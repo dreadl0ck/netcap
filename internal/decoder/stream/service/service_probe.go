@@ -29,6 +29,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -178,6 +179,12 @@ func writeSoftwareFromBanner(serv *service, ident, probeIdent string) {
 
 // MatchServiceProbes will check the service banner against the probes.
 func MatchServiceProbes(serv *service, banner []byte, ident string) {
+	if serviceProbes == nil {
+		if identifyBuiltinBanner(serv, banner) && serv.Product != "" {
+			writeSoftwareFromBanner(serv, ident, "built-in protocol banner")
+		}
+		return
+	}
 	var (
 		expectedCategory string
 		found            bool
@@ -682,6 +689,12 @@ func initServiceProbes() error {
 	// load nmap service probes
 	data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseFolderPath, "nmap-service-probes"))
 	if err != nil {
+		if os.IsNotExist(err) {
+			serviceProbes = nil
+			serviceProbeCategories = nil
+			serviceLog.Warn("optional nmap-service-probes unavailable; using built-in SSH/HTTP/SMTP/FTP banner classification", zap.String("directory", resolvers.DataBaseFolderPath))
+			return nil
+		}
 		return err
 	}
 

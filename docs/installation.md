@@ -10,6 +10,30 @@ Compiled versions for macOS, Linux and Windows are available on GitHub:
 
 {% embed url="https://github.com/dreadl0ck/netcap/releases" caption="NETCAP GitHub Releases Page" %}
 
+Linux archives built by `zeus/scripts/build-{ubuntu,alpine}-docker.sh` include
+`net` and a private `lib/` runtime. Keep that directory together: `net` launches
+`lib/net.bin` with the bundled ELF loader and libraries, including nDPI,
+libprotoident and libtrace for DPI builds. It does not install system libraries.
+Use the libc archive on Debian/Ubuntu and the musl archive on Alpine.
+
+For offline analysis, `net capture --read traffic.pcap --out nc` exits after
+flushing records. Add `--http localhost:8080` to keep the WebUI running.
+`net dump --read nc/HTTP.ncap.gz --json --sort-time` provides stable capture-time
+ordering using temporary files and bounded-memory sorting; capture files retain
+decoder emission order.
+
+The default per-decoder buffer is 64 KiB (`--membuf-size` overrides it).
+Missing optional `nmap-service-probes` no longer prevents Service startup:
+built-in parsers recognize SSH, HTTP, SMTP and FTP greetings. External probes
+remain optional; `--download-dbs` does not install Nmap's catalogue.
+
+Windows identity extraction covers visible Kerberos principals, NTLM Type 3
+identities, LDAP directory attributes, SAMR query classes 1/6/7/8/21, and LSA
+lookup request names/SIDs. SAMR/LSA stubs require NDR32; SMB2 SAMR/LSA pipes are
+supported through CREATE, WRITE, READ and PIPE_TRANSCEIVE. `IdentityStatus`
+records incomplete, encrypted and unsupported RPC results; LSA translated
+responses, NDR64 and SMB1 pipe transports are not decoded.
+
 ## Go Get
 
 Installation via go get:
@@ -72,4 +96,3 @@ To install the _Netcap_ and _Netlabel_ command-line tool and the library with ze
 ```text
 $ zeus install
 ```
-

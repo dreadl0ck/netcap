@@ -167,7 +167,10 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 // context is the assembler context.
 type context struct {
 	CaptureInfo gopacket.CaptureInfo
+	link        gopacket.Flow
 }
+
+func (c *context) GetLinkFlow() gopacket.Flow { return c.link }
 
 // GetCaptureInfo returns the gopacket.CaptureInfo from the context.
 func (c *context) GetCaptureInfo() gopacket.CaptureInfo {

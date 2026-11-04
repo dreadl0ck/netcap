@@ -652,7 +652,7 @@ func GetFlags() []cli.Flag {
 		&cli.StringFlag{
 			Name:    "http",
 			Value:   "localhost:8080",
-			Usage:   "start web UI server on specified address (e.g., localhost:8080)",
+			Usage:   "start web UI server and keep running after analysis (offline files default to no server)",
 			Sources: cli.EnvVars("NC_HTTP"),
 		},
 		&cli.StringFlag{

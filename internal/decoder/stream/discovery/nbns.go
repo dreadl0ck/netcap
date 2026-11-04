@@ -8,6 +8,7 @@ package discovery
 
 import (
 	"encoding/binary"
+	"net"
 	"strings"
 	"time"
 	"unicode"
@@ -50,38 +51,59 @@ func nbnsExtract(data []byte, ident string, ts time.Time) *DiscoveryResult {
 		return nil
 	}
 
-	qdCount := binary.BigEndian.Uint16(data[4:6])
-	anCount := binary.BigEndian.Uint16(data[6:8])
-	_ = anCount
-	if qdCount > 10 {
+	qdCount := int(binary.BigEndian.Uint16(data[4:6]))
+	anCount := int(binary.BigEndian.Uint16(data[6:8]))
+	if qdCount > 10 || anCount > 50 || isResponse == 0 && opcode != 5 && opcode != 8 {
 		return nil
 	}
-
-	records := nbnsExtractRecords(data, nbnsHeaderSize)
-	if len(records) == 0 {
-		return nil
-	}
-
-	var hostnames []string
-	var roles []string
-
-	for _, r := range records {
-		if r.name != "" && !containsStr(hostnames, r.name) {
-			hostnames = append(hostnames, r.name)
+	pos := nbnsHeaderSize
+	var question int
+	for range qdCount {
+		question = pos
+		_, _, end := nbnsDecodeName(data, pos)
+		if end <= pos || end+4 > len(data) {
+			return nil
 		}
-		if r.role != "" && !containsStr(roles, r.role) {
-			roles = append(roles, r.role)
+		pos = end + 4
+	}
+	// Registration binds its question name using the additional NB resource.
+	count := anCount
+	if isResponse == 0 {
+		count = int(binary.BigEndian.Uint16(data[10:12]))
+	}
+	for range count {
+		namePos := pos
+		if pos+2 <= len(data) && data[pos]&0xc0 == 0xc0 {
+			namePos = int(binary.BigEndian.Uint16(data[pos:pos+2]) & 0x3fff)
+			pos += 2
+		} else {
+			_, _, end := nbnsDecodeName(data, pos)
+			if end <= pos {
+				return nil
+			}
+			pos = end
 		}
+		if pos+10 > len(data) {
+			return nil
+		}
+		typ, size := binary.BigEndian.Uint16(data[pos:]), int(binary.BigEndian.Uint16(data[pos+8:]))
+		pos += 10
+		if pos+size > len(data) {
+			return nil
+		}
+		if namePos == question && question == 0 {
+			return nil
+		}
+		name, role, _ := nbnsDecodeName(data, namePos)
+		if typ == 0x20 && size >= 6 && size%6 == 0 && binary.BigEndian.Uint16(data[pos:])&0x8000 == 0 && name != "" {
+			ip := net.IP(data[pos+2 : pos+6])
+			if !ip.IsUnspecified() && !ip.IsMulticast() {
+				return &DiscoveryResult{Hostnames: []string{name}, Roles: []string{role}, SourceIP: ip.String()}
+			}
+		}
+		pos += size
 	}
-
-	if len(hostnames) == 0 {
-		return nil
-	}
-
-	return &DiscoveryResult{
-		Hostnames: hostnames,
-		Roles:     roles,
-	}
+	return nil
 }
 
 type nbnsRec struct {

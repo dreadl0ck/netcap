@@ -193,6 +193,8 @@ func getSaltForVersion(version uint32) []byte {
 
 // IETFQUICClientHello represents parsed IETF QUIC Initial packet data.
 type IETFQUICClientHello struct {
+	packetLength int
+	fragments    []cryptoFragment
 	Version      uint32 // QUIC version
 	DCID         []byte // Destination Connection ID
 	SCID         []byte // Source Connection ID
@@ -342,9 +344,10 @@ func ParseIETFQUICInitial(payload []byte) (*IETFQUICClientHello, error) {
 	if len(encryptedPayload) < int(length) || len(encryptedPayload) < 4 {
 		return nil, nil
 	}
+	result.packetLength = offset + int(length)
 
 	// Derive Initial secret and attempt decryption
-	clientHello, err := decryptInitialPacket(result, payload, offset, int(length))
+	clientHello, err := decryptInitialPacket(result, payload[:result.packetLength], offset, int(length))
 	if err != nil || clientHello == nil {
 		// Even if decryption fails, we still have header info
 		return result, nil
@@ -369,9 +372,13 @@ func decryptInitialPacket(result *IETFQUICClientHello, fullPacket []byte, payloa
 	clientSecret := hkdfExpandLabel(initialSecret, clientInLabel, nil, 32)
 
 	// Derive key and IV
-	key := hkdfExpandLabel(clientSecret, quicKeyLabel, nil, 16)
-	iv := hkdfExpandLabel(clientSecret, quicIVLabel, nil, 12)
-	hp := hkdfExpandLabel(clientSecret, quicHPLabel, nil, 16)
+	keyLabel, ivLabel, hpLabel := quicKeyLabel, quicIVLabel, quicHPLabel
+	if result.Version == quicVersionIETF2 {
+		keyLabel, ivLabel, hpLabel = []byte("quicv2 key"), []byte("quicv2 iv"), []byte("quicv2 hp")
+	}
+	key := hkdfExpandLabel(clientSecret, keyLabel, nil, 16)
+	iv := hkdfExpandLabel(clientSecret, ivLabel, nil, 12)
+	hp := hkdfExpandLabel(clientSecret, hpLabel, nil, 16)
 
 	// Remove header protection to get packet number
 	pnOffset := payloadOffset
@@ -486,9 +493,31 @@ func parseCryptoFrames(data []byte, result *IETFQUICClientHello) {
 		case 0x01: // PING
 			continue
 		case 0x02, 0x03: // ACK frames - skip them
-			// ACK frame has variable structure, skip for now
-			// This shouldn't appear in Initial packets, but handle gracefully
-			return
+			var ranges uint64
+			for i := 0; i < 4; i++ {
+				v, n := parseQUICVarint(data[offset:])
+				if n == 0 {
+					return
+				}
+				offset += n
+				if i == 2 {
+					ranges = v
+				}
+			}
+			if ranges > 4096 {
+				return
+			}
+			fields := int(ranges) * 2
+			if frameType == 3 {
+				fields += 3
+			}
+			for range fields {
+				_, n := parseQUICVarint(data[offset:])
+				if n == 0 {
+					return
+				}
+				offset += n
+			}
 		case 0x06: // CRYPTO frame
 			// Parse crypto frame offset
 			cryptoOffset, bytesRead := parseQUICVarint(data[offset:])
@@ -504,7 +533,7 @@ func parseCryptoFrames(data []byte, result *IETFQUICClientHello) {
 			}
 			offset += bytesRead
 
-			if offset+int(cryptoLength) > len(data) {
+			if cryptoLength > uint64(len(data)-offset) || cryptoOffset > 65536 || cryptoLength > 65536-cryptoOffset {
 				return
 			}
 
@@ -517,19 +546,18 @@ func parseCryptoFrames(data []byte, result *IETFQUICClientHello) {
 			})
 			offset += int(cryptoLength)
 		default:
-			// Unknown frame type - stop parsing
-			// but try to reassemble what we have
-			break
+			return
 		}
 	}
 
 	if len(fragments) == 0 {
 		return
 	}
+	result.fragments = fragments
 
 	// Reassemble CRYPTO fragments
 	tlsData := reassembleCryptoFragments(fragments)
-	if len(tlsData) > 0 {
+	if completeCryptoHello(tlsData) {
 		parseTLSClientHello(tlsData, result)
 	}
 }
@@ -544,6 +572,9 @@ func reassembleCryptoFragments(fragments []cryptoFragment) []byte {
 	// Find the total size needed
 	var maxEnd uint64
 	for _, frag := range fragments {
+		if frag.offset > 65536 || uint64(len(frag.data)) > 65536-frag.offset {
+			return nil
+		}
 		end := frag.offset + uint64(len(frag.data))
 		if end > maxEnd {
 			maxEnd = end
@@ -557,13 +588,34 @@ func reassembleCryptoFragments(fragments []cryptoFragment) []byte {
 
 	// Create reassembly buffer
 	buffer := make([]byte, maxEnd)
+	filled := make([]bool, maxEnd)
 
 	// Copy fragments into buffer
 	for _, frag := range fragments {
-		copy(buffer[frag.offset:], frag.data)
+		for i, b := range frag.data {
+			pos := int(frag.offset) + i
+			if filled[pos] && buffer[pos] != b {
+				return nil
+			}
+			buffer[pos] = b
+			filled[pos] = true
+		}
+	}
+	for i, ok := range filled {
+		if !ok {
+			return buffer[:i]
+		}
 	}
 
 	return buffer
+}
+
+func completeCryptoHello(b []byte) bool {
+	if len(b) < 4 || b[0] != 1 {
+		return false
+	}
+	n := int(b[1])<<16 | int(b[2])<<8 | int(b[3])
+	return n >= 34 && n <= 65532 && len(b) >= 4+n
 }
 
 // parseTLSClientHello parses a TLS 1.3 ClientHello message.

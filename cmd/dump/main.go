@@ -65,9 +65,7 @@ func Run() {
 // RunWithContext runs the dump command with a CLI context.
 func RunWithContext(ctx context.Context, c *cli.Command) error {
 	if c.Bool("gen-config") {
-		// TODO: Update GenerateConfig to work with urfave/cli
-		fmt.Println("gen-config not yet implemented with urfave/cli")
-		return nil
+		return fmt.Errorf("dump --gen-config is not implemented")
 	}
 
 	flagInput := c.String("read")
@@ -76,27 +74,28 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	if flagInput == "" {
 		printHeader()
 		fmt.Println(ansi.Red + "> nothing to do. need a NETCAP audit record file (.ncap.gz or .ncap) with the read flag (-read)" + ansi.Reset)
-		os.Exit(1)
+		return fmt.Errorf("dump requires --read <file.ncap[.gz]>")
 	}
 
 	if strings.HasSuffix(flagInput, ".pcap") || strings.HasSuffix(flagInput, ".pcapng") {
 		printHeader()
 		fmt.Println(ansi.Red + "> the dump tool is used to read netcap audit records" + ansi.Reset)
 		fmt.Println(ansi.Red + "> use the capture tool create audit records from live traffic or a pcap dumpfile" + ansi.Reset)
-		os.Exit(1)
+		return fmt.Errorf("PCAP input requires net capture --read %q", flagInput)
 	}
 
 	// read dumpfile header and exit
 	if c.Bool("header") { // open input file for reading
 		r, errOpen := netio.Open(flagInput, c.Int("membuf-size"))
 		if errOpen != nil {
-			panic(errOpen)
+			return fmt.Errorf("open audit header: %w", errOpen)
 		}
+		defer r.Close()
 
 		// get header
 		h, errFileHeader := r.ReadHeader()
 		if errFileHeader != nil {
-			log.Fatal(errFileHeader)
+			return errFileHeader
 		}
 
 		// print result as table
@@ -107,7 +106,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			{"Type", h.Type.String()},
 			{"ContainsPayloads", strconv.FormatBool(h.ContainsPayloads)},
 		})
-		os.Exit(0) // bye bye
+		return nil
 	}
 
 	// set separators for sub structures in CSV
@@ -124,25 +123,26 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			// We need to read the file header first to determine the record type
 			r, errOpen := netio.Open(flagInput, c.Int("membuf-size"))
 			if errOpen != nil {
-				log.Fatal("failed to open file for filter compilation:", errOpen)
+				return fmt.Errorf("open audit file for filter: %w", errOpen)
 			}
 
 			header, errHeader := r.ReadHeader()
 			if errHeader != nil {
-				log.Fatal("failed to read header for filter compilation:", errHeader)
+				_ = r.Close()
+				return fmt.Errorf("read audit header for filter: %w", errHeader)
 			}
 
 			// Close the reader, we'll open it again in Dump()
 			errClose := r.Close()
 			if errClose != nil {
-				log.Fatal("failed to close reader:", errClose)
+				return errClose
 			}
 
 			// Compile the filter expression
 			var err error
 			filterProgram, err = filter.CompileExpression(flagFilter, header.Type)
 			if err != nil {
-				log.Fatal("failed to compile filter expression:", err)
+				return fmt.Errorf("compile audit filter: %w", err)
 			}
 
 			fmt.Fprintf(os.Stderr, "Using filter: %s\n", flagFilter)
@@ -162,15 +162,16 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 				JSON:          c.Bool("json"),
 				CSV:           c.Bool("csv"),
 				ForceColors:   c.Bool("c"),
+				SortTime:      c.Bool("sort-time"),
 				FilterProgram: filterProgram,
 			},
 		)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		return nil
 	}
 
-	return nil
+	return fmt.Errorf("unsupported audit file extension: %q (expected .ncap or .ncap.gz)", flagInput)
 }

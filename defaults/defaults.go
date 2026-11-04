@@ -27,7 +27,7 @@ import (
 
 const (
 	// BufferSize is the size for memory buffering before feeding data into compressor.
-	BufferSize = 1024 * 1024 * 12 // 12 MB
+	BufferSize = 64 * 1024 // Per-decoder buffer; all enabled writers allocate one.
 
 	// PacketBuffer is the size of the channel for feeding packets into workers.
 	PacketBuffer = 1000
@@ -95,7 +95,7 @@ const (
 	DirectoryPermission = 0o777
 
 	// FilePermission for all created files.
-	FilePermission = 0o777
+	FilePermission = 0o600
 
 	// FileExtension of uncompressed netcap files.
 	FileExtension = ".ncap"

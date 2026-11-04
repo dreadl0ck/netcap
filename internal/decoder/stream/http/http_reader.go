@@ -119,6 +119,8 @@ func (h *httpReader) Decode() {
 	// iterate over responses
 	for _, res := range h.responses { // populate types.HTTP with all infos from response
 		ht := newHTTPFromResponse(res.response)
+		ht.Timestamp, ht.Flow = res.timestamp, res.flow
+		ht.SrcIP, ht.DstIP, ht.SrcPort, ht.DstPort = res.serverIP, res.clientIP, res.serverPort, res.clientPort
 
 		matchedReq := h.findRequest(res.response)
 
@@ -135,7 +137,7 @@ func (h *httpReader) Decode() {
 			// Use the matched request which preserves JA4H header order info
 			setRequest(ht, &httpRequest{
 				request:      res.response.Request,
-				timestamp:    res.timestamp,
+				timestamp:    matchedReq.timestamp,
 				clientIP:     res.clientIP,
 				serverIP:     res.serverIP,
 				clientPort:   res.clientPort,
@@ -146,11 +148,8 @@ func (h *httpReader) Decode() {
 				acceptLang:   matchedReq.acceptLang,
 			})
 		} else {
-			// response without matching request
-			// don't add to output for now
+			// The request may precede the capture; retain the visible response.
 			atomic.AddInt64(&streamutils.Stats.NumUnmatchedResp, 1)
-
-			continue
 		}
 
 		// Set Community ID for cross-tool correlation
@@ -411,7 +410,10 @@ func (h *httpReader) findRequest(res *http.Response) *httpRequest {
 
 	if len(h.requests) != 0 {
 		// take the request from the parent stream and delete it from there
-		httpReq, h.requests = h.requests[0], h.requests[1:]
+		httpReq = h.requests[0]
+		if res.StatusCode < 100 || res.StatusCode >= 200 || res.StatusCode == http.StatusSwitchingProtocols {
+			h.requests = h.requests[1:]
+		}
 	}
 
 	// set request instance on response
@@ -445,22 +447,19 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 		return err
 	}
 
-	body, err := io.ReadAll(req.Body)
+	body, bodyErr := io.ReadAll(req.Body)
 	s := len(body)
-	if err != nil {
+	if bodyErr != nil {
 		httpLog.Error(
 			"failed to read HTTP request body",
 			zap.String("ident", h.conversation.Ident),
-			zap.Error(err),
+			zap.Error(bodyErr),
 			zap.Int("length", s),
 		)
 		// continue execution
-	} else {
-		_ = req.Body.Close()
-
-		// Restore body so it can be read again
-		req.Body = io.NopCloser(bytes.NewBuffer(body))
 	}
+	_ = req.Body.Close()
+	req.Body = io.NopCloser(bytes.NewReader(body))
 	//if h.tcpStreamReader.hexdump {
 	//	logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
 	//}
@@ -496,6 +495,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 			zap.Error(err),
 		)
 	}
+	req.Body = io.NopCloser(bytes.NewReader(body))
 
 	// increase counter
 	streamutils.Stats.Lock()
@@ -506,7 +506,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 
 	if req.Method == methodPOST {
 		// write request payload to disk if configured
-		if (err == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
+		if (bodyErr == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
 			// Use new file extraction framework
 			extractor, ok := file.GetExtractor("HTTP")
 			if !ok {
@@ -524,6 +524,9 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 				ContentType:    strings.Join(req.Header[headerContentType], " "),
 				Host:           req.Host,
 				Encoding:       req.Header[headerContentEncoding],
+			}
+			if bodyErr != nil {
+				return (&HTTPFileExtractor{}).extractFile(h.conversation, body, metadata, bodyErr)
 			}
 			return extractor.ExtractFile(h.conversation, body, metadata)
 		}

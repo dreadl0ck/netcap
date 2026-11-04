@@ -195,6 +195,7 @@ enum Type {
   NC_Protobuf = 145;
   NC_PKTAP = 146;
   NC_TLSRecord = 147;
+  NC_LDAP = 148;
 }
 
 message TLSRecord {
@@ -4482,6 +4483,35 @@ message DCERPC {
   string CommunityID = 18;
   string OperationName = 19;   // Procedure for a recognized interface and opnum; empty when unknown
   uint32 FaultStatus = 20;     // Status of a Fault PDU; 0 otherwise
+  repeated WindowsIdentity Identities = 21;
+  string IdentityStatus = 22;
+}
+
+message WindowsIdentity {
+  string AccountName = 1;
+  string FullName = 2;
+  string Domain = 3;
+  string SID = 4;
+}
+
+message LDAPAttribute {
+  string Name = 1;
+  repeated bytes Values = 2;
+}
+
+message LDAP {
+  int64 Timestamp = 1;
+  string Flow = 2;
+  string CommunityID = 3;
+  string SrcIP = 4;
+  string DstIP = 5;
+  int32 SrcPort = 6;
+  int32 DstPort = 7;
+  int32 MessageID = 8;
+  string Operation = 9;
+  string DN = 10;
+  repeated LDAPAttribute Attributes = 11;
+  int32 ResultCode = 12;
 }
 
 // OCSP - Online Certificate Status Protocol

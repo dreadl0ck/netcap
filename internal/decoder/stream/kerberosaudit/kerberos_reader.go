@@ -21,11 +21,13 @@ package kerberosaudit
 
 import (
 	"encoding/asn1"
+	"encoding/binary"
 	"sync/atomic"
 
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -58,28 +60,78 @@ func (k *kerberosReader) Decode() {
 		return
 	}
 
+	k.decodeMessages(func(rec *types.Kerberos, d core.DataFragment) {
+		// Time and direction come from the fragment that carried the
+		// bytes. Every record used to take FirstClientPacket and the
+		// client's addresses, which collapses a session to one instant and
+		// records a server reply as though the client had sent it.
+		rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = k.conversation.Endpoints(d)
+		rec.Flow = k.conversation.Ident
+		rec.Timestamp = core.FragmentTime(d)
+
+		err := Decoder.Writer.Write(rec)
+		if err != nil {
+			kerberosLog.Error("failed to write kerberos record", zap.Error(err))
+		} else {
+			atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+		}
+	})
+}
+
+// TCP record marks are directional; never join UDP datagrams or cross a gap.
+func (k *kerberosReader) decodeMessages(emit func(*types.Kerberos, core.DataFragment)) {
+	type pending struct {
+		bytes   []byte
+		first   core.DataFragment
+		stopped bool
+	}
+	states := [2]pending{}
 	for _, d := range k.conversation.Data {
-		raw := d.Raw()
-		if len(raw) < 2 {
+		if d == nil {
 			continue
 		}
-
-		records := k.parseKerberosMessages(raw)
-		for _, rec := range records {
-			// Time and direction come from the fragment that carried the
-			// bytes. Every record used to take FirstClientPacket and the
-			// client's addresses, which collapses a session to one instant and
-			// records a server reply as though the client had sent it.
-			rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = k.conversation.Endpoints(d)
-			rec.Flow = k.conversation.Ident
-			rec.Timestamp = core.FragmentTime(d)
-
-			err := Decoder.Writer.Write(rec)
-			if err != nil {
-				kerberosLog.Error("failed to write kerberos record", zap.Error(err))
-			} else {
-				atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+		if k.conversation.ClientData == nil && k.conversation.ServerData == nil && d.Context() == nil {
+			for _, rec := range k.parseKerberosMessages(d.Raw()) {
+				emit(rec, d)
 			}
+			continue
+		}
+		index := 0
+		if d.Direction() == reassembly.TCPDirServerToClient {
+			index = 1
+		}
+		s := &states[index]
+		if frag, ok := d.(*core.StreamData); ok && frag.SkippedBytes != 0 {
+			s.bytes = nil
+			s.stopped = true
+		}
+		if s.stopped {
+			continue
+		}
+		if len(s.bytes) == 0 {
+			s.first = d
+		}
+		if len(s.bytes)+len(d.Raw()) > 4<<20 {
+			s.stopped = true
+			s.bytes = nil
+			continue
+		}
+		s.bytes = append(s.bytes, d.Raw()...)
+		for len(s.bytes) >= 4 {
+			n := int(binary.BigEndian.Uint32(s.bytes))
+			if n < 2 || n > 1<<20 {
+				s.stopped = true
+				s.bytes = nil
+				break
+			}
+			if len(s.bytes) < n+4 {
+				break
+			}
+			for _, rec := range k.parseKerberosMessages(s.bytes[4 : 4+n]) {
+				emit(rec, s.first)
+			}
+			s.bytes = s.bytes[n+4:]
+			s.first = d
 		}
 	}
 }
@@ -126,6 +178,9 @@ func (k *kerberosReader) parseSingleMessage(data []byte) *types.Kerberos {
 	if len(data) < 2 {
 		return nil
 	}
+	if n, ok := derMessageSize(data); !ok || n != len(data) || !isKerberosAppTag(data[0]) {
+		return nil
+	}
 
 	// Extract the application tag number
 	tag := data[0]
@@ -152,52 +207,65 @@ func (k *kerberosReader) parseSingleMessage(data []byte) *types.Kerberos {
 
 // extractKerberosDetails attempts to parse ASN.1 structure for realm and principal names.
 func (k *kerberosReader) extractKerberosDetails(data []byte, rec *types.Kerberos) {
-	// Parse the outer application-tagged wrapper
 	var inner asn1.RawValue
-	rest, err := asn1.Unmarshal(data, &inner)
-	_ = rest
-	if err != nil {
+	if rest, err := asn1.Unmarshal(data, &inner); err != nil || len(rest) != 0 || inner.Class != asn1.ClassApplication {
 		return
 	}
-
-	// The inner content should be a SEQUENCE
-	var seq asn1.RawValue
-	remaining := inner.Bytes
-	for len(remaining) > 0 {
-		remaining, err = asn1.Unmarshal(remaining, &seq)
-		if err != nil {
-			return
+	fields := kerberosFields(inner.Bytes)
+	var cname, sname, realm []byte
+	switch rec.MessageTypeCode {
+	case 10, 12:
+		body := kerberosFields(fields[4]) // KDC-REQ.req-body
+		cname, sname, realm = body[1], body[3], body[2]
+	case 11, 13:
+		cname, realm = fields[4], fields[3]
+		ticket := kerberosTicket(fields[5])
+		sname = ticket[2]
+	case 14:
+		ticket := kerberosTicket(fields[3])
+		sname, realm = ticket[2], ticket[1]
+	case 30:
+		cname, sname, realm = fields[8], fields[10], fields[7]
+		if len(realm) == 0 {
+			realm = fields[9]
 		}
-
-		// Context-specific tagged fields inside the Kerberos message
-		if seq.Class == asn1.ClassContextSpecific {
-			switch seq.Tag {
-			case 7: // realm in AS-REQ/TGS-REQ (crealm in replies)
-				var realm string
-				if _, err2 := asn1.Unmarshal(seq.Bytes, &realm); err2 == nil {
-					rec.Realm = realm
-				}
-			case 9: // crealm in AS-REP/TGS-REP
-				var realm string
-				if _, err2 := asn1.Unmarshal(seq.Bytes, &realm); err2 == nil {
-					if rec.Realm == "" {
-						rec.Realm = realm
-					}
-				}
-			case 4: // cname (PrincipalName) in requests
-				k.extractPrincipalName(seq.Bytes, rec, true)
-			case 10: // cname in replies
-				k.extractPrincipalName(seq.Bytes, rec, true)
-			case 5: // sname (PrincipalName) in requests
-				k.extractPrincipalName(seq.Bytes, rec, false)
-			case 6: // error-code in KRB-ERROR
-				var errCode int
-				if _, err2 := asn1.Unmarshal(seq.Bytes, &errCode); err2 == nil {
-					rec.ErrorCode = int32(errCode)
-				}
-			}
+		var code int
+		if _, err := asn1.Unmarshal(fields[6], &code); err == nil {
+			rec.ErrorCode = int32(code)
 		}
 	}
+	_, _ = asn1.Unmarshal(realm, &rec.Realm)
+	k.extractPrincipalName(cname, rec, true)
+	k.extractPrincipalName(sname, rec, false)
+}
+
+func kerberosFields(data []byte) map[int][]byte {
+	fields := make(map[int][]byte)
+	var seq asn1.RawValue
+	if rest, err := asn1.Unmarshal(data, &seq); err != nil || len(rest) != 0 || seq.Class != asn1.ClassUniversal || seq.Tag != asn1.TagSequence {
+		return fields
+	}
+	for b := seq.Bytes; len(b) > 0; {
+		var f asn1.RawValue
+		rest, err := asn1.Unmarshal(b, &f)
+		if err != nil || f.Class != asn1.ClassContextSpecific {
+			return nil
+		}
+		if _, duplicate := fields[f.Tag]; duplicate {
+			return nil
+		}
+		fields[f.Tag] = f.Bytes
+		b = rest
+	}
+	return fields
+}
+
+func kerberosTicket(data []byte) map[int][]byte {
+	var ticket asn1.RawValue
+	if rest, err := asn1.Unmarshal(data, &ticket); err != nil || len(rest) != 0 || ticket.Class != asn1.ClassApplication || ticket.Tag != 1 {
+		return nil
+	}
+	return kerberosFields(ticket.Bytes)
 }
 
 // extractPrincipalName parses a PrincipalName ASN.1 structure.

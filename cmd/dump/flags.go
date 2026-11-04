@@ -37,6 +37,7 @@ func Flags() []string {
 // GetFlags returns the CLI flags for the dump subcommand.
 func GetFlags() []cli.Flag {
 	return []cli.Flag{
+		&cli.BoolFlag{Name: "sort-time", Usage: "stable timestamp order using bounded-memory external sorting", Sources: cli.EnvVars("NC_SORT_TIME")},
 		&cli.BoolFlag{
 			Name:    "gen-config",
 			Usage:   "generate config",
@@ -113,7 +114,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:    "read",
-			Usage:   "read specified file, can either be a pcap or netcap audit record file",
+			Usage:   "read a netcap audit record file (.ncap or .ncap.gz); use capture for PCAP files",
 			Sources: cli.EnvVars("NC_READ"),
 		},
 		&cli.BoolFlag{

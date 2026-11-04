@@ -140,7 +140,7 @@ func (f *tlsRecordFramer) feed(data []byte, timestamp int64) {
 		}
 		n := min(len(data), int(f.record.Length-f.record.ObservedLength))
 		f.prefixBytes += copy(f.prefix[f.prefixBytes:], data[:n])
-		if Decoder.Writer != nil && f.dir == reassembly.TCPDirServerToClient && f.record.ContentType == 22 && !f.encrypted && !f.certificateLimit {
+		if (Decoder.Writer != nil || helloEnabled()) && f.record.ContentType == 22 && !f.encrypted && !f.certificateLimit {
 			if len(f.handshake)+n <= maxTLSHandshake {
 				if len(f.handshake) == 0 && n > 0 {
 					f.handshakeTS = f.record.Timestamp
@@ -192,9 +192,10 @@ func (f *tlsRecordFramer) feed(data []byte, timestamp int64) {
 				if length+4 > len(f.handshake) {
 					break
 				}
-				if f.handshake[0] == handshakeTypeCertificate {
+				if f.handshake[0] == handshakeTypeCertificate && Decoder.Writer != nil {
 					f.reader.parseCertificateMessage(f.handshake[4:4+length], f.handshakeTS)
 				}
+				f.emitHello(f.handshake[:4+length])
 				f.handshake = f.handshake[4+length:]
 				if len(f.handshake) == 0 {
 					f.handshakeTS = 0

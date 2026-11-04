@@ -45,6 +45,8 @@ var DefaultAbstractDecoders = []core.DecoderAPI{
 	secret.Decoder,
 	alert.Decoder,
 	tls.RecordDecoder,
+	tls.ClientHelloDecoder,
+	tls.ServerHelloDecoder,
 } // contains all available abstract decoders
 
 // package level init.
@@ -85,6 +87,8 @@ func ApplyActionToAbstractDecodersAsync(action func(api core.DecoderAPI)) {
 // InitAbstractDecoders initializes all stream decoders.
 func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err error) {
 	tls.RecordDecoder.Writer = nil
+	tls.ClientHelloDecoder.Writer = nil
+	tls.ServerHelloDecoder.Writer = nil
 	active, err := decoderutils.SelectDecoders(DefaultAbstractDecoders, c.IncludeDecoders, c.ExcludeDecoders, core.DecoderAPI.GetName, errInvalidAbstractDecoder)
 	if err != nil {
 		return nil, err

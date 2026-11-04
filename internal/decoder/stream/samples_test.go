@@ -297,6 +297,11 @@ func samples() []sample {
 			server: smbNegotiate(true),
 		},
 		{
+			decoder: "LDAP", port: 389, transport: core.TCP,
+			client: hexBytes("300c020101600702010304008000"),
+			server: hexBytes("300c02010161070a010004000400"),
+		},
+		{
 			decoder: "Modbus", port: 502, transport: core.TCP,
 			client: mbapADU(1, 0x03, 0x00, 0x01, 0x00, 0x01), // read holding registers
 			note:   "MBAP + FC3, validated by canDecodeModbus's full parse",

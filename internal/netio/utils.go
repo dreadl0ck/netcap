@@ -132,11 +132,20 @@ type DumpConfig struct {
 	Structured    bool
 	CSV           bool
 	ForceColors   bool
+	SortTime      bool
 }
 
 // Dump reads the specified netcap file
 // and dumps the output according to the configuration to the specified *io.File.
 func Dump(w *os.File, c DumpConfig) error {
+	if c.SortTime && !c.Fields {
+		path, cleanup, err := sortedAuditFile(c.Path, 16<<20)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+		c.Path = path
+	}
 	var (
 		isTTY         = terminal.IsTerminal(int(w.Fd())) || c.ForceColors
 		count         = 0

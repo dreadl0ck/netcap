@@ -36,6 +36,8 @@ type ConversationInfo struct {
 	ServerIP   string
 	ClientPort int32
 	ServerPort int32
+	ClientMAC  string
+	ServerMAC  string
 
 	// True only when SYN, SYN-ACK and the acknowledging client ACK were observed.
 	TCPHandshakeComplete bool

@@ -471,6 +471,15 @@ func (t *tcpConnection) decode() {
 		CommunityID:          streamutils.CalcCommunityIDTCP(cIP, sIP, uint16(cPort), uint16(sPort)),
 		TCPHandshakeComplete: t.initStage == 3,
 	}
+	for _, fragment := range conv.ClientData {
+		if ac, ok := fragment.Context().(interface{ GetLinkFlow() gopacket.Flow }); ok {
+			flow := ac.GetLinkFlow()
+			if len(flow.Src().Raw()) > 0 {
+				conv.ClientMAC, conv.ServerMAC = flow.Src().String(), flow.Dst().String()
+				break
+			}
+		}
+	}
 
 	// Use the client's destination port (= server's listening port) for decoder matching
 	// NOT the server's destination port (which would be the client's ephemeral port)
@@ -493,8 +502,7 @@ func (t *tcpConnection) decode() {
 		ServerPort:   serverPort,
 		PortClient:   cr,
 		PortServer:   sr,
-		ScanClient:   t.client.DataSlice().Bytes(),
-		ScanServer:   t.server.DataSlice().Bytes(),
+		ScanBytes:    func() ([]byte, []byte) { return t.client.DataSlice().Bytes(), t.server.DataSlice().Bytes() },
 		Conversation: conv,
 	})
 
@@ -608,9 +616,11 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	streamutils.Stats.Totalsz += int64(len(tcp.Payload))
 	streamutils.Stats.Unlock()
 
-	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &context{
-		CaptureInfo: packet.Metadata().CaptureInfo,
-	})
+	ac := &context{CaptureInfo: packet.Metadata().CaptureInfo}
+	if ll := packet.LinkLayer(); ll != nil {
+		ac.link = ll.LinkFlow()
+	}
+	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, ac)
 }
 
 // CleanupReassembly finalizes all pools after packet workers have joined.

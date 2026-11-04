@@ -24,6 +24,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/ipp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/irc"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/kerberosaudit"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/ldap"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/modbus"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/mqttsn"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/opcua"
@@ -98,12 +99,13 @@ var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
 	// New protocol decoders
 	49:    tacacs.Decoder,        // TACACS+ authentication
 	88:    kerberosaudit.Decoder, // Kerberos v5 authentication
-	135:   dcerpc.Decoder,        // DCE/RPC Endpoint Mapper
-	631:   ipp.Decoder,           // IPP printing
-	10050: zabbix.Decoder,        // Zabbix agent
-	10051: zabbix.Decoder,        // Zabbix server
-	9090:  protobuf.Decoder,      // Generic protobuf/gRPC
-	50051: protobuf.Decoder,      // gRPC default port
+	389:   ldap.Decoder,
+	135:   dcerpc.Decoder,   // DCE/RPC Endpoint Mapper
+	631:   ipp.Decoder,      // IPP printing
+	10050: zabbix.Decoder,   // Zabbix agent
+	10051: zabbix.Decoder,   // Zabbix server
+	9090:  protobuf.Decoder, // Generic protobuf/gRPC
+	50051: protobuf.Decoder, // gRPC default port
 } // contains all available stream decoders
 
 // UDPStreamDecoders contains additional stream decoders specifically for UDP protocols.

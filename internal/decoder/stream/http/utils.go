@@ -22,11 +22,13 @@ package http
 import (
 	"bytes"
 	"compress/gzip"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 
+	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	ja4 "github.com/dreadl0ck/netcap/internal/ja4plusadapter"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/types"
@@ -49,6 +51,10 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	h.RequestHeader = readHeader(req.request.Header)
 
 	body, err := ioutil.ReadAll(req.request.Body)
+	req.request.Body = io.NopCloser(bytes.NewReader(body))
+	if decoderconfig.Instance != nil && decoderconfig.Instance.IncludePayloads {
+		h.RequestBody = body
+	}
 	if err == nil {
 		h.ContentTypeDetected = http.DetectContentType(body)
 
@@ -158,7 +164,7 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 		}
 	}
 
-	return &types.HTTP{
+	record := &types.HTTP{
 		ResContentLength:       contentLength,
 		ResContentType:         res.Header.Get(headerContentType),
 		StatusCode:             int32(res.StatusCode),
@@ -179,6 +185,10 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 		Server:                   res.Header.Get("Server"),
 		XPoweredBy:               res.Header.Get("X-Powered-By"),
 	}
+	if decoderconfig.Instance != nil && decoderconfig.Instance.IncludePayloads {
+		record.ResponseBody = body
+	}
+	return record
 }
 
 // extractAuthType extracts the authorization type from the Authorization header

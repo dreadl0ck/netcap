@@ -88,6 +88,11 @@ func ntlmsspHarvesterFunc(data []byte, ident string, ts time.Time) *types.Secret
 			}
 
 		case ntlmsspAuth:
+			// Identity fields are plaintext even when the challenge was not captured.
+			_, _, authDomain, authUser, authWorkstation := extractNTLMAuthFields(data[pos:])
+			if authUser != "" && (state != ntlmStateWaitResponse || len(challenge) == 0) {
+				return &types.Secret{Timestamp: ts.UnixNano(), Service: "NTLMSSP", Flow: ident, User: authUser, Realm: authDomain, Notes: "Identity only; challenge not observed. Domain: " + authDomain + ", Workstation: " + authWorkstation}
+			}
 			if state == ntlmStateWaitResponse && len(challenge) > 0 {
 				// Extract all fields using offset/length pairs
 				lmHash, ntHash, domain, username, workstation = extractNTLMAuthFields(data[pos:])
@@ -115,6 +120,7 @@ func ntlmsspHarvesterFunc(data []byte, ident string, ts time.Time) *types.Secret
 						Service:   "NTLMSSP",
 						Flow:      ident,
 						User:      username,
+						Realm:     domain,
 						Password:  hashcatFormat, // Store in password field for now
 						Notes:     "HashType: " + hashType + ", Domain: " + domain + ", Workstation: " + workstation + ", Challenge: " + hex.EncodeToString(challenge),
 					}

@@ -287,6 +287,9 @@ func setFlagsFromContext(c *cli.Command) {
 	flagHTTP = c.String("http")
 	flagHTTPAssets = c.String("http-assets")
 	flagService = c.Bool("service")
+	if flagInput != "" && !flagService && !c.IsSet("http") {
+		flagHTTP = ""
+	}
 	flagServiceDataDir = c.String("service-data-dir")
 	flagServicePreloadDir = c.String("service-preload-dir")
 	flagServiceMaxFileSize = c.Int64("service-max-file-size")

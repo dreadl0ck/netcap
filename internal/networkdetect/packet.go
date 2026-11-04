@@ -48,6 +48,12 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 		base.SrcPort = uint16(tcp.SrcPort)
 		base.DstPort = uint16(tcp.DstPort)
 		base.Seq = tcp.Seq
+		if tcp.RST && tcp.ACK {
+			ev := base
+			ev.Kind = "refused"
+			ev.SrcIP, ev.DstIP, ev.SrcPort, ev.DstPort = base.DstIP, base.SrcIP, base.DstPort, base.SrcPort
+			events = append(events, ev)
+		}
 		if tcp.SYN && !tcp.ACK && !tcp.RST {
 			ev := base
 			ev.Kind = "syn"

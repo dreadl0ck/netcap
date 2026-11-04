@@ -35,3 +35,6 @@ type dataFragment interface {
 	Network() gopacket.Flow
 	Transport() gopacket.Flow
 }
+
+// DataFragment carries directional bytes and their original capture metadata.
+type DataFragment = dataFragment
