@@ -66,6 +66,14 @@ func TestSMB2PipeTransportRetainsClosedPipe(t *testing.T) {
 	if len(pipes) != 1 || len(pipes[0].Data) != 2 || !bytes.Equal(pipes[0].Data[0].Raw(), []byte{1, 2, 3}) || !bytes.Equal(pipes[0].Data[1].Raw(), []byte{4, 5, 6}) || pipes[0].Data[1].Direction() != reassembly.TCPDirServerToClient {
 		t.Fatalf("pipe evidence: %#v", pipes)
 	}
+	withGap := append(append(core.DataFragments{}, fragments...), &core.StreamData{SkippedBytes: 1, RawData: []byte("lost")})
+	if p := smbPipeConversations(&core.ConversationInfo{Data: withGap}); len(p) != 1 || len(p[0].Data) != 2 {
+		t.Fatal("later loss erased earlier pipe evidence", p)
+	}
+	fragments[0].(*core.StreamData).SkippedBytes = -1
+	if p := smbPipeConversations(&core.ConversationInfo{Data: fragments}); len(p) != 1 || len(p[0].Data) != 2 {
+		t.Fatal("initial unknown gap rejected complete SMB framing", p)
+	}
 	fragments[2].(*core.StreamData).SkippedBytes = 1
 	if p := smbPipeConversations(&core.ConversationInfo{Data: fragments}); p != nil {
 		t.Fatal("pipe evidence stitched across loss")

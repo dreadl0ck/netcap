@@ -62,7 +62,7 @@ func TestLookups(t *testing.T) {
 	}
 	defer d.Close()
 	meta, _ := d.Meta()
-	if meta["nvd_count"] != "3" || meta["nvd_start_year"] != "2002" || meta["schema_version"] != "1" {
+	if meta["nvd_count"] != "3" || meta["nvd_start_year"] != "2002" || meta["schema_version"] != "2" {
 		t.Fatalf("meta %v", meta)
 	}
 	vid := func(v Vulnerability) string { return v.ID }
@@ -78,7 +78,7 @@ func TestLookups(t *testing.T) {
 		{"nginx", "", "1.17.6", []string{"CVE-2020-0001"}},
 	}
 	for _, c := range cases {
-		got, err := d.Vulnerabilities(c.vendor, c.product, c.version)
+		got, err := d.VulnerabilityCandidates(c.vendor, c.product, c.version)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -86,7 +86,7 @@ func TestLookups(t *testing.T) {
 			t.Errorf("%q %q %q: got %v want %v", c.vendor, c.product, c.version, g, c.want)
 		}
 	}
-	got, _ := d.Vulnerabilities("Apache", "", "2.4.49")
+	got, _ := d.VulnerabilityCandidates("Apache", "", "2.4.49")
 	if got[0].ID != "CVE-2021-41773" || got[0].Severity != "HIGH" || got[0].BaseScore != 4.3 || got[0].AccessVector != "NETWORK" {
 		t.Errorf("fields: %+v", got[0])
 	}
@@ -101,7 +101,7 @@ func TestLookups(t *testing.T) {
 		{"OpenSSH", `"quoted"`, "7.2", []string{"1"}}, // quotes are escaped
 		{"", "...", "", []string{}},                   // punctuation-only terms are dropped
 	} {
-		got, err := d.Exploits(c.vendor, c.product, c.version)
+		got, err := d.ExploitCandidates(c.vendor, c.product, c.version)
 		if err != nil {
 			t.Fatal(err)
 		}

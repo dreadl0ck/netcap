@@ -109,10 +109,14 @@ func (c *Collector) doCleanup(force bool) {
 	c.workers = nil
 	c.dispatchMu.Unlock()
 
+	if err := c.finishHostIdentity(); err != nil {
+		c.log.Error("host identity finalization failed", zap.Error(err))
+	}
 	if err := c.closeNetworkDetection(); err != nil {
 		c.log.Error("network detection finalization failed", zap.Error(err))
 	}
 	c.teardown()
+	c.detachRecordAnalysis()
 
 	// Reset package-level stream pools so a subsequent CollectPcap call in
 	// the same process starts from a clean slate. Without this, tests (or

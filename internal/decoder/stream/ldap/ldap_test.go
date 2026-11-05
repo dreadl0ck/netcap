@@ -2,6 +2,7 @@ package ldap
 
 import (
 	"bytes"
+	"encoding/asn1"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/types"
 	"testing"
@@ -12,6 +13,20 @@ func entry() []byte {
 	attr := tlv(0x30, append(tlv(4, []byte("displayName")...), tlv(0x31, tlv(4, []byte("Test Analyst")...)...)...)...)
 	body := append(tlv(4, []byte("CN=Test,DC=example,DC=test")...), tlv(0x30, attr...)...)
 	return tlv(0x30, append([]byte{2, 1, 7}, tlv(0x64, body...)...)...)
+}
+
+func TestSearchFilterAccountRequiresEqualityNotDisjunction(t *testing.T) {
+	equality := asn1.RawValue{Class: 2, Tag: 3, IsCompound: true, Bytes: append(tlv(4, []byte("sAMAccountName")...), tlv(4, []byte("analyst")...)...)}
+	if filterAccount(equality, 0) != "analyst" {
+		t.Fatal("account equality not extracted")
+	}
+	b, err := asn1.Marshal(equality)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filterAccount(asn1.RawValue{Class: 2, Tag: 1, IsCompound: true, Bytes: b}, 0) != "" {
+		t.Fatal("OR filter treated as unique account")
+	}
 }
 func TestLDAPSearchEntryAcrossEverySplit(t *testing.T) {
 	wire := entry()

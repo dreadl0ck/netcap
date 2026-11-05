@@ -18,7 +18,8 @@ func (d *dcerpcReader) decodeIdentityStub(rec *types.DCERPC, pdu []byte, order b
 	if rec.PacketType != ptypeRequest && rec.PacketType != ptypeResponse {
 		return
 	}
-	if !d.ndr32[uint16(rec.ContextID)] {
+	is64 := d.ndr64[uint16(rec.ContextID)]
+	if !d.ndr32[uint16(rec.ContextID)] && !is64 || isLookup && is64 {
 		rec.IdentityStatus = "unsupported_or_unconfirmed_transfer_syntax"
 		return
 	}
@@ -82,10 +83,95 @@ func (d *dcerpcReader) decodeIdentityStub(rec *types.DCERPC, pdu []byte, order b
 		return
 	}
 	ident, status := samrUserIdentity(bytes, level, order)
+	if is64 {
+		ident, status = samrUserIdentity64(bytes, level, order)
+	}
 	rec.IdentityStatus = status
 	if ident != nil {
 		rec.Identities = []*types.WindowsIdentity{ident}
 	}
+}
+
+// NDR64 widens pointers and conformant-array counts, with 8-byte alignment.
+func samrUserIdentity64(b []byte, level uint16, order binary.ByteOrder) (*types.WindowsIdentity, string) {
+	if len(b) < 20 {
+		return nil, "truncated"
+	}
+	if order.Uint32(b[len(b)-4:]) != 0 {
+		return nil, "rpc_error"
+	}
+	if order.Uint64(b) == 0 {
+		return nil, "null_result"
+	}
+	if level == 0 || order.Uint16(b[8:10]) != level {
+		return nil, "unknown_or_mismatched_information_class"
+	}
+	var fixed, descriptor, count int
+	switch level {
+	case 1:
+		fixed, count = 72, 2
+	case 6:
+		fixed, count = 32, 2
+	case 7, 8:
+		fixed, count = 16, 1
+	case 21:
+		fixed, descriptor, count = 320, 48, 2
+	default:
+		return nil, "unsupported_information_class"
+	}
+	const base = 16
+	if len(b) < base+fixed+4 {
+		return nil, "truncated"
+	}
+	pos := base + fixed
+	names := make([]string, count)
+	for i := range count {
+		desc := b[base+descriptor+i*16:]
+		length, maximum, ptr := int(order.Uint16(desc)), int(order.Uint16(desc[2:])), order.Uint64(desc[8:])
+		if length > maximum || length%2 != 0 {
+			return nil, "invalid_ndr_string"
+		}
+		if ptr == 0 {
+			if length != 0 {
+				return nil, "invalid_ndr_string"
+			}
+			continue
+		}
+		pos = (pos + 7) &^ 7
+		if pos+24 > len(b)-4 {
+			return nil, "truncated"
+		}
+		maxCount, offset, actual := order.Uint64(b[pos:]), order.Uint64(b[pos+8:]), order.Uint64(b[pos+16:])
+		pos += 24
+		if maxCount > 32768 || offset > maxCount || actual > maxCount-offset || actual*2 != uint64(length) || actual*2 > uint64(len(b)-4-pos) {
+			return nil, "invalid_ndr_string"
+		}
+		units := make([]uint16, int(actual))
+		for j := range units {
+			units[j] = order.Uint16(b[pos+j*2:])
+		}
+		pos += int(actual) * 2
+		names[i] = string(utf16.Decode(units))
+	}
+	ident := &types.WindowsIdentity{}
+	if level == 8 {
+		ident.FullName = names[0]
+	} else {
+		ident.AccountName = names[0]
+		if len(names) > 1 {
+			ident.FullName = names[1]
+		}
+	}
+	if level == 21 {
+		present := order.Uint32(b[base+284:])
+		if present&1 == 0 {
+			ident.AccountName = ""
+		}
+		if present&2 == 0 {
+			ident.FullName = ""
+		}
+	}
+	return ident, "decoded_ndr64"
 }
 
 // MS-LSAT lookup request arrays: expose only explicitly counted input names/SIDs.

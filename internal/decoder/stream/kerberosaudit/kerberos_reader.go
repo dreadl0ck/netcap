@@ -217,13 +217,21 @@ func (k *kerberosReader) extractKerberosDetails(data []byte, rec *types.Kerberos
 	case 10, 12:
 		body := kerberosFields(fields[4]) // KDC-REQ.req-body
 		cname, sname, realm = body[1], body[3], body[2]
+		var typesList []int
+		if _, err := asn1.Unmarshal(body[8], &typesList); err == nil {
+			for _, n := range typesList {
+				rec.RequestedEncryptionTypes = append(rec.RequestedEncryptionTypes, int32(n))
+			}
+		}
 	case 11, 13:
 		cname, realm = fields[4], fields[3]
 		ticket := kerberosTicket(fields[5])
 		sname = ticket[2]
+		setEncryptionType(fields[6], rec)
 	case 14:
 		ticket := kerberosTicket(fields[3])
 		sname, realm = ticket[2], ticket[1]
+		setEncryptionType(ticket[3], rec)
 	case 30:
 		cname, sname, realm = fields[8], fields[10], fields[7]
 		if len(realm) == 0 {
@@ -233,10 +241,21 @@ func (k *kerberosReader) extractKerberosDetails(data []byte, rec *types.Kerberos
 		if _, err := asn1.Unmarshal(fields[6], &code); err == nil {
 			rec.ErrorCode = int32(code)
 		}
+		_, _ = asn1.Unmarshal(fields[11], &rec.ErrorMessage)
 	}
 	_, _ = asn1.Unmarshal(realm, &rec.Realm)
 	k.extractPrincipalName(cname, rec, true)
 	k.extractPrincipalName(sname, rec, false)
+}
+
+func setEncryptionType(data []byte, rec *types.Kerberos) {
+	fields := kerberosFields(data)
+	var n int
+	if _, err := asn1.Unmarshal(fields[0], &n); err != nil {
+		return
+	}
+	rec.EncryptionType = int32(n)
+	rec.EncryptionTypeName = map[int]string{1: "des-cbc-crc", 3: "des-cbc-md5", 16: "des3-cbc-sha1", 17: "aes128-cts-hmac-sha1-96", 18: "aes256-cts-hmac-sha1-96", 19: "aes128-cts-hmac-sha256-128", 20: "aes256-cts-hmac-sha384-192", 23: "rc4-hmac"}[n]
 }
 
 func kerberosFields(data []byte) map[int][]byte {

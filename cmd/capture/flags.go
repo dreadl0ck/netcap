@@ -151,7 +151,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.IntFlag{
 			Name:    "workers",
-			Value:   runtime.NumCPU() * 2,
+			Value:   defaults.CaptureWorkers(),
 			Usage:   "number of workers",
 			Sources: cli.EnvVars("NC_WORKERS"),
 		},

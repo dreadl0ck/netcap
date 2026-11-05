@@ -51,8 +51,10 @@ import (
  */
 
 type tlsReader struct {
-	conversation *core.ConversationInfo
-	tls13        bool
+	conversation    *core.ConversationInfo
+	tls13           bool
+	serverKnown     bool
+	clientOffered13 bool
 }
 
 // New returns a new TLS reader

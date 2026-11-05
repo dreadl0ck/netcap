@@ -29,6 +29,7 @@ func smbPipeConversations(c *core.ConversationInfo) []*core.ConversationInfo {
 		data    []byte
 		at      int64
 		stopped bool
+		seen    bool
 	}
 	var sides [2]side
 	creates := map[string]string{}
@@ -36,6 +37,7 @@ func smbPipeConversations(c *core.ConversationInfo) []*core.ConversationInfo {
 	pipes := map[string]*core.ConversationInfo{}
 	var order []*core.ConversationInfo
 	total := 0
+	initialLoss := false
 	for _, f := range c.Data {
 		index := 0
 		if f.Direction() == reassembly.TCPDirServerToClient {
@@ -43,7 +45,14 @@ func smbPipeConversations(c *core.ConversationInfo) []*core.ConversationInfo {
 		}
 		s := &sides[index]
 		if d, ok := f.(*core.StreamData); ok && d.SkippedBytes != 0 {
-			return nil
+			if d.SkippedBytes == -1 && !s.seen && len(s.data) == 0 {
+				initialLoss = true
+			} else {
+				return retainedPipes(order)
+			}
+		}
+		if len(f.Raw()) > 0 {
+			s.seen = true
 		}
 		if s.stopped {
 			continue
@@ -52,7 +61,7 @@ func smbPipeConversations(c *core.ConversationInfo) []*core.ConversationInfo {
 			s.at = core.FragmentTime(f)
 		}
 		if len(s.data)+len(f.Raw()) > 2<<20 {
-			return nil
+			return retainedPipes(order)
 		}
 		s.data = append(s.data, f.Raw()...)
 		for len(s.data) >= 4 {
@@ -115,6 +124,9 @@ func smbPipeConversations(c *core.ConversationInfo) []*core.ConversationInfo {
 							copy.ClientData = nil
 							copy.ServerData = nil
 							copy.Ident = c.Ident + "|pipe:" + name + ":" + key
+							if initialLoss {
+								copy.Ident += "|initial-loss-unknown"
+							}
 							pipes[key] = &copy
 							order = append(order, &copy)
 						}
@@ -153,7 +165,7 @@ func smbPipeConversations(c *core.ConversationInfo) []*core.ConversationInfo {
 				if pipe := pipes[key]; pipe != nil && len(payload) > 0 {
 					total += len(payload)
 					if total > 8<<20 {
-						return nil
+						return retainedPipes(order)
 					}
 					pipe.Data = append(pipe.Data, &core.StreamData{RawData: append([]byte(nil), payload...), Dir: f.Direction(), CaptureInformation: gopacket.CaptureInfo{Timestamp: time.Unix(0, s.at)}})
 				}
@@ -166,5 +178,15 @@ func smbPipeConversations(c *core.ConversationInfo) []*core.ConversationInfo {
 			s.at = core.FragmentTime(f)
 		}
 	}
-	return order
+	return retainedPipes(order)
+}
+
+func retainedPipes(order []*core.ConversationInfo) []*core.ConversationInfo {
+	var result []*core.ConversationInfo
+	for _, pipe := range order {
+		if len(pipe.Data) > 0 {
+			result = append(result, pipe)
+		}
+	}
+	return result
 }

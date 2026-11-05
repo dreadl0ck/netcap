@@ -43,6 +43,8 @@ import (
 // if cpe url does not contain version information.
 var reSimpleVersion = regexp.MustCompile(`([0-9]+)\.([0-9]+)\.?([0-9]*)?`)
 
+var reCVEReference = regexp.MustCompile(`(?i)CVE-[0-9]{4}-[0-9]{4,}`)
+
 // generates max 20 intermediate versions
 // until is excluded.
 func intermediatePatchVersions(from string, until string) []string {
@@ -246,17 +248,17 @@ func vulnerabilityFromNVD(item *nvdItem) (vulndb.Vulnerability, bool) {
 				continue
 			}
 
-			for _, cpe := range node.CpeMatch {
+			for _, cpe := range node.Matches {
 				if !cpe.Vulnerable {
 					continue
 				}
 
-				if cpe.VersionStartIncluding != "" {
-					versions = append(versions, cpe.VersionStartIncluding)
+				if cpe.StartIncluding != "" {
+					versions = append(versions, cpe.StartIncluding)
 
 					// generate array of intermediate versions if end is set
-					if cpe.VersionEndExcluding != "" {
-						versions = append(versions, intermediatePatchVersions(cpe.VersionStartIncluding, cpe.VersionEndExcluding)...)
+					if cpe.EndExcluding != "" {
+						versions = append(versions, intermediatePatchVersions(cpe.StartIncluding, cpe.EndExcluding)...)
 					}
 
 					continue
@@ -279,9 +281,10 @@ func vulnerabilityFromNVD(item *nvdItem) (vulndb.Vulnerability, bool) {
 	}
 
 	v := vulndb.Vulnerability{
-		ID:          cve.ID,
-		Description: description,
-		Versions:    versions,
+		ID:             cve.ID,
+		Description:    description,
+		Versions:       versions,
+		Configurations: cve.Configurations,
 	}
 
 	if len(cve.Metrics.CvssMetricV2) > 0 {
@@ -345,6 +348,7 @@ func indexExploitCSV(b *vulndb.Builder, file string) error {
 		}
 
 		err = b.AddExploit(vulndb.Exploit{
+			CVEs:        reCVEReference.FindAllString(strings.ToUpper(get(rec, "codes")), -1),
 			ID:          get(rec, "id"),
 			File:        get(rec, "file"),
 			Description: get(rec, "description"),

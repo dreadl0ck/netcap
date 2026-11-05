@@ -67,6 +67,15 @@ func TestPrincipalMessageSchemas(t *testing.T) {
 	}
 }
 
+func TestEncryptionTypeIsReadFromEncryptedData(t *testing.T) {
+	data := seq(t, field(t, 0, []byte{2, 1, 18}), field(t, 2, []byte{4, 0}))
+	r := &types.Kerberos{}
+	setEncryptionType(data, r)
+	if r.EncryptionType != 18 || r.EncryptionTypeName != "aes256-cts-hmac-sha1-96" {
+		t.Fatal(r)
+	}
+}
+
 func TestKerberosTCPRecordSplitsAndGaps(t *testing.T) {
 	msg := der(t, 1, 10, seq(t, field(t, 4, seq(t, field(t, 1, principal(t, "bdiaz")), field(t, 2, realm(t))))))
 	wire := binary.BigEndian.AppendUint32(nil, uint32(len(msg)))

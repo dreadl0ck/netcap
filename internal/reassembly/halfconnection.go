@@ -29,6 +29,8 @@ type halfconnection struct {
 	queuedBytes   int
 	queuedPackets int
 	closed        bool
+	synSeen       bool
+	synSeq        uint32
 
 	// track total bytes reassembled for this halfconnection
 	totalBytes int

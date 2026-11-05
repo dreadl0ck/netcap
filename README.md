@@ -100,7 +100,11 @@ go build -tags=nodpi -o net ./cmd/net/
 CGO_ENABLED=1 go build -tags hyperscan -o net ./cmd/net/
 
 # Capture from PCAP file
-./net capture -read traffic.pcap
+./net capture -read traffic.pcap -out nc
+
+# Host/account summary, or JSON with provenance and conflicting observations
+./net triage --read nc
+./net triage --read nc --json
 
 # Live capture
 sudo ./net capture -iface en0
@@ -124,6 +128,8 @@ source IPs/CIDRs and versioned indicators (`internal/networkdetect/config.go`).
 | DNS DGA and tunneling | Distinct randomized apex names or high-entropy TXT labels beneath one parent, capture-time counts and sampled names; behavioral suspicion |
 | TCP scans and SMTP fan-out | Distinct destination endpoints or mail hosts; retries do not increase cardinality |
 | Periodic connections (`c2.beacon`) | Latest 8 TCP connection starts from one source to one service, mean interval ≥ 10 s, coefficient of variation ≤ 0.1 within 1 h; retransmitted SYNs ignored. Updates and monitoring are also periodic |
+| HTTP scans and periodic requests | `http.scan`: ≥ 32 distinct paths with ≥ 80% 4xx responses in the window; `c2.beacon` also measures repeated HTTP transactions within one connection |
+| Application policy observations | `policy.http-on-443`, `policy.non-tls-on-443`, `policy.executable-unusual-port` and `policy.public-smb-ntlm` retain observed endpoints; none establishes execution, compromise or successful relay |
 | ICMP tunneling | Repeated large, high-entropy echo requests; diagnostic traffic can look similar |
 | SSH transfer and unusual ports | SSH banners, unique contiguous client bytes and service port; encrypted contents and authorization remain unknown |
 | Stratum, IRC, OAST and Telegram | Protocol/destination observations; legitimate use is possible |
@@ -145,6 +151,35 @@ is synthetic lab data; SSH qualification uses a 1 MiB transfer and a 512 KiB
 threshold. `testdata/cases.json` separately labels synthetic source-shape and
 benign controls. Scenario names never enter the detector. `beacon` has no
 FlightSim capture and is synthetic only.
+
+`Hosts.json` retains scoped IP/MAC bindings, Kerberos/SMB accounts, hostname
+evidence and LDAP/SAMR directory subjects. `net triage --read nc --json` exposes
+timestamps, flows and unresolved/conflicting joins. LDAP SASL signing payloads
+are marked `sasl-integrity-not-verified`; sealed payloads are not decoded.
+SAMR user-information queries support NDR32 and NDR64. An account-name match
+without a directory domain is explicitly qualified in `fullNameState`.
+TLS hello parsing also follows acknowledged STARTTLS/STLS/AUTH TLS and SOCKS5
+CONNECT exchanges through `internal/decoder/stream/tls/upgrades.go`.
+
+Vulnerability findings require schema-2 CPE product/version applicability and
+an observed software host; exploit findings additionally require a linked CVE.
+Schema-1 databases must be rebuilt with `net util --generate-dbs` or replaced
+with a compatible snapshot; see [the format](internal/vulndb/SCHEMA.md).
+
+### Corpus regression checks
+
+`scripts/mta-regression.py --report /path/to/netcap-evaluation.md --root /tmp/mta --binary ./net`
+fetches the report's 52 PCAPs, verifies cached receipts before replay and writes
+`replay.json`. `--offline` reuses receipts without network access;
+`--compare-only --tshark /path/to/tshark` compares HTTP/TCP TLS tuples and writes
+`reference.json`, including missing and additional observations; missing reference
+tuples make the command exit nonzero. Neither file
+is a rescore of the report's 289 questions.
+
+`NETCAP_MTA_ROOT=/tmp/mta NETCAP_TSHARK=/path/to/tshark go test -tags nodpi ./internal/collector -run '^TestMTAReportRegressions$' -count=1`
+runs checksum-pinned HTTP, TLS, SMTP, LDAP and SAMR regressions. The November 2024
+NetSupport capture uses LF headers and `194.180.191.64`; the evaluation's
+`194.180.191.164` is a typo.
 
 ### Hunting evidence
 

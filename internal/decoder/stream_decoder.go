@@ -20,6 +20,7 @@
 package decoder
 
 import (
+	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"sync/atomic"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
@@ -116,6 +117,9 @@ func (sd *StreamDecoder) GetName() string {
 // SetWriter sets the netcap writer to use for the
 func (sd *StreamDecoder) SetWriter(w netio.AuditRecordWriter) {
 	sd.Writer = w
+	if decoderconfig.Instance != nil {
+		sd.Writer = netio.ObserveWriter(w, decoderconfig.Instance.RecordObserver)
+	}
 }
 
 // GetWriter returns the current writer.

@@ -28,6 +28,7 @@ package vulndb
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -47,7 +48,7 @@ const (
 	Format = "netcap-vulndb"
 
 	// SchemaVersion is bumped on any incompatible table or query change.
-	SchemaVersion = 1
+	SchemaVersion = 2
 
 	// MaxHits caps the results of one lookup, matching bleve's default
 	// search size used by netcap v0.9.x.
@@ -57,6 +58,7 @@ const (
 const schema = `
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE nvd (
+	rowid INTEGER PRIMARY KEY,
 	id TEXT NOT NULL UNIQUE,
 	description TEXT NOT NULL,
 	severity TEXT NOT NULL,
@@ -67,7 +69,8 @@ CREATE TABLE nvd (
 	integrity_impact TEXT NOT NULL,
 	availability_impact TEXT NOT NULL,
 	base_score REAL NOT NULL,
-	base_severity TEXT NOT NULL
+	base_severity TEXT NOT NULL,
+	configurations TEXT NOT NULL
 );
 CREATE TABLE nvd_versions (
 	nvd_rowid INTEGER NOT NULL REFERENCES nvd(rowid),
@@ -75,6 +78,7 @@ CREATE TABLE nvd_versions (
 	PRIMARY KEY (version, nvd_rowid)
 ) WITHOUT ROWID;
 CREATE VIRTUAL TABLE nvd_fts USING fts5(description, content='nvd', content_rowid='rowid', tokenize='unicode61');
+CREATE TABLE nvd_products (nvd_rowid INTEGER NOT NULL REFERENCES nvd(rowid), part TEXT NOT NULL, vendor TEXT NOT NULL, product TEXT NOT NULL, PRIMARY KEY(part,vendor,product,nvd_rowid)) WITHOUT ROWID;
 CREATE TABLE exploits (
 	id TEXT NOT NULL UNIQUE,
 	file TEXT NOT NULL,
@@ -86,6 +90,7 @@ CREATE TABLE exploits (
 	port TEXT NOT NULL
 );
 CREATE VIRTUAL TABLE exploits_fts USING fts5(description, content='exploits', content_rowid='rowid', tokenize='unicode61');
+CREATE TABLE exploit_cves (exploit_id TEXT NOT NULL REFERENCES exploits(id), cve_id TEXT NOT NULL REFERENCES nvd(id), PRIMARY KEY(exploit_id,cve_id)) WITHOUT ROWID;
 `
 
 // Vulnerability is one NVD entry.
@@ -102,6 +107,8 @@ type Vulnerability struct {
 	BaseScore             float64
 	BaseSeverity          string
 	Versions              []string
+	Configurations        []Configuration
+	MatchStatus           string
 }
 
 // Exploit is one Exploit-DB entry. File is relative to the exploitdb folder.
@@ -114,6 +121,8 @@ type Exploit struct {
 	Type        string
 	Platform    string
 	Port        string
+	CVEs        []string
+	MatchStatus string
 }
 
 // Phrase quotes term as an FTS5 phrase, or returns "" when it holds no
@@ -196,10 +205,10 @@ func (d *DB) Meta() (map[string]string, error) {
 	return out, rows.Err()
 }
 
-// Vulnerabilities returns NVD entries whose description contains every
+// VulnerabilityCandidates returns unverified text-search candidates containing every
 // non-empty phrase of vendor and product and whose version list contains
 // version exactly. Without a text term or a version nothing is returned.
-func (d *DB) Vulnerabilities(vendor, product, version string) ([]Vulnerability, error) {
+func (d *DB) VulnerabilityCandidates(vendor, product, version string) ([]Vulnerability, error) {
 	match := MatchExpr(vendor, product)
 	version = strings.TrimSpace(version)
 	if match == "" || version == "" {
@@ -225,13 +234,14 @@ LIMIT ?3`, match, version, MaxHits)
 			return nil, err
 		}
 		out = append(out, v)
+		out[len(out)-1].MatchStatus = "text-candidate"
 	}
 	return out, rows.Err()
 }
 
-// Exploits returns Exploit-DB entries whose description contains every
+// ExploitCandidates returns unverified Exploit-DB text-search candidates containing every
 // non-empty phrase of vendor, product and version.
-func (d *DB) Exploits(vendor, product, version string) ([]Exploit, error) {
+func (d *DB) ExploitCandidates(vendor, product, version string) ([]Exploit, error) {
 	match := MatchExpr(vendor, product, version)
 	if match == "" {
 		return nil, nil
@@ -253,6 +263,7 @@ LIMIT ?2`, match, MaxHits)
 			return nil, err
 		}
 		out = append(out, e)
+		out[len(out)-1].MatchStatus = "text-candidate"
 	}
 	return out, rows.Err()
 }
@@ -266,6 +277,8 @@ type Builder struct {
 	path     string
 	nvd      *sql.Stmt
 	versions *sql.Stmt
+	products *sql.Stmt
+	links    *sql.Stmt
 	exploit  *sql.Stmt
 	meta     map[string]string
 	counts   [2]int
@@ -282,7 +295,7 @@ func Create(path string) (*Builder, error) {
 	if err != nil {
 		return nil, err
 	}
-	conn, err := sql.Open("sqlite", "file:"+filepath.ToSlash(abs)+"?_pragma=journal_mode(OFF)&_pragma=synchronous(OFF)")
+	conn, err := sql.Open("sqlite", "file:"+filepath.ToSlash(abs)+"?_pragma=journal_mode(OFF)&_pragma=synchronous(OFF)&_pragma=foreign_keys(1)")
 	if err != nil {
 		return nil, err
 	}
@@ -303,11 +316,17 @@ func (b *Builder) init() (err error) {
 		return err
 	}
 	if b.nvd, err = b.tx.Prepare(`INSERT INTO nvd (id, description, severity, v2_score, access_vector, attack_complexity,
-		confidentiality_impact, integrity_impact, availability_impact, base_score, base_severity)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING`); err != nil {
+		confidentiality_impact, integrity_impact, availability_impact, base_score, base_severity, configurations)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING`); err != nil {
 		return err
 	}
 	if b.versions, err = b.tx.Prepare(`INSERT OR IGNORE INTO nvd_versions (nvd_rowid, version) VALUES (?, ?)`); err != nil {
+		return err
+	}
+	if b.products, err = b.tx.Prepare(`INSERT OR IGNORE INTO nvd_products VALUES (?,?,?,?)`); err != nil {
+		return err
+	}
+	if b.links, err = b.tx.Prepare(`INSERT OR IGNORE INTO exploit_cves SELECT ?, id FROM nvd WHERE id=?`); err != nil {
 		return err
 	}
 	b.exploit, err = b.tx.Prepare(`INSERT INTO exploits (id, file, description, date, author, type, platform, port)
@@ -320,8 +339,12 @@ func (b *Builder) SetMeta(key, value string) { b.meta[key] = value }
 
 // AddVulnerability inserts v; a repeated ID keeps the first entry.
 func (b *Builder) AddVulnerability(v Vulnerability) error {
+	config, err := json.Marshal(v.Configurations)
+	if err != nil || len(config) > 8<<20 {
+		return fmt.Errorf("invalid bounded NVD applicability for %s", v.ID)
+	}
 	res, err := b.nvd.Exec(v.ID, v.Description, v.Severity, v.V2Score, v.AccessVector, v.AttackComplexity,
-		v.ConfidentialityImpact, v.IntegrityImpact, v.AvailabilityImpact, v.BaseScore, v.BaseSeverity)
+		v.ConfidentialityImpact, v.IntegrityImpact, v.AvailabilityImpact, v.BaseScore, v.BaseSeverity, string(config))
 	if err != nil {
 		return err
 	}
@@ -340,6 +363,11 @@ func (b *Builder) AddVulnerability(v Vulnerability) error {
 			return err
 		}
 	}
+	for _, identity := range configurationProducts(v.Configurations) {
+		if _, err := b.products.Exec(rowid, identity.Part, identity.Vendor, identity.Product); err != nil {
+			return err
+		}
+	}
 	b.counts[0]++
 	return nil
 }
@@ -352,6 +380,11 @@ func (b *Builder) AddExploit(e Exploit) error {
 	}
 	if n, _ := res.RowsAffected(); n > 0 {
 		b.counts[1]++
+		for _, id := range e.CVEs {
+			if _, err := b.links.Exec(e.ID, id); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -371,7 +404,7 @@ func (b *Builder) Finish() error {
 			return err
 		}
 	}
-	for _, s := range []*sql.Stmt{b.nvd, b.versions, b.exploit} {
+	for _, s := range []*sql.Stmt{b.nvd, b.versions, b.exploit, b.products, b.links} {
 		s.Close()
 	}
 	steps := []string{

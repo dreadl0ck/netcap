@@ -20,6 +20,7 @@
 package config
 
 import (
+	"github.com/gogo/protobuf/proto"
 	"runtime"
 	"time"
 
@@ -112,6 +113,7 @@ var DefaultConfig = &Config{
 // for the decoders
 // this structure has an optimized field order to avoid excessive padding.
 type Config struct {
+	RecordObserver func(proto.Message) `json:"-" yaml:"-"`
 	// Output path
 	Out string
 

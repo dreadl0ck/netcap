@@ -1484,6 +1484,7 @@ message HTTPCookie {
 // TLS Client Hello
 
 message TLSClientHello {
+  string ReassemblyStatus = 99;
   int64 Timestamp = 1;
   int32 Type = 2;
   int32 Version = 3;
@@ -1530,6 +1531,7 @@ message TLSClientHello {
 // TLS Server Hello
 
 message TLSServerHello {
+  string ReassemblyStatus = 99;
   int64 Timestamp = 1;
   int32 Version = 2;
   bytes Random = 3;
@@ -2381,6 +2383,7 @@ message ENIPCommandSpecificData {
 
 // Device Profiling
 message DeviceProfile {
+  repeated string AdvertisedServices = 17;
 	uint64 ContactObservations = 14;
 	uint64 ContactCountLowerBound = 15;
 	bool ContactsTruncated = 16;
@@ -2895,6 +2898,9 @@ message Software {
   // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
   // Multiple IDs since software can be detected across multiple connections
   repeated string CommunityIDs = 24;
+  string ObservedHost = 25;
+  string ObservationRole = 26;
+  string VulnerabilityAssessment = 27;
 }
 
 message Service {
@@ -2996,6 +3002,8 @@ message SSH {
 }
 
 message Vulnerability {
+  string MatchStatus = 11;
+  string ObservedHost = 12;
   int64 Timestamp = 1;
   string ID = 2;
   string Description = 3;
@@ -3012,6 +3020,8 @@ message Vulnerability {
 }
 
 message Exploit {
+  string MatchStatus = 13;
+  string ObservedHost = 14;
   int64 Timestamp = 1;
   string ID = 2;
   string Description = 3;
@@ -3031,6 +3041,7 @@ message Exploit {
 
 // Alert models a user defined event with IP layer and meta information.
 message Alert {
+  string CommunityID = 25;
   int64 Timestamp = 1;
 
   string Name = 2;
@@ -4394,6 +4405,7 @@ message STUNAttribute {
 
 // Kerberos v5 authentication protocol
 message Kerberos {
+  repeated int32 RequestedEncryptionTypes = 18;
   int64 Timestamp = 1;
   string MessageType = 2;      // AS-REQ, AS-REP, TGS-REQ, TGS-REP, AP-REQ, AP-REP, KRB-ERROR
   int32 MessageTypeCode = 3;   // 10=AS-REQ, 11=AS-REP, 12=TGS-REQ, 13=TGS-REP, 14=AP-REQ, 15=AP-REP, 30=KRB-ERROR
@@ -4505,6 +4517,10 @@ message LDAPAttribute {
 }
 
 message LDAP {
+  string AuthMechanism = 15;
+  uint32 SASLNTLMFlags = 16;
+  string ReassemblyStatus = 14;
+  string SearchAccount = 13;
   int64 Timestamp = 1;
   string Flow = 2;
   string CommunityID = 3;

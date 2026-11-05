@@ -164,14 +164,16 @@ func writeSoftwareFromBanner(serv *service, ident, probeIdent string) {
 	software.WriteSoftware([]*software.AtomicSoftware{
 		{
 			Software: &types.Software{
-				Timestamp:  serv.Timestamp,
-				Product:    serv.Product,
-				Vendor:     serv.Vendor,
-				Version:    serv.Version,
-				SourceName: "Service Probe Match: " + probeIdent,
-				Service:    serv.Name,
-				Flows:      []string{ident},
-				Notes:      "Protocol: " + serv.Protocol,
+				ObservedHost:    serv.IP,
+				ObservationRole: "server",
+				Timestamp:       serv.Timestamp,
+				Product:         serv.Product,
+				Vendor:          serv.Vendor,
+				Version:         serv.Version,
+				SourceName:      "Service Probe Match: " + probeIdent,
+				Service:         serv.Name,
+				Flows:           []string{ident},
+				Notes:           "Protocol: " + serv.Protocol,
 			},
 		},
 	}, nil)

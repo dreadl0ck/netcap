@@ -20,6 +20,7 @@
 package dcerpc
 
 import (
+	"encoding/binary"
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
@@ -47,7 +48,7 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
-	// three bytes, one fixed, one two-valued, one a range.
+	// The common header must include a valid representation and fragment length.
 	Specificity: core.SpecificityWeak,
 
 	CanDecode: func(client, server []byte) bool {
@@ -62,7 +63,7 @@ var Decoder = &decoder.StreamDecoder{
 
 // isDCERPC checks for a DCE/RPC v5 header.
 func isDCERPC(data []byte) bool {
-	if len(data) < 3 {
+	if len(data) < 16 {
 		return false
 	}
 
@@ -78,6 +79,17 @@ func isDCERPC(data []byte) bool {
 
 	// Packet type must be 0-19
 	if data[2] > 19 {
+		return false
+	}
+	if (data[4] != 0 && data[4] != 0x10) || data[5] != 0 || data[6] != 0 || data[7] != 0 {
+		return false
+	}
+	var order binary.ByteOrder = binary.BigEndian
+	if data[4] == 0x10 {
+		order = binary.LittleEndian
+	}
+	length, auth := int(order.Uint16(data[8:10])), int(order.Uint16(data[10:12]))
+	if length < 16 || auth > length-16 || auth > 0 && auth+24 > length {
 		return false
 	}
 

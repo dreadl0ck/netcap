@@ -97,7 +97,8 @@ type tcpConnection struct {
 // start could be modified to force a start even if no SYN have been seen.
 func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection, nextSeq reassembly.Sequence) bool {
 	// Finite State Machine
-	if !t.tcpstate.CheckState(tcp, dir) {
+	staleReset := tcp.RST && nextSeq >= 0 && int32(tcp.Seq-uint32(nextSeq)) < 0
+	if staleReset || !t.tcpstate.CheckState(tcp, dir) {
 
 		reassemblyLog.Debug("packet rejected by FSM", zap.String("ident", t.ident), zap.String("state", t.tcpstate.String()))
 
@@ -110,7 +111,7 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 		}
 		streamutils.Stats.Unlock()
 
-		if !decoderconfig.Instance.IgnoreFSMerr {
+		if staleReset || !decoderconfig.Instance.IgnoreFSMerr {
 			return false
 		}
 	}
@@ -543,6 +544,7 @@ func (t *tcpConnection) decode() {
 			zap.Int("serverPort", int(serverPort)),
 		)
 	}
+	stream.ObserveTLSUpgrade(conv, sel.Name)
 }
 
 // ReassemblePacket takes care of submitting a TCP / UDP packet to the reassembly.

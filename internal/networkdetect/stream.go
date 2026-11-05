@@ -136,6 +136,9 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 		add("protocol.irc", "policy-observation", "info", "", 1, 1, []string{"IRC NICK and USER commands"}, f.first, nil, "IRC is also used legitimately")
 	}
 	tlsRecord := len(d.prefix) >= 5 && d.prefix[0] >= 20 && d.prefix[0] <= 23 && d.prefix[1] == 3 && d.prefix[2] <= 4 && binary.BigEndian.Uint16(d.prefix[3:5]) <= 18432
+	if f.client != "" && d.bytes >= 128 && (ev.DstPort == 443 || ev.SrcPort == 443) && !tlsRecord && !f.ssh {
+		add("policy.non-tls-on-443", "policy-observation", "low", "T1571", d.bytes, 128, []string{"At least 128 contiguous TCP payload bytes whose prefix is not a TLS record"}, f.first, nil, "A non-TLS prefix on TCP/443 can be intentional or precede a protocol upgrade; C2 intent is not established")
+	}
 	if len(d.prefix) >= 64 && (ev.DstPort == 21 || ev.DstPort == 23 || ev.DstPort == 110 || ev.DstPort == 143 || ev.DstPort == 873) && !f.ssh && !tlsRecord {
 		add("policy.cleartext-service", "policy-observation", "low", "", uint64(len(d.prefix)), 64, []string{fmt.Sprintf("TCP destination port %d", ev.DstPort)}, f.first, nil, "Port and observed payload do not identify the application protocol or prove credentials were sent")
 	}

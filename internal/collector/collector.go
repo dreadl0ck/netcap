@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gogo/protobuf/proto"
 	"io"
 	"log"
 	"net/http"
@@ -60,6 +61,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/filter"
 	"github.com/dreadl0ck/netcap/internal/flowexport"
+	"github.com/dreadl0ck/netcap/internal/identity"
 	"github.com/dreadl0ck/netcap/internal/label/manager"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/networkdetect"
@@ -83,6 +85,16 @@ var (
 // Collector provides an interface to collect data from PCAP or a network interface.
 // this structure has an optimized field order to avoid excessive padding.
 type Collector struct {
+	recordObserverHandle   *atomic.Pointer[recordCallback]
+	userRecordObserver     func(proto.Message)
+	analysisMu             sync.Mutex
+	hostIdentity           *identity.Engine
+	recordScopes           map[string]recordScope
+	ipScopes               map[string]recordScope
+	applicationRecords     []networkdetect.ApplicationObservation
+	applicationConfig      networkdetect.Config
+	analysisOverflow       uint64
+	analysisUnscoped       uint64
 	lifecycleMu            sync.Mutex // full initialization and task registration
 	lifecycleStopped       bool
 	initialized            bool
@@ -408,6 +420,9 @@ func (c *Collector) GetTotalAuditRecords() int64 {
 
 // New returns a new Collector instance.
 func New(config Config) *Collector {
+	if config.DecoderConfig != nil {
+		config.DecoderConfig = config.DecoderConfig.Clone()
+	}
 	if config.OutDirPermission == 0 {
 		config.OutDirPermission = defaults.DirectoryPermission
 	}
@@ -429,6 +444,9 @@ func New(config Config) *Collector {
 		perfTracker:         performance.NewTracker(),
 	}
 	c.next.Store(1)
+	if config.DecoderConfig != nil {
+		c.userRecordObserver = config.DecoderConfig.RecordObserver
+	}
 
 	return c
 }

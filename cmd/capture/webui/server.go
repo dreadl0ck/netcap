@@ -1789,7 +1789,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		NetworkDetection:       s.featureEnabled(featureNetworkDetection),
 		DNSResolutionContext:   s.featureEnabled(featureDNSResolutionContext),
 		NetworkDetectionConfig: os.Getenv("NC_NETWORK_DETECTION_CONFIG"),
-		Workers:                runtime.NumCPU() * 2,
+		Workers:                defaults.CaptureWorkers(),
 		PacketBufferSize:       defaults.PacketBuffer,
 		WriteUnknownPackets:    false,
 		Promisc:                true,

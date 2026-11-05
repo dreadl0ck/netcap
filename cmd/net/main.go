@@ -22,6 +22,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/dreadl0ck/netcap/cmd/triage"
 	"io/ioutil"
 	"log"
 	"os"
@@ -104,6 +105,7 @@ func main() {
 			},
 		},
 		Commands: []*cli.Command{
+			triage.GetCommand(),
 			investigate.GetCommand(),
 			{
 				Name:  cmdCapture,

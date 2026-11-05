@@ -47,7 +47,7 @@ func TestWriteSoftwareLookupSnapshot(t *testing.T) {
 		vulnerability.Decoder.Writer, vulnerability.Decoder.NumRecordsWritten = oldWriter, oldCount
 		vulnerability.ResetVulnStore()
 	})
-	item := &AtomicSoftware{Software: &types.Software{Product: "snapshot", Version: "1", Flows: []string{"first"}, CommunityIDs: []string{"cid-first"}}}
+	item := &AtomicSoftware{Software: &types.Software{Product: "snapshot", Version: "1", ObservedHost: "10.0.0.2", Flows: []string{"first"}, CommunityIDs: []string{"cid-first"}}}
 	called := false
 	vulnerability.Decoder.Writer = snapshotWriter{write: func(record *types.Vulnerability) {
 		called = true

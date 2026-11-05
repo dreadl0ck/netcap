@@ -25,6 +25,7 @@ import (
 	"net"
 	"slices"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -118,13 +119,19 @@ func (a *atomicDeviceProfileMap) FindByIP(ip string) *deviceProfile {
 	a.Lock()
 	defer a.Unlock()
 
+	var match *deviceProfile
 	for _, dp := range a.Items {
-		if slices.Contains(dp.DeviceIPs, ip) {
-			return dp
+		dp.Lock()
+		found := slices.Contains(dp.DeviceIPs, ip)
+		dp.Unlock()
+		if found {
+			if match != nil {
+				return nil
+			}
+			match = dp
 		}
 	}
-
-	return nil
+	return match
 }
 
 // EnrichFromDiscovery merges discovery data into the device profile.
@@ -143,6 +150,16 @@ func (dp *deviceProfile) EnrichFromDiscovery(hostnames, deviceTypes, roles []str
 		}
 	}
 	for _, r := range roles {
+		if r == "File Server" || r == "Workstation" || strings.Contains(r, "Browser") {
+			service := "netbios-" + strings.ReplaceAll(strings.ToLower(r), " ", "-")
+			if r == "File Server" {
+				service = "smb"
+			}
+			if !slices.Contains(dp.AdvertisedServices, service) {
+				dp.AdvertisedServices = append(dp.AdvertisedServices, service)
+			}
+			continue
+		}
 		if !slices.Contains(dp.Roles, r) {
 			dp.Roles = append(dp.Roles, r)
 		}
@@ -665,6 +682,7 @@ func processDeferredDPIWithoutClear(p *deviceProfile) {
 // writeDeviceProfile writes the profile.
 func (d *Decoder) writeDeviceProfile(dp *types.DeviceProfile, apps map[string]struct{}) {
 	sort.Strings(dp.DeviceIPs)
+	sort.Strings(dp.AdvertisedServices)
 	sort.Strings(dp.Contacts)
 	sort.Strings(dp.Devices)
 	sort.Strings(dp.Hostnames)

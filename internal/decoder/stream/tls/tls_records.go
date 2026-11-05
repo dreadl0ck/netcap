@@ -36,9 +36,29 @@ type tlsRecordFramer struct {
 	handshake                     []byte
 	handshakeTS                   int64
 	certificateLimit              bool
+	initialLossUnknown            bool
+	pendingCCS                    bool
 }
 
 func (h *tlsReader) frameConversation() {
+	c, s := h.conversation.ClientData, h.conversation.ServerData
+	if c == nil && s == nil {
+		for _, d := range h.conversation.Data {
+			if d.Direction() == reassembly.TCPDirServerToClient {
+				s = append(s, d)
+			} else {
+				c = append(c, d)
+			}
+		}
+	}
+	if helloPrefixType(c) == 2 || helloPrefixType(s) == 1 {
+		copy := *h.conversation
+		copy.ClientIP, copy.ServerIP = copy.ServerIP, copy.ClientIP
+		copy.ClientPort, copy.ServerPort = copy.ServerPort, copy.ClientPort
+		copy.ClientMAC, copy.ServerMAC = copy.ServerMAC, copy.ClientMAC
+		h.conversation = &copy
+		c, s = s, c
+	}
 	write := func(r *types.TLSRecord) {
 		if RecordDecoder.Writer == nil {
 			return
@@ -51,9 +71,9 @@ func (h *tlsReader) frameConversation() {
 	}
 	client := &tlsRecordFramer{reader: h, dir: reassembly.TCPDirClientToServer, emit: write}
 	server := &tlsRecordFramer{reader: h, dir: reassembly.TCPDirServerToClient, emit: write}
-	feed := func(d *core.StreamData) {
+	feed := func(d *core.StreamData, fromServer bool) {
 		f := client
-		if d.Direction() == reassembly.TCPDirServerToClient {
+		if fromServer {
 			f = server
 		}
 		timestamp := d.CaptureInfo().Timestamp
@@ -65,14 +85,7 @@ func (h *tlsReader) frameConversation() {
 		}
 		f.feed(d.Raw(), timestamp.UnixNano())
 	}
-	c, s := h.conversation.ClientData, h.conversation.ServerData
-	if c == nil && s == nil {
-		for _, fragment := range h.conversation.Data {
-			if d, ok := fragment.(*core.StreamData); ok {
-				feed(d)
-			}
-		}
-	} else {
+	{
 		// Merge heads by capture time without ever reordering either TCP direction.
 		for len(c) > 0 || len(s) > 0 {
 			useClient := len(s) == 0
@@ -82,12 +95,12 @@ func (h *tlsReader) frameConversation() {
 			}
 			if useClient {
 				if d, ok := c[0].(*core.StreamData); ok {
-					feed(d)
+					feed(d, false)
 				}
 				c = c[1:]
 			} else {
 				if d, ok := s[0].(*core.StreamData); ok {
-					feed(d)
+					feed(d, true)
 				}
 				s = s[1:]
 			}
@@ -95,6 +108,24 @@ func (h *tlsReader) frameConversation() {
 	}
 	client.eof()
 	server.eof()
+}
+
+func helloPrefixType(data core.DataFragments) byte {
+	var prefix []byte
+	for _, d := range data {
+		if f, ok := d.(*core.StreamData); ok && f.SkippedBytes != 0 && len(prefix) > 0 {
+			return 0
+		}
+		n := min(6-len(prefix), len(d.Raw()))
+		prefix = append(prefix, d.Raw()[:n]...)
+		if len(prefix) == 6 {
+			break
+		}
+	}
+	if len(prefix) == 6 && prefix[0] == 22 && prefix[1] == 3 && prefix[2] <= 3 {
+		return prefix[5]
+	}
+	return 0
 }
 
 func (f *tlsRecordFramer) begin(timestamp int64) {
@@ -139,7 +170,7 @@ func (f *tlsRecordFramer) feed(data []byte, timestamp int64) {
 		}
 		n := min(len(data), int(f.record.Length-f.record.ObservedLength))
 		f.prefixBytes += copy(f.prefix[f.prefixBytes:], data[:n])
-		if (Decoder.Writer != nil || helloEnabled()) && f.record.ContentType == 22 && !f.encrypted && !f.certificateLimit {
+		if (Decoder.Writer != nil || helloEnabled()) && f.record.ContentType == 22 && !f.encrypted && !f.certificateLimit && (!f.pendingCCS || f.reader.tls13) {
 			if len(f.handshake)+n <= maxTLSHandshake {
 				if len(f.handshake) == 0 && n > 0 {
 					f.handshakeTS = f.record.Timestamp
@@ -163,6 +194,11 @@ func (f *tlsRecordFramer) feed(data []byte, timestamp int64) {
 		switch r.ContentType {
 		case 20:
 			if !f.encrypted && f.reader.tls13 && r.Length == 1 && f.prefix[0] == 1 {
+				break
+			}
+			if !f.encrypted && !f.reader.serverKnown && f.reader.clientOffered13 && r.Length == 1 && f.prefix[0] == 1 {
+				f.pendingCCS = true
+				f.handshake = nil
 				break
 			}
 			f.encrypted = true
@@ -204,6 +240,18 @@ func (f *tlsRecordFramer) feed(data []byte, timestamp int64) {
 					var hello tlsx.ServerHello
 					if hello.Unmarshal(wire) == nil {
 						f.reader.tls13 = hello.SupportedVersion == 0x304
+						f.reader.serverKnown = true
+					}
+				}
+				if f.handshake[0] == handshakeTypeClientHello && f.dir == reassembly.TCPDirClientToServer && length+4 <= 65535 {
+					wire := append([]byte{22, 3, 3, byte((length + 4) >> 8), byte(length + 4)}, f.handshake[:length+4]...)
+					var hello tlsx.ClientHello
+					if hello.Unmarshal(wire) == nil {
+						for _, v := range hello.SupportedVersions {
+							if v == 0x304 {
+								f.reader.clientOffered13 = true
+							}
+						}
 					}
 				}
 				f.emitHello(f.handshake[:4+length])
@@ -239,12 +287,17 @@ func (f *tlsRecordFramer) gap(skipped int, timestamp int64) {
 	if f.stopped {
 		return
 	}
+	initial := skipped == -1 && f.offset == 0 && f.record == nil && f.index == 0
 	if f.record == nil {
 		f.begin(timestamp)
 	}
 	f.record.Incomplete, f.record.Loss = true, true
 	f.record.SkippedBytes = int64(skipped)
 	f.finish("gap")
+	if initial {
+		f.initialLossUnknown = true
+		return
+	}
 	if skipped > 0 {
 		f.offset += uint64(skipped)
 	}

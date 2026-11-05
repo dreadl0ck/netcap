@@ -40,6 +40,22 @@ func (h *httpReader) decodeDirections() {
 		return b
 	}
 	client, server := prefix(directions[0]), prefix(directions[1])
+	for _, reverse := range []bool{false, true} {
+		request, response := 0, 1
+		if reverse {
+			request, response = 1, 0
+		}
+		data := [2][]byte{client, server}
+		a, b := httpStart(data[request], false), httpStart(data[response], true)
+		if a >= 0 && b >= 0 && (a > 0 || b > 0) {
+			directions[request] = trimFragments(directions[request], a)
+			directions[response] = trimFragments(directions[response], b)
+			client, server = prefix(directions[0]), prefix(directions[1])
+			h.pairingBroken = true
+			h.preface = true
+			break
+		}
+	}
 	if containsHTTPMethod(server) || containsHTTPProtocolName(client) && !containsHTTPMethod(client) {
 		directions[0], directions[1] = directions[1], directions[0]
 		c := *h.conversation
@@ -94,6 +110,26 @@ func (h *httpReader) decodeDirections() {
 			}
 		}
 	}
+}
+
+type offsetFragment struct {
+	core.DataFragment
+	bytes []byte
+}
+
+func (f offsetFragment) Raw() []byte { return f.bytes }
+func trimFragments(fragments core.DataFragments, n int) core.DataFragments {
+	for i, f := range fragments {
+		if n < len(f.Raw()) {
+			out := append(core.DataFragments{}, fragments[i:]...)
+			if n > 0 {
+				out[0] = offsetFragment{f, f.Raw()[n:]}
+			}
+			return out
+		}
+		n -= len(f.Raw())
+	}
+	return nil
 }
 
 // Resynchronization is line-boundary-only and bounded per attempt. Bodies are

@@ -10,15 +10,7 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 	if packet == nil || packet.NetworkLayer() == nil {
 		return nil
 	}
-	scope.VLANs = nil
-	if index := packet.Metadata().CaptureInfo.InterfaceIndex; index > 0 {
-		scope.Interface = fmt.Sprintf("%s#%d", scope.Interface, index)
-	}
-	for _, layer := range packet.Layers() {
-		if vlan, ok := layer.(*layers.Dot1Q); ok {
-			scope.VLANs = append(scope.VLANs, vlan.VLANIdentifier)
-		}
-	}
+	scope = PacketScope(packet, scope)
 	if len(scope.VLANs) > 4 {
 		return nil
 	}
@@ -98,4 +90,17 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 		}
 	}
 	return events
+}
+
+func PacketScope(packet gopacket.Packet, scope Scope) Scope {
+	scope.VLANs = nil
+	if index := packet.Metadata().CaptureInfo.InterfaceIndex; index > 0 {
+		scope.Interface = fmt.Sprintf("%s#%d", scope.Interface, index)
+	}
+	for _, layer := range packet.Layers() {
+		if vlan, ok := layer.(*layers.Dot1Q); ok {
+			scope.VLANs = append(scope.VLANs, vlan.VLANIdentifier)
+		}
+	}
+	return scope
 }

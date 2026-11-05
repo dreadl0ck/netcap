@@ -42,6 +42,9 @@ func (f *tlsRecordFramer) emitHello(message []byte) {
 		r := tlshello.Client(&hello, nil)
 		r.Timestamp, r.SrcIP, r.DstIP, r.SrcPort, r.DstPort = f.handshakeTS, c.ClientIP, c.ServerIP, c.ClientPort, c.ServerPort
 		r.CommunityID = c.CommunityID
+		if f.initialLossUnknown {
+			r.ReassemblyStatus = "unknown-initial-stream-loss"
+		}
 		r.SrcMAC, r.DstMAC = c.ClientMAC, c.ServerMAC
 		record, d = r, ClientHelloDecoder
 	case handshakeTypeServerHello:
@@ -58,6 +61,9 @@ func (f *tlsRecordFramer) emitHello(message []byte) {
 		r := tlshello.Server(&hello, nil)
 		r.Timestamp, r.SrcIP, r.DstIP, r.SrcPort, r.DstPort = f.handshakeTS, c.ServerIP, c.ClientIP, c.ServerPort, c.ClientPort
 		r.CommunityID = c.CommunityID
+		if f.initialLossUnknown {
+			r.ReassemblyStatus = "unknown-initial-stream-loss"
+		}
 		r.SrcMAC, r.DstMAC = c.ServerMAC, c.ClientMAC
 		record, d = r, ServerHelloDecoder
 	default:

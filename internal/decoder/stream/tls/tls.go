@@ -60,6 +60,11 @@ var Decoder = &decoder.StreamDecoder{
 	Specificity: core.SpecificityStructural,
 
 	CanDecode: func(client, server []byte) bool {
+		for _, data := range [][]byte{client, server} {
+			if len(data) >= 6 && data[0] == 22 && data[1] == 3 && data[2] <= 3 && (data[5] == 1 || data[5] == 2) {
+				return true
+			}
+		}
 		if RecordDecoder.Writer != nil {
 			for _, data := range [][]byte{client, server} {
 				if len(data) >= 3 && data[0] >= 20 && data[0] <= 24 && data[1] == 3 && data[2] <= 3 {

@@ -13,6 +13,7 @@ import (
 )
 
 func (c *Collector) initNetworkDetection() error {
+	c.initRecordAnalysis()
 	if !c.config.NetworkDetection {
 		return nil
 	}
@@ -28,6 +29,7 @@ func (c *Collector) initNetworkDetection() error {
 	if err != nil {
 		return err
 	}
+	c.applicationConfig = options
 	writer, err := rules.NewFileAlertWriter(c.config.DecoderConfig.Out)
 	if err != nil {
 		return err
@@ -40,15 +42,16 @@ func (c *Collector) initNetworkDetection() error {
 }
 
 func (c *Collector) observeNetworkDetection(packet gopacket.Packet) {
-	if c.networkDetector == nil || c.networkDetectionError != nil {
-		return
-	}
 	scope := networkdetect.Scope{Sensor: "local", Interface: "pcap"}
 	if c.behaviorScope.Sensor != "" {
 		scope.Sensor = c.behaviorScope.Sensor
 	}
 	if c.behaviorScope.Interface != "" {
 		scope.Interface = c.behaviorScope.Interface
+	}
+	c.observeRecordScope(packet, networkdetect.PacketScope(packet, scope))
+	if c.networkDetector == nil || c.networkDetectionError != nil {
+		return
 	}
 	for _, event := range networkdetect.PacketEvents(packet, scope) {
 		alerts, err := c.networkDetector.Observe(event)
@@ -73,6 +76,9 @@ func (c *Collector) closeNetworkDetection() error {
 		return nil
 	}
 	stats := c.networkDetector.Stats()
+	if err := c.finishApplicationDetection(&stats); err != nil {
+		c.networkDetectionError = errors.Join(c.networkDetectionError, err)
+	}
 	if c.networkDetectionError != nil {
 		stats.Error = c.networkDetectionError.Error()
 	}

@@ -91,6 +91,7 @@ type httpReader struct {
 	requests             []*httpRequest
 	responses            []*httpResponse
 	pairingBroken        bool
+	preface              bool
 	responseRequestIndex int
 }
 
@@ -152,6 +153,9 @@ func (h *httpReader) Decode() {
 		if h.pairingBroken {
 			ht.ReassemblyStatus = "unpaired_after_capture_loss"
 		}
+		if h.preface {
+			ht.ReassemblyStatus = "unpaired_after_protocol_preface"
+		}
 		writeHTTP(ht, h.conversation.Ident)
 	}
 
@@ -173,6 +177,9 @@ func (h *httpReader) Decode() {
 			ht.CommunityID = h.conversation.CommunityID
 			if h.pairingBroken {
 				ht.ReassemblyStatus = "unpaired_after_capture_loss"
+			}
+			if h.preface {
+				ht.ReassemblyStatus = "unpaired_after_protocol_preface"
 			}
 			writeHTTP(ht, h.conversation.Ident)
 		} else {

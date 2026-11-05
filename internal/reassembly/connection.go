@@ -13,6 +13,7 @@ type connection struct {
 	mu         sync.Mutex
 	generation uint64
 	live       bool
+	resetSeen  bool
 	key        *key // client->server
 	c2s, s2c   halfconnection
 
@@ -31,6 +32,7 @@ func (c *connection) reset(k *key, s Stream, ts time.Time) {
 	}
 	c.generation++
 	c.live = true
+	c.resetSeen = false
 	c.connectionDue = nil
 	c.key = k
 	base := halfconnection{

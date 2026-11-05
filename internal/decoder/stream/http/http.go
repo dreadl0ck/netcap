@@ -22,6 +22,7 @@ package http
 import (
 	"bytes"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
@@ -53,7 +54,7 @@ var Decoder = &decoder.StreamDecoder{
 	Specificity: core.SpecificityStructural,
 
 	CanDecode: func(client, server []byte) bool {
-		return containsHTTPMethod(client) || containsHTTPMethod(server) || containsHTTPProtocolName(server) || containsHTTPProtocolName(client)
+		return containsHTTPMethod(client) || containsHTTPMethod(server) || containsHTTPProtocolName(server) || containsHTTPProtocolName(client) || (httpStart(client, false) >= 0 && httpStart(server, true) >= 0) || (httpStart(server, false) >= 0 && httpStart(client, true) >= 0)
 	},
 	DeInit: func(sd *decoder.StreamDecoder) error {
 		return httpLog.Sync()
@@ -79,7 +80,8 @@ var (
 )
 
 func containsHTTPProtocolName(data []byte) bool {
-	line, _, ok := bytes.Cut(data, []byte("\r\n"))
+	line, _, ok := bytes.Cut(data, []byte("\n"))
+	line = bytes.TrimSuffix(line, []byte("\r"))
 	if !ok || len(line) > 8192 {
 		return false
 	}
@@ -91,7 +93,8 @@ func containsHTTPProtocolName(data []byte) bool {
 }
 
 func containsHTTPMethod(data []byte) bool {
-	line, _, ok := bytes.Cut(data, []byte("\r\n"))
+	line, _, ok := bytes.Cut(data, []byte("\n"))
+	line = bytes.TrimSuffix(line, []byte("\r"))
 	if !ok || len(line) > 8192 {
 		return false
 	}
@@ -101,9 +104,33 @@ func containsHTTPMethod(data []byte) bool {
 	}
 	for _, m := range httpMethods {
 		if parts[0] == string(m) {
-			_, err := http.NewRequest(parts[0], parts[1], nil)
+			var err error
+			if parts[0] == methodCONNECT {
+				_, err = http.NewRequest(parts[0], parts[1], nil)
+			} else {
+				_, err = url.ParseRequestURI(parts[1])
+			}
 			return err == nil
 		}
 	}
 	return false
+}
+
+// A protocol preface is skipped only with a complete HTTP header on both sides.
+func httpStart(data []byte, response bool) int {
+	data = data[:min(len(data), 16384)]
+	for i := range data {
+		if i > 0 && data[i-1] != '\n' && data[i-1] != 0 {
+			continue
+		}
+		rest := data[i:]
+		valid := containsHTTPMethod(rest)
+		if response {
+			valid = containsHTTPProtocolName(rest)
+		}
+		if valid && (bytes.Contains(rest, []byte("\r\n\r\n")) || bytes.Contains(rest, []byte("\n\n"))) {
+			return i
+		}
+	}
+	return -1
 }

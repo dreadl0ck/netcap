@@ -36,6 +36,7 @@ type dcerpcReader struct {
 	// presentation context id -> abstract syntax UUID, learned from Bind and AlterContext
 	contexts map[uint16]string
 	ndr32    map[uint16]bool
+	ndr64    map[uint16]bool
 	// call id -> requests awaiting a response, oldest first
 	calls         map[uint32][]call
 	pending       int
@@ -155,6 +156,7 @@ func (d *dcerpcReader) Decode() {
 func (d *dcerpcReader) decode(emit func(*types.DCERPC)) {
 	d.contexts = map[uint16]string{}
 	d.ndr32 = map[uint16]bool{}
+	d.ndr64 = map[uint16]bool{}
 	d.calls = map[uint32][]call{}
 	d.pending = 0
 	d.stubFragments = make(map[uint64][]byte)
@@ -178,6 +180,7 @@ func (d *dcerpcReader) decode(emit func(*types.DCERPC)) {
 			b.data = nil
 			d.contexts = map[uint16]string{}
 			d.ndr32 = map[uint16]bool{}
+			d.ndr64 = map[uint16]bool{}
 			d.calls = map[uint32][]call{}
 			d.pending = 0
 			d.stubFragments = make(map[uint64][]byte)
@@ -345,7 +348,11 @@ func (d *dcerpcReader) parseContextList(body []byte, rec *types.DCERPC, order bi
 			if d.ndr32 == nil {
 				d.ndr32 = map[uint16]bool{}
 			}
+			if d.ndr64 == nil {
+				d.ndr64 = map[uint16]bool{}
+			}
 			d.ndr32[ctx] = transfers == 1 && at+44 <= len(body) && formatUUID(body[at+24:at+40], order) == "8a885d04-1ceb-11c9-9fe8-08002b104860"
+			d.ndr64[ctx] = transfers == 1 && at+44 <= len(body) && formatUUID(body[at+24:at+40], order) == "71710533-beba-4937-8319-b5dbef9ccc36"
 		}
 		at += 24 + 20*transfers
 	}
