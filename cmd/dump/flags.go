@@ -55,7 +55,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.BoolFlag{
 			Name:    "fields",
-			Usage:   "print available fields for an audit record file and exit",
+			Usage:   "list protocol-buffer field names from the audit file header without dumping records",
 			Sources: cli.EnvVars("NC_FIELDS"),
 		},
 		&cli.StringFlag{

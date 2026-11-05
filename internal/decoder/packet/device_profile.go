@@ -20,6 +20,7 @@
 package packet
 
 import (
+	"container/heap"
 	"log"
 	"net"
 	"slices"
@@ -59,6 +60,8 @@ type streamBuffer struct {
 }
 
 const (
+	maxContactKeys       = 65536
+	maxReportedContacts  = 4096
 	maxPacketsPerStream  = 10
 	maxStreamsPerProfile = 1000 // Limit total streams to prevent unbounded growth
 )
@@ -89,6 +92,9 @@ type deviceProfile struct {
 
 	// buffer packets per stream for deferred DPI analysis
 	streamBuffers map[streamKey]*streamBuffer
+	contactSet    map[string]struct{}
+	contactSample map[string]struct{}
+	contactHeap   contactKeys
 }
 
 // atomicDeviceProfileMap contains all connections and provides synchronized access.
@@ -268,11 +274,6 @@ func copyPacketData(p gopacket.Packet) []byte {
 
 // newDeviceProfile creates a new device specific profile.
 func newDeviceProfile(i *decoderutils.PacketInfo) *deviceProfile {
-	var contacts []string
-	if i.DstIP != "" {
-		contacts = append(contacts, i.DstIP)
-	}
-
 	var devices []string
 
 	// Initialize stream buffers and buffer the first packet (copy data to avoid buffer reuse)
@@ -292,13 +293,15 @@ func newDeviceProfile(i *decoderutils.PacketInfo) *deviceProfile {
 			MacAddr:            i.SrcMAC,
 			DeviceManufacturer: resolvers.LookupManufacturer(i.SrcMAC),
 			DeviceIPs:          devices,
-			Contacts:           contacts,
 			Timestamp:          i.Timestamp,
 			NumPackets:         1,
 			Bytes:              uint64(len(i.Packet.Data())),
 		},
 		applications:  make(map[string]struct{}),
 		streamBuffers: streamBuffers,
+	}
+	if i.DstIP != "" {
+		observeContact(p, i.DstIP)
 	}
 	return p
 }
@@ -314,10 +317,7 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 
 	// Track contacts
 	if i.DstIP != "" {
-		found := slices.Contains(p.Contacts, i.DstIP)
-		if !found {
-			p.Contacts = append(p.Contacts, i.DstIP)
-		}
+		observeContact(p, i.DstIP)
 	}
 
 	p.Bytes += uint64(len(i.Packet.Data()))
@@ -474,6 +474,53 @@ func enrichDeviceProfileFromPacket(p *deviceProfile, pkt gopacket.Packet) {
 	}
 }
 
+func observeContact(p *deviceProfile, ip string) {
+	p.ContactObservations++
+	if p.contactSet == nil {
+		p.contactSet = make(map[string]struct{})
+		for _, s := range p.Contacts {
+			p.contactSet[s] = struct{}{}
+		}
+	}
+	if _, ok := p.contactSet[ip]; ok {
+		return
+	}
+	if len(p.contactSet) >= maxContactKeys {
+		p.ContactCountLowerBound = maxContactKeys + 1
+		p.ContactsTruncated = true
+	} else {
+		p.contactSet[ip] = struct{}{}
+		p.ContactCountLowerBound = uint64(len(p.contactSet))
+	}
+	if p.contactSample == nil {
+		p.contactSample = make(map[string]struct{})
+	}
+	if _, ok := p.contactSample[ip]; ok {
+		return
+	}
+	if len(p.contactHeap) < maxReportedContacts {
+		heap.Push(&p.contactHeap, ip)
+		p.contactSample[ip] = struct{}{}
+		p.Contacts = append(p.Contacts, ip)
+	} else {
+		p.ContactsTruncated = true
+		if ip < p.contactHeap[0] {
+			removed := heap.Pop(&p.contactHeap).(string)
+			delete(p.contactSample, removed)
+			heap.Push(&p.contactHeap, ip)
+			p.contactSample[ip] = struct{}{}
+		}
+	}
+}
+
+type contactKeys []string
+
+func (h contactKeys) Len() int           { return len(h) }
+func (h contactKeys) Less(i, j int) bool { return h[i] > h[j] }
+func (h contactKeys) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *contactKeys) Push(v any)        { *h = append(*h, v.(string)) }
+func (h *contactKeys) Pop() any          { a := *h; v := a[len(a)-1]; *h = a[:len(a)-1]; return v }
+
 func addDeviceIP(p *deviceProfile, ip net.IP) {
 	if ip == nil || ip.IsUnspecified() || ip.IsMulticast() {
 		return
@@ -517,6 +564,9 @@ var deviceProfileDecoder = newAccumulatingPacketDecoder(
 		for _, item := range items {
 			item.Lock()
 			processDeferredDPI(item)
+			if item.contactHeap != nil {
+				item.Contacts = append(item.Contacts[:0], item.contactHeap...)
+			}
 			d.writeDeviceProfile(item.DeviceProfile, item.applications)
 			item.Unlock()
 		}
@@ -547,6 +597,9 @@ var deviceProfileDecoder = newAccumulatingPacketDecoder(
 			item.Lock()
 			// Process any buffered DPI data before writing
 			processDeferredDPIWithoutClear(item)
+			if item.contactHeap != nil {
+				item.Contacts = append(item.Contacts[:0], item.contactHeap...)
+			}
 			d.writeDeviceProfile(item.DeviceProfile, item.applications)
 			numFlushed++
 			item.Unlock()

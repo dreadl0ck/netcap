@@ -2,6 +2,7 @@ package tls
 
 import (
 	"encoding/binary"
+	"github.com/dreadl0ck/tlsx"
 	"sync/atomic"
 
 	"go.uber.org/zap"
@@ -77,9 +78,7 @@ func (h *tlsReader) frameConversation() {
 			useClient := len(s) == 0
 			if len(c) > 0 && len(s) > 0 {
 				useClient = true
-				if c[0].Context() != nil && s[0].Context() != nil {
-					useClient = !s[0].Context().GetCaptureInfo().Timestamp.Before(c[0].Context().GetCaptureInfo().Timestamp)
-				}
+				useClient = core.FragmentTime(c[0]) <= core.FragmentTime(s[0])
 			}
 			if useClient {
 				if d, ok := c[0].(*core.StreamData); ok {
@@ -162,8 +161,13 @@ func (f *tlsRecordFramer) feed(data []byte, timestamp int64) {
 		r := f.record
 		status := "complete"
 		switch r.ContentType {
-		case 20, 23:
-			// Includes TLS 1.3 compatibility CCS; conservative without negotiated keys.
+		case 20:
+			if !f.encrypted && f.reader.tls13 && r.Length == 1 && f.prefix[0] == 1 {
+				break
+			}
+			f.encrypted = true
+			f.handshake = nil
+		case 23:
 			f.encrypted = true
 			f.handshake = nil
 		case 21:
@@ -194,6 +198,13 @@ func (f *tlsRecordFramer) feed(data []byte, timestamp int64) {
 				}
 				if f.handshake[0] == handshakeTypeCertificate && Decoder.Writer != nil {
 					f.reader.parseCertificateMessage(f.handshake[4:4+length], f.handshakeTS)
+				}
+				if f.handshake[0] == handshakeTypeServerHello && f.dir == reassembly.TCPDirServerToClient && length+4 <= 65535 {
+					wire := append([]byte{22, 3, 3, byte((length + 4) >> 8), byte(length + 4)}, f.handshake[:length+4]...)
+					var hello tlsx.ServerHello
+					if hello.Unmarshal(wire) == nil {
+						f.reader.tls13 = hello.SupportedVersion == 0x304
+					}
 				}
 				f.emitHello(f.handshake[:4+length])
 				f.handshake = f.handshake[4+length:]

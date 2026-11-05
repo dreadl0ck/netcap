@@ -21,7 +21,6 @@ package smtp
 
 import (
 	"bytes"
-	"strconv"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 
@@ -34,9 +33,8 @@ import (
 )
 
 var (
-	smtpLog               *zap.Logger
-	smtpServiceReadyBytes = []byte(strconv.Itoa(smtpServiceReady))
-	smtpName              = []byte("SMTP")
+	smtpLog  *zap.Logger
+	smtpName = []byte("SMTP")
 )
 
 // Decoder for protocol analysis and writing audit records to disk.
@@ -57,15 +55,45 @@ var Decoder = &decoder.StreamDecoder{
 
 		return nil
 	},
-	// anchored "220" plus "SMTP" in the banner: strictly more than FTP.
+	// SMTP-specific greetings or client commands outrank a shared numeric reply.
 	Specificity: core.SpecificityStructural,
 
 	CanDecode: func(client, server []byte) bool {
-		return bytes.HasPrefix(server, smtpServiceReadyBytes) && bytes.Contains(server, smtpName)
+		s, c := bytes.ToUpper(server), bytes.ToUpper(client)
+		if replyPrefix(s) && bytes.Contains(s, smtpName) {
+			return true
+		}
+		for _, prefix := range [][]byte{[]byte("EHLO "), []byte("HELO "), []byte("MAIL FROM:")} {
+			if bytes.HasPrefix(c, prefix) {
+				return true
+			}
+		}
+		return false
 	},
 	DeInit: func(sd *decoder.StreamDecoder) error {
 		return smtpLog.Sync()
 	},
 	Factory: &smtpReader{},
 	Typ:     core.TCP,
+}
+
+func replyPrefix(b []byte) bool {
+	return len(b) >= 4 && b[0] >= '2' && b[0] <= '5' && b[1] >= '0' && b[1] <= '9' && b[2] >= '0' && b[2] <= '9' && (b[3] == ' ' || b[3] == '-')
+}
+
+// PartialGreeting is weak evidence and requires a known SMTP service port.
+func PartialGreeting(client, server []byte) bool {
+	if !replyPrefix(server) {
+		return false
+	}
+	c := bytes.ToUpper(client)
+	if len(c) == 0 {
+		return true
+	}
+	for _, command := range []string{"EHLO ", "HELO ", "AUTH ", "MAIL FROM:", "RCPT TO:", "QUIT\r\n", "RSET\r\n", "NOOP\r\n", "STARTTLS\r\n"} {
+		if bytes.HasPrefix(c, []byte(command)) {
+			return true
+		}
+	}
+	return false
 }

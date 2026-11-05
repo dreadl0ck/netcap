@@ -1400,6 +1400,7 @@ message ICMPv6RouterSolicitation {
 // collaborative, hypermedia information systems. HTTP is the foundation of data
 // communication for the World Wide Web.
 message HTTP {
+	string ReassemblyStatus = 51;
   int64 Timestamp = 1;
   string Proto = 2;
   string Method = 3;
@@ -2380,6 +2381,9 @@ message ENIPCommandSpecificData {
 
 // Device Profiling
 message DeviceProfile {
+	uint64 ContactObservations = 14;
+	uint64 ContactCountLowerBound = 15;
+	bool ContactsTruncated = 16;
   string MacAddr = 1;
   string DeviceManufacturer = 2;
   repeated string DeviceIPs = 3;
@@ -2523,6 +2527,7 @@ message SMTPCommand {
 
 // Simple Mail Transfer Protocol
 message SMTP {
+	string ServerGreeting = 13;
   int64 Timestamp = 1;
   bool IsEncrypted = 2;
   bool IsResponse = 3;

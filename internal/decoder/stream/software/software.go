@@ -64,10 +64,6 @@ var Decoder = &decoder.AbstractDecoder{
 			return err
 		}
 
-		if errInitUAParser != nil {
-			return errInitUAParser
-		}
-
 		// Load the JSON database of SSH fingerprint signatures (legacy HASSH format)
 		data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseFolderPath, "hasshdb.json"))
 		if err != nil {
@@ -238,7 +234,7 @@ var (
 		Items: make(map[string]*AtomicSoftware),
 	}
 
-	parser, errInitUAParser = uaparser.New(filepath.Join(resolvers.DataBaseFolderPath, "regexes.yaml"))
+	parser = uaparser.NewFromSaved()
 
 	// UserAgentParserMutex ensures atomic access to the user agent parser.
 	UserAgentParserMutex sync.Mutex

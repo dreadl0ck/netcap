@@ -40,6 +40,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/network"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/udp"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
@@ -280,9 +281,6 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 	t.updateStats(sg, skip, length, saved, startTime, end, dir)
 	if skip != 0 {
 		gap := &core.StreamData{AssemblerContext: ac, Dir: dir, SkippedBytes: skip}
-		if skip > 0 {
-			gap.SkippedBytes += length
-		} // This delivery is discarded below.
 		if dir == reassembly.TCPDirClientToServer {
 			t.client.StoreData(gap)
 		} else {
@@ -290,12 +288,8 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 		}
 	}
 
-	if skip == -1 && decoderconfig.Instance.AllowMissingInit {
-		// this is allowed
-	} else if skip != 0 {
-		// Missing bytes in stream: do not even try to parse it
-		return
-	}
+	// Retain observed bytes following a hole. Gap-aware readers may resync;
+	// conservative readers stop at the explicit marker above.
 
 	if length > 0 {
 		sg.ForEach(func(data []byte, context reassembly.AssemblerContext) {
@@ -493,6 +487,7 @@ func (t *tcpConnection) decode() {
 	)
 
 	stream.ObserveFTPData(conv)
+	secret.HarvestSMTPConversation(conv)
 
 	// The fallback scan sees a whole direction concatenated, because a
 	// length-prefixed protocol cannot be recognized from its first fragment

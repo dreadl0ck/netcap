@@ -202,6 +202,9 @@ func main() {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			if cmd.Args().Len() > 0 {
+				return fmt.Errorf("unknown command %q; use net --help or net --version", cmd.Args().First())
+			}
 			netio.PrintLogo()
 			fmt.Println(`
 available subcommands:

@@ -53,7 +53,7 @@ var Decoder = &decoder.StreamDecoder{
 	Specificity: core.SpecificityStructural,
 
 	CanDecode: func(client, server []byte) bool {
-		return containsHTTPMethod(client) || len(client) == 0 && containsHTTPProtocolName(server)
+		return containsHTTPMethod(client) || containsHTTPMethod(server) || containsHTTPProtocolName(server) || containsHTTPProtocolName(client)
 	},
 	DeInit: func(sd *decoder.StreamDecoder) error {
 		return httpLog.Sync()

@@ -62,6 +62,7 @@ const (
  */
 
 type httpRequest struct {
+	incomplete   bool
 	request      *http.Request
 	timestamp    int64
 	clientIP     string
@@ -87,8 +88,10 @@ type httpResponse struct {
 type httpReader struct {
 	conversation *core.ConversationInfo
 
-	requests  []*httpRequest
-	responses []*httpResponse
+	requests             []*httpRequest
+	responses            []*httpResponse
+	pairingBroken        bool
+	responseRequestIndex int
 }
 
 // New constructs a new http stream decoder.
@@ -105,16 +108,7 @@ func (h *httpReader) Decode() {
 		return
 	}
 
-	streamutils.DecodeConversationAt(
-		h.conversation.Ident,
-		h.conversation.Data,
-		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
-			return h.readRequest(b, pos)
-		},
-		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
-			return h.readResponse(b, pos)
-		},
-	)
+	h.decodeDirections()
 
 	// iterate over responses
 	for _, res := range h.responses { // populate types.HTTP with all infos from response
@@ -137,6 +131,7 @@ func (h *httpReader) Decode() {
 			// Use the matched request which preserves JA4H header order info
 			setRequest(ht, &httpRequest{
 				request:      res.response.Request,
+				incomplete:   matchedReq.incomplete,
 				timestamp:    matchedReq.timestamp,
 				clientIP:     res.clientIP,
 				serverIP:     res.serverIP,
@@ -154,6 +149,9 @@ func (h *httpReader) Decode() {
 
 		// Set Community ID for cross-tool correlation
 		ht.CommunityID = h.conversation.CommunityID
+		if h.pairingBroken {
+			ht.ReassemblyStatus = "unpaired_after_capture_loss"
+		}
 		writeHTTP(ht, h.conversation.Ident)
 	}
 
@@ -173,6 +171,9 @@ func (h *httpReader) Decode() {
 
 			// Set Community ID for cross-tool correlation
 			ht.CommunityID = h.conversation.CommunityID
+			if h.pairingBroken {
+				ht.ReassemblyStatus = "unpaired_after_capture_loss"
+			}
 			writeHTTP(ht, h.conversation.Ident)
 		} else {
 			atomic.AddInt64(&streamutils.Stats.NumNilRequests, 1)
@@ -285,7 +286,11 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	timestamp := pos.Timestamp()
 
 	// try to read HTTP response from the buffered reader
-	res, err := http.ReadResponse(b, nil)
+	var request *http.Request
+	if !h.pairingBroken && h.responseRequestIndex < len(h.requests) {
+		request = h.requests[h.responseRequestIndex].request
+	}
+	res, err := http.ReadResponse(b, request)
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
@@ -349,30 +354,33 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		serverPort: h.conversation.ServerPort,
 		flow:       h.conversation.Ident,
 	})
+	requestIndex := h.responseRequestIndex
+	if res.StatusCode >= 200 || res.StatusCode == 101 {
+		h.responseRequestIndex++
+	}
 
 	// write responses to disk if configured
 	if (err == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
 
 		var (
-			name         = "unknown"
-			ctype        = res.Header.Get(headerContentType)
-			numResponses = len(h.responses)
-			numRequests  = len(h.requests)
-			host         string
-			method       = ""
-			statusCode   = res.StatusCode
-			urlPath      = ""
+			name        = "unknown"
+			ctype       = res.Header.Get(headerContentType)
+			numRequests = len(h.requests)
+			host        string
+			method      = ""
+			statusCode  = res.StatusCode
+			urlPath     = ""
 		)
 
 		// check if there is a matching request for the current stream
-		if numRequests >= numResponses { // fetch it
+		if !h.pairingBroken && numRequests > requestIndex { // fetch it
 
-			req := h.requests[numResponses-1]
+			req := h.requests[requestIndex]
 			if req != nil {
 				host = req.request.Host
 				name = path.Base(req.request.URL.Path)
 				method = req.request.Method
-				urlPath = req.request.URL.Path
+				urlPath = req.request.RequestURI
 			}
 		}
 
@@ -384,6 +392,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		}
 
 		metadata := file.FileMetadata{
+			Timestamp:      timestamp,
 			ConnectionUID:  h.conversation.Ident,
 			FlowDirection:  "server_to_client",
 			HTTPMethod:     method,
@@ -405,6 +414,9 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 }
 
 func (h *httpReader) findRequest(res *http.Response) *httpRequest {
+	if h.pairingBroken {
+		return nil
+	}
 	// try to find the matching HTTP request for the response
 	var httpReq *httpRequest
 
@@ -474,6 +486,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	t := requestTimestamp
 
 	request := &httpRequest{
+		incomplete:   bodyErr != nil,
 		request:      req,
 		timestamp:    t,
 		clientIP:     h.conversation.ClientIP,
@@ -515,11 +528,12 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 			}
 
 			metadata := file.FileMetadata{
+				Timestamp:      requestTimestamp,
 				ConnectionUID:  h.conversation.Ident,
 				FlowDirection:  "client_to_server",
 				HTTPMethod:     methodPOST,
 				HTTPStatusCode: 0, // Request doesn't have status code
-				HTTPURL:        req.URL.Path,
+				HTTPURL:        req.RequestURI,
 				Filename:       path.Base(req.URL.Path),
 				ContentType:    strings.Join(req.Header[headerContentType], " "),
 				Host:           req.Host,

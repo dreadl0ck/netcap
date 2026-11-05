@@ -102,6 +102,7 @@ type pop3Reader struct {
 	authSuccess       bool
 	authAttempts      int32
 	starttlsRequested bool
+	upgradePending    bool
 	starttlsSuccess   bool
 	capabilities      []string
 	messageCount      int32
@@ -192,6 +193,10 @@ func (h *pop3Reader) Decode() {
 		ServerCapabilities: h.capabilities,
 		CommunityID:        h.conversation.CommunityID,
 	}
+	if len(h.pop3Responses) > 0 {
+		pop3Msg.ResponseStatus = h.pop3Responses[0].Command
+		pop3Msg.ResponseText = h.pop3Responses[0].Message
+	}
 
 	if user != "" || pass != "" {
 		secret.WriteSecret(&types.Secret{
@@ -222,6 +227,9 @@ func pop3Debug(msg string, fields ...zap.Field) {
 }
 
 func (h *pop3Reader) readRequest(b *bufio.Reader) error {
+	if h.starttlsSuccess {
+		return io.EOF
+	}
 	tp := textproto.NewReader(b)
 
 	// Parse the first line of the response.
@@ -243,6 +251,10 @@ func (h *pop3Reader) readRequest(b *bufio.Reader) error {
 	)
 
 	cmd, args := getCommand(line)
+	if cmd == pop3STLS {
+		h.upgradePending = true
+		h.starttlsRequested = true
+	}
 
 	h.pop3Requests = append(h.pop3Requests, &types.POP3Request{
 		Command:  cmd,
@@ -257,6 +269,9 @@ func (h *pop3Reader) readRequest(b *bufio.Reader) error {
 }
 
 func (h *pop3Reader) readResponse(b *bufio.Reader) error {
+	if h.starttlsSuccess {
+		return io.EOF
+	}
 	tp := textproto.NewReader(b)
 
 	// Parse the first line of the response.
@@ -278,6 +293,14 @@ func (h *pop3Reader) readResponse(b *bufio.Reader) error {
 	)
 
 	cmd, args := getCommand(line)
+	if h.upgradePending {
+		if cmd == pop3OK {
+			h.starttlsSuccess = true
+		}
+		if cmd == pop3OK || cmd == pop3Err {
+			h.upgradePending = false
+		}
+	}
 
 	if validPop3ServerCommand(cmd) {
 		h.pop3Responses = append(h.pop3Responses, &types.POP3Response{
@@ -319,9 +342,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 		return
 	}
 
-	if !strings.HasPrefix(serverHello.Message, "POP server ready") {
-		return
-	}
+	h.resIndex = 1
 
 	var (
 		state       = stateNotAuthenticated

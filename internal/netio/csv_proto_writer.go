@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 	"sync"
 	"time"
 
@@ -91,10 +90,10 @@ func (w *csvProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, e
 	if csv, ok := msg.(types.AuditRecord); ok {
 		if w.label {
 			// TODO: make label column name configurable
-			return w.w.Write([]byte(strings.Join(append(csv.CSVHeader(), "Category"), ",") + "\n"))
+			return w.w.Write([]byte(csvFields(append(csv.CSVHeader(), "Category"), ",") + "\n"))
 		}
 
-		return w.w.Write([]byte(strings.Join(csv.CSVHeader(), ",") + "\n"))
+		return w.w.Write([]byte(csvFields(csv.CSVHeader(), ",") + "\n"))
 	}
 
 	return 0, fmt.Errorf("%w (writeHeader, type %T)", errNotAuditRecord, msg)
@@ -129,14 +128,14 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 			if w.label {
 				values = append(values, w.labelManager.Label(record))
 			}
-			out = []byte(strings.Join(values, ",") + "\n")
+			out = []byte(csvFields(values, ",") + "\n")
 		} else {
 			// use raw values
 			values = record.CSVRecord()
 			if w.label {
 				values = append(values, w.labelManager.Label(record))
 			}
-			out = []byte(strings.Join(values, ",") + "\n")
+			out = []byte(csvFields(values, ",") + "\n")
 		}
 
 		fails := 0

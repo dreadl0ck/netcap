@@ -34,6 +34,23 @@ supported through CREATE, WRITE, READ and PIPE_TRANSCEIVE. `IdentityStatus`
 records incomplete, encrypted and unsupported RPC results; LSA translated
 responses, NDR64 and SMB1 pipe transports are not decoded.
 
+HTTP preserves the wire request target and supports requests in either TCP
+direction. `ReassemblyStatus` qualifies unpaired records after capture loss and
+incomplete request bodies. SMTP LOGIN/PLAIN exchanges appear in `Secret`; `Notes`
+distinguishes success, rejection and an unknown result. Successful IMAP STARTTLS,
+SMTP STARTTLS and POP3 STLS end plaintext parsing.
+
+DeviceProfile retains a deterministic sample of at most 4,096 contacts and a
+65,536-key deduplication set. `ContactObservations` counts observations;
+`ContactCountLowerBound` and `ContactsTruncated` qualify cardinality after limits.
+Extracted artifacts use SHA-256 basenames with preserved extensions; source names
+and URLs remain in File metadata.
+
+`NETCAP_MTA_ROOT=/path/to/captures go test -tags nodpi ./internal/collector -run
+TestMTAReportRegressions` replays the checksum-pinned 2019-12-25 and 2021-12-08
+captures without extracting artifacts. The tests cover post-gap HTTP requests,
+asymmetric-MAC flow totals, SMTP AUTH and banner-only POP3.
+
 ## Go Get
 
 Installation via go get:

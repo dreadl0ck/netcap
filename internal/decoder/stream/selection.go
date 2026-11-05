@@ -20,6 +20,7 @@
 package stream
 
 import (
+	"bytes"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
@@ -27,6 +28,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/dcerpc"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/modbus"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/smtp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tls"
 )
 
@@ -209,6 +211,12 @@ func matchScore(sd core.StreamDecoderAPI, in *SelectionInput, portPass bool) (in
 		client, server = in.PortClient, in.PortServer
 	}
 	if !sd.CanDecodeStream(client, server) {
+		if sd.GetName() == "POP3" && in.ServerPort == 110 && (bytes.HasPrefix(server, []byte("+OK ")) || bytes.HasPrefix(server, []byte("+OK\r\n"))) {
+			return core.SpecificityWeak, true
+		}
+		if sd.GetName() == "SMTP" && (in.ServerPort == 25 || in.ServerPort == 587 || in.ServerPort == 2525 || in.ServerPort == 5025) && smtp.PartialGreeting(client, server) {
+			return core.SpecificityWeak, true
+		}
 		return 0, false
 	}
 	return sd.MatchSpecificity(client, server), true

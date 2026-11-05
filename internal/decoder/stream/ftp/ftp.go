@@ -26,6 +26,7 @@ import (
 	logging "github.com/dreadl0ck/netcap/internal/logger"
 	"github.com/dreadl0ck/netcap/types"
 	"go.uber.org/zap"
+	"strings"
 )
 
 var ftpLog = zap.NewNop()
@@ -49,13 +50,27 @@ var Decoder = &decoder.StreamDecoder{
 		initConnectionTracker()
 		return nil
 	},
-	// three anchored ASCII bytes of the "220" greeting, server only.
+	// The shared 220 greeting requires FTP-specific corroboration.
 	Specificity: core.SpecificityWeak,
 
 	CanDecode: func(client, server []byte) bool {
-		// FTP server starts with 220
-		if len(server) > 3 && server[0] == '2' && server[1] == '2' && server[2] == '0' {
+		c, s := strings.ToUpper(string(client)), strings.ToUpper(string(server))
+		if !strings.HasPrefix(s, "220 ") && !strings.HasPrefix(s, "220-") {
+			return false
+		}
+		for _, command := range []string{"EHLO ", "HELO ", "MAIL FROM:", "AUTH "} {
+			if strings.HasPrefix(c, command) || strings.Contains(c, "\r\n"+command) {
+				return false
+			}
+		}
+		line, _, _ := strings.Cut(s, "\r\n")
+		if strings.Contains(line, "FTP") {
 			return true
+		}
+		for _, command := range []string{"USER ", "PASS ", "RETR ", "STOR ", "PASV\r\n", "EPSV\r\n"} {
+			if strings.HasPrefix(c, command) || strings.Contains(c, "\r\n"+command) {
+				return true
+			}
 		}
 		return false
 	},

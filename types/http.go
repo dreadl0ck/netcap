@@ -69,6 +69,7 @@ var fieldsHTTP = []string{
 	fieldServerName,
 	fieldFlow,
 	fieldJa4h,
+	"ReassemblyStatus",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -109,6 +110,7 @@ func (h *HTTP) CSVRecord() []string {
 		h.ServerName,
 		h.Flow,
 		h.Ja4H,
+		h.ReassemblyStatus,
 	})
 }
 
@@ -211,6 +213,7 @@ func (h *HTTP) Encode() []string {
 		httpEncoder.String(fieldServerName, h.ServerName),
 		httpEncoder.String(fieldFlow, h.Flow),
 		httpEncoder.String(fieldJa4h, h.Ja4H),
+		httpEncoder.String("ReassemblyStatus", h.ReassemblyStatus),
 	})
 }
 

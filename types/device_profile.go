@@ -43,6 +43,7 @@ var fieldsDeviceProfile = []string{
 	fieldNumPackets,
 	fieldBytes,
 	fieldApplications,
+	"ContactObservations", "ContactCountLowerBound", "ContactsTruncated",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -61,6 +62,7 @@ func (d *DeviceProfile) CSVRecord() []string {
 		formatInt64(d.NumPackets),
 		formatUint64(d.Bytes),
 		join(d.Applications...),
+		formatUint64(d.ContactObservations), formatUint64(d.ContactCountLowerBound), strconv.FormatBool(d.ContactsTruncated),
 	})
 }
 
@@ -106,6 +108,7 @@ func (d *DeviceProfile) Encode() []string {
 		deviceProfileEncoder.Int64(fieldNumPackets, d.NumPackets),
 		deviceProfileEncoder.Uint64(fieldBytes, d.Bytes),
 		deviceProfileEncoder.String(fieldApplications, join(d.Applications...)),
+		deviceProfileEncoder.Uint64("ContactObservations", d.ContactObservations), deviceProfileEncoder.Uint64("ContactCountLowerBound", d.ContactCountLowerBound), deviceProfileEncoder.Bool(d.ContactsTruncated),
 	})
 }
 

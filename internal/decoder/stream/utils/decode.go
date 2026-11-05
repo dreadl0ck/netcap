@@ -32,6 +32,14 @@ type ReadPosition struct {
 	server  bool
 }
 
+// FragmentReader reads one contiguous direction while retaining capture offsets.
+func FragmentReader(fragments core.DataFragments, server bool) (*bufio.Reader, *ReadPosition) {
+	data, index := core.Flatten(fragments)
+	buf := bytes.NewBuffer(data)
+	rd := bufio.NewReaderSize(buf, 16<<10)
+	return rd, &ReadPosition{index: index, buf: buf, rd: rd, written: len(data), server: server}
+}
+
 // Offset returns how many bytes of the current direction the reader has
 // consumed.
 func (p *ReadPosition) Offset() int {
@@ -131,6 +139,10 @@ func DecodeConversationAt(
 	}
 
 	for _, d := range data {
+		if fragment, ok := d.(*core.StreamData); ok && fragment.SkippedBytes != 0 {
+			drain()
+			return
+		}
 		if d.Direction() == previousDir {
 			buf.Write(d.Raw())
 			run = append(run, d)

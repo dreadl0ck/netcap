@@ -21,6 +21,7 @@ package imap
 
 import (
 	"bufio"
+	"io"
 	"strings"
 	"sync/atomic"
 
@@ -43,6 +44,7 @@ type imapReader struct {
 	username        string
 	authMethod      string
 	startTLSReq     bool
+	startTLSTag     string
 	startTLSSuccess bool
 	isEncrypted     bool
 	capabilities    []string
@@ -73,6 +75,9 @@ func (i *imapReader) Decode() {
 
 // readClient parses IMAP commands from client
 func (i *imapReader) readClient(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+	if i.isEncrypted {
+		return io.EOF
+	}
 	// Taken before the line is consumed.
 	i.timestamp = pos.Timestamp()
 
@@ -126,6 +131,7 @@ func (i *imapReader) readClient(b *bufio.Reader, pos *streamutils.ReadPosition) 
 
 	case "STARTTLS":
 		i.startTLSReq = true
+		i.startTLSTag = tag
 		imapLog.Info("IMAP STARTTLS requested",
 			zap.String("ident", i.conversation.Ident),
 		)
@@ -139,6 +145,9 @@ func (i *imapReader) readClient(b *bufio.Reader, pos *streamutils.ReadPosition) 
 
 // readServer parses IMAP responses from server
 func (i *imapReader) readServer(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+	if i.isEncrypted {
+		return io.EOF
+	}
 	i.timestamp = pos.Timestamp()
 
 	line, err := b.ReadString('\n')
@@ -179,15 +188,6 @@ func (i *imapReader) readServer(b *bufio.Reader, pos *streamutils.ReadPosition) 
 				zap.String("ident", i.conversation.Ident),
 			)
 
-		case "OK":
-			// Check for STARTTLS success
-			if i.startTLSReq && strings.Contains(line, "STARTTLS") {
-				i.startTLSSuccess = true
-				i.isEncrypted = true
-				imapLog.Info("IMAP STARTTLS successful",
-					zap.String("ident", i.conversation.Ident),
-				)
-			}
 		}
 
 	} else {
@@ -201,6 +201,15 @@ func (i *imapReader) readServer(b *bufio.Reader, pos *streamutils.ReadPosition) 
 		}
 	}
 
+	if tag == i.startTLSTag && i.startTLSTag != "" {
+		if strings.EqualFold(response, "OK") {
+			i.startTLSSuccess = true
+			i.isEncrypted = true
+		}
+		if strings.EqualFold(response, "OK") || strings.EqualFold(response, "NO") || strings.EqualFold(response, "BAD") {
+			i.startTLSTag = ""
+		}
+	}
 	imapLog.Debug("IMAP response",
 		zap.String("tag", tag),
 		zap.String("response", response),

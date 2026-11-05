@@ -376,8 +376,8 @@ func samples() []sample {
 		},
 		{
 			decoder: "BACnetIP", port: 47808, transport: core.UDP,
-			// BVLC type 0x81, function 0x0a (Original-Unicast-NPDU), length 12.
-			client: append([]byte{0x81, 0x0a, 0x00, 0x0c}, make([]byte, 8)...),
+			// Original-Unicast-NPDU with NPDU version 1 and a Who-Is APDU.
+			client: []byte{0x81, 0x0a, 0, 8, 1, 0, 0x10, 8},
 		},
 		{
 			decoder: "QUICClientHello", port: 443, transport: core.UDP,

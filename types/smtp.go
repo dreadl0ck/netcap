@@ -45,6 +45,7 @@ var fieldsSMTP = []string{
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	"ServerGreeting",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -64,6 +65,7 @@ func (a *SMTP) CSVRecord() []string {
 		a.DstIP,
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
+		a.ServerGreeting,
 	})
 }
 
@@ -153,6 +155,7 @@ func (a *SMTP) Encode() []string {
 		smtpEncoder.String(fieldDstIP, a.DstIP),
 		smtpEncoder.Int32(fieldSrcPort, a.SrcPort),
 		smtpEncoder.Int32(fieldDstPort, a.DstPort),
+		smtpEncoder.String("ServerGreeting", a.ServerGreeting),
 	})
 }
 

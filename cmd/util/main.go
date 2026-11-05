@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
+	"sort"
 	"strings"
 
 	"github.com/urfave/cli/v3"
@@ -123,15 +123,17 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	}
 
 	if c.Bool("env") {
-		out, errEnv := exec.Command("env").CombinedOutput()
-		if errEnv != nil {
-			log.Fatal(errEnv)
-		}
-
-		for line := range strings.SplitSeq(string(out), "\n") {
+		entries := os.Environ()
+		sort.Strings(entries)
+		count := 0
+		for _, line := range entries {
 			if strings.HasPrefix(line, defaults.NetcapTypePrefix) {
-				fmt.Println(line)
+				fmt.Fprintln(c.Writer, line)
+				count++
 			}
+		}
+		if count == 0 {
+			fmt.Fprintln(c.Writer, "No NC_* environment overrides are set.")
 		}
 
 		return nil

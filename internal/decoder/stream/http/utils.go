@@ -40,6 +40,9 @@ import (
 
 // set HTTP request on types.HTTP.
 func setRequest(h *types.HTTP, req *httpRequest) {
+	if req.incomplete {
+		h.ReassemblyStatus = "incomplete_request_body"
+	}
 	// set basic info
 	h.Timestamp = req.timestamp
 	h.Proto = req.request.Proto
@@ -70,11 +73,9 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 		}
 	}
 
-	// manually replace commas, to avoid breaking them the CSV
-	// use the -check flag to validate the generated CSV output and find errors quickly if other fields slipped through
-	h.UserAgent = removeCommas(req.request.UserAgent())
-	h.Referer = removeCommas(req.request.Referer())
-	h.URL = removeCommas(req.request.URL.String())
+	h.UserAgent = req.request.UserAgent()
+	h.Referer = req.request.Referer()
+	h.URL = req.request.RequestURI
 
 	// retrieve ip addresses and ports set on the request while processing
 	h.SrcIP = req.clientIP
@@ -106,10 +107,6 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 		// Lookup JA4H fingerprint in database for enrichment
 		h.Ja4HDescription = resolvers.LookupJA4H(h.Ja4H)
 	}
-}
-
-func removeCommas(s string) string {
-	return strings.Replace(s, ",", "(comma)", -1)
 }
 
 // readCookies transforms an array of *http.Cookie to an array of *types.HTTPCookie.

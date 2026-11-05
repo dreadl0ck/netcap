@@ -562,7 +562,7 @@ func GetFlags() []cli.Flag {
 		&cli.BoolFlag{
 			Name:    "stop-after-service-category-miss",
 			Value:   true,
-			Usage:   "stop processing the conversation after the first service probe returned a result",
+			Usage:   "skip other service categories after probes for the expected port category miss",
 			Sources: cli.EnvVars("NC_STOP_AFTER_SERVICE_CATEGORY_MISS"),
 		},
 		&cli.BoolFlag{

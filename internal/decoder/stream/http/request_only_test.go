@@ -45,6 +45,9 @@ func TestRequestOnlyEvidence(t *testing.T) {
 				t.Fatalf("split %d: %v", split, w.records)
 			}
 			r := w.records[0]
+			if body == "part" && r.ReassemblyStatus == "" {
+				t.Fatal("truncated request body not qualified")
+			}
 			if r.Method != "POST" || r.Host != "c2.example" || r.URL != "/submit" || string(r.RequestBody) != body || r.Timestamp != time.Unix(10, 0).UnixNano() || r.SrcIP != c.ClientIP {
 				t.Fatalf("split %d: %v", split, r)
 			}
