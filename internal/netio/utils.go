@@ -141,7 +141,7 @@ func Dump(w *os.File, c DumpConfig) error {
 	if c.SortTime && !c.Fields {
 		path, cleanup, err := sortedAuditFile(c.Path, 16<<20)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to open audit record or sort captured records: %w", err)
 		}
 		defer cleanup()
 		c.Path = path

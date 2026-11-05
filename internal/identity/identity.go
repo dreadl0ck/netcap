@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
@@ -53,6 +54,7 @@ type Report struct {
 	Limitations     []string               `json:"limitations"`
 }
 type DirectoryObservation struct {
+	SID      string   `json:"sid,omitempty"`
 	Scope    string   `json:"scope"`
 	Account  string   `json:"account,omitempty"`
 	Domain   string   `json:"domain,omitempty"`
@@ -61,6 +63,7 @@ type DirectoryObservation struct {
 	Evidence Evidence `json:"evidence"`
 }
 type directory struct {
+	SID                                     string
 	Scope, Name, Domain, FullName, Hostname string
 	Client                                  string
 	Source, Flow                            string
@@ -162,6 +165,13 @@ func (e *Engine) account(scope, ip, name, domain, source, flow string, at int64)
 }
 func (e *Engine) Observe(scope string, m proto.Message) {
 	switch r := m.(type) {
+	case *types.Secret:
+		if r.Service == secret.IdentityService {
+			if ip, _, _, _, ok := secret.SecretEndpoints(r.Flow); ok {
+				e.account(scope, ip, r.User, r.Domain, "NTLMSSP observed identity (unverified authentication)", r.Flow, r.Timestamp)
+				e.add(scope, ip, "hostname", r.Workstation, "NTLMSSP workstation claim", r.Flow, r.Timestamp)
+			}
+		}
 	case *types.Kerberos:
 		ip := r.SrcIP
 		if r.MessageTypeCode == 11 || r.MessageTypeCode == 13 {
@@ -214,18 +224,21 @@ func (e *Engine) Observe(scope string, m proto.Message) {
 	case *types.DCERPC:
 		// Query results identify accounts, not the IP of the RPC server.
 		for _, i := range r.Identities {
-			if i.AccountName != "" && i.FullName != "" && len(e.directory) < 65536 {
+			if i.AccountName != "" && (i.FullName != "" || i.SID != "") && len(e.directory) < 65536 {
 				client := r.SrcIP
 				if r.PacketType == 2 {
 					client = r.DstIP
 				}
-				e.rememberDirectory(directory{Scope: scope, Name: i.AccountName, Domain: i.Domain, FullName: i.FullName, Client: client, Source: "SAMR " + r.OperationName, Flow: r.Flow, At: r.Timestamp})
+				if r.InterfaceName == "LSARPC" {
+					client = ""
+				}
+				e.rememberDirectory(directory{SID: i.SID, Scope: scope, Name: i.AccountName, Domain: i.Domain, FullName: i.FullName, Client: client, Source: r.InterfaceName + " " + r.OperationName, Flow: r.Flow, At: r.Timestamp})
 			}
 		}
 	}
 }
 func (e *Engine) rememberDirectory(d directory) {
-	key := d.Scope + "|" + strings.ToLower(d.Domain+"|"+d.Name) + "|" + d.FullName + "|" + d.Source + "|" + d.Client
+	key := d.Scope + "|" + strings.ToLower(d.Domain+"|"+d.Name) + "|" + d.FullName + "|" + d.Source + "|" + d.Client + "|" + d.SID
 	if old, ok := e.directory[key]; ok {
 		if old.At < d.At || old.At == d.At && old.Flow <= d.Flow {
 			return
@@ -258,7 +271,7 @@ func (e *Engine) Report() Report {
 		}
 	}
 	for _, d := range e.directory {
-		r.Directory = append(r.Directory, DirectoryObservation{Scope: d.Scope, Account: d.Name, Domain: d.Domain, FullName: d.FullName, Client: d.Client, Evidence: Evidence{At: d.At, Kind: "directory-subject", Value: d.FullName, Source: d.Source, Flow: d.Flow}})
+		r.Directory = append(r.Directory, DirectoryObservation{SID: d.SID, Scope: d.Scope, Account: d.Name, Domain: d.Domain, FullName: d.FullName, Client: d.Client, Evidence: Evidence{At: d.At, Kind: "directory-subject", Value: d.FullName, Source: d.Source, Flow: d.Flow}})
 		key := d.Scope + "|" + strings.ToLower(d.Name)
 		directoryIndex[key] = append(directoryIndex[key], d)
 	}
@@ -374,7 +387,7 @@ func (e *Engine) Report() Report {
 	sort.Slice(r.Hosts, func(i, j int) bool { return r.Hosts[i].Scope+"|"+r.Hosts[i].IP < r.Hosts[j].Scope+"|"+r.Hosts[j].IP })
 	sort.Slice(r.Directory, func(i, j int) bool {
 		x, y := r.Directory[i], r.Directory[j]
-		return x.Scope+"|"+x.Domain+"|"+x.Account+"|"+x.FullName+"|"+x.Evidence.Source+"|"+x.Client < y.Scope+"|"+y.Domain+"|"+y.Account+"|"+y.FullName+"|"+y.Evidence.Source+"|"+y.Client
+		return x.Scope+"|"+x.Domain+"|"+x.Account+"|"+x.FullName+"|"+x.Evidence.Source+"|"+x.Client+"|"+x.SID < y.Scope+"|"+y.Domain+"|"+y.Account+"|"+y.FullName+"|"+y.Evidence.Source+"|"+y.Client+"|"+y.SID
 	})
 	return r
 }

@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/internal/identity"
 	"github.com/dreadl0ck/netcap/internal/networkdetect"
 	"github.com/dreadl0ck/netcap/types"
@@ -109,6 +110,10 @@ func (c *Collector) observeRecordScope(p gopacket.Packet, scope networkdetect.Sc
 func (c *Collector) observeDecodedRecord(m proto.Message) {
 	switch m.(type) {
 	case *types.HTTP, *types.File, *types.SMB, *types.Kerberos, *types.LDAP, *types.DCERPC, *types.DHCPv4:
+	case *types.Secret:
+		if m.(*types.Secret).Service != secret.IdentityService {
+			return
+		}
 	default:
 		return
 	}
@@ -129,6 +134,11 @@ func (c *Collector) observeDecodedRecord(m proto.Message) {
 	}
 	if r, is := m.(*types.DHCPv4); is {
 		bound, ok = c.ipScopes[r.YourClientIP]
+	}
+	if r, is := m.(*types.Secret); is {
+		if a, p, b, q, valid := secret.SecretEndpoints(r.Flow); valid {
+			bound, ok = c.recordScopes[endpoints(a, p, b, q)]
+		}
 	}
 	if !ok || bound.Ambiguous {
 		c.analysisUnscoped++

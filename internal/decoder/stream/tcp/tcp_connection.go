@@ -489,6 +489,7 @@ func (t *tcpConnection) decode() {
 
 	stream.ObserveFTPData(conv)
 	secret.HarvestSMTPConversation(conv)
+	secret.HarvestAdditionalConversation(conv)
 
 	// The fallback scan sees a whole direction concatenated, because a
 	// length-prefixed protocol cannot be recognized from its first fragment

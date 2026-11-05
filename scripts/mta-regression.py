@@ -22,6 +22,15 @@ def digest(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
+def report_dates(text):
+    numbered = re.findall(r"^\|\s*\d+\s*\|\s*(20\d\d-\d\d-\d\d)\s*\|", text, re.M)
+    return sorted(set(numbered or re.findall(r"^\|\s*(20\d\d-\d\d-\d\d)\s*\|", text, re.M)))
+
+
+def report_counts(text):
+    return {date: int(count) for date, count in re.findall(r"^\|\s*\d+\s*\|\s*(20\d\d-\d\d-\d\d)\s*\|\s*\d+\s*\|[^|\n]*\|\s*(\d+)\s*\|", text, re.M)}
+
+
 def fetch(root, date, page=None):
     year, month, day = date.split("-")
     page = page or f"https://www.malware-traffic-analysis.net/{year}/{month}/{day}/index.html"
@@ -32,7 +41,8 @@ def fetch(root, date, page=None):
         url = urllib.parse.urljoin(page, href)
         parsed = urllib.parse.urlparse(url)
         name = parsed.path.rsplit("/", 1)[-1].lower()
-        if parsed.netloc == "www.malware-traffic-analysis.net" and name.endswith(".zip") and "pcap" in name and not any(x in name for x in ("malware", "email", "artifact")):
+        contains_pcap = "pcap" in name or name.endswith("-exercise-files.zip") and ".pcap" in html
+        if parsed.netloc == "www.malware-traffic-analysis.net" and name.endswith(".zip") and contains_pcap and not any(x in name for x in ("malware", "email", "artifact")):
             urls.add(url)
     if not urls:
         raise RuntimeError("no PCAP archive links found")
@@ -147,6 +157,34 @@ def compare(tshark, binary, metric):
     return result
 
 
+def audit_user_misses(args):
+    replayed = json.loads((args.root / "replay.json").read_text())
+    if digest(args.binary) != replayed["binarySHA256"]:
+        raise RuntimeError("binary differs from completed replay")
+    misses = {}
+    for line in args.report.read_text().splitlines():
+        cells = [cell.strip() for cell in line.split("|")]
+        if len(cells) > 3 and cells[1].isdigit() and re.fullmatch(r"20\d\d-\d\d-\d\d", cells[2]):
+            users = re.findall(r"user:([^,\s|]+)", line)
+            if users:
+                misses[cells[2]] = users
+    found = {}
+    for metric in replayed["metrics"]:
+        date = Path(metric["pcap"]).parent.name
+        if date not in misses:
+            continue
+        names = found.setdefault(date, set())
+        for host in metric["hosts"]["hosts"]:
+            names.update(account["name"].lower() for account in host["accounts"] or [])
+        names.update(record.get("ClientName", "").lower() for record in records(args.binary.resolve(), Path(metric["output"]), "Kerberos"))
+    results = [{"date": date, "user": user, "recovered": user.lower() in found.get(date, set())} for date, users in sorted(misses.items()) for user in users]
+    target = args.root / "user-misses.json"
+    target.write_text(json.dumps({"binarySHA256": replayed["binarySHA256"], "results": results}, indent=2) + "\n")
+    target.chmod(0o600)
+    print(json.dumps({"checked": len(results), "recovered": sum(row["recovered"] for row in results), "missing": [row for row in results if not row["recovered"]]}))
+    return bool(not results or any(not row["recovered"] for row in results))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", required=True, type=Path)
@@ -156,8 +194,17 @@ def main():
     parser.add_argument("--offline", action="store_true", help="replay existing checksum-verified receipts without network access")
     parser.add_argument("--compare-only", action="store_true", help="compare a completed replay against tshark HTTP/TCP TLS tuples")
     parser.add_argument("--tshark", type=Path)
+    parser.add_argument("--expected-exercises", type=int)
+    parser.add_argument("--expected-pcaps", type=int)
+    parser.add_argument("--quiet", action="store_true", help="print only the final verification summary")
+    parser.add_argument("--count-override", action="append", default=[], metavar="DATE=COUNT", help="explicit correction to a report inventory row")
     parser.add_argument("--dates", default="")
+    parser.add_argument("--audit-misses", action="store_true", help="check previously missed user facts against structured identities")
     args = parser.parse_args()
+    if args.audit_misses:
+        if not args.binary:
+            parser.error("--audit-misses requires --binary")
+        return audit_user_misses(args)
     if args.compare_only:
         if not args.tshark or not args.binary:
             parser.error("--compare-only requires --tshark and --binary")
@@ -170,12 +217,25 @@ def main():
                 continue
             compared = compare(args.tshark, args.binary.resolve(), metric)
             comparisons.append(compared)
-            print(json.dumps({"pcap": Path(metric["pcap"]).name, **{kind: {"reference": compared[kind]["reference"], "observed": compared[kind]["observed"], "missing": sum(item["count"] for item in compared[kind]["missing"]), "additional": compared[kind]["additional"]} for kind in ("HTTP", "TLSClientHello")}}), flush=True)
+            if not args.quiet:
+                print(json.dumps({"pcap": Path(metric["pcap"]).name, **{kind: {"reference": compared[kind]["reference"], "observed": compared[kind]["observed"], "missing": sum(item["count"] for item in compared[kind]["missing"]), "additional": compared[kind]["additional"]} for kind in ("HTTP", "TLSClientHello")}}), flush=True)
         target = args.root / "reference.json"
         target.write_text(json.dumps({"binarySHA256": replayed["binarySHA256"], "comparisons": comparisons}, indent=2) + "\n")
         target.chmod(0o600)
+        print(json.dumps({"compared": len(comparisons), **{kind: {"reference": sum(result[kind]["reference"] for result in comparisons), "missing": sum(item["count"] for result in comparisons for item in result[kind]["missing"]), "additional": sum(result[kind]["additional"] for result in comparisons)} for kind in ("HTTP", "TLSClientHello")}}), flush=True)
         return bool(replayed["failures"] or len(replayed["metrics"]) != len(replayed["receipts"]) or any(result[kind]["missing"] for result in comparisons for kind in ("HTTP", "TLSClientHello")))
-    dates = sorted(set(re.findall(r"^\|\s*(20\d\d-\d\d-\d\d)\s*\|", args.report.read_text(), re.M)))
+    report_text = args.report.read_text()
+    dates = report_dates(report_text)
+    expected_counts = report_counts(report_text)
+    overrides = {}
+    for value in args.count_override:
+        date, separator, count = value.partition("=")
+        if not separator or date not in expected_counts or not count.isdigit() or not 0 < int(count) <= 512:
+            parser.error(f"invalid inventory count correction: {value}")
+        overrides[date] = int(count)
+    expected_counts.update(overrides)
+    if not dates or args.expected_exercises is not None and len(dates) != args.expected_exercises:
+        parser.error(f"report inventory contains {len(dates)} exercises; expected {args.expected_exercises}")
     if args.dates:
         dates = [d for d in dates if d in args.dates.split(",")]
     args.root.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -201,24 +261,31 @@ def main():
             try:
                 fetched = job.result()
                 receipts.extend(fetched)
-                print(json.dumps({"date": date, "pcaps": len(fetched), "status": "fetched"}), flush=True)
+                if date in expected_counts and len(fetched) != expected_counts[date]:
+                    failures.append({"date": date, "error": f"found {len(fetched)} captures; report inventory specifies {expected_counts[date]}"})
+                if not args.quiet:
+                    print(json.dumps({"date": date, "pcaps": len(fetched), "status": "fetched"}), flush=True)
             except Exception as error:
                 failures.append({"date": date, "error": str(error)})
                 print(json.dumps(failures[-1]), flush=True)
+    if args.expected_pcaps is not None and len(receipts) != args.expected_pcaps:
+        failures.append({"error": f"inventory contains {len(receipts)} PCAPs; expected {args.expected_pcaps}"})
     metrics = []
-    if not args.fetch_only:
+    if not args.fetch_only and not failures:
         if args.binary is None:
             parser.error("--binary is required for replay")
         for receipt in sorted(receipts, key=lambda r: r["pcap"]):
             try:
                 result = replay(args.binary.resolve(), args.root, receipt)
                 metrics.append(result)
-                print(json.dumps({"pcap": Path(receipt["pcap"]).name, "status": "replayed", "counts": result["counts"]}), flush=True)
+                if not args.quiet:
+                    print(json.dumps({"pcap": Path(receipt["pcap"]).name, "status": "replayed", "counts": result["counts"]}), flush=True)
             except Exception as error:
                 failures.append({"pcap": receipt["pcap"], "error": str(error)})
     summary = args.root / ("fetch.json" if args.fetch_only else "replay.json")
-    summary.write_text(json.dumps({"binarySHA256": digest(args.binary) if args.binary else None, "receipts": receipts, "metrics": metrics, "failures": failures}, indent=2) + "\n")
+    summary.write_text(json.dumps({"reportSHA256": digest(args.report), "inventoryOverrides": overrides, "binarySHA256": digest(args.binary) if args.binary else None, "receipts": receipts, "metrics": metrics, "failures": failures}, indent=2) + "\n")
     summary.chmod(0o600)
+    print(json.dumps({"exercises": len(dates), "pcaps": len(receipts), "replayed": len(metrics), "failures": failures}), flush=True)
     return bool(failures)
 
 

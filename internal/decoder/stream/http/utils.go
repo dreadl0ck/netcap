@@ -76,6 +76,9 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	h.UserAgent = req.request.UserAgent()
 	h.Referer = req.request.Referer()
 	h.URL = req.request.RequestURI
+	if req.parseIssue != "" {
+		h.ReassemblyStatus = req.parseIssue
+	}
 
 	// retrieve ip addresses and ports set on the request while processing
 	h.SrcIP = req.clientIP

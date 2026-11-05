@@ -37,7 +37,7 @@ func Flags() []string {
 // GetFlags returns the CLI flags for the dump subcommand.
 func GetFlags() []cli.Flag {
 	return []cli.Flag{
-		&cli.BoolFlag{Name: "sort-time", Usage: "stable timestamp order using bounded-memory external sorting", Sources: cli.EnvVars("NC_SORT_TIME")},
+		&cli.BoolFlag{Name: "sort-time", Value: true, Usage: "stable timestamp order using bounded-memory external sorting; false preserves storage order", Sources: cli.EnvVars("NC_SORT_TIME")},
 		&cli.BoolFlag{
 			Name:    "gen-config",
 			Usage:   "generate config",

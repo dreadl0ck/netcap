@@ -62,6 +62,7 @@ const (
  */
 
 type httpRequest struct {
+	parseIssue   string
 	incomplete   bool
 	request      *http.Request
 	timestamp    int64
@@ -133,6 +134,7 @@ func (h *httpReader) Decode() {
 			setRequest(ht, &httpRequest{
 				request:      res.response.Request,
 				incomplete:   matchedReq.incomplete,
+				parseIssue:   matchedReq.parseIssue,
 				timestamp:    matchedReq.timestamp,
 				clientIP:     res.clientIP,
 				serverIP:     res.serverIP,
@@ -454,7 +456,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	// We need to peek at the raw bytes to preserve header order
 	headerOrder, cookieFields, acceptLang := extractHeaderOrderFromReader(b)
 
-	req, err := http.ReadRequest(b)
+	req, issue, err := readEvidenceRequest(b)
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
@@ -493,6 +495,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	t := requestTimestamp
 
 	request := &httpRequest{
+		parseIssue:   issue,
 		incomplete:   bodyErr != nil,
 		request:      req,
 		timestamp:    t,
@@ -507,7 +510,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	}
 
 	// parse form values
-	err = req.ParseForm()
+	err = parseEvidenceForm(req, body)
 	if err != nil {
 		httpLog.Error(
 			"failed to read HTTP form values",
@@ -523,6 +526,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	streamutils.Stats.Unlock()
 
 	h.requests = append(h.requests, request)
+	secret.HarvestHTTPNTLMIdentity(req.Header.Get("Authorization"), request.clientIP, request.serverIP, request.clientPort, request.serverPort, t, h.conversation.CommunityID)
 
 	if req.Method == methodPOST {
 		// write request payload to disk if configured

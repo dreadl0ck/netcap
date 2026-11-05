@@ -19,7 +19,7 @@ func (d *dcerpcReader) decodeIdentityStub(rec *types.DCERPC, pdu []byte, order b
 		return
 	}
 	is64 := d.ndr64[uint16(rec.ContextID)]
-	if !d.ndr32[uint16(rec.ContextID)] && !is64 || isLookup && is64 {
+	if !d.ndr32[uint16(rec.ContextID)] && !is64 {
 		rec.IdentityStatus = "unsupported_or_unconfirmed_transfer_syntax"
 		return
 	}
@@ -67,7 +67,13 @@ func (d *dcerpcReader) decodeIdentityStub(rec *types.DCERPC, pdu []byte, order b
 	delete(d.stubFragments, key)
 	if rec.PacketType == ptypeRequest {
 		if isLookup {
-			rec.Identities, rec.IdentityStatus = lsaLookupInputs(bytes, uint16(rec.OpNum), order)
+			rec.Identities, rec.IdentityStatus = lsaInputs(bytes, uint16(rec.OpNum), is64, order)
+			if d.lookupInputs == nil {
+				d.lookupInputs = map[uint64][]*types.WindowsIdentity{}
+			}
+			if len(d.lookupInputs) < maxPendingCalls {
+				d.lookupInputs[uint64(uint32(rec.ContextID))<<32|uint64(uint32(rec.CallID))] = rec.Identities
+			}
 			return
 		}
 		if len(bytes) >= 22 {
@@ -79,7 +85,9 @@ func (d *dcerpcReader) decodeIdentityStub(rec *types.DCERPC, pdu []byte, order b
 		return
 	}
 	if isLookup {
-		rec.IdentityStatus = "lookup_response_not_decoded"
+		key := uint64(uint32(rec.ContextID))<<32 | uint64(uint32(rec.CallID))
+		rec.Identities, rec.IdentityStatus = lsaResults(bytes, uint16(rec.OpNum), is64, order, d.lookupInputs[key])
+		delete(d.lookupInputs, key)
 		return
 	}
 	ident, status := samrUserIdentity(bytes, level, order)

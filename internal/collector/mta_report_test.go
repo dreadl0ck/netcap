@@ -34,6 +34,10 @@ func TestMTAReportRegressions(t *testing.T) {
 		{"2026-08-09-traffic-analysis-exercise.pcap", "0ea6b597732a9ce6af9a7e3adff4512c9a91b4bce27184c8fdeb746f05cce170"},
 		{"2020-12-31-traffic-analysis-quiz-05.pcap", "7a063bb680dcf4af8fe3feaae873853a24ed287e4fdd390ecc70331d30784233"},
 		{"2021-07-traffic-analysis-exercise.pcap", "a32fc4ce0496a2aec7ef4a8c80190a605d701afbe780ea62b5a58e929a2a72d0"},
+		{"2018-10-01-UISGCON-CTF-pcap-2-of-2.pcap", "3036fd3e5c45e2bb260a7a40120a5541964448005043d8058d3cb7dd38bca855"},
+		{"2018-08-12-traffic-analysis-exercise.pcap", "c9e136e6e53daec4deec416e545d56e3c430dbc2d38374cf7a4dc839a0f4a3ff"},
+		{"2015-02-24-traffic-analysis-exercise.pcap", "bfce39d11d994ce7844045a6dc33477ea6b05ca8575f321edadfc59be1bea80e"},
+		{"2015-07-24-traffic-analysis-exercise.pcap", "1b773ec94fd065e74aed856e179218ea2c68d9a72012a0878b05ae71804cdc36"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			input := filepath.Join(root, tc.name)
@@ -225,6 +229,48 @@ func TestMTAReportRegressions(t *testing.T) {
 				}
 				if !found {
 					t.Fatal("SAMR identity not retained with client-host provenance")
+				}
+			} else if strings.HasPrefix(tc.name, "2015") || strings.HasPrefix(tc.name, "2018") {
+				if strings.HasPrefix(tc.name, "2018-10") {
+					found := false
+					read("File", func(m proto.Message) {
+						r := m.(*types.File)
+						if r.Protocol == "SMB" && r.Hashes != nil && r.Hashes.SHA256 == "cf99990bee6c378cbf56239b3cc88276eec348d82740f84e9d5c343751f82560" {
+							found = true
+						}
+					})
+					if !found {
+						t.Fatal("published SMB-delivered executable hash missing")
+					}
+				} else {
+					requests, controls, semicolon := 0, 0, 0
+					read("HTTP", func(m proto.Message) {
+						r := m.(*types.HTTP)
+						if r.Method != "" {
+							requests++
+						}
+						if strings.ContainsRune(r.URL, 31) {
+							controls++
+							if !strings.Contains(r.ReassemblyStatus, "invalid-request-target") {
+								t.Fatal("unqualified malformed target")
+							}
+						}
+						for _, v := range r.Parameters {
+							if strings.Contains(v, ";") {
+								semicolon++
+							}
+						}
+					})
+					want := map[string]int{"2018-08": 154, "2015-02": 441, "2015-07": 426}[tc.name[:7]]
+					if requests != want {
+						t.Fatalf("HTTP requests=%d want=%d", requests, want)
+					}
+					if strings.HasPrefix(tc.name, "2015-02") && controls < 6 {
+						t.Fatal("control-byte request evidence missing", controls)
+					}
+					if strings.HasPrefix(tc.name, "2015-07") && semicolon == 0 {
+						t.Fatal("semicolon query values missing")
+					}
 				}
 			} else {
 				full := map[string]bool{}

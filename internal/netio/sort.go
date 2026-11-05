@@ -14,9 +14,18 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-type timedRecord interface {
-	proto.Message
-	GetTimestamp() int64
+type timedRecord = proto.Message
+
+func sortTimestamp(record proto.Message) int64 {
+	switch r := record.(type) {
+	case interface{ GetTimestamp() int64 }:
+		return r.GetTimestamp()
+	case interface{ GetTimestampFirst() int64 }:
+		return r.GetTimestampFirst()
+	case interface{ GetFirstSeen() int64 }:
+		return r.GetFirstSeen()
+	}
+	return 0
 }
 
 // Runs are merged in pairs so file descriptors and merge memory stay bounded.
@@ -63,7 +72,7 @@ func sortedAuditFile(path string, budget int) (result string, cleanup func(), er
 		if len(records) == 0 {
 			break
 		}
-		sort.SliceStable(records, func(i, j int) bool { return records[i].GetTimestamp() < records[j].GetTimestamp() })
+		sort.SliceStable(records, func(i, j int) bool { return sortTimestamp(records[i]) < sortTimestamp(records[j]) })
 		name := filepath.Join(dir, fmt.Sprintf("run-%d.ncap", len(runs)))
 		if err = writeSortedRun(name, h, records); err != nil {
 			return "", nil, err
@@ -155,7 +164,7 @@ func mergeSortedRuns(path string, h *types.Header, left, right string) (err erro
 	}
 	for heads[0] != nil || heads[1] != nil {
 		i := 0
-		if heads[0] == nil || heads[1] != nil && heads[1].GetTimestamp() < heads[0].GetTimestamp() {
+		if heads[0] == nil || heads[1] != nil && sortTimestamp(heads[1]) < sortTimestamp(heads[0]) {
 			i = 1
 		}
 		if err = w.PutProto(heads[i]); err != nil {

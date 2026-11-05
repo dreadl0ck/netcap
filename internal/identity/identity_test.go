@@ -45,6 +45,14 @@ func TestMachineAccountAndRealmHaveDifferentSemantics(t *testing.T) {
 	}
 }
 
+func TestUnframedNTLMTokenDoesNotBecomeHostIdentity(t *testing.T) {
+	e := New()
+	e.Observe("scope", &types.Secret{Service: "NTLMSSP Token", Flow: "192.0.2.1:1234->192.0.2.2:445", User: "UntrustedFileContent", Workstation: "ForgedHost"})
+	if len(e.Report().Hosts) != 0 {
+		t.Fatal("arbitrary payload token attributed to a host")
+	}
+}
+
 func TestDirectorySubjectWithoutAccountIsRetainedUnattributed(t *testing.T) {
 	e := New()
 	e.Observe("scope", &types.LDAP{Timestamp: 42, Flow: "ldap-flow", SrcIP: "10.0.0.1", DstIP: "10.0.0.2", Operation: "SearchResultEntry", DN: "CN=Analyst,DC=example,DC=test", Attributes: []*types.LDAPAttribute{{Name: "displayName", Values: [][]byte{[]byte("Test Analyst")}}}})

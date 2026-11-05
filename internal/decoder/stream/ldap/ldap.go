@@ -10,6 +10,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -189,6 +190,9 @@ func (r *reader) decode(emit func(*types.LDAP)) {
 			record.Flow = r.conversation.Ident
 			record.CommunityID = r.conversation.CommunityID
 			record.SrcIP, record.DstIP, record.SrcPort, record.DstPort = r.conversation.Endpoints(f)
+			if record.Operation == "BindRequest" {
+				secret.HarvestNTLMIdentityToken(bindCredential(input[:n]), record.SrcIP, record.DstIP, record.SrcPort, record.DstPort, record.Timestamp, record.CommunityID)
+			}
 			emit(record)
 			if wrapped {
 				s.plain = s.plain[n:]
@@ -199,6 +203,26 @@ func (r *reader) decode(emit func(*types.LDAP)) {
 			s.at = core.FragmentTime(f)
 		}
 	}
+}
+
+func bindCredential(b []byte) []byte {
+	outer, _, ok := berValue(b)
+	if !ok {
+		return nil
+	}
+	message, ok := values(outer.Bytes)
+	if !ok || len(message) < 2 || message[1].Tag != 0 {
+		return nil
+	}
+	fields, ok := values(message[1].Bytes)
+	if !ok || len(fields) < 3 || fields[2].Class != 2 || fields[2].Tag != 3 {
+		return nil
+	}
+	auth, ok := values(fields[2].Bytes)
+	if !ok || len(auth) != 2 || auth[1].Class != 0 || auth[1].Tag != 4 {
+		return nil
+	}
+	return auth[1].Bytes
 }
 
 // LDAP uses definite BER lengths; indefinite and oversized messages are refused.

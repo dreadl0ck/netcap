@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -41,6 +42,7 @@ type dcerpcReader struct {
 	calls         map[uint32][]call
 	pending       int
 	stubFragments map[uint64][]byte
+	lookupInputs  map[uint64][]*types.WindowsIdentity
 }
 
 type call struct {
@@ -160,6 +162,7 @@ func (d *dcerpcReader) decode(emit func(*types.DCERPC)) {
 	d.calls = map[uint32][]call{}
 	d.pending = 0
 	d.stubFragments = make(map[uint64][]byte)
+	d.lookupInputs = make(map[uint64][]*types.WindowsIdentity)
 
 	fragments := d.conversation.Data
 	if len(fragments) == 0 {
@@ -184,6 +187,7 @@ func (d *dcerpcReader) decode(emit func(*types.DCERPC)) {
 			d.calls = map[uint32][]call{}
 			d.pending = 0
 			d.stubFragments = make(map[uint64][]byte)
+			d.lookupInputs = make(map[uint64][]*types.WindowsIdentity)
 			continue
 		}
 		raw := f.Raw()
@@ -219,6 +223,11 @@ func (d *dcerpcReader) decode(emit func(*types.DCERPC)) {
 			rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = d.conversation.Endpoints(f)
 			rec.Timestamp = b.at
 			rec.Flow, rec.CommunityID = d.conversation.Ident, d.conversation.CommunityID
+			auth := int(order.Uint16(b.data[10:12]))
+			trailer := len(b.data) - auth - 8
+			if auth > 0 && trailer >= 16 && b.data[trailer] == 10 {
+				secret.HarvestNTLMIdentityToken(b.data[len(b.data)-auth:], rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort, rec.Timestamp, rec.CommunityID)
+			}
 			emit(rec)
 			b.data = b.data[:0]
 		}

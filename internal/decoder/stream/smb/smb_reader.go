@@ -330,6 +330,7 @@ func (s *smbReader) New(conversation *core.ConversationInfo) core.StreamDecoderI
 // Decode parses the SMB conversation using the standard conversation decoder
 func (s *smbReader) Decode() {
 	dcerpc.DecodeSMBPipes(s.conversation)
+	decodeSMBFiles(s.conversation)
 	smbLog.Debug("Decoding SMB conversation",
 		zap.String("ident", s.conversation.Ident),
 		zap.String("clientIP", s.conversation.ClientIP),

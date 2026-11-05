@@ -14,6 +14,12 @@ spec.loader.exec_module(mta)
 
 
 class ReferenceComparisonTests(unittest.TestCase):
+    def test_numbered_inventory_excludes_answer_corrections(self):
+        text = "| 1 | 2018-10-01 | 4 |\n| 2 | 2015-02-24 | 7 |\n| 2026-10-01 | typo | correction |\n"
+        self.assertEqual(mta.report_dates(text), ["2015-02-24", "2018-10-01"])
+        self.assertEqual(mta.report_dates("| 2020-01-30 | 3 |\n"), ["2020-01-30"])
+        self.assertEqual(mta.report_counts("| 1 | 2016-07-07 | 6 | Email roulette | 6 | - |\n"), {"2016-07-07": 6})
+
     def test_raw_targets_and_empty_sni_are_compared_without_rewriting(self):
         metric = {"pcap": "capture.pcap", "sha256": "fixture", "output": "output"}
         responses = ["10.0.0.1\t\t1234\t10.0.0.2\t\t80\tGET\t//raw%2fpath?a,b\n", "10.0.0.1\t\t1235\t10.0.0.2\t\t443\t\n"]

@@ -158,8 +158,23 @@ timestamps, flows and unresolved/conflicting joins. LDAP SASL signing payloads
 are marked `sasl-integrity-not-verified`; sealed payloads are not decoded.
 SAMR user-information queries support NDR32 and NDR64. An account-name match
 without a directory domain is explicitly qualified in `fullNameState`.
+LSARPC lookup operations 14/15 decode NDR32/NDR64 name/SID translations;
+directory subjects are not assigned to the RPC server. `NTLMSSP Identity`
+observations retain user/domain/workstation claims without asserting successful
+authentication. POP3/IMAP LOGIN and SASL PLAIN/LOGIN use ordered exchanges and
+stop at acknowledged TLS upgrades.
+Unframed `NTLMSSP Token` records are retained as unverified payload observations
+and excluded from host attribution; HTTP, LDAP and RPC authentication fields
+produce framed identity observations.
 TLS hello parsing also follows acknowledged STARTTLS/STLS/AUTH TLS and SOCKS5
 CONNECT exchanges through `internal/decoder/stream/tls/upgrades.go`.
+
+`dump` sorts timestamped records by default; `--sort-time=false` preserves storage
+order. Malformed HTTP target control bytes survive in `URL` with
+`ReassemblyStatus=invalid-request-target-control-byte`; semicolons remain literal
+query values. SMB1 NT_CREATE_ANDX and SMB2 CREATE/READ/WRITE/CLOSE reconstruction
+publishes complete, consistent byte ranges up to 32 MiB per file. Missing or
+conflicting ranges and encrypted SMB transforms are not published as complete files.
 
 Vulnerability findings require schema-2 CPE product/version applicability and
 an observed software host; exploit findings additionally require a linked CVE.
@@ -168,18 +183,25 @@ with a compatible snapshot; see [the format](internal/vulndb/SCHEMA.md).
 
 ### Corpus regression checks
 
-`scripts/mta-regression.py --report /path/to/netcap-evaluation.md --root /tmp/mta --binary ./net`
-fetches the report's 52 PCAPs, verifies cached receipts before replay and writes
-`replay.json`. `--offline` reuses receipts without network access;
+`scripts/mta-regression.py --report /path/to/netcap-final-report.md --root /tmp/mta --binary ./net --expected-exercises 121 --expected-pcaps 143 --count-override 2016-07-07=1`
+fetches and verifies the numbered exercise inventory before replay and writes
+`replay.json`, including report/binary hashes and explicit inventory corrections.
+The final report's 148-PCAP count includes five nonexistent captures:
+[2016-07-07](https://www.malware-traffic-analysis.net/2016/07/07/index.html)
+publishes one PCAP and six emails, not six PCAPs. All other inventory rows match.
+`--offline` reuses receipts without network access;
 `--compare-only --tshark /path/to/tshark` compares HTTP/TCP TLS tuples and writes
 `reference.json`, including missing and additional observations; missing reference
-tuples make the command exit nonzero. Neither file
-is a rescore of the report's 289 questions.
+tuples make the command exit nonzero. `--audit-misses` checks the report's 25
+previously missed user facts against structured identities. These checks do not
+rescore the 289 questions or all 1,667 published facts.
 
 `NETCAP_MTA_ROOT=/tmp/mta NETCAP_TSHARK=/path/to/tshark go test -tags nodpi ./internal/collector -run '^TestMTAReportRegressions$' -count=1`
 runs checksum-pinned HTTP, TLS, SMTP, LDAP and SAMR regressions. The November 2024
 NetSupport capture uses LF headers and `194.180.191.64`; the evaluation's
 `194.180.191.164` is a typo.
+The 2018-10-01 published `cf99990b…2560` executable is recovered over SMB1;
+the final report incorrectly calls that particular transfer SMB2.
 
 ### Hunting evidence
 

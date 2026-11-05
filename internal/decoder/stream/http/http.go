@@ -108,7 +108,7 @@ func containsHTTPMethod(data []byte) bool {
 			if parts[0] == methodCONNECT {
 				_, err = http.NewRequest(parts[0], parts[1], nil)
 			} else {
-				_, err = url.ParseRequestURI(parts[1])
+				_, err = url.ParseRequestURI(escapeTargetControls(parts[1]))
 			}
 			return err == nil
 		}
