@@ -9,6 +9,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 export default defineConfig(({ mode }) => ({
+  envDir: mode === 'e2e' ? false : undefined,
   plugins: [react()],
   resolve: {
     alias: {

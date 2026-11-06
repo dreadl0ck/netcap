@@ -65,11 +65,17 @@ func (c *Collector) cleanup(force bool) {
 				}
 			}
 		}
-		c.finalizeCaptureEvidence()
 		if c.log == nil {
+			c.finalizeCaptureEvidence()
 			return
 		}
 		c.doCleanup(force)
+		c.finalizeCaptureEvidence()
+		if c.captureEvidence != nil && c.captureRunError == nil && c.captureEvidenceError == nil && c.flowExportError == nil {
+			if err := c.captureEvidence.MarkAuditOutputReady(); err != nil {
+				c.captureEvidenceError = fmt.Errorf("finalize audit output: %w", err)
+			}
+		}
 	})
 }
 
@@ -223,7 +229,9 @@ func (c *Collector) teardown() {
 	c.stats()
 
 	// Collect final performance statistics
-	c.perfTracker.SetTotalPacketsAndBytes(c.numPackets, c.totalBytesWritten)
+	c.dispatchMu.Lock()
+	c.perfTracker.SetTotalPacketsAndBytes(int64(c.admittedPackets), int64(c.admittedBytes))
+	c.dispatchMu.Unlock()
 
 	// Update decoder metrics in performance tracker
 	c.updatePerformanceTrackerWithDecoderStats()

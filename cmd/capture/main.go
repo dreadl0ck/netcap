@@ -403,6 +403,9 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 	behaviorCommand := c
 	// Populate global variables from CLI context
 	setFlagsFromContext(c)
+	if flagCPUProfile && (flagService || (flagInput == "" && flagInterface == "" && flagHTTP != "")) {
+		return errors.New("-cpuprof requires an offline or live capture; service and upload-only modes are unsupported")
+	}
 
 	// Load the approved engineering-workstation allowlist for the
 	// IsApprovedWorkstation() / InAllowlist() rule helpers. This is the central
@@ -520,31 +523,14 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		return nil
 	}
 
-	// configure CPU profiling
+	stopProfile := func() error { return nil }
 	if flagCPUProfile {
-		defer func() func() {
-			if flagCPUProfile {
-				f, errCPUProfile := os.Create("netcap-" + netcap.Version + ".cpu.profile")
-				if errCPUProfile != nil {
-					log.Fatalf("could not open cpu profile file %q, error: %s\n", "netcap.cpu.profile", errCPUProfile)
-				}
-
-				if errCPUProfile = pprof.StartCPUProfile(f); errCPUProfile != nil {
-					log.Fatalf("failed to start CPU profiling, error: %s\n", errCPUProfile)
-				}
-
-				return func() {
-					pprof.StopCPUProfile()
-
-					errCPUProfile = f.Close()
-					if errCPUProfile != nil {
-						panic("failed to write CPU profile: " + errCPUProfile.Error())
-					}
-				}
-			}
-
-			return func() {}
-		}()
+		var err error
+		stopProfile, err = startCPUProfile("netcap-" + netcap.Version + ".cpu.profile")
+		if err != nil {
+			return err
+		}
+		defer func() { runErr = errors.Join(runErr, stopProfile()) }()
 	}
 
 	// print decoders and exit
@@ -593,14 +579,14 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		fmt.Println(ansi.Red + "> nothing to do. need a pcap file with the read flag (-read), live mode and an interface (-iface), or HTTP server (-http)" + ansi.Reset)
 		fmt.Println(ansi.Green + "\nTo start in upload-only mode, simply run: net capture" + ansi.Reset)
 		fmt.Println(ansi.Green + "This will start a local HTTP server at http://localhost:8080 that accepts PCAP file uploads" + ansi.Reset)
-		os.Exit(1)
+		return errors.New("no capture input provided")
 	}
 
 	if strings.HasSuffix(flagInput, defaults.FileExtensionCompressed) || strings.HasSuffix(flagInput, defaults.FileExtension) {
 		printHeader()
 		fmt.Println(ansi.Red + "> the capture tool is used to create audit records from live traffic or a pcap dumpfile" + ansi.Reset)
 		fmt.Println(ansi.Red + "> use the dump tool to read netcap audit records" + ansi.Reset)
-		os.Exit(1)
+		return errors.New("capture cannot read netcap audit records; use dump")
 	}
 
 	// Check if input contains wildcards and expand to multiple files
@@ -610,7 +596,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		var err error
 		inputFiles, err = expandPcapFiles(flagInput)
 		if err != nil {
-			log.Fatal("failed to expand input pattern: ", err)
+			return fmt.Errorf("expand input pattern: %w", err)
 		}
 
 		// Add any additional files from shell expansion
@@ -624,7 +610,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			printHeader()
 			fmt.Println(ansi.Red + "> no valid pcap or pcapng files found to process" + ansi.Reset)
 			fmt.Println(ansi.Red + "> directories and non-pcap files were filtered out" + ansi.Reset)
-			os.Exit(1)
+			return errors.New("no valid pcap or pcapng files found")
 		}
 
 		if len(inputFiles) > 1 {
@@ -794,7 +780,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 
 		wd, err := os.Getwd()
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("get analyzer working directory: %w", err)
 		}
 
 		// get config path
@@ -811,7 +797,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 				if strings.Contains(conf.WorkDir, "~") || strings.Contains(conf.WorkDir, "$HOME") {
 					dirname, err := os.UserHomeDir()
 					if err != nil {
-						log.Fatal(err)
+						return fmt.Errorf("get analyzer home directory: %w", err)
 					}
 
 					conf.WorkDir = strings.Replace(conf.WorkDir, "~", dirname, 1)
@@ -820,14 +806,14 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 
 				err = os.Chdir(conf.WorkDir)
 				if err != nil {
-					log.Fatal(err)
+					return fmt.Errorf("change analyzer working directory: %w", err)
 				}
 			}
 
 			logPath := "/tmp/" + a + ".log"
 			logfile, err := os.Create(logPath)
 			if err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("create analyzer log: %w", err)
 			}
 			analyzerLogFileHandles = append(analyzerLogFileHandles, logfile)
 
@@ -877,7 +863,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		// switch back to current dir
 		err = os.Chdir(wd)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("restore working directory: %w", err)
 		}
 	}
 
@@ -1024,6 +1010,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		},
 	})
 	coll.Bpf = flagBPF
+	coll.SetSignalExitHook(stopProfile)
 	defer func() { runErr = errors.Join(runErr, coll.GetNetworkDetectionError()) }()
 	coll.InputFile = flagInput
 	coll.PrintTime = flagTime
@@ -1058,13 +1045,13 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		// Create alert writer
 		alertWriter, err := rules.NewFileAlertWriter(flagOutDir)
 		if err != nil {
-			log.Fatal("failed to create alert writer:", err)
+			return fmt.Errorf("create alert writer: %w", err)
 		}
 
 		// Create rules engine
 		rulesEngine, err := rules.NewEngine(flagRules, alertWriter)
 		if err != nil {
-			log.Fatal("failed to create rules engine:", err)
+			return errors.Join(fmt.Errorf("create rules engine: %w", err), alertWriter.Close())
 		}
 
 		// Set rules engine in collector
@@ -1126,7 +1113,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		select {
 		case err := <-errChan:
 			if err != nil {
-				log.Printf("Live capture error: %v\n", err)
+				return fmt.Errorf("live capture: %w", err)
 			}
 		case sig := <-sigChan:
 			fmt.Printf("\nReceived signal: %v\n", sig)
@@ -1135,7 +1122,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			// Wait for capture to stop
 			err := <-errChan
 			if err != nil {
-				log.Printf("Error during shutdown: %v\n", err)
+				return fmt.Errorf("live capture shutdown: %w", err)
 			}
 		}
 
@@ -1386,6 +1373,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 				},
 			})
 			coll.Bpf = flagBPF
+			coll.SetSignalExitHook(stopProfile)
 			coll.InputFile = inputFile
 			coll.PrintTime = flagTime
 			coll.Epochs = numEpochs
@@ -1414,7 +1402,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 				fmt.Println("Skipping to next file...")
 				continue
 			}
-			os.Exit(1)
+			return fmt.Errorf("access input %s: %w", inputFile, err)
 		}
 		if fileInfo.IsDir() {
 			fmt.Printf("Error: %s is a directory, not a file\n", inputFile)
@@ -1422,7 +1410,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 				fmt.Println("Skipping to next file...")
 				continue
 			}
-			os.Exit(1)
+			return fmt.Errorf("input %s is a directory", inputFile)
 		}
 
 		// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
@@ -1454,7 +1442,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 					fmt.Println("Skipping to next file...")
 					continue
 				}
-				log.Fatal("failed to set BPF: ", err)
+				return fmt.Errorf("collect with BPF: %w", err)
 			}
 
 			continue
@@ -1485,7 +1473,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 				continue
 			}
 			fmt.Println("failed to open file:", err)
-			os.Exit(1)
+			return fmt.Errorf("open input: %w", err)
 		}
 
 		if isPcap {
@@ -1510,7 +1498,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 					fmt.Println("Skipping to next file...")
 					continue
 				}
-				log.Fatal("failed to collect audit records from pcap file: ", err)
+				return fmt.Errorf("collect pcap: %w", err)
 			}
 		} else {
 			if err = coll.CollectPcapNG(inputFile); err != nil {
@@ -1534,7 +1522,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 					fmt.Println("Skipping to next file...")
 					continue
 				}
-				log.Fatal("failed to collect audit records from pcapng file: ", err)
+				return fmt.Errorf("collect pcapng: %w", err)
 			}
 		}
 
@@ -1593,15 +1581,15 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 	if flagMemProfile {
 		f, errProfile := os.Create("netcap-" + netcap.Version + ".mem.profile")
 		if errProfile != nil {
-			log.Fatal("failed create memory profile: ", errProfile)
+			return fmt.Errorf("create memory profile: %w", errProfile)
 		}
 
 		if errProfile = pprof.WriteHeapProfile(f); errProfile != nil {
-			log.Fatal("failed to write heap profile: ", errProfile)
+			return errors.Join(fmt.Errorf("write heap profile: %w", errProfile), f.Close())
 		}
 
 		if err := f.Close(); err != nil {
-			panic("failed to write memory profile: " + err.Error())
+			return fmt.Errorf("close memory profile: %w", err)
 		}
 	}
 

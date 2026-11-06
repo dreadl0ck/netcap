@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,7 +28,81 @@ func alertResponse(alert *types.Alert) AlertResponse {
 		response.MatchedRecordSHA256 = alert.MatchedRecordSHA256
 	}
 	response.AlertID = generateAlertID(response)
+	if metadata := offlineAlertMetadata(alert.Notes); metadata != nil {
+		response.GroupedEvaluation = metadata
+		response.AlertID = metadata.EventID
+	}
 	return response
+}
+
+func offlineAlertMetadata(notes string) *rules.OfflineAlertMetadata {
+	if len(notes) == 0 || len(notes) > 1<<20 {
+		return nil
+	}
+	var envelope struct {
+		Metadata *rules.OfflineAlertMetadata `json:"netcapOffline"`
+	}
+	if json.Unmarshal([]byte(notes), &envelope) != nil || envelope.Metadata == nil {
+		return nil
+	}
+	m := envelope.Metadata
+	id, err := hex.DecodeString(m.EventID)
+	if err != nil || len(id) != 32 || m.Version != 1 || m.RunID == "" || m.RuleID == "" || m.Count < 2 || m.First > m.Last || len(m.Group) == 0 || len(m.Group) > 8 || len(m.Contributors) > 16 {
+		return nil
+	}
+	for _, value := range m.Group {
+		if !validOfflineGroupValue(value) {
+			return nil
+		}
+	}
+	return m
+}
+
+func validOfflineGroupValue(value any) bool {
+	if _, ok := value.(string); ok {
+		return true
+	}
+	tag, ok := value.(map[string]any)
+	if !ok || len(tag) != 2 {
+		return false
+	}
+	typ, typeOK := tag["type"].(string)
+	decimal, valueOK := tag["value"].(string)
+	if !typeOK || !valueOK {
+		return false
+	}
+	bits := 0
+	unsigned := false
+	switch typ {
+	case "int":
+		bits = strconv.IntSize
+	case "uint":
+		bits, unsigned = strconv.IntSize, true
+	case "int8":
+		bits = 8
+	case "int16":
+		bits = 16
+	case "int32":
+		bits = 32
+	case "int64":
+		bits = 64
+	case "uint8":
+		bits, unsigned = 8, true
+	case "uint16":
+		bits, unsigned = 16, true
+	case "uint32":
+		bits, unsigned = 32, true
+	case "uint64":
+		bits, unsigned = 64, true
+	default:
+		return false
+	}
+	if unsigned {
+		n, err := strconv.ParseUint(decimal, 10, bits)
+		return err == nil && strconv.FormatUint(n, 10) == decimal
+	}
+	n, err := strconv.ParseInt(decimal, 10, bits)
+	return err == nil && strconv.FormatInt(n, 10) == decimal
 }
 
 func writeAlertSSE(w http.ResponseWriter, event, cursor string, value any) error {

@@ -670,6 +670,12 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Delete all existing audit records in the output directory
+		release, available := leaseOfflineMutation(session.OutputDir)
+		if !available {
+			http.Error(w, "Capture output is busy", http.StatusConflict)
+			return
+		}
+		defer release()
 		if err := s.deleteAuditRecords(session.OutputDir); err != nil {
 			log.Printf("[WebUI] Error deleting audit records for reanalysis: %v", err)
 			http.Error(w, fmt.Sprintf("Failed to delete existing data: %v", err), http.StatusInternalServerError)
@@ -749,6 +755,13 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Reset completion status and errors
+	release, available := leaseOfflineMutation(outputDir)
+	if !available {
+		s.mu.Unlock()
+		http.Error(w, "Capture output is busy", http.StatusConflict)
+		return
+	}
+	defer release()
 	delete(s.completedFiles, req.InputFile)
 	delete(s.fileErrors, req.InputFile)
 	delete(s.fileProcessingTime, req.InputFile)
@@ -826,6 +839,9 @@ func (s *Server) deleteAuditRecords(outputDir string) error {
 
 	deletedCount := 0
 	for _, entry := range entries {
+		if entry.Name() == ".offline-rule-evaluation.lock" {
+			continue
+		}
 		if entry.IsDir() {
 			// Delete subdirectories like "files", "tcp", "udp"
 			subDir := filepath.Join(outputDir, entry.Name())

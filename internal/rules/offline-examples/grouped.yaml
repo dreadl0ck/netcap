@@ -1,0 +1,30 @@
+# Explicit opt-in; this directory is not part of the live rules embed.
+# v1 expressions use exact Go scalar names, comparisons, boolean/string operators
+# and literal membership arrays. Function calls, maps and iteration are rejected.
+# group_by also requires exact Go names (SrcIP, never src_ip); aliases are rejected.
+# JSON nanoseconds/ordinals and report counters are decimal strings; integer
+# groups carry {type: int32, value: "80"}, while string groups remain strings.
+format: netcap-offline-rules/v1
+rules:
+  - id: tcp-syn-burst
+    name: Retained TCP SYN burst
+    description: Fifty retained SYN records in an inclusive ten-minute window for one source, destination and port.
+    type: TCP
+    expression: SYN && !ACK
+    severity: medium
+    enabled: true
+    threshold:
+      count: 50
+      window: 600s
+      group_by: [SrcIP, DstIP, DstPort]
+  - id: http-server-errors
+    name: Retained HTTP server error burst
+    description: Fifty retained HTTP server errors for the same source, destination and host.
+    type: HTTP
+    expression: StatusCode >= 500 && StatusCode <= 599
+    severity: medium
+    enabled: true
+    threshold:
+      count: 50
+      window: 600s
+      group_by: [SrcIP, DstIP, DstPort, Host]

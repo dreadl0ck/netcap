@@ -4,13 +4,36 @@
 
 Netcap now includes comprehensive performance tracking that measures the processing speed of various components and generates a detailed performance report for each execution.
 
+## CPU profiles and measurement boundaries
+
+`net capture -cpuprof -read sample.pcap -out ./audit -http ""` records capture
+initialization, preliminary scans, packet processing and teardown into
+`netcap-<version>.cpu.profile` in the working directory. Inspect it with
+`go tool pprof netcap-<version>.cpu.profile`. Profiling starts synchronously and stops
+exactly once on ordinary/error returns and the collector's first handled
+SIGINT/SIGTERM. Forced termination, legacy fatal library exits and analyzer/HTTP
+shutdown exits can still bypass finalization (`cmd/capture/profile.go`).
+
+| Boundary | Interpretation |
+| --- | --- |
+| Multi-file commands | One profile spans all inputs; per-file cleanup does not stop it. |
+| Service/upload-only | `-cpuprof` is rejected: the parent cannot profile helper-process captures. Use `-pprof` for service-parent diagnostics. |
+| CPU profiler ownership | A failed acquisition does not stop an existing profiler; runtime CPU profiling is process-global. |
+| Captured input | Overall input totals use admitted packets and captured bytes, excluding packet-container overhead and rejected admission. |
+| Audit output | Final audit-file sizes are separate from capture-input throughput. |
+| Duration | Collector lifetime includes preparation and teardown. Summed call durations overlap across workers and nested operations; they are not independent wall-clock costs. |
+| Writer rate | Decimal MB/s from measured writer calls includes encoding/buffering work; it is not physical disk bandwidth. |
+
+The sample below is historical output from 2025-10-25; its labels are not the
+current `internal/performance/tracker.go` output.
+
 ## What is Tracked
 
 The performance tracking system monitors:
 
 1. **Overall Statistics**
-   - Total packets processed
-   - Total bytes written
+   - Admitted capture packets
+   - Admitted captured bytes and separate audit-output totals
    - Overall throughput (packets/sec and Mbps)
    - Processing duration
 
@@ -49,11 +72,11 @@ The performance tracking system monitors:
    - Average processing time per invocation
    - Total processing time
 
-6. **Disk I/O Performance**
+6. **Writer-call Performance**
    - Number of write operations per file
    - Bytes written per file
    - Time spent writing
-   - Overall disk I/O throughput (MB/s)
+   - Writer-call rate (decimal MB/s)
 
 ## Output Location
 
@@ -189,4 +212,3 @@ Potential improvements:
 - Historical performance tracking
 - Prometheus metrics integration (already partially implemented)
 - Per-stream/connection performance metrics
-

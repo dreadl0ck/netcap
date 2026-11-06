@@ -71,6 +71,7 @@ import useSWR, { mutate, mutate as globalMutate } from 'swr';
 import { FilterExpressionInline, FilterExpressionBlock } from '../components/FilterExpressionHighlight';
 import { SyntaxHighlightedTextArea } from '../components/SyntaxHighlightedInput';
 import SearchInput from '../components/SearchInput';
+import OfflineRulesPanel from '../components/OfflineRulesPanel';
 
 export default function RulesPage() {
   const router = useNetcapRouter();
@@ -489,6 +490,7 @@ export default function RulesPage() {
   return (
     <Layout title="Detection Rules" headerAction={fileSelector}>
       <Box>
+        <OfflineRulesPanel status={status} />
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="body2" color="text.secondary">
             Total: {rules.length} rule{rules.length !== 1 ? 's' : ''} • Enabled: {rules.filter(r => r.enabled).length}

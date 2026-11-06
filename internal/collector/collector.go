@@ -120,6 +120,7 @@ type Collector struct {
 	workersWG              sync.WaitGroup
 	workersStopped         bool
 	admittedPackets        uint64
+	admittedBytes          uint64 // captured bytes, excluding wire truncation and file framing
 	start                  time.Time
 
 	// when running multiple epochs, the timestamp of the first run can be preserved.
@@ -151,6 +152,7 @@ type Collector struct {
 	logFilesClosed           atomic.Bool    // track if log files have been closed
 	signalChan               chan os.Signal // signal channel for cleanup
 	signalStop               func()         // function to stop signal handling and cleanup goroutines
+	signalExitHook           func() error
 
 	// logging
 	log           *zap.Logger // collector.log
@@ -510,6 +512,23 @@ func (c *Collector) closePacketAdmission() {
 	c.dispatchMu.Unlock()
 }
 
+// SetSignalExitHook installs command finalization before a handled signal exits.
+// Set it before starting capture. Normal cleanup does not call it (multi-input commands).
+func (c *Collector) SetSignalExitHook(hook func() error) {
+	c.signalExitHook = hook
+}
+
+func (c *Collector) finishSignalShutdown() int {
+	c.cleanup(true)
+	if c.signalExitHook != nil {
+		if err := c.signalExitHook(); err != nil {
+			log.Printf("signal shutdown finalization: %v", err)
+			return 1
+		}
+	}
+	return 0
+}
+
 // handleSignals catches signals and runs the cleanup
 // SIGQUIT is not caught, to allow debugging by producing a stack and goroutine trace.
 func (c *Collector) handleSignals() {
@@ -553,8 +572,7 @@ func (c *Collector) handleSignals() {
 
 		// Cleanup joins this handler, so it must run in a separate goroutine.
 		go func() {
-			c.cleanup(true)
-			os.Exit(0)
+			os.Exit(c.finishSignalShutdown())
 		}()
 	}()
 
@@ -711,6 +729,7 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	}
 	// Capture metadata before transferring ownership to the worker.
 	ref := p.Metadata().CaptureInfo.Timestamp
+	capturedBytes := uint64(len(p.Data()))
 	// Observe ingress serially before pooled-packet ownership moves to a worker.
 	c.flowIngressOrdinal++
 	c.observeCaptureEvidence(p)
@@ -730,6 +749,7 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 		return false
 	}
 	c.admittedPackets++
+	c.admittedBytes += capturedBytes
 	if c.behaviorEngine != nil {
 		c.behaviorPackets++
 	}

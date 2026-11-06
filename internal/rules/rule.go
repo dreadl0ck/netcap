@@ -202,6 +202,15 @@ func LoadRulesFromFile(path string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read rules file: %w", err)
 	}
+	var admission struct {
+		Format string `yaml:"format"`
+	}
+	if err := yaml.Unmarshal(data, &admission); err != nil {
+		return nil, fmt.Errorf("failed to parse rules YAML: %w", err)
+	}
+	if strings.HasPrefix(admission.Format, "netcap-offline-rules/") {
+		return nil, fmt.Errorf("offline rule packs cannot be loaded by the live engine; capture first, then use net investigate rules -read OUT -rules FILE against finalized audit output")
+	}
 
 	var config Config
 	err = yaml.Unmarshal(data, &config)

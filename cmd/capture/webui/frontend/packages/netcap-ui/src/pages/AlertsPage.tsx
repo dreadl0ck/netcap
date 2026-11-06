@@ -164,6 +164,11 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
+  const { data: offlineHistory, error: offlineHistoryError } = useSWR(
+    status && ['offline-evaluations', status.sessionId, status.activeInputFile, status.outputDir],
+    () => api.getOfflineEvaluations(status?.sessionId ? { sessionId: status.sessionId } : { inputFile: status?.activeInputFile }),
+    { refreshInterval: 10000, shouldRetryOnError: false },
+  );
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
   const { data: detectionCoverage, error: detectionCoverageError } = useSWR(['network-detection', status?.activeInputFile], () => api.getNetworkDetectionStats(status?.activeInputFile || undefined), { refreshInterval: 5000 });
 
@@ -385,6 +390,8 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
   return (
     <Layout title="Alerts" headerAction={fileSelector}>
       <Box sx={{ minWidth: 0 }}>
+        {offlineHistory?.evaluations.some(report => report.status !== 'complete') && <MuiAlert severity="warning" sx={{ mb: 2 }}>Offline evaluation history includes incomplete coverage. Review execution reports on the Detection Rules page.</MuiAlert>}
+        {offlineHistoryError && offlineHistoryError.status !== 404 && offlineHistoryError.status !== 409 && <MuiAlert severity="error" sx={{ mb: 2 }}>Offline evaluation history could not be read: {offlineHistoryError.message}</MuiAlert>}
         <Box sx={{ 
           display: 'flex', 
           flexDirection: { xs: 'column', md: 'row' },
@@ -1207,6 +1214,11 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                   </Box>
                 )}
 
+                {selectedAlert.groupedEvaluation && <Box>
+                  <Typography variant="subtitle2">Offline group evaluation</Typography>
+                  <Typography variant="body2">{selectedAlert.groupedEvaluation.count} matching records · rule {selectedAlert.groupedEvaluation.ruleId}</Typography>
+                  <Box component="pre" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12 }}>{JSON.stringify(selectedAlert.groupedEvaluation, null, 2)}</Box>
+                </Box>}
                 {selectedAlert.matchedRecord && (
                   <Box>
                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>

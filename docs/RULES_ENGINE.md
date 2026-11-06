@@ -10,6 +10,7 @@ The NETCAP Rules Engine allows you to define detection rules that automatically 
 - [Alert Structure](#alert-structure)
 - [MITRE ATT&CK Integration](#mitre-attck-integration)
 - [Example Rules](#example-rules)
+- [Offline grouped thresholds](#offline-grouped-thresholds)
 - [Best Practices](#best-practices)
 
 ## Overview
@@ -44,6 +45,78 @@ The NETCAP Rules Engine allows you to define detection rules that automatically 
 │ Alert.ncap.gz│
 └──────────────┘
 ```
+
+## Offline grouped thresholds
+
+`net investigate rules` evaluates `netcap-offline-rules/v1` packs against
+completed captures. The separate format rejects actions, sequences and distinct
+gates; the legacy capture engine rejects offline packs before processing.
+
+```sh
+net capture -read sample.pcap -out ./audit -include TCP -context=true \
+  -capture-evidence=true -dpi=false -geoDB=false -http ""
+net investigate rules -read ./audit -rules grouped.yaml
+```
+
+Save this opt-in pack as `grouped.yaml`:
+
+```yaml
+format: netcap-offline-rules/v1
+rules:
+  - id: tcp-syn-volume
+    name: Retained TCP SYN volume
+    type: TCP
+    expression: SYN && !ACK
+    severity: medium
+    enabled: true
+    threshold:
+      count: 50
+      window: 600s
+      group_by: [SrcIP, DstIP, DstPort]
+```
+
+This counts stored SYN observations, including retransmissions. It does not
+establish authentication failure or unique connection attempts.
+
+| Contract | Behavior |
+| --- | --- |
+| Admission | Matching finalized `capture-manifest.json` and `audit-output-ready.json`, one unambiguous completed scope, no scope overflow or offline BPF. Older captures without readiness require recapture; do not manufacture a marker. |
+| Types | TCP, UDP, DNS and HTTP. Missing required files produce partial coverage; corrupt input fails before publication. |
+| Grouping | 1–8 unique exact Go scalar field names; strings and integers only. Empty strings withhold observations and mark coverage partial. Numeric zero is valid. Aliases/nested fields are rejected. |
+| Expressions | Scalar comparisons, boolean operators, `contains`, `startsWith`, `endsWith`, and literal-array `in`. Calls, methods, maps, iteration, arithmetic and regex are rejected, including in disabled rules. |
+| Windows | Positive capture timestamps; observations sorted by time and canonical content. Inclusive `[t-window,t]`; the Nth match alerts and resets only that group. No wall-clock rate limiting or deduplication. |
+| Configuration | Strict single-document YAML; stable unique IDs, count 2–65,536, positive duration up to 720h (default 60s). At least one rule must be enabled. |
+| Identity | Event IDs bind canonical retained input, observation policy, normalized pack, group and crossing. Workers/source paths/run IDs remain provenance and do not change semantic identity. |
+| Output | Root `Alert.ncap.gz` plus `rule-evaluations/<id>.json`. CLI prints a JSON report; failures and partial coverage return nonzero. |
+| Evidence | Trigger JSON and digest remain unchanged. `Notes.netcapOffline` holds grouping, time bounds and up to 16 contributor references, with explicit truncation. Nanoseconds/ordinals/counters are decimal strings; integer groups contain typed decimal values. |
+| Concurrency | Evaluation, alert clearing and reanalysis share an output lease. A stale `.offline-rule-evaluation.lock` needs operator inspection; it is not automatically removed. |
+
+| Default refusal limit | Value |
+| --- | --- |
+| Rules / records | 64 / 100,000 per execution |
+| Frame / decoded bytes | 4 MiB / 256 MiB |
+| Sort data / state | 128 MiB per type / 64 MiB |
+| Groups | 4,096 per rule / 16,384 per job |
+| Pending matches | 65,536 per rule / 262,144 per job |
+| Alerts / time | 10,000 or 32 MiB / 2 minutes |
+| Group key / execution history | 1,024 bytes / 100 reports |
+
+Bounds are accounted-storage limits, not an exact process-RSS ceiling. Large
+inputs refuse rather than spill to disk. Evaluation covers retained audit
+records; previously filtered/discarded records cannot be recovered.
+
+Publication is durable per alert member, not transactional across the job.
+`publish-failed` reports record the committed prefix; `committing` after an
+interruption means unknown publication progress. Inspect the report and alert
+history before retrying. Explicit reruns append another evaluation.
+
+The WebUI Rules page accepts a YAML upload, validates a read-only preview and
+executes against the selected completed capture. Alerts expose grouped evidence
+and incomplete-history warnings. Routes: `GET /api/rules/offline/packs`,
+`POST /api/rules/offline/validate`, `POST /api/rules/offline/execute`, and
+`GET /api/rules/offline/evaluations`. POST bodies contain `yaml` plus an optional
+local `inputFile` or service `sessionId`; unknown selectors never fall back to a
+different capture. Capability absence disables the panel on older backends.
 
 ## Rule Configuration
 
@@ -113,9 +186,11 @@ Whether the rule is active. Disabled rules are not evaluated.
 
 #### `threshold` / `threshold_window` (optional)
 Fire only after `threshold` matches occur within `threshold_window` seconds
-(default window: 60). Time windows are measured using the **record's own
-timestamp**, so they behave correctly on offline PCAP replay, not just live
-capture.
+(default window: 60). These legacy counters are shared by rule name, without
+entity grouping. They use record timestamps when available but retain
+arrival-order and wall-clock suppression behavior. Use
+[offline grouped thresholds](#offline-grouped-thresholds) for deterministic,
+entity-grouped evaluation of finalized retained records.
 
 #### `distinct_field` / `distinct_threshold` (optional)
 Cardinality-based (fan-out) detection. Instead of counting raw matches, the
@@ -618,4 +693,3 @@ rules:
 - See [FILTERING.md](FILTERING.md) for expression syntax details
 - Check the [expr-lang documentation](https://expr-lang.org/docs/language-definition)
 - Explore MITRE ATT&CK framework at https://attack.mitre.org/
-

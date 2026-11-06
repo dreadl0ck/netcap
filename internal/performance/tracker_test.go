@@ -129,9 +129,34 @@ func TestTrackerReportWithFilterAndRules(t *testing.T) {
 		t.Error("report should show 10 alerts generated")
 	}
 
-	// Verify processing overhead is calculated
-	if !strings.Contains(reportStr, "Processing Overhead:") {
-		t.Error("report should contain processing overhead calculation")
+	if !strings.Contains(reportStr, "Summed Call Time / Wall Duration:") || strings.Contains(reportStr, "Processing Overhead:") {
+		t.Error("report must distinguish summed elapsed call time from wall time")
+	}
+}
+
+func TestTrackerReportUnits(t *testing.T) {
+	tracker := NewTracker()
+	tracker.SetTotalPacketsAndBytes(7, 250)
+	tracker.RecordDiskWrite("audit.ncap", 2*time.Second, 4_000_000)
+	tracker.RecordFilterEvaluation(3*time.Second, false)
+	tracker.RecordRulesEvaluation(3*time.Second, 0)
+	path := filepath.Join(t.TempDir(), "performance.log")
+	if err := tracker.WriteReport(path); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"Wall Duration:", "concurrent and nested calls overlap", "Total Packets:        7", "(250 bytes)", "captured packet bytes", "2.00 MB/s (bytes / summed write durations)", "overlapping calls may exceed 100%"} {
+		if !strings.Contains(string(b), want) {
+			t.Errorf("missing %q in report:\n%s", want, b)
+		}
+	}
+	for _, bad := range []string{"Processing Overhead:", "16.00 MB/s", "NaN", "+Inf"} {
+		if strings.Contains(string(b), bad) {
+			t.Errorf("incorrect %q in report", bad)
+		}
 	}
 }
 

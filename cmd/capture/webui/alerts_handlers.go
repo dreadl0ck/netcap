@@ -34,6 +34,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -64,6 +65,8 @@ type AlertResponse struct {
 	TimestampBasis      string   `json:"timestampBasis,omitempty"`
 	RuleDigest          string   `json:"ruleDigest,omitempty"`
 	MatchedRecordSHA256 string   `json:"matchedRecordSHA256,omitempty"`
+
+	GroupedEvaluation *rules.OfflineAlertMetadata `json:"groupedEvaluation,omitempty"`
 }
 
 // GroupedAlert represents a deduplicated/grouped alert
@@ -177,11 +180,7 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 	alerts, err := s.readAlertsFromFile(alertsFile)
 	if err != nil {
 		log.Printf("[WebUI] Failed to read alerts: %v", err)
-		// Return empty list if file doesn't exist or can't be read
-		RespondJSON(w, http.StatusOK, AlertsResponse{
-			Alerts:     []AlertResponse{},
-			TotalCount: 0,
-		})
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{"error": "Failed to read alerts"})
 		return
 	}
 
@@ -311,14 +310,7 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 	alerts, err := s.readAlertsFromFile(alertsFile)
 	if err != nil {
 		log.Printf("[WebUI] Failed to read alerts: %v", err)
-		RespondJSON(w, http.StatusOK, map[string]any{
-			"totalAlerts":    0,
-			"groupCount":     0,
-			"bySeverity":     map[string]int{},
-			"byRule":         map[string]int{},
-			"recentAlerts":   []AlertResponse{},
-			"criticalAlerts": 0,
-		})
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{"error": "Failed to read alerts"})
 		return
 	}
 
@@ -381,6 +373,12 @@ func (s *Server) handleClearAlerts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Delete the alerts file
+	release, available := leaseOfflineMutation(outDir)
+	if !available {
+		RespondJSON(w, http.StatusConflict, map[string]any{"error": "Capture output is busy"})
+		return
+	}
+	defer release()
 	alertsFile := filepath.Join(outDir, "Alert.ncap.gz")
 	if err := os.Remove(alertsFile); err != nil && !os.IsNotExist(err) {
 		log.Printf("[WebUI] Failed to delete alerts file: %v", err)
@@ -452,12 +450,7 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 	alerts, err := s.readAlertsFromFile(alertsFile)
 	if err != nil {
 		log.Printf("[WebUI] Failed to read alerts: %v", err)
-		// Return empty list if file doesn't exist or can't be read
-		RespondJSON(w, http.StatusOK, GroupedAlertsResponse{
-			Groups:     []GroupedAlert{},
-			TotalCount: 0,
-			GroupCount: 0,
-		})
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{"error": "Failed to read alerts"})
 		return
 	}
 
@@ -709,6 +702,9 @@ func contains(slice []string, item string) bool {
 
 // generateAlertID generates a unique identifier for an alert
 func generateAlertID(alert AlertResponse) string {
+	if alert.GroupedEvaluation != nil {
+		return alert.GroupedEvaluation.EventID
+	}
 	id := fmt.Sprintf("%s-%d-%s-%s", alert.RuleName, alert.Timestamp, alert.SrcIP, alert.DstIP)
 	if alert.RuleDigest != "" {
 		hash := sha256.Sum256([]byte(alert.RuleDigest + "/" + alert.TimestampNs + "/" + alert.DetectedAtNs + "/" + alert.MatchedRecordSHA256))

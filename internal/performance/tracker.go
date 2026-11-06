@@ -350,7 +350,8 @@ func (t *Tracker) WriteReport(filename string) error {
 	fmt.Fprintf(f, "NETCAP PERFORMANCE REPORT\n")
 	fmt.Fprintf(f, "================================================================================\n")
 	fmt.Fprintf(f, "Generated: %s\n", time.Now().Format(time.RFC3339))
-	fmt.Fprintf(f, "Duration: %v\n", duration)
+	fmt.Fprintf(f, "Wall Duration: %v\n", duration)
+	fmt.Fprintln(f, "Instrumented durations are summed elapsed call times; concurrent and nested calls overlap.")
 	fmt.Fprintf(f, "\n")
 
 	// Overall statistics
@@ -358,6 +359,7 @@ func (t *Tracker) WriteReport(filename string) error {
 	fmt.Fprintf(f, "--------------------------------------------------------------------------------\n")
 	fmt.Fprintf(f, "Total Packets:        %d\n", t.TotalPackets)
 	fmt.Fprintf(f, "Total Bytes:          %s (%d bytes)\n", humanize.Bytes(uint64(t.TotalBytes)), t.TotalBytes)
+	fmt.Fprintln(f, "Input basis: admitted packets and captured packet bytes (excluding file framing and uncaptured wire bytes).")
 
 	if duration.Seconds() > 0 {
 		packetsPerSec := float64(t.TotalPackets) / duration.Seconds()
@@ -523,10 +525,9 @@ func (t *Tracker) WriteReport(filename string) error {
 			fmt.Fprintf(f, "Evaluation Rate:      %.2f evals/sec\n", 1e9/float64(avgFilter.Nanoseconds()))
 		}
 
-		// Calculate overhead percentage if we have packet count
-		if t.TotalPackets > 0 {
+		if duration > 0 {
 			overheadPct := (float64(t.FilterEvaluationsNs) / float64(duration.Nanoseconds())) * 100.0
-			fmt.Fprintf(f, "Processing Overhead:  %.2f%%\n", overheadPct)
+			fmt.Fprintf(f, "Summed Call Time / Wall Duration: %.2f%% (overlapping calls may exceed 100%%)\n", overheadPct)
 		}
 		fmt.Fprintf(f, "\n")
 	}
@@ -545,10 +546,9 @@ func (t *Tracker) WriteReport(filename string) error {
 			fmt.Fprintf(f, "Evaluation Rate:      %.2f evals/sec\n", 1e9/float64(avgRules.Nanoseconds()))
 		}
 
-		// Calculate overhead percentage if we have packet count
-		if t.TotalPackets > 0 {
+		if duration > 0 {
 			overheadPct := (float64(t.RulesEvaluationsNs) / float64(duration.Nanoseconds())) * 100.0
-			fmt.Fprintf(f, "Processing Overhead:  %.2f%%\n", overheadPct)
+			fmt.Fprintf(f, "Summed Call Time / Wall Duration: %.2f%% (overlapping calls may exceed 100%%)\n", overheadPct)
 		}
 		fmt.Fprintf(f, "\n")
 	}
@@ -599,8 +599,8 @@ func (t *Tracker) WriteReport(filename string) error {
 		fmt.Fprintf(f, "%-40s %10d %15s %15v\n", "TOTAL", totalWrites, humanize.Bytes(uint64(totalBytes)), time.Duration(totalTime))
 
 		if totalBytes > 0 && totalTime > 0 {
-			mbps := (float64(totalBytes) * 8) / (float64(totalTime) / 1e9) / 1e6
-			fmt.Fprintf(f, "\nDisk I/O Throughput:  %.2f MB/s\n", mbps)
+			mbps := float64(totalBytes) / (float64(totalTime) / 1e9) / 1e6
+			fmt.Fprintf(f, "\nDisk I/O Throughput:  %.2f MB/s (bytes / summed write durations)\n", mbps)
 		}
 		fmt.Fprintf(f, "\n")
 	}

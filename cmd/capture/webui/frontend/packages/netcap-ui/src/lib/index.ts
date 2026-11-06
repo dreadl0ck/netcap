@@ -27,6 +27,7 @@ export {
 } from './api';
 
 export type { NetcapApiClient } from './api';
+export type { OfflineSelection, OfflineRule, OfflinePack, OfflineValidation, OfflineReport, OfflineExecution, OfflineAlertMetadata } from './api';
 
 export {
   escapeHTML,

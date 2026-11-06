@@ -1080,6 +1080,11 @@ func (s *Server) handleExecuteAllRules(w http.ResponseWriter, r *http.Request) {
 
 // executeRuleOnCapture executes a single rule against all relevant audit records in the output directory
 func (s *Server) executeRuleOnCapture(rule *rules.Rule, outDir string) (alertsCount int, recordsRead int, err error) {
+	release, available := leaseOfflineMutation(outDir)
+	if !available {
+		return 0, 0, fmt.Errorf("capture output is busy")
+	}
+	defer release()
 	// Create a temporary config with just this rule
 	tempConfig := &rules.Config{
 		Rules: []*rules.Rule{rule},

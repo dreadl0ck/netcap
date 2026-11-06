@@ -163,6 +163,10 @@ function createNoOpApi(): NetcapApiClient {
     getProtocolHierarchy: noOpReturn({ links: [], nodes: [], stats: {} }),
     reportIssue: noOpReturn({ success: false, issueId: '', message: '', remaining: 0 }),
     getRules: noOpReturn({ rules: [] }),
+    getOfflinePacks: noOp,
+    validateOfflinePack: noOp,
+    executeOfflinePack: noOp,
+    getOfflineEvaluations: noOp,
     getRule: noOp as any,
     createRule: noOp as any,
     updateRule: noOpReturn({ success: false, message: '' }),
@@ -289,6 +293,40 @@ export interface StatusResponse {
   isServiceMode?: boolean;  // Optional, indicates service mode
   isLiveMode: boolean;  // Whether in live capture mode
   logoSubText?: string;  // Optional, custom label shown below NETCAP logo
+}
+
+export interface OfflineSelection { inputFile?: string; sessionId?: string }
+export interface OfflineRule {
+  id: string; name: string; type: 'TCP' | 'UDP' | 'HTTP' | 'DNS'; expression: string;
+  enabled: boolean; severity: string; threshold: { count: number; window: string; groupBy: string[] };
+}
+export interface OfflinePack { format: 'netcap-offline-rules/v1'; rules: OfflineRule[] }
+export interface OfflineValidation {
+  valid: boolean; errors: { field: string; message: string }[]; pack?: OfflinePack;
+}
+export interface OfflineReport {
+  status: string;
+  version?: number; id?: string; runId?: string; error?: string; startedAt?: string; elapsed?: string;
+  packDigest?: string; configDigest?: string; inputCanonicalDigest?: string; observationPolicyDigest?: string;
+  files?: { name: string; sha256: string; bytes: string }[];
+  types?: { type: string; records: string; canonicalBytes: string; missing: boolean; unknownScopes?: string }[];
+  rules?: { id: string; type: string; digest: string; enabled: boolean; matches: string; missingGroups: string; alerts: string }[];
+  limits?: Record<string, number>; limitations?: string[]; plannedAlerts?: string; committedAlerts?: string;
+}
+export interface OfflineAlertMetadata {
+  version: 1; eventId: string; runId: string; ruleId: string; ruleDigest: string;
+  observationPolicyDigest?: string;
+  inputCanonicalDigest: string; group: Record<string, string | { type: string; value: string }>; count: number; first: string; last: string; windowNs: string;
+  contributors: { file: string; ordinal: string; sha256: string; fileSHA256?: string; timestamp: string }[]; contributorsTruncated: boolean;
+}
+export interface OfflineExecution { report?: OfflineReport | null; error?: string }
+export class OfflineApiError extends Error {
+  constructor(message: string, public status: number) { super(message); }
+}
+
+async function offlineResponse<T>(res: Response): Promise<T> {
+  if (!res.ok) throw new OfflineApiError(await describeFailure(res, 'Offline rules request failed'), res.status);
+  return res.json();
 }
 
 export interface UploadResponse {
@@ -1054,6 +1092,7 @@ export interface Alert {
   resolved: boolean;
   resolvedAt?: number;
   alertId: string;
+  groupedEvaluation?: OfflineAlertMetadata;
 }
 
 export interface AlertsResponse {
@@ -1995,6 +2034,30 @@ function createApiWithBase(apiBase: string) {
   },
 
   // Rules API
+  async getOfflinePacks(): Promise<{ format: string; packs: { name: string; yaml: string }[]; upload: boolean; limits: Record<string, number> }> {
+    return offlineResponse(await fetch(`${apiBase}/rules/offline/packs`));
+  },
+  async validateOfflinePack(yaml: string): Promise<OfflineValidation> {
+    const res = await fetch(`${apiBase}/rules/offline/validate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ yaml }),
+    });
+    if (res.status === 400) return res.json();
+    return offlineResponse(res);
+  },
+  async executeOfflinePack(yaml: string, selection: OfflineSelection, signal?: AbortSignal): Promise<OfflineExecution> {
+    const res = await fetch(`${apiBase}/rules/offline/execute`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ yaml, ...selection }), signal,
+    });
+    if (res.status === 422) return res.json();
+    return offlineResponse(res);
+  },
+  async getOfflineEvaluations(selection: OfflineSelection): Promise<{ evaluations: OfflineReport[] }> {
+    const query = new URLSearchParams();
+    if (selection.inputFile) query.set('inputFile', selection.inputFile);
+    if (selection.sessionId) query.set('sessionId', selection.sessionId);
+    return offlineResponse(await fetch(`${apiBase}/rules/offline/evaluations?${query}`));
+  },
   async getRules(): Promise<RulesResponse> {
     const res = await fetch(`${apiBase}/rules`);
     if (!res.ok) throw new Error('Failed to fetch rules');

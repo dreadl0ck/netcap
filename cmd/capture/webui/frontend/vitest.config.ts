@@ -4,7 +4,7 @@
  * License: GNU General Public License v3.0
  */
 
-import { defineConfig, mergeConfig } from 'vitest/config'
+import { configDefaults, defineConfig, mergeConfig } from 'vitest/config'
 import viteConfig from './vite.config'
 
 export default mergeConfig(
@@ -15,6 +15,7 @@ export default mergeConfig(
       environment: 'jsdom',
       setupFiles: ['./vitest.setup.ts'],
       include: ['**/__tests__/**/*.{ts,tsx}', '**/*.{spec,test}.{ts,tsx}'],
+      exclude: [...configDefaults.exclude, 'e2e/**'],
       coverage: {
         include: ['src/**/*.{ts,tsx}'],
         exclude: ['src/**/*.d.ts', 'src/**/__tests__/**'],

@@ -25,7 +25,7 @@ import (
 
 func GetCommand() *cli.Command {
 	command := &cli.Command{Name: "investigate", Usage: "bounded flow queries and verifiable packet evidence", Commands: []*cli.Command{
-		protocolServerCommand(), protocolAccessCommand(), protocolCorpusCommand(), protocolTriageCommand(), protocolCampaignCommand(), protocolGenerateCommand(), protocolReproduceCommand(), protocolBoundaryCommand(),
+		offlineRulesCommand(), protocolServerCommand(), protocolAccessCommand(), protocolCorpusCommand(), protocolTriageCommand(), protocolCampaignCommand(), protocolGenerateCommand(), protocolReproduceCommand(), protocolBoundaryCommand(),
 		{Name: "protocol-fields", Usage: "validate a framing/field hypothesis and optionally compare directional streams", Flags: []cli.Flag{
 			&cli.StringFlag{Name: "spec", Required: true, Usage: "versioned JSON grammar"},
 			&cli.StringFlag{Name: "read", Required: true, Usage: "contiguous directional byte stream"},
