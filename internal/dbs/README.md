@@ -28,26 +28,27 @@ legacy `/dbs/*` and `/dbs/v2/*` metadata and archives return HTTP 410.
 | Item | Value |
 | --- | --- |
 | Dokploy application | `ZrG0UFSYLc1AvaAu1nUE4`, swarm service `netcap-dbs-suxwnk` |
-| Runtime | Static `cmd/dbs-server` binary at `/srv/netcap-dbs-v3-runtime/netcap-dbs-server`, mounted under `/opt/netcap-dbs-v3`; Dokploy command overrides the legacy image's executable |
-| Binary SHA-256 | `cbb042fc64b17c0fe5baa8f0d2f5ea42db570d9fd61c57553b4fefe0123eb82d` |
-| Registry | `/srv/netcap-dbs-v3-runtime/approvals.json`, independently pinned in Dokploy args |
-| Registry SHA-256 | `b2a0f98dcd35e27f5cc8bfebf29db5896c07b955de5d7ba36b47143ccc78375d` |
-| Archive SHA-256 | `0834d6ace32ef46501ded18000bd811284ac8f8a339c7a85e9198a214f933e2c` |
+| Runtime | Static `cmd/dbs-server` binary at `/srv/netcap-dbs-v3-runtime/netcap-dbs-server-schema2`, mounted under `/opt/netcap-dbs-v3`; Dokploy command overrides the legacy image's executable |
+| Binary SHA-256 | `8225180f6f6e0470c675f2d9afa98b28f3ef97a62b47007a5c301836557da79b` |
+| Registry | `/srv/netcap-dbs-v3-runtime/approvals-schema2.json`, independently pinned in Dokploy args and bundled in the v0.14 client |
+| Registry SHA-256 | `0a71e6b0bb4f4c3513dca4051e54b1b457d480b2e54b857ffa9568952dccf441` |
+| Archive SHA-256 | `1e2cd4e3f605d0044c8d6b45f4da9a7c8bd3ef3eef68c996ba91c3df26759298` |
 | Contents | NVD (420,062 records; 85,687 CVE-2026 IDs; 25 annual feeds, 2002–2026), DB-IP City/ASN, IANA, uap-core; zero Exploit-DB records |
-| Retained acquisition | `/srv/netcap-dbs-v3-candidates/candidate-1563188265`; published objects under `/srv/netcap-dbs-server/v3` |
+| Retained acquisition | `/srv/netcap-dbs-v3-candidates/candidate-1306206749`; published objects under `/srv/netcap-dbs-schema2/v3` |
 | Automation | Automatic deployment and nightly rebuilding disabled; fresh snapshots require review and registry rotation |
 
 The full public archive and the current Go client's installation were verified;
-SQLite integrity and foreign-key checks passed. Released v1/v2 clients still
-need a v3-capable release and trust provisioning. HASSH was skipped because its
-configured source is the retired repository. Package the mounted runtime into a
+SQLite integrity and foreign-key checks passed. Clients before v0.14 must
+upgrade. The retired repository is no longer a generator source; HASSH requires
+a separately verified replacement. Package the mounted runtime into a
 versioned image before restoring automatic deployment; removing the command
 override would run the old publisher.
 
 ## Layout 3 contract
 
-`V3Layout=3` and `VulnDBSchema=1` are defined in `v3_policy.go`. No production
-snapshot approvals ship with this implementation. A candidate is not a grant.
+`V3Layout=3` and `VulnDBSchema=vulndb.SchemaVersion` (2) are defined in
+`v3_policy.go`. Client community approvals are pinned in
+`community_registry_generated.go`. A generated candidate is not an approval.
 
 | Surface | Contract |
 | --- | --- |
@@ -62,7 +63,7 @@ snapshot approvals ship with this implementation. A candidate is not a grant.
 | Legacy | All v1/v2 metadata and download bodies return 410 once v3 is ready, otherwise 503. Files on disk are not pruned or repacked. |
 | Client | `DownloadDBsWithProgress` uses bundled community trust or an explicit operator registry/path pin, verifies into a new managed directory before switching `dbs`, and retains ambient data only in an inactive backup. `ManagedReleaseMetadata(dir)` uses the same trust gate for `dbs/.release.json`; the old root `.db-version` is not authoritative. |
 
-SQLite keeps schema 1 and its `built_at` key, with an empty value rather than
+SQLite uses schema 2 and keeps its `built_at` key, with an empty value rather than
 inventing a reproducible timestamp. Release metadata supplies `created_at`;
 `input_sha256` binds the exact NVD feed inventory. Identical inputs rebuild to
 identical SQLite bytes (`TestV3SQLiteRebuildReproducesReviewedBytes`).
