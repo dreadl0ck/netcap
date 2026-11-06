@@ -1,0 +1,81 @@
+name: Qualify packaged release runtimes
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        required: true
+        type: string
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  runtime:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: macos-15, target: darwin-arm64, variant: nodpi-}
+          - {os: macos-26, target: darwin-arm64, variant: ''}
+          - {os: windows-latest, target: windows-amd64, variant: nodpi-}
+    runs-on: ${{ matrix.os }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.tag }}
+      TARGET: ${{ matrix.target }}
+      VARIANT: ${{ matrix.variant }}
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      HOMEBREW_NO_INSTALL_CLEANUP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download and verify exact release assets
+        run: |
+          python -c 'import os,re;assert re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+",os.environ["RELEASE_TAG"])'
+          asset="netcap-${VARIANT}${RELEASE_TAG}-${TARGET}.tar.gz"
+          gh release download "$RELEASE_TAG" --pattern "$asset" --pattern checksums.txt --pattern netcap.rb --dir "$RUNNER_TEMP/release"
+          python - <<'PY'
+          import hashlib,os,pathlib
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])/'release'
+          checks=dict((name,digest) for digest,name in (line.split() for line in (root/'checksums.txt').read_text().splitlines()))
+          for file in root.iterdir():
+              if file.name=='checksums.txt':continue
+              assert hashlib.sha256(file.read_bytes()).hexdigest()==checks[file.name]
+          PY
+      - name: Run the packaged client without workstation dependencies
+        run: |
+          python - <<'PY'
+          import os,pathlib,struct,tarfile
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])
+          archive=next((root/'release').glob('*.tar.gz'))
+          with tarfile.open(archive) as tar:tar.extractall(root/'extracted',filter='data')
+          binary=next((root/'extracted').rglob('net.exe' if os.name=='nt' else 'net'))
+          frame=bytes.fromhex('ffffffffffff00112233445508060001080006040001001122334455c0000201000000000000c0000202')
+          (root/'smoke.pcap').write_bytes(struct.pack('<IHHIIII',0xa1b2c3d4,2,4,0,0,65535,1)+struct.pack('<IIII',1,0,len(frame),len(frame))+frame)
+          PY
+          NETCAP_BINARY=$(python -c 'import os,pathlib;print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"extracted").rglob("net.exe" if os.name=="nt" else "net")).as_posix())')
+          "$NETCAP_BINARY" --version
+          export NC_CONFIG_ROOT="$RUNNER_TEMP/netcap-dbs"
+          "$NETCAP_BINARY" util -download-dbs
+          "$NETCAP_BINARY" util -update-dbs
+          "$NETCAP_BINARY" capture -read "$RUNNER_TEMP/smoke.pcap" -out "$RUNNER_TEMP/audits" -quiet -dpi=false -geoDB=false
+          "$NETCAP_BINARY" triage -read "$RUNNER_TEMP/audits" -json
+      - name: Install the exact generated Homebrew formula from its verified cache
+        if: matrix.os == 'macos-26'
+        run: |
+          tap="$(brew --repository)/Library/Taps/qualification/homebrew-netcap"
+          mkdir -p "$tap/Formula"
+          cp "$RUNNER_TEMP/release/netcap.rb" "$tap/Formula/netcap.rb"
+          git -C "$tap" init
+          cache=$(brew --cache qualification/netcap/netcap)
+          python - "$cache" <<'PY'
+          import os,pathlib,shutil,sys
+          source=next((pathlib.Path(os.environ['RUNNER_TEMP'])/'release').glob('*.tar.gz'))
+          target=pathlib.Path(sys.argv[1]);target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(source,target)
+          PY
+          brew install qualification/netcap/netcap
+          "$(brew --prefix qualification/netcap/netcap)/bin/net" --version
+          NC_CONFIG_ROOT="$RUNNER_TEMP/netcap-dbs" "$(brew --prefix qualification/netcap/netcap)/bin/net" util -update-dbs
