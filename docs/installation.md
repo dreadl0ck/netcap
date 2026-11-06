@@ -23,9 +23,14 @@ ordering using temporary files and bounded-memory sorting; capture files retain
 decoder emission order.
 
 The default per-decoder buffer is 64 KiB (`--membuf-size` overrides it).
-Missing optional `nmap-service-probes` no longer prevents Service startup:
-built-in parsers recognize SSH, HTTP, SMTP and FTP greetings. External probes
-remain optional; `--download-dbs` does not install Nmap's catalogue.
+Built-in service parsers recognize SSH, HTTP, SMTP and FTP greetings. The Nmap
+catalogue reader is retired; `--download-dbs` never installs that catalogue.
+
+Install enrichment data with `net util -download-dbs` and refresh with
+`net util -update-dbs`. Signed clients verify the publisher root and expiring
+release metadata; no secret or operator registry is needed for community data.
+The default directory is `~/.config/netcap/dbs`; `NC_CONFIG_ROOT` changes its
+parent. See [Resolvers](resolvers.md) for the file inventory and retired features.
 
 Windows identity extraction covers visible Kerberos principals, NTLM Type 3
 identities, LDAP directory attributes, SAMR query classes 1/6/7/8/21, and LSA
@@ -53,10 +58,16 @@ asymmetric-MAC flow totals, SMTP AUTH and banner-only POP3.
 
 ## Go Get
 
-Installation via go get:
+`go get` manages dependencies; it does not install current Go executables.
+For source installation, clone the tagged repository, build the embedded WebUI,
+then compile with the installed native dependencies:
 
 ```text
-$ go get -u github.com/dreadl0ck/netcap/...
+$ git clone --branch v0.15.0 https://github.com/dreadl0ck/netcap.git
+$ cd netcap/cmd/capture/webui/frontend
+$ pnpm install --frozen-lockfile && pnpm build
+$ cd ../../../..
+$ GOWORK=off go build -tags nodpi,noyara -o net ./cmd/net
 ```
 
 ## Manual Build

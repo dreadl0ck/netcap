@@ -2,12 +2,24 @@
 
 ## Client installation
 
+Current clients use `/dbs/signed/v1/latest`: Ed25519 signatures cover opaque
+payload bytes binding archive hash/size, layout/schema, source policy and exact
+review records. `signing_root.go` pins the offline root. Root-signed publisher
+certificates last at most 90 days; production releases last 72 hours. Downloads
+reject expiry, future issue times, lower key epochs/sequences and same-sequence
+equivocation. Verified installed data remains usable offline after expiry.
+Explicit registry overrides retain the v3 protocol for private publishers.
+
+`/dbs/v3/` stays frozen at the v0.14.0 registry/archive below. `/ready` checks both
+channels; `/freshness` also alerts with less than 24 hours left on an update or
+less than 14 days on its signing key/source policy. Serving needs no private key.
+
 ```sh
 net util -download-dbs
 net util -update-dbs
 ```
 
-The client bundles the reviewed community registry independently of downloaded
+The client embeds the community signing root independently of downloaded
 archives. No credentials or trust environment variables are needed for the
 community release. `NC_CONFIG_ROOT` changes the installation root; the default
 is `~/.config/netcap`. A repeated download verifies the installed files and skips
@@ -17,8 +29,40 @@ Private publishers override both `NC_DBS_APPROVALS` and
 `NC_DBS_APPROVALS_SHA256`; partial or invalid overrides fail rather than falling
 back. Publishing and serving still require an explicit operator registry.
 `scripts/import-db-trust.py <registry> <independent-sha256>` updates the bundled
-registry for a reviewed client release. This is an exact-snapshot trust policy:
-a changed community registry requires a client release or explicit override.
+registry for a reviewed compatibility release. Signed community updates use
+publisher-side source policies instead of requiring a binary per snapshot.
+
+## Signed publisher operations
+
+| Surface | Configuration |
+| --- | --- |
+| Serving image | `docker/dbs-server/Dockerfile.publisher`; non-root, digest-pinned; data mounts only |
+| Public signed objects | `/srv/netcap-dbs-signed/v3`; `signed-latest.json` is the atomic pointer |
+| Signer | Host `/usr/local/bin/netcap-dbs-server`; `/root/netcap-db-publisher/publisher.env` selects policy, certificate and private signer |
+| Offline root | Operator workstation `../server/secrets/netcap-db-signing/root.key`; never deployed or committed |
+| Schedule | `../server/schedules/netcap-db-refresh.{service,timer}`; daily 00:30 UTC plus up to 15 minutes jitter |
+| Refresh | `scripts/refresh-databases.sh`; `flock` prevents overlap; failures retain the previous signed pointer and failed acquisition |
+| Policy | Explicit source origins, transformations, filenames, pinned static revisions, full licences/notices and 60-day expiry; complete nonempty 2002–current-year feeds; minimum 400,000 CVEs and no decrease exceeding 5% |
+
+`scripts/prepare-db-policy.py` prepares operator-reviewable policy from existing
+rights records and pinned BSD HASSH upstream. Independently pin its SHA-256 in
+`publisher.env`. New sources, transformations or terms require policy review.
+`-mode approve` emits automation-labelled exact-output records after policy/data
+validation; `-mode sign` verifies the complete archive before publishing. Keep
+policy and signer outside serving mounts; review renewal before policy expiry.
+
+Rotate on the workstation: `netcap-dbs-server -mode rotate-key -key
+/offline/root.key -output /new/key-directory -epoch N`, with N greater than the
+current epoch. Transfer only `signer.key` and `signer.json`, update host paths,
+run the refresh service and verify a download. A new root-authorized epoch can
+recover from a compromised signer's inflated sequence. Never replace the root
+based solely on downloaded metadata.
+
+Rollback republishes a previous archive with a new higher sequence; replaying an
+old signed pointer is rejected. Stage both channels and a full download on a
+loopback-only port before an image cutover. Retain the previous image digest,
+mounts, registry pin and args for serving-image rollback. The frozen v0.14 channel
+is independent of signed publication.
 
 ## Production deployment
 
@@ -28,21 +72,19 @@ legacy `/dbs/*` and `/dbs/v2/*` metadata and archives return HTTP 410.
 | Item | Value |
 | --- | --- |
 | Dokploy application | `ZrG0UFSYLc1AvaAu1nUE4`, swarm service `netcap-dbs-suxwnk` |
-| Runtime | Static `cmd/dbs-server` binary at `/srv/netcap-dbs-v3-runtime/netcap-dbs-server-schema2`, mounted under `/opt/netcap-dbs-v3`; Dokploy command overrides the legacy image's executable |
-| Binary SHA-256 | `8225180f6f6e0470c675f2d9afa98b28f3ef97a62b47007a5c301836557da79b` |
-| Registry | `/srv/netcap-dbs-v3-runtime/approvals-schema2.json`, independently pinned in Dokploy args and bundled in the v0.14 client |
+| Runtime | Dedicated non-root `netcap-dbs-server` image; `/netcap-dbs-server` is part of the image, not a bind mount |
+| Compatibility registry | `/srv/netcap-dbs-v3-runtime/approvals-schema2.json`, mounted at `/run/netcap-trust/approvals.json` and pinned in Dokploy args |
 | Registry SHA-256 | `0a71e6b0bb4f4c3513dca4051e54b1b457d480b2e54b857ffa9568952dccf441` |
 | Archive SHA-256 | `1e2cd4e3f605d0044c8d6b45f4da9a7c8bd3ef3eef68c996ba91c3df26759298` |
 | Contents | NVD (420,062 records; 85,687 CVE-2026 IDs; 25 annual feeds, 2002–2026), DB-IP City/ASN, IANA, uap-core; zero Exploit-DB records |
 | Retained acquisition | `/srv/netcap-dbs-v3-candidates/candidate-1306206749`; published objects under `/srv/netcap-dbs-schema2/v3` |
-| Automation | Automatic deployment and nightly rebuilding disabled; fresh snapshots require review and registry rotation |
+| Automation | Frozen v3 compatibility archive; systemd refreshes the separate signed channel daily |
 
 The full public archive and the current Go client's installation were verified;
 SQLite integrity and foreign-key checks passed. Clients before v0.14 must
 upgrade. The retired repository is no longer a generator source; HASSH requires
-a separately verified replacement. Package the mounted runtime into a
-versioned image before restoring automatic deployment; removing the command
-override would run the old publisher.
+a separately verified replacement in this compatibility snapshot. The signed
+channel restores HASSH from a pinned BSD-licensed upstream.
 
 ## Layout 3 contract
 

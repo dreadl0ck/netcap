@@ -9,7 +9,7 @@ DB-IP Lite geolocation data
 IP Geolocation by DB-IP (https://db-ip.com/), copyright DB-IP / Eris Networks
 S.A.S., licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
 Includes GeoNames data (https://www.geonames.org/) under CC BY.
-Community layout-2 database archives include unmodified DB-IP Lite City and
+Community layout-3 database archives include unmodified DB-IP Lite City and
 ASN MMDBs with normalized filenames; geoip-sources.json records their releases
 and hashes. Redistribution requires attribution and a license link. Web
 applications using the data must link to DB-IP on pages showing results.
@@ -82,7 +82,7 @@ v1.14.0.
 
 Native DPI libraries
 --------------------
-DPI-enabled Linux images dynamically link and redistribute the following
+DPI-enabled Linux images and bundled-runtime archives dynamically link and redistribute the following
 LGPL-3.0-or-later shared libraries. Users may replace them with compatible
 modified versions. Reverse engineering for debugging such modifications is not
 restricted. GPL-3.0 is in ../LICENSE and LGPL-3.0 is in
@@ -113,14 +113,26 @@ Ubuntu DPI builds:
   libprotoident 2.0.15-2
   https://github.com/LibtraceTeam/libprotoident/archive/refs/tags/2.0.15-2.tar.gz
 
-  libtrace 4.0.34-1
-  https://github.com/LibtraceTeam/libtrace/archive/refs/tags/4.0.34-1.tar.gz
+  libtrace 4.0.23-1 (loaded libtrace.so.7 in the qualified glibc image)
+  https://github.com/LibtraceTeam/libtrace/archive/refs/tags/4.0.23-1.tar.gz
+
+  libwandder 2.0.8-1
+  https://github.com/wanduow/libwandder/archive/refs/tags/2.0.8-1.tar.gz
 
   libflowmanager 3.0.0-3
   https://github.com/LibtraceTeam/libflowmanager/archive/refs/tags/3.0.0-3.tar.gz
 
-  wandio 4.2.7-1
-  https://github.com/LibtraceTeam/wandio/archive/refs/tags/4.2.7-1.tar.gz
+  wandio 4.2.6-1 (loaded libwandio.so.6 in the qualified glibc image)
+  https://github.com/LibtraceTeam/wandio/archive/refs/tags/4.2.6-1.tar.gz
+
+Bundled Linux runtimes
+----------------------
+runtime-inventory.json records every shipped loader/library hash, supplying
+image identity, installed package version and exact corresponding-source link.
+legal/runtime/ retains the supplying packages' copyright notices and complete
+available common GPL/LGPL license texts. The lib/ directory is replaceable with
+compatible modified libraries; the net launcher supplies --library-path rather
+than installing libraries globally. Keep the extracted directory together.
 
 The URLs above provide the exact corresponding library source, including build
 scripts, at no charge. Netcap does not modify these libraries. Release pages

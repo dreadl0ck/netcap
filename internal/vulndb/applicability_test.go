@@ -1,6 +1,7 @@
 package vulndb
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -36,6 +37,15 @@ func TestCPEApplicabilityRejectsReportFalsePositives(t *testing.T) {
 	}
 	if err := b.Finish(); err != nil {
 		t.Fatal(err)
+	}
+	if output := os.Getenv("NETCAP_APPLICABILITY_FIXTURE_OUT"); output != "" {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(output, data, 0o600); err != nil {
+			t.Fatal(err)
+		}
 	}
 	db, err := Open(path)
 	if err != nil {

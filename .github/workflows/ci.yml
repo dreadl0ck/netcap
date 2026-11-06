@@ -2,6 +2,11 @@ name: CI
 
 on:
   workflow_dispatch:
+    inputs:
+      scope:
+        type: choice
+        options: [full, windows]
+        default: full
 
 # A second push to the same branch cancels the previous run.
 concurrency:
@@ -22,6 +27,7 @@ env:
 
 jobs:
   go:
+    if: inputs.scope != 'windows'
     name: Go build and test
     runs-on: ubuntu-latest
 
@@ -150,3 +156,28 @@ jobs:
 
       - name: Verify distributable license bundle
         run: ./zeus/scripts/licenses.sh
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.0'
+      - name: Build and test the Windows client without Npcap
+        shell: bash
+        env:
+          CGO_ENABLED: '1'
+          CC: gcc
+        run: |
+          go build -tags nodpi,noyara -o net.exe ./cmd/net
+          ./net.exe --version
+          go test -tags nodpi,noyara ./internal/dbs ./internal/vulndb
+          export NC_CONFIG_ROOT="$RUNNER_TEMP/netcap-db-qualification"
+          ./net.exe util -download-dbs
+          ./net.exe util -update-dbs
+          NETCAP_TEST_COMMUNITY_DBS="$NC_CONFIG_ROOT/dbs" go test ./internal/dbs -run TestInstalledCommunityCompatibility -count=1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: netcap-windows-qualified
+          path: net.exe

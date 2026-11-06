@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -51,6 +52,9 @@ func DownloadDBsWithProgress(serverURL string, force bool, progress ProgressFunc
 }
 
 func DownloadDBsWithRegistry(serverURL string, force bool, progress ProgressFunc, path, pin string) error {
+	if path == "" && pin == "" {
+		return downloadSigned(serverURL, force, progress)
+	}
 	installMu.Lock()
 	defer installMu.Unlock()
 	target := filepath.Clean(resolvers.DataBaseFolderPath)
@@ -136,6 +140,19 @@ func DownloadDBsWithRegistry(serverURL string, force bool, progress ProgressFunc
 }
 
 func verifyInstalled(dir string, meta *DBMetadata) error {
+	var signed SignedRelease
+	if err := readJSON(filepath.Join(dir, signedMarker), &signed); err == nil {
+		payload, trust, _, err := verifyCommunityRelease(signed, false)
+		if err != nil {
+			return err
+		}
+		if payload.Metadata != *meta {
+			return fmt.Errorf("installed signed metadata mismatch")
+		}
+		return verifyInstalledWithTrust(dir, meta, trust)
+	} else if !os.IsNotExist(err) {
+		return err
+	}
 	trust, err := loadClientTrust(os.Getenv(ApprovalRegistryEnv), os.Getenv(ApprovalRegistryPinEnv), dir)
 	if err != nil {
 		return err
@@ -173,10 +190,17 @@ func verifyInstalledWithTrust(dir string, meta *DBMetadata, trust approvalTrust)
 	if err != nil {
 		return err
 	}
-	if len(entries) != len(m.Files)+3 {
+	extra := 0
+	if _, err := os.Lstat(filepath.Join(dir, signedMarker)); err == nil {
+		extra = 1
+	}
+	if len(entries) != len(m.Files)+3+extra {
 		return fmt.Errorf("ambient installed members")
 	}
 	expected := map[string]bool{ManifestFile: true, "DATABASE_NOTICES.txt": true, ".release.json": true}
+	if extra == 1 {
+		expected[signedMarker] = true
+	}
 	for _, f := range m.Files {
 		expected[f.Path] = true
 	}
@@ -227,6 +251,34 @@ func activateManaged(target, dir string) error {
 		return err
 	}
 	parent := filepath.Dir(target)
+	if runtime.GOOS == "windows" {
+		backupDir, err := os.MkdirTemp(parent, ".netcap-previous-*")
+		if err != nil {
+			return err
+		}
+		backup := filepath.Join(backupDir, "dbs")
+		hadPrevious := false
+		if info, err := os.Lstat(target); err == nil {
+			if !info.IsDir() {
+				return fmt.Errorf("database target is not a directory")
+			}
+			if err := os.Rename(target, backup); err != nil {
+				return err
+			}
+			hadPrevious = true
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+		if err := os.Rename(abs, target); err != nil {
+			if hadPrevious {
+				if restore := os.Rename(backup, target); restore != nil {
+					return fmt.Errorf("activate: %v; rollback: %w", err, restore)
+				}
+			}
+			return err
+		}
+		return nil
+	}
 	linkDir, err := os.MkdirTemp(parent, ".netcap-switch-*")
 	if err != nil {
 		return err

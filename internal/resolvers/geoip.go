@@ -73,10 +73,18 @@ func initGeolocationDB() error {
 		files := GeoFiles(name)
 		cityPath, asnPath := filepath.Join(DataBaseFolderPath, files.City), filepath.Join(DataBaseFolderPath, files.ASN)
 		if _, err := os.Stat(cityPath); err != nil {
+			if name == "geolite2" && len(order) > 1 && os.IsNotExist(err) {
+				resolverLog.Debug("optional GeoLite2 provider unavailable", zap.Error(err))
+				continue
+			}
 			resolverLog.Warn("skipping geolocation provider", zap.String("provider", name), zap.Error(err))
 			continue
 		}
 		if _, err := os.Stat(asnPath); err != nil {
+			if name == "geolite2" && len(order) > 1 && os.IsNotExist(err) {
+				resolverLog.Debug("optional GeoLite2 provider unavailable", zap.Error(err))
+				continue
+			}
 			resolverLog.Warn("skipping geolocation provider", zap.String("provider", name), zap.Error(err))
 			continue
 		}

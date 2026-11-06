@@ -129,6 +129,7 @@ func BuildVulnDB(buildPath, outDir string, nvdStart int, verbose bool) error {
 	b.SetMeta("nvd_start_year", strconv.Itoa(nvdStart))
 	b.SetMeta("publication_profile", "nvd-only-v3")
 
+	yearCounts := map[string]int{}
 	for _, input := range inputs {
 		year := strconv.Itoa(input.Year)
 		file := filepath.Join(frozen, "nvdcve-2.0-"+year+".json.gz")
@@ -137,6 +138,11 @@ func BuildVulnDB(buildPath, outDir string, nvdStart int, verbose bool) error {
 			b.Abort()
 			return fmt.Errorf("NVD feed %s: %w", file, errYear)
 		}
+		if n == 0 {
+			b.Abort()
+			return fmt.Errorf("empty required NVD year %s", year)
+		}
+		yearCounts[year] = n
 		sum, size, err := hashFile(file)
 		if err != nil || sum != input.SHA256 || size != input.Size {
 			b.Abort()
@@ -146,6 +152,12 @@ func BuildVulnDB(buildPath, outDir string, nvdStart int, verbose bool) error {
 			fmt.Println("indexed NVD year", year, "entries:", n)
 		}
 	}
+	countsJSON, err := json.Marshal(yearCounts)
+	if err != nil {
+		b.Abort()
+		return err
+	}
+	b.SetMeta("nvd_year_counts", string(countsJSON))
 
 	nvdCount, exploitCount := b.Counts()
 	if nvdCount == 0 {

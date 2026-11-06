@@ -69,6 +69,7 @@ docker rm $CONTAINER_ID
 
 cp LICENSE dist-linux/${ARCHIVE}
 cp -R legal dist-linux/${ARCHIVE}/
+python3 zeus/scripts/audit-linux-runtime.py "$tag" "dist-linux/${ARCHIVE}" --supplier-image dreadl0ck/netcap-builder:ubuntu-dpi-latest
 cp README.md dist-linux/${ARCHIVE}
 mkdir -p dist-linux/${ARCHIVE}/docs
 cp "docs/NETCAP Software Report.pdf" dist-linux/${ARCHIVE}/docs/

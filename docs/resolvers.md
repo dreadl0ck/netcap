@@ -16,29 +16,32 @@ The resolvers package provides primitives for such tasks, and if possible, cache
 
 External data sources are stored in a central directory on the system, which defaults to **~/.config/netcap/dbs** but can be overridden using the **NC\_CONFIG\_ROOT** environment variable.
 
-Database files:
-
-* _domain-whitelist.csv_
-* _dbip-city-lite.mmdb_
-* _dbip-asn-lite.mmdb_
-* _GeoLite2-City.mmdb_
-* _GeoLite2-ASN.mmdb_
-* _ja3fingerprint.json_
-* _macaddress.io-db.json_
-* _service-names-port-numbers.csv_
-* _ja3UserAgents.json_
-* _ja3erDB.json_
+| Community file | Purpose |
+| --- | --- |
+| `netcap.sqlite` | NVD CVEs, structured CPE applicability and external reference links; SQLite schema 2 |
+| `dbip-city-lite.mmdb`, `dbip-asn-lite.mmdb`, `geoip-sources.json` | DB-IP Lite location/ASN and source inventory |
+| `service-names-port-numbers.csv` | IANA port names |
+| `regexes.yaml` | UA-parser software/OS signatures |
+| `hasshdb.json` | Pinned HASSH SSH software catalogue in signed releases |
+| `RELEASE_MANIFEST.json`, `DATABASE_NOTICES.txt` | Exact file/source inventory and full applicable notices |
 
 ## Configuration
 
-By default, all resolvers are disabled. You need to use the **-reverse-dns**, **-local-dns**, **-macDB**, **-ja3DB**, **-serviceDB** and **-geoDB** to enable what you want to use, or configure it via environment variables or config file, as described in:
+Use `net capture -h` for current defaults and the `-reverse-dns`, `-local-dns`,
+`-macDB`, `-serviceDB` and `-geoDB` options. `-ja3DB` is retired. Configuration
+and environment overrides are described in:
 
 {% page-ref page="configuration.md" %}
 
 ## Quickstart
 
-Run `net util -download-dbs` for the current community database archive,
-including DB-IP Lite in layout 2. GeoLite2 and Nmap probes are user-installed.
+Run `net util -download-dbs`; repeat with `net util -update-dbs` to refresh.
+Signed-release clients verify the embedded publisher root, signing certificate,
+expiry, monotonic release sequence and exact archive/source hashes. Explicit
+operator registries remain available for private publishers.
+
+Netcap v0.14.0 uses the frozen `/dbs/v3/` compatibility snapshot. New signed
+clients use `/dbs/signed/v1/`. Legacy v1/v2 distribution returns HTTP 410.
 
 ## DNS
 
@@ -76,11 +79,8 @@ community archives. See [provider and installation instructions](../internal/dbs
 
 ## Vendor Identification
 
-To identify the vendor for a given MAC address, the **macaddress.io** JSON database is used.
-
-At the time of this writing it contains 39,041 tracked address blocks and 28,961 unique vendors.
-
-{% embed url="https://macaddress.io/database-download" caption="MacAddress.io database" %}
+MAC vendor lookup uses the embedded OUI table. The macaddress.io download and
+external catalogue reader are retired; `-macDB` does not fetch that service.
 
 ## Service Identification
 
@@ -90,10 +90,7 @@ Resolving port numbers to service names is done according to the CSV mapping fro
 
 ## TLS Fingerprints
 
-To identify hosts that use TLS connections, the Ja3 fingerprint database from **Trisul** is used:
-
-{% embed url="https://github.com/trisulnsm/trisul-scripts/blob/master/lua/frontend\_scripts/reassembly/ja3/prints/ja3fingerprint.json" caption="" %}
-
-For more fingerprints, you can load other databases additionally. For example from **ja3erDB**:
-
-{% embed url="https://ja3er.com/downloads.html" caption="Ja3er JSON database downloads" %}
+JA3/JA4 fingerprint calculation does not imply a catalogue lookup. The community
+release ships no JA3 identification corpus; JA4+ remains an opt-in source build.
+Legacy CMS and DHCP OS catalogue enrichment is disabled. Packet decoding and
+built-in service-signature classification remain available without those files.

@@ -85,10 +85,22 @@ func buildCandidatePinned(root string, startYear int, approvalsPath, registrySHA
 		if err != nil {
 			return "", err
 		}
-		if err := moveToDbs(path, s, base); err != nil {
+		hook := s.hook
+		if hook == nil {
+			hook = moveToDbs
+		}
+		if err := hook(path, s, base); err != nil {
 			return "", err
 		}
-		evidence = append(evidence, SourceEvidence{ID: CandidateFiles()[s.name], Origin: s.url, Revision: sum, SHA256: sum, Transformation: "byte-for-byte"})
+		transformation := "byte-for-byte"
+		if s.name == "hasshdb.json" {
+			transformation = hasshTransformation
+		}
+		outputSum, _, err := hashFile(filepath.Join(dir, s.name))
+		if err != nil {
+			return "", err
+		}
+		evidence = append(evidence, SourceEvidence{ID: CandidateFiles()[s.name], Origin: s.url, Revision: sum, SHA256: outputSum, Transformation: transformation})
 	}
 	for _, year := range yearRange(startYear, time.Now().Year()) {
 		url := "https://nvd.nist.gov/feeds/json/cve/2.0/nvdcve-2.0-" + year + ".json.gz"
@@ -114,7 +126,7 @@ func buildCandidatePinned(root string, startYear int, approvalsPath, registrySHA
 		return "", err
 	}
 	sum := values["input_sha256"]
-	evidence = append(evidence, SourceEvidence{ID: "nvd", Origin: "https://nvd.nist.gov/feeds/json/cve/2.0/", Revision: strconv.Itoa(startYear) + "-" + values["nvd_end_year"] + ":" + sum, SHA256: sum, Transformation: "netcap-nvd-v3.5: frozen complete NVD 2.0 yearly gzip inputs, NVD-only SQLite schema 2 with structured CPE applicability, nvd_rowid_alias_version=1 valid foreign keys and nvd_references_version=1 HTTP(S) link metadata, sorted metadata without wall-clock fields", NVDInputs: nvdInputs})
+	evidence = append(evidence, SourceEvidence{ID: "nvd", Origin: "https://nvd.nist.gov/feeds/json/cve/2.0/", Revision: strconv.Itoa(startYear) + "-" + values["nvd_end_year"] + ":" + sum, SHA256: sum, Transformation: "netcap-nvd-v3.6: frozen complete nonempty NVD 2.0 yearly gzip inputs with per-year counts, NVD-only SQLite schema 2 with structured CPE applicability, nvd_rowid_alias_version=1 valid foreign keys and nvd_references_version=1 HTTP(S) link metadata, sorted metadata without wall-clock fields", NVDInputs: nvdInputs})
 	if err := includeDBIP(base, filepath.Join(base, "geoip-cache")); err != nil {
 		return "", err
 	}
@@ -267,6 +279,9 @@ func (s *DBServer) Start() error {
 func (s *DBServer) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", s.handleHealth)
+	mux.HandleFunc("/ready", s.handleReady)
+	mux.HandleFunc("/freshness", s.handleFreshness)
+	mux.HandleFunc("/dbs/signed/v1/", s.handleSigned)
 	mux.HandleFunc("/", s.handleRoot)
 	mux.HandleFunc("/dbs/", func(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasPrefix(r.URL.Path, "/dbs/v3/") {

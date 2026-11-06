@@ -416,6 +416,8 @@ func TestV3FreshAcquisitionIsUnapprovedAndRequiredNVDIsFatal(t *testing.T) {
 		requests[r.URL.String()]++
 		body, status := []byte("synthetic static fixture"), 200
 		switch {
+		case strings.HasSuffix(r.URL.Path, "/hasshdb"):
+			body = []byte("004238f88dc63904baf2d5cf128db12f SSH-2.0-fixture (100)\n")
 		case strings.Contains(r.URL.Path, "nvdcve-"):
 			body = nvd.Bytes()
 			if failedNVD {

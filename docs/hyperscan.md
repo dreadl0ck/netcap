@@ -1,5 +1,10 @@
 # Hyperscan / Vectorscan integration
 
+The Nmap/CMS sections below describe historical implementations. Since v0.14,
+`internal/servicesignatures` uses bounded protocol parsers and the legacy CMS
+catalogue is disabled; neither subsystem consumes Nmap regex databases. The
+`hyperscan` build tag still applies to the remaining filter/rule integrations.
+
 Netcap can optionally use [Intel Hyperscan](https://www.hyperscan.io/) (or its
 portable fork [Vectorscan](https://github.com/VectorCamp/vectorscan)) to
 accelerate multi-pattern regex matching.
