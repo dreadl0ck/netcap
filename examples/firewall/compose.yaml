@@ -1,0 +1,39 @@
+services:
+  firewall:
+    image: ${FIREWALL_IMAGE:-netcap-firewall:0.1.0-local}
+    build:
+      context: ../..
+      dockerfile: docker/firewall/Dockerfile
+    command: [serve, --config, /etc/netcap-firewall/config.yaml]
+    user: '10001:10001'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ['/tmp:size=16m,mode=1777,noexec,nosuid,nodev']
+    mem_limit: 256m
+    cpus: 1
+    pids_limit: 64
+    stop_grace_period: 60s
+    ports: ['127.0.0.1:${FIREWALL_PORT:-18080}:8080']
+    volumes:
+      - ./config.yaml:/etc/netcap-firewall/config.yaml:ro
+      - ./policy.yaml:/etc/netcap-firewall/policy.yaml:ro
+    networks: [edge, origin]
+    depends_on: [backend]
+  backend:
+    image: ${BACKEND_IMAGE:-nginx:1.28.0-alpine@sha256:30f1c0d78e0ad60901648be663a710bdadf19e4c10ac6782c235200619158284}
+    entrypoint: [nginx]
+    command: [-g, 'daemon off;']
+    user: '101:101'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ['/tmp:size=16m,mode=1777,noexec,nosuid,nodev']
+    mem_limit: 64m
+    pids_limit: 32
+    volumes: ['./nginx.conf:/etc/nginx/nginx.conf:ro']
+    networks: [origin]
+networks:
+  edge: {}
+  origin:
+    internal: true

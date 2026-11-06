@@ -1,0 +1,147 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["upstream", "image", "runtime", "policy"],
+  "properties": {
+    "mode": {"enum": ["file", "managed"]},
+    "managed": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "existingClaim": {"type": "string"}, "storageClassName": {"type": "string"},
+        "size": {"type": "string", "pattern": "^[1-9][0-9]*(Mi|Gi|Ti)$"}
+      }
+    },
+    "replicaCount": {"type": "integer", "minimum": 1},
+    "image": {
+      "type": "object", "additionalProperties": false,
+      "required": ["repository", "tag", "digest", "pullPolicy"],
+      "properties": {
+        "repository": {"type": "string", "minLength": 1},
+        "tag": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+[A-Za-z0-9_.-]*$"},
+        "digest": {"type": "string", "pattern": "^$|^sha256:[a-f0-9]{64}$"},
+        "pullPolicy": {"enum": ["Always", "IfNotPresent", "Never"]}
+      }
+    },
+    "imagePullSecrets": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["name"], "properties": {"name": {"type": "string", "minLength": 1}}}},
+    "upstream": {"type": "string", "pattern": "^https?://[^ /]+"},
+    "runtime": {
+      "type": "object", "additionalProperties": false,
+      "required": ["maxBodyBytes", "maxResponseBytes", "maxConcurrent", "bodyTimeout", "inspectResponse", "trustedProxyCIDRs"],
+      "properties": {
+        "maxBodyBytes": {"type": "integer", "minimum": 1, "maximum": 1048576},
+        "maxResponseBytes": {"type": "integer", "minimum": 1, "maximum": 1048576},
+        "maxConcurrent": {"type": "integer", "minimum": 1, "maximum": 4096},
+        "bodyTimeout": {"type": "string", "pattern": "^([1-9][0-9]{0,4}ms|[1-9][0-9]?s|[12][0-9]{2}s|300s|[1-5]m)$"},
+        "inspectResponse": {"type": "boolean"},
+        "corazaCRS": {"type": "boolean"},
+        "trustedProxyCIDRs": {"type": "array", "items": {"type": "string", "minLength": 3}}
+      }
+    },
+    "tls": {"type": "object", "additionalProperties": false, "properties": {"secretName": {"type": "string"}}},
+    "upstreamTLS": {"type": "object", "additionalProperties": false, "properties": {"caSecretName": {"type": "string"}, "serverName": {"type": "string"}}},
+    "adminTokenSecret": {"type": "object", "additionalProperties": false, "properties": {"name": {"type": "string"}, "key": {"type": "string", "minLength": 1}}},
+    "adminTLS": {"type": "object", "additionalProperties": false, "properties": {"secretName": {"type": "string"}}},
+    "adminService": {"type": "object", "additionalProperties": false, "properties": {"enabled": {"type": "boolean"}, "port": {"type": "integer", "minimum": 1, "maximum": 65535}}},
+    "policy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["version", "id", "mode", "default", "rules"],
+      "properties": {
+        "version": {"const": "netcap-policy/v1"},
+        "id": {"type": "string", "minLength": 1},
+        "mode": {"enum": ["enforce", "monitor"]},
+        "default": {"enum": ["allow", "deny"]},
+        "rules": {
+          "type": "array", "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "phase", "expression", "action"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "phase": {"enum": ["request", "response"]},
+              "expression": {"type": "string", "minLength": 1},
+              "action": {"enum": ["allow", "deny"]},
+              "status": {"type": "integer", "minimum": 400, "maximum": 599},
+              "priority": {"type": "integer"}
+            }
+          }
+        }
+      }
+    },
+    "service": {"type": "object", "additionalProperties": false, "properties": {"port": {"type": "integer", "minimum": 1, "maximum": 65535}}},
+    "resources": {"type": "object", "additionalProperties": false, "required": ["requests", "limits"], "properties": {"requests": {"$ref": "#/definitions/resources"}, "limits": {"$ref": "#/definitions/resources"}}},
+    "ingress": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean"}, "className": {"type": "string"},
+        "annotations": {"type": "object", "additionalProperties": {"type": "string"}},
+        "host": {"type": "string"}, "tlsSecretName": {"type": "string"}
+      }
+    },
+    "pdb": {"type": "object", "additionalProperties": false, "properties": {"enabled": {"type": "boolean"}, "minAvailable": {"type": "integer", "minimum": 0}}},
+    "autoscaling": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean"}, "minReplicas": {"type": "integer", "minimum": 1},
+        "maxReplicas": {"type": "integer", "minimum": 1},
+        "targetCPUUtilizationPercentage": {"type": "integer", "minimum": 1, "maximum": 100}
+      }
+    },
+    "networkPolicy": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "ingressPeers": {"type": "array", "items": {"$ref": "#/definitions/peer"}},
+        "dnsPeers": {"type": "array", "items": {"$ref": "#/definitions/peer"}},
+        "upstreamEgress": {"type": "array", "items": {
+          "type": "object", "additionalProperties": false, "required": ["to", "ports"],
+          "properties": {
+            "to": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/peer"}},
+            "ports": {"type": "array", "minItems": 1, "items": {
+              "type": "object", "additionalProperties": false, "required": ["port"],
+              "properties": {"protocol": {"enum": ["TCP", "UDP", "SCTP"]}, "port": {"type": "integer", "minimum": 1, "maximum": 65535}}
+            }}
+          }
+        }}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["adminTokenSecret"],
+        "properties": {
+          "adminTokenSecret": {"required": ["name"], "properties": {"name": {"minLength": 1}}}
+        }
+      },
+      "then": {
+        "required": ["adminTLS"],
+        "properties": {
+          "adminTLS": {"required": ["secretName"], "properties": {"secretName": {"minLength": 1}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"mode": {"const": "managed"}}, "required": ["mode"]},
+      "then": {
+        "required": ["replicaCount", "adminTokenSecret", "adminTLS"],
+        "properties": {
+          "replicaCount": {"const": 1},
+          "autoscaling": {"properties": {"enabled": {"const": false}}},
+          "adminTokenSecret": {"required": ["name"], "properties": {"name": {"minLength": 1}}},
+          "adminTLS": {"required": ["secretName"], "properties": {"secretName": {"minLength": 1}}}
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "resources": {"type": "object", "additionalProperties": false, "required": ["cpu", "memory"], "properties": {"cpu": {"type": ["string", "number"]}, "memory": {"type": "string", "minLength": 1}}},
+    "peer": {
+      "type": "object", "additionalProperties": false, "minProperties": 1,
+      "properties": {
+        "namespaceSelector": {"type": "object"}, "podSelector": {"type": "object"},
+        "ipBlock": {"type": "object", "additionalProperties": false, "required": ["cidr"], "properties": {"cidr": {"type": "string", "minLength": 3}, "except": {"type": "array", "items": {"type": "string"}}}}
+      },
+      "not": {"anyOf": [{"required": ["ipBlock", "namespaceSelector"]}, {"required": ["ipBlock", "podSelector"]}]}
+    }
+  }
+}

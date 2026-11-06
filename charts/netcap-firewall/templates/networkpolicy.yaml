@@ -1,0 +1,25 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $dns := required "networkPolicy.dnsPeers must explicitly select your DNS resolver" .Values.networkPolicy.dnsPeers }}
+{{- $upstream := required "networkPolicy.upstreamEgress must explicitly select your upstream" .Values.networkPolicy.upstreamEgress }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "firewall.name" . }}
+spec:
+  podSelector:
+    matchLabels: {{ include "firewall.selector" . | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    {{- if .Values.networkPolicy.ingressPeers }}
+    - from: {{ toYaml .Values.networkPolicy.ingressPeers | nindent 8 }}
+      ports: [{protocol: TCP, port: 8080}]
+    {{- else }}
+    []
+    {{- end }}
+  egress:
+    - to: {{ toYaml $dns | nindent 8 }}
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+    {{- toYaml $upstream | nindent 4 }}
+{{- end }}

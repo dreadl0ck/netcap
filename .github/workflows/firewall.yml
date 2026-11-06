@@ -1,0 +1,90 @@
+name: Application firewall
+on:
+  pull_request:
+    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'internal/waf/**', 'internal/policy/**', 'internal/policycontrol/**', 'internal/gateway/**', 'internal/enforcer/**', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'charts/netcap-firewall/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
+  push:
+    branches: [master, main, feature/application-firewall]
+    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'internal/waf/**', 'internal/policy/**', 'internal/policycontrol/**', 'internal/gateway/**', 'internal/enforcer/**', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'charts/netcap-firewall/**', 'examples/firewall/**', '.github/workflows/firewall.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: firewall-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  deployment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOWORK: 'off'
+      CGO_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.0'
+      - uses: azure/setup-helm@v4.3.0
+        with:
+          version: v3.17.3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m pip install PyYAML==6.0.2
+      - name: Native and pure-Go compile, with and without Coraza
+        run: |
+          go build -trimpath -buildvcs=false -o "$RUNNER_TEMP/netcap-firewall" ./cmd/netcap-firewall
+          go build -tags coraza -trimpath -buildvcs=false -o "$RUNNER_TEMP/netcap-firewall-coraza" ./cmd/netcap-firewall
+          CGO_ENABLED=1 go build -tags coraza -o "$RUNNER_TEMP/netcap-firewall-native" ./cmd/netcap-firewall
+          python3 examples/firewall/gateway_smoke.py "$RUNNER_TEMP/netcap-firewall-coraza"
+      - name: Race tests, with and without Coraza
+        env:
+          CGO_ENABLED: '1'
+        run: |
+          packages='./cmd/netcap-firewall ./cmd/firewall ./internal/waf ./internal/policy ./internal/policycontrol ./internal/gateway ./internal/enforcer'
+          go test -race $packages
+          go test -race -tags coraza $packages
+      - name: Validate Helm deployment contract
+        run: |
+          helm lint charts/netcap-firewall --strict --set upstream=http://backend:8080
+          helm template firewall charts/netcap-firewall --kube-version 1.25.0 --set upstream=http://backend:8080 > "$RUNNER_TEMP/firewall.yaml"
+          python3 charts/netcap-firewall/tests/test_render.py
+      - name: Compose contract and end-to-end denial
+        run: |
+          docker compose -f examples/firewall/compose.yaml config --quiet
+          bash examples/firewall/smoke.sh
+          python3 docker/firewall/check-image.py
+      - name: Save tested image for Kubernetes job
+        run: docker save netcap-firewall:0.1.0-local -o "$RUNNER_TEMP/firewall-image.tar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firewall-image
+          path: ${{ runner.temp }}/firewall-image.tar
+          retention-days: 1
+  kubernetes:
+    needs: deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GOWORK: 'off'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.0'
+      - uses: azure/setup-helm@v4.3.0
+        with:
+          version: v3.17.3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: firewall-image
+          path: ${{ runner.temp }}
+      - name: Install pinned kind and load tested image
+        run: |
+          go install sigs.k8s.io/kind@v0.27.0
+          python3 -m pip install PyYAML==6.0.2
+          docker load -i "$RUNNER_TEMP/firewall-image.tar"
+      - name: Install, Service traffic, upgrade, rollback, managed persistence
+        run: python3 examples/firewall/kind_smoke.py

@@ -1,0 +1,73 @@
+mode: file
+replicaCount: 2
+managed:
+  existingClaim: ''
+  storageClassName: ''
+  size: 1Gi
+image:
+  repository: netcap-firewall
+  tag: 0.1.0-local
+  digest: ''
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+upstream: ''
+runtime:
+  maxBodyBytes: 1048576
+  maxResponseBytes: 1048576
+  maxConcurrent: 32
+  bodyTimeout: 15s
+  inspectResponse: false
+  corazaCRS: true
+  trustedProxyCIDRs: []
+adminTLS:
+  secretName: ''
+adminService:
+  enabled: false
+  port: 9090
+tls:
+  secretName: ''
+upstreamTLS:
+  caSecretName: ''
+  serverName: ''
+adminTokenSecret:
+  name: ''
+  key: token
+policy:
+  version: netcap-policy/v1
+  id: baseline
+  mode: enforce
+  default: allow
+  rules:
+    - id: deny-traversal
+      phase: request
+      expression: 'Path contains ".."'
+      action: deny
+      status: 403
+      priority: 100
+service:
+  port: 8080
+resources:
+  requests: {cpu: 100m, memory: 64Mi}
+  limits: {cpu: '1', memory: 256Mi}
+ingress:
+  enabled: false
+  className: ''
+  annotations: {}
+  host: ''
+  tlsSecretName: ''
+pdb:
+  enabled: false
+  minAvailable: 1
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+networkPolicy:
+  enabled: false
+  # Each peer uses Kubernetes NetworkPolicyPeer syntax; [] grants no ingress.
+  ingressPeers: []
+  # Explicit DNS namespace/pod peers are required when enabled.
+  dnsPeers: []
+  # Rules use Kubernetes NetworkPolicyEgressRule syntax, including ports.
+  upstreamEgress: []

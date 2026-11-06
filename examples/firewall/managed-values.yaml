@@ -1,0 +1,12 @@
+mode: managed
+replicaCount: 1
+upstream: http://backend:8080
+adminTokenSecret:
+  name: firewall-admin-token
+  key: token
+adminTLS:
+  secretName: firewall-admin-tls
+adminService:
+  enabled: true
+managed:
+  size: 1Gi

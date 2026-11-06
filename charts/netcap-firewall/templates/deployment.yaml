@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "firewall.name" . }}
+  labels:
+    {{- include "firewall.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 3
+  {{- if eq .Values.mode "managed" }}
+  strategy: {type: Recreate}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "firewall.selector" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "firewall.selector" . | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: firewall
+          {{- if .Values.image.digest }}
+          image: {{ printf "%s@%s" .Values.image.repository .Values.image.digest | quote }}
+          {{- else }}
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - serve
+            - --config
+            - /etc/netcap-firewall/config.yaml
+            {{- if eq .Values.mode "managed" }}
+            - --managed
+            - --state-dir
+            - /var/lib/netcap-firewall/managed
+            {{- end }}
+            {{- if .Values.adminTLS.secretName }}
+            - --admin-cert
+            - /etc/netcap-firewall/admin-tls/tls.crt
+            - --admin-key
+            - /etc/netcap-firewall/admin-tls/tls.key
+            {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          {{- if .Values.adminTokenSecret.name }}
+          env:
+            - name: NETCAP_FIREWALL_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.adminTokenSecret.name | quote }}
+                  key: {{ .Values.adminTokenSecret.key | quote }}
+          {{- end }}
+          ports:
+            - {name: http, containerPort: 8080}
+            - {name: admin, containerPort: 9090}
+          startupProbe:
+            httpGet: {path: /readyz, port: admin, scheme: {{ include "firewall.probeScheme" . }}}
+            periodSeconds: 2
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: {path: /readyz, port: admin, scheme: {{ include "firewall.probeScheme" . }}}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /livez, port: admin, scheme: {{ include "firewall.probeScheme" . }}}
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - {name: config, mountPath: /etc/netcap-firewall, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+            {{- if eq .Values.mode "managed" }}
+            - {name: state, mountPath: /var/lib/netcap-firewall}
+            {{- end }}
+            {{- if .Values.adminTLS.secretName }}
+            - {name: admin-tls, mountPath: /etc/netcap-firewall/admin-tls, readOnly: true}
+            {{- end }}
+            {{- if .Values.tls.secretName }}
+            - {name: tls, mountPath: /etc/netcap-firewall/tls, readOnly: true}
+            {{- end }}
+            {{- if .Values.upstreamTLS.caSecretName }}
+            - {name: upstream-ca, mountPath: /etc/netcap-firewall/upstream, readOnly: true}
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "firewall.configName" . }}
+        - name: tmp
+          emptyDir: {medium: Memory, sizeLimit: 16Mi}
+        {{- if eq .Values.mode "managed" }}
+        - name: state
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-state" (include "firewall.name" .)) .Values.managed.existingClaim | quote }}
+        {{- end }}
+        {{- if .Values.adminTLS.secretName }}
+        - name: admin-tls
+          secret:
+            secretName: {{ .Values.adminTLS.secretName | quote }}
+            defaultMode: 0440
+        {{- end }}
+        {{- if .Values.tls.secretName }}
+        - name: tls
+          secret:
+            secretName: {{ .Values.tls.secretName | quote }}
+            defaultMode: 0440
+        {{- end }}
+        {{- if .Values.upstreamTLS.caSecretName }}
+        - name: upstream-ca
+          secret:
+            secretName: {{ .Values.upstreamTLS.caSecretName | quote }}
+            defaultMode: 0440
+        {{- end }}

@@ -36,6 +36,7 @@
 * [Rules Engine](RULES_ENGINE.md)
 * [Filtering](FILTERING.md)
 * [Firewall Response Actions](FIREWALL_RESPONSE_ACTIONS.md)
+* [Application Firewall](APPLICATION_FIREWALL.md)
 * [Python Integration](python-integration.md)
 * [Changelog](changelog.md)
 * [Troubleshooting](troubleshooting.md)

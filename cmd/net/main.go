@@ -36,6 +36,7 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/collect"
 	"github.com/dreadl0ck/netcap/cmd/dump"
 	"github.com/dreadl0ck/netcap/cmd/export"
+	"github.com/dreadl0ck/netcap/cmd/firewall"
 	"github.com/dreadl0ck/netcap/cmd/inject"
 	"github.com/dreadl0ck/netcap/cmd/investigate"
 	"github.com/dreadl0ck/netcap/cmd/label"
@@ -105,6 +106,7 @@ func main() {
 			},
 		},
 		Commands: []*cli.Command{
+			firewall.GetCommand(),
 			triage.GetCommand(),
 			investigate.GetCommand(),
 			{

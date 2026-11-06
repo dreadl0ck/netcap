@@ -1,0 +1,12 @@
+version: netcap-policy/v1
+id: modbus-read-only
+mode: enforce
+default: deny
+defaults:
+  response: allow
+rules:
+  - id: allow-unit-one-read-range
+    phase: request
+    expression: 'Protocol == "modbus" && Modbus.UnitID == 1 && Modbus.Function == 3 && Modbus.Address >= 0 && Modbus.EndAddress <= 99 && !Modbus.IsWrite'
+    action: allow
+    priority: 100
