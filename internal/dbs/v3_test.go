@@ -320,18 +320,20 @@ func TestV3DownloadTransactionalAndNoAmbientData(t *testing.T) {
 	if len(backups) != 1 {
 		t.Fatal("previous user installation not preserved")
 	}
-	link, _ := os.Readlink(resolvers.DataBaseFolderPath)
+	installedFile:=filepath.Join(resolvers.DataBaseFolderPath,"netcap.sqlite")
+	before,err:=os.Stat(installedFile)
+	if err!=nil{t.Fatal(err)}
 	if err := DownloadDBs(server.URL, false); err != nil {
 		t.Fatal(err)
 	}
-	if after, _ := os.Readlink(resolvers.DataBaseFolderPath); after != link {
+	if after, err := os.Stat(installedFile); err!=nil || !os.SameFile(before,after) {
 		t.Fatal("verified current install unnecessarily switched")
 	}
 	os.WriteFile(filepath.Join(out, meta.Tarball), []byte("broken response"), 0o644)
 	if err := DownloadDBs(server.URL, true); err == nil {
 		t.Fatal("broken transfer installed")
 	}
-	if after, _ := os.Readlink(resolvers.DataBaseFolderPath); after != link {
+	if after, err := os.Stat(installedFile); err!=nil || !os.SameFile(before,after) {
 		t.Fatal("failed download replaced active release")
 	}
 	if err := verifyInstalled(resolvers.DataBaseFolderPath, meta); err != nil {

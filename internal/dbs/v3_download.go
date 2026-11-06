@@ -252,11 +252,11 @@ func activateManaged(target, dir string) error {
 	}
 	parent := filepath.Dir(target)
 	if runtime.GOOS == "windows" {
-		backupDir, err := os.MkdirTemp(parent, ".netcap-previous-*")
+		backupDir, err := os.MkdirTemp(parent, ".netcap-switch-*")
 		if err != nil {
 			return err
 		}
-		backup := filepath.Join(backupDir, "dbs")
+		backup := filepath.Join(backupDir, "previous-dbs")
 		hadPrevious := false
 		if info, err := os.Lstat(target); err == nil {
 			if !info.IsDir() {
