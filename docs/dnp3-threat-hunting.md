@@ -28,15 +28,12 @@ midstream, where no frame boundary falls inside the inspected bytes, is not
 claimed. Detection is not a completeness guarantee; no records does not prove no
 DNP3 activity.
 
-Off the standard port a second thing has to hold: no other decoder may claim the
-traffic first. Selection falls back to scanning every decoder in **ascending
-registered port order, first match wins**, and DNP3 at 20000 is asked 29th of
-33 — so a loose signature on a lower port shadows it however strong its own
-check is. Three did, until 2026-09: `kerberosaudit` (88) keyed on one byte that
-happens to be the outstation's address, `socks` (1080) on the `0x05` start byte,
-and `iec62351` (2404) on a scan for any `0x78`. `TestFallbackShadowingIsRecorded`
-in `internal/decoder/stream/` asserts that DNP3 traffic is now accepted by the
-DNP3 decoder and nothing else, across every outstation address.
+Off-port selection ranks eligible decoders by evidence specificity; registered
+port order only breaks ties. The old first-match behavior could let a weaker
+signature shadow DNP3's validated CRC. `SelectDecoder` in
+`internal/decoder/stream/selection.go` and the selector/confusable tests cover
+the current behavior. DNP3 Secure Authentication can be claimed by `dnp3`
+rather than `iec62351` off-port; see [decoder selection](industrial-control-systems.md#decoder-selection-off-the-standard-port).
 
 ## Why the protocol offers nothing to authenticate against
 
@@ -102,8 +99,9 @@ An Operate on a live outstation is not a finding, it is a breaker.
 ## The point index is not an address
 
 Group 12 index 7 is a particular feeder only because that outstation's device
-profile says so, and two vendors do not share a map. **A capture alone tells you
-a breaker moved; it never tells you which breaker.**
+profile says so, and two vendors do not share a map. A captured control request
+does not prove a breaker moved. Interpreting an observed point/status also needs
+the outstation's point map and relevant process evidence.
 
 Keep the point list with the capture. `-dnp3-point-map` puts it in the evidence:
 
@@ -126,10 +124,9 @@ point unnamed. `net export` takes the same flag; both read `NC_DNP3_POINT_MAP`.
 
 ## The primary hunt: the control plane
 
-Read, Response and Unsolicited Response are almost all of a healthy network,
-because telemetry is polling and polling is boring. Everything left over is the
-control plane, and on most utility networks a month of it is short enough to
-read by eye and put a work order against every line.
+Start by separating routine telemetry/confirmation functions from other
+application functions. Compare the remaining controls, configuration, restart
+and file activity with the site's operating baseline and work orders.
 
 ```bash
 net dump -read dnp3-hunt/DNP3.ncap.gz -json \
@@ -139,10 +136,10 @@ net dump -read dnp3-hunt/DNP3.ncap.gz -json \
 `CONFIRM` (0) is excluded with the telemetry codes because it is
 application-layer housekeeping for those same responses; drop the `0` to see it.
 
-**If the result is too long to read, that is the finding**, and working out why
-the control plane is that noisy comes before detection engineering.
+High volume is a triage lead, not itself a finding: first account for normal
+maintenance, capture duration, duplicate observations and the site's protocol use.
 
-Three things make a line a finding on the spot:
+These queries identify candidates for site-policy validation:
 
 ```bash
 # Direct Operate, where the engineering standard says Select-Before-Operate
@@ -171,7 +168,7 @@ outstation link address. `SBOStatus` is one of:
 | `select_never_operated` | A Select no Operate followed. Routine on an operator cancel. |
 | `sbo_object_mismatch` | The Operate named different points or control codes than the Select armed. |
 | `sbo_sequence_mismatch` | Objects agree, but the application sequence number is not the Select's plus one. |
-| `select_expired` | More than ten seconds apart, so the outstation had already discarded the Select. |
+| `select_expired` | Beyond Netcap's ten-second correlation window; the actual outstation timeout needs device configuration evidence. |
 
 A matched Operate is an **attempt**. Pair it with the response before claiming
 effect; the reply's `StatusCode` in `ControlBlocks` is the outstation's own
@@ -203,20 +200,24 @@ net dump -read dnp3-hunt/DNP3.ncap.gz -json \
 
 ## Reconnaissance
 
-A Class 0 integrity poll returns the outstation's entire static point map for
-four bytes on the wire, and is byte-identical to what the real master sends
-every few minutes. One poll is routine; polling the estate in one window is an
-inventory, so breadth is the signal:
+A Class 0 request uses group 60 variation 1, as shown in
+[opendnp3's group/variation definitions](https://github.com/dnp3/opendnp3/blob/master/cpp/lib/src/gen/GroupVariation.cpp).
+It requests static class data, not the site's engineering map from point indexes
+to physical equipment. Polling can be routine; use breadth and the approved
+baseline to identify inventory candidates:
 
 ```bash
 net dump -read dnp3-hunt/DNP3.ncap.gz -json -filter '
 ParseStatus == "valid" && FunctionCode == 1 &&
-any(Objects, {.ObjectGroup == 60 && .Variation == 0})'
+any(Objects, {.ObjectGroup == 60 && .Variation == 1})'
 ```
 
-The shipped rules express this with `distinct_field: Destination` over a
-five-minute window. Cardinality carries no ordering, so it detects breadth, not
-a scan pattern.
+The v0.15.2 `DNP3 Class 0 Integrity Poll Sweep` rule incorrectly checks variation
+0, and `internal/decoder/stream/dnp3/objects.go` incorrectly labels that variation
+as Class 0. Use the raw `ObjectGroup`/`Variation` fields and a local corrected
+rule (`Variation == 1`) before relying on this hunt. The shipped rule's
+`distinct_field: Destination` over 300 seconds measures breadth, not ordered
+scanning.
 
 The outstation's own rejections are the other half, and the DNP3 analogue of a
 Modbus exception code:
@@ -239,8 +240,9 @@ net dump -read dnp3-hunt/DNP3.ncap.gz -json \
   -filter 'ParseStatus == "malformed" && !IsMaster'
 ```
 
-Every such record has a **passing header CRC**, so it came from something
-speaking DNP3 rather than from line noise. `ParseError` names the cause:
+Decoded malformed-frame records have a passing header CRC. That improves
+framing confidence but does not authenticate the sender or exclude corruption
+or an accidental CRC match. `ParseError` names the cause:
 `length below minimum`, `block CRC failed`, `truncated transport header`,
 `truncated application header` or `truncated internal indications`.
 

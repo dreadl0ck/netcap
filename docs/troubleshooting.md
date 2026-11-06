@@ -1,44 +1,47 @@
----
-description: Look behind the curtain
----
-
 # Troubleshooting
+
+Start with `net --version`, the exact command, its exit status and the output
+directory. Preserve the source capture and health artifacts before rerunning
+into a fresh directory.
 
 ## First Aid
 
-* are all files in place?
-* does the current user have sufficient rights to access them?
-* does the current user have sufficient rights to access the current working directory?
+| Symptom | Check |
+| --- | --- |
+| Flag/command missing | Installed version and `net COMMAND -h`; old `net` earlier in `PATH` |
+| Native library cannot load | Complete matching release archive, including `lib/`; OS/runtime/architecture |
+| No interface traffic | Driver, permissions, interface/network namespace, BPF and observation point |
+| Offline process exits | Normal without explicit `-http`; records flush before exit |
+| Local WebUI inaccessible | Bind address/port, startup errors and process lifetime |
+| No HTTP/TLS records | Actual input, encryption, decoder selection and reassembly health |
+| No enrichment | Database path, signed-source status and data availability |
+| Few contacts/records | Sampling/truncation flags, capture drops, parser scope and finalization |
+| Rules return no alerts | Rule enabled state, record type, expression errors and actual field values |
+| CSV columns unexpected | `-csv`, separator and field names from `dump -fields` |
 
 ## Pitfalls
 
-* the go flag package implementation only allows to set boolean value using the **-name=value** syntax \(e.g: **-debug=true**\), but strings can be set also using a space instead with the **-name value** syntax \(e.g: **-read traffic.pcap**\)
+Use explicit boolean values such as `-dpi=false`. Generic `-gen-config` is
+unimplemented despite appearing in help. `net export` starts a metrics exporter;
+CSV/JSON conversion uses `net dump`.
 
 ## Debug Mode
 
-Use the **-debug** flag to generate debug logs. The files will be created in the directory from which the netcap process has been started. The reassembly engine logs data into **reassembly.log** and all other debug messages go into **debug.log.**
-
-> Remember that netcap logs packet decoding errors into **errors.log!**
+Use the relevant command's `-debug` option and inspect its actual log paths.
+Capture outputs can include `errors.log`, debug logs and health sidecars. Avoid
+posting payloads, credentials or an entire private capture in a public issue.
+Report version/build tags, input hash, exact error and a minimal reproducer.
 
 ## Advanced Debugging
 
-In order to use advanced debugging features, you will need to recompile the code and make a few changes. Some primitives in the core library have a second implementation that spawns an additional goroutine for each invocation to time out the call. This is useful to debug hangs in the reassembly or due to invocation of external code, for example the DPI integration of **nDPI** and **libprotoident**.
-
-List of \*Timeout primitives:
-
-* handlePacketTimeout\(p \*packet\) in collector.go
-* AssembleWithContextTimeout\(...\) in tcpConnection.go
-* GetProtocolsTimeout\(packet gopacket.Packet\) in dpi.go
-
-Simply replace the calls to the original versions with the \*Timeout primitives, and if one of those will block for longer than the configured thresholds, the call will be interrupted and an error logged.
+`capture-manifest.json`, `TCPReassemblyHealth.json` and subsystem health files
+qualify different boundaries. Missing/null counters are unavailable, not zero.
+Compare a known small synthetic capture before diagnosing a larger corpus.
+The [evidence guide](evidence.md) explains completeness witnesses.
 
 ## Race Detection Builds
 
-To debug synchronization problems and data races you can compile a version with the **-race** flag set for the go compiler and see if the program crashes due to a race condition.
-
-There is a command implemented for that in the build scripts:
-
-```text
-$ zeus install-race
-```
-
+For source-level concurrency bugs, run a scoped `go test -race` with the matching
+build tags; [testing](tests.md) lists entrypoints. A goroutine timeout wrapper
+does not cancel blocked native code, so do not substitute historical timeout
+helpers as a production fix for a native hang.

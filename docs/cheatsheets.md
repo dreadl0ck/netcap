@@ -32,6 +32,10 @@ The authors used the framework to process their recorded PCAP dumps:
 
 ## Cheatsheets
 
+The PDFs below are historical publications, not the v0.15.2 command/schema
+reference. Use [commands](commands.md), [record inspection](filtering-and-export.md)
+and `net COMMAND -h` for current executable examples.
+
 ### List of all supported protocols and fields
 
 {% file src=".gitbook/assets/overview-2 (1).pdf" %}

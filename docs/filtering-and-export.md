@@ -1,66 +1,53 @@
----
-description: Process Netcap audit records and extract the data you are interested in
----
+# CSV, JSON and record inspection
 
-# Filtering and Export
+`net dump` reads audit files. It is the command for record inspection and
+file-format conversion; `net export` is a Prometheus-oriented exporter.
 
-## Exporting Data with net dump
+## Inspect before selecting
 
-Netcap offers a simple interface to filter for specific fields and select only those of interest. Filtering and exporting specific fields can be performed with all available audit record types, over a uniform command-line interface. By default, output is generated as CSV with the field names added as first line. It is also possible to use a custom separator string. Fields are exported in the order they are named in the select statement. Sub structures of audit records \(for example IPv4Options from an IPv4 packet\), are converted to a human readable string representation. More examples for using this feature on the command-line can be found in the usage section.
-
-![](.gitbook/assets/netcap-export%20%282%29.svg)
-
-Netcap offers a simple command-line interface to select fields of interest from the gathered audit records.
-
-## Examples
-
-Show available header fields:
-
-```text
-$ net dump -read UDP.ncap.gz -fields
-Timestamp,SrcPort,DstPort,Length,Checksum,PayloadEntropy,PayloadSize
+```sh
+net dump -read analysis/UDP.ncap.gz -header
+net dump -read analysis/UDP.ncap.gz -fields
+net dump -read analysis/UDP.ncap.gz -json
 ```
 
-Print all fields for the supplied audit record:
+`-fields` lists protobuf names one per line. JSON mode emits newline-delimited
+objects, not one enclosing array. Use the record schema for types and meanings.
+The structured terminal display is the default; explicitly request CSV or JSON
+for machine-readable output.
 
-```text
-$ net dump -read UDP.ncap.gz
-1331904607.100000,53,42665,120,41265,4.863994469989251,112 
-1331904607.100000,42665,53,53,1764,4.0625550894074385,45 
-1331904607.290000,51190,53,39,22601,3.1861758166070766,31 
-1331904607.290000,56434,53,39,37381,3.290856864924384,31 
-1331904607.330000,137,137,58,64220,3.0267194361875682,50
-...
+## Export selected columns
+
+```sh
+net dump -read analysis/UDP.ncap.gz -csv -sep ',' \
+  -select Timestamp,SrcPort,DstPort > udp.csv
 ```
 
-Selecting fields will also define their order:
+CSV's default separator is `;`, so pass `-sep ','` when consumers expect commas.
+`-select` orders/selects fields but does not itself request CSV. Nested records,
+maps and repeated values require inspection before mapping to a flat table.
+Treat CSV output as data; spreadsheet tools may interpret cells as formulas.
 
-```text
-$ net dump -read UDP.ncap.gz -select Length,SrcPort,DstPort,Timestamp 
-Length,SrcPort,DstPort,Timestamp
-145,49792,1900,1499254962.084372
-145,49792,1900,1499254962.084377
-145,49792,1900,1499254962.084378
-145,49792,1900,1499254962.084379 
-145,49792,1900,1499254962.084380 
-...
+## Filter records
+
+```sh
+net dump -read analysis/UDP.ncap.gz -filter 'DstPort == 9999' -json
 ```
 
-Print selection in the supplied order and convert timestamps to UTC time:
+Expressions are typed against this file's record type. Keep shell quoting around
+the expression, and check errors rather than treating failure as zero matches.
+For TCP/UDP numeric ports compare integers; for Connection strings compare
+quoted strings. See [Filtering](FILTERING.md).
 
-```text
-$ net dump -read UDP.ncap.gz -select Timestamp,SrcPort,DstPort,Length -utc
-2012-03-16 13:30:07.1 +0000 UTC,53,42665,120
-2012-03-16 13:30:07.1 +0000 UTC,42665,53,53
-2012-03-16 13:30:07.29 +0000 UTC,51190,53,39
-2012-03-16 13:30:07.29 +0000 UTC,56434,53,39
-2012-03-16 13:30:07.33 +0000 UTC,137,137,58
-...
-```
+## Time order
 
-To save the output into a new file, simply redirect the standard output:
+Go v0.15.2 enables timestamp ordering for `dump` through `-sort-time`; inspect
+`dump -h` for overrides. Sorting uses bounded-memory temporary files. Stream
+completion and concurrent writers mean original file order can differ from
+capture time. Sorting changes presentation, not the source evidence or packet
+ordering. UTC/string display is separate from raw nanosecond timestamps.
 
-```text
-$ net dump -read UDP.ncap.gz -select Timestamp,SrcPort,DstPort,Length -utc > UDP.csv
-```
-
+Use a new destination when preserving a prior export: shell `>` truncates an
+existing file. This differs from evidence commands that explicitly refuse
+replacement. For packet-preserving selection and provenance, use
+[`investigate packet-evidence`](evidence.md#export-packet-evidence).

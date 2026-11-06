@@ -75,7 +75,7 @@ captures and shows availability, loaded providers and build timestamps.
 
 DB-IP Lite (CC BY 4.0) is credited through the web UI footer and archive notices.
 City names are approximate. User-installed MaxMind files are never included in
-community archives. See [provider and installation instructions](../internal/dbs/README.md#geolocation-providers).
+community archives. See [provider and installation instructions](https://github.com/dreadl0ck/netcap/blob/v0.15.2/internal/dbs/README.md#geolocation-providers).
 
 ## Vendor Identification
 
@@ -84,7 +84,8 @@ external catalogue reader are retired; `-macDB` does not fetch that service.
 
 ## Service Identification
 
-Resolving port numbers to service names is done according to the CSV mapping from IANA, which contains 6104 records for TCP and UDP services at the time of this writing:
+Port names come from IANA's CSV mapping. They describe registered assignments,
+not confirmation of the application actually using a port:
 
 {% embed url="https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv" caption="IANA service names and ports" %}
 
