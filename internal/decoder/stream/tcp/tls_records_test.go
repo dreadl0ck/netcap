@@ -65,6 +65,9 @@ func TestTLSRecordTCPSelectionAndGap(t *testing.T) {
 			second := client.data[1]
 			client.data = client.data[:1]
 			conn.ReassembledSG(tlsGapSG{dir: reassembly.TCPDirClientToServer, skip: skip}, &mergeTestContext{ts: time.Unix(2, 0)})
+			if len(client.data) != 3 || len(client.data[2].Raw()) != 3 {
+				t.Fatal("observed post-gap bytes were discarded")
+			}
 			client.data = append(client.data, second)
 		}
 		conn.sortAndMergeFragments()
@@ -79,9 +82,6 @@ func TestTLSRecordTCPSelectionAndGap(t *testing.T) {
 			}
 		} else {
 			wantSkip := int64(skip)
-			if skip > 0 {
-				wantSkip += 3
-			}
 			if !r.Loss || !r.Incomplete || r.SkippedBytes != wantSkip {
 				t.Fatalf("gap: %v", r)
 			}

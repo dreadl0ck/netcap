@@ -22,11 +22,13 @@ package http
 import (
 	"bytes"
 	"compress/gzip"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 
+	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	ja4 "github.com/dreadl0ck/netcap/internal/ja4plusadapter"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/types"
@@ -38,6 +40,9 @@ import (
 
 // set HTTP request on types.HTTP.
 func setRequest(h *types.HTTP, req *httpRequest) {
+	if req.incomplete {
+		h.ReassemblyStatus = "incomplete_request_body"
+	}
 	// set basic info
 	h.Timestamp = req.timestamp
 	h.Proto = req.request.Proto
@@ -49,6 +54,10 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	h.RequestHeader = readHeader(req.request.Header)
 
 	body, err := ioutil.ReadAll(req.request.Body)
+	req.request.Body = io.NopCloser(bytes.NewReader(body))
+	if decoderconfig.Instance != nil && decoderconfig.Instance.IncludePayloads {
+		h.RequestBody = body
+	}
 	if err == nil {
 		h.ContentTypeDetected = http.DetectContentType(body)
 
@@ -64,11 +73,12 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 		}
 	}
 
-	// manually replace commas, to avoid breaking them the CSV
-	// use the -check flag to validate the generated CSV output and find errors quickly if other fields slipped through
-	h.UserAgent = removeCommas(req.request.UserAgent())
-	h.Referer = removeCommas(req.request.Referer())
-	h.URL = removeCommas(req.request.URL.String())
+	h.UserAgent = req.request.UserAgent()
+	h.Referer = req.request.Referer()
+	h.URL = req.request.RequestURI
+	if req.parseIssue != "" {
+		h.ReassemblyStatus = req.parseIssue
+	}
 
 	// retrieve ip addresses and ports set on the request while processing
 	h.SrcIP = req.clientIP
@@ -100,10 +110,6 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 		// Lookup JA4H fingerprint in database for enrichment
 		h.Ja4HDescription = resolvers.LookupJA4H(h.Ja4H)
 	}
-}
-
-func removeCommas(s string) string {
-	return strings.Replace(s, ",", "(comma)", -1)
 }
 
 // readCookies transforms an array of *http.Cookie to an array of *types.HTTPCookie.
@@ -158,7 +164,7 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 		}
 	}
 
-	return &types.HTTP{
+	record := &types.HTTP{
 		ResContentLength:       contentLength,
 		ResContentType:         res.Header.Get(headerContentType),
 		StatusCode:             int32(res.StatusCode),
@@ -179,6 +185,10 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 		Server:                   res.Header.Get("Server"),
 		XPoweredBy:               res.Header.Get("X-Powered-By"),
 	}
+	if decoderconfig.Instance != nil && decoderconfig.Instance.IncludePayloads {
+		record.ResponseBody = body
+	}
+	return record
 }
 
 // extractAuthType extracts the authorization type from the Authorization header

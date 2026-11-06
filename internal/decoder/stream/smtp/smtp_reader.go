@@ -99,6 +99,7 @@ const (
 
 type smtpReader struct {
 	conversation *core.ConversationInfo
+	greeting     string
 
 	smtpRequests  []*types.SMTPRequest
 	smtpResponses []*types.SMTPResponse
@@ -106,11 +107,14 @@ type smtpReader struct {
 	resIndex      int
 
 	user, pass, token string
+	upgradePending    bool
+	encrypted         bool
 }
 
 func validSMTPCommand(cmd string) bool {
 	switch cmd {
 	case smtpDot,
+		"AUTH",
 		smtpHELO,
 		smtpMAILFROM,
 		smtpRCPTTO,
@@ -170,14 +174,16 @@ func (h *smtpReader) Decode() {
 	mails := h.processSMTPConversation()
 
 	smtpMsg := &types.SMTP{
-		Timestamp:   h.conversation.FirstClientPacket.UnixNano(),
-		SrcIP:       h.conversation.ClientIP,
-		DstIP:       h.conversation.ServerIP,
-		SrcPort:     h.conversation.ClientPort,
-		DstPort:     h.conversation.ServerPort,
-		MailIDs:     mails,
-		Commands:    commands,
-		CommunityID: h.conversation.CommunityID,
+		ServerGreeting: h.greeting,
+		IsEncrypted:    h.encrypted,
+		Timestamp:      h.conversation.FirstClientPacket.UnixNano(),
+		SrcIP:          h.conversation.ClientIP,
+		DstIP:          h.conversation.ServerIP,
+		SrcPort:        h.conversation.ClientPort,
+		DstPort:        h.conversation.ServerPort,
+		MailIDs:        mails,
+		Commands:       commands,
+		CommunityID:    h.conversation.CommunityID,
 	}
 
 	// export metrics if configured
@@ -199,6 +205,9 @@ func smtpDebug(msg string, fields ...zap.Field) {
 }
 
 func (h *smtpReader) readRequest(b *bufio.Reader) error {
+	if h.encrypted {
+		return io.EOF
+	}
 	var (
 		tp   = textproto.NewReader(b)
 		data []string
@@ -225,6 +234,9 @@ nextLine:
 	)
 
 	cmd, args := getSMTPCommand(line)
+	if cmd == smtpSTARTTLS {
+		h.upgradePending = true
+	}
 
 	if cmd == smtpDot {
 
@@ -273,9 +285,10 @@ func getSMTPCommand(line string) (string, []string) {
 	cmd := strings.Split(line, " ")
 
 	if strings.ToUpper(cmd[0]) == "MAIL" || strings.ToUpper(cmd[0]) == "RCPT" {
-		cmd = strings.Split(line, ": ")
+		cmd = strings.SplitN(line, ":", 2)
+		cmd[0] = strings.ToUpper(strings.TrimSpace(cmd[0]))
 		if len(cmd) > 1 {
-			cmd[1] = strings.Trim(cmd[1], "<>")
+			cmd[1] = strings.Trim(strings.TrimSpace(cmd[1]), "<>")
 		}
 	}
 
@@ -283,6 +296,9 @@ func getSMTPCommand(line string) (string, []string) {
 }
 
 func (h *smtpReader) readResponse(b *bufio.Reader) error {
+	if h.encrypted {
+		return io.EOF
+	}
 	var (
 		tp   = textproto.NewReader(b)
 		data []string
@@ -293,6 +309,15 @@ func (h *smtpReader) readResponse(b *bufio.Reader) error {
 nextLine:
 	// Parse the first line of the response.
 	line, err := tp.ReadLine()
+	if h.greeting == "" && !h.upgradePending && replyPrefix([]byte(line)) && len(line) <= 16384 {
+		h.greeting = line
+	}
+	if h.upgradePending && strings.HasPrefix(line, "220 ") {
+		h.encrypted = true
+	}
+	if h.upgradePending && len(line) > 0 && (line[0] == '4' || line[0] == '5') {
+		h.upgradePending = false
+	}
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {

@@ -20,12 +20,15 @@
 package stream
 
 import (
+	"bytes"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/dcerpc"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/modbus"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/smtp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tls"
 )
 
@@ -68,6 +71,8 @@ type SelectionInput struct {
 
 	// ScanClient and ScanServer are the bytes offered to the fallback scan.
 	ScanClient, ScanServer []byte
+	// ScanBytes is evaluated only if the registered-port fast path misses.
+	ScanBytes func() ([]byte, []byte)
 	// UDP datagrams are independent messages. If the first is incomplete or
 	// unrecognized, a later complete one may still identify the conversation;
 	// their bytes must never be concatenated as though this were TCP.
@@ -116,6 +121,7 @@ func SelectDecoder(in *SelectionInput) (Selection, bool) {
 		if portScore > core.SpecificityWeak {
 			return sel, true
 		}
+		in.loadScanBytes()
 		if other, matched := selectByScan(in); matched && other.Name != sel.Name {
 			scanScore, _ := matchScore(other.API, in, false)
 			if scanScore > portScore {
@@ -125,7 +131,15 @@ func SelectDecoder(in *SelectionInput) (Selection, bool) {
 		return sel, true
 	}
 
+	in.loadScanBytes()
 	return selectByScan(in)
+}
+
+func (in *SelectionInput) loadScanBytes() {
+	if in.ScanBytes != nil {
+		in.ScanClient, in.ScanServer = in.ScanBytes()
+		in.ScanBytes = nil
+	}
 }
 
 // eligible reports whether a decoder can serve this transport and can produce a
@@ -146,13 +160,18 @@ func configuredDecoder(name string) bool {
 	if c == nil {
 		return true
 	}
+	if name == "SMB" && dcerpc.Decoder.Writer != nil && !decoderListed(c.ExcludeDecoders, "DCERPC") && (c.IncludeDecoders == "" || decoderListed(c.IncludeDecoders, "DCERPC")) {
+		return true
+	}
 	// TLSRecord is an abstract writer fed by TLSCertificate's stream reader.
 	// Selecting only TLSRecord deliberately leaves the certificate writer nil;
 	// the stream reader must nevertheless remain eligible to frame records.
-	if name == tls.Decoder.GetName() && tls.RecordDecoder.Writer != nil &&
-		!decoderListed(c.ExcludeDecoders, tls.RecordDecoder.GetName()) &&
-		(c.IncludeDecoders == "" || decoderListed(c.IncludeDecoders, tls.RecordDecoder.GetName())) {
-		return true
+	if name == tls.Decoder.GetName() {
+		for _, d := range []*decoder.AbstractDecoder{tls.RecordDecoder, tls.ClientHelloDecoder, tls.ServerHelloDecoder} {
+			if d.Writer != nil && !decoderListed(c.ExcludeDecoders, d.GetName()) && (c.IncludeDecoders == "" || decoderListed(c.IncludeDecoders, d.GetName())) {
+				return true
+			}
+		}
 	}
 	if c.IncludeDecoders != "" && !decoderListed(c.IncludeDecoders, name) {
 		return false
@@ -192,6 +211,12 @@ func matchScore(sd core.StreamDecoderAPI, in *SelectionInput, portPass bool) (in
 		client, server = in.PortClient, in.PortServer
 	}
 	if !sd.CanDecodeStream(client, server) {
+		if sd.GetName() == "POP3" && in.ServerPort == 110 && (bytes.HasPrefix(server, []byte("+OK ")) || bytes.HasPrefix(server, []byte("+OK\r\n"))) {
+			return core.SpecificityWeak, true
+		}
+		if sd.GetName() == "SMTP" && (in.ServerPort == 25 || in.ServerPort == 587 || in.ServerPort == 2525 || in.ServerPort == 5025) && smtp.PartialGreeting(client, server) {
+			return core.SpecificityWeak, true
+		}
 		return 0, false
 	}
 	return sd.MatchSpecificity(client, server), true

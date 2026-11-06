@@ -19,8 +19,8 @@ const nvdFixture = `{"resultsPerPage":2,"format":"NVD_CVE","version":"2.0","vuln
 {"cve":{"id":"CVE-2020-2","descriptions":[{"lang":"de","value":"no english"}]}}
 ]}`
 
-const exploitFixture = "id,file,description,date_published,author,type,platform,port\n" +
-	"50383,exploits/multiple/webapps/50383.sh,\"Apache HTTP Server 2.4.49 - Path Traversal\",2021-10-06,Lucas Souza,webapps,multiple,\n"
+const exploitFixture = "id,file,description,date_published,author,type,platform,port,codes\n" +
+	"50383,exploits/multiple/webapps/50383.sh,\"Apache HTTP Server 2.4.49 - Path Traversal\",2021-10-06,Lucas Souza,webapps,multiple,,CVE-2021-41773\n"
 
 func writeGz(t *testing.T, path, content string) {
 	t.Helper()
@@ -61,7 +61,7 @@ func TestBuildVulnDBFromFeeds(t *testing.T) {
 		t.Fatalf("%+v %v", v, err)
 	}
 	// version taken from the description when no CPE carries one
-	if v, _ = d.Vulnerabilities("Example", "", "1.2.3"); len(v) != 1 {
+	if v, _ = d.VulnerabilityCandidates("Example", "", "1.2.3"); len(v) != 1 {
 		t.Fatalf("description version: %+v", v)
 	}
 	e, err := d.Exploits("Apache", "", "2.4.49")

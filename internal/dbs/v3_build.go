@@ -114,7 +114,7 @@ func buildCandidatePinned(root string, startYear int, approvalsPath, registrySHA
 		return "", err
 	}
 	sum := values["input_sha256"]
-	evidence = append(evidence, SourceEvidence{ID: "nvd", Origin: "https://nvd.nist.gov/feeds/json/cve/2.0/", Revision: strconv.Itoa(startYear) + "-" + values["nvd_end_year"] + ":" + sum, SHA256: sum, Transformation: "netcap-nvd-v3.4: frozen complete NVD 2.0 yearly gzip inputs, NVD-only SQLite schema 1 with nvd_rowid_alias_version=1 valid version foreign key and nvd_references_version=1 HTTP(S) link metadata, sorted metadata without wall-clock fields", NVDInputs: nvdInputs})
+	evidence = append(evidence, SourceEvidence{ID: "nvd", Origin: "https://nvd.nist.gov/feeds/json/cve/2.0/", Revision: strconv.Itoa(startYear) + "-" + values["nvd_end_year"] + ":" + sum, SHA256: sum, Transformation: "netcap-nvd-v3.5: frozen complete NVD 2.0 yearly gzip inputs, NVD-only SQLite schema 2 with structured CPE applicability, nvd_rowid_alias_version=1 valid foreign keys and nvd_references_version=1 HTTP(S) link metadata, sorted metadata without wall-clock fields", NVDInputs: nvdInputs})
 	if err := includeDBIP(base, filepath.Join(base, "geoip-cache")); err != nil {
 		return "", err
 	}

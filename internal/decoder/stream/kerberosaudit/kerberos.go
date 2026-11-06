@@ -172,6 +172,8 @@ func isKerberosAppTag(b byte) bool {
 		0x6b, // tag 11 = AS-REP
 		0x6c, // tag 12 = TGS-REQ
 		0x6d, // tag 13 = TGS-REP
+		0x6e, // tag 14 = AP-REQ
+		0x6f, // tag 15 = AP-REP
 		0x7e: // tag 30 = KRB-ERROR
 		return true
 	}

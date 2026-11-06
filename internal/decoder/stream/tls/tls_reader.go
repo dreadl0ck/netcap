@@ -51,7 +51,10 @@ import (
  */
 
 type tlsReader struct {
-	conversation *core.ConversationInfo
+	conversation    *core.ConversationInfo
+	tls13           bool
+	serverKnown     bool
+	clientOffered13 bool
 }
 
 // New returns a new TLS reader
@@ -72,7 +75,7 @@ func (h *tlsReader) Decode() {
 		zap.Int("serverPort", int(h.conversation.ServerPort)),
 	)
 
-	if Decoder.Writer == nil && RecordDecoder.Writer == nil {
+	if Decoder.Writer == nil && RecordDecoder.Writer == nil && !helloEnabled() {
 		return
 	}
 	h.frameConversation()

@@ -50,7 +50,7 @@ func TestReferenceOrderDoesNotChangeDatabase(t *testing.T) {
 	}
 }
 
-func TestReferencesOptionalSchemaOne(t *testing.T) {
+func TestReferencesOptionalCapability(t *testing.T) {
 	for _, mode := range []string{"old", "missing-table", "unknown-version"} {
 		t.Run(mode, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), FileName)
@@ -84,7 +84,7 @@ func TestReferencesOptionalSchemaOne(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer d.Close()
-			v, err := d.Vulnerabilities("", "product", "1.0")
+			v, err := d.VulnerabilityCandidates("", "product", "1.0")
 			if err != nil || len(v) != 1 || v[0].References == nil || len(v[0].References) != 0 {
 				t.Fatalf("%+v %v", v, err)
 			}

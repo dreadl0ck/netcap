@@ -1165,7 +1165,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 	// Note: Some defaults are hardcoded here as they're not defined in the defaults package
 	compressValue := true // default compression enabled
 	bufferValue := true   // default buffering enabled
-	workersValue := runtime.NumCPU() * 2
+	workersValue := defaults.CaptureWorkers()
 	pbufValue := defaults.PacketBuffer
 	membufValue := defaults.BufferSize
 	ifaceValue := ""
@@ -1300,7 +1300,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		{
 			Name:        "workers",
 			Value:       workersValue,
-			Default:     runtime.NumCPU() * 2,
+			Default:     defaults.CaptureWorkers(),
 			Type:        "int",
 			Description: "Number of workers",
 			Category:    "Performance",

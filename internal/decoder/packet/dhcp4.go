@@ -20,6 +20,7 @@
 package packet
 
 import (
+	"bytes"
 	"strconv"
 	"strings"
 
@@ -132,6 +133,7 @@ var dhcpv4Decoder = newGoPacketDecoder(
 				ja4dFingerprint = ja4.ComputeJA4D(ja4dData)
 			}
 
+			serverName, bootFile := dhcpTextFields(dhcp4)
 			return &types.DHCPv4{
 				Timestamp:        timestamp,
 				Operation:        int32(dhcp4.Operation),
@@ -146,8 +148,8 @@ var dhcpv4Decoder = newGoPacketDecoder(
 				NextServerIP:     dhcp4.NextServerIP.String(),
 				RelayAgentIP:     dhcp4.RelayAgentIP.String(),
 				ClientHWAddr:     dhcp4.ClientHWAddr.String(),
-				ServerName:       dhcp4.ServerName,
-				File:             dhcp4.File,
+				ServerName:       serverName,
+				File:             bootFile,
 				Options:          opts,
 				Fingerprint:      fp.String(),
 				MessageType:      messageType,
@@ -163,3 +165,20 @@ var dhcpv4Decoder = newGoPacketDecoder(
 		return nil
 	},
 )
+
+func dhcpTextFields(d *layers.DHCPv4) ([]byte, []byte) {
+	var overload byte
+	for _, o := range d.Options {
+		if o.Type == 52 && len(o.Data) == 1 {
+			overload = o.Data[0]
+		}
+	}
+	name, file := d.ServerName, d.File
+	if overload&2 == 0 {
+		name = bytes.TrimRight(name, "\x00")
+	}
+	if overload&1 == 0 {
+		file = bytes.TrimRight(file, "\x00")
+	}
+	return name, file
+}

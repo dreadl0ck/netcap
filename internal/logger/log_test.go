@@ -21,6 +21,7 @@ package logger_test
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/logger"
@@ -52,13 +53,16 @@ func TestInitZapLogger(t *testing.T) {
 	if l == nil {
 		t.Fatal("expected a logger")
 	}
-	if f == nil {
-		t.Fatal("expected log file handle")
+	if f != nil {
+		t.Fatal("lazy logger unexpectedly opened a file")
+	}
+	if _, err := os.Stat(filepath.Join(tempDir, "testlog.log")); !os.IsNotExist(err) {
+		t.Fatal("unused logger created an empty file")
 	}
 
 	l.Info("test")
 
-	err = f.Close()
+	err = l.Sync()
 	if err != nil {
 		t.Fatal("expected no error")
 	}

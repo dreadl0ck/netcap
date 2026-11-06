@@ -22,6 +22,7 @@ package http
 import (
 	"fmt"
 	"path"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
@@ -46,6 +47,11 @@ func (h *HTTPFileExtractor) ExtractFile(conv *core.ConversationInfo, data []byte
 }
 
 func (h *HTTPFileExtractor) extractFile(conv *core.ConversationInfo, data []byte, metadata file.FileMetadata, bodyErr error) error {
+	if metadata.Timestamp != 0 {
+		copy := *conv
+		copy.FirstClientPacket = time.Unix(0, metadata.Timestamp)
+		conv = &copy
+	}
 	// Check if HTTP file extraction is enabled
 	if !file.IsProtocolEnabled("HTTP") {
 		return nil

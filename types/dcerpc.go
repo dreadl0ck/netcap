@@ -20,6 +20,8 @@
 package types
 
 import (
+	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -54,6 +56,7 @@ var fieldsDCERPC = []string{
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	"ContextID", "CommunityID", "OperationName", "FaultStatus", "Identities", "IdentityStatus",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -63,6 +66,7 @@ func (a *DCERPC) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (a *DCERPC) CSVRecord() []string {
+	identities, _ := json.Marshal(a.Identities)
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.Version),      // int32
@@ -80,6 +84,7 @@ func (a *DCERPC) CSVRecord() []string {
 		a.DstIP,
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
+		formatInt32(a.ContextID), a.CommunityID, a.OperationName, fmt.Sprint(a.FaultStatus), string(identities), a.IdentityStatus,
 	})
 }
 
@@ -126,23 +131,25 @@ var dcerpcEncoder = encoder.NewValueEncoder()
 
 // Encode will encode categorical values and normalize according to configuration
 func (a *DCERPC) Encode() []string {
+	identities, _ := json.Marshal(a.Identities)
 	return filter([]string{
 		dcerpcEncoder.Int64(fieldTimestamp, a.Timestamp),
-		dcerpcEncoder.Int32(fieldVersion, a.Version),              // int32
-		dcerpcEncoder.Int32(fieldVersionMinor, a.VersionMinor),    // int32
-		dcerpcEncoder.Int32(fieldPacketType, a.PacketType),        // int32
+		dcerpcEncoder.Int32(fieldVersion, a.Version),                // int32
+		dcerpcEncoder.Int32(fieldVersionMinor, a.VersionMinor),      // int32
+		dcerpcEncoder.Int32(fieldPacketType, a.PacketType),          // int32
 		dcerpcEncoder.String(fieldPacketTypeName, a.PacketTypeName), // string
-		dcerpcEncoder.Int32(fieldFlags, a.Flags),                  // int32
-		dcerpcEncoder.Int32(fieldFragLength, a.FragLength),        // int32
-		dcerpcEncoder.Int32(fieldCallID, a.CallID),                // int32
-		dcerpcEncoder.String(fieldInterfaceUUID, a.InterfaceUUID), // string
-		dcerpcEncoder.String(fieldInterfaceName, a.InterfaceName), // string
-		dcerpcEncoder.Int32(fieldOpNum, a.OpNum),                  // int32
+		dcerpcEncoder.Int32(fieldFlags, a.Flags),                    // int32
+		dcerpcEncoder.Int32(fieldFragLength, a.FragLength),          // int32
+		dcerpcEncoder.Int32(fieldCallID, a.CallID),                  // int32
+		dcerpcEncoder.String(fieldInterfaceUUID, a.InterfaceUUID),   // string
+		dcerpcEncoder.String(fieldInterfaceName, a.InterfaceName),   // string
+		dcerpcEncoder.Int32(fieldOpNum, a.OpNum),                    // int32
 		dcerpcEncoder.String(fieldFlow, a.Flow),
 		dcerpcEncoder.String(fieldSrcIP, a.SrcIP),
 		dcerpcEncoder.String(fieldDstIP, a.DstIP),
 		dcerpcEncoder.Int32(fieldSrcPort, a.SrcPort),
 		dcerpcEncoder.Int32(fieldDstPort, a.DstPort),
+		dcerpcEncoder.Int32("ContextID", a.ContextID), dcerpcEncoder.String("CommunityID", a.CommunityID), dcerpcEncoder.String("OperationName", a.OperationName), dcerpcEncoder.String("FaultStatus", fmt.Sprint(a.FaultStatus)), dcerpcEncoder.String("Identities", string(identities)), dcerpcEncoder.String("IdentityStatus", a.IdentityStatus),
 	})
 }
 

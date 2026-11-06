@@ -1,5 +1,7 @@
 package dbs
 
+import "github.com/dreadl0ck/netcap/internal/vulndb"
+
 type NVD2 struct {
 	ResultsPerPage  int       `json:"resultsPerPage"`
 	StartIndex      int       `json:"startIndex"`
@@ -58,22 +60,8 @@ type nvdCVE struct {
 			Value string `json:"value"`
 		} `json:"description"`
 	} `json:"weaknesses"`
-	Configurations []struct {
-		Nodes []struct {
-			Operator string `json:"operator"`
-			Negate   bool   `json:"negate"`
-			CpeMatch []struct {
-				Vulnerable            bool   `json:"vulnerable"`
-				Criteria              string `json:"criteria"`
-				MatchCriteriaID       string `json:"matchCriteriaId"`
-				VersionStartIncluding string `json:"versionStartIncluding,omitempty"`
-				VersionEndExcluding   string `json:"versionEndExcluding,omitempty"`
-				VersionStartExcluding string `json:"versionStartExcluding,omitempty"`
-				VersionEndIncluding   string `json:"versionEndIncluding,omitempty"`
-			} `json:"cpeMatch"`
-		} `json:"nodes"`
-	} `json:"configurations"`
-	References []struct {
+	Configurations []vulndb.Configuration `json:"configurations"`
+	References     []struct {
 		URL    string   `json:"url"`
 		Source string   `json:"source"`
 		Tags   []string `json:"tags"`

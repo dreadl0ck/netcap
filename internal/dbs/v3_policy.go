@@ -21,7 +21,7 @@ import (
 
 const (
 	V3Layout      = 3
-	VulnDBSchema  = 1
+	VulnDBSchema  = vulndb.SchemaVersion
 	CandidateFile = "SOURCE_CANDIDATE.json"
 	ManifestFile  = "RELEASE_MANIFEST.json"
 )

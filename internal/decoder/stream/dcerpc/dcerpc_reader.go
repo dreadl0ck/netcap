@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -35,15 +36,20 @@ type dcerpcReader struct {
 	conversation *core.ConversationInfo
 	// presentation context id -> abstract syntax UUID, learned from Bind and AlterContext
 	contexts map[uint16]string
+	ndr32    map[uint16]bool
+	ndr64    map[uint16]bool
 	// call id -> requests awaiting a response, oldest first
-	calls   map[uint32][]call
-	pending int
+	calls         map[uint32][]call
+	pending       int
+	stubFragments map[uint64][]byte
+	lookupInputs  map[uint64][]*types.WindowsIdentity
 }
 
 type call struct {
-	context uint16
-	opnum   uint16
-	uuid    string
+	context   uint16
+	opnum     uint16
+	uuid      string
+	infoClass uint16
 }
 
 // New returns a new DCE/RPC reader.
@@ -121,7 +127,7 @@ var operationNames = map[string]map[uint16]string{
 	"DRSUAPI":               {0: "IDL_DRSBind", 1: "IDL_DRSUnbind", 3: "IDL_DRSGetNCChanges", 12: "IDL_DRSCrackNames"},
 	"WINREG":                {2: "OpenLocalMachine", 6: "BaseRegCreateKey", 8: "BaseRegDeleteKey", 15: "BaseRegOpenKey", 17: "BaseRegQueryValue", 22: "BaseRegSetValue"},
 	"SAMR": {5: "SamrLookupDomainInSamServer", 6: "SamrEnumerateDomainsInSamServer", 7: "SamrOpenDomain", 13: "SamrEnumerateUsersInDomain",
-		17: "SamrLookupNamesInDomain", 34: "SamrOpenUser", 64: "SamrConnect5"},
+		17: "SamrLookupNamesInDomain", 34: "SamrOpenUser", 36: "SamrQueryInformationUser", 47: "SamrQueryInformationUser2", 64: "SamrConnect5"},
 	"EFSR":   {0: "EfsRpcOpenFileRaw", 4: "EfsRpcEncryptFileSrv"},
 	"LSARPC": {14: "LsarLookupNames", 15: "LsarLookupSids", 44: "LsarOpenPolicy2"},
 }
@@ -151,8 +157,12 @@ func (d *dcerpcReader) Decode() {
 // an operation from a request or binding that arrives later.
 func (d *dcerpcReader) decode(emit func(*types.DCERPC)) {
 	d.contexts = map[uint16]string{}
+	d.ndr32 = map[uint16]bool{}
+	d.ndr64 = map[uint16]bool{}
 	d.calls = map[uint32][]call{}
 	d.pending = 0
+	d.stubFragments = make(map[uint64][]byte)
+	d.lookupInputs = make(map[uint64][]*types.WindowsIdentity)
 
 	fragments := d.conversation.Data
 	if len(fragments) == 0 {
@@ -172,8 +182,12 @@ func (d *dcerpcReader) decode(emit func(*types.DCERPC)) {
 		if gap, ok := f.(*core.StreamData); ok && gap.SkippedBytes != 0 {
 			b.data = nil
 			d.contexts = map[uint16]string{}
+			d.ndr32 = map[uint16]bool{}
+			d.ndr64 = map[uint16]bool{}
 			d.calls = map[uint32][]call{}
 			d.pending = 0
+			d.stubFragments = make(map[uint64][]byte)
+			d.lookupInputs = make(map[uint64][]*types.WindowsIdentity)
 			continue
 		}
 		raw := f.Raw()
@@ -209,6 +223,11 @@ func (d *dcerpcReader) decode(emit func(*types.DCERPC)) {
 			rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = d.conversation.Endpoints(f)
 			rec.Timestamp = b.at
 			rec.Flow, rec.CommunityID = d.conversation.Ident, d.conversation.CommunityID
+			auth := int(order.Uint16(b.data[10:12]))
+			trailer := len(b.data) - auth - 8
+			if auth > 0 && trailer >= 16 && b.data[trailer] == 10 {
+				secret.HarvestNTLMIdentityToken(b.data[len(b.data)-auth:], rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort, rec.Timestamp, rec.CommunityID)
+			}
 			emit(rec)
 			b.data = b.data[:0]
 		}
@@ -235,6 +254,7 @@ func (d *dcerpcReader) parsePDU(pdu []byte, order binary.ByteOrder) *types.DCERP
 	}
 
 	body := pdu[dcerpcHeaderLen:]
+	var responseClass uint16
 	switch pktType {
 	case ptypeRequest:
 		// alloc_hint(4) p_cont_id(2) opnum(2)
@@ -255,6 +275,7 @@ func (d *dcerpcReader) parsePDU(pdu []byte, order binary.ByteOrder) *types.DCERP
 			rec.ContextID = int32(ctx)
 			request, known := d.complete(callID, ctx, pdu[3]&0x02 != 0 || pktType == ptypeFault)
 			if known {
+				responseClass = request.infoClass
 				rec.OpNum = int32(request.opnum)
 				rec.InterfaceUUID = request.uuid
 				rec.InterfaceName = wellKnownInterfaces[request.uuid]
@@ -269,6 +290,7 @@ func (d *dcerpcReader) parsePDU(pdu []byte, order binary.ByteOrder) *types.DCERP
 	case ptypeBind, ptypeAlterContext:
 		d.parseContextList(body, rec, order)
 	}
+	d.decodeIdentityStub(rec, pdu, order, responseClass)
 
 	return rec
 }
@@ -332,6 +354,14 @@ func (d *dcerpcReader) parseContextList(body []byte, rec *types.DCERPC, order bi
 		}
 		if _, exists := d.contexts[ctx]; exists || len(d.contexts) < maxContexts {
 			d.contexts[ctx] = uuid
+			if d.ndr32 == nil {
+				d.ndr32 = map[uint16]bool{}
+			}
+			if d.ndr64 == nil {
+				d.ndr64 = map[uint16]bool{}
+			}
+			d.ndr32[ctx] = transfers == 1 && at+44 <= len(body) && formatUUID(body[at+24:at+40], order) == "8a885d04-1ceb-11c9-9fe8-08002b104860"
+			d.ndr64[ctx] = transfers == 1 && at+44 <= len(body) && formatUUID(body[at+24:at+40], order) == "71710533-beba-4937-8319-b5dbef9ccc36"
 		}
 		at += 24 + 20*transfers
 	}

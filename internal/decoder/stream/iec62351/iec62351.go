@@ -20,6 +20,7 @@
 package iec62351
 
 import (
+	"encoding/binary"
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
@@ -78,13 +79,6 @@ var (
 	// MMS uses ASN.1 BER encoding, security extensions have specific OID patterns
 	iec61850MMSSecurityOID = []byte{0x06, 0x05, 0x28, 0xCA, 0x22} // Partial OID for IEC 61850 security
 
-	// TLS/SSL for IEC 62351-3 transport security
-	tlsHandshakeClientHello = byte(0x01)
-	tlsHandshakeServerHello = byte(0x02)
-	tlsHandshakeCertificate = byte(0x0B)
-
-	// Common security authentication headers
-	securityAuthHeader = []byte{0x62, 0x35, 0x31} // "621" in ASCII as a marker
 )
 
 // Decoder for IEC 62351 protocol analysis and writing audit records to disk.
@@ -137,18 +131,10 @@ func canDecodeIEC62351(data []byte) bool {
 		return true
 	}
 
-	// Check for TLS-secured power system communications
-	if hasTLSSecurityHandshake(data) {
-		return true
-	}
+	// A generic TLS handshake carries no evidence of a power-system protocol.
 
 	// Check for DNP3 Secure Authentication headers
 	if hasDNP3SecureAuth(data) {
-		return true
-	}
-
-	// Check for explicit IEC 62351 security authentication header
-	if hasSecurityAuthenticationHeader(data) {
 		return true
 	}
 
@@ -164,7 +150,7 @@ func hasIEC61850SecurityExtensions(data []byte) bool {
 	}
 
 	// Check for TPKT header (version 3)
-	if data[0] != 0x03 {
+	if data[0] != 0x03 || data[1] != 0 || int(binary.BigEndian.Uint16(data[2:4])) > len(data) || binary.BigEndian.Uint16(data[2:4]) < 10 {
 		return false
 	}
 
@@ -193,7 +179,7 @@ func hasIEC104SecurityASDU(data []byte) bool {
 	}
 
 	// Check for APCI start bytes (0x68 = start, then length)
-	if data[0] != 0x68 {
+	if data[0] != 0x68 || int(data[1])+2 > len(data) || data[1] < 10 || data[2]&1 != 0 || data[4]&1 != 0 {
 		return false
 	}
 
@@ -202,47 +188,6 @@ func hasIEC104SecurityASDU(data []byte) bool {
 	asduType := data[6]
 	if asduType >= 0x50 && asduType <= 0x5F {
 		return true
-	}
-
-	// Also check for authentication challenge/response patterns
-	// These may appear in the information object area
-	if len(data) >= 20 {
-		// Look for challenge/response structures
-		for i := 6; i < len(data)-4; i++ {
-			if data[i] == MsgTypeChallengeRequest || data[i] == MsgTypeChallengeResponse ||
-				data[i] == MsgTypeAuthenticationRequest || data[i] == MsgTypeAuthenticationResponse {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-// hasTLSSecurityHandshake checks for TLS handshake messages (IEC 62351-3)
-func hasTLSSecurityHandshake(data []byte) bool {
-	if len(data) < 6 {
-		return false
-	}
-
-	// TLS record layer: content type (1), version (2), length (2)
-	// Content type 22 = Handshake
-	if data[0] != 22 {
-		return false
-	}
-
-	// Check TLS version (1.0: 0x0301, 1.1: 0x0302, 1.2: 0x0303, 1.3: 0x0304)
-	if data[1] != 0x03 || (data[2] < 0x01 || data[2] > 0x04) {
-		return false
-	}
-
-	// Check handshake message type at offset 5
-	if len(data) > 5 {
-		handshakeType := data[5]
-		switch handshakeType {
-		case tlsHandshakeClientHello, tlsHandshakeServerHello, tlsHandshakeCertificate:
-			return true
-		}
 	}
 
 	return false
@@ -282,28 +227,6 @@ func hasDNP3SecureAuth(data []byte) bool {
 	switch data[12] {
 	case dnp3AuthenticateReq, dnp3AuthenticateReqNoAck, dnp3AuthenticateResp:
 		return true
-	}
-
-	return false
-}
-
-// hasSecurityAuthenticationHeader checks for explicit IEC 62351 security headers
-func hasSecurityAuthenticationHeader(data []byte) bool {
-	if len(data) < len(securityAuthHeader)+2 {
-		return false
-	}
-
-	for i := 0; i < len(data)-len(securityAuthHeader); i++ {
-		match := true
-		for j := range securityAuthHeader {
-			if data[i+j] != securityAuthHeader[j] {
-				match = false
-				break
-			}
-		}
-		if match {
-			return true
-		}
 	}
 
 	return false

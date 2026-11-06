@@ -73,6 +73,7 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 
 func writeSoftwareFromBanner(serv *service, ident, probeIdent string) {
 	software.WriteSoftware([]*software.AtomicSoftware{{Software: &types.Software{
+		ObservedHost: serv.IP, ObservationRole: "server",
 		Timestamp: serv.Timestamp, Product: serv.Product, Vendor: serv.Vendor, Version: serv.Version,
 		SourceName: "Service Signature: " + probeIdent, Service: serv.Name, Flows: []string{ident}, Notes: "Protocol: " + serv.Protocol,
 	}}}, nil)

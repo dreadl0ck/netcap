@@ -27,10 +27,11 @@ type discoveryExtractor func(data []byte, ident string, ts time.Time) *Discovery
 
 // portMapping maps well-known ports to their discovery extractors.
 var portMapping = map[int]discoveryExtractor{
-	5353: mdnsExtract, // mDNS
-	137:  nbnsExtract, // NBNS
-	1900: upnpExtract, // UPnP/SSDP
-	3702: wsdExtract,  // WSD
+	5353: mdnsExtract,    // mDNS
+	137:  nbnsExtract,    // NBNS
+	138:  browserExtract, // NetBIOS datagram browser announcements
+	1900: upnpExtract,    // UPnP/SSDP
+	3702: wsdExtract,     // WSD
 }
 
 // RunDiscovery runs network discovery extractors on conversation data and returns results.

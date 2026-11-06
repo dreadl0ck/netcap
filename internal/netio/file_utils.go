@@ -160,6 +160,10 @@ func createFile(name, ext string) *os.File {
 	if err != nil {
 		panic(fmt.Errorf("io: failed to create audit record file %q: %w", name+ext, err))
 	}
+	if err := f.Chmod(defaults.FilePermission); err != nil {
+		_ = f.Close()
+		panic(fmt.Errorf("io: failed to set audit record permissions %q: %w", name+ext, err))
+	}
 
 	return f
 }

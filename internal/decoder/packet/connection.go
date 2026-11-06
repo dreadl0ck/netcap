@@ -78,6 +78,8 @@ func isMulticastIP(ipStr string) bool {
 // between two devices over the network
 // that includes the Link, Network and TransportLayer.
 type connectionID struct {
+	Tuple           string
+	Scope           string
 	LinkFlowID      uint64
 	NetworkFlowID   uint64
 	TransportFlowID uint64
@@ -85,6 +87,9 @@ type connectionID struct {
 }
 
 func (c connectionID) String() string {
+	if c.Tuple != "" {
+		return c.Scope + "/" + c.Tuple + "/" + strconv.Itoa(int(c.IPProtocol))
+	}
 	return strconv.FormatUint(c.LinkFlowID, 10) + "/" + strconv.FormatUint(c.NetworkFlowID, 10) + "/" + strconv.FormatUint(c.TransportFlowID, 10) + "/" + strconv.Itoa(int(c.IPProtocol))
 }
 
@@ -261,6 +266,31 @@ func handlePacket(p gopacket.Packet) proto.Message {
 	if tl != nil {
 		connID.TransportFlowID = tl.TransportFlow().FastHash()
 	}
+	if nl != nil && tl != nil {
+		_, ipv4 := nl.(*layers.IPv4)
+		_, ipv6 := nl.(*layers.IPv6)
+		if ipv4 || ipv6 {
+			a, b := net.JoinHostPort(nl.NetworkFlow().Src().String(), connectionPort(tl.TransportFlow().Src())), net.JoinHostPort(nl.NetworkFlow().Dst().String(), connectionPort(tl.TransportFlow().Dst()))
+			if a > b {
+				a, b = b, a
+			}
+			connID.Tuple = a + "/" + b
+			connID.Scope = strconv.Itoa(p.Metadata().InterfaceIndex)
+			for _, layer := range p.Layers() {
+				if vlan, ok := layer.(*layers.Dot1Q); ok {
+					connID.Scope += "/vlan:" + strconv.Itoa(int(vlan.VLANIdentifier))
+				}
+			}
+			switch tl.(type) {
+			case *layers.TCP:
+				connID.IPProtocol = 6
+			case *layers.UDP:
+				connID.IPProtocol = 17
+			case *layers.SCTP:
+				connID.IPProtocol = 132
+			}
+		}
+	}
 
 	// lookup connection
 	key := connID.String()
@@ -333,6 +363,12 @@ retry:
 				// Check if the endpoint has valid data before converting to string
 				conn.SrcPort = connectionPort(tl.TransportFlow().Src())
 				conn.DstPort = connectionPort(tl.TransportFlow().Dst())
+			}
+			if conn.clientIP != conn.SrcIP || conn.clientPort != conn.SrcPort {
+				conn.clientIP, conn.clientPort = conn.SrcIP, conn.SrcPort
+				conn.BytesClientToServer, conn.BytesServerToClient = conn.BytesServerToClient, conn.BytesClientToServer
+				conn.packetsClientToServer, conn.packetsServerToClient = conn.packetsServerToClient, conn.packetsClientToServer
+				conn.finClient, conn.finServer = conn.finServer, conn.finClient
 			}
 		}
 

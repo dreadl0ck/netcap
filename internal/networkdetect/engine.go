@@ -49,16 +49,17 @@ type Evidence struct {
 }
 
 type Stats struct {
-	Schema     int    `json:"schema"`
-	Events     uint64 `json:"events"`
-	Alerts     uint64 `json:"alerts"`
-	Overflow   uint64 `json:"overflow"`
-	Late       uint64 `json:"late"`
-	StreamGaps uint64 `json:"streamGaps"`
-	Keys       int    `json:"keys"`
-	Flows      int    `json:"flows"`
-	Indicators int    `json:"indicators"`
-	Error      string `json:"error,omitempty"`
+	ApplicationAlerts uint64 `json:"applicationAlerts,omitempty"`
+	Schema            int    `json:"schema"`
+	Events            uint64 `json:"events"`
+	Alerts            uint64 `json:"alerts"`
+	Overflow          uint64 `json:"overflow"`
+	Late              uint64 `json:"late"`
+	StreamGaps        uint64 `json:"streamGaps"`
+	Keys              int    `json:"keys"`
+	Flows             int    `json:"flows"`
+	Indicators        int    `json:"indicators"`
+	Error             string `json:"error,omitempty"`
 }
 
 type window struct {
@@ -140,6 +141,9 @@ func (e *Engine) Observe(ev Event) ([]*types.Alert, error) {
 	var alerts []*types.Alert
 	add := func(detector, class, severity, mitre string, count, threshold uint64, samples []string, first int64, indicator *Indicator, limitations ...string) {
 		key := e.key(ev, detector+"|"+ev.DstIP+"|"+ev.Name)
+		if detector == "smtp.fanout" {
+			key = e.key(ev, detector)
+		}
 		if prev, ok := e.recent[key]; ok && ev.At-prev < e.config.DedupNS {
 			return
 		}
@@ -213,9 +217,19 @@ func (e *Engine) Observe(ev Event) ([]*types.Alert, error) {
 			}
 		}
 	case "syn":
-		count, first, samples := e.count(ev, "scan", fmt.Sprintf("%s:%d", ev.DstIP, ev.DstPort))
+		// Count scan shapes, not the union of normal web destinations.
+		count, first, samples := e.count(ev, "scan-vertical|"+ev.DstIP, fmt.Sprint(ev.DstPort))
 		if count >= e.config.ScanTargets {
-			add("network.scan", "behavioral-suspicion", "medium", "T1046", uint64(count), uint64(e.config.ScanTargets), samples, first, nil, "Distinct TCP destinations; connection outcomes and intent are not inferred")
+			add("network.scan", "behavioral-suspicion", "medium", "T1046", uint64(count), uint64(e.config.ScanTargets), samples, first, nil, "Distinct ports on one host; outcomes and intent are not inferred")
+		}
+		if ev.DstPort != 80 && ev.DstPort != 443 {
+			count, first, samples = e.count(ev, fmt.Sprintf("scan-horizontal|%d", ev.DstPort), ev.DstIP)
+			if count >= e.config.ScanTargets {
+				dst := ev.DstIP
+				ev.DstIP = ""
+				add("network.scan", "behavioral-suspicion", "medium", "T1046", uint64(count), uint64(e.config.ScanTargets), samples, first, nil, "Distinct hosts on one non-web port; outcomes and intent are not inferred")
+				ev.DstIP = dst
+			}
 		}
 		if ev.DstPort == 25 {
 			count, first, samples := e.count(ev, "smtp", ev.DstIP)
@@ -226,6 +240,13 @@ func (e *Engine) Observe(ev Event) ([]*types.Alert, error) {
 		e.observeBeacon(ev, add)
 		e.startFlow(ev)
 	case "icmp":
+		count, first, samples := e.count(ev, "icmp-discovery", ev.DstIP)
+		if count >= e.config.ScanTargets {
+			dst := ev.DstIP
+			ev.DstIP = ""
+			add("network.scan", "behavioral-suspicion", "low", "T1018", uint64(count), uint64(e.config.ScanTargets), samples, first, nil, "Distinct ICMP echo destinations indicate discovery; authorization and intent are unknown")
+			ev.DstIP = dst
+		}
 		if len(ev.Payload) >= 1024 && entropy(ev.Payload) >= 6 {
 			count, first, samples := e.count(ev, "icmp|"+ev.DstIP, fmt.Sprint(ev.Seq))
 			if count >= e.config.ICMPEchoes {
@@ -236,6 +257,12 @@ func (e *Engine) Observe(ev Event) ([]*types.Alert, error) {
 		e.observeStream(ev, add)
 	case "end":
 		delete(e.flows, flowKey(ev))
+	case "refused":
+		count, first, samples := e.count(ev, fmt.Sprintf("scan-refused|%d", ev.DstPort), ev.DstIP)
+		if count >= e.config.ScanTargets {
+			ev.DstIP = ""
+			add("network.scan", "behavioral-suspicion", "medium", "T1046", uint64(count), uint64(e.config.ScanTargets), samples, first, nil, "Distinct hosts refusing TCP connections; authorization and intent are unknown")
+		}
 	default:
 		return nil, errors.New("unknown capture event kind")
 	}

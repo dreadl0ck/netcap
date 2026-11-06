@@ -40,6 +40,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/network"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/udp"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
@@ -96,7 +97,8 @@ type tcpConnection struct {
 // start could be modified to force a start even if no SYN have been seen.
 func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection, nextSeq reassembly.Sequence) bool {
 	// Finite State Machine
-	if !t.tcpstate.CheckState(tcp, dir) {
+	staleReset := tcp.RST && nextSeq >= 0 && int32(tcp.Seq-uint32(nextSeq)) < 0
+	if staleReset || !t.tcpstate.CheckState(tcp, dir) {
 
 		reassemblyLog.Debug("packet rejected by FSM", zap.String("ident", t.ident), zap.String("state", t.tcpstate.String()))
 
@@ -109,7 +111,7 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 		}
 		streamutils.Stats.Unlock()
 
-		if !decoderconfig.Instance.IgnoreFSMerr {
+		if staleReset || !decoderconfig.Instance.IgnoreFSMerr {
 			return false
 		}
 	}
@@ -280,9 +282,6 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 	t.updateStats(sg, skip, length, saved, startTime, end, dir)
 	if skip != 0 {
 		gap := &core.StreamData{AssemblerContext: ac, Dir: dir, SkippedBytes: skip}
-		if skip > 0 {
-			gap.SkippedBytes += length
-		} // This delivery is discarded below.
 		if dir == reassembly.TCPDirClientToServer {
 			t.client.StoreData(gap)
 		} else {
@@ -290,12 +289,8 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 		}
 	}
 
-	if skip == -1 && decoderconfig.Instance.AllowMissingInit {
-		// this is allowed
-	} else if skip != 0 {
-		// Missing bytes in stream: do not even try to parse it
-		return
-	}
+	// Retain observed bytes following a hole. Gap-aware readers may resync;
+	// conservative readers stop at the explicit marker above.
 
 	if length > 0 {
 		sg.ForEach(func(data []byte, context reassembly.AssemblerContext) {
@@ -471,6 +466,15 @@ func (t *tcpConnection) decode() {
 		CommunityID:          streamutils.CalcCommunityIDTCP(cIP, sIP, uint16(cPort), uint16(sPort)),
 		TCPHandshakeComplete: t.initStage == 3,
 	}
+	for _, fragment := range conv.ClientData {
+		if ac, ok := fragment.Context().(interface{ GetLinkFlow() gopacket.Flow }); ok {
+			flow := ac.GetLinkFlow()
+			if len(flow.Src().Raw()) > 0 {
+				conv.ClientMAC, conv.ServerMAC = flow.Src().String(), flow.Dst().String()
+				break
+			}
+		}
+	}
 
 	// Use the client's destination port (= server's listening port) for decoder matching
 	// NOT the server's destination port (which would be the client's ephemeral port)
@@ -484,6 +488,8 @@ func (t *tcpConnection) decode() {
 	)
 
 	stream.ObserveFTPData(conv)
+	secret.HarvestSMTPConversation(conv)
+	secret.HarvestAdditionalConversation(conv)
 
 	// The fallback scan sees a whole direction concatenated, because a
 	// length-prefixed protocol cannot be recognized from its first fragment
@@ -493,8 +499,7 @@ func (t *tcpConnection) decode() {
 		ServerPort:   serverPort,
 		PortClient:   cr,
 		PortServer:   sr,
-		ScanClient:   t.client.DataSlice().Bytes(),
-		ScanServer:   t.server.DataSlice().Bytes(),
+		ScanBytes:    func() ([]byte, []byte) { return t.client.DataSlice().Bytes(), t.server.DataSlice().Bytes() },
 		Conversation: conv,
 	})
 
@@ -540,6 +545,7 @@ func (t *tcpConnection) decode() {
 			zap.Int("serverPort", int(serverPort)),
 		)
 	}
+	stream.ObserveTLSUpgrade(conv, sel.Name)
 }
 
 // ReassemblePacket takes care of submitting a TCP / UDP packet to the reassembly.
@@ -608,9 +614,11 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	streamutils.Stats.Totalsz += int64(len(tcp.Payload))
 	streamutils.Stats.Unlock()
 
-	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &context{
-		CaptureInfo: packet.Metadata().CaptureInfo,
-	})
+	ac := &context{CaptureInfo: packet.Metadata().CaptureInfo}
+	if ll := packet.LinkLayer(); ll != nil {
+		ac.link = ll.LinkFlow()
+	}
+	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, ac)
 }
 
 // CleanupReassembly finalizes all pools after packet workers have joined.

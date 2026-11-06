@@ -151,6 +151,32 @@ func TestCheckFSM(t *testing.T) {
 	})
 }
 
+func TestClientResetToStaleACKDoesNotPoisonPendingSYN(t *testing.T) {
+	fsm := NewTCPSimpleFSM(TCPSimpleFSMOptions{})
+	client, server := TCPDirClientToServer, TCPDirServerToClient
+	for i, step := range []struct {
+		tcp    layers.TCP
+		dir    TCPFlowDirection
+		accept bool
+	}{
+		{layers.TCP{SYN: true, Seq: 100}, client, true},
+		{layers.TCP{ACK: true, Seq: 9000, Ack: 8000}, server, false},
+		{layers.TCP{RST: true, Seq: 8000}, client, false},
+		{layers.TCP{SYN: true, Seq: 100}, client, true},
+		{layers.TCP{SYN: true, ACK: true, Seq: 500, Ack: 101}, server, true},
+		{layers.TCP{ACK: true, Seq: 101, Ack: 501}, client, true},
+	} {
+		if got := fsm.CheckState(&step.tcp, step.dir); got != step.accept {
+			t.Fatalf("step %d: %v state %s", i, got, fsm.String())
+		}
+	}
+	fsm = NewTCPSimpleFSM(TCPSimpleFSMOptions{})
+	fsm.CheckState(&layers.TCP{SYN: true}, client)
+	if !fsm.CheckState(&layers.TCP{RST: true, ACK: true}, server) {
+		t.Fatal("valid peer SYN rejection lost")
+	}
+}
+
 func TestCheckFSMmissingSYNACK(t *testing.T) {
 	testCheckFSM(t, TCPSimpleFSMOptions{}, []testCheckFSMSequence{
 		{

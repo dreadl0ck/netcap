@@ -21,10 +21,12 @@ package file
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"io"
+	"mime"
 	"os"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -171,9 +173,13 @@ func SaveFileEnhanced(
 		// Use decompressed content for accurate magic detection
 		cTypeDetected, accurate = DetectContentType(contentInfo.DecodedContent)
 	} else {
-		cTypeDetected = trimEncoding(decoderconfig.Instance.FileStorage)
+		cTypeDetected = trimEncoding(contentType)
+		if cTypeDetected == "" {
+			cTypeDetected = "application/octet-stream"
+		}
 	}
 
+	cTypeDetected = safeMIMEPath(cTypeDetected)
 	// Use detected type if more accurate than provided
 	if accurate && contentType == "" {
 		contentType = cTypeDetected
@@ -192,18 +198,28 @@ func SaveFileEnhanced(
 
 	// File extension based on detected content type
 	ext := ExtensionForContentType(cTypeDetected)
+	if ext == "" {
+		ext = ".bin"
+	}
 
 	// File basename
-	base := filepath.Clean(name+"-"+path.Base(utils.CleanIdent(conv.Ident))) + ext
+	digest := contentInfo.Hash
+	if decoded, e := hex.DecodeString(digest); e != nil || len(decoded) != 32 {
+		sum := sha256.Sum256(contentInfo.DecodedContent)
+		digest = hex.EncodeToString(sum[:])
+	}
+	stem := digest
+	base := stem + ext
 
 	if err != nil {
-		base = "incomplete-" + base
+		stem = "incomplete-" + stem
+		base = stem + ext
 	}
 
 	// Determine filename
 	fileName := name
-	if filepath.Ext(name) == "" {
-		fileName = name + ext
+	if fileName == "" {
+		fileName = "artifact"
 	}
 
 	// Create directory structure
@@ -216,11 +232,6 @@ func SaveFileEnhanced(
 	}
 
 	base = path.Join(root, base)
-
-	// Truncate overly long paths
-	if len(base) > 250 {
-		base = base[:250] + "..."
-	}
 
 	if base == decoderconfig.Instance.FileStorage {
 		base = path.Join(decoderconfig.Instance.Out, decoderconfig.Instance.FileStorage, "noname")
@@ -275,16 +286,12 @@ func SaveFileEnhanced(
 				break
 			}
 
-			if err != nil {
-				target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+utils.CleanIdent(conv.Ident))+"-"+strconv.Itoa(n)+ExtensionForContentType(cTypeDetected))
-			} else {
-				target = path.Join(root, filepath.Clean(name+"-"+utils.CleanIdent(conv.Ident))+"-"+strconv.Itoa(n)+ExtensionForContentType(cTypeDetected))
-			}
+			target = path.Join(root, stem+"-"+strconv.Itoa(n)+ext)
 			n++
 		}
 
 		// Create file for writing
-		f, err := os.Create(target)
+		f, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 		if err != nil {
 			saveFileLog.Error("failed to create file",
 				zap.String("ident", conv.Ident),
@@ -451,6 +458,19 @@ func SaveFileEnhanced(
 	})
 
 	return nil
+}
+
+func safeMIMEPath(value string) string {
+	typ, _, err := mime.ParseMediaType(value)
+	parts := strings.Split(typ, "/")
+	if err != nil || len(parts) != 2 || parts[1] == "." || parts[1] == ".." {
+		return "application/octet-stream"
+	}
+	switch parts[0] {
+	case "application", "audio", "font", "image", "message", "model", "multipart", "text", "video":
+		return typ
+	}
+	return "application/octet-stream"
 }
 
 func conversationLoss(conv *core.ConversationInfo) (int64, bool) {

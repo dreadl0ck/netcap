@@ -20,9 +20,12 @@
 package packet
 
 import (
+	"container/heap"
 	"log"
+	"net"
 	"slices"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -58,6 +61,8 @@ type streamBuffer struct {
 }
 
 const (
+	maxContactKeys       = 65536
+	maxReportedContacts  = 4096
 	maxPacketsPerStream  = 10
 	maxStreamsPerProfile = 1000 // Limit total streams to prevent unbounded growth
 )
@@ -88,6 +93,9 @@ type deviceProfile struct {
 
 	// buffer packets per stream for deferred DPI analysis
 	streamBuffers map[streamKey]*streamBuffer
+	contactSet    map[string]struct{}
+	contactSample map[string]struct{}
+	contactHeap   contactKeys
 }
 
 // atomicDeviceProfileMap contains all connections and provides synchronized access.
@@ -111,13 +119,19 @@ func (a *atomicDeviceProfileMap) FindByIP(ip string) *deviceProfile {
 	a.Lock()
 	defer a.Unlock()
 
+	var match *deviceProfile
 	for _, dp := range a.Items {
-		if slices.Contains(dp.DeviceIPs, ip) {
-			return dp
+		dp.Lock()
+		found := slices.Contains(dp.DeviceIPs, ip)
+		dp.Unlock()
+		if found {
+			if match != nil {
+				return nil
+			}
+			match = dp
 		}
 	}
-
-	return nil
+	return match
 }
 
 // EnrichFromDiscovery merges discovery data into the device profile.
@@ -136,6 +150,16 @@ func (dp *deviceProfile) EnrichFromDiscovery(hostnames, deviceTypes, roles []str
 		}
 	}
 	for _, r := range roles {
+		if r == "File Server" || r == "Workstation" || strings.Contains(r, "Browser") {
+			service := "netbios-" + strings.ReplaceAll(strings.ToLower(r), " ", "-")
+			if r == "File Server" {
+				service = "smb"
+			}
+			if !slices.Contains(dp.AdvertisedServices, service) {
+				dp.AdvertisedServices = append(dp.AdvertisedServices, service)
+			}
+			continue
+		}
 		if !slices.Contains(dp.Roles, r) {
 			dp.Roles = append(dp.Roles, r)
 		}
@@ -215,15 +239,42 @@ func getStreamKey(i *decoderutils.PacketInfo) streamKey {
 
 // updateDeviceProfile can be used to update the profile for the passed identifiers.
 func updateDeviceProfile(i *decoderutils.PacketInfo) {
+	if i.SrcMAC == "" {
+		return
+	}
 	// lookup profile
 	DeviceProfiles.Lock()
 	if p, ok := DeviceProfiles.Items[i.SrcMAC]; ok {
 		DeviceProfiles.Unlock()
 		applyDeviceProfileUpdate(p, i)
 	} else {
-		DeviceProfiles.Items[i.SrcMAC] = newDeviceProfile(i)
+		p := newDeviceProfile(i)
+		DeviceProfiles.Items[i.SrcMAC] = p
 		deviceProfiles++
 		DeviceProfiles.Unlock()
+		p.Lock()
+		enrichDeviceProfileFromPacket(p, i.Packet)
+		p.Unlock()
+	}
+	if layer := i.Packet.Layer(layers.LayerTypeDHCPv4); layer != nil {
+		d := layer.(*layers.DHCPv4)
+		mac := d.ClientHWAddr.String()
+		if len(d.ClientHWAddr) == 6 && mac != "00:00:00:00:00:00" && mac != i.SrcMAC {
+			DeviceProfiles.Lock()
+			target := DeviceProfiles.Items[mac]
+			if target == nil {
+				target = &deviceProfile{DeviceProfile: &types.DeviceProfile{MacAddr: mac, Timestamp: i.Timestamp, DeviceManufacturer: resolvers.LookupManufacturer(mac)}, applications: make(map[string]struct{})}
+				DeviceProfiles.Items[mac] = target
+				deviceProfiles++
+			}
+			DeviceProfiles.Unlock()
+			target.Lock()
+			if i.Timestamp < target.Timestamp {
+				target.Timestamp = i.Timestamp
+			}
+			enrichDHCPDeviceProfile(target, d)
+			target.Unlock()
+		}
 	}
 }
 
@@ -240,32 +291,25 @@ func copyPacketData(p gopacket.Packet) []byte {
 
 // newDeviceProfile creates a new device specific profile.
 func newDeviceProfile(i *decoderutils.PacketInfo) *deviceProfile {
-	var contacts []string
-	if i.DstIP != "" {
-		contacts = append(contacts, i.DstIP)
-	}
-
 	var devices []string
-	if i.SrcIP != "" {
-		devices = append(devices, i.SrcIP)
-	}
 
 	// Initialize stream buffers and buffer the first packet (copy data to avoid buffer reuse)
 	streamBuffers := make(map[streamKey]*streamBuffer)
 	key := getStreamKey(i)
-	streamBuffers[key] = &streamBuffer{
-		packets: []bufferedPacket{{
-			data:      copyPacketData(i.Packet),
-			timestamp: i.Timestamp,
-		}},
+	if dpi.IsEnabled() {
+		streamBuffers[key] = &streamBuffer{
+			packets: []bufferedPacket{{
+				data:      copyPacketData(i.Packet),
+				timestamp: i.Timestamp,
+			}},
+		}
 	}
 
-	return &deviceProfile{
+	p := &deviceProfile{
 		DeviceProfile: &types.DeviceProfile{
 			MacAddr:            i.SrcMAC,
 			DeviceManufacturer: resolvers.LookupManufacturer(i.SrcMAC),
 			DeviceIPs:          devices,
-			Contacts:           contacts,
 			Timestamp:          i.Timestamp,
 			NumPackets:         1,
 			Bytes:              uint64(len(i.Packet.Data())),
@@ -273,6 +317,10 @@ func newDeviceProfile(i *decoderutils.PacketInfo) *deviceProfile {
 		applications:  make(map[string]struct{}),
 		streamBuffers: streamBuffers,
 	}
+	if i.DstIP != "" {
+		observeContact(p, i.DstIP)
+	}
+	return p
 }
 
 func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
@@ -282,20 +330,11 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 		p.Timestamp = i.Timestamp
 	}
 
-	// Track deviceIPs
-	if i.SrcIP != "" {
-		found := slices.Contains(p.DeviceIPs, i.SrcIP)
-		if !found {
-			p.DeviceIPs = append(p.DeviceIPs, i.SrcIP)
-		}
-	}
+	// Ethernet source addresses identify the next hop, not routed IP owners.
 
 	// Track contacts
 	if i.DstIP != "" {
-		found := slices.Contains(p.Contacts, i.DstIP)
-		if !found {
-			p.Contacts = append(p.Contacts, i.DstIP)
-		}
+		observeContact(p, i.DstIP)
 	}
 
 	p.Bytes += uint64(len(i.Packet.Data()))
@@ -303,6 +342,9 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 
 	// Extract device discovery data from protocol layers
 	enrichDeviceProfileFromPacket(p, i.Packet)
+	if !dpi.IsEnabled() {
+		return
+	}
 
 	// Ensure streamBuffers is initialized (defensive check)
 	if p.streamBuffers == nil {
@@ -354,21 +396,11 @@ func enrichDHCPDeviceProfile(p *deviceProfile, dhcp4 *layers.DHCPv4) {
 		}
 	}
 
-	if hostname == "" && vendorClass == "" {
-		return
-	}
-
 	// Check if this is a relayed DHCP packet
 	clientMAC := dhcp4.ClientHWAddr.String()
 	target := p
 	if clientMAC != "" && clientMAC != p.MacAddr {
-		if clientDP := DeviceProfiles.FindByMAC(clientMAC); clientDP != nil {
-			target = clientDP
-			target.Lock()
-			defer target.Unlock()
-		} else {
-			return // client profile doesn't exist yet, don't pollute relay's profile
-		}
+		return // cross-profile enrichment runs after releasing the source lock
 	}
 
 	if hostname != "" && !slices.Contains(target.Hostnames, hostname) {
@@ -377,11 +409,32 @@ func enrichDHCPDeviceProfile(p *deviceProfile, dhcp4 *layers.DHCPv4) {
 	if vendorClass != "" && target.OS == "" {
 		target.OS = vendorClass
 	}
+	// An ACK binds yiaddr to chaddr; a discover's 0.0.0.0 does not.
+	for _, option := range dhcp4.Options {
+		if option.Type == layers.DHCPOptMessageType && len(option.Data) == 1 && option.Data[0] == byte(layers.DHCPMsgTypeAck) {
+			addDeviceIP(target, dhcp4.YourClientIP)
+		}
+	}
 }
 
 // enrichDeviceProfileFromPacket extracts device information from DHCP, CDP, and LLDP layers.
 // Called per-packet inside applyDeviceProfileUpdate (lock already held).
 func enrichDeviceProfileFromPacket(p *deviceProfile, pkt gopacket.Packet) {
+	if pkt == nil {
+		return
+	}
+	if a, ok := pkt.Layer(layers.LayerTypeARP).(*layers.ARP); ok && a.Protocol == layers.EthernetTypeIPv4 && a.SourceHwAddress != nil && net.HardwareAddr(a.SourceHwAddress).String() == p.MacAddr {
+		addDeviceIP(p, net.IP(a.SourceProtAddress))
+	}
+	if a, ok := pkt.Layer(layers.LayerTypeICMPv6NeighborAdvertisement).(*layers.ICMPv6NeighborAdvertisement); ok {
+		if ip, ok := pkt.NetworkLayer().(*layers.IPv6); ok && ip.SrcIP.Equal(a.TargetAddress) {
+			for _, o := range a.Options {
+				if o.Type == layers.ICMPv6OptTargetAddress && net.HardwareAddr(o.Data).String() == p.MacAddr {
+					addDeviceIP(p, a.TargetAddress)
+				}
+			}
+		}
+	}
 	// DHCP: extract hostname and vendor class (OS fingerprint)
 	// Use ClientHWAddr to find the correct device profile — if the packet came from
 	// a DHCP relay, the Ethernet source MAC is the relay, not the client.
@@ -438,6 +491,63 @@ func enrichDeviceProfileFromPacket(p *deviceProfile, pkt gopacket.Packet) {
 	}
 }
 
+func observeContact(p *deviceProfile, ip string) {
+	p.ContactObservations++
+	if p.contactSet == nil {
+		p.contactSet = make(map[string]struct{})
+		for _, s := range p.Contacts {
+			p.contactSet[s] = struct{}{}
+		}
+	}
+	if _, ok := p.contactSet[ip]; ok {
+		return
+	}
+	if len(p.contactSet) >= maxContactKeys {
+		p.ContactCountLowerBound = maxContactKeys + 1
+		p.ContactsTruncated = true
+	} else {
+		p.contactSet[ip] = struct{}{}
+		p.ContactCountLowerBound = uint64(len(p.contactSet))
+	}
+	if p.contactSample == nil {
+		p.contactSample = make(map[string]struct{})
+	}
+	if _, ok := p.contactSample[ip]; ok {
+		return
+	}
+	if len(p.contactHeap) < maxReportedContacts {
+		heap.Push(&p.contactHeap, ip)
+		p.contactSample[ip] = struct{}{}
+		p.Contacts = append(p.Contacts, ip)
+	} else {
+		p.ContactsTruncated = true
+		if ip < p.contactHeap[0] {
+			removed := heap.Pop(&p.contactHeap).(string)
+			delete(p.contactSample, removed)
+			heap.Push(&p.contactHeap, ip)
+			p.contactSample[ip] = struct{}{}
+		}
+	}
+}
+
+type contactKeys []string
+
+func (h contactKeys) Len() int           { return len(h) }
+func (h contactKeys) Less(i, j int) bool { return h[i] > h[j] }
+func (h contactKeys) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *contactKeys) Push(v any)        { *h = append(*h, v.(string)) }
+func (h *contactKeys) Pop() any          { a := *h; v := a[len(a)-1]; *h = a[:len(a)-1]; return v }
+
+func addDeviceIP(p *deviceProfile, ip net.IP) {
+	if ip == nil || ip.IsUnspecified() || ip.IsMulticast() {
+		return
+	}
+	s := ip.String()
+	if s != "<nil>" && !slices.Contains(p.DeviceIPs, s) {
+		p.DeviceIPs = append(p.DeviceIPs, s)
+	}
+}
+
 var deviceProfileDecoder = newAccumulatingPacketDecoder(
 	types.Type_NC_DeviceProfile,
 	"DeviceProfile",
@@ -471,6 +581,9 @@ var deviceProfileDecoder = newAccumulatingPacketDecoder(
 		for _, item := range items {
 			item.Lock()
 			processDeferredDPI(item)
+			if item.contactHeap != nil {
+				item.Contacts = append(item.Contacts[:0], item.contactHeap...)
+			}
 			d.writeDeviceProfile(item.DeviceProfile, item.applications)
 			item.Unlock()
 		}
@@ -501,6 +614,9 @@ var deviceProfileDecoder = newAccumulatingPacketDecoder(
 			item.Lock()
 			// Process any buffered DPI data before writing
 			processDeferredDPIWithoutClear(item)
+			if item.contactHeap != nil {
+				item.Contacts = append(item.Contacts[:0], item.contactHeap...)
+			}
 			d.writeDeviceProfile(item.DeviceProfile, item.applications)
 			numFlushed++
 			item.Unlock()
@@ -566,6 +682,7 @@ func processDeferredDPIWithoutClear(p *deviceProfile) {
 // writeDeviceProfile writes the profile.
 func (d *Decoder) writeDeviceProfile(dp *types.DeviceProfile, apps map[string]struct{}) {
 	sort.Strings(dp.DeviceIPs)
+	sort.Strings(dp.AdvertisedServices)
 	sort.Strings(dp.Contacts)
 	sort.Strings(dp.Devices)
 	sort.Strings(dp.Hostnames)

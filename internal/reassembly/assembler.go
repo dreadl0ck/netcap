@@ -213,6 +213,19 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		if reverse {
 			half, rev = rev, half
 		}
+		if t.SYN && !t.ACK && (conn.resetSeen || half.closed || rev.closed) && (!half.synSeen || half.synSeq != t.Seq) {
+			// A fresh ISN after closure belongs to a new incarnation of the tuple.
+			for _, old := range []*halfconnection{&conn.s2c, &conn.c2s} {
+				for !old.closed {
+					a.skipFlush(conn, old)
+				}
+			}
+			if conn.live {
+				a.connPool.remove(conn)
+			}
+			conn.mu.Unlock()
+			continue
+		}
 		break
 	}
 	defer func() {
@@ -254,6 +267,13 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		}
 
 		return
+	}
+	if t.SYN && !half.synSeen {
+		half.synSeen = true
+		half.synSeq = t.Seq
+	}
+	if t.RST {
+		conn.resetSeen = true
 	}
 
 	seq, ack, bytes := Sequence(t.Seq), Sequence(t.Ack), t.Payload

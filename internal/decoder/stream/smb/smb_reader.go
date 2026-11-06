@@ -32,6 +32,7 @@ import (
 	"unicode/utf16"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/dcerpc"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/types"
@@ -328,6 +329,8 @@ func (s *smbReader) New(conversation *core.ConversationInfo) core.StreamDecoderI
 
 // Decode parses the SMB conversation using the standard conversation decoder
 func (s *smbReader) Decode() {
+	dcerpc.DecodeSMBPipes(s.conversation)
+	decodeSMBFiles(s.conversation)
 	smbLog.Debug("Decoding SMB conversation",
 		zap.String("ident", s.conversation.Ident),
 		zap.String("clientIP", s.conversation.ClientIP),

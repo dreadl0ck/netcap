@@ -21,7 +21,6 @@ package collector
 
 import (
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/gopacket/gopacket/pcap"
@@ -36,11 +35,7 @@ import (
 
 // defaultWorkers returns a CPU-proportional worker count.
 func defaultWorkers() int {
-	n := runtime.NumCPU() * 4
-	if n < 4 {
-		n = 4
-	}
-	return n
+	return defaults.CaptureWorkers()
 }
 
 // DefaultConfig is a sane example configuration.

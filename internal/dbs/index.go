@@ -44,6 +44,8 @@ import (
 // if cpe url does not contain version information.
 var reSimpleVersion = regexp.MustCompile(`([0-9]+)\.([0-9]+)\.?([0-9]*)?`)
 
+var reCVEReference = regexp.MustCompile(`(?i)CVE-[0-9]{4}-[0-9]{4,}`)
+
 // generates max 20 intermediate versions
 // until is excluded.
 func intermediatePatchVersions(from string, until string) []string {
@@ -85,7 +87,7 @@ func intermediatePatchVersions(from string, until string) []string {
 	return out
 }
 
-// BuildVulnDB builds schema-1 SQLite from every required NVD year, without
+// BuildVulnDB builds current-schema SQLite from every required NVD year, without
 // Exploit-DB input. Normalized metadata makes identical inputs reproducible.
 // Only a completed, normalized database replaces a prior output.
 func BuildVulnDB(buildPath, outDir string, nvdStart int, verbose bool) error {
@@ -343,17 +345,17 @@ func vulnerabilityFromNVD(item *nvdItem) (vulndb.Vulnerability, bool) {
 				continue
 			}
 
-			for _, cpe := range node.CpeMatch {
+			for _, cpe := range node.Matches {
 				if !cpe.Vulnerable {
 					continue
 				}
 
-				if cpe.VersionStartIncluding != "" {
-					versions = append(versions, cpe.VersionStartIncluding)
+				if cpe.StartIncluding != "" {
+					versions = append(versions, cpe.StartIncluding)
 
 					// generate array of intermediate versions if end is set
-					if cpe.VersionEndExcluding != "" {
-						versions = append(versions, intermediatePatchVersions(cpe.VersionStartIncluding, cpe.VersionEndExcluding)...)
+					if cpe.EndExcluding != "" {
+						versions = append(versions, intermediatePatchVersions(cpe.StartIncluding, cpe.EndExcluding)...)
 					}
 
 					continue
@@ -376,9 +378,10 @@ func vulnerabilityFromNVD(item *nvdItem) (vulndb.Vulnerability, bool) {
 	}
 
 	v := vulndb.Vulnerability{
-		ID:          cve.ID,
-		Description: description,
-		Versions:    versions,
+		ID:             cve.ID,
+		Description:    description,
+		Versions:       versions,
+		Configurations: cve.Configurations,
 	}
 	for _, ref := range cve.References {
 		v.References = append(v.References, vulndb.Reference{URL: ref.URL, Source: ref.Source, Tags: ref.Tags})
@@ -446,6 +449,7 @@ func indexExploitCSV(b *vulndb.Builder, file string) error {
 		}
 
 		err = b.AddExploit(vulndb.Exploit{
+			CVEs:        reCVEReference.FindAllString(strings.ToUpper(get(rec, "codes")), -1),
 			ID:          get(rec, "id"),
 			File:        get(rec, "file"),
 			Description: get(rec, "description"),

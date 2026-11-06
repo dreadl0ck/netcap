@@ -264,6 +264,9 @@ func (pd *Decoder) GetName() string {
 // SetWriter sets the netcap writer to use for the decoder.
 func (pd *Decoder) SetWriter(w netio.AuditRecordWriter) {
 	pd.Writer = w
+	if config.Instance != nil {
+		pd.Writer = netio.ObserveWriter(w, config.Instance.RecordObserver)
+	}
 }
 
 // GetWriter returns the current writer.

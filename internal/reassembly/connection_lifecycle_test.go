@@ -90,6 +90,40 @@ func TestConnectionRefRetirementAndReuse(t *testing.T) {
 	}
 }
 
+func TestFreshSYNAfterResetRetiresOldTupleIncarnation(t *testing.T) {
+	var streams []*lifecycleStream
+	p := NewStreamPool(lifecycleFactory(func(gopacket.Flow, gopacket.Flow, AssemblerContext) Stream {
+		s := &lifecycleStream{}
+		streams = append(streams, s)
+		return s
+	}))
+	a := NewAssembler(p)
+	flow := snapshotKey(1)[0]
+	packet := func(seq uint32, syn, rst bool, payload string) {
+		tcp := &layers.TCP{SrcPort: 12345, DstPort: 80, Seq: seq, SYN: syn, RST: rst, BaseLayer: layers.BaseLayer{Payload: []byte(payload)}}
+		a.assemble(flow, tcp)
+	}
+	packet(100, true, false, "")
+	packet(9000, false, true, "")
+	packet(100, true, false, "")
+	if len(streams) != 1 {
+		t.Fatal("late SYN retransmission created a new incarnation")
+	}
+	packet(1000, true, false, "")
+	packet(1001, false, false, "new-data")
+	a.FlushAll()
+	if len(streams) != 2 || streams[0].completed != 1 || streams[1].completed != 1 {
+		t.Fatalf("stream lifecycle: %+v", streams)
+	}
+	var body string
+	for _, r := range streams[1].reassembly {
+		body += string(r.Bytes)
+	}
+	if body != "new-data" {
+		t.Fatalf("new incarnation payload lost: %q", body)
+	}
+}
+
 func TestConnectionCallbackDump(t *testing.T) {
 	const child = "NETCAP_TEST_CALLBACK_DUMP"
 	if os.Getenv(child) != "1" {

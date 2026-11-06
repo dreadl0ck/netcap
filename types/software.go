@@ -49,6 +49,7 @@ var fieldsSoftware = []string{
 	fieldFlows,
 	fieldSourceData,
 	fieldNotes,
+	"ObservedHost", "ObservationRole", "VulnerabilityAssessment",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -70,6 +71,7 @@ func (a *Software) CSVRecord() []string {
 		join(a.Flows...),
 		a.SourceData,
 		a.Notes,
+		a.ObservedHost, a.ObservationRole, a.VulnerabilityAssessment,
 	})
 }
 
@@ -128,7 +130,7 @@ func (a *Software) SetPacketContext(*PacketContext) {}
 
 // Src returns the source address of the audit record.
 func (a *Software) Src() string {
-	return ""
+	return a.ObservedHost
 }
 
 // Dst returns the destination address of the audit record.
@@ -152,6 +154,7 @@ func (a *Software) Encode() []string {
 		softwareEncoder.String(fieldFlows, join(a.Flows...)),
 		softwareEncoder.String(fieldSourceData, a.SourceData),
 		softwareEncoder.String(fieldNotes, a.Notes),
+		softwareEncoder.String("ObservedHost", a.ObservedHost), softwareEncoder.String("ObservationRole", a.ObservationRole), softwareEncoder.String("VulnerabilityAssessment", a.VulnerabilityAssessment),
 	})
 }
 

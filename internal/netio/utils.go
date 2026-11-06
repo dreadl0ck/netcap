@@ -132,11 +132,20 @@ type DumpConfig struct {
 	Structured    bool
 	CSV           bool
 	ForceColors   bool
+	SortTime      bool
 }
 
 // Dump reads the specified netcap file
 // and dumps the output according to the configuration to the specified *io.File.
 func Dump(w *os.File, c DumpConfig) error {
+	if c.SortTime && !c.Fields {
+		path, cleanup, err := sortedAuditFile(c.Path, 16<<20)
+		if err != nil {
+			return fmt.Errorf("failed to open audit record or sort captured records: %w", err)
+		}
+		defer cleanup()
+		c.Path = path
+	}
 	var (
 		isTTY         = terminal.IsTerminal(int(w.Fd())) || c.ForceColors
 		count         = 0
@@ -172,6 +181,21 @@ func Dump(w *os.File, c DumpConfig) error {
 		colorMap map[string]string
 	)
 
+	if c.Fields {
+		if _, ok := record.(types.AuditRecord); !ok {
+			return errMissingInterface
+		}
+		typ := reflect.TypeOf(record).Elem()
+		var names []string
+		for i := 0; i < typ.NumField(); i++ {
+			field := typ.Field(i)
+			if field.Tag.Get("protobuf") != "" {
+				names = append(names, field.Name)
+			}
+		}
+		_, err := fmt.Fprintln(w, strings.Join(names, "\n"))
+		return err
+	}
 	// disable structured dumping explicitly, since its enabled by default.
 	if c.CSV || c.JSON || c.Table {
 		c.Structured = false
@@ -182,7 +206,7 @@ func Dump(w *os.File, c DumpConfig) error {
 
 	if !c.Structured && !c.Table && !c.JSON {
 		if p, ok := record.(types.AuditRecord); ok {
-			_, _ = w.WriteString(strings.Join(p.CSVHeader(), c.Separator) + "\n")
+			_, _ = w.WriteString(csvFields(p.CSVHeader(), c.Separator) + "\n")
 		} else {
 			return fmt.Errorf("%w, invalid type: %#v", errMissingInterface, record)
 		}
@@ -243,7 +267,7 @@ func Dump(w *os.File, c DumpConfig) error {
 
 			// CSV
 			if c.CSV {
-				_, _ = w.WriteString(strings.Join(p.CSVRecord(), c.Separator) + newline)
+				_, _ = w.WriteString(csvFields(p.CSVRecord(), c.Separator) + newline)
 
 				continue
 			}

@@ -265,7 +265,7 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 	}
 
 	// check if its a well known port and use the harvester for that one
-	if h, ok := harvesterPortMapping[dstPort]; ok {
+	if h, ok := harvesterPortMapping[dstPort]; ok && !conversationHarvester(h.Name) {
 		if creds := h.HarvesterFunc(banner, ident, firstPacket); creds != nil { // write audit record
 			creds.CommunityID = communityID // Set Community ID for cross-tool correlation
 			WriteSecret(creds)
@@ -279,7 +279,7 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 		tried[h.Name] = true
 	}
 
-	if h, ok := harvesterPortMapping[srcPort]; ok {
+	if h, ok := harvesterPortMapping[srcPort]; ok && !conversationHarvester(h.Name) {
 		if !tried[h.Name] { // Don't run the same harvester twice
 			if creds := h.HarvesterFunc(banner, ident, firstPacket); creds != nil { // write audit record
 				creds.CommunityID = communityID // Set Community ID for cross-tool correlation
@@ -298,6 +298,9 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 	if !found {
 		// iterate over all harvesters
 		for _, h := range tcpConnectionHarvesters {
+			if conversationHarvester(h.Name) {
+				continue
+			}
 			// Skip if we've already tried this harvester
 			if tried[h.Name] {
 				continue
@@ -322,6 +325,10 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 			}
 		}
 	}
+}
+
+func conversationHarvester(name string) bool {
+	return name == "SMTP" || name == "POP3" || name == "IMAP"
 }
 
 // harvesterMatchesPort checks if a harvester is configured for the given ports

@@ -3,10 +3,11 @@ package vulndb
 import (
 	"database/sql"
 	"path/filepath"
+	"strconv"
 	"testing"
 )
 
-func TestSchemaOneRowidAliasForeignKeys(t *testing.T) {
+func TestRowidAliasForeignKeys(t *testing.T) {
 	path := filepath.Join(t.TempDir(), FileName)
 	b, err := Create(path)
 	if err != nil {
@@ -61,10 +62,10 @@ func TestSchemaOneRowidAliasForeignKeys(t *testing.T) {
 	}
 	defer d.Close()
 	meta, err := d.Meta()
-	if err != nil || meta["schema_version"] != "1" || meta["nvd_rowid_alias_version"] != "1" {
+	if err != nil || meta["schema_version"] != strconv.Itoa(SchemaVersion) || meta["nvd_rowid_alias_version"] != "1" {
 		t.Fatalf("meta: %v %v", meta, err)
 	}
-	v, err := d.Vulnerabilities("Example", "product", "1.2.3")
+	v, err := d.VulnerabilityCandidates("Example", "product", "1.2.3")
 	if err != nil || len(v) != 2 || len(v[0].References) != 1 {
 		t.Fatalf("query: %+v %v", v, err)
 	}

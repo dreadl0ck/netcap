@@ -41,6 +41,7 @@ type FileHandle struct {
 
 // FileMetadata contains contextual information about an extracted file
 type FileMetadata struct {
+	Timestamp int64
 	// Network context
 	ConnectionUID string
 	FlowDirection string // "client_to_server" or "server_to_client"

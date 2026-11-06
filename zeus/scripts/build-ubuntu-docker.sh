@@ -61,6 +61,9 @@ mkdir -p dist-linux/${ARCHIVE}
 # copy binaries from container
 docker cp $CONTAINER_ID:/usr/bin/net dist-linux/${ARCHIVE}/net
 
+python3 zeus/scripts/bundle-linux-runtime.py "$tag" "dist-linux/${ARCHIVE}"
+docker run --rm -v "$PWD/dist-linux/${ARCHIVE}:/release:ro" --entrypoint /release/net "$tag" --version
+
 # remove container
 docker rm $CONTAINER_ID
 
@@ -73,7 +76,7 @@ cp "docs/NETCAP Software Report.pdf" dist-linux/${ARCHIVE}/docs/
 cd dist-linux
 
 # create tar archive for linux
-tar -czvf ${ARCHIVE}.tar.gz ${ARCHIVE}
+COPYFILE_DISABLE=1 tar --no-xattrs -czvf ${ARCHIVE}.tar.gz ${ARCHIVE}
 
 # add checksum - goreleaser needs to be patched for this to work
 # by default the checksums.txt file is truncated when being opened

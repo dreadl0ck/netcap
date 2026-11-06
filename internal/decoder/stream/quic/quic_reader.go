@@ -21,6 +21,7 @@ package quic
 
 import (
 	"encoding/binary"
+	"fmt"
 	"sync/atomic"
 
 	"go.uber.org/zap"
@@ -33,6 +34,14 @@ import (
 
 type quicReader struct {
 	conversation *core.ConversationInfo
+	initials     map[string]*initialAssembly
+}
+
+type initialAssembly struct {
+	fragments []cryptoFragment
+	timestamp int64
+	emitted   bool
+	bytes     int
 }
 
 // New returns a new QUIC reader.
@@ -80,121 +89,160 @@ func (q *quicReader) Decode() {
 
 // parseIETFQUIC parses an IETF QUIC Initial packet and writes a QUICClientHello record.
 func (q *quicReader) parseIETFQUIC(payload []byte, timestamp int64) {
-	clientHello, err := ParseIETFQUICInitial(payload)
-	if err != nil {
-		quicLog.Debug("Failed to parse IETF QUIC Initial",
-			zap.Error(err),
-			zap.Int("payloadLen", len(payload)),
+	for len(payload) > 0 {
+		clientHello, err := ParseIETFQUICInitial(payload)
+		if err != nil {
+			quicLog.Debug("Failed to parse IETF QUIC Initial",
+				zap.Error(err),
+				zap.Int("payloadLen", len(payload)),
+			)
+			return
+		}
+		if clientHello == nil {
+			return // Not an Initial packet
+		}
+		n := clientHello.packetLength
+		if n <= 0 || n > len(payload) {
+			return
+		}
+		payload = payload[n:]
+		key := fmt.Sprintf("%08x:%x", clientHello.Version, clientHello.DCID)
+		if q.initials == nil {
+			q.initials = make(map[string]*initialAssembly)
+		}
+		s := q.initials[key]
+		if s == nil {
+			if len(q.initials) >= 32 {
+				return
+			}
+			s = &initialAssembly{timestamp: timestamp}
+			q.initials[key] = s
+		}
+		if s.emitted {
+			continue
+		}
+		for _, frag := range clientHello.fragments {
+			if len(s.fragments) >= 128 || s.bytes+len(frag.data) > 128<<10 {
+				s.emitted = true
+				s.fragments = nil
+				return
+			}
+			s.fragments = append(s.fragments, frag)
+			s.bytes += len(frag.data)
+		}
+		assembled := reassembleCryptoFragments(s.fragments)
+		if !completeCryptoHello(assembled) {
+			continue
+		}
+		clientHello = &IETFQUICClientHello{Version: clientHello.Version, DCID: clientHello.DCID, SCID: clientHello.SCID, PacketNumber: clientHello.PacketNumber, Token: clientHello.Token}
+		parseTLSClientHello(assembled, clientHello)
+
+		// Only process if we got useful data (SNI or cipher suites)
+		if clientHello.SNI == "" && len(clientHello.CipherSuites) == 0 {
+			quicLog.Debug("IETF QUIC Initial parsed but no ClientHello data extracted")
+			continue
+		}
+
+		quicLog.Debug("Parsed IETF QUIC ClientHello",
+			zap.String("SNI", clientHello.SNI),
+			zap.Int("numCipherSuites", len(clientHello.CipherSuites)),
+			zap.Strings("ALPNs", clientHello.ALPNs),
 		)
-		return
-	}
-	if clientHello == nil {
-		return // Not an Initial packet
-	}
 
-	// Only process if we got useful data (SNI or cipher suites)
-	if clientHello.SNI == "" && len(clientHello.CipherSuites) == 0 {
-		quicLog.Debug("IETF QUIC Initial parsed but no ClientHello data extracted")
-		return
-	}
+		// Convert cipher suites to int32
+		cipherSuites := make([]int32, len(clientHello.CipherSuites))
+		for i, cs := range clientHello.CipherSuites {
+			cipherSuites[i] = int32(cs)
+		}
 
-	quicLog.Debug("Parsed IETF QUIC ClientHello",
-		zap.String("SNI", clientHello.SNI),
-		zap.Int("numCipherSuites", len(clientHello.CipherSuites)),
-		zap.Strings("ALPNs", clientHello.ALPNs),
-	)
+		// Convert extensions to int32
+		extensions := make([]int32, len(clientHello.Extensions))
+		for i, ext := range clientHello.Extensions {
+			extensions[i] = int32(ext)
+		}
 
-	// Convert cipher suites to int32
-	cipherSuites := make([]int32, len(clientHello.CipherSuites))
-	for i, cs := range clientHello.CipherSuites {
-		cipherSuites[i] = int32(cs)
-	}
+		// Convert supported groups to int32
+		supportedGroups := make([]int32, len(clientHello.SupportedGroups))
+		for i, sg := range clientHello.SupportedGroups {
+			supportedGroups[i] = int32(sg)
+		}
 
-	// Convert extensions to int32
-	extensions := make([]int32, len(clientHello.Extensions))
-	for i, ext := range clientHello.Extensions {
-		extensions[i] = int32(ext)
-	}
+		// Convert signature algorithms to int32
+		signatureAlgs := make([]int32, len(clientHello.SignatureAlgs))
+		for i, sa := range clientHello.SignatureAlgs {
+			signatureAlgs[i] = int32(sa)
+		}
 
-	// Convert supported groups to int32
-	supportedGroups := make([]int32, len(clientHello.SupportedGroups))
-	for i, sg := range clientHello.SupportedGroups {
-		supportedGroups[i] = int32(sg)
-	}
+		// Compute JA4 fingerprint with QUIC flag
+		var supportedVersion uint16
+		if len(clientHello.SupportedVersions) > 0 {
+			supportedVersion = clientHello.SupportedVersions[0]
+		}
 
-	// Convert signature algorithms to int32
-	signatureAlgs := make([]int32, len(clientHello.SignatureAlgs))
-	for i, sa := range clientHello.SignatureAlgs {
-		signatureAlgs[i] = int32(sa)
-	}
+		ja4Fingerprint := ja4.ComputeJA4(&ja4.ClientHelloData{
+			Version:             clientHello.TLSVersion,
+			CipherSuites:        clientHello.CipherSuites,
+			Extensions:          clientHello.Extensions,
+			SNI:                 clientHello.SNI,
+			ALPNs:               clientHello.ALPNs,
+			SupportedVers:       supportedVersion,
+			IsQUIC:              true, // This is QUIC, so JA4 will use 'q' prefix
+			SignatureAlgorithms: clientHello.SignatureAlgs,
+		})
 
-	// Compute JA4 fingerprint with QUIC flag
-	var supportedVersion uint16
-	if len(clientHello.SupportedVersions) > 0 {
-		supportedVersion = clientHello.SupportedVersions[0]
-	}
+		// Lookup JA4 fingerprint in database for enrichment
+		ja4Description := resolvers.LookupJA4(ja4Fingerprint)
 
-	ja4Fingerprint := ja4.ComputeJA4(&ja4.ClientHelloData{
-		Version:             clientHello.TLSVersion,
-		CipherSuites:        clientHello.CipherSuites,
-		Extensions:          clientHello.Extensions,
-		SNI:                 clientHello.SNI,
-		ALPNs:               clientHello.ALPNs,
-		SupportedVers:       supportedVersion,
-		IsQUIC:              true, // This is QUIC, so JA4 will use 'q' prefix
-		SignatureAlgorithms: clientHello.SignatureAlgs,
-	})
+		// Determine version string
+		versionStr := "1"
+		if clientHello.Version == 0x6b3343cf {
+			versionStr = "2"
+		} else if clientHello.Version >= 0xff000000 && clientHello.Version <= 0xff00001d {
+			versionStr = "draft"
+		}
 
-	// Lookup JA4 fingerprint in database for enrichment
-	ja4Description := resolvers.LookupJA4(ja4Fingerprint)
+		record := &types.QUICClientHello{
+			Timestamp:                     s.timestamp,
+			SrcIP:                         q.conversation.ClientIP,
+			DstIP:                         q.conversation.ServerIP,
+			SrcPort:                       int32(q.conversation.ClientPort),
+			DstPort:                       int32(q.conversation.ServerPort),
+			QUICVersion:                   versionStr,
+			IsIETFQUIC:                    true,
+			DCID:                          clientHello.DCID,
+			SCID:                          clientHello.SCID,
+			SNI:                           clientHello.SNI,
+			ALPNs:                         clientHello.ALPNs,
+			CipherSuites:                  cipherSuites,
+			Extensions:                    extensions,
+			SupportedGroups:               supportedGroups,
+			SignatureAlgs:                 signatureAlgs,
+			SupportedVersion:              int32(supportedVersion),
+			Random:                        clientHello.Random,
+			SessionID:                     clientHello.SessionID,
+			CompressMethods:               convertBytesToInt32(clientHello.CompressionMethods),
+			Ja4:                           ja4Fingerprint,
+			Ja4Description:                ja4Description,
+			MaxIdleTimeout:                int64(clientHello.MaxIdleTimeout),
+			InitialMaxData:                int64(clientHello.InitialMaxData),
+			InitialMaxStreamDataBidiLocal: int64(clientHello.InitialMaxStreamDataBidiLocal),
+			MaxUdpPayloadSize:             int64(clientHello.MaxUDPPayloadSize),
+			CommunityID:                   q.conversation.CommunityID,
+		}
 
-	// Determine version string
-	versionStr := "1"
-	if clientHello.Version == 0x6b3343cf {
-		versionStr = "2"
-	} else if clientHello.Version >= 0xff000000 && clientHello.Version <= 0xff00001d {
-		versionStr = "draft"
-	}
-
-	record := &types.QUICClientHello{
-		Timestamp:                     timestamp,
-		SrcIP:                         q.conversation.ClientIP,
-		DstIP:                         q.conversation.ServerIP,
-		SrcPort:                       int32(q.conversation.ClientPort),
-		DstPort:                       int32(q.conversation.ServerPort),
-		QUICVersion:                   versionStr,
-		IsIETFQUIC:                    true,
-		DCID:                          clientHello.DCID,
-		SCID:                          clientHello.SCID,
-		SNI:                           clientHello.SNI,
-		ALPNs:                         clientHello.ALPNs,
-		CipherSuites:                  cipherSuites,
-		Extensions:                    extensions,
-		SupportedGroups:               supportedGroups,
-		SignatureAlgs:                 signatureAlgs,
-		SupportedVersion:              int32(supportedVersion),
-		Random:                        clientHello.Random,
-		SessionID:                     clientHello.SessionID,
-		CompressMethods:               convertBytesToInt32(clientHello.CompressionMethods),
-		Ja4:                           ja4Fingerprint,
-		Ja4Description:                ja4Description,
-		MaxIdleTimeout:                int64(clientHello.MaxIdleTimeout),
-		InitialMaxData:                int64(clientHello.InitialMaxData),
-		InitialMaxStreamDataBidiLocal: int64(clientHello.InitialMaxStreamDataBidiLocal),
-		MaxUdpPayloadSize:             int64(clientHello.MaxUDPPayloadSize),
-		CommunityID:                   q.conversation.CommunityID,
-	}
-
-	err = Decoder.Writer.Write(record)
-	if err != nil {
-		quicLog.Error("failed to write IETF QUIC ClientHello record", zap.Error(err))
-	} else {
-		atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
-		quicLog.Info("IETF QUIC ClientHello extracted",
-			zap.String("sni", clientHello.SNI),
-			zap.String("ja4", ja4Fingerprint),
-			zap.Strings("alpns", clientHello.ALPNs),
-		)
+		err = Decoder.Writer.Write(record)
+		if err != nil {
+			quicLog.Error("failed to write IETF QUIC ClientHello record", zap.Error(err))
+		} else {
+			s.emitted = true
+			s.fragments = nil
+			atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+			quicLog.Info("IETF QUIC ClientHello extracted",
+				zap.String("sni", clientHello.SNI),
+				zap.String("ja4", ja4Fingerprint),
+				zap.Strings("alpns", clientHello.ALPNs),
+			)
+		}
 	}
 }
 

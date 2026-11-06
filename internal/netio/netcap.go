@@ -99,6 +99,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.HTTP)
 	case types.Type_NC_TLSClientHello:
 		record = new(types.TLSClientHello)
+	case types.Type_NC_LDAP:
+		record = new(types.LDAP)
 	case types.Type_NC_Connection:
 		record = new(types.Connection)
 	case types.Type_NC_IPSecAH:

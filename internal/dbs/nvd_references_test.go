@@ -24,7 +24,7 @@ const referenceFixture = `{"vulnerabilities":[{"cve":{"id":"CVE-2026-99999","des
 {"url":"https://example.org/?q=%zz"},{"url":"https://example.org:99999/poc"},
 {"url":"https://example.org/\u007fcontrol"},{"url":"https://example.org/a b"},
 {"url":"https://user:pass@example.org/poc"}
-]}}]}`
+],"configurations":[{"nodes":[{"operator":"OR","cpeMatch":[{"vulnerable":true,"criteria":"cpe:2.3:a:test:reference-product:1.2.3:*:*:*:*:*:*:*"}]}]}]}}]}`
 
 func TestNVDReferencesBuildAndDeterminism(t *testing.T) {
 	build, out := t.TempDir(), t.TempDir()
@@ -49,10 +49,10 @@ func TestNVDReferencesBuildAndDeterminism(t *testing.T) {
 			t.Fatal(err)
 		}
 		meta, err := d.Meta()
-		if err != nil || meta["schema_version"] != "1" || meta["nvd_rowid_alias_version"] != "1" || meta["nvd_references_version"] != "1" || meta["nvd_count"] != "1" || meta["exploit_count"] != "0" {
+		if err != nil || meta["schema_version"] != strconv.Itoa(vulndb.SchemaVersion) || meta["nvd_rowid_alias_version"] != "1" || meta["nvd_references_version"] != "1" || meta["nvd_count"] != "1" || meta["exploit_count"] != "0" {
 			t.Fatalf("meta: %v %v", meta, err)
 		}
-		v, err := d.Vulnerabilities("", "reference-product", "1.2.3")
+		v, err := d.Vulnerabilities("test", "reference-product", "1.2.3")
 		if err != nil || len(v) != 1 {
 			t.Fatalf("lookup: %+v %v", v, err)
 		}

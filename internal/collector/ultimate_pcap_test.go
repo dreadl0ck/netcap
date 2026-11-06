@@ -200,6 +200,11 @@ func ultimateRecordHashes(tb testing.TB, path string) []string {
 		if err != nil {
 			tb.Fatalf("%s: %v", path, err)
 		}
+		if f, ok := msg.(*types.File); ok && f.Location != "" {
+			if relative, err := filepath.Rel(filepath.Dir(path), f.Location); err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+				f.Location = relative
+			}
+		}
 		data, err := json.Marshal(msg)
 		if err != nil {
 			tb.Fatalf("%s: marshal %T: %v", path, msg, err)

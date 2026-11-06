@@ -24,6 +24,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/ipp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/irc"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/kerberosaudit"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/ldap"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/modbus"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/mqttsn"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/opcua"
@@ -64,6 +65,8 @@ func ObserveFTPData(c *core.ConversationInfo) {
 	ftp.ObserveDataConversation(c)
 }
 
+func ObserveTLSUpgrade(c *core.ConversationInfo, primary string) { tls.ObserveUpgrade(c, primary) }
+
 // DefaultStreamDecoders contains stream decoders mapped to their protocols default port
 // int32 is used to avoid casting when looking up values
 // Note: Multiple decoders can share the same port if they use different transports (TCP vs UDP).
@@ -98,12 +101,13 @@ var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
 	// New protocol decoders
 	49:    tacacs.Decoder,        // TACACS+ authentication
 	88:    kerberosaudit.Decoder, // Kerberos v5 authentication
-	135:   dcerpc.Decoder,        // DCE/RPC Endpoint Mapper
-	631:   ipp.Decoder,           // IPP printing
-	10050: zabbix.Decoder,        // Zabbix agent
-	10051: zabbix.Decoder,        // Zabbix server
-	9090:  protobuf.Decoder,      // Generic protobuf/gRPC
-	50051: protobuf.Decoder,      // gRPC default port
+	389:   ldap.Decoder,
+	135:   dcerpc.Decoder,   // DCE/RPC Endpoint Mapper
+	631:   ipp.Decoder,      // IPP printing
+	10050: zabbix.Decoder,   // Zabbix agent
+	10051: zabbix.Decoder,   // Zabbix server
+	9090:  protobuf.Decoder, // Generic protobuf/gRPC
+	50051: protobuf.Decoder, // gRPC default port
 } // contains all available stream decoders
 
 // UDPStreamDecoders contains additional stream decoders specifically for UDP protocols.
@@ -258,7 +262,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		d.(*decoder.StreamDecoder).NumRecordsWritten = 0
 
 		// Log which decoders are being initialized
-		log.Printf("[StreamDecoder] Initializing stream decoder: %s (type: %s)",
+		initLogf(c, "[StreamDecoder] Initializing stream decoder: %s (type: %s)",
 			d.GetName(), d.GetType())
 
 		wg.Add(1)
@@ -317,7 +321,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 				log.Fatal(errors.Wrap(errInit, "failed to write header for audit record "+dec.GetName()))
 			}
 
-			log.Printf("[StreamDecoder] Successfully initialized %s decoder (writer: %v, type: %s)",
+			initLogf(c, "[StreamDecoder] Successfully initialized %s decoder (writer: %v, type: %s)",
 				dec.GetName(), w != nil, dec.GetType())
 
 			// append to packet decoders slice
@@ -351,7 +355,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		d.(*decoder.StreamDecoder).NumRecordsWritten = 0
 
 		// Log which decoders are being initialized
-		log.Printf("[StreamDecoder] Initializing UDP stream decoder: %s (type: %s)",
+		initLogf(c, "[StreamDecoder] Initializing UDP stream decoder: %s (type: %s)",
 			d.GetName(), d.GetType())
 
 		wg.Add(1)
@@ -407,7 +411,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 				log.Fatal(errors.Wrap(errInit, "failed to write header for audit record "+dec.GetName()))
 			}
 
-			log.Printf("[StreamDecoder] Successfully initialized %s UDP decoder (writer: %v, type: %s)",
+			initLogf(c, "[StreamDecoder] Successfully initialized %s UDP decoder (writer: %v, type: %s)",
 				dec.GetName(), w != nil, dec.GetType())
 
 			// append to decoders slice
@@ -422,13 +426,19 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 	wg.Wait()
 
 	// Log summary of initialized decoders
-	log.Printf("[StreamDecoder] Stream decoder initialization complete: %d decoders ready", len(decoders))
+	initLogf(c, "[StreamDecoder] Stream decoder initialization complete: %d decoders ready", len(decoders))
 	for _, dec := range decoders {
-		log.Printf("[StreamDecoder]   - %s (type: %s, transport: %v)",
+		initLogf(c, "[StreamDecoder]   - %s (type: %s, transport: %v)",
 			dec.GetName(), dec.GetType(), dec.Transport())
 	}
 
 	return decoders, nil
+}
+
+func initLogf(c *config.Config, format string, args ...any) {
+	if !c.Quiet {
+		log.Printf(format, args...)
+	}
 }
 
 // isStreamDecoderLoaded checks if an abstract decoder is loaded.

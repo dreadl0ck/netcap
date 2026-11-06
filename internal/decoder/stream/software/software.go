@@ -63,10 +63,6 @@ var Decoder = &decoder.AbstractDecoder{
 			return err
 		}
 
-		if errInitUAParser != nil {
-			return errInitUAParser
-		}
-
 		// Load the JSON database of SSH fingerprint signatures (legacy HASSH format)
 		data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseFolderPath, "hasshdb.json"))
 		hasshDB = nil
@@ -231,7 +227,7 @@ var (
 		Items: make(map[string]*AtomicSoftware),
 	}
 
-	parser, errInitUAParser = uaparser.New(filepath.Join(resolvers.DataBaseFolderPath, "regexes.yaml"))
+	parser = uaparser.NewFromSaved()
 
 	// UserAgentParserMutex ensures atomic access to the user agent parser.
 	UserAgentParserMutex sync.Mutex
@@ -358,6 +354,20 @@ func softwareHarvester(data []byte, flowIdent string, ts time.Time, service stri
 
 // WhatSoftwareHTTP TODO: pass in the device profile.
 func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
+	defer func() {
+		for _, item := range s {
+			if item.SourceName == "UserAgent" {
+				item.ObservedHost = h.SrcIP
+				item.ObservationRole = "client"
+			} else {
+				item.ObservedHost = h.DstIP
+				if h.Method == "" {
+					item.ObservedHost = h.SrcIP
+				}
+				item.ObservationRole = "server"
+			}
+		}
+	}()
 	// Get community ID from the HTTP record for correlation
 	communityID := h.CommunityID
 
@@ -386,8 +396,8 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 				s = append(s, &AtomicSoftware{
 					Software: &types.Software{
 						Timestamp: h.Timestamp,
-						Product:   userInfo.Product,
-						Vendor:    userInfo.Vendor,
+						Product:   userInfo.Vendor,
+						Vendor:    determineVendor(userInfo.Vendor),
 						Version:   userInfo.Version,
 						// DeviceProfiles: []string{dpIdent},
 						SourceName:   "UserAgent",
@@ -684,6 +694,9 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 		}
 
 		ident := s.Product + "/" + s.Version
+		if s.ObservedHost != "" {
+			ident += "/" + s.ObservedHost + "/" + s.ObservationRole
+		}
 
 		// trim version field if its too long
 		// likely a regex matched too much text
@@ -715,6 +728,9 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 			item.Unlock()
 			vulnerability.VulnerabilitiesLookup(s)
 			exploit.ExploitsLookup(s)
+			item.Lock()
+			item.VulnerabilityAssessment = s.VulnerabilityAssessment
+			item.Unlock()
 			if s.HasKnownVulnerabilities {
 				item.Lock()
 				item.HasKnownVulnerabilities = true

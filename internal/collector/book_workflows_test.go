@@ -353,7 +353,7 @@ func TestBookDownloadIntelligenceIntegration(t *testing.T) {
 			if generated != 3 || len(alerts) != 3 {
 				t.Fatalf("engine/persisted alerts=%d/%d want 3", generated, len(alerts))
 			}
-			wantNames := []string{"lab-artifact-indicator-v1", "lab-domain-indicator-v1", "lab-syn-fanout-v1"}
+			wantNames := []string{"lab-domain-indicator-v1", "lab-artifact-indicator-v1", "lab-syn-fanout-v1"}
 			for ordinal, a := range alerts {
 				if a.Name != wantNames[ordinal] || a.TimestampBasis != "record-time" || a.SrcIP != "192.0.2.20" || len(a.RuleDigest) != 64 || a.MatchedRecordSHA256 != fmt.Sprintf("%x", sha256.Sum256([]byte(a.MatchedRecord))) {
 					t.Fatalf("persisted alert %d: %v", ordinal, a)

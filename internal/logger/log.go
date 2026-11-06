@@ -20,10 +20,12 @@
 package logger
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -34,14 +36,17 @@ import (
 // InitZapLogger can be used for high performance logging.
 // The name is the log filename and the outpath must exist in advance.
 func InitZapLogger(outpath, name string, debug bool) (*zap.Logger, *os.File, error) {
-	fileHandle, err := os.OpenFile(
-		filepath.Join(outpath, name+".log"),
-		os.O_CREATE|os.O_TRUNC|os.O_WRONLY,
-		defaults.FilePermission,
-	)
+	if outpath == "" {
+		outpath = "."
+	}
+	info, err := os.Stat(outpath)
 	if err != nil {
 		return nil, nil, err
 	}
+	if !info.IsDir() || filepath.Base(name) != name {
+		return nil, nil, fmt.Errorf("invalid logger directory or name")
+	}
+	sink := &lazyLogFile{path: filepath.Join(outpath, name+".log")}
 
 	var level zap.LevelEnablerFunc
 	if debug {
@@ -66,12 +71,49 @@ func InitZapLogger(outpath, name string, debug bool) (*zap.Logger, *os.File, err
 			zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
 			// If the data source only implements io.Writer, we can use zapcore.AddSync to add a no-op Sync
 			// method. If its not safe for concurrent use, we can add a protecting mutex with zapcore.Lock.
-			zapcore.AddSync(fileHandle),
+			sink,
 			level,
 		),
 	)
 
-	return zap.New(core), fileHandle, nil
+	return zap.New(core), nil, nil
+}
+
+// Sync closes the current append handle. A later write safely reopens it.
+type lazyLogFile struct {
+	sync.Mutex
+	path string
+	file *os.File
+}
+
+func (f *lazyLogFile) Write(p []byte) (int, error) {
+	f.Lock()
+	defer f.Unlock()
+	if len(p) == 0 {
+		return 0, nil
+	}
+	if f.file == nil {
+		var err error
+		f.file, err = os.OpenFile(f.path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, defaults.FilePermission)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return f.file.Write(p)
+}
+func (f *lazyLogFile) Sync() error {
+	f.Lock()
+	defer f.Unlock()
+	if f.file == nil {
+		return nil
+	}
+	err := f.file.Sync()
+	closeErr := f.file.Close()
+	f.file = nil
+	if err != nil {
+		return err
+	}
+	return closeErr
 }
 
 // InitZapLoggerWithAtomicLevel creates a zap logger with an atomic level that can be changed at runtime.

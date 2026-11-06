@@ -199,6 +199,9 @@ func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 		}
 	case TCPStateSynSent:
 		if tcp.RST {
+			if !tcp.ACK || dir != t.dir.reverse() {
+				return false
+			}
 			t.state = TCPStateReset
 
 			return true

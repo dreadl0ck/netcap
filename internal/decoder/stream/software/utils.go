@@ -29,7 +29,7 @@ func determineVendor(product string) (vendor string) {
 		vendor = "Google"
 	case "Firefox":
 		vendor = "Mozilla"
-	case "Internet Explorer", "IE":
+	case "Internet Explorer", "IE", "Edge":
 		vendor = "Microsoft"
 	case "Safari", "iOS", "macOS":
 		vendor = "Apple"

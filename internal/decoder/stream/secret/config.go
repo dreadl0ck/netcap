@@ -154,7 +154,7 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 				Name:        "NTLMSSP",
 				Description: "NTLM Security Support Provider authentication",
 				Enabled:     true,
-				Ports:       []int{445},
+				Ports:       []int{80, 135, 139, 143, 389, 443, 445, 587, 636, 993, 3389},
 				Parameters:  map[string]any{},
 			},
 			{

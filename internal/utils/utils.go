@@ -23,6 +23,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
+	"golang.org/x/term"
 	"io"
 	"log"
 	"net"
@@ -230,12 +231,18 @@ func Pad(in any, length int) string {
 
 // ClearScreen prints ANSI escape to flush screen.
 func ClearScreen() {
-	print("\033[H\033[2J")
+	if term.IsTerminal(int(os.Stdout.Fd())) {
+		fmt.Fprint(os.Stdout, "\033[H\033[2J")
+	}
 }
 
 // ClearLine clears the current line of the terminal.
 func ClearLine() {
-	print("\033[2K\r")
+	if term.IsTerminal(int(os.Stdout.Fd())) {
+		fmt.Fprint(os.Stdout, "\033[2K\r")
+	} else {
+		fmt.Fprintln(os.Stdout)
+	}
 }
 
 // Progress returns the value in percent as a string suffixed with a %.

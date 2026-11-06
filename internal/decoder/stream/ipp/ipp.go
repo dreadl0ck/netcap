@@ -21,6 +21,8 @@ package ipp
 
 import (
 	"bytes"
+	"mime"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -50,31 +52,21 @@ var Decoder = &decoder.StreamDecoder{
 		return err
 	},
 	// HTTP request-line and content-type literals.
-	Specificity: core.SpecificityStructural,
+	Specificity: core.SpecificityStructural + 1,
 
 	CanDecode: func(client, server []byte) bool {
-		// Check for IPP indicators in client or server data
-		if len(client) > 0 {
-			// Check for HTTP POST to IPP endpoints
-			if bytes.Contains(client, []byte("POST /ipp")) ||
-				bytes.Contains(client, []byte("POST /printers")) {
-				return true
+		for _, data := range [][]byte{client, server} {
+			header, _, _ := bytes.Cut(data, []byte("\r\n\r\n"))
+			if len(header) > 16384 {
+				continue
 			}
-			// Check for application/ipp content type
-			if bytes.Contains(client, []byte("application/ipp")) {
-				return true
-			}
-		}
-		// Check for application/ipp content type in server response
-		if len(server) > 0 {
-			if bytes.Contains(server, []byte("application/ipp")) {
-				return true
-			}
-			// Check for IPP version bytes in response body after HTTP headers
-			if idx := bytes.Index(server, []byte("\r\n\r\n")); idx >= 0 {
-				body := server[idx+4:]
-				if len(body) >= 4 && (body[0] == 0x01 || body[0] == 0x02) && body[1] <= 0x01 {
-					return true
+			for _, line := range strings.Split(string(header), "\r\n") {
+				name, value, ok := strings.Cut(line, ":")
+				if ok && strings.EqualFold(name, "Content-Type") {
+					typ, _, err := mime.ParseMediaType(strings.TrimSpace(value))
+					if err == nil && typ == "application/ipp" {
+						return true
+					}
 				}
 			}
 		}

@@ -195,6 +195,7 @@ enum Type {
   NC_Protobuf = 145;
   NC_PKTAP = 146;
   NC_TLSRecord = 147;
+  NC_LDAP = 148;
 }
 
 message TLSRecord {
@@ -1399,6 +1400,7 @@ message ICMPv6RouterSolicitation {
 // collaborative, hypermedia information systems. HTTP is the foundation of data
 // communication for the World Wide Web.
 message HTTP {
+	string ReassemblyStatus = 51;
   int64 Timestamp = 1;
   string Proto = 2;
   string Method = 3;
@@ -1482,6 +1484,7 @@ message HTTPCookie {
 // TLS Client Hello
 
 message TLSClientHello {
+  string ReassemblyStatus = 99;
   int64 Timestamp = 1;
   int32 Type = 2;
   int32 Version = 3;
@@ -1528,6 +1531,7 @@ message TLSClientHello {
 // TLS Server Hello
 
 message TLSServerHello {
+  string ReassemblyStatus = 99;
   int64 Timestamp = 1;
   int32 Version = 2;
   bytes Random = 3;
@@ -2379,6 +2383,10 @@ message ENIPCommandSpecificData {
 
 // Device Profiling
 message DeviceProfile {
+  repeated string AdvertisedServices = 17;
+	uint64 ContactObservations = 14;
+	uint64 ContactCountLowerBound = 15;
+	bool ContactsTruncated = 16;
   string MacAddr = 1;
   string DeviceManufacturer = 2;
   repeated string DeviceIPs = 3;
@@ -2522,6 +2530,7 @@ message SMTPCommand {
 
 // Simple Mail Transfer Protocol
 message SMTP {
+	string ServerGreeting = 13;
   int64 Timestamp = 1;
   bool IsEncrypted = 2;
   bool IsResponse = 3;
@@ -2889,6 +2898,9 @@ message Software {
   // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
   // Multiple IDs since software can be detected across multiple connections
   repeated string CommunityIDs = 24;
+  string ObservedHost = 25;
+  string ObservationRole = 26;
+  string VulnerabilityAssessment = 27;
 }
 
 message Service {
@@ -2990,6 +3002,8 @@ message SSH {
 }
 
 message Vulnerability {
+  string MatchStatus = 11;
+  string ObservedHost = 12;
   int64 Timestamp = 1;
   string ID = 2;
   string Description = 3;
@@ -3006,6 +3020,8 @@ message Vulnerability {
 }
 
 message Exploit {
+  string MatchStatus = 13;
+  string ObservedHost = 14;
   int64 Timestamp = 1;
   string ID = 2;
   string Description = 3;
@@ -3025,6 +3041,7 @@ message Exploit {
 
 // Alert models a user defined event with IP layer and meta information.
 message Alert {
+  string CommunityID = 25;
   int64 Timestamp = 1;
 
   string Name = 2;
@@ -4388,6 +4405,7 @@ message STUNAttribute {
 
 // Kerberos v5 authentication protocol
 message Kerberos {
+  repeated int32 RequestedEncryptionTypes = 18;
   int64 Timestamp = 1;
   string MessageType = 2;      // AS-REQ, AS-REP, TGS-REQ, TGS-REP, AP-REQ, AP-REP, KRB-ERROR
   int32 MessageTypeCode = 3;   // 10=AS-REQ, 11=AS-REP, 12=TGS-REQ, 13=TGS-REP, 14=AP-REQ, 15=AP-REP, 30=KRB-ERROR
@@ -4482,6 +4500,39 @@ message DCERPC {
   string CommunityID = 18;
   string OperationName = 19;   // Procedure for a recognized interface and opnum; empty when unknown
   uint32 FaultStatus = 20;     // Status of a Fault PDU; 0 otherwise
+  repeated WindowsIdentity Identities = 21;
+  string IdentityStatus = 22;
+}
+
+message WindowsIdentity {
+  string AccountName = 1;
+  string FullName = 2;
+  string Domain = 3;
+  string SID = 4;
+}
+
+message LDAPAttribute {
+  string Name = 1;
+  repeated bytes Values = 2;
+}
+
+message LDAP {
+  string AuthMechanism = 15;
+  uint32 SASLNTLMFlags = 16;
+  string ReassemblyStatus = 14;
+  string SearchAccount = 13;
+  int64 Timestamp = 1;
+  string Flow = 2;
+  string CommunityID = 3;
+  string SrcIP = 4;
+  string DstIP = 5;
+  int32 SrcPort = 6;
+  int32 DstPort = 7;
+  int32 MessageID = 8;
+  string Operation = 9;
+  string DN = 10;
+  repeated LDAPAttribute Attributes = 11;
+  int32 ResultCode = 12;
 }
 
 // OCSP - Online Certificate Status Protocol

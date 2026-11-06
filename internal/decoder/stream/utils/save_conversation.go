@@ -370,6 +370,9 @@ func createBannerFromConversation(conversation core.DataFragments) []byte {
 	// to use for the credential harvesters
 	// This limits the amount of data processed to prevent performance issues with large streams
 	for _, d := range conversation {
+		if fragment, ok := d.(*core.StreamData); ok && fragment.SkippedBytes != 0 {
+			break
+		}
 		for _, b := range d.Raw() {
 			if processed >= maxSize {
 				break

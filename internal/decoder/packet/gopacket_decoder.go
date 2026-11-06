@@ -77,6 +77,9 @@ func (dec *GoPacketDecoder) GetName() string {
 
 func (dec *GoPacketDecoder) SetWriter(writer netio.AuditRecordWriter) {
 	dec.writer = writer
+	if config.Instance != nil {
+		dec.writer = netio.ObserveWriter(writer, config.Instance.RecordObserver)
+	}
 }
 
 func (dec *GoPacketDecoder) GetWriter() netio.AuditRecordWriter {

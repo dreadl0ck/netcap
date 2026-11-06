@@ -17,13 +17,12 @@ func TestSoftwareNVDIndependentOfLegacyCMS(t *testing.T) {
 	oldCMS, oldHeaders, oldCookies := cmsDB, CMSHeaders, CMSCookies
 	oldHash, oldHassh := HashDBMap, hasshDB
 	oldLog := softwareLog
-	oldParser, oldParserError := parser, errInitUAParser
+	oldParser := parser
 	var err error
 	parser, err = uaparser.NewFromBytes([]byte("user_agent_parsers: []\nos_parsers: []\ndevice_parsers: []\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	errInitUAParser = nil
 	dir := t.TempDir()
 	resolvers.DataBaseFolderPath = dir
 	cfg := *decoderconfig.DefaultConfig
@@ -37,13 +36,13 @@ func TestSoftwareNVDIndependentOfLegacyCMS(t *testing.T) {
 		cmsDB, CMSHeaders, CMSCookies = oldCMS, oldHeaders, oldCookies
 		HashDBMap, hasshDB = oldHash, oldHassh
 		softwareLog = oldLog
-		parser, errInitUAParser = oldParser, oldParserError
+		parser = oldParser
 	})
 	b, err := vulndb.Create(db.Path(dir))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = b.AddVulnerability(vulndb.Vulnerability{ID: "fixture-only", Description: "fixture-vendor fixture-product", Versions: []string{"1"}}); err != nil {
+	if err = b.AddVulnerability(vulndb.Vulnerability{ID: "fixture-only", Description: "fixture-vendor fixture-product", Versions: []string{"1"}, Configurations: []vulndb.Configuration{{Nodes: []vulndb.Node{{Operator: "OR", Matches: []vulndb.CPEMatch{{Vulnerable: true, Criteria: "cpe:2.3:a:fixture-vendor:fixture-product:1:*:*:*:*:*:*:*"}}}}}}}); err != nil {
 		b.Abort()
 		t.Fatal(err)
 	}

@@ -115,8 +115,22 @@ func canDecodeBACnetIP(data []byte) bool {
 	// Sanity checks on length
 	// Length must be at least the header size
 	// Length should be reasonable (max ~1500 for typical Ethernet)
-	if length < minBVLCHeaderSize || length > 1500 {
+	if length < minBVLCHeaderSize || int(length) != len(data) {
 		return false
+	}
+	switch funcCode {
+	case BVLCResult, BVLCRegisterForeignDevice:
+		return length == 6
+	case BVLCReadBroadcastDistributionTable, BVLCReadForeignDeviceTable:
+		return length == 4
+	case BVLCWriteBroadcastDistributionTable, BVLCReadBroadcastDistributionTableAck, BVLCReadForeignDeviceTableAck:
+		return (length-4)%10 == 0
+	case BVLCDeleteForeignDeviceTableEntry:
+		return length == 10
+	case BVLCForwardedNPDU:
+		return length >= 12 && data[10] == 1
+	case BVLCDistributeBroadcastToNetwork, BVLCOriginalUnicastNPDU, BVLCOriginalBroadcastNPDU:
+		return length >= 6 && data[4] == 1
 	}
 
 	return true

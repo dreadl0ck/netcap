@@ -167,7 +167,7 @@ func GetDefaultConfig() *Config {
 				SMTP: true,
 				POP3: false,
 				IMAP: false,
-				SMB:  false,
+				SMB:  true,
 				IRC:  false,
 			},
 			SizeLimits: SizeLimitsConfig{

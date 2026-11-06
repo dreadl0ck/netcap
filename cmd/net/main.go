@@ -22,6 +22,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/dreadl0ck/netcap/cmd/triage"
 	"io/ioutil"
 	"log"
 	"os"
@@ -104,6 +105,7 @@ func main() {
 			},
 		},
 		Commands: []*cli.Command{
+			triage.GetCommand(),
 			investigate.GetCommand(),
 			{
 				Name:  cmdCapture,
@@ -202,6 +204,9 @@ func main() {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			if cmd.Args().Len() > 0 {
+				return fmt.Errorf("unknown command %q; use net --help or net --version", cmd.Args().First())
+			}
 			netio.PrintLogo()
 			fmt.Println(`
 available subcommands:
