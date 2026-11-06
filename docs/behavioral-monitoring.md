@@ -31,6 +31,63 @@ explicit sensor identity and `-behavior-prefix` for configured network CIDRs.
 Default capture state is under the output directory. The baseline has a
 single-writer lock; concurrent captures must not mutate one file.
 
+## Reproducible baseline lab
+
+Create the [synthetic fixtures](investigation-walkthrough.md#create-the-evidence).
+This lab deliberately lowers learning to 1 second / 4 packets; those are test
+values, not production recommendations. The four baseline ARP packets span six
+seconds and advertise `192.0.2.10` at `02:00:00:00:00:10`.
+
+In terminal 1, from the checkout root:
+
+<!-- docs:serve baseline -->
+```sh
+net capture -read doc-fixtures/baseline.pcap -out doc-fixtures/baseline-audit \
+  -behavior -behavior-sensor docs-lab -behavior-prefix 192.0.2.0/24 \
+  -behavior-learning 1s -behavior-min-samples 4 -dpi=false -geoDB=false \
+  -http 127.0.0.1:8080
+```
+
+Wait for capture finalization. In terminal 2, inspect the state, create an
+approval request using its actual version and explicitly approve the lab facts:
+
+<!-- docs:run approve-baseline -->
+```sh
+curl -fsS http://127.0.0.1:8080/api/behavior > doc-fixtures/learning.json
+python3 -c 'import json; s=json.load(open("doc-fixtures/learning.json")); assert s["mode"] == "learning" and s["samples"] >= 4 and s["observed"]; json.dump({"action":"approve","ids":[],"reason":"Reviewed synthetic ARP lab only","version":s["version"]},open("doc-fixtures/approve.json","w"))'
+curl -fsS -H 'Content-Type: application/json' \
+  --data-binary @doc-fixtures/approve.json \
+  http://127.0.0.1:8080/api/behavior/change > doc-fixtures/approved.json
+python3 -c 'import json; s=json.load(open("doc-fixtures/approved.json")); assert s["mode"] == "monitoring" and s["approved"]; print(s["baselineId"],s["version"])'
+```
+
+Stop terminal 1 with Ctrl-C before opening the same baseline in another capture.
+Replay the unchanged and changed fixtures into fresh output directories, keeping
+the sensor and prefix scope identical:
+
+<!-- docs:run monitor-baseline -->
+```sh
+net capture -read doc-fixtures/unchanged.pcap -out doc-fixtures/unchanged-audit \
+  -behavior-baseline doc-fixtures/baseline-audit/Behavior.json \
+  -behavior-sensor docs-lab -behavior-prefix 192.0.2.0/24 -dpi=false -geoDB=false
+net capture -read doc-fixtures/changed.pcap -out doc-fixtures/changed-audit \
+  -behavior-baseline doc-fixtures/baseline-audit/Behavior.json \
+  -behavior-sensor docs-lab -behavior-prefix 192.0.2.0/24 -dpi=false -geoDB=false
+net dump -read doc-fixtures/changed-audit/Alert.ncap.gz -json \
+  > doc-fixtures/behavior-alerts.ndjson
+```
+
+The unchanged replay must produce no baseline-deviation alerts. The changed
+fixture claims the same IP from `02:00:00:00:00:99` and must produce a baseline
+change observation. Inspect its fact/evidence, then confirm that the original
+`baselineId` and approved map did not silently change. An ARP claim alone does
+not prove an attacker or establish which MAC should be trusted.
+
+The default state file lives in the output directory; this replay explicitly
+selects the original baseline. Merely choosing a new `-out` without the baseline
+path would start separate learning. The saved baseline retains its original
+learning criteria after restart.
+
 ## Evidence and limits
 
 | Surface | Contract |

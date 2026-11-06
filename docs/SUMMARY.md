@@ -5,6 +5,7 @@
 ## Start here
 * [Installation](installation.md)
 * [First capture](quickstart.md)
+* [Investigate a synthetic transfer](investigation-walkthrough.md)
 * [Commands](commands.md)
 * [Configuration](configuration.md)
 * [Troubleshooting](troubleshooting.md)
@@ -25,6 +26,7 @@
 ## Investigate evidence
 * [Hosts and identity](host-identity.md)
 * [Device profiles](device-profiles.md)
+* [Credential observations](credential-analysis.md)
 * [Related evidence and capture health](evidence.md)
 * [Flow analysis](flow-analysis.md)
 * [Rules engine](RULES_ENGINE.md)
@@ -38,6 +40,7 @@
 
 ## Enrichment
 * [Database updates](database-updates.md)
+* [Vulnerability applicability](vulnerability-analysis.md)
 * [Resolvers](resolvers.md)
 * [Service identification and DPI](deep-packet-inspection.md)
 * [TLS fingerprinting](tls-fingerprinting.md)
@@ -46,6 +49,7 @@
 * [AI agents and MCP](mcp.md)
 * [MCP tool reference](mcp/tools.md)
 * [Distributed collection](distributed-collection.md)
+* [Signed sensor bundles](sensor-bundles.md)
 * [Containers](docker-containers.md)
 * [Metrics](metrics.md)
 * [Logging](logging.md)

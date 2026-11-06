@@ -20,10 +20,23 @@ analysis.
 
 ## Offline hypotheses first
 
+Create the [lab fixtures](investigation-walkthrough.md#create-the-evidence),
+then use the complete version-1 grammar in
+[`docs/examples/grammar.json`](examples/grammar.json). Its fixed seven-byte
+frame contains version `1`, length `5` and five UTF-8 bytes. `expected` byte
+assertions use JSON base64 (`AQ==` is one byte with value 1).
+
+<!-- docs:run grammar -->
 ```sh
-net investigate protocol-fields -spec grammar.json -read client.bin \
-  -compare other-client.bin
+net investigate protocol-fields -spec docs/examples/grammar.json \
+  -read doc-fixtures/client.bin -compare doc-fixtures/other-client.bin \
+  > doc-fixtures/grammar-comparison.json
 ```
+
+Expect one frame in each input and a `text` difference from `hello` to `world`.
+The `size` field is interpreted, not automatically validated against the body;
+use explicit length/framing constraints when that relationship is part of the
+hypothesis. Ordinal comparison does not repair insertion/deletion alignment.
 
 Use the versioned grammar types and examples in
 [`internal/protocoltest`](https://github.com/dreadl0ck/netcap/tree/v0.15.2/internal/protocoltest).

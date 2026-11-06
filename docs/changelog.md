@@ -4,6 +4,17 @@ description: Detailed Version History Information
 
 # Changelog
 
+## Source-only corrections
+
+These changes follow v0.15.2; they do not change an existing release archive.
+
+| Change | Migration/qualification |
+| --- | --- |
+| S7 requests gated by message role; response allowlist uses destination initiator | “Completed” rule renamed to acknowledgment; no header-only execution claim |
+| DNP3 group 60 variation 1 mapped to Class 0; 2–4 to classes 1–3 | Corrected integrity-poll rule; released binaries need an external corrected pack or a future release |
+| Grouped offline rules and audit readiness | Source-only `investigate rules`; separate pack format and finalized-capture requirements |
+| Documentation contracts | `make docs-check` runs published lab commands; `make docs-source-check` checks schema/rule examples |
+
 ## v0.15.2
 
 The [binary release](https://github.com/dreadl0ck/netcap/releases/tag/v0.15.2)

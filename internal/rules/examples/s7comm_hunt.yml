@@ -4,13 +4,12 @@
 # ("Defending Against an Active Threat to Siemens S7 Series PLCs", 19 Aug 2026)
 # and the associated threat-hunt plan. Unlike the port-based rules in
 # industrial_ports.yml, these operate on the parsed S7Comm audit record and can
-# distinguish READ (reconnaissance) from WRITE/DOWNLOAD/UPLOAD/CPU-STATE-CHANGE
-# (the point at which reconnaissance becomes an operational effect).
+# distinguish read, write, block transfer and CPU-state requests. Requests and
+# acknowledgments do not independently prove authorization or process effect.
 #
 # Approved-workstation baseline (the advisory's central discriminator):
-#   Every rule negates the approved engineering-workstation set using
-#   !IsApprovedWorkstation(SrcIP). Populate the approved EWS addresses in the
-#   ip-whitelist.csv resolver file. An uncorrelated write/download/CPU-state
+#   Load -approved-workstations. Requests check SrcIP; acknowledgments check
+#   DstIP because the PLC is their source. An uncorrelated write/download/CPU-state
 #   change is escalated regardless of how legitimate the source looks —
 #   including third-party integrators and managed service providers.
 #
@@ -21,20 +20,19 @@
 #   - Segments without full-payload capture on TCP/102 cannot support
 #     function-code analysis at all.
 
-description: "Siemens S7 PLC threat hunt (CISA AA26-231A): function-code level detection of S7comm write, download (ladder logic injection), upload (logic theft), PLC stop and CPU restart operations, plus reconnaissance reads. Discriminates completed operations (acknowledged, error class 0x00) from mere attempts, and negates the approved engineering-workstation baseline."
+description: "Siemens S7 function-code hunt: requests and header acknowledgments with direction-aware approved initiator checks. Item results, authorization and process effects require separate validation."
 
 rules:
   # ========================================
   # H4: HAS ANYTHING BEEN WRITTEN?
-  # Function codes outside the read set. This is where reconnaissance
-  # becomes an operational effect.
+  # Function codes outside the read set remain request evidence.
   # ========================================
 
   # 0x05 WriteVar — writing to PLC memory / data blocks
   - name: S7comm Write Operation
     description: S7comm WriteVar (0x05) to PLC memory from a non-approved source - process manipulation or pre-positioning (AA26-231A T0821 Modify Controller Tasking)
     type: S7Comm
-    expression: FunctionCode == 5 && !IsApprovedWorkstation(SrcIP)
+    expression: MessageType == 1 && FunctionCode == 5 && !IsApprovedWorkstation(SrcIP)
     severity: critical
     mitre: ["T0821", "T0836", "T0855"]
     tags: ["s7comm", "plc", "siemens", "write", "aa26-231a"]
@@ -44,7 +42,7 @@ rules:
   - name: S7comm Logic Download
     description: S7comm block download (0x1A-0x1C RequestDownload/DownloadBlock/DownloadEnded) from a non-approved source - ladder logic injection / controller reprogramming (AA26-231A T0843)
     type: S7Comm
-    expression: FunctionCode >= 26 && FunctionCode <= 28 && !IsApprovedWorkstation(SrcIP)
+    expression: MessageType == 1 && FunctionCode >= 26 && FunctionCode <= 28 && !IsApprovedWorkstation(SrcIP)
     severity: critical
     mitre: ["T0843", "T0821", "T0836"]
     tags: ["s7comm", "plc", "siemens", "download", "logic-injection", "aa26-231a"]
@@ -54,7 +52,7 @@ rules:
   - name: S7comm Logic Theft (Upload)
     description: S7comm block upload (0x1D-0x1F StartUpload/Upload/EndUpload) from a non-approved source - ladder logic exfiltration / logic theft (AA26-231A T0845 Program Upload)
     type: S7Comm
-    expression: FunctionCode >= 29 && FunctionCode <= 31 && !IsApprovedWorkstation(SrcIP)
+    expression: MessageType == 1 && FunctionCode >= 29 && FunctionCode <= 31 && !IsApprovedWorkstation(SrcIP)
     severity: critical
     mitre: ["T0845", "T0893"]
     tags: ["s7comm", "plc", "siemens", "upload", "logic-theft", "aa26-231a"]
@@ -64,7 +62,7 @@ rules:
   - name: S7comm PLC Stop
     description: S7comm PLC Stop (0x29) from a non-approved source - controller halt / denial of control (AA26-231A T0813/T0816)
     type: S7Comm
-    expression: FunctionCode == 41 && !IsApprovedWorkstation(SrcIP)
+    expression: MessageType == 1 && FunctionCode == 41 && !IsApprovedWorkstation(SrcIP)
     severity: critical
     mitre: ["T0813", "T0816"]
     tags: ["s7comm", "plc", "siemens", "plc-stop", "availability", "aa26-231a"]
@@ -74,28 +72,28 @@ rules:
   - name: S7comm CPU State Change
     description: S7comm PI service (0x28) from a non-approved source - CPU state change / cold-warm-hot restart (AA26-231A T0816 Device Restart/Shutdown)
     type: S7Comm
-    expression: FunctionCode == 40 && !IsApprovedWorkstation(SrcIP)
+    expression: MessageType == 1 && FunctionCode == 40 && !IsApprovedWorkstation(SrcIP)
     severity: critical
     mitre: ["T0816", "T0821"]
     tags: ["s7comm", "plc", "siemens", "restart", "cpu-state", "aa26-231a"]
     enabled: true
 
-  # Completed vs attempted: a job acknowledged with error class 0x00 is a
-  # completed operation, not merely an attempt.
-  - name: S7comm Critical Operation Completed
-    description: A critical S7comm operation was acknowledged successfully (Ack-Data, error class 0x00) - the operation completed, not just attempted (AA26-231A)
+  # Replies originate at the PLC. Header status does not prove item success
+  # or a process effect; keep those separate from this acknowledgment candidate.
+  - name: S7comm Critical Operation Acknowledgment
+    description: A critical S7comm Ack-Data has no header error and targets an unapproved initiator; inspect item results and process evidence before claiming success.
     type: S7Comm
-    expression: MessageType == 3 && ErrorClass == 0 && IsCriticalOperation && !IsApprovedWorkstation(SrcIP)
+    expression: ProtocolId == 50 && MessageType == 3 && ErrorClass == 0 && ErrorCode == 0 && IsCriticalOperation && !IsApprovedWorkstation(DstIP)
     severity: critical
     mitre: ["T0821", "T0836"]
-    tags: ["s7comm", "plc", "siemens", "completed", "acknowledged", "aa26-231a"]
+    tags: ["s7comm", "plc", "siemens", "acknowledged", "aa26-231a"]
     enabled: true
 
   # Catch-all for any operation the decoder flagged as critical.
   - name: S7comm Critical Operation
     description: Any S7comm operation flagged critical (write/download/upload/PLC-stop/PI-service/block-functions) from a non-approved source (AA26-231A)
     type: S7Comm
-    expression: IsCriticalOperation && !IsApprovedWorkstation(SrcIP)
+    expression: MessageType == 1 && IsCriticalOperation && !IsApprovedWorkstation(SrcIP)
     severity: high
     mitre: ["T0821", "T0836"]
     tags: ["s7comm", "plc", "siemens", "critical", "aa26-231a"]
@@ -130,7 +128,7 @@ rules:
   - name: S7comm Read From Non-Approved Source
     description: S7comm ReadVar (0x04) from a source that is not an approved engineering workstation - reconnaissance of PLC memory/process (AA26-231A T0893 Data from Local System)
     type: S7Comm
-    expression: FunctionCode == 4 && !IsApprovedWorkstation(SrcIP)
+    expression: MessageType == 1 && FunctionCode == 4 && !IsApprovedWorkstation(SrcIP)
     severity: high
     mitre: ["T0893", "T0855"]
     tags: ["s7comm", "plc", "siemens", "read", "reconnaissance", "aa26-231a"]
@@ -156,7 +154,7 @@ rules:
   - name: S7comm Off-Hours Operation
     description: A critical S7comm operation occurred outside business hours (Mon-Fri 08:00-18:00) from a non-approved source - temporal anomaly consistent with out-of-window access (AA26-231A)
     type: S7Comm
-    expression: IsCriticalOperation && !IsBusinessHours(Timestamp, 8, 18) && !IsApprovedWorkstation(SrcIP)
+    expression: MessageType == 1 && IsCriticalOperation && !IsBusinessHours(Timestamp, 8, 18) && !IsApprovedWorkstation(SrcIP)
     severity: high
     mitre: ["T0821", "T0836"]
     tags: ["s7comm", "plc", "siemens", "off-hours", "temporal-anomaly", "aa26-231a"]
@@ -183,7 +181,7 @@ rules:
   - name: S7CommPlus Obscured Payload
     description: S7CommPlus (S7-1200/1500 TIA Portal) session observed - connection proven but payload is integrity-obscured, so function code cannot be determined. Corroborate with the approved-workstation baseline out-of-band (AA26-231A named gap)
     type: S7Comm
-    expression: ProtocolId == 114 && !IsApprovedWorkstation(SrcIP)
+    expression: ProtocolId == 114
     severity: medium
     mitre: ["T0830", "T0855"]
     tags: ["s7comm", "s7commplus", "plc", "siemens", "obscured", "visibility-gap", "aa26-231a"]

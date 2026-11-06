@@ -76,6 +76,11 @@ confirmed tunnels, and a MITRE label/severity does not validate intent.
 
 ## Offline grouped thresholds
 
+Availability: current source after v0.15.2. The v0.15.2 release binary has no
+`investigate rules` command or audit-readiness marker; build current source to
+use this section. The capture-time YAML format elsewhere on this page is a
+separate v0.15.2 interface.
+
 `net investigate rules` evaluates `netcap-offline-rules/v1` packs against
 completed captures. The separate format rejects actions, sequences and distinct
 gates; the legacy capture engine rejects offline packs before processing.
@@ -355,8 +360,8 @@ expressions:
 
 ```yaml
 rules:
-  - name: HTTPS_Traffic
-    description: Detect HTTPS connections
+  - name: TCP_443_Observation
+    description: Observe TCP records addressed to port 443; protocol not established
     type: TCP
     expression: DstPort == 443
     severity: low
@@ -391,7 +396,7 @@ rules:
     expression: |
       Method == "POST" && 
       ReqContentLength > 10000000 && 
-      UserAgent in ["curl", "wget", "python"]
+      MatchesPattern(UserAgent, "(?i)^(curl/|wget/|python[-/])")
     severity: high
     mitre: ["T1041"]
     tags: ["exfiltration", "http"]
@@ -493,8 +498,8 @@ rules:
 ```yaml
 rules:
   # Port Scanning
-  - name: SYN_Scan
-    description: Detect TCP SYN scan attempts
+  - name: TCP_SYN_Observation
+    description: Observe an initiating SYN; a single packet is not a scan
     type: TCP
     expression: SYN && !ACK && !RST
     severity: medium
@@ -503,8 +508,8 @@ rules:
     enabled: true
 
   # ICMP Reconnaissance
-  - name: ICMP_Ping_Sweep
-    description: Detect ICMP echo requests (ping sweep)
+  - name: ICMP_Echo_Request
+    description: Observe an echo request; aggregate distinct destinations to assess a sweep
     type: ICMPv4
     expression: Type == 8
     severity: low
@@ -543,23 +548,21 @@ rules:
 ```yaml
 rules:
   # IRC C2
-  - name: IRC_Communication
-    description: Detect IRC traffic (possible botnet C2)
+  - name: TCP_IRC_Port_Observation
+    description: Observe common IRC destination ports; neither IRC nor C2 is confirmed
     type: TCP
     expression: DstPort >= 6667 && DstPort <= 6669
-    severity: high
-    mitre: ["T1219"]
-    tags: ["malware", "c2", "irc"]
+    severity: low
+    tags: ["port-observation", "irc-candidate"]
     enabled: true
 
   # Suspicious Port
-  - name: Backdoor_Port_31337
-    description: Detect connections to common backdoor port
+  - name: TCP_31337_Observation
+    description: Observe a port associated with some historical tools; no malware verdict
     type: TCP
     expression: DstPort == 31337 || SrcPort == 31337
-    severity: critical
-    mitre: ["T1571"]
-    tags: ["malware", "backdoor"]
+    severity: low
+    tags: ["port-observation"]
     enabled: true
 ```
 
@@ -655,7 +658,7 @@ rules:
 2. **Monitor Alert Volume**: Ensure rules don't generate excessive alerts
    ```bash
    # Count alerts per rule
-   net dump -read Alert.ncap.gz -csv | cut -d';' -f2 | sort | uniq -c
+    net dump -read Alert.ncap.gz -json | python3 -c 'import collections,json,sys; print(collections.Counter(json.loads(line)["RuleName"] for line in sys.stdin))'
    ```
 
 3. **Review False Positives**: Refine rules based on real-world results

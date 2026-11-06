@@ -1,0 +1,16 @@
+{
+  "windowNS": 60000000000,
+  "scanTargets": 5,
+  "approvedSources": ["192.0.2.10"],
+  "indicators": [
+    {
+      "value": "docs.example.test",
+      "kind": "domain",
+      "category": "c2",
+      "source": "synthetic documentation fixture; not real intelligence",
+      "version": "1",
+      "validFrom": 1700000000000000000,
+      "validUntil": 1700000060000000000
+    }
+  ]
+}

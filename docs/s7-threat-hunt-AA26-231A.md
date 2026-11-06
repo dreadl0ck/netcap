@@ -100,12 +100,16 @@ each.** Repeated, frequent pairs are your operational baseline, not a finding.
 **netcap:** the rule engine supports **source→distinct-destination cardinality**:
 
 ```yaml
-- name: S7comm Horizontal Enumeration
-  type: Connection
-  expression: DstPort == "102" && !IsApprovedWorkstation(SrcIP)
-  distinct_field: DstIP
-  distinct_threshold: 5
-  threshold_window: 300
+rules:
+  - name: S7comm Horizontal Enumeration
+    description: One unapproved source contacted five distinct TCP/102 destinations
+    type: Connection
+    expression: DstPort == "102" && !IsApprovedWorkstation(SrcIP)
+    distinct_field: DstIP
+    distinct_threshold: 5
+    threshold_window: 300
+    severity: medium
+    enabled: true
 ```
 
 This fires when one source contacts 5+ distinct destinations on TCP/102 within
@@ -133,10 +137,13 @@ observe "snap7 imported" or "a Python process." What it can do:
 
 ### H4 — Has anything been written?
 
-This is where it stops being reconnaissance. Function codes outside the read
-set, and — critically — **check the acknowledgement**: a job issued is an
-attempt; a job acknowledged with **error class `0x00`** is a completed
-operation.
+Separate the request, response header, item results and process effect.
+`MessageType == 3 && ErrorClass == 0 && ErrorCode == 0` identifies an Ack-Data
+with no header error; it does not establish that every item succeeded or that
+the physical process changed. Inspect available `DataItems[].ReturnCode`
+(`255` denotes item success) and correlate the request/PDU reference. v0.15.2's
+item parser does not cover every response shape, so an empty item list cannot
+prove success. Confirm operational effects with controller/process evidence.
 
 netcap parses all of these at the function-code level into `S7Comm` records.
 The shipped rules (`internal/rules/examples/s7comm_hunt.yml`):
@@ -148,7 +155,7 @@ The shipped rules (`internal/rules/examples/s7comm_hunt.yml`):
 | S7comm Logic Theft (Upload) | `0x1D–0x1F` | Logic exfiltration |
 | S7comm PLC Stop | `0x29` | Controller halt / denial of control |
 | S7comm CPU State Change | `0x28` PI service | Cold/warm/hot restart |
-| S7comm Critical Operation Completed | `MessageType == 3 && ErrorClass == 0` | **Acknowledged success**, not just attempted |
+| Critical-operation acknowledgment candidate | `MessageType == 3 && ErrorClass == 0 && ErrorCode == 0` | Header result only; inspect item results and request correlation |
 | S7comm Read From Non-Approved Source | `0x04` ReadVar | Reconnaissance of PLC memory |
 | S7comm Configuration Enumeration (SZL) | UserData CPU/ReadSZL | CPU/firmware/config fingerprinting |
 
@@ -176,7 +183,16 @@ net capture -read plant.pcap -include S7Comm,Connection \
   -out out/
 ```
 
-Then every hunt rule negates the set with `!IsApprovedWorkstation(SrcIP)`.
+Request records carry the initiator in `SrcIP`; response records carry it in
+`DstIP`. Negate the approved set on the appropriate endpoint, not always on
+`SrcIP`. The v0.15.2 acknowledgment rule checks the PLC's source address and
+misnames the observation as a completed operation. Current source corrects the
+direction and renames it `S7comm Critical Operation Acknowledgment`; that source
+change does not alter an already downloaded v0.15.2 binary or its embedded rules.
+Use a reviewed external rule pack with `-rules` to apply corrections on v0.15.2.
+
+The source request rules now require `MessageType == 1`; the S7CommPlus visibility
+rule reports both directions without inferring an approved initiator.
 
 > **Do not allowlist by hostname pattern inside the query.** If a compromised
 > approved workstation is your problem, a pattern match hides it. The baseline is
@@ -249,8 +265,8 @@ Key fields for hunting (see `types/netcap.proto` `message S7Comm`):
 
 - `FunctionCode` / `FunctionName` — the operation (`0x04` read, `0x05` write, …).
 - `MessageType` / `MessageTypeName` — Job (1), Ack (2), Ack-Data (3), UserData (7).
-- `ErrorClass` / `ErrorCode` / `ErrorName` — `ErrorClass == 0` on an Ack-Data
-  means the operation completed.
+- `ErrorClass` / `ErrorCode` / `ErrorName` — header-level error evidence; zero
+  does not prove item-level success or physical process effect.
 - `IsCriticalOperation` / `IsSecurityRelevant` — decoder-computed flags.
 - `SubFunctionName` — names cold/warm/hot restart for PI services.
 - `UserDataFunctionGroup` / `UserDataSubFunction` — SZL / CPU function

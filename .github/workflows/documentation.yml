@@ -1,0 +1,61 @@
+name: Documentation contracts
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - 'scripts/*docs*'
+      - 'tests/documentation/**'
+      - 'internal/rules/**'
+      - 'internal/decoder/stream/dnp3/**'
+      - 'types/netcap.proto'
+      - '.github/workflows/documentation.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - 'scripts/*docs*'
+      - 'tests/documentation/**'
+      - 'internal/rules/**'
+      - 'internal/decoder/stream/dnp3/**'
+      - 'types/netcap.proto'
+      - '.github/workflows/documentation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.0'
+          cache: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: cmd/capture/webui/frontend/pnpm-lock.yaml
+      - name: Install packet capture headers
+        run: sudo apt-get update && sudo apt-get install -y libpcap-dev
+      - name: Build embedded interface
+        working-directory: cmd/capture/webui/frontend
+        run: pnpm install --frozen-lockfile && pnpm build
+      - name: Check source contracts and rule regressions
+        run: GOWORK=off go test -tags nodpi,noyara,nomagika ./tests/documentation ./internal/rules ./internal/decoder/stream/dnp3 -count=1
+      - name: Execute documented offline workflows
+        run: |
+          GOWORK=off go build -tags nodpi,noyara,nomagika -o "$RUNNER_TEMP/net-docs" ./cmd/net
+          make docs-check NETCAP_BIN="$RUNNER_TEMP/net-docs"

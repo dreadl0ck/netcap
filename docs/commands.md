@@ -30,6 +30,11 @@ legacy completion result or historical README row is not an executable interface
 
 ## Common operations
 
+The [offline grouped rule evaluator](RULES_ENGINE.md#offline-grouped-thresholds)
+(`investigate rules`) is available in current source after v0.15.2. It is not
+present in the v0.15.2 release binary. The [sensor bundle commands](sensor-bundles.md)
+are a separate completed-output workflow from live agent transport.
+
 ```sh
 net util -interfaces
 net capture -overview

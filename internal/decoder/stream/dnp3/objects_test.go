@@ -186,14 +186,12 @@ func TestReadRequestHeadersHaveNoData(t *testing.T) {
 	}
 }
 
-// The Class 0 integrity poll returns the outstation's whole static point map.
-// Naming it the same as a routine event poll hides that distinction.
 func TestClassDataNamesDistinguishVariations(t *testing.T) {
-	if got := objectName(groupClassData, 0); got != "Class 0 Data (static point map)" {
-		t.Errorf("group 60 variation 0 = %q", got)
+	if got := objectName(groupClassData, 0); got != "Class Data" {
+		t.Errorf("reserved group 60 variation 0 = %q", got)
 	}
-	for _, v := range []int32{1, 2, 3} {
-		want := "Class " + string(rune('0'+v)) + " Data"
+	for _, v := range []int32{1, 2, 3, 4} {
+		want := "Class " + string(rune('0'+v-1)) + " Data"
 		if got := objectName(groupClassData, v); got != want {
 			t.Errorf("group 60 variation %d = %q, want %q", v, got, want)
 		}

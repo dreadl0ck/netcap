@@ -8,6 +8,16 @@
 .PHONY: test-coverage test-coverage-html test-coverage-check test-race test-determinism test-wireshark
 .PHONY: test-golden-update test-regression-verify
 .PHONY: test-hyperscan test-msan test-pkg test-verbose test-clean test-help
+.PHONY: docs-check docs-source-check
+
+NETCAP_BIN ?= ./net
+DOCS_TEST_TAGS ?= nodpi,noyara
+
+docs-check:
+	python3 scripts/check-docs.py --net "$(NETCAP_BIN)"
+
+docs-source-check:
+	GOWORK=off go test -tags "$(DOCS_TEST_TAGS)" ./tests/documentation -count=1
 
 # Test targets
 test: test-unit
@@ -40,9 +50,8 @@ test-regression-verify:
 
 # Update golden files (use after verifying changes are correct)
 test-golden-update:
-	@echo "Updating golden files..."
-	UPDATE_GOLDEN=1 go test -v -tags=regression ./tests/regression/...
-	@echo "Golden files updated. Please review changes before committing."
+	@echo "No golden-update suite is registered; tests/regression does not exist. Review the affected fixture and test directly."
+	@exit 2
 
 # E2E tests (full CLI workflows)
 test-e2e:
@@ -157,7 +166,7 @@ test-help:
 	@echo "  test-determinism  - Compare Ultimate PCAP output across runs and worker counts"
 	@echo "  test-wireshark    - Fetch verified Wireshark samples and run the full corpus (needs editcap)"
 	@echo ""
-	@echo "  test-golden-update    - Update golden files"
+	@echo "  test-golden-update    - Retired; fails explicitly (no registered suite)"
 	@echo "  test-regression-verify - Verify against golden files"
 	@echo ""
 	@echo "  test-hyperscan    - Hyperscan/Vectorscan tests (needs libhs)"

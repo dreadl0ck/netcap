@@ -22,6 +22,7 @@ changing the signed client protocol.
 | Goal | Guide |
 | --- | --- |
 | Produce and inspect your first records | [First capture](quickstart.md) |
+| Follow a complete DNS/HTTP/file/alert investigation | [Synthetic transfer lab](investigation-walkthrough.md) |
 | Explore captures in a browser | [Web interface](web-interface.md) |
 | Identify hosts and observed accounts | [Hosts and identity](host-identity.md) |
 | Explain an alert and recover its evidence | [Related evidence](evidence.md) |

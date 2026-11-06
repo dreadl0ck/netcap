@@ -28,6 +28,8 @@ tests/wireshark-corpus/
 # ignored while the Go sources do not.
 !tests/integration/
 !tests/integration/**
+!tests/documentation/
+!tests/documentation/**
 .idea
 types/python
 types/java

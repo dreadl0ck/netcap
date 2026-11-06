@@ -214,8 +214,10 @@ any(Objects, {.ObjectGroup == 60 && .Variation == 1})'
 
 The v0.15.2 `DNP3 Class 0 Integrity Poll Sweep` rule incorrectly checks variation
 0, and `internal/decoder/stream/dnp3/objects.go` incorrectly labels that variation
-as Class 0. Use the raw `ObjectGroup`/`Variation` fields and a local corrected
-rule (`Variation == 1`) before relying on this hunt. The shipped rule's
+as Class 0. Current source fixes both the names and rule, but the released
+v0.15.2 executable remains affected. Use the raw `ObjectGroup`/`Variation`
+fields and a local corrected rule (`Variation == 1`) before relying on this hunt.
+The v0.15.2 shipped rule's
 `distinct_field: Destination` over 300 seconds measures breadth, not ordered
 scanning.
 

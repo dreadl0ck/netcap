@@ -39,6 +39,32 @@ Do not reuse fields across record types without checking `dump -fields`.
 [Rules](RULES_ENGINE.md) use typed record expressions too, but have additional
 threshold/sequence/action behavior.
 
+## Helper reference
+
+These signatures describe capture-time rules and `dump`'s expr environment,
+not the separate source-only offline-pack expression subset.
+
+| Helper | Input/result | Example/limit |
+| --- | --- | --- |
+| `InSubnet(ip, cidr)` | Strings → bool | `InSubnet(SrcIP, "192.0.2.0/24")` |
+| `IsPrivateIP(ip)`, `IsPublicIP(ip)` | String → bool | Private includes special-use/documentation ranges, not just RFC1918; it is not a trust decision |
+| `IsApprovedWorkstation(ip)`, `InAllowlist(ip)` | String → bool | Exact loaded IP membership; empty allowlist returns false |
+| `ParsePort(port)` | String → integer | For Connection string ports; validate unexpected input separately |
+| `PortInRange(port, start, end)` | Integers → bool | Inclusive bounds; use `ParsePort` on string ports |
+| `TimeInRange(ts, start, end)` | Unix-nanosecond integers → bool | Inclusive bounds; units must match |
+| `DurationSince(ts)` | Unix-nanosecond integer → elapsed nanoseconds | Uses current wall clock; unsuitable for capture-relative replay windows |
+| `FormatTime(ts, layout)` | Timestamp and Go layout → string | Layout `2006-01-02` is Go syntax, not strftime |
+| `HourOfDay(ts)`, `Weekday(ts)` | Timestamp → local hour / weekday | Process local timezone; weekday 0 is Sunday |
+| `IsBusinessHours(ts, start, end)` | Timestamp/hour integers → bool | Mon–Fri, `[start,end)`, process local timezone; set `TZ=UTC` for reproducible UTC policy |
+| `ContainsAny(text, parts...)` | String and string arguments → bool | Literal substring checks |
+| `MatchesPattern(text, pattern)` | Strings → bool | Regex matching; use `(?i)` for case-insensitivity |
+| `DNSResolutionMatches(...)` | Six typed arguments → bool | Advanced capture-time DNS context helper; see the signature in `internal/filter/filter.go` before use |
+
+Nested list predicates use expr syntax, for example
+`len(Questions) > 0 && any(Questions, {.Name == "docs.example.test"})` on DNS.
+Guard missing nested data. CSV flattening does not make every flattened column
+a top-level field in every expression environment; inspect the actual schema.
+
 ## Capture-time compatibility filter
 
 In Go v0.15.2, `capture -filter` is compiled against TCP. Compilation warns

@@ -42,3 +42,18 @@ diagram can rule out. [Workers](workers.md) lists practical budgets.
 Build tags change native integrations and available paths. Separate the public
 Go release contract from source-only experimental code and from another
 implementation's API. [Adding decoders](extension.md) covers extension points.
+
+## Decoder qualification
+
+| Reference | What it checks |
+| --- | --- |
+| `internal/decoder/stream/selection.go` | Evidence-specificity ranking and transport/port eligibility |
+| `decoder_matching_test.go`, `confusable_test.go` in that directory | Competing decoder signatures and their specificity margins |
+| `reader_hygiene_test.go` in that directory | Emission, captured-fragment timing and direction across registered readers |
+| `internal/decoder/core` fragment index | Map byte offsets back to captured fragments |
+| Collector corpus/regression tests | Record output and worker/replay invariance |
+
+Selector history and earlier before/after measurements remain in Git history.
+Current fixes must preserve stronger-signature selection and message provenance;
+a microfixture pass is not a complete protocol-conformance claim. See
+[testing](tests.md) for corpus prerequisites and skip handling.
