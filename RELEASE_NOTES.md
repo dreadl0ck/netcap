@@ -26,6 +26,7 @@ disabled; the retired corpora and Exploit-DB payloads are not redistributed.
 | Dependencies | Upgrade klauspost/compress, Vite, Vitest/mocker, shell-quote and source-map-js to patched versions |
 | Linux WebUI | Pass the actual built WebUI as an explicit Docker build context instead of embedding only its placeholder |
 | Runtime provenance | Record every bundled loader/library hash, supplying package/image and corresponding-source link; retain package copyright and licence notices |
+| macOS runtime | Bundle and relocate native libraries instead of depending on old Homebrew paths; include exact supplier sources and build recipes. DPI requires macOS 26+, nodpi macOS 15+ |
 | Source bundle | Include the qualified libtrace 4.0.23, wandio 4.2.6 and libwandder 2.0.8 sources; correct the prior runtime-version notices |
 | Geolocation | Missing optional GeoLite2 fallback data logs at debug level; explicitly selected or corrupt providers retain actionable errors |
 | Windows | On-demand qualification runs the actual client, signed download/update and structured CVE lookup on a Windows runner |

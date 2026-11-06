@@ -70,15 +70,16 @@ release third-party source archive and is also available from crates.io.
   Source: https://github.com/google/magika/archive/refs/tags/cli/v1.0.2.tar.gz
   License: Apache-2.0, reproduced in THIRD_PARTY_LICENSES.txt
 
-YARA-X native library 1.14.0
+YARA-X native libraries
 ---------------------------
 DPI builder images and service images include the unmodified YARA-X C API
-library under BSD-3-Clause. Its statically linked Rust dependencies and license
+library 1.14.0 under BSD-3-Clause; macOS bundles C API 1.15.0. Their statically linked Rust dependencies and license
 texts are listed in THIRD_PARTY_RUST_LICENSES.txt. The YARA-X license is also
 reproduced in THIRD_PARTY_LICENSES.txt under github.com/VirusTotal/yara-x/go
 v1.14.0.
 
   Source: https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.14.0.tar.gz
+  macOS source: https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.15.0.tar.gz
 
 Native DPI libraries
 --------------------
@@ -133,6 +134,16 @@ legal/runtime/ retains the supplying packages' copyright notices and complete
 available common GPL/LGPL license texts. The lib/ directory is replaceable with
 compatible modified libraries; the net launcher supplies --library-path rather
 than installing libraries globally. Keep the extracted directory together.
+
+Bundled macOS runtimes
+-----------------------
+native-runtime-inventory.json records the exact library hashes, installed
+Homebrew supplier versions, source URLs and source hashes. The separate macOS
+runtime source asset contains those complete source archives and original build
+recipes. legal/native-runtime-notices.txt retains upstream notices. Native code
+is unchanged; Netcap relocates Mach-O install names and ad-hoc signs the copies.
+Libraries remain dynamically linked and replaceable with compatible modified
+versions; reverse engineering for debugging those changes is not restricted.
 
 The URLs above provide the exact corresponding library source, including build
 scripts, at no charge. Netcap does not modify these libraries. Release pages

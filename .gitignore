@@ -2,6 +2,8 @@
 coverage.out
 dist-linux
 dist-license-sources
+/dist-macos-runtime/
+/dist-macos-sources/
 .docker-build-timestamp
 .docker-build-context
 scripts/analyze-dnn/dnn/models/

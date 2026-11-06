@@ -13,6 +13,7 @@ builds:
     binary: net
     env:
       - CGO_ENABLED=1
+      - MACOSX_DEPLOYMENT_TARGET=26.0
     id: netcap
     goos:
       - darwin
@@ -22,11 +23,15 @@ builds:
       - -trimpath
     goarch:
       - arm64
+    hooks:
+      post:
+        - python3 zeus/scripts/bundle-macos-runtime.py {{ .Path }} --variant dpi
   - main: ./cmd/net
     binary: macOS_nodpi/net
     id: netcap_macOS_nodpi
     env:
       - CGO_ENABLED=1 # needed to compile gopacket for arm64
+      - MACOSX_DEPLOYMENT_TARGET=15.0
     goos:
       - darwin
     goarch:
@@ -36,6 +41,9 @@ builds:
     flags:
       - -trimpath
       - -tags=nodpi
+    hooks:
+      post:
+        - python3 zeus/scripts/bundle-macos-runtime.py {{ .Path }} --variant nodpi
   - main: ./cmd/net
     id: netcap_nodpi
     binary: net
@@ -74,6 +82,13 @@ archives:
       - types/rust/*
       - types/swift/*
       - types/netcap.pb.go
+      - src: dist-macos-runtime/dpi/lib/*
+        dst: lib
+        strip_parent: true
+      - src: dist-macos-runtime/dpi/inventory.json
+        dst: native-runtime-inventory.json
+      - src: dist-macos-runtime/dpi/NOTICES.txt
+        dst: legal/native-runtime-notices.txt
   - id: "netcap_macOS_nodpi"
     builds: [ 'netcap_macOS_nodpi' ]
     name_template: '{{ .ProjectName }}-nodpi-{{ .Tag }}-{{ .Os }}-{{ .Arch }}'
@@ -94,6 +109,13 @@ archives:
       - types/rust/*
       - types/swift/*
       - types/netcap.pb.go
+      - src: dist-macos-runtime/nodpi/lib/*
+        dst: macOS_nodpi/lib
+        strip_parent: true
+      - src: dist-macos-runtime/nodpi/inventory.json
+        dst: native-runtime-inventory.json
+      - src: dist-macos-runtime/nodpi/NOTICES.txt
+        dst: legal/native-runtime-notices.txt
   - id: "netcap_nodpi"
     builds: [ 'netcap_nodpi' ]
     name_template: '{{ .ProjectName }}-nodpi-{{ .Tag }}-{{ .Os }}-{{ .Arch }}'
@@ -156,10 +178,10 @@ release:
     
     | Build | OS | Architecture | DPI Support | Description |
     |-------|----|--------------| ------------|-------------|
-    | `netcap-{{ .Tag }}-darwin-arm64` | macOS | ARM64 | ✅ Yes | Full DPI support with nDPI |
+    | `netcap-{{ .Tag }}-darwin-arm64` | macOS 26+ | ARM64 | ✅ Yes | Bundled nDPI and native runtime |
     | `netcap-{{ .Tag }}-linux-amd64-libc` | Linux | AMD64 | ✅ Yes | glibc-based with DPI |
     | `netcap-{{ .Tag }}-linux-amd64-musl` | Linux | AMD64 | ✅ Yes | musl-based with DPI (Alpine) |
-    | `netcap-nodpi-{{ .Tag }}-darwin-arm64` | macOS | ARM64 | ❌ No | Static build, no DPI |
+    | `netcap-nodpi-{{ .Tag }}-darwin-arm64` | macOS 15+ | ARM64 | ❌ No | Bundled runtime, no DPI |
     | `netcap-nodpi-{{ .Tag }}-linux-amd64-libc` | Linux | AMD64 | ❌ No | glibc-based, no DPI |
     | `netcap-nodpi-{{ .Tag }}-linux-amd64-musl` | Linux | AMD64 | ❌ No | musl-based, no DPI |
     | `netcap-nodpi-{{ .Tag }}-windows-amd64` | Windows | AMD64 | ❌ No | Windows build |
@@ -173,10 +195,9 @@ release:
     ### Installing on macOS via homebrew
 
     Builds distributed via homebrew are built with DPI support.
-    You need to install the libprotoident and ndpi libraries via homebrew.
+    Native dependencies are bundled; keep the extracted `lib/` beside `net`.
 
     ```
-      $ brew install libprotoident ndpi
       $ brew tap dreadl0ck/formulas
       $ brew install netcap
     ```
@@ -206,6 +227,10 @@ brews:
       name: homebrew-formulas
     homepage: "https://github.com/dreadl0ck/netcap"
     description: "A framework for secure and scalable network traffic analysis"
+    install: |
+      odie "Netcap DPI requires macOS 26 or newer; use the nodpi archive on macOS 15" if MacOS.version < :tahoe
+      libexec.install "net", "lib"
+      bin.install_symlink libexec/"net"
 
 before:
   hooks:

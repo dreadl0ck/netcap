@@ -16,6 +16,12 @@ Linux archives built by `zeus/scripts/build-{ubuntu,alpine}-docker.sh` include
 libprotoident and libtrace for DPI builds. It does not install system libraries.
 Use the libc archive on Debian/Ubuntu and the musl archive on Alpine.
 
+macOS archives also keep native libraries in `lib/` beside the executable; their
+install names use `@executable_path`/`@loader_path`, not workstation Homebrew
+paths. The DPI archive requires macOS 26+; nodpi supports macOS 15+. Full supplier
+sources and build recipes are in the separate macOS runtime source asset. The
+Homebrew formula installs the complete DPI runtime under `libexec`.
+
 For offline analysis, `net capture --read traffic.pcap --out nc` exits after
 flushing records. Add `--http localhost:8080` to keep the WebUI running.
 `net dump --read nc/HTTP.ncap.gz --json --sort-time` provides stable capture-time
@@ -63,7 +69,7 @@ For source installation, clone the tagged repository, build the embedded WebUI,
 then compile with the installed native dependencies:
 
 ```text
-$ git clone --branch v0.15.0 https://github.com/dreadl0ck/netcap.git
+$ git clone --branch v0.15.1 https://github.com/dreadl0ck/netcap.git
 $ cd netcap/cmd/capture/webui/frontend
 $ pnpm install --frozen-lockfile && pnpm build
 $ cd ../../../..

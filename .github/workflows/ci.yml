@@ -5,7 +5,7 @@ on:
     inputs:
       scope:
         type: choice
-        options: [full, windows]
+        options: [full, windows, macos]
         default: full
 
 # A second push to the same branch cancels the previous run.
@@ -27,7 +27,7 @@ env:
 
 jobs:
   go:
-    if: inputs.scope != 'windows'
+    if: inputs.scope == 'full'
     name: Go build and test
     runs-on: ubuntu-latest
 
@@ -158,6 +158,7 @@ jobs:
         run: ./zeus/scripts/licenses.sh
 
   windows:
+    if: inputs.scope != 'macos'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -189,3 +190,35 @@ jobs:
         with:
           name: netcap-windows-qualified
           path: net.exe
+
+  macos:
+    if: inputs.scope == 'macos'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: macos-15, variant: nodpi-}
+          - {os: macos-26, variant: ''}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Qualify the exact bundled release on clean macOS
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          tag=$(git describe --tags --exact-match)
+          asset="netcap-${VARIANT}${tag}-darwin-arm64.tar.gz"
+          gh release download "$tag" --pattern "$asset" --pattern checksums.txt --dir "$RUNNER_TEMP/release"
+          python3 - "$RUNNER_TEMP/release/$asset" "$RUNNER_TEMP/release/checksums.txt" <<'PY'
+          import hashlib,pathlib,sys
+          p=pathlib.Path(sys.argv[1]);expected=dict((name,digest) for digest,name in (line.split() for line in pathlib.Path(sys.argv[2]).read_text().splitlines()))
+          assert hashlib.sha256(p.read_bytes()).hexdigest()==expected[p.name]
+          PY
+          mkdir "$RUNNER_TEMP/extracted"
+          tar -xzf "$RUNNER_TEMP/release/$asset" -C "$RUNNER_TEMP/extracted"
+          binary=$(python3 -c 'import pathlib,sys;print(next(pathlib.Path(sys.argv[1]).rglob("net")))' "$RUNNER_TEMP/extracted")
+          "$binary" --version
+          export NC_CONFIG_ROOT="$RUNNER_TEMP/netcap-dbs"
+          "$binary" util -download-dbs
+          "$binary" util -update-dbs
