@@ -1,8 +1,9 @@
-FROM --platform=linux/amd64 dreadl0ck/netcap-builder:ubuntu-dpi-latest as builder
+FROM --platform=linux/amd64 dreadl0ck/netcap-builder:ubuntu-dpi-latest@sha256:9a2fa86233b00fc17149446f5741d580b1b5eb5b569faa63a93aabed3d2f050d as builder
 
 # Copy netcap source
 WORKDIR /netcap
 COPY . .
+COPY --from=netcap-webui / /netcap/cmd/capture/webui/frontend/dist/
 
 ENV VERSION XXX
 

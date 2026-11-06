@@ -4,6 +4,12 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/json"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -88,5 +94,67 @@ func TestSignedReleaseAuthenticityAndExpiry(t *testing.T) {
 	changed.PolicySHA256 = digest([]byte("changed policy"))
 	if err := compareReleaseOrder(changed, key, p, key); err == nil {
 		t.Fatal("sequence equivocation accepted")
+	}
+}
+
+func TestSignedMirrorCannotReplayAnOlderPublishedKey(t *testing.T) {
+	oldPath := os.Getenv("NETCAP_TEST_SIGNED_REPLAY")
+	if oldPath == "" {
+		t.Skip("set NETCAP_TEST_SIGNED_REPLAY to an earlier public signed envelope")
+	}
+	latest, err := fetchSigned(defaultDBsURL + "/dbs/signed/v1/latest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var previous SignedRelease
+	if err := readJSON(oldPath, &previous); err != nil {
+		t.Fatal(err)
+	}
+	p, _, key, err := verifyCommunityRelease(previous, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := checkReleaseOrder(p, key, latest); err == nil {
+		t.Fatal("fixture is not an older key/sequence")
+	}
+	target := filepath.Join(t.TempDir(), "dbs")
+	if err := os.Mkdir(target, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := atomicJSON(filepath.Join(target, signedMarker), latest); err != nil {
+		t.Fatal(err)
+	}
+	oldDir := resolvers.DataBaseFolderPath
+	resolvers.DataBaseFolderPath = target
+	t.Cleanup(func() { resolvers.DataBaseFolderPath = oldDir })
+	archiveRequests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/dbs/signed/v1/latest" {
+			archiveRequests++
+		}
+		_ = jsonResponse(w, previous)
+	}))
+	defer server.Close()
+	if err := downloadSigned(server.URL, true, nil); err == nil {
+		t.Fatal("mirror replay accepted")
+	}
+	if archiveRequests != 0 {
+		t.Fatal("replayed archive was requested")
+	}
+}
+
+func TestSignedDownloadRefusesConcurrentInstallation(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, ".dbs-install.lock"), []byte("other process"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	previous := resolvers.DataBaseFolderPath
+	resolvers.DataBaseFolderPath = filepath.Join(root, "dbs")
+	t.Cleanup(func() { resolvers.DataBaseFolderPath = previous })
+	if err := downloadSigned("http://127.0.0.1:1", false, nil); err == nil || !strings.Contains(err.Error(), "update lock unavailable") {
+		t.Fatalf("did not reject concurrent update: %v", err)
+	}
+	if b, err := os.ReadFile(filepath.Join(root, ".dbs-install.lock")); err != nil || string(b) != "other process" {
+		t.Fatal("modified another process's lock")
 	}
 }

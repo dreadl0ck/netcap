@@ -177,6 +177,14 @@ jobs:
           ./net.exe util -download-dbs
           ./net.exe util -update-dbs
           NETCAP_TEST_COMMUNITY_DBS="$NC_CONFIG_ROOT/dbs" go test ./internal/dbs -run TestInstalledCommunityCompatibility -count=1
+          python - <<'PY'
+          import os, pathlib, struct
+          frame=bytes.fromhex('ffffffffffff00112233445508060001080006040001001122334455c0000201000000000000c0000202')
+          path=pathlib.Path(os.environ['RUNNER_TEMP'])/'netcap-smoke.pcap'
+          path.write_bytes(struct.pack('<IHHIIII',0xa1b2c3d4,2,4,0,0,65535,1)+struct.pack('<IIII',1,0,len(frame),len(frame))+frame)
+          PY
+          ./net.exe capture -read "$RUNNER_TEMP/netcap-smoke.pcap" -out "$RUNNER_TEMP/netcap-smoke-audits" -quiet -dpi=false -geoDB=false
+          ./net.exe triage -read "$RUNNER_TEMP/netcap-smoke-audits" -json
       - uses: actions/upload-artifact@v4
         with:
           name: netcap-windows-qualified

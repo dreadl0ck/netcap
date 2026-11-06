@@ -1,8 +1,9 @@
-FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-latest as builder
+FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-latest@sha256:f21aab4be6e2c0b0fdc89fdc09bbe8152c985aeebb28c623af9874d895593136 as builder
 
 # Copy netcap source
 WORKDIR /netcap
 COPY . .
+COPY --from=netcap-webui / /netcap/cmd/capture/webui/frontend/dist/
 
 ENV VERSION XXX
 ARG TAGS="-tags nodpi,noyara"

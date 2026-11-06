@@ -41,6 +41,16 @@ func downloadSigned(serverURL string, force bool, progress ProgressFunc) error {
 	if target == "." || target == string(filepath.Separator) {
 		return fmt.Errorf("invalid database installation path")
 	}
+	parent := filepath.Dir(target)
+	if err := os.MkdirAll(parent, 0o755); err != nil {
+		return err
+	}
+	lockPath := filepath.Join(parent, ".dbs-install.lock")
+	lock, err := os.OpenFile(lockPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return fmt.Errorf("database update lock unavailable (%s): %w", lockPath, err)
+	}
+	defer func() { _ = lock.Close(); _ = os.Remove(lockPath) }()
 	if serverURL == "" {
 		serverURL = os.Getenv(env.NetcapDBsURL)
 	}
@@ -79,7 +89,6 @@ func downloadSigned(serverURL string, force bool, progress ProgressFunc) error {
 		report(DownloadProgress{Stage: StageCompleted, Version: meta.Version, Percent: 100})
 		return nil
 	}
-	parent := filepath.Dir(target)
 	if err := os.MkdirAll(parent, 0o755); err != nil {
 		return err
 	}
@@ -108,6 +117,9 @@ func downloadSigned(serverURL string, force bool, progress ProgressFunc) error {
 		return err
 	}
 	if err := os.Chmod(stage, 0o755); err != nil {
+		return err
+	}
+	if _, _, _, err := verifyCommunityRelease(envelope, true); err != nil {
 		return err
 	}
 	if err := activateManaged(target, dir); err != nil {

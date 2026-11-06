@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -eo pipefail
+test -s cmd/capture/webui/frontend/dist/index.html || { echo "Build the WebUI with pnpm build before packaging Linux" >&2; exit 1; }
+
 if [ -z "$NODPI" ]; then
   NODPI=true
 fi
@@ -28,9 +31,9 @@ echo "[INFO] $tag args: ${ARGS}"
 # build image directly from project root
 # dont quote ARGS or passing arguments wont work anymore
 if [ -n "${ARGS:-}" ]; then
-  docker build --platform linux/amd64 ${ARGS} -t "$tag" -f Dockerfile .
+  docker build --platform linux/amd64 --build-context netcap-webui=./cmd/capture/webui/frontend/dist ${ARGS} -t "$tag" -f Dockerfile .
 else
-  docker build --platform linux/amd64 -t "$tag" -f Dockerfile .
+  docker build --platform linux/amd64 --build-context netcap-webui=./cmd/capture/webui/frontend/dist -t "$tag" -f Dockerfile .
 fi
 BUILD_EXIT_CODE=$?
 
@@ -72,7 +75,9 @@ docker rm $CONTAINER_ID
 
 cp LICENSE dist-linux/${ARCHIVE}
 cp -R legal dist-linux/${ARCHIVE}/
-python3 zeus/scripts/audit-linux-runtime.py "$tag" "dist-linux/${ARCHIVE}" --supplier-image dreadl0ck/netcap-builder:alpine-dpi-latest
+supplier=$(python3 -c 'from pathlib import Path; print(Path("Dockerfile").read_text().splitlines()[0].split()[2])')
+docker pull --platform linux/amd64 "$supplier"
+python3 zeus/scripts/audit-linux-runtime.py "$tag" "dist-linux/${ARCHIVE}" --supplier-image "$supplier"
 cp README.md dist-linux/${ARCHIVE}
 mkdir -p dist-linux/${ARCHIVE}/docs
 cp "docs/NETCAP Software Report.pdf" dist-linux/${ARCHIVE}/docs/

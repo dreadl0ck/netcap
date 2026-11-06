@@ -1,45 +1,31 @@
-## Reviewed community databases
+## Signed community database updates
 
-`net util -download-dbs` installs the layout-3 community database using trust
-records bundled with the client; no extra configuration is required. Upgrade
-existing installations with `net util -update-dbs`. Legacy v1/v2 distribution
-endpoints are retired and return HTTP 410.
-
-| Area | Change |
-| --- | --- |
-| Current CVE coverage | Complete 2002–2026 NVD feeds; published snapshot contains 420,062 records, including 85,687 CVE-2026 IDs |
-| CVE matching | SQLite schema 2 evaluates structured CPE product/version applicability; text candidates no longer establish a vulnerability finding |
-| Reference links | NVD advisory and exploit reference URLs remain available without bundling exploit payloads |
-| Installation | Exact source/output verification, bounded archive extraction and staged activation preserve the previous installation on failure |
-| Community contents | NVD, DB-IP City/ASN, IANA services and UA-parser regexes, with source provenance and licence notices |
-| Service identification | Built-in protocol signatures replace the Nmap database reader |
-| Removed enrichment | Legacy CMS and DHCP OS catalogues are disabled; HASSH catalogue enrichment is unavailable in this snapshot |
-
-Schema-1 readers must upgrade before consuming the new database. Private
-publishers can override community trust with `NC_DBS_APPROVALS` and
-`NC_DBS_APPROVALS_SHA256`. The bundled registry approves this exact snapshot;
-later registry changes require a compatible client update or explicit override.
-
-## Capture and investigation improvements
+`net util -download-dbs` installs the signed community release without extra
+configuration. `net util -update-dbs` refreshes an existing installation. The
+publisher can now refresh reviewed sources without shipping a new client for
+each exact snapshot. v0.14.0 retains its frozen compatibility archive; legacy
+v1/v2 endpoints remain retired with HTTP 410.
 
 | Area | Change |
 | --- | --- |
-| HTTP and SMB | Recover request-only and post-gap HTTP evidence, preserve request/response attribution, and reassemble SMB file evidence |
-| Host identities | Correlate DHCP, NetBIOS, LDAP, Kerberos and DCE/RPC observations without assigning identities to unrelated hosts |
-| TLS and QUIC | Reassemble fragmented hellos and QUIC Initials; recognize mail protocol TLS upgrades |
-| Authentication evidence | Recover SMTP, IMAP, POP3, LDAP and NTLM authentication conversations |
-| Offline workflows | File capture exits without starting the Web UI by default; `net triage` summarizes existing audit output |
-| Linux archives | Bundle the ELF loader and runtime libraries beside `net`; keep the entire extracted directory together |
+| Authentication | Embedded Ed25519 root verifies the root-authorized publisher key and signed opaque release payload |
+| Freshness and rollback | Expiring updates, future timestamps, lower key epochs/sequences and same-sequence equivocation are rejected; verified installed data remains usable offline |
+| Publication policy | Reviewed source origins, transformations, static revision pins, full notices and required filenames; complete nonempty annual NVD feeds, per-year counts and count-drop gates |
+| Community contents | NVD schema 2, DB-IP City/ASN, IANA services, UA-parser and restored HASSH from a pinned BSD-licensed source |
+| Installation | Cross-process update lock, bounded verification, Windows activation without symlink privileges and preservation of previous data on failure |
+| Operations | Dedicated non-root publisher image, separate host signer, daily refresh timer and readiness/freshness monitoring |
 
-## Reliability fixes
+Private publishers retain explicit `NC_DBS_APPROVALS` and
+`NC_DBS_APPROVALS_SHA256` overrides. CMS/DHCP OS catalogue enrichment remains
+disabled; the retired corpora and Exploit-DB payloads are not redistributed.
+
+## Packaging and dependency fixes
 
 | Area | Change |
 | --- | --- |
-| Processing status | Track admitted queued, in-flight and post-processing work; return idle after completion, failure or cancellation without hiding active captures |
-| Read-only previews | Opening results or retaining live-capture context no longer implies an active capture |
-| Incomplete transport headers | Avoid port-formatting panics while retaining connection packet counts, bytes and direction |
-| Unsupported IP protocols | Retain separate connection accounting without requiring a decoded transport header |
-| Behavioral baselines | Preserve valid rate windows starting at Unix time zero across baseline saves |
-| Investigation evidence | Retain capture-scoped evidence across persisted investigations |
-| Stream lifecycle | Preserve stream ownership during cancellation |
-| WebUI startup | Report synchronous listener bind failures |
+| Dependencies | Upgrade klauspost/compress, Vite, Vitest/mocker, shell-quote and source-map-js to patched versions |
+| Linux WebUI | Pass the actual built WebUI as an explicit Docker build context instead of embedding only its placeholder |
+| Runtime provenance | Record every bundled loader/library hash, supplying package/image and corresponding-source link; retain package copyright and licence notices |
+| Source bundle | Include the qualified libtrace 4.0.23, wandio 4.2.6 and libwandder 2.0.8 sources; correct the prior runtime-version notices |
+| Geolocation | Missing optional GeoLite2 fallback data logs at debug level; explicitly selected or corrupt providers retain actionable errors |
+| Windows | On-demand qualification runs the actual client, signed download/update and structured CVE lookup on a Windows runner |
