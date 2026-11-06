@@ -47,4 +47,4 @@
 * [Contributing](contributing.md)
 * [macOS Development Setup](macos-development-setup.md)
 * [License](license.md)
-
+* [Database updates](database-updates.md)

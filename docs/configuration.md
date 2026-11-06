@@ -6,81 +6,48 @@ description: Adjusting framework parameters
 
 ## Command-line Flags
 
-Each subcommand has a dedicated set of flags for configuration.
+Each subcommand defines its own flags. Use the installed version's help for options, defaults and environment-variable names:
 
-List the flag names, a short description and their default values with:
-
-```text
-$ net <subcommand> -h
+```sh
+net capture -h
+net util -h
 ```
 
 ## Environment
 
-All default values for flags can be overriden via environment variables, by using the flag name and prefixing it with "NC\_", for example lets overwrite the **-read** flag from net capture:
+Use the variable declared by the option; names are not universally derived from flag spelling. `NC_READ` selects a capture input; `NETCAP_DBS_URL` selects a database server.
 
-```text
-$ NC_READ=/home/user/traffic.pcap net capture
+```sh
+NC_READ=/path/to/traffic.pcap net capture
 ```
-
-Since the provide the value via the environment, passing it via flag is no longer necessary. This is generally useful to enable or disable features globally on your system.
 
 ## Configuration File
 
-Additionally, the configuration can be provided as a config file via the **-config** flag.
+Go Netcap generates and reads subcommand configuration:
 
-To retrieve a sane default configuration for the subcommand you want to execute, use the **-gen-config** flag and redirect the output into a file:
-
-```text
-$ net capture -gen-config > capture.conf
+```sh
+net capture -gen-config > capture.conf
+net capture -config capture.conf
 ```
 
-The config file will look something like this, using the **name value** syntax to set values:
-
-```bash
-...
-# toggle promiscous mode for live capture
-promisc true
-
-# don't print infos to stdout
-quiet false
-
-# reassemble TCP connections
-reassemble-connections true
-
-# resolve ips to domains via the operating systems default dns resolver
-reverse-dns false
-
-# use serviceDB for device profiling
-serviceDB false
-
-# configure snaplen for live capture from interface
-snaplen 1514
-
-# print netcap package version and exit
-version false
-
-# wait for all connections to finish processing before cleanup
-wait-conns true
-
-# number of workers
-workers 12
-
-# write incomplete response
-writeincomplete false
-...
-```
-
-> Lines starting with \# are treated as comments, blank lines are being ignored.
-
-Adjust the parameters of interest and pass the config file:
-
-```text
-$ net capture -config capture.conf
-```
+Edit the generated file for the installed version instead of copying historical flag lists. Lines starting with `#` are comments; blank lines are ignored. Rust commands have their own supported configuration boundary; consult their help rather than assuming every Go utility exists.
 
 ## Resolver Database
 
-The environment variable **NC\_CONFIG\_ROOT** can be used to overwrite the default path for the resolver databases **~/.config/netcap/dbs**. Read more about the resolvers package here:
+`NC_CONFIG_ROOT` sets the parent configuration directory, not the final `dbs` directory. The default is `~/.config/netcap/dbs`.
 
-{% page-ref page="resolvers.md" %}
+```sh
+NC_CONFIG_ROOT=/srv/netcap-config net util -download-dbs
+NC_CONFIG_ROOT=/srv/netcap-config net capture -read traffic.pcap -out nc
+```
 
+Both commands use `/srv/netcap-config/dbs`. Use the same root for installation and capture. Do not merge user files or historical catalogues into the managed signed inventory.
+
+| Setting                                          | Purpose                                                                             |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| `NC_CONFIG_ROOT`                                 | Parent directory for configuration and managed data                                 |
+| `NETCAP_DBS_URL`                                 | Optional publisher URL override                                                     |
+| `NC_DBS_APPROVALS` and `NC_DBS_APPROVALS_SHA256` | Paired private-publisher registry override; not needed for signed community updates |
+| `NC_GEO_PROVIDERS`                               | DB-IP/optional GeoLite2 provider order                                              |
+
+See [Resolvers](resolvers.md) and [Database updates](database-updates.md).
