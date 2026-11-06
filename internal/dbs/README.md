@@ -83,6 +83,20 @@ on `9fafcd38…`.
 Verified 2026-11-06: `https://dbs.netcap.io/dbs/v3/latest` serves layout 3;
 legacy `/dbs/*` and `/dbs/v2/*` metadata and archives return HTTP 410.
 
+The signed publisher image is `signed-190061c1` at digest
+`sha256:b91afb7197703a72799a4b77604eb7d2fe61e7ee65fd374696df8e17b1980208`;
+the serving container contains no signing credential or executable bind mount.
+Go v0.15.2 and Rust v0.1.9 are the released signed-update clients. Their actual
+archives passed clean Windows/macOS qualification; the generated Homebrew install
+also passed. Mac DPI requires 26+, nodpi 15+; all Linux variants include their
+runtime and supplier inventory.
+
+`docs.netcap.io` still needs external GitBook access: GitHub hook `104064290`
+targets `hooks.gitbook.com` and returns 404. The site retains a legacy attachment
+at `/files/-M6158bOQF_mI5dN6UjM`; reconnect Git Sync/publish current docs and delete
+the attachment, then verify its direct URL. Repository docs alone do not retire
+that separately hosted copy. The legacy LFS batch route returns Traefik HTTP 404.
+
 | Item | Value |
 | --- | --- |
 | Dokploy application | `ZrG0UFSYLc1AvaAu1nUE4`, swarm service `netcap-dbs-suxwnk` |
