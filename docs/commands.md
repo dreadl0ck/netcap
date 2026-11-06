@@ -1,0 +1,45 @@
+---
+description: Choose the public Go command for the job.
+---
+
+# Commands
+
+Go v0.15.2 registers the commands below in `cmd/net/main.go`. Run `net -h` and
+`net COMMAND -h` for their installed options. The executable is `net`; version
+inspection is `net --version`, not a `version` subcommand.
+
+| Command | Job | Guide |
+| --- | --- | --- |
+| `capture` | PCAP/PCAPNG, live packets and local/upload WebUI | [Packet collection](packet-collection.md) |
+| `dump` | Read audit files, discover fields, filter and emit CSV/JSON | [Record inspection](filtering-and-export.md) |
+| `triage` | Inspect capture-derived `Hosts.json` identities | [Hosts and identity](host-identity.md) |
+| `investigate` | Flow queries, related records, evidence exports and bounded experiments | [Evidence](evidence.md), [flow analysis](flow-analysis.md) |
+| `util` | Interfaces, schemas, timestamps and database operations | [Database updates](database-updates.md) |
+| `mcp` | Stdio Model Context Protocol server | [AI agents](mcp.md) |
+| `licenses` | Distribution license/notice information | [License](license.md) |
+| `agent` | TLS-authenticated remote sensor | [Distributed collection](distributed-collection.md) |
+| `collect` | Receive agent batches | [Distributed collection](distributed-collection.md) |
+| `export` | Prometheus-oriented audit metrics exporter | [Metrics](metrics.md) |
+| `proxy` | HTTP/HTTPS reverse proxy records | [HTTP proxy](http-proxy.md) |
+| `label` | Suricata/custom mappings for dataset labels | [Labeling](audit-record-labeling.md) |
+| `transform` | Maltego transform integration | [Maltego](maltego-integration.md) |
+| `inject` | Linux NFQueue inline manipulation | [Response actions](FIREWALL_RESPONSE_ACTIONS.md) |
+
+`split` and `analyze` are not registered v0.15.2 commands. A source directory,
+legacy completion result or historical README row is not an executable interface.
+
+## Common operations
+
+```sh
+net util -interfaces
+net capture -overview
+net capture -read example.pcap -out analysis -dpi=false -geoDB=false
+net dump -read analysis/UDP.ncap.gz -fields
+net dump -read analysis/UDP.ncap.gz -json
+net triage -read analysis -json
+net investigate related -read analysis -type Connection -ordinal 0
+```
+
+Only query a type/ordinal that exists in your capture. For advanced commands,
+the [generated MCP catalogue](mcp/tools.md) is a different interface, not a CLI
+alias list. The source command/flag registrations are the reference for scripting.

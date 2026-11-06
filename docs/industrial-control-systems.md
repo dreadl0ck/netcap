@@ -317,7 +317,7 @@ control-plane and Select-Before-Operate hunts,
 
 ```erlang
 message CIP {
-    string          Timestamp        = 1;
+    int64           Timestamp        = 1;
     bool            Response         = 2; // false if request, true if response
     int32           ServiceID        = 3; // The service specified for the request
     uint32          ClassID          = 4; // request only
@@ -333,7 +333,7 @@ message CIP {
 
 ```erlang
 message ENIP {
-    string                  Timestamp        = 1;
+    int64                   Timestamp        = 1;
     uint32                  Command          = 2; 
     uint32                  Length           = 3;
     uint32                  SessionHandle    = 4;

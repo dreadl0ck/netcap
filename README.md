@@ -1,8 +1,14 @@
-<a href="https://netcap.io">
-  <img alt="Netcap Logo" src="docs/graphics/logo.png" width="100%">
-</a>
+<p align="center">
+  <a href="https://netcap.io">
+    <img alt="NETCAP — Network Traffic Analysis Framework" src="docs/graphics/logo.png" width="640">
+  </a>
+</p>
 
-<br>
+<p align="center">
+  <a href="https://docs.netcap.io">Documentation</a> ·
+  <a href="https://github.com/dreadl0ck/netcap/releases">Releases</a> ·
+  <a href="docs/quickstart.md">First capture</a>
+</p>
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/dreadl0ck/netcap)](https://goreportcard.com/report/github.com/dreadl0ck/netcap)
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://raw.githubusercontent.com/dreadl0ck/netcap/master/LICENSE)

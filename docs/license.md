@@ -1,24 +1,37 @@
----
-description: License type and terms
----
-
 # License
 
 ## GNU General Public License v3.0
 
-Netcap is licensed under the GNU General Public License v3, which is a very permissive open source license, that allows others to do almost anything they want with the project, except to distribute closed source versions.
+The public Go Netcap source is GPL-3.0-or-later. GPL is a strong-copyleft
+license; the historical description of it as “very permissive” was incorrect.
+See the [project LICENSE](https://github.com/dreadl0ck/netcap/blob/v0.15.2/LICENSE)
+and source-file notices for the actual terms.
 
-Permissions of this strong copyleft license are conditioned on making available complete source code of licensed works and modifications, which include larger works using a licensed work, under the same license. Copyright and license notices must be preserved. Contributors provide an express grant of patent rights.
+## Third-party components and data
 
-This license type was chosen with Netcaps research purpose in mind, and in the hope that it leads to further improvements and new capabilities contributed by other researchers on the long term.
+| Material | Applicable inventory |
+| --- | --- |
+| Go/native dependencies | Release `legal/` notices and bundled source assets |
+| Native runtime | `native-runtime-inventory.json` and runtime source archive |
+| Enrichment datasets | `DATABASE_NOTICES.txt` and `RELEASE_MANIFEST.json` |
+| Plain JA4 TLS fingerprint | BSD terms included with the implementation |
+| Optional JA4+ source build | Separate opt-in terms; excluded from official binaries |
 
-The license can be found here: [https://github.com/dreadl0ck/netcap/blob/master/LICENSE](https://github.com/dreadl0ck/netcap/blob/master/LICENSE)
+`net licenses -h` describes the executable's license inspection commands.
+A license for Netcap does not replace third-party data/runtime obligations.
+[Database updates](database-updates.md) records source provenance and retired
+catalogues.
 
 ## Commercial License
 
-The GPLv3 terms above do not suit every deployment. A commercial license is available for use in closed-source or proprietary products: [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md).
+An alternative commercial license is available for covered Netcap code. The
+[commercial agreement](COMMERCIAL-LICENSE.md) is a template with placeholders;
+it does not itself grant rights until the parties agree and execute it. Its
+third-party component exclusions still apply.
 
 ## Usage Disclaimer
 
-Netcap was developed in a short timeframe as a research project and thus was neither tested nor developed to run in a production environment. The project may contain bugs, that have not yet been discovered. Error handling is not very graceful, in many cases that could have been handled otherwise, the program panics in order to assist in debugging with a stack trace. Until there are further unit tests and the error handling is more robust, using Netcap for other purposes than research is not recommended!
-
+The GPL warranty disclaimer applies. Qualify the release, enabled features and
+capture completeness for your use case with [tests](tests.md) and
+[health evidence](evidence.md). An alert, software fingerprint or reconstructed
+file is evidence to evaluate rather than a guarantee of compromise or safety.

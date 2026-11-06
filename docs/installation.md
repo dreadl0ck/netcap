@@ -1,132 +1,103 @@
----
-description: Setup instructions
----
-
 # Installation
+
+These instructions target the public Go release
+[v0.15.2](https://github.com/dreadl0ck/netcap/releases/tag/v0.15.2).
+Start with an archive matching your operating system, architecture and native
+runtime; keep the archive's executable and libraries together.
 
 ## Binary Distributions
 
-Compiled versions for macOS, Linux and Windows are available on GitHub:
+| Distribution | Runtime requirement |
+| --- | --- |
+| Linux libc | Debian/Ubuntu-compatible runtime; retain `net`, `lib/net.bin` and bundled loader/libraries |
+| Linux musl | Alpine-compatible runtime; use the musl archive rather than the libc archive |
+| macOS DPI | macOS 26+; retain adjacent `lib/` native libraries |
+| macOS nodpi | macOS 15+; no native DPI classification |
+| Windows | Match architecture; install compatible Npcap for live capture and BPF-dependent workflows |
 
-{% embed url="https://github.com/dreadl0ck/netcap/releases" caption="NETCAP GitHub Releases Page" %}
+Linux wrappers load their private runtime; they do not install libraries into
+system directories. macOS libraries use executable-relative install names.
+Full supplier sources/build recipes accompany the macOS runtime asset.
 
-Linux archives built by `zeus/scripts/build-{ubuntu,alpine}-docker.sh` include
-`net` and a private `lib/` runtime. Keep that directory together: `net` launches
-`lib/net.bin` with the bundled ELF loader and libraries, including nDPI,
-libprotoident and libtrace for DPI builds. It does not install system libraries.
-Use the libc archive on Debian/Ubuntu and the musl archive on Alpine.
+```sh
+net --version
+net capture -h
+```
 
-macOS archives also keep native libraries in `lib/` beside the executable; their
-install names use `@executable_path`/`@loader_path`, not workstation Homebrew
-paths. The DPI archive requires macOS 26+; nodpi supports macOS 15+. Full supplier
-sources and build recipes are in the separate macOS runtime source asset. The
-Homebrew formula installs the complete DPI runtime under `libexec`.
+Check that `net --version` resolves the intended executable and reports the
+expected commit/DPI status. A previously installed `net` elsewhere in `PATH` can
+hide the new archive. Continue with the [synthetic first capture](quickstart.md).
 
-For offline analysis, `net capture --read traffic.pcap --out nc` exits after
-flushing records. Add `--http localhost:8080` to keep the WebUI running.
-`net dump --read nc/HTTP.ncap.gz --json --sort-time` provides stable capture-time
-ordering using temporary files and bounded-memory sorting; capture files retain
-decoder emission order.
+## Homebrew
 
-The default per-decoder buffer is 64 KiB (`--membuf-size` overrides it).
-Built-in service parsers recognize SSH, HTTP, SMTP and FTP greetings. The Nmap
-catalogue reader is retired; `--download-dbs` never installs that catalogue.
+```sh
+brew tap dreadl0ck/formulas
+brew install netcap
+net --version
+```
 
-Install enrichment data with `net util -download-dbs` and refresh with
-`net util -update-dbs`. Signed clients verify the publisher root and expiring
-release metadata; no secret or operator registry is needed for community data.
-The default directory is `~/.config/netcap/dbs`; `NC_CONFIG_ROOT` changes its
-parent. See [Resolvers](resolvers.md) for the file inventory and retired features.
-
-Windows identity extraction covers visible Kerberos principals, NTLM Type 3
-identities, LDAP directory attributes, SAMR query classes 1/6/7/8/21, and LSA
-lookup request names/SIDs. SAMR/LSA stubs require NDR32; SMB2 SAMR/LSA pipes are
-supported through CREATE, WRITE, READ and PIPE_TRANSCEIVE. `IdentityStatus`
-records incomplete, encrypted and unsupported RPC results; LSA translated
-responses, NDR64 and SMB1 pipe transports are not decoded.
-
-HTTP preserves the wire request target and supports requests in either TCP
-direction. `ReassemblyStatus` qualifies unpaired records after capture loss and
-incomplete request bodies. SMTP LOGIN/PLAIN exchanges appear in `Secret`; `Notes`
-distinguishes success, rejection and an unknown result. Successful IMAP STARTTLS,
-SMTP STARTTLS and POP3 STLS end plaintext parsing.
-
-DeviceProfile retains a deterministic sample of at most 4,096 contacts and a
-65,536-key deduplication set. `ContactObservations` counts observations;
-`ContactCountLowerBound` and `ContactsTruncated` qualify cardinality after limits.
-Extracted artifacts use SHA-256 basenames with preserved extensions; source names
-and URLs remain in File metadata.
-
-`NETCAP_MTA_ROOT=/path/to/captures go test -tags nodpi ./internal/collector -run
-TestMTAReportRegressions` replays the checksum-pinned 2019-12-25 and 2021-12-08
-captures without extracting artifacts. The tests cover post-gap HTTP requests,
-asymmetric-MAC flow totals, SMTP AUTH and banner-only POP3.
+The formula installs its complete native runtime under `libexec`. The tap may
+advance beyond the release documented here; record the installed version when
+reproducing results.
 
 ## Go Get
 
 `go get` manages dependencies; it does not install current Go executables.
-For source installation, clone the tagged repository, build the embedded WebUI,
-then compile with the installed native dependencies:
-
-```text
-$ git clone --branch v0.15.2 https://github.com/dreadl0ck/netcap.git
-$ cd netcap/cmd/capture/webui/frontend
-$ pnpm install --frozen-lockfile && pnpm build
-$ cd ../../../..
-$ GOWORK=off go build -tags nodpi,noyara -o net ./cmd/net
-```
+Clone the release and build its embedded browser assets before compiling Go.
 
 ## Manual Build
 
-```text
-$ go build -ldflags "-s -w" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd/net
+Install the Go version declared in `go.mod`, Node/pnpm for the UI, a C toolchain
+and libpcap headers. Native DPI and YARA require additional libraries; the
+following reduced build disables those two optional integrations:
+
+```sh
+git clone --branch v0.15.2 https://github.com/dreadl0ck/netcap.git
+cd netcap/cmd/capture/webui/frontend
+pnpm install --frozen-lockfile
+pnpm build
+cd ../../../..
+GOWORK=off go build -tags nodpi,noyara -o net ./cmd/net
+./net --version
 ```
+
+This is a source build, not the packaged runtime distribution. `nodpi` does not
+remove libpcap requirements. Run it as `./net` so an older executable in `PATH`
+cannot be selected accidentally.
 
 ## Reproducible Builds via Go Modules
 
-In order to provide stable and reproducible builds, Go modules are used to pin the versions of source code dependencies to specific versions.
-
-Go has included support for versioned modules as proposed [here](https://golang.org/design/24301-versioned-go) since `1.11`. The initial prototype `vgo` was [announced](https://research.swtch.com/vgo) in February 2018. In July 2018, versioned modules [landed](https://groups.google.com/d/msg/golang-dev/a5PqQuBljF4/61QK4JdtBgAJ) in the main Go repository. They are used by default by the go toolchain starting from version `1.13` .
-
-You can read about Go modules here:
-
-{% embed url="https://github.com/golang/go/wiki/Modules" caption="" %}
-
-{% embed url="https://blog.golang.org/using-go-modules" caption="" %}
+`go.mod`/`go.sum` pin module dependencies. Reproduction also requires a recorded
+source commit, Go/C toolchains, build tags, embedded UI and native libraries.
+Use `GOWORK=off` to avoid local workspace replacements. Dependency pinning alone
+does not prove bit-for-bit reproducibility.
 
 ## Development Build
 
-To install the command-line tool:
-
-```text
-$ go build -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd/net
-```
+Follow [macOS development](macos-development-setup.md) for platform tooling and
+[testing](tests.md) for scoped verification. Schema generation uses
+`protoc-gen-gogofaster`; it is unnecessary for an unchanged release checkout.
 
 ## Cross Compilation
 
-To cross compile for other architectures, set the _GOARCH_ and _GOOS_ environment variables. For example to cross compile a binary for _linux amd64_:
-
-```text
-$ GOARCH=amd64 GOOS=linux go build -o bin/net github.com/dreadl0ck/netcap/cmd/net
-```
-
-## Homebrew
-
-On macOS, you can install the _netcap_ command-line tool with Homebrew:
-
-```text
-$ brew tap dreadl0ck/formulas
-$ brew install netcap
-```
+CGO and native dependencies mean `GOOS`/`GOARCH` alone are insufficient. Use
+the platform build recipes in `zeus/scripts/` and supply the matching C compiler,
+headers and runtime. Verify the resulting archive on its target OS.
 
 ## Buildsystem
 
-_Netcap_ uses the [zeus](https://github.com/dreadl0ck/zeus) build system, it can be found on GitHub along with installation instructions:
+[Zeus](https://github.com/dreadl0ck/zeus) drives builds/releases through
+`zeus/commands.yml`; the root Makefile provides test entrypoints. Run `zeus`
+without arguments to inspect available commands.
 
-{% embed url="https://github.com/dreadl0ck/zeus" caption="ZEUS Build System GitHub" %}
+## Optional enrichment
 
-To install the _Netcap_ and _Netlabel_ command-line tool and the library with zeus, run:
-
-```text
-$ zeus install
+```sh
+net util -download-dbs
+net util -update-dbs
 ```
+
+Signed clients verify publisher metadata. The default data directory is
+`~/.config/netcap/dbs`; `NC_CONFIG_ROOT` changes its parent. Follow
+[database updates](database-updates.md) for trust, source inventory and retired
+catalogues. Packet-only analysis can proceed without this optional enrichment.

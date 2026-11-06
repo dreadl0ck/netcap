@@ -1,116 +1,45 @@
----
-description: Extract transferred files and save them to disk
----
-
 # File Extraction
 
-## Introduction
-
-Various protocols allow transferring files (e.g: HTTP, POP3) and some are made for the sole purpose of transferring files (FTP, SMB etc).
-
-From a network security monitoring perspective, transferred files are interesting because they can contain malicious software or prohibited content.
-
-Netcap extracts files from HTTP and saves them to disk, for both HTTP responses and HTTP requests.
-
-It uses the **File** audit record type to model the extracted information.
-
-> Future versions will add file extraction support for other protocols as well.
-
-## File Audit Records
-
-The audit record definition for a file looks like this:
-
-```erlang
-message File {
-    string        Timestamp   = 1;
-    string        Name        = 2;
-    int64         Length      = 3;
-    string        Hash        = 4;
-    string        Location    = 5;
-    string        Ident       = 6;
-    string        Source      = 7;
-    string        ContentType = 8;
-    PacketContext Context     = 9;
-    string        Host        = 10;
-    string        ContentTypeDetected = 11;
-}
-```
-
-As can be seen, the content type indicated by the HTTP header is included, as well as the content type that was detected. In addition, the source of the File is specified (e.g: from HTTP, Mail attachment etc), as well the identifier of the connection where it originated from.
-
-The Hash field currently holds an MD5 hash of the file, Location points to the path on disk where the file is stored.
-
-> This will likely be replaced with a stronger hash function in the future.
+File extraction reconstructs available transferred content and emits `File`
+metadata. It is distinct from packet payload retention and complete source-PCAP
+retention. Encrypted content remains unavailable without a supported plaintext
+analysis path.
 
 ## Usage
 
-File capture is enabled by default and will store extracted files in the **files** subdirectory within your output directory. The **-fileStorage** flag allows you to customize this path (relative to the output directory):
-
-```
-$ net capture -read traffic.pcap -fileStorage files
-```
-
-To disable file extraction, set an empty string:
-
-```
-$ net capture -read traffic.pcap -fileStorage ""
+```sh
+net capture -read traffic.pcap -out file-audit -fileStorage files -dpi=false
+net dump -read file-audit/File.ncap.gz -fields
+net dump -read file-audit/File.ncap.gz -json
 ```
 
-After capturing, lets inspect the directory contents:
+Only inspect `File.ncap.gz` when the capture produced file records. The default
+storage directory is `files` beneath the analysis output; disable extraction
+with `-fileStorage ''`. Protocol coverage and completeness differ by decoder.
 
-```
-$ tree files
-files
-├── application
-│   └── x-gzip
-│       └── unknown-193.24.227.12->216.66.80.30-80->60075.gz
-├── image
-│   └── x-icon
-│       └── favicon.ico-193.24.227.12->216.66.80.30-80->60076.ico
-└── text
-    └── html
-        ├── unknown-193.24.227.12->216.66.80.30-80->55031.html
-        ├── unknown-193.24.227.12->216.66.80.30-80->55032.html
-        ├── unknown-193.24.227.12->216.66.80.30-80->55033.html
-        └── unknown-80.237.133.136->192.168.110.10-80->1152.html
+## File Audit Records
 
-6 directories, 6 files
-```
+| Evidence | Interpretation |
+| --- | --- |
+| `Name`, source URL/metadata | Original advertised name, not a trusted filesystem path |
+| `Location` | Stored artifact path |
+| SHA-256 storage basename | Content-addressed name with preserved extension |
+| Declared/detected content types | Advertised MIME and classifier result can disagree |
+| Length/hashes/completeness | Qualify the bytes actually reconstructed |
+| Context/connection reference | Link back to the observed transfer |
 
-As you can see, files are sorted by their MIME types retrieved from classifying them using the go standard library and named after the TCP connection they originated from.
+Current extraction uses SHA-256-based storage names and can retain multiple
+hash algorithms. Historical MD5-only examples and connection-derived filenames
+are obsolete. Inspect `types/netcap.proto` and emitted fields rather than an
+old copied message definition.
 
-By default, only complete requests and responses are captured, if you also want to extract incomplete data, use the **-writeincomplete** flag:
+## Incomplete content
 
-```
-$ net capture -read traffic.pcap -fileStorage files -writeincomplete
-```
+`-writeincomplete` permits supported paths to write incomplete bodies. A stored
+file is not proof of a complete transfer: inspect gaps, parser state, declared
+lengths and [stream evidence](reassembly.md). Encodings/decompression can make
+stored bytes differ from their on-wire representation.
 
-Dumping a File on the commandline looks like this:
-
-```
-$ net dump -read File.ncap.gz -struc
-NC_File
-Timestamp: "2015-03-08 14:05:29.664213 +0000 UTC"
-Name: "ads.bmp"
-Length: 126
-Hash: "2d5a035011854b04a456b244b15a583b"
-Location: "files/image/bmp/ads.bmp-80.239.178.178->192.168.0.51-80->41214.bmp"
-Ident: "80.239.178.178->192.168.0.51-80->41214"
-Source: "HTTP RESPONSE from /ads.bmp"
-Context: <
-  SrcIP: "192.168.0.51"
-  DstIP: "80.239.178.178"
-  SrcPort: "41214"
-  DstPort: "80"
->
-ContentTypeDetected: "image/bmp"
-...
-```
-
-For properly exploring files for each host I recommend using the Maltego Integration:
-
-{% content-ref url="maltego-integration.md" %}
-[maltego-integration.md](maltego-integration.md)
-{% endcontent-ref %}
-
-![](<.gitbook/assets/files (1).png>)
+Transferred files can be executable or hostile. Retain them as evidence; the
+fact that Netcap wrote an artifact does not mean it is safe to open. Preserve
+the source capture/hash for repeat analysis.

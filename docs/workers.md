@@ -1,27 +1,40 @@
----
-description: This is where the magic happens
----
+# Workers and resource budgets
 
-# Workers
+Go v0.15.2 defaults capture workers to `max(1, GOMAXPROCS)`. Dispatch uses a
+symmetric flow key where possible, with a fallback when no suitable key exists;
+it is not simply round-robin for every packet.
 
-## Introduction
+```sh
+net capture -read traffic.pcap -out four-workers -workers 4 -dpi=false
+```
 
-To make use of multi-core processors, processing of packets should happen in an asynchronous way. Since Netcap should be usable on a stream of packets, fetching of packets has to happen sequentially, but decoding them can be parallelized. The packets read from the input data source (PCAP file or network interface) are assigned to a configurable number of workers routines via round-robin. Each of those worker routines operates independently, and has all selected decoders loaded. It decodes all desired layers of the packet, and writes the encoded data into a buffer that will be flushed to disk after reaching its capacity.
+More workers do not guarantee more throughput: disk, parsing, native analyzers,
+input locality and aggregation can dominate. Benchmark identical input/options
+and compare output witnesses as well as elapsed time and memory.
 
-## Worker
+| Budget/default | Scope |
+| --- | --- |
+| Packet buffer: 1,000 entries | Per configured worker queue |
+| Writer buffer: 64 KiB | Per decoder writer, not total process memory |
+| Reassembly maximum buffered size: 10 MiB | Per stream direction; zero means unlimited |
+| Out-of-order page limits: zero | Unlimited unless configured; not a global RAM cap |
+| DPI automatic contexts | Up to 8; distinct from protocol workers |
+| Evidence index | 64 MiB accounted storage plus record/link bounds |
+| Optional packet retention | Default selected budgets: 32 MiB segments / 512 MiB retained |
+| Service upload | Default 100 MiB per file; not a hard global filesystem ceiling |
 
-[Workers](https://github.com/dreadl0ck/netcap/blob/master/internal/collector/worker.go) are a core concept of _Netcap_, as they handle the actual task of decoding each packet. _Netcap_ can be configured to run with the desired amount of workers, the default is 1000, since this configuration has shown the best results on the development machine. Increasing the number of workers also increases the number of runtime operations for goroutine scheduling, thus performance might decrease with a huge amount of workers. It is recommended to experiment with different configurations on the target system, and choose the one that performs best. Packet data fetched from the input source is distributed to a worker pool for decoding in round robin style. Each worker decodes all layers of a packet and calls all available custom decoders. After decoding of each layer, the generated protocol buffer instance is written into the _Netcap_ data pipe. Packets that produced an error in the decoding phase or carry an unknown protocol are being written in the corresponding logs and dumpfiles.
+Check `capture -h` for the exact option names and installed defaults. Queue
+occupancy/drop counters, `capture-manifest.json`, reassembly health and behavioral
+health report different layers. A null kernel counter is unavailable, not zero.
 
-> Note: by default the number of workers is set to the numbers of cores of your machine! You can use the **-workers** flag to overwrite this value.
+## Operational tuning
 
-![NETCAP worker](https://github.com/dreadl0ck/netcap/tree/767852a00d76fcf7c921a4f3830ae6cec0162481/docs/.gitbook/assets/netcap-worker%20\(1\).svg)
+1. Measure the input packet rate and required decoder/enrichment set.
+2. Retain a representative benign fixture and expected output counts/hashes.
+3. Change one budget at a time; replay the same capture into fresh directories.
+4. Inspect error/drop/completeness witnesses and native context statistics.
+5. Validate live behavior separately: offline file throughput does not measure
+   kernel drops, capture privileges or a production SPAN path.
 
-## Buffering
-
-Each worker receives its data from an input channel. This channel can be buffered, by default the buffer size is 100, also because this configuration has shown the best results on the development machine. When the buffer size is set to zero, the operation of writing a packet into the channel blocks, until the goroutine behind it is ready for consumption. That means, the goroutine must finish the currently processed packet, until a new packet can be accepted. By configuring the buffer size for all routines to a specific number of packets, distributing packets among workers can continue even if a worker is not finished yet when new data arrives. New packets will be queued in the channel buffer, and writing in the channels will only block if the buffer is full.
-
-## Data Pipe
-
-The Netcap data pipe describes the way from a network packet that has been processed in a worker routine, to a serialized, delimited and compressed record into a file on disk.
-
-![](.gitbook/assets/netcap-pipe.svg)
+Do not disable bounds or silently drop record families to produce a faster
+benchmark. [Testing](tests.md) explains worker-invariance qualification.

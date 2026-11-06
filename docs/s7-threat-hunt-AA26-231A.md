@@ -54,11 +54,14 @@ check whether any `S7Comm` (or other ICS) records are produced:
 net capture -read plant.pcap -include S7Comm,Connection -out out/
 
 # Are there any S7comm records at all?
-net dump -read out/S7Comm.ncap.gz -fields | head
+net dump -read out/S7Comm.ncap.gz -fields
+net dump -read out/S7Comm.ncap.gz -json
 ```
 
-If no S7comm/Modbus/other ICS records are produced, that is a **documented,
-defensible negative**, not a wasted hunt. Write it down.
+If no ICS records are produced, record that no supported ICS records were
+decoded from this input. Validate observation point, enabled decoders, capture
+loss, truncation and encryption before using that scoped result. `-fields`
+shows the schema, not whether the file contains any records.
 
 ---
 
@@ -235,8 +238,8 @@ covered half the estate. Name the gaps:
 through the standard writers:
 
 - **Protobuf** (default), **CSV**, **JSON** for offline analysis.
-- **Elasticsearch** (`net export ... ` / `internal/netio/elastic.go`) for Kibana dashboards
-  and geographic maps.
+- **Elasticsearch** is a separate writer/integration path; `net export` is the
+  Prometheus exporter, not an Elasticsearch export recipe.
 - **Alerts** are written to `Alert.ncap.gz` and carry the matched record,
   MITRE IDs, severity and rule expression for triage.
 

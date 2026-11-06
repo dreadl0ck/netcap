@@ -1,277 +1,66 @@
----
-description: macOS Development Environment Setup
----
-
 # macOS Development Setup
 
-This guide covers setting up a complete development environment for Netcap on macOS.
+Build the public Go checkout with the Go version in `go.mod`, Xcode command-line
+tools, libpcap headers and the embedded browser assets. Prebuilt release runtime
+requirements are listed in [installation](installation.md).
 
 ## Prerequisites
 
-### 1. Install Homebrew
+With Homebrew already installed:
 
-If you don't have Homebrew installed:
-
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-### 2. Install Go
-
-Install Go 1.21 or later:
-
-```bash
-brew install go
-```
-
-Verify installation:
-
-```bash
+```sh
+brew install go libpcap node pnpm
 go version
+pnpm --version
 ```
 
-### 3. Install Protocol Buffers Compiler
-
-Netcap uses Protocol Buffers for efficient data serialization. Install the `protoc` compiler:
-
-```bash
-brew install protobuf
-```
-
-Verify installation:
-
-```bash
-protoc --version
-```
-
-## Protocol Buffer Plugins
-
-Netcap generates Protocol Buffer code for multiple languages. Install all required plugins:
-
-### Go Plugin (gogofaster)
-
-The `gogofaster` plugin generates optimized Go code:
-
-```bash
-go install github.com/gogo/protobuf/protoc-gen-gogofaster@latest
-```
-
-Verify installation:
-
-```bash
-which protoc-gen-gogofaster
-# Should output: /Users/USERNAME/go/bin/protoc-gen-gogofaster
-```
-
-### Swift Plugin
-
-For Swift code generation:
-
-```bash
-brew install swift-protobuf
-```
-
-Verify installation:
-
-```bash
-which protoc-gen-swift
-# Should output: /opt/homebrew/bin/protoc-gen-swift
-```
-
-### JavaScript Plugin
-
-For JavaScript code generation:
-
-```bash
-npm install -g protoc-gen-js
-```
-
-Verify installation:
-
-```bash
-which protoc-gen-js
-# Should output: /Users/USERNAME/.npm-global/bin/protoc-gen-js (or similar)
-```
-
-### Built-in Plugins
-
-The following plugins are built into `protoc` and require no separate installation:
-- Python (`--python_out`)
-- Java (`--java_out`)
-- C++ (`--cpp_out`)
-- C# (`--csharp_out`)
-
-## Verify All Plugins
-
-Run this command to verify all plugins are installed:
-
-```bash
-echo "✓ protoc: $(protoc --version)"
-echo "✓ protoc-gen-gogofaster: $(which protoc-gen-gogofaster)"
-echo "✓ protoc-gen-swift: $(which protoc-gen-swift)"
-echo "✓ protoc-gen-js: $(which protoc-gen-js)"
-```
+Confirm the Go version satisfies `go.mod`; the old “Go 1.21 or later” minimum
+does not describe v0.15.2. Use the checkout's declared package-manager version
+when building the UI.
 
 ## Clone and Build Netcap
 
-### Clone the Repository
+Follow the tagged [manual build](installation.md#manual-build) to build the UI
+and a `nodpi,noyara` executable. Those tags disable optional native DPI/YARA,
+not libpcap. Building full DPI requires the matching native runtime dependencies
+and recipes in `zeus/scripts/`.
 
-```bash
-git clone https://github.com/dreadl0ck/netcap.git
-cd netcap
-```
-
-### Install Zeus Build System
-
-Netcap uses the Zeus build system:
-
-```bash
-go install github.com/dreadl0ck/zeus/cmd/zeus@latest
-```
-
-### Build Netcap
-
-Build the project:
-
-```bash
-zeus install
-```
-
-Or build manually:
-
-```bash
-go build -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd/net
-```
+Use `./net --version` to inspect the resulting binary. A build to the project
+directory does not replace another `net` already installed in `PATH`.
 
 ## Generate Protocol Buffers
 
-### Development Build (Go only)
+An unchanged checkout includes generated Go bindings. Only install generators
+when changing `types/netcap.proto`:
 
-For development, you typically only need Go code:
-
-```bash
-zeus gen-proto-dev
-```
-
-Or manually:
-
-```bash
+```sh
+brew install protobuf
+go install github.com/gogo/protobuf/protoc-gen-gogofaster@v1.3.2
+export PATH="$(go env GOPATH)/bin:$PATH"
+protoc --version
 protoc --proto_path=types --gogofaster_out=types/. types/netcap.proto
 ```
 
-### Release Build (All languages)
-
-For a release build with all language bindings:
-
-```bash
-zeus gen-proto-release
-```
-
-Or manually:
-
-```bash
-mkdir -p types/{python,java,swift,cpp,csharp,js}
-protoc --proto_path=types \
-       --gogofaster_out=types/. \
-       --python_out=types/python \
-       --java_out=types/java \
-       --swift_out=types/swift \
-       --cpp_out=types/cpp \
-       --csharp_out=types/csharp \
-       --js_out=types/js \
-       types/netcap.proto
-```
+Check the checkout's gogo version with `go list -m github.com/gogo/protobuf`
+before changing generator pins. `zeus gen-proto-dev` wraps Go generation.
+Swift/JavaScript plugins are only needed when deliberately generating those
+bindings; they are not prerequisites for a normal Go build.
 
 ## Environment Variables
 
-### Go Binary Path
-
-Ensure your Go binary directory is in your PATH. Add to `~/.zshrc` (or `~/.bash_profile`):
-
-```bash
-export PATH="$HOME/go/bin:$PATH"
-```
-
-### Netcap Configuration
-
-Set the configuration root if needed:
-
-```bash
-export NC_CONFIG_ROOT="$HOME/.config/netcap"
-```
+Use `GOWORK=off` for release-like builds. A local `go.work` can silently replace
+the pinned go-dpi module with a sibling checkout. `NC_CONFIG_ROOT` controls local
+runtime data separately; see [configuration](configuration.md).
 
 ## Troubleshooting
 
-### protoc-gen-* not found errors
+| Error | Check |
+| --- | --- |
+| Missing embedded frontend files | Build `cmd/capture/webui/frontend` first |
+| `pcap.h` or linker error | C toolchain/libpcap and matching architecture |
+| `protoc-gen-gogofaster` missing | Go binary directory in `PATH` |
+| Unexpected large generated diff | Generator version/options; use `gogofaster`, not `gogo` |
+| Linter refuses Go version | Linter was built with an older Go toolchain than the module requires |
 
-If you get errors like `protoc-gen-XXX: program not found or is not executable`:
-
-1. Ensure the plugin is installed
-2. Check if it's in your PATH:
-   ```bash
-   echo $PATH
-   ```
-3. For Go plugins, ensure `$HOME/go/bin` is in your PATH
-4. For Homebrew plugins, ensure `/opt/homebrew/bin` is in your PATH
-
-### Permission Issues
-
-If you encounter permission errors when installing global npm packages:
-
-```bash
-# Configure npm to use a different directory
-mkdir ~/.npm-global
-npm config set prefix '~/.npm-global'
-
-# Add to PATH in ~/.zshrc or ~/.bash_profile
-export PATH="$HOME/.npm-global/bin:$PATH"
-
-# Reload shell configuration
-source ~/.zshrc
-```
-
-### Protocol Buffer Version Mismatch
-
-If you encounter version mismatch errors, ensure you're using compatible versions:
-
-```bash
-# Check current versions
-protoc --version
-go list -m github.com/gogo/protobuf
-```
-
-## Additional Development Tools
-
-### Optional but Recommended
-
-Install additional tools for development:
-
-```bash
-# Code formatting
-go install golang.org/x/tools/cmd/goimports@latest
-
-# Linting
-brew install golangci-lint
-
-# Testing utilities
-go install github.com/rakyll/gotest@latest
-
-# Profiling
-go install github.com/google/pprof@latest
-```
-
-## Next Steps
-
-- Read the [Contributing Guide](contributing.md)
-- Check the [Development Notes](DEVNOTES.md)
-- Review the [Testing Guide](TESTING_QUICKSTART.md)
-- Explore the [Architecture Documentation](internals.md)
-
-## See Also
-
-- [Installation Guide](installation.md) - For end-user installation
-- [Quickstart](quickstart.md) - Getting started with Netcap
-- [Configuration](configuration.md) - Configuration options
-- [Troubleshooting](troubleshooting.md) - Common issues and solutions
-
-
+Run [scoped tests](tests.md); format only changed Go files. Follow
+[extension](extension.md) for decoder registration and schema contracts.
