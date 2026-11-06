@@ -6,9 +6,9 @@ description: Graphical link analysis to the rescue!
 
 ## Introduction
 
-**Maltego** is an open source intelligence \(OSINT\) and graphical link analysis tool for gathering and connecting information for investigative tasks.
+**Maltego** is an open source intelligence (OSINT) and graphical link analysis tool for gathering and connecting information for investigative tasks.
 
-{% embed url="https://www.maltego.com" caption="" %}
+{% embed url="https://www.maltego.com" %}
 
 It allows to transform data using external knowledge and visualize the results in a graph topology.
 
@@ -20,16 +20,16 @@ The current implementation focuses on behavorial analysis of entities within the
 
 ## Installation
 
-Ensure netcap **&gt;= v0.5** is installed and can be found in **$PATH**:
+Ensure netcap **>= v0.5** is installed and can be found in **$PATH**:
 
-```text
+```
 $ net -version
 v0.5
 ```
 
 Ensure the **net** binary is placed in **/usr/local/bin**:
 
-```text
+```
 $ which net
 /usr/local/bin/net
 ```
@@ -42,7 +42,7 @@ Next, download install the maltego transformations and enities for netcap:
 
 Currently there are **20 entities** and **42 transformations** implemented. You can download them here:
 
-{% file src=".gitbook/assets/netcap-maltego-config-v0.5.mtz \(2\) \(1\).zip" %}
+{% file src=".gitbook/assets/netcap-maltego-config-v0.5.mtz (2) (1).zip" %}
 
 Import them into Maltego in the "**Import / Export Config**" tab under "**Import Config**".
 
@@ -106,11 +106,11 @@ Extraction of a POP3 authentication token:
 
 When working with larger amount of nodes, the organic topology can be useful:
 
-![Graph during an investigation \(organic topology\)](.gitbook/assets/screenshot-2020-03-25-at-01.22.54.png)
+![Graph during an investigation (organic topology)](.gitbook/assets/screenshot-2020-03-25-at-01.22.54.png)
 
 Example of interaction with a PHP webshell:
 
-![PHP webshell interaction](.gitbook/assets/screenshot-2020-03-25-at-15.00.45-1.png)
+![PHP webshell interaction](<.gitbook/assets/screenshot-2020-03-25-at-15.00.45 (1).png>)
 
 Example of an exploit abusing a HTTP parameter command injection vulnerability:
 
@@ -120,7 +120,7 @@ Graph during an investigation where the attacker has been identified and further
 
 ![Dataset investigation](.gitbook/assets/screenshot-2020-03-25-at-00.20.06.png)
 
-![Dataset investigation](.gitbook/assets/screenshot-2020-03-24-at-23.52.23.png)
+![Dataset investigation](<.gitbook/assets/files (1).png>)
 
 ![Flow Graph](.gitbook/assets/screenshot-2020-03-25-at-20.19.15.png)
 
@@ -137,4 +137,3 @@ Graph during an investigation where the attacker has been identified and further
 ![](.gitbook/assets/screenshot-2020-04-22-at-12.02.03.png)
 
 ![](.gitbook/assets/screenshot-2020-04-22-at-12.03.33.png)
-

@@ -6,7 +6,7 @@ description: Extract transferred files and save them to disk
 
 ## Introduction
 
-Various protocols allow transferring files \(e.g: HTTP, POP3\) and some are made for the sole purpose of transferring files \(FTP, SMB etc\).
+Various protocols allow transferring files (e.g: HTTP, POP3) and some are made for the sole purpose of transferring files (FTP, SMB etc).
 
 From a network security monitoring perspective, transferred files are interesting because they can contain malicious software or prohibited content.
 
@@ -36,7 +36,7 @@ message File {
 }
 ```
 
-As can be seen, the content type indicated by the HTTP header is included, as well as the content type that was detected. In addition, the source of the File is specified \(e.g: from HTTP, Mail attachment etc\), as well the identifier of the connection where it originated from.
+As can be seen, the content type indicated by the HTTP header is included, as well as the content type that was detected. In addition, the source of the File is specified (e.g: from HTTP, Mail attachment etc), as well the identifier of the connection where it originated from.
 
 The Hash field currently holds an MD5 hash of the file, Location points to the path on disk where the file is stored.
 
@@ -46,19 +46,19 @@ The Hash field currently holds an MD5 hash of the file, Location points to the p
 
 File capture is enabled by default and will store extracted files in the **files** subdirectory within your output directory. The **-fileStorage** flag allows you to customize this path (relative to the output directory):
 
-```text
+```
 $ net capture -read traffic.pcap -fileStorage files
 ```
 
 To disable file extraction, set an empty string:
 
-```text
+```
 $ net capture -read traffic.pcap -fileStorage ""
 ```
 
 After capturing, lets inspect the directory contents:
 
-```text
+```
 $ tree files
 files
 ├── application
@@ -81,13 +81,13 @@ As you can see, files are sorted by their MIME types retrieved from classifying 
 
 By default, only complete requests and responses are captured, if you also want to extract incomplete data, use the **-writeincomplete** flag:
 
-```text
+```
 $ net capture -read traffic.pcap -fileStorage files -writeincomplete
 ```
 
 Dumping a File on the commandline looks like this:
 
-```text
+```
 $ net dump -read File.ncap.gz -struc
 NC_File
 Timestamp: "2015-03-08 14:05:29.664213 +0000 UTC"
@@ -109,7 +109,8 @@ ContentTypeDetected: "image/bmp"
 
 For properly exploring files for each host I recommend using the Maltego Integration:
 
-{% page-ref page="maltego-integration.md" %}
+{% content-ref url="maltego-integration.md" %}
+[maltego-integration.md](maltego-integration.md)
+{% endcontent-ref %}
 
-![](.gitbook/assets/files.png)
-
+![](<.gitbook/assets/files (1).png>)
