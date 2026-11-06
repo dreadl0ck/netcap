@@ -1,5 +1,8 @@
 ## Signed community database updates
 
+`v0.15.0` and `v0.15.1` were runtime-qualification candidates; `v0.15.2` is the
+binary release with the completed macOS closure and Alpine supplier notices.
+
 `net util -download-dbs` installs the signed community release without extra
 configuration. `net util -update-dbs` refreshes an existing installation. The
 publisher can now refresh reviewed sources without shipping a new client for

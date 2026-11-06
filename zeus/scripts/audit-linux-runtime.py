@@ -20,6 +20,8 @@ history=subprocess.check_output(['docker','history','--no-trunc','--format','{{.
 notices=dest/'legal/runtime'
 notices.mkdir(parents=True,exist_ok=True)
 inventory=[]
+apk_databases={}
+extra_notices={}
 for file in sorted(lib.iterdir()):
     if not file.is_file() or file.name=='net.bin':continue
     query='''set -eu
@@ -61,6 +63,24 @@ else exit 3; fi
     if owned and 'ubuntu' in evidence_image:
         fields=result.stdout.splitlines()
         if len(fields)>=4:record['correspondingSource']='https://launchpad.net/ubuntu/+source/'+fields[2]+'/'+fields[3]
+    if owned and 'alpine' in evidence_image and ' is owned by ' in result.stdout:
+        if evidence_image not in apk_databases:
+            database=subprocess.check_output(['docker','run','--rm','--entrypoint','cat',evidence_image,'/lib/apk/db/installed'],text=True)
+            packages={}
+            for block in database.split('\n\n'):
+                fields=dict(line.split(':',1) for line in block.splitlines() if ':' in line)
+                if fields.get('P'):packages[fields['P']]=fields
+            apk_databases[evidence_image]=packages
+        owner=result.stdout.split(' is owned by ',1)[1].splitlines()[0]
+        package=next((v for k,v in apk_databases[evidence_image].items() if k+'-'+v.get('V','')==owner),None)
+        if not package:raise SystemExit('Missing exact APK supplier metadata: '+owner)
+        origin=package.get('o',package['P']);version=package['V'].rsplit('-r',1)[0]
+        commit=package.get('c','')
+        if len(commit)!=40:raise SystemExit('APK source commit missing for '+owner)
+        record['correspondingSource']='https://github.com/alpinelinux/aports/tree/'+commit+'/main/'+origin
+        record['sourcePackage']={'origin':origin,'version':package['V'],'commit':commit}
+        if origin=='musl':extra_notices['musl-'+version]='https://git.musl-libc.org/cgit/musl/plain/COPYRIGHT?h=v'+version
+        if origin=='libpcap':extra_notices['libpcap-'+version]='https://raw.githubusercontent.com/the-tcpdump-group/libpcap/libpcap-'+version+'/LICENSE'
     if owned:(notices/(file.name+'.txt')).write_text(result.stdout)
     inventory.append(record)
 result={'image':a.image,'imageID':inspect['Id'],'repoDigests':inspect.get('RepoDigests',[]),'files':inventory}
@@ -72,12 +92,12 @@ for image in filter(None,[a.image,a.supplier_image]):
 unresolved=[r['file'] for r in inventory if r['requiresSupplierEvidence']]
 print(json.dumps({'libraries':len(inventory),'supplierEvidenceRequired':unresolved}))
 if unresolved:raise SystemExit('Unidentified runtime libraries prevent release')
-for name,url in {
-    'musl-COPYRIGHT':'https://git.musl-libc.org/cgit/musl/plain/COPYRIGHT?h=v1.2.5',
+for name,url in ({
     'GCC-RUNTIME-EXCEPTION':'https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-15.2.0/COPYING.RUNTIME',
     'GPL-3.0':'https://raw.githubusercontent.com/spdx/license-list-data/v3.27.0/text/GPL-3.0-or-later.txt',
+    'GPL-2.0':'https://raw.githubusercontent.com/spdx/license-list-data/v3.27.0/text/GPL-2.0-or-later.txt',
     'LGPL-2.1':'https://raw.githubusercontent.com/spdx/license-list-data/v3.27.0/text/LGPL-2.1-or-later.txt',
     'LGPL-3.0':'https://raw.githubusercontent.com/spdx/license-list-data/v3.27.0/text/LGPL-3.0-or-later.txt',
-}.items():
+}|extra_notices).items():
     with urllib.request.urlopen(url,timeout=60) as response:body=response.read()
     (notices/(name+'.txt')).write_bytes(body)

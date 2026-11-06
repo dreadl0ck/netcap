@@ -69,7 +69,7 @@ For source installation, clone the tagged repository, build the embedded WebUI,
 then compile with the installed native dependencies:
 
 ```text
-$ git clone --branch v0.15.1 https://github.com/dreadl0ck/netcap.git
+$ git clone --branch v0.15.2 https://github.com/dreadl0ck/netcap.git
 $ cd netcap/cmd/capture/webui/frontend
 $ pnpm install --frozen-lockfile && pnpm build
 $ cd ../../../..
