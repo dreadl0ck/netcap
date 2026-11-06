@@ -126,7 +126,15 @@ func buildCandidatePinned(root string, startYear int, approvalsPath, registrySHA
 		return "", err
 	}
 	sum := values["input_sha256"]
-	evidence = append(evidence, SourceEvidence{ID: "nvd", Origin: "https://nvd.nist.gov/feeds/json/cve/2.0/", Revision: strconv.Itoa(startYear) + "-" + values["nvd_end_year"] + ":" + sum, SHA256: sum, Transformation: "netcap-nvd-v3.6: frozen complete nonempty NVD 2.0 yearly gzip inputs with per-year counts, NVD-only SQLite schema 2 with structured CPE applicability, nvd_rowid_alias_version=1 valid foreign keys and nvd_references_version=1 HTTP(S) link metadata, sorted metadata without wall-clock fields", NVDInputs: nvdInputs})
+	var counts map[string]int
+	if err := json.Unmarshal([]byte(values["nvd_year_counts"]), &counts); err != nil {
+		return "", err
+	}
+	acquisition, err := nvdAcquisitionRevision(build, nvdInputs, counts)
+	if err != nil {
+		return "", err
+	}
+	evidence = append(evidence, SourceEvidence{ID: "nvd", Origin: "https://nvd.nist.gov/feeds/json/cve/2.0/", Revision: strconv.Itoa(startYear) + "-" + values["nvd_end_year"] + ":" + sum + acquisition, SHA256: sum, Transformation: "netcap-nvd-v3.6: frozen complete nonempty NVD 2.0 yearly gzip inputs with per-year counts, NVD-only SQLite schema 2 with structured CPE applicability, nvd_rowid_alias_version=1 valid foreign keys and nvd_references_version=1 HTTP(S) link metadata, sorted metadata without wall-clock fields", NVDInputs: nvdInputs})
 	if err := includeDBIP(base, filepath.Join(base, "geoip-cache")); err != nil {
 		return "", err
 	}

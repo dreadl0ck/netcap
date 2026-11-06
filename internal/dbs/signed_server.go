@@ -85,6 +85,10 @@ func (s *DBServer) handleReady(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *DBServer) handleFreshness(w http.ResponseWriter, r *http.Request) {
+	if err := refreshHealth(os.Getenv("NC_DBS_SIGNED_ROOT")); err != nil {
+		http.Error(w, err.Error(), 503)
+		return
+	}
 	e, p, err := currentSigned(os.Getenv("NC_DBS_SIGNED_ROOT"))
 	if err != nil {
 		http.Error(w, "signed release unavailable or expired", 503)
@@ -109,4 +113,30 @@ func (s *DBServer) handleFreshness(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = jsonResponse(w, map[string]any{"status": "fresh", "expires_at": p.ExpiresAt, "key_expires_at": key.NotAfter})
+}
+
+func refreshHealth(dir string) error {
+	var state struct {
+		Status    string `json:"status"`
+		Stage     string `json:"stage"`
+		UpdatedAt int64  `json:"updated_at"`
+	}
+	if err := readJSON(filepath.Join(dir, "refresh-status.json"), &state); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("invalid database refresh status")
+	}
+	switch state.Status {
+	case "failed":
+		return fmt.Errorf("database refresh failed at %s", state.Stage)
+	case "running":
+		if time.Now().Unix()-state.UpdatedAt > 3600 {
+			return fmt.Errorf("database refresh is stuck")
+		}
+	case "success":
+	default:
+		return fmt.Errorf("invalid database refresh state")
+	}
+	return nil
 }

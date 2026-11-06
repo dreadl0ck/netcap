@@ -36,6 +36,7 @@ jobs:
         run: |
           python -c 'import os,re;assert re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+",os.environ["RELEASE_TAG"])'
           asset="netcap-${VARIANT}${RELEASE_TAG}-${TARGET}.tar.gz"
+          # A read-only Actions token can download a public prerelease, not a draft.
           gh release download "$RELEASE_TAG" --pattern "$asset" --pattern checksums.txt --pattern netcap.rb --dir "$RUNNER_TEMP/release"
           python - <<'PY'
           import hashlib,os,pathlib
@@ -70,6 +71,7 @@ jobs:
           mkdir -p "$tap/Formula"
           cp "$RUNNER_TEMP/release/netcap.rb" "$tap/Formula/netcap.rb"
           git -C "$tap" init
+          brew trust --formula qualification/netcap/netcap
           cache=$(brew --cache qualification/netcap/netcap)
           python - "$cache" <<'PY'
           import os,pathlib,shutil,sys

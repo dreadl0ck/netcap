@@ -42,7 +42,7 @@ publisher-side source policies instead of requiring a binary per snapshot.
 | Offline root | Operator workstation `../server/secrets/netcap-db-signing/root.key`; never deployed or committed |
 | Schedule | `../server/schedules/netcap-db-refresh.{service,timer}`; daily 00:30 UTC plus up to 15 minutes jitter |
 | Refresh | `scripts/refresh-databases.sh`; `flock` prevents overlap; failures retain the previous signed pointer and failed acquisition |
-| Policy | Explicit source origins, transformations, filenames, pinned static revisions, full licences/notices and 60-day expiry; complete nonempty 2002–current-year feeds; minimum 400,000 CVEs and no decrease exceeding 5% |
+| Policy | Explicit source origins, transformations, filenames, static pins, full notices and 60-day expiry; nonempty annual feeds, declared/indexed count agreement, 48-hour current-feed age, minimum 400,000 CVEs and no decrease exceeding 5% |
 
 `scripts/prepare-db-policy.py` prepares operator-reviewable policy from existing
 rights records and pinned BSD HASSH upstream. Independently pin its SHA-256 in
@@ -63,6 +63,20 @@ old signed pointer is rejected. Stage both channels and a full download on a
 loopback-only port before an image cutover. Retain the previous image digest,
 mounts, registry pin and args for serving-image rollback. The frozen v0.14 channel
 is independent of signed publication.
+
+NVD source revisions append `;acquisition=` JSON with each feed's compressed hash,
+acquisition time, upstream timestamp and declared/indexed counts. This extends
+the opaque revision string without changing the Go/Rust client wire contract.
+`refresh-status.json` records credential-free pipeline stages; `/freshness`
+distinguishes failed acquisition/policy/pack/sign stages and builds stuck over an
+hour from release expiry or key/policy renewal. Source-age/count refusal keeps
+the previous signed publication.
+
+Verified 2026-11-06: Go/Rust accepted delegated key epoch 1 → 2; an older-key replay
+was rejected before requesting its archive. A loopback-only rollback republished
+archive `e44410a7…` with a higher sequence, installed over production snapshot
+`9fafcd38…`, and passed real CVE applicability/reference checks; production stayed
+on `9fafcd38…`.
 
 ## Production deployment
 

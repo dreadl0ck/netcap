@@ -30,6 +30,6 @@ assert 'Adel' in grant and 'Redistribution and use' in grant and 'Neither the na
 sha=lambda b:hashlib.sha256(b).hexdigest()
 rules.append({'evidence':{'id':'hassh','origin':origin,'revision':sha(source),'sha256':sha(source),'transformation':'netcap-hassh-v1: parse pinned upstream hash/banner/percentage lines, sort hashes, preserve banner and likelihood strings as legacy JSON','grant_origin':grant_origin,'grant_revision':revision,'grant_text':grant,'grant_sha256':sha(grant.encode()),'notice_text':"Copyright (c) 2018, Adel '0x4d31' Karimi. BSD-3-Clause. Netcap transforms the pinned HASSH database text to JSON; original banners and likelihoods are retained."},'files':['hasshdb.json'],'pinned_revision':sha(source)})
 expiry=int((datetime.datetime.now(datetime.timezone.utc)+datetime.timedelta(days=60)).timestamp())
-policy={'format':'netcap-source-policy/v1','expires_at':expiry,'rules':rules,'minimum_nvd_count':400000}
+policy={'format':'netcap-source-policy/v1','expires_at':expiry,'rules':rules,'minimum_nvd_count':400000,'max_current_feed_age_seconds':172800}
 args.output.write_text(json.dumps(policy,indent=2)+'\n')
 print(sha(args.output.read_bytes()))

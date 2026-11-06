@@ -1,6 +1,6 @@
 {
   "format": "netcap-source-policy/v1",
-  "expires_at": 1799148038,
+  "expires_at": 1799161810,
   "rules": [
     {
       "evidence": {
@@ -244,5 +244,6 @@
       "pinned_revision": "9f78b7d509730fcabe17c1a2192ce43d88379e1980bb12e244f0bc5cba105104"
     }
   ],
-  "minimum_nvd_count": 400000
+  "minimum_nvd_count": 400000,
+  "max_current_feed_age_seconds": 172800
 }

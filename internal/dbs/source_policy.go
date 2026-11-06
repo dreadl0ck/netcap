@@ -12,10 +12,11 @@ import (
 )
 
 type SourcePolicy struct {
-	Format          string       `json:"format"`
-	ExpiresAt       int64        `json:"expires_at"`
-	Rules           []SourceRule `json:"rules"`
-	MinimumNVDCount int          `json:"minimum_nvd_count"`
+	Format                string       `json:"format"`
+	ExpiresAt             int64        `json:"expires_at"`
+	Rules                 []SourceRule `json:"rules"`
+	MinimumNVDCount       int          `json:"minimum_nvd_count"`
+	MaximumCurrentFeedAge int64        `json:"max_current_feed_age_seconds"`
 }
 
 type SourceRule struct {
@@ -40,6 +41,9 @@ func ApproveCandidate(dir, policyPath, policyPin, registryPath string, previousC
 	}
 	if policy.Format != "netcap-source-policy/v1" || policy.ExpiresAt <= time.Now().Unix() || policy.MinimumNVDCount < 1 {
 		return fmt.Errorf("invalid or expired source policy")
+	}
+	if policy.MaximumCurrentFeedAge <= 0 || policy.MaximumCurrentFeedAge > 72*3600 {
+		return fmt.Errorf("invalid NVD source-age policy")
 	}
 	var candidate Candidate
 	if err := readJSON(filepath.Join(dir, CandidateFile), &candidate); err != nil {
@@ -88,6 +92,11 @@ func ApproveCandidate(dir, policyPath, policyPin, registryPath string, previousC
 	}
 	var reviews []ReviewedSource
 	for i, observed := range candidate.Sources {
+		if observed.ID == "nvd" {
+			if err := validateNVDAcquisition(observed, yearCounts, policy.MaximumCurrentFeedAge); err != nil {
+				return err
+			}
+		}
 		rule, ok := rules[observed.ID]
 		if !ok || observed.Origin != rule.Evidence.Origin || observed.Transformation != rule.Evidence.Transformation || (rule.PinnedRevision != "" && observed.Revision != rule.PinnedRevision) {
 			return fmt.Errorf("source %s violates reviewed acquisition/transformation policy", observed.ID)
