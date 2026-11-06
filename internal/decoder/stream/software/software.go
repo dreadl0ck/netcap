@@ -31,7 +31,6 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/pkg/errors"
 
 	"github.com/ua-parser/uap-go/uaparser"
 	"go.uber.org/zap"
@@ -70,14 +69,13 @@ var Decoder = &decoder.AbstractDecoder{
 
 		// Load the JSON database of SSH fingerprint signatures (legacy HASSH format)
 		data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseFolderPath, "hasshdb.json"))
-		if err != nil {
-			return err
+		hasshDB = nil
+		if err == nil {
+			err = json.Unmarshal(data, &hasshDB)
 		}
-
-		// unpack JSON
-		err = json.Unmarshal(data, &hasshDB)
 		if err != nil {
-			return err
+			softwareLog.Warn("SSH fingerprint enrichment disabled", zap.Error(err))
+			hasshDB = nil
 		}
 
 		HashDBMap = make(map[string][]sshSoftware)
@@ -88,13 +86,8 @@ var Decoder = &decoder.AbstractDecoder{
 
 		softwareLog.Info("loaded SSH fingerprint digests", zap.Int("total", len(HashDBMap)))
 
-		// read CMS db JSON
-		err = loadCmsDB()
-		if err != nil {
-			return errors.Wrap(err, "failed to load CMS database")
-		}
-
-		softwareLog.Info("loaded CMS db", zap.Int("total", len(cmsDB)))
+		_ = loadCmsDB()
+		softwareLog.Warn("CMS enrichment disabled: legacy dataset is not cleared; Software and NVD remain enabled")
 
 		// Build the optional Hyperscan prefilter for CMS header / cookie
 		// regex matching. With the `hyperscan` build tag this populates
@@ -778,6 +771,6 @@ func ResetCaches() {
 	Store.Items = make(map[string]*AtomicSoftware)
 	Store.Unlock()
 
-	// cmsDB is loaded once from file and should not be cleared
-	// CMSCookies and CMSHeaders are also static configuration, not cleared
+	_ = loadCmsDB()
+	buildCMSHSIndex()
 }

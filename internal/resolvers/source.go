@@ -130,7 +130,8 @@ func Init(c Config, quietMode bool) {
 		geoMu.Unlock()
 	}
 	if c.DHCPDB {
-		InitDHCPFingerprintDB()
+		resolverLog.Warn(ErrDHCPEnrichmentDisabled.Error())
+		log.Print(ErrDHCPEnrichmentDisabled)
 	}
 	if c.JA4DB && ja4plusadapter.Enabled {
 		initJA4Resolver()

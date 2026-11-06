@@ -24,117 +24,12 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/defaults"
 )
-
-/*
- * Create Tarballs
- */
-
-// makeTarball will create a compressed tarball
-func makeTarball(source string, revision string, buf io.Writer) error {
-	if err := validateGeoIPBundle(source); err != nil {
-		return err
-	}
-
-	// tar -> gzip -> buffer
-	var (
-		zipWriter         = gzip.NewWriter(buf)
-		tarWriter         = tar.NewWriter(zipWriter)
-		fileCount         int
-		dirCount          int
-		exploitdbIncluded bool
-	)
-
-	// process every file in the source folder
-	err := filepath.Walk(source, func(file string, fi os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if excludedFromDistribution(file) {
-			if fi.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		// generate tar header for archive
-		hdr, err := tar.FileInfoHeader(fi, file)
-		if err != nil {
-			return err
-		}
-
-		// provide the real file name
-		// (see https://golang.org/src/archive/tar/common.go?#L626)
-		hdr.Name = strings.ReplaceAll(filepath.ToSlash(file), source, revision)
-
-		// Track if exploitdb directory is being included
-		if fi.IsDir() && fi.Name() == "exploitdb" {
-			exploitdbIncluded = true
-			fmt.Println("✓ Including exploitdb folder with exploit code snippets")
-		}
-
-		// write header in archive
-		if err = tarWriter.WriteHeader(hdr); err != nil {
-			return err
-		}
-
-		// if not a directory, write file content
-		if !fi.IsDir() {
-			fileCount++
-
-			f, errOpen := os.Open(file)
-			if errOpen != nil {
-				return errOpen
-			}
-			defer func() {
-				errClose := f.Close()
-				if errClose != nil {
-					log.Fatal(errClose)
-				}
-			}()
-
-			fmt.Println("adding", f.Name())
-			if _, err = io.Copy(tarWriter, f); err != nil {
-				return err
-			}
-		} else {
-			dirCount++
-		}
-		return nil
-	})
-	if err != nil {
-		log.Fatalln("failed to collect files: ", err)
-	}
-
-	fmt.Printf("Tarball contains: %d files, %d directories\n", fileCount, dirCount)
-	if exploitdbIncluded {
-		fmt.Println("✓ exploitdb folder successfully bundled in archive")
-	}
-
-	// produce tarball
-	if err = tarWriter.Flush(); err != nil {
-		return err
-	}
-	if err = tarWriter.Close(); err != nil {
-		return err
-	}
-
-	// produce gzip archive
-	if err = zipWriter.Flush(); err != nil {
-		return err
-	}
-	if err = zipWriter.Close(); err != nil {
-		return err
-	}
-
-	return nil
-}
 
 /*
  * Deflate Tarballs

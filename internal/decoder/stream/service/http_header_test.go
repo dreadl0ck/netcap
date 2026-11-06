@@ -303,8 +303,8 @@ func TestMatchHTTPHeadersWithGWSServer(t *testing.T) {
 	if serv.Product != "gws" {
 		t.Errorf("matchHTTPHeaders() should extract Server header value 'gws', got %v", serv.Product)
 	}
-	if serv.MatchedProbeID != "http-header-server" {
-		t.Errorf("matchHTTPHeaders() MatchedProbeID = %v, want 'http-header-server'", serv.MatchedProbeID)
+	if serv.MatchedProbeID != "netcap.http.response.v1" {
+		t.Errorf("matchHTTPHeaders() MatchedProbeID = %v, want 'netcap.http.response.v1'", serv.MatchedProbeID)
 	}
 }
 

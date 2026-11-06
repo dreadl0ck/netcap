@@ -27,7 +27,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -37,7 +36,6 @@ import (
 
 	"github.com/dustin/go-humanize"
 
-	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/archive"
 	"github.com/dreadl0ck/netcap/internal/httputil"
 )
@@ -145,26 +143,13 @@ var nvdStartYear = 2002
  */
 
 var sources = []*datasource{
-	// TODO: implement generation
-	//makeSource("https://raw.githubusercontent.com/0x4D31/hassh-utils/master/hasshdb", "hasshdb.txt", moveToDbs), // hasshdb.json
-	//makeSource("https://raw.githubusercontent.com/karottc/fingerbank/master/upstream/startup/fingerprints.csv", "", moveToDbs), // dhcp-fingerprints.json
-	//makeSource("https://raw.githubusercontent.com/AliasIO/wappalyzer/master/src/technologies.json", "", moveToDbs), // cmsdb.json
-
-	// this clones the latest versions until the generation is implemented
-	makeSource("https://raw.githubusercontent.com/dreadl0ck/netcap-dbs/main/dbs/hasshdb.json", "", moveToDbs),
-	makeSource("https://raw.githubusercontent.com/dreadl0ck/netcap-dbs/main/dbs/dhcp-fingerprints.json", "", moveToDbs),
-	makeSource("https://raw.githubusercontent.com/dreadl0ck/netcap-dbs/main/dbs/cmsdb.json", "", moveToDbs),
-
-	makeSource("https://raw.githubusercontent.com/tobie/ua-parser/master/regexes.yaml", "", moveToDbs),
-
-	makeSource("https://macaddress.io/database/macaddress.io-db.json", "", moveToDbs),
+	// Candidate sources only; acquisition does not authorize publication.
+	makeSource("https://raw.githubusercontent.com/ua-parser/uap-core/73e7340c3ed8055051607b296bf46ead7aa5f19e/regexes.yaml", "", moveToDbs),
 
 	makeSource("https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv", "", moveToDbs),
 
-	// NVD feeds and files_exploits.csv land in build/; BuildVulnDB turns them
-	// into netcap.sqlite once every source has finished.
+	// BuildVulnDB indexes complete NVD feeds only.
 	makeSource("", "nvd", downloadNVD),
-	makeSource("https://gitlab.com/exploit-database/exploitdb/-/raw/main/files_exploits.csv", "", cloneExploitDB),
 }
 
 /*
@@ -196,52 +181,7 @@ func downloadNVD(_ string, _ *datasource, base string) error {
 		s := makeSource(fmt.Sprintf("https://nvd.nist.gov/feeds/json/cve/2.0/nvdcve-2.0-%s.json.gz", year), "", nil)
 		err := fetchResource(s, filepath.Join(base, "build", s.name))
 		if err != nil {
-			log.Printf("ERROR: failed to fetch NVD data for year %s: %v", year, err)
-			continue
-		}
-	}
-
-	return nil
-}
-
-func cloneExploitDB(_ string, _ *datasource, base string) error {
-	// Clone the exploitdb repository to get the actual exploit files
-	exploitdbPath := filepath.Join(base, "dbs", "exploitdb")
-
-	// Always clone fresh to get the latest exploits
-	if _, err := os.Stat(exploitdbPath); err == nil {
-		fmt.Println("Removing existing exploitdb to clone fresh...")
-		if err := os.RemoveAll(exploitdbPath); err != nil {
-			log.Printf("Warning: Failed to remove existing exploitdb: %v", err)
-		}
-	}
-
-	fmt.Println("Cloning exploitdb repository (this may take a few minutes)...")
-
-	// Ensure parent directory exists
-	if err := os.MkdirAll(filepath.Dir(exploitdbPath), defaults.DirectoryPermission); err != nil {
-		log.Printf("Warning: Failed to create parent directory for exploitdb: %v", err)
-	} else {
-		// Use shallow clone with depth 1 to save space and time
-		cmd := exec.Command("git", "clone", "--depth", "1",
-			"https://gitlab.com/exploit-database/exploitdb.git",
-			exploitdbPath)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Run(); err != nil {
-			log.Printf("Warning: Failed to clone exploitdb repository: %v", err)
-			log.Println("Exploit POC files will not be available, but metadata indexing will continue")
-		} else {
-			fmt.Printf("Successfully cloned exploitdb to %s\n", exploitdbPath)
-
-			// Remove .git directory to save space in the tarball
-			gitDir := filepath.Join(exploitdbPath, ".git")
-			if err := os.RemoveAll(gitDir); err != nil {
-				log.Printf("Warning: Failed to remove .git directory: %v", err)
-			} else {
-				fmt.Println("Removed .git directory to save space")
-			}
+			return fmt.Errorf("required NVD year %s unavailable: %w", year, err)
 		}
 	}
 
@@ -339,120 +279,6 @@ var (
 	numBytesFetched   uint64
 	numBytesFetchedMu sync.Mutex
 )
-
-// GenerateDBs allows to fetch the databases from their initial sources and generate the preprocessed form that netcap uses
-func GenerateDBs(nvdIndexStartYear int) {
-
-	var (
-		base         = "netcap-dbs-generated"
-		_            = os.MkdirAll(filepath.Join(base, "build"), defaults.DirectoryPermission)
-		_            = os.MkdirAll(filepath.Join(base, "dbs"), defaults.DirectoryPermission)
-		wg           sync.WaitGroup
-		start        = time.Now()
-		total        int
-		successCount int
-		failureCount int
-		mu           sync.Mutex // protect counters
-	)
-
-	if nvdIndexStartYear != 0 {
-		nvdStartYear = nvdIndexStartYear
-	}
-
-	for _, s := range activeSources() {
-		total++
-		wg.Add(1)
-		go func(source *datasource) {
-			defer wg.Done()
-
-			success := processSource(source, base)
-			mu.Lock()
-			if success {
-				successCount++
-			} else {
-				failureCount++
-			}
-			mu.Unlock()
-		}(s)
-	}
-
-	time.Sleep(1 * time.Second)
-	fmt.Println("waiting for downloads to complete...")
-	wg.Wait()
-	if err := includeDBIP(base, filepath.Join(base, "geoip-cache")); err != nil {
-		log.Printf("database generation stopped: %v", err)
-		return
-	}
-
-	// Print summary
-	fmt.Printf("\n=== Download Summary ===\n")
-	fmt.Printf("Total sources: %d\n", total)
-	fmt.Printf("Successful: %d\n", successCount)
-	fmt.Printf("Failed: %d\n", failureCount)
-	fmt.Printf("Total bytes fetched: %s\n", humanize.Bytes(numBytesFetched))
-	fmt.Printf("Duration: %v\n", time.Since(start))
-
-	if failureCount > 0 {
-		log.Printf("WARNING: %d out of %d data sources failed to download. Check logs above for details.", failureCount, total)
-	}
-	if err := BuildVulnDB(filepath.Join(base, "build"), filepath.Join(base, "dbs"), nvdStartYear, false); err != nil {
-		log.Printf("ERROR: failed to build %s: %v", "netcap.sqlite", err)
-	}
-	if err := writeDatabaseNotices(filepath.Join(base, "dbs")); err != nil {
-		log.Fatalf("failed to include database notices: %v", err)
-	}
-
-	// shell out to print a directory tree
-	out, err := exec.Command("tree", base).CombinedOutput()
-	if err != nil {
-		fmt.Printf("Unable to display directory tree: %v\n", err)
-	} else {
-		fmt.Println(string(out))
-	}
-
-	// save the total size into a file named "size"
-	// will be used to ask the user for confirmation
-	// prior to cloning the repo via the netcap toolchain
-	saveTotalDatabaseSize(base)
-
-	fmt.Printf("Operation completed: fetched %d sources successfully ("+humanize.Bytes(numBytesFetched)+") in %v\n", successCount, time.Since(start))
-
-	// Verify exploitdb folder is present
-	exploitdbPath := filepath.Join(base, "dbs", "exploitdb")
-	if stat, err := os.Stat(exploitdbPath); err == nil && stat.IsDir() {
-		// Count files in exploitdb to give user feedback
-		var fileCount int
-		_ = filepath.Walk(exploitdbPath, func(_ string, info os.FileInfo, _ error) error {
-			if info != nil && !info.IsDir() {
-				fileCount++
-			}
-			return nil
-		})
-		fmt.Printf("✓ exploitdb folder present with %d files (exploit code snippets will be bundled)\n", fileCount)
-	} else {
-		fmt.Println("⚠ exploitdb folder not found - exploit code snippets will not be available")
-	}
-
-	// Create the tarball automatically
-	tarballPath := filepath.Join(base, "dbs.tar.gz")
-	fmt.Printf("Creating tarball: %s\n", tarballPath)
-
-	tarballFile, err := os.Create(tarballPath)
-	if err != nil {
-		log.Printf("Warning: failed to create tarball file: %v", err)
-	} else {
-		if err := makeTarball(filepath.Join(base, "dbs"), "dbs", tarballFile); err != nil {
-			log.Printf("Warning: failed to create tarball: %v", err)
-		} else {
-			tarballFile.Close()
-			if stat, err := os.Stat(tarballPath); err == nil {
-				fmt.Printf("✓ Tarball created: %s (%s)\n", tarballPath, humanize.Bytes(uint64(stat.Size())))
-			}
-		}
-	}
-
-	fmt.Println("fetched", total, "sources ("+humanize.Bytes(numBytesFetched)+")", "in", time.Since(start))
-}
 
 func processSource(s *datasource, base string) bool {
 	outFilePath := filepath.Join(base, "build", s.name)

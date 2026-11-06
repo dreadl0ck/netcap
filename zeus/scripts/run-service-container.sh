@@ -5,6 +5,38 @@
 
 set -e
 
+# Validate before pulling images or replacing an existing container.
+trust_args=()
+if [[ -n "${NC_DBS_APPROVALS:-}${NC_DBS_APPROVALS_SHA256:-}" ]]; then
+if [[ -z "${NC_DBS_APPROVALS:-}" || ! "$NC_DBS_APPROVALS" = /* || ! -f "$NC_DBS_APPROVALS" || -L "$NC_DBS_APPROVALS" || ! -r "$NC_DBS_APPROVALS" ]]; then
+    echo "[ERROR] Set NC_DBS_APPROVALS to an absolute, readable regular registry file outside the database directory." >&2
+    exit 1
+fi
+if [[ "$NC_DBS_APPROVALS" = *','* || "$NC_DBS_APPROVALS" = *$'\n'* ]]; then
+    echo "[ERROR] NC_DBS_APPROVALS cannot contain commas or newlines in a Docker bind mount." >&2
+    exit 1
+fi
+if [[ ! "${NC_DBS_APPROVALS_SHA256:-}" =~ ^[0-9a-f]{64}$ ]]; then
+    echo "[ERROR] Set NC_DBS_APPROVALS_SHA256 to the independently obtained lowercase SHA-256 registry pin." >&2
+    exit 1
+fi
+if command -v sha256sum >/dev/null 2>&1; then
+    registry_digest=$(sha256sum < "$NC_DBS_APPROVALS")
+elif command -v shasum >/dev/null 2>&1; then
+    registry_digest=$(shasum -a 256 < "$NC_DBS_APPROVALS")
+else
+    echo "[ERROR] Install sha256sum or shasum to verify the supplied registry pin." >&2
+    exit 1
+fi
+if [[ "${registry_digest%% *}" != "$NC_DBS_APPROVALS_SHA256" ]]; then
+    echo "[ERROR] Approval registry digest mismatch; check the file against the independently supplied NC_DBS_APPROVALS_SHA256." >&2
+    exit 1
+fi
+trust_args=(--mount "type=bind,source=${NC_DBS_APPROVALS},target=/run/netcap-trust/approvals.json,readonly"
+    -e NC_DBS_APPROVALS=/run/netcap-trust/approvals.json
+    -e NC_DBS_APPROVALS_SHA256="${NC_DBS_APPROVALS_SHA256}")
+fi
+
 # Image configuration
 IMAGE_NAME="netcap-service"
 VERSION="${VERSION:-latest}"
@@ -107,6 +139,7 @@ docker run -d \
     -p "${HTTP_PORT}:7070" \
     -v "${DATA_DIR}:/data" \
     -v "${CONFIG_DIR}:/home/netcap/.config/netcap" \
+    "${trust_args[@]}" \
     -e NC_DATA_DIR=/data/netcap-service \
     -e NC_HTTP=0.0.0.0:7070 \
     -e NC_DPI="${NC_DPI}" \
@@ -161,4 +194,3 @@ if [[ "${FOLLOW_LOGS}" == "true" ]]; then
     echo ""
     docker logs -f "${CONTAINER_NAME}"
 fi
-

@@ -642,9 +642,9 @@ Fetch the NVD record for a CVE id: description, CVSS v3 score and vector, CWE cl
 
 ### `lookup_dhcp_fingerprint`
 
-Resolve a DHCPv4 fingerprint (option list) to a device class via netcap's local fingerprint database. With AllowNetwork=true and INIT_DHCPFINGERPRINT_API_KEY set, falls through to Fingerbank for unknown fingerprints; otherwise returns the local-DB match only (or an empty result).
+Reports DHCP fingerprint enrichment as disabled pending an independently sourced catalogue. Packet decoding remains available; no network or legacy dataset access.
 
-**Hints:** read-only, idempotent, open-world
+**Hints:** read-only, idempotent
 
 **Arguments:**
 

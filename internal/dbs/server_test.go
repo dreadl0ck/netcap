@@ -199,16 +199,13 @@ func TestInitialize_FastPathPreservesReadiness(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := s.initialize(); err != nil {
-		t.Fatalf("initialize returned: %v", err)
+	if err := s.initialize(); err == nil {
+		t.Fatal("serve-only startup accepted unvalidated date-named archive")
 	}
-	if !s.ready.Load() {
-		t.Error("expected ready=true after fast-path initialize")
+	if s.ready.Load() {
+		t.Fatal("invalid cache became ready")
 	}
-	s.mu.RLock()
-	got := s.currentDate
-	s.mu.RUnlock()
-	if got != date {
-		t.Errorf("currentDate: got %q, want %q", got, date)
+	if _, err := os.Stat(s.dbsDir + "/" + date + ".tar.gz"); err != nil {
+		t.Fatal("startup modified existing evidence", err)
 	}
 }

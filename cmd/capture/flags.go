@@ -544,7 +544,7 @@ func GetFlags() []cli.Flag {
 		&cli.BoolFlag{
 			Name:    "re2",
 			Value:   true,
-			Usage:   "if true uses the default golang re2 regex engine for service detection",
+			Usage:   "legacy compatibility option; service signatures now use bounded protocol parsers",
 			Sources: cli.EnvVars("NC_RE2"),
 		},
 		&cli.BoolFlag{
@@ -556,13 +556,13 @@ func GetFlags() []cli.Flag {
 		&cli.BoolFlag{
 			Name:    "stop-after-service-match",
 			Value:   true,
-			Usage:   "stop processing the conversation after the first service probe returned a result",
+			Usage:   "legacy compatibility option; service signature matches are deterministic",
 			Sources: cli.EnvVars("NC_STOP_AFTER_SERVICE_MATCH"),
 		},
 		&cli.BoolFlag{
 			Name:    "stop-after-service-category-miss",
 			Value:   true,
-			Usage:   "stop processing the conversation after the first service probe returned a result",
+			Usage:   "legacy compatibility option; service signatures do not depend on port categories",
 			Sources: cli.EnvVars("NC_STOP_AFTER_SERVICE_CATEGORY_MISS"),
 		},
 		&cli.BoolFlag{

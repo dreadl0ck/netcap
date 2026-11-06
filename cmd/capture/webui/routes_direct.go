@@ -23,6 +23,8 @@ func registerEditionRoutes(mux *http.ServeMux, s *Server) {
 	mux.HandleFunc("/api/service-probes/test", s.handleTestServiceProbe)
 	mux.HandleFunc("/api/service-probes/export", s.handleExportServiceProbes)
 	mux.HandleFunc("/api/service-probes/import", s.handleImportServiceProbes)
+	mux.HandleFunc("/api/service-signatures", s.handleServiceSignatures)
+	mux.HandleFunc("/api/service-signatures/status", s.handleServiceSignatureStatus)
 	mux.HandleFunc("/api/injection-rules", s.handleInjectionRules)
 	mux.HandleFunc("/api/injection-rules/", s.handleInjectionRule)
 	mux.HandleFunc("/api/injection-events", s.handleInjectionEvents)

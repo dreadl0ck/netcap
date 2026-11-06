@@ -50,11 +50,7 @@ func (s *Server) registerResolveTools() error {
 		{
 			Tool: mcplib.NewTool("lookup_dhcp_fingerprint",
 				mcplib.WithDescription(
-					"Resolve a DHCPv4 fingerprint (option list) to a device class via "+
-						"netcap's local fingerprint database. With AllowNetwork=true and "+
-						"INIT_DHCPFINGERPRINT_API_KEY set, falls through to Fingerbank for "+
-						"unknown fingerprints; otherwise returns the local-DB match only "+
-						"(or an empty result)."),
+					"Reports DHCP fingerprint enrichment as disabled pending an independently sourced catalogue. Packet decoding remains available; no network or legacy dataset access."),
 				mcplib.WithString("fingerprint",
 					mcplib.Description("DHCP option list, comma-separated (e.g. \"1,3,6,15,33,43\")."),
 					mcplib.Required()),
@@ -63,7 +59,7 @@ func (s *Server) registerResolveTools() error {
 				mcplib.WithReadOnlyHintAnnotation(true),
 				mcplib.WithDestructiveHintAnnotation(false),
 				mcplib.WithIdempotentHintAnnotation(true),
-				mcplib.WithOpenWorldHintAnnotation(true), // may hit Fingerbank
+				mcplib.WithOpenWorldHintAnnotation(false),
 			),
 			Handler: s.handleLookupDHCPFingerprint,
 		},
@@ -166,21 +162,7 @@ func (s *Server) handleLookupDHCPFingerprint(_ context.Context, req mcplib.CallT
 		"fingerprint": fp,
 		"vendor":      vendor,
 	}
-	if local := resolvers.LookupDHCPFingerprintLocal(fp); local != "" {
-		out["local"] = local
-	}
-	// LookupDHCPFingerprint also tries Fingerbank when an API key is set
-	// (INIT_DHCPFINGERPRINT_API_KEY env). Honour AllowNetwork to gate
-	// the outbound call to match lookup_cve's posture.
-	if s.cve != nil && s.cve.enabled { // cve.enabled mirrors AllowNetwork
-		res, ferr := resolvers.LookupDHCPFingerprint(fp, vendor, nil)
-		if ferr != nil {
-			out["error"] = ferr.Error()
-		} else if res != nil {
-			out["result"] = res
-		}
-	} else {
-		out["note"] = "Network disabled; only local-DB match returned. Pass --allow-fetch to enable Fingerbank."
-	}
+	out["disabled"] = true
+	out["note"] = resolvers.ErrDHCPEnrichmentDisabled.Error()
 	return jsonResult(out), nil
 }

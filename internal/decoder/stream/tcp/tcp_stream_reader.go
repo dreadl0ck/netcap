@@ -47,16 +47,14 @@ func SetLogger(l *zap.Logger) {
 // this structure has an optimized field order to avoid excessive padding.
 type tcpStreamReader struct {
 	sync.Mutex
-	serviceBanner      bytes.Buffer
-	data               core.DataFragments
-	ident              string
-	parent             *tcpConnection
-	numBytes           int
-	dataChan           chan *core.StreamData
-	serviceBannerBytes int
-	hexdump            bool
-	isClient           bool
-	saved              bool
+	data     core.DataFragments
+	ident    string
+	parent   *tcpConnection
+	numBytes int
+	dataChan chan *core.StreamData
+	hexdump  bool
+	isClient bool
+	saved    bool
 }
 
 func (t *tcpConnection) newTCPStreamReader(client bool) *tcpStreamReader {
@@ -211,22 +209,28 @@ func (t *tcpStreamReader) ServiceBanner() []byte {
 	t.parent.Lock()
 	defer t.parent.Unlock()
 
-	if t.serviceBanner.Len() == 0 {
-		// Save ONLY the first server packet for banner identification
-		// Nmap service probes are designed to match against the initial server greeting,
-		// not the entire conversation including responses to client commands.
-		// This stores up to BannerSize bytes from the FIRST server packet only.
-		dataSlice := t.parent.server.DataSlice()
-		if len(dataSlice) > 0 {
-			// Extract only from the first packet
-			firstPacket := dataSlice[0].Raw()
-			limit := min(len(firstPacket), decoderconfig.Instance.BannerSize)
-			t.serviceBanner.Write(firstPacket[:limit])
-			t.serviceBannerBytes = limit
+	return contiguousServicePrefix(t.parent.server.DataSlice(), decoderconfig.Instance.BannerSize)
+}
+
+// A greeting can span deliveries, but bytes after a capture gap cannot complete it.
+func contiguousServicePrefix(data core.DataFragments, limit int) []byte {
+	limit = min(limit, 8192)
+	if limit <= 0 {
+		return nil
+	}
+	var prefix []byte
+	for _, fragment := range data {
+		d, ok := fragment.(*core.StreamData)
+		if !ok || d.SkippedBytes != 0 {
+			break
+		}
+		n := min(len(d.Raw()), limit-len(prefix))
+		prefix = append(prefix, d.Raw()[:n]...)
+		if len(prefix) == limit {
+			break
 		}
 	}
-
-	return t.serviceBanner.Bytes()
+	return prefix
 }
 
 // Run starts reading TCP traffic in a single direction.

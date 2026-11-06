@@ -83,11 +83,11 @@ const DIRECT_NAVIGATION_ITEMS = [
     description: 'Configure Deep Packet Inspection modules.',
   },
   {
-    path: '/probes',
-    label: 'Service Probes',
+    path: '/service-signatures',
+    label: 'Service Signatures',
     icon: <SearchIcon />,
     placement: 'system-before-bpf' as const,
-    description: 'Manage nmap service probes for service fingerprinting.',
+    description: 'Inspect read-only protocol signatures, source evidence and capture coverage.',
   },
 ];
 

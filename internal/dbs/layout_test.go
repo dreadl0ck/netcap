@@ -1,7 +1,6 @@
 package dbs
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -9,8 +8,7 @@ import (
 	"testing"
 )
 
-// The v0.10 server must keep serving the frozen bleve revision to old
-// clients on the original routes while new clients use /dbs/v2/.
+// Legacy metadata and archive bodies are retired after v3 is ready.
 func TestLegacyAndLayoutRoutesAreSeparate(t *testing.T) {
 	s := newTestServer(t)
 	s.legacyDir = filepath.Join(s.buildDir, "dbs")
@@ -35,10 +33,7 @@ func TestLegacyAndLayoutRoutesAreSeparate(t *testing.T) {
 	}
 	s.currentDate = "2026-10-05"
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/dbs/"+layoutPrefix+"/", s.handleDownload)
-	mux.HandleFunc("/dbs/"+layoutPrefix+"/latest", s.handleLatest)
-	mux.HandleFunc("/dbs/", s.handleLegacy)
+	mux := s.Handler()
 
 	get := func(path string) *httptest.ResponseRecorder {
 		rec := httptest.NewRecorder()
@@ -46,27 +41,14 @@ func TestLegacyAndLayoutRoutesAreSeparate(t *testing.T) {
 		return rec
 	}
 
-	var meta map[string]any
-	if err := json.Unmarshal(get("/dbs/latest").Body.Bytes(), &meta); err != nil || meta["version"] != "2026-10-04" {
-		t.Fatalf("legacy latest: %v %v", meta, err)
+	if rec := get("/dbs/latest"); rec.Code != 503 {
+		t.Fatalf("unready legacy route: %d", rec.Code)
 	}
-	if rec := get("/dbs/latest"); rec.Header().Get("Deprecation") != "true" {
-		t.Error("legacy route not marked deprecated")
-	}
-	if body := get("/dbs/2026-10-04.tar.gz").Body.String(); body != "bleve" {
-		t.Errorf("legacy tarball: %q", body)
-	}
-	if err := json.Unmarshal(get("/dbs/v2/latest").Body.Bytes(), &meta); err != nil || meta["version"] != "2026-10-05" {
-		t.Fatalf("v2 latest: %v %v", meta, err)
-	}
-	if body := get("/dbs/v2/2026-10-05.tar.gz").Body.String(); body != "sqlite" {
-		t.Errorf("v2 tarball: %q", body)
-	}
-	if code := get("/dbs/v2/2026-10-04.tar.gz").Code; code != http.StatusNotFound {
-		t.Errorf("v2 served a legacy tarball: %d", code)
-	}
-	if code := get("/dbs/v2/2026-10-05.json").Code; code != http.StatusNotFound {
-		t.Errorf("non-tarball served: %d", code)
+	s.ready.Store(true)
+	for _, path := range []string{"/dbs/latest", "/dbs/list", "/dbs/2026-10-04.tar.gz", "/dbs/v2/latest", "/dbs/v2/2026-10-05.tar.gz"} {
+		if rec := get(path); rec.Code != 410 {
+			t.Fatalf("retired %s: %d", path, rec.Code)
+		}
 	}
 }
 
@@ -86,7 +68,7 @@ func TestFetchMetadataRejectsOldServer(t *testing.T) {
 
 func TestFetchMetadataRejectsOtherSchema(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte(`{"version":"x","layout":2,"vulndb_schema":99}`))
+		w.Write([]byte(`{"version":"x","layout":3,"vulndb_schema":99}`))
 	}))
 	defer srv.Close()
 	if _, err := fetchMetadata(srv.URL); err == nil || !contains(err.Error(), "schema 99") {

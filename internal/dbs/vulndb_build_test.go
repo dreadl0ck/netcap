@@ -39,12 +39,12 @@ func writeGz(t *testing.T, path, content string) {
 func TestBuildVulnDBFromFeeds(t *testing.T) {
 	build, out := t.TempDir(), t.TempDir()
 	year := time.Now().Year()
-	// only the newest year exists: older years are logged and skipped
+	// Every required year must exist. Stale exploit CSVs are not indexed.
 	writeGz(t, filepath.Join(build, "nvdcve-2.0-"+strconv.Itoa(year)+".json.gz"), nvdFixture)
 	if err := os.WriteFile(filepath.Join(build, "files_exploits.csv"), []byte(exploitFixture), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := BuildVulnDB(build, out, year-2, false); err != nil {
+	if err := BuildVulnDB(build, out, year, false); err != nil {
 		t.Fatal(err)
 	}
 	d, err := vulndb.Open(filepath.Join(out, vulndb.FileName))
@@ -53,7 +53,7 @@ func TestBuildVulnDBFromFeeds(t *testing.T) {
 	}
 	defer d.Close()
 	meta, _ := d.Meta()
-	if meta["nvd_count"] != "2" || meta["exploit_count"] != "1" {
+	if meta["nvd_count"] != "2" || meta["exploit_count"] != "0" {
 		t.Fatalf("meta %v", meta)
 	}
 	v, err := d.Vulnerabilities("Apache", "HTTP Server", "2.4.49")
@@ -65,7 +65,7 @@ func TestBuildVulnDBFromFeeds(t *testing.T) {
 		t.Fatalf("description version: %+v", v)
 	}
 	e, err := d.Exploits("Apache", "", "2.4.49")
-	if err != nil || len(e) != 1 || e[0].Date != "2021-10-06" || e[0].Author != "Lucas Souza" {
+	if err != nil || len(e) != 0 {
 		t.Fatalf("%+v %v", e, err)
 	}
 }

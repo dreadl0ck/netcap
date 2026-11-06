@@ -78,6 +78,7 @@ export function AppRoutes() {
         <Route path="/logs" element={<LogsPage />} />
         <Route path="/pcaps" element={<PcapsPage />} />
         <Route path="/probes" element={<ProbesPage />} />
+        <Route path="/service-signatures" element={<ProbesPage />} />
         <Route path="/protobuf" element={<ProtobufPage />} />
         <Route path="/records" element={<RecordsPage />} />
         <Route path="/rules" element={<RulesPage />} />

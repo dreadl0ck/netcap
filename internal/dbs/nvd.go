@@ -74,7 +74,8 @@ type nvdCVE struct {
 		} `json:"nodes"`
 	} `json:"configurations"`
 	References []struct {
-		URL    string `json:"url"`
-		Source string `json:"source"`
+		URL    string   `json:"url"`
+		Source string   `json:"source"`
+		Tags   []string `json:"tags"`
 	} `json:"references"`
 }

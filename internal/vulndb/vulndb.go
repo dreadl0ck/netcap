@@ -28,10 +28,12 @@ package vulndb
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -57,6 +59,7 @@ const (
 const schema = `
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE nvd (
+	nvd_rowid INTEGER PRIMARY KEY,
 	id TEXT NOT NULL UNIQUE,
 	description TEXT NOT NULL,
 	severity TEXT NOT NULL,
@@ -70,11 +73,18 @@ CREATE TABLE nvd (
 	base_severity TEXT NOT NULL
 );
 CREATE TABLE nvd_versions (
-	nvd_rowid INTEGER NOT NULL REFERENCES nvd(rowid),
+	nvd_rowid INTEGER NOT NULL REFERENCES nvd(nvd_rowid),
 	version TEXT NOT NULL,
 	PRIMARY KEY (version, nvd_rowid)
 ) WITHOUT ROWID;
 CREATE VIRTUAL TABLE nvd_fts USING fts5(description, content='nvd', content_rowid='rowid', tokenize='unicode61');
+CREATE TABLE nvd_references (
+	nvd_id TEXT NOT NULL REFERENCES nvd(id),
+	url TEXT NOT NULL,
+	source TEXT NOT NULL,
+	tags TEXT NOT NULL,
+	PRIMARY KEY (nvd_id, url, source)
+) WITHOUT ROWID;
 CREATE TABLE exploits (
 	id TEXT NOT NULL UNIQUE,
 	file TEXT NOT NULL,
@@ -102,6 +112,7 @@ type Vulnerability struct {
 	BaseScore             float64
 	BaseSeverity          string
 	Versions              []string
+	References            []Reference `json:"references"`
 }
 
 // Exploit is one Exploit-DB entry. File is relative to the exploitdb folder.
@@ -139,8 +150,9 @@ func MatchExpr(terms ...string) string {
 
 // DB is a read-only handle.
 type DB struct {
-	db   *sql.DB
-	path string
+	db         *sql.DB
+	path       string
+	references bool
 }
 
 // ErrSchema reports a file that is not a netcap.sqlite of this schema.
@@ -168,6 +180,14 @@ func Open(path string) (*DB, error) {
 	if meta["format"] != Format || meta["schema_version"] != fmt.Sprint(SchemaVersion) {
 		conn.Close()
 		return nil, fmt.Errorf("%w: %s has format=%q schema_version=%q, want %q %d", ErrSchema, path, meta["format"], meta["schema_version"], Format, SchemaVersion)
+	}
+	if meta["nvd_references_version"] == "1" {
+		var count int
+		if err := conn.QueryRow(`SELECT count(*) FROM sqlite_master WHERE type='table' AND name='nvd_references'`).Scan(&count); err != nil {
+			conn.Close()
+			return nil, err
+		}
+		d.references = count == 1
 	}
 	return d, nil
 }
@@ -226,7 +246,19 @@ LIMIT ?3`, match, version, MaxHits)
 		}
 		out = append(out, v)
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	for i := range out {
+		out[i].References, err = d.References(out[i].ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
 }
 
 // Exploits returns Exploit-DB entries whose description contains every
@@ -260,15 +292,16 @@ LIMIT ?2`, match, MaxHits)
 // Builder writes a new database to a temporary file and publishes it with a
 // rename on Finish, so readers never see a partial file.
 type Builder struct {
-	db       *sql.DB
-	tx       *sql.Tx
-	tmp      string
-	path     string
-	nvd      *sql.Stmt
-	versions *sql.Stmt
-	exploit  *sql.Stmt
-	meta     map[string]string
-	counts   [2]int
+	db        *sql.DB
+	tx        *sql.Tx
+	tmp       string
+	path      string
+	nvd       *sql.Stmt
+	versions  *sql.Stmt
+	reference *sql.Stmt
+	exploit   *sql.Stmt
+	meta      map[string]string
+	counts    [2]int
 }
 
 // Create starts a build of path.
@@ -282,7 +315,7 @@ func Create(path string) (*Builder, error) {
 	if err != nil {
 		return nil, err
 	}
-	conn, err := sql.Open("sqlite", "file:"+filepath.ToSlash(abs)+"?_pragma=journal_mode(OFF)&_pragma=synchronous(OFF)")
+	conn, err := sql.Open("sqlite", "file:"+filepath.ToSlash(abs)+"?_pragma=journal_mode(OFF)&_pragma=synchronous(OFF)&_pragma=foreign_keys(ON)")
 	if err != nil {
 		return nil, err
 	}
@@ -308,6 +341,9 @@ func (b *Builder) init() (err error) {
 		return err
 	}
 	if b.versions, err = b.tx.Prepare(`INSERT OR IGNORE INTO nvd_versions (nvd_rowid, version) VALUES (?, ?)`); err != nil {
+		return err
+	}
+	if b.reference, err = b.tx.Prepare(`INSERT INTO nvd_references (nvd_id,url,source,tags) VALUES (?,?,?,?)`); err != nil {
 		return err
 	}
 	b.exploit, err = b.tx.Prepare(`INSERT INTO exploits (id, file, description, date, author, type, platform, port)
@@ -340,6 +376,15 @@ func (b *Builder) AddVulnerability(v Vulnerability) error {
 			return err
 		}
 	}
+	for _, ref := range NormalizeReferences(v.References) {
+		tags, err := json.Marshal(ref.Tags)
+		if err != nil {
+			return err
+		}
+		if _, err := b.reference.Exec(v.ID, ref.URL, ref.Source, string(tags)); err != nil {
+			return err
+		}
+	}
 	b.counts[0]++
 	return nil
 }
@@ -363,15 +408,23 @@ func (b *Builder) Counts() (vulnerabilities, exploits int) { return b.counts[0],
 func (b *Builder) Finish() error {
 	b.meta["format"] = Format
 	b.meta["schema_version"] = fmt.Sprint(SchemaVersion)
+	b.meta["nvd_references_version"] = "1"
+	b.meta["nvd_rowid_alias_version"] = "1"
 	b.meta["nvd_count"] = fmt.Sprint(b.counts[0])
 	b.meta["exploit_count"] = fmt.Sprint(b.counts[1])
-	for k, v := range b.meta {
+	keys := make([]string, 0, len(b.meta))
+	for k := range b.meta {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		v := b.meta[k]
 		if _, err := b.tx.Exec(`INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)`, k, v); err != nil {
 			b.Abort()
 			return err
 		}
 	}
-	for _, s := range []*sql.Stmt{b.nvd, b.versions, b.exploit} {
+	for _, s := range []*sql.Stmt{b.nvd, b.versions, b.reference, b.exploit} {
 		s.Close()
 	}
 	steps := []string{

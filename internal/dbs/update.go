@@ -6,11 +6,8 @@
 
 package dbs
 
-import "log"
-
-// UpdateDBs installs the current community archive without replacing user-local GeoLite2 files.
-func UpdateDBs() {
-	if err := DownloadDBsWithProgress("", true, nil); err != nil {
-		log.Printf("database update failed: %v", err)
-	}
+// UpdateDBs installs a verified managed release, preserving ambient data only
+// in an inactive backup directory.
+func UpdateDBs() error {
+	return DownloadDBsWithProgress("", false, nil)
 }

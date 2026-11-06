@@ -1,5 +1,3 @@
-//go:build !hyperscan
-
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
@@ -61,20 +59,8 @@ type HyperscanStatus struct {
 	Categories    []HyperscanCategory `json:"categories,omitempty"`
 }
 
-// buildServiceProbeHSIndex is a no-op without the hyperscan build tag.
-func buildServiceProbeHSIndex() {}
-
-// hsCandidatesForCategory returns nil so matchProbes falls back to the
-// linear RE2/regexp2 scan over all probes.
-//
-// Returning nil (rather than an empty map) is meaningful: matchProbes treats
-// a nil map as "no prefilter available" and skips the membership check.
-func hsCandidatesForCategory(_ string, _ []*serviceProbe, _ []byte) map[int]struct{} {
-	return nil
-}
-
 // GetHyperscanStatus reports the integration as compiled-out so UI surfaces
 // can render a clear "disabled" badge instead of guessing.
 func GetHyperscanStatus() HyperscanStatus {
-	return HyperscanStatus{Enabled: false, LibVersion: "disabled"}
+	return HyperscanStatus{Enabled: false, LibVersion: "bounded-protocol-parsers"}
 }

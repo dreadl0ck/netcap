@@ -20,8 +20,6 @@
 package dbs
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -31,12 +29,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
-	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/env"
-	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/vulndb"
 	"github.com/dustin/go-humanize"
 )
@@ -48,14 +43,17 @@ const (
 
 // DBMetadata represents metadata about a database version
 type DBMetadata struct {
-	Version      string `json:"version"`
-	CreatedAt    string `json:"created_at"`
-	Tarball      string `json:"tarball"`
-	NVDStartYear int    `json:"nvd_start_year"`
-	Layout       int    `json:"layout"`
-	VulnDBSchema int    `json:"vulndb_schema"`
-	SHA256       string `json:"sha256"`
-	Size         int64  `json:"size"`
+	Version                string `json:"version"`
+	CreatedAt              string `json:"created_at"`
+	Tarball                string `json:"tarball"`
+	NVDStartYear           int    `json:"nvd_start_year"`
+	Layout                 int    `json:"layout"`
+	VulnDBSchema           int    `json:"vulndb_schema"`
+	SHA256                 string `json:"sha256"`
+	Size                   int64  `json:"size"`
+	ManifestSHA256         string `json:"manifest_sha256,omitempty"`
+	ApprovalRegistrySHA256 string `json:"approval_registry_sha256"`
+	NVDEndYear             int    `json:"nvd_end_year"`
 }
 
 // installedVersion is what .db-version records, so a layout-1 revision of the
@@ -96,134 +94,6 @@ func DownloadDBs(serverURL string, force bool) error {
 	return DownloadDBsWithProgress(serverURL, force, nil)
 }
 
-// DownloadDBsWithProgress is DownloadDBs with progress reporting.
-//
-// onProgress may be nil, in which case this behaves exactly like DownloadDBs.
-// Progress exists because this download is the first thing a new install must
-// do and it moves ~91 MB: without it the GUI can only show a spinner that
-// cannot be distinguished from a stall.
-func DownloadDBsWithProgress(serverURL string, force bool, onProgress ProgressFunc) error {
-	report := func(p DownloadProgress) {
-		if onProgress != nil {
-			onProgress(p)
-		}
-	}
-
-	// Get server URL from environment or use default
-	if serverURL == "" {
-		serverURL = os.Getenv(env.NetcapDBsURL)
-		if serverURL == "" {
-			serverURL = defaultDBsURL
-		}
-	}
-
-	log.Printf("Downloading databases from %s", serverURL)
-	report(DownloadProgress{Stage: StageMetadata, Message: "Checking for the latest database version"})
-
-	// Fetch metadata about the latest version
-	metadata, err := fetchMetadata(serverURL)
-	if err != nil {
-		return fmt.Errorf("failed to fetch database metadata: %w", err)
-	}
-
-	log.Printf("Latest database version: %s (created: %s)", metadata.Version, metadata.CreatedAt)
-
-	// Check if we already have this version
-	versionFile := filepath.Join(resolvers.ConfigRootPath, ".db-version")
-	if !force {
-		if data, err := os.ReadFile(versionFile); err == nil {
-			currentVersion := string(data)
-			if currentVersion == metadata.installedVersion() {
-				log.Printf("Already have the latest version (%s), skipping download", metadata.Version)
-				report(DownloadProgress{
-					Stage:   StageCompleted,
-					Version: metadata.Version,
-					Percent: 100,
-					Message: "Databases are already up to date",
-				})
-
-				return nil
-			}
-		}
-	}
-
-	// Create directories
-	if err := os.MkdirAll(resolvers.ConfigRootPath, defaults.DirectoryPermission); err != nil {
-		return fmt.Errorf("failed to create config directory: %w", err)
-	}
-	if err := os.MkdirAll(resolvers.DataBaseFolderPath, defaults.DirectoryPermission); err != nil {
-		return fmt.Errorf("failed to create database directory: %w", err)
-	}
-
-	// Download the tarball
-	tarballURL := fmt.Sprintf("%s/dbs/%s/%s", serverURL, layoutPrefix, filepath.Base(metadata.Tarball))
-	tempTarball := filepath.Join(resolvers.ConfigRootPath, "dbs-download.tar.gz")
-
-	log.Printf("Downloading database tarball to: %s", tempTarball)
-	start := time.Now()
-
-	err = downloadFileWithProgress(tarballURL, tempTarball, func(downloaded, total int64) {
-		var percent float64
-		if total > 0 {
-			percent = float64(downloaded) / float64(total) * 100
-		}
-
-		report(DownloadProgress{
-			Stage:      StageDownload,
-			Version:    metadata.Version,
-			Downloaded: downloaded,
-			Total:      total,
-			Percent:    percent,
-			Message:    downloadMessage(downloaded, total),
-		})
-	})
-	if err != nil {
-		return fmt.Errorf("failed to download database tarball: %w", err)
-	}
-
-	// Get file size for reporting
-	stat, _ := os.Stat(tempTarball)
-	log.Printf("Downloaded %s in %v to: %s", humanize.Bytes(uint64(stat.Size())), time.Since(start), tempTarball)
-
-	if err := verifySHA256(tempTarball, metadata.SHA256); err != nil {
-		os.Remove(tempTarball)
-		return err
-	}
-
-	// Extract the tarball
-	log.Printf("Extracting databases to: %s", resolvers.DataBaseFolderPath)
-	report(DownloadProgress{
-		Stage:   StageExtract,
-		Version: metadata.Version,
-		Percent: 100,
-		Message: "Extracting databases",
-	})
-
-	if err := extractTarball(tempTarball, resolvers.DataBaseFolderPath); err != nil {
-		return fmt.Errorf("failed to extract database tarball: %w", err)
-	}
-
-	// Clean up temporary tarball
-	os.Remove(tempTarball)
-
-	warnLegacyIndexes(resolvers.DataBaseFolderPath)
-
-	// Save version file
-	if err := os.WriteFile(versionFile, []byte(metadata.installedVersion()), defaults.FilePermission); err != nil {
-		log.Printf("Warning: failed to write version file: %v", err)
-	}
-
-	log.Printf("Successfully downloaded and installed databases to: %s (version: %s)", resolvers.DataBaseFolderPath, metadata.Version)
-	report(DownloadProgress{
-		Stage:   StageCompleted,
-		Version: metadata.Version,
-		Percent: 100,
-		Message: "Databases installed",
-	})
-
-	return nil
-}
-
 func downloadMessage(downloaded, total int64) string {
 	if total > 0 {
 		return fmt.Sprintf("Downloading %s of %s",
@@ -252,12 +122,19 @@ func fetchMetadata(serverURL string) (*DBMetadata, error) {
 		return nil, fmt.Errorf("%s serves no layout %d databases; it predates netcap v0.10 (point NETCAP_DBS_URL at an upgraded server or use -generate-dbs)", serverURL, Layout)
 	}
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return nil, fmt.Errorf("server returned status %s for %s: %s", resp.Status, url, string(body))
 	}
 
 	var metadata DBMetadata
-	if err := json.NewDecoder(resp.Body).Decode(&metadata); err != nil {
+	body, err := io.ReadAll(io.LimitReader(resp.Body, (1<<20)+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(body) > 1<<20 {
+		return nil, fmt.Errorf("oversized release metadata")
+	}
+	if err := decodeJSON(body, &metadata); err != nil {
 		return nil, fmt.Errorf("failed to decode metadata: %w", err)
 	}
 	if metadata.Layout != Layout {
@@ -265,6 +142,9 @@ func fetchMetadata(serverURL string) (*DBMetadata, error) {
 	}
 	if metadata.VulnDBSchema != vulndb.SchemaVersion {
 		return nil, fmt.Errorf("%s announced %s schema %d, this netcap reads schema %d", url, vulndb.FileName, metadata.VulnDBSchema, vulndb.SchemaVersion)
+	}
+	if err := validateV3Metadata(&metadata); err != nil {
+		return nil, err
 	}
 
 	return &metadata, nil
@@ -290,22 +170,19 @@ func verifySHA256(path, want string) error {
 	return nil
 }
 
-// warnLegacyIndexes points at bleve indexes from netcap < v0.10, which are
-// no longer read but can hold several GB.
-func warnLegacyIndexes(dir string) {
-	for _, name := range []string{"nvd.bleve", "exploit-db.bleve", "mitre-cve.bleve"} {
-		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
-			log.Printf("Note: %s is a netcap < v0.10 index and is no longer used; remove it to free space", filepath.Join(dir, name))
-		}
-	}
-}
-
 // downloadFile downloads a file from a URL to a local path with progress reporting
 func downloadFile(url, filepath string) error {
 	return downloadFileWithProgress(url, filepath, nil)
 }
 
 func downloadFileWithProgress(url, filepath string, onProgress func(downloaded, total int64)) error {
+	return downloadFileWithLimit(url, filepath, maxReleaseBytes, onProgress)
+}
+
+func downloadFileWithLimit(url, filepath string, limit int64, onProgress func(downloaded, total int64)) error {
+	if limit <= 0 || limit > maxReleaseBytes {
+		return fmt.Errorf("invalid download size limit")
+	}
 	// Create the file
 	out, err := os.Create(filepath)
 	if err != nil {
@@ -329,8 +206,11 @@ func downloadFileWithProgress(url, filepath string, onProgress func(downloaded, 
 
 	// Check server response
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return fmt.Errorf("bad status %s for %s: %s", resp.Status, url, string(body))
+	}
+	if resp.ContentLength > limit {
+		return fmt.Errorf("download exceeds announced release size")
 	}
 
 	// Create a progress writer
@@ -345,9 +225,15 @@ func downloadFileWithProgress(url, filepath string, onProgress func(downloaded, 
 	writer := io.MultiWriter(out, progressWriter)
 
 	// Write the body to file
-	_, err = io.Copy(writer, resp.Body)
+	n, err := io.Copy(writer, io.LimitReader(resp.Body, limit+1))
 	if err != nil {
 		return fmt.Errorf("failed to write downloaded data: %w", err)
+	}
+	if n > limit {
+		return fmt.Errorf("download exceeds release size limit")
+	}
+	if err := out.Sync(); err != nil {
+		return err
 	}
 
 	// Final progress report. Emit one last observation so a consumer that
@@ -356,7 +242,7 @@ func downloadFileWithProgress(url, filepath string, onProgress func(downloaded, 
 	progressWriter.reportNow()
 	fmt.Println()
 
-	return nil
+	return out.Close()
 }
 
 // progressWriter tracks download progress
@@ -397,79 +283,6 @@ func (pw *progressWriter) reportNow() {
 	}
 }
 
-// extractTarball extracts a gzipped tarball to the target directory
-func extractTarball(tarballPath, targetDir string) error {
-	// Open the tarball
-	file, err := os.Open(tarballPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Create gzip reader
-	gzipReader, err := gzip.NewReader(file)
-	if err != nil {
-		return err
-	}
-	defer gzipReader.Close()
-
-	// Create tar reader
-	tarReader := tar.NewReader(gzipReader)
-
-	// Extract files
-	for {
-		header, err := tarReader.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-
-		// Strip leading "dbs/" directory if present to avoid nesting
-		// The tarball contains "dbs/file.json" but we're extracting to ".../dbs" already
-		targetPath := header.Name
-		if len(targetPath) > 4 && targetPath[:4] == "dbs/" {
-			targetPath = targetPath[4:]
-		}
-
-		// Skip if we stripped everything (was just "dbs/" directory entry)
-		if targetPath == "" {
-			continue
-		}
-
-		// Construct target path
-		target := filepath.Join(targetDir, targetPath)
-
-		// Ensure parent directory exists
-		if err := os.MkdirAll(filepath.Dir(target), defaults.DirectoryPermission); err != nil {
-			return err
-		}
-
-		// Handle different file types
-		switch header.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(target, os.FileMode(header.Mode)); err != nil {
-				return err
-			}
-		case tar.TypeReg:
-			outFile, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR|os.O_TRUNC, os.FileMode(header.Mode))
-			if err != nil {
-				return err
-			}
-			if _, err := io.Copy(outFile, tarReader); err != nil {
-				outFile.Close()
-				return err
-			}
-			outFile.Close()
-		default:
-			log.Printf("Warning: unknown file type %v in tar for %s", header.Typeflag, header.Name)
-		}
-	}
-
-	return nil
-}
-
 // ListAvailableVersions lists all available database versions from the server
 func ListAvailableVersions(serverURL string) error {
 	if serverURL == "" {
@@ -493,7 +306,7 @@ func ListAvailableVersions(serverURL string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return fmt.Errorf("server returned status %s for %s: %s", resp.Status, url, string(body))
 	}
 

@@ -1,5 +1,107 @@
 # DBs
 
+## Client installation
+
+```sh
+net util -download-dbs
+net util -update-dbs
+```
+
+The client bundles the reviewed community registry independently of downloaded
+archives. No credentials or trust environment variables are needed for the
+community release. `NC_CONFIG_ROOT` changes the installation root; the default
+is `~/.config/netcap`. A repeated download verifies the installed files and skips
+an unchanged release. `-download-dbs -force` forces replacement.
+
+Private publishers override both `NC_DBS_APPROVALS` and
+`NC_DBS_APPROVALS_SHA256`; partial or invalid overrides fail rather than falling
+back. Publishing and serving still require an explicit operator registry.
+`scripts/import-db-trust.py <registry> <independent-sha256>` updates the bundled
+registry for a reviewed client release. This is an exact-snapshot trust policy:
+a changed community registry requires a client release or explicit override.
+
+## Production deployment
+
+Verified 2026-11-06: `https://dbs.netcap.io/dbs/v3/latest` serves layout 3;
+legacy `/dbs/*` and `/dbs/v2/*` metadata and archives return HTTP 410.
+
+| Item | Value |
+| --- | --- |
+| Dokploy application | `ZrG0UFSYLc1AvaAu1nUE4`, swarm service `netcap-dbs-suxwnk` |
+| Runtime | Static `cmd/dbs-server` binary at `/srv/netcap-dbs-v3-runtime/netcap-dbs-server`, mounted under `/opt/netcap-dbs-v3`; Dokploy command overrides the legacy image's executable |
+| Binary SHA-256 | `cbb042fc64b17c0fe5baa8f0d2f5ea42db570d9fd61c57553b4fefe0123eb82d` |
+| Registry | `/srv/netcap-dbs-v3-runtime/approvals.json`, independently pinned in Dokploy args |
+| Registry SHA-256 | `b2a0f98dcd35e27f5cc8bfebf29db5896c07b955de5d7ba36b47143ccc78375d` |
+| Archive SHA-256 | `0834d6ace32ef46501ded18000bd811284ac8f8a339c7a85e9198a214f933e2c` |
+| Contents | NVD (420,062 records; 85,687 CVE-2026 IDs; 25 annual feeds, 2002–2026), DB-IP City/ASN, IANA, uap-core; zero Exploit-DB records |
+| Retained acquisition | `/srv/netcap-dbs-v3-candidates/candidate-1563188265`; published objects under `/srv/netcap-dbs-server/v3` |
+| Automation | Automatic deployment and nightly rebuilding disabled; fresh snapshots require review and registry rotation |
+
+The full public archive and the current Go client's installation were verified;
+SQLite integrity and foreign-key checks passed. Released v1/v2 clients still
+need a v3-capable release and trust provisioning. HASSH was skipped because its
+configured source is the retired repository. Package the mounted runtime into a
+versioned image before restoring automatic deployment; removing the command
+override would run the old publisher.
+
+## Layout 3 contract
+
+`V3Layout=3` and `VulnDBSchema=1` are defined in `v3_policy.go`. No production
+snapshot approvals ship with this implementation. A candidate is not a grant.
+
+| Surface | Contract |
+| --- | --- |
+| Build | `BuildCandidate(root, year)` uses a new private directory and requires every NVD year through the current year. It retains `SOURCE_CANDIDATE.json` for review. |
+| Review | `NC_DBS_APPROVALS` names a separate operator-controlled JSON array of `ReviewedSource` records, outside candidates/releases/caches. `NC_DBS_APPROVALS_SHA256` independently pins its exact bytes. Publication, startup and installation require that pin; a manifest cannot authorize itself. |
+| Evidence | Each review requires `decision: approved-for-publication`, opaque public reviewer/review IDs, RFC3339 review time, exact source evidence and exact output hashes/sizes. `SourceEvidence` binds origin, immutable revision/hash, transformation, `grant_origin`, `grant_revision`, complete `grant_text`/hash and copyright/notice text. No private review notes are part of the schema. |
+| Policy | `CandidateFiles()` is the positive allowlist. SQLite is required and must contain NVD entries and zero exploits. Unknown files, directories, symlinks and stale derived indexes fail publication. |
+| Publication | `PackV3(candidate, output, approvals)` verifies the complete archive before publishing `<sha256>.tar.gz` and immutable `<sha256>.json`, then atomically commits regular-file `latest.json`. Inputs and previous releases are retained. |
+| HTTP | `/dbs/v3/latest`, `/dbs/v3/list`, `/dbs/v3/<sha256>.json`, `/dbs/v3/<sha256>.tar.gz`. `version` equals archive SHA-256; metadata also binds `manifest_sha256`, `approval_registry_sha256`, size, NVD start/end years, layout and SQLite schema. |
+| Archive | Flat regular members only: reviewed files, `RELEASE_MANIFEST.json` (`Candidate`, `reviews`, `approval_registry_sha256`) and `DATABASE_NOTICES.txt` containing every complete supplied primary grant/notice with acquisition origin, revision and hash. Embedded reviews must exactly match the independently pinned registry. |
+| Startup | `net util --serve-dbs` validates cached v3 bodies before serving. No ambient import or automatic startup build. `NC_DBS_REBUILD=1` opts into nightly builds; `/health` exposes the last build error. |
+| Legacy | All v1/v2 metadata and download bodies return 410 once v3 is ready, otherwise 503. Files on disk are not pruned or repacked. |
+| Client | `DownloadDBsWithProgress` uses bundled community trust or an explicit operator registry/path pin, verifies into a new managed directory before switching `dbs`, and retains ambient data only in an inactive backup. `ManagedReleaseMetadata(dir)` uses the same trust gate for `dbs/.release.json`; the old root `.db-version` is not authoritative. |
+
+SQLite keeps schema 1 and its `built_at` key, with an empty value rather than
+inventing a reproducible timestamp. Release metadata supplies `created_at`;
+`input_sha256` binds the exact NVD feed inventory. Identical inputs rebuild to
+identical SQLite bytes (`TestV3SQLiteRebuildReproducesReviewedBytes`).
+`nvd_inputs` records every contiguous year with its primary feed URL, SHA-256
+and compressed size, in both SQLite metadata and `SourceEvidence`. Indexing
+reads private frozen copies; start/end-year claims are checked against that
+inventory and the pinned exact output review.
+
+For private publishers, supply the registry path and pin through operator configuration, never by
+copying a pin announced by a download. CLI equivalents are `--dbs-approvals`
+and `--dbs-approvals-sha256`, also supported by serving/downloading commands.
+
+```sh
+net util --generate-dbs --nvd-start-year 2002
+# Review the retained candidate and supply actual snapshot-specific records.
+net util --pack-dbs /path/to/candidate/dbs --dbs-output /path/to/server/v3 \
+  --dbs-approvals /path/to/reviewed-records.json \
+  --dbs-approvals-sha256 "$NC_DBS_APPROVALS_SHA256"
+# Equivalent wrapper; NETCAP_BIN may select the freshly built executable.
+zeus/scripts/pack-dbs.sh -d /path/to/candidate/dbs -o /path/to/server/v3 \
+  -a /path/to/reviewed-records.json --approvals-sha256 "$NC_DBS_APPROVALS_SHA256"
+```
+
+The wrapper performs no deployment or release cleanup. CMS, DHCP fingerprints,
+macaddress.io, Exploit-DB, Nmap, Alexa, JA3 corpora and GeoLite2 are not v3
+publication candidates. `CandidateFiles()` retains HASSH, UA regexes, IANA and
+DB-IP candidates without asserting snapshot clearance.
+Reviewed, independently authored `service-signatures.json` is optional, mapped
+to source ID `netcap-service-signatures` and validated by the runtime parser.
+There is no recurring approval policy: fresh or changed nightly bytes remain
+blocked until their exact snapshot/output records enter the operator registry;
+changing a registry also requires an independently configured new pin.
+The initial implementation trusts one registry identity at a time. Old artifact
+files are retained across rotation, but an archive bound to a different registry
+identity is not silently grandfathered into the new trust configuration.
+
+The material below describes the historical v1/v2 implementation and source
+inventory; use the layout-3 contract above for current operating instructions.
+
 ## Usage Options
 
 Users have three options for obtaining netcap databases:

@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -41,7 +40,7 @@ func dbipPayload(t *testing.T, kind, month string) []byte {
 }
 
 func TestDBIPBundleArchiveValidation(t *testing.T) {
-	for _, method := range []string{"generator", "server", "packer", "legacy-packer"} {
+	for _, method := range []string{"generator", "server", "packer"} {
 		t.Run(method, func(t *testing.T) {
 			root := t.TempDir()
 			dir := filepath.Join(root, "dbs")
@@ -59,10 +58,9 @@ func TestDBIPBundleArchiveValidation(t *testing.T) {
 			if err := ensureDBIP(dir, filepath.Join(root, "cache"), month, server.Client(), server.URL); err != nil {
 				t.Fatal(err)
 			}
-			if method != "legacy-packer" {
-				os.WriteFile(filepath.Join(dir, "netcap.sqlite"), []byte("fixture"), 0o644)
-			}
-			os.WriteFile(filepath.Join(dir, "GeoLite2-City.mmdb"), []byte("local data"), 0o644)
+			buildFixtureSQLite(t, dir)
+			approvals, _ := approveFixtureDirectory(t, dir)
+			t.Setenv("NC_DBS_APPROVALS", approvals)
 			build := func() ([]byte, error) {
 				var buf bytes.Buffer
 				switch method {
@@ -77,11 +75,11 @@ func TestDBIPBundleArchiveValidation(t *testing.T) {
 					}
 					return os.ReadFile(path)
 				default:
-					cmd := exec.Command("bash", "../../zeus/scripts/pack-dbs.sh", "-d", dir, "-o", root, "-v", "2026-10-05", "-D", "false")
-					if body, err := cmd.CombinedOutput(); err != nil {
-						return nil, fmt.Errorf("%s: %w", body, err)
+					meta, err := PackV3(dir, filepath.Join(root, "published"), approvals)
+					if err != nil {
+						return nil, err
 					}
-					return os.ReadFile(filepath.Join(root, "2026-10-05.tar.gz"))
+					return os.ReadFile(filepath.Join(root, "published", meta.Tarball))
 				}
 			}
 			body, err := build()
@@ -106,18 +104,16 @@ func TestDBIPBundleArchiveValidation(t *testing.T) {
 				seen[filepath.Base(h.Name)] = true
 			}
 			for _, file := range []string{"dbip-city-lite.mmdb", "dbip-asn-lite.mmdb", "geoip-sources.json"} {
-				if seen[file] != (method != "legacy-packer") {
+				if !seen[file] {
 					t.Fatalf("%s presence=%v", file, seen[file])
 				}
 			}
 			if seen["GeoLite2-City.mmdb"] {
 				t.Fatal("user data shipped")
 			}
-			if method != "legacy-packer" {
-				os.WriteFile(filepath.Join(dir, "dbip-city-lite.mmdb"), []byte("tampered"), 0o644)
-				if _, err := build(); err == nil {
-					t.Fatal("packer accepted modified DB-IP")
-				}
+			os.WriteFile(filepath.Join(dir, "dbip-city-lite.mmdb"), []byte("tampered"), 0o644)
+			if _, err := build(); err == nil {
+				t.Fatal("packer accepted modified DB-IP")
 			}
 		})
 	}

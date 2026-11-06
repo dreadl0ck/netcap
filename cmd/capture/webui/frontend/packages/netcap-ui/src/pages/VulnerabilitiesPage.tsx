@@ -24,7 +24,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   IconButton,
   Paper,
   Table,
@@ -52,7 +51,6 @@ import {
   Warning as WarningIcon,
   Security as SecurityIcon,
   Computer as ComputerIcon,
-  Code as CodeIcon,
   TableChart as TableChartIcon,
   BarChart as BarChartIcon,
   Apps as AppsIcon,
@@ -64,14 +62,13 @@ import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
 import SearchInput from '../components/SearchInput';
 import ResponsiveDataView from '../components/ResponsiveDataView';
+import VulnerabilityReferences, { type VulnerabilityReference } from '../components/VulnerabilityReferences';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
-import { formatBytes, getBackendUrl } from '../lib/api';
+import { getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 import { ChartFrame } from '../components/ChartFrame';
 interface SoftwareInfo {
@@ -92,6 +89,7 @@ interface VulnerabilitySummary {
   count: number;
   software: SoftwareInfo | null;
   affected: number;
+  references?: VulnerabilityReference[];
   communityIds: string[]; // Community IDs for cross-tool correlation
 }
 
@@ -141,7 +139,6 @@ export default function VulnerabilitiesPage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<string>('count');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [exploitCode, setExploitCode] = useState<{[key: string]: {content: string, language: string, loading: boolean, error?: string}}>({});
   const [viewMode, setViewMode] = useViewMode();
 
   // Fetch status and input files
@@ -342,45 +339,6 @@ export default function VulnerabilitiesPage() {
     }
   }, [router]);
 
-  const fetchExploitCode = async (exploitId: string, filePath: string) => {
-    // If already loaded, don't fetch again
-    if (exploitCode[exploitId]) {
-      return;
-    }
-
-    // Set loading state
-    setExploitCode(prev => ({
-      ...prev,
-      [exploitId]: { content: '', language: 'text', loading: true }
-    }));
-
-    try {
-      const response = await fetch(`${getBackendUrl()}/api/vulnerabilities/exploit-file?file=${encodeURIComponent(filePath)}`);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: response.statusText }));
-        const errorMessage = errorData.error || `Failed to fetch exploit file: ${response.statusText}`;
-        const hint = errorData.hint || '';
-        throw new Error(hint ? `${errorMessage}\n${hint}` : errorMessage);
-      }
-      const data = await response.json();
-      setExploitCode(prev => ({
-        ...prev,
-        [exploitId]: { content: data.content, language: data.language, loading: false }
-      }));
-    } catch (error) {
-      console.error('Error fetching exploit code:', error);
-      setExploitCode(prev => ({
-        ...prev,
-        [exploitId]: { 
-          content: '', 
-          language: 'text', 
-          loading: false, 
-          error: error instanceof Error ? error.message : 'Failed to load exploit code'
-        }
-      }));
-    }
-  };
-
   // Use shared FileSelectorHeader component
   const fileSelector = (
     <FileSelectorHeader
@@ -571,6 +529,7 @@ export default function VulnerabilitiesPage() {
                         Affected: {row.affected}
                       </Typography>
                     </Box>
+                    <VulnerabilityReferences references={row.references} />
                   </Box>
                 )}
                 {tabValue === 1 && (
@@ -766,6 +725,7 @@ export default function VulnerabilitiesPage() {
                                       {row.description}
                                     </Typography>
                                   </Box>
+                                  <VulnerabilityReferences references={row.references} />
                                   <Grid container spacing={2}>
                                     <Grid item xs={12} md={6}>
                                       <Card variant="outlined" sx={{ p: 2 }}>
@@ -1115,54 +1075,7 @@ export default function VulnerabilitiesPage() {
                                     )}
                                     {row.file && (
                                       <Grid item xs={12}>
-                                        <Card variant="outlined" sx={{ p: 2, mt: 2 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                          <Typography variant="subtitle2">
-                                            Exploit POC Code
-                                          </Typography>
-                                          {!exploitCode[row.id] && (
-                                            <Button
-                                              size="small"
-                                              startIcon={<CodeIcon />}
-                                              onClick={() => fetchExploitCode(row.id, row.file)}
-                                              variant="outlined"
-                                            >
-                                              Load Code
-                                            </Button>
-                                          )}
-                                        </Box>
-                                        {exploitCode[row.id]?.loading && (
-                                          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                                            <CircularProgress size={24} />
-                                          </Box>
-                                        )}
-                                        {exploitCode[row.id]?.error && (
-                                          <Alert severity="warning">
-                                            <Typography variant="body2" component="div" sx={{ whiteSpace: 'pre-line' }}>
-                                              {exploitCode[row.id].error}
-                                            </Typography>
-                                          </Alert>
-                                        )}
-                                        {exploitCode[row.id]?.content && (
-                                          <Box sx={{ 
-                                            maxHeight: 600, 
-                                            overflow: 'auto',
-                                            '& pre': {
-                                              margin: 0,
-                                              fontSize: '0.85rem',
-                                            }
-                                          }}>
-                                            <SyntaxHighlighter
-                                              language={exploitCode[row.id].language}
-                                              style={tomorrow}
-                                              showLineNumbers
-                                              wrapLines
-                                            >
-                                              {exploitCode[row.id].content}
-                                            </SyntaxHighlighter>
-                                          </Box>
-                                        )}
-                                        </Card>
+                                        <Alert severity="info">Exploit payload delivery is retired. NVD external references provide link metadata only.</Alert>
                                       </Grid>
                                     )}
                                   </Grid>

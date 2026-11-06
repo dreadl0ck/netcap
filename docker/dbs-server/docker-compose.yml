@@ -11,9 +11,17 @@ services:
       - "8080"
     volumes:
       - netcap-dbs-data:/data
+      - type: bind
+        source: ${NC_DBS_APPROVALS:?Set NC_DBS_APPROVALS to an absolute regular operator registry file}
+        target: /run/netcap-trust/approvals.json
+        read_only: true
+        bind:
+          create_host_path: false
     environment:
       - NC_CONFIG_ROOT=/data/netcap-dbs-server
       - NETCAP_DBS_URL=http://localhost:8080
+      - NC_DBS_APPROVALS=/run/netcap-trust/approvals.json
+      - NC_DBS_APPROVALS_SHA256=${NC_DBS_APPROVALS_SHA256:?Set NC_DBS_APPROVALS_SHA256 to the independently obtained registry pin}
       - TZ=UTC
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -31,4 +39,3 @@ volumes:
 networks:
   netcap:
     driver: bridge
-

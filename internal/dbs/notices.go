@@ -14,6 +14,8 @@ var databaseNotices []byte
 func excludedFromDistribution(name string) bool {
 	name = filepath.Base(name)
 	return name == "nmap-service-probes" || name == "domain-whitelist.csv" ||
+		name == "cmsdb.json" || name == "dhcp-fingerprints.json" || name == "macaddress.io-db.json" ||
+		name == "exploitdb" || name == "files_exploits.csv" || strings.HasSuffix(name, ".bleve") ||
 		(strings.HasPrefix(name, "GeoLite2-") && strings.HasSuffix(name, ".mmdb"))
 }
 

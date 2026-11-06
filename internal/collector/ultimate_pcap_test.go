@@ -103,10 +103,6 @@ func TestUltimatePCAPProcess(t *testing.T) {
 	}
 	input := os.Getenv("NETCAP_ULTIMATE_INPUT")
 	dbs := t.TempDir()
-	probes := "Probe TCP NULL q||\nmatch http m|^HTTP/1\\.[01] [0-9]{3}| p/Synthetic HTTP/\n"
-	if err := os.WriteFile(filepath.Join(dbs, "nmap-service-probes"), []byte(probes), 0o600); err != nil {
-		t.Fatal(err)
-	}
 	resolvers.DataBaseFolderPath = dbs
 	c := New(ultimateCaptureConfig(out, workers, flush))
 	collect := c.CollectPcap

@@ -72,13 +72,19 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	}
 
 	if c.Bool("generate-dbs") {
-		dbs.GenerateDBs(c.Int("nvd-start-year"))
+		return dbs.GenerateDBsWithRegistry(c.Int("nvd-start-year"), c.String("dbs-approvals"), c.String("dbs-approvals-sha256"))
+	}
+	if c.String("pack-dbs") != "" {
+		meta, err := dbs.PackV3WithRegistry(c.String("pack-dbs"), c.String("dbs-output"), c.String("dbs-approvals"), c.String("dbs-approvals-sha256"))
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Published reviewed v3 candidate: %s/%s (%d bytes)\n", c.String("dbs-output"), meta.Tarball, meta.Size)
 		return nil
 	}
 
 	if c.Bool("update-dbs") {
-		dbs.UpdateDBs()
-		return nil
+		return dbs.DownloadDBsWithRegistry(c.String("dbs-url"), true, nil, c.String("dbs-approvals"), c.String("dbs-approvals-sha256"))
 	}
 
 	if c.Bool("download-geolite") {
@@ -86,18 +92,12 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	}
 
 	if c.Bool("serve-dbs") {
-		server := dbs.NewDBServer(c.String("serve-addr"), c.Int("nvd-start-year"), c.Bool("verbose"))
-		if err := server.Start(); err != nil {
-			log.Fatal("failed to start database server: ", err)
-		}
-		return nil
+		server := dbs.NewDBServerWithRegistry(c.String("serve-addr"), c.Int("nvd-start-year"), c.Bool("verbose"), c.String("dbs-approvals"), c.String("dbs-approvals-sha256"))
+		return server.Start()
 	}
 
 	if c.Bool("download-dbs") {
-		if err := dbs.DownloadDBs(c.String("dbs-url"), c.Bool("force")); err != nil {
-			log.Fatal("failed to download databases: ", err)
-		}
-		return nil
+		return dbs.DownloadDBsWithRegistry(c.String("dbs-url"), c.Bool("force"), nil, c.String("dbs-approvals"), c.String("dbs-approvals-sha256"))
 	}
 
 	// Simple util to construct a IPv4 pcapng packet, with a TCP / UDP layer and a given payload.

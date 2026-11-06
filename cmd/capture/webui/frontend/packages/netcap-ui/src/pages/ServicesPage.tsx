@@ -54,7 +54,6 @@ import {
   BarChart as BarChartIcon,
   Cable as CableIcon,
   Search as SearchIcon,
-  Add as AddIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import ResponsiveDataView from '../components/ResponsiveDataView';
@@ -845,34 +844,19 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                                       >
                                         Show Connections
                                       </Button>
-                                      {svc.product && svc.matchedProbeID && (
+                                      {svc.matchedProbeID && (
                                         <Button
-                                          data-learn="View Probe: Navigate to the Probes page to view details about the probe that matched this service."
+                                          data-learn="View Signature: Inspect the stable signature ID and its protocol source evidence."
                                           variant="outlined"
                                           color="primary"
                                           startIcon={<SearchIcon />}
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            router.push(`/probes?search=${encodeURIComponent(svc.matchedProbeID)}`);
+                                            router.push(`/service-signatures?search=${encodeURIComponent(svc.matchedProbeID)}`);
                                           }}
                                           size="small"
                                         >
-                                          View Probe
-                                        </Button>
-                                      )}
-                                      {svc.banner && (
-                                        <Button
-                                          data-learn="Create Probe: Create a new service probe using this service's banner as test input. Opens the Probes page with the banner pre-filled."
-                                          variant="outlined"
-                                          color="secondary"
-                                          startIcon={<AddIcon />}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            router.push(`/probes?create=true&banner=${encodeURIComponent(svc.banner)}`);
-                                          }}
-                                          size="small"
-                                        >
-                                          Create Probe
+                                          View Signature
                                         </Button>
                                       )}
 
@@ -900,4 +884,3 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
     </Layout>
   );
 }
-

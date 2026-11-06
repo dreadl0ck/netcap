@@ -125,20 +125,20 @@ func TestSkippedSourceNames(t *testing.T) {
 // requested datasource from the default list. Uses a real source name from
 // the package-level `sources` slice to keep the test honest.
 func TestActiveSources_FiltersByEnv(t *testing.T) {
-	// Sanity: hasshdb.json is one of the defaults; this test is meaningless
+	// Sanity: regexes.yaml is one of the defaults; this test is meaningless
 	// otherwise. Loud failure is preferable to a silent skip.
 	var foundSource bool
 	for _, s := range sources {
-		if s.name == "hasshdb.json" {
+		if s.name == "regexes.yaml" {
 			foundSource = true
 			break
 		}
 	}
 	if !foundSource {
-		t.Fatal("default sources list no longer contains hasshdb.json; update this test or the skip target")
+		t.Fatal("default sources list no longer contains regexes.yaml; update this test or the skip target")
 	}
 
-	t.Setenv("NC_DBS_SKIP_SOURCES", "hasshdb.json")
+	t.Setenv("NC_DBS_SKIP_SOURCES", "regexes.yaml")
 	// Force a fresh log-once for this test scope so subsequent runs in the
 	// same `go test` invocation aren't quieted. activeSources uses
 	// sync.Once at package scope; we don't assert on the log line itself,
@@ -148,8 +148,8 @@ func TestActiveSources_FiltersByEnv(t *testing.T) {
 		t.Fatalf("activeSources returned %d entries, want %d", len(got), len(sources)-1)
 	}
 	for _, s := range got {
-		if s.name == "hasshdb.json" {
-			t.Errorf("activeSources did not skip hasshdb.json")
+		if s.name == "regexes.yaml" {
+			t.Errorf("activeSources did not skip regexes.yaml")
 		}
 	}
 }

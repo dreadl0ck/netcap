@@ -256,6 +256,9 @@ func (c *Collector) Init() (err error) {
 
 	// wait for decoder init to finish
 	wg.Wait()
+	if err = c.persistServiceSignatures(); err != nil {
+		return fmt.Errorf("record service signature inventory: %w", err)
+	}
 	c.log.Info("initialized decoders",
 		zap.Int("packetDecoders", len(c.packetDecoders)),
 		zap.Int("streamDecoders", len(c.streamDecoders)),

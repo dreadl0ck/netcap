@@ -21,6 +21,7 @@ package dbs
 
 import (
 	"compress/gzip"
+	"database/sql"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -84,45 +85,64 @@ func intermediatePatchVersions(from string, until string) []string {
 	return out
 }
 
-// BuildVulnDB builds netcap.sqlite in outDir from the NVD 2.0 yearly feeds
-// (nvdcve-2.0-<year>.json.gz) and files_exploits.csv found in buildPath.
-// Missing years and a missing exploit CSV are logged and skipped; a build
-// without a single NVD entry is an error, so a failed download never
-// replaces a good database.
+// BuildVulnDB builds schema-1 SQLite from every required NVD year, without
+// Exploit-DB input. Normalized metadata makes identical inputs reproducible.
+// Only a completed, normalized database replaces a prior output.
 func BuildVulnDB(buildPath, outDir string, nvdStart int, verbose bool) error {
+	if nvdStart < 2002 || nvdStart > time.Now().Year() {
+		return fmt.Errorf("invalid NVD start year %d", nvdStart)
+	}
 	start := time.Now()
-	out := filepath.Join(outDir, vulndb.FileName)
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		return err
+	}
+	private, err := os.MkdirTemp(outDir, ".nvd-build-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(private)
+	frozen := filepath.Join(private, "inputs")
+	inputs, err := freezeNVDInputs(buildPath, frozen, nvdStart, start.Year())
+	if err != nil {
+		return err
+	}
+	out := filepath.Join(private, vulndb.FileName)
 
 	b, err := vulndb.Create(out)
 	if err != nil {
 		return err
 	}
 
-	b.SetMeta("built_at", start.UTC().Format(time.RFC3339))
+	// Retain the schema-1 key without inventing a reproducible build time.
+	// Archive creation time is recorded separately in release metadata.
+	b.SetMeta("built_at", "")
+	b.SetMeta("input_sha256", nvdInputDigest(inputs))
+	inputJSON, err := json.Marshal(inputs)
+	if err != nil {
+		b.Abort()
+		return err
+	}
+	b.SetMeta("nvd_inputs", string(inputJSON))
+	b.SetMeta("nvd_end_year", strconv.Itoa(start.Year()))
 	b.SetMeta("nvd_start_year", strconv.Itoa(nvdStart))
+	b.SetMeta("publication_profile", "nvd-only-v3")
 
-	for _, year := range yearRange(nvdStart, time.Now().Year()) {
-		file := filepath.Join(buildPath, "nvdcve-2.0-"+year+".json.gz")
+	for _, input := range inputs {
+		year := strconv.Itoa(input.Year)
+		file := filepath.Join(frozen, "nvdcve-2.0-"+year+".json.gz")
 		n, errYear := indexNVDFile(b, file)
 		if errYear != nil {
-			if errors.Is(errYear, os.ErrNotExist) {
-				log.Printf("WARNING: NVD feed for %s missing: %s", year, file)
-				continue
-			}
 			b.Abort()
 			return fmt.Errorf("NVD feed %s: %w", file, errYear)
+		}
+		sum, size, err := hashFile(file)
+		if err != nil || sum != input.SHA256 || size != input.Size {
+			b.Abort()
+			return fmt.Errorf("frozen NVD year %s changed during indexing", year)
 		}
 		if verbose {
 			fmt.Println("indexed NVD year", year, "entries:", n)
 		}
-	}
-
-	if errExploits := indexExploitCSV(b, filepath.Join(buildPath, "files_exploits.csv")); errExploits != nil {
-		if !errors.Is(errExploits, os.ErrNotExist) {
-			b.Abort()
-			return errExploits
-		}
-		log.Printf("WARNING: exploit-db CSV missing, building without exploits")
 	}
 
 	nvdCount, exploitCount := b.Counts()
@@ -134,15 +154,69 @@ func BuildVulnDB(buildPath, outDir string, nvdStart int, verbose bool) error {
 	if err = b.Finish(); err != nil {
 		return err
 	}
+	if err := normalizeSQLiteMeta(out); err != nil {
+		return err
+	}
+	if err := os.Rename(out, filepath.Join(outDir, vulndb.FileName)); err != nil {
+		return err
+	}
 
 	size := "?"
-	if stat, errStat := os.Stat(out); errStat == nil {
+	if stat, errStat := os.Stat(filepath.Join(outDir, vulndb.FileName)); errStat == nil {
 		size = humanize.Bytes(uint64(stat.Size()))
 	}
 
 	fmt.Printf("built %s: %d NVD entries, %d exploits, %s in %v\n", out, nvdCount, exploitCount, size, time.Since(start))
 
 	return nil
+}
+
+func normalizeSQLiteMeta(path string) error {
+	conn, err := sql.Open("sqlite", path)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	rows, err := conn.Query("SELECT key,value FROM meta ORDER BY key")
+	if err != nil {
+		return err
+	}
+	var values [][2]string
+	for rows.Next() {
+		var v [2]string
+		if err := rows.Scan(&v[0], &v[1]); err != nil {
+			rows.Close()
+			return err
+		}
+		values = append(values, v)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	tx, err := conn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec("DELETE FROM meta"); err != nil {
+		return err
+	}
+	for _, v := range values {
+		if _, err := tx.Exec("INSERT INTO meta (key,value) VALUES (?,?)", v[0], v[1]); err != nil {
+			return err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	if _, err := conn.Exec("VACUUM"); err != nil {
+		return err
+	}
+	return conn.Close()
 }
 
 // indexNVDFile streams one gzipped NVD 2.0 feed into b.
@@ -180,7 +254,30 @@ func indexNVDFile(b *vulndb.Builder, file string) (int, error) {
 			count++
 		}
 	}
-
+	if tok, err := dec.Token(); err != nil || tok != json.Delim(']') {
+		return count, fmt.Errorf("truncated NVD array: %v", err)
+	}
+	for dec.More() {
+		if _, err := dec.Token(); err != nil {
+			return count, err
+		}
+		var skip json.RawMessage
+		if err := dec.Decode(&skip); err != nil {
+			return count, err
+		}
+	}
+	if tok, err := dec.Token(); err != nil || tok != json.Delim('}') {
+		return count, fmt.Errorf("truncated NVD object: %v", err)
+	}
+	if err := dec.Decode(new(any)); err != io.EOF {
+		return count, fmt.Errorf("trailing or corrupt NVD data: %v", err)
+	}
+	if _, err := io.Copy(io.Discard, r); err != nil {
+		return count, err
+	}
+	if err := r.Close(); err != nil {
+		return count, err
+	}
 	return count, nil
 }
 
@@ -283,6 +380,10 @@ func vulnerabilityFromNVD(item *nvdItem) (vulndb.Vulnerability, bool) {
 		Description: description,
 		Versions:    versions,
 	}
+	for _, ref := range cve.References {
+		v.References = append(v.References, vulndb.Reference{URL: ref.URL, Source: ref.Source, Tags: ref.Tags})
+	}
+	v.References = vulndb.NormalizeReferences(v.References)
 
 	if len(cve.Metrics.CvssMetricV2) > 0 {
 		metric := cve.Metrics.CvssMetricV2[0]
@@ -361,8 +462,8 @@ func indexExploitCSV(b *vulndb.Builder, file string) error {
 }
 
 func yearRange(start int, end int) []string {
-	if start >= end {
-		log.Fatal("invalid range", start, "to", end)
+	if start > end {
+		return nil
 	}
 	var out []string
 	for i := start; i <= end; i++ {

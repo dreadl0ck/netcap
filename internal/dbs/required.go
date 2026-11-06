@@ -53,7 +53,7 @@ var requiredDBs = []RequiredDB{
 // layout has nvd.bleve but no netcap.sqlite, and without this it reported
 // every database present while vulnerability and exploit lookups were off.
 var recommendedDBs = []RequiredDB{
-	{File: vulndb.FileName, Feature: "vulnerability and exploit lookups"},
+	{File: vulndb.FileName, Feature: "NVD vulnerability lookups"},
 }
 
 // MissingDBs returns every required and recommended database that is absent,

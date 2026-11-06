@@ -38,6 +38,10 @@ func Flags() []string {
 // GetFlags returns the CLI flags for the util subcommand.
 func GetFlags() []cli.Flag {
 	return []cli.Flag{
+		&cli.StringFlag{Name: "pack-dbs", Usage: "verify and pack a reviewed v3 candidate directory (no deployment)"},
+		&cli.StringFlag{Name: "dbs-output", Value: "release-v3", Usage: "v3 publication output directory"},
+		&cli.StringFlag{Name: "dbs-approvals", Sources: cli.EnvVars("NC_DBS_APPROVALS"), Usage: "operator registry override (downloads default to bundled community trust; publishing requires explicit records)"},
+		&cli.StringFlag{Name: "dbs-approvals-sha256", Sources: cli.EnvVars("NC_DBS_APPROVALS_SHA256"), Usage: "out-of-band SHA-256 pin of the operator approval registry"},
 		&cli.BoolFlag{
 			Name:    "gen-config",
 			Usage:   "generate config",
@@ -97,7 +101,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:    "index",
-			Usage:   "build netcap.sqlite (NVD + exploit-db) from the downloaded feeds in the build folder; any value, e.g. -index all",
+			Usage:   "build NVD-only netcap.sqlite from complete yearly feeds; any value, e.g. -index all",
 			Sources: cli.EnvVars("NC_INDEX"),
 		},
 		&cli.StringFlag{
@@ -128,7 +132,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.BoolFlag{
 			Name:    "serve-dbs",
-			Usage:   "start HTTP server to serve databases with nightly rebuilds",
+			Usage:   "serve a validated v3 release; set NC_DBS_REBUILD=1 to opt into nightly reviewed rebuilds",
 			Sources: cli.EnvVars("NC_SERVE_DBS"),
 		},
 		&cli.StringFlag{
@@ -144,7 +148,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:    "dbs-url",
-			Usage:   "URL to download databases from (default: " + env.NetcapDBsURL + ")",
+			Usage:   "override DB server URL (env NETCAP_DBS_URL; default https://dbs.netcap.io)",
 			Sources: cli.EnvVars("NC_DBS_URL"),
 		},
 		&cli.BoolFlag{

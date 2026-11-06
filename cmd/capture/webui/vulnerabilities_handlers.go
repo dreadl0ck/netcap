@@ -30,8 +30,10 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/internal/decoder/db"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/utils"
+	"github.com/dreadl0ck/netcap/internal/vulndb"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -46,16 +48,17 @@ type SoftwareInfo struct {
 
 // VulnerabilitySummary represents aggregated vulnerability information
 type VulnerabilitySummary struct {
-	ID           string        `json:"id"`
-	Description  string        `json:"description"`
-	Severity     string        `json:"severity"`
-	V2Score      string        `json:"v2Score"`
-	AccessVector string        `json:"accessVector"`
-	Versions     []string      `json:"versions"`
-	Count        int           `json:"count"`
-	Software     *SoftwareInfo `json:"software"`     // Software details including flows
-	Affected     int           `json:"affected"`     // Number of affected hosts
-	CommunityIDs []string      `json:"communityIds"` // Community IDs for cross-tool correlation
+	References   []vulndb.Reference `json:"references"`
+	ID           string             `json:"id"`
+	Description  string             `json:"description"`
+	Severity     string             `json:"severity"`
+	V2Score      string             `json:"v2Score"`
+	AccessVector string             `json:"accessVector"`
+	Versions     []string           `json:"versions"`
+	Count        int                `json:"count"`
+	Software     *SoftwareInfo      `json:"software"`     // Software details including flows
+	Affected     int                `json:"affected"`     // Number of affected hosts
+	CommunityIDs []string           `json:"communityIds"` // Community IDs for cross-tool correlation
 }
 
 // ExploitSummary represents aggregated exploit information
@@ -119,7 +122,34 @@ func (s *Server) handleVulnerabilities(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(snapshot.selectRows(filter))
+	result := snapshot.selectRows(filter)
+	referenceDB, hasReferences := db.VulnerabilitiesIndex.(interface {
+		References(string) ([]vulndb.Reference, error)
+	})
+	if !hasReferences && resolvers.DataBaseFolderPath != "" {
+		local, err := vulndb.Open(filepath.Join(resolvers.DataBaseFolderPath, vulndb.FileName))
+		if err != nil && !os.IsNotExist(err) {
+			http.Error(w, "Failed to open NVD reference database", http.StatusInternalServerError)
+			return
+		}
+		if local != nil {
+			defer local.Close()
+			referenceDB, hasReferences = local, true
+		}
+	}
+	for i := range result.Vulnerabilities {
+		result.Vulnerabilities[i].References = []vulndb.Reference{}
+		if hasReferences {
+			refs, err := referenceDB.References(result.Vulnerabilities[i].ID)
+			if err != nil {
+				log.Printf("[WebUI] Failed to read NVD references: %v", err)
+				http.Error(w, "Failed to read NVD references", http.StatusInternalServerError)
+				return
+			}
+			result.Vulnerabilities[i].References = refs
+		}
+	}
+	json.NewEncoder(w).Encode(result)
 }
 
 // readVulnerabilitiesAndExploits reads and aggregates Vulnerability and Exploit records
@@ -701,68 +731,9 @@ func severityToScore(severity string) int {
 	}
 }
 
-// handleExploitFileContent returns the contents of an exploit file
+// handleExploitFileContent retires payload delivery; metadata links remain usable.
 func (s *Server) handleExploitFileContent(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Get the file path from query parameter
-	filePath := r.URL.Query().Get("file")
-	if filePath == "" {
-		http.Error(w, "File path is required", http.StatusBadRequest)
-		return
-	}
-
-	// Security: prevent path traversal attacks by cleaning the path
-	cleanPath := filepath.Clean(filePath)
-	if strings.Contains(cleanPath, "..") {
-		log.Printf("[WebUI][Exploit] Path traversal attempt detected: %s", filePath)
-		http.Error(w, "Invalid file path", http.StatusBadRequest)
-		return
-	}
-
-	// The file path from the database starts with "exploitdb/" (e.g., "exploitdb/exploits/linux/dos/34133.txt")
-	// Strip this prefix since we'll construct the full path using DataBaseFolderPath
-	cleanPath = strings.TrimPrefix(cleanPath, "exploitdb/")
-	cleanPath = strings.TrimPrefix(cleanPath, "exploitdb\\") // Windows path separator
-
-	// Construct the correct path: ~/.config/netcap/dbs/exploitdb/<relative-path>
-	fullPath := filepath.Join(resolvers.DataBaseFolderPath, "exploitdb", cleanPath)
-
-	// Read the file
-	fileContent, err := os.ReadFile(fullPath)
-	if err != nil {
-		log.Printf("[WebUI][Exploit] Failed to read exploit file: %s", fullPath)
-		log.Printf("[WebUI][Exploit] Original file path from database: %s", filePath)
-		log.Printf("[WebUI][Exploit] Error: %v", err)
-
-		// Return a helpful error message
-		response := map[string]any{
-			"error": "Exploit file not found. The exploitdb files may not be installed on this server.",
-			"hint":  "Run 'net util -download-dbs' to download the latest database bundle including exploit files.",
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	log.Printf("[WebUI][Exploit] Successfully read exploit file: %s (size: %d bytes)", fullPath, len(fileContent))
-
-	// Detect language from file extension
-	language := detectLanguageFromPath(cleanPath)
-
-	// Return the content with metadata
-	response := map[string]any{
-		"content":  string(fileContent),
-		"language": language,
-		"path":     cleanPath,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	http.Error(w, "Exploit payload delivery is retired; use the external exploit reference", http.StatusGone)
 }
 
 // detectLanguageFromPath attempts to determine the programming language from the file path

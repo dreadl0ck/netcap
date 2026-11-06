@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -25,57 +26,19 @@ func TestArchivesExcludeUserInstalledAndRetiredData(t *testing.T) {
 				}
 			}
 			var archive bytes.Buffer
+			var rejected error
 			switch method {
 			case "generator":
-				if err := makeTarball(dir, "dbs", &archive); err != nil {
-					t.Fatal(err)
-				}
+				rejected = makeTarball(dir, "dbs", &archive)
 			case "server":
 				path := filepath.Join(root, "release.tar.gz")
-				if _, _, err := new(DBServer).createTarball(dir, path); err != nil {
-					t.Fatal(err)
-				}
-				body, err := os.ReadFile(path)
-				if err != nil {
-					t.Fatal(err)
-				}
-				archive.Write(body)
+				_, _, rejected = new(DBServer).createTarball(dir, path)
 			case "packer":
-				cmd := exec.Command("bash", "../../zeus/scripts/pack-dbs.sh", "-d", dir, "-o", root, "-v", "2026-10-05", "-D", "false")
-				if output, err := cmd.CombinedOutput(); err != nil {
-					t.Fatalf("pack: %v\n%s", err, output)
-				}
-				body, err := os.ReadFile(filepath.Join(root, "2026-10-05.tar.gz"))
-				if err != nil {
-					t.Fatal(err)
-				}
-				archive.Write(body)
+				cmd := exec.Command("bash", "../../zeus/scripts/pack-dbs.sh", "-d", dir, "-o", root, "-D", "false")
+				_, rejected = cmd.CombinedOutput()
 			}
-			zr, err := gzip.NewReader(&archive)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer zr.Close()
-			tr := tar.NewReader(zr)
-			found := false
-			for {
-				h, err := tr.Next()
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					t.Fatal(err)
-				}
-				switch filepath.Base(h.Name) {
-				case "nmap-service-probes", "domain-whitelist.csv", "GeoLite2-ASN.mmdb", "GeoLite2-City.mmdb", "GeoLite2-Country.mmdb":
-					t.Fatalf("shipped %s", h.Name)
-				}
-				if filepath.Base(h.Name) == "sample.json" {
-					found = true
-				}
-			}
-			if !found {
-				t.Fatal("omitted allowed data")
+			if rejected == nil {
+				t.Fatal("unapproved ambient datasets were published")
 			}
 			if _, err := os.Stat(filepath.Join(dir, "nmap-service-probes")); err != nil {
 				t.Fatalf("modified user-installed source: %v", err)
@@ -85,13 +48,8 @@ func TestArchivesExcludeUserInstalledAndRetiredData(t *testing.T) {
 }
 
 func TestGeneratedDatabaseArchiveIncludesNotices(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "dbs")
-	if err := os.Mkdir(dir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := writeDatabaseNotices(dir); err != nil {
-		t.Fatal(err)
-	}
+	dir, approvals, manifest := reviewedFixture(t)
+	t.Setenv("NC_DBS_APPROVALS", approvals)
 
 	var archive bytes.Buffer
 	if err := makeTarball(dir, "dbs", &archive); err != nil {
@@ -111,12 +69,12 @@ func TestGeneratedDatabaseArchiveIncludesNotices(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if h.Name == "dbs/DATABASE_NOTICES.txt" {
+		if h.Name == "DATABASE_NOTICES.txt" {
 			body, err := io.ReadAll(tr)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !bytes.Equal(body, databaseNotices) {
+			if !bytes.Equal(body, releaseNotices(manifest)) {
 				t.Fatal("database archive contains different notices")
 			}
 			return
@@ -125,21 +83,11 @@ func TestGeneratedDatabaseArchiveIncludesNotices(t *testing.T) {
 }
 
 func TestPackedDatabaseArchiveIncludesNotices(t *testing.T) {
-	root := t.TempDir()
-	dir := filepath.Join(root, "dbs")
-	out := filepath.Join(root, "release")
-	for _, path := range []string{dir, out} {
-		if err := os.Mkdir(path, 0o755); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if err := os.WriteFile(filepath.Join(dir, "sample.json"), []byte("{}"), 0o644); err != nil {
+	dir, approvals, manifest := reviewedFixture(t)
+	out := t.TempDir()
+	meta, err := PackV3(dir, out, approvals)
+	if err != nil {
 		t.Fatal(err)
-	}
-
-	cmd := exec.Command("bash", "../../zeus/scripts/pack-dbs.sh", "-d", dir, "-o", out, "-v", "2026-09-27", "-D", "false")
-	if output, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("pack databases: %v\n%s", err, output)
 	}
 	if _, err := os.Stat(filepath.Join(dir, "DATABASE_NOTICES.txt")); !os.IsNotExist(err) {
 		t.Fatalf("packer modified source database directory: %v", err)
@@ -147,12 +95,11 @@ func TestPackedDatabaseArchiveIncludesNotices(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "DATABASE_NOTICES.txt"), []byte("stale"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	cmd = exec.Command("bash", "../../zeus/scripts/pack-dbs.sh", "-d", dir, "-o", out, "-v", "2026-09-27", "-D", "false")
-	if output, err := cmd.CombinedOutput(); err == nil || !bytes.Contains(output, []byte("Database notices differ")) {
-		t.Fatalf("packer did not reject stale notices: %v\n%s", err, output)
+	if _, err := PackV3(dir, out, approvals); err == nil || !strings.Contains(err.Error(), "stale database notices") {
+		t.Fatalf("stale notice accepted: %v", err)
 	}
 
-	f, err := os.Open(filepath.Join(out, "2026-09-27.tar.gz"))
+	f, err := os.Open(filepath.Join(out, meta.Tarball))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,12 +118,12 @@ func TestPackedDatabaseArchiveIncludesNotices(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if h.Name == "dbs/DATABASE_NOTICES.txt" {
+		if h.Name == "DATABASE_NOTICES.txt" {
 			body, err := io.ReadAll(tr)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !bytes.Equal(body, databaseNotices) {
+			if !bytes.Equal(body, releaseNotices(manifest)) {
 				t.Fatal("packed archive contains different notices")
 			}
 			return
@@ -186,10 +133,8 @@ func TestPackedDatabaseArchiveIncludesNotices(t *testing.T) {
 
 func TestNightlyDatabaseArchiveIncludesNotices(t *testing.T) {
 	root := t.TempDir()
-	dir := filepath.Join(root, "temp-dbs")
-	if err := os.Mkdir(dir, 0o755); err != nil {
-		t.Fatal(err)
-	}
+	dir, approvals, manifest := reviewedFixture(t)
+	t.Setenv("NC_DBS_APPROVALS", approvals)
 	path := filepath.Join(root, "nightly.tar.gz")
 	sum, size, err := new(DBServer).createTarball(dir, path)
 	if err != nil {
@@ -212,18 +157,20 @@ func TestNightlyDatabaseArchiveIncludesNotices(t *testing.T) {
 	}
 	defer zr.Close()
 	tr := tar.NewReader(zr)
-	h, err := tr.Next()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if h.Name != "DATABASE_NOTICES.txt" {
-		t.Fatalf("nightly archive first entry: %q", h.Name)
+	for {
+		h, err := tr.Next()
+		if err != nil {
+			t.Fatal("missing notices", err)
+		}
+		if h.Name == "DATABASE_NOTICES.txt" {
+			break
+		}
 	}
 	body, err := io.ReadAll(tr)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(body, databaseNotices) {
+	if !bytes.Equal(body, releaseNotices(manifest)) {
 		t.Fatal("nightly archive contains different notices")
 	}
 }

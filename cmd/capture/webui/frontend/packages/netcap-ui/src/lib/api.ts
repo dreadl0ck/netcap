@@ -136,14 +136,8 @@ function createNoOpApi(): NetcapApiClient {
     uploadHarvesterPreset: noOpReturn({ success: false, message: '', name: '' }),
     downloadHarvesterPreset: noOp as any,
     getFingerprints: noOpReturn({ fingerprints: [], totalCount: 0, offset: 0, limit: 0, stats: { totalFingerprints: 0, totalOccurrences: 0, countsByType: {} } }),
-    getServiceProbes: noOpReturn({ probes: [], totalCount: 0 }),
-    getServiceProbe: noOp as any,
-    updateServiceProbe: noOpReturn({ success: false, message: '' }),
-    testServiceProbe: noOpReturn({ matches: false, capturedGroups: {} }),
-    toggleServiceProbe: noOpReturn({ success: false, message: '', enabled: false }),
-    createServiceProbe: noOpReturn({ success: false, message: '' }),
-    exportServiceProbes: () => '',
-    importServiceProbes: noOpReturn({ success: false, message: '', importedCount: 0 }),
+    getServiceSignatures: async () => { throw new Error('Service signature catalogue is unavailable in this backend'); },
+    getServiceSignatureStatus: async () => { throw new Error('Capture signature diagnostics are unavailable in this backend'); },
     getDecoderConfig: noOpReturn({ includeDecoders: '', excludeDecoders: '', enabledDecoders: [] }),
     saveDecoderConfig: noOpReturn({ success: false, message: '' }),
     listDecoderConfigs: noOpReturn([]),
@@ -756,33 +750,43 @@ export interface HarvesterPresetListResponse {
   presets: HarvesterPresetInfo[];
 }
 
-export interface ServiceProbeInfo {
+export interface ServiceSignatureRule {
   id: string;
   protocol: string;
-  probeName: string;
-  service: string;
-  pattern: string;
-  product: string;
-  version: string;
-  info: string;
-  hostname: string;
-  os: string;
-  deviceType: string;
-  cpes: string[];
-  ports: number[];
-  sslPorts: number[];
-  rarity: number;
-  isSoftMatch: boolean;
-  sendString: string;
-  rawLine: string;
-  lineNumber: number;
-  probeProtocol: string;
-  enabled: boolean;
+  transport: string;
+  direction: string;
+  kind: string;
+  provenance: { url: string; section: string }[];
 }
 
-export interface ServiceProbesResponse {
-  probes: ServiceProbeInfo[];
-  totalCount: number;
+export interface ServiceSignatureCatalogue {
+  format: 'netcap-service-signatures';
+  schema_version: 1;
+  rules: ServiceSignatureRule[];
+}
+
+export interface ServiceSignatureInventory {
+  format: 'netcap-service-signature-inventory';
+  schema_version: 1;
+  scope: 'capture' | 'catalogue-on-disk';
+  state: string;
+  source: string;
+  source_sha256?: string;
+  checked_at: string;
+  degraded: boolean;
+  warning?: string;
+  rule_count: number;
+  protocols: string[];
+  catalogue?: ServiceSignatureCatalogue;
+  limitations: string[];
+}
+
+export interface ServiceSignaturesResponse {
+  catalogue: ServiceSignatureCatalogue;
+  inventory: ServiceSignatureInventory;
+  source: string;
+  degraded: boolean;
+  warning?: string;
 }
 
 export interface FingerprintSummary {
@@ -812,18 +816,6 @@ export interface FingerprintsResponse {
   offset: number;
   limit: number;
   stats: FingerprintsStats;
-}
-
-export interface TestProbeRequest {
-  pattern: string;
-  sampleInput: string;
-  flags?: string;
-}
-
-export interface TestProbeResponse {
-  matches: boolean;
-  capturedGroups: Record<string, string>;
-  error?: string;
 }
 
 export interface SystemInfo {
@@ -1654,112 +1646,15 @@ function createApiWithBase(apiBase: string) {
     return res.json();
   },
 
-  async getServiceProbes(params?: {
-    limit?: number;
-    offset?: number;
-    search?: string;
-    protocol?: string;
-    service?: string;
-    matchType?: string;
-  }): Promise<ServiceProbesResponse> {
-    const queryParams = new URLSearchParams();
-    if (params?.limit) queryParams.set('limit', params.limit.toString());
-    if (params?.offset) queryParams.set('offset', params.offset.toString());
-    if (params?.search) queryParams.set('search', params.search);
-    if (params?.protocol) queryParams.set('protocol', params.protocol);
-    if (params?.service) queryParams.set('service', params.service);
-    if (params?.matchType) queryParams.set('matchType', params.matchType);
-
-    const res = await fetch(`${apiBase}/service-probes?${queryParams}`);
-    if (!res.ok) throw new Error('Failed to fetch service probes');
+  async getServiceSignatures(): Promise<ServiceSignaturesResponse> {
+    const res = await fetch(`${apiBase}/service-signatures`);
+    if (!res.ok) throw new Error('Failed to load service signature catalogue');
     return res.json();
   },
 
-  async getServiceProbe(id: string): Promise<ServiceProbeInfo> {
-    const res = await fetch(`${apiBase}/service-probes/${encodeURIComponent(id)}`);
-    if (!res.ok) throw new Error('Failed to fetch service probe');
-    return res.json();
-  },
-
-  async updateServiceProbe(id: string, probe: Partial<ServiceProbeInfo>): Promise<{success: boolean; message: string}> {
-    const res = await fetch(`${apiBase}/service-probes/${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(probe),
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || 'Failed to update service probe');
-    }
-    return res.json();
-  },
-
-  async testServiceProbe(request: TestProbeRequest): Promise<TestProbeResponse> {
-    const res = await fetch(`${apiBase}/service-probes/test`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    });
-    if (!res.ok) throw new Error('Failed to test service probe');
-    return res.json();
-  },
-
-  async toggleServiceProbe(id: string, enabled: boolean): Promise<{success: boolean; message: string; enabled: boolean}> {
-    const res = await fetch(`${apiBase}/service-probes/${encodeURIComponent(id)}/toggle`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled }),
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || 'Failed to toggle service probe');
-    }
-    return res.json();
-  },
-
-  async createServiceProbe(probe: {
-    service: string;
-    pattern: string;
-    product?: string;
-    version?: string;
-    info?: string;
-    hostname?: string;
-    os?: string;
-    deviceType?: string;
-    protocol?: string;
-    probeName?: string;
-    enabled?: boolean;
-  }): Promise<{success: boolean; message: string}> {
-    const res = await fetch(`${apiBase}/service-probes`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(probe),
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || 'Failed to create service probe');
-    }
-    return res.json();
-  },
-
-  exportServiceProbes(): string {
-    return `${apiBase}/service-probes/export`;
-  },
-
-  async importServiceProbes(file: File): Promise<{success: boolean; message: string; importedCount: number}> {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const res = await fetch(`${apiBase}/service-probes/import`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || error.message || 'Import failed');
-    }
-
+  async getServiceSignatureStatus(selection = ''): Promise<ServiceSignatureInventory> {
+    const res = await fetch(`${apiBase}/service-signatures/status${selection}`);
+    if (!res.ok) throw new Error(`Capture signature diagnostics unavailable: ${await res.text()}`);
     return res.json();
   },
 
