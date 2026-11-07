@@ -53,6 +53,7 @@ func WriteFile(f *types.File) {
 
 	err := Decoder.Writer.Write(f)
 	if err != nil {
+		RecordArtifactWriteError(err)
 		saveFileLog.Error("failed to write File audit record", zap.Error(err))
 	}
 }

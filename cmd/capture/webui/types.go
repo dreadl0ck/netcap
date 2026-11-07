@@ -99,6 +99,7 @@ type UserDPIPreferences struct {
 
 // AnalysisJob represents a job in the analysis queue (service mode only)
 type AnalysisJob struct {
+	ArtifactConfig  []byte
 	processingDone  func()
 	SessionID       string
 	InputFile       string

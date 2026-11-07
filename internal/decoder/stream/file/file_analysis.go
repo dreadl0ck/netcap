@@ -125,7 +125,7 @@ func AnalyzeFile(content []byte, filename string) *FileAnalysis {
 	analysis.IsPasswordProtected = isPasswordProtected(content)
 
 	// YARA scanning
-	if cfg.FileExtraction.Advanced.EnableYaraScanning && cfg.FileExtraction.Advanced.YaraRulesPath != "" {
+	if currentAnalysis() == nil && cfg.FileExtraction.Advanced.EnableYaraScanning && cfg.FileExtraction.Advanced.YaraRulesPath != "" {
 		scanner := GetGlobalYaraScanner()
 		if scanner != nil {
 			matches, err := scanner.ScanBytes(content)

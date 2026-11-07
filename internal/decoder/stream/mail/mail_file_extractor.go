@@ -42,7 +42,11 @@ func (m *MailFileExtractor) DescribeFile(handle *file.FileHandle) string {
 // ExtractFile performs email attachment extraction
 func (m *MailFileExtractor) ExtractFile(conv *core.ConversationInfo, data []byte, metadata file.FileMetadata) error {
 	// Check if SMTP/email file extraction is enabled
-	if !file.IsProtocolEnabled("SMTP") {
+	protocol := metadata.Protocol
+	if protocol == "" {
+		protocol = "SMTP"
+	}
+	if !file.IsProtocolEnabled(protocol) {
 		return nil
 	}
 
@@ -60,15 +64,15 @@ func (m *MailFileExtractor) ExtractFile(conv *core.ConversationInfo, data []byte
 		conv,
 		source,
 		filename,
-		nil, // no error
+		metadata.ExtractionError,
 		data,
 		metadata.Encoding,
 		metadata.Host,
 		metadata.ContentType,
-		0,  // depth
-		"", // parent file ID - could link to the email message
+		metadata.Depth,
+		metadata.ParentFileID,
 		metadata.FlowDirection,
-		"SMTP", // protocol
+		protocol,
 	)
 }
 

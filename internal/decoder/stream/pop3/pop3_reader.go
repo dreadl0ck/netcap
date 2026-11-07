@@ -16,6 +16,7 @@ package pop3
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 	"net/textproto"
 	"strconv"
@@ -26,6 +27,7 @@ import (
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/mail"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
@@ -88,7 +90,10 @@ const (
 )
 
 type pop3Reader struct {
-	conversation *core.ConversationInfo
+	responseLines  []string
+	bufferReleases []func()
+	responseBytes  int64
+	conversation   *core.ConversationInfo
 
 	pop3Requests  []*types.POP3Request
 	pop3Responses []*types.POP3Response
@@ -129,6 +134,11 @@ func (h *pop3Reader) New(conv *core.ConversationInfo) core.StreamDecoderInterfac
 
 // Decode parses the stream according to the POP3 protocol.
 func (h *pop3Reader) Decode() {
+	defer func() {
+		for _, release := range h.bufferReleases {
+			release()
+		}
+	}()
 	// prevent nil pointer access if decoder is not initialized
 	if Decoder.Writer == nil {
 		return
@@ -272,10 +282,8 @@ func (h *pop3Reader) readResponse(b *bufio.Reader) error {
 	if h.starttlsSuccess {
 		return io.EOF
 	}
-	tp := textproto.NewReader(b)
-
-	// Parse the first line of the response.
-	line, err := tp.ReadLine()
+	rawLine, err := mail.ReadWireLine(b)
+	line := strings.TrimSuffix(strings.TrimSuffix(rawLine, "\n"), "\r")
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
@@ -286,6 +294,19 @@ func (h *pop3Reader) readResponse(b *bufio.Reader) error {
 
 		return err
 	}
+	h.responseBytes += int64(len(rawLine))
+	if h.responseBytes > file.GetMaxFileSize() {
+		err := fmt.Errorf("POP3 retained-response budget exceeded")
+		file.RecordExtractionIssue(err)
+		return err
+	}
+	retained, release, retainErr := file.ReadBodyLimit(strings.NewReader(rawLine), int64(max(1, len(rawLine))))
+	h.bufferReleases = append(h.bufferReleases, release)
+	if retainErr != nil {
+		file.RecordExtractionIssue(retainErr)
+		return retainErr
+	}
+	h.responseLines = append(h.responseLines, string(retained))
 
 	pop3Debug("read POP3 response",
 		zap.String("ident", h.conversation.Ident),
@@ -305,14 +326,14 @@ func (h *pop3Reader) readResponse(b *bufio.Reader) error {
 	if validPop3ServerCommand(cmd) {
 		h.pop3Responses = append(h.pop3Responses, &types.POP3Response{
 			Command: cmd,
-			Message: strings.Join(args, " "),
+			Message: strings.ToValidUTF8(strings.Join(args, " "), "�"),
 		})
 	} else {
 		if line == "" {
 			line = "\n"
 		}
 		h.pop3Responses = append(h.pop3Responses, &types.POP3Response{
-			Message: line,
+			Message: strings.ToValidUTF8(line, "�"),
 		})
 	}
 
@@ -351,7 +372,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 		next        = func() *types.POP3Request {
 			return h.pop3Requests[h.reqIndex]
 		}
-		mailBuf      string
+		mailBuf      strings.Builder
 		r            *types.POP3Request
 		currentMsgID int32 // Track current message being retrieved/deleted
 	)
@@ -423,10 +444,10 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 
 				for _, reply := range h.pop3Responses[h.resIndex:] {
 					if reply.Command == pop3Dot {
-						m := mail.Parse(h.conversation, []byte(mailBuf), "", "", pop3Log, servicePOP3, mailOrdinal)
+						m := mail.Parse(h.conversation, []byte(mailBuf.String()), "", "", pop3Log, servicePOP3, mailOrdinal)
 						mail.WriteMail(m)
 						mailIDs = append(mailIDs, m.ID)
-						mailBuf = ""
+						mailBuf.Reset()
 						numMails++
 						mailOrdinal++
 						h.resIndex++
@@ -434,7 +455,18 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 						break
 					}
 
-					mailBuf += reply.Message + "\n"
+					if reply.Command == "" {
+						index := h.resIndex + n
+						if index < len(h.responseLines) {
+							raw := h.responseLines[index]
+							if strings.HasPrefix(raw, "..") {
+								raw = raw[1:]
+							}
+							mailBuf.WriteString(raw)
+						} else {
+							mailBuf.WriteString(reply.Message + "\r\n")
+						}
+					}
 					n++
 				}
 

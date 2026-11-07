@@ -77,6 +77,7 @@ type httpRequest struct {
 }
 
 type httpResponse struct {
+	readIssue  bool
 	response   *http.Response
 	timestamp  int64
 	clientIP   string
@@ -87,7 +88,8 @@ type httpResponse struct {
 }
 
 type httpReader struct {
-	conversation *core.ConversationInfo
+	bufferReleases []func()
+	conversation   *core.ConversationInfo
 
 	requests             []*httpRequest
 	responses            []*httpResponse
@@ -105,6 +107,11 @@ func (h *httpReader) New(conversation *core.ConversationInfo) core.StreamDecoder
 
 // Decode parses the stream according to the HTTP protocol.
 func (h *httpReader) Decode() {
+	defer func() {
+		for _, release := range h.bufferReleases {
+			release()
+		}
+	}()
 	// prevent nil pointer access if decoder is not initialized
 	if Decoder.Writer == nil {
 		return
@@ -157,6 +164,9 @@ func (h *httpReader) Decode() {
 		}
 		if h.preface {
 			ht.ReassemblyStatus = "unpaired_after_protocol_preface"
+		}
+		if res.readIssue {
+			ht.ReassemblyStatus = strings.Trim(ht.ReassemblyStatus+",incomplete_response_body", ",")
 		}
 		writeHTTP(ht, h.conversation.Ident)
 	}
@@ -311,7 +321,9 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		return err
 	}
 
-	body, err := io.ReadAll(res.Body)
+	body, release, err := file.ReadBody(res.Body)
+	h.bufferReleases = append(h.bufferReleases, release)
+	file.RecordExtractionIssue(err)
 	s := len(body)
 	if err != nil {
 		httpLog.Debug(
@@ -355,6 +367,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	streamutils.Stats.Unlock()
 
 	h.responses = append(h.responses, &httpResponse{
+		readIssue:  err != nil,
 		response:   res,
 		timestamp:  timestamp,
 		clientIP:   h.conversation.ClientIP,
@@ -468,7 +481,9 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 		return err
 	}
 
-	body, bodyErr := io.ReadAll(req.Body)
+	body, release, bodyErr := file.ReadBody(req.Body)
+	file.RecordExtractionIssue(bodyErr)
+	h.bufferReleases = append(h.bufferReleases, release)
 	s := len(body)
 	if bodyErr != nil {
 		httpLog.Error(

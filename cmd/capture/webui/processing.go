@@ -40,6 +40,13 @@ func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
 	if job == nil || s.jobQueue == nil {
 		return errAnalysisUnavailable
 	}
+	if len(job.ArtifactConfig) == 0 {
+		snapshot, err := snapshotArtifactConfig()
+		if err != nil {
+			return err
+		}
+		job.ArtifactConfig = snapshot
+	}
 	done := s.beginProcessingWork()
 	if done == nil {
 		return errAnalysisStopping

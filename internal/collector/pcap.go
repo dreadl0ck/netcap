@@ -263,7 +263,7 @@ func (c *Collector) CollectPcap(path string) (resultErr error) {
 		c.captureRunError = resultErr
 		finish()
 		c.cleanup(false)
-		resultErr = stdErrors.Join(resultErr, c.flowExportError, c.captureEvidenceError)
+		resultErr = stdErrors.Join(resultErr, c.flowExportError, c.captureEvidenceError, c.artifactAnalysisError)
 	}()
 
 	// stat input file

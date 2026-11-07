@@ -579,6 +579,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/config/bpf", s.handleBPFConfig)
 	mux.HandleFunc("/api/rules", s.handleRules)
 	mux.HandleFunc("/api/rules/offline/packs", s.handleOfflinePacks)
+	mux.HandleFunc("/api/artifact-analysis", s.handleArtifactAnalysis)
 	mux.HandleFunc("/api/rules/offline/validate", s.handleOfflineValidate)
 	mux.HandleFunc("/api/rules/offline/execute", s.handleOfflineExecute)
 	mux.HandleFunc("/api/rules/offline/evaluations", s.handleOfflineEvaluations)
@@ -1789,6 +1790,12 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	}
 	s.mu.RUnlock()
 	// Build collector configuration
+	restoreArtifactConfig, artifactErr := applyArtifactJobConfig(job)
+	if artifactErr != nil {
+		s.recordAnalysisFailure(job, artifactErr.Error(), "")
+		return
+	}
+	defer restoreArtifactConfig()
 	c := collector.New(collector.Config{
 		NetworkDetection:       s.featureEnabled(featureNetworkDetection),
 		DNSResolutionContext:   s.featureEnabled(featureDNSResolutionContext),

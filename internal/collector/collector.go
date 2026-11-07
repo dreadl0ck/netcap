@@ -194,6 +194,8 @@ type Collector struct {
 	captureEvidence            *evidence.Capture
 	dnsContext                 *dnscontext.Tracker
 	captureEvidenceError       error
+	artifactAnalysisError      error
+	artifactAnalysisStarted    atomic.Bool
 	captureRunError            error
 	captureKind, captureSource string
 	captureLinkType            layers.LinkType
@@ -520,6 +522,10 @@ func (c *Collector) SetSignalExitHook(hook func() error) {
 
 func (c *Collector) finishSignalShutdown() int {
 	c.cleanup(true)
+	if c.artifactAnalysisError != nil {
+		log.Printf("artifact shutdown: %v", c.artifactAnalysisError)
+		return 1
+	}
 	if c.signalExitHook != nil {
 		if err := c.signalExitHook(); err != nil {
 			log.Printf("signal shutdown finalization: %v", err)

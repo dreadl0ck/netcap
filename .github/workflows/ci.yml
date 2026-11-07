@@ -154,6 +154,7 @@ jobs:
           go test -short -race ./...
           GOWORK=off go test -tags=nodpi,noyara,nomagika ./cmd/capture -run '^TestCPUProfile' -count=1
           GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestOfflineRulesCLI$' -count=1
+          GOWORK=off go test -tags=e2e,nodpi,nomagika ./tests/e2e -run '^TestArtifactAnalysisCLI$' -count=1
           SCRIPT
 
       - name: Verify distributable license bundle

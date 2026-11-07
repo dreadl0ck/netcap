@@ -277,7 +277,7 @@ func (c *Collector) initWorkers() []chan gopacket.Packet {
 		a := reassembly.NewAssembler(reassembly.NewStreamPool(tcp.StreamFactory))
 
 		// Configure stream reassembly limits from config
-		if c.config.DecoderConfig.MaxStreamBytes > 0 {
+		if c.config.DecoderConfig.MaxStreamBytes >= 0 {
 			a.MaxStreamBytes = c.config.DecoderConfig.MaxStreamBytes
 		}
 		if c.config.DecoderConfig.MaxBufferedPagesPerConnection > 0 {

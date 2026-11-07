@@ -75,7 +75,6 @@ import (
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/vulnerability"
 	"github.com/dreadl0ck/netcap/internal/dpi"
-	"github.com/dreadl0ck/netcap/internal/magika"
 	"github.com/dreadl0ck/netcap/internal/metrics"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
@@ -423,19 +422,11 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 	if flagFileConfig != "" {
 		cfg, err := file.LoadConfig(flagFileConfig)
 		if err != nil {
-			log.Printf("Warning: Failed to load file extraction config from %s: %v", flagFileConfig, err)
-			log.Printf("Using default file extraction configuration")
+			return fmt.Errorf("load file extraction configuration: %w", err)
 		} else {
 			file.SetGlobalConfig(cfg)
 			log.Printf("Loaded file extraction configuration from: %s", flagFileConfig)
 
-			// Initialize Magika if enabled in config
-			if cfg.FileExtraction.Advanced.EnableMagika {
-				log.Printf("Initializing Magika AI file classifier (assets: %s, model: %s)",
-					cfg.FileExtraction.Advanced.MagikaAssetsDir,
-					cfg.FileExtraction.Advanced.MagikaModelName)
-				magika.Init(cfg.FileExtraction.Advanced.MagikaAssetsDir, cfg.FileExtraction.Advanced.MagikaModelName)
-			}
 		}
 	}
 

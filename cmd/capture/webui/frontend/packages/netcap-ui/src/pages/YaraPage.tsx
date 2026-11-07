@@ -51,15 +51,15 @@ export default function YaraPage() {
   const [tabIndex, setTabIndex] = useState(0);
   const [scanning, setScanning] = useState(false);
   const [scanResults, setScanResults] = useState<YaraScanResult[]>([]);
-  const [scanStats, setScanStats] = useState<{ totalFiles: number; totalMatches: number; scanTimeMs: number } | null>(null);
+  const [scanStats, setScanStats] = useState<{ totalFiles: number; filesScanned: number; totalMatches: number; scanTimeMs: number; state: string; failed: number } | null>(null);
   const [viewDialog, setViewDialog] = useState<{ open: boolean; filename: string; content: string }>({ open: false, filename: '', content: '' });
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'warning' }>({ open: false, message: '', severity: 'success' });
 
   const { data: status } = useSWR('yara-status', () => api.getYaraStatus());
   const { data: rulesData } = useSWR('yara-rules', () => api.getYaraRules());
   const rules = rulesData?.rules ?? [];
 
-  const showSnackbar = (message: string, severity: 'success' | 'error') => {
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning') => {
     setSnackbar({ open: true, message, severity });
   };
 
@@ -119,8 +119,8 @@ export default function YaraPage() {
     try {
       const result = await api.scanWithYara();
       setScanResults(result.results);
-      setScanStats({ totalFiles: result.totalFiles, totalMatches: result.totalMatches, scanTimeMs: result.scanTimeMs });
-      showSnackbar(`Scan complete: ${result.totalMatches} matches in ${result.totalFiles} files`, 'success');
+      setScanStats({ totalFiles: result.totalFiles, filesScanned: result.filesScanned, totalMatches: result.totalMatches, scanTimeMs: result.scanTimeMs, state: result.state || 'unavailable', failed: result.failed || 0 });
+      showSnackbar(`Scan ${result.state || 'status unavailable'}: ${result.totalMatches} matches, ${result.filesScanned} files scanned`, result.state === 'complete' ? 'success' : 'warning');
     } catch (err: any) {
       showSnackbar(err.message || 'Scan failed', 'error');
     } finally {
@@ -230,8 +230,8 @@ export default function YaraPage() {
             {scanning && <LinearProgress sx={{ mb: 2 }} />}
 
             {scanStats && (
-              <Alert severity={scanStats.totalMatches > 0 ? 'warning' : 'success'} sx={{ mb: 2 }}>
-                Scanned {scanStats.totalFiles} files in {scanStats.scanTimeMs}ms — {scanStats.totalMatches} match{scanStats.totalMatches !== 1 ? 'es' : ''} found
+              <Alert severity={scanStats.state !== 'complete' || scanStats.totalMatches > 0 ? 'warning' : 'success'} sx={{ mb: 2 }}>
+                Scan {scanStats.state}: {scanStats.filesScanned}/{scanStats.totalFiles} files completed in {scanStats.scanTimeMs}ms — {scanStats.totalMatches} matches; {scanStats.failed} failures
               </Alert>
             )}
 
@@ -241,6 +241,7 @@ export default function YaraPage() {
                   <TableHead>
                     <TableRow>
                       <TableCell>File</TableCell>
+                      <TableCell>Result</TableCell>
                       <TableCell>Matched Rules</TableCell>
                       <TableCell align="right">Scan Time</TableCell>
                     </TableRow>
@@ -252,6 +253,7 @@ export default function YaraPage() {
                           <Typography variant="body2" fontFamily="monospace">{result.fileName}</Typography>
                           <Typography variant="caption" color="text.secondary">{result.filePath}</Typography>
                         </TableCell>
+                        <TableCell>{result.state || 'unavailable'}{result.outcome ? ` · ${result.outcome}` : ''}{result.error ? ` · ${result.error}` : ''}</TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                             {result.matches.map((m) => (
@@ -268,7 +270,7 @@ export default function YaraPage() {
             )}
 
             {scanStats && scanResults.length === 0 && (
-              <Typography color="text.secondary">No matches found.</Typography>
+              <Typography color="text.secondary">{scanStats.state === 'complete' && scanStats.filesScanned > 0 ? 'No matches found.' : 'No completed scan evidence is available.'}</Typography>
             )}
           </Box>
         )}
