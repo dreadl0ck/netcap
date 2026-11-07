@@ -43,6 +43,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/udp"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
+	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/utils"
 )
@@ -90,9 +91,10 @@ type tcpConnection struct {
 	client streamReader
 	server streamReader
 
-	ident    string
-	decoder  core.StreamDecoderInterface
-	tcpstate *reassembly.TCPSimpleFSM
+	ident        string
+	networkScope string
+	decoder      core.StreamDecoderInterface
+	tcpstate     *reassembly.TCPSimpleFSM
 
 	wasMerged       bool
 	fsmerr          bool
@@ -547,6 +549,7 @@ func (t *tcpConnection) decode() {
 		ClientData:           t.client.DataSlice(),
 		ServerData:           t.server.DataSlice(),
 		Ident:                t.ident,
+		NetworkScope:         t.networkScope,
 		FirstClientPacket:    t.client.FirstPacket(),
 		FirstServerPacket:    t.server.FirstPacket(),
 		ClientIP:             cIP,
@@ -705,7 +708,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	streamutils.Stats.Totalsz += int64(len(tcp.Payload))
 	streamutils.Stats.Unlock()
 
-	ac := &context{CaptureInfo: packet.Metadata().CaptureInfo}
+	ac := &context{CaptureInfo: packet.Metadata().CaptureInfo, scope: packetview.Scope(packet)}
 	if ll := packet.LinkLayer(); ll != nil {
 		ac.link = ll.LinkFlow()
 	}

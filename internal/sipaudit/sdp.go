@@ -34,6 +34,7 @@ type description struct {
 }
 type call struct {
 	id           string
+	scope        string
 	latest       int64
 	descriptions []description
 }
@@ -87,7 +88,7 @@ func (a *Associations) Observe(s *types.SIP) {
 			return
 		}
 	}
-	key := s.CallID + "\x00" + tag
+	key := s.NetworkScope + "\x00" + s.CallID + "\x00" + tag
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	c := a.calls[key]
@@ -104,7 +105,7 @@ func (a *Associations) Observe(s *types.SIP) {
 			}
 			delete(a.calls, oldKey)
 		}
-		c = &call{id: s.CallID, latest: d.at}
+		c = &call{id: s.CallID, scope: s.NetworkScope, latest: d.at}
 		a.calls[key] = c
 	}
 	// Retransmissions do not extend a negotiation's validity or consume slots.
@@ -141,12 +142,15 @@ func sameMedia(a, b []media) bool {
 
 // Lookup requires both advertised endpoints and a matching offer/answer codec.
 // Ambiguous overlapping calls fail closed; NAT port guessing is not performed.
-func (a *Associations) Lookup(src, dst string, sport, dport int32, pt uint32, at int64) (string, Codec, bool) {
+func (a *Associations) Lookup(scope, src, dst string, sport, dport int32, pt uint32, at int64) (string, Codec, bool) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 	var foundID string
 	var found Codec
 	for _, c := range a.calls {
+		if c.scope != scope {
+			continue
+		}
 		var offer *description
 		var answer *description
 		for i := range c.descriptions {

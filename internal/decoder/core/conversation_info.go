@@ -27,9 +27,11 @@ type ConversationInfo struct {
 	Transport TransportProtocol
 	Data      DataFragments
 	// TCP directions in reassembly order; capture timestamps can run backwards.
-	ClientData        DataFragments
-	ServerData        DataFragments
-	Ident             string
+	ClientData DataFragments
+	ServerData DataFragments
+	Ident      string
+	// Immutable packetview scope shared by every packet in this conversation.
+	NetworkScope      string
 	FirstClientPacket time.Time
 	FirstServerPacket time.Time
 

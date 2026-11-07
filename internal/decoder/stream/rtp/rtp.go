@@ -67,7 +67,7 @@ func Matches(c *core.ConversationInfo) bool {
 	for _, f := range c.Data {
 		if r, _ := parse(f.Raw()); r != nil {
 			src, dst, sp, dp := c.Endpoints(f)
-			if _, _, ok := sipaudit.Media.Lookup(src, dst, sp, dp, r.PayloadType, core.FragmentTime(f)); ok {
+			if _, _, ok := sipaudit.Media.Lookup(c.NetworkScope, src, dst, sp, dp, r.PayloadType, core.FragmentTime(f)); ok {
 				return true
 			}
 		}
@@ -114,7 +114,7 @@ func (r *reader) decode(emit func(*types.RTP), event func(*types.DTMF)) {
 		}
 		m.Timestamp = core.FragmentTime(f)
 		m.SrcIP, m.DstIP, m.SrcPort, m.DstPort = r.conversation.Endpoints(f)
-		id, codec, ok := sipaudit.Media.Lookup(m.SrcIP, m.DstIP, m.SrcPort, m.DstPort, m.PayloadType, m.Timestamp)
+		id, codec, ok := sipaudit.Media.Lookup(r.conversation.NetworkScope, m.SrcIP, m.DstIP, m.SrcPort, m.DstPort, m.PayloadType, m.Timestamp)
 		if !ok {
 			continue
 		}

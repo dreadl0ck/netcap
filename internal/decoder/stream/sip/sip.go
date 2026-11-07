@@ -89,6 +89,7 @@ func (r *reader) decode(emit func(*types.SIP)) {
 					msg := sipaudit.Record(wire, at)
 					msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = c.Endpoints(f)
 					msg.CommunityID, msg.Transport = c.CommunityID, "TCP"
+					msg.NetworkScope = c.NetworkScope
 					sipaudit.Analyze(msg)
 					sipaudit.Media.Observe(msg)
 					if config.Instance == nil || !config.Instance.IncludePayloads {

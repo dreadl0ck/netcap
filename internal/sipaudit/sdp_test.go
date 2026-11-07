@@ -20,7 +20,7 @@ func signal(id string, at int64, answer bool, seq int32, pt int) *types.SIP {
 func TestAssociationLifetimeAndNegotiation(t *testing.T) {
 	a := NewAssociations()
 	lookup := func(at int64, pt uint32) bool {
-		_, _, ok := a.Lookup("192.0.2.1", "192.0.2.2", 4000, 5000, pt, at)
+		_, _, ok := a.Lookup("", "192.0.2.1", "192.0.2.2", 4000, 5000, pt, at)
 		return ok
 	}
 	a.Observe(signal("call", 1, true, 1, 110)) // answer delivered before offer by another worker
@@ -63,7 +63,7 @@ func TestAssociationBoundsAndConcurrentAccess(t *testing.T) {
 			for i := range maxCalls {
 				id := fmt.Sprintf("%d/%d", worker, i)
 				a.Observe(signal(id, int64(i), false, 1, 110))
-				a.Lookup("192.0.2.1", "192.0.2.2", 4000, 5000, 110, int64(i))
+				a.Lookup("", "192.0.2.1", "192.0.2.2", 4000, 5000, 110, int64(i))
 			}
 		}()
 	}
@@ -74,13 +74,13 @@ func TestAssociationBoundsAndConcurrentAccess(t *testing.T) {
 	for i := range 40 {
 		a.Observe(signal("bounded", int64(10000+i), false, int32(i), 110))
 	}
-	if len(a.calls["bounded\x00one"].descriptions) != maxDescriptions {
+	if len(a.calls["\x00bounded\x00one"].descriptions) != maxDescriptions {
 		t.Fatal("description bound")
 	}
 	for i := range 100 {
 		a.Observe(signal("bounded", int64(20000+i), false, 39, 110))
 	}
-	if len(a.calls["bounded\x00one"].descriptions) != maxDescriptions {
+	if len(a.calls["\x00bounded\x00one"].descriptions) != maxDescriptions {
 		t.Fatal("retransmissions consume slots")
 	}
 }
@@ -96,5 +96,44 @@ func TestSDPRejectsUnusableMedia(t *testing.T) {
 		if len(m) != 1 || (!m[0].disabled && len(m[0].codecs) > 0) {
 			t.Fatalf("usable malformed media: %+v", m)
 		}
+	}
+}
+
+func TestAssociationScopeIsolation(t *testing.T) {
+	for _, peer := range []string{"if:2", "if:1/vxlan:192.0.2.10,192.0.2.20:4789:false:0:8:0"} {
+		t.Run(peer, func(t *testing.T) {
+			a := NewAssociations()
+			base := "if:1/vxlan:192.0.2.10,192.0.2.20:4789:false:0:7:0"
+			observe := func(scope string, at int64, answer bool, pt int) {
+				s := signal("same-call", at, answer, 1, pt)
+				s.NetworkScope = scope
+				a.Observe(s)
+			}
+			lookup := func(scope string, pt uint32) bool {
+				id, codec, ok := a.Lookup(scope, "192.0.2.1", "192.0.2.2", 4000, 5000, pt, 10)
+				if ok && (id != "same-call" || codec.Encoding != "telephone-event") {
+					t.Fatalf("wrong association: %q %+v", id, codec)
+				}
+				return ok
+			}
+			observe(base, 1, false, 110)
+			observe(peer, 2, true, 110)
+			if lookup(base, 110) || lookup(peer, 110) {
+				t.Fatal("offer and answer joined across scopes")
+			}
+			observe(base, 2, true, 110)
+			if !lookup(base, 110) || lookup(peer, 110) || lookup("", 110) {
+				t.Fatal("media inherited another scope's signaling")
+			}
+			observe(peer, 3, false, 111)
+			observe(peer, 4, true, 111)
+			if !lookup(base, 110) || lookup(base, 111) || !lookup(peer, 111) || lookup(peer, 110) {
+				t.Fatal("same Call-ID/tag negotiations contaminated each other")
+			}
+			a.Observe(&types.SIP{NetworkScope: peer, Timestamp: 5, CallID: "same-call", From: "<sip:a@example.test>;tag=one", MethodName: "BYE"})
+			if !lookup(base, 110) || lookup(peer, 111) {
+				t.Fatal("BYE crossed scope boundary")
+			}
+		})
 	}
 }
