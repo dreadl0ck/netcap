@@ -62,6 +62,9 @@ func TestTLSRecordTCPSelectionAndGap(t *testing.T) {
 		client := conn.client.(*tcpStreamReader)
 		client.data[1].(*core.StreamData).AssemblerContext = &mergeTestContext{ts: time.Unix(0, 0)}
 		if skip != 0 {
+			// Establish TLS from a complete observed header before introducing loss.
+			client.data[0].(*core.StreamData).RawData = []byte{23, 3, 3, 0, 2}
+			client.data[1].(*core.StreamData).RawData = []byte{1, 2}
 			second := client.data[1]
 			client.data = client.data[:1]
 			conn.ReassembledSG(tlsGapSG{dir: reassembly.TCPDirClientToServer, skip: skip}, &mergeTestContext{ts: time.Unix(2, 0)})
@@ -85,6 +88,30 @@ func TestTLSRecordTCPSelectionAndGap(t *testing.T) {
 			if !r.Loss || !r.Incomplete || r.SkippedBytes != wantSkip {
 				t.Fatalf("gap: %v", r)
 			}
+		}
+	}
+}
+
+func TestTLSRecordSelectionDoesNotJoinAHeaderAcrossLoss(t *testing.T) {
+	previous := config.Instance
+	writer, count := tls.RecordDecoder.Writer, tls.RecordDecoder.NumRecordsWritten
+	t.Cleanup(func() {
+		config.Instance = previous
+		tls.RecordDecoder.Writer, tls.RecordDecoder.NumRecordsWritten = writer, count
+	})
+	c := *config.DefaultConfig
+	config.Instance = &c
+	for _, skip := range []int{5, -1} {
+		w := &tlsCaptureWriter{}
+		tls.RecordDecoder.Writer = w
+		conn := newMergeTestConn([]string{string([]byte{23, 3}), string([]byte{3, 0, 2, 1, 2})}, nil, time.Unix(1, 0))
+		conn.net = gopacket.NewFlow(layers.EndpointIPv4, []byte{192, 0, 2, 1}, []byte{192, 0, 2, 2})
+		conn.transport = gopacket.NewFlow(layers.EndpointTCPPort, []byte{0x9c, 0x40}, []byte{1, 187})
+		conn.client.(*tcpStreamReader).data[1].(*core.StreamData).SkippedBytes = skip
+		conn.sortAndMergeFragments()
+		conn.decode()
+		if len(w.records) != 0 {
+			t.Fatalf("skip=%d: fabricated TLS header across loss: %v", skip, w.records)
 		}
 	}
 }

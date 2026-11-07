@@ -491,15 +491,15 @@ func (t *tcpConnection) decode() {
 	secret.HarvestSMTPConversation(conv)
 	secret.HarvestAdditionalConversation(conv)
 
-	// The fallback scan sees a whole direction concatenated, because a
-	// length-prefixed protocol cannot be recognized from its first fragment
-	// alone. The port pass sees only that fragment.
+	// Probing can span deliveries, but cannot invent a signature across a gap.
 	sel, found := stream.SelectDecoder(&stream.SelectionInput{
-		Transport:    core.TCP,
-		ServerPort:   serverPort,
-		PortClient:   cr,
-		PortServer:   sr,
-		ScanBytes:    func() ([]byte, []byte) { return t.client.DataSlice().Bytes(), t.server.DataSlice().Bytes() },
+		Transport:  core.TCP,
+		ServerPort: serverPort,
+		PortClient: cr,
+		PortServer: sr,
+		ScanBytes: func() ([]byte, []byte) {
+			return t.client.DataSlice().ContiguousBytes(), t.server.DataSlice().ContiguousBytes()
+		},
 		Conversation: conv,
 	})
 

@@ -21,6 +21,11 @@ net capture -read traffic.pcap -out streams -reassemble-connections=true \
 | Per-direction buffer limit | Evidence can be incomplete when bounds are reached |
 | Connection finalization | Stream records and alerts may only become visible on completion/flush |
 
+Fallback decoder probing uses `DataFragments.ContiguousBytes()`: deliveries can
+complete a header only within one observed byte run. Known and unknown gaps
+cannot join partial signatures into a protocol match. A leading midstream marker
+still permits probing the first observed run; it does not establish completeness.
+
 Go v0.15.2's default maximum buffered size is 10 MiB per direction. Zero-valued
 page limits can mean unlimited; [resource budgets](workers.md) are not a global
 memory guarantee. Use the installed help and health sidecars for actual policy.
