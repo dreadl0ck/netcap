@@ -2,6 +2,7 @@ package webui
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -168,8 +169,9 @@ func TestServiceReanalysisOwnsChildAndPreservesParent(t *testing.T) {
 	if !ok || child.ParentSessionID != "parent" || child.IsPreloaded || child.IP != "192.0.2.1" || child.ResultsReady || child.Status != StatusQueued || child.InputFile == input {
 		t.Fatalf("child=%+v", child)
 	}
-	if !reflect.DeepEqual(original, before) {
-		t.Fatalf("parent modified: %+v", original)
+	storedParent, _ := s.sessionManager.GetSession("parent")
+	if !reflect.DeepEqual(*storedParent, before) {
+		t.Fatalf("parent modified: %+v", storedParent)
 	}
 	assertParentPreserved(t, s, input, parent)
 	for _, tc := range []struct {
@@ -214,6 +216,19 @@ func TestQueuedChildCancellationPreservesParent(t *testing.T) {
 		if !strings.Contains(s.fileErrors[child].Error, "canceled") {
 			t.Fatal("child cancellation was not recorded")
 		}
+	}
+	assertParentPreserved(t, s, input, parent)
+}
+
+func TestCanceledWholeChildPreparationPreservesParent(t *testing.T) {
+	s, input, parent := reanalysisFixture(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	r := httptest.NewRequest(http.MethodPost, "/api/reanalyze", bytes.NewReader(mustOfflineJSON(t, map[string]string{"inputFile": input}))).WithContext(ctx)
+	w := httptest.NewRecorder()
+	s.handleReanalyze(w, r)
+	if w.Code != http.StatusRequestTimeout || len(s.jobQueue) != 0 || len(s.childAnalyses) != 0 {
+		t.Fatalf("canceled copy admitted work: %d %s", w.Code, w.Body.String())
 	}
 	assertParentPreserved(t, s, input, parent)
 }

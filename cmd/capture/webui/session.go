@@ -43,28 +43,31 @@ const (
 
 // SessionInfo tracks information about an upload and analysis session
 type SessionInfo struct {
-	SessionID        string        `json:"sessionId"`
-	ParentSessionID  string        `json:"parentSessionId,omitempty"`
-	IP               string        `json:"ip"`
-	UploadTimestamp  time.Time     `json:"uploadTimestamp"`
-	InputFile        string        `json:"inputFile"`
-	InputFilename    string        `json:"inputFilename"`
-	InputFileSize    int64         `json:"inputFileSize"`
-	OutputDir        string        `json:"outputDir"`
-	Status           SessionStatus `json:"status"`
-	ErrorMessage     string        `json:"errorMessage,omitempty"`
-	ErrorLogPath     string        `json:"errorLogPath,omitempty"` // Path to detailed error log file
-	StartTime        time.Time     `json:"startTime"`
-	CompletionTime   time.Time     `json:"completionTime"`
-	ProcessingTime   float64       `json:"processingTime,omitempty"` // Processing duration in seconds
-	PacketsTotal     int64         `json:"packetsTotal,omitempty"`
-	ResultsReady     bool          `json:"resultsReady"`
-	ShareUrl         string        `json:"shareUrl"`         // Shareable URL for viewing this session
-	IsPreloaded      bool          `json:"isPreloaded"`      // True if this is a preloaded system pcap
-	BPFFilter        string        `json:"bpfFilter"`        // BPF filter applied during capture
-	IncludeDecoders  string        `json:"includeDecoders"`  // Decoders included during capture
-	ExcludeDecoders  string        `json:"excludeDecoders"`  // Decoders excluded during capture
-	HasReportedIssue bool          `json:"hasReportedIssue"` // True if an issue has been reported for this session
+	SessionID        string                `json:"sessionId"`
+	ParentSessionID  string                `json:"parentSessionId,omitempty"`
+	ParentRunID      string                `json:"parentRunId,omitempty"`
+	AnalysisSelector string                `json:"analysisSelector,omitempty"`
+	PacketSelection  *childPacketSelection `json:"packetSelection,omitempty"`
+	IP               string                `json:"ip"`
+	UploadTimestamp  time.Time             `json:"uploadTimestamp"`
+	InputFile        string                `json:"inputFile"`
+	InputFilename    string                `json:"inputFilename"`
+	InputFileSize    int64                 `json:"inputFileSize"`
+	OutputDir        string                `json:"outputDir"`
+	Status           SessionStatus         `json:"status"`
+	ErrorMessage     string                `json:"errorMessage,omitempty"`
+	ErrorLogPath     string                `json:"errorLogPath,omitempty"` // Path to detailed error log file
+	StartTime        time.Time             `json:"startTime"`
+	CompletionTime   time.Time             `json:"completionTime"`
+	ProcessingTime   float64               `json:"processingTime,omitempty"` // Processing duration in seconds
+	PacketsTotal     int64                 `json:"packetsTotal,omitempty"`
+	ResultsReady     bool                  `json:"resultsReady"`
+	ShareUrl         string                `json:"shareUrl"`         // Shareable URL for viewing this session
+	IsPreloaded      bool                  `json:"isPreloaded"`      // True if this is a preloaded system pcap
+	BPFFilter        string                `json:"bpfFilter"`        // BPF filter applied during capture
+	IncludeDecoders  string                `json:"includeDecoders"`  // Decoders included during capture
+	ExcludeDecoders  string                `json:"excludeDecoders"`  // Decoders excluded during capture
+	HasReportedIssue bool                  `json:"hasReportedIssue"` // True if an issue has been reported for this session
 }
 
 // IPTracker tracks analysis attempts per IP for rate limiting
@@ -124,6 +127,7 @@ func (sm *SessionManager) CheckRateLimit(ip string) (allowed bool, remaining int
 func (sm *SessionManager) AddSession(session *SessionInfo) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
+	session = cloneSession(session)
 
 	sm.sessions[session.SessionID] = session
 
@@ -149,7 +153,7 @@ func (sm *SessionManager) GetSession(sessionID string) (*SessionInfo, bool) {
 	defer sm.mu.RUnlock()
 
 	session, exists := sm.sessions[sessionID]
-	return session, exists
+	return cloneSession(session), exists
 }
 
 // GetSessionForIP checks if a session belongs to a specific IP
@@ -162,7 +166,27 @@ func (sm *SessionManager) GetSessionForIP(sessionID, ip string) (*SessionInfo, b
 		return nil, false
 	}
 
-	return session, true
+	return cloneSession(session), true
+}
+
+func cloneSession(session *SessionInfo) *SessionInfo {
+	if session == nil {
+		return nil
+	}
+	copy := *session
+	if session.PacketSelection != nil {
+		selection := *session.PacketSelection
+		if selection.StartNs != nil {
+			value := *selection.StartNs
+			selection.StartNs = &value
+		}
+		if selection.EndNs != nil {
+			value := *selection.EndNs
+			selection.EndNs = &value
+		}
+		copy.PacketSelection = &selection
+	}
+	return &copy
 }
 
 // UpdateSessionStatus updates the status of a session
@@ -194,13 +218,17 @@ func (sm *SessionManager) UpdateSessionStatus(sessionID string, status SessionSt
 			}
 		}
 
-		// Save session metadata to disk after status update
-		go func() {
-			metadataPath := filepath.Join(session.OutputDir, "session.json")
-			if err := saveSessionMetadata(metadataPath, session); err != nil {
-				log.Printf("[SessionManager] Warning: Failed to save session metadata for %s: %v", sessionID, err)
+		if session.ParentSessionID != "" {
+			if err := saveSessionMetadata(filepath.Join(session.OutputDir, "session.json"), session); err != nil {
+				session.Status, session.ResultsReady = StatusFailed, false
+				session.ErrorMessage = "Failed to persist child status: " + err.Error()
+				log.Printf("[SessionManager] %s", session.ErrorMessage)
 			}
-		}()
+			return
+		}
+		if err := saveSessionMetadata(filepath.Join(session.OutputDir, "session.json"), session); err != nil {
+			log.Printf("[SessionManager] Warning: Failed to save session metadata for %s: %v", sessionID, err)
+		}
 	} else {
 		log.Printf("[SessionManager] WARNING: Attempted to update non-existent session %s to status %s", sessionID, status)
 	}
@@ -310,7 +338,7 @@ func (sm *SessionManager) GetAllSessions() []*SessionInfo {
 
 	sessions := make([]*SessionInfo, 0, len(sm.sessions))
 	for _, session := range sm.sessions {
-		sessions = append(sessions, session)
+		sessions = append(sessions, cloneSession(session))
 	}
 	return sessions
 }
@@ -323,7 +351,7 @@ func (sm *SessionManager) GetSessionsForIP(ip string) []*SessionInfo {
 	sessions := make([]*SessionInfo, 0)
 	for _, session := range sm.sessions {
 		if session.IP == ip {
-			sessions = append(sessions, session)
+			sessions = append(sessions, cloneSession(session))
 		}
 	}
 	return sessions
@@ -349,7 +377,7 @@ func (sm *SessionManager) GetAccessibleSessions(ip string) []*SessionInfo {
 
 	for _, session := range sm.sessions {
 		if session.IsPreloaded || session.IP == ip {
-			sessions = append(sessions, session)
+			sessions = append(sessions, cloneSession(session))
 		}
 	}
 
@@ -633,6 +661,9 @@ func loadSessionMetadata(path string) (*SessionInfo, error) {
 
 // saveSessionMetadata saves session metadata to JSON file
 func saveSessionMetadata(path string, session *SessionInfo) error {
+	if session.ParentSessionID != "" {
+		return writeAnalysisJSON(filepath.Dir(path), filepath.Base(path), session)
+	}
 	data, err := json.MarshalIndent(session, "", "  ")
 	if err != nil {
 		return err
@@ -645,8 +676,8 @@ func saveSessionMetadata(path string, session *SessionInfo) error {
 // Call this after creating or updating a session to persist it to disk
 func (sm *SessionManager) SaveSessionMetadata(sessionID string) error {
 	sm.mu.RLock()
+	defer sm.mu.RUnlock()
 	session, exists := sm.sessions[sessionID]
-	sm.mu.RUnlock()
 
 	if !exists {
 		return fmt.Errorf("session %s not found", sessionID)

@@ -132,6 +132,7 @@ func TestChildRecoveryRejectsEscapesAndCorruptMetadata(t *testing.T) {
 				child := s.childAnalyses[job.InputFile]
 				if scenario == "outside-parent" {
 					child.ParentOutputDir = t.TempDir()
+					child.AnalysisRoot = ""
 				} else {
 					child.AnalysisID = "analysis-other"
 				}
@@ -202,5 +203,21 @@ func TestChildRecoveryRejectsDuplicateIDs(t *testing.T) {
 	restored := restartLocalAnalysis(s, input)
 	if len(restored.childAnalyses) != 0 {
 		t.Fatal("duplicate IDs arbitrarily rebound a child")
+	}
+}
+
+func TestRootBoundGrandchildSurvivesRemovalOfItsParent(t *testing.T) {
+	s, input, parent := reanalysisFixture(t)
+	s.baseOutDir = parent
+	first := admitTestChild(t, s, input)
+	completeTestChild(t, s, first)
+	second := admitTestChild(t, s, first.InputFile)
+	completeTestChild(t, s, second)
+	if err := os.RemoveAll(first.OutputDir); err != nil {
+		t.Fatal(err)
+	}
+	restored := restartLocalAnalysis(s, input)
+	if !restored.completedFiles[second.InputFile] || restored.fileIDToPath[second.SessionID] != second.InputFile {
+		t.Fatal("retained grandchild depended on its parent's directory lifetime")
 	}
 }

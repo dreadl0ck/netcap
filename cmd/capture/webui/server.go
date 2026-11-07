@@ -337,6 +337,9 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 		}
 
 		log.Printf("[Server] Service mode enabled with data directory: %s", serviceConfig.DataDir)
+		if err := s.discoverServiceChildren(resultsDir); err != nil {
+			log.Printf("[WebUI] Service child discovery failed: %v", err)
+		}
 
 		// Restore sessions from disk (persist sessions across restarts)
 		// pcapsDir := filepath.Join(serviceConfig.DataDir, "pcaps")
@@ -1812,6 +1815,9 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		maxRetainedTCPBytes = s.runtimeConfig.MaxRetainedTCPBytes
 	}
 	s.mu.RUnlock()
+	if job.requireCaptureEvidence {
+		captureEvidence = true
+	}
 	// Build collector configuration
 	restoreArtifactConfig, artifactErr := applyArtifactJobConfig(job)
 	if artifactErr != nil {

@@ -83,7 +83,7 @@ func (s *Server) registerPipelineTools() error {
 				mcplib.WithDescription(
 					"Return metadata for one analysis session: completion status, error "+
 						"message if any, input filename and size, per-record-type audit "+
-						"counts. Use this to poll an in-flight ingest."),
+						"counts and capture_provenance (runId/inputSHA256) when available. Missing provenance has an explicit error field. Use this to poll ingest or child analysis."),
 				mcplib.WithString("session_id",
 					mcplib.Description("Session identifier returned by ingest_pcap or list_sessions."),
 					mcplib.Required()),
@@ -126,12 +126,19 @@ func (s *Server) registerPipelineTools() error {
 		{
 			Tool: mcplib.NewTool("reanalyze_session",
 				mcplib.WithDescription(
-					"Re-decode an existing session's PCAP. Server-wide BPF/DPI/decoder "+
+					"Create a separately retained child analysis; parent results remain available. Server-wide BPF/DPI/decoder "+
 						"settings apply (configure them out-of-band before calling). "+
-						"Returns immediately; poll get_session_info for completion."),
+						"Optional bounded BPF/time subsets require run_id and source_sha256 from parent provenance. Poll get_session_info with the returned child ID."),
 				mcplib.WithString("session_id",
 					mcplib.Description("Session identifier."),
 					mcplib.Required()),
+				mcplib.WithString("run_id", mcplib.Description("Expected parent capture runId; required for subsets.")),
+				mcplib.WithString("source_sha256", mcplib.Description("Parent inputSHA256; required for subsets.")),
+				mcplib.WithString("selection_bpf", mcplib.Description("BPF for the retained child input, e.g. host 192.0.2.10 and tcp port 9243.")),
+				mcplib.WithString("start_ns", mcplib.Description("Inclusive start capture timestamp as an exact decimal nanosecond string; requires end_ns.")),
+				mcplib.WithString("end_ns", mcplib.Description("Inclusive end capture timestamp as an exact decimal nanosecond string; requires start_ns.")),
+				mcplib.WithNumber("max_packets", mcplib.Description("Subset packet limit, at most 1000000.")),
+				mcplib.WithString("max_output_bytes", mcplib.Description("Subset output-byte limit as a decimal string; default 268435456, maximum 1073741824.")),
 				mcplib.WithReadOnlyHintAnnotation(false),
 				mcplib.WithDestructiveHintAnnotation(true),
 				mcplib.WithIdempotentHintAnnotation(false),
@@ -428,7 +435,6 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 	// /api/files/input are global; /api/files/input is filtered locally
 	// by deriveCompleted / extractSessionError below.
 	statsQ := ref.sessionQueryParams()
-	statsQ.Set("scope", ref.ID)
 	stats, sErr := client.Get("/api/audit-stats", statsQ)
 	if sErr != nil {
 		return errResult(fmt.Errorf("audit-stats: %w", sErr)), nil
@@ -443,6 +449,14 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 		"completed":    completed,
 		"audit_stats":  json.RawMessage(stats),
 		"capture_stat": json.RawMessage(status),
+	}
+	provenance, provenanceErr := client.Get("/api/investigation/capture", ref.sessionQueryParams())
+	if provenanceErr != nil {
+		out["capture_provenance_error"] = provenanceErr.Error()
+	} else if !json.Valid(provenance) || string(provenance) == "null" {
+		out["capture_provenance_error"] = "Capture provenance is unavailable"
+	} else {
+		out["capture_provenance"] = provenance
 	}
 
 	// Surface per-file errors (local mode) and session error fields
@@ -482,6 +496,9 @@ func extractSessionError(ref SessionRef, files json.RawMessage) (msg, logPath, s
 			key, _ = row["path"].(string)
 		} else {
 			key, _ = row["sessionId"].(string)
+			if key == "" {
+				key, _ = row["id"].(string)
+			}
 		}
 		if key != ref.ID {
 			continue
@@ -517,7 +534,11 @@ func deriveCompleted(ref SessionRef, files, status json.RawMessage) bool {
 						return b
 					}
 				} else {
-					if sid, _ := f["sessionId"].(string); sid == ref.ID {
+					sid, _ := f["sessionId"].(string)
+					if sid == "" {
+						sid, _ = f["id"].(string)
+					}
+					if sid == ref.ID {
 						b, _ := f["isCompleted"].(bool)
 						return b
 					}
@@ -554,9 +575,6 @@ func (s *Server) handleListAuditRecords(_ context.Context, req mcplib.CallToolRe
 		return errResult(err), nil
 	}
 	q := ref.sessionQueryParams()
-	// /api/files/audit accepts ?scope=<session-id-or-path> via the
-	// shared chart-scope resolver.
-	q.Set("scope", ref.ID)
 	raw, gErr := s.newClient().Get("/api/files/audit", q)
 	if gErr != nil {
 		return errResult(fmt.Errorf("files/audit: %w", gErr)), nil
@@ -567,22 +585,53 @@ func (s *Server) handleListAuditRecords(_ context.Context, req mcplib.CallToolRe
 // handleReanalyzeSession POSTs the right JSON shape to /api/reanalyze
 // based on whether the session id is a path (local) or a hex id (service).
 func (s *Server) handleReanalyzeSession(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+	allowed := map[string]bool{"session_id": true, "run_id": true, "source_sha256": true, "selection_bpf": true, "start_ns": true, "end_ns": true, "max_packets": true, "max_output_bytes": true}
+	for name := range req.GetArguments() {
+		if !allowed[name] {
+			return errResult(fmt.Errorf("unknown reanalysis argument %q", name)), nil
+		}
+	}
 	ref, err := s.requireSessionID(req)
 	if err != nil {
 		return errResult(err), nil
 	}
-	body := map[string]string{}
+	client := s.newClient()
+	var capabilities struct {
+		ChildAnalysisVersion int `json:"childAnalysisVersion"`
+	}
+	status, err := client.Get("/api/status", nil)
+	if err != nil || json.Unmarshal(status, &capabilities) != nil || capabilities.ChildAnalysisVersion != 1 {
+		return errResult(fmt.Errorf("backend does not advertise version 1 child analysis")), nil
+	}
+	body := map[string]any{}
 	if ref.isPath {
 		body["inputFile"] = ref.ID
 	} else {
 		body["sessionId"] = ref.ID
 	}
-	raw, err := s.newClient().PostJSON("/api/reanalyze", body)
+	if run := req.GetString("run_id", ""); run != "" {
+		body["runId"] = run
+	}
+	selection := map[string]any{"version": 1}
+	for from, to := range map[string]string{"source_sha256": "sourceSHA256", "selection_bpf": "bpf", "start_ns": "startNs", "end_ns": "endNs", "max_packets": "maxPackets", "max_output_bytes": "maxOutputBytes"} {
+		if value, exists := req.GetArguments()[from]; exists {
+			selection[to] = value
+		}
+	}
+	if len(selection) > 1 {
+		body["selection"] = selection
+	}
+	raw, err := client.PostJSON("/api/reanalyze", body)
 	if err != nil {
 		return errResult(fmt.Errorf("reanalyze: %w", err)), nil
 	}
-	if len(raw) == 0 {
-		return textResult(fmt.Sprintf("Reanalyze triggered for session %s. Poll get_session_info.", ref.ID)), nil
+	var child struct {
+		Success   bool   `json:"success"`
+		SessionID string `json:"sessionId"`
+		Path      string `json:"path"`
+	}
+	if json.Unmarshal(raw, &child) != nil || !child.Success || (child.SessionID == "" && child.Path == "") {
+		return errResult(fmt.Errorf("backend did not confirm a child analysis identity")), nil
 	}
 	return rawJSONResult(raw), nil
 }

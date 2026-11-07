@@ -283,6 +283,7 @@ export interface AuditStatsResponse {
 }
 
 export interface StatusResponse {
+  childAnalysisVersion?: number;
   isProcessing: boolean;
   outputDir: string;
   inputFiles: string[];
@@ -477,6 +478,9 @@ export interface TrySession {
 export interface FileInfo {
   parentSessionId?: string;
   parentInputFile?: string;
+  parentRunId?: string;
+  analysisSelector?: string;
+  packetSelection?: ChildAnalysisOptions['selection'];
   id: string;  // Unique identifier for the file (used for API calls)
   name: string;
   path: string;
@@ -494,6 +498,19 @@ export interface FileInfo {
   processingTime?: number;  // Optional, processing duration in seconds
   hash?: string;  // Optional, SHA256 hash of the file
   hasReportedIssue?: boolean;  // Optional, whether an issue has been reported for this file
+}
+
+export interface ChildAnalysisOptions {
+  runId?: string;
+  selection?: {
+    version: 1;
+    sourceSHA256: string;
+    bpf: string;
+    startNs?: string;
+    endNs?: string;
+    maxPackets?: number;
+    maxOutputBytes?: string;
+  };
 }
 
 export interface ExtractedFileInfo {
@@ -2626,12 +2643,11 @@ function createApiWithBase(apiBase: string) {
     return res.json();
   },
 
-  // Reanalyze a PCAP file - deletes existing data and reruns analysis with current config
-  async reanalyzeFile(inputFile: string, sessionId?: string): Promise<{success: boolean; message: string; filename?: string; path?: string; sessionId?: string}> {
+  async reanalyzeFile(inputFile: string, sessionId?: string, options?: ChildAnalysisOptions): Promise<{success: boolean; message: string; filename?: string; path?: string; sessionId?: string}> {
     const res = await fetch(`${apiBase}/reanalyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inputFile, sessionId }),
+      body: JSON.stringify({ inputFile, sessionId, ...options }),
     });
     if (!res.ok) {
       const errorText = await res.text();

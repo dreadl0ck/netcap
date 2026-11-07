@@ -69,16 +69,17 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := StatusResponse{
-		IsProcessing:    s.processingLocked(),
-		OutputDir:       s.outDir,
-		InputFiles:      inputFiles,
-		ServerStarted:   serverStartTime,
-		ActiveInputFile: s.activeInputFile,
-		IsMultiFile:     len(inputFiles) > 1,
-		IsServiceMode:   s.isServiceMode,
-		IsLiveMode:      s.isLiveMode,
-		SessionID:       s.currentSession, // Include current session ID in service mode
-		LogoSubText:     logoSubText,
+		ChildAnalysisVersion: 1,
+		IsProcessing:         s.processingLocked(),
+		OutputDir:            s.outDir,
+		InputFiles:           inputFiles,
+		ServerStarted:        serverStartTime,
+		ActiveInputFile:      s.activeInputFile,
+		IsMultiFile:          len(inputFiles) > 1,
+		IsServiceMode:        s.isServiceMode,
+		IsLiveMode:           s.isLiveMode,
+		SessionID:            s.currentSession, // Include current session ID in service mode
+		LogoSubText:          logoSubText,
 	}
 
 	// Add completed files info
@@ -114,16 +115,17 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			}
 
 			fileInfo := FileInfo{
-				ID:               session.SessionID, // Use session ID as file ID
-				Name:             session.InputFilename,
-				Path:             session.InputFile,
-				Size:             session.InputFileSize,
-				ModifiedTime:     session.UploadTimestamp.Unix(),
-				IsCompleted:      session.Status == StatusCompleted,
-				BPFFilter:        session.BPFFilter,
-				ProcessingTime:   session.ProcessingTime,
-				SessionID:        session.SessionID,
-				ParentSessionID:  session.ParentSessionID,
+				ID:              session.SessionID, // Use session ID as file ID
+				Name:            session.InputFilename,
+				Path:            session.InputFile,
+				Size:            session.InputFileSize,
+				ModifiedTime:    session.UploadTimestamp.Unix(),
+				IsCompleted:     session.Status == StatusCompleted,
+				BPFFilter:       session.BPFFilter,
+				ProcessingTime:  session.ProcessingTime,
+				SessionID:       session.SessionID,
+				ParentSessionID: session.ParentSessionID,
+				ParentRunID:     session.ParentRunID, AnalysisSelector: session.AnalysisSelector, PacketSelection: session.PacketSelection,
 				HasReportedIssue: session.HasReportedIssue,
 			}
 
@@ -147,16 +149,17 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			}
 
 			fileInfo := FileInfo{
-				ID:               session.SessionID, // Use session ID as file ID
-				Name:             session.InputFilename,
-				Path:             session.InputFile,
-				Size:             session.InputFileSize,
-				ModifiedTime:     session.UploadTimestamp.Unix(),
-				IsCompleted:      session.Status == StatusCompleted,
-				BPFFilter:        session.BPFFilter,
-				ProcessingTime:   session.ProcessingTime,
-				SessionID:        session.SessionID,
-				ParentSessionID:  session.ParentSessionID,
+				ID:              session.SessionID, // Use session ID as file ID
+				Name:            session.InputFilename,
+				Path:            session.InputFile,
+				Size:            session.InputFileSize,
+				ModifiedTime:    session.UploadTimestamp.Unix(),
+				IsCompleted:     session.Status == StatusCompleted,
+				BPFFilter:       session.BPFFilter,
+				ProcessingTime:  session.ProcessingTime,
+				SessionID:       session.SessionID,
+				ParentSessionID: session.ParentSessionID,
+				ParentRunID:     session.ParentRunID, AnalysisSelector: session.AnalysisSelector, PacketSelection: session.PacketSelection,
 				HasReportedIssue: session.HasReportedIssue,
 			}
 
@@ -242,6 +245,7 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			Hash:             hash,
 			HasReportedIssue: reportedIssues[hash],
 			ParentInputFile:  children[path].ParentInputFile,
+			ParentRunID:      children[path].ParentRunID, AnalysisSelector: children[path].Selector, PacketSelection: children[path].PacketSelection,
 		}
 
 		// Add error information if available
@@ -657,13 +661,21 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		InputFile string `json:"inputFile"`
-		SessionID string `json:"sessionId,omitempty"` // For service mode
-		RunID     string `json:"runId,omitempty"`
+		InputFile string                `json:"inputFile"`
+		SessionID string                `json:"sessionId,omitempty"` // For service mode
+		RunID     string                `json:"runId,omitempty"`
+		Selection *childPacketSelection `json:"selection,omitempty"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&req); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
+		return
+	}
+	var extra any
+	if decoder.Decode(&extra) != io.EOF {
+		http.Error(w, "A single JSON request is required", http.StatusBadRequest)
 		return
 	}
 
@@ -677,6 +689,12 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.InputFile = selected.InputFile
+	if req.Selection != nil {
+		if err := req.Selection.validate(selected.RunID); err != nil {
+			writeSelectionError(w, err)
+			return
+		}
+	}
 	if s.isServiceMode {
 		req.SessionID = selected.SessionID
 	}
@@ -699,7 +717,7 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Check access rights
-		if !session.IsPreloaded && session.IP != clientIP {
+		if !session.IsPreloaded && session.IP != clientIP && !captureAdminAuthorized(r) {
 			http.Error(w, "Access denied", http.StatusForbidden)
 			return
 		}
@@ -716,7 +734,7 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer release()
-		s.queueChildAnalysis(w, session.InputFile, session.OutputDir, session.SessionID, clientIP)
+		s.queueChildAnalysis(w, r, session.InputFile, session.OutputDir, session.SessionID, clientIP, req.Selection, selected.RunID)
 		return
 	}
 
@@ -762,7 +780,7 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 	}
 	defer release()
 	s.mu.Unlock()
-	s.queueChildAnalysis(w, req.InputFile, outputDir, "", "")
+	s.queueChildAnalysis(w, r, req.InputFile, outputDir, "", "", req.Selection, selected.RunID)
 }
 
 // handleVersion returns version information
