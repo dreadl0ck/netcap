@@ -16,9 +16,8 @@ type aggregate struct {
 	alert *types.Alert
 }
 
-// Windows are [first match, first match + dedupNS). Capture time alone advances
-// them, including in live capture: an idle input retains pending rows until
-// the next event or Flush at shutdown. Capacity flushes preserve every match.
+// Windows are [first match, first match + dedupNS). Live checkpoints emit
+// partial windows without advancing capture time. Capacity flushes preserve every match.
 type aggregator struct {
 	windowNS    int64
 	maxKeys     int
@@ -150,9 +149,13 @@ func (g *aggregator) advance(at int64) []*types.Alert {
 }
 
 func (g *aggregator) flush() []*types.Alert {
+	return g.checkpoint("eof")
+}
+
+func (g *aggregator) checkpoint(reason string) []*types.Alert {
 	var out []*types.Alert
 	for _, k := range g.orderedKeys() {
-		out = append(out, g.take(k, "eof"))
+		out = append(out, g.take(k, reason))
 	}
 	return out
 }

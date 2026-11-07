@@ -73,6 +73,13 @@ func (c *Collector) writeDetectionAlerts(alerts []*types.Alert) error {
 	return nil
 }
 
+// Called under dispatchMu by the live periodic flush hook.
+func (c *Collector) checkpointNetworkDetection() {
+	if c.networkDetector != nil && c.networkDetectionError == nil {
+		c.networkDetectionError = c.writeDetectionAlerts(c.networkDetector.Checkpoint())
+	}
+}
+
 func (c *Collector) closeNetworkDetection() error {
 	c.dispatchMu.Lock()
 	defer c.dispatchMu.Unlock()

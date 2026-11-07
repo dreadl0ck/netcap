@@ -73,6 +73,7 @@ func (c *Collector) flushAllDecoders() {
 
 	start := time.Now()
 	c.dispatchMu.Lock()
+	c.checkpointNetworkDetection()
 	if c.captureEvidence != nil {
 		if err := c.captureEvidence.Checkpoint(c.admittedPackets, c.behaviorQueueDrops); err != nil {
 			c.captureEvidenceError = err
