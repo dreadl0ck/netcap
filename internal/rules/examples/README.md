@@ -29,6 +29,13 @@ whitespace (`CompileRules`). `TestExampleRulesCompilation` discovers every embed
 YAML file and also compiles disabled templates; missing files fail qualification.
 Invalid explicitly configured directories return errors instead of default rules.
 
+`Engine.UpdateConfig` publishes an owned configuration snapshot only after it
+compiles. Each successful reload resets threshold, distinct, sequence, dedup and
+rate-limit state; in-flight records finish in their original generation. Failed
+reloads preserve both configuration and pending evidence. `GetStats` reports
+`config_generation` and `reload_state_policy=reset-on-reload`; emitted alerts
+remain in their writer.
+
 | Identity correction | Canonical location/name |
 | --- | --- |
 | Duplicate Cloudflare name | Cache-header variant is `Cloudflare Cache Headers Detected`; CDN/WAF variant keeps `Cloudflare CDN Detected`. |

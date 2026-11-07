@@ -33,8 +33,10 @@ import (
 
 // Engine manages rules and evaluates them against audit records.
 type Engine struct {
-	config      *Config
-	alertWriter AlertWriter
+	generationMu sync.RWMutex // A record finishes in one configuration/state generation.
+	generation   uint64
+	config       *Config
+	alertWriter  AlertWriter
 
 	// Deduplication tracking
 	recentAlerts map[string]int64 // map[alertKey]lastSeen
@@ -130,12 +132,18 @@ func NewEngineFromConfig(config *Config, alertWriter AlertWriter) (*Engine, erro
 		return nil, fmt.Errorf("alert writer cannot be nil")
 	}
 
-	// Compile all rules
+	owned, err := cloneRuleConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	config = owned
+	// Compile only the engine-owned snapshot.
 	if err := CompileRules(config); err != nil {
 		return nil, err
 	}
 
 	engine := &Engine{
+		generation:        1,
 		config:            config,
 		alertWriter:       alertWriter,
 		recentAlerts:      make(map[string]int64),
@@ -154,6 +162,8 @@ func NewEngineFromConfig(config *Config, alertWriter AlertWriter) (*Engine, erro
 // SetFirewallManager sets the firewall manager for response actions.
 // If not set, iptables-based response actions will be skipped.
 func (e *Engine) SetFirewallManager(manager *firewall.Manager) {
+	e.generationMu.Lock()
+	defer e.generationMu.Unlock()
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.firewallManager = manager
@@ -168,6 +178,8 @@ func (e *Engine) GetFirewallManager() *firewall.Manager {
 
 // SetDeduplicationWindow configures the time window for alert deduplication.
 func (e *Engine) SetDeduplicationWindow(d time.Duration) {
+	e.generationMu.Lock()
+	defer e.generationMu.Unlock()
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.dedupWindow = d
@@ -175,6 +187,8 @@ func (e *Engine) SetDeduplicationWindow(d time.Duration) {
 
 // SetRateLimit configures the maximum number of alerts per minute per rule.
 func (e *Engine) SetRateLimit(limit int) {
+	e.generationMu.Lock()
+	defer e.generationMu.Unlock()
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.rateLimit = limit
@@ -182,6 +196,8 @@ func (e *Engine) SetRateLimit(limit int) {
 
 // SetPerformanceTracker sets the performance tracker for collecting metrics.
 func (e *Engine) SetPerformanceTracker(tracker *performance.Tracker) {
+	e.generationMu.Lock()
+	defer e.generationMu.Unlock()
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.perfTracker = tracker
@@ -190,6 +206,8 @@ func (e *Engine) SetPerformanceTracker(tracker *performance.Tracker) {
 // Evaluate evaluates all applicable rules against an audit record.
 // It returns the number of alerts generated.
 func (e *Engine) Evaluate(record types.AuditRecord) (int, error) {
+	e.generationMu.RLock()
+	defer e.generationMu.RUnlock()
 	recordType := record.NetcapType()
 	alertCount := 0
 
@@ -601,29 +619,41 @@ func (e *Engine) GetStats() map[string]any {
 	}
 
 	return map[string]any{
-		"total_rules":        len(e.config.Rules),
-		"enabled_rules":      enabledRules,
-		"threshold_rules":    thresholdRules,
-		"recent_alerts":      len(e.recentAlerts),
-		"dedup_window":       e.dedupWindow.String(),
-		"rate_limit":         e.rateLimit,
-		"tracked_thresholds": len(e.thresholdTrackers),
-		"tracked_distinct":   len(e.distinctTrackers),
-		"tracked_sequences":  len(e.sequenceTrackers),
+		"config_generation":   e.generation,
+		"reload_state_policy": "reset-on-reload",
+		"total_rules":         len(e.config.Rules),
+		"enabled_rules":       enabledRules,
+		"threshold_rules":     thresholdRules,
+		"recent_alerts":       len(e.recentAlerts),
+		"dedup_window":        e.dedupWindow.String(),
+		"rate_limit":          e.rateLimit,
+		"tracked_thresholds":  len(e.thresholdTrackers),
+		"tracked_distinct":    len(e.distinctTrackers),
+		"tracked_sequences":   len(e.sequenceTrackers),
 	}
 }
 
 // UpdateConfig updates the rules configuration in memory.
-// This allows for runtime updates of rules without recreating the engine.
+// A successful reload resets thresholds, sequences, distinct counts, dedup and rate limits.
 func (e *Engine) UpdateConfig(config *Config) error {
-	// Compile all rules in the new config
-	if err := CompileRules(config); err != nil {
+	owned, err := cloneRuleConfig(config)
+	if err != nil {
+		return err
+	}
+	if err := CompileRules(owned); err != nil {
 		return fmt.Errorf("failed to compile rules: %w", err)
 	}
 
-	// Update config atomically
+	e.generationMu.Lock()
+	defer e.generationMu.Unlock()
 	e.mu.Lock()
-	e.config = config
+	e.config = owned
+	e.generation++
+	e.thresholdTrackers = make(map[string]*thresholdTracker)
+	e.distinctTrackers = make(map[string]*distinctTracker)
+	e.sequenceTrackers = make(map[string]*sequenceTracker)
+	e.recentAlerts = make(map[string]int64)
+	e.ruleCounters = make(map[string]*rateCounter)
 	e.mu.Unlock()
 
 	return nil

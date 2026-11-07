@@ -326,6 +326,21 @@ func validateRuleNames(config *Config) error {
 	return nil
 }
 
+func cloneRuleConfig(config *Config) (*Config, error) {
+	if err := validateRuleNames(config); err != nil {
+		return nil, err
+	}
+	data, err := yaml.Marshal(config)
+	if err != nil {
+		return nil, fmt.Errorf("copy rule configuration: %w", err)
+	}
+	var copy Config
+	if err := yaml.Unmarshal(data, &copy); err != nil {
+		return nil, fmt.Errorf("copy rule configuration: %w", err)
+	}
+	return &copy, nil
+}
+
 // EvaluateRule evaluates a rule against an audit record and returns an alert if it matches.
 func EvaluateRule(rule *Rule, record types.AuditRecord) (*types.Alert, error) {
 	if !rule.Enabled {
