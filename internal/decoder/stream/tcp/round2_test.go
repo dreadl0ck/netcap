@@ -395,3 +395,34 @@ func TestRound2SYNRefusalAcknowledgesOpening(t *testing.T) {
 		})
 	}
 }
+
+func TestRound2SSHResetBoundaryWithQueuedData(t *testing.T) {
+	for _, queued := range []bool{false, true} {
+		t.Run(fmt.Sprint(queued), func(t *testing.T) {
+			w := round2Config(t, ssh.Decoder)
+			r := newRound2Trace(22)
+			r.send(false, 100, "S", "")
+			r.send(true, 200, "SA", "")
+			r.send(true, 201, "A", "SSH-2.0-server_1.0\r\n")
+			if queued {
+				// The queued suffix keeps its pre-reset capture context when
+				// the post-reset prefix fills the sequence hole.
+				r.send(false, 109, "A", "client_1.0\r\n")
+				r.send(false, 101, "R", "")
+				r.send(false, 101, "A", "SSH-2.0-")
+			} else {
+				r.send(false, 101, "A", "SSH-2.0-")
+				r.send(false, 109, "R", "")
+				r.send(false, 109, "A", "client_1.0\r\n")
+			}
+			r.assembler.FlushAll()
+			if len(w.records) != 1 {
+				t.Fatalf("invented cross-reset identification or lost peer: %d records", len(w.records))
+			}
+			m := w.records[0].(*types.SSH)
+			if m.IsClient || m.Ident != "SSH-2.0-server_1.0" || strings.Contains(m.Notes, "after-rst") {
+				t.Fatalf("independent pre-reset server observation changed: %v", m)
+			}
+		})
+	}
+}

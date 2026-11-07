@@ -103,13 +103,15 @@ func (h *sshReader) Decode() {
 			} else if fragment.SkippedBytes == -1 {
 				h.qualifications[index] = "capture started midstream"
 			}
+			if len(fragment.Raw()) > 0 && started[index] && observation[index] != fragment.TCPObservation {
+				stopped[index] = true
+			}
 			if fragment.TCPObservation != "" {
-				if started[index] && observation[index] != fragment.TCPObservation {
-					stopped[index] = true
-				}
 				h.qualifications[index] = fragment.TCPObservation + "; endpoint delivery unconfirmed"
 			}
-			observation[index] = fragment.TCPObservation
+			if len(fragment.Raw()) > 0 {
+				observation[index] = fragment.TCPObservation
+			}
 		}
 		payloadLen := len(d.Raw())
 		if payloadLen > 0 && !started[index] {
