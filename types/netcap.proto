@@ -1318,6 +1318,7 @@ message SIP {
   string SDPMediaType = 37;             // Extracted SDP m= type
   string CommunityID = 38;              // Corelight Community ID v1 for cross-tool correlation
   string Transport = 39;                // UDP or TCP signaling
+  string NetworkScope = 40;             // Capture interface and encapsulation identity
 }
 
 // The Internet Group Management Protocol (IGMP) is a communications protocol

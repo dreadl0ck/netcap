@@ -20,11 +20,13 @@
 package tcp
 
 import (
+	"strconv"
 	"sync"
 
 	"github.com/gopacket/gopacket"
 	"go.uber.org/zap"
 
+	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/utils"
 )
@@ -135,6 +137,13 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 		optchecker:  reassembly.NewTCPOptionCheck(),
 		firstPacket: ac.GetCaptureInfo().Timestamp,
 	}
+	str.networkScope = "if:" + strconv.Itoa(ac.GetCaptureInfo().InterfaceIndex)
+	if c := packetview.FromCapture(ac.GetCaptureInfo()); c != nil {
+		str.networkScope = c.Scope
+	}
+	if c, ok := ac.(*context); ok && c.scope != "" {
+		str.networkScope = c.scope
+	}
 
 	str.decoder = &tcpReader{
 		parent: str,
@@ -171,6 +180,7 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 type context struct {
 	CaptureInfo gopacket.CaptureInfo
 	link        gopacket.Flow
+	scope       string
 }
 
 func (c *context) GetLinkFlow() gopacket.Flow { return c.link }

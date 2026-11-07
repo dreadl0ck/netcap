@@ -235,6 +235,7 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 		}
 
 		if s, ok := record.(*types.SIP); ok {
+			s.NetworkScope = packetview.Scope(p)
 			s.Transport = "UDP"
 			sipaudit.Analyze(s)
 			if !conf.IncludePayloads {

@@ -56,6 +56,7 @@ type udpStream struct {
 	sync.Mutex
 	data    core.DataFragments
 	decoder core.StreamDecoderInterface
+	scope   string
 }
 
 // udpStreamPool holds a pool of UDP streams.
@@ -97,6 +98,7 @@ func (u *udpStreamPool) HandleUDP(packet gopacket.Packet, udpLayer gopacket.Laye
 	// it before the EOF UDP drain, independently of the SIP audit writer.
 	if wire, _, err := sipaudit.Parse(udpLayer.LayerPayload(), false); err == nil {
 		msg := sipaudit.Record(wire, packet.Metadata().Timestamp.UnixNano())
+		msg.NetworkScope = packetview.Scope(packet)
 		sipaudit.Media.Observe(msg)
 	}
 	key := udpConversationKey(packet)
@@ -116,6 +118,7 @@ func (u *udpStreamPool) HandleUDP(packet gopacket.Packet, udpLayer gopacket.Laye
 	} else {
 		// add new
 		str := new(udpStream)
+		str.scope = packetview.Scope(packet)
 		str.data = append(str.data, &core.StreamData{
 			RawData:            udpLayer.LayerPayload(),
 			CaptureInformation: packet.Metadata().CaptureInfo,
@@ -252,6 +255,7 @@ func (u *udpStream) decode() {
 
 	conv := &core.ConversationInfo{
 		Transport:         core.UDP,
+		NetworkScope:      u.scope,
 		Data:              u.data,
 		Ident:             utils.CreateFlowIdentFromLayerFlows(u.data[0].Network(), u.data[0].Transport()),
 		FirstClientPacket: u.data[0].CaptureInfo().Timestamp,
