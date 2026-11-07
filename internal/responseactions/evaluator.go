@@ -3,6 +3,7 @@ package responseactions
 import (
 	"errors"
 
+	"github.com/dreadl0ck/netcap/internal/enforcer"
 	"github.com/dreadl0ck/netcap/internal/policy"
 )
 
@@ -19,6 +20,7 @@ type Evaluator struct {
 	Policy PolicyEvaluator
 	Broker *Broker
 	Source SourceResolver
+	Flow   func(policy.Event) (enforcer.Flow, bool)
 	// Replay prevents dispatch even when wrapping an enforce-mode policy.
 	Replay bool
 }
@@ -65,7 +67,13 @@ func (e *Evaluator) Evaluate(event policy.Event) (policy.Decision, error) {
 				source = v
 			}
 		}
-		e.Broker.Submit(intent, source)
+		var flow *enforcer.Flow
+		if e.Flow != nil {
+			if f, ok := e.Flow(event); ok {
+				flow = &f
+			}
+		}
+		e.Broker.SubmitFlow(intent, source, flow)
 	}
 	return d, nil
 }

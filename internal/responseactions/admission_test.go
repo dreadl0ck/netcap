@@ -88,7 +88,7 @@ func TestCreationRateTargetReservationsAndTTLBounds(t *testing.T) {
 	}
 	for _, r := range b.Receipts() {
 		if r.Status == "requested" {
-			await(t, b, r.ID, "applied")
+			await(t, b, r.ID, "simulated")
 		}
 	}
 	b.mu.Lock()
@@ -119,7 +119,7 @@ func TestCreationRateTargetReservationsAndTTLBounds(t *testing.T) {
 	if r := b.Submit(i, i.Source); r.Status != "requested" {
 		t.Fatal(r)
 	}
-	await(t, b, i.ID, "applied")
+	await(t, b, i.ID, "simulated")
 	b.mu.Lock()
 	b.prune(time.Now().Add(policy.MaxEffectTTL + b.retention + time.Second))
 	remaining := len(b.seen) + len(b.targets)

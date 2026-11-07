@@ -67,6 +67,7 @@ func GetCommand() *cli.Command {
 			&cli.StringFlag{Name: "hook", Value: "forward"}, &cli.UintFlag{Name: "port", Required: true},
 			&cli.StringSliceFlag{Name: "protected-cidr"}, &cli.BoolFlag{Name: "dry-run"}, &cli.StringFlag{Name: "state-file"},
 			&cli.StringFlag{Name: "tls-cert"}, &cli.StringFlag{Name: "tls-key"},
+			&cli.StringFlag{Name: "actions-config", Usage: "bootstrap JSON profiles and protected_services; immutable until restart"},
 		}, Action: withSignals(runEnforcer)},
 		{Name: "version", Action: func(_ context.Context, c *cli.Command) error {
 			return json.NewEncoder(c.Root().Writer).Encode(map[string]any{"version": "netcap-firewall/v1", "policy": "netcap-policy/v1", "protocols": []string{"http", "modbus", "dns", "dns-tcp", "dns-tls", "redis", "postgres", "smtp", "mysql", "dnp3", "network", "websocket", "grpc"}, "http3": firewalltransport.HTTP3Available})
@@ -409,6 +410,16 @@ func runEnforcer(ctx context.Context, c *cli.Command) error {
 		return errors.New("port must be 1..65535")
 	}
 	cfg := enforcer.Config{Token: os.Getenv("NETCAP_FIREWALL_ADMIN_TOKEN"), Table: c.String("table"), Namespace: c.String("namespace"), ProtectedCIDRs: c.StringSlice("protected-cidr"), DryRun: c.Bool("dry-run"), StateFile: c.String("state-file"), Scope: enforcer.Scope{Hook: c.String("hook"), Interface: c.String("interface"), DestinationCIDR: c.String("destination"), Protocol: c.String("protocol"), Port: uint16(c.Uint("port"))}}
+	if path := c.String("actions-config"); path != "" {
+		var actions struct {
+			Profiles  map[string]enforcer.Profile `json:"profiles"`
+			Protected []enforcer.Service          `json:"protected_services"`
+		}
+		if err := strictFile(path, &actions); err != nil {
+			return err
+		}
+		cfg.Profiles, cfg.ProtectedServices = actions.Profiles, actions.Protected
+	}
 	e, err := enforcer.New(cfg, nil)
 	if err != nil {
 		return err
