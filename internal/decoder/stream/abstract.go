@@ -12,6 +12,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/exploit"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/mail"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/rtp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/service"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/software"
@@ -36,6 +37,7 @@ var errInvalidAbstractDecoder = errors.New("invalid abstract decoder")
 // DefaultAbstractDecoders contains decoders for custom abstractions
 // that do not represent a specific network protocol.
 var DefaultAbstractDecoders = []core.DecoderAPI{
+	rtp.EventDecoder,
 	file.Decoder,
 	service.Decoder,
 	exploit.Decoder,
@@ -86,6 +88,7 @@ func ApplyActionToAbstractDecodersAsync(action func(api core.DecoderAPI)) {
 
 // InitAbstractDecoders initializes all stream decoders.
 func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err error) {
+	rtp.EventDecoder.Writer = nil
 	tls.RecordDecoder.Writer = nil
 	tls.ClientHelloDecoder.Writer = nil
 	tls.ServerHelloDecoder.Writer = nil

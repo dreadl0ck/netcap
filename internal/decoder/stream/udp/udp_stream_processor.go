@@ -180,7 +180,7 @@ func (usp *udpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan *udpStream 
 			var firstServerPacketCaptured bool
 
 			for _, d := range s.data {
-				if d.Transport() == clientTransport {
+				if d.Transport() == clientTransport && d.Network() == clientNetwork {
 					clientBytes += len(d.Raw())
 				} else {
 					// server

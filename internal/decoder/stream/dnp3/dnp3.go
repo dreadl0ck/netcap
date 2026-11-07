@@ -86,5 +86,5 @@ var Decoder = &decoder.StreamDecoder{
 		return dnp3Log.Sync()
 	},
 	Factory: &dnp3Reader{},
-	Typ:     core.TCP, // DNP3 uses TCP port 20000
+	Typ:     core.All,
 }

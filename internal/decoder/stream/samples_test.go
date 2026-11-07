@@ -236,6 +236,12 @@ func rdpCookie(user string) []byte {
 // reports.
 func samples() []sample {
 	return []sample{
+		{decoder: "SIP", port: 5060, transport: core.TCP,
+			client: []byte("OPTIONS sip:test@example.test SIP/2.0\r\nCSeq: 1 OPTIONS\r\nContent-Length: 0\r\n\r\n"),
+			server: []byte("SIP/2.0 200 OK\r\nCSeq: 1 OPTIONS\r\nContent-Length: 0\r\n\r\n"), note: "RFC 3261 framing"},
+		{decoder: "RTP", port: 5000, transport: core.UDP, wantVia: ViaUDPList,
+			client: hexBytes("80000001000000010000002a01"), server: hexBytes("80000002000000020000002b02"),
+			note: "RFC 3550 metadata, with SDP supplied by prepareMediaSample"},
 		{
 			decoder: "FTP", port: 21, transport: core.TCP,
 			client: []byte("USER anonymous\r\n"),

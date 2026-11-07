@@ -33,7 +33,9 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/protobuf"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/quic"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/rdp"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/rtp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/s7comm"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/sip"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/smb"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/smtp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/socks"
@@ -83,14 +85,15 @@ var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
 	179:   bgp.Decoder, // BGP routing protocol
 	443:   tls.Decoder,
 	445:   smb.Decoder,
-	502:   modbus.Decoder,   // Modbus TCP ICS/SCADA
-	514:   syslog.Decoder,   // Syslog (UDP/TCP)
-	1080:  socks.Decoder,    // SOCKS proxy
-	1883:  mqttsn.Decoder,   // MQTT-SN IoT sensor networks (UDP)
-	1884:  mqttsn.Decoder,   // MQTT-SN alternate port (UDP)
-	2222:  cip.Decoder,      // CIP ICS/SCADA (direct)
-	3389:  rdp.Decoder,      // RDP remote desktop
-	4840:  opcua.Decoder,    // OPC UA ICS/SCADA
+	502:   modbus.Decoder, // Modbus TCP ICS/SCADA
+	514:   syslog.Decoder, // Syslog (UDP/TCP)
+	1080:  socks.Decoder,  // SOCKS proxy
+	1883:  mqttsn.Decoder, // MQTT-SN IoT sensor networks (UDP)
+	1884:  mqttsn.Decoder, // MQTT-SN alternate port (UDP)
+	2222:  cip.Decoder,    // CIP ICS/SCADA (direct)
+	3389:  rdp.Decoder,    // RDP remote desktop
+	4840:  opcua.Decoder,  // OPC UA ICS/SCADA
+	5060:  sip.Decoder,
 	6667:  irc.Decoder,      // Common IRC port
 	8443:  tls.Decoder,      // Common alternate HTTPS port
 	20000: dnp3.Decoder,     // DNP3 ICS/SCADA
@@ -115,6 +118,7 @@ var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
 // This is particularly useful for protocols that share port numbers with TCP protocols
 // (e.g., QUIC uses UDP port 443 while TLS uses TCP port 443).
 var UDPStreamDecoders = []core.StreamDecoderAPI{
+	rtp.Decoder,
 	quic.Decoder,          // QUIC/HTTP3 (UDP port 443)
 	kerberosaudit.Decoder, // Kerberos v5 (UDP port 88)
 }
@@ -181,6 +185,8 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		return nil, err
 	}
 	tls.Decoder.Writer = nil
+	sip.Decoder.Writer = nil
+	rtp.Decoder.Writer = nil
 	var (
 		// values from command-line flags
 		in = strings.Split(c.IncludeDecoders, ",")

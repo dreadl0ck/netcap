@@ -24,7 +24,8 @@ import "time"
 // ConversationInfo is wrapper structure for traffic sent over a Transport protocol
 // to allow Transport agnostic decoding of data streams.
 type ConversationInfo struct {
-	Data DataFragments
+	Transport TransportProtocol
+	Data      DataFragments
 	// TCP directions in reassembly order; capture timestamps can run backwards.
 	ClientData        DataFragments
 	ServerData        DataFragments

@@ -10,6 +10,10 @@ import (
 
 var dnsTx = dnsaudit.NewPacketTracker()
 
+func init() {
+	layers.RegisterUDPPortLayerType(5353, layers.LayerTypeDNS)
+}
+
 var dnsDecoder = newGoPacketDecoder(types.Type_NC_DNS, layers.LayerTypeDNS,
 	"The Domain Name System maps names to network addresses", func(layer gopacket.Layer, at int64) proto.Message {
 		if wire, ok := layer.(*layers.DNS); ok {

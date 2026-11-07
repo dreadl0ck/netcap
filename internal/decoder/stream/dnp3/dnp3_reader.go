@@ -74,6 +74,10 @@ func (d *dnp3Reader) Decode() {
 // also loses the direction itself: an outstation's response recorded with the
 // master's address cannot be told from a command.
 func (d *dnp3Reader) frameConversation(emit func(*types.DNP3)) {
+	if d.conversation.Transport == core.UDP {
+		d.frameDatagrams(emit)
+		return
+	}
 	// Client and server are only known when the handshake was observed; a
 	// midstream capture may have the assignment reversed. Without that, the
 	// DIR bit cannot be checked against the network direction.
@@ -447,13 +451,21 @@ func (d *dnp3Reader) malformedRecord(header []byte, ts int64, server, oriented b
 
 // parseFrame decodes one CRC-validated frame.
 func (d *dnp3Reader) parseFrame(frame []byte, ts int64, server, oriented bool) *types.DNP3 {
+	msg, data := d.parseLinkFrame(frame, ts, server, oriented)
+	if data != nil {
+		d.parseApplicationLayer(msg, data)
+	}
+	return msg
+}
+
+func (d *dnp3Reader) parseLinkFrame(frame []byte, ts int64, server, oriented bool) (*types.DNP3, []byte) {
 	msg := &types.DNP3{ParseStatus: statusValid, CorrelationStatus: corrNotApplicable}
 	d.attribute(msg, server, ts)
 	d.linkHeader(msg, frame[:linkHeaderLen], server, oriented)
 
 	user := userDataLen(frame[2])
 	if user <= 0 {
-		return msg
+		return msg, nil
 	}
 
 	data, ok := extractUserData(frame[linkHeaderLen:], user)
@@ -464,7 +476,7 @@ func (d *dnp3Reader) parseFrame(frame []byte, ts int64, server, oriented bool) *
 		// publish values that were not sent.
 		msg.ParseStatus, msg.ParseError = statusMalformed, "block CRC failed"
 
-		return msg
+		return msg, nil
 	}
 
 	if !carriesAPDU(frame[3]&0x0F, msg.IsRequest) {
@@ -473,12 +485,10 @@ func (d *dnp3Reader) parseFrame(frame []byte, ts int64, server, oriented bool) *
 		msg.ParseStatus = statusUnsupported
 		msg.ParseError = "link frame carries no application data"
 
-		return msg
+		return msg, nil
 	}
 
-	d.parseApplicationLayer(msg, data)
-
-	return msg
+	return msg, data
 }
 
 func (d *dnp3Reader) parseApplicationLayer(msg *types.DNP3, data []byte) {

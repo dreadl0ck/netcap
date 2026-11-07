@@ -332,6 +332,8 @@ func getTypeForName(name string) types.Type {
 		"DHCPv6":                       types.Type_NC_DHCPv6,
 		"NTP":                          types.Type_NC_NTP,
 		"SIP":                          types.Type_NC_SIP,
+		"RTP":                          types.Type_NC_RTP,
+		"DTMF":                         types.Type_NC_DTMF,
 		"HTTP":                         types.Type_NC_HTTP,
 		"TLSClientHello":               types.Type_NC_TLSClientHello,
 		"TLSServerHello":               types.Type_NC_TLSServerHello,

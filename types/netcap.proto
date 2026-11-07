@@ -196,6 +196,8 @@ enum Type {
   NC_PKTAP = 146;
   NC_TLSRecord = 147;
   NC_LDAP = 148;
+  NC_RTP = 200;
+  NC_DTMF = 201;
 }
 
 message TLSRecord {
@@ -1063,7 +1065,7 @@ message DNS {
   // (case-insensitive), type and class; TCP pairs within one connection.
   // These fields describe the pairing state at this message.
   int64 RTT = 33;                  // Response minus the latest matching query, in ns; 0 when unpaired
-  string TransactionStatus = 34;   // query | retransmission | answered | late | unsolicited | reordered
+  string TransactionStatus = 34;   // query | retransmission | answered | late | unsolicited | reordered | mdns_query | mdns_response
   int32 QueryTransmissions = 35;   // Matching queries seen for this transaction (>1 means retransmitted)
 }
 
@@ -1071,7 +1073,7 @@ message DNSResourceRecord {
   // Header
   string Name = 1;
   int32 Type = 2;
-  int32 Class = 3;
+  int32 Class = 3; // Raw class; mDNS bit 15 is cache-flush, lower 15 bits are the class
   uint32 TTL = 4;
   // RDATA Raw Values
   int32 DataLength = 5;
@@ -1140,7 +1142,7 @@ message DNSMX {
 message DNSQuestion {
   string Name = 1;
   int32 Type = 2;
-  int32 Class = 3;
+  int32 Class = 3; // Raw class; mDNS bit 15 is QU (unicast response requested)
 }
 
 message DHCPv4 {
@@ -1306,6 +1308,7 @@ message SIP {
   string SDPConnectionIP = 36;          // Extracted SDP c= IP
   string SDPMediaType = 37;             // Extracted SDP m= type
   string CommunityID = 38;              // Corelight Community ID v1 for cross-tool correlation
+  string Transport = 39;                // UDP or TCP signaling
 }
 
 // The Internet Group Management Protocol (IGMP) is a communications protocol
@@ -4746,4 +4749,50 @@ message ModbusFileRecord {
   uint32 RecordNumber = 3;
   uint32 RecordLength = 4;
   repeated uint32 Values = 5;
+}
+
+// RTP metadata only; payload decoding requires an observed SIP/SDP negotiation.
+message RTP {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  string CommunityID = 6;
+  string CallID = 7;
+  uint32 SSRC = 8;
+  uint32 Sequence = 9;
+  int64 ExtendedSequence = 10; // Nearest modular sequence relative to the high-water mark
+  uint32 MediaTimestamp = 11;
+  int64 ExtendedTimestamp = 12;
+  uint32 PayloadType = 13;
+  string Encoding = 14;
+  uint32 ClockRate = 15;
+  bool Marker = 16;
+  uint32 PayloadLength = 17;
+  repeated uint32 CSRC = 18;
+  uint32 ExtensionProfile = 19;
+  uint32 ExtensionLength = 20;
+  uint32 PaddingLength = 21;
+  bool Reordered = 22;
+}
+
+// One completed RFC 4733 telephone event; retransmitted end packets are deduplicated.
+message DTMF {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  string CommunityID = 6;
+  string CallID = 7;
+  uint32 SSRC = 8;
+  uint32 MediaTimestamp = 9;
+  int64 ExtendedTimestamp = 10;
+  uint32 Event = 11;
+  string Digit = 12;
+  uint32 Volume = 13;
+  uint32 Duration = 14; // RTP clock ticks
+  uint32 ClockRate = 15;
+  uint32 PayloadType = 16;
 }

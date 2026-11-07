@@ -28,6 +28,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/dcerpc"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/modbus"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/rtp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/smtp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tls"
@@ -110,6 +111,9 @@ type Selection struct {
 // scan picks the most specific match. A strong registered-port match stays on
 // the fast path; weak port matches are compared against the full conversation.
 func SelectDecoder(in *SelectionInput) (Selection, bool) {
+	if in.Transport == core.UDP && (configuredDecoder("RTP") || configuredDecoder("DTMF")) && rtp.Matches(in.Conversation) {
+		return Selection{API: rtp.Decoder, Decoder: rtp.Decoder.Factory.New(in.Conversation), Name: "RTP", Via: ViaUDPList}, true
+	}
 	if sel, ok := selectModbusRTU(in); ok {
 		return sel, true
 	}
@@ -163,6 +167,9 @@ func configuredDecoder(name string) bool {
 	}
 	if name == "FTP" && secret.FTPHarvesterEnabled() && !decoderListed(c.ExcludeDecoders, "Secret") && (c.IncludeDecoders == "" || decoderListed(c.IncludeDecoders, "Secret")) {
 		return true
+	}
+	if name == "SIP" && (configuredDecoder("RTP") || configuredDecoder("DTMF")) {
+		return true // Signaling reader dependency; its writer may be disabled.
 	}
 	if name == "SMB" && dcerpc.Decoder.Writer != nil && !decoderListed(c.ExcludeDecoders, "DCERPC") && (c.IncludeDecoders == "" || decoderListed(c.IncludeDecoders, "DCERPC")) {
 		return true
