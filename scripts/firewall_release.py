@@ -89,6 +89,33 @@ def loopback(value):
     return value
 
 
+def qualification(directory, commit):
+    directory = Path(directory)
+    manifest = json.loads((directory / 'manifest.json').read_text())
+    require(manifest.get('head') == commit, 'soak qualification commit mismatch; old topic binaries cannot qualify a future candidate')
+    require(manifest.get('owner') == 'netcap-topic-qualification/v2', 'owned qualification manifest required')
+    before = manifest.get('provenance_before', {})
+    after = manifest.get('provenance_after', {})
+    require(before and before == after and manifest.get('inputs_unchanged') is True, 'soak inputs changed or before/after provenance absent')
+    require(before.get('commit') == commit and before.get('clean') is True, 'soak requires clean candidate commit')
+    require(before.get('binary_sha256') == manifest.get('binary_sha256'), 'soak binary provenance mismatch')
+    settings = {line.strip().removeprefix('build\t') for line in before.get('go_build', '').splitlines()}
+    require('vcs.revision=' + commit in settings and 'vcs.modified=false' in settings, 'soak binary must embed exact clean candidate revision')
+    require(manifest.get('state') == 'pass' and manifest.get('child_exit_code') == 0, 'soak runner did not pass')
+    receipts = manifest.get('receipt_sha256', {})
+    require('http/progress.json' in receipts, 'missing final soak receipt')
+    for path, digest in receipts.items():
+        checked_file(directory, {'path': path, 'sha256': digest})
+    report = json.loads((directory / 'http/progress.json').read_text())
+    require(report.get('load_state') == 'pass' and report.get('soak_24h_pass') is True and report.get('actual_load_seconds', 0) >= 86400, '24h mixed soak is incomplete')
+    require(report.get('mixed_wire_enabled') is True and len(report.get('profiles', {})) == 34, 'missing mixed protocol profiles')
+    for profile in report['profiles'].values():
+        counts = profile['counts']
+        require(counts['Allowed'] > 0 and counts['Denied'] > 0 and counts['Offered'] == counts['Allowed'] + counts['Denied'], 'incomplete profile load')
+        require(all(counts[k] == 0 for k in ('Errors', 'Dropped', 'FalseBlocks')) and all(profile.get(k, 0) == 0 for k in ('forbidden_origin_requests', 'forbidden_origin_bytes', 'forbidden_side_effects')), 'soak safety budget failed')
+    return manifest
+
+
 def check_oci(path, digest, arch, m, binary):
     with tarfile.open(path) as tf:
         members = {p.name.removeprefix('./'): p for p in tf.getmembers() if p.isfile()}
@@ -179,6 +206,11 @@ def validate(root, publication=False, rehearsal=False):
         require(values['image']['digest'] == m['images'][kind]['digest'] and values['image']['repository'] == m['images'][kind]['repository'] and values['image']['tag'] == m['version'], 'chart imageDigest/version mismatch')
     require(m['reviews'].keys() == set(POLICY['externalReviews']), 'missing external review slots')
     if publication:
+        soak = m.get('soak')
+        require(soak is not None, 'final candidate soak qualification required')
+        receipt = json.loads(checked_file(root, soak).read_text())
+        require(receipt['commit'] == m['commit'] and receipt['digests'] == {k: i['digest'] for k, i in m['images'].items()}, 'soak candidate digest mismatch')
+        qualification(checked_file(root, receipt['manifest']).parent, m['commit'])
         for review in m['reviews'].values():
             require(review['decision'] == 'approved' and review['reviewer'] and review['uri'].startswith('https://'), 'operator/external signoff required')
             require(review['commit'] == m['commit'] and review['version'] == m['version'] and review['digests'] == {k: i['digest'] for k, i in m['images'].items()}, 'review not bound to this candidate')
@@ -328,6 +360,9 @@ def main():
     p = sub.add_parser('check-run')
     p.add_argument('run_id')
     p.add_argument('--commit', required=True)
+    p = sub.add_parser('check-qualification')
+    p.add_argument('directory', type=Path)
+    p.add_argument('--commit', required=True)
     p = sub.add_parser('plan-upgrade')
     for name in ('candidate', 'current', 'state', 'config', 'policy', 'backup', 'output'):
         p.add_argument('--' + name, required=True)
@@ -347,6 +382,8 @@ def main():
         apply_reviews(args.candidate, args.reviews)
     elif args.command == 'check-run':
         check_run(args.run_id, args.commit)
+    elif args.command == 'check-qualification':
+        qualification(args.directory, args.commit)
     else:
         plan(args)
 

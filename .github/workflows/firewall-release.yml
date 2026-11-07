@@ -1,7 +1,7 @@
 name: Firewall release candidate
 on:
   pull_request:
-    paths: ['scripts/firewall*', 'scripts/test_firewall_release.py', '.goreleaser-firewall.yml', '.github/workflows/firewall-release.yml', 'docker/**', 'charts/**', 'cmd/firewall/**', 'cmd/netcap-firewall/**', 'internal/**', 'go.mod', 'go.sum']
+    paths: ['scripts/firewall*', 'scripts/test_firewall_release.py', '.goreleaser-firewall.yml', '.github/workflows/firewall-release.yml', 'docker/**', 'charts/**', 'cmd/firewall/**', 'cmd/netcap-firewall/**', 'internal/**', 'examples/firewall/**', 'Makefile', 'operations.Makefile', 'version.go', 'licenses.go', 'legal/**', 'go.mod', 'go.sum']
   workflow_dispatch:
     inputs:
       version:
@@ -125,6 +125,7 @@ jobs:
           docker run -d --name firewall-release-registry -p 127.0.0.1:5000:5000 registry:3.0.0@sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e
           args=()
           if test -f candidate/release-inputs/reviews.json; then args+=(--reviews candidate/release-inputs/reviews.json); fi
+          if test -f candidate/release-inputs/qualification/manifest.json; then args+=(--qualification-run candidate/release-inputs/qualification); fi
           python3 scripts/firewall_release_build.py assemble --version "${VERSION#firewall-v}" --output candidate "${args[@]}"
           python3 scripts/firewall_release.py validate candidate
       - name: Disposable-key signing and verification rehearsal, no public transparency log

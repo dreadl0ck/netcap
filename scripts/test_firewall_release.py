@@ -204,6 +204,54 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 release.version(v)
 
+    def test_soak_rejects_old_commit_missing_provenance_and_running_receipts(self):
+        run = self.root / 'soak'
+        run.mkdir()
+        manifest = {'owner': 'netcap-topic-qualification/v2', 'head': 'b' * 40, 'state': 'running'}
+        release.write(run / 'manifest.json', manifest)
+        with self.assertRaisesRegex(ValueError, 'commit mismatch'):
+            release.qualification(run, self.m['commit'])
+        manifest['head'] = self.m['commit']
+        release.write(run / 'manifest.json', manifest)
+        with self.assertRaisesRegex(ValueError, 'provenance absent'):
+            release.qualification(run, self.m['commit'])
+        before = {'commit': self.m['commit'], 'clean': True, 'binary_sha256': 'f' * 64,
+                  'go_build': 'vcs.revision=' + self.m['commit'] + '\nvcs.modified=false'}
+        manifest.update(provenance_before=before, provenance_after=before, inputs_unchanged=True,
+                        binary_sha256='f' * 64)
+        release.write(run / 'manifest.json', manifest)
+        with self.assertRaisesRegex(ValueError, 'did not pass'):
+            release.qualification(run, self.m['commit'])
+        report = {'load_state': 'pass', 'soak_24h_pass': True, 'actual_load_seconds': 86400,
+                  'mixed_wire_enabled': True, 'profiles': {str(n): {'counts': {'Offered': 2, 'Allowed': 1, 'Denied': 1, 'Errors': 0, 'Dropped': 0, 'FalseBlocks': 0}} for n in range(34)}}
+        (run / 'http').mkdir()
+        release.write(run / 'http/progress.json', report)
+        manifest.update(state='pass', child_exit_code=0, receipt_sha256={'http/progress.json': release.sha(run / 'http/progress.json')})
+        release.write(run / 'manifest.json', manifest)
+        self.assertEqual(release.qualification(run, self.m['commit']), manifest)
+        report['profiles']['0']['counts']['Errors'] = 1
+        release.write(run / 'http/progress.json', report)
+        with self.assertRaisesRegex(ValueError, 'checksum mismatch'):
+            release.qualification(run, self.m['commit'])
+        manifest['receipt_sha256']['http/progress.json'] = release.sha(run / 'http/progress.json')
+        release.write(run / 'manifest.json', manifest)
+        with self.assertRaisesRegex(ValueError, 'safety budget failed'):
+            release.qualification(run, self.m['commit'])
+
+    def test_embedded_ui_is_in_source_archive_and_docker_allowlists(self):
+        data = subprocess.check_output(['git', 'archive', '--format=tar', 'HEAD'], cwd=release.ROOT)
+        with tarfile.open(fileobj=io.BytesIO(data)) as archive:
+            names = set(archive.getnames())
+        for name in ('app.js', 'app.css', 'index.html'):
+            self.assertIn('internal/firewallui/static/' + name, names)
+        for kind in ('firewall', 'enforcer'):
+            text = (release.ROOT / 'docker' / kind / 'Dockerfile.dockerignore').read_text()
+            self.assertIn('!internal/**', text)
+            self.assertNotIn('**/static', text)
+        config = yaml.safe_load((release.ROOT / '.goreleaser-firewall.yml').read_text())
+        for item in config['builds']:
+            self.assertIn(item['main'].removeprefix('./') + '/main.go', names)
+
     def test_no_state_change_before_verification_and_downgrade_gate(self):
         state = self.root / 'state'
         state.mkdir()
@@ -345,6 +393,8 @@ class LocalPromotion(unittest.TestCase):
             with tarfile.open(fileobj=tf.extractfile('source/netcap.tar.gz')) as source:
                 self.assertIn('LICENSE', source.getnames())
                 self.assertIn('go.mod', source.getnames())
+                self.assertIn('internal/firewallui/static/app.js', source.getnames())
+                self.assertIn('cmd/netcap-firewall/main.go', source.getnames())
             with tarfile.open(fileobj=tf.extractfile('source/go-toolchain-source.tar.gz')) as toolchain:
                 self.assertIn('go/LICENSE', toolchain.getnames())
                 self.assertIn('go/src/runtime/runtime2.go', toolchain.getnames())

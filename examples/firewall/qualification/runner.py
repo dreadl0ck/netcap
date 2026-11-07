@@ -32,6 +32,16 @@ def write(path, data):
     temporary.replace(path)
 
 
+def provenance(binary):
+    paths = subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).decode().split('\0')
+    return {'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+            'tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], cwd=ROOT, text=True).strip(),
+            'clean': not subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT),
+            'binary_sha256': digest(binary),
+            'go_build': subprocess.check_output(['go', 'version', '-m', str(binary)], cwd=ROOT, text=True),
+            'source_sha256': {p: digest(ROOT / p) for p in paths if p and (ROOT / p).is_file()}}
+
+
 def identity(pid):
     result = subprocess.run(['/bin/ps', '-ww', '-p', str(pid), '-o', 'lstart=', '-o', 'command='],
                             capture_output=True, text=True, check=False)
@@ -126,6 +136,10 @@ def worker(directory, token):
     manifest.update(state='stopped' if stopping else ('pass' if process.returncode == 0 else 'fail'),
                     child_exit_code=process.returncode, elapsed_seconds=time.monotonic() - started,
                     finished_unix=time.time(), qualification='incomplete; see corpus and protocol receipts')
+    manifest['provenance_after'] = provenance(pathlib.Path(manifest['binary']))
+    manifest['inputs_unchanged'] = manifest.get('provenance_before') == manifest['provenance_after']
+    if not manifest['inputs_unchanged']:
+        manifest['state'] = 'fail'
     manifest['receipt_sha256'] = {str(p.relative_to(directory)): digest(p)
                                   for p in directory.rglob('*') if p.is_file() and p != path}
     write(path, manifest)
@@ -160,6 +174,7 @@ def start(directory, binary, duration, rate, mixed=True, workers=128):
                 'coverage': 'HTTP/1.1,H2,H3' + (' and owned scripted WS,gRPC,DNS,Redis,Postgres,MySQL,Modbus,DNP3,SMTP wire profiles' if mixed else ''),
                 'resume': 'monitor validates PID birth/command/token; interrupted duration is never credited',
                 'fail_budget': 'zero forbidden origin bytes/requests, drops, errors, false blocks; p99 <=2s; heap <=1GiB'}
+    manifest['provenance_before'] = provenance(binary)
     (directory / 'http').mkdir(mode=0o700)
     write(directory / 'manifest.json', manifest)
     with (directory / 'supervisor.log').open('xb') as log:

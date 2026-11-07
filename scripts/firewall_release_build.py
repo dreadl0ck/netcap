@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import tarfile
 
-from firewall_release import ROOT, ARCHES, KINDS, TESTS, POLICY, CHARTS, require, run, version, write, record, sha, loopback
+from firewall_release import ROOT, ARCHES, KINDS, TESTS, POLICY, CHARTS, require, run, version, write, record, sha, loopback, qualification, checked_file
 
 
 def export_oci(ref, archive):
@@ -135,7 +135,7 @@ def native(args):
     logs = out / 'evidence'
     logs.mkdir()
     env = dict(os.environ, CGO_ENABLED='1')
-    packages = ['./cmd/netcap-firewall', './cmd/firewall', './internal/waf', './internal/policy', './internal/policystate', './internal/policycontrol', './internal/gateway', './internal/enforcer', './internal/networkfirewall', './internal/transparentfirewall', './internal/firewallstate', './internal/firewallfleet', './internal/firewalltransport', './internal/responseactions']
+    packages = ['./cmd/netcap-firewall', './cmd/firewall', './internal/firewallui', './internal/waf', './internal/policy', './internal/policystate', './internal/policycontrol', './internal/gateway', './internal/enforcer', './internal/networkfirewall', './internal/transparentfirewall', './internal/firewallstate', './internal/firewallfleet', './internal/firewalltransport', './internal/responseactions']
     proofs = {}
     versions = {}
     for kind in KINDS:
@@ -150,7 +150,8 @@ def native(args):
         name = 'chart-' + chart
         proofs[name] = evidence(logs, name, ['python3', str(ROOT / 'charts' / chart / 'tests/test_render.py')])
     for name, tags in [('race', ''), ('race-coraza', 'coraza'), ('race-http3', 'coraza,http3')]:
-        proofs[name] = evidence(logs, name, ['go', 'test', '-race', '-count=1'] + (['-tags', tags] if tags else []) + packages, env)
+        extra = ['./examples/firewall/qualification'] if tags == 'coraza,http3' else []
+        proofs[name] = evidence(logs, name, ['go', 'test', '-race', '-count=1'] + (['-tags', tags] if tags else []) + packages + extra, env)
     proofs['gateway'] = evidence(logs, 'gateway', ['python3', 'examples/firewall/gateway_smoke.py', str(context / 'netcap-firewall-waf')])
     proofs['image-smoke'] = evidence(logs, 'image-smoke', ['bash', 'examples/firewall/smoke.sh'], dict(os.environ, SKIP_BUILD='1', FIREWALL_IMAGE='netcap-release-waf:' + args.version))
     run('docker', 'tag', 'netcap-release-enforcer:' + args.version, 'netcap-enforcer:0.1.0-local')
@@ -245,6 +246,18 @@ def assemble(args):
         shutil.rmtree(chart)
     if args.reviews:
         m['reviews'] = json.loads(args.reviews.read_text())
+    if getattr(args, 'qualification_run', None):
+        manifest = qualification(args.qualification_run, m['commit'])
+        dest = root / 'soak'
+        dest.mkdir(mode=0o700)
+        for path, digest in manifest['receipt_sha256'].items():
+            src = checked_file(args.qualification_run, {'path': path, 'sha256': digest})
+            target = dest / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(src, target)
+        shutil.copyfile(args.qualification_run / 'manifest.json', dest / 'manifest.json')
+        write(root / 'soak-binding.json', {'commit': m['commit'], 'digests': {k: i['digest'] for k, i in m['images'].items()}, 'manifest': record(root, dest / 'manifest.json')})
+        m['soak'] = record(root, root / 'soak-binding.json')
     write(root / 'candidate.json', m)
     write(root / 'candidate-checklist.json', {'schema': 'netcap-release-checklist/v1', 'candidateSHA256': sha(root / 'candidate.json'), 'externalReviews': m['reviews'], 'operatorSignoffRequired': True, 'requirements': ['both native Linux qualifications', 'exact tested digests and index children', 'per-architecture pinned Syft SPDX', 'every component license and corresponding source export', 'three Helm3 charts appVersion/image digest coherence', 'cosign OIDC signature and SLSA v1 attestations', 'offline verification with pinned trust root', 'protected release environment and immutable tag'], 'publicationApproved': False})
 
@@ -258,6 +271,7 @@ if __name__ == '__main__':
     p.add_argument('--arch', choices=ARCHES)
     p.add_argument('--supplements', type=Path)
     p.add_argument('--reviews', type=Path)
+    p.add_argument('--qualification-run', type=Path, help='completed exact-candidate owned 24h run; required for publication')
     p.add_argument('--rehearsal', action='store_true', help='assemble fixture receipts only; never authorizes publication')
     args = p.parse_args()
     loopback(args.registry)

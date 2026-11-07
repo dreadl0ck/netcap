@@ -187,3 +187,5 @@ test-help:
 	@echo "  test-clean        - Clean test artifacts"
 	@echo ""
 	@echo "Building and releasing is zeus, not make: see zeus/commands.yml"
+
+-include operations.Makefile

@@ -8,6 +8,20 @@ import runner
 
 
 class OwnershipTests(unittest.TestCase):
+    def test_provenance_records_hashes_without_source_bodies_or_git_files(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            source = root / 'source.go'
+            source.write_text('sensitive-body-must-not-appear')
+            binary = root / 'runner'
+            binary.write_bytes(b'fixture')
+            outputs = [b'source.go\0', 'a' * 40 + '\n', 'b' * 40 + '\n', b'', 'build metadata']
+            with patch.object(runner, 'ROOT', root), patch.object(runner.subprocess, 'check_output', side_effect=outputs):
+                receipt = runner.provenance(binary)
+            self.assertNotIn('sensitive-body', json.dumps(receipt))
+            self.assertEqual(set(receipt['source_sha256']), {'source.go'})
+            self.assertTrue(receipt['clean'])
+
     def test_wait_observes_completion_without_relaunch(self):
         states = [dict(state='running', supervisor_owned_live=True),
                   dict(state='pass', supervisor_owned_live=False)]

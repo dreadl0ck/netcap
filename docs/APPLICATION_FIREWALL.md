@@ -571,6 +571,7 @@ GitHub release or PR, or changes a cluster.
 | Native build | `firewall_release_build.py native`: clean committed checkout; native Linux runner and matching Docker architecture; GoReleaser WAF (`coraza,http3`) and enforcer binaries copied into release Dockerfiles once |
 | Version evidence | `version` retains config/policy versions and adds `releaseVersion` / `commit`; `version-smoke` checks both runtime images, embedded version/commit and HTTP/3 build feature |
 | Qualification | Each named policy qualification has a hashed log per architecture; Linux amd64 and arm64 receipts bind the same source commit/version to the shipped image digests; lab overlays add test tools and retain the shipped binary bytes |
+| Final candidate soak | `assemble --qualification-run <run>` validates a completed 24h mixed run, copies hashed receipts and binds them to both index digests. Publication rejects missing soak evidence, old commits, dirty binaries and changed before/after inputs. `check-qualification <run> --commit <full-SHA>` checks eligibility without publication |
 | Images | OCI layouts preserve platform manifests; assembly creates 2 indexes containing exactly the tested amd64/arm64 children; promotion uses `crane copy`, never rebuilds |
 | Helm 3 | Packages all 3 charts with matching `version`, `appVersion`, image tag, repository and index digest; lint/render precede packaging; OCI promotion preserves the chart manifest digest |
 | Offline assets | Each architecture includes binaries, OCI archives, pinned Syft SPDX, source/license inventory and corresponding-source export; source includes the committed tree, vendored Go modules and Go toolchain source; checksum/signature bundles cover the complete directory |
@@ -613,6 +614,7 @@ copies those exact artifacts. A PR run cannot be used as a publication candidate
 | Manual release input | Required evidence |
 | --- | --- |
 | Native qualification | Successful same-commit Linux amd64/arm64 receipts; emulated or synthetic tests cannot satisfy this gate |
+| Soak input | `firewall-release-inputs/qualification/` contains `manifest.json` and all named receipts from the final clean merged commit. Build the runner with VCS stamping enabled; keep source and binary unchanged until completion. The pre-UI `b2b72450` run cannot qualify a later candidate |
 | External reviews | `security`, `license-and-corresponding-source`, `operations`; each needs `decision: approved`, identified reviewer, HTTPS review URI, hashed evidence file, matching commit/version and both index digests; generated slots remain `pending` |
 | Input transport | Same-repository `inputsRun` artifact named `firewall-release-inputs`; native jobs optionally read supplements; publication requires `reviews.json` and its hashed evidence files, copied by `apply-reviews` after verification of the original bundle |
 | Registry authorization | Publication job alone gets `packages: write` / `id-token: write`, with `contents: read`; optional short-lived `FIREWALL_REGISTRY_TOKEN` must be scoped to the intended repository/packages, otherwise job-scoped `GITHUB_TOKEN`; no contents write or repository-wide PAT |
@@ -620,6 +622,12 @@ copies those exact artifacts. A PR run cannot be used as a publication candidate
 
 There is no external approval or production qualification supplied by the local
 rehearsal. `candidate-checklist.json` reports `publicationApproved: false`.
+
+`scripts/firewall-integration-gates.json` records branch dependencies and external
+gates. The qualification runner requires `waf.Config.CRSTargetExclusions` and
+`waf.CRSTargetExclusion` from the web integration branch (`41535d61`); until that
+merge, its Go build fails rather than substituting an exception stub. The bounded
+pilot CLI remains local-only because no production target authorization exists.
 
 ### Verified upgrade planning
 

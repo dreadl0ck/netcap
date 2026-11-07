@@ -1,0 +1,23 @@
+{
+  "schema": "netcap-firewall-integration-gates/v1",
+  "base": "0628f6d7",
+  "qualificationTopic": "b2b7245086c27d10b4508094429e074a32204f26",
+  "releaseTopic": "73007571dade28111ad5a24bf4019e25ffe3a111",
+  "webIntegrationDependency": {
+    "commit": "41535d61",
+    "interfaces": ["waf.Config.CRSTargetExclusions", "waf.CRSTargetExclusion"],
+    "owner": "web integration agent",
+    "requiredBefore": "qualification Go build and final merged-candidate CI"
+  },
+  "externalGates": {
+    "reviews": "scripts/firewall-release-policy.json externalReviews; all pending until real digest-bound evidence",
+    "soak": "24h mixed run on clean final merged commit with identical before/after source and binary provenance",
+    "native": "Linux amd64 and arm64 exact shipped binaries and OCI digests",
+    "publication": "manual workflow_dispatch, matching immutable tag and protected firewall-release environment only",
+    "productionPilot": "not authorized; examples/firewall/qualification/pilot.py permits bounded owned-local-fake rehearsal only"
+  },
+  "topicSoak": {
+    "runRoot": "/var/folders/sb/n7njgj0s1ln8wkb4j9hs4n8h0000gn/T/opencode/topic-owned-24h-b2b72450",
+    "candidateEligibility": "pre-UI topic binary; cannot qualify the integrated or future merged candidate"
+  }
+}
