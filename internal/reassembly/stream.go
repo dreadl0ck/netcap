@@ -33,6 +33,26 @@ type Stream interface {
 	ReassemblyComplete(ac AssemblerContext, firstFlow gopacket.Flow, reason string) bool
 }
 
+// PostCloseObserver retains wire observations until idle expiry/EOF. Such bytes
+// are not proof of endpoint delivery; their context carries TCPObservation().
+type PostCloseObserver interface {
+	ObservePostClose() bool
+}
+
+type observationContext struct {
+	AssemblerContext
+	reason string
+}
+
+func (c *observationContext) TCPObservation() string { return c.reason }
+
+func (c *observationContext) GetLinkFlow() gopacket.Flow {
+	if original, ok := c.AssemblerContext.(interface{ GetLinkFlow() gopacket.Flow }); ok {
+		return original.GetLinkFlow()
+	}
+	return gopacket.Flow{}
+}
+
 // streamFactory is used by assembly to create a new stream for each
 // new TCP session.
 type streamFactory interface {

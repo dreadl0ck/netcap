@@ -2720,6 +2720,8 @@ message IMAP {
   
   // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
   string CommunityID = 26;
+  // Capture/transport qualifications; observed bytes do not prove peer delivery.
+  string Notes = 27;
 }
 
 // Diameter is an authentication, authorization, and accounting protocol for computer networks.

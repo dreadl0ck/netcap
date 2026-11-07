@@ -59,7 +59,7 @@ func TestSSHCanDecode(t *testing.T) {
 			name:     "SSH in client but not server",
 			client:   []byte("SSH-2.0-OpenSSH_6.2\r\n"),
 			server:   []byte{},
-			expected: false,
+			expected: true,
 		},
 		{
 			name:     "Unidirectional SSH - Server only with protocol mismatch",

@@ -55,6 +55,9 @@ func NewTCPOptionCheck() TCPOptionCheck {
 
 // Accept checks whether the packet should be accepted by checking TCP options.
 func (t *TCPOptionCheck) Accept(tcp *layers.TCP, dir TCPFlowDirection, nextSeq Sequence) error {
+	if err := ValidateTCPOptions(tcp); err != nil {
+		return err
+	}
 	options := t.getOptions(dir)
 
 	if tcp.SYN {
@@ -106,6 +109,32 @@ func (t *TCPOptionCheck) Accept(tcp *layers.TCP, dir TCPFlowDirection, nextSeq S
 		options.receiveWindow <<= uint(options.scale)
 	}
 
+	return nil
+}
+
+// ValidateTCPOptions checks framing even when an option is irrelevant to the FSM.
+func ValidateTCPOptions(tcp *layers.TCP) error {
+	for _, o := range tcp.Options {
+		n := len(o.OptionData)
+		valid := true
+		switch o.OptionType {
+		case layers.TCPOptionKindEndList, layers.TCPOptionKindNop:
+			valid = n == 0
+		case layers.TCPOptionKindMSS:
+			valid = n == 2
+		case layers.TCPOptionKindWindowScale:
+			valid = n == 1 && o.OptionData[0] <= 14
+		case layers.TCPOptionKindSACKPermitted:
+			valid = n == 0
+		case layers.TCPOptionKindSACK:
+			valid = n >= 8 && n%8 == 0
+		case layers.TCPOptionKindTimestamps:
+			valid = n == 8
+		}
+		if !valid {
+			return fmt.Errorf("invalid TCP option %d length %d", o.OptionType, n)
+		}
+	}
 	return nil
 }
 
@@ -216,6 +245,11 @@ func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 		if tcp.SYN && !tcp.ACK && dir == t.dir {
 			// re-transmission
 			return true
+		}
+		if t.options.SupportMissingEstablishment && tcp.ACK && !tcp.SYN {
+			// A one-sided capture can contain the SYN and later data, but no SYN-ACK.
+			t.state = TCPStateEstablished
+			return t.CheckState(tcp, dir)
 		}
 	/* established */
 	case TCPStateEstablished:

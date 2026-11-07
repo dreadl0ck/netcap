@@ -75,7 +75,7 @@ func (p *StreamPool) refreshDueLocked(conn *connection, releaseClaim bool) {
 	if !conn.live {
 		return
 	}
-	closed := conn.s2c.closed && conn.c2s.closed
+	closed := conn.s2c.closed && conn.c2s.closed || conn.observeClose
 	pending := (!conn.s2c.closed && conn.s2c.first != nil) || (!conn.c2s.closed && conn.c2s.first != nil)
 	if !p.trackIdle && !pending && !closed && (conn.connectionDue == nil || (!releaseClaim && !conn.due.hasPending && !conn.due.hasClosed)) {
 		return
@@ -196,7 +196,12 @@ func (a *Assembler) flushDue(ref connectionRef, opt FlushOptions) (flushed, clos
 		a.connPool.refreshDueLocked(conn, true)
 		conn.mu.Unlock()
 	}()
-	if !opt.TI.IsZero() && conn.lastSeen().Before(opt.TI) && !(conn.s2c.closed && conn.c2s.closed) {
+	closeObservation := conn.observeClose && conn.lastSeen().Before(opt.TC)
+	if (closeObservation || !opt.TI.IsZero() && conn.lastSeen().Before(opt.TI)) && !(conn.s2c.closed && conn.c2s.closed) {
+		reason := "idle-expired"
+		if closeObservation {
+			reason = "post-close-observation-expired"
+		}
 		for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
 			if half.closed {
 				continue
@@ -208,7 +213,7 @@ func (a *Assembler) flushDue(ref connectionRef, opt FlushOptions) (flushed, clos
 				a.skipFlush(conn, half)
 			}
 			if !half.closed {
-				a.closeHalfConnection(conn, half, "idle-expired")
+				a.closeHalfConnection(conn, half, reason)
 			}
 			closed++
 		}
