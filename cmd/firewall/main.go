@@ -53,6 +53,7 @@ func configFlags() []cli.Flag {
 func GetCommand() *cli.Command {
 	return &cli.Command{Name: "firewall", Usage: "protocol-aware application firewall", Commands: []*cli.Command{
 		operationsCommand(),
+		applianceCommand(),
 		{Name: "serve", Usage: "serve the enforcing HTTP reverse proxy", Flags: configFlags(), Action: withSignals(serve)},
 		{Name: "validate", Usage: "validate runtime, policy and enabled inspection engines without listening", Flags: configFlags(), Action: validate},
 		{Name: "mcp", Usage: "stdio MCP for isolated policy authoring and replay (not a running target)", Flags: configFlags(), Action: withSignals(stdio)},

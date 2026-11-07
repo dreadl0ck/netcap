@@ -54,6 +54,9 @@ type Config struct {
 	// InspectTLS enables bounded visible ClientHello metadata; it never holds a
 	// packet waiting for a later segment and cannot inspect encrypted application data.
 	InspectTLS bool
+	// Persistent appliance hooks require lifetime-lock fencing for recovery.
+	OwnershipNonce string
+	RecoverOwned   bool
 }
 
 type Counters struct{ Packets, Accepted, Dropped, WouldDeny, ParseErrors, EvaluationErrors, Deadlines, Overloads, VerdictErrors, ReceiveErrors uint64 }
@@ -72,6 +75,12 @@ type Firewall struct {
 var identifier = regexp.MustCompile(`^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,63}$`)
 
 func New(c Config, e Evaluator) (*Firewall, error) {
+	if c.RecoverOwned && c.OwnershipNonce == "" {
+		return nil, errors.New("recovery requires an appliance ownership nonce")
+	}
+	if c.OwnershipNonce != "" && (!regexp.MustCompile(`^[a-f0-9]{32}$`).MatchString(c.OwnershipNonce) || c.FailureVerdict != Deny || c.BypassWithoutListener || c.FailOpenOnOverflow) {
+		return nil, errors.New("persistent appliance requires a 128-bit lowercase hex nonce and deny on missing listener, overflow and deadline")
+	}
 	if !identifier.MatchString(c.Namespace) || c.Namespace == "default" || !identifier.MatchString(c.Interface) || len(c.Interface) > 15 || c.Interface == "lo" {
 		return nil, errors.New("explicit non-default named namespace and non-loopback interface required")
 	}

@@ -1,0 +1,11 @@
+FROM alpine:3.23.2
+RUN apk add --no-cache iproute2 nftables util-linux
+COPY appliance.test /appliance.test
+COPY networkfirewall.test /networkfirewall.test
+COPY transparentfirewall.test /transparentfirewall.test
+COPY firewall /firewall
+COPY appliance-lab.json /lab/examples/firewall/appliance-lab.json
+WORKDIR /lab/internal/appliance
+ENV NETCAP_APPLIANCE_LAB=1 NETCAP_NETWORKFIREWALL_LAB=1 NETCAP_TRANSPARENTFIREWALL_LAB=1
+ENV TFW_GATEWAY_BINARY=/firewall
+ENTRYPOINT ["/bin/sh", "-ec"]
