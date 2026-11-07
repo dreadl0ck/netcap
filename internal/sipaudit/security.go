@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package packet
+package sipaudit
 
 import (
 	"fmt"
@@ -58,8 +58,8 @@ var (
 // Maximum header length before considering it oversized (potential buffer overflow)
 const maxHeaderLength = 256
 
-// analyzeSIPSecurity performs comprehensive security analysis on a SIP message
-func analyzeSIPSecurity(msg *types.SIP) {
+// Analyze runs after endpoint attribution, before optional body suppression.
+func Analyze(msg *types.SIP) {
 	var riskFactors []string
 	riskScore := 0
 

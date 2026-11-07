@@ -35,6 +35,7 @@ import (
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
+	"github.com/dreadl0ck/netcap/internal/sipaudit"
 	"github.com/dreadl0ck/netcap/internal/utils"
 )
 
@@ -91,6 +92,12 @@ func udpConversationKey(packet gopacket.Packet) uint64 {
 
 // HandleUDP takes an UDP packet and tracks the data seen for the conversation.
 func (u *udpStreamPool) HandleUDP(packet gopacket.Packet, udpLayer gopacket.Layer) {
+	// Signaling is needed even when only RTP/DTMF output was selected. Observe
+	// it before the EOF UDP drain, independently of the SIP audit writer.
+	if wire, _, err := sipaudit.Parse(udpLayer.LayerPayload(), false); err == nil {
+		msg := sipaudit.Record(wire, packet.Metadata().Timestamp.UnixNano())
+		sipaudit.Media.Observe(msg)
+	}
 	key := udpConversationKey(packet)
 
 	u.Lock()
@@ -218,10 +225,11 @@ func (u *udpStream) decode() {
 
 	// first message defines the client
 	clientTransport := u.data[0].Transport()
+	clientNetwork := u.data[0].Network()
 
 	// search for the first server reply
 	for _, d := range u.data {
-		if d.Transport() != clientTransport {
+		if d.Transport() != clientTransport || d.Network() != clientNetwork {
 			sr = d.Raw()
 			serverFirstReply = d.CaptureInfo().Timestamp
 			break
@@ -232,7 +240,7 @@ func (u *udpStream) decode() {
 	// TODO: this is a bit of a hack, since we are reusing the constants from the TCP reassembly
 	// TODO: add generic stream direction types in netcap and use those in the readers Decode() implementations instead
 	for _, d := range u.data {
-		if d.Transport() == clientTransport {
+		if d.Transport() == clientTransport && d.Network() == clientNetwork {
 			// client
 			d.SetDirection(reassembly.TCPDirClientToServer)
 		} else {
@@ -242,6 +250,7 @@ func (u *udpStream) decode() {
 	}
 
 	conv := &core.ConversationInfo{
+		Transport:         core.UDP,
 		Data:              u.data,
 		Ident:             utils.CreateFlowIdentFromLayerFlows(u.data[0].Network(), u.data[0].Transport()),
 		FirstClientPacket: u.data[0].CaptureInfo().Timestamp,

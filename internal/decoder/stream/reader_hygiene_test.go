@@ -186,6 +186,7 @@ func driveReader(t *testing.T, s sample) (readerReport, bool) {
 		FirstServerPacket:    time.Unix(0, serverFirst),
 	}
 
+	defer prepareMediaSample(s, conv)()
 	sd.Factory.New(conv).Decode()
 	if s.decoder == "TLSCertificate" {
 		if tls.GetCertificateCount() == 0 {

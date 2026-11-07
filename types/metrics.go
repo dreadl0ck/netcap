@@ -33,6 +33,8 @@ var Metrics = []prometheus.Collector{
 	geneveMetric,
 	pktapMetric,
 	tlsRecordMetric,
+	rtpMetric,
+	dtmfMetric,
 	ipSecAhMetric,
 	ip4Metric,
 	ip4PayloadEntropy,

@@ -92,6 +92,8 @@ var fieldsSIP = []string{
 	fieldHasSDPPrivateIPLeak,
 	fieldSDPConnectionIP,
 	fieldSDPMediaType,
+	fieldCommunityID,
+	"Transport",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -140,6 +142,8 @@ func (s *SIP) CSVRecord() []string {
 		strconv.FormatBool(s.HasSDPPrivateIPLeak),
 		s.SDPConnectionIP,
 		s.SDPMediaType,
+		s.CommunityID,
+		s.Transport,
 	})
 }
 
@@ -151,9 +155,9 @@ func (s *SIP) Time() int64 {
 // JSON returns the JSON representation of the audit record.
 func (u *SIP) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
-	u.Timestamp /= int64(time.Millisecond)
-
-	return jsonMarshaler.MarshalToString(u)
+	copy := *u
+	copy.Timestamp /= int64(time.Millisecond)
+	return jsonMarshaler.MarshalToString(&copy)
 }
 
 var sipMetric = prometheus.NewCounterVec(
@@ -231,6 +235,8 @@ func (s *SIP) Encode() []string {
 		sipEncoder.Bool(s.HasSDPPrivateIPLeak),
 		sipEncoder.String(fieldSDPConnectionIP, s.SDPConnectionIP),
 		sipEncoder.String(fieldSDPMediaType, s.SDPMediaType),
+		sipEncoder.String(fieldCommunityID, s.CommunityID),
+		sipEncoder.String("Transport", s.Transport),
 	})
 }
 
