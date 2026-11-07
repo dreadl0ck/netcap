@@ -20,7 +20,7 @@
 [![Homepage](https://img.shields.io/badge/Homepage-blue.svg)](https://netcap.io)
 [![Documentation](https://img.shields.io/badge/Documentation-blue.svg)](https://docs.netcap.io)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap?ref=badge_shield)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/dreadl0ck/netcap)
+[![Ask DeepWiki](https://img.shields.io/badge/Ask-DeepWiki-blue.svg)](https://deepwiki.com/dreadl0ck/netcap)
 
 **Netcap** (NETwork CAPture) converts network packets into structured Protocol Buffer audit records for security monitoring, forensic analysis and dataset preparation. The Go binary includes concurrent packet/stream decoders and a local web UI. Discover its actual inventory with `net capture -overview`; record definitions are in `types/netcap.proto`.
 
