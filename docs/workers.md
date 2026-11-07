@@ -23,6 +23,20 @@ and compare output witnesses as well as elapsed time and memory.
 | Optional packet retention | Default selected budgets: 32 MiB segments / 512 MiB retained |
 | Service upload | Default 100 MiB per file; not a hard global filesystem ceiling |
 
+Out-of-order page caches allocate lazily (`internal/reassembly/memory.go`).
+`BenchmarkPageCacheInitialization`, Darwin/arm64 Apple M5 Max, 3 runs at 100 ms:
+
+| Page-cache instances | Before, bytes/op | Lazy, bytes/op |
+| --- | ---: | ---: |
+| 1 | 2,057,561 | 88 |
+| 2 | 4,115,121 | 176 |
+| 4 | 8,230,240 | 352 |
+| 8 | 16,460,483 | 704 |
+
+These are initialization allocations, not whole-capture RSS. In-order streams
+allocate no out-of-order pages; the first queued segment initializes the existing
+1,024-page cache. Aggregate reassembly/parser memory still needs separate bounds.
+
 Check `capture -h` for the exact option names and installed defaults. Queue
 occupancy/drop counters, `capture-manifest.json`, reassembly health and behavioral
 health report different layers. A null kernel counter is unavailable, not zero.
