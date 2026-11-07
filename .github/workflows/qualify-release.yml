@@ -77,6 +77,7 @@ jobs:
           for member in ['kev.json','dhcp-fingerprints-odbl.json','mac-organizations.json','webtech-descriptors.json','service-signatures.json','ENRICHMENT_NOTICES.txt','source-evidence.json']:
               assert (optional/'versions'/version/member).is_file(),member
           PY
+          python scripts/qualify-enrichment-client.py "$NETCAP_BINARY" "$NC_CONFIG_ROOT" "$RUNNER_TEMP/enrichment-integration"
       - name: Install the exact generated Homebrew formula from its verified cache
         if: matrix.os == 'macos-26'
         run: |

@@ -13,7 +13,7 @@ extraction. Agent behavior state defaults under the OS user configuration
 directory in `netcap/behavior/<interface>/`; select `-behavior-baseline` explicitly
 when managing its location.
 
-![](<.gitbook/assets/Netcap-IOT (2).svg>)
+![](<.gitbook/assets/Netcap-IOT (2)-legacy-gitbook.svg>)
 
 The wire format changed after v0.10.2 and is not compatible with earlier versions, none of which produced readable output: records were sent without length prefixes.
 

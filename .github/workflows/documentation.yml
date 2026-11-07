@@ -40,6 +40,8 @@ jobs:
         with:
           go-version: '1.27.0'
           cache: true
+      - name: Verify tracked Go module archive
+        run: GOWORK=off go test ./tests/modulearchive -count=1
       - uses: pnpm/action-setup@v4
         with:
           version: 9.15.0

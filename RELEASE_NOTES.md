@@ -1,3 +1,15 @@
+## Module consumption and catalogue integration fixes
+
+`v0.15.4` repairs module consumption and optional enrichment integration from
+v0.15.3. Install the reviewed optional channel with `net util --download-enrichment`.
+
+| Area | Fix |
+| --- | --- |
+| Go modules | Eight case-colliding GitBook asset pairs retain both original blobs under distinct filenames; module-zip checks guard release and documentation CI |
+| DHCP | CLI and service collector configurations enable option-55 lookups through admitted catalogues; stale legacy JSON remains inactive |
+| Service catalogue API | `/api/service-signatures` and capture initialization use the same verified optional installation |
+| Database summary | Device catalogue availability is read from the installation without mutating capture globals; `scope: installation` distinguishes availability from a capture's loaded state |
+
 ## Optional signed enrichment
 
 `v0.15.3` adds an independent, opt-in signed enrichment channel. Core database

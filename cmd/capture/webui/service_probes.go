@@ -3,12 +3,15 @@
 package webui
 
 import (
+	"crypto/ed25519"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
+	"github.com/dreadl0ck/netcap/internal/enrichment"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/servicesignatures"
 )
@@ -38,14 +41,18 @@ func (s *Server) handleServiceSignatures(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Read-only catalogue", http.StatusMethodNotAllowed)
 		return
 	}
-	e, err := servicesignatures.Load(filepath.Join(resolvers.DataBaseFolderPath, servicesignatures.FileName))
 	w.Header().Set("Content-Type", "application/json")
-	response := map[string]any{"catalogue": e.Catalogue(), "inventory": e.Inventory("catalogue-on-disk", err), "source": "external", "degraded": err != nil}
+	_ = json.NewEncoder(w).Encode(serviceSignatureCatalogue(enrichment.Root(resolvers.ConfigRootPath), enrichment.SigningRoot(), time.Now()))
+}
+
+func serviceSignatureCatalogue(root string, trust ed25519.PublicKey, now time.Time) map[string]any {
+	e, err := enrichment.LoadServiceSignatures(root, trust, now)
+	response := map[string]any{"catalogue": e.Catalogue(), "inventory": e.Inventory("installed-catalogue", err), "source": "external", "degraded": err != nil}
 	if err != nil {
 		response["warning"] = err.Error()
 		response["source"] = "builtin"
 	}
-	_ = json.NewEncoder(w).Encode(response)
+	return response
 }
 
 func (s *Server) handleServiceSignatureStatus(w http.ResponseWriter, r *http.Request) {

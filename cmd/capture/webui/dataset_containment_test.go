@@ -77,6 +77,7 @@ func TestCaptureSignatureStatusDoesNotReloadCatalogue(t *testing.T) {
 }
 
 func TestReadOnlyServiceSignatureCatalogue(t *testing.T) {
+	t.Setenv("NC_ENRICHMENT_ROOT", filepath.Join(t.TempDir(), "absent-enrichment"))
 	old := resolvers.DataBaseFolderPath
 	resolvers.DataBaseFolderPath = t.TempDir()
 	t.Cleanup(func() { resolvers.DataBaseFolderPath = old })

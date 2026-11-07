@@ -14,6 +14,7 @@ import (
 )
 
 type DeviceCatalogueStatus struct {
+	Scope        string `json:"scope"`
 	Kind         string `json:"kind"`
 	State        string `json:"state"`
 	Version      string `json:"version,omitempty"`
@@ -33,6 +34,7 @@ func deviceCatalogueStatus(kind string) DeviceCatalogueStatus {
 		status.LicenseURL = "https://metadata.ftp-master.debian.org/changelogs/main/i/ieee-data/ieee-data_20260625_copyright"
 		status.DownloadFile = "mac-organizations.json"
 	}
+	status.Scope = "capture"
 	return status
 }
 
@@ -54,6 +56,43 @@ func DeviceCatalogueStatuses() []DeviceCatalogueStatus {
 		mac = deviceCatalogueStatus("mac")
 	}
 	return []DeviceCatalogueStatus{dhcp, mac}
+}
+
+// InstalledDeviceCatalogueStatuses reports admission without changing capture state.
+func InstalledDeviceCatalogueStatuses() []DeviceCatalogueStatus {
+	return installedDeviceCatalogueStatuses(enrichment.Root(ConfigRootPath), enrichment.SigningRoot(), time.Now())
+}
+
+func installedDeviceCatalogueStatuses(root string, trust ed25519.PublicKey, now time.Time) []DeviceCatalogueStatus {
+	members, admissionErr := enrichment.Open(root, trust, now)
+	statuses := make([]DeviceCatalogueStatus, 0, 2)
+	for _, kind := range []string{"dhcp", "mac"} {
+		status := deviceCatalogueStatus(kind)
+		status.Scope, status.State = "installation", "unavailable"
+		err := admissionErr
+		if err == nil {
+			if kind == "dhcp" {
+				var catalogue *devicecatalog.DHCP
+				catalogue, err = devicecatalog.ParseDHCP(members[status.DownloadFile])
+				if err == nil {
+					status.Version = catalogue.Version
+				}
+			} else {
+				var catalogue *devicecatalog.MAC
+				catalogue, err = devicecatalog.ParseMAC(members[status.DownloadFile])
+				if err == nil {
+					status.Version = catalogue.Version
+				}
+			}
+		}
+		if err == nil {
+			status.State = "verified-installed"
+		} else {
+			status.Reason = err.Error()
+		}
+		statuses = append(statuses, status)
+	}
+	return statuses
 }
 
 func initDeviceCatalogues(mac, dhcp bool) {

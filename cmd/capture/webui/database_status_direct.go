@@ -173,7 +173,7 @@ func currentDatabaseStatus(selection ...string) DatabaseStatus {
 	}
 
 	return DatabaseStatus{
-		DeviceCatalogues: resolvers.DeviceCatalogueStatuses(),
+		DeviceCatalogues: resolvers.InstalledDeviceCatalogueStatuses(),
 		GeoProviders:     strings.Join(order, ","),
 		GeoStatus:        statuses,
 		GeoError:         errorText(geoErr),

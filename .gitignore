@@ -30,6 +30,8 @@ tests/wireshark-corpus/
 !tests/integration/**
 !tests/documentation/
 !tests/documentation/**
+!tests/modulearchive/
+!tests/modulearchive/**
 .idea
 types/python
 types/java
