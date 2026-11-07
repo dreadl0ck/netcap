@@ -63,7 +63,7 @@ func (w *partialWriter) Write(m proto.Message) error {
 }
 
 func TestPartialSSHFraming(t *testing.T) {
-	for _, mode := range []string{"initial", "split", "hole", "budget", "post-close", "unterminated", "preamble"} {
+	for _, mode := range []string{"initial", "split", "hole", "budget", "post-close", "post-close-prefix", "post-close-split", "unterminated", "preamble"} {
 		t.Run(mode, func(t *testing.T) {
 			writer, count := Decoder.Writer, Decoder.NumRecordsWritten
 			w := &partialWriter{}
@@ -83,6 +83,10 @@ func TestPartialSSHFraming(t *testing.T) {
 				marker.DiscardedBytes = 5
 			case "post-close":
 				last.TCPObservation = "after-rst"
+			case "post-close-prefix":
+				first.TCPObservation = "after-rst"
+			case "post-close-split":
+				first.TCPObservation, last.TCPObservation = "after-rst", "after-rst"
 			case "unterminated":
 				last.RawData = []byte("example_1.0")
 			case "preamble":
@@ -91,7 +95,7 @@ func TestPartialSSHFraming(t *testing.T) {
 			conv := &core.ConversationInfo{Data: data, ClientData: data, Ident: "192.0.2.1:40000->192.0.2.2:22", TCPRoleSource: "syn"}
 			Decoder.Factory.New(conv).Decode()
 			want := 1
-			if mode == "hole" || mode == "budget" || mode == "post-close" || mode == "unterminated" {
+			if mode == "hole" || mode == "budget" || mode == "post-close" || mode == "post-close-prefix" || mode == "unterminated" {
 				want = 0
 			}
 			if len(w.records) != want {
@@ -101,6 +105,9 @@ func TestPartialSSHFraming(t *testing.T) {
 				r := w.records[0]
 				if r.Ident != "SSH-2.0-example_1.0" || !r.IsClient || r.Timestamp != time.Unix(9, 123).UnixNano() || !strings.Contains(r.Notes, "peer not observed") {
 					t.Fatalf("partial observation lost: %v", r)
+				}
+				if mode == "post-close-split" && !strings.Contains(r.Notes, "after-rst; endpoint delivery unconfirmed") {
+					t.Fatalf("post-close qualification lost: %v", r)
 				}
 			}
 		})
