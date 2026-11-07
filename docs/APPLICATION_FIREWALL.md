@@ -482,6 +482,79 @@ AMD64/ARM64 deployment, capture-bridge and Kubernetes jobs passed at `bbc20a6`
 ([run 42333924481](https://github.com/dreadl0ck/netcap/actions/runs/42333924481)).
 No emulated result counts as native qualification. Reports live in `$TMPDIR`/CI artifacts, not git.
 
+### Local sustained qualification
+
+`examples/firewall/qualification/` supplies a loopback-only open-loop runner and
+JSON receipts. Build tags are `coraza,http3,nodpi,noyara`; `runner.py` starts a
+detached owned process and records its birth/command identity, binary/source
+SHA-256, Go dependency versions, hardware and checkpoint. Evidence stays outside git.
+The supervisor defaults to 128 bounded generator workers; raw runner `-workers`
+defaults to 32. Scheduling-inclusive latency still counts generator pauses.
+
+| Profile | Exercised wire subset |
+| --- | --- |
+| HTTP/1.1, H2, H3 | Native/CRS × 0/10/100/1000 filler rules: 24 profiles, each with a marker-denial rule |
+| Local evaluator state | One additional HTTP profile exercises a one-second sliding window and asserts zero groups/entries after expiry/maintenance |
+| WebSocket / gRPC | RFC 6455 uncompressed masked text/echo; identity unary gRPC over verified TLS H2 |
+| DNS / Redis | UDP A question/compressed A answer; RESP2 SET and denied FLUSHALL |
+| Postgres / MySQL | Protocol 3.0 startup/simple query; protocol-10 scripted greeting/4.1 handshake/COM_QUERY |
+| Modbus / DNP3 / SMTP | TCP FC3/FC6; unconfirmed single-fragment read/CROB; EHLO/envelope/whole DATA |
+
+The nine non-HTTP peers are owned scripted fixtures, not vendor-server version
+qualification. `protocols.py` separately requires every named integration test,
+every requested repetition and zero skips; these bounded tests cover additional
+prepared-statement, fragmentation, replay, authentication and dependency cases.
+
+| Local gate | Requirement |
+| --- | --- |
+| Load | Allowed and denied operations on all 34 profiles; zero errors, generator drops, false blocks, forbidden origin bytes/requests and forbidden fixture effects; scheduled-arrival p99 ≤2 s |
+| Resources | Five-second whole-process samples: Go heap ≤1 GiB, RSS ≤2 GiB, descriptors/goroutines ≤4096, owned scratch ≤64 MiB; current/highwater/recovery plus local evaluator state are recorded |
+| Lifecycle | Owned origin 503, policy reload, in-process proxy/listener restart and a changed TLS certificate SHA-256; allow/deny and released buffers are checked after recovery |
+| Corpus | Calibration/held-out business routes and attack controls require exact status and independent origin deltas; critical false blocks must equal 0 |
+| FTW | Immutable Apache-2.0 CRS source/license hashes; reviewed 941100 cases 2/4 over HTTP/1.1/H2/H3; four other upstream cases remain excluded |
+| Negative control | `-inject-leak` sends directly to the owned origin and must exit 1; `audit.py` repeats it against the measured binary |
+| Pilot | `pilot.py` accepts only a finite allowlisted local fake plan; absent production authorization is recorded as unrun, not a code failure |
+
+```bash
+go test -race -tags coraza,http3,nodpi,noyara ./examples/firewall/qualification ./internal/waf
+python3 -m unittest discover -s examples/firewall/qualification -v
+ROOT=$(mktemp -d "${TMPDIR:-/tmp}/netcap-qualification.XXXXXX")
+go build -tags coraza,http3,nodpi,noyara -o "$ROOT/qualify" ./examples/firewall/qualification
+mkdir "$ROOT/run"
+python3 examples/firewall/qualification/runner.py start "$ROOT/run" --binary "$ROOT/qualify" --duration 86400 --rate 50
+python3 examples/firewall/qualification/runner.py monitor "$ROOT/run"
+python3 examples/firewall/qualification/runner.py resume "$ROOT/run"
+python3 examples/firewall/qualification/runner.py stop "$ROOT/run"
+```
+
+`resume` observes the same verified process/checkpoint; it never credits downtime
+or relaunches a dead process. `stop` refuses an unverified owner. A 24-hour request
+does not establish 24-hour evidence: only a completed `soak_24h_pass: true` does.
+OS-process/external-state disruptions under sustained load, vendor-server matrices
+and external UDP ingress/LB/NAT/CNI paths remain separate gates.
+
+The measured baseline password false positive was CRS `942100`. Qualification
+uses exactly `crsTargetExclusions: [{path: /api/account, method: POST, argument:
+password, ruleID: 942100}]`; the original password case is calibration and a new
+password case remains held out. `coraza_exclusions_test.go` checks that XSS on
+that field, other fields/routes/methods and native denials remain enforced.
+Exclusions accept at most 32 literal scopes and only application-attack rule IDs.
+
+For shorter evidence use `--duration 1800`; direct `-quick -mixed -duration 30s`
+is a quick check. Run `-ftw-only`, `protocols.py --repetitions 2` and
+`pilot.py --execute-local-fake` into fresh evidence directories, then join them
+with `audit.py --run R --ftw F --protocols P --pilot L --output A`.
+`qualification.json` distinguishes the local pass from every unrun deployment gate.
+
+The native ARM64 sample on Apple M5 Max/Go 1.27.0 completed 1,800 seconds at
+50 offers/s with 128 workers: 90,000 offers across 34 profiles, 71,980 allowed,
+18,020 denied, zero errors/drops/false blocks/forbidden origin bytes or fixture
+effects. All 179 fault cycles recovered; maximum profile p99 was bounded by
+256 ms. The 288 corpus rows and six FTW wire cases passed with zero protocol
+skips. `topic-owned-final-audit/qualification.json` records the joined local pass;
+the load receipt SHA-256 is `1915bf55ce55bcca6a23cbc0c478b3e4c98f316f0f5e103a980a61bde2c2123e`.
+This is 30-minute evidence; `soak_24h_pass` remains false.
+
 ## Rollout and rollback
 
 | Step | Check |
