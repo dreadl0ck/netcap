@@ -83,6 +83,18 @@ a unique HTTP transaction or certificate occurrence. HTTP exports no longer
 guess ports 80/443/8080. MCP connection carving requires the observed transport;
 its `start_ns`/`end_ns` fields preserve nanoseconds as strings.
 
+Explicit `sessionId`/`inputFile` selectors must resolve to a registered capture;
+unknown selectors return 404, conflicting selectors or stale `runId` return 409,
+and empty/duplicate selectors return 400. Only requests without selectors may use
+the active capture. One request keeps one input/output context across active-file
+changes. Service reads require ownership or a public preloaded capture; configured
+MCP admin credentials retain administrative access. IDs alone no longer grant
+cross-owner private reads. The MCP backend client does not forward credentials
+through redirects or treat a 3xx body as successful API data.
+
+`POST /api/reanalyze` also accepts `runId` in its JSON body. Body and query
+selectors must agree; a stale generation cannot enqueue work.
+
 ## Reanalyze a capture
 
 `POST /api/reanalyze` creates an `analysis-*` sibling directory and a separate

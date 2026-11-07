@@ -772,7 +772,7 @@ func (s *Server) Start() error {
 
 	s.httpServer = &http.Server{
 		Addr:         s.addr,
-		Handler:      gzipMiddleware(s.corsMiddleware(mux)),
+		Handler:      gzipMiddleware(s.corsMiddleware(s.captureSelectionMiddleware(mux))),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 5 * time.Minute,
 		IdleTimeout:  120 * time.Second,
@@ -1025,9 +1025,10 @@ func (s *Server) SetFileOutputDir(inputFile, outputDir string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.fileOutputDirs[inputFile] = outputDir
-	// Also update the active output directory so API calls use the correct path immediately
-	s.outDir = outputDir
-	log.Printf("[WebUI] Output directory set for %s: %s (active outDir updated)", inputFile, outputDir)
+	if s.activeInputFile == "" || s.activeInputFile == inputFile {
+		s.outDir = outputDir
+	}
+	log.Printf("[WebUI] Output directory set for %s: %s", inputFile, outputDir)
 }
 
 // GetFileOutputDir retrieves the output directory for a specific input file

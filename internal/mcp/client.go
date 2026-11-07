@@ -24,8 +24,9 @@ import (
 // over loopback. It exists so MCP tool handlers stay 5-line transformers
 // and the analytical logic remains in exactly one place (the webui handlers).
 type NetcapClient struct {
-	baseURL string
-	hc      *http.Client
+	baseURL    string
+	hc         *http.Client
+	adminToken string
 }
 
 // NewNetcapClient constructs a client targeting baseURL (e.g.
@@ -172,6 +173,7 @@ func (c *NetcapClient) GetRaw(path string, query url.Values) ([]byte, string, er
 	if err != nil {
 		return nil, "", err
 	}
+	c.authorizeBackend(req)
 	resp, err := c.hc.Do(req)
 	if err != nil {
 		return nil, "", fmt.Errorf("GET %s: %w", path, err)
@@ -181,13 +183,14 @@ func (c *NetcapClient) GetRaw(path string, query url.Values) ([]byte, string, er
 	if err != nil {
 		return nil, "", fmt.Errorf("reading response: %w", err)
 	}
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode >= 300 {
 		return nil, "", fmt.Errorf("GET %s: %s: %s", path, resp.Status, truncate(string(body), 500))
 	}
 	return body, resp.Header.Get("Content-Type"), nil
 }
 
 func (c *NetcapClient) do(req *http.Request) (json.RawMessage, error) {
+	c.authorizeBackend(req)
 	resp, err := c.hc.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("%s %s: %w", req.Method, req.URL.Path, err)
@@ -199,11 +202,17 @@ func (c *NetcapClient) do(req *http.Request) (json.RawMessage, error) {
 		return nil, fmt.Errorf("reading response: %w", err)
 	}
 
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("%s %s: %s: %s",
 			req.Method, req.URL.Path, resp.Status, truncate(string(body), 500))
 	}
 	return body, nil
+}
+
+func (c *NetcapClient) authorizeBackend(req *http.Request) {
+	if c.adminToken != "" && strings.HasPrefix(req.URL.String(), c.baseURL+"/api/") {
+		req.Header.Set("Authorization", "Bearer "+c.adminToken)
+	}
 }
 
 func truncate(s string, n int) string {

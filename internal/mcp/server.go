@@ -344,7 +344,12 @@ func (s *Server) addTool(t server.ServerTool) error {
 
 // newClient builds a fresh NetcapClient for the current request.
 func (s *Server) newClient() *NetcapClient {
-	return NewNetcapClient(s.baseURL)
+	c := NewNetcapClient(s.baseURL)
+	c.adminToken = s.adminToken
+	if c.adminToken != "" {
+		c.hc.CheckRedirect = func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
+	}
+	return c
 }
 
 // TokenFingerprint returns the first 8 hex chars of the SHA-256 of the
@@ -432,5 +437,3 @@ func (s *Server) requireSessionID(req mcplib.CallToolRequest) (SessionRef, error
 	}
 	return SessionRef{}, fmt.Errorf("session_id is required (call ingest_pcap or list_sessions first)")
 }
-
-

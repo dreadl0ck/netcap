@@ -299,37 +299,47 @@ func (s *Server) handleAuditFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	HandleAuditFiles(outDir)(w, r)
+	selected, ok := s.selectedCapture(w, r)
+	if !ok {
+		return
+	}
+	HandleAuditFiles(selected.OutputDir)(w, r)
 }
 
 // handleAuditFilesFiltered delegates to the shared handler with community ID filtering
 func (s *Server) handleAuditFilesFiltered(w http.ResponseWriter, r *http.Request) {
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	HandleAuditFilesFiltered(outDir)(w, r)
+	selected, ok := s.selectedCapture(w, r)
+	if !ok {
+		return
+	}
+	HandleAuditFilesFiltered(selected.OutputDir)(w, r)
 }
 
 // handleLogFiles delegates to the shared handler
 func (s *Server) handleLogFiles(w http.ResponseWriter, r *http.Request) {
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	HandleLogFiles(outDir)(w, r)
+	selected, ok := s.selectedCapture(w, r)
+	if !ok {
+		return
+	}
+	HandleLogFiles(selected.OutputDir)(w, r)
 }
 
 // handleAuditRecords delegates to the shared handler
 func (s *Server) handleAuditRecords(w http.ResponseWriter, r *http.Request) {
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	HandleAuditRecords(outDir)(w, r)
+	selected, ok := s.selectedCapture(w, r)
+	if !ok {
+		return
+	}
+	HandleAuditRecords(selected.OutputDir)(w, r)
 }
 
 // handleLogContent delegates to the shared handler
 func (s *Server) handleLogContent(w http.ResponseWriter, r *http.Request) {
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	HandleLogContent(outDir)(w, r)
+	selected, ok := s.selectedCapture(w, r)
+	if !ok {
+		return
+	}
+	HandleLogContent(selected.OutputDir)(w, r)
 }
 
 // handleDatabaseInfo returns information about the currently loaded databases
@@ -639,6 +649,7 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		InputFile string `json:"inputFile"`
 		SessionID string `json:"sessionId,omitempty"` // For service mode
+		RunID     string `json:"runId,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -649,6 +660,15 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 	if req.InputFile == "" && req.SessionID == "" {
 		http.Error(w, "Input file or session ID required", http.StatusBadRequest)
 		return
+	}
+	selected, err := s.resolveBodyCapture(r, req.InputFile, req.SessionID, req.RunID)
+	if err != nil {
+		writeSelectionError(w, err)
+		return
+	}
+	req.InputFile = selected.InputFile
+	if s.isServiceMode {
+		req.SessionID = selected.SessionID
 	}
 	if s.isServiceMode && (s.sessionManager == nil || req.SessionID == "") {
 		http.Error(w, "Session ID required", http.StatusBadRequest)
