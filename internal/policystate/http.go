@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 )
 
@@ -89,14 +90,40 @@ type health struct {
 
 func (s *Store) Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.cfg.Auth != nil && strings.HasPrefix(r.URL.Path, "/api/v1/auth/") {
+			s.cfg.Auth.LifecycleHandler(s.cfg.Origin).ServeHTTP(w, r)
+			return
+		}
 		var principal *Principal
 		for i := range s.cfg.Principals {
 			if firewallstate.MatchToken(firewallstate.Bearer(r), s.cfg.Principals[i].Token) {
 				principal = &s.cfg.Principals[i]
 			}
 		}
+		if s.cfg.Auth != nil {
+			identity, err := s.cfg.Auth.Authenticate(r.Context(), firewallstate.Bearer(r))
+			if err != nil {
+				firewallstate.WriteError(w, firewallstate.Fail(401, "credential rejected"))
+				return
+			}
+			action := firewallauth.Evaluate
+			if r.URL.Path == HealthPath {
+				action = firewallauth.Read
+			}
+			scope, err := identity.BoundScope(action, s.cfg.Environment, s.cfg.Target)
+			if err != nil {
+				firewallstate.WriteError(w, firewallstate.Fail(403, "state grant required"))
+				return
+			}
+			principal = &Principal{ID: identity.ID, Scope: firewallstate.Scope{Tenant: scope.Tenant, App: scope.App}}
+			r = r.WithContext(firewallauth.WithPrincipal(r.Context(), identity))
+		}
 		if principal == nil {
 			firewallstate.WriteError(w, firewallstate.Fail(401, "unauthorized"))
+			return
+		}
+		if !firewallauth.AllowOrigin(r, s.cfg.Origin) {
+			firewallstate.WriteError(w, firewallstate.Fail(403, "origin refused"))
 			return
 		}
 		select {

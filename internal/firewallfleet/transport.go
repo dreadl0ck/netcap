@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -21,6 +22,7 @@ type descriptor struct {
 }
 
 var descriptors = []descriptor{
+	{"approval", []string{"scope", "approval"}, []string{"scope", "approval"}},
 	{"capabilities", []string{"scope"}, nil},
 	{"status", []string{"scope"}, nil},
 	{"audit", []string{"scope"}, nil},
@@ -37,6 +39,9 @@ var descriptors = []descriptor{
 func descriptorFor(op string) (descriptor, bool) {
 	for _, d := range descriptors {
 		if d.op == op {
+			if firewallauth.Operation(op) == firewallauth.Deploy || op == "rollback" {
+				d.fields = append(append([]string(nil), d.fields...), "receipt")
+			}
 			return d, true
 		}
 	}
@@ -80,10 +85,14 @@ func (s *Service) Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
+		if s.cfg.Auth != nil && strings.HasPrefix(r.URL.Path, "/api/v1/auth/") {
+			s.cfg.Auth.LifecycleHandler(s.cfg.Origin).ServeHTTP(w, r)
+			return
+		}
 		token := firewallstate.Bearer(r)
 		isTarget := r.URL.Path == "/api/v1/fleet/desired" || r.URL.Path == "/api/v1/fleet/ack"
 		if isTarget {
-			if _, err := s.target(token); err != nil {
+			if _, err := s.workloadTarget(r.Context(), token); err != nil {
 				firewallstate.WriteError(w, err)
 				return
 			}
@@ -92,12 +101,19 @@ func (s *Service) Handler() http.Handler {
 			for _, p := range s.cfg.Identities {
 				valid = valid || firewallstate.MatchToken(token, p.Token)
 			}
+			if s.cfg.Auth != nil {
+				authed, err := s.cfg.Auth.Request(r)
+				valid = err == nil
+				if valid {
+					r = authed
+				}
+			}
 			if !valid {
 				firewallstate.WriteError(w, firewallstate.Fail(401, "administrative bearer required"))
 				return
 			}
 		}
-		if r.Header.Get("Origin") != "" {
+		if !firewallauth.AllowOrigin(r, s.cfg.Origin) {
 			firewallstate.WriteError(w, firewallstate.Fail(403, "browser origins refused"))
 			return
 		}
@@ -201,6 +217,10 @@ func schemaFor(d descriptor) mcp.ToolInputSchema {
 	id := map[string]any{"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$", "maxLength": 128}
 	for _, f := range d.fields {
 		switch f {
+		case "receipt":
+			props[f] = map[string]any{"type": "string", "maxLength": 8192}
+		case "approval":
+			props[f] = map[string]any{"type": "object", "properties": map[string]any{"actor": id, "action": map[string]any{"type": "string"}, "scope": map[string]any{"type": "object"}, "digest": map[string]any{"type": "string"}}, "additionalProperties": false}
 		case "scope":
 			props[f] = map[string]any{"type": "object", "properties": map[string]any{"tenant": id, "app": id}, "required": []string{"tenant", "app"}, "additionalProperties": false}
 		case "bundle":
@@ -236,8 +256,15 @@ func schemaFor(d descriptor) mcp.ToolInputSchema {
 }
 func (s *Service) newMCP() *server.MCPServer {
 	srv := server.NewMCPServer("netcap-firewall-fleet", "1.0.0", server.WithToolCapabilities(false))
+	if s.cfg.Auth != nil {
+		s.cfg.Auth.AddLifecycleTool(srv)
+	}
 	for _, d := range descriptors {
-		read := d.op == "capabilities" || d.op == "audit"
+		if d.op == "approval" && s.cfg.Approvals == nil {
+			continue
+		}
+		d, _ = descriptorFor(d.op)
+		read := d.op == "capabilities" || d.op == "audit" || s.cfg.Auth != nil && d.op == "status"
 		tool := mcp.Tool{Name: "fleet_" + d.op, Description: "Scoped fleet " + d.op + ". Per-target CAS; one fenced controller; no globally atomic activation.", InputSchema: schemaFor(d), Annotations: mcp.ToolAnnotation{ReadOnlyHint: &read}}
 		srv.AddTool(tool, func(ctx context.Context, call mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			raw, err := json.Marshal(call.Params.Arguments)

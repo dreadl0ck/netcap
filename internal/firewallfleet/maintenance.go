@@ -6,6 +6,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 )
 
@@ -18,6 +19,9 @@ type MaintenanceResult struct {
 // main integration should call it periodically even when transports are idle.
 // Scoped status, desired polling, and acknowledgments also drive maintenance.
 func (s *Service) Maintain(ctx context.Context) (MaintenanceResult, error) {
+	if s.cfg.Auth != nil && firewallauth.Require(ctx, firewallauth.Rollback, firewallauth.Scope{Tenant: "*", App: "*", Environment: s.cfg.Environment, Target: "*"}) != nil {
+		return MaintenanceResult{}, firewallstate.Fail(403, "fleet maintenance grant required")
+	}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	s.mu.Lock()

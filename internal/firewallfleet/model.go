@@ -9,6 +9,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 	"github.com/dreadl0ck/netcap/internal/policy"
 )
@@ -38,6 +39,10 @@ type Enrollment struct {
 	Scope Scope
 }
 type Config struct {
+	Approvals         *firewallauth.Approvals
+	Auth              *firewallauth.Authority
+	Environment       string
+	Origin            string
 	StateDir          string
 	DatabaseURL       string
 	DatabaseNamespace string
@@ -110,22 +115,34 @@ type Audit struct {
 	Object    string    `json:"object"`
 }
 type Request struct {
-	Scope             Scope            `json:"scope"`
-	Bundle            string           `json:"bundle,omitempty"`
-	Revision          string           `json:"revision,omitempty"`
-	ID                string           `json:"id,omitempty"`
-	Targets           []string         `json:"targets,omitempty"`
-	Canary            []string         `json:"canary,omitempty"`
-	Expected          map[string]int64 `json:"expected,omitempty"`
-	Deadline          time.Time        `json:"deadline,omitempty"`
-	ExpectedPhase     string           `json:"expected_phase,omitempty"`
-	RollbackOnFailure bool             `json:"rollback_on_failure,omitempty"`
+	Approval          *firewallauth.ApprovalRequest `json:"approval,omitempty"`
+	Receipt           string                        `json:"receipt,omitempty"`
+	Scope             Scope                         `json:"scope"`
+	Bundle            string                        `json:"bundle,omitempty"`
+	Revision          string                        `json:"revision,omitempty"`
+	ID                string                        `json:"id,omitempty"`
+	Targets           []string                      `json:"targets,omitempty"`
+	Canary            []string                      `json:"canary,omitempty"`
+	Expected          map[string]int64              `json:"expected,omitempty"`
+	Deadline          time.Time                     `json:"deadline,omitempty"`
+	ExpectedPhase     string                        `json:"expected_phase,omitempty"`
+	RollbackOnFailure bool                          `json:"rollback_on_failure,omitempty"`
 }
 type revision struct {
 	Scope    Scope           `json:"scope"`
 	Revision string          `json:"revision"`
 	Bundle   json.RawMessage `json:"bundle,omitempty"`
 }
+
+func ApprovalDigest(operation string, r Request) string {
+	r.Receipt = ""
+	r.Approval = nil
+	return firewallauth.Digest(struct {
+		Operation string  `json:"operation"`
+		Request   Request `json:"request"`
+	}{operation, r})
+}
+
 type snapshot struct {
 	Version   int                     `json:"version"`
 	Targets   map[string]*TargetState `json:"targets"`

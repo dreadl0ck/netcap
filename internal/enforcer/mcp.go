@@ -10,6 +10,8 @@ import (
 	"slices"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
+
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -18,6 +20,7 @@ import (
 const MCPMaxRequestBytes = 16 << 10
 
 type leaseRequest struct {
+	Receipt    string     `json:"receipt,omitempty"`
 	ID         string     `json:"id"`
 	Source     string     `json:"source"`
 	TTLSeconds *int64     `json:"ttl_seconds,omitempty"`
@@ -44,6 +47,9 @@ func (r *leaseRequest) UnmarshalJSON(raw []byte) error {
 }
 
 func (c *Controller) createRequest(ctx context.Context, req leaseRequest) (Lease, error) {
+	if req.Receipt != "" {
+		ctx = firewallauth.WithReceipt(ctx, req.Receipt)
+	}
 	if req.TTLSeconds != nil {
 		if *req.TTLSeconds < 1 || *req.TTLSeconds > int64(HardMaxTTL/time.Second) || time.Duration(*req.TTLSeconds)*time.Second > c.config.MaxTTL {
 			return Lease{}, errors.New("TTL exceeds configured limit")
@@ -79,7 +85,13 @@ type enforcerCapabilities struct {
 func (c *Controller) mcpHandler() http.Handler {
 	s := server.NewMCPServer("netcap-enforcer", "1.0.0", server.WithToolCapabilities(false), server.WithInstructions("Manage finite source-address blocks only within the immutable configured scope. No command execution or scope edits. Active lease retries preserve the original expiry."))
 	stringSchema := func() map[string]any { return map[string]any{"type": "string"} }
+	if c.config.Auth != nil {
+		c.config.Auth.AddLifecycleTool(s)
+	}
 	register := func(name, description string, properties map[string]any, required []string, readOnly bool, handler server.ToolHandlerFunc) {
+		if name == "create_action_lease" || name == "revoke_action_lease" {
+			properties["receipt"] = stringSchema()
+		}
 		definition := map[string]any{"type": "object", "properties": properties, "required": required, "additionalProperties": false}
 		if name == "create_action_lease" {
 			definition["anyOf"] = []any{map[string]any{"required": []string{"ttl_seconds"}}, map[string]any{"required": []string{"expires_at"}}}
@@ -88,7 +100,18 @@ func (c *Controller) mcpHandler() http.Handler {
 		tool := mcp.NewTool(name, mcp.WithDescription(description), mcp.WithReadOnlyHintAnnotation(readOnly), mcp.WithDestructiveHintAnnotation(!readOnly), mcp.WithOpenWorldHintAnnotation(false))
 		tool.InputSchema = mcp.ToolInputSchema{}
 		tool.RawInputSchema = schema
-		s.AddTool(tool, handler)
+		s.AddTool(tool, func(ctx context.Context, call mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			if c.config.Auth != nil {
+				action := firewallauth.Lease
+				if name == "get_enforcer_capabilities" || name == "list_action_leases" {
+					action = firewallauth.Read
+				}
+				if err := firewallauth.Require(ctx, action, c.config.AuthScope); err != nil {
+					return mcp.NewToolResultError("lease grant required"), nil
+				}
+			}
+			return handler(ctx, call)
+		})
 	}
 	register("get_enforcer_capabilities", "Read immutable enforcement scope, dry-run mode, protected CIDRs and limits.", map[string]any{}, []string{}, true, func(_ context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		if err := toolArguments(r, &struct{}{}); err != nil {
@@ -96,7 +119,7 @@ func (c *Controller) mcpHandler() http.Handler {
 		}
 		return mcp.NewToolResultJSON(enforcerCapabilities{Scope: c.config.Scope, DryRun: c.config.DryRun, MaxLeases: c.config.MaxLeases, MaxTTLSeconds: int64(c.config.MaxTTL / time.Second), ProtectedCIDRs: append([]string{}, c.config.ProtectedCIDRs...), Actions: []string{"block_source"}, AbsoluteDeadlines: true})
 	})
-	register("list_action_leases", "List active leases using controller reconciliation; expired/orphaned rules may be cleaned up.", map[string]any{}, []string{}, false, func(ctx context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	register("list_action_leases", "List controller leases; shared identity mode never reconciles on reads.", map[string]any{}, []string{}, c.config.Auth != nil, func(ctx context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		if err := toolArguments(r, &struct{}{}); err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
@@ -108,7 +131,7 @@ func (c *Controller) mcpHandler() http.Handler {
 	})
 	register("create_action_lease", "Temporarily block one source IP in the fixed scope. Supply ttl_seconds, expires_at (absolute RFC3339Nano), or both (TTL additionally bounds the deadline). Matching active retries never renew expiry.", map[string]any{"id": map[string]any{"type": "string", "pattern": identifier.String(), "maxLength": 48}, "source": stringSchema(), "ttl_seconds": map[string]any{"type": "integer", "minimum": 1, "maximum": int64(c.config.MaxTTL / time.Second)}, "expires_at": map[string]any{"type": "string", "format": "date-time", "maxLength": 64}}, []string{"id", "source"}, false, func(ctx context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		var req leaseRequest
-		if err := toolArguments(r, &req, "id", "source", "ttl_seconds", "expires_at"); err != nil {
+		if err := toolArguments(r, &req, "id", "source", "ttl_seconds", "expires_at", "receipt"); err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 		l, err := c.createRequest(ctx, req)
@@ -119,19 +142,36 @@ func (c *Controller) mcpHandler() http.Handler {
 	})
 	register("revoke_action_lease", "Revoke one lease by ID using exact controller deletion; missing IDs are idempotent.", map[string]any{"id": stringSchema()}, []string{"id"}, false, func(ctx context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		var req struct {
-			ID string `json:"id"`
+			ID      string `json:"id"`
+			Receipt string `json:"receipt,omitempty"`
 		}
-		if err := toolArguments(r, &req, "id"); err != nil {
+		if err := toolArguments(r, &req, "id", "receipt"); err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 		if !identifier.MatchString(req.ID) {
 			return mcp.NewToolResultError("invalid ID"), nil
 		}
-		if err := c.Delete(ctx, req.ID); err != nil {
+		if err := c.Delete(firewallauth.WithReceipt(ctx, req.Receipt), req.ID); err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 		return mcp.NewToolResultJSON(map[string]any{"revoked": req.ID})
 	})
+	if c.config.Approvals != nil {
+		s.AddTool(mcp.NewTool("issue_lease_approval", mcp.WithDescription("Issue a five-minute receipt for a separate lease actor and exact digest."), mcp.WithString("actor", mcp.Required()), mcp.WithString("digest", mcp.Required())), func(ctx context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			var req struct {
+				Actor  string `json:"actor"`
+				Digest string `json:"digest"`
+			}
+			if err := toolArguments(r, &req, "actor", "digest"); err != nil {
+				return mcp.NewToolResultError("invalid approval request"), nil
+			}
+			receipt, err := c.config.Approvals.Issue(ctx, firewallauth.ApprovalRequest{Actor: req.Actor, Action: firewallauth.Lease, Scope: c.config.AuthScope, Digest: req.Digest})
+			if err != nil {
+				return mcp.NewToolResultError("approval refused"), nil
+			}
+			return mcp.NewToolResultJSON(map[string]string{"receipt": receipt})
+		})
+	}
 	transport := server.NewStreamableHTTPServer(s, server.WithStateLess(true), server.WithDisableStreaming(true))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if version := r.Header.Get("MCP-Protocol-Version"); version != "" && !slices.Contains(mcp.ValidProtocolVersions, version) {

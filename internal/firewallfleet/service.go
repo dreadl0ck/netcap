@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 )
 
@@ -26,7 +27,16 @@ type Service struct {
 }
 
 func New(cfg Config) (*Service, error) {
-	if cfg.Token == "" && len(cfg.Identities) == 0 {
+	if cfg.Auth != nil && cfg.DatabaseURL != "" {
+		return nil, errors.New("shared identity mode requires a singleton SQLite service; PostgreSQL replicas require a shared identity ledger")
+	}
+	if cfg.Auth != nil && (cfg.Token != "" || len(cfg.Identities) > 0) {
+		return nil, errors.New("shared authority and legacy administrative identities are mutually exclusive")
+	}
+	if cfg.Approvals != nil && cfg.Auth == nil {
+		return nil, errors.New("approvals require identity authority")
+	}
+	if cfg.Token == "" && len(cfg.Identities) == 0 && cfg.Auth == nil {
 		return nil, errors.New("administrative identity required")
 	}
 	if cfg.Token != "" && len(cfg.Token) < 16 {
@@ -49,7 +59,10 @@ func New(cfg Config) (*Service, error) {
 	}
 	ids = map[string]bool{}
 	for _, p := range cfg.Targets {
-		if !firewallstate.ValidID(p.ID) || !p.Scope.Valid() || len(p.Token) < 16 || seen[firewallstate.Digest(p.Token)] || ids[p.ID] {
+		if cfg.Auth != nil && p.Token != "" {
+			return nil, errors.New("shared authority enrollments bind identity IDs; legacy target tokens must be removed")
+		}
+		if !firewallstate.ValidID(p.ID) || !p.Scope.Valid() || cfg.Auth == nil && (len(p.Token) < 16 || seen[firewallstate.Digest(p.Token)]) || ids[p.ID] {
 			return nil, errors.New("invalid target enrollment")
 		}
 		seen[firewallstate.Digest(p.Token)] = true
@@ -76,6 +89,12 @@ func New(cfg Config) (*Service, error) {
 		return nil, err
 	}
 	s := &Service{cfg: cfg, disk: d, slots: make(chan struct{}, 16), httpSlots: make(chan struct{}, 16), artifacts: map[string]revision{}, enrolled: map[string]Enrollment{}}
+	if !d.IsPostgres() {
+		if err = firewallauth.PinState(startup, d.DB, firewallauth.Scope{Environment: cfg.Environment}, cfg.Auth != nil); err != nil {
+			d.Close()
+			return nil, err
+		}
+	}
 	if d.IsPostgres() {
 		err = d.Bootstrap(startup, fleetFingerprint(cfg), fleetPostgresSchema)
 	} else {
@@ -122,6 +141,9 @@ func New(cfg Config) (*Service, error) {
 				s.audit(st, "bootstrap", "enroll", p.Scope, p.ID)
 			}
 			old.TokenHash = firewallstate.Digest(p.Token)
+			if cfg.Auth != nil {
+				old.TokenHash = ""
+			}
 		}
 		for _, t := range st.Targets {
 			if t.TokenHash != "" {
@@ -142,6 +164,9 @@ func New(cfg Config) (*Service, error) {
 }
 func (s *Service) Close() error { s.mu.Lock(); defer s.mu.Unlock(); return s.disk.Close() }
 func (s *Service) Backup(ctx context.Context, path string) error {
+	if s.cfg.Auth != nil && firewallauth.Require(ctx, firewallauth.Audit, firewallauth.Scope{Tenant: "*", App: "*", Environment: s.cfg.Environment, Target: "*"}) != nil {
+		return firewallstate.Fail(403, "fleet backup grant required")
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.disk.Backup(ctx, path)
@@ -393,6 +418,22 @@ func (s *Service) target(token string) (Enrollment, error) {
 	}
 	return Enrollment{}, firewallstate.Fail(401, "enrolled target bearer required")
 }
+func (s *Service) workloadTarget(ctx context.Context, token string) (Enrollment, error) {
+	if s.cfg.Auth == nil {
+		return s.target(token)
+	}
+	if s.cfg.Auth != nil {
+		p, err := s.cfg.Auth.Authenticate(ctx, token)
+		if err == nil {
+			for _, e := range s.cfg.Targets {
+				if p.ID == e.ID && p.Allows(firewallauth.Lease, firewallauth.Scope{Tenant: e.Scope.Tenant, App: e.Scope.App, Environment: s.cfg.Environment, Target: e.ID}) {
+					return e, nil
+				}
+			}
+		}
+	}
+	return Enrollment{}, firewallstate.Fail(401, "enrolled workload credential required")
+}
 func (s *Service) audit(st *snapshot, actor, op string, scope Scope, object string) {
 	st.AuditSeq++
 	st.Audit = append(st.Audit, Audit{st.AuditSeq, time.Now().UTC(), actor, op, scope, object})
@@ -404,7 +445,22 @@ func (s *Service) audit(st *snapshot, actor, op string, scope Scope, object stri
 // Execute is the authenticated administrative REST/MCP boundary. Target tokens
 // cannot invoke this API; HTTP desired/ack derive their attachment from enrollment.
 func (s *Service) Execute(ctx context.Context, token, op string, r Request) (any, error) {
-	actor, scope, err := s.admin(token, r.Scope)
+	var actor string
+	var scope Scope
+	var err error
+	var principal firewallauth.Principal
+	if s.cfg.Auth != nil {
+		principal, err = s.cfg.Auth.Authenticate(ctx, token)
+		actor, scope = principal.ID, r.Scope
+		if err != nil {
+			return nil, firewallstate.Fail(401, "credential rejected")
+		}
+		if !scope.Valid() {
+			return nil, firewallstate.Fail(400, "explicit tenant/app required")
+		}
+	} else {
+		actor, scope, err = s.admin(token, r.Scope)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -419,7 +475,50 @@ func (s *Service) Execute(ctx context.Context, token, op string, r Request) (any
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if op != "audit" && op != "capabilities" {
+	if s.cfg.Auth != nil {
+		ctx = firewallauth.WithPrincipal(ctx, principal)
+		if op == "approval" {
+			if s.cfg.Approvals == nil || r.Approval == nil || r.Approval.Scope != (firewallauth.Scope{Tenant: scope.Tenant, App: scope.App, Environment: s.cfg.Environment}) {
+				return nil, firewallstate.Fail(403, "approval unavailable or foreign scope")
+			}
+			receipt, err := s.cfg.Approvals.Issue(ctx, *r.Approval)
+			if err != nil {
+				return nil, firewallstate.Fail(403, "separate authorized approver required")
+			}
+			return map[string]string{"receipt": receipt}, nil
+		}
+		var targets []string
+		if op == "rollout" || op == "drain" || op == "revoke" || op == "resume" {
+			targets = r.Targets
+		}
+		if op == "activate" || op == "promote" || op == "rollback" {
+			err = s.transactionMode(ctx, false, func(st *snapshot) error {
+				j := st.Jobs[r.ID]
+				if j == nil || j.Scope != scope {
+					return firewallstate.Fail(404, "job not found")
+				}
+				targets = j.Targets
+				return nil
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+		if len(targets) == 0 {
+			targets = []string{""}
+		}
+		for _, id := range targets {
+			if !principal.Allows(firewallauth.Operation(op), firewallauth.Scope{Tenant: scope.Tenant, App: scope.App, Environment: s.cfg.Environment, Target: id}) {
+				return nil, firewallstate.Fail(403, "fleet grant required")
+			}
+		}
+		if s.cfg.Approvals != nil {
+			if err := s.cfg.Approvals.CheckTargets(ctx, firewallauth.Operation(op), firewallauth.Scope{Tenant: scope.Tenant, App: scope.App, Environment: s.cfg.Environment}, targets, ApprovalDigest(op, r), r.Receipt); err != nil {
+				return nil, firewallstate.Fail(403, "valid unused approval required")
+			}
+		}
+	}
+	if s.cfg.Auth == nil && op != "audit" && op != "capabilities" {
 		if _, err = s.maintainLocked(ctx, &scope); err != nil {
 			return nil, err
 		}
@@ -629,19 +728,21 @@ func (s *Service) Execute(ctx context.Context, token, op string, r Request) (any
 }
 
 func (s *Service) Desired(ctx context.Context, token string) (Desired, error) {
-	p, err := s.target(token)
+	p, err := s.workloadTarget(ctx, token)
 	if err != nil {
 		return Desired{}, err
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, err = s.maintainLocked(ctx, &p.Scope); err != nil {
-		return Desired{}, err
+	if s.cfg.Auth == nil {
+		if _, err = s.maintainLocked(ctx, &p.Scope); err != nil {
+			return Desired{}, err
+		}
 	}
 	var out Desired
 	err = s.transactionMode(ctx, false, func(st *snapshot) error {
 		t := st.Targets[p.ID]
-		if t == nil || t.Scope != p.Scope || t.TokenHash != firewallstate.Digest(token) {
+		if t == nil || t.Scope != p.Scope || s.cfg.Auth == nil && t.TokenHash != firewallstate.Digest(token) {
 			return firewallstate.Fail(403, "enrollment revoked")
 		}
 		if t.Generation == 0 {
@@ -658,7 +759,7 @@ func (s *Service) Desired(ctx context.Context, token string) (Desired, error) {
 	return out, err
 }
 func (s *Service) Acknowledge(ctx context.Context, token string, a Ack) error {
-	p, err := s.target(token)
+	p, err := s.workloadTarget(ctx, token)
 	if err != nil {
 		return err
 	}
@@ -669,7 +770,7 @@ func (s *Service) Acknowledge(ctx context.Context, token string, a Ack) error {
 	defer s.mu.Unlock()
 	return s.transaction(ctx, func(st *snapshot) error {
 		t := st.Targets[p.ID]
-		if t == nil || t.Scope != p.Scope || t.TokenHash != firewallstate.Digest(token) {
+		if t == nil || t.Scope != p.Scope || s.cfg.Auth == nil && t.TokenHash != firewallstate.Digest(token) {
 			return firewallstate.Fail(403, "enrollment revoked")
 		}
 		if a.Generation != t.Generation || a.Revision != t.DesiredRevision || a.Draining != t.Draining || a.Revoked != t.Revoked {
@@ -684,7 +785,9 @@ func (s *Service) Acknowledge(ctx context.Context, token string, a Ack) error {
 			t.ObservedRevoked = a.Revoked
 		}
 		s.audit(st, p.ID, "ack", t.Scope, fmt.Sprintf("%s:%d", t.ID, a.Generation))
-		s.autoMaintain(st, &p.Scope, time.Now())
+		if s.cfg.Auth == nil {
+			s.autoMaintain(st, &p.Scope, time.Now())
+		}
 		return nil
 	})
 }

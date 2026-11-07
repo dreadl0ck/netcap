@@ -33,7 +33,7 @@ package policycontrol
 // event field returns one decision; events returns an array. Do not combine them.
 // Activation/rollback to a different revision and managed restart reset runtime
 // counters. Same-revision activation and receipt replay preserve current state.
-// HTTP rejects browser Origin headers and unsupported MCP protocol versions;
+// HTTP accepts only the optional exact Config.Origin and rejects unsupported MCP protocol versions;
 // omitted MCP version headers use the SDK's 2025-03-26 compatibility behavior.
 // Request contexts cancel pending operations; a committed deployment is durable
 // even if the client disconnects before receiving its receipt.

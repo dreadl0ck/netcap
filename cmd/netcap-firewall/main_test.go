@@ -344,7 +344,7 @@ func TestShippingManagedLifecycle(t *testing.T) {
 	config, data := runtimeConfig(t, origin.URL, admin)
 	adminURL := "http://" + admin
 	state := filepath.Join(t.TempDir(), "state")
-	args := []string{"serve", "--config", config, "--managed", "--state-dir", state}
+	args := []string{"serve", "--config", config, "--legacy-admin", "--managed", "--state-dir", state}
 	p := startCLI(t, adminToken, args...)
 	c := httpClient(t)
 	waitReady(t, p, c, adminURL+"/readyz")
@@ -502,8 +502,9 @@ func TestShippingValidationAndStartupRejections(t *testing.T) {
 		args              []string
 	}{
 		{"missing-token", "", "managed mode requires NETCAP_FIREWALL_ADMIN_TOKEN", []string{"--managed", "--state-dir", filepath.Join(t.TempDir(), "state")}},
-		{"short-token", "short", "at least 32 bytes", nil},
-		{"missing-state", adminToken, "managed mode requires StateDir", []string{"--managed"}},
+		{"short-token", "short", "at least 32 bytes", []string{"--legacy-admin"}},
+		{"legacy-opt-in", adminToken, "requires --legacy-admin", nil},
+		{"missing-state", adminToken, "managed mode requires StateDir", []string{"--legacy-admin", "--managed"}},
 		{"unpaired-TLS", "", "must be paired", []string{"--admin-cert", "missing.pem"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -515,7 +516,7 @@ func TestShippingValidationAndStartupRejections(t *testing.T) {
 		})
 	}
 	networkConfig, _ := runtimeConfig(t, "http://127.0.0.1:1", "0.0.0.0:0")
-	if out, err := runCLI(t, adminToken, "serve", "--config", networkConfig); err == nil || !strings.Contains(out, "network-accessible policy management requires admin-cert and admin-key") {
+	if out, err := runCLI(t, adminToken, "serve", "--config", networkConfig, "--legacy-admin"); err == nil || !strings.Contains(out, "network-accessible policy management requires admin-cert and admin-key") {
 		t.Fatalf("plaintext network admin: %v %s", err, out)
 	}
 	writeFile(t, filepath.Join(filepath.Dir(config), "policy.json"), `{"version":`)

@@ -10,6 +10,7 @@ import (
 )
 
 type policyStateFile struct {
+	AuthConfig        string          `json:"authConfig"`
 	StateDir          string          `json:"stateDir"`
 	DatabaseURLEnv    string          `json:"databaseURLEnv"`
 	DatabaseNamespace string          `json:"databaseNamespace"`
@@ -30,6 +31,11 @@ func nativeStateConfig(path string) (policystate.Config, error) {
 		return cfg, err
 	}
 	cfg = policystate.Config{StateDir: f.StateDir, DatabaseURL: raw, DatabaseNamespace: f.DatabaseNamespace, AllowEffects: f.AllowEffects, MaxRevisions: f.MaxRevisions, MaxStateBytes: f.MaxStateBytes}
+	a, auth, err := loadAuth(f.AuthConfig)
+	if err != nil {
+		return cfg, err
+	}
+	cfg.Auth, cfg.Environment, cfg.Target, cfg.Origin = a, auth.Scope.Environment, auth.Scope.Target, auth.Origin
 	for _, p := range f.Principals {
 		token, err := envToken(p.TokenEnv)
 		if err != nil {
@@ -45,6 +51,9 @@ func runPolicyState(ctx context.Context, c *cli.Command) error {
 		return err
 	}
 	cfg, err := nativeStateConfig(c.String("config"))
+	if cfg.Auth != nil {
+		defer cfg.Auth.Close()
+	}
 	if err != nil {
 		return err
 	}
