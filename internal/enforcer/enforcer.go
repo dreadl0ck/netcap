@@ -54,10 +54,13 @@ type Config struct {
 	DryRun         bool
 	// StateFile is an optional private desired-state snapshot. Its parent must
 	// exist. A sibling .lock prevents concurrent controllers using the same file.
-	StateFile string
+	StateFile         string
+	Profiles          map[string]Profile
+	ProtectedServices []Service
 }
 
 type Lease struct {
+	Action Action `json:"action,omitempty"`
 	ID     string `json:"id"`
 	Source string `json:"source"`
 	Scope  Scope  `json:"scope"`
@@ -107,7 +110,7 @@ func normalize(c Config) (Config, []netip.Prefix, error) {
 		return c, nil, errors.New("limits must be TTL 1s..15m and leases 1..1000")
 	}
 	s := c.Scope
-	if (s.Hook != "input" && s.Hook != "forward") || (s.Protocol != "tcp" && s.Protocol != "udp") || s.Port == 0 {
+	if (s.Hook != "input" && s.Hook != "forward" && s.Hook != "prerouting") || (s.Protocol != "tcp" && s.Protocol != "udp") || s.Port == 0 {
 		return c, nil, errors.New("explicit input/forward hook, tcp/udp protocol and service port required")
 	}
 	if len(s.Interface) > 15 || !regexp.MustCompile(`^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$`).MatchString(s.Interface) {
@@ -129,6 +132,9 @@ func normalize(c Config) (Config, []netip.Prefix, error) {
 			return c, nil, errors.New("destination scope overlaps protected CIDR")
 		}
 		protected = append(protected, p)
+	}
+	if err := normalizeProfiles(&c); err != nil {
+		return c, nil, err
 	}
 	return c, protected, nil
 }
@@ -191,16 +197,25 @@ func New(config Config, backend Backend) (*Controller, error) {
 
 func fingerprint(c Config) string {
 	b, _ := json.Marshal(struct {
-		Table, Namespace string
-		Scope            Scope
-		Protected        []string
-		DryRun           bool
-	}{c.Table, c.Namespace, c.Scope, c.ProtectedCIDRs, c.DryRun})
+		Table, Namespace  string
+		Scope             Scope
+		Protected         []string
+		DryRun            bool
+		Profiles          map[string]Profile `json:",omitempty"`
+		ProtectedServices []Service          `json:",omitempty"`
+	}{c.Table, c.Namespace, c.Scope, c.ProtectedCIDRs, c.DryRun, c.Profiles, c.ProtectedServices})
 	h := sha256.Sum256(b)
 	return hex.EncodeToString(h[:])
 }
 
 func (c *Controller) validate(l Lease) error {
+	if err := c.validateAction(l); err != nil {
+		return err
+	}
+	return c.validateBase(l)
+}
+
+func (c *Controller) validateBase(l Lease) error {
 	if !identifier.MatchString(l.ID) || l.Scope != c.config.Scope {
 		return errors.New("invalid ID or scope")
 	}
@@ -245,6 +260,10 @@ func (c *Controller) Create(ctx context.Context, id, source string, ttl time.Dur
 // remaining time to milliseconds; TTLSeconds is metadata, never a renewal input.
 // An active same-ID retry must have the same source and deadline.
 func (c *Controller) CreateUntil(ctx context.Context, id, source string, expiresAt time.Time) (Lease, error) {
+	return c.CreateActionUntil(ctx, id, source, expiresAt, Action{})
+}
+
+func (c *Controller) CreateActionUntil(ctx context.Context, id, source string, expiresAt time.Time, action Action) (Lease, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed {
@@ -255,7 +274,7 @@ func (c *Controller) CreateUntil(ctx context.Context, id, source string, expires
 	if expiresAt.IsZero() || remaining < time.Millisecond || remaining > c.config.MaxTTL {
 		return Lease{}, errors.New("deadline must be 1ms..MaxTTL in the future")
 	}
-	l := Lease{ID: id, Source: source, Scope: c.config.Scope, TTLSeconds: ceilSeconds(remaining), ExpiresAt: expiresAt.UTC()}
+	l := Lease{ID: id, Source: source, Scope: c.config.Scope, TTLSeconds: ceilSeconds(remaining), ExpiresAt: expiresAt.UTC(), Action: action}
 	return c.create(ctx, l, true)
 }
 
@@ -278,13 +297,13 @@ func (c *Controller) create(ctx context.Context, l Lease, absolute bool) (Lease,
 		if absolute {
 			same = old.ExpiresAt.Equal(l.ExpiresAt)
 		}
-		if old.Source == l.Source && same {
+		if old.Source == l.Source && old.Action == l.Action && same {
 			return old, nil
 		}
 		return Lease{}, ErrConflict
 	}
 	for _, old := range c.leases {
-		if old.Source == l.Source {
+		if c.selectorsConflict(old, l) {
 			return Lease{}, ErrConflict
 		}
 	}
@@ -399,11 +418,16 @@ func (c *Controller) reconcile(ctx context.Context) error {
 		selectors := make(map[string]bool)
 		for _, l := range kernel {
 			if l.ExpiresAt.After(now) {
-				if _, ok := c.leases[l.ID]; ok || selectors[l.Source] {
+				for _, old := range c.leases {
+					if c.selectorsConflict(old, l) {
+						return ErrConflict
+					}
+				}
+				if _, ok := c.leases[l.ID]; ok || selectors[selectorKey(l)] {
 					return ErrConflict
 				}
 				c.leases[l.ID] = l
-				selectors[l.Source] = true
+				selectors[selectorKey(l)] = true
 			}
 		}
 		if len(c.leases) > c.config.MaxLeases {

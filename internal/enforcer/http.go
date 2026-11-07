@@ -33,6 +33,10 @@ func (c *Controller) Handler() http.Handler {
 			mcpHandler.ServeHTTP(w, r)
 			return
 		}
+		if r.URL.Path == "/v1/capabilities" && r.Method == http.MethodGet {
+			_ = json.NewEncoder(w).Encode(c.capabilities())
+			return
+		}
 		if r.URL.Path == "/v1/leases" {
 			switch r.Method {
 			case http.MethodGet:
@@ -49,7 +53,7 @@ func (c *Controller) Handler() http.Handler {
 					http.Error(w, `{"error":"invalid request"}`, 400)
 					return
 				}
-				if err := decodeObject(raw, &req, "id", "source", "ttl_seconds", "expires_at"); err != nil {
+				if err := decodeObject(raw, &req, "id", "source", "ttl_seconds", "expires_at", "action"); err != nil {
 					http.Error(w, `{"error":"invalid request fields"}`, 400)
 					return
 				}

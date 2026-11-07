@@ -18,6 +18,7 @@ import (
 const MCPMaxRequestBytes = 16 << 10
 
 type leaseRequest struct {
+	Action     Action     `json:"action,omitempty"`
 	ID         string     `json:"id"`
 	Source     string     `json:"source"`
 	TTLSeconds *int64     `json:"ttl_seconds,omitempty"`
@@ -53,24 +54,35 @@ func (c *Controller) createRequest(ctx context.Context, req leaseRequest) (Lease
 		if req.TTLSeconds != nil && req.ExpiresAt.After(time.Now().Add(time.Duration(*req.TTLSeconds)*time.Second)) {
 			return Lease{}, errors.New("deadline exceeds supplied TTL")
 		}
-		return c.CreateUntil(ctx, req.ID, req.Source, *req.ExpiresAt)
+		return c.CreateActionUntil(ctx, req.ID, req.Source, *req.ExpiresAt, req.Action)
 	}
 	if req.TTLSeconds == nil {
 		return Lease{}, errors.New("ttl_seconds or expires_at required")
 	}
-	return c.Create(ctx, req.ID, req.Source, time.Duration(*req.TTLSeconds)*time.Second)
+	if req.Action == (Action{}) {
+		return c.Create(ctx, req.ID, req.Source, time.Duration(*req.TTLSeconds)*time.Second)
+	}
+	return c.CreateActionUntil(ctx, req.ID, req.Source, time.Now().UTC().Add(time.Duration(*req.TTLSeconds)*time.Second), req.Action)
 }
 
 type enforcerCapabilities struct {
-	Scope             Scope    `json:"scope"`
-	DryRun            bool     `json:"dry_run"`
-	MaxLeases         int      `json:"max_leases"`
-	MaxTTLSeconds     int64    `json:"max_ttl_seconds"`
-	ProtectedCIDRs    []string `json:"protected_cidrs"`
-	Actions           []string `json:"actions"`
-	ScopeMutable      bool     `json:"scope_mutable"`
-	GenericCommands   bool     `json:"generic_commands"`
-	AbsoluteDeadlines bool     `json:"absolute_deadlines"`
+	Profiles             map[string]Profile `json:"profiles"`
+	ProtectedServices    []Service          `json:"protected_services"`
+	PacketFlow           bool               `json:"packet_flow"`
+	ApplicationReject    bool               `json:"application_reject"`
+	ProactiveTermination bool               `json:"proactive_termination"`
+	RequestRate          bool               `json:"request_rate"`
+	RejectSemantics      string             `json:"reject_semantics"`
+	RedirectSemantics    string             `json:"redirect_semantics"`
+	Scope                Scope              `json:"scope"`
+	DryRun               bool               `json:"dry_run"`
+	MaxLeases            int                `json:"max_leases"`
+	MaxTTLSeconds        int64              `json:"max_ttl_seconds"`
+	ProtectedCIDRs       []string           `json:"protected_cidrs"`
+	Actions              []string           `json:"actions"`
+	ScopeMutable         bool               `json:"scope_mutable"`
+	GenericCommands      bool               `json:"generic_commands"`
+	AbsoluteDeadlines    bool               `json:"absolute_deadlines"`
 }
 
 // mcpHandler is private so the only HTTP entry point is Handler's bearer boundary.
@@ -94,7 +106,7 @@ func (c *Controller) mcpHandler() http.Handler {
 		if err := toolArguments(r, &struct{}{}); err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultJSON(enforcerCapabilities{Scope: c.config.Scope, DryRun: c.config.DryRun, MaxLeases: c.config.MaxLeases, MaxTTLSeconds: int64(c.config.MaxTTL / time.Second), ProtectedCIDRs: append([]string{}, c.config.ProtectedCIDRs...), Actions: []string{"block_source"}, AbsoluteDeadlines: true})
+		return mcp.NewToolResultJSON(c.capabilities())
 	})
 	register("list_action_leases", "List active leases using controller reconciliation; expired/orphaned rules may be cleaned up.", map[string]any{}, []string{}, false, func(ctx context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		if err := toolArguments(r, &struct{}{}); err != nil {
@@ -106,9 +118,9 @@ func (c *Controller) mcpHandler() http.Handler {
 		}
 		return mcp.NewToolResultJSON(map[string]any{"leases": ls})
 	})
-	register("create_action_lease", "Temporarily block one source IP in the fixed scope. Supply ttl_seconds, expires_at (absolute RFC3339Nano), or both (TTL additionally bounds the deadline). Matching active retries never renew expiry.", map[string]any{"id": map[string]any{"type": "string", "pattern": identifier.String(), "maxLength": 48}, "source": stringSchema(), "ttl_seconds": map[string]any{"type": "integer", "minimum": 1, "maximum": int64(c.config.MaxTTL / time.Second)}, "expires_at": map[string]any{"type": "string", "format": "date-time", "maxLength": 64}}, []string{"id", "source"}, false, func(ctx context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	register("create_action_lease", "Apply a finite packet action in the immutable scope. Action selects an operator profile or exact ingress flow. Reject is a kernel response to a matching packet, never a proactive session reset or application rejection. DNAT affects new conntrack bindings; existing bindings may outlive the lease. Active retries never renew expiry.", map[string]any{"action": map[string]any{"type": "object", "properties": map[string]any{"kind": map[string]any{"type": "string", "enum": c.actionKinds()}, "profile": stringSchema(), "flow": map[string]any{"type": "object", "properties": map[string]any{"destination": stringSchema(), "protocol": stringSchema(), "source_port": map[string]any{"type": "integer"}, "destination_port": map[string]any{"type": "integer"}}, "additionalProperties": false}}, "additionalProperties": false}, "id": map[string]any{"type": "string", "pattern": identifier.String(), "maxLength": 48}, "source": stringSchema(), "ttl_seconds": map[string]any{"type": "integer", "minimum": 1, "maximum": int64(c.config.MaxTTL / time.Second)}, "expires_at": map[string]any{"type": "string", "format": "date-time", "maxLength": 64}}, []string{"id", "source"}, false, func(ctx context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		var req leaseRequest
-		if err := toolArguments(r, &req, "id", "source", "ttl_seconds", "expires_at"); err != nil {
+		if err := toolArguments(r, &req, "id", "source", "ttl_seconds", "expires_at", "action"); err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 		l, err := c.createRequest(ctx, req)

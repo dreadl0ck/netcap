@@ -111,7 +111,7 @@ func TestEffectsStrictReadersAndValidation(t *testing.T) {
 		}
 	}
 	for _, effect := range []Effect{
-		{Kind: "notify", Target: "client", Duration: "1m", Scope: "edge"},
+		{Kind: "terminate_flow", Target: "source", Duration: "1m", Scope: "edge"},
 		{Kind: "block_source", Target: "header", Duration: "1m", Scope: "edge"},
 		{Kind: "block_source", Target: "client", Duration: "16m", Scope: "edge"},
 		{Kind: "block_source", Target: "client", Duration: "1.5s", Scope: "edge"},

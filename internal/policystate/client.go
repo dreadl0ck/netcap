@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/enforcer"
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 	"github.com/dreadl0ck/netcap/internal/policy"
 )
@@ -229,7 +230,15 @@ func validateDecision(p *policy.Compiled, e policy.Event, d policy.Decision) err
 		if effect.Target == "source" {
 			source = e.Network.SrcIP
 		}
-		if i.Revision != d.Revision || i.RuleID != d.RuleID || i.Kind != effect.Kind || i.Target != effect.Target || i.Scope != effect.Scope || i.Source != source || i.TTL != ttl || i.ID != policy.IntentID(i) || i.IssuedAt.IsZero() || !i.ExpiresAt.Equal(i.IssuedAt.Add(ttl)) {
+		var flow enforcer.Flow
+		if effect.Kind == string(enforcer.DropFlow) || effect.Kind == string(enforcer.RejectFlow) {
+			var err error
+			flow, err = policy.EventFlow(e)
+			if err != nil {
+				return bad
+			}
+		}
+		if i.Revision != d.Revision || i.RuleID != d.RuleID || i.Kind != effect.Kind || i.Profile != effect.Profile || i.Flow != flow || i.Target != effect.Target || i.Scope != effect.Scope || i.Source != source || i.TTL != ttl || i.ID != policy.IntentID(i) || i.IssuedAt.IsZero() || !i.ExpiresAt.Equal(i.IssuedAt.Add(ttl)) {
 			return bad
 		}
 	}

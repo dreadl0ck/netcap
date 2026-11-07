@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/enforcer"
 	"github.com/dreadl0ck/netcap/internal/firewallfleet"
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 	"github.com/dreadl0ck/netcap/internal/firewalltransport"
@@ -284,7 +285,7 @@ func (r *runtimeEvaluator) evaluateContext(ctx context.Context, p *policy.Compil
 			return e.Network.SrcIP, e.Network.SrcIP != ""
 		}
 		return "", false
-	}}
+	}, Flow: func(e policy.Event) (enforcer.Flow, bool) { f, err := policy.EventFlow(e); return f, err == nil }}
 	return wrapped.Evaluate(e)
 }
 func (r *runtimeEvaluator) Evaluate(e policy.Event) (policy.Decision, error) {

@@ -94,7 +94,7 @@ func TestRealEnforcerHTTPRecoveryDedupAndDryRun(t *testing.T) {
 			if r := b.Submit(i, i.Source); r.Status != "requested" {
 				t.Fatal(r)
 			}
-			if r := await(t, b, i.ID, "applied"); r.Reason != "recovered" {
+			if r := await(t, b, i.ID, "simulated"); r.Reason != "recovered" {
 				t.Fatal(r)
 			}
 			leases, _ := backend.List(context.Background())
@@ -278,7 +278,7 @@ func TestConcurrentSubmissionAndRemoteProtection(t *testing.T) {
 		go func() { defer wg.Done(); b.Submit(i, i.Source); _ = b.Receipts() }()
 	}
 	wg.Wait()
-	await(t, b, i.ID, "applied")
+	await(t, b, i.ID, "simulated")
 	leases, _ := backend.List(context.Background())
 	if len(leases) != 1 {
 		t.Fatalf("concurrent lease count: %+v", leases)

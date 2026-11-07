@@ -65,7 +65,7 @@ func TestCrossProtocolDistinctSequenceDispatchesOnlyAfterCompletion(t *testing.T
 	if final.Verdict != "deny" || len(final.Effects) != 1 {
 		t.Fatal(final)
 	}
-	await(t, b, final.Effects[0].ID, "applied")
+	await(t, b, final.Effects[0].ID, "simulated")
 	leases, err := backend.List(context.Background())
 	if err != nil || len(leases) != 1 || !leases[0].ExpiresAt.Equal(final.Effects[0].ExpiresAt) {
 		t.Fatalf("correlation lease deadline: %+v %v", leases, err)

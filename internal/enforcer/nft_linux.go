@@ -139,7 +139,15 @@ func quote(s string) string { return strconv.Quote(s) }
 
 func (b *NFTBackend) setup() string {
 	c := b.config
-	return fmt.Sprintf("add table inet %s { comment %s; }\nadd chain inet %s leases { type filter hook %s priority 0; policy accept; }\n", c.Table, quote(b.owner()), c.Table, c.Scope.Hook)
+	kind, priority := b.chainType()
+	return fmt.Sprintf("add table inet %s { comment %s; }\nadd chain inet %s leases { type %s hook %s priority %d; policy accept; }\n", c.Table, quote(b.owner()), c.Table, kind, c.Scope.Hook, priority)
+}
+
+func (b *NFTBackend) chainType() (string, int) {
+	if b.config.Scope.Hook == "prerouting" {
+		return "nat", -100
+	}
+	return "filter", 0
 }
 
 type nftObject struct {
@@ -209,6 +217,7 @@ func (b *NFTBackend) decode(data []byte) ([]nftLease, error) {
 	owned, chain := false, false
 	sets := make(map[string]Lease)
 	rules := make(map[string]uint64)
+	actions := make(map[string]Action)
 	for _, entry := range doc.NFTables {
 		for kind, raw := range entry {
 			if kind == "metainfo" {
@@ -225,7 +234,8 @@ func (b *NFTBackend) decode(data []byte) ([]nftLease, error) {
 				}
 				owned = true
 			case "chain":
-				if chain || o.Name != "leases" || o.Hook != b.config.Scope.Hook || o.Type != "filter" || o.Policy != "accept" || o.Priority != 0 {
+				kind, priority := b.chainType()
+				if chain || o.Name != "leases" || o.Hook != b.config.Scope.Hook || o.Type != kind || o.Policy != "accept" || o.Priority != priority {
 					return nil, errors.New("unexpected owned chain")
 				}
 				chain = true
@@ -242,14 +252,17 @@ func (b *NFTBackend) decode(data []byte) ([]nftLease, error) {
 				}
 				sets[l.ID] = l
 			case "rule":
-				id := strings.TrimPrefix(o.Comment, "netcap-lease:")
-				if !identifier.MatchString(id) || o.Comment != "netcap-lease:"+id || o.Handle == 0 {
+				parts := strings.Split(strings.TrimPrefix(o.Comment, "netcap-lease:"), "|")
+				id := parts[0]
+				action, err := b.parseAction(parts[1:])
+				if err != nil || !identifier.MatchString(id) || !strings.HasPrefix(o.Comment, "netcap-lease:") || o.Handle == 0 {
 					return nil, errors.New("unexpected owned rule")
 				}
 				if _, ok := rules[id]; ok {
 					return nil, ErrConflict
 				}
 				rules[id] = o.Handle
+				actions[id] = action
 			default:
 				return nil, fmt.Errorf("unexpected nft object %q", kind)
 			}
@@ -260,6 +273,14 @@ func (b *NFTBackend) decode(data []byte) ([]nftLease, error) {
 	}
 	out := make([]nftLease, 0, len(sets))
 	for id, l := range sets {
+		l.Action = actions[id]
+		_, protected, err := normalize(b.config)
+		if err != nil {
+			return nil, err
+		}
+		if err := (&Controller{config: b.config, protected: protected}).validate(l); err != nil {
+			return nil, err
+		}
 		h, ok := rules[id]
 		if !ok {
 			return nil, errors.New("lease rule missing")
@@ -291,9 +312,11 @@ func (b *NFTBackend) parseMetadata(s string) (Lease, error) {
 		return Lease{}, e
 	}
 	c := Controller{config: b.config, protected: protected}
-	if e = c.validate(l); e != nil {
+	// Action metadata lives on the associated rule and is validated by decode.
+	if e = c.validateBase(l); e != nil {
 		return Lease{}, e
 	}
+	l.Action = Action{}
 	return l, nil
 }
 
@@ -311,13 +334,57 @@ func (b *NFTBackend) applyScript(l Lease, now time.Time) (string, error) {
 		return "", nil
 	}
 	family, kind := "ip", "ipv4_addr"
-	a, _ := netip.ParseAddr(l.Source)
-	if a.Is6() {
+	addr, _ := netip.ParseAddr(l.Source)
+	if addr.Is6() {
 		family, kind = "ip6", "ipv6_addr"
 	}
 	table, set := b.config.Table, setName(l.ID)
 	s := b.config.Scope
-	return fmt.Sprintf("add set inet %s %s { type %s; flags timeout; timeout %dms; comment %s; elements = { %s timeout %dms }; }\nadd rule inet %s leases iifname %s %s daddr %s %s saddr @%s %s dport %d counter drop comment %s\n", table, set, kind, remaining, quote(metadata(l)), l.Source, remaining, table, quote(s.Interface), family, s.DestinationCIDR, family, set, s.Protocol, s.Port, quote("netcap-lease:"+l.ID)), nil
+	selector := fmt.Sprintf("%s dport %d", s.Protocol, s.Port)
+	verdict := "drop"
+	a := l.Action
+	if a.EffectiveKind() == DropFlow || a.EffectiveKind() == RejectFlow {
+		selector = fmt.Sprintf("%s daddr %s %s sport %d %s dport %d", family, a.Flow.Destination, a.Flow.Protocol, a.Flow.SourcePort, a.Flow.Protocol, a.Flow.DestinationPort)
+		if a.Kind == RejectFlow {
+			if a.Flow.Protocol == "tcp" {
+				verdict = "reject with tcp reset"
+			} else {
+				verdict = "reject with icmpx type port-unreachable"
+			}
+		}
+	}
+	if a.Profile != "" {
+		p := b.config.Profiles[a.Profile]
+		services := make([]string, 0, len(p.Services))
+		for _, service := range p.Services {
+			services = append(services, fmt.Sprintf("%s . %d", service.Protocol, service.Port))
+		}
+		selector = "meta l4proto . th dport { " + strings.Join(services, ", ") + " }"
+		if p.Kind == RateSource {
+			if p.Unit == "packets" {
+				verdict = fmt.Sprintf("limit rate over %d/second burst %d packets drop", p.Rate, p.Burst)
+			} else {
+				verdict = fmt.Sprintf("limit rate over %d bytes/second burst %d bytes drop", p.Rate, p.Burst)
+			}
+		}
+		if p.Kind == RedirectSource {
+			ports := make([]string, 0, len(p.Services))
+			for _, service := range p.Services {
+				ports = append(ports, strconv.Itoa(int(service.Port)))
+			}
+			selector = s.Protocol + " dport { " + strings.Join(ports, ", ") + " }"
+			destination := p.Destination
+			if a, _ := netip.ParseAddr(destination); a.Is6() {
+				destination = "[" + destination + "]"
+			}
+			verdict = fmt.Sprintf("dnat %s to %s:%d", family, destination, p.Port)
+		}
+	}
+	comment := actionComment(l)
+	if len(comment) > 128 || len(metadata(l)) > 128 {
+		return "", errors.New("lease identity exceeds nft metadata capacity")
+	}
+	return fmt.Sprintf("add set inet %s %s { type %s; flags timeout; timeout %dms; comment %s; elements = { %s timeout %dms }; }\nadd rule inet %s leases iifname %s %s daddr %s %s saddr @%s %s counter %s comment %s\n", table, set, kind, remaining, quote(metadata(l)), l.Source, remaining, table, quote(s.Interface), family, s.DestinationCIDR, family, set, selector, verdict, quote(comment)), nil
 }
 
 func (b *NFTBackend) List(ctx context.Context) ([]Lease, error) {
@@ -355,7 +422,7 @@ func (b *NFTBackend) Apply(ctx context.Context, l Lease) error {
 			}
 			return ErrConflict
 		}
-		if old.Lease.Source == l.Source && old.Lease.ExpiresAt.After(time.Now()) {
+		if (&Controller{config: b.config}).selectorsConflict(old.Lease, l) && old.Lease.ExpiresAt.After(time.Now()) {
 			return ErrConflict
 		}
 	}
