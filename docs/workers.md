@@ -17,7 +17,8 @@ and compare output witnesses as well as elapsed time and memory.
 | Packet buffer: 1,000 entries | Per configured worker queue |
 | Writer buffer: 64 KiB | Per decoder writer, not total process memory |
 | Reassembly maximum buffered size: 10 MiB | Per stream direction; zero means unlimited |
-| Out-of-order page limits: zero | Unlimited unless configured; not a global RAM cap |
+| Out-of-order page pressure thresholds: zero | Per worker/connection; unlimited unless configured, not a global RAM cap |
+| Retained TCP payload: zero | `-max-retained-tcp-bytes` bounds reader-owned payload copies across all workers; zero is unlimited. |
 | DPI automatic contexts | Up to 8; distinct from protocol workers |
 | Evidence index | 64 MiB accounted storage plus record/link bounds |
 | Optional packet retention | Default selected budgets: 32 MiB segments / 512 MiB retained |
@@ -40,6 +41,26 @@ allocate no out-of-order pages; the first queued segment initializes the existin
 Check `capture -h` for the exact option names and installed defaults. Queue
 occupancy/drop counters, `capture-manifest.json`, reassembly health and behavioral
 health report different layers. A null kernel counter is unavailable, not zero.
+
+```sh
+net capture -read traffic.pcap -out bounded -workers 8 \
+  -max-retained-tcp-bytes 67108864 -dpi=false
+```
+
+This configures 64 MiB across all eight workers, also available through
+`NC_MAX_RETAINED_TCP_BYTES`. Completed connections return their reservations.
+Exhaustion cancels collection, returns a nonzero CLI result, records
+`capture-manifest.json` status `error`, and withholds `audit-output-ready.json`.
+`TCPReassemblyHealth.json.retainedPayload` records the limit, peak, current and
+rejected bytes; a shutdown current value of zero means released storage.
+
+With `-conns`, per-stream manifests preserve `locally-truncated` status and quoted
+`discardedBytes`/`discardReason` spans, including loss-only streams with empty raw
+files. These local omissions do not increment network `missingBytes`.
+
+The bound excludes assembler pages, connection/fragment metadata, decoder-owned
+caches and process RSS. Existing page thresholds remain per-worker pressure
+controls. A budget-aborted output is partial evidence, not a finalized analysis.
 
 ## Operational tuning
 

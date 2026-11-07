@@ -71,6 +71,9 @@ func NumSavedTCPConns() int64 {
 // and manage the stream lifecycle
 // this structure has an optimized field order to avoid excessive padding.
 type tcpConnection struct {
+	payloadBudget        *retainedPayloadBudget
+	retainedPayloadBytes int64
+	retentionMarkers     [2]*core.StreamData
 	sync.Mutex
 	factory        *connectionFactory
 	releaseOnce    sync.Once
@@ -235,6 +238,15 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 }
 
 func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) {
+	if t.payloadBudget != nil {
+		if !t.payloadBudget.reserve(int64(len(data))) {
+			t.recordRetentionDiscard(dir, len(data), ac)
+			return
+		}
+		t.Lock()
+		t.retainedPayloadBytes += int64(len(data))
+		t.Unlock()
+	}
 	// fmt.Println(t.ident, "feedData", ansi.White, dir, ansi.Cyan, len(data), ansi.Yellow, ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset)
 	// fmt.Println(hex.Dump(data))
 

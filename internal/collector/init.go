@@ -49,7 +49,13 @@ func (c *Collector) Init() (err error) {
 	if c.initialized {
 		return nil
 	}
+	if c.config.DecoderConfig.MaxRetainedTCPBytes < 0 {
+		return fmt.Errorf("max-retained-tcp-bytes cannot be negative")
+	}
 	c.contextLocked()
+	if err := tcp.ConfigureRetainedPayloadBudget(c.config.DecoderConfig.MaxRetainedTCPBytes, c.runCancel); err != nil {
+		return err
+	}
 	// set configuration for decoder pkgs
 	c.config.DecoderConfig.PerfTracker = c.perfTracker
 	packet.SetConfig(c.config.DecoderConfig)

@@ -150,6 +150,7 @@ type RuntimeConfig struct {
 	CloseInactiveTimeout    time.Duration
 	LiveMaintenanceInterval time.Duration
 	LiveFlushInterval       time.Duration
+	MaxRetainedTCPBytes     int64
 
 	// Output Format
 	Proto bool
@@ -1785,6 +1786,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	captureEvidence, retainPackets := true, false
 	var segmentBytes, retentionBytes int64
 	var maintenanceInterval, flushInterval time.Duration
+	var maxRetainedTCPBytes int64
 	s.mu.RLock()
 	if s.runtimeConfig != nil {
 		flowExports = s.runtimeConfig.FlowExports
@@ -1792,6 +1794,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		captureEvidence, retainPackets = s.runtimeConfig.CaptureEvidence, s.runtimeConfig.RetainPackets
 		segmentBytes, retentionBytes = s.runtimeConfig.PacketSegmentBytes, s.runtimeConfig.PacketRetentionBytes
 		maintenanceInterval, flushInterval = s.runtimeConfig.LiveMaintenanceInterval, s.runtimeConfig.LiveFlushInterval
+		maxRetainedTCPBytes = s.runtimeConfig.MaxRetainedTCPBytes
 	}
 	s.mu.RUnlock()
 	// Build collector configuration
@@ -1831,6 +1834,8 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		Scatter:              true,
 		ScatterDuration:      5 * time.Minute,
 		DecoderConfig: &config.Config{
+			MaxRetainedTCPBytes: maxRetainedTCPBytes,
+
 			Quiet:            true,
 			PrintProgress:    false,
 			Buffer:           true,

@@ -90,6 +90,7 @@ func (t *tcpStreamReader) CloseData() {
 func (t *tcpStreamReader) StoreData(data *core.StreamData) {
 	t.parent.Lock()
 	t.data = append(t.data, data)
+	t.parent.wasMerged = false
 	t.numBytes += len(data.RawData)
 	t.parent.Unlock()
 }
@@ -234,7 +235,7 @@ func contiguousServicePrefix(data core.DataFragments, limit int) []byte {
 	var prefix []byte
 	for _, fragment := range data {
 		d, ok := fragment.(*core.StreamData)
-		if !ok || d.SkippedBytes != 0 {
+		if !ok || d.SkippedBytes != 0 || d.DiscardedBytes > 0 {
 			break
 		}
 		n := min(len(d.Raw()), limit-len(prefix))

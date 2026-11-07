@@ -160,6 +160,7 @@ jobs:
           GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestDHCPOption55CLI$' -count=1
           GOWORK=off go test -tags=e2e,nodpi,nomagika ./tests/e2e -run '^TestArtifactAnalysisCLI$' -count=1
           GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestAuditSemanticsCLI$' -count=1
+          GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestTCPRetentionBudgetCLI$' -count=1 -timeout=8m
           GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests -run '^TestNewDecoders_UltimatePCAP$' -count=1 -timeout=8m
           GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/decoder/stream/tls -run '^$' -fuzz '^FuzzCertificateHandshakeSemantics$' -fuzztime=5s -parallel=2
           GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/decoder/stream/rdp -run '^$' -fuzz '^FuzzNegotiationEvidence$' -fuzztime=5s -parallel=2

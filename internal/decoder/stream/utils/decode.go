@@ -139,7 +139,7 @@ func DecodeConversationAt(
 	}
 
 	for _, d := range data {
-		if fragment, ok := d.(*core.StreamData); ok && fragment.SkippedBytes != 0 {
+		if fragment, ok := d.(*core.StreamData); ok && (fragment.SkippedBytes != 0 || fragment.DiscardedBytes > 0) {
 			drain()
 			return
 		}

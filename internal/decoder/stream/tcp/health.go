@@ -19,6 +19,8 @@ type ReassemblyHealth struct {
 	RejectedFSM           int64    `json:"rejectedFSM"`
 	MissingBytes          int64    `json:"missingBytes"`
 	Limitations           []string `json:"limitations"`
+
+	RetainedPayload *PayloadRetentionHealth `json:"retainedPayload,omitempty"`
 }
 
 func WriteReassemblyHealth() error {
@@ -27,6 +29,10 @@ func WriteReassemblyHealth() error {
 	}
 	h := ReassemblyHealth{Version: 1, ChecksumPolicy: "tolerant", Limitations: []string{"invalid checksum may reflect capture offload; the policy does not identify its cause", "rejected TCP packets remain available in retained packet evidence; no parsed transaction is not proof of no traffic"}}
 	h.Limitations = append(h.Limitations, "strict reassembly validates IPv4 header and TCP checksums; packet audit records remain available and UDP checksums are not validated")
+	h.RetainedPayload = payloadRetentionSnapshot()
+	if h.RetainedPayload != nil {
+		h.Limitations = append(h.Limitations, "TCP retention budget counts reader-owned payload copies, not assembler pages, connection metadata, decoder caches or total RSS; exhaustion aborts capture and leaves partial audit output")
+	}
 	if config.Instance.Checksum {
 		h.ChecksumPolicy = "strict"
 	}

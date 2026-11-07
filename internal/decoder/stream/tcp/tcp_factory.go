@@ -113,6 +113,7 @@ type connectionFactory struct {
 	wg              sync.WaitGroup
 	FSMOptions      reassembly.TCPSimpleFSMOptions
 	freeReaderSlots []int
+	payloadBudget   *retainedPayloadBudget
 }
 
 // New handles a new stream received from the assembler
@@ -144,6 +145,7 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 	factory.wg.Add(2)
 
 	factory.Lock()
+	str.payloadBudget = factory.payloadBudget
 	for _, reader := range []*tcpStreamReader{client, server} {
 		slot := len(factory.streamReaders)
 		if last := len(factory.freeReaderSlots) - 1; last >= 0 {

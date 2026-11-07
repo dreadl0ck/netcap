@@ -99,7 +99,7 @@ func (d DataFragments) ContiguousBytes() []byte {
 		if fragment == nil {
 			continue
 		}
-		if stream, ok := fragment.(*StreamData); ok && stream.SkippedBytes != 0 && b.Len() > 0 {
+		if stream, ok := fragment.(*StreamData); ok && (stream.SkippedBytes != 0 || stream.DiscardedBytes > 0) && b.Len() > 0 {
 			break
 		}
 		b.Write(fragment.Raw())

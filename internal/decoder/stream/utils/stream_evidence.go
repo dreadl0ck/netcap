@@ -16,12 +16,14 @@ import (
 )
 
 type StreamEvidenceSpan struct {
-	Direction    string `json:"direction"`
-	Offset       int64  `json:"offset,string"`
-	Length       int    `json:"length"`
-	TimestampNs  string `json:"timestampNs"`
-	MissingBytes int    `json:"missingBytes"`
-	Datagram     bool   `json:"datagram"`
+	Direction      string `json:"direction"`
+	Offset         int64  `json:"offset,string"`
+	Length         int    `json:"length"`
+	TimestampNs    string `json:"timestampNs"`
+	MissingBytes   int    `json:"missingBytes"`
+	Datagram       bool   `json:"datagram"`
+	DiscardedBytes int64  `json:"discardedBytes,omitempty,string"`
+	DiscardReason  string `json:"discardReason,omitempty"`
 }
 
 type StreamEvidenceFile struct {
@@ -84,6 +86,7 @@ func SaveStreamEvidence(out, protocol string, conversation core.DataFragments, i
 		Client: StreamEvidenceFile{Name: "client.bin"}, Server: StreamEvidenceFile{Name: "server.bin"}, Spans: []StreamEvidenceSpan{},
 		Limitations: []string{"bytes are concatenated observed fragments; gaps are explicit and must not be parsed as contiguous data", "stream completeness and packet provenance require the original capture", "direction follows the reassembler; midstream client role may be uncertain"}}
 	offsets := [2]int64{}
+	hasGap, hasDiscard := false, false
 	for _, fragment := range conversation {
 		direction := 0
 		if fragment.Direction() == reassembly.TCPDirServerToClient {
@@ -105,18 +108,31 @@ func SaveStreamEvidence(out, protocol string, conversation core.DataFragments, i
 			capture = fragment.Context().GetCaptureInfo()
 		}
 		missing := 0
+		var discarded int64
+		var discardReason string
 		if data, ok := fragment.(*core.StreamData); ok {
 			missing = data.SkippedBytes
+			discarded, discardReason = data.DiscardedBytes, data.DiscardReason
 		}
 		if missing != 0 {
-			manifest.Status = "gapped"
+			hasGap = true
+		}
+		if discarded > 0 {
+			hasDiscard = true
 		}
 		span := StreamEvidenceSpan{Direction: name, Offset: offsets[direction], Length: len(fragment.Raw()), TimestampNs: fmt.Sprint(capture.Timestamp.UnixNano()), MissingBytes: missing, Datagram: protocol == "UDP"}
+		span.DiscardedBytes, span.DiscardReason = discarded, discardReason
 		if _, err := writers[direction].Write(fragment.Raw()); err != nil {
 			return "", err
 		}
 		offsets[direction] += int64(span.Length)
 		manifest.Spans = append(manifest.Spans, span)
+	}
+	if hasDiscard {
+		manifest.Status = "locally-truncated"
+		manifest.Limitations = append(manifest.Limitations, "local discard spans aggregate omitted reader-copy bytes after their first timestamp; these are not network sequence gaps")
+	} else if hasGap {
+		manifest.Status = "gapped"
 	}
 	for _, file := range []*os.File{client, server} {
 		if err := file.Sync(); err != nil {

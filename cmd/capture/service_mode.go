@@ -109,6 +109,7 @@ func runServiceMode(command *cli.Command) {
 		CloseInactiveTimeout:    flagCloseInactiveTimeout,
 		LiveMaintenanceInterval: flagLiveMaintenanceInterval,
 		LiveFlushInterval:       flagLiveFlushInterval,
+		MaxRetainedTCPBytes:     flagMaxRetainedTCPBytes,
 		Proto:                   flagProto,
 		JSON:                    flagJSON,
 		CSV:                     flagCSV,

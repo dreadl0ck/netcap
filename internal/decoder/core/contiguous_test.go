@@ -18,3 +18,10 @@ func TestContiguousProbeCannotBridgeKnownOrUnknownLoss(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestContiguousProbeCannotBridgeLocalRetentionLoss(t *testing.T) {
+	fragments := DataFragments{&StreamData{RawData: []byte("SSH-")}, &StreamData{DiscardedBytes: 2, DiscardReason: "tcp-retained-payload-budget"}, &StreamData{RawData: []byte("2.0-owned\r\n")}}
+	if got := string(fragments.ContiguousBytes()); got != "SSH-" {
+		t.Fatalf("local omission completed a fabricated greeting: %q", got)
+	}
+}

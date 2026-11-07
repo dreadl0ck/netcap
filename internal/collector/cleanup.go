@@ -113,6 +113,7 @@ func (c *Collector) doCleanup(force bool) {
 		// Flushes every pool, then closes and joins the stream readers.
 		// Readers must finish before teardown() closes the log files.
 		tcp.CleanupReassembly(!force, c.assemblers)
+		c.captureEvidenceError = errors.Join(c.captureEvidenceError, tcp.PayloadRetentionError())
 	}
 	c.assemblers = nil
 
