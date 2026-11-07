@@ -22,8 +22,18 @@ import (
 
 func TestHTTP3RealTerminationAndLateBodyDenial(t *testing.T) {
 	var calls atomic.Int64
-	origin := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	origin := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
+		if r.URL.Path == "/service/method" {
+			if r.ProtoMajor != 2 {
+				t.Error("message profile origin must use HTTP/2")
+			}
+			w.Header().Set("Content-Type", "application/grpc")
+			w.Header().Set("Trailer", "Grpc-Status")
+			_, _ = io.Copy(w, r.Body)
+			w.Header().Set("Grpc-Status", "0")
+			return
+		}
 		_, _ = io.Copy(io.Discard, r.Body)
 		if r.URL.Path == "/response" {
 			_, _ = io.WriteString(w, strings.Repeat("a", (1<<20)+100)+"secret")
@@ -31,12 +41,15 @@ func TestHTTP3RealTerminationAndLateBodyDenial(t *testing.T) {
 		}
 		_, _ = io.WriteString(w, "allowed")
 	}))
+	origin.EnableHTTP2 = true
+	origin.StartTLS()
 	defer origin.Close()
 	c := config(origin.URL)
 	c.MaxBodyBytes = 2 << 20
 	c.MaxResponseBytes = 2 << 20
 	c.InspectResponse = true
 	f := firewall(t, c, compiled(t, "enforce", "request", `Body contains "forbidden"`))
+	f.transport = origin.Client().Transport.(*http.Transport)
 	handler, err := f.MessageHandler(false, true)
 	if err != nil {
 		t.Fatal(err)
@@ -114,14 +127,14 @@ func TestHTTP3RealTerminationAndLateBodyDenial(t *testing.T) {
 	if calls.Load() != 5 {
 		t.Fatalf("HTTP/3 denied streams crossed boundary: calls=%d", calls.Load())
 	}
-	unsupported, err := client.Post(base+"/service/method", "application/grpc", strings.NewReader(""))
+	profile, err := client.Post(base+"/service/method", "application/grpc", strings.NewReader("\x00\x00\x00\x00\x04safe"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, _ = io.Copy(io.Discard, unsupported.Body)
-	_ = unsupported.Body.Close()
-	if unsupported.ProtoMajor != 3 || unsupported.StatusCode != 400 || calls.Load() != 5 {
-		t.Fatalf("gRPC-over-HTTP/3 was falsely accepted: proto=%s status=%d origin=%d", unsupported.Proto, unsupported.StatusCode, calls.Load())
+	profileBody, err := io.ReadAll(profile.Body)
+	_ = profile.Body.Close()
+	if err != nil || profile.ProtoMajor != 3 || profile.StatusCode != 200 || calls.Load() != 6 || string(profileBody) != "\x00\x00\x00\x00\x04safe" || profile.Trailer.Get("Grpc-Status") != "0" {
+		t.Fatalf("HTTP/3 message profile: proto=%s status=%d origin=%d body=%x trailers=%v err=%v", profile.Proto, profile.StatusCode, calls.Load(), profileBody, profile.Trailer, err)
 	}
 	f.SetPolicy(compiled(t, "enforce", "response", `Body contains "secret"`))
 	resp, err := client.Get(base + "/response")

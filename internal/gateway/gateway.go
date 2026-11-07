@@ -59,12 +59,12 @@ func New(cfg Config, evaluator Evaluator) (*Gateway, error) {
 		return nil, errors.New("gateway: policy is required")
 	}
 	switch cfg.Protocol {
-	case "modbus", "dns", "dns-tcp", "dns-tls", "redis", "postgres", "smtp", "dnp3", "mysql":
+	case "modbus", "dns", "dns-tcp", "dns-tls", "redis", "postgres", "smtp", "dnp3", "mysql", "smb", "ftp":
 	default:
 		return nil, errors.New("gateway: unsupported protocol")
 	}
 	if cfg.Listen == "" {
-		ports := map[string]string{"modbus": "1502", "dns": "1053", "dns-tcp": "1053", "dns-tls": "1853", "redis": "16379", "postgres": "15432", "smtp": "1025", "dnp3": "20000", "mysql": "13306"}
+		ports := map[string]string{"modbus": "1502", "dns": "1053", "dns-tcp": "1053", "dns-tls": "1853", "redis": "16379", "postgres": "15432", "smtp": "1025", "dnp3": "20000", "mysql": "13306", "smb": "1445", "ftp": "1021"}
 		cfg.Listen = "127.0.0.1:" + ports[cfg.Protocol]
 	}
 	if cfg.MaxConnections == 0 {
@@ -99,6 +99,9 @@ func New(cfg Config, evaluator Evaluator) (*Gateway, error) {
 	}
 	if (cfg.TLSCert == "") != (cfg.TLSKey == "") || (cfg.ClientCA != "" && cfg.TLSCert == "") || (cfg.Protocol == "dns-tls" && cfg.TLSCert == "") || (cfg.Protocol == "dns" && cfg.TLSCert != "") {
 		return nil, errors.New("gateway: invalid listener TLS configuration")
+	}
+	if cfg.Protocol == "ftp" && (cfg.TLSCert != "" || cfg.UpstreamTLS) {
+		return nil, errors.New("gateway: FTP profile requires plaintext control and owned plaintext data connections")
 	}
 	if cfg.UpstreamTLS && cfg.UpstreamServerName == "" {
 		return nil, errors.New("gateway: upstream TLS requires a verification server name")

@@ -39,8 +39,11 @@ func (h *Handler) webSocket(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	out := h.outbound(r, ctx)
 	out.Body = nil
-	// No compression is negotiated: RSV1 frames are rejected in both directions.
 	out.Header.Del("Sec-WebSocket-Extensions")
+	compression := h.cfg.WebSocketCompression && wsDeflateOffer(r.Header)
+	if compression {
+		out.Header.Set("Sec-WebSocket-Extensions", wsDeflateExtension)
+	}
 	timer := time.AfterFunc(h.cfg.MessageTimeout, cancel)
 	resp, err := h.cfg.WebSocketTransport.RoundTrip(out)
 	timer.Stop()
@@ -50,10 +53,11 @@ func (h *Handler) webSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 	sum := sha1.Sum([]byte(r.Header.Get("Sec-WebSocket-Key") + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
-	if resp.StatusCode != 101 || !validHeaders(resp.Header) || !hasToken(resp.Header, "Connection", "upgrade") || !strings.EqualFold(resp.Header.Get("Upgrade"), "websocket") || resp.Header.Get("Sec-WebSocket-Accept") != base64.StdEncoding.EncodeToString(sum[:]) || len(resp.Header.Values("Sec-WebSocket-Accept")) != 1 || len(resp.Header.Values("Sec-WebSocket-Extensions")) != 0 {
+	if resp.StatusCode != 101 || !validHeaders(resp.Header) || !hasToken(resp.Header, "Connection", "upgrade") || !strings.EqualFold(resp.Header.Get("Upgrade"), "websocket") || resp.Header.Get("Sec-WebSocket-Accept") != base64.StdEncoding.EncodeToString(sum[:]) || len(resp.Header.Values("Sec-WebSocket-Accept")) != 1 || !wsDeflateResponse(resp.Header, compression) {
 		http.Error(w, "invalid WebSocket upstream handshake", 502)
 		return
 	}
+	compression = compression && resp.Header.Get("Sec-WebSocket-Extensions") != ""
 	selected := resp.Header.Get("Sec-WebSocket-Protocol")
 	if len(resp.Header.Values("Sec-WebSocket-Protocol")) > 1 || selected != "" && !hasToken(r.Header, "Sec-WebSocket-Protocol", selected) {
 		http.Error(w, "invalid WebSocket subprotocol", 502)
@@ -113,7 +117,7 @@ func (h *Handler) webSocket(w http.ResponseWriter, r *http.Request) {
 			e.Attributes["message.index"] = strconv.FormatUint(index, 10)
 			return h.inspect(ctx, e)
 		}
-		done <- gateWebSocketBudget(ctx, src, dst, masked, h.cfg.MessageTimeout, cancel, inspect, h.cfg.Budget)
+		done <- gateWebSocketExtensions(ctx, src, dst, masked, h.cfg.MessageTimeout, cancel, inspect, h.cfg.Budget, compression)
 	}
 	go gate("request", rw.Reader, up, true)
 	go gate("response", up, down, false)
@@ -141,6 +145,10 @@ func gateWebSocket(ctx context.Context, src io.Reader, dst io.Writer, masked boo
 }
 
 func gateWebSocketBudget(ctx context.Context, src io.Reader, dst io.Writer, masked bool, timeout time.Duration, abort context.CancelFunc, inspect func([]byte, byte, uint64) error, budget *BufferBudget) error {
+	return gateWebSocketExtensions(ctx, src, dst, masked, timeout, abort, inspect, budget, false)
+}
+
+func gateWebSocketExtensions(ctx context.Context, src io.Reader, dst io.Writer, masked bool, timeout time.Duration, abort context.CancelFunc, inspect func([]byte, byte, uint64) error, budget *BufferBudget, compression bool) error {
 	var message []byte
 	var current wsFrame
 	var messageCharge int64
@@ -151,6 +159,7 @@ func gateWebSocketBudget(ctx context.Context, src io.Reader, dst io.Writer, mask
 		}
 	}()
 	var opcode byte
+	compressed := false
 	var index uint64
 	fragments := 0
 	timer := time.AfterFunc(timeout, abort)
@@ -163,7 +172,7 @@ func gateWebSocketBudget(ctx context.Context, src io.Reader, dst io.Writer, mask
 		// The caller closes both connections on this timer, including writes blocked
 		// by a peer that has stopped reading. Fragment/control traffic cannot renew it.
 		current.release()
-		frame, err := readWSFrameBudget(src, masked, budget)
+		frame, err := readWSFrameExtensions(src, masked, budget, compression)
 		if err != nil {
 			return err
 		}
@@ -200,6 +209,7 @@ func gateWebSocketBudget(ctx context.Context, src io.Reader, dst io.Writer, mask
 				return ErrFraming
 			}
 			opcode = frame.opcode
+			compressed = frame.compressed
 		}
 		if len(message)+len(frame.payload) > MaxMessageBytes {
 			return ErrFraming
@@ -211,6 +221,16 @@ func gateWebSocketBudget(ctx context.Context, src io.Reader, dst io.Writer, mask
 		messageCharge = int64(cap(message))
 		if !frame.final {
 			continue
+		}
+		if compressed {
+			decoded, charge, err := inflateWS(message, budget)
+			if err != nil {
+				return err
+			}
+			if budget != nil {
+				budget.Release(messageCharge)
+			}
+			message, messageCharge = decoded, charge
 		}
 		if opcode == 1 && !utf8.Valid(message) {
 			return ErrFraming
@@ -259,11 +279,12 @@ func appendWSMessage(message, payload []byte, budget *BufferBudget) ([]byte, err
 }
 
 type wsFrame struct {
-	final   bool
-	opcode  byte
-	payload []byte
-	budget  *BufferBudget
-	charge  int64
+	final      bool
+	compressed bool
+	opcode     byte
+	payload    []byte
+	budget     *BufferBudget
+	charge     int64
 }
 
 func (f *wsFrame) release() {
@@ -280,12 +301,16 @@ func readWSFrame(r io.Reader, masked bool) (wsFrame, error) {
 }
 
 func readWSFrameBudget(r io.Reader, masked bool, budget *BufferBudget) (_ wsFrame, err error) {
+	return readWSFrameExtensions(r, masked, budget, false)
+}
+
+func readWSFrameExtensions(r io.Reader, masked bool, budget *BufferBudget, compression bool) (_ wsFrame, err error) {
 	var head [2]byte
 	if _, err := io.ReadFull(r, head[:]); err != nil {
 		return wsFrame{}, err
 	}
-	f := wsFrame{final: head[0]&128 != 0, opcode: head[0] & 15}
-	if head[0]&112 != 0 || (head[1]&128 != 0) != masked || (f.opcode != 0 && f.opcode != 1 && f.opcode != 2 && f.opcode != 8 && f.opcode != 9 && f.opcode != 10) {
+	f := wsFrame{final: head[0]&128 != 0, opcode: head[0] & 15, compressed: head[0]&64 != 0}
+	if head[0]&48 != 0 || f.compressed && (!compression || f.opcode != 1 && f.opcode != 2) || (head[1]&128 != 0) != masked || (f.opcode != 0 && f.opcode != 1 && f.opcode != 2 && f.opcode != 8 && f.opcode != 9 && f.opcode != 10) {
 		return f, ErrFraming
 	}
 	n := uint64(head[1] & 127)

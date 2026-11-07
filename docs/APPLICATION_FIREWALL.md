@@ -14,7 +14,7 @@ Direct origin traffic bypasses the WAF; protect the origin independently.
 | Policy ownership | File rollout, managed single-target SQLite, or explicitly enrolled external fleet; managed and fleet ownership cannot overlap |
 | Shared rates | `sharedstate` plus `--shared-rate-config`; separate fixed-window guard, mutually exclusive with the native authority client |
 | Native rule authority | `policy-state` plus `--policy-state-config`; scoped/revision-pinned native thresholds, sliding/distinct windows, tuples and sequences shared across data-plane replicas |
-| Gateways | `gateway --protocol` supports `modbus`, `dns`, `dns-tcp`, `dns-tls`, `redis`, `postgres`, `mysql`, `smtp`, `dnp3`; explicit termination, bounded parsers |
+| Gateways | `gateway --protocol` supports `modbus`, `dns`, `dns-tcp`, `dns-tls`, `redis`, `postgres`, `mysql`, `smtp`, `dnp3`, `smb`, `ftp`; explicit termination, bounded parsers |
 | Linux | `network` produces NFQUEUE verdicts; `enforcer` owns finite nft leases; both require an existing named namespace and reject the default namespace |
 | Decoder bridge | Full capture CLI `--firewall-policy`, `--firewall-effects-config`, `--firewall-schema`; retrospective bindings for all 220 compiled protobuf messages, not interception of completed transactions |
 
@@ -92,9 +92,9 @@ a `Body` rule, so its effective native limit is smaller than the configured ceil
 | Base requests | Complete bounded request before forwarding; both wire/expanded gzip bytes bounded; nesting 64, arguments/parts 1000 |
 | Base responses | Status/headers checked before final headers; body/trailers stream without inspection by default |
 | `inspectResponse: true` | Complete bounded response buffering; no unbounded streaming or upgrades |
-| `--websocket` | Per-message gates, 1 MiB wire/expanded message bound; no WebSocket compression |
+| `--websocket` | Per-message gates, 1 MiB wire/expanded message bound; optional RFC 7692 `permessage-deflate` with both `server_no_context_takeover` and `client_no_context_takeover`; decoded messages forwarded uncompressed, RSV1 permitted only on negotiated initial data fragments |
 | `--grpc` | HTTP/2 message gates with identity/gzip encoding; rejected messages do not release their frame headers |
-| `--http3-listen` | QUIC/TLS termination with runtime TLS certificate/key; no 0-RTT; gRPC-over-HTTP/3 is rejected |
+| `--http3-listen` | QUIC/TLS termination with runtime TLS certificate/key; no 0-RTT; `--grpc` enables an HTTP/3 message-envelope ingress profile bridged to an HTTP/2 origin, including duplex bodies and gated trailers; not a standardized gRPC-over-HTTP/3 claim |
 
 Policies use `netcap-policy/v1`, with typed HTTP, `Network`, `TLS`, `DNS`, `Modbus`
 and protocol-adapter fields (`internal/policy/model.go`). The literal traversal
@@ -411,6 +411,22 @@ writes must be denied in the request phase; response denial cannot undo a write.
 | --- | --- |
 | MySQL | Protocol 4.1 auth relay and independently negotiated TLS legs; QUERY/INIT_DB/PING and bounded prepared-statement lifecycle; query metadata gates execution. Rejects multipart 0xffffff packets, compression, LOCAL INFILE, multi-results, long-data/cursors and unsupported capabilities (`mysql_wire.go`, `mysql.go`) |
 | DNP3 | CRC-validated link frames, confirmed/unconfirmed transport, sequence-bounded reassembly and explicit object profiles for READ/WRITE/SELECT/OPERATE/restart functions. One request APDU per authorization, configured message/state bounds; unsolicited and unknown profiles rejected (`dnp3_wire.go`, `dnp3.go`) |
+| SMB2/3 plaintext | Direct TCP length/header/compound bounds; entire request compound authorized before forwarding. `smb.command`, raw UTF-16 `smb.path`/`smb.share`, session/tree-scoped file handles, CREATE access/disposition/options, READ/WRITE length/offset; WRITE content and successful READ response content gated. Authentication opaque; signed bytes unchanged and unverified, denial closes without forging a reply. SMB1, encrypted/compressed transforms, async, IOCTL, SET_INFO, locks, leases/create contexts rejected (`smb.go`). Qualification is the owned disk-effect emulator in `smb_test.go`, not Samba/Windows interoperability |
+| FTP | Bounded CRLF commands and RFC 959 multiline replies; EPSV data listener bound to the control listener's local address, data client must match control client, origin data target pinned to the control peer with port 1024..65535. STOR fully buffered and body-gated before origin command/data connection; RETR/LIST/NLST fully buffered before downstream release. Implicit TLS configuration, active PORT/EPRT, PASV, AUTH/PBSZ/PROT upgrades, APPE, MODE/STRU, SITE and unknown commands rejected (`ftp.go`). Raw `ftp.path`/`ftp.argument` are not canonical filesystem identities |
+| Existing extension exclusions | Redis RESP3/HELLO, transactions and pub/sub remain rejected (`redis.go`); Postgres COPY remains unsupported (`postgres.go`); SMTP STARTTLS/BDAT/BURL remain rejected, with implicit TLS available (`smtp.go`). These modes do not become opaque passthrough |
+
+`TestFTPPyftpdlibPreventiveUploadsAndCommands` requires `NETCAP_FTP_PYTHON`
+pointing to Python with `pyftpdlib==2.1.0`; `TestWSDeflateRealPythonClient` requires
+`NETCAP_WS_PYTHON` with `websockets==15.0.1`. Both use owned loopback endpoints
+and skip explicitly when unset. `go test -race -tags http3 ./internal/gateway
+./internal/firewalltransport ./internal/waf ./cmd/firewall` includes real QUIC
+duplex/trailer-denial and stream-limit/recovery tests, file-side-effect checks, fragmentation, decompression
+bombs, buffer-capacity and cancellation checks. FTP transfers are limited to
+`--max-message-bytes`; a synthetic `150` permits buffering before STOR authorization.
+The alternate-loopback FTP peer test skips on macOS without `127.0.0.2`; it passes
+in the isolated `alpine:3.23.2` Linux fixture. SMB qualification uses the owned
+SMB2 HMAC-SHA256 disk emulator; SMB3 signing algorithms and Samba interoperability
+are not qualified.
 
 ### Decoder audit bridge
 
@@ -504,7 +520,7 @@ Retain prior image digests, values and consistent state snapshots.
 | Production qualification | Passing native/cluster CI does not qualify another CNI, storage provider, traffic mix or external HTTP/3 UDP ingress/LB/NAT path |
 | HA / state loss | SQLite remains singleton; Postgres application replicas are active-active, but primary fencing and DB HA remain database-operator responsibilities; stale-snapshot recovery is not lossless |
 | Distributed semantics | Native thresholds/sequences are authoritative when configured; default local mode and the separate fixed-window guard retain their documented semantics; fleet acknowledgments are not an atomic cutover |
-| Protocol extensions | No encrypted passthrough payload decryption, WebSocket compression or gRPC-over-HTTP/3; gateway parsers cover explicit subsets |
+| Protocol extensions | No encrypted passthrough payload decryption, WebSocket context takeover/window-size negotiation, HTTP/3 origin message transport, broad SMB interoperability or FTP active/PASV modes; gateway parsers cover the explicit subsets above |
 | Storage / capacity | Optional PG schema backup/encrypted upload/scoped retention is implemented; production repository provisioning, off-host restore/schedule qualification, SQLite offline automation and deployment-specific sizing remain; 64 MiB bounds do not establish throughput |
 
 ## Verification pitfalls
@@ -523,3 +539,4 @@ Retain prior image digests, values and consistent state snapshots.
 | Postgres crash test interrupts another package | Run the two PG packages with `-p 1` against their shared disposable DB; concurrency inside each test remains enabled |
 | Default-deny routed policy breaks allowed TCP | Match protected service replies explicitly; NFQUEUE covers both directions, not only client destination ports |
 | CodeQL `py/clear-text-storage-sensitive-data` on PG fixture env files | Keep generated DB passwords/DSNs in process environment; Restic's local fixture password file belongs only in container tmpfs, populated through stdin |
+| HTTP/3 request trailers disappear after `WithContext` | quic-go v0.65.0 replaces `Request.Trailer` at EOF; retain the server-owned request for trailer inspection (`internal/firewalltransport/transport.go`) |

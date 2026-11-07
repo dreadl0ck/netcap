@@ -21,10 +21,12 @@ type Capabilities struct {
 	WebSocketCompression bool
 	GRPCEncodings        []string
 	GRPCHTTPVersions     []int
+	// HTTP3MessageProfile is an HTTP/3 ingress to HTTP/2 origin bridge, not a gRPC standard claim.
+	HTTP3MessageProfile bool
 }
 
 func Supported() Capabilities {
-	return Capabilities{WebSocket: true, GRPC: true, HTTP3: HTTP3Available, MaxMessageBytes: MaxMessageBytes, GRPCEncodings: []string{"identity", "gzip"}, GRPCHTTPVersions: []int{2}}
+	return Capabilities{WebSocket: true, WebSocketCompression: true, GRPC: true, HTTP3: HTTP3Available, HTTP3MessageProfile: HTTP3Available, MaxMessageBytes: MaxMessageBytes, GRPCEncodings: []string{"identity", "gzip"}, GRPCHTTPVersions: []int{2}}
 }
 
 // Event carries one message, never the accumulated connection or RPC stream.
@@ -59,19 +61,22 @@ func inspectionStatus(err error) int {
 // Config is opt-in. Next handles all traffic outside the explicitly enabled modes.
 // Transport must support HTTP/2 for streaming gRPC (including TLS ALPN).
 type Config struct {
-	ByteEvents         bool
-	Budget             *BufferBudget
-	MaxBufferedBytes   int64
-	Context            context.Context
-	Begin              func(*http.Request) InspectFunc
-	End                func(*http.Request)
-	WebSocket          bool
-	GRPC               bool
-	Upstream           *url.URL
-	Transport          http.RoundTripper
-	WebSocketTransport http.RoundTripper
-	MessageTimeout     time.Duration
-	MaxConcurrent      int
+	ByteEvents       bool
+	Budget           *BufferBudget
+	MaxBufferedBytes int64
+	Context          context.Context
+	Begin            func(*http.Request) InspectFunc
+	End              func(*http.Request)
+	WebSocket        bool
+	// Only RFC 7692 with no context takeover in either direction is negotiated.
+	WebSocketCompression bool
+	GRPC                 bool
+	HTTP3MessageProfile  bool
+	Upstream             *url.URL
+	Transport            http.RoundTripper
+	WebSocketTransport   http.RoundTripper
+	MessageTimeout       time.Duration
+	MaxConcurrent        int
 }
 
 type Handler struct {
@@ -136,6 +141,9 @@ func New(c Config, next http.Handler, inspect InspectFunc) (*Handler, error) {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// quic-go replaces Request.Trailer at EOF instead of mutating its initial
+	// map. Retain the server-owned request across our WithContext shallow copy.
+	source := r
 	ws := strings.EqualFold(r.Header.Get("Upgrade"), "websocket")
 	grpc := grpcMediaType(r.Header.Get("Content-Type"))
 	if !(ws && h.cfg.WebSocket || grpc && h.cfg.GRPC) {
@@ -187,7 +195,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if ws {
 		h.webSocket(w, r)
 	} else {
-		h.grpc(w, r)
+		h.grpc(w, r, source)
 	}
 }
 

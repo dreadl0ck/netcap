@@ -37,7 +37,7 @@ func TestRootFirewallVersion(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &version); err != nil {
 		t.Fatal(err)
 	}
-	if version.Version != "netcap-firewall/v1" || version.Policy != "netcap-policy/v1" || strings.Join(version.Protocols, ",") != "http,modbus,dns,dns-tcp,dns-tls,redis,postgres,smtp,mysql,dnp3,network,websocket,grpc" {
+	if version.Version != "netcap-firewall/v1" || version.Policy != "netcap-policy/v1" || strings.Join(version.Protocols, ",") != "http,modbus,dns,dns-tcp,dns-tls,redis,postgres,smtp,mysql,dnp3,smb,ftp,network,websocket,grpc" {
 		t.Fatalf("version contract: %s", out)
 	}
 }
