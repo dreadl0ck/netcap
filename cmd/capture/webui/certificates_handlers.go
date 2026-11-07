@@ -20,6 +20,7 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,7 +30,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -306,16 +306,14 @@ func (s *Server) handleCertificateDownloadPCAP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Get query parameters
-	srcIP := r.URL.Query().Get("srcIP")
-	srcPort := r.URL.Query().Get("srcPort")
-	dstIP := r.URL.Query().Get("dstIP")
-	dstPort := r.URL.Query().Get("dstPort")
-
-	if srcIP == "" || srcPort == "" || dstIP == "" || dstPort == "" {
-		http.Error(w, "Missing required parameters", http.StatusBadRequest)
+	query := r.URL.Query()
+	selection, err := parseTCPPacketSelection(query)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	srcIP, srcPort := query.Get("srcIP"), query.Get("srcPort")
+	dstIP, dstPort := query.Get("dstIP"), query.Get("dstPort")
 
 	activeInputFile, _ := s.resolveInputFileFromRequest(r)
 
@@ -330,22 +328,24 @@ func (s *Server) handleCertificateDownloadPCAP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Create BPF filter for the connection (TLS is typically on TCP)
-	bpf := fmt.Sprintf("(host %s and port %s) and (host %s and port %s) and tcp",
-		srcIP, srcPort, dstIP, dstPort)
-
-	// Create temporary output file
-	tempDir := os.TempDir()
-	outputFile := filepath.Join(tempDir, fmt.Sprintf("certificate_%s-%s_%s-%s.pcap",
-		strings.ReplaceAll(srcIP, ".", "_"),
-		srcPort,
-		strings.ReplaceAll(dstIP, ".", "_"),
-		dstPort))
+	temp, err := os.CreateTemp("", "netcap-certificate-*.pcap")
+	if err != nil {
+		http.Error(w, "Failed to create certificate packet export", http.StatusInternalServerError)
+		return
+	}
+	outputFile := temp.Name()
+	defer os.Remove(outputFile)
+	if err := temp.Close(); err != nil {
+		http.Error(w, "Failed to close certificate packet export", http.StatusInternalServerError)
+		return
+	}
 
 	// Filter the PCAP entirely in-process (no external tcpdump).
-	log.Printf("[WebUI] Filtering PCAP for certificate in-process: %s -> %s (bpf: %s)", activeInputFile, outputFile, bpf)
+	log.Printf("[WebUI] Filtering PCAP for certificate in-process: %s -> %s (bpf: %s)", activeInputFile, outputFile, selection.bpf)
 
-	written, err := filterPCAPToFileWithTimeout(r.Context(), activeInputFile, bpf, outputFile, 30*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+	written, err := filterPCAPSelectionContext(ctx, activeInputFile, selection.bpf, outputFile, selection.contains)
 	if err != nil {
 		log.Printf("[WebUI] PCAP filter error: %v", err)
 		os.Remove(outputFile)

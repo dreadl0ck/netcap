@@ -70,6 +70,19 @@ hashes, selection, packet ranges, interface mapping and truncation counts.
 Existing destinations are refused. Packet options, secrets and source statistics
 are not copied as if they described the selected subset; keep the original.
 
+| Packet download API | Required tuple / time selection |
+| --- | --- |
+| `/api/connections/download-pcap` | `srcIP`, `srcPort`, `dstIP`, `dstPort`, and explicit `protocol=TCP` or `UDP`. |
+| `/api/http/download-pcap` | The observed endpoint ports are required, including nonstandard ports; transport is TCP. |
+| `/api/certificates/download-pcap` | Endpoint/port pairs are preserved in both directions; transport is TCP. |
+
+All three accept paired inclusive `startNs`/`endNs` decimal strings and explicit
+`inputFile`/`sessionId` capture selection. Without time bounds, a tuple export
+includes matching reused connections and other transactions; it is not proof of
+a unique HTTP transaction or certificate occurrence. HTTP exports no longer
+guess ports 80/443/8080. MCP connection carving requires the observed transport;
+its `start_ns`/`end_ns` fields preserve nanoseconds as strings.
+
 ## Retain packets and directional streams
 
 ```sh

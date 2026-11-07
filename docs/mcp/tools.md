@@ -92,7 +92,7 @@ Produce a sub-PCAP filtered to all traffic involving one host IP. Returns the ca
 
 ### `carve_subpcap_for_http_pair`
 
-Produce a sub-PCAP of all HTTP-on-TCP flows between two IPs.
+Produce a bidirectional sub-PCAP for the observed HTTP TCP tuple, including nonstandard ports. Without time bounds, all matching tuple occurrences are included.
 
 **Hints:** read-only, idempotent
 
@@ -101,8 +101,12 @@ Produce a sub-PCAP of all HTTP-on-TCP flows between two IPs.
 | name | type | required | description |
 | --- | --- | --- | --- |
 | `dst_ip` | string | yes | Destination IP. |
+| `dst_port` | string | yes | Observed destination port. |
+| `end_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with start_ns. |
 | `session_id` | string | yes | Session identifier. |
 | `src_ip` | string | yes | Source IP. |
+| `src_port` | string | yes | Observed source port. |
+| `start_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with end_ns. |
 
 
 ### `delete_session`

@@ -395,6 +395,9 @@ export default function HTTPPage() {
       const params = new URLSearchParams({
         srcIP: http.srcIP,
         dstIP: http.dstIP,
+        srcPort: String(http.srcPort),
+        dstPort: String(http.dstPort),
+        protocol: 'TCP',
       });
       const downloadUrl = `${getBackendUrl()}/api/http/download-pcap?${params}`;
       
@@ -1386,7 +1389,7 @@ export default function HTTPPage() {
                                         </Button>
                                       )}
                                       <Button
-                                        data-learn="Download as PCAP: Download a filtered PCAP file containing only the packets from this HTTP request/response."
+                                        data-learn="Export the matching bidirectional TCP tuple using its observed ports. Reused connections and other transactions on that tuple may be included."
                                         variant="outlined"
                                         startIcon={<DownloadIcon />}
                                         onClick={(e) => {
@@ -1432,4 +1435,3 @@ export default function HTTPPage() {
     </Layout>
   );
 }
-

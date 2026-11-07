@@ -71,17 +71,21 @@ func (s *Server) registerCarveTools() error {
 		},
 		{
 			Tool: mcplib.NewTool("carve_subpcap_for_http_pair",
-				mcplib.WithDescription("Produce a sub-PCAP of all HTTP-on-TCP flows between two IPs."),
+				mcplib.WithDescription("Produce a bidirectional sub-PCAP for the observed HTTP TCP tuple, including nonstandard ports. Without time bounds, all matching tuple occurrences are included."),
 				mcplib.WithString("session_id", mcplib.Description("Session identifier."), mcplib.Required()),
 				mcplib.WithString("src_ip", mcplib.Description("Source IP."), mcplib.Required()),
 				mcplib.WithString("dst_ip", mcplib.Description("Destination IP."), mcplib.Required()),
+				mcplib.WithString("src_port", mcplib.Description("Observed source port."), mcplib.Required()),
+				mcplib.WithString("dst_port", mcplib.Description("Observed destination port."), mcplib.Required()),
+				mcplib.WithString("start_ns", mcplib.Description("Inclusive UTC Unix nanoseconds; supply together with end_ns.")),
+				mcplib.WithString("end_ns", mcplib.Description("Inclusive UTC Unix nanoseconds; supply together with start_ns.")),
 				mcplib.WithReadOnlyHintAnnotation(true),
 				mcplib.WithDestructiveHintAnnotation(false),
 				mcplib.WithIdempotentHintAnnotation(true),
 				mcplib.WithOpenWorldHintAnnotation(false),
 			),
 			Handler: s.makeCarveHandler("/api/http/download-pcap", "http_pair",
-				[]string{"src_ip", "dst_ip"}),
+				[]string{"src_ip", "dst_ip", "src_port", "dst_port"}),
 		},
 		{
 			Tool: mcplib.NewTool("carve_subpcap_for_certificate",
@@ -153,12 +157,20 @@ func (s *Server) makeCarveHandler(endpoint, label string, mcpArgs []string) serv
 			return errResult(err), nil
 		}
 		q := url.Values{}
+		if endpoint == "/api/http/download-pcap" {
+			q.Set("protocol", "TCP")
+		}
 		for _, a := range mcpArgs {
 			v, rErr := req.RequireString(a)
 			if rErr != nil {
 				return errResult(rErr), nil
 			}
 			q.Set(carveQueryKey(a), v)
+		}
+		for _, field := range []string{"start_ns", "end_ns"} {
+			if value := req.GetString(field, ""); value != "" {
+				q.Set(carveQueryKey(field), value)
+			}
 		}
 		return s.doCarve(ref, endpoint, label, q)
 	}

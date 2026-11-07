@@ -17,6 +17,7 @@ func TestCarveForwardsTransportAndExactCaptureTime(t *testing.T) {
 		{"carve_subpcap_for_connection", "", ""},
 		{"carve_subpcap_for_connection", "ICMP", ""},
 		{"carve_subpcap_for_certificate", "", "TCP"},
+		{"carve_subpcap_for_http_pair", "", "TCP"},
 	} {
 		t.Run(tc.tool+tc.protocol, func(t *testing.T) {
 			var calls atomic.Int32

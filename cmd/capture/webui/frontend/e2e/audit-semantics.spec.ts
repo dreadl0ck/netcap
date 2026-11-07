@@ -40,3 +40,35 @@ for (const mode of ['capture-time', 'legacy', 'unavailable']) {
     expect(unexpected).toEqual([]); expect(errors).toEqual([]);
   });
 }
+
+test('ui-mocked: HTTP packet export carries observed nonstandard ports', async ({ page, baseURL }) => {
+  const unexpected: string[] = [], errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.context().route('**/*', async route => {
+    const url = new URL(route.request().url());
+    if (url.origin !== baseURL) { unexpected.push(url.href); return route.abort(); }
+    if (!url.pathname.startsWith('/api/')) return route.continue();
+    let json: unknown;
+    switch (url.pathname) {
+      case '/api/status': json = { activeInputFile: '/owned.pcap', outputDir: '/owned', isProcessing: false }; break;
+      case '/api/files/input': json = [{ path: '/owned.pcap', name: 'owned.pcap', isCompleted: true }]; break;
+      case '/api/version': json = { version: 'ui-mocked' }; break;
+      case '/api/menu-counts': json = {}; break;
+      case '/api/alerts/stats': json = { totalAlerts: 0, groupCount: 0, bySeverity: {}, byRule: {}, recentAlerts: [] }; break;
+      case '/api/dbs/status': json = { satisfied: true, missing: [] }; break;
+      case '/api/secrets': json = { secrets: [], totalCount: 0 }; break;
+      case '/api/http': json = { http: [{ timestamp: 1590969600000000000, proto: 'HTTP/1.1', method: 'GET', url: '/owned', host: 'owned.example.test', srcIP: '192.0.2.1', dstIP: '198.51.100.1', srcPort: 52123, dstPort: 9243, statusCode: 200, requestHeader: {}, responseHeader: {}, parameters: {} }], totalCount: 1 }; break;
+      case '/api/http/download-pcap': return route.fulfill({ contentType: 'application/vnd.tcpdump.pcap', body: 'owned fixture bytes' });
+      default:
+        if (['top-hosts', 'status-codes', 'methods', 'content-types'].some(name => url.pathname === `/api/http/${name}`)) return route.fulfill({ contentType: 'text/html', body: '<html><body>owned chart</body></html>' });
+        unexpected.push(url.pathname); return route.abort();
+    }
+    return route.fulfill({ json });
+  });
+  await page.goto('/http');
+  await page.getByRole('row').filter({ hasText: 'owned.example.test' }).first().click();
+  const request = page.waitForRequest(r => new URL(r.url()).pathname === '/api/http/download-pcap');
+  await page.getByRole('button', { name: 'Download PCAP', exact: true }).click();
+  expect(Object.fromEntries(new URL((await request).url()).searchParams)).toEqual({ srcIP: '192.0.2.1', dstIP: '198.51.100.1', srcPort: '52123', dstPort: '9243', protocol: 'TCP' });
+  expect(unexpected).toEqual([]); expect(errors).toEqual([]);
+});
