@@ -1484,6 +1484,10 @@ message HTTPCookie {
 // TLS Client Hello
 
 message TLSClientHello {
+  string HelloFormat = 100; // SSLv2 for legacy framing; empty on older TLS records
+  repeated uint32 SSLv2CipherSpecs = 101; // Full 24-bit cipher identifiers, not TLS cipher suites
+  bytes SSLv2Challenge = 102; // Unpadded challenge; Random remains unset
+  reserved 103 to 109;
   string ReassemblyStatus = 99;
   int64 Timestamp = 1;
   int32 Type = 2;
@@ -1531,6 +1535,12 @@ message TLSClientHello {
 // TLS Server Hello
 
 message TLSServerHello {
+  string HelloFormat = 100;
+  repeated uint32 SSLv2CipherSpecs = 101; // Offered cipher list, not a selected TLS cipher
+  bytes SSLv2ConnectionID = 102;
+  bool SSLv2SessionIDHit = 103;
+  uint32 SSLv2CertificateType = 104;
+  reserved 105 to 109;
   string ReassemblyStatus = 99;
   int64 Timestamp = 1;
   int32 Version = 2;

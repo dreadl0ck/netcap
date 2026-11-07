@@ -48,6 +48,9 @@ const (
 	fieldSelectedGroup                = "SelectedGroup"
 	fieldExtensions                   = "Extensions"
 	fieldJa4S                         = "Ja4S"
+	fieldSSLv2ConnectionID            = "SSLv2ConnectionID"
+	fieldSSLv2SessionIDHit            = "SSLv2SessionIDHit"
+	fieldSSLv2CertificateType         = "SSLv2CertificateType"
 )
 
 var fieldsTLSServerHello = []string{
@@ -78,6 +81,11 @@ var fieldsTLSServerHello = []string{
 	fieldSrcPort,
 	fieldDstPort,
 	fieldJa4S,
+	fieldHelloFormat,
+	fieldSSLv2CipherSpecs,
+	fieldSSLv2ConnectionID,
+	fieldSSLv2SessionIDHit,
+	fieldSSLv2CertificateType,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -87,7 +95,11 @@ func (t *TLSServerHello) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (t *TLSServerHello) CSVRecord() []string {
-	return filter([]string{
+	return filter(t.csvRecord())
+}
+
+func (t *TLSServerHello) csvRecord() []string {
+	return []string{
 		formatTimestamp(t.Timestamp),
 		formatInt32(t.Version),
 		//hex.EncodeToString(t.Random),
@@ -115,7 +127,12 @@ func (t *TLSServerHello) CSVRecord() []string {
 		formatInt32(t.SrcPort),
 		formatInt32(t.DstPort),
 		t.Ja4S,
-	})
+		t.HelloFormat,
+		joinUints(t.SSLv2CipherSpecs),
+		hex.EncodeToString(t.SSLv2ConnectionID),
+		strconv.FormatBool(t.SSLv2SessionIDHit),
+		strconv.FormatUint(uint64(t.SSLv2CertificateType), 10),
+	}
 }
 
 // Time returns the timestamp associated with the audit record.
@@ -136,12 +153,13 @@ var tlsServerMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_TLSServerHello.String()),
 		Help: Type_NC_TLSServerHello.String() + " audit records",
 	},
-	fieldsTLSServerHello[1:],
+	fieldsTLSServerHello[1:len(fieldsTLSServerHello)-5], // Exclude SSLv2 connection-specific data.
 )
 
 // Inc increments the metrics for the audit record.
 func (t *TLSServerHello) Inc() {
-	tlsServerMetric.WithLabelValues(t.CSVRecord()[1:]...).Inc()
+	values := t.csvRecord()
+	tlsServerMetric.WithLabelValues(values[1 : len(values)-5]...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
@@ -189,6 +207,11 @@ func (t *TLSServerHello) Encode() []string {
 		tlsServerHelloEncoder.Int32(fieldSrcPort, t.SrcPort),
 		tlsServerHelloEncoder.Int32(fieldDstPort, t.DstPort),
 		tlsServerHelloEncoder.String(fieldJa4S, t.Ja4S),
+		tlsServerHelloEncoder.String(fieldHelloFormat, t.HelloFormat),
+		tlsServerHelloEncoder.String(fieldSSLv2CipherSpecs, joinUints(t.SSLv2CipherSpecs)),
+		tlsServerHelloEncoder.String(fieldSSLv2ConnectionID, hex.EncodeToString(t.SSLv2ConnectionID)),
+		tlsServerHelloEncoder.Bool(t.SSLv2SessionIDHit),
+		tlsServerHelloEncoder.Uint32(fieldSSLv2CertificateType, t.SSLv2CertificateType),
 	})
 }
 

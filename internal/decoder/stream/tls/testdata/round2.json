@@ -1,0 +1,23 @@
+{
+  "issues": ["D2-11", "DS-1"],
+  "unavailable_artifacts": ["/Users/pmieden/Downloads/netcap-datasets-round2.md", "Original /workspace/mta/datasets2/ report outputs and full R1-R13 corpus were not available for this worker's verification."],
+  "source": "https://raw.githubusercontent.com/zeek/zeek/5862ccc5e13e6127cda5932a7f18aaf070c8b63b/testing/btest/Traces/",
+  "command": "NETCAP_TLS_CORPUS=1 GOWORK=off GOMAXPROCS=2 go test -p 1 -tags nodpi,noyara,nomagika ./internal/collector -run '^TestTLSRound2Corpus$' -count=1 -v",
+  "oracle_command": "tshark -r FILE -Y 'tls.handshake.type==1 || tls.handshake.type==2 || tls.ssl2.handshake.type' -T fields -e frame.number -e _ws.col.Info -e tcp.stream",
+  "verification_scope": "Pinned small upstream samples; counts, protocol qualification, tuple/time/community metadata and protobuf-content invariance across 1 and 2 workers. This does not assert a full original-corpus replay or a baseline replay.",
+  "samples": [
+    {"path":"tls/ssl-v2.pcap","size":3908,"sha256":"7096791786926b8551d0ebe9f1d01614c1ed29ba623a099d1a16ad0c0fe01c4a","client":1,"server":1,"format":"SSLv2"},
+    {"path":"tls/sslv2-repeated-server-hello.pcap","size":6184,"sha256":"54640f3e03cd9e9f92c303b11a5c152fc1da477ea879b6926e1539dfc532d0ca","client":1,"server":10,"format":"SSLv2"},
+    {"path":"http/connect-with-header.pcap","size":64527,"sha256":"91bd9fdd6456d104914c99fb511134d43d471850ab0679a9b6ec9898895e6c06","client":1,"server":1,"format":"TLS"},
+    {"path":"ldap/ldap-starttls.pcap","size":6009,"sha256":"e9898ac40a2c1ae7df135044c8d29b747384ed1dfd9c2ed47ff5f8ed5d119bdd","client":1,"server":1,"format":"TLS"},
+    {"path":"postgresql/psql-aws-ssl-require.pcap","size":7804,"sha256":"10c865115a2022839850ea4ef35499d88b552bf3730da8471b5798e69ae94d5e","client":1,"server":1,"format":"TLS"},
+    {"path":"mysql/tls-12-amazon-rds.pcap","size":6079,"sha256":"67cc2b3818ecd015e4598f590cf7d4a2a01f1a68e7227777743d4b91ac3dd46b","client":1,"server":1,"format":"TLS"},
+    {"path":"tls/xmpp-starttls.pcap","size":8174,"sha256":"8750d011062fe02607c9525861d7d3c5f1cc97dcb197b2f9685d8a2b50b613e4","client":1,"server":1,"format":"TLS"},
+    {"path":"tls/xmpp-dialback-starttls.pcap","size":14673,"sha256":"882e0c98fa01a646f9fcb76e647453d0a6a830e3a5d435834e346a4ea284c584","client":1,"server":1,"format":"TLS"},
+    {"path":"tls/irc-starttls.pcap","size":4512,"sha256":"635ee00b86be43434e3c89f125279a6e8a63cfd83d8577ff96bb518cb4704629","client":1,"server":1,"format":"TLS"},
+    {"path":"rdp/rdp-to-ssl.pcap","size":134982,"sha256":"ff44d3567d2583bd17c1a6fdd765049b082c800f671481a4d01bdf70721654eb","client":2,"server":2,"format":"TLS"},
+    {"path":"tls/smtp-starttls.pcap","size":8693,"sha256":"5b25d421b15989b25be2ad75da91eebff03db7c7d3ee0d9f9abbbd5c5e07b7d5","client":1,"server":1,"format":"TLS"},
+    {"path":"tls/pop3-starttls.pcap","size":5841,"sha256":"032a328c466af619da540ebf860053f202e4b10f0478d026990676b027dfe698","client":1,"server":1,"format":"TLS"},
+    {"path":"tls/imap-starttls.pcap","size":8511,"sha256":"0753e55846eea1a469c923f3038d2aff0527ae7227399fdb10ed3b2a66788a15","client":1,"server":1,"format":"TLS"}
+  ]
+}

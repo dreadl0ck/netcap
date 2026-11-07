@@ -40,6 +40,7 @@ func (f *tlsRecordFramer) emitHello(message []byte) {
 			return
 		}
 		r := tlshello.Client(&hello, nil)
+		r.HelloFormat = "TLS"
 		r.Timestamp, r.SrcIP, r.DstIP, r.SrcPort, r.DstPort = f.handshakeTS, c.ClientIP, c.ServerIP, c.ClientPort, c.ServerPort
 		r.CommunityID = c.CommunityID
 		if f.initialLossUnknown {
@@ -59,6 +60,7 @@ func (f *tlsRecordFramer) emitHello(message []byte) {
 			return
 		}
 		r := tlshello.Server(&hello, nil)
+		r.HelloFormat = "TLS"
 		r.Timestamp, r.SrcIP, r.DstIP, r.SrcPort, r.DstPort = f.handshakeTS, c.ServerIP, c.ClientIP, c.ServerPort, c.ClientPort
 		r.CommunityID = c.CommunityID
 		if f.initialLossUnknown {
