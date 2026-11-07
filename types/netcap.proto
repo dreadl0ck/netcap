@@ -224,6 +224,7 @@ message TLSRecord {
   uint32 AlertLevel = 21;
   uint32 AlertDescription = 22;
   string AlertState = 23; // plaintext, encrypted_or_unknown, malformed; empty for non-alert records
+  string TCPObservation = 24; // Post-close wire evidence; endpoint delivery unconfirmed
 }
 
 message PKTAP {
@@ -1623,6 +1624,7 @@ message TLSCertificate {
   string CertificateSender = 49; // client, server or unknown
   string NotBeforeRFC3339 = 50; // Lossless dates outside Unix-nanosecond range
   string NotAfterRFC3339 = 51;
+  string TCPObservation = 52; // Post-close wire evidence; endpoint delivery unconfirmed
   int64 Timestamp = 1;
   
   // Connection info (to correlate with TLS handshake)

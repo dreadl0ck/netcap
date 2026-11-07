@@ -105,6 +105,7 @@ type httpReader struct {
 	preface              bool
 	initialUnknown       bool
 	responseRequestIndex int
+	transportObservation string
 }
 
 // New constructs a new http stream decoder.
@@ -116,6 +117,19 @@ func (h *httpReader) New(conversation *core.ConversationInfo) core.StreamDecoder
 
 // Decode parses the stream according to the HTTP protocol.
 func (h *httpReader) Decode() {
+	runs := streamutils.TransportRuns(h.conversation)
+	if len(runs) == 1 {
+		h.transportObservation = runs[0].Observation
+		h.decodeTransportRun()
+		return
+	}
+	for _, run := range runs {
+		reader := &httpReader{conversation: run.Conversation, transportObservation: run.Observation}
+		reader.decodeTransportRun()
+	}
+}
+
+func (h *httpReader) decodeTransportRun() {
 	defer func() {
 		for _, release := range h.bufferReleases {
 			release()
@@ -146,7 +160,7 @@ func (h *httpReader) Decode() {
 
 		// now add request information
 		if matchedReq != nil && res.response.Request != nil {
-			if secret.Decoder.Writer != nil {
+			if secret.Decoder.Writer != nil && h.transportObservation == "" {
 				h.searchForLoginParams(res.response.Request)
 				h.searchForBasicAuth(res.response.Request)
 			}
@@ -185,7 +199,7 @@ func (h *httpReader) Decode() {
 			ht := &types.HTTP{}
 			setRequest(ht, req)
 
-			if secret.Decoder.Writer != nil {
+			if secret.Decoder.Writer != nil && h.transportObservation == "" {
 				h.searchForLoginParams(req.request)
 				h.searchForBasicAuth(req.request)
 			}
@@ -207,6 +221,11 @@ func (h *httpReader) Decode() {
 }
 
 func (h *httpReader) qualifyPairing(record *types.HTTP, paired bool) {
+	if h.transportObservation != "" {
+		note := streamutils.TransportQualification(h.transportObservation)
+		record.ParseQualifications = appendUnique(record.ParseQualifications, note)
+		addStatus(record, note)
+	}
 	if h.captureLoss {
 		if paired {
 			addStatus(record, "capture_loss_elsewhere")
@@ -328,7 +347,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 
 	// try to read HTTP response from the buffered reader
 	var request *http.Request
-	if !h.directionBroken[1] && h.responseRequestIndex < len(h.requests) {
+	if h.transportObservation == "" && !h.directionBroken[1] && h.responseRequestIndex < len(h.requests) {
 		candidate := h.requests[h.responseRequestIndex]
 		if candidate.pairable {
 			request = candidate.request
@@ -425,7 +444,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	}
 
 	// write responses to disk if configured
-	if !evidence.unsafe && (err == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
+	if h.transportObservation == "" && !evidence.unsafe && (err == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
 
 		var (
 			name        = "unknown"
@@ -578,11 +597,13 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	streamutils.Stats.Unlock()
 
 	h.requests = append(h.requests, request)
-	secret.HarvestHTTPNTLMIdentity(req.Header.Get("Authorization"), request.clientIP, request.serverIP, request.clientPort, request.serverPort, t, h.conversation.CommunityID)
+	if h.transportObservation == "" {
+		secret.HarvestHTTPNTLMIdentity(req.Header.Get("Authorization"), request.clientIP, request.serverIP, request.clientPort, request.serverPort, t, h.conversation.CommunityID)
+	}
 
 	if req.Method == methodPOST {
 		// write request payload to disk if configured
-		if !evidence.unsafe && (bodyErr == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
+		if h.transportObservation == "" && !evidence.unsafe && (bodyErr == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
 			// Use new file extraction framework
 			extractor, ok := file.GetExtractor("HTTP")
 			if !ok {

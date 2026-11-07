@@ -9,6 +9,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -41,6 +42,13 @@ type tlsRecordFramer struct {
 }
 
 func (h *tlsReader) frameConversation() {
+	for _, run := range streamutils.TransportRuns(h.conversation) {
+		reader := &tlsReader{conversation: run.Conversation, transportObservation: run.Observation}
+		reader.frameTransportRun()
+	}
+}
+
+func (h *tlsReader) frameTransportRun() {
 	c, s := h.conversation.ClientData, h.conversation.ServerData
 	if c == nil && s == nil {
 		for _, d := range h.conversation.Data {
@@ -148,7 +156,8 @@ func helloPrefix(data core.DataFragments) []byte {
 func (f *tlsRecordFramer) begin(timestamp int64) {
 	c := f.reader.conversation
 	r := &types.TLSRecord{Timestamp: timestamp, Flow: c.Ident, CommunityID: c.CommunityID,
-		Direction: f.dir.String(), Index: f.index, Offset: f.offset,
+		TCPObservation: f.reader.transportObservation,
+		Direction:      f.dir.String(), Index: f.index, Offset: f.offset,
 		SrcIP: c.ClientIP, DstIP: c.ServerIP, SrcPort: c.ClientPort, DstPort: c.ServerPort}
 	if f.dir == reassembly.TCPDirServerToClient {
 		r.SrcIP, r.DstIP, r.SrcPort, r.DstPort = c.ServerIP, c.ClientIP, c.ServerPort, c.ClientPort

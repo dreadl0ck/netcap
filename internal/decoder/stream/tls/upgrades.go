@@ -5,11 +5,18 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 )
 
 // ObserveUpgrade shares the TLS framer with validated cleartext protocol hand-offs.
 func ObserveUpgrade(c *core.ConversationInfo, primary string) {
+	for _, run := range streamutils.TransportRuns(c) {
+		observeUpgradeRun(run.Conversation, primary)
+	}
+}
+
+func observeUpgradeRun(c *core.ConversationInfo, primary string) {
 	if !helloEnabled() && RecordDecoder.Writer == nil && Decoder.Writer == nil {
 		return
 	}
@@ -50,6 +57,7 @@ func ObserveUpgrade(c *core.ConversationInfo, primary string) {
 		}
 		d := &core.StreamData{RawData: f.Raw()[max(0, bounds[side]-start):], Dir: f.Direction(), AssemblerContext: f.Context(), CaptureInformation: f.CaptureInfo()}
 		if original, ok := f.(*core.StreamData); ok {
+			d.TCPObservation = original.TCPObservation
 			d.SkippedBytes = original.SkippedBytes
 			if start < bounds[side] {
 				d.SkippedBytes = 0

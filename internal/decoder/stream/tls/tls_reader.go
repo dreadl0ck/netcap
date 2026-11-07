@@ -52,10 +52,11 @@ import (
  */
 
 type tlsReader struct {
-	conversation    *core.ConversationInfo
-	tls13           bool
-	serverKnown     bool
-	clientOffered13 bool
+	conversation         *core.ConversationInfo
+	tls13                bool
+	serverKnown          bool
+	clientOffered13      bool
+	transportObservation string
 }
 
 // New returns a new TLS reader
@@ -267,6 +268,7 @@ func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32, timestam
 	}
 
 	tlsCert := &types.TLSCertificate{
+		TCPObservation:      h.transportObservation,
 		AssessmentTime:      assessment.time,
 		AssessmentBasis:     assessment.basis,
 		ValidityState:       assessment.validity,

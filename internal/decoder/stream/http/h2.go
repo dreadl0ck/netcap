@@ -475,6 +475,7 @@ func (c *h2Connection) finish() {
 		r := c.baseRecord(0)
 		r.ParseQualifications = append([]string(nil), c.issues...)
 		r.ReassemblyStatus = strings.Join(c.issues, ",")
+		c.reader.qualifyPairing(r, false)
 		writeHTTP(r, c.reader.conversation.Ident)
 	}
 }
@@ -560,8 +561,9 @@ func (c *h2Connection) write(s *h2Transaction, final bool) {
 	for _, issue := range issues {
 		addStatus(r, issue)
 	}
+	c.reader.qualifyPairing(r, request.started && response.started)
 	writeHTTP(r, c.reader.conversation.Ident)
-	if final && len(issues) == 0 && decoderconfig.Instance.FileStorage != "" {
+	if c.reader.transportObservation == "" && final && len(issues) == 0 && decoderconfig.Instance.FileStorage != "" {
 		for side, m := range s.message {
 			if !m.started || !m.ended || len(m.body) == 0 {
 				continue
