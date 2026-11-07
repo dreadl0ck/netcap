@@ -1,0 +1,25 @@
+{
+  "schema": "netcap-release-trust/v1",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "subjectPrefix": "https://github.com/dreadl0ck/netcap/.github/workflows/firewall-release.yml@refs/tags/firewall-v",
+  "registry": "ghcr.io/dreadl0ck",
+  "environment": "firewall-release",
+  "configSchema": "netcap-firewall/v1",
+  "policySchema": "netcap-policy/v1",
+  "qualifications": ["race", "race-coraza", "race-http3", "chart-netcap-firewall", "chart-netcap-enforcer", "chart-netcap-firewall-control", "version-smoke", "gateway", "image-smoke", "enforcer", "network", "transparent"],
+  "qualificationRule": "All named tests must pass for the same commit/version and shipped binary bytes on native Linux amd64 and arm64. Test overlays add harness tools only. Rehearsal fixtures and emulation never authorize publication.",
+  "externalReviews": ["security", "license-and-corresponding-source", "operations"],
+  "registryAppToken": {
+    "permissions": {"packages": "write", "contents": "read"},
+    "repositories": ["dreadl0ck/netcap"],
+    "secret": "FIREWALL_REGISTRY_TOKEN",
+    "constraints": "Short-lived installation/app token scoped to firewall packages only; no contents write, releases, tags, administration or delete permission. Provision outside this workflow. GHCR must support the chosen app credential; otherwise use the job-scoped GITHUB_TOKEN with packages:write. Never expand to a repository-wide PAT."
+  },
+  "tools": {
+    "cosign": "v3.1.4",
+    "syft": "v1.57.0",
+    "crane": "v0.22.1",
+    "goreleaser": "v2.20.0",
+    "helm": "v3.22.1"
+  }
+}

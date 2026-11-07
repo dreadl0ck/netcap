@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/internal/enforcer"
 	"github.com/dreadl0ck/netcap/internal/firewalltransport"
 	"github.com/dreadl0ck/netcap/internal/gateway"
@@ -69,7 +70,7 @@ func GetCommand() *cli.Command {
 			&cli.StringFlag{Name: "tls-cert"}, &cli.StringFlag{Name: "tls-key"},
 		}, Action: withSignals(runEnforcer)},
 		{Name: "version", Action: func(_ context.Context, c *cli.Command) error {
-			return json.NewEncoder(c.Root().Writer).Encode(map[string]any{"version": "netcap-firewall/v1", "policy": "netcap-policy/v1", "protocols": []string{"http", "modbus", "dns", "dns-tcp", "dns-tls", "redis", "postgres", "smtp", "mysql", "dnp3", "network", "websocket", "grpc"}, "http3": firewalltransport.HTTP3Available})
+			return json.NewEncoder(c.Root().Writer).Encode(map[string]any{"version": "netcap-firewall/v1", "policy": "netcap-policy/v1", "releaseVersion": netcap.Version, "commit": netcap.Commit, "protocols": []string{"http", "modbus", "dns", "dns-tcp", "dns-tls", "redis", "postgres", "smtp", "mysql", "dnp3", "network", "websocket", "grpc"}, "http3": firewalltransport.HTTP3Available})
 		}},
 	}}
 }

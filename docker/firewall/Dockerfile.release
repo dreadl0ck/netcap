@@ -1,0 +1,11 @@
+FROM scratch
+ARG VERSION
+ARG REVISION
+LABEL org.opencontainers.image.version=$VERSION org.opencontainers.image.revision=$REVISION org.opencontainers.image.licenses="GPL-3.0-only"
+COPY netcap-firewall-waf /netcap-firewall
+COPY LICENSE /LICENSE
+COPY legal /legal
+USER 10001:10001
+EXPOSE 8080 9090
+ENTRYPOINT ["/netcap-firewall"]
+CMD ["serve", "--config", "/etc/netcap-firewall/config.yaml"]

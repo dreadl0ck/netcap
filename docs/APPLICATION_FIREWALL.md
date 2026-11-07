@@ -484,6 +484,93 @@ No emulated result counts as native qualification. Reports live in `$TMPDIR`/CI 
 
 ## Rollout and rollback
 
+### Versioned release candidates
+
+`.github/workflows/firewall-release.yml` builds independent firewall candidates;
+`.goreleaser-firewall.yml` disables GoReleaser publication. The existing
+`.goreleaser.yml` and main Netcap release workflow retain their own release path.
+`firewall-v<SemVer>` is the firewall tag namespace. No script creates a tag,
+GitHub release or PR, or changes a cluster.
+
+| Artifact / gate | Contract |
+| --- | --- |
+| Trust policy | `scripts/firewall-release-policy.json`: issuer, exact workflow/tag identity, supported config/policy schemas, pinned tools, required qualifications and 3 external review slots |
+| Native build | `firewall_release_build.py native`: clean committed checkout; native Linux runner and matching Docker architecture; GoReleaser WAF (`coraza,http3`) and enforcer binaries copied into release Dockerfiles once |
+| Version evidence | `version` retains config/policy versions and adds `releaseVersion` / `commit`; `version-smoke` checks both runtime images, embedded version/commit and HTTP/3 build feature |
+| Qualification | Each named policy qualification has a hashed log per architecture; Linux amd64 and arm64 receipts bind the same source commit/version to the shipped image digests; lab overlays add test tools and retain the shipped binary bytes |
+| Images | OCI layouts preserve platform manifests; assembly creates 2 indexes containing exactly the tested amd64/arm64 children; promotion uses `crane copy`, never rebuilds |
+| Helm 3 | Packages all 3 charts with matching `version`, `appVersion`, image tag, repository and index digest; lint/render precede packaging; OCI promotion preserves the chart manifest digest |
+| Offline assets | Each architecture includes binaries, OCI archives, pinned Syft SPDX, source/license inventory and corresponding-source export; source includes the committed tree, vendored Go modules and Go toolchain source; checksum/signature bundles cover the complete directory |
+| Source inventory | Every SPDX package needs a resolved license plus hashed license text and source export. Missing Alpine/base-image sources or unresolved Go licenses block validation; `blockers.json` lists supplemental work. `supplements.json` maps `name@version` to `license`, `source` and `licenseFile` paths beneath its own directory |
+| Signatures | Opt-in publication uses cosign keyless, exact GitHub OIDC issuer and workflow/tag identity; SLSA v1 predicates bind commit/version and digest, without claiming a SLSA assurance level. Per-platform SPDX is attested separately |
+| Offline verification | `firewall_release.py verify` checks candidate/checksum signatures, all files, archive blob hashes/platform/labels/binary bytes, chart metadata, OCI chart layer hashes and all 9 signed provenance subjects. Supply an independently pinned Sigstore trusted root; never trust a root merely because it accompanies a download |
+| Rehearsal | `make firewall-release-rehearsal` creates isolated loopback registry fixtures, temporary keys and a no-services signing config; copies 4 image manifests, 2 indexes and 3 charts to another local repository and verifies signatures/attestations. Fixture receipts say `qualificationMode: rehearsal`, `native: false`; publication and ordinary release verification reject them |
+
+Install the policy-pinned tools into an external directory, placing it first on
+`PATH`. `firewall_release_tools.py` downloads Syft, GoReleaser and Helm from
+their upstream release endpoints and checks upstream SHA256 files. Install
+crane/cosign with the exact Go module versions in the JSON policy. Current pins
+were checked against official GitHub releases and Helm's distribution endpoint
+on 2026-11-07; action commit pins match their official version refs.
+
+```bash
+make firewall-release-test
+make firewall-release-rehearsal
+make firewall-release-build FIREWALL_RELEASE_VERSION=0.1.0-rc.1 FIREWALL_RELEASE_OUTPUT="$TMPDIR/firewall-build"
+# On each native Linux architecture; start a loopback-only registry first.
+python3 scripts/firewall_release_build.py native --version 0.1.0-rc.1 --arch arm64 --output "$TMPDIR/candidate/arm64"
+# Combine both architecture directories under one candidate root.
+python3 scripts/firewall_release_build.py assemble --version 0.1.0-rc.1 --output "$TMPDIR/candidate"
+python3 scripts/firewall_release.py validate "$TMPDIR/candidate"
+# Published bundle verification uses no registry; root is provisioned independently.
+python3 scripts/firewall_release.py verify ./candidate --offline --trust-root /trusted/sigstore-root.json
+```
+
+**Publication requires a separate manual decision.** PRs, tag pushes and the
+default `workflow_dispatch` produce candidates and loopback rehearsals only.
+The `publish` job requires `dryRun: false`, a matching existing firewall tag,
+matching commit and approval of the `firewall-release` environment. Configure
+that environment with required human reviewers and tag restrictions before use.
+Set `candidateRun` to the successful same-commit manual/tag candidate run and
+`inputsRun` to the review artifact run. The publication dispatch skips native
+builds/assembly, authenticates the candidate run's repository/workflow/commit,
+verifies its rehearsal bundle, attaches digest-bound reviews, then signs and
+copies those exact artifacts. A PR run cannot be used as a publication candidate.
+
+| Manual release input | Required evidence |
+| --- | --- |
+| Native qualification | Successful same-commit Linux amd64/arm64 receipts; emulated or synthetic tests cannot satisfy this gate |
+| External reviews | `security`, `license-and-corresponding-source`, `operations`; each needs `decision: approved`, identified reviewer, HTTPS review URI, hashed evidence file, matching commit/version and both index digests; generated slots remain `pending` |
+| Input transport | Same-repository `inputsRun` artifact named `firewall-release-inputs`; native jobs optionally read supplements; publication requires `reviews.json` and its hashed evidence files, copied by `apply-reviews` after verification of the original bundle |
+| Registry authorization | Publication job alone gets `packages: write` / `id-token: write`, with `contents: read`; optional short-lived `FIREWALL_REGISTRY_TOKEN` must be scoped to the intended repository/packages, otherwise job-scoped `GITHUB_TOKEN`; no contents write or repository-wide PAT |
+| Release storage | Upload-artifact bundles are retained for 30/90 days; an operator must retain the approved offline bundle and independently pinned trust root in durable release storage |
+
+There is no external approval or production qualification supplied by the local
+rehearsal. `candidate-checklist.json` reports `publicationApproved: false`.
+
+### Verified upgrade planning
+
+`scripts/firewall_release.py plan-upgrade` verifies both signed offline manifests
+before creating a mode-0600 state archive. It rejects unsupported config/policy
+schema versions, config/policy files outside the backup tree, symlinks, existing
+backup/output files and implicit downgrades. Configuration validation and Helm
+diff remain operator gates; the planner executes only fixed verification tools,
+never deployment commands or manifest-supplied commands.
+
+```bash
+# Stop/quiesce writers first; include configuration, policy and consistent state.
+python3 scripts/firewall_release.py plan-upgrade \
+  --current ./current --candidate ./candidate --offline --trust-root /trusted/sigstore-root.json \
+  --state /private/firewall-state --config /private/firewall-state/config.yaml \
+  --policy /private/firewall-state/policy.yaml --backup /private/backups/pre-upgrade.tar.gz \
+  --output /private/backups/upgrade-plan.json --quiesced
+```
+
+For rollback, select the previous signed bundle as `--candidate` and add
+`--allow-downgrade`. The plan records source/target manifest hashes, exact image
+digests, schemas, configuration/policy hashes and backup hash; it never changes
+live state. Validate a restore and use the deployment-specific procedure below.
+
 | Step | Check |
 | --- | --- |
 | Prepare | Build shipping tags, validate exact configuration/policy, review image digest and Secret bootstrap identities |
@@ -523,3 +610,7 @@ Retain prior image digests, values and consistent state snapshots.
 | Postgres crash test interrupts another package | Run the two PG packages with `-p 1` against their shared disposable DB; concurrency inside each test remains enabled |
 | Default-deny routed policy breaks allowed TCP | Match protected service replies explicitly; NFQUEUE covers both directions, not only client destination ports |
 | CodeQL `py/clear-text-storage-sensitive-data` on PG fixture env files | Keep generated DB passwords/DSNs in process environment; Restic's local fixture password file belongs only in container tmpfs, populated through stdin |
+| cosign v3 rejects `--offline` on `verify-blob` | Supply the independently pinned `--trusted-root` and complete v3 bundles; that command has no `--offline` flag |
+| Syft SPDX creator index 0 is an organization | Match the exact `Tool: syft-<pinned version>` entry anywhere in `creationInfo.creators` |
+| Helm 3.22 schema diagnostics use `/runtime/field` | Negative render tests accept slash or dot field paths while still requiring schema rejection |
+| BuildKit adds unknown-platform attestation children | Release runtime builds disable BuildKit provenance/SBOM; the release pipeline creates its own verified cosign/Syft attestations after qualification |

@@ -115,7 +115,7 @@ class DeploymentContract(unittest.TestCase):
     def test_file_token_requires_tls_in_schema(self):
         error = render('--set', 'mode=file', '--set', 'adminTokenSecret.name=token', success=False)
         self.assertIn("don't meet the specifications of the schema", error)
-        self.assertIn('adminTLS.secretName', error)
+        self.assertRegex(error, r'adminTLS[./]secretName')
         docs = render('--set', 'mode=file', '--set', 'adminTokenSecret.name=token',
                       '--set', 'adminTLS.secretName=admin-tls')
         pod = next(d for d in docs if d['kind'] == 'Deployment')['spec']['template']['spec']
@@ -136,7 +136,7 @@ class DeploymentContract(unittest.TestCase):
                 with self.subTest(field=field, value=value):
                     error = render('--set', f'runtime.{field}={value}', success=False)
                     self.assertIn("don't meet the specifications of the schema", error)
-                    self.assertIn('runtime.' + field, error)
+                    self.assertRegex(error, r'runtime[./]' + field)
         render('--set', 'runtime.maxBufferedBytes=0', success=False)
         render('--set', 'runtime.maxBufferedBytes=1073741825', success=False)
 
