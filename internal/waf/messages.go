@@ -43,6 +43,17 @@ func (f *Firewall) MessageHandler(websocket, grpc bool) (http.Handler, error) {
 				return nil
 			}
 		}
+		if f.api != nil {
+			// WebSocket needs an explicit passthrough binding until it has an
+			// application-message contract; HTTP operations are not WS schemas.
+			if strings.HasPrefix(r.Header.Get("Content-Type"), "application/grpc") {
+				if f.api.GRPCMethod(r.URL.Path) != nil {
+					return nil
+				}
+			} else if !f.api.Passthrough(r.Method, r.URL.Path) {
+				return nil
+			}
+		}
 		select {
 		case f.slots <- struct{}{}:
 		default:
@@ -52,6 +63,16 @@ func (f *Firewall) MessageHandler(websocket, grpc bool) (http.Handler, error) {
 		return func(ctx context.Context, m firewalltransport.Event) error {
 			if err := ctx.Err(); err != nil {
 				return err
+			}
+			if f.api != nil && m.Protocol == "grpc" && m.Attributes["inspection.kind"] == "message" && (m.Phase == "request" || f.cfg.APIValidateResponse) {
+				if !f.buffers.Acquire(apiValidationCharge) {
+					return firewalltransport.ErrBufferCapacity
+				}
+				err := f.api.ValidateGRPC(m.Path, m.Phase == "response", m.Payload)
+				f.buffers.Release(apiValidationCharge)
+				if err != nil {
+					return firewalltransport.Rejection{Status: 403}
+				}
 			}
 			var projection string
 			if policyRequiresBody(p, m.Phase) {

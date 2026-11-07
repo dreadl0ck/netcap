@@ -19,6 +19,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/apipolicy"
 	"github.com/dreadl0ck/netcap/internal/firewalltransport"
 	"github.com/dreadl0ck/netcap/internal/policy"
 )
@@ -46,11 +47,13 @@ type Firewall struct {
 	stats       *counters
 	audit       chan AuditRecord
 	engine      inspectionEngine
+	api         *apipolicy.Bundle
 	lifetime    context.Context
 	stop        context.CancelFunc
 }
 
 type requestState struct {
+	operation  *apipolicy.Operation
 	buffered   int64
 	policy     *policy.Compiled
 	event      policy.Event
@@ -84,6 +87,13 @@ func New(c Config, p *policy.Compiled) (*Firewall, error) {
 	c.AllowedHosts = append([]string(nil), c.AllowedHosts...)
 	f := &Firewall{cfg: c, slots: make(chan struct{}, c.MaxConcurrent), audit: make(chan AuditRecord, 256), stats: &counters{}}
 	f.buffers, _ = firewalltransport.NewBufferBudget(c.MaxBufferedBytes)
+	if c.DescriptorPath != "" {
+		var err error
+		f.api, err = apipolicy.Load(c.BootstrapDir, c.DescriptorPath, c.DescriptorSHA256)
+		if err != nil {
+			return nil, err
+		}
+	}
 	f.lifetime, f.stop = context.WithCancel(context.Background())
 	if err := f.ReloadTLS(); err != nil {
 		f.stop()
@@ -356,6 +366,30 @@ func (f *Firewall) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		f.reject(w, r, 503)
 		return
 	}
+	var operation *apipolicy.Operation
+	if f.api != nil {
+		operation, err = f.api.Resolve(r.Method, r.URL.Path)
+		if err != nil {
+			f.reject(w, r, 403)
+			return
+		}
+		if operation != nil {
+			if body.size > apipolicy.MaxBytes {
+				f.reject(w, r, 413)
+				return
+			}
+			if !f.buffers.Acquire(apiValidationCharge) {
+				f.reject(w, r, 503)
+				return
+			}
+			err = operation.ValidateRequest(r, body.reader())
+			f.buffers.Release(apiValidationCharge)
+			if err != nil {
+				f.reject(w, r, 403)
+				return
+			}
+		}
+	}
 	if err := validatePayloadReader(r, body.reader(), body.size); err != nil {
 		var reject rejection
 		if errors.As(err, &reject) {
@@ -396,7 +430,7 @@ func (f *Firewall) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	e := policy.Event{Protocol: "http", Method: r.Method, Host: r.Host, Path: r.URL.Path, RawQuery: r.URL.RawQuery, ClientIP: client, Headers: r.Header.Clone(), Body: projection, Phase: "request"}
-	s := &requestState{policy: p, event: e, client: client}
+	s := &requestState{policy: p, event: e, client: client, operation: operation}
 	defer func() {
 		if s.inspection != nil {
 			_ = s.inspection.Close()
@@ -594,7 +628,8 @@ func (f *Firewall) inspectResponse(resp *http.Response) error {
 	e.Status = resp.StatusCode
 	e.Headers = resp.Header.Clone()
 	var inspected *bodyStore
-	inspectBody := f.cfg.InspectResponse
+	apiResponse := f.cfg.APIValidateResponse && s.operation != nil
+	inspectBody := f.cfg.InspectResponse || apiResponse
 	if inspectBody && resp.StatusCode == 101 {
 		_ = resp.Body.Close()
 		return rejection{502}
@@ -646,6 +681,26 @@ func (f *Firewall) inspectResponse(resp *http.Response) error {
 		}
 		inspected = b
 		e.Headers = resp.Header.Clone()
+	}
+	if apiResponse {
+		var reader io.Reader = strings.NewReader("")
+		if inspected != nil {
+			reader = inspected.reader()
+			if inspected.size > apipolicy.MaxBytes {
+				_ = resp.Body.Close()
+				return rejection{502}
+			}
+		}
+		if !f.buffers.Acquire(apiValidationCharge) {
+			_ = resp.Body.Close()
+			return rejection{503}
+		}
+		err := s.operation.ValidateResponse(resp.StatusCode, resp.Header, reader)
+		f.buffers.Release(apiValidationCharge)
+		if err != nil {
+			_ = resp.Body.Close()
+			return rejection{502}
+		}
 	}
 	if status := f.evaluate(resp.Request.Context(), s.policy, e); status != 0 {
 		_ = resp.Body.Close()
