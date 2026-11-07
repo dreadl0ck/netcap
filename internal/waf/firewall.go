@@ -67,6 +67,7 @@ func New(c Config, p *policy.Compiled) (*Firewall, error) {
 	}
 	c.TrustedProxyCIDRs = append([]string(nil), c.TrustedProxyCIDRs...)
 	c.AllowedHosts = append([]string(nil), c.AllowedHosts...)
+	c.CRSTargetExclusions = append([]CRSTargetExclusion(nil), c.CRSTargetExclusions...)
 	f := &Firewall{cfg: c, slots: make(chan struct{}, c.MaxConcurrent), audit: make(chan AuditRecord, 256)}
 	f.buffers, _ = firewalltransport.NewBufferBudget(c.MaxBufferedBytes)
 	f.lifetime, f.stop = context.WithCancel(context.Background())

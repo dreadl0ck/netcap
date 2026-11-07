@@ -38,7 +38,7 @@ func newInspectionEngine(c Config) (inspectionEngine, error) {
 func corazaDirectives(c Config) string {
 	// Disable Coraza's file audit/debug sinks: the outer proxy owns redacted audit.
 	// Coraza shares spool readers and spills its own request representation at 64 KiB.
-	return fmt.Sprintf(`
+	directives := fmt.Sprintf(`
 Include @coraza.conf-recommended
 Include @crs-setup.conf.example
 SecRuleEngine On
@@ -56,8 +56,13 @@ SecResponseBodyLimit %d
 SecResponseBodyLimitAction Reject
 SecRule ARGUMENTS_LIMIT_REACHED "@eq 1" "id:10000001,phase:1,deny,status:413,nolog"
 SecRule ARGUMENTS_LIMIT_REACHED "@eq 1" "id:10000002,phase:2,deny,status:413,nolog"
-Include @owasp_crs/*.conf
 `, c.MaxBodyBytes+1, c.MaxBodyBytes+1, min(c.MaxBodyBytes+1, bodyMemoryBytes), map[bool]string{true: "On", false: "Off"}[c.InspectResponse], c.MaxResponseBytes+1)
+	for i, e := range c.CRSTargetExclusions {
+		directives += fmt.Sprintf(`SecRule REQUEST_FILENAME "@streq %s" "id:%d,phase:1,pass,t:none,nolog,chain"
+SecRule REQUEST_METHOD "@streq %s" "t:none,ctl:ruleRemoveTargetById=%d;ARGS:%s"
+`, e.Path, 10000100+i, e.Method, e.RuleID, e.Argument)
+	}
+	return directives + "Include @owasp_crs/*.conf\n"
 }
 
 func interruptionStatus(i *types.Interruption) int {

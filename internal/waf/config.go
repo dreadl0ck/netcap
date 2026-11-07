@@ -25,24 +25,61 @@ const maxInspectionHeaderBytes = 32 << 10
 const maxInspectionFieldBytes = 65536
 
 type Config struct {
-	Version            string   `json:"version" yaml:"version"`
-	Listen             string   `json:"listen" yaml:"listen"`
-	AdminListen        string   `json:"adminListen" yaml:"adminListen"`
-	Upstream           string   `json:"upstream" yaml:"upstream"`
-	PolicyFile         string   `json:"policyFile" yaml:"policyFile"`
-	MaxBodyBytes       int64    `json:"maxBodyBytes" yaml:"maxBodyBytes"`
-	MaxResponseBytes   int64    `json:"maxResponseBytes" yaml:"maxResponseBytes"`
-	MaxBufferedBytes   int64    `json:"maxBufferedBytes,omitempty" yaml:"maxBufferedBytes,omitempty"`
-	MaxConcurrent      int      `json:"maxConcurrent" yaml:"maxConcurrent"`
-	BodyTimeout        string   `json:"bodyTimeout" yaml:"bodyTimeout"`
-	TLSCert            string   `json:"tlsCert,omitempty" yaml:"tlsCert,omitempty"`
-	TLSKey             string   `json:"tlsKey,omitempty" yaml:"tlsKey,omitempty"`
-	UpstreamCA         string   `json:"upstreamCA,omitempty" yaml:"upstreamCA,omitempty"`
-	UpstreamServerName string   `json:"upstreamServerName,omitempty" yaml:"upstreamServerName,omitempty"`
-	TrustedProxyCIDRs  []string `json:"trustedProxyCIDRs,omitempty" yaml:"trustedProxyCIDRs,omitempty"`
-	InspectResponse    bool     `json:"inspectResponse" yaml:"inspectResponse"`
-	AllowedHosts       []string `json:"allowedHosts,omitempty" yaml:"allowedHosts,omitempty"`
-	CorazaCRS          bool     `json:"corazaCRS,omitempty" yaml:"corazaCRS,omitempty"`
+	Version             string               `json:"version" yaml:"version"`
+	Listen              string               `json:"listen" yaml:"listen"`
+	AdminListen         string               `json:"adminListen" yaml:"adminListen"`
+	Upstream            string               `json:"upstream" yaml:"upstream"`
+	PolicyFile          string               `json:"policyFile" yaml:"policyFile"`
+	MaxBodyBytes        int64                `json:"maxBodyBytes" yaml:"maxBodyBytes"`
+	MaxResponseBytes    int64                `json:"maxResponseBytes" yaml:"maxResponseBytes"`
+	MaxBufferedBytes    int64                `json:"maxBufferedBytes,omitempty" yaml:"maxBufferedBytes,omitempty"`
+	MaxConcurrent       int                  `json:"maxConcurrent" yaml:"maxConcurrent"`
+	BodyTimeout         string               `json:"bodyTimeout" yaml:"bodyTimeout"`
+	TLSCert             string               `json:"tlsCert,omitempty" yaml:"tlsCert,omitempty"`
+	TLSKey              string               `json:"tlsKey,omitempty" yaml:"tlsKey,omitempty"`
+	UpstreamCA          string               `json:"upstreamCA,omitempty" yaml:"upstreamCA,omitempty"`
+	UpstreamServerName  string               `json:"upstreamServerName,omitempty" yaml:"upstreamServerName,omitempty"`
+	TrustedProxyCIDRs   []string             `json:"trustedProxyCIDRs,omitempty" yaml:"trustedProxyCIDRs,omitempty"`
+	InspectResponse     bool                 `json:"inspectResponse" yaml:"inspectResponse"`
+	AllowedHosts        []string             `json:"allowedHosts,omitempty" yaml:"allowedHosts,omitempty"`
+	CorazaCRS           bool                 `json:"corazaCRS,omitempty" yaml:"corazaCRS,omitempty"`
+	CRSTargetExclusions []CRSTargetExclusion `json:"crsTargetExclusions,omitempty" yaml:"crsTargetExclusions,omitempty"`
+}
+
+// CRSTargetExclusion narrows one application-attack rule to an exact route,
+// method and argument. Structural validation and all other targets remain active.
+type CRSTargetExclusion struct {
+	Path     string `json:"path" yaml:"path"`
+	Method   string `json:"method" yaml:"method"`
+	Argument string `json:"argument" yaml:"argument"`
+	RuleID   int    `json:"ruleID" yaml:"ruleID"`
+}
+
+func validateCRSExclusions(c Config) error {
+	if len(c.CRSTargetExclusions) > 32 || len(c.CRSTargetExclusions) > 0 && !c.CorazaCRS {
+		return errors.New("WAF CRS target exclusions require CRS and at most 32 entries")
+	}
+	seen := map[CRSTargetExclusion]bool{}
+	for _, e := range c.CRSTargetExclusions {
+		if e.RuleID < 930000 || e.RuleID > 944999 || e.Path == "" || e.Path[0] != '/' || len(e.Path) > 256 || len(e.Argument) == 0 || len(e.Argument) > 64 || seen[e] {
+			return errors.New("invalid or duplicate WAF CRS target exclusion")
+		}
+		if e.Method != "POST" && e.Method != "PUT" && e.Method != "PATCH" && e.Method != "GET" {
+			return errors.New("invalid WAF CRS exclusion method")
+		}
+		for _, part := range []string{e.Path, e.Argument} {
+			for _, r := range part {
+				if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_' || r == '-' || r == '.' || r == '/') {
+					return errors.New("invalid WAF CRS exclusion characters")
+				}
+			}
+		}
+		if strings.ContainsAny(e.Argument, "/.") {
+			return errors.New("WAF CRS exclusion requires a simple argument name")
+		}
+		seen[e] = true
+	}
+	return nil
 }
 
 func LoadConfig(data []byte) (Config, error) {
@@ -112,6 +149,9 @@ func validateJSONKeys(data []byte) error {
 }
 
 func ValidateConfig(c Config) error {
+	if err := validateCRSExclusions(c); err != nil {
+		return err
+	}
 	if c.MaxBufferedBytes < 0 || c.MaxBufferedBytes > 1<<30 {
 		return errors.New("maxBufferedBytes must be 0 (64 MiB default) or 1..1073741824 bytes")
 	}
