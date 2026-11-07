@@ -1,8 +1,10 @@
 package collector
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
+
 	decoderpacket "github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/gopacket/gopacket"
@@ -44,6 +46,13 @@ func (c *Collector) initCaptureEvidence() error {
 
 func (c *Collector) observeCaptureEvidence(packet gopacket.Packet) {
 	if c.captureEvidence == nil {
+		return
+	}
+	ci := packet.Metadata().CaptureInfo
+	if c.config.RetainPackets && ((c.captureLinkType == 239 && inputPacketInfo(ci).Order == binary.BigEndian) || !supportedRetentionTimestamp(ci.Timestamp)) {
+		// The evidence segment writer always emits little-endian, timestamped EPBs.
+		// Refuse rather than mislabel native-order NFLOG or invent a timestamp.
+		c.captureEvidenceError = fmt.Errorf("packet retention does not support big-endian NFLOG or absent/out-of-range timestamps; retain the original capture")
 		return
 	}
 	var vlans []uint16
