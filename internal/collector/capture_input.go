@@ -27,6 +27,7 @@ type CaptureInputReport struct {
 	SkippedRecords    int64               `json:"skippedRecords"`
 	ReadErrors        int64               `json:"readErrors"`
 	DecodeErrors      int64               `json:"decodeErrors"`
+	LinkErrors        int64               `json:"linkErrors"`
 	Unsupported       int64               `json:"unsupportedPackets"`
 	SnaplenOverrides  int64               `json:"snaplenOverrides"`
 	SnapshotTruncated int64               `json:"snapshotTruncatedPackets"`
@@ -43,7 +44,7 @@ type CaptureInputIssue struct {
 type CaptureInputError struct{ Report CaptureInputReport }
 
 func (e *CaptureInputError) Error() string {
-	message := fmt.Sprintf("capture input %s: processed=%d skipped=%d read-errors=%d decode-errors=%d unsupported=%d", e.Report.Status, e.Report.ProcessedPackets, e.Report.SkippedRecords, e.Report.ReadErrors, e.Report.DecodeErrors, e.Report.Unsupported)
+	message := fmt.Sprintf("capture input %s: processed=%d skipped=%d read-errors=%d link-errors=%d decode-errors=%d unsupported=%d", e.Report.Status, e.Report.ProcessedPackets, e.Report.SkippedRecords, e.Report.ReadErrors, e.Report.LinkErrors, e.Report.DecodeErrors, e.Report.Unsupported)
 	if len(e.Report.Issues) > 0 {
 		message += fmt.Sprintf("; offset %d: %s", e.Report.Issues[0].Offset, e.Report.Issues[0].Reason)
 	}
@@ -67,13 +68,13 @@ func (r *CaptureInputReport) result() error {
 	if r.Unsupported > 0 {
 		r.Status = "unsupported"
 	}
-	if r.ReadErrors > 0 || r.DecodeErrors > 0 {
+	if r.ReadErrors > 0 || r.LinkErrors > 0 {
 		r.Status = "partial"
 		if r.ProcessedPackets == 0 {
 			r.Status = "error"
 		}
 	}
-	if r.ReadErrors+r.DecodeErrors+r.Unsupported > 0 {
+	if r.ReadErrors+r.LinkErrors+r.Unsupported > 0 {
 		return &CaptureInputError{Report: *r}
 	}
 	return nil
@@ -215,10 +216,20 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 		if failure := p.ErrorLayer(); failure != nil {
 			kind := "decode"
 			var linkErr *captureLinkError
-			if errors.As(failure.Error(), &linkErr) && linkErr.Unsupported {
-				report.Unsupported++
-				kind = "unsupported"
+			if errors.As(failure.Error(), &linkErr) {
+				if linkErr.Unsupported {
+					report.Unsupported++
+					kind = "unsupported"
+				} else {
+					report.LinkErrors++
+					kind = "link"
+				}
+			} else if c.captureLinkType == layers.LinkTypeEthernet && p.LinkLayer() == nil {
+				report.LinkErrors++
+				kind = "link"
 			} else {
+				// A fully read malformed protocol packet is captured evidence,
+				// not a corrupt PCAP record. Retain its parser qualification.
 				report.DecodeErrors++
 			}
 			report.issue(inputPacketInfo(ci).Offset, kind, failure.Error().Error(), true)
