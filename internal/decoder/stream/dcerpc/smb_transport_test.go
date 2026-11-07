@@ -10,6 +10,14 @@ import (
 )
 
 func smbFrame(command uint16, response bool, mid uint64, body []byte) []byte {
+	sizes := map[uint16][2]uint16{2: {4, 4}, 3: {9, 16}, 4: {4, 4}, 5: {57, 89}, 6: {24, 60}, 8: {49, 17}, 9: {49, 17}, 11: {57, 49}}
+	if len(body) >= 2 {
+		index := 0
+		if response {
+			index = 1
+		}
+		binary.LittleEndian.PutUint16(body, sizes[command][index])
+	}
 	b := make([]byte, 64)
 	copy(b, []byte{0xfe, 'S', 'M', 'B'})
 	binary.LittleEndian.PutUint16(b[4:], 64)
@@ -41,12 +49,17 @@ func TestSMB2PipeTransportRetainsClosedPipe(t *testing.T) {
 	write = append(write, 1, 2, 3)
 	read := make([]byte, 48)
 	read[16] = 42
+	read[4] = 3
 	readResult := make([]byte, 16)
 	readResult[2] = 80
 	binary.LittleEndian.PutUint32(readResult[4:], 3)
 	readResult = append(readResult, 4, 5, 6)
 	close := make([]byte, 24)
 	close[8] = 42
+	tree := make([]byte, 16)
+	tree[2] = 2
+	ack := make([]byte, 16)
+	ack[4] = 3
 	fragments := core.DataFragments{}
 	for _, m := range []struct {
 		command  uint16
@@ -54,7 +67,7 @@ func TestSMB2PipeTransportRetainsClosedPipe(t *testing.T) {
 		mid      uint64
 		body     []byte
 	}{
-		{5, false, 1, create}, {5, true, 1, created}, {9, false, 2, write}, {8, false, 3, read}, {8, true, 3, readResult}, {6, false, 4, close},
+		{3, false, 0, make([]byte, 8)}, {3, true, 0, tree}, {5, false, 1, create}, {5, true, 1, created}, {9, false, 2, write}, {9, true, 2, ack}, {8, false, 3, read}, {8, true, 3, readResult}, {6, false, 4, close}, {6, true, 4, make([]byte, 60)},
 	} {
 		dir := reassembly.TCPDirClientToServer
 		if m.response {
@@ -74,7 +87,7 @@ func TestSMB2PipeTransportRetainsClosedPipe(t *testing.T) {
 	if p := smbPipeConversations(&core.ConversationInfo{Data: fragments}); len(p) != 1 || len(p[0].Data) != 2 {
 		t.Fatal("initial unknown gap rejected complete SMB framing", p)
 	}
-	fragments[2].(*core.StreamData).SkippedBytes = 1
+	fragments[4].(*core.StreamData).SkippedBytes = 1
 	if p := smbPipeConversations(&core.ConversationInfo{Data: fragments}); p != nil {
 		t.Fatal("pipe evidence stitched across loss")
 	}
