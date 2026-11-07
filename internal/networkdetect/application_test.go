@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 func httpObservation(n int) ApplicationObservation {
@@ -22,6 +24,14 @@ func TestHTTPScanNeedsDiversityAndFailureEvidence(t *testing.T) {
 				}
 			}
 		}
+		for _, a := range e.Flush() {
+			if a.Name == "http.scan" {
+				count++
+				if a.Count != 49 {
+					t.Fatalf("lost HTTP scan matches: %d", a.Count)
+				}
+			}
+		}
 		if status == 404 && count != 1 || status == 200 && count != 0 {
 			t.Fatal(status, count)
 		}
@@ -36,21 +46,29 @@ func TestHTTPScanNeedsDiversityAndFailureEvidence(t *testing.T) {
 			}
 		}
 	}
+	for _, a := range e.Flush() {
+		if a.Name == "http.scan" {
+			t.Fatal("unpaired responses invented 4xx evidence at EOF")
+		}
+	}
 }
 func TestHTTPBeaconInsideOneConnectionIsQualified(t *testing.T) {
 	e := NewApplication(DefaultConfig())
 	found := false
+	var alerts []*types.Alert
 	for i := 0; i < 12; i++ {
 		o := httpObservation(i * 30)
 		o.Path = "/fakeurl.htm"
 		o.Method = "POST"
 		o.Status = 200
-		for _, a := range e.Observe(o) {
-			if a.Name == "c2.beacon" {
-				found = true
-				if a.Severity != "low" || !strings.Contains(a.MatchedRecord, "legitimate") {
-					t.Fatal("periodicity represented as compromise", a)
-				}
+		alerts = append(alerts, e.Observe(o)...)
+	}
+	alerts = append(alerts, e.Flush()...)
+	for _, a := range alerts {
+		if a.Name == "c2.beacon" {
+			found = true
+			if a.Severity != "low" || !strings.Contains(a.MatchedRecord, "legitimate") {
+				t.Fatal("periodicity represented as compromise", a)
 			}
 		}
 	}
@@ -68,7 +86,7 @@ func TestPublicNTLMExcludesSpecialUseAddresses(t *testing.T) {
 	o := httpObservation(0)
 	o.Kind = "ntlm"
 	o.DstPort = 445
-	if a := e.Observe(o); len(a) != 1 || a[0].Name != "policy.public-smb-ntlm" {
+	if a := append(e.Observe(o), e.Flush()...); len(a) != 1 || a[0].Name != "policy.public-smb-ntlm" {
 		t.Fatal(a)
 	}
 }

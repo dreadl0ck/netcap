@@ -22,17 +22,19 @@ type Indicator struct {
 }
 
 type Config struct {
-	WindowNS        int64       `json:"windowNS"`
-	DedupNS         int64       `json:"dedupNS"`
-	MaxKeys         int         `json:"maxKeys"`
-	MaxFlows        int         `json:"maxFlows"`
-	DNSNames        int         `json:"dnsNames"`
-	ScanTargets     int         `json:"scanTargets"`
-	SMTPHosts       int         `json:"smtpHosts"`
-	ICMPEchoes      int         `json:"icmpEchoes"`
-	SSHBytes        uint64      `json:"sshBytes"`
-	ApprovedSources []string    `json:"approvedSources"`
-	Indicators      []Indicator `json:"indicators"`
+	WindowNS         int64       `json:"windowNS"`
+	DedupNS          int64       `json:"dedupNS"` // Legacy name: aggregation window; 0 emits every match immediately.
+	MaxKeys          int         `json:"maxKeys"`
+	MaxFlows         int         `json:"maxFlows"`
+	DNSNames         int         `json:"dnsNames"`
+	ScanTargets      int         `json:"scanTargets"`
+	SMTPHosts        int         `json:"smtpHosts"`
+	ICMPEchoes       int         `json:"icmpEchoes"`
+	SSHBytes         uint64      `json:"sshBytes"`
+	ApprovedSources  []string    `json:"approvedSources"`
+	Indicators       []Indicator `json:"indicators"`
+	SMTPRelays       []string    `json:"smtpRelays"`       // Source IPs/CIDRs; SMTP-only exemption requires at least one endpoint in InternalNetworks.
+	InternalNetworks []string    `json:"internalNetworks"` // CIDRs defining network roles, never inferred from private addressing.
 
 	// Periodic TCP connection starts from one source to one service. Samples
 	// is the number of connection starts examined (0 disables), Jitter the
@@ -93,9 +95,24 @@ func (c Config) Validate() error {
 			}
 		}
 	}
+	if len(c.SMTPRelays) > 256 || len(c.InternalNetworks) > 256 {
+		return errors.New("too many SMTP relay/network roles")
+	}
+	for _, s := range c.SMTPRelays {
+		if _, err := netip.ParsePrefix(s); err != nil {
+			if a, err := netip.ParseAddr(s); err != nil || a.Zone() != "" {
+				return errors.New("invalid SMTP relay")
+			}
+		}
+	}
+	for _, s := range c.InternalNetworks {
+		if _, err := netip.ParsePrefix(s); err != nil {
+			return errors.New("invalid internal network CIDR")
+		}
+	}
 	for _, i := range c.Indicators {
-		if i.Source == "" || i.Version == "" || len(i.Source) > 256 || len(i.Version) > 128 || i.ValidFrom <= 0 || i.ValidUntil <= i.ValidFrom {
-			return errors.New("indicator requires bounded provenance and positive capture-time validity")
+		if i.Source == "" || i.Version == "" || len(i.Source) > 256 || len(i.Version) > 128 || i.ValidFrom < 0 || i.ValidUntil <= i.ValidFrom {
+			return errors.New("indicator requires bounded provenance and nonnegative capture-time validity")
 		}
 		if i.Category != "c2" && i.Category != "sink" && i.Category != "imposter" && i.Category != "miner" && i.Category != "oast" {
 			return errors.New("unknown indicator category")

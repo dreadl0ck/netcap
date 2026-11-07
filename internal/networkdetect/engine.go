@@ -49,17 +49,24 @@ type Evidence struct {
 }
 
 type Stats struct {
-	ApplicationAlerts uint64 `json:"applicationAlerts,omitempty"`
-	Schema            int    `json:"schema"`
-	Events            uint64 `json:"events"`
-	Alerts            uint64 `json:"alerts"`
-	Overflow          uint64 `json:"overflow"`
-	Late              uint64 `json:"late"`
-	StreamGaps        uint64 `json:"streamGaps"`
-	Keys              int    `json:"keys"`
-	Flows             int    `json:"flows"`
-	Indicators        int    `json:"indicators"`
-	Error             string `json:"error,omitempty"`
+	Matches             uint64 `json:"matches"`
+	PendingAggregates   int    `json:"pendingAggregates"`
+	CapacityFlushes     uint64 `json:"capacityFlushes"`
+	FTPDataExclusions   uint64 `json:"ftpDataExclusions"`
+	SMTPRelayExclusions uint64 `json:"smtpRelayExclusions"`
+	AggregationMode     string `json:"aggregationMode,omitempty"`
+	ApplicationMode     string `json:"applicationMode,omitempty"`
+	ApplicationAlerts   uint64 `json:"applicationAlerts,omitempty"`
+	Schema              int    `json:"schema"`
+	Events              uint64 `json:"events"`
+	Alerts              uint64 `json:"alerts"`
+	Overflow            uint64 `json:"overflow"`
+	Late                uint64 `json:"late"`
+	StreamGaps          uint64 `json:"streamGaps"`
+	Keys                int    `json:"keys"`
+	Flows               int    `json:"flows"`
+	Indicators          int    `json:"indicators"`
+	Error               string `json:"error,omitempty"`
 }
 
 type window struct {
@@ -69,14 +76,16 @@ type window struct {
 }
 
 type Engine struct {
-	config    Config
-	windows   map[string]*window
-	recent    map[string]int64
-	flows     map[string]*flow
-	beacons   map[string]*beacon
-	watermark int64
-	lastSweep int64
-	stats     Stats
+	config     Config
+	windows    map[string]*window
+	aggregates *aggregator
+	flows      map[string]*flow
+	ftpData    map[string]ftpDataGrant
+	beacons    map[string]*beacon
+	watermark  int64
+	lastSweep  int64
+	observed   bool
+	stats      Stats
 }
 
 func New(c Config) (*Engine, error) {
@@ -91,18 +100,28 @@ func New(c Config) (*Engine, error) {
 			c.Indicators[n].Value = addr.Unmap().String()
 		}
 	}
-	return &Engine{config: c, windows: map[string]*window{}, recent: map[string]int64{}, flows: map[string]*flow{}, beacons: map[string]*beacon{}, stats: Stats{Schema: 1, Indicators: len(c.Indicators)}}, nil
+	return &Engine{config: c, windows: map[string]*window{}, aggregates: newAggregator(c), flows: map[string]*flow{}, ftpData: map[string]ftpDataGrant{}, beacons: map[string]*beacon{}, stats: Stats{Schema: 1, Indicators: len(c.Indicators), AggregationMode: "capture-time windows; idle input waits for next event or shutdown", ApplicationMode: "sorted record replay at end of capture"}}, nil
 }
 
 func (e *Engine) Stats() Stats {
 	s := e.stats
 	s.Keys = len(e.windows)
 	s.Flows = len(e.flows)
+	s.Matches = e.aggregates.matches
+	s.PendingAggregates = len(e.aggregates.pending)
+	s.CapacityFlushes = e.aggregates.capacity
 	return s
 }
 
-func (e *Engine) Observe(ev Event) ([]*types.Alert, error) {
-	if ev.At <= 0 || ev.Scope.Sensor == "" || ev.Scope.Interface == "" || len(ev.Scope.Sensor) > 256 || len(ev.Scope.Interface) > 256 || len(ev.Scope.VLANs) > 4 || len(ev.Payload) > 65535 {
+// Flush finalizes pending matches at EOF/shutdown; repeated calls emit nothing.
+func (e *Engine) Flush() []*types.Alert {
+	alerts := e.aggregates.flush()
+	e.stats.Alerts += uint64(len(alerts))
+	return alerts
+}
+
+func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
+	if ev.At < 0 || ev.Scope.Sensor == "" || ev.Scope.Interface == "" || len(ev.Scope.Sensor) > 256 || len(ev.Scope.Interface) > 256 || len(ev.Scope.VLANs) > 4 || len(ev.Payload) > 65535 || len(ev.Name) > 253 {
 		return nil, errors.New("invalid bounded capture event")
 	}
 	for _, vlan := range ev.Scope.VLANs {
@@ -118,40 +137,41 @@ func (e *Engine) Observe(ev Event) ([]*types.Alert, error) {
 		*ip = addr.Unmap().String()
 	}
 	e.stats.Events++
-	if ev.At < e.watermark {
+	if e.observed && ev.At < e.watermark {
 		e.stats.Late++
 		return nil, nil
 	}
-	if ev.At > e.watermark {
+	if !e.observed || ev.At > e.watermark {
 		e.watermark = ev.At
-		if ev.At-e.lastSweep >= 1e9 {
+		if !e.observed || ev.At-e.lastSweep >= 1e9 {
 			e.expire(ev.At)
 			e.lastSweep = ev.At
 		}
 	}
+	e.observed = true
+	alerts = e.aggregates.advance(ev.At)
+	defer func() { e.stats.Alerts += uint64(len(alerts)) }()
 	for _, s := range e.config.ApprovedSources {
 		a, _ := netip.ParseAddr(ev.SrcIP)
 		if p, err := netip.ParsePrefix(s); err == nil && p.Contains(a) {
-			return nil, nil
+			return alerts, nil
 		}
 		if allowed, err := netip.ParseAddr(s); err == nil && allowed.Unmap() == a {
-			return nil, nil
+			return alerts, nil
 		}
 	}
-	var alerts []*types.Alert
+	group := ""
 	add := func(detector, class, severity, mitre string, count, threshold uint64, samples []string, first int64, indicator *Indicator, limitations ...string) {
-		key := e.key(ev, detector+"|"+ev.DstIP+"|"+ev.Name)
+		key := stableKey(ev.Scope, ev.SrcIP, detector, class, ev.DstIP, ev.Name, indicator)
 		if detector == "smtp.fanout" {
-			key = e.key(ev, detector)
+			key = stableKey(ev.Scope, ev.SrcIP, detector, e.networkRole(ev.DstIP))
 		}
-		if prev, ok := e.recent[key]; ok && ev.At-prev < e.config.DedupNS {
-			return
+		if detector == "network.scan" {
+			key = stableKey(ev.Scope, ev.SrcIP, detector, group)
 		}
-		if _, exists := e.recent[key]; !exists && len(e.recent) >= e.config.MaxKeys {
-			e.stats.Overflow++
-			return
+		if detector == "c2.beacon" {
+			key = stableKey(ev.Scope, ev.SrcIP, detector, "tcp", ev.DstIP, ev.DstPort)
 		}
-		e.recent[key] = ev.At
 		if samples == nil {
 			samples = []string{}
 		}
@@ -164,13 +184,13 @@ func (e *Engine) Observe(ev Event) ([]*types.Alert, error) {
 		}
 		evidence := Evidence{1, detector, class, ev.Scope, first, ev.At, count, threshold, window, samples, limitations, indicator}
 		data, _ := json.Marshal(evidence)
-		alerts = append(alerts, &types.Alert{Timestamp: ev.At, Name: detector, RuleName: detector, Description: detector + ": " + class, RecordType: "NetworkDetection", Severity: severity, SrcIP: ev.SrcIP, DstIP: ev.DstIP, SrcPort: fmt.Sprint(ev.SrcPort), DstPort: fmt.Sprint(ev.DstPort), Domain: ev.Name, MITRE: mitre, Tags: []string{"network-detection", class}, MatchedRecord: string(data)})
-		e.stats.Alerts++
+		alert := &types.Alert{Timestamp: ev.At, Name: detector, RuleName: detector, Description: detector + ": " + class, RecordType: "NetworkDetection", Severity: severity, SrcIP: ev.SrcIP, DstIP: ev.DstIP, SrcPort: fmt.Sprint(ev.SrcPort), DstPort: fmt.Sprint(ev.DstPort), Domain: ev.Name, MITRE: mitre, Tags: []string{"network-detection", class}, MatchedRecord: string(data)}
+		alerts = append(alerts, e.aggregates.add(key, alert)...)
 	}
 	if ev.Kind == "dns" {
 		ev.Name = strings.ToLower(strings.TrimSuffix(ev.Name, "."))
 		if !validDomain(ev.Name) {
-			return nil, nil
+			return alerts, nil
 		}
 	}
 	if ev.Kind == "dns" || ev.Kind == "syn" {
@@ -217,35 +237,45 @@ func (e *Engine) Observe(ev Event) ([]*types.Alert, error) {
 			}
 		}
 	case "syn":
+		f := e.startFlow(ev)
+		if e.negotiatedFTPData(ev, f) {
+			e.stats.FTPDataExclusions++
+			break
+		}
+		relay, role := e.smtpRole(ev)
+		relay = relay && ev.DstPort == 25
+		if relay {
+			e.stats.SMTPRelayExclusions++
+		}
 		// Count scan shapes, not the union of normal web destinations.
-		count, first, samples := e.count(ev, "scan-vertical|"+ev.DstIP, fmt.Sprint(ev.DstPort))
+		group = "scan-vertical|" + ev.DstIP
+		count, first, samples := e.count(ev, group, fmt.Sprint(ev.DstPort))
 		if count >= e.config.ScanTargets {
 			add("network.scan", "behavioral-suspicion", "medium", "T1046", uint64(count), uint64(e.config.ScanTargets), samples, first, nil, "Distinct ports on one host; outcomes and intent are not inferred")
 		}
-		if ev.DstPort != 80 && ev.DstPort != 443 {
-			count, first, samples = e.count(ev, fmt.Sprintf("scan-horizontal|%d", ev.DstPort), ev.DstIP)
+		if ev.DstPort != 80 && ev.DstPort != 443 && !relay {
+			group = fmt.Sprintf("scan-horizontal|%d", ev.DstPort)
+			count, first, samples = e.count(ev, group, ev.DstIP)
 			if count >= e.config.ScanTargets {
-				dst := ev.DstIP
-				ev.DstIP = ""
-				add("network.scan", "behavioral-suspicion", "medium", "T1046", uint64(count), uint64(e.config.ScanTargets), samples, first, nil, "Distinct hosts on one non-web port; outcomes and intent are not inferred")
-				ev.DstIP = dst
+				limits := []string{"Distinct hosts on one non-web port; outcomes and intent are not inferred"}
+				if ev.DstPort == 25 {
+					limits = append(limits, role)
+				}
+				add("network.scan", "behavioral-suspicion", "medium", "T1046", uint64(count), uint64(e.config.ScanTargets), samples, first, nil, limits...)
 			}
 		}
-		if ev.DstPort == 25 {
+		if ev.DstPort == 25 && !relay {
 			count, first, samples := e.count(ev, "smtp", ev.DstIP)
 			if count >= e.config.SMTPHosts {
-				add("smtp.fanout", "behavioral-suspicion", "medium", "", uint64(count), uint64(e.config.SMTPHosts), samples, first, nil, "Mail relays can legitimately contact many SMTP servers")
+				add("smtp.fanout", "behavioral-suspicion", "medium", "", uint64(count), uint64(e.config.SMTPHosts), samples, first, nil, "Mail relays can legitimately contact many SMTP servers", role)
 			}
 		}
 		e.observeBeacon(ev, add)
-		e.startFlow(ev)
 	case "icmp":
-		count, first, samples := e.count(ev, "icmp-discovery", ev.DstIP)
+		group = "icmp-discovery"
+		count, first, samples := e.count(ev, group, ev.DstIP)
 		if count >= e.config.ScanTargets {
-			dst := ev.DstIP
-			ev.DstIP = ""
 			add("network.scan", "behavioral-suspicion", "low", "T1018", uint64(count), uint64(e.config.ScanTargets), samples, first, nil, "Distinct ICMP echo destinations indicate discovery; authorization and intent are unknown")
-			ev.DstIP = dst
 		}
 		if len(ev.Payload) >= 1024 && entropy(ev.Payload) >= 6 {
 			count, first, samples := e.count(ev, "icmp|"+ev.DstIP, fmt.Sprint(ev.Seq))
@@ -256,15 +286,22 @@ func (e *Engine) Observe(ev Event) ([]*types.Alert, error) {
 	case "data":
 		e.observeStream(ev, add)
 	case "end":
+		e.revokeFTP(flowKey(ev))
 		delete(e.flows, flowKey(ev))
 	case "refused":
-		count, first, samples := e.count(ev, fmt.Sprintf("scan-refused|%d", ev.DstPort), ev.DstIP)
+		if f := e.flows[flowKey(ev)]; f != nil && f.ftpData && ev.At-f.last <= e.config.WindowNS {
+			break
+		}
+		if relay, _ := e.smtpRole(ev); relay && ev.DstPort == 25 {
+			break
+		}
+		group = fmt.Sprintf("scan-refused|%d", ev.DstPort)
+		count, first, samples := e.count(ev, group, ev.DstIP)
 		if count >= e.config.ScanTargets {
-			ev.DstIP = ""
 			add("network.scan", "behavioral-suspicion", "medium", "T1046", uint64(count), uint64(e.config.ScanTargets), samples, first, nil, "Distinct hosts refusing TCP connections; authorization and intent are unknown")
 		}
 	default:
-		return nil, errors.New("unknown capture event kind")
+		return alerts, errors.New("unknown capture event kind")
 	}
 	return alerts, nil
 }
@@ -338,14 +375,15 @@ func (e *Engine) expire(at int64) {
 			delete(e.windows, k)
 		}
 	}
-	for k, v := range e.recent {
-		if at-v >= e.config.DedupNS {
-			delete(e.recent, k)
-		}
-	}
 	for k, f := range e.flows {
 		if at-f.last > e.config.WindowNS {
+			e.revokeFTP(k)
 			delete(e.flows, k)
+		}
+	}
+	for k, grant := range e.ftpData {
+		if at-grant.at >= ftpDataLifetimeNS {
+			delete(e.ftpData, k)
 		}
 	}
 	e.expireBeacons(at)

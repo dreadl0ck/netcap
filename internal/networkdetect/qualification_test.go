@@ -81,6 +81,9 @@ func TestPacketBackedFlightSimContract(t *testing.T) {
 					}
 				}
 			}
+			for _, alert := range e.Flush() {
+				seen = append(seen, alert.RuleName)
+			}
 			for _, want := range tc.Expected {
 				found := false
 				for _, got := range seen {

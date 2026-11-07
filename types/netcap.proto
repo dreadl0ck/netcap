@@ -3079,6 +3079,11 @@ message Alert {
   string RuleDigest = 22;    // SHA-256 of the effective YAML rule configuration
   string MatchedRecordSHA256 = 23;
   string TimestampBasis = 24; // "record-time" for generic rules; empty for legacy/other producers
+  string AggregateKey = 26; // Stable detector/scope/subject key; independent of the aggregation window
+  uint64 Count = 27; // Matching detector observations, not packets or distinct targets; 0 for legacy producers
+  int64 FirstSeen = 28; // First matching observation, Unix nanoseconds (0 is valid when Count > 0)
+  int64 LastSeen = 29; // Last matching observation, Unix nanoseconds
+  repeated string Examples = 30; // Bounded JSON evidence examples; first samples plus latest
 }
 
 // RADIUS (Remote Authentication Dial-In User Service) is a networking protocol

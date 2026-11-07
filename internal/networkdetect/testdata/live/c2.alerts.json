@@ -8,6 +8,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "c2.example",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "intel.c2",
     "RecordType": "NetworkDetection",
     "Severity": "high",
@@ -15,7 +16,22 @@
       "network-detection",
       "indicator-match"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"intel.c2\",\"classification\":\"indicator-match\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363748225784000,\"lastSeen\":1791363748225784000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"c2.example\"],\"limitations\":[\"Indicator association does not establish execution or compromise\"],\"indicator\":{\"value\":\"c2.example\",\"kind\":\"domain\",\"category\":\"c2\",\"source\":\"egress-disabled FlightSim lab\",\"version\":\"3709d1c\",\"validFrom\":1,\"validUntil\":2000000000000000000}}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"intel.c2\",\"classification\":\"indicator-match\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363748225784000,\"lastSeen\":1791363748225784000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"c2.example\"],\"limitations\":[\"Indicator association does not establish execution or compromise\"],\"indicator\":{\"value\":\"c2.example\",\"kind\":\"domain\",\"category\":\"c2\",\"source\":\"egress-disabled FlightSim lab\",\"version\":\"3709d1c\",\"validFrom\":1,\"validUntil\":2000000000000000000}}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "ad5ff93165006a3ae3e278c231e30f44f85f787c52465a0d73aef06de835063a",
+    "Count": 30,
+    "FirstSeen": 1791363748225784000,
+    "LastSeen": 1791363748346969000,
+    "Examples": [
+      "{\"at\":1791363748225784000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748225784000,\"samples\":[\"c2.example\"]}",
+      "{\"at\":1791363748225814000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748225814000,\"samples\":[\"c2.example\"]}",
+      "{\"at\":1791363748232724000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748232724000,\"samples\":[\"c2.example\"]}",
+      "{\"at\":1791363748232754000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748232754000,\"samples\":[\"c2.example\"]}",
+      "{\"at\":1791363748241557000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748241557000,\"samples\":[\"c2.example\"]}",
+      "{\"at\":1791363748241593000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748241593000,\"samples\":[\"c2.example\"]}",
+      "{\"at\":1791363748246833000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748246833000,\"samples\":[\"c2.example\"]}",
+      "{\"at\":1791363748346969000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748346969000,\"samples\":[\"c2.example\"]}"
+    ]
   },
   {
     "Timestamp": 1791363748370914000,
@@ -25,6 +41,7 @@
     "SrcPort": "44099",
     "DstIP": "127.0.0.5",
     "DstPort": "8080",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "intel.c2",
     "RecordType": "NetworkDetection",
     "Severity": "high",
@@ -32,6 +49,21 @@
       "network-detection",
       "indicator-match"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"intel.c2\",\"classification\":\"indicator-match\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363748370914000,\"lastSeen\":1791363748370914000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"127.0.0.5\"],\"limitations\":[\"Indicator association does not establish execution or compromise\"],\"indicator\":{\"value\":\"127.0.0.5\",\"kind\":\"ip\",\"category\":\"c2\",\"source\":\"egress-disabled FlightSim lab\",\"version\":\"3709d1c\",\"validFrom\":1,\"validUntil\":2000000000000000000}}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"intel.c2\",\"classification\":\"indicator-match\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363748370914000,\"lastSeen\":1791363748370914000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"127.0.0.5\"],\"limitations\":[\"Indicator association does not establish execution or compromise\"],\"indicator\":{\"value\":\"127.0.0.5\",\"kind\":\"ip\",\"category\":\"c2\",\"source\":\"egress-disabled FlightSim lab\",\"version\":\"3709d1c\",\"validFrom\":1,\"validUntil\":2000000000000000000}}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "44adf30e166e663ad7cc459d394e1f7ff74f02b87e67b7d29062e4759e6e69e2",
+    "Count": 15,
+    "FirstSeen": 1791363748370914000,
+    "LastSeen": 1791363748419177000,
+    "Examples": [
+      "{\"at\":1791363748370914000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"44099\",\"dstIP\":\"127.0.0.5\",\"dstPort\":\"8080\",\"observed\":1,\"firstSeen\":1791363748370914000,\"samples\":[\"127.0.0.5\"]}",
+      "{\"at\":1791363748375761000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"44979\",\"dstIP\":\"127.0.0.5\",\"dstPort\":\"8080\",\"observed\":1,\"firstSeen\":1791363748375761000,\"samples\":[\"127.0.0.5\"]}",
+      "{\"at\":1791363748378186000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"52149\",\"dstIP\":\"127.0.0.5\",\"dstPort\":\"8080\",\"observed\":1,\"firstSeen\":1791363748378186000,\"samples\":[\"127.0.0.5\"]}",
+      "{\"at\":1791363748386161000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"35295\",\"dstIP\":\"127.0.0.5\",\"dstPort\":\"8080\",\"observed\":1,\"firstSeen\":1791363748386161000,\"samples\":[\"127.0.0.5\"]}",
+      "{\"at\":1791363748389417000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"57997\",\"dstIP\":\"127.0.0.5\",\"dstPort\":\"8080\",\"observed\":1,\"firstSeen\":1791363748389417000,\"samples\":[\"127.0.0.5\"]}",
+      "{\"at\":1791363748392006000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55303\",\"dstIP\":\"127.0.0.5\",\"dstPort\":\"8080\",\"observed\":1,\"firstSeen\":1791363748392006000,\"samples\":[\"127.0.0.5\"]}",
+      "{\"at\":1791363748392433000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"44871\",\"dstIP\":\"127.0.0.5\",\"dstPort\":\"8080\",\"observed\":1,\"firstSeen\":1791363748392433000,\"samples\":[\"127.0.0.5\"]}",
+      "{\"at\":1791363748419177000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"43593\",\"dstIP\":\"127.0.0.5\",\"dstPort\":\"8080\",\"observed\":1,\"firstSeen\":1791363748419177000,\"samples\":[\"127.0.0.5\"]}"
+    ]
   }
 ]

@@ -9,6 +9,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/networkdetect"
 	"github.com/dreadl0ck/netcap/internal/rules"
+	"github.com/dreadl0ck/netcap/types"
 	"github.com/gopacket/gopacket"
 )
 
@@ -55,18 +56,21 @@ func (c *Collector) observeNetworkDetection(packet gopacket.Packet) {
 	}
 	for _, event := range networkdetect.PacketEvents(packet, scope) {
 		alerts, err := c.networkDetector.Observe(event)
-		if err != nil {
+		if err = errors.Join(err, c.writeDetectionAlerts(alerts)); err != nil {
 			c.networkDetectionError = err
 			return
 		}
-		for _, alert := range alerts {
-			if err := c.networkAlertWriter.WriteAlert(alert); err != nil {
-				c.networkDetectionError = err
-				return
-			}
-			atomic.AddInt64(&c.alertCount, 1)
-		}
 	}
+}
+
+func (c *Collector) writeDetectionAlerts(alerts []*types.Alert) error {
+	for _, alert := range alerts {
+		if err := c.networkAlertWriter.WriteAlert(alert); err != nil {
+			return err
+		}
+		atomic.AddInt64(&c.alertCount, 1)
+	}
+	return nil
 }
 
 func (c *Collector) closeNetworkDetection() error {
@@ -75,6 +79,7 @@ func (c *Collector) closeNetworkDetection() error {
 	if c.networkDetector == nil {
 		return nil
 	}
+	c.networkDetectionError = errors.Join(c.networkDetectionError, c.writeDetectionAlerts(c.networkDetector.Flush()))
 	stats := c.networkDetector.Stats()
 	if err := c.finishApplicationDetection(&stats); err != nil {
 		c.networkDetectionError = errors.Join(c.networkDetectionError, err)

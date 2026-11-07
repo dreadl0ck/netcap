@@ -7,6 +7,7 @@
     "SrcPort": "48677",
     "DstIP": "127.0.0.67",
     "DstPort": "25",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "smtp.fanout",
     "RecordType": "NetworkDetection",
     "Severity": "medium",
@@ -14,7 +15,22 @@
       "network-detection",
       "behavioral-suspicion"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"smtp.fanout\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772469794000,\"observed\":5,\"threshold\":5,\"windowNS\":60000000000,\"samples\":[\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.60\",\"127.0.0.67\"],\"limitations\":[\"Mail relays can legitimately contact many SMTP servers\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"smtp.fanout\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772469794000,\"observed\":5,\"threshold\":5,\"windowNS\":60000000000,\"samples\":[\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.60\",\"127.0.0.67\"],\"limitations\":[\"Mail relays can legitimately contact many SMTP servers\",\"SMTP source role: unknown (smtpRelays not configured); network direction: unknown (internalNetworks not configured) -\\u003e unknown (internalNetworks not configured); unlisted/unknown roles are not evidence of a spambot\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "cf4e7f4eec0a5f631a6eb2e505c05a5894c44c99b63f33afb895c17670a4527c",
+    "Count": 11,
+    "FirstSeen": 1791363772469794000,
+    "LastSeen": 1791363772532886000,
+    "Examples": [
+      "{\"at\":1791363772469794000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"48677\",\"dstIP\":\"127.0.0.67\",\"dstPort\":\"25\",\"observed\":5,\"firstSeen\":1791363772458090000,\"samples\":[\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.60\",\"127.0.0.67\"]}",
+      "{\"at\":1791363772476100000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"58323\",\"dstIP\":\"127.0.0.72\",\"dstPort\":\"25\",\"observed\":6,\"firstSeen\":1791363772458090000,\"samples\":[\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.60\",\"127.0.0.67\",\"127.0.0.72\"]}",
+      "{\"at\":1791363772485776000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"45195\",\"dstIP\":\"127.0.0.116\",\"dstPort\":\"25\",\"observed\":7,\"firstSeen\":1791363772458090000,\"samples\":[\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.60\",\"127.0.0.67\",\"127.0.0.72\"]}",
+      "{\"at\":1791363772491149000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"40903\",\"dstIP\":\"127.0.0.67\",\"dstPort\":\"25\",\"observed\":7,\"firstSeen\":1791363772458090000,\"samples\":[\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.60\",\"127.0.0.67\",\"127.0.0.72\"]}",
+      "{\"at\":1791363772496183000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55409\",\"dstIP\":\"127.0.0.46\",\"dstPort\":\"25\",\"observed\":8,\"firstSeen\":1791363772458090000,\"samples\":[\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.46\",\"127.0.0.60\",\"127.0.0.67\",\"127.0.0.72\"]}",
+      "{\"at\":1791363772502541000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"59427\",\"dstIP\":\"127.0.0.102\",\"dstPort\":\"25\",\"observed\":9,\"firstSeen\":1791363772458090000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.46\",\"127.0.0.60\",\"127.0.0.67\"]}",
+      "{\"at\":1791363772507173000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"54939\",\"dstIP\":\"127.0.0.52\",\"dstPort\":\"25\",\"observed\":10,\"firstSeen\":1791363772458090000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.46\",\"127.0.0.52\",\"127.0.0.60\"]}",
+      "{\"at\":1791363772532886000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"50929\",\"dstIP\":\"127.0.0.64\",\"dstPort\":\"25\",\"observed\":14,\"firstSeen\":1791363772458090000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.24\",\"127.0.0.46\",\"127.0.0.48\"]}"
+    ]
   },
   {
     "Timestamp": 1791363772507173000,
@@ -22,8 +38,10 @@
     "Description": "network.scan: behavioral-suspicion",
     "SrcIP": "127.0.0.1",
     "SrcPort": "54939",
+    "DstIP": "127.0.0.52",
     "DstPort": "25",
     "MITRE": "T1046",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "network.scan",
     "RecordType": "NetworkDetection",
     "Severity": "medium",
@@ -31,6 +49,18 @@
       "network-detection",
       "behavioral-suspicion"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772507173000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.46\",\"127.0.0.52\",\"127.0.0.60\"],\"limitations\":[\"Distinct hosts on one non-web port; outcomes and intent are not inferred\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772507173000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.46\",\"127.0.0.52\",\"127.0.0.60\"],\"limitations\":[\"Distinct hosts on one non-web port; outcomes and intent are not inferred\",\"SMTP source role: unknown (smtpRelays not configured); network direction: unknown (internalNetworks not configured) -\\u003e unknown (internalNetworks not configured); unlisted/unknown roles are not evidence of a spambot\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "1750256a100eda046a39173c9f8d7488ba85cd85105527135d33d5317dd9130e",
+    "Count": 5,
+    "FirstSeen": 1791363772507173000,
+    "LastSeen": 1791363772532886000,
+    "Examples": [
+      "{\"at\":1791363772507173000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"54939\",\"dstIP\":\"127.0.0.52\",\"dstPort\":\"25\",\"observed\":10,\"firstSeen\":1791363772458090000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.46\",\"127.0.0.52\",\"127.0.0.60\"]}",
+      "{\"at\":1791363772516942000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"33821\",\"dstIP\":\"127.0.0.48\",\"dstPort\":\"25\",\"observed\":11,\"firstSeen\":1791363772458090000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.46\",\"127.0.0.48\",\"127.0.0.52\"]}",
+      "{\"at\":1791363772524158000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"59517\",\"dstIP\":\"127.0.0.24\",\"dstPort\":\"25\",\"observed\":12,\"firstSeen\":1791363772458090000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.24\",\"127.0.0.46\",\"127.0.0.48\"]}",
+      "{\"at\":1791363772527158000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"56875\",\"dstIP\":\"127.0.0.61\",\"dstPort\":\"25\",\"observed\":13,\"firstSeen\":1791363772458090000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.24\",\"127.0.0.46\",\"127.0.0.48\"]}",
+      "{\"at\":1791363772532886000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"50929\",\"dstIP\":\"127.0.0.64\",\"dstPort\":\"25\",\"observed\":14,\"firstSeen\":1791363772458090000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.24\",\"127.0.0.46\",\"127.0.0.48\"]}"
+    ]
   }
 ]
