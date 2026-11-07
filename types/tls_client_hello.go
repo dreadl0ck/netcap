@@ -48,6 +48,9 @@ const (
 	fieldSupportedPoints  = "SupportedPoints"
 	fieldALPNs            = "ALPNs"
 	fieldJa4              = "Ja4"
+	fieldHelloFormat      = "HelloFormat"
+	fieldSSLv2CipherSpecs = "SSLv2CipherSpecs"
+	fieldSSLv2Challenge   = "SSLv2Challenge"
 )
 
 var fieldsTLSClientHello = []string{
@@ -78,6 +81,9 @@ var fieldsTLSClientHello = []string{
 	fieldDstMAC,
 	fieldSrcPort,
 	fieldDstPort,
+	fieldHelloFormat,
+	fieldSSLv2CipherSpecs,
+	fieldSSLv2Challenge,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -115,6 +121,9 @@ func (t *TLSClientHello) CSVRecord() []string {
 		t.DstMAC,
 		formatInt32(t.SrcPort),
 		formatInt32(t.DstPort),
+		t.HelloFormat,
+		joinUints(t.SSLv2CipherSpecs),
+		hex.EncodeToString(t.SSLv2Challenge),
 	})
 }
 
@@ -249,6 +258,9 @@ func (t *TLSClientHello) Encode() []string {
 		tlsClientHelloEncoder.String(fieldDstMAC, t.DstMAC),
 		tlsClientHelloEncoder.Int32(fieldSrcPort, t.SrcPort),
 		tlsClientHelloEncoder.Int32(fieldDstPort, t.DstPort),
+		tlsClientHelloEncoder.String(fieldHelloFormat, t.HelloFormat),
+		tlsClientHelloEncoder.String(fieldSSLv2CipherSpecs, joinUints(t.SSLv2CipherSpecs)),
+		tlsClientHelloEncoder.String(fieldSSLv2Challenge, hex.EncodeToString(t.SSLv2Challenge)),
 	})
 }
 

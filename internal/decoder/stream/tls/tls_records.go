@@ -69,8 +69,20 @@ func (h *tlsReader) frameConversation() {
 			atomic.AddInt64(&RecordDecoder.NumRecordsWritten, 1)
 		}
 	}
-	client := &tlsRecordFramer{reader: h, dir: reassembly.TCPDirClientToServer, emit: write}
-	server := &tlsRecordFramer{reader: h, dir: reassembly.TCPDirServerToClient, emit: write}
+	type framer interface {
+		feed([]byte, int64)
+		gap(int, int64)
+		eof()
+	}
+	clientTLS := &tlsRecordFramer{reader: h, dir: reassembly.TCPDirClientToServer, emit: write}
+	serverTLS := &tlsRecordFramer{reader: h, dir: reassembly.TCPDirServerToClient, emit: write}
+	var client, server framer = clientTLS, serverTLS
+	if sslv2HelloType(helloPrefix(c)) != 0 {
+		client = &sslv2Framer{reader: h, dir: reassembly.TCPDirClientToServer, tls: clientTLS}
+	}
+	if sslv2HelloType(helloPrefix(s)) != 0 {
+		server = &sslv2Framer{reader: h, dir: reassembly.TCPDirServerToClient, tls: serverTLS}
+	}
 	feed := func(d *core.StreamData, fromServer bool) {
 		f := client
 		if fromServer {
@@ -111,21 +123,26 @@ func (h *tlsReader) frameConversation() {
 }
 
 func helloPrefixType(data core.DataFragments) byte {
+	prefix := helloPrefix(data)
+	if len(prefix) >= 6 && prefix[0] == 22 && prefix[1] == 3 && prefix[2] <= 3 {
+		return prefix[5]
+	}
+	return sslv2HelloType(prefix)
+}
+
+func helloPrefix(data core.DataFragments) []byte {
 	var prefix []byte
 	for _, d := range data {
-		if f, ok := d.(*core.StreamData); ok && f.SkippedBytes != 0 && len(prefix) > 0 {
-			return 0
+		if f, ok := d.(*core.StreamData); ok && f.SkippedBytes != 0 && (f.SkippedBytes > 0 || len(prefix) > 0) {
+			break
 		}
-		n := min(6-len(prefix), len(d.Raw()))
+		n := min(14-len(prefix), len(d.Raw()))
 		prefix = append(prefix, d.Raw()[:n]...)
-		if len(prefix) == 6 {
+		if len(prefix) == 14 {
 			break
 		}
 	}
-	if len(prefix) == 6 && prefix[0] == 22 && prefix[1] == 3 && prefix[2] <= 3 {
-		return prefix[5]
-	}
-	return 0
+	return prefix
 }
 
 func (f *tlsRecordFramer) begin(timestamp int64) {

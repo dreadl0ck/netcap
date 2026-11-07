@@ -13,7 +13,7 @@ func ObserveUpgrade(c *core.ConversationInfo, primary string) {
 	if !helloEnabled() && RecordDecoder.Writer == nil && Decoder.Writer == nil {
 		return
 	}
-	if primary == Decoder.Name || primary == "HTTP" {
+	if primary == Decoder.Name {
 		return
 	}
 	fragments := c.Data
@@ -34,15 +34,7 @@ func ObserveUpgrade(c *core.ConversationInfo, primary string) {
 		(&tlsReader{conversation: c}).frameConversation()
 		return
 	}
-	var bounds [2]int
-	var ok bool
-	switch primary {
-	case "SMTP", "POP3", "IMAP", "FTP", "SOCKS", "SOCKS5", "":
-		bounds, ok = cleartextUpgrade(fragments)
-	}
-	if !ok {
-		bounds, ok = socksUpgrade(fragments)
-	}
+	bounds, ok := negotiatedUpgrade(fragments, primary)
 	if !ok {
 		return
 	}
@@ -53,12 +45,15 @@ func ObserveUpgrade(c *core.ConversationInfo, primary string) {
 		side := fragmentSide(f)
 		start := positions[side]
 		positions[side] += len(f.Raw())
-		if positions[side] <= bounds[side] {
+		if positions[side] < bounds[side] || positions[side] == bounds[side] && len(f.Raw()) > 0 {
 			continue
 		}
 		d := &core.StreamData{RawData: f.Raw()[max(0, bounds[side]-start):], Dir: f.Direction(), AssemblerContext: f.Context(), CaptureInformation: f.CaptureInfo()}
 		if original, ok := f.(*core.StreamData); ok {
 			d.SkippedBytes = original.SkippedBytes
+			if start < bounds[side] {
+				d.SkippedBytes = 0
+			}
 		}
 		copy.Data = append(copy.Data, d)
 		if side == 0 {
@@ -67,7 +62,7 @@ func ObserveUpgrade(c *core.ConversationInfo, primary string) {
 			copy.ServerData = append(copy.ServerData, d)
 		}
 	}
-	if helloPrefixType(copy.ClientData) != 1 && helloPrefixType(copy.ServerData) != 1 {
+	if helloPrefixType(copy.ClientData) == 0 && helloPrefixType(copy.ServerData) == 0 {
 		return
 	}
 	(&tlsReader{conversation: &copy}).frameConversation()
@@ -88,14 +83,19 @@ func cleartextUpgrade(fragments core.DataFragments) ([2]int, bool) {
 	var smtpData [2]bool
 	for _, f := range fragments {
 		side := fragmentSide(f)
+		if pending != "" && side == requestSide {
+			// Everything after the command belongs to the proposed TLS stream.
+			continue
+		}
 		if d, ok := f.(*core.StreamData); ok && d.SkippedBytes != 0 && (d.SkippedBytes > 0 || seen[side] > 0) {
 			return [2]int{}, false
 		}
-		seen[side] += len(f.Raw())
-		if seen[side] > 65536 {
+		if seen[side] >= maxUpgradeBytes {
 			return [2]int{}, false
 		}
-		lines[side] = append(lines[side], f.Raw()...)
+		n := min(len(f.Raw()), maxUpgradeBytes-seen[side])
+		seen[side] += n
+		lines[side] = append(lines[side], f.Raw()[:n]...)
 		for {
 			end := bytes.IndexByte(lines[side], '\n')
 			if end < 0 {
@@ -148,6 +148,7 @@ func cleartextUpgrade(fragments core.DataFragments) ([2]int, bool) {
 				continue
 			}
 			requestSide, requestEnd = side, consumed[side]
+			break
 		}
 	}
 	return [2]int{}, false
@@ -180,38 +181,5 @@ func socksMessageLength(b []byte) int {
 }
 
 func socksUpgrade(fragments core.DataFragments) ([2]int, bool) {
-	var data [2][]byte
-	var starts [2][]int
-	requestSide, requestEnd := -1, 0
-	for _, f := range fragments {
-		side := fragmentSide(f)
-		if d, ok := f.(*core.StreamData); ok && d.SkippedBytes != 0 && (d.SkippedBytes > 0 || len(data[side]) > 0) {
-			return [2]int{}, false
-		}
-		if len(data[side])+len(f.Raw()) > 65536 || len(starts[side]) >= 128 {
-			return [2]int{}, false
-		}
-		if len(f.Raw()) > 0 && f.Raw()[0] == 5 {
-			starts[side] = append(starts[side], len(data[side]))
-		}
-		data[side] = append(data[side], f.Raw()...)
-		for _, start := range starts[side] {
-			b := data[side][start:]
-			n := socksMessageLength(b)
-			if n == 0 {
-				continue
-			}
-			if b[1] == 1 {
-				requestSide, requestEnd = side, start+n
-				continue
-			}
-			if b[1] == 0 && requestSide >= 0 && side != requestSide {
-				var bounds [2]int
-				bounds[requestSide] = requestEnd
-				bounds[side] = start + n
-				return bounds, true
-			}
-		}
-	}
-	return [2]int{}, false
+	return tryUpgrade(upgradePrefixes(fragments), socksBounds)
 }
