@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
+	"go.uber.org/zap"
 )
 
 func TestRound2EpochZeroCollectorAggregation(t *testing.T) {
@@ -81,6 +83,67 @@ func TestRound2EpochZeroCollectorAggregation(t *testing.T) {
 				t.Fatal(stats)
 			}
 		})
+	}
+}
+
+func TestRound2LiveAggregationDurableBeforeClose(t *testing.T) {
+	dc := config.DefaultConfig.Clone()
+	dc.Out, dc.Quiet = t.TempDir(), true
+	c := New(Config{DecoderConfig: dc, NetworkDetection: true})
+	c.log = zap.NewNop()
+	if err := c.initNetworkDetection(); err != nil {
+		t.Fatal(err)
+	}
+	defer c.detachRecordAnalysis()
+	defer func() {
+		if err := c.closeNetworkDetection(); err != nil {
+			t.Error(err)
+		}
+	}()
+	ev := networkdetect.Event{Scope: networkdetect.Scope{Sensor: "local", Interface: "live"}, Kind: "dns", SrcIP: "192.0.2.1", DstIP: "192.0.2.53", Name: "api.telegram.org"}
+	for _, at := range []int64{0, 1e9, 2e9} {
+		ev.At = at
+		alerts, err := c.networkDetector.Observe(ev)
+		if err != nil || len(alerts) != 0 {
+			t.Fatal(alerts, err)
+		}
+	}
+	c.flushAllDecoders()
+	read := func() []*types.Alert {
+		t.Helper()
+		r, err := netio.Open(filepath.Join(dc.Out, "Alert.ncap.gz"), 4096)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer r.Close()
+		if _, err := r.ReadHeader(); err != nil {
+			t.Fatal(err)
+		}
+		var rows []*types.Alert
+		for {
+			a := new(types.Alert)
+			if err := r.Next(a); err == io.EOF {
+				return rows
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			rows = append(rows, a)
+		}
+	}
+	rows := read()
+	if len(rows) != 1 || rows[0].Count != 3 || rows[0].FirstSeen != 0 || rows[0].LastSeen != 2e9 || !strings.Contains(rows[0].Notes, "flush=live") {
+		t.Fatal(rows)
+	}
+	// A checkpoint must neither advance the capture watermark nor lose later matches.
+	ev.At = 3e9
+	if _, err := c.networkDetector.Observe(ev); err != nil {
+		t.Fatal(err)
+	}
+	c.flushAllDecoders()
+	c.flushAllDecoders()
+	rows = read()
+	if len(rows) != 2 || rows[1].Count != 1 || rows[1].AggregateKey != rows[0].AggregateKey || c.networkDetector.Stats().Late != 0 || c.GetNetworkDetectionError() != nil {
+		t.Fatal(rows, c.networkDetector.Stats(), c.GetNetworkDetectionError())
 	}
 }
 

@@ -100,7 +100,7 @@ func New(c Config) (*Engine, error) {
 			c.Indicators[n].Value = addr.Unmap().String()
 		}
 	}
-	return &Engine{config: c, windows: map[string]*window{}, aggregates: newAggregator(c), flows: map[string]*flow{}, ftpData: map[string]ftpDataGrant{}, beacons: map[string]*beacon{}, stats: Stats{Schema: 1, Indicators: len(c.Indicators), AggregationMode: "capture-time windows; idle input waits for next event or shutdown", ApplicationMode: "sorted record replay at end of capture"}}, nil
+	return &Engine{config: c, windows: map[string]*window{}, aggregates: newAggregator(c), flows: map[string]*flow{}, ftpData: map[string]ftpDataGrant{}, beacons: map[string]*beacon{}, stats: Stats{Schema: 1, Indicators: len(c.Indicators), AggregationMode: "capture-time windows; live checkpoints emit partial windows", ApplicationMode: "sorted record replay at end of capture"}}, nil
 }
 
 func (e *Engine) Stats() Stats {
@@ -116,6 +116,14 @@ func (e *Engine) Stats() Stats {
 // Flush finalizes pending matches at EOF/shutdown; repeated calls emit nothing.
 func (e *Engine) Flush() []*types.Alert {
 	alerts := e.aggregates.flush()
+	e.stats.Alerts += uint64(len(alerts))
+	return alerts
+}
+
+// Checkpoint emits pending live matches without moving the event watermark.
+// Rows across checkpoints retain their AggregateKey and disjoint match counts.
+func (e *Engine) Checkpoint() []*types.Alert {
+	alerts := e.aggregates.checkpoint("live")
 	e.stats.Alerts += uint64(len(alerts))
 	return alerts
 }
