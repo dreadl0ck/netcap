@@ -117,7 +117,7 @@ jobs:
           go version
 
           # Database archive tests run pack-dbs.sh and its Python metadata validator.
-          apk add --no-cache bash python3 wireshark-cli
+          apk add --no-cache bash python3 tshark
 
           # Regenerate types/netcap.pb.go so it provably matches
           # types/netcap.proto. The file is tracked again since 3dbcc508
