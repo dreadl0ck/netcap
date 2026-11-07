@@ -123,6 +123,7 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 				BPFFilter:        session.BPFFilter,
 				ProcessingTime:   session.ProcessingTime,
 				SessionID:        session.SessionID,
+				ParentSessionID:  session.ParentSessionID,
 				HasReportedIssue: session.HasReportedIssue,
 			}
 
@@ -155,6 +156,7 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 				BPFFilter:        session.BPFFilter,
 				ProcessingTime:   session.ProcessingTime,
 				SessionID:        session.SessionID,
+				ParentSessionID:  session.ParentSessionID,
 				HasReportedIssue: session.HasReportedIssue,
 			}
 
@@ -182,7 +184,7 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	completedFiles := make(map[string]bool)
 	maps.Copy(completedFiles, s.completedFiles)
-	inputFiles := s.inputFiles
+	inputFiles := slices.Clone(s.inputFiles)
 	fileErrors := make(map[string]FileError)
 	maps.Copy(fileErrors, s.fileErrors)
 	fileBPFFilters := make(map[string]string)
@@ -191,6 +193,8 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 	maps.Copy(fileProcessingTime, s.fileProcessingTime)
 	reportedIssues := make(map[string]bool)
 	maps.Copy(reportedIssues, s.reportedIssues)
+	children := make(map[string]childAnalysis)
+	maps.Copy(children, s.childAnalyses)
 	s.mu.RUnlock()
 
 	files := make([]FileInfo, 0)
@@ -206,6 +210,9 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 		if fileID == "" {
 			// Fallback to basename if hash calculation fails
 			fileID = filepath.Base(path)
+		}
+		if child, ok := children[path]; ok {
+			fileID = child.AnalysisID
 		}
 
 		// Store the mapping from ID to path
@@ -224,6 +231,7 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			ProcessingTime:   fileProcessingTime[path],
 			Hash:             hash,
 			HasReportedIssue: reportedIssues[hash],
+			ParentInputFile:  children[path].ParentInputFile,
 		}
 
 		// Add error information if available
@@ -621,7 +629,7 @@ func (s *Server) handleSetDirectory(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleReanalyze handles requests to reanalyze a PCAP file
-// This deletes all existing audit records and queues a new analysis job
+// Each request creates a child analysis; parent results remain available.
 func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -642,6 +650,10 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Input file or session ID required", http.StatusBadRequest)
 		return
 	}
+	if s.isServiceMode && (s.sessionManager == nil || req.SessionID == "") {
+		http.Error(w, "Session ID required", http.StatusBadRequest)
+		return
+	}
 
 	// Service mode: handle by session ID
 	if s.isServiceMode && s.sessionManager != nil && req.SessionID != "" {
@@ -649,6 +661,10 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 		session, ok := s.sessionManager.GetSession(req.SessionID)
 		if !ok {
 			http.Error(w, "Session not found", http.StatusNotFound)
+			return
+		}
+		if req.InputFile != "" && req.InputFile != session.InputFile {
+			http.Error(w, "Input file conflicts with session", http.StatusConflict)
 			return
 		}
 
@@ -664,61 +680,13 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Verify input file exists
-		if _, err := os.Stat(session.InputFile); os.IsNotExist(err) {
-			http.Error(w, "Input file no longer exists", http.StatusNotFound)
-			return
-		}
-
-		// Delete all existing audit records in the output directory
 		release, available := leaseOfflineMutation(session.OutputDir)
 		if !available {
 			http.Error(w, "Capture output is busy", http.StatusConflict)
 			return
 		}
 		defer release()
-		if err := s.deleteAuditRecords(session.OutputDir); err != nil {
-			log.Printf("[WebUI] Error deleting audit records for reanalysis: %v", err)
-			http.Error(w, fmt.Sprintf("Failed to delete existing data: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		// Reset session status
-		s.sessionManager.UpdateSessionStatus(req.SessionID, StatusQueued, "", "")
-		s.sessionManager.UpdateSessionProcessingTime(req.SessionID, 0)
-
-		// Get DPI configuration
-		s.mu.RLock()
-		enableDPI := s.dpiConfigured
-		s.mu.RUnlock()
-
-		// Load BPF filter from saved configuration
-		bpfConfig := s.loadBPFConfig()
-
-		// Create new analysis job
-		job := &AnalysisJob{
-			SessionID:       req.SessionID,
-			InputFile:       session.InputFile,
-			OutputDir:       session.OutputDir,
-			EnableDPI:       enableDPI,
-			BPFFilter:       bpfConfig.Filter,
-			IncludeDecoders: "",
-			ExcludeDecoders: "",
-		}
-
-		// Queue the job
-		if err := s.enqueueAnalysis(job, false); err != nil {
-			s.recordAnalysisFailure(job, err.Error(), "")
-			http.Error(w, err.Error(), http.StatusServiceUnavailable)
-			return
-		}
-		log.Printf("[WebUI] Reanalysis job queued for session %s: %s", req.SessionID, session.InputFilename)
-
-		respondJSON(w, http.StatusOK, map[string]any{
-			"success":   true,
-			"message":   "Reanalysis queued successfully",
-			"sessionId": req.SessionID,
-		})
+		s.queueChildAnalysis(w, session.InputFile, session.OutputDir, session.SessionID, clientIP)
 		return
 	}
 
@@ -755,7 +723,7 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 		outputDir = filepath.Join(s.baseOutDir, dirName)
 	}
 
-	// Reset completion status and errors
+	// Keep the parent stable while its source and provenance are snapshotted.
 	release, available := leaseOfflineMutation(outputDir)
 	if !available {
 		s.mu.Unlock()
@@ -763,108 +731,8 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer release()
-	delete(s.completedFiles, req.InputFile)
-	delete(s.fileErrors, req.InputFile)
-	delete(s.fileProcessingTime, req.InputFile)
-
-	// Get DPI configuration
-	enableDPI := s.dpiConfigured
 	s.mu.Unlock()
-
-	// Verify input file exists
-	if _, err := os.Stat(req.InputFile); os.IsNotExist(err) {
-		http.Error(w, "Input file no longer exists", http.StatusNotFound)
-		return
-	}
-
-	// Delete all existing audit records in the output directory
-	if err := s.deleteAuditRecords(outputDir); err != nil {
-		log.Printf("[WebUI] Error deleting audit records for reanalysis: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to delete existing data: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Load BPF filter from saved configuration
-	bpfConfig := s.loadBPFConfig()
-
-	// Create analysis job using filename as session ID (like in handleUpload)
-	sessionID := filepath.Base(req.InputFile)
-	job := &AnalysisJob{
-		SessionID:       sessionID,
-		InputFile:       req.InputFile,
-		OutputDir:       outputDir,
-		EnableDPI:       enableDPI,
-		BPFFilter:       bpfConfig.Filter,
-		IncludeDecoders: "",
-		ExcludeDecoders: "",
-	}
-
-	// Queue the job
-	if s.jobQueue == nil {
-		http.Error(w, "Analysis queue not available", http.StatusServiceUnavailable)
-		return
-	}
-
-	if err := s.enqueueAnalysis(job, false); err != nil {
-		s.recordAnalysisFailure(job, err.Error(), "")
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		return
-	}
-	log.Printf("[WebUI] Reanalysis job queued for file: %s -> %s", req.InputFile, outputDir)
-
-	respondJSON(w, http.StatusOK, map[string]any{
-		"success":  true,
-		"message":  "Reanalysis queued successfully",
-		"filename": filepath.Base(req.InputFile),
-		"path":     req.InputFile,
-	})
-}
-
-// deleteAuditRecords removes all audit record files from the output directory
-func (s *Server) deleteAuditRecords(outputDir string) error {
-	if outputDir == "" {
-		return fmt.Errorf("output directory not specified")
-	}
-
-	// Check if directory exists
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		// Directory doesn't exist, nothing to delete
-		return nil
-	}
-
-	// Read directory contents
-	entries, err := os.ReadDir(outputDir)
-	if err != nil {
-		return fmt.Errorf("failed to read output directory: %w", err)
-	}
-
-	deletedCount := 0
-	for _, entry := range entries {
-		if entry.Name() == ".offline-rule-evaluation.lock" {
-			continue
-		}
-		if entry.IsDir() {
-			// Delete subdirectories like "files", "tcp", "udp"
-			subDir := filepath.Join(outputDir, entry.Name())
-			if err := os.RemoveAll(subDir); err != nil {
-				log.Printf("[WebUI] Warning: failed to delete subdirectory %s: %v", subDir, err)
-			} else {
-				log.Printf("[WebUI] Deleted subdirectory: %s", subDir)
-				deletedCount++
-			}
-		} else {
-			// Delete files (ncap.gz files, logs, etc.)
-			filePath := filepath.Join(outputDir, entry.Name())
-			if err := os.Remove(filePath); err != nil {
-				log.Printf("[WebUI] Warning: failed to delete file %s: %v", filePath, err)
-			} else {
-				deletedCount++
-			}
-		}
-	}
-
-	log.Printf("[WebUI] Deleted %d items from output directory: %s", deletedCount, outputDir)
-	return nil
+	s.queueChildAnalysis(w, req.InputFile, outputDir, "", "")
 }
 
 // handleVersion returns version information

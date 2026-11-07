@@ -22,6 +22,7 @@
 package webui
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -226,6 +227,27 @@ func TestInProcessAnalysisProducesAuditRecords(t *testing.T) {
 	}
 	assertProgressStatus(t, s, job.SessionID, "completed")
 	t.Logf("in-process analysis produced %d audit record file(s) from %s", audit, input)
+
+	parentManifest, err := os.ReadFile(filepath.Join(outDir, "capture-manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.jobQueue = make(chan *AnalysisJob, 1)
+	w := requestReanalysis(s, string(mustOfflineJSON(t, map[string]string{"inputFile": input})))
+	if w.Code != http.StatusOK {
+		t.Fatalf("child admission: %d %s", w.Code, w.Body.String())
+	}
+	child := <-s.jobQueue
+	defer child.processingDone()
+	s.runAnalysis(child)
+	assertProgressStatus(t, s, child.SessionID, "completed")
+	if childManifest, err := os.ReadFile(filepath.Join(child.OutputDir, "capture-manifest.json")); err != nil || bytes.Equal(childManifest, parentManifest) {
+		t.Fatalf("child manifest is missing or reused parent manifest: %v", err)
+	}
+	after, err := os.ReadFile(filepath.Join(outDir, "capture-manifest.json"))
+	if err != nil || !bytes.Equal(after, parentManifest) || !s.completedFiles[input] || s.fileOutputDirs[input] != outDir {
+		t.Fatalf("child execution changed parent: %v", err)
+	}
 }
 
 func TestAppStoreInProcessAnalysisNeedsNoExternalDatabases(t *testing.T) {

@@ -606,7 +606,7 @@ export default function PCAPs() {
                                 whiteSpace: 'nowrap'
                               }}
                             >
-                              {file.name}
+                              {file.name}{(file.parentSessionId || file.parentInputFile) && ' (child analysis)'}
                               {!file.isCompleted && !file.error && (
                                 <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                                   {progressData[file.path]?.percent > 0
@@ -898,7 +898,7 @@ export default function PCAPs() {
                       <HourglassEmptyIcon color="disabled" fontSize="small" />
                     ) : null}
                     <Typography variant="subtitle2" noWrap sx={{ fontFamily: 'monospace', flex: 1 }}>
-                      {file.name}
+                      {file.name}{(file.parentSessionId || file.parentInputFile) && ' (child analysis)'}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1076,8 +1076,8 @@ export default function PCAPs() {
                 </Typography>
               </Paper>
             )}
-            <Typography variant="body2" color="warning.main" paragraph>
-              ⚠️ This will delete all existing audit records and extracted files for this capture and rerun the analysis with the current netcap configuration.
+            <Typography variant="body2" paragraph>
+              This creates a separate child analysis with a copied capture and the current configuration. Existing results remain available. The copy requires additional disk space.
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Use this if you&apos;ve changed decoder settings, harvesters, or other configuration options and want to regenerate the analysis results.
@@ -1099,4 +1099,3 @@ export default function PCAPs() {
     </Layout>
   );
 }
-

@@ -44,6 +44,7 @@ const (
 // SessionInfo tracks information about an upload and analysis session
 type SessionInfo struct {
 	SessionID        string        `json:"sessionId"`
+	ParentSessionID  string        `json:"parentSessionId,omitempty"`
 	IP               string        `json:"ip"`
 	UploadTimestamp  time.Time     `json:"uploadTimestamp"`
 	InputFile        string        `json:"inputFile"`

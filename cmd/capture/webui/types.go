@@ -36,6 +36,8 @@ type FileInfo struct {
 	Hash             string  `json:"hash,omitempty"`           // SHA256 hash of the file
 	HasReportedIssue bool    `json:"hasReportedIssue"`         // Whether an issue report has been submitted for this file
 	SessionID        string  `json:"sessionId,omitempty"`      // Session ID (service mode only)
+	ParentSessionID  string  `json:"parentSessionId,omitempty"`
+	ParentInputFile  string  `json:"parentInputFile,omitempty"`
 
 	// ErrorLogID is the identifier to pass to /api/error-log/{id}: the session
 	// ID in service mode, the hashed file ID in local mode.

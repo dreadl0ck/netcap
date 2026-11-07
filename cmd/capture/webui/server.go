@@ -214,7 +214,8 @@ type Server struct {
 	dpiPreferences       map[string]*UserDPIPreferences // DPI preferences per user IP
 	reportedIssues       map[string]bool                // Tracks which file hashes have had issues reported
 	fileIDToPath         map[string]string              // Maps file IDs to file paths (local mode)
-	devMode              bool                           // Development mode: use current binary instead of "net"
+	childAnalyses        map[string]childAnalysis
+	devMode              bool // Development mode: use current binary instead of "net"
 
 	// Rules cache
 	rulesConfig      any // Cached rules config (uses rules.Config type to avoid circular import)

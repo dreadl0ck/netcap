@@ -83,6 +83,24 @@ a unique HTTP transaction or certificate occurrence. HTTP exports no longer
 guess ports 80/443/8080. MCP connection carving requires the observed transport;
 its `start_ns`/`end_ns` fields preserve nanoseconds as strings.
 
+## Reanalyze a capture
+
+`POST /api/reanalyze` creates an `analysis-*` sibling directory and a separate
+queued run. Parent audit records, extracted files, notes and completion state
+remain available, including when admission or child processing fails.
+
+| Child artifact / field | Contract |
+| --- | --- |
+| `source/<capture-name>` | Private copied input; SHA256 calculated during copying. A known parent `inputSHA256` must match or the request returns 409. The copy consumes additional disk space. |
+| `analysis-parent.json` | Analysis ID, creation time, engine version/commit, parent input/output/session, available parent RunID and manifest SHA256, source SHA256, `whole-capture` selector, requested BPF/DPI and exact artifact-configuration snapshot. Missing legacy parent hashes remain absent. |
+| `session.json` | Service-mode child ownership and `parentSessionId`; a child of a public preloaded capture belongs to its requester. |
+| `/api/files/input` identity | Local children use distinct analysis IDs even when their input hashes match. Content SHA256 alone cannot identify a run. |
+| Rejected queue admission | HTTP 503; an already registered child is retained as failed. Parent state is untouched. |
+
+This path reruns the whole copied capture. Selected-subset child analysis and
+automatic local child discovery after restart remain separate work; service
+sessions retain their existing metadata reload and expiry policy.
+
 ## Retain packets and directional streams
 
 ```sh

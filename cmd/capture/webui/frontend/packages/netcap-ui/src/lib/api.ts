@@ -475,6 +475,8 @@ export interface TrySession {
 }
 
 export interface FileInfo {
+  parentSessionId?: string;
+  parentInputFile?: string;
   id: string;  // Unique identifier for the file (used for API calls)
   name: string;
   path: string;
