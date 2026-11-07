@@ -128,6 +128,22 @@ func (t *smbPipeTransport) smb2(message []byte, dir reassembly.TCPFlowDirection,
 		} else {
 			status := binary.LittleEndian.Uint32(frame[8:])
 			r := t.pending[mid]
+			if r != nil && flags&2 != 0 {
+				id := binary.LittleEndian.Uint64(frame[32:])
+				if status == smbStatusPending && !r.async {
+					r.async, r.asyncID = true, id
+				} else if !r.async || r.asyncID != id {
+					t.fail(r, "async-mismatch")
+					delete(t.pending, mid)
+					t.stop = "async-mismatch"
+					return
+				}
+			} else if r != nil && r.async {
+				t.fail(r, "async-mismatch")
+				delete(t.pending, mid)
+				t.stop = "async-mismatch"
+				return
+			}
 			if r != nil && status != smbStatusPending {
 				delete(t.pending, mid)
 				if command != 3 && flags&2 == 0 && r.scope != scope {

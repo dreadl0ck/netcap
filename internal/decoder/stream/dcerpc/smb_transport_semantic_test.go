@@ -282,6 +282,49 @@ func TestSMBPipeEvidenceBarriers(t *testing.T) {
 	}
 }
 
+func TestSMB2AsyncIdentityBarrier(t *testing.T) {
+	for _, mode := range []string{"matching", "wrong-id", "missing-pending", "sync-final", "changed-pending"} {
+		t.Run(mode, func(t *testing.T) {
+			data := smb2Open("svcctl", 42)
+			data = append(data, smb2WritePair(2, 42, cat(bind(1, uuidSVCCTL), request(7, 0, 12)))...)
+			read := smb2ReadPair(3, 42, response(ptypeResponse, 7, 0, 0))
+			pending := smb2Fragment(8, true, 3, make([]byte, 8))
+			binary.LittleEndian.PutUint32(pending.Raw()[12:], smbStatusPending)
+			pending.Raw()[20] |= 2
+			binary.LittleEndian.PutUint64(pending.Raw()[36:], 0x123456789)
+			read[1].Raw()[20] |= 2
+			binary.LittleEndian.PutUint64(read[1].Raw()[36:], 0x123456789)
+			data = append(data, read[0])
+			if mode != "missing-pending" {
+				data = append(data, pending)
+			}
+			switch mode {
+			case "wrong-id":
+				read[1].Raw()[36]++
+			case "sync-final":
+				read[1].Raw()[20] &^= 2
+				binary.LittleEndian.PutUint32(read[1].Raw()[40:], 1)
+			case "changed-pending":
+				other := fragment(append([]byte(nil), pending.Raw()...), 20, true)
+				other.Raw()[36]++
+				data = append(data, other)
+			}
+			data = append(data, read[1])
+			pipes, records := pipeRecords(data)
+			want := 2
+			if mode == "matching" {
+				want = 3
+			}
+			if len(records) != want || len(pipes) != 1 {
+				t.Fatalf("pipes=%d records=%v", len(pipes), records)
+			}
+			if mode != "matching" && !strings.Contains(pipes[0].Ident, "async-mismatch") {
+				t.Fatal("missing asynchronous correlation qualification", pipes[0].Ident)
+			}
+		})
+	}
+}
+
 func TestSMB2PendingReadCannotCrossTreeReconnect(t *testing.T) {
 	data := smb2Open("svcctl", 42)
 	data = append(data, smb2WritePair(2, 42, bind(1, uuidSVCCTL))...)
