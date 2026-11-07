@@ -108,6 +108,7 @@ func (r *ippReader) Decode() {
 
 		rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = r.conversation.Endpoints(d)
 		rec.Flow = r.conversation.Ident
+		rec.CommunityID = r.conversation.CommunityID
 		rec.Timestamp = core.FragmentTime(d)
 
 		err := Decoder.Writer.Write(rec)

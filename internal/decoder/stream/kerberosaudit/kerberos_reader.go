@@ -67,6 +67,7 @@ func (k *kerberosReader) Decode() {
 		// records a server reply as though the client had sent it.
 		rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = k.conversation.Endpoints(d)
 		rec.Flow = k.conversation.Ident
+		rec.CommunityID = k.conversation.CommunityID
 		rec.Timestamp = core.FragmentTime(d)
 
 		err := Decoder.Writer.Write(rec)

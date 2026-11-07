@@ -73,6 +73,7 @@ var fieldsDNS = []string{
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	"CommunityID",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -124,6 +125,7 @@ func (d *DNS) CSVRecord() []string {
 		d.DstIP,
 		formatInt32(d.SrcPort),
 		formatInt32(d.DstPort),
+		d.CommunityID,
 	})
 }
 
@@ -338,6 +340,7 @@ func (d *DNS) Encode() []string {
 		dnsEncoder.String(fieldDstIP, d.DstIP),
 		dnsEncoder.Int32(fieldSrcPort, d.SrcPort),
 		dnsEncoder.Int32(fieldDstPort, d.DstPort),
+		dnsEncoder.String("CommunityID", d.CommunityID),
 	})
 }
 

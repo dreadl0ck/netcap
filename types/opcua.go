@@ -89,6 +89,7 @@ var fieldsOPCUA = []string{
 	fieldOPCUAAuthenticationToken,
 	fieldOPCUAIsSecurityRelevant,
 	fieldOPCUAIsCriticalOperation,
+	"CommunityID",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -130,6 +131,7 @@ func (o *OPCUA) CSVRecord() []string {
 		o.AuthenticationToken,
 		strconv.FormatBool(o.IsSecurityRelevant),
 		strconv.FormatBool(o.IsCriticalOperation),
+		o.CommunityID,
 	})
 }
 
@@ -213,6 +215,7 @@ func (o *OPCUA) Encode() []string {
 		opcuaEncoder.String(fieldOPCUAAuthenticationToken, o.AuthenticationToken),
 		opcuaEncoder.Bool(o.IsSecurityRelevant),
 		opcuaEncoder.Bool(o.IsCriticalOperation),
+		opcuaEncoder.String("CommunityID", o.CommunityID),
 	})
 }
 

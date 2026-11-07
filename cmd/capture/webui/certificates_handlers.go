@@ -37,6 +37,13 @@ import (
 
 // CertificateSummary represents aggregated information for a single TLS certificate
 type CertificateSummary struct {
+	AssessmentTime      string   `json:"assessmentTimeNs"`
+	AssessmentBasis     string   `json:"assessmentBasis"`
+	ValidityState       string   `json:"validityState"`
+	SelfSignatureState  string   `json:"selfSignatureState"`
+	CertificateSender   string   `json:"certificateSender"`
+	NotBeforeRFC3339    string   `json:"notBeforeRFC3339"`
+	NotAfterRFC3339     string   `json:"notAfterRFC3339"`
 	Timestamp           int64    `json:"timestamp"`
 	SrcIP               string   `json:"srcIP"`
 	SrcPort             int32    `json:"srcPort"`
@@ -171,6 +178,9 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 			// Fallback to serial number + issuer if no fingerprint
 			key = cert.SerialNumber + "|" + cert.IssuerCommonName
 		}
+		if cert.AssessmentBasis != "" {
+			key += fmt.Sprintf("|%s|%s|%s|%s", cert.AssessmentBasis, cert.ValidityState, cert.SelfSignatureState, cert.CertificateSender)
+		}
 		if cert.CommunityID != "" {
 			if communityIDs[key] == nil {
 				communityIDs[key] = make(map[string]struct{})
@@ -183,6 +193,11 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 			existing.SeenCount++
 			if cert.Timestamp < existing.FirstSeen || existing.FirstSeen == 0 {
 				existing.FirstSeen = cert.Timestamp
+				existing.Timestamp = cert.Timestamp
+				existing.AssessmentTime = fmt.Sprint(cert.AssessmentTime)
+				existing.DaysUntilExpiration = cert.DaysUntilExpiration
+				existing.SrcIP, existing.DstIP = cert.SrcIP, cert.DstIP
+				existing.SrcPort, existing.DstPort = cert.SrcPort, cert.DstPort
 			}
 			if cert.Timestamp > existing.LastSeen {
 				existing.LastSeen = cert.Timestamp
@@ -190,6 +205,33 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 		} else {
 			// Add new certificate
 			certMap[key] = &CertificateSummary{
+				AssessmentTime: fmt.Sprint(cert.AssessmentTime),
+				AssessmentBasis: func() string {
+					if cert.AssessmentBasis == "" {
+						return "legacy-unqualified"
+					}
+					return cert.AssessmentBasis
+				}(),
+				ValidityState: func() string {
+					if cert.ValidityState == "" {
+						return "legacy-unqualified"
+					}
+					return cert.ValidityState
+				}(),
+				SelfSignatureState: func() string {
+					if cert.SelfSignatureState == "" {
+						return "legacy-unqualified"
+					}
+					return cert.SelfSignatureState
+				}(),
+				CertificateSender: func() string {
+					if cert.CertificateSender == "" {
+						return "unknown"
+					}
+					return cert.CertificateSender
+				}(),
+				NotBeforeRFC3339:    cert.NotBeforeRFC3339,
+				NotAfterRFC3339:     cert.NotAfterRFC3339,
 				Timestamp:           cert.Timestamp,
 				SrcIP:               cert.SrcIP,
 				SrcPort:             cert.SrcPort,

@@ -117,7 +117,7 @@ jobs:
           go version
 
           # Database archive tests run pack-dbs.sh and its Python metadata validator.
-          apk add --no-cache bash python3
+          apk add --no-cache bash python3 wireshark-cli
 
           # Regenerate types/netcap.pb.go so it provably matches
           # types/netcap.proto. The file is tracked again since 3dbcc508
@@ -159,6 +159,9 @@ jobs:
           GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestOfflineRulesCLI$' -count=1
           GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestDHCPOption55CLI$' -count=1
           GOWORK=off go test -tags=e2e,nodpi,nomagika ./tests/e2e -run '^TestArtifactAnalysisCLI$' -count=1
+          GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestAuditSemanticsCLI$' -count=1
+          GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/decoder/stream/tls -run '^$' -fuzz '^FuzzCertificateHandshakeSemantics$' -fuzztime=5s -parallel=2
+          GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/decoder/stream/rdp -run '^$' -fuzz '^FuzzNegotiationEvidence$' -fuzztime=5s -parallel=2
           SCRIPT
 
       - name: Verify distributable license bundle

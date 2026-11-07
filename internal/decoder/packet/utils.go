@@ -149,12 +149,15 @@ func CalcCommunityID(p gopacket.Packet) string {
 	if tl != nil {
 		switch v := tl.(type) {
 		case *layers.TCP:
+			proto = uint8(layers.IPProtocolTCP)
 			srcPort = uint16(v.SrcPort)
 			dstPort = uint16(v.DstPort)
 		case *layers.UDP:
+			proto = uint8(layers.IPProtocolUDP)
 			srcPort = uint16(v.SrcPort)
 			dstPort = uint16(v.DstPort)
 		case *layers.SCTP:
+			proto = uint8(layers.IPProtocolSCTP)
 			srcPort = uint16(v.SrcPort)
 			dstPort = uint16(v.DstPort)
 		default:
@@ -168,6 +171,23 @@ func CalcCommunityID(p gopacket.Packet) string {
 			}
 		}
 	}
+	// Do not combine outer tunnel endpoints with an inner transport's ports.
+	networkLayers := 0
+	for _, layer := range p.Layers() {
+		switch layer.(type) {
+		case *layers.IPv4, *layers.IPv6:
+			networkLayers++
+		}
+	}
+	if networkLayers > 1 {
+		return ""
+	}
+	if ipv4, ok := nl.(*layers.IPv4); ok && (ipv4.FragOffset != 0 || ipv4.Flags&layers.IPv4MoreFragments != 0) {
+		return ""
+	}
+	if p.Layer(layers.LayerTypeIPv6Fragment) != nil && tl == nil {
+		return ""
+	}
 
 	// Handle ICMP specially
 	if icmpLayer := p.Layer(layers.LayerTypeICMPv4); icmpLayer != nil {
@@ -179,6 +199,12 @@ func CalcCommunityID(p gopacket.Packet) string {
 		icmp := icmpLayer.(*layers.ICMPv6)
 		ft := gommunityid.MakeFlowTupleICMP6(srcIP, dstIP, uint16(icmp.TypeCode.Type()), uint16(icmp.TypeCode.Code()))
 		return communityIDGenerator.CalcBase64(ft)
+	}
+	if tl == nil {
+		switch proto {
+		case 6, 17, 132, 0, 43, 44, 60, 51:
+			return ""
+		}
 	}
 
 	// Create flow tuple based on protocol

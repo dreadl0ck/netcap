@@ -56,6 +56,7 @@ import {
   Close as CloseIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import { RecordSemantics } from '../components/RecordSemantics';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatBytes, getBackendUrl, FilteredAuditFileInfo } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
@@ -210,6 +211,7 @@ function RecordUI({ data, level = 0 }: RecordUIProps) {
     
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: level === 0 ? 0.75 : 0.5 }}>
+        {level === 0 && <RecordSemantics data={data} />}
         {entries.map(([key, value]) => {
           const fieldColor = getFieldColor(key);
           

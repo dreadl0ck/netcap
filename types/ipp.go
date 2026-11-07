@@ -41,19 +41,20 @@ const (
 
 var fieldsIPP = []string{
 	fieldTimestamp,
-	fieldVersionMajor,     // int32
-	fieldVersionMinor,     // int32
+	fieldVersionMajor,      // int32
+	fieldVersionMinor,      // int32
 	fieldOperationOrStatus, // int32
-	fieldOperationName,    // string
-	fieldRequestID,        // int32
-	fieldAttributes,       // []*IPPAttribute
-	fieldPrinterURI,       // string
-	fieldJobName,          // string
+	fieldOperationName,     // string
+	fieldRequestID,         // int32
+	fieldAttributes,        // []*IPPAttribute
+	fieldPrinterURI,        // string
+	fieldJobName,           // string
 	fieldFlow,
 	fieldSrcIP,
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	"CommunityID",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -70,7 +71,7 @@ func (a *IPP) CSVRecord() []string {
 		formatInt32(a.OperationOrStatus), // int32
 		a.OperationName,                  // string
 		formatInt32(a.RequestID),         // int32
-		strconv.Itoa(len(a.Attributes)), // []*IPPAttribute
+		strconv.Itoa(len(a.Attributes)),  // []*IPPAttribute
 		a.PrinterURI,                     // string
 		a.JobName,                        // string
 		a.Flow,
@@ -78,6 +79,7 @@ func (a *IPP) CSVRecord() []string {
 		a.DstIP,
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
+		a.CommunityID,
 	})
 }
 
@@ -126,19 +128,20 @@ var ippEncoder = encoder.NewValueEncoder()
 func (a *IPP) Encode() []string {
 	return filter([]string{
 		ippEncoder.Int64(fieldTimestamp, a.Timestamp),
-		ippEncoder.Int32(fieldVersionMajor, a.VersionMajor),            // int32
-		ippEncoder.Int32(fieldVersionMinor, a.VersionMinor),            // int32
-		ippEncoder.Int32(fieldOperationOrStatus, a.OperationOrStatus),  // int32
-		ippEncoder.String(fieldOperationName, a.OperationName),         // string
-		ippEncoder.Int32(fieldRequestID, a.RequestID),                  // int32
+		ippEncoder.Int32(fieldVersionMajor, a.VersionMajor),                 // int32
+		ippEncoder.Int32(fieldVersionMinor, a.VersionMinor),                 // int32
+		ippEncoder.Int32(fieldOperationOrStatus, a.OperationOrStatus),       // int32
+		ippEncoder.String(fieldOperationName, a.OperationName),              // string
+		ippEncoder.Int32(fieldRequestID, a.RequestID),                       // int32
 		ippEncoder.String(fieldAttributes, strconv.Itoa(len(a.Attributes))), // []*IPPAttribute
-		ippEncoder.String(fieldPrinterURI, a.PrinterURI),               // string
-		ippEncoder.String(fieldJobName, a.JobName),                     // string
+		ippEncoder.String(fieldPrinterURI, a.PrinterURI),                    // string
+		ippEncoder.String(fieldJobName, a.JobName),                          // string
 		ippEncoder.String(fieldFlow, a.Flow),
 		ippEncoder.String(fieldSrcIP, a.SrcIP),
 		ippEncoder.String(fieldDstIP, a.DstIP),
 		ippEncoder.Int32(fieldSrcPort, a.SrcPort),
 		ippEncoder.Int32(fieldDstPort, a.DstPort),
+		ippEncoder.String("CommunityID", a.CommunityID),
 	})
 }
 

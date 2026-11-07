@@ -1573,6 +1573,13 @@ message TLSServerHello {
 // Represents a X.509 certificate extracted from TLS handshake
 
 message TLSCertificate {
+  int64 AssessmentTime = 45; // Unix nanoseconds when capture time is known
+  string AssessmentBasis = 46; // capture-time or unavailable
+  string ValidityState = 47; // valid, expired, not-yet-valid, unavailable
+  string SelfSignatureState = 48; // verified, not-self-issued, invalid, unsupported
+  string CertificateSender = 49; // client, server or unknown
+  string NotBeforeRFC3339 = 50; // Lossless dates outside Unix-nanosecond range
+  string NotAfterRFC3339 = 51;
   int64 Timestamp = 1;
   
   // Connection info (to correlate with TLS handshake)
@@ -3186,6 +3193,9 @@ message SyslogStructuredData {
 // RDP (Remote Desktop Protocol) captures remote desktop connection events.
 // Critical for detecting unauthorized remote access and lateral movement.
 message RDP {
+  string NegotiationOutcome = 44; // accepted, rejected, not-observed, malformed
+  string AuthenticationOutcome = 45; // unknown: negotiation is not authentication
+  bool NegotiatedSecurityKnown = 46;
   int64 Timestamp = 1;
   string SrcIP = 2;
   string DstIP = 3;
@@ -3241,7 +3251,7 @@ message RDP {
   // Additional fields
   int32 RequestedProtocolsFlags = 36; // Requested protocols as bitmask
   string RequestedProtocolNames = 37; // Requested protocol names (comma-separated)
-  bool ConnectionSuccessful = 38;     // Connection was successful
+  bool ConnectionSuccessful = 38;     // Legacy negotiation acceptance; not login success
   bool ExtendedClientDataSupported = 39; // Extended client data supported
   bool DynamicDST = 40;               // Dynamic DST supported
   bool RestrictedAdminMode = 41;      // Restricted admin mode
@@ -3792,6 +3802,7 @@ message MLDv2MulticastAddressRecord {
 // It provides a platform-independent service-oriented architecture for
 // process control and ICS/SCADA systems.
 message OPCUA {
+  string CommunityID = 33;
   int64 Timestamp = 1;            // Timestamp of the message
   string SrcIP = 2;               // Source IP address
   string DstIP = 3;               // Destination IP address
@@ -3849,6 +3860,7 @@ message OPCUA {
 // on TCP port 102. This protocol is widely used in industrial automation and
 // SCADA systems.
 message S7Comm {
+  string CommunityID = 52;
   int64 Timestamp = 1;            // Timestamp of the message
   string SrcIP = 2;               // Source IP address
   string DstIP = 3;               // Destination IP address
@@ -4201,6 +4213,7 @@ message IEC62351 {
 // It supports real-time (RT) and isochronous real-time (IRT) communication.
 // PROFINET uses DCE/RPC for device configuration and parameter setting.
 message PROFINET {
+  string CommunityID = 48;
   int64 Timestamp = 1;            // Timestamp of the message
   string SrcIP = 2;               // Source IP address
   string DstIP = 3;               // Destination IP address
@@ -4405,6 +4418,7 @@ message STUNAttribute {
 
 // Kerberos v5 authentication protocol
 message Kerberos {
+  string CommunityID = 19;
   repeated int32 RequestedEncryptionTypes = 18;
   int64 Timestamp = 1;
   string MessageType = 2;      // AS-REQ, AS-REP, TGS-REQ, TGS-REP, AP-REQ, AP-REP, KRB-ERROR
@@ -4428,6 +4442,7 @@ message Kerberos {
 // TACACS+ - Terminal Access Controller Access-Control System Plus
 // Network authentication protocol on TCP port 49
 message TACACS {
+  string CommunityID = 21;
   int64 Timestamp = 1;
   int32 VersionMajor = 2;
   int32 VersionMinor = 3;
@@ -4554,6 +4569,7 @@ message OCSP {
 
 // IPP - Internet Printing Protocol (HTTP-based, port 631)
 message IPP {
+  string CommunityID = 15;
   int64 Timestamp = 1;
   int32 VersionMajor = 2;
   int32 VersionMinor = 3;
@@ -4590,6 +4606,7 @@ message PIM {
 
 // Zabbix monitoring agent protocol
 message Zabbix {
+  string CommunityID = 12;
   int64 Timestamp = 1;
   string RequestType = 2;     // "active checks", "agent data", etc.
   string Host = 3;
@@ -4655,6 +4672,7 @@ message RARP {
 // When .proto schema files are provided, fields are resolved to their
 // named definitions with full type information and enum labels.
 message Protobuf {
+  string CommunityID = 22;
   int64 Timestamp = 1;
   string SrcIP = 2;
   string DstIP = 3;

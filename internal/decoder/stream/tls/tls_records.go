@@ -233,7 +233,7 @@ func (f *tlsRecordFramer) feed(data []byte, timestamp int64) {
 					break
 				}
 				if f.handshake[0] == handshakeTypeCertificate && Decoder.Writer != nil {
-					f.reader.parseCertificateMessage(f.handshake[4:4+length], f.handshakeTS)
+					f.reader.parseCertificateMessage(f.handshake[4:4+length], f.handshakeTS, f.dir)
 				}
 				if f.handshake[0] == handshakeTypeServerHello && f.dir == reassembly.TCPDirServerToClient && length+4 <= 65535 {
 					wire := append([]byte{22, 3, 3, byte((length + 4) >> 8), byte(length + 4)}, f.handshake[:length+4]...)

@@ -42,6 +42,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	ja4 "github.com/dreadl0ck/netcap/internal/ja4plusadapter"
+	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -86,7 +87,7 @@ func (h *tlsReader) Decode() {
 }
 
 // parseCertificateMessage parses a TLS Certificate handshake message
-func (h *tlsReader) parseCertificateMessage(data []byte, timestamp int64) {
+func (h *tlsReader) parseCertificateMessage(data []byte, timestamp int64, direction reassembly.TCPFlowDirection) {
 	if len(data) < 3 {
 		tlsLog.Debug("Certificate message too short")
 		return
@@ -100,7 +101,7 @@ func (h *tlsReader) parseCertificateMessage(data []byte, timestamp int64) {
 		zap.Int("certsLength", certsLength),
 	)
 
-	if offset+certsLength > len(data) {
+	if offset+certsLength != len(data) {
 		tlsLog.Debug("Certificates length exceeds available data")
 		return
 	}
@@ -134,7 +135,10 @@ func (h *tlsReader) parseCertificateMessage(data []byte, timestamp int64) {
 		)
 
 		// Parse the X.509 certificate
-		h.parseCertificate(certData, chainIndex, timestamp)
+		if certLength == 0 {
+			return
+		}
+		h.parseCertificate(certData, chainIndex, timestamp, direction)
 		chainIndex++
 	}
 
@@ -144,7 +148,7 @@ func (h *tlsReader) parseCertificateMessage(data []byte, timestamp int64) {
 }
 
 // parseCertificate parses an X.509 certificate and creates a TLSCertificate audit record
-func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32, timestamp int64) {
+func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32, timestamp int64, direction reassembly.TCPFlowDirection) {
 	cert, err := x509.ParseCertificate(certData)
 	if err != nil {
 		tlsLog.Error("Failed to parse X.509 certificate",
@@ -191,24 +195,9 @@ func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32, timestam
 		issuerCountry = cert.Issuer.Country[0]
 	}
 
-	// Perform certificate validations
-	now := time.Now()
-
-	// Check if self-signed (Subject == Issuer)
-	isSelfSigned := cert.Subject.String() == cert.Issuer.String()
-
-	// Check if expired (current time is after NotAfter)
-	isExpired := now.After(cert.NotAfter)
-
-	// Check if not yet valid (current time is before NotBefore)
-	isNotYetValid := now.Before(cert.NotBefore)
-
-	// Calculate days until expiration
-	daysUntilExpiration := int64(cert.NotAfter.Sub(now).Hours() / 24)
-	if isExpired {
-		// If expired, show negative days (how long it's been expired)
-		daysUntilExpiration = -int64(now.Sub(cert.NotAfter).Hours() / 24)
-	}
+	assessment := assessCertificate(cert, timestamp)
+	isSelfSigned, isExpired, isNotYetValid := assessment.selfSigned, assessment.expired, assessment.notYetValid
+	daysUntilExpiration := assessment.days
 
 	// Validate certificate for security issues
 	hasWeakSignature := isWeakSignatureAlgorithm(cert.SignatureAlgorithm)
@@ -278,6 +267,13 @@ func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32, timestam
 	}
 
 	tlsCert := &types.TLSCertificate{
+		AssessmentTime:      assessment.time,
+		AssessmentBasis:     assessment.basis,
+		ValidityState:       assessment.validity,
+		SelfSignatureState:  assessment.selfSignature,
+		CertificateSender:   "server",
+		NotBeforeRFC3339:    cert.NotBefore.UTC().Format(time.RFC3339Nano),
+		NotAfterRFC3339:     cert.NotAfter.UTC().Format(time.RFC3339Nano),
 		Timestamp:           timestamp,
 		SrcIP:               h.conversation.ServerIP, // Server sends the certificate
 		DstIP:               h.conversation.ClientIP,
@@ -295,8 +291,8 @@ func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32, timestam
 		IssuerCommonName:    issuerCN,
 		IssuerOrganization:  issuerOrg,
 		IssuerCountry:       issuerCountry,
-		NotBefore:           cert.NotBefore.UnixNano(),
-		NotAfter:            cert.NotAfter.UnixNano(),
+		NotBefore:           certificateUnixNano(cert.NotBefore),
+		NotAfter:            certificateUnixNano(cert.NotAfter),
 		IsExpired:           isExpired,
 		IsSelfSigned:        isSelfSigned,
 		DaysUntilExpiration: daysUntilExpiration,
@@ -319,6 +315,11 @@ func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32, timestam
 		Ja4XRaw:             ja4xRaw,
 		Ja4XDescription:     ja4xDescription,
 		CommunityID:         h.conversation.CommunityID, // Community ID for cross-tool correlation
+	}
+	if direction == reassembly.TCPDirClientToServer {
+		tlsCert.CertificateSender = "client"
+		tlsCert.SrcIP, tlsCert.DstIP = tlsCert.DstIP, tlsCert.SrcIP
+		tlsCert.SrcPort, tlsCert.DstPort = tlsCert.DstPort, tlsCert.SrcPort
 	}
 
 	tlsLog.Info("Parsed certificate successfully",

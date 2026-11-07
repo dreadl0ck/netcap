@@ -20,6 +20,7 @@
 package stream
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
@@ -475,4 +476,57 @@ func DefaultRecordType(name string) types.Type {
 		}
 	}
 	return types.Type_NC_Header
+}
+
+func TestSharedCommunityIDAuditContract(t *testing.T) {
+	matchingEnv(t)
+	required := map[string]bool{"Kerberos": false, "TACACS": false, "IPP": false, "Zabbix": false, "Protobuf": false, "OPCUA": false, "S7Comm": false, "PROFINET": false}
+	for _, s := range samples() {
+		if _, ok := required[s.decoder]; !ok {
+			continue
+		}
+		required[s.decoder] = true
+		t.Run(s.decoder, func(t *testing.T) {
+			report, _ := driveReader(t, s)
+			if len(report.messages) == 0 {
+				t.Fatal("no production reader record")
+			}
+			for _, message := range report.messages {
+				cid, ok := field(message, "CommunityID")
+				if !ok || cid.String() != "community" {
+					t.Fatalf("conversation ID lost in %T", message)
+				}
+				record := message.(types.AuditRecord)
+				header, row := record.CSVHeader(), record.CSVRecord()
+				if len(header) != len(row) || header[len(header)-1] != "CommunityID" || row[len(row)-1] != "community" {
+					t.Fatalf("CSV contract lost: %v %v", header, row)
+				}
+				encoded, err := json.Marshal(message)
+				if err != nil {
+					t.Fatal(err)
+				}
+				var values map[string]any
+				if json.Unmarshal(encoded, &values) != nil || values["CommunityID"] != "community" {
+					t.Fatalf("JSON correlation lost: %s", encoded)
+				}
+				wire, err := proto.Marshal(message)
+				if err != nil {
+					t.Fatal(err)
+				}
+				decoded := netio.InitRecord(record.NetcapType()).(proto.Message)
+				if err := proto.Unmarshal(wire, decoded); err != nil {
+					t.Fatal(err)
+				}
+				got, _ := field(decoded, "CommunityID")
+				if got.String() != "community" {
+					t.Fatal("protobuf correlation lost")
+				}
+			}
+		})
+	}
+	for name, seen := range required {
+		if !seen {
+			t.Fatalf("missing required registry fixture %s", name)
+		}
+	}
 }
