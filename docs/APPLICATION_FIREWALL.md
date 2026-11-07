@@ -186,7 +186,9 @@ Shared/native state derives a single unambiguous tenant/app binding from grants.
 | `deploy` | Activate/promote/rollout; drain/revoke/resume targets |
 | `rollback` | Rollback; process-owned fleet maintenance uses a bootstrap supervisor |
 | `lease` | Create/revoke leases; enrolled target desired/ack |
-| `audit` | Mutation audit queries |
+| `audit` | Mutation audit queries and `audit_export` |
+| `prune` | `retention_preview`, `prune`, `audit_ack`; read-only audit grants cannot delete retained records |
+| `metrics` | `/metrics`, fleet REST `metrics` and MCP `fleet_metrics`; aggregate fleet metrics require environment-wide scope |
 | `approve` | Issue receipts, also requiring the approved action's grant |
 | `manage-credentials` | Revoke fingerprints with an authority-wide empty-scope grant |
 
@@ -210,6 +212,7 @@ same file with `authConfig`. Secrets are environment references, never JSON valu
 | Provider time limits | Integer nanoseconds: `ttl` defaults to 60s (1–300s), `maxLifetime` to 900s (1–3600s), `clockSkew` to 0 (0–60s); JWT requires `exp`, `iat`, bound subject, issuer and audience |
 | JWKS | RS256/ES256/EdDSA only, public signing keys, nonempty bounded `kid`; HTTPS or literal loopback HTTP, no redirects; 32 keys/256KiB, one refresh/second/provider, no per-kid cache |
 | `stateDir` | Private 0700 directory with 0600 `identity.sqlite`; durable fingerprint revocation and unique approval consumption; retain alongside policy state |
+| `databaseURLEnv`, `databaseNamespace` | Shared PostgreSQL identity ledger; mutually exclusive with `stateDir`; use one dedicated schema for every owner and retain it with service state |
 | `approvalKeyEnv`, `protected` | Base64 64-byte Ed25519 private key and action/scope rules for `deploy`, `rollback`, `lease`; both require durable identity state |
 | `stdio` | Explicit local principal; absent grants confer no privileges |
 | `origin` | Optional exact first-party HTTP(S) origin; no wildcard, path, credentials or CORS headers |
@@ -229,18 +232,26 @@ Protected policy/fleet writes take `receipt`. Obtain it from
 the complete request, including CAS, revisions, targets and idempotency key.
 Fleet approval scope is the enclosing tenant/app/environment; stored job targets
 determine whether protection applies. Enforcer uses `POST /v1/approval` or MCP
-`issue_lease_approval`, `CreateApprovalDigest` / `DeleteApprovalDigest`, and a
+`issue_lease_approval`, `ActionApprovalDigest` / `DeleteApprovalDigest`, and a
 `receipt` create argument or `X-Firewall-Approval` header (DELETE uses the header).
 The signing principal must differ from `actor`; receipts expire after 300s and
 are consumed durably once. A failed operation may consume its receipt. Ordinary
 delegated operations outside `protected` rules need no receipt or human prompt.
 
-Identity ledgers are local SQLite. Shared identity mode rejects PostgreSQL-backed
-services at startup: replicas need a shared authoritative replay/revocation ledger
-before they can provide global lifecycle guarantees. Legacy PostgreSQL service
-mode remains available through its explicit compatibility bootstrap.
-The console UI integration is separate; `origin` only supplies the exact-origin
-server helper. Legacy `serve`/`enforcer` tokens require `--legacy-admin`; the Helm
+`firewallauth.OpenShared` uses `firewallstate.Database` namespace transaction locks
+for revocation reads/writes and one-use approval consumption across processes.
+PostgreSQL service owners require this shared ledger. Its bootstrap fingerprint
+pins normalized grants, provider policy, approval public key and protection rules;
+JWKS caches and private signing keys stay process-local. Shared policy changes
+require coordinated bootstrap migration; `Authority.Reload` refuses them.
+`TestSharedPostgresIdentityProcesses` verifies fake-provider authentication,
+cross-process replay/revocation and mismatched tenant policy rejection.
+
+The embedded `/console/` preserves `Origin` in identity mode and requires the
+configured exact first-party origin for browser API requests; bearers remain in
+browser memory. `ActionApprovalDigest` binds action kind, profile and exact flow;
+`CreateApprovalDigest` remains the legacy default-action helper.
+Legacy `serve`/`enforcer` tokens require `--legacy-admin`; the Helm
 chart maps an explicitly configured `adminTokenSecret` to that flag. Legacy
 service `tokenEnv`/`identities`/`principals` remain explicit compatibility
 bootstrap and cannot be mixed with `authConfig` identities.
@@ -251,6 +262,17 @@ process-owned maintenance loops do that. Fleet authority enrollment omits
 Retained SQLite state pins identity mode and resource binding; changing tenant,
 environment or target, or downgrading to legacy, requires separately provisioned
 state. Rotating credentials does not change this pin (`firewallauth.PinState`).
+
+`appliance plan --manifest ...` supports `mode: production` with `targetID`.
+Production `apply`/`recover`/`remove`/`status` additionally require `--auth-config`,
+`--operator-token-env` and `--reviewed-plan-digest` equal to the plan's `digest`;
+the bootstrap scope's target must equal `targetID` and grant `deploy` over all
+four scope dimensions. Named-namespace, private-prefix, ownership and recovery
+fences remain enforced. Configured protection requires `--approval-receipt-env`
+with a one-use receipt binding `appliance.ApprovalDigest(planDigest, operation)`.
+`mode: lab` still requires `NETCAP_APPLIANCE_LAB=1` and
+Docker. `TestApplianceProductionLab` exercises the production gate only inside
+the disposable Docker lab.
 
 ### Managed singleton
 

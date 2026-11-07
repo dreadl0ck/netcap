@@ -46,7 +46,7 @@ cmp /tmp/plan /tmp/dry
         print(result.stdout, end='')
         if result.returncode or '--- SKIP' in result.stdout:
             raise SystemExit(result.returncode or 1)
-        for test in ('TestApplianceLinuxLab', 'TestApplianceCrashLab', 'TestApplianceGatewayLab', 'TestApplianceRemovalCrashLab', 'TestRoutedLab', 'TestFenceFDLab', 'TestTransparentLab'):
+        for test in ('TestApplianceProductionLab', 'TestApplianceLinuxLab', 'TestApplianceCrashLab', 'TestApplianceGatewayLab', 'TestApplianceRemovalCrashLab', 'TestRoutedLab', 'TestFenceFDLab', 'TestTransparentLab'):
             if f'--- PASS: {test} ' not in result.stdout:
                 raise SystemExit(f'missing qualification: {test}')
         print('PASS: appliance lifecycle, crash recovery, packet handoff, CLI JSON, routed and transparent regressions')

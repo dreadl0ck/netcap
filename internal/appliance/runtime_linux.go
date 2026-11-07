@@ -15,6 +15,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/networkfirewall"
 
 	"golang.org/x/sys/unix"
@@ -93,11 +94,23 @@ func Execute(ctx context.Context, m Manifest, dir, action string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if os.Getenv("NETCAP_APPLIANCE_LAB") != "1" {
-		return nil, errors.New("explicit NETCAP_APPLIANCE_LAB=1 disposable container gate required")
-	}
-	if _, err = os.Stat("/.dockerenv"); err != nil {
-		return nil, errors.New("topology writes require a disposable Docker lab")
+	if m.Mode == "production" {
+		if err = AuthorizeProduction(ctx, m); err != nil {
+			return nil, err
+		}
+		b := ctx.Value(bootstrapKey{}).(Bootstrap)
+		if b.Approvals != nil {
+			if err = b.Approvals.Check(ctx, firewallauth.Deploy, b.Scope, ApprovalDigest(p.Digest, action), b.Receipt); err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		if os.Getenv("NETCAP_APPLIANCE_LAB") != "1" {
+			return nil, errors.New("explicit NETCAP_APPLIANCE_LAB=1 disposable container gate required")
+		}
+		if _, err = os.Stat("/.dockerenv"); err != nil {
+			return nil, errors.New("topology writes require a disposable Docker lab")
+		}
 	}
 	if action != "apply" && action != "recover" && action != "remove" && action != "status" {
 		return nil, errors.New("unknown appliance action")

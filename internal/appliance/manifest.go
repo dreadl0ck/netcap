@@ -3,6 +3,7 @@ package appliance
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
@@ -12,6 +13,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/networkfirewall"
 
 	"gopkg.in/yaml.v3"
@@ -20,6 +22,7 @@ import (
 const MaxManifestBytes = 64 << 10
 
 type Manifest struct {
+	TargetID   string   `json:"targetID,omitempty" yaml:"targetID,omitempty"`
 	Version    string   `json:"version" yaml:"version"`
 	Mode       string   `json:"mode" yaml:"mode"`
 	Nonce      string   `json:"nonce" yaml:"nonce"`
@@ -110,8 +113,11 @@ func privatePrefix(p netip.Prefix) bool {
 }
 
 func (m Manifest) Validate() error {
-	if m.Version != "netcap-appliance/v1" || m.Mode != "lab" || !nonce.MatchString(m.Nonce) {
-		return errors.New("version netcap-appliance/v1, mode lab and immutable 128-bit hex nonce required; production topology unsupported")
+	if m.Version != "netcap-appliance/v1" || (m.Mode != "lab" && m.Mode != "production") || !nonce.MatchString(m.Nonce) {
+		return errors.New("version netcap-appliance/v1, mode lab or production and immutable 128-bit hex nonce required")
+	}
+	if m.Mode == "production" && !name.MatchString(m.TargetID) {
+		return errors.New("production requires explicit topology targetID")
 	}
 	if len(m.Namespaces) < 1 || len(m.Namespaces) > 8 || len(m.Links) > 16 || len(m.Routes) > 64 {
 		return errors.New("topology exceeds bounded lab scope")
@@ -204,6 +210,33 @@ func (m Manifest) Validate() error {
 		return err
 	}
 	return nil
+}
+
+type bootstrapKey struct{}
+type Bootstrap struct {
+	Scope          firewallauth.Scope
+	ReviewedDigest string
+	Approvals      *firewallauth.Approvals
+	Receipt        string
+}
+
+func ApprovalDigest(planDigest, operation string) string {
+	return firewallauth.Digest(struct{ Plan, Operation string }{planDigest, operation})
+}
+
+func WithBootstrap(ctx context.Context, b Bootstrap) context.Context {
+	return context.WithValue(ctx, bootstrapKey{}, b)
+}
+func AuthorizeProduction(ctx context.Context, m Manifest) error {
+	p, err := m.Plan()
+	if err != nil {
+		return err
+	}
+	b, ok := ctx.Value(bootstrapKey{}).(Bootstrap)
+	if !ok || m.Mode != "production" || b.Scope.Target != m.TargetID || b.Scope.Tenant == "" || b.Scope.App == "" || b.Scope.Environment == "" || b.ReviewedDigest != p.Digest {
+		return errors.New("production requires bootstrap target binding and exact reviewed manifest digest")
+	}
+	return firewallauth.Require(ctx, firewallauth.Deploy, b.Scope)
 }
 
 func (m Manifest) Plan() (Plan, error) {

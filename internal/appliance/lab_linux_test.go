@@ -14,12 +14,85 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/networkfirewall"
 	"github.com/dreadl0ck/netcap/internal/transparentfirewall"
 	"golang.org/x/sys/unix"
 )
 
 type labVerdict string
+
+func TestApplianceProductionLab(t *testing.T) {
+	if os.Getenv("NETCAP_APPLIANCE_LAB") != "1" {
+		t.Skip("disposable Docker lab only")
+	}
+	if _, err := os.Stat("/.dockerenv"); err != nil {
+		t.Fatal("Docker-only test")
+	}
+	m := fixture(t)
+	m.Mode, m.TargetID = "production", "edge-a"
+	p, err := m.Plan()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := "/var/lib/nca-production"
+	if _, err = Execute(context.Background(), m, dir, "apply"); err == nil {
+		t.Fatal("production without bootstrap grant admitted")
+	}
+	if _, err = os.Stat(dir); !os.IsNotExist(err) {
+		t.Fatal("authorization failure wrote state")
+	}
+	s := firewallauth.Scope{Tenant: "test", App: "network", Environment: "production", Target: m.TargetID}
+	ctx := WithBootstrap(firewallauth.WithPrincipal(context.Background(), firewallauth.Principal{ID: "operator", Grants: []firewallauth.Grant{{Scope: s, Actions: []firewallauth.Action{firewallauth.Deploy}}}}), Bootstrap{Scope: s, ReviewedDigest: p.Digest})
+	if _, err = Execute(ctx, m, dir, "apply"); err != nil {
+		t.Fatal(err)
+	}
+	libraryRemoved := false
+	t.Cleanup(func() {
+		if libraryRemoved {
+			return
+		}
+		if _, err := Execute(ctx, m, dir, "remove"); err != nil {
+			t.Error(err)
+		}
+	})
+	if _, err = Execute(ctx, m, dir, "recover"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = Execute(ctx, m, dir, "status"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = Execute(ctx, m, dir, "remove"); err != nil {
+		t.Fatal(err)
+	}
+	libraryRemoved = true
+	manifest, _ := json.Marshal(m)
+	if err = os.WriteFile("/var/lib/nca-production-manifest.json", manifest, 0600); err != nil {
+		t.Fatal(err)
+	}
+	bootstrap, _ := json.Marshal(map[string]any{"stateDir": "/var/lib/nca-production-auth", "scope": s, "static": []any{map[string]any{"tokenEnv": "NCA_OPERATOR_TOKEN", "principal": firewallauth.Principal{ID: "operator", Grants: []firewallauth.Grant{{Scope: s, Actions: []firewallauth.Action{firewallauth.Deploy}}}}}}})
+	if err = os.WriteFile("/var/lib/nca-production-auth.json", bootstrap, 0600); err != nil {
+		t.Fatal(err)
+	}
+	cli := func(action, digest string) error {
+		c := exec.Command(os.Getenv("TFW_GATEWAY_BINARY"), "appliance", action, "--manifest", "/var/lib/nca-production-manifest.json", "--state-dir", "/var/lib/nca-production-cli", "--auth-config", "/var/lib/nca-production-auth.json", "--operator-token-env", "NCA_OPERATOR_TOKEN", "--reviewed-plan-digest", digest)
+		c.Env = append(os.Environ(), "NCA_OPERATOR_TOKEN=synthetic-production-operator-token")
+		out, e := c.CombinedOutput()
+		if e != nil {
+			return fmt.Errorf("CLI %s: %w: %s", action, e, out)
+		}
+		return nil
+	}
+	if cli("apply", "incorrect") == nil {
+		t.Fatal("CLI accepted unreviewed production manifest")
+	}
+	for _, action := range []string{"apply", "recover", "status", "remove"} {
+		if err := cli(action, p.Digest); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Log("production authorization and reviewed digest exercised only in disposable Docker namespaces")
+}
 
 func (v labVerdict) EvaluatePacket(networkfirewall.PacketEvent) (networkfirewall.Decision, error) {
 	return networkfirewall.Decision{Verdict: networkfirewall.Verdict(v)}, nil
