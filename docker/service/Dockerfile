@@ -19,7 +19,7 @@
 #
 # $BUILDPLATFORM rather than linux/amd64: the output is platform-independent
 # JavaScript, so this runs natively on the builder instead of under emulation.
-FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend
+FROM --platform=$BUILDPLATFORM node:22-alpine3.24@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS frontend
 
 WORKDIR /frontend
 
@@ -93,7 +93,7 @@ RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep
     -o /netcap/bin/netcap github.com/dreadl0ck/netcap/cmd/net
 
 # Runtime stage
-FROM --platform=linux/amd64 alpine:latest
+FROM --platform=linux/amd64 alpine:3.24.4@sha256:93b41ef40b1677fce8fcc64ff4af09daddfacf5040afde618bc46c1e2d1cc7d4
 
 LABEL maintainer="Philipp Mieden <dreadl0ck@protonmail.ch>"
 LABEL description="Netcap Service Mode - Upload and analyze PCAP files (with DPI support)"

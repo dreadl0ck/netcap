@@ -115,7 +115,7 @@ RUN GOPACKET_VERSION=$(cd /gopacket && git describe --tags --always 2>/dev/null 
     -o /netcap/bin/netcap github.com/dreadl0ck/netcap/cmd/net
 
 # Runtime stage
-FROM --platform=linux/amd64 alpine:latest
+FROM --platform=linux/amd64 alpine:3.24.4@sha256:93b41ef40b1677fce8fcc64ff4af09daddfacf5040afde618bc46c1e2d1cc7d4
 
 LABEL maintainer="Philipp Mieden <dreadl0ck@protonmail.ch>"
 LABEL description="Netcap Service Mode - Upload and analyze PCAP files (with DPI support and local gopacket)"
