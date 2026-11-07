@@ -67,16 +67,29 @@ type httpScan struct {
 }
 type ApplicationEngine struct {
 	lastSweep        int64
+	watermark        int64
+	observed         bool
 	config           Config
 	scans            map[string]*httpScan
 	beacons          map[string][]int64
-	recent           map[string]int64
+	aggregates       *aggregator
 	last             map[string]int64
 	Alerts, Overflow uint64
+	Late             uint64
 }
 
 func NewApplication(c Config) *ApplicationEngine {
-	return &ApplicationEngine{config: c, scans: map[string]*httpScan{}, beacons: map[string][]int64{}, recent: map[string]int64{}, last: map[string]int64{}}
+	return &ApplicationEngine{config: c, scans: map[string]*httpScan{}, beacons: map[string][]int64{}, aggregates: newAggregator(c), last: map[string]int64{}}
+}
+
+func (e *ApplicationEngine) Flush() []*types.Alert {
+	alerts := e.aggregates.flush()
+	e.Alerts += uint64(len(alerts))
+	return alerts
+}
+
+func (e *ApplicationEngine) AggregationStats() (matches, capacity uint64) {
+	return e.aggregates.matches, e.aggregates.capacity
 }
 func globalAddress(s string) bool {
 	a, e := netip.ParseAddr(s)
@@ -103,28 +116,35 @@ var specialUsePrefixes = func() []netip.Prefix {
 	return result
 }()
 
-func (e *ApplicationEngine) Observe(o ApplicationObservation) []*types.Alert {
-	if o.At <= 0 || o.Scope.Sensor == "" || o.Scope.Interface == "" {
+func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.Alert) {
+	if o.At < 0 || o.Scope.Sensor == "" || o.Scope.Interface == "" || len(o.Scope.Sensor) > 256 || len(o.Scope.Interface) > 256 || len(o.Scope.VLANs) > 4 {
 		return nil
+	}
+	for _, vlan := range o.Scope.VLANs {
+		if vlan > 4095 {
+			return nil
+		}
 	}
 	src, err := netip.ParseAddr(o.SrcIP)
-	if err != nil {
+	if err != nil || src.Zone() != "" {
 		return nil
 	}
-	if _, err := netip.ParseAddr(o.DstIP); err != nil {
+	dst, err := netip.ParseAddr(o.DstIP)
+	if err != nil || dst.Zone() != "" {
 		return nil
 	}
-	for _, s := range e.config.ApprovedSources {
-		if p, err := netip.ParsePrefix(s); err == nil && p.Contains(src) {
-			return nil
-		}
-		if a, err := netip.ParseAddr(s); err == nil && a.Unmap() == src.Unmap() {
-			return nil
-		}
+	o.SrcIP, o.DstIP = src.Unmap().String(), dst.Unmap().String()
+	o.Method, o.Path = boundedText(o.Method, 32), boundedText(o.Path, 1024)
+	o.Host, o.CommunityID = boundedText(o.Host, 253), boundedText(o.CommunityID, 128)
+	if e.observed && o.At < e.watermark {
+		e.Late++
+		return nil
 	}
-	scope, _ := json.Marshal(o.Scope)
-	key := string(scope) + "|" + o.SrcIP + "|" + o.DstIP + fmt.Sprint("/", o.DstPort)
-	if o.At-e.lastSweep >= 1e9 {
+	e.watermark = o.At
+	alerts = e.aggregates.advance(o.At)
+	defer func() { e.Alerts += uint64(len(alerts)) }()
+	key := stableKey(o.Scope, o.SrcIP, o.DstIP, o.DstPort)
+	if !e.observed || o.At-e.lastSweep >= 1e9 {
 		for k, at := range e.last {
 			if o.At-at > e.config.BeaconWindowNS {
 				delete(e.last, k)
@@ -132,27 +152,23 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) []*types.Alert {
 				delete(e.beacons, k)
 			}
 		}
-		for k, at := range e.recent {
-			if o.At-at >= e.config.DedupNS {
-				delete(e.recent, k)
-			}
-		}
 		e.lastSweep = o.At
 	}
-	var alerts []*types.Alert
+	e.observed = true
+	for _, s := range e.config.ApprovedSources {
+		if p, err := netip.ParsePrefix(s); err == nil && p.Contains(src) {
+			return alerts
+		}
+		if a, err := netip.ParseAddr(s); err == nil && a.Unmap() == src.Unmap() {
+			return alerts
+		}
+	}
+	group := ""
 	add := func(name, severity, class string, count, threshold int, first int64, samples []string, limitations ...string) {
-		id := key + "|" + name
-		if at, ok := e.recent[id]; ok && o.At-at < e.config.DedupNS {
-			return
-		}
-		if len(e.recent) >= e.config.MaxKeys {
-			e.Overflow++
-			return
-		}
-		e.recent[id] = o.At
+		id := stableKey(key, "application", name, group)
 		data, _ := json.Marshal(Evidence{Schema: 1, Detector: name, Classification: class, Scope: o.Scope, FirstSeen: first, LastSeen: o.At, Observed: uint64(count), Threshold: uint64(threshold), WindowNS: e.config.WindowNS, Samples: samples, Limitations: limitations})
-		alerts = append(alerts, &types.Alert{Timestamp: o.At, Name: name, RuleName: name, RecordType: "ApplicationDetection", SrcIP: o.SrcIP, DstIP: o.DstIP, SrcPort: fmt.Sprint(o.SrcPort), DstPort: fmt.Sprint(o.DstPort), Severity: severity, Description: name + ": " + class, CommunityID: o.CommunityID, Tags: []string{"application-detection", class}, MatchedRecord: string(data)})
-		e.Alerts++
+		alert := &types.Alert{Timestamp: o.At, Name: name, RuleName: name, RecordType: "ApplicationDetection", SrcIP: o.SrcIP, DstIP: o.DstIP, SrcPort: fmt.Sprint(o.SrcPort), DstPort: fmt.Sprint(o.DstPort), Severity: severity, Description: name + ": " + class, CommunityID: o.CommunityID, Tags: []string{"application-detection", class}, MatchedRecord: string(data)}
+		alerts = append(alerts, e.aggregates.add(id, alert)...)
 	}
 	if o.Kind == "ntlm" && globalAddress(o.DstIP) {
 		add("policy.public-smb-ntlm", "medium", "policy-observation", 1, 1, o.At, []string{"NTLM identity observed in SMB session setup to a public endpoint"}, "Public addressing does not establish unauthorized authentication or a successful relay")
@@ -214,7 +230,7 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) []*types.Alert {
 	if e.config.BeaconSamples == 0 {
 		return alerts
 	}
-	beaconKey := key + "|" + o.Method + "|" + strings.ToLower(o.Host) + "|" + path
+	beaconKey := stableKey(key, o.Method, strings.ToLower(o.Host), path)
 	if len(e.beacons) >= e.config.MaxKeys && e.beacons[beaconKey] == nil {
 		e.Overflow++
 		return alerts
@@ -236,6 +252,7 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) []*types.Alert {
 		recent := times[len(times)-e.config.BeaconSamples:]
 		mean, jitter := BeaconStats(recent)
 		if mean >= 1e9 && jitter <= e.config.BeaconJitter {
+			group = beaconKey
 			add("c2.beacon", "low", "behavioral-suspicion", len(recent), e.config.BeaconSamples, recent[0], []string{fmt.Sprintf("HTTP %s %s; interval %.3fs; jitter %.3f", o.Method, path, mean/1e9, jitter)}, "Periodic HTTP transactions can be legitimate monitoring or telemetry; C2 intent is not established")
 		}
 	}

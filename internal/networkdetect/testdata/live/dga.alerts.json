@@ -8,6 +8,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "MITRE": "T1568.002",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "dns.dga",
     "RecordType": "NetworkDetection",
     "Severity": "medium",
@@ -15,6 +16,21 @@
       "network-detection",
       "behavioral-suspicion"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"dns.dga\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363750865210000,\"lastSeen\":1791363750919283000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\",\"suycr1ax.com\"],\"limitations\":[\"Lexical/domain-diversity heuristic; DNS response outcomes are not required or inferred\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"dns.dga\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363750865210000,\"lastSeen\":1791363750919283000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\",\"suycr1ax.com\"],\"limitations\":[\"Lexical/domain-diversity heuristic; DNS response outcomes are not required or inferred\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "c7e9babad040931faa83c66c7e13c824173496a5052a0e0ce0420aabaa228b23",
+    "Count": 12,
+    "FirstSeen": 1791363750919283000,
+    "LastSeen": 1791363750958214000,
+    "Examples": [
+      "{\"at\":1791363750919283000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":10,\"firstSeen\":1791363750865210000,\"samples\":[\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\",\"suycr1ax.com\"]}",
+      "{\"at\":1791363750919429000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":10,\"firstSeen\":1791363750865210000,\"samples\":[\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\",\"suycr1ax.com\"]}",
+      "{\"at\":1791363750928181000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":11,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\"]}",
+      "{\"at\":1791363750928217000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":11,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\"]}",
+      "{\"at\":1791363750931774000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":12,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"bhfy6vdn.com\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\"]}",
+      "{\"at\":1791363750931798000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":12,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"bhfy6vdn.com\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\"]}",
+      "{\"at\":1791363750937091000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":13,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"bhfy6vdn.com\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\"]}",
+      "{\"at\":1791363750958214000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":15,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"3nwllcmp.com\",\"bhfy6vdn.com\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\"]}"
+    ]
   }
 ]

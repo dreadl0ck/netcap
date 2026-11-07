@@ -20,6 +20,8 @@
 package types
 
 import (
+	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
@@ -37,6 +39,11 @@ const (
 	fieldTags           = "Tags"           // string
 	fieldMatchedRecord  = "MatchedRecord"  // string
 	fieldRuleExpression = "RuleExpression" // string
+	fieldAggregateKey   = "AggregateKey"
+	fieldAlertCount     = "Count"
+	fieldAlertFirstSeen = "FirstSeen"
+	fieldAlertLastSeen  = "LastSeen"
+	fieldAlertExamples  = "Examples"
 )
 
 var fieldsAlert = []string{
@@ -55,6 +62,11 @@ var fieldsAlert = []string{
 	fieldTags,
 	fieldMatchedRecord,
 	fieldRuleExpression,
+	fieldAggregateKey,
+	fieldAlertCount,
+	fieldAlertFirstSeen,
+	fieldAlertLastSeen,
+	fieldAlertExamples,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -80,6 +92,11 @@ func (a *Alert) CSVRecord() []string {
 		strings.Join(a.Tags, ","),
 		a.MatchedRecord,
 		a.RuleExpression,
+		a.AggregateKey,
+		strconv.FormatUint(a.Count, 10),
+		formatTimestamp(a.FirstSeen),
+		formatTimestamp(a.LastSeen),
+		a.examplesJSON(),
 	})
 }
 
@@ -94,6 +111,8 @@ func (a *Alert) JSON() (string, error) {
 	copy := *a
 	copy.Timestamp /= int64(time.Millisecond)
 	copy.DetectedAt /= int64(time.Millisecond)
+	copy.FirstSeen /= int64(time.Millisecond)
+	copy.LastSeen /= int64(time.Millisecond)
 
 	return jsonMarshaler.MarshalToString(&copy)
 }
@@ -146,7 +165,17 @@ func (a *Alert) Encode() []string {
 		aEncoder.String(fieldTags, strings.Join(a.Tags, ",")),
 		aEncoder.String(fieldMatchedRecord, a.MatchedRecord),
 		aEncoder.String(fieldRuleExpression, a.RuleExpression),
+		aEncoder.String(fieldAggregateKey, a.AggregateKey),
+		aEncoder.Uint64(fieldAlertCount, a.Count),
+		aEncoder.Int64(fieldAlertFirstSeen, a.FirstSeen),
+		aEncoder.Int64(fieldAlertLastSeen, a.LastSeen),
+		aEncoder.String(fieldAlertExamples, a.examplesJSON()),
 	})
+}
+
+func (a *Alert) examplesJSON() string {
+	data, _ := json.Marshal(a.Examples)
+	return string(data)
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.

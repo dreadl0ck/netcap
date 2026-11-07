@@ -8,6 +8,7 @@
     "DstIP": "127.0.0.3",
     "DstPort": "995",
     "MITRE": "T1571",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "ssh.nonstandard-port",
     "RecordType": "NetworkDetection",
     "Severity": "medium",
@@ -15,7 +16,22 @@
       "network-detection",
       "behavioral-suspicion"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"ssh.nonstandard-port\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363774911290000,\"lastSeen\":1791363774911717000,\"observed\":995,\"threshold\":22,\"windowNS\":60000000000,\"samples\":[\"SSH version banner\"],\"limitations\":[\"SSH service identification does not establish exfiltration\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"ssh.nonstandard-port\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363774911290000,\"lastSeen\":1791363774911717000,\"observed\":995,\"threshold\":22,\"windowNS\":60000000000,\"samples\":[\"SSH version banner\"],\"limitations\":[\"SSH service identification does not establish exfiltration\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "6888558ba08e77fdba4869445343052f247cb9e5571efece000991f91dd351f5",
+    "Count": 39,
+    "FirstSeen": 1791363774911717000,
+    "LastSeen": 1791363775055240000,
+    "Examples": [
+      "{\"at\":1791363774911717000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}",
+      "{\"at\":1791363774968913000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}",
+      "{\"at\":1791363774970234000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}",
+      "{\"at\":1791363774975298000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}",
+      "{\"at\":1791363774975340000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}",
+      "{\"at\":1791363774976899000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}",
+      "{\"at\":1791363774978573000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}",
+      "{\"at\":1791363775055240000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}"
+    ]
   },
   {
     "Timestamp": 1791363774968682000,
@@ -26,6 +42,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "55455",
     "MITRE": "T1571",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "ssh.nonstandard-port",
     "RecordType": "NetworkDetection",
     "Severity": "medium",
@@ -33,7 +50,22 @@
       "network-detection",
       "behavioral-suspicion"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"ssh.nonstandard-port\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363774911290000,\"lastSeen\":1791363774968682000,\"observed\":995,\"threshold\":22,\"windowNS\":60000000000,\"samples\":[\"SSH version banner\"],\"limitations\":[\"SSH service identification does not establish exfiltration\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"ssh.nonstandard-port\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363774911290000,\"lastSeen\":1791363774968682000,\"observed\":995,\"threshold\":22,\"windowNS\":60000000000,\"samples\":[\"SSH version banner\"],\"limitations\":[\"SSH service identification does not establish exfiltration\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "6f030a6b421c0852d871791691fa9f5dd35985fabe9a0c70d545d9964ee89c61",
+    "Count": 13,
+    "FirstSeen": 1791363774968682000,
+    "LastSeen": 1791363775058445000,
+    "Examples": [
+      "{\"at\":1791363774968682000,\"srcIP\":\"127.0.0.3\",\"srcPort\":\"995\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"55455\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}",
+      "{\"at\":1791363774969816000,\"srcIP\":\"127.0.0.3\",\"srcPort\":\"995\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"55455\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}",
+      "{\"at\":1791363774974702000,\"srcIP\":\"127.0.0.3\",\"srcPort\":\"995\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"55455\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}",
+      "{\"at\":1791363774975310000,\"srcIP\":\"127.0.0.3\",\"srcPort\":\"995\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"55455\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}",
+      "{\"at\":1791363774976604000,\"srcIP\":\"127.0.0.3\",\"srcPort\":\"995\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"55455\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}",
+      "{\"at\":1791363774977889000,\"srcIP\":\"127.0.0.3\",\"srcPort\":\"995\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"55455\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}",
+      "{\"at\":1791363774978885000,\"srcIP\":\"127.0.0.3\",\"srcPort\":\"995\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"55455\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}",
+      "{\"at\":1791363775058445000,\"srcIP\":\"127.0.0.3\",\"srcPort\":\"995\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"55455\",\"observed\":995,\"firstSeen\":1791363774911290000,\"samples\":[\"SSH version banner\"]}"
+    ]
   },
   {
     "Timestamp": 1791363775009965000,
@@ -44,6 +76,7 @@
     "DstIP": "127.0.0.3",
     "DstPort": "995",
     "MITRE": "T1048.002",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "ssh.large-upload",
     "RecordType": "NetworkDetection",
     "Severity": "medium",
@@ -51,6 +84,21 @@
       "network-detection",
       "behavioral-suspicion"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"ssh.large-upload\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363774911290000,\"lastSeen\":1791363775009965000,\"observed\":525264,\"threshold\":524288,\"windowNS\":60000000000,\"samples\":[\"Unique contiguous client TCP payload bytes\"],\"limitations\":[\"Encrypted content and authorization are unavailable; configured source exceptions apply\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"ssh.large-upload\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363774911290000,\"lastSeen\":1791363775009965000,\"observed\":525264,\"threshold\":524288,\"windowNS\":60000000000,\"samples\":[\"Unique contiguous client TCP payload bytes\"],\"limitations\":[\"Encrypted content and authorization are unavailable; configured source exceptions apply\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "5c2fbe16f27eb2ddea96ffd2f9c4b03e09728f628ab684185eb760c1bd763094",
+    "Count": 12,
+    "FirstSeen": 1791363775009965000,
+    "LastSeen": 1791363775055240000,
+    "Examples": [
+      "{\"at\":1791363775009965000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":525264,\"firstSeen\":1791363774911290000,\"samples\":[\"Unique contiguous client TCP payload bytes\"]}",
+      "{\"at\":1791363775009969000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":590747,\"firstSeen\":1791363774911290000,\"samples\":[\"Unique contiguous client TCP payload bytes\"]}",
+      "{\"at\":1791363775009971000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":618832,\"firstSeen\":1791363774911290000,\"samples\":[\"Unique contiguous client TCP payload bytes\"]}",
+      "{\"at\":1791363775009974000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":684315,\"firstSeen\":1791363774911290000,\"samples\":[\"Unique contiguous client TCP payload bytes\"]}",
+      "{\"at\":1791363775009976000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":712400,\"firstSeen\":1791363774911290000,\"samples\":[\"Unique contiguous client TCP payload bytes\"]}",
+      "{\"at\":1791363775010031000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":777883,\"firstSeen\":1791363774911290000,\"samples\":[\"Unique contiguous client TCP payload bytes\"]}",
+      "{\"at\":1791363775010036000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":843366,\"firstSeen\":1791363774911290000,\"samples\":[\"Unique contiguous client TCP payload bytes\"]}",
+      "{\"at\":1791363775055240000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55455\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"995\",\"observed\":1052044,\"firstSeen\":1791363774911290000,\"samples\":[\"Unique contiguous client TCP payload bytes\"]}"
+    ]
   }
 ]

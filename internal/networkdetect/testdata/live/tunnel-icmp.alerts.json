@@ -8,6 +8,7 @@
     "DstIP": "127.0.0.3",
     "DstPort": "0",
     "MITRE": "T1048.003",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "icmp.tunnel",
     "RecordType": "NetworkDetection",
     "Severity": "medium",
@@ -15,6 +16,21 @@
       "network-detection",
       "behavioral-suspicion"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"icmp.tunnel\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363792544040000,\"lastSeen\":1791363792553940000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"15663104\",\"15663105\",\"15663106\",\"15663107\",\"15663108\",\"15663109\",\"15663110\",\"15663111\"],\"limitations\":[\"Large randomized diagnostic echoes can look similar\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"icmp.tunnel\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363792544040000,\"lastSeen\":1791363792553940000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"15663104\",\"15663105\",\"15663106\",\"15663107\",\"15663108\",\"15663109\",\"15663110\",\"15663111\"],\"limitations\":[\"Large randomized diagnostic echoes can look similar\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "51bb04ce0849995ff78820430267d12f0c1675c18b615a4e0efef57f7cdff272",
+    "Count": 71,
+    "FirstSeen": 1791363792553940000,
+    "LastSeen": 1791363792609303000,
+    "Examples": [
+      "{\"at\":1791363792553940000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"0\",\"observed\":10,\"firstSeen\":1791363792544040000,\"samples\":[\"15663104\",\"15663105\",\"15663106\",\"15663107\",\"15663108\",\"15663109\",\"15663110\",\"15663111\"]}",
+      "{\"at\":1791363792554239000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"0\",\"observed\":11,\"firstSeen\":1791363792544040000,\"samples\":[\"15663104\",\"15663105\",\"15663106\",\"15663107\",\"15663108\",\"15663109\",\"15663110\",\"15663111\"]}",
+      "{\"at\":1791363792557125000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"0\",\"observed\":12,\"firstSeen\":1791363792544040000,\"samples\":[\"15663104\",\"15663105\",\"15663106\",\"15663107\",\"15663108\",\"15663109\",\"15663110\",\"15663111\"]}",
+      "{\"at\":1791363792557717000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"0\",\"observed\":13,\"firstSeen\":1791363792544040000,\"samples\":[\"15663104\",\"15663105\",\"15663106\",\"15663107\",\"15663108\",\"15663109\",\"15663110\",\"15663111\"]}",
+      "{\"at\":1791363792559283000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"0\",\"observed\":14,\"firstSeen\":1791363792544040000,\"samples\":[\"15663104\",\"15663105\",\"15663106\",\"15663107\",\"15663108\",\"15663109\",\"15663110\",\"15663111\"]}",
+      "{\"at\":1791363792559435000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"0\",\"observed\":15,\"firstSeen\":1791363792544040000,\"samples\":[\"15663104\",\"15663105\",\"15663106\",\"15663107\",\"15663108\",\"15663109\",\"15663110\",\"15663111\"]}",
+      "{\"at\":1791363792559529000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"0\",\"observed\":16,\"firstSeen\":1791363792544040000,\"samples\":[\"15663104\",\"15663105\",\"15663106\",\"15663107\",\"15663108\",\"15663109\",\"15663110\",\"15663111\"]}",
+      "{\"at\":1791363792609303000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"0\",\"observed\":80,\"firstSeen\":1791363792544040000,\"samples\":[\"15663104\",\"15663105\",\"15663106\",\"15663107\",\"15663108\",\"15663109\",\"15663110\",\"15663111\"]}"
+    ]
   }
 ]

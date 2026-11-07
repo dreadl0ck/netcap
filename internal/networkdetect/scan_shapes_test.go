@@ -21,6 +21,11 @@ func TestBrowsingIsNotScan(t *testing.T) {
 			}
 		}
 	}
+	for _, a := range e.Flush() {
+		if a.RuleName == "network.scan" {
+			t.Fatal("browsing flagged at EOF", a)
+		}
+	}
 }
 
 func TestScanAggregation(t *testing.T) {
@@ -41,6 +46,14 @@ func TestScanAggregation(t *testing.T) {
 			for _, a := range alerts {
 				if a.RuleName == "network.scan" {
 					count++
+				}
+			}
+		}
+		for _, a := range e.Flush() {
+			if a.RuleName == "network.scan" {
+				count++
+				if a.Count != 91 {
+					t.Fatalf("lost repeated matches: %d", a.Count)
 				}
 			}
 		}

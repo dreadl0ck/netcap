@@ -166,7 +166,7 @@ func replay(t *testing.T, c Config, events []Event) []*types.Alert {
 		}
 		alerts = append(alerts, got...)
 	}
-	return alerts
+	return append(alerts, e.Flush()...)
 }
 
 func TestFlightSimSourceShapeContract(t *testing.T) {

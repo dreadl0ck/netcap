@@ -7,6 +7,7 @@
     "SrcPort": "42855",
     "DstIP": "127.0.0.3",
     "DstPort": "21",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.cleartext-service",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -14,6 +15,18 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.cleartext-service\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363823692054000,\"lastSeen\":1791363823692957000,\"observed\":1000,\"threshold\":64,\"windowNS\":60000000000,\"samples\":[\"TCP destination port 21\"],\"limitations\":[\"Port and observed payload do not identify the application protocol or prove credentials were sent\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.cleartext-service\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363823692054000,\"lastSeen\":1791363823692957000,\"observed\":1000,\"threshold\":64,\"windowNS\":60000000000,\"samples\":[\"TCP destination port 21\"],\"limitations\":[\"Port and observed payload do not identify the application protocol or prove credentials were sent\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "d256ad12e564bf137be3cee4aa67bbe8e3210062b547fc5f2de3a240793f2471",
+    "Count": 5,
+    "FirstSeen": 1791363823692957000,
+    "LastSeen": 1791363823704388000,
+    "Examples": [
+      "{\"at\":1791363823692957000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"42855\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"21\",\"observed\":1000,\"firstSeen\":1791363823692054000,\"samples\":[\"TCP destination port 21\"]}",
+      "{\"at\":1791363823696178000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"50607\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"23\",\"observed\":1000,\"firstSeen\":1791363823696121000,\"samples\":[\"TCP destination port 23\"]}",
+      "{\"at\":1791363823698345000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"50413\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"110\",\"observed\":1000,\"firstSeen\":1791363823698223000,\"samples\":[\"TCP destination port 110\"]}",
+      "{\"at\":1791363823700796000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"37555\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"143\",\"observed\":1000,\"firstSeen\":1791363823700736000,\"samples\":[\"TCP destination port 143\"]}",
+      "{\"at\":1791363823704388000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"56465\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"873\",\"observed\":1000,\"firstSeen\":1791363823703519000,\"samples\":[\"TCP destination port 873\"]}"
+    ]
   }
 ]
