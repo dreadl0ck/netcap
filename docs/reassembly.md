@@ -27,7 +27,7 @@ memory guarantee. Use the installed help and health sidecars for actual policy.
 
 Live collection sends ordered maintenance to every worker once per second,
 including when no new packets arrive (`internal/collector/live_maintenance.go`).
-`collector.Config.LiveMaintenanceInterval` overrides that interval; a negative
+`-live-maintenance-interval` (`NC_LIVE_MAINTENANCE_INTERVAL`) overrides that interval; a negative
 value disables it. Both directions must be older than `CloseInactiveTimeOut`
 before an open stream expires. Pending bytes are delivered with gap evidence,
 and timeout closure is labeled `idle-expired`.
@@ -37,7 +37,7 @@ and timeout closure is labeled `idle-expired`.
 | Pending-byte deadline | `FlushOptions.T` releases old sequence heads with gap evidence. |
 | Closed-state retention | `FlushOptions.TC` removes retained closed connections. |
 | Live idle expiry | Explicit `FlushOptions.TI` closes idle open connections; zero disables it. An opt-in deadline index avoids scanning every active stream. |
-| Output snapshots | `LiveFlushInterval` flushes writers/current records; it does not expire streams. |
+| Output snapshots | `-live-flush-interval` (`NC_LIVE_FLUSH_INTERVAL`) flushes writers/current records; zero disables snapshots. It does not expire streams. |
 
 Offline collection does not start a wall-clock maintenance timer or enable idle
 expiry; its existing packet-driven capture-time policy is preserved.

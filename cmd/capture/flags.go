@@ -536,6 +536,17 @@ func GetFlags() []cli.Flag {
 			Sources: cli.EnvVars("NC_CLOSE_PENDING_TIMEOUT"),
 		},
 		&cli.DurationFlag{
+			Name:    "live-maintenance-interval",
+			Value:   time.Second,
+			Usage:   "live reassembly maintenance interval; negative disables idle expiry (independent of output snapshots)",
+			Sources: cli.EnvVars("NC_LIVE_MAINTENANCE_INTERVAL"),
+		},
+		&cli.DurationFlag{
+			Name:    "live-flush-interval",
+			Usage:   "live audit-output snapshot interval; zero disables snapshots (does not expire streams)",
+			Sources: cli.EnvVars("NC_LIVE_FLUSH_INTERVAL"),
+		},
+		&cli.DurationFlag{
 			Name:    "close-inactive-timeout",
 			Value:   defaults.CloseInactiveTimeout,
 			Usage:   "reassembly: close connections that are inactive",

@@ -132,22 +132,24 @@ type RuntimeConfig struct {
 	LocalDNS     bool
 
 	// TCP Reassembly
-	ReassembleConnections bool
-	FlowExports           bool
-	CaptureEvidence       bool
-	RetainPackets         bool
-	PacketSegmentBytes    int64
-	PacketRetentionBytes  int64
-	FlowExportPorts       string
-	FlushEvery            int
-	Checksum              bool
-	NoOptCheck            bool
-	IgnoreFSMErr          bool
-	AllowMissingInit      bool
-	ModbusRTUEndpoints    string
-	DNP3PointMap          string
-	ClosePendingTimeout   time.Duration
-	CloseInactiveTimeout  time.Duration
+	ReassembleConnections   bool
+	FlowExports             bool
+	CaptureEvidence         bool
+	RetainPackets           bool
+	PacketSegmentBytes      int64
+	PacketRetentionBytes    int64
+	FlowExportPorts         string
+	FlushEvery              int
+	Checksum                bool
+	NoOptCheck              bool
+	IgnoreFSMErr            bool
+	AllowMissingInit        bool
+	ModbusRTUEndpoints      string
+	DNP3PointMap            string
+	ClosePendingTimeout     time.Duration
+	CloseInactiveTimeout    time.Duration
+	LiveMaintenanceInterval time.Duration
+	LiveFlushInterval       time.Duration
 
 	// Output Format
 	Proto bool
@@ -1782,12 +1784,14 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	flowExports, flowPorts := true, ""
 	captureEvidence, retainPackets := true, false
 	var segmentBytes, retentionBytes int64
+	var maintenanceInterval, flushInterval time.Duration
 	s.mu.RLock()
 	if s.runtimeConfig != nil {
 		flowExports = s.runtimeConfig.FlowExports
 		flowPorts = s.runtimeConfig.FlowExportPorts
 		captureEvidence, retainPackets = s.runtimeConfig.CaptureEvidence, s.runtimeConfig.RetainPackets
 		segmentBytes, retentionBytes = s.runtimeConfig.PacketSegmentBytes, s.runtimeConfig.PacketRetentionBytes
+		maintenanceInterval, flushInterval = s.runtimeConfig.LiveMaintenanceInterval, s.runtimeConfig.LiveFlushInterval
 	}
 	s.mu.RUnlock()
 	// Build collector configuration
@@ -1798,22 +1802,24 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	}
 	defer restoreArtifactConfig()
 	c := collector.New(collector.Config{
-		NetworkDetection:       s.featureEnabled(featureNetworkDetection),
-		DNSResolutionContext:   s.featureEnabled(featureDNSResolutionContext),
-		NetworkDetectionConfig: os.Getenv("NC_NETWORK_DETECTION_CONFIG"),
-		Workers:                defaults.CaptureWorkers(),
-		PacketBufferSize:       defaults.PacketBuffer,
-		WriteUnknownPackets:    false,
-		Promisc:                true,
-		SnapLen:                defaults.SnapLen,
-		BaseLayer:              utils.GetBaseLayer("ethernet"),
-		DecodeOptions:          utils.GetDecodeOptions("default"),
-		DPI:                    job.EnableDPI,
-		DPIModules:             "",
-		ReassembleConnections:  true,
-		FlowExports:            flowExports,
-		CaptureEvidence:        captureEvidence,
-		RetainPackets:          retainPackets, PacketSegmentBytes: segmentBytes, PacketRetentionBytes: retentionBytes,
+		NetworkDetection:        s.featureEnabled(featureNetworkDetection),
+		DNSResolutionContext:    s.featureEnabled(featureDNSResolutionContext),
+		NetworkDetectionConfig:  os.Getenv("NC_NETWORK_DETECTION_CONFIG"),
+		Workers:                 defaults.CaptureWorkers(),
+		PacketBufferSize:        defaults.PacketBuffer,
+		LiveMaintenanceInterval: maintenanceInterval,
+		LiveFlushInterval:       flushInterval,
+		WriteUnknownPackets:     false,
+		Promisc:                 true,
+		SnapLen:                 defaults.SnapLen,
+		BaseLayer:               utils.GetBaseLayer("ethernet"),
+		DecodeOptions:           utils.GetDecodeOptions("default"),
+		DPI:                     job.EnableDPI,
+		DPIModules:              "",
+		ReassembleConnections:   true,
+		FlowExports:             flowExports,
+		CaptureEvidence:         captureEvidence,
+		RetainPackets:           retainPackets, PacketSegmentBytes: segmentBytes, PacketRetentionBytes: retentionBytes,
 		FlowExportPorts:      flowPorts,
 		FreeOSMem:            0,
 		LogErrors:            false,

@@ -124,6 +124,8 @@ var (
 	flagFlowTimeOut                    time.Duration
 	flagClosePendingTimeout            time.Duration
 	flagCloseInactiveTimeout           time.Duration
+	flagLiveMaintenanceInterval        time.Duration
+	flagLiveFlushInterval              time.Duration
 	flagUseRE2                         bool
 	flagStopAfterHarvesterMatch        bool
 	flagStopAfterServiceProbeMatch     bool
@@ -265,6 +267,8 @@ func setFlagsFromContext(c *cli.Command) {
 	flagFlowTimeOut = c.Duration("flow-timeout")
 	flagClosePendingTimeout = c.Duration("close-pending-timeout")
 	flagCloseInactiveTimeout = c.Duration("close-inactive-timeout")
+	flagLiveMaintenanceInterval = c.Duration("live-maintenance-interval")
+	flagLiveFlushInterval = c.Duration("live-flush-interval")
 	flagUseRE2 = c.Bool("re2")
 	flagStopAfterHarvesterMatch = c.Bool("stop-after-harvester-match")
 	flagStopAfterServiceProbeMatch = c.Bool("stop-after-service-match")
