@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -16,6 +17,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
+	"github.com/dreadl0ck/netcap/types"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
@@ -112,6 +114,11 @@ func TestRound2UpstreamCaptures(t *testing.T) {
 		Fixtures []struct {
 			Path, Issue, SHA256, Qualification, GzipBase64 string
 			Requests                                       int
+			Expected                                       []struct {
+				Method, URL string
+				Status      int32
+				Stream      uint32
+			}
 		}
 	}
 	if err := json.Unmarshal(round2Manifest, &manifest); err != nil {
@@ -135,10 +142,18 @@ func TestRound2UpstreamCaptures(t *testing.T) {
 			if len(data) > 65536 || fmt.Sprintf("%x", sha256.Sum256(data)) != fixture.SHA256 {
 				t.Fatal("fixture digest mismatch")
 			}
+			var baseline []*types.HTTP
 			for _, removeSYN := range []bool{false, true} {
 				w := replayHTTPPCAP(t, data, removeSYN)
+				if len(w.records) != len(fixture.Expected) {
+					t.Fatalf("noSYN=%v got %d records, want %d", removeSYN, len(w.records), len(fixture.Expected))
+				}
 				requests, qualified := 0, false
-				for _, record := range w.records {
+				for i, record := range w.records {
+					want := fixture.Expected[i]
+					if record.Method != want.Method || record.URL != want.URL || record.StatusCode != want.Status || record.HTTP2StreamID != want.Stream {
+						t.Fatalf("noSYN=%v record %d semantic mismatch: %v", removeSYN, i, record)
+					}
 					if record.Method != "" && record.StatusCode != 101 {
 						requests++
 					}
@@ -149,6 +164,36 @@ func TestRound2UpstreamCaptures(t *testing.T) {
 						t.Fatal("lost capture time")
 					}
 					t.Logf("noSYN=%v stream=%d method=%s status=%d url=%q qualification=%q", removeSYN, record.HTTP2StreamID, record.Method, record.StatusCode, record.URL, record.ReassemblyStatus)
+					// Losing only SYN must preserve all visible message evidence,
+					// endpoint attribution, timestamps, bodies and correlation.
+					normalized := *record
+					// Conversation IDs follow the first observed packet's direction.
+					endpoints := strings.Split(record.Flow, "->")
+					if len(endpoints) != 2 || record.Flow == "" {
+						t.Fatalf("lost conversation identity: %q", record.Flow)
+					}
+					if endpoints[0] > endpoints[1] {
+						endpoints[0], endpoints[1] = endpoints[1], endpoints[0]
+					}
+					normalized.Flow = strings.Join(endpoints, "->")
+					var statuses []string
+					for _, status := range strings.Split(record.ReassemblyStatus, ",") {
+						if status != "unknown-initial-stream-loss" && status != "" {
+							statuses = append(statuses, status)
+						}
+					}
+					normalized.ReassemblyStatus = strings.Join(statuses, ",")
+					if !removeSYN {
+						baseline = append(baseline, &normalized)
+					} else if !reflect.DeepEqual(baseline[i], &normalized) {
+						before, after := reflect.ValueOf(*baseline[i]), reflect.ValueOf(normalized)
+						for field := range before.NumField() {
+							if !reflect.DeepEqual(before.Field(field).Interface(), after.Field(field).Interface()) {
+								t.Errorf("SYN removal changed message %d field %s: before=%v after=%v", i, before.Type().Field(field).Name, before.Field(field), after.Field(field))
+							}
+						}
+						t.FailNow()
+					}
 				}
 				if requests != fixture.Requests || !qualified {
 					t.Fatalf("noSYN=%v got requests=%d qualified=%v", removeSYN, requests, qualified)

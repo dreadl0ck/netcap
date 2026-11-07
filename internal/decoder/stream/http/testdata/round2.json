@@ -2,13 +2,13 @@
   "source": "https://github.com/OISF/suricata-verify",
   "revision": "9a9178a7e4d45ff1d990e8f178c1e2f54b772f39",
   "unavailableArtifacts": [
-    "/Users/pmieden/Downloads/netcap-datasets-round2.md: unavailable during W76 HTTP verification; scope taken from authoritative W76 plan",
     "/workspace/mta/datasets2/: original report outputs and full corpora not available for this lane; no full replay claimed"
   ],
   "reproduction": "GOWORK=off GOMAXPROCS=2 go test -p 1 -tags nodpi,noyara,nomagika ./internal/decoder/stream/http -run TestRound2UpstreamCaptures -v",
   "fixtures": [
     {
       "path": "tests/http-chunked/input.pcap",
+      "expected": [{"method":"HEAD","url":"/resources/fonts/SourceSansPro-Regular.ttf","status":0,"stream":0}],
       "issue": "D2-4",
       "sha256": "97f46415934f75c8bae73ea25682ea69cf8af11112bc5ea550d49d51937b40d4",
       "qualification": "ambiguous-transfer-encoding",
@@ -17,6 +17,7 @@
     },
     {
       "path": "tests/http-multiple-cl/input.pcap",
+      "expected": [{"method":"","url":"","status":501,"stream":0},{"method":"POST","url":"/which.php","status":0,"stream":0}],
       "issue": "D2-4",
       "sha256": "721d23d095f6baa87a343eb45490034e7988f1158151ca9cc7c1a1767eabc0e1",
       "qualification": "ambiguous-content-length",
@@ -25,6 +26,7 @@
     },
     {
       "path": "tests/http-uri-spaces/input.pcap",
+      "expected": [{"method":"GET","url":"/uri afterspace","status":400,"stream":0}],
       "issue": "D2-4",
       "sha256": "c2f72d1fd0388e0c3c2ff5c4244955c3751fc3dbd73cf675e245f37cd55df030",
       "qualification": "request-target-whitespace",
@@ -33,6 +35,7 @@
     },
     {
       "path": "tests/http-missing-protocol/input.pcap",
+      "expected": [{"method":"GET","url":"/gen.php?generate=191636955/-394717567&hwid=-53127817","status":0,"stream":0}],
       "issue": "D2-4",
       "sha256": "a4c7f08e6abe145c05fb16e6b803d7bafb205925092cf3f42c13415a1cd2b937",
       "qualification": "missing-http-version",
@@ -41,6 +44,7 @@
     },
     {
       "path": "tests/http2-continuation/input.pcap",
+      "expected": [{"method":"GET","url":"/tata","status":200,"stream":1}],
       "issue": "D2-17 h2c",
       "sha256": "bf5f7ea7a1508fc0cd389d562d5276b0300569c526c3ba227dfc6ce1ea9c6211",
       "requests": 1,
@@ -48,6 +52,7 @@
     },
     {
       "path": "tests/http2-keywords2/input.pcap",
+      "expected": [{"method":"GET","url":"/robots.txt","status":200,"stream":1},{"method":"GET","url":"/humans.txt","status":404,"stream":3},{"method":"GET","url":"/robots.txt","status":101,"stream":0}],
       "issue": "D2-17 h2c upgrade",
       "sha256": "2b56dec940106df358ed3c9b0892f86efb53bfa9eac17377a29b4b8b44b2b239",
       "requests": 2,
