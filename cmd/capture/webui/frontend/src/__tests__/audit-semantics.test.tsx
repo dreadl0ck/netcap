@@ -32,7 +32,15 @@ describe('audit evidence semantics', () => {
     expect(screen.getByText(/not proof of login/)).toBeInTheDocument();
   });
   it('labels legacy RDP data', () => {
-    render(<RecordSemantics data={{ ConnectionSuccessful: true }} />);
+    render(<RecordSemantics recordType="RDP" data={{ ConnectionSuccessful: true }} />);
     expect(screen.getByText(/legacy-unqualified/)).toBeInTheDocument();
+  });
+  it('does not interpret SOCKS connection success as RDP evidence', () => {
+    render(<RecordSemantics recordType="SOCKS" data={{ ConnectionSuccessful: true }} />);
+    expect(screen.queryByText(/RDP negotiation/)).not.toBeInTheDocument();
+  });
+  it('does not relabel an already formatted timestamp as exact nanoseconds', () => {
+    render(<HTTPReassemblyNotice timestampNs="2020-06-01T00:00:00.000Z" />);
+    expect(screen.getByText(/Exact capture timestamp: unavailable/)).toBeInTheDocument();
   });
 });

@@ -199,9 +199,9 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
       filtered = filtered.filter(cert => {
         switch (filterType) {
           case 'expired':
-            return cert.isExpired;
+            return cert.assessmentBasis === 'capture-time' && cert.validityState === 'expired';
           case 'selfSigned':
-            return cert.isSelfSigned;
+            return cert.selfSignatureState === 'verified';
           case 'weakSecurity':
             return cert.hasWeakSignature || cert.hasShortKeySize;
           default:
@@ -382,13 +382,13 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
   // Helper function to get status icon
   const getStatusIcon = (cert: CertificateSummary) => {
     if (cert.assessmentBasis !== 'capture-time' || cert.validityState === 'unavailable' || !cert.validityState) return <WarningIcon color="warning" />;
-    if (cert.isExpired) {
+    if (cert.validityState === 'expired') {
       return <ErrorIcon color="error" />;
     }
     if (cert.hasWeakSignature || cert.hasShortKeySize) {
       return <WarningIcon color="warning" />;
     }
-    if (cert.isSelfSigned) {
+    if (cert.selfSignatureState === 'verified') {
       return <WarningIcon color="warning" />;
     }
     if (cert.daysUntilExpiration < 30) {
@@ -798,10 +798,10 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                                       <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
                                         Observed: {cert.seenCount} time{cert.seenCount !== 1 ? 's' : ''}
                                       </Typography>
-                                      {cert.isExpired && (
+                                      {cert.assessmentBasis === 'capture-time' && cert.validityState === 'expired' && (
                                         <Chip label="EXPIRED" size="small" color="error" sx={{ fontSize: '0.75rem' }} />
                                       )}
-                                      {cert.isNotYetValid && (
+                                      {cert.assessmentBasis === 'capture-time' && cert.validityState === 'not-yet-valid' && (
                                         <Chip label="Not Yet Valid" size="small" color="error" sx={{ fontSize: '0.75rem' }} />
                                       )}
                                       {cert.selfSignatureState === 'verified' && (
@@ -913,7 +913,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                                         Country: {cert.issuerCountry}
                                       </Typography>
                                     )}
-                                    {cert.isSelfSigned && (
+                                    {cert.selfSignatureState === 'verified' && (
                                       <Box sx={{ mt: 0.5 }}>
                                         <Chip 
                                           label="Self-Signed Certificate" 
@@ -924,7 +924,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                                         />
                                       </Box>
                                     )}
-                                    {!cert.issuerOrganization && !cert.issuerCountry && !cert.isSelfSigned && (
+                                    {!cert.issuerOrganization && !cert.issuerCountry && cert.selfSignatureState !== 'verified' && (
                                       <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
                                         No additional issuer information
                                       </Typography>

@@ -18,7 +18,7 @@ for (const mode of ['capture-time', 'legacy', 'unavailable']) {
         case '/api/dbs/status': json = { satisfied: true, missing: [] }; break;
         case '/api/certificates': json = { totalCount: 1, certificates: [{ timestamp: 1590969600000000000, srcIP: '192.0.2.1', dstIP: '192.0.2.2', srcPort: 1234, dstPort: 443,
           subjectCommonName: 'owned.example.test', issuerCommonName: 'owned.example.test', subjectAltNames: [], keyUsage: [], extKeyUsage: [], sha256Fingerprint: 'owned-fingerprint',
-          communityId: '1:owned', communityIds: ['1:owned'], seenCount: 1, firstSeen: 1590969600000000000, lastSeen: 1590969600000000000, daysUntilExpiration: 100, isExpired: false, isSelfSigned: false, publicKeySize: 256,
+          communityId: '1:owned', communityIds: ['1:owned'], seenCount: 1, firstSeen: 1590969600000000000, lastSeen: 1590969600000000000, daysUntilExpiration: 100, isExpired: mode === 'legacy', isSelfSigned: mode === 'legacy', publicKeySize: 256,
           ...(mode === 'legacy' ? {} : { assessmentBasis: mode, validityState: mode === 'capture-time' ? 'valid' : 'unavailable', assessmentTimeNs: '1590969600000000123', certificateSender: 'client', selfSignatureState: 'verified', notBeforeRFC3339: '2020-01-01T00:00:00Z', notAfterRFC3339: '9999-12-31T00:00:00Z' }),
         }] }; break;
         default:
@@ -35,7 +35,10 @@ for (const mode of ['capture-time', 'legacy', 'unavailable']) {
       await expect(page.getByText(/Not After: 9999-12-31T00:00:00Z/)).toBeVisible();
     } else {
       await expect(page.getByText(/false flags do not establish validity/)).toBeVisible();
-      await expect(page.getByText('Valid for 100 days', { exact: true })).toHaveCount(0);
+      const details = page.getByRole('row').filter({ hasText: 'false flags do not establish validity' });
+      await expect(details.getByText('Valid for 100 days', { exact: true })).toHaveCount(0);
+      if (mode === 'legacy') await expect(details.getByText('Self-Signed Certificate', { exact: true })).toHaveCount(0);
+      await expect(details.getByText('Expired', { exact: true })).toHaveCount(0);
     }
     expect(unexpected).toEqual([]); expect(errors).toEqual([]);
   });
