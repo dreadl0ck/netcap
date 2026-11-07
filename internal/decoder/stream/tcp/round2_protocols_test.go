@@ -33,6 +33,7 @@ func TestRound2ConservativeProtocols(t *testing.T) {
 	kerberos := append([]byte{0, 0, 0, 66, 0x6a, 64}, make([]byte, 64)...)
 	rdpReq := append([]byte{3, 0, 0, 0, 0x0e, 0xe0, 0, 0, 0, 0, 0}, []byte("Cookie: mstshash=fixture\r\n")...)
 	binary.BigEndian.PutUint16(rdpReq[2:4], uint16(len(rdpReq)))
+	rdpReq[4] = byte(len(rdpReq) - 5)
 	for _, tc := range []struct {
 		name           string
 		port           layers.TCPPort
