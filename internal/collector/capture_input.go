@@ -241,7 +241,8 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 		report.issue(0, "read", "packet count changed between count and processing passes", false)
 	}
 	resultErr = report.result()
-	c.captureComplete = report.ReachedEOF && resultErr == nil
+	c.captureInputStatus = report.Status
+	c.captureComplete = report.ReachedEOF && report.Status == "complete"
 	data, err := json.MarshalIndent(report, "", "  ")
 	if err == nil {
 		err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "capture-input.json"), append(data, '\n'), 0600)

@@ -20,8 +20,9 @@ import (
 )
 
 type inputReproResult struct {
-	Packets uint64 `json:"packets"`
-	Error   string `json:"error,omitempty"`
+	Packets  uint64 `json:"packets"`
+	Complete bool   `json:"complete"`
+	Error    string `json:"error,omitempty"`
 }
 
 // Separate processes isolate the decoder registries and retain real collector output.
@@ -44,7 +45,7 @@ func TestCaptureInputProcess(t *testing.T) {
 		collect = c.CollectPcapNG
 	}
 	err = collect(input)
-	result := inputReproResult{Packets: c.admittedPackets}
+	result := inputReproResult{Packets: c.admittedPackets, Complete: c.captureComplete}
 	if err != nil {
 		result.Error = err.Error()
 	}

@@ -131,6 +131,7 @@ jobs:
           # "types/netcap.proto" instead of "netcap.proto".
           protoc --proto_path=types --gogofaster_out=types/. types/netcap.proto
           test -s types/netcap.pb.go
+          git diff --exit-code -- types/netcap.pb.go
 
           go build ./...
           go vet ./...
@@ -164,6 +165,10 @@ jobs:
           GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests -run '^TestNewDecoders_UltimatePCAP$' -count=1 -timeout=8m
           GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/decoder/stream/tls -run '^$' -fuzz '^FuzzCertificateHandshakeSemantics$' -fuzztime=5s -parallel=2
           GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/decoder/stream/rdp -run '^$' -fuzz '^FuzzNegotiationEvidence$' -fuzztime=5s -parallel=2
+          NETCAP_TLS_CORPUS=1 GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/collector -run '^TestTLSRound2Corpus$' -count=1 -timeout=4m
+          NETCAP_SMB_CORPUS=1 GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/decoder/stream/dcerpc -run '^TestSMBPinnedCorpus$' -count=1 -timeout=4m
+          GOWORK=off go test -tags=nodpi,noyara,nomagika ./types -run '^$' -fuzz '^FuzzDHCPOptionRoundTrip$' -fuzztime=5s -parallel=2
+          GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/packetview -run '^$' -fuzz '^FuzzPacketPipeline$' -fuzztime=5s -parallel=2
           SCRIPT
 
       - name: Verify distributable license bundle

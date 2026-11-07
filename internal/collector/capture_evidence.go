@@ -79,6 +79,9 @@ func (c *Collector) finalizeCaptureEvidence() {
 	if c.captureComplete {
 		status = "done"
 	}
+	if c.captureInputStatus == "partial" || c.captureInputStatus == "unsupported" {
+		status = "partial"
+	}
 	if err := c.captureEvidence.Close(status, c.admittedPackets, c.behaviorQueueDrops, errors.Join(c.captureRunError, c.flowExportError, c.captureEvidenceError)); err != nil {
 		c.captureEvidenceError = err
 	}

@@ -204,6 +204,7 @@ type Collector struct {
 	captureKind, captureSource string
 	captureLinkType            layers.LinkType
 	captureComplete            bool
+	captureInputStatus         string
 	networkDetector            *networkdetect.Engine
 	networkAlertWriter         *rules.FileAlertWriter
 	networkDetectionError      error
