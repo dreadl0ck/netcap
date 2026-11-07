@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily independent Netcap optional enrichment publication
+
+[Timer]
+OnCalendar=*-*-* 01:00:00 UTC
+RandomizedDelaySec=900
+Persistent=true
+Unit=netcap-enrichment-refresh.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,16 @@
+[Unit]
+Description=Refresh the independent signed Netcap optional enrichment channel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 /root/netcap-enrichment-publisher/refresh-enrichment.py --binary /usr/local/bin/netcap-enrichment-server --repo /root/netcap-enrichment-publisher/source --root /srv/netcap-enrichment --key /root/netcap-db-publisher/signer-epoch2.key --certificate /root/netcap-enrichment-publisher/signer-epoch2.json
+TimeoutStartSec=900
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/srv/netcap-enrichment

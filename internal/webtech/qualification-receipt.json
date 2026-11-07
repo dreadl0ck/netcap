@@ -1,0 +1,397 @@
+{
+  "qualified_at": "2026-11-06T22:03:03.033123+00:00",
+  "scope": "local synthetic qualification; no production packets, publication, commits or deployment",
+  "catalogue_sha256": "6d43c43d1b0c04ec0258f7c790cd88df752461fd8349df032188fc7dbdfdad54",
+  "vectors_sha256": "9fb7d0c653c9f78c92a473fb6985924571dda95c65070177d7266802355ec73f",
+  "installed_shared_fixture_sha256": "0a4251859ac8ab94a4dc5fb180ea4c03d7905805f3c1b158fa08be7fd7941461",
+  "source_sha256": {
+    "go/internal/webtech/open_unix.go": "8c1b69ef9284af2c509d6f9b20ef73e71af19c773291ed5353a38d0cf17b8433",
+    "go/internal/webtech/observe_test.go": "9aaef739149d87dfe383cf166ec3dc4ba813ecb9f7a179c3c19874639c1022d1",
+    "go/internal/webtech/open_windows.go": "f7612aa4b618ed7b538c6c533436be0c911965f49c2e168108ac63ec2137f341",
+    "go/internal/webtech/attribution.go": "2528a44e9d4b196bad4a641d962cae76d1bc5e9c8274e80e3c4880bfcd8aeeb9",
+    "go/internal/webtech/observe.go": "1ecec9fd28bd131f0c2947f450deb3c5bb78362b88a9f06be78235e1942ae3d7",
+    "go/internal/webtech/catalogue.go": "9ec58791b35dab4726d7bde01e02c841a6667118af10ad72a6bd6ecb319df6a9",
+    "go/internal/webtech/provenance_test.go": "f02aa776d3e56221d127e5f163625423299a6e1feb1dc7c247309c24971ead08",
+    "go/internal/webtech/publication/publication.go": "85ca5330b8a421c1f16a8fe5ce0846d19d9ca8932c8cc9c3097b98b270e5cabc",
+    "go/internal/webtech/publication/publication_test.go": "9676b9f6f859217a3e5735c82427414871a4ce36feeae88b262fc750001cdf58",
+    "go/internal/webtech/testfixture/fixture.go": "509b67232bc53c56fde7b024a411df3e72753e4d112d694ea81e03d9ce87377a",
+    "go/internal/webtech/cmd/qualify/main.go": "aaaf7a3ba4839d5c7ec94aca9b5538179c6385edde1c4fcf8328d2bb41ee781b",
+    "go/internal/webtech/cmd/prepare/main.go": "c5802600244b8c89e61593d46231c69bf0196ce14ad2f00e9f39c31391d2c279",
+    "go/internal/webtech/provenance.json": "f1d86233716e0a939e7d92fedb5546cbcf436aa4c5c1ed84df57d66baa61fc68",
+    "go/internal/webtech/format-contract.json": "d967c058009ac23dbc1aa9689d08959c26c82f526e6f5bd91e121e11e8adb9a7",
+    "go/internal/webtech/NOTICE.txt": "be2a2d4bb122316d8136a0a046f9c6407f3b4eb98cecc96333e6589defe1af2f",
+    "go/internal/webtech/NUCLEI-LICENSE.txt": "5fa6644d2dd1987a79c06f4af210d2cf8cfc4ee799999029d0f9980c9cf95a2c",
+    "go/internal/webtech/FIRST-PARTY-LICENSE.txt": "c012ed583711048f2c8e25778fee6fa26bb3e09f11a4c213646a837f2ef54228",
+    "go/internal/webtech/qualify.py": "e8e3611189b53b78f743e00e95fc4183f533c38fbb76f853b78dea7b4ec7003c",
+    "go/internal/webtech/baseline_http.py": "ca43d9262721e14baa1165f6b861ee6415182b78be470351c7d0f04e94a43f31",
+    "go/internal/decoder/stream/http/http.go": "dc8718f3420d3fa6c4973b9d4fd1f78d46e3ae702fc94745989e30e38529a79f",
+    "go/internal/decoder/stream/http/http_reader.go": "f91434fab88938fdce9ac6f9ee7f71bd6e8268e843e880dc4e4dee4f6e84aab7",
+    "go/internal/decoder/stream/http/webtech_test.go": "48daf596f914aba8da4298ba20188046389c8d9a553c6a335e95625eeac9e568",
+    "go/internal/decoder/stream/software/webtech.go": "0de79e83ee7a572f012b23e25748a85d244d2517b6b0adbef2ca0a84cd23018b",
+    "go/internal/decoder/stream/software/webtech_test.go": "9ce3e37bf4a66938bf69e3ebf23b9c9b767ac5a2330eba1c026a39d269679f48",
+    "go/internal/decoder/stream/software/software.go": "9fa32c5e98fd6fce46312c132df12ddcbdd4a20a1d567669b8028dcc9fefb75b",
+    "go/internal/decoder/stream/software/software_analysis.go": "2ec80293c1776834d4293bbce1f188ae19ae09606b4afae4d2ad15563d6b4d9d",
+    "go/internal/decoder/stream/service/service_probe.go": "8389f1a31635a769fcaa8e9372481f96f9cb6435b9a26c995482d9fabfe4fc87",
+    "go/internal/decoder/stream/service/service_signatures_test.go": "584ad429fa5aa56790c779cbc9893a3f4c14184b0a1dc00e96301a6c03927a51",
+    "go/internal/servicesignatures/provenance.json": "5a7dec826b747f2f69023bf2c6e271582ce0746f856baf47e684ce0fd5d44100",
+    "go/cmd/capture/webui/enrichment_attribution.go": "bd87f15e9aa5cd9aef67a42f8f99ad898669604766a878b6676024d11d788afa",
+    "go/cmd/capture/webui/enrichment_attribution_test.go": "ac72ff61e21d08a17acc8b6b108e2d4d502c8020c208527612bf5ec7e0bcddcf",
+    "rust/crates/netcap-webtech/tests/contract.rs": "842fe331ede339dea56fead485859a4b3f79c7f835eab414a406f774489cf7fc",
+    "rust/crates/netcap-webtech/examples/benchmark.rs": "647b0b18fcc444f1fccaaa31ea21f404d30d1236cbf35942239b8d81e4a4f62e",
+    "rust/crates/netcap-webtech/examples/qualify.rs": "bf6ce0949d905aec7d4a65793599e55d175132ec7bca57f8bca340b93bcb429b",
+    "rust/crates/netcap-webtech/src/lib.rs": "f5baf8c497bdeb74472be922c570242fc75ead9548e9f777ec2fabdef1a59402",
+    "rust/crates/netcap-webtech/tests/support/installed_fixture.rs": "7b5f1e49382d9added69d3a9c01826dd79db7b0a103f8bd219a5c5a1754d2aa9",
+    "rust/crates/netcap-applayer/src/http.rs": "7312b76fbca625e33cb55f357a5d04ec87b76041ad4911468826b5e10974c287",
+    "rust/crates/netcap-applayer/src/http_webtech.rs": "8b0ec15db3b621b744c1c90cd02133f429875bd1a645b809c8ec331a95103f0b",
+    "rust/crates/netcap-applayer/tests/webtech.rs": "b424e5cbc7c9418f867aee9608516ed88f44c22373bcaf68dfc0b47d0509b737",
+    "rust/crates/netcap-enrichment/src/services.rs": "988803a54bd0b94251779ad0135729a60f332ba5be26c27238b13ed90249c953",
+    "rust/crates/netcap-enrichment/tests/optional_services.rs": "e9c3e9610ca9f4019eaf8880c4ee1388984455fe5181b10f29f15f1a567ee3d3",
+    "rust/crates/netcap-cli/src/capture.rs": "6b22fab8d8ac447dc3bdbc61f575629395cf05672134764aabf07ab010256e1b",
+    "rust/crates/netcap-cli/src/offline_capture.rs": "2610a6452fe538bfba7ba0ae3f4aab53409db0c2a777522d9fde3ddaeff731b7"
+  },
+  "full_report_differential_cases": 31,
+  "reports": [
+    {
+      "body_state": "complete",
+      "matches": [
+        {
+          "id": "netcap.webtech.wordpress.generator.v1",
+          "product": "WordPress",
+          "version": "6.8.3",
+          "precision": "numeric"
+        }
+      ]
+    },
+    {
+      "body_state": "complete",
+      "matches": [
+        {
+          "id": "netcap.webtech.wordpress.generator.v1",
+          "product": "WordPress",
+          "version": "6.9",
+          "precision": "numeric"
+        }
+      ]
+    },
+    {
+      "body_state": "complete",
+      "matches": [
+        {
+          "id": "netcap.webtech.wordpress.generator.v1",
+          "product": "WordPress",
+          "version": "",
+          "precision": "none"
+        }
+      ]
+    },
+    {
+      "body_state": "complete",
+      "matches": [
+        {
+          "id": "netcap.webtech.drupal.x-generator.v1",
+          "product": "Drupal",
+          "version": "11",
+          "precision": "major"
+        }
+      ]
+    },
+    {
+      "body_state": "complete",
+      "matches": [
+        {
+          "id": "netcap.webtech.drupal.x-generator.v1",
+          "product": "Drupal",
+          "version": "10",
+          "precision": "major"
+        }
+      ]
+    },
+    {
+      "body_state": "complete",
+      "matches": [
+        {
+          "id": "netcap.webtech.hugo.generator.v1",
+          "product": "Hugo",
+          "version": "0.147.0",
+          "precision": "numeric"
+        }
+      ]
+    },
+    {
+      "body_state": "complete",
+      "matches": [
+        {
+          "id": "netcap.webtech.joomla.generator.v1",
+          "product": "Joomla!",
+          "version": "",
+          "precision": "none"
+        }
+      ]
+    },
+    {
+      "body_state": "complete",
+      "matches": []
+    },
+    {
+      "body_state": "complete",
+      "matches": []
+    },
+    {
+      "body_state": "complete",
+      "matches": []
+    },
+    {
+      "body_state": "complete",
+      "matches": []
+    },
+    {
+      "body_state": "complete",
+      "matches": []
+    },
+    {
+      "body_state": "tag-limited",
+      "matches": []
+    },
+    {
+      "body_state": "complete",
+      "matches": []
+    },
+    {
+      "body_state": "complete",
+      "matches": []
+    },
+    {
+      "body_state": "complete",
+      "matches": []
+    },
+    {
+      "body_state": "complete",
+      "matches": []
+    },
+    {
+      "body_state": "complete",
+      "matches": []
+    },
+    {
+      "body_state": "complete",
+      "matches": []
+    },
+    {
+      "body_state": "out-of-scope",
+      "matches": []
+    },
+    {
+      "body_state": "out-of-scope",
+      "matches": []
+    },
+    {
+      "body_state": "not-html",
+      "matches": [
+        {
+          "id": "netcap.webtech.drupal.x-generator.v1",
+          "product": "Drupal",
+          "version": "10",
+          "precision": "major"
+        }
+      ]
+    },
+    {
+      "body_state": "unobservable",
+      "matches": [
+        {
+          "id": "netcap.webtech.drupal.x-generator.v1",
+          "product": "Drupal",
+          "version": "10",
+          "precision": "major"
+        }
+      ]
+    },
+    {
+      "body_state": "truncated",
+      "matches": [
+        {
+          "id": "netcap.webtech.wordpress.generator.v1",
+          "product": "WordPress",
+          "version": "6.8",
+          "precision": "numeric"
+        }
+      ]
+    },
+    {
+      "body_state": "tag-limited",
+      "matches": []
+    },
+    {
+      "body_state": "complete",
+      "matches": []
+    },
+    {
+      "body_state": "complete",
+      "matches": [
+        {
+          "id": "netcap.webtech.wordpress.generator.v1",
+          "product": "WordPress",
+          "version": "6.8",
+          "precision": "numeric"
+        }
+      ]
+    },
+    {
+      "body_state": "complete",
+      "matches": [
+        {
+          "id": "netcap.webtech.wordpress.generator.v1",
+          "product": "WordPress",
+          "version": "6.8",
+          "precision": "numeric"
+        }
+      ]
+    },
+    {
+      "body_state": "complete",
+      "matches": []
+    },
+    {
+      "body_state": "complete",
+      "matches": []
+    },
+    {
+      "body_state": "tag-limited",
+      "matches": []
+    }
+  ],
+  "service_claim_fixtures": 14,
+  "service_validation_cases": 17,
+  "historical_machine_proof_sha256": "c6b8a3f6aa744ab543982e1e2ee3676271e43f60e6b49d3c7d33e5853efd464f",
+  "historical_service_parser_and_catalogue_unchanged": true,
+  "historical_whole_database_pin": "known source drift outside service engine/catalogue; existing proof preserved, not regenerated",
+  "go_tests": {
+    "command": [
+      "go",
+      "test",
+      "-race",
+      "-count=1",
+      "-tags=nodpi,noyara",
+      "./internal/webtech/...",
+      "./internal/servicesignatures",
+      "./internal/decoder/stream/service",
+      "./internal/decoder/stream/http",
+      "./internal/decoder/stream/software"
+    ],
+    "returncode": 0,
+    "stdout": "ok  \tgithub.com/dreadl0ck/netcap/internal/webtech\t2.452s\n?   \tgithub.com/dreadl0ck/netcap/internal/webtech/cmd/prepare\t[no test files]\n?   \tgithub.com/dreadl0ck/netcap/internal/webtech/cmd/qualify\t[no test files]\nok  \tgithub.com/dreadl0ck/netcap/internal/webtech/publication\t1.998s\n?   \tgithub.com/dreadl0ck/netcap/internal/webtech/testfixture\t[no test files]\nok  \tgithub.com/dreadl0ck/netcap/internal/servicesignatures\t2.905s\nok  \tgithub.com/dreadl0ck/netcap/internal/decoder/stream/service\t2.014s\nok  \tgithub.com/dreadl0ck/netcap/internal/decoder/stream/http\t2.756s\nok  \tgithub.com/dreadl0ck/netcap/internal/decoder/stream/software\t3.181s\n",
+    "stderr": ""
+  },
+  "go_attribution_api_tests": {
+    "command": [
+      "go",
+      "test",
+      "-race",
+      "-count=1",
+      "-tags=nodpi,noyara",
+      "./cmd/capture/webui",
+      "-run=TestCatalogueAttributionFullNoticesAndVerifiedSources"
+    ],
+    "returncode": 0,
+    "stdout": "ok  \tgithub.com/dreadl0ck/netcap/cmd/capture/webui\t2.090s\n",
+    "stderr": "# github.com/dreadl0ck/netcap/cmd/capture/webui.test\nld: warning: ignoring duplicate libraries: '-lpcap'\n"
+  },
+  "rust_tests": "\nrunning 23 tests\ntest dnp3::reference_crc_contracts::captured_full_and_partial_user_block_crc_vectors ... ok\ntest mail::mime::tests::quoted_printable_follows_go_reader ... ok\ntest mail::record::tests::header_split_follows_netcap ... ok\ntest dnp3::reference_crc_contracts::catalogue_and_all_captured_header_crc_vectors ... ok\ntest mail::mime::tests::params_handle_quotes_and_rfc2231 ... ok\ntest dnp3::reference_object_contracts::full_range_prefix_and_object_data_classification_tables ... ok\ntest dnp3::reference_crc_contracts::every_header_bit_flip_and_short_crc_are_rejected ... ok\ntest heap::tests::collections_charge_capacity_and_nested_heap ... ok\ntest dns::map::tests::go_helpers ... ok\ntest mail::mime::tests::base64_follows_go_std_encoding ... ok\ntest mail::record::tests::entropy_matches_go_bits ... ok\ntest heap::tests::held_audit_messages_charge_empty_reserved_vectors_and_strings ... ok\ntest dnp3::reference_object_contracts::crob_names_index_timing_and_truncated_run_matrix ... ok\ntest mail::mime::tests::nested_multipart_and_limits ... ok\ntest modbus::reference_correlation_contracts::capture_gap_invalidates_prior_and_postgap_reused_transactions_until_timeout ... ok\ntest dns::svcb::tests::doh_paths ... ok\ntest ipp::tests::header_groups_and_additional_values ... ok\ntest modbus::reference_correlation_contracts::full_response_content_compatibility_and_enrichment_matrix ... ok\ntest modbus::reference_correlation_contracts::full_tcp_transaction_reuse_duplicate_and_refusal_matrix ... ok\ntest dnp3::reference_object_contracts::complete_sizing_skips_values_and_retains_only_authentic_headers ... ok\ntest smtp::tests::mail_ids_are_capped ... ok\ntest smtp::tests::pending_data_bytes_are_capped ... ok\ntest modbus::reference_correlation_contracts::pending_bound_expires_and_bulk_write_values_are_not_retained ... ok\n\ntest result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s\n\n\nrunning 2 tests\ntest transient_hook_without_payloads_files_or_ip_claims ... ok\ntest installed_four_rule_snapshot_is_ready_immutable_offline_and_private ... ok\n\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s\n\n\nrunning 5 tests\ntest tests::golden_matches_go ... ok\ntest tests::strict_contract ... ok\ntest tests::missing_invalid_non_regular ... ok\ntest tests::validation_matches_go ... ok\ntest tests::symlink_and_fifo_catalogues_are_degraded_without_reading_targets ... ok\n\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n\nrunning 1 test\ntest resource_tests::aggregate_leases_release_and_do_not_turn_budget_loss_into_absence ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\nrunning 2 tests\ntest go_rust_shared_vectors ... ok\ntest bounded_decompression_and_validation ... ok\n\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.42s\n\n",
+  "rust_optional_service_tests": "\nrunning 1 test\ntest verified_optional_services_are_ready_and_do_not_reread_core_or_disk ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s\n\n",
+  "rust_owned_passed": 34,
+  "rust_complete_http_passed": false,
+  "rust_complete_http_baseline": {
+    "scope": "shadow copy only; current working files preserved; no captures or user data copied",
+    "current_http_sha256": "7312b76fbca625e33cb55f357a5d04ec87b76041ad4911468826b5e10974c287",
+    "without_hook_http_sha256": "246c6b88bede64653472bb15423966e539742b3b8bcc1254119f75d712ccbf7f",
+    "removed": "passive observe call, webtech snapshot field and constructor initialization; all concurrent HTTP recovery/mapping code retained",
+    "current": {
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "-p",
+        "netcap-applayer",
+        "--test",
+        "http",
+        "--",
+        "--test-threads=1"
+      ],
+      "returncode": 101,
+      "failures": [
+        "malformed_input_and_stream_gaps_emit_events",
+        "unsolicited_response_is_an_event_not_a_record",
+        "upgrade_and_connect_leave_http_without_errors"
+      ],
+      "stdout": "\nrunning 12 tests\ntest absolute_form_target_names_its_own_host ... ok\ntest head_interim_and_cookies_are_split_invariant_in_both_directions ... ok\ntest ipp_and_ocsp_bodies_are_split_invariant ... ok\ntest malformed_input_and_stream_gaps_emit_events ... FAILED\ntest paired_record_uses_first_response_byte_time_not_request_or_completion ... ok\ntest request_frame_is_body_completion_frame ... ok\ntest request_frame_survives_transaction_limit_eviction ... ok\ntest request_response_pairs_emit_one_record_and_two_frames ... ok\ntest request_without_frame_does_not_inherit_response_frame ... ok\ntest unmatched_requests_close_with_incomplete_record ... ok\ntest unsolicited_response_is_an_event_not_a_record ... FAILED\ntest upgrade_and_connect_leave_http_without_errors ... FAILED\n\nfailures:\n\n---- malformed_input_and_stream_gaps_emit_events stdout ----\n\nthread 'malformed_input_and_stream_gaps_emit_events' panicked at crates/netcap-applayer/tests/http.rs:324:5:\nassertion `left == right` failed\n  left: Ok\n right: Error\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n---- unsolicited_response_is_an_event_not_a_record stdout ----\n\nthread 'unsolicited_response_is_an_event_not_a_record' panicked at crates/netcap-applayer/tests/http.rs:469:5:\nassertion failed: records.is_empty()\n\n---- upgrade_and_connect_leave_http_without_errors stdout ----\n\nthread 'upgrade_and_connect_leave_http_without_errors' panicked at crates/netcap-applayer/tests/http.rs:442:5:\nassertion `left == right` failed\n  left: (1, \"h:443\", \"h:443\")\n right: (1, \"h:443\", \"//h:443\")\n\n\nfailures:\n    malformed_input_and_stream_gaps_emit_events\n    unsolicited_response_is_an_event_not_a_record\n    upgrade_and_connect_leave_http_without_errors\n\ntest result: FAILED. 9 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s\n\n",
+      "stderr": "    Blocking waiting for file lock on build directory\n   Compiling netcap-enrichment-data v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-enrichment-data)\n   Compiling netcap-applayer v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-applayer)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.47s\n     Running tests/http.rs (target/debug/deps/http-c06b8f263e585aed)\nerror: test failed, to rerun pass `-p netcap-applayer --test http`\n"
+    },
+    "without_hook": {
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "-p",
+        "netcap-applayer",
+        "--test",
+        "http",
+        "--",
+        "--test-threads=1"
+      ],
+      "returncode": 101,
+      "failures": [
+        "malformed_input_and_stream_gaps_emit_events",
+        "unsolicited_response_is_an_event_not_a_record",
+        "upgrade_and_connect_leave_http_without_errors"
+      ],
+      "stdout": "\nrunning 12 tests\ntest absolute_form_target_names_its_own_host ... ok\ntest head_interim_and_cookies_are_split_invariant_in_both_directions ... ok\ntest ipp_and_ocsp_bodies_are_split_invariant ... ok\ntest malformed_input_and_stream_gaps_emit_events ... FAILED\ntest paired_record_uses_first_response_byte_time_not_request_or_completion ... ok\ntest request_frame_is_body_completion_frame ... ok\ntest request_frame_survives_transaction_limit_eviction ... ok\ntest request_response_pairs_emit_one_record_and_two_frames ... ok\ntest request_without_frame_does_not_inherit_response_frame ... ok\ntest unmatched_requests_close_with_incomplete_record ... ok\ntest unsolicited_response_is_an_event_not_a_record ... FAILED\ntest upgrade_and_connect_leave_http_without_errors ... FAILED\n\nfailures:\n\n---- malformed_input_and_stream_gaps_emit_events stdout ----\n\nthread 'malformed_input_and_stream_gaps_emit_events' panicked at crates/netcap-applayer/tests/http.rs:324:5:\nassertion `left == right` failed\n  left: Ok\n right: Error\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n---- unsolicited_response_is_an_event_not_a_record stdout ----\n\nthread 'unsolicited_response_is_an_event_not_a_record' panicked at crates/netcap-applayer/tests/http.rs:469:5:\nassertion failed: records.is_empty()\n\n---- upgrade_and_connect_leave_http_without_errors stdout ----\n\nthread 'upgrade_and_connect_leave_http_without_errors' panicked at crates/netcap-applayer/tests/http.rs:442:5:\nassertion `left == right` failed\n  left: (1, \"h:443\", \"h:443\")\n right: (1, \"h:443\", \"//h:443\")\n\n\nfailures:\n    malformed_input_and_stream_gaps_emit_events\n    unsolicited_response_is_an_event_not_a_record\n    upgrade_and_connect_leave_http_without_errors\n\ntest result: FAILED. 9 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s\n\n",
+      "stderr": "   Compiling netcap-format v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/target/webtech-no-hook-6fkg1ila/crates/netcap-format)\n   Compiling netcap-applayer v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/target/webtech-no-hook-6fkg1ila/crates/netcap-applayer)\nwarning: function `webtech_authority` is never used\n    --> crates/netcap-applayer/src/http.rs:1112:15\n     |\n1112 | pub(crate) fn webtech_authority(method: &str, target: &str, host: String) -> String {\n     |               ^^^^^^^^^^^^^^^^^\n     |\n     = note: `#[warn(dead_code)]` on by default\n\nwarning: field `engine` is never read\n  --> crates/netcap-applayer/src/http_webtech.rs:13:5\n   |\n12 | pub struct Snapshot {\n   |            -------- field in this struct\n13 |     engine: Engine,\n   |     ^^^^^^\n\nwarning: function `snapshot` is never used\n  --> crates/netcap-applayer/src/http_webtech.rs:48:15\n   |\n48 | pub(crate) fn snapshot() -> Arc<Snapshot> {\n   |               ^^^^^^^^\n\nwarning: function `observe` is never used\n  --> crates/netcap-applayer/src/http_webtech.rs:81:15\n   |\n81 | pub(crate) fn observe(\n   |               ^^^^^^^\n\nwarning: `netcap-applayer` (lib) generated 4 warnings\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.66s\n     Running tests/http.rs (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/target/debug/deps/http-c06b8f263e585aed)\nerror: test failed, to rerun pass `-p netcap-applayer --test http`\n"
+    },
+    "known_failures": {
+      "malformed_input_and_stream_gaps_emit_events": {
+        "test_line": 324,
+        "cause": "Preserved orientation/recovery buffers unknown BROKEN request method and returns Ok; historical test expects Error."
+      },
+      "unsolicited_response_is_an_event_not_a_record": {
+        "test_line": 469,
+        "cause": "Preserved unsolicited-response branch writes the observed HTTP record; historical test expects none."
+      },
+      "upgrade_and_connect_leave_http_without_errors": {
+        "test_line": 442,
+        "cause": "Preserved map_transaction stores the raw CONNECT target h:443; historical test expects //h:443."
+      }
+    },
+    "identical_failure_set": true
+  },
+  "clippy_owned": "passed: --no-deps webtech/applayer/enrichment libraries and tests, -D warnings",
+  "clippy_including_dependencies": {
+    "command": [
+      "cargo",
+      "clippy",
+      "--offline",
+      "-p",
+      "netcap-webtech",
+      "-p",
+      "netcap-applayer",
+      "-p",
+      "netcap-enrichment",
+      "--lib",
+      "--tests",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "returncode": 101,
+    "stdout": "",
+    "stderr": "   Compiling netcap-format v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-format)\n    Checking netcap-flow v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-flow)\n    Checking netcap-webtech v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-webtech)\n    Checking netcap-http1 v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-http1)\n    Checking netcap-resolvers v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-resolvers)\n    Checking netcap-quic v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-quic)\n    Checking netcap-tls v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-tls)\n    Checking netcap-service-signatures v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-service-signatures)\n    Checking netcap-ja4 v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-ja4)\n    Checking netcap-stream v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-stream)\n    Checking netcap-enrichment-data v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-enrichment-data)\n    Checking netcap-vulndb v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-vulndb)\nerror: this `if` statement can be collapsed\n   --> crates/netcap-enrichment-data/src/install.rs:88:9\n    |\n 88 | /         if let Some(r) = &s.review {\n 89 | |             if s.evidence.is_empty()\n 90 | |                 || serde_json::from_str::<serde_json::Value>(&s.evidence).is_err()\n 91 | |                 || r.decision != \"approved-for-publication\"\n...   |\n100 | |         }\n    | |_________^\n    |\n    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#collapsible_if\n    = note: `-D clippy::collapsible-if` implied by `-D warnings`\n    = help: to override `-D warnings` add `#[allow(clippy::collapsible_if)]`\nhelp: collapse nested if block\n    |\n 88 ~         if let Some(r) = &s.review\n 89 ~             && (s.evidence.is_empty()\n 90 |                 || serde_json::from_str::<serde_json::Value>(&s.evidence).is_err()\n...\n 95 |                 || r.evidence_sha256 != digest(s.evidence.as_bytes())\n 96 ~                 || chrono::DateTime::parse_from_rfc3339(&r.reviewed_at).is_err())\n 97 |             {\n 98 |                 return Err(invalid(\"invalid enrichment review\"));\n 99 ~             }\n    |\n\nerror: could not compile `netcap-enrichment-data` (lib) due to 1 previous error\nwarning: build failed, waiting for other jobs to finish...\n"
+  },
+  "cli_check": "passed",
+  "go_benchmark": "goos: darwin\ngoarch: arm64\npkg: github.com/dreadl0ck/netcap/internal/webtech\ncpu: Apple M5 Max\nBenchmarkObserve-18    \t   27244\t     44149 ns/op\t1483.99 MB/s\t  197073 B/op\t       9 allocs/op\nPASS\nok  \tgithub.com/dreadl0ck/netcap/internal/webtech\t1.509s\n",
+  "rust_benchmark": {
+    "iterations": 10000,
+    "prefix_bytes": 65517,
+    "ns_per_observation": 6996,
+    "profile": "release",
+    "baseline": "none; qualification measurement only"
+  }
+}

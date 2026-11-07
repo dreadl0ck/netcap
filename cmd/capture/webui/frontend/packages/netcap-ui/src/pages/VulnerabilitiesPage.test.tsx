@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { SWRConfig } from 'swr';
 import { NetcapProvider } from '../providers/NetcapProvider';
 import VulnerabilitiesPage from './VulnerabilitiesPage';
+import type { KEVStatus } from '../components/VulnerabilityKEV';
 
 const view = vi.hoisted(() => ({ mobile: false }));
 vi.mock('../components/Layout', () => ({ default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
@@ -15,10 +16,11 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 const reference = { url: 'https://example.org/advisory', source: 'nvd', tags: ['Exploit'] };
 
-function mount(mobile: boolean) {
+function mount(mobile: boolean, kev?: KEVStatus) {
   view.mobile = mobile;
   const fetcher = vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({
-    vulnerabilities: [{ id: 'CVE-fixture', description: 'Fixture vulnerability', severity: 'HIGH', v2Score: '7.5', accessVector: 'NETWORK', versions: ['1'], count: 7, affected: 3, software: null, communityIds: [], references: [reference] }],
+    vulnerabilities: [{ id: 'CVE-fixture', description: 'Fixture vulnerability', severity: 'HIGH', v2Score: '7.5', accessVector: 'NETWORK', versions: ['1'], count: 7, affected: 3, software: null, communityIds: [], references: [reference], kev }],
+    kevStatus: kev ? 'available' : 'unavailable',
     exploits: [{ id: 'EDB-fixture', description: 'Historical exploit metadata', file: 'retired.txt', count: 2, affected: 1, software: null, communityIds: [] }],
     affectedHosts: [], totalVulns: 7, totalExploits: 2,
   }) } as Response);
@@ -44,6 +46,18 @@ it('shows attributed references in desktop details and retires payload loading w
   expect(await screen.findByText(/Exploit payload delivery is retired/)).toBeVisible();
   expect(screen.queryByRole('button', { name: 'Load Code' })).not.toBeInTheDocument();
   expect(fetcher.mock.calls.every(([url]) => new URL(String(url)).pathname === '/api/vulnerabilities')).toBe(true);
+});
+
+it('joins optional KEV in desktop details without changing occurrence counts or NVD references', async () => {
+  mount(false, { cve: 'CVE-fixture', date_added: '2026-11-04', ransomware: 'Unknown', federal_due_date: '2026-11-18', required_action: 'Synthetic action', urls: [] });
+  const row = await screen.findByRole('row', { name: /CVE-fixture/ });
+  expect(within(row).getByText('CISA KEV')).toBeVisible();
+  expect(within(row).getByRole('cell', { name: '7' })).toBeVisible();
+  expect(within(row).getByRole('cell', { name: '3' })).toBeVisible();
+  fireEvent.click(row);
+  expect(await screen.findByText('Ransomware campaign use: Unknown')).toBeVisible();
+  expect(screen.getByRole('link', { name: reference.url })).toBeVisible();
+  expect(screen.getByText('Optional CISA KEV: available')).toBeVisible();
 });
 
 it('shows the same reference metadata in mobile cards with original occurrence and host counts', async () => {

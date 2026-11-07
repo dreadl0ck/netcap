@@ -1,0 +1,10 @@
+{
+  "format": "netcap-webtech",
+  "schema_version": 1,
+  "rules": [
+    {"id":"netcap.webtech.wordpress.generator.v1","product":"WordPress","selector":"meta-generator","token":"WordPress","precision":"numeric","method":"GET","status":200},
+    {"id":"netcap.webtech.drupal.x-generator.v1","product":"Drupal","selector":"x-generator","token":"Drupal","precision":"major","method":"GET","status":200},
+    {"id":"netcap.webtech.hugo.generator.v1","product":"Hugo","selector":"meta-generator","token":"Hugo","precision":"numeric","method":"GET","status":200},
+    {"id":"netcap.webtech.joomla.generator.v1","product":"Joomla!","selector":"meta-generator","token":"Joomla!","precision":"none","method":"GET","status":200}
+  ]
+}

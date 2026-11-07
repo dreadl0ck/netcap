@@ -38,6 +38,21 @@ func Flags() []string {
 // GetFlags returns the CLI flags for the util subcommand.
 func GetFlags() []cli.Flag {
 	return []cli.Flag{
+		&cli.StringFlag{Name: "delegate-enrichment", Usage: "existing core signer certificate to re-certify for the optional channel (no key generation)"},
+		&cli.StringFlag{Name: "enrichment-root-key", Usage: "existing offline community root file; used only for explicit delegation"},
+		&cli.StringFlag{Name: "sign-enrichment", Usage: "sign a packed optional candidate using an existing separately delegated signer"},
+		&cli.StringFlag{Name: "enrichment-key", Usage: "existing base64 Ed25519 signer file (never generated here)"},
+		&cli.StringFlag{Name: "enrichment-certificate", Usage: "existing root-signed enrichment-scoped signer certificate"},
+		&cli.Uint64Flag{Name: "enrichment-sequence", Usage: "strictly increasing optional-channel release sequence"},
+		&cli.StringFlag{Name: "serve-enrichment", Usage: "serve a verified signed optional publication directory independently of core"},
+		&cli.StringFlag{Name: "enrichment-addr", Value: ":8081", Usage: "optional enrichment HTTP listener"},
+		&cli.BoolFlag{Name: "download-enrichment", Usage: "explicitly install the independent signed optional enrichment channel"},
+		&cli.StringFlag{Name: "enrichment-url", Value: "https://dbs.netcap.io", Usage: "optional enrichment server"},
+		&cli.StringFlag{Name: "enrichment-root", Sources: cli.EnvVars("NC_ENRICHMENT_ROOT"), Usage: "separate enrichment root (default NC_CONFIG_ROOT/enrichment)"},
+		&cli.StringFlag{Name: "pack-enrichment", Usage: "validate and deterministically pack an unsigned enrichment candidate directory"},
+		&cli.StringFlag{Name: "enrichment-output", Value: "enrichment-candidate", Usage: "new candidate output directory"},
+		&cli.StringFlag{Name: "build-kev", Usage: "transform the pinned CISA KEV JSON file (offline)"},
+		&cli.StringFlag{Name: "kev-license", Usage: "full pinned upstream CC0 LICENSE file"},
 		&cli.StringFlag{Name: "pack-dbs", Usage: "verify and pack a reviewed v3 candidate directory (no deployment)"},
 		&cli.StringFlag{Name: "dbs-output", Value: "release-v3", Usage: "v3 publication output directory"},
 		&cli.StringFlag{Name: "dbs-approvals", Sources: cli.EnvVars("NC_DBS_APPROVALS"), Usage: "operator registry override (downloads default to bundled community trust; publishing requires explicit records)"},

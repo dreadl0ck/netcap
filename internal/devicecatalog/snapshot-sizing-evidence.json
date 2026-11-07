@@ -1,0 +1,12 @@
+{
+  "envelope_sha256": "cb6ba00ed1fa47227db9b1a00e40a3bf9a645e350ade3474f59b11f861ee73a6",
+  "qualification": "Authenticated public metadata only; no database body was acquired, copied or approved by this sizing check.",
+  "sequence": 1793998315,
+  "source": "https://dbs.netcap.io/dbs/signed/v1/latest",
+  "sqlite": {
+    "path": "netcap.sqlite",
+    "sha256": "6b447761ab74d1efe5b9b08f1029f36d146fd85057a1da7090ee78ca2f91b695",
+    "size": 1061502976,
+    "source": "nvd"
+  }
+}

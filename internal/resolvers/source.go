@@ -83,6 +83,7 @@ func SetPerfTracker(pt *performance.Tracker) {
 func Init(c Config, quietMode bool) {
 	quiet = quietMode
 	CurrentConfig = c
+	InitDNSWhitelist()
 
 	// Log database path (logger is set before Init is called)
 	resolverLog.Info("loading netcap databases",
@@ -103,9 +104,7 @@ func Init(c Config, quietMode bool) {
 		}
 	}
 
-	if c.MACDB {
-		initMACResolver()
-	}
+	initDeviceCatalogues(c.MACDB, c.DHCPDB)
 	if c.ServiceDB {
 		InitServiceDB()
 	}
@@ -130,8 +129,10 @@ func Init(c Config, quietMode bool) {
 		geoMu.Unlock()
 	}
 	if c.DHCPDB {
-		resolverLog.Warn(ErrDHCPEnrichmentDisabled.Error())
-		log.Print(ErrDHCPEnrichmentDisabled)
+		if dhcpCatalogue.Load() == nil {
+			resolverLog.Warn(ErrDHCPEnrichmentDisabled.Error())
+			log.Print(ErrDHCPEnrichmentDisabled)
+		}
 	}
 	if c.JA4DB && ja4plusadapter.Enabled {
 		initJA4Resolver()

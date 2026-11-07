@@ -6,9 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/dreadl0ck/netcap/internal/enrichment"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/servicesignatures"
+	"github.com/dreadl0ck/netcap/internal/webtech/testfixture"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -16,6 +19,7 @@ func TestServiceSignaturesStaleInstallAndWarning(t *testing.T) {
 	oldPath, oldWriter, oldEngine := resolvers.DataBaseFolderPath, signatureWarningWriter, signatureEngine.Load()
 	oldInventory := signatureInventory.Load()
 	dir := t.TempDir()
+	t.Setenv("NC_ENRICHMENT_ROOT", t.TempDir())
 	resolvers.DataBaseFolderPath = dir
 	var warnings bytes.Buffer
 	signatureWarningWriter = &warnings
@@ -26,6 +30,10 @@ func TestServiceSignaturesStaleInstallAndWarning(t *testing.T) {
 		signatureInventory.Store(oldInventory)
 	})
 	// A retired file is never interpreted, even when present on an upgrade.
+	core := bytes.Replace(servicesignatures.PublicationBytes(), []byte("netcap.ssh.ident.v1"), []byte("netcap.core.must-not-load.v1"), 1)
+	if err := os.WriteFile(filepath.Join(dir, servicesignatures.FileName), core, 0600); err != nil {
+		t.Fatal(err)
+	}
 	path := filepath.Join(dir, "nmap-service-probes")
 	legacy := []byte("uninterpreted legacy bytes")
 	if err := os.WriteFile(path, legacy, 0600); err != nil {
@@ -53,6 +61,40 @@ func TestServiceSignaturesStaleInstallAndWarning(t *testing.T) {
 	got, err := os.ReadFile(path)
 	if err != nil || !bytes.Equal(got, legacy) {
 		t.Fatal("legacy file was changed")
+	}
+}
+
+func TestVerifiedOptionalServiceSnapshotIsImmutable(t *testing.T) {
+	f, err := testfixture.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := filepath.Join(t.TempDir(), "enrichment")
+	if err = f.Install(root); err != nil {
+		t.Fatal(err)
+	}
+	e, err := loadOptionalSignatures(root, f.Trust, time.Unix(f.Now, 0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	inventory := e.Inventory("capture", err)
+	if inventory.Degraded || inventory.Source != "external" || inventory.RuleCount != 4 {
+		t.Fatal(inventory)
+	}
+	dir, err := enrichment.Resolve(root, f.Trust, time.Unix(f.Now, 0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.RemoveAll(dir); err != nil {
+		t.Fatal(err)
+	}
+	r, ok := e.Identify([]byte("SSH-2.0-Fixture_1.0\r\n"), "tcp", "server-to-client")
+	if !ok || r.ID != "netcap.ssh.ident.v1" {
+		t.Fatal("snapshot reread disk", r)
+	}
+	_, err = loadOptionalSignatures(root, f.Trust, time.Unix(f.Now, 0))
+	if err == nil {
+		t.Fatal("removed verified snapshot accepted")
 	}
 }
 

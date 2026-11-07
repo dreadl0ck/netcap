@@ -1,0 +1,19 @@
+Optional passive descriptors transformed by OpenAI gpt-6.1-sol for Netcap.
+Upstream: projectdiscovery/nuclei-templates, revision
+82ccd2a03568fed3c0c579d3c1df0997642e86dc (MIT; see NUCLEI-LICENSE.txt).
+http/technologies/hugo-detect.yaml: author daffainfo.
+http/technologies/joomla-detect.yaml: author ricardomaia.
+Copyright (c) 2025 ProjectDiscovery, Inc.
+
+Transformation: retained generator product tokens only; parsed HTML attributes
+replace template body patterns. GET/status-200 is local passive scope. Removed
+requests, paths, redirects, DSL, regex execution, extractors, CPEs and claims
+about verified deployments. Joomla emits no inferred version. No raw template
+is shipped or interpreted. These descriptors do not grant rights in CMS code.
+
+WordPress/Drupal parsers and all new fixtures are independently AI-assisted
+Netcap work from advertised-output facts, not copied vendor implementation.
+Repository copyright owner: Philipp Mieden. The owner authorized MIT rights in
+independent descriptors and synthetic fixtures to the extent owned; see
+FIRST-PARTY-LICENSE.txt. Review is automated AI, not a human-authorship or legal
+attestation. Existing GPL runtime engine/parser code is not relicensed.

@@ -39,6 +39,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/software"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
+	"github.com/dreadl0ck/netcap/internal/webtech"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -77,13 +78,16 @@ type httpRequest struct {
 }
 
 type httpResponse struct {
-	response   *http.Response
-	timestamp  int64
-	clientIP   string
-	serverIP   string
-	clientPort int32
-	serverPort int32
-	flow       string
+	transient           bool
+	detectedContentType string
+	wireBytes           int64
+	response            *http.Response
+	timestamp           int64
+	clientIP            string
+	serverIP            string
+	clientPort          int32
+	serverPort          int32
+	flow                string
 }
 
 type httpReader struct {
@@ -115,6 +119,12 @@ func (h *httpReader) Decode() {
 	// iterate over responses
 	for _, res := range h.responses { // populate types.HTTP with all infos from response
 		ht := newHTTPFromResponse(res.response)
+		if res.transient {
+			ht.ResContentTypeDetected = res.detectedContentType
+			if res.response.ContentLength < 0 {
+				ht.ResContentLength = int32(min(res.wireBytes, int64(2147483647)))
+			}
+		}
 		ht.Timestamp, ht.Flow = res.timestamp, res.flow
 		ht.SrcIP, ht.DstIP, ht.SrcPort, ht.DstPort = res.serverIP, res.clientIP, res.serverPort, res.clientPort
 
@@ -311,7 +321,20 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		return err
 	}
 
-	body, err := io.ReadAll(res.Body)
+	var body []byte
+	var passiveReport webtech.Report
+	observation := webtech.Observation{Status: res.StatusCode, ContentType: res.Header.Get(headerContentType), Generator: res.Header.Values("X-Generator")}
+	authority := ""
+	if request != nil {
+		observation.Method = request.Method
+		authority = request.Host
+	}
+	if decoderconfig.Instance.FileStorage == "" && !decoderconfig.Instance.IncludePayloads {
+		passiveReport = software.ObserveWebtech(observation, res.Body, res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+	} else {
+		body, err = io.ReadAll(res.Body)
+		software.ObserveWebtech(observation, bytes.NewReader(body), res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+	}
 	s := len(body)
 	if err != nil {
 		httpLog.Debug(
@@ -355,13 +378,16 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	streamutils.Stats.Unlock()
 
 	h.responses = append(h.responses, &httpResponse{
-		response:   res,
-		timestamp:  timestamp,
-		clientIP:   h.conversation.ClientIP,
-		serverIP:   h.conversation.ServerIP,
-		clientPort: h.conversation.ClientPort,
-		serverPort: h.conversation.ServerPort,
-		flow:       h.conversation.Ident,
+		transient:           decoderconfig.Instance.FileStorage == "" && !decoderconfig.Instance.IncludePayloads,
+		detectedContentType: passiveReport.DetectedContentType,
+		wireBytes:           passiveReport.WireBytes,
+		response:            res,
+		timestamp:           timestamp,
+		clientIP:            h.conversation.ClientIP,
+		serverIP:            h.conversation.ServerIP,
+		clientPort:          h.conversation.ClientPort,
+		serverPort:          h.conversation.ServerPort,
+		flow:                h.conversation.Ident,
 	})
 	requestIndex := h.responseRequestIndex
 	if res.StatusCode >= 200 || res.StatusCode == 101 {

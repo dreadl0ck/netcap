@@ -20,9 +20,10 @@
 package resolvers
 
 import (
-	"strings"
+	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/devicecatalog"
 	"github.com/gopacket/gopacket/macs"
 	"go.uber.org/zap"
 )
@@ -41,15 +42,15 @@ func hexVal(c byte) byte {
 	}
 }
 
-// initMACResolver reports the built-in source; external supplements are disabled.
+// initMACResolver loads only an explicit reviewed supplement.
 func initMACResolver() {
-	resolverLog.Info("using gopacket's built-in MAC prefix database",
+	initDeviceCatalogues(true, false)
+	resolverLog.Info("gopacket MAC fallback available",
 		zap.Int("prefixes", len(macs.ValidMACPrefixMap)),
 	)
 }
 
-// LookupManufacturer resolves a MAC addr to the manufacturer.
-// Uses only gopacket's built-in prefix data.
+// LookupManufacturer returns a registered organization, not a device identity.
 func LookupManufacturer(mac string) string {
 	startTime := time.Now()
 	cacheHit := false
@@ -59,35 +60,34 @@ func LookupManufacturer(mac string) string {
 		}
 	}()
 
-	if len(mac) < 8 {
+	key := devicecatalog.NormalizeMAC(mac)
+	if key == "" {
 		return ""
 	}
 
-	oui := strings.ToUpper(mac[:8])
-
-	// Fall back to gopacket's built-in MAC prefix database
-	// The gopacket map uses [3]byte as key (first 3 bytes of MAC)
-	// Parse the MAC address to get the first 3 bytes
-	if len(mac) >= 8 {
-		// Parse "E8:9F:80" or "e8:9f:80" format to [3]byte using direct hex decoding
-		var prefix [3]byte
-		valid := true
-		for i, start := 0, 0; i < 3 && start+1 < len(oui); i++ {
-			hi := hexVal(oui[start])
-			lo := hexVal(oui[start+1])
-			if hi == 0xFF || lo == 0xFF {
-				valid = false
-				break
-			}
-			prefix[i] = hi<<4 | lo
-			start += 3 // skip "XX:"
-		}
-		if valid {
-			if vendor, ok := macs.ValidMACPrefixMap[prefix]; ok {
-				return vendor
-			}
-		}
+	if org := macCatalogue.Load().Lookup(mac); org != "" {
+		return org
 	}
+	oui := key[:6]
 
-	return ""
+	var prefix [3]byte
+	for i := range prefix {
+		prefix[i] = hexVal(oui[i*2])<<4 | hexVal(oui[i*2+1])
+	}
+	return macs.ValidMACPrefixMap[prefix]
+}
+
+var macCatalogue atomic.Pointer[devicecatalog.MAC]
+
+func LoadMACCatalogue(path string) error {
+	b, err := devicecatalog.Read(path)
+	if err != nil {
+		return err
+	}
+	c, err := devicecatalog.ParseMAC(b)
+	if err != nil {
+		return err
+	}
+	macCatalogue.Store(c)
+	return nil
 }

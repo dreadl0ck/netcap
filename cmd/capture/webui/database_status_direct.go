@@ -68,9 +68,10 @@ type DatabaseDownloadStatus struct {
 // DatabaseStatus answers "can this install analyse a capture at full fidelity,
 // and if not, what is missing and is a fix already running".
 type DatabaseStatus struct {
-	GeoProviders string                        `json:"geoProviders"`
-	GeoStatus    []resolvers.GeoProviderStatus `json:"geoStatus"`
-	GeoError     string                        `json:"geoError,omitempty"`
+	DeviceCatalogues []resolvers.DeviceCatalogueStatus `json:"deviceCatalogues"`
+	GeoProviders     string                            `json:"geoProviders"`
+	GeoStatus        []resolvers.GeoProviderStatus     `json:"geoStatus"`
+	GeoError         string                            `json:"geoError,omitempty"`
 	// Satisfied is true when no required database is absent.
 	Satisfied bool `json:"satisfied"`
 	// Missing lists the absent required databases.
@@ -172,13 +173,14 @@ func currentDatabaseStatus(selection ...string) DatabaseStatus {
 	}
 
 	return DatabaseStatus{
-		GeoProviders: strings.Join(order, ","),
-		GeoStatus:    statuses,
-		GeoError:     errorText(geoErr),
-		Satisfied:    len(missing) == 0,
-		Missing:      missing,
-		DatabaseDir:  resolvers.DataBaseFolderPath,
-		Download:     databaseDownloadStatus(),
+		DeviceCatalogues: resolvers.DeviceCatalogueStatuses(),
+		GeoProviders:     strings.Join(order, ","),
+		GeoStatus:        statuses,
+		GeoError:         errorText(geoErr),
+		Satisfied:        len(missing) == 0,
+		Missing:          missing,
+		DatabaseDir:      resolvers.DataBaseFolderPath,
+		Download:         databaseDownloadStatus(),
 	}
 }
 

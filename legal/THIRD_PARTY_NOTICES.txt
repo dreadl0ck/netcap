@@ -49,6 +49,23 @@ and exact license texts are listed in THIRD_PARTY_LICENSES.txt. This includes
 MIT, BSD-3-Clause, Apache-2.0, ISC, 0BSD, CC0-1.0, and OFL-1.1 components.
 JetBrains Mono and Space Grotesk font files are redistributed under OFL-1.1.
 
+Public Suffix List and Go lookup code
+-------------------------------------
+golang.org/x/net v0.56.0 lookup/IDNA code is BSD-3-Clause, copyright The Go
+Authors; full BSD text is in THIRD_PARTY_LICENSES.txt (golang.org/x/net section).
+Its publicsuffix tables derive from the Mozilla/Public Suffix List contributors'
+MPL-2.0 data, including ICANN and PRIVATE sections, at revision
+d6c92f1bbb7433e5db7b8405c25d4035fb8ff376 (2026-02-06T07:36:33Z).
+The complete MPL-2.0 text is already in THIRD_PARTY_LICENSES.txt (go-uuid section).
+The unmodified covered source is available at no charge:
+  https://github.com/publicsuffix/list/blob/d6c92f1bbb7433e5db7b8405c25d4035fb8ff376/public_suffix_list.dat
+  https://proxy.golang.org/golang.org/x/net/@v/v0.56.0.zip
+This Source Code Form is subject to the terms of the Mozilla Public License,
+v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain
+one at https://mozilla.org/MPL/2.0/.
+These suffix rules are not a domain-popularity dataset. Optional operator CSVs
+are not distributed by Netcap and are subject to their own source terms.
+
 MPL-covered Go dependency
 -------------------------
 All Netcap binary variants include the unmodified github.com/hashicorp/go-uuid
