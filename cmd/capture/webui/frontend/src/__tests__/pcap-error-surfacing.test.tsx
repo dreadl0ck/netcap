@@ -163,6 +163,22 @@ describe('PCAPs page error surfacing in local mode', () => {
 });
 
 describe('PCAP child analysis', () => {
+  it('does not reselect the child row when its Parent action is clicked', async () => {
+    const parent = { ...FAILED_FILE, isCompleted: true, error: undefined };
+    const child = { ...parent, id: 'analysis-child', name: 'selected.pcapng', path: '/analysis-child/source/selected.pcapng', parentInputFile: parent.path };
+    let active = child.path;
+    const setActiveDirectory = vi.fn(async (path: string) => { active = path; return { success: true, outputDir: '/owned' }; });
+    renderPcaps({
+      getInputFiles: vi.fn(async () => [parent, child]), setActiveDirectory,
+      getStatus: vi.fn(async () => ({ ...LOCAL_MODE_STATUS, activeInputFile: active, isMultiFile: true, childAnalysisVersion: 1 })),
+    });
+    const childRow = await screen.findByRole('row', { name: /selected.pcapng/ });
+    await waitFor(() => expect(within(childRow).getByLabelText('Currently viewing', { exact: true })).toBeInTheDocument());
+    await userEvent.click(within(childRow).getByRole('button', { name: 'Parent', exact: true }));
+    await waitFor(() => expect(setActiveDirectory).toHaveBeenCalledExactlyOnceWith(parent.path));
+    expect(active).toBe(parent.path);
+  });
+
   async function openDialog() {
     await userEvent.click((await screen.findAllByRole('button', { name: /retry analysis/i }))[0]);
     return screen.findByRole('dialog');

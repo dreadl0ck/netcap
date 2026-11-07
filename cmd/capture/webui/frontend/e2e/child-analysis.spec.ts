@@ -8,6 +8,7 @@ test('ui-mocked: create a source-bound subset child and return to its parent', a
   const files = [parent];
   let active = parent.path;
   let submitted: unknown;
+  const selections: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.context().route('**/*', async route => {
     const request = route.request(), url = new URL(request.url());
@@ -15,8 +16,9 @@ test('ui-mocked: create a source-bound subset child and return to its parent', a
     if (!url.pathname.startsWith('/api/')) return route.continue();
     let json: unknown;
     switch (url.pathname) {
-      case '/api/status': json = { activeInputFile: active, outputDir: '/owned', isProcessing: false, childAnalysisVersion: 1, inputFiles: files.map(f => f.path), isMultiFile: files.length > 1 }; break;
+      case '/api/status': json = { activeInputFile: active, outputDir: active === parent.path ? '/owned' : '/analysis-child', isProcessing: false, childAnalysisVersion: 1, inputFiles: files.map(f => f.path), isMultiFile: files.length > 1 }; break;
       case '/api/files/input': json = files; break;
+      case '/api/files/audit': json = []; break;
       case '/api/version': json = { version: 'ui-mocked' }; break;
       case '/api/menu-counts': json = {}; break;
       case '/api/alerts/stats': json = { totalAlerts: 0, groupCount: 0, bySeverity: {}, byRule: {}, recentAlerts: [] }; break;
@@ -30,8 +32,9 @@ test('ui-mocked: create a source-bound subset child and return to its parent', a
         json = { success: true, sessionId: child.id, path: child.path }; break;
       case '/api/set-directory':
         expect(request.method()).toBe('POST');
-        expect(request.postDataJSON()).toEqual({ inputFile: parent.path }); active = parent.path;
-        json = { success: true, outputDir: '/owned', activeInputFile: active }; break;
+        expect([parent.path, child.path]).toContain(request.postDataJSON().inputFile);
+        active = request.postDataJSON().inputFile; selections.push(active);
+        json = { success: true, outputDir: active === parent.path ? '/owned' : '/analysis-child', activeInputFile: active }; break;
       default: unexpected.push(url.pathname); return route.abort();
     }
     return route.fulfill({ json });
@@ -53,9 +56,18 @@ test('ui-mocked: create a source-bound subset child and return to its parent', a
   await expect(childRow).toBeVisible();
   await expect(childRow.getByText('Selected packets: tcp port 9243; 1700000000000000001–1700000000000000002 ns', { exact: true })).toBeVisible();
   await expect(page.getByRole('row').filter({ hasText: 'owned.pcap' })).toBeVisible();
+  const audit = page.waitForResponse(response => new URL(response.url()).pathname === '/api/files/audit');
+  await childRow.getByLabel('View audit records', { exact: true }).getByRole('button').click();
+  await expect(page).toHaveURL(/\/records$/);
+  expect((await audit).status()).toBe(200);
+  await page.goto('/pcaps');
+  await expect(childRow.getByLabel('Currently viewing', { exact: true })).toBeVisible();
   const selected = page.waitForRequest(r => new URL(r.url()).pathname === '/api/set-directory');
   await childRow.getByRole('button', { name: 'Parent', exact: true }).click();
   await selected;
+  await expect(page.getByRole('row').filter({ hasText: 'owned.pcap' }).getByLabel('Currently viewing', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/pcaps$/);
+  expect(selections).toEqual([child.path, parent.path]);
   await expect(childRow).toBeVisible();
   expect(unexpected).toEqual([]); expect(errors).toEqual([]);
 });
