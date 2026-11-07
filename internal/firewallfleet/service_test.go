@@ -271,7 +271,7 @@ func TestMCPActualDescriptorsAndCalls(t *testing.T) {
 	if err = json.Unmarshal(out["result"], &listed); err != nil {
 		t.Fatalf("tools/list %s %v", out["error"], err)
 	}
-	if len(listed.Tools) != len(descriptors) {
+	if len(listed.Tools) != len(descriptors)-1 { // Approval issuance is hidden without protection configured.
 		t.Fatalf("tools %d", len(listed.Tools))
 	}
 	for _, tool := range listed.Tools {

@@ -1,0 +1,38 @@
+rule_files:
+  - firewall-operations-rules.yaml
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'netcap_firewall_operation_duration_seconds_bucket{component="waf",stage="decision",job="firewall",instance="fixture",le="1"}'
+        values: '0+95x5'
+      - series: 'netcap_firewall_operation_duration_seconds_bucket{component="waf",stage="decision",job="firewall",instance="fixture",le="5"}'
+        values: '0+99x5'
+      - series: 'netcap_firewall_operation_duration_seconds_bucket{component="waf",stage="decision",job="firewall",instance="fixture",le="+Inf"}'
+        values: '0+100x5'
+    promql_expr_test:
+      - expr: netcap_firewall:operation_latency:p95
+        eval_time: 5m
+        exp_samples:
+          - labels: 'netcap_firewall:operation_latency:p95{component="waf",stage="decision",job="firewall",instance="fixture"}'
+            value: 1
+      - expr: netcap_firewall:operation_latency:p99
+        eval_time: 5m
+        exp_samples:
+          - labels: 'netcap_firewall:operation_latency:p99{component="waf",stage="decision",job="firewall",instance="fixture"}'
+            value: 5
+  - interval: 1m
+    input_series:
+      - series: 'netcap_firewall_degraded{component="fleet",job="firewall",instance="fixture"}'
+        values: '1x5'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: NetcapFirewallDegraded
+        exp_alerts:
+          - exp_labels:
+              component: fleet
+              job: firewall
+              instance: fixture
+              severity: warning
+            exp_annotations:
+              summary: Firewall runtime reports a named degraded condition

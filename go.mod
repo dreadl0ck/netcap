@@ -26,6 +26,7 @@ require (
 	github.com/florianl/go-nfqueue/v2 v2.0.2
 	github.com/go-echarts/go-echarts/v2 v2.6.5
 	github.com/go-errors/errors v1.5.1
+	github.com/go-jose/go-jose/v4 v4.1.9
 	github.com/gogo/protobuf v1.3.2
 	github.com/gopacket/gopacket v1.7.2
 	github.com/jcmturner/gokrb5/v8 v8.4.4
@@ -49,6 +50,7 @@ require (
 	github.com/yosida95/uritemplate/v3 v3.0.2
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.55.0
+	golang.org/x/mod v0.41.0
 	golang.org/x/net v0.58.0
 	gonum.org/v1/gonum v0.16.0
 	google.golang.org/protobuf v1.36.11
@@ -117,7 +119,6 @@ require (
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
-	golang.org/x/mod v0.41.0
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/term v0.45.0 // indirect

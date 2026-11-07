@@ -14,8 +14,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 	"github.com/dreadl0ck/netcap/internal/policy"
+	"github.com/dreadl0ck/netcap/internal/runtimeobs"
 )
 
 const MaxRevisions = 64
@@ -28,13 +30,15 @@ type Principal struct {
 	Scope firewallstate.Scope
 }
 type Config struct {
-	StateDir          string
-	DatabaseURL       string
-	DatabaseNamespace string
-	Principals        []Principal
-	AllowEffects      bool
-	MaxRevisions      int
-	MaxStateBytes     int
+	Auth                        *firewallauth.Authority
+	Environment, Target, Origin string
+	StateDir                    string
+	DatabaseURL                 string
+	DatabaseNamespace           string
+	Principals                  []Principal
+	AllowEffects                bool
+	MaxRevisions                int
+	MaxStateBytes               int
 }
 type Request struct {
 	Revision string          `json:"revision"`
@@ -46,6 +50,7 @@ type artifact struct {
 	raw []byte
 }
 type Store struct {
+	Operations  *runtimeobs.Monitor
 	cfg         Config
 	disk        *firewallstate.Database
 	fingerprint string
@@ -59,13 +64,19 @@ type Store struct {
 }
 
 func normalize(cfg Config) (Config, string, error) {
+	if cfg.Auth != nil && cfg.DatabaseURL != "" && !cfg.Auth.Shared() {
+		return cfg, "", errors.New("shared identity mode requires a singleton SQLite service; PostgreSQL replicas require a shared identity ledger")
+	}
+	if cfg.Auth != nil && len(cfg.Principals) > 0 {
+		return cfg, "", errors.New("shared authority and legacy state principals are mutually exclusive")
+	}
 	if cfg.MaxRevisions == 0 {
 		cfg.MaxRevisions = MaxRevisions
 	}
 	if cfg.MaxStateBytes == 0 {
 		cfg.MaxStateBytes = MaxBytes
 	}
-	if cfg.MaxRevisions < 1 || cfg.MaxRevisions > MaxRevisions || cfg.MaxStateBytes < 1024 || cfg.MaxStateBytes > MaxBytes || len(cfg.Principals) < 1 || len(cfg.Principals) > 100 {
+	if cfg.MaxRevisions < 1 || cfg.MaxRevisions > MaxRevisions || cfg.MaxStateBytes < 1024 || cfg.MaxStateBytes > MaxBytes || (len(cfg.Principals) < 1 && cfg.Auth == nil) || len(cfg.Principals) > 100 {
 		return cfg, "", errors.New("invalid native policy-state limits")
 	}
 	if cfg.DatabaseURL != "" && cfg.StateDir != "" || cfg.DatabaseURL == "" && cfg.DatabaseNamespace != "" {
@@ -93,6 +104,9 @@ func normalize(cfg Config) (Config, string, error) {
 		Revisions, Bytes int
 		Principals       []pin
 	}{"native-policy-state/v1", cfg.AllowEffects, cfg.MaxRevisions, cfg.MaxStateBytes, pins})
+	if cfg.Auth != nil {
+		raw, _ = json.Marshal(struct{ Base, Identity, Environment, Target string }{firewallstate.Digest(string(raw)), cfg.Auth.PolicyFingerprint(), cfg.Environment, cfg.Target})
+	}
 	return cfg, firewallstate.Digest(string(raw)), nil
 }
 
@@ -115,7 +129,13 @@ func New(cfg Config) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Store{cfg: cfg, disk: d, fingerprint: fp, cache: make(map[string]artifact), slots: make(chan struct{}, 4), now: time.Now}
+	s := &Store{Operations: runtimeobs.New("policy_state"), cfg: cfg, disk: d, fingerprint: fp, cache: make(map[string]artifact), slots: make(chan struct{}, 4), now: time.Now}
+	if !d.IsPostgres() {
+		if err = firewallauth.PinState(ctx, d.DB, firewallauth.Scope{Environment: cfg.Environment, Target: cfg.Target}, cfg.Auth != nil); err != nil {
+			d.Close()
+			return nil, err
+		}
+	}
 	fail := func(err error) (*Store, error) { _ = d.Close(); return nil, err }
 	blob := "BLOB"
 	if d.IsPostgres() {
@@ -169,6 +189,9 @@ func validRevision(v string) bool {
 	return true
 }
 func (s *Store) scopeAllowed(scope firewallstate.Scope) bool {
+	if s.cfg.Auth != nil {
+		return scope.Valid()
+	}
 	for _, p := range s.cfg.Principals {
 		if p.Scope == scope {
 			return true
@@ -304,7 +327,19 @@ func (s *Store) checkRows(ctx context.Context, tx *firewallstate.Transaction, la
 
 // Evaluate is a trusted in-process boundary. HTTP callers cannot supply Scope.
 // Commit errors return no decision and are never retried, even if commit applied.
-func (s *Store) Evaluate(ctx context.Context, scope firewallstate.Scope, req Request) (policy.Decision, error) {
+func (s *Store) Evaluate(ctx context.Context, scope firewallstate.Scope, req Request) (decision policy.Decision, resultErr error) {
+	if s.cfg.Auth != nil && firewallauth.Require(ctx, firewallauth.Evaluate, firewallauth.Scope{Tenant: scope.Tenant, App: scope.App, Environment: s.cfg.Environment, Target: s.cfg.Target}) != nil {
+		return policy.Decision{}, firewallstate.Fail(403, "state grant required")
+	}
+	start := time.Now()
+	defer func() {
+		outcome := decision.Verdict
+		if resultErr != nil {
+			outcome = "error"
+		}
+		s.Operations.Observe("state", start, outcome)
+		s.Operations.NativeError(resultErr)
+	}()
 	if !scope.Valid() || !s.scopeAllowed(scope) || !validRevision(req.Revision) || req.Event == nil {
 		return policy.Decision{}, firewallstate.Fail(400, "invalid scoped evaluation")
 	}
@@ -425,7 +460,27 @@ func (s *Store) Evaluate(ctx context.Context, scope firewallstate.Scope, req Req
 	return d, nil
 }
 
-func (s *Store) Ready(ctx context.Context) error {
+func (s *Store) Ready(ctx context.Context) (resultErr error) {
+	if s.cfg.Auth != nil {
+		p, ok := firewallauth.FromContext(ctx)
+		if !ok {
+			return firewallstate.Fail(403, "state read grant required")
+		}
+		if _, err := p.BoundScope(firewallauth.Read, s.cfg.Environment, s.cfg.Target); err != nil {
+			return firewallstate.Fail(403, "state read grant required")
+		}
+	}
+	start := time.Now()
+	defer func() {
+		condition := "ok"
+		outcome := "ok"
+		if resultErr != nil {
+			condition = "state_unavailable"
+			outcome = "error"
+		}
+		s.Operations.Health(resultErr == nil, condition)
+		s.Operations.Observe("transaction", start, outcome)
+	}()
 	if err := s.disk.CheckBootstrap(ctx); err != nil {
 		return err
 	}
@@ -445,9 +500,13 @@ func (s *Store) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.closed = true
+	s.Operations.Health(false, "closed")
 	return s.disk.Close()
 }
 func (s *Store) ConsistentBackup(ctx context.Context, path string) error {
+	if s.cfg.Auth != nil && firewallauth.Require(ctx, firewallauth.Audit, firewallauth.Scope{Tenant: "*", App: "*", Environment: s.cfg.Environment, Target: s.cfg.Target}) != nil {
+		return firewallstate.Fail(403, "state backup grant required")
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.disk.Backup(ctx, path)

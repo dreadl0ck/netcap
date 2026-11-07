@@ -43,7 +43,12 @@ func (f *Firewall) Run(ctx context.Context) (result error) {
 		return err
 	}
 	defer ns.Close()
-	lock, err := lockNamespace(ns)
+	fence, err := kernelFence(ns)
+	if err != nil {
+		return err
+	}
+	defer unix.Close(fence)
+	lock, err := lockNamespace(ns, fence)
 	if err != nil {
 		return err
 	}
@@ -87,7 +92,12 @@ func (f *Firewall) Run(ctx context.Context) (result error) {
 		if a.Payload != nil {
 			raw = *a.Payload
 		}
-		v := f.decide(queueCtx, jobs, raw)
+		v := Deny
+		select {
+		case <-f.ready:
+			v = f.decide(queueCtx, jobs, raw)
+		default:
+		}
 		n := nfqueue.NfDrop
 		if v == Allow {
 			n = nfqueue.NfAccept
@@ -117,13 +127,13 @@ func (f *Firewall) Run(ctx context.Context) (result error) {
 	if err != nil {
 		return fmt.Errorf("bind NFQUEUE: %w", err)
 	}
-	if err = runNFT(ctx, ns, f.rules()); err != nil {
+	if err = f.install(ctx, ns, lock); err != nil {
 		return err
 	}
 	defer func() {
 		// A fatal listener error must preserve the configured absent-listener
 		// policy. Only orderly context cancellation removes diversion hooks.
-		if result != nil {
+		if result != nil || f.config.OwnershipNonce != "" {
 			return
 		}
 		cleanup, c := context.WithTimeout(context.Background(), 5*time.Second)
@@ -131,6 +141,8 @@ func (f *Firewall) Run(ctx context.Context) (result error) {
 		result = errors.Join(result, runNFT(cleanup, ns, "delete table inet "+tableName+"\n"))
 	}()
 	close(f.ready)
+	f.Operations.Health(true, "ok")
+	defer f.Operations.Health(false, "closed")
 	select {
 	case <-ctx.Done():
 		return nil
@@ -169,7 +181,13 @@ func openNamespace(name string) (*os.File, error) {
 	return f, nil
 }
 
-func lockNamespace(ns *os.File) (*os.File, error) {
+func lockNamespace(ns *os.File, fence int) (*os.File, error) {
+	// A namespace inode can be reused after a killed teardown. The kernel's
+	// lifetime cookie keeps a future namespace out of that stale journal.
+	cookie, err := unix.GetsockoptUint64(fence, unix.SOL_SOCKET, unix.SO_NETNS_COOKIE)
+	if err != nil {
+		return nil, fmt.Errorf("namespace lifetime cookie unavailable: %w", err)
+	}
 	var st unix.Stat_t
 	if err := unix.Fstat(int(ns.Fd()), &st); err != nil {
 		return nil, err
@@ -193,7 +211,7 @@ func lockNamespace(ns *os.File) (*os.File, error) {
 	if err = checkNode(dir, unix.S_IFDIR, 0700); err != nil {
 		return nil, err
 	}
-	key := fmt.Sprintf("net-%x-%x-inet-%s.lock", st.Dev, st.Ino, tableName)
+	key := fmt.Sprintf("net-%x-%x-%x-inet-%s.lock", st.Dev, st.Ino, cookie, tableName)
 	fd, err := unix.Openat(dir, key, unix.O_RDWR|unix.O_CREAT|unix.O_NOFOLLOW|unix.O_NONBLOCK|unix.O_CLOEXEC, 0600)
 	if err != nil {
 		return nil, err
@@ -239,6 +257,10 @@ func (f *Firewall) rules() string {
 	var b strings.Builder
 	// Exclusive create refuses stale/foreign tables; there is no flush or adoption.
 	fmt.Fprintf(&b, "create table inet %s\nadd chain inet %s packets { type filter hook %s priority -10; policy accept; }\n", tableName, tableName, c.Hook)
+	if c.OwnershipNonce != "" {
+		b.Reset()
+		fmt.Fprintf(&b, "create table inet %s { comment %s; }\nadd chain inet %s packets { type filter hook %s priority -10; policy accept; }\n", tableName, strconv.Quote("netcap-appliance:"+c.OwnershipNonce), tableName, c.Hook)
+	}
 	prefix := "add rule inet " + tableName + " packets "
 	b.WriteString(prefix + "iifname \"lo\" return\n")
 	for _, s := range c.ManagementDestinations {

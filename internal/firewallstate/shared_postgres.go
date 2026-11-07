@@ -34,5 +34,8 @@ func stateFingerprint(cfg Config) string {
 		Principals           []Principal
 		MaxWindow, MinWindow int64
 	}{"sharedstate", 1, cfg.MaxKeys, principals, int64(MaxWindow), int64(time.Millisecond)})
+	if cfg.Auth != nil {
+		raw, _ = json.Marshal(struct{ Base, Identity, Environment, Target string }{Digest(string(raw)), cfg.Auth.PolicyFingerprint(), cfg.Environment, cfg.Target})
+	}
 	return Digest(string(raw))
 }

@@ -50,11 +50,16 @@ func (c *Controller) load() error {
 		if err = c.validate(l); err != nil {
 			return err
 		}
-		if _, ok := c.leases[l.ID]; ok || selectors[l.Source] {
+		for _, old := range c.leases {
+			if c.selectorsConflict(old, l) {
+				return ErrConflict
+			}
+		}
+		if _, ok := c.leases[l.ID]; ok || selectors[selectorKey(l)] {
 			return ErrConflict
 		}
 		c.leases[l.ID] = l
-		selectors[l.Source] = true
+		selectors[selectorKey(l)] = true
 	}
 	return nil
 }

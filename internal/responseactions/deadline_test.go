@@ -53,7 +53,7 @@ func TestAbsoluteDeadlineThroughRealEnforcer(t *testing.T) {
 			}
 			status := "failed"
 			if tc.applied {
-				status = "applied"
+				status = "simulated"
 			}
 			await(t, b, i.ID, status)
 			select {

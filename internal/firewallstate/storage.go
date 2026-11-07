@@ -19,12 +19,13 @@ import (
 // Stop listeners and users before Close. Copying a SQLite database does not fence
 // its old host; PostgreSQL writers must use Begin's namespace transaction lock.
 type Database struct {
-	DB          *sql.DB
-	owner       *sql.DB
-	postgres    bool
-	namespace   string
-	lockID      int64
-	fingerprint string
+	DB           *sql.DB
+	owner        *sql.DB
+	postgres     bool
+	namespace    string
+	authEndpoint string
+	lockID       int64
+	fingerprint  string
 }
 
 func PrivateDir(dir string) error {

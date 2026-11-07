@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/firewallfleet"
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 )
@@ -24,11 +25,25 @@ func fleetHealthHandler(s *firewallfleet.Service, cfg firewallfleet.Config) http
 		for _, p := range cfg.Identities {
 			authorized = firewallstate.MatchToken(token, p.Token) || authorized
 		}
+		var bound firewallauth.Scope
+		if cfg.Auth != nil {
+			p, err := cfg.Auth.Authenticate(r.Context(), token)
+			if err != nil {
+				http.Error(w, "credential rejected", 401)
+				return
+			}
+			bound, err = p.BoundScope(firewallauth.Read, cfg.Environment, "")
+			if err != nil {
+				http.Error(w, "health grant required", 403)
+				return
+			}
+			authorized = true
+		}
 		if !authorized {
 			http.Error(w, "administrative bearer required", http.StatusUnauthorized)
 			return
 		}
-		if r.Header.Get("Origin") != "" {
+		if !firewallauth.AllowOrigin(r, cfg.Origin) {
 			http.Error(w, "browser origins refused", http.StatusForbidden)
 			return
 		}
@@ -53,6 +68,9 @@ func fleetHealthHandler(s *firewallfleet.Service, cfg firewallfleet.Config) http
 		req := firewallfleet.Request{}
 		if operator {
 			req.Scope = firewallfleet.Scope{Tenant: "health", App: "health"}
+		}
+		if cfg.Auth != nil {
+			req.Scope = firewallfleet.Scope{Tenant: bound.Tenant, App: bound.App}
 		}
 		// Capabilities runs a read-only authoritative transaction, including the
 		// PostgreSQL bootstrap fingerprint check, without driving maintenance.

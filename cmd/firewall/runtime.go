@@ -12,12 +12,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/enforcer"
 	"github.com/dreadl0ck/netcap/internal/firewallfleet"
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 	"github.com/dreadl0ck/netcap/internal/firewalltransport"
 	"github.com/dreadl0ck/netcap/internal/policy"
 	"github.com/dreadl0ck/netcap/internal/policystate"
 	"github.com/dreadl0ck/netcap/internal/responseactions"
+	"github.com/dreadl0ck/netcap/internal/runtimeobs"
 	"github.com/dreadl0ck/netcap/internal/waf"
 	"github.com/urfave/cli/v3"
 )
@@ -250,6 +252,18 @@ func (r *runtimeEvaluator) startProbes(ctx context.Context) {
 
 type evaluateFunc func(policy.Event) (policy.Decision, error)
 
+func (r *runtimeEvaluator) attachOperations(m *runtimeobs.Monitor) {
+	if r.guard != nil {
+		m.Include(r.guard.Operations)
+	}
+	if r.nativeState != nil {
+		m.Include(r.nativeState.Operations)
+	}
+	if r.broker != nil {
+		m.Include(r.broker.Operations)
+	}
+}
+
 func (f evaluateFunc) Evaluate(e policy.Event) (policy.Decision, error) { return f(e) }
 
 func (r *runtimeEvaluator) evaluate(p *policy.Compiled, e policy.Event) (policy.Decision, error) {
@@ -284,7 +298,7 @@ func (r *runtimeEvaluator) evaluateContext(ctx context.Context, p *policy.Compil
 			return e.Network.SrcIP, e.Network.SrcIP != ""
 		}
 		return "", false
-	}}
+	}, Flow: func(e policy.Event) (enforcer.Flow, bool) { f, err := policy.EventFlow(e); return f, err == nil }}
 	return wrapped.Evaluate(e)
 }
 func (r *runtimeEvaluator) Evaluate(e policy.Event) (policy.Decision, error) {
@@ -316,6 +330,7 @@ func validateServeOptions(c *cli.Command, cfg waf.Config) error {
 func gatewayFlags() []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{Name: "protocol", Required: true, Usage: "modbus | dns | dns-tcp | dns-tls | redis | postgres | smtp | mysql | dnp3 | smb | ftp (SMB2 plaintext serial profile; FTP EPSV bounded transfers)"},
+		&cli.StringFlag{Name: "operations-listen", Usage: "optional literal loopback metrics/status listener"},
 		&cli.StringFlag{Name: "listen", Required: true}, &cli.StringFlag{Name: "upstream", Required: true}, &cli.StringFlag{Name: "policy", Required: true},
 		&cli.StringSliceFlag{Name: "allow-client", Usage: "source CIDRs; default loopback only"},
 		&cli.StringFlag{Name: "effects-config"}, &cli.StringFlag{Name: "shared-rate-config"},

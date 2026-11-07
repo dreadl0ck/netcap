@@ -168,10 +168,10 @@ and delete only their own digest-pinned Kubernetes 1.32.2 clusters.
 
 ## Policy control and replica state
 
-`serve` exposes bearer-authenticated `/mcp` and `/api/v1/policy/*` on the admin
-listener when `NETCAP_FIREWALL_ADMIN_TOKEN` is set. File/fleet policy ownership is
-read-only there. `mcp --config …` is an isolated process-owner authoring session,
-not a control connection to a running WAF.
+`serve --auth-config /etc/firewall/auth.json` exposes authenticated `/mcp` and
+`/api/v1/policy/*` on the admin listener. File/fleet policy ownership remains
+read-only. `mcp --config … --auth-config …` runs an isolated read-only stdio
+session with explicit `stdio` grants; it does not connect to a running WAF.
 
 | Single-target lifecycle | MCP tool |
 | --- | --- |
@@ -180,6 +180,112 @@ not a control connection to a running WAF.
 | Compare / simulate | `diff_policy_revisions`, `explain_policy_decision` |
 | Activate / rollback | `activate_policy_deployment`, `rollback_policy_deployment`; expected revision and idempotency key required |
 | Successful mutation history | `query_policy_audit` |
+
+### Identity and authorization
+
+`internal/firewallauth` enforces one grant across `tenant`, `app`, `environment`,
+`target` and operation at REST, MCP and underlying operation boundaries. Empty
+dimensions match only empty dimensions; `*` must be explicit in a grant.
+Policy/enforcer scope is bootstrap-bound. Fleet admin requests name tenant/app;
+job transitions authorize every stored job target. Workload `desired`/`ack`
+requires the principal ID to equal an enrolled target ID and a `lease` grant.
+Shared/native state derives a single unambiguous tenant/app binding from grants.
+
+| Action | Operations |
+| --- | --- |
+| `read` | Capabilities, revisions, diff, status, lease listing, state health |
+| `author` | Check/stage bundles |
+| `evaluate` | Synthetic replay; shared counters/native state evaluation |
+| `deploy` | Activate/promote/rollout; drain/revoke/resume targets |
+| `rollback` | Rollback; process-owned fleet maintenance uses a bootstrap supervisor |
+| `lease` | Create/revoke leases; enrolled target desired/ack |
+| `audit` | Mutation audit queries and `audit_export` |
+| `prune` | `retention_preview`, `prune`, `audit_ack`; read-only audit grants cannot delete retained records |
+| `metrics` | `/metrics`, fleet REST `metrics` and MCP `fleet_metrics`; aggregate fleet metrics require environment-wide scope |
+| `approve` | Issue receipts, also requiring the approved action's grant |
+| `manage-credentials` | Revoke fingerprints with an authority-wide empty-scope grant |
+
+Example strict JSON for `--auth-config`; service bootstrap files reference the
+same file with `authConfig`. Secrets are environment references, never JSON values:
+
+```json
+{
+  "stateDir": "/var/lib/firewall/identity",
+  "scope": {"tenant":"lab","app":"web","environment":"test","target":"edge"},
+  "origin": "https://console.example",
+  "static": [{"tokenEnv":"FIREWALL_READER_TOKEN","principal":{
+    "id":"reader","grants":[{"scope":{"tenant":"lab","app":"web","environment":"test","target":"edge"},"actions":["read"]}]
+  }}]
+}
+```
+
+| Bootstrap field | Contract |
+| --- | --- |
+| `providers` | Operator-pinned `issuer`, `audience`, `jwksURL`, and `subjects` map from subject to local principal/grants; token claims cannot assign roles or select key URLs |
+| Provider time limits | Integer nanoseconds: `ttl` defaults to 60s (1–300s), `maxLifetime` to 900s (1–3600s), `clockSkew` to 0 (0–60s); JWT requires `exp`, `iat`, bound subject, issuer and audience |
+| JWKS | RS256/ES256/EdDSA only, public signing keys, nonempty bounded `kid`; HTTPS or literal loopback HTTP, no redirects; 32 keys/256KiB, one refresh/second/provider, no per-kid cache |
+| `stateDir` | Private 0700 directory with 0600 `identity.sqlite`; durable fingerprint revocation and unique approval consumption; retain alongside policy state |
+| `databaseURLEnv`, `databaseNamespace` | Shared PostgreSQL identity ledger; mutually exclusive with `stateDir`; use one dedicated schema for every owner and retain it with service state |
+| `approvalKeyEnv`, `protected` | Base64 64-byte Ed25519 private key and action/scope rules for `deploy`, `rollback`, `lease`; both require durable identity state |
+| `stdio` | Explicit local principal; absent grants confer no privileges |
+| `origin` | Optional exact first-party HTTP(S) origin; no wildcard, path, credentials or CORS headers |
+
+`POST /api/v1/auth/revoke {"fingerprint":"<SHA-256 hex of bearer>"}` and MCP
+`revoke_firewall_credential` permanently reject that token, including after
+restart. Without an identity ledger these calls fail closed. Rotate static
+tokens, issuer trust, subject grants and `revokedIDs` through trusted config and
+restart (embedded callers can use `Authority.Reload`). Removed JWKS keys cease
+working after cache expiry, at most 300s. Bearers are accepted only in the
+Authorization header, never a URL.
+
+Protected policy/fleet writes take `receipt`. Obtain it from
+`POST /api/v1/policy/approval`, `POST /api/v1/fleet/approval`, or MCP
+`issue_policy_approval` / `fleet_approval`: `approval` contains `actor`, `action`,
+`scope`, `digest`. Use the package's `ApprovalDigest(operation, Request)` to bind
+the complete request, including CAS, revisions, targets and idempotency key.
+Fleet approval scope is the enclosing tenant/app/environment; stored job targets
+determine whether protection applies. Enforcer uses `POST /v1/approval` or MCP
+`issue_lease_approval`, `ActionApprovalDigest` / `DeleteApprovalDigest`, and a
+`receipt` create argument or `X-Firewall-Approval` header (DELETE uses the header).
+The signing principal must differ from `actor`; receipts expire after 300s and
+are consumed durably once. A failed operation may consume its receipt. Ordinary
+delegated operations outside `protected` rules need no receipt or human prompt.
+
+`firewallauth.OpenShared` uses `firewallstate.Database` namespace transaction locks
+for revocation reads/writes and one-use approval consumption across processes.
+PostgreSQL service owners require this shared ledger. Its bootstrap fingerprint
+pins normalized grants, provider policy, approval public key and protection rules;
+JWKS caches and private signing keys stay process-local. Shared policy changes
+require coordinated bootstrap migration; `Authority.Reload` refuses them.
+`TestSharedPostgresIdentityProcesses` verifies fake-provider authentication,
+cross-process replay/revocation and mismatched tenant policy rejection.
+
+The embedded `/console/` preserves `Origin` in identity mode and requires the
+configured exact first-party origin for browser API requests; bearers remain in
+browser memory. `ActionApprovalDigest` binds action kind, profile and exact flow;
+`CreateApprovalDigest` remains the legacy default-action helper.
+Legacy `serve`/`enforcer` tokens require `--legacy-admin`; the Helm
+chart maps an explicitly configured `adminTokenSecret` to that flag. Legacy
+service `tokenEnv`/`identities`/`principals` remain explicit compatibility
+bootstrap and cannot be mixed with `authConfig` identities.
+
+Pitfalls: shared-identity lease/status reads never reconcile or deploy; the
+process-owned maintenance loops do that. Fleet authority enrollment omits
+`tokenEnv` and matches the enrolled ID; legacy target-token fallback is disabled.
+Retained SQLite state pins identity mode and resource binding; changing tenant,
+environment or target, or downgrading to legacy, requires separately provisioned
+state. Rotating credentials does not change this pin (`firewallauth.PinState`).
+
+`appliance plan --manifest ...` supports `mode: production` with `targetID`.
+Production `apply`/`recover`/`remove`/`status` additionally require `--auth-config`,
+`--operator-token-env` and `--reviewed-plan-digest` equal to the plan's `digest`;
+the bootstrap scope's target must equal `targetID` and grant `deploy` over all
+four scope dimensions. Named-namespace, private-prefix, ownership and recovery
+fences remain enforced. Configured protection requires `--approval-receipt-env`
+with a one-use receipt binding `appliance.ApprovalDigest(planDigest, operation)`.
+`mode: lab` still requires `NETCAP_APPLIANCE_LAB=1` and
+Docker. `TestApplianceProductionLab` exercises the production gate only inside
+the disposable Docker lab.
 
 ### Managed singleton
 

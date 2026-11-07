@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/enforcer"
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/firewalltransport"
 	"github.com/dreadl0ck/netcap/internal/firewallui"
 	"github.com/dreadl0ck/netcap/internal/gateway"
@@ -32,6 +33,8 @@ import (
 func configFlags() []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{Name: "config", Required: true, Usage: "runtime YAML or JSON file"},
+		&cli.StringFlag{Name: "auth-config", Usage: "strict JSON identity/grants bootstrap; required for stdio"},
+		&cli.BoolFlag{Name: "legacy-admin", Usage: "explicit compatibility: trust NETCAP_FIREWALL_ADMIN_TOKEN as unrestricted local admin"},
 		&cli.BoolFlag{Name: "managed", Usage: "allow authenticated policy activation; requires state-dir and admin token"},
 		&cli.StringFlag{Name: "route-id", Usage: "explicit bootstrap route ID owned by the policy console/MCP"},
 		&cli.StringFlag{Name: "state-dir", Usage: "private durable policy directory"},
@@ -50,6 +53,8 @@ func configFlags() []cli.Flag {
 // GetCommand also powers the thin executable without capture or DPI dependencies.
 func GetCommand() *cli.Command {
 	return &cli.Command{Name: "firewall", Usage: "protocol-aware application firewall", Commands: []*cli.Command{
+		operationsCommand(),
+		applianceCommand(),
 		{Name: "serve", Usage: "serve the enforcing HTTP reverse proxy", Flags: configFlags(), Action: withSignals(serve)},
 		{Name: "validate", Usage: "validate runtime, policy and enabled inspection engines without listening", Flags: configFlags(), Action: validate},
 		{Name: "mcp", Usage: "stdio MCP for isolated policy authoring and replay (not a running target)", Flags: configFlags(), Action: withSignals(stdio)},
@@ -63,12 +68,15 @@ func GetCommand() *cli.Command {
 		{Name: "backup", Usage: "offline snapshot (service must be stopped)", Flags: backupFlags(), Action: runBackup},
 		{Name: "restore", Usage: "offline restore into empty state directory; fence old service first", Flags: restoreFlags(), Action: runRestore},
 		{Name: "enforcer", Usage: "explicit scoped nftables leases in a named Linux lab namespace", Flags: []cli.Flag{
+			&cli.StringFlag{Name: "auth-config", Usage: "strict JSON identity/grants bootstrap"},
+			&cli.BoolFlag{Name: "legacy-admin", Usage: "explicit compatibility: trust NETCAP_FIREWALL_ADMIN_TOKEN as unrestricted enforcer admin"},
 			&cli.StringFlag{Name: "listen", Value: "127.0.0.1:9091"}, &cli.StringFlag{Name: "namespace"},
 			&cli.StringFlag{Name: "table", Value: "netcap_firewall_leases"}, &cli.StringFlag{Name: "interface", Required: true},
 			&cli.StringFlag{Name: "destination", Required: true}, &cli.StringFlag{Name: "protocol", Value: "tcp"},
 			&cli.StringFlag{Name: "hook", Value: "forward"}, &cli.UintFlag{Name: "port", Required: true},
 			&cli.StringSliceFlag{Name: "protected-cidr"}, &cli.BoolFlag{Name: "dry-run"}, &cli.StringFlag{Name: "state-file"},
 			&cli.StringFlag{Name: "tls-cert"}, &cli.StringFlag{Name: "tls-key"},
+			&cli.StringFlag{Name: "actions-config", Usage: "bootstrap JSON profiles and protected_services; immutable until restart"},
 		}, Action: withSignals(runEnforcer)},
 		{Name: "version", Action: func(_ context.Context, c *cli.Command) error {
 			return json.NewEncoder(c.Root().Writer).Encode(map[string]any{"version": "netcap-firewall/v1", "policy": "netcap-policy/v1", "protocols": []string{"http", "modbus", "dns", "dns-tcp", "dns-tls", "redis", "postgres", "smtp", "mysql", "dnp3", "smb", "ftp", "network", "websocket", "grpc"}, "http3": firewalltransport.HTTP3Available, "http3_message_profile": firewalltransport.HTTP3Available, "websocket_compression": "permessage-deflate; no context takeover", "smb_profile": "plaintext SMB2/3 serial; signed bytes relayed unverified; transforms rejected", "ftp_profile": "EPSV stream; bounded complete transfers; active/PASV/FTPS upgrades rejected"})
@@ -175,8 +183,12 @@ func validate(ctx context.Context, c *cli.Command) error {
 	return err
 }
 
-func adminConfig(c *cli.Command) policycontrol.Config {
-	return policycontrol.Config{Token: os.Getenv("NETCAP_FIREWALL_ADMIN_TOKEN"), Managed: c.Bool("managed"), StateDir: c.String("state-dir"), AllowEffects: c.String("effects-config") != ""}
+func adminConfig(c *cli.Command) (policycontrol.Config, error) {
+	if c.String("auth-config") == "" && os.Getenv("NETCAP_FIREWALL_ADMIN_TOKEN") != "" && !c.Bool("legacy-admin") {
+		return policycontrol.Config{}, errors.New("legacy administrative token requires --legacy-admin or migrate to --auth-config")
+	}
+	a, f, err := loadAuth(c.String("auth-config"))
+	return policycontrol.Config{Auth: a, Approvals: f.approvals, Scope: f.Scope, Origin: f.Origin, Token: os.Getenv("NETCAP_FIREWALL_ADMIN_TOKEN"), Managed: c.Bool("managed"), StateDir: c.String("state-dir"), AllowEffects: c.String("effects-config") != ""}, err
 }
 
 func loopbackAddress(addr string) bool {
@@ -210,6 +222,7 @@ func serve(ctx context.Context, c *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	runtime.attachOperations(f.Operations)
 	defer f.Close()
 	if err = f.SetEvaluator(func(ctx context.Context, p *policy.Compiled, e policy.Event) (policy.Decision, error) {
 		return runtime.evaluateContext(ctx, p, e)
@@ -264,12 +277,18 @@ func serve(ctx context.Context, c *cli.Command) error {
 	defer stopMaintenance()
 	admin := http.NewServeMux()
 	admin.Handle("/", f.AdminHandler())
-	ac := adminConfig(c)
-	if ac.Managed && ac.Token == "" {
+	ac, err := adminConfig(c)
+	if ac.Auth != nil {
+		defer ac.Auth.Close()
+	}
+	if err != nil {
+		return err
+	}
+	if ac.Managed && ac.Token == "" && ac.Auth == nil {
 		return errors.New("managed mode requires NETCAP_FIREWALL_ADMIN_TOKEN")
 	}
-	if ac.Token != "" {
-		if len(ac.Token) < 32 {
+	if ac.Token != "" || ac.Auth != nil {
+		if ac.Auth == nil && len(ac.Token) < 32 {
 			return errors.New("administrative token requires at least 32 bytes")
 		}
 		if !loopbackAddress(cfg.AdminListen) && (c.String("admin-cert") == "" || c.String("admin-key") == "") {
@@ -288,6 +307,7 @@ func serve(ctx context.Context, c *cli.Command) error {
 		}
 		defer s.Close()
 		admin.Handle("/api/v1/policy/", s.Handler())
+		admin.Handle("/api/v1/auth/", s.Handler())
 		admin.Handle("/mcp", s.Handler())
 	}
 	if (c.String("admin-cert") == "") != (c.String("admin-key") == "") {
@@ -295,7 +315,7 @@ func serve(ctx context.Context, c *cli.Command) error {
 	}
 	data := &http.Server{Addr: cfg.Listen, Handler: dataHandler, ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 32 << 10, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS12}}
 	data.TLSConfig = f.TLSConfig()
-	management := &http.Server{Addr: cfg.AdminListen, Handler: firewallui.Wrap(admin, "policy"), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS12}}
+	management := &http.Server{Addr: cfg.AdminListen, Handler: firewallui.WrapOrigin(admin, "policy", ac.Origin, ac.Auth != nil), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS12}}
 	dl, err := net.Listen("tcp", data.Addr)
 	if err != nil {
 		return err
@@ -415,7 +435,17 @@ func stdio(ctx context.Context, c *cli.Command) error {
 	}
 	t := &localTarget{}
 	t.SetPolicy(p)
-	s, err := policycontrol.New(policycontrol.Config{Token: "local-stdio-read-only-principal", ReadOnly: true}, t)
+	a, auth, err := loadAuth(c.String("auth-config"))
+	if a != nil {
+		defer a.Close()
+	}
+	if err != nil {
+		return err
+	}
+	if a == nil || auth.Stdio == nil {
+		return errors.New("stdio requires auth-config with explicit stdio grants")
+	}
+	s, err := policycontrol.New(policycontrol.Config{Auth: a, Scope: auth.Scope, StdioPrincipal: auth.Stdio, ReadOnly: true}, t)
 	if err != nil {
 		return err
 	}
@@ -459,10 +489,19 @@ func runGateway(ctx context.Context, c *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	runtime.attachOperations(g.Operations)
+	stop, err := startOperations(c.String("operations-listen"), g.Operations)
+	if err != nil {
+		return err
+	}
+	defer stop()
 	return runtime.runWithAgent(ctx, c, g.Run)
 }
 
 func runEnforcer(ctx context.Context, c *cli.Command) error {
+	if c.String("auth-config") == "" && !c.Bool("legacy-admin") {
+		return errors.New("enforcer requires --auth-config or explicit --legacy-admin compatibility")
+	}
 	if err := checkServiceTLS(c); err != nil {
 		return err
 	}
@@ -473,12 +512,31 @@ func runEnforcer(ctx context.Context, c *cli.Command) error {
 		return errors.New("port must be 1..65535")
 	}
 	cfg := enforcer.Config{Token: os.Getenv("NETCAP_FIREWALL_ADMIN_TOKEN"), Table: c.String("table"), Namespace: c.String("namespace"), ProtectedCIDRs: c.StringSlice("protected-cidr"), DryRun: c.Bool("dry-run"), StateFile: c.String("state-file"), Scope: enforcer.Scope{Hook: c.String("hook"), Interface: c.String("interface"), DestinationCIDR: c.String("destination"), Protocol: c.String("protocol"), Port: uint16(c.Uint("port"))}}
+	if path := c.String("actions-config"); path != "" {
+		var actions struct {
+			Profiles  map[string]enforcer.Profile `json:"profiles"`
+			Protected []enforcer.Service          `json:"protected_services"`
+		}
+		if err := strictFile(path, &actions); err != nil {
+			return err
+		}
+		cfg.Profiles, cfg.ProtectedServices = actions.Profiles, actions.Protected
+	}
+	a, auth, err := loadAuth(c.String("auth-config"))
+	if a != nil {
+		defer a.Close()
+	}
+	if err != nil {
+		return err
+	}
+	cfg.Auth, cfg.AuthScope, cfg.Origin = a, auth.Scope, auth.Origin
+	cfg.Approvals = auth.approvals
 	e, err := enforcer.New(cfg, nil)
 	if err != nil {
 		return err
 	}
 	defer e.Close()
-	srv := &http.Server{Addr: c.String("listen"), Handler: firewallui.Wrap(e.Handler(), "leases"), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10}
+	srv := &http.Server{Addr: c.String("listen"), Handler: firewallui.WrapOrigin(e.Handler(), "leases", cfg.Origin, cfg.Auth != nil), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10}
 	l, err := net.Listen("tcp", srv.Addr)
 	if err != nil {
 		return err
@@ -506,7 +564,7 @@ func runEnforcer(ctx context.Context, c *cli.Command) error {
 			}
 			return err
 		case <-ticker.C:
-			if err := e.Reconcile(ctx); err != nil {
+			if err := e.Reconcile(maintenanceIdentity(ctx, cfg.AuthScope, firewallauth.Lease)); err != nil {
 				fmt.Fprintln(c.Root().ErrWriter, "enforcer reconciliation failed:", strings.TrimSpace(err.Error()))
 			}
 		}

@@ -18,6 +18,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/policy"
 	"github.com/mark3labs/mcp-go/server"
 	_ "modernc.org/sqlite"
@@ -39,10 +40,15 @@ type Target interface {
 // Managed must be explicitly true to enable writes and restart recovery.
 // ReadOnly overrides Managed. StateDir is required only in managed mode.
 type Config struct {
-	Token    string
-	ReadOnly bool
-	StateDir string
-	Managed  bool
+	Approvals      *firewallauth.Approvals
+	Auth           *firewallauth.Authority
+	Scope          firewallauth.Scope
+	Origin         string
+	StdioPrincipal *firewallauth.Principal
+	Token          string
+	ReadOnly       bool
+	StateDir       string
+	Managed        bool
 	// AllowEffects is immutable host admission, including replay and recovery.
 	AllowEffects bool
 }
@@ -60,19 +66,30 @@ type Service struct {
 }
 
 type Request struct {
-	Bundle           string         `json:"bundle,omitempty"`
-	Revision         string         `json:"revision,omitempty"`
-	OtherRevision    string         `json:"other_revision,omitempty"`
-	ExpectedRevision string         `json:"expected_revision,omitempty"`
-	IdempotencyKey   string         `json:"idempotency_key,omitempty"`
-	Event            policy.Event   `json:"event,omitempty"`
-	Events           []policy.Event `json:"events,omitempty"`
-	Limit            int            `json:"limit,omitempty"`
+	Approval         *firewallauth.ApprovalRequest `json:"approval,omitempty"`
+	Receipt          string                        `json:"receipt,omitempty"`
+	Bundle           string                        `json:"bundle,omitempty"`
+	Revision         string                        `json:"revision,omitempty"`
+	OtherRevision    string                        `json:"other_revision,omitempty"`
+	ExpectedRevision string                        `json:"expected_revision,omitempty"`
+	IdempotencyKey   string                        `json:"idempotency_key,omitempty"`
+	Event            policy.Event                  `json:"event,omitempty"`
+	Events           []policy.Event                `json:"events,omitempty"`
+	Limit            int                           `json:"limit,omitempty"`
 }
 
 type Revision struct {
 	Revision string          `json:"revision"`
 	Bundle   json.RawMessage `json:"bundle"`
+}
+
+func ApprovalDigest(operation string, r Request) string {
+	r.Receipt = ""
+	r.Approval = nil
+	return firewallauth.Digest(struct {
+		Operation string  `json:"operation"`
+		Request   Request `json:"request"`
+	}{operation, r})
 }
 
 type Deployment struct {
@@ -97,7 +114,10 @@ func (e *apiError) Error() string              { return e.message }
 func failure(status int, message string) error { return &apiError{status, message} }
 
 func New(cfg Config, target Target) (*Service, error) {
-	if cfg.Token == "" {
+	if cfg.Approvals != nil && cfg.Auth == nil {
+		return nil, errors.New("approval protection requires identity authority")
+	}
+	if cfg.Token == "" && cfg.Auth == nil {
 		return nil, errors.New("policycontrol: nonempty administrative token required")
 	}
 	if target == nil || target.Policy() == nil {
@@ -227,6 +247,9 @@ func (s *Service) open() error {
 		return err
 	}
 	s.db.SetMaxOpenConns(1)
+	if err := firewallauth.PinState(context.Background(), s.db, s.cfg.Scope, s.cfg.Auth != nil); err != nil {
+		return err
+	}
 	// EXCLUSIVE in rollback-journal mode holds the OS lock until Close, including
 	// between transactions: a second service must never attach this database.
 	_, err = s.db.Exec(`PRAGMA busy_timeout=0; PRAGMA journal_mode=DELETE;
@@ -371,6 +394,27 @@ func (s *Service) compileBundle(c *policy.Compiled) (*policy.Compiled, []byte, e
 // Execute is the common REST/MCP operation boundary. Evaluate only uses synthetic
 // caller-supplied events and never invokes Target.SetPolicy or an upstream.
 func (s *Service) Execute(ctx context.Context, operation string, r Request) (any, error) {
+	if operation == "approval" {
+		if s.cfg.Approvals == nil || r.Approval == nil || r.Approval.Scope != s.cfg.Scope {
+			return nil, failure(403, "approval unavailable or foreign scope")
+		}
+		receipt, err := s.cfg.Approvals.Issue(ctx, *r.Approval)
+		if err != nil {
+			return nil, failure(403, "separate authorized approver required")
+		}
+		return map[string]string{"receipt": receipt}, nil
+	}
+	_, hasPrincipal := firewallauth.FromContext(ctx)
+	if s.cfg.Auth != nil || hasPrincipal {
+		if err := firewallauth.Require(ctx, firewallauth.Operation(operation), s.cfg.Scope); err != nil {
+			return nil, failure(403, "policy grant required")
+		}
+	}
+	if s.cfg.Approvals != nil {
+		if err := s.cfg.Approvals.Check(ctx, firewallauth.Operation(operation), s.cfg.Scope, ApprovalDigest(operation, r), r.Receipt); err != nil {
+			return nil, failure(403, "valid unused approval receipt required")
+		}
+	}
 	if len(r.Events) > MaxEvents {
 		return nil, failure(400, "simulation exceeds 1000 events")
 	}

@@ -16,6 +16,8 @@ import (
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 )
 
 const (
@@ -42,8 +44,12 @@ type Scope struct {
 }
 
 type Config struct {
-	Token string
-	Table string
+	Approvals *firewallauth.Approvals
+	Auth      *firewallauth.Authority
+	AuthScope firewallauth.Scope
+	Origin    string
+	Token     string
+	Table     string
 	// Namespace is an existing named Linux netns under /run/netns. It is required
 	// by NewNFTBackend; enforcer never creates a namespace or targets the default one.
 	Namespace      string
@@ -54,10 +60,13 @@ type Config struct {
 	DryRun         bool
 	// StateFile is an optional private desired-state snapshot. Its parent must
 	// exist. A sibling .lock prevents concurrent controllers using the same file.
-	StateFile string
+	StateFile         string
+	Profiles          map[string]Profile
+	ProtectedServices []Service
 }
 
 type Lease struct {
+	Action Action `json:"action,omitempty"`
 	ID     string `json:"id"`
 	Source string `json:"source"`
 	Scope  Scope  `json:"scope"`
@@ -88,7 +97,10 @@ type Controller struct {
 }
 
 func normalize(c Config) (Config, []netip.Prefix, error) {
-	if len(c.Token) < 32 || len(c.Token) > 4096 {
+	if c.Approvals != nil && c.Auth == nil {
+		return c, nil, errors.New("approval protection requires identity authority")
+	}
+	if c.Auth == nil && (len(c.Token) < 32 || len(c.Token) > 4096) {
 		return c, nil, errors.New("bearer token must contain 32..4096 bytes")
 	}
 	if c.Table == "" {
@@ -107,7 +119,7 @@ func normalize(c Config) (Config, []netip.Prefix, error) {
 		return c, nil, errors.New("limits must be TTL 1s..15m and leases 1..1000")
 	}
 	s := c.Scope
-	if (s.Hook != "input" && s.Hook != "forward") || (s.Protocol != "tcp" && s.Protocol != "udp") || s.Port == 0 {
+	if (s.Hook != "input" && s.Hook != "forward" && s.Hook != "prerouting") || (s.Protocol != "tcp" && s.Protocol != "udp") || s.Port == 0 {
 		return c, nil, errors.New("explicit input/forward hook, tcp/udp protocol and service port required")
 	}
 	if len(s.Interface) > 15 || !regexp.MustCompile(`^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$`).MatchString(s.Interface) {
@@ -129,6 +141,9 @@ func normalize(c Config) (Config, []netip.Prefix, error) {
 			return c, nil, errors.New("destination scope overlaps protected CIDR")
 		}
 		protected = append(protected, p)
+	}
+	if err := normalizeProfiles(&c); err != nil {
+		return c, nil, err
 	}
 	return c, protected, nil
 }
@@ -182,7 +197,7 @@ func New(config Config, backend Backend) (*Controller, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	if err = x.Reconcile(ctx); err != nil {
+	if err = x.reconcile(ctx); err != nil {
 		return nil, err
 	}
 	ready = true
@@ -191,16 +206,31 @@ func New(config Config, backend Backend) (*Controller, error) {
 
 func fingerprint(c Config) string {
 	b, _ := json.Marshal(struct {
-		Table, Namespace string
-		Scope            Scope
-		Protected        []string
-		DryRun           bool
-	}{c.Table, c.Namespace, c.Scope, c.ProtectedCIDRs, c.DryRun})
+		Table, Namespace  string
+		Scope             Scope
+		Protected         []string
+		DryRun            bool
+		Profiles          map[string]Profile `json:",omitempty"`
+		ProtectedServices []Service          `json:",omitempty"`
+	}{c.Table, c.Namespace, c.Scope, c.ProtectedCIDRs, c.DryRun, c.Profiles, c.ProtectedServices})
+	if c.Auth != nil {
+		b, _ = json.Marshal(struct {
+			Network  json.RawMessage
+			Identity firewallauth.Scope
+		}{b, c.AuthScope})
+	}
 	h := sha256.Sum256(b)
 	return hex.EncodeToString(h[:])
 }
 
 func (c *Controller) validate(l Lease) error {
+	if err := c.validateAction(l); err != nil {
+		return err
+	}
+	return c.validateBase(l)
+}
+
+func (c *Controller) validateBase(l Lease) error {
 	if !identifier.MatchString(l.ID) || l.Scope != c.config.Scope {
 		return errors.New("invalid ID or scope")
 	}
@@ -228,6 +258,16 @@ func (c *Controller) validate(l Lease) error {
 }
 
 func (c *Controller) Create(ctx context.Context, id, source string, ttl time.Duration) (Lease, error) {
+	return c.CreateAction(ctx, id, source, ttl, Action{})
+}
+
+func (c *Controller) CreateAction(ctx context.Context, id, source string, ttl time.Duration, action Action) (Lease, error) {
+	if err := c.authorize(ctx, firewallauth.Lease); err != nil {
+		return Lease{}, err
+	}
+	if err := c.checkApproval(ctx, ActionApprovalDigest(id, source, ttl, time.Time{}, action)); err != nil {
+		return Lease{}, err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed {
@@ -236,7 +276,7 @@ func (c *Controller) Create(ctx context.Context, id, source string, ttl time.Dur
 	if ttl < time.Second || ttl > c.config.MaxTTL || ttl%time.Second != 0 {
 		return Lease{}, errors.New("TTL must be whole seconds within configured limit")
 	}
-	l := Lease{ID: id, Source: source, Scope: c.config.Scope, TTLSeconds: int64(ttl / time.Second), ExpiresAt: time.Now().UTC().Add(ttl)}
+	l := Lease{ID: id, Source: source, Scope: c.config.Scope, TTLSeconds: int64(ttl / time.Second), ExpiresAt: time.Now().UTC().Add(ttl), Action: action}
 	return c.create(ctx, l, false)
 }
 
@@ -245,6 +285,16 @@ func (c *Controller) Create(ctx context.Context, id, source string, ttl time.Dur
 // remaining time to milliseconds; TTLSeconds is metadata, never a renewal input.
 // An active same-ID retry must have the same source and deadline.
 func (c *Controller) CreateUntil(ctx context.Context, id, source string, expiresAt time.Time) (Lease, error) {
+	return c.CreateActionUntil(ctx, id, source, expiresAt, Action{})
+}
+
+func (c *Controller) CreateActionUntil(ctx context.Context, id, source string, expiresAt time.Time, action Action) (Lease, error) {
+	if err := c.authorize(ctx, firewallauth.Lease); err != nil {
+		return Lease{}, err
+	}
+	if err := c.checkApproval(ctx, ActionApprovalDigest(id, source, 0, expiresAt, action)); err != nil {
+		return Lease{}, err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed {
@@ -255,7 +305,7 @@ func (c *Controller) CreateUntil(ctx context.Context, id, source string, expires
 	if expiresAt.IsZero() || remaining < time.Millisecond || remaining > c.config.MaxTTL {
 		return Lease{}, errors.New("deadline must be 1ms..MaxTTL in the future")
 	}
-	l := Lease{ID: id, Source: source, Scope: c.config.Scope, TTLSeconds: ceilSeconds(remaining), ExpiresAt: expiresAt.UTC()}
+	l := Lease{ID: id, Source: source, Scope: c.config.Scope, TTLSeconds: ceilSeconds(remaining), ExpiresAt: expiresAt.UTC(), Action: action}
 	return c.create(ctx, l, true)
 }
 
@@ -278,13 +328,13 @@ func (c *Controller) create(ctx context.Context, l Lease, absolute bool) (Lease,
 		if absolute {
 			same = old.ExpiresAt.Equal(l.ExpiresAt)
 		}
-		if old.Source == l.Source && same {
+		if old.Source == l.Source && old.Action == l.Action && same {
 			return old, nil
 		}
 		return Lease{}, ErrConflict
 	}
 	for _, old := range c.leases {
-		if old.Source == l.Source {
+		if c.selectorsConflict(old, l) {
 			return Lease{}, ErrConflict
 		}
 	}
@@ -331,10 +381,16 @@ func (c *Controller) applyLease(ctx context.Context, l Lease) error {
 }
 
 func (c *Controller) Delete(ctx context.Context, id string) error {
+	if err := c.authorize(ctx, firewallauth.Lease); err != nil {
+		return err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed {
 		return errors.New("controller closed")
+	}
+	if err := c.checkApproval(ctx, DeleteApprovalDigest(c.leases[id])); err != nil {
+		return err
 	}
 	if err := c.reconcile(ctx); err != nil {
 		return err
@@ -355,13 +411,18 @@ func (c *Controller) Delete(ctx context.Context, id string) error {
 }
 
 func (c *Controller) List(ctx context.Context) ([]Lease, error) {
+	if err := c.authorize(ctx, firewallauth.Read); err != nil {
+		return nil, err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed {
 		return nil, errors.New("controller closed")
 	}
-	if err := c.reconcile(ctx); err != nil {
-		return nil, err
+	if c.config.Auth == nil {
+		if err := c.reconcile(ctx); err != nil {
+			return nil, err
+		}
 	}
 	return sorted(c.leases), nil
 }
@@ -376,12 +437,53 @@ func sorted(m map[string]Lease) []Lease {
 }
 
 func (c *Controller) Reconcile(ctx context.Context) error {
+	if err := c.authorize(ctx, firewallauth.Lease); err != nil {
+		return err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed {
 		return errors.New("controller closed")
 	}
 	return c.reconcile(ctx)
+}
+
+func (c *Controller) authorize(ctx context.Context, action firewallauth.Action) error {
+	if c.config.Auth != nil {
+		return firewallauth.Require(ctx, action, c.config.AuthScope)
+	}
+	return nil
+}
+
+func (c *Controller) checkApproval(ctx context.Context, digest string) error {
+	if c.config.Approvals != nil {
+		return c.config.Approvals.Check(ctx, firewallauth.Lease, c.config.AuthScope, digest, firewallauth.Receipt(ctx))
+	}
+	return nil
+}
+
+func CreateApprovalDigest(id, source string, ttl time.Duration, expires time.Time) string {
+	return firewallauth.Digest(struct {
+		Operation, ID, Source string
+		TTL                   time.Duration
+		Expires               time.Time
+	}{"create", id, source, ttl, expires.UTC()})
+}
+
+func ActionApprovalDigest(id, source string, ttl time.Duration, expires time.Time, action Action) string {
+	if action == (Action{}) {
+		return CreateApprovalDigest(id, source, ttl, expires)
+	}
+	return firewallauth.Digest(struct {
+		Base   string
+		Action Action
+	}{CreateApprovalDigest(id, source, ttl, expires), action})
+}
+func DeleteApprovalDigest(l Lease) string {
+	return firewallauth.Digest(struct {
+		Operation string
+		Lease     Lease
+	}{"delete", l})
 }
 
 func (c *Controller) reconcile(ctx context.Context) error {
@@ -399,11 +501,16 @@ func (c *Controller) reconcile(ctx context.Context) error {
 		selectors := make(map[string]bool)
 		for _, l := range kernel {
 			if l.ExpiresAt.After(now) {
-				if _, ok := c.leases[l.ID]; ok || selectors[l.Source] {
+				for _, old := range c.leases {
+					if c.selectorsConflict(old, l) {
+						return ErrConflict
+					}
+				}
+				if _, ok := c.leases[l.ID]; ok || selectors[selectorKey(l)] {
 					return ErrConflict
 				}
 				c.leases[l.ID] = l
-				selectors[l.Source] = true
+				selectors[selectorKey(l)] = true
 			}
 		}
 		if len(c.leases) > c.config.MaxLeases {

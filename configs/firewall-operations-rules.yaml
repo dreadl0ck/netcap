@@ -1,0 +1,21 @@
+groups:
+  - name: netcap-firewall-operations-v1
+    rules:
+      - record: netcap_firewall:operation_latency:p95
+        expr: histogram_quantile(0.95, sum by (le, component, stage, job, instance) (rate(netcap_firewall_operation_duration_seconds_bucket[5m])))
+      - record: netcap_firewall:operation_latency:p99
+        expr: histogram_quantile(0.99, sum by (le, component, stage, job, instance) (rate(netcap_firewall_operation_duration_seconds_bucket[5m])))
+      - alert: NetcapFirewallDegraded
+        expr: netcap_firewall_degraded == 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Firewall runtime reports a named degraded condition
+      - alert: NetcapFirewallOperationFailures
+        expr: sum by (component, job, instance, stage) (rate(netcap_firewall_operations_total{outcome=~"error|failed|timeout|overload"}[5m])) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Firewall operations are failing

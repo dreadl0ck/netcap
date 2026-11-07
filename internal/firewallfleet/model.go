@@ -9,6 +9,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 	"github.com/dreadl0ck/netcap/internal/policy"
 )
@@ -25,6 +26,7 @@ const (
 
 type Scope = firewallstate.Scope
 type Identity struct {
+	Role  string `json:"role,omitempty"`
 	ID    string
 	Token string
 	Scope Scope
@@ -38,14 +40,24 @@ type Enrollment struct {
 	Scope Scope
 }
 type Config struct {
-	StateDir          string
-	DatabaseURL       string
-	DatabaseNamespace string
-	Token             string
-	Identities        []Identity
-	Targets           []Enrollment
-	AllowEffects      bool
-	RollbackOnFailure bool
+	Approvals   *firewallauth.Approvals
+	Auth        *firewallauth.Authority
+	Environment string
+	Origin      string
+	// AuditRequired refuses mutations when the retained audit is full. Export
+	// does not acknowledge deletion; retention remains an explicit operator choice.
+	AuditRequired       bool
+	AuditRetention      time.Duration
+	AuditMaxRecords     int
+	JobReceiptRetention time.Duration
+	StateDir            string
+	DatabaseURL         string
+	DatabaseNamespace   string
+	Token               string
+	Identities          []Identity
+	Targets             []Enrollment
+	AllowEffects        bool
+	RollbackOnFailure   bool
 }
 type Target interface {
 	Policy() *policy.Compiled
@@ -102,37 +114,66 @@ type Job struct {
 	Failure           string            `json:"failure,omitempty"`
 }
 type Audit struct {
-	ID        int64     `json:"id"`
-	Time      time.Time `json:"time"`
-	Actor     string    `json:"actor"`
-	Operation string    `json:"operation"`
-	Scope     Scope     `json:"scope"`
-	Object    string    `json:"object"`
+	ID                int64             `json:"id"`
+	Time              time.Time         `json:"time"`
+	Actor             string            `json:"actor"`
+	Operation         string            `json:"operation"`
+	Scope             Scope             `json:"scope"`
+	Object            string            `json:"object"`
+	Grant             string            `json:"grant,omitempty"`
+	Outcome           string            `json:"outcome,omitempty"`
+	Reason            string            `json:"reason,omitempty"`
+	Revision          string            `json:"revision,omitempty"`
+	PreviousRevision  string            `json:"previous_revision,omitempty"`
+	Generation        int64             `json:"generation,omitempty"`
+	Correlation       string            `json:"correlation,omitempty"`
+	Targets           []string          `json:"targets,omitempty"`
+	PreviousRevisions map[string]string `json:"previous_revisions,omitempty"`
 }
 type Request struct {
-	Scope             Scope            `json:"scope"`
-	Bundle            string           `json:"bundle,omitempty"`
-	Revision          string           `json:"revision,omitempty"`
-	ID                string           `json:"id,omitempty"`
-	Targets           []string         `json:"targets,omitempty"`
-	Canary            []string         `json:"canary,omitempty"`
-	Expected          map[string]int64 `json:"expected,omitempty"`
-	Deadline          time.Time        `json:"deadline,omitempty"`
-	ExpectedPhase     string           `json:"expected_phase,omitempty"`
-	RollbackOnFailure bool             `json:"rollback_on_failure,omitempty"`
+	Approval          *firewallauth.ApprovalRequest `json:"approval,omitempty"`
+	Receipt           string                        `json:"receipt,omitempty"`
+	Revisions         []string                      `json:"revisions,omitempty"`
+	Jobs              []string                      `json:"jobs,omitempty"`
+	Receipts          []string                      `json:"receipts,omitempty"`
+	ExpectedPlan      string                        `json:"expected_plan,omitempty"`
+	After             int64                         `json:"after,omitempty"`
+	Limit             int                           `json:"limit,omitempty"`
+	Scope             Scope                         `json:"scope"`
+	Bundle            string                        `json:"bundle,omitempty"`
+	Revision          string                        `json:"revision,omitempty"`
+	ID                string                        `json:"id,omitempty"`
+	Targets           []string                      `json:"targets,omitempty"`
+	Canary            []string                      `json:"canary,omitempty"`
+	Expected          map[string]int64              `json:"expected,omitempty"`
+	Deadline          time.Time                     `json:"deadline,omitempty"`
+	ExpectedPhase     string                        `json:"expected_phase,omitempty"`
+	RollbackOnFailure bool                          `json:"rollback_on_failure,omitempty"`
 }
 type revision struct {
 	Scope    Scope           `json:"scope"`
 	Revision string          `json:"revision"`
 	Bundle   json.RawMessage `json:"bundle,omitempty"`
 }
+
+func ApprovalDigest(operation string, r Request) string {
+	r.Receipt = ""
+	r.Approval = nil
+	return firewallauth.Digest(struct {
+		Operation string  `json:"operation"`
+		Request   Request `json:"request"`
+	}{operation, r})
+}
+
 type snapshot struct {
-	Version   int                     `json:"version"`
-	Targets   map[string]*TargetState `json:"targets"`
-	Revisions map[string]revision     `json:"revisions"`
-	Jobs      map[string]*Job         `json:"jobs"`
-	Audit     []Audit                 `json:"audit"`
-	AuditSeq  int64                   `json:"audit_seq"`
+	AuditOverflow bool                    `json:"-"`
+	ArchivedJobs  map[string]JobReceipt   `json:"archived_jobs,omitempty"`
+	Version       int                     `json:"version"`
+	Targets       map[string]*TargetState `json:"targets"`
+	Revisions     map[string]revision     `json:"revisions"`
+	Jobs          map[string]*Job         `json:"jobs"`
+	Audit         []Audit                 `json:"audit"`
+	AuditSeq      int64                   `json:"audit_seq"`
 }
 
 func revisionKey(s Scope, rev string) string { return s.Tenant + "/" + s.App + "/" + rev }

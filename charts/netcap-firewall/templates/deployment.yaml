@@ -48,6 +48,9 @@ spec:
             - serve
             - --config
             - /etc/netcap-firewall/config.yaml
+            {{- if .Values.adminTokenSecret.name }}
+            - --legacy-admin
+            {{- end }}
             {{- if .Values.websocket }}
             - --websocket
             {{- end }}

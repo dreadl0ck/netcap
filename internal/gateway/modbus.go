@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/policy"
 )
@@ -19,6 +20,8 @@ var errModbus = errors.New("gateway: invalid or unsupported Modbus frame")
 // Serve owns and closes l. Cancellation closes active connections and waits for
 // all handlers. Each client has at most one upstream connection and outstanding ADU.
 func (g *Gateway) Serve(ctx context.Context, l net.Listener) error {
+	g.Operations.Health(true, "ok")
+	defer g.Operations.Health(false, "closed")
 	defer l.Close()
 	if g.cfg.Protocol == "dns" {
 		return protocolError(g.cfg.Protocol)
@@ -45,11 +48,14 @@ func (g *Gateway) Serve(ctx context.Context, l net.Listener) error {
 			_ = c.Close()
 			continue
 		}
+		queueStart := time.Now()
 		select {
 		case slots <- struct{}{}:
+			g.Operations.Observe("queue", queueStart, "ok")
 			wg.Add(1)
 			go func() { defer wg.Done(); defer func() { <-slots }(); g.serveClient(ctx, c, ip) }()
 		default:
+			g.Operations.Observe("queue", queueStart, "overload")
 			_ = c.Close()
 		}
 	}
@@ -136,7 +142,15 @@ func (g *Gateway) readModbus(ctx context.Context, c net.Conn, idle bool) ([]byte
 	return frame, err
 }
 
-func (g *Gateway) writeFrame(ctx context.Context, c net.Conn, b []byte) error {
+func (g *Gateway) writeFrame(ctx context.Context, c net.Conn, b []byte) (resultErr error) {
+	start := time.Now()
+	defer func() {
+		outcome := "ok"
+		if resultErr != nil {
+			outcome = "error"
+		}
+		g.Operations.Observe("forwarding", start, outcome)
+	}()
 	if err := c.SetWriteDeadline(deadline(ctx, g.cfg.IOTimeout)); err != nil {
 		return err
 	}

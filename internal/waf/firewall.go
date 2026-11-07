@@ -22,9 +22,11 @@ import (
 	"github.com/dreadl0ck/netcap/internal/apipolicy"
 	"github.com/dreadl0ck/netcap/internal/firewalltransport"
 	"github.com/dreadl0ck/netcap/internal/policy"
+	"github.com/dreadl0ck/netcap/internal/runtimeobs"
 )
 
 type Firewall struct {
+	Operations  *runtimeobs.Monitor
 	parent      *Firewall
 	router      *routeRouter
 	messageWS   bool
@@ -55,12 +57,13 @@ type Firewall struct {
 }
 
 type requestState struct {
-	operation  *apipolicy.Operation
-	buffered   int64
-	policy     *policy.Compiled
-	event      policy.Event
-	client     string
-	inspection inspectionTransaction
+	forwardFailed bool
+	operation     *apipolicy.Operation
+	buffered      int64
+	policy        *policy.Compiled
+	event         policy.Event
+	client        string
+	inspection    inspectionTransaction
 }
 type stateKey struct{}
 type rejection struct{ status int }
@@ -88,7 +91,7 @@ func New(c Config, p *policy.Compiled) (*Firewall, error) {
 	c.TrustedProxyCIDRs = append([]string(nil), c.TrustedProxyCIDRs...)
 	c.AllowedHosts = append([]string(nil), c.AllowedHosts...)
 	c.CRSTargetExclusions = append([]CRSTargetExclusion(nil), c.CRSTargetExclusions...)
-	f := &Firewall{cfg: c, slots: make(chan struct{}, c.MaxConcurrent), audit: make(chan AuditRecord, 256), stats: &counters{}}
+	f := &Firewall{Operations: runtimeobs.New("waf"), cfg: c, slots: make(chan struct{}, c.MaxConcurrent), audit: make(chan AuditRecord, 256), stats: &counters{}}
 	f.buffers, _ = firewalltransport.NewBufferBudget(c.MaxBufferedBytes)
 	if c.DescriptorPath != "" {
 		var err error
@@ -98,6 +101,9 @@ func New(c Config, p *policy.Compiled) (*Firewall, error) {
 		}
 	}
 	f.lifetime, f.stop = context.WithCancel(context.Background())
+	f.Operations.Revision(p.Revision())
+	f.Operations.Health(true, "ok")
+	f.registerLegacyMetrics()
 	if err := f.ReloadTLS(); err != nil {
 		f.stop()
 		return nil, err
@@ -156,6 +162,9 @@ func New(c Config, p *policy.Compiled) (*Firewall, error) {
 		}
 		pr.Out.Header.Set("X-Forwarded-Proto", proto)
 	}, ModifyResponse: f.inspectResponse, ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
+		if state, ok := r.Context().Value(stateKey{}).(*requestState); ok {
+			state.forwardFailed = true
+		}
 		status := http.StatusBadGateway
 		var reject rejection
 		if errors.As(err, &reject) {
@@ -169,6 +178,7 @@ func New(c Config, p *policy.Compiled) (*Firewall, error) {
 func (f *Firewall) SetPolicy(p *policy.Compiled) {
 	if p != nil {
 		f.current.Store(p)
+		f.Operations.Revision(p.Revision())
 	}
 }
 func (f *Firewall) Policy() *policy.Compiled { return f.current.Load() }
@@ -180,6 +190,9 @@ func (f *Firewall) SetDraining(v bool) {
 func (f *Firewall) Close() error {
 	f.routeMu.Lock()
 	defer f.routeMu.Unlock()
+	if f.parent == nil {
+		f.Operations.Health(false, "closed")
+	}
 	f.SetDraining(true)
 	f.stop()
 	if f.router != nil {
@@ -247,6 +260,7 @@ func (f *Firewall) clientIP(r *http.Request) (string, error) {
 }
 
 func (f *Firewall) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	queueStart := time.Now()
 	f.startServing()
 	if f.router != nil {
 		f.serveRoute(w, r)
@@ -259,8 +273,10 @@ func (f *Firewall) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	select {
 	case f.slots <- struct{}{}:
+		f.Operations.Observe("queue", queueStart, "ok")
 		defer func() { <-f.slots }()
 	default:
+		f.Operations.Observe("queue", queueStart, "overload")
 		f.reject(w, r, 503)
 		return
 	}
@@ -464,7 +480,13 @@ func (f *Firewall) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	releaseProjection()
 	pw := &finalResponseWriter{ResponseWriter: w, ctx: r.Context()}
 	defer pw.finish()
+	forwardStart := time.Now()
 	f.proxy.ServeHTTP(pw, r.WithContext(context.WithValue(r.Context(), stateKey{}, s)))
+	forwardOutcome := "ok"
+	if s.forwardFailed {
+		forwardOutcome = "error"
+	}
+	f.Operations.Observe("forwarding", forwardStart, forwardOutcome)
 }
 
 func boundedInspectionHeaders(h http.Header) bool {
@@ -577,6 +599,7 @@ type cancelReadWriteBody struct {
 func (b *cancelReadWriteBody) Close() error { err := b.ReadWriteCloser.Close(); b.cancel(); return err }
 
 func (f *Firewall) evaluate(ctx context.Context, p *policy.Compiled, e policy.Event) int {
+	start := time.Now()
 	var d policy.Decision
 	var err error
 	hook := f.evaluator.Load()
@@ -588,6 +611,12 @@ func (f *Firewall) evaluate(ctx context.Context, p *policy.Compiled, e policy.Ev
 	} else {
 		d, err = p.Evaluate(e)
 	}
+	outcome := d.Verdict
+	if err != nil {
+		outcome = "error"
+	}
+	f.Operations.Observe("decision", start, outcome)
+	f.Operations.NativeError(err)
 	if err != nil {
 		f.stats.errors.Add(1)
 		f.record(AuditRecord{Phase: e.Phase, Verdict: "error", Status: 503})

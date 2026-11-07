@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"sync/atomic"
 	"time"
+
+	"github.com/dreadl0ck/netcap/internal/runtimeobs"
 )
 
 type Verdict string
@@ -52,23 +54,33 @@ type Config struct {
 	// InspectTLS enables bounded visible ClientHello metadata; it never holds a
 	// packet waiting for a later segment and cannot inspect encrypted application data.
 	InspectTLS bool
+	// Persistent appliance hooks require lifetime-lock fencing for recovery.
+	OwnershipNonce string
+	RecoverOwned   bool
 }
 
 type Counters struct{ Packets, Accepted, Dropped, WouldDeny, ParseErrors, EvaluationErrors, Deadlines, Overloads, VerdictErrors, ReceiveErrors uint64 }
 
 type Firewall struct {
-	config    Config
-	protected []netip.Prefix
-	evaluator Evaluator
-	ready     chan struct{}
-	started   atomic.Bool
-	counts    [10]atomic.Uint64
-	tls       *helloInspector
+	Operations *runtimeobs.Monitor
+	config     Config
+	protected  []netip.Prefix
+	evaluator  Evaluator
+	ready      chan struct{}
+	started    atomic.Bool
+	counts     [10]atomic.Uint64
+	tls        *helloInspector
 }
 
 var identifier = regexp.MustCompile(`^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,63}$`)
 
 func New(c Config, e Evaluator) (*Firewall, error) {
+	if c.RecoverOwned && c.OwnershipNonce == "" {
+		return nil, errors.New("recovery requires an appliance ownership nonce")
+	}
+	if c.OwnershipNonce != "" && (!regexp.MustCompile(`^[a-f0-9]{32}$`).MatchString(c.OwnershipNonce) || c.FailureVerdict != Deny || c.BypassWithoutListener || c.FailOpenOnOverflow) {
+		return nil, errors.New("persistent appliance requires a 128-bit lowercase hex nonce and deny on missing listener, overflow and deadline")
+	}
 	if !identifier.MatchString(c.Namespace) || c.Namespace == "default" || !identifier.MatchString(c.Interface) || len(c.Interface) > 15 || c.Interface == "lo" {
 		return nil, errors.New("explicit non-default named namespace and non-loopback interface required")
 	}
@@ -86,7 +98,7 @@ func New(c Config, e Evaluator) (*Firewall, error) {
 	}
 	c.ProtectedCIDRs = append([]string(nil), c.ProtectedCIDRs...)
 	c.ManagementDestinations = append([]string(nil), c.ManagementDestinations...)
-	f := &Firewall{config: c, evaluator: e, ready: make(chan struct{})}
+	f := &Firewall{Operations: runtimeobs.New("network"), config: c, evaluator: e, ready: make(chan struct{})}
 	if c.InspectTLS {
 		f.tls = newHelloInspector()
 	}
@@ -143,11 +155,14 @@ func (f *Firewall) worker(ctx context.Context) chan evaluation {
 	return jobs
 }
 
-func (f *Firewall) decide(ctx context.Context, jobs chan evaluation, raw []byte) Verdict {
+func (f *Firewall) decide(ctx context.Context, jobs chan evaluation, raw []byte) (verdict Verdict) {
+	start := time.Now()
+	defer func() { f.Operations.Observe("decision", start, string(verdict)) }()
 	f.counts[0].Add(1)
 	e, err := ParsePacket(raw)
 	if err != nil {
 		f.counts[4].Add(1)
+		f.Operations.Health(false, "evaluation_failed")
 		return f.config.FailureVerdict
 	}
 	if f.tls != nil && e.Transport == "tcp" {
@@ -166,18 +181,23 @@ func (f *Firewall) decide(ctx context.Context, jobs chan evaluation, raw []byte)
 	defer timer.Stop()
 	select {
 	case jobs <- job:
+		f.Operations.Observe("queue", start, "ok")
 	case <-ctx.Done():
 		return f.config.FailureVerdict
 	case <-timer.C:
 		f.counts[7].Add(1)
+		f.Operations.Observe("queue", start, "timeout")
+		f.Operations.Health(false, "capacity")
 		return f.config.FailureVerdict
 	}
 	select {
 	case r := <-job.result:
 		if r.err != nil {
 			f.counts[5].Add(1)
+			f.Operations.Health(false, runtimeobs.NativeFailure(r.err))
 			return f.config.FailureVerdict
 		}
+		f.Operations.Health(true, "ok")
 		switch r.decision.Verdict {
 		case Allow, Deny:
 			return r.decision.Verdict
@@ -192,6 +212,7 @@ func (f *Firewall) decide(ctx context.Context, jobs chan evaluation, raw []byte)
 		return f.config.FailureVerdict
 	case <-timer.C:
 		f.counts[6].Add(1)
+		f.Operations.Health(false, "deadline")
 		return f.config.FailureVerdict
 	}
 }

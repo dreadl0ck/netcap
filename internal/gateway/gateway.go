@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/policy"
+	"github.com/dreadl0ck/netcap/internal/runtimeobs"
 )
 
 // Evaluator is implemented by policy.Compiled. Implementations must be concurrency safe.
@@ -44,6 +45,7 @@ type Config struct {
 }
 
 type Gateway struct {
+	Operations           *runtimeobs.Monitor
 	cfg                  Config
 	policy               Evaluator
 	upstream             string
@@ -127,7 +129,7 @@ func New(cfg Config, evaluator Evaluator) (*Gateway, error) {
 	if err != nil || a == nil || a.Port == 0 || a.IP == nil || a.IP.IsUnspecified() || a.IP.IsMulticast() {
 		return nil, errors.New("gateway: upstream must resolve to a fixed unicast host:port")
 	}
-	g := &Gateway{cfg: cfg, policy: evaluator, upstream: a.String(), slots: make(chan struct{}, cfg.MaxConnections)}
+	g := &Gateway{Operations: runtimeobs.New("gateway"), cfg: cfg, policy: evaluator, upstream: a.String(), slots: make(chan struct{}, cfg.MaxConnections)}
 	if g.serverTLS, err = g.listenerTLS(); err != nil {
 		return nil, err
 	}
@@ -185,7 +187,17 @@ func (g *Gateway) clientAllowed(addr net.Addr) (string, bool) {
 }
 
 func (g *Gateway) allowed(e policy.Event) bool {
+	start := time.Now()
 	d, err := g.policy.Evaluate(e)
+	outcome := d.Verdict
+	if err != nil {
+		outcome = "error"
+	}
+	g.Operations.Observe("decision", start, outcome)
+	g.Operations.NativeError(err)
+	condition := runtimeobs.NativeFailure(err)
+	g.Operations.Health(err == nil, condition)
+	g.Operations.Revision(d.Revision)
 	return err == nil && (d.Verdict == "allow" || d.Verdict == "would-deny")
 }
 

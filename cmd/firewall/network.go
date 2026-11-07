@@ -21,6 +21,9 @@ func networkFlags() []cli.Flag {
 		&cli.BoolFlag{Name: "validate-only", Usage: "validate scope and policy without opening NFQUEUE"},
 		&cli.StringFlag{Name: "fleet-agent-config"},
 		&cli.StringFlag{Name: "policy-state-config"},
+		&cli.StringFlag{Name: "operations-listen", Usage: "optional literal loopback metrics/status listener"},
+		&cli.StringFlag{Name: "ownership-nonce", Usage: "immutable appliance nonce; keeps fail-closed hooks on shutdown"},
+		&cli.BoolFlag{Name: "recover-owned", Usage: "recover exact journaled hooks after lifetime-lock fencing"},
 	}
 }
 
@@ -52,6 +55,7 @@ func networkConfig(c *cli.Command) (networkfirewall.Config, error) {
 }
 func runNetwork(ctx context.Context, c *cli.Command) error {
 	cfg, err := networkConfig(c)
+	cfg.OwnershipNonce, cfg.RecoverOwned = c.String("ownership-nonce"), c.Bool("recover-owned")
 	if err != nil {
 		return err
 	}
@@ -72,5 +76,11 @@ func runNetwork(ctx context.Context, c *cli.Command) error {
 		}
 		return nil
 	}
+	r.attachOperations(f.Operations)
+	stop, err := startOperations(c.String("operations-listen"), f.Operations)
+	if err != nil {
+		return err
+	}
+	defer stop()
 	return r.runWithAgent(ctx, c, f.Run)
 }

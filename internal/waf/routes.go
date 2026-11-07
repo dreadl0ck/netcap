@@ -184,6 +184,7 @@ func (f *Firewall) compileRoutes() (*routeTable, error) {
 		child.buffers = f.buffers
 		child.audit = f.audit
 		child.stats = f.stats
+		child.Operations = f.Operations
 		var handler http.Handler = child
 		if f.messageWS || f.messageGRPC {
 			handler, err = child.MessageHandler(f.messageWS, f.messageGRPC)
