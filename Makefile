@@ -22,6 +22,18 @@ docs-source-check:
 # Test targets
 test: test-unit
 
+.PHONY: test-firewall-operations
+test-firewall-operations:
+	sh scripts/test-firewall-operations.sh
+
+FIREWALL_PACKAGES = ./cmd/netcap-firewall ./cmd/firewall ./internal/waf ./internal/policy ./internal/policystate ./internal/policycontrol ./internal/gateway ./internal/enforcer ./internal/networkfirewall ./internal/transparentfirewall ./internal/firewallstate ./internal/firewallfleet ./internal/firewalltransport ./internal/responseactions ./internal/runtimeobs
+.PHONY: test-firewall-ship
+test-firewall-ship: test-firewall-operations
+	go test -count=1 -race $(FIREWALL_PACKAGES)
+	go test -count=1 -race -tags coraza,http3 $(FIREWALL_PACKAGES)
+	go vet $(FIREWALL_PACKAGES)
+	go vet -tags coraza,http3 $(FIREWALL_PACKAGES)
+
 test-all: test-unit test-integration test-regression
 
 # Unit tests (fast, isolated, with mocks)

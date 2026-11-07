@@ -9,6 +9,7 @@ import (
 	"net"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/policy"
 	"golang.org/x/net/dns/dnsmessage"
@@ -20,6 +21,8 @@ var errDNS = errors.New("gateway: invalid or unsupported DNS message")
 
 // ServePacket owns pc. Single-question IN queries may carry one bounded EDNS0 OPT.
 func (g *Gateway) ServePacket(ctx context.Context, pc net.PacketConn) error {
+	g.Operations.Health(true, "ok")
+	defer g.Operations.Health(false, "closed")
 	defer pc.Close()
 	if g.cfg.Protocol != "dns" {
 		return protocolError(g.cfg.Protocol)
@@ -50,8 +53,10 @@ func (g *Gateway) ServePacket(ctx context.Context, pc net.PacketConn) error {
 		if err != nil {
 			continue
 		}
+		queueStart := time.Now()
 		select {
 		case slots <- struct{}{}:
+			g.Operations.Observe("queue", queueStart, "ok")
 			req := append([]byte(nil), buf[:n]...)
 			wg.Add(1)
 			go func() {
@@ -64,6 +69,7 @@ func (g *Gateway) ServePacket(ctx context.Context, pc net.PacketConn) error {
 				}
 			}()
 		default:
+			g.Operations.Observe("queue", queueStart, "overload")
 			// UDP overload is dropped rather than spawning unbounded waiters.
 		}
 	}
@@ -83,7 +89,13 @@ func (g *Gateway) dnsQuery(parent context.Context, req []byte, meta policy.DNSEv
 	if stream {
 		c, err = g.dial(ctx)
 	} else {
+		start := time.Now()
 		c, err = (&net.Dialer{}).DialContext(ctx, "udp", g.upstream)
+		outcome := "ok"
+		if err != nil {
+			outcome = "error"
+		}
+		g.Operations.Observe("connect", start, outcome)
 	}
 	if err != nil {
 		return dnsReply(req, 2, false)

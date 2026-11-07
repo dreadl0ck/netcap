@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/policy"
 )
@@ -58,7 +59,15 @@ func (g *Gateway) upstreamTLS() (*tls.Config, error) {
 	}
 	return t, err
 }
-func (g *Gateway) dial(ctx context.Context) (net.Conn, error) {
+func (g *Gateway) dial(ctx context.Context) (result net.Conn, resultErr error) {
+	start := time.Now()
+	defer func() {
+		outcome := "ok"
+		if resultErr != nil {
+			outcome = "error"
+		}
+		g.Operations.Observe("connect", start, outcome)
+	}()
 	c, err := (&net.Dialer{Timeout: g.cfg.IOTimeout}).DialContext(ctx, "tcp", g.upstream)
 	if err != nil {
 		return nil, err

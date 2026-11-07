@@ -21,6 +21,7 @@ func networkFlags() []cli.Flag {
 		&cli.BoolFlag{Name: "validate-only", Usage: "validate scope and policy without opening NFQUEUE"},
 		&cli.StringFlag{Name: "fleet-agent-config"},
 		&cli.StringFlag{Name: "policy-state-config"},
+		&cli.StringFlag{Name: "operations-listen", Usage: "optional literal loopback metrics/status listener"},
 	}
 }
 
@@ -72,5 +73,11 @@ func runNetwork(ctx context.Context, c *cli.Command) error {
 		}
 		return nil
 	}
+	r.attachOperations(f.Operations)
+	stop, err := startOperations(c.String("operations-listen"), f.Operations)
+	if err != nil {
+		return err
+	}
+	defer stop()
 	return r.runWithAgent(ctx, c, f.Run)
 }

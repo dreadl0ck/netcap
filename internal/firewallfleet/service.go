@@ -13,19 +13,39 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
+	"github.com/dreadl0ck/netcap/internal/runtimeobs"
 )
 
 type Service struct {
-	cfg       Config
-	disk      *firewallstate.Database
-	mu        sync.Mutex
-	slots     chan struct{}
-	httpSlots chan struct{}
-	artifacts map[string]revision
-	enrolled  map[string]Enrollment
+	Operations *runtimeobs.Monitor
+	cfg        Config
+	disk       *firewallstate.Database
+	mu         sync.Mutex
+	slots      chan struct{}
+	httpSlots  chan struct{}
+	artifacts  map[string]revision
+	enrolled   map[string]Enrollment
 }
 
 func New(cfg Config) (*Service, error) {
+	if cfg.AuditRetention == 0 {
+		cfg.AuditRetention = 30 * 24 * time.Hour
+	}
+	if cfg.JobReceiptRetention == 0 {
+		cfg.JobReceiptRetention = 30 * 24 * time.Hour
+	}
+	if cfg.JobReceiptRetention < time.Hour || cfg.JobReceiptRetention > 365*24*time.Hour {
+		return nil, errors.New("job receipt retention must be 1h..365d")
+	}
+	if cfg.AuditMaxRecords == 0 {
+		cfg.AuditMaxRecords = MaxAudit
+	}
+	if cfg.AuditMaxRecords < 2 || cfg.AuditMaxRecords > MaxAudit {
+		return nil, errors.New("audit max records must be 2..2048")
+	}
+	if cfg.AuditRetention < time.Hour || cfg.AuditRetention > 365*24*time.Hour {
+		return nil, errors.New("audit retention must be 1h..365d")
+	}
 	if cfg.Token == "" && len(cfg.Identities) == 0 {
 		return nil, errors.New("administrative identity required")
 	}
@@ -41,6 +61,9 @@ func New(cfg Config) (*Service, error) {
 	}
 	ids := map[string]bool{}
 	for _, p := range cfg.Identities {
+		if p.Role != "" && p.Role != "operator" && p.Role != "auditor" && p.Role != "viewer" {
+			return nil, errors.New("invalid administrative role")
+		}
 		if !firewallstate.ValidID(p.ID) || !p.Scope.Valid() || len(p.Token) < 16 || seen[firewallstate.Digest(p.Token)] || ids[p.ID] {
 			return nil, errors.New("invalid administrative identity")
 		}
@@ -75,7 +98,7 @@ func New(cfg Config) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Service{cfg: cfg, disk: d, slots: make(chan struct{}, 16), httpSlots: make(chan struct{}, 16), artifacts: map[string]revision{}, enrolled: map[string]Enrollment{}}
+	s := &Service{Operations: runtimeobs.New("fleet"), cfg: cfg, disk: d, slots: make(chan struct{}, 16), httpSlots: make(chan struct{}, 16), artifacts: map[string]revision{}, enrolled: map[string]Enrollment{}}
 	if d.IsPostgres() {
 		err = d.Bootstrap(startup, fleetFingerprint(cfg), fleetPostgresSchema)
 	} else {
@@ -138,9 +161,15 @@ func New(cfg Config) (*Service, error) {
 		_ = d.Close()
 		return nil, err
 	}
+	s.Operations.Health(true, "ok")
 	return s, nil
 }
-func (s *Service) Close() error { s.mu.Lock(); defer s.mu.Unlock(); return s.disk.Close() }
+func (s *Service) Close() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.Operations.Health(false, "closed")
+	return s.disk.Close()
+}
 func (s *Service) Backup(ctx context.Context, path string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -150,7 +179,23 @@ func (s *Service) Backup(ctx context.Context, path string) error {
 func (s *Service) transaction(ctx context.Context, fn func(*snapshot) error) error {
 	return s.transactionMode(ctx, true, fn)
 }
-func (s *Service) transactionMode(ctx context.Context, write bool, fn func(*snapshot) error) error {
+func (s *Service) transactionMode(ctx context.Context, write bool, fn func(*snapshot) error) (resultErr error) {
+	start := time.Now()
+	defer func() {
+		outcome := "ok"
+		if resultErr == nil {
+			s.Operations.Health(true, "ok")
+		} else {
+			outcome = "error"
+			var api *firewallstate.Error
+			if !errors.As(resultErr, &api) {
+				s.Operations.Health(false, "state_unavailable")
+			} else if api.Status == 507 {
+				s.Operations.Health(false, "audit_unavailable")
+			}
+		}
+		s.Operations.Observe("transaction", start, outcome)
+	}()
 	tx, err := s.disk.Begin(ctx)
 	if err != nil {
 		return err
@@ -197,12 +242,22 @@ func (s *Service) transactionMode(ctx context.Context, write bool, fn func(*snap
 	if err = fn(&st); err != nil {
 		return err
 	}
+	if st.AuditOverflow {
+		return firewallstate.Fail(507, "required audit capacity exhausted")
+	}
 	if !write {
 		return nil
 	}
 	// Artifacts are immutable and separate from frequently updated desired/ack
 	// metadata, so a heartbeat never rewrites up to 64 MiB of policy bundles.
 	persisted := st
+	for key := range s.artifacts {
+		if _, retained := st.Revisions[key]; !retained {
+			if _, err = tx.ExecContext(ctx, `DELETE FROM artifacts WHERE key=?`, key); err != nil {
+				return err
+			}
+		}
+	}
 	persisted.Revisions = make(map[string]revision, len(st.Revisions))
 	for key, r := range st.Revisions {
 		if _, ok := s.artifacts[key]; !ok {
@@ -272,6 +327,14 @@ func (s *Service) loadArtifactsFrom(ctx context.Context, q artifactQuerier) erro
 }
 
 func validate(st *snapshot, allowEffects bool) error {
+	if len(st.ArchivedJobs) > MaxArchivedJobs {
+		return errors.New("archived job identity capacity exceeded")
+	}
+	for id, receipt := range st.ArchivedJobs {
+		if !firewallstate.ValidID(id) || st.Jobs[id] != nil || !receipt.Scope.Valid() || receipt.Expires.IsZero() {
+			return errors.New("invalid archived job identity")
+		}
+	}
 	if st.Version != 1 || st.Targets == nil || st.Revisions == nil || st.Jobs == nil || len(st.Targets) > MaxTargets || len(st.Revisions) > MaxRevisions || len(st.Jobs) > MaxJobs || len(st.Audit) > MaxAudit || st.AuditSeq < 0 {
 		return errors.New("invalid fleet snapshot bounds/version")
 	}
@@ -394,22 +457,130 @@ func (s *Service) target(token string) (Enrollment, error) {
 	return Enrollment{}, firewallstate.Fail(401, "enrolled target bearer required")
 }
 func (s *Service) audit(st *snapshot, actor, op string, scope Scope, object string) {
+	if !s.cfg.AuditRequired {
+		cutoff := time.Now().Add(-s.cfg.AuditRetention)
+		for len(st.Audit) > 0 && st.Audit[0].Time.Before(cutoff) {
+			st.Audit = st.Audit[1:]
+		}
+	}
+	if s.cfg.AuditRequired && len(st.Audit) >= s.cfg.AuditMaxRecords {
+		st.AuditOverflow = true
+		return
+	}
 	st.AuditSeq++
-	st.Audit = append(st.Audit, Audit{st.AuditSeq, time.Now().UTC(), actor, op, scope, object})
-	if len(st.Audit) > MaxAudit {
-		st.Audit = st.Audit[len(st.Audit)-MaxAudit:]
+	a := Audit{ID: st.AuditSeq, Time: time.Now().UTC(), Actor: actor, Operation: op, Scope: scope, Object: object, Grant: "operator", Outcome: "committed", Reason: op, Correlation: fmt.Sprintf("fleet:%d", st.AuditSeq)}
+	if actor == "controller" && (op == "auto_rollback" || op == "auto_rollback_blocked") || actor == "bootstrap" && (op == "enroll" || op == "revoke") {
+		a.Grant = "system"
+	}
+	if op == "ack" {
+		a.Grant = "target"
+	}
+	if j := st.Jobs[object]; j != nil && j.Scope == scope {
+		a.Revision = j.Revision
+		a.Targets = append([]string(nil), j.Targets...)
+		a.PreviousRevisions = map[string]string{}
+		for id, rev := range j.Previous {
+			a.PreviousRevisions[id] = rev
+		}
+	}
+	if t := st.Targets[object]; t != nil && t.Scope == scope {
+		a.Generation = t.Generation
+		a.Targets = []string{t.ID}
+		a.Revision = t.DesiredRevision
+		a.PreviousRevision = t.PreviousRevision
+	}
+	if (op == "stage" || op == "prune_revision") && validRevisionDigest(object) {
+		a.Revision = object
+	}
+	st.Audit = append(st.Audit, a)
+	if len(st.Audit) > s.cfg.AuditMaxRecords {
+		st.Audit = st.Audit[len(st.Audit)-s.cfg.AuditMaxRecords:]
 	}
 }
 
 // Execute is the authenticated administrative REST/MCP boundary. Target tokens
 // cannot invoke this API; HTTP desired/ack derive their attachment from enrollment.
 func (s *Service) Execute(ctx context.Context, token, op string, r Request) (any, error) {
+	out, err := s.execute(ctx, token, op, r)
+	if err == nil {
+		return out, nil
+	}
+	d, known := descriptorFor(op)
+	if !known || d.op == "status" || d.op == "capabilities" || d.op == "audit" || d.op == "audit_export" || d.op == "retention_preview" {
+		return out, err
+	}
+	actor, scope, authErr := s.admin(token, r.Scope)
+	if authErr != nil {
+		return out, err
+	}
+	reason := "unavailable"
+	var api *firewallstate.Error
+	if errors.As(err, &api) {
+		switch api.Status {
+		case 400, 413:
+			reason = "invalid"
+		case 403:
+			reason = "forbidden"
+		case 409:
+			reason = "conflict"
+		case 429, 503, 507:
+			reason = "capacity"
+		}
+	}
+	object := "request"
+	if firewallstate.ValidID(r.ID) {
+		object = r.ID
+	}
+	// Rejections carry only an authenticated actor and bounded reason, never raw input.
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_ = s.transaction(ctx, func(st *snapshot) error {
+		s.audit(st, actor, op, scope, object)
+		if !st.AuditOverflow {
+			a := &st.Audit[len(st.Audit)-1]
+			a.Outcome = "rejected"
+			a.Reason = reason
+			for _, p := range s.cfg.Identities {
+				if p.ID == actor && p.Role != "" {
+					a.Grant = p.Role
+				}
+			}
+		}
+		return nil
+	})
+	return out, err
+}
+
+func (s *Service) execute(ctx context.Context, token, op string, r Request) (any, error) {
 	actor, scope, err := s.admin(token, r.Scope)
 	if err != nil {
 		return nil, err
 	}
-	if len(r.Bundle) > MaxArtifactBytes || len(r.Targets) > MaxTargets || len(r.Canary) > MaxTargets || len(r.Expected) > MaxTargets {
+	for _, p := range s.cfg.Identities {
+		if p.ID != actor {
+			continue
+		}
+		if p.Role == "viewer" && (op == "audit_export" || op == "audit") || (p.Role == "viewer" || p.Role == "auditor") && op != "audit" && op != "audit_export" && op != "status" && op != "capabilities" && op != "retention_preview" {
+			return nil, firewallstate.Fail(403, "role does not grant operation")
+		}
+	}
+	if len(r.Receipts) > MaxArchivedJobs || len(r.Revisions) > MaxRevisions || len(r.Jobs) > MaxJobs || len(r.ExpectedPlan) > 64 || r.After < 0 || r.Limit < 0 || r.Limit > 256 || len(r.Bundle) > MaxArtifactBytes || len(r.Targets) > MaxTargets || len(r.Canary) > MaxTargets || len(r.Expected) > MaxTargets {
 		return nil, firewallstate.Fail(413, "request bounds exceeded")
+	}
+	for _, rev := range r.Revisions {
+		if !validRevisionDigest(rev) {
+			return nil, firewallstate.Fail(400, "invalid revision candidate")
+		}
+	}
+	for _, id := range r.Jobs {
+		if !firewallstate.ValidID(id) {
+			return nil, firewallstate.Fail(400, "invalid job candidate")
+		}
+	}
+	for _, id := range r.Receipts {
+		if !firewallstate.ValidID(id) {
+			return nil, firewallstate.Fail(400, "invalid receipt candidate")
+		}
 	}
 	select {
 	case s.slots <- struct{}{}:
@@ -419,16 +590,40 @@ func (s *Service) Execute(ctx context.Context, token, op string, r Request) (any
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if op != "audit" && op != "capabilities" {
+	if op != "audit" && op != "audit_export" && op != "audit_ack" && op != "capabilities" && op != "retention_preview" && op != "prune" {
 		if _, err = s.maintainLocked(ctx, &scope); err != nil {
 			return nil, err
 		}
 	}
 	var out any
-	err = s.transactionMode(ctx, op != "status" && op != "audit" && op != "capabilities", func(st *snapshot) error {
+	err = s.transactionMode(ctx, op != "status" && op != "audit" && op != "audit_export" && op != "capabilities" && op != "retention_preview", func(st *snapshot) error {
 		switch op {
+		case "audit_ack":
+			plan := retention(st, scope, Request{}).Plan
+			if r.ExpectedPlan == "" || r.ExpectedPlan != plan || r.After < 1 || r.After > st.AuditSeq {
+				return firewallstate.Fail(409, "audit acknowledgment CAS conflict")
+			}
+			kept := make([]Audit, 0, len(st.Audit))
+			removed := 0
+			for _, a := range st.Audit {
+				if a.Scope == scope && a.ID <= r.After {
+					removed++
+				} else {
+					kept = append(kept, a)
+				}
+			}
+			st.Audit = kept
+			s.audit(st, actor, "audit_ack", scope, fmt.Sprintf("through:%d", r.After))
+			out = map[string]int{"removed": removed}
+		case "retention_preview":
+			out = retention(st, scope, r)
+		case "prune":
+			var e error
+			out, e = s.prune(st, actor, scope, r)
+			return e
 		case "capabilities":
-			out = map[string]any{"allow_effects": s.cfg.AllowEffects, "rollback_on_failure": s.cfg.RollbackOnFailure, "effects_execution": "external scope-authorized broker; admission grants no execution rights", "coordination": s.disk.Coordination(), "max_targets": MaxTargets, "max_revisions": MaxRevisions, "max_jobs": MaxJobs, "max_artifact_bytes": MaxArtifactBytes}
+			out = s.operationsCapabilities()
+			return nil
 		case "status":
 			result := Status{Targets: map[string]*TargetState{}, Jobs: []*Job{}, Coordination: s.disk.Coordination()}
 			for id, t := range st.Targets {
@@ -452,6 +647,30 @@ func (s *Service) Execute(ctx context.Context, token, op string, r Request) (any
 				}
 			}
 			out = result
+		case "audit_export":
+			limit := r.Limit
+			if limit == 0 {
+				limit = 100
+			}
+			page := AuditPage{Version: OperationsVersion, Records: []Audit{}, Next: r.After}
+			for _, a := range st.Audit {
+				if a.Scope == scope {
+					page.Oldest = a.ID
+					page.Truncated = r.After > 0 && r.After < page.Oldest-1
+					break
+				}
+			}
+			for _, a := range st.Audit {
+				if a.Scope == scope && a.ID > r.After {
+					if len(page.Records) == limit {
+						page.More = true
+						break
+					}
+					page.Records = append(page.Records, a)
+					page.Next = a.ID
+				}
+			}
+			out = page
 		case "stage":
 			c, raw, e := compileAdmitted([]byte(r.Bundle), s.cfg.AllowEffects)
 			if e != nil {
@@ -473,7 +692,8 @@ func (s *Service) Execute(ctx context.Context, token, op string, r Request) (any
 			if _, ok := st.Revisions[revisionKey(scope, r.Revision)]; !ok {
 				return firewallstate.Fail(404, "revision not staged in scope")
 			}
-			if st.Jobs[r.ID] != nil {
+			_, archived := st.ArchivedJobs[r.ID]
+			if st.Jobs[r.ID] != nil || archived {
 				return firewallstate.Fail(409, "job ID exists")
 			}
 			if len(st.Jobs) >= MaxJobs {
@@ -683,7 +903,12 @@ func (s *Service) Acknowledge(ctx context.Context, token string, a Ack) error {
 			t.ObservedDraining = a.Draining
 			t.ObservedRevoked = a.Revoked
 		}
-		s.audit(st, p.ID, "ack", t.Scope, fmt.Sprintf("%s:%d", t.ID, a.Generation))
+		s.audit(st, p.ID, "ack", t.Scope, t.ID)
+		if !st.AuditOverflow && a.Error != "" {
+			record := &st.Audit[len(st.Audit)-1]
+			record.Outcome = "failed"
+			record.Reason = "target_reported_failure"
+		}
 		s.autoMaintain(st, &p.Scope, time.Now())
 		return nil
 	})

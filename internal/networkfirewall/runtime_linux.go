@@ -131,6 +131,8 @@ func (f *Firewall) Run(ctx context.Context) (result error) {
 		result = errors.Join(result, runNFT(cleanup, ns, "delete table inet "+tableName+"\n"))
 	}()
 	close(f.ready)
+	f.Operations.Health(true, "ok")
+	defer f.Operations.Health(false, "closed")
 	select {
 	case <-ctx.Done():
 		return nil

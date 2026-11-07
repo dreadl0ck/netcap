@@ -22,10 +22,18 @@ func (f *Firewall) SetReadinessCheck(check func() bool) error {
 
 func (f *Firewall) ready() bool {
 	if f.draining.Load() || f.lifetime.Err() != nil || f.Policy() == nil {
+		f.Operations.Health(false, "draining")
 		return false
 	}
 	if hook := f.readiness.Load(); hook != nil {
-		return hook.check()
+		ready := hook.check()
+		condition := "ok"
+		if !ready {
+			condition = "state_unavailable"
+		}
+		f.Operations.Health(ready, condition)
+		return ready
 	}
+	f.Operations.Health(true, "ok")
 	return true
 }

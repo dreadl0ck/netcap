@@ -13,6 +13,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 	"github.com/dreadl0ck/netcap/internal/policy"
+	"github.com/dreadl0ck/netcap/internal/runtimeobs"
 )
 
 type ClientConfig struct {
@@ -21,6 +22,7 @@ type ClientConfig struct {
 	Transport  http.RoundTripper
 }
 type Client struct {
+	Operations  *runtimeobs.Monitor
 	base, token string
 	http        *http.Client
 	ready       atomic.Int64
@@ -72,13 +74,21 @@ func NewClient(cfg ClientConfig) (*Client, error) {
 	tr.Proxy = nil
 	tr.MaxConnsPerHost = 8
 	tr.ResponseHeaderTimeout = 5 * time.Second
-	return &Client{base: strings.TrimRight(u.String(), "/"), token: cfg.Token, http: firewallstate.HTTPClient(cfg.Timeout, tr)}, nil
+	return &Client{Operations: runtimeobs.New("state_client"), base: strings.TrimRight(u.String(), "/"), token: cfg.Token, http: firewallstate.HTTPClient(cfg.Timeout, tr)}, nil
 }
 
 // Evaluate pins the supplied descriptor. Every attempt includes its artifact so
 // expired artifact reclamation needs no mutation retry. There is exactly one HTTP
 // attempt; an ambiguous failure never falls back to local state or resubmits.
-func (c *Client) Evaluate(ctx context.Context, p *policy.Compiled, e policy.Event) (policy.Decision, error) {
+func (c *Client) Evaluate(ctx context.Context, p *policy.Compiled, e policy.Event) (decision policy.Decision, resultErr error) {
+	start := time.Now()
+	defer func() {
+		outcome := decision.Verdict
+		if resultErr != nil {
+			outcome = "error"
+		}
+		c.Operations.Observe("state", start, outcome)
+	}()
 	op, err := c.begin()
 	if err != nil {
 		return policy.Decision{}, err
@@ -147,6 +157,11 @@ func (c *Client) finish(op uint64, ready bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if op == c.operation && !c.closed {
+		condition := "ok"
+		if !ready {
+			condition = "state_unavailable"
+		}
+		c.Operations.Health(ready, condition)
 		stamp := int64(0)
 		if ready {
 			stamp = time.Now().UnixNano()
@@ -159,6 +174,7 @@ func (c *Client) Close() {
 	c.closed = true
 	c.operation++
 	c.ready.Store(0)
+	c.Operations.Health(false, "closed")
 	c.mu.Unlock()
 	c.http.CloseIdleConnections()
 }

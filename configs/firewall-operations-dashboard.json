@@ -1,0 +1,19 @@
+{
+  "uid": "netcap-firewall-operations-v1",
+  "title": "Netcap firewall operations v1",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "time": {"from": "now-1h", "to": "now"},
+  "panels": [
+    {"id": 1, "type": "timeseries", "title": "Measured operation latency p95 / p99", "gridPos": {"x": 0, "y": 0, "w": 24, "h": 10}, "fieldConfig": {"defaults": {"unit": "s"}}, "targets": [
+      {"refId": "A", "expr": "histogram_quantile(0.95, sum by (le, component, stage, job, instance) (rate(netcap_firewall_operation_duration_seconds_bucket[5m])))", "legendFormat": "p95 {{component}} {{stage}} {{instance}}"},
+      {"refId": "B", "expr": "histogram_quantile(0.99, sum by (le, component, stage, job, instance) (rate(netcap_firewall_operation_duration_seconds_bucket[5m])))", "legendFormat": "p99 {{component}} {{stage}} {{instance}}"}
+    ]},
+    {"id": 2, "type": "timeseries", "title": "Operations by outcome", "gridPos": {"x": 0, "y": 10, "w": 12, "h": 8}, "targets": [{"refId": "A", "expr": "sum by (component, stage, outcome, job, instance) (rate(netcap_firewall_operations_total[5m]))"}]},
+    {"id": 3, "type": "timeseries", "title": "Named failures", "gridPos": {"x": 12, "y": 10, "w": 12, "h": 8}, "targets": [{"refId": "A", "expr": "sum by (component, condition, job, instance) (rate(netcap_firewall_failures_total[5m]))"}]},
+    {"id": 4, "type": "stat", "title": "Local readiness (upstream independent)", "gridPos": {"x": 0, "y": 18, "w": 12, "h": 5}, "targets": [{"refId": "A", "expr": "netcap_firewall_ready"}]},
+    {"id": 5, "type": "stat", "title": "Degraded", "gridPos": {"x": 12, "y": 18, "w": 12, "h": 5}, "targets": [{"refId": "A", "expr": "netcap_firewall_degraded"}]},
+    {"id": 6, "type": "table", "title": "Current named condition", "gridPos": {"x": 0, "y": 23, "w": 24, "h": 5}, "targets": [{"refId": "A", "expr": "netcap_firewall_condition == 1", "instant": true, "format": "table"}]}
+  ]
+}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/policy"
+	"github.com/dreadl0ck/netcap/internal/runtimeobs"
 )
 
 // GuardConfig is runtime configuration, separate from native policy thresholds.
@@ -23,12 +24,13 @@ type GuardConfig struct {
 	Unit    string        `json:"unit,omitempty"`
 }
 type Guard struct {
-	cfg       GuardConfig
-	store     Store
-	mu        sync.RWMutex
-	lastErr   error
-	contacted bool
-	operation uint64
+	Operations *runtimeobs.Monitor
+	cfg        GuardConfig
+	store      Store
+	mu         sync.RWMutex
+	lastErr    error
+	contacted  bool
+	operation  uint64
 }
 
 type healthStore interface{ Probe(context.Context) error }
@@ -45,6 +47,11 @@ func (g *Guard) finishOperation(operation uint64, err error) {
 	if operation == g.operation {
 		g.lastErr = err
 		g.contacted = true
+		condition := "ok"
+		if err != nil {
+			condition = "state_unavailable"
+		}
+		g.Operations.Health(err == nil, condition)
 	}
 }
 
@@ -85,7 +92,7 @@ func NewGuardWithStore(cfg GuardConfig, store Store) (*Guard, error) {
 	default:
 		return nil, errors.New("unsupported group_by")
 	}
-	return &Guard{cfg: cfg, store: store}, nil
+	return &Guard{Operations: runtimeobs.New("guard"), cfg: cfg, store: store}, nil
 }
 
 // Ready reports ordered count/probe outcomes; no contact is unready.
@@ -143,7 +150,13 @@ func (g *Guard) Evaluate(ctx context.Context, c *policy.Compiled, e policy.Event
 	// Include rule configuration to isolate independent guards even on one revision.
 	k := Key{Revision: rev, Group: Digest(g.cfg.ID + "\x00" + g.cfg.Unit + "\x00" + g.cfg.GroupBy + "\x00" + v)}
 	operation := g.beginOperation()
+	start := time.Now()
 	out, err := g.store.Count(ctx, k, Window{Mode: "fixed", Duration: g.cfg.Window}, time.Now())
+	outcome := "ok"
+	if err != nil {
+		outcome = "error"
+	}
+	g.Operations.Observe("state", start, outcome)
 	g.finishOperation(operation, err)
 	if err != nil {
 		return deny, err

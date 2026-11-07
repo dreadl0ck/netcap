@@ -16,6 +16,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 	"github.com/dreadl0ck/netcap/internal/policy"
+	"github.com/dreadl0ck/netcap/internal/runtimeobs"
 )
 
 const MaxRevisions = 64
@@ -46,6 +47,7 @@ type artifact struct {
 	raw []byte
 }
 type Store struct {
+	Operations  *runtimeobs.Monitor
 	cfg         Config
 	disk        *firewallstate.Database
 	fingerprint string
@@ -115,7 +117,7 @@ func New(cfg Config) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Store{cfg: cfg, disk: d, fingerprint: fp, cache: make(map[string]artifact), slots: make(chan struct{}, 4), now: time.Now}
+	s := &Store{Operations: runtimeobs.New("policy_state"), cfg: cfg, disk: d, fingerprint: fp, cache: make(map[string]artifact), slots: make(chan struct{}, 4), now: time.Now}
 	fail := func(err error) (*Store, error) { _ = d.Close(); return nil, err }
 	blob := "BLOB"
 	if d.IsPostgres() {
@@ -304,7 +306,16 @@ func (s *Store) checkRows(ctx context.Context, tx *firewallstate.Transaction, la
 
 // Evaluate is a trusted in-process boundary. HTTP callers cannot supply Scope.
 // Commit errors return no decision and are never retried, even if commit applied.
-func (s *Store) Evaluate(ctx context.Context, scope firewallstate.Scope, req Request) (policy.Decision, error) {
+func (s *Store) Evaluate(ctx context.Context, scope firewallstate.Scope, req Request) (decision policy.Decision, resultErr error) {
+	start := time.Now()
+	defer func() {
+		outcome := decision.Verdict
+		if resultErr != nil {
+			outcome = "error"
+		}
+		s.Operations.Observe("state", start, outcome)
+		s.Operations.NativeError(resultErr)
+	}()
 	if !scope.Valid() || !s.scopeAllowed(scope) || !validRevision(req.Revision) || req.Event == nil {
 		return policy.Decision{}, firewallstate.Fail(400, "invalid scoped evaluation")
 	}
@@ -425,7 +436,18 @@ func (s *Store) Evaluate(ctx context.Context, scope firewallstate.Scope, req Req
 	return d, nil
 }
 
-func (s *Store) Ready(ctx context.Context) error {
+func (s *Store) Ready(ctx context.Context) (resultErr error) {
+	start := time.Now()
+	defer func() {
+		condition := "ok"
+		outcome := "ok"
+		if resultErr != nil {
+			condition = "state_unavailable"
+			outcome = "error"
+		}
+		s.Operations.Health(resultErr == nil, condition)
+		s.Operations.Observe("transaction", start, outcome)
+	}()
 	if err := s.disk.CheckBootstrap(ctx); err != nil {
 		return err
 	}
@@ -445,6 +467,7 @@ func (s *Store) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.closed = true
+	s.Operations.Health(false, "closed")
 	return s.disk.Close()
 }
 func (s *Store) ConsistentBackup(ctx context.Context, path string) error {

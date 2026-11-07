@@ -99,6 +99,10 @@ func (s *Store) Handler() http.Handler {
 			firewallstate.WriteError(w, firewallstate.Fail(401, "unauthorized"))
 			return
 		}
+		if r.URL.Path == "/metrics" && r.Method == http.MethodGet {
+			s.Operations.Handler().ServeHTTP(w, r)
+			return
+		}
 		select {
 		case s.slots <- struct{}{}:
 			defer func() { <-s.slots }()

@@ -16,6 +16,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/enforcer"
 	"github.com/dreadl0ck/netcap/internal/policy"
+	"github.com/dreadl0ck/netcap/internal/runtimeobs"
 )
 
 // Scope is configured by the operator, never by a policy. Endpoint is an HTTPS
@@ -56,6 +57,8 @@ type destination struct {
 }
 
 type Broker struct {
+	Operations              *runtimeobs.Monitor
+	queued                  map[string]time.Time
 	mu                      sync.Mutex
 	scopes                  map[string]destination
 	queue                   chan policy.Intent
@@ -116,7 +119,7 @@ func New(config Config) (*Broker, error) {
 		}
 	}
 	transport := &http.Transport{TLSClientConfig: tc, MaxIdleConns: 8, MaxIdleConnsPerHost: 2, IdleConnTimeout: time.Minute, ResponseHeaderTimeout: 2 * time.Second}
-	b := &Broker{scopes: make(map[string]destination), queue: make(chan policy.Intent, config.QueueSize), seen: make(map[string]time.Time), maxPending: config.MaxPending, maxReceipts: config.MaxReceipts, retention: config.Retention,
+	b := &Broker{Operations: runtimeobs.New("broker"), queued: map[string]time.Time{}, scopes: make(map[string]destination), queue: make(chan policy.Intent, config.QueueSize), seen: make(map[string]time.Time), maxPending: config.MaxPending, maxReceipts: config.MaxReceipts, retention: config.Retention,
 		maxActions: config.MaxActionsPerMinute, targets: make(map[targetKey]targetReservation),
 		client: &http.Client{Transport: transport, Timeout: 3 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}
 	for name, s := range config.Scopes {
@@ -146,6 +149,7 @@ func New(config Config) (*Broker, error) {
 		b.scopes[name] = d
 	}
 	b.ctx, b.cancel = context.WithCancel(context.Background())
+	b.Operations.Health(true, "ok")
 	b.wg.Add(1)
 	go b.run()
 	return b, nil
@@ -205,6 +209,7 @@ func (b *Broker) Submit(i policy.Intent, trustedSource string) Receipt {
 	b.targets[key] = targetReservation{i.ID, i.ExpiresAt, i.ExpiresAt.Add(b.retention)}
 	select {
 	case b.queue <- i:
+		b.queued[i.ID] = now
 		return reject("requested", "")
 	default:
 		return reject("dropped", "queue-full")
@@ -283,8 +288,24 @@ func (b *Broker) run() {
 			if !ok {
 				return
 			}
-			status, reason := b.deliver(i)
 			b.mu.Lock()
+			queued := b.queued[i.ID]
+			delete(b.queued, i.ID)
+			b.mu.Unlock()
+			if !queued.IsZero() {
+				b.Operations.Observe("queue", queued, "ok")
+			}
+			start := time.Now()
+			status, reason := b.deliver(i)
+			b.Operations.Observe("delivery", start, status)
+			condition := "ok"
+			if status == "failed" {
+				condition = "delivery_failed"
+			}
+			b.mu.Lock()
+			if !b.closed {
+				b.Operations.Health(status != "failed", condition)
+			}
 			b.record(i, status, reason, time.Now().UTC())
 			b.mu.Unlock()
 		case now := <-ticker.C:
@@ -299,6 +320,7 @@ func (b *Broker) Close() error {
 	b.mu.Lock()
 	if !b.closed {
 		b.closed = true
+		b.Operations.Health(false, "closed")
 		b.cancel()
 		close(b.queue)
 	}
