@@ -42,6 +42,7 @@ import (
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
@@ -2430,20 +2431,17 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Determine the output directory
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	if outDir == "" {
-		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": "No output directory selected",
-		})
+	filesDir, ok := s.artifactDirectory(w, r)
+	if !ok {
 		return
 	}
-
-	// Get the files directory within the output directory
-	filesDir := filepath.Join(outDir, "files")
+	outDir := filepath.Dir(filesDir)
 
 	// Check if files directory exists
+	if info, err := os.Lstat(filesDir); err == nil && (!info.IsDir() || info.Mode()&os.ModeSymlink != 0) {
+		artifactAccessError(w, artifactio.ErrPath)
+		return
+	}
 	if _, err := os.Stat(filesDir); os.IsNotExist(err) {
 		// Return empty list if directory doesn't exist
 		RespondJSON(w, http.StatusOK, map[string]any{
@@ -2456,6 +2454,10 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 	// Read File audit records to get hash and protocol information
 	type fileAuditInfo struct {
+		Occurrences         []map[string]string
+		SHA256              string
+		IsComplete          bool
+		CompletenessReason  string
 		Name                string // Original filename from network traffic
 		Hash                string
 		Protocol            string
@@ -2480,16 +2482,28 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	}
 	fileInfoMap := make(map[string]fileAuditInfo) // filename -> {name, hash, protocol}
 	fileAuditPath := filepath.Join(outDir, "File.ncap.gz")
+	if _, err := os.Stat(fileAuditPath); os.IsNotExist(err) {
+		fileAuditPath = filepath.Join(outDir, "File.ncap")
+	}
 	if _, err := os.Stat(fileAuditPath); err == nil {
 		// File audit exists, read it to get hashes and protocols
 		reader, err := netio.Open(fileAuditPath, defaults.BufferSize)
 		if err == nil {
+			header, headerErr := reader.ReadHeader()
+			if headerErr != nil || header.Type != types.Type_NC_File {
+				reader.Close()
+				RespondJSON(w, 500, map[string]any{"error": "Invalid File audit header"})
+				return
+			}
 			var file types.File
 			for {
 				err := reader.Next(&file)
 				if err != nil {
 					if err != io.EOF {
 						log.Printf("[WebUI] Error reading File audit record: %v", err)
+						reader.Close()
+						RespondJSON(w, 500, map[string]any{"error": "Cannot read File audit evidence"})
+						return
 					}
 					break
 				}
@@ -2497,7 +2511,21 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 				// Location paths may differ from current filesystem paths due to directory changes
 				if file.Location != "" {
 					filename := filepath.Base(file.Location)
+					prior := fileInfoMap[filename]
+					occurrences := prior.Occurrences
+					if len(occurrences) < 1024 {
+						occurrences = append(occurrences, map[string]string{"name": file.Name, "timestampNs": fmt.Sprint(file.Timestamp), "communityId": file.CommunityID, "connectionUid": file.ConnectionUID, "protocol": file.Protocol, "parentFileId": file.ParentFileID, "flowDirection": file.FlowDirection})
+					}
 					fileInfoMap[filename] = fileAuditInfo{
+						Occurrences: occurrences,
+						SHA256: func() string {
+							if file.Hashes != nil {
+								return file.Hashes.SHA256
+							}
+							return ""
+						}(),
+						IsComplete:          file.IsComplete,
+						CompletenessReason:  file.CompletenessReason,
 						Name:                file.Name,
 						Hash:                file.Hash,
 						Protocol:            file.Protocol,
@@ -2522,6 +2550,9 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			reader.Close()
+		} else {
+			RespondJSON(w, 500, map[string]any{"error": "Cannot open File audit evidence"})
+			return
 		}
 		log.Printf("[WebUI] Loaded %d file records from File audit records", len(fileInfoMap))
 	}
@@ -2530,13 +2561,21 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	var extractedFiles []map[string]any
 	err := filepath.Walk(filesDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			log.Printf("[WebUI] Error walking files directory: %v", err)
-			return nil // Continue walking
+			return err
 		}
 
 		// Skip directories
 		if info.IsDir() {
 			return nil
+		}
+		if !info.Mode().IsRegular() {
+			return artifactio.ErrPath
+		}
+		if strings.HasPrefix(info.Name(), ".netcap-artifact-") {
+			return nil
+		}
+		if len(extractedFiles) >= 4096 {
+			return fmt.Errorf("artifact listing limit exceeded")
 		}
 
 		// Get relative path from files directory
@@ -2567,6 +2606,11 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		// Add name, hash, protocol, and security indicators from File audit records
 		// Match by filename since full paths may differ
 		if auditInfo, ok := fileInfoMap[info.Name()]; ok {
+			fileInfo["occurrences"] = auditInfo.Occurrences
+			fileInfo["occurrencesCapped"] = len(auditInfo.Occurrences) == 1024
+			fileInfo["sha256"] = auditInfo.SHA256
+			fileInfo["isComplete"] = auditInfo.IsComplete
+			fileInfo["completenessReason"] = auditInfo.CompletenessReason
 			if auditInfo.Name != "" {
 				fileInfo["originalName"] = auditInfo.Name
 			}
@@ -2654,51 +2698,13 @@ func (s *Server) handleDownloadExtractedFile(w http.ResponseWriter, r *http.Requ
 
 	log.Printf("[WebUI] Download extracted file request: encodedPath=%s, decodedPath=%s", encodedPath, relativePath)
 
-	// Determine the output directory
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	if outDir == "" {
-		http.Error(w, "No output directory selected", http.StatusServiceUnavailable)
+	filesDir, ok := s.artifactDirectory(w, r)
+	if !ok {
 		return
 	}
-
-	// Build full path to the file
-	filesDir := filepath.Join(outDir, "files")
-	fullPath := filepath.Join(filesDir, filepath.Clean(relativePath))
-
-	log.Printf("[WebUI] File download: filesDir=%s, relativePath=%s, fullPath=%s", filesDir, relativePath, fullPath)
-
-	// Security check: ensure the file is within the files directory
-	if !strings.HasPrefix(fullPath, filesDir) {
-		log.Printf("[WebUI] Security violation: attempt to access file outside files directory: %s", relativePath)
-		http.Error(w, "Invalid file path", http.StatusForbidden)
-		return
-	}
-
-	// Check if file exists
-	fileInfo, err := os.Stat(fullPath)
+	file, fileInfo, err := artifactio.Open(filesDir, relativePath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			log.Printf("[WebUI] File not found: %s (fullPath: %s)", relativePath, fullPath)
-			http.Error(w, "File not found", http.StatusNotFound)
-		} else {
-			log.Printf("[WebUI] Error accessing file %s: %v", relativePath, err)
-			http.Error(w, "Error accessing file", http.StatusInternalServerError)
-		}
-		return
-	}
-
-	// Ensure it's not a directory
-	if fileInfo.IsDir() {
-		http.Error(w, "Cannot download directory", http.StatusBadRequest)
-		return
-	}
-
-	// Open the file
-	file, err := os.Open(fullPath)
-	if err != nil {
-		log.Printf("[WebUI] Failed to open file %s: %v", relativePath, err)
-		http.Error(w, "Failed to open file", http.StatusInternalServerError)
+		artifactAccessError(w, err)
 		return
 	}
 	defer file.Close()
@@ -2763,47 +2769,13 @@ func (s *Server) handleExtractedFileContent(w http.ResponseWriter, r *http.Reque
 		limit = 64 * 1024
 	}
 
-	// Determine the output directory
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	if outDir == "" {
-		http.Error(w, "No output directory selected", http.StatusServiceUnavailable)
+	filesDir, ok := s.artifactDirectory(w, r)
+	if !ok {
 		return
 	}
-
-	// Build full path to the file
-	filesDir := filepath.Join(outDir, "files")
-	fullPath := filepath.Join(filesDir, filepath.Clean(relativePath))
-
-	// Security check: ensure the file is within the files directory
-	if !strings.HasPrefix(fullPath, filesDir) {
-		log.Printf("[WebUI] Security violation: attempt to access file outside files directory: %s", relativePath)
-		http.Error(w, "Invalid file path", http.StatusForbidden)
-		return
-	}
-
-	// Check if file exists
-	fileInfo, err := os.Stat(fullPath)
+	file, fileInfo, err := artifactio.Open(filesDir, relativePath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			http.Error(w, "File not found", http.StatusNotFound)
-		} else {
-			http.Error(w, "Error accessing file", http.StatusInternalServerError)
-		}
-		return
-	}
-
-	// Ensure it's not a directory
-	if fileInfo.IsDir() {
-		http.Error(w, "Cannot read directory", http.StatusBadRequest)
-		return
-	}
-
-	// Open the file
-	file, err := os.Open(fullPath)
-	if err != nil {
-		log.Printf("[WebUI] Failed to open file %s: %v", relativePath, err)
-		http.Error(w, "Failed to open file", http.StatusInternalServerError)
+		artifactAccessError(w, err)
 		return
 	}
 	defer file.Close()

@@ -26,6 +26,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -119,6 +120,7 @@ func (c *fileDeduplicationCache) Lookup(hash string) (string, bool) {
 
 // ContentInfo contains information about decoded content
 type ContentInfo struct {
+	release         func()
 	Hash            string // SHA256 hash of the decoded content
 	DecodedContent  []byte // Decompressed content
 	WasCompressed   bool   // Whether the content was compressed
@@ -126,10 +128,20 @@ type ContentInfo struct {
 	CompressedSize  int64  // Original compressed size
 }
 
+var ErrContentDecodeDisabled = errors.New("content decoding disabled by extraction policy")
+
 // ComputeContentHash computes SHA256 hash of the content, handling all encoding types.
 // This function decodes gzip/deflate/base64 content before hashing to ensure we hash the actual content.
 // It also returns compression information for audit records.
 func ComputeContentHash(body []byte, encoding []string) (*ContentInfo, error) {
+	policy := GetGlobalConfig().FileExtraction.Advanced
+	for _, enc := range encoding {
+		kind := strings.ToLower(strings.TrimSpace(enc))
+		if (kind == "base64" && !policy.DecodeBase64) || ((kind == "gzip" || kind == "deflate") && !policy.DecodeCompressed) {
+			sum := sha256.Sum256(body)
+			return &ContentInfo{Hash: hex.EncodeToString(sum[:]), DecodedContent: body, CompressedSize: int64(len(body))}, ErrContentDecodeDisabled
+		}
+	}
 	limit := GetMaxFileSize()
 	if limit <= 0 {
 		limit = 100 << 20
@@ -138,10 +150,12 @@ func ComputeContentHash(body []byte, encoding []string) (*ContentInfo, error) {
 }
 
 func ComputeContentHashWithLimit(body []byte, encoding []string, limit int64) (*ContentInfo, error) {
+	var release = func() {}
 	info := &ContentInfo{
 		CompressedSize: int64(len(body)),
 	}
 	fallback := func(err error) (*ContentInfo, error) {
+		release()
 		hash := sha256.Sum256(body)
 		return &ContentInfo{Hash: hex.EncodeToString(hash[:]), DecodedContent: body, CompressedSize: int64(len(body))}, err
 	}
@@ -177,7 +191,7 @@ func ComputeContentHashWithLimit(body []byte, encoding []string, limit int64) (*
 		default:
 			return fallback(fmt.Errorf("unsupported content encoding %q", enc))
 		}
-		decoded, err := io.ReadAll(io.LimitReader(reader, limit+1))
+		decoded, releaseDecoded, err := ReadBodyLimit(reader, limit)
 		if closer != nil {
 			closeErr := closer.Close()
 			if err == nil {
@@ -185,14 +199,18 @@ func ComputeContentHashWithLimit(body []byte, encoding []string, limit int64) (*
 			}
 		}
 		if err != nil {
+			releaseDecoded()
 			return fallback(fmt.Errorf("decode %s: %w", enc, err))
 		}
 		if int64(len(decoded)) > limit {
+			releaseDecoded()
 			return fallback(fmt.Errorf("decoded-content limit exceeded: %d", limit))
 		}
 		if enc == "gzip" || enc == "deflate" {
 			compressed = append(compressed, enc)
 		}
+		release()
+		release = releaseDecoded
 		current = decoded
 	}
 	if int64(len(current)) > limit {
@@ -203,6 +221,7 @@ func ComputeContentHashWithLimit(body []byte, encoding []string, limit int64) (*
 	info.CompressionType = strings.Join(compressed, ",")
 	hash := sha256.Sum256(current)
 	info.Hash = hex.EncodeToString(hash[:])
+	info.release = release
 	return info, nil
 }
 

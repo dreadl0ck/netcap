@@ -20,6 +20,7 @@
 package collector
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -28,6 +29,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/alert"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/network"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/udp"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
@@ -50,6 +52,9 @@ func (c *Collector) cleanup(force bool) {
 			c.runCancel()
 		}
 		c.lifecycleMu.Unlock()
+		if c.artifactAnalysisStarted.Load() && (force || c.captureRunError != nil) {
+			file.CancelAnalysis()
+		}
 		c.statMutex.Lock()
 		c.shutdown = true
 		c.statMutex.Unlock()
@@ -70,6 +75,12 @@ func (c *Collector) cleanup(force bool) {
 			return
 		}
 		c.doCleanup(force)
+		if c.artifactAnalysisStarted.Load() {
+			analysisErr, persistenceErr := file.FinishAnalysis()
+			c.artifactAnalysisError = analysisErr
+			c.captureEvidenceError = errors.Join(c.captureEvidenceError, persistenceErr)
+			c.artifactAnalysisStarted.Store(false)
+		}
 		c.finalizeCaptureEvidence()
 		if c.captureEvidence != nil && c.captureRunError == nil && c.captureEvidenceError == nil && c.flowExportError == nil {
 			if err := c.captureEvidence.MarkAuditOutputReady(); err != nil {

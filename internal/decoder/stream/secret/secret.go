@@ -20,6 +20,7 @@
 package secret
 
 import (
+	"encoding/json"
 	"log"
 	"regexp"
 	"strings"
@@ -122,7 +123,9 @@ func WriteSecret(creds *types.Secret) {
 		return
 	}
 
-	ident := creds.Service + creds.User + creds.Password
+	// Cross-flow deduplication discarded whichever observation finished second.
+	encoded, _ := json.Marshal([4]string{creds.Service, creds.User, creds.Password, creds.Flow})
+	ident := string(encoded)
 
 	// prevent saving duplicate credentials
 	credStoreMu.Lock()

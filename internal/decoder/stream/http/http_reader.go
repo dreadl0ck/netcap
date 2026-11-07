@@ -78,6 +78,7 @@ type httpRequest struct {
 }
 
 type httpResponse struct {
+	readIssue           bool
 	transient           bool
 	detectedContentType string
 	wireBytes           int64
@@ -91,7 +92,8 @@ type httpResponse struct {
 }
 
 type httpReader struct {
-	conversation *core.ConversationInfo
+	bufferReleases []func()
+	conversation   *core.ConversationInfo
 
 	requests             []*httpRequest
 	responses            []*httpResponse
@@ -109,6 +111,11 @@ func (h *httpReader) New(conversation *core.ConversationInfo) core.StreamDecoder
 
 // Decode parses the stream according to the HTTP protocol.
 func (h *httpReader) Decode() {
+	defer func() {
+		for _, release := range h.bufferReleases {
+			release()
+		}
+	}()
 	// prevent nil pointer access if decoder is not initialized
 	if Decoder.Writer == nil {
 		return
@@ -167,6 +174,9 @@ func (h *httpReader) Decode() {
 		}
 		if h.preface {
 			ht.ReassemblyStatus = "unpaired_after_protocol_preface"
+		}
+		if res.readIssue {
+			ht.ReassemblyStatus = strings.Trim(ht.ReassemblyStatus+",incomplete_response_body", ",")
 		}
 		writeHTTP(ht, h.conversation.Ident)
 	}
@@ -332,9 +342,12 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	if decoderconfig.Instance.FileStorage == "" && !decoderconfig.Instance.IncludePayloads {
 		passiveReport = software.ObserveWebtech(observation, res.Body, res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 	} else {
-		body, err = io.ReadAll(res.Body)
+		var release func()
+		body, release, err = file.ReadBody(res.Body)
+		h.bufferReleases = append(h.bufferReleases, release)
 		software.ObserveWebtech(observation, bytes.NewReader(body), res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 	}
+	file.RecordExtractionIssue(err)
 	s := len(body)
 	if err != nil {
 		httpLog.Debug(
@@ -378,6 +391,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	streamutils.Stats.Unlock()
 
 	h.responses = append(h.responses, &httpResponse{
+		readIssue:           err != nil,
 		transient:           decoderconfig.Instance.FileStorage == "" && !decoderconfig.Instance.IncludePayloads,
 		detectedContentType: passiveReport.DetectedContentType,
 		wireBytes:           passiveReport.WireBytes,
@@ -494,7 +508,9 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 		return err
 	}
 
-	body, bodyErr := io.ReadAll(req.Body)
+	body, release, bodyErr := file.ReadBody(req.Body)
+	file.RecordExtractionIssue(bodyErr)
+	h.bufferReleases = append(h.bufferReleases, release)
 	s := len(body)
 	if bodyErr != nil {
 		httpLog.Error(

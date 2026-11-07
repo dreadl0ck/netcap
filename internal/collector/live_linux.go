@@ -50,7 +50,7 @@ func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) (resu
 		c.captureRunError = resultErr
 		finish()
 		c.cleanup(false)
-		resultErr = stdErrors.Join(resultErr, c.flowExportError, c.captureEvidenceError)
+		resultErr = stdErrors.Join(resultErr, c.flowExportError, c.captureEvidenceError, c.artifactAnalysisError)
 	}()
 
 	// use raw socket to fetch packet on linux live mode

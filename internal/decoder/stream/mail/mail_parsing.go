@@ -26,11 +26,11 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"net/textproto"
 	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/araddon/dateparse"
 	"go.uber.org/zap"
@@ -45,54 +45,20 @@ import (
 const partIdent = "------=_Part_"
 
 func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
-	var (
-		hdr         = make(map[string]string)
-		r           = textproto.NewReader(bufio.NewReader(bytes.NewReader(buf)))
-		body        string
-		lastHeader  string
-		collectBody bool
-	)
-
-	for {
-		line, err := r.ReadLine()
-		if err != nil {
-			return hdr, body
-		}
-
-		if collectBody {
-			body += line + "\n"
-
-			continue
-		}
-
-		if line == "" {
-			// newline means begin of email body for SMTP
-			collectBody = true
-			continue
-		}
-
-		parts := strings.Split(line, ": ")
-		if len(parts) == 0 {
-			hdr[lastHeader] += "\n" + line
-
-			continue
-		}
-
-		// should be an uppercase char if header field
-		// multi line values start with a whitespace
-		// Safety check: ensure parts[0] exists and is not empty before accessing its first character
-		if len(parts) > 0 && len(parts[0]) > 0 && unicode.IsUpper(rune(parts[0][0])) {
-			if parts[0] == "Envelope-To" {
-				// Envelope-To means begin of email body for POP3
-				collectBody = true
-			}
-			hdr[parts[0]] = strings.Join(parts[1:], ": ")
-			lastHeader = parts[0]
-		} else {
-			// multiline
-			hdr[lastHeader] += "\n" + line
+	hdr := map[string]string{}
+	header, err := textproto.NewReader(bufio.NewReader(bytes.NewReader(buf))).ReadMIMEHeader()
+	if err == nil {
+		for k, v := range header {
+			hdr[k] = strings.Join(v, ", ")
 		}
 	}
+	if i := bytes.Index(buf, []byte("\r\n\r\n")); i >= 0 {
+		return hdr, string(buf[i+4:])
+	}
+	if i := bytes.Index(buf, []byte("\n\n")); i >= 0 {
+		return hdr, string(buf[i+2:])
+	}
+	return hdr, ""
 }
 
 // newMailID derives a stable identifier for a mail occurrence.
@@ -118,6 +84,10 @@ func newMailID(conv *core.ConversationInfo, buf []byte, origin string, ordinal u
 
 // Parse attempts to read a mail from the conversation.
 func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap.Logger, origin string, ordinal uint64) *types.Mail {
+	if int64(len(buf)) > file.GetMaxFileSize() {
+		file.RecordExtractionIssue(fmt.Errorf("mail message byte limit exceeded"))
+		buf = buf[:file.GetMaxFileSize()]
+	}
 	logger.Info("parsing mail",
 		zap.String("from", from),
 		zap.String("to", to),
@@ -129,6 +99,12 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 		hdr, body = splitMailHeaderAndBody(buf)
 		ti        int64
 	)
+	parsedHeaders, parsedParts, attachments, releaseMIME, mimeErr := parseMIMEMessage(buf)
+	defer releaseMIME()
+	file.RecordExtractionIssue(mimeErr)
+	if parsedHeaders != nil {
+		hdr = parsedHeaders
+	}
 
 	ts, err := dateparse.ParseAny(hdr["Delivery-Date"])
 	if err != nil {
@@ -159,7 +135,7 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 		XOriginatingIP:  hdr["x-originating-ip"],
 		ContentType:     hdr["Content-Type"],
 		EnvelopeTo:      hdr["Envelope-To"],
-		Body:            parseMailParts(conv, body, logger),
+		Body:            parsedParts,
 		ID:              newMailID(conv, buf, origin, ordinal),
 		Origin:          origin,
 		CommunityID:     conv.CommunityID,
@@ -189,8 +165,13 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 	mail.ReplyTo = secAnalysis.ReplyTo
 	mail.FromDomain = secAnalysis.FromDomain
 
-	for _, p := range mail.Body {
-		if strings.Contains(p.Header["Content-Disposition"], "attachment") {
+	direction := "server_to_client"
+	if strings.EqualFold(origin, "SMTP") {
+		direction = "client_to_server"
+	}
+	for _, attachment := range attachments {
+		p := attachment.part
+		{
 			mail.HasAttachments = true
 
 			if decoderconfig.Instance.FileStorage != "" {
@@ -202,20 +183,23 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 				}
 
 				metadata := file.FileMetadata{
-					ConnectionUID: conv.Ident,
-					FlowDirection: "server_to_client", // Typically receiving email
-					Filename:      p.Filename,
-					ContentType:   p.Header["Content-Type"],
-					Host:          conv.ServerIP + ":" + strconv.Itoa(int(conv.ServerPort)),
-					Encoding:      []string{p.Header["Content-Transfer-Encoding"]},
+					ConnectionUID:   conv.Ident,
+					FlowDirection:   direction,
+					Filename:        p.Filename,
+					ContentType:     p.Header["Content-Type"],
+					Host:            conv.ServerIP + ":" + strconv.Itoa(int(conv.ServerPort)),
+					Encoding:        nil,
+					Protocol:        strings.ToUpper(origin),
+					ParentFileID:    mail.ID,
+					Depth:           attachment.depth,
+					ExtractionError: attachment.err,
 				}
-				err = extractor.ExtractFile(conv, []byte(p.Content), metadata)
+				err = extractor.ExtractFile(conv, attachment.data, metadata)
 				if err != nil {
 					mailLog.Error("failed to save attachment", zap.Error(err), zap.String("origin", origin))
 				}
 			}
 
-			break
 		}
 	}
 

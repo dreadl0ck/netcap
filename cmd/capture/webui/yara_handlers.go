@@ -7,7 +7,9 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -18,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 )
 
@@ -34,6 +37,9 @@ type YaraRuleInfo struct {
 
 // YaraScanResult represents a YARA scan result for a single file.
 type YaraScanResult struct {
+	State      string   `json:"state"`
+	Outcome    string   `json:"outcome,omitempty"`
+	Error      string   `json:"error,omitempty"`
 	FilePath   string   `json:"filePath"`
 	FileName   string   `json:"fileName"`
 	Matches    []string `json:"matches"`
@@ -42,6 +48,8 @@ type YaraScanResult struct {
 
 // YaraScanResponse represents the response from a YARA scan operation.
 type YaraScanResponse struct {
+	State        string           `json:"state"`
+	Failed       int              `json:"failed"`
 	Results      []YaraScanResult `json:"results"`
 	TotalFiles   int              `json:"totalFiles"`
 	FilesScanned int              `json:"filesScanned"`
@@ -294,21 +302,27 @@ func (s *Server) handleUploadYaraRule(w http.ResponseWriter, r *http.Request) {
 	metaFile := filepath.Join(rulesDir, "yara-rules-meta.json")
 	meta := newYaraRulesMeta(metaFile)
 	meta.setEnabled(safeName, true)
-	meta.save()
+	if err := meta.save(); err != nil {
+		RespondJSON(w, 500, map[string]any{"error": err.Error()})
+		return
+	}
 
 	// Reload scanner
 	scanner := getOrCreateYaraScanner()
 	if scanner != nil {
-		scanner.Reload()
+		if err := scanner.Reload(); err != nil {
+			RespondJSON(w, 400, map[string]any{"error": err.Error(), "previousRulesRetained": true})
+			return
+		}
 	}
 
 	log.Printf("[YARA] Uploaded rule file: %s", safeName)
 
 	desc, ruleCount := parseYaraFileInfo(string(content))
 	RespondJSON(w, http.StatusOK, map[string]any{
-		"message":   "Rule uploaded successfully",
-		"filename":  safeName,
-		"ruleCount": ruleCount,
+		"message":     "Rule uploaded successfully",
+		"filename":    safeName,
+		"ruleCount":   ruleCount,
 		"description": desc,
 	})
 }
@@ -401,7 +415,10 @@ func (s *Server) handleUpdateYaraRule(w http.ResponseWriter, r *http.Request) {
 		// Reload scanner
 		scanner := getOrCreateYaraScanner()
 		if scanner != nil {
-			scanner.Reload()
+			if err := scanner.Reload(); err != nil {
+				RespondJSON(w, 400, map[string]any{"error": err.Error(), "previousRulesRetained": true})
+				return
+			}
 		}
 	}
 
@@ -410,12 +427,18 @@ func (s *Server) handleUpdateYaraRule(w http.ResponseWriter, r *http.Request) {
 		metaFile := filepath.Join(rulesDir, "yara-rules-meta.json")
 		meta := newYaraRulesMeta(metaFile)
 		meta.setEnabled(name, *req.Enabled)
-		meta.save()
+		if err := meta.save(); err != nil {
+			RespondJSON(w, 500, map[string]any{"error": err.Error()})
+			return
+		}
 
 		// Reload scanner to pick up enabled/disabled changes
 		scanner := getOrCreateYaraScanner()
 		if scanner != nil {
-			scanner.Reload()
+			if err := scanner.Reload(); err != nil {
+				RespondJSON(w, 400, map[string]any{"error": err.Error(), "previousRulesRetained": true})
+				return
+			}
 		}
 	}
 
@@ -456,12 +479,18 @@ func (s *Server) handleDeleteYaraRule(w http.ResponseWriter, r *http.Request) {
 	metaFile := filepath.Join(rulesDir, "yara-rules-meta.json")
 	meta := newYaraRulesMeta(metaFile)
 	meta.remove(name)
-	meta.save()
+	if err := meta.save(); err != nil {
+		RespondJSON(w, 500, map[string]any{"error": err.Error()})
+		return
+	}
 
 	// Reload scanner
 	scanner := getOrCreateYaraScanner()
 	if scanner != nil {
-		scanner.Reload()
+		if err := scanner.Reload(); err != nil {
+			RespondJSON(w, 400, map[string]any{"error": err.Error(), "previousRulesRetained": true})
+			return
+		}
 	}
 
 	log.Printf("[YARA] Deleted rule file: %s", name)
@@ -486,19 +515,26 @@ func (s *Server) handleYaraScan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Determine the files directory
-	s.mu.RLock()
-	outDir := s.outDir
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
+	filesDir, ok := s.artifactDirectory(w, r)
+	if !ok {
+		return
 	}
-	s.mu.RUnlock()
-
-	filesDir := filepath.Join(outDir, "files")
+	if info, err := os.Lstat(filesDir); err == nil && (!info.IsDir() || info.Mode()&os.ModeSymlink != 0) {
+		artifactAccessError(w, artifactio.ErrPath)
+		return
+	}
+	select {
+	case manualArtifactScans <- struct{}{}:
+		defer func() { <-manualArtifactScans }()
+	default:
+		RespondJSON(w, 409, map[string]any{"error": "analysis capacity busy"})
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
+	defer cancel()
 	if _, err := os.Stat(filesDir); os.IsNotExist(err) {
 		RespondJSON(w, http.StatusOK, YaraScanResponse{
+			State:   "not-evaluated",
 			Results: []YaraScanResult{},
 		})
 		return
@@ -508,32 +544,40 @@ func (s *Server) handleYaraScan(w http.ResponseWriter, r *http.Request) {
 	var results []YaraScanResult
 	totalFiles := 0
 	totalMatches := 0
+	failed := 0
+	successful := 0
+	entries := 0
 
 	err := filepath.Walk(filesDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
+		if err != nil {
+			return err
+		}
+		entries++
+		if entries > 4096 {
+			return fmt.Errorf("artifact traversal limit exceeded")
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		if strings.HasPrefix(info.Name(), ".netcap-artifact-") {
 			return nil
 		}
 
 		totalFiles++
-		fileStart := time.Now()
-
-		matches, err := scanner.ScanFile(path)
-		if err != nil {
-			log.Printf("[YARA] Error scanning %s: %v", path, err)
-			return nil
+		rel, _ := filepath.Rel(filesDir, path)
+		result := scanArtifact(ctx, filesDir, rel, scanner)
+		results = append(results, result)
+		totalMatches += len(result.Matches)
+		if result.State != "completed" {
+			failed++
+		} else {
+			successful++
 		}
-
-		scanTimeMs := time.Since(fileStart).Milliseconds()
-
-		if len(matches) > 0 {
-			relPath, _ := filepath.Rel(filesDir, path)
-			results = append(results, YaraScanResult{
-				FilePath:   relPath,
-				FileName:   info.Name(),
-				Matches:    matches,
-				ScanTimeMs: scanTimeMs,
-			})
-			totalMatches += len(matches)
+		if totalFiles >= 1024 {
+			return fmt.Errorf("artifact scan file limit reached")
 		}
 
 		return nil
@@ -541,6 +585,7 @@ func (s *Server) handleYaraScan(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Printf("[YARA] Walk error: %v", err)
+		failed++
 	}
 
 	if results == nil {
@@ -551,9 +596,16 @@ func (s *Server) handleYaraScan(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[YARA] Scan complete: %d files scanned, %d matches in %dms", totalFiles, totalMatches, totalScanMs)
 
 	RespondJSON(w, http.StatusOK, YaraScanResponse{
+		State: func() string {
+			if failed > 0 {
+				return "partial"
+			}
+			return "complete"
+		}(),
+		Failed:       failed,
 		Results:      results,
 		TotalFiles:   totalFiles,
-		FilesScanned: totalFiles,
+		FilesScanned: successful,
 		TotalMatches: totalMatches,
 		ScanTimeMs:   totalScanMs,
 	})
@@ -580,54 +632,56 @@ func (s *Server) handleYaraScanFile(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		FilePath string `json:"filePath"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.FilePath == "" {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&req); err != nil || req.FilePath == "" {
 		RespondJSON(w, http.StatusBadRequest, map[string]any{"error": "filePath required"})
 		return
 	}
 
-	// Determine the files directory
-	s.mu.RLock()
-	outDir := s.outDir
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
+	filesDir, ok := s.artifactDirectory(w, r)
+	if !ok {
+		return
+	}
+	select {
+	case manualArtifactScans <- struct{}{}:
+		defer func() { <-manualArtifactScans }()
+	default:
+		RespondJSON(w, 409, map[string]any{"error": "analysis capacity busy"})
+		return
+	}
+	result := scanArtifact(r.Context(), filesDir, req.FilePath, scanner)
+	status := 200
+	if result.State != "completed" {
+		status = 422
+	}
+	RespondJSON(w, status, result)
+}
+
+var manualArtifactScans = make(chan struct{}, 2)
+
+func scanArtifact(ctx context.Context, directory, name string, scanner *file.YaraScanner) YaraScanResult {
+	start := time.Now()
+	result := YaraScanResult{FilePath: name, FileName: filepath.Base(name), State: "failed", Matches: []string{}}
+	data, err := artifactio.Read(ctx, directory, name, 100<<20)
+	if err == nil {
+		result.Matches, err = scanner.ScanBytesContext(ctx, data)
+	}
+	if err != nil {
+		result.Error = err.Error()
+		if errors.Is(err, context.DeadlineExceeded) {
+			result.State = "timed-out"
+		}
+		if errors.Is(err, context.Canceled) {
+			result.State = "cancelled"
+		}
+	} else {
+		result.State = "completed"
+		result.Outcome = "no-match"
+		if len(result.Matches) > 0 {
+			result.Outcome = "matched"
 		}
 	}
-	s.mu.RUnlock()
-
-	filesDir := filepath.Join(outDir, "files")
-	fullPath := filepath.Join(filesDir, req.FilePath)
-
-	// Prevent path traversal
-	if !strings.HasPrefix(filepath.Clean(fullPath), filepath.Clean(filesDir)) {
-		RespondJSON(w, http.StatusBadRequest, map[string]any{"error": "Invalid file path"})
-		return
-	}
-
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-		RespondJSON(w, http.StatusNotFound, map[string]any{"error": "File not found"})
-		return
-	}
-
-	startTime := time.Now()
-	matches, err := scanner.ScanFile(fullPath)
-	scanTimeMs := time.Since(startTime).Milliseconds()
-
-	if err != nil {
-		RespondJSON(w, http.StatusInternalServerError, map[string]any{"error": fmt.Sprintf("Scan failed: %v", err)})
-		return
-	}
-
-	if matches == nil {
-		matches = []string{}
-	}
-
-	RespondJSON(w, http.StatusOK, YaraScanResult{
-		FilePath:   req.FilePath,
-		FileName:   filepath.Base(req.FilePath),
-		Matches:    matches,
-		ScanTimeMs: scanTimeMs,
-	})
+	result.ScanTimeMs = time.Since(start).Milliseconds()
+	return result
 }
 
 // handleYaraRuleRouter dispatches YARA rule requests by method.
@@ -666,6 +720,9 @@ func extractPathParam(path, prefix string) string {
 		return ""
 	}
 	param := strings.TrimPrefix(path, prefix)
+	if filepath.Base(param) != param || strings.ContainsAny(param, "\\\x00") || (strings.ToLower(filepath.Ext(param)) != ".yar" && strings.ToLower(filepath.Ext(param)) != ".yara") {
+		return ""
+	}
 	// URL-decode
 	return param
 }

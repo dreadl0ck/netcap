@@ -77,6 +77,7 @@ import ResponsiveDataView from '../components/ResponsiveDataView';
 import { formatBytes, formatTimestamp, type ExtractedFileInfo } from '../lib/api';
 import { useNetcapApi, useTableKeyboardNavigation, useIsMobile } from '../hooks';
 import useSWR, { mutate as globalMutate } from 'swr';
+import ArtifactAnalysisPanel from '../components/ArtifactAnalysisPanel';
 import OptimizedPieChart from '../components/OptimizedPieChart';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -1116,6 +1117,7 @@ export default function ExtractedFilesPage() {
   return (
     <Layout title="Files" headerAction={fileSelector}>
       <Box sx={{ minWidth: 0 }}>
+        <ArtifactAnalysisPanel selection={status?.sessionId ? { sessionId: status.sessionId } : { inputFile: status?.activeInputFile }} />
         <Box sx={{ 
           display: 'flex', 
           flexDirection: { xs: 'column', md: 'row' },
@@ -1809,6 +1811,11 @@ export default function ExtractedFilesPage() {
             </Box>
           </DialogTitle>
           <DialogContent dividers sx={{ p: 0, display: 'flex', flexDirection: 'column' }}>
+            {previewFile && <Box sx={{ p: 2 }}>
+              <ArtifactAnalysisPanel selection={status?.sessionId ? { sessionId: status.sessionId } : { inputFile: status?.activeInputFile }} sha256={previewFile.sha256} />
+              {previewFile.completenessReason && <Alert severity={previewFile.isComplete ? 'info' : 'warning'}>Artifact completeness: {previewFile.completenessReason}</Alert>}
+              {previewFile.occurrences && <details><summary>Transfer occurrences ({previewFile.occurrences.length}{previewFile.occurrencesCapped ? '+, capped' : ''})</summary><Box component="pre" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify(previewFile.occurrences, null, 2)}</Box></details>}
+            </Box>}
             {previewLoading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                 <CircularProgress />

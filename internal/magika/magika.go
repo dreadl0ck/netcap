@@ -25,6 +25,7 @@
 package magika
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"os"
@@ -77,6 +78,7 @@ type magikaJSONOutput struct {
 // Init locates the magika CLI binary and verifies it works.
 // assetsDir and modelName are ignored (the Rust CLI embeds the model).
 func Init(assetsDir, modelName string) {
+	enabled.Store(false)
 	log.Println(ansi.Yellow + "[Magika] Init() called" + ansi.Reset)
 
 	// Find the magika binary
@@ -103,13 +105,11 @@ func Classify(filePath string) (*Result, error) {
 		return nil, nil
 	}
 
-	cmd := exec.Command(magikaBinary, "--json", filePath)
-	output, err := cmd.Output()
+	classifier, err := NewClassifier()
 	if err != nil {
 		return nil, err
 	}
-
-	return parseJSONOutput(output)
+	return classifier.Classify(context.Background(), filePath)
 }
 
 // ClassifyBytes classifies file content from a byte slice.
