@@ -2,11 +2,13 @@ package http
 
 import (
 	"bytes"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/hpack"
@@ -149,6 +151,133 @@ func TestH2NegotiatedUpgradeAndRejection(t *testing.T) {
 		if len(records) != 3 || len(byID) != 2 || byID[1].URL != "/upgrade" || byID[1].StatusCode != 204 || byID[3].URL != "/after-upgrade" || byID[1].Proto != "HTTP/2.0" {
 			t.Fatal(records)
 		}
+	}
+}
+
+func TestH2RejectedUpgradeResumesHTTP1(t *testing.T) {
+	for _, status := range []string{"200 OK", "400 Bad Request"} {
+		for _, informational := range []string{"", "HTTP/1.1 100 Continue\r\n\r\nHTTP/1.1 103 Early Hints\r\nLink: </asset>\r\n\r\n"} {
+			for _, layout := range []string{"coalesced", "segmented", "bytewise"} {
+				t.Run(status+"/info="+strconv.FormatBool(informational != "")+"/"+layout, func(t *testing.T) {
+					request := "GET /before HTTP/1.1\r\nHost: fixture.test\r\n\r\n" +
+						"GET /upgrade HTTP/1.1\r\nHost: fixture.test\r\nConnection: Upgrade, HTTP2-Settings\r\nUpgrade: h2c\r\nHTTP2-Settings: \r\n\r\n"
+					body := "GET /body-only HTTP/1.1\r\n\r\n"
+					next := "POST /after HTTP/1.1\r\nHost: fixture.test\r\nContent-Length: " + strconv.Itoa(len(body)) + "\r\n\r\n" + body
+					response := "HTTP/1.1 204 No Content\r\n\r\n" + informational + "HTTP/1.1 " + status + "\r\nContent-Length: 0\r\n\r\n"
+					data := core.DataFragments{
+						wireFragment(0, []byte(request), 10),
+						wireFragment(1, []byte(response), 11),
+						wireFragment(0, []byte(next), 12),
+						wireFragment(1, []byte("HTTP/1.1 201 Created\r\nContent-Length: 5\r\n\r\nreply"), 13),
+					}
+					records := captureHTTP(t, h2UpgradeLayout(data, layout))
+					want := 3
+					if informational != "" {
+						want += 2
+					}
+					if len(records) != want {
+						t.Fatalf("got %d records, want %d: %v", len(records), want, records)
+					}
+					for _, r := range records {
+						if r.Proto != "HTTP/1.1" || r.HTTP2StreamID != 0 || r.ReassemblyStatus != "" {
+							t.Fatal(r)
+						}
+						if r.StatusCode == 100 || r.StatusCode == 103 {
+							if r.URL != "/upgrade" {
+								t.Fatal("informational response paired with wrong request", r)
+							}
+						}
+					}
+					r := records[len(records)-1]
+					if r.URL != "/after" || r.Method != "POST" || r.StatusCode != 201 || string(r.RequestBody) != body || string(r.ResponseBody) != "reply" {
+						t.Fatal("lost HTTP/1 transaction after rejected upgrade", r)
+					}
+				})
+			}
+		}
+	}
+}
+
+func h2UpgradeLayout(data core.DataFragments, layout string) core.DataFragments {
+	if layout == "segmented" {
+		return data
+	}
+	var out core.DataFragments
+	if layout == "coalesced" {
+		var wire [2][]byte
+		for _, f := range data {
+			side := 0
+			if f.Direction() == reassembly.TCPDirServerToClient {
+				side = 1
+			}
+			wire[side] = append(wire[side], f.Raw()...)
+		}
+		for side := range wire {
+			out = append(out, wireFragment(side, wire[side], 10))
+		}
+		return out
+	}
+	for _, f := range data {
+		for i := range f.Raw() {
+			part := *f.(*core.StreamData)
+			part.RawData = f.Raw()[i : i+1]
+			out = append(out, &part)
+		}
+	}
+	return out
+}
+
+func TestH2AcceptedUpgradeAfterRejection(t *testing.T) {
+	for _, informational := range []string{"", "HTTP/1.1 103 Early Hints\r\n\r\n"} {
+		for _, layout := range []string{"coalesced", "segmented", "bytewise"} {
+			t.Run("info="+strconv.FormatBool(informational != "")+"/"+layout, func(t *testing.T) {
+				f := newH2Fixture(t)
+				f.headers(0, 3, true, requestFields("/after-upgrade")...)
+				f.headers(1, 1, true, ":status", "204")
+				f.headers(1, 3, true, ":status", "200", "content-length", "0")
+				upgrade := " HTTP/1.1\r\nHost: fixture.test\r\nConnection: Upgrade, HTTP2-Settings\r\nUpgrade: h2c\r\nHTTP2-Settings: \r\n\r\n"
+				request := "GET /rejected" + upgrade + "GET /accepted" + upgrade
+				response := "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n" + informational +
+					"HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: h2c\r\n\r\n"
+				f.data[0].(*core.StreamData).RawData = append([]byte(request), f.data[0].Raw()...)
+				f.data[1].(*core.StreamData).RawData = append([]byte(response), f.data[1].Raw()...)
+				records := captureHTTP(t, h2UpgradeLayout(f.data, layout))
+				want := 4
+				if informational != "" {
+					want++
+				}
+				byID := streamRecords(records)
+				if len(records) != want || len(byID) != 2 || byID[1].URL != "/accepted" || byID[1].StatusCode != 204 || byID[3].URL != "/after-upgrade" || byID[3].StatusCode != 200 {
+					t.Fatal(records)
+				}
+				for _, r := range records {
+					if r.ReassemblyStatus != "" || (r.StatusCode == 103 && r.URL != "/accepted") {
+						t.Fatal(r)
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestH2UpgradeInformationalResponseDoesNotResumeHTTP1(t *testing.T) {
+	request := "GET /upgrade HTTP/1.1\r\nHost: fixture.test\r\nConnection: Upgrade, HTTP2-Settings\r\nUpgrade: h2c\r\nHTTP2-Settings: \r\n\r\n" +
+		"POST /pending HTTP/1.1\r\nHost: fixture.test\r\nContent-Length: 4\r\n\r\nbody"
+	for _, layout := range []string{"coalesced", "segmented", "bytewise"} {
+		t.Run(layout, func(t *testing.T) {
+			records := captureHTTP(t, h2UpgradeLayout(core.DataFragments{
+				wireFragment(0, []byte(request), 10),
+				wireFragment(1, []byte("HTTP/1.1 103 Early Hints\r\n\r\n"), 11),
+			}, layout))
+			if len(records) == 0 {
+				t.Fatal("lost upgrade evidence")
+			}
+			for _, r := range records {
+				if r.URL != "/upgrade" || r.HTTP2StreamID != 0 {
+					t.Fatal("informational response resolved pending upgrade", r)
+				}
+			}
+		})
 	}
 }
 

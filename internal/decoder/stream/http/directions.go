@@ -108,7 +108,9 @@ func (h *httpReader) decodeDirections() {
 	}
 	var upgrade *httpRequest
 	var h2Directions [2]core.DataFragments
-	for side, chunks := range runs {
+	var pendingClient []run
+	var decodeHTTP1 func(int, []run)
+	decodeHTTP1 = func(side int, chunks []run) {
 		stopDirection := false
 		for index, chunk := range chunks {
 			if stopDirection {
@@ -154,6 +156,8 @@ func (h *httpReader) decodeDirections() {
 					if validH2Upgrade(req.request) {
 						upgrade = req
 						h2Directions[0] = remainder()
+						// Keep HTTP/1 run boundaries until the matching response accepts.
+						pendingClient = append([]run{{fragments: trimFragments(chunk.fragments, pos.Offset())}}, chunks[index+1:]...)
 						stopDirection = true
 						break
 					}
@@ -168,6 +172,12 @@ func (h *httpReader) decodeDirections() {
 						stopDirection = true
 						break
 					}
+					if upgrade != nil && res.Request == upgrade.request && res.StatusCode >= 200 {
+						pending := pendingClient
+						upgrade, pendingClient = nil, nil
+						h2Directions[0] = nil
+						decodeHTTP1(0, pending)
+					}
 					if res.Request != nil && res.Request.Method == methodCONNECT && res.StatusCode >= 200 && res.StatusCode < 300 {
 						stopDirection = true
 						break
@@ -179,6 +189,8 @@ func (h *httpReader) decodeDirections() {
 			}
 		}
 	}
+	decodeHTTP1(0, runs[0])
+	decodeHTTP1(1, runs[1])
 }
 
 type offsetFragment struct {
