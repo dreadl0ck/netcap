@@ -20,15 +20,11 @@
 package collector
 
 import (
-	stdErrors "errors"
+	"context"
 	"fmt"
 	"io"
 	"os"
-	"sync/atomic"
-	"time"
 
-	"github.com/dustin/go-humanize"
-	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/pkg/errors"
@@ -154,11 +150,11 @@ var dltDescriptions = map[int]string{
 	269: "DLT_LORATAP - LoRaTap",
 	270: "DLT_VSOCK - Linux vsock",
 	271: "DLT_NORDIC_BLE - Nordic Semiconductor Bluetooth LE sniffer",
-	272: "DLT_DOCSIS31_XRA31 - DOCSIS 3.1 Downstream RF Interface",
-	273: "DLT_ETHERNET_MPACKET - mPackets",
-	274: "DLT_DISPLAYPORT_AUX - DisplayPort AUX channel",
-	275: "DLT_LINUX_SLL2 - Linux cooked sockets v2",
-	276: "DLT_OPENVIZSLA - OpenVizsla",
+	272: "DLT_USB_DARWIN - Apple Darwin USB",
+	273: "DLT_DOCSIS31_XRA31 - DOCSIS 3.1 Downstream RF Interface",
+	274: "DLT_ETHERNET_MPACKET - mPackets",
+	275: "DLT_DISPLAYPORT_AUX - DisplayPort AUX channel",
+	276: "DLT_LINUX_SLL2 - Linux cooked sockets v2",
 	278: "DLT_EBHSCR - Elektrobit High Speed Capture and Replay",
 	279: "DLT_VPP_DISPATCH - VPP graph dispatcher trace",
 	280: "DLT_DSA_TAG_BRCM - Broadcom switch tag",
@@ -189,6 +185,9 @@ func OpenPCAP(file string) (*pcapgo.Reader, *os.File, error) {
 		return nil, nil, enhancePcapError(file, err)
 	}
 
+	// Snaplen is advisory; retain an allocation ceiling for direct API callers.
+	// Count/collect use the bounded reader, which also consumes recoverable bad records.
+	r.SetSnaplen(maxInputPacket)
 	return r, f, nil
 }
 
@@ -220,162 +219,20 @@ func IsPcap(file string) (bool, error) {
 
 // countPackets returns the number of packets in a PCAP file.
 func countPackets(path string) (count int64, err error) {
-	// get reader and file handle
-	r, f, err := OpenPCAP(path)
-	if err != nil {
-		return
-	}
-
-	defer func() {
-		errClose := f.Close()
-		if errClose != nil && !errors.Is(errClose, io.EOF) {
-			fmt.Println(errClose)
-		}
-	}()
-
-	for {
-		// loop over packets and discard all data
-		_, _, err = r.ZeroCopyReadPacketData()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return count, errors.Wrap(err, errReadingPacketData)
-		}
-
-		// increment counter
-		count++
-	}
-
-	return count, nil
+	return countCaptureInput(context.Background(), path, false)
 }
 
 // CollectPcap implements parallel decoding of incoming packets.
 func (c *Collector) CollectPcap(path string) (resultErr error) {
-	c.captureKind, c.captureSource = "file", path
-	// Recover from any panics during processing
-	defer c.recoverFromPanic()
-	ctx, finish, err := c.beginCapture()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		c.captureRunError = resultErr
-		finish()
-		c.cleanup(false)
-		resultErr = stdErrors.Join(resultErr, c.flowExportError, c.captureEvidenceError, c.artifactAnalysisError)
-	}()
-
-	// stat input file
-	stat, err := os.Stat(path)
-	if err != nil {
-		return errors.Wrap(err, "failed to open file")
-	}
-
-	// file exists.
-	c.clearLine()
-	c.printlnStdOut("opening", path+" | size:", humanize.Bytes(uint64(stat.Size())))
-
-	// set input filesize on collector
-	c.inputSize = stat.Size()
-
-	// display total packet count
-	start := time.Now()
-
-	c.printStdOut("counting packets...")
-
-	numPackets, err := countPackets(path)
-	if err != nil && !(errors.Is(err, io.EOF)) {
-		return err
-	}
-	atomic.StoreInt64(&c.numPackets, numPackets)
-
-	c.clearLine()
-	c.printlnStdOut("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
-
-	r, f, err := OpenPCAP(path)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		errClose := f.Close()
-		if errClose != nil && !errors.Is(errClose, io.EOF) {
-			fmt.Println(errClose)
-		}
-	}()
-
-	if err = c.handleLinkType(r.LinkType()); err != nil {
-		return err
-	}
-	defer interruptCapture(ctx, ctx, func() { _ = f.Close() })()
-
-	// initialize collector
-	if err = c.Init(); err != nil {
-		return err
-	}
-
-	var (
-		data         []byte
-		ci           gopacket.CaptureInfo
-		stopProgress = c.printProgressInterval()
-	)
-
-	for { // fetch the next packet data and packet header
-		data, ci, err = r.ReadPacketData()
-		if err != nil {
-			if ctx.Err() != nil || errors.Is(err, io.EOF) {
-				c.captureComplete = ctx.Err() == nil && errors.Is(err, io.EOF)
-				break
-			}
-
-			return errors.Wrap(err, errReadingPacketData+" file: "+path)
-		}
-
-		if !c.handleRawPacketData(data, &ci) {
-			break
-		}
-	}
-
-	// Stop progress reporting
-	close(stopProgress)
-
-	return nil
+	return c.collectCaptureInput(path, false)
 }
 
 func (c *Collector) handleLinkType(lt layers.LinkType) error {
 	c.captureLinkType = lt
 	c.printlnStdOut("detected link type:", lt)
 
-	// TODO: why does this not work?
-	//c.config.BaseLayer = lt.LayerType()
-
-	switch lt {
-	case layers.LinkTypeEthernet:
-		c.config.BaseLayer = layers.LayerTypeEthernet
-	case layers.LinkTypeRaw:
-		c.config.BaseLayer = layers.LayerTypeIPv4
-	case layers.LinkTypeIPv4:
-		c.config.BaseLayer = layers.LayerTypeIPv4
-	case layers.LinkTypeIPv6:
-		c.config.BaseLayer = layers.LayerTypeIPv6
-	case layers.LinkTypeNull:
-		c.config.BaseLayer = layers.LayerTypeLoopback
-	case layers.LinkTypeFDDI:
-		c.config.BaseLayer = layers.LayerTypeFDDI
-	case layers.LinkTypeIEEE802_11:
-		c.config.BaseLayer = layers.LayerTypeDot11
-	case layers.LinkTypeIEEE80211Radio:
-		c.config.BaseLayer = layers.LayerTypeRadioTap
-	case layers.LinkTypePPP:
-		c.config.BaseLayer = layers.LayerTypePPP
-	case layers.LinkTypeLinuxSLL:
-		c.config.BaseLayer = layers.LayerTypeLinuxSLL
-	default:
-		if linkTypeToLayerType(lt) == layers.LayerTypePktap {
-			c.config.BaseLayer = layers.LayerTypePktap
-			break
-		}
+	layerType := linkTypeToLayerType(lt)
+	if layerType == 0 || (lt == 149 && layerType != layers.LayerTypePktap) {
 		linkTypeValue := int(lt)
 		errMsg := fmt.Sprintf("unhandled link type: %s (raw value: %d, hex: 0x%02X)", lt, linkTypeValue, linkTypeValue)
 
@@ -387,6 +244,7 @@ func (c *Collector) handleLinkType(lt layers.LinkType) error {
 		errMsg += "\n   For more information, see: https://www.tcpdump.org/linktypes.html"
 		return errors.New(errMsg)
 	}
+	c.config.BaseLayer = layerType
 
 	// Set the base layer type for the decoder package
 	// This is used when decoding buffered packets during the flush phase

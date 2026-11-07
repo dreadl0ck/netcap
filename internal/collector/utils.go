@@ -20,6 +20,7 @@
 package collector
 
 import (
+	"encoding/binary"
 	"fmt"
 	"os"
 	"runtime"
@@ -37,32 +38,54 @@ import (
 // handleRawPacketData takes ownership of data and reports whether the packet was admitted.
 // Callers must not modify or reuse data.
 func (c *Collector) handleRawPacketData(data []byte, ci *gopacket.CaptureInfo) bool {
+	return c.handlePacket(c.decodeRawPacketData(data, ci))
+}
+
+func (c *Collector) decodeRawPacketData(data []byte, ci *gopacket.CaptureInfo) gopacket.Packet {
 	// Determine the correct base layer for this packet.
 	// For pcapng files with mixed link types, the per-packet link type
 	// is stored in ci.AncillaryData[0].
-	baseLayer := c.config.BaseLayer
+	var baseLayer gopacket.Decoder = c.config.BaseLayer
 	if len(ci.AncillaryData) > 0 {
 		if lt, ok := ci.AncillaryData[0].(layers.LinkType); ok {
-			if lt == 274 && len(data) > 8 {
+			if lt == 239 {
+				order := inputPacketInfo(*ci).Order
+				if order == nil {
+					order = binary.NativeEndian
+				}
+				baseLayer = gopacket.DecodeFunc(func(data []byte, p gopacket.PacketBuilder) error { return decodeNFLOG(data, p, order) })
+			} else if lt == layers.LinkTypeLinuxSLL2 {
+				baseLayer = gopacket.DecodeFunc(decodeSLL2)
+			} else if lt == 274 && len(data) > 8 {
 				// LINKTYPE_ETHERNET_MPACKET (FPP): strip 8-byte Ethernet preamble+SFD
 				data = data[8:]
 				baseLayer = layers.LayerTypeEthernet
 			} else if layerType := linkTypeToLayerType(lt); layerType != 0 {
 				baseLayer = layerType
+			} else {
+				baseLayer = gopacket.DecodeFunc(func(_ []byte, _ gopacket.PacketBuilder) error {
+					return unsupportedLink("unsupported capture link type %d (%s)", lt, dltDescriptions[int(lt)])
+				})
 			}
 		}
 	}
 
 	// when not using lazy here, the packet will be decoded on the main thread!
 	opts := c.config.DecodeOptions
+	if len(data) == 0 {
+		// Lazy decoding skips empty slices entirely, hiding even link-header errors.
+		opts.Lazy = false
+		baseLayer = gopacket.DecodeFunc(func(_ []byte, _ gopacket.PacketBuilder) error {
+			return badLink("empty captured packet has no link header")
+		})
+	}
 	if opts == (gopacket.DecodeOptions{}) {
 		opts.NoCopy = true
 	}
 	p := gopacket.NewPacket(data, baseLayer, opts)
 	p.Metadata().CaptureInfo = *ci
 
-	// pass packet to a worker routine
-	return c.handlePacket(p)
+	return p
 }
 
 // linkTypeToLayerType converts a pcap link type to a gopacket layer type.
@@ -78,7 +101,9 @@ func linkTypeToLayerType(lt layers.LinkType) gopacket.LayerType {
 		return gopacket.LayerTypePayload
 	case layers.LinkTypeEthernet:
 		return layers.LayerTypeEthernet
-	case layers.LinkTypeRaw, layers.LinkTypeIPv4:
+	case layers.LinkTypeRaw:
+		return layerRawIP
+	case layers.LinkTypeIPv4:
 		return layers.LayerTypeIPv4
 	case layers.LinkTypeIPv6:
 		return layers.LayerTypeIPv6
@@ -94,6 +119,14 @@ func linkTypeToLayerType(lt layers.LinkType) gopacket.LayerType {
 		return layers.LayerTypePPP
 	case layers.LinkTypeLinuxSLL:
 		return layers.LayerTypeLinuxSLL
+	case layers.LinkTypeLinuxSLL2:
+		return layers.LayerTypeLinuxSLL2
+	case layers.LinkTypeC_HDLC:
+		return layerCHDLC
+	case 230:
+		return layerIEEE802154
+	case 239:
+		return layerNFLOG
 	case 274: // LINKTYPE_ETHERNET_MPACKET (FPP - Frame Preemption Protocol)
 		// FPP frames in pcapng are standard Ethernet frames
 		return layers.LayerTypeEthernet

@@ -1,0 +1,55 @@
+{
+  "issues": ["D2-12", "D2-13", "DS-4", "DS-18"],
+  "reproduce": "NETCAP_INPUT_CORPUS=/absolute/fixture/cache NETCAP_INPUT_FETCH=1 NETCAP_INPUT_RESULTS=/absolute/results GOWORK=off GOMAXPROCS=2 go test -p 1 -tags nodpi,noyara,nomagika ./internal/collector -run '^TestCaptureInputCorpus$' -count=1 -v",
+  "notes": "Opt-in downloads only, capped at each declared size and SHA-256 verified. Collector outputs and child stdout are retained when NETCAP_INPUT_RESULTS is set. NETCAP_INPUT_BASELINE=1 records observations without post-fix assertions. The original /Users/pmieden/Downloads/netcap-datasets-round2.md report is unavailable; the authoritative W76 plan and source guide implementation. Upstream krb/smb2_krb.pcap is the pinned reproducer for the plan's named krb_smb2_krb.pcap; equivalence to the unavailable original artifact is unverified. No keytab is fetched. Large MCFP captures and original /workspace/mta/datasets2 outputs are not available locally.",
+  "samples": [
+    {
+      "name": "zeek-smb2-krb", "issue": "D2-12",
+      "url": "https://raw.githubusercontent.com/zeek/zeek/5862ccc5e13e6127cda5932a7f18aaf070c8b63b/testing/btest/Traces/krb/smb2_krb.pcap",
+      "size": 44485, "sha256": "ce63a561c70ef74df41dd90f63f93e75f8b4006bc65511d779112fa93efcbc0d",
+      "packets": 100, "record": "TCP", "status": "partial", "semantics": "snaplen 9999 is advisory; caplen 10014 is read intact; all 100 packets reach processing; one packet was snapshot-truncated upstream"
+    },
+    {
+      "name": "zeek-nflog-http", "issue": "D2-13",
+      "url": "https://raw.githubusercontent.com/zeek/zeek/5862ccc5e13e6127cda5932a7f18aaf070c8b63b/testing/btest/Traces/nflog-http.pcap",
+      "size": 3336, "sha256": "1a3892d87aa63e82d80ab7949c0a1006c495703f75e42543ff34369057fa163d",
+      "packets": 13, "record": "HTTP", "status": "complete", "semantics": "bounded native-order NFLOG TLVs expose IPv4/TCP/HTTP without changing raw evidence"
+    },
+    {
+      "name": "zeek-nflog-bad-tlv", "issue": "D2-13",
+      "url": "https://raw.githubusercontent.com/zeek/zeek/5862ccc5e13e6127cda5932a7f18aaf070c8b63b/testing/btest/Traces/nflog-bad-tlv-len.pcap",
+      "size": 52, "sha256": "ce3853c445b1217b3e3b131a3d54f0b7d429006f22b246d60ec96374e10ad00d",
+      "packets": 1, "status": "partial", "error": true, "semantics": "TLV claims 256 bytes in 8 remaining bytes; preserve error packet, do not decode a guessed payload"
+    },
+    {
+      "name": "zeek-ieee802154", "issue": "D2-13",
+      "url": "https://raw.githubusercontent.com/zeek/zeek/5862ccc5e13e6127cda5932a7f18aaf070c8b63b/testing/btest/Traces/ieee80211.15.4.pcap",
+      "size": 91, "sha256": "1c0d6a46c098b6ecd2bbbe30c481d83655b51f9176bb008ea860e3bda645e658",
+      "packets": 1, "status": "unsupported", "error": true, "semantics": "validate no-FCS MAC header; explicitly unsupported deeper 802.15.4 payload"
+    },
+    {
+      "name": "zeek-sll2", "issue": "DS-18",
+      "url": "https://raw.githubusercontent.com/zeek/zeek/5862ccc5e13e6127cda5932a7f18aaf070c8b63b/testing/btest/Traces/linux_dlt_sll2.pcap",
+      "size": 672, "sha256": "da2e002abf776f3af0566c7c63e0d3e636177c67bd95da083cd0086cc812171b",
+      "packets": 6, "record": "ICMPv4", "status": "unsupported", "error": true, "semantics": "link type 276 uses native LinuxSLL2; IPv4/IPv6/ARP decode, frame 6 RARP 0x8035 is explicitly unsupported; 275 must not alias SLL2"
+    },
+    {
+      "name": "zeek-trunc-hdr", "issue": "DS-4",
+      "url": "https://raw.githubusercontent.com/zeek/zeek/5862ccc5e13e6127cda5932a7f18aaf070c8b63b/testing/btest/Traces/trunc/trunc-hdr.pcap",
+      "size": 48, "sha256": "e278b3cbbeeded84ca3b5d33ea7ebdda851f75b550c2f82b32f94a901991f00e",
+      "packets": 1, "status": "partial", "error": true, "semantics": "complete PCAP record containing an 8-byte truncated Ethernet header, snaplen 1; retain packet evidence and decode failure"
+    },
+    {
+      "name": "suricata-chdlc", "issue": "D2-13",
+      "url": "https://raw.githubusercontent.com/OISF/suricata-verify/9a9178a7e4d45ff1d990e8f178c1e2f54b772f39/tests/decode-chdlc-01/hdlc-http_1tx.pcap",
+      "size": 10616, "sha256": "c49d7bd4a09c3b8596d0732fbaab7e24a1322a09ee343bddddfb85e571f41e0e",
+      "packets": 17, "record": "HTTP", "status": "complete", "semantics": "4-byte Cisco HDLC header followed by IPv4/TCP/HTTP"
+    },
+    {
+      "name": "suricata-sll2", "issue": "DS-18",
+      "url": "https://raw.githubusercontent.com/OISF/suricata-verify/9a9178a7e4d45ff1d990e8f178c1e2f54b772f39/tests/decode-sll2-01/input.pcap",
+      "size": 562, "sha256": "caa329a68affe15cba352ae4ae653d8450a358b66498e646b54496909f212fbf",
+      "packets": 5, "record": "TCP", "status": "complete", "semantics": "native LinuxSLL2 delivers TCP and retains the cooked header"
+    }
+  ]
+}
