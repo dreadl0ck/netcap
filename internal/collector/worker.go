@@ -44,6 +44,7 @@ type workerControl struct {
 	ref  time.Time
 	all  bool
 	done chan struct{}
+	idle bool
 }
 
 // worker spawns a new worker goroutine
@@ -83,10 +84,14 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 					if control.all {
 						assembler.FlushAll()
 					} else {
-						assembler.FlushWithOptions(reassembly.FlushOptions{
+						options := reassembly.FlushOptions{
 							T:  control.ref.Add(-c.config.DecoderConfig.ClosePendingTimeOut),
 							TC: control.ref.Add(-c.config.DecoderConfig.CloseInactiveTimeOut),
-						})
+						}
+						if control.idle {
+							options.TI = options.TC
+						}
+						assembler.FlushWithOptions(options)
 					}
 				}
 				if control.done != nil {
@@ -274,7 +279,13 @@ func (c *Collector) initWorkers() []chan gopacket.Packet {
 
 	// create assemblers
 	for i := range workers {
-		a := reassembly.NewAssembler(reassembly.NewStreamPool(tcp.StreamFactory))
+		var pool *reassembly.StreamPool
+		if c.captureKind == "live" && c.config.LiveMaintenanceInterval >= 0 {
+			pool = reassembly.NewStreamPoolWithIdleExpiry(tcp.StreamFactory)
+		} else {
+			pool = reassembly.NewStreamPool(tcp.StreamFactory)
+		}
+		a := reassembly.NewAssembler(pool)
 
 		// Configure stream reassembly limits from config
 		if c.config.DecoderConfig.MaxStreamBytes >= 0 {

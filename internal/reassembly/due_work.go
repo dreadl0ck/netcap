@@ -8,12 +8,15 @@ import (
 type dueState struct {
 	pending, closed       time.Time
 	hasPending, hasClosed bool
+	idle                  time.Time
+	hasIdle               bool
 }
 
 type connectionDue struct {
 	due          dueState // Protected by conn.mu; skips unchanged publications.
 	pendingEntry deadlineEntry
 	closedEntry  deadlineEntry
+	idleEntry    deadlineEntry
 	dueClaimed   bool // Protected by StreamPool.mu.
 }
 
@@ -74,7 +77,7 @@ func (p *StreamPool) refreshDueLocked(conn *connection, releaseClaim bool) {
 	}
 	closed := conn.s2c.closed && conn.c2s.closed
 	pending := (!conn.s2c.closed && conn.s2c.first != nil) || (!conn.c2s.closed && conn.c2s.first != nil)
-	if !pending && !closed && (conn.connectionDue == nil || (!releaseClaim && !conn.due.hasPending && !conn.due.hasClosed)) {
+	if !p.trackIdle && !pending && !closed && (conn.connectionDue == nil || (!releaseClaim && !conn.due.hasPending && !conn.due.hasClosed)) {
 		return
 	}
 	if conn.connectionDue == nil {
@@ -89,6 +92,8 @@ func (p *StreamPool) refreshDueLocked(conn *connection, releaseClaim bool) {
 	}
 	if closed {
 		state.closed, state.hasClosed = conn.lastSeen(), true
+	} else if p.trackIdle {
+		state.idle, state.hasIdle = conn.lastSeen(), true
 	}
 	if state == conn.due && !releaseClaim {
 		return
@@ -102,6 +107,7 @@ func (p *StreamPool) refreshDueLocked(conn *connection, releaseClaim bool) {
 		ref := connectionRef{conn: conn, generation: conn.generation}
 		p.pendingDue.update(&conn.pendingEntry, ref, state.pending, state.hasPending)
 		p.closedDue.update(&conn.closedEntry, ref, state.closed, state.hasClosed)
+		p.idleDue.update(&conn.idleEntry, ref, state.idle, state.hasIdle)
 	}
 	p.mu.Unlock()
 }
@@ -112,8 +118,10 @@ func (h deadlineHeap) collectDue(i int, cutoff time.Time, dst []connectionRef) [
 		return dst
 	}
 	ref := h[i].ref
-	ref.conn.dueClaimed = true
-	dst = append(dst, ref)
+	if !ref.conn.dueClaimed {
+		ref.conn.dueClaimed = true
+		dst = append(dst, ref)
+	}
 	dst = h.collectDue(i*2+1, cutoff, dst)
 	return h.collectDue(i*2+2, cutoff, dst)
 }
@@ -127,7 +135,10 @@ func (p *StreamPool) claimDue(dst []connectionRef, opt FlushOptions) []connectio
 	for _, queue := range []struct {
 		heap   *deadlineHeap
 		cutoff time.Time
-	}{{&p.pendingDue, opt.T}, {&p.closedDue, opt.TC}} {
+	}{{&p.pendingDue, opt.T}, {&p.closedDue, opt.TC}, {&p.idleDue, opt.TI}} {
+		if queue.heap == &p.idleDue && opt.TI.IsZero() {
+			continue
+		}
 		start := len(dst)
 		dst = queue.heap.collectDue(0, queue.cutoff, dst)
 		count := len(dst) - start
@@ -138,6 +149,7 @@ func (p *StreamPool) claimDue(dst []connectionRef, opt FlushOptions) []connectio
 			for _, ref := range dst[start:] {
 				p.pendingDue.remove(&ref.conn.pendingEntry)
 				p.closedDue.remove(&ref.conn.closedEntry)
+				p.idleDue.remove(&ref.conn.idleEntry)
 			}
 			continue
 		}
@@ -184,6 +196,24 @@ func (a *Assembler) flushDue(ref connectionRef, opt FlushOptions) (flushed, clos
 		a.connPool.refreshDueLocked(conn, true)
 		conn.mu.Unlock()
 	}()
+	if !opt.TI.IsZero() && conn.lastSeen().Before(opt.TI) && !(conn.s2c.closed && conn.c2s.closed) {
+		for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
+			if half.closed {
+				continue
+			}
+			if half.first != nil {
+				flushed++
+			}
+			for !half.closed && half.first != nil {
+				a.skipFlush(conn, half)
+			}
+			if !half.closed {
+				a.closeHalfConnection(conn, half, "idle-expired")
+			}
+			closed++
+		}
+		return flushed, closed
+	}
 	for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
 		f, c := a.flushClose(conn, half, opt.T, opt.TC)
 		if f {

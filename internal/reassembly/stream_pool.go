@@ -40,6 +40,8 @@ type StreamPool struct {
 	newConnectionCount int64
 	pendingDue         deadlineHeap
 	closedDue          deadlineHeap
+	idleDue            deadlineHeap
+	trackIdle          bool // Immutable after construction.
 }
 
 func (p *StreamPool) grow() {
@@ -84,6 +86,7 @@ func (p *StreamPool) remove(conn *connection) {
 		if conn.connectionDue != nil {
 			p.pendingDue.remove(&conn.pendingEntry)
 			p.closedDue.remove(&conn.closedEntry)
+			p.idleDue.remove(&conn.idleEntry)
 			conn.dueClaimed = false
 		}
 		conn.live = false
@@ -112,7 +115,7 @@ func (p *StreamPool) Reset() {
 
 	// Clear connections map
 	p.conns = make(map[key]*connection, initialAllocSize)
-	p.pendingDue, p.closedDue = nil, nil
+	p.pendingDue, p.closedDue, p.idleDue = nil, nil, nil
 
 	// Clear free list
 	p.free = make([]*connection, 0, initialAllocSize)
@@ -134,8 +137,14 @@ func (p *StreamPool) Reset() {
 	}
 }
 
-// NewStreamPool creates a new connection pool.  Streams will
-// be created as necessary using the passed-in streamFactory.
+// NewStreamPoolWithIdleExpiry indexes open connections for explicit TI maintenance.
+func NewStreamPoolWithIdleExpiry(factory streamFactory) *StreamPool {
+	p := NewStreamPool(factory)
+	p.trackIdle = true
+	return p
+}
+
+// NewStreamPool creates connections lazily using the supplied factory.
 func NewStreamPool(factory streamFactory) *StreamPool {
 	return &StreamPool{
 		conns:     make(map[key]*connection, initialAllocSize),

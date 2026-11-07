@@ -1019,6 +1019,7 @@ func (a *Assembler) addNextFromConn(conn *halfconnection) {
 type FlushOptions struct {
 	T  time.Time // Pending sequence heads strictly older than T are flushed.
 	TC time.Time // Fully closed connections with both lastSeen times before TC are removed.
+	TI time.Time // Open connections idle before TI are closed; zero disables idle expiry.
 }
 
 // FlushWithOptions finds any streams waiting for packets older than

@@ -25,6 +25,23 @@ Go v0.15.2's default maximum buffered size is 10 MiB per direction. Zero-valued
 page limits can mean unlimited; [resource budgets](workers.md) are not a global
 memory guarantee. Use the installed help and health sidecars for actual policy.
 
+Live collection sends ordered maintenance to every worker once per second,
+including when no new packets arrive (`internal/collector/live_maintenance.go`).
+`collector.Config.LiveMaintenanceInterval` overrides that interval; a negative
+value disables it. Both directions must be older than `CloseInactiveTimeOut`
+before an open stream expires. Pending bytes are delivered with gap evidence,
+and timeout closure is labeled `idle-expired`.
+
+| Maintenance | Time basis / effect |
+| --- | --- |
+| Pending-byte deadline | `FlushOptions.T` releases old sequence heads with gap evidence. |
+| Closed-state retention | `FlushOptions.TC` removes retained closed connections. |
+| Live idle expiry | Explicit `FlushOptions.TI` closes idle open connections; zero disables it. An opt-in deadline index avoids scanning every active stream. |
+| Output snapshots | `LiveFlushInterval` flushes writers/current records; it does not expire streams. |
+
+Offline collection does not start a wall-clock maintenance timer or enable idle
+expiry; its existing packet-driven capture-time policy is preserved.
+
 ## Inspect the evidence
 
 With `-conns`, `stream-evidence/stream-*/` contains `client.bin`, `server.bin`

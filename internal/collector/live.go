@@ -109,6 +109,8 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) (resultE
 
 	stopProgress := c.printProgressInterval()
 	stopPeriodicFlush := c.startPeriodicFlush()
+	stopMaintenance := c.startLiveMaintenance()
+	defer close(stopMaintenance)
 
 	c.mu.Lock()
 	c.isLive = true
