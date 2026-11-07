@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/url"
+	"strings"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -52,7 +53,10 @@ func (s *Server) registerCarveTools() error {
 		},
 		{
 			Tool: mcplib.NewTool("carve_subpcap_for_connection",
-				mcplib.WithDescription("Produce a sub-PCAP for a specific 4-tuple connection."),
+				mcplib.WithDescription("Produce a bidirectional sub-PCAP for an explicit TCP/UDP tuple. Optional inclusive capture-time bounds narrow tuple reuse; omitting bounds selects all matching occurrences."),
+				mcplib.WithString("protocol", mcplib.Description("Observed transport protocol."), mcplib.Enum("TCP", "UDP"), mcplib.Required()),
+				mcplib.WithString("start_ns", mcplib.Description("Inclusive UTC Unix nanoseconds; supply together with end_ns.")),
+				mcplib.WithString("end_ns", mcplib.Description("Inclusive UTC Unix nanoseconds; supply together with start_ns.")),
 				mcplib.WithString("session_id", mcplib.Description("Session identifier."), mcplib.Required()),
 				mcplib.WithString("src_ip", mcplib.Description("Source IP."), mcplib.Required()),
 				mcplib.WithString("src_port", mcplib.Description("Source port."), mcplib.Required()),
@@ -87,6 +91,8 @@ func (s *Server) registerCarveTools() error {
 				mcplib.WithString("src_port", mcplib.Description("Source port."), mcplib.Required()),
 				mcplib.WithString("dst_ip", mcplib.Description("Destination IP."), mcplib.Required()),
 				mcplib.WithString("dst_port", mcplib.Description("Destination port."), mcplib.Required()),
+				mcplib.WithString("start_ns", mcplib.Description("Inclusive UTC Unix nanoseconds; supply together with end_ns.")),
+				mcplib.WithString("end_ns", mcplib.Description("Inclusive UTC Unix nanoseconds; supply together with start_ns.")),
 				mcplib.WithReadOnlyHintAnnotation(true),
 				mcplib.WithDestructiveHintAnnotation(false),
 				mcplib.WithIdempotentHintAnnotation(true),
@@ -181,6 +187,23 @@ func (s *Server) carveFourTuple(req mcplib.CallToolRequest, endpoint, label stri
 	q.Set("srcPort", req.GetString("src_port", ""))
 	q.Set("dstIP", req.GetString("dst_ip", ""))
 	q.Set("dstPort", req.GetString("dst_port", ""))
+	protocol := "TCP"
+	if label == "connection" {
+		value, err := req.RequireString("protocol")
+		if err != nil {
+			return errResult(err), nil
+		}
+		protocol = strings.ToUpper(value)
+		if protocol != "TCP" && protocol != "UDP" {
+			return errResult(fmt.Errorf("protocol must be TCP or UDP")), nil
+		}
+	}
+	q.Set("protocol", protocol)
+	for _, field := range []string{"start_ns", "end_ns"} {
+		if value := req.GetString(field, ""); value != "" {
+			q.Set(carveQueryKey(field), value)
+		}
+	}
 	return s.doCarve(ref, endpoint, label, q)
 }
 
@@ -249,6 +272,10 @@ func carveQueryKey(a string) string {
 		return "dstIP"
 	case "dst_port":
 		return "dstPort"
+	case "start_ns":
+		return "startNs"
+	case "end_ns":
+		return "endNs"
 	default:
 		return a
 	}

@@ -49,14 +49,16 @@ Produce a sub-PCAP for the TCP flow that carried a given TLS certificate (identi
 | --- | --- | --- | --- |
 | `dst_ip` | string | yes | Destination IP. |
 | `dst_port` | string | yes | Destination port. |
+| `end_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with start_ns. |
 | `session_id` | string | yes | Session identifier. |
 | `src_ip` | string | yes | Source IP of the TLS flow. |
 | `src_port` | string | yes | Source port. |
+| `start_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with end_ns. |
 
 
 ### `carve_subpcap_for_connection`
 
-Produce a sub-PCAP for a specific 4-tuple connection.
+Produce a bidirectional sub-PCAP for an explicit TCP/UDP tuple. Optional inclusive capture-time bounds narrow tuple reuse; omitting bounds selects all matching occurrences.
 
 **Hints:** read-only, idempotent
 
@@ -66,9 +68,12 @@ Produce a sub-PCAP for a specific 4-tuple connection.
 | --- | --- | --- | --- |
 | `dst_ip` | string | yes | Destination IP. |
 | `dst_port` | string | yes | Destination port. |
+| `end_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with start_ns. |
+| `protocol` | string | yes | Observed transport protocol. |
 | `session_id` | string | yes | Session identifier. |
 | `src_ip` | string | yes | Source IP. |
 | `src_port` | string | yes | Source port. |
+| `start_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with end_ns. |
 
 
 ### `carve_subpcap_for_host`
