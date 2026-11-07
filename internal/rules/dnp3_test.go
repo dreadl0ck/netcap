@@ -182,7 +182,7 @@ func TestDNP3BreakerRules(t *testing.T) {
 	}
 }
 
-// The Class 0 poll returns the whole static point map; the event classes do not.
+// Class 0 uses variation 1; variations 2..4 request event classes 1..3.
 func TestDNP3ClassZeroPollRule(t *testing.T) {
 	rule := dnp3HuntRules(t)["DNP3 Class 0 Integrity Poll Sweep"]
 
@@ -193,12 +193,12 @@ func TestDNP3ClassZeroPollRule(t *testing.T) {
 		return record
 	}
 
-	if !dnp3Match(t, rule, poll(0)) {
+	if !dnp3Match(t, rule, poll(1)) {
 		t.Error("Class 0 poll did not match")
 	}
-	for _, v := range []int32{1, 2, 3} {
+	for _, v := range []int32{0, 2, 3, 4} {
 		if dnp3Match(t, rule, poll(v)) {
-			t.Errorf("Class %d event poll matched the integrity poll rule", v)
+			t.Errorf("variation %d matched the integrity poll rule", v)
 		}
 	}
 	if rule.DistinctField != "Destination" || rule.DistinctThreshold != 5 {

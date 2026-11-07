@@ -1,0 +1,110 @@
+Optional passive descriptors transformed by OpenAI gpt-6.1-sol for Netcap.
+Upstream: projectdiscovery/nuclei-templates, revision
+82ccd2a03568fed3c0c579d3c1df0997642e86dc (MIT; see NUCLEI-LICENSE.txt).
+http/technologies/hugo-detect.yaml: author daffainfo.
+http/technologies/joomla-detect.yaml: author ricardomaia.
+Copyright (c) 2025 ProjectDiscovery, Inc.
+
+Transformation: retained generator product tokens only; parsed HTML attributes
+replace template body patterns. GET/status-200 is local passive scope. Removed
+requests, paths, redirects, DSL, regex execution, extractors, CPEs and claims
+about verified deployments. Joomla emits no inferred version. No raw template
+is shipped or interpreted. These descriptors do not grant rights in CMS code.
+
+WordPress/Drupal parsers and all new fixtures are independently AI-assisted
+Netcap work from advertised-output facts, not copied vendor implementation.
+Repository copyright owner: Philipp Mieden. The owner authorized MIT rights in
+independent descriptors and synthetic fixtures to the extent owned; see
+FIRST-PARTY-LICENSE.txt. Review is automated AI, not a human-authorship or legal
+attestation. Existing GPL runtime engine/parser code is not relicensed.
+
+Scope: independently authored Netcap webtech/service catalogue descriptors and
+synthetic fixtures identified in the accompanying provenance records, to the
+extent owned by Philipp Mieden. The owner authorized this permissive grant in
+the W66 integration request. This is not a human-authorship or legal-review
+attestation. Existing Go/Rust runtime engine and parser code retains its
+existing GPL license; this grant does not relicense that code or vendor code.
+
+MIT License
+
+Copyright (c) 2026 Philipp Mieden
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+MIT License
+
+Copyright (c) 2025 ProjectDiscovery, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Service catalogue authorship and review:
+{
+  "schema_version":1,
+  "review_id":"w66-four-service-rules-automated-20261106",
+  "reviewed_at":"2026-11-06T21:52:53Z",
+  "reviewer":{"kind":"automated-AI","model":"openai/gpt-6.1-sol","human_approval":false},
+  "authorship":{"repository_copyright_owner":"Philipp Mieden","commit_author":"Philipp Mieden <dreadl0ck@protonmail.ch>","origin_commit":"a56c1699b2a7ae9cfb0c9c7ee4c680df8b4573af","authorship_limitation":"commit author is not an attestation of manual authorship; historical generation transcript unavailable","this_review":"automated AI review by OpenAI gpt-6.1-sol","owner_grant_status":"owner-authorized to the extent owned","catalogue_grant":"MIT for independently authored first-party catalogue and synthetic fixtures, to the extent owned; existing GPL engine/parser code is not relicensed","grant_file":"../webtech/FIRST-PARTY-LICENSE.txt","authorization_record":"User integration request: userowner authorizedfinish; rightsprovidedtoextentowned; preserving existingGPLcode licence","human_authorship_attestation":false,"human_legal_review_attestation":false},
+  "review_conclusion":"Inspected finite protocol parsers and synthetic fixtures contain independently expressed protocol grammar, not a translated Nmap corpus. No raw Nmap data was used for this review or added to the delivery catalogue.",
+  "catalogue":{"filename":"service-signatures.json","format":"netcap-service-signatures","schema_version":1,"sha256":"bc6ae53ff54c6ba01719b339ca452cba9ec382c6bb3fcf2f2fade5b6870ede8f","same_four_builtin_ids":true,"format_ready":true,"owner_authorized":true,"human_rights_approval":false,"core_database_approval":false},
+  "inspected_source_sha256":{"engine.go":"c31fa31d9d431a507fa9df3bf1bc1e897ff94b64bc010c83c7794e3aed1602bd","engine_test.go":"d78480fd1c8e74ddbd5069ffed225387eb42a5d53cf5cefd065c26060a27c3ef"},
+  "rules":[
+    {"id":"netcap.ssh.ident.v1","source":"https://www.rfc-editor.org/rfc/rfc4253.txt","section":"4.2","source_sha256":"b471173305154f6c66facffcf7a4a25fc5c32765cb30542120be6c20a88f1ed3","transformation":"bounded SSH-2.0 identification grammar; raw software token only, no product database","fixture_names":["ssh-software-token","ssh-1.99-not-selected","ssh-hyphen","incomplete","wrong-direction","wrong-transport"]},
+    {"id":"netcap.http.response.v1","source":"https://www.rfc-editor.org/rfc/rfc9112.txt","section":"4","source_sha256":"e4f426bac6206b67fdf9e0da826154f70588db2133a0a86b15cde4ff725d8937","transformation":"HTTP/1 response status-line grammar only; no product/version inference","fixture_names":["http-status-only","http-no-product-inference","bad-status","bounded-prefix"]},
+    {"id":"netcap.smtp.greeting.v1","source":"https://www.rfc-editor.org/rfc/rfc5321.txt","section":"4.2; 4.3.1","source_sha256":"7d560eddff1b213c17d4e1e5f95005728b2f05bc2b3947f0fcc91717c6707634","transformation":"220 grammar plus conservative explicit SMTP/ESMTP token; ambiguous bare 220 rejected","fixture_names":["smtp","ambiguous-greeting","bare-220"]},
+    {"id":"netcap.ftp.greeting.v1","source":"https://www.rfc-editor.org/rfc/rfc959.txt","section":"4.2; 5.4","source_sha256":"e2eb01566e64c12ed75a0c4bd02231e62f91eebb86f596abc40999d5e8bc5a91","transformation":"220 grammar plus conservative explicit FTP token; ambiguous bare 220 rejected","fixture_names":["ftp","ambiguous-greeting","bare-220"]}
+  ],
+  "fixtures":{"source":"netcap-rs/compat/fixtures/service-signatures/golden.json","sha256":"afe18a5459e861dd14f0e2f9de5bb50cb93a798c5e414e324eceb7a2378d4bb0","count":14,"rights_scope":"synthetic first-party fixtures per original source comment; no PCAP or vendor corpus; owner-authorized MIT to the extent owned","reviewed_names":["ssh-software-token","http-status-only","http-no-product-inference","smtp","ftp","ambiguous-greeting","bare-220","ssh-1.99-not-selected","ssh-hyphen","incomplete","wrong-direction","wrong-transport","bad-status","bounded-prefix"]},
+  "validation":{"source":"netcap-rs/compat/fixtures/service-signatures/validation.json","sha256":"bd8254b3eabe9037f4de43ebc37daab17737325141682ac4d7194342438ea85e","count":17,"basis":"first-party catalogue admission, URL and duplicate-key contracts; no upstream rule corpus","reviewed_names":["custom-id","empty-id-tail","uppercase-id","empty-catalogue","schema-2","no-enabled-field","duplicate-rule","no-https","missing-host","triple-slash","credentials","empty-user","malformed-percent","raw-control","query-at-sign","uppercase-scheme","blank-section"]},
+  "existing_machine_proof":{"file":"netcap-rs/compat/fixtures/w66-release/go-contract.json","sha256":"c6b8a3f6aa744ab543982e1e2ee3676271e43f60e6b49d3c7d33e5853efd464f","fixture_scope":"synthetic-test-only; no production approvals","pinned_go_head":"e96587b77120bea0115ae05e275e868dfe3c4200","interpretation":"historical technical receipt, not a copyright grant or current database-source approval"}
+}
+
+Webtech authorship and review:
+{
+  "schema_version": 1,
+  "review_id": "w66-passive-webtech-automated-20261106",
+  "reviewed_at": "2026-11-06T21:52:53Z",
+  "reviewer": {"kind":"automated-AI","model":"openai/gpt-6.1-sol","human_approval":false},
+  "authorship": {"new_parser_and_fixtures":"AI-assisted implementation by OpenAI gpt-6.1-sol in the user-requested W66 sessions","repository_copyright_owner":"Philipp Mieden","owner_basis":"repository copyright notices and explicit user-owner integration authorization","owner_grant_status":"owner-authorized to the extent owned","catalogue_grant":"MIT for independently authored descriptor/fixture contributions to the extent owned; existing GPL Go/Rust engine/parser code is not relicensed","grant_file":"FIRST-PARTY-LICENSE.txt","authorization_record":"User integration request: userowner authorizedfinish and previouslyrestore; rightsprovidedtoextentowned; preserving existingGPLcode licence","human_authorship_attestation":false,"human_legal_review_attestation":false},
+  "publication": {"format_ready":true,"owner_authorized":true,"human_rights_approval":false,"core_database_source_approval":false,"bundle_required":["webtech-descriptors.json","provenance.json","NOTICE.txt","FIRST-PARTY-LICENSE.txt","NUCLEI-LICENSE.txt"]},
+  "catalogue_sha256": "6d43c43d1b0c04ec0258f7c790cd88df752461fd8349df032188fc7dbdfdad54",
+  "fixtures": {"file":"vectors.json","sha256":"9fb7d0c653c9f78c92a473fb6985924571dda95c65070177d7266802355ec73f","count":31,"origin":"new synthetic strings authored by this session; no capture files or real-user data","ownership":"AI-assisted first-party contributions; owner authorizes MIT to the extent owned"},
+  "rules": [
+    {"id":"netcap.webtech.wordpress.generator.v1","basis":"advertised HTML meta generator product and version, independently parsed","source":"https://developer.wordpress.org/reference/functions/get_the_generator/","source_sha256":"4c25949cb0556af63739fa3d60ff6858f3639ccfe7ab937972e71a272f2abd5e","observed_at":"2026-11-06","source_scope":"output fact only; no PHP/GPL implementation copied or translated","author":"OpenAI gpt-6.1-sol (AI-assisted Netcap contribution)","fixtures":["wordpress","attribute-order-case","wordpress-no-version","substring","token-boundary","bad-version","prerelease-not-exact"]},
+    {"id":"netcap.webtech.drupal.x-generator.v1","basis":"X-Generator advertises Drupal and the major version, not a patch version","source":"https://raw.githubusercontent.com/drupal/drupal/11.2.0/core/lib/Drupal/Core/EventSubscriber/ResponseGeneratorSubscriber.php","source_ref":"11.2.0","source_sha256":"ea61ed37e3ccae6a41a70ae63ef8f69c4248ade0bc3f9e5a27a62878512ca98e","source_scope":"observed output grammar only; no PHP/GPL implementation copied or translated","author":"OpenAI gpt-6.1-sol (AI-assisted Netcap contribution)","fixtures":["drupal-major","drupal-never-upgrades-major","drupal-boundary","body-unobservable-header-visible"]},
+    {"id":"netcap.webtech.hugo.generator.v1","source":"https://github.com/projectdiscovery/nuclei-templates","source_ref":"82ccd2a03568fed3c0c579d3c1df0997642e86dc","file":"http/technologies/hugo-detect.yaml","source_sha256":"c13434b546a4dc0eec8af9d2ac06a35b40439ee9f5d79a0f87172c90774e468e","template_author":"daffainfo","copyright":"Copyright (c) 2025 ProjectDiscovery, Inc.","license":"MIT","license_file":"NUCLEI-LICENSE.txt","license_sha256":"5fa6644d2dd1987a79c06f4af210d2cf8cfc4ee799999029d0f9980c9cf95a2c","transformation":"passive parsed meta-generator selector, product token and numeric version; omit active GET, redirects, regex program and CPE","fixtures":["hugo-reviewed-data"]},
+    {"id":"netcap.webtech.joomla.generator.v1","source":"https://github.com/projectdiscovery/nuclei-templates","source_ref":"82ccd2a03568fed3c0c579d3c1df0997642e86dc","file":"http/technologies/joomla-detect.yaml","source_sha256":"d8a63e0eb8915dd84f9b750469113f696cb1d3cefc23fd362d6fe1ea501bf2c0","template_author":"ricardomaia","copyright":"Copyright (c) 2025 ProjectDiscovery, Inc.","license":"MIT","license_file":"NUCLEI-LICENSE.txt","license_sha256":"5fa6644d2dd1987a79c06f4af210d2cf8cfc4ee799999029d0f9980c9cf95a2c","transformation":"passive parsed meta-generator product token only; omit all probe paths, redirects, other body matchers, regex programs, version extractors and CPE","fixtures":["joomla-no-version-inference"]}
+  ],
+  "pitfalls": ["Drupal header reports only major; do not synthesize minor/patch or infer a CVE.","No template interpreter or active request path is retained.","Official Drupal API documentation returned a client challenge; pin the actual output-fact source instead."]
+}

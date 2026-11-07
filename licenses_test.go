@@ -11,6 +11,7 @@ func TestBundledLicenses(t *testing.T) {
 		"legal/THIRD_PARTY_LICENSES.txt",
 		"legal/THIRD_PARTY_NOTICES.txt",
 		"legal/THIRD_PARTY_RUST_LICENSES.txt",
+		"legal/DEVICE_CATALOGUE_NOTICES.txt",
 		"legal/licenses/JA4-BSD-3-Clause.txt",
 		"legal/licenses/LGPL-3.0.txt",
 	}

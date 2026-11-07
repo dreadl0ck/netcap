@@ -28,6 +28,10 @@ tests/wireshark-corpus/
 # ignored while the Go sources do not.
 !tests/integration/
 !tests/integration/**
+!tests/documentation/
+!tests/documentation/**
+!tests/modulearchive/
+!tests/modulearchive/**
 .idea
 types/python
 types/java
@@ -37,6 +41,8 @@ types/cpp
 types/csharp
 types/js
 data/
+!internal/devicecatalog/data/
+!internal/devicecatalog/data/*.json
 __pycache__
 pcaps
 .vscode

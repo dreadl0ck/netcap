@@ -4,9 +4,16 @@ description: Sensors and Collection Server
 
 # Distributed Collection
 
-Sensor agents (`net agent`) capture live traffic and stream audit records to a central collection server (`net collect`). Agents write nothing to disk; the collector writes one `.ncap.gz` per agent and record type, readable with `net dump` like any other netcap file.
+Sensor agents (`net agent`) capture live traffic and stream audit records to a
+central collection server (`net collect`). The collector writes one `.ncap.gz`
+per agent and record type, readable with `net dump`. Streaming audit records
+does not make the sensor diskless: file extraction, logs and optional behavioral
+monitoring can retain local artifacts. `-fileStorage ''` disables supported file
+extraction. Agent behavior state defaults under the OS user configuration
+directory in `netcap/behavior/<interface>/`; select `-behavior-baseline` explicitly
+when managing its location.
 
-![](<.gitbook/assets/Netcap-IOT (2).svg>)
+![](<.gitbook/assets/Netcap-IOT (2)-legacy-gitbook.svg>)
 
 The wire format changed after v0.10.2 and is not compatible with earlier versions, none of which produced readable output: records were sent without length prefixes.
 
@@ -62,10 +69,14 @@ Start both:
 
 ```bash
 net collect -clients clients.txt -addr 0.0.0.0:1335 -out collected
-net agent -server-fingerprint 189b7718...90abc1 -addr collector:1335 -iface eth0
+net agent -server-fingerprint "$COLLECTOR_FINGERPRINT" -addr collector:1335 -iface eth0
 ```
 
 Output goes to `<out>/<name>/<Type>.ncap.gz`, with directories `0750` and files `0640`. A file left by an earlier collector run is never truncated: the next run writes `TCP-1.ncap.gz` and so on. Key files are written `0600`, and `-gen-keypair` refuses to overwrite them.
+
+Set `COLLECTOR_FINGERPRINT` to the complete 64-hex-character fingerprint printed
+by your collector. The values above are illustrative; shortened fingerprints
+containing `...` are rejected.
 
 To revoke an agent, remove its line and restart the collector.
 

@@ -41,7 +41,7 @@ const analysisErrorLogName = "analysis_error.log"
 
 func inProcessResolverConfig() resolvers.Config {
 	return resolvers.Config{
-		ReverseDNS: false, LocalDNS: false, MACDB: true,
+		ReverseDNS: false, LocalDNS: false, MACDB: true, DHCPDB: true,
 		ServiceDB: true, GeolocationDB: true,
 	}
 }

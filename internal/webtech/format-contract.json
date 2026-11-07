@@ -1,0 +1,22 @@
+{
+  "format": "netcap-webtech",
+  "schema_version": 1,
+  "catalogue_file": "webtech-descriptors.json",
+  "root": "NC_ENRICHMENT_ROOT; otherwise NC_CONFIG_ROOT/enrichment; config defaults to ~/.config/netcap (no-home fallback /usr/local/etc/netcap)",
+  "runtime_admission": "owned Software/HTTP hooks call the separate enrichment offline resolver and load its verified active version directory; an unavailable/unverified snapshot uses two first-party builtins, not a loose unsigned catalogue",
+  "runtime_snapshot": "verified catalogue bytes are read once at capture initialization; Go HTTP PostInit refreshes the capture snapshot and Rust initialize_webtech publishes an Arc snapshot retained by each new HTTP parser; no per-packet disk verification",
+  "go_retained_software": "at most 4096 webtech claims per software-cache lifetime; excess counted as software-record-limit; ResetCaches resets admission",
+  "core_database_policy": "separate; no core source-policy or allowlist changes",
+  "defaults": "two first-party builtins; four descriptors only when a valid optional catalogue is present",
+  "admission": "at most four unique reviewed fixed descriptors; unknown fields, duplicate JSON keys, changed semantics and trailing JSON rejected",
+  "scope": "paired observed GET response, status 200; origin authority plus flow and response-start timestamp; no host/IP inventory conclusion",
+  "limits_bytes": {"catalogue":65536,"decoded_prefix":65536,"encoded_prefix":65536,"tag":4096,"aggregate_capture_reservations":16777216,"reservation_per_capture":1048576},
+  "coding": ["identity","gzip (first member)","deflate (zlib only)"],
+  "html_subset": "UTF-8; ASCII-case-insensitive tag and attribute names; quoted or unquoted attributes; comments and raw-text excluded; stop at first template or overlong/unfinished tag; no entity decoding or DOM recovery",
+  "token": "case-sensitive exact product followed by ASCII space or end; numeric dotted version token only, maximum 32 bytes; Drupal major only; Joomla no version; absent versions emit precision none",
+  "diagnostics": ["complete","truncated","incomplete","tag-limited","unsupported-text","unobservable","out-of-scope","not-html","decode-failed","unsupported-encoding","budget-exhausted"],
+  "interpretation": "Empty matches never establish technology absence, including on a complete prefix. Advertisements may be spoofed.",
+  "privacy": "No cookie input; raw body, generator header value and URL query not copied into Software. Existing HTTP audit privacy settings remain separate.",
+  "software_fields": {"SourceName":"Passive WebTech","SourceData":"product only","DetectionMethod":"webtech_advertisement","ConfidenceLevel":"low","ObservedHost":"","ObservationRole":"origin","BehaviorProfile":"server","VulnerabilityAssessment":"advertised-origin-only","HasKnownVulnerabilities":false,"Notes":"rule; precision; scope=origin-transaction; authority; transaction timestamp"},
+  "forbidden": ["extra HTTP requests","redirect following","external JS dependency attribution","JavaScript evaluation","DSL interpretation","legacy cmsdb loading","CVE or exploit lookup on webtech advertisements"]
+}

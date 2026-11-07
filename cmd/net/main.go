@@ -168,9 +168,9 @@ func main() {
 			{
 				Name:  cmdTransform,
 				Usage: "maltego plugin",
+				Flags: transform.GetFlags(),
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					transform.Run()
-					return nil
+					return transform.RunWithContext(ctx, cmd)
 				},
 			},
 			{

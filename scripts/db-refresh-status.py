@@ -10,7 +10,7 @@ import time
 path=Path(sys.argv[1])/'refresh-status.json'
 status,stage=sys.argv[2:4]
 assert status in ('running','success','failed')
-assert stage in ('acquisition','policy','pack','sign','complete')
+assert stage in ('previous-publication','acquisition','policy','pack','sign','publication-recovery','complete')
 fd,name=tempfile.mkstemp(dir=path.parent,prefix='.refresh-status-')
 with os.fdopen(fd,'w') as out:
     json.dump({'status':status,'stage':stage,'updated_at':int(time.time())},out)

@@ -1,84 +1,49 @@
----
-description: Inspect traffic to web applications with a HTTP reverse proxy
----
-
 # HTTP Proxy
 
-## Motivation
-
-The **proxy** tool allows to quickly spin up monitoring of web applications and retrieving netcap audit records.
-
-Since currently, TCP stream reassembly is only supported for IPv4, netcap misses HTTP traffic over IPv6 when decoding traffic from raw packets. Also there is currently no support implemented for decoding HTTP2 over TCP or QUIC.
-
-By using a simple reverse proxy for HTTP traffic, the operating system handles the stream reassembly and we can make sure no IPv6 and / or HTTP2 traffic is missed.
+`net proxy` is an HTTP reverse proxy that records requests handled through it.
+It changes the traffic path; it is separate from passive PCAP analysis and does
+not provide automatic visibility into all encrypted traffic on a network.
 
 ## Usage
 
-Spin up a single proxy instance from the commandline:
+For an application you operate at `127.0.0.1:8080`:
 
-`$ net proxy -local 127.0.0.1:4000 -remote http://google.com`
-
-Specifiy a custom config file for proxying multiple services with the **-proxy-config** flag:
-
-```text
-$ net proxy -proxy-config example_config.yml
+```sh
+net proxy -local 127.0.0.1:4000 -remote http://127.0.0.1:8080
 ```
 
-The default config path is **net.proxy-config.yml**, so if this file exists in the folder where you execute the proxy, you do not need to specify it on the commandline.
+Send test requests to port 4000. Only requests through that listener are proxied.
+Upstream TLS verification remains enabled by default; `-skipTlsVerify` weakens
+that boundary and is not required for the local HTTP example.
 
 ## Configuration
 
-For proxying several services, you need to provide a config file, here is a simple example:
+Multiple listeners use the dedicated `-proxy-config` file, whose default path is
+`net.proxy-config.yml`. This is different from the generic unimplemented
+configuration-generation flags.
 
 ```yaml
-# Proxies map holds all reverse proxies
 proxies:
-  service1:
-    local: 127.0.0.1:443
+  local-app:
+    local: 127.0.0.1:4000
     remote: http://127.0.0.1:8080
-    tls: true
-
-  service2:
-    local: 127.0.0.1:9999
-    remote: http://192.168.1.20
-
-  service3:
-    local: 127.0.0.1:7000
-    remote: https://google.com
-
-# CertFile for TLS secured connections
-certFile: "certs/cert.crt"
-
-# KeyFile for TLS secured connections
-keyFile: "certs/cert.key"
-
-# Logdir is used as destination for the logfile
-logdir: "logs"
+logdir: logs
 ```
+
+```sh
+net proxy -proxy-config net.proxy-config.yml
+```
+
+TLS listeners additionally use `tls: true` and the top-level `certFile` and
+`keyFile`. Supply a certificate appropriate for that listener; this is not a
+transparent interception CA.
 
 ## Help
 
-```erlang
-Usage of net proxy:
-  -version bool
-        print netcap package version and exit
-  -config string
-        set config file path (default "net.proxy-config.yml")
-  -debug
-        set debug mode
-  -dialTimeout int
-        seconds until dialing to the backend times out (default 30)
-  -idleConnTimeout int
-        seconds until a connection times out (default 90)
-  -local string
-        set local endpoint
-  -maxIdle int
-        maximum number of idle connections (default 120)
-  -remote string
-        set remote endpoint
-  -skipTlsVerify
-        skip TLS verification
-  -tlsTimeout int
-        seconds until a TLS handshake times out (default 15)
-```
+Run `net proxy -h` for timeout and trace options. Defaults include a 30-second
+dial timeout, 90-second idle timeout and 15-second TLS handshake timeout.
+`-dump` prints audit records as JSON; `-trace` is enabled by default.
 
+Historical claims that passive reassembly is IPv4-only are obsolete. Proxy
+logging also does not establish complete HTTP/2 or HTTP/3 transaction decoding;
+check [protocol coverage](protocol-support.md) for the selected capture path.

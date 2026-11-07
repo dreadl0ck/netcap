@@ -1,0 +1,63 @@
+{
+  "scope": "shadow copy only; current working files preserved; no captures or user data copied",
+  "current_http_sha256": "7312b76fbca625e33cb55f357a5d04ec87b76041ad4911468826b5e10974c287",
+  "without_hook_http_sha256": "246c6b88bede64653472bb15423966e539742b3b8bcc1254119f75d712ccbf7f",
+  "removed": "passive observe call, webtech snapshot field and constructor initialization; all concurrent HTTP recovery/mapping code retained",
+  "current": {
+    "command": [
+      "cargo",
+      "test",
+      "--offline",
+      "-p",
+      "netcap-applayer",
+      "--test",
+      "http",
+      "--",
+      "--test-threads=1"
+    ],
+    "returncode": 101,
+    "failures": [
+      "malformed_input_and_stream_gaps_emit_events",
+      "unsolicited_response_is_an_event_not_a_record",
+      "upgrade_and_connect_leave_http_without_errors"
+    ],
+    "stdout": "\nrunning 12 tests\ntest absolute_form_target_names_its_own_host ... ok\ntest head_interim_and_cookies_are_split_invariant_in_both_directions ... ok\ntest ipp_and_ocsp_bodies_are_split_invariant ... ok\ntest malformed_input_and_stream_gaps_emit_events ... FAILED\ntest paired_record_uses_first_response_byte_time_not_request_or_completion ... ok\ntest request_frame_is_body_completion_frame ... ok\ntest request_frame_survives_transaction_limit_eviction ... ok\ntest request_response_pairs_emit_one_record_and_two_frames ... ok\ntest request_without_frame_does_not_inherit_response_frame ... ok\ntest unmatched_requests_close_with_incomplete_record ... ok\ntest unsolicited_response_is_an_event_not_a_record ... FAILED\ntest upgrade_and_connect_leave_http_without_errors ... FAILED\n\nfailures:\n\n---- malformed_input_and_stream_gaps_emit_events stdout ----\n\nthread 'malformed_input_and_stream_gaps_emit_events' panicked at crates/netcap-applayer/tests/http.rs:324:5:\nassertion `left == right` failed\n  left: Ok\n right: Error\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n---- unsolicited_response_is_an_event_not_a_record stdout ----\n\nthread 'unsolicited_response_is_an_event_not_a_record' panicked at crates/netcap-applayer/tests/http.rs:469:5:\nassertion failed: records.is_empty()\n\n---- upgrade_and_connect_leave_http_without_errors stdout ----\n\nthread 'upgrade_and_connect_leave_http_without_errors' panicked at crates/netcap-applayer/tests/http.rs:442:5:\nassertion `left == right` failed\n  left: (1, \"h:443\", \"h:443\")\n right: (1, \"h:443\", \"//h:443\")\n\n\nfailures:\n    malformed_input_and_stream_gaps_emit_events\n    unsolicited_response_is_an_event_not_a_record\n    upgrade_and_connect_leave_http_without_errors\n\ntest result: FAILED. 9 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s\n\n",
+    "stderr": "    Blocking waiting for file lock on build directory\n   Compiling netcap-enrichment-data v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-enrichment-data)\n   Compiling netcap-applayer v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/crates/netcap-applayer)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.47s\n     Running tests/http.rs (target/debug/deps/http-c06b8f263e585aed)\nerror: test failed, to rerun pass `-p netcap-applayer --test http`\n"
+  },
+  "without_hook": {
+    "command": [
+      "cargo",
+      "test",
+      "--offline",
+      "-p",
+      "netcap-applayer",
+      "--test",
+      "http",
+      "--",
+      "--test-threads=1"
+    ],
+    "returncode": 101,
+    "failures": [
+      "malformed_input_and_stream_gaps_emit_events",
+      "unsolicited_response_is_an_event_not_a_record",
+      "upgrade_and_connect_leave_http_without_errors"
+    ],
+    "stdout": "\nrunning 12 tests\ntest absolute_form_target_names_its_own_host ... ok\ntest head_interim_and_cookies_are_split_invariant_in_both_directions ... ok\ntest ipp_and_ocsp_bodies_are_split_invariant ... ok\ntest malformed_input_and_stream_gaps_emit_events ... FAILED\ntest paired_record_uses_first_response_byte_time_not_request_or_completion ... ok\ntest request_frame_is_body_completion_frame ... ok\ntest request_frame_survives_transaction_limit_eviction ... ok\ntest request_response_pairs_emit_one_record_and_two_frames ... ok\ntest request_without_frame_does_not_inherit_response_frame ... ok\ntest unmatched_requests_close_with_incomplete_record ... ok\ntest unsolicited_response_is_an_event_not_a_record ... FAILED\ntest upgrade_and_connect_leave_http_without_errors ... FAILED\n\nfailures:\n\n---- malformed_input_and_stream_gaps_emit_events stdout ----\n\nthread 'malformed_input_and_stream_gaps_emit_events' panicked at crates/netcap-applayer/tests/http.rs:324:5:\nassertion `left == right` failed\n  left: Ok\n right: Error\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n---- unsolicited_response_is_an_event_not_a_record stdout ----\n\nthread 'unsolicited_response_is_an_event_not_a_record' panicked at crates/netcap-applayer/tests/http.rs:469:5:\nassertion failed: records.is_empty()\n\n---- upgrade_and_connect_leave_http_without_errors stdout ----\n\nthread 'upgrade_and_connect_leave_http_without_errors' panicked at crates/netcap-applayer/tests/http.rs:442:5:\nassertion `left == right` failed\n  left: (1, \"h:443\", \"h:443\")\n right: (1, \"h:443\", \"//h:443\")\n\n\nfailures:\n    malformed_input_and_stream_gaps_emit_events\n    unsolicited_response_is_an_event_not_a_record\n    upgrade_and_connect_leave_http_without_errors\n\ntest result: FAILED. 9 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s\n\n",
+    "stderr": "   Compiling netcap-format v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/target/webtech-no-hook-6fkg1ila/crates/netcap-format)\n   Compiling netcap-applayer v0.1.9 (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/target/webtech-no-hook-6fkg1ila/crates/netcap-applayer)\nwarning: function `webtech_authority` is never used\n    --> crates/netcap-applayer/src/http.rs:1112:15\n     |\n1112 | pub(crate) fn webtech_authority(method: &str, target: &str, host: String) -> String {\n     |               ^^^^^^^^^^^^^^^^^\n     |\n     = note: `#[warn(dead_code)]` on by default\n\nwarning: field `engine` is never read\n  --> crates/netcap-applayer/src/http_webtech.rs:13:5\n   |\n12 | pub struct Snapshot {\n   |            -------- field in this struct\n13 |     engine: Engine,\n   |     ^^^^^^\n\nwarning: function `snapshot` is never used\n  --> crates/netcap-applayer/src/http_webtech.rs:48:15\n   |\n48 | pub(crate) fn snapshot() -> Arc<Snapshot> {\n   |               ^^^^^^^^\n\nwarning: function `observe` is never used\n  --> crates/netcap-applayer/src/http_webtech.rs:81:15\n   |\n81 | pub(crate) fn observe(\n   |               ^^^^^^^\n\nwarning: `netcap-applayer` (lib) generated 4 warnings\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.66s\n     Running tests/http.rs (/Users/pmieden/go/src/github.com/dreadl0ck/netcap-rs/target/debug/deps/http-c06b8f263e585aed)\nerror: test failed, to rerun pass `-p netcap-applayer --test http`\n"
+  },
+  "known_failures": {
+    "malformed_input_and_stream_gaps_emit_events": {
+      "test_line": 324,
+      "cause": "Preserved orientation/recovery buffers unknown BROKEN request method and returns Ok; historical test expects Error."
+    },
+    "unsolicited_response_is_an_event_not_a_record": {
+      "test_line": 469,
+      "cause": "Preserved unsolicited-response branch writes the observed HTTP record; historical test expects none."
+    },
+    "upgrade_and_connect_leave_http_without_errors": {
+      "test_line": 442,
+      "cause": "Preserved map_transaction stores the raw CONNECT target h:443; historical test expects //h:443."
+    }
+  },
+  "identical_failure_set": true
+}

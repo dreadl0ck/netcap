@@ -1,0 +1,55 @@
+services:
+  publisher:
+    image: dreadl0ck/netcap-dbs-server:signed-190061c1@sha256:b91afb7197703a72799a4b77604eb7d2fe61e7ee65fd374696df8e17b1980208
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    environment:
+      NC_CONFIG_ROOT: /data/netcap-dbs-server
+    command:
+      - -mode
+      - serve
+      - -addr
+      - :8080
+      - -approvals
+      - /run/netcap-trust/approvals.json
+      - -approvals-sha256
+      - 0a71e6b0bb4f4c3513dca4051e54b1b457d480b2e54b857ffa9568952dccf441
+      - -signed-root
+      - /data/signed
+    volumes:
+      - type: bind
+        source: /srv/netcap-dbs-schema2
+        target: /data/netcap-dbs-server
+        read_only: true
+      - type: bind
+        source: /srv/netcap-dbs-v3-runtime/approvals-schema2.json
+        target: /run/netcap-trust/approvals.json
+        read_only: true
+      - type: bind
+        source: /srv/netcap-dbs-signed/v3
+        target: /data/signed
+        read_only: true
+    tmpfs:
+      - /tmp:size=3221225472,mode=1777
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:8080/ready']
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 3
+    networks: [dokploy-network]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.netcap-dbs-readonly.rule=Host(`dbs.netcap.io`)
+      - traefik.http.routers.netcap-dbs-readonly.entrypoints=websecure
+      - traefik.http.routers.netcap-dbs-readonly.priority=110
+      - traefik.http.routers.netcap-dbs-readonly.tls.certresolver=letsencrypt
+      - traefik.http.services.netcap-dbs-readonly.loadbalancer.server.port=8080
+networks:
+  dokploy-network:
+    external: true

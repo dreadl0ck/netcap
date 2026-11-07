@@ -16,6 +16,10 @@ func (f forbiddenTransport) RoundTrip(*http.Request) (*http.Response, error) {
 }
 
 func TestDHCPLegacyFilesInert(t *testing.T) {
+	oldCatalogue := dhcpCatalogue.Load()
+	dhcpCatalogue.Store(nil)
+	t.Cleanup(func() { dhcpCatalogue.Store(oldCatalogue) })
+	t.Setenv("NC_DHCP_CATALOGUE", "")
 	dir := t.TempDir()
 	old, oldClient := DataBaseFolderPath, http.DefaultClient
 	DataBaseFolderPath = dir
@@ -43,6 +47,23 @@ func TestDHCPLegacyFilesInert(t *testing.T) {
 	entries, err := os.ReadDir(dir)
 	if err != nil || len(entries) != 1 {
 		t.Fatalf("unexpected cache writes: %v %v", entries, err)
+	}
+}
+
+func TestDHCPExplicitCatalogue(t *testing.T) {
+	old := dhcpCatalogue.Load()
+	t.Cleanup(func() { dhcpCatalogue.Store(old) })
+	if err := LoadDHCPCatalogue("../devicecatalog/data/dhcp-catalogue-v1.json"); err != nil {
+		t.Fatal(err)
+	}
+	if LookupDHCPFingerprintLocal("1,3,6") != "Xbox 360" {
+		t.Fatal("missing source-derived rule")
+	}
+	if err := LoadDHCPCatalogue("missing"); err == nil {
+		t.Fatal("accepted missing")
+	}
+	if LookupDHCPFingerprintLocal("1,3,6") != "Xbox 360" {
+		t.Fatal("failed refresh erased rule")
 	}
 }
 

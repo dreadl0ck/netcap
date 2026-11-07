@@ -1,184 +1,108 @@
 ---
-description: For those who can't wait to get their hands dirty.
+description: Analyze a small, synthetic capture and inspect its records.
 ---
 
-# Quickstart
+# First capture
 
-## Capture traffic to create audit records
+This walkthrough uses Go Netcap v0.15.2 and Python 3. It creates two synthetic
+Ethernet/IPv4/UDP packets on documentation-only addresses: no traffic is sent.
+Install the appropriate [binary distribution](installation.md) first.
 
-Read traffic live from interface, stop with _Ctrl-C_ \(_SIGINT_\):
+## 1. Verify the executable
 
-```text
-$ net capture -iface eth0
+```sh
+net --version
 ```
 
-Read traffic from a dump file \(supports PCAP or PCAPNG\):
+Check the printed version, commit and DPI status. Run commands from a writable
+working directory. Use a fresh output directory for each analysis.
 
-```text
-$ net capture -read traffic.pcap
+## 2. Create a benign PCAP
+
+```python
+import socket
+import struct
+from pathlib import Path
+
+def checksum(data):
+    if len(data) % 2:
+        data += b"\0"
+    total = sum(struct.unpack("!%dH" % (len(data) // 2), data))
+    while total >> 16:
+        total = (total & 65535) + (total >> 16)
+    return (~total) & 65535
+
+frames = []
+for index in range(2):
+    payload = b"netcap documentation fixture"
+    udp = struct.pack("!HHHH", 40000, 9999, 8 + len(payload), 0) + payload
+    ip = struct.pack("!BBHHHBBH4s4s", 0x45, 0, 20 + len(udp), index,
+                     0, 64, 17, 0, socket.inet_aton("192.0.2.10"),
+                     socket.inet_aton("192.0.2.20"))
+    ip = ip[:10] + struct.pack("!H", checksum(ip)) + ip[12:]
+    ethernet = bytes.fromhex("0200000000200200000000100800")
+    frames.append(ethernet + ip + udp)
+
+with Path("example.pcap").open("xb") as output:
+    output.write(struct.pack("<IHHIIII", 0xa1b2c3d4, 2, 4, 0, 0, 65535, 1))
+    for index, frame in enumerate(frames):
+        output.write(struct.pack("<IIII", 1700000000 + index, 0,
+                                 len(frame), len(frame)))
+        output.write(frame)
 ```
 
-## Read audit records
+Save as `example.py` and run `python3 example.py`. Exclusive creation refuses
+to replace an existing `example.pcap`.
 
-Read a netcap dumpfile and print to stdout as CSV:
+## 3. Analyze the file
 
-```text
-$ net dump -read TCP.ncap.gz
+```sh
+net capture -read example.pcap -out example-audit -dpi=false -geoDB=false
 ```
 
-Show the available fields for a specific Netcap dump file:
+The process exits after flushing records. `-dpi=false` makes this example usable
+with nodpi builds; `-geoDB=false` avoids a GeoIP prerequisite. Some other
+enrichment may report unavailable local data. [Database updates](database-updates.md)
+are optional for this packet-only exercise.
 
-```text
-$ net dump -fields -read TCP.ncap.gz
+Expect `example-audit/UDP.ncap.gz` with two UDP records, along with other enabled
+record files and health artifacts. Empty protocol files are not proof of a
+problem: this fixture deliberately has no HTTP, TLS, DNS or credentials.
+
+## 4. Inspect and export
+
+```sh
+net dump -read example-audit/UDP.ncap.gz -header
+net dump -read example-audit/UDP.ncap.gz -fields
+net dump -read example-audit/UDP.ncap.gz -json
+net dump -read example-audit/UDP.ncap.gz -csv -sep ',' \
+  -select Timestamp,SrcPort,DstPort > udp.csv
 ```
 
-Print only selected fields and output as CSV:
+The header identifies `NC_UDP`. Field discovery prints one protobuf field name
+per line. JSON mode emits one object per record; the CSV header is
+`Timestamp,SrcPort,DstPort`. Port values are 40000 → 9999. Timestamp formatting
+depends on display options; raw record timestamps are Unix nanoseconds.
 
-```text
-$ net dump -read TCP.ncap.gz -select Timestamp,SrcPort,DstPort
+## 5. Open the local WebUI
+
+Analyze again into another fresh directory:
+
+```sh
+net capture -read example.pcap -out example-browser -dpi=false -geoDB=false \
+  -http 127.0.0.1:8080
 ```
 
-Save CSV output to file:
+Open `http://127.0.0.1:8080`. The explicit HTTP flag keeps the process running;
+stop it with Ctrl-C when finished. Do not publish this unauthenticated local API
+directly to the Internet. [Web interface](web-interface.md) explains modes and
+the hosting boundary.
 
-```text
-$ net dump -read TCP.ncap.gz -select Timestamp,SrcPort,DstPort > tcp.csv
-```
+## Next steps
 
-Print output separated with tabs:
-
-```text
-$ net dump -read TPC.ncap.gz -tsv
-```
-
-Run with 24 workers and disable gzip compression and buffering:
-
-```text
-$ net capture -workers 24 -buf false -comp false -read traffic.pcapng
-```
-
-Parse pcap and write all data to output directory \(will be created if it does not exist\):
-
-```text
-$ net capture -read traffic.pcap -out traffic_ncap
-```
-
-Convert timestamps to UTC:
-
-```text
-$ net dump -read TCP.ncap.gz -select Timestamp,SrcPort,Dstport -utc
-```
-
-## Show Audit Record File Header
-
-To display the header of the supplied audit record file, the -header flag can be used:
-
-```text
-$ net capture -read TCP.ncap.gz -header
-
-+----------+---------------------------------------+
-|  Field   |                Value                  |
-+----------+---------------------------------------+
-| Created  | 2018-11-15 04:42:22.411785 +0000 UTC  |
-| Source   | Wednesday-WorkingHours.pcap           |
-| Version  | v0.3.3                                |
-| Type     | NC_TCP                                |
-+----------+---------------------------------------+
-```
-
-## Print Structured Audit Records
-
-Audit records can be printed structured, this makes use of the _proto.MarshalTextString\(\)_ function. This is sometimes useful for debugging, but very verbose.
-
-```text
-$ net dump -read TCP.ncap.gz -struc
-...
-NC_TCP
-Timestamp: "1499255023.848884"
-SrcPort: 80
-DstPort: 49472
-SeqNum: 1959843981
-AckNum: 3666268230
-DataOffset: 5
-ACK: true
-Window: 1025
-Checksum: 2348
-PayloadEntropy: 7.836586993143013
-PayloadSize: 1460
-...
-```
-
-## Print as CSV
-
-This is the default behavior. First line contains all field names.
-
-```text
-$ net dump -read TCP.ncap.gz
-Timestamp,SrcPort,DstPort,SeqNum,AckNum,DataOffset,FIN,SYN,RST,PSH,ACK,URG,...
-1499254962.234259,443,49461,1185870107,2940396492,5,false,false,false,true,true,false,...
-1499254962.282063,49461,443,2940396492,1185870976,5,false,false,false,false,true,false,...
-...
-```
-
-## Print as Tab Separated Values
-
-To use a tab as separator, the _-tsv_ flag can be supplied:
-
-```text
-$ net dump -read TCP.ncap.gz -tsv
-Timestamp               SrcPort DstPort Length  Checksum PayloadEntropy  PayloadSize
-1499254962.084372       49792   1900    145     34831    5.19616448      137
-1499254962.084377       49792   1900    145     34831    5.19616448      137
-1499254962.084378       49792   1900    145     34831    5.19616448      137
-1499254962.084379       49792   1900    145     34831    5.19616448      137
-...
-```
-
-## Print as Table
-
-The _-table_ flag can be used to print output as a table. Every 100 entries the table is printed to stdout.
-
-```text
-$ net dump -read UDP.ncap.gz -table -select Timestamp,SrcPort,DstPort,Length,Checksum
-+--------------------+----------+----------+---------+-----------+
-|     Timestamp      | SrcPort  | DstPort  | Length  | Checksum  |
-+--------------------+----------+----------+---------+-----------+
-| 1499255691.722212  | 62109    | 53       | 43      | 38025     |
-| 1499255691.722216  | 62109    | 53       | 43      | 38025     |
-| 1499255691.722363  | 53       | 62109    | 59      | 37492     |
-| 1499255691.722366  | 53       | 62109    | 59      | 37492     |
-| 1499255691.723146  | 56977    | 53       | 43      | 7337      |
-| 1499255691.723149  | 56977    | 53       | 43      | 7337      |
-| 1499255691.723283  | 53       | 56977    | 59      | 6804      |
-| 1499255691.723286  | 53       | 56977    | 59      | 6804      |
-| 1499255691.723531  | 63427    | 53       | 43      | 17441     |
-| 1499255691.723534  | 63427    | 53       | 43      | 17441     |
-| 1499255691.723682  | 53       | 63427    | 87      | 14671     |
-...
-```
-
-## Print with Custom Separator
-
-Output can also be generated with a custom separator:
-
-```text
-$ net dump -read TCP.ncap.gz -sep ";"
-Timestamp;SrcPort;DstPort;Length;Checksum;PayloadEntropy;PayloadSize
-1499254962.084372;49792;1900;145;34831;5.19616448;137
-1499254962.084377;49792;1900;145;34831;5.19616448;137
-1499254962.084378;49792;1900;145;34831;5.19616448;137
-...
-```
-
-## Validate generated CSV output
-
-To ensure values in the generated CSV would not contain the separator string, the _-check_ flag can be used.
-
-This will determine the expected number of separators for the audit record type, and print all lines to stdout that do not have the expected number of separator symbols. The separator symbol will be colored red with ansi escape sequences and each line is followed by the number of separators in red color.
-
-The _-sep_ flag can be used to specify a custom separator.
-
-```text
-$ net util -read TCP.ncap.gz -check
-$ net util -read TCP.ncap.gz -check -sep=";"
-```
-
+| Question | Continue with |
+| --- | --- |
+| How do I capture an interface? | [Live capture](live-collection.md) |
+| How do I select packets or records? | [Filtering](FILTERING.md) |
+| What happened on a connection? | [Evidence linking](evidence.md) |
+| Which data enriches an observation? | [Resolvers](resolvers.md) |

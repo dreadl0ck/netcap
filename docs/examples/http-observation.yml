@@ -1,0 +1,8 @@
+rules:
+  - name: Documentation HTTP Transfer
+    description: Observe the synthetic GET; this is a fixture marker, not a threat verdict
+    type: HTTP
+    expression: Method == "GET" && URL contains "/fixture.txt"
+    severity: low
+    tags: [documentation, fixture]
+    enabled: true

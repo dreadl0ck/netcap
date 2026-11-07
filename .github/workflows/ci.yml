@@ -39,6 +39,9 @@ jobs:
           go-version: '1.27.0'
           cache: true
 
+      - name: Verify tracked Go module archive
+        run: GOWORK=off go test ./tests/modulearchive -count=1
+
       # go-dpi is an ordinary pinned dependency here -- go.mod requires
       # the version in go.mod and the module proxy serves it. CI does NOT create
       # a go.work overlay: that would make the build resolve go-dpi from a
@@ -154,6 +157,7 @@ jobs:
           go test -short -race ./...
           GOWORK=off go test -tags=nodpi,noyara,nomagika ./cmd/capture -run '^TestCPUProfile' -count=1
           GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestOfflineRulesCLI$' -count=1
+          GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestDHCPOption55CLI$' -count=1
           SCRIPT
 
       - name: Verify distributable license bundle

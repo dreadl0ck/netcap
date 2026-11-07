@@ -1,74 +1,44 @@
----
-description: Extract transferred emails
----
-
 # Email Extraction
 
-## Motivation
+Go Netcap decodes supported plaintext POP3, IMAP and SMTP exchanges. Transaction
+records, message bodies/attachments and authentication observations are separate
+outputs; visibility depends on captured bytes and protocol state.
 
-Emails are a key communication mechanism that holds plenty of digital evidence, starting from Mail header information about the sender and route, to transferred files via attachments.
+```sh
+net capture -read mail.pcap -out mail-audit -dpi=false
+```
 
-Netcap currently extracts Email fetched over POP3 and support IMAP is in the making.
+Inspect files actually emitted, for example:
+
+```sh
+net dump -read mail-audit/SMTP.ncap.gz -fields
+net dump -read mail-audit/Secret.ncap.gz -json
+```
 
 ## POP3
 
-A POP3 audit record contains information about the addresses involved, as well as authentication information. The fetched mails are provided as an array of **Mail** instances.
+Supported retrievals can contain parsed `Mail`/`MailPart` metadata and bodies.
+A banner-only conversation does not imply a fetched message. Successful STLS
+ends plaintext parsing; subsequent encrypted bytes are not mail text.
 
-```erlang
-message POP3 {
-    string           Timestamp              = 1;
-    string           ClientIP               = 2;
-    string           ServerIP               = 3;
-    string           AuthToken              = 4;
-    string           User                   = 5;
-    string           Pass                   = 6;
-    repeated Mail    Mails                  = 7;
-}
-```
+## IMAP
 
-A Mail instance has the following fields:
-
-```erlang
-message Mail {
-    string            ReturnPath            = 1;
-    string            DeliveryDate          = 2;
-    string            From                  = 3;
-    string            To                    = 4;
-    string            CC                    = 5;
-    string            Subject               = 6;
-    string            Date                  = 7;
-    string            MessageID             = 8;
-    string            References            = 9;
-    string            InReplyTo             = 10;
-    string            ContentLanguage       = 11;
-    bool              HasAttachments        = 12;
-    string            XOriginatingIP        = 13;
-    string            ContentType           = 14;
-    string            EnvelopeTo            = 15;
-    repeated MailPart Body                  = 16;
-}
-```
-
-For exploring captured emails, the Maltego Integration can be used:
-
-{% page-ref page="maltego-integration.md" %}
-
-![](.gitbook/assets/mails1.png)
-
-![](.gitbook/assets/mails2.png)
+Supported plaintext exchanges expose protocol records. Literal framing,
+partial responses and missing bytes can limit reconstruction. Successful
+STARTTLS ends plaintext parsing; the old statement that all IMAP support is
+future work is obsolete.
 
 ## SMTP
 
-For SMTP an audit record is also available, though mail extraction has not been implemented yet:
+SMTP command/response records and LOGIN/PLAIN authentication observations are
+available. `Secret.Notes` distinguishes observed success, rejection and unknown
+result. A failed connection or incomplete response is not an authentication
+failure. Successful STARTTLS ends plaintext parsing.
 
-```erlang
-message SMTP {
-    string                 Timestamp     = 1;
-    bool                   IsEncrypted   = 2;
-    bool                   IsResponse    = 3;
-    repeated SMTPResponse  ResponseLines = 4;
-    SMTPCommand            Command       = 5;
-    PacketContext          Context       = 6;
-}
-```
+## Interpretation
 
+Use current record fields from `types/netcap.proto`; historical schema snippets
+with string timestamps are obsolete. Mail headers are sender-supplied evidence,
+not verified ownership. Credentials, recipients and attachments require the same
+access boundaries as the original capture. Follow [file extraction](file-extraction.md)
+and [evidence linking](evidence.md) to trace reconstructed content.

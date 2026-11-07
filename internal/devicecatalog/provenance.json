@@ -1,0 +1,97 @@
+{
+  "authorization": "User explicitly authorized historical ODbL restoration and accepted derivative-download/SaaS attribution obligations; accepted bounded IEEE fallback and secondary nonassertion evidence.",
+  "dhcp": {
+    "ambiguous_keys": 1,
+    "fingerprint_blocks": 236,
+    "obligations": "Attribute FingerBank / Inverse inc. (2008-2013), retain ODbL/DbCL notices, offer this complete derivative database and transformation/source evidence under ODbL including for public SaaS use.",
+    "occurrences": 536,
+    "sections": 238,
+    "transformation": "Only active fingerprints blocks and description/id from pinned source; no legacy JSON, API additions or vendor-id inference; ordered request list; preserve all candidates.",
+    "unique_keys": 535
+  },
+  "mac": {
+    "basis": "Debian ieee-data 20260625 copyright record quotes: IEEE does not assert any copyright in the OUI Public Listing or attempt to restrict distribution of the listing in any way.",
+    "duplicate_policy": "Retain distinct names for a prefix in sorted order, joined by ' | '; do not choose one registration silently.",
+    "fallback": "gopacket v1.7.2 bounded embedded table retained; BSD code license does not independently establish IEEE data rights.",
+    "multiple_organization_prefixes": 2,
+    "prefixes": 58971,
+    "remaining_evidence_gap": "Secondary Debian record, not a newly obtained direct IEEE grant or legal opinion; no invented grant. Daily source refresh is a builder capability, not a running scheduled deployment.",
+    "transformation": "IEEE MA-L/MA-M/MA-S/IAB Assignment and Organization Name only; exclude Organization Address; deterministic prefix sort."
+  },
+  "outputs": [
+    {
+      "bytes": 100640,
+      "file": "dhcp-catalogue-v1.json",
+      "sha256": "9b70048342d642b6a135f61ae0be48b501db6c19546e23912ae30119b04bf016"
+    },
+    {
+      "bytes": 6190190,
+      "file": "mac-catalogue-v1.json",
+      "sha256": "299a3d8ad76e2343a595210037ef4c920e778c16b650098ab6f5106f1584fbe7"
+    }
+  ],
+  "reviewer": "OpenCode automated source/evidence review (not human counsel)",
+  "schema": 1,
+  "sources": [
+    {
+      "bytes": 38988,
+      "file": "dhcp_fingerprints.conf",
+      "sha256": "a68d73be27467df464769c7c6bd15906c2a5bc36e3ea4f101b1d1a6ecdb1372d",
+      "url": "https://raw.githubusercontent.com/inverse-inc/packetfence/de2f9678434a6f922fc7ce66e9fd3191606ed80f/conf/dhcp_fingerprints.conf"
+    },
+    {
+      "bytes": 25317,
+      "file": "LICENSE.odbl-10.txt",
+      "sha256": "d9685b90fa7d223f5cb0e7f57d00d5b63de69638c9de0340be2e7cf4dc6ecab3",
+      "url": "https://raw.githubusercontent.com/karottc/fingerbank/f062a677245fcebd338a6839357a65ff53c3b6d8/LICENSE.odbl-10.txt"
+    },
+    {
+      "bytes": 2386,
+      "file": "LICENSE.dbcl-10.txt",
+      "sha256": "4ba29303b8f63348bd6488219ebf3c7684f5ce16cd2616f3935c94e3c5853380",
+      "url": "https://raw.githubusercontent.com/karottc/fingerbank/f062a677245fcebd338a6839357a65ff53c3b6d8/LICENSE.dbcl-10.txt"
+    },
+    {
+      "bytes": 1782,
+      "file": "debian-ieee-copyright.txt",
+      "sha256": "f1a22c2737d856d90a676a553501431b6a77b9e0bb094cf325827ff6a733381c",
+      "url": "https://metadata.ftp-master.debian.org/changelogs/main/i/ieee-data/ieee-data_20260625_copyright"
+    },
+    {
+      "bytes": 3870579,
+      "file": "oui.csv",
+      "sha256": "c2341326b0909e6fe97060457223dd996c2473830a65bf26944ba2e22d8922c1",
+      "url": "https://standards-oui.ieee.org/oui/oui.csv"
+    },
+    {
+      "bytes": 762903,
+      "file": "mam.csv",
+      "sha256": "f02e2e8a6de71f30bcc76a22e4020a7a41a76ebf24dc92c5cc5922ad598758c9",
+      "url": "https://standards-oui.ieee.org/oui28/mam.csv"
+    },
+    {
+      "bytes": 675330,
+      "file": "oui36.csv",
+      "sha256": "db969e320fe4a9d1c7229597422f9c3fe806e682ae38e1cfb9611f946ca468c4",
+      "url": "https://standards-oui.ieee.org/oui36/oui36.csv"
+    },
+    {
+      "bytes": 381117,
+      "file": "iab.csv",
+      "sha256": "6e71aa3d47f00f19d09cb3b31ce1038de1834703420f0ce4ce111da586f1a533",
+      "url": "https://standards-oui.ieee.org/iab/iab.csv"
+    },
+    {
+      "bytes": 1964395,
+      "file": "gopacket-valid-mac-prefixes.go.txt",
+      "sha256": "eb562e4e44e343da1ca929f2e2548dccc815eb83341dcb054aeab112775f27f4",
+      "url": "https://raw.githubusercontent.com/gopacket/gopacket/v1.7.2/macs/valid_mac_prefixes.go"
+    },
+    {
+      "bytes": 1555,
+      "file": "gopacket-LICENSE.txt",
+      "sha256": "8025b28cd71e0a486b173d4a29a05478c003d197a907f99b61a05e181e90b92d",
+      "url": "https://raw.githubusercontent.com/gopacket/gopacket/v1.7.2/LICENSE"
+    }
+  ]
+}

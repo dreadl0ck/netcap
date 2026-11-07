@@ -71,6 +71,7 @@ archives:
       - legal/THIRD_PARTY_LICENSES.txt
       - legal/THIRD_PARTY_RUST_LICENSES.txt
       - legal/THIRD_PARTY_NOTICES.txt
+      - legal/DEVICE_CATALOGUE_NOTICES.txt
       - legal/licenses/*
       - README.md
       - docs/NETCAP Software Report.pdf
@@ -98,6 +99,7 @@ archives:
       - legal/THIRD_PARTY_LICENSES.txt
       - legal/THIRD_PARTY_RUST_LICENSES.txt
       - legal/THIRD_PARTY_NOTICES.txt
+      - legal/DEVICE_CATALOGUE_NOTICES.txt
       - legal/licenses/*
       - README.md
       - docs/NETCAP Software Report.pdf
@@ -125,6 +127,7 @@ archives:
       - legal/THIRD_PARTY_LICENSES.txt
       - legal/THIRD_PARTY_RUST_LICENSES.txt
       - legal/THIRD_PARTY_NOTICES.txt
+      - legal/DEVICE_CATALOGUE_NOTICES.txt
       - legal/licenses/*
       - README.md
       - docs/NETCAP Software Report.pdf

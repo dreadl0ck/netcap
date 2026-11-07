@@ -1,392 +1,81 @@
-# Expression-Based Filtering in NETCAP
+# Filtering
 
-NETCAP supports powerful expression-based filtering of audit records using the [expr-lang](https://expr-lang.org) expression language. This allows you to selectively output audit records based on complex conditions.
+Choose a filter stage deliberately. BPF selects packets; decoder options select
+producers; typed expressions select records. These controls are not equivalent.
 
-## Table of Contents
+## Packet filters
 
-- [Overview](#overview)
-- [Expression Syntax](#expression-syntax)
-- [Available Fields](#available-fields)
-- [Helper Functions](#helper-functions)
-- [Usage Examples](#usage-examples)
-- [Performance Considerations](#performance-considerations)
-
-## Overview
-
-Filtering in NETCAP allows you to:
-
-- **Reduce output size** by only displaying records matching specific criteria
-- **Focus analysis** on relevant traffic patterns
-- **Extract specific conversations** from large capture files
-- **Identify suspicious activities** based on traffic characteristics
-
-Filters are available in the `net dump` command and can be applied to any audit record type.
-
-## Expression Syntax
-
-Expressions use a C-like syntax with support for:
-
-- **Comparison operators**: `==`, `!=`, `<`, `>`, `<=`, `>=`
-- **Logical operators**: `&&` (AND), `||` (OR), `!` (NOT)
-- **Arithmetic operators**: `+`, `-`, `*`, `/`, `%`
-- **String operations**: `contains()`, `startsWith()`, `endsWith()`
-- **Regular expressions**: `matches()`
-- **Membership testing**: `in`
-
-### Basic Examples
-
-```bash
-# Simple equality
-DstPort == 443
-
-# Logical AND
-SrcPort == 80 && DstPort == 443
-
-# Logical OR
-DstPort == 80 || DstPort == 443 || DstPort == 8080
-
-# Range comparison
-DstPort >= 1000 && DstPort <= 2000
-
-# Negation
-!(DstPort == 80)
+```sh
+net capture -read traffic.pcap -out dns-audit -bpf 'udp port 53' -dpi=false
 ```
 
-## Available Fields
+BPF requires a working platform libpcap/Npcap path. It can remove the SYN,
+response or handshake a decoder needs. Filtered offline input does not promise
+the same PCAPNG interface metadata as unfiltered input; inspect scope health.
 
-Fields available in expressions depend on the audit record type. All fields from the protobuf definition are accessible directly by name.
+## Post-capture expressions
 
-### Common Fields (Most Record Types)
+Start by discovering fields:
 
-- `Timestamp` (int64) - Unix timestamp in nanoseconds
-- `SrcIP` (string) - Source IP address
-- `DstIP` (string) - Destination IP address
-- `SrcPort` (int) - Source port number
-- `DstPort` (int) - Destination port number
-
-### TCP Records
-
-- `SYN`, `ACK`, `FIN`, `RST`, `PSH`, `URG`, `ECE`, `CWR`, `NS` (bool) - TCP flags
-- `SeqNum`, `AckNum` (uint32) - Sequence and acknowledgment numbers
-- `Window` (int32) - Window size
-- `PayloadSize` (int32) - Size of payload data
-
-### UDP Records
-
-- `Length` (int32) - UDP packet length
-- `Checksum` (int32) - UDP checksum
-- `PayloadSize` (int32) - Size of payload data
-
-### HTTP Records
-
-- `Method` (string) - HTTP method (GET, POST, etc.)
-- `Host` (string) - HTTP Host header
-- `UserAgent` (string) - User-Agent header
-- `StatusCode` (int32) - HTTP response status code
-- `ContentLength` (int64) - Content-Length header value
-- `URL` (string) - Request URL
-
-### DNS Records
-
-- `Questions` (array) - DNS questions
-- `Answers` (array) - DNS answers
-- `Authorities` (array) - Authority records
-- `Additionals` (array) - Additional records
-
-To see all available fields for a specific audit record type, use:
-
-```bash
-net dump -read <file>.ncap.gz -fields
+```sh
+net dump -read analysis/UDP.ncap.gz -fields
+net dump -read analysis/UDP.ncap.gz -filter 'DstPort == 9999' -json
+net dump -read analysis/Connection.ncap.gz \
+  -filter 'DstPort == "443"' -json
 ```
 
-## Helper Functions
-
-NETCAP provides helper functions for common filtering operations:
-
-### Network Functions
-
-#### `InSubnet(ip string, cidr string) bool`
-
-Check if an IP address is within a CIDR subnet.
-
-```bash
-InSubnet(SrcIP, "192.168.0.0/16")
-```
-
-#### `IsPrivateIP(ip string) bool`
-
-Check if an IP is in a private address range (RFC 1918, loopback, link-local).
-
-```bash
-IsPrivateIP(SrcIP)
-```
-
-#### `IsPublicIP(ip string) bool`
-
-Check if an IP is a public (non-private) address.
-
-```bash
-IsPublicIP(DstIP)
-```
-
-#### `ParsePort(port string) int`
-
-Convert a port string to an integer.
-
-```bash
-ParsePort("443") == 443
-```
-
-#### `PortInRange(port int, start int, end int) bool`
-
-Check if a port is within a range (inclusive).
-
-```bash
-PortInRange(DstPort, 1024, 65535)
-```
-
-#### `IsApprovedWorkstation(ip string) bool` / `InAllowlist(ip string) bool`
-
-Check whether an IP is in the approved-workstation allowlist. The allowlist is
-loaded from a file via the `-approved-workstations` flag (or the
-`NC_APPROVED_WORKSTATIONS` environment variable). Returns `false` for every
-address when the allowlist is empty. `InAllowlist` is an alias for readability.
-
-This is the central discriminator for the CISA AA26-231A Siemens S7 PLC hunt:
-negate it to surface activity from non-authorized sources. See the
-[S7 Threat Hunt guide](s7-threat-hunt-AA26-231A.md).
-
-```bash
-# Show S7comm writes that did NOT come from an approved engineering workstation
-net dump -read S7Comm.ncap.gz -filter "FunctionCode == 5 && !IsApprovedWorkstation(SrcIP)"
-```
-
-### Time Functions
-
-#### `TimeInRange(ts int64, start int64, end int64) bool`
-
-Check if a timestamp is within a range.
-
-```bash
-TimeInRange(Timestamp, 1609459200000000000, 1640995200000000000)
-```
-
-#### `DurationSince(ts int64) int64`
-
-Get the duration in nanoseconds since a timestamp.
-
-```bash
-DurationSince(Timestamp) < 3600000000000  # Less than 1 hour ago
-```
-
-#### `FormatTime(ts int64, format string) string`
-
-Format a timestamp using Go's time format layout.
-
-```bash
-FormatTime(Timestamp, "2006-01-02 15:04:05")
-```
-
-#### `HourOfDay(ts int64) int`
-
-Return the local hour-of-day (0–23) for a nanosecond timestamp.
-
-```bash
-HourOfDay(Timestamp) >= 22 || HourOfDay(Timestamp) < 6   # night-time activity
-```
-
-#### `Weekday(ts int64) int`
-
-Return the local day-of-week (0 = Sunday … 6 = Saturday) for a nanosecond timestamp.
-
-```bash
-Weekday(Timestamp) == 0 || Weekday(Timestamp) == 6       # weekend activity
-```
-
-#### `IsBusinessHours(ts int64, startHour int, endHour int) bool`
-
-Report whether the local time falls within `[startHour, endHour)` on a weekday
-(Mon–Fri). Useful for off-hours / out-of-change-window detection.
-
-```bash
-# Critical S7comm operation outside 08:00-18:00 on a weekday
-net dump -read S7Comm.ncap.gz -filter "IsCriticalOperation && !IsBusinessHours(Timestamp, 8, 18)"
-```
-
-### String Functions
-
-#### `ContainsAny(str string, substrs []string) bool`
-
-Check if a string contains any of the provided substrings as a substring (not exact match).
-For exact matches with array literals, use the `in` operator instead.
-
-```bash
-# For substring matching (e.g., "curl/7.68.0" contains "curl")
-# Note: Use the 'in' operator for exact matches with arrays
-UserAgent in ["curl", "wget", "python"]
-
-# For programmatic use with a string slice:
-# ContainsAny can be called with a variable
-```
-
-#### `MatchesPattern(str string, pattern string) bool`
-
-Check if a string matches a regular expression pattern.
-
-```bash
-MatchesPattern(URL, ".*\\.php\\?.*")
-```
-
-## Usage Examples
-
-### Filter by Port
-
-Show only HTTPS traffic:
-
-```bash
-net dump -read TCP.ncap.gz -filter "DstPort == 443"
-```
-
-### Filter by IP Range
-
-Show traffic to/from a specific subnet:
-
-```bash
-net dump -read IPv4.ncap.gz -filter "InSubnet(SrcIP, '10.0.0.0/8') || InSubnet(DstIP, '10.0.0.0/8')"
-```
-
-### Filter Private to Public Traffic
-
-Identify outbound traffic from private networks:
-
-```bash
-net dump -read IPv4.ncap.gz -filter "IsPrivateIP(SrcIP) && IsPublicIP(DstIP)"
-```
-
-### Filter HTTP POST Requests
-
-Show only HTTP POST requests:
-
-```bash
-net dump -read HTTP.ncap.gz -filter "Method == 'POST'"
-```
-
-### Filter Large Uploads
-
-Detect large HTTP uploads (>10MB):
-
-```bash
-net dump -read HTTP.ncap.gz -filter "Method == 'POST' && ReqContentLength > 10000000"
-```
-
-### Filter Suspicious User-Agents
-
-Identify automated tools (exact match):
-
-```bash
-net dump -read HTTP.ncap.gz -filter "UserAgent in ['curl', 'wget', 'python', 'scanner']"
-```
-
-### Filter TCP SYN Scans
-
-Detect potential SYN scan attempts:
-
-```bash
-net dump -read TCP.ncap.gz -filter "SYN && !ACK"
-```
-
-### Filter by Time Range
-
-Show traffic within a specific time window:
-
-```bash
-net dump -read TCP.ncap.gz -filter "Timestamp >= 1609459200000000000 && Timestamp <= 1609545600000000000"
-```
-
-### Complex Filters
-
-Combine multiple conditions for sophisticated filtering:
-
-```bash
-# Suspicious SSH traffic from external sources
-net dump -read TCP.ncap.gz -filter "DstPort == 22 && IsPublicIP(SrcIP) && SYN"
-
-# Large DNS responses (possible exfiltration)
-net dump -read DNS.ncap.gz -filter "len(Answers) > 10"
-
-# HTTP requests to IP addresses (not domains)
-net dump -read HTTP.ncap.gz -filter "MatchesPattern(Host, '^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$')"
-```
-
-## Performance Considerations
-
-### Filter Compilation
-
-Filters are compiled once before processing records. The compilation validates the expression syntax and checks that field names are valid for the audit record type.
-
-### Evaluation Performance
-
-- **Simple comparisons** (equality, numeric) are very fast
-- **String operations** (contains, regex) are moderately fast
-- **Complex expressions** with many conditions may impact throughput
-
-### Optimization Tips
-
-1. **Place simple conditions first** in AND expressions:
-   ```bash
-   DstPort == 443 && MatchesPattern(URL, "complex.*regex")
-   ```
-
-2. **Use specific field checks** instead of regex when possible:
-   ```bash
-   # Prefer this:
-   Method == "POST"
-   
-   # Over this:
-   MatchesPattern(Method, "POST")
-   ```
-
-3. **Limit regex complexity** - simple patterns are faster than complex ones
-
-4. **Use helper functions** - they're optimized native Go code:
-   ```bash
-   # Prefer this:
-   IsPrivateIP(SrcIP)
-   
-   # Over this:
-   InSubnet(SrcIP, "10.0.0.0/8") || InSubnet(SrcIP, "172.16.0.0/12") || InSubnet(SrcIP, "192.168.0.0/16")
-   ```
-
-### Benchmarks
-
-On typical hardware processing a 1GB audit record file:
-
-- **No filter**: ~500,000 records/sec
-- **Simple filter** (port equality): ~480,000 records/sec (4% overhead)
-- **Complex filter** (regex + multiple conditions): ~350,000 records/sec (30% overhead)
-
-## Error Handling
-
-### Compilation Errors
-
-If a filter expression has syntax errors or references invalid fields, an error is reported before processing begins:
-
-```bash
-$ net dump -read TCP.ncap.gz -filter "InvalidField == 123"
-Error: failed to compile filter expression: undefined identifier "InvalidField"
-```
-
-### Runtime Errors
-
-If a filter evaluation fails (rare), a warning is logged and the record is skipped:
-
-```bash
-warning: filter evaluation error: type mismatch
-```
-
-## Next Steps
-
-- See [RULES_ENGINE.md](RULES_ENGINE.md) for information on creating alerting rules
-- Check [examples/filters/](examples/filters/) for more filter examples
-- Read the [expr-lang documentation](https://expr-lang.org/docs/language-definition) for complete expression syntax
-
+`dump` compiles the expression for the file's type. Connection and TCP/UDP
+ports have different types. Parenthesize combined conditions and quote the
+whole expression for the shell. Match semantics come from the installed
+expr-language environment and helpers, not SQL or BPF syntax.
+
+| Expression shape | Meaning |
+| --- | --- |
+| `DstPort == 443 && SYN && !ACK` | TCP packet condition; not proof of a completed session |
+| `DstPort == "443"` | Connection record port equality |
+| `InSubnet(SrcIP, "192.0.2.0/24")` | Network helper on a record exposing string `SrcIP` |
+
+Do not reuse fields across record types without checking `dump -fields`.
+[Rules](RULES_ENGINE.md) use typed record expressions too, but have additional
+threshold/sequence/action behavior.
+
+## Helper reference
+
+These signatures describe capture-time rules and `dump`'s expr environment,
+not the separate source-only offline-pack expression subset.
+
+| Helper | Input/result | Example/limit |
+| --- | --- | --- |
+| `InSubnet(ip, cidr)` | Strings → bool | `InSubnet(SrcIP, "192.0.2.0/24")` |
+| `IsPrivateIP(ip)`, `IsPublicIP(ip)` | String → bool | Private includes special-use/documentation ranges, not just RFC1918; it is not a trust decision |
+| `IsApprovedWorkstation(ip)`, `InAllowlist(ip)` | String → bool | Exact loaded IP membership; empty allowlist returns false |
+| `ParsePort(port)` | String → integer | For Connection string ports; validate unexpected input separately |
+| `PortInRange(port, start, end)` | Integers → bool | Inclusive bounds; use `ParsePort` on string ports |
+| `TimeInRange(ts, start, end)` | Unix-nanosecond integers → bool | Inclusive bounds; units must match |
+| `DurationSince(ts)` | Unix-nanosecond integer → elapsed nanoseconds | Uses current wall clock; unsuitable for capture-relative replay windows |
+| `FormatTime(ts, layout)` | Timestamp and Go layout → string | Layout `2006-01-02` is Go syntax, not strftime |
+| `HourOfDay(ts)`, `Weekday(ts)` | Timestamp → local hour / weekday | Process local timezone; weekday 0 is Sunday |
+| `IsBusinessHours(ts, start, end)` | Timestamp/hour integers → bool | Mon–Fri, `[start,end)`, process local timezone; set `TZ=UTC` for reproducible UTC policy |
+| `ContainsAny(text, parts...)` | String and string arguments → bool | Literal substring checks |
+| `MatchesPattern(text, pattern)` | Strings → bool | Regex matching; use `(?i)` for case-insensitivity |
+| `DNSResolutionMatches(...)` | Six typed arguments → bool | Advanced capture-time DNS context helper; see the signature in `internal/filter/filter.go` before use |
+
+Nested list predicates use expr syntax, for example
+`len(Questions) > 0 && any(Questions, {.Name == "docs.example.test"})` on DNS.
+Guard missing nested data. CSV flattening does not make every flattened column
+a top-level field in every expression environment; inspect the actual schema.
+
+## Capture-time compatibility filter
+
+In Go v0.15.2, `capture -filter` is compiled against TCP. Compilation warns
+rather than failing the capture, and evaluation errors can pass records through;
+other record types are not generally filtered. It is **not** an all-record
+filter or a data-minimization boundary. For a predictable analysis workflow,
+retain the capture and apply `dump -filter` to an explicit audit type.
+
+## Preserve provenance
+
+Record the input hash, command, expression, version and output hash when sharing
+an export. A selected record set is not a selected packet capture. Use
+[packet evidence](evidence.md) when the recipient needs original packet bytes
+and a selection manifest.

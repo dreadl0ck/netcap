@@ -1,15 +1,18 @@
 package service
 
 import (
+	"crypto/ed25519"
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync/atomic"
+	"time"
 
+	"github.com/dreadl0ck/netcap/internal/dbs"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/software"
+	"github.com/dreadl0ck/netcap/internal/enrichment"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/servicesignatures"
 	"github.com/dreadl0ck/netcap/types"
@@ -34,7 +37,14 @@ func init() {
 func ResetProbeEnums() {}
 
 func initServiceProbes() error {
-	e, err := servicesignatures.Load(filepath.Join(resolvers.DataBaseFolderPath, servicesignatures.FileName))
+	trust, err := dbs.CommunitySigningRoot()
+	var e *servicesignatures.Engine
+	if err == nil {
+		e, err = loadOptionalSignatures(enrichment.Root(resolvers.ConfigRootPath), trust, time.Now())
+	}
+	if e == nil {
+		e = servicesignatures.Builtin()
+	}
 	signatureEngine.Store(e)
 	inventory := e.Inventory("capture", err)
 	signatureInventory.Store(&inventory)
@@ -43,6 +53,10 @@ func initServiceProbes() error {
 		fmt.Fprintln(signatureWarningWriter, err)
 	}
 	return nil
+}
+
+func loadOptionalSignatures(root string, trust ed25519.PublicKey, now time.Time) (*servicesignatures.Engine, error) {
+	return enrichment.LoadServiceSignatures(root, trust, now)
 }
 
 // SignatureInventory is the actual decoder initialization result, not a re-read

@@ -1,28 +1,41 @@
----
-description: Frequently Asked Questions
----
-
 # FAQ
 
 ## What can I use this for?
 
-This is a framework for capturing and analysing network packets.
+The public Go framework turns live packets or PCAP/PCAPNG files into structured
+records, browser investigations and reproducible evidence. Start with the
+[synthetic capture](quickstart.md) and [protocol coverage](protocol-support.md).
 
-For common protocols, chances are high that NETCAP already supports parsing them. If not, it's simple to implement.
+## Does a protocol label mean the payload was decoded?
 
-NETCAP uses its own data storage format, that focuses on efficiency and applies compression by default. The data format allows accessing the extracted information across all major programming languages as type safe structured data, which makes it easy to implement quality software on top the NETCAP core engine.
+No. Port names, DPI labels, handshake metadata and complete application parsing
+are different capabilities. [Service identification](deep-packet-inspection.md)
+describes their boundaries; encrypted payloads need separately supplied plaintext
+or secrets for supported experiments.
+
+## Does an alert prove compromise?
+
+No. A rule match, behavioral deviation or NVD applicability candidate needs
+validation against its source, scope and asset context. [Evidence](evidence.md)
+and [network detections](network-detections.md) show that workflow.
+
+## Can I expose the WebUI publicly?
+
+The local UI/API is unauthenticated. Keep it on loopback or place an appropriate
+authenticated hosting boundary in front of it. An MCP token protects `/mcp`, not
+every `/api` route; see [Web interface](web-interface.md#hosting-boundary).
+
+## How do I export CSV or JSON?
+
+Use `net dump`, not the Prometheus `net export` command. Follow
+[record inspection](filtering-and-export.md).
 
 ## How can I contribute to the project?
 
-Please see the Contributing page.
-
-{% page-ref page="contributing.md" %}
+See [contributing](contributing.md) for the CLA, development setup and tests.
 
 ## I have a question, how can I reach you?
 
-Contact me by mail:
-
-```text
-dreadl0ck [at] protonmail [dot] ch
-```
-
+Open an issue at [dreadl0ck/netcap](https://github.com/dreadl0ck/netcap/issues)
+with version, exact command and error. The maintainer address is
+`dreadl0ck [at] protonmail [dot] ch`.

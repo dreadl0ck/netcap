@@ -1,62 +1,50 @@
----
-description: Identify applications and categories
----
+# Service identification and DPI
 
-# Deep Packet Inspection
+Netcap has several identification mechanisms. A port name, a protocol parser,
+a banner product and a native DPI label answer different questions.
 
-## Libprotoident
+| Mechanism | Input | Claim |
+| --- | --- | --- |
+| IANA lookup | Port and transport | Registered service name; not confirmation of actual protocol |
+| Stream selector | Captured framing/signatures | Eligible parser chosen by evidence specificity |
+| Built-in service signatures | Bounded passive greeting bytes | SSH, HTTP/1, SMTP or FTP recognition and supported banner fields |
+| Native DPI | Native flow classifier | Application/category label available in this build |
+| NVD lookup | Concrete software identity/version | Applicability candidate evaluated under stored CPE conditions |
 
-NETCAP has support for using **libprotoident** \(v[2.0.14](https://github.com/wanduow/libprotoident/releases/tag/2.0.14-1)\), to identify 45 application categories and 500+ applications and protocols!
+## Choose a build
 
-The full list of supported protocols can be found here:
+```sh
+net --version
+net capture -read traffic.pcap -out classified -dpi=false
+```
 
-{% embed url="https://github.com/wanduow/libprotoident/wiki/SupportedProtocols" caption="Libprotoident Supported Protocols" %}
+The version output reports whether DPI is compiled in. DPI-enabled release
+archives include native libraries; nodpi builds do not become DPI-enabled merely
+by setting a flag. `lpi`, `ndpi` and Go module choices depend on the installed
+build. Inspect `capture -h` for supported selection options.
 
-**libprotoident** is maintained by the WAND group, you can download and install the library here:
+Native contexts have their own flow/context/idle budgets. A label is not a full
+decode of every transaction or proof that the named program executed. A TLS or
+QUIC classification does not imply decrypted HTTP/2/3 application content.
 
-{% embed url="https://github.com/wanduow/libprotoident" caption="Libprotoident Source Code" %}
+## Independent service signatures
 
-## nDPI
+Official builds no longer read Nmap's `nmap-service-probes`. The replacement
+`netcap-service-signatures` schema 1 uses bounded protocol parsers with declared
+provenance. The initial built-in catalogue covers SSH identification, HTTP/1
+response status, unambiguous SMTP and FTP greetings. Bare `220` is insufficient
+to distinguish the last two. Catalogue inventory/status reports degraded or
+missing optional inputs instead of silently claiming Nmap coverage parity.
 
-Furthermore **nDPI** \(v4.14 Stable\) can be used to identify 244+ applications, they are listed here:
+Custom catalogue operations validate the same format. A managed signed release
+and a local user override have separate ownership; do not contaminate the signed
+archive directory. Legacy probe APIs return 410.
 
-{% embed url="https://github.com/ntop/nDPI/wiki/Supported-Protocols" caption="nDPI Supported Protocols" %}
+## Limitations
 
-**nDPI** is mainted by **ntop**, and can be downloaded here:
-
-{% embed url="https://github.com/ntop/nDPI" caption="nDPI Source Code" %}
-
-The results from all heuristic engines \(lPI, nDPI and go heuristics\) get dedpulicated automatically. Future versions could create a certainity score based on the number of votes from different heuristics.
-
-## Audit Records with Applications Field
-
-DPI detected applications are stored in the **Applications** field, which is available in the following audit records:
-
-- **Connection**: DPI applications detected for bidirectional flows
-- **Service**: DPI applications detected for services running on specific IP:Port combinations
-- **DeviceProfile**: Aggregated DPI applications seen from/to a specific MAC address
-- **IPProfile**: Aggregated DPI applications seen from/to a specific IP address
-
-The Applications field is a repeated string field (array) that contains the names of all detected applications for that audit record.
-
-### DPI Classification Strategy
-
-NETCAP invokes DPI classification for each packet up to `MaxPacketsPerFlow` (10 packets):
-
-- **Invocation**: DPI is called for each of the first 10 packets per flow
-- **Internal Management**: godpi internally checks `MinPacketsForClassification` (default: 1) before actually performing classification
-- **Efficiency**: Results are cached after first successful classification
-- **Performance**: Automatically stops after 10 packets per flow
-
-This ensures short HTTP/REST API connections (typically 3-8 packets) are properly classified while maintaining performance on long-lived flows.
-
-**Note:** The `ApplicationProto` field in Connection records may show "Payload" for HTTP connections. This is expected because gopacket does not decode HTTP at the individual packet level (only at the TCP stream reassembly level). The DPI `Applications` field contains the actual protocol identification.
-
-Read more about DeviceProfiles here:
-
-{% page-ref page="device-profiles.md" %}
-
-## Platform Support
-
-NETCAPs DPI integration is currently only available on linux and macOS.
-
+Encrypted bytes, incomplete greetings, parser ambiguity and stream gaps can
+prevent identification. Legacy CMS/DHCP OS catalogues are disabled. HASSH and
+UA identification require their local data; classification does not authenticate
+the device's advertised software. [TLS fingerprints](tls-fingerprinting.md),
+[resolvers](resolvers.md) and [record support](protocol-support.md) explain the
+remaining distinctions.

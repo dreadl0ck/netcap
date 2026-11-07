@@ -110,6 +110,9 @@ func EnhanceSoftwareRecord(s *types.Software) {
 	if s == nil {
 		return
 	}
+	if s.SourceName == "Passive WebTech" {
+		return
+	}
 
 	// Set detection method based on SourceName
 	s.DetectionMethod = mapSourceNameToMethod(s.SourceName)
