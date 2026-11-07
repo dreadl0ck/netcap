@@ -27,6 +27,8 @@ const (
 	Audit             Action = "audit"
 	Approve           Action = "approve"
 	ManageCredentials Action = "manage-credentials"
+	Prune             Action = "prune"
+	Metrics           Action = "metrics"
 )
 
 type Scope struct {
@@ -59,12 +61,12 @@ func validPrincipal(p Principal) bool {
 				return false
 			}
 		}
-		if len(g.Actions) > 9 {
+		if len(g.Actions) > 11 {
 			return false
 		}
 		for _, a := range g.Actions {
 			switch a {
-			case Read, Author, Evaluate, Deploy, Rollback, Lease, Audit, Approve, ManageCredentials:
+			case Read, Author, Evaluate, Deploy, Rollback, Lease, Audit, Approve, ManageCredentials, Prune, Metrics:
 			default:
 				return false
 			}
@@ -118,8 +120,12 @@ func Operation(op string) Action {
 		return Rollback
 	case "lease", "desired", "ack":
 		return Lease
-	case "audit":
+	case "audit", "audit_export":
 		return Audit
+	case "prune", "retention_preview", "audit_ack":
+		return Prune
+	case "metrics":
+		return Metrics
 	}
 	return ""
 }
@@ -160,11 +166,13 @@ type Config struct {
 // Authority is replaced atomically by trusted configuration reload. It has no
 // token-directed discovery, token issuance, or remotely writable trust settings.
 type Authority struct {
-	ledger      *sql.DB
-	revocations Revocations
-	mu          sync.RWMutex
-	static      []Static
-	providers   []*provider
+	policyFingerprint string
+	shared            SharedDatabase
+	ledger            *sql.DB
+	revocations       Revocations
+	mu                sync.RWMutex
+	static            []Static
+	providers         []*provider
 }
 
 func New(c Config) (*Authority, error) {
@@ -202,6 +210,9 @@ func clone(p Principal) Principal {
 // Reload revokes removed credentials and clears all JWKS caches. The caller must
 // persist trusted configuration before invoking this method if restart durability is required.
 func (a *Authority) Reload(c Config) error {
+	if a.Shared() {
+		return errors.New("shared identity policy changes require coordinated bootstrap migration")
+	}
 	n, err := New(c)
 	if err != nil {
 		return err

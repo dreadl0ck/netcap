@@ -48,5 +48,8 @@ func fleetFingerprint(cfg Config) string {
 			JobReceiptRetention int64
 		}{firewallstate.Digest(string(raw)), cfg.AuditMaxRecords, int64(cfg.JobReceiptRetention)})
 	}
+	if cfg.Auth != nil {
+		raw, _ = json.Marshal(struct{ Base, Identity, Environment string }{firewallstate.Digest(string(raw)), cfg.Auth.PolicyFingerprint(), cfg.Environment})
+	}
 	return firewallstate.Digest(string(raw))
 }

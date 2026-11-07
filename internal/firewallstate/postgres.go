@@ -105,6 +105,7 @@ func OpenPostgres(ctx context.Context, rawURL, namespace string) (*Database, err
 	}
 	hash := sha256.Sum256([]byte("netcap-firewall:" + namespace))
 	d := &Database{DB: db, postgres: true, namespace: namespace, lockID: int64(binary.BigEndian.Uint64(hash[:8]))}
+	d.authEndpoint = Digest(strings.ToLower(u.Hostname()) + ":" + strconv.Itoa(port) + "/" + connection.Database + "/" + namespace)
 	tx, err := d.Begin(ctx)
 	if err != nil {
 		_ = d.Close()

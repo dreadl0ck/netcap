@@ -29,7 +29,7 @@ type Service struct {
 }
 
 func New(cfg Config) (*Service, error) {
-	if cfg.Auth != nil && cfg.DatabaseURL != "" {
+	if cfg.Auth != nil && cfg.DatabaseURL != "" && !cfg.Auth.Shared() {
 		return nil, errors.New("shared identity mode requires a singleton SQLite service; PostgreSQL replicas require a shared identity ledger")
 	}
 	if cfg.Auth != nil && (cfg.Token != "" || len(cfg.Identities) > 0) {
@@ -593,6 +593,17 @@ func (s *Service) Execute(ctx context.Context, token, op string, r Request) (any
 }
 
 func (s *Service) execute(ctx context.Context, token, op string, r Request) (any, error) {
+	if op == "metrics" {
+		if s.cfg.Auth != nil {
+			p, err := s.cfg.Auth.Authenticate(ctx, token)
+			if err != nil || !p.Allows(firewallauth.Metrics, firewallauth.Scope{Environment: s.cfg.Environment}) {
+				return nil, firewallstate.Fail(403, "metrics grant required")
+			}
+		} else if _, _, err := s.admin(token, Scope{}); err != nil {
+			return nil, err
+		}
+		return s.Operations.Registry.Gather()
+	}
 	var actor string
 	var scope Scope
 	var err error

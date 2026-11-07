@@ -62,7 +62,7 @@ type Service struct {
 }
 
 func New(cfg Config) (*Service, error) {
-	if cfg.Auth != nil && cfg.DatabaseURL != "" {
+	if cfg.Auth != nil && cfg.DatabaseURL != "" && !cfg.Auth.Shared() {
 		return nil, errors.New("shared identity mode requires a singleton SQLite service; PostgreSQL replicas require a shared identity ledger")
 	}
 	if cfg.Auth != nil && len(cfg.Principals) > 0 {

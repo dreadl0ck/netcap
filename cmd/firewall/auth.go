@@ -2,6 +2,7 @@ package firewall
 
 import (
 	"context"
+	"crypto/ed25519"
 	"encoding/base64"
 	"errors"
 	"net/url"
@@ -9,14 +10,17 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/netcap/internal/firewallauth"
+	"github.com/dreadl0ck/netcap/internal/firewallstate"
 )
 
 type authFile struct {
-	StateDir       string                   `json:"stateDir"`
-	ApprovalKeyEnv string                   `json:"approvalKeyEnv"`
-	Protected      []firewallauth.Protected `json:"protected"`
-	approvals      *firewallauth.Approvals
-	Static         []struct {
+	DatabaseURLEnv    string                   `json:"databaseURLEnv"`
+	DatabaseNamespace string                   `json:"databaseNamespace"`
+	StateDir          string                   `json:"stateDir"`
+	ApprovalKeyEnv    string                   `json:"approvalKeyEnv"`
+	Protected         []firewallauth.Protected `json:"protected"`
+	approvals         *firewallauth.Approvals
+	Static            []struct {
 		TokenEnv  string                 `json:"tokenEnv"`
 		Principal firewallauth.Principal `json:"principal"`
 	} `json:"static"`
@@ -39,6 +43,9 @@ func loadAuth(path string) (*firewallauth.Authority, authFile, error) {
 	if err := strictFile(path, &f); err != nil {
 		return nil, f, err
 	}
+	if f.DatabaseNamespace != "" && f.DatabaseURLEnv == "" {
+		return nil, f, errors.New("databaseNamespace requires databaseURLEnv")
+	}
 	if f.Origin != "" {
 		u, err := url.Parse(f.Origin)
 		if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" || strings.Contains(f.Origin, "*") {
@@ -58,7 +65,7 @@ func loadAuth(path string) (*firewallauth.Authority, authFile, error) {
 		}
 		c.Static = append(c.Static, firewallauth.Static{Token: token, Principal: s.Principal})
 	}
-	if f.StateDir != "" {
+	if f.StateDir != "" || f.DatabaseURLEnv != "" {
 		var key []byte
 		if f.ApprovalKeyEnv != "" {
 			if !envName.MatchString(f.ApprovalKeyEnv) {
@@ -66,11 +73,28 @@ func loadAuth(path string) (*firewallauth.Authority, authFile, error) {
 			}
 			var err error
 			key, err = base64.StdEncoding.DecodeString(os.Getenv(f.ApprovalKeyEnv))
-			if err != nil {
+			if err != nil || len(key) != ed25519.PrivateKeySize {
 				return nil, f, errors.New("approval signing key must be base64 Ed25519 private key")
 			}
 		}
-		a, approvals, err := firewallauth.OpenPersistent(c, f.StateDir, key, f.Protected)
+		var a *firewallauth.Authority
+		var approvals *firewallauth.Approvals
+		var err error
+		if f.DatabaseURLEnv != "" {
+			if f.StateDir != "" || !envName.MatchString(f.DatabaseURLEnv) || f.DatabaseNamespace == "" {
+				return nil, f, errors.New("shared auth requires databaseURLEnv and dedicated databaseNamespace, without stateDir")
+			}
+			db, e := firewallstate.OpenPostgres(context.Background(), os.Getenv(f.DatabaseURLEnv), f.DatabaseNamespace)
+			if e != nil {
+				return nil, f, e
+			}
+			a, approvals, err = firewallauth.OpenShared(context.Background(), c, db, key, f.Protected)
+			if err != nil {
+				db.Close()
+			}
+		} else {
+			a, approvals, err = firewallauth.OpenPersistent(c, f.StateDir, key, f.Protected)
+		}
 		f.approvals = approvals
 		return a, f, err
 	}

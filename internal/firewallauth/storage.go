@@ -82,6 +82,9 @@ func (a *Authority) Close() error {
 	if a.ledger != nil {
 		return a.ledger.Close()
 	}
+	if a.shared != nil {
+		return a.shared.Close()
+	}
 	return nil
 }
 

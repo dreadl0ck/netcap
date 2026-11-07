@@ -64,7 +64,7 @@ type Store struct {
 }
 
 func normalize(cfg Config) (Config, string, error) {
-	if cfg.Auth != nil && cfg.DatabaseURL != "" {
+	if cfg.Auth != nil && cfg.DatabaseURL != "" && !cfg.Auth.Shared() {
 		return cfg, "", errors.New("shared identity mode requires a singleton SQLite service; PostgreSQL replicas require a shared identity ledger")
 	}
 	if cfg.Auth != nil && len(cfg.Principals) > 0 {
@@ -104,6 +104,9 @@ func normalize(cfg Config) (Config, string, error) {
 		Revisions, Bytes int
 		Principals       []pin
 	}{"native-policy-state/v1", cfg.AllowEffects, cfg.MaxRevisions, cfg.MaxStateBytes, pins})
+	if cfg.Auth != nil {
+		raw, _ = json.Marshal(struct{ Base, Identity, Environment, Target string }{firewallstate.Digest(string(raw)), cfg.Auth.PolicyFingerprint(), cfg.Environment, cfg.Target})
+	}
 	return cfg, firewallstate.Digest(string(raw)), nil
 }
 
