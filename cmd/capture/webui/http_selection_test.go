@@ -61,7 +61,7 @@ func TestHTTPPacketExportUsesObservedTupleTransportAndTime(t *testing.T) {
 		if err := gopacket.SerializeLayers(buf, gopacket.SerializeOptions{FixLengths: true, ComputeChecksums: true}, eth, ip, transport); err != nil {
 			t.Fatal(err)
 		}
-		if err := writer.WritePacket(gopacket.CaptureInfo{Timestamp: base.Add(time.Duration(index)), CaptureLength: len(buf.Bytes()), Length: len(buf.Bytes())}, buf.Bytes()); err != nil {
+		if err := writer.WritePacket(gopacket.CaptureInfo{Timestamp: base.Add(time.Duration(min(index, 2))), CaptureLength: len(buf.Bytes()), Length: len(buf.Bytes())}, buf.Bytes()); err != nil {
 			t.Fatal(err)
 		}
 	}
