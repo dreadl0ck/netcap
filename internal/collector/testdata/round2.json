@@ -27,7 +27,7 @@
   "commands": {
     "short": "GOWORK=off GOMAXPROCS=2 go test -p 1 -short -tags nodpi,noyara,nomagika ./internal/decoder/... ./internal/reassembly ./internal/networkdetect ./internal/packetview ./internal/sipaudit ./types ./internal/collector",
     "cli": "GOWORK=off GOMAXPROCS=2 go test -p 1 -tags e2e,nodpi,noyara,nomagika ./tests/e2e -run 'TestTCPRetentionBudgetCLI|TestAuditSemanticsCLI|TestDHCPOption55CLI' -count=1 -timeout=8m",
-    "proto": "protoc --proto_path=types --gogofaster_out=types/. types/netcap.proto && git diff --exit-code -- types/netcap.pb.go",
+    "proto": "sh scripts/gen-proto.sh && git diff --exit-code -- types/netcap.pb.go",
     "native": "gh workflow run ci.yml --ref fix/dataset-round2 -f scope=full"
   },
   "unavailable_evidence": [

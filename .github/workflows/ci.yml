@@ -123,14 +123,14 @@ jobs:
           # types/netcap.proto. The file is tracked again since 3dbcc508
           # (it ships in the release archives), so this no longer rescues a
           # clean checkout -- it catches a proto edit committed without the
-          # regenerated output. protoc and the gogofaster plugin ship in the
-          # builder image for this.
+          # regenerated output. The script pins the plugin's source/toolchain;
+          # the builder supplies protoc.
           #
           # --proto_path=types is required, not decoration: without it the
           # output lands in types/proto/ and the descriptor registers as
           # "types/netcap.proto" instead of "netcap.proto".
           cp types/netcap.pb.go /tmp/netcap.pb.go.expected
-          protoc --proto_path=types --gogofaster_out=types/. types/netcap.proto
+          sh scripts/gen-proto.sh
           test -s types/netcap.pb.go
           cmp /tmp/netcap.pb.go.expected types/netcap.pb.go
 
