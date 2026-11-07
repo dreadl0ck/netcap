@@ -23,9 +23,18 @@ export function CertificateAssessmentNotice({ cert }: { cert: CertificateAssessm
 }
 
 export function RecordSemantics({ data }: { data: Record<string, unknown> }) {
+  if ('ReassemblyStatus' in data) return <HTTPReassemblyNotice status={String(data.ReassemblyStatus || '')} timestampNs={typeof data.TimestampNs === 'string' ? data.TimestampNs : undefined} />;
   if ('NegotiationOutcome' in data || 'ConnectionSuccessful' in data) return <Alert severity="info">
     RDP negotiation: {String(data.NegotiationOutcome || 'legacy-unqualified')}; authentication: {String(data.AuthenticationOutcome || 'unknown')}.
     {' '}ConnectionSuccessful is legacy negotiation acceptance, not proof of login. Negotiated security is {data.NegotiatedSecurityKnown ? 'observed' : 'unknown'}.
   </Alert>;
   return null;
+}
+
+export function HTTPReassemblyNotice({ status, timestampNs }: { status?: string; timestampNs?: string }) {
+  const observedNs = timestampNs && timestampNs !== '0' ? timestampNs : undefined;
+  return <Alert severity={status ? 'warning' : 'info'} sx={{ mb: 2 }}>
+    {status ? `HTTP reassembly: ${status}.` : 'HTTP reassembly qualification is not recorded; this does not establish completeness.'}
+    {' '}Exact capture timestamp: {observedNs || 'unavailable'}{observedNs ? ' ns' : ''}.
+  </Alert>;
 }

@@ -37,6 +37,8 @@ import (
 
 // HTTPSummary represents HTTP request/response information
 type HTTPSummary struct {
+	TimestampNs            string            `json:"timestampNs"`
+	ReassemblyStatus       string            `json:"reassemblyStatus"`
 	Timestamp              int64             `json:"timestamp"`
 	Proto                  string            `json:"proto"`
 	Method                 string            `json:"method"`
@@ -166,7 +168,13 @@ func readHTTP(outDir string) ([]HTTPSummary, error) {
 			continue
 		}
 
+		timestampNs := ""
+		if httpRec.Timestamp > 0 {
+			timestampNs = fmt.Sprint(httpRec.Timestamp)
+		}
 		httpRecords = append(httpRecords, HTTPSummary{
+			TimestampNs:            timestampNs,
+			ReassemblyStatus:       httpRec.ReassemblyStatus,
 			Timestamp:              httpRec.Timestamp,
 			Proto:                  httpRec.Proto,
 			Method:                 httpRec.Method,

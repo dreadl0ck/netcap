@@ -1,9 +1,19 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { CertificateAssessmentNotice, certificateValidityLabel, RecordSemantics } from '../../packages/netcap-ui/src/components/RecordSemantics';
+import { CertificateAssessmentNotice, certificateValidityLabel, HTTPReassemblyNotice, RecordSemantics } from '../../packages/netcap-ui/src/components/RecordSemantics';
 
 afterEach(cleanup);
 describe('audit evidence semantics', () => {
+  it('preserves HTTP gap qualifications and exact observation time', () => {
+    render(<HTTPReassemblyNotice status="unpaired_after_capture_loss" timestampNs="1590969600000000123" />);
+    expect(screen.getByText(/unpaired_after_capture_loss/)).toBeInTheDocument();
+    expect(screen.getByText(/1590969600000000123 ns/)).toBeInTheDocument();
+  });
+  it('does not label a rounded generic HTTP timestamp as exact', () => {
+    render(<RecordSemantics data={{ ReassemblyStatus: '', Timestamp: 1590969600000000123 }} />);
+    expect(screen.getByText(/does not establish completeness/)).toBeInTheDocument();
+    expect(screen.getByText(/Exact capture timestamp: unavailable/)).toBeInTheDocument();
+  });
   it('does not infer validity from legacy false flags', () => {
     expect(certificateValidityLabel({ daysUntilExpiration: 100 })).toContain('unavailable');
     render(<CertificateAssessmentNotice cert={{}} />);

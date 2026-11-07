@@ -57,7 +57,7 @@ test('ui-mocked: HTTP packet export carries observed nonstandard ports', async (
       case '/api/alerts/stats': json = { totalAlerts: 0, groupCount: 0, bySeverity: {}, byRule: {}, recentAlerts: [] }; break;
       case '/api/dbs/status': json = { satisfied: true, missing: [] }; break;
       case '/api/secrets': json = { secrets: [], totalCount: 0 }; break;
-      case '/api/http': json = { http: [{ timestamp: 1590969600000000000, proto: 'HTTP/1.1', method: 'GET', url: '/owned', host: 'owned.example.test', srcIP: '192.0.2.1', dstIP: '198.51.100.1', srcPort: 52123, dstPort: 9243, statusCode: 200, requestHeader: {}, responseHeader: {}, parameters: {} }], totalCount: 1 }; break;
+      case '/api/http': json = { http: [{ timestamp: 1590969600000000000, timestampNs: '1590969600000000123', reassemblyStatus: 'unpaired_after_capture_loss', proto: 'HTTP/1.1', method: 'GET', url: '/owned', host: 'owned.example.test', srcIP: '192.0.2.1', dstIP: '198.51.100.1', srcPort: 52123, dstPort: 9243, statusCode: 200, requestHeader: {}, responseHeader: {}, parameters: {} }], totalCount: 1 }; break;
       case '/api/http/download-pcap': return route.fulfill({ contentType: 'application/vnd.tcpdump.pcap', body: 'owned fixture bytes' });
       default:
         if (['top-hosts', 'status-codes', 'methods', 'content-types'].some(name => url.pathname === `/api/http/${name}`)) return route.fulfill({ contentType: 'text/html', body: '<html><body>owned chart</body></html>' });
@@ -67,6 +67,8 @@ test('ui-mocked: HTTP packet export carries observed nonstandard ports', async (
   });
   await page.goto('/http');
   await page.getByRole('row').filter({ hasText: 'owned.example.test' }).first().click();
+  await expect(page.getByText(/HTTP reassembly: unpaired_after_capture_loss/)).toBeVisible();
+  await expect(page.getByText(/1590969600000000123 ns/)).toBeVisible();
   const request = page.waitForRequest(r => new URL(r.url()).pathname === '/api/http/download-pcap');
   await page.getByRole('button', { name: 'Download PCAP', exact: true }).click();
   expect(Object.fromEntries(new URL((await request).url()).searchParams)).toEqual({ srcIP: '192.0.2.1', dstIP: '198.51.100.1', srcPort: '52123', dstPort: '9243', protocol: 'TCP' });

@@ -59,6 +59,11 @@ DNP3 CRC/framing evidence and HTTP recovery have their own limits. Read the
 protocol-specific guide before interpreting `lost`, `unmatched` or a recovered
 record as complete coverage.
 
+The HTTP API/view exposes `reassemblyStatus` and string-valued `timestampNs`.
+Empty reassembly status does not establish completeness; missing capture time
+stays unavailable. Generic numeric JSON timestamps are not relabeled as exact
+nanoseconds (`cmd/capture/webui/audit_semantics_test.go`).
+
 `TCPReassemblyHealth.json` qualifies checksum policy and rejections. Malformed
 input, encrypted payloads and unsupported protocols can all yield no application
 records. [Capture health](evidence.md) helps distinguish missing visibility from

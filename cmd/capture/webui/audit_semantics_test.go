@@ -44,3 +44,34 @@ func TestCertificateAssessmentAPIAndLegacyUnknown(t *testing.T) {
 		}
 	}
 }
+
+func TestHTTPAPIKeepsReassemblyQualificationsAndExactTime(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{
+		&types.HTTP{Timestamp: 1590969600000000123, ReassemblyStatus: "unpaired_after_capture_loss,incomplete_response_body", Method: "GET"},
+		&types.HTTP{Timestamp: 1590969600000000124, Method: "GET"},
+		&types.HTTP{Method: "GET"},
+	})
+	s := &Server{outDir: dir}
+	w := httptest.NewRecorder()
+	s.handleHTTP(w, httptest.NewRequest("GET", "/api/http", nil))
+	if w.Code != 200 {
+		t.Fatalf("HTTP API: %d %s", w.Code, w.Body.String())
+	}
+	var response HTTPResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	if response.TotalCount != 3 {
+		t.Fatal(response.TotalCount)
+	}
+	if response.HTTP[0].TimestampNs != "1590969600000000124" || response.HTTP[0].ReassemblyStatus != "" {
+		t.Fatal("missing state was invented or time rounded")
+	}
+	if response.HTTP[1].TimestampNs != "1590969600000000123" || response.HTTP[1].ReassemblyStatus != "unpaired_after_capture_loss,incomplete_response_body" {
+		t.Fatal("HTTP qualification lost")
+	}
+	if response.HTTP[2].TimestampNs != "" {
+		t.Fatal("missing capture time became an exact observation")
+	}
+}
