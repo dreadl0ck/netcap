@@ -21,6 +21,7 @@ package rdp
 
 import (
 	"bytes"
+	"encoding/binary"
 
 	"go.uber.org/zap"
 
@@ -56,28 +57,73 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
-	// TPKT version and the X.224 connection-request byte at fixed offsets.
 	Specificity: core.SpecificityStructural,
 
 	CanDecode: func(client, server []byte) bool {
-		// RDP uses TPKT (starts with 0x03) over TCP
-		// Client sends X.224 Connection Request (0xE0)
-		// Server responds with X.224 Connection Confirm (0xD0)
-		if len(client) >= 11 && client[0] == tpktVersion {
-			// Check for X.224 Connection Request
-			if client[5] == x224ConnectionRequest {
-				return true
-			}
-			// Check for RDP Cookie pattern "Cookie: mstshash="
-			if bytes.Contains(client, []byte("Cookie:")) && bytes.Contains(client, []byte("mstshash=")) {
-				return true
-			}
-		}
-		return false
+		return probeRDP(client) || probeRDP(server)
 	},
 	DeInit: func(sd *decoder.StreamDecoder) error {
 		return rdpLog.Sync()
 	},
 	Factory: &rdpReader{},
 	Typ:     core.TCP, // RDP uses TCP port 3389
+}
+
+// A generic X.224 request also belongs to MMS and S7. Require RDP's cookie
+// or negotiation structure inside the declared TPKT/X.224 frame.
+func probeRDP(data []byte) bool {
+	if len(data) < 11 || data[0] != tpktVersion || data[1] != 0 {
+		return false
+	}
+	n := int(binary.BigEndian.Uint16(data[2:4]))
+	if n < 11 || int(data[4])+5 != n || data[10] != 0 {
+		return false
+	}
+	request := data[5] == x224ConnectionRequest
+	if !request && data[5] != x224ConnectionConfirm {
+		return false
+	}
+	body := data[11:min(n, len(data))]
+	cookieSize := 0
+	for _, prefix := range []string{"Cookie: mstshash=", "Cookie: msts="} {
+		if bytes.HasPrefix(body, []byte(prefix)) {
+			cookieSize = len(prefix)
+		}
+	}
+	if request && cookieSize != 0 {
+		end := bytes.Index(body, []byte("\r\n"))
+		if end < cookieSize {
+			return false
+		}
+		for _, b := range body[cookieSize:end] {
+			if b < 0x20 || b > 0x7e {
+				return false
+			}
+		}
+		return true
+	}
+	if len(body) < 8 || binary.LittleEndian.Uint16(body[2:4]) != 8 {
+		return false
+	}
+	protocol := binary.LittleEndian.Uint32(body[4:8])
+	if request {
+		if body[0] != RDPNegReq || body[1]&^byte(0x0b) != 0 || protocol&^uint32(0x1f) != 0 {
+			return false
+		}
+		if body[1]&8 == 0 {
+			return n == 19
+		}
+		// CORRELATION_INFO is a fixed 36-byte structure after RDP_NEG_REQ.
+		return n == 55 && len(body) >= 44 && body[8] == 6 && body[9] == 0 && binary.LittleEndian.Uint16(body[10:12]) == 36 && bytes.Equal(body[28:44], make([]byte, 16))
+	}
+	if n != 19 {
+		return false
+	}
+	switch body[0] {
+	case RDPNegRsp:
+		return body[1]&^byte(0x1f) == 0 && (protocol == 0 || protocol == 1 || protocol == 2 || protocol == 4 || protocol == 8 || protocol == 16)
+	case RDPNegFailure:
+		return body[1] == 0 && protocol >= 1 && protocol <= 6
+	}
+	return false
 }

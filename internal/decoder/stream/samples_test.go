@@ -216,6 +216,20 @@ func zabbixRequest() []byte {
 	return append(msg, payload...)
 }
 
+func pnioRequest() []byte {
+	data := make([]byte, 80)
+	data[0], data[4] = 4, 0x10
+	copy(data[24:40], hexBytes("0100a0de976cd111827100a02442df7d"))
+	binary.LittleEndian.PutUint32(data[60:64], 1)
+	return data
+}
+
+func rdpCookie(user string) []byte {
+	cotp := append([]byte{0, 0xe0, 0, 0, 0, 0, 0}, []byte("Cookie: mstshash="+user+"\r\n")...)
+	cotp[0] = byte(len(cotp) - 1)
+	return tpktFrame(cotp)
+}
+
 // samples is one entry per registered decoder.
 //
 // A decoder with no entry is a hole in the matrix, which TestEveryDecoderHasASample
@@ -341,8 +355,7 @@ func samples() []sample {
 		{
 			decoder: "RDP", port: 3389, transport: core.TCP,
 			// TPKT + X.224 Connection Request + the mstshash cookie.
-			client: tpktFrame(append([]byte{0x0e, 0xe0, 0x00, 0x00, 0x00, 0x00, 0x00},
-				[]byte("Cookie: mstshash=user\r\n")...)),
+			client: rdpCookie("user"),
 		},
 		{
 			decoder: "OPCUA", port: 4840, transport: core.TCP,
@@ -371,8 +384,7 @@ func samples() []sample {
 		},
 		{
 			decoder: "PROFINET", port: 34964, transport: core.TCP,
-			// DCE/RPC v4, packet type 0 (Request), 24-byte header then body.
-			client: append([]byte{0x04, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x40, 0x00}, make([]byte, 32)...),
+			client: pnioRequest(),
 		},
 		{
 			decoder: "BACnetIP", port: 47808, transport: core.UDP,

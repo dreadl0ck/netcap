@@ -58,7 +58,7 @@ var Decoder = &decoder.StreamDecoder{
 		if !strings.HasPrefix(s, "220 ") && !strings.HasPrefix(s, "220-") {
 			return false
 		}
-		for _, command := range []string{"EHLO ", "HELO ", "MAIL FROM:", "AUTH "} {
+		for _, command := range []string{"EHLO ", "HELO ", "MAIL FROM:", "AUTH PLAIN", "AUTH LOGIN", "AUTH CRAM-MD5", "AUTH XOAUTH2"} {
 			if strings.HasPrefix(c, command) || strings.Contains(c, "\r\n"+command) {
 				return false
 			}

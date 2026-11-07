@@ -15,7 +15,7 @@ import (
 
 var Decoder = &decoder.StreamDecoder{
 	Type: types.Type_NC_DNS, Name: "DNS", Description: "Length-framed DNS over TCP",
-	Specificity: core.SpecificityWeak, Typ: core.TCP, Factory: &reader{},
+	Specificity: core.SpecificityStructural, Typ: core.TCP, Factory: &reader{},
 	CanDecode: func(client, server []byte) bool { return probe(client) || probe(server) },
 }
 
@@ -24,12 +24,18 @@ func probe(data []byte) bool {
 		return false
 	}
 	n := int(binary.BigEndian.Uint16(data))
-	if n < 12 || n+2 > len(data) {
+	if n < 12 || n+2 > len(data) || data[5]&0x40 != 0 {
 		return false
 	}
 	var message layers.DNS
-	return message.DecodeFromBytes(data[2:n+2], gopacket.NilDecodeFeedback) == nil &&
-		message.OpCode <= 5 && (len(message.Questions) > 0 || len(message.Answers) > 0)
+	if message.DecodeFromBytes(data[2:n+2], gopacket.NilDecodeFeedback) != nil {
+		return false
+	}
+	switch message.OpCode {
+	case 0, 1, 2, 4, 5, 6:
+		return len(message.Questions) > 0 || len(message.Answers) > 0
+	}
+	return false
 }
 
 type reader struct{ conversation *core.ConversationInfo }

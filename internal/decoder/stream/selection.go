@@ -28,6 +28,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/dcerpc"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/modbus"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/smtp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tls"
 )
@@ -158,6 +159,9 @@ func eligible(sd core.StreamDecoderAPI, transport core.TransportProtocol) bool {
 func configuredDecoder(name string) bool {
 	c := decoderconfig.Instance
 	if c == nil {
+		return true
+	}
+	if name == "FTP" && secret.FTPHarvesterEnabled() && !decoderListed(c.ExcludeDecoders, "Secret") && (c.IncludeDecoders == "" || decoderListed(c.IncludeDecoders, "Secret")) {
 		return true
 	}
 	if name == "SMB" && dcerpc.Decoder.Writer != nil && !decoderListed(c.ExcludeDecoders, "DCERPC") && (c.IncludeDecoders == "" || decoderListed(c.IncludeDecoders, "DCERPC")) {
