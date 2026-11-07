@@ -109,29 +109,7 @@ rules:
     tags: ["automation", "websocket", "suspicious"]
     enabled: true
 
-  # ========================================
-  # PROTOCOL UPGRADE ANOMALIES
-  # ========================================
-
-  # HTTP Upgrade to Unknown Protocol
-  - name: HTTP Upgrade to Unknown Protocol
-    description: Detect HTTP Upgrade header with non-standard protocols (potential tunneling)
-    type: HTTP
-    expression: RequestHeader["Upgrade"] != "" && !MatchesPattern(RequestHeader["Upgrade"], "(?i)(websocket|h2c|TLS/1\\.)") && MatchesPattern(RequestHeader["Connection"], "(?i)Upgrade")
-    severity: medium
-    mitre: ["T1090", "T1572"]
-    tags: ["tunneling", "suspicious", "protocol-upgrade"]
-    enabled: true
-
-  # Unexpected Protocol Switch
-  - name: Unexpected Protocol Switch
-    description: Detect 101 Switching Protocols to unexpected protocols (not WebSocket/h2c)
-    type: HTTP
-    expression: StatusCode == 101 && ResponseHeader["Upgrade"] != "" && !MatchesPattern(ResponseHeader["Upgrade"], "(?i)(websocket|h2c)")
-    severity: medium
-    mitre: ["T1090", "T1572"]
-    tags: ["tunneling", "anomaly", "protocol-switch"]
-    enabled: true
+  # Protocol-upgrade anomaly rules are defined once in suspicious_traffic.yml.
 
   # ========================================
   # HTTP/2 PUSH & FEATURES
@@ -158,4 +136,3 @@ rules:
     severity: info
     tags: ["protocol-upgrade", "protocol-switching"]
     enabled: true
-
