@@ -63,7 +63,8 @@ const (
  */
 
 type httpRequest struct {
-	parseIssue   string
+	pairable     bool
+	evidence     messageEvidence
 	incomplete   bool
 	request      *http.Request
 	timestamp    int64
@@ -78,6 +79,7 @@ type httpRequest struct {
 }
 
 type httpResponse struct {
+	evidence            messageEvidence
 	readIssue           bool
 	transient           bool
 	detectedContentType string
@@ -97,8 +99,11 @@ type httpReader struct {
 
 	requests             []*httpRequest
 	responses            []*httpResponse
-	pairingBroken        bool
+	captureLoss          bool
+	pairingQualification string
+	directionBroken      [2]bool
 	preface              bool
+	initialUnknown       bool
 	responseRequestIndex int
 }
 
@@ -148,20 +153,7 @@ func (h *httpReader) Decode() {
 
 			atomic.AddInt64(&streamutils.Stats.NumRequests, 1)
 			// Use the matched request which preserves JA4H header order info
-			setRequest(ht, &httpRequest{
-				request:      res.response.Request,
-				incomplete:   matchedReq.incomplete,
-				parseIssue:   matchedReq.parseIssue,
-				timestamp:    matchedReq.timestamp,
-				clientIP:     res.clientIP,
-				serverIP:     res.serverIP,
-				clientPort:   res.clientPort,
-				serverPort:   res.serverPort,
-				flow:         res.flow,
-				headerOrder:  matchedReq.headerOrder,
-				cookieFields: matchedReq.cookieFields,
-				acceptLang:   matchedReq.acceptLang,
-			})
+			setRequest(ht, matchedReq)
 		} else {
 			// The request may precede the capture; retain the visible response.
 			atomic.AddInt64(&streamutils.Stats.NumUnmatchedResp, 1)
@@ -169,12 +161,18 @@ func (h *httpReader) Decode() {
 
 		// Set Community ID for cross-tool correlation
 		ht.CommunityID = h.conversation.CommunityID
-		if h.pairingBroken {
-			ht.ReassemblyStatus = "unpaired_after_capture_loss"
+		ht.RawResponseLine, ht.ResponseHeaders = res.evidence.line, res.evidence.headers
+		if res.evidence.unsafe {
+			ht.ResContentTypeDetected = ""
 		}
-		if h.preface {
-			ht.ReassemblyStatus = "unpaired_after_protocol_preface"
+		ht.ParseQualifications = appendUnique(ht.ParseQualifications, res.evidence.issues...)
+		for _, issue := range res.evidence.issues {
+			addStatus(ht, issue)
 		}
+		if h.initialUnknown {
+			addStatus(ht, "unknown-initial-stream-loss")
+		}
+		h.qualifyPairing(ht, matchedReq != nil)
 		if res.readIssue {
 			ht.ReassemblyStatus = strings.Trim(ht.ReassemblyStatus+",incomplete_response_body", ",")
 		}
@@ -197,16 +195,30 @@ func (h *httpReader) Decode() {
 
 			// Set Community ID for cross-tool correlation
 			ht.CommunityID = h.conversation.CommunityID
-			if h.pairingBroken {
-				ht.ReassemblyStatus = "unpaired_after_capture_loss"
+			if h.initialUnknown {
+				addStatus(ht, "unknown-initial-stream-loss")
 			}
-			if h.preface {
-				ht.ReassemblyStatus = "unpaired_after_protocol_preface"
-			}
+			h.qualifyPairing(ht, false)
 			writeHTTP(ht, h.conversation.Ident)
 		} else {
 			atomic.AddInt64(&streamutils.Stats.NumNilRequests, 1)
 		}
+	}
+}
+
+func (h *httpReader) qualifyPairing(record *types.HTTP, paired bool) {
+	if h.captureLoss {
+		if paired {
+			addStatus(record, "capture_loss_elsewhere")
+		} else {
+			addStatus(record, "unpaired_after_capture_loss")
+		}
+	}
+	if h.preface {
+		addStatus(record, "unpaired_after_protocol_preface")
+	}
+	if !paired {
+		addStatus(record, h.pairingQualification)
 	}
 }
 
@@ -316,10 +328,13 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 
 	// try to read HTTP response from the buffered reader
 	var request *http.Request
-	if !h.pairingBroken && h.responseRequestIndex < len(h.requests) {
-		request = h.requests[h.responseRequestIndex].request
+	if !h.directionBroken[1] && h.responseRequestIndex < len(h.requests) {
+		candidate := h.requests[h.responseRequestIndex]
+		if candidate.pairable {
+			request = candidate.request
+		}
 	}
-	res, err := http.ReadResponse(b, request)
+	res, evidence, err := readEvidenceResponse(b, request)
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
@@ -391,6 +406,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	streamutils.Stats.Unlock()
 
 	h.responses = append(h.responses, &httpResponse{
+		evidence:            evidence,
 		readIssue:           err != nil,
 		transient:           decoderconfig.Instance.FileStorage == "" && !decoderconfig.Instance.IncludePayloads,
 		detectedContentType: passiveReport.DetectedContentType,
@@ -409,7 +425,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	}
 
 	// write responses to disk if configured
-	if (err == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
+	if !evidence.unsafe && (err == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
 
 		var (
 			name        = "unknown"
@@ -422,7 +438,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		)
 
 		// check if there is a matching request for the current stream
-		if !h.pairingBroken && numRequests > requestIndex { // fetch it
+		if request != nil && numRequests > requestIndex { // fetch it
 
 			req := h.requests[requestIndex]
 			if req != nil {
@@ -437,7 +453,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		extractor, ok := file.GetExtractor("HTTP")
 		if !ok {
 			httpLog.Error("HTTP file extractor not registered")
-			return nil
+			return err
 		}
 
 		metadata := file.FileMetadata{
@@ -454,36 +470,29 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		}
 		if err != nil {
 			// The generic extractor interface cannot carry the body read error.
-			return (&HTTPFileExtractor{}).extractFile(h.conversation, body, metadata, err)
+			file.RecordExtractionIssue((&HTTPFileExtractor{}).extractFile(h.conversation, body, metadata, err))
+			return err
 		}
-		return extractor.ExtractFile(h.conversation, body, metadata)
+		file.RecordExtractionIssue(extractor.ExtractFile(h.conversation, body, metadata))
 	}
 
-	return nil
+	if evidence.unsafe {
+		return evidence.framingError()
+	}
+	return err
 }
 
 func (h *httpReader) findRequest(res *http.Response) *httpRequest {
-	if h.pairingBroken {
-		return nil
-	}
-	// try to find the matching HTTP request for the response
-	var httpReq *httpRequest
-
-	if len(h.requests) != 0 {
-		// take the request from the parent stream and delete it from there
-		httpReq = h.requests[0]
-		if res.StatusCode < 100 || res.StatusCode >= 200 || res.StatusCode == http.StatusSwitchingProtocols {
-			h.requests = h.requests[1:]
+	for i, req := range h.requests {
+		if req != nil && req.request == res.Request {
+			if res.StatusCode >= 200 || res.StatusCode == http.StatusSwitchingProtocols {
+				h.requests[i] = nil
+			}
+			atomic.AddInt64(&streamutils.Stats.NumFoundRequests, 1)
+			return req
 		}
 	}
-
-	// set request instance on response
-	if httpReq != nil {
-		res.Request = httpReq.request
-		atomic.AddInt64(&streamutils.Stats.NumFoundRequests, 1)
-	}
-
-	return httpReq
+	return nil
 }
 
 // HTTP Request
@@ -496,7 +505,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	// We need to peek at the raw bytes to preserve header order
 	headerOrder, cookieFields, acceptLang := extractHeaderOrderFromReader(b)
 
-	req, issue, err := readEvidenceRequest(b)
+	req, evidence, err := readEvidenceRequest(b)
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
@@ -537,7 +546,8 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	t := requestTimestamp
 
 	request := &httpRequest{
-		parseIssue:   issue,
+		pairable:     !h.directionBroken[0] && !evidence.unsafe && bodyErr == nil,
+		evidence:     evidence,
 		incomplete:   bodyErr != nil,
 		request:      req,
 		timestamp:    t,
@@ -572,12 +582,12 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 
 	if req.Method == methodPOST {
 		// write request payload to disk if configured
-		if (bodyErr == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
+		if !evidence.unsafe && (bodyErr == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
 			// Use new file extraction framework
 			extractor, ok := file.GetExtractor("HTTP")
 			if !ok {
 				httpLog.Error("HTTP file extractor not registered")
-				return nil
+				return bodyErr
 			}
 
 			metadata := file.FileMetadata{
@@ -593,11 +603,15 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 				Encoding:       req.Header[headerContentEncoding],
 			}
 			if bodyErr != nil {
-				return (&HTTPFileExtractor{}).extractFile(h.conversation, body, metadata, bodyErr)
+				file.RecordExtractionIssue((&HTTPFileExtractor{}).extractFile(h.conversation, body, metadata, bodyErr))
+				return bodyErr
 			}
-			return extractor.ExtractFile(h.conversation, body, metadata)
+			file.RecordExtractionIssue(extractor.ExtractFile(h.conversation, body, metadata))
 		}
 	}
 
-	return nil
+	if evidence.unsafe {
+		return evidence.framingError()
+	}
+	return bodyErr
 }
