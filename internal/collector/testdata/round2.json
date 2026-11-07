@@ -1,0 +1,39 @@
+{
+  "workstream": "W76",
+  "baseline": "25ea2e69181ecb88979754cba98a628075220c3f",
+  "scope": "D2-1 through D2-17 plus recurring section-3 defects; no new attack-rule catalogue",
+  "fixture_manifests": [
+    "internal/decoder/stream/tcp/testdata/round2.json",
+    "internal/collector/testdata/round2-input/manifest.json",
+    "internal/decoder/stream/http/testdata/round2.json",
+    "internal/decoder/stream/testdata/round2-selection.json",
+    "internal/decoder/stream/tls/testdata/round2.json",
+    "internal/collector/testdata/voip/provenance.json"
+  ],
+  "semantic_checks": [
+    {"issues": ["D2-1", "D2-5", "D2-8", "DS-8"], "package": "./internal/decoder/stream/tcp", "tests": "TestRound2|TestReorderedFIN|TestTCPHTTPPostCloseFraming|TestTCPTLSPostCloseFraming", "assertions": "missing SYN, asymmetric metadata, valid/invalid resets, reordered FIN payload, half-close, tuple incarnation, bounded qualified post-close observations"},
+    {"issues": ["D2-3", "D2-7", "DS-20"], "package": "./internal/packetview ./internal/collector", "tests": "TestTunnel|TestFragment|TestPacketPipeline", "fixture_generator": "internal/packetview/testutil/packets.go", "assertions": "nested tunnel scope, inner tuples/Community IDs, original fragment refs, bounds/overlap/expiry, worker invariance, interleaved fragment detection"},
+    {"issues": ["D2-12", "D2-13", "DS-4", "DS-18"], "package": "./internal/collector", "tests": "TestCaptureInput|TestCaptureSnapshot|TestCaptureReader|TestCaptureLink", "assertions": "100-packet snaplen reproducer, trustworthy record boundaries, valid-prefix output, mixed interfaces, NFLOG/HDLC/802.15.4/SLL2, explicit coverage status"},
+    {"issues": ["D2-2", "D2-14"], "package": "./internal/decoder/stream/dcerpc ./internal/decoder/stream/smb", "tests": "TestSMB|TestNamed|TestPipe", "assertions": "SMB1/2 named pipes for six RPC interfaces, compounds, fragmented messages, scoped handles/calls, Unicode flags/length/alignment"},
+    {"issues": ["D2-4", "NEW-1", "D2-17:h2c"], "package": "./internal/decoder/stream/http", "tests": "TestRound2|TestH2|TestHTTPTransport", "assertions": "raw malformed evidence, duplicate headers, framing ambiguity, pairing, bounded HPACK/CONTINUATION/stream state, rejected-upgrade HTTP1 fallback, unsafe extraction suppression"},
+    {"issues": ["D2-6", "D2-9", "D2-15", "DS-10"], "package": "./internal/decoder/stream ./internal/decoder/stream/secret", "tests": "TestRound2", "assertions": "frame-aware selection, HTTP/SMB and DNS/PROFINET and X224 collisions, TeamViewer framing, FTP/8884 authentication and deduplication", "baseline_evidence": "internal/decoder/stream/testdata/round2-selection-evidence.json"},
+    {"issues": ["D2-11", "DS-1"], "package": "./internal/decoder/stream/tls ./internal/collector", "tests": "TestSSLv2|TestNegotiated|TestTLSRound2Corpus|TestTLS.*Transport", "assertions": "qualified SSLv2, seven explicit TLS handoffs, split/rejected negotiation, framing barriers across post-close qualifications"},
+    {"issues": ["D2-16", "D2-17:DNP3/UDP", "D2-17:SIP/TCP", "D2-17:mDNS", "D2-17:RTP/DTMF"], "package": "./internal/collector ./internal/sipaudit ./internal/decoder/stream/rtp", "tests": "TestW76|Test.*Scope", "assertions": "DNP3 CRC/datagram boundaries, SIP framing and response export, mDNS multicast bits/no unicast pairing, negotiated RTP sequence wrap/reordering, DTMF end deduplication, cross-interface/VNI isolation", "baseline_disposition": "D2-16 response fields already populated on base; export regression retained"},
+    {"issues": ["NEW-8"], "package": "./types ./internal/decoder/packet", "tests": "TestDHCPOption|TestDHCPBinary", "fixture": "bytes(range(256))", "sha256": "40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880", "assertions": "owned raw DHCPv4/v6 bytes, valid printable or hex presentation, protobuf/JSON/CSV preservation, legacy field compatibility"},
+    {"issues": ["D2-10", "DS-17", "N13"], "package": "./internal/networkdetect ./internal/collector", "tests": "TestRound2EpochZero|Test.*FTP|Test.*SMTP|Test.*Aggregat|TestFlightSimCollectorReplay", "assertions": "epoch zero, active/passive negotiated FTP data exclusion, source-port-20 negative, SMTP network roles, bounded count/first/last/examples and deterministic EOF/window flush"},
+    {"issues": ["DS-12"], "package": "./internal/collector ./internal/decoder/stream/tcp ./internal/decoder/packet", "tests": "TestTCPRetainedPayloadBudgetQualifiesFailureAndReadiness|Test.*Resource|Test.*Retention|TestHostDoesNotRetainPayloadWithoutDPI|TestDeferredDPIPreservesPerPacketView", "baseline_disposition": "W70 release/budget primitives already present. W76 additionally removes Host payload copies when DPI is disabled and preserves each buffered DPI packet's own normalized base layer, timestamp and scope", "verification_limit": "WRCCDC, MAWI, DARPA and bigFlows resource/coverage qualification unavailable"},
+    {"issues": ["DS-11", "DS-14"], "package": "./internal/decoder/... ./internal/collector ./types", "tests": "existing short suites and tests/e2e/TestAuditSemanticsCLI", "disposition": "regression controls"}
+  ],
+  "commands": {
+    "short": "GOWORK=off GOMAXPROCS=2 go test -p 1 -short -tags nodpi,noyara,nomagika ./internal/decoder/... ./internal/reassembly ./internal/networkdetect ./internal/packetview ./internal/sipaudit ./types ./internal/collector",
+    "cli": "GOWORK=off GOMAXPROCS=2 go test -p 1 -tags e2e,nodpi,noyara,nomagika ./tests/e2e -run 'TestTCPRetentionBudgetCLI|TestAuditSemanticsCLI|TestDHCPOption55CLI' -count=1 -timeout=8m",
+    "proto": "protoc --proto_path=types --gogofaster_out=types/. types/netcap.proto && git diff --exit-code -- types/netcap.pb.go",
+    "native": "gh workflow run ci.yml --ref fix/dataset-round2 -f scope=full"
+  },
+  "unavailable_evidence": [
+    "/Users/pmieden/Downloads/netcap-datasets-round2.md: macOS EPERM prevents reading Downloads; the detailed W76 plan supplies task scope",
+    "/workspace/mta/datasets2/: original report outputs and complete 2874-capture R1-R13 corpus unavailable locally",
+    "Per-issue full-corpus baseline comparison is not established by synthetic tests or the pinned sample replays",
+    "Large-corpus completion/RSS/output-coverage acceptance for DS-12 remains unverified; budget aborts are partial failures, never full replay success"
+  ]
+}

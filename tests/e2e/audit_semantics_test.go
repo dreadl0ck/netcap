@@ -290,7 +290,11 @@ func writeAuditSemanticCapture(t *testing.T, path string) {
 	z := append([]byte("ZBXD\x01"), make([]byte, 8)...)
 	binary.LittleEndian.PutUint64(z[5:], uint64(len(zb)))
 	flow(10050, append(z, zb...), nil, false)
-	flow(34964, append([]byte{4, 0, 0, 0, 32, 0, 0, 0, 64, 0}, make([]byte, 32)...), nil, false)
+	pnio := make([]byte, 80)
+	pnio[0], pnio[4] = 4, 0x10
+	copy(pnio[24:40], []byte{1, 0, 0xa0, 0xde, 0x97, 0x6c, 0xd1, 0x11, 0x82, 0x71, 0, 0xa0, 0x24, 0x42, 0xdf, 0x7d})
+	binary.LittleEndian.PutUint32(pnio[60:64], 1)
+	flow(34964, pnio, nil, false)
 	req := []byte{3, 0, 0, 19, 14, 0xe0, 0, 0, 0, 0, 0, 1, 0, 8, 0, 3, 0, 0, 0}
 	rsp := append([]byte(nil), req...)
 	rsp[5] = 0xd0
