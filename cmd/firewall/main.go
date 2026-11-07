@@ -139,12 +139,21 @@ func loadConfig(path string) (waf.Config, error) {
 	if !filepath.IsAbs(c.PolicyFile) {
 		c.PolicyFile = filepath.Join(filepath.Dir(path), c.PolicyFile)
 	}
+	for i := range c.Routes {
+		r := &c.Routes[i]
+		if !filepath.IsAbs(r.PolicyFile) {
+			r.PolicyFile = filepath.Join(filepath.Dir(path), r.PolicyFile)
+		}
+	}
 	return c, nil
 }
 
 func validate(ctx context.Context, c *cli.Command) error {
 	cfg, err := loadConfig(c.String("config"))
 	if err != nil {
+		return err
+	}
+	if err := validateRouteRuntime(c, cfg); err != nil {
 		return err
 	}
 	r, err := newEvaluator(ctx, c, cfg.PolicyFile)
@@ -188,6 +197,9 @@ func serve(ctx context.Context, c *cli.Command) error {
 	if err := validateServeOptions(c, cfg); err != nil {
 		return err
 	}
+	if err := validateRouteRuntime(c, cfg); err != nil {
+		return err
+	}
 	runtime, err := newEvaluator(ctx, c, cfg.PolicyFile)
 	if err != nil {
 		return err
@@ -203,6 +215,31 @@ func serve(ctx context.Context, c *cli.Command) error {
 	}); err != nil {
 		return err
 	}
+	reloads := make(chan os.Signal, 1)
+	signal.Notify(reloads, syscall.SIGHUP)
+	defer signal.Stop(reloads)
+	reloadCtx, stopReload := context.WithCancel(ctx)
+	reloadDone := make(chan struct{})
+	defer func() { stopReload(); <-reloadDone }()
+	go func() {
+		defer close(reloadDone)
+		for {
+			select {
+			case <-reloadCtx.Done():
+				return
+			case <-reloads:
+				if err := f.ReloadTLS(); err != nil {
+					fmt.Fprintln(c.Root().ErrWriter, "firewall TLS reload rejected:", err)
+					continue
+				}
+				if len(cfg.Routes) > 0 {
+					if err := f.ReloadRoutePolicies(); err != nil {
+						fmt.Fprintln(c.Root().ErrWriter, "firewall route reload rejected:", err)
+					}
+				}
+			}
+		}
+	}()
 	if runtime.guard != nil || runtime.nativeState != nil {
 		if err = f.SetReadinessCheck(runtime.Ready); err != nil {
 			return err
@@ -249,6 +286,7 @@ func serve(ctx context.Context, c *cli.Command) error {
 		return errors.New("admin-cert and admin-key must be paired")
 	}
 	data := &http.Server{Addr: cfg.Listen, Handler: dataHandler, ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 32 << 10, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS12}}
+	data.TLSConfig = f.TLSConfig()
 	management := &http.Server{Addr: cfg.AdminListen, Handler: firewallui.Wrap(admin, "policy"), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS12}}
 	dl, err := net.Listen("tcp", data.Addr)
 	if err != nil {
@@ -280,10 +318,6 @@ func serve(ctx context.Context, c *cli.Command) error {
 		}
 	}()
 	if c.String("http3-listen") != "" {
-		pair, e := tls.LoadX509KeyPair(cfg.TLSCert, cfg.TLSKey)
-		if e != nil {
-			return e
-		}
 		udp, e := net.ListenPacket("udp", c.String("http3-listen"))
 		if e != nil {
 			return e
@@ -293,12 +327,12 @@ func serve(ctx context.Context, c *cli.Command) error {
 		defer func() { runtimeCancel(); <-h3done }()
 		go func() {
 			defer close(h3done)
-			errs <- serveHTTP3(ctx, udp, &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{pair}}, dataHandler)
+			errs <- serveHTTP3(ctx, udp, f.TLSConfigForProtocols("h3"), dataHandler)
 		}()
 	}
 	go func() {
 		if cfg.TLSCert != "" {
-			errs <- data.ServeTLS(dl, cfg.TLSCert, cfg.TLSKey)
+			errs <- data.ServeTLS(dl, "", "")
 		} else {
 			errs <- data.Serve(dl)
 		}
@@ -330,6 +364,16 @@ func serve(ctx context.Context, c *cli.Command) error {
 		err = nil
 	}
 	return errors.Join(err, dataErr, adminErr)
+}
+
+func validateRouteRuntime(c *cli.Command, cfg waf.Config) error {
+	if len(cfg.Routes) == 0 {
+		return nil
+	}
+	if c.Bool("managed") || c.String("fleet-agent-config") != "" || c.String("shared-rate-config") != "" || c.String("policy-state-config") != "" || c.String("effects-config") != "" || c.Bool("websocket") || c.Bool("grpc") || c.String("http3-listen") != "" || os.Getenv("NETCAP_FIREWALL_ADMIN_TOKEN") != "" {
+		return errors.New("route bindings currently require local HTTP policies; global management, fleet, effects, shared state and message adapters have no route scope")
+	}
+	return nil
 }
 
 type localTarget struct {

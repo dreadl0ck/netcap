@@ -126,6 +126,22 @@ spec:
           volumeMounts:
             - {name: config, mountPath: /etc/netcap-firewall, readOnly: true}
             - {name: tmp, mountPath: /tmp}
+            {{- if .Values.tls.clientCASecretName }}
+            - {name: client-ca, mountPath: /etc/netcap-firewall/client-ca, readOnly: true}
+            {{- end }}
+            {{- if .Values.upstreamTLS.clientSecretName }}
+            - {name: upstream-client, mountPath: /etc/netcap-firewall/upstream-client, readOnly: true}
+            {{- end }}
+            {{- range $index, $route := .Values.routes }}
+            {{- with .upstreamTLS }}
+            {{- if .caSecretName }}
+            - {name: route-ca-{{ $index }}, mountPath: /etc/netcap-firewall/route-tls/{{ $index }}/ca, readOnly: true}
+            {{- end }}
+            {{- if .clientSecretName }}
+            - {name: route-client-{{ $index }}, mountPath: /etc/netcap-firewall/route-tls/{{ $index }}/client, readOnly: true}
+            {{- end }}
+            {{- end }}
+            {{- end }}
             {{- if .Values.sharedRate.configSecretName }}
             - {name: shared-rate, mountPath: /etc/shared-rate, readOnly: true}
             {{- end }}
@@ -149,6 +165,26 @@ spec:
             - {name: upstream-ca, mountPath: /etc/netcap-firewall/upstream, readOnly: true}
             {{- end }}
       volumes:
+        {{- if .Values.tls.clientCASecretName }}
+        - name: client-ca
+          secret: {secretName: {{ .Values.tls.clientCASecretName | quote }}, defaultMode: 0440}
+        {{- end }}
+        {{- if .Values.upstreamTLS.clientSecretName }}
+        - name: upstream-client
+          secret: {secretName: {{ .Values.upstreamTLS.clientSecretName | quote }}, defaultMode: 0440}
+        {{- end }}
+        {{- range $index, $route := .Values.routes }}
+        {{- with .upstreamTLS }}
+        {{- if .caSecretName }}
+        - name: route-ca-{{ $index }}
+          secret: {secretName: {{ .caSecretName | quote }}, defaultMode: 0440}
+        {{- end }}
+        {{- if .clientSecretName }}
+        - name: route-client-{{ $index }}
+          secret: {secretName: {{ .clientSecretName | quote }}, defaultMode: 0440}
+        {{- end }}
+        {{- end }}
+        {{- end }}
         - name: config
           configMap:
             name: {{ include "firewall.configName" . }}

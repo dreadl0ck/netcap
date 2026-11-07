@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"errors"
 	"io"
 	"net"
@@ -23,24 +24,30 @@ import (
 )
 
 type Firewall struct {
-	bootstrap sync.Mutex
-	started   bool
-	evaluator atomic.Pointer[evaluatorHook]
-	readiness atomic.Pointer[readinessHook]
-	buffers   *firewalltransport.BufferBudget
-	cfg       Config
-	current   atomic.Pointer[policy.Compiled]
-	draining  atomic.Bool
-	slots     chan struct{}
-	proxy     *httputil.ReverseProxy
-	transport *http.Transport
-	trusted   []netip.Prefix
-	timeout   time.Duration
-	stats     counters
-	audit     chan AuditRecord
-	engine    inspectionEngine
-	lifetime  context.Context
-	stop      context.CancelFunc
+	parent      *Firewall
+	router      *routeRouter
+	routeMu     sync.Mutex
+	retired     []*routeTable
+	listenerTLS atomic.Pointer[tls.Config]
+	clientPair  atomic.Pointer[tls.Certificate]
+	bootstrap   sync.Mutex
+	started     bool
+	evaluator   atomic.Pointer[evaluatorHook]
+	readiness   atomic.Pointer[readinessHook]
+	buffers     *firewalltransport.BufferBudget
+	cfg         Config
+	current     atomic.Pointer[policy.Compiled]
+	draining    atomic.Bool
+	slots       chan struct{}
+	proxy       *httputil.ReverseProxy
+	transport   *http.Transport
+	trusted     []netip.Prefix
+	timeout     time.Duration
+	stats       *counters
+	audit       chan AuditRecord
+	engine      inspectionEngine
+	lifetime    context.Context
+	stop        context.CancelFunc
 }
 
 type requestState struct {
@@ -62,15 +69,37 @@ func New(c Config, p *policy.Compiled) (*Firewall, error) {
 	if p == nil {
 		return nil, errors.New("initial policy required")
 	}
+	encoded, err := json.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+	c = Config{}
+	if err := json.Unmarshal(encoded, &c); err != nil {
+		return nil, err
+	}
 	if c.MaxBufferedBytes == 0 {
 		c.MaxBufferedBytes = firewalltransport.DefaultMaxBufferedBytes
 	}
 	c.TrustedProxyCIDRs = append([]string(nil), c.TrustedProxyCIDRs...)
 	c.AllowedHosts = append([]string(nil), c.AllowedHosts...)
-	f := &Firewall{cfg: c, slots: make(chan struct{}, c.MaxConcurrent), audit: make(chan AuditRecord, 256)}
+	f := &Firewall{cfg: c, slots: make(chan struct{}, c.MaxConcurrent), audit: make(chan AuditRecord, 256), stats: &counters{}}
 	f.buffers, _ = firewalltransport.NewBufferBudget(c.MaxBufferedBytes)
 	f.lifetime, f.stop = context.WithCancel(context.Background())
-	var err error
+	if err := f.ReloadTLS(); err != nil {
+		f.stop()
+		return nil, err
+	}
+	if len(c.Routes) > 0 {
+		f.current.Store(p)
+		f.router = &routeRouter{}
+		t, err := f.compileRoutes()
+		if err != nil {
+			f.stop()
+			return nil, err
+		}
+		f.router.current.Store(t)
+		return f, nil
+	}
 	f.engine, err = newInspectionEngine(c)
 	if err != nil {
 		return nil, err
@@ -82,6 +111,9 @@ func New(c Config, p *policy.Compiled) (*Firewall, error) {
 		f.trusted = append(f.trusted, n)
 	}
 	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12, ServerName: c.UpstreamServerName}
+	if c.UpstreamCert != "" {
+		tlsConfig.GetClientCertificate = func(*tls.CertificateRequestInfo) (*tls.Certificate, error) { return f.clientPair.Load(), nil }
+	}
 	if c.UpstreamCA != "" {
 		pem, err := os.ReadFile(c.UpstreamCA)
 		if err != nil {
@@ -133,9 +165,19 @@ func (f *Firewall) SetDraining(v bool) {
 	}
 }
 func (f *Firewall) Close() error {
+	f.routeMu.Lock()
+	defer f.routeMu.Unlock()
 	f.SetDraining(true)
 	f.stop()
-	f.transport.CloseIdleConnections()
+	if f.router != nil {
+		f.router.current.Load().close()
+		for _, t := range f.retired {
+			t.close()
+		}
+	}
+	if f.transport != nil {
+		f.transport.CloseIdleConnections()
+	}
 	return nil
 }
 
@@ -193,6 +235,10 @@ func (f *Firewall) clientIP(r *http.Request) (string, error) {
 
 func (f *Firewall) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.startServing()
+	if f.router != nil {
+		f.serveRoute(w, r)
+		return
+	}
 	f.stats.requests.Add(1)
 	if f.draining.Load() || f.lifetime.Err() != nil {
 		f.reject(w, r, 503)
@@ -496,7 +542,11 @@ func (b *cancelReadWriteBody) Close() error { err := b.ReadWriteCloser.Close(); 
 func (f *Firewall) evaluate(ctx context.Context, p *policy.Compiled, e policy.Event) int {
 	var d policy.Decision
 	var err error
-	if hook := f.evaluator.Load(); hook != nil {
+	hook := f.evaluator.Load()
+	if f.parent != nil {
+		hook = f.parent.evaluator.Load()
+	}
+	if hook != nil {
 		d, err = hook.evaluate(ctx, p, e)
 	} else {
 		d, err = p.Evaluate(e)
