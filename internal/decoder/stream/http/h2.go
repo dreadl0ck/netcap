@@ -386,8 +386,13 @@ func validateH2Headers(fields []*types.HTTPHeaderEvidence, side int, trailers bo
 		if name == "connection" || name == "upgrade" || name == "keep-alive" || name == "proxy-connection" || name == "transfer-encoding" || name == "te" && value != "trailers" {
 			issues = appendUnique(issues, "h2-connection-specific-header")
 		}
-		if name == "content-length" && seen[name] {
-			issues = appendUnique(issues, "duplicate-content-length")
+		if name == "content-length" {
+			if seen[name] {
+				issues = appendUnique(issues, "duplicate-content-length")
+			}
+			if _, err := strconv.ParseUint(value, 10, 63); err != nil || value == "" || strings.Trim(value, "0123456789") != "" {
+				issues = appendUnique(issues, "h2-invalid-content-length")
+			}
 		}
 		seen[name] = true
 	}

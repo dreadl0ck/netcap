@@ -406,7 +406,7 @@ func TestH2BodylessResponsesAndInvalidLength(t *testing.T) {
 		{"HEAD", "200", "1", "x", "h2-data-on-bodyless-response"},
 		{"GET", "204", "1", "x", "h2-data-on-bodyless-response"},
 		{"GET", "304", "1", "x", "h2-data-on-bodyless-response"},
-		{"GET", "200", "+1", "x", "h2-content-length-mismatch"},
+		{"GET", "200", "+1", "x", "h2-invalid-content-length,h2-content-length-mismatch"},
 	} {
 		t.Run(tc.method+tc.status+tc.length+tc.body, func(t *testing.T) {
 			f := newH2Fixture(t)
@@ -421,6 +421,36 @@ func TestH2BodylessResponsesAndInvalidLength(t *testing.T) {
 				t.Fatal(records)
 			}
 		})
+	}
+}
+
+func TestH2InvalidContentLengthEvidence(t *testing.T) {
+	for _, side := range []int{0, 1} {
+		for _, value := range []string{"", "-1", "+1", " 1", "1, 1", "9223372036854775808"} {
+			t.Run(strconv.Itoa(side)+"/"+value, func(t *testing.T) {
+				f := newH2Fixture(t)
+				request := requestFields("/invalid-length")
+				response := []string{":status", "200"}
+				if side == 0 {
+					request = append(request, "content-length", value)
+				} else {
+					response = append(response, "content-length", value)
+				}
+				f.headers(0, 1, true, request...)
+				f.headers(1, 1, true, response...)
+				records := captureHTTP(t, f.data)
+				if len(records) != 1 || records[0].URL != "/invalid-length" || records[0].StatusCode != 200 || !strings.Contains(records[0].ReassemblyStatus, "h2-invalid-content-length") {
+					t.Fatalf("unqualified malformed length: %v", records)
+				}
+				fields := records[0].RequestHeaders
+				if side == 1 {
+					fields = records[0].ResponseHeaders
+				}
+				if fields[len(fields)-1] == nil || string(fields[len(fields)-1].Value) != value {
+					t.Fatal("lost malformed content-length evidence")
+				}
+			})
+		}
 	}
 }
 
