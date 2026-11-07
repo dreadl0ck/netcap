@@ -2,8 +2,8 @@
 # Lightweight container for running the database rebuild service
 
 # Build stage
-# Floating minor tag: rebuilds pick up 1.27.x patch releases automatically.
-FROM golang:1.27-alpine AS builder
+FROM golang:1.27-alpine3.24@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS builder
+RUN apk upgrade --no-cache && test "$(cat /etc/alpine-release)" = 3.24.4
 
 # Install build dependencies (minimal set for nodpi build)
 # protobuf/protobuf-dev are required because types/netcap.pb.go is no longer
@@ -37,7 +37,7 @@ RUN apk add --no-cache libpcap-dev linux-headers
 RUN CGO_ENABLED=1 GOOS=linux go build -tags "nodpi noyara" -a -installsuffix cgo -ldflags="-s -w" -o netcap ./cmd/net
 
 # Runtime stage
-FROM alpine:latest
+FROM alpine:3.24.4@sha256:93b41ef40b1677fce8fcc64ff4af09daddfacf5040afde618bc46c1e2d1cc7d4
 
 LABEL maintainer="Philipp Mieden <dreadl0ck@protonmail.ch>"
 LABEL description="Netcap Database Server - Serves and rebuilds netcap databases nightly"

@@ -24,7 +24,7 @@ RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep
 RUN ls -la /netcap
 RUN file /netcap/bin/net
 
-FROM --platform=linux/amd64 alpine:latest
+FROM --platform=linux/amd64 alpine:3.24.4@sha256:93b41ef40b1677fce8fcc64ff4af09daddfacf5040afde618bc46c1e2d1cc7d4
 ARG IPV6_SUPPORT=true
 
 RUN apk add --no-cache ca-certificates iptables libpcap libnetfilter_queue tcpdump curl gcompat libstdc++ libgcc ${IPV6_SUPPORT:+ip6tables}
