@@ -5,11 +5,13 @@ package networkfirewall
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -56,10 +58,34 @@ func TestRoutedLab(t *testing.T) {
 		cmd("ip", "link", "set", pair[0], "netns", pair[2])
 		cmd("ip", "link", "set", pair[1], "netns", pair[3])
 	}
-	for _, a := range [][4]string{{"nfw-client", "c0", "10.80.0.2/24", "fd80::2/64"}, {"nfw-gateway", "g0", "10.80.0.1/24", "fd80::1/64"}, {"nfw-gateway", "g1", "10.81.0.1/24", "fd81::1/64"}, {"nfw-origin", "o0", "10.81.0.2/24", "fd81::2/64"}} {
+	interfaces := [][5]string{{"nfw-client", "c0", "10.80.0.2/24", "fd80::2/64", "02:00:00:80:00:02"}, {"nfw-gateway", "g0", "10.80.0.1/24", "fd80::1/64", "02:00:00:80:00:01"}, {"nfw-gateway", "g1", "10.81.0.1/24", "fd81::1/64", "02:00:00:81:00:01"}, {"nfw-origin", "o0", "10.81.0.2/24", "fd81::2/64", "02:00:00:81:00:02"}}
+	for _, a := range interfaces {
+		cmd("ip", "-n", a[0], "link", "set", "dev", a[1], "address", a[4])
+		// Only these disposable interfaces: also disable DAD for auto link-local addresses.
+		cmd("ip", "netns", "exec", a[0], "sysctl", "-qw", "net.ipv6.conf."+a[1]+".accept_dad=0", "net.ipv6.conf."+a[1]+".dad_transmits=0")
 		cmd("ip", "-n", a[0], "addr", "add", a[2], "dev", a[1])
 		cmd("ip", "-n", a[0], "-6", "addr", "add", a[3], "dev", a[1], "nodad")
 		cmd("ip", "-n", a[0], "link", "set", a[1], "up")
+	}
+	for _, a := range interfaces {
+		deadline := time.Now().Add(3 * time.Second)
+		for {
+			data := cmd("ip", "-n", a[0], "-j", "addr", "show", "dev", a[1])
+			if err := labInterfaceReady([]byte(data), strings.Split(a[2], "/")[0], strings.Split(a[3], "/")[0]); err == nil {
+				break
+			} else if time.Now().After(deadline) {
+				t.Fatalf("interface %s/%s not ready: %v: %s", a[0], a[1], err, data)
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+	// This qualifies routed verdicts, not ARP/NDP convergence. Pin every next-hop
+	// neighbor in both directions so a cold first SYN cannot race resolution.
+	for _, pair := range [][2]int{{0, 1}, {1, 0}, {2, 3}, {3, 2}} {
+		local, peer := interfaces[pair[0]], interfaces[pair[1]]
+		for _, cidr := range []string{peer[2], peer[3]} {
+			cmd("ip", "-n", local[0], "neigh", "replace", strings.Split(cidr, "/")[0], "lladdr", peer[4], "nud", "permanent", "dev", local[1])
+		}
 	}
 	for _, r := range [][3]string{{"nfw-client", "10.80.0.1", "fd80::1"}, {"nfw-origin", "10.81.0.1", "fd81::1"}} {
 		cmd("ip", "-n", r[0], "route", "add", "default", "via", r[1])
@@ -75,18 +101,29 @@ func TestRoutedLab(t *testing.T) {
 	}
 	startServer := func(ns, addr, network string) {
 		t.Helper()
+		ready, signal, err := os.Pipe()
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer ready.Close()
 		c := exec.Command("ip", "netns", "exec", ns, exe, "-test.run=^TestLabHelper$")
+		c.ExtraFiles = []*os.File{signal}
 		role := "server"
 		if strings.HasSuffix(addr, ":8443") {
 			role = "hello-server"
 		}
-		c.Env = append(os.Environ(), "NFW_HELPER="+role, "NFW_ADDRESS="+addr, "NFW_NETWORK="+network)
+		c.Env = append(os.Environ(), "NFW_HELPER="+role, "NFW_ADDRESS="+addr, "NFW_NETWORK="+network, "NFW_READY_FD=3")
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
 		if err := c.Start(); err != nil {
+			signal.Close()
 			t.Fatal(err)
 		}
+		signal.Close()
 		t.Cleanup(func() { _ = c.Process.Kill(); _ = c.Wait() })
+		if err := labWaitReady(ready); err != nil {
+			t.Fatalf("server %s %s %s: %v", ns, network, addr, err)
+		}
 	}
 	for _, port := range []int{8080, 8081} {
 		for _, network := range []string{"tcp", "udp"} {
@@ -95,8 +132,7 @@ func TestRoutedLab(t *testing.T) {
 		}
 	}
 	startServer("nfw-origin", "[::]:8443", "tcp")
-	probeNet := func(addr, network string, want bool) {
-		t.Helper()
+	runProbe := func(addr, network string) ([]byte, error) {
 		c := exec.Command("ip", "netns", "exec", "nfw-client", exe, "-test.run=^TestLabHelper$")
 		role := "client"
 		if network == "fragment" {
@@ -108,17 +144,32 @@ func TestRoutedLab(t *testing.T) {
 			network = "tcp"
 		}
 		c.Env = append(os.Environ(), "NFW_HELPER="+role, "NFW_ADDRESS="+addr, "NFW_NETWORK="+network)
-		out, err := c.CombinedOutput()
+		return c.CombinedOutput()
+	}
+	probeNet := func(addr, network string, want bool) {
+		t.Helper()
+		out, err := runProbe(addr, network)
 		if (err == nil) != want {
 			t.Fatalf("probe %s success=%v want=%v: %s", addr, err == nil, want, out)
 		}
 	}
 	probe := func(addr string, want bool) { t.Helper(); probeNet(addr, "tcp", want) }
-	// Link-local addresses also need DAD before the first routed IPv6 probe.
-	time.Sleep(2 * time.Second)
-	for _, addr := range []string{"10.81.0.2:8080", "[fd81::2]:8080", "10.81.0.2:8081", "[fd81::2]:8081"} {
+	// IPv6 is deliberately the first real dataplane probe in each cold fixture.
+	for _, addr := range []string{"[fd81::2]:8080", "10.81.0.2:8080", "[fd81::2]:8081", "10.81.0.2:8081"} {
 		probe(addr, true)
 	}
+	t.Log("cold IPv6-first baseline passed with unchanged 700ms probes")
+	// Readiness must not disguise a missing route or listener as successful traffic.
+	cmd("ip", "-n", "nfw-client", "-6", "route", "del", "default")
+	if out, err := runProbe("[fd81::2]:8080", "tcp"); err == nil || !strings.Contains(string(out), "network is unreachable") {
+		t.Fatalf("broken-route negative control: %v: %s", err, out)
+	}
+	cmd("ip", "-n", "nfw-client", "-6", "route", "add", "default", "via", "fd80::1")
+	probe("[fd81::2]:8080", true)
+	if out, err := runProbe("[fd81::2]:8099", "tcp"); err == nil || !strings.Contains(string(out), "connection refused") {
+		t.Fatalf("absent-listener negative control: %v: %s", err, out)
+	}
+	t.Log("baseline negative controls rejected broken IPv6 route and absent listener")
 	start := func(c Config, e Evaluator) (*Firewall, func()) {
 		t.Helper()
 		f, err := New(c, e)
@@ -356,6 +407,7 @@ func TestLabHelper(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer c.Close()
+			labSignalReady(t)
 			b := make([]byte, 1024)
 			for {
 				n, peer, err := c.ReadFrom(b)
@@ -372,6 +424,7 @@ func TestLabHelper(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer l.Close()
+		labSignalReady(t)
 		for {
 			c, err := l.Accept()
 			if err != nil {
@@ -412,5 +465,107 @@ func TestLabHelper(t *testing.T) {
 	b := make([]byte, 4)
 	if _, err = io.ReadFull(c, b); err != nil || string(b) != "ping" {
 		t.Fatalf("origin response %q: %v", b, err)
+	}
+}
+
+func labInterfaceReady(data []byte, ipv4, ipv6 string) error {
+	var links []struct {
+		Flags     []string
+		Addresses []struct {
+			Local     string
+			Flags     []string
+			Tentative bool
+			DADFailed bool `json:"dadfailed"`
+		} `json:"addr_info"`
+	}
+	if err := json.Unmarshal(data, &links); err != nil {
+		return err
+	}
+	if len(links) != 1 {
+		return fmt.Errorf("expected one fixture interface, got %d", len(links))
+	}
+	flags := "," + strings.Join(links[0].Flags, ",") + ","
+	if !strings.Contains(flags, ",UP,") || !strings.Contains(flags, ",LOWER_UP,") {
+		return fmt.Errorf("link not up: %v", links[0].Flags)
+	}
+	found4, found6 := false, false
+	for _, a := range links[0].Addresses {
+		if a.Tentative || a.DADFailed {
+			return fmt.Errorf("address %s has not completed DAD", a.Local)
+		}
+		for _, flag := range a.Flags {
+			if flag == "tentative" || flag == "dadfailed" {
+				return fmt.Errorf("address %s is %s", a.Local, flag)
+			}
+		}
+		found4 = found4 || a.Local == ipv4
+		found6 = found6 || a.Local == ipv6
+	}
+	if !found4 || !found6 {
+		return fmt.Errorf("expected ready addresses %s and %s", ipv4, ipv6)
+	}
+	return nil
+}
+
+func labWaitReady(ready *os.File) error {
+	if err := ready.SetReadDeadline(time.Now().Add(3 * time.Second)); err != nil {
+		return err
+	}
+	var signal [1]byte
+	if _, err := io.ReadFull(ready, signal[:]); err != nil {
+		return fmt.Errorf("listener readiness signal: %w", err)
+	}
+	if signal[0] != 1 {
+		return fmt.Errorf("invalid listener readiness signal %d", signal[0])
+	}
+	return nil
+}
+
+func labSignalReady(t *testing.T) {
+	t.Helper()
+	value := os.Getenv("NFW_READY_FD")
+	if value == "" {
+		// The packaged CLI fixture also uses this helper without a ready pipe.
+		return
+	}
+	fd, err := strconv.Atoi(value)
+	if err != nil || fd < 3 {
+		t.Fatal("server readiness descriptor required")
+	}
+	f := os.NewFile(uintptr(fd), "listener-ready")
+	if _, err = f.Write([]byte{1}); err != nil {
+		f.Close()
+		t.Fatal(err)
+	}
+	if err = f.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestLabReadinessRejectsIncompleteFixture(t *testing.T) {
+	valid := `[{"flags":["UP","LOWER_UP"],"addr_info":[{"local":"10.80.0.2"},{"local":"fd80::2"}]}]`
+	if err := labInterfaceReady([]byte(valid), "10.80.0.2", "fd80::2"); err != nil {
+		t.Fatal(err)
+	}
+	for _, invalid := range []string{`[]`, strings.Replace(valid, `"LOWER_UP"`, `"NO-CARRIER"`, 1), strings.Replace(valid, `"fd80::2"`, `"fd80::3"`, 1), strings.Replace(valid, `"local":"fd80::2"`, `"local":"fd80::2","tentative":true`, 1), strings.Replace(valid, `"local":"fd80::2"`, `"local":"fd80::2","flags":["dadfailed"]`, 1)} {
+		if err := labInterfaceReady([]byte(invalid), "10.80.0.2", "fd80::2"); err == nil {
+			t.Fatalf("incomplete interface accepted: %s", invalid)
+		}
+	}
+	for _, signal := range [][]byte{nil, {0}, {1}} {
+		read, write, err := os.Pipe()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err = write.Write(signal); err != nil {
+			t.Fatal(err)
+		}
+		write.Close()
+		err = labWaitReady(read)
+		read.Close()
+		want := len(signal) == 1 && signal[0] == 1
+		if (err == nil) != want {
+			t.Fatalf("listener readiness %v: %v", signal, err)
+		}
 	}
 }
