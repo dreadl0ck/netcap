@@ -5,7 +5,7 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN go build -tags coraza -trimpath -buildvcs=false -ldflags='-s -w' -o /out/netcap-firewall ./cmd/netcap-firewall
+RUN go build -tags coraza,http3 -trimpath -buildvcs=false -ldflags='-s -w' -o /out/netcap-firewall ./cmd/netcap-firewall
 RUN mkdir -p /out/legal/licenses && cp LICENSE /out/LICENSE && cp legal/*.txt /out/legal/ && \
     cp docker/firewall/THIRD_PARTY_NOTICES.txt /out/legal/FIREWALL_NOTICES.txt && \
     go version -m /out/netcap-firewall > /out/legal/BUILD_MODULES.txt && \

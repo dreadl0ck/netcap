@@ -1,0 +1,24 @@
+enabled: false
+service: fleet-controller
+replicaCount: 1
+persistence:
+  backend: sqlite
+  postgres:
+    # Must match config.json; credentialsSecretName provides this environment key.
+    databaseURLEnv: ''
+    databaseNamespace: ''
+image:
+  repository: netcap-firewall
+  tag: 0.1.0-local
+  digest: ''
+  pullPolicy: IfNotPresent
+configSecretName: ''
+credentialsSecretName: ''
+tlsSecretName: ''
+storage:
+  existingClaim: ''
+  className: ''
+  size: 1Gi
+resources:
+  requests: {cpu: 50m, memory: 64Mi}
+  limits: {cpu: '1', memory: 256Mi}

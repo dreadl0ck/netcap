@@ -12,13 +12,29 @@ image:
 imagePullSecrets: []
 upstream: ''
 runtime:
-  maxBodyBytes: 1048576
-  maxResponseBytes: 1048576
+  maxBodyBytes: 67108864
+  maxResponseBytes: 67108864
+  maxBufferedBytes: 67108864
   maxConcurrent: 32
   bodyTimeout: 15s
   inspectResponse: false
   corazaCRS: true
   trustedProxyCIDRs: []
+websocket: false
+grpc: false
+http3:
+  enabled: false
+  port: 8443
+spool:
+  size: 256Mi
+sharedRate:
+  configSecretName: ''
+  credentialsSecretName: ''
+fleet:
+  configSecretName: ''
+  credentialsSecretName: ''
+  size: 1Gi
+  storageClassName: ''
 adminTLS:
   secretName: ''
 adminService:

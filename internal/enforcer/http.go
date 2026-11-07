@@ -7,12 +7,13 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-	"time"
 )
 
 // Handler serves /mcp (stateless Streamable HTTP), GET/POST /v1/leases and
 // DELETE /v1/leases/{id}. REST POST accepts
 // {"id":"incident-1","source":"192.0.2.1","ttl_seconds":60}.
+// expires_at optionally specifies an authoritative RFC3339Nano deadline; it can
+// replace ttl_seconds. When both are present, TTL is an additional upper bound.
 // All routes require Authorization: Bearer <Token>. Mount behind TLS or on a
 // trusted local socket; the embedding server owns transport timeouts. Bodies are
 // bounded and duplicate/unknown JSON fields are rejected before action dispatch.
@@ -48,15 +49,11 @@ func (c *Controller) Handler() http.Handler {
 					http.Error(w, `{"error":"invalid request"}`, 400)
 					return
 				}
-				if err := decodeObject(raw, &req, "id", "source", "ttl_seconds"); err != nil {
+				if err := decodeObject(raw, &req, "id", "source", "ttl_seconds", "expires_at"); err != nil {
 					http.Error(w, `{"error":"invalid request fields"}`, 400)
 					return
 				}
-				if req.TTLSeconds < 1 || req.TTLSeconds > int64(HardMaxTTL/time.Second) {
-					http.Error(w, `{"error":"invalid TTL"}`, 400)
-					return
-				}
-				l, err := c.Create(r.Context(), req.ID, req.Source, time.Duration(req.TTLSeconds)*time.Second)
+				l, err := c.createRequest(r.Context(), req)
 				if err != nil {
 					apiError(w, err)
 					return

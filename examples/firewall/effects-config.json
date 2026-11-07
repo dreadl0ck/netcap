@@ -1,0 +1,21 @@
+{
+  "ca": "lab-enforcer.crt",
+  "queueSize": 8,
+  "maxPending": 64,
+  "maxReceipts": 64,
+  "retention": 60000000000,
+  "scopes": {
+    "lab-edge": {
+      "endpoint": "https://127.0.0.1:19091",
+      "tokenEnv": "LAB_ENFORCER_TOKEN",
+      "network": {
+        "hook": "forward",
+        "interface": "lab0",
+        "destination_cidr": "198.51.100.0/24",
+        "protocol": "tcp",
+        "port": 8080
+      },
+      "protectedCIDRs": ["192.0.2.0/24"]
+    }
+  }
+}

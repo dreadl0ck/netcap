@@ -13,6 +13,10 @@ spec:
     {{- if .Values.networkPolicy.ingressPeers }}
     - from: {{ toYaml .Values.networkPolicy.ingressPeers | nindent 8 }}
       ports: [{protocol: TCP, port: 8080}]
+      {{- if .Values.http3.enabled }}
+    - from: {{ toYaml .Values.networkPolicy.ingressPeers | nindent 8 }}
+      ports: [{protocol: UDP, port: {{ .Values.http3.port }}}]
+      {{- end }}
     {{- else }}
     []
     {{- end }}

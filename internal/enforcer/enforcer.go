@@ -58,9 +58,11 @@ type Config struct {
 }
 
 type Lease struct {
-	ID         string    `json:"id"`
-	Source     string    `json:"source"`
-	Scope      Scope     `json:"scope"`
+	ID     string `json:"id"`
+	Source string `json:"source"`
+	Scope  Scope  `json:"scope"`
+	// TTLSeconds is the ceiling of the admission-time lifetime in seconds.
+	// ExpiresAt is authoritative; subsecond leases do not receive a fresh second.
 	TTLSeconds int64     `json:"ttl_seconds"`
 	ExpiresAt  time.Time `json:"expires_at"`
 }
@@ -215,10 +217,11 @@ func (c *Controller) validate(l Lease) error {
 			return errors.New("source overlaps protected CIDR")
 		}
 	}
-	if l.TTLSeconds < 1 || time.Duration(l.TTLSeconds)*time.Second > c.config.MaxTTL || l.TTLSeconds > int64(HardMaxTTL/time.Second) {
+	if l.TTLSeconds < 1 || l.TTLSeconds > int64(HardMaxTTL/time.Second) || l.TTLSeconds > ceilSeconds(c.config.MaxTTL) {
 		return errors.New("TTL exceeds configured limit")
 	}
-	if l.ExpiresAt.IsZero() || l.ExpiresAt.After(time.Now().Add(time.Duration(l.TTLSeconds)*time.Second)) {
+	now := time.Now()
+	if l.ExpiresAt.IsZero() || l.ExpiresAt.After(now.Add(time.Duration(l.TTLSeconds)*time.Second)) || l.ExpiresAt.After(now.Add(c.config.MaxTTL)) {
 		return errors.New("invalid expiry")
 	}
 	return nil
@@ -234,37 +237,97 @@ func (c *Controller) Create(ctx context.Context, id, source string, ttl time.Dur
 		return Lease{}, errors.New("TTL must be whole seconds within configured limit")
 	}
 	l := Lease{ID: id, Source: source, Scope: c.config.Scope, TTLSeconds: int64(ttl / time.Second), ExpiresAt: time.Now().UTC().Add(ttl)}
+	return c.create(ctx, l, false)
+}
+
+// CreateUntil preserves the exact UTC deadline (RFC3339Nano on the wire).
+// Remaining lifetime must be 1ms..MaxTTL on the enforcer's clock. nft truncates
+// remaining time to milliseconds; TTLSeconds is metadata, never a renewal input.
+// An active same-ID retry must have the same source and deadline.
+func (c *Controller) CreateUntil(ctx context.Context, id, source string, expiresAt time.Time) (Lease, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.closed {
+		return Lease{}, errors.New("controller closed")
+	}
+	now := time.Now()
+	remaining := expiresAt.Sub(now)
+	if expiresAt.IsZero() || remaining < time.Millisecond || remaining > c.config.MaxTTL {
+		return Lease{}, errors.New("deadline must be 1ms..MaxTTL in the future")
+	}
+	l := Lease{ID: id, Source: source, Scope: c.config.Scope, TTLSeconds: ceilSeconds(remaining), ExpiresAt: expiresAt.UTC()}
+	return c.create(ctx, l, true)
+}
+
+func ceilSeconds(d time.Duration) int64 { return int64((d + time.Second - 1) / time.Second) }
+
+// create runs with c.mu held. Deadline validation precedes reconciliation and is
+// repeated after durable writes, immediately before handing the lease to a backend.
+func (c *Controller) create(ctx context.Context, l Lease, absolute bool) (Lease, error) {
+	if err := ctx.Err(); err != nil {
+		return Lease{}, err
+	}
 	if err := c.validate(l); err != nil {
 		return Lease{}, err
 	}
 	if err := c.reconcile(ctx); err != nil {
 		return Lease{}, err
 	}
-	if old, ok := c.leases[id]; ok {
-		if old.Source == source && old.TTLSeconds == l.TTLSeconds {
+	if old, ok := c.leases[l.ID]; ok {
+		same := old.TTLSeconds == l.TTLSeconds
+		if absolute {
+			same = old.ExpiresAt.Equal(l.ExpiresAt)
+		}
+		if old.Source == l.Source && same {
 			return old, nil
 		}
 		return Lease{}, ErrConflict
 	}
 	for _, old := range c.leases {
-		if old.Source == source {
+		if old.Source == l.Source {
 			return Lease{}, ErrConflict
 		}
 	}
 	if len(c.leases) >= c.config.MaxLeases {
 		return Lease{}, ErrLimit
 	}
-	c.leases[id] = l
-	if err := c.save(); err != nil {
-		delete(c.leases, id)
+	if err := ctx.Err(); err != nil {
 		return Lease{}, err
 	}
-	if err := c.backend.Apply(ctx, l); err != nil {
+	if time.Until(l.ExpiresAt) < time.Millisecond {
+		return Lease{}, errors.New("lease deadline expired before admission")
+	}
+	c.leases[l.ID] = l
+	if err := c.save(); err != nil {
+		delete(c.leases, l.ID)
+		return Lease{}, err
+	}
+	if err := ctx.Err(); err != nil {
+		delete(c.leases, l.ID)
+		return Lease{}, errors.Join(err, c.save())
+	}
+	if time.Until(l.ExpiresAt) < time.Millisecond {
+		delete(c.leases, l.ID)
+		if err := c.save(); err != nil {
+			return Lease{}, err
+		}
+		return Lease{}, errors.New("lease deadline expired before apply")
+	}
+	if err := c.applyLease(ctx, l); err != nil {
 		// Retain durable intent on an ambiguous executor failure. Reconcile retries
 		// with the same absolute deadline, never a fresh TTL.
 		return Lease{}, &ExecutionError{err}
 	}
 	return l, nil
+}
+
+func (c *Controller) applyLease(ctx context.Context, l Lease) error {
+	ctx, cancel := context.WithDeadline(ctx, l.ExpiresAt)
+	defer cancel()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return c.backend.Apply(ctx, l)
 }
 
 func (c *Controller) Delete(ctx context.Context, id string) error {
@@ -372,7 +435,7 @@ func (c *Controller) reconcile(ctx context.Context) error {
 			}
 		}
 		if !found {
-			if err := c.backend.Apply(ctx, l); err != nil {
+			if err := c.applyLease(ctx, l); err != nil {
 				return &ExecutionError{err}
 			}
 		}

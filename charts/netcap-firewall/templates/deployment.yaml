@@ -1,10 +1,14 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: {{ if eq .Values.mode "fleet" }}StatefulSet{{ else }}Deployment{{ end }}
 metadata:
   name: {{ include "firewall.name" . }}
   labels:
     {{- include "firewall.labels" . | nindent 4 }}
 spec:
+  {{- if eq .Values.mode "fleet" }}
+  serviceName: {{ include "firewall.name" . }}-targets
+  podManagementPolicy: Parallel
+  {{- end }}
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
@@ -44,6 +48,21 @@ spec:
             - serve
             - --config
             - /etc/netcap-firewall/config.yaml
+            {{- if .Values.websocket }}
+            - --websocket
+            {{- end }}
+            {{- if .Values.grpc }}
+            - --grpc
+            {{- end }}
+            {{- if .Values.http3.enabled }}
+            - --http3-listen=:{{ .Values.http3.port }}
+            {{- end }}
+            {{- if .Values.sharedRate.configSecretName }}
+            - --shared-rate-config=/etc/shared-rate/config.json
+            {{- end }}
+            {{- if eq .Values.mode "fleet" }}
+            - --fleet-agent-config=/etc/fleet/$(POD_NAME).json
+            {{- end }}
             {{- if eq .Values.mode "managed" }}
             - --managed
             - --state-dir
@@ -59,17 +78,33 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities: {drop: [ALL]}
-          {{- if .Values.adminTokenSecret.name }}
           env:
+            {{- if .Values.adminTokenSecret.name }}
             - name: NETCAP_FIREWALL_ADMIN_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.adminTokenSecret.name | quote }}
                   key: {{ .Values.adminTokenSecret.key | quote }}
+            {{- end }}
+            {{- if eq .Values.mode "fleet" }}
+            - name: POD_NAME
+              valueFrom: {fieldRef: {fieldPath: metadata.name}}
+            {{- end }}
+          {{- if or .Values.sharedRate.credentialsSecretName (eq .Values.mode "fleet") }}
+          envFrom:
+            {{- if .Values.sharedRate.credentialsSecretName }}
+            - secretRef: {name: {{ .Values.sharedRate.credentialsSecretName | quote }}}
+            {{- end }}
+            {{- if eq .Values.mode "fleet" }}
+            - secretRef: {name: {{ .Values.fleet.credentialsSecretName | quote }}}
+            {{- end }}
           {{- end }}
           ports:
             - {name: http, containerPort: 8080}
             - {name: admin, containerPort: 9090}
+            {{- if .Values.http3.enabled }}
+            - {name: http3, containerPort: {{ .Values.http3.port }}, protocol: UDP}
+            {{- end }}
           startupProbe:
             httpGet: {path: /readyz, port: admin, scheme: {{ include "firewall.probeScheme" . }}}
             periodSeconds: 2
@@ -85,6 +120,13 @@ spec:
           volumeMounts:
             - {name: config, mountPath: /etc/netcap-firewall, readOnly: true}
             - {name: tmp, mountPath: /tmp}
+            {{- if .Values.sharedRate.configSecretName }}
+            - {name: shared-rate, mountPath: /etc/shared-rate, readOnly: true}
+            {{- end }}
+            {{- if eq .Values.mode "fleet" }}
+            - {name: fleet-config, mountPath: /etc/fleet, readOnly: true}
+            - {name: agent-state, mountPath: /var/lib/netcap-firewall}
+            {{- end }}
             {{- if eq .Values.mode "managed" }}
             - {name: state, mountPath: /var/lib/netcap-firewall}
             {{- end }}
@@ -102,7 +144,15 @@ spec:
           configMap:
             name: {{ include "firewall.configName" . }}
         - name: tmp
-          emptyDir: {medium: Memory, sizeLimit: 16Mi}
+          emptyDir: {sizeLimit: {{ .Values.spool.size }}}
+        {{- if .Values.sharedRate.configSecretName }}
+        - name: shared-rate
+          secret: {secretName: {{ .Values.sharedRate.configSecretName | quote }}, defaultMode: 0440}
+        {{- end }}
+        {{- if eq .Values.mode "fleet" }}
+        - name: fleet-config
+          secret: {secretName: {{ .Values.fleet.configSecretName | quote }}, defaultMode: 0440}
+        {{- end }}
         {{- if eq .Values.mode "managed" }}
         - name: state
           persistentVolumeClaim:
@@ -126,3 +176,15 @@ spec:
             secretName: {{ .Values.upstreamTLS.caSecretName | quote }}
             defaultMode: 0440
         {{- end }}
+  {{- if eq .Values.mode "fleet" }}
+  volumeClaimTemplates:
+    - metadata:
+        name: agent-state
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- if .Values.fleet.storageClassName }}
+        storageClassName: {{ .Values.fleet.storageClassName | quote }}
+        {{- end }}
+        resources:
+          requests: {storage: {{ .Values.fleet.size }}}
+  {{- end }}

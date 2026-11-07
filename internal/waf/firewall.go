@@ -2,8 +2,6 @@ package waf
 
 import (
 	"bufio"
-	"bytes"
-	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -20,10 +18,16 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewalltransport"
 	"github.com/dreadl0ck/netcap/internal/policy"
 )
 
 type Firewall struct {
+	bootstrap sync.Mutex
+	started   bool
+	evaluator atomic.Pointer[evaluatorHook]
+	readiness atomic.Pointer[readinessHook]
+	buffers   *firewalltransport.BufferBudget
 	cfg       Config
 	current   atomic.Pointer[policy.Compiled]
 	draining  atomic.Bool
@@ -40,6 +44,7 @@ type Firewall struct {
 }
 
 type requestState struct {
+	buffered   int64
 	policy     *policy.Compiled
 	event      policy.Event
 	client     string
@@ -57,9 +62,13 @@ func New(c Config, p *policy.Compiled) (*Firewall, error) {
 	if p == nil {
 		return nil, errors.New("initial policy required")
 	}
+	if c.MaxBufferedBytes == 0 {
+		c.MaxBufferedBytes = firewalltransport.DefaultMaxBufferedBytes
+	}
 	c.TrustedProxyCIDRs = append([]string(nil), c.TrustedProxyCIDRs...)
 	c.AllowedHosts = append([]string(nil), c.AllowedHosts...)
 	f := &Firewall{cfg: c, slots: make(chan struct{}, c.MaxConcurrent), audit: make(chan AuditRecord, 256)}
+	f.buffers, _ = firewalltransport.NewBufferBudget(c.MaxBufferedBytes)
 	f.lifetime, f.stop = context.WithCancel(context.Background())
 	var err error
 	f.engine, err = newInspectionEngine(c)
@@ -182,65 +191,8 @@ func (f *Firewall) clientIP(r *http.Request) (string, error) {
 	return ip.String(), nil
 }
 
-func bounded(r io.Reader, max, length int64) ([]byte, error) {
-	if length > max {
-		return nil, rejection{413}
-	}
-	if length >= 0 {
-		b := make([]byte, int(length))
-		if _, err := io.ReadFull(r, b); err != nil {
-			return nil, err
-		}
-		var extra [1]byte
-		n, err := io.ReadFull(r, extra[:])
-		if n != 0 {
-			return nil, rejection{400}
-		}
-		if err != io.EOF {
-			return nil, err
-		}
-		return b, nil
-	}
-	b, err := io.ReadAll(io.LimitReader(r, max+1))
-	if err != nil {
-		return nil, err
-	}
-	if int64(len(b)) > max {
-		return nil, rejection{http.StatusRequestEntityTooLarge}
-	}
-	return b, nil
-}
-
-// decodeBody caps both wire and expanded representations. Only a single gzip coding is accepted.
-func decodeBody(body io.Reader, h http.Header, max, length int64) ([]byte, error) {
-	enc := h.Values("Content-Encoding")
-	if len(enc) > 1 || (len(enc) == 1 && !strings.EqualFold(strings.TrimSpace(enc[0]), "gzip")) {
-		return nil, rejection{http.StatusUnsupportedMediaType}
-	}
-	b, err := bounded(body, max, length)
-	if err != nil {
-		return nil, err
-	}
-	if len(enc) == 0 {
-		return b, nil
-	}
-	z, err := gzip.NewReader(bytes.NewReader(b))
-	if err != nil {
-		return nil, rejection{http.StatusBadRequest}
-	}
-	defer z.Close()
-	b, err = bounded(z, max, -1)
-	if err != nil {
-		var reject rejection
-		if errors.As(err, &reject) {
-			return nil, err
-		}
-		return nil, rejection{http.StatusBadRequest}
-	}
-	return b, nil
-}
-
 func (f *Firewall) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	f.startServing()
 	f.stats.requests.Add(1)
 	if f.draining.Load() || f.lifetime.Err() != nil {
 		f.reject(w, r, 503)
@@ -253,6 +205,7 @@ func (f *Firewall) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		f.reject(w, r, 503)
 		return
 	}
+	p := f.Policy()
 	ctx, cancel := context.WithCancel(r.Context())
 	stop := context.AfterFunc(f.lifetime, cancel)
 	defer func() { stop(); cancel() }()
@@ -325,8 +278,11 @@ func (f *Firewall) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			_ = originalBody.Close()
 		}
 	})
-	var body []byte
-	body, err = decodeBody(originalBody, r.Header, f.cfg.MaxBodyBytes, r.ContentLength)
+	var body *bodyStore
+	body, err = spoolBodyBudget(originalBody, r.Header, f.cfg.MaxBodyBytes, r.ContentLength, f.buffers)
+	if body != nil {
+		defer body.Close()
+	}
 	_ = originalBody.Close()
 	timer.Stop()
 	if !stopReadCancel() {
@@ -354,7 +310,7 @@ func (f *Firewall) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		f.reject(w, r, 503)
 		return
 	}
-	if err := validatePayload(r, body); err != nil {
+	if err := validatePayloadReader(r, body.reader(), body.size); err != nil {
 		var reject rejection
 		if errors.As(err, &reject) {
 			f.reject(w, r, reject.status)
@@ -374,31 +330,55 @@ func (f *Firewall) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.Trailer = nil
 	r.TransferEncoding = nil
 	r.GetBody = nil
-	r.ContentLength = int64(len(body))
-	if len(body) == 0 {
+	r.ContentLength = body.size
+	if body.size == 0 {
 		r.Body = http.NoBody
 	} else {
-		r.Body = &bufferedRequestBody{reader: bytes.NewReader(body)}
+		r.Body = body.view()
+		defer r.Body.Close()
 	}
 	stripForwarding(r.Header)
-	e := policy.Event{Protocol: "http", Method: r.Method, Host: r.Host, Path: r.URL.Path, RawQuery: r.URL.RawQuery, ClientIP: client, Headers: r.Header.Clone(), Body: string(body), Phase: "request"}
-	s := &requestState{policy: f.Policy(), event: e, client: client}
-	if status := f.evaluate(s.policy, e); status != 0 {
+	projection, releaseProjection, err := nativeProjection(p, "request", body)
+	defer releaseProjection()
+	if err != nil {
+		status := 503
+		var reject rejection
+		if errors.As(err, &reject) {
+			status = reject.status
+		}
+		f.reject(w, r, status)
+		return
+	}
+	e := policy.Event{Protocol: "http", Method: r.Method, Host: r.Host, Path: r.URL.Path, RawQuery: r.URL.RawQuery, ClientIP: client, Headers: r.Header.Clone(), Body: projection, Phase: "request"}
+	s := &requestState{policy: p, event: e, client: client}
+	defer func() {
+		if s.inspection != nil {
+			_ = s.inspection.Close()
+		}
+		if s.buffered > 0 {
+			f.buffers.Release(s.buffered)
+		}
+	}()
+	if status := f.evaluate(r.Context(), s.policy, e); status != 0 {
 		f.reject(w, r, status)
 		return
 	}
 	if f.engine != nil {
-		var status int
-		s.inspection, status, err = f.engine.request(r, body, client, s.policy.Bundle().Mode == "monitor")
-		if s.inspection != nil {
-			defer s.inspection.Close()
+		charge := body.size + bodyMemoryBytes
+		if !f.buffers.Acquire(charge) {
+			f.reject(w, r, 503)
+			return
 		}
+		s.buffered += charge
+		var status int
+		s.inspection, status, err = f.engine.request(r, body.reader(), client, s.policy.Bundle().Mode == "monitor")
 		if status = f.inspectionDecision(s.policy, "request", status, err); status != 0 {
 			f.reject(w, r, status)
 			return
 		}
 	}
 	s.event.Body = ""
+	releaseProjection()
 	pw := &finalResponseWriter{ResponseWriter: w, ctx: r.Context()}
 	defer pw.finish()
 	f.proxy.ServeHTTP(pw, r.WithContext(context.WithValue(r.Context(), stateKey{}, s)))
@@ -477,21 +457,6 @@ func (w *finalResponseWriter) finish() {
 	}
 }
 
-type bufferedRequestBody struct {
-	mu     sync.Mutex
-	reader *bytes.Reader
-}
-
-func (b *bufferedRequestBody) Read(p []byte) (int, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	if b.reader == nil {
-		return 0, io.EOF
-	}
-	return b.reader.Read(p)
-}
-func (b *bufferedRequestBody) Close() error { b.mu.Lock(); b.reader = nil; b.mu.Unlock(); return nil }
-
 type headerDeadlineTransport struct {
 	base    http.RoundTripper
 	timeout time.Duration
@@ -528,12 +493,21 @@ type cancelReadWriteBody struct {
 
 func (b *cancelReadWriteBody) Close() error { err := b.ReadWriteCloser.Close(); b.cancel(); return err }
 
-func (f *Firewall) evaluate(p *policy.Compiled, e policy.Event) int {
-	d, err := p.Evaluate(e)
+func (f *Firewall) evaluate(ctx context.Context, p *policy.Compiled, e policy.Event) int {
+	var d policy.Decision
+	var err error
+	if hook := f.evaluator.Load(); hook != nil {
+		d, err = hook.evaluate(ctx, p, e)
+	} else {
+		d, err = p.Evaluate(e)
+	}
 	if err != nil {
 		f.stats.errors.Add(1)
 		f.record(AuditRecord{Phase: e.Phase, Verdict: "error", Status: 503})
-		return 503
+		// A broker failure accompanying an enforcing deny cannot replace that deny.
+		if (d.Verdict != "deny" && d.Verdict != "block") || d.Monitor {
+			return 503
+		}
 	}
 	f.record(AuditRecord{Phase: e.Phase, Verdict: d.Verdict, Status: d.Status, RuleID: d.RuleID, Revision: d.Revision, Monitor: d.Monitor})
 	if d.Verdict == "would-deny" && d.Monitor {
@@ -569,11 +543,13 @@ func (f *Firewall) inspectResponse(resp *http.Response) error {
 	e.Body = ""
 	e.Status = resp.StatusCode
 	e.Headers = resp.Header.Clone()
-	if f.cfg.InspectResponse && resp.StatusCode == 101 {
+	var inspected *bodyStore
+	inspectBody := f.cfg.InspectResponse
+	if inspectBody && resp.StatusCode == 101 {
 		_ = resp.Body.Close()
 		return rejection{502}
 	}
-	if f.cfg.InspectResponse && resp.Request.Method != http.MethodHead && resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusNotModified {
+	if inspectBody && resp.Request.Method != http.MethodHead && resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusNotModified {
 		if resp.Header.Get("Content-Encoding") != "" && resp.Header.Get("Content-Range") != "" {
 			_ = resp.Body.Close()
 			return rejection{502}
@@ -582,10 +558,17 @@ func (f *Firewall) inspectResponse(resp *http.Response) error {
 		originalBody := resp.Body
 		var expired atomic.Bool
 		timer := time.AfterFunc(f.timeout, func() { expired.Store(true); _ = originalBody.Close() })
-		b, err := decodeBody(originalBody, resp.Header, f.cfg.MaxResponseBytes, resp.ContentLength)
+		b, err := spoolBodyBudget(originalBody, resp.Header, f.cfg.MaxResponseBytes, resp.ContentLength, f.buffers)
+		if b != nil {
+			defer b.Close()
+		}
 		timer.Stop()
 		_ = originalBody.Close()
 		if err != nil || expired.Load() {
+			var reject rejection
+			if !expired.Load() && errors.As(err, &reject) && reject.status == 503 {
+				return rejection{503}
+			}
 			return rejection{502}
 		}
 		if resp.Header.Get("Content-Encoding") != "" {
@@ -598,17 +581,37 @@ func (f *Firewall) inspectResponse(resp *http.Response) error {
 		resp.Header.Del("Trailer")
 		resp.Trailer = nil
 		resp.TransferEncoding = nil
-		resp.ContentLength = int64(len(b))
-		resp.Body = io.NopCloser(bytes.NewReader(b))
-		e.Body = string(b)
+		resp.ContentLength = b.size
+		resp.Body = b.view()
+		var releaseProjection func()
+		e.Body, releaseProjection, err = nativeProjection(s.policy, "response", b)
+		defer releaseProjection()
+		if err != nil {
+			_ = resp.Body.Close()
+			var reject rejection
+			if errors.As(err, &reject) && reject.status == 503 {
+				return rejection{503}
+			}
+			return rejection{502}
+		}
+		inspected = b
 		e.Headers = resp.Header.Clone()
 	}
-	if status := f.evaluate(s.policy, e); status != 0 {
+	if status := f.evaluate(resp.Request.Context(), s.policy, e); status != 0 {
 		_ = resp.Body.Close()
 		return rejection{status}
 	}
 	if s.inspection != nil {
-		status, err := s.inspection.response(resp, []byte(e.Body), f.cfg.InspectResponse)
+		var reader io.Reader = strings.NewReader("")
+		if inspected != nil {
+			if !f.buffers.Acquire(inspected.size) {
+				_ = resp.Body.Close()
+				return rejection{503}
+			}
+			s.buffered += inspected.size
+			reader = inspected.reader()
+		}
+		status, err := s.inspection.response(resp, reader, f.cfg.InspectResponse)
 		if status = f.inspectionDecision(s.policy, "response", status, err); status != 0 {
 			_ = resp.Body.Close()
 			return rejection{status}

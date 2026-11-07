@@ -4,7 +4,13 @@
   "additionalProperties": false,
   "required": ["upstream", "image", "runtime", "policy"],
   "properties": {
-    "mode": {"enum": ["file", "managed"]},
+    "mode": {"enum": ["file", "managed", "fleet"]},
+    "websocket": {"type": "boolean"},
+    "grpc": {"type": "boolean"},
+    "http3": {"type": "object", "additionalProperties": false, "required": ["enabled", "port"], "properties": {"enabled": {"type": "boolean"}, "port": {"type": "integer", "minimum": 1024, "maximum": 65535}}},
+    "spool": {"type": "object", "additionalProperties": false, "required": ["size"], "properties": {"size": {"type": "string", "pattern": "^[1-9][0-9]*(Mi|Gi)$"}}},
+    "sharedRate": {"type": "object", "additionalProperties": false, "required": ["configSecretName", "credentialsSecretName"], "properties": {"configSecretName": {"type": "string"}, "credentialsSecretName": {"type": "string"}}},
+    "fleet": {"type": "object", "additionalProperties": false, "required": ["configSecretName", "credentialsSecretName", "size", "storageClassName"], "properties": {"configSecretName": {"type": "string"}, "credentialsSecretName": {"type": "string"}, "size": {"type": "string", "pattern": "^[1-9][0-9]*(Mi|Gi)$"}, "storageClassName": {"type": "string"}}},
     "managed": {
       "type": "object", "additionalProperties": false,
       "properties": {
@@ -29,8 +35,9 @@
       "type": "object", "additionalProperties": false,
       "required": ["maxBodyBytes", "maxResponseBytes", "maxConcurrent", "bodyTimeout", "inspectResponse", "trustedProxyCIDRs"],
       "properties": {
-        "maxBodyBytes": {"type": "integer", "minimum": 1, "maximum": 1048576},
-        "maxResponseBytes": {"type": "integer", "minimum": 1, "maximum": 1048576},
+        "maxBodyBytes": {"type": "integer", "minimum": 1, "maximum": 67108864},
+        "maxResponseBytes": {"type": "integer", "minimum": 1, "maximum": 67108864},
+        "maxBufferedBytes": {"type": "integer", "minimum": 1, "maximum": 1073741824},
         "maxConcurrent": {"type": "integer", "minimum": 1, "maximum": 4096},
         "bodyTimeout": {"type": "string", "pattern": "^([1-9][0-9]{0,4}ms|[1-9][0-9]?s|[12][0-9]{2}s|300s|[1-5]m)$"},
         "inspectResponse": {"type": "boolean"},
@@ -61,7 +68,28 @@
               "expression": {"type": "string", "minLength": 1},
               "action": {"enum": ["allow", "deny"]},
               "status": {"type": "integer", "minimum": 400, "maximum": 599},
-              "priority": {"type": "integer"}
+              "priority": {"type": "integer"},
+              "enabled": {"type": "boolean"},
+              "threshold": {
+                "type": "object", "additionalProperties": false, "required": ["count", "window"],
+                "properties": {
+                  "count": {"type": "integer", "minimum": 1, "maximum": 1000000},
+                  "window": {"type": "string", "minLength": 1},
+                  "group_by": {"type": "string"},
+                  "mode": {"enum": ["fixed", "sliding"]},
+                  "distinct": {"type": "string"},
+                  "group_by_fields": {"type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+                }
+              },
+              "sequence": {
+                "type": "object", "additionalProperties": false, "required": ["name", "window", "steps"],
+                "properties": {
+                  "name": {"type": "string", "minLength": 1}, "window": {"type": "string", "minLength": 1},
+                  "group_by": {"type": "string"},
+                  "group_by_fields": {"type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+                  "steps": {"type": "array", "minItems": 2, "items": {"type": "string", "minLength": 1}}
+                }
+              }
             }
           }
         }

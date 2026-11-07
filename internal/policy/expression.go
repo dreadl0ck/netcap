@@ -19,10 +19,16 @@ const MaxEvaluationWork uint64 = 128 << 20
 
 var ErrWorkBudget = errors.New("policy: evaluation work budget exceeded")
 
-type expressionCost struct{ units uint64 }
+type expressionCost struct {
+	units uint64
+	body  bool
+}
 
 func (v *expressionCost) Visit(node *ast.Node) {
 	v.units++
+	if n, ok := (*node).(*ast.IdentifierNode); ok && n.Value == "Body" {
+		v.body = true
+	}
 	if n, ok := (*node).(*ast.BinaryNode); ok && n.Operator == "matches" {
 		pattern := n.Right.(*ast.StringNode).Value
 		re, _ := syntax.Parse(pattern, syntax.Perl)
@@ -31,11 +37,12 @@ func (v *expressionCost) Visit(node *ast.Node) {
 	}
 }
 
-func programCost(source string) uint64 {
+// Analyze the validated source AST, before optimization can discard dependencies.
+func analyzeExpression(source string) expressionCost {
 	tree, _ := new(parser.Parser).Parse(source, nil)
 	v := &expressionCost{}
 	ast.Walk(&tree.Node, v)
-	return v.units
+	return *v
 }
 
 func compileExpression(source string) (*vm.Program, error) {

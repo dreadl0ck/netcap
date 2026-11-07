@@ -172,7 +172,7 @@ func TestCorazaEarlyInterruptionStillRunsParserInMonitor(t *testing.T) {
 		r.Header.Set("Content-Type", "application/json")
 		r.Header.Set("User-Agent", "test")
 		r.Header.Set("Accept", "*/*")
-		tx, status, err := e.request(r, []byte(tc.body), "192.0.2.1", true)
+		tx, status, err := e.request(r, strings.NewReader(tc.body), "192.0.2.1", true)
 		if tx != nil {
 			_ = tx.Close()
 		}

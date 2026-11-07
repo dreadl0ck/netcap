@@ -18,9 +18,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// MaxInspectionBodyBytes leaves metadata headroom within policy.MaxEventBytes.
-// It bounds wire and expanded bodies; larger uploads are unsupported.
-const MaxInspectionBodyBytes int64 = 1 << 20
+// MaxInspectionBodyBytes bounds each wire and expanded disk-spooled representation.
+const MaxInspectionBodyBytes int64 = 64 << 20
 
 const maxInspectionHeaderBytes = 32 << 10
 const maxInspectionFieldBytes = 65536
@@ -33,6 +32,7 @@ type Config struct {
 	PolicyFile         string   `json:"policyFile" yaml:"policyFile"`
 	MaxBodyBytes       int64    `json:"maxBodyBytes" yaml:"maxBodyBytes"`
 	MaxResponseBytes   int64    `json:"maxResponseBytes" yaml:"maxResponseBytes"`
+	MaxBufferedBytes   int64    `json:"maxBufferedBytes,omitempty" yaml:"maxBufferedBytes,omitempty"`
 	MaxConcurrent      int      `json:"maxConcurrent" yaml:"maxConcurrent"`
 	BodyTimeout        string   `json:"bodyTimeout" yaml:"bodyTimeout"`
 	TLSCert            string   `json:"tlsCert,omitempty" yaml:"tlsCert,omitempty"`
@@ -112,6 +112,9 @@ func validateJSONKeys(data []byte) error {
 }
 
 func ValidateConfig(c Config) error {
+	if c.MaxBufferedBytes < 0 || c.MaxBufferedBytes > 1<<30 {
+		return errors.New("maxBufferedBytes must be 0 (64 MiB default) or 1..1073741824 bytes")
+	}
 	if c.Version != "netcap-firewall/v1" {
 		return errors.New("unsupported WAF config version")
 	}
@@ -140,7 +143,7 @@ func ValidateConfig(c Config) error {
 		value int64
 	}{{"maxBodyBytes", c.MaxBodyBytes}, {"maxResponseBytes", c.MaxResponseBytes}} {
 		if limit.value <= 0 || limit.value > MaxInspectionBodyBytes {
-			return fmt.Errorf("%s must be 1..%d bytes (1 MiB); larger inspection bodies are unsupported to reserve metadata space in the native policy event budget", limit.name, MaxInspectionBodyBytes)
+			return fmt.Errorf("%s must be 1..%d bytes; body-dependent native policies additionally require bodies <=%d bytes", limit.name, MaxInspectionBodyBytes, NativeBodyBytes)
 		}
 	}
 	if c.MaxConcurrent <= 0 || c.MaxConcurrent > 4096 {

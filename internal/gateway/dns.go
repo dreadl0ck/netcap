@@ -5,19 +5,20 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"errors"
+	"io"
 	"net"
+	"strconv"
 	"sync"
 
 	"github.com/dreadl0ck/netcap/internal/policy"
 	"golang.org/x/net/dns/dnsmessage"
 )
 
-const maxDNSQuery = 512
+const maxDNSQuery = 4096
 
 var errDNS = errors.New("gateway: invalid or unsupported DNS message")
 
-// ServePacket owns pc. Only single-question IN queries with no resource sections
-// are supported (classic DNS, no EDNS, UPDATE, transfers or TCP fallback).
+// ServePacket owns pc. Single-question IN queries may carry one bounded EDNS0 OPT.
 func (g *Gateway) ServePacket(ctx context.Context, pc net.PacketConn) error {
 	defer pc.Close()
 	if g.cfg.Protocol != "dns" {
@@ -30,7 +31,7 @@ func (g *Gateway) ServePacket(ctx context.Context, pc net.PacketConn) error {
 	var wg sync.WaitGroup
 	defer wg.Wait()
 	defer cancel()
-	slots := make(chan struct{}, g.cfg.MaxConnections)
+	slots := g.slots
 	buf := make([]byte, maxDNSQuery+1)
 	for {
 		n, addr, err := pc.ReadFrom(buf)
@@ -71,11 +72,19 @@ func (g *Gateway) ServePacket(ctx context.Context, pc net.PacketConn) error {
 func (g *Gateway) dnsQuery(parent context.Context, req []byte, meta policy.DNSEvent, ip string) []byte {
 	ctx, cancel := context.WithTimeout(parent, g.cfg.IOTimeout)
 	defer cancel()
-	e := policy.Event{Protocol: "dns", DNS: meta, ClientIP: ip, Phase: "request"}
+	e := event("dns", "QUERY", ip, map[string]string{"dns.name": meta.Name, "dns.type": strconv.Itoa(meta.Type)})
+	e.DNS = meta
 	if !g.allowed(e) {
 		return dnsReply(req, 5, false)
 	}
-	c, err := (&net.Dialer{}).DialContext(ctx, "udp", g.upstream)
+	var c net.Conn
+	var err error
+	stream := g.cfg.Protocol != "dns" || g.cfg.UpstreamTLS
+	if stream {
+		c, err = g.dial(ctx)
+	} else {
+		c, err = (&net.Dialer{}).DialContext(ctx, "udp", g.upstream)
+	}
 	if err != nil {
 		return dnsReply(req, 2, false)
 	}
@@ -89,16 +98,33 @@ func (g *Gateway) dnsQuery(parent context.Context, req []byte, meta policy.DNSEv
 	if err := c.SetDeadline(deadline(ctx, g.cfg.IOTimeout)); err != nil {
 		return dnsReply(req, 2, false)
 	}
-	if _, err := c.Write(query); err != nil {
+	wire := query
+	if stream {
+		wire = append([]byte{byte(len(query) >> 8), byte(len(query))}, query...)
+	}
+	if err := g.writeFrame(ctx, c, wire); err != nil {
 		return dnsReply(req, 2, false)
 	}
 	// The extra byte detects datagrams exceeding the configured receive limit.
 	buf := make([]byte, g.cfg.MaxDNSResponseBytes+1)
-	n, err := c.Read(buf)
+	var n int
+	if stream {
+		var h [2]byte
+		_, err = io.ReadFull(c, h[:])
+		n = word(h[:])
+		if err == nil && n <= g.cfg.MaxDNSResponseBytes {
+			_, err = io.ReadFull(c, buf[:n])
+		}
+	} else {
+		n, err = c.Read(buf)
+	}
 	if err != nil {
 		return dnsReply(req, 2, false)
 	}
 	if n > g.cfg.MaxDNSResponseBytes {
+		if stream {
+			return dnsReply(req, 0, true)
+		}
 		if n < 12 || buf[0] != query[0] || buf[1] != query[1] || word(buf[2:4])&0x8000 == 0 || word(buf[2:4])&0x7840 != 0 {
 			return dnsReply(req, 2, false)
 		}
@@ -112,8 +138,18 @@ func (g *Gateway) dnsQuery(parent context.Context, req []byte, meta policy.DNSEv
 	if !g.allowed(e) {
 		return dnsReply(req, 5, false)
 	}
-	if len(resp) > 3*len(req) {
+	if !stream && len(resp) > 3*len(req) {
 		return dnsReply(req, 0, true)
+	}
+	if !stream {
+		limit := 512
+		var queryMessage dnsmessage.Message
+		if queryMessage.Unpack(req) == nil && len(queryMessage.Additionals) == 1 {
+			limit = int(queryMessage.Additionals[0].Header.Class)
+		}
+		if len(resp) > limit {
+			return dnsReply(req, 0, true)
+		}
 	}
 	copy(resp[:2], req[:2])
 	return resp
@@ -121,7 +157,7 @@ func (g *Gateway) dnsQuery(parent context.Context, req []byte, meta policy.DNSEv
 
 func parseDNSQuery(b []byte) (policy.DNSEvent, error) {
 	var m policy.DNSEvent
-	if len(b) < 17 || len(b) > maxDNSQuery || word(b[2:4]) & ^(0x0100|0x0010) != 0 || word(b[4:6]) != 1 || word(b[6:8]) != 0 || word(b[8:10]) != 0 || word(b[10:12]) != 0 {
+	if len(b) < 17 || len(b) > maxDNSQuery || word(b[2:4]) & ^(0x0100|0x0010) != 0 || word(b[4:6]) != 1 || word(b[6:8]) != 0 || word(b[8:10]) != 0 || word(b[10:12]) > 1 {
 		return m, errDNS
 	}
 	if validateDNSWire(b) != nil {
@@ -132,6 +168,19 @@ func parseDNSQuery(b []byte) (policy.DNSEvent, error) {
 		return m, errDNS
 	}
 	q := msg.Questions[0]
+	for _, rr := range msg.Additionals {
+		opt, ok := rr.Body.(*dnsmessage.OPTResource)
+		if !ok || rr.Header.Name.String() != "." || rr.Header.Type != 41 || rr.Header.TTL & ^uint32(0x8000) != 0 || uint16(rr.Header.Class) < 512 || uint16(rr.Header.Class) > 4096 || len(opt.Options) > 32 {
+			return m, errDNS
+		}
+		total := 0
+		for _, o := range opt.Options {
+			total += len(o.Data) + 4
+		}
+		if total > 2048 {
+			return m, errDNS
+		}
+	}
 	if q.Class != dnsmessage.ClassINET {
 		return m, errDNS
 	}
@@ -175,6 +224,9 @@ func canonicalDNSName(name dnsmessage.Name) string {
 
 func dnsReply(req []byte, rcode byte, truncated bool) []byte {
 	r := append([]byte(nil), req...)
+	if end, err := dnsNameEnd(req, 12); err == nil && end+4 <= len(req) {
+		r = r[:end+4]
+	}
 	flags := uint16(0x8000) | binary.BigEndian.Uint16(req[2:4])&0x0110 | uint16(rcode)
 	if truncated {
 		flags |= 0x0200
@@ -184,6 +236,33 @@ func dnsReply(req []byte, rcode byte, truncated bool) []byte {
 		r[i] = 0
 	}
 	return r
+}
+
+func (g *Gateway) dnsStream(ctx context.Context, c net.Conn, ip string) {
+	for i := 0; i < g.cfg.MaxSessionMessages; i++ {
+		c.SetReadDeadline(deadline(ctx, g.cfg.IdleTimeout))
+		var h [2]byte
+		if _, err := io.ReadFull(c, h[:]); err != nil {
+			return
+		}
+		n := word(h[:])
+		if n < 17 || n > maxDNSQuery {
+			return
+		}
+		c.SetReadDeadline(deadline(ctx, g.cfg.IOTimeout))
+		b := make([]byte, n)
+		if _, err := io.ReadFull(c, b); err != nil {
+			return
+		}
+		m, err := parseDNSQuery(b)
+		if err != nil {
+			return
+		}
+		r := g.dnsQuery(ctx, b, m, ip)
+		if g.writeFrame(ctx, c, append([]byte{byte(len(r) >> 8), byte(len(r))}, r...)) != nil {
+			return
+		}
+	}
 }
 
 // Walk the envelope to reject trailing data and bound record counts before the

@@ -10,6 +10,20 @@ spec:
     {{- include "firewall.selector" . | nindent 4 }}
   ports:
     - {name: http, port: {{ .Values.service.port }}, targetPort: http}
+    {{- if .Values.http3.enabled }}
+    - {name: http3, port: {{ .Values.http3.port }}, targetPort: http3, protocol: UDP}
+    {{- end }}
+{{- if eq .Values.mode "fleet" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "firewall.name" . }}-targets
+spec:
+  clusterIP: None
+  selector: {{ include "firewall.selector" . | nindent 4 }}
+  ports: [{name: http, port: 8080, targetPort: http}]
+{{- end }}
 {{- if .Values.adminService.enabled }}
 ---
 apiVersion: v1

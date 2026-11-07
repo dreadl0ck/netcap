@@ -72,6 +72,24 @@ func TestNFTScriptScopeAndDeadline(t *testing.T) {
 	}
 }
 
+func TestNFTSubsecondAbsoluteDeadline(t *testing.T) {
+	b := testNFT(t)
+	l := testLease(b)
+	l.TTLSeconds = 1
+	l.ExpiresAt = time.Now().UTC().Add(750 * time.Millisecond)
+	script, err := b.applyScript(l, l.ExpiresAt.Add(-123456789*time.Nanosecond))
+	if err != nil || !strings.Contains(script, "timeout 123ms") || strings.Contains(script, "timeout 1000ms") {
+		t.Fatalf("subsecond timeout rounded up: %s %v", script, err)
+	}
+	restored, err := b.parseMetadata(metadata(l))
+	if err != nil || restored != l {
+		t.Fatalf("absolute metadata changed: %+v %v", restored, err)
+	}
+	if script, err := b.applyScript(l, l.ExpiresAt.Add(-500*time.Microsecond)); err != nil || script != "" {
+		t.Fatalf("submillisecond lease emitted: %s %v", script, err)
+	}
+}
+
 func TestNFTCollisionFailureAndExactDelete(t *testing.T) {
 	b := testNFT(t)
 	l := testLease(b)

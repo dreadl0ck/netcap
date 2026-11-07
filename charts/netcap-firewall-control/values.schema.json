@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#", "type": "object", "additionalProperties": false,
+  "properties": {
+    "enabled": {"type": "boolean"}, "service": {"enum": ["fleet-controller", "sharedstate"]},
+    "replicaCount": {"type": "integer", "minimum": 1},
+    "persistence": {"type": "object", "additionalProperties": false, "required": ["backend", "postgres"], "properties": {
+      "backend": {"enum": ["sqlite", "postgres"]},
+      "postgres": {"type": "object", "additionalProperties": false, "required": ["databaseURLEnv", "databaseNamespace"], "properties": {
+        "databaseURLEnv": {"type": "string", "pattern": "^(|[A-Za-z_][A-Za-z0-9_]*)$"},
+        "databaseNamespace": {"type": "string", "pattern": "^(|[a-z][a-z0-9_]{0,47})$", "not": {"anyOf": [{"enum": ["public", "information_schema"]}, {"pattern": "^pg_"}]}}
+      }}
+    }},
+    "configSecretName": {"type": "string"}, "credentialsSecretName": {"type": "string"}, "tlsSecretName": {"type": "string"},
+    "image": {"type": "object", "additionalProperties": false, "required": ["repository", "tag", "digest", "pullPolicy"], "properties": {
+      "repository": {"type": "string", "minLength": 1}, "tag": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+[A-Za-z0-9_.-]*$"},
+      "digest": {"type": "string", "pattern": "^(|sha256:[a-f0-9]{64})$"}, "pullPolicy": {"enum": ["Always", "Never", "IfNotPresent"]}}},
+    "storage": {"type": "object", "additionalProperties": false, "properties": {"existingClaim": {"type": "string"}, "className": {"type": "string"}, "size": {"type": "string", "pattern": "^[1-9][0-9]*(Mi|Gi)$"}}},
+    "resources": {"type": "object"}
+  },
+  "allOf": [
+    {"if": {"properties": {"persistence": {"properties": {"backend": {"const": "sqlite"}}}}}, "then": {
+      "properties": {"replicaCount": {"const": 1}, "persistence": {"properties": {"postgres": {"properties": {"databaseURLEnv": {"const": ""}, "databaseNamespace": {"const": ""}}}}}}
+    }},
+    {"if": {"properties": {"persistence": {"properties": {"backend": {"const": "postgres"}}}}}, "then": {
+      "properties": {"replicaCount": {"minimum": 2}, "persistence": {"properties": {"postgres": {"properties": {"databaseURLEnv": {"minLength": 1}, "databaseNamespace": {"minLength": 1}}}}}, "storage": {"properties": {"existingClaim": {"const": ""}, "className": {"const": ""}}}}
+    }}
+  ]
+}

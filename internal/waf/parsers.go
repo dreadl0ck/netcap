@@ -25,6 +25,10 @@ func argumentCount(raw string) int {
 // Structural failures are independent of disruptive rules and monitor mode.
 // In particular, an early Coraza interruption must not skip malformed-body rejection.
 func validatePayload(r *http.Request, body []byte) error {
+	return validatePayloadReader(r, bytes.NewReader(body), int64(len(body)))
+}
+
+func validatePayloadReader(r *http.Request, body io.Reader, size int64) error {
 	queryCount := argumentCount(r.URL.RawQuery)
 	if queryCount > maxArguments {
 		return rejection{413}
@@ -37,12 +41,16 @@ func validatePayload(r *http.Request, body []byte) error {
 	if err != nil {
 		return rejection{400}
 	}
-	if len(body) == 0 {
+	if size == 0 {
 		return nil
 	}
 	switch {
 	case media == "application/json" || strings.HasPrefix(media, "application/") && strings.HasSuffix(media, "+json"):
-		d := json.NewDecoder(bytes.NewReader(body))
+		// encoding/json materializes scalar tokens. Bound those allocations explicitly.
+		if size > NativeBodyBytes {
+			return rejection{413}
+		}
+		d := json.NewDecoder(body)
 		d.UseNumber()
 		budget := maxArguments - queryCount
 		if err := validateJSONValue(d, 0, &budget); err != nil {
@@ -52,14 +60,24 @@ func validatePayload(r *http.Request, body []byte) error {
 			return rejection{400}
 		}
 	case media == "application/x-www-form-urlencoded":
-		if queryCount+argumentCount(string(body)) > maxArguments {
+		if size > NativeBodyBytes {
 			return rejection{413}
 		}
-		if !validQuery(string(body)) {
+		data, err := io.ReadAll(body)
+		if err != nil {
+			return rejection{400}
+		}
+		if queryCount+argumentCount(string(data)) > maxArguments {
+			return rejection{413}
+		}
+		if !validQuery(string(data)) {
 			return rejection{400}
 		}
 	case media == "application/xml" || media == "text/xml" || strings.HasSuffix(media, "+xml"):
-		d := xml.NewDecoder(bytes.NewReader(body))
+		if size > NativeBodyBytes {
+			return rejection{413}
+		}
+		d := xml.NewDecoder(body)
 		depth, roots, nodes := 0, 0, 0
 		for {
 			token, err := d.Token()
@@ -98,7 +116,7 @@ func validatePayload(r *http.Request, body []byte) error {
 		if len(boundary) == 0 || len(boundary) > 70 {
 			return rejection{400}
 		}
-		m := multipart.NewReader(bytes.NewReader(body), boundary)
+		m := multipart.NewReader(body, boundary)
 		for count := queryCount; ; count++ {
 			part, err := m.NextRawPart()
 			if errors.Is(err, io.EOF) {

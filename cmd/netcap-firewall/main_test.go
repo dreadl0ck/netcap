@@ -37,8 +37,9 @@ func TestMain(m *testing.M) {
 	executable = filepath.Join(dir, "netcap-firewall")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	args := []string{"build", "-o", executable}
-	if cliBuildTags != "" {
-		args = append(args, "-tags", cliBuildTags)
+	tags := strings.Trim(strings.Join([]string{cliBuildTags, http3BuildTag}, ","), ",")
+	if tags != "" {
+		args = append(args, "-tags", tags)
 	}
 	args = append(args, ".")
 	cmd := exec.CommandContext(ctx, "go", args...)
@@ -207,7 +208,7 @@ func httpClient(t *testing.T) *http.Client {
 
 func waitReady(t *testing.T, p *process, client *http.Client, url string) {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 	tick := time.NewTicker(20 * time.Millisecond)
 	defer tick.Stop()

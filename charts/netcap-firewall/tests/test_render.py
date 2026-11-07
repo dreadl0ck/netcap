@@ -1,6 +1,7 @@
 """Run with python3; requires Helm and PyYAML."""
 import pathlib
 import subprocess
+import tempfile
 import unittest
 
 import yaml
@@ -22,6 +23,19 @@ def render(*args, success=True):
 
 
 class DeploymentContract(unittest.TestCase):
+    def test_committed_advanced_policy_renders_without_losing_state_options(self):
+        policy = yaml.safe_load((CHART.parents[1] / 'examples/firewall/advanced-policy.yaml').read_text())
+        with tempfile.TemporaryDirectory() as directory:
+            values = pathlib.Path(directory) / 'values.yaml'
+            values.write_text(yaml.safe_dump({'policy': policy}))
+            docs = render('-f', str(values))
+        installed = yaml.safe_load(next(d for d in docs if d['kind'] == 'ConfigMap')['data']['policy.yaml'])
+        self.assertEqual(installed, policy)
+        threshold = installed['rules'][1]['threshold']
+        self.assertEqual(threshold['mode'], 'sliding')
+        self.assertEqual(threshold['distinct'], 'Path')
+        self.assertEqual(threshold['group_by_fields'], ['ClientIP', 'Host'])
+
     def test_isolated_defaults(self):
         docs = render()
         self.assertEqual({d['kind'] for d in docs}, {'Deployment', 'Service', 'ConfigMap'})
@@ -94,15 +108,47 @@ class DeploymentContract(unittest.TestCase):
         self.assertEqual(pod['containers'][0]['readinessProbe']['httpGet']['scheme'], 'HTTPS')
         self.assertNotIn('PersistentVolumeClaim', {d['kind'] for d in docs})
 
-    def test_body_limits_match_native_projection(self):
-        render('--set', 'runtime.maxBodyBytes=1048576', '--set', 'runtime.maxResponseBytes=1048576')
+    def test_spool_and_budget_bounds(self):
+        docs = render('--set', 'runtime.maxBodyBytes=67108864', '--set', 'runtime.maxResponseBytes=67108864')
+        runtime = yaml.safe_load(next(d for d in docs if d['kind'] == 'ConfigMap')['data']['config.yaml'])
+        self.assertEqual(runtime['maxBufferedBytes'], 67108864)
+        pod = next(d for d in docs if d['kind'] == 'Deployment')['spec']['template']['spec']
+        self.assertEqual(next(v for v in pod['volumes'] if v['name'] == 'tmp')['emptyDir'], {'sizeLimit': '256Mi'})
         render('--set', 'runtime.maxBodyBytes=1', '--set', 'runtime.maxResponseBytes=1')
         for field in ('maxBodyBytes', 'maxResponseBytes'):
-            for value in (0, 1048577, 67108864):
+            for value in (0, 67108865):
                 with self.subTest(field=field, value=value):
                     error = render('--set', f'runtime.{field}={value}', success=False)
                     self.assertIn("don't meet the specifications of the schema", error)
                     self.assertIn('runtime.' + field, error)
+        render('--set', 'runtime.maxBufferedBytes=0', success=False)
+        render('--set', 'runtime.maxBufferedBytes=1073741825', success=False)
+
+    def test_messages_and_http3_tls_gate(self):
+        render('--set', 'http3.enabled=true', success=False)
+        docs = render('--set', 'http3.enabled=true', '--set', 'tls.secretName=client-tls',
+                      '--set', 'websocket=true', '--set', 'grpc=true')
+        c = next(d for d in docs if d['kind'] == 'Deployment')['spec']['template']['spec']['containers'][0]
+        self.assertTrue({'--websocket', '--grpc', '--http3-listen=:8443'} <= set(c['args']))
+        self.assertEqual(next(p for p in c['ports'] if p['name'] == 'http3')['protocol'], 'UDP')
+        self.assertEqual(next(p for d in docs if d['kind'] == 'Service' for p in d['spec']['ports'] if p['name'] == 'http3')['protocol'], 'UDP')
+
+    def test_control_config_is_secret_only_and_fleet_identity_is_stable(self):
+        render('--set', 'sharedRate.configSecretName=rate', success=False)
+        render('--set', 'mode=managed', '--set', 'fleet.configSecretName=agent', success=False)
+        args = ['--set', 'mode=fleet', '--set', 'fleet.configSecretName=agents',
+                '--set', 'fleet.credentialsSecretName=target-tokens',
+                '--set', 'sharedRate.configSecretName=rate', '--set', 'sharedRate.credentialsSecretName=rate-token']
+        docs = render(*args)
+        sts = next(d for d in docs if d['kind'] == 'StatefulSet')
+        self.assertNotIn('Deployment', {d['kind'] for d in docs})
+        c = sts['spec']['template']['spec']['containers'][0]
+        self.assertIn('--fleet-agent-config=/etc/fleet/$(POD_NAME).json', c['args'])
+        self.assertIn('--shared-rate-config=/etc/shared-rate/config.json', c['args'])
+        self.assertEqual(c['envFrom'], [{'secretRef': {'name': 'rate-token'}}, {'secretRef': {'name': 'target-tokens'}}])
+        self.assertEqual(sts['spec']['volumeClaimTemplates'][0]['metadata']['name'], 'agent-state')
+        render(*args, '--set', 'autoscaling.enabled=true', success=False)
+        render('--set', 'sharedRate.token=plaintext-is-forbidden', success=False)
 
     def test_network_policy_requires_explicit_destinations(self):
         render('--set', 'networkPolicy.enabled=true', success=False)

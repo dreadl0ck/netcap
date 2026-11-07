@@ -1,9 +1,9 @@
-// Package gateway implements explicit plaintext Modbus TCP and DNS UDP application
-// gateways. It terminates connections; it does not inspect arbitrary routed traffic.
+// Package gateway implements bounded explicit application gateways.
 package gateway
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -28,14 +28,27 @@ type Config struct {
 	IdleTimeout    time.Duration
 	IOTimeout      time.Duration
 	SessionTimeout time.Duration
-	// DNS responses are also limited to three times the query length.
+	// UDP DNS responses are also limited to three times the query length.
 	MaxDNSResponseBytes int
+	// TLSCert/TLSKey enable implicit TLS; Postgres/MySQL use SSLRequest negotiation.
+	TLSCert, TLSKey string
+	// UpstreamTLS verifies the pinned destination against this name and CA pool.
+	UpstreamTLS                    bool
+	UpstreamServerName, UpstreamCA string
+	UpstreamCert, UpstreamKey      string
+	// ClientCA requires and verifies listener client certificates when set.
+	ClientCA           string
+	MaxMessageBytes    int
+	MaxSessionMessages int
+	MaxStateEntries    int
 }
 
 type Gateway struct {
-	cfg      Config
-	policy   Evaluator
-	upstream string
+	cfg                  Config
+	policy               Evaluator
+	upstream             string
+	serverTLS, originTLS *tls.Config
+	slots                chan struct{}
 }
 
 func New(cfg Config, evaluator Evaluator) (*Gateway, error) {
@@ -45,14 +58,14 @@ func New(cfg Config, evaluator Evaluator) (*Gateway, error) {
 	if p, ok := evaluator.(*policy.Compiled); ok && p == nil {
 		return nil, errors.New("gateway: policy is required")
 	}
-	if cfg.Protocol != "modbus" && cfg.Protocol != "dns" {
-		return nil, errors.New("gateway: protocol must be modbus or dns")
+	switch cfg.Protocol {
+	case "modbus", "dns", "dns-tcp", "dns-tls", "redis", "postgres", "smtp", "dnp3", "mysql":
+	default:
+		return nil, errors.New("gateway: unsupported protocol")
 	}
 	if cfg.Listen == "" {
-		cfg.Listen = "127.0.0.1:1502"
-		if cfg.Protocol == "dns" {
-			cfg.Listen = "127.0.0.1:1053"
-		}
+		ports := map[string]string{"modbus": "1502", "dns": "1053", "dns-tcp": "1053", "dns-tls": "1853", "redis": "16379", "postgres": "15432", "smtp": "1025", "dnp3": "20000", "mysql": "13306"}
+		cfg.Listen = "127.0.0.1:" + ports[cfg.Protocol]
 	}
 	if cfg.MaxConnections == 0 {
 		cfg.MaxConnections = 64
@@ -68,8 +81,36 @@ func New(cfg Config, evaluator Evaluator) (*Gateway, error) {
 	}
 	if cfg.MaxDNSResponseBytes == 0 {
 		cfg.MaxDNSResponseBytes = 512
+		if cfg.Protocol == "dns-tcp" || cfg.Protocol == "dns-tls" {
+			cfg.MaxDNSResponseBytes = 65535
+		}
 	}
-	if cfg.MaxConnections < 1 || cfg.MaxConnections > 4096 || cfg.IdleTimeout < time.Millisecond || cfg.IdleTimeout > time.Hour || cfg.IOTimeout < time.Millisecond || cfg.IOTimeout > time.Minute || cfg.SessionTimeout < time.Millisecond || cfg.SessionTimeout > 24*time.Hour || cfg.MaxDNSResponseBytes < 512 || cfg.MaxDNSResponseBytes > 4096 {
+	if cfg.MaxMessageBytes == 0 {
+		cfg.MaxMessageBytes = 1 << 20
+	}
+	if cfg.MaxSessionMessages == 0 {
+		cfg.MaxSessionMessages = 10000
+	}
+	if cfg.MaxStateEntries == 0 {
+		cfg.MaxStateEntries = 128
+	}
+	if cfg.MaxMessageBytes < 512 || cfg.MaxMessageBytes > 16<<20 || cfg.MaxSessionMessages < 1 || cfg.MaxSessionMessages > 1000000 || cfg.MaxStateEntries < 1 || cfg.MaxStateEntries > 4096 {
+		return nil, errors.New("gateway: invalid message/session limits")
+	}
+	if (cfg.TLSCert == "") != (cfg.TLSKey == "") || (cfg.ClientCA != "" && cfg.TLSCert == "") || (cfg.Protocol == "dns-tls" && cfg.TLSCert == "") || (cfg.Protocol == "dns" && cfg.TLSCert != "") {
+		return nil, errors.New("gateway: invalid listener TLS configuration")
+	}
+	if cfg.UpstreamTLS && cfg.UpstreamServerName == "" {
+		return nil, errors.New("gateway: upstream TLS requires a verification server name")
+	}
+	if (cfg.UpstreamCert == "") != (cfg.UpstreamKey == "") || (!cfg.UpstreamTLS && (cfg.UpstreamCert != "" || cfg.UpstreamCA != "" || cfg.UpstreamServerName != "")) {
+		return nil, errors.New("gateway: invalid upstream TLS configuration")
+	}
+	dnsLimit := 4096
+	if cfg.Protocol == "dns-tcp" || cfg.Protocol == "dns-tls" {
+		dnsLimit = 65535
+	}
+	if cfg.MaxConnections < 1 || cfg.MaxConnections > 4096 || cfg.IdleTimeout < time.Millisecond || cfg.IdleTimeout > time.Hour || cfg.IOTimeout < time.Millisecond || cfg.IOTimeout > time.Minute || cfg.SessionTimeout < time.Millisecond || cfg.SessionTimeout > 24*time.Hour || cfg.MaxDNSResponseBytes < 512 || cfg.MaxDNSResponseBytes > dnsLimit {
 		return nil, errors.New("gateway: invalid resource limits")
 	}
 	cfg.AllowedClients = append([]netip.Prefix(nil), cfg.AllowedClients...)
@@ -83,7 +124,14 @@ func New(cfg Config, evaluator Evaluator) (*Gateway, error) {
 	if err != nil || a == nil || a.Port == 0 || a.IP == nil || a.IP.IsUnspecified() || a.IP.IsMulticast() {
 		return nil, errors.New("gateway: upstream must resolve to a fixed unicast host:port")
 	}
-	return &Gateway{cfg: cfg, policy: evaluator, upstream: a.String()}, nil
+	g := &Gateway{cfg: cfg, policy: evaluator, upstream: a.String(), slots: make(chan struct{}, cfg.MaxConnections)}
+	if g.serverTLS, err = g.listenerTLS(); err != nil {
+		return nil, err
+	}
+	if g.originTLS, err = g.upstreamTLS(); err != nil {
+		return nil, err
+	}
+	return g, nil
 }
 
 func Run(ctx context.Context, cfg Config, compiled *policy.Compiled) error {

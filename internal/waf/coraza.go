@@ -5,6 +5,7 @@ package waf
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"strconv"
@@ -36,7 +37,7 @@ func newInspectionEngine(c Config) (inspectionEngine, error) {
 
 func corazaDirectives(c Config) string {
 	// Disable Coraza's file audit/debug sinks: the outer proxy owns redacted audit.
-	// Keep all Coraza body buffers in memory within the outer proxy's admission cap.
+	// Coraza shares spool readers and spills its own request representation at 64 KiB.
 	return fmt.Sprintf(`
 Include @coraza.conf-recommended
 Include @crs-setup.conf.example
@@ -47,6 +48,7 @@ SecRequestBodyAccess On
 SecRequestBodyJsonDepthLimit 64
 SecArgumentsLimit 1000
 SecRequestBodyLimit %d
+SecRequestBodyNoFilesLimit %d
 SecRequestBodyInMemoryLimit %d
 SecRequestBodyLimitAction Reject
 SecResponseBodyAccess %s
@@ -55,7 +57,7 @@ SecResponseBodyLimitAction Reject
 SecRule ARGUMENTS_LIMIT_REACHED "@eq 1" "id:10000001,phase:1,deny,status:413,nolog"
 SecRule ARGUMENTS_LIMIT_REACHED "@eq 1" "id:10000002,phase:2,deny,status:413,nolog"
 Include @owasp_crs/*.conf
-`, c.MaxBodyBytes+1, c.MaxBodyBytes+1, map[bool]string{true: "On", false: "Off"}[c.InspectResponse], c.MaxResponseBytes+1)
+`, c.MaxBodyBytes+1, c.MaxBodyBytes+1, min(c.MaxBodyBytes+1, bodyMemoryBytes), map[bool]string{true: "On", false: "Off"}[c.InspectResponse], c.MaxResponseBytes+1)
 }
 
 func interruptionStatus(i *types.Interruption) int {
@@ -68,7 +70,7 @@ func interruptionStatus(i *types.Interruption) int {
 	return i.Status
 }
 
-func (e *corazaEngine) request(r *http.Request, body []byte, client string, monitor bool) (inspectionTransaction, int, error) {
+func (e *corazaEngine) request(r *http.Request, body io.Reader, client string, monitor bool) (inspectionTransaction, int, error) {
 	tx := &corazaTransaction{e.waf.NewTransaction()}
 	port := 0
 	if _, p, err := net.SplitHostPort(r.RemoteAddr); err == nil {
@@ -82,7 +84,7 @@ func (e *corazaEngine) request(r *http.Request, body []byte, client string, moni
 	tx.SetServerName(host)
 	tx.ProcessURI(r.URL.RequestURI(), r.Method, r.Proto)
 	tx.AddRequestHeader("Host", r.Host)
-	tx.AddRequestHeader("Content-Length", strconv.Itoa(len(body)))
+	tx.AddRequestHeader("Content-Length", strconv.FormatInt(r.ContentLength, 10))
 	for k, vs := range r.Header {
 		for _, v := range vs {
 			tx.AddRequestHeader(k, v)
@@ -105,18 +107,15 @@ func (e *corazaEngine) request(r *http.Request, body []byte, client string, moni
 		}
 		return tx, interruptionStatus(i), nil
 	}
-	i, n, err := tx.WriteRequestBody(body)
+	i, _, err := tx.ReadRequestBodyFrom(body)
 	if err != nil || i != nil {
 		return tx, interruptionStatus(i), err
-	}
-	if n != len(body) {
-		return tx, 0, errors.New("incomplete Coraza request inspection")
 	}
 	i, err = tx.ProcessRequestBody()
 	return tx, interruptionStatus(i), err
 }
 
-func (tx *corazaTransaction) response(r *http.Response, body []byte, inspect bool) (int, error) {
+func (tx *corazaTransaction) response(r *http.Response, body io.Reader, inspect bool) (int, error) {
 	if tx.IsInterrupted() {
 		return 0, nil
 	}
@@ -131,12 +130,9 @@ func (tx *corazaTransaction) response(r *http.Response, body []byte, inspect boo
 	if !inspect {
 		return 0, nil
 	}
-	i, n, err := tx.WriteResponseBody(body)
+	i, _, err := tx.ReadResponseBodyFrom(body)
 	if err != nil || i != nil {
 		return interruptionStatus(i), err
-	}
-	if n != len(body) {
-		return 0, errors.New("incomplete Coraza response inspection")
 	}
 	i, err = tx.ProcessResponseBody()
 	return interruptionStatus(i), err

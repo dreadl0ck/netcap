@@ -1,16 +1,17 @@
 package waf
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/dreadl0ck/netcap/internal/policy"
 )
 
 type inspectionEngine interface {
-	request(*http.Request, []byte, string, bool) (inspectionTransaction, int, error)
+	request(*http.Request, io.Reader, string, bool) (inspectionTransaction, int, error)
 }
 type inspectionTransaction interface {
-	response(*http.Response, []byte, bool) (int, error)
+	response(*http.Response, io.Reader, bool) (int, error)
 	Close() error
 }
 

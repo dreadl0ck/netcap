@@ -46,9 +46,9 @@ func TestConfigValidation(t *testing.T) {
 	}
 }
 
-func TestConfigBodyLimitsReservePolicyMetadata(t *testing.T) {
+func TestConfigBodySpoolLimits(t *testing.T) {
 	for _, field := range []string{"maxBodyBytes", "maxResponseBytes"} {
-		for _, limit := range []int64{MaxInspectionBodyBytes + 1, 2 << 20, 64 << 20} {
+		for _, limit := range []int64{MaxInspectionBodyBytes + 1, 0, -1} {
 			c := config("http://origin.example")
 			if field == "maxBodyBytes" {
 				c.MaxBodyBytes = limit
@@ -56,7 +56,7 @@ func TestConfigBodyLimitsReservePolicyMetadata(t *testing.T) {
 				c.MaxResponseBytes = limit
 			}
 			err := ValidateConfig(c)
-			if err == nil || !strings.Contains(err.Error(), field) || !strings.Contains(err.Error(), "1048576") || !strings.Contains(err.Error(), "metadata") {
+			if err == nil || !strings.Contains(err.Error(), field) || !strings.Contains(err.Error(), "67108864") || !strings.Contains(err.Error(), "native") {
 				t.Fatalf("%s=%d: expected explanatory limit rejection, got %v", field, limit, err)
 			}
 			for _, marshal := range []func(any) ([]byte, error){json.Marshal, yaml.Marshal} {
@@ -74,6 +74,30 @@ func TestConfigBodyLimitsReservePolicyMetadata(t *testing.T) {
 	c.MaxBodyBytes = MaxInspectionBodyBytes
 	c.MaxResponseBytes = MaxInspectionBodyBytes
 	if err := ValidateConfig(c); err != nil {
-		t.Fatalf("1 MiB boundary config rejected: %v", err)
+		t.Fatalf("64 MiB spool boundary config rejected: %v", err)
+	}
+}
+
+func TestConfigAggregateBufferBudget(t *testing.T) {
+	for _, limit := range []int64{0, 64 << 10, 64 << 20, 1 << 30} {
+		c := config("http://origin.example")
+		c.MaxBufferedBytes = limit
+		for _, marshal := range []func(any) ([]byte, error){json.Marshal, yaml.Marshal} {
+			data, err := marshal(c)
+			if err != nil {
+				t.Fatal(err)
+			}
+			loaded, err := LoadConfig(data)
+			if err != nil || loaded.MaxBufferedBytes != limit {
+				t.Fatalf("budget config %d: loaded=%d error=%v", limit, loaded.MaxBufferedBytes, err)
+			}
+		}
+	}
+	for _, limit := range []int64{-1, (1 << 30) + 1} {
+		c := config("http://origin.example")
+		c.MaxBufferedBytes = limit
+		if err := ValidateConfig(c); err == nil || !strings.Contains(err.Error(), "maxBufferedBytes") {
+			t.Fatalf("accepted invalid aggregate quota %d: %v", limit, err)
+		}
 	}
 }

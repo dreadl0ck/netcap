@@ -9,7 +9,7 @@ services:
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    tmpfs: ['/tmp:size=16m,mode=1777,noexec,nosuid,nodev']
+    tmpfs: ['/tmp:size=256m,mode=1777,noexec,nosuid,nodev']
     mem_limit: 256m
     cpus: 1
     pids_limit: 64
@@ -28,8 +28,8 @@ services:
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    tmpfs: ['/tmp:size=16m,mode=1777,noexec,nosuid,nodev']
-    mem_limit: 64m
+    tmpfs: ['/tmp:size=256m,mode=1777,noexec,nosuid,nodev']
+    mem_limit: 256m
     pids_limit: 32
     volumes: ['./nginx.conf:/etc/nginx/nginx.conf:ro']
     networks: [origin]

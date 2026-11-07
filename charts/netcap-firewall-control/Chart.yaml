@@ -1,0 +1,7 @@
+apiVersion: v2
+name: netcap-firewall-control
+description: Optional single-owner TLS fleet controller or shared counter service
+type: application
+version: 0.1.0
+appVersion: 0.1.0-local
+kubeVersion: '>=1.25.0-0'

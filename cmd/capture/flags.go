@@ -42,6 +42,9 @@ func Flags() (flags []string) {
 // GetFlags returns the CLI flags for the capture subcommand.
 func GetFlags() []cli.Flag {
 	return append([]cli.Flag{
+		&cli.StringFlag{Name: "firewall-policy", Usage: "explicit audit-record response policy (retrospective; does not intercept completed transactions)"},
+		&cli.StringFlag{Name: "firewall-effects-config", Usage: "explicit response broker JSON; dispatch only during -iface live capture"},
+		&cli.BoolFlag{Name: "firewall-schema", Usage: "print versioned audit policy field types, sensitivity and projection bounds as JSON, then exit"},
 		&cli.BoolFlag{Name: "network-detection", Value: true, Usage: "capture-time network threat and policy detections", Sources: cli.EnvVars("NC_NETWORK_DETECTION")},
 		&cli.StringFlag{Name: "network-detection-config", Usage: "bounded JSON thresholds, approved sources and versioned indicators", Sources: cli.EnvVars("NC_NETWORK_DETECTION_CONFIG")},
 		&cli.BoolFlag{Name: "evidence-links", Value: true, Usage: "serve related evidence across protocols in the WebUI (/api/evidence/related)", Sources: cli.EnvVars("NC_EVIDENCE_LINKS")},

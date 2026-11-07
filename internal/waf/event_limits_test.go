@@ -13,10 +13,10 @@ import (
 )
 
 func TestMaximumInspectionBodiesFitEmptyPolicy(t *testing.T) {
-	if MaxInspectionBodyBytes+(maxInspectionFieldBytes*5)+maxInspectionHeaderBytes+64 > policy.MaxEventBytes {
+	if NativeBodyBytes+(maxInspectionFieldBytes*5)+maxInspectionHeaderBytes+64 > policy.MaxEventBytes {
 		t.Fatal("WAF body and metadata bounds exceed native event budget")
 	}
-	body := strings.Repeat("a", int(MaxInspectionBodyBytes))
+	body := strings.Repeat("a", int(NativeBodyBytes))
 	var calls atomic.Int64
 	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)

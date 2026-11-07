@@ -18,20 +18,59 @@ import (
 const MCPMaxRequestBytes = 16 << 10
 
 type leaseRequest struct {
-	ID         string `json:"id"`
-	Source     string `json:"source"`
-	TTLSeconds int64  `json:"ttl_seconds"`
+	ID         string     `json:"id"`
+	Source     string     `json:"source"`
+	TTLSeconds *int64     `json:"ttl_seconds,omitempty"`
+	ExpiresAt  *time.Time `json:"expires_at,omitempty"`
+}
+
+func (r *leaseRequest) UnmarshalJSON(raw []byte) error {
+	type wire leaseRequest
+	var value wire
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return err
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return err
+	}
+	for _, name := range []string{"ttl_seconds", "expires_at"} {
+		if bytes.Equal(bytes.TrimSpace(fields[name]), []byte("null")) {
+			return errors.New("null lease lifetime is not allowed")
+		}
+	}
+	*r = leaseRequest(value)
+	return nil
+}
+
+func (c *Controller) createRequest(ctx context.Context, req leaseRequest) (Lease, error) {
+	if req.TTLSeconds != nil {
+		if *req.TTLSeconds < 1 || *req.TTLSeconds > int64(HardMaxTTL/time.Second) || time.Duration(*req.TTLSeconds)*time.Second > c.config.MaxTTL {
+			return Lease{}, errors.New("TTL exceeds configured limit")
+		}
+	}
+	if req.ExpiresAt != nil {
+		if req.TTLSeconds != nil && req.ExpiresAt.After(time.Now().Add(time.Duration(*req.TTLSeconds)*time.Second)) {
+			return Lease{}, errors.New("deadline exceeds supplied TTL")
+		}
+		return c.CreateUntil(ctx, req.ID, req.Source, *req.ExpiresAt)
+	}
+	if req.TTLSeconds == nil {
+		return Lease{}, errors.New("ttl_seconds or expires_at required")
+	}
+	return c.Create(ctx, req.ID, req.Source, time.Duration(*req.TTLSeconds)*time.Second)
 }
 
 type enforcerCapabilities struct {
-	Scope           Scope    `json:"scope"`
-	DryRun          bool     `json:"dry_run"`
-	MaxLeases       int      `json:"max_leases"`
-	MaxTTLSeconds   int64    `json:"max_ttl_seconds"`
-	ProtectedCIDRs  []string `json:"protected_cidrs"`
-	Actions         []string `json:"actions"`
-	ScopeMutable    bool     `json:"scope_mutable"`
-	GenericCommands bool     `json:"generic_commands"`
+	Scope             Scope    `json:"scope"`
+	DryRun            bool     `json:"dry_run"`
+	MaxLeases         int      `json:"max_leases"`
+	MaxTTLSeconds     int64    `json:"max_ttl_seconds"`
+	ProtectedCIDRs    []string `json:"protected_cidrs"`
+	Actions           []string `json:"actions"`
+	ScopeMutable      bool     `json:"scope_mutable"`
+	GenericCommands   bool     `json:"generic_commands"`
+	AbsoluteDeadlines bool     `json:"absolute_deadlines"`
 }
 
 // mcpHandler is private so the only HTTP entry point is Handler's bearer boundary.
@@ -41,7 +80,11 @@ func (c *Controller) mcpHandler() http.Handler {
 	s := server.NewMCPServer("netcap-enforcer", "1.0.0", server.WithToolCapabilities(false), server.WithInstructions("Manage finite source-address blocks only within the immutable configured scope. No command execution or scope edits. Active lease retries preserve the original expiry."))
 	stringSchema := func() map[string]any { return map[string]any{"type": "string"} }
 	register := func(name, description string, properties map[string]any, required []string, readOnly bool, handler server.ToolHandlerFunc) {
-		schema, _ := json.Marshal(map[string]any{"type": "object", "properties": properties, "required": required, "additionalProperties": false})
+		definition := map[string]any{"type": "object", "properties": properties, "required": required, "additionalProperties": false}
+		if name == "create_action_lease" {
+			definition["anyOf"] = []any{map[string]any{"required": []string{"ttl_seconds"}}, map[string]any{"required": []string{"expires_at"}}}
+		}
+		schema, _ := json.Marshal(definition)
 		tool := mcp.NewTool(name, mcp.WithDescription(description), mcp.WithReadOnlyHintAnnotation(readOnly), mcp.WithDestructiveHintAnnotation(!readOnly), mcp.WithOpenWorldHintAnnotation(false))
 		tool.InputSchema = mcp.ToolInputSchema{}
 		tool.RawInputSchema = schema
@@ -51,7 +94,7 @@ func (c *Controller) mcpHandler() http.Handler {
 		if err := toolArguments(r, &struct{}{}); err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultJSON(enforcerCapabilities{c.config.Scope, c.config.DryRun, c.config.MaxLeases, int64(c.config.MaxTTL / time.Second), append([]string{}, c.config.ProtectedCIDRs...), []string{"block_source"}, false, false})
+		return mcp.NewToolResultJSON(enforcerCapabilities{Scope: c.config.Scope, DryRun: c.config.DryRun, MaxLeases: c.config.MaxLeases, MaxTTLSeconds: int64(c.config.MaxTTL / time.Second), ProtectedCIDRs: append([]string{}, c.config.ProtectedCIDRs...), Actions: []string{"block_source"}, AbsoluteDeadlines: true})
 	})
 	register("list_action_leases", "List active leases using controller reconciliation; expired/orphaned rules may be cleaned up.", map[string]any{}, []string{}, false, func(ctx context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		if err := toolArguments(r, &struct{}{}); err != nil {
@@ -63,15 +106,12 @@ func (c *Controller) mcpHandler() http.Handler {
 		}
 		return mcp.NewToolResultJSON(map[string]any{"leases": ls})
 	})
-	register("create_action_lease", "Temporarily block one source IP in the fixed scope. An active matching ID retry preserves expiry; expired IDs can be reused.", map[string]any{"id": map[string]any{"type": "string", "pattern": identifier.String(), "maxLength": 48}, "source": stringSchema(), "ttl_seconds": map[string]any{"type": "integer", "minimum": 1, "maximum": int64(c.config.MaxTTL / time.Second)}}, []string{"id", "source", "ttl_seconds"}, false, func(ctx context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	register("create_action_lease", "Temporarily block one source IP in the fixed scope. Supply ttl_seconds, expires_at (absolute RFC3339Nano), or both (TTL additionally bounds the deadline). Matching active retries never renew expiry.", map[string]any{"id": map[string]any{"type": "string", "pattern": identifier.String(), "maxLength": 48}, "source": stringSchema(), "ttl_seconds": map[string]any{"type": "integer", "minimum": 1, "maximum": int64(c.config.MaxTTL / time.Second)}, "expires_at": map[string]any{"type": "string", "format": "date-time", "maxLength": 64}}, []string{"id", "source"}, false, func(ctx context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		var req leaseRequest
-		if err := toolArguments(r, &req, "id", "source", "ttl_seconds"); err != nil {
+		if err := toolArguments(r, &req, "id", "source", "ttl_seconds", "expires_at"); err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		if req.TTLSeconds < 1 || req.TTLSeconds > int64(HardMaxTTL/time.Second) {
-			return mcp.NewToolResultError("invalid TTL"), nil
-		}
-		l, err := c.Create(ctx, req.ID, req.Source, time.Duration(req.TTLSeconds)*time.Second)
+		l, err := c.createRequest(ctx, req)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

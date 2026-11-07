@@ -1,0 +1,103 @@
+x-runtime: &runtime
+  image: ${FIREWALL_IMAGE:-netcap-firewall:0.1.0-local}
+  user: '10001:10001'
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  mem_limit: 256m
+  cpus: 1
+  pids_limit: 64
+  tmpfs: ['/tmp:size=256m,mode=1777,noexec,nosuid,nodev']
+  stop_grace_period: 60s
+  healthcheck: {disable: true}
+  networks: [control]
+services:
+  postgres:
+    image: postgres:17.11@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f
+    container_name: ${PG_TEST_CONTAINER:?unique labeled lab container required}
+    labels: {netcap.firewall.ha-test: 'true'}
+    env_file: ['${LAB_ENV_DIR:?}/postgres.env']
+    command:
+      - /bin/sh
+      - -ec
+      - >-
+        mkdir -p /var/lib/postgresql/tls;
+        cp /lab/tls.crt /var/lib/postgresql/tls/server.crt;
+        cp /lab/tls.key /var/lib/postgresql/tls/server.key;
+        chown -R postgres:postgres /var/lib/postgresql/tls;
+        chmod 600 /var/lib/postgresql/tls/server.key;
+        exec docker-entrypoint.sh postgres -c ssl=on
+        -c ssl_cert_file=/var/lib/postgresql/tls/server.crt
+        -c ssl_key_file=/var/lib/postgresql/tls/server.key
+    volumes:
+      - '${LAB_CONFIG_DIR:?}:/lab:ro'
+      - postgres-data:/var/lib/postgresql/data
+    ports: ['127.0.0.1:${PG_TEST_PORT:?}:5432']
+    healthcheck: {test: [CMD-SHELL, 'pg_isready -U firewall -d firewall'], interval: 1s, timeout: 3s, retries: 60}
+    networks: [control]
+  fleet1: &fleet
+    <<: *runtime
+    env_file: ['${LAB_ENV_DIR:?}/fleet.env']
+    command: [fleet-controller, --config, /lab/fleet.json, --listen, ':9092', --tls-cert, /lab/tls.crt, --tls-key, /lab/tls.key]
+    volumes: ['${LAB_CONFIG_DIR:?}:/lab:ro']
+    ports: ['127.0.0.1:${FLEET1_PORT:?}:9092']
+    depends_on: {postgres: {condition: service_healthy}}
+  fleet2:
+    <<: *fleet
+    ports: ['127.0.0.1:${FLEET2_PORT:?}:9092']
+  state1: &state
+    <<: *runtime
+    env_file: ['${LAB_ENV_DIR:?}/state.env']
+    command: [sharedstate, --config, /lab/state.json, --listen, ':9092', --tls-cert, /lab/tls.crt, --tls-key, /lab/tls.key]
+    volumes: ['${LAB_CONFIG_DIR:?}:/lab:ro']
+    ports: ['127.0.0.1:${STATE1_PORT:?}:9092']
+    depends_on: {postgres: {condition: service_healthy}}
+  state2:
+    <<: *state
+    ports: ['127.0.0.1:${STATE2_PORT:?}:9092']
+  front:
+    image: nginx:1.28.0-alpine@sha256:30f1c0d78e0ad60901648be663a710bdadf19e4c10ac6782c235200619158284
+    entrypoint: [nginx]
+    command: [-g, 'daemon off;']
+    user: '101:101'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ['/tmp:size=16m,mode=1777,noexec,nosuid,nodev']
+    volumes: ['./postgres-front.conf:/etc/nginx/nginx.conf:ro']
+    ports: ['127.0.0.1:${FLEET_PORT:?}:9092']
+    networks:
+      control: {aliases: [fleet, state]}
+    depends_on: [fleet1, fleet2, state1, state2]
+  waf1:
+    <<: *runtime
+    env_file: ['${LAB_ENV_DIR:?}/waf1.env']
+    command: [serve, --config, /lab/waf.json, --fleet-agent-config, /lab/waf1.json, --shared-rate-config, /lab/rate.json]
+    volumes: ['${LAB_CONFIG_DIR:?}:/lab:ro']
+    tmpfs: ['/tmp:size=256m,mode=1777,noexec,nosuid,nodev', '/state:size=16m,mode=0700,uid=10001,gid=10001']
+    ports: ['127.0.0.1:${WAF1_PORT:?}:8080']
+    networks: [control, origin]
+  waf2:
+    <<: *runtime
+    env_file: ['${LAB_ENV_DIR:?}/waf2.env']
+    command: [serve, --config, /lab/waf.json, --fleet-agent-config, /lab/waf2.json, --shared-rate-config, /lab/rate.json]
+    volumes: ['${LAB_CONFIG_DIR:?}:/lab:ro']
+    tmpfs: ['/tmp:size=256m,mode=1777,noexec,nosuid,nodev', '/state:size=16m,mode=0700,uid=10001,gid=10001']
+    ports: ['127.0.0.1:${WAF2_PORT:?}:8080']
+    networks: [control, origin]
+  backend:
+    image: nginx:1.28.0-alpine@sha256:30f1c0d78e0ad60901648be663a710bdadf19e4c10ac6782c235200619158284
+    entrypoint: [nginx]
+    command: [-g, 'daemon off;']
+    user: '101:101'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ['/tmp:size=16m,mode=1777,noexec,nosuid,nodev']
+    volumes: ['./nginx.conf:/etc/nginx/nginx.conf:ro']
+    networks: [origin]
+networks:
+  control: {}
+  origin: {internal: true}
+volumes:
+  postgres-data: {}

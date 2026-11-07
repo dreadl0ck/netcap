@@ -20,7 +20,7 @@ var errModbus = errors.New("gateway: invalid or unsupported Modbus frame")
 // all handlers. Each client has at most one upstream connection and outstanding ADU.
 func (g *Gateway) Serve(ctx context.Context, l net.Listener) error {
 	defer l.Close()
-	if g.cfg.Protocol != "modbus" {
+	if g.cfg.Protocol == "dns" {
 		return protocolError(g.cfg.Protocol)
 	}
 	ctx, cancel := context.WithCancel(ctx)
@@ -31,7 +31,7 @@ func (g *Gateway) Serve(ctx context.Context, l net.Listener) error {
 	defer wg.Wait()
 	// Cancel before waiting, including on unexpected listener errors.
 	defer cancel()
-	slots := make(chan struct{}, g.cfg.MaxConnections)
+	slots := g.slots
 	for {
 		c, err := l.Accept()
 		if err != nil {
@@ -48,7 +48,7 @@ func (g *Gateway) Serve(ctx context.Context, l net.Listener) error {
 		select {
 		case slots <- struct{}{}:
 			wg.Add(1)
-			go func() { defer wg.Done(); defer func() { <-slots }(); g.modbusClient(ctx, c, ip) }()
+			go func() { defer wg.Done(); defer func() { <-slots }(); g.serveClient(ctx, c, ip) }()
 		default:
 			_ = c.Close()
 		}
@@ -62,7 +62,7 @@ func (g *Gateway) modbusClient(parent context.Context, client net.Conn, ip strin
 	stop := context.AfterFunc(ctx, func() { _ = client.Close() })
 	defer stop()
 	var upstream net.Conn
-	for ctx.Err() == nil {
+	for i := 0; ctx.Err() == nil && i < g.cfg.MaxSessionMessages; i++ {
 		req, err := g.readModbus(ctx, client, true)
 		if err != nil {
 			return
@@ -80,7 +80,7 @@ func (g *Gateway) modbusClient(parent context.Context, client net.Conn, ip strin
 		}
 		// No upstream connection or request bytes exist before request authorization.
 		if upstream == nil {
-			upstream, err = (&net.Dialer{Timeout: g.cfg.IOTimeout}).DialContext(ctx, "tcp", g.upstream)
+			upstream, err = g.dial(ctx)
 			if err != nil {
 				_ = g.writeFrame(ctx, client, modbusException(req, 11))
 				return

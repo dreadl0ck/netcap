@@ -43,6 +43,8 @@ type Config struct {
 	ReadOnly bool
 	StateDir string
 	Managed  bool
+	// AllowEffects is immutable host admission, including replay and recovery.
+	AllowEffects bool
 }
 
 type Service struct {
@@ -103,6 +105,9 @@ func New(cfg Config, target Target) (*Service, error) {
 	}
 	cfg.ReadOnly = cfg.ReadOnly || !cfg.Managed
 	s := &Service{cfg: cfg, target: target, lock: make(chan struct{}, 1), slots: make(chan struct{}, 8), httpSlots: make(chan struct{}, 8)}
+	if _, _, err := s.compileBundle(target.Policy()); err != nil {
+		return nil, err
+	}
 	if !cfg.ReadOnly {
 		if cfg.StateDir == "" {
 			return nil, errors.New("policycontrol: managed mode requires StateDir")
@@ -150,6 +155,14 @@ func (s *Service) Close() error {
 }
 
 func compile(raw []byte) (*policy.Compiled, []byte, error) {
+	return compileAdmitted(raw, false)
+}
+
+func (s *Service) compile(raw []byte) (*policy.Compiled, []byte, error) {
+	return compileAdmitted(raw, s.cfg.AllowEffects)
+}
+
+func compileAdmitted(raw []byte, allowEffects bool) (*policy.Compiled, []byte, error) {
 	if len(raw) == 0 || len(raw) > MaxInputBytes {
 		return nil, nil, failure(400, "bundle must contain 1..262144 bytes")
 	}
@@ -157,7 +170,7 @@ func compile(raw []byte) (*policy.Compiled, []byte, error) {
 	if err != nil {
 		return nil, nil, failure(400, "invalid policy bundle: "+err.Error())
 	}
-	c, err := policy.Compile(b)
+	c, err := policy.CompileWithOptions(b, policy.CompileOptions{AllowEffects: allowEffects})
 	if err != nil {
 		return nil, nil, failure(400, "invalid policy bundle: "+err.Error())
 	}
@@ -258,7 +271,7 @@ func (s *Service) open() error {
 			break
 		}
 		var c *policy.Compiled
-		c, _, err = compile(raw)
+		c, _, err = s.compile(raw)
 		if err != nil {
 			break
 		}
@@ -282,7 +295,7 @@ func (s *Service) open() error {
 		if len(compiled) != 0 {
 			return errors.New("policycontrol: persisted deployment missing")
 		}
-		c, raw, e := compileBundle(s.target.Policy())
+		c, raw, e := s.compileBundle(s.target.Policy())
 		if e != nil {
 			return e
 		}
@@ -335,12 +348,15 @@ func stateFile(path string) error {
 	return nil
 }
 
-func compileBundle(c *policy.Compiled) (*policy.Compiled, []byte, error) {
+func (s *Service) compileBundle(c *policy.Compiled) (*policy.Compiled, []byte, error) {
+	if c == nil {
+		return nil, nil, failure(503, "target policy unavailable")
+	}
 	raw, err := json.Marshal(c.Bundle())
 	if err != nil {
 		return nil, nil, err
 	}
-	return compile(raw)
+	return s.compile(raw)
 }
 
 // Execute is the common REST/MCP operation boundary. Evaluate only uses synthetic
@@ -372,11 +388,12 @@ func (s *Service) Execute(ctx context.Context, operation string, r Request) (any
 	switch operation {
 	case "capabilities":
 		return map[string]any{"api_version": 1, "read_only": s.cfg.ReadOnly, "managed": !s.cfg.ReadOnly,
-			"scope": "single configured target", "coordination": "per-process; exclusive StateDir singleton", "runtime_configuration_mutable": false,
+			"allow_effects": s.cfg.AllowEffects,
+			"scope":         "single configured target", "coordination": "per-process; exclusive StateDir singleton", "runtime_configuration_mutable": false,
 			"max_input_bytes": MaxInputBytes, "max_revisions": MaxRevisions, "max_audit": MaxAudit, "idempotency_window": MaxReceipts,
 			"max_concurrency": 8, "max_events": MaxEvents, "replay": "synthetic events only; no network; fresh counters per replay, shared within replay", "audit_scope": "successful stage/activate/rollback transactions"}, nil
 	case "check":
-		c, _, e := compile([]byte(r.Bundle))
+		c, _, e := s.compile([]byte(r.Bundle))
 		if e != nil {
 			return nil, e
 		}
@@ -458,8 +475,12 @@ func (s *Service) Execute(ctx context.Context, operation string, r Request) (any
 
 func (s *Service) resolve(ctx context.Context, revision string) (*policy.Compiled, error) {
 	c := s.target.Policy()
+	if c == nil {
+		return nil, failure(503, "target policy unavailable")
+	}
 	if revision == "" || revision == c.Revision() {
-		return c, nil
+		admitted, _, err := s.compileBundle(c)
+		return admitted, err
 	}
 	if s.db == nil {
 		return nil, failure(404, "revision not retained")
@@ -471,7 +492,7 @@ func (s *Service) resolve(ctx context.Context, revision string) (*policy.Compile
 		}
 		return nil, err
 	}
-	c, _, err := compile(raw)
+	c, _, err := s.compile(raw)
 	return c, err
 }
 
@@ -556,7 +577,7 @@ func (s *Service) mutate(ctx context.Context, op string, r Request) (any, error)
 	var result any
 	if op == "stage" {
 		var raw []byte
-		c, raw, err = compile([]byte(r.Bundle))
+		c, raw, err = s.compile([]byte(r.Bundle))
 		if err != nil {
 			return nil, err
 		}
@@ -582,7 +603,7 @@ func (s *Service) mutate(ctx context.Context, op string, r Request) (any, error)
 			}
 			return nil, err
 		}
-		c, _, err = compile(raw)
+		c, _, err = s.compile(raw)
 		if err != nil {
 			return nil, err
 		}

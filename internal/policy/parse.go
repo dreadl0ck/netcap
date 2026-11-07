@@ -191,9 +191,11 @@ func jsonKeyAllowed(depth int, key string) bool {
 	case 1:
 		allowed = []string{"request", "response"}
 	case 2:
-		allowed = []string{"id", "phase", "expression", "action", "status", "priority", "enabled", "threshold", "sequence"}
+		allowed = []string{"id", "phase", "expression", "action", "status", "priority", "enabled", "threshold", "sequence", "effects"}
 	case 3:
-		allowed = []string{"count", "window", "group_by", "name", "steps"}
+		allowed = []string{"count", "window", "group_by", "group_by_fields", "mode", "distinct", "name", "steps"}
+	case 4:
+		allowed = []string{"kind", "duration", "target", "scope"}
 	default:
 		return false
 	}

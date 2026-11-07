@@ -3,8 +3,10 @@ package gateway
 import (
 	"context"
 	"encoding/binary"
+	"io"
 	"net"
 	"net/netip"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -269,6 +271,9 @@ func TestDNSCancellationDuringUpstreamWait(t *testing.T) {
 
 func FuzzDNSQuery(f *testing.F) {
 	f.Add(dnsRequest(f, "example.test."))
+	edns := dnsRequest(f, "example.test.")
+	edns[11] = 1
+	f.Add(append(edns, 0, 0, 41, 4, 208, 0, 0, 128, 0, 0, 0))
 	f.Add([]byte{0, 1, 0, 0})
 	f.Fuzz(func(t *testing.T, b []byte) {
 		m, err := parseDNSQuery(b)
@@ -276,4 +281,55 @@ func FuzzDNSQuery(f *testing.F) {
 			t.Fatal("invalid accepted DNS query")
 		}
 	})
+}
+
+func TestDNSTCPResponseBeyondUDPLimit(t *testing.T) {
+	o := fixtureOrigin(t, func(c net.Conn, o *wireOrigin) {
+		var h [2]byte
+		if _, err := io.ReadFull(c, h[:]); err != nil {
+			return
+		}
+		b := make([]byte, word(h[:]))
+		if _, err := io.ReadFull(c, b); err != nil {
+			return
+		}
+		var msg dnsmessage.Message
+		if msg.Unpack(b) != nil {
+			return
+		}
+		msg.Header.Response = true
+		txt := make([]string, 20)
+		for i := range txt {
+			txt[i] = strings.Repeat("x", 255)
+		}
+		msg.Answers = []dnsmessage.Resource{{Header: dnsmessage.ResourceHeader{Name: msg.Questions[0].Name, Type: dnsmessage.TypeTXT, Class: dnsmessage.ClassINET}, Body: &dnsmessage.TXTResource{TXT: txt}}}
+		resp, err := msg.Pack()
+		if err != nil {
+			return
+		}
+		c.Write(append([]byte{byte(len(resp) >> 8), byte(len(resp))}, resp...))
+	})
+	c, _, _ := startTCPGateway(t, Config{Protocol: "dns-tcp", Upstream: o.listener.Addr().String()}, allowAll())
+	b := dnsRequest(t, "example.test.")
+	b[len(b)-3] = 16
+	c.Write(append([]byte{byte(len(b) >> 8), byte(len(b))}, b...))
+	var h [2]byte
+	if _, err := io.ReadFull(c, h[:]); err != nil {
+		t.Fatal(err)
+	}
+	n := word(h[:])
+	resp := make([]byte, n)
+	if _, err := io.ReadFull(c, resp); err != nil {
+		t.Fatal(err)
+	}
+	if n <= 4096 || word(resp[2:4])&0x0200 != 0 {
+		t.Fatalf("TCP answer incorrectly restricted to UDP size: %d bytes", n)
+	}
+	meta, err := parseDNSQuery(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = validateDNSResponse(b, resp, meta); err != nil {
+		t.Fatal(err)
+	}
 }
