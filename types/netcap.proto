@@ -1401,6 +1401,14 @@ message ICMPv6RouterSolicitation {
 // communication for the World Wide Web.
 message HTTP {
 	string ReassemblyStatus = 51;
+  bytes RawRequestLine = 52;
+  bytes RawResponseLine = 53;
+  repeated HTTPHeaderEvidence RequestHeaders = 54;
+  repeated HTTPHeaderEvidence ResponseHeaders = 55;
+  repeated string ParseQualifications = 56;
+  uint32 HTTP2StreamID = 57;
+  repeated HTTPHeaderEvidence RequestTrailers = 58;
+  repeated HTTPHeaderEvidence ResponseTrailers = 59;
   int64 Timestamp = 1;
   string Proto = 2;
   string Method = 3;
@@ -1467,6 +1475,14 @@ message HTTP {
   
   // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
   string CommunityID = 50;
+}
+
+// Ordered, duplicate-preserving headers. Raw includes HTTP/1 line endings;
+// HTTP/2 has decoded HPACK Name/Value bytes and no textual Raw representation.
+message HTTPHeaderEvidence {
+  bytes Name = 1;
+  bytes Value = 2;
+  bytes Raw = 3;
 }
 
 message HTTPCookie {

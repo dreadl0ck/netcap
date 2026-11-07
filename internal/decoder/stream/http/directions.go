@@ -4,6 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"net/http"
+	"strings"
+
+	"golang.org/x/net/http2"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
@@ -27,7 +31,7 @@ func (h *httpReader) decodeDirections() {
 		var b []byte
 		for _, d := range f {
 			if len(b) > 0 {
-				if s, ok := d.(*core.StreamData); ok && s.SkippedBytes != 0 {
+				if s, ok := d.(*core.StreamData); ok && (s.SkippedBytes != 0 || s.DiscardedBytes > 0) {
 					break
 				}
 			}
@@ -41,6 +45,9 @@ func (h *httpReader) decodeDirections() {
 	}
 	client, server := prefix(directions[0]), prefix(directions[1])
 	for _, reverse := range []bool{false, true} {
+		if bytes.HasPrefix(client, []byte(http2.ClientPreface)) || bytes.HasPrefix(server, []byte(http2.ClientPreface)) {
+			break
+		}
 		request, response := 0, 1
 		if reverse {
 			request, response = 1, 0
@@ -51,12 +58,12 @@ func (h *httpReader) decodeDirections() {
 			directions[request] = trimFragments(directions[request], a)
 			directions[response] = trimFragments(directions[response], b)
 			client, server = prefix(directions[0]), prefix(directions[1])
-			h.pairingBroken = true
 			h.preface = true
+			h.directionBroken = [2]bool{true, true}
 			break
 		}
 	}
-	if containsHTTPMethod(server) || containsHTTPProtocolName(client) && !containsHTTPMethod(client) {
+	if bytes.HasPrefix(server, []byte(http2.ClientPreface)) || containsHTTPMethod(server) || containsHTTPProtocolName(client) && !containsHTTPMethod(client) {
 		directions[0], directions[1] = directions[1], directions[0]
 		c := *h.conversation
 		c.ClientIP, c.ServerIP = c.ServerIP, c.ClientIP
@@ -66,30 +73,61 @@ func (h *httpReader) decodeDirections() {
 		c.FirstClientPacket, c.FirstServerPacket = c.FirstServerPacket, c.FirstClientPacket
 		h.conversation = &c
 	}
-	var runs [2][]core.DataFragments
+	if bytes.HasPrefix(prefix(directions[0]), []byte(http2.ClientPreface)) {
+		h.decodeH2(directions, nil)
+		return
+	}
+	type run struct {
+		fragments core.DataFragments
+		lost      bool
+	}
+	var runs [2][]run
 	for side, fragments := range directions {
-		var run core.DataFragments
+		var chunk core.DataFragments
+		lost := false
+		seenBytes := false
 		for _, f := range fragments {
-			if d, ok := f.(*core.StreamData); ok && d.SkippedBytes != 0 {
-				h.pairingBroken = true
-				if len(run) > 0 {
-					runs[side] = append(runs[side], run)
-					run = nil
+			if d, ok := f.(*core.StreamData); ok && (d.SkippedBytes != 0 || d.DiscardedBytes > 0) {
+				if d.SkippedBytes == -1 && !seenBytes && d.DiscardedBytes == 0 {
+					h.initialUnknown = true
+				} else {
+					h.captureLoss = true
+					if len(chunk) > 0 {
+						runs[side] = append(runs[side], run{chunk, lost})
+						chunk = nil
+					}
+					lost = true
 				}
 			}
-			run = append(run, f)
+			chunk = append(chunk, f)
+			seenBytes = seenBytes || len(f.Raw()) > 0
 		}
-		if len(run) > 0 {
-			runs[side] = append(runs[side], run)
+		if len(chunk) > 0 {
+			runs[side] = append(runs[side], run{chunk, lost})
 		}
 	}
+	var upgrade *httpRequest
+	var h2Directions [2]core.DataFragments
 	for side, chunks := range runs {
-		for _, chunk := range chunks {
-			b, pos := streamutils.FragmentReader(chunk, side == 1)
+		stopDirection := false
+		for index, chunk := range chunks {
+			if stopDirection {
+				break
+			}
+			h.directionBroken[side] = h.directionBroken[side] || chunk.lost
+			b, pos := streamutils.FragmentReader(chunk.fragments, side == 1)
+			remainder := func() core.DataFragments {
+				remaining := trimFragments(chunk.fragments, pos.Offset())
+				for _, rest := range chunks[index+1:] {
+					remaining = append(remaining, rest.fragments...)
+				}
+				return remaining
+			}
 			for {
 				skipped, ok := seekHTTPLine(b, side == 1)
 				if skipped {
-					h.pairingBroken = true
+					h.directionBroken[side] = true
+					h.pairingQualification = "unpaired_after_unrecognized_bytes"
 				}
 				if !ok {
 					break
@@ -102,7 +140,38 @@ func (h *httpReader) decodeDirections() {
 					err = h.readResponse(b, pos)
 				}
 				if err != nil {
-					h.pairingBroken = true
+					h.directionBroken[side] = true
+					h.pairingQualification = "unpaired_after_parse_error"
+					if err == errUnsafeHTTPFraming {
+						h.pairingQualification = "unpaired_after_ambiguous_framing"
+						stopDirection = true
+					}
+					// A parser/body failure leaves no trustworthy next-message boundary.
+					break
+				}
+				if side == 0 && len(h.requests) > 0 {
+					req := h.requests[len(h.requests)-1]
+					if validH2Upgrade(req.request) {
+						upgrade = req
+						h2Directions[0] = remainder()
+						stopDirection = true
+						break
+					}
+				}
+				if side == 1 && len(h.responses) > 0 {
+					res := h.responses[len(h.responses)-1].response
+					if res.StatusCode == http.StatusSwitchingProtocols {
+						if upgrade != nil && res.Request == upgrade.request && strings.EqualFold(res.Header.Get("Upgrade"), "h2c") && headerHasToken(res.Header, "Connection", "upgrade") {
+							h2Directions[1] = remainder()
+							h.decodeH2(h2Directions, upgrade)
+						}
+						stopDirection = true
+						break
+					}
+					if res.Request != nil && res.Request.Method == methodCONNECT && res.StatusCode >= 200 && res.StatusCode < 300 {
+						stopDirection = true
+						break
+					}
 				}
 				if pos.Offset() == before {
 					break
