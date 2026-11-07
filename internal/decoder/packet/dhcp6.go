@@ -43,10 +43,13 @@ var dhcpv6Decoder = newGoPacketDecoder(
 				length = len(dhcp6.Options) - 1
 			)
 			for i, o := range dhcp6.Options {
+				data, encoding := types.DHCPOptionPresentation(o.Data)
 				opts = append(opts, &types.DHCPv6Option{
-					Data:   string(o.Data),
-					Length: int32(o.Length),
-					Code:   int32(o.Code),
+					Data:         data,
+					RawData:      append([]byte(nil), o.Data...),
+					DataEncoding: encoding,
+					Length:       int32(o.Length),
+					Code:         int32(o.Code),
 				})
 				fp.WriteString(strconv.Itoa(int(o.Code)))
 				if i != length {

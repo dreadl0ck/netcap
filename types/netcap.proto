@@ -1180,6 +1180,8 @@ message DHCPOption {
   int32 Type = 1;
   int32 Length = 2;
   string Data = 3;
+  bytes RawData = 4;
+  string DataEncoding = 5; // utf-8 or hex; RawData is authoritative
 }
 
 message DHCPv6 {
@@ -1205,6 +1207,8 @@ message DHCPv6Option {
   int32 Code = 1;
   int32 Length = 2;
   string Data = 3;
+  bytes RawData = 4;
+  string DataEncoding = 5; // utf-8 or hex; RawData is authoritative
 }
 
 // LLC is the layer used for 802.2 Logical Link Control headers.
