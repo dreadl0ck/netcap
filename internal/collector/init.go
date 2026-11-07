@@ -199,6 +199,7 @@ func (c *Collector) Init() (err error) {
 	)
 
 	wg.Add(4)
+	abstractReady := make(chan struct{})
 
 	go func() {
 		// initialize decoders
@@ -216,6 +217,7 @@ func (c *Collector) Init() (err error) {
 	}()
 
 	go func() {
+		<-abstractReady
 		var errInit error
 		c.streamDecoders, errInit = stream.InitDecoders(c.config.DecoderConfig)
 		handleDecoderInitError(errInit, "stream")
@@ -226,6 +228,7 @@ func (c *Collector) Init() (err error) {
 		var errInit error
 		c.abstractDecoders, errInit = stream.InitAbstractDecoders(c.config.DecoderConfig)
 		handleDecoderInitError(errInit, "abstract")
+		close(abstractReady)
 		wg.Done()
 	}()
 

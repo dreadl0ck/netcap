@@ -64,6 +64,9 @@ func Run() {
 func RunWithContext(ctx context.Context, c *cli.Command) error {
 	// Store context for helper functions
 	currentCtx = c
+	if handled, err := runEnrichment(c); handled {
+		return err
+	}
 
 	if c.Bool("gen-config") {
 		// TODO: Update GenerateConfig to work with urfave/cli

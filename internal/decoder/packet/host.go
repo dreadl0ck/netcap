@@ -23,8 +23,6 @@ import (
 	"log"
 	"slices"
 	"sort"
-	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -34,6 +32,7 @@ import (
 	"github.com/gopacket/gopacket/layers"
 
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
+	"github.com/dreadl0ck/netcap/internal/devicecatalog"
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/ja4"
 	"github.com/dreadl0ck/netcap/internal/ja4plusadapter"
@@ -685,38 +684,20 @@ func addUniqueString(slice []string, item string) []string {
 	return append(slice, item)
 }
 
-// extractDHCPFingerprint extracts the DHCP fingerprint from a packet.
-// Returns the fingerprint as a comma-separated list of DHCP option types.
+// extractDHCPFingerprint returns only DHCPv4's ordered option-55 request list.
+// The audit record's raw outer-option Fingerprint field is unchanged.
 func extractDHCPFingerprint(p gopacket.Packet) string {
-	// Try DHCPv4
 	if dhcp4Layer := p.Layer(layers.LayerTypeDHCPv4); dhcp4Layer != nil {
 		if dhcp4, ok := dhcp4Layer.(*layers.DHCPv4); ok {
-			var fp strings.Builder
-			length := len(dhcp4.Options) - 1
-			for i, o := range dhcp4.Options {
-				fp.WriteString(strconv.Itoa(int(o.Type)))
-				if i != length {
-					fp.WriteString(",")
-				}
+			if dhcp4.Operation != layers.DHCPOpRequest {
+				return ""
 			}
-			return fp.String()
+			options := make([]devicecatalog.Option, 0, len(dhcp4.Options))
+			for _, o := range dhcp4.Options {
+				options = append(options, devicecatalog.Option{Code: int(o.Type), Length: int(o.Length), Data: o.Data})
+			}
+			return devicecatalog.ParameterKey(options, dhcp4.File, dhcp4.ServerName)
 		}
 	}
-
-	// Try DHCPv6
-	if dhcp6Layer := p.Layer(layers.LayerTypeDHCPv6); dhcp6Layer != nil {
-		if dhcp6, ok := dhcp6Layer.(*layers.DHCPv6); ok {
-			var fp strings.Builder
-			length := len(dhcp6.Options) - 1
-			for i, o := range dhcp6.Options {
-				fp.WriteString(strconv.Itoa(int(o.Code)))
-				if i != length {
-					fp.WriteString(",")
-				}
-			}
-			return fp.String()
-		}
-	}
-
 	return ""
 }

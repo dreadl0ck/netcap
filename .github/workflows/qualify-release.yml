@@ -62,8 +62,21 @@ jobs:
           export NC_CONFIG_ROOT="$RUNNER_TEMP/netcap-dbs"
           "$NETCAP_BINARY" util -download-dbs
           "$NETCAP_BINARY" util -update-dbs
+          "$NETCAP_BINARY" util --download-enrichment
           "$NETCAP_BINARY" capture -read "$RUNNER_TEMP/smoke.pcap" -out "$RUNNER_TEMP/audits" -quiet -dpi=false -geoDB=false
           "$NETCAP_BINARY" triage -read "$RUNNER_TEMP/audits" -json
+          python - <<'PY'
+          import json,os,pathlib
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])
+          inventory=json.loads((root/'audits/service-signatures-status.json').read_text())
+          assert inventory['source']=='external' and not inventory['degraded'],inventory
+          webtech=json.loads((root/'audits/webtech-status.json').read_text())['catalogue']
+          assert webtech['state']=='external',webtech
+          optional=root/'netcap-dbs/enrichment'
+          version=(optional/'active').read_text().strip()
+          for member in ['kev.json','dhcp-fingerprints-odbl.json','mac-organizations.json','webtech-descriptors.json','service-signatures.json','ENRICHMENT_NOTICES.txt','source-evidence.json']:
+              assert (optional/'versions'/version/member).is_file(),member
+          PY
       - name: Install the exact generated Homebrew formula from its verified cache
         if: matrix.os == 'macos-26'
         run: |

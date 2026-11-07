@@ -1,0 +1,38 @@
+{
+  "mac_catalogue": {"format":"netcap-mac-catalogue","schema":1,"version":"owned-test-v1","license":"IEEE-secondary-nonassertion","entries":[{"prefix":"001122","bits":24,"organization":"Fixture L"},{"prefix":"0011223","bits":28,"organization":"Fixture M"},{"prefix":"001122334","bits":36,"organization":"Fixture S"}]},
+  "mac": [
+    {"input":"00:00:00:00:00:00","want":""},
+    {"input":"00:11:22:33:44:55","want":"Fixture S"},
+    {"input":"00-11-22-33-4f-ff","want":"Fixture S"},
+    {"input":"0011223ABCDE","want":"Fixture M"},
+    {"input":"00:11:22:40:00:00","want":"Fixture L"},
+    {"input":"00:11:23:33:44:55","want":""},
+    {"input":"02:11:22:33:44:55","want":""},
+    {"input":"01:11:22:33:44:55","want":""},
+    {"input":"ff:ff:ff:ff:ff:ff","want":""},
+    {"input":"00:11:22","want":""},
+    {"input":"00x11x22x33x44x55","want":""},
+    {"input":"00:11-22:33:44:55","want":""},
+    {"input":"00:11:22:33:44:5z","want":""},
+    {"input":" 001122334455","want":""},
+    {"input":"0011.2233.4455","want":""},
+    {"input":"00112233445500","want":""},
+    {"input":"éé:11:22:33:44:55","want":""}
+  ],
+  "dhcp": [
+    {"options":[{"code":53,"length":1,"data":[1]},{"code":55,"length":3,"data":[1,3,6]}],"want":"1,3,6"},
+    {"options":[{"code":55,"length":3,"data":[6,3,1]}],"want":"6,3,1"},
+    {"options":[{"code":55,"length":2,"data":[1,3]},{"code":55,"length":1,"data":[6]}],"want":"1,3,6"},
+    {"options":[{"code":55,"length":2,"data":[1,3,6]}],"want":""},
+    {"options":[{"code":55,"length":0,"data":[]}],"want":""},
+    {"options":[{"code":53,"length":1,"data":[1]}],"want":""},
+    {"options":[{"code":55,"length":1,"data":[1]},{"code":52,"length":1,"data":[3]}],"file":[55,1,3,255],"sname":[55,1,6,255],"want":"1,3,6"},
+    {"options":[{"code":52,"length":1,"data":[1]}],"file":[55,4,3],"want":""},
+    {"options":[{"code":52,"length":1,"data":[4]},{"code":55,"length":1,"data":[1]}],"want":""},
+    {"options":[{"code":52,"length":1,"data":[1]},{"code":52,"length":1,"data":[1]}],"want":""},
+    {"options":[{"code":55,"length":3,"data":[1,1,0]}],"want":"1,1,0"},
+    {"options":[{"code":255,"length":0,"data":[]},{"code":55,"length":1,"data":[1]}],"want":""},
+    {"options":[{"code":52,"length":1,"data":[2]}],"sname":[0,55,2,3,6,255,55,1,9],"want":"3,6"},
+    {"options":[{"code":52,"length":1,"data":[1]}],"file":[52,1,2,55,1,1],"want":""}
+  ]
+}

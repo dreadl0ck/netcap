@@ -37,6 +37,8 @@ types/cpp
 types/csharp
 types/js
 data/
+!internal/devicecatalog/data/
+!internal/devicecatalog/data/*.json
 __pycache__
 pcaps
 .vscode

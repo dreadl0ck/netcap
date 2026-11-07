@@ -1,0 +1,10 @@
+{
+  "format": "netcap-service-signatures",
+  "schema_version": 1,
+  "rules": [
+    {"id":"netcap.ssh.ident.v1","protocol":"ssh","transport":"tcp","direction":"server-to-client","kind":"ssh-ident","provenance":[{"url":"https://www.rfc-editor.org/rfc/rfc4253","section":"4.2 Protocol Version Exchange"}]},
+    {"id":"netcap.http.response.v1","protocol":"http","transport":"tcp","direction":"server-to-client","kind":"http1-response","provenance":[{"url":"https://www.rfc-editor.org/rfc/rfc9112","section":"4 Status Line"}]},
+    {"id":"netcap.smtp.greeting.v1","protocol":"smtp","transport":"tcp","direction":"server-to-client","kind":"smtp-greeting","provenance":[{"url":"https://www.rfc-editor.org/rfc/rfc5321","section":"4.2 SMTP Replies; 4.3.1 Sequencing Overview"}]},
+    {"id":"netcap.ftp.greeting.v1","protocol":"ftp","transport":"tcp","direction":"server-to-client","kind":"ftp-greeting","provenance":[{"url":"https://www.rfc-editor.org/rfc/rfc959","section":"4.2 FTP Replies; 5.4 Sequencing of Commands and Replies"}]}
+  ]
+}

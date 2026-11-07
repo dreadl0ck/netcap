@@ -1,0 +1,78 @@
+{
+  "dhcp": {
+    "ambiguous_keys": 1,
+    "api_additions_included": false,
+    "fingerprint_blocks": 236,
+    "legacy_json_compared": false,
+    "modern_first_party_rules_added": 0,
+    "occurrences": 536,
+    "source_os_sections": 238,
+    "unique_keys": 535
+  },
+  "field_changes": [
+    {
+      "change": "Unchanged raw outer-option code sequence; not used as the catalogue key.",
+      "field": "DHCPv4.Fingerprint"
+    },
+    {
+      "change": "Ordered option-55 contents, RFC 3396 fragments, file then sname overload; invalid lengths, BOOTP replies and DHCPv6 yield no v4 claim.",
+      "field": "DHCP candidate key"
+    },
+    {
+      "change": "Historical source label only for a unique exact key; ambiguous keys retain all candidates but emit no single-label claim; no inferred device version or confidence score.",
+      "field": "DHCP device label"
+    },
+    {
+      "change": "24/28/36-bit longest prefix; complete 48-bit input required; local/group/malformed addresses unknown; registered organization is not device identity.",
+      "field": "MAC organization"
+    }
+  ],
+  "format": "netcap-device-release-coverage/v1",
+  "mac": {
+    "device_identity_claim": false,
+    "normalized_prefixes": 58971,
+    "organization_addresses_in_output": false,
+    "prefix_lengths": [
+      24,
+      28,
+      36
+    ]
+  },
+  "outputs": [
+    {
+      "bytes": 100640,
+      "file": "dhcp-catalogue-v1.json",
+      "sha256": "9b70048342d642b6a135f61ae0be48b501db6c19546e23912ae30119b04bf016"
+    },
+    {
+      "bytes": 6190190,
+      "file": "mac-catalogue-v1.json",
+      "sha256": "299a3d8ad76e2343a595210037ef4c920e778c16b650098ab6f5106f1584fbe7"
+    }
+  ],
+  "qualification": {
+    "classification_accuracy_measured": false,
+    "coverage_parity_claim": false,
+    "deterministic_random_mac_inputs_per_language": 4096,
+    "nmap_parity_claim": false,
+    "note": "Counts describe data and functional test cases, not detection accuracy. Signed runtime admission is tested with synthetic test-only signing keys over the real candidate.",
+    "representative_capture_accuracy_corpus": null,
+    "shared_functional_vectors": {
+      "dhcp": 14,
+      "mac": 17
+    }
+  },
+  "scope": [
+    "DHCPv4 historical option-55 candidates",
+    "MAC registered organization enrichment"
+  ],
+  "snapshot_sizing": {
+    "envelope_sha256": "cb6ba00ed1fa47227db9b1a00e40a3bf9a645e350ade3474f59b11f861ee73a6",
+    "max_file_bytes": 2147483648,
+    "max_total_bytes": 4294967296,
+    "qualification": "Authenticated public metadata only; no database body was acquired, copied or approved by this sizing check.",
+    "receipt": "snapshot-sizing-evidence.json",
+    "signed_sequence": 1793998315,
+    "sqlite_bytes": 1061502976
+  }
+}

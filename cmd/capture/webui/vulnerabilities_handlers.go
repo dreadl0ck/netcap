@@ -31,6 +31,7 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/db"
+	"github.com/dreadl0ck/netcap/internal/enrichment"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/internal/vulndb"
@@ -48,17 +49,18 @@ type SoftwareInfo struct {
 
 // VulnerabilitySummary represents aggregated vulnerability information
 type VulnerabilitySummary struct {
-	References   []vulndb.Reference `json:"references"`
-	ID           string             `json:"id"`
-	Description  string             `json:"description"`
-	Severity     string             `json:"severity"`
-	V2Score      string             `json:"v2Score"`
-	AccessVector string             `json:"accessVector"`
-	Versions     []string           `json:"versions"`
-	Count        int                `json:"count"`
-	Software     *SoftwareInfo      `json:"software"`     // Software details including flows
-	Affected     int                `json:"affected"`     // Number of affected hosts
-	CommunityIDs []string           `json:"communityIds"` // Community IDs for cross-tool correlation
+	KEV          *enrichment.KEVStatus `json:"kev,omitempty"`
+	References   []vulndb.Reference    `json:"references"`
+	ID           string                `json:"id"`
+	Description  string                `json:"description"`
+	Severity     string                `json:"severity"`
+	V2Score      string                `json:"v2Score"`
+	AccessVector string                `json:"accessVector"`
+	Versions     []string              `json:"versions"`
+	Count        int                   `json:"count"`
+	Software     *SoftwareInfo         `json:"software"`     // Software details including flows
+	Affected     int                   `json:"affected"`     // Number of affected hosts
+	CommunityIDs []string              `json:"communityIds"` // Community IDs for cross-tool correlation
 }
 
 // ExploitSummary represents aggregated exploit information
@@ -88,6 +90,7 @@ type HostVulnerabilitySummary struct {
 
 // VulnerabilitiesResponse contains the aggregated data
 type VulnerabilitiesResponse struct {
+	KEVStatus       string                     `json:"kevStatus"`
 	Vulnerabilities []VulnerabilitySummary     `json:"vulnerabilities"`
 	Exploits        []ExploitSummary           `json:"exploits"`
 	AffectedHosts   []HostVulnerabilitySummary `json:"affectedHosts"`
@@ -123,6 +126,7 @@ func (s *Server) handleVulnerabilities(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	result := snapshot.selectRows(filter)
+	attachKEV(result)
 	referenceDB, hasReferences := db.VulnerabilitiesIndex.(interface {
 		References(string) ([]vulndb.Reference, error)
 	})

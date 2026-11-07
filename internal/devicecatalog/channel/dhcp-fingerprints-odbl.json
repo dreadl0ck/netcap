@@ -1,0 +1,4828 @@
+{
+  "entries": [
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.434",
+          "label": "N300 Wireless Router"
+        }
+      ],
+      "key": "1,121,249,3,6,12,15,28,33,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.427",
+          "label": "MikroTik (RouterOS)"
+        }
+      ],
+      "key": "1,121,3,33,6,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.403",
+          "label": "Netgear Router"
+        }
+      ],
+      "key": "1,121,3,6,12,15,28,33"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.403",
+          "label": "Netgear Router"
+        }
+      ],
+      "key": "1,121,3,6,12,15,28,33,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1103",
+          "label": "HTC Android"
+        }
+      ],
+      "key": "1,121,33,3,28,51,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.504",
+          "label": "Gentoo Linux"
+        }
+      ],
+      "key": "1,121,33,3,6,12,15,26,28,42,51,54,58,59,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.513",
+          "label": "Chrome OS"
+        }
+      ],
+      "key": "1,121,33,3,6,12,15,26,28,51,54,58,59,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.513",
+          "label": "Chrome OS"
+        }
+      ],
+      "key": "1,121,33,3,6,12,15,26,28,51,54,58,59,119,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.504",
+          "label": "Gentoo Linux"
+        }
+      ],
+      "key": "1,121,33,3,6,12,15,28,40,41,42,51,58,59,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.501",
+          "label": "Generic Linux"
+        }
+      ],
+      "key": "1,121,33,3,6,12,15,28,42,51,54,58,59,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1121",
+          "label": "Samsung GT-S5690M (Galaxy Ruby)"
+        }
+      ],
+      "key": "1,121,33,3,6,12,15,28,42,51,58,59,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1111",
+          "label": "Generic Android"
+        }
+      ],
+      "key": "1,121,33,3,6,12,15,28,51,58,59,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.806",
+          "label": "Kyocera Printer"
+        }
+      ],
+      "key": "1,121,33,3,6,15,28,40,41,42,51,58,59,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1117",
+          "label": "Motorola Android"
+        }
+      ],
+      "key": "1,121,33,3,6,15,28,44,51,58,59,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1112",
+          "label": "Samsung Android"
+        }
+      ],
+      "key": "1,121,33,3,6,15,28,51,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1111",
+          "label": "Generic Android"
+        }
+      ],
+      "key": "1,121,33,3,6,15,28,51,58,59,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1116",
+          "label": "Unknown Android"
+        }
+      ],
+      "key": "1,121,33,3,6,28,42,51,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1111",
+          "label": "Generic Android"
+        }
+      ],
+      "key": "1,121,33,3,6,28,51,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.105",
+          "label": "Microsoft Windows NT 4 (Version 4.0)"
+        }
+      ],
+      "key": "1,15,3,44,46,47,6"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1106",
+          "label": "Apple iPod"
+        }
+      ],
+      "key": "1,15,3,6"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.419",
+          "label": "Enterasys or Trapeze Wireless Access Point"
+        }
+      ],
+      "key": "1,15,3,6,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.402",
+          "label": "Cisco/Linksys Router"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.402",
+          "label": "Cisco/Linksys Router"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,1,3,6,15,44,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.109",
+          "label": "Microsoft Windows 8 or 8.1 (Version 6.2)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,252,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.107",
+          "label": "Microsoft Windows Vista/7 or Server 2008 (Version 6.0)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.107",
+          "label": "Microsoft Windows Vista/7 or Server 2008 (Version 6.0)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43,0,112,64"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.110",
+          "label": "Microsoft Windows 7 or Server 2008 R2 or Server SBS 2011 (Version 6.1)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43,0,112,98"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.107",
+          "label": "Microsoft Windows Vista/7 or Server 2008 (Version 6.0)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43,0,128,64"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.107",
+          "label": "Microsoft Windows Vista/7 or Server 2008 (Version 6.0)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43,0,168,112,64"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.110",
+          "label": "Microsoft Windows 7 or Server 2008 R2 or Server SBS 2011 (Version 6.1)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43,0,176,112"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.107",
+          "label": "Microsoft Windows Vista/7 or Server 2008 (Version 6.0)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43,0,176,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.107",
+          "label": "Microsoft Windows Vista/7 or Server 2008 (Version 6.0)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43,0,188,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.110",
+          "label": "Microsoft Windows 7 or Server 2008 R2 or Server SBS 2011 (Version 6.1)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43,0,192,176,112"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.107",
+          "label": "Microsoft Windows Vista/7 or Server 2008 (Version 6.0)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43,0,32,176,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.107",
+          "label": "Microsoft Windows Vista/7 or Server 2008 (Version 6.0)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43,0,64,112"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.110",
+          "label": "Microsoft Windows 7 or Server 2008 R2 or Server SBS 2011 (Version 6.1)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43,0,80"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.107",
+          "label": "Microsoft Windows Vista/7 or Server 2008 (Version 6.0)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43,195"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.100",
+          "label": "Microsoft Windows XP (Version 5.1, 5.2)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43,200"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.107",
+          "label": "Microsoft Windows Vista/7 or Server 2008 (Version 6.0)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,121,249,43,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.100",
+          "label": "Microsoft Windows XP (Version 5.1, 5.2)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,249,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.501",
+          "label": "Generic Linux"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,249,43,0,128,112"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.111",
+          "label": "Microsoft Windows XP for embedded devices"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,249,43,171,172"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.100",
+          "label": "Microsoft Windows XP (Version 5.1, 5.2)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,249,43,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.100",
+          "label": "Microsoft Windows XP (Version 5.1, 5.2)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,249,43,252,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.101",
+          "label": "Microsoft Windows 2000 (Version 5.0)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.101",
+          "label": "Microsoft Windows 2000 (Version 5.0)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,43,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.101",
+          "label": "Microsoft Windows 2000 (Version 5.0)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,43,252,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.102",
+          "label": "Microsoft Windows ME (Version 4.90)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,31,33,43,77"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.106",
+          "label": "Microsoft Windows 98SE (Version 4.10)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,43,77"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.106",
+          "label": "Microsoft Windows 98SE (Version 4.10)"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,43,77,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.308",
+          "label": "Sipura VoIP Adaptor"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.402",
+          "label": "Cisco/Linksys Router"
+        }
+      ],
+      "key": "1,15,3,6,44,46,47,66,1,3,6,15,44,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1111",
+          "label": "Generic Android"
+        }
+      ],
+      "key": "1,150,3,6,15,35,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.405",
+          "label": "Apple Airport"
+        }
+      ],
+      "key": "1,2,3,15,6,12,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1701",
+          "label": "PXE"
+        }
+      ],
+      "key": "1,2,3,4,5,6,11,12,13,15,16,17,18,22,23,28,40,41,42,43,50,51,54,58,59,60,66,67,128,129,130,131,132,133,134,135"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1701",
+          "label": "PXE"
+        }
+      ],
+      "key": "1,2,3,4,5,6,12,13,15,17,18,22,23,28,40,41,42,43,50,51,54,58,59,60,66,67,97,128,129,130,131,132,133,134,135"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1107",
+          "label": "Samsung S8000"
+        }
+      ],
+      "key": "1,2,3,4,5,6,7,8,9,12,13,15,16,17,23,26,28,42,44,50,51,53,54,56,66,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1201",
+          "label": "HP iLO Agent"
+        }
+      ],
+      "key": "1,2,3,4,6,15,28,33,42,43,44,58,59,100,101"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "1,2,3,4,6,15,42,54,160,66,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "1,2,3,4,6,15,42,54,66,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "1,2,3,4,6,15,42,54,7,160,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.336",
+          "label": "XIAMEN YEALINK NETWORK TECHNOLOGY"
+        }
+      ],
+      "key": "1,2,3,4,6,7,12,15,28,42,66,67,43,120"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.701",
+          "label": "Replay TV"
+        }
+      ],
+      "key": "1,2,3,4,7,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1701",
+          "label": "PXE"
+        }
+      ],
+      "key": "1,2,3,5,6,11,12,13,15,16,17,18,43,54,60,67,128,129,130,131,132,133,134,135"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1901",
+          "label": "Solaris 8 (SunOS 5.8)"
+        }
+      ],
+      "key": "1,2,3,5,6,12,15,19,28,33,40,41,64,65"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.702",
+          "label": "Amino Aminet Set Top Box"
+        }
+      ],
+      "key": "1,2,3,6,12,15,17,23,28,29,31,33,40,41,42,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.715",
+          "label": "Amino’s IPTV"
+        }
+      ],
+      "key": "1,2,3,6,12,15,17,23,28,29,31,33,40,41,42,43,72"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.804",
+          "label": "Brother Printer"
+        }
+      ],
+      "key": "1,2,3,6,12,15,26,28,85,86,87,88,44,45,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.105",
+          "label": "Microsoft Windows NT 4 (Version 4.0)"
+        }
+      ],
+      "key": "1,2,3,6,12,15,26,28,85,86,87,88,44,45,46,47,70,69,78,79"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,2,3,6,12,15,26,28,85,86,87,88,44,45,46,47,70,69,78,79,120"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.803",
+          "label": "Dell Printer"
+        }
+      ],
+      "key": "1,2,3,6,12,15,26,28,88,44,45,46,47,70,69,78,79"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.315",
+          "label": "Siemens OpenStage IP Phones"
+        }
+      ],
+      "key": "1,2,3,6,12,15,28,33,42,43,120"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.506",
+          "label": "FortiOS"
+        }
+      ],
+      "key": "1,2,3,6,12,15,28,40,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.316",
+          "label": "Siemens optiPoint WL2 Professional"
+        }
+      ],
+      "key": "1,2,3,6,12,15,28,42,43,120"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.418",
+          "label": "Ruckus Wireless"
+        }
+      ],
+      "key": "1,2,3,6,12,15,28,42,43,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.339",
+          "label": "Grandstream Telephone"
+        }
+      ],
+      "key": "1,2,3,6,12,15,28,42,43,66,120,125"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.339",
+          "label": "Grandstream Telephone"
+        }
+      ],
+      "key": "1,2,3,6,12,15,28,42,43,66,125"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,2,3,6,15,26,28,85,86,87,88,44,45,46,47,70,69,78,79,120"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.305",
+          "label": "Uniden DTA VoIP Adapater"
+        }
+      ],
+      "key": "1,2,3,6,15,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.410",
+          "label": "2Wire Residential Gateway"
+        }
+      ],
+      "key": "1,2,3,6,15,88,42,44,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2103",
+          "label": "Wyse Technology thin client"
+        }
+      ],
+      "key": "1,2,4,3,12,6,15,44,43,161,162,184,185,186,192,187,181,182,188,190"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.425",
+          "label": "Trendnet Wireless Router"
+        }
+      ],
+      "key": "1,249,3,6,12,15,28,33,40,41,42,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.701",
+          "label": "Replay TV"
+        }
+      ],
+      "key": "1,28"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.310",
+          "label": "Nortel IP Phone"
+        }
+      ],
+      "key": "1,28,1,3"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.310",
+          "label": "Nortel IP Phone"
+        }
+      ],
+      "key": "1,28,1,3,43,128,131,144,157,188,191,205,219,223,232,247,251,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.411",
+          "label": "Motorola Router"
+        }
+      ],
+      "key": "1,28,1,3,6,4"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.326",
+          "label": "Aastra VoIP"
+        }
+      ],
+      "key": "1,28,1,3,6,42,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1503",
+          "label": "PHAST Electronics"
+        }
+      ],
+      "key": "1,28,15,6,3"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.714",
+          "label": "Matsushita electric / Panasonic"
+        }
+      ],
+      "key": "1,28,15,6,3,1"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.314",
+          "label": "ShoreTel IP Phone"
+        }
+      ],
+      "key": "1,28,156,4,3,66,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "1,28,160,3,4,42,2,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "1,28,160,43,3,4,42,2,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.328",
+          "label": "Polycom SoundPoint IP 450"
+        }
+      ],
+      "key": "1,28,160,66,3,4,42,2,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "1,28,160,66,43,3,4,42,2,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "1,28,160,66,43,3,4,42,2,6,15,7"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.512",
+          "label": "Fedora 14 based distro"
+        }
+      ],
+      "key": "1,28,2,121,15,6,12,40,41,42,26,119,3"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.514",
+          "label": "Fedora 15 or 16 based distro"
+        }
+      ],
+      "key": "1,28,2,121,15,6,12,40,41,42,26,119,3,121,249,252,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.501",
+          "label": "Generic Linux"
+        }
+      ],
+      "key": "1,28,2,121,15,6,12,40,41,42,26,119,3,121,249,33,252,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.500",
+          "label": "Debian-based Linux"
+        }
+      ],
+      "key": "1,28,2,121,15,6,12,40,41,42,26,119,3,121,249,33,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.515",
+          "label": "RHEL 6.4 or Centos6.4"
+        }
+      ],
+      "key": "1,28,2,121,15,6,12,40,41,42,26,119,3,121,249,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1100",
+          "label": "Nokia"
+        }
+      ],
+      "key": "1,28,2,121,3,15,6,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1004",
+          "label": "NAS4FREE"
+        }
+      ],
+      "key": "1,28,2,121,3,15,6,12,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1126",
+          "label": "Barnes and Noble Nook (eReader)"
+        }
+      ],
+      "key": "1,28,2,3,15,6"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.500",
+          "label": "Debian-based Linux"
+        }
+      ],
+      "key": "1,28,2,3,15,6,119,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1005",
+          "label": "Iomega Backup Center"
+        }
+      ],
+      "key": "1,28,2,3,15,6,119,12,44,47,121"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.500",
+          "label": "Debian-based Linux"
+        }
+      ],
+      "key": "1,28,2,3,15,6,119,12,44,47,26"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.505",
+          "label": "Ubuntu/Debian 5/Knoppix 6"
+        }
+      ],
+      "key": "1,28,2,3,15,6,119,12,44,47,26,121"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.505",
+          "label": "Ubuntu/Debian 5/Knoppix 6"
+        }
+      ],
+      "key": "1,28,2,3,15,6,119,12,44,47,26,121,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.511",
+          "label": "Ubuntu 11.04"
+        }
+      ],
+      "key": "1,28,2,3,15,6,119,12,44,47,26,121,42,121,249,252,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.500",
+          "label": "Debian-based Linux"
+        },
+        {
+          "id": "fingerbank.os.516",
+          "label": "Linux Ubuntu 14.04"
+        }
+      ],
+      "key": "1,28,2,3,15,6,119,12,44,47,26,121,42,121,249,33,252,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.500",
+          "label": "Debian-based Linux"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.501",
+          "label": "Generic Linux"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,121,249,252,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.500",
+          "label": "Debian-based Linux"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,121,249,33,252,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.402",
+          "label": "Cisco/Linksys Router"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,4,7,23,26,43,50,51,54,55,60,61"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.408",
+          "label": "Gemtek Wireless Router"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,4,7,23,26,43,50,51,54,55,60,61,72"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.402",
+          "label": "Cisco/Linksys Router"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,4,7,23,26,43,50,51,54,55,60,72"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.502",
+          "label": "SUSE Linux/Novell Desktop"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,40,41"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.503",
+          "label": "RedHat/Fedora-based Linux"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,40,41,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.503",
+          "label": "RedHat/Fedora-based Linux"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,40,41,42,26"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.503",
+          "label": "RedHat/Fedora-based Linux"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,40,41,42,26,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.500",
+          "label": "Debian-based Linux"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1304",
+          "label": "LifeSize Video Conferencing"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,42,157"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.422",
+          "label": "HP ProCurve Access Point"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.435",
+          "label": "Motorola AP 6511"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,43,191,186,187,188,189"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.806",
+          "label": "Kyocera Printer"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.500",
+          "label": "Debian-based Linux"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,44,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.500",
+          "label": "Debian-based Linux"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,44,47,26"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1800",
+          "label": "Linspire"
+        }
+      ],
+      "key": "1,28,2,3,15,6,12,46,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.433",
+          "label": "Actiontec Wireless Router"
+        }
+      ],
+      "key": "1,28,2,3,15,6,4,7,23,26,43,50,51,54,55,60,61,72"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.424",
+          "label": "Aruba Access Point"
+        }
+      ],
+      "key": "1,28,2,3,15,6,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.310",
+          "label": "Nortel IP Phone"
+        }
+      ],
+      "key": "1,28,3"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.500",
+          "label": "Debian-based Linux"
+        }
+      ],
+      "key": "1,28,3,121,26,12,15,119,6,40,41,87,85,86,44,45,46,47,42,121,249,33,252,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1400",
+          "label": "OpenBSD"
+        }
+      ],
+      "key": "1,28,3,15,6,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2103",
+          "label": "Wyse Technology thin client"
+        }
+      ],
+      "key": "1,28,3,15,6,12,2,42,48,161,162,184,185,163,164,188,189,181,182,190,186,187"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1302",
+          "label": "Tandberg"
+        }
+      ],
+      "key": "1,28,3,15,6,12,42,242,120,66,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.414",
+          "label": "Bluesocket BSC"
+        }
+      ],
+      "key": "1,28,3,15,6,12,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,28,3,15,6,12,44,78,79"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,28,3,15,6,12,44,78,79,2,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,28,3,15,6,12,44,78,79,66,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,28,3,15,6,12,44,81,78,79,116,2,42,58,59,69,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.301",
+          "label": "Avaya IP Phone"
+        }
+      ],
+      "key": "1,28,3,15,6,12,7,26,42,43,242"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,28,3,15,6,12,81,44,46,78,79,116,66,67,2,69,42,58,59,119,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "1,28,3,160,66,4,42,2,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "1,28,3,160,66,4,42,2,6,15,128,144,157,191"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.510",
+          "label": "Suse Linux Enterprise Desktop 11"
+        }
+      ],
+      "key": "1,28,3,26,12,15,6,40,41,87,85,86,44,45,46,47,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.400",
+          "label": "Cisco Wireless Access Point"
+        }
+      ],
+      "key": "1,28,3,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.310",
+          "label": "Nortel IP Phone"
+        }
+      ],
+      "key": "1,28,3,43,128,131,144,157,188,191,205,219,223,224,227,230,232,235,238,241,244,247,249,251,254,58,59,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.310",
+          "label": "Nortel IP Phone"
+        }
+      ],
+      "key": "1,28,3,43,128,131,144,157,188,191,205,219,223,224,227,230,232,235,238,241,244,247,249,251,254,58,59,66,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.310",
+          "label": "Nortel IP Phone"
+        }
+      ],
+      "key": "1,28,3,43,128,131,144,157,188,191,205,219,223,232,247,251,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.310",
+          "label": "Nortel IP Phone"
+        }
+      ],
+      "key": "1,28,3,43,128,131,144,157,188,191,205,219,223,232,247,251,58,59,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.310",
+          "label": "Nortel IP Phone"
+        }
+      ],
+      "key": "1,28,3,43,128,131,144,157,188,191,205,219,223,232,247,251,58,59,66,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.417",
+          "label": "TP-Link Wireless LAN Router"
+        }
+      ],
+      "key": "1,28,3,43,44,46,47,6"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,28,3,58,59,6,15,78,79,12,42,44,46,69,116,66,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,28,3,58,59,6,15,78,79,12,44,46,69,116,66,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,28,3,58,59,6,15,78,79,42,44,46,69,116,66,67,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,28,3,58,59,6,15,78,79,44,46,69,116,66,67,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1504",
+          "label": "ROBE"
+        }
+      ],
+      "key": "1,28,3,6"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1505",
+          "label": "Intermec corporation"
+        }
+      ],
+      "key": "1,28,3,6,12,15,53,54,51,58,59,69,44,60"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.405",
+          "label": "Apple Airport"
+        }
+      ],
+      "key": "1,28,3,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.420",
+          "label": "Enterasys HiPath Wireless Access Point"
+        }
+      ],
+      "key": "1,28,3,6,15,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.707",
+          "label": "ClearOne Gentner Communications CONVERGE1212 CONVERGE880"
+        }
+      ],
+      "key": "1,28,3,6,15,2,42,4,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.317",
+          "label": "Siemens optiPoint 410/420"
+        }
+      ],
+      "key": "1,28,3,6,15,33,42,2,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.317",
+          "label": "Siemens optiPoint 410/420"
+        }
+      ],
+      "key": "1,28,3,6,15,33,42,2,43,120"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.301",
+          "label": "Avaya IP Phone"
+        }
+      ],
+      "key": "1,28,3,6,15,42,242"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.301",
+          "label": "Avaya IP Phone"
+        }
+      ],
+      "key": "1,28,3,6,15,42,43,176,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.400",
+          "label": "Cisco Wireless Access Point"
+        }
+      ],
+      "key": "1,28,3,6,15,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.400",
+          "label": "Cisco Wireless Access Point"
+        }
+      ],
+      "key": "1,28,3,6,15,67,4"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.400",
+          "label": "Cisco Wireless Access Point"
+        }
+      ],
+      "key": "1,28,3,6,15,67,4,7"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.330",
+          "label": "Polycom SoundPoint IP 301"
+        }
+      ],
+      "key": "1,28,3,66,4,42,2,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.310",
+          "label": "Nortel IP Phone"
+        }
+      ],
+      "key": "1,28,3,99,43,128,131,144,157,188,191,205,219,223,224,227,230,232,235,238,241,244,247,249,251,254,58,59,66,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.317",
+          "label": "Siemens optiPoint 410/420"
+        }
+      ],
+      "key": "1,28,43,3"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.318",
+          "label": "Alcatel Advanced Reflex IP Phone"
+        }
+      ],
+      "key": "1,28,54,58,59,60,43,3"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.416",
+          "label": "Trendnet Access Point"
+        }
+      ],
+      "key": "1,28,6,5,3,44,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.324",
+          "label": "Polycom SoundPoint IP 430"
+        }
+      ],
+      "key": "1,28,66,3,4,42,2,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.300",
+          "label": "Cisco IP Phone"
+        }
+      ],
+      "key": "1,28,66,6,15,3,35,150"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.332",
+          "label": "Unidentified Polycom"
+        }
+      ],
+      "key": "1,28,66,6,15,3,35,176"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "1,28,66,6,15,3,35,43,128,131,144,157,188,191,205,219,223,232,247,251"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.809",
+          "label": "Trendnet Printserver"
+        }
+      ],
+      "key": "1,3"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.906",
+          "label": "HP ProCurve 1800-8G"
+        }
+      ],
+      "key": "1,3,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.426",
+          "label": "Belkin Wireless Router"
+        }
+      ],
+      "key": "1,3,12,23,44,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.801",
+          "label": "Canon Printer"
+        }
+      ],
+      "key": "1,3,12,23,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.816",
+          "label": "Oki Xante llumina"
+        }
+      ],
+      "key": "1,3,12,23,6,15,42,44,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.806",
+          "label": "Kyocera Printer"
+        }
+      ],
+      "key": "1,3,12,23,6,15,44,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1700",
+          "label": "Etherboot/Sun Blade 100"
+        }
+      ],
+      "key": "1,3,12,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1706",
+          "label": "Etherboot/gPXE"
+        }
+      ],
+      "key": "1,3,12,43,17,128,129,130,150"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1707",
+          "label": "Generic Intel PXE"
+        }
+      ],
+      "key": "1,3,12,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "1,3,12,6,15,112,113,78,79"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.806",
+          "label": "Kyocera Printer"
+        }
+      ],
+      "key": "1,3,12,6,15,23,44,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.426",
+          "label": "Belkin Wireless Router"
+        }
+      ],
+      "key": "1,3,121,6,12,15,28,50,33"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.329",
+          "label": "Polycom SoundStation IP 6000"
+        }
+      ],
+      "key": "1,3,15,160,66,3,4,54,42,2,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.332",
+          "label": "Unidentified Polycom"
+        }
+      ],
+      "key": "1,3,15,242,4,54,42,2,6"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.602",
+          "label": "Playstation 2"
+        }
+      ],
+      "key": "1,3,15,6"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.300",
+          "label": "Cisco IP Phone"
+        }
+      ],
+      "key": "1,3,15,6,12,35,66,150"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.401",
+          "label": "Compex Wireless Access Point"
+        }
+      ],
+      "key": "1,3,15,6,43,77"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.806",
+          "label": "Kyocera Printer"
+        }
+      ],
+      "key": "1,3,15,6,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.104",
+          "label": "Microsoft Windows 95 (Version 4.0)"
+        }
+      ],
+      "key": "1,3,15,6,44,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.813",
+          "label": "Konica Minolta Multifunction Printer"
+        }
+      ],
+      "key": "1,3,23,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.811",
+          "label": "Toshiba Multifunction Printer"
+        }
+      ],
+      "key": "1,3,28,15,6,44,69,70,42,12,4"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.319",
+          "label": "Alcatel IP Touch 8 Series Phones"
+        }
+      ],
+      "key": "1,3,28,43,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,3,28,58,59,6,15,78,79,44,46,69,12,81"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,3,28,58,59,6,15,78,79,44,46,69,66,67,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,3,28,58,59,6,15,78,79,44,46,69,66,67,12,81"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1501",
+          "label": "Eye-Fi Wireless Memory Card"
+        }
+      ],
+      "key": "1,3,28,6"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1302",
+          "label": "Tandberg"
+        }
+      ],
+      "key": "1,3,28,6,12,15,26,42,242,120"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.605",
+          "label": "Playstation 3 or Playstation Portable (PSP)"
+        }
+      ],
+      "key": "1,3,28,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,3,28,6,15,44,46,69,12,81"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.340",
+          "label": "2N TELEKOMUNIKACE Helios Phones"
+        }
+      ],
+      "key": "1,3,28,6,66,150"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1701",
+          "label": "PXE"
+        }
+      ],
+      "key": "1,3,3,5,6,11,12,13,15,16,17,18,43,54,60,67,128,129,130,131,132,133,134,135"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.902",
+          "label": "HP ProCurve"
+        }
+      ],
+      "key": "1,3,4,23"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.902",
+          "label": "HP ProCurve"
+        }
+      ],
+      "key": "1,3,4,23,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.902",
+          "label": "HP ProCurve"
+        }
+      ],
+      "key": "1,3,4,23,67,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.907",
+          "label": "HP ProCurve 3500yl"
+        }
+      ],
+      "key": "1,3,4,23,67,66,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.902",
+          "label": "HP ProCurve"
+        }
+      ],
+      "key": "1,3,4,23,67,66,43,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.808",
+          "label": "Lexmark Printer"
+        }
+      ],
+      "key": "1,3,4,42,6,7,12,15,26,44,51,54,58,59,190"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.902",
+          "label": "HP ProCurve"
+        }
+      ],
+      "key": "1,3,4,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.712",
+          "label": "ACTi Corporation"
+        }
+      ],
+      "key": "1,3,4,6,12,15,17,23,28,29,31,33,40,41,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.424",
+          "label": "Aruba Access Point"
+        }
+      ],
+      "key": "1,3,4,6,12,15,28,42,43,60"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.400",
+          "label": "Cisco Wireless Access Point"
+        }
+      ],
+      "key": "1,3,4,6,12,15,28,42,43,66,67,60"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.709",
+          "label": "VBrick Multimedia System"
+        }
+      ],
+      "key": "1,3,4,6,12,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1507",
+          "label": "Alps Electric"
+        }
+      ],
+      "key": "1,3,4,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.711",
+          "label": "Arecont Vision"
+        }
+      ],
+      "key": "1,3,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.808",
+          "label": "Lexmark Printer"
+        }
+      ],
+      "key": "1,3,42,4,6,7,12,15,26,44,51,54,58,59,190"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.808",
+          "label": "Lexmark Printer"
+        }
+      ],
+      "key": "1,3,42,4,6,7,12,15,26,51,54,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.808",
+          "label": "Lexmark Printer"
+        }
+      ],
+      "key": "1,3,42,4,6,7,12,26,44,51,54,58,59,190"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.308",
+          "label": "Sipura VoIP Adaptor"
+        }
+      ],
+      "key": "1,3,42,6,7,15,58,59,44,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.320",
+          "label": "Cisco/Linksys SPA series IP Phone"
+        }
+      ],
+      "key": "1,3,42,6,7,15,58,59,44,66,150,151"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.320",
+          "label": "Cisco/Linksys SPA series IP Phone"
+        }
+      ],
+      "key": "1,3,42,6,7,15,58,59,44,66,150,2,151"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.303",
+          "label": "Linksys PAP VoIP"
+        }
+      ],
+      "key": "1,3,42,6,7,15,58,59,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.320",
+          "label": "Cisco/Linksys SPA series IP Phone"
+        }
+      ],
+      "key": "1,3,42,6,7,15,58,59,66,2,150,151,160,159"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.417",
+          "label": "TP-Link Wireless LAN Router"
+        }
+      ],
+      "key": "1,3,43,44,46,47,6"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.417",
+          "label": "TP-Link Wireless LAN Router"
+        }
+      ],
+      "key": "1,3,43,44,46,47,6,33,121"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.417",
+          "label": "TP-Link Wireless LAN Router"
+        }
+      ],
+      "key": "1,3,43,44,46,47,6,33,121,249"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1701",
+          "label": "PXE"
+        }
+      ],
+      "key": "1,3,43,54,60,67,128,129,130,131,132,133,134,135"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1705",
+          "label": "Apple Netboot"
+        }
+      ],
+      "key": "1,3,43,60"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "1,3,44,6,7,12,15,22,54,58,59,18,144"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "1,3,44,6,7,12,15,22,54,58,59,69,18,144"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "1,3,44,6,7,12,15,22,54,58,59,69,18,144,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "1,3,44,6,7,12,15,22,54,58,59,69,18,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "1,3,44,6,7,12,15,22,54,58,59,69,18,43,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "1,3,44,6,7,12,15,22,54,58,59,69,18,43,119,154"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "1,3,44,6,7,12,15,22,54,58,59,69,18,43,119,81,153,154"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "1,3,44,6,7,12,252,15,22,54,58,59,69,18,43,119,81,153,154"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "1,3,44,6,81,7,12,15,22,54,58,59,69,18,144"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1123",
+          "label": "Samsung S5260 Star II"
+        }
+      ],
+      "key": "1,3,5,6,12,13,15,17,23,28,42,50,51,53,54,56,66,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1506",
+          "label": "Tattile Camera"
+        }
+      ],
+      "key": "1,3,5,6,12,15,44,46,47,155,156,157,158,159,160,161,162,163,164,165,166,167,168,186,187"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1108",
+          "label": "Samsung S8500"
+        }
+      ],
+      "key": "1,3,5,6,32,13,15,17,23,28,42,50,51,53,54,56,66,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1108",
+          "label": "Samsung S8500"
+        }
+      ],
+      "key": "1,3,5,6,49,13,15,17,23,28,42,50,51,53,54,56,66,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1108",
+          "label": "Samsung S8500"
+        }
+      ],
+      "key": "1,3,5,6,56,13,15,17,23,28,42,50,51,53,54,56,66,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.710",
+          "label": "Extron Electronics"
+        }
+      ],
+      "key": "1,3,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.710",
+          "label": "Extron Electronics"
+        }
+      ],
+      "key": "1,3,58,59,6"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.710",
+          "label": "Extron Electronics"
+        }
+      ],
+      "key": "1,3,58,59,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.601",
+          "label": "Xbox 360"
+        }
+      ],
+      "key": "1,3,6"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.431",
+          "label": "Zioncom Wireless Router"
+        }
+      ],
+      "key": "1,3,6,10,12,14,15,28,40,41,42,87"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1300",
+          "label": "Tandberg 1000"
+        }
+      ],
+      "key": "1,3,6,12,15,120,242"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.504",
+          "label": "Gentoo Linux"
+        }
+      ],
+      "key": "1,3,6,12,15,17,23,28,29,31,33,40,41,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.504",
+          "label": "Gentoo Linux"
+        }
+      ],
+      "key": "1,3,6,12,15,17,23,28,29,31,33,40,41,42,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.702",
+          "label": "Amino Aminet Set Top Box"
+        }
+      ],
+      "key": "1,3,6,12,15,17,23,28,29,31,33,40,41,42,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1003",
+          "label": "Synology NAS"
+        }
+      ],
+      "key": "1,3,6,12,15,17,23,28,29,31,33,40,41,42,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.327",
+          "label": "Nortel IP Phone Model 1535"
+        }
+      ],
+      "key": "1,3,6,12,15,17,23,28,29,31,33,40,41,42,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.327",
+          "label": "Nortel IP Phone Model 1535"
+        }
+      ],
+      "key": "1,3,6,12,15,17,23,28,29,31,33,40,41,42,66,72,150"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.502",
+          "label": "SUSE Linux/Novell Desktop"
+        }
+      ],
+      "key": "1,3,6,12,15,17,23,28,29,31,33,40,41,42,9,7,200,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.502",
+          "label": "SUSE Linux/Novell Desktop"
+        }
+      ],
+      "key": "1,3,6,12,15,17,23,28,29,31,33,40,41,42,9,7,44,45,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.502",
+          "label": "SUSE Linux/Novell Desktop"
+        }
+      ],
+      "key": "1,3,6,12,15,17,23,28,29,31,33,40,41,42,9,7,44,45,46,47,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2102",
+          "label": "Generic Thin Client"
+        }
+      ],
+      "key": "1,3,6,12,15,17,26,28,40"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2102",
+          "label": "Generic Thin Client"
+        }
+      ],
+      "key": "1,3,6,12,15,17,28"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1100",
+          "label": "Nokia"
+        }
+      ],
+      "key": "1,3,6,12,15,17,28,40,41,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.417",
+          "label": "TP-Link Wireless LAN Router"
+        }
+      ],
+      "key": "1,3,6,12,15,17,28,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.436",
+          "label": "Sophos/Astaro Wireless Access Point AP 10 Access Point"
+        }
+      ],
+      "key": "1,3,6,12,15,17,28,42,234"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.424",
+          "label": "Aruba Access Point"
+        }
+      ],
+      "key": "1,3,6,12,15,17,43,60"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.501",
+          "label": "Generic Linux"
+        }
+      ],
+      "key": "1,3,6,12,15,23,28,29,31,33,40,41,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.412",
+          "label": "Buffalo Wireless AP"
+        }
+      ],
+      "key": "1,3,6,12,15,23,28,29,31,33,40,41,42,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.501",
+          "label": "Generic Linux"
+        }
+      ],
+      "key": "1,3,6,12,15,23,28,29,31,33,40,41,42,9,7,200,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.432",
+          "label": "AP Meraki"
+        }
+      ],
+      "key": "1,3,6,12,15,26,28,40,41,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.337",
+          "label": "NetCODEC Co VoIP"
+        }
+      ],
+      "key": "1,3,6,12,15,26,28,40,41,42,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.402",
+          "label": "Cisco/Linksys Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.403",
+          "label": "Netgear Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,33,121"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.403",
+          "label": "Netgear Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,33,121,249"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.409",
+          "label": "D-Link Wireless Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,33,40,41,42,44,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.409",
+          "label": "D-Link Wireless Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,33,40,41,42,44,46,47,121,249"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.426",
+          "label": "Belkin Wireless Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,33,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.403",
+          "label": "Netgear Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,33,44,121"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.403",
+          "label": "Netgear Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,33,44,121,249"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1105",
+          "label": "Sony Ericsson Android"
+        }
+      ],
+      "key": "1,3,6,12,15,28,33,51,58,59,119,121"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.604",
+          "label": "Wii"
+        }
+      ],
+      "key": "1,3,6,12,15,28,33,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1127",
+          "label": "LG G2 F320"
+        }
+      ],
+      "key": "1,3,6,12,15,28,4,72"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.501",
+          "label": "Generic Linux"
+        }
+      ],
+      "key": "1,3,6,12,15,28,40,41,42,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.402",
+          "label": "Cisco/Linksys Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,40,41,42,121"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.409",
+          "label": "D-Link Wireless Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,40,41,42,44,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1001",
+          "label": "LaCie NAS"
+        }
+      ],
+      "key": "1,3,6,12,15,28,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.708",
+          "label": "Samsung SMART-TV"
+        }
+      ],
+      "key": "1,3,6,12,15,28,42,125"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.807",
+          "label": "Epson Printer"
+        }
+      ],
+      "key": "1,3,6,12,15,28,42,40"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1203",
+          "label": "Tripplite UPS"
+        }
+      ],
+      "key": "1,3,6,12,15,28,42,40,38,23,37,39,19,26"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.808",
+          "label": "Lexmark Printer"
+        }
+      ],
+      "key": "1,3,6,12,15,28,42,40,38,23,37,44,39,19,26"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.804",
+          "label": "Brother Printer"
+        }
+      ],
+      "key": "1,3,6,12,15,28,42,40,44,46"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.435",
+          "label": "Motorola AP 6511"
+        }
+      ],
+      "key": "1,3,6,12,15,28,42,43,186,187,188,189,191,192"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.417",
+          "label": "TP-Link Wireless LAN Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,42,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.300",
+          "label": "Cisco IP Phone"
+        }
+      ],
+      "key": "1,3,6,12,15,28,42,66,149,150"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1900",
+          "label": "OpenSolaris"
+        }
+      ],
+      "key": "1,3,6,12,15,28,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1111",
+          "label": "Generic Android"
+        }
+      ],
+      "key": "1,3,6,12,15,28,43,66,125"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.402",
+          "label": "Cisco/Linksys Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.421",
+          "label": "Quanta Microsystems Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,44,212"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.402",
+          "label": "Cisco/Linksys Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,44,33,249"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.409",
+          "label": "D-Link Wireless Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,44,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.107",
+          "label": "Microsoft Windows Vista/7 or Server 2008 (Version 6.0)"
+        }
+      ],
+      "key": "1,3,6,12,15,28,44,46,47,33,249"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.812",
+          "label": "Ricoh Multifunction Printer"
+        }
+      ],
+      "key": "1,3,6,12,15,28,44,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.812",
+          "label": "Ricoh Multifunction Printer"
+        }
+      ],
+      "key": "1,3,6,12,15,28,44,47,204"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.426",
+          "label": "Belkin Wireless Router"
+        }
+      ],
+      "key": "1,3,6,12,15,28,50,33"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.807",
+          "label": "Epson Printer"
+        }
+      ],
+      "key": "1,3,6,12,15,28,51,54,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.716",
+          "label": "TV-IP512P PoE Network Camera"
+        }
+      ],
+      "key": "1,3,6,12,15,28,60"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.331",
+          "label": "GrandStream HandyTone 503 ATA"
+        }
+      ],
+      "key": "1,3,6,12,15,28,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.424",
+          "label": "Aruba Access Point"
+        }
+      ],
+      "key": "1,3,6,12,15,4,43,44,60,42,28"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.304",
+          "label": "Mediatrix VoIP Adapter"
+        }
+      ],
+      "key": "1,3,6,12,15,42,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.334",
+          "label": "Cisco ATA 186"
+        }
+      ],
+      "key": "1,3,6,12,15,42,66,150"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.325",
+          "label": "Snom VoIP solutions"
+        }
+      ],
+      "key": "1,3,6,12,15,42,66,67,120"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.406",
+          "label": "Symbol Wireless Access Point"
+        }
+      ],
+      "key": "1,3,6,12,15,43,66,67,128,129,130,131,132,133,134,135"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.402",
+          "label": "Cisco/Linksys Router"
+        }
+      ],
+      "key": "1,3,6,12,15,44,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.321",
+          "label": "Siemens optiPoint 150 S"
+        }
+      ],
+      "key": "1,3,6,12,15,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.409",
+          "label": "D-Link Wireless Router"
+        }
+      ],
+      "key": "1,3,6,12,15,66,69,70,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.322",
+          "label": "Mitel IP Phone"
+        }
+      ],
+      "key": "1,3,6,12,42,44,51,54,58,59,128,66,120,129,130,131,132,133,134,135,224,138,125,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.322",
+          "label": "Mitel IP Phone"
+        }
+      ],
+      "key": "1,3,6,12,42,44,51,54,58,59,128,66,120,129,130,131,132,133,134,135,224,138,125,43,225,226"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1119",
+          "label": "Sony Ericsson CK15A"
+        }
+      ],
+      "key": "1,3,6,12,51,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1109",
+          "label": "Sony Ericsson W800i"
+        }
+      ],
+      "key": "1,3,6,120"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.600",
+          "label": "Xbox"
+        }
+      ],
+      "key": "1,3,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "1,3,6,15,112,113,78,79"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "1,3,6,15,112,113,78,79,95"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "1,3,6,15,112,113,78,79,95,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "1,3,6,15,112,113,78,79,95,252,44,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "1,3,6,15,112,113,78,79,95,44,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "1,3,6,15,119,112,113,78,79,95,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1102",
+          "label": "Apple iPod, iPhone or iPad"
+        }
+      ],
+      "key": "1,3,6,15,119,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1102",
+          "label": "Apple iPod, iPhone or iPad"
+        }
+      ],
+      "key": "1,3,6,15,119,252,46,208,92"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1102",
+          "label": "Apple iPod, iPhone or iPad"
+        }
+      ],
+      "key": "1,3,6,15,119,252,67,52,13"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1102",
+          "label": "Apple iPod, iPhone or iPad"
+        }
+      ],
+      "key": "1,3,6,15,119,78,79,95,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.202",
+          "label": "Mac OS X Lion"
+        }
+      ],
+      "key": "1,3,6,15,119,95,252,44,46"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "1,3,6,15,119,95,252,44,46,101"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "1,3,6,15,119,95,252,44,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "1,3,6,15,119,95,252,44,46,47,101"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.302",
+          "label": "BATM VoIP Adapter"
+        }
+      ],
+      "key": "1,3,6,15,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1601",
+          "label": "BeOS"
+        }
+      ],
+      "key": "1,3,6,15,12,19"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1303",
+          "label": "Polycom VSX 3000"
+        }
+      ],
+      "key": "1,3,6,15,12,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1200",
+          "label": "NetBotz WallBotz 400C"
+        }
+      ],
+      "key": "1,3,6,15,12,69,70,88,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.335",
+          "label": "Gigaset Communications GmbH"
+        }
+      ],
+      "key": "1,3,6,15,120,114,125"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.704",
+          "label": "Motorola NIM100"
+        }
+      ],
+      "key": "1,3,6,15,23,51,54"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.905",
+          "label": "3Com Switches"
+        }
+      ],
+      "key": "1,3,6,15,27"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1000",
+          "label": "Hotway LanDrive"
+        }
+      ],
+      "key": "1,3,6,15,28"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1801",
+          "label": "PHLAK"
+        }
+      ],
+      "key": "1,3,6,15,28,12,7,9,42,48,49"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2100",
+          "label": "Neoware e100 NeoLinux"
+        }
+      ],
+      "key": "1,3,6,15,28,12,7,9,42,48,49,137,211,212,213,214,219"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1704",
+          "label": "Anaconda (RedHat) Installer"
+        }
+      ],
+      "key": "1,3,6,15,28,12,7,9,42,48,49,26"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1600",
+          "label": "OS/2 Warp"
+        }
+      ],
+      "key": "1,3,6,15,28,33"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.806",
+          "label": "Kyocera Printer"
+        }
+      ],
+      "key": "1,3,6,15,28,33,40,41,42,51,58,59,119,121"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1201",
+          "label": "HP iLO Agent"
+        }
+      ],
+      "key": "1,3,6,15,28,33,43,44,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1112",
+          "label": "Samsung Android"
+        }
+      ],
+      "key": "1,3,6,15,28,33,51,58,59,121"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.812",
+          "label": "Ricoh Multifunction Printer"
+        }
+      ],
+      "key": "1,3,6,15,28,44,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.402",
+          "label": "Cisco/Linksys Router"
+        }
+      ],
+      "key": "1,3,6,15,28,54"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.430",
+          "label": "Tenda Wireless Router"
+        }
+      ],
+      "key": "1,3,6,15,31,33,43,44,46,47,249"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.201",
+          "label": "Mac OS 9"
+        }
+      ],
+      "key": "1,3,6,15,33,42,44,45,46,47,69,70,71,74,78,79"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.417",
+          "label": "TP-Link Wireless LAN Router"
+        }
+      ],
+      "key": "1,3,6,15,33,43,44,46,47,121"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.417",
+          "label": "TP-Link Wireless LAN Router"
+        }
+      ],
+      "key": "1,3,6,15,33,43,44,46,47,121,249"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.409",
+          "label": "D-Link Wireless Router"
+        }
+      ],
+      "key": "1,3,6,15,33,44,46,47,121"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.409",
+          "label": "D-Link Wireless Router"
+        }
+      ],
+      "key": "1,3,6,15,33,44,46,47,121,249,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.109",
+          "label": "Microsoft Windows 8 or 8.1 (Version 6.2)"
+        }
+      ],
+      "key": "1,3,6,15,33,44,46,47,121,249,43,60,212"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.300",
+          "label": "Cisco IP Phone"
+        }
+      ],
+      "key": "1,3,6,15,35,66,150"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.300",
+          "label": "Cisco IP Phone"
+        }
+      ],
+      "key": "1,3,6,15,35,66,51,150"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "1,3,6,15,42,43,44,46,47,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.713",
+          "label": "Axis communications ab"
+        }
+      ],
+      "key": "1,3,6,15,42,44,46,47,69"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.300",
+          "label": "Cisco IP Phone"
+        }
+      ],
+      "key": "1,3,6,15,42,66,150"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.300",
+          "label": "Cisco IP Phone"
+        }
+      ],
+      "key": "1,3,6,15,42,66,51,150"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.408",
+          "label": "Gemtek Wireless Router"
+        }
+      ],
+      "key": "1,3,6,15,43,44,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1128",
+          "label": "Windows Phone 8.0"
+        }
+      ],
+      "key": "1,3,6,15,43,44,46,47,33,121,249"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.424",
+          "label": "Aruba Access Point"
+        }
+      ],
+      "key": "1,3,6,15,43,60"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.813",
+          "label": "Konica Minolta Multifunction Printer"
+        }
+      ],
+      "key": "1,3,6,15,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.813",
+          "label": "Konica Minolta Multifunction Printer"
+        }
+      ],
+      "key": "1,3,6,15,44,46"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.703",
+          "label": "Slingbox"
+        }
+      ],
+      "key": "1,3,6,15,44,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2101",
+          "label": "Neoware Capio Windows CE"
+        }
+      ],
+      "key": "1,3,6,15,44,46,47,137,215"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2101",
+          "label": "Neoware Capio Windows CE"
+        }
+      ],
+      "key": "1,3,6,15,44,46,47,137,215,224,226"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.309",
+          "label": "Clipcomm IP Phone"
+        }
+      ],
+      "key": "1,3,6,15,44,46,47,31,33,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.103",
+          "label": "Microsoft Windows 98 (Version 4.10)"
+        }
+      ],
+      "key": "1,3,6,15,44,46,47,57"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1113",
+          "label": "Palm OS"
+        }
+      ],
+      "key": "1,3,6,15,44,46,47,66,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.801",
+          "label": "Canon Printer"
+        }
+      ],
+      "key": "1,3,6,15,44,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.705",
+          "label": "Sony player"
+        }
+      ],
+      "key": "1,3,6,15,51"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1802",
+          "label": "Knoppix"
+        }
+      ],
+      "key": "1,3,6,15,51,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.428",
+          "label": "Freebox Wireless Router"
+        }
+      ],
+      "key": "1,3,6,15,51,58,59,255"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.301",
+          "label": "Avaya IP Phone"
+        }
+      ],
+      "key": "1,3,6,15,66,69,43,176"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "1,3,6,15,67,43,60"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.815",
+          "label": "SEH COMPUTERTECHNIK GMBH"
+        }
+      ],
+      "key": "1,3,6,15,7,44,51,54,58,59,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.815",
+          "label": "SEH COMPUTERTECHNIK GMBH"
+        }
+      ],
+      "key": "1,3,6,15,7,44,51,54,58,59,12,69"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.815",
+          "label": "SEH COMPUTERTECHNIK GMBH"
+        }
+      ],
+      "key": "1,3,6,15,7,44,51,54,58,59,12,69,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2400",
+          "label": "Moneris HiSpeed 3100IP"
+        }
+      ],
+      "key": "1,3,6,15,70,69"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1100",
+          "label": "Nokia"
+        }
+      ],
+      "key": "1,3,6,28"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1111",
+          "label": "Generic Android"
+        }
+      ],
+      "key": "1,3,6,28,33,51,58,59,121"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2401",
+          "label": "PCS Revenue Control Systems"
+        }
+      ],
+      "key": "1,3,6,42,12,15,31,33,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.326",
+          "label": "Aastra VoIP"
+        }
+      ],
+      "key": "1,3,6,42,43,2,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.326",
+          "label": "Aastra VoIP"
+        }
+      ],
+      "key": "1,3,6,42,43,2,66,159,160"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.326",
+          "label": "Aastra VoIP"
+        }
+      ],
+      "key": "1,3,6,42,43,66,159,160"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1706",
+          "label": "Etherboot/gPXE"
+        }
+      ],
+      "key": "1,3,6,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.811",
+          "label": "Toshiba Multifunction Printer"
+        }
+      ],
+      "key": "1,3,6,44,12,15,4,69,70,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.409",
+          "label": "D-Link Wireless Router"
+        }
+      ],
+      "key": "1,3,6,44,15,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.813",
+          "label": "Konica Minolta Multifunction Printer"
+        }
+      ],
+      "key": "1,3,6,44,46"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.409",
+          "label": "D-Link Wireless Router"
+        }
+      ],
+      "key": "1,3,6,44,46,47,12,15,17,23,28,29,31,33"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2200",
+          "label": "Paradox Card Access module"
+        }
+      ],
+      "key": "1,3,6,51,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.805",
+          "label": "Tally Printer"
+        }
+      ],
+      "key": "1,3,6,58,59,44,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.312",
+          "label": "ZyXEL WiFi Phone"
+        }
+      ],
+      "key": "1,3,6,66,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2102",
+          "label": "Generic Thin Client"
+        }
+      ],
+      "key": "1,3,6,7,12,15,17,43,60,66,67,175,203"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "1,3,6,7,12,15,18,23,26,44,46,51,54,58,59,78,79"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.810",
+          "label": "Generic Printer"
+        }
+      ],
+      "key": "1,3,6,7,12,15,18,23,26,44,46,51,54,58,59,78,79,81"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.429",
+          "label": "AeroHive Hive Access Points"
+        }
+      ],
+      "key": "1,3,6,7,12,15,28,40,41,42,225,226,227,228"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.429",
+          "label": "AeroHive Hive Access Points"
+        }
+      ],
+      "key": "1,3,6,7,12,15,28,40,41,42,225,226,227,228,229,230,231"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "1,3,6,7,12,26,44,51,54,58,59,190"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "1,3,6,7,15,66,151,152"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "1,3,6,7,15,66,151,152,43,128,129,130"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.904",
+          "label": "Cisco Small Business"
+        }
+      ],
+      "key": "1,3,66,67,54,129,150,131,132,6,15,100"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1705",
+          "label": "Apple Netboot"
+        }
+      ],
+      "key": "1,3,67,43,60"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1302",
+          "label": "Tandberg"
+        }
+      ],
+      "key": "1,3,7"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.808",
+          "label": "Lexmark Printer"
+        }
+      ],
+      "key": "1,3,7,12,26,44,51,54,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.808",
+          "label": "Lexmark Printer"
+        }
+      ],
+      "key": "1,3,7,12,26,44,51,54,58,59,190"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "1,3,7,44,51,54,58,59,12,144,18"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "1,3,7,44,51,54,58,59,12,15,144,18"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.301",
+          "label": "Avaya IP Phone"
+        }
+      ],
+      "key": "1,3,7,6,15,66,69,43,176"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1124",
+          "label": "Samsung Galaxy Tab 3 7.0 SM-T210R"
+        }
+      ],
+      "key": "1,33,3,6,12,15,28,42,51,58,59,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1111",
+          "label": "Generic Android"
+        }
+      ],
+      "key": "1,33,3,6,12,15,28,51,58,59,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1125",
+          "label": "Android LG Nexus 5 & 7"
+        }
+      ],
+      "key": "1,33,3,6,15,26,28,51,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1117",
+          "label": "Motorola Android"
+        }
+      ],
+      "key": "1,33,3,6,15,28,44,51,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1117",
+          "label": "Motorola Android"
+        }
+      ],
+      "key": "1,33,3,6,15,28,44,51,58,59,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1111",
+          "label": "Generic Android"
+        }
+      ],
+      "key": "1,33,3,6,15,28,51,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1120",
+          "label": "ZTE N9120 Android"
+        }
+      ],
+      "key": "1,33,3,6,15,28,51,58,59,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.513",
+          "label": "Chrome OS"
+        }
+      ],
+      "key": "1,33,3,6,28,51,54,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1115",
+          "label": "Android Tablet"
+        }
+      ],
+      "key": "1,33,3,6,28,51,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2301",
+          "label": "Precision time and frequency reference system"
+        }
+      ],
+      "key": "1,42,4,6,11,3"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.313",
+          "label": "UTStarcom F3000"
+        }
+      ],
+      "key": "1,6,15,3,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.901",
+          "label": "Cisco Catalyst 35xx"
+        }
+      ],
+      "key": "1,6,15,44,3,33"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.400",
+          "label": "Cisco Wireless Access Point"
+        }
+      ],
+      "key": "1,6,15,44,3,33,150,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.400",
+          "label": "Cisco Wireless Access Point"
+        }
+      ],
+      "key": "1,6,15,44,3,7,33,150,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.901",
+          "label": "Cisco Catalyst 35xx"
+        }
+      ],
+      "key": "1,6,15,44,52"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1002",
+          "label": "Xyratex NAS"
+        }
+      ],
+      "key": "1,6,3"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.908",
+          "label": "3Com 4400 SE Switch"
+        }
+      ],
+      "key": "1,6,54,69,42,50,4,3,51,12,116"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.400",
+          "label": "Cisco Wireless Access Point"
+        }
+      ],
+      "key": "1,66,6,15,44,3,67,12,33,150,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.400",
+          "label": "Cisco Wireless Access Point"
+        }
+      ],
+      "key": "1,66,6,15,44,3,67,12,33,150,43,125"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.400",
+          "label": "Cisco Wireless Access Point"
+        }
+      ],
+      "key": "1,66,6,15,44,3,67,33,150,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.300",
+          "label": "Cisco IP Phone"
+        }
+      ],
+      "key": "1,66,6,3,15,150,35"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.300",
+          "label": "Cisco IP Phone"
+        }
+      ],
+      "key": "1,66,6,3,15,150,35,151"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.900",
+          "label": "Cisco Catalyst 29xx"
+        }
+      ],
+      "key": "1,66,6,3,67"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.900",
+          "label": "Cisco Catalyst 29xx"
+        }
+      ],
+      "key": "1,66,6,3,67,12,150"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.900",
+          "label": "Cisco Catalyst 29xx"
+        }
+      ],
+      "key": "1,66,6,3,67,150,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1702",
+          "label": "Novell Netware Client"
+        }
+      ],
+      "key": "100"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "116,252,67,28,59,58,15,6,119,81,44,46,47,42,70,3,78,79,69,1,66,2"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1104",
+          "label": "Symbian OS"
+        }
+      ],
+      "key": "12,6,15,1,3,28,120"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1104",
+          "label": "Symbian OS"
+        }
+      ],
+      "key": "12,6,15,1,3,28,120,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.402",
+          "label": "Cisco/Linksys Router"
+        }
+      ],
+      "key": "15,3,6,44,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.100",
+          "label": "Microsoft Windows XP (Version 5.1, 5.2)"
+        }
+      ],
+      "key": "15,3,6,44,46,47,31,33,249,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.100",
+          "label": "Microsoft Windows XP (Version 5.1, 5.2)"
+        }
+      ],
+      "key": "15,3,6,44,46,47,31,33,249,43,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.100",
+          "label": "Microsoft Windows XP (Version 5.1, 5.2)"
+        }
+      ],
+      "key": "15,3,6,44,46,47,31,33,249,43,252,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.101",
+          "label": "Microsoft Windows 2000 (Version 5.0)"
+        }
+      ],
+      "key": "15,3,6,44,46,47,31,33,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.101",
+          "label": "Microsoft Windows 2000 (Version 5.0)"
+        }
+      ],
+      "key": "15,3,6,44,46,47,31,33,43,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.102",
+          "label": "Microsoft Windows ME (Version 4.90)"
+        }
+      ],
+      "key": "15,3,6,44,46,47,31,33,43,77"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.106",
+          "label": "Microsoft Windows 98SE (Version 4.10)"
+        }
+      ],
+      "key": "15,3,6,44,46,47,43,77"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.106",
+          "label": "Microsoft Windows 98SE (Version 4.10)"
+        }
+      ],
+      "key": "15,3,6,44,46,47,43,77,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1126",
+          "label": "Barnes and Noble Nook (eReader)"
+        }
+      ],
+      "key": "163,1,28,2,3,15,6,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "191,157,144,128,66,160,7,54,42,15,6,4,3,2,1"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1201",
+          "label": "HP iLO Agent"
+        }
+      ],
+      "key": "202"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1201",
+          "label": "HP iLO Agent"
+        }
+      ],
+      "key": "203"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.508",
+          "label": "Meego Netbook"
+        }
+      ],
+      "key": "252,3,42,15,6,1,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.700",
+          "label": "TiVo"
+        }
+      ],
+      "key": "28,2,3,15,6,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.503",
+          "label": "RedHat/Fedora-based Linux"
+        }
+      ],
+      "key": "28,2,3,15,6,12,40,41,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.100",
+          "label": "Microsoft Windows XP (Version 5.1, 5.2)"
+        }
+      ],
+      "key": "28,2,3,15,6,12,44,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.405",
+          "label": "Apple Airport"
+        }
+      ],
+      "key": "28,3,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.903",
+          "label": "Enterasys SecureStacks"
+        }
+      ],
+      "key": "3,1"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "3,1,15,44,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.307",
+          "label": "Sunrocket VoIP Gizmo"
+        }
+      ],
+      "key": "3,1,6,12,15,67,66,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.403",
+          "label": "Netgear Router"
+        }
+      ],
+      "key": "3,1,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.403",
+          "label": "Netgear Router"
+        }
+      ],
+      "key": "3,1,6,15,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.426",
+          "label": "Belkin Wireless Router"
+        }
+      ],
+      "key": "3,1,6,15,121"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.602",
+          "label": "Playstation 2"
+        }
+      ],
+      "key": "3,15,6"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.421",
+          "label": "Quanta Microsystems Router"
+        }
+      ],
+      "key": "3,22,23,1,24,33,35,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.814",
+          "label": "Zebra Printer"
+        }
+      ],
+      "key": "3,22,23,1,24,33,35,6,15,44,11"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "3,44,6,7,12,15,22,54,58,59,69,18,144"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "3,44,6,81,7,12,15,22,54,58,59,69,18,144"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.600",
+          "label": "Xbox"
+        }
+      ],
+      "key": "3,6"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.501",
+          "label": "Generic Linux"
+        }
+      ],
+      "key": "3,6,12,15,17,23,28,29,31,33,40,41,42,119"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.501",
+          "label": "Generic Linux"
+        }
+      ],
+      "key": "3,6,12,15,17,23,28,29,31,33,40,41,42,9,7,200,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.403",
+          "label": "Netgear Router"
+        }
+      ],
+      "key": "3,6,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "3,6,15,112,113,78,79,95"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "3,6,15,112,113,78,79,95,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "3,6,15,112,113,78,79,95,252,44,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "3,6,15,112,113,78,79,95,44,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.500",
+          "label": "Debian-based Linux"
+        }
+      ],
+      "key": "3,6,15,28,12,7,9,42,48,49"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.801",
+          "label": "Canon Printer"
+        }
+      ],
+      "key": "3,6,15,44,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.603",
+          "label": "Gamecube"
+        }
+      ],
+      "key": "3,6,26,28,58,59"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "3,7,44,51,54,58,59,12,15,144,18"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "43,60"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2001",
+          "label": "NEC Projectors"
+        }
+      ],
+      "key": "50,1,3,12,15,51,58,59,6,42,69,70"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.802",
+          "label": "Xerox Printer"
+        }
+      ],
+      "key": "51,1,3,58,59,12,44,54,6,15,144"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.310",
+          "label": "Nortel IP Phone"
+        }
+      ],
+      "key": "51,58,59,1,3,43,128,144,157,191,251"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.333",
+          "label": "MagicJack Plus"
+        }
+      ],
+      "key": "54,51,58,59,1,3,6,15,28"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.306",
+          "label": "UniData IP Phone"
+        }
+      ],
+      "key": "54,51,58,59,1,3,6,15,28,139"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.306",
+          "label": "UniData IP Phone"
+        }
+      ],
+      "key": "54,51,58,59,1,3,6,15,28,139,2,42,66"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1114",
+          "label": "Sharp Phone"
+        }
+      ],
+      "key": "54,51,6,1,3,15,120"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1110",
+          "label": "LG BL40"
+        }
+      ],
+      "key": "54,51,6,1,3,26,15,120"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.808",
+          "label": "Lexmark Printer"
+        }
+      ],
+      "key": "54,59,83,101,114,61,57,52,50,49,80,89,51,59,255"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1101",
+          "label": "RIM BlackBerry"
+        }
+      ],
+      "key": "56,6,1,3,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.509",
+          "label": "Ubuntu Server 10.04 LTS"
+        }
+      ],
+      "key": "58,59,1,28,121,33,3,12,119,15,6,26,17,120"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.817",
+          "label": "Shandong New Beiyang Information Technology"
+        }
+      ],
+      "key": "58,59,1,28,121,33,3,12,119,15,6,40,41,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.504",
+          "label": "Gentoo Linux"
+        }
+      ],
+      "key": "58,59,1,28,121,33,3,12,119,15,6,40,41,42,26"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.507",
+          "label": "Puppy Linux 4.x"
+        }
+      ],
+      "key": "58,59,1,28,121,33,3,12,119,15,6,40,41,42,26,17,120"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2300",
+          "label": "VMware vCenter Server Appliance"
+        }
+      ],
+      "key": "58,59,1,28,121,33,3,12,119,15,6,40,41,42,26,17,120,9,7,44,45,46,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2300",
+          "label": "VMware vCenter Server Appliance"
+        }
+      ],
+      "key": "58,59,1,28,121,33,3,12,119,15,6,40,41,42,26,17,120,9,7,44,45,47"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.818",
+          "label": "Panasonic MB2030CX"
+        }
+      ],
+      "key": "58,59,6,15,44,51,54,1,3"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.706",
+          "label": "Panasonic G20 Television"
+        }
+      ],
+      "key": "58,59,6,15,51,54,1,3"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.338",
+          "label": "Panasonic KX-UDS124CE SIP-DECT Base Station"
+        }
+      ],
+      "key": "58,59,6,15,66,67,51,54,1,3"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1301",
+          "label": "Polycom ViewStation"
+        }
+      ],
+      "key": "6,1,3,12,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1301",
+          "label": "Polycom ViewStation"
+        }
+      ],
+      "key": "6,1,3,12,44,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.402",
+          "label": "Cisco/Linksys Router"
+        }
+      ],
+      "key": "6,3,1"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1112",
+          "label": "Samsung Android"
+        }
+      ],
+      "key": "6,3,1,15,12,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "6,3,1,15,12,66,67,13,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "6,3,1,15,44,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "6,3,1,15,66,67,13"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "6,3,1,15,66,67,13,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.804",
+          "label": "Brother Printer"
+        }
+      ],
+      "key": "6,3,1,15,66,67,13,12,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.804",
+          "label": "Brother Printer"
+        }
+      ],
+      "key": "6,3,1,15,66,67,13,12,44,2,42"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1202",
+          "label": "APC UPS"
+        }
+      ],
+      "key": "6,3,1,15,66,67,13,43,58,59,42,2,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.2000",
+          "label": "Epson Projectors"
+        }
+      ],
+      "key": "6,3,1,15,66,67,13,44"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "6,3,1,15,66,67,13,44,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1502",
+          "label": "APC Uninterruptible Power Supply"
+        }
+      ],
+      "key": "6,3,1,15,66,67,13,44,12,43,58,59,42,2"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "6,3,1,15,66,67,13,44,12,81"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.800",
+          "label": "HP Printer"
+        }
+      ],
+      "key": "6,3,1,15,66,67,13,44,12,81,252"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1202",
+          "label": "APC UPS"
+        }
+      ],
+      "key": "6,3,1,15,66,67,13,44,43,58,59,42,2,12"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.300",
+          "label": "Cisco IP Phone"
+        }
+      ],
+      "key": "6,3,1,66,15,150"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.416",
+          "label": "Trendnet Access Point"
+        }
+      ],
+      "key": "6,5,3,44,15"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.200",
+          "label": "Mac OS X"
+        }
+      ],
+      "key": "60,43"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.323",
+          "label": "Polycom Conference IP Phone"
+        }
+      ],
+      "key": "66,160,7,54,42,15,6,4,3,2,1"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1702",
+          "label": "Novell Netware Client"
+        }
+      ],
+      "key": "78,79"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1702",
+          "label": "Novell Netware Client"
+        }
+      ],
+      "key": "78,79,85"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1702",
+          "label": "Novell Netware Client"
+        }
+      ],
+      "key": "79,78"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1702",
+          "label": "Novell Netware Client"
+        }
+      ],
+      "key": "85"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1702",
+          "label": "Novell Netware Client"
+        }
+      ],
+      "key": "85,86"
+    },
+    {
+      "candidates": [
+        {
+          "id": "fingerbank.os.1702",
+          "label": "Novell Netware Client"
+        }
+      ],
+      "key": "85,86,87"
+    }
+  ],
+  "format": "netcap-dhcp-catalogue",
+  "license": "ODbL-1.0 AND DbCL-1.0",
+  "schema": 1,
+  "source_sha256": "a68d73be27467df464769c7c6bd15906c2a5bc36e3ea4f101b1d1a6ecdb1372d",
+  "version": "fingerbank-6.8.2-pf-de2f9678434a"
+}
