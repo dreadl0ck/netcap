@@ -1,4 +1,4 @@
-// Package appliance provisions operator-owned, isolated network laboratories.
+// Package appliance provisions operator-owned named network topologies.
 package appliance
 
 import (

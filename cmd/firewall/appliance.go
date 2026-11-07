@@ -11,7 +11,7 @@ import (
 )
 
 func applianceCommand() *cli.Command {
-	c := &cli.Command{Name: "appliance", Usage: "operator-owned isolated lab topology lifecycle (JSON output)"}
+	c := &cli.Command{Name: "appliance", Usage: "operator-owned named topology lifecycle (JSON output)"}
 	for _, action := range []string{"plan", "apply", "recover", "remove", "status"} {
 		c.Commands = append(c.Commands, &cli.Command{Name: action, Flags: []cli.Flag{
 			&cli.StringFlag{Name: "manifest", Required: true},

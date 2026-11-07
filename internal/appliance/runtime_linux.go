@@ -87,8 +87,8 @@ func save(dir string, j journal) error {
 	return d.Sync()
 }
 
-// Execute deliberately admits only a disposable container, never a host or
-// production node. The persisted desired topology is immutable for its lifetime.
+// Execute requires bootstrap grants and reviewed digest for production; lab mode
+// is Docker-only. The persisted topology is immutable for its lifetime.
 func Execute(ctx context.Context, m Manifest, dir, action string) (any, error) {
 	p, err := m.Plan()
 	if err != nil {
