@@ -34,7 +34,19 @@ type PayloadRetentionHealth struct {
 	Exceeded      bool   `json:"exceeded"`
 }
 
+const maxPostCloseBytes = 64 << 10
+
+func (t *tcpConnection) ObservePostClose() bool { return true }
+
+func (t *tcpConnection) recordPostCloseDiscard(dir reassembly.TCPFlowDirection, size int, ac reassembly.AssemblerContext) {
+	t.recordDiscard(&t.postCloseMarkers, "tcp-post-close-budget", dir, size, ac)
+}
+
 func (t *tcpConnection) recordRetentionDiscard(dir reassembly.TCPFlowDirection, size int, ac reassembly.AssemblerContext) {
+	t.recordDiscard(&t.retentionMarkers, "tcp-retained-payload-budget", dir, size, ac)
+}
+
+func (t *tcpConnection) recordDiscard(markers *[2]*core.StreamData, reason string, dir reassembly.TCPFlowDirection, size int, ac reassembly.AssemblerContext) {
 	if size <= 0 {
 		return
 	}
@@ -44,11 +56,11 @@ func (t *tcpConnection) recordRetentionDiscard(dir reassembly.TCPFlowDirection, 
 		index, reader = 1, t.server
 	}
 	t.Lock()
-	marker := t.retentionMarkers[index]
+	marker := markers[index]
 	created := marker == nil
 	if created {
-		marker = &core.StreamData{Dir: dir, AssemblerContext: ac, CaptureInformation: ac.GetCaptureInfo(), DiscardReason: "tcp-retained-payload-budget"}
-		t.retentionMarkers[index] = marker
+		marker = &core.StreamData{Dir: dir, AssemblerContext: ac, CaptureInformation: ac.GetCaptureInfo(), DiscardReason: reason}
+		markers[index] = marker
 	}
 	marker.DiscardedBytes += int64(size)
 	t.Unlock()

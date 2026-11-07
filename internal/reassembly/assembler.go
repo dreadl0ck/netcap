@@ -213,7 +213,23 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		if reverse {
 			half, rev = rev, half
 		}
-		if t.SYN && !t.ACK && (conn.resetSeen || half.closed || rev.closed) && (!half.synSeen || half.synSeq != t.Seq) {
+		observer, observesClose := half.stream.(PostCloseObserver)
+		observesClose = observesClose && observer.ObservePostClose()
+		freshSYN := t.SYN && !t.RST && !t.FIN && (!half.synSeen || half.synSeq != t.Seq)
+		retire := !t.ACK && (conn.resetSeen || half.closed || rev.closed)
+		if observesClose {
+			retire = conn.resetSeen || half.finSeen || rev.finSeen || half.closed || rev.closed || half.synSeen && half.synSeq != t.Seq
+			// A first SYN-ACK acknowledging the observed SYN can be the late
+			// response to that opening, even when a forged RST intervened.
+			if t.ACK && !half.synSeen && rev.synSeen && t.Ack == rev.synSeq+1 {
+				freshSYN = false
+			}
+		}
+		if freshSYN && retire {
+			if validator, ok := half.stream.(interface{ ValidateNewSYN(*layers.TCP) bool }); ok && !validator.ValidateNewSYN(t) {
+				conn.mu.Unlock()
+				return
+			}
 			// A fresh ISN after closure belongs to a new incarnation of the tuple.
 			for _, old := range []*halfconnection{&conn.s2c, &conn.c2s} {
 				for !old.closed {
@@ -252,12 +268,37 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		}
 	}
 
-	if !half.stream.Accept(t, half.dir, half.nextSeq) {
+	acceptNext := half.nextSeq
+	if half.finSeen && acceptNext == half.finSeq && Sequence(t.Seq) == half.finSeq.add(1) {
+		acceptNext = acceptNext.add(1)
+	}
+	if !half.stream.Accept(t, half.dir, acceptNext) {
 		if Debug {
 			log.Printf("Ignoring packet")
 		}
 
 		return
+	}
+	observer, observesClose := half.stream.(PostCloseObserver)
+	observesClose = observesClose && observer.ObservePostClose()
+	if observesClose && (t.RST || t.FIN) {
+		conn.observeClose = true
+	}
+	if observesClose && len(t.Payload) > 0 {
+		reason := ""
+		if conn.resetSeen || t.RST {
+			reason = "after-rst"
+		} else if half.finSeen {
+			reason = "after-fin"
+		}
+		if reason != "" {
+			ac = &observationContext{AssemblerContext: ac, reason: reason}
+		}
+		// FIN occupies sequence space only if the continuation actually skips it.
+		// Data at the FIN's sequence remains observable as an evasion candidate.
+		if half.finSeen && half.nextSeq == half.finSeq && Sequence(t.Seq) == half.finSeq.add(1) {
+			half.nextSeq = half.nextSeq.add(1)
+		}
 	}
 
 	if half.closed {
@@ -274,6 +315,9 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	}
 	if t.RST {
 		conn.resetSeen = true
+	}
+	if observesClose && t.FIN && !half.finSeen {
+		half.finSeen, half.finSeq = true, Sequence(t.Seq).add(len(t.Payload))
 	}
 
 	seq, ack, bytes := Sequence(t.Seq), Sequence(t.Ack), t.Payload
@@ -324,7 +368,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		}
 	}
 
-	action = a.handleBytes(bytes, seq, half, t.SYN, t.RST || t.FIN, action, ac)
+	action = a.handleBytes(bytes, seq, half, t.SYN, (t.RST || t.FIN) && !observesClose, action, ac)
 	a.Lock()
 	l := len(a.ret)
 	a.Unlock()
@@ -334,7 +378,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 
 	if action.nextSeq != invalidSequence {
 		half.nextSeq = action.nextSeq
-		if t.FIN {
+		if t.FIN && !observesClose {
 			half.nextSeq = half.nextSeq.add(1)
 		}
 	}

@@ -41,6 +41,8 @@ type ConversationInfo struct {
 
 	// True only when SYN, SYN-ACK and the acknowledging client ACK were observed.
 	TCPHandshakeComplete bool
+	// syn, syn-ack, service-port, or first-observed (roles unknown).
+	TCPRoleSource string
 
 	// CommunityID is the Corelight Community ID v1 for this stream.
 	// This provides a standardized flow identifier compatible with

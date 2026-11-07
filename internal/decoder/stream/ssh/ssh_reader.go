@@ -18,9 +18,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"regexp"
 	"strings"
 	"sync"
@@ -52,7 +50,11 @@ type sshReader struct {
 	ja4sshData        *ja4.SSHStreamData
 	ja4sshFingerprint string
 	ja4sshSessionType string
+	observedAt        [2]int64
+	qualifications    [2]string
 }
+
+const maxSSHPrefix = 64 << 10
 
 // New returns a new SSH reader.
 func (h *sshReader) New(conversation *core.ConversationInfo) core.StreamDecoderInterface {
@@ -81,17 +83,43 @@ func (h *sshReader) Decode() {
 	}
 
 	var (
-		serverBuf bytes.Buffer
-		clientBuf bytes.Buffer
+		serverBuf   bytes.Buffer
+		clientBuf   bytes.Buffer
+		started     [2]bool
+		stopped     [2]bool
+		observation [2]string
 	)
 
 	for _, d := range h.conversation.Data {
-		payloadLen := len(d.Raw())
-		if d.Direction() == reassembly.TCPDirClientToServer {
-			// 2255k bytes should be enough to capture ident (max 255 bytes) + kexInit (usually ~1200-1700 bytes)
-			if clientBuf.Len() < 2255 {
-				clientBuf.Write(d.Raw())
+		index := 0
+		buf := &clientBuf
+		if d.Direction() == reassembly.TCPDirServerToClient {
+			index, buf = 1, &serverBuf
+		}
+		if fragment, ok := d.(*core.StreamData); ok {
+			if fragment.HasGap(started[index]) {
+				stopped[index] = true
+				h.qualifications[index] = "capture or retention gap"
+			} else if fragment.SkippedBytes == -1 {
+				h.qualifications[index] = "capture started midstream"
 			}
+			if fragment.TCPObservation != "" {
+				if started[index] && observation[index] != fragment.TCPObservation {
+					stopped[index] = true
+				}
+				h.qualifications[index] = fragment.TCPObservation + "; endpoint delivery unconfirmed"
+			}
+			observation[index] = fragment.TCPObservation
+		}
+		payloadLen := len(d.Raw())
+		if payloadLen > 0 && !started[index] {
+			h.observedAt[index] = core.FragmentTime(d)
+			started[index] = true
+		}
+		if !stopped[index] && buf.Len() < maxSSHPrefix {
+			buf.Write(d.Raw()[:min(payloadLen, maxSSHPrefix-buf.Len())])
+		}
+		if d.Direction() == reassembly.TCPDirClientToServer {
 			// Track for JA4SSH
 			if ja4.Enabled && payloadLen > 0 {
 				h.ja4sshData.AddClientPacket(payloadLen)
@@ -99,10 +127,6 @@ func (h *sshReader) Decode() {
 				h.ja4sshData.AddClientACK()
 			}
 		} else {
-			// 2255k bytes should be enough to capture ident (max 255 bytes) + kexInit (usually ~1200-1700 bytes)
-			if serverBuf.Len() < 2255 {
-				serverBuf.Write(d.Raw())
-			}
 			// Track for JA4SSH
 			if ja4.Enabled && payloadLen > 0 {
 				h.ja4sshData.AddServerPacket(payloadLen)
@@ -130,18 +154,18 @@ func (h *sshReader) Decode() {
 		zap.Bool("serverKexInit", h.serverKexInit != nil),
 	)
 
-	// If we have idents but no KexInit, create audit records for incomplete handshakes
-	if h.clientKexInit == nil && h.serverKexInit == nil {
+	// Keep either observed identification when its KEX was not captured.
+	if h.clientKexInit == nil || h.serverKexInit == nil {
 		// Create audit records for ident-only connections (incomplete handshakes)
-		if h.clientIdent != "" {
+		if h.clientIdent != "" && h.clientKexInit == nil {
 			err := Decoder.Writer.Write(&types.SSH{
-				Timestamp:         h.conversation.FirstClientPacket.UnixNano(),
+				Timestamp:         h.observedAt[0],
 				Ja4Ssh:            h.ja4sshFingerprint,
 				Flow:              h.conversation.Ident,
 				Ident:             h.clientIdent,
 				Algorithms:        "", // No algorithms without KexInit
 				IsClient:          true,
-				Notes:             "Incomplete handshake - no KexInit",
+				Notes:             h.notes(0, true),
 				Ja4SshSessionType: h.ja4sshSessionType,
 				CommunityID:       h.conversation.CommunityID,
 			})
@@ -157,15 +181,15 @@ func (h *sshReader) Decode() {
 			}
 		}
 
-		if h.serverIdent != "" {
+		if h.serverIdent != "" && h.serverKexInit == nil {
 			err := Decoder.Writer.Write(&types.SSH{
-				Timestamp:         h.conversation.FirstServerPacket.UnixNano(),
+				Timestamp:         h.observedAt[1],
 				Ja4Ssh:            h.ja4sshFingerprint,
 				Flow:              utils.ReverseFlowIdent(h.conversation.Ident),
 				Ident:             h.serverIdent,
 				Algorithms:        "", // No algorithms without KexInit
 				IsClient:          false,
-				Notes:             "Incomplete handshake - no KexInit",
+				Notes:             h.notes(1, true),
 				Ja4SshSessionType: h.ja4sshSessionType,
 				CommunityID:       h.conversation.CommunityID,
 			})
@@ -207,20 +231,51 @@ func (h *sshReader) Decode() {
 	software.Store.Unlock()
 }
 
+func (h *sshReader) notes(index int, noKex bool) string {
+	var notes []string
+	if noKex {
+		notes = append(notes, "Incomplete handshake - no KexInit")
+	}
+	peer := h.conversation.ServerData
+	if index == 1 {
+		peer = h.conversation.ClientData
+	}
+	if len(peer.FirstNonEmpty()) == 0 {
+		notes = append(notes, "peer not observed")
+	}
+	if !h.conversation.TCPHandshakeComplete {
+		notes = append(notes, "TCP establishment incomplete")
+	}
+	switch h.conversation.TCPRoleSource {
+	case "first-observed":
+		notes = append(notes, "endpoint role unknown; first-observed direction")
+	case "service-port":
+		notes = append(notes, "endpoint role inferred from service port")
+	}
+	if h.qualifications[index] != "" {
+		notes = append(notes, h.qualifications[index])
+	}
+	return strings.Join(notes, "; ")
+}
+
 func (h *sshReader) processSSHIdent(ident string, entity string) {
 	i := parseSSHIdent(ident)
 	if i != nil {
+		index, flow := 0, h.conversation.Ident
+		if entity == "server" {
+			index, flow = 1, utils.ReverseFlowIdent(flow)
+		}
 		software.WriteSoftware([]*software.AtomicSoftware{
 			{
 				Software: &types.Software{
-					Timestamp:  h.conversation.FirstClientPacket.UnixNano(),
+					Timestamp:  h.observedAt[index],
 					Product:    i.productName,
 					Version:    i.productVersion,
 					SourceName: "SSH " + entity + " Ident",
 					Service:    serviceSSH,
-					Flows:      []string{h.conversation.Ident},
+					Flows:      []string{flow},
 					Notes:      "SSH version: " + i.sshVersion + " OS: " + i.os,
-					SourceData: h.serverIdent,
+					SourceData: ident,
 				},
 			},
 		}, nil)
@@ -247,18 +302,15 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 		return
 	}
 
-	data, err := ioutil.ReadAll(r)
+	data, err := io.ReadAll(io.LimitReader(r, maxSSHPrefix))
 	if err != nil && !errors.Is(err, io.EOF) {
 		sshLog.Warn("Failed to read data from buffer",
 			zap.String("ident", h.conversation.Ident),
 			zap.String("direction", dirStr),
 			zap.Error(err),
 		)
-		fmt.Println(err)
-
 		return
 	}
-	// fmt.Println(dir, len(data), "\n", hex.Dump(data))
 
 	if len(data) == 0 {
 		sshLog.Debug("No data to parse",
@@ -274,226 +326,67 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 		zap.Int("dataLen", len(data)),
 	)
 
-	// length of the ident if it was found
-	offset := 0
-
-	if h.clientIdent == "" || h.serverIdent == "" { // read the SSH ident from the buffer
-		sshLog.Debug("Parsing SSH ident",
-			zap.String("ident", h.conversation.Ident),
-			zap.String("direction", dirStr),
-		)
-
-		var (
-			br       = bytes.NewReader(data)
-			b        byte
-			ident    []byte
-			lastByte byte
-		)
-
-		for {
-			b, err = br.ReadByte()
-			if errors.Is(err, io.EOF) {
-				break
-			}
-
-			// SSH ident can end with either \n or \r\n
-			// Check for \n (LF) alone
-			if b == 0x0a {
-				offset = len(ident) + 1
-				// Don't include the \r if it was the last byte
-				if lastByte == 0x0d && len(ident) > 0 {
-					ident = ident[:len(ident)-1]
-					offset = len(ident) + 2 // +2 because we consumed \r\n
-				}
-				break
-			}
-
-			lastByte = b
-			ident = append(ident, b)
-		}
-
-		if dir == reassembly.TCPDirClientToServer {
-			h.clientIdent = strings.TrimSpace(string(ident))
-			sshLog.Info("Parsed client SSH ident",
-				zap.String("ident", h.conversation.Ident),
-				zap.String("sshIdent", h.clientIdent),
-				zap.Int("offset", offset),
-			)
-			h.processSSHIdent(h.clientIdent, "client")
-		} else {
-			h.serverIdent = strings.TrimSpace(string(ident))
-			sshLog.Info("Parsed server SSH ident",
-				zap.String("ident", h.conversation.Ident),
-				zap.String("sshIdent", h.serverIdent),
-				zap.Int("offset", offset),
-			)
-			h.processSSHIdent(h.serverIdent, "server")
-		}
+	ident, offset := sshIdentification(data)
+	if offset == 0 {
+		return
+	}
+	if dir == reassembly.TCPDirClientToServer {
+		h.clientIdent = ident
+		h.processSSHIdent(ident, "client")
+	} else {
+		h.serverIdent = ident
+		h.processSSHIdent(ident, "server")
 	}
 
-	// search the entire data fragment for the KexInit
-	kexInitFound := false
-	for i, b := range data {
-		// 0x14 marks the beginning of the SSH KexInitMsg
-		if !(b == 0x14) {
-			continue
-		}
-
-		sshLog.Debug("Found KexInit marker (0x14)",
-			zap.String("ident", h.conversation.Ident),
-			zap.String("direction", dirStr),
-			zap.Int("position", i),
-			zap.Int("offset", offset),
-		)
-
-		// fmt.Println(dir, offset, len(data), i-1, "data[",offset,":",i-1,"]")
-		// fmt.Println(hex.Dump(data))
-
-		// check if length would have correct length
-		if (i-1)-offset != 4 {
-			sshLog.Debug("Invalid length field size",
-				zap.String("ident", h.conversation.Ident),
-				zap.String("direction", dirStr),
-				zap.Int("lengthFieldSize", (i-1)-offset),
-				zap.Int("expected", 4),
-			)
-			break
-		}
-
-		// check if array access is safe
-		if offset > i-1 || len(data) <= i-1 {
-			sshLog.Debug("Array access unsafe",
-				zap.String("ident", h.conversation.Ident),
-				zap.String("direction", dirStr),
-				zap.Int("offset", offset),
-				zap.Int("i-1", i-1),
-				zap.Int("dataLen", len(data)),
-			)
-			break
-		}
-
-		length := int(binary.BigEndian.Uint32(data[offset : i-1]))
-		padding := int(data[i-1])
-
-		sshLog.Debug("Parsing SSH packet",
-			zap.String("ident", h.conversation.Ident),
-			zap.String("direction", dirStr),
-			zap.Int("packetLength", length),
-			zap.Int("padding", padding),
-		)
-
-		if len(data) < i+length-padding-1 {
-			sshLog.Debug("Insufficient data for KexInit",
-				zap.String("ident", h.conversation.Ident),
-				zap.String("direction", dirStr),
-				zap.Int("dataLen", len(data)),
-				zap.Int("required", i+length-padding-1),
-			)
-			// fmt.Println("break: len(data) < i+length-padding-1")
-			break
-		}
-
-		// fmt.Println("padding", padding, "length", length)
-		// fmt.Println(hex.Dump(data[i:i+length-padding-1]))
-
-		var init KexInitMsg
-
-		err = Unmarshal(data[i:i+length-padding-1], &init)
-		if err != nil {
-			sshLog.Warn("Failed to unmarshal KexInit",
-				zap.String("ident", h.conversation.Ident),
-				zap.String("direction", dirStr),
-				zap.Error(err),
-			)
-			fmt.Println(err)
-			break
-		}
-
-		kexInitFound = true
-		sshLog.Info("Successfully parsed KexInit",
-			zap.String("ident", h.conversation.Ident),
-			zap.String("direction", dirStr),
-		)
-
-		// Build algorithms string from KexInit for display/analysis
-		raw := buildAlgorithmsString(init)
-
-		if dir == reassembly.TCPDirClientToServer {
-			err = Decoder.Writer.Write(&types.SSH{
-				Timestamp:               h.conversation.FirstClientPacket.UnixNano(),
-				Ja4Ssh:                  h.ja4sshFingerprint,
-				Flow:                    h.conversation.Ident,
-				Ident:                   h.clientIdent,
-				Algorithms:              raw,
-				IsClient:                true,
-				Ja4SshSessionType:       h.ja4sshSessionType,
-				SoftwareVersion:         extractSoftwareVersion(h.clientIdent),
-				OSGuess:                 guessOS(h.clientIdent),
-				HasWeakKex:              hasWeakKex(init.KexAlgos),
-				HasWeakCipher:           hasWeakCipher(init.CiphersClientServer),
-				HasWeakMAC:              hasWeakMAC(init.MACsClientServer),
-				ServerHostKeyAlgorithms: strings.Join(init.ServerHostKeyAlgos, ","),
-				CommunityID:             h.conversation.CommunityID,
-			})
-			if err != nil {
-				sshLog.Error("failed to flush ssh audit record", zap.Error(err))
-			} else {
-				sshLog.Info("SSH audit record written (client)",
-					zap.String("ident", h.conversation.Ident),
-					zap.String("ja4ssh", h.ja4sshFingerprint),
-					zap.String("clientIdent", h.clientIdent),
-				)
-			}
-
-			atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
-
-			h.clientKexInit = &init
-
-			sshLog.Info("found clientKexInit", zap.String("ident", h.conversation.Ident))
-		} else {
-			err = Decoder.Writer.Write(&types.SSH{
-				Timestamp:               h.conversation.FirstServerPacket.UnixNano(),
-				Ja4Ssh:                  h.ja4sshFingerprint,
-				Flow:                    utils.ReverseFlowIdent(h.conversation.Ident),
-				Ident:                   h.serverIdent,
-				Algorithms:              raw,
-				IsClient:                false,
-				Ja4SshSessionType:       h.ja4sshSessionType,
-				SoftwareVersion:         extractSoftwareVersion(h.serverIdent),
-				OSGuess:                 guessOS(h.serverIdent),
-				HasWeakKex:              hasWeakKex(init.KexAlgos),
-				HasWeakCipher:           hasWeakCipher(init.CiphersServerClient),
-				HasWeakMAC:              hasWeakMAC(init.MACsServerClient),
-				ServerHostKeyAlgorithms: strings.Join(init.ServerHostKeyAlgos, ","),
-				CommunityID:             h.conversation.CommunityID,
-			})
-			if err != nil {
-				sshLog.Error("failed to flush ssh audit record", zap.Error(err))
-			} else {
-				sshLog.Info("SSH audit record written (server)",
-					zap.String("ident", h.conversation.Ident),
-					zap.String("ja4ssh", h.ja4sshFingerprint),
-					zap.String("serverIdent", h.serverIdent),
-				)
-			}
-
-			atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
-
-			h.serverKexInit = &init
-
-			sshLog.Info("found serverKexInit", zap.String("ident", h.conversation.Ident))
-		}
-
-		break
+	init, ok := initialKex(data[offset:])
+	if !ok {
+		return
 	}
 
-	if !kexInitFound {
-		sshLog.Warn("No KexInit found in stream",
-			zap.String("ident", h.conversation.Ident),
-			zap.String("direction", dirStr),
-			zap.Int("dataLen", len(data)),
-		)
+	index, flow := 0, h.conversation.Ident
+	ciphers, macs := init.CiphersClientServer, init.MACsClientServer
+	if dir == reassembly.TCPDirClientToServer {
+		h.clientKexInit = &init
+	} else {
+		h.serverKexInit = &init
+		index, flow = 1, utils.ReverseFlowIdent(flow)
+		ciphers, macs = init.CiphersServerClient, init.MACsServerClient
 	}
+	err = Decoder.Writer.Write(&types.SSH{
+		Timestamp:               h.observedAt[index],
+		Notes:                   h.notes(index, false),
+		Ja4Ssh:                  h.ja4sshFingerprint,
+		Flow:                    flow,
+		Ident:                   ident,
+		Algorithms:              buildAlgorithmsString(init),
+		IsClient:                index == 0,
+		Ja4SshSessionType:       h.ja4sshSessionType,
+		SoftwareVersion:         extractSoftwareVersion(ident),
+		OSGuess:                 guessOS(ident),
+		HasWeakKex:              hasWeakKex(init.KexAlgos),
+		HasWeakCipher:           hasWeakCipher(ciphers),
+		HasWeakMAC:              hasWeakMAC(macs),
+		ServerHostKeyAlgorithms: strings.Join(init.ServerHostKeyAlgos, ","),
+		CommunityID:             h.conversation.CommunityID,
+	})
+	if err != nil {
+		sshLog.Error("failed to flush ssh audit record", zap.Error(err))
+	} else {
+		atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+	}
+}
+
+func initialKex(data []byte) (KexInitMsg, bool) {
+	var init KexInitMsg
+	if len(data) < 6 || data[5] != 20 {
+		return init, false
+	}
+	length, padding := int(binary.BigEndian.Uint32(data)), int(data[4])
+	if padding < 4 || length < padding+2 || length > maxSSHPrefix || length+4 > len(data) {
+		return init, false
+	}
+	err := Unmarshal(data[5:4+length-padding], &init)
+	return init, err == nil
 }
 
 func parseSSHInfoFromHasshDB(soft string) (sshVersion string, product string, version string, os string) {

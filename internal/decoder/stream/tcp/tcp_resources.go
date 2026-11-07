@@ -35,6 +35,7 @@ func (t *tcpConnection) releaseResources() {
 		}
 		t.merged, t.decoder = nil, nil
 		clear(t.retentionMarkers[:])
+		clear(t.postCloseMarkers[:])
 		if t.payloadBudget != nil {
 			t.payloadBudget.release(t.retainedPayloadBytes)
 			t.retainedPayloadBytes = 0

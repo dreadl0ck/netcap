@@ -74,10 +74,21 @@ func (r *rdpReader) Decode() {
 	}
 
 	var clientBuf, serverBuf bytes.Buffer
-	loss:=false
+	loss := false
+	var started, stopped [2]bool
 
 	for _, d := range r.conversation.Data {
-		if fragment,ok:=d.(*core.StreamData);ok&&fragment.SkippedBytes!=0{loss=true}
+		i := 0
+		if d.Direction() == reassembly.TCPDirServerToClient {
+			i = 1
+		}
+		if fragment, ok := d.(*core.StreamData); ok && fragment.HasGap(started[i]) {
+			loss, stopped[i] = true, true
+		}
+		if stopped[i] {
+			continue
+		}
+		started[i] = started[i] || len(d.Raw()) > 0
 		if d.Direction() == reassembly.TCPDirClientToServer {
 			clientBuf.Write(d.Raw())
 		} else {
@@ -92,7 +103,11 @@ func (r *rdpReader) Decode() {
 	if len(clientData) >= 11 && clientData[0] == tpktVersion {
 		msg := r.parseConnectionRequest(clientData)
 		if msg != nil {
-			if loss{msg.NegotiationOutcome="unavailable-after-capture-loss"}else{r.enrichWithServerResponse(msg, serverData)}
+			if loss {
+				msg.NegotiationOutcome = "unavailable-after-capture-loss"
+			} else {
+				r.enrichWithServerResponse(msg, serverData)
+			}
 			msg.SrcIP = r.conversation.ClientIP
 			msg.DstIP = r.conversation.ServerIP
 			msg.SrcPort = int32(r.conversation.ClientPort)
@@ -128,7 +143,7 @@ func (r *rdpReader) parseConnectionRequest(data []byte) *types.RDP {
 	// data[2:4] = length
 	tpktLength := binary.BigEndian.Uint16(data[2:4])
 	if int(tpktLength) > len(data) {
-		msg.NegotiationOutcome="malformed"
+		msg.NegotiationOutcome = "malformed"
 		tpktLength = uint16(len(data))
 	}
 

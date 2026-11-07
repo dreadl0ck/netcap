@@ -85,6 +85,7 @@ func (k *kerberosReader) decodeMessages(emit func(*types.Kerberos, core.DataFrag
 		bytes   []byte
 		first   core.DataFragment
 		stopped bool
+		started bool
 	}
 	states := [2]pending{}
 	for _, d := range k.conversation.Data {
@@ -102,13 +103,14 @@ func (k *kerberosReader) decodeMessages(emit func(*types.Kerberos, core.DataFrag
 			index = 1
 		}
 		s := &states[index]
-		if frag, ok := d.(*core.StreamData); ok && frag.SkippedBytes != 0 {
+		if frag, ok := d.(*core.StreamData); ok && frag.HasGap(s.started) {
 			s.bytes = nil
 			s.stopped = true
 		}
 		if s.stopped {
 			continue
 		}
+		s.started = s.started || len(d.Raw()) > 0
 		if len(s.bytes) == 0 {
 			s.first = d
 		}
