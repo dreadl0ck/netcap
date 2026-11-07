@@ -26,6 +26,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/packetview"
+
 	"github.com/gopacket/gopacket"
 
 	"github.com/dreadl0ck/netcap/internal/reassembly"
@@ -148,7 +150,7 @@ func (p *networkStreamPool) HandleNetworkPacket(packet gopacket.Packet, payload 
 	}
 
 	// Use network flow hash as the stream key (bidirectional)
-	flowHash := nl.NetworkFlow().FastHash()
+	flowHash := nl.NetworkFlow().FastHash() ^ packetview.ScopeHash(packet)
 
 	p.Lock()
 	if s, ok := p.streams[flowHash]; ok {

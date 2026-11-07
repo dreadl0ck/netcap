@@ -14,9 +14,12 @@ import (
 	dpitypes "github.com/dreadl0ck/go-dpi/types"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
+
+	"github.com/dreadl0ck/netcap/internal/packetview"
 )
 
 type incrementalKey struct {
+	scope     string
 	endpoints [36]byte
 	protocol  uint8
 	version   uint8
@@ -48,6 +51,7 @@ func packetKey(packet gopacket.Packet) (incrementalKey, int, bool) {
 		return key, 0, false
 	}
 	key.version = uint8(len(src.Raw()))
+	key.scope = packetview.Scope(packet)
 	copy(key.endpoints[:16], src.Raw())
 	copy(key.endpoints[16:18], sp.Raw())
 	copy(key.endpoints[18:34], dst.Raw())
@@ -67,6 +71,9 @@ func (key incrementalKey) hash() uint64 {
 	// Mix both address-port endpoints; fixed high bits must not put every flow on one shard.
 	h := uint64(14695981039346656037)
 	for _, b := range key.endpoints {
+		h = (h ^ uint64(b)) * 1099511628211
+	}
+	for _, b := range []byte(key.scope) {
 		h = (h ^ uint64(b)) * 1099511628211
 	}
 	return (h ^ uint64(key.protocol) ^ uint64(key.version)<<8) * 1099511628211

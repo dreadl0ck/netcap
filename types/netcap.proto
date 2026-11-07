@@ -307,6 +307,11 @@ message PacketContext {
   int32 SrcPort = 3;
   int32 DstPort = 4;
   string CommunityID = 5;  // Corelight Community ID v1 for cross-tool correlation
+  string NetworkScope = 6; // Interface, VLANs and symmetric tunnel path; separate from Community ID
+  repeated Encapsulation Encapsulations = 7;
+  bool ReassembledIP = 8;
+  repeated CapturePacketRef CapturePackets = 9; // Original ingress packets, including duplicate fragments
+  string Normalization = 10; // complete | fragment-pending | fragment-rejected | malformed | depth-limit
 }
 
 // a connection has the following attributes:
@@ -406,6 +411,10 @@ message Connection {
   string DNSResolvedName = 65;       // First observed packet's ingress-time UDP DNS context
   int64 DNSResolvedAt = 66;          // Matching answer's capture time (ns)
   string DNSResolutionState = 67;    // empty when disabled | unobserved | resolved
+  string NetworkScope = 68;
+  repeated Encapsulation Encapsulations = 69; // Path of the first observed datagram
+  uint64 ReassembledDatagrams = 70;
+  string Normalization = 71; // complete, or why only an outer network observation was possible
 }
 
 //
@@ -4709,4 +4718,24 @@ message ModbusFileRecord {
   uint32 RecordNumber = 3;
   uint32 RecordLength = 4;
   repeated uint32 Values = 5;
+}
+
+message Encapsulation {
+  string Protocol = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  uint32 SrcPort = 4;
+  uint32 DstPort = 5;
+  uint32 Identifier = 6; // VNI, GRE key or ERSPAN session
+  bool KeyPresent = 7;
+  uint32 VLAN = 8;
+  uint32 GREKey = 9; // Retained separately when Identifier is an ERSPAN session
+}
+
+message CapturePacketRef {
+  uint64 Ordinal = 1; // One-based within this capture
+  int64 Timestamp = 2;
+  int32 CaptureLength = 3;
+  int32 WireLength = 4;
+  int32 InterfaceIndex = 5;
 }

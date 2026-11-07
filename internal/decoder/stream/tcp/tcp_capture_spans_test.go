@@ -75,7 +75,7 @@ func TestTCPModbusCaptureSpans(t *testing.T) {
 					}
 					packet.Payload = bytes.Clone(data)
 					packet.SetInternalPortsForTesting()
-					ac := &context{CaptureInfo: gopacket.CaptureInfo{Timestamp: time.Unix(stamp, 123), CaptureLength: len(data) + 40, Length: len(data) + 40, InterfaceIndex: int(stamp)}}
+					ac := &context{CaptureInfo: gopacket.CaptureInfo{Timestamp: time.Unix(stamp, 123), CaptureLength: len(data) + 40, Length: len(data) + 40, InterfaceIndex: 7}}
 					assembler.AssembleWithContext(flow, packet, ac)
 					// Delivery must not retain the live packet's backing array.
 					clear(packet.Payload)

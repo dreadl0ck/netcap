@@ -27,6 +27,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/packetview"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
@@ -226,13 +228,7 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 				log.Fatal("type does not implement the types.AuditRecord interface")
 			}
 			if d, ok := record.(*types.DNS); ok {
-				scope := fmt.Sprintf("%d", p.Metadata().CaptureInfo.InterfaceIndex)
-				for _, layer := range p.Layers() {
-					if vlan, ok := layer.(*layers.Dot1Q); ok {
-						scope += fmt.Sprintf("/%d", vlan.VLANIdentifier)
-					}
-				}
-				dnsTx.ObserveScoped(d, scope)
+				dnsTx.ObserveScoped(d, packetview.Scope(p))
 			}
 		}
 
