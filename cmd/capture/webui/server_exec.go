@@ -83,6 +83,9 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		"-y",        // Force overwrite without prompting (required for non-interactive mode)
 		"-http", "", // Disable web UI server
 	}
+	if job.requireCaptureEvidence {
+		args = append(args, "-capture-evidence=true")
+	}
 	if len(job.ArtifactConfig) == 0 {
 		snapshot, err := snapshotArtifactConfig()
 		if err != nil {

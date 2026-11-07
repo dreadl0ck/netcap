@@ -17,7 +17,8 @@ import (
 	"github.com/gopacket/gopacket/pcapgo"
 )
 
-func TestHTTPPacketExportUsesObservedTupleTransportAndTime(t *testing.T) {
+func observedTuplePCAP(t *testing.T) (string, time.Time) {
+	t.Helper()
 	path := filepath.Join(t.TempDir(), "owned.pcap")
 	file, err := os.Create(path)
 	if err != nil {
@@ -68,6 +69,11 @@ func TestHTTPPacketExportUsesObservedTupleTransportAndTime(t *testing.T) {
 	if err := file.Close(); err != nil {
 		t.Fatal(err)
 	}
+	return path, base
+}
+
+func TestHTTPPacketExportUsesObservedTupleTransportAndTime(t *testing.T) {
+	path, base := observedTuplePCAP(t)
 	s := &Server{activeInputFile: path}
 	query := url.Values{"srcIP": {"192.0.2.1"}, "dstIP": {"198.51.100.1"}, "srcPort": {"52123"}, "dstPort": {"9243"}, "startNs": {"1700000000000000001"}, "endNs": {"1700000000000000002"}}
 	for name, handler := range map[string]http.HandlerFunc{"HTTP": s.handleHTTPDownloadPCAP, "certificate": s.handleCertificateDownloadPCAP} {

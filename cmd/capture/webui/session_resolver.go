@@ -138,6 +138,9 @@ func (s *Server) resolveCaptureSelection(r *http.Request) (captureSelection, err
 		return selected, selectionError(503, "No analysis selected")
 	}
 	if expected := q.Get("runId"); expected != "" {
+		if selected.OutputDir == "" {
+			return captureSelection{}, selectionError(409, "Capture generation is unavailable")
+		}
 		var manifest evidence.CaptureManifest
 		if err := readEvidenceJSON(filepath.Join(selected.OutputDir, "capture-manifest.json"), &manifest); err != nil || manifest.RunID == "" || manifest.RunID != expected {
 			return captureSelection{}, selectionError(409, "Capture generation is unavailable or stale")

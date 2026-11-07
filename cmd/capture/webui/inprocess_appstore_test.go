@@ -233,6 +233,7 @@ func TestInProcessAnalysisProducesAuditRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.jobQueue = make(chan *AnalysisJob, 1)
+	s.runtimeConfig = &RuntimeConfig{CaptureEvidence: false}
 	w := requestReanalysis(s, string(mustOfflineJSON(t, map[string]string{"inputFile": input})))
 	if w.Code != http.StatusOK {
 		t.Fatalf("child admission: %d %s", w.Code, w.Body.String())
@@ -251,6 +252,24 @@ func TestInProcessAnalysisProducesAuditRecords(t *testing.T) {
 	restored := NewServer("127.0.0.1:0", outDir, []string{input}, "", false, false, false, nil, nil, false)
 	if !restored.completedFiles[child.InputFile] || restored.fileIDToPath[child.SessionID] != child.InputFile || len(restored.jobQueue) != 0 {
 		t.Fatalf("completed native child did not survive restart independently: errors=%+v", restored.fileErrors)
+	}
+	var binding struct {
+		RunID       string `json:"runId"`
+		InputSHA256 string `json:"inputSHA256"`
+	}
+	if err := json.Unmarshal(parentManifest, &binding); err != nil {
+		t.Fatal(err)
+	}
+	w = requestReanalysis(s, subsetRequestBody(t, input, binding.RunID, &childPacketSelection{Version: 1, SourceSHA256: binding.InputSHA256, BPF: "tcp port 18127"}))
+	if w.Code != 200 {
+		t.Fatalf("native subset admission: %d %s", w.Code, w.Body.String())
+	}
+	subset := <-s.jobQueue
+	defer subset.processingDone()
+	s.runAnalysis(subset)
+	assertProgressStatus(t, s, subset.SessionID, "completed")
+	if _, err := os.Stat(filepath.Join(subset.OutputDir, "Protobuf.ncap.gz")); err != nil {
+		t.Fatalf("subset produced no Protobuf audit records: %v", err)
 	}
 }
 

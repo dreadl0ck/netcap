@@ -26,6 +26,10 @@ type localChildState struct {
 }
 
 func writeChildState(dir string, state localChildState) error {
+	return writeAnalysisJSON(dir, "analysis-state.json", state)
+}
+
+func writeAnalysisJSON(dir, destination string, value any) error {
 	root, err := os.OpenRoot(dir)
 	if err != nil {
 		return err
@@ -37,7 +41,7 @@ func writeChildState(dir string, state localChildState) error {
 		return err
 	}
 	defer root.Remove(name)
-	writeErr := json.NewEncoder(f).Encode(state)
+	writeErr := json.NewEncoder(f).Encode(value)
 	if writeErr == nil {
 		writeErr = f.Sync()
 	}
@@ -48,7 +52,7 @@ func writeChildState(dir string, state localChildState) error {
 	if closeErr != nil {
 		return closeErr
 	}
-	return root.Rename(name, "analysis-state.json")
+	return root.Rename(name, destination)
 }
 
 func (s *Server) saveLocalChildStateLocked(input string) error {
@@ -69,19 +73,27 @@ func (s *Server) saveLocalChildStateLocked(input string) error {
 }
 
 func readRootJSON(root *os.Root, name string, target any) error {
-	f, err := root.Open(name)
+	data, err := readRootMetadata(root, name)
 	if err != nil {
 		return err
+	}
+	return json.Unmarshal(data, target)
+}
+
+func readRootMetadata(root *os.Root, name string) ([]byte, error) {
+	f, err := root.Open(name)
+	if err != nil {
+		return nil, err
 	}
 	defer f.Close()
 	data, err := io.ReadAll(io.LimitReader(f, (16<<20)+1))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(data) > 16<<20 {
-		return fmt.Errorf("child metadata exceeds 16 MiB")
+		return nil, fmt.Errorf("child metadata exceeds 16 MiB")
 	}
-	return json.Unmarshal(data, target)
+	return data, nil
 }
 
 func childRecoveredState(root *os.Root, child childAnalysis, source string) localChildState {
@@ -112,6 +124,14 @@ func childRecoveredState(root *os.Root, child childAnalysis, source string) loca
 	if saved.Status == StatusFailed {
 		return state
 	}
+	if child.PacketSelection != nil {
+		data, err := readRootMetadata(root, "packet-selection.json")
+		hash := sha256.Sum256(data)
+		if err != nil || hex.EncodeToString(hash[:]) != child.PacketManifestSHA256 {
+			state.Error = "Subset selection manifest is missing or changed"
+			return state
+		}
+	}
 	var manifest evidence.CaptureManifest
 	var ready rules.OfflineReadyMarker
 	if (saved.Status == StatusCompleted || os.IsNotExist(stateErr)) && readRootJSON(root, "capture-manifest.json", &manifest) == nil && (manifest.Status == "done" || manifest.Status == "complete") && manifest.RunID != "" &&
@@ -140,6 +160,7 @@ func (s *Server) discoverLocalChildren() error {
 	}
 	candidates := make(map[string]childAnalysis)
 	metadataBytes := 0
+	candidateCount := 0
 	for _, scan := range []string{base, filepath.Dir(base)} {
 		entries, err := os.ReadDir(scan)
 		if os.IsNotExist(err) {
@@ -152,20 +173,33 @@ func (s *Server) discoverLocalChildren() error {
 			if !entry.IsDir() || !strings.HasPrefix(entry.Name(), "analysis-") {
 				continue
 			}
+			candidateCount++
+			if candidateCount > 4096 {
+				return fmt.Errorf("child discovery exceeds 4096 candidates")
+			}
 			dir := filepath.Join(scan, entry.Name())
 			root, err := os.OpenRoot(dir)
 			if err != nil {
 				continue
 			}
 			var child childAnalysis
-			err = readRootJSON(root, "analysis-parent.json", &child)
+			data, err := readRootMetadata(root, "analysis-parent.json")
+			if err == nil {
+				err = json.Unmarshal(data, &child)
+			}
 			root.Close()
 			if err != nil || child.Version != 1 || child.AnalysisID != entry.Name() || len(child.InputSHA256) != 64 || child.CreatedAt.IsZero() {
 				log.Printf("[WebUI] Ignoring invalid child metadata in %s", dir)
 				continue
 			}
-			metadataBytes += len(child.ArtifactConfig) + len(child.ParentInputFile) + len(child.ParentOutputDir) + 512
-			if len(candidates) >= 4096 || metadataBytes > 64<<20 {
+			if child.Selector != "whole-capture" && child.Selector != "packet-subset" {
+				continue
+			}
+			if child.Selector == "packet-subset" && (child.PacketSelection == nil || child.PacketSelection.validate(child.ParentRunID) != nil || len(child.PacketManifestSHA256) != 64) {
+				continue
+			}
+			metadataBytes += len(data) + 512
+			if metadataBytes > 64<<20 {
 				return fmt.Errorf("child discovery exceeds 4096 candidates or 64 MiB accounted metadata")
 			}
 			candidates[dir] = child
@@ -185,7 +219,8 @@ func (s *Server) discoverLocalChildren() error {
 		progress = false
 		for dir, child := range candidates {
 			parent, err := filepath.Abs(child.ParentOutputDir)
-			if err != nil || (!allowed[parent] && !withinAnalysisRoot(base, parent)) {
+			boundRoot := child.AnalysisRoot == base
+			if err != nil || (!boundRoot && !allowed[parent] && !withinAnalysisRoot(base, parent)) {
 				continue
 			}
 			if !withinAnalysisRoot(base, dir) && filepath.Dir(dir) != filepath.Dir(base) {
@@ -202,7 +237,14 @@ func (s *Server) discoverLocalChildren() error {
 }
 
 func (s *Server) restoreLocalChild(dir string, child childAnalysis) bool {
-	source := filepath.Join("source", filepath.Base(child.ParentInputFile))
+	name := child.InputFilename
+	if name == "" {
+		name = filepath.Base(child.ParentInputFile)
+	}
+	if name != filepath.Base(name) || name == "." || name == ".." {
+		return false
+	}
+	source := filepath.Join("source", name)
 	if child.ParentInputFile == "" || filepath.Base(child.ParentInputFile) == "." {
 		return false
 	}

@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -16,25 +17,29 @@ import (
 )
 
 type childAnalysis struct {
-	Version              int       `json:"version"`
-	AnalysisID           string    `json:"analysisId"`
-	CreatedAt            time.Time `json:"createdAt"`
-	EngineVersion        string    `json:"engineVersion"`
-	EngineCommit         string    `json:"engineCommit"`
-	Selector             string    `json:"selector"`
-	ParentSessionID      string    `json:"parentSessionId,omitempty"`
-	ParentInputFile      string    `json:"parentInputFile"`
-	ParentOutputDir      string    `json:"parentOutputDir"`
-	ParentRunID          string    `json:"parentRunId,omitempty"`
-	ParentManifestSHA256 string    `json:"parentManifestSHA256,omitempty"`
-	InputSHA256          string    `json:"inputSHA256"`
-	EnableDPI            bool      `json:"enableDPI"`
-	BPFFilter            string    `json:"bpfFilter"`
-	ArtifactConfig       []byte    `json:"artifactConfig"`
+	Version              int                   `json:"version"`
+	AnalysisID           string                `json:"analysisId"`
+	CreatedAt            time.Time             `json:"createdAt"`
+	EngineVersion        string                `json:"engineVersion"`
+	EngineCommit         string                `json:"engineCommit"`
+	Selector             string                `json:"selector"`
+	ParentSessionID      string                `json:"parentSessionId,omitempty"`
+	ParentInputFile      string                `json:"parentInputFile"`
+	ParentOutputDir      string                `json:"parentOutputDir"`
+	AnalysisRoot         string                `json:"analysisRoot,omitempty"`
+	ParentRunID          string                `json:"parentRunId,omitempty"`
+	ParentManifestSHA256 string                `json:"parentManifestSHA256,omitempty"`
+	InputSHA256          string                `json:"inputSHA256"`
+	InputFilename        string                `json:"inputFilename,omitempty"`
+	PacketSelection      *childPacketSelection `json:"packetSelection,omitempty"`
+	PacketManifestSHA256 string                `json:"packetManifestSHA256,omitempty"`
+	EnableDPI            bool                  `json:"enableDPI"`
+	BPFFilter            string                `json:"bpfFilter"`
+	ArtifactConfig       []byte                `json:"artifactConfig"`
 }
 
 // Copy the input so parent expiry or replacement cannot change a queued child's source.
-func snapshotAnalysisInput(source, destination string) (string, int64, error) {
+func snapshotAnalysisInput(ctx context.Context, source, destination string) (string, int64, error) {
 	in, err := os.Open(source)
 	if err != nil {
 		return "", 0, err
@@ -52,7 +57,7 @@ func snapshotAnalysisInput(source, destination string) (string, int64, error) {
 		return "", 0, err
 	}
 	hash := sha256.New()
-	n, copyErr := io.Copy(io.MultiWriter(out, hash), in)
+	n, copyErr := io.Copy(io.MultiWriter(out, hash), &childInputReader{ctx: ctx, input: in})
 	closeErr := out.Close()
 	if copyErr != nil {
 		return "", n, copyErr
@@ -70,7 +75,19 @@ func snapshotAnalysisInput(source, destination string) (string, int64, error) {
 	return hex.EncodeToString(hash.Sum(nil)), n, nil
 }
 
-func (s *Server) queueChildAnalysis(w http.ResponseWriter, input, parentDir, parentSession, ip string) {
+type childInputReader struct {
+	ctx   context.Context
+	input io.Reader
+}
+
+func (r *childInputReader) Read(data []byte) (int, error) {
+	if err := r.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return r.input.Read(data)
+}
+
+func (s *Server) queueChildAnalysis(w http.ResponseWriter, r *http.Request, input, parentDir, parentSession, ip string, selection *childPacketSelection, expectedRun string) {
 	if s.jobQueue == nil {
 		http.Error(w, errAnalysisUnavailable.Error(), http.StatusServiceUnavailable)
 		return
@@ -82,13 +99,28 @@ func (s *Server) queueChildAnalysis(w http.ResponseWriter, input, parentDir, par
 	}
 	s.mu.RLock()
 	enableDPI := s.dpiConfigured
+	analysisRoot := s.baseOutDir
 	s.mu.RUnlock()
+	if analysisRoot != "" {
+		analysisRoot, err = filepath.Abs(analysisRoot)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+	}
 	provenance := childAnalysis{Version: 1, CreatedAt: time.Now().UTC(), ParentSessionID: parentSession,
 		EngineVersion: netcap.Version, EngineCommit: netcap.Commit, Selector: "whole-capture",
 		ParentInputFile: input, ParentOutputDir: parentDir, EnableDPI: enableDPI,
-		BPFFilter: s.loadBPFConfig().Filter, ArtifactConfig: config}
+		AnalysisRoot: analysisRoot,
+		BPFFilter:    s.loadBPFConfig().Filter, ArtifactConfig: config}
 	var parent evidence.CaptureManifest
-	if data, readErr := os.ReadFile(filepath.Join(parentDir, "capture-manifest.json")); readErr == nil {
+	parentRoot, err := os.OpenRoot(parentDir)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer parentRoot.Close()
+	if data, readErr := readRootMetadata(parentRoot, "capture-manifest.json"); readErr == nil {
 		if err := json.Unmarshal(data, &parent); err != nil {
 			http.Error(w, "Invalid parent capture manifest", http.StatusConflict)
 			return
@@ -98,6 +130,14 @@ func (s *Server) queueChildAnalysis(w http.ResponseWriter, input, parentDir, par
 		provenance.ParentRunID = parent.RunID
 	} else if !os.IsNotExist(readErr) {
 		http.Error(w, readErr.Error(), http.StatusInternalServerError)
+		return
+	}
+	if expectedRun != "" && parent.RunID != expectedRun {
+		http.Error(w, "Parent capture generation changed before preparation", http.StatusConflict)
+		return
+	}
+	if selection != nil && (parent.RunID == "" || parent.InputSHA256 != selection.SourceSHA256) {
+		http.Error(w, "Subset requires a matching parent capture SHA256", http.StatusConflict)
 		return
 	}
 	dir, err := os.MkdirTemp(filepath.Dir(parentDir), "analysis-")
@@ -116,9 +156,34 @@ func (s *Server) queueChildAnalysis(w http.ResponseWriter, input, parentDir, par
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	childInput := filepath.Join(dir, "source", filepath.Base(input))
-	hash, size, err := snapshotAnalysisInput(input, childInput)
+	provenance.InputFilename = filepath.Base(input)
+	if selection != nil {
+		provenance.InputFilename = "selected.pcapng"
+	}
+	childInput := filepath.Join(dir, "source", provenance.InputFilename)
+	var hash string
+	var size int64
+	if selection == nil {
+		hash, size, err = snapshotAnalysisInput(r.Context(), input, childInput)
+	} else {
+		hash, size, err = prepareSubsetInput(r.Context(), input, dir, selection)
+		provenance.Selector, provenance.PacketSelection = "packet-subset", selection
+		if err == nil {
+			provenance.PacketManifestSHA256 = calculateFileHash(filepath.Join(dir, "packet-selection.json"))
+			if provenance.PacketManifestSHA256 == "" {
+				err = fmt.Errorf("subset manifest hash is unavailable")
+			}
+		}
+	}
 	if err != nil {
+		if r.Context().Err() != nil {
+			http.Error(w, "Child preparation canceled", http.StatusRequestTimeout)
+			return
+		}
+		if typed, ok := err.(*captureSelectionError); ok {
+			writeSelectionError(w, typed)
+			return
+		}
 		code := http.StatusInternalServerError
 		if os.IsNotExist(err) {
 			code = http.StatusNotFound
@@ -126,7 +191,7 @@ func (s *Server) queueChildAnalysis(w http.ResponseWriter, input, parentDir, par
 		http.Error(w, err.Error(), code)
 		return
 	}
-	if parent.InputSHA256 != "" && parent.InputSHA256 != hash {
+	if selection == nil && parent.InputSHA256 != "" && parent.InputSHA256 != hash {
 		http.Error(w, "Input no longer matches parent capture hash", http.StatusConflict)
 		return
 	}
@@ -139,13 +204,17 @@ func (s *Server) queueChildAnalysis(w http.ResponseWriter, input, parentDir, par
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if r.Context().Err() != nil {
+		http.Error(w, "Child preparation canceled", http.StatusRequestTimeout)
+		return
+	}
 	job := &AnalysisJob{SessionID: provenance.AnalysisID, InputFile: childInput, OutputDir: dir,
-		EnableDPI: enableDPI, BPFFilter: provenance.BPFFilter, ArtifactConfig: config}
+		EnableDPI: enableDPI, BPFFilter: provenance.BPFFilter, ArtifactConfig: config, requireCaptureEvidence: true}
 	if s.sessionManager != nil {
 		child := &SessionInfo{SessionID: job.SessionID, IP: ip, UploadTimestamp: provenance.CreatedAt,
 			InputFile: childInput, InputFilename: filepath.Base(input), InputFileSize: size, OutputDir: dir,
 			Status: StatusQueued, ShareUrl: "/view/" + job.SessionID, BPFFilter: job.BPFFilter,
-			ParentSessionID: parentSession}
+			ParentSessionID: parentSession, ParentRunID: parent.RunID, AnalysisSelector: provenance.Selector, PacketSelection: selection}
 		if err := saveSessionMetadata(filepath.Join(dir, "session.json"), child); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -177,6 +246,11 @@ func (s *Server) queueChildAnalysis(w http.ResponseWriter, input, parentDir, par
 		s.mu.Unlock()
 	}
 	registered = true
+	if r.Context().Err() != nil {
+		s.recordAnalysisFailure(job, "Child preparation canceled before queue admission", "")
+		http.Error(w, "Child preparation canceled", http.StatusRequestTimeout)
+		return
+	}
 	if err := s.enqueueAnalysis(job, false); err != nil {
 		s.recordAnalysisFailure(job, err.Error(), "")
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)

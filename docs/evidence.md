@@ -100,6 +100,8 @@ selectors must agree; a stale generation cannot enqueue work.
 `POST /api/reanalyze` creates an `analysis-*` sibling directory and a separate
 queued run. Parent audit records, extracted files, notes and completion state
 remain available, including when admission or child processing fails.
+Child jobs require capture-provenance witnesses even when ordinary capture
+evidence is disabled; their effective capture configuration records that policy.
 
 | Child artifact / field | Contract |
 | --- | --- |
@@ -112,6 +114,8 @@ remain available, including when admission or child processing fails.
 Local startup rediscovers owned `analysis-*` directories immediately inside the
 configured output root or beside it, with parent relationships bound to that
 root. `analysis-state.json` atomically preserves local outcomes and timing.
+New children also retain the configured `analysisRoot`, allowing a retained
+grandchild to reopen after its immediate parent's directory is removed.
 Completion requires a matching source hash, finalized capture manifest and
 matching `audit-output-ready.json`; queued/interrupted work becomes a visible
 failure and is never automatically rerun. Missing/replaced sources remain visible
@@ -119,9 +123,41 @@ as failed children. Symlinked sources/directories, mismatched IDs and duplicate
 IDs are rejected. Discovery is capped at 4,096 candidates and 64 MiB accounted
 metadata; failures are logged.
 
-This path reruns the whole copied capture. Selected subsets and service-session
-startup restoration remain separate work: `session.json` is persisted, but the
-general service restore call in `server.go` is currently disabled.
+The PCAP page offers whole-capture and selected-packet child analyses when the
+backend advertises `childAnalysisVersion: 1`. Selected children show their saved
+BPF/time bounds and a Parent action; unsupported backends cannot submit the new
+workflow. Service startup restores owned child sessions from `results/analysis-*`
+with their original requester, parent reference, expiry and outcome. Interrupted
+children become failed without requeueing; missing or changed sources cannot
+remain ready. Child session writes are atomic, and status persistence failures
+are failures. General non-child session restoration remains disabled; an
+unavailable parent is not silently rebound to another capture.
+
+For a subset, POST `inputFile` or `sessionId`, the expected parent `runId`, and
+`selection: {version: 1, sourceSHA256, bpf, startNs?, endNs?, maxPackets?,
+maxOutputBytes?}` to `/api/reanalyze`. Nanosecond bounds and output bytes are
+decimal strings. At least a BPF expression or paired inclusive bounds is required.
+The retained input is `source/selected.pcapng`; `packet-selection.json` binds
+source/output hashes, normalized selection, packet spans/counts, interface mapping
+and truncation/metadata limitations; its SHA256 is retained in
+`analysis-parent.json.packetManifestSHA256` and checked on recovery.
+`analysis-parent.json.inputSHA256` identifies
+the derivative, while `packetSelection.sourceSHA256` identifies its parent input.
+
+| Subset limit / failure | Contract |
+| --- | --- |
+| Packets | Default and maximum 1,000,000; overflow aborts with HTTP 413. |
+| Request JSON | At most 64 KiB; unknown fields and trailing JSON are rejected, so a misspelled selection cannot silently rerun the whole capture. |
+| Output bytes | Default 256 MiB; configurable up to 1 GiB; overflow aborts with HTTP 413. |
+| Preparation | 60-second timeout; cancellation/timeout returns 408. |
+| Empty / stale | No matches returns 422; changed source/generation returns 409. |
+| Failed preparation | No queued job; unregistered derivative files are removed. Parent output remains intact. |
+
+MCP `reanalyze_session` exposes `run_id`, `source_sha256`, `selection_bpf`,
+`start_ns`/`end_ns` and subset limits. It verifies backend support first and
+returns the child identity; polling the original parent cannot track child work.
+`get_session_info.capture_provenance` supplies the parent binding; unavailable
+provenance is reported separately as `capture_provenance_error`.
 
 Recovery pitfall: real capture manifests finish with `status: "done"`; the
 older synthetic `"complete"` spelling is accepted only with the same hash/ready

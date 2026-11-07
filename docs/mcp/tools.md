@@ -294,7 +294,7 @@ Wireshark-style nested protocol hierarchy as JSON: layer counts and bytes.
 
 ### `get_session_info`
 
-Return metadata for one analysis session: completion status, error message if any, input filename and size, per-record-type audit counts. Use this to poll an in-flight ingest.
+Return metadata for one analysis session: completion status, error message if any, input filename and size, per-record-type audit counts and capture_provenance (runId/inputSHA256) when available. Missing provenance has an explicit error field. Use this to poll ingest or child analysis.
 
 **Hints:** read-only, idempotent
 
@@ -685,7 +685,7 @@ Supports the netcap filter-expression language in `filter` (an `expr`-style bool
 
 ### `reanalyze_session`
 
-Re-decode an existing session's PCAP. Server-wide BPF/DPI/decoder settings apply (configure them out-of-band before calling). Returns immediately; poll get_session_info for completion.
+Create a separately retained child analysis; parent results remain available. Server-wide BPF/DPI/decoder settings apply (configure them out-of-band before calling). Optional bounded BPF/time subsets require run_id and source_sha256 from parent provenance. Poll get_session_info with the returned child ID.
 
 **Hints:** destructive
 
@@ -693,7 +693,14 @@ Re-decode an existing session's PCAP. Server-wide BPF/DPI/decoder settings apply
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `end_ns` | string |  | Inclusive end capture timestamp as an exact decimal nanosecond string; requires start_ns. |
+| `max_output_bytes` | string |  | Subset output-byte limit as a decimal string; default 268435456, maximum 1073741824. |
+| `max_packets` | number |  | Subset packet limit, at most 1000000. |
+| `run_id` | string |  | Expected parent capture runId; required for subsets. |
+| `selection_bpf` | string |  | BPF for the retained child input, e.g. host 192.0.2.10 and tcp port 9243. |
 | `session_id` | string | yes | Session identifier. |
+| `source_sha256` | string |  | Parent inputSHA256; required for subsets. |
+| `start_ns` | string |  | Inclusive start capture timestamp as an exact decimal nanosecond string; requires end_ns. |
 
 
 ### `resolve`

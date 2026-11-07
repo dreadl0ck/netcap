@@ -10,7 +10,6 @@
   <a href="docs/quickstart.md">First capture</a>
 </p>
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/dreadl0ck/netcap)](https://goreportcard.com/report/github.com/dreadl0ck/netcap)
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://raw.githubusercontent.com/dreadl0ck/netcap/master/LICENSE)
 [![Golang](https://img.shields.io/badge/Go-1.27-blue.svg)](https://go.dev)
 ![Linux](https://img.shields.io/badge/Supports-Linux-green.svg)
