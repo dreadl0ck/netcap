@@ -11,6 +11,7 @@ image:
   pullPolicy: IfNotPresent
 imagePullSecrets: []
 upstream: ''
+routes: []
 runtime:
   maxBodyBytes: 67108864
   maxResponseBytes: 67108864
@@ -45,9 +46,11 @@ adminService:
   port: 9090
 tls:
   secretName: ''
+  clientCASecretName: ''
 upstreamTLS:
   caSecretName: ''
   serverName: ''
+  clientSecretName: ''
 adminTokenSecret:
   name: ''
   key: token

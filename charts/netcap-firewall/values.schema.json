@@ -4,6 +4,26 @@
   "additionalProperties": false,
   "required": ["upstream", "image", "runtime", "policy"],
   "properties": {
+    "routes": {"type": "array", "maxItems": 128, "items": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "priority", "hosts", "methods", "pathPrefix", "upstream", "policy", "maxBodyBytes", "maxResponseBytes", "maxConcurrent"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$"},
+        "priority": {"type": "integer"},
+        "hosts": {"type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "methods": {"type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Z]{1,32}$"}},
+        "pathPrefix": {"type": "string", "pattern": "^/"},
+        "upstream": {"type": "string", "pattern": "^https?://[^ /]+"},
+        "upstreamCA": {"type": "string"},
+        "upstreamServerName": {"type": "string", "minLength": 1},
+        "upstreamTLS": {"$ref": "#/properties/upstreamTLS"},
+        "maxBodyBytes": {"type": "integer", "minimum": 1, "maximum": 67108864},
+        "maxResponseBytes": {"type": "integer", "minimum": 1, "maximum": 67108864},
+        "maxConcurrent": {"type": "integer", "minimum": 1, "maximum": 4096},
+        "policy": {"$ref": "#/properties/policy"},
+        "crsProfile": {"$ref": "#/definitions/crsProfile"}
+      }
+    }},
     "mode": {"enum": ["file", "managed", "fleet"]},
     "websocket": {"type": "boolean"},
     "grpc": {"type": "boolean"},
@@ -43,11 +63,12 @@
         "bodyTimeout": {"type": "string", "pattern": "^([1-9][0-9]{0,4}ms|[1-9][0-9]?s|[12][0-9]{2}s|300s|[1-5]m)$"},
         "inspectResponse": {"type": "boolean"},
         "corazaCRS": {"type": "boolean"},
+        "crsProfile": {"$ref": "#/definitions/crsProfile"},
         "trustedProxyCIDRs": {"type": "array", "items": {"type": "string", "minLength": 3}}
       }
     },
-    "tls": {"type": "object", "additionalProperties": false, "properties": {"secretName": {"type": "string"}}},
-    "upstreamTLS": {"type": "object", "additionalProperties": false, "properties": {"caSecretName": {"type": "string"}, "serverName": {"type": "string"}}},
+    "tls": {"type": "object", "additionalProperties": false, "properties": {"secretName": {"type": "string"}, "clientCASecretName": {"type": "string"}}},
+    "upstreamTLS": {"type": "object", "additionalProperties": false, "properties": {"caSecretName": {"type": "string"}, "serverName": {"type": "string"}, "clientSecretName": {"type": "string"}}},
     "adminTokenSecret": {"type": "object", "additionalProperties": false, "properties": {"name": {"type": "string"}, "key": {"type": "string", "minLength": 1}}},
     "adminTLS": {"type": "object", "additionalProperties": false, "properties": {"secretName": {"type": "string"}}},
     "adminService": {"type": "object", "additionalProperties": false, "properties": {"enabled": {"type": "boolean"}, "port": {"type": "integer", "minimum": 1, "maximum": 65535}}},
@@ -163,6 +184,26 @@
     }
   ],
   "definitions": {
+    "crsProfile": {
+      "type": "object", "additionalProperties": false,
+      "required": ["paranoiaLevel", "inboundThreshold", "outboundThreshold"],
+      "properties": {
+        "paranoiaLevel": {"type": "integer", "minimum": 1, "maximum": 4},
+        "inboundThreshold": {"type": "integer", "minimum": 1, "maximum": 100},
+        "outboundThreshold": {"type": "integer", "minimum": 1, "maximum": 100},
+        "exclusions": {"type": "array", "maxItems": 64, "items": {
+          "type": "object", "additionalProperties": false,
+          "required": ["ruleID", "owner", "reason", "expiresAt"],
+          "properties": {
+            "ruleID": {"type": "integer", "minimum": 930000, "maximum": 944999},
+            "parameter": {"type": "string", "pattern": "^[A-Za-z0-9_.-]{1,128}$"},
+            "owner": {"type": "string", "minLength": 1, "maxLength": 128},
+            "reason": {"type": "string", "minLength": 1, "maxLength": 512},
+            "expiresAt": {"type": "string", "format": "date-time"}
+          }
+        }}
+      }
+    },
     "resources": {"type": "object", "additionalProperties": false, "required": ["cpu", "memory"], "properties": {"cpu": {"type": ["string", "number"]}, "memory": {"type": "string", "minLength": 1}}},
     "peer": {
       "type": "object", "additionalProperties": false, "minProperties": 1,

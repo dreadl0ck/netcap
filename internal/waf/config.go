@@ -25,24 +25,29 @@ const maxInspectionHeaderBytes = 32 << 10
 const maxInspectionFieldBytes = 65536
 
 type Config struct {
-	Version            string   `json:"version" yaml:"version"`
-	Listen             string   `json:"listen" yaml:"listen"`
-	AdminListen        string   `json:"adminListen" yaml:"adminListen"`
-	Upstream           string   `json:"upstream" yaml:"upstream"`
-	PolicyFile         string   `json:"policyFile" yaml:"policyFile"`
-	MaxBodyBytes       int64    `json:"maxBodyBytes" yaml:"maxBodyBytes"`
-	MaxResponseBytes   int64    `json:"maxResponseBytes" yaml:"maxResponseBytes"`
-	MaxBufferedBytes   int64    `json:"maxBufferedBytes,omitempty" yaml:"maxBufferedBytes,omitempty"`
-	MaxConcurrent      int      `json:"maxConcurrent" yaml:"maxConcurrent"`
-	BodyTimeout        string   `json:"bodyTimeout" yaml:"bodyTimeout"`
-	TLSCert            string   `json:"tlsCert,omitempty" yaml:"tlsCert,omitempty"`
-	TLSKey             string   `json:"tlsKey,omitempty" yaml:"tlsKey,omitempty"`
-	UpstreamCA         string   `json:"upstreamCA,omitempty" yaml:"upstreamCA,omitempty"`
-	UpstreamServerName string   `json:"upstreamServerName,omitempty" yaml:"upstreamServerName,omitempty"`
-	TrustedProxyCIDRs  []string `json:"trustedProxyCIDRs,omitempty" yaml:"trustedProxyCIDRs,omitempty"`
-	InspectResponse    bool     `json:"inspectResponse" yaml:"inspectResponse"`
-	AllowedHosts       []string `json:"allowedHosts,omitempty" yaml:"allowedHosts,omitempty"`
-	CorazaCRS          bool     `json:"corazaCRS,omitempty" yaml:"corazaCRS,omitempty"`
+	Routes             []RouteConfig `json:"routes,omitempty" yaml:"routes,omitempty"`
+	CRSProfile         *CRSProfile   `json:"crsProfile,omitempty" yaml:"crsProfile,omitempty"`
+	ClientCA           string        `json:"clientCA,omitempty" yaml:"clientCA,omitempty"`
+	UpstreamCert       string        `json:"upstreamCert,omitempty" yaml:"upstreamCert,omitempty"`
+	UpstreamKey        string        `json:"upstreamKey,omitempty" yaml:"upstreamKey,omitempty"`
+	Version            string        `json:"version" yaml:"version"`
+	Listen             string        `json:"listen" yaml:"listen"`
+	AdminListen        string        `json:"adminListen" yaml:"adminListen"`
+	Upstream           string        `json:"upstream" yaml:"upstream"`
+	PolicyFile         string        `json:"policyFile" yaml:"policyFile"`
+	MaxBodyBytes       int64         `json:"maxBodyBytes" yaml:"maxBodyBytes"`
+	MaxResponseBytes   int64         `json:"maxResponseBytes" yaml:"maxResponseBytes"`
+	MaxBufferedBytes   int64         `json:"maxBufferedBytes,omitempty" yaml:"maxBufferedBytes,omitempty"`
+	MaxConcurrent      int           `json:"maxConcurrent" yaml:"maxConcurrent"`
+	BodyTimeout        string        `json:"bodyTimeout" yaml:"bodyTimeout"`
+	TLSCert            string        `json:"tlsCert,omitempty" yaml:"tlsCert,omitempty"`
+	TLSKey             string        `json:"tlsKey,omitempty" yaml:"tlsKey,omitempty"`
+	UpstreamCA         string        `json:"upstreamCA,omitempty" yaml:"upstreamCA,omitempty"`
+	UpstreamServerName string        `json:"upstreamServerName,omitempty" yaml:"upstreamServerName,omitempty"`
+	TrustedProxyCIDRs  []string      `json:"trustedProxyCIDRs,omitempty" yaml:"trustedProxyCIDRs,omitempty"`
+	InspectResponse    bool          `json:"inspectResponse" yaml:"inspectResponse"`
+	AllowedHosts       []string      `json:"allowedHosts,omitempty" yaml:"allowedHosts,omitempty"`
+	CorazaCRS          bool          `json:"corazaCRS,omitempty" yaml:"corazaCRS,omitempty"`
 }
 
 func LoadConfig(data []byte) (Config, error) {
@@ -82,6 +87,9 @@ func LoadConfig(data []byte) (Config, error) {
 }
 
 func validateJSONKeys(data []byte) error {
+	if err := rejectDuplicateKeys(json.NewDecoder(bytes.NewReader(data))); err != nil {
+		return err
+	}
 	allowed := make(map[string]bool)
 	t := reflect.TypeFor[Config]()
 	for i := 0; i < t.NumField(); i++ {
@@ -111,7 +119,49 @@ func validateJSONKeys(data []byte) error {
 	return err
 }
 
+func rejectDuplicateKeys(d *json.Decoder) error {
+	v, err := d.Token()
+	if err != nil {
+		return err
+	}
+	delim, ok := v.(json.Delim)
+	if !ok {
+		return nil
+	}
+	seen := map[string]bool{}
+	for d.More() {
+		if delim == '{' {
+			key, err := d.Token()
+			if err != nil {
+				return err
+			}
+			s, ok := key.(string)
+			if !ok || seen[s] {
+				return errors.New("duplicate JSON config key")
+			}
+			seen[s] = true
+		}
+		if err := rejectDuplicateKeys(d); err != nil {
+			return err
+		}
+	}
+	_, err = d.Token()
+	return err
+}
+
 func ValidateConfig(c Config) error {
+	if len(c.Routes) > 0 {
+		return validateRoutes(c)
+	}
+	if err := validateProfile(c); err != nil {
+		return err
+	}
+	if (c.UpstreamCert == "") != (c.UpstreamKey == "") {
+		return errors.New("upstreamCert and upstreamKey must be paired")
+	}
+	if c.ClientCA != "" && c.TLSCert == "" {
+		return errors.New("clientCA requires listener TLS")
+	}
 	if c.MaxBufferedBytes < 0 || c.MaxBufferedBytes > 1<<30 {
 		return errors.New("maxBufferedBytes must be 0 (64 MiB default) or 1..1073741824 bytes")
 	}
@@ -156,7 +206,7 @@ func ValidateConfig(c Config) error {
 	if (c.TLSCert == "") != (c.TLSKey == "") {
 		return errors.New("tlsCert and tlsKey must be paired")
 	}
-	if u.Scheme != "https" && (c.UpstreamCA != "" || c.UpstreamServerName != "") {
+	if u.Scheme != "https" && (c.UpstreamCA != "" || c.UpstreamServerName != "" || c.UpstreamCert != "") {
 		return errors.New("upstream TLS options require https")
 	}
 	for _, s := range c.TrustedProxyCIDRs {

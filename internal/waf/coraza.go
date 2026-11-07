@@ -13,6 +13,7 @@ import (
 
 	coreruleset "github.com/corazawaf/coraza-coreruleset/v4"
 	"github.com/corazawaf/coraza/v3"
+	"github.com/corazawaf/coraza/v3/experimental"
 	"github.com/corazawaf/coraza/v3/types"
 )
 
@@ -24,9 +25,23 @@ func newInspectionEngine(c Config) (inspectionEngine, error) {
 	if !c.CorazaCRS {
 		return nil, nil
 	}
-	w, err := coraza.NewWAF(coraza.NewWAFConfig().WithRootFS(coreruleset.FS).WithDirectives(corazaDirectives(c)))
+	ids := map[int]bool{}
+	w, err := coraza.NewWAF(experimental.WAFConfigWithRuleObserver(coraza.NewWAFConfig().WithRootFS(coreruleset.FS), func(r types.RuleMetadata) {
+		for _, tag := range r.Tags() {
+			if strings.HasPrefix(tag, "attack-") {
+				ids[r.ID()] = true
+			}
+		}
+	}).WithDirectives(corazaDirectives(c)))
 	if err != nil {
 		return nil, err
+	}
+	if c.CRSProfile != nil {
+		for _, e := range c.CRSProfile.Exclusions {
+			if !ids[e.RuleID] {
+				return nil, fmt.Errorf("unknown CRS rule %d", e.RuleID)
+			}
+		}
 	}
 	validator, err := coraza.NewWAF(coraza.NewWAFConfig().WithRootFS(coreruleset.FS).WithDirectives(strings.Replace(corazaDirectives(c), "Include @owasp_crs/*.conf", "", 1)))
 	if err != nil {
@@ -56,8 +71,24 @@ SecResponseBodyLimit %d
 SecResponseBodyLimitAction Reject
 SecRule ARGUMENTS_LIMIT_REACHED "@eq 1" "id:10000001,phase:1,deny,status:413,nolog"
 SecRule ARGUMENTS_LIMIT_REACHED "@eq 1" "id:10000002,phase:2,deny,status:413,nolog"
+%s
 Include @owasp_crs/*.conf
-`, c.MaxBodyBytes+1, c.MaxBodyBytes+1, min(c.MaxBodyBytes+1, bodyMemoryBytes), map[bool]string{true: "On", false: "Off"}[c.InspectResponse], c.MaxResponseBytes+1)
+`, c.MaxBodyBytes+1, c.MaxBodyBytes+1, min(c.MaxBodyBytes+1, bodyMemoryBytes), map[bool]string{true: "On", false: "Off"}[c.InspectResponse], c.MaxResponseBytes+1, profileDirectives(c.CRSProfile))
+}
+
+func profileDirectives(p *CRSProfile) string {
+	if p == nil {
+		return ""
+	}
+	s := fmt.Sprintf(`SecAction "id:10000100,phase:1,pass,nolog,setvar:tx.blocking_paranoia_level=%d,setvar:tx.detection_paranoia_level=%d,setvar:tx.inbound_anomaly_score_threshold=%d,setvar:tx.outbound_anomaly_score_threshold=%d"`, p.ParanoiaLevel, p.ParanoiaLevel, p.InboundThreshold, p.OutboundThreshold)
+	for i, e := range p.Exclusions {
+		ctl := fmt.Sprintf("ruleRemoveById=%d", e.RuleID)
+		if e.Parameter != "" {
+			ctl = fmt.Sprintf("ruleRemoveTargetById=%d;ARGS:%s", e.RuleID, e.Parameter)
+		}
+		s += fmt.Sprintf("\nSecRule TIME_EPOCH \"@lt %d\" \"id:%d,phase:1,pass,nolog,ctl:%s\"", e.ExpiresAt.Unix(), 10000200+i, ctl)
+	}
+	return s
 }
 
 func interruptionStatus(i *types.Interruption) int {

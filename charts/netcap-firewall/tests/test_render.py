@@ -23,6 +23,92 @@ def render(*args, success=True):
 
 
 class DeploymentContract(unittest.TestCase):
+    def test_mtls_secrets_are_binding_scoped(self):
+        args = ['--set', 'tls.secretName=listener', '--set', 'tls.clientCASecretName=clients',
+                '--set', 'upstream=https://backend:8443', '--set', 'upstreamTLS.clientSecretName=identity']
+        docs = render(*args)
+        runtime = yaml.safe_load(next(d for d in docs if d['kind'] == 'ConfigMap')['data']['config.yaml'])
+        self.assertEqual(runtime['clientCA'], '/etc/netcap-firewall/client-ca/ca.crt')
+        self.assertEqual(runtime['upstreamCert'], '/etc/netcap-firewall/upstream-client/tls.crt')
+        render('--set', 'tls.clientCASecretName=clients', success=False)
+        render('--set', 'upstreamTLS.clientSecretName=identity', success=False)
+        route = {'id': 'a', 'priority': 1, 'hosts': ['a.example'], 'methods': ['GET'],
+                 'pathPrefix': '/', 'upstream': 'https://a:8443',
+                 'policy': {'version': 'netcap-policy/v1', 'id': 'a', 'mode': 'enforce', 'default': 'allow', 'rules': []},
+                 'maxBodyBytes': 1024, 'maxResponseBytes': 1024, 'maxConcurrent': 8,
+                 'upstreamTLS': {'serverName': 'a.example', 'caSecretName': 'a-ca', 'clientSecretName': 'a-client'}}
+        with tempfile.TemporaryDirectory() as directory:
+            values = pathlib.Path(directory) / 'values.yaml'
+            values.write_text(yaml.safe_dump({'routes': [route]}))
+            docs = render('-f', str(values))
+            pod = next(d for d in docs if d['kind'] == 'Deployment')['spec']['template']['spec']
+            runtime = yaml.safe_load(next(d for d in docs if d['kind'] == 'ConfigMap')['data']['config.yaml'])
+            installed = runtime['routes'][0]
+            self.assertNotIn('upstreamTLS', installed)
+            self.assertEqual(installed['upstreamServerName'], 'a.example')
+            self.assertEqual(installed['upstreamCA'], '/etc/netcap-firewall/route-tls/0/ca/ca.crt')
+            self.assertEqual(installed['upstreamCert'], '/etc/netcap-firewall/route-tls/0/client/tls.crt')
+            volumes = {v['name']: v for v in pod['volumes']}
+            self.assertEqual(volumes['route-client-0']['secret']['secretName'], 'a-client')
+            self.assertEqual(volumes['route-ca-0']['secret']['secretName'], 'a-ca')
+            for mount in pod['containers'][0]['volumeMounts']:
+                if mount['name'].startswith('route-'):
+                    self.assertTrue(mount['readOnly'])
+            del route['upstreamTLS']['serverName']
+            values.write_text(yaml.safe_dump({'routes': [route]}))
+            render('-f', str(values), success=False)
+
+    def test_negative_profiles(self):
+        profile = {'paranoiaLevel': 1, 'inboundThreshold': 5, 'outboundThreshold': 4}
+        exclusion = {'ruleID': 942100, 'owner': 'ops', 'reason': 'SQL examples',
+                     'expiresAt': '2026-11-08T00:00:00Z', 'parameter': 'q'}
+        invalid = []
+        for field, value in [('paranoiaLevel', 0), ('paranoiaLevel', 5),
+                             ('inboundThreshold', 0), ('inboundThreshold', 101),
+                             ('outboundThreshold', 0), ('outboundThreshold', 101),
+                             ('rawDirectives', 'SecRuleEngine Off')]:
+            invalid.append({**profile, field: value})
+        for field, value in [('ruleID', 949110), ('ruleID', 920100), ('owner', ''),
+                             ('reason', ''), ('parameter', 'q;ctl:ruleEngine=Off'),
+                             ('expiresAt', 'invalid')]:
+            invalid.append({**profile, 'exclusions': [{**exclusion, field: value}]})
+        invalid.append({**profile, 'exclusions': [exclusion] * 65})
+        with tempfile.TemporaryDirectory() as directory:
+            values = pathlib.Path(directory) / 'values.yaml'
+            for candidate in invalid:
+                with self.subTest(profile=candidate):
+                    values.write_text(yaml.safe_dump({'runtime': {'crsProfile': candidate}}))
+                    render('-f', str(values), success=False)
+            values.write_text(yaml.safe_dump({'runtime': {'crsProfile': profile, 'corazaCRS': False}}))
+            render('-f', str(values), success=False)
+
+    def test_route_policies_profiles_and_rollout(self):
+        policy = {'version': 'netcap-policy/v1', 'id': 'tenant-a', 'mode': 'enforce', 'default': 'allow', 'rules': []}
+        route = {'id': 'a', 'priority': 10, 'hosts': ['a.example'], 'methods': ['GET'],
+                 'pathPrefix': '/api', 'upstream': 'http://a:8080', 'policy': policy,
+                 'maxBodyBytes': 1024, 'maxResponseBytes': 1024, 'maxConcurrent': 8,
+                 'crsProfile': {'paranoiaLevel': 2, 'inboundThreshold': 5, 'outboundThreshold': 4}}
+        with tempfile.TemporaryDirectory() as directory:
+            values = pathlib.Path(directory) / 'values.yaml'
+            values.write_text(yaml.safe_dump({'routes': [route]}))
+            docs = render('-f', str(values))
+            cm = next(d for d in docs if d['kind'] == 'ConfigMap')
+            runtime = yaml.safe_load(cm['data']['config.yaml'])
+            installed = runtime['routes'][0]
+            self.assertEqual(installed['policyFile'], '/etc/netcap-firewall/route-a.yaml')
+            self.assertEqual(installed['policyID'], 'tenant-a')
+            self.assertNotIn('policy', installed)
+            self.assertEqual(yaml.safe_load(cm['data']['route-a.yaml']), policy)
+            render('-f', str(values), '--set', 'websocket=true', success=False)
+            route['crsProfile']['paranoiaLevel'] = 5
+            values.write_text(yaml.safe_dump({'routes': [route]}))
+            render('-f', str(values), success=False)
+            route['crsProfile']['paranoiaLevel'] = 2
+            policy['default'] = 'deny'
+            values.write_text(yaml.safe_dump({'routes': [route]}))
+            changed = next(d for d in render('-f', str(values)) if d['kind'] == 'ConfigMap')
+            self.assertNotEqual(cm['metadata']['name'], changed['metadata']['name'])
+
     def test_native_policy_state_secret_mount_and_exclusive_guard(self):
         args = ['--set', 'policyState.configSecretName=native-client',
                 '--set', 'policyState.credentialsSecretName=native-token']

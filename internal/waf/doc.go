@@ -62,5 +62,34 @@ also freeze bootstrap hooks. A readiness predicate must not initiate network I/O
 CorazaCRS additionally requires the coraza build tag, coraza/v3 v3.8.1 and
 coraza-coreruleset/v4 v4.25.0. Without that tag enabling it fails startup. Its
 audit/debug sinks are disabled; only outer redacted decisions are queued.
+
+Routes optionally replaces single-origin forwarding with at most 128 immutable
+bindings. Exact host authorities (case-insensitive, ports significant), explicit
+methods and segment-bounded PathPrefix match in descending Priority order.
+Overlapping equal-priority matches fail compilation. Unknown hosts receive 421;
+unmatched paths/methods receive 404. Noncanonical/encoded paths fail closed.
+Each binding requires its own PolicyFile, expected PolicyID, origin and limits.
+All files, TLS and inspection engines compile before publication; the global
+SetPolicy target never changes a route. RouteTarget grants an in-process
+identity-checked, expected-revision activation capability for one bootstrap ID.
+ReloadRoutePolicies atomically replaces the complete table from bound files;
+requests pin their binding through response inspection. Retired generations close
+after their last request. Listener concurrency and retained-byte quotas cover all
+bindings. MessageHandler rejects routed configurations. The CLI also rejects
+global managed/fleet/effects/shared-state adapters when routes are configured;
+there is no remote route activation endpoint or caller-selected policy path.
+
+CRSProfile requires CorazaCRS, paranoia 1..4 and anomaly thresholds 1..100.
+Up to 64 exclusions name recognized request attack detectors, optionally one ARGS
+parameter, with owner/reason and expiry no more than 90 days ahead. Generated
+phase-1 controls expire on transaction time before CRS executes; no raw SecRule
+or include path is admitted. Native denies and structural validation still run.
+
+ClientCA enables listener mTLS. UpstreamCert/UpstreamKey enable upstream mTLS;
+HTTPS routes require explicit UpstreamServerName and always verify certificates.
+TLSConfig provides per-handshake listener snapshots. ReloadTLS validates complete
+identity pairs and client trust before publication; failures retain live state.
+CLI SIGHUP reloads TLS and then route policy files; route/upstream configuration
+changes require restart. Existing TLS connections retain their handshake identity.
 */
 package waf

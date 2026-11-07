@@ -10,3 +10,7 @@ data:
     {{- include "firewall.config" . | nindent 4 }}
   policy.yaml: |
     {{- toYaml .Values.policy | nindent 4 }}
+  {{- range .Values.routes }}
+  route-{{ .id }}.yaml: |
+    {{- toYaml .policy | nindent 4 }}
+  {{- end }}
