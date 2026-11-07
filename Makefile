@@ -13,6 +13,18 @@
 NETCAP_BIN ?= ./net
 DOCS_TEST_TAGS ?= nodpi,noyara
 
+FIREWALL_RELEASE_VERSION ?= 0.1.0-rc.local
+FIREWALL_RELEASE_OUTPUT ?= $(TMPDIR)netcap-firewall-candidate
+.PHONY: firewall-release-test firewall-release-rehearsal firewall-release-build
+firewall-release-test:
+	python3 -m unittest discover -s scripts -p test_firewall_release.py -v
+
+firewall-release-rehearsal:
+	FIREWALL_RELEASE_INTEGRATION=1 python3 -m unittest discover -s scripts -p test_firewall_release.py -v
+
+firewall-release-build:
+	python3 scripts/firewall_release_build.py binaries --version "$(FIREWALL_RELEASE_VERSION)" --output "$(FIREWALL_RELEASE_OUTPUT)"
+
 docs-check:
 	python3 scripts/check-docs.py --net "$(NETCAP_BIN)"
 
