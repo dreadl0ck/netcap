@@ -129,9 +129,10 @@ jobs:
           # --proto_path=types is required, not decoration: without it the
           # output lands in types/proto/ and the descriptor registers as
           # "types/netcap.proto" instead of "netcap.proto".
+          cp types/netcap.pb.go /tmp/netcap.pb.go.expected
           protoc --proto_path=types --gogofaster_out=types/. types/netcap.proto
           test -s types/netcap.pb.go
-          git diff --exit-code -- types/netcap.pb.go
+          cmp /tmp/netcap.pb.go.expected types/netcap.pb.go
 
           go build ./...
           go vet ./...
