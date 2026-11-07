@@ -238,7 +238,8 @@ admission, including stable identity/policy after pod replacement.
 
 `control-postgres-compose.yaml` and `postgres_ha.py` qualify Postgres-backed HA:
 two fleet replicas, two counter replicas, TLS-passthrough frontend and two fixed
-target agents. The runner generates per-role credentials/TLS, verifies the pinned
+target agents. Generated DB passwords, DSNs and role tokens pass only through
+subprocess/container environment; no credential env files are written. The runner verifies the pinned
 Postgres 17.11 digest and running version, crosses replicas for stage/rollout/
 activation and counters, then kills one replica of each service while leaving the
 DB running. A separate DB kill/restart checks fail-closed readiness and WAL-backed
@@ -251,7 +252,7 @@ labeled loopback `NETCAP_POSTGRES_TEST_CONTAINER`. No existing database is targe
 | Store | Operator path |
 | --- | --- |
 | SQLite fleet / shared counters | Stop and fence the old owner; select `--service fleet` or `--service sharedstate` for `netcap-firewall backup --config … --output /absolute/private/snapshot.sqlite`; `restore --service … --input … --state-dir /absolute/empty-dir` |
-| Postgres fleet / shared counters | Database-operator backups/WAL/PITR and restore procedure; the SQLite backup CLI rejects Postgres; validate committed generations/counters after recovery |
+| Postgres fleet / shared counters | Optional schema-dump/Restic CronJob below; database-operator roles/WAL/PITR and restore procedure remain separate; SQLite backup CLI rejects Postgres |
 | Managed policycontrol | `managed_snapshot.py` with `backup` or `restore`, `--state-dir /absolute/state --snapshot /absolute/private/snapshot.sqlite`; Python SQLite backup API uses the same lifetime ownership lock |
 
 Snapshots contain sensitive revisions/audit/counters and use private directories
@@ -261,10 +262,70 @@ application replicas against one writable primary; **primary election, fencing,
 replication durability and DB failover are database-operator responsibilities**.
 `restore_drill.py` checks managed live-owner/corrupt/existing-destination refusal,
 then restored revision/audit/idempotency receipts and deny→rollback→allow traffic.
-`control_smoke.py` separately checks fleet/shared-state CLI recovery. No scheduled
-retention, off-host copy or storage-provider snapshot job is installed.
+`control_smoke.py` separately checks SQLite fleet/shared-state CLI recovery.
+
+### Scheduled Postgres backups
+
+`charts/netcap-firewall-control` adds no backup resources by default. Enable
+`backup.enabled` only with Postgres, Kubernetes 1.27+, a unique cluster/operator
+`backup.scope` and pre-provisioned Secrets. `examples/firewall/backup-values.yaml`
+shows the opt-in values; it contains no repository URL or credentials.
+
+| Backup input / bound | Contract |
+| --- | --- |
+| `backup.databaseSecretName` | `pg_service.conf` with service `[backup]`, host/port/dbname/user/password and `sslrootcert=/db/ca.crt`; include `ca.crt` in that Secret. `pg_dump` forces `sslmode=verify-full`; no password/DSN in argv |
+| `backup.repositorySecretName` | `RESTIC_REPOSITORY` and backend-auth environment entries; optional config/CA files mount read-only at `/repository`, with `ca.crt` used automatically. Keep authentication out of the repository URI |
+| `backup.passwordSecretName` | Separate Restic password file, key `password` unless `passwordSecretKey` overrides it; repository must already be initialized by its operator |
+| Dump stage | Digest-pinned Postgres 17.11 `pg_dump`, consistent custom-format archive of the configured service schema; 64 MiB default hard file limit, 5s lock wait, private 0600 files; failed/oversize dumps never become upload inputs |
+| Encryption stage | Separate digest-pinned Restic 0.18.1 image; no runtime installer, repository initialization, Kubernetes API mutation or application pause |
+| Retention | Daily 7 / weekly 4 / monthly 3; forget always selects both stable host and tag, including scope/namespace/release/service. `prune: false` by default; optional prune performs repository-wide unreferenced-blob GC after scoped forget |
+| Job bounds | Forbid overlap, 900s deadline, one retry, 3600s finished-Job TTL; rootless 10001, dropped capabilities, read-only root, no service-account token; bounded work/cache volumes and ephemeral-storage limits |
+
+Backups cover all tenants in that service schema, not a tenant-scoped API export.
+Repository provisioning, access policy, key rotation and backup-success alerting
+remain operator work. Logical snapshot retention does not bound physical repository
+bytes while prune is disabled. Work holds plaintext only in the private ephemeral
+volume; the upload stage removes the archive on ordinary exit, with pod/Job cleanup
+covering failed startup or forced termination. No automatic SQLite stop/scale procedure is installed.
+
+```bash
+helm upgrade --install fleet charts/netcap-firewall-control -n firewall -f examples/firewall/backup-values.yaml
+python3 examples/firewall/postgres_ha.py --backup-restore --output "$TMPDIR/firewall-backup.json"
+```
+
+The local drill runs the exact chart scripts against a disposable encrypted Docker
+volume, verifies restored fleet generation/counter values, refuses bad CA/password
+and oversize dumps, and preserves foreign host/tag snapshots through scoped prune.
+Restic networking is disabled in the drill. Off-host delivery and production
+schedule execution require separate qualification; no estate/cloud resources were used.
+The local drill passes `PGPASSWORD` through process environment and pipes the
+Restic password into container tmpfs. Both PostgreSQL/backup runners check their
+host fixture directories for generated password/token leakage; only non-secret
+connection settings and TLS certificate/key fixtures remain in those directories.
 
 ## Protocol gateways and optional enforcer
+
+`redirect` places an already-running TCP message gateway on an explicitly scoped
+routed service path. Start the gateway inside its named namespace, then install
+the redirect from outside it:
+
+```bash
+ip netns exec firewall-router netcap-firewall gateway --protocol redis \
+  --listen 10.90.0.1:16379 --upstream 10.91.0.2:6379 \
+  --allow-client 10.90.0.0/24 --policy /etc/netcap-firewall/redis.yaml
+# Separate process; SIGTERM removes only this redirect's owned table.
+netcap-firewall redirect --namespace firewall-router --interface g0 \
+  --service-cidr 10.91.0.2/32 --service-port 6379 --gateway-port 16379 \
+  --protocol redis --tls-mode plaintext
+```
+
+The gateway must be listening before activation. `--tls-mode terminated` records
+an operator assertion; the gateway still needs its TLS certificates and explicit
+termination configuration. Opaque TLS is rejected. Placement applies to new
+conntrack sessions and one configured fixed upstream. `transparent_lab.py`
+verifies real shipping Redis/DNP3 gateways and redirect processes on IPv4/IPv6,
+source identity, denial before origin receipt, management exemptions, and SIGTERM
+cleanup, without changing the default namespace.
 
 | Example under `examples/firewall/` | Contract |
 | --- | --- |
@@ -353,6 +414,7 @@ The CNI lab also starts both DaemonSet modes against an existing named lab names
 | `cni_qualification.py` | Cilium origin/client/admin isolation, restricted admission, local counters, real HPA 3→4, optional enforcer modes, both control charts and stable fleet targets |
 | `control_smoke.py` | Scoped TLS services, two-target policy push, shared count, offline fleet/state CLI recovery |
 | `postgres_ha.py --package-tests` | Active-active control/counter processes, surviving application replicas, DB outage/WAL recovery and real Postgres package race/crash tests |
+| `postgres_ha.py --backup-restore` | Pinned rootless dump/encryption scripts; local encrypted restore to separate databases; scoped retention/prune and negative credential/size tests; no off-host claim |
 | `spool_smoke.py` | Three 8 MiB multipart files with CRS off and on; late-body denial absent at origin; retained-body quota exhaustion yields 503 and recovers on close; 1 CPU/256 MiB container |
 | `benchmark.py` | Standard-library bounded open-loop load; offered/completed counts, generator drops/lag, scheduling-inclusive p50/p95/p99, image/config hashes and raw cgroup CPU/memory counters |
 
@@ -365,9 +427,9 @@ prove file-content inspection or acceptance of arbitrary opaque bodies by CRS.
 The 64 MiB runtime ceiling is not a measured production capacity guarantee.
 
 Local qualification on 2026-11-07 used native ARM64 Docker Desktop Linux. Native
-AMD64 was not available; CI defines separate native `ubuntu-24.04` and
-`ubuntu-24.04-arm` jobs and verifies engine architecture. No emulated result counts
-as native qualification. Reports live in `$TMPDIR`/CI artifacts, not git.
+AMD64/ARM64 deployment, capture-bridge and Kubernetes jobs passed at `bbc20a6`
+([run 42333924481](https://github.com/dreadl0ck/netcap/actions/runs/42333924481)).
+No emulated result counts as native qualification. Reports live in `$TMPDIR`/CI artifacts, not git.
 
 ## Rollout and rollback
 
@@ -388,11 +450,11 @@ Retain prior image digests, values and consistent state snapshots.
 
 | Remaining gate | Exact boundary |
 | --- | --- |
-| Production qualification | Lab Cilium/storage tests do not qualify another CNI, storage provider, traffic mix or external HTTP/3 UDP ingress/LB/NAT path; native AMD64 CI still must run |
-| HA / state loss | SQLite remains singleton; Postgres application replicas are active-active, but database-operator primary fencing, DB HA and off-host backups remain external; stale-snapshot recovery is not lossless |
+| Production qualification | Passing native/cluster CI does not qualify another CNI, storage provider, traffic mix or external HTTP/3 UDP ingress/LB/NAT path |
+| HA / state loss | SQLite remains singleton; Postgres application replicas are active-active, but primary fencing and DB HA remain database-operator responsibilities; stale-snapshot recovery is not lossless |
 | Distributed semantics | Shared fixed-window guard is authoritative; native rule thresholds/sequences remain local; fleet acknowledgments are not an atomic cutover |
 | Protocol extensions | No encrypted passthrough payload decryption, WebSocket compression or gRPC-over-HTTP/3; gateway parsers cover explicit subsets |
-| Storage / capacity | Scheduled retention/off-host backup and deployment-specific load/storage sizing remain operator work; 64 MiB bounds do not establish throughput |
+| Storage / capacity | Optional PG schema backup/encrypted upload/scoped retention is implemented; production repository provisioning, off-host restore/schedule qualification, SQLite offline automation and deployment-specific sizing remain; 64 MiB bounds do not establish throughput |
 
 ## Verification pitfalls
 
@@ -409,3 +471,4 @@ Retain prior image digests, values and consistent state snapshots.
 | CRS rejects opaque upload fixture | Use an explicitly typed multipart fixture for file-spooling qualification; do not report it as arbitrary opaque-body or file-content inspection |
 | Postgres crash test interrupts another package | Run the two PG packages with `-p 1` against their shared disposable DB; concurrency inside each test remains enabled |
 | Default-deny routed policy breaks allowed TCP | Match protected service replies explicitly; NFQUEUE covers both directions, not only client destination ports |
+| CodeQL `py/clear-text-storage-sensitive-data` on PG fixture env files | Keep generated DB passwords/DSNs in process environment; Restic's local fixture password file belongs only in container tmpfs, populated through stdin |

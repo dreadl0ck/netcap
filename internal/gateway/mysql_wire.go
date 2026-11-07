@@ -260,6 +260,16 @@ func mysqlTextRow(b []byte, columns int) bool {
 	return len(b) == 0
 }
 
+func mysqlResultEOF(b []byte, deprecate bool) bool {
+	limit := 9
+	if deprecate {
+		// A canonical 0xfe-prefixed text field needs at least 2^24 value
+		// bytes. mysqlRead rejects continuation packets at this boundary.
+		limit = 0xffffff
+	}
+	return len(b) > 0 && b[0] == 0xfe && len(b) < limit
+}
+
 func (s *mysqlConversation) result(deprecate, binaryRows bool) (bool, error) {
 	b, err := s.read()
 	if err != nil {
@@ -307,7 +317,7 @@ func (s *mysqlConversation) result(deprecate, binaryRows bool) (bool, error) {
 		if b[0] == 0xff {
 			return false, nil
 		}
-		if b[0] == 0xfe && len(b) < 9 {
+		if mysqlResultEOF(b, deprecate) {
 			if !mysqlTerminal(b, deprecate) {
 				return false, errFrame
 			}

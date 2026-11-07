@@ -22,3 +22,27 @@ storage:
 resources:
   requests: {cpu: 50m, memory: 64Mi}
   limits: {cpu: '1', memory: 256Mi}
+backup:
+  enabled: false
+  schedule: '17 2 * * *'
+  timeZone: Etc/UTC
+  # Unique cluster/operator scope; combined with namespace, release and service.
+  scope: ''
+  databaseSecretName: ''
+  databaseService: backup
+  repositorySecretName: ''
+  passwordSecretName: ''
+  passwordSecretKey: password
+  maxDumpBytes: 67108864
+  workSize: 128Mi
+  cacheSize: 128Mi
+  activeDeadlineSeconds: 900
+  ttlSecondsAfterFinished: 3600
+  retention:
+    keepDaily: 7
+    keepWeekly: 4
+    keepMonthly: 3
+    prune: false
+  resources:
+    requests: {cpu: 50m, memory: 64Mi, ephemeral-storage: 256Mi}
+    limits: {cpu: '1', memory: 512Mi, ephemeral-storage: 512Mi}

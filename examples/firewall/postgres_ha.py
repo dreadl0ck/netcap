@@ -30,6 +30,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=pathlib.Path)
     parser.add_argument('--package-tests', action='store_true', help='also run real Postgres package race/crash tests')
+    parser.add_argument('--backup-restore', action='store_true', help='qualify chart dump/Restic scripts against an encrypted local repository')
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='fw-postgres-ha-') as directory:
         temp = pathlib.Path(directory)
@@ -37,23 +38,13 @@ def main():
         config.mkdir(mode=0o755)
         nonce = secrets.token_hex(4)
         env = dict(os.environ, COMPOSE_PROJECT_NAME='ncf-ha-' + nonce, PG_TEST_CONTAINER='ncf-ha-' + nonce,
-                   LAB_CONFIG_DIR=str(config), LAB_ENV_DIR=str(temp))
+                   LAB_CONFIG_DIR=str(config))
         for name in ['PG_TEST', 'FLEET', 'FLEET1', 'FLEET2', 'STATE1', 'STATE2', 'WAF1', 'WAF2']:
             env[name + '_PORT'] = str(free_port())
         tokens = {key: secrets.token_hex(32) for key in ['OPERATOR_TOKEN', 'OTHER_TOKEN', 'TARGET1_TOKEN', 'TARGET2_TOKEN', 'STATE_TOKEN']}
         password = secrets.token_hex(32)
         db_url = f'postgres://firewall:{password}@postgres:5432/firewall?sslmode=verify-full&sslrootcert=/lab/tls.crt'
-        role_env = {'postgres': {'POSTGRES_USER': 'firewall', 'POSTGRES_DB': 'firewall', 'POSTGRES_PASSWORD': password},
-                    'fleet': {key: tokens[key] for key in ['OPERATOR_TOKEN', 'OTHER_TOKEN', 'TARGET1_TOKEN', 'TARGET2_TOKEN']},
-                    'state': {'STATE_TOKEN': tokens['STATE_TOKEN']},
-                    'waf1': {key: tokens[key] for key in ['TARGET1_TOKEN', 'STATE_TOKEN']},
-                    'waf2': {key: tokens[key] for key in ['TARGET2_TOKEN', 'STATE_TOKEN']}}
-        role_env['fleet']['CONTROL_DATABASE_URL'] = db_url
-        role_env['state']['CONTROL_DATABASE_URL'] = db_url
-        for role, entries in role_env.items():
-            path = temp / f'{role}.env'
-            path.write_text(''.join(f'{key}={value}\n' for key, value in entries.items()))
-            path.chmod(0o600)
+        env.update(tokens, POSTGRES_PASSWORD=password, CONTROL_DATABASE_URL=db_url)
         scope = {'tenant': 'lab', 'app': 'postgres-ha'}
 
         def write(name, data):
@@ -203,12 +194,23 @@ def main():
                             'TestPostgresFleetActiveActive', 'TestPostgresMCPAndAgentAcrossReplicas',
                             'TestPostgresDatabaseCrashRecovery'}
                 assert required <= set(package_checks), 'required HA tests skipped or missing'
+            backup = None
+            if args.backup_restore:
+                from backup_lab import qualify
+                backup = qualify(env, temp, config, password)
+            for path in temp.rglob('*'):
+                if path.is_file():
+                    contents = path.read_bytes()
+                    assert all(secret.encode() not in contents for secret in [password, db_url, *tokens.values()]), \
+                        'generated credential persisted in a host fixture file'
             report = {'result': 'pass', 'postgres_image': POSTGRES, 'postgres_version': version,
                 'checks': ['TLS verified database and service connections', 'two fleet and two counter CLI replicas',
                            'stage/rollout/activate cross replicas', 'two enrolled target agents', 'scope isolation',
                            'global counts across direct counter replicas and WAFs', 'service availability after killing one replica of each service',
                            'database outage fails closed', 'database WAL restart preserves generations and committed counters'],
+                'host_generated_password_or_token_files': False,
                 'package_tests': package_checks,
+                'backup_restore': backup,
                 'boundary': 'one disposable Postgres primary; primary election/fencing and production DB HA are external operator responsibilities'}
             args.output.write_text(json.dumps(report, indent=2) + '\n')
             print(json.dumps(report, indent=2))

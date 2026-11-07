@@ -1,10 +1,10 @@
 name: Application firewall
 on:
   pull_request:
-    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/networkfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
+    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/networkfirewall/**', 'internal/transparentfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
   push:
     branches: [master, main, feature/application-firewall]
-    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/networkfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
+    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/networkfirewall/**', 'internal/transparentfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -52,7 +52,7 @@ jobs:
         env:
           CGO_ENABLED: '1'
         run: |
-          packages='./cmd/netcap-firewall ./cmd/firewall ./internal/waf ./internal/policy ./internal/policycontrol ./internal/gateway ./internal/enforcer ./internal/networkfirewall ./internal/firewallstate ./internal/firewallfleet ./internal/firewalltransport ./internal/responseactions'
+          packages='./cmd/netcap-firewall ./cmd/firewall ./internal/waf ./internal/policy ./internal/policycontrol ./internal/gateway ./internal/enforcer ./internal/networkfirewall ./internal/transparentfirewall ./internal/firewallstate ./internal/firewallfleet ./internal/firewalltransport ./internal/responseactions'
           go test -race $packages
           go test -race -tags coraza $packages
           go test -race -tags coraza,http3 ./cmd/netcap-firewall ./cmd/firewall ./internal/firewalltransport ./internal/waf
@@ -74,6 +74,7 @@ jobs:
         run: |
           python3 examples/firewall/enforcer_lab.py
           python3 examples/firewall/network_lab.py
+          python3 examples/firewall/transparent_lab.py
       - name: Managed restore and controlled open-loop measurement
         run: |
           python3 examples/firewall/restore_drill.py --binary "$RUNNER_TEMP/netcap-firewall-coraza" --output "$RUNNER_TEMP/restore-${{ matrix.arch }}.json"

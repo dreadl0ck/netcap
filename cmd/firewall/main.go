@@ -53,6 +53,7 @@ func GetCommand() *cli.Command {
 		{Name: "healthcheck", Flags: []cli.Flag{&cli.StringFlag{Name: "url", Value: "http://127.0.0.1:9090/readyz"}}, Action: healthcheck},
 		{Name: "gateway", Usage: "bounded DNS, Modbus, DNP3, Redis, MySQL, Postgres or SMTP gateway", Flags: gatewayFlags(), Action: withSignals(runGateway)},
 		{Name: "network", Usage: "scoped Linux netns NFQUEUE firewall", Flags: networkFlags(), Action: withSignals(runNetwork)},
+		{Name: "redirect", Usage: "place an already-running TCP protocol gateway on a scoped routed service path", Flags: redirectFlags(), Action: withSignals(runRedirect)},
 		{Name: "fleet-controller", Usage: "authoritative fleet controller", Flags: serviceFlags(), Action: withSignals(runFleetController)},
 		{Name: "sharedstate", Usage: "authoritative shared rate counters", Flags: serviceFlags(), Action: withSignals(runSharedState)},
 		{Name: "backup", Usage: "offline snapshot (service must be stopped)", Flags: backupFlags(), Action: runBackup},

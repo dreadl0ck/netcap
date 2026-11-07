@@ -15,7 +15,23 @@
       "repository": {"type": "string", "minLength": 1}, "tag": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+[A-Za-z0-9_.-]*$"},
       "digest": {"type": "string", "pattern": "^(|sha256:[a-f0-9]{64})$"}, "pullPolicy": {"enum": ["Always", "Never", "IfNotPresent"]}}},
     "storage": {"type": "object", "additionalProperties": false, "properties": {"existingClaim": {"type": "string"}, "className": {"type": "string"}, "size": {"type": "string", "pattern": "^[1-9][0-9]*(Mi|Gi)$"}}},
-    "resources": {"type": "object"}
+    "resources": {"type": "object"},
+    "backup": {"type": "object", "additionalProperties": false,
+      "required": ["enabled", "schedule", "timeZone", "scope", "databaseSecretName", "databaseService", "repositorySecretName", "passwordSecretName", "passwordSecretKey", "maxDumpBytes", "workSize", "cacheSize", "activeDeadlineSeconds", "ttlSecondsAfterFinished", "retention", "resources"],
+      "properties": {
+        "enabled": {"type": "boolean"}, "schedule": {"type": "string", "minLength": 9}, "timeZone": {"type": "string", "minLength": 1},
+        "scope": {"type": "string", "pattern": "^(|[a-z0-9][a-z0-9-]{0,31})$"},
+        "databaseSecretName": {"type": "string"}, "databaseService": {"type": "string", "pattern": "^[A-Za-z0-9_]+$"},
+        "repositorySecretName": {"type": "string"}, "passwordSecretName": {"type": "string"}, "passwordSecretKey": {"type": "string", "minLength": 1},
+        "maxDumpBytes": {"type": "integer", "minimum": 512, "maximum": 1073741824, "multipleOf": 512},
+        "workSize": {"type": "string", "pattern": "^[1-9][0-9]*(Mi|Gi)$"}, "cacheSize": {"type": "string", "pattern": "^[1-9][0-9]*(Mi|Gi)$"},
+        "activeDeadlineSeconds": {"type": "integer", "minimum": 60, "maximum": 3600},
+        "ttlSecondsAfterFinished": {"type": "integer", "minimum": 60, "maximum": 86400},
+        "retention": {"type": "object", "additionalProperties": false, "required": ["keepDaily", "keepWeekly", "keepMonthly", "prune"], "properties": {
+          "keepDaily": {"type": "integer", "minimum": 1, "maximum": 366}, "keepWeekly": {"type": "integer", "minimum": 0, "maximum": 366},
+          "keepMonthly": {"type": "integer", "minimum": 0, "maximum": 366}, "prune": {"type": "boolean"}}},
+        "resources": {"type": "object"}
+      }}
   },
   "allOf": [
     {"if": {"properties": {"persistence": {"properties": {"backend": {"const": "sqlite"}}}}}, "then": {
@@ -23,6 +39,11 @@
     }},
     {"if": {"properties": {"persistence": {"properties": {"backend": {"const": "postgres"}}}}}, "then": {
       "properties": {"replicaCount": {"minimum": 2}, "persistence": {"properties": {"postgres": {"properties": {"databaseURLEnv": {"minLength": 1}, "databaseNamespace": {"minLength": 1}}}}}, "storage": {"properties": {"existingClaim": {"const": ""}, "className": {"const": ""}}}}
+    }},
+    {"if": {"required": ["backup"], "properties": {"backup": {"required": ["enabled"], "properties": {"enabled": {"const": true}}}}}, "then": {
+      "properties": {"enabled": {"const": true}, "persistence": {"properties": {"backend": {"const": "postgres"}}}, "backup": {"properties": {
+        "scope": {"minLength": 1}, "databaseSecretName": {"minLength": 1}, "repositorySecretName": {"minLength": 1}, "passwordSecretName": {"minLength": 1}
+      }}}
     }}
   ]
 }
