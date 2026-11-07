@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/firewallfleet"
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 	"github.com/dreadl0ck/netcap/internal/firewallui"
@@ -24,6 +25,7 @@ type principalFile struct {
 	Scope    firewallstate.Scope `json:"scope"`
 }
 type serviceFile struct {
+	AuthConfig        string          `json:"authConfig"`
 	StateDir          string          `json:"stateDir"`
 	TokenEnv          string          `json:"tokenEnv"`
 	Identities        []principalFile `json:"identities"`
@@ -68,6 +70,12 @@ func fleetConfig(path string) (firewallfleet.Config, error) {
 		return cfg, err
 	}
 	cfg.DatabaseNamespace = f.DatabaseNamespace
+	a, auth, err := loadAuth(f.AuthConfig)
+	if err != nil {
+		return cfg, err
+	}
+	cfg.Auth, cfg.Environment, cfg.Origin = a, auth.Scope.Environment, auth.Origin
+	cfg.Approvals = auth.approvals
 	if len(f.Principals) > 0 || f.MaxKeys != 0 {
 		return cfg, errors.New("sharedstate options are invalid for fleet-controller")
 	}
@@ -89,6 +97,10 @@ func fleetConfig(path string) (firewallfleet.Config, error) {
 		cfg.Identities = append(cfg.Identities, firewallfleet.Identity{ID: p.ID, Token: token, Scope: p.Scope})
 	}
 	for _, p := range f.Targets {
+		if cfg.Auth != nil && p.TokenEnv == "" {
+			cfg.Targets = append(cfg.Targets, firewallfleet.Enrollment{ID: p.ID, Scope: p.Scope})
+			continue
+		}
 		token, err := envToken(p.TokenEnv)
 		if err != nil {
 			return cfg, err
@@ -114,6 +126,11 @@ func stateConfig(path string) (firewallstate.Config, error) {
 		return cfg, errors.New("fleet options are invalid for sharedstate")
 	}
 	cfg.StateDir, cfg.MaxKeys = f.StateDir, f.MaxKeys
+	a, auth, err := loadAuth(f.AuthConfig)
+	if err != nil {
+		return cfg, err
+	}
+	cfg.Auth, cfg.Environment, cfg.Target, cfg.Origin = a, auth.Scope.Environment, auth.Scope.Target, auth.Origin
 	for _, p := range f.Principals {
 		token, err := envToken(p.TokenEnv)
 		if err != nil {
@@ -187,6 +204,9 @@ func runFleetController(ctx context.Context, c *cli.Command) error {
 		return err
 	}
 	cfg, err := fleetConfig(c.String("config"))
+	if cfg.Auth != nil {
+		defer cfg.Auth.Close()
+	}
 	if err != nil {
 		return err
 	}
@@ -210,7 +230,7 @@ func runFleetController(ctx context.Context, c *cli.Command) error {
 			case <-maintenanceCtx.Done():
 				return
 			case <-ticker.C:
-				if _, err := s.Maintain(maintenanceCtx); err != nil && maintenanceCtx.Err() == nil {
+				if _, err := s.Maintain(maintenanceIdentity(maintenanceCtx, firewallauth.Scope{Tenant: "*", App: "*", Environment: cfg.Environment, Target: "*"}, firewallauth.Rollback)); err != nil && maintenanceCtx.Err() == nil {
 					// No request data or credentials enter periodic diagnostics.
 					fmt.Fprintln(c.Root().ErrWriter, "fleet maintenance failed")
 				}
@@ -224,6 +244,9 @@ func runSharedState(ctx context.Context, c *cli.Command) error {
 		return err
 	}
 	cfg, err := stateConfig(c.String("config"))
+	if cfg.Auth != nil {
+		defer cfg.Auth.Close()
+	}
 	if err != nil {
 		return err
 	}
@@ -241,6 +264,9 @@ func runBackup(ctx context.Context, c *cli.Command) error {
 	switch c.String("service") {
 	case "policy-state":
 		cfg, err := nativeStateConfig(c.String("config"))
+		if cfg.Auth != nil {
+			defer cfg.Auth.Close()
+		}
 		if err != nil {
 			return err
 		}
@@ -249,9 +275,12 @@ func runBackup(ctx context.Context, c *cli.Command) error {
 			return err
 		}
 		defer s.Close()
-		return s.ConsistentBackup(ctx, c.String("output"))
+		return s.ConsistentBackup(maintenanceIdentity(ctx, firewallauth.Scope{Tenant: "*", App: "*", Environment: cfg.Environment, Target: cfg.Target}, firewallauth.Audit), c.String("output"))
 	case "fleet":
 		cfg, err := fleetConfig(c.String("config"))
+		if cfg.Auth != nil {
+			defer cfg.Auth.Close()
+		}
 		if err != nil {
 			return err
 		}
@@ -263,9 +292,12 @@ func runBackup(ctx context.Context, c *cli.Command) error {
 			return err
 		}
 		defer s.Close()
-		return s.Backup(ctx, c.String("output"))
+		return s.Backup(maintenanceIdentity(ctx, firewallauth.Scope{Tenant: "*", App: "*", Environment: cfg.Environment, Target: "*"}, firewallauth.Audit), c.String("output"))
 	case "sharedstate":
 		cfg, err := stateConfig(c.String("config"))
+		if cfg.Auth != nil {
+			defer cfg.Auth.Close()
+		}
 		if err != nil {
 			return err
 		}
@@ -277,7 +309,7 @@ func runBackup(ctx context.Context, c *cli.Command) error {
 			return err
 		}
 		defer s.Close()
-		return s.Backup(ctx, c.String("output"))
+		return s.Backup(maintenanceIdentity(ctx, firewallauth.Scope{Tenant: "*", App: "*", Environment: cfg.Environment, Target: cfg.Target}, firewallauth.Audit), c.String("output"))
 	default:
 		return errors.New("service must be fleet, sharedstate or policy-state")
 	}

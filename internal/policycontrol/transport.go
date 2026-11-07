@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/policy"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -25,8 +26,11 @@ import (
 // trusted TLS terminator). All routes, including MCP initialization, require auth.
 func (s *Service) Handler() http.Handler {
 	mux := http.NewServeMux()
+	if s.cfg.Auth != nil {
+		mux.Handle("/api/v1/auth/", s.cfg.Auth.LifecycleHandler(s.cfg.Origin))
+	}
 	mux.Handle("/mcp", server.NewStreamableHTTPServer(s.mcp, server.WithStateLess(true), server.WithDisableStreaming(true)))
-	for _, op := range []string{"capabilities", "revision", "revisions", "check", "evaluate", "stage", "diff", "activate", "rollback", "audit"} {
+	for _, op := range []string{"capabilities", "revision", "revisions", "check", "evaluate", "stage", "diff", "activate", "rollback", "audit", "approval"} {
 		mux.HandleFunc("/api/v1/policy/"+op, func(w http.ResponseWriter, r *http.Request) {
 			operation := op
 			if op == "revisions" && r.Method == http.MethodPost {
@@ -85,13 +89,19 @@ func (s *Service) Handler() http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		auth := r.Header.Get("Authorization")
 		got := sha256.Sum256([]byte(strings.TrimPrefix(auth, "Bearer ")))
-		if !strings.HasPrefix(auth, "Bearer ") || subtle.ConstantTimeCompare(got[:], want[:]) != 1 {
+		valid := strings.HasPrefix(auth, "Bearer ") && subtle.ConstantTimeCompare(got[:], want[:]) == 1
+		if s.cfg.Auth != nil {
+			var err error
+			r, err = s.cfg.Auth.Request(r)
+			valid = err == nil
+		}
+		if !valid {
 			w.Header().Set("WWW-Authenticate", `Bearer realm="policycontrol"`)
 			writeError(w, failure(401, "administrative bearer token required"))
 			return
 		}
-		// No browser-origin administrative requests or cross-origin CORS surface.
-		if r.Header.Get("Origin") != "" {
+		// A bootstrap-configured exact origin is allowed without enabling CORS.
+		if !firewallauth.AllowOrigin(r, s.cfg.Origin) {
 			writeError(w, failure(403, "browser origins are not supported"))
 			return
 		}
@@ -156,25 +166,35 @@ func writeError(w http.ResponseWriter, err error) {
 
 func (s *Service) newMCP() *server.MCPServer {
 	srv := server.NewMCPServer("netcap-policycontrol", "1.0.0", server.WithToolCapabilities(false))
+	if s.cfg.Auth != nil {
+		s.cfg.Auth.AddLifecycleTool(srv)
+	}
 	for _, spec := range []struct {
 		name, op, description string
 		fields                []string
 	}{
+		{"issue_policy_approval", "approval", "Issue a five-minute server-signed receipt for a separate authorized principal and exact request digest.", []string{"approval"}},
 		{"get_policy_capabilities", "capabilities", "Read mode, single-target scope, and limits.", nil},
 		{"get_policy_revision", "revision", "Read an immutable revision; empty revision selects active.", []string{"revision"}},
 		{"check_policy_bundle", "check", "Parse and compile a bundle without staging or target mutation.", []string{"bundle"}},
 		{"stage_policy_revision", "stage", "Validate and retain an immutable bundle in managed mode.", []string{"bundle", "idempotency_key"}},
 		{"diff_policy_revisions", "diff", "Compare retained revisions; returns changed top-level fields.", []string{"revision", "other_revision"}},
 		{"explain_policy_decision", "evaluate", "Replay synthetic events with isolated per-replay state; no network or target mutation. Use event or events.", []string{"revision", "event", "events"}},
-		{"activate_policy_deployment", "activate", "Activate a staged revision using expected_revision CAS and idempotency_key.", []string{"revision", "expected_revision", "idempotency_key"}},
-		{"rollback_policy_deployment", "rollback", "Activate a retained revision, or previous if omitted, using CAS and idempotency_key.", []string{"revision", "expected_revision", "idempotency_key"}},
+		{"activate_policy_deployment", "activate", "Activate a staged revision using expected_revision CAS and idempotency_key.", []string{"revision", "expected_revision", "idempotency_key", "receipt"}},
+		{"rollback_policy_deployment", "rollback", "Activate a retained revision, or previous if omitted, using CAS and idempotency_key.", []string{"revision", "expected_revision", "idempotency_key", "receipt"}},
 		{"query_policy_audit", "audit", "Query bounded successful mutation audit records.", []string{"limit"}},
 	} {
+		if spec.op == "approval" && s.cfg.Approvals == nil {
+			continue
+		}
 		op := spec.op
-		mutation := op == "stage" || op == "activate" || op == "rollback"
+		mutation := op == "stage" || op == "activate" || op == "rollback" || op == "approval"
 		opts := []mcp.ToolOption{mcp.WithDescription(spec.description), mcp.WithReadOnlyHintAnnotation(!mutation), mcp.WithOpenWorldHintAnnotation(false)}
 		for _, field := range spec.fields {
 			switch field {
+			case "approval":
+				schema := jsonSchema(reflect.TypeOf(firewallauth.ApprovalRequest{}))
+				opts = append(opts, mcp.WithObject(field, mcp.Properties(schema["properties"].(map[string]any)), mcp.AdditionalProperties(false), mcp.Required()))
 			case "event", "events":
 				schema := jsonSchema(reflect.TypeOf(policy.Event{}))
 				if field == "events" {
@@ -217,9 +237,12 @@ func (s *Service) newMCP() *server.MCPServer {
 	return srv
 }
 
-// ServeStdio is a local, process-owner-authorized transport. The caller controls
-// process launch and stdin; bearer auth applies to HTTP, not local stdio.
+// ServeStdio requires explicit local grants, including in legacy bearer mode.
 func (s *Service) ServeStdio(ctx context.Context) error {
+	if s.cfg.StdioPrincipal == nil {
+		return errors.New("explicit stdio principal required")
+	}
+	ctx = firewallauth.WithPrincipal(ctx, *s.cfg.StdioPrincipal)
 	return server.NewStdioServer(s.mcp).Listen(ctx, &lineLimitReader{reader: os.Stdin}, os.Stdout)
 }
 

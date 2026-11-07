@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/enforcer"
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/firewalltransport"
 	"github.com/dreadl0ck/netcap/internal/firewallui"
 	"github.com/dreadl0ck/netcap/internal/gateway"
@@ -32,6 +33,8 @@ import (
 func configFlags() []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{Name: "config", Required: true, Usage: "runtime YAML or JSON file"},
+		&cli.StringFlag{Name: "auth-config", Usage: "strict JSON identity/grants bootstrap; required for stdio"},
+		&cli.BoolFlag{Name: "legacy-admin", Usage: "explicit compatibility: trust NETCAP_FIREWALL_ADMIN_TOKEN as unrestricted local admin"},
 		&cli.BoolFlag{Name: "managed", Usage: "allow authenticated policy activation; requires state-dir and admin token"},
 		&cli.StringFlag{Name: "state-dir", Usage: "private durable policy directory"},
 		&cli.StringFlag{Name: "admin-cert", Usage: "administrative TLS certificate"},
@@ -62,6 +65,8 @@ func GetCommand() *cli.Command {
 		{Name: "backup", Usage: "offline snapshot (service must be stopped)", Flags: backupFlags(), Action: runBackup},
 		{Name: "restore", Usage: "offline restore into empty state directory; fence old service first", Flags: restoreFlags(), Action: runRestore},
 		{Name: "enforcer", Usage: "explicit scoped nftables leases in a named Linux lab namespace", Flags: []cli.Flag{
+			&cli.StringFlag{Name: "auth-config", Usage: "strict JSON identity/grants bootstrap"},
+			&cli.BoolFlag{Name: "legacy-admin", Usage: "explicit compatibility: trust NETCAP_FIREWALL_ADMIN_TOKEN as unrestricted enforcer admin"},
 			&cli.StringFlag{Name: "listen", Value: "127.0.0.1:9091"}, &cli.StringFlag{Name: "namespace"},
 			&cli.StringFlag{Name: "table", Value: "netcap_firewall_leases"}, &cli.StringFlag{Name: "interface", Required: true},
 			&cli.StringFlag{Name: "destination", Required: true}, &cli.StringFlag{Name: "protocol", Value: "tcp"},
@@ -166,8 +171,12 @@ func validate(ctx context.Context, c *cli.Command) error {
 	return err
 }
 
-func adminConfig(c *cli.Command) policycontrol.Config {
-	return policycontrol.Config{Token: os.Getenv("NETCAP_FIREWALL_ADMIN_TOKEN"), Managed: c.Bool("managed"), StateDir: c.String("state-dir"), AllowEffects: c.String("effects-config") != ""}
+func adminConfig(c *cli.Command) (policycontrol.Config, error) {
+	if c.String("auth-config") == "" && os.Getenv("NETCAP_FIREWALL_ADMIN_TOKEN") != "" && !c.Bool("legacy-admin") {
+		return policycontrol.Config{}, errors.New("legacy administrative token requires --legacy-admin or migrate to --auth-config")
+	}
+	a, f, err := loadAuth(c.String("auth-config"))
+	return policycontrol.Config{Auth: a, Approvals: f.approvals, Scope: f.Scope, Origin: f.Origin, Token: os.Getenv("NETCAP_FIREWALL_ADMIN_TOKEN"), Managed: c.Bool("managed"), StateDir: c.String("state-dir"), AllowEffects: c.String("effects-config") != ""}, err
 }
 
 func loopbackAddress(addr string) bool {
@@ -227,12 +236,18 @@ func serve(ctx context.Context, c *cli.Command) error {
 	defer stopMaintenance()
 	admin := http.NewServeMux()
 	admin.Handle("/", f.AdminHandler())
-	ac := adminConfig(c)
-	if ac.Managed && ac.Token == "" {
+	ac, err := adminConfig(c)
+	if ac.Auth != nil {
+		defer ac.Auth.Close()
+	}
+	if err != nil {
+		return err
+	}
+	if ac.Managed && ac.Token == "" && ac.Auth == nil {
 		return errors.New("managed mode requires NETCAP_FIREWALL_ADMIN_TOKEN")
 	}
-	if ac.Token != "" {
-		if len(ac.Token) < 32 {
+	if ac.Token != "" || ac.Auth != nil {
+		if ac.Auth == nil && len(ac.Token) < 32 {
 			return errors.New("administrative token requires at least 32 bytes")
 		}
 		if !loopbackAddress(cfg.AdminListen) && (c.String("admin-cert") == "" || c.String("admin-key") == "") {
@@ -244,6 +259,7 @@ func serve(ctx context.Context, c *cli.Command) error {
 		}
 		defer s.Close()
 		admin.Handle("/api/v1/policy/", s.Handler())
+		admin.Handle("/api/v1/auth/", s.Handler())
 		admin.Handle("/mcp", s.Handler())
 	}
 	if (c.String("admin-cert") == "") != (c.String("admin-key") == "") {
@@ -353,7 +369,17 @@ func stdio(ctx context.Context, c *cli.Command) error {
 	}
 	t := &localTarget{}
 	t.SetPolicy(p)
-	s, err := policycontrol.New(policycontrol.Config{Token: "local-stdio-read-only-principal", ReadOnly: true}, t)
+	a, auth, err := loadAuth(c.String("auth-config"))
+	if a != nil {
+		defer a.Close()
+	}
+	if err != nil {
+		return err
+	}
+	if a == nil || auth.Stdio == nil {
+		return errors.New("stdio requires auth-config with explicit stdio grants")
+	}
+	s, err := policycontrol.New(policycontrol.Config{Auth: a, Scope: auth.Scope, StdioPrincipal: auth.Stdio, ReadOnly: true}, t)
 	if err != nil {
 		return err
 	}
@@ -401,6 +427,9 @@ func runGateway(ctx context.Context, c *cli.Command) error {
 }
 
 func runEnforcer(ctx context.Context, c *cli.Command) error {
+	if c.String("auth-config") == "" && !c.Bool("legacy-admin") {
+		return errors.New("enforcer requires --auth-config or explicit --legacy-admin compatibility")
+	}
 	if err := checkServiceTLS(c); err != nil {
 		return err
 	}
@@ -421,6 +450,15 @@ func runEnforcer(ctx context.Context, c *cli.Command) error {
 		}
 		cfg.Profiles, cfg.ProtectedServices = actions.Profiles, actions.Protected
 	}
+	a, auth, err := loadAuth(c.String("auth-config"))
+	if a != nil {
+		defer a.Close()
+	}
+	if err != nil {
+		return err
+	}
+	cfg.Auth, cfg.AuthScope, cfg.Origin = a, auth.Scope, auth.Origin
+	cfg.Approvals = auth.approvals
 	e, err := enforcer.New(cfg, nil)
 	if err != nil {
 		return err
@@ -454,7 +492,7 @@ func runEnforcer(ctx context.Context, c *cli.Command) error {
 			}
 			return err
 		case <-ticker.C:
-			if err := e.Reconcile(ctx); err != nil {
+			if err := e.Reconcile(maintenanceIdentity(ctx, cfg.AuthScope, firewallauth.Lease)); err != nil {
 				fmt.Fprintln(c.Root().ErrWriter, "enforcer reconciliation failed:", strings.TrimSpace(err.Error()))
 			}
 		}

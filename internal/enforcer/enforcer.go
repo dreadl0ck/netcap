@@ -16,6 +16,8 @@ import (
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 )
 
 const (
@@ -42,8 +44,12 @@ type Scope struct {
 }
 
 type Config struct {
-	Token string
-	Table string
+	Approvals *firewallauth.Approvals
+	Auth      *firewallauth.Authority
+	AuthScope firewallauth.Scope
+	Origin    string
+	Token     string
+	Table     string
 	// Namespace is an existing named Linux netns under /run/netns. It is required
 	// by NewNFTBackend; enforcer never creates a namespace or targets the default one.
 	Namespace      string
@@ -91,7 +97,10 @@ type Controller struct {
 }
 
 func normalize(c Config) (Config, []netip.Prefix, error) {
-	if len(c.Token) < 32 || len(c.Token) > 4096 {
+	if c.Approvals != nil && c.Auth == nil {
+		return c, nil, errors.New("approval protection requires identity authority")
+	}
+	if c.Auth == nil && (len(c.Token) < 32 || len(c.Token) > 4096) {
 		return c, nil, errors.New("bearer token must contain 32..4096 bytes")
 	}
 	if c.Table == "" {
@@ -188,7 +197,7 @@ func New(config Config, backend Backend) (*Controller, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	if err = x.Reconcile(ctx); err != nil {
+	if err = x.reconcile(ctx); err != nil {
 		return nil, err
 	}
 	ready = true
@@ -204,6 +213,12 @@ func fingerprint(c Config) string {
 		Profiles          map[string]Profile `json:",omitempty"`
 		ProtectedServices []Service          `json:",omitempty"`
 	}{c.Table, c.Namespace, c.Scope, c.ProtectedCIDRs, c.DryRun, c.Profiles, c.ProtectedServices})
+	if c.Auth != nil {
+		b, _ = json.Marshal(struct {
+			Network  json.RawMessage
+			Identity firewallauth.Scope
+		}{b, c.AuthScope})
+	}
 	h := sha256.Sum256(b)
 	return hex.EncodeToString(h[:])
 }
@@ -243,6 +258,12 @@ func (c *Controller) validateBase(l Lease) error {
 }
 
 func (c *Controller) Create(ctx context.Context, id, source string, ttl time.Duration) (Lease, error) {
+	if err := c.authorize(ctx, firewallauth.Lease); err != nil {
+		return Lease{}, err
+	}
+	if err := c.checkApproval(ctx, CreateApprovalDigest(id, source, ttl, time.Time{})); err != nil {
+		return Lease{}, err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed {
@@ -264,6 +285,12 @@ func (c *Controller) CreateUntil(ctx context.Context, id, source string, expires
 }
 
 func (c *Controller) CreateActionUntil(ctx context.Context, id, source string, expiresAt time.Time, action Action) (Lease, error) {
+	if err := c.authorize(ctx, firewallauth.Lease); err != nil {
+		return Lease{}, err
+	}
+	if err := c.checkApproval(ctx, CreateApprovalDigest(id, source, 0, expiresAt)); err != nil {
+		return Lease{}, err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed {
@@ -350,10 +377,16 @@ func (c *Controller) applyLease(ctx context.Context, l Lease) error {
 }
 
 func (c *Controller) Delete(ctx context.Context, id string) error {
+	if err := c.authorize(ctx, firewallauth.Lease); err != nil {
+		return err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed {
 		return errors.New("controller closed")
+	}
+	if err := c.checkApproval(ctx, DeleteApprovalDigest(c.leases[id])); err != nil {
+		return err
 	}
 	if err := c.reconcile(ctx); err != nil {
 		return err
@@ -374,13 +407,18 @@ func (c *Controller) Delete(ctx context.Context, id string) error {
 }
 
 func (c *Controller) List(ctx context.Context) ([]Lease, error) {
+	if err := c.authorize(ctx, firewallauth.Read); err != nil {
+		return nil, err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed {
 		return nil, errors.New("controller closed")
 	}
-	if err := c.reconcile(ctx); err != nil {
-		return nil, err
+	if c.config.Auth == nil {
+		if err := c.reconcile(ctx); err != nil {
+			return nil, err
+		}
 	}
 	return sorted(c.leases), nil
 }
@@ -395,12 +433,43 @@ func sorted(m map[string]Lease) []Lease {
 }
 
 func (c *Controller) Reconcile(ctx context.Context) error {
+	if err := c.authorize(ctx, firewallauth.Lease); err != nil {
+		return err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed {
 		return errors.New("controller closed")
 	}
 	return c.reconcile(ctx)
+}
+
+func (c *Controller) authorize(ctx context.Context, action firewallauth.Action) error {
+	if c.config.Auth != nil {
+		return firewallauth.Require(ctx, action, c.config.AuthScope)
+	}
+	return nil
+}
+
+func (c *Controller) checkApproval(ctx context.Context, digest string) error {
+	if c.config.Approvals != nil {
+		return c.config.Approvals.Check(ctx, firewallauth.Lease, c.config.AuthScope, digest, firewallauth.Receipt(ctx))
+	}
+	return nil
+}
+
+func CreateApprovalDigest(id, source string, ttl time.Duration, expires time.Time) string {
+	return firewallauth.Digest(struct {
+		Operation, ID, Source string
+		TTL                   time.Duration
+		Expires               time.Time
+	}{"create", id, source, ttl, expires.UTC()})
+}
+func DeleteApprovalDigest(l Lease) string {
+	return firewallauth.Digest(struct {
+		Operation string
+		Lease     Lease
+	}{"delete", l})
 }
 
 func (c *Controller) reconcile(ctx context.Context) error {

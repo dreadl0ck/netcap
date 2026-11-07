@@ -7,6 +7,8 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 )
 
 // Handler serves /mcp (stateless Streamable HTTP), GET/POST /v1/leases and
@@ -22,12 +24,56 @@ func (c *Controller) Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")
+		if c.config.Auth != nil && strings.HasPrefix(r.URL.Path, "/api/v1/auth/") {
+			c.config.Auth.LifecycleHandler(c.config.Origin).ServeHTTP(w, r)
+			return
+		}
 		got := sha256.Sum256([]byte(r.Header.Get("Authorization")))
 		want := sha256.Sum256([]byte("Bearer " + c.config.Token))
-		if subtle.ConstantTimeCompare(got[:], want[:]) != 1 {
+		valid := subtle.ConstantTimeCompare(got[:], want[:]) == 1
+		if c.config.Auth != nil {
+			var err error
+			r, err = c.config.Auth.Request(r)
+			valid = err == nil
+		}
+		if !valid {
 			w.Header().Set("WWW-Authenticate", `Bearer realm="enforcer"`)
 			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 			return
+		}
+		if !firewallauth.AllowOrigin(r, c.config.Origin) {
+			http.Error(w, `{"error":"origin refused"}`, 403)
+			return
+		}
+		r = r.WithContext(firewallauth.WithReceipt(r.Context(), r.Header.Get("X-Firewall-Approval")))
+		if r.URL.Path == "/v1/approval" {
+			if c.config.Approvals == nil || r.Method != "POST" {
+				http.NotFound(w, r)
+				return
+			}
+			raw, err := readJSONBody(w, r, 4096)
+			var req firewallauth.ApprovalRequest
+			if err != nil || decodeObject(raw, &req, "actor", "action", "scope", "digest") != nil || req.Scope != c.config.AuthScope {
+				http.Error(w, "invalid approval request", 400)
+				return
+			}
+			receipt, err := c.config.Approvals.Issue(r.Context(), req)
+			if err != nil {
+				http.Error(w, "approval refused", 403)
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]string{"receipt": receipt})
+			return
+		}
+		if c.config.Auth != nil && r.URL.Path != "/mcp" {
+			action := firewallauth.Lease
+			if r.Method == http.MethodGet {
+				action = firewallauth.Read
+			}
+			if err := firewallauth.Require(r.Context(), action, c.config.AuthScope); err != nil {
+				http.Error(w, `{"error":"lease grant required"}`, 403)
+				return
+			}
 		}
 		if r.URL.Path == "/mcp" {
 			mcpHandler.ServeHTTP(w, r)
@@ -53,7 +99,7 @@ func (c *Controller) Handler() http.Handler {
 					http.Error(w, `{"error":"invalid request"}`, 400)
 					return
 				}
-				if err := decodeObject(raw, &req, "id", "source", "ttl_seconds", "expires_at", "action"); err != nil {
+				if err := decodeObject(raw, &req, "id", "source", "ttl_seconds", "expires_at", "action", "receipt"); err != nil {
 					http.Error(w, `{"error":"invalid request fields"}`, 400)
 					return
 				}
@@ -94,7 +140,9 @@ func (c *Controller) Handler() http.Handler {
 
 func apiError(w http.ResponseWriter, err error) {
 	status := http.StatusBadRequest
-	if errors.Is(err, ErrConflict) {
+	if errors.Is(err, firewallauth.ErrForbidden) || errors.Is(err, firewallauth.ErrUnauthenticated) {
+		status = http.StatusForbidden
+	} else if errors.Is(err, ErrConflict) {
 		status = http.StatusConflict
 	} else if errors.Is(err, ErrLimit) {
 		status = http.StatusTooManyRequests

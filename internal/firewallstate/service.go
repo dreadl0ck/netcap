@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 )
 
 const MaxKeys = 4096
@@ -22,11 +24,13 @@ type Principal struct {
 	Scope Scope
 }
 type Config struct {
-	StateDir          string
-	DatabaseURL       string
-	DatabaseNamespace string
-	Principals        []Principal
-	MaxKeys           int
+	Auth                        *firewallauth.Authority
+	Environment, Target, Origin string
+	StateDir                    string
+	DatabaseURL                 string
+	DatabaseNamespace           string
+	Principals                  []Principal
+	MaxKeys                     int
 }
 type Key struct {
 	Revision string `json:"revision"`
@@ -58,10 +62,16 @@ type Service struct {
 }
 
 func New(cfg Config) (*Service, error) {
+	if cfg.Auth != nil && cfg.DatabaseURL != "" {
+		return nil, errors.New("shared identity mode requires a singleton SQLite service; PostgreSQL replicas require a shared identity ledger")
+	}
+	if cfg.Auth != nil && len(cfg.Principals) > 0 {
+		return nil, errors.New("shared authority and legacy state principals are mutually exclusive")
+	}
 	if cfg.MaxKeys == 0 {
 		cfg.MaxKeys = MaxKeys
 	}
-	if cfg.MaxKeys < 1 || cfg.MaxKeys > MaxKeys || len(cfg.Principals) < 1 || len(cfg.Principals) > 100 {
+	if cfg.MaxKeys < 1 || cfg.MaxKeys > MaxKeys || (len(cfg.Principals) < 1 && cfg.Auth == nil) || len(cfg.Principals) > 100 {
 		return nil, errors.New("invalid shared-state limits")
 	}
 	seen := map[string]bool{}
@@ -93,6 +103,12 @@ func New(cfg Config) (*Service, error) {
 		return nil, err
 	}
 	s := &Service{cfg: cfg, disk: d, slots: make(chan struct{}, 32)}
+	if !d.IsPostgres() {
+		if err = firewallauth.PinState(startup, d.DB, firewallauth.Scope{Environment: cfg.Environment, Target: cfg.Target}, cfg.Auth != nil); err != nil {
+			d.Close()
+			return nil, err
+		}
+	}
 	if d.IsPostgres() {
 		err = d.Bootstrap(startup, stateFingerprint(cfg), statePostgresSchema)
 	} else {
@@ -147,8 +163,13 @@ func validateCounterKeys(db *sql.DB) error {
 	}
 	return rows.Err()
 }
-func (s *Service) Close() error                                  { return s.disk.Close() }
-func (s *Service) Backup(ctx context.Context, path string) error { return s.disk.Backup(ctx, path) }
+func (s *Service) Close() error { return s.disk.Close() }
+func (s *Service) Backup(ctx context.Context, path string) error {
+	if err := s.authorize(ctx, firewallauth.Audit, Scope{Tenant: "*", App: "*"}); err != nil {
+		return err
+	}
+	return s.disk.Backup(ctx, path)
+}
 
 // Bind is for trusted in-process callers only. Network callers are bound by token.
 func (s *Service) Bind(scope Scope) Store { return &bound{s: s, scope: scope} }
@@ -163,6 +184,9 @@ func (b *bound) Count(ctx context.Context, k Key, w Window, now time.Time) (Coun
 }
 
 func (b *bound) Probe(ctx context.Context) error {
+	if err := b.s.authorize(ctx, firewallauth.Read, b.scope); err != nil {
+		return err
+	}
 	if !b.scope.Valid() {
 		return Fail(400, "invalid bound scope")
 	}
@@ -207,6 +231,9 @@ func validHash(s string) bool {
 	return true
 }
 func (s *Service) count(ctx context.Context, scope Scope, k Key, w Window, now time.Time) (CountResult, error) {
+	if err := s.authorize(ctx, firewallauth.Evaluate, scope); err != nil {
+		return CountResult{}, err
+	}
 	if !scope.Valid() || !validHash(k.Revision) || !validHash(k.Group) || w.Mode != "fixed" || w.Duration < time.Millisecond || w.Duration > MaxWindow || !s.disk.IsPostgres() && now.UnixNano() <= 0 {
 		return CountResult{}, Fail(400, "invalid counter key/window")
 	}
@@ -271,17 +298,39 @@ func (s *Service) count(ctx context.Context, scope Scope, k Key, w Window, now t
 
 func (s *Service) Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.cfg.Auth != nil && strings.HasPrefix(r.URL.Path, "/api/v1/auth/") {
+			s.cfg.Auth.LifecycleHandler(s.cfg.Origin).ServeHTTP(w, r)
+			return
+		}
 		var p *Principal
 		for i := range s.cfg.Principals {
 			if MatchToken(Bearer(r), s.cfg.Principals[i].Token) {
 				p = &s.cfg.Principals[i]
 			}
 		}
+		if s.cfg.Auth != nil {
+			identity, err := s.cfg.Auth.Authenticate(r.Context(), Bearer(r))
+			if err != nil {
+				WriteError(w, Fail(401, "credential rejected"))
+				return
+			}
+			action := firewallauth.Evaluate
+			if r.URL.Path == "/api/v1/state/health" {
+				action = firewallauth.Read
+			}
+			scope, err := identity.BoundScope(action, s.cfg.Environment, s.cfg.Target)
+			if err != nil {
+				WriteError(w, Fail(403, "state grant required"))
+				return
+			}
+			p = &Principal{ID: identity.ID, Scope: Scope{Tenant: scope.Tenant, App: scope.App}}
+			r = r.WithContext(firewallauth.WithPrincipal(r.Context(), identity))
+		}
 		if p == nil {
 			WriteError(w, Fail(401, "principal bearer required"))
 			return
 		}
-		if r.Header.Get("Origin") != "" {
+		if !firewallauth.AllowOrigin(r, s.cfg.Origin) {
 			WriteError(w, Fail(403, "browser origins refused"))
 			return
 		}
@@ -335,6 +384,13 @@ func (s *Service) Handler() http.Handler {
 		}
 		WriteJSON(w, 200, out)
 	})
+}
+
+func (s *Service) authorize(ctx context.Context, action firewallauth.Action, scope Scope) error {
+	if s.cfg.Auth != nil && firewallauth.Require(ctx, action, firewallauth.Scope{Tenant: scope.Tenant, App: scope.App, Environment: s.cfg.Environment, Target: s.cfg.Target}) != nil {
+		return Fail(403, "state grant required")
+	}
+	return nil
 }
 
 type ClientConfig struct {

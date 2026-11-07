@@ -185,7 +185,7 @@ func TestSharedGuardAcrossTwoShippingOrigins(t *testing.T) {
 		defer origin.Close()
 		admin := freeAddress(t, "tcp")
 		cfg, url := runtimeConfig(t, origin.URL, admin)
-		p := startCLI(t, adminToken, "serve", "--config", cfg, "--shared-rate-config", rate)
+		p := startCLI(t, adminToken, "serve", "--config", cfg, "--legacy-admin", "--shared-rate-config", rate)
 		waitReady(t, p, c, "http://"+admin+"/readyz")
 		proxies = append(proxies, p)
 		urls = append(urls, url)
@@ -235,7 +235,7 @@ func TestEffectsBrokerShippingDryRunLease(t *testing.T) {
 	dir := t.TempDir()
 	cert, key := testCertificate(t)
 	addr := freeAddress(t, "tcp")
-	e := startCLI(t, adminToken, "enforcer", "--listen", addr, "--interface", "eth0", "--destination", "10.1.0.0/24", "--port", "443", "--dry-run", "--tls-cert", cert, "--tls-key", key)
+	e := startCLI(t, adminToken, "enforcer", "--legacy-admin", "--listen", addr, "--interface", "eth0", "--destination", "10.1.0.0/24", "--port", "443", "--dry-run", "--tls-cert", cert, "--tls-key", key)
 	waitListening(t, e, addr)
 	network := map[string]any{"hook": "forward", "interface": "eth0", "destination_cidr": "10.1.0.0/24", "protocol": "tcp", "port": 443}
 	effects := jsonFile(t, filepath.Join(dir, "effects.json"), map[string]any{"ca": cert, "scopes": map[string]any{"edge": map[string]any{"endpoint": "https://" + addr, "tokenEnv": "NETCAP_FIREWALL_ADMIN_TOKEN", "network": network}}})
@@ -252,7 +252,7 @@ func TestEffectsBrokerShippingDryRunLease(t *testing.T) {
 	if out, err := runCLI(t, adminToken, "validate", "--config", cfg); err == nil {
 		t.Fatalf("effects admitted without broker: %s", out)
 	}
-	p := startCLI(t, adminToken, "serve", "--config", cfg, "--managed", "--state-dir", filepath.Join(dir, "managed"), "--effects-config", effects)
+	p := startCLI(t, adminToken, "serve", "--config", cfg, "--legacy-admin", "--managed", "--state-dir", filepath.Join(dir, "managed"), "--effects-config", effects)
 	c := httpClient(t)
 	waitReady(t, p, c, "http://"+admin+"/readyz")
 	request, err := http.NewRequest("GET", url+"/effect", nil)
@@ -292,13 +292,13 @@ func TestEffectsBrokerShippingDryRunLease(t *testing.T) {
 	mustTool(t, c, "http://"+admin, "activate_policy_deployment", map[string]any{"revision": staged, "expected_revision": initial, "idempotency_key": "effects-activate"})
 	p.stop(t)
 	writeFile(t, filepath.Join(filepath.Dir(cfg), "policy.json"), bundle("safe-bootstrap", "false"))
-	restarted := startCLI(t, adminToken, "serve", "--config", cfg, "--managed", "--state-dir", filepath.Join(dir, "managed"), "--effects-config", effects)
+	restarted := startCLI(t, adminToken, "serve", "--config", cfg, "--legacy-admin", "--managed", "--state-dir", filepath.Join(dir, "managed"), "--effects-config", effects)
 	waitReady(t, restarted, c, "http://"+admin+"/readyz")
 	if got := revision(t, mustTool(t, c, "http://"+admin, "get_policy_revision", map[string]any{})); got != staged {
 		t.Fatalf("effect admission lost on recovery: %s", got)
 	}
 	restarted.stop(t)
-	if out, err := runCLI(t, adminToken, "serve", "--config", cfg, "--managed", "--state-dir", filepath.Join(dir, "managed")); err == nil {
+	if out, err := runCLI(t, adminToken, "serve", "--config", cfg, "--legacy-admin", "--managed", "--state-dir", filepath.Join(dir, "managed")); err == nil {
 		t.Fatalf("effect revision recovered without broker: %s", out)
 	}
 	e.stop(t)
