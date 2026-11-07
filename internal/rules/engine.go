@@ -20,6 +20,7 @@
 package rules
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -818,25 +819,16 @@ func (e *Engine) executeIPTablesReject(action *ResponseAction, record types.Audi
 	return manager.BlockIP(ip, blockConfig)
 }
 
-// executeIPTablesRateLimit rate-limits traffic from/to an IP.
+// ErrUnsupportedResponseAction identifies an action that installs no firewall rule.
+var ErrUnsupportedResponseAction = errors.New("unsupported response action")
+
+// No firewall rule is installed for these legacy action names.
 func (e *Engine) executeIPTablesRateLimit(action *ResponseAction, record types.AuditRecord, alert *types.Alert) error {
-	// Rate limiting requires hashlimit module - placeholder for now
-	fmt.Printf("[RULES] Rate limit action not yet fully implemented for rule %s\n", alert.RuleName)
-	return nil
+	return fmt.Errorf("%w: iptables_rate_limit", ErrUnsupportedResponseAction)
 }
 
-// executeIPTablesLog logs matching traffic via iptables.
 func (e *Engine) executeIPTablesLog(action *ResponseAction, record types.AuditRecord, alert *types.Alert) error {
-	// Logging is already done via alerts - this is for iptables-level logging
-	prefix := "NETCAP: "
-	if p, ok := action.Config["prefix"].(string); ok {
-		prefix = p
-	}
-
-	fmt.Printf("[RULES] LOG: %s%s src=%s dst=%s\n",
-		prefix, alert.RuleName, record.Src(), record.Dst())
-
-	return nil
+	return fmt.Errorf("%w: iptables_log", ErrUnsupportedResponseAction)
 }
 
 // GetActionStats returns response action statistics.

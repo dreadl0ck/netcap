@@ -36,6 +36,10 @@ reloads preserve both configuration and pending evidence. `GetStats` reports
 `config_generation` and `reload_state_policy=reset-on-reload`; emitted alerts
 remain in their writer.
 
+`iptables_rate_limit` and `iptables_log` are unimplemented firewall actions.
+They return `ErrUnsupportedResponseAction` and increment `actions_failed`, never
+`actions_success`; generating an alert does not establish firewall enforcement.
+
 | Identity correction | Canonical location/name |
 | --- | --- |
 | Duplicate Cloudflare name | Cache-header variant is `Cloudflare Cache Headers Detected`; CDN/WAF variant keeps `Cloudflare CDN Detected`. |
