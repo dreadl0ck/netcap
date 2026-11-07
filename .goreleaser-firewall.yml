@@ -1,0 +1,23 @@
+version: 2
+project_name: netcap-firewall
+dist: dist-firewall
+builds:
+  - id: waf
+    main: ./cmd/netcap-firewall
+    binary: netcap-firewall-waf
+    env: [CGO_ENABLED=0, GOWORK=off]
+    goos: [linux]
+    goarch: [amd64, arm64]
+    tags: [coraza, http3]
+    flags: [-trimpath, -buildvcs=false]
+    ldflags: ['-s -w -X github.com/dreadl0ck/netcap.Version={{ .Env.FIREWALL_VERSION }} -X github.com/dreadl0ck/netcap.Commit={{ .FullCommit }}']
+  - id: enforcer
+    main: ./cmd/netcap-firewall
+    binary: netcap-firewall-enforcer
+    env: [CGO_ENABLED=0, GOWORK=off]
+    goos: [linux]
+    goarch: [amd64, arm64]
+    flags: [-trimpath, -buildvcs=false]
+    ldflags: ['-s -w -X github.com/dreadl0ck/netcap.Version={{ .Env.FIREWALL_VERSION }} -X github.com/dreadl0ck/netcap.Commit={{ .FullCommit }}']
+release:
+  disable: true

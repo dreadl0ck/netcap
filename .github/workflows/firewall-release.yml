@@ -1,0 +1,223 @@
+name: Firewall release candidate
+on:
+  pull_request:
+    paths: ['scripts/firewall*', 'scripts/test_firewall_release.py', '.goreleaser-firewall.yml', '.github/workflows/firewall-release.yml', 'docker/**', 'charts/**', 'cmd/firewall/**', 'cmd/netcap-firewall/**', 'internal/**', 'examples/firewall/**', 'Makefile', 'operations.Makefile', 'version.go', 'licenses.go', 'legal/**', 'go.mod', 'go.sum']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Firewall SemVer (without firewall-v prefix)'
+        required: true
+        type: string
+      dryRun:
+        description: 'Loopback registry only; false requires matching firewall-v tag and protected environment'
+        default: true
+        type: boolean
+      inputsRun:
+        description: 'Optional same-repository run with firewall-release-inputs artifact (supplements.json, source exports, reviews.json and evidence)'
+        default: ''
+        type: string
+      candidateRun:
+        description: 'Existing same-commit candidate run to promote without rebuilding; required for publication'
+        default: ''
+        type: string
+  push:
+    tags: ['firewall-v*']
+permissions:
+  contents: read
+concurrency:
+  group: firewall-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python3 -m pip install PyYAML==6.0.2
+      - run: python3 -m unittest discover -s scripts -p test_firewall_release.py -v
+  native:
+    needs: contract
+    if: inputs.candidateRun == ''
+    permissions:
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {runner: ubuntu-24.04, arch: amd64}
+          - {runner: ubuntu-24.04-arm, arch: arm64}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    env:
+      GOWORK: 'off'
+      VERSION: ${{ inputs.version || (startsWith(github.ref, 'refs/tags/firewall-v') && github.ref_name) || '0.1.0-rc.ci' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.3'
+      - name: Install pinned upstream tools
+        run: |
+          python3 scripts/firewall_release_tools.py "$RUNNER_TEMP/tools"
+          python3 -m pip install PyYAML==6.0.2
+          GOBIN="$RUNNER_TEMP/tools" go install github.com/google/go-containerregistry/cmd/crane@v0.22.1
+          echo "$RUNNER_TEMP/tools" >> "$GITHUB_PATH"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: inputs.inputsRun != ''
+        with:
+          name: firewall-release-inputs
+          run-id: ${{ inputs.inputsRun }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/release-inputs
+      - name: Native build once and qualification in loopback registry
+        run: |
+          docker run -d --name firewall-release-registry -p 127.0.0.1:5000:5000 registry:3.0.0@sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e
+          args=()
+          if test -f "$RUNNER_TEMP/release-inputs/supplements.json"; then args+=(--supplements "$RUNNER_TEMP/release-inputs/supplements.json"); fi
+          python3 scripts/firewall_release_build.py native --version "${VERSION#firewall-v}" --arch '${{ matrix.arch }}' --output "$RUNNER_TEMP/candidate/${{ matrix.arch }}" "${args[@]}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: firewall-candidate-${{ matrix.arch }}
+          path: ${{ runner.temp }}/candidate/
+          if-no-files-found: error
+          retention-days: 14
+  candidate:
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    env:
+      VERSION: ${{ inputs.version || (startsWith(github.ref, 'refs/tags/firewall-v') && github.ref_name) || '0.1.0-rc.ci' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.3'
+      - run: |
+          python3 scripts/firewall_release_tools.py "$RUNNER_TEMP/tools"
+          GOBIN="$RUNNER_TEMP/tools" go install github.com/google/go-containerregistry/cmd/crane@v0.22.1
+          GOBIN="$RUNNER_TEMP/tools" go install github.com/sigstore/cosign/v3/cmd/cosign@v3.1.4
+          echo "$RUNNER_TEMP/tools" >> "$GITHUB_PATH"
+          python3 -m pip install PyYAML==6.0.2
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: firewall-candidate-*
+          merge-multiple: true
+          path: candidate
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: inputs.inputsRun != ''
+        with:
+          name: firewall-release-inputs
+          run-id: ${{ inputs.inputsRun }}
+          github-token: ${{ github.token }}
+          path: candidate/release-inputs
+      - name: Assemble exact tested manifests, Helm3 charts and checklist
+        run: |
+          docker run -d --name firewall-release-registry -p 127.0.0.1:5000:5000 registry:3.0.0@sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e
+          args=()
+          if test -f candidate/release-inputs/reviews.json; then args+=(--reviews candidate/release-inputs/reviews.json); fi
+          if test -f candidate/release-inputs/qualification/manifest.json; then args+=(--qualification-run candidate/release-inputs/qualification); fi
+          python3 scripts/firewall_release_build.py assemble --version "${VERSION#firewall-v}" --output candidate "${args[@]}"
+          python3 scripts/firewall_release.py validate candidate
+      - name: Disposable-key signing and verification rehearsal, no public transparency log
+        env:
+          COSIGN_PASSWORD: local-rehearsal-only
+        run: |
+          cosign generate-key-pair --output-key-prefix "$RUNNER_TEMP/rehearsal"
+          cosign signing-config create --out "$RUNNER_TEMP/no-services.json"
+          python3 scripts/firewall_release_promote.py candidate --key "$RUNNER_TEMP/rehearsal.key" --public-key "$RUNNER_TEMP/rehearsal.pub" --signing-config "$RUNNER_TEMP/no-services.json"
+          cp "$RUNNER_TEMP/rehearsal.pub" "$RUNNER_TEMP/rehearsal-download.pub"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: firewall-release-candidate
+          path: candidate
+          if-no-files-found: error
+          retention-days: 30
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: firewall-rehearsal-public-key
+          path: ${{ runner.temp }}/rehearsal-download.pub
+  publish:
+    needs: [contract, candidate]
+    if: always() && needs.contract.result == 'success' && needs.candidate.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.candidateRun != '' && inputs.inputsRun != '' && inputs.dryRun == false && startsWith(github.ref, 'refs/tags/firewall-v')
+    runs-on: ubuntu-24.04
+    environment: firewall-release
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+      packages: write
+      id-token: write
+    env:
+      FIREWALL_RELEASE_ENVIRONMENT: firewall-release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.3'
+      - name: Authenticate candidate run origin and commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_RUN: ${{ inputs.candidateRun }}
+        run: python3 scripts/firewall_release.py check-run "$CANDIDATE_RUN" --commit "$GITHUB_SHA"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: firewall-release-candidate
+          path: candidate
+          run-id: ${{ inputs.candidateRun }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: firewall-rehearsal-public-key
+          path: rehearsal-key
+          run-id: ${{ inputs.candidateRun }}
+          github-token: ${{ github.token }}
+      - run: |
+          python3 scripts/firewall_release_tools.py "$RUNNER_TEMP/tools"
+          GOBIN="$RUNNER_TEMP/tools" go install github.com/google/go-containerregistry/cmd/crane@v0.22.1
+          GOBIN="$RUNNER_TEMP/tools" go install github.com/sigstore/cosign/v3/cmd/cosign@v3.1.4
+          echo "$RUNNER_TEMP/tools" >> "$GITHUB_PATH"
+          python3 -m pip install PyYAML==6.0.2
+      - name: Verify rehearsal and external review evidence before registry credentials
+        run: |
+          python3 scripts/firewall_release.py verify candidate --key rehearsal-key/rehearsal-download.pub
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: firewall-release-inputs
+          run-id: ${{ inputs.inputsRun }}
+          github-token: ${{ github.token }}
+          path: reviews
+      - name: Apply digest-bound human review evidence
+        run: |
+          python3 scripts/firewall_release.py apply-reviews candidate --reviews reviews/reviews.json
+          python3 scripts/firewall_release.py validate candidate --publication
+      - name: Restore immutable tested OCI objects locally
+        run: |
+          docker run -d --name firewall-release-registry -p 127.0.0.1:5000:5000 registry:3.0.0@sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e
+          python3 scripts/firewall_release_promote.py candidate --hydrate-only
+      - name: Opt-in promotion, keyless signatures and digest attestations
+        env:
+          REGISTRY_TOKEN: ${{ secrets.FIREWALL_REGISTRY_TOKEN || github.token }}
+          REGISTRY_USER: ${{ github.actor }}
+        run: |
+          printf '%s' "$REGISTRY_TOKEN" | crane auth login ghcr.io -u "$REGISTRY_USER" --password-stdin
+          python3 scripts/firewall_release_promote.py candidate --publish
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: firewall-release-verification-bundles
+          path: candidate
+          if-no-files-found: error
+          retention-days: 90

@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/internal/enforcer"
 	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/firewalltransport"
@@ -79,7 +80,7 @@ func GetCommand() *cli.Command {
 			&cli.StringFlag{Name: "actions-config", Usage: "bootstrap JSON profiles and protected_services; immutable until restart"},
 		}, Action: withSignals(runEnforcer)},
 		{Name: "version", Action: func(_ context.Context, c *cli.Command) error {
-			return json.NewEncoder(c.Root().Writer).Encode(map[string]any{"version": "netcap-firewall/v1", "policy": "netcap-policy/v1", "protocols": []string{"http", "modbus", "dns", "dns-tcp", "dns-tls", "redis", "postgres", "smtp", "mysql", "dnp3", "smb", "ftp", "network", "websocket", "grpc"}, "http3": firewalltransport.HTTP3Available, "http3_message_profile": firewalltransport.HTTP3Available, "websocket_compression": "permessage-deflate; no context takeover", "smb_profile": "plaintext SMB2/3 serial; signed bytes relayed unverified; transforms rejected", "ftp_profile": "EPSV stream; bounded complete transfers; active/PASV/FTPS upgrades rejected"})
+			return json.NewEncoder(c.Root().Writer).Encode(map[string]any{"version": "netcap-firewall/v1", "policy": "netcap-policy/v1", "releaseVersion": netcap.Version, "commit": netcap.Commit, "protocols": []string{"http", "modbus", "dns", "dns-tcp", "dns-tls", "redis", "postgres", "smtp", "mysql", "dnp3", "smb", "ftp", "network", "websocket", "grpc"}, "http3": firewalltransport.HTTP3Available, "http3_message_profile": firewalltransport.HTTP3Available, "websocket_compression": "permessage-deflate; no context takeover", "smb_profile": "plaintext SMB2/3 serial; signed bytes relayed unverified; transforms rejected", "ftp_profile": "EPSV stream; bounded complete transfers; active/PASV/FTPS upgrades rejected"})
 		}},
 	}}
 }
