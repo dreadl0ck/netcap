@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
@@ -21,6 +22,7 @@ type Context struct {
 	Tunnels          []*types.Encapsulation
 	Packets          []*types.CapturePacketRef
 	Reassembled      bool
+	CompletedAt      time.Time // admission time; CaptureInfo.Timestamp remains the earliest evidence
 	Status           string
 	SyntheticNetwork bool // its original fragment headers were already audited
 }

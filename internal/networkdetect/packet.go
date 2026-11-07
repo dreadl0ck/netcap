@@ -16,7 +16,14 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 		return nil
 	}
 	net := packet.NetworkLayer().NetworkFlow()
-	base := Event{At: packet.Metadata().CaptureInfo.Timestamp.UnixNano(), Scope: scope, SrcIP: net.Src().String(), DstIP: net.Dst().String()}
+	ci := packet.Metadata().CaptureInfo
+	at := ci.Timestamp
+	if c := packetview.FromCapture(ci); c != nil && c.Reassembled {
+		// Fragment evidence predates admission; using it here would make a newly
+		// completed datagram late behind unrelated, already admitted packets.
+		at = c.CompletedAt
+	}
+	base := Event{At: at.UnixNano(), Scope: scope, SrcIP: net.Src().String(), DstIP: net.Dst().String()}
 	var events []Event
 	if layer := packet.Layer(layers.LayerTypeDNS); layer != nil {
 		dns := layer.(*layers.DNS)

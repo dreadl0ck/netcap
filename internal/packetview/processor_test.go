@@ -407,6 +407,10 @@ func TestFragmentCaptureExpiryAndContextExport(t *testing.T) {
 	if r.Packet == nil || !r.Packet.Metadata().Timestamp.Equal(time.Unix(0, 0)) {
 		t.Fatal("lost epoch-zero fragment timestamp")
 	}
+	c := packetview.FromCapture(r.Packet.Metadata().CaptureInfo)
+	if !c.CompletedAt.Equal(time.Unix(0, 500)) || len(c.Packets) != 2 || c.Packets[0].Timestamp != 0 || c.Packets[1].Timestamp != 500 {
+		t.Fatalf("completion time or original evidence lost: %+v", c)
+	}
 	ctx := &types.PacketContext{}
 	packetview.FillContext(ctx, r.Packet)
 	encoded, err := proto.Marshal(ctx)
