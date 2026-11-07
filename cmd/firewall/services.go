@@ -13,6 +13,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/firewallfleet"
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
+	"github.com/dreadl0ck/netcap/internal/firewallui"
 	"github.com/dreadl0ck/netcap/internal/policystate"
 	"github.com/urfave/cli/v3"
 )
@@ -216,7 +217,7 @@ func runFleetController(ctx context.Context, c *cli.Command) error {
 			}
 		}
 	}()
-	return serveControl(ctx, c, fleetHealthHandler(s, cfg))
+	return serveControl(ctx, c, firewallui.Wrap(fleetHealthHandler(s, cfg), "fleet"))
 }
 func runSharedState(ctx context.Context, c *cli.Command) error {
 	if err := checkServiceTLS(c); err != nil {

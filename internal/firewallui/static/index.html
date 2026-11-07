@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Netcap · Firewall console</title><link rel="stylesheet" href="/console/app.css"><script src="/console/app.js" defer></script></head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header><div><span class="brand">NETCAP / FIREWALL</span><h1>Policy console</h1></div><button id="logout" hidden>Log out</button></header>
+<main id="main">
+<form id="login"><h2>Connect to this listener</h2><p>Use an administrative or scoped bearer token. It stays in this tab’s memory and is cleared on logout or reload.</p><label for="token">Bearer token</label><input id="token" type="password" required autocomplete="off" spellcheck="false"><button class="primary">Connect</button></form>
+<p id="notice" role="status" aria-live="polite">Disconnected.</p>
+<div id="workspace" hidden>
+<nav aria-label="Console sections"><a href="#policy">Policy</a><a href="#runtime">Runtime</a><a href="#fleet">Fleet</a><a href="#leases">Leases</a></nav>
+<section id="runtime"><h2>Runtime &amp; capabilities</h2><p id="service-label"></p><button id="refresh">Refresh status</button><pre id="capabilities" aria-label="Runtime capabilities"></pre></section>
+<section id="policy" hidden><h2>Policy workspace</h2>
+<div class="state-grid"><div><h3>Active revision</h3><code id="active">Unknown</code></div><div><h3>Pending revision</h3><code id="pending">None staged in this tab</code></div></div>
+<p>1. Edit → 2. Check → 3. Stage → 4. Review diff / replay → 5. Activate. Staging does not change traffic.</p>
+<label for="bundle">Bundle source · JSON or YAML</label><textarea id="bundle" rows="18" spellcheck="false" aria-describedby="source-help"></textarea>
+<p id="source-help">Source is sent verbatim. Raw editing preserves comments and every native field. Form changes apply only to JSON; YAML remains editable here without conversion.</p>
+<div class="actions"><button id="check">Check bundle</button><button id="stage" class="primary">Stage revision</button><button id="download">Download source</button></div>
+<details><summary>Native bundle form</summary><p>Load JSON to edit common fields and rules. Thresholds, sequences, effects and phase defaults are preserved. Use source for advanced fields or YAML.</p><button id="load-form">Load JSON into form</button>
+<form id="native-form"><fieldset id="native-fields" disabled><legend>Bundle</legend><div class="fields"><label>Bundle ID<input name="id" required></label><label>Version<input name="version" required></label><label>Mode<select name="mode"><option>enforce</option><option>monitor</option></select></label><label>Default action<select name="default"><option>allow</option><option>deny</option></select></label></div><div id="rules"></div><div class="actions"><button type="button" id="add-rule">Add rule</button><button type="submit">Apply form to source</button></div></fieldset></form></details>
+<h3>Retained revisions</h3><label for="revision">Revision to inspect or roll back to</label><select id="revision"></select><div class="actions"><button id="inspect">Load retained source</button><button id="diff">Compare with active</button></div>
+<label for="expected">Expected active revision · compare-and-swap</label><input id="expected" readonly><p>Captured at refresh/stage. A competing activation returns 409; review and refresh before retrying.</p>
+<div class="actions"><button id="activate" class="primary" disabled>Activate pending</button><button id="rollback">Roll back to selected</button></div>
+<details><summary>Replay &amp; explain</summary><label for="events">Synthetic event or event array · JSON</label><textarea id="events" rows="7" spellcheck="false">{"phase":"request","protocol":"http","method":"GET","path":"/blocked"}</textarea><button id="replay">Replay selected revision</button><p>Fresh isolated state per replay; events share state within an array. No network traffic is sent.</p></details>
+<h3>Operation result</h3><pre id="result" tabindex="0" aria-label="Policy operation result"></pre><details><summary>Mutation audit</summary><button id="audit">Load audit</button><pre id="audit-result"></pre></details>
+</section>
+<section id="fleet" hidden><h2>Fleet desired / observed state</h2><form id="scope-form"><div class="fields"><label>Tenant<input id="tenant" required></label><label>Application<input id="app" required></label></div><button>Load scoped fleet</button></form><p>Scope is checked by the server. A token does not imply permission for every tenant or operation.</p><div id="targets"></div>
+<details><summary>Stage &amp; roll out</summary><label for="fleet-bundle">Fleet bundle · JSON or YAML</label><textarea id="fleet-bundle" rows="9"></textarea><button id="fleet-stage">Stage fleet revision</button><label for="rollout">Rollout request · JSON</label><textarea id="rollout" rows="9">{"id":"rollout-1","revision":"","targets":[],"canary":[],"expected":{},"deadline":"","rollback_on_failure":true}</textarea><p>Use displayed target generations in expected; set an RFC3339 deadline. Desired state changes precede agent observations.</p><button id="fleet-rollout">Create rollout</button></details><div id="jobs"></div><pre id="fleet-result" aria-label="Fleet result"></pre></section>
+<section id="leases" hidden><h2>Scoped action leases</h2><p>Only leases in this listener’s immutable enforcement scope are listed. Listing also reconciles expired leases. Revocation removes the exact lease ID.</p><button id="list-leases">List / reconcile leases</button><div id="lease-list"></div><pre id="lease-result"></pre></section>
+</div></main>
+<dialog id="confirm"><form method="dialog"><h2>Confirm operation</h2><p id="confirm-text"></p><div class="actions"><button value="cancel" autofocus>Cancel</button><button value="confirm" class="primary">Confirm</button></div></form></dialog>
+</body></html>
