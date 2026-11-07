@@ -1,0 +1,18 @@
+{
+  "version": "netcap-appliance/v1",
+  "mode": "lab",
+  "nonce": "b6f81728b38f4b93b0ca9de8c191db72",
+  "namespaces": ["nca-client", "nca-gateway", "nca-origin"],
+  "links": [
+    {"a": {"namespace": "nca-client", "interface": "c0", "cidrs": ["10.180.0.2/24", "fd80::2/64"]}, "b": {"namespace": "nca-gateway", "interface": "g0", "cidrs": ["10.180.0.1/24", "fd80::1/64"]}},
+    {"a": {"namespace": "nca-gateway", "interface": "g1", "cidrs": ["10.181.0.1/24", "fd81::1/64"]}, "b": {"namespace": "nca-origin", "interface": "o0", "cidrs": ["10.181.0.2/24", "fd81::2/64", "10.181.0.3/24", "fd81::3/64"]}}
+  ],
+  "routes": [
+    {"namespace": "nca-client", "destination": "10.181.0.0/24", "via": "10.180.0.1", "interface": "c0"},
+    {"namespace": "nca-origin", "destination": "10.180.0.0/24", "via": "10.181.0.1", "interface": "o0"},
+    {"namespace": "nca-client", "destination": "fd81::/64", "via": "fd80::1", "interface": "c0"},
+    {"namespace": "nca-origin", "destination": "fd80::/64", "via": "fd81::1", "interface": "o0"}
+  ],
+  "forward": ["nca-gateway"],
+  "packet": {"namespace": "nca-gateway", "interface": "g0", "queue": 100, "protectedCIDRs": ["10.180.0.0/24", "fd80::/64"], "managementDestinations": ["10.181.0.3/32", "fd81::3/128"]}
+}
