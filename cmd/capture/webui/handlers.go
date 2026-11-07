@@ -200,12 +200,22 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 	files := make([]FileInfo, 0)
 	for _, path := range inputFiles {
 		info, err := os.Stat(path)
-		if err != nil {
+		child, isChild := children[path]
+		if err != nil && !isChild {
 			continue
+		}
+		var size, modifiedTime int64
+		if err == nil {
+			size, modifiedTime = info.Size(), info.ModTime().Unix()
+		} else {
+			modifiedTime = child.CreatedAt.Unix()
 		}
 
 		// Calculate file hash - use this as the file ID
-		hash := calculateFileHash(path)
+		hash := ""
+		if err == nil {
+			hash = calculateFileHash(path)
+		}
 		fileID := hash
 		if fileID == "" {
 			// Fallback to basename if hash calculation fails
@@ -224,8 +234,8 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			ID:               fileID,
 			Name:             filepath.Base(path),
 			Path:             path,
-			Size:             info.Size(),
-			ModifiedTime:     info.ModTime().Unix(),
+			Size:             size,
+			ModifiedTime:     modifiedTime,
 			IsCompleted:      completedFiles[path],
 			BPFFilter:        fileBPFFilters[path],
 			ProcessingTime:   fileProcessingTime[path],

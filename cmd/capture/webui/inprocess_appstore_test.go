@@ -248,6 +248,10 @@ func TestInProcessAnalysisProducesAuditRecords(t *testing.T) {
 	if err != nil || !bytes.Equal(after, parentManifest) || !s.completedFiles[input] || s.fileOutputDirs[input] != outDir {
 		t.Fatalf("child execution changed parent: %v", err)
 	}
+	restored := NewServer("127.0.0.1:0", outDir, []string{input}, "", false, false, false, nil, nil, false)
+	if !restored.completedFiles[child.InputFile] || restored.fileIDToPath[child.SessionID] != child.InputFile || len(restored.jobQueue) != 0 {
+		t.Fatalf("completed native child did not survive restart independently: errors=%+v", restored.fileErrors)
+	}
 }
 
 func TestAppStoreInProcessAnalysisNeedsNoExternalDatabases(t *testing.T) {

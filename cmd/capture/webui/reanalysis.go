@@ -152,6 +152,10 @@ func (s *Server) queueChildAnalysis(w http.ResponseWriter, input, parentDir, par
 		}
 		s.sessionManager.AddSession(child)
 	} else {
+		if err := writeChildState(dir, localChildState{Version: 1, Status: StatusQueued}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		s.mu.Lock()
 		if s.childAnalyses == nil {
 			s.childAnalyses = make(map[string]childAnalysis)

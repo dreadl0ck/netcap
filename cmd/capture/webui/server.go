@@ -348,6 +348,9 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 		s.jobQueue = make(chan *AnalysisJob, 100)
 		s.shutdownChan = make(chan struct{})
 		log.Printf("[WebUI] Local mode: job queue initialized for upload processing")
+		if err := s.discoverLocalChildren(); err != nil {
+			log.Printf("[WebUI] Child discovery failed: %v", err)
+		}
 	}
 
 	return s
@@ -1044,6 +1047,10 @@ func (s *Server) MarkFileCompleted(inputFile string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.completedFiles[inputFile] = true
+	if err := s.saveLocalChildStateLocked(inputFile); err != nil {
+		delete(s.completedFiles, inputFile)
+		s.fileErrors[inputFile] = FileError{InputFile: inputFile, Error: "Failed to persist child completion: " + err.Error(), Timestamp: time.Now().Unix()}
+	}
 	log.Printf("[WebUI] File marked as completed: %s", inputFile)
 }
 
@@ -1062,6 +1069,9 @@ func (s *Server) SetFileProcessingTime(inputFile string, durationSeconds float64
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.fileProcessingTime[inputFile] = durationSeconds
+	if err := s.saveLocalChildStateLocked(inputFile); err != nil {
+		log.Printf("[WebUI] Child timing persistence failed: %v", err)
+	}
 	log.Printf("[WebUI] Processing time set for %s: %.2f seconds", inputFile, durationSeconds)
 }
 
@@ -1106,6 +1116,9 @@ func (s *Server) SetFileError(inputFile, errorMsg, errorLogPath string) {
 		Error:        errorMsg,
 		ErrorLogPath: errorLogPath,
 		Timestamp:    time.Now().Unix(),
+	}
+	if err := s.saveLocalChildStateLocked(inputFile); err != nil {
+		log.Printf("[WebUI] Child failure persistence failed: %v", err)
 	}
 	log.Printf("[WebUI] Error recorded for file %s: %s", inputFile, errorMsg)
 	if errorLogPath != "" {

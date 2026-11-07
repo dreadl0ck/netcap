@@ -109,9 +109,23 @@ remain available, including when admission or child processing fails.
 | `/api/files/input` identity | Local children use distinct analysis IDs even when their input hashes match. Content SHA256 alone cannot identify a run. |
 | Rejected queue admission | HTTP 503; an already registered child is retained as failed. Parent state is untouched. |
 
-This path reruns the whole copied capture. Selected-subset child analysis and
-automatic local child discovery after restart remain separate work; service
-sessions retain their existing metadata reload and expiry policy.
+Local startup rediscovers owned `analysis-*` directories immediately inside the
+configured output root or beside it, with parent relationships bound to that
+root. `analysis-state.json` atomically preserves local outcomes and timing.
+Completion requires a matching source hash, finalized capture manifest and
+matching `audit-output-ready.json`; queued/interrupted work becomes a visible
+failure and is never automatically rerun. Missing/replaced sources remain visible
+as failed children. Symlinked sources/directories, mismatched IDs and duplicate
+IDs are rejected. Discovery is capped at 4,096 candidates and 64 MiB accounted
+metadata; failures are logged.
+
+This path reruns the whole copied capture. Selected subsets and service-session
+startup restoration remain separate work: `session.json` is persisted, but the
+general service restore call in `server.go` is currently disabled.
+
+Recovery pitfall: real capture manifests finish with `status: "done"`; the
+older synthetic `"complete"` spelling is accepted only with the same hash/ready
+witnesses. A completion flag alone is insufficient.
 
 ## Retain packets and directional streams
 
