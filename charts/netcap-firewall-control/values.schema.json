@@ -1,7 +1,11 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#", "type": "object", "additionalProperties": false,
   "properties": {
-    "enabled": {"type": "boolean"}, "service": {"enum": ["fleet-controller", "sharedstate"]},
+    "enabled": {"type": "boolean"}, "service": {"enum": ["fleet-controller", "sharedstate", "policy-state"]},
+    "healthProbe": {"type": "object", "additionalProperties": false, "required": ["enabled", "authorizationSecretName", "authorizationSecretKey", "caSecretName", "serverName"], "properties": {
+      "enabled": {"type": "boolean"}, "authorizationSecretName": {"type": "string"}, "authorizationSecretKey": {"type": "string", "minLength": 1},
+      "caSecretName": {"type": "string"}, "serverName": {"type": "string", "pattern": "^(|[a-z0-9][a-z0-9.-]*)$"}
+    }},
     "replicaCount": {"type": "integer", "minimum": 1},
     "persistence": {"type": "object", "additionalProperties": false, "required": ["backend", "postgres"], "properties": {
       "backend": {"enum": ["sqlite", "postgres"]},
@@ -34,6 +38,11 @@
       }}
   },
   "allOf": [
+    {"if": {"required": ["healthProbe"], "properties": {"healthProbe": {"properties": {"enabled": {"const": true}}}}}, "then": {
+      "properties": {"enabled": {"const": true}, "service": {"const": "policy-state"}, "healthProbe": {"properties": {
+        "authorizationSecretName": {"minLength": 1}, "caSecretName": {"minLength": 1}
+      }}}
+    }},
     {"if": {"properties": {"persistence": {"properties": {"backend": {"const": "sqlite"}}}}}, "then": {
       "properties": {"replicaCount": {"const": 1}, "persistence": {"properties": {"postgres": {"properties": {"databaseURLEnv": {"const": ""}, "databaseNamespace": {"const": ""}}}}}}
     }},

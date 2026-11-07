@@ -15,6 +15,12 @@ image:
 configSecretName: ''
 credentialsSecretName: ''
 tlsSecretName: ''
+healthProbe:
+  enabled: false
+  authorizationSecretName: ''
+  authorizationSecretKey: authorization
+  caSecretName: ''
+  serverName: ''
 storage:
   existingClaim: ''
   className: ''

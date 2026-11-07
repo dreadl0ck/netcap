@@ -12,7 +12,8 @@ Direct origin traffic bypasses the WAF; protect the origin independently.
 | HTTP | `serve`, `validate`, `healthcheck`; native expr policies and optional embedded Coraza 3.8.1 / CRS 4.25.0 |
 | Messages / HTTP/3 | `serve --websocket --grpc`, optional `--http3-listen`; shipping image builds `-tags coraza,http3`; listeners remain opt-in |
 | Policy ownership | File rollout, managed single-target SQLite, or explicitly enrolled external fleet; managed and fleet ownership cannot overlap |
-| Shared rates | `sharedstate` plus `--shared-rate-config`; authoritative scoped fixed-window guard, independent of native threshold/sequence state |
+| Shared rates | `sharedstate` plus `--shared-rate-config`; separate fixed-window guard, mutually exclusive with the native authority client |
+| Native rule authority | `policy-state` plus `--policy-state-config`; scoped/revision-pinned native thresholds, sliding/distinct windows, tuples and sequences shared across data-plane replicas |
 | Gateways | `gateway --protocol` supports `modbus`, `dns`, `dns-tcp`, `dns-tls`, `redis`, `postgres`, `mysql`, `smtp`, `dnp3`; explicit termination, bounded parsers |
 | Linux | `network` produces NFQUEUE verdicts; `enforcer` owns finite nft leases; both require an existing named namespace and reject the default namespace |
 | Decoder bridge | Full capture CLI `--firewall-policy`, `--firewall-effects-config`, `--firewall-schema`; retrospective bindings for all 220 compiled protobuf messages, not interception of completed transactions |
@@ -40,6 +41,7 @@ python3 examples/firewall/kind_smoke.py
 python3 examples/firewall/cni_qualification.py --output "$TMPDIR/firewall-cni.json"
 python3 examples/firewall/control_smoke.py --output "$TMPDIR/firewall-control.json"
 python3 examples/firewall/postgres_ha.py --package-tests --output "$TMPDIR/firewall-postgres-ha.json"
+python3 examples/firewall/policy_state_smoke.py --package-tests --output "$TMPDIR/firewall-policy-state.json"
 python3 examples/firewall/restore_drill.py --output "$TMPDIR/firewall-restore.json"
 python3 examples/firewall/spool_smoke.py --output "$TMPDIR/firewall-spool.json"
 python3 examples/firewall/benchmark.py --rate 50 --duration 20 --output "$TMPDIR/firewall-benchmark.json"
@@ -123,6 +125,7 @@ helm upgrade --install firewall charts/netcap-firewall -n firewall --create-name
 | Probes | `/readyz` and `/livez` on admin port 9090, HTTPS when admin TLS is configured; no bearer needed for health routes |
 | Origin TLS | `upstreamTLS.caSecretName` (`ca.crt`) and optional `serverName`; HTTPS upstream required |
 | Shared guard | `sharedRate.configSecretName` (`config.json`, optional CA/client cert files) and `credentialsSecretName` (`tokenEnv` entries); both references required together |
+| Native rule authority | `policyState.configSecretName` (`config.json`, CA/client TLS files) and `credentialsSecretName`; mounts `/etc/policy-state` read-only and passes `--policy-state-config`; rejects mixed `sharedRate` configuration |
 | Fleet targets | `mode: fleet` uses a fixed-replica StatefulSet, headless target Service and per-pod cache PVC; `fleet.configSecretName` and `credentialsSecretName` required |
 | Availability | File mode permits HPA/PDB; managed mode is one replica with Recreate; fleet mode rejects HPA because target enrollment is explicit |
 
@@ -177,7 +180,7 @@ imports the file policy; subsequent Helm changes do not replace SQLite activatio
 ### Fleet and shared services
 
 `charts/netcap-firewall-control` is disabled by default. Install one release per
-service with `enabled=true`, `service=fleet-controller|sharedstate`, existing
+service with `enabled=true`, `service=fleet-controller|sharedstate|policy-state`, existing
 `configSecretName`, `credentialsSecretName`, and `tlsSecretName`. Both backends
 use rootless TLS ClusterIP port 9092. TCP readiness proves a listening socket;
 authoritative API/guard probes additionally verify database availability.
@@ -221,8 +224,54 @@ omit their bound scope. Writes are POST `stage`, `rollout`, `activate`, `promote
 `rollback`, `drain`, `revoke`, `resume`. Targets use GET `desired` and POST `ack`;
 their attachment identity is derived from the bearer, never a query parameter.
 Rollouts CAS per-target generations and wait for observed acknowledgments; they
-are not atomic fleet-wide cutovers. Native thresholds/sequences remain local;
-the external shared guard is a separate always-enforcing fixed-window limit.
+are not atomic fleet-wide cutovers. Native thresholds/sequences are local by
+default; `--policy-state-config` instead evaluates them at the authority below.
+The external shared-rate guard remains a separate fixed-window feature.
+
+### Distributed native rule state
+
+`policy-state-bootstrap.json`, `policy-state-client.json` and the corresponding
+`policy-state-values.yaml` / `policy-state-waf-values.yaml` show the exact strict
+JSON and Secret-reference contracts. Install the control example as release
+`native` so the client URL `https://native-control:9092` matches its Service.
+Bootstrap accepts `principals`, `allowEffects`, `maxRevisions`, `maxStateBytes`
+and either private `stateDir` or `databaseURLEnv`/`databaseNamespace`; unlike fleet
+bootstrap it does not accept `identities`/`targets`, or shared-rate `maxKeys`.
+Authority credentials contain DB URL/principal tokens; caller credentials contain
+only their `tokenEnv`. SQLite uses one fenced WAL owner; PG replicas share one
+dedicated namespace and identical principals, limits and effect-admission settings.
+
+Client JSON accepts `url`, `tokenEnv`, `ca`, optional `cert`/`key`, and integer
+nanosecond `requestTimeout` (default 5s, maximum 10s). The example selects 1s.
+Time windows use the authority's clock, with the PG database clock and a persisted
+monotonic watermark; callers cannot provide a clock. New revisions have independent
+state, not a global reset; rolling back/rejoining a retained revision can resume
+its live windows. Process restart does not reset committed native state.
+
+`policy-state` health is authenticated GET `/api/v1/policy-state/health`, not the
+fleet `/health` route. Optional `healthProbe.enabled` adds a pinned rootless curl
+sidecar: `authorizationSecretName` holds a complete `Authorization: Bearer …` line
+under key `authorization`; `caSecretName` holds `ca.crt`. It verifies TLS using the
+Service name (or `serverName`) but connects to this pod's loopback, and requires
+HTTP 200. The example has a separate health principal. Without this option the
+control chart retains its socket-only probe; WAF readiness still uses authenticated
+authority probes whenever the native client is configured.
+
+HTTP/gateway events, WebSocket/gRPC messages and network packets incur a remote
+evaluation and transactional state cost; this is not a line-rate/capacity claim.
+Timeout, overload, unavailable/ambiguous commit or authority loss fail closed,
+with no local fallback or automatic evaluation retry. Network mode additionally
+requires `failure-verdict=deny`, no missing-listener bypass and no overflow
+fail-open; size the RPC timeout and queue deadline for the deployment's latency.
+Both WAF and network enforcer charts accept the Secret-reference client settings.
+
+The authority receives projected events, including bounded HTTP bodies/headers,
+in plaintext inside the trusted process after TLS termination. SQL retains scoped
+policy artifacts, state digests and timing metadata, not raw per-event bodies or
+datagrams. Group hashes are not a promise of anonymity. Effect policies require
+both authority `allowEffects` and the caller's explicit broker admission. The direct
+capture audit bridge remains retrospective; these runtime flags do not make it
+inline prevention or automatically wire its observer to the authority.
 
 ```bash
 python3 examples/firewall/control_smoke.py --output "$TMPDIR/firewall-control.json"
@@ -251,8 +300,8 @@ labeled loopback `NETCAP_POSTGRES_TEST_CONTAINER`. No existing database is targe
 
 | Store | Operator path |
 | --- | --- |
-| SQLite fleet / shared counters | Stop and fence the old owner; select `--service fleet` or `--service sharedstate` for `netcap-firewall backup --config … --output /absolute/private/snapshot.sqlite`; `restore --service … --input … --state-dir /absolute/empty-dir` |
-| Postgres fleet / shared counters | Optional schema-dump/Restic CronJob below; database-operator roles/WAL/PITR and restore procedure remain separate; SQLite backup CLI rejects Postgres |
+| SQLite control services | Stop/fence the old owner; select `--service fleet`, `sharedstate` or `policy-state` for `netcap-firewall backup --config … --output /absolute/private/snapshot.sqlite`; restore into a new empty StateDir |
+| Postgres control services | Optional schema-dump/Restic CronJob below; database-operator roles/WAL/PITR and restore procedure remain separate; SQLite backup CLI rejects Postgres |
 | Managed policycontrol | `managed_snapshot.py` with `backup` or `restore`, `--state-dir /absolute/state --snapshot /absolute/private/snapshot.sqlite`; Python SQLite backup API uses the same lifetime ownership lock |
 
 Snapshots contain sensitive revisions/audit/counters and use private directories
@@ -330,7 +379,7 @@ cleanup, without changing the default namespace.
 | Example under `examples/firewall/` | Contract |
 | --- | --- |
 | `network-policy.yaml` | Default-deny packet policy with explicit `Protocol == "network"`, bidirectional service selectors, visible-SNI denial and an explicit allow for unclassified TCP/443 |
-| `advanced-policy.yaml` | Sliding event counts, sliding distinct paths/ports, ordered grouping tuples and a named login→export sequence; state remains per compiled evaluator |
+| `advanced-policy.yaml` | Sliding counts, distinct paths/ports, grouping tuples and a named login→export sequence; local by default, or authoritative per scope/revision with `--policy-state-config` |
 | `effects-policy.yaml`, `effects-config.json` | HTTP-path or SMTP-RCPT denial emits a bounded `block_source` intent; operator bootstrap fixes HTTPS endpoint, `LAB_ENFORCER_TOKEN`, CA and future TCP/8080 scope; no policy-supplied endpoint |
 | `audit-smb-policy.yaml` | `Protocol == "audit"`, `RecordType == "SMB"`, `Fields["ShareName"] == "ADMIN$"`; only an explicitly admitted live capture can request a future lease |
 
@@ -396,6 +445,7 @@ licenses are retained. Default `--help` is inert; live scope must be explicit.
 | Mounts | Existing `/run/netns` read-only/HostToContainer, shared private `/run/netcap-enforcer`, node-local state directory; creates no host namespace or route |
 | `mode: leases` | Existing bearer Secret; explicit destination/protocol/port; loopback API only, no Service/Ingress |
 | `mode: network` | Explicit `scope.protectedCIDRs` select protected traffic; optional management exemptions; immutable policy ConfigMap; queue/deadline/failure/TLS-metadata values map to actual CLI flags |
+| Native network authority | `policyState` Secret references pass the client config; renderer and CLI reject fail-open queue/deadline settings when it is enabled |
 | Network failure policy | Queue 100, length 1024, deadline 100ms, failure verdict deny; no-listener bypass and overflow fail-open default false |
 | Updates | OnDelete requires deliberate pod replacement; network table is fixed by the runtime; lease table remains independently scoped |
 
@@ -415,6 +465,7 @@ The CNI lab also starts both DaemonSet modes against an existing named lab names
 | `control_smoke.py` | Scoped TLS services, two-target policy push, shared count, offline fleet/state CLI recovery |
 | `postgres_ha.py --package-tests` | Active-active control/counter processes, surviving application replicas, DB outage/WAL recovery and real Postgres package race/crash tests |
 | `postgres_ha.py --backup-restore` | Pinned rootless dump/encryption scripts; local encrypted restore to separate databases; scoped retention/prune and negative credential/size tests; no off-host claim |
+| `policy_state_smoke.py` | Two WAFs/two PG authorities; shared native sliding/distinct/sequence state, authority loss, revision isolation, authenticated health, DB outage/recovery and no raw event marker in stored state |
 | `spool_smoke.py` | Three 8 MiB multipart files with CRS off and on; late-body denial absent at origin; retained-body quota exhaustion yields 503 and recovers on close; 1 CPU/256 MiB container |
 | `benchmark.py` | Standard-library bounded open-loop load; offered/completed counts, generator drops/lag, scheduling-inclusive p50/p95/p99, image/config hashes and raw cgroup CPU/memory counters |
 
@@ -452,7 +503,7 @@ Retain prior image digests, values and consistent state snapshots.
 | --- | --- |
 | Production qualification | Passing native/cluster CI does not qualify another CNI, storage provider, traffic mix or external HTTP/3 UDP ingress/LB/NAT path |
 | HA / state loss | SQLite remains singleton; Postgres application replicas are active-active, but primary fencing and DB HA remain database-operator responsibilities; stale-snapshot recovery is not lossless |
-| Distributed semantics | Shared fixed-window guard is authoritative; native rule thresholds/sequences remain local; fleet acknowledgments are not an atomic cutover |
+| Distributed semantics | Native thresholds/sequences are authoritative when configured; default local mode and the separate fixed-window guard retain their documented semantics; fleet acknowledgments are not an atomic cutover |
 | Protocol extensions | No encrypted passthrough payload decryption, WebSocket compression or gRPC-over-HTTP/3; gateway parsers cover explicit subsets |
 | Storage / capacity | Optional PG schema backup/encrypted upload/scoped retention is implemented; production repository provisioning, off-host restore/schedule qualification, SQLite offline automation and deployment-specific sizing remain; 64 MiB bounds do not establish throughput |
 

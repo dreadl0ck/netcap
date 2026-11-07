@@ -16,6 +16,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 	"github.com/dreadl0ck/netcap/internal/firewalltransport"
 	"github.com/dreadl0ck/netcap/internal/policy"
+	"github.com/dreadl0ck/netcap/internal/policystate"
 	"github.com/dreadl0ck/netcap/internal/responseactions"
 	"github.com/dreadl0ck/netcap/internal/waf"
 	"github.com/urfave/cli/v3"
@@ -128,6 +129,7 @@ type runtimeEvaluator struct {
 	guard        *firewallstate.Guard
 	broker       *responseactions.Broker
 	stateClient  *firewallstate.Client
+	nativeState  *policystate.Client
 	fleetUnready atomic.Bool
 	agentStatus  atomic.Pointer[firewallfleet.AgentStatus]
 	probeCancel  context.CancelFunc
@@ -146,6 +148,15 @@ func newEvaluator(ctx context.Context, c *cli.Command, path string) (*runtimeEva
 		return fail(err)
 	}
 	r.p.Store(p)
+	if path := c.String("policy-state-config"); path != "" {
+		if c.String("shared-rate-config") != "" {
+			return fail(errors.New("policy-state-config and shared-rate-config are mutually exclusive"))
+		}
+		r.nativeState, err = nativeStateClient(path)
+		if err != nil {
+			return fail(err)
+		}
+	}
 	if path := c.String("shared-rate-config"); path != "" {
 		var f rateFile
 		if err = strictFile(path, &f); err != nil {
@@ -183,6 +194,9 @@ func (r *runtimeEvaluator) Close() {
 	if r.stateClient != nil {
 		r.stateClient.Close()
 	}
+	if r.nativeState != nil {
+		r.nativeState.Close()
+	}
 	if r.broker != nil {
 		_ = r.broker.Close()
 	}
@@ -196,11 +210,14 @@ func (r *runtimeEvaluator) Ready() bool {
 		ready, _ := r.guard.Ready()
 		return ready
 	}
+	if r.nativeState != nil {
+		return r.nativeState.Ready()
+	}
 	return true
 }
 
 func (r *runtimeEvaluator) startProbes(ctx context.Context) {
-	if r.guard == nil {
+	if r.guard == nil && r.nativeState == nil {
 		return
 	}
 	ctx, r.probeCancel = context.WithCancel(ctx)
@@ -210,7 +227,12 @@ func (r *runtimeEvaluator) startProbes(ctx context.Context) {
 		probe := func() {
 			bounded, cancel := context.WithTimeout(ctx, 2*time.Second)
 			defer cancel()
-			_ = r.guard.Probe(bounded)
+			if r.guard != nil {
+				_ = r.guard.Probe(bounded)
+			}
+			if r.nativeState != nil {
+				_ = r.nativeState.Probe(bounded)
+			}
 		}
 		probe()
 		ticker := time.NewTicker(time.Second)
@@ -241,6 +263,13 @@ func (r *runtimeEvaluator) evaluateContext(ctx context.Context, p *policy.Compil
 		return policy.Decision{Verdict: "deny", Status: 503, Revision: p.Revision()}, nil
 	}
 	base := evaluateFunc(func(e policy.Event) (policy.Decision, error) {
+		if r.nativeState != nil {
+			d, err := r.nativeState.Evaluate(ctx, p, e)
+			if err != nil {
+				return policy.Decision{Verdict: "deny", Status: 503, Revision: p.Revision()}, nil
+			}
+			return d, nil
+		}
 		if r.guard != nil {
 			return r.guard.Evaluate(ctx, p, e)
 		}
@@ -290,6 +319,7 @@ func gatewayFlags() []cli.Flag {
 		&cli.StringFlag{Name: "listen", Required: true}, &cli.StringFlag{Name: "upstream", Required: true}, &cli.StringFlag{Name: "policy", Required: true},
 		&cli.StringSliceFlag{Name: "allow-client", Usage: "source CIDRs; default loopback only"},
 		&cli.StringFlag{Name: "effects-config"}, &cli.StringFlag{Name: "shared-rate-config"},
+		&cli.StringFlag{Name: "policy-state-config"},
 		&cli.StringFlag{Name: "fleet-agent-config"},
 		&cli.StringFlag{Name: "tls-cert"}, &cli.StringFlag{Name: "tls-key"}, &cli.StringFlag{Name: "client-ca"},
 		&cli.BoolFlag{Name: "upstream-tls"}, &cli.StringFlag{Name: "upstream-server-name"}, &cli.StringFlag{Name: "upstream-ca"}, &cli.StringFlag{Name: "upstream-cert"}, &cli.StringFlag{Name: "upstream-key"},

@@ -5,6 +5,9 @@
   "required": ["enabled", "image", "scope", "tokenSecret", "nodeSelector", "resources"],
   "properties": {
     "mode": {"enum": ["leases", "network"]},
+    "policyState": {"type": "object", "additionalProperties": false, "required": ["configSecretName", "credentialsSecretName"], "properties": {
+      "configSecretName": {"type": "string"}, "credentialsSecretName": {"type": "string"}
+    }},
     "policy": {"type": "object"},
     "network": {"type": "object", "additionalProperties": false, "properties": {
       "queue": {"type": "integer", "minimum": 0, "maximum": 65535},

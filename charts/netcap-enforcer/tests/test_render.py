@@ -67,6 +67,19 @@ class EnforcerBoundary(unittest.TestCase):
         self.assertIn('--bypass-without-listener=false', c['args'])
         self.assertEqual(next(d for d in docs if d['kind'] == 'ConfigMap')['immutable'], True)
 
+    def test_native_authority_requires_fail_closed_network_mode(self):
+        refs = ['--set', 'policyState.configSecretName=native-client', '--set', 'policyState.credentialsSecretName=native-token']
+        render(*ARGS, *refs, success=False)
+        args = [*ARGS, '--set', 'mode=network', '--set', 'scope.protectedCIDRs[0]=198.51.100.0/24', *refs]
+        docs = render(*args)
+        c = next(d for d in docs if d['kind'] == 'DaemonSet')['spec']['template']['spec']['containers'][0]
+        self.assertIn('--policy-state-config=/etc/policy-state/config.json', c['args'])
+        self.assertEqual(c['envFrom'], [{'secretRef': {'name': 'native-token'}}])
+        self.assertTrue(next(v for v in c['volumeMounts'] if v['name'] == 'policy-state')['readOnly'])
+        for option in ['network.failureVerdict=allow', 'network.bypassWithoutListener=true', 'network.failOpenOnOverflow=true',
+                       'policyState.credentialsSecretName=']:
+            render(*args, '--set', option, success=False)
+
 
 if __name__ == '__main__':
     unittest.main()

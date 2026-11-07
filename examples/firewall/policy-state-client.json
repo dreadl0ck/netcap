@@ -1,0 +1,6 @@
+{
+  "url": "https://native-control:9092",
+  "tokenEnv": "NATIVE_POLICY_TOKEN",
+  "ca": "/etc/policy-state/ca.crt",
+  "requestTimeout": 1000000000
+}

@@ -3,6 +3,7 @@
 {{- $config := required "configSecretName required (config.json with the selected persistence backend)" .Values.configSecretName }}
 {{- $credentials := required "credentialsSecretName required (tokenEnv keys)" .Values.credentialsSecretName }}
 {{- $tls := required "tlsSecretName required" .Values.tlsSecretName }}
+{{- $probeConfig := printf "%s-health-%s" $name (.Files.Get "files/policy-state-health.sh" | sha256sum | trunc 10) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -55,7 +56,40 @@ spec:
             {{- if eq .Values.persistence.backend "sqlite" }}
             - {name: state, mountPath: /var/lib/control}
             {{- end }}
+        {{- if .Values.healthProbe.enabled }}
+        - name: authenticated-health
+          image: curlimages/curl:8.19.0@sha256:c03110c736db81bbe1be0296f1f1608c81b954b01626bdfb0a8f84e5bd00ff3c
+          command: [/bin/sh, -ec, 'exec sleep 2147483647']
+          env:
+            - {name: PROBE_SERVER, value: {{ default $name .Values.healthProbe.serverName | quote }}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          readinessProbe:
+            exec: {command: [/bin/sh, /health/probe.sh]}
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            requests: {cpu: 5m, memory: 8Mi}
+            limits: {cpu: 50m, memory: 32Mi}
+          volumeMounts:
+            - {name: health-script, mountPath: /health, readOnly: true}
+            - {name: health-auth, mountPath: /probe-auth, readOnly: true}
+            - {name: health-ca, mountPath: /probe-ca, readOnly: true}
+        {{- end }}
       volumes:
+        {{- if .Values.healthProbe.enabled }}
+        - name: health-script
+          configMap: {name: {{ $probeConfig }}, defaultMode: 0444}
+        - name: health-auth
+          secret:
+            secretName: {{ .Values.healthProbe.authorizationSecretName | quote }}
+            defaultMode: 0440
+            items: [{key: {{ .Values.healthProbe.authorizationSecretKey | quote }}, path: authorization}]
+        - name: health-ca
+          secret: {secretName: {{ .Values.healthProbe.caSecretName | quote }}, defaultMode: 0440}
+        {{- end }}
         - name: bootstrap
           secret: {secretName: {{ $config | quote }}, defaultMode: 0440}
         - name: tls
@@ -88,5 +122,16 @@ spec:
   {{- end }}
   resources:
     requests: {storage: {{ .Values.storage.size }}}
+{{- end }}
+{{- if .Values.healthProbe.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $probeConfig }}
+immutable: true
+data:
+  probe.sh: |
+    {{- .Files.Get "files/policy-state-health.sh" | nindent 4 }}
 {{- end }}
 {{- end }}

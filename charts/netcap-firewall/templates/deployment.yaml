@@ -60,6 +60,9 @@ spec:
             {{- if .Values.sharedRate.configSecretName }}
             - --shared-rate-config=/etc/shared-rate/config.json
             {{- end }}
+            {{- if .Values.policyState.configSecretName }}
+            - --policy-state-config=/etc/policy-state/config.json
+            {{- end }}
             {{- if eq .Values.mode "fleet" }}
             - --fleet-agent-config=/etc/fleet/$(POD_NAME).json
             {{- end }}
@@ -90,10 +93,13 @@ spec:
             - name: POD_NAME
               valueFrom: {fieldRef: {fieldPath: metadata.name}}
             {{- end }}
-          {{- if or .Values.sharedRate.credentialsSecretName (eq .Values.mode "fleet") }}
+          {{- if or .Values.sharedRate.credentialsSecretName .Values.policyState.credentialsSecretName (eq .Values.mode "fleet") }}
           envFrom:
             {{- if .Values.sharedRate.credentialsSecretName }}
             - secretRef: {name: {{ .Values.sharedRate.credentialsSecretName | quote }}}
+            {{- end }}
+            {{- if .Values.policyState.credentialsSecretName }}
+            - secretRef: {name: {{ .Values.policyState.credentialsSecretName | quote }}}
             {{- end }}
             {{- if eq .Values.mode "fleet" }}
             - secretRef: {name: {{ .Values.fleet.credentialsSecretName | quote }}}
@@ -123,6 +129,9 @@ spec:
             {{- if .Values.sharedRate.configSecretName }}
             - {name: shared-rate, mountPath: /etc/shared-rate, readOnly: true}
             {{- end }}
+            {{- if .Values.policyState.configSecretName }}
+            - {name: policy-state, mountPath: /etc/policy-state, readOnly: true}
+            {{- end }}
             {{- if eq .Values.mode "fleet" }}
             - {name: fleet-config, mountPath: /etc/fleet, readOnly: true}
             - {name: agent-state, mountPath: /var/lib/netcap-firewall}
@@ -148,6 +157,10 @@ spec:
         {{- if .Values.sharedRate.configSecretName }}
         - name: shared-rate
           secret: {secretName: {{ .Values.sharedRate.configSecretName | quote }}, defaultMode: 0440}
+        {{- end }}
+        {{- if .Values.policyState.configSecretName }}
+        - name: policy-state
+          secret: {secretName: {{ .Values.policyState.configSecretName | quote }}, defaultMode: 0440}
         {{- end }}
         {{- if eq .Values.mode "fleet" }}
         - name: fleet-config

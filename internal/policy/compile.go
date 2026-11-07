@@ -43,9 +43,13 @@ type Compiled struct {
 	suppressEffects bool
 	bodyPhases      [2]bool
 	lastNow         time.Time
+	programBytes    int
 }
 
 type counter struct {
+	ruleID  string
+	kind    byte
+	token   [32]byte
 	count   int
 	step    int
 	expires time.Time
@@ -187,6 +191,7 @@ func CompileWithOptions(b Bundle, options CompileOptions) (*Compiled, error) {
 	}
 	digest := sha256.Sum256(encoded)
 	c.revision = hex.EncodeToString(digest[:])
+	c.programBytes = len(encoded)*4 + int(totalUnits)*256
 	c.bundle = b
 	sort.Slice(c.rules, func(i, j int) bool {
 		a, b := c.rules[i].rule, c.rules[j].rule
@@ -324,6 +329,10 @@ func cloneBundle(b Bundle) Bundle {
 }
 
 func (c *Compiled) Revision() string { return c.revision }
+
+// StateProgramBytes is the conservative immutable-program reservation used by
+// authoritative state/cache admission, including source copies and VM work.
+func (c *Compiled) StateProgramBytes() int { return c.programBytes }
 
 // RequiresBody reports syntactic Body dependencies of enabled rules and sequence
 // steps in the exact phase, regardless of priority, action or constant branches.

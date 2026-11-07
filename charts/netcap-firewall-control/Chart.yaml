@@ -1,6 +1,6 @@
 apiVersion: v2
 name: netcap-firewall-control
-description: TLS fleet/counter services with SQLite or PostgreSQL persistence and optional encrypted backups
+description: TLS fleet, counter and native-rule services with optional authenticated health and encrypted backups
 type: application
 version: 0.1.0
 appVersion: 0.1.0-local

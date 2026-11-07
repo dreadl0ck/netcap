@@ -23,6 +23,22 @@ def render(*args, success=True):
 
 
 class DeploymentContract(unittest.TestCase):
+    def test_native_policy_state_secret_mount_and_exclusive_guard(self):
+        args = ['--set', 'policyState.configSecretName=native-client',
+                '--set', 'policyState.credentialsSecretName=native-token']
+        docs = render(*args)
+        pod = next(d for d in docs if d['kind'] == 'Deployment')['spec']['template']['spec']
+        c = pod['containers'][0]
+        self.assertIn('--policy-state-config=/etc/policy-state/config.json', c['args'])
+        self.assertEqual(c['envFrom'], [{'secretRef': {'name': 'native-token'}}])
+        mount = next(v for v in c['volumeMounts'] if v['name'] == 'policy-state')
+        self.assertTrue(mount['readOnly'])
+        self.assertEqual(next(v for v in pod['volumes'] if v['name'] == 'policy-state')['secret']['secretName'], 'native-client')
+        render('--set', 'policyState.configSecretName=native-client', success=False)
+        render('--set', 'policyState.credentialsSecretName=native-token', success=False)
+        render(*args, '--set', 'sharedRate.configSecretName=rate', '--set', 'sharedRate.credentialsSecretName=rate-token', success=False)
+        render('--set', 'policyState.token=plaintext', success=False)
+
     def test_committed_advanced_policy_renders_without_losing_state_options(self):
         policy = yaml.safe_load((CHART.parents[1] / 'examples/firewall/advanced-policy.yaml').read_text())
         with tempfile.TemporaryDirectory() as directory:

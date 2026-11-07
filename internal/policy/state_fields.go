@@ -93,23 +93,36 @@ func hashPart(h hash.Hash, value string) {
 }
 
 func stateKey(id, single string, fields []string, e Event) ([32]byte, error) {
+	key, _, err := stateKeyParts(id, single, fields, e)
+	return key, err
+}
+
+func stateKeyFromToken(id string, token [32]byte) [32]byte {
 	h := sha256.New()
 	hashPart(h, id)
+	_, _ = h.Write(token[:])
+	var key [32]byte
+	copy(key[:], h.Sum(nil))
+	return key
+}
+
+func stateKeyParts(id, single string, fields []string, e Event) ([32]byte, [32]byte, error) {
+	h := sha256.New()
 	if single != "" {
 		fields = []string{single}
 	}
 	for _, field := range fields {
 		kind, value, present := scalarValue(e, field)
 		if !present {
-			return [32]byte{}, fmt.Errorf("%w: %s", ErrMissingStateField, field)
+			return [32]byte{}, [32]byte{}, fmt.Errorf("%w: %s", ErrMissingStateField, field)
 		}
 		hashPart(h, field)
 		hashPart(h, kind)
 		hashPart(h, value)
 	}
-	var key [32]byte
-	copy(key[:], h.Sum(nil))
-	return key, nil
+	var token [32]byte
+	copy(token[:], h.Sum(nil))
+	return stateKeyFromToken(id, token), token, nil
 }
 
 func groupKey(id, field string, e Event) [32]byte {

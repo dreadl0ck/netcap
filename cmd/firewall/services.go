@@ -13,6 +13,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/firewallfleet"
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
+	"github.com/dreadl0ck/netcap/internal/policystate"
 	"github.com/urfave/cli/v3"
 )
 
@@ -126,10 +127,10 @@ func serviceFlags() []cli.Flag {
 	return []cli.Flag{&cli.StringFlag{Name: "config", Required: true, Usage: "strict JSON bootstrap; tokenEnv and databaseURLEnv reference environment secrets"}, &cli.StringFlag{Name: "listen", Value: "127.0.0.1:9092"}, &cli.StringFlag{Name: "tls-cert"}, &cli.StringFlag{Name: "tls-key"}}
 }
 func backupFlags() []cli.Flag {
-	return []cli.Flag{&cli.StringFlag{Name: "service", Required: true, Usage: "fleet | sharedstate"}, &cli.StringFlag{Name: "config", Required: true}, &cli.StringFlag{Name: "output", Required: true, Usage: "absolute snapshot path"}}
+	return []cli.Flag{&cli.StringFlag{Name: "service", Required: true, Usage: "fleet | sharedstate | policy-state"}, &cli.StringFlag{Name: "config", Required: true}, &cli.StringFlag{Name: "output", Required: true, Usage: "absolute snapshot path"}}
 }
 func restoreFlags() []cli.Flag {
-	return []cli.Flag{&cli.StringFlag{Name: "service", Required: true, Usage: "fleet | sharedstate"}, &cli.StringFlag{Name: "input", Required: true}, &cli.StringFlag{Name: "state-dir", Required: true}}
+	return []cli.Flag{&cli.StringFlag{Name: "service", Required: true, Usage: "fleet | sharedstate | policy-state"}, &cli.StringFlag{Name: "input", Required: true}, &cli.StringFlag{Name: "state-dir", Required: true}}
 }
 
 func checkServiceTLS(c *cli.Command) error {
@@ -237,6 +238,17 @@ func runSharedState(ctx context.Context, c *cli.Command) error {
 }
 func runBackup(ctx context.Context, c *cli.Command) error {
 	switch c.String("service") {
+	case "policy-state":
+		cfg, err := nativeStateConfig(c.String("config"))
+		if err != nil {
+			return err
+		}
+		s, err := policystate.New(cfg)
+		if err != nil {
+			return err
+		}
+		defer s.Close()
+		return s.ConsistentBackup(ctx, c.String("output"))
 	case "fleet":
 		cfg, err := fleetConfig(c.String("config"))
 		if err != nil {
@@ -266,12 +278,15 @@ func runBackup(ctx context.Context, c *cli.Command) error {
 		defer s.Close()
 		return s.Backup(ctx, c.String("output"))
 	default:
-		return errors.New("service must be fleet or sharedstate")
+		return errors.New("service must be fleet, sharedstate or policy-state")
 	}
 }
 func runRestore(ctx context.Context, c *cli.Command) error {
-	if c.String("service") != "fleet" && c.String("service") != "sharedstate" {
-		return errors.New("service must be fleet or sharedstate")
+	if c.String("service") != "fleet" && c.String("service") != "sharedstate" && c.String("service") != "policy-state" {
+		return errors.New("service must be fleet, sharedstate or policy-state")
+	}
+	if c.String("service") == "policy-state" {
+		return firewallstate.Restore(ctx, c.String("input"), c.String("state-dir"), "policystate")
 	}
 	return firewallstate.Restore(ctx, c.String("input"), c.String("state-dir"), c.String("service"))
 }

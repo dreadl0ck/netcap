@@ -13,6 +13,8 @@ helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | quote }}
 {{- define "firewall.config" -}}
 {{- if and .Values.http3.enabled (not .Values.tls.secretName) }}{{ fail "http3 requires tls.secretName" }}{{- end }}
 {{- if ne (empty .Values.sharedRate.configSecretName) (empty .Values.sharedRate.credentialsSecretName) }}{{ fail "sharedRate requires config and credentials Secret references" }}{{- end }}
+{{- if ne (empty .Values.policyState.configSecretName) (empty .Values.policyState.credentialsSecretName) }}{{ fail "policyState requires config and credentials Secret references" }}{{- end }}
+{{- if and .Values.policyState.configSecretName .Values.sharedRate.configSecretName }}{{ fail "policyState and sharedRate are mutually exclusive" }}{{- end }}
 {{- if eq .Values.mode "fleet" }}
 {{- if or (not .Values.fleet.configSecretName) (not .Values.fleet.credentialsSecretName) }}{{ fail "fleet mode requires config and credentials Secret references" }}{{- end }}
 {{- if .Values.autoscaling.enabled }}{{ fail "fleet mode uses fixed StatefulSet identities; HPA is unsupported" }}{{- end }}

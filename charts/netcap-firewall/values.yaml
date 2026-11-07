@@ -30,6 +30,9 @@ spool:
 sharedRate:
   configSecretName: ''
   credentialsSecretName: ''
+policyState:
+  configSecretName: ''
+  credentialsSecretName: ''
 fleet:
   configSecretName: ''
   credentialsSecretName: ''

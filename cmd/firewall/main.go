@@ -37,6 +37,7 @@ func configFlags() []cli.Flag {
 		&cli.StringFlag{Name: "admin-key", Usage: "administrative TLS private key"},
 		&cli.StringFlag{Name: "fleet-agent-config", Usage: "strict JSON fleet agent bootstrap (tokenEnv)"},
 		&cli.StringFlag{Name: "shared-rate-config", Usage: "strict JSON shared rate guard (tokenEnv)"},
+		&cli.StringFlag{Name: "policy-state-config", Usage: "optional authoritative native thresholds/sequences client (tokenEnv)"},
 		&cli.StringFlag{Name: "effects-config", Usage: "strict JSON response action scopes (tokenEnv); explicitly admits policy effects"},
 		&cli.BoolFlag{Name: "websocket"},
 		&cli.BoolFlag{Name: "grpc"},
@@ -56,6 +57,7 @@ func GetCommand() *cli.Command {
 		{Name: "redirect", Usage: "place an already-running TCP protocol gateway on a scoped routed service path", Flags: redirectFlags(), Action: withSignals(runRedirect)},
 		{Name: "fleet-controller", Usage: "authoritative fleet controller", Flags: serviceFlags(), Action: withSignals(runFleetController)},
 		{Name: "sharedstate", Usage: "authoritative shared rate counters", Flags: serviceFlags(), Action: withSignals(runSharedState)},
+		{Name: "policy-state", Usage: "authoritative scoped native policy thresholds and sequences", Flags: serviceFlags(), Action: withSignals(runPolicyState)},
 		{Name: "backup", Usage: "offline snapshot (service must be stopped)", Flags: backupFlags(), Action: runBackup},
 		{Name: "restore", Usage: "offline restore into empty state directory; fence old service first", Flags: restoreFlags(), Action: runRestore},
 		{Name: "enforcer", Usage: "explicit scoped nftables leases in a named Linux lab namespace", Flags: []cli.Flag{
@@ -200,7 +202,7 @@ func serve(ctx context.Context, c *cli.Command) error {
 	}); err != nil {
 		return err
 	}
-	if runtime.guard != nil {
+	if runtime.guard != nil || runtime.nativeState != nil {
 		if err = f.SetReadinessCheck(runtime.Ready); err != nil {
 			return err
 		}
@@ -337,7 +339,7 @@ func (t *localTarget) Policy() *policy.Compiled     { return t.p.Load() }
 func (t *localTarget) SetPolicy(p *policy.Compiled) { t.p.Store(p) }
 
 func stdio(ctx context.Context, c *cli.Command) error {
-	if c.String("effects-config") != "" || c.String("shared-rate-config") != "" || c.String("fleet-agent-config") != "" || c.Bool("websocket") || c.Bool("grpc") || c.String("http3-listen") != "" {
+	if c.String("effects-config") != "" || c.String("shared-rate-config") != "" || c.String("policy-state-config") != "" || c.String("fleet-agent-config") != "" || c.Bool("websocket") || c.Bool("grpc") || c.String("http3-listen") != "" {
 		return errors.New("stdio authoring does not admit runtime effects, rate guards, fleet or listeners")
 	}
 	_, p, err := load(c.String("config"))

@@ -1,4 +1,9 @@
 {{- if .Values.enabled }}
+{{- if ne (empty .Values.policyState.configSecretName) (empty .Values.policyState.credentialsSecretName) }}{{ fail "policyState requires config and credentials Secret references" }}{{- end }}
+{{- if .Values.policyState.configSecretName }}
+{{- if ne .Values.mode "network" }}{{ fail "policyState is supported only in network mode" }}{{- end }}
+{{- if or (ne .Values.network.failureVerdict "deny") .Values.network.bypassWithoutListener .Values.network.failOpenOnOverflow }}{{ fail "policyState requires fail-closed NFQUEUE deadline, overflow and missing-listener settings" }}{{- end }}
+{{- end }}
 {{- if not .Values.nodeSelector }}{{ fail "nodeSelector must select dedicated lab nodes" }}{{- end }}
 {{- $namespace := required "scope.namespace must name an existing lab netns" .Values.scope.namespace }}
 {{- if or (not (regexMatch "^[a-zA-Z0-9_-]{1,64}$" $namespace)) (has $namespace (list "host" "default")) }}{{ fail "scope.namespace must be a named lab netns" }}{{- end }}
@@ -70,6 +75,9 @@ spec:
             - --bypass-without-listener={{ .Values.network.bypassWithoutListener }}
             - --fail-open-on-overflow={{ .Values.network.failOpenOnOverflow }}
             - --inspect-tls={{ .Values.network.inspectTLS }}
+            {{- if .Values.policyState.configSecretName }}
+            - --policy-state-config=/etc/policy-state/config.json
+            {{- end }}
             {{- range .Values.scope.managementDestinations }}
             - --management-destination={{ . }}
             {{- end }}
@@ -78,15 +86,26 @@ spec:
             - --protected-cidr={{ . }}
             {{- end }}
           resources: {{ toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.policyState.credentialsSecretName }}
+          envFrom:
+            - secretRef: {name: {{ .Values.policyState.credentialsSecretName | quote }}}
+          {{- end }}
           volumeMounts:
             - {name: netns, mountPath: /run/netns, readOnly: true, mountPropagation: HostToContainer}
             - {name: locks, mountPath: /run/netcap-enforcer}
             - {name: state, mountPath: /var/lib/netcap-enforcer}
             - {name: tmp, mountPath: /tmp}
+            {{- if .Values.policyState.configSecretName }}
+            - {name: policy-state, mountPath: /etc/policy-state, readOnly: true}
+            {{- end }}
             {{- if eq .Values.mode "network" }}
             - {name: policy, mountPath: /etc/netcap-network, readOnly: true}
             {{- end }}
       volumes:
+        {{- if .Values.policyState.configSecretName }}
+        - name: policy-state
+          secret: {secretName: {{ .Values.policyState.configSecretName | quote }}, defaultMode: 0440}
+        {{- end }}
         - name: netns
           hostPath: {path: /run/netns, type: Directory}
         - name: locks

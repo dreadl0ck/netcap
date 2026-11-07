@@ -88,7 +88,7 @@ class ControlContract(unittest.TestCase):
             render(*ARGS, '--set', override, success=False)
 
     def test_fenced_singleton_and_existing_claim(self):
-        for service in ['fleet-controller', 'sharedstate']:
+        for service in ['fleet-controller', 'sharedstate', 'policy-state']:
             docs = render(*ARGS, '--set', 'service=' + service)
             deployment = next(d for d in docs if d['kind'] == 'Deployment')
             self.assertEqual(deployment['spec']['replicas'], 1)
@@ -107,7 +107,7 @@ class ControlContract(unittest.TestCase):
         pg = ['--set', 'persistence.backend=postgres', '--set', 'replicaCount=2',
               '--set', 'persistence.postgres.databaseURLEnv=CONTROL_DATABASE_URL',
               '--set', 'persistence.postgres.databaseNamespace=ncf_fleet']
-        for service in ['fleet-controller', 'sharedstate']:
+        for service in ['fleet-controller', 'sharedstate', 'policy-state']:
             docs = render(*ARGS, *pg, '--set', 'service=' + service)
             self.assertNotIn('PersistentVolumeClaim', {d['kind'] for d in docs})
             deploy = next(d for d in docs if d['kind'] == 'Deployment')
@@ -122,6 +122,30 @@ class ControlContract(unittest.TestCase):
                          'persistence.postgres.databaseNamespace=public', 'persistence.postgres.databaseNamespace=pg_temp',
                          'persistence.postgres.databaseURL=postgres://plaintext']:
             render(*ARGS, *pg, '--set', override, success=False)
+
+    def test_native_authority_authenticated_health_probe(self):
+        probe = ['--set', 'service=policy-state', '--set', 'healthProbe.enabled=true',
+                 '--set', 'healthProbe.authorizationSecretName=probe-auth', '--set', 'healthProbe.caSecretName=probe-ca']
+        docs = render(*ARGS, *probe)
+        pod = next(d for d in docs if d['kind'] == 'Deployment')['spec']['template']['spec']
+        sidecar = next(c for c in pod['containers'] if c['name'] == 'authenticated-health')
+        self.assertTrue(sidecar['image'].startswith('curlimages/curl:8.19.0@sha256:'))
+        self.assertEqual(sidecar['readinessProbe']['exec']['command'], ['/bin/sh', '/health/probe.sh'])
+        self.assertTrue(sidecar['securityContext']['readOnlyRootFilesystem'])
+        self.assertEqual(sidecar['securityContext']['capabilities']['drop'], ['ALL'])
+        self.assertNotIn('envFrom', sidecar)
+        self.assertTrue(all(v['readOnly'] for v in sidecar['volumeMounts']))
+        self.assertEqual({e['name']: e['value'] for e in sidecar['env']}['PROBE_SERVER'], 'lab-control')
+        script = next(d for d in docs if d['kind'] == 'ConfigMap')['data']['probe.sh']
+        self.assertIn('/api/v1/policy-state/health', script)
+        self.assertIn('--header @/probe-auth/authorization', script)
+        self.assertIn('--cacert /probe-ca/ca.crt', script)
+        self.assertIn('test "$code" = 200', script)
+        self.assertNotIn('--insecure', script)
+        render(*ARGS, *probe, '--set', 'service=sharedstate', success=False)
+        render(*ARGS, *probe, '--set', 'healthProbe.authorizationSecretName=', success=False)
+        render(*ARGS, *probe, '--set', 'healthProbe.caSecretName=', success=False)
+        render(*ARGS, *probe, '--set', 'healthProbe.token=plaintext', success=False)
 
 
 if __name__ == '__main__':

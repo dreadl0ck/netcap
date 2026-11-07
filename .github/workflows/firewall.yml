@@ -1,10 +1,10 @@
 name: Application firewall
 on:
   pull_request:
-    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/networkfirewall/**', 'internal/transparentfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
+    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policystate/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/networkfirewall/**', 'internal/transparentfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
   push:
     branches: [master, main, feature/application-firewall]
-    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/networkfirewall/**', 'internal/transparentfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
+    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policystate/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/networkfirewall/**', 'internal/transparentfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -52,7 +52,7 @@ jobs:
         env:
           CGO_ENABLED: '1'
         run: |
-          packages='./cmd/netcap-firewall ./cmd/firewall ./internal/waf ./internal/policy ./internal/policycontrol ./internal/gateway ./internal/enforcer ./internal/networkfirewall ./internal/transparentfirewall ./internal/firewallstate ./internal/firewallfleet ./internal/firewalltransport ./internal/responseactions'
+          packages='./cmd/netcap-firewall ./cmd/firewall ./internal/waf ./internal/policy ./internal/policystate ./internal/policycontrol ./internal/gateway ./internal/enforcer ./internal/networkfirewall ./internal/transparentfirewall ./internal/firewallstate ./internal/firewallfleet ./internal/firewalltransport ./internal/responseactions'
           go test -race $packages
           go test -race -tags coraza $packages
           go test -race -tags coraza,http3 ./cmd/netcap-firewall ./cmd/firewall ./internal/firewalltransport ./internal/waf
@@ -85,6 +85,8 @@ jobs:
           python3 examples/firewall/control_smoke.py --output "$RUNNER_TEMP/control-${{ matrix.arch }}.json"
       - name: Postgres active-active CLI and real database race/crash qualification
         run: python3 examples/firewall/postgres_ha.py --package-tests --output "$RUNNER_TEMP/postgres-ha-${{ matrix.arch }}.json"
+      - name: Native distributed rule authority, replica loss and revision isolation
+        run: python3 examples/firewall/policy_state_smoke.py --package-tests --output "$RUNNER_TEMP/policy-state-${{ matrix.arch }}.json"
       - uses: actions/upload-artifact@v4
         with:
           name: firewall-qualification-${{ matrix.arch }}
@@ -96,6 +98,7 @@ jobs:
             ${{ runner.temp }}/spool-${{ matrix.arch }}.json
             ${{ runner.temp }}/control-${{ matrix.arch }}.json
             ${{ runner.temp }}/postgres-ha-${{ matrix.arch }}.json
+            ${{ runner.temp }}/policy-state-${{ matrix.arch }}.json
           retention-days: 7
       - name: Save tested image for Kubernetes job
         run: docker save netcap-firewall:0.1.0-local netcap-enforcer:0.1.0-local -o "$RUNNER_TEMP/firewall-image.tar"

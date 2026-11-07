@@ -1,5 +1,8 @@
 enabled: false
 mode: leases
+policyState:
+  configSecretName: ''
+  credentialsSecretName: ''
 network:
   queue: 100
   maxQueueLen: 1024

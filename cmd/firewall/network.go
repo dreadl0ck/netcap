@@ -20,6 +20,7 @@ func networkFlags() []cli.Flag {
 		&cli.BoolFlag{Name: "bypass-without-listener"}, &cli.BoolFlag{Name: "fail-open-on-overflow"}, &cli.BoolFlag{Name: "inspect-tls"}, &cli.StringFlag{Name: "effects-config"},
 		&cli.BoolFlag{Name: "validate-only", Usage: "validate scope and policy without opening NFQUEUE"},
 		&cli.StringFlag{Name: "fleet-agent-config"},
+		&cli.StringFlag{Name: "policy-state-config"},
 	}
 }
 
@@ -41,6 +42,9 @@ func (p packetEvaluator) EvaluatePacket(e networkfirewall.PacketEvent) (networkf
 	return networkfirewall.Decision{Verdict: networkfirewall.Verdict(d.Verdict)}, err
 }
 func networkConfig(c *cli.Command) (networkfirewall.Config, error) {
+	if c.String("policy-state-config") != "" && (c.String("failure-verdict") != "deny" || c.Bool("bypass-without-listener") || c.Bool("fail-open-on-overflow")) {
+		return networkfirewall.Config{}, errors.New("authoritative policy-state requires deny on NFQUEUE deadline, overflow and missing listener")
+	}
 	if c.Uint("queue") > 65535 || c.Uint("max-queue-len") > 65535 {
 		return networkfirewall.Config{}, errors.New("queue and max-queue-len must fit uint16")
 	}

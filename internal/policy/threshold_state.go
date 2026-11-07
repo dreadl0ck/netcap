@@ -149,7 +149,7 @@ func (c *Compiled) advanceThreshold(r compiledRule, e Event, now time.Time, upda
 			return false, err
 		}
 	}
-	key, err := stateKey("threshold:"+r.rule.ID, t.GroupBy, t.GroupByFields, e)
+	key, token, err := stateKeyParts("threshold:"+r.rule.ID, t.GroupBy, t.GroupByFields, e)
 	if err != nil {
 		return false, err
 	}
@@ -159,6 +159,9 @@ func (c *Compiled) advanceThreshold(r compiledRule, e Event, now time.Time, upda
 	old := c.groups[key]
 	v := old
 	if !now.Before(v.expires) {
+		// Expired storage remains live until commit, but its entries are already
+		// subtracted from the transaction's final-capacity accounting.
+		old = counter{}
 		v = counter{expires: now.Add(r.window)}
 	}
 	switch {
@@ -191,6 +194,7 @@ func (c *Compiled) advanceThreshold(r compiledRule, e Event, now time.Time, upda
 	if err != nil {
 		return false, err
 	}
+	v.ruleID, v.kind, v.token = r.rule.ID, stateThreshold, token
 	updates[key] = v
 	return v.count >= t.Count, nil
 }

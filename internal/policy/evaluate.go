@@ -1,6 +1,7 @@
 package policy
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -18,6 +19,22 @@ const MaxSimulationWork uint64 = 1 << 30
 // Default applies to both phases unless Defaults overrides it. Errors must be
 // handled by the caller's fail-closed policy; they are never allows.
 func (c *Compiled) Evaluate(e Event) (Decision, error) {
+	return c.evaluate(context.Background(), e, time.Time{})
+}
+
+// EvaluateAt is for trusted authoritative processors. Event data never selects
+// the clock. Callers must serialize import/evaluate/export as one transaction.
+func (c *Compiled) EvaluateAt(ctx context.Context, e Event, now time.Time) (Decision, error) {
+	if !validStateTime(now) {
+		return Decision{}, ErrStateClock
+	}
+	return c.evaluate(ctx, e, now)
+}
+
+func (c *Compiled) evaluate(ctx context.Context, e Event, instant time.Time) (Decision, error) {
+	if err := ctx.Err(); err != nil {
+		return Decision{}, err
+	}
 	if e.Phase == "" {
 		e.Phase = "request"
 	}
@@ -30,6 +47,9 @@ func (c *Compiled) Evaluate(e Event) (Decision, error) {
 	}
 	matches := make([]int, 0, len(c.rules))
 	for i, r := range c.rules {
+		if err := ctx.Err(); err != nil {
+			return Decision{}, err
+		}
 		if r.rule.Phase != e.Phase || (r.rule.Enabled != nil && !*r.rule.Enabled) {
 			continue
 		}
@@ -48,14 +68,27 @@ func (c *Compiled) Evaluate(e Event) (Decision, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	now := c.now()
+	if !instant.IsZero() {
+		now = instant
+	}
+	if err := ctx.Err(); err != nil {
+		return Decision{}, err
+	}
 	if now.Before(c.lastNow) {
 		return Decision{}, ErrStateClock
 	}
-	c.pruneExpired(now)
 	usage := c.stateStats()
-	budget := &stateBudget{live: usage, finalEntries: usage.Entries}
-	// Stage updates so runtime/capacity errors never partially advance counters.
+	// Expiry is a state transition too: retain the original map and watermark
+	// until every validation and capacity check succeeds.
 	updates := make(map[[32]byte]counter)
+	finalEntries := usage.Entries
+	for key, v := range c.groups {
+		if !now.Before(v.expires) {
+			updates[key] = counter{}
+			finalEntries -= counterEntries(v)
+		}
+	}
+	budget := &stateBudget{live: usage, finalEntries: finalEntries}
 	winner := -1
 	for _, i := range matches {
 		r := c.rules[i]
@@ -101,6 +134,9 @@ func (c *Compiled) Evaluate(e Event) (Decision, error) {
 				return Decision{}, err
 			}
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return Decision{}, err
 	}
 	if len(updates) > 0 {
 		if err := c.applyUpdates(updates); err != nil {
@@ -243,7 +279,7 @@ func measureValue(v reflect.Value, path string, depth int, total *uint64, nodes 
 
 func (c *Compiled) advanceSequence(r compiledRule, e Event, now time.Time, updates map[[32]byte]counter) (bool, error) {
 	s := r.rule.Sequence
-	key, err := stateKey("sequence\x00"+r.rule.ID+"\x00"+s.Name, s.GroupBy, s.GroupByFields, e)
+	key, token, err := stateKeyParts("sequence\x00"+r.rule.ID+"\x00"+s.Name, s.GroupBy, s.GroupByFields, e)
 	if err != nil {
 		return false, err
 	}
@@ -274,6 +310,7 @@ func (c *Compiled) advanceSequence(r compiledRule, e Event, now time.Time, updat
 		}
 	}
 	if v.step > 0 {
+		v.ruleID, v.kind, v.token = r.rule.ID, stateSequence, token
 		updates[key] = v
 	}
 	return false, nil
