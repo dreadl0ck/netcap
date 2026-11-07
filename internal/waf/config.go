@@ -43,6 +43,11 @@ type Config struct {
 	InspectResponse    bool     `json:"inspectResponse" yaml:"inspectResponse"`
 	AllowedHosts       []string `json:"allowedHosts,omitempty" yaml:"allowedHosts,omitempty"`
 	CorazaCRS          bool     `json:"corazaCRS,omitempty" yaml:"corazaCRS,omitempty"`
+	// API artifacts are trusted bootstrap inputs, independent of policy reloads.
+	DescriptorPath      string `json:"descriptorPath,omitempty" yaml:"descriptorPath,omitempty"`
+	DescriptorSHA256    string `json:"descriptorSHA256,omitempty" yaml:"descriptorSHA256,omitempty"`
+	BootstrapDir        string `json:"bootstrapDir,omitempty" yaml:"bootstrapDir,omitempty"`
+	APIValidateResponse bool   `json:"apiValidateResponse,omitempty" yaml:"apiValidateResponse,omitempty"`
 }
 
 func LoadConfig(data []byte) (Config, error) {
@@ -112,6 +117,11 @@ func validateJSONKeys(data []byte) error {
 }
 
 func ValidateConfig(c Config) error {
+	if c.DescriptorPath != "" || c.DescriptorSHA256 != "" || c.BootstrapDir != "" || c.APIValidateResponse {
+		if c.DescriptorPath == "" || len(c.DescriptorSHA256) != 64 || c.BootstrapDir == "" {
+			return errors.New("API policy requires descriptorPath, descriptorSHA256 and bootstrapDir")
+		}
+	}
 	if c.MaxBufferedBytes < 0 || c.MaxBufferedBytes > 1<<30 {
 		return errors.New("maxBufferedBytes must be 0 (64 MiB default) or 1..1073741824 bytes")
 	}
