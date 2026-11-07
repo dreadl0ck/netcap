@@ -110,12 +110,16 @@ func (s *Store) Handler() http.Handler {
 			if r.URL.Path == HealthPath {
 				action = firewallauth.Read
 			}
-			scope, err := identity.BoundScope(action, s.cfg.Environment, s.cfg.Target)
-			if err != nil {
-				firewallstate.WriteError(w, firewallstate.Fail(403, "state grant required"))
-				return
+			if r.URL.Path == "/metrics" {
+				principal = &Principal{ID: identity.ID}
+			} else {
+				scope, err := identity.BoundScope(action, s.cfg.Environment, s.cfg.Target)
+				if err != nil {
+					firewallstate.WriteError(w, firewallstate.Fail(403, "state grant required"))
+					return
+				}
+				principal = &Principal{ID: identity.ID, Scope: firewallstate.Scope{Tenant: scope.Tenant, App: scope.App}}
 			}
-			principal = &Principal{ID: identity.ID, Scope: firewallstate.Scope{Tenant: scope.Tenant, App: scope.App}}
 			r = r.WithContext(firewallauth.WithPrincipal(r.Context(), identity))
 		}
 		if principal == nil {
@@ -127,6 +131,10 @@ func (s *Store) Handler() http.Handler {
 			return
 		}
 		if r.URL.Path == "/metrics" && r.Method == http.MethodGet {
+			if s.cfg.Auth != nil && firewallauth.Require(r.Context(), firewallauth.Metrics, firewallauth.Scope{Environment: s.cfg.Environment, Target: s.cfg.Target}) != nil {
+				firewallstate.WriteError(w, firewallstate.Fail(403, "metrics grant required"))
+				return
+			}
 			s.Operations.Handler().ServeHTTP(w, r)
 			return
 		}

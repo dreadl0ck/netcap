@@ -259,7 +259,7 @@ func runFleetController(ctx context.Context, c *cli.Command) error {
 			}
 		}
 	}()
-	return serveControl(ctx, c, firewallui.Wrap(fleetHealthHandler(s, cfg), "fleet"))
+	return serveControl(ctx, c, firewallui.WrapOrigin(fleetHealthHandler(s, cfg), "fleet", cfg.Origin, cfg.Auth != nil))
 }
 func runSharedState(ctx context.Context, c *cli.Command) error {
 	if err := checkServiceTLS(c); err != nil {

@@ -65,10 +65,7 @@ func (c *Controller) createRequest(ctx context.Context, req leaseRequest) (Lease
 	if req.TTLSeconds == nil {
 		return Lease{}, errors.New("ttl_seconds or expires_at required")
 	}
-	if req.Action == (Action{}) {
-		return c.Create(ctx, req.ID, req.Source, time.Duration(*req.TTLSeconds)*time.Second)
-	}
-	return c.CreateActionUntil(ctx, req.ID, req.Source, time.Now().UTC().Add(time.Duration(*req.TTLSeconds)*time.Second), req.Action)
+	return c.CreateAction(ctx, req.ID, req.Source, time.Duration(*req.TTLSeconds)*time.Second, req.Action)
 }
 
 type enforcerCapabilities struct {

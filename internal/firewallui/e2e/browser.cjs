@@ -3,12 +3,12 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { chromium, expect } = require(process.env.FIREWALL_PLAYWRIGHT_MODULE);
 const env = process.env;
-const origins = ['UI_ORIGIN', 'READONLY_ORIGIN', 'FLEET_ORIGIN', 'LEASE_ORIGIN', 'TRAFFIC_ORIGIN'].map(k => env[k]);
+const origins = ['UI_ORIGIN', 'READONLY_ORIGIN', 'FLEET_ORIGIN', 'LEASE_ORIGIN', 'TRAFFIC_ORIGIN', 'AUTH_ORIGIN'].map(k => env[k]);
 let browser;
 let contextID = 0;
 before(async () => {
   browser = await chromium.launch({ headless: true });
-  for (const origin of origins.slice(0, 4)) {
+  for (const origin of origins.filter(o => o !== env.TRAFFIC_ORIGIN)) {
     const identity = await (await fetch(origin + '/fixture/identity')).json();
     assert.equal(identity.run_id, env.RUN_ID, 'must own this server');
   }
@@ -46,6 +46,25 @@ async function accept(page, button) {
   await page.getByRole('button', { name: 'Confirm', exact: true }).click();
 }
 const bundle = id => ({ version: '1', id, mode: 'enforce', default: 'allow', rules: [{ id: 'blocked', phase: 'request', expression: 'Path == "/blocked"', action: 'deny', status: 403, priority: 1 }] });
+
+test('scoped identity: exact-origin console reads, server RBAC denies writes, token stays in memory', async () => {
+  const s = await session(env.AUTH_ORIGIN), { page } = s;
+  try {
+    await expect(page.locator('#active')).not.toHaveText('');
+    await page.getByLabel('Bundle source · JSON or YAML', { exact: true }).fill(JSON.stringify(bundle('reader-denied')));
+    await page.getByRole('button', { name: 'Stage revision', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('HTTP 403');
+    const denied = await page.evaluate(async () => {
+      const response = await fetch('/api/v1/policy/stage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      return response.status;
+    });
+    assert.equal(denied, 403, 'browser request without bearer cannot use the console wrapper');
+    assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
+    await page.reload();
+    await expect(page.getByLabel('Bearer token', { exact: true })).toBeVisible();
+    assert.equal(await page.getByLabel('Bearer token', { exact: true }).inputValue(), '');
+  } finally { await s.close(); }
+});
 
 test('policy: invalid source cannot activate; YAML stage, diff, replay, activate, real traffic and persisted reload', async () => {
   const s = await session(env.UI_ORIGIN), { page } = s;

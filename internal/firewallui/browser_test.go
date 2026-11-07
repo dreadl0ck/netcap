@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/enforcer"
+	"github.com/dreadl0ck/netcap/internal/firewallauth"
 	"github.com/dreadl0ck/netcap/internal/firewallfleet"
 	"github.com/dreadl0ck/netcap/internal/policy"
 	"github.com/dreadl0ck/netcap/internal/policycontrol"
@@ -74,6 +75,23 @@ func TestBrowser(t *testing.T) {
 	defer readonly.Close()
 	ro := httptest.NewServer(identity(Wrap(readonly.Handler(), "policy")))
 	defer ro.Close()
+	// The legacy fixtures above remain independent of the scoped identity console.
+	authServer := httptest.NewUnstartedServer(nil)
+	authOrigin := "http://" + authServer.Listener.Addr().String()
+	authScope := firewallauth.Scope{Tenant: "browser", App: "web", Environment: "test", Target: "edge"}
+	reader, err := firewallauth.New(firewallauth.Config{Static: []firewallauth.Static{{Token: token, Principal: firewallauth.Principal{ID: "reader", Grants: []firewallauth.Grant{{Scope: authScope, Actions: []firewallauth.Action{firewallauth.Read}}}}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reader.Close()
+	authService, err := policycontrol.New(policycontrol.Config{Auth: reader, Scope: authScope, Origin: authOrigin, Managed: true, StateDir: filepath.Join(t.TempDir(), "scoped-policy")}, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer authService.Close()
+	authServer.Config.Handler = identity(WrapOrigin(authService.Handler(), "policy", authOrigin, true))
+	authServer.Start()
+	defer authServer.Close()
 	scope := firewallfleet.Scope{Tenant: "tenant-a", App: "app"}
 	fleet, err := firewallfleet.New(firewallfleet.Config{StateDir: filepath.Join(t.TempDir(), "fleet"), Token: token, Identities: []firewallfleet.Identity{{ID: "scoped", Token: "synthetic-scoped-token", Scope: scope}}, Targets: []firewallfleet.Enrollment{{ID: "edge-a", Token: "synthetic-agent-token", Scope: scope}, {ID: "foreign", Token: "synthetic-foreign-token", Scope: firewallfleet.Scope{Tenant: "tenant-b", App: "app"}}}})
 	if err != nil {
@@ -110,7 +128,7 @@ func TestBrowser(t *testing.T) {
 			}
 		}
 	}()
-	cmd.Env = []string{"PATH=" + os.Getenv("PATH"), "HOME=" + os.Getenv("HOME"), "TMPDIR=" + os.TempDir(), "FIREWALL_PLAYWRIGHT_MODULE=" + module, "UI_ORIGIN=" + admin.URL, "READONLY_ORIGIN=" + ro.URL, "FLEET_ORIGIN=" + fc.URL, "LEASE_ORIGIN=" + le.URL, "TRAFFIC_ORIGIN=" + traffic.URL, "RUN_ID=" + runID, "UI_TOKEN=" + token}
+	cmd.Env = []string{"PATH=" + os.Getenv("PATH"), "HOME=" + os.Getenv("HOME"), "TMPDIR=" + os.TempDir(), "FIREWALL_PLAYWRIGHT_MODULE=" + module, "UI_ORIGIN=" + admin.URL, "READONLY_ORIGIN=" + ro.URL, "FLEET_ORIGIN=" + fc.URL, "LEASE_ORIGIN=" + le.URL, "TRAFFIC_ORIGIN=" + traffic.URL, "AUTH_ORIGIN=" + authServer.URL, "RUN_ID=" + runID, "UI_TOKEN=" + token}
 	if cache := os.Getenv("PLAYWRIGHT_BROWSERS_PATH"); cache != "" {
 		cmd.Env = append(cmd.Env, "PLAYWRIGHT_BROWSERS_PATH="+cache)
 	}

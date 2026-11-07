@@ -269,7 +269,7 @@ func serve(ctx context.Context, c *cli.Command) error {
 		return errors.New("admin-cert and admin-key must be paired")
 	}
 	data := &http.Server{Addr: cfg.Listen, Handler: dataHandler, ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 32 << 10, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS12}}
-	management := &http.Server{Addr: cfg.AdminListen, Handler: firewallui.Wrap(admin, "policy"), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS12}}
+	management := &http.Server{Addr: cfg.AdminListen, Handler: firewallui.WrapOrigin(admin, "policy", ac.Origin, ac.Auth != nil), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS12}}
 	dl, err := net.Listen("tcp", data.Addr)
 	if err != nil {
 		return err
@@ -473,7 +473,7 @@ func runEnforcer(ctx context.Context, c *cli.Command) error {
 		return err
 	}
 	defer e.Close()
-	srv := &http.Server{Addr: c.String("listen"), Handler: firewallui.Wrap(e.Handler(), "leases"), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10}
+	srv := &http.Server{Addr: c.String("listen"), Handler: firewallui.WrapOrigin(e.Handler(), "leases", cfg.Origin, cfg.Auth != nil), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10}
 	l, err := net.Listen("tcp", srv.Addr)
 	if err != nil {
 		return err

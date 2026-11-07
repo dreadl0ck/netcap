@@ -141,6 +141,13 @@ func (a *Approvals) CheckTargets(ctx context.Context, action Action, scope Scope
 	if !required {
 		return nil
 	}
+	for _, target := range targets {
+		s := scope
+		s.Target = target
+		if err := Require(ctx, action, s); err != nil {
+			return err
+		}
+	}
 	p, ok := FromContext(ctx)
 	if !ok || len(receipt) > 8192 {
 		return ErrForbidden

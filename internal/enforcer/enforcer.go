@@ -258,10 +258,14 @@ func (c *Controller) validateBase(l Lease) error {
 }
 
 func (c *Controller) Create(ctx context.Context, id, source string, ttl time.Duration) (Lease, error) {
+	return c.CreateAction(ctx, id, source, ttl, Action{})
+}
+
+func (c *Controller) CreateAction(ctx context.Context, id, source string, ttl time.Duration, action Action) (Lease, error) {
 	if err := c.authorize(ctx, firewallauth.Lease); err != nil {
 		return Lease{}, err
 	}
-	if err := c.checkApproval(ctx, CreateApprovalDigest(id, source, ttl, time.Time{})); err != nil {
+	if err := c.checkApproval(ctx, ActionApprovalDigest(id, source, ttl, time.Time{}, action)); err != nil {
 		return Lease{}, err
 	}
 	c.mu.Lock()
@@ -272,7 +276,7 @@ func (c *Controller) Create(ctx context.Context, id, source string, ttl time.Dur
 	if ttl < time.Second || ttl > c.config.MaxTTL || ttl%time.Second != 0 {
 		return Lease{}, errors.New("TTL must be whole seconds within configured limit")
 	}
-	l := Lease{ID: id, Source: source, Scope: c.config.Scope, TTLSeconds: int64(ttl / time.Second), ExpiresAt: time.Now().UTC().Add(ttl)}
+	l := Lease{ID: id, Source: source, Scope: c.config.Scope, TTLSeconds: int64(ttl / time.Second), ExpiresAt: time.Now().UTC().Add(ttl), Action: action}
 	return c.create(ctx, l, false)
 }
 
@@ -288,7 +292,7 @@ func (c *Controller) CreateActionUntil(ctx context.Context, id, source string, e
 	if err := c.authorize(ctx, firewallauth.Lease); err != nil {
 		return Lease{}, err
 	}
-	if err := c.checkApproval(ctx, CreateApprovalDigest(id, source, 0, expiresAt)); err != nil {
+	if err := c.checkApproval(ctx, ActionApprovalDigest(id, source, 0, expiresAt, action)); err != nil {
 		return Lease{}, err
 	}
 	c.mu.Lock()
@@ -464,6 +468,16 @@ func CreateApprovalDigest(id, source string, ttl time.Duration, expires time.Tim
 		TTL                   time.Duration
 		Expires               time.Time
 	}{"create", id, source, ttl, expires.UTC()})
+}
+
+func ActionApprovalDigest(id, source string, ttl time.Duration, expires time.Time, action Action) string {
+	if action == (Action{}) {
+		return CreateApprovalDigest(id, source, ttl, expires)
+	}
+	return firewallauth.Digest(struct {
+		Base   string
+		Action Action
+	}{CreateApprovalDigest(id, source, ttl, expires), action})
 }
 func DeleteApprovalDigest(l Lease) string {
 	return firewallauth.Digest(struct {

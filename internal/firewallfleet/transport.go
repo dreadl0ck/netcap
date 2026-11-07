@@ -23,6 +23,7 @@ type descriptor struct {
 }
 
 var descriptors = []descriptor{
+	{"metrics", nil, nil},
 	{"approval", []string{"scope", "approval"}, []string{"scope", "approval"}},
 	{"audit_ack", []string{"scope", "after", "expected_plan"}, []string{"after", "expected_plan"}},
 	{"retention_preview", []string{"scope", "revisions", "jobs", "receipts"}, nil},
@@ -123,6 +124,10 @@ func (s *Service) Handler() http.Handler {
 			return
 		}
 		if r.URL.Path == "/metrics" {
+			if s.cfg.Auth != nil && firewallauth.Require(r.Context(), firewallauth.Metrics, firewallauth.Scope{Environment: s.cfg.Environment}) != nil {
+				firewallstate.WriteError(w, firewallstate.Fail(403, "metrics grant required"))
+				return
+			}
 			if r.Method != http.MethodGet {
 				w.WriteHeader(405)
 				return
@@ -196,12 +201,15 @@ func (s *Service) Handler() http.Handler {
 				return
 			}
 			var raw []byte
-			if op == "status" || op == "audit" || op == "capabilities" || op == "audit_export" {
+			if op == "status" || op == "audit" || op == "capabilities" || op == "audit_export" || op == "metrics" {
 				if r.Method != "GET" {
 					w.WriteHeader(405)
 					return
 				}
 				raw, _ = json.Marshal(map[string]any{"scope": Scope{Tenant: r.URL.Query().Get("tenant"), App: r.URL.Query().Get("app")}})
+				if op == "metrics" {
+					raw = []byte(`{}`)
+				}
 				if op == "audit_export" {
 					after, e1 := strconv.ParseInt(r.URL.Query().Get("after"), 10, 64)
 					if r.URL.Query().Get("after") == "" {
@@ -319,7 +327,7 @@ func (s *Service) newMCP() *server.MCPServer {
 			continue
 		}
 		d, _ = descriptorFor(d.op)
-		read := d.op == "capabilities" || d.op == "audit" || d.op == "audit_export" || d.op == "retention_preview" || s.cfg.Auth != nil && d.op == "status"
+		read := d.op == "metrics" || d.op == "capabilities" || d.op == "audit" || d.op == "audit_export" || d.op == "retention_preview" || s.cfg.Auth != nil && d.op == "status"
 		tool := mcp.Tool{Name: "fleet_" + d.op, Description: "Scoped fleet " + d.op + ". Per-target CAS; one fenced controller; no globally atomic activation.", InputSchema: schemaFor(d), Annotations: mcp.ToolAnnotation{ReadOnlyHint: &read}}
 		srv.AddTool(tool, func(ctx context.Context, call mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			raw, err := json.Marshal(call.Params.Arguments)

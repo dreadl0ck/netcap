@@ -15,6 +15,11 @@ var assets embed.FS
 // Wrap adds /console to one administrative listener. Authentication and scope
 // authorization remain in next. Forwarded headers deliberately do not set origin.
 func Wrap(next http.Handler, kind string) http.Handler {
+	return WrapOrigin(next, kind, "", false)
+}
+
+// Identity mode preserves Origin for the authority's exact bootstrap-origin check.
+func WrapOrigin(next http.Handler, kind, origin string, identity bool) http.Handler {
 	files, _ := fs.Sub(assets, "static")
 	static := http.FileServer(http.FS(files))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -44,19 +49,21 @@ func Wrap(next http.Handler, kind string) http.Handler {
 			http.StripPrefix("/console/", static).ServeHTTP(w, r)
 			return
 		}
-		if origin := r.Header.Get("Origin"); origin != "" {
+		if requestOrigin := r.Header.Get("Origin"); requestOrigin != "" {
 			scheme := "http"
 			if r.TLS != nil {
 				scheme = "https"
 			}
-			if origin != scheme+"://"+r.Host || !consoleAPI(r.URL.Path, kind) || !strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
+			if requestOrigin != scheme+"://"+r.Host || identity && requestOrigin != origin || !consoleAPI(r.URL.Path, kind) || !strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
 				http.Error(w, `{"error":"console requires exact same origin and bearer authentication"}`, http.StatusForbidden)
 				return
 			}
 			// Only the private console REST allowlist reaches legacy handlers that
 			// refuse every Origin. The original request is never mutated.
-			r = r.Clone(r.Context())
-			r.Header.Del("Origin")
+			if !identity {
+				r = r.Clone(r.Context())
+				r.Header.Del("Origin")
+			}
 		}
 		if kind == "leases" && r.URL.Path == "/api/v1/console/enforcer-capabilities" {
 			if r.Method != http.MethodGet {
@@ -83,8 +90,9 @@ func consoleAPI(path, kind string) bool {
 		prefix, operations = "/api/v1/policy/", " capabilities revision revisions check evaluate stage diff activate rollback audit "
 	case "fleet":
 		prefix, operations = "/api/v1/fleet/", " capabilities status audit stage rollout activate promote rollback drain revoke resume "
+		operations += " approval audit_export audit_ack retention_preview prune "
 	case "leases":
-		return path == "/api/v1/console/enforcer-capabilities" || path == "/v1/leases" || (strings.HasPrefix(path, "/v1/leases/") && !strings.Contains(strings.TrimPrefix(path, "/v1/leases/"), "/"))
+		return path == "/v1/approval" || path == "/v1/capabilities" || path == "/api/v1/console/enforcer-capabilities" || path == "/v1/leases" || (strings.HasPrefix(path, "/v1/leases/") && !strings.Contains(strings.TrimPrefix(path, "/v1/leases/"), "/"))
 	}
 	if prefix != "" && strings.HasPrefix(path, prefix) {
 		for _, op := range strings.Fields(operations) {
