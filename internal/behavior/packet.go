@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/netip"
 
+	"github.com/dreadl0ck/netcap/internal/packetview"
+
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 )
@@ -17,6 +19,7 @@ func PacketFacts(packet gopacket.Packet, scope Scope) []Fact {
 		return nil
 	}
 	scope.VLANs = nil
+	scope.Interface = packetview.ScopeInterface(packet, scope.Interface)
 	for _, layer := range packet.Layers() {
 		if vlan, ok := layer.(*layers.Dot1Q); ok {
 			scope.VLANs = append(scope.VLANs, vlan.VLANIdentifier)

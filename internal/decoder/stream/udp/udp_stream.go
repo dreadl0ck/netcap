@@ -33,6 +33,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/service"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
+	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/sipaudit"
@@ -87,7 +88,7 @@ func udpConversationKey(packet gopacket.Packet) uint64 {
 		key ^= net.NetworkFlow().FastHash()
 	}
 
-	return key
+	return key ^ packetview.ScopeHash(packet)
 }
 
 // HandleUDP takes an UDP packet and tracks the data seen for the conversation.

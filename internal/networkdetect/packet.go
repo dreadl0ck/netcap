@@ -1,9 +1,10 @@
 package networkdetect
 
 import (
-	"fmt"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
+
+	"github.com/dreadl0ck/netcap/internal/packetview"
 )
 
 func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
@@ -94,9 +95,7 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 
 func PacketScope(packet gopacket.Packet, scope Scope) Scope {
 	scope.VLANs = nil
-	if index := packet.Metadata().CaptureInfo.InterfaceIndex; index > 0 {
-		scope.Interface = fmt.Sprintf("%s#%d", scope.Interface, index)
-	}
+	scope.Interface = packetview.ScopeInterface(packet, scope.Interface)
 	for _, layer := range packet.Layers() {
 		if vlan, ok := layer.(*layers.Dot1Q); ok {
 			scope.VLANs = append(scope.VLANs, vlan.VLANIdentifier)

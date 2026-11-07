@@ -33,6 +33,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/packetview"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
@@ -90,7 +92,7 @@ func (c connectionID) String() string {
 	if c.Tuple != "" {
 		return c.Scope + "/" + c.Tuple + "/" + strconv.Itoa(int(c.IPProtocol))
 	}
-	return strconv.FormatUint(c.LinkFlowID, 10) + "/" + strconv.FormatUint(c.NetworkFlowID, 10) + "/" + strconv.FormatUint(c.TransportFlowID, 10) + "/" + strconv.Itoa(int(c.IPProtocol))
+	return c.Scope + "/" + strconv.FormatUint(c.LinkFlowID, 10) + "/" + strconv.FormatUint(c.NetworkFlowID, 10) + "/" + strconv.FormatUint(c.TransportFlowID, 10) + "/" + strconv.Itoa(int(c.IPProtocol))
 }
 
 type connection struct {
@@ -246,6 +248,7 @@ func handlePacket(p gopacket.Packet) proto.Message {
 
 	// assemble connectionID
 	connID := connectionID{}
+	connID.Scope = packetview.Scope(p)
 	ll := p.LinkLayer()
 	if ll != nil {
 		connID.LinkFlowID = ll.LinkFlow().FastHash()
@@ -275,12 +278,6 @@ func handlePacket(p gopacket.Packet) proto.Message {
 				a, b = b, a
 			}
 			connID.Tuple = a + "/" + b
-			connID.Scope = strconv.Itoa(p.Metadata().InterfaceIndex)
-			for _, layer := range p.Layers() {
-				if vlan, ok := layer.(*layers.Dot1Q); ok {
-					connID.Scope += "/vlan:" + strconv.Itoa(int(vlan.VLANIdentifier))
-				}
-			}
 			switch tl.(type) {
 			case *layers.TCP:
 				connID.IPProtocol = 6
@@ -379,22 +376,28 @@ retry:
 			conn.AppPayloadSize64 += int64(len(tl.LayerPayload()))
 		}
 
+		packetCount, wireBytes, first, last := packetview.Accounting(p)
+		conn.TimestampFirst = min(conn.TimestampFirst, first)
+		conn.TimestampLast = max(conn.TimestampLast, last)
+		if context := packetview.FromCapture(p.Metadata().CaptureInfo); context != nil && context.Reassembled {
+			conn.ReassembledDatagrams++
+		}
 		if nl != nil {
 			if conn.clientIP == nl.NetworkFlow().Src().String() && (tl == nil || conn.clientPort == connectionPort(tl.TransportFlow().Src())) {
-				conn.BytesClientToServer += int64(p.Metadata().Length)
-				conn.packetsClientToServer++
+				conn.BytesClientToServer += wireBytes
+				conn.packetsClientToServer += packetCount
 			} else {
-				conn.BytesServerToClient += int64(p.Metadata().Length)
-				conn.packetsServerToClient++
+				conn.BytesServerToClient += wireBytes
+				conn.packetsServerToClient += packetCount
 			}
 		}
-		conn.NumPackets64++
+		conn.NumPackets64 += packetCount
 		conn.NumPackets = connectionLegacyCounter(conn.NumPackets64, conn.Connection)
 		conn.AppPayloadSize = connectionLegacyCounter(conn.AppPayloadSize64, conn.Connection)
 		trackTCPStats(conn, p)
 		trackConnectionLifecycle(conn, p)
 		trackJA4LTiming(conn, p)
-		conn.TotalSize64 += int64(p.Metadata().Length)
+		conn.TotalSize64 += wireBytes
 		conn.TotalSize = connectionLegacyCounter(conn.TotalSize64, conn.Connection)
 
 		// check if LAST timestamp was before the current packet
@@ -430,6 +433,15 @@ retry:
 
 func makeConnection(p gopacket.Packet, connID connectionID, ll gopacket.LinkLayer, nl gopacket.NetworkLayer, tl gopacket.TransportLayer, generation uint64) *connection {
 	co := &types.Connection{}
+	packetCount, wireBytes, first, last := packetview.Accounting(p)
+	co.NetworkScope = packetview.Scope(p)
+	if context := packetview.FromCapture(p.Metadata().CaptureInfo); context != nil {
+		co.Encapsulations = context.Tunnels
+		co.Normalization = context.Status
+		if context.Reassembled {
+			co.ReassembledDatagrams = 1
+		}
+	}
 	for _, context := range p.Metadata().CaptureInfo.AncillaryData {
 		if stamp, ok := context.(dnscontext.Snapshot); ok {
 			co.DNSResolvedName, co.DNSResolvedAt, co.DNSResolutionState = stamp.Name, stamp.AnsweredAt, stamp.State
@@ -452,12 +464,11 @@ func makeConnection(p gopacket.Packet, connID connectionID, ll gopacket.LinkLaye
 	} else {
 		co.CommunityID = calcMd5(connID.String())
 	}
-	co.TimestampFirst = p.Metadata().Timestamp.UnixNano()
-	co.TimestampLast = p.Metadata().Timestamp.UnixNano()
-	co.TotalSize64 = int64(p.Metadata().Length)
+	co.TimestampFirst, co.TimestampLast = first, last
+	co.TotalSize64 = wireBytes
 	co.TotalSize = connectionLegacyCounter(co.TotalSize64, co)
-	co.NumPackets = 1
-	co.NumPackets64 = 1
+	co.NumPackets = connectionLegacyCounter(packetCount, co)
+	co.NumPackets64 = packetCount
 
 	if ll != nil {
 		co.LinkProto = ll.LayerType().String()
@@ -496,7 +507,7 @@ func makeConnection(p gopacket.Packet, connID connectionID, ll gopacket.LinkLaye
 	}
 
 	// track amount of transferred bytes
-	co.BytesClientToServer += int64(p.Metadata().Length)
+	co.BytesClientToServer += wireBytes
 
 	// DPI: detect applications
 	apps := make(map[string]struct{})
@@ -510,7 +521,7 @@ func makeConnection(p gopacket.Packet, connID connectionID, ll gopacket.LinkLaye
 		clientIP:              co.SrcIP,
 		clientPort:            co.SrcPort,
 		applications:          apps,
-		packetsClientToServer: 1, // First packet is from client
+		packetsClientToServer: packetCount,
 		startedAt:             p.Metadata().Timestamp.UnixNano(),
 		generation:            generation,
 	}

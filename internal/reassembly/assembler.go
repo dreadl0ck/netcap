@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/packetview"
+
 	"github.com/cheggaaa/pb/v3"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
@@ -192,7 +194,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		conn    *connection
 		half    *halfconnection
 		rev     *halfconnection
-		flowKey = &key{netFlow, t.TransportFlow()}
+		flowKey = &key{netFlow, t.TransportFlow(), packetview.ScopeFlow(ac.GetCaptureInfo())}
 	)
 
 	// RACE

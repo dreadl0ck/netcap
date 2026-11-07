@@ -8,7 +8,7 @@ import (
 func (c *Collector) startLiveMaintenance() chan struct{} {
 	stop := make(chan struct{})
 	interval := c.config.LiveMaintenanceInterval
-	if interval < 0 || !c.config.ReassembleConnections {
+	if interval < 0 {
 		return stop
 	}
 	if interval == 0 {
@@ -36,6 +36,9 @@ func (c *Collector) maintainStreams(ref time.Time) {
 	defer c.dispatchMu.Unlock()
 	if !c.acceptingPackets || c.workersStopped {
 		return
+	}
+	if c.packetPipeline != nil {
+		c.packetPipeline.ExpireIdle(ref)
 	}
 	for _, worker := range c.workers {
 		worker <- &workerControl{ref: ref, idle: true}
