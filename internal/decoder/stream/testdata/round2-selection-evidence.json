@@ -15,7 +15,22 @@
     "candidate_exit_status": 0,
     "baseline_exit_status": 1,
     "baseline_disposition": "Six fixture assertions fail as expected; Modbus/RDP and opaque TeamViewer controls already pass.",
-    "rss": "not measured"
+    "rss": "not measured",
+    "reaudit": {
+      "date": "2026-11-08",
+      "implementation_commit": "8dfb044f",
+      "baseline_binary_revision": "25ea2e69181ecb88979754cba98a628075220c3f",
+      "baseline_binary_revision_check": "go version -m $W76_BASELINE_NET; vcs.modified=false",
+      "packages": ["./internal/decoder/stream", "./internal/decoder/stream/secret", "./internal/decoder/stream/ftp", "./internal/decoder/stream/smb", "./internal/decoder/stream/dns", "./internal/decoder/stream/rdp", "./internal/decoder/stream/s7comm", "./internal/decoder/stream/profinet"],
+      "targeted": "GOWORK=off GOMAXPROCS=2 go test -count=1 -p 1 -tags nodpi,noyara,nomagika <packages>: 821 passed",
+      "race": "GOWORK=off GOMAXPROCS=2 go test -race -count=1 -p 1 -tags nodpi,noyara,nomagika <packages>: 821 passed",
+      "vet": "GOWORK=off GOMAXPROCS=2 go vet -p 1 -tags nodpi,noyara,nomagika <packages>: exit 0",
+      "fuzz": "GOWORK=off GOMAXPROCS=2 go test -p 1 -tags nodpi,noyara,nomagika <package> -run '^$' -fuzz '^<target>$' -fuzztime=5s: stream/FuzzRound2StructuralProbes and secret/FuzzRound2SecretFraming passed",
+      "candidate_replay": "Fresh CLI build; all eight hash-pinned captures at default/1/2 workers: 33 tests passed",
+      "baseline_replay": "Six of eight captures fail semantic assertions at every worker setting; mixed Modbus/RDP and opaque TeamViewer controls pass",
+      "source_report": "/Users/pmieden/Downloads/netcap-datasets-round2.md read successfully; D2-6, D2-9, D2-15 and DS-10 scope confirmed",
+      "tcp_hook": "internal/decoder/stream/tcp/tcp_connection.go calls secret.HarvestAdditionalConversation(conv); FTP reader independently calls secret.HarvestFTPConversation"
+    }
   },
   "observations": [
     {"file": "http-multiple100.pcap", "baseline": {}, "candidate": {"HTTP": 3, "Upload": 3}},
@@ -33,7 +48,6 @@
     "Captured TeamViewer command1/command2 payloads are framing positives, not auth events. Direct auth-event positives and Steam/RTMP collision controls are synthetic embedded Go fixtures."
   ],
   "unavailable_or_unverified": [
-    "Original /Users/pmieden/Downloads/netcap-datasets-round2.md is missing; scope follows the authoritative W76 plan and source inspection.",
     "Full original /workspace/mta/datasets2 corpus was not replayed. Steam and RTMP source captures were not replayed.",
     "Native DPI/YARA/Magika build variants were not exercised; verification uses nodpi,noyara,nomagika.",
     "Pinned source captures remain external opt-in fixtures; only reviewed wire snippets and generated synthetic fixtures are committed."
