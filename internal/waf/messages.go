@@ -16,6 +16,8 @@ import (
 func (f *Firewall) MessageHandler(websocket, grpc bool) (http.Handler, error) {
 	u, _ := url.Parse(f.cfg.Upstream)
 	c := firewalltransport.Config{WebSocket: websocket, GRPC: grpc, Upstream: u, Transport: f.transport, MessageTimeout: f.timeout, MaxConcurrent: f.cfg.MaxConcurrent, Context: f.lifetime, Budget: f.buffers, ByteEvents: true}
+	c.WebSocketCompression = websocket
+	c.HTTP3MessageProfile = grpc && firewalltransport.HTTP3Available
 	c.Begin = func(r *http.Request) firewalltransport.InspectFunc {
 		p := f.Policy()
 		client, err := f.clientIP(r)

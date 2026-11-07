@@ -315,7 +315,7 @@ func validateServeOptions(c *cli.Command, cfg waf.Config) error {
 
 func gatewayFlags() []cli.Flag {
 	return []cli.Flag{
-		&cli.StringFlag{Name: "protocol", Required: true, Usage: "modbus | dns | dns-tcp | dns-tls | redis | postgres | smtp | mysql | dnp3"},
+		&cli.StringFlag{Name: "protocol", Required: true, Usage: "modbus | dns | dns-tcp | dns-tls | redis | postgres | smtp | mysql | dnp3 | smb | ftp (SMB2 plaintext serial profile; FTP EPSV bounded transfers)"},
 		&cli.StringFlag{Name: "listen", Required: true}, &cli.StringFlag{Name: "upstream", Required: true}, &cli.StringFlag{Name: "policy", Required: true},
 		&cli.StringSliceFlag{Name: "allow-client", Usage: "source CIDRs; default loopback only"},
 		&cli.StringFlag{Name: "effects-config"}, &cli.StringFlag{Name: "shared-rate-config"},

@@ -119,6 +119,10 @@ func (g *Gateway) serveClient(parent context.Context, c net.Conn, ip string) {
 		g.mysqlClient(ctx, c, ip)
 	case "dnp3":
 		g.dnp3Client(ctx, c, ip)
+	case "smb":
+		g.smbClient(ctx, c, ip)
+	case "ftp":
+		g.ftpClient(ctx, c, ip)
 	}
 }
 

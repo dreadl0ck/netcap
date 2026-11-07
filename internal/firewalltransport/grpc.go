@@ -227,14 +227,14 @@ func grpcRejectionCode(err error) string {
 	return "13"
 }
 
-func (h *Handler) grpc(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) grpc(w http.ResponseWriter, r, source *http.Request) {
 	if !h.cfg.Budget.Acquire(32 << 10) {
 		http.Error(w, "inspection capacity exhausted", 503)
 		return
 	}
 	defer h.cfg.Budget.Release(32 << 10)
-	if r.ProtoMajor != 2 || r.Method != http.MethodPost {
-		http.Error(w, "streaming gRPC requires HTTP/2 POST", 400)
+	if (r.ProtoMajor != 2 && !(r.ProtoMajor == 3 && HTTP3Available && h.cfg.HTTP3MessageProfile)) || r.Method != http.MethodPost {
+		http.Error(w, "streaming gRPC requires HTTP/2 POST or enabled HTTP/3 message profile", 400)
 		return
 	}
 	if r.Header.Get("Content-Encoding") != "" || len(r.Header.Values("Content-Type")) != 1 {
@@ -249,6 +249,9 @@ func (h *Handler) grpc(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 	out := h.outbound(r, ctx)
+	// HTTP/3 ingress carries the same bounded message envelope to an HTTP/2
+	// origin. This profile does not advertise standard gRPC-over-HTTP/3 support.
+	out.Proto, out.ProtoMajor, out.ProtoMinor = "HTTP/2.0", 2, 0
 	out.Header.Del("Content-Length")
 	out.Header.Set("Grpc-Accept-Encoding", "identity,gzip")
 	out.ContentLength = -1
@@ -272,6 +275,10 @@ func (h *Handler) grpc(w http.ResponseWriter, r *http.Request) {
 			e.Attributes["message.index"] = strconv.FormatUint(index, 10)
 			e.Attributes["inspection.kind"] = "message"
 			e.Attributes["grpc.compressed"] = strconv.FormatBool(compressed)
+			e.Attributes["http.message_profile"] = "grpc-h2"
+			if r.ProtoMajor == 3 {
+				e.Attributes["http.message_profile"] = "grpc-envelope-h3-to-h2"
+			}
 			return h.inspect(ctx, e)
 		}
 	}
@@ -281,18 +288,22 @@ func (h *Handler) grpc(w http.ResponseWriter, r *http.Request) {
 	}
 	out.Body = &grpcReader{ReadCloser: requestBody, ctx: ctx, cancel: cancel, timeout: h.cfg.MessageTimeout, encoding: encoding, inspect: inspect("request", r.Header, 0), budget: h.cfg.Budget}
 	out.Body.(*grpcReader).onEOF = func() error {
-		if !validHeaders(r.Trailer) {
+		trailers := source.Trailer
+		if !validHeaders(trailers) {
 			return ErrFraming
 		}
 		e := event(r, "grpc", "request", nil, 0)
-		e.Headers = r.Trailer.Clone()
+		e.Headers = trailers.Clone()
 		e.Attributes["grpc.trailers"] = "true"
 		e.Attributes["inspection.kind"] = "trailers"
 		if err := h.inspect(ctx, e); err != nil {
 			return err
 		}
-		for key := range out.Trailer {
-			out.Trailer[key] = append([]string(nil), r.Trailer.Values(key)...)
+		if out.Trailer == nil {
+			out.Trailer = make(http.Header)
+		}
+		for key, values := range trailers {
+			out.Trailer[key] = append([]string(nil), values...)
 		}
 		headerMu.Lock()
 		if !headersReturned && headerTimer == nil {
@@ -304,7 +315,7 @@ func (h *Handler) grpc(w http.ResponseWriter, r *http.Request) {
 	defer out.Body.Close()
 	stop := context.AfterFunc(ctx, func() { _ = requestBody.Close() })
 	defer stop()
-	// HTTP/2 is duplex by default; HTTP/1 never enters this explicit mode.
+	// HTTP/2 and quic-go's HTTP/3 handler are duplex without EnableFullDuplex.
 	resp, err := h.cfg.Transport.RoundTrip(out)
 	headerMu.Lock()
 	headersReturned = true

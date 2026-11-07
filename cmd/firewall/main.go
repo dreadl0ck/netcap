@@ -39,8 +39,8 @@ func configFlags() []cli.Flag {
 		&cli.StringFlag{Name: "shared-rate-config", Usage: "strict JSON shared rate guard (tokenEnv)"},
 		&cli.StringFlag{Name: "policy-state-config", Usage: "optional authoritative native thresholds/sequences client (tokenEnv)"},
 		&cli.StringFlag{Name: "effects-config", Usage: "strict JSON response action scopes (tokenEnv); explicitly admits policy effects"},
-		&cli.BoolFlag{Name: "websocket"},
-		&cli.BoolFlag{Name: "grpc"},
+		&cli.BoolFlag{Name: "websocket", Usage: "bounded messages; optional permessage-deflate without context takeover"},
+		&cli.BoolFlag{Name: "grpc", Usage: "HTTP/2 message gates; http3 builds also enable HTTP/3 envelope ingress to HTTP/2 origin"},
 		&cli.StringFlag{Name: "http3-listen", Usage: "optional UDP listener; requires http3 build tag and runtime TLS"},
 	}
 }
@@ -52,7 +52,7 @@ func GetCommand() *cli.Command {
 		{Name: "validate", Usage: "validate runtime, policy and enabled inspection engines without listening", Flags: configFlags(), Action: validate},
 		{Name: "mcp", Usage: "stdio MCP for isolated policy authoring and replay (not a running target)", Flags: configFlags(), Action: withSignals(stdio)},
 		{Name: "healthcheck", Flags: []cli.Flag{&cli.StringFlag{Name: "url", Value: "http://127.0.0.1:9090/readyz"}}, Action: healthcheck},
-		{Name: "gateway", Usage: "bounded DNS, Modbus, DNP3, Redis, MySQL, Postgres or SMTP gateway", Flags: gatewayFlags(), Action: withSignals(runGateway)},
+		{Name: "gateway", Usage: "bounded DNS, Modbus, DNP3, Redis, MySQL, Postgres, SMTP, SMB2 or FTP gateway", Flags: gatewayFlags(), Action: withSignals(runGateway)},
 		{Name: "network", Usage: "scoped Linux netns NFQUEUE firewall", Flags: networkFlags(), Action: withSignals(runNetwork)},
 		{Name: "redirect", Usage: "place an already-running TCP protocol gateway on a scoped routed service path", Flags: redirectFlags(), Action: withSignals(runRedirect)},
 		{Name: "fleet-controller", Usage: "authoritative fleet controller", Flags: serviceFlags(), Action: withSignals(runFleetController)},
@@ -69,7 +69,7 @@ func GetCommand() *cli.Command {
 			&cli.StringFlag{Name: "tls-cert"}, &cli.StringFlag{Name: "tls-key"},
 		}, Action: withSignals(runEnforcer)},
 		{Name: "version", Action: func(_ context.Context, c *cli.Command) error {
-			return json.NewEncoder(c.Root().Writer).Encode(map[string]any{"version": "netcap-firewall/v1", "policy": "netcap-policy/v1", "protocols": []string{"http", "modbus", "dns", "dns-tcp", "dns-tls", "redis", "postgres", "smtp", "mysql", "dnp3", "network", "websocket", "grpc"}, "http3": firewalltransport.HTTP3Available})
+			return json.NewEncoder(c.Root().Writer).Encode(map[string]any{"version": "netcap-firewall/v1", "policy": "netcap-policy/v1", "protocols": []string{"http", "modbus", "dns", "dns-tcp", "dns-tls", "redis", "postgres", "smtp", "mysql", "dnp3", "smb", "ftp", "network", "websocket", "grpc"}, "http3": firewalltransport.HTTP3Available, "http3_message_profile": firewalltransport.HTTP3Available, "websocket_compression": "permessage-deflate; no context takeover", "smb_profile": "plaintext SMB2/3 serial; signed bytes relayed unverified; transforms rejected", "ftp_profile": "EPSV stream; bounded complete transfers; active/PASV/FTPS upgrades rejected"})
 		}},
 	}}
 }
