@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,6 +24,10 @@ type descriptor struct {
 
 var descriptors = []descriptor{
 	{"approval", []string{"scope", "approval"}, []string{"scope", "approval"}},
+	{"audit_ack", []string{"scope", "after", "expected_plan"}, []string{"after", "expected_plan"}},
+	{"retention_preview", []string{"scope", "revisions", "jobs", "receipts"}, nil},
+	{"prune", []string{"scope", "revisions", "jobs", "receipts", "expected_plan"}, []string{"expected_plan"}},
+	{"audit_export", []string{"scope", "after", "limit"}, nil},
 	{"capabilities", []string{"scope"}, nil},
 	{"status", []string{"scope"}, nil},
 	{"audit", []string{"scope"}, nil},
@@ -117,6 +122,14 @@ func (s *Service) Handler() http.Handler {
 			firewallstate.WriteError(w, firewallstate.Fail(403, "browser origins refused"))
 			return
 		}
+		if r.URL.Path == "/metrics" {
+			if r.Method != http.MethodGet {
+				w.WriteHeader(405)
+				return
+			}
+			s.Operations.Handler().ServeHTTP(w, r)
+			return
+		}
 		select {
 		case s.httpSlots <- struct{}{}:
 			defer func() { <-s.httpSlots }()
@@ -183,12 +196,27 @@ func (s *Service) Handler() http.Handler {
 				return
 			}
 			var raw []byte
-			if op == "status" || op == "audit" || op == "capabilities" {
+			if op == "status" || op == "audit" || op == "capabilities" || op == "audit_export" {
 				if r.Method != "GET" {
 					w.WriteHeader(405)
 					return
 				}
 				raw, _ = json.Marshal(map[string]any{"scope": Scope{Tenant: r.URL.Query().Get("tenant"), App: r.URL.Query().Get("app")}})
+				if op == "audit_export" {
+					after, e1 := strconv.ParseInt(r.URL.Query().Get("after"), 10, 64)
+					if r.URL.Query().Get("after") == "" {
+						e1 = nil
+					}
+					limit, e2 := strconv.Atoi(r.URL.Query().Get("limit"))
+					if r.URL.Query().Get("limit") == "" {
+						e2 = nil
+					}
+					if e1 != nil || e2 != nil {
+						firewallstate.WriteError(w, firewallstate.Fail(400, "invalid pagination"))
+						return
+					}
+					raw, _ = json.Marshal(map[string]any{"scope": Scope{Tenant: r.URL.Query().Get("tenant"), App: r.URL.Query().Get("app")}, "after": after, "limit": limit})
+				}
 			} else {
 				if r.Method != "POST" {
 					w.WriteHeader(405)
@@ -208,6 +236,21 @@ func (s *Service) Handler() http.Handler {
 			firewallstate.WriteError(w, err)
 			return
 		}
+		if page, ok := out.(AuditPage); ok {
+			w.Header().Set("Cache-Control", "private, no-store")
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			w.Header().Set("Content-Type", "application/x-ndjson")
+			w.Header().Set("X-Audit-Next", strconv.FormatInt(page.Next, 10))
+			w.Header().Set("X-Audit-More", strconv.FormatBool(page.More))
+			w.Header().Set("X-Audit-Truncated", strconv.FormatBool(page.Truncated))
+			enc := json.NewEncoder(w)
+			for _, a := range page.Records {
+				if enc.Encode(a) != nil {
+					return
+				}
+			}
+			return
+		}
 		firewallstate.WriteJSON(w, 200, out)
 	})
 }
@@ -221,6 +264,18 @@ func schemaFor(d descriptor) mcp.ToolInputSchema {
 			props[f] = map[string]any{"type": "string", "maxLength": 8192}
 		case "approval":
 			props[f] = map[string]any{"type": "object", "properties": map[string]any{"actor": id, "action": map[string]any{"type": "string"}, "scope": map[string]any{"type": "object"}, "digest": map[string]any{"type": "string"}}, "additionalProperties": false}
+		case "after":
+			props[f] = map[string]any{"type": "integer", "minimum": 0, "maximum": int64(1<<53 - 1)}
+		case "limit":
+			props[f] = map[string]any{"type": "integer", "minimum": 0, "maximum": 256}
+		case "revisions":
+			props[f] = map[string]any{"type": "array", "items": map[string]any{"type": "string", "pattern": "^[0-9a-f]{64}$"}, "maxItems": MaxRevisions}
+		case "receipts":
+			props[f] = map[string]any{"type": "array", "items": id, "maxItems": MaxArchivedJobs}
+		case "jobs":
+			props[f] = map[string]any{"type": "array", "items": id, "maxItems": MaxJobs}
+		case "expected_plan":
+			props[f] = map[string]any{"type": "string", "pattern": "^[0-9a-f]{64}$"}
 		case "scope":
 			props[f] = map[string]any{"type": "object", "properties": map[string]any{"tenant": id, "app": id}, "required": []string{"tenant", "app"}, "additionalProperties": false}
 		case "bundle":
@@ -264,7 +319,7 @@ func (s *Service) newMCP() *server.MCPServer {
 			continue
 		}
 		d, _ = descriptorFor(d.op)
-		read := d.op == "capabilities" || d.op == "audit" || s.cfg.Auth != nil && d.op == "status"
+		read := d.op == "capabilities" || d.op == "audit" || d.op == "audit_export" || d.op == "retention_preview" || s.cfg.Auth != nil && d.op == "status"
 		tool := mcp.Tool{Name: "fleet_" + d.op, Description: "Scoped fleet " + d.op + ". Per-target CAS; one fenced controller; no globally atomic activation.", InputSchema: schemaFor(d), Annotations: mcp.ToolAnnotation{ReadOnlyHint: &read}}
 		srv.AddTool(tool, func(ctx context.Context, call mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			raw, err := json.Marshal(call.Params.Arguments)

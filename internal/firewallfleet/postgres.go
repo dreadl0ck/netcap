@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/firewallstate"
 )
@@ -33,5 +34,19 @@ func fleetFingerprint(cfg Config) string {
 		AllowEffects, RollbackOnFailure bool
 		Limits                          [7]int
 	}{"fleet", 1, firewallstate.Digest(cfg.Token), identities, targets, cfg.AllowEffects, cfg.RollbackOnFailure, [7]int{MaxTargets, MaxRevisions, MaxJobs, MaxAudit, MaxArtifactBytes, MaxRequestBytes, MaxSnapshotBytes}})
+	if cfg.AuditRequired || cfg.AuditRetention != 30*24*time.Hour {
+		raw, _ = json.Marshal(struct {
+			Base      string
+			Required  bool
+			Retention int64
+		}{firewallstate.Digest(string(raw)), cfg.AuditRequired, int64(cfg.AuditRetention)})
+	}
+	if cfg.AuditMaxRecords != MaxAudit || cfg.JobReceiptRetention != 30*24*time.Hour {
+		raw, _ = json.Marshal(struct {
+			Base                string
+			AuditMaxRecords     int
+			JobReceiptRetention int64
+		}{firewallstate.Digest(string(raw)), cfg.AuditMaxRecords, int64(cfg.JobReceiptRetention)})
+	}
 	return firewallstate.Digest(string(raw))
 }

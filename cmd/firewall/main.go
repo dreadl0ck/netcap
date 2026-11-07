@@ -52,6 +52,7 @@ func configFlags() []cli.Flag {
 // GetCommand also powers the thin executable without capture or DPI dependencies.
 func GetCommand() *cli.Command {
 	return &cli.Command{Name: "firewall", Usage: "protocol-aware application firewall", Commands: []*cli.Command{
+		operationsCommand(),
 		{Name: "serve", Usage: "serve the enforcing HTTP reverse proxy", Flags: configFlags(), Action: withSignals(serve)},
 		{Name: "validate", Usage: "validate runtime, policy and enabled inspection engines without listening", Flags: configFlags(), Action: validate},
 		{Name: "mcp", Usage: "stdio MCP for isolated policy authoring and replay (not a running target)", Flags: configFlags(), Action: withSignals(stdio)},
@@ -207,6 +208,7 @@ func serve(ctx context.Context, c *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	runtime.attachOperations(f.Operations)
 	defer f.Close()
 	if err = f.SetEvaluator(func(ctx context.Context, p *policy.Compiled, e policy.Event) (policy.Decision, error) {
 		return runtime.evaluateContext(ctx, p, e)
@@ -423,6 +425,12 @@ func runGateway(ctx context.Context, c *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	runtime.attachOperations(g.Operations)
+	stop, err := startOperations(c.String("operations-listen"), g.Operations)
+	if err != nil {
+		return err
+	}
+	defer stop()
 	return runtime.runWithAgent(ctx, c, g.Run)
 }
 

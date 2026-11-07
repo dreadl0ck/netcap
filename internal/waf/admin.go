@@ -3,7 +3,6 @@ package waf
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"sync/atomic"
@@ -56,8 +55,12 @@ func (f *Firewall) AdminHandler() http.Handler {
 		_, _ = io.WriteString(w, "ready\n")
 	})
 	m.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
-		_, _ = fmt.Fprintf(w, "waf_requests_total %d\nwaf_rejected_total %d\nwaf_denied_total %d\nwaf_would_deny_total %d\nwaf_evaluation_errors_total %d\nwaf_audit_dropped_total %d\nwaf_active %d\nwaf_response_body_inspection %d\n", f.stats.requests.Load(), f.stats.rejected.Load(), f.stats.denied.Load(), f.stats.wouldDeny.Load(), f.stats.errors.Load(), f.stats.auditDropped.Load(), len(f.slots), boolInt(f.cfg.InspectResponse))
+		f.ready()
+		f.Operations.Handler().ServeHTTP(w, r)
+	})
+	m.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(f.Operations.Status())
 	})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { f.startServing(); m.ServeHTTP(w, r) })
 }

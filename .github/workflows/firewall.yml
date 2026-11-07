@@ -1,10 +1,10 @@
 name: Application firewall
 on:
   pull_request:
-    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policystate/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/networkfirewall/**', 'internal/transparentfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
+    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policystate/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/networkfirewall/**', 'internal/transparentfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'internal/runtimeobs/**', 'configs/firewall-operations-*', 'scripts/test-firewall-operations.sh', 'Makefile', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
   push:
     branches: [master, main]
-    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policystate/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/networkfirewall/**', 'internal/transparentfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
+    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policystate/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/networkfirewall/**', 'internal/transparentfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'internal/runtimeobs/**', 'configs/firewall-operations-*', 'scripts/test-firewall-operations.sh', 'Makefile', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -56,6 +56,12 @@ jobs:
           go test -race $packages
           go test -race -tags coraza $packages
           go test -race -tags coraza,http3 ./cmd/netcap-firewall ./cmd/firewall ./internal/firewalltransport ./internal/waf
+      - name: Prometheus rules and percentile fixtures
+        run: make test-firewall-operations
+      - name: Operations metric name and cardinality contract
+        env:
+          CGO_ENABLED: '1'
+        run: go test -race ./internal/runtimeobs
       - name: Validate Helm deployment contract
         run: |
           helm lint charts/netcap-firewall --strict --set upstream=http://backend:8080

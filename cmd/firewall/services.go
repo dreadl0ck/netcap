@@ -20,22 +20,27 @@ import (
 )
 
 type principalFile struct {
+	Role     string              `json:"role,omitempty"`
 	ID       string              `json:"id"`
 	TokenEnv string              `json:"tokenEnv"`
 	Scope    firewallstate.Scope `json:"scope"`
 }
 type serviceFile struct {
-	AuthConfig        string          `json:"authConfig"`
-	StateDir          string          `json:"stateDir"`
-	TokenEnv          string          `json:"tokenEnv"`
-	Identities        []principalFile `json:"identities"`
-	Targets           []principalFile `json:"targets"`
-	Principals        []principalFile `json:"principals"`
-	MaxKeys           int             `json:"maxKeys"`
-	AllowEffects      bool            `json:"allowEffects"`
-	RollbackOnFailure bool            `json:"rollbackOnFailure"`
-	DatabaseURLEnv    string          `json:"databaseURLEnv"`
-	DatabaseNamespace string          `json:"databaseNamespace"`
+	AuthConfig          string          `json:"authConfig"`
+	AuditRequired       bool            `json:"auditRequired,omitempty"`
+	AuditRetention      string          `json:"auditRetention,omitempty"`
+	AuditMaxRecords     int             `json:"auditMaxRecords,omitempty"`
+	JobReceiptRetention string          `json:"jobReceiptRetention,omitempty"`
+	StateDir            string          `json:"stateDir"`
+	TokenEnv            string          `json:"tokenEnv"`
+	Identities          []principalFile `json:"identities"`
+	Targets             []principalFile `json:"targets"`
+	Principals          []principalFile `json:"principals"`
+	MaxKeys             int             `json:"maxKeys"`
+	AllowEffects        bool            `json:"allowEffects"`
+	RollbackOnFailure   bool            `json:"rollbackOnFailure"`
+	DatabaseURLEnv      string          `json:"databaseURLEnv"`
+	DatabaseNamespace   string          `json:"databaseNamespace"`
 }
 
 func (f serviceFile) database() (string, error) {
@@ -82,6 +87,20 @@ func fleetConfig(path string) (firewallfleet.Config, error) {
 	cfg.StateDir = f.StateDir
 	cfg.AllowEffects = f.AllowEffects
 	cfg.RollbackOnFailure = f.RollbackOnFailure
+	cfg.AuditRequired = f.AuditRequired
+	cfg.AuditMaxRecords = f.AuditMaxRecords
+	if f.JobReceiptRetention != "" {
+		cfg.JobReceiptRetention, err = time.ParseDuration(f.JobReceiptRetention)
+		if err != nil {
+			return cfg, errors.New("invalid jobReceiptRetention duration")
+		}
+	}
+	if f.AuditRetention != "" {
+		cfg.AuditRetention, err = time.ParseDuration(f.AuditRetention)
+		if err != nil {
+			return cfg, errors.New("invalid auditRetention duration")
+		}
+	}
 	if f.TokenEnv != "" {
 		var err error
 		cfg.Token, err = envToken(f.TokenEnv)
@@ -94,9 +113,12 @@ func fleetConfig(path string) (firewallfleet.Config, error) {
 		if err != nil {
 			return cfg, err
 		}
-		cfg.Identities = append(cfg.Identities, firewallfleet.Identity{ID: p.ID, Token: token, Scope: p.Scope})
+		cfg.Identities = append(cfg.Identities, firewallfleet.Identity{ID: p.ID, Token: token, Scope: p.Scope, Role: p.Role})
 	}
 	for _, p := range f.Targets {
+		if p.Role != "" {
+			return cfg, errors.New("target enrollment does not accept administrative roles")
+		}
 		if cfg.Auth != nil && p.TokenEnv == "" {
 			cfg.Targets = append(cfg.Targets, firewallfleet.Enrollment{ID: p.ID, Scope: p.Scope})
 			continue
@@ -122,7 +144,7 @@ func stateConfig(path string) (firewallstate.Config, error) {
 		return cfg, err
 	}
 	cfg.DatabaseNamespace = f.DatabaseNamespace
-	if f.TokenEnv != "" || len(f.Identities) > 0 || len(f.Targets) > 0 || f.AllowEffects || f.RollbackOnFailure {
+	if f.TokenEnv != "" || len(f.Identities) > 0 || len(f.Targets) > 0 || f.AllowEffects || f.RollbackOnFailure || f.AuditRequired || f.AuditRetention != "" || f.AuditMaxRecords != 0 || f.JobReceiptRetention != "" {
 		return cfg, errors.New("fleet options are invalid for sharedstate")
 	}
 	cfg.StateDir, cfg.MaxKeys = f.StateDir, f.MaxKeys
