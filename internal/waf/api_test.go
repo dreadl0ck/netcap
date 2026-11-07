@@ -59,6 +59,14 @@ func apiConfig(t *testing.T, c Config, artifacts map[string][]byte, d apipolicy.
 const apiContract = `{"openapi":"3.1.0","info":{"title":"test","version":"1"},"paths":{"/items":{"post":{"parameters":[{"in":"header","name":"X-Required","required":true,"schema":{"type":"string","minLength":1}},{"in":"query","name":"limit","required":true,"schema":{"type":"integer","minimum":1,"maximum":10}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["text","n"],"additionalProperties":false,"properties":{"text":{"type":"string"},"n":{"type":"integer","minimum":1,"maximum":10}}}}}},"responses":{"200":{"description":"OK","content":{"application/json":{"schema":{"type":"object","required":["ok"],"properties":{"ok":{"const":true}}}}}}}}}}}`
 
 func TestAPIOriginBoundaryAndResponseOptIn(t *testing.T) {
+	apiOriginBoundary(t, false)
+}
+
+func TestRoutedAPIOriginBoundaryAndResponseOptIn(t *testing.T) {
+	apiOriginBoundary(t, true)
+}
+
+func apiOriginBoundary(t *testing.T, routed bool) {
 	var calls atomic.Int64
 	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
@@ -68,8 +76,8 @@ func TestAPIOriginBoundaryAndResponseOptIn(t *testing.T) {
 	}))
 	defer origin.Close()
 	c := apiConfig(t, config(origin.URL), map[string][]byte{"openapi.json": []byte(apiContract)}, apipolicy.Declaration{OpenAPI: "openapi.json", Passthrough: []apipolicy.Binding{{Method: "GET", Path: "/health"}}})
-	f := firewall(t, c, compiled(t, "enforce", "request", ""))
-	proxy := httptest.NewServer(f)
+	_, _, handler := composedFirewall(t, c, compiled(t, "enforce", "request", ""), routed)
+	proxy := httptest.NewServer(handler)
 	defer proxy.Close()
 	request := func(path, body string, required bool) int {
 		t.Helper()
@@ -148,8 +156,8 @@ func TestAPIOriginBoundaryAndResponseOptIn(t *testing.T) {
 		t.Fatal("late invalid field contacted origin")
 	}
 	c.APIValidateResponse = true
-	g := firewall(t, c, compiled(t, "enforce", "request", ""))
-	server := httptest.NewServer(g)
+	_, _, responseHandler := composedFirewall(t, c, compiled(t, "enforce", "request", ""), routed)
+	server := httptest.NewServer(responseHandler)
 	defer server.Close()
 	req, _ = http.NewRequest("POST", server.URL+"/items?limit=2", strings.NewReader(`{"text":"x","n":2}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -188,6 +196,14 @@ func grpcArtifact(t *testing.T) ([]byte, protoreflect.MessageDescriptor) {
 }
 
 func TestAPIGRPCRealH2ProtobufLateFragmentAndIsolation(t *testing.T) {
+	apiGRPCBoundary(t, false)
+}
+
+func TestRoutedAPIGRPCRealH2ProtobufLateFragmentAndIsolation(t *testing.T) {
+	apiGRPCBoundary(t, true)
+}
+
+func apiGRPCBoundary(t *testing.T, routed bool) {
 	artifact, md := grpcArtifact(t)
 	message := func(amount int64) []byte {
 		t.Helper()
@@ -248,8 +264,8 @@ func TestAPIGRPCRealH2ProtobufLateFragmentAndIsolation(t *testing.T) {
 	c := apiConfig(t, config(origin.URL), map[string][]byte{"api.pb": artifact}, apipolicy.Declaration{Descriptors: "api.pb", GRPC: map[string]apipolicy.MethodPolicy{"/api.Service/Exchange": {Request: fields, Response: fields}}})
 	c.APIValidateResponse = true
 	// The same descriptor binds both directions, with separate field policies.
-	f := firewall(t, c, compiled(t, "enforce", "request", ""))
-	f.transport.TLSClientConfig = origin.Client().Transport.(*http.Transport).TLSClientConfig.Clone()
+	f, bound, routedHandler := composedFirewall(t, c, compiled(t, "enforce", "request", ""), routed)
+	bound.transport.TLSClientConfig = origin.Client().Transport.(*http.Transport).TLSClientConfig.Clone()
 	h, err := f.MessageHandler(false, true)
 	if err != nil {
 		t.Fatal(err)
@@ -260,7 +276,11 @@ func TestAPIGRPCRealH2ProtobufLateFragmentAndIsolation(t *testing.T) {
 		peersMu.Lock()
 		peers[r.RemoteAddr] = true
 		peersMu.Unlock()
-		h.ServeHTTP(w, r)
+		if routed {
+			routedHandler.ServeHTTP(w, r)
+		} else {
+			h.ServeHTTP(w, r)
+		}
 	}))
 	proxy.EnableHTTP2 = true
 	proxy.StartTLS()

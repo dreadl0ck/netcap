@@ -27,6 +27,8 @@ import (
 type Firewall struct {
 	parent      *Firewall
 	router      *routeRouter
+	messageWS   bool
+	messageGRPC bool
 	routeMu     sync.Mutex
 	retired     []*routeTable
 	listenerTLS atomic.Pointer[tls.Config]

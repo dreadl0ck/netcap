@@ -3,6 +3,7 @@ package waf
 import (
 	"bufio"
 	"bytes"
+	"compress/flate"
 	"context"
 	"encoding/binary"
 	"io"
@@ -180,6 +181,14 @@ func TestMessageHandlerHonorsAllowedHosts(t *testing.T) {
 }
 
 func TestMessageEvaluatorWebSocketSnapshotAndBothDirections(t *testing.T) {
+	websocketBoundary(t, false)
+}
+
+func TestRoutedCompressedWebSocketSnapshotAndBothDirections(t *testing.T) {
+	websocketBoundary(t, true)
+}
+
+func websocketBoundary(t *testing.T, routed bool) {
 	originDone := make(chan struct{})
 	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer close(originDone)
@@ -190,7 +199,11 @@ func TestMessageEvaluatorWebSocketSnapshotAndBothDirections(t *testing.T) {
 		}
 		defer conn.Close()
 		_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
-		_, _ = rw.WriteString("HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\r\n")
+		extension := ""
+		if routed {
+			extension = "Sec-WebSocket-Extensions: permessage-deflate; client_no_context_takeover; server_no_context_takeover\r\n"
+		}
+		_, _ = rw.WriteString("HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n" + extension + "\r\n")
 		_ = rw.Flush()
 		_, _ = conn.Write([]byte{129, 2, 'h', 'i'})
 		var request [8]byte
@@ -205,14 +218,15 @@ func TestMessageEvaluatorWebSocketSnapshotAndBothDirections(t *testing.T) {
 	}))
 	defer origin.Close()
 	p := compiled(t, "enforce", "response", `Body contains "secret"`)
-	f := firewall(t, config(origin.URL), p)
+	f, bound, routeHandler := composedFirewall(t, config(origin.URL), p, routed)
+	p = bound.Policy()
 	var requestMessages, responseMessages atomic.Int64
 	if err := f.SetEvaluator(func(ctx context.Context, snapshot *policy.Compiled, e policy.Event) (policy.Decision, error) {
 		if snapshot != p || e.Protocol != "websocket" {
 			t.Errorf("WebSocket evaluator lost snapshot/protocol: %p %s", snapshot, e.Protocol)
 		}
 		if e.Phase == "request" && e.Attributes["inspection.kind"] == "headers" {
-			f.SetPolicy(compiled(t, "enforce", "request", "true"))
+			bound.SetPolicy(compiled(t, "enforce", "request", "true"))
 		}
 		if e.Attributes["inspection.kind"] == "message" {
 			if e.Phase == "request" {
@@ -232,6 +246,9 @@ func TestMessageEvaluatorWebSocketSnapshotAndBothDirections(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if routed {
+		h = routeHandler
+	}
 	proxy := httptest.NewServer(h)
 	defer proxy.Close()
 	conn, err := net.Dial("tcp", strings.TrimPrefix(proxy.URL, "http://"))
@@ -240,7 +257,11 @@ func TestMessageEvaluatorWebSocketSnapshotAndBothDirections(t *testing.T) {
 	}
 	defer conn.Close()
 	_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
-	_, _ = io.WriteString(conn, "GET /chat HTTP/1.1\r\nHost: route.example\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n")
+	extension := ""
+	if routed {
+		extension = "Sec-WebSocket-Extensions: permessage-deflate; client_no_context_takeover; server_no_context_takeover\r\n"
+	}
+	_, _ = io.WriteString(conn, "GET /chat HTTP/1.1\r\nHost: route.example\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+extension+"\r\n")
 	reader := bufio.NewReader(conn)
 	resp, err := http.ReadResponse(reader, nil)
 	if err != nil || resp.StatusCode != 101 {
@@ -250,7 +271,17 @@ func TestMessageEvaluatorWebSocketSnapshotAndBothDirections(t *testing.T) {
 	if _, err := io.ReadFull(reader, safe[:]); err != nil || !bytes.Equal(safe[:], []byte{129, 2, 'h', 'i'}) {
 		t.Fatalf("response phase hook: %x %v", safe, err)
 	}
-	_, _ = conn.Write([]byte{129, 130, 0, 0, 0, 0, 'o', 'k'})
+	if routed {
+		var compressed bytes.Buffer
+		z, _ := flate.NewWriter(&compressed, flate.DefaultCompression)
+		_, _ = z.Write([]byte("ok"))
+		_ = z.Flush()
+		payload := append([]byte(nil), compressed.Bytes()[:compressed.Len()-4]...)
+		_ = z.Close()
+		_, _ = conn.Write(append([]byte{193, 128 | byte(len(payload)), 0, 0, 0, 0}, payload...))
+	} else {
+		_, _ = conn.Write([]byte{129, 130, 0, 0, 0, 0, 'o', 'k'})
+	}
 	if b, err := reader.ReadByte(); err == nil {
 		t.Fatalf("native-denied WebSocket header leaked: %x", b)
 	}

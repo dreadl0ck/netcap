@@ -12,6 +12,7 @@ image:
 imagePullSecrets: []
 upstream: ''
 routes: []
+routeID: ''
 runtime:
   maxBodyBytes: 67108864
   maxResponseBytes: 67108864

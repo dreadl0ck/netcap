@@ -103,6 +103,19 @@ files with `netcap-firewall validate`; Helm does not compile expressions.
 
 ## Kubernetes
 
+Routed runtime composition is implemented in `internal/waf/routes.go` and
+`internal/waf/messages.go`:
+
+| Binding | Contract |
+| --- | --- |
+| HTTP, WS compression, gRPC, HTTP/3 | Each route uses the same immutable origin, transport and policy; route reload rebuilds all enabled adapters together. HTTP/3 gRPC is a bounded envelope-to-HTTP/2-origin profile, not standard gRPC-over-HTTP/3. |
+| API validation | Each route declares `descriptorPath`, `descriptorSHA256` and optional `apiValidateResponse`; only listener `bootstrapDir` is inherited. No global or neighboring descriptor fallback. WS requires explicit API passthrough. |
+| Managed console/MCP | `--route-id=<bootstrap ID>` selects one `RouteTarget`; policy bundle ID is checked on stage, activation and recovery. Helm uses `routeID`. Global activation cannot update tenant routes. |
+| TLS reload | `SIGHUP` stages listener/client identity for all bindings before publication. Managed mode leaves policy ownership with the control service; file mode additionally reloads route policy files. Existing TLS connections retain handshake identity. |
+| CRS exclusions | `crsProfile.exclusions` supports exact `path`/`method` with existing owner/reason/expiry. `parameter` uses Coraza ARGS names, including `json.text`. Legacy `crsTargetExclusions` enters the same registry, mapping `argument` to `parameter`, preserving exact path/method and no-expiry semantics. API, native and structural gates remain active. |
+| Unsupported routed CLI adapters | `fleet-agent-config`, `shared-rate-config`, `policy-state-config` and `effects-config` fail startup because their bootstrap schemas have no per-route binding. |
+| Helm API artifacts | `values.schema.json` does not expose descriptor/artifact mounts; use a separately mounted trusted CLI bootstrap configuration for API contracts. The chart supports routed WS/gRPC/H3 and explicitly scoped managed mode. |
+
 `charts/netcap-firewall` requires Kubernetes 1.25+ and an explicit `upstream`.
 Defaults are a two-replica file-mode Deployment, immutable content-addressed
 ConfigMap and ClusterIP Service. There are no CRDs, RBAC grants or mounted service

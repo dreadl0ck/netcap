@@ -87,7 +87,9 @@ class DeploymentContract(unittest.TestCase):
         route = {'id': 'a', 'priority': 10, 'hosts': ['a.example'], 'methods': ['GET'],
                  'pathPrefix': '/api', 'upstream': 'http://a:8080', 'policy': policy,
                  'maxBodyBytes': 1024, 'maxResponseBytes': 1024, 'maxConcurrent': 8,
-                 'crsProfile': {'paranoiaLevel': 2, 'inboundThreshold': 5, 'outboundThreshold': 4}}
+                 'crsProfile': {'paranoiaLevel': 2, 'inboundThreshold': 5, 'outboundThreshold': 4,
+                                'exclusions': [{'ruleID': 942100, 'parameter': 'password', 'path': '/api/account', 'method': 'POST',
+                                                'owner': 'fixture', 'reason': 'qualification password', 'expiresAt': '2026-11-08T00:00:00Z'}]}}
         with tempfile.TemporaryDirectory() as directory:
             values = pathlib.Path(directory) / 'values.yaml'
             values.write_text(yaml.safe_dump({'routes': [route]}))
@@ -98,8 +100,18 @@ class DeploymentContract(unittest.TestCase):
             self.assertEqual(installed['policyFile'], '/etc/netcap-firewall/route-a.yaml')
             self.assertEqual(installed['policyID'], 'tenant-a')
             self.assertNotIn('policy', installed)
+            self.assertEqual(installed['crsProfile']['exclusions'][0]['path'], '/api/account')
             self.assertEqual(yaml.safe_load(cm['data']['route-a.yaml']), policy)
-            render('-f', str(values), '--set', 'websocket=true', success=False)
+            composed = render('-f', str(values), '--set', 'websocket=true', '--set', 'grpc=true', '--set', 'http3.enabled=true', '--set', 'tls.secretName=listener')
+            args = next(d for d in composed if d['kind'] == 'Deployment')['spec']['template']['spec']['containers'][0]['args']
+            self.assertIn('--websocket', args)
+            self.assertIn('--grpc', args)
+            managed = ['--set', 'mode=managed', '--set', 'replicaCount=1', '--set', 'adminTokenSecret.name=token', '--set', 'adminTLS.secretName=admin']
+            render('-f', str(values), *managed, success=False)
+            docs = render('-f', str(values), *managed, '--set', 'routeID=a')
+            args = next(d for d in docs if d['kind'] == 'Deployment')['spec']['template']['spec']['containers'][0]['args']
+            self.assertIn('--route-id=a', args)
+            render('-f', str(values), *managed, '--set', 'routeID=foreign', success=False)
             route['crsProfile']['paranoiaLevel'] = 5
             values.write_text(yaml.safe_dump({'routes': [route]}))
             render('-f', str(values), success=False)

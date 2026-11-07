@@ -33,6 +33,14 @@ func TestRouteRuntimeValidationAndRelativeCapabilities(t *testing.T) {
 	if _, err := runRoot(t.Context(), append(args, "--managed")...); err == nil {
 		t.Fatal("global managed target accepted for routes")
 	}
+	for _, extra := range [][]string{{"--managed", "--route-id", "a"}, {"--websocket"}} {
+		if out, err := runRoot(t.Context(), append(args, extra...)...); err != nil {
+			t.Fatalf("composed route runtime %v: %v %s", extra, err, out)
+		}
+	}
+	if _, err := runRoot(t.Context(), append(args, "--managed", "--route-id", "unknown")...); err == nil {
+		t.Fatal("unknown route management scope accepted")
+	}
 	write("a.yaml", []byte("version: [invalid"))
 	if _, err := runRoot(t.Context(), args...); err == nil {
 		t.Fatal("invalid sibling policy passed runtime validation")

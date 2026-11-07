@@ -16,7 +16,23 @@ import (
 // Each connection/RPC pins one policy revision and is canceled by Firewall.Close.
 func (f *Firewall) MessageHandler(websocket, grpc bool) (http.Handler, error) {
 	if f.router != nil {
-		return nil, errors.New("message adapters require a single-origin binding")
+		f.bootstrap.Lock()
+		defer f.bootstrap.Unlock()
+		if f.started {
+			return nil, errors.New("message adapters must be bound before serving")
+		}
+		f.routeMu.Lock()
+		defer f.routeMu.Unlock()
+		for i := range f.router.current.Load().bindings {
+			b := &f.router.current.Load().bindings[i]
+			h, err := b.firewall.MessageHandler(websocket, grpc)
+			if err != nil {
+				return nil, err
+			}
+			b.handler = h
+		}
+		f.messageWS, f.messageGRPC = websocket, grpc
+		return f, nil
 	}
 	u, _ := url.Parse(f.cfg.Upstream)
 	c := firewalltransport.Config{WebSocket: websocket, GRPC: grpc, Upstream: u, Transport: f.transport, MessageTimeout: f.timeout, MaxConcurrent: f.cfg.MaxConcurrent, Context: f.lifetime, Budget: f.buffers, ByteEvents: true}

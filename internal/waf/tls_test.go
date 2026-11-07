@@ -8,7 +8,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"fmt"
 	"io"
 	"math/big"
 	"net/http"
@@ -26,8 +25,9 @@ type tlsFixture struct {
 }
 
 func TestUpstreamClientCertificateRotation(t *testing.T) {
-	for _, routed := range []bool{false, true} {
-		t.Run(fmt.Sprint("routed=", routed), func(t *testing.T) {
+	for _, mode := range []string{"single", "route-files", "route-tls"} {
+		t.Run(mode, func(t *testing.T) {
+			routed := mode != "single"
 			server, client, next := testTLS(t, "origin.local"), testTLS(t, "client.local"), testTLS(t, "next.local")
 			trust := client.roots.Clone()
 			b, _ := os.ReadFile(next.cert)
@@ -48,7 +48,7 @@ func TestUpstreamClientCertificateRotation(t *testing.T) {
 			}
 			f := firewall(t, c, compiled(t, "enforce", "request", ""))
 			reload := f.ReloadTLS
-			if routed {
+			if mode == "route-files" {
 				reload = f.ReloadRoutePolicies
 			}
 			check := func(want string) {
@@ -150,11 +150,19 @@ func TestUpstreamMTLSAndHostnameVerification(t *testing.T) {
 }
 
 func TestListenerMTLSReloadFailurePreservesIdentityAndPolicy(t *testing.T) {
+	listenerReloadBoundary(t, false)
+}
+
+func TestRoutedListenerMTLSReloadFailurePreservesIdentityAndPolicy(t *testing.T) {
+	listenerReloadBoundary(t, true)
+}
+
+func listenerReloadBoundary(t *testing.T, routed bool) {
 	server, client, replacement := testTLS(t, "waf.local"), testTLS(t, "client.local"), testTLS(t, "waf.local")
 	c := config("http://unused.invalid")
 	c.TLSCert, c.TLSKey, c.ClientCA = server.cert, server.key, client.cert
-	f := firewall(t, c, compiled(t, "enforce", "request", `Method == "POST"`))
-	proxy := httptest.NewUnstartedServer(f)
+	f, bound, handler := composedFirewall(t, c, compiled(t, "enforce", "request", `Method == "POST"`), routed)
+	proxy := httptest.NewUnstartedServer(handler)
 	proxy.TLS = f.TLSConfig()
 	proxy.StartTLS()
 	defer proxy.Close()
@@ -179,7 +187,7 @@ func TestListenerMTLSReloadFailurePreservesIdentityAndPolicy(t *testing.T) {
 	if _, _, err := send(false); err == nil {
 		t.Fatal("unauthenticated listener accepted")
 	}
-	before := f.Policy()
+	before := bound.Policy()
 	certBytes, _ := os.ReadFile(replacement.cert)
 	keyBytes, _ := os.ReadFile(replacement.key)
 	if err := os.WriteFile(server.cert, certBytes, 0600); err != nil {
@@ -200,7 +208,7 @@ func TestListenerMTLSReloadFailurePreservesIdentityAndPolicy(t *testing.T) {
 	if status, der, err := send(true); err != nil || status != 403 || string(der) != string(replacement.pair.Certificate[0]) {
 		t.Fatalf("reload: status=%d err=%v", status, err)
 	}
-	if f.Policy() != before {
+	if bound.Policy() != before {
 		t.Fatal("TLS reload disabled policy")
 	}
 	untrusted := testTLS(t, "other-client.local")

@@ -20,27 +20,31 @@ import (
 // RouteConfig is an operator bootstrap capability. PolicyFile is never supplied by a request.
 // Higher priorities win; overlapping equal-priority matches are rejected.
 type RouteConfig struct {
-	ID                 string      `json:"id" yaml:"id"`
-	Priority           int         `json:"priority" yaml:"priority"`
-	Hosts              []string    `json:"hosts" yaml:"hosts"`
-	Methods            []string    `json:"methods" yaml:"methods"`
-	PathPrefix         string      `json:"pathPrefix" yaml:"pathPrefix"`
-	Upstream           string      `json:"upstream" yaml:"upstream"`
-	PolicyFile         string      `json:"policyFile" yaml:"policyFile"`
-	PolicyID           string      `json:"policyID" yaml:"policyID"`
-	MaxBodyBytes       int64       `json:"maxBodyBytes" yaml:"maxBodyBytes"`
-	MaxResponseBytes   int64       `json:"maxResponseBytes" yaml:"maxResponseBytes"`
-	MaxConcurrent      int         `json:"maxConcurrent" yaml:"maxConcurrent"`
-	CRSProfile         *CRSProfile `json:"crsProfile,omitempty" yaml:"crsProfile,omitempty"`
-	UpstreamCA         string      `json:"upstreamCA,omitempty" yaml:"upstreamCA,omitempty"`
-	UpstreamServerName string      `json:"upstreamServerName,omitempty" yaml:"upstreamServerName,omitempty"`
-	UpstreamCert       string      `json:"upstreamCert,omitempty" yaml:"upstreamCert,omitempty"`
-	UpstreamKey        string      `json:"upstreamKey,omitempty" yaml:"upstreamKey,omitempty"`
+	DescriptorPath      string      `json:"descriptorPath,omitempty" yaml:"descriptorPath,omitempty"`
+	DescriptorSHA256    string      `json:"descriptorSHA256,omitempty" yaml:"descriptorSHA256,omitempty"`
+	APIValidateResponse bool        `json:"apiValidateResponse,omitempty" yaml:"apiValidateResponse,omitempty"`
+	ID                  string      `json:"id" yaml:"id"`
+	Priority            int         `json:"priority" yaml:"priority"`
+	Hosts               []string    `json:"hosts" yaml:"hosts"`
+	Methods             []string    `json:"methods" yaml:"methods"`
+	PathPrefix          string      `json:"pathPrefix" yaml:"pathPrefix"`
+	Upstream            string      `json:"upstream" yaml:"upstream"`
+	PolicyFile          string      `json:"policyFile" yaml:"policyFile"`
+	PolicyID            string      `json:"policyID" yaml:"policyID"`
+	MaxBodyBytes        int64       `json:"maxBodyBytes" yaml:"maxBodyBytes"`
+	MaxResponseBytes    int64       `json:"maxResponseBytes" yaml:"maxResponseBytes"`
+	MaxConcurrent       int         `json:"maxConcurrent" yaml:"maxConcurrent"`
+	CRSProfile          *CRSProfile `json:"crsProfile,omitempty" yaml:"crsProfile,omitempty"`
+	UpstreamCA          string      `json:"upstreamCA,omitempty" yaml:"upstreamCA,omitempty"`
+	UpstreamServerName  string      `json:"upstreamServerName,omitempty" yaml:"upstreamServerName,omitempty"`
+	UpstreamCert        string      `json:"upstreamCert,omitempty" yaml:"upstreamCert,omitempty"`
+	UpstreamKey         string      `json:"upstreamKey,omitempty" yaml:"upstreamKey,omitempty"`
 }
 
 type routeBinding struct {
 	config   RouteConfig
 	firewall *Firewall
+	handler  http.Handler
 }
 type routeTable struct {
 	bindings []routeBinding
@@ -60,6 +64,11 @@ func routeConfig(c Config, r RouteConfig) Config {
 		c.CRSProfile = r.CRSProfile
 	}
 	c.UpstreamCA, c.UpstreamServerName, c.UpstreamCert, c.UpstreamKey = r.UpstreamCA, r.UpstreamServerName, r.UpstreamCert, r.UpstreamKey
+	c.DescriptorPath, c.DescriptorSHA256, c.APIValidateResponse = r.DescriptorPath, r.DescriptorSHA256, r.APIValidateResponse
+	// BootstrapDir is trusted listener input; a route never inherits another contract.
+	if c.DescriptorPath == "" {
+		c.BootstrapDir = ""
+	}
 	return c
 }
 
@@ -175,7 +184,16 @@ func (f *Firewall) compileRoutes() (*routeTable, error) {
 		child.buffers = f.buffers
 		child.audit = f.audit
 		child.stats = f.stats
-		t.bindings = append(t.bindings, routeBinding{r, child})
+		var handler http.Handler = child
+		if f.messageWS || f.messageGRPC {
+			handler, err = child.MessageHandler(f.messageWS, f.messageGRPC)
+			if err != nil {
+				_ = child.Close()
+				t.close()
+				return nil, err
+			}
+		}
+		t.bindings = append(t.bindings, routeBinding{config: r, firewall: child, handler: handler})
 	}
 	sort.Slice(t.bindings, func(i, j int) bool { return t.bindings[i].config.Priority > t.bindings[j].config.Priority })
 	return t, nil
@@ -261,7 +279,7 @@ func (f *Firewall) serveRoute(w http.ResponseWriter, r *http.Request) {
 		if !slices.Contains(b.config.Methods, r.Method) || !prefixMatch(b.config.PathPrefix, r.URL.Path) {
 			continue
 		}
-		b.firewall.ServeHTTP(w, r)
+		b.handler.ServeHTTP(w, r)
 		return
 	}
 	if hostKnown {
@@ -290,6 +308,28 @@ func (f *Firewall) RouteTarget(id string) (*RoutePolicyTarget, error) {
 type RoutePolicyTarget struct {
 	f            *Firewall
 	id, policyID string
+}
+
+func (t *RoutePolicyTarget) ValidatePolicy(p *policy.Compiled) error {
+	if p == nil || p.Bundle().ID != t.policyID {
+		return errors.New("route policy identity mismatch")
+	}
+	return nil
+}
+
+// SetPolicy is reserved for an owning policycontrol service after ValidatePolicy.
+func (t *RoutePolicyTarget) SetPolicy(p *policy.Compiled) {
+	if t.ValidatePolicy(p) != nil {
+		return
+	}
+	t.f.routeMu.Lock()
+	defer t.f.routeMu.Unlock()
+	for _, b := range t.f.router.current.Load().bindings {
+		if b.config.ID == t.id {
+			b.firewall.SetPolicy(p)
+			return
+		}
+	}
 }
 
 func (t *RoutePolicyTarget) Policy() *policy.Compiled {

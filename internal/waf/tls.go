@@ -9,23 +9,60 @@ import (
 
 // ReloadTLS reads complete pairs before publication. A failed reload preserves live TLS and policy.
 func (f *Firewall) ReloadTLS() error {
-	c := f.cfg
+	f.routeMu.Lock()
+	defer f.routeMu.Unlock()
+	bindings := []*Firewall{f}
+	if f.router != nil {
+		for _, b := range f.router.current.Load().bindings {
+			bindings = append(bindings, b.firewall)
+		}
+		for _, table := range f.retired {
+			for _, b := range table.bindings {
+				bindings = append(bindings, b.firewall)
+			}
+		}
+	}
+	type material struct {
+		listener *tls.Config
+		client   *tls.Certificate
+	}
+	staged := make([]material, len(bindings))
+	for i, bound := range bindings {
+		listener, pair, err := loadTLS(bound.cfg)
+		if err != nil {
+			return err
+		}
+		staged[i] = material{listener, pair}
+	}
+	for i, bound := range bindings {
+		if staged[i].client != nil {
+			bound.clientPair.Store(staged[i].client)
+		}
+		bound.listenerTLS.Store(staged[i].listener)
+		if staged[i].client != nil && bound.transport != nil {
+			bound.transport.CloseIdleConnections()
+		}
+	}
+	return nil
+}
+
+func loadTLS(c Config) (*tls.Config, *tls.Certificate, error) {
 	next := &tls.Config{MinVersion: tls.VersionTLS12}
 	if c.TLSCert != "" {
 		pair, err := tls.LoadX509KeyPair(c.TLSCert, c.TLSKey)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
 		next.Certificates = []tls.Certificate{pair}
 	}
 	if c.ClientCA != "" {
 		b, err := os.ReadFile(c.ClientCA)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
 		roots := x509.NewCertPool()
 		if !roots.AppendCertsFromPEM(b) {
-			return errors.New("clientCA contains no certificates")
+			return nil, nil, errors.New("clientCA contains no certificates")
 		}
 		next.ClientCAs = roots
 		next.ClientAuth = tls.RequireAndVerifyClientCert
@@ -34,18 +71,11 @@ func (f *Firewall) ReloadTLS() error {
 	if c.UpstreamCert != "" {
 		p, err := tls.LoadX509KeyPair(c.UpstreamCert, c.UpstreamKey)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
 		pair = &p
 	}
-	if pair != nil {
-		f.clientPair.Store(pair)
-	}
-	f.listenerTLS.Store(next)
-	if pair != nil && f.transport != nil {
-		f.transport.CloseIdleConnections()
-	}
-	return nil
+	return next, pair, nil
 }
 
 // TLSConfig snapshots listener identity and client trust together at each handshake.

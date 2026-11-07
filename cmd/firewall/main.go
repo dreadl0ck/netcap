@@ -33,6 +33,7 @@ func configFlags() []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{Name: "config", Required: true, Usage: "runtime YAML or JSON file"},
 		&cli.BoolFlag{Name: "managed", Usage: "allow authenticated policy activation; requires state-dir and admin token"},
+		&cli.StringFlag{Name: "route-id", Usage: "explicit bootstrap route ID owned by the policy console/MCP"},
 		&cli.StringFlag{Name: "state-dir", Usage: "private durable policy directory"},
 		&cli.StringFlag{Name: "admin-cert", Usage: "administrative TLS certificate"},
 		&cli.StringFlag{Name: "admin-key", Usage: "administrative TLS private key"},
@@ -232,7 +233,7 @@ func serve(ctx context.Context, c *cli.Command) error {
 					fmt.Fprintln(c.Root().ErrWriter, "firewall TLS reload rejected:", err)
 					continue
 				}
-				if len(cfg.Routes) > 0 {
+				if len(cfg.Routes) > 0 && !c.Bool("managed") {
 					if err := f.ReloadRoutePolicies(); err != nil {
 						fmt.Fprintln(c.Root().ErrWriter, "firewall route reload rejected:", err)
 					}
@@ -274,7 +275,14 @@ func serve(ctx context.Context, c *cli.Command) error {
 		if !loopbackAddress(cfg.AdminListen) && (c.String("admin-cert") == "" || c.String("admin-key") == "") {
 			return errors.New("network-accessible policy management requires admin-cert and admin-key; otherwise bind adminListen to loopback")
 		}
-		s, err := policycontrol.New(ac, f)
+		var target policycontrol.Target = f
+		if len(cfg.Routes) > 0 {
+			target, err = f.RouteTarget(c.String("route-id"))
+			if err != nil {
+				return err
+			}
+		}
+		s, err := policycontrol.New(ac, target)
 		if err != nil {
 			return err
 		}
@@ -368,10 +376,21 @@ func serve(ctx context.Context, c *cli.Command) error {
 
 func validateRouteRuntime(c *cli.Command, cfg waf.Config) error {
 	if len(cfg.Routes) == 0 {
+		if c.String("route-id") != "" {
+			return errors.New("route-id requires routes")
+		}
 		return nil
 	}
-	if c.Bool("managed") || c.String("fleet-agent-config") != "" || c.String("shared-rate-config") != "" || c.String("policy-state-config") != "" || c.String("effects-config") != "" || c.Bool("websocket") || c.Bool("grpc") || c.String("http3-listen") != "" || os.Getenv("NETCAP_FIREWALL_ADMIN_TOKEN") != "" {
-		return errors.New("route bindings currently require local HTTP policies; global management, fleet, effects, shared state and message adapters have no route scope")
+	if c.String("fleet-agent-config") != "" || c.String("shared-rate-config") != "" || c.String("policy-state-config") != "" || c.String("effects-config") != "" {
+		return errors.New("routed runtime does not support fleet-agent-config, shared-rate-config, policy-state-config or effects-config: these adapters lack route-scoped bootstrap bindings")
+	}
+	if c.Bool("managed") || os.Getenv("NETCAP_FIREWALL_ADMIN_TOKEN") != "" || c.String("route-id") != "" {
+		for _, r := range cfg.Routes {
+			if r.ID == c.String("route-id") {
+				return nil
+			}
+		}
+		return errors.New("routed policy management requires route-id naming one bootstrap route")
 	}
 	return nil
 }

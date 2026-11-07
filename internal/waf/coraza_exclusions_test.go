@@ -8,16 +8,31 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
+
+	"github.com/dreadl0ck/netcap/internal/apipolicy"
 )
 
 func TestCRSArgumentExceptionKeepsRouteMethodAndOtherTargetsProtected(t *testing.T) {
+	crsExceptionBoundary(t, false)
+}
+
+func TestRoutedCRSProfileExactExceptionCompatibility(t *testing.T) {
+	crsExceptionBoundary(t, true)
+}
+
+func crsExceptionBoundary(t *testing.T, routed bool) {
 	var calls atomic.Int64
 	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { calls.Add(1); w.WriteHeader(200) }))
 	defer origin.Close()
 	c := config(origin.URL)
 	c.CorazaCRS = true
 	c.CRSTargetExclusions = []CRSTargetExclusion{{Path: "/api/account", Method: "POST", Argument: "password", RuleID: 942100}}
-	f := firewall(t, c, compiled(t, "enforce", "request", `Body contains "native-forbidden"`))
+	if routed {
+		c.CRSTargetExclusions = nil
+		c.CRSProfile = &CRSProfile{ParanoiaLevel: 1, InboundThreshold: 5, OutboundThreshold: 4, Exclusions: []CRSExclusion{{Path: "/api/account", Method: "POST", Parameter: "password", RuleID: 942100, Owner: "fixture", Reason: "qualification password", ExpiresAt: time.Now().Add(time.Hour)}}}
+	}
+	_, _, handler := composedFirewall(t, c, compiled(t, "enforce", "request", `Body contains "native-forbidden"`), routed)
 	for _, tc := range []struct {
 		name, method, path, body string
 		want                     int
@@ -38,7 +53,7 @@ func TestCRSArgumentExceptionKeepsRouteMethodAndOtherTargetsProtected(t *testing
 			r.Header.Set("User-Agent", "NetcapQualification/1.0")
 			r.Header.Set("Accept", "application/json")
 			w := httptest.NewRecorder()
-			f.ServeHTTP(w, r)
+			handler.ServeHTTP(w, r)
 			if w.Code != tc.want {
 				t.Fatalf("status=%d body=%q", w.Code, w.Body.String())
 			}
@@ -50,6 +65,37 @@ func TestCRSArgumentExceptionKeepsRouteMethodAndOtherTargetsProtected(t *testing
 				t.Fatal("origin reach disagrees with expected protection")
 			}
 		})
+	}
+}
+
+func TestRoutedCRSExceptionCannotBypassAPIOrNative(t *testing.T) {
+	var calls atomic.Int64
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { calls.Add(1); w.WriteHeader(200) }))
+	defer origin.Close()
+	c := apiConfig(t, config(origin.URL), map[string][]byte{"openapi.json": []byte(apiContract)}, apipolicy.Declaration{OpenAPI: "openapi.json"})
+	c.CorazaCRS = true
+	c.CRSProfile = &CRSProfile{ParanoiaLevel: 1, InboundThreshold: 5, OutboundThreshold: 4, Exclusions: []CRSExclusion{{Path: "/items", Method: "POST", Parameter: "json.text", RuleID: 942100, Owner: "fixture", Reason: "JSON qualification password", ExpiresAt: time.Now().Add(time.Hour)}}}
+	_, _, handler := composedFirewall(t, c, compiled(t, "enforce", "request", `Body contains "native-forbidden"`), true)
+	for _, tc := range []struct {
+		body   string
+		status int
+	}{
+		{`{"text":"Test!@#$2026","n":2}`, 200},
+		{`{"text":"Test!@#$2026","n":99}`, 403},
+		{`{"text":"native-forbidden","n":2}`, 403},
+		{`{"text":"<script>alert(1)</script>","n":2}`, 403},
+	} {
+		before := calls.Load()
+		r := httptest.NewRequest("POST", "http://fixture.test/items?limit=2", strings.NewReader(tc.body))
+		r.Header.Set("Content-Type", "application/json")
+		r.Header.Set("X-Required", "yes")
+		r.Header.Set("User-Agent", "NetcapQualification/1.0")
+		r.Header.Set("Accept", "application/json")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
+		if w.Code != tc.status || (tc.status != 200 && calls.Load() != before) {
+			t.Fatalf("API/native/CRS composition: status=%d want=%d origin=%d body=%s", w.Code, tc.status, calls.Load()-before, w.Body.String())
+		}
 	}
 }
 

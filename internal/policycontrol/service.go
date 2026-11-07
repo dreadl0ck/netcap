@@ -159,7 +159,16 @@ func compile(raw []byte) (*policy.Compiled, []byte, error) {
 }
 
 func (s *Service) compile(raw []byte) (*policy.Compiled, []byte, error) {
-	return compileAdmitted(raw, s.cfg.AllowEffects)
+	c, canonical, err := compileAdmitted(raw, s.cfg.AllowEffects)
+	if err != nil {
+		return nil, nil, err
+	}
+	if bound, ok := s.target.(interface{ ValidatePolicy(*policy.Compiled) error }); ok {
+		if err := bound.ValidatePolicy(c); err != nil {
+			return nil, nil, failure(400, err.Error())
+		}
+	}
+	return c, canonical, nil
 }
 
 func compileAdmitted(raw []byte, allowEffects bool) (*policy.Compiled, []byte, error) {

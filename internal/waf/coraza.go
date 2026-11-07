@@ -36,11 +36,9 @@ func newInspectionEngine(c Config) (inspectionEngine, error) {
 	if err != nil {
 		return nil, err
 	}
-	if c.CRSProfile != nil {
-		for _, e := range c.CRSProfile.Exclusions {
-			if !ids[e.RuleID] {
-				return nil, fmt.Errorf("unknown CRS rule %d", e.RuleID)
-			}
+	for _, e := range exclusionRegistry(c) {
+		if !ids[e.RuleID] {
+			return nil, fmt.Errorf("unknown CRS rule %d", e.RuleID)
 		}
 	}
 	validator, err := coraza.NewWAF(coraza.NewWAFConfig().WithRootFS(coreruleset.FS).WithDirectives(strings.Replace(corazaDirectives(c), "Include @owasp_crs/*.conf", "", 1)))
@@ -73,10 +71,20 @@ SecRule ARGUMENTS_LIMIT_REACHED "@eq 1" "id:10000001,phase:1,deny,status:413,nol
 SecRule ARGUMENTS_LIMIT_REACHED "@eq 1" "id:10000002,phase:2,deny,status:413,nolog"
 %s
 `, c.MaxBodyBytes+1, c.MaxBodyBytes+1, min(c.MaxBodyBytes+1, bodyMemoryBytes), map[bool]string{true: "On", false: "Off"}[c.InspectResponse], c.MaxResponseBytes+1, profileDirectives(c.CRSProfile))
-	for i, e := range c.CRSTargetExclusions {
-		directives += fmt.Sprintf(`SecRule REQUEST_FILENAME "@streq %s" "id:%d,phase:1,pass,t:none,nolog,chain"
-SecRule REQUEST_METHOD "@streq %s" "t:none,ctl:ruleRemoveTargetById=%d;ARGS:%s"
-`, e.Path, 10000300+i, e.Method, e.RuleID, e.Argument)
+	for i, e := range exclusionRegistry(c) {
+		ctl := fmt.Sprintf("ruleRemoveById=%d", e.RuleID)
+		if e.Parameter != "" {
+			ctl = fmt.Sprintf("ruleRemoveTargetById=%d;ARGS:%s", e.RuleID, e.Parameter)
+		}
+		condition := `SecRule TIME_EPOCH "@ge 0"`
+		if !e.ExpiresAt.IsZero() {
+			condition = fmt.Sprintf(`SecRule TIME_EPOCH "@lt %d"`, e.ExpiresAt.Unix())
+		}
+		if e.Path == "" {
+			directives += fmt.Sprintf("%s \"id:%d,phase:1,pass,nolog,ctl:%s\"\n", condition, 10000200+i, ctl)
+		} else {
+			directives += fmt.Sprintf("%s \"id:%d,phase:1,pass,nolog,chain\"\nSecRule REQUEST_FILENAME \"@streq %s\" \"t:none,chain\"\nSecRule REQUEST_METHOD \"@streq %s\" \"t:none,ctl:%s\"\n", condition, 10000200+i, e.Path, e.Method, ctl)
+		}
 	}
 	return directives + "Include @owasp_crs/*.conf\n"
 }
@@ -86,13 +94,6 @@ func profileDirectives(p *CRSProfile) string {
 		return ""
 	}
 	s := fmt.Sprintf(`SecAction "id:10000100,phase:1,pass,nolog,setvar:tx.blocking_paranoia_level=%d,setvar:tx.detection_paranoia_level=%d,setvar:tx.inbound_anomaly_score_threshold=%d,setvar:tx.outbound_anomaly_score_threshold=%d"`, p.ParanoiaLevel, p.ParanoiaLevel, p.InboundThreshold, p.OutboundThreshold)
-	for i, e := range p.Exclusions {
-		ctl := fmt.Sprintf("ruleRemoveById=%d", e.RuleID)
-		if e.Parameter != "" {
-			ctl = fmt.Sprintf("ruleRemoveTargetById=%d;ARGS:%s", e.RuleID, e.Parameter)
-		}
-		s += fmt.Sprintf("\nSecRule TIME_EPOCH \"@lt %d\" \"id:%d,phase:1,pass,nolog,ctl:%s\"", e.ExpiresAt.Unix(), 10000200+i, ctl)
-	}
 	return s
 }
 

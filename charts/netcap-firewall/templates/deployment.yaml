@@ -51,6 +51,9 @@ spec:
             {{- if .Values.websocket }}
             - --websocket
             {{- end }}
+            {{- if .Values.routeID }}
+            - --route-id={{ .Values.routeID }}
+            {{- end }}
             {{- if .Values.grpc }}
             - --grpc
             {{- end }}

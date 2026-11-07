@@ -4,6 +4,7 @@
   "additionalProperties": false,
   "required": ["upstream", "image", "runtime", "policy"],
   "properties": {
+    "routeID": {"type": "string", "pattern": "^$|^[A-Za-z0-9_-]{1,64}$"},
     "routes": {"type": "array", "maxItems": 128, "items": {
       "type": "object", "additionalProperties": false,
       "required": ["id", "priority", "hosts", "methods", "pathPrefix", "upstream", "policy", "maxBodyBytes", "maxResponseBytes", "maxConcurrent"],
@@ -197,10 +198,13 @@
           "properties": {
             "ruleID": {"type": "integer", "minimum": 930000, "maximum": 944999},
             "parameter": {"type": "string", "pattern": "^[A-Za-z0-9_.-]{1,128}$"},
+            "path": {"type": "string", "maxLength": 256, "pattern": "^/[A-Za-z0-9_./-]*$"},
+            "method": {"enum": ["GET", "POST", "PUT", "PATCH"]},
             "owner": {"type": "string", "minLength": 1, "maxLength": 128},
             "reason": {"type": "string", "minLength": 1, "maxLength": 512},
             "expiresAt": {"type": "string", "format": "date-time"}
-          }
+          },
+          "dependencies": {"path": ["method"], "method": ["path"]}
         }}
       }
     },

@@ -17,7 +17,13 @@ helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | quote }}
 {{- if and .crsProfile (not $.Values.runtime.corazaCRS) }}{{ fail "route crsProfile requires corazaCRS" }}{{- end }}
 {{- end }}
 {{- if .Values.routes }}
-{{- if or (ne .Values.mode "file") .Values.adminTokenSecret.name .Values.sharedRate.configSecretName .Values.policyState.configSecretName .Values.websocket .Values.grpc .Values.http3.enabled }}{{ fail "routes require file mode without global management, shared state or message adapters" }}{{- end }}
+{{- if or (eq .Values.mode "fleet") .Values.sharedRate.configSecretName .Values.policyState.configSecretName }}{{ fail "routes do not support fleet, sharedRate or policyState without route-scoped bootstrap bindings" }}{{- end }}
+{{- if or (eq .Values.mode "managed") .Values.adminTokenSecret.name .Values.routeID }}
+{{- $found := false }}
+{{- range .Values.routes }}{{- if eq .id $.Values.routeID }}{{- $found = true }}{{- end }}{{- end }}
+{{- if not $found }}{{ fail "routed policy management requires routeID naming one bootstrap route" }}{{- end }}
+{{- end }}
+{{- else if .Values.routeID }}{{ fail "routeID requires routes" }}
 {{- end }}
 {{- if and .Values.http3.enabled (not .Values.tls.secretName) }}{{ fail "http3 requires tls.secretName" }}{{- end }}
 {{- if ne (empty .Values.sharedRate.configSecretName) (empty .Values.sharedRate.credentialsSecretName) }}{{ fail "sharedRate requires config and credentials Secret references" }}{{- end }}

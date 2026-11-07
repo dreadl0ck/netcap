@@ -75,21 +75,36 @@ identity-checked, expected-revision activation capability for one bootstrap ID.
 ReloadRoutePolicies atomically replaces the complete table from bound files;
 requests pin their binding through response inspection. Retired generations close
 after their last request. Listener concurrency and retained-byte quotas cover all
-bindings. MessageHandler rejects routed configurations. The CLI also rejects
-global managed/fleet/effects/shared-state adapters when routes are configured;
-there is no remote route activation endpoint or caller-selected policy path.
+bindings. MessageHandler builds WS/compression and gRPC/H3 adapters on each same
+bound origin, transport, policy and contract, including after file reloads.
+The CLI requires --route-id for authenticated route management; one console/MCP
+owns one bootstrap route. Global SetPolicy cannot update tenants. Fleet, effects,
+shared-rate and native-state CLI adapters reject routes until their bootstrap
+configurations provide explicit per-route scopes.
+
+DescriptorPath, DescriptorSHA256 and APIValidateResponse belong to each route;
+only trusted BootstrapDir is inherited. An absent contract never falls back to
+another route or the global descriptor. Complete HTTP bodies and decompressed
+gRPC messages pass their contract before forwarding. WS needs explicit API
+passthrough because an HTTP operation is not a WebSocket message schema.
 
 CRSProfile requires CorazaCRS, paranoia 1..4 and anomaly thresholds 1..100.
 Up to 64 exclusions name recognized request attack detectors, optionally one ARGS
 parameter, with owner/reason and expiry no more than 90 days ahead. Generated
 phase-1 controls expire on transaction time before CRS executes; no raw SecRule
-or include path is admitted. Native denies and structural validation still run.
+or include path is admitted. Optional Path/Method narrow an exclusion to an exact
+request; Parameter uses Coraza ARGS names (json.text for a JSON text field).
+Legacy CRSTargetExclusions map into this same registry as exact Path/Method,
+Argument-to-Parameter exclusions with no expiry; migrating to CRSProfile adds
+owner/reason/expiry. Both forms check real pinned attack rule IDs. Native denies,
+API contracts and structural validation still run.
 
 ClientCA enables listener mTLS. UpstreamCert/UpstreamKey enable upstream mTLS;
 HTTPS routes require explicit UpstreamServerName and always verify certificates.
 TLSConfig provides per-handshake listener snapshots. ReloadTLS validates complete
 identity pairs and client trust before publication; failures retain live state.
-CLI SIGHUP reloads TLS and then route policy files; route/upstream configuration
+CLI SIGHUP reloads TLS and then route policy files, except in managed mode where
+the control service exclusively owns policies. Route/upstream configuration
 changes require restart. Existing TLS connections retain their handshake identity.
 */
 package waf

@@ -193,6 +193,9 @@ func rejectDuplicateKeys(d *json.Decoder) error {
 
 func ValidateConfig(c Config) error {
 	if len(c.Routes) > 0 {
+		if c.DescriptorPath != "" || c.DescriptorSHA256 != "" || c.APIValidateResponse {
+			return errors.New("routed API contracts must be declared per route; only bootstrapDir is inherited")
+		}
 		return validateRoutes(c)
 	}
 	if err := validateProfile(c); err != nil {
