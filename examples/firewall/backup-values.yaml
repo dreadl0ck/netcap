@@ -1,0 +1,22 @@
+enabled: true
+service: fleet-controller
+replicaCount: 2
+persistence:
+  backend: postgres
+  postgres:
+    databaseURLEnv: CONTROL_DATABASE_URL
+    databaseNamespace: ncf_fleet
+configSecretName: fleet-bootstrap
+credentialsSecretName: fleet-credentials
+tlsSecretName: fleet-tls
+backup:
+  enabled: true
+  scope: example-cluster
+  databaseSecretName: fleet-backup-database
+  repositorySecretName: fleet-backup-repository
+  passwordSecretName: fleet-backup-password
+  retention:
+    keepDaily: 7
+    keepWeekly: 4
+    keepMonthly: 3
+    prune: false

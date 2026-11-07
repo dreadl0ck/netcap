@@ -1,0 +1,9 @@
+version: netcap-policy/v1
+id: decoder-audit-example
+mode: enforce
+default: allow
+rules:
+  - id: observe-blocked-dns-name
+    phase: request
+    expression: 'Protocol == "audit" && RecordType == "DNS" && Fields["Questions[0].Name"] == "blocked.example"'
+    action: deny

@@ -1,0 +1,17 @@
+{{- if and (eq .Values.mode "managed") (not .Values.managed.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "firewall.name" . }}-state
+  labels: {{ include "firewall.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with .Values.managed.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.managed.size | quote }}
+{{- end }}

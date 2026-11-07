@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  nginx.conf: |
+    pid /tmp/nginx.pid;
+    events { worker_connections 64; }
+    http {
+      access_log /dev/stdout;
+      error_log /dev/stderr warn;
+      client_body_temp_path /tmp/client;
+      proxy_temp_path /tmp/proxy;
+      fastcgi_temp_path /tmp/fastcgi;
+      uwsgi_temp_path /tmp/uwsgi;
+      scgi_temp_path /tmp/scgi;
+      server { listen 8080; location / { return 200 "origin-ok\n"; } }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: backend}
+  template:
+    metadata:
+      labels: {app: backend}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 101
+        runAsGroup: 101
+        runAsNonRoot: true
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: nginx
+          image: nginx:1.28.0-alpine@sha256:30f1c0d78e0ad60901648be663a710bdadf19e4c10ac6782c235200619158284
+          imagePullPolicy: IfNotPresent
+          command: [nginx, -g, 'daemon off;']
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          ports: [{containerPort: 8080}]
+          readinessProbe:
+            httpGet: {path: /, port: 8080}
+          volumeMounts:
+            - {name: config, mountPath: /etc/nginx/nginx.conf, subPath: nginx.conf, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: config
+          configMap: {name: backend-config}
+        - name: tmp
+          emptyDir: {sizeLimit: 16Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector: {app: backend}
+  ports: [{port: 8080, targetPort: 8080}]

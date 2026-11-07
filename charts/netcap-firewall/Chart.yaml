@@ -1,0 +1,7 @@
+apiVersion: v2
+name: netcap-firewall
+description: Community Core HTTP application firewall
+type: application
+version: 0.1.0
+appVersion: 0.1.0
+kubeVersion: '>=1.25.0-0'

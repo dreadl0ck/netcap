@@ -1,0 +1,47 @@
+version: netcap-policy/v1
+id: bounded-stateful-examples
+mode: enforce
+default: allow
+rules:
+  - id: sliding-posts
+    phase: request
+    expression: 'Protocol == "http" && Method == "POST"'
+    action: deny
+    status: 429
+    threshold:
+      mode: sliding
+      count: 3
+      window: 10s
+      group_by: ClientIP
+  - id: distinct-catalog-paths
+    phase: request
+    expression: 'Protocol == "http" && Method == "GET" && Path startsWith "/catalog/"'
+    action: deny
+    status: 429
+    threshold:
+      mode: sliding
+      count: 4
+      window: 10s
+      distinct: Path
+      group_by_fields: [ClientIP, Host]
+  - id: distinct-network-ports
+    phase: request
+    expression: 'Protocol == "network" && Network.Transport == "tcp" && Network.Direction == "inbound"'
+    action: deny
+    threshold:
+      mode: sliding
+      count: 5
+      window: 10s
+      distinct: Network.DstPort
+      group_by_fields: [Network.SrcIP, Network.DstIP]
+  - id: login-then-export
+    phase: request
+    expression: 'Protocol == "http"'
+    action: deny
+    sequence:
+      name: login-export
+      window: 1m
+      group_by_fields: [ClientIP, Host]
+      steps:
+        - 'Path == "/login"'
+        - 'Path == "/export"'

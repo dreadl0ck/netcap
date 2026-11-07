@@ -1,0 +1,39 @@
+version: netcap-policy/v1
+id: native-authority-v1
+mode: enforce
+default: allow
+rules:
+  - id: global-sliding
+    phase: request
+    expression: 'Protocol == "http" && Method == "GET" && Path == "/sliding"'
+    action: deny
+    status: 429
+    threshold:
+      mode: sliding
+      count: 3
+      window: 1h
+      group_by_fields: [ClientIP, Host]
+  - id: global-distinct
+    phase: request
+    expression: 'Protocol == "http" && Method == "GET" && Path startsWith "/distinct/"'
+    action: deny
+    status: 429
+    threshold:
+      mode: sliding
+      count: 3
+      window: 1h
+      distinct: Path
+      group_by_fields: [ClientIP, Host]
+  - id: global-sequence
+    phase: request
+    expression: 'Protocol == "http"'
+    action: deny
+    sequence:
+      name: login-export
+      window: 1h
+      group_by_fields: [ClientIP, Host]
+      steps: ['Path == "/sequence/login"', 'Path == "/sequence/export"']
+  - id: private-body
+    phase: request
+    expression: 'Protocol == "http" && Path == "/body-check" && Body != ""'
+    action: deny

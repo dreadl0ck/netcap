@@ -1,0 +1,5 @@
+mode: file
+replicaCount: 2
+policyState:
+  configSecretName: native-client
+  credentialsSecretName: native-caller-credentials

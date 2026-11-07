@@ -1,0 +1,4 @@
+FROM alpine:3.23.2
+RUN apk add --no-cache iproute2 nftables util-linux
+ENV NETCAP_NETWORKFIREWALL_LAB=1
+ENTRYPOINT ["/networkfirewall.test", "-test.v", "-test.run", "TestRoutedLab"]

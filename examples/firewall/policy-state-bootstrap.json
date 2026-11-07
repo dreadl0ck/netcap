@@ -1,0 +1,11 @@
+{
+  "databaseURLEnv": "NATIVE_DATABASE_URL",
+  "databaseNamespace": "ncf_native_rules",
+  "allowEffects": false,
+  "maxRevisions": 64,
+  "maxStateBytes": 67108864,
+  "principals": [
+    {"id": "waf", "tokenEnv": "NATIVE_POLICY_TOKEN", "scope": {"tenant": "example", "app": "web"}},
+    {"id": "health", "tokenEnv": "NATIVE_HEALTH_TOKEN", "scope": {"tenant": "health", "app": "probe"}}
+  ]
+}

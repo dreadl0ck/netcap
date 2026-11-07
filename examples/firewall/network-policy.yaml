@@ -1,0 +1,31 @@
+version: netcap-policy/v1
+id: routed-cli-lab
+mode: enforce
+default: deny
+rules:
+  - id: deny-lab-port
+    phase: request
+    expression: 'Protocol == "network" && Network.Transport == "tcp" && Network.DstPort == 8081'
+    priority: 100
+    action: deny
+  - id: deny-visible-lab-sni
+    phase: request
+    expression: 'Protocol == "network" && Network.Transport == "tcp" && Network.DstPort == 443 && TLS.Encrypted && TLS.ServerName == "blocked.example"'
+    priority: 100
+    action: deny
+  - id: allow-visible-lab-tls
+    phase: request
+    expression: 'Protocol == "network" && Network.Transport == "tcp" && Network.DstPort == 443 && TLS.Encrypted'
+    action: allow
+  - id: allow-unclassified-tls-port
+    phase: request
+    expression: 'Protocol == "network" && Network.Transport == "tcp" && Network.DstPort == 443 && !TLS.Encrypted'
+    action: allow
+  - id: allow-lab-http
+    phase: request
+    expression: 'Protocol == "network" && Network.Transport == "tcp" && Network.IPVersion == 4 && Network.DstIP == "10.81.0.2" && Network.DstPort == 8080'
+    action: allow
+  - id: allow-lab-service-replies
+    phase: request
+    expression: 'Protocol == "network" && Network.Direction == "outbound" && Network.Transport == "tcp" && Network.SrcIP == "10.81.0.2" && Network.SrcPort in [8080, 443]'
+    action: allow

@@ -1,0 +1,17 @@
+version: netcap-policy/v1
+id: baseline
+mode: enforce
+default: allow
+rules:
+  - id: deny-traversal
+    phase: request
+    expression: 'Path contains ".."'
+    action: deny
+    status: 403
+    priority: 100
+  - id: deny-smoke-body
+    phase: request
+    expression: 'Body contains "netcap-smoke-deny"'
+    action: deny
+    status: 403
+    priority: 90

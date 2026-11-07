@@ -1,0 +1,92 @@
+x-runtime: &runtime
+  image: ${FIREWALL_IMAGE:-netcap-firewall:0.1.0-local}
+  user: '10001:10001'
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  mem_limit: 256m
+  cpus: 1
+  pids_limit: 64
+  tmpfs: ['/tmp:size=64m,mode=1777,noexec,nosuid,nodev']
+  stop_grace_period: 60s
+  healthcheck: {disable: true}
+  volumes: ['${LAB_CONFIG_DIR:?}:/lab:ro']
+  networks: [control]
+services:
+  postgres:
+    image: postgres:17.11@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f
+    container_name: ${PG_TEST_CONTAINER:?}
+    labels: {netcap.firewall.ha-test: 'true'}
+    environment:
+      POSTGRES_USER: firewall
+      POSTGRES_DB: firewall
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    command:
+      - /bin/sh
+      - -ec
+      - >-
+        mkdir -p /var/lib/postgresql/tls;
+        cp /lab/tls.crt /var/lib/postgresql/tls/server.crt;
+        cp /lab/tls.key /var/lib/postgresql/tls/server.key;
+        chown -R postgres:postgres /var/lib/postgresql/tls;
+        chmod 600 /var/lib/postgresql/tls/server.key;
+        exec docker-entrypoint.sh postgres -c ssl=on
+        -c ssl_cert_file=/var/lib/postgresql/tls/server.crt
+        -c ssl_key_file=/var/lib/postgresql/tls/server.key
+    volumes: ['${LAB_CONFIG_DIR:?}:/lab:ro', 'postgres-data:/var/lib/postgresql/data']
+    ports: ['127.0.0.1:${PG_TEST_PORT:?}:5432']
+    healthcheck: {test: [CMD-SHELL, 'pg_isready -U firewall -d firewall'], interval: 1s, timeout: 3s, retries: 60}
+    networks: [control]
+  authority1: &authority
+    <<: *runtime
+    environment:
+      CONTROL_DATABASE_URL: ${CONTROL_DATABASE_URL:?}
+      NATIVE1_TOKEN: ${NATIVE1_TOKEN:?}
+      NATIVE2_TOKEN: ${NATIVE2_TOKEN:?}
+    command: [policy-state, --config, /lab/authority.json, --listen, ':9092', --tls-cert, /lab/tls.crt, --tls-key, /lab/tls.key]
+    ports: ['127.0.0.1:${AUTHORITY1_PORT:?}:9092']
+    depends_on: {postgres: {condition: service_healthy}}
+  authority2:
+    <<: *authority
+    ports: ['127.0.0.1:${AUTHORITY2_PORT:?}:9092']
+  front:
+    image: nginx:1.28.0-alpine@sha256:30f1c0d78e0ad60901648be663a710bdadf19e4c10ac6782c235200619158284
+    entrypoint: [nginx]
+    command: [-g, 'daemon off;']
+    user: '101:101'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ['/tmp:size=16m,mode=1777,noexec,nosuid,nodev']
+    volumes: ['./policy-state-front.conf:/etc/nginx/nginx.conf:ro']
+    networks:
+      control: {aliases: [authority]}
+    depends_on: [authority1, authority2]
+  waf1:
+    <<: *runtime
+    environment: {NATIVE1_TOKEN: '${NATIVE1_TOKEN:?}'}
+    command: [serve, --config, /lab/waf1.json, --policy-state-config, /lab/client1.json]
+    ports: ['127.0.0.1:${WAF1_PORT:?}:8080']
+    networks: [control, origin]
+  waf2:
+    <<: *runtime
+    environment: {NATIVE2_TOKEN: '${NATIVE2_TOKEN:?}'}
+    command: [serve, --config, /lab/waf2.json, --policy-state-config, /lab/client2.json]
+    ports: ['127.0.0.1:${WAF2_PORT:?}:8080']
+    networks: [control, origin]
+  backend:
+    image: nginx:1.28.0-alpine@sha256:30f1c0d78e0ad60901648be663a710bdadf19e4c10ac6782c235200619158284
+    entrypoint: [nginx]
+    command: [-g, 'daemon off;']
+    user: '101:101'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ['/tmp:size=16m,mode=1777,noexec,nosuid,nodev']
+    volumes: ['./nginx.conf:/etc/nginx/nginx.conf:ro']
+    networks: [origin]
+networks:
+  control: {}
+  origin: {internal: true}
+volumes:
+  postgres-data: {}

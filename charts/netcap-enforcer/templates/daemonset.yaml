@@ -1,0 +1,133 @@
+{{- if .Values.enabled }}
+{{- if ne (empty .Values.policyState.configSecretName) (empty .Values.policyState.credentialsSecretName) }}{{ fail "policyState requires config and credentials Secret references" }}{{- end }}
+{{- if .Values.policyState.configSecretName }}
+{{- if ne .Values.mode "network" }}{{ fail "policyState is supported only in network mode" }}{{- end }}
+{{- if or (ne .Values.network.failureVerdict "deny") .Values.network.bypassWithoutListener .Values.network.failOpenOnOverflow }}{{ fail "policyState requires fail-closed NFQUEUE deadline, overflow and missing-listener settings" }}{{- end }}
+{{- end }}
+{{- if not .Values.nodeSelector }}{{ fail "nodeSelector must select dedicated lab nodes" }}{{- end }}
+{{- $namespace := required "scope.namespace must name an existing lab netns" .Values.scope.namespace }}
+{{- if or (not (regexMatch "^[a-zA-Z0-9_-]{1,64}$" $namespace)) (has $namespace (list "host" "default")) }}{{ fail "scope.namespace must be a named lab netns" }}{{- end }}
+{{- $interface := required "scope.interface required" .Values.scope.interface }}
+{{- $destination := .Values.scope.destination }}
+{{- $secret := .Values.tokenSecret.name }}
+{{- if eq .Values.mode "leases" }}
+{{- $destination = required "scope.destination required" $destination }}
+{{- $secret = required "tokenSecret.name required" $secret }}
+{{- else }}
+{{- if not .Values.scope.protectedCIDRs }}{{ fail "network mode requires scope.protectedCIDRs" }}{{- end }}
+{{- end }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Release.Name }}-netcap-enforcer
+spec:
+  selector:
+    matchLabels: {app.kubernetes.io/name: netcap-enforcer, app.kubernetes.io/instance: {{ .Release.Name }}}
+  updateStrategy: {type: OnDelete}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: netcap-enforcer, app.kubernetes.io/instance: {{ .Release.Name }}}
+    spec:
+      automountServiceAccountToken: false
+      hostNetwork: true
+      hostPID: false
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: enforcer
+          image: {{ if .Values.image.digest }}{{ printf "%s@%s" .Values.image.repository .Values.image.digest | quote }}{{ else }}{{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}{{ end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # ip netns exec uses setns/unshare/mount; NET_ADMIN alone is insufficient.
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            privileged: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL], add: [NET_ADMIN, SYS_ADMIN]}
+            seccompProfile: {type: Unconfined}
+            appArmorProfile: {type: Unconfined}
+          env:
+            - {name: ENFORCER_MODE, value: {{ .Values.mode | quote }}}
+            {{- if eq .Values.mode "leases" }}
+            - name: NETCAP_FIREWALL_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef: {name: {{ $secret | quote }}, key: {{ .Values.tokenSecret.key | quote }}}
+            {{- end }}
+            - {name: ENFORCER_NAMESPACE, value: {{ $namespace | quote }}}
+            - {name: ENFORCER_INTERFACE, value: {{ $interface | quote }}}
+            - {name: ENFORCER_DESTINATION, value: {{ $destination | quote }}}
+            - {name: ENFORCER_PORT, value: {{ .Values.scope.port | quote }}}
+            - {name: ENFORCER_PROTOCOL, value: {{ .Values.scope.protocol | quote }}}
+            - {name: ENFORCER_HOOK, value: {{ .Values.scope.hook | quote }}}
+            - {name: ENFORCER_TABLE, value: {{ .Values.scope.table | quote }}}
+            {{- if eq .Values.mode "network" }}
+            - {name: ENFORCER_QUEUE, value: {{ .Values.network.queue | quote }}}
+            - {name: ENFORCER_MAX_QUEUE_LEN, value: {{ .Values.network.maxQueueLen | quote }}}
+            - {name: ENFORCER_DEADLINE, value: {{ .Values.network.deadline | quote }}}
+            - {name: ENFORCER_FAILURE_VERDICT, value: {{ .Values.network.failureVerdict | quote }}}
+            {{- end }}
+          args:
+            {{- if eq .Values.mode "leases" }}
+            - --dry-run=false
+            {{- else }}
+            - --bypass-without-listener={{ .Values.network.bypassWithoutListener }}
+            - --fail-open-on-overflow={{ .Values.network.failOpenOnOverflow }}
+            - --inspect-tls={{ .Values.network.inspectTLS }}
+            {{- if .Values.policyState.configSecretName }}
+            - --policy-state-config=/etc/policy-state/config.json
+            {{- end }}
+            {{- range .Values.scope.managementDestinations }}
+            - --management-destination={{ . }}
+            {{- end }}
+            {{- end }}
+            {{- range .Values.scope.protectedCIDRs }}
+            - --protected-cidr={{ . }}
+            {{- end }}
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.policyState.credentialsSecretName }}
+          envFrom:
+            - secretRef: {name: {{ .Values.policyState.credentialsSecretName | quote }}}
+          {{- end }}
+          volumeMounts:
+            - {name: netns, mountPath: /run/netns, readOnly: true, mountPropagation: HostToContainer}
+            - {name: locks, mountPath: /run/netcap-enforcer}
+            - {name: state, mountPath: /var/lib/netcap-enforcer}
+            - {name: tmp, mountPath: /tmp}
+            {{- if .Values.policyState.configSecretName }}
+            - {name: policy-state, mountPath: /etc/policy-state, readOnly: true}
+            {{- end }}
+            {{- if eq .Values.mode "network" }}
+            - {name: policy, mountPath: /etc/netcap-network, readOnly: true}
+            {{- end }}
+      volumes:
+        {{- if .Values.policyState.configSecretName }}
+        - name: policy-state
+          secret: {secretName: {{ .Values.policyState.configSecretName | quote }}, defaultMode: 0440}
+        {{- end }}
+        - name: netns
+          hostPath: {path: /run/netns, type: Directory}
+        - name: locks
+          hostPath: {path: /run/netcap-enforcer, type: Directory}
+        - name: state
+          hostPath: {path: /var/lib/netcap-enforcer, type: Directory}
+        - name: tmp
+          emptyDir: {medium: Memory, sizeLimit: 16Mi}
+        {{- if eq .Values.mode "network" }}
+        - name: policy
+          configMap:
+            name: {{ .Release.Name }}-network-{{ toYaml .Values.policy | sha256sum | trunc 10 }}
+        {{- end }}
+{{- if eq .Values.mode "network" }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-network-{{ toYaml .Values.policy | sha256sum | trunc 10 }}
+immutable: true
+data:
+  policy.yaml: |
+    {{- toYaml .Values.policy | nindent 4 }}
+{{- end }}
+{{- end }}

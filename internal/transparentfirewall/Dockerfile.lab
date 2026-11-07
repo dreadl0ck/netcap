@@ -1,0 +1,16 @@
+FROM golang:1.27.0-alpine@sha256:4c9fe60190a2a3350ddc51de80d0224b8a6698d12bdfc999fee45ea9d6c46dbc AS build
+ENV GOWORK=off CGO_ENABLED=0 GOTOOLCHAIN=local
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN go build -tags coraza,http3 -trimpath -buildvcs=false -o /out/netcap-firewall ./cmd/netcap-firewall && \
+    go test -c -o /out/transparentfirewall.test ./internal/transparentfirewall
+
+FROM alpine:3.23.2@sha256:865b95f46d98cf867a156fe4a135ad3fe50d2056aa3f25ed31662dff6da4eb62
+RUN apk add --no-cache iproute2 nftables util-linux
+COPY --from=build /out/netcap-firewall /netcap-firewall
+COPY --from=build /out/transparentfirewall.test /transparentfirewall.test
+ENV NETCAP_TRANSPARENTFIREWALL_LAB=1
+ENV TFW_GATEWAY_BINARY=/netcap-firewall
+ENTRYPOINT ["/transparentfirewall.test", "-test.v", "-test.run", "^TestTransparent(Lab|ShippingCLI)$", "-test.timeout=120s"]

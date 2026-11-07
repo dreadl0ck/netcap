@@ -57,6 +57,7 @@
 * [Maltego](maltego-integration.md)
 * [Labeling datasets](audit-record-labeling.md)
 * [Firewall response actions](FIREWALL_RESPONSE_ACTIONS.md)
+* [Application firewall](APPLICATION_FIREWALL.md)
 
 ## Develop and extend
 * [Architecture](internals.md)

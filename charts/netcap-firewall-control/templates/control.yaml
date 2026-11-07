@@ -1,0 +1,137 @@
+{{- if .Values.enabled }}
+{{- $name := printf "%s-control" .Release.Name | trunc 50 | trimSuffix "-" }}
+{{- $config := required "configSecretName required (config.json with the selected persistence backend)" .Values.configSecretName }}
+{{- $credentials := required "credentialsSecretName required (tokenEnv keys)" .Values.credentialsSecretName }}
+{{- $tls := required "tlsSecretName required" .Values.tlsSecretName }}
+{{- $probeConfig := printf "%s-health-%s" $name (.Files.Get "files/policy-state-health.sh" | sha256sum | trunc 10) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  {{- if eq .Values.persistence.backend "postgres" }}
+  annotations:
+    netcap.io/database-namespace: {{ .Values.persistence.postgres.databaseNamespace | quote }}
+    netcap.io/database-url-env: {{ .Values.persistence.postgres.databaseURLEnv | quote }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  {{- if eq .Values.persistence.backend "sqlite" }}
+  strategy: {type: Recreate}
+  {{- else }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxUnavailable: 1, maxSurge: 1}
+  {{- end }}
+  selector:
+    matchLabels: {app.kubernetes.io/name: netcap-firewall-control, app.kubernetes.io/instance: {{ .Release.Name }}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: netcap-firewall-control, app.kubernetes.io/instance: {{ .Release.Name }}}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        runAsNonRoot: true
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: control
+          image: {{ if .Values.image.digest }}{{ printf "%s@%s" .Values.image.repository .Values.image.digest | quote }}{{ else }}{{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}{{ end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: [{{ .Values.service | quote }}, --config, /bootstrap/config.json, --listen, ':9092', --tls-cert, /tls/tls.crt, --tls-key, /tls/tls.key]
+          envFrom: [{secretRef: {name: {{ $credentials | quote }}}}]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          ports: [{name: control, containerPort: 9092}]
+          readinessProbe: {tcpSocket: {port: control}, periodSeconds: 5}
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - {name: bootstrap, mountPath: /bootstrap, readOnly: true}
+            - {name: tls, mountPath: /tls, readOnly: true}
+            {{- if eq .Values.persistence.backend "sqlite" }}
+            - {name: state, mountPath: /var/lib/control}
+            {{- end }}
+        {{- if .Values.healthProbe.enabled }}
+        - name: authenticated-health
+          image: curlimages/curl:8.19.0@sha256:c03110c736db81bbe1be0296f1f1608c81b954b01626bdfb0a8f84e5bd00ff3c
+          command: [/bin/sh, -ec, 'exec sleep 2147483647']
+          env:
+            - {name: PROBE_SERVER, value: {{ default $name .Values.healthProbe.serverName | quote }}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          readinessProbe:
+            exec: {command: [/bin/sh, /health/probe.sh]}
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            requests: {cpu: 5m, memory: 8Mi}
+            limits: {cpu: 50m, memory: 32Mi}
+          volumeMounts:
+            - {name: health-script, mountPath: /health, readOnly: true}
+            - {name: health-auth, mountPath: /probe-auth, readOnly: true}
+            - {name: health-ca, mountPath: /probe-ca, readOnly: true}
+        {{- end }}
+      volumes:
+        {{- if .Values.healthProbe.enabled }}
+        - name: health-script
+          configMap: {name: {{ $probeConfig }}, defaultMode: 0444}
+        - name: health-auth
+          secret:
+            secretName: {{ .Values.healthProbe.authorizationSecretName | quote }}
+            defaultMode: 0440
+            items: [{key: {{ .Values.healthProbe.authorizationSecretKey | quote }}, path: authorization}]
+        - name: health-ca
+          secret: {secretName: {{ .Values.healthProbe.caSecretName | quote }}, defaultMode: 0440}
+        {{- end }}
+        - name: bootstrap
+          secret: {secretName: {{ $config | quote }}, defaultMode: 0440}
+        - name: tls
+          secret: {secretName: {{ $tls | quote }}, defaultMode: 0440}
+        {{- if eq .Values.persistence.backend "sqlite" }}
+        - name: state
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-state" $name) .Values.storage.existingClaim | quote }}
+        {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+spec:
+  type: ClusterIP
+  selector: {app.kubernetes.io/name: netcap-firewall-control, app.kubernetes.io/instance: {{ .Release.Name }}}
+  ports: [{name: control, port: 9092, targetPort: control}]
+{{- if and (eq .Values.persistence.backend "sqlite") (not .Values.storage.existingClaim) }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $name }}-state
+  annotations: {helm.sh/resource-policy: keep}
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- if .Values.storage.className }}
+  storageClassName: {{ .Values.storage.className | quote }}
+  {{- end }}
+  resources:
+    requests: {storage: {{ .Values.storage.size }}}
+{{- end }}
+{{- if .Values.healthProbe.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $probeConfig }}
+immutable: true
+data:
+  probe.sh: |
+    {{- .Files.Get "files/policy-state-health.sh" | nindent 4 }}
+{{- end }}
+{{- end }}

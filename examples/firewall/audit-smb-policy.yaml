@@ -1,0 +1,11 @@
+version: netcap-policy/v1
+id: retrospective-smb-future-response
+mode: enforce
+default: allow
+rules:
+  - id: observe-admin-share
+    phase: request
+    expression: 'Protocol == "audit" && RecordType == "SMB" && Fields["ShareName"] == "ADMIN$"'
+    action: deny
+    effects:
+      - {kind: block_source, target: source, duration: 30s, scope: lab-edge}

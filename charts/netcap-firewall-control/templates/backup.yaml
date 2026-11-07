@@ -1,0 +1,110 @@
+{{- if .Values.backup.enabled }}
+{{- if not (semverCompare ">=1.27.0-0" .Capabilities.KubeVersion.Version) }}{{ fail "backup CronJob timeZone requires Kubernetes 1.27+" }}{{- end }}
+{{- $name := printf "%s-control-backup" .Release.Name | trunc 52 | trimSuffix "-" }}
+{{- $scripts := printf "%s\n%s" (.Files.Get "files/backup-dump.sh") (.Files.Get "files/backup-restic.sh") }}
+{{- $config := printf "%s-%s" $name ($scripts | sha256sum | trunc 10) }}
+{{- $host := printf "netcap-%s-%s-%s" .Values.backup.scope .Release.Namespace .Release.Name }}
+{{- $tag := printf "netcap-control/%s/%s/%s/%s" .Values.backup.scope .Release.Namespace .Release.Name .Values.service }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $config }}
+immutable: true
+data:
+  dump.sh: |
+    {{- .Files.Get "files/backup-dump.sh" | nindent 4 }}
+  restic.sh: |
+    {{- .Files.Get "files/backup-restic.sh" | nindent 4 }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ $name }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  timeZone: {{ .Values.backup.timeZone | quote }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: {{ .Values.backup.activeDeadlineSeconds }}
+      ttlSecondsAfterFinished: {{ .Values.backup.ttlSecondsAfterFinished }}
+      template:
+        metadata:
+          labels: {app.kubernetes.io/name: netcap-control-backup, app.kubernetes.io/instance: {{ .Release.Name }}}
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            runAsNonRoot: true
+            fsGroup: 10001
+            seccompProfile: {type: RuntimeDefault}
+          initContainers:
+            - name: consistent-dump
+              image: postgres:17.11@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f
+              command: [/bin/sh, /scripts/dump.sh]
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: [ALL]}
+              env:
+                - {name: PGSERVICEFILE, value: /db/pg_service.conf}
+                - {name: PGSERVICE, value: {{ .Values.backup.databaseService | quote }}}
+                - {name: DATABASE_NAMESPACE, value: {{ .Values.persistence.postgres.databaseNamespace | quote }}}
+                - {name: MAX_DUMP_BYTES, value: {{ .Values.backup.maxDumpBytes | int64 | quote }}}
+                - {name: TMPDIR, value: /cache}
+              resources: {{ toYaml .Values.backup.resources | nindent 16 }}
+              volumeMounts:
+                - {name: scripts, mountPath: /scripts, readOnly: true}
+                - {name: database, mountPath: /db, readOnly: true}
+                - {name: work, mountPath: /work}
+                - {name: cache, mountPath: /cache}
+          containers:
+            - name: encrypted-backup
+              image: restic/restic:0.18.1@sha256:39d9072fb5651c80d75c7a811612eb60b4c06b32ffe87c2e9f3c7222e1797e76
+              command: [/bin/sh, /scripts/restic.sh]
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: [ALL]}
+              envFrom: [{secretRef: {name: {{ .Values.backup.repositorySecretName | quote }}}}]
+              env:
+                - {name: RESTIC_PASSWORD_FILE, value: /password/password}
+                - {name: RESTIC_CACHE_DIR, value: /cache}
+                - {name: HOME, value: /cache}
+                - {name: TMPDIR, value: /cache}
+                - {name: BACKUP_HOST, value: {{ $host | quote }}}
+                - {name: BACKUP_TAG, value: {{ $tag | quote }}}
+                - {name: KEEP_DAILY, value: {{ .Values.backup.retention.keepDaily | int64 | quote }}}
+                - {name: KEEP_WEEKLY, value: {{ .Values.backup.retention.keepWeekly | int64 | quote }}}
+                - {name: KEEP_MONTHLY, value: {{ .Values.backup.retention.keepMonthly | int64 | quote }}}
+                - {name: PRUNE, value: {{ .Values.backup.retention.prune | quote }}}
+              resources: {{ toYaml .Values.backup.resources | nindent 16 }}
+              volumeMounts:
+                - {name: scripts, mountPath: /scripts, readOnly: true}
+                - {name: repository, mountPath: /repository, readOnly: true}
+                - {name: password, mountPath: /password, readOnly: true}
+                - {name: work, mountPath: /work}
+                - {name: cache, mountPath: /cache}
+          volumes:
+            - name: scripts
+              configMap: {name: {{ $config }}, defaultMode: 0444}
+            - name: database
+              secret: {secretName: {{ .Values.backup.databaseSecretName | quote }}, defaultMode: 0440}
+            - name: repository
+              secret: {secretName: {{ .Values.backup.repositorySecretName | quote }}, defaultMode: 0440}
+            - name: password
+              secret:
+                secretName: {{ .Values.backup.passwordSecretName | quote }}
+                defaultMode: 0440
+                items: [{key: {{ .Values.backup.passwordSecretKey | quote }}, path: password}]
+            - name: work
+              emptyDir: {sizeLimit: {{ .Values.backup.workSize }}}
+            - name: cache
+              emptyDir: {sizeLimit: {{ .Values.backup.cacheSize }}}
+{{- end }}
