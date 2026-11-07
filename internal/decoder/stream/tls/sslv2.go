@@ -144,6 +144,12 @@ func (f *sslv2Framer) emitHello() {
 	if f.initialLossUnknown {
 		status = "unknown-initial-stream-loss"
 	}
+	if f.reader.transportObservation != "" {
+		if status != "" {
+			status += ","
+		}
+		status += f.reader.transportObservation + "; endpoint delivery unconfirmed"
+	}
 	var record proto.Message
 	var d *decoder.AbstractDecoder
 	switch {

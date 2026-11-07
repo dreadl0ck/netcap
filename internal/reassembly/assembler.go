@@ -283,14 +283,14 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	}
 	observer, observesClose := half.stream.(PostCloseObserver)
 	observesClose = observesClose && observer.ObservePostClose()
-	if observesClose && (t.RST || t.FIN) {
+	if observesClose && t.RST {
 		conn.observeClose = true
 	}
 	if observesClose && len(t.Payload) > 0 {
 		reason := ""
 		if conn.resetSeen || t.RST {
 			reason = "after-rst"
-		} else if half.finSeen {
+		} else if half.finSeen || half.finPending && half.finSeq.difference(Sequence(t.Seq)) >= 0 {
 			reason = "after-fin"
 		}
 		if reason != "" {
@@ -318,8 +318,8 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	if t.RST {
 		conn.resetSeen = true
 	}
-	if observesClose && t.FIN && !half.finSeen {
-		half.finSeen, half.finSeq = true, Sequence(t.Seq).add(len(t.Payload))
+	if observesClose && t.FIN && !half.finSeen && !half.finPending {
+		half.finPending, half.finSeq = true, Sequence(t.Seq).add(len(t.Payload))
 	}
 
 	seq, ack, bytes := Sequence(t.Seq), Sequence(t.Ack), t.Payload
@@ -382,6 +382,13 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		half.nextSeq = action.nextSeq
 		if t.FIN && !observesClose {
 			half.nextSeq = half.nextSeq.add(1)
+		}
+	}
+	if half.finPending && half.nextSeq != invalidSequence && half.finSeq.difference(half.nextSeq) >= 0 {
+		half.finPending, half.finSeen = false, true
+		conn.observeClose = true
+		if observer, ok := half.stream.(interface{ FINContiguous(TCPFlowDirection) }); ok {
+			observer.FINContiguous(half.dir)
 		}
 	}
 

@@ -77,6 +77,7 @@ type tcpConnection struct {
 	postCloseMarkers     [2]*core.StreamData
 	postCloseBytes       [2]int
 	resetObserved        bool
+	pendingFIN           [2]*layers.TCP
 	sync.Mutex
 	factory        *connectionFactory
 	releaseOnce    sync.Once
@@ -106,18 +107,25 @@ type tcpConnection struct {
 // Accept decides whether the TCP packet should be accepted
 // start could be modified to force a start even if no SYN have been seen.
 func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection, nextSeq reassembly.Sequence) bool {
+	side := 0
+	if dir == reassembly.TCPDirServerToClient {
+		side = 1
+	}
 	// Validation is transactional: a rejected close must not poison the FSM
 	// or the advertised-window state used by subsequent observations.
 	state, options := *t.tcpstate, t.optchecker
 	// Finite State Machine
 	staleReset := tcp.RST && nextSeq >= 0 && tcp.Seq != uint32(nextSeq)
-	// Only contiguous FIN evidence may change lifecycle state. A future FIN
-	// cannot close bytes that have not yet been observed.
-	invalidFIN := tcp.FIN && nextSeq >= 0 && (int32(tcp.Seq-uint32(nextSeq)) > 0 || int32(tcp.Seq+uint32(len(tcp.Payload))-uint32(nextSeq)) < 0)
+	futureFIN := tcp.FIN && nextSeq >= 0 && int32(tcp.Seq-uint32(nextSeq)) > 0
+	invalidFIN := tcp.FIN && nextSeq >= 0 && (futureFIN && len(tcp.Payload) == 0 || int32(tcp.Seq+uint32(len(tcp.Payload))-uint32(nextSeq)) < 0)
 	invalidRefusal := tcp.RST && nextSeq < 0 && t.initStage == 1 && (!tcp.ACK || tcp.Ack != t.clientISN+1)
 	invalidClose := staleReset || invalidFIN || invalidRefusal || tcp.RST && tcp.FIN || (tcp.RST || tcp.FIN) && (tcp.SYN || reassembly.ValidateTCPOptions(tcp) != nil)
 	lateSYNACK := tcp.SYN && tcp.ACK && t.initStage == 1 && tcp.Ack == t.clientISN+1
-	if invalidClose || !state.CheckState(tcp, dir) && !(t.resetObserved && (!tcp.SYN || lateSYNACK)) {
+	checked := *tcp
+	if futureFIN {
+		checked.FIN = false
+	}
+	if invalidClose || !state.CheckState(&checked, dir) && !(t.resetObserved && (!tcp.SYN || lateSYNACK)) {
 
 		reassemblyLog.Debug("packet rejected by FSM", zap.String("ident", t.ident), zap.String("state", t.tcpstate.String()))
 
@@ -173,6 +181,9 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 	if accept {
 		*t.tcpstate, t.optchecker = state, options
 		t.resetObserved = t.resetObserved || tcp.RST
+		if futureFIN && t.pendingFIN[side] == nil {
+			t.pendingFIN[side] = &layers.TCP{FIN: true, ACK: tcp.ACK}
+		}
 	}
 
 	if accept && !tcp.RST && !tcp.FIN {
@@ -207,6 +218,18 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 		t.Unlock()
 	}
 	return accept
+}
+
+// FINContiguous commits a queued FIN only after its preceding bytes arrive.
+func (t *tcpConnection) FINContiguous(dir reassembly.TCPFlowDirection) {
+	side := 0
+	if dir == reassembly.TCPDirServerToClient {
+		side = 1
+	}
+	if fin := t.pendingFIN[side]; fin != nil {
+		t.tcpstate.CheckState(fin, dir)
+		t.pendingFIN[side] = nil
+	}
 }
 
 func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, length int, saved int, start bool, end bool, dir reassembly.TCPFlowDirection) {

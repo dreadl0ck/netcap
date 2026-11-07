@@ -102,6 +102,7 @@ var fieldsTLSCertificate = []string{
 	fieldJa4x,
 	fieldJa4xRaw,
 	"CommunityID", "AssessmentTime", "AssessmentBasis", "ValidityState", "SelfSignatureState", "CertificateSender", "NotBeforeRFC3339", "NotAfterRFC3339",
+	"TCPObservation",
 }
 
 // CSVHeader returns the CSV header for the audit record
@@ -152,6 +153,7 @@ func (t *TLSCertificate) CSVRecord() []string {
 		t.Ja4X,
 		t.Ja4XRaw,
 		t.CommunityID, formatInt64(t.AssessmentTime), t.AssessmentBasis, t.ValidityState, t.SelfSignatureState, t.CertificateSender, t.NotBeforeRFC3339, t.NotAfterRFC3339,
+		t.TCPObservation,
 	})
 }
 

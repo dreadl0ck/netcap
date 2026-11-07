@@ -83,6 +83,9 @@ func addOrUpdateCertificate(cert *types.TLSCertificate) bool {
 		identity, _ := json.Marshal([]any{fingerprint, cert.CommunityID, cert.CertificateSender, cert.Timestamp, cert.ChainIndex, cert.SrcIP, cert.DstIP, cert.SrcPort, cert.DstPort})
 		fingerprint = string(identity)
 	}
+	if cert.TCPObservation != "" {
+		fingerprint += "\x00" + cert.TCPObservation
+	}
 	if entry, exists := certificates.Items[fingerprint]; exists {
 		// Update existing certificate
 		entry.Lock()
