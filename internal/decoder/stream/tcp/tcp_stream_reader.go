@@ -47,29 +47,42 @@ func SetLogger(l *zap.Logger) {
 // this structure has an optimized field order to avoid excessive padding.
 type tcpStreamReader struct {
 	sync.Mutex
-	data     core.DataFragments
-	ident    string
-	parent   *tcpConnection
-	numBytes int
-	dataChan chan *core.StreamData
-	hexdump  bool
-	isClient bool
-	saved    bool
+	data        core.DataFragments
+	ident       string
+	parent      *tcpConnection
+	numBytes    int
+	dataChan    chan *core.StreamData
+	hexdump     bool
+	isClient    bool
+	saved       bool
+	closeOnce   sync.Once
+	done        chan struct{}
+	factorySlot int
 }
 
 func (t *tcpConnection) newTCPStreamReader(client bool) *tcpStreamReader {
 	return &tcpStreamReader{
-		dataChan: make(chan *core.StreamData, decoderconfig.Instance.StreamDecoderBufSize),
-		ident:    t.ident,
-		hexdump:  decoderconfig.Instance.HexDump,
-		parent:   t,
-		isClient: client,
+		dataChan:    make(chan *core.StreamData, decoderconfig.Instance.StreamDecoderBufSize),
+		ident:       t.ident,
+		hexdump:     decoderconfig.Instance.HexDump,
+		parent:      t,
+		isClient:    client,
+		done:        make(chan struct{}),
+		factorySlot: -1,
 	}
 }
 
 // DataChan returns a channel for sending stream data.
 func (t *tcpStreamReader) DataChan() chan *core.StreamData {
 	return t.dataChan
+}
+
+func (t *tcpStreamReader) CloseData() {
+	t.closeOnce.Do(func() {
+		if t.dataChan != nil {
+			close(t.dataChan)
+		}
+	})
 }
 
 // StoreData records an immutable stream fragment synchronously with the
@@ -235,7 +248,12 @@ func contiguousServicePrefix(data core.DataFragments, limit int) []byte {
 
 // Run starts reading TCP traffic in a single direction.
 func (t *tcpStreamReader) Run(f *connectionFactory) {
-	defer t.Cleanup(f)
+	defer func() {
+		t.Cleanup(f)
+		if t.done != nil {
+			close(t.done)
+		}
+	}()
 	for range t.dataChan {
 	}
 }

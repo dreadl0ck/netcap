@@ -72,6 +72,8 @@ func NumSavedTCPConns() int64 {
 // this structure has an optimized field order to avoid excessive padding.
 type tcpConnection struct {
 	sync.Mutex
+	factory        *connectionFactory
+	releaseOnce    sync.Once
 	net, transport gopacket.Flow
 
 	optchecker reassembly.TCPOptionCheck
@@ -435,6 +437,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 	)
 
 	// optionally, do not remove the connection to allow last ACK
+	t.releaseResources()
 	return decoderconfig.Instance.RemoveClosedStreams
 }
 
@@ -631,9 +634,7 @@ func CleanupReassembly(_ bool, assemblers []*reassembly.Assembler) {
 		}
 	}
 	decoderconfig.UnlockInstance()
-	StreamFactory.Lock()
-	numTotal := len(StreamFactory.streamReaders)
-	StreamFactory.Unlock()
+	numTotal := len(StreamFactory.readerSnapshot())
 	if !decoderconfig.Instance.Quiet && numTotal > 1 {
 		fmt.Println("\nprocessing last TCP streams")
 	}

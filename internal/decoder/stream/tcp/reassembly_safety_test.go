@@ -140,26 +140,23 @@ func TestPrivatePoolCleanup(t *testing.T) {
 			if StreamFactory.StreamPool != nil {
 				t.Fatal("private pools retained an unused singleton pool")
 			}
-			if len(StreamFactory.streamReaders) != workers*2 {
-				t.Fatalf("readers = %d", len(StreamFactory.streamReaders))
+			pending := StreamFactory.readerSnapshot()
+			if len(pending) != workers {
+				t.Fatalf("pending readers = %d, want %d after maintenance released completed readers", len(pending), workers)
 			}
-			saved := 0
-			for _, s := range StreamFactory.streamReaders {
+			for _, s := range pending {
 				if s.Saved() {
-					saved++
-					continue
+					t.Fatal("finalized reader remained registered")
 				}
 				if s.NumBytes() != 0 {
 					t.Fatal("test payload was not buffered until cleanup")
 				}
 			}
-			if saved != workers {
-				t.Fatalf("saved readers = %d, want %d from worker maintenance only", saved, workers)
-			}
 			// An unpooled connection exercises fallback processing after reader EOF.
 			StreamFactory.New(gopacket.NewFlow(layers.EndpointIPv4, []byte{10, 1, 0, 1}, []byte{10, 1, 0, 2}),
 				gopacket.NewFlow(layers.EndpointTCPPort, []byte{1, 1}, []byte{0, 80}),
 				&context{CaptureInfo: gopacket.CaptureInfo{Timestamp: time.Now()}})
+			remaining := StreamFactory.readerSnapshot()
 			CleanupReassembly(wait, assemblers)
 			// Both public close functions remain safe for post-join external callers.
 			for range 4 {
@@ -171,19 +168,18 @@ func TestPrivatePoolCleanup(t *testing.T) {
 				}()
 			}
 			wg.Wait()
-			if StreamFactory.closedReaders != len(StreamFactory.streamReaders) {
-				t.Fatalf("cleanup closed %d of %d reader channels",
-					StreamFactory.closedReaders, len(StreamFactory.streamReaders))
+			if len(StreamFactory.readerSnapshot()) != 0 {
+				t.Fatal("cleanup retained finalized reader references")
 			}
 			if StreamFactory.numActive != 0 {
 				t.Fatalf("cleanup returned with %d active readers", StreamFactory.numActive)
 			}
-			for _, s := range StreamFactory.streamReaders {
+			for _, s := range remaining {
 				if !s.Saved() {
 					t.Fatal("cleanup failed to finalize a stream")
 				}
 			}
-			for _, s := range StreamFactory.streamReaders[:workers*2] {
+			for _, s := range pending {
 				if s.IsClient() && s.NumBytes() != len("buffered until flush") {
 					t.Fatalf("cleanup lost buffered payload: got %d bytes", s.NumBytes())
 				}

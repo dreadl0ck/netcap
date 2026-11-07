@@ -47,6 +47,13 @@ and timeout closure is labeled `idle-expired`.
 Offline collection does not start a wall-clock maintenance timer or enable idle
 expiry; its existing packet-driven capture-time policy is preserved.
 
+Completed TCP connections finish decoding, conversation persistence and banner
+extraction before closing/joining both reader tasks. Raw fragment/decoder references
+are released and reader-registry slots reused (`tcp/tcp_resources.go`); lifetime
+byte counters and any retained closed-connection FSM metadata remain available.
+This releases completed-stream state during capture, without claiming a global
+bound on still-open streams or decoder-owned caches.
+
 ## Inspect the evidence
 
 With `-conns`, `stream-evidence/stream-*/` contains `client.bin`, `server.bin`

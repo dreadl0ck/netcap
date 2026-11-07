@@ -59,17 +59,11 @@ func closeStreamReaderChannelsAndWaitInternal(doLog bool) {
 		return
 	}
 
-	// Close each reader's dataChan exactly once to signal EOF.
-	// A watermark rather than a flag: readers registered by a later capture
-	// still need closing, otherwise the wait below never returns.
-	StreamFactory.Lock()
-	pending := StreamFactory.streamReaders[StreamFactory.closedReaders:]
-	StreamFactory.closedReaders = len(StreamFactory.streamReaders)
-	StreamFactory.Unlock()
+	pending := StreamFactory.readerSnapshot()
 
 	for _, reader := range pending {
-		if reader != nil && reader.DataChan() != nil {
-			close(reader.DataChan())
+		if reader != nil {
+			reader.CloseData()
 		}
 	}
 
@@ -113,12 +107,12 @@ func GetStreamPool() *reassembly.StreamPool {
 // and spawn the stream decoder routines for processing the data.
 type connectionFactory struct {
 	sync.Mutex
-	streamReaders []streamReader
-	numActive     int64
-	StreamPool    *reassembly.StreamPool
-	wg            sync.WaitGroup
-	FSMOptions    reassembly.TCPSimpleFSMOptions
-	closedReaders int
+	streamReaders   []streamReader
+	numActive       int64
+	StreamPool      *reassembly.StreamPool
+	wg              sync.WaitGroup
+	FSMOptions      reassembly.TCPSimpleFSMOptions
+	freeReaderSlots []int
 }
 
 // New handles a new stream received from the assembler
@@ -132,6 +126,7 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 
 	// parent structure for tracking the bidirectional connection
 	str := &tcpConnection{
+		factory:     factory,
 		net:         net,
 		transport:   transport,
 		tcpstate:    reassembly.NewTCPSimpleFSM(factory.FSMOptions),
@@ -143,17 +138,23 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 	str.decoder = &tcpReader{
 		parent: str,
 	}
-	str.client = str.newTCPStreamReader(true)
-	str.server = str.newTCPStreamReader(false)
+	client, server := str.newTCPStreamReader(true), str.newTCPStreamReader(false)
+	str.client, str.server = client, server
 
 	factory.wg.Add(2)
 
 	factory.Lock()
-	factory.streamReaders = append(
-		factory.streamReaders,
-		str.client,
-		str.server,
-	)
+	for _, reader := range []*tcpStreamReader{client, server} {
+		slot := len(factory.streamReaders)
+		if last := len(factory.freeReaderSlots) - 1; last >= 0 {
+			slot = factory.freeReaderSlots[last]
+			factory.freeReaderSlots = factory.freeReaderSlots[:last]
+		} else {
+			factory.streamReaders = append(factory.streamReaders, nil)
+		}
+		factory.streamReaders[slot] = reader
+		reader.factorySlot = slot
+	}
 	factory.numActive += 2
 	factory.Unlock()
 
