@@ -384,7 +384,7 @@ func TestV3SQLiteRebuildReproducesReviewedBytes(t *testing.T) {
 
 func TestPackWrapperNoDeploymentAndPropagatesFailure(t *testing.T) {
 	cmd := exec.Command("bash", "../../zeus/scripts/pack-dbs.sh", "-d", t.TempDir(), "-a", "reviews.json", "--approvals-sha256", digest([]byte("synthetic wrapper fixture")))
-	cmd.Env = append(os.Environ(), "NETCAP_BIN=/usr/bin/false")
+	cmd.Env = append(os.Environ(), "NETCAP_BIN=false")
 	if body, err := cmd.CombinedOutput(); err == nil {
 		t.Fatal("wrapper swallowed pack failure")
 	} else if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 1 {
