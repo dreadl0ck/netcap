@@ -38,6 +38,10 @@ const maxPostCloseBytes = 64 << 10
 
 func (t *tcpConnection) ObservePostClose() bool { return true }
 
+func (t *tcpConnection) ReassemblyDiscarded(dir reassembly.TCPFlowDirection, size int, ac reassembly.AssemblerContext) {
+	t.recordDiscard(&t.pageBudgetMarkers, "tcp-reassembly-page-budget", dir, size, ac)
+}
+
 func (t *tcpConnection) recordPostCloseDiscard(dir reassembly.TCPFlowDirection, size int, ac reassembly.AssemblerContext) {
 	t.recordDiscard(&t.postCloseMarkers, "tcp-post-close-budget", dir, size, ac)
 }

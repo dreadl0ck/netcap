@@ -43,4 +43,5 @@ func (c *Collector) maintainStreams(ref time.Time) {
 	for _, worker := range c.workers {
 		worker <- &workerControl{ref: ref, idle: true}
 	}
+	c.checkpointNetworkDetection()
 }

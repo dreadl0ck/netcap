@@ -46,6 +46,10 @@ func (lp *livePacket) isPacket() bool {
 // Creates a page (or set of pages) from a TCP packet: returns the first and last
 // page in its doubly-linked list of new pages.
 func (lp *livePacket) convertToPages(pc *pageCache, skip int, _ AssemblerContext) (*page, *page, int) {
+	pages := max(1, (len(lp.bytes)-skip+pageBytes-1)/pageBytes)
+	if !pc.budget.reserve(pages) {
+		return nil, nil, 0
+	}
 	ts := lp.captureInfo().Timestamp
 	first := pc.next(ts)
 	current := first
@@ -78,7 +82,7 @@ func (lp *livePacket) convertToPages(pc *pageCache, skip int, _ AssemblerContext
 }
 
 func (lp *livePacket) estimateNumberOfPages() int {
-	return (len(lp.bytes) + pageBytes + 1) / pageBytes
+	return max(1, (len(lp.bytes)+pageBytes-1)/pageBytes)
 }
 
 func (lp *livePacket) release(*pageCache) int {

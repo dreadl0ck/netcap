@@ -54,6 +54,31 @@ are released and reader-registry slots reused (`tcp/tcp_resources.go`); lifetime
 byte counters and any retained closed-connection FSM metadata remain available.
 This releases completed-stream state during capture, without claiming a global
 bound on still-open streams or decoder-owned caches.
+`KeepFrom` pages previously survived half-connection closure; closure now releases
+both saved/queued lists and clears delivery scratch references
+(`internal/reassembly/page_budget_test.go`).
+
+## Shared retention budgets
+
+| Control | Accounted storage / exhaustion |
+| --- | --- |
+| `-max-retained-tcp-bytes` / `NC_MAX_RETAINED_TCP_BYTES` | Copied TCP reader payload across every worker; exhaustion aborts capture. |
+| `-max-retained-reassembly-bytes` / `NC_MAX_RETAINED_REASSEMBLY_BYTES` | TCP page payload arrays plus fixed page metadata across every worker. Reservations precede allocation, multi-page requests are atomic, and consumed pages leave no free-page cache. Exhaustion aborts capture. |
+| `-max-buffered-pages-total` | Per-worker pressure threshold; it can force gap delivery and is not an aggregate byte cap. |
+
+Both byte controls default to `0` (unlimited) and reject negative values.
+`TCPReassemblyPageBudget.json` records the page limit, current/peak bytes,
+rejected allocation bytes and exhaustion. `capture-manifest.json` records
+`maxRetainedReassemblyBytes` as a quoted integer; budget failure produces status
+`error` and no audit-ready marker. Stream spans retain actual discarded payload
+bytes with reason `tcp-reassembly-page-budget` and status `locally-truncated`.
+Rejected allocation bytes include page metadata/padding and therefore need not
+equal discarded payload bytes.
+
+These controls exclude connection metadata, packet contexts, protocol parser
+copies, decoder caches, native libraries and Go garbage awaiting collection.
+Neither configured byte limits nor `0` certify process RSS. Tests:
+`internal/collector/page_budget_test.go`, `tests/e2e/page_budget_test.go`.
 
 ## Inspect the evidence
 

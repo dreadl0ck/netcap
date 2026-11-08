@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -40,9 +41,9 @@ func stableKey(parts ...any) string {
 
 func boundedText(s string, limit int) string {
 	if len(s) > limit {
-		return s[:limit]
+		s = s[:limit]
 	}
-	return s
+	return strings.Clone(s)
 }
 
 // Examples retain bounded structured context, never application payloads.

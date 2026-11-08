@@ -663,6 +663,17 @@ func GetFlags() []cli.Flag {
 				return nil
 			},
 		},
+		&cli.Int64Flag{
+			Name:    "max-retained-reassembly-bytes",
+			Usage:   "maximum TCP reassembly page allocation bytes shared by all workers (0 = unlimited, excludes parser state and RSS); exhaustion aborts capture",
+			Sources: cli.EnvVars("NC_MAX_RETAINED_REASSEMBLY_BYTES"),
+			Action: func(_ context.Context, _ *cli.Command, value int64) error {
+				if value < 0 {
+					return fmt.Errorf("max-retained-reassembly-bytes cannot be negative")
+				}
+				return nil
+			},
+		},
 		&cli.IntFlag{
 			Name:    "compression-block-size",
 			Value:   defaults.CompressionBlockSize,

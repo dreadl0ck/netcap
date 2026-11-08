@@ -75,6 +75,7 @@ type tcpConnection struct {
 	payloadBudget        *retainedPayloadBudget
 	retainedPayloadBytes int64
 	retentionMarkers     [2]*core.StreamData
+	pageBudgetMarkers    [2]*core.StreamData
 	postCloseMarkers     [2]*core.StreamData
 	postCloseBytes       [2]int
 	resetObserved        bool

@@ -334,6 +334,9 @@ type Config struct {
 	// Exhaustion cancels collection and marks audit output failed.
 	MaxRetainedTCPBytes int64
 
+	// MaxRetainedReassemblyBytes bounds shared TCP page allocations; zero is unlimited.
+	MaxRetainedReassemblyBytes int64
+
 	// PerfTracker tracks performance metrics
 	PerfTracker *performance.Tracker
 

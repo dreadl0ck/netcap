@@ -47,12 +47,10 @@ func Observation(m proto.Message) (ApplicationObservation, bool) {
 	default:
 		return o, false
 	}
-	if len(o.Path) > 1024 {
-		o.Path = o.Path[:1024]
-	}
-	if len(o.Host) > 253 {
-		o.Host = o.Host[:253]
-	}
+	o.SrcIP, o.DstIP = boundedText(o.SrcIP, 64), boundedText(o.DstIP, 64)
+	o.Method, o.Path = boundedText(o.Method, 32), boundedText(o.Path, 1024)
+	o.Host, o.CommunityID = boundedText(o.Host, 253), boundedText(o.CommunityID, 128)
+	o.Qualification = boundedText(o.Qualification, 256)
 	return o, true
 }
 
@@ -84,6 +82,14 @@ func NewApplication(c Config) *ApplicationEngine {
 
 func (e *ApplicationEngine) Flush() []*types.Alert {
 	alerts := e.aggregates.flush()
+	e.Alerts += uint64(len(alerts))
+	return alerts
+}
+
+// Checkpoint emits partial aggregates without advancing capture time or
+// resetting scan/beacon history. Delayed older records remain explicit Late.
+func (e *ApplicationEngine) Checkpoint() []*types.Alert {
+	alerts := e.aggregates.checkpoint("live")
 	e.Alerts += uint64(len(alerts))
 	return alerts
 }
@@ -204,9 +210,14 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.A
 	for drop < len(s.samples) && o.At-s.samples[drop].at > e.config.WindowNS {
 		drop++
 	}
-	s.samples = s.samples[drop:]
+	copy(s.samples, s.samples[drop:])
+	clear(s.samples[len(s.samples)-drop:])
+	s.samples = s.samples[:len(s.samples)-drop]
 	if len(s.samples) > 128 {
-		s.samples = s.samples[len(s.samples)-128:]
+		drop := len(s.samples) - 128
+		copy(s.samples, s.samples[drop:])
+		clear(s.samples[128:])
+		s.samples = s.samples[:128]
 	}
 	paths := map[string]bool{}
 	failures := 0

@@ -95,7 +95,11 @@ type Collector struct {
 	recordScopes           map[string]recordScope
 	ipScopes               map[string]recordScope
 	applicationRecords     []networkdetect.ApplicationObservation
-	applicationConfig      networkdetect.Config
+	applicationDetector    *networkdetect.ApplicationEngine
+	applicationQueuedBytes int64
+	applicationPeakBytes   int64
+	applicationQueueDrops  uint64
+	reassemblyPageBudget   *reassembly.PageBudget
 	analysisOverflow       uint64
 	analysisUnscoped       uint64
 	lifecycleMu            sync.Mutex // full initialization and task registration

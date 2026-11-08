@@ -30,7 +30,7 @@ func (c *Collector) initNetworkDetection() error {
 	if err != nil {
 		return err
 	}
-	c.applicationConfig = options
+	c.applicationDetector = networkdetect.NewApplication(options)
 	writer, err := rules.NewFileAlertWriter(c.config.DecoderConfig.Out)
 	if err != nil {
 		return err
@@ -58,6 +58,9 @@ func (c *Collector) observeNetworkDetection(packet gopacket.Packet) {
 		alerts, err := c.networkDetector.Observe(event)
 		if err = errors.Join(err, c.writeDetectionAlerts(alerts)); err != nil {
 			c.networkDetectionError = err
+			if c.runCancel != nil {
+				c.runCancel()
+			}
 			return
 		}
 	}
@@ -77,6 +80,25 @@ func (c *Collector) writeDetectionAlerts(alerts []*types.Alert) error {
 func (c *Collector) checkpointNetworkDetection() {
 	if c.networkDetector != nil && c.networkDetectionError == nil {
 		c.networkDetectionError = c.writeDetectionAlerts(c.networkDetector.Checkpoint())
+		if c.captureKind == "live" {
+			// Hold admission until every worker reaches the same queue boundary.
+			// A slow worker must not turn an already-admitted record into Late.
+			if !c.workersStopped {
+				done := make([]chan struct{}, 0, len(c.workers))
+				for _, worker := range c.workers {
+					ack := make(chan struct{})
+					worker <- &workerControl{barrier: true, done: ack}
+					done = append(done, ack)
+				}
+				for _, ack := range done {
+					<-ack
+				}
+			}
+			c.networkDetectionError = errors.Join(c.networkDetectionError, c.drainApplicationDetection(false))
+		}
+		if c.networkDetectionError != nil && c.runCancel != nil {
+			c.runCancel()
+		}
 	}
 }
 
@@ -123,6 +145,7 @@ func (c *Collector) NetworkDetectionForOutput(output string) (networkdetect.Stat
 		return networkdetect.Stats{}, false
 	}
 	s := c.networkDetector.Stats()
+	c.applicationDetectionStats(&s)
 	if c.networkDetectionError != nil {
 		s.Error = c.networkDetectionError.Error()
 	}

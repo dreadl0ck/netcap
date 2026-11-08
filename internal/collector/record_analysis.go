@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"sync/atomic"
+	"unsafe"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
@@ -27,6 +28,15 @@ type recordScope struct {
 
 type recordCallback struct{ observe func(proto.Message) }
 
+// Shared by every decoder worker, including a detached checkpoint batch.
+// This accounts observation storage, not assembler/parser state or process RSS.
+const maxApplicationQueueBytes = 16 << 20
+
+func applicationObservationBytes(o networkdetect.ApplicationObservation) int64 {
+	// Allow two slice slots per observation for append's spare capacity.
+	return 2*int64(unsafe.Sizeof(o)) + int64(len(o.Kind)+len(o.SrcIP)+len(o.DstIP)+len(o.Method)+len(o.Path)+len(o.Host)+len(o.CommunityID)+len(o.Qualification)+len(o.Scope.Sensor)+len(o.Scope.Interface)+2*len(o.Scope.VLANs))
+}
+
 func endpoints(a string, p int32, b string, q int32) string {
 	x, y := a+"/"+strconv.Itoa(int(p)), b+"/"+strconv.Itoa(int(q))
 	if x > y {
@@ -39,6 +49,7 @@ func (c *Collector) initRecordAnalysis() {
 	c.recordScopes = map[string]recordScope{}
 	c.ipScopes = map[string]recordScope{}
 	c.applicationRecords = nil
+	c.applicationQueuedBytes, c.applicationPeakBytes, c.applicationQueueDrops = 0, 0, 0
 	c.analysisOverflow = 0
 	c.analysisUnscoped = 0
 	previous := c.userRecordObserver
@@ -58,6 +69,8 @@ func (c *Collector) initRecordAnalysis() {
 }
 
 func (c *Collector) detachRecordAnalysis() {
+	c.dispatchMu.Lock()
+	defer c.dispatchMu.Unlock()
 	if c.recordObserverHandle != nil {
 		c.recordObserverHandle.Store(nil)
 	}
@@ -66,6 +79,8 @@ func (c *Collector) detachRecordAnalysis() {
 	c.recordScopes = nil
 	c.ipScopes = nil
 	c.applicationRecords = nil
+	c.applicationQueuedBytes = 0
+	c.applicationDetector = nil
 	c.analysisMu.Unlock()
 }
 func (c *Collector) observeRecordScope(p gopacket.Packet, scope networkdetect.Scope) {
@@ -147,11 +162,15 @@ func (c *Collector) observeDecodedRecord(m proto.Message) {
 	c.hostIdentity.Observe(bound.Key, m)
 	if c.config.NetworkDetection {
 		if o, yes := networkdetect.Observation(m); yes {
-			if len(c.applicationRecords) >= 100000 {
+			o.Scope = bound.Scope
+			n := applicationObservationBytes(o)
+			if len(c.applicationRecords) >= 100000 || n > maxApplicationQueueBytes-c.applicationQueuedBytes {
 				c.analysisOverflow++
+				c.applicationQueueDrops++
 				return
 			}
-			o.Scope = bound.Scope
+			c.applicationQueuedBytes += n
+			c.applicationPeakBytes = max(c.applicationPeakBytes, c.applicationQueuedBytes)
 			c.applicationRecords = append(c.applicationRecords, o)
 		}
 	}
@@ -200,11 +219,28 @@ func (c *Collector) finishHostIdentity() error {
 	return os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, identity.Filename), append(data, '\n'), 0600)
 }
 func (c *Collector) finishApplicationDetection(stats *networkdetect.Stats) error {
+	err := c.drainApplicationDetection(true)
+	c.applicationDetectionStats(stats)
+	return err
+}
+
+// dispatchMu serializes the detector and alert writer; callbacks only enqueue
+// under analysisMu so a decoder never waits for packet admission.
+func (c *Collector) drainApplicationDetection(final bool) error {
 	c.analysisMu.Lock()
-	events := append([]networkdetect.ApplicationObservation(nil), c.applicationRecords...)
+	events := c.applicationRecords
 	c.applicationRecords = nil
-	overflow := c.analysisOverflow
 	c.analysisMu.Unlock()
+	defer func() {
+		var released int64
+		for i := range events {
+			released += applicationObservationBytes(events[i])
+		}
+		clear(events)
+		c.analysisMu.Lock()
+		c.applicationQueuedBytes -= released
+		c.analysisMu.Unlock()
+	}()
 	sort.SliceStable(events, func(i, j int) bool {
 		a, b := events[i], events[j]
 		if a.At != b.At {
@@ -214,14 +250,35 @@ func (c *Collector) finishApplicationDetection(stats *networkdetect.Stats) error
 		y, _ := json.Marshal(b)
 		return string(x) < string(y)
 	})
-	e := networkdetect.NewApplication(c.applicationConfig)
+	e := c.applicationDetector
+	if e == nil {
+		return nil
+	}
 	for _, o := range events {
 		if err := c.writeDetectionAlerts(e.Observe(o)); err != nil {
 			return err
 		}
 	}
-	if err := c.writeDetectionAlerts(e.Flush()); err != nil {
-		return err
+	if final {
+		return c.writeDetectionAlerts(e.Flush())
+	}
+	return c.writeDetectionAlerts(e.Checkpoint())
+}
+
+func (c *Collector) applicationDetectionStats(stats *networkdetect.Stats) {
+	e := c.applicationDetector
+	if e == nil {
+		return
+	}
+	c.analysisMu.Lock()
+	overflow := c.analysisOverflow
+	stats.ApplicationQueuedBytes = c.applicationQueuedBytes
+	stats.ApplicationPeakBytes = c.applicationPeakBytes
+	stats.ApplicationQueueDrops = c.applicationQueueDrops
+	stats.ApplicationQueueLimit = maxApplicationQueueBytes
+	c.analysisMu.Unlock()
+	if c.captureKind == "live" {
+		stats.ApplicationMode = "capture-time sorted checkpoint batches; older decoded observations counted late; wall clock does not advance event time"
 	}
 	stats.Alerts += e.Alerts
 	stats.ApplicationAlerts = e.Alerts
@@ -230,5 +287,5 @@ func (c *Collector) finishApplicationDetection(stats *networkdetect.Stats) error
 	stats.Matches += matches
 	stats.CapacityFlushes += capacity
 	stats.Late += e.Late
-	return nil
+	stats.ApplicationLate = e.Late
 }

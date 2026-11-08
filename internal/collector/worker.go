@@ -43,10 +43,11 @@ var packetContextPool = sync.Pool{
 // Controls share the packet queue so maintenance cannot overtake admitted data.
 type workerControl struct {
 	gopacket.Packet
-	ref  time.Time
-	all  bool
-	done chan struct{}
-	idle bool
+	ref     time.Time
+	all     bool
+	done    chan struct{}
+	idle    bool
+	barrier bool
 }
 
 type packetWork struct {
@@ -87,7 +88,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 				return
 			}
 			if control, ok := pkt.(*workerControl); ok {
-				if assembler != nil {
+				if assembler != nil && !control.barrier {
 					if control.all {
 						assembler.FlushAll()
 					} else {
@@ -329,6 +330,7 @@ func (c *Collector) initWorkers() []chan gopacket.Packet {
 			pool = reassembly.NewStreamPool(tcp.StreamFactory)
 		}
 		a := reassembly.NewAssembler(pool)
+		a.SetPageBudget(c.reassemblyPageBudget)
 
 		// Configure stream reassembly limits from config
 		if c.config.DecoderConfig.MaxStreamBytes >= 0 {
