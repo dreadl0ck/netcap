@@ -112,7 +112,9 @@ func (s *service) PreferObservation(banner []byte, ts int64, numBytesServer, num
 	current := []byte(s.Banner)
 	prefer := len(banner) > len(current) ||
 		(len(banner) == len(current) && bytes.Compare(banner, current) < 0) ||
-		(bytes.Equal(banner, current) && (s.Timestamp == 0 || ts < s.Timestamp))
+		(bytes.Equal(banner, current) && (ts < s.Timestamp ||
+			(ts == s.Timestamp && (int32(numBytesServer) > s.BytesServer ||
+				(int32(numBytesServer) == s.BytesServer && int32(numBytesClient) > s.BytesClient)))))
 	if !prefer {
 		return false
 	}
@@ -126,6 +128,7 @@ func (s *service) PreferObservation(banner []byte, ts int64, numBytesServer, num
 // ResetProbeMatch clears fields derived from a previously selected banner.
 // Applications and port metadata come from independent sources and remain.
 func (s *service) ResetProbeMatch() {
+	s.Name = s.PortName
 	s.Product = ""
 	s.Vendor = ""
 	s.Version = ""
