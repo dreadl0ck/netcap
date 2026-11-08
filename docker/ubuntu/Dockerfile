@@ -44,12 +44,13 @@ RUN update-ca-certificates
 # Install Google Magika CLI v1.0.2 for AI-based file type classification
 ARG MAGIKA_VERSION=1.0.2
 RUN ARCH=$(uname -m) && \
-    if [ "$ARCH" = "x86_64" ]; then MAGIKA_ARCH="x86_64-unknown-linux-gnu"; \
-    elif [ "$ARCH" = "aarch64" ]; then MAGIKA_ARCH="aarch64-unknown-linux-gnu"; \
+    if [ "$ARCH" = "x86_64" ]; then MAGIKA_ARCH="x86_64-unknown-linux-gnu"; MAGIKA_SHA256=4ce475c965cd20e724b5fc53e8a303a479b9d8649beef8721d05e9b3988fbab4; \
+    elif [ "$ARCH" = "aarch64" ]; then MAGIKA_ARCH="aarch64-unknown-linux-gnu"; MAGIKA_SHA256=55eda0c5dc9e1853ba530000815cd084c1dc654c59d52da486159b907dc9ec84; \
     else echo "Unsupported arch: $ARCH" && exit 1; fi && \
-    curl -LsSf "https://github.com/google/magika/releases/download/cli%2Fv${MAGIKA_VERSION}/magika-${MAGIKA_ARCH}.tar.xz" \
-    | tar -xJO "magika-${MAGIKA_ARCH}/magika" > /usr/local/bin/magika && \
-    chmod +x /usr/local/bin/magika
+    curl -LsSf "https://github.com/google/magika/releases/download/cli/v${MAGIKA_VERSION}/magika-${MAGIKA_ARCH}.tar.xz" -o /tmp/magika.tar.xz && \
+    echo "$MAGIKA_SHA256  /tmp/magika.tar.xz" | sha256sum -c - && \
+    tar -xJOf /tmp/magika.tar.xz "magika-${MAGIKA_ARCH}/magika" > /usr/local/bin/magika && \
+    chmod +x /usr/local/bin/magika && rm /tmp/magika.tar.xz
 
 WORKDIR /netcap
 

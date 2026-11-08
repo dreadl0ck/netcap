@@ -48,7 +48,10 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 ENV GOMAXPROCS=4 GOFLAGS=-p=4 CARGO_BUILD_JOBS=4
 
 # Build the matched C API from the checksum-pinned source and locked Cargo graph.
-RUN PREFIX=/usr/local sh /opt/netcap-native/build-yara-x.sh && ldconfig
+# GNU tar in Ubuntu 26.04 uses syscalls unavailable under Docker's amd64 emulation.
+RUN mkdir -p /opt/netcap-native/bin && \
+    ln -s "$(command -v busybox)" /opt/netcap-native/bin/tar && \
+    PREFIX=/usr/local PATH="/opt/netcap-native/bin:$PATH" sh /opt/netcap-native/build-yara-x.sh && ldconfig
 
 RUN pkg-config --exact-version=1.22.0 yara_x_capi
 
