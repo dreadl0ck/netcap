@@ -632,7 +632,10 @@ export default function PCAPs() {
                           opacity: file.isCompleted ? 1 : 0.6,
                           '&:hover': ((isMultiFile || status?.isServiceMode) && file.isCompleted) ? { backgroundColor: 'action.hover', cursor: 'pointer' } : {}
                         }}
-                        onClick={((isMultiFile || status?.isServiceMode) && file.isCompleted) ? () => handleSelectFile(file.path) : undefined}
+                        onClick={((isMultiFile || status?.isServiceMode) && file.isCompleted) ? event => {
+                          if (event.target instanceof Element && event.target.closest('button, a, [role="button"]')) return;
+                          handleSelectFile(file.path);
+                        } : undefined}
                       >
                       <TableCell>
                         <Box display="flex" alignItems="center" gap={1}>
