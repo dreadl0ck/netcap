@@ -48,9 +48,11 @@ type SankeyLink struct {
 
 // ProtocolHierarchyResponse is the API response
 type ProtocolHierarchyResponse struct {
-	Links []SankeyLink             `json:"links"`
-	Nodes []string                 `json:"nodes"`
-	Stats map[string]ProtocolStats `json:"stats"`
+	Basis       string                   `json:"basis"`
+	Limitations []string                 `json:"limitations"`
+	Links       []SankeyLink             `json:"links"`
+	Nodes       []string                 `json:"nodes"`
+	Stats       map[string]ProtocolStats `json:"stats"`
 }
 
 // ProtocolStats contains statistics for a protocol
@@ -384,8 +386,10 @@ func buildProtocolHierarchy(outDir string) (*ProtocolHierarchyResponse, error) {
 	sort.Strings(nodes)
 
 	return &ProtocolHierarchyResponse{
-		Links: links,
-		Nodes: nodes,
-		Stats: stats,
+		Basis:       "schematic",
+		Limitations: []string{"Links are synthesized from typical protocol encapsulation and audit counts, not measured packet-level parent-child relationships", "Audit record counts are not wire packet or byte counts"},
+		Links:       links,
+		Nodes:       nodes,
+		Stats:       stats,
 	}, nil
 }

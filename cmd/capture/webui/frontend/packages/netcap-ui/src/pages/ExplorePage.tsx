@@ -827,7 +827,7 @@ export default function Explore() {
                 Choose an audit record type and field to automatically generate a chart
               </Typography>
               <Typography variant="caption" color="text.secondary" align="center" sx={{ maxWidth: 500 }}>
-                Charts are generated server-side using go-echarts. All audit records are displayed using their actual timestamps. 
+                Charts use retained audit records with usable field values. Field discovery inspects at most the first 100 records of the first available capture; later fields may be absent from the picker. Chart point limits may uniformly sample buckets. Missing or filtered records are not evidence of zero traffic.
                 Numeric fields support line, bar, area, scatter, funnel, and radar charts. 
                 Categorical fields support pie, bar, wordcloud, funnel, sankey, and graph visualizations.
               </Typography>
@@ -949,4 +949,3 @@ export default function Explore() {
     </Layout>
   );
 }
-

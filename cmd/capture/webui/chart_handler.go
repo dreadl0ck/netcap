@@ -128,9 +128,15 @@ func HandleChartFields(outDir string) http.HandlerFunc {
 		}
 
 		// Read up to 100 records to inspect fields across multiple records
-		fields, totalFields := extractAllFieldsAcrossRecords(reader, 100)
+		fields, totalFields, err := extractAllFieldsAcrossRecords(reader, 100)
+		if err != nil {
+			http.Error(w, "Cannot read chart field sample", http.StatusInternalServerError)
+			return
+		}
 
 		response := ChartFieldsResponse{
+			Discovery:     "prefix-of-first-available-capture; fields absent from the sample may still exist",
+			SampleLimit:   100,
 			Type:          auditType,
 			Fields:        fields,
 			TotalFields:   totalFields,
@@ -153,6 +159,7 @@ type ChartDataPoint struct {
 
 // ChartDataResponse contains the chart data and metadata
 type ChartDataResponse struct {
+	Coverage ChartCoverage    `json:"coverage"`
 	Type     string           `json:"type"`
 	Field    string           `json:"field"`
 	Interval string           `json:"interval"`
@@ -163,8 +170,18 @@ type ChartDataResponse struct {
 	AvgValue float64          `json:"avgValue"`
 }
 
+type ChartCoverage struct {
+	Basis            string   `json:"basis"`
+	SourceBuckets    int      `json:"sourceBuckets"`
+	DisplayedBuckets int      `json:"displayedBuckets"`
+	Sampled          bool     `json:"sampled"`
+	Limitations      []string `json:"limitations"`
+}
+
 // ChartFieldsResponse lists available numeric fields for charting
 type ChartFieldsResponse struct {
+	Discovery     string           `json:"discovery"`
+	SampleLimit   int              `json:"sampleLimit"`
 	Type          string           `json:"type"`
 	Fields        []ChartFieldInfo `json:"fields"`
 	TotalFields   int              `json:"totalFields"`   // Total possible fields including empty ones
@@ -412,6 +429,7 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 // "no data" from "couldn't open file".
 func (s *Server) aggregateChartDataAcrossDirs(dirs []string, auditType, field, interval string, maxDataPoints int) (*ChartDataResponse, error) {
 	merged := &ChartDataResponse{
+		Coverage: ChartCoverage{Basis: "retained-audit-records", Limitations: []string{"Only retained records with the requested numeric field contribute; absence is not zero traffic", "Values are sums of per-capture bucket means", "Min/max are record values; average is a bucket-count-weighted mean of per-capture record averages"}},
 		Type:     auditType,
 		Field:    field,
 		Interval: interval,
@@ -453,10 +471,12 @@ func (s *Server) aggregateChartDataAcrossDirs(dirs []string, auditType, field, i
 		keys = append(keys, k)
 	}
 	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+	merged.Coverage.SourceBuckets = len(keys)
 
 	// Down-sample uniformly when over the cap (matches the HTML path's
 	// max-data-points contract).
 	if maxDataPoints > 0 && len(keys) > maxDataPoints {
+		merged.Coverage.Sampled = true
 		step := float64(len(keys)) / float64(maxDataPoints)
 		out := make([]int64, 0, maxDataPoints)
 		for i := 0; i < maxDataPoints; i++ {
@@ -466,6 +486,7 @@ func (s *Server) aggregateChartDataAcrossDirs(dirs []string, auditType, field, i
 	}
 
 	merged.Data = make([]ChartDataPoint, 0, len(keys))
+	merged.Coverage.DisplayedBuckets = len(keys)
 	for _, k := range keys {
 		merged.Data = append(merged.Data, ChartDataPoint{Timestamp: k, Value: buckets[k]})
 	}
@@ -572,6 +593,7 @@ func (s *Server) extractChartData(filePath, auditType, fieldName, intervalStr st
 	avgValue := sum / float64(totalCount)
 
 	return &ChartDataResponse{
+		Coverage: ChartCoverage{Basis: "retained-audit-records", SourceBuckets: len(dataPoints), DisplayedBuckets: len(dataPoints), Limitations: []string{"Only retained records with the requested numeric field contribute; absence is not zero traffic", "Values are per-bucket arithmetic means"}},
 		Type:     auditType,
 		Field:    fieldName,
 		Interval: intervalStr,
@@ -743,9 +765,15 @@ func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Read up to 100 records to inspect fields across multiple records
-	fields, totalFields := extractAllFieldsAcrossRecords(reader, 100)
+	fields, totalFields, err := extractAllFieldsAcrossRecords(reader, 100)
+	if err != nil {
+		http.Error(w, "Cannot read chart field sample", http.StatusInternalServerError)
+		return
+	}
 
 	response := ChartFieldsResponse{
+		Discovery:     "prefix-of-first-available-capture; fields absent from the sample may still exist",
+		SampleLimit:   100,
 		Type:          auditType,
 		Fields:        fields,
 		TotalFields:   totalFields,
@@ -769,7 +797,7 @@ func extractAllFields(msg any) []ChartFieldInfo {
 
 // extractAllFieldsWithCount returns a list of all chartable fields and the total count including filtered fields
 // extractAllFieldsAcrossRecords reads up to maxRecords records and collects all fields that have values in any of those records
-func extractAllFieldsAcrossRecords(reader *AuditRecordReader, maxRecords int) ([]ChartFieldInfo, int) {
+func extractAllFieldsAcrossRecords(reader *AuditRecordReader, maxRecords int) ([]ChartFieldInfo, int, error) {
 	// Use a map to track unique fields found across all records
 	fieldMap := make(map[string]ChartFieldInfo)
 	var totalCount int
@@ -781,8 +809,7 @@ func extractAllFieldsAcrossRecords(reader *AuditRecordReader, maxRecords int) ([
 			if err == io.EOF {
 				break // End of file reached
 			}
-			log.Printf("[WebUI] Error reading record %d: %v", recordsRead+1, err)
-			break
+			return nil, 0, fmt.Errorf("field sample record %d: %w", recordsRead+1, err)
 		}
 
 		// Extract fields from this record
@@ -816,7 +843,7 @@ func extractAllFieldsAcrossRecords(reader *AuditRecordReader, maxRecords int) ([
 	log.Printf("[WebUI] Extracted fields from %d records: found %d fields with data out of %d total fields",
 		recordsRead, len(result), totalCount)
 
-	return result, totalCount
+	return result, totalCount, nil
 }
 
 func extractAllFieldsWithCount(msg any) ([]ChartFieldInfo, int) {

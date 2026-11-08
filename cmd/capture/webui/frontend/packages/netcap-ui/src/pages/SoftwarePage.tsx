@@ -66,7 +66,11 @@ import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode 
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 import { ChartFrame } from '../components/ChartFrame';
+import SoftwareEvidence, { type SoftwareObservation } from '../components/SoftwareEvidence';
+
 interface SoftwareSummary {
+  observations?: SoftwareObservation[];
+  observationsCapped?: boolean;
   product: string;
   version: string;
   os: string;
@@ -823,6 +827,7 @@ export default function SoftwarePage() {
                                     </Grid>
                                   )}
                                   
+                                  <SoftwareEvidence observations={sw.observations} capped={sw.observationsCapped} />
                                   {/* Associated Devices */}
                                   {(sw.devices || []).length > 0 && (
                                     <Grid item xs={12}>
@@ -948,4 +953,3 @@ export default function SoftwarePage() {
     </Layout>
   );
 }
-

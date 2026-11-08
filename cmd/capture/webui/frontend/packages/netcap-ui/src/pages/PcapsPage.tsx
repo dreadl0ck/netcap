@@ -58,6 +58,7 @@ import { parseSearchQuery, matchesSingleValue } from '../lib/tableSearch';
 import useSWR from 'swr';
 import ReportIssueDialog from '../components/ReportIssueDialog';
 import SearchInput from '../components/SearchInput';
+import ReproductionDownload from '../components/ReproductionDownload';
 
 type SortField = 'name' | 'size' | 'modifiedTime';
 type SortOrder = 'asc' | 'desc';
@@ -713,10 +714,13 @@ export default function PCAPs() {
                                 />
                               </Box>
                             )}
-                            {file.error && (
+                             {file.error && (
+                              <Box>
                               <Typography variant="caption" color="error" display="block" sx={{ mt: 0.5 }}>
                                 {file.error}
                               </Typography>
+                              <ReproductionDownload selection={file.sessionId || file.id ? { sessionId: file.sessionId || file.id } : { inputFile: file.path }} />
+                              </Box>
                             )}
                           </Box>
                         </Box>
@@ -1014,6 +1018,7 @@ export default function PCAPs() {
                           Retry
                         </Button>
                       </Box>
+                      <ReproductionDownload selection={file.sessionId || file.id ? { sessionId: file.sessionId || file.id } : { inputFile: file.path }} />
                     </>
                   )}
                 </CardContent>

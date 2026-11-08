@@ -76,8 +76,9 @@ type PortInfo struct {
 
 // HostsResponse contains the list of IP profiles
 type HostsResponse struct {
-	Hosts      []HostSummary `json:"hosts"`
-	TotalCount int           `json:"totalCount"`
+	Hosts      []HostSummary      `json:"hosts"`
+	TotalCount int                `json:"totalCount"`
+	Identity   hostIdentityReport `json:"identity"`
 }
 
 // handleHosts returns a list of all IP profiles
@@ -87,7 +88,11 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	outDir, _ := s.resolveOutDirFromRequest(r)
+	selected, ok := s.selectedCapture(w, r)
+	if !ok {
+		return
+	}
+	outDir := selected.OutputDir
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -101,9 +106,15 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	identity, err := readHostIdentity(r.Context(), outDir)
+	if err != nil {
+		http.Error(w, "Cannot read qualified host identity evidence", http.StatusInternalServerError)
+		return
+	}
 	response := HostsResponse{
 		Hosts:      hosts,
 		TotalCount: len(hosts),
+		Identity:   identity,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -142,8 +153,7 @@ func readHosts(outDir string) ([]HostSummary, error) {
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading IPProfile record: %v", err)
-			continue
+			return nil, err
 		}
 
 		// Type assert to IPProfile

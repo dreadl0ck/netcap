@@ -38,6 +38,7 @@ func (s *Server) registerCarveTools() error {
 	tools := []server.ServerTool{
 		{
 			Tool: mcplib.NewTool("carve_subpcap_for_host",
+				mcplib.WithString("run_id", mcplib.Description("Expected capture generation; stale generations are rejected by the backend.")),
 				mcplib.WithDescription(
 					"Produce a sub-PCAP filtered to all traffic involving one host IP. "+
 						"Returns the carved file's on-disk path, sha256, and an "+
@@ -53,6 +54,7 @@ func (s *Server) registerCarveTools() error {
 		},
 		{
 			Tool: mcplib.NewTool("carve_subpcap_for_connection",
+				mcplib.WithString("run_id", mcplib.Description("Expected capture generation; stale generations are rejected by the backend.")),
 				mcplib.WithDescription("Produce a bidirectional sub-PCAP for an explicit TCP/UDP tuple. Optional inclusive capture-time bounds narrow tuple reuse; omitting bounds selects all matching occurrences."),
 				mcplib.WithString("protocol", mcplib.Description("Observed transport protocol."), mcplib.Enum("TCP", "UDP"), mcplib.Required()),
 				mcplib.WithString("start_ns", mcplib.Description("Inclusive UTC Unix nanoseconds; supply together with end_ns.")),
@@ -71,6 +73,7 @@ func (s *Server) registerCarveTools() error {
 		},
 		{
 			Tool: mcplib.NewTool("carve_subpcap_for_http_pair",
+				mcplib.WithString("run_id", mcplib.Description("Expected capture generation; stale generations are rejected by the backend.")),
 				mcplib.WithDescription("Produce a bidirectional sub-PCAP for the observed HTTP TCP tuple, including nonstandard ports. Without time bounds, all matching tuple occurrences are included."),
 				mcplib.WithString("session_id", mcplib.Description("Session identifier."), mcplib.Required()),
 				mcplib.WithString("src_ip", mcplib.Description("Source IP."), mcplib.Required()),
@@ -89,6 +92,7 @@ func (s *Server) registerCarveTools() error {
 		},
 		{
 			Tool: mcplib.NewTool("carve_subpcap_for_certificate",
+				mcplib.WithString("run_id", mcplib.Description("Expected capture generation; stale generations are rejected by the backend.")),
 				mcplib.WithDescription("Produce a sub-PCAP for the TCP flow that carried a given TLS certificate (identified by its 4-tuple)."),
 				mcplib.WithString("session_id", mcplib.Description("Session identifier."), mcplib.Required()),
 				mcplib.WithString("src_ip", mcplib.Description("Source IP of the TLS flow."), mcplib.Required()),
@@ -157,6 +161,9 @@ func (s *Server) makeCarveHandler(endpoint, label string, mcpArgs []string) serv
 			return errResult(err), nil
 		}
 		q := url.Values{}
+		if err := addCarveGeneration(req, q); err != nil {
+			return errResult(err), nil
+		}
 		if endpoint == "/api/http/download-pcap" {
 			q.Set("protocol", "TCP")
 		}
@@ -195,6 +202,9 @@ func (s *Server) carveFourTuple(req mcplib.CallToolRequest, endpoint, label stri
 		}
 	}
 	q := url.Values{}
+	if err := addCarveGeneration(req, q); err != nil {
+		return errResult(err), nil
+	}
 	q.Set("srcIP", req.GetString("src_ip", ""))
 	q.Set("srcPort", req.GetString("src_port", ""))
 	q.Set("dstIP", req.GetString("dst_ip", ""))
@@ -258,6 +268,8 @@ func (s *Server) doCarve(ref SessionRef, endpoint, label string, q url.Values) (
 	count, total := s.carve.Stats()
 
 	return jsonResult(map[string]any{
+		"selection":    q,
+		"limitations":  []string{"Tuple/time selection is not content-bound occurrence identity", "Without run_id the capture generation is not pinned; without time bounds tuple reuse is included"},
 		"session_id":   ref.ID,
 		"kind":         label,
 		"resource_uri": uri,
@@ -270,6 +282,19 @@ func (s *Server) doCarve(ref SessionRef, endpoint, label string, q url.Values) (
 		"download_url": source,
 		"store_stats":  map[string]any{"entries": count, "total_bytes": total},
 	}), nil
+}
+
+func addCarveGeneration(req mcplib.CallToolRequest, q url.Values) error {
+	raw, exists := req.GetArguments()["run_id"]
+	if !exists {
+		return nil
+	}
+	run, ok := raw.(string)
+	if !ok || strings.TrimSpace(run) == "" {
+		return fmt.Errorf("run_id must be a nonempty string when supplied")
+	}
+	q.Set("runId", run)
+	return nil
 }
 
 // carveQueryKey translates an MCP-style arg name to the upstream

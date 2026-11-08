@@ -82,6 +82,16 @@ includes matching reused connections and other transactions; it is not proof of
 a unique HTTP transaction or certificate occurrence. HTTP exports no longer
 guess ports 80/443/8080. MCP connection carving requires the observed transport;
 its `start_ns`/`end_ns` fields preserve nanoseconds as strings.
+All four MCP carve tools also accept optional `run_id`; a stale generation fails
+before a carve is stored. Their results retain the query and tuple-reuse limitations.
+
+`net split --read traffic.pcapng --out subset --bpf 'host 192.0.2.10'`
+writes `selected.pcapng` and `packet-selection.json` into a new private directory.
+Optional `--start-ns`/`--end-ns` are inclusive decimal nanoseconds;
+`--source-sha256` refuses changed source content. Defaults are 1,000,000 selected
+packets, 256 MiB output and a 1-minute deadline; limits fail rather than truncate.
+The source stays unchanged and failed exports are removed. This is a single subset,
+not automatic multi-shard partitioning or capinfos-style inspection.
 
 Explicit `sessionId`/`inputFile` selectors must resolve to a registered capture;
 unknown selectors return 404, conflicting selectors or stale `runId` return 409,
@@ -178,3 +188,23 @@ concatenate a `gapped` stream and treat it as contiguous protocol input.
 These options retain sensitive content and use disk. A bounded retained subset
 is not the original complete capture. [Flow analysis](flow-analysis.md) explains
 whole-observation counters and estimated rates.
+
+## Export reproduction metadata
+
+Failed PCAP rows offer **Download reproduction metadata**. The read-only
+`GET /api/investigation/reproduction` accepts the same exact capture selectors
+and optional `runId`; private sessions require ownership. A missing manifest is
+404, an invalid manifest is 422 and a read failure is 500.
+
+`netcap-reproduction-metadata/v1` is explicitly `metadata-only`: exporter version,
+recorded source/configuration identity, numeric/boolean effective settings and
+attachment digests/outcomes. It does not establish the producer version or freshly
+verify source bytes. Each attachment distinguishes `digest-only`, `missing`,
+`read-failed` and `invalid-json`; the projected capture manifest is bounded to
+4 MiB, as is each of four optional attachments.
+
+Source paths, raw BPF/decoder strings, logs, free-text errors and payloads are
+omitted; settings retain SHA256 digests. This is not a self-contained replay
+bundle. Attach additional material only after analyst review. There is no upload
+or automatic issue submission. `reproduction_test.go` checks sentinel secrets,
+symlink confinement, missing reads, stale selectors and private ownership.
