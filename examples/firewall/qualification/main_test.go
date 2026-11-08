@@ -59,6 +59,19 @@ func TestActualTransportsAndReloadPreserveBoundary(t *testing.T) {
 	}
 }
 
+func TestRepeatedHTTP3FaultRecovery(t *testing.T) {
+	p, err := newProfile(context.Background(), 0, true, 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { p.Close() }()
+	for generation := 1; generation <= 200; generation++ {
+		if _, err := p.exerciseFault(context.Background(), generation); err != nil {
+			t.Fatalf("generation=%d: %v", generation, err)
+		}
+	}
+}
+
 func TestInterruptedRunPersistsFailureAndDoesNotClaim24h(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

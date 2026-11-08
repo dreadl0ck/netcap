@@ -20,6 +20,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httptrace"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -122,6 +123,7 @@ type profile struct {
 	Down              *atomic.Bool
 	mu                sync.Mutex
 	Stats             sample
+	Failures          []requestFailure
 	Close             func()
 }
 
@@ -250,9 +252,17 @@ func (p *profile) requestUnlocked(w workflow) (int, int, error) {
 	r.Header.Set("Content-Type", w.ContentType)
 	r.Header.Set("User-Agent", "NetcapQualification/1.0")
 	r.Header.Set("Accept", "application/json")
+	var stage atomic.Int32
+	r = r.WithContext(httptrace.WithClientTrace(r.Context(), &httptrace.ClientTrace{
+		ConnectStart:         func(_, _ string) { stage.Store(1) },
+		TLSHandshakeDone:     func(tls.ConnectionState, error) { stage.Store(2) },
+		GotConn:              func(httptrace.GotConnInfo) { stage.Store(3) },
+		WroteRequest:         func(httptrace.WroteRequestInfo) { stage.Store(4) },
+		GotFirstResponseByte: func() { stage.Store(5) },
+	}))
 	resp, err := p.Client.Do(r)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, wireStage("http-"+[]string{"start", "connect", "tls", "connection", "request-written", "response-started"}[stage.Load()], err)
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 65537))
@@ -553,6 +563,7 @@ func run(ctx context.Context, o options) (err error) {
 	var resourcePeak resources
 	var recovery resources
 	var offered uint64
+	var activeFault atomic.Int64
 	state := "running"
 	report := func() error {
 		elapsed := math.Max(0, math.Min(time.Since(start).Seconds(), o.Duration.Seconds()))
@@ -560,6 +571,7 @@ func run(ctx context.Context, o options) (err error) {
 		for _, p := range profiles {
 			p.mu.Lock()
 			s := p.Stats
+			failures := append([]requestFailure(nil), p.Failures...)
 			p.mu.Unlock()
 			stateUsage := policy.StateStats{}
 			if p.FW != nil {
@@ -576,6 +588,7 @@ func run(ctx context.Context, o options) (err error) {
 			}
 			stats[p.Name] = map[string]any{"counts": s, "p95_upper_ms": s.quantile(.95), "p99_upper_ms": s.quantile(.99), "accepted_goodput_rps": float64(s.Allowed) / math.Max(elapsed, .001), "origin_requests": p.Ledger.Requests.Load(), "origin_bytes": p.Ledger.Bytes.Load(), "forbidden_origin_requests": p.Ledger.ForbiddenRequests.Load(), "forbidden_origin_bytes": p.Ledger.ForbiddenBytes.Load(), "forbidden_side_effects": p.Ledger.ForbiddenEffects.Load(), "fixture": p.Fixture, "filler_rules": p.Rules, "safety_rules": 1}
 			row := stats[p.Name].(map[string]any)
+			row["first_failures"], row["failure_history_limit"] = failures, 16
 			row["evaluator_state_current"], row["evaluator_state_peak"], row["stateful_probe"] = stateUsage, p.StatePeak, p.Stateful
 			if p.Stateful {
 				row["safety_rules"] = 2
@@ -641,6 +654,8 @@ func run(ctx context.Context, o options) (err error) {
 			w = workflow{"attack", "/api/invoices", "application/json", `{"value":"` + forbidden + `"}`}
 		}
 		job := func() {
+			began := time.Now()
+			faultAtStart := activeFault.Load()
 			status, _, requestErr := p.request(w)
 			p.mu.Lock()
 			defer p.mu.Unlock()
@@ -657,6 +672,18 @@ func run(ctx context.Context, o options) (err error) {
 			default:
 				p.Stats.Errors++
 			}
+			if requestErr != nil || attack && status != 403 || !attack && status != 200 {
+				failure := describeFailure(requestErr)
+				failure.Sequence, failure.Attack, failure.Status = i, attack, status
+				failure.ElapsedSeconds = time.Since(start).Seconds()
+				failure.ScheduleDelayMS = float64(began.Sub(planned)) / float64(time.Millisecond)
+				failure.RequestMS = float64(time.Since(began)) / float64(time.Millisecond)
+				failure.FaultAtStart, failure.FaultAtEnd = faultAtStart, activeFault.Load()
+				if len(p.Failures) < 16 {
+					p.Failures = append(p.Failures, failure)
+					log.Printf("request failure profile=%s detail=%+v", p.Name, failure)
+				}
+			}
 		}
 		select {
 		case jobs <- job:
@@ -668,15 +695,17 @@ func run(ctx context.Context, o options) (err error) {
 		offered++
 		if time.Now().After(nextFault) {
 			p := profiles[faultCount%httpCount]
+			activeFault.Store(int64(faultCount + 1))
 			fault, e := p.exerciseFault(ctx, faultCount+1)
-			if e != nil {
-				return e
-			}
+			activeFault.Store(0)
 			faults = append(faults, fault)
-			faultCount++
 			if len(faults) > 256 {
 				faults = faults[len(faults)-256:]
 			}
+			if e != nil {
+				return e
+			}
+			faultCount++
 			nextFault = nextFault.Add(o.FaultEvery)
 		}
 		if time.Now().After(nextSnapshot) {

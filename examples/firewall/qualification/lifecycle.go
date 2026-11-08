@@ -61,41 +61,58 @@ func (p *profile) restart(ctx context.Context) (string, string, error) {
 	return old, p.CertificateSHA256, nil
 }
 
-func (p *profile) exerciseFault(ctx context.Context, generation int) (map[string]any, error) {
+func (p *profile) exerciseFault(ctx context.Context, generation int) (receipt map[string]any, err error) {
 	p.lifecycle.Lock()
 	defer p.lifecycle.Unlock()
 	started := time.Now()
+	receipt = map[string]any{"profile": p.Name, "generation": generation, "started": started.UTC(), "stage": "outage", "result": "running"}
+	defer func() {
+		receipt["elapsed_ms"] = float64(time.Since(started)) / float64(time.Millisecond)
+		receipt["result"] = "pass"
+		if err != nil {
+			receipt["result"], receipt["failure"] = "fail", describeFailure(err)
+		}
+	}()
 	p.Down.Store(true)
 	status, _, err := p.requestUnlocked(training[0])
 	p.Down.Store(false)
 	if err != nil || status != 503 {
-		return nil, fmt.Errorf("owned outage not observed: %d %v", status, err)
+		return receipt, fmt.Errorf("owned outage not observed: %d: %w", status, wireStage("fault-outage", err))
 	}
+	receipt["stage"] = "compile"
 	compiled, err := compileState(p.Rules, generation, p.Stateful)
 	if err != nil {
-		return nil, err
+		return receipt, err
 	}
 	p.FW.SetPolicy(compiled)
 	if p.FW.BodyCapabilities().BufferedBytes != 0 {
-		return nil, fmt.Errorf("buffer not released after outage")
+		return receipt, fmt.Errorf("buffer not released after outage")
 	}
+	receipt["stage"] = "restart"
 	oldCert, newCert, err := p.restart(ctx)
 	if err != nil {
-		return nil, err
+		return receipt, err
 	}
+	receipt["stage"] = "recovery-allow"
 	p.FW.SetPolicy(compiled)
 	status, actual, err := p.requestUnlocked(training[0])
 	if err != nil || status != 200 || actual != p.Protocol {
-		return nil, fmt.Errorf("restart recovery: %d h%d %v", status, actual, err)
+		return receipt, fmt.Errorf("restart recovery: %d h%d: %w", status, actual, wireStage("fault-recovery-allow", err))
 	}
+	receipt["stage"] = "recovery-deny"
 	status, _, err = p.requestUnlocked(workflow{"post-restart-denial", "/api/invoices", "application/json", `{"value":"` + forbidden + `"}`})
 	if err != nil || status != 403 || oldCert == newCert {
-		return nil, fmt.Errorf("restart certificate/denial invariant failed: %d %v", status, err)
+		return receipt, fmt.Errorf("restart certificate/denial invariant failed: %d: %w", status, wireStage("fault-recovery-deny", err))
 	}
 	if err = checkLedger(p.Ledger); err != nil {
-		return nil, err
+		return receipt, err
 	}
-	return map[string]any{"profile": p.Name, "kind": "owned origin 503, policy reload, in-process proxy/listener restart with new TLS identity", "recovery_ms": float64(time.Since(started)) / float64(time.Millisecond), "revision": compiled.Revision(), "old_certificate_sha256": oldCert, "new_certificate_sha256": newCert, "buffered_bytes_after_recovery": p.FW.BodyCapabilities().BufferedBytes}, nil
+	receipt["stage"] = "complete"
+	receipt["kind"] = "owned origin 503, policy reload, in-process proxy/listener restart with new TLS identity"
+	receipt["recovery_ms"], receipt["revision"] = float64(time.Since(started))/float64(time.Millisecond), compiled.Revision()
+	receipt["old_certificate_sha256"], receipt["new_certificate_sha256"] = oldCert, newCert
+	receipt["buffered_bytes_after_recovery"] = p.FW.BodyCapabilities().BufferedBytes
+	return receipt, nil
 }
 
 func diskBytes(directory string) int64 {
