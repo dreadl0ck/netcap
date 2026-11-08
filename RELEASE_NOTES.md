@@ -7,6 +7,8 @@ are distributed separately with this release.
 `v0.16.0` remains a qualification prerelease. `v0.16.1` restores the tracked
 frontend bootstrap required by immutable Go module consumers; module-zip tests
 now reject an archive that omits it even when the ZIP itself is valid.
+Linux runtime attribution also verifies the bundled YARA-X bytes, version,
+source pin and build recipes against the selected builder before packaging.
 
 | Area | Change |
 | --- | --- |

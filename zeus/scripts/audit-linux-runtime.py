@@ -5,7 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
-import urllib.request
+from native_supplier import yara_evidence
 
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('image')
@@ -47,6 +47,10 @@ else exit 3; fi
         evidence_image=a.supplier_image
     owned=result.returncode==0
     record={'file':'lib/'+file.name,'sha256':hashlib.sha256(file.read_bytes()).hexdigest(),'size':file.stat().st_size,'packageEvidence':result.stdout.strip(),'evidenceImage':evidence_image,'requiresSupplierEvidence':not owned}
+    if not owned and file.name=='libyara_x_capi.so' and a.supplier_image:
+        record.update(yara_evidence(a.supplier_image,file))
+        record['packageEvidence']=json.dumps({key:record[key] for key in ('supplierLibrarySHA256','supplierRecipes','supplierVersion','sourceSHA256')},sort_keys=True)
+        owned=True
     if not owned and file.name=='libndpi.so.4':
         record.update(requiresSupplierEvidence=False,correspondingSource='https://github.com/ntop/nDPI/archive/refs/tags/4.14.tar.gz',sourceSHA256='954135ee14ad6bd74a78a10db560b534b8f2083ad0615f5c1a2c376fff0301e0',license='LGPL-3.0-or-later')
         owned=True
@@ -81,7 +85,7 @@ else exit 3; fi
         record['sourcePackage']={'origin':origin,'version':package['V'],'commit':commit}
         if origin=='musl':extra_notices['musl-'+version]='https://git.musl-libc.org/cgit/musl/plain/COPYRIGHT?h=v'+version
         if origin=='libpcap':extra_notices['libpcap-'+version]='https://raw.githubusercontent.com/the-tcpdump-group/libpcap/libpcap-'+version+'/LICENSE'
-    if owned:(notices/(file.name+'.txt')).write_text(result.stdout)
+    if owned:(notices/(file.name+'.txt')).write_text(record['packageEvidence'])
     inventory.append(record)
 result={'image':a.image,'imageID':inspect['Id'],'repoDigests':inspect.get('RepoDigests',[]),'files':inventory}
 (dest/'runtime-inventory.json').write_text(json.dumps(result,indent=2)+'\n')
@@ -99,5 +103,5 @@ for name,url in ({
     'LGPL-2.1':'https://raw.githubusercontent.com/spdx/license-list-data/v3.27.0/text/LGPL-2.1-or-later.txt',
     'LGPL-3.0':'https://raw.githubusercontent.com/spdx/license-list-data/v3.27.0/text/LGPL-3.0-or-later.txt',
 }|extra_notices).items():
-    with urllib.request.urlopen(url,timeout=60) as response:body=response.read()
+    body=subprocess.check_output(['curl','--fail','--location','--retry','3','--connect-timeout','10','--max-time','60','--silent','--show-error',url])
     (notices/(name+'.txt')).write_bytes(body)
