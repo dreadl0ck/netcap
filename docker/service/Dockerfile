@@ -1,7 +1,7 @@
 # Netcap Try Service - Alpine Linux
 # Container for running the try service with file upload capabilities (with DPI support)
 
-ARG NETCAP_BUILDER_IMAGE
+ARG NETCAP_BUILDER_IMAGE=docker.io/dreadl0ck/netcap-builder:alpine-dpi-yara1.22.0-84980998-20261108@sha256:eb0472fc0b30b11c4482cf458c1727881eef2938f569c50ce15afdc1c660e779
 # Frontend stage - build the web UI from source.
 #
 # cmd/capture/webui/embed.go does `//go:embed all:frontend/dist`, so the Go build

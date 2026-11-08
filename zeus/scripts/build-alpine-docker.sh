@@ -1,12 +1,15 @@
 #!/bin/bash
 
 set -eo pipefail
-: "${NETCAP_BUILDER_IMAGE:?set a qualified YARA-X 1.22.0 builder image}"
 test -s cmd/capture/webui/frontend/dist/index.html || { echo "Build the WebUI with pnpm build before packaging Linux" >&2; exit 1; }
 
 if [ -z "$NODPI" ]; then
   NODPI=true
 fi
+
+builder_variant=alpine-dpi
+if $NODPI; then builder_variant=alpine; fi
+NETCAP_BUILDER_IMAGE="${NETCAP_BUILDER_IMAGE:-$(python3 zeus/scripts/builder-image.py "$builder_variant")}"
 
 echo "[INFO] building docker image"
 

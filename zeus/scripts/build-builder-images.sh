@@ -1,126 +1,34 @@
 #!/bin/bash
-# Build and push base builder images to accelerate Linux builds
-# These images contain all dependencies and can be reused across builds
+# Publish new candidates; release consumers select a qualified digest separately.
+set -euo pipefail
 
-set -e
-
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/../.."
+: "${BUILDER_VERSION:?set a unique candidate suffix, for example yara1.22.0-<revision>-<date>}"
+[[ "$BUILDER_VERSION" =~ ^yara1\.22\.0-[0-9a-f]{8,40}-[0-9]{8}(-[a-z0-9]+)?$ ]] || {
+    echo 'BUILDER_VERSION must identify a new matched YARA-X 1.22.0 candidate' >&2
+    exit 1
+}
 REGISTRY="${REGISTRY:-dreadl0ck}"
-VERSION="${VERSION:-latest}"
-
-echo "[INFO] Building netcap builder images..."
-echo "[INFO] Registry: $REGISTRY"
-echo "[INFO] Version: $VERSION"
-
-# Function to build and optionally push an image
-build_image() {
-    local dockerfile=$1
-    local tag=$2
-    local push=${3:-false}
-    
-    echo ""
-    echo "======================================"
-    echo "[INFO] Building $tag"
-    echo "======================================"
-    
-    docker build \
-        --platform linux/amd64 \
-        -f "$dockerfile" \
-        -t "$tag" \
-        .
-    
-    if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed to build $tag"
-        return 1
-    fi
-    
-    echo "[INFO] Successfully built $tag"
-    
-    # Create :latest tag by replacing version with 'latest'
-    local latest_tag="${tag%:*}:latest"
-    echo "[INFO] Tagging as $latest_tag"
-    docker tag "$tag" "$latest_tag"
-    
-    if [ "$push" = true ]; then
-        echo "[INFO] Pushing $tag to registry..."
-        docker push "$tag"
-        if [ $? -eq 0 ]; then
-            echo "[INFO] Successfully pushed $tag"
-        else
-            echo "[ERROR] Failed to push $tag"
-            return 1
-        fi
-        
-        echo "[INFO] Pushing $latest_tag to registry..."
-        docker push "$latest_tag"
-        if [ $? -eq 0 ]; then
-            echo "[INFO] Successfully pushed $latest_tag"
-        else
-            echo "[ERROR] Failed to push $latest_tag"
-            return 1
-        fi
-    fi
-    
-    return 0
+[[ "$REGISTRY" == dreadl0ck || "$REGISTRY" == docker.io/dreadl0ck ]] || {
+    echo 'This publisher checks candidate uniqueness in docker.io/dreadl0ck' >&2
+    exit 1
 }
 
-# Navigate to project root
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+for variant in alpine alpine-dpi ubuntu ubuntu-dpi; do
+    tag="$REGISTRY/netcap-builder:$variant-$BUILDER_VERSION"
+    python3 "$SCRIPT_DIR/builder-image.py" --ensure-absent "$tag"
+done
 
-echo "[INFO] Script directory: $SCRIPT_DIR"
-echo "[INFO] Project root: $PROJECT_ROOT"
-
-cd "$PROJECT_ROOT" || exit 1
-
-# Verify we're in the right place
-if [ ! -d "docker/builders" ]; then
-    echo "[ERROR] Cannot find docker/builders directory"
-    echo "[ERROR] Current directory: $(pwd)"
-    exit 1
-fi
-
-echo "[INFO] Working directory: $(pwd)"
-echo ""
-
-# Build Alpine builder (for musl builds without DPI)
-build_image \
-    "docker/builders/alpine-builder.Dockerfile" \
-    "$REGISTRY/netcap-builder:alpine-$VERSION" \
-    ${PUSH:-false}
-
-# Build Alpine DPI builder (for musl builds with DPI support)
-build_image \
-    "docker/builders/alpine-dpi-builder.Dockerfile" \
-    "$REGISTRY/netcap-builder:alpine-dpi-$VERSION" \
-    ${PUSH:-false}
-
-# Build Ubuntu builder (for glibc builds without DPI)
-build_image \
-    "docker/builders/ubuntu-builder.Dockerfile" \
-    "$REGISTRY/netcap-builder:ubuntu-$VERSION" \
-    ${PUSH:-false}
-
-# Build Ubuntu DPI builder (for glibc builds with DPI support)
-build_image \
-    "docker/builders/ubuntu-dpi-builder.Dockerfile" \
-    "$REGISTRY/netcap-builder:ubuntu-dpi-$VERSION" \
-    ${PUSH:-false}
-
-echo ""
-echo "======================================"
-echo "[INFO] All builder images built successfully!"
-echo "======================================"
-echo ""
-echo "Built images (both versioned and :latest tags):"
-docker images | grep "netcap-builder"
-echo ""
-echo "To push these images to the registry, run:"
-echo "  PUSH=true $0"
-echo ""
-echo "To use a different registry:"
-echo "  REGISTRY=your-registry $0"
-echo ""
-echo "Note: Both versioned tags (e.g., :ubuntu-dpi-0.7.5) and :latest tags"
-echo "      (e.g., :ubuntu-dpi-latest) are automatically created and pushed."
-echo ""
-
+for variant in alpine alpine-dpi ubuntu ubuntu-dpi; do
+    tag="$REGISTRY/netcap-builder:$variant-$BUILDER_VERSION"
+    docker build --platform linux/amd64 \
+        -f "docker/builders/$variant-builder.Dockerfile" -t "$tag" .
+    docker run --rm --cpus=2 --network=none "$tag" \
+        pkg-config --exact-version=1.22.0 yara_x_capi
+    if [[ "${PUSH:-false}" == true ]]; then
+        python3 "$SCRIPT_DIR/builder-image.py" --ensure-absent "$tag"
+        docker push "$tag"
+        docker buildx imagetools inspect "$tag"
+    fi
+done

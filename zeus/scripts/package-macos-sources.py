@@ -21,7 +21,11 @@ for variant in ['dpi','nodpi']:
         archive=sources/record['archive']
         if archive.parent!=sources or hashlib.sha256(archive.read_bytes()).hexdigest()!=record['sha256']:raise ValueError('changed source archive')
         files.add(archive)
-        files.add(sources/(record['package']+'-'+record['version']+'.rb'))
+        if record['package']=='yara-x':
+            for recipe in ('yara-x.env','build-yara-x.sh','install-yara-rust.sh'):
+                files.add(sources/recipe)
+        else:
+            files.add(sources/(record['package']+'-'+record['version']+'.rb'))
 name='netcap-macos-runtime-source-v'+a.version
 destination=sources/(name+'.tar.gz')
 with destination.open('wb') as output,gzip.GzipFile(fileobj=output,mode='wb',mtime=0,filename='') as gz,tarfile.open(fileobj=gz,mode='w',format=tarfile.PAX_FORMAT) as tar:

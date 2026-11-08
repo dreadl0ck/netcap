@@ -5,6 +5,8 @@
 
 set -e
 
+NETCAP_BUILDER_IMAGE="${NETCAP_BUILDER_IMAGE:-$(python3 "$(dirname "$0")/builder-image.py" alpine-dpi)}"
+
 # Image configuration
 IMAGE_NAME="netcap-service"
 VERSION="${VERSION:-latest}"
@@ -37,7 +39,11 @@ if [ ! -d "cmd/capture/webui/frontend/dist" ]; then
 fi
 
 # Check if we should build multi-platform images
-PLATFORMS="${NETCAP_PLATFORMS:-linux/amd64,linux/arm64}"
+PLATFORMS="${NETCAP_PLATFORMS:-linux/amd64}"
+if [[ "$PLATFORMS" != linux/amd64 ]]; then
+    echo 'The qualified native service builder supports linux/amd64 only.' >&2
+    exit 1
+fi
 USE_BUILDX="${NETCAP_USE_BUILDX:-true}"
 
 # Check if docker/service directory exists

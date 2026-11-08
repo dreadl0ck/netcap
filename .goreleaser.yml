@@ -18,7 +18,7 @@ builds:
     goos:
       - darwin
     ldflags:
-      - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}} -X github.com/dreadl0ck/netcap.Commit={{.FullCommit}} -X github.com/dreadl0ck/netcap.GopacketVersion=v1.7.2 -X github.com/dreadl0ck/netcap/internal/dpi.NDPIVersion=4.14 -X github.com/dreadl0ck/netcap/internal/dpi.LibprotoidentVersion=2.0.15-2
+      - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}} -X github.com/dreadl0ck/netcap.Commit={{.FullCommit}} -X github.com/dreadl0ck/netcap.GopacketVersion=v1.7.2+v1.1.16-0.20261108103455-f2eeabc1ff6e -X github.com/dreadl0ck/netcap/internal/dpi.NDPIVersion=4.14 -X github.com/dreadl0ck/netcap/internal/dpi.LibprotoidentVersion=2.0.15-2
     flags:
       - -trimpath
     goarch:
@@ -37,7 +37,7 @@ builds:
     goarch:
       - arm64
     ldflags:
-      - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}} -X github.com/dreadl0ck/netcap.Commit={{.FullCommit}} -X github.com/dreadl0ck/netcap.GopacketVersion=v1.7.2
+      - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}} -X github.com/dreadl0ck/netcap.Commit={{.FullCommit}} -X github.com/dreadl0ck/netcap.GopacketVersion=v1.7.2+v1.1.16-0.20261108103455-f2eeabc1ff6e
     flags:
       - -trimpath
       - -tags=nodpi
@@ -54,7 +54,7 @@ builds:
     goos:
       - windows
     ldflags:
-      - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}} -X github.com/dreadl0ck/netcap.Commit={{.FullCommit}} -X github.com/dreadl0ck/netcap.GopacketVersion=v1.7.2
+      - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}} -X github.com/dreadl0ck/netcap.Commit={{.FullCommit}} -X github.com/dreadl0ck/netcap.GopacketVersion=v1.7.2+v1.1.16-0.20261108103455-f2eeabc1ff6e
     flags:
       - -trimpath
       - -tags=nodpi,noyara
