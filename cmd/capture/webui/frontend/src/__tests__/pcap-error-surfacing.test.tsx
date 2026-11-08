@@ -174,7 +174,7 @@ describe('PCAP child analysis', () => {
     });
     const childRow = await screen.findByRole('row', { name: /selected.pcapng/ });
     await waitFor(() => expect(within(childRow).getByLabelText('Currently viewing', { exact: true })).toBeInTheDocument());
-    await userEvent.click(within(childRow).getByRole('button', { name: 'Parent', exact: true }));
+    await userEvent.click(within(childRow).getByRole('button', { name: 'Parent' }));
     await waitFor(() => expect(setActiveDirectory).toHaveBeenCalledExactlyOnceWith(parent.path));
     expect(active).toBe(parent.path);
   });
