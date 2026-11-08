@@ -190,7 +190,7 @@ def build(args):
         for package, field in [('libndpi', 'NDPIVersion'), ('libprotoident', 'LibprotoidentVersion')]:
             flags += ' -X github.com/dreadl0ck/netcap/internal/dpi.' + field + '=' + run(['pkg-config', '--modversion', package], env=env).strip()
         flags += ' -X github.com/dreadl0ck/netcap/internal/dpi.GoDPIVersion=' + run(['go', 'list', '-m', '-f', '{{.Version}}', 'github.com/dreadl0ck/go-dpi'], cwd=root, env=env).strip()
-    command = ['sh', 'scripts/with-yara-x.sh', 'go', 'build', '-trimpath', '-ldflags', flags, '-o', str(bundle / 'net')]
+    command = ['sh', 'scripts/with-yara-x.sh', 'env', 'GOMAXPROCS=2', 'GOFLAGS=-mod=readonly -p=2', 'go', 'build', '-trimpath', '-ldflags', flags, '-o', str(bundle / 'net')]
     if args.variant == 'nodpi':
         command += ['-tags=nodpi']
     command += ['./cmd/net']
