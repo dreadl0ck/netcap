@@ -4,6 +4,21 @@
   "rules": [
     {
       "evidence": {
+        "id": "netapi",
+        "origin": "https://netapi.com/netapi_top1mln.csv",
+        "revision": "1b2726ddf115fa27e7f198a738a1e562c6099be068e3dbe2ad59027a76f6831e",
+        "sha256": "1b2726ddf115fa27e7f198a738a1e562c6099be068e3dbe2ad59027a76f6831e",
+        "transformation": "byte-for-byte",
+        "grant_text": "NetAPI Terms of Service, effective November 7, 2026, section 4.3 (https://netapi.com/tos/#open-data):\nThe following materials are published under the Creative Commons Attribution 4.0 International license (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/legalcode. For them CC BY 4.0 applies instead of the restrictions in Section 4.2: you may copy, publicly post, redistribute and adapt them, in whole or in part and also commercially, as long as you credit NetAPI with a link to the page of the dataset.\n- the NetAPI Top 1M list of the most popular websites (https://netapi.com/top-1-mln-websites/) and its CSV file\nSlava Olesik confirmed bundling and mirroring under CC BY 4.0 with attribution on 2026-11-07: https://github.com/dreadl0ck/netcap/issues/102#issuecomment-6711862258. Inputs include Majestic Million (CC BY 3.0) and Chrome UX Report (CC BY 4.0); published output contains only fused rank and domain.\n",
+        "grant_sha256": "abd1637f9c46827608b8c855f671d10c054e1faad141bbb3e081aec7074c55e2",
+        "notice_text": "NetAPI Top 1M by NetAPI / CodeRockers LTD, https://netapi.com/top-1-mln-websites/, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/legalcode). CSV redistributed unchanged. Ranking inputs include Majestic Million (CC BY 3.0) and Chrome UX Report (CC BY 4.0). Popularity is not a security/trust assessment.",
+        "grant_origin": "https://netapi.com/tos/#open-data ; https://github.com/dreadl0ck/netcap/issues/102#issuecomment-6711862258",
+        "grant_revision": "ToS-effective-2026-11-07; reviewed-2026-11-08"
+      },
+      "files": ["netapi-top1m.csv"]
+    },
+    {
+      "evidence": {
         "id": "ua-parser",
         "origin": "https://raw.githubusercontent.com/ua-parser/uap-core/73e7340c3ed8055051607b296bf46ead7aa5f19e/regexes.yaml",
         "revision": "acf2c9af91158a00c444c3b795e7769f8af3d894106327a299c70bd64a81c8e6",

@@ -3,6 +3,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -38,11 +39,21 @@ type dependency struct {
 	Paths    []string
 	Variants map[string]bool
 	Files    []licenseFile
+	Replaced bool
 }
 
 type licenseFile struct {
 	Name string
 	Text string
+}
+
+type licenseReview struct {
+	Module   string   `json:"module"`
+	Version  string   `json:"version"`
+	File     string   `json:"file"`
+	SHA256   string   `json:"sha256"`
+	Licenses []string `json:"licenses"`
+	Reason   string   `json:"reason"`
 }
 
 type pnpmDependency struct {
@@ -132,9 +143,18 @@ func repositoryRoot() (string, error) {
 }
 
 func collectGoDependencies(root string) ([]dependency, error) {
+	reviewData, err := os.ReadFile(filepath.Join(root, "legal", "go-license-reviews.json"))
+	if err != nil {
+		return nil, err
+	}
+	var reviews []licenseReview
+	if err := json.Unmarshal(reviewData, &reviews); err != nil {
+		return nil, err
+	}
 	deps := make(map[string]*dependency)
+	seenPackages := make(map[string]bool)
 	for _, v := range variants {
-		args := []string{"list", "-deps", "-json"}
+		args := []string{"list", "-mod=readonly", "-deps", "-json"}
 		if v.tags != "" {
 			args = append(args, "-tags="+v.tags)
 		}
@@ -168,6 +188,11 @@ func collectGoDependencies(root string) ([]dependency, error) {
 			key := mod.Path + "@" + mod.Version
 			dep := deps[key]
 			if dep == nil {
+				dep = &dependency{Name: mod.Path, Version: mod.Version, Replaced: mod.Replace != nil, Variants: make(map[string]bool)}
+				deps[key] = dep
+			}
+			packageKey := key + "\x00" + pkg.Dir
+			if !seenPackages[packageKey] {
 				files, err := findLicenseFiles(pkg.Dir, licenseDir)
 				if err != nil {
 					return nil, fmt.Errorf("%s: %w", key, err)
@@ -175,61 +200,124 @@ func collectGoDependencies(root string) ([]dependency, error) {
 				if len(files) == 0 {
 					return nil, fmt.Errorf("%s has no distributable license file", key)
 				}
-				licenses, err := identifyLicenses(files)
-				if err != nil {
-					return nil, fmt.Errorf("%s: %w", key, err)
-				}
-				dep = &dependency{Name: mod.Path, Version: mod.Version, License: strings.Join(licenses, " OR "), Variants: make(map[string]bool), Files: files}
-				deps[key] = dep
+				dep.Files = mergeLicenseFiles(dep.Files, files)
+				seenPackages[packageKey] = true
 			}
 			dep.Variants[v.name] = true
 		}
 	}
 
+	if len(deps) == 0 {
+		return nil, errors.New("production package graph contains no dependency modules")
+	}
 	result := make([]dependency, 0, len(deps))
+	var policyErrors []error
 	for _, dep := range deps {
+		licenses, err := reviewedLicenses(dep, reviews)
+		if err != nil {
+			policyErrors = append(policyErrors, fmt.Errorf("%s@%s: %w", dep.Name, dep.Version, err))
+			continue
+		}
+		dep.License = strings.Join(licenses, "; ")
 		result = append(result, *dep)
 	}
-	return result, nil
+	slices.SortFunc(policyErrors, func(a, b error) int { return strings.Compare(a.Error(), b.Error()) })
+	return result, errors.Join(policyErrors...)
+}
+
+func reviewedLicenses(dep *dependency, reviews []licenseReview) ([]string, error) {
+	if len(dep.Files) == 0 {
+		return nil, errors.New("no license files")
+	}
+	seenReviews := make(map[string]bool)
+	for _, review := range reviews {
+		if review.Module != dep.Name {
+			continue
+		}
+		if dep.Replaced {
+			return nil, errors.New("published-module license review does not cover a replacement")
+		}
+		if seenReviews[review.File] {
+			return nil, fmt.Errorf("duplicate license review for %s", review.File)
+		}
+		seenReviews[review.File] = true
+		if review.Version != dep.Version {
+			return nil, fmt.Errorf("license review is stale for %s; review version %s", review.File, dep.Version)
+		}
+		if !slices.ContainsFunc(dep.Files, func(file licenseFile) bool { return file.Name == review.File }) {
+			return nil, fmt.Errorf("reviewed legal file %s is missing", review.File)
+		}
+	}
+	var licenses []string
+	for _, file := range dep.Files {
+		reviewed := false
+		for _, review := range reviews {
+			if review.Module != dep.Name || review.File != file.Name {
+				continue
+			}
+			if review.Version != dep.Version || review.SHA256 != fmt.Sprintf("%x", sha256.Sum256([]byte(file.Text))) {
+				return nil, fmt.Errorf("license review is stale for %s; review version and file content", file.Name)
+			}
+			if strings.TrimSpace(review.Reason) == "" || len(review.Licenses) == 0 {
+				return nil, fmt.Errorf("incomplete license review for %s", file.Name)
+			}
+			licenses = append(licenses, review.Licenses...)
+			reviewed = true
+			break
+		}
+		if !reviewed {
+			found, err := identifyLicenses([]licenseFile{file})
+			if err != nil {
+				return nil, fmt.Errorf("%s (sha256 %x): %w", file.Name, sha256.Sum256([]byte(file.Text)), err)
+			}
+			licenses = append(licenses, found...)
+		}
+	}
+	slices.Sort(licenses)
+	return slices.Compact(licenses), nil
 }
 
 func identifyLicenses(files []licenseFile) ([]string, error) {
 	var licenses []string
 	for _, file := range files {
-		if strings.HasPrefix(strings.ToUpper(file.Name), "NOTICE") {
-			continue
-		}
-		text := strings.ToLower(file.Text)
-		for _, forbidden := range []string{"gnu affero general public license", "server side public license", "commons clause", "business source license", "non-commercial use only"} {
+		text := strings.ToLower(strings.Join(strings.Fields(file.Text), " "))
+		for _, forbidden := range []string{"gnu affero general public license", "gnu general public license", "gnu lesser general public license", "gnu library general public license", "mozilla public license", "common development and distribution license", "gpl-", "agpl-", "lgpl-", "mpl-", "cddl-", "sspl-", "busl-", "cc-by-nc", "server side public license", "commons clause", "business source license", "non-commercial use only", "advertising materials", "foxio license", "nmap public source license"} {
 			if strings.Contains(text, forbidden) {
 				return nil, fmt.Errorf("forbidden or review-required license text %q in %s", forbidden, file.Name)
 			}
 		}
+		before := len(licenses)
 		switch {
-		case strings.Contains(text, "mozilla public license"):
-			licenses = append(licenses, "MPL-2.0")
-		case strings.Contains(text, "apache license") && strings.Contains(text, "version 2.0"):
-			licenses = append(licenses, "Apache-2.0")
-		case strings.Contains(text, "gnu lesser general public license"):
-			licenses = append(licenses, "LGPL")
-		case strings.Contains(text, "gnu general public license"):
-			licenses = append(licenses, "GPL")
 		case strings.Contains(text, "sil open font license"):
 			licenses = append(licenses, "OFL-1.1")
 		case strings.Contains(text, "creative commons zero") || strings.Contains(text, "cc0 1.0"):
 			licenses = append(licenses, "CC0-1.0")
-		case strings.Contains(text, "permission is hereby granted, free of charge"):
-			licenses = append(licenses, "MIT")
-		case strings.Contains(text, "redistribution and use in source and binary forms") && strings.Contains(text, "neither the name"):
-			licenses = append(licenses, "BSD-3-Clause")
-		case strings.Contains(text, "redistribution and use in source and binary forms"):
-			licenses = append(licenses, "BSD-2-Clause")
-		case strings.Contains(text, "permission to use, copy, modify, and/or distribute"):
-			licenses = append(licenses, "ISC")
 		case strings.Contains(text, "the unlicense") || strings.Contains(text, "free and unencumbered software released into the public domain"):
 			licenses = append(licenses, "Unlicense")
+		case strings.Contains(text, "sqlite is public domain"):
+			licenses = append(licenses, "public-domain")
 		case strings.Contains(text, "zlib license") || strings.Contains(text, "this software is provided 'as-is', without any express or implied warranty"):
 			licenses = append(licenses, "Zlib")
+		default:
+			if strings.Contains(text, "apache license") && strings.Contains(text, "version 2.0") {
+				licenses = append(licenses, "Apache-2.0")
+			}
+			if strings.Contains(text, "permission is hereby granted, free of charge") {
+				licenses = append(licenses, "MIT")
+			}
+			if strings.Contains(text, "redistribution and use in source and binary forms") {
+				if strings.Contains(text, "neither the name") {
+					licenses = append(licenses, "BSD-3-Clause")
+				} else {
+					licenses = append(licenses, "BSD-2-Clause")
+				}
+			}
+			if strings.Contains(text, "permission to use, copy, modify, and/or distribute") {
+				licenses = append(licenses, "ISC")
+			}
+		}
+		if len(licenses) == before {
+			return nil, fmt.Errorf("unrecognized license text in %s; explicit review required", file.Name)
 		}
 	}
 	slices.Sort(licenses)
@@ -241,28 +329,32 @@ func identifyLicenses(files []licenseFile) ([]string, error) {
 }
 
 func findLicenseFiles(packageDir, moduleDir string) ([]licenseFile, error) {
+	packageDir, moduleDir = filepath.Clean(packageDir), filepath.Clean(moduleDir)
+	rel, err := filepath.Rel(moduleDir, packageDir)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return nil, fmt.Errorf("package %s is outside module %s", packageDir, moduleDir)
+	}
 	dir := packageDir
+	var result []licenseFile
 	for {
 		files, err := licenseFilesInDir(dir)
 		if err != nil {
 			return nil, err
 		}
-		if len(files) != 0 {
-			if dir != moduleDir {
-				rootFiles, err := licenseFilesInDir(moduleDir)
-				if err != nil {
-					return nil, err
-				}
-				files = mergeLicenseFiles(files, rootFiles)
+		for i := range files {
+			rel, err := filepath.Rel(moduleDir, filepath.Join(dir, files[i].Name))
+			if err != nil {
+				return nil, err
 			}
-			return files, nil
+			files[i].Name = filepath.ToSlash(rel)
 		}
+		result = mergeLicenseFiles(result, files)
 		if dir == moduleDir {
-			return nil, nil
+			return result, nil
 		}
 		parent := filepath.Dir(dir)
-		if parent == dir || !strings.HasPrefix(parent, moduleDir) {
-			return nil, nil
+		if parent == dir || !strings.HasPrefix(parent, moduleDir+string(filepath.Separator)) && parent != moduleDir {
+			return nil, fmt.Errorf("package %s is outside module %s", packageDir, moduleDir)
 		}
 		dir = parent
 	}
@@ -413,19 +505,27 @@ func render(deps []dependency) ([]byte, error) {
 	out.WriteString("NETCAP THIRD-PARTY LICENSES\n\n")
 	out.WriteString("Generated by: go run ./internal/tools/licenses\n")
 	out.WriteString("Do not edit this file manually. Build-specific native and copied-code notices are in THIRD_PARTY_NOTICES.txt.\n\n")
+	out.WriteString("License inventories below describe collected texts, not alternative licensing grants. Component-specific terms and scope remain in the reproduced texts. This scan checks package/ancestor legal files; it is not a source-header or native-library audit.\n\n")
 	for _, dep := range deps {
 		variants := make([]string, 0, len(dep.Variants))
 		for name := range dep.Variants {
 			variants = append(variants, name)
 		}
 		slices.Sort(variants)
-		fmt.Fprintf(&out, "================================================================================\n%s %s\nLicense: %s\nUsed by: %s\n", dep.Name, dep.Version, dep.License, strings.Join(variants, ", "))
+		fmt.Fprintf(&out, "================================================================================\n%s %s\nLicense inventory: %s\nUsed by: %s\n", dep.Name, dep.Version, dep.License, strings.Join(variants, ", "))
 		if dep.Variants["webui"] {
 			fmt.Fprintf(&out, "Source: https://www.npmjs.com/package/%s/v/%s\n", dep.Name, strings.Split(dep.Version, ", ")[0])
 		} else {
 			fmt.Fprintf(&out, "Source: https://pkg.go.dev/%s@%s\n", dep.Name, dep.Version)
 		}
-		for _, file := range dep.Files {
+		files := slices.Clone(dep.Files)
+		slices.SortFunc(files, func(a, b licenseFile) int {
+			if c := strings.Compare(a.Name, b.Name); c != 0 {
+				return c
+			}
+			return strings.Compare(a.Text, b.Text)
+		})
+		for _, file := range files {
 			fmt.Fprintf(&out, "\n--- %s ---\n%s\n", file.Name, file.Text)
 		}
 		out.WriteByte('\n')

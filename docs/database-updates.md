@@ -25,7 +25,11 @@ Use the same `NC_CONFIG_ROOT` when installing and capturing. Defaults are `~/.co
 
 Updates validate complete source/member records through staging. Failure preserves the previous installation. Unchanged verified data can skip archive downloading. Verified installed data remains usable offline after update expiry; expiry prevents accepting an old update as fresh.
 
-Community data contains NVD, DB-IP Lite, IANA, UA-parser and pinned BSD HASSH. It excludes Exploit-DB payloads, Nmap probes, macaddress.io, Alexa, JA3 identification corpora and legacy CMS/DHCP OS catalogues. NVD reference URLs remain metadata; the updater does not fetch their bodies.
+Community data contains NVD, DB-IP Lite, IANA, UA-parser, pinned BSD HASSH and NetAPI Top 1M (`netapi-top1m.csv`, CC BY 4.0). It excludes Exploit-DB payloads, Nmap probes, macaddress.io, Alexa, JA3 identification corpora and legacy CMS/DHCP OS catalogues. NVD reference URLs remain metadata; the updater does not fetch their bodies.
+
+The legacy resolver ZIP attachment is retired. Use the signed updater above;
+historical Git revisions and their source archives are not current database
+releases, and their availability does not establish dataset redistribution rights.
 
 ## Troubleshooting
 

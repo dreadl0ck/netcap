@@ -164,7 +164,7 @@ function createNoOpApi(): NetcapApiClient {
     reportIssue: noOpReturn({ success: false, issueId: '', message: '', remaining: 0 }),
     getRules: noOpReturn({ rules: [] }),
     getOfflinePacks: noOp,
-    getArtifactAnalysis: noOp,
+	getArtifactAnalysis: noOp,
     validateOfflinePack: noOp,
     executeOfflinePack: noOp,
     getOfflineEvaluations: noOp,

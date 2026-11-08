@@ -20,6 +20,16 @@ dbip-city-lite.mmdb, dbip-asn-lite.mmdb (layout 2 only)
   have reduced accuracy and coverage and are updated monthly.
   Web applications using this data must link to DB-IP on result pages.
 
+netapi-top1m.csv
+  NetAPI Top 1M by NetAPI / CodeRockers LTD, unchanged CSV.
+  https://netapi.com/top-1-mln-websites/
+  Creative Commons Attribution 4.0 International (CC BY 4.0):
+  https://creativecommons.org/licenses/by/4.0/legalcode
+  Redistribution grant: https://netapi.com/tos/#open-data (2026-11-07).
+  Ranking inputs include Majestic Million (CC BY 3.0) and Chrome UX Report
+  (CC BY 4.0); NetAPI publishes its fused rank and domain only.
+  Popularity does not imply safety or trust.
+
 OPTIONAL USER-INSTALLED DATA (not included in this archive)
   Nmap probes: review https://nmap.org/npsl/ and obtain nmap-service-probes
   from your Nmap installation or https://svn.nmap.org/nmap/nmap-service-probes.

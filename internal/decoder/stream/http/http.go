@@ -30,6 +30,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/software"
 	logging "github.com/dreadl0ck/netcap/internal/logger"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -48,6 +49,9 @@ var Decoder = &decoder.StreamDecoder{
 			"http",
 			decoderconfig.Instance.Debug,
 		)
+		if err == nil {
+			software.InitializeWebtech()
+		}
 		return err
 	},
 	// A complete request line is sufficient even when no response was captured.

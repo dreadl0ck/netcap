@@ -39,23 +39,24 @@ func toHTTPHostsFiltered() {
 
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
-	resolvers.InitDNSWhitelist()
+	if err := resolvers.InitDNSWhitelist(); err != nil {
+		log.Fatal(err)
+	}
 	os.Stdout = stdOut
 
 	netmaltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
-			if http.SrcIP != ipaddr {
+			if !includePopularityHTTPHost(http, ipaddr) {
 				return
 			}
-			if http.Host != "" {
-				if !resolvers.IsWhitelistedDomain(http.Host) {
-					ent := addEntityWithPath(trx, "netcap.HTTPHost", http.Host, path)
-					ent.AddProperty(netmaltego.PropertyIpAddr, netmaltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
-
-				}
-			}
+			ent := addEntityWithPath(trx, "netcap.HTTPHost", http.Host, path)
+			ent.AddProperty(netmaltego.PropertyIpAddr, netmaltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 		},
 		false,
 	)
+}
+
+func includePopularityHTTPHost(http *types.HTTP, ipaddr string) bool {
+	return http.SrcIP == ipaddr && http.Host != "" && !resolvers.IsPopularHTTPHost(http.Host)
 }

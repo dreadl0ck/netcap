@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-latest@sha256:f21aab4be6e2c0b0fdc89fdc09bbe8152c985aeebb28c623af9874d895593136 as builder
+FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-3.24.4-20261107@sha256:705bed655ef680333add520b6a5c59153693c2026b8efdf57136a0b0c898f1f5 as builder
 
 # Copy netcap source
 WORKDIR /netcap

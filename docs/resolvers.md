@@ -8,7 +8,7 @@ description: Lookup everything!
 
 Lots of information is not available on first sight, and we need to combine our data with knowledge from other data sources to make it easier to understand for humans.
 
-Think of resolving ip addresses to geolocations, hardware addreses to manufacturers, domains to ip addresses and vice versa, or simply identifying the service name associated with a given port number. Or consider filtering ip addresses or domain names against a whitelist, to eliminate known legitimate traffic.
+Think of resolving IP addresses to geolocations, hardware addresses to manufacturers, or identifying service names from port numbers. The filtered Maltego transforms can optionally suppress popular domains; popularity does not establish legitimacy or safety.
 
 The resolvers package provides primitives for such tasks, and if possible, caches results in memory for better performance.
 
@@ -23,6 +23,7 @@ External data sources are stored in a central directory on the system, which def
 | `service-names-port-numbers.csv` | IANA port names |
 | `regexes.yaml` | UA-parser software/OS signatures |
 | `hasshdb.json` | Pinned HASSH SSH software catalogue in signed releases |
+| `netapi-top1m.csv` | NetAPI Top 1M popularity ranking (CC BY 4.0) |
 | `RELEASE_MANIFEST.json`, `DATABASE_NOTICES.txt` | Exact file/source inventory and full applicable notices |
 
 ## Configuration
@@ -61,8 +62,61 @@ And provide it to netcaps resolver via a **hosts** file in the database director
 
 ## Domain Whitelisting
 
-An optional local `domain-whitelist.csv` contains `rank,domain` rows for the
-filtered transforms. The Alexa feed is retired and no whitelist is shipped.
+The 3 filtered Maltego transforms use **managed NetAPI Top 1M by default** from
+`dbs/netapi-top1m.csv`, acquired by the database publisher and included in new
+signed database releases. Update databases before using these defaults. The
+retired Alexa `dbs/domain-whitelist.csv` remains inert.
+
+Use `net transform --no-domain-popularity <transform> <Maltego arguments>` to
+disable suppression. An unavailable or invalid selected list fails the transform;
+initialization reuses the validated list instead of parsing it twice.
+
+To override NetAPI, place an independently obtained CSV outside the managed database directory, for
+example `~/.config/netcap/user-data/popularity.csv`. Pass its explicit path before
+the transform name and the usual Maltego positional arguments:
+
+```text
+net transform --domain-popularity-list /absolute/path/popularity.csv --domain-popularity-format rank-domain toHTTPHostsFiltered <Maltego arguments>
+```
+
+| `--domain-popularity-format` | Required CSV shape |
+| --- | --- |
+| `rank-domain` (default; Tranco-style) | 2 columns: positive integer rank, registrable domain; no header |
+| `netapi` | 2 columns; exact `NetAPI_Rank,Domain` header |
+| `majestic` | 12 columns; exact `GlobalRank,TldRank,Domain,TLD,RefSubNets,RefIPs,IDN_Domain,IDN_TLD,PrevGlobalRank,PrevTldRank,PrevRefSubNets,PrevRefIPs` header; uses GlobalRank and Domain |
+
+The 3 filtered transforms (`toHTTPHostsFiltered`, `toIncomingConnsFiltered`,
+`toOutgoingConnsFiltered`) use the same membership rules as their byte-count
+helpers. Parsing accepts quoted CSV and CRLF, normalizes case, a final DNS dot
+and IDNA, and rejects IPs, unknown/public suffixes, malformed names, subdomain-only
+list entries and duplicate ranks. Duplicate normalized domains are counted once.
+ICANN and PRIVATE Public Suffix List rules, including wildcards and exceptions,
+keep `alice.github.io` separate from `bob.github.io`; matching never takes just
+the last 2 labels. HTTP Host matching also accepts a numeric port in 1–65535.
+
+Limits are 128 MiB and 1,000,000 data rows. An explicit invalid/missing file fails
+CLI preflight. Counts (`rows`, `loaded`, `duplicates`, `invalid`, `skipped`) are reported;
+failed loads publish no partial suppression data. Core database replacement never
+writes the external file. Paths inside `dbs`, including resolved symlinks, are
+rejected for overrides. The managed importer skips syntactically valid entries
+that are PSL roots, use unknown/retired suffixes or are not registrable domains;
+external overrides remain strict. Skipping prevents a shared suffix from
+suppressing every tenant beneath it. The distributed CSV is unchanged.
+
+Rust provides the equivalent `netcap_resolvers::popularity::{Config,List}` API
+and resolver-runtime configuration. Its capture CLI accepts
+`--domain-popularity-list` and `--domain-popularity-format` (also YAML keys),
+loads and reports the optional list, but does not suppress capture records.
+Rust has no filtered Maltego transforms; this is not transform parity. Its help
+and successful-load diagnostic explicitly say `no suppression of capture records`.
+
+NetAPI / CodeRockers LTD publishes the [Top 1M](https://netapi.com/top-1-mln-websites/)
+under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+[ToS §4.3](https://netapi.com/tos/#open-data), effective 2026-11-07, expressly
+overrides §4.2's redistribution restrictions for this CSV. Slava clarified the
+Majestic Million (CC BY 3.0) and Chrome UX Report (CC BY 4.0) inputs and confirmed
+bundling/mirroring in [issue #102](https://github.com/dreadl0ck/netcap/issues/102#issuecomment-6711862258).
+The publisher policy and archive notices retain attribution and the dataset link.
 
 ## Geolocation
 

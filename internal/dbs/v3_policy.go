@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/servicesignatures"
 	"github.com/dreadl0ck/netcap/internal/vulndb"
 )
@@ -30,7 +31,8 @@ const (
 // permits review; it is not a redistribution grant.
 func CandidateFiles() map[string]string {
 	return map[string]string{
-		"netcap.sqlite": "nvd", "hasshdb.json": "hassh",
+		resolvers.ManagedPopularityFile: "netapi",
+		"netcap.sqlite":                 "nvd", "hasshdb.json": "hassh",
 		"regexes.yaml": "ua-parser", "service-names-port-numbers.csv": "iana",
 		"dbip-city-lite.mmdb": "dbip", "dbip-asn-lite.mmdb": "dbip",
 		"geoip-sources.json":      "dbip",
@@ -467,6 +469,13 @@ func validateSourceBindings(dir string, m ReleaseManifest) error {
 }
 
 func validateReleaseData(dir string) error {
+	if _, err := os.Lstat(filepath.Join(dir, resolvers.ManagedPopularityFile)); err == nil {
+		if _, _, err := resolvers.LoadManagedDomainPopularityList(dir); err != nil {
+			return err
+		}
+	} else if !os.IsNotExist(err) {
+		return err
+	}
 	if _, err := os.Lstat(filepath.Join(dir, servicesignatures.FileName)); err == nil {
 		f, err := openRegular(filepath.Join(dir, servicesignatures.FileName))
 		if err != nil {

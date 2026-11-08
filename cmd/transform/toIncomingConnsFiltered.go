@@ -42,7 +42,9 @@ func toIncomingConnsFiltered() {
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
 	resolvers.InitLocalDNS()
-	resolvers.InitDNSWhitelist()
+	if err := resolvers.InitDNSWhitelist(); err != nil {
+		log.Fatal(err)
+	}
 	resolvers.InitServiceDB()
 	os.Stdout = stdOut
 

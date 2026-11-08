@@ -63,6 +63,7 @@ import CommunityIDChip from '../components/CommunityIDChip';
 import SearchInput from '../components/SearchInput';
 import ResponsiveDataView from '../components/ResponsiveDataView';
 import VulnerabilityReferences, { type VulnerabilityReference } from '../components/VulnerabilityReferences';
+import VulnerabilityKEV, { type KEVStatus } from '../components/VulnerabilityKEV';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
@@ -90,6 +91,7 @@ interface VulnerabilitySummary {
   software: SoftwareInfo | null;
   affected: number;
   references?: VulnerabilityReference[];
+  kev?: KEVStatus;
   communityIds: string[]; // Community IDs for cross-tool correlation
 }
 
@@ -117,6 +119,7 @@ interface HostVulnerabilitySummary {
 }
 
 interface VulnerabilitiesResponse {
+  kevStatus?: 'available' | 'unavailable' | 'invalid-or-stale';
   vulnerabilities: VulnerabilitySummary[];
   exploits: ExploitSummary[];
   affectedHosts: HostVulnerabilitySummary[];
@@ -355,6 +358,9 @@ export default function VulnerabilitiesPage() {
   return (
     <Layout title="Vulnerabilities" headerAction={fileSelector}>
       <Box sx={{ minWidth: 0 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          Optional CISA KEV: {vulnerabilitiesData?.kevStatus === 'available' ? 'available' : vulnerabilitiesData?.kevStatus === 'invalid-or-stale' ? 'invalid or stale' : 'unavailable'}
+        </Typography>
         {/* View Mode Toggle */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
           <ToggleButtonGroup
@@ -530,6 +536,7 @@ export default function VulnerabilitiesPage() {
                       </Typography>
                     </Box>
                     <VulnerabilityReferences references={row.references} />
+                    <VulnerabilityKEV cve={row.id} status={row.kev} />
                   </Box>
                 )}
                 {tabValue === 1 && (
@@ -636,7 +643,7 @@ export default function VulnerabilitiesPage() {
                               <ExpandMoreIcon sx={{ transform: expandedRow === key ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                             </IconButton>
                           </TableCell>
-                          <TableCell>{row.id}</TableCell>
+                          <TableCell>{row.id} <VulnerabilityKEV cve={row.id} status={row.kev} compact /></TableCell>
                           <TableCell>
                             <Chip 
                               label={row.severity || 'UNKNOWN'} 
@@ -726,6 +733,7 @@ export default function VulnerabilitiesPage() {
                                     </Typography>
                                   </Box>
                                   <VulnerabilityReferences references={row.references} />
+                                  <VulnerabilityKEV cve={row.id} status={row.kev} />
                                   <Grid container spacing={2}>
                                     <Grid item xs={12} md={6}>
                                       <Card variant="outlined" sx={{ p: 2 }}>

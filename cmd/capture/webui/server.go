@@ -572,6 +572,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/set-directory", s.handleSetDirectory)
 	mux.HandleFunc("/api/reanalyze", s.handleReanalyze)
 	mux.HandleFunc("/api/version", s.handleVersion)
+	mux.HandleFunc("/api/enrichment/attribution", s.handleEnrichmentAttribution)
 	mux.HandleFunc("/api/hyperscan", s.handleHyperscanInfo)
 	mux.HandleFunc("/api/config", s.handleConfig)
 	mux.HandleFunc("/api/config/debug", s.handleDebugToggle)

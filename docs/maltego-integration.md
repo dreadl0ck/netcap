@@ -38,13 +38,12 @@ $ which net
 Transformations in maltego have to specify a working directory. Currently /**usr/local** is used for this so make sure the current user has sufficient right to enter the directory. No data will be written there, all logs from transformations that invoke the netcap core are written into dedicated directories for each processed pcap file.
 {% endhint %}
 
-Next, download install the maltego transformations and enities for netcap:
-
-Currently there are **20 entities** and **42 transformations** implemented. You can download them here:
-
-{% file src=".gitbook/assets/netcap-maltego-config-v0.5.mtz (2) (1).zip" %}
-
-Import them into Maltego in the "**Import / Export Config**" tab under "**Import Config**".
+The old v0.5 transform ZIP is retired from the installation guide. Current
+transform implementations live in `cmd/transform` and configuration code in
+`internal/maltego`; source checkouts provide `zeus gen-maltego-config`.
+Qualify generated configuration against your installed Maltego version before
+importing it through Import / Export Config → Import Config. The screenshots
+below describe the historical graph workflow.
 
 ## Loading PCAP files into Maltego
 

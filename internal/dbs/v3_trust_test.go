@@ -367,7 +367,7 @@ func TestV3ChangedNightlyBytesRemainUnapprovedAndKeepPriorRelease(t *testing.T) 
 	}
 	before, _ := os.ReadFile(filepath.Join(out, "latest.json"))
 	registryBefore, _ := os.ReadFile(registry)
-	t.Setenv("NC_DBS_SKIP_SOURCES", "hasshdb.json,regexes.yaml,service-names-port-numbers.csv")
+	t.Setenv("NC_DBS_SKIP_SOURCES", "hasshdb.json,regexes.yaml,service-names-port-numbers.csv,netapi-top1m.csv")
 	month := time.Now().UTC().Format("2006-01")
 	city, asn := dbipPayload(t, "city", month), dbipPayload(t, "asn", month)
 	feedPath := filepath.Join(t.TempDir(), "new-feed.gz")

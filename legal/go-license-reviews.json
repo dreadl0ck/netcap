@@ -1,0 +1,82 @@
+[
+  {
+    "module": "modernc.org/libc",
+    "version": "v1.77.1",
+    "file": "LICENSE-3RD-PARTY.md",
+    "sha256": "de2e7c240a45e22cd9f3e4e627cee0f64e23425dee2ab3adb89862f208deb83a",
+    "licenses": ["BSD-3-Clause", "MIT"],
+    "reason": "Pins this module version to the FOSSA 21407524/26/28/29/30 build-file review. Catalogue covers Go (BSD), musl, go-netdb and nixpkgs (MIT); it does not supersede generated-header terms. Selected GCC headers use Runtime Library Exception 3.1; full terms and scope are in THIRD_PARTY_NOTICES.txt. Re-review source headers and build selection when upgrading."
+  },
+  {
+    "module": "github.com/hashicorp/go-uuid",
+    "version": "v1.0.3",
+    "file": "LICENSE",
+    "sha256": "b8c9287ff34857b22c1188fbb1f7505004a14e6a022c70c7e6f5af68a02b568d",
+    "licenses": ["MPL-2.0"],
+    "reason": "Unmodified MPL-covered dependency. Full terms are reproduced; covered-source URL and availability are recorded in THIRD_PARTY_NOTICES.txt. References to GPL/AGPL in the standard MPL secondary-license clause are not additional grants for Netcap."
+  },
+  {
+    "module": "github.com/hashicorp/golang-lru",
+    "version": "v1.0.2",
+    "file": "LICENSE",
+    "sha256": "ba36895caa0717b51eacc64ad50ef0b399482e1b82b93cfcdd065307409b3d9d",
+    "licenses": ["MPL-2.0"],
+    "reason": "Unmodified MPL-covered dependency. Full terms are reproduced; covered-source URL and availability are recorded in THIRD_PARTY_NOTICES.txt. This v1 module is distinct from sqlite's tool-only golang-lru/v2 catalogue entry."
+  },
+  {
+    "module": "modernc.org/sqlite",
+    "version": "v1.60.1",
+    "file": "LICENSE-3RD-PARTY.md",
+    "sha256": "77b00d378fa8a729f1b99b0a84fbbd081c7950ebcabb6406f6a2d2a9a46d5ca6",
+    "licenses": ["BSD-3-Clause", "MIT", "public-domain", "Apache-2.0 (test tooling)", "MPL-2.0 (module-graph tooling)"],
+    "reason": "FOSSA 21407527 matches only this catalogue. Sections 1-4 separate runtime, tests, module-graph tools and source-only material. MPL belongs to hashicorp/golang-lru/v2 v2.0.7 in section 3; Netcap's selected sqlite packages do not import it. Retain the entire catalogue without treating its licenses as alternatives. Generated-header review is separate in THIRD_PARTY_NOTICES.txt."
+  },
+  {
+    "module": "modernc.org/memory",
+    "version": "v1.12.1",
+    "file": "LICENSE-LOGO",
+    "sha256": "ce9c578c2968e316b80b180c3f5a5d70a8f32f37256c1bcf944a5de4f9f4eb59",
+    "licenses": ["Logo attribution reference (asset not bundled)"],
+    "reason": "Single Wikimedia URL for the upstream logo; not a code license. Netcap imports the Go memory package and does not distribute this logo. Keep the reference alongside the code licenses."
+  },
+  {
+    "module": "github.com/coreos/go-iptables",
+    "version": "v0.8.0",
+    "file": "NOTICE",
+    "sha256": "d647d40647c01bec10122e5ee7389d562008b7099566ea7dc0149ff2773807a4",
+    "licenses": ["Attribution notice"],
+    "reason": "CoreOS copyright and acknowledgement only. Retained verbatim with the module's Apache-2.0 license."
+  },
+  {
+    "module": "github.com/prometheus/client_model",
+    "version": "v0.6.2",
+    "file": "NOTICE",
+    "sha256": "1c6ae0107fb9e87ce26f8098d5d173914331217f4d11d7ff3956d37ecb9c49a3",
+    "licenses": ["Attribution notice"],
+    "reason": "Prometheus copyright and SoundCloud acknowledgement only. Retained verbatim with the module's Apache-2.0 license."
+  },
+  {
+    "module": "github.com/prometheus/client_golang",
+    "version": "v1.23.2",
+    "file": "NOTICE",
+    "sha256": "f6c7b09c73554da233e12f776eede9a9a3f1a0f7e00b19178e41473af53853b4",
+    "licenses": ["Attribution notice"],
+    "reason": "Prometheus, SoundCloud, perks and Go protobuf acknowledgements. Retained verbatim; the production graph separately supplies the dependencies' license texts."
+  },
+  {
+    "module": "github.com/prometheus/procfs",
+    "version": "v0.18.0",
+    "file": "NOTICE",
+    "sha256": "322c24deae12157c69417716f0237cb08f4f99953d21be813067a62551227edc",
+    "licenses": ["Attribution notice"],
+    "reason": "Prometheus copyright and SoundCloud acknowledgement only. Retained verbatim with the module's Apache-2.0 license."
+  },
+  {
+    "module": "github.com/prometheus/common",
+    "version": "v0.67.1",
+    "file": "NOTICE",
+    "sha256": "a964149ae204f5510720cb1e569beabf22458a8a571d9d4e9773bbe3f895d13e",
+    "licenses": ["Attribution notice"],
+    "reason": "Prometheus copyright and SoundCloud acknowledgement only. Retained verbatim with the module's Apache-2.0 license."
+  }
+]

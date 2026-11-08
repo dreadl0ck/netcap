@@ -42,6 +42,7 @@ publisher-side source policies instead of requiring a binary per snapshot.
 | Offline root | Operator workstation `../server/secrets/netcap-db-signing/root.key`; never deployed or committed |
 | Schedule | `../server/schedules/netcap-db-refresh.{service,timer}`; daily 00:30 UTC plus up to 15 minutes jitter |
 | Refresh | `scripts/refresh-databases.sh`; `flock` prevents overlap; failures retain the previous signed pointer and failed acquisition |
+| Previous count | `scripts/db-previous-count.py` authenticates the prior signed release/archive/reviewed SQLite and recounts NVD; missing/stale caches cannot reset the baseline. Requires Python 3.11+ and `cryptography`. Explicit `NC_DBS_BOOTSTRAP_PREVIOUS_COUNT=0` is accepted only for an empty channel. |
 | Policy | Explicit source origins, transformations, filenames, static pins, full notices and 60-day expiry; nonempty annual feeds, declared/indexed count agreement, 48-hour current-feed age, minimum 400,000 CVEs and no decrease exceeding 5% |
 
 `scripts/prepare-db-policy.py` prepares operator-reviewable policy from existing
@@ -99,7 +100,7 @@ that separately hosted copy. The legacy LFS batch route returns Traefik HTTP 404
 
 | Item | Value |
 | --- | --- |
-| Dokploy application | `ZrG0UFSYLc1AvaAu1nUE4`, swarm service `netcap-dbs-suxwnk` |
+| Dokploy workload | Compose `fWFhMHd-o2Zuw9r8Kd_Zd`, project `netcap-dbs-readonly-ssbahz`, service `publisher`; `docker/dbs-server/compose.publisher.yml` pins all three serving binds read-only. Prior application `ZrG0UFSYLc1AvaAu1nUE4` remains stopped at `0/0` for rollback. |
 | Runtime | Dedicated non-root `netcap-dbs-server` image; `/netcap-dbs-server` is part of the image, not a bind mount |
 | Compatibility registry | `/srv/netcap-dbs-v3-runtime/approvals-schema2.json`, mounted at `/run/netcap-trust/approvals.json` and pinned in Dokploy args |
 | Registry SHA-256 | `0a71e6b0bb4f4c3513dca4051e54b1b457d480b2e54b857ffa9568952dccf441` |
@@ -437,8 +438,16 @@ License: Commercial
 
 ### Domain Whitelist (Alexa Top 1 million)
 
-Retired. `domain-whitelist.csv` is no longer fetched or shipped. A local
-`rank,domain` CSV remains optional for the filtered transforms.
+The Alexa feed and `domain-whitelist.csv` are retired. New signed database
+releases include unchanged `netapi-top1m.csv` from [NetAPI Top 1M](https://netapi.com/top-1-mln-websites/),
+licensed CC BY 4.0 by NetAPI / CodeRockers LTD. ToS §4.3 (2026-11-07) and the
+provider's [clarification](https://github.com/dreadl0ck/netcap/issues/102#issuecomment-6711862258)
+permit redistribution with attribution. The publisher records the exact CSV hash
+and retains the dataset link in archive notices.
+
+Filtered Maltego transforms use this list by default; `--no-domain-popularity`
+disables suppression, and `--domain-popularity-list` selects an external override.
+See [resolver configuration](../../docs/resolvers.md#domain-whitelisting).
 
 ### MaxMind GeoLite2 CC Databases
 

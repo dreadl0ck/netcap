@@ -24,6 +24,9 @@ import "github.com/dreadl0ck/netcap/internal/ja4plusadapter"
 
 // Config contains settings for the resolvers package.
 type Config struct {
+	DomainPopularityList    string
+	DomainPopularityFormat  string
+	DisableDomainPopularity bool
 
 	// Controls whether ip addresses are resolved through the default OS resolver
 	ReverseDNS bool

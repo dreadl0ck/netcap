@@ -83,7 +83,7 @@ var Decoder = &decoder.AbstractDecoder{
 		softwareLog.Info("loaded SSH fingerprint digests", zap.Int("total", len(HashDBMap)))
 
 		_ = loadCmsDB()
-		softwareLog.Warn("CMS enrichment disabled: legacy dataset is not cleared; Software and NVD remain enabled")
+		softwareLog.Warn("legacy CMS dataset inactive; bounded passive webtech advertisements enabled")
 
 		// Build the optional Hyperscan prefilter for CMS header / cookie
 		// regex matching. With the `hyperscan` build tag this populates
@@ -149,6 +149,7 @@ var Decoder = &decoder.AbstractDecoder{
 		}
 
 		db.Close(db.VulnerabilitiesIndex)
+		writeWebtechDiagnostics()
 
 		return softwareLog.Sync()
 	},
@@ -694,13 +695,16 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 		}
 
 		ident := s.Product + "/" + s.Version
+		if s.SourceName == "Passive WebTech" {
+			ident += "/" + s.Notes + "/" + strings.Join(s.Flows, ",")
+		}
 		if s.ObservedHost != "" {
 			ident += "/" + s.ObservedHost + "/" + s.ObservationRole
 		}
 
 		// trim version field if its too long
 		// likely a regex matched too much text
-		if len(s.Version) > 15 {
+		if len(s.Version) > 15 && s.SourceName != "Passive WebTech" {
 			s.Version = s.Version[:15] + "..."
 		}
 		s.Unlock()
@@ -722,6 +726,9 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 		// NOTE: Do NOT spawn goroutine here - causes goroutine leak!
 		// These lookups are fast enough to do synchronously
 		for _, item := range newSoftwareProducts {
+			if item.SourceName == "Passive WebTech" {
+				continue
+			}
 			item.Lock()
 			// Lookups retain slices in audit records while HTTP updates the live item.
 			s := proto.Clone(item.Software).(*types.Software)
@@ -786,6 +793,9 @@ func ResetCaches() {
 	Store.Lock()
 	Store.Items = make(map[string]*AtomicSoftware)
 	Store.Unlock()
+	webtechRuntime.Lock()
+	webtechRuntime.claims = 0
+	webtechRuntime.Unlock()
 
 	_ = loadCmsDB()
 	buildCMSHSIndex()

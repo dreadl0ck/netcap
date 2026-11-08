@@ -1,0 +1,37 @@
+services:
+  enrichment:
+    image: ${NETCAP_ENRICHMENT_IMAGE:?immutable enrichment image required}
+    pull_policy: never
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    mem_limit: 512m
+    cpus: 1
+    ports: ['127.0.0.1:18093:8080']
+    volumes:
+      - type: bind
+        source: /srv/netcap-enrichment/public
+        target: /data/enrichment
+        read_only: true
+    tmpfs: ['/tmp:size=16777216,mode=1777']
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:8080/enrichment/live']
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    networks: [dokploy-network]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.netcap-enrichment.rule=Host(`dbs.netcap.io`) && PathPrefix(`/enrichment/`)
+      - traefik.http.routers.netcap-enrichment.entrypoints=websecure
+      - traefik.http.routers.netcap-enrichment.priority=210
+      - traefik.http.routers.netcap-enrichment.tls.certresolver=letsencrypt
+      - traefik.http.services.netcap-enrichment.loadbalancer.server.port=8080
+networks:
+  dokploy-network:
+    external: true

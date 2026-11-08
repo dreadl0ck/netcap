@@ -144,6 +144,7 @@ var nvdStartYear = 2002
 
 var sources = []*datasource{
 	// Candidate sources only; acquisition does not authorize publication.
+	makeSource("https://netapi.com/netapi_top1mln.csv", "netapi-top1m.csv", moveToDbs),
 	makeSource("https://raw.githubusercontent.com/0x4D31/hassh-utils/b9324b2bfa2ad8bd9671b49dd2d58ea193591e60/hasshdb", "hasshdb.json", convertHASSH),
 	makeSource("https://raw.githubusercontent.com/ua-parser/uap-core/73e7340c3ed8055051607b296bf46ead7aa5f19e/regexes.yaml", "", moveToDbs),
 

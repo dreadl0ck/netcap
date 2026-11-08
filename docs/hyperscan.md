@@ -269,39 +269,11 @@ PKG_CONFIG_PATH=$(brew --prefix vectorscan)/lib/pkgconfig \
 
 ### End-to-end (`internal/decoder/stream/service`)
 
-The `service_probe_bench_test.go` benchmarks load the **real**
-`nmap-service-probes` file from a system path
-(`/opt/homebrew/share/nmap`, `/usr/local/share/nmap`, `/usr/share/nmap` —
-in that order; install nmap to make them available) and exercise
-`MatchServiceProbes` against a representative banner set.
-
-Each scenario runs in two flavours, sharing a single binary, so a fair
-A/B comparison is possible without rebuilding:
-
-| Bench | Fast path |
-|---|---|
-| `BenchmarkServiceProbeMatch_All` | HS prefilter active |
-| `BenchmarkServiceProbeMatch_NoHyperscan` | HS index cleared at runtime → pure RE2 |
-| `BenchmarkServiceProbeMatch_HitOnly` / `_NoHyperscan` | only well-known-port hit banners |
-| `BenchmarkServiceProbeMatch_MissOnly` / `_NoHyperscan` | only banners that match no probe (full category sweep) |
-
-```bash
-PKG_CONFIG_PATH=$(brew --prefix vectorscan)/lib/pkgconfig \
-  CGO_ENABLED=1 \
-  go test -tags hyperscan -bench '^BenchmarkServiceProbeMatch' \
-    -benchtime=3s -benchmem -timeout=900s \
-    ./decoder/stream/service/
-```
-
-Notes:
-
-- The benchmarks `b.Skip` if no `nmap-service-probes` file is found. Install
-  nmap (`brew install nmap` / `apt install nmap`) to enable them.
-- Initial probe load is slow (compiles ~9k regexes plus per-category HS
-  databases) so a long `-timeout` is required.
-- The runtime toggle (`resetServiceProbeHSIndexForBench`) closes/opens the
-  HS DBs between benches — it does **not** reload the RE2 probes, keeping
-  the comparison fair.
+The historical `BenchmarkServiceProbeMatch*` results below compared RE2 with
+an HS prefilter over a locally installed Nmap corpus. That reader is retired
+since v0.14; these measurements are not installation instructions or coverage
+claims for `internal/servicesignatures`. Current database installation is
+documented in [Database updates](database-updates.md).
 
 ---
 

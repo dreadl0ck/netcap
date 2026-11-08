@@ -49,8 +49,25 @@ and exact license texts are listed in THIRD_PARTY_LICENSES.txt. This includes
 MIT, BSD-3-Clause, Apache-2.0, ISC, 0BSD, CC0-1.0, and OFL-1.1 components.
 JetBrains Mono and Space Grotesk font files are redistributed under OFL-1.1.
 
-MPL-covered Go dependency
--------------------------
+Public Suffix List and Go lookup code
+-------------------------------------
+golang.org/x/net v0.56.0 lookup/IDNA code is BSD-3-Clause, copyright The Go
+Authors; full BSD text is in THIRD_PARTY_LICENSES.txt (golang.org/x/net section).
+Its publicsuffix tables derive from the Mozilla/Public Suffix List contributors'
+MPL-2.0 data, including ICANN and PRIVATE sections, at revision
+d6c92f1bbb7433e5db7b8405c25d4035fb8ff376 (2026-02-06T07:36:33Z).
+The complete MPL-2.0 text is already in THIRD_PARTY_LICENSES.txt (go-uuid section).
+The unmodified covered source is available at no charge:
+  https://github.com/publicsuffix/list/blob/d6c92f1bbb7433e5db7b8405c25d4035fb8ff376/public_suffix_list.dat
+  https://proxy.golang.org/golang.org/x/net/@v/v0.56.0.zip
+This Source Code Form is subject to the terms of the Mozilla Public License,
+v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain
+one at https://mozilla.org/MPL/2.0/.
+These suffix rules are not a domain-popularity dataset. Optional operator CSVs
+are not distributed by Netcap and are subject to their own source terms.
+
+MPL-covered Go dependencies
+---------------------------
 All Netcap binary variants include the unmodified github.com/hashicorp/go-uuid
 v1.0.3 package under MPL-2.0. Its full license is reproduced in
 THIRD_PARTY_LICENSES.txt. The exact covered source files are available at no
@@ -58,6 +75,40 @@ charge in source-code form from:
 
   https://github.com/hashicorp/go-uuid/tree/v1.0.3
   https://proxy.golang.org/github.com/hashicorp/go-uuid/@v/v1.0.3.zip
+
+The unmodified github.com/hashicorp/golang-lru v1.0.2 dependency is also
+MPL-2.0. Its full license is in THIRD_PARTY_LICENSES.txt and its covered source
+is available at no charge:
+
+  https://github.com/hashicorp/golang-lru/tree/v1.0.2
+  https://proxy.golang.org/github.com/hashicorp/golang-lru/@v/v1.0.2.zip
+
+modernc SQLite and libc
+-----------------------
+modernc.org/sqlite v1.60.1 and modernc.org/libc v1.77.1 use BSD-3-Clause for
+their own code. SQLite is public domain; musl libc is MIT. Their complete
+primary and third-party license texts are in THIRD_PARTY_LICENSES.txt.
+
+Generated GCC header portions carry GPL-3.0-or-later WITH
+GCC-exception-3.1, copyright Free Software Foundation, Inc. The GPL text is
+in ../LICENSE and the complete exception is in licenses/GCC-exception-3.1.txt.
+The exception permits eligible compiled combinations with independent modules
+under those modules' terms; it does not relicense GCC-derived source as BSD.
+Netcap uses the unmodified dependency sources:
+
+  https://proxy.golang.org/modernc.org/libc/@v/v1.77.1.zip
+  https://proxy.golang.org/modernc.org/sqlite/@v/v1.60.1.zip
+
+The 2026-11-07 FOSSA review checked all seven variants in
+internal/tools/licenses/main.go. Its CDDL matches were illumos-only; its
+GPLv2 and GPLv3-only matches were unselected headers or test data. Selected
+GPLv3-or-later matches were GCC-exception headers on Darwin ARM64 and Windows
+AMD64. SQLite's MPL match was its third-party catalogue describing tool-only
+golang-lru/v2, distinct from Netcap's MPL-covered golang-lru v1 above.
+These findings do not authorize redistribution of the complete dependency
+source trees under BSD. Re-review new versions, targets and build tags.
+FOSSA issues 21407524-21407530 have individual project-scoped dispositions;
+data-correction disputes 536-540 remain subject to FOSSA's review.
 
 Google Magika CLI 1.0.2
 -----------------------
