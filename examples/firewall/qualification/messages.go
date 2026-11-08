@@ -147,62 +147,70 @@ func newMessageProfile(ctx context.Context, protocol string) (*profile, error) {
 		}
 		c, err := net.DialTimeout("tcp", strings.TrimPrefix(proxy.URL, "http://"), time.Second)
 		if err != nil {
-			return 0, 0, err
+			return 0, 0, wireStage("ws-dial", err)
 		}
 		defer c.Close()
 		_ = c.SetDeadline(time.Now().Add(3 * time.Second))
 		_, err = io.WriteString(c, "GET /chat HTTP/1.1\r\nHost: fixture.test\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n")
 		if err != nil {
-			return 0, 0, err
+			return 0, 0, wireStage("ws-handshake-write", err)
 		}
 		r := bufio.NewReader(c)
 		resp, err := http.ReadResponse(r, nil)
 		if err != nil {
-			return 0, 0, err
+			return 0, 0, wireStage("ws-handshake-read", err)
 		}
 		if resp.StatusCode != 101 {
 			_ = resp.Body.Close()
-			return 0, 0, fmt.Errorf("WebSocket upgrade %d", resp.StatusCode)
+			return resp.StatusCode, 0, &wireError{Stage: "ws-upgrade", Category: "unexpected-status"}
 		}
 		frame := append([]byte{129, 128 | byte(len(body)), 0, 0, 0, 0}, []byte(body)...)
 		if _, err = c.Write(frame); err != nil {
-			return 0, 0, err
+			return 0, 0, wireStage("ws-frame-write", err)
 		}
 		b, err := wsRead(r, false)
 		if attack {
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			if wsDeniedCleanly(err) {
 				return 403, 1, nil
 			}
-			return 0, 1, fmt.Errorf("WebSocket denied frame should close: %x %v", b, err)
+			if err != nil {
+				return 0, 1, err
+			}
+			return 0, 1, &wireError{Stage: "ws-denial", Category: "unexpected-frame", Read: len(b)}
 		}
 		if err != nil {
 			return 0, 1, err
 		}
 		if string(b) != body {
-			return 0, 1, errors.New("WebSocket echo mismatch")
+			return 0, 1, &wireError{Stage: "ws-echo", Category: "payload-mismatch", Read: len(b), Want: len(body)}
 		}
 		return 200, 1, nil
 	}
 	return p, nil
 }
 
+func wsDeniedCleanly(err error) bool {
+	var wire *wireError
+	return errors.As(err, &wire) && wire.Stage == "ws-frame-header" && wire.Read == 0 && errors.Is(err, io.EOF)
+}
+
 func wsRead(r *bufio.Reader, masked bool) ([]byte, error) {
 	h := make([]byte, 2)
-	if _, err := io.ReadFull(r, h); err != nil {
-		return nil, err
+	if n, err := io.ReadFull(r, h); err != nil {
+		return nil, &wireError{Stage: "ws-frame-header", Category: errorCategory(err), Header: fmt.Sprintf("%x", h[:n]), Read: n, Want: 2, Cause: err}
 	}
 	if h[0] != 129 || h[1]&127 > 125 || (h[1]&128 != 0) != masked {
-		return nil, errors.New("fixture WebSocket frame header")
+		return nil, &wireError{Stage: "ws-frame-header", Category: "invalid-frame", Header: fmt.Sprintf("%x", h), Read: 2, Want: 2}
 	}
 	var mask [4]byte
 	if masked {
-		if _, err := io.ReadFull(r, mask[:]); err != nil {
-			return nil, err
+		if n, err := io.ReadFull(r, mask[:]); err != nil {
+			return nil, &wireError{Stage: "ws-frame-mask", Category: errorCategory(err), Read: n, Want: 4, Cause: err}
 		}
 	}
 	b := make([]byte, int(h[1]&127))
-	if _, err := io.ReadFull(r, b); err != nil {
-		return nil, err
+	if n, err := io.ReadFull(r, b); err != nil {
+		return nil, &wireError{Stage: "ws-frame-body", Category: errorCategory(err), Read: n, Want: len(b), Cause: err}
 	}
 	if masked {
 		for i := range b {

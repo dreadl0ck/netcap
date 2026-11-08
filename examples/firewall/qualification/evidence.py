@@ -77,7 +77,9 @@ def summarize(directory):
             'forbidden_origin_requests': sum(p['forbidden_origin_requests'] for p in profiles.values()),
             'forbidden_side_effects': sum(p.get('forbidden_side_effects', 0) for p in profiles.values()),
             'fault_count': report.get('fault_count', len(report.get('faults') or [])),
-            'max_fault_recovery_ms': max((f['recovery_ms'] for f in (report.get('faults') or [])), default=0),
+            'max_fault_recovery_ms': max((f['recovery_ms'] for f in (report.get('faults') or []) if 'recovery_ms' in f), default=0),
+            'failed_faults': [f for f in (report.get('faults') or []) if f.get('result') == 'fail'],
+            'first_failures': {name: p['first_failures'] for name, p in profiles.items() if p.get('first_failures')},
             'resources_peak': report['resources_peak'], 'resources_recovery': report.get('resources_recovery'), 'soak_24h_pass': report['soak_24h_pass'],
             'false_positive_error': report['false_positive_error']}
 

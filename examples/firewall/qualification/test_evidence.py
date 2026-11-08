@@ -22,6 +22,16 @@ class RetentionTests(unittest.TestCase):
             report.update(fault_count=300, faults=[dict(recovery_ms=2)])
             (directory / 'progress.json').write_text(json.dumps(report))
             self.assertEqual(evidence.summarize(directory)['fault_count'], 300)
+            failure = dict(result='fail', stage='recovery-allow', elapsed_ms=3001,
+                           failure=dict(Category='timeout'))
+            report.update(load_state='failed', faults=[dict(recovery_ms=2), failure])
+            report['profiles']['h1']['first_failures'] = [dict(Category='partial-eof')]
+            (directory / 'progress.json').write_text(json.dumps(report))
+            summary = evidence.summarize(directory)
+            self.assertEqual(summary['load_state'], 'failed')
+            self.assertEqual(summary['max_fault_recovery_ms'], 2)
+            self.assertEqual(summary['failed_faults'], [failure])
+            self.assertEqual(summary['first_failures'], {'h1': [dict(Category='partial-eof')]})
 
     def test_prune_only_owned_inactive_and_preserve_active(self):
         with tempfile.TemporaryDirectory() as temp:
