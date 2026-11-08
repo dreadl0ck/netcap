@@ -16,6 +16,8 @@ func Flags() []string {
 // GetFlags returns the CLI flags for the split subcommand.
 func GetFlags() []cli.Flag {
 	return []cli.Flag{
+		&cli.BoolFlag{Name: "inspect", Usage: "read-only bounded capinfos-style JSON inspection; no output directory or selection"},
+		&cli.StringFlag{Name: "shard-ns", Usage: "positive time-shard width; requires inclusive start-ns/end-ns; at most 16 shards"},
 		&cli.StringFlag{Name: "out", Usage: "new private output directory (must not exist)"},
 		&cli.StringFlag{Name: "bpf", Usage: "exact libpcap BPF selection, e.g. host 192.0.2.1 or a paired TCP tuple"},
 		&cli.StringFlag{Name: "start-ns", Usage: "inclusive Unix nanosecond start (decimal integer)"},
