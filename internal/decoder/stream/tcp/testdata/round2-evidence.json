@@ -1,0 +1,30 @@
+{
+  "issues": ["D2-1", "D2-5", "D2-8", "DS-8"],
+  "base": "25ea2e69181ecb88979754cba98a628075220c3f",
+  "report": "/Users/pmieden/Downloads/netcap-datasets-round2.md (read successfully during completion audit)",
+  "unavailable": [
+    "/workspace/mta/datasets2/ original report outputs"
+  ],
+  "fixtureManifest": "round2.json",
+  "reproduce": "NETCAP_W76_TCP_FIXTURES=<reviewed-capture-directory> GOWORK=off GOMAXPROCS=2 go test -p 1 -tags nodpi,noyara,nomagika ./internal/decoder/stream/tcp -run TestRound2PinnedCaptures -count=1 -v",
+  "verified": {
+    "syntheticBaseline": "CLI-admission-default overlay on clean 25ea2e69: missing-SYN IMAP, client-only SSH, post-RST IMAP and post-FIN IMAP each emit 0 instead of 1; SYN-present client-only IMAP already emits 1. Identical five assertions pass on the TCP topic branch.",
+    "sshBoundaryRegression": "TestPartialSSHFraming/post-close-prefix emitted an invented identification across qualified-to-unqualified bytes before the correction; both boundary directions now stop framing, while equally qualified fragments separated by an empty marker remain decodable.",
+    "imap-detection.pcap": "357 IMAP records with and without client SYN",
+    "tcp-async-01.pcap": "62 IMAP records with and without client SYN",
+    "ssh-client.pcap": "20 client SSH observations",
+    "ssh-server.pcap": "20 server SSH observations",
+    "security-4710-01.pcap": "one retained request qualified after-rst; no HTTP parser assertion",
+    "bug-3286-02.pcap": "one retained request qualified after-rst; no HTTP parser assertion",
+    "egypt-packetlogic-ttl-localization.pcap": "38 retained requests, 19 qualified after-fin; no HTTP parser assertion",
+    "smtp-quit.pcap": "observed QUIT retained after peer half-close; zero SMTP records (QUIT alone does not identify SMTP)",
+    "ftp-quit.pcap": "observed QUIT retained after peer half-close; zero FTP records (QUIT alone does not identify FTP)"
+  },
+  "limits": [
+    "Targeted assembler/decoder replay uses CLI admission defaults, not an end-to-end CLI corpus run.",
+    "No original full-corpus replay or original-source baseline count comparison was performed; baseline comparison is synthetic.",
+    "Post-close bytes are wire observations, not endpoint-delivery claims; retained continuation is capped at 64 KiB per direction.",
+    "HTTP transaction pairing is owned by the HTTP worker.",
+    "Only contiguous FIN evidence changes lifecycle state; future-sequence FIN is conservatively rejected."
+  ]
+}

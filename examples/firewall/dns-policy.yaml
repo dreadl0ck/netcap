@@ -1,0 +1,12 @@
+version: netcap-policy/v1
+id: dns-example-zone
+mode: enforce
+default: deny
+defaults:
+  response: allow
+rules:
+  - id: allow-example-address-queries
+    phase: request
+    expression: 'Protocol == "dns" && (DNS.Name == "example.test." || DNS.Name endsWith ".example.test.") && DNS.Type in [1, 28]'
+    action: allow
+    priority: 100

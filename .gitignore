@@ -4,6 +4,8 @@ dist-linux
 dist-license-sources
 /dist-macos-runtime/
 /dist-macos-sources/
+/.native/
+/.qualification/
 .docker-build-timestamp
 .docker-build-context
 scripts/analyze-dnn/dnn/models/
@@ -28,6 +30,10 @@ tests/wireshark-corpus/
 # ignored while the Go sources do not.
 !tests/integration/
 !tests/integration/**
+!tests/documentation/
+!tests/documentation/**
+!tests/modulearchive/
+!tests/modulearchive/**
 .idea
 types/python
 types/java
@@ -37,6 +43,8 @@ types/cpp
 types/csharp
 types/js
 data/
+!internal/devicecatalog/data/
+!internal/devicecatalog/data/*.json
 __pycache__
 pcaps
 .vscode
@@ -52,6 +60,7 @@ pcaps
 !tests/The Ultimate PCAP v20260316.pcapng
 !internal/behavior/testdata/qualification/**/*.pcap
 !internal/networkdetect/testdata/**/*.pcap
+!internal/collector/testdata/voip/*.pcap
 !tests/flightsim-lab/
 !tests/flightsim-lab/**
 zeus/.history

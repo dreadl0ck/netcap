@@ -28,16 +28,14 @@ type pageCache struct {
 const initialAllocSize = 1024
 
 func newPageCache() *pageCache {
-	pc := &pageCache{
-		free:   make([]*page, 0, initialAllocSize),
-		pcSize: initialAllocSize,
-	}
-	pc.grow()
-	return pc
+	return &pageCache{pcSize: initialAllocSize}
 }
 
 // grow exponentially increases the size of our page cache as much as necessary.
 func (c *pageCache) grow() {
+	if c.free == nil {
+		c.free = make([]*page, 0, c.pcSize)
+	}
 	pages := make([]page, c.pcSize)
 	c.size += c.pcSize
 	for i := range pages {

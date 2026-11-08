@@ -25,9 +25,11 @@ import (
 	"time"
 
 	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tcp"
+	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/types"
@@ -44,6 +46,12 @@ type workerControl struct {
 	ref  time.Time
 	all  bool
 	done chan struct{}
+	idle bool
+}
+
+type packetWork struct {
+	gopacket.Packet
+	views packetview.Result
 }
 
 // worker spawns a new worker goroutine
@@ -83,10 +91,14 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 					if control.all {
 						assembler.FlushAll()
 					} else {
-						assembler.FlushWithOptions(reassembly.FlushOptions{
+						options := reassembly.FlushOptions{
 							T:  control.ref.Add(-c.config.DecoderConfig.ClosePendingTimeOut),
 							TC: control.ref.Add(-c.config.DecoderConfig.CloseInactiveTimeOut),
-						})
+						}
+						if control.idle {
+							options.TI = options.TC
+						}
+						assembler.FlushWithOptions(options)
 					}
 				}
 				if control.done != nil {
@@ -94,157 +106,193 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 				}
 				continue
 			}
-
-			pkt.Metadata().Timestamp = pkt.Metadata().CaptureInfo.Timestamp
-			pkt.Metadata().Length = pkt.Metadata().CaptureInfo.Length
-			pkt.Metadata().CaptureLength = pkt.Metadata().CaptureInfo.CaptureLength
-
-			// pass packet to reassembly
-			if c.config.ReassembleConnections {
-				t := time.Now()
-				tcp.ReassemblePacket(pkt, assembler)
-				duration := time.Since(t)
-				reassemblyTime.WithLabelValues().Set(float64(duration.Nanoseconds()))
-				c.perfTracker.RecordReassembly(duration)
-			}
-
-			// create context for packet (reuse from pool to reduce GC pressure)
-			ctx := packetContextPool.Get().(*types.PacketContext)
-			*ctx = types.PacketContext{}
-
-			// Always calculate Community ID v1 for cross-tool correlation
-			ctx.CommunityID = packet.CalcCommunityID(pkt)
-
-			if c.config.DecoderConfig.AddContext {
-				netLayer = pkt.NetworkLayer()
-				transportLayer = pkt.TransportLayer()
-
-				if netLayer != nil {
-					if len(netLayer.NetworkFlow().Src().Raw()) > 0 {
-						ctx.SrcIP = netLayer.NetworkFlow().Src().String()
-					}
-					if len(netLayer.NetworkFlow().Dst().Raw()) > 0 {
-						ctx.DstIP = netLayer.NetworkFlow().Dst().String()
-					}
-				}
-
-				if transportLayer != nil {
-					ctx.SrcPort = utils.DecodePort(transportLayer.TransportFlow().Src().Raw())
-					ctx.DstPort = utils.DecodePort(transportLayer.TransportFlow().Dst().Raw())
+			original := pkt
+			views := []gopacket.Packet{pkt}
+			logical := pkt
+			var opaque gopacket.Packet
+			if work, ok := pkt.(*packetWork); ok {
+				original, logical = work.Packet, work.views.Packet
+				views = work.views.Evidence
+				opaque = work.views.Opaque
+				if logical != nil {
+					views = append(views, logical)
 				}
 			}
+			for _, view := range views {
+				pkt = view
 
-			// iterate over all layers
-			for _, layer = range pkt.Layers() {
+				pkt.Metadata().Timestamp = pkt.Metadata().CaptureInfo.Timestamp
+				pkt.Metadata().Length = pkt.Metadata().CaptureInfo.Length
+				pkt.Metadata().CaptureLength = pkt.Metadata().CaptureInfo.CaptureLength
 
-				// cache the layer type string to avoid repeated String() allocations
-				layerTypeStr := layer.LayerType().String()
-
-				// increment counter for layer type
-				allProtos.Inc(layerTypeStr)
-
-				if c.config.DecoderConfig.ExportMetrics {
-					allProtosTotal.WithLabelValues(layerTypeStr).Inc()
+				// pass packet to reassembly
+				if pkt == logical && c.config.ReassembleConnections {
+					t := time.Now()
+					tcp.ReassemblePacket(pkt, assembler)
+					duration := time.Since(t)
+					reassemblyTime.WithLabelValues().Set(float64(duration.Nanoseconds()))
+					c.perfTracker.RecordReassembly(duration)
 				}
 
-				// check if packet contains an unknown layer
-				switch layer.LayerType() {
-				case gopacket.LayerTypeZero: // not known to gopacket
-					// increase counter
-					unknownProtos.Inc(layerTypeStr)
+				// create context for packet (reuse from pool to reduce GC pressure)
+				ctx := packetContextPool.Get().(*types.PacketContext)
+				*ctx = types.PacketContext{}
+				packetview.FillContext(ctx, pkt)
 
-					if c.config.DecoderConfig.ExportMetrics {
-						unknownProtosTotal.WithLabelValues(layerTypeStr).Inc()
-					}
+				// Always calculate Community ID v1 for cross-tool correlation
+				ctx.CommunityID = packet.CalcCommunityID(pkt)
 
-					// write to unknown.pcap file
-					if err = c.writePacketToUnknownPcap(pkt); err != nil {
-						fmt.Println("failed to write packet to unknown.pcap file:", err)
-					}
+				if c.config.DecoderConfig.AddContext {
+					netLayer = pkt.NetworkLayer()
+					transportLayer = pkt.TransportLayer()
 
-					// call custom decoders
-					goto done
-				case gopacket.LayerTypeDecodeFailure:
-					// call custom decoders
-					goto done
-				}
-
-				// pick decoders from the decoderMap by looking up the layer type
-				if decoders, ok = c.goPacketDecoders[layer.LayerType()]; ok {
-					for _, dec = range decoders {
-						t := time.Now()
-						err = dec.Decode(ctx, pkt, layer)
-						duration := time.Since(t)
-						gopacketDecoderTime.WithLabelValues(layerTypeStr).Set(float64(duration.Nanoseconds()))
-						c.perfTracker.RecordGoPacketDecoder(layerTypeStr, duration)
-						if err != nil {
-							if c.config.DecoderConfig.ExportMetrics {
-								decodingErrorsTotal.WithLabelValues(layerTypeStr, err.Error()).Inc()
-							}
-
-							if err = c.logPacketError(pkt, "GoPacketDecoder Error: "+layerTypeStr+": "+err.Error()); err != nil {
-								fmt.Println("failed to log packet error:", err)
-							}
-
-							goto done
+					if netLayer != nil {
+						if len(netLayer.NetworkFlow().Src().Raw()) > 0 {
+							ctx.SrcIP = netLayer.NetworkFlow().Src().String()
+						}
+						if len(netLayer.NetworkFlow().Dst().Raw()) > 0 {
+							ctx.DstIP = netLayer.NetworkFlow().Dst().String()
 						}
 					}
-				} else { // no netcap decoder implemented
 
-					// increment unknown layer type counter
-					unknownProtos.Inc(layerTypeStr)
-					if c.config.DecoderConfig.ExportMetrics {
-						unknownProtosTotal.WithLabelValues(layerTypeStr).Inc()
+					if transportLayer != nil {
+						ctx.SrcPort = utils.DecodePort(transportLayer.TransportFlow().Src().Raw())
+						ctx.DstPort = utils.DecodePort(transportLayer.TransportFlow().Dst().Raw())
+					}
+				}
+
+				// iterate over all layers
+				for _, layer = range pkt.Layers() {
+					// The original fragment headers were already audited. Reconstructed
+					// headers are a decoding view, not another captured IP packet.
+					if viewContext := packetview.FromCapture(pkt.Metadata().CaptureInfo); viewContext != nil && viewContext.SyntheticNetwork {
+						switch layer.LayerType() {
+						case layers.LayerTypeEthernet, layers.LayerTypeDot1Q, layers.LayerTypeIPv4, layers.LayerTypeIPv6,
+							layers.LayerTypeIPv6HopByHop, layers.LayerTypeIPv6Routing, layers.LayerTypeIPv6Destination, layers.LayerTypeIPSecAH:
+							continue
+						}
 					}
 
-					// if its not a payload layer, write to unknown .pcap file
-					if layer.LayerType() != gopacket.LayerTypePayload {
-						if err = c.writePacketToUnknownPcap(pkt); err != nil {
+					// cache the layer type string to avoid repeated String() allocations
+					layerTypeStr := layer.LayerType().String()
+
+					// increment counter for layer type
+					allProtos.Inc(layerTypeStr)
+
+					if c.config.DecoderConfig.ExportMetrics {
+						allProtosTotal.WithLabelValues(layerTypeStr).Inc()
+					}
+
+					// check if packet contains an unknown layer
+					switch layer.LayerType() {
+					case gopacket.LayerTypeZero: // not known to gopacket
+						// increase counter
+						unknownProtos.Inc(layerTypeStr)
+
+						if c.config.DecoderConfig.ExportMetrics {
+							unknownProtosTotal.WithLabelValues(layerTypeStr).Inc()
+						}
+
+						// write to unknown.pcap file
+						if err = c.writePacketToUnknownPcap(original); err != nil {
 							fmt.Println("failed to write packet to unknown.pcap file:", err)
 						}
+
+						// call custom decoders
+						goto done
+					case gopacket.LayerTypeDecodeFailure:
+						// call custom decoders
+						goto done
+					}
+
+					// pick decoders from the decoderMap by looking up the layer type
+					if decoders, ok = c.goPacketDecoders[layer.LayerType()]; ok {
+						for _, dec = range decoders {
+							t := time.Now()
+							err = dec.Decode(ctx, pkt, layer)
+							duration := time.Since(t)
+							gopacketDecoderTime.WithLabelValues(layerTypeStr).Set(float64(duration.Nanoseconds()))
+							c.perfTracker.RecordGoPacketDecoder(layerTypeStr, duration)
+							if err != nil {
+								if c.config.DecoderConfig.ExportMetrics {
+									decodingErrorsTotal.WithLabelValues(layerTypeStr, err.Error()).Inc()
+								}
+
+								if err = c.logPacketError(original, "GoPacketDecoder Error: "+layerTypeStr+": "+err.Error()); err != nil {
+									fmt.Println("failed to log packet error:", err)
+								}
+
+								goto done
+							}
+						}
+					} else { // no netcap decoder implemented
+
+						// increment unknown layer type counter
+						unknownProtos.Inc(layerTypeStr)
+						if c.config.DecoderConfig.ExportMetrics {
+							unknownProtosTotal.WithLabelValues(layerTypeStr).Inc()
+						}
+
+						// if its not a payload layer, write to unknown .pcap file
+						if layer.LayerType() != gopacket.LayerTypePayload {
+							if err = c.writePacketToUnknownPcap(original); err != nil {
+								fmt.Println("failed to write packet to unknown.pcap file:", err)
+							}
+						}
+					}
+				} // END goPacket.Layers()
+
+			done:
+				// call custom decoders
+				custom := c.packetDecoders
+				if pkt != logical {
+					custom = nil
+					if pkt == opaque {
+						for _, dec := range c.packetDecoders {
+							if dec.GetName() == "Connection" {
+								custom = append(custom, dec)
+							}
+						}
 					}
 				}
-			} // END goPacket.Layers()
+				for _, customDec = range custom {
+					t := time.Now()
+					err = customDec.Decode(pkt, ctx)
+					duration := time.Since(t)
+					customDecoderTime.WithLabelValues(customDec.GetName()).Set(float64(duration.Nanoseconds()))
+					c.perfTracker.RecordCustomDecoder(customDec.GetName(), duration)
+					if err != nil {
+						if c.config.DecoderConfig.ExportMetrics {
+							decodingErrorsTotal.WithLabelValues(customDec.GetName(), err.Error()).Inc()
+						}
+						if err = c.logPacketError(original, "PacketDecoder Error: "+customDec.GetName()+": "+err.Error()); err != nil {
+							fmt.Println("failed to log packet error:", err)
+						}
 
-		done:
-			// call custom decoders
-			for _, customDec = range c.packetDecoders {
-				t := time.Now()
-				err = customDec.Decode(pkt, ctx)
-				duration := time.Since(t)
-				customDecoderTime.WithLabelValues(customDec.GetName()).Set(float64(duration.Nanoseconds()))
-				c.perfTracker.RecordCustomDecoder(customDec.GetName(), duration)
-				if err != nil {
-					if c.config.DecoderConfig.ExportMetrics {
-						decodingErrorsTotal.WithLabelValues(customDec.GetName(), err.Error()).Inc()
+						continue
 					}
-					if err = c.logPacketError(pkt, "PacketDecoder Error: "+customDec.GetName()+": "+err.Error()); err != nil {
+				}
+
+				// Check for errors after decoding all layers
+				// if an error has occurred while decoding the packet
+				// it will be logged and written into the errors.pcap file
+				if errLayer = pkt.ErrorLayer(); errLayer != nil {
+					if err = c.logPacketError(original, errLayer.Error().Error()); err != nil {
 						fmt.Println("failed to log packet error:", err)
 					}
 
-					continue
+					if c.config.DecoderConfig.ExportMetrics {
+						decodingErrorsTotal.WithLabelValues(errLayer.LayerType().String(), errLayer.Error().Error()).Inc()
+					}
 				}
+
+				// Return PacketContext to pool for reuse
+				packetContextPool.Put(ctx)
 			}
-
-			// Check for errors after decoding all layers
-			// if an error has occurred while decoding the packet
-			// it will be logged and written into the errors.pcap file
-			if errLayer = pkt.ErrorLayer(); errLayer != nil {
-				if err = c.logPacketError(pkt, errLayer.Error().Error()); err != nil {
-					fmt.Println("failed to log packet error:", err)
-				}
-
-				if c.config.DecoderConfig.ExportMetrics {
-					decodingErrorsTotal.WithLabelValues(errLayer.LayerType().String(), errLayer.Error().Error()).Inc()
-				}
-			}
-
-			// Return PacketContext to pool for reuse
-			packetContextPool.Put(ctx)
 
 			// If using pool mode, dispose of the packet to return it to the pool
 			// This must be done after all packet processing is complete
-			if pooledPkt, ok := pkt.(gopacket.PooledPacket); ok {
+			if pooledPkt, ok := original.(gopacket.PooledPacket); ok {
 				pooledPkt.Dispose()
 			}
 			c.wg.Done()
@@ -274,7 +322,13 @@ func (c *Collector) initWorkers() []chan gopacket.Packet {
 
 	// create assemblers
 	for i := range workers {
-		a := reassembly.NewAssembler(reassembly.NewStreamPool(tcp.StreamFactory))
+		var pool *reassembly.StreamPool
+		if c.captureKind == "live" && c.config.LiveMaintenanceInterval >= 0 {
+			pool = reassembly.NewStreamPoolWithIdleExpiry(tcp.StreamFactory)
+		} else {
+			pool = reassembly.NewStreamPool(tcp.StreamFactory)
+		}
+		a := reassembly.NewAssembler(pool)
 
 		// Configure stream reassembly limits from config
 		if c.config.DecoderConfig.MaxStreamBytes >= 0 {

@@ -13,6 +13,7 @@ type direction struct {
 	prefix  []byte
 	bytes   uint64
 	gap     bool
+	ftpLine []byte
 }
 type flow struct {
 	synSequence uint32
@@ -21,6 +22,9 @@ type flow struct {
 	last        int64
 	directions  map[string]*direction
 	ssh         bool
+	ftp         *ftpControl
+	ftpDisabled bool
+	ftpData     bool
 }
 
 func endpoint(ip string, port uint16) string { return fmt.Sprintf("%s/%d", ip, port) }
@@ -33,25 +37,28 @@ func flowKey(ev Event) string {
 	data, _ := json.Marshal(scope)
 	return string(data) + "|" + a + "|" + b
 }
-func (e *Engine) startFlow(ev Event) {
+func (e *Engine) startFlow(ev Event) *flow {
 	key := flowKey(ev)
 	if f, ok := e.flows[key]; ok {
 		if ev.At-f.last <= e.config.WindowNS && f.synSequence == ev.Seq && f.client == endpoint(ev.SrcIP, ev.SrcPort) {
-			return
+			return f
 		}
+		e.revokeFTP(key)
 		delete(e.flows, key)
 	}
 	if len(e.flows) >= e.config.MaxFlows {
 		e.stats.Overflow++
-		return
+		return nil
 	}
 	e.flows[key] = &flow{synSequence: ev.Seq, client: endpoint(ev.SrcIP, ev.SrcPort), first: ev.At, last: ev.At, directions: map[string]*direction{endpoint(ev.SrcIP, ev.SrcPort): {next: ev.Seq + 1, started: true}}}
+	return e.flows[key]
 }
 
 func (e *Engine) observeStream(ev Event, add func(string, string, string, string, uint64, uint64, []string, int64, *Indicator, ...string)) {
 	key := flowKey(ev)
 	f := e.flows[key]
 	if f != nil && ev.At-f.last > e.config.WindowNS {
+		e.revokeFTP(key)
 		delete(e.flows, key)
 		f = nil
 	}
@@ -80,6 +87,7 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 			e.stats.StreamGaps++
 		}
 		d.gap = true
+		e.disableFTP(key, f)
 		return
 	}
 	payload := ev.Payload
@@ -102,6 +110,7 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 	if d.gap {
 		return
 	}
+	e.observeFTP(ev, f, d, payload)
 	text := string(d.prefix)
 	if strings.HasPrefix(text, "SSH-2.0-") || strings.HasPrefix(text, "SSH-1.99-") {
 		if strings.Contains(text, "\n") {

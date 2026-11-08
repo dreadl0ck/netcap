@@ -1,0 +1,12 @@
+version: netcap-firewall/v1
+listen: ':8080'
+adminListen: ':9090'
+upstream: http://backend:8080
+policyFile: /etc/netcap-firewall/policy.yaml
+maxBodyBytes: 67108864
+maxResponseBytes: 67108864
+maxBufferedBytes: 67108864
+maxConcurrent: 32
+bodyTimeout: 15s
+inspectResponse: false
+corazaCRS: true

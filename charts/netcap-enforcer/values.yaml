@@ -1,0 +1,51 @@
+enabled: false
+mode: leases
+policyState:
+  configSecretName: ''
+  credentialsSecretName: ''
+network:
+  queue: 100
+  maxQueueLen: 1024
+  deadline: 100ms
+  failureVerdict: deny
+  bypassWithoutListener: false
+  failOpenOnOverflow: false
+  inspectTLS: false
+policy:
+  version: netcap-policy/v1
+  id: routed-lab
+  mode: enforce
+  default: deny
+  rules:
+    - id: allow-lab-http
+      phase: request
+      expression: 'Protocol == "network" && Network.Transport == "tcp" && ((Network.Direction == "inbound" && Network.DstPort == 8080) || (Network.Direction == "outbound" && Network.SrcPort == 8080))'
+      action: allow
+image:
+  repository: netcap-enforcer
+  tag: 0.1.0-local
+  digest: ''
+  pullPolicy: IfNotPresent
+# Nodes must be deliberately labelled for this lab. No tolerations are added.
+nodeSelector: {}
+scope:
+  namespace: ''
+  interface: ''
+  destination: ''
+  port: 8080
+  protocol: tcp
+  hook: forward
+  table: netcap_firewall_lab
+  protectedCIDRs: []
+  managementDestinations: []
+legacyAdmin: false
+authConfigSecret:
+  name: ""
+  key: auth.json
+tokenEnvironment: []
+tokenSecret:
+  name: ''
+  key: token
+resources:
+  requests: {cpu: 25m, memory: 32Mi}
+  limits: {cpu: 250m, memory: 128Mi}

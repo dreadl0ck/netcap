@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/dreadl0ck/netcap/internal/dbs"
 	"github.com/dreadl0ck/netcap/internal/enrichment"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/servicesignatures"
@@ -43,7 +42,7 @@ func (s *Server) handleEnrichmentAttribution(w http.ResponseWriter, r *http.Requ
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	trust, err := dbs.CommunitySigningRoot()
+	trust, err := catalogueSigningRoot()
 	result := catalogueAttribution{State: "unavailable", Webtech: webtech.ResourceAttribution(), Services: servicesignatures.ResourceAttribution()}
 	if err == nil {
 		result = readCatalogueAttribution(enrichment.Root(resolvers.ConfigRootPath), trust, time.Now())

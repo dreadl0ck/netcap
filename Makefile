@@ -8,9 +8,43 @@
 .PHONY: test-coverage test-coverage-html test-coverage-check test-race test-determinism test-wireshark
 .PHONY: test-golden-update test-regression-verify
 .PHONY: test-hyperscan test-msan test-pkg test-verbose test-clean test-help
+.PHONY: docs-check docs-source-check
+
+NETCAP_BIN ?= ./net
+DOCS_TEST_TAGS ?= nodpi,noyara
+
+FIREWALL_RELEASE_VERSION ?= 0.1.0-rc.local
+FIREWALL_RELEASE_OUTPUT ?= $(TMPDIR)netcap-firewall-candidate
+.PHONY: firewall-release-test firewall-release-rehearsal firewall-release-build
+firewall-release-test:
+	python3 -m unittest discover -s scripts -p test_firewall_release.py -v
+
+firewall-release-rehearsal:
+	FIREWALL_RELEASE_INTEGRATION=1 python3 -m unittest discover -s scripts -p test_firewall_release.py -v
+
+firewall-release-build:
+	python3 scripts/firewall_release_build.py binaries --version "$(FIREWALL_RELEASE_VERSION)" --output "$(FIREWALL_RELEASE_OUTPUT)"
+
+docs-check:
+	python3 scripts/check-docs.py --net "$(NETCAP_BIN)"
+
+docs-source-check:
+	GOWORK=off go test -tags "$(DOCS_TEST_TAGS)" ./tests/documentation -count=1
 
 # Test targets
 test: test-unit
+
+.PHONY: test-firewall-operations
+test-firewall-operations:
+	sh scripts/test-firewall-operations.sh
+
+FIREWALL_PACKAGES = ./cmd/netcap-firewall ./cmd/firewall ./internal/waf ./internal/policy ./internal/policystate ./internal/policycontrol ./internal/gateway ./internal/enforcer ./internal/networkfirewall ./internal/transparentfirewall ./internal/firewallstate ./internal/firewallfleet ./internal/firewalltransport ./internal/responseactions ./internal/runtimeobs
+.PHONY: test-firewall-ship
+test-firewall-ship: test-firewall-operations
+	go test -count=1 -race $(FIREWALL_PACKAGES)
+	go test -count=1 -race -tags coraza,http3 $(FIREWALL_PACKAGES)
+	go vet $(FIREWALL_PACKAGES)
+	go vet -tags coraza,http3 $(FIREWALL_PACKAGES)
 
 test-all: test-unit test-integration test-regression
 
@@ -40,9 +74,8 @@ test-regression-verify:
 
 # Update golden files (use after verifying changes are correct)
 test-golden-update:
-	@echo "Updating golden files..."
-	UPDATE_GOLDEN=1 go test -v -tags=regression ./tests/regression/...
-	@echo "Golden files updated. Please review changes before committing."
+	@echo "No golden-update suite is registered; tests/regression does not exist. Review the affected fixture and test directly."
+	@exit 2
 
 # E2E tests (full CLI workflows)
 test-e2e:
@@ -157,7 +190,7 @@ test-help:
 	@echo "  test-determinism  - Compare Ultimate PCAP output across runs and worker counts"
 	@echo "  test-wireshark    - Fetch verified Wireshark samples and run the full corpus (needs editcap)"
 	@echo ""
-	@echo "  test-golden-update    - Update golden files"
+	@echo "  test-golden-update    - Retired; fails explicitly (no registered suite)"
 	@echo "  test-regression-verify - Verify against golden files"
 	@echo ""
 	@echo "  test-hyperscan    - Hyperscan/Vectorscan tests (needs libhs)"
@@ -166,3 +199,5 @@ test-help:
 	@echo "  test-clean        - Clean test artifacts"
 	@echo ""
 	@echo "Building and releasing is zeus, not make: see zeus/commands.yml"
+
+-include operations.Makefile

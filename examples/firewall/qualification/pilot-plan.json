@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "environment": "owned-local-fake",
+  "endpoints": [
+    {"method": "GET", "path": "/health"},
+    {"method": "POST", "path": "/api/invoices"},
+    {"method": "POST", "path": "/api/orders"}
+  ],
+  "requests_per_endpoint": 3,
+  "rate": 10,
+  "timeout_seconds": 2
+}

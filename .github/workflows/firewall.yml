@@ -1,0 +1,219 @@
+name: Application firewall
+on:
+  pull_request:
+    paths: &shipping-paths ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policystate/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/firewallauth/**', 'internal/firewallui/**', 'internal/apipolicy/**', 'internal/appliance/**', 'internal/protocoltest/**', 'internal/networkfirewall/**', 'internal/transparentfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'internal/runtimeobs/**', 'configs/firewall-operations-*', 'scripts/*firewall*', 'Makefile', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall*.yml']
+  push:
+    branches: [master, main]
+    paths: *shipping-paths
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: Run Chromium against local role-scoped APIs
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: firewall-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  deployment:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {runner: ubuntu-24.04, arch: amd64}
+          - {runner: ubuntu-24.04-arm, arch: arm64}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    env:
+      GOWORK: 'off'
+      CGO_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.0'
+      - uses: azure/setup-helm@v4.3.0
+        with:
+          version: v3.17.3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m pip install PyYAML==6.0.2
+      - name: Verify native runner and Docker architecture
+        run: |
+          case '${{ matrix.arch }}' in
+            amd64) test "$(uname -m)" = x86_64; test "$(docker info --format '{{.Architecture}}')" = x86_64 ;;
+            arm64) test "$(uname -m)" = aarch64; test "$(docker info --format '{{.Architecture}}')" = aarch64 ;;
+          esac
+      - name: Native and pure-Go compile, with and without Coraza
+        run: |
+          go build -trimpath -buildvcs=false -o "$RUNNER_TEMP/netcap-firewall" ./cmd/netcap-firewall
+          go build -tags coraza,http3 -trimpath -buildvcs=false -o "$RUNNER_TEMP/netcap-firewall-coraza" ./cmd/netcap-firewall
+          CGO_ENABLED=1 go build -tags coraza -o "$RUNNER_TEMP/netcap-firewall-native" ./cmd/netcap-firewall
+          python3 examples/firewall/gateway_smoke.py "$RUNNER_TEMP/netcap-firewall-coraza"
+      - name: Race tests, with and without Coraza
+        env:
+          CGO_ENABLED: '1'
+        run: |
+          packages='./cmd/netcap-firewall ./cmd/firewall ./internal/waf ./internal/policy ./internal/policystate ./internal/policycontrol ./internal/gateway ./internal/enforcer ./internal/networkfirewall ./internal/transparentfirewall ./internal/firewallstate ./internal/firewallfleet ./internal/firewalltransport ./internal/responseactions ./internal/firewallauth ./internal/firewallui ./internal/apipolicy ./internal/appliance ./internal/protocoltest ./internal/runtimeobs'
+          go test -race $packages
+          go test -race -tags coraza $packages
+          go test -race -tags coraza,http3 ./cmd/netcap-firewall ./cmd/firewall ./internal/firewalltransport ./internal/waf ./examples/firewall/qualification
+      - name: Prometheus rules and percentile fixtures
+        run: make test-firewall-operations
+      - name: Release tooling and qualification negative-control unit tests
+        run: |
+          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.11 -shellcheck= .github/workflows/firewall.yml .github/workflows/firewall-release.yml
+          python3 -m unittest discover -s scripts -p 'test_firewall_release.py'
+          python3 -m unittest discover -s examples/firewall/qualification -p 'test_*.py'
+      - name: Short real-wire qualification and deliberately leaking negative control
+        run: |
+          go build -tags coraza,http3 -o "$RUNNER_TEMP/firewall-qualification" ./examples/firewall/qualification
+          evidence=$(mktemp -d "$RUNNER_TEMP/qualification.XXXXXX")
+          "$RUNNER_TEMP/firewall-qualification" -quick -duration 5s -rate 40 -rules 0,10 -mixed -output "$evidence"
+          negative=$(mktemp -d "$RUNNER_TEMP/negative-control.XXXXXX")
+          if "$RUNNER_TEMP/firewall-qualification" -quick -duration 2s -rate 40 -rules 0 -inject-leak -output "$negative"; then
+            exit 1
+          else
+            test "$?" -eq 1
+          fi
+      - name: Operations metric name and cardinality contract
+        env:
+          CGO_ENABLED: '1'
+        run: go test -race ./internal/runtimeobs
+      - name: Validate Helm deployment contract
+        run: |
+          helm lint charts/netcap-firewall --strict --set upstream=http://backend:8080
+          helm template firewall charts/netcap-firewall --kube-version 1.25.0 --set upstream=http://backend:8080 > "$RUNNER_TEMP/firewall.yaml"
+          python3 charts/netcap-firewall/tests/test_render.py
+          helm lint charts/netcap-enforcer --strict
+          python3 charts/netcap-enforcer/tests/test_render.py
+          helm lint charts/netcap-firewall-control --strict
+          python3 charts/netcap-firewall-control/tests/test_render.py
+      - name: Compose contract and end-to-end denial
+        run: |
+          docker compose -f examples/firewall/compose.yaml config --quiet
+          bash examples/firewall/smoke.sh
+          python3 docker/firewall/check-image.py
+          python3 examples/firewall/roles_smoke.py
+      - name: Native Linux nft/netns qualification, no host mounts or test skips
+        run: |
+          python3 examples/firewall/enforcer_lab.py
+          python3 examples/firewall/network_lab.py
+          python3 examples/firewall/transparent_lab.py
+      - name: Managed restore and controlled open-loop measurement
+        run: |
+          python3 examples/firewall/restore_drill.py --binary "$RUNNER_TEMP/netcap-firewall-coraza" --output "$RUNNER_TEMP/restore-${{ matrix.arch }}.json"
+          python3 examples/firewall/benchmark.py --rate 25 --duration 5 --output "$RUNNER_TEMP/benchmark-${{ matrix.arch }}.json"
+          python3 examples/firewall/benchmark.py --body-bytes 2097152 --rate 1 --duration 3 --workers 2 --output "$RUNNER_TEMP/benchmark-large-crs-${{ matrix.arch }}.json"
+          python3 examples/firewall/benchmark.py --no-coraza --body-bytes 2097152 --rate 1 --duration 3 --workers 2 --output "$RUNNER_TEMP/benchmark-large-native-${{ matrix.arch }}.json"
+          python3 examples/firewall/spool_smoke.py --output "$RUNNER_TEMP/spool-${{ matrix.arch }}.json"
+          python3 examples/firewall/control_smoke.py --output "$RUNNER_TEMP/control-${{ matrix.arch }}.json"
+      - name: Postgres active-active CLI and real database race/crash qualification
+        run: python3 examples/firewall/postgres_ha.py --package-tests --output "$RUNNER_TEMP/postgres-ha-${{ matrix.arch }}.json"
+      - name: Native distributed rule authority, replica loss and revision isolation
+        run: python3 examples/firewall/policy_state_smoke.py --package-tests --output "$RUNNER_TEMP/policy-state-${{ matrix.arch }}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firewall-qualification-${{ matrix.arch }}
+          path: |
+            ${{ runner.temp }}/restore-${{ matrix.arch }}.json
+            ${{ runner.temp }}/benchmark-${{ matrix.arch }}.json
+            ${{ runner.temp }}/benchmark-large-crs-${{ matrix.arch }}.json
+            ${{ runner.temp }}/benchmark-large-native-${{ matrix.arch }}.json
+            ${{ runner.temp }}/spool-${{ matrix.arch }}.json
+            ${{ runner.temp }}/control-${{ matrix.arch }}.json
+            ${{ runner.temp }}/postgres-ha-${{ matrix.arch }}.json
+            ${{ runner.temp }}/policy-state-${{ matrix.arch }}.json
+          retention-days: 7
+      - name: Save tested image for Kubernetes job
+        run: docker save netcap-firewall:0.1.0-local netcap-enforcer:0.1.0-local -o "$RUNNER_TEMP/firewall-image.tar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firewall-image-${{ matrix.arch }}
+          path: ${{ runner.temp }}/firewall-image.tar
+          retention-days: 1
+  browser:
+    if: github.event_name == 'workflow_dispatch' && inputs.browser
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GOWORK: 'off'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.0'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+      - name: Install pinned browser driver
+        run: |
+          npm install --prefix "$RUNNER_TEMP/firewall-browser" --no-audit --no-fund @playwright/test@1.51.1
+          "$RUNNER_TEMP/firewall-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Real local API and grant-aware console integration
+        run: FIREWALL_PLAYWRIGHT_MODULE="$RUNNER_TEMP/firewall-browser/node_modules/@playwright/test" go test -count=1 -run '^TestBrowser$' -v ./internal/firewallui
+  capture-bridge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GOWORK: 'off'
+      CGO_ENABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.0'
+      - name: Install capture headers without DPI or YARA dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libpcap-dev
+      - name: Capture decoder bridge schema, projection, replay and response race tests
+        run: go test -race -count=1 -tags nodpi,noyara ./cmd/capture ./internal/firewallaudit
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile committed examples and reuse real CLI TLS dry-run response evidence
+        run: |
+          go build -tags coraza,http3 -o "$RUNNER_TEMP/netcap-firewall-examples" ./cmd/netcap-firewall
+          python3 examples/firewall/full_stack_smoke.py --binary "$RUNNER_TEMP/netcap-firewall-examples" --output "$RUNNER_TEMP/full-stack.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firewall-full-stack
+          path: ${{ runner.temp }}/full-stack.json
+          retention-days: 7
+  kubernetes:
+    needs: deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOWORK: 'off'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.0'
+      - uses: azure/setup-helm@v4.3.0
+        with:
+          version: v3.17.3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: firewall-image-amd64
+          path: ${{ runner.temp }}
+      - name: Install pinned kind and load tested image
+        run: |
+          go install sigs.k8s.io/kind@v0.27.0
+          python3 -m pip install PyYAML==6.0.2
+          docker load -i "$RUNNER_TEMP/firewall-image.tar"
+      - name: Install, Service traffic, upgrade, rollback, managed persistence
+        run: python3 examples/firewall/kind_smoke.py
+      - name: Dedicated Cilium-enforced NetworkPolicy and replica boundary
+        run: python3 examples/firewall/cni_qualification.py --output "$RUNNER_TEMP/cni-amd64.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firewall-cni-amd64
+          path: ${{ runner.temp }}/cni-amd64.json
+          retention-days: 7

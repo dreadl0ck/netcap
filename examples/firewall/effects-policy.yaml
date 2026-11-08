@@ -1,0 +1,18 @@
+version: netcap-policy/v1
+id: bounded-future-response
+mode: enforce
+default: allow
+rules:
+  - id: http-deny-and-future-lease
+    phase: request
+    expression: 'Protocol == "http" && Path == "/trigger-future-lease"'
+    action: deny
+    status: 403
+    effects:
+      - {kind: block_source, target: client, duration: 30s, scope: lab-edge}
+  - id: smtp-recipient-and-future-lease
+    phase: request
+    expression: 'Protocol == "smtp" && Method == "RCPT" && Attributes["mail.recipient"] == "blocked@example.test"'
+    action: deny
+    effects:
+      - {kind: block_source, target: client, duration: 30s, scope: lab-edge}

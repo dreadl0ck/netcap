@@ -2,6 +2,34 @@
 
 The NETCAP Rules Engine allows you to define detection rules that automatically generate alerts when specific network patterns are observed. Rules use expr-lang expressions to match audit records and can be configured to detect various attack patterns, anomalies, and policy violations.
 
+## First rule
+
+Create the benign input from [First capture](quickstart.md), then save this as
+`documentation-rule.yml`:
+
+```yaml
+rules:
+  - name: Documentation UDP Observation
+    description: Match the synthetic walkthrough destination port
+    type: UDP
+    expression: DstPort == 9999
+    severity: low
+    tags: [documentation, fixture]
+    enabled: true
+```
+
+```sh
+net capture -read example.pcap -out rule-audit -rules documentation-rule.yml \
+  -dpi=false -geoDB=false
+net dump -read rule-audit/Alert.ncap.gz -json
+```
+
+Inspect `RuleName`, matched-record evidence and record-time timestamps. Alert
+deduplication can reduce alert count; do not equate alert rows with matched
+packets. This rule observes a port, not malicious activity. The examples below
+are hypothesis templates: SYNs are not failed logins, long DNS names are not
+confirmed tunnels, and a MITRE label/severity does not validate intent.
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -47,6 +75,11 @@ The NETCAP Rules Engine allows you to define detection rules that automatically 
 ```
 
 ## Offline grouped thresholds
+
+Availability: current source after v0.15.2. The v0.15.2 release binary has no
+`investigate rules` command or audit-readiness marker; build current source to
+use this section. The capture-time YAML format elsewhere on this page is a
+separate v0.15.2 interface.
 
 `net investigate rules` evaluates `netcap-offline-rules/v1` packs against
 completed captures. The separate format rejects actions, sequences and distinct
@@ -149,7 +182,10 @@ Human-readable explanation of what the rule detects.
 #### `type` (required)
 The audit record type this rule applies to. Can be specified with or without the `NC_` prefix.
 
-**Valid values**: `TCP`, `UDP`, `HTTP`, `DNS`, `TLS`, `IPv4`, `IPv6`, `ICMP`, etc.
+Use actual audit types such as `TCP`, `UDP`, `HTTP`, `DNS`, `TLSClientHello`,
+`IPv4`, `IPv6` or `ICMPv4`. Generic labels such as `TLS` and `ICMP` are not
+substitutes for record names. Discover fields with `dump -fields` and check
+their types in `types/netcap.proto`.
 
 **Examples**:
 - `TCP` or `NC_TCP`
@@ -271,7 +307,7 @@ The web UI cannot author sequences yet, but it preserves them when saving rules
 or toggling rule sets.
 
 **Worked example** (shipped disabled in
-[`internal/rules/examples/modbus_hunt.yml`](../rules/examples/modbus_hunt.yml)):
+[`internal/rules/examples/modbus_hunt.yml`](https://github.com/dreadl0ck/netcap/blob/v0.15.2/internal/rules/examples/modbus_hunt.yml)):
 
 ```yaml
 - name: Modbus Write After Read Same Register
@@ -324,8 +360,8 @@ expressions:
 
 ```yaml
 rules:
-  - name: HTTPS_Traffic
-    description: Detect HTTPS connections
+  - name: TCP_443_Observation
+    description: Observe TCP records addressed to port 443; protocol not established
     type: TCP
     expression: DstPort == 443
     severity: low
@@ -360,7 +396,7 @@ rules:
     expression: |
       Method == "POST" && 
       ReqContentLength > 10000000 && 
-      UserAgent in ["curl", "wget", "python"]
+      MatchesPattern(UserAgent, "(?i)^(curl/|wget/|python[-/])")
     severity: high
     mitre: ["T1041"]
     tags: ["exfiltration", "http"]
@@ -389,7 +425,7 @@ When a rule matches, an alert is generated with the following information:
 
 ```go
 type Alert struct {
-    Timestamp      int64    // When the alert was generated
+    Timestamp      int64    // Matched record time, Unix nanoseconds
     Name           string   // Rule name
     Description    string   // Rule description
     SrcIP          string   // Source IP from matched record
@@ -406,6 +442,11 @@ type Alert struct {
 ```
 
 Alerts are written to `Alert.ncap.gz` in the output directory and can be analyzed like any other audit record:
+
+The excerpt is not the complete current schema. `DetectedAt` records processing
+time separately; `TimestampBasis`, `RuleDigest`, `RuleExpression`, threshold
+configuration and evidence references preserve interpretation/provenance. Read
+the emitted fields before joining alerts across captures.
 
 ```bash
 # View all alerts
@@ -457,8 +498,8 @@ rules:
 ```yaml
 rules:
   # Port Scanning
-  - name: SYN_Scan
-    description: Detect TCP SYN scan attempts
+  - name: TCP_SYN_Observation
+    description: Observe an initiating SYN; a single packet is not a scan
     type: TCP
     expression: SYN && !ACK && !RST
     severity: medium
@@ -467,10 +508,10 @@ rules:
     enabled: true
 
   # ICMP Reconnaissance
-  - name: ICMP_Ping_Sweep
-    description: Detect ICMP echo requests (ping sweep)
+  - name: ICMP_Echo_Request
+    description: Observe an echo request; aggregate distinct destinations to assess a sweep
     type: ICMPv4
-    expression: TypeCode == 8
+    expression: Type == 8
     severity: low
     mitre: ["T1018"]
     tags: ["reconnaissance", "icmp"]
@@ -507,23 +548,21 @@ rules:
 ```yaml
 rules:
   # IRC C2
-  - name: IRC_Communication
-    description: Detect IRC traffic (possible botnet C2)
+  - name: TCP_IRC_Port_Observation
+    description: Observe common IRC destination ports; neither IRC nor C2 is confirmed
     type: TCP
     expression: DstPort >= 6667 && DstPort <= 6669
-    severity: high
-    mitre: ["T1219"]
-    tags: ["malware", "c2", "irc"]
+    severity: low
+    tags: ["port-observation", "irc-candidate"]
     enabled: true
 
   # Suspicious Port
-  - name: Backdoor_Port_31337
-    description: Detect connections to common backdoor port
+  - name: TCP_31337_Observation
+    description: Observe a port associated with some historical tools; no malware verdict
     type: TCP
     expression: DstPort == 31337 || SrcPort == 31337
-    severity: critical
-    mitre: ["T1571"]
-    tags: ["malware", "backdoor"]
+    severity: low
+    tags: ["port-observation"]
     enabled: true
 ```
 
@@ -619,7 +658,7 @@ rules:
 2. **Monitor Alert Volume**: Ensure rules don't generate excessive alerts
    ```bash
    # Count alerts per rule
-   net dump -read Alert.ncap.gz -csv | cut -d';' -f2 | sort | uniq -c
+    net dump -read Alert.ncap.gz -json | python3 -c 'import collections,json,sys; print(collections.Counter(json.loads(line)["RuleName"] for line in sys.stdin))'
    ```
 
 3. **Review False Positives**: Refine rules based on real-world results
@@ -689,7 +728,7 @@ rules:
 
 ## Next Steps
 
-- Review [example rules](../rules/examples/) for more patterns
+- Review [example rules](https://github.com/dreadl0ck/netcap/tree/v0.15.2/internal/rules/examples) for more patterns
 - See [FILTERING.md](FILTERING.md) for expression syntax details
 - Check the [expr-lang documentation](https://expr-lang.org/docs/language-definition)
 - Explore MITRE ATT&CK framework at https://attack.mitre.org/

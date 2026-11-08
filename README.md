@@ -1,11 +1,17 @@
-<a href="https://netcap.io">
-  <img alt="Netcap Logo" src="docs/graphics/logo.png" width="100%">
-</a>
+<p align="center">
+  <a href="https://netcap.io">
+    <img alt="NETCAP — Network Traffic Analysis Framework" src="docs/graphics/logo.png" width="640">
+  </a>
+</p>
 
-<br>
+<p align="center">
+  <a href="https://docs.netcap.io">Documentation</a> ·
+  <a href="https://github.com/dreadl0ck/netcap/releases">Releases</a> ·
+  <a href="docs/quickstart.md">First capture</a>
+</p>
 
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://raw.githubusercontent.com/dreadl0ck/netcap/master/LICENSE)
-[![Golang](https://img.shields.io/badge/Go-1.25-blue.svg)](https://golang.org)
+[![Golang](https://img.shields.io/badge/Go-1.27-blue.svg)](https://go.dev)
 ![Linux](https://img.shields.io/badge/Supports-Linux-green.svg)
 ![macOS](https://img.shields.io/badge/Supports-macOS-green.svg)
 ![windows](https://img.shields.io/badge/Supports-windows-green.svg)
@@ -13,9 +19,9 @@
 [![Homepage](https://img.shields.io/badge/Homepage-blue.svg)](https://netcap.io)
 [![Documentation](https://img.shields.io/badge/Documentation-blue.svg)](https://docs.netcap.io)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap?ref=badge_shield)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/dreadl0ck/netcap)
+[![Ask DeepWiki](https://img.shields.io/badge/Ask-DeepWiki-blue.svg)](https://deepwiki.com/dreadl0ck/netcap)
 
-**Netcap** (NETwork CAPture) converts network packets into structured, type-safe Protocol Buffer audit records — designed for security monitoring, forensic analysis, and machine learning. A single Go binary with 83 packet decoders, 40+ stream decoders, and 141+ audit record types, backed by a concurrent architecture and a built-in web UI.
+**Netcap** (NETwork CAPture) converts network packets into structured Protocol Buffer audit records for security monitoring, forensic analysis and dataset preparation. The Go binary includes concurrent packet/stream decoders and a local web UI. Discover its actual inventory with `net capture -overview`; record definitions are in `types/netcap.proto`.
 
 <a href="docs/GALLERY.md">
   <img alt="Netcap Web UI — Protocol Hierarchy" src="docs/gallery/protocol-hierarchy-sankey.png" width="100%">
@@ -27,8 +33,8 @@
 
 ### Protocol Analysis
 
-- **83 packet-layer decoders** — Ethernet, IPv4/6, TCP, UDP, DNS, DHCP, ARP, TLS ClientHello/ServerHello, ICMP, NTP, SIP, OSPF, BGP, MPLS, GRE, VXLAN, 802.11, and many more
-- **40+ stream decoders** — TLS, SSH, HTTP/2, QUIC, SMB, FTP, SMTP, POP3, IMAP, IRC, Kerberos, DCERPC, and more
+- **Packet-layer decoders** — Ethernet, IPv4/6, TCP, UDP, DNS, DHCP, ARP, TLS ClientHello/ServerHello, ICMP, NTP, SIP, OSPF, BGP, MPLS, GRE, VXLAN and 802.11; check the installed inventory for enabled paths
+- **Stream decoders** — HTTP/1, TLS handshake metadata, SSH, QUIC Initial ClientHello, SMB, FTP, SMTP, POP3, IMAP, IRC, Kerberos and DCE/RPC. A protocol label does not imply HTTP/2/3 plaintext decoding; see [coverage](docs/protocol-support.md).
 - **Industrial protocols** — Modbus, S7Comm, DNP3, OPC-UA, PROFINET, BACnet, CIP, IEC 62351
 - **Full TCP/UDP stream reassembly** with configurable limits
 
@@ -70,7 +76,7 @@ See the [Gallery](docs/GALLERY.md) for screenshots.
   or the Databases page; see [GeoIP configuration](internal/dbs/README.md#geolocation-providers).
 - MAC vendor lookup
 - Deep Packet Inspection (optional, via nDPI/libprotoident)
-- **Hyperscan / Vectorscan** acceleration (optional) — multi-pattern regex prefilter for nmap service probes (~2.2× faster), CMS/web framework detection (~1.4×) and rule-engine `MatchesPattern` (up to ~6× on miss-heavy detection traffic), see [docs/hyperscan.md](docs/hyperscan.md)
+- **Hyperscan / Vectorscan** acceleration (optional) — build-dependent rule-expression matching. Nmap probe and CMS/DHCP OS catalogue processing are retired; see [service identification](docs/deep-packet-inspection.md) and [database sources](docs/database-updates.md).
 
 ### Integrations
 
@@ -108,8 +114,11 @@ CGO_ENABLED=1 go build -tags hyperscan -o net ./cmd/net/
 # Live capture
 sudo ./net capture -iface en0
 
-# Service mode (starts web UI)
-./net capture -read traffic.pcap --service
+# Analyze one file and keep the local web UI running
+./net capture -read traffic.pcap -out browser-audit -http 127.0.0.1:8080
+
+# Separate upload/session service
+./net capture --service -http 127.0.0.1:7070
 
 # Service mode with hot reload (development)
 air
@@ -177,8 +186,8 @@ conflicting ranges and encrypted SMB transforms are not published as complete fi
 
 Vulnerability findings require schema-2 CPE product/version applicability and
 an observed software host; exploit findings additionally require a linked CVE.
-Schema-1 databases must be rebuilt with `net util --generate-dbs` or replaced
-with a compatible snapshot; see [the format](internal/vulndb/SCHEMA.md).
+Schema-1 databases require a fresh compatible snapshot (`net util -download-dbs`);
+editing their version field is not migration. See [the format](internal/vulndb/SCHEMA.md).
 
 ### Corpus regression checks
 
@@ -432,18 +441,20 @@ approval; consumers verify the committed bytes against each manifest.
 
 | Command | Description |
 |---------|-------------|
-| `capture` | Capture audit records from live interfaces or PCAP files; `--service` enables the web UI |
+| `capture` | Capture audit records; explicit `-http` keeps the local UI running, `--service` starts an upload workspace |
 | `dump` | Read and display audit record files in CSV, JSON, or table format |
 | `label` | Apply attack labels to audit records using Suricata or CSV mappings |
 | `collect` | Collection server for receiving data from distributed agents |
 | `agent` | Sensor agent for distributed capture on remote hosts |
-| `proxy` | HTTP/HTTPS reverse proxy with MITM traffic inspection |
+| `proxy` | Explicit HTTP/HTTPS reverse proxy; not transparent TLS decryption |
 | `export` | Export audit records with Prometheus metrics exposure |
 | `transform` | Maltego OSINT transform plugin |
-| `util` | Utilities: timestamp conversion, interface listing, database generation, search indexing |
+| `util` | Interfaces, timestamps, schemas and signed database installation/update |
 | `inject` | Inline packet manipulation via NFQueue (Linux) |
 | `investigate` | Bounded flow rankings and packet-evidence ZIP exports |
-| `split` | Split audit record files |
+| `triage` | Capture-derived host/account evidence |
+| `mcp` | Stdio AI-agent tools with bounded local analysis contracts |
+| `licenses` | Distribution licenses and notices |
 
 ### Investigation tools
 
@@ -588,6 +599,8 @@ Please use the [bug report template](https://github.com/dreadl0ck/netcap/blob/ma
 
 ## License
 
-Netcap is licensed under the GNU General Public License v3, which is a very permissive open source license, that allows others to do almost anything they want with the project, except to distribute closed source versions. This license type was chosen with Netcap's research purpose in mind, and in the hope that it leads to further improvements and new capabilities contributed by other researchers on the long term.
+Netcap's public Go source is GPL-3.0-or-later, a strong-copyleft license.
+See [LICENSE](LICENSE) and the [license guide](docs/license.md) for the source,
+native-runtime and dataset boundaries. GPL is not a permissive license.
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap?ref=badge_large)

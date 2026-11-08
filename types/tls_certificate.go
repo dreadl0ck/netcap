@@ -101,6 +101,8 @@ var fieldsTLSCertificate = []string{
 	fieldSeenCount,
 	fieldJa4x,
 	fieldJa4xRaw,
+	"CommunityID", "AssessmentTime", "AssessmentBasis", "ValidityState", "SelfSignatureState", "CertificateSender", "NotBeforeRFC3339", "NotAfterRFC3339",
+	"TCPObservation",
 }
 
 // CSVHeader returns the CSV header for the audit record
@@ -150,6 +152,8 @@ func (t *TLSCertificate) CSVRecord() []string {
 		formatInt64(t.SeenCount),
 		t.Ja4X,
 		t.Ja4XRaw,
+		t.CommunityID, formatInt64(t.AssessmentTime), t.AssessmentBasis, t.ValidityState, t.SelfSignatureState, t.CertificateSender, t.NotBeforeRFC3339, t.NotAfterRFC3339,
+		t.TCPObservation,
 	})
 }
 
@@ -200,41 +204,7 @@ func (t *TLSCertificate) Dst() string {
 
 // Encode returns the encoded values for machine learning
 func (t *TLSCertificate) Encode() []string {
-	return filter([]string{
-		formatTimestamp(t.Timestamp),
-		t.SrcIP,
-		t.DstIP,
-		t.SrcMAC,
-		t.DstMAC,
-		formatInt32(t.SrcPort),
-		formatInt32(t.DstPort),
-		formatInt32(t.ChainIndex),
-		t.SubjectCommonName,
-		join(t.SubjectAltNames...),
-		t.SubjectOrganization,
-		t.SubjectCountry,
-		t.IssuerCommonName,
-		t.IssuerOrganization,
-		t.IssuerCountry,
-		formatTimestamp(t.NotBefore),
-		formatTimestamp(t.NotAfter),
-		strconv.FormatBool(t.IsExpired),
-		strconv.FormatBool(t.IsSelfSigned),
-		formatInt64(t.DaysUntilExpiration),
-		strconv.FormatBool(t.IsNotYetValid),
-		strconv.FormatBool(t.HasWeakSignature),
-		strconv.FormatBool(t.HasShortKeySize),
-		t.SignatureAlgorithm,
-		t.PublicKeyAlgorithm,
-		formatInt32(t.PublicKeySize),
-		t.SerialNumber,
-		formatInt32(t.Version),
-		strconv.FormatBool(t.IsCA),
-		formatInt32(t.MaxPathLen),
-		formatInt64(t.SeenCount),
-		t.Ja4X,
-		t.Ja4XRaw,
-	})
+	return t.CSVRecord()
 }
 
 // Analyze is a stub for the AuditRecord interface

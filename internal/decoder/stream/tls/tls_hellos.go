@@ -1,6 +1,7 @@
 package tls
 
 import (
+	"strings"
 	"sync/atomic"
 
 	"github.com/dreadl0ck/tlsx"
@@ -8,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
+	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/decoder/tlshello"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
@@ -40,12 +42,16 @@ func (f *tlsRecordFramer) emitHello(message []byte) {
 			return
 		}
 		r := tlshello.Client(&hello, nil)
+		r.HelloFormat = "TLS"
 		r.Timestamp, r.SrcIP, r.DstIP, r.SrcPort, r.DstPort = f.handshakeTS, c.ClientIP, c.ServerIP, c.ClientPort, c.ServerPort
 		r.CommunityID = c.CommunityID
 		if f.initialLossUnknown {
 			r.ReassemblyStatus = "unknown-initial-stream-loss"
 		}
 		r.SrcMAC, r.DstMAC = c.ClientMAC, c.ServerMAC
+		if note := streamutils.TransportQualification(f.reader.transportObservation); note != "" {
+			r.ReassemblyStatus = strings.Trim(r.ReassemblyStatus+","+note, ",")
+		}
 		record, d = r, ClientHelloDecoder
 	case handshakeTypeServerHello:
 		if f.dir != reassembly.TCPDirServerToClient {
@@ -59,12 +65,16 @@ func (f *tlsRecordFramer) emitHello(message []byte) {
 			return
 		}
 		r := tlshello.Server(&hello, nil)
+		r.HelloFormat = "TLS"
 		r.Timestamp, r.SrcIP, r.DstIP, r.SrcPort, r.DstPort = f.handshakeTS, c.ServerIP, c.ClientIP, c.ServerPort, c.ClientPort
 		r.CommunityID = c.CommunityID
 		if f.initialLossUnknown {
 			r.ReassemblyStatus = "unknown-initial-stream-loss"
 		}
 		r.SrcMAC, r.DstMAC = c.ServerMAC, c.ClientMAC
+		if note := streamutils.TransportQualification(f.reader.transportObservation); note != "" {
+			r.ReassemblyStatus = strings.Trim(r.ReassemblyStatus+","+note, ",")
+		}
 		record, d = r, ServerHelloDecoder
 	default:
 		return

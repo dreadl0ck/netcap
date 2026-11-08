@@ -284,9 +284,8 @@ func objectShapeFor(group, variation int32) objectShape {
 	return unknownShape
 }
 
-// objectName names a group and variation. The variation matters: group 60
-// variation 0 is the Class 0 static point map, which is an inventory of the
-// outstation, while variations 1 to 3 are routine event polls.
+// objectName names a group and variation. Group 60 variations 1..4 select
+// classes 0..3; Class 0 requests static data, not an engineering point map.
 //
 //nolint:gocyclo,cyclop,funlen // a wire-format lookup table; splitting it hides the shape
 func objectName(group, variation int32) string {
@@ -341,10 +340,8 @@ func objectName(group, variation int32) string {
 		return "Time Delay"
 	case groupClassData:
 		switch variation {
-		case 0:
-			return "Class 0 Data (static point map)"
-		case 1, 2, 3:
-			return "Class " + strconv.Itoa(int(variation)) + " Data"
+		case 1, 2, 3, 4:
+			return "Class " + strconv.Itoa(int(variation-1)) + " Data"
 		}
 
 		return "Class Data"

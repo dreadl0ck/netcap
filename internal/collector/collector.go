@@ -26,7 +26,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gogo/protobuf/proto"
 	"io"
 	"log"
 	"net/http"
@@ -41,13 +40,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
+
 	"github.com/dustin/go-humanize"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 
-	"github.com/dreadl0ck/netcap/internal/table"
 	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
+
+	"github.com/dreadl0ck/netcap/internal/table"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/behavior"
@@ -65,6 +67,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/label/manager"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/networkdetect"
+	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/internal/performance"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/rules"
@@ -111,7 +114,8 @@ type Collector struct {
 	numPackets             int64
 	numWorkers             int
 	workers                []chan gopacket.Packet
-	dispatchMu             sync.Mutex // admission, controls, and assembler lifecycle
+	dispatchMu             sync.Mutex            // admission, controls, and assembler lifecycle
+	packetPipeline         *packetview.Processor // protected by dispatchMu
 	behaviorHealthMu       sync.Mutex
 	behaviorCaptureHealth  behavior.CaptureHealth
 	behaviorQueueDrops     uint64
@@ -200,6 +204,7 @@ type Collector struct {
 	captureKind, captureSource string
 	captureLinkType            layers.LinkType
 	captureComplete            bool
+	captureInputStatus         string
 	networkDetector            *networkdetect.Engine
 	networkAlertWriter         *rules.FileAlertWriter
 	networkDetectionError      error
@@ -498,6 +503,12 @@ func (c *Collector) recoverFromPanic() {
 func (c *Collector) stopWorkers() {
 	c.dispatchMu.Lock()
 	c.acceptingPackets = false
+	if c.packetPipeline != nil {
+		c.packetPipeline.Reset()
+		if c.log != nil {
+			c.log.Info("packet pipeline outcomes", zap.Any("stats", c.packetPipeline.Stats()))
+		}
+	}
 	if !c.workersStopped {
 		c.workersStopped = true
 		for _, w := range c.workers {
@@ -675,14 +686,11 @@ func (c *Collector) getSymmetricWorkerIndex(p gopacket.Packet) int {
 		hasFlow = true
 	}
 
-	// Match ReassemblePacket's TCP selection, including encapsulated TCP.
-	if tcpLayer := p.Layer(layers.LayerTypeTCP); tcpLayer != nil {
-		hash ^= tcpLayer.(*layers.TCP).TransportFlow().FastHash()
-		hasFlow = true
-	} else if tl := p.TransportLayer(); tl != nil {
+	if tl := p.TransportLayer(); tl != nil {
 		hash ^= tl.TransportFlow().FastHash()
 		hasFlow = true
 	}
+	hash ^= packetview.ScopeHash(p)
 
 	// A zero hash is valid; fall back only when no flow was identified.
 	if !hasFlow {
@@ -726,7 +734,6 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	if p == nil || !c.acceptingPackets || c.workersStopped || len(c.workers) == 0 {
 		return false
 	}
-	idx := c.getSymmetricWorkerIndex(p)
 	var deadline <-chan time.Time
 	if timeout {
 		timer := time.NewTimer(3 * time.Second)
@@ -739,14 +746,31 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	// Observe ingress serially before pooled-packet ownership moves to a worker.
 	c.flowIngressOrdinal++
 	c.observeCaptureEvidence(p)
-	c.observeFlowExport(p)
-	c.observeBehavior(p)
-	c.observeNetworkDetection(p)
-	c.observeDNSContext(p)
+	if c.packetPipeline == nil {
+		limits := packetview.DefaultLimits()
+		if c.config != nil && c.config.DecoderConfig != nil {
+			limits.Checksum = c.config.DecoderConfig.Checksum
+		}
+		c.packetPipeline = packetview.New(limits)
+	}
+	views := c.packetPipeline.Process(p, c.flowIngressOrdinal)
+	route := p
+	if logical := views.Packet; logical != nil {
+		route = logical
+		c.observeFlowExport(logical)
+		c.observeBehavior(logical)
+		c.observeNetworkDetection(logical)
+		c.observeDNSContext(logical)
+	}
+	idx := c.getSymmetricWorkerIndex(route)
+	queued := p
+	if views.Packet != p || len(views.Evidence) > 0 {
+		queued = &packetWork{Packet: p, views: views}
+	}
 	c.wg.Add(1)
 	atomic.AddInt64(&c.current, 1)
 	select {
-	case c.workers[idx] <- p:
+	case c.workers[idx] <- queued:
 		accepted = true
 	case <-deadline:
 		c.behaviorQueueDrops++
@@ -767,6 +791,16 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 		}
 	}
 	return true
+}
+
+// PacketPipelineStats reports bounded normalization/defragmentation outcomes.
+func (c *Collector) PacketPipelineStats() packetview.Stats {
+	c.dispatchMu.Lock()
+	defer c.dispatchMu.Unlock()
+	if c.packetPipeline == nil {
+		return packetview.Stats{}
+	}
+	return c.packetPipeline.Stats()
 }
 
 // print errors to stdout in red.

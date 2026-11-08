@@ -7,6 +7,7 @@
     "SrcPort": "51085",
     "DstIP": "127.0.0.3",
     "DstPort": "6667",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "protocol.irc",
     "RecordType": "NetworkDetection",
     "Severity": "info",
@@ -14,7 +15,22 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"protocol.irc\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363795069000000,\"lastSeen\":1791363795069164000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"IRC NICK and USER commands\"],\"limitations\":[\"IRC is also used legitimately\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"protocol.irc\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363795069000000,\"lastSeen\":1791363795069164000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"IRC NICK and USER commands\"],\"limitations\":[\"IRC is also used legitimately\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "4f61dbb3c354f0b58086a0c8c28bfc93c171d8c699c4b820ab421aed3887935f",
+    "Count": 15,
+    "FirstSeen": 1791363795069164000,
+    "LastSeen": 1791363795189296000,
+    "Examples": [
+      "{\"at\":1791363795069164000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"51085\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795069000000,\"samples\":[\"IRC NICK and USER commands\"]}",
+      "{\"at\":1791363795072802000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"36275\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795072671000,\"samples\":[\"IRC NICK and USER commands\"]}",
+      "{\"at\":1791363795081585000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"54415\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795081440000,\"samples\":[\"IRC NICK and USER commands\"]}",
+      "{\"at\":1791363795084660000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"49941\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795083322000,\"samples\":[\"IRC NICK and USER commands\"]}",
+      "{\"at\":1791363795105402000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"49629\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795105227000,\"samples\":[\"IRC NICK and USER commands\"]}",
+      "{\"at\":1791363795115015000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"59447\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795114866000,\"samples\":[\"IRC NICK and USER commands\"]}",
+      "{\"at\":1791363795123928000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"35287\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795123661000,\"samples\":[\"IRC NICK and USER commands\"]}",
+      "{\"at\":1791363795189296000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"47615\",\"dstIP\":\"127.0.0.3\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795189151000,\"samples\":[\"IRC NICK and USER commands\"]}"
+    ]
   },
   {
     "Timestamp": 1791363795222401000,
@@ -24,6 +40,7 @@
     "SrcPort": "59247",
     "DstIP": "127.0.0.8",
     "DstPort": "6667",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "protocol.irc",
     "RecordType": "NetworkDetection",
     "Severity": "info",
@@ -31,6 +48,21 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"protocol.irc\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363795221659000,\"lastSeen\":1791363795222401000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"IRC NICK and USER commands\"],\"limitations\":[\"IRC is also used legitimately\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"protocol.irc\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363795221659000,\"lastSeen\":1791363795222401000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"IRC NICK and USER commands\"],\"limitations\":[\"IRC is also used legitimately\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "4cf2b5e50db292f95bbdd4427ed83d72399a1929c4fd2ba5fd8ba273ae5473dc",
+    "Count": 15,
+    "FirstSeen": 1791363795222401000,
+    "LastSeen": 1791363795347923000,
+    "Examples": [
+      "{\"at\":1791363795222401000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"59247\",\"dstIP\":\"127.0.0.8\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795221659000,\"samples\":[\"IRC NICK and USER commands\"]}",
+      "{\"at\":1791363795230493000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"40151\",\"dstIP\":\"127.0.0.8\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795228299000,\"samples\":[\"IRC NICK and USER commands\"]}",
+      "{\"at\":1791363795236360000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"60097\",\"dstIP\":\"127.0.0.8\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795234622000,\"samples\":[\"IRC NICK and USER commands\"]}",
+      "{\"at\":1791363795240408000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"51559\",\"dstIP\":\"127.0.0.8\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795239372000,\"samples\":[\"IRC NICK and USER commands\"]}",
+      "{\"at\":1791363795244831000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"48931\",\"dstIP\":\"127.0.0.8\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795243515000,\"samples\":[\"IRC NICK and USER commands\"]}",
+      "{\"at\":1791363795250040000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"39753\",\"dstIP\":\"127.0.0.8\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795247996000,\"samples\":[\"IRC NICK and USER commands\"]}",
+      "{\"at\":1791363795267089000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"57401\",\"dstIP\":\"127.0.0.8\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795266869000,\"samples\":[\"IRC NICK and USER commands\"]}",
+      "{\"at\":1791363795347923000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"44771\",\"dstIP\":\"127.0.0.8\",\"dstPort\":\"6667\",\"observed\":1,\"firstSeen\":1791363795347799000,\"samples\":[\"IRC NICK and USER commands\"]}"
+    ]
   }
 ]

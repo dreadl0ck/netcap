@@ -120,6 +120,7 @@ func (p *profinetReader) Decode() {
 		msg, consumed := p.parsePROFINETMessage(frameData[offset:])
 		if msg != nil {
 			msg.SrcIP = p.conversation.ClientIP
+			msg.CommunityID = p.conversation.CommunityID
 			msg.DstIP = p.conversation.ServerIP
 			msg.SrcPort = int32(p.conversation.ClientPort)
 			msg.DstPort = int32(p.conversation.ServerPort)

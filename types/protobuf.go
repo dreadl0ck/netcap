@@ -55,6 +55,7 @@ var fieldsProtobuf = []string{
 	fieldProtoFile,
 	fieldFullMessageName,
 	fieldSchemaResolved,
+	"CommunityID",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -81,6 +82,7 @@ func (p *Protobuf) CSVRecord() []string {
 		p.ProtoFile,
 		p.FullMessageName,
 		strconv.FormatBool(p.SchemaResolved),
+		p.CommunityID,
 	})
 }
 
@@ -147,6 +149,7 @@ func (p *Protobuf) Encode() []string {
 		protobufEncoder.String(fieldProtoFile, p.ProtoFile),
 		protobufEncoder.String(fieldFullMessageName, p.FullMessageName),
 		protobufEncoder.Bool(p.SchemaResolved),
+		protobufEncoder.String("CommunityID", p.CommunityID),
 	})
 }
 

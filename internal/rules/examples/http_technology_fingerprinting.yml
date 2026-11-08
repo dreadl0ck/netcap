@@ -237,8 +237,8 @@ rules:
     tags: ["fingerprinting", "cdn", "fastly"]
     enabled: true
 
-  # CloudFront Detection
-  - name: Cloudflare CDN Detected
+  # Cloudflare cache indicators
+  - name: Cloudflare Cache Headers Detected
     description: Detect Cloudflare via X-Cache or Server headers
     type: HTTP
     expression: MatchesPattern(ResponseHeader["X-Cache"], "(?i)cloudflare") || ResponseHeader["CF-Cache-Status"] != ""
@@ -427,4 +427,3 @@ rules:
     severity: info
     tags: ["fingerprinting", "github", "pages"]
     enabled: true
-

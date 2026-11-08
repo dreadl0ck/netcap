@@ -1,51 +1,32 @@
----
-description: Tab completion for the shell
----
-
 # Bash Completion
+
+The repository ships `scripts/completions/net.bash`, a Bash completion adapter
+that calls the executable's legacy `-previous`, `-current` and `-full` interface.
+Completion suggestions are convenience output; `net COMMAND -h` and the
+[registered command inventory](commands.md) define the executable interface.
 
 ## Installation
 
-Completions for the command-line is provided via the bash-completion package which is available for most linux distros and macOS.
+For Bash, source the reviewed script from your checkout:
 
-On macOS you can install it with brew:
-
-```text
-$ brew install bash-completion
+```sh
+source scripts/completions/net.bash
 ```
 
-on linux use the package manager of your distro.
+Add it to the startup configuration of the shell you actually use if desired.
+System completion directories vary by distribution and Homebrew prefix; do not
+assume `/usr/local` on Apple Silicon.
 
-Then add the completion file **scripts/completions/net.bash** to:
+For Zsh's Bash compatibility layer:
 
-* macOS: /usr/local/etc/bash\_completion.d/
-* Linux: /etc/bash\_completion.d/
-
-and source it with:
-
-* macOS: . /usr/local/etc/bash\_completion.d/net
-* Linux: . /etc/bash\_completion.d/net
-
-If you use zeus, simply execute the following in the project root to install the completion script:
-
-```text
-$ zeus install-bash-completion        # macOS
-$ zeus install-bash-completion-linux  # Linux
+```sh
+autoload -U +X compinit
+compinit
+autoload -U +X bashcompinit
+bashcompinit
+source scripts/completions/net.bash
 ```
 
-or move and source the file manually from the project root:
-
-```text
-$ cp scripts/completions/net.bash /usr/local/etc/bash_completion.d/net && . /usr/local/etc/bash_completion.d/net
-```
-
-Afterwards you should receive predictions when hitting tab in the shell, for subcommands and flags. For flags that expect a path on the filesystem, path completion is available and will only display files with the expected datatype \(based on the file extension\).
-
-To use completion with **zsh** run the following:
-
-```text
-autoload -U +X compinit && compinit
-autoload -U +X bashcompinit && bashcompinit
-cp scripts/completions/net.bash /usr/local/etc/bash_completion.d/net && . /usr/local/etc/bash_completion.d/net
-```
-
+Verify a known current command and flag after sourcing. Historical suggestions
+may include `split` or other stale interfaces; a suggested token does not make
+it a registered command in v0.15.2.

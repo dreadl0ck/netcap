@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "framing": {"kind": "fixed", "fixedSize": 7, "maxBytes": 7},
+  "maxFrames": 2,
+  "fields": [
+    {"name": "version", "offset": 0, "length": 1, "kind": "unsigned", "byteOrder": "big", "expected": "AQ==", "hypothesis": "first byte is a version tag"},
+    {"name": "size", "offset": 1, "length": 1, "kind": "unsigned", "byteOrder": "big", "hypothesis": "second byte is payload length"},
+    {"name": "text", "offset": 2, "length": 5, "kind": "utf8", "hypothesis": "last five bytes are UTF-8 text"}
+  ]
+}

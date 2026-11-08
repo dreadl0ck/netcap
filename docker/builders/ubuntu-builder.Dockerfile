@@ -42,33 +42,18 @@ ENV GOPATH="/go"
 ENV PATH="${GOPATH}/bin:${PATH}"
 
 # Install Rust toolchain for yara-x
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+COPY scripts/yara-x.env scripts/install-yara-rust.sh scripts/build-yara-x.sh /opt/netcap-native/
+RUN sh /opt/netcap-native/install-yara-rust.sh
 ENV PATH="/root/.cargo/bin:${PATH}"
+ENV GOMAXPROCS=4 GOFLAGS=-p=4 CARGO_BUILD_JOBS=4
 
-# Build and install yara-x v1.14.0 C API library
-RUN cd /tmp && \
-    wget https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.14.0.tar.gz && \
-    busybox tar xfz v1.14.0.tar.gz && \
-    cd yara-x-1.14.0 && \
-    cargo build --release -p yara-x-capi && \
-    cp target/release/libyara_x_capi.so /usr/local/lib/ && \
-    cp target/release/libyara_x_capi.a /usr/local/lib/ && \
-    mkdir -p /usr/local/include && \
-    cp capi/include/yara_x.h /usr/local/include/ && \
-    ldconfig && \
-    cd / && rm -rf /tmp/v1.14.0.tar.gz /tmp/yara-x-1.14.0 /root/.cargo/registry
+# Build the matched C API from the checksum-pinned source and locked Cargo graph.
+# GNU tar in Ubuntu 26.04 uses syscalls unavailable under Docker's amd64 emulation.
+RUN mkdir -p /opt/netcap-native/bin && \
+    ln -s "$(command -v busybox)" /opt/netcap-native/bin/tar && \
+    PREFIX=/usr/local PATH="/opt/netcap-native/bin:$PATH" sh /opt/netcap-native/build-yara-x.sh && ldconfig
 
-# Create pkg-config file for yara-x
-RUN mkdir -p /usr/local/lib/pkgconfig && \
-    echo 'prefix=/usr/local' > /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'libdir=${prefix}/lib' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'includedir=${prefix}/include' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo '' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Name: yara_x_capi' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Description: YARA-X C API' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Version: 1.14.0' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Libs: -L${libdir} -lyara_x_capi' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Cflags: -I${includedir}' >> /usr/local/lib/pkgconfig/yara_x_capi.pc
+RUN pkg-config --exact-version=1.22.0 yara_x_capi
 
 # Fail here rather than in every downstream netcap build.
 #

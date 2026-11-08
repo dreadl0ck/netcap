@@ -29,47 +29,47 @@ import (
 )
 
 const (
-	fieldPROFINETFrameID            = "FrameID"
-	fieldPROFINETFrameType          = "FrameType"
-	fieldPROFINETFrameTypeName      = "FrameTypeName"
-	fieldPROFINETBlockType          = "BlockType"
-	fieldPROFINETBlockTypeName      = "BlockTypeName"
-	fieldPROFINETBlockLength        = "BlockLength"
-	fieldPROFINETBlockVersionHigh   = "BlockVersionHigh"
-	fieldPROFINETBlockVersionLow    = "BlockVersionLow"
-	fieldPROFINETServiceID          = "ServiceID"
-	fieldPROFINETServiceName        = "ServiceName"
-	fieldPROFINETOperationType      = "OperationType"
-	fieldPROFINETOperationTypeName  = "OperationTypeName"
-	fieldPROFINETIsRequest          = "IsRequest"
-	fieldPROFINETARUUID             = "ARUUID"
-	fieldPROFINETAPI                = "API"
-	fieldPROFINETSlotNumber         = "SlotNumber"
-	fieldPROFINETSubslotNumber      = "SubslotNumber"
-	fieldPROFINETIODataLength       = "IODataLength"
-	fieldPROFINETIOCS               = "IOCS"
-	fieldPROFINETIOPS               = "IOPS"
-	fieldPROFINETIOStatusName       = "IOStatusName"
-	fieldPROFINETAlarmType          = "AlarmType"
-	fieldPROFINETAlarmTypeName      = "AlarmTypeName"
-	fieldPROFINETAlarmPriority      = "AlarmPriority"
-	fieldPROFINETDiagnosisType      = "DiagnosisType"
-	fieldPROFINETDiagnosisTypeName  = "DiagnosisTypeName"
-	fieldPROFINETChannelNumber      = "ChannelNumber"
-	fieldPROFINETErrorType          = "ErrorType"
-	fieldPROFINETErrorTypeName      = "ErrorTypeName"
-	fieldPROFINETStationName        = "StationName"
-	fieldPROFINETVendorID           = "VendorID"
-	fieldPROFINETDeviceID           = "DeviceID"
-	fieldPROFINETDeviceRole         = "DeviceRole"
-	fieldPROFINETSequenceNumber     = "SequenceNumber"
-	fieldPROFINETCycleCounter       = "CycleCounter"
-	fieldPROFINETDataStatus         = "DataStatus"
-	fieldPROFINETTransferStatus     = "TransferStatus"
-	fieldPROFINETIsSecurityRelevant = "IsSecurityRelevant"
+	fieldPROFINETFrameID             = "FrameID"
+	fieldPROFINETFrameType           = "FrameType"
+	fieldPROFINETFrameTypeName       = "FrameTypeName"
+	fieldPROFINETBlockType           = "BlockType"
+	fieldPROFINETBlockTypeName       = "BlockTypeName"
+	fieldPROFINETBlockLength         = "BlockLength"
+	fieldPROFINETBlockVersionHigh    = "BlockVersionHigh"
+	fieldPROFINETBlockVersionLow     = "BlockVersionLow"
+	fieldPROFINETServiceID           = "ServiceID"
+	fieldPROFINETServiceName         = "ServiceName"
+	fieldPROFINETOperationType       = "OperationType"
+	fieldPROFINETOperationTypeName   = "OperationTypeName"
+	fieldPROFINETIsRequest           = "IsRequest"
+	fieldPROFINETARUUID              = "ARUUID"
+	fieldPROFINETAPI                 = "API"
+	fieldPROFINETSlotNumber          = "SlotNumber"
+	fieldPROFINETSubslotNumber       = "SubslotNumber"
+	fieldPROFINETIODataLength        = "IODataLength"
+	fieldPROFINETIOCS                = "IOCS"
+	fieldPROFINETIOPS                = "IOPS"
+	fieldPROFINETIOStatusName        = "IOStatusName"
+	fieldPROFINETAlarmType           = "AlarmType"
+	fieldPROFINETAlarmTypeName       = "AlarmTypeName"
+	fieldPROFINETAlarmPriority       = "AlarmPriority"
+	fieldPROFINETDiagnosisType       = "DiagnosisType"
+	fieldPROFINETDiagnosisTypeName   = "DiagnosisTypeName"
+	fieldPROFINETChannelNumber       = "ChannelNumber"
+	fieldPROFINETErrorType           = "ErrorType"
+	fieldPROFINETErrorTypeName       = "ErrorTypeName"
+	fieldPROFINETStationName         = "StationName"
+	fieldPROFINETVendorID            = "VendorID"
+	fieldPROFINETDeviceID            = "DeviceID"
+	fieldPROFINETDeviceRole          = "DeviceRole"
+	fieldPROFINETSequenceNumber      = "SequenceNumber"
+	fieldPROFINETCycleCounter        = "CycleCounter"
+	fieldPROFINETDataStatus          = "DataStatus"
+	fieldPROFINETTransferStatus      = "TransferStatus"
+	fieldPROFINETIsSecurityRelevant  = "IsSecurityRelevant"
 	fieldPROFINETIsCriticalOperation = "IsCriticalOperation"
-	fieldPROFINETIsAlarm            = "IsAlarm"
-	fieldPROFINETIsDiagnostic       = "IsDiagnostic"
+	fieldPROFINETIsAlarm             = "IsAlarm"
+	fieldPROFINETIsDiagnostic        = "IsDiagnostic"
 )
 
 var fieldsPROFINET = []string{
@@ -119,6 +119,7 @@ var fieldsPROFINET = []string{
 	fieldPROFINETIsCriticalOperation,
 	fieldPROFINETIsAlarm,
 	fieldPROFINETIsDiagnostic,
+	"CommunityID",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -175,6 +176,7 @@ func (p *PROFINET) CSVRecord() []string {
 		strconv.FormatBool(p.IsCriticalOperation),
 		strconv.FormatBool(p.IsAlarm),
 		strconv.FormatBool(p.IsDiagnostic),
+		p.CommunityID,
 	})
 }
 
@@ -273,6 +275,7 @@ func (p *PROFINET) Encode() []string {
 		profinetEncoder.Bool(p.IsCriticalOperation),
 		profinetEncoder.Bool(p.IsAlarm),
 		profinetEncoder.Bool(p.IsDiagnostic),
+		profinetEncoder.String("CommunityID", p.CommunityID),
 	})
 }
 
@@ -283,4 +286,3 @@ func (p *PROFINET) Analyze() {}
 func (p *PROFINET) NetcapType() Type {
 	return Type_NC_PROFINET
 }
-

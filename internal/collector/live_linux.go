@@ -79,6 +79,8 @@ func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) (resu
 
 	stopProgress := c.printProgressInterval()
 	stopPeriodicFlush := c.startPeriodicFlush()
+	stopMaintenance := c.startLiveMaintenance()
+	defer close(stopMaintenance)
 
 	c.mu.Lock()
 	c.isLive = true

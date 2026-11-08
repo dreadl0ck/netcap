@@ -30,34 +30,35 @@ import (
 )
 
 const (
-	fieldMessageTypeCode  = "MessageTypeCode"
-	fieldClientName       = "ClientName"
-	fieldRealm            = "Realm"
-	fieldEncryptionType   = "EncryptionType"
+	fieldMessageTypeCode    = "MessageTypeCode"
+	fieldClientName         = "ClientName"
+	fieldRealm              = "Realm"
+	fieldEncryptionType     = "EncryptionType"
 	fieldEncryptionTypeName = "EncryptionTypeName"
-	fieldErrorMessage     = "ErrorMessage"
-	fieldTill             = "Till"
-	fieldPADataTypes      = "PADataTypes"
+	fieldErrorMessage       = "ErrorMessage"
+	fieldTill               = "Till"
+	fieldPADataTypes        = "PADataTypes"
 )
 
 var fieldsKerberos = []string{
 	fieldTimestamp,
-	fieldMessageType,       // string
-	fieldMessageTypeCode,   // int32
-	fieldClientName,        // string
-	fieldServerName,        // string
-	fieldRealm,             // string
-	fieldEncryptionType,    // int32
+	fieldMessageType,        // string
+	fieldMessageTypeCode,    // int32
+	fieldClientName,         // string
+	fieldServerName,         // string
+	fieldRealm,              // string
+	fieldEncryptionType,     // int32
 	fieldEncryptionTypeName, // string
-	fieldErrorCode,         // int32
-	fieldErrorMessage,      // string
-	fieldTill,              // int64
-	fieldPADataTypes,       // []int32
+	fieldErrorCode,          // int32
+	fieldErrorMessage,       // string
+	fieldTill,               // int64
+	fieldPADataTypes,        // []int32
 	fieldFlow,
 	fieldSrcIP,
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	"CommunityID",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -74,22 +75,23 @@ func (a *Kerberos) CSVRecord() []string {
 
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		a.MessageType,                    // string
-		formatInt32(a.MessageTypeCode),   // int32
-		a.ClientName,                     // string
-		a.ServerName,                     // string
-		a.Realm,                          // string
-		formatInt32(a.EncryptionType),    // int32
-		a.EncryptionTypeName,             // string
-		formatInt32(a.ErrorCode),         // int32
-		a.ErrorMessage,                   // string
-		formatInt64(a.Till),              // int64
-		strings.Join(paTypes, ","),       // []int32
+		a.MessageType,                  // string
+		formatInt32(a.MessageTypeCode), // int32
+		a.ClientName,                   // string
+		a.ServerName,                   // string
+		a.Realm,                        // string
+		formatInt32(a.EncryptionType),  // int32
+		a.EncryptionTypeName,           // string
+		formatInt32(a.ErrorCode),       // int32
+		a.ErrorMessage,                 // string
+		formatInt64(a.Till),            // int64
+		strings.Join(paTypes, ","),     // []int32
 		a.Flow,
 		a.SrcIP,
 		a.DstIP,
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
+		a.CommunityID,
 	})
 }
 
@@ -160,6 +162,7 @@ func (a *Kerberos) Encode() []string {
 		kerberosEncoder.String(fieldDstIP, a.DstIP),
 		kerberosEncoder.Int32(fieldSrcPort, a.SrcPort),
 		kerberosEncoder.Int32(fieldDstPort, a.DstPort),
+		kerberosEncoder.String("CommunityID", a.CommunityID),
 	})
 }
 

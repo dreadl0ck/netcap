@@ -20,14 +20,16 @@ The current implementation focuses on behavorial analysis of entities within the
 
 ## Installation
 
-Ensure netcap **>= v0.5** is installed and can be found in **$PATH**:
+Install the current public Go release and check the executable selected by the
+Maltego transform configuration:
 
 ```
-$ net -version
-v0.5
+$ net --version
 ```
 
-Ensure the **net** binary is placed in **/usr/local/bin**:
+Historical transform bundles used `/usr/local/bin/net`. Update their executable
+path to your actual installation, retaining the release's adjacent native
+libraries rather than moving only its binary:
 
 ```
 $ which net
@@ -38,12 +40,14 @@ $ which net
 Transformations in maltego have to specify a working directory. Currently /**usr/local** is used for this so make sure the current user has sufficient right to enter the directory. No data will be written there, all logs from transformations that invoke the netcap core are written into dedicated directories for each processed pcap file.
 {% endhint %}
 
-The old v0.5 transform ZIP is retired from the installation guide. Current
-transform implementations live in `cmd/transform` and configuration code in
-`internal/maltego`; source checkouts provide `zeus gen-maltego-config`.
-Qualify generated configuration against your installed Maltego version before
-importing it through Import / Export Config → Import Config. The screenshots
-below describe the historical graph workflow.
+The old v0.5 downloadable transform ZIP has been retired. Current transform
+implementations live in `cmd/transform` and entity/configuration code in
+`internal/maltego`. Source checkouts provide `zeus gen-maltego-config` for
+configuration generation; qualify the result against your installed Maltego
+version before importing it through Import / Export Config → Import Config.
+
+The gallery below documents the historical graph workflow; it does not promise
+that a v0.5 bundle implements every v0.15.2 record or modern evidence link.
 
 ## Loading PCAP files into Maltego
 

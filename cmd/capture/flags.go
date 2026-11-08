@@ -21,6 +21,7 @@ package capture
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"time"
 
@@ -42,6 +43,9 @@ func Flags() (flags []string) {
 // GetFlags returns the CLI flags for the capture subcommand.
 func GetFlags() []cli.Flag {
 	return append([]cli.Flag{
+		&cli.StringFlag{Name: "firewall-policy", Usage: "explicit audit-record response policy (retrospective; does not intercept completed transactions)"},
+		&cli.StringFlag{Name: "firewall-effects-config", Usage: "explicit response broker JSON; dispatch only during -iface live capture"},
+		&cli.BoolFlag{Name: "firewall-schema", Usage: "print versioned audit policy field types, sensitivity and projection bounds as JSON, then exit"},
 		&cli.BoolFlag{Name: "network-detection", Value: true, Usage: "capture-time network threat and policy detections", Sources: cli.EnvVars("NC_NETWORK_DETECTION")},
 		&cli.StringFlag{Name: "network-detection-config", Usage: "bounded JSON thresholds, approved sources and versioned indicators", Sources: cli.EnvVars("NC_NETWORK_DETECTION_CONFIG")},
 		&cli.BoolFlag{Name: "evidence-links", Value: true, Usage: "serve related evidence across protocols in the WebUI (/api/evidence/related)", Sources: cli.EnvVars("NC_EVIDENCE_LINKS")},
@@ -536,6 +540,17 @@ func GetFlags() []cli.Flag {
 			Sources: cli.EnvVars("NC_CLOSE_PENDING_TIMEOUT"),
 		},
 		&cli.DurationFlag{
+			Name:    "live-maintenance-interval",
+			Value:   time.Second,
+			Usage:   "live reassembly maintenance interval; negative disables idle expiry (independent of output snapshots)",
+			Sources: cli.EnvVars("NC_LIVE_MAINTENANCE_INTERVAL"),
+		},
+		&cli.DurationFlag{
+			Name:    "live-flush-interval",
+			Usage:   "live audit-output snapshot interval; zero disables snapshots (does not expire streams)",
+			Sources: cli.EnvVars("NC_LIVE_FLUSH_INTERVAL"),
+		},
+		&cli.DurationFlag{
 			Name:    "close-inactive-timeout",
 			Value:   defaults.CloseInactiveTimeout,
 			Usage:   "reassembly: close connections that are inactive",
@@ -629,13 +644,24 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.IntFlag{
 			Name:    "max-buffered-pages-per-conn",
-			Usage:   "maximum pages to buffer per connection for out-of-order packets (0 = unlimited, ~1900 bytes per page)",
+			Usage:   "out-of-order page pressure threshold per connection (0 = unlimited, ~1900 bytes per page)",
 			Sources: cli.EnvVars("NC_MAX_BUFFERED_PAGES_PER_CONN"),
 		},
 		&cli.IntFlag{
 			Name:    "max-buffered-pages-total",
-			Usage:   "maximum total pages to buffer across all connections (0 = unlimited, ~1900 bytes per page)",
+			Usage:   "out-of-order page pressure threshold per worker assembler (0 = unlimited, ~1900 bytes per page)",
 			Sources: cli.EnvVars("NC_MAX_BUFFERED_PAGES_TOTAL"),
+		},
+		&cli.Int64Flag{
+			Name:    "max-retained-tcp-bytes",
+			Usage:   "maximum copied TCP reader payload across all workers (bytes, 0 = unlimited); exhaustion aborts capture",
+			Sources: cli.EnvVars("NC_MAX_RETAINED_TCP_BYTES"),
+			Action: func(_ context.Context, _ *cli.Command, value int64) error {
+				if value < 0 {
+					return fmt.Errorf("max-retained-tcp-bytes cannot be negative")
+				}
+				return nil
+			},
 		},
 		&cli.IntFlag{
 			Name:    "compression-block-size",

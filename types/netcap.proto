@@ -196,6 +196,8 @@ enum Type {
   NC_PKTAP = 146;
   NC_TLSRecord = 147;
   NC_LDAP = 148;
+  NC_RTP = 200;
+  NC_DTMF = 201;
 }
 
 message TLSRecord {
@@ -217,11 +219,12 @@ message TLSRecord {
   bool Incomplete = 16;
   bool Loss = 17;
   int64 SkippedBytes = 18; // -1 when loss size is unknown
-  string Status = 19; // complete, eof, gap, invalid_header, unknown_type
+  string Status = 19; // complete, eof, gap, discarded, invalid_header, unknown_type
   bool PlaintextAlert = 20;
   uint32 AlertLevel = 21;
   uint32 AlertDescription = 22;
   string AlertState = 23; // plaintext, encrypted_or_unknown, malformed; empty for non-alert records
+  string TCPObservation = 24; // Post-close wire evidence; endpoint delivery unconfirmed
 }
 
 message PKTAP {
@@ -307,6 +310,11 @@ message PacketContext {
   int32 SrcPort = 3;
   int32 DstPort = 4;
   string CommunityID = 5;  // Corelight Community ID v1 for cross-tool correlation
+  string NetworkScope = 6; // Interface, VLANs and symmetric tunnel path; separate from Community ID
+  repeated Encapsulation Encapsulations = 7;
+  bool ReassembledIP = 8;
+  repeated CapturePacketRef CapturePackets = 9; // Original ingress packets, including duplicate fragments
+  string Normalization = 10; // complete | fragment-pending | fragment-rejected | malformed | depth-limit
 }
 
 // a connection has the following attributes:
@@ -406,6 +414,10 @@ message Connection {
   string DNSResolvedName = 65;       // First observed packet's ingress-time UDP DNS context
   int64 DNSResolvedAt = 66;          // Matching answer's capture time (ns)
   string DNSResolutionState = 67;    // empty when disabled | unobserved | resolved
+  string NetworkScope = 68;
+  repeated Encapsulation Encapsulations = 69; // Path of the first observed datagram
+  uint64 ReassembledDatagrams = 70;
+  string Normalization = 71; // complete, or why only an outer network observation was possible
 }
 
 //
@@ -1063,7 +1075,7 @@ message DNS {
   // (case-insensitive), type and class; TCP pairs within one connection.
   // These fields describe the pairing state at this message.
   int64 RTT = 33;                  // Response minus the latest matching query, in ns; 0 when unpaired
-  string TransactionStatus = 34;   // query | retransmission | answered | late | unsolicited | reordered
+  string TransactionStatus = 34;   // query | retransmission | answered | late | unsolicited | reordered | mdns_query | mdns_response
   int32 QueryTransmissions = 35;   // Matching queries seen for this transaction (>1 means retransmitted)
 }
 
@@ -1071,7 +1083,7 @@ message DNSResourceRecord {
   // Header
   string Name = 1;
   int32 Type = 2;
-  int32 Class = 3;
+  int32 Class = 3; // Raw class; mDNS bit 15 is cache-flush, lower 15 bits are the class
   uint32 TTL = 4;
   // RDATA Raw Values
   int32 DataLength = 5;
@@ -1140,7 +1152,7 @@ message DNSMX {
 message DNSQuestion {
   string Name = 1;
   int32 Type = 2;
-  int32 Class = 3;
+  int32 Class = 3; // Raw class; mDNS bit 15 is QU (unicast response requested)
 }
 
 message DHCPv4 {
@@ -1180,6 +1192,8 @@ message DHCPOption {
   int32 Type = 1;
   int32 Length = 2;
   string Data = 3;
+  bytes RawData = 4;
+  string DataEncoding = 5; // utf-8 or hex; RawData is authoritative
 }
 
 message DHCPv6 {
@@ -1205,6 +1219,8 @@ message DHCPv6Option {
   int32 Code = 1;
   int32 Length = 2;
   string Data = 3;
+  bytes RawData = 4;
+  string DataEncoding = 5; // utf-8 or hex; RawData is authoritative
 }
 
 // LLC is the layer used for 802.2 Logical Link Control headers.
@@ -1302,6 +1318,9 @@ message SIP {
   string SDPConnectionIP = 36;          // Extracted SDP c= IP
   string SDPMediaType = 37;             // Extracted SDP m= type
   string CommunityID = 38;              // Corelight Community ID v1 for cross-tool correlation
+  string Transport = 39;                // UDP or TCP signaling
+  string NetworkScope = 40;             // Capture interface and encapsulation identity
+  string TCPObservation = 41;           // Post-close evidence; endpoint delivery unconfirmed
 }
 
 // The Internet Group Management Protocol (IGMP) is a communications protocol
@@ -1401,6 +1420,14 @@ message ICMPv6RouterSolicitation {
 // communication for the World Wide Web.
 message HTTP {
 	string ReassemblyStatus = 51;
+  bytes RawRequestLine = 52;
+  bytes RawResponseLine = 53;
+  repeated HTTPHeaderEvidence RequestHeaders = 54;
+  repeated HTTPHeaderEvidence ResponseHeaders = 55;
+  repeated string ParseQualifications = 56;
+  uint32 HTTP2StreamID = 57;
+  repeated HTTPHeaderEvidence RequestTrailers = 58;
+  repeated HTTPHeaderEvidence ResponseTrailers = 59;
   int64 Timestamp = 1;
   string Proto = 2;
   string Method = 3;
@@ -1469,6 +1496,14 @@ message HTTP {
   string CommunityID = 50;
 }
 
+// Ordered, duplicate-preserving headers. Raw includes HTTP/1 line endings;
+// HTTP/2 has decoded HPACK Name/Value bytes and no textual Raw representation.
+message HTTPHeaderEvidence {
+  bytes Name = 1;
+  bytes Value = 2;
+  bytes Raw = 3;
+}
+
 message HTTPCookie {
   string Name = 1;
   string Value = 2;
@@ -1484,6 +1519,10 @@ message HTTPCookie {
 // TLS Client Hello
 
 message TLSClientHello {
+  string HelloFormat = 100; // SSLv2 for legacy framing; empty on older TLS records
+  repeated uint32 SSLv2CipherSpecs = 101; // Full 24-bit cipher identifiers, not TLS cipher suites
+  bytes SSLv2Challenge = 102; // Unpadded challenge; Random remains unset
+  reserved 103 to 109;
   string ReassemblyStatus = 99;
   int64 Timestamp = 1;
   int32 Type = 2;
@@ -1531,6 +1570,12 @@ message TLSClientHello {
 // TLS Server Hello
 
 message TLSServerHello {
+  string HelloFormat = 100;
+  repeated uint32 SSLv2CipherSpecs = 101; // Offered cipher list, not a selected TLS cipher
+  bytes SSLv2ConnectionID = 102;
+  bool SSLv2SessionIDHit = 103;
+  uint32 SSLv2CertificateType = 104;
+  reserved 105 to 109;
   string ReassemblyStatus = 99;
   int64 Timestamp = 1;
   int32 Version = 2;
@@ -1573,6 +1618,14 @@ message TLSServerHello {
 // Represents a X.509 certificate extracted from TLS handshake
 
 message TLSCertificate {
+  int64 AssessmentTime = 45; // Unix nanoseconds when capture time is known
+  string AssessmentBasis = 46; // capture-time or unavailable
+  string ValidityState = 47; // valid, expired, not-yet-valid, unavailable
+  string SelfSignatureState = 48; // verified, not-self-issued, invalid, unsupported
+  string CertificateSender = 49; // client, server or unknown
+  string NotBeforeRFC3339 = 50; // Lossless dates outside Unix-nanosecond range
+  string NotAfterRFC3339 = 51;
+  string TCPObservation = 52; // Post-close wire evidence; endpoint delivery unconfirmed
   int64 Timestamp = 1;
   
   // Connection info (to correlate with TLS handshake)
@@ -2713,6 +2766,8 @@ message IMAP {
   
   // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
   string CommunityID = 26;
+  // Capture/transport qualifications; observed bytes do not prove peer delivery.
+  string Notes = 27;
 }
 
 // Diameter is an authentication, authorization, and accounting protocol for computer networks.
@@ -3072,6 +3127,11 @@ message Alert {
   string RuleDigest = 22;    // SHA-256 of the effective YAML rule configuration
   string MatchedRecordSHA256 = 23;
   string TimestampBasis = 24; // "record-time" for generic rules; empty for legacy/other producers
+  string AggregateKey = 26; // Stable detector/scope/subject key; independent of the aggregation window
+  uint64 Count = 27; // Matching detector observations, not packets or distinct targets; 0 for legacy producers
+  int64 FirstSeen = 28; // First matching observation, Unix nanoseconds (0 is valid when Count > 0)
+  int64 LastSeen = 29; // Last matching observation, Unix nanoseconds
+  repeated string Examples = 30; // Bounded JSON evidence examples; first samples plus latest
 }
 
 // RADIUS (Remote Authentication Dial-In User Service) is a networking protocol
@@ -3186,6 +3246,9 @@ message SyslogStructuredData {
 // RDP (Remote Desktop Protocol) captures remote desktop connection events.
 // Critical for detecting unauthorized remote access and lateral movement.
 message RDP {
+  string NegotiationOutcome = 44; // accepted, rejected, not-observed, malformed
+  string AuthenticationOutcome = 45; // unknown: negotiation is not authentication
+  bool NegotiatedSecurityKnown = 46;
   int64 Timestamp = 1;
   string SrcIP = 2;
   string DstIP = 3;
@@ -3241,7 +3304,7 @@ message RDP {
   // Additional fields
   int32 RequestedProtocolsFlags = 36; // Requested protocols as bitmask
   string RequestedProtocolNames = 37; // Requested protocol names (comma-separated)
-  bool ConnectionSuccessful = 38;     // Connection was successful
+  bool ConnectionSuccessful = 38;     // Legacy negotiation acceptance; not login success
   bool ExtendedClientDataSupported = 39; // Extended client data supported
   bool DynamicDST = 40;               // Dynamic DST supported
   bool RestrictedAdminMode = 41;      // Restricted admin mode
@@ -3792,6 +3855,7 @@ message MLDv2MulticastAddressRecord {
 // It provides a platform-independent service-oriented architecture for
 // process control and ICS/SCADA systems.
 message OPCUA {
+  string CommunityID = 33;
   int64 Timestamp = 1;            // Timestamp of the message
   string SrcIP = 2;               // Source IP address
   string DstIP = 3;               // Destination IP address
@@ -3849,6 +3913,7 @@ message OPCUA {
 // on TCP port 102. This protocol is widely used in industrial automation and
 // SCADA systems.
 message S7Comm {
+  string CommunityID = 52;
   int64 Timestamp = 1;            // Timestamp of the message
   string SrcIP = 2;               // Source IP address
   string DstIP = 3;               // Destination IP address
@@ -4201,6 +4266,7 @@ message IEC62351 {
 // It supports real-time (RT) and isochronous real-time (IRT) communication.
 // PROFINET uses DCE/RPC for device configuration and parameter setting.
 message PROFINET {
+  string CommunityID = 48;
   int64 Timestamp = 1;            // Timestamp of the message
   string SrcIP = 2;               // Source IP address
   string DstIP = 3;               // Destination IP address
@@ -4405,6 +4471,7 @@ message STUNAttribute {
 
 // Kerberos v5 authentication protocol
 message Kerberos {
+  string CommunityID = 19;
   repeated int32 RequestedEncryptionTypes = 18;
   int64 Timestamp = 1;
   string MessageType = 2;      // AS-REQ, AS-REP, TGS-REQ, TGS-REP, AP-REQ, AP-REP, KRB-ERROR
@@ -4428,6 +4495,7 @@ message Kerberos {
 // TACACS+ - Terminal Access Controller Access-Control System Plus
 // Network authentication protocol on TCP port 49
 message TACACS {
+  string CommunityID = 21;
   int64 Timestamp = 1;
   int32 VersionMajor = 2;
   int32 VersionMinor = 3;
@@ -4554,6 +4622,7 @@ message OCSP {
 
 // IPP - Internet Printing Protocol (HTTP-based, port 631)
 message IPP {
+  string CommunityID = 15;
   int64 Timestamp = 1;
   int32 VersionMajor = 2;
   int32 VersionMinor = 3;
@@ -4590,6 +4659,7 @@ message PIM {
 
 // Zabbix monitoring agent protocol
 message Zabbix {
+  string CommunityID = 12;
   int64 Timestamp = 1;
   string RequestType = 2;     // "active checks", "agent data", etc.
   string Host = 3;
@@ -4655,6 +4725,7 @@ message RARP {
 // When .proto schema files are provided, fields are resolved to their
 // named definitions with full type information and enum labels.
 message Protobuf {
+  string CommunityID = 22;
   int64 Timestamp = 1;
   string SrcIP = 2;
   string DstIP = 3;
@@ -4691,4 +4762,71 @@ message ModbusFileRecord {
   uint32 RecordNumber = 3;
   uint32 RecordLength = 4;
   repeated uint32 Values = 5;
+}
+
+// RTP metadata only; payload decoding requires an observed SIP/SDP negotiation.
+message RTP {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  string CommunityID = 6;
+  string CallID = 7;
+  uint32 SSRC = 8;
+  uint32 Sequence = 9;
+  int64 ExtendedSequence = 10; // Nearest modular sequence relative to the high-water mark
+  uint32 MediaTimestamp = 11;
+  int64 ExtendedTimestamp = 12;
+  uint32 PayloadType = 13;
+  string Encoding = 14;
+  uint32 ClockRate = 15;
+  bool Marker = 16;
+  uint32 PayloadLength = 17;
+  repeated uint32 CSRC = 18;
+  uint32 ExtensionProfile = 19;
+  uint32 ExtensionLength = 20;
+  uint32 PaddingLength = 21;
+  bool Reordered = 22;
+  string AssociationQualification = 23; // Nonempty: RTP candidate only; no trusted SIP association
+}
+
+// One completed RFC 4733 telephone event; retransmitted end packets are deduplicated.
+message DTMF {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  string CommunityID = 6;
+  string CallID = 7;
+  uint32 SSRC = 8;
+  uint32 MediaTimestamp = 9;
+  int64 ExtendedTimestamp = 10;
+  uint32 Event = 11;
+  string Digit = 12;
+  uint32 Volume = 13;
+  uint32 Duration = 14; // RTP clock ticks
+  uint32 ClockRate = 15;
+  uint32 PayloadType = 16;
+}
+
+message Encapsulation {
+  string Protocol = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  uint32 SrcPort = 4;
+  uint32 DstPort = 5;
+  uint32 Identifier = 6; // VNI, GRE key or ERSPAN session
+  bool KeyPresent = 7;
+  uint32 VLAN = 8;
+  uint32 GREKey = 9; // Retained separately when Identifier is an ERSPAN session
+}
+
+message CapturePacketRef {
+  uint64 Ordinal = 1; // One-based within this capture
+  int64 Timestamp = 2;
+  int32 CaptureLength = 3;
+  int32 WireLength = 4;
+  int32 InterfaceIndex = 5;
 }

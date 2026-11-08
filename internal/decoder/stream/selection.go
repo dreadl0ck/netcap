@@ -27,7 +27,10 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/dcerpc"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/ipp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/modbus"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/rtp"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/smtp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tls"
 )
@@ -109,11 +112,24 @@ type Selection struct {
 // scan picks the most specific match. A strong registered-port match stays on
 // the fast path; weak port matches are compared against the full conversation.
 func SelectDecoder(in *SelectionInput) (Selection, bool) {
+	if in.Transport == core.UDP && (configuredDecoder("RTP") || configuredDecoder("DTMF")) && rtp.Matches(in.Conversation) {
+		return Selection{API: rtp.Decoder, Decoder: rtp.Decoder.Factory.New(in.Conversation), Name: "RTP", Via: ViaUDPList}, true
+	}
 	if sel, ok := selectModbusRTU(in); ok {
 		return sel, true
 	}
 
 	if sel, ok := selectByPort(in); ok {
+		// IPP specializes HTTP. A POST header may span deliveries, and a
+		// response-only capture may start with 100 Continue rather than IPP.
+		if sel.Name == "HTTP" && in.Transport == core.TCP && configuredDecoder("IPP") &&
+			(bytes.HasPrefix(in.PortClient, []byte("POST ")) || bytes.HasPrefix(in.PortServer, []byte("POST ")) ||
+				bytes.HasPrefix(in.PortClient, []byte("HTTP/1.")) || bytes.HasPrefix(in.PortServer, []byte("HTTP/1."))) {
+			in.loadScanBytes()
+			if ipp.Decoder.CanDecodeStream(in.ScanClient, in.ScanServer) {
+				return Selection{API: ipp.Decoder, Decoder: ipp.Decoder.Factory.New(in.Conversation), Name: "IPP", Port: 631, Via: ViaFallback}, true
+			}
+		}
 		portScore, _ := matchScore(sel.API, in, true)
 		// A short banner can match several services. Keep the usual fast port
 		// path for structural evidence; only compare weak port matches with
@@ -159,6 +175,12 @@ func configuredDecoder(name string) bool {
 	c := decoderconfig.Instance
 	if c == nil {
 		return true
+	}
+	if name == "FTP" && secret.FTPHarvesterEnabled() && !decoderListed(c.ExcludeDecoders, "Secret") && (c.IncludeDecoders == "" || decoderListed(c.IncludeDecoders, "Secret")) {
+		return true
+	}
+	if name == "SIP" && (configuredDecoder("RTP") || configuredDecoder("DTMF")) {
+		return true // Signaling reader dependency; its writer may be disabled.
 	}
 	if name == "SMB" && dcerpc.Decoder.Writer != nil && !decoderListed(c.ExcludeDecoders, "DCERPC") && (c.IncludeDecoders == "" || decoderListed(c.IncludeDecoders, "DCERPC")) {
 		return true

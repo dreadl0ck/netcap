@@ -67,6 +67,7 @@ var fieldsDHCPv4 = []string{
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	fieldOptions,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -102,6 +103,7 @@ func (d *DHCPv4) CSVRecord() []string {
 		d.DstIP,
 		formatInt32(d.SrcPort),
 		formatInt32(d.DstPort),
+		strings.Join(opts, ""),
 	})
 }
 
@@ -122,6 +124,12 @@ func (d *DHCPOption) toString() string {
 	b.WriteString(formatInt32(d.Length))
 	b.WriteString(FieldSeparator)
 	b.WriteString(d.Data)
+	if d.DataEncoding != "" {
+		b.WriteString(FieldSeparator)
+		b.WriteString(d.DataEncoding)
+		b.WriteString(FieldSeparator)
+		b.WriteString(hex.EncodeToString(d.RawData))
+	}
 	b.WriteString(StructureEnd)
 	return b.String()
 }
@@ -237,6 +245,7 @@ func (d *DHCPv4) Encode() []string {
 		dhcp4Encoder.String(fieldDstIP, d.DstIP),
 		dhcp4Encoder.Int32(fieldSrcPort, d.SrcPort),
 		dhcp4Encoder.Int32(fieldDstPort, d.DstPort),
+		dhcp4Encoder.String(fieldOptions, strings.Join(opts, "")),
 	})
 }
 

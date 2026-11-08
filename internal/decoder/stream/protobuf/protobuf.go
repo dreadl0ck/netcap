@@ -38,6 +38,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
+	"github.com/dreadl0ck/netcap/internal/entropy"
 	logging "github.com/dreadl0ck/netcap/internal/logger"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -168,6 +169,7 @@ func (r *protobufReader) processData(b *bufio.Reader, isClient bool) error {
 	}
 
 	pb := &types.Protobuf{
+		CommunityID:       r.conversation.CommunityID,
 		Timestamp:         ts,
 		SrcIP:             r.conversation.ClientIP,
 		DstIP:             r.conversation.ServerIP,
@@ -179,6 +181,10 @@ func (r *protobufReader) processData(b *bufio.Reader, isClient bool) error {
 		Fields:            make(map[string]string),
 		FieldAlternatives: make(map[string]string),
 		DetectionMethod:   "heuristic",
+	}
+	if !isClient {
+		pb.SrcIP, pb.DstIP = pb.DstIP, pb.SrcIP
+		pb.SrcPort, pb.DstPort = pb.DstPort, pb.SrcPort
 	}
 
 	// Try direct parsing first, then fall back to length-prefixed framing
@@ -692,28 +698,7 @@ func IsPrintable(data []byte) bool {
 
 // CalculateEntropy computes Shannon entropy of the data in bits.
 func CalculateEntropy(data []byte) float64 {
-	if len(data) == 0 {
-		return 0
-	}
-
-	// A fixed array rather than a map: summing in map order varied the
-	// floating point rounding between runs.
-	var freq [256]int
-	for _, b := range data {
-		freq[b]++
-	}
-
-	entropy := 0.0
-	length := float64(len(data))
-
-	for _, count := range freq {
-		if count > 0 {
-			p := float64(count) / length
-			entropy -= p * math.Log2(p)
-		}
-	}
-
-	return entropy
+	return entropy.Bytes(data)
 }
 
 // DetectMessageType classifies a decoded message based on field patterns.

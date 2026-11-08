@@ -1,0 +1,17 @@
+NETCAP FIREWALL DISTRIBUTION
+
+Netcap is distributed under the license at /LICENSE. Repository-wide notices
+and license texts are retained in /legal. Not every component described in those
+repository-wide notices is linked into this standalone firewall binary.
+
+This image is built with the coraza tag. The module versions are pinned in
+go.mod/go.sum; /legal/BUILD_MODULES.txt records the actual linked build metadata.
+Coraza v3.8.1 and coraza-coreruleset v4.25.0 provide the embedded HTTP WAF engine
+and OWASP Core Rule Set. Their upstream license/notice files and the available
+module-root license files of other dependencies are retained under
+/legal/licenses/<module-path>/. CRS activation uses runtime corazaCRS: true;
+no rule download occurs at container startup.
+
+Corresponding source and deployment recipes:
+https://github.com/dreadl0ck/netcap
+Use the exact source revision used to build this image, not a moving branch.

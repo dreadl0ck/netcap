@@ -1,27 +1,75 @@
----
-description: This is where the magic happens
----
+# Workers and resource budgets
 
-# Workers
+Go v0.15.2 defaults capture workers to `max(1, GOMAXPROCS)`. Dispatch uses a
+symmetric flow key where possible, with a fallback when no suitable key exists;
+it is not simply round-robin for every packet.
 
-## Introduction
+```sh
+net capture -read traffic.pcap -out four-workers -workers 4 -dpi=false
+```
 
-To make use of multi-core processors, processing of packets should happen in an asynchronous way. Since Netcap should be usable on a stream of packets, fetching of packets has to happen sequentially, but decoding them can be parallelized. The packets read from the input data source (PCAP file or network interface) are assigned to a configurable number of workers routines via round-robin. Each of those worker routines operates independently, and has all selected decoders loaded. It decodes all desired layers of the packet, and writes the encoded data into a buffer that will be flushed to disk after reaching its capacity.
+More workers do not guarantee more throughput: disk, parsing, native analyzers,
+input locality and aggregation can dominate. Benchmark identical input/options
+and compare output witnesses as well as elapsed time and memory.
 
-## Worker
+| Budget/default | Scope |
+| --- | --- |
+| Packet buffer: 1,000 entries | Per configured worker queue |
+| Writer buffer: 64 KiB | Per decoder writer, not total process memory |
+| Reassembly maximum buffered size: 10 MiB | Per stream direction; zero means unlimited |
+| Out-of-order page pressure thresholds: zero | Per worker/connection; unlimited unless configured, not a global RAM cap |
+| Retained TCP payload: zero | `-max-retained-tcp-bytes` bounds reader-owned payload copies across all workers; zero is unlimited. |
+| DPI automatic contexts | Up to 8; distinct from protocol workers |
+| Evidence index | 64 MiB accounted storage plus record/link bounds |
+| Optional packet retention | Default selected budgets: 32 MiB segments / 512 MiB retained |
+| Service upload | Default 100 MiB per file; not a hard global filesystem ceiling |
 
-[Workers](https://github.com/dreadl0ck/netcap/blob/master/internal/collector/worker.go) are a core concept of _Netcap_, as they handle the actual task of decoding each packet. _Netcap_ can be configured to run with the desired amount of workers, the default is 1000, since this configuration has shown the best results on the development machine. Increasing the number of workers also increases the number of runtime operations for goroutine scheduling, thus performance might decrease with a huge amount of workers. It is recommended to experiment with different configurations on the target system, and choose the one that performs best. Packet data fetched from the input source is distributed to a worker pool for decoding in round robin style. Each worker decodes all layers of a packet and calls all available custom decoders. After decoding of each layer, the generated protocol buffer instance is written into the _Netcap_ data pipe. Packets that produced an error in the decoding phase or carry an unknown protocol are being written in the corresponding logs and dumpfiles.
+Out-of-order page caches allocate lazily (`internal/reassembly/memory.go`).
+`BenchmarkPageCacheInitialization`, Darwin/arm64 Apple M5 Max, 3 runs at 100 ms:
 
-> Note: by default the number of workers is set to the numbers of cores of your machine! You can use the **-workers** flag to overwrite this value.
+| Page-cache instances | Before, bytes/op | Lazy, bytes/op |
+| --- | ---: | ---: |
+| 1 | 2,057,561 | 88 |
+| 2 | 4,115,121 | 176 |
+| 4 | 8,230,240 | 352 |
+| 8 | 16,460,483 | 704 |
 
-![NETCAP worker](https://github.com/dreadl0ck/netcap/tree/767852a00d76fcf7c921a4f3830ae6cec0162481/docs/.gitbook/assets/netcap-worker%20\(1\).svg)
+These are initialization allocations, not whole-capture RSS. In-order streams
+allocate no out-of-order pages; the first queued segment initializes the existing
+1,024-page cache. Aggregate reassembly/parser memory still needs separate bounds.
 
-## Buffering
+Check `capture -h` for the exact option names and installed defaults. Queue
+occupancy/drop counters, `capture-manifest.json`, reassembly health and behavioral
+health report different layers. A null kernel counter is unavailable, not zero.
 
-Each worker receives its data from an input channel. This channel can be buffered, by default the buffer size is 100, also because this configuration has shown the best results on the development machine. When the buffer size is set to zero, the operation of writing a packet into the channel blocks, until the goroutine behind it is ready for consumption. That means, the goroutine must finish the currently processed packet, until a new packet can be accepted. By configuring the buffer size for all routines to a specific number of packets, distributing packets among workers can continue even if a worker is not finished yet when new data arrives. New packets will be queued in the channel buffer, and writing in the channels will only block if the buffer is full.
+```sh
+net capture -read traffic.pcap -out bounded -workers 8 \
+  -max-retained-tcp-bytes 67108864 -dpi=false
+```
 
-## Data Pipe
+This configures 64 MiB across all eight workers, also available through
+`NC_MAX_RETAINED_TCP_BYTES`. Completed connections return their reservations.
+Exhaustion cancels collection, returns a nonzero CLI result, records
+`capture-manifest.json` status `error`, and withholds `audit-output-ready.json`.
+`TCPReassemblyHealth.json.retainedPayload` records the limit, peak, current and
+rejected bytes; a shutdown current value of zero means released storage.
 
-The Netcap data pipe describes the way from a network packet that has been processed in a worker routine, to a serialized, delimited and compressed record into a file on disk.
+With `-conns`, per-stream manifests preserve `locally-truncated` status and quoted
+`discardedBytes`/`discardReason` spans, including loss-only streams with empty raw
+files. These local omissions do not increment network `missingBytes`.
 
-![](.gitbook/assets/netcap-pipe.svg)
+The bound excludes assembler pages, connection/fragment metadata, decoder-owned
+caches and process RSS. Existing page thresholds remain per-worker pressure
+controls. A budget-aborted output is partial evidence, not a finalized analysis.
+
+## Operational tuning
+
+1. Measure the input packet rate and required decoder/enrichment set.
+2. Retain a representative benign fixture and expected output counts/hashes.
+3. Change one budget at a time; replay the same capture into fresh directories.
+4. Inspect error/drop/completeness witnesses and native context statistics.
+5. Validate live behavior separately: offline file throughput does not measure
+   kernel drops, capture privileges or a production SPAN path.
+
+Do not disable bounds or silently drop record families to produce a faster
+benchmark. [Testing](tests.md) explains worker-invariance qualification.

@@ -1,0 +1,60 @@
+{
+  "issues": ["D2-6", "DS-10", "D2-9", "D2-15"],
+  "baseline": "25ea2e69181ecb88979754cba98a628075220c3f",
+  "fixture_manifest": "round2-selection.json",
+  "build": "GOWORK=off GOMAXPROCS=2 go build -p 1 -tags nodpi,noyara,nomagika -o $W76_NET ./cmd/net",
+  "replay": "W76_REPRO_DIR=<directory containing manifest files> W76_NET=<absolute CLI path> GOWORK=off GOMAXPROCS=2 go test -count=1 -p 1 -tags nodpi,noyara,nomagika ./internal/decoder/stream -run '^TestRound2PinnedCLIReplays$' -v",
+  "verification": {
+    "date": "2026-11-07",
+    "platform": "darwin",
+    "workers": ["CLI defaults", 1, 2],
+    "hashes_checked": true,
+    "counts_invariant_across_workers": true,
+    "candidate_replay_seconds": 70.55,
+    "baseline_replay_seconds": 74.74,
+    "candidate_exit_status": 0,
+    "baseline_exit_status": 1,
+    "baseline_disposition": "Six fixture assertions fail as expected; Modbus/RDP and opaque TeamViewer controls already pass.",
+    "rss": "not measured",
+    "reaudit": {
+      "date": "2026-11-08",
+      "implementation_commit": "8dfb044f",
+      "baseline_binary_revision": "25ea2e69181ecb88979754cba98a628075220c3f",
+      "baseline_binary_revision_check": "go version -m $W76_BASELINE_NET; vcs.modified=false",
+      "packages": ["./internal/decoder/stream", "./internal/decoder/stream/secret", "./internal/decoder/stream/ftp", "./internal/decoder/stream/smb", "./internal/decoder/stream/dns", "./internal/decoder/stream/rdp", "./internal/decoder/stream/s7comm", "./internal/decoder/stream/profinet"],
+      "targeted": "GOWORK=off GOMAXPROCS=2 go test -count=1 -p 1 -tags nodpi,noyara,nomagika <packages>: 821 passed",
+      "race": "GOWORK=off GOMAXPROCS=2 go test -race -count=1 -p 1 -tags nodpi,noyara,nomagika <packages>: 821 passed",
+      "vet": "GOWORK=off GOMAXPROCS=2 go vet -p 1 -tags nodpi,noyara,nomagika <packages>: exit 0",
+      "fuzz": "GOWORK=off GOMAXPROCS=2 go test -p 1 -tags nodpi,noyara,nomagika <package> -run '^$' -fuzz '^<target>$' -fuzztime=5s: stream/FuzzRound2StructuralProbes and secret/FuzzRound2SecretFraming passed",
+      "candidate_replay": "Fresh CLI build; all eight hash-pinned captures at default/1/2 workers: 33 tests passed",
+      "baseline_replay": "Six of eight captures fail semantic assertions at every worker setting; mixed Modbus/RDP and opaque TeamViewer controls pass",
+      "source_report": "/Users/pmieden/Downloads/netcap-datasets-round2.md read successfully; D2-6, D2-9, D2-15 and DS-10 scope confirmed",
+      "tcp_hook": "internal/decoder/stream/tcp/tcp_connection.go calls secret.HarvestAdditionalConversation(conv); FTP reader independently calls secret.HarvestFTPConversation"
+    }
+  },
+  "observations": [
+    {"file": "http-multiple100.pcap", "baseline": {}, "candidate": {"HTTP": 3, "Upload": 3}},
+    {"file": "dns_axfr.pcapng", "baseline": {"PROFINET": 3}, "candidate": {"DNS": 2}},
+    {"file": "mmsX.pcap", "baseline": {"RDP": 1}, "candidate": {}},
+    {"file": "rdp-invalid-length.pcap", "baseline": {"S7Comm": 1}, "candidate": {}},
+    {"file": "modbus-and-non-modbus-p502.pcap", "baseline": {"Modbus": 12, "RDP": 1}, "candidate": {"Modbus": 12, "RDP": 1}},
+    {"file": "krb_kinit.pcap", "baseline": {"Kerberos": 188, "TeamViewer": 1}, "candidate": {"Kerberos": 188}},
+    {"file": "teamviewer.pcap", "baseline": {}, "candidate": {}},
+    {"file": "attack-trace.pcap_", "baseline": {"FTP": 16, "SMB": 14}, "candidate": {"FTP": 16, "SMB": 14, "FTPSecret": 1}}
+  ],
+  "semantics": [
+    "HTTP upload URL, content length, timestamp and tuple; AXFR question type and bidirectional Community ID; FTP/8884 username/password presence, capture timestamp, successful reply and control-channel Community ID are asserted by the replay test.",
+    "Candidate and baseline counts describe only the audit types inspected by the replay test, not all traffic or all audit output.",
+    "Captured TeamViewer command1/command2 payloads are framing positives, not auth events. Direct auth-event positives and Steam/RTMP collision controls are synthetic embedded Go fixtures."
+  ],
+  "unavailable_or_unverified": [
+    "Full original /workspace/mta/datasets2 corpus was not replayed. Steam and RTMP source captures were not replayed.",
+    "Native DPI/YARA/Magika build variants were not exercised; verification uses nodpi,noyara,nomagika.",
+    "Pinned source captures remain external opt-in fixtures; only reviewed wire snippets and generated synthetic fixtures are committed."
+  ],
+  "pitfalls": [
+    "A valid RDP request exists on TCP/502 in the mixed Modbus capture; asserting absence of all RDP would be incorrect.",
+    "Do not classify a generic X.224 setup request as RDP/S7 or a generic RPC version as PROFINET.",
+    "FTP AUTH TLS must not be rejected as SMTP AUTH, and accepted or unanswered upgrade commands must suppress plaintext credential interpretation."
+  ]
+}

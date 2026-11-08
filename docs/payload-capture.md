@@ -1,22 +1,25 @@
----
-description: Capture full packet payloads
----
+# Payload retention
 
-# Payload Capture
+`capture -payload` includes raw payload fields where the selected decoder
+supports them. It does not decrypt TLS or recover upstream-truncated packets.
 
-It is now possible to capture payload data for the following protocols: **TCP, UDP, ModbusTCP, USB**
-
-This can be enabled with the **-payload** flag:
-
-```text
-$ net capture -read traffic.pcap -payload
+```sh
+net capture -read traffic.pcap -out payload-audit -payload -dpi=false
+net dump -read payload-audit/UDP.ncap.gz -json
 ```
 
-Setting the flag works for both live and offlline capture, afterwards the raw payload bytes are stored in the **Payload** field of the audit records.
+JSON represents protobuf byte fields as base64. CSV/custom record renderers may
+use another representation; consult the record schema before interpreting a
+string as text. Payload field coverage is decoder-specific.
 
-You can use the **-struc** flag with the **dump** tool to see the payload in the command-line:
+| Option/artifact | Different purpose |
+| --- | --- |
+| `-payload` | Raw bytes in supported audit records |
+| `-conns` | Directional stream evidence and conversation output |
+| File extraction | Reconstruct transferred file artifacts with completeness metadata |
+| `-retain-packets` | Rotating PCAPNG packet retention with a manifest |
 
-```text
-$ net dump -read TCP.ncap.gz -struc
-```
-
+Retained bytes can contain credentials, personal data and executable content.
+Set collection, access and retention boundaries for the actual output directory.
+Compression is not anonymization. Preserve the original capture for reruns;
+missing payloads in an old record require reanalysis from available source bytes.

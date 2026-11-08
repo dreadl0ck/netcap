@@ -83,11 +83,6 @@ func (s *Server) handleChartData(_ context.Context, req mcplib.CallToolRequest) 
 	q.Set("interval", interval)
 	q.Set("maxDataPoints", fmt.Sprintf("%d", maxPts))
 	q.Set("format", "json")
-	// The chart endpoint uses ?scope= for the scope dispatch; pass our
-	// session_id through so it's resolved per-request.
-	if sid := ref.ID; sid != "" {
-		q.Set("scope", sid)
-	}
 
 	raw, gErr := s.newClient().Get("/api/chart/data", q)
 	if gErr != nil {

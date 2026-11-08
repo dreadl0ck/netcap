@@ -64,6 +64,9 @@ func LoadEmbeddedRules() (*Config, error) {
 		// Tag each rule with its source file (used for rule set management)
 		ruleSetName := strings.TrimSuffix(entry.Name(), ".yml")
 		for _, rule := range fileConfig.Rules {
+			if rule == nil {
+				return nil, fmt.Errorf("null rule in embedded file %s", entry.Name())
+			}
 			if rule.Tags == nil {
 				rule.Tags = []string{}
 			}
@@ -74,6 +77,9 @@ func LoadEmbeddedRules() (*Config, error) {
 		config.Rules = append(config.Rules, fileConfig.Rules...)
 	}
 
+	if err := validateRuleNames(config); err != nil {
+		return nil, err
+	}
 	return config, nil
 }
 
@@ -84,8 +90,7 @@ func LoadRulesWithEmbeddedDefaults(dirPath string) (*Config, error) {
 	// Start with embedded defaults
 	config, err := LoadEmbeddedRules()
 	if err != nil {
-		// If embedded rules fail, start with empty config
-		config = &Config{Rules: []*Rule{}}
+		return nil, err
 	}
 
 	// If no path specified, just return embedded rules
@@ -96,8 +101,7 @@ func LoadRulesWithEmbeddedDefaults(dirPath string) (*Config, error) {
 	// Try to load from directory
 	fileConfig, err := LoadRulesFromDirectory(dirPath)
 	if err != nil {
-		// If directory loading fails, just return embedded rules
-		return config, nil
+		return nil, err
 	}
 
 	// Merge file rules with embedded (file rules override by name)

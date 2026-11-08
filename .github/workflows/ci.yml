@@ -21,9 +21,11 @@ permissions:
   contents: read
 
 env:
-  # The same image the released service container is built from, so CI compiles
-  # against the exact nDPI, libprotoident and yara-x it ships with.
-  BUILDER_IMAGE: dreadl0ck/netcap-builder:alpine-dpi-latest
+  GOWORK: 'off'
+  GOMAXPROCS: '4'
+  GOFLAGS: '-p=2'
+  # Build the native recipe from this revision; a shared tag can carry an old ABI.
+  BUILDER_IMAGE: netcap-builder:ci-yara122
 
 jobs:
   go:
@@ -38,6 +40,9 @@ jobs:
         with:
           go-version: '1.27.0'
           cache: true
+
+      - name: Verify tracked Go module archive
+        run: GOWORK=off go test ./tests/modulearchive -count=1
 
       # go-dpi is an ordinary pinned dependency here -- go.mod requires
       # the version in go.mod and the module proxy serves it. CI does NOT create
@@ -79,17 +84,14 @@ jobs:
           pnpm build
           test -f dist/index.html
 
-      - name: Pull the builder image
-        run: docker pull "$BUILDER_IMAGE"
+      - name: Build the matched native toolchain
+        run: docker build --platform linux/amd64 -f docker/builders/alpine-dpi-builder.Dockerfile -t "$BUILDER_IMAGE" .
 
       # Everything below runs inside the builder image rather than on the
       # runner.
       #
       # The Go build needs nDPI headers, libprotoident and the yara-x C API.
-      # Installing those on the runner means compiling nDPI and a Rust project
-      # from source on every run; the builder image already has them, pinned to
-      # the versions the release is built with, so CI and the shipped binary
-      # cannot drift.
+      # The builder above compiles the pinned native sources from this revision.
       #
       # It is invoked with `docker run` rather than a job-level `container:`
       # because GitHub injects its own glibc-linked Node into container jobs to
@@ -107,27 +109,30 @@ jobs:
           docker run --rm -i \
             -v "${{ github.workspace }}:/netcap" \
             -w /netcap \
-            -e GOFLAGS=-buildvcs=false \
+            -e 'GOFLAGS=-buildvcs=false -p=2' \
+            -e GOWORK=off -e GOMAXPROCS=4 \
             -e 'GOPROXY=https://proxy.golang.org|direct' \
             "$BUILDER_IMAGE" \
             sh -eux <<'SCRIPT'
           go version
 
           # Database archive tests run pack-dbs.sh and its Python metadata validator.
-          apk add --no-cache bash python3
+          apk add --no-cache bash python3 tshark
 
           # Regenerate types/netcap.pb.go so it provably matches
           # types/netcap.proto. The file is tracked again since 3dbcc508
           # (it ships in the release archives), so this no longer rescues a
           # clean checkout -- it catches a proto edit committed without the
-          # regenerated output. protoc and the gogofaster plugin ship in the
-          # builder image for this.
+          # regenerated output. The script pins the plugin's source/toolchain;
+          # the builder supplies protoc.
           #
           # --proto_path=types is required, not decoration: without it the
           # output lands in types/proto/ and the descriptor registers as
           # "types/netcap.proto" instead of "netcap.proto".
-          protoc --proto_path=types --gogofaster_out=types/. types/netcap.proto
+          cp types/netcap.pb.go /tmp/netcap.pb.go.expected
+          sh scripts/gen-proto.sh
           test -s types/netcap.pb.go
+          cmp /tmp/netcap.pb.go.expected types/netcap.pb.go
 
           go build ./...
           go vet ./...
@@ -151,10 +156,20 @@ jobs:
           # it. collector was temporarily excluded after this suite found a TCP
           # reassembly race; it is back under the detector now that the fragment
           # ownership and completion lifecycle are fixed.
-          go test -short -race ./...
+          go test -short -race -timeout=15m ./...
           GOWORK=off go test -tags=nodpi,noyara,nomagika ./cmd/capture -run '^TestCPUProfile' -count=1
           GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestOfflineRulesCLI$' -count=1
+          GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestDHCPOption55CLI$' -count=1
           GOWORK=off go test -tags=e2e,nodpi,nomagika ./tests/e2e -run '^TestArtifactAnalysisCLI$' -count=1
+          GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestAuditSemanticsCLI$' -count=1
+          GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestTCPRetentionBudgetCLI$' -count=1 -timeout=8m
+          GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests -run '^TestNewDecoders_UltimatePCAP$' -count=1 -timeout=8m
+          GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/decoder/stream/tls -run '^$' -fuzz '^FuzzCertificateHandshakeSemantics$' -fuzztime=5s -parallel=2
+          GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/decoder/stream/rdp -run '^$' -fuzz '^FuzzNegotiationEvidence$' -fuzztime=5s -parallel=2
+          NETCAP_TLS_CORPUS=1 GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/collector -run '^TestTLSRound2Corpus$' -count=1 -timeout=4m
+          NETCAP_SMB_CORPUS=1 GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/decoder/stream/dcerpc -run '^TestSMBPinnedCorpus$' -count=1 -timeout=4m
+          GOWORK=off go test -tags=nodpi,noyara,nomagika ./types -run '^$' -fuzz '^FuzzDHCPOptionRoundTrip$' -fuzztime=5s -parallel=2
+          GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/packetview -run '^$' -fuzz '^FuzzPacketPipeline$' -fuzztime=5s -parallel=2
           SCRIPT
 
       - name: Verify distributable license bundle
@@ -177,6 +192,10 @@ jobs:
           go build -tags nodpi,noyara -o net.exe ./cmd/net
           ./net.exe --version
           go test -tags nodpi,noyara ./internal/dbs ./internal/vulndb
+          # This runner has no Npcap; BPF/export and POSIX permission suites run on Linux.
+          go test -race -p 2 -timeout=15m -tags nodpi,noyara ./cmd/split ./internal/decoder/stream/cip
+          go test -race -p 2 -timeout=15m -tags nodpi,noyara ./internal/netio -run '^Test(Reader|Writer|CountRecords|ChanWriter|ProtoWriter|DelimitedProtoWriter|SortRejects)'
+          go test -race -p 2 -timeout=15m -tags nodpi,noyara ./internal/collector -run '^Test(LegacyPCAP|CaptureReader|CaptureInput(Synthetic|MixedInterfaces|EmptyPacket|DecodeQualification))'
           export NC_CONFIG_ROOT="$RUNNER_TEMP/netcap-db-qualification"
           ./net.exe util -download-dbs
           ./net.exe util -update-dbs

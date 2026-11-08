@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.15.2
+    VERSION: 0.15.4
 
 # command data
 commands:
@@ -49,7 +49,7 @@ commands:
         help: Compiles and moves the netcap binary to /usr/local/bin (auto-detects DPI libraries on macOS)
         exec: |
             # Extract gopacket version from go.mod
-            GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" go.mod | grep -v indirect | awk '{print $2}')
+            GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket)
 
             if [[ "$OSTYPE" == "darwin"* ]] && ! xcrun --find clang &>/dev/null; then
                 echo "[ERROR] Xcode command-line tools are unavailable. Accept the license with: sudo xcodebuild -license"
@@ -101,7 +101,7 @@ commands:
         exec: |
             mkdir -p bin
             # Extract gopacket version from go.mod
-            GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" go.mod | grep -v indirect | awk '{print $2}')
+            GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket)
             
             # Try to detect DPI library versions on Linux
             LDFLAGS="-s -w"
@@ -139,7 +139,7 @@ commands:
         exec: |
             mkdir -p bin
             # Extract gopacket version from go.mod
-            GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" go.mod | grep -v indirect | awk '{print $2}')
+            GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket)
             LDFLAGS="-s -w"
             if [ -n "$GOPACKET_VERSION" ]; then
                 LDFLAGS="$LDFLAGS -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}"
@@ -155,7 +155,7 @@ commands:
         help: Compiles and moves the netcap binary to /usr/local/bin
         exec: |
             # Extract gopacket version from go.mod
-            GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" go.mod | grep -v indirect | awk '{print $2}')
+            GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket)
             LDFLAGS="-s -w"
             if [ -n "$GOPACKET_VERSION" ]; then
                 LDFLAGS="$LDFLAGS -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}"
@@ -825,7 +825,7 @@ commands:
             echo "[INFO] configuring core for version v$VERSION"
             
             # Extract dependency versions from go.mod
-            GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" go.mod | grep -v indirect | awk '{print $2}')
+            GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket)
             GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" go.mod | grep -v indirect | awk '{print $2}')
             
             # Generate version.go with all version info

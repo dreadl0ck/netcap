@@ -56,6 +56,8 @@ func matchingEnv(t *testing.T) {
 // selectFor runs the production selector for one sample over one transport.
 // port is the server port to present the conversation on.
 func selectFor(s sample, transport core.TransportProtocol, port int32) (Selection, bool) {
+	c := &core.ConversationInfo{ServerPort: port}
+	defer prepareMediaSample(s, c)()
 	return SelectDecoder(&SelectionInput{
 		Transport:    transport,
 		ServerPort:   port,
@@ -63,7 +65,7 @@ func selectFor(s sample, transport core.TransportProtocol, port int32) (Selectio
 		PortServer:   s.server,
 		ScanClient:   s.client,
 		ScanServer:   s.server,
-		Conversation: &core.ConversationInfo{},
+		Conversation: c,
 	})
 }
 

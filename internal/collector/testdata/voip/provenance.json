@@ -1,0 +1,51 @@
+{
+  "issues": ["W76 D2-16", "W76 D2-17 UDP/VoIP"],
+  "unavailableArtifacts": {
+    "/Users/pmieden/Downloads/netcap-datasets-round2.md": "macOS EPERM; original report inaccessible, plan and source used",
+    "/workspace/mta/datasets2/": "original full-corpus outputs unavailable locally; no full-corpus replay claimed"
+  },
+  "verification": {
+    "date": "2026-11-07",
+    "result": "Pinned captures and synthetic collector regressions passed; pinned fixtures and synthetic media tested with 1 and 4 workers; fc04 passed with 2 workers",
+    "fc04Observed": {"SIP": 19, "RTP": 3113, "DTMF": 15},
+    "baseline": "No baseline corpus replay performed in this worktree. Base source already populates SIP ResponseCode/ResponseStatus; D2-16 retained as an export regression.",
+    "schema": "Base enum maximum 148; RTP=200 and DTMF=201 were unused. gogofaster regeneration is byte-identical; DHCP schema unchanged.",
+    "limitations": "RTP requires observed cleartext SIP/SDP offer/answer and advertised endpoints; encrypted, NAT-translated, directional-only and ambiguous media are not guessed. Historical association metadata is retained without eviction within a conservatively accounted 16 MiB budget; exhaustion preserves the historical prefix and qualifies RTP candidates from the earliest rejected signaling timestamp across all scopes. sip-association-coverage.json reports capacity loss even for DTMF-only output. Post-close TCP signaling is exported with TCPObservation and cannot authorize media. Full corpus/RSS qualification belongs to integration.",
+    "reviewRegressions": "TestW76DelayedMediaHistory: 300 calls, 12 negotiations on one call, 311 attributed RTP/DTMF events, UDP and TCP signaling, 1/4 workers; TestW76AssociationCapacityCoverage: bounded overflow and historical prefix including DTMF-only; TestW76ReverseBYEPortReuse: reversed dialog tags, historical RTP and reused ports over UDP/TCP with 1/4 workers."
+  },
+  "zeek": {
+    "revision": "5862ccc5e13e6127cda5932a7f18aaf070c8b63b",
+    "baseURL": "https://raw.githubusercontent.com/zeek/zeek/5862ccc5e13e6127cda5932a7f18aaf070c8b63b/testing/btest/Traces/",
+    "files": ["dnp3/dnp3_udp_read.pcap", "dnp3/dnp3_udp_write.pcap", "dnp3/dnp3_udp_en_spon.pcap", "dns/mdns.pcap"]
+  },
+  "suricata": {
+    "revision": "9a9178a7e4d45ff1d990e8f178c1e2f54b772f39",
+    "url": "https://raw.githubusercontent.com/OISF/suricata-verify/9a9178a7e4d45ff1d990e8f178c1e2f54b772f39/tests/sip-tcp-method/sip-tcp.pcap"
+  },
+  "honeynet": {
+    "revision": "2499cfdbdd21c1107146ec1ee3f918fd3039956e",
+    "url": "https://media.githubusercontent.com/media/honeynet/forensic_challenges/2499cfdbdd21c1107146ec1ee3f918fd3039956e/zip_files/challenges/fc04.zip",
+    "member": "Forensic_challenge_4.pcap",
+    "committed": false,
+    "test": "W76_FC04=/path/to/Forensic_challenge_4.pcap GOWORK=off GOMAXPROCS=2 go test -p 1 -tags nodpi,noyara,nomagika ./internal/collector -run '^TestW76FC04$' -v",
+    "expectedSIP": {"records": 19, "100": 1, "200": 4, "401": 3, "404": 1}
+  },
+  "synthetic": "voip_test.go serializes RFC 3261/6762/3550/4733 controls locally using documentation IPs; no network or media extraction",
+  "sha256": {
+    "dnp3_udp_read.pcap": "4787acb645e088ddabfcec437c3adeee30b51a445c064b62c0a85c48280ee8ba",
+    "dnp3_udp_write.pcap": "62ff4d916c295ab81825d3d22419c44855d528529ed72c9f76b88567f6b07219",
+    "dnp3_udp_en_spon.pcap": "6e2d07f5ee3d5c2545456b5612565b604fcc13d9aab30192bab64ff233f2a650",
+    "mdns.pcap": "f7725d833d6b0f2c626cce8a22fc5a6f982ae4e7e4fed164b1d1ddf61d8cf137",
+    "sip-tcp.pcap": "8730ef1a0796ce186f2bd853fe41db35268d3d8c822ceb6c7da9491e03d3a667",
+    "Forensic_challenge_4.pcap": "568c113747dd9adcdb24dbf7f5aff9143dd19d7027d8f84bc3e93cf9e4ceee86"
+  },
+  "expected": {
+    "dnp3_udp_read.pcap": {"linkRecords": 23, "applicationFunctions": [1,129]},
+    "dnp3_udp_write.pcap": {"linkRecords": 2, "applicationFunctions": [2,129]},
+    "dnp3_udp_en_spon.pcap": {"linkRecords": 4, "applicationFunctions": [20,129]},
+    "mdns.pcap": {"records": 18, "unicastPairings": 0},
+    "sip-tcp.pcap": {"records": 2, "responseCode": 200},
+    "Forensic_challenge_4.pcap": {"RTP": 3113, "DTMF": 15, "tsharkDifference": "frames 4445 and 4447 quote RTP in ICMP errors; they are not additional UDP datagrams"}
+  },
+  "command": "GOWORK=off GOMAXPROCS=2 go test -p 1 -tags nodpi,noyara,nomagika ./internal/collector -run '^TestW76' -v"
+}

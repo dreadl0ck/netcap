@@ -31,10 +31,13 @@ func TestDirectionalHTTPRecoveryAndExactTargets(t *testing.T) {
 				continue
 			}
 			requests++
+			if r.URL == "/44313,6048%2fX?q=a,b" && r.StatusCode != 204 {
+				t.Fatal("complete prefix transaction was split", r)
+			}
 			if r.ReassemblyStatus == "" {
 				t.Fatal("loss not qualified", r)
 			}
-			if r.URL != "/recovered" && (r.URL != "/44313,6048%2fX?q=a,b" || r.UserAgent != "test,raw") {
+			if r.URL != "/recovered" && r.URL != "/lost" && (r.URL != "/44313,6048%2fX?q=a,b" || r.UserAgent != "test,raw") {
 				t.Fatal(r)
 			}
 			want := c.ClientIP
@@ -45,7 +48,7 @@ func TestDirectionalHTTPRecoveryAndExactTargets(t *testing.T) {
 				t.Fatal("wrong application direction", r)
 			}
 		}
-		if requests != 2 {
+		if requests != 3 {
 			t.Fatalf("reverse %v: %v", reverse, w.records)
 		}
 	}

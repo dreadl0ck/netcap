@@ -4,14 +4,58 @@ description: Detailed Version History Information
 
 # Changelog
 
+## Source-only corrections
+
+These changes follow v0.15.2; they do not change an existing release archive.
+
+| Change | Migration/qualification |
+| --- | --- |
+| S7 requests gated by message role; response allowlist uses destination initiator | “Completed” rule renamed to acknowledgment; no header-only execution claim |
+| DNP3 group 60 variation 1 mapped to Class 0; 2–4 to classes 1–3 | Corrected integrity-poll rule; released binaries need an external corrected pack or a future release |
+| Grouped offline rules and audit readiness | Source-only `investigate rules`; separate pack format and finalized-capture requirements |
+| Documentation contracts | `make docs-check` runs published lab commands; `make docs-source-check` checks schema/rule examples |
+
+## v0.15.2
+
+The [binary release](https://github.com/dreadl0ck/netcap/releases/tag/v0.15.2)
+ships signed community database installation and qualified native runtimes.
+v0.15.0/v0.15.1 were runtime-qualification candidates.
+
+| Area | Released change |
+| --- | --- |
+| Updates | Embedded Ed25519 verification root, expiring signed releases, monotonic sequence/epoch and exact hashes |
+| Data | NVD SQLite schema 2, DB-IP City/ASN, IANA, UA-parser and pinned BSD HASSH |
+| Installation | Cross-process update lock, staged activation and preservation on failure |
+| Linux | Embed the actual built WebUI through an explicit Docker build context |
+| macOS | Relocated bundled native libraries; DPI macOS 26+, nodpi macOS 15+ |
+| Provenance | Native-runtime hashes, package notices and corresponding source assets |
+| Windows | Qualified signed download/update and structured CVE lookup |
+
+### Migration checklist
+
+| Previous workflow | Current workflow |
+| --- | --- |
+| Old executable/CLI recipes | `net --version`, [command inventory](commands.md) and installed help |
+| CSV through `export` | `dump -csv`; `export` serves Prometheus metrics |
+| Generic generated config | Explicit supported flags/env; `-gen-config` remains unimplemented |
+| v0.14.0 community snapshot | Frozen `/dbs/v3/`; upgrade for signed refreshes |
+| v1/v2 database endpoint or SQLite schema 1 | Upgrade client and download schema 2; do not edit a version field |
+| Nmap/CMS/DHCP OS/JA3 catalogue assumptions | [Current source inventory](database-updates.md) and bounded built-in service signatures |
+| Older `agent`/`collect` wire format | Upgrade both ends; see distributed collection below |
+
+Publisher policy/source-provenance changes after the v0.15.2 tag are source/server
+changes, not additional features of that binary. The remaining sections retain
+historical release context; use the current topic guides for executable recipes.
+
 ## v0.13.0
 
-Affected Go packages pass 524 tests. [Release notes](../RELEASE_NOTES.md) describe
+The v0.13.0 notes recorded 524 passing tests in affected Go packages.
+[Release notes](https://github.com/dreadl0ck/netcap/blob/v0.13.0/RELEASE_NOTES.md) describe
 the evidence-linking and capture-time DNS features.
 
 | Change | Evidence |
 | --- | --- |
-| Scoped cross-protocol linking, immutable audit references, capture-time DNS context and independent feature switches | `29464936`, [release notes](../RELEASE_NOTES.md#hunting-evidence) |
+| Scoped cross-protocol linking, immutable audit references, capture-time DNS context and independent feature switches | `29464936`, [release notes](https://github.com/dreadl0ck/netcap/blob/v0.13.0/RELEASE_NOTES.md#hunting-evidence) |
 | Shared UI 0.13.0, including related evidence and tagless-alert rendering | `cmd/capture/webui/frontend/packages/netcap-ui/package.json` |
 
 ## v0.10.3

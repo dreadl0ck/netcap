@@ -56,6 +56,7 @@ import {
   Close as CloseIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import { RecordSemantics } from '../components/RecordSemantics';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatBytes, getBackendUrl, FilteredAuditFileInfo } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
@@ -90,9 +91,11 @@ function getFieldColor(fieldName: string): string {
 interface RecordUIProps {
   data: any;
   level?: number;
+  recordType?: string;
+  evidence?: Record<string, unknown>;
 }
 
-function RecordUI({ data, level = 0 }: RecordUIProps) {
+function RecordUI({ data, level = 0, recordType, evidence }: RecordUIProps) {
   if (data === null || data === undefined) {
     return <Typography variant="body2" color="text.secondary">—</Typography>;
   }
@@ -210,6 +213,7 @@ function RecordUI({ data, level = 0 }: RecordUIProps) {
     
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: level === 0 ? 0.75 : 0.5 }}>
+        {level === 0 && <RecordSemantics data={evidence || data} recordType={recordType} />}
         {entries.map(([key, value]) => {
           const fieldColor = getFieldColor(key);
           
@@ -1714,7 +1718,7 @@ export default function AuditRecords() {
                         }}
                       />
                     ) : (
-                      <RecordUI data={convertTimestamps(record)} />
+                      <RecordUI data={convertTimestamps(record)} recordType={selectedType || undefined} evidence={record} />
                     )}
                   </Paper>
                 ))}

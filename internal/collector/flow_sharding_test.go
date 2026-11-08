@@ -1,9 +1,13 @@
 package collector
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net"
 	"testing"
+
+	"github.com/dreadl0ck/netcap/internal/packetview"
+	"github.com/dreadl0ck/netcap/internal/packetview/testutil"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
@@ -128,28 +132,28 @@ func TestSymmetricWorkerIndexZeroHash(t *testing.T) {
 }
 
 func TestSymmetricWorkerIndexTCPSelection(t *testing.T) {
-	p := shardingTCPPacket(t, true, false, 1000, 0)
-	for port := 2000; port < 2032; port++ {
-		for _, workers := range []int{2, 3, 4, 7, 16} {
-			// Lazy decoding skips the decoder entirely for empty packet data.
-			tunneled := gopacket.NewPacket(p.Data(), gopacket.DecodeFunc(func(_ []byte, b gopacket.PacketBuilder) error {
-				b.SetNetworkLayer(p.NetworkLayer())
-				udp := &layers.UDP{SrcPort: layers.UDPPort(port), DstPort: 4789}
-				b.AddLayer(udp)
-				b.SetTransportLayer(udp)
-				b.AddLayer(p.Layer(layers.LayerTypeTCP))
-				b.SetTransportLayer(p.Layer(layers.LayerTypeTCP).(*layers.TCP))
-				return nil
-			}), gopacket.Lazy)
-			c := &Collector{numWorkers: workers}
-			if got, want := c.getSymmetricWorkerIndex(tunneled), c.getSymmetricWorkerIndex(p); got != want {
-				t.Fatalf("workers=%d outer UDP port=%d: worker=%d, want TCP worker %d", workers, port, got, want)
-			}
-			if _, ok := tunneled.TransportLayer().(*layers.UDP); !ok || tunneled.Layer(layers.LayerTypeTCP) != p.Layer(layers.LayerTypeTCP) {
-				t.Fatal("fixture must expose outer UDP as transport and inner TCP via Layer(TCP)")
-			}
-			if c.next.Load() != 0 {
-				t.Fatal("identifiable TCP flow used round robin")
+	for _, workers := range []int{2, 3, 4, 7, 16} {
+		c := &Collector{numWorkers: workers}
+		pipeline := packetview.New(packetview.Limits{})
+		want := -1
+		for _, reverse := range []bool{false, true} {
+			for port := 2000; port < 2032; port++ {
+				raw := testutil.Tunnel("vxlan", 42, testutil.TCP(true, reverse, 1, 0, "S", ""))
+				binary.BigEndian.PutUint16(raw[20:22], uint16(port))
+				p := pipeline.Process(testutil.Packet(testutil.Ethernet(raw), 0, 1), 1).Packet
+				if p == nil || p.NetworkLayer().LayerType() != layers.LayerTypeIPv6 {
+					t.Fatal("inner packet missing")
+				}
+				if _, ok := p.TransportLayer().(*layers.TCP); !ok {
+					t.Fatal("outer UDP selected")
+				}
+				got := c.getSymmetricWorkerIndex(p)
+				if want < 0 {
+					want = got
+				}
+				if got != want {
+					t.Fatalf("workers=%d reverse=%v entropy=%d got=%d want=%d", workers, reverse, port, got, want)
+				}
 			}
 		}
 	}

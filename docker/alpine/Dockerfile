@@ -1,4 +1,6 @@
-FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-dpi-latest@sha256:f745720790c835f1f225c08aa13fa8147f8c96adef6b291b87516b190d8e7229 as builder
+ARG NETCAP_BUILDER_IMAGE
+FROM --platform=linux/amd64 ${NETCAP_BUILDER_IMAGE} AS builder
+RUN pkg-config --exact-version=1.22.0 yara_x_capi
 
 # Copy netcap source
 WORKDIR /netcap
@@ -10,7 +12,7 @@ ARG TAGS="-tags noyara"
 RUN echo "tags: $TAGS"
 
 # Extract library versions from go.mod
-RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
+RUN GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket) && \
     GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
     GOOS=linux GOARCH=amd64 go build ${TAGS} -trimpath \
     -ldflags "-r /usr/local/lib -s -w \
@@ -32,15 +34,16 @@ RUN apk add --no-cache ca-certificates iptables libpcap libnetfilter_queue tcpdu
 # Install Google Magika CLI v1.0.2 for AI-based file type classification
 ARG MAGIKA_VERSION=1.0.2
 RUN ARCH=$(uname -m) && \
-    if [ "$ARCH" = "x86_64" ]; then MAGIKA_ARCH="x86_64-unknown-linux-gnu"; \
-    elif [ "$ARCH" = "aarch64" ]; then MAGIKA_ARCH="aarch64-unknown-linux-gnu"; \
+    if [ "$ARCH" = "x86_64" ]; then MAGIKA_ARCH="x86_64-unknown-linux-gnu"; MAGIKA_SHA256=4ce475c965cd20e724b5fc53e8a303a479b9d8649beef8721d05e9b3988fbab4; \
+    elif [ "$ARCH" = "aarch64" ]; then MAGIKA_ARCH="aarch64-unknown-linux-gnu"; MAGIKA_SHA256=55eda0c5dc9e1853ba530000815cd084c1dc654c59d52da486159b907dc9ec84; \
     else echo "Unsupported arch: $ARCH" && exit 1; fi && \
     mkdir -p /tmp/magika && \
-    curl -LsSf "https://github.com/google/magika/releases/download/cli%2Fv${MAGIKA_VERSION}/magika-${MAGIKA_ARCH}.tar.xz" \
-    | tar -xJ -C /tmp/magika && \
+    curl -LsSf "https://github.com/google/magika/releases/download/cli/v${MAGIKA_VERSION}/magika-${MAGIKA_ARCH}.tar.xz" -o /tmp/magika.tar.xz && \
+    echo "$MAGIKA_SHA256  /tmp/magika.tar.xz" | sha256sum -c - && \
+    tar -xJf /tmp/magika.tar.xz -C /tmp/magika && \
     cp /tmp/magika/*/magika /usr/local/bin/magika && \
     chmod +x /usr/local/bin/magika && \
-    rm -rf /tmp/magika
+    rm -rf /tmp/magika /tmp/magika.tar.xz
 
 WORKDIR /
 

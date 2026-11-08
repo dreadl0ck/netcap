@@ -47,12 +47,9 @@ RUN apk add --no-cache pkgconfig
 # this image has never contained yara-x.
 #
 # Downloaded to a file and executed directly, so no pipeline can hide a missing
-# downloader. Not apk's rust: Alpine ships 1.87 and yara-x 1.14 pulls in
-# cranelift/wasmtime, which require 1.89.
-RUN wget -O /tmp/rustup-init.sh https://sh.rustup.rs && \
-    chmod +x /tmp/rustup-init.sh && \
-    /tmp/rustup-init.sh -y --profile minimal --default-toolchain stable && \
-    rm /tmp/rustup-init.sh
+# downloader. The installer and toolchain are pinned in scripts/.
+COPY scripts/yara-x.env scripts/install-yara-rust.sh scripts/build-yara-x.sh /opt/netcap-native/
+RUN sh /opt/netcap-native/install-yara-rust.sh
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 RUN rustc --version && cargo --version
@@ -62,8 +59,10 @@ RUN rustc --version && cargo --version
 # without this every crate with a build script fails at "linker `musl-gcc` not
 # found".
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=gcc
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=gcc
+ENV GOMAXPROCS=4 GOFLAGS=-p=4 CARGO_BUILD_JOBS=4
 
-# Build and install yara-x v1.14.0 C API library.
+# Build and install the matched YARA-X C API from scripts/yara-x.env.
 #
 # No `|| true` here. The previous version ended
 # `... && cp yara_x.h && ldconfig || true && cd / && rm -rf ...`, and `||` binds
@@ -74,17 +73,7 @@ ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=gcc
 # is static and not position-independent, but proc-macro crates must be shared
 # objects, so they fail with "relocation R_X86_64_32 ... can not be used when
 # making a shared object".
-RUN cd /tmp && \
-    wget https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.14.0.tar.gz && \
-    tar xfz v1.14.0.tar.gz && \
-    cd yara-x-1.14.0 && \
-    RUSTFLAGS="-C target-feature=-crt-static" cargo build --release -p yara-x-capi && \
-    cp target/release/libyara_x_capi.so /usr/local/lib/ && \
-    cp target/release/libyara_x_capi.a /usr/local/lib/ && \
-    mkdir -p /usr/local/include && \
-    cp capi/include/yara_x.h /usr/local/include/ && \
-    cd / && \
-    rm -rf /tmp/v1.14.0.tar.gz /tmp/yara-x-1.14.0 /root/.cargo/registry
+RUN PREFIX=/usr/local RUSTFLAGS="-C target-feature=-crt-static" sh /opt/netcap-native/build-yara-x.sh
 RUN ldconfig /usr/local/lib 2>/dev/null || true
 
 # Fail here rather than in every downstream netcap build. The bugs above were
@@ -96,17 +85,7 @@ RUN test -f /usr/local/include/yara_x.h || (echo "yara_x.h missing" && exit 1) &
 COPY LICENSE /usr/share/licenses/netcap/LICENSE
 COPY legal /usr/share/licenses/netcap/
 
-# Create pkg-config file for yara-x
-RUN mkdir -p /usr/local/lib/pkgconfig && \
-    echo 'prefix=/usr/local' > /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'libdir=${prefix}/lib' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'includedir=${prefix}/include' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo '' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Name: yara_x_capi' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Description: YARA-X C API' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Version: 1.14.0' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Libs: -L${libdir} -lyara_x_capi' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Cflags: -I${includedir}' >> /usr/local/lib/pkgconfig/yara_x_capi.pc
+RUN pkg-config --exact-version=1.22.0 yara_x_capi
 
 # Set working directory
 WORKDIR /workspace

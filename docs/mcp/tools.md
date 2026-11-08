@@ -49,14 +49,16 @@ Produce a sub-PCAP for the TCP flow that carried a given TLS certificate (identi
 | --- | --- | --- | --- |
 | `dst_ip` | string | yes | Destination IP. |
 | `dst_port` | string | yes | Destination port. |
+| `end_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with start_ns. |
 | `session_id` | string | yes | Session identifier. |
 | `src_ip` | string | yes | Source IP of the TLS flow. |
 | `src_port` | string | yes | Source port. |
+| `start_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with end_ns. |
 
 
 ### `carve_subpcap_for_connection`
 
-Produce a sub-PCAP for a specific 4-tuple connection.
+Produce a bidirectional sub-PCAP for an explicit TCP/UDP tuple. Optional inclusive capture-time bounds narrow tuple reuse; omitting bounds selects all matching occurrences.
 
 **Hints:** read-only, idempotent
 
@@ -66,9 +68,12 @@ Produce a sub-PCAP for a specific 4-tuple connection.
 | --- | --- | --- | --- |
 | `dst_ip` | string | yes | Destination IP. |
 | `dst_port` | string | yes | Destination port. |
+| `end_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with start_ns. |
+| `protocol` | string | yes | Observed transport protocol. |
 | `session_id` | string | yes | Session identifier. |
 | `src_ip` | string | yes | Source IP. |
 | `src_port` | string | yes | Source port. |
+| `start_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with end_ns. |
 
 
 ### `carve_subpcap_for_host`
@@ -87,7 +92,7 @@ Produce a sub-PCAP filtered to all traffic involving one host IP. Returns the ca
 
 ### `carve_subpcap_for_http_pair`
 
-Produce a sub-PCAP of all HTTP-on-TCP flows between two IPs.
+Produce a bidirectional sub-PCAP for the observed HTTP TCP tuple, including nonstandard ports. Without time bounds, all matching tuple occurrences are included.
 
 **Hints:** read-only, idempotent
 
@@ -96,8 +101,12 @@ Produce a sub-PCAP of all HTTP-on-TCP flows between two IPs.
 | name | type | required | description |
 | --- | --- | --- | --- |
 | `dst_ip` | string | yes | Destination IP. |
+| `dst_port` | string | yes | Observed destination port. |
+| `end_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with start_ns. |
 | `session_id` | string | yes | Session identifier. |
 | `src_ip` | string | yes | Source IP. |
+| `src_port` | string | yes | Observed source port. |
+| `start_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with end_ns. |
 
 
 ### `delete_session`
@@ -285,7 +294,7 @@ Wireshark-style nested protocol hierarchy as JSON: layer counts and bytes.
 
 ### `get_session_info`
 
-Return metadata for one analysis session: completion status, error message if any, input filename and size, per-record-type audit counts. Use this to poll an in-flight ingest.
+Return metadata for one analysis session: completion status, error message if any, input filename and size, per-record-type audit counts and capture_provenance (runId/inputSHA256) when available. Missing provenance has an explicit error field. Use this to poll ingest or child analysis.
 
 **Hints:** read-only, idempotent
 
@@ -676,7 +685,7 @@ Supports the netcap filter-expression language in `filter` (an `expr`-style bool
 
 ### `reanalyze_session`
 
-Re-decode an existing session's PCAP. Server-wide BPF/DPI/decoder settings apply (configure them out-of-band before calling). Returns immediately; poll get_session_info for completion.
+Create a separately retained child analysis; parent results remain available. Server-wide BPF/DPI/decoder settings apply (configure them out-of-band before calling). Optional bounded BPF/time subsets require run_id and source_sha256 from parent provenance. Poll get_session_info with the returned child ID.
 
 **Hints:** destructive
 
@@ -684,7 +693,14 @@ Re-decode an existing session's PCAP. Server-wide BPF/DPI/decoder settings apply
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `end_ns` | string |  | Inclusive end capture timestamp as an exact decimal nanosecond string; requires start_ns. |
+| `max_output_bytes` | string |  | Subset output-byte limit as a decimal string; default 268435456, maximum 1073741824. |
+| `max_packets` | number |  | Subset packet limit, at most 1000000. |
+| `run_id` | string |  | Expected parent capture runId; required for subsets. |
+| `selection_bpf` | string |  | BPF for the retained child input, e.g. host 192.0.2.10 and tcp port 9243. |
 | `session_id` | string | yes | Session identifier. |
+| `source_sha256` | string |  | Parent inputSHA256; required for subsets. |
+| `start_ns` | string |  | Inclusive start capture timestamp as an exact decimal nanosecond string; requires end_ns. |
 
 
 ### `resolve`

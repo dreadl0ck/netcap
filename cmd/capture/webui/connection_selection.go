@@ -15,6 +15,14 @@ type connectionPacketSelection struct {
 	start, end *int64
 }
 
+func parseTCPPacketSelection(query url.Values) (connectionPacketSelection, error) {
+	if protocol := query.Get("protocol"); protocol != "" && !strings.EqualFold(protocol, "TCP") {
+		return connectionPacketSelection{}, fmt.Errorf("packet export requires TCP")
+	}
+	query.Set("protocol", "TCP")
+	return parseConnectionPacketSelection(query)
+}
+
 func parseConnectionPacketSelection(query url.Values) (connectionPacketSelection, error) {
 	var selection connectionPacketSelection
 	src, err := netip.ParseAddr(query.Get("srcIP"))

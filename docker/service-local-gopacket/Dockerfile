@@ -2,7 +2,9 @@
 # Container for running the try service with file upload capabilities (using local gopacket)
 
 # Build stage - Use official netcap builder with DPI support
-FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-dpi-latest AS builder
+ARG NETCAP_BUILDER_IMAGE
+FROM --platform=linux/amd64 ${NETCAP_BUILDER_IMAGE} AS builder
+RUN pkg-config --exact-version=1.22.0 yara_x_capi
 
 # Copy gopacket source FIRST (to use local version)
 WORKDIR /gopacket

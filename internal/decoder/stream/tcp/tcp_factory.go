@@ -20,11 +20,13 @@
 package tcp
 
 import (
+	"strconv"
 	"sync"
 
 	"github.com/gopacket/gopacket"
 	"go.uber.org/zap"
 
+	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/utils"
 )
@@ -59,17 +61,11 @@ func closeStreamReaderChannelsAndWaitInternal(doLog bool) {
 		return
 	}
 
-	// Close each reader's dataChan exactly once to signal EOF.
-	// A watermark rather than a flag: readers registered by a later capture
-	// still need closing, otherwise the wait below never returns.
-	StreamFactory.Lock()
-	pending := StreamFactory.streamReaders[StreamFactory.closedReaders:]
-	StreamFactory.closedReaders = len(StreamFactory.streamReaders)
-	StreamFactory.Unlock()
+	pending := StreamFactory.readerSnapshot()
 
 	for _, reader := range pending {
-		if reader != nil && reader.DataChan() != nil {
-			close(reader.DataChan())
+		if reader != nil {
+			reader.CloseData()
 		}
 	}
 
@@ -113,12 +109,13 @@ func GetStreamPool() *reassembly.StreamPool {
 // and spawn the stream decoder routines for processing the data.
 type connectionFactory struct {
 	sync.Mutex
-	streamReaders []streamReader
-	numActive     int64
-	StreamPool    *reassembly.StreamPool
-	wg            sync.WaitGroup
-	FSMOptions    reassembly.TCPSimpleFSMOptions
-	closedReaders int
+	streamReaders   []streamReader
+	numActive       int64
+	StreamPool      *reassembly.StreamPool
+	wg              sync.WaitGroup
+	FSMOptions      reassembly.TCPSimpleFSMOptions
+	freeReaderSlots []int
+	payloadBudget   *retainedPayloadBudget
 }
 
 // New handles a new stream received from the assembler
@@ -132,6 +129,7 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 
 	// parent structure for tracking the bidirectional connection
 	str := &tcpConnection{
+		factory:     factory,
 		net:         net,
 		transport:   transport,
 		tcpstate:    reassembly.NewTCPSimpleFSM(factory.FSMOptions),
@@ -139,21 +137,35 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 		optchecker:  reassembly.NewTCPOptionCheck(),
 		firstPacket: ac.GetCaptureInfo().Timestamp,
 	}
+	str.networkScope = "if:" + strconv.Itoa(ac.GetCaptureInfo().InterfaceIndex)
+	if c := packetview.FromCapture(ac.GetCaptureInfo()); c != nil {
+		str.networkScope = c.Scope
+	}
+	if c, ok := ac.(*context); ok && c.scope != "" {
+		str.networkScope = c.scope
+	}
 
 	str.decoder = &tcpReader{
 		parent: str,
 	}
-	str.client = str.newTCPStreamReader(true)
-	str.server = str.newTCPStreamReader(false)
+	client, server := str.newTCPStreamReader(true), str.newTCPStreamReader(false)
+	str.client, str.server = client, server
 
 	factory.wg.Add(2)
 
 	factory.Lock()
-	factory.streamReaders = append(
-		factory.streamReaders,
-		str.client,
-		str.server,
-	)
+	str.payloadBudget = factory.payloadBudget
+	for _, reader := range []*tcpStreamReader{client, server} {
+		slot := len(factory.streamReaders)
+		if last := len(factory.freeReaderSlots) - 1; last >= 0 {
+			slot = factory.freeReaderSlots[last]
+			factory.freeReaderSlots = factory.freeReaderSlots[:last]
+		} else {
+			factory.streamReaders = append(factory.streamReaders, nil)
+		}
+		factory.streamReaders[slot] = reader
+		reader.factorySlot = slot
+	}
 	factory.numActive += 2
 	factory.Unlock()
 
@@ -168,6 +180,7 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 type context struct {
 	CaptureInfo gopacket.CaptureInfo
 	link        gopacket.Flow
+	scope       string
 }
 
 func (c *context) GetLinkFlow() gopacket.Flow { return c.link }

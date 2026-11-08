@@ -283,7 +283,9 @@ func generateCertificatesStatusDistributionChart(outDir string, showLegend bool)
 	// Count by status
 	statusCount := make(map[string]int)
 	for _, cert := range certificates {
-		if cert.IsExpired {
+		if cert.AssessmentBasis != "capture-time" || cert.ValidityState == "unavailable" || cert.ValidityState == "" {
+			statusCount["Unavailable / legacy assessment"]++
+		} else if cert.IsExpired {
 			statusCount["Expired"]++
 		} else if cert.IsNotYetValid {
 			statusCount["Not Yet Valid"]++
@@ -456,7 +458,7 @@ func generateCertificatesExpirationTimelineChart(outDir string, showLegend bool)
 
 	for _, cert := range certificates {
 		// Skip expired or not yet valid certificates
-		if cert.IsExpired || cert.IsNotYetValid {
+		if cert.AssessmentBasis != "capture-time" || cert.ValidityState != "valid" || cert.IsExpired || cert.IsNotYetValid {
 			continue
 		}
 

@@ -410,10 +410,10 @@ func TestYaraScanner_EmptyDir(t *testing.T) {
 		t.Errorf("Expected 0 rules, got %d", scanner.RuleCount())
 	}
 
-	// Scanning with no rules should return no matches
+	// An unavailable rule set cannot establish a clean scan.
 	matches, err := scanner.ScanBytes([]byte("anything"))
-	if err != nil {
-		t.Fatalf("ScanBytes with no rules failed: %v", err)
+	if err == nil || !strings.Contains(err.Error(), "no enabled YARA rules") {
+		t.Fatalf("empty rule set did not qualify the scan failure: %v", err)
 	}
 	if len(matches) != 0 {
 		t.Errorf("Expected no matches, got %v", matches)
@@ -422,13 +422,9 @@ func TestYaraScanner_EmptyDir(t *testing.T) {
 
 // TestYaraScanner_NonexistentDir tests scanner with a missing directory.
 func TestYaraScanner_NonexistentDir(t *testing.T) {
-	scanner, err := file.NewYaraScanner("/nonexistent/path")
-	if err != nil {
-		t.Fatalf("Unexpected error for nonexistent dir: %v", err)
-	}
-
-	if scanner.RuleCount() != 0 {
-		t.Errorf("Expected 0 rules, got %d", scanner.RuleCount())
+	scanner, err := file.NewYaraScanner(filepath.Join(t.TempDir(), "missing"))
+	if !os.IsNotExist(err) || scanner != nil {
+		t.Fatalf("missing directory became an available scanner: %v %v", scanner, err)
 	}
 }
 

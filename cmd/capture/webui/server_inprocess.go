@@ -30,7 +30,7 @@ import "github.com/dreadl0ck/netcap/internal/resolvers"
 const analysisErrorLogName = "analysis-errors.log"
 
 func inProcessResolverConfig() resolvers.Config {
-	return resolvers.Config{ReverseDNS: false, LocalDNS: false, MACDB: true}
+	return resolvers.Config{ReverseDNS: false, LocalDNS: false, MACDB: true, DHCPDB: true}
 }
 
 func inProcessRequiredExcludes() string { return "Exploit,Service,Software" }

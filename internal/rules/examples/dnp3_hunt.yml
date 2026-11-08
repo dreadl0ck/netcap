@@ -164,15 +164,14 @@ rules:
     tags: [dnp3, identity, spoofing]
     enabled: true
 
-  # Recon: a Class 0 poll returns the outstation's entire static point map, and
-  # is byte-identical to what a real master sends. Breadth across outstations is
-  # the signal, not the poll itself.
+  # Group 60 variation 1 requests Class 0 static data. Routine integrity polls
+  # also match; breadth needs comparison with the site's operating baseline.
   - name: DNP3 Class 0 Integrity Poll Sweep
-    description: One source requesting the Class 0 static point map from five or more outstations within five minutes. A single Class 0 poll is routine master behaviour; polling the whole estate in one window is an inventory.
+    description: One source requesting Class 0 static data from five or more outstations within five minutes; compare with routine integrity polling before treating breadth as reconnaissance.
     type: DNP3
     expression: >-
       ParseStatus == "valid" && FunctionCode == 1 &&
-      any(Objects, {.ObjectGroup == 60 && .Variation == 0})
+      any(Objects, {.ObjectGroup == 60 && .Variation == 1})
     distinct_field: Destination
     distinct_threshold: 5
     threshold_window: 300

@@ -74,8 +74,21 @@ func (r *rdpReader) Decode() {
 	}
 
 	var clientBuf, serverBuf bytes.Buffer
+	loss := false
+	var started, stopped [2]bool
 
 	for _, d := range r.conversation.Data {
+		i := 0
+		if d.Direction() == reassembly.TCPDirServerToClient {
+			i = 1
+		}
+		if fragment, ok := d.(*core.StreamData); ok && fragment.HasGap(started[i]) {
+			loss, stopped[i] = true, true
+		}
+		if stopped[i] {
+			continue
+		}
+		started[i] = started[i] || len(d.Raw()) > 0
 		if d.Direction() == reassembly.TCPDirClientToServer {
 			clientBuf.Write(d.Raw())
 		} else {
@@ -90,7 +103,11 @@ func (r *rdpReader) Decode() {
 	if len(clientData) >= 11 && clientData[0] == tpktVersion {
 		msg := r.parseConnectionRequest(clientData)
 		if msg != nil {
-			r.enrichWithServerResponse(msg, serverData)
+			if loss {
+				msg.NegotiationOutcome = "unavailable-after-capture-loss"
+			} else {
+				r.enrichWithServerResponse(msg, serverData)
+			}
 			msg.SrcIP = r.conversation.ClientIP
 			msg.DstIP = r.conversation.ServerIP
 			msg.SrcPort = int32(r.conversation.ClientPort)
@@ -113,9 +130,11 @@ func (r *rdpReader) parseConnectionRequest(data []byte) *types.RDP {
 	}
 
 	msg := &types.RDP{
-		Timestamp:       r.conversation.FirstClientPacket.UnixNano(),
-		ConnectionPhase: "Connection Request",
-		IsRequest:       true,
+		NegotiationOutcome:    "not-observed",
+		AuthenticationOutcome: "unknown",
+		Timestamp:             r.conversation.FirstClientPacket.UnixNano(),
+		ConnectionPhase:       "Connection Request",
+		IsRequest:             true,
 	}
 
 	// Parse TPKT header
@@ -124,6 +143,7 @@ func (r *rdpReader) parseConnectionRequest(data []byte) *types.RDP {
 	// data[2:4] = length
 	tpktLength := binary.BigEndian.Uint16(data[2:4])
 	if int(tpktLength) > len(data) {
+		msg.NegotiationOutcome = "malformed"
 		tpktLength = uint16(len(data))
 	}
 
@@ -177,9 +197,11 @@ func (r *rdpReader) parseConnectionRequest(data []byte) *types.RDP {
 }
 
 func (r *rdpReader) parseNegotiationRequest(msg *types.RDP, data []byte) {
-	if len(data) < 8 {
+	if len(data) < 8 || binary.LittleEndian.Uint16(data[2:4]) != 8 {
+		msg.NegotiationOutcome = "malformed"
 		return
 	}
+	msg.NegotiationRequest = true
 
 	// Type = data[0] (RDPNegReq = 0x01)
 	// Flags = data[1]
@@ -194,19 +216,15 @@ func (r *rdpReader) parseNegotiationRequest(msg *types.RDP, data []byte) {
 	}
 	if requestedProtocols&ProtocolSSL != 0 {
 		protocols = append(protocols, "SSL")
-		msg.UsesTLS = true
 	}
 	if requestedProtocols&ProtocolHybrid != 0 {
 		protocols = append(protocols, "CredSSP/NLA")
-		msg.UsesNLA = true
-		msg.UsesCredSSP = true
 	}
 	if requestedProtocols&ProtocolRDSTLS != 0 {
 		protocols = append(protocols, "RDSTLS")
 	}
 	if requestedProtocols&ProtocolHybridEx != 0 {
 		protocols = append(protocols, "CredSSP/EarlyUserAuth")
-		msg.UsesCredSSP = true
 	}
 
 	msg.RequestedProtocolNames = strings.Join(protocols, ",")
@@ -214,6 +232,13 @@ func (r *rdpReader) parseNegotiationRequest(msg *types.RDP, data []byte) {
 }
 
 func (r *rdpReader) enrichWithServerResponse(msg *types.RDP, serverData []byte) {
+	if msg.NegotiationOutcome == "" {
+		msg.NegotiationOutcome = "not-observed"
+	}
+	msg.AuthenticationOutcome = "unknown"
+	if len(serverData) > 0 {
+		msg.NegotiationOutcome = "malformed"
+	}
 	if len(serverData) < 11 {
 		return
 	}
@@ -222,6 +247,11 @@ func (r *rdpReader) enrichWithServerResponse(msg *types.RDP, serverData []byte) 
 	if serverData[0] != tpktVersion {
 		return
 	}
+	length := int(binary.BigEndian.Uint16(serverData[2:4]))
+	if length < 11 || length > len(serverData) {
+		return
+	}
+	serverData = serverData[:length]
 
 	// Check for X.224 Connection Confirm
 	if serverData[5] != x224ConnectionConfirm {
@@ -248,7 +278,13 @@ func (r *rdpReader) enrichWithServerResponse(msg *types.RDP, serverData []byte) 
 }
 
 func (r *rdpReader) parseNegotiationResponse(msg *types.RDP, data []byte) {
-	if len(data) < 8 {
+	msg.ConnectionSuccessful = false
+	msg.SelectedProtocol = ""
+	msg.AuthenticationOutcome = "unknown"
+	msg.UsesTLS, msg.UsesNLA, msg.UsesCredSSP = false, false, false
+	msg.NegotiatedSecurityKnown = false
+	if len(data) < 8 || binary.LittleEndian.Uint16(data[2:4]) != 8 {
+		msg.NegotiationOutcome = "malformed"
 		return
 	}
 
@@ -256,9 +292,21 @@ func (r *rdpReader) parseNegotiationResponse(msg *types.RDP, data []byte) {
 	flags := data[1]
 	// Length = data[2:4]
 	selectedProtocol := binary.LittleEndian.Uint32(data[4:8])
+	switch selectedProtocol {
+	case ProtocolRDP, ProtocolSSL, ProtocolHybrid, ProtocolRDSTLS, ProtocolHybridEx:
+	default:
+		msg.NegotiationOutcome = "malformed"
+		return
+	}
+	msg.NegotiationOutcome = "accepted"
+	msg.NegotiatedSecurityKnown = true
+	msg.UsesTLS = selectedProtocol != ProtocolRDP
+	msg.UsesNLA = selectedProtocol == ProtocolHybrid || selectedProtocol == ProtocolHybridEx
+	msg.UsesCredSSP = msg.UsesNLA
 
 	msg.SelectedProtocol = getSelectedProtocolName(selectedProtocol)
 	msg.ConnectionSuccessful = true
+	// Kept for old consumers: this field has only ever observed negotiation acceptance.
 
 	// Parse flags
 	if flags&0x01 != 0 {
@@ -276,9 +324,15 @@ func (r *rdpReader) parseNegotiationResponse(msg *types.RDP, data []byte) {
 }
 
 func (r *rdpReader) parseNegotiationFailure(msg *types.RDP, data []byte) {
-	if len(data) < 8 {
+	msg.AuthenticationOutcome = "unknown"
+	msg.ConnectionSuccessful = false
+	msg.UsesTLS, msg.UsesNLA, msg.UsesCredSSP = false, false, false
+	msg.NegotiatedSecurityKnown = false
+	if len(data) < 8 || binary.LittleEndian.Uint16(data[2:4]) != 8 {
+		msg.NegotiationOutcome = "malformed"
 		return
 	}
+	msg.NegotiationOutcome = "rejected"
 
 	// Type = data[0] (RDPNegFailure = 0x03)
 	// Flags = data[1]

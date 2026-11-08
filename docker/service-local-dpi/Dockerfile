@@ -2,7 +2,9 @@
 # Container for running the try service with file upload capabilities (with DPI support using local go-dpi)
 
 # Build stage - Use official netcap builder with DPI support
-FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-dpi-latest AS builder
+ARG NETCAP_BUILDER_IMAGE
+FROM --platform=linux/amd64 ${NETCAP_BUILDER_IMAGE} AS builder
+RUN pkg-config --exact-version=1.22.0 yara_x_capi
 
 # Copy go-dpi source FIRST (to use local version)
 WORKDIR /go-dpi
@@ -26,7 +28,7 @@ RUN rm -rf /netcap/bin
 
 # Build the binary WITH DPI support (disable workspace mode)
 # Extract library versions
-RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
+RUN GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket) && \
     GO_DPI_VERSION=$(cd /go-dpi && git describe --tags --always 2>/dev/null || echo "local-dev") && \
     mkdir -p /netcap/bin && \
     GOWORK=off GOOS=linux GOARCH=amd64 go build -a -trimpath \

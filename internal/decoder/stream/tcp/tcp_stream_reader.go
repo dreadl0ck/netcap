@@ -47,23 +47,28 @@ func SetLogger(l *zap.Logger) {
 // this structure has an optimized field order to avoid excessive padding.
 type tcpStreamReader struct {
 	sync.Mutex
-	data     core.DataFragments
-	ident    string
-	parent   *tcpConnection
-	numBytes int
-	dataChan chan *core.StreamData
-	hexdump  bool
-	isClient bool
-	saved    bool
+	data        core.DataFragments
+	ident       string
+	parent      *tcpConnection
+	numBytes    int
+	dataChan    chan *core.StreamData
+	hexdump     bool
+	isClient    bool
+	saved       bool
+	closeOnce   sync.Once
+	done        chan struct{}
+	factorySlot int
 }
 
 func (t *tcpConnection) newTCPStreamReader(client bool) *tcpStreamReader {
 	return &tcpStreamReader{
-		dataChan: make(chan *core.StreamData, decoderconfig.Instance.StreamDecoderBufSize),
-		ident:    t.ident,
-		hexdump:  decoderconfig.Instance.HexDump,
-		parent:   t,
-		isClient: client,
+		dataChan:    make(chan *core.StreamData, decoderconfig.Instance.StreamDecoderBufSize),
+		ident:       t.ident,
+		hexdump:     decoderconfig.Instance.HexDump,
+		parent:      t,
+		isClient:    client,
+		done:        make(chan struct{}),
+		factorySlot: -1,
 	}
 }
 
@@ -72,11 +77,20 @@ func (t *tcpStreamReader) DataChan() chan *core.StreamData {
 	return t.dataChan
 }
 
+func (t *tcpStreamReader) CloseData() {
+	t.closeOnce.Do(func() {
+		if t.dataChan != nil {
+			close(t.dataChan)
+		}
+	})
+}
+
 // StoreData records an immutable stream fragment synchronously with the
 // assembler's delivery path so completion sees fragments still queued for draining.
 func (t *tcpStreamReader) StoreData(data *core.StreamData) {
 	t.parent.Lock()
 	t.data = append(t.data, data)
+	t.parent.wasMerged = false
 	t.numBytes += len(data.RawData)
 	t.parent.Unlock()
 }
@@ -221,7 +235,7 @@ func contiguousServicePrefix(data core.DataFragments, limit int) []byte {
 	var prefix []byte
 	for _, fragment := range data {
 		d, ok := fragment.(*core.StreamData)
-		if !ok || d.SkippedBytes != 0 {
+		if !ok || d.SkippedBytes != 0 || d.DiscardedBytes > 0 {
 			break
 		}
 		n := min(len(d.Raw()), limit-len(prefix))
@@ -235,7 +249,12 @@ func contiguousServicePrefix(data core.DataFragments, limit int) []byte {
 
 // Run starts reading TCP traffic in a single direction.
 func (t *tcpStreamReader) Run(f *connectionFactory) {
-	defer t.Cleanup(f)
+	defer func() {
+		t.Cleanup(f)
+		if t.done != nil {
+			close(t.done)
+		}
+	}()
 	for range t.dataChan {
 	}
 }

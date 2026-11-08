@@ -132,22 +132,25 @@ type RuntimeConfig struct {
 	LocalDNS     bool
 
 	// TCP Reassembly
-	ReassembleConnections bool
-	FlowExports           bool
-	CaptureEvidence       bool
-	RetainPackets         bool
-	PacketSegmentBytes    int64
-	PacketRetentionBytes  int64
-	FlowExportPorts       string
-	FlushEvery            int
-	Checksum              bool
-	NoOptCheck            bool
-	IgnoreFSMErr          bool
-	AllowMissingInit      bool
-	ModbusRTUEndpoints    string
-	DNP3PointMap          string
-	ClosePendingTimeout   time.Duration
-	CloseInactiveTimeout  time.Duration
+	ReassembleConnections   bool
+	FlowExports             bool
+	CaptureEvidence         bool
+	RetainPackets           bool
+	PacketSegmentBytes      int64
+	PacketRetentionBytes    int64
+	FlowExportPorts         string
+	FlushEvery              int
+	Checksum                bool
+	NoOptCheck              bool
+	IgnoreFSMErr            bool
+	AllowMissingInit        bool
+	ModbusRTUEndpoints      string
+	DNP3PointMap            string
+	ClosePendingTimeout     time.Duration
+	CloseInactiveTimeout    time.Duration
+	LiveMaintenanceInterval time.Duration
+	LiveFlushInterval       time.Duration
+	MaxRetainedTCPBytes     int64
 
 	// Output Format
 	Proto bool
@@ -211,7 +214,8 @@ type Server struct {
 	dpiPreferences       map[string]*UserDPIPreferences // DPI preferences per user IP
 	reportedIssues       map[string]bool                // Tracks which file hashes have had issues reported
 	fileIDToPath         map[string]string              // Maps file IDs to file paths (local mode)
-	devMode              bool                           // Development mode: use current binary instead of "net"
+	childAnalyses        map[string]childAnalysis
+	devMode              bool // Development mode: use current binary instead of "net"
 
 	// Rules cache
 	rulesConfig      any // Cached rules config (uses rules.Config type to avoid circular import)
@@ -333,6 +337,9 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 		}
 
 		log.Printf("[Server] Service mode enabled with data directory: %s", serviceConfig.DataDir)
+		if err := s.discoverServiceChildren(resultsDir); err != nil {
+			log.Printf("[WebUI] Service child discovery failed: %v", err)
+		}
 
 		// Restore sessions from disk (persist sessions across restarts)
 		// pcapsDir := filepath.Join(serviceConfig.DataDir, "pcaps")
@@ -344,6 +351,9 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 		s.jobQueue = make(chan *AnalysisJob, 100)
 		s.shutdownChan = make(chan struct{})
 		log.Printf("[WebUI] Local mode: job queue initialized for upload processing")
+		if err := s.discoverLocalChildren(); err != nil {
+			log.Printf("[WebUI] Child discovery failed: %v", err)
+		}
 	}
 
 	return s
@@ -768,7 +778,7 @@ func (s *Server) Start() error {
 
 	s.httpServer = &http.Server{
 		Addr:         s.addr,
-		Handler:      gzipMiddleware(s.corsMiddleware(mux)),
+		Handler:      gzipMiddleware(s.corsMiddleware(s.captureSelectionMiddleware(mux))),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 5 * time.Minute,
 		IdleTimeout:  120 * time.Second,
@@ -1021,9 +1031,10 @@ func (s *Server) SetFileOutputDir(inputFile, outputDir string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.fileOutputDirs[inputFile] = outputDir
-	// Also update the active output directory so API calls use the correct path immediately
-	s.outDir = outputDir
-	log.Printf("[WebUI] Output directory set for %s: %s (active outDir updated)", inputFile, outputDir)
+	if s.activeInputFile == "" || s.activeInputFile == inputFile {
+		s.outDir = outputDir
+	}
+	log.Printf("[WebUI] Output directory set for %s: %s", inputFile, outputDir)
 }
 
 // GetFileOutputDir retrieves the output directory for a specific input file
@@ -1039,6 +1050,10 @@ func (s *Server) MarkFileCompleted(inputFile string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.completedFiles[inputFile] = true
+	if err := s.saveLocalChildStateLocked(inputFile); err != nil {
+		delete(s.completedFiles, inputFile)
+		s.fileErrors[inputFile] = FileError{InputFile: inputFile, Error: "Failed to persist child completion: " + err.Error(), Timestamp: time.Now().Unix()}
+	}
 	log.Printf("[WebUI] File marked as completed: %s", inputFile)
 }
 
@@ -1057,6 +1072,9 @@ func (s *Server) SetFileProcessingTime(inputFile string, durationSeconds float64
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.fileProcessingTime[inputFile] = durationSeconds
+	if err := s.saveLocalChildStateLocked(inputFile); err != nil {
+		log.Printf("[WebUI] Child timing persistence failed: %v", err)
+	}
 	log.Printf("[WebUI] Processing time set for %s: %.2f seconds", inputFile, durationSeconds)
 }
 
@@ -1101,6 +1119,9 @@ func (s *Server) SetFileError(inputFile, errorMsg, errorLogPath string) {
 		Error:        errorMsg,
 		ErrorLogPath: errorLogPath,
 		Timestamp:    time.Now().Unix(),
+	}
+	if err := s.saveLocalChildStateLocked(inputFile); err != nil {
+		log.Printf("[WebUI] Child failure persistence failed: %v", err)
 	}
 	log.Printf("[WebUI] Error recorded for file %s: %s", inputFile, errorMsg)
 	if errorLogPath != "" {
@@ -1782,14 +1803,21 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	flowExports, flowPorts := true, ""
 	captureEvidence, retainPackets := true, false
 	var segmentBytes, retentionBytes int64
+	var maintenanceInterval, flushInterval time.Duration
+	var maxRetainedTCPBytes int64
 	s.mu.RLock()
 	if s.runtimeConfig != nil {
 		flowExports = s.runtimeConfig.FlowExports
 		flowPorts = s.runtimeConfig.FlowExportPorts
 		captureEvidence, retainPackets = s.runtimeConfig.CaptureEvidence, s.runtimeConfig.RetainPackets
 		segmentBytes, retentionBytes = s.runtimeConfig.PacketSegmentBytes, s.runtimeConfig.PacketRetentionBytes
+		maintenanceInterval, flushInterval = s.runtimeConfig.LiveMaintenanceInterval, s.runtimeConfig.LiveFlushInterval
+		maxRetainedTCPBytes = s.runtimeConfig.MaxRetainedTCPBytes
 	}
 	s.mu.RUnlock()
+	if job.requireCaptureEvidence {
+		captureEvidence = true
+	}
 	// Build collector configuration
 	restoreArtifactConfig, artifactErr := applyArtifactJobConfig(job)
 	if artifactErr != nil {
@@ -1798,22 +1826,24 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	}
 	defer restoreArtifactConfig()
 	c := collector.New(collector.Config{
-		NetworkDetection:       s.featureEnabled(featureNetworkDetection),
-		DNSResolutionContext:   s.featureEnabled(featureDNSResolutionContext),
-		NetworkDetectionConfig: os.Getenv("NC_NETWORK_DETECTION_CONFIG"),
-		Workers:                defaults.CaptureWorkers(),
-		PacketBufferSize:       defaults.PacketBuffer,
-		WriteUnknownPackets:    false,
-		Promisc:                true,
-		SnapLen:                defaults.SnapLen,
-		BaseLayer:              utils.GetBaseLayer("ethernet"),
-		DecodeOptions:          utils.GetDecodeOptions("default"),
-		DPI:                    job.EnableDPI,
-		DPIModules:             "",
-		ReassembleConnections:  true,
-		FlowExports:            flowExports,
-		CaptureEvidence:        captureEvidence,
-		RetainPackets:          retainPackets, PacketSegmentBytes: segmentBytes, PacketRetentionBytes: retentionBytes,
+		NetworkDetection:        s.featureEnabled(featureNetworkDetection),
+		DNSResolutionContext:    s.featureEnabled(featureDNSResolutionContext),
+		NetworkDetectionConfig:  os.Getenv("NC_NETWORK_DETECTION_CONFIG"),
+		Workers:                 defaults.CaptureWorkers(),
+		PacketBufferSize:        defaults.PacketBuffer,
+		LiveMaintenanceInterval: maintenanceInterval,
+		LiveFlushInterval:       flushInterval,
+		WriteUnknownPackets:     false,
+		Promisc:                 true,
+		SnapLen:                 defaults.SnapLen,
+		BaseLayer:               utils.GetBaseLayer("ethernet"),
+		DecodeOptions:           utils.GetDecodeOptions("default"),
+		DPI:                     job.EnableDPI,
+		DPIModules:              "",
+		ReassembleConnections:   true,
+		FlowExports:             flowExports,
+		CaptureEvidence:         captureEvidence,
+		RetainPackets:           retainPackets, PacketSegmentBytes: segmentBytes, PacketRetentionBytes: retentionBytes,
 		FlowExportPorts:      flowPorts,
 		FreeOSMem:            0,
 		LogErrors:            false,
@@ -1825,6 +1855,8 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		Scatter:              true,
 		ScatterDuration:      5 * time.Minute,
 		DecoderConfig: &config.Config{
+			MaxRetainedTCPBytes: maxRetainedTCPBytes,
+
 			Quiet:            true,
 			PrintProgress:    false,
 			Buffer:           true,

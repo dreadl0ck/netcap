@@ -75,7 +75,9 @@ cat > "$NETCAP_ROOT/docker/service-local-gopacket/Dockerfile" << 'DOCKERFILE_END
 # Container for running the try service with file upload capabilities (using local gopacket)
 
 # Build stage - Use official netcap builder with DPI support
-FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-dpi-latest AS builder
+ARG NETCAP_BUILDER_IMAGE
+FROM --platform=linux/amd64 ${NETCAP_BUILDER_IMAGE} AS builder
+RUN pkg-config --exact-version=1.22.0 yara_x_capi
 
 # Copy gopacket source FIRST (to use local version)
 WORKDIR /gopacket
@@ -252,6 +254,7 @@ if [[ "${USE_BUILDX}" == "true" && "${NETCAP_PUSH_IMAGES}" == "true" ]]; then
     
     echo "[INFO] Building container..."
     docker buildx build \
+        --build-arg NETCAP_BUILDER_IMAGE="${NETCAP_BUILDER_IMAGE:?set a qualified YARA-X 1.22.0 builder image}" \
         --platform "${PLATFORMS}" \
         --provenance=false \
         --build-arg VERSION="${VERSION}" \
@@ -271,6 +274,7 @@ if [[ "${USE_BUILDX}" == "true" && "${NETCAP_PUSH_IMAGES}" == "true" ]]; then
         
         echo "[INFO] Building and pushing latest tag for: ${PLATFORMS}"
         docker buildx build \
+            --build-arg NETCAP_BUILDER_IMAGE="${NETCAP_BUILDER_IMAGE:?set a qualified YARA-X 1.22.0 builder image}" \
             --platform "${PLATFORMS}" \
             --provenance=false \
             --build-arg VERSION="${VERSION}" \
@@ -329,6 +333,7 @@ else
     cp -r "$GOPACKET_ABS_PATH" "$BUILD_CONTEXT/gopacket"
     
     docker build \
+        --build-arg NETCAP_BUILDER_IMAGE="${NETCAP_BUILDER_IMAGE:?set a qualified YARA-X 1.22.0 builder image}" \
         --provenance=false \
         --build-arg VERSION="${VERSION}" \
         -t "${IMAGE_TAG}" \

@@ -1,6 +1,6 @@
 # Database updates
 
-Go v0.15.2 and Rust v0.1.9 install signed community data using an embedded Ed25519 verification root. No community API key is required.
+Go v0.15.2 installs signed community data using an embedded Ed25519 verification root. No community API key is required.
 
 ## Install and Update
 

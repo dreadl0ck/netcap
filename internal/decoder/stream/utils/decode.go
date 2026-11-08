@@ -28,8 +28,17 @@ type ReadPosition struct {
 	buf   *bytes.Buffer
 	rd    *bufio.Reader
 
-	written int
-	server  bool
+	written     int
+	server      bool
+	observation string
+}
+
+// TCPObservation qualifies post-close wire evidence; it never confirms delivery.
+func (p *ReadPosition) TCPObservation() string {
+	if p == nil {
+		return ""
+	}
+	return p.observation
 }
 
 // FragmentReader reads one contiguous direction while retaining capture offsets.
@@ -97,6 +106,8 @@ func DecodeConversationAt(
 		buf         bytes.Buffer
 		run         core.DataFragments
 		previousDir reassembly.TCPFlowDirection
+		started     [2]bool
+		observation string
 	)
 
 	if len(data) > 0 {
@@ -106,6 +117,9 @@ func DecodeConversationAt(
 	// A run is the consecutive fragments traveling the same way. Each is
 	// drained through its own bufio.Reader, so the position is scoped to it.
 	drain := func() {
+		if buf.Len() == 0 {
+			return
+		}
 		var (
 			err error
 			rd  = bufio.NewReader(&buf)
@@ -114,11 +128,12 @@ func DecodeConversationAt(
 		_, index := core.Flatten(run)
 
 		pos := &ReadPosition{
-			index:   index,
-			buf:     &buf,
-			rd:      rd,
-			written: buf.Len(),
-			server:  previousDir == reassembly.TCPDirServerToClient,
+			index:       index,
+			buf:         &buf,
+			rd:          rd,
+			written:     buf.Len(),
+			server:      previousDir == reassembly.TCPDirServerToClient,
+			observation: observation,
 		}
 
 		handle := client
@@ -127,7 +142,11 @@ func DecodeConversationAt(
 		}
 
 		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+			before := pos.Offset()
 			err = handle(rd, pos)
+			if pos.Offset() == before {
+				break
+			}
 		}
 
 		if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
@@ -139,11 +158,26 @@ func DecodeConversationAt(
 	}
 
 	for _, d := range data {
-		if fragment, ok := d.(*core.StreamData); ok && fragment.SkippedBytes != 0 {
+		if d == nil {
+			continue
+		}
+		dir := 0
+		if d.Direction() == reassembly.TCPDirServerToClient {
+			dir = 1
+		}
+		if fragment, ok := d.(*core.StreamData); ok && fragment.HasGap(started[dir]) {
 			drain()
 			return
 		}
-		if d.Direction() == previousDir {
+		if len(d.Raw()) == 0 {
+			continue
+		}
+		started[dir] = true
+		qualification := ""
+		if fragment, ok := d.(*core.StreamData); ok {
+			qualification = fragment.TCPObservation
+		}
+		if d.Direction() == previousDir && qualification == observation {
 			buf.Write(d.Raw())
 			run = append(run, d)
 
@@ -155,6 +189,7 @@ func DecodeConversationAt(
 		buf.Reset()
 		run = core.DataFragments{d}
 		previousDir = d.Direction()
+		observation = qualification
 
 		buf.Write(d.Raw())
 	}

@@ -66,8 +66,8 @@ one at https://mozilla.org/MPL/2.0/.
 These suffix rules are not a domain-popularity dataset. Optional operator CSVs
 are not distributed by Netcap and are subject to their own source terms.
 
-MPL-covered Go dependencies
----------------------------
+MPL-covered Go dependency
+-------------------------
 All Netcap binary variants include the unmodified github.com/hashicorp/go-uuid
 v1.0.3 package under MPL-2.0. Its full license is reproduced in
 THIRD_PARTY_LICENSES.txt. The exact covered source files are available at no
@@ -75,40 +75,6 @@ charge in source-code form from:
 
   https://github.com/hashicorp/go-uuid/tree/v1.0.3
   https://proxy.golang.org/github.com/hashicorp/go-uuid/@v/v1.0.3.zip
-
-The unmodified github.com/hashicorp/golang-lru v1.0.2 dependency is also
-MPL-2.0. Its full license is in THIRD_PARTY_LICENSES.txt and its covered source
-is available at no charge:
-
-  https://github.com/hashicorp/golang-lru/tree/v1.0.2
-  https://proxy.golang.org/github.com/hashicorp/golang-lru/@v/v1.0.2.zip
-
-modernc SQLite and libc
------------------------
-modernc.org/sqlite v1.60.1 and modernc.org/libc v1.77.1 use BSD-3-Clause for
-their own code. SQLite is public domain; musl libc is MIT. Their complete
-primary and third-party license texts are in THIRD_PARTY_LICENSES.txt.
-
-Generated GCC header portions carry GPL-3.0-or-later WITH
-GCC-exception-3.1, copyright Free Software Foundation, Inc. The GPL text is
-in ../LICENSE and the complete exception is in licenses/GCC-exception-3.1.txt.
-The exception permits eligible compiled combinations with independent modules
-under those modules' terms; it does not relicense GCC-derived source as BSD.
-Netcap uses the unmodified dependency sources:
-
-  https://proxy.golang.org/modernc.org/libc/@v/v1.77.1.zip
-  https://proxy.golang.org/modernc.org/sqlite/@v/v1.60.1.zip
-
-The 2026-11-07 FOSSA review checked all seven variants in
-internal/tools/licenses/main.go. Its CDDL matches were illumos-only; its
-GPLv2 and GPLv3-only matches were unselected headers or test data. Selected
-GPLv3-or-later matches were GCC-exception headers on Darwin ARM64 and Windows
-AMD64. SQLite's MPL match was its third-party catalogue describing tool-only
-golang-lru/v2, distinct from Netcap's MPL-covered golang-lru v1 above.
-These findings do not authorize redistribution of the complete dependency
-source trees under BSD. Re-review new versions, targets and build tags.
-FOSSA issues 21407524-21407530 have individual project-scoped dispositions;
-data-correction disputes 536-540 remain subject to FOSSA's review.
 
 Google Magika CLI 1.0.2
 -----------------------
@@ -121,16 +87,22 @@ release third-party source archive and is also available from crates.io.
   Source: https://github.com/google/magika/archive/refs/tags/cli/v1.0.2.tar.gz
   License: Apache-2.0, reproduced in THIRD_PARTY_LICENSES.txt
 
+Gopacket maintenance fork
+------------------------
+github.com/gopacket/gopacket v1.7.2 is replaced by github.com/dreadl0ck/gopacket
+at f2eeabc1ff6e52e2b18f4642100b3d1ecf584f1a (BSD-3-Clause). This retains the
+v1.7.2 baseline and adds live-handle Close wakeups; it does not adopt v1.7.7.
+The replacement version and license text are in THIRD_PARTY_LICENSES.txt.
+
 YARA-X native libraries
 ---------------------------
 DPI builder images and service images include the unmodified YARA-X C API
-library 1.14.0 under BSD-3-Clause; macOS bundles C API 1.15.0. Their statically linked Rust dependencies and license
+library 1.22.0 under BSD-3-Clause on Linux and macOS. Its statically linked Rust dependencies and license
 texts are listed in THIRD_PARTY_RUST_LICENSES.txt. The YARA-X license is also
 reproduced in THIRD_PARTY_LICENSES.txt under github.com/VirusTotal/yara-x/go
-v1.14.0.
+v1.22.0.
 
-  Source: https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.14.0.tar.gz
-  macOS source: https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.15.0.tar.gz
+  Source: https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.22.0.tar.gz
 
 Native DPI libraries
 --------------------

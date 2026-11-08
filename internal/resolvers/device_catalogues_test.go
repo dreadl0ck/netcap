@@ -33,6 +33,9 @@ func TestInstalledDeviceCataloguesDefaultAndRetainedStatus(t *testing.T) {
 	t.Setenv("NC_DHCP_CATALOGUE", "")
 	macCatalogue.Store(nil)
 	dhcpCatalogue.Store(nil)
+	deviceStatus.Lock()
+	deviceStatus.MAC, deviceStatus.DHCP = DeviceCatalogueStatus{}, DeviceCatalogueStatus{}
+	deviceStatus.Unlock()
 	// Test-only keys sign the real candidate; no production credential is used.
 	root := ed25519.NewKeyFromSeed(make([]byte, 32))
 	seed := make([]byte, 32)
@@ -53,6 +56,14 @@ func TestInstalledDeviceCataloguesDefaultAndRetainedStatus(t *testing.T) {
 	trust := root.Public().(ed25519.PublicKey)
 	if err = enrichment.Install(enrichment.Root(ConfigRootPath), envelope, archive, trust, now); err != nil {
 		t.Fatal(err)
+	}
+	for _, status := range installedDeviceCatalogueStatuses(enrichment.Root(ConfigRootPath), trust, now) {
+		if status.State != "verified-installed" || status.Scope != "installation" || status.Version == "" {
+			t.Fatalf("installed inventory: %+v", status)
+		}
+	}
+	if macCatalogue.Load() != nil || dhcpCatalogue.Load() != nil || DeviceCatalogueStatuses()[0].State != "not-initialized" {
+		t.Fatal("installation inspection mutated capture state")
 	}
 	initDeviceCataloguesWithTrust(true, true, trust, now)
 	if LookupDHCPFingerprintLocal("1,3,6") != "Xbox 360" || macCatalogue.Load() == nil {

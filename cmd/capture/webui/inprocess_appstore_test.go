@@ -22,6 +22,7 @@
 package webui
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -226,6 +227,50 @@ func TestInProcessAnalysisProducesAuditRecords(t *testing.T) {
 	}
 	assertProgressStatus(t, s, job.SessionID, "completed")
 	t.Logf("in-process analysis produced %d audit record file(s) from %s", audit, input)
+
+	parentManifest, err := os.ReadFile(filepath.Join(outDir, "capture-manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.jobQueue = make(chan *AnalysisJob, 1)
+	s.runtimeConfig = &RuntimeConfig{CaptureEvidence: false}
+	w := requestReanalysis(s, string(mustOfflineJSON(t, map[string]string{"inputFile": input})))
+	if w.Code != http.StatusOK {
+		t.Fatalf("child admission: %d %s", w.Code, w.Body.String())
+	}
+	child := <-s.jobQueue
+	defer child.processingDone()
+	s.runAnalysis(child)
+	assertProgressStatus(t, s, child.SessionID, "completed")
+	if childManifest, err := os.ReadFile(filepath.Join(child.OutputDir, "capture-manifest.json")); err != nil || bytes.Equal(childManifest, parentManifest) {
+		t.Fatalf("child manifest is missing or reused parent manifest: %v", err)
+	}
+	after, err := os.ReadFile(filepath.Join(outDir, "capture-manifest.json"))
+	if err != nil || !bytes.Equal(after, parentManifest) || !s.completedFiles[input] || s.fileOutputDirs[input] != outDir {
+		t.Fatalf("child execution changed parent: %v", err)
+	}
+	restored := NewServer("127.0.0.1:0", outDir, []string{input}, "", false, false, false, nil, nil, false)
+	if !restored.completedFiles[child.InputFile] || restored.fileIDToPath[child.SessionID] != child.InputFile || len(restored.jobQueue) != 0 {
+		t.Fatalf("completed native child did not survive restart independently: errors=%+v", restored.fileErrors)
+	}
+	var binding struct {
+		RunID       string `json:"runId"`
+		InputSHA256 string `json:"inputSHA256"`
+	}
+	if err := json.Unmarshal(parentManifest, &binding); err != nil {
+		t.Fatal(err)
+	}
+	w = requestReanalysis(s, subsetRequestBody(t, input, binding.RunID, &childPacketSelection{Version: 1, SourceSHA256: binding.InputSHA256, BPF: "tcp port 18127"}))
+	if w.Code != 200 {
+		t.Fatalf("native subset admission: %d %s", w.Code, w.Body.String())
+	}
+	subset := <-s.jobQueue
+	defer subset.processingDone()
+	s.runAnalysis(subset)
+	assertProgressStatus(t, s, subset.SessionID, "completed")
+	if _, err := os.Stat(filepath.Join(subset.OutputDir, "Protobuf.ncap.gz")); err != nil {
+		t.Fatalf("subset produced no Protobuf audit records: %v", err)
+	}
 }
 
 func TestAppStoreInProcessAnalysisNeedsNoExternalDatabases(t *testing.T) {

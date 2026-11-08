@@ -384,8 +384,8 @@ func TestReorderSwapsReadersAndRepairsDirections(t *testing.T) {
 	)
 	transportFlow := gopacket.NewFlow(
 		layers.EndpointTCPPort,
+		[]byte{0x00, 0x19}, // server-first SMTP
 		[]byte{0xc3, 0x50}, // 50000
-		[]byte{0x00, 0x19}, // 25 (SMTP)
 	)
 
 	base := time.Now()

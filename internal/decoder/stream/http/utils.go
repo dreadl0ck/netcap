@@ -41,7 +41,12 @@ import (
 // set HTTP request on types.HTTP.
 func setRequest(h *types.HTTP, req *httpRequest) {
 	if req.incomplete {
-		h.ReassemblyStatus = "incomplete_request_body"
+		addStatus(h, "incomplete_request_body")
+	}
+	h.RawRequestLine, h.RequestHeaders = req.evidence.line, req.evidence.headers
+	h.ParseQualifications = appendUnique(h.ParseQualifications, req.evidence.issues...)
+	for _, issue := range req.evidence.issues {
+		addStatus(h, issue)
 	}
 	// set basic info
 	h.Timestamp = req.timestamp
@@ -59,7 +64,7 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	if decoderconfig.Instance != nil && decoderconfig.Instance.IncludePayloads {
 		h.RequestBody = body
 	}
-	if err == nil {
+	if err == nil && !req.evidence.unsafe {
 		h.ContentTypeDetected = http.DetectContentType(body)
 
 		// decompress if required
@@ -80,9 +85,6 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	h.UserAgent = req.request.UserAgent()
 	h.Referer = req.request.Referer()
 	h.URL = req.request.RequestURI
-	if req.parseIssue != "" {
-		h.ReassemblyStatus = req.parseIssue
-	}
 
 	// retrieve ip addresses and ports set on the request while processing
 	h.SrcIP = req.clientIP

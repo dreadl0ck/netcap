@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["enabled", "image", "scope", "tokenSecret", "nodeSelector", "resources"],
+  "properties": {
+    "legacyAdmin": {"type": "boolean"},
+    "authConfigSecret": {"type": "object", "additionalProperties": false, "required": ["name", "key"], "properties": {"name": {"type": "string"}, "key": {"type": "string", "minLength": 1}}},
+    "tokenEnvironment": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["name", "secretName", "secretKey"], "properties": {"name": {"type": "string", "pattern": "^[A-Z_][A-Z0-9_]*$"}, "secretName": {"type": "string", "minLength": 1}, "secretKey": {"type": "string", "minLength": 1}}}},
+    "mode": {"enum": ["leases", "network"]},
+    "policyState": {"type": "object", "additionalProperties": false, "required": ["configSecretName", "credentialsSecretName"], "properties": {
+      "configSecretName": {"type": "string"}, "credentialsSecretName": {"type": "string"}
+    }},
+    "policy": {"type": "object"},
+    "network": {"type": "object", "additionalProperties": false, "properties": {
+      "queue": {"type": "integer", "minimum": 0, "maximum": 65535},
+      "maxQueueLen": {"type": "integer", "minimum": 1, "maximum": 65535},
+      "deadline": {"type": "string", "minLength": 1}, "failureVerdict": {"enum": ["allow", "deny"]},
+      "bypassWithoutListener": {"type": "boolean"}, "failOpenOnOverflow": {"type": "boolean"}, "inspectTLS": {"type": "boolean"}
+    }},
+    "enabled": {"type": "boolean"},
+    "nodeSelector": {"type": "object", "additionalProperties": {"type": "string"}},
+    "resources": {"type": "object"},
+    "image": {
+      "type": "object", "additionalProperties": false,
+      "required": ["repository", "tag", "digest", "pullPolicy"],
+      "properties": {
+        "repository": {"type": "string", "minLength": 1},
+        "tag": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([-+][a-zA-Z0-9.-]+)?$"},
+        "digest": {"type": "string", "pattern": "^(|sha256:[a-f0-9]{64})$"},
+        "pullPolicy": {"enum": ["Always", "IfNotPresent", "Never"]}
+      }
+    },
+    "tokenSecret": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "key"],
+      "properties": {"name": {"type": "string"}, "key": {"type": "string", "minLength": 1}}
+    },
+    "scope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["namespace", "interface", "destination", "port", "protocol", "hook", "table", "protectedCIDRs"],
+      "properties": {
+        "namespace": {"type": "string"}, "interface": {"type": "string"},
+        "destination": {"type": "string"},
+        "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "protocol": {"enum": ["tcp", "udp"]}, "hook": {"enum": ["input", "forward"]},
+        "table": {"type": "string", "pattern": "^netcap_firewall_[a-zA-Z0-9_]+$"},
+        "protectedCIDRs": {"type": "array", "items": {"type": "string"}},
+        "managementDestinations": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+mode: managed
+replicaCount: 1
+upstream: http://backend:8080
+authConfigSecret:
+  name: firewall-auth
+  key: auth.json
+tokenEnvironment:
+  - {name: FIREWALL_READER_TOKEN, secretName: firewall-role-tokens, secretKey: reader}
+  - {name: FIREWALL_OPERATOR_TOKEN, secretName: firewall-role-tokens, secretKey: operator}
+adminTLS:
+  secretName: firewall-admin-tls
+adminService:
+  enabled: true
+managed:
+  size: 1Gi

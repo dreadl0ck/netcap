@@ -1,0 +1,490 @@
+package sipaudit
+
+import (
+	"net/netip"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+
+	"github.com/dreadl0ck/netcap/types"
+)
+
+// Retain historical negotiations until capture reset: UDP drains after signaling.
+// Accounting deliberately overestimates Go objects, maps and slice growth.
+const associationBudget = 16 << 20
+const CapacityLoss = "sip-association-capacity; RTP candidate only, association unavailable"
+const associationLifetime int64 = 3600e9
+
+type Codec struct {
+	Encoding string
+	Rate     uint32
+	Events   string
+}
+type media struct {
+	ip       string
+	port     int32
+	codecs   map[uint32]Codec
+	disabled bool
+}
+type description struct {
+	from, to     string
+	at           int64
+	seq          int32
+	method       string
+	answer, stop bool
+	media        []media
+}
+type call struct {
+	id           string
+	scope        string
+	descriptions []description
+}
+
+// Associations stores signaling metadata only. Capture-time intervals, rather
+// than arrival order or wall time, also support UDP replay after TCP readers drain.
+type Associations struct {
+	mu          sync.RWMutex
+	calls       map[string]*call
+	used, limit int
+	lost        bool
+	lostAt      int64
+	rejected    uint64
+}
+
+type AssociationCoverage struct {
+	Status               string `json:"status"`
+	Policy               string `json:"policy"`
+	LimitBytes           int    `json:"limitBytes"`
+	RetainedBytes        int    `json:"retainedBytes"`
+	RetainedCalls        int    `json:"retainedCalls"`
+	RetainedDescriptions int    `json:"retainedDescriptions"`
+	RejectedDescriptions uint64 `json:"rejectedDescriptions"`
+	UntrustedFrom        int64  `json:"untrustedFromNs"`
+}
+
+func (a *Associations) Coverage() AssociationCoverage {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	c := AssociationCoverage{Status: "complete", Policy: "retain-history; fail-closed from earliest rejected signaling timestamp across all scopes", LimitBytes: a.limit, RetainedBytes: a.used, RetainedCalls: len(a.calls), RejectedDescriptions: a.rejected, UntrustedFrom: a.lostAt}
+	if a.lost {
+		c.Status = "capacity-loss"
+	}
+	for _, call := range a.calls {
+		c.RetainedDescriptions += len(call.descriptions)
+	}
+	return c
+}
+
+var Media = NewAssociations()
+
+func NewAssociations() *Associations { return NewAssociationsWithBudget(associationBudget) }
+
+// NewAssociationsWithBudget bounds retained signaling metadata, never packet buffers.
+func NewAssociationsWithBudget(bytes int) *Associations {
+	return &Associations{calls: map[string]*call{}, limit: bytes}
+}
+func (a *Associations) Reset() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.calls, a.used, a.lost, a.lostAt = map[string]*call{}, 0, false, 0
+	a.rejected = 0
+}
+
+func (a *Associations) Qualification(at int64) string {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	if a.lost && at >= a.lostAt {
+		return CapacityLoss
+	}
+	return ""
+}
+
+func fromTag(from string) string {
+	for _, part := range strings.Split(from, ";")[1:] {
+		key, value, ok := strings.Cut(strings.TrimSpace(part), "=")
+		if ok && strings.EqualFold(key, "tag") {
+			return strings.Clone(value)
+		}
+	}
+	return ""
+}
+
+func (a *Associations) Observe(s *types.SIP) {
+	if s.TCPObservation != "" {
+		return
+	}
+	if s.CallID == "" || len(s.CallID) > 256 {
+		return
+	}
+	tag := fromTag(s.From)
+	if tag == "" || len(tag) > 128 {
+		return
+	}
+	to := fromTag(s.To)
+	if len(to) > 128 {
+		return
+	}
+	d := description{from: tag, to: to, at: s.Timestamp, seq: s.CSeqNumber, method: strings.Clone(s.CSeqMethod), answer: s.IsResponse}
+	if !s.IsResponse && (s.MethodName == "BYE" || s.MethodName == "CANCEL") {
+		d.stop = true
+		d.method = strings.Clone(s.MethodName)
+	} else {
+		if d.method != "INVITE" && d.method != "UPDATE" {
+			return
+		}
+		if s.IsResponse && (s.ResponseCode < 180 || s.ResponseCode >= 300) {
+			return
+		}
+		contentType, _, _ := strings.Cut(s.ContentType, ";")
+		if !strings.EqualFold(strings.TrimSpace(contentType), "application/sdp") {
+			return
+		}
+		d.media = parseSDP(s.Body)
+		if len(d.media) == 0 {
+			return
+		}
+	}
+	key := s.NetworkScope + "\x00" + s.CallID
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	c := a.calls[key]
+	// Retransmissions do not extend a negotiation's validity or consume slots.
+	if c != nil {
+		for i := range c.descriptions {
+			old := &c.descriptions[i]
+			if old.from == d.from && old.to == d.to && old.seq == d.seq && old.method == d.method && old.answer == d.answer && old.stop == d.stop && sameMedia(old.media, d.media) {
+				if d.at < old.at {
+					old.at = d.at
+					sort.SliceStable(c.descriptions, func(i, j int) bool { return c.descriptions[i].at < c.descriptions[j].at })
+				}
+				return
+			}
+		}
+	}
+	cost := 512 + len(tag) + len(to) + len(d.method)
+	if c == nil {
+		cost += 512 + 2*len(key)
+	}
+	for _, m := range d.media {
+		cost += 256 + len(m.ip)
+		for _, codec := range m.codecs {
+			cost += 256 + len(codec.Encoding) + len(codec.Events)
+		}
+	}
+	if a.lost || cost > a.limit-a.used {
+		a.rejected++
+		if !a.lost || d.at < a.lostAt {
+			a.lostAt = d.at
+		}
+		a.lost = true
+		return
+	}
+	a.used += cost
+	if c == nil {
+		c = &call{id: strings.Clone(s.CallID), scope: strings.Clone(s.NetworkScope)}
+		a.calls[key] = c
+	}
+	c.descriptions = append(c.descriptions, d)
+	sort.SliceStable(c.descriptions, func(i, j int) bool { return c.descriptions[i].at < c.descriptions[j].at })
+}
+
+// A missing To tag is an early offer shared by its response forks.
+func sameDialog(d, answer *description) bool {
+	return d.from == answer.from && (d.to == "" || d.to == answer.to) ||
+		d.to == answer.from && d.from == answer.to
+}
+
+func sameMedia(a, b []media) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, x := range a {
+		y := b[i]
+		if x.ip != y.ip || x.port != y.port || x.disabled != y.disabled || len(x.codecs) != len(y.codecs) {
+			return false
+		}
+		for pt, codec := range x.codecs {
+			if y.codecs[pt] != codec {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// Lookup requires both advertised endpoints and a matching offer/answer codec.
+// Ambiguous overlapping calls fail closed; NAT port guessing is not performed.
+func (a *Associations) Lookup(scope, src, dst string, sport, dport int32, pt uint32, at int64) (string, Codec, bool) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	if a.lost && at >= a.lostAt {
+		return "", Codec{}, false
+	}
+	var foundID string
+	var foundCall *call
+	var found Codec
+	var foundDialog string
+	for _, c := range a.calls {
+		if c.scope != scope {
+			continue
+		}
+		// Only the latest response per directed dialog can be current. Keep ties
+		// for ambiguity checks without rescanning every historical answer.
+		type tags struct{ from, to string }
+		latest := map[tags]int64{}
+		for _, d := range c.descriptions {
+			if d.at > at {
+				break
+			}
+			if d.answer {
+				latest[tags{d.from, d.to}] = d.at
+			}
+		}
+		for ai := range c.descriptions {
+			answer := &c.descriptions[ai]
+			if !answer.answer || answer.at > at || answer.at != latest[tags{answer.from, answer.to}] {
+				continue
+			}
+			var offer *description
+			var stop *description
+			valid := true
+			for di := range c.descriptions {
+				d := &c.descriptions[di]
+				if d.at > at {
+					break
+				}
+				if !sameDialog(d, answer) {
+					continue
+				}
+				if d.stop && (d.method == "CANCEL" || answer.to == "" || d.to != "") {
+					stop = d
+				}
+				if !d.answer && !d.stop {
+					if d.at <= answer.at && d.from == answer.from && (d.to == answer.to || d.to == "") {
+						offer = d
+					} else if d.at > answer.at {
+						valid = false
+					}
+				}
+				if d.answer && d.at > answer.at && d.from == answer.from && d.to == answer.to {
+					valid = false
+				}
+			}
+			if !valid || offer == nil || stop != nil && stop.at >= offer.at || offer.seq != answer.seq || offer.method != answer.method || at-offer.at > associationLifetime {
+				continue
+			}
+			dialog := answer.from + "\x00" + answer.to
+			for i, x := range offer.media {
+				if i >= len(answer.media) {
+					break
+				}
+				y := answer.media[i]
+				if x.disabled || y.disabled {
+					continue
+				}
+				if src == x.ip && sport == x.port && dst == y.ip && dport == y.port {
+					x, y = y, x // x is the receiver's payload map
+				} else if !(src == y.ip && sport == y.port && dst == x.ip && dport == x.port) {
+					continue
+				}
+				codec, ok := x.codecs[pt]
+				if !ok {
+					continue
+				}
+				compatible := false
+				var allowed [16]bool
+				for _, peer := range y.codecs {
+					if peer.Encoding == codec.Encoding && peer.Rate == codec.Rate {
+						if codec.Encoding == "telephone-event" {
+							for event := range uint32(16) {
+								if codec.AllowsEvent(event) && peer.AllowsEvent(event) {
+									allowed[event] = true
+								}
+							}
+						}
+						compatible = true
+					}
+				}
+				if codec.Encoding == "telephone-event" {
+					var events []string
+					for event, ok := range allowed {
+						if ok {
+							events = append(events, strconv.Itoa(event))
+						}
+					}
+					compatible = len(events) > 0
+					codec.Events = strings.Join(events, ",")
+				}
+				if !compatible {
+					continue
+				}
+				if foundCall != nil && (foundCall != c || found != codec || foundDialog != dialog) {
+					return "", Codec{}, false
+				}
+				foundID, found = c.id, codec
+				foundCall = c
+				foundDialog = dialog
+			}
+		}
+	}
+	return foundID, found, foundID != ""
+}
+
+func connection(fields []string) string {
+	if len(fields) != 3 || fields[0] != "IN" || (fields[1] != "IP4" && fields[1] != "IP6") {
+		return ""
+	}
+	ip, err := netip.ParseAddr(fields[2])
+	if err != nil || ip.IsUnspecified() || ip.IsMulticast() || (fields[1] == "IP4") != ip.Is4() {
+		return ""
+	}
+	return ip.String()
+}
+
+func parseSDP(body []byte) []media {
+	if len(body) == 0 || len(body) > MaxBody {
+		return nil
+	}
+	var result []media
+	sessionIP := ""
+	sessionDisabled := false
+	for _, line := range strings.Split(string(body), "\n") {
+		line = strings.TrimSuffix(line, "\r")
+		if len(line) < 2 || line[1] != '=' {
+			continue
+		}
+		fields := strings.Fields(line[2:])
+		switch line[:2] {
+		case "c=":
+			ip := connection(fields)
+			if len(result) == 0 {
+				sessionIP = ip
+			} else {
+				result[len(result)-1].ip = ip
+			}
+		case "m=":
+			if len(result) >= 8 {
+				return nil
+			}
+			m := media{ip: sessionIP, disabled: sessionDisabled, codecs: map[uint32]Codec{}}
+			if len(fields) >= 4 {
+				port, err := strconv.ParseUint(fields[1], 10, 16)
+				m.port = int32(port)
+				m.disabled = m.disabled || err != nil || port == 0 || fields[0] != "audio" || (fields[2] != "RTP/AVP" && fields[2] != "RTP/AVPF")
+				if len(fields) > 36 {
+					return nil
+				}
+				for _, value := range fields[3:] {
+					pt, err := strconv.ParseUint(value, 10, 7)
+					if err == nil {
+						m.codecs[uint32(pt)] = staticCodec(uint32(pt))
+					}
+				}
+			} else {
+				m.disabled = true
+			}
+			result = append(result, m)
+		case "a=":
+			if line == "a=inactive" || line == "a=sendonly" || line == "a=recvonly" {
+				// Direction-limited sessions need directional offer/answer handling.
+				if len(result) == 0 {
+					sessionDisabled = true
+				} else {
+					result[len(result)-1].disabled = true
+				}
+			}
+			if len(result) == 0 {
+				continue
+			}
+			m := &result[len(result)-1]
+			if len(fields) != 2 {
+				continue
+			}
+			name, value, ok := strings.Cut(fields[0], ":")
+			if !ok {
+				continue
+			}
+			pt, err := strconv.ParseUint(value, 10, 7)
+			if err != nil {
+				continue
+			}
+			codec, offered := m.codecs[uint32(pt)]
+			if !offered {
+				continue
+			}
+			if name == "rtpmap" {
+				parts := strings.Split(fields[1], "/")
+				if len(parts) < 2 || len(parts) > 3 || len(parts[0]) > 32 {
+					continue
+				}
+				rate, err := strconv.ParseUint(parts[1], 10, 32)
+				if err != nil || rate == 0 || rate > 384000 {
+					continue
+				}
+				codec.Encoding, codec.Rate = strings.Clone(strings.ToLower(parts[0])), uint32(rate)
+			} else if name == "fmtp" && len(fields[1]) <= 128 {
+				codec.Events = strings.Clone(fields[1])
+			}
+			m.codecs[uint32(pt)] = codec
+		}
+	}
+	for i := range result {
+		m := &result[i]
+		if m.ip == "" {
+			m.disabled = true
+		}
+		for pt, c := range m.codecs {
+			if c.Encoding == "" || c.Rate == 0 {
+				delete(m.codecs, pt)
+			}
+		}
+	}
+	return result
+}
+
+func staticCodec(pt uint32) Codec {
+	switch pt {
+	case 0:
+		return Codec{Encoding: "pcmu", Rate: 8000}
+	case 8:
+		return Codec{Encoding: "pcma", Rate: 8000}
+	case 9:
+		return Codec{Encoding: "g722", Rate: 8000}
+	case 18:
+		return Codec{Encoding: "g729", Rate: 8000}
+	}
+	return Codec{}
+}
+
+func (c Codec) AllowsEvent(event uint32) bool {
+	if event > 15 {
+		return false
+	}
+	if c.Events == "" {
+		return true
+	} // RFC 4733 default events 0-15
+	allowed := false
+	for _, part := range strings.Split(c.Events, ",") {
+		lo, hi, rangeValue := strings.Cut(part, "-")
+		start, err := strconv.ParseUint(lo, 10, 8)
+		if err != nil {
+			return false
+		}
+		end := start
+		if rangeValue {
+			var err error
+			end, err = strconv.ParseUint(hi, 10, 8)
+			if err != nil {
+				return false
+			}
+		}
+		if start > end {
+			return false
+		}
+		if uint64(event) >= start && uint64(event) <= end {
+			allowed = true
+		}
+	}
+	return allowed
+}

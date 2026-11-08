@@ -277,10 +277,25 @@ func TestUDPServerSessionsFreshVariablesAndDatagramBoundaries(t *testing.T) {
 		}
 	}
 }
+
+type observedPacketReader struct {
+	net.PacketConn
+	reads      int
+	secondRead chan struct{}
+}
+
+func (p *observedPacketReader) ReadFrom(b []byte) (int, net.Addr, error) {
+	p.reads++
+	if p.reads == 2 {
+		close(p.secondRead)
+	}
+	return p.PacketConn.ReadFrom(b)
+}
+
 func TestUDPServerRejectsForeignPeerAndOversizedDatagram(t *testing.T) {
 	for _, mode := range []string{"foreign", "oversized", "cancel"} {
 		t.Run(mode, func(t *testing.T) {
-			p := udpListener(t)
+			p := &observedPacketReader{PacketConn: udpListener(t), secondRead: make(chan struct{})}
 			e := Exchange{Version: 1, Network: "udp", Address: p.LocalAddr().String(), Framing: Framing{MaxBytes: 8}, MaxTotalBytes: 64, TimeoutMilliseconds: 1000, Steps: []Step{{Receive: true, Expect: []byte("hello")}, {Send: []byte("ready")}, {Receive: true}}}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -308,6 +323,12 @@ func TestUDPServerRejectsForeignPeerAndOversizedDatagram(t *testing.T) {
 			case "oversized":
 				_, _ = c.Write(bytes.Repeat([]byte{1}, 16))
 			case "cancel":
+				// The third observation belongs to an attempted read, not an unstarted step.
+				select {
+				case <-p.secondRead:
+				case <-time.After(time.Second):
+					t.Fatal("server did not enter second UDP read")
+				}
 				cancel()
 			}
 			r := <-done

@@ -22,6 +22,7 @@ package capture
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -37,6 +38,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/internal/analyze"
@@ -48,6 +50,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/internal/env"
 	"github.com/dreadl0ck/netcap/internal/filter"
+	"github.com/dreadl0ck/netcap/internal/firewallaudit"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 
@@ -402,6 +405,18 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 	behaviorCommand := c
 	// Populate global variables from CLI context
 	setFlagsFromContext(c)
+	if c.Bool("firewall-schema") {
+		return json.NewEncoder(c.Writer).Encode(firewallaudit.Discover())
+	}
+	if c.String("firewall-effects-config") != "" && c.String("firewall-policy") == "" {
+		return errors.New("firewall-effects-config requires firewall-policy")
+	}
+	if c.String("firewall-policy") != "" && (flagService || (flagInput == "" && flagInterface == "")) {
+		return errors.New("firewall-policy requires direct -read or -iface capture; service/upload mode is unsupported")
+	}
+	if c.String("firewall-policy") != "" && flagInput != "" && flagInterface != "" {
+		return errors.New("firewall-policy requires choosing either -read or -iface")
+	}
 	if flagCPUProfile && (flagService || (flagInput == "" && flagInterface == "" && flagHTTP != "")) {
 		return errors.New("-cpuprof requires an offline or live capture; service and upload-only modes are unsupported")
 	}
@@ -700,34 +715,37 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			ReassembleConnections: flagReassembleConnections,
 			FlowExports:           flagFlowExports,
 			CaptureEvidence:       flagCaptureEvidence, RetainPackets: flagRetainPackets, PacketSegmentBytes: flagPacketSegmentBytes, PacketRetentionBytes: flagPacketRetentionBytes,
-			FlowExportPorts:      flagFlowExportPorts,
-			FlushEvery:           flagFlushevery,
-			Checksum:             flagChecksum,
-			NoOptCheck:           flagNooptcheck,
-			IgnoreFSMErr:         flagIgnorefsmerr,
-			AllowMissingInit:     flagAllowmissinginit,
-			ModbusRTUEndpoints:   flagModbusRTUEndpoints,
-			DNP3PointMap:         flagDNP3PointMap,
-			ClosePendingTimeout:  flagClosePendingTimeout,
-			CloseInactiveTimeout: flagCloseInactiveTimeout,
-			Proto:                flagProto,
-			JSON:                 flagJSON,
-			CSV:                  flagCSV,
-			Elastic:              flagElastic,
-			ElasticAddrs:         flagElasticAddrs,
-			ElasticUser:          flagElasticUser,
-			IgnoreUnknown:        flagIgnoreUnknown,
-			FreeOSMemory:         flagFreeOSMemory,
-			ConnFlushInterval:    flagConnFlushInterval,
-			ConnTimeout:          flagConnTimeOut,
-			FlowFlushInterval:    flagFlowFlushInterval,
-			FlowTimeout:          flagFlowTimeOut,
-			Entropy:              flagCalcEntropy,
-			TCPDebug:             flagTCPDebug,
-			SaveConns:            flagSaveConns,
-			DefragIPv4:           flagDefragIPv4,
-			HexDump:              flagHexdump,
-			BannerSize:           flagBannerSize,
+			FlowExportPorts:         flagFlowExportPorts,
+			FlushEvery:              flagFlushevery,
+			Checksum:                flagChecksum,
+			NoOptCheck:              flagNooptcheck,
+			IgnoreFSMErr:            flagIgnorefsmerr,
+			AllowMissingInit:        flagAllowmissinginit,
+			ModbusRTUEndpoints:      flagModbusRTUEndpoints,
+			DNP3PointMap:            flagDNP3PointMap,
+			ClosePendingTimeout:     flagClosePendingTimeout,
+			CloseInactiveTimeout:    flagCloseInactiveTimeout,
+			LiveMaintenanceInterval: flagLiveMaintenanceInterval,
+			LiveFlushInterval:       flagLiveFlushInterval,
+			MaxRetainedTCPBytes:     flagMaxRetainedTCPBytes,
+			Proto:                   flagProto,
+			JSON:                    flagJSON,
+			CSV:                     flagCSV,
+			Elastic:                 flagElastic,
+			ElasticAddrs:            flagElasticAddrs,
+			ElasticUser:             flagElasticUser,
+			IgnoreUnknown:           flagIgnoreUnknown,
+			FreeOSMemory:            flagFreeOSMemory,
+			ConnFlushInterval:       flagConnFlushInterval,
+			ConnTimeout:             flagConnTimeOut,
+			FlowFlushInterval:       flagFlowFlushInterval,
+			FlowTimeout:             flagFlowTimeOut,
+			Entropy:                 flagCalcEntropy,
+			TCPDebug:                flagTCPDebug,
+			SaveConns:               flagSaveConns,
+			DefragIPv4:              flagDefragIPv4,
+			HexDump:                 flagHexdump,
+			BannerSize:              flagBannerSize,
 		}
 
 		// Create server in local mode (unrestricted)
@@ -886,24 +904,38 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		defer webUIServer.SetProcessingComplete()
 	}
 
+	var firewallObserver func(proto.Message)
+	stopCapture := stopProfile
+	if path := c.String("firewall-policy"); path != "" {
+		bridge, err := firewallaudit.Open(firewallaudit.Config{PolicyFile: path, EffectsFile: c.String("firewall-effects-config"), Live: live && flagInput == "", Audit: c.ErrWriter})
+		if err != nil {
+			return err
+		}
+		defer func() { runErr = errors.Join(runErr, bridge.Close()) }()
+		stopCapture = func() error { return errors.Join(stopProfile(), bridge.Close()) }
+		firewallObserver = bridge.Chain(nil)
+	}
+
 	// init collector
 	coll := collector.New(collector.Config{
-		NetworkDetection:       flagNetworkDetection,
-		DNSResolutionContext:   flagDNSResolutionContext,
-		NetworkDetectionConfig: flagNetworkDetectionConfig,
-		Workers:                flagWorkers,
-		PacketBufferSize:       flagPacketBuffer,
-		WriteUnknownPackets:    !flagIgnoreUnknown,
-		Promisc:                flagPromiscMode,
-		SnapLen:                flagSnapLen,
-		BaseLayer:              utils.GetBaseLayer(flagBaseLayer),
-		DecodeOptions:          utils.GetDecodeOptions(flagDecodeOptions),
-		DPI:                    flagDPI,
-		DPIModules:             flagDPIModules,
-		DPIWorkers:             flagDPIWorkers,
-		ReassembleConnections:  flagReassembleConnections,
-		FlowExports:            flagFlowExports,
-		CaptureEvidence:        flagCaptureEvidence, RetainPackets: flagRetainPackets, PacketSegmentBytes: flagPacketSegmentBytes, PacketRetentionBytes: flagPacketRetentionBytes,
+		NetworkDetection:        flagNetworkDetection,
+		DNSResolutionContext:    flagDNSResolutionContext,
+		NetworkDetectionConfig:  flagNetworkDetectionConfig,
+		Workers:                 flagWorkers,
+		PacketBufferSize:        flagPacketBuffer,
+		LiveMaintenanceInterval: flagLiveMaintenanceInterval,
+		LiveFlushInterval:       flagLiveFlushInterval,
+		WriteUnknownPackets:     !flagIgnoreUnknown,
+		Promisc:                 flagPromiscMode,
+		SnapLen:                 flagSnapLen,
+		BaseLayer:               utils.GetBaseLayer(flagBaseLayer),
+		DecodeOptions:           utils.GetDecodeOptions(flagDecodeOptions),
+		DPI:                     flagDPI,
+		DPIModules:              flagDPIModules,
+		DPIWorkers:              flagDPIWorkers,
+		ReassembleConnections:   flagReassembleConnections,
+		FlowExports:             flagFlowExports,
+		CaptureEvidence:         flagCaptureEvidence, RetainPackets: flagRetainPackets, PacketSegmentBytes: flagPacketSegmentBytes, PacketRetentionBytes: flagPacketRetentionBytes,
 		FlowExportPorts:      flagFlowExportPorts,
 		FreeOSMem:            flagFreeOSMemory,
 		LogErrors:            flagLogErrors,
@@ -980,6 +1012,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			MaxStreamBytes:                 flagMaxStreamBytes,
 			MaxBufferedPagesPerConnection:  flagMaxBufferedPagesPerConnection,
 			MaxBufferedPagesTotal:          flagMaxBufferedPagesTotal,
+			MaxRetainedTCPBytes:            flagMaxRetainedTCPBytes,
 			IgnoreDecoderInitErrors:        flagIgnoreInitErrs,
 			DisableGenericVersionHarvester: flagDisableGenericVersionHarvester,
 			RemoveClosedStreams:            flagRemoveClosedStreams,
@@ -988,11 +1021,13 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			ProtoSearchPaths:               flagProtoSearchPaths,
 			ProtoShowAlternatives:          flagProtoShowAlternatives,
 			ProtoMessageTypes:              flagProtoMessageTypes,
+			RecordObserver:                 firewallObserver,
 		},
 		ResolverConfig: resolvers.Config{
 			ReverseDNS: flagReverseDNS,
 			LocalDNS:   flagLocalDNS,
 			MACDB:      flagMACDB,
+			DHCPDB:     true,
 			JA4DB:      flagJA4DB,
 
 			ServiceDB:     flagServiceDB,
@@ -1001,7 +1036,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		},
 	})
 	coll.Bpf = flagBPF
-	coll.SetSignalExitHook(stopProfile)
+	coll.SetSignalExitHook(stopCapture)
 	defer func() { runErr = errors.Join(runErr, coll.GetNetworkDetectionError()) }()
 	coll.InputFile = flagInput
 	coll.PrintTime = flagTime
@@ -1080,6 +1115,11 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 
 	// collect traffic live from named interface
 	if live {
+		if firewallObserver != nil {
+			if err := firewallaudit.Prepare(coll); err != nil {
+				return err
+			}
+		}
 		// Create a cancellable context for live capture
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -1251,22 +1291,24 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 
 			// Create a fresh collector instance with updated configuration for this file
 			coll = collector.New(collector.Config{
-				NetworkDetection:       flagNetworkDetection,
-				DNSResolutionContext:   flagDNSResolutionContext,
-				NetworkDetectionConfig: flagNetworkDetectionConfig,
-				Workers:                flagWorkers,
-				PacketBufferSize:       flagPacketBuffer,
-				WriteUnknownPackets:    !flagIgnoreUnknown,
-				Promisc:                flagPromiscMode,
-				SnapLen:                flagSnapLen,
-				BaseLayer:              utils.GetBaseLayer(flagBaseLayer),
-				DecodeOptions:          utils.GetDecodeOptions(flagDecodeOptions),
-				DPI:                    flagDPI,
-				DPIModules:             flagDPIModules,
-				DPIWorkers:             flagDPIWorkers,
-				ReassembleConnections:  flagReassembleConnections,
-				FlowExports:            flagFlowExports,
-				CaptureEvidence:        flagCaptureEvidence, RetainPackets: flagRetainPackets, PacketSegmentBytes: flagPacketSegmentBytes, PacketRetentionBytes: flagPacketRetentionBytes,
+				NetworkDetection:        flagNetworkDetection,
+				DNSResolutionContext:    flagDNSResolutionContext,
+				NetworkDetectionConfig:  flagNetworkDetectionConfig,
+				Workers:                 flagWorkers,
+				PacketBufferSize:        flagPacketBuffer,
+				LiveMaintenanceInterval: flagLiveMaintenanceInterval,
+				LiveFlushInterval:       flagLiveFlushInterval,
+				WriteUnknownPackets:     !flagIgnoreUnknown,
+				Promisc:                 flagPromiscMode,
+				SnapLen:                 flagSnapLen,
+				BaseLayer:               utils.GetBaseLayer(flagBaseLayer),
+				DecodeOptions:           utils.GetDecodeOptions(flagDecodeOptions),
+				DPI:                     flagDPI,
+				DPIModules:              flagDPIModules,
+				DPIWorkers:              flagDPIWorkers,
+				ReassembleConnections:   flagReassembleConnections,
+				FlowExports:             flagFlowExports,
+				CaptureEvidence:         flagCaptureEvidence, RetainPackets: flagRetainPackets, PacketSegmentBytes: flagPacketSegmentBytes, PacketRetentionBytes: flagPacketRetentionBytes,
 				FlowExportPorts:      flagFlowExportPorts,
 				FreeOSMem:            flagFreeOSMemory,
 				LogErrors:            flagLogErrors,
@@ -1343,6 +1385,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 					MaxStreamBytes:                 flagMaxStreamBytes,
 					MaxBufferedPagesPerConnection:  flagMaxBufferedPagesPerConnection,
 					MaxBufferedPagesTotal:          flagMaxBufferedPagesTotal,
+					MaxRetainedTCPBytes:            flagMaxRetainedTCPBytes,
 					IgnoreDecoderInitErrors:        flagIgnoreInitErrs,
 					DisableGenericVersionHarvester: flagDisableGenericVersionHarvester,
 					RemoveClosedStreams:            flagRemoveClosedStreams,
@@ -1351,11 +1394,13 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 					ProtoSearchPaths:               flagProtoSearchPaths,
 					ProtoShowAlternatives:          flagProtoShowAlternatives,
 					ProtoMessageTypes:              flagProtoMessageTypes,
+					RecordObserver:                 firewallObserver,
 				},
 				ResolverConfig: resolvers.Config{
 					ReverseDNS: flagReverseDNS,
 					LocalDNS:   flagLocalDNS,
 					MACDB:      flagMACDB,
+					DHCPDB:     true,
 					JA4DB:      flagJA4DB,
 
 					ServiceDB:     flagServiceDB,
@@ -1364,7 +1409,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 				},
 			})
 			coll.Bpf = flagBPF
-			coll.SetSignalExitHook(stopProfile)
+			coll.SetSignalExitHook(stopCapture)
 			coll.InputFile = inputFile
 			coll.PrintTime = flagTime
 			coll.Epochs = numEpochs
@@ -1402,6 +1447,12 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 				continue
 			}
 			return fmt.Errorf("input %s is a directory", inputFile)
+		}
+
+		if firewallObserver != nil {
+			if err := firewallaudit.Prepare(coll); err != nil {
+				return err
+			}
 		}
 
 		// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used

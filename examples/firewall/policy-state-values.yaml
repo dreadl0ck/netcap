@@ -1,0 +1,15 @@
+enabled: true
+service: policy-state
+replicaCount: 2
+persistence:
+  backend: postgres
+  postgres:
+    databaseURLEnv: NATIVE_DATABASE_URL
+    databaseNamespace: ncf_native_rules
+configSecretName: native-bootstrap
+credentialsSecretName: native-authority-credentials
+tlsSecretName: native-tls
+healthProbe:
+  enabled: true
+  authorizationSecretName: native-health-auth
+  caSecretName: native-ca

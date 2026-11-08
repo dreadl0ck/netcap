@@ -82,27 +82,6 @@ func (s *smb1Files) consume(frame []byte, at int64) {
 		}
 		return frame[offset : offset+length]
 	}
-	text := func(b []byte, absolute int) string {
-		if binary.LittleEndian.Uint16(frame[10:])&0x8000 != 0 {
-			if absolute%2 != 0 && len(b) > 0 {
-				b = b[1:]
-			}
-			for i := 0; i+1 < len(b); i += 2 {
-				if b[i] == 0 && b[i+1] == 0 {
-					b = b[:i]
-					break
-				}
-			}
-			if len(b)%2 != 0 {
-				b = b[:len(b)-1]
-			}
-			return smbText(b)
-		}
-		if index := bytes.IndexByte(b, 0); index >= 0 {
-			b = b[:index]
-		}
-		return string(b)
-	}
 	if !response {
 		if len(s.pending) >= 4096 {
 			return
@@ -110,19 +89,12 @@ func (s *smb1Files) consume(frame []byte, at int64) {
 		r := smbFileRequest{command: uint16(command), at: at, share: s.trees[tree]}
 		switch command {
 		case 0x75:
-			if len(p) < 8 {
-				return
-			}
-			password := int(binary.LittleEndian.Uint16(p[6:]))
-			if password > len(data) {
-				return
-			}
-			r.share = text(data[password:], start+password)
+			r.share = smb1TreePath(p, data, start, binary.LittleEndian.Uint16(frame[10:]))
 		case 0xa2:
-			if len(p) < 48 {
+			if len(p) != 48 {
 				return
 			}
-			r.name = text(data, start)
+			r.name = smb1CreateName(p, data, start, binary.LittleEndian.Uint16(frame[10:]))
 			r.directory = binary.LittleEndian.Uint32(p[39:])&1 != 0
 		case 0x2e:
 			if len(p) < 20 {

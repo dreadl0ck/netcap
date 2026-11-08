@@ -1,34 +1,28 @@
----
-description: Preserve information about other layers on audit records
----
-
 # Packet Contexts
 
-Netcap v0.4.3 added PacketContexts, a new feature to preserve additional information on audit records.
+`PacketContext` carries related IP/port information on supported audit records.
+It allows a transport or application record to retain endpoints that otherwise
+belong to another decoded layer. Capture enables `-context` by default.
 
-This need originates from a core concept of Netcap: separating the results based on the different protocols, which results in audit records like TCP not providing any IP address information, since they only provide information about the TCP protocol which operates at the Transport Layer.
-
-A packet context looks as follows:
-
-```erlang
-message PacketContext {
-    string SrcIP    = 1;
-    string DstIP    = 2;
-    string SrcPort  = 3;
-    string DstPort  = 4;
-}
+```sh
+net capture -read traffic.pcap -out context-audit -context=true -dpi=false
+net dump -read context-audit/UDP.ncap.gz -fields
+net dump -read context-audit/UDP.ncap.gz -json
 ```
 
-Many audit record types \(e.g: IPv4, IPv6, TCP, UDP, ICMPv4, ICMPv6, SCTP, DNS, DHCP, SIP etc\) now have an addional field called context, which will contain a PacketContext that describes the flow where the packet originated from, if context capture is enabled.
+Use [the synthetic capture](quickstart.md) for a known UDP example. CSV rendering
+flattens supported context fields into columns such as `SrcIP` and `DstIP`;
+`dump -fields` prints one selectable field per line. Duplicate transport fields
+need not be repeated in context.
 
-When generating a CSV representation the fields from the PacketContext are flattened, which means they will be shown as if they are direct member of the dumped audit record, e.g:
+| Context | Boundary |
+| --- | --- |
+| Packet endpoints | Observed addresses/ports, not authenticated asset identity |
+| Connection orientation | Can differ from an individual packet's direction |
+| Community ID | Cross-tool flow correlation, not a globally unique observation id |
+| Evidence link | Scoped reference plus provenance, beyond merely sharing endpoints |
 
-```text
-$ net dump -read UDP.ncap.gz -fields
-Timestamp,SrcPort,DstPort,Length,Checksum,PayloadEntropy,PayloadSize,Payload,SrcIP,DstIP
-```
-
-If the audit record already has information that would be duplicated by the PacketContext \(for example Port information for UDP\), this information is cleared on the context to avoid repetition.
-
-Context capture is enabled by default and can be controlled using the **-context** flag.
-
+Read the current schema in `types/netcap.proto`. A historical four-field excerpt
+is not the full contract for every record. Disabling context reduces information
+available for later joins; it does not anonymize retained payloads. See
+[hosts and identity](host-identity.md) and [evidence linking](evidence.md).

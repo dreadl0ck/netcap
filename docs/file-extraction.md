@@ -1,8 +1,9 @@
----
-description: Extract transferred files and save them to disk
----
-
 # File Extraction
+
+File extraction reconstructs available transferred content and emits `File`
+metadata. It is distinct from packet payload retention and complete source-PCAP
+retention. Encrypted content remains unavailable without a supported plaintext
+analysis path.
 
 ## Bounded extraction and analysis
 
@@ -53,116 +54,96 @@ enablement requires SHA-256. `IsComplete`/`CompletenessReason` qualify bytes;
 `StreamMissingBytes` is unattributed stream loss, not a measured missing-byte
 count for every file. General archive recursion remains unsupported.
 
-The original introduction/schema excerpt below describes an older implementation;
-the current schema is `types/netcap.proto` and the runtime contract above applies.
+## Usage
 
-## Introduction
+```sh
+net capture -read traffic.pcap -out file-audit -fileStorage files -dpi=false
+net dump -read file-audit/File.ncap.gz -fields
+net dump -read file-audit/File.ncap.gz -json
+```
 
-Various protocols allow transferring files (e.g: HTTP, POP3) and some are made for the sole purpose of transferring files (FTP, SMB etc).
-
-From a network security monitoring perspective, transferred files are interesting because they can contain malicious software or prohibited content.
-
-Netcap extracts files from HTTP and saves them to disk, for both HTTP responses and HTTP requests.
-
-It uses the **File** audit record type to model the extracted information.
-
-> Future versions will add file extraction support for other protocols as well.
+Only inspect `File.ncap.gz` when the capture produced file records. The default
+storage directory is `files` beneath the analysis output; disable extraction
+with `-fileStorage ''`. Protocol coverage and completeness differ by decoder.
 
 ## File Audit Records
 
-The audit record definition for a file looks like this:
+| Evidence | Interpretation |
+| --- | --- |
+| `Name`, source URL/metadata | Original advertised name, not a trusted filesystem path |
+| `Location` | Stored artifact path |
+| SHA-256 storage basename | Content-addressed name with preserved extension |
+| Declared/detected content types | Advertised MIME and classifier result can disagree |
+| Length/hashes/completeness | Qualify the bytes actually reconstructed |
+| Context/connection reference | Link back to the observed transfer |
 
-```erlang
-message File {
-    string        Timestamp   = 1;
-    string        Name        = 2;
-    int64         Length      = 3;
-    string        Hash        = 4;
-    string        Location    = 5;
-    string        Ident       = 6;
-    string        Source      = 7;
-    string        ContentType = 8;
-    PacketContext Context     = 9;
-    string        Host        = 10;
-    string        ContentTypeDetected = 11;
-}
+Current extraction uses SHA-256-based storage names and can retain multiple
+hash algorithms. Historical MD5-only examples and connection-derived filenames
+are obsolete. Inspect `types/netcap.proto` and emitted fields rather than an
+old copied message definition.
+
+## Inspect a synthetic artifact
+
+The [transfer lab](investigation-walkthrough.md) produces a known text file.
+Inspect its `Hashes.SHA256`, `IsComplete`, original name and stored `Location`.
+`Hash` remains legacy MD5; use the explicit SHA-256 field for the content check.
+Magika, MIME detection, executable/script heuristics and YARA are independent
+build/configuration-dependent analyses, not interchangeable verdicts.
+
+## YARA workflow
+
+For a YARA-enabled build, keep the local UI running while analyzing a fresh lab
+copy:
+
+<!-- docs:serve yara -->
+```sh
+net capture -read doc-fixtures/investigation.pcap -out doc-fixtures/yara-audit \
+  -http 127.0.0.1:8080 -dpi=false -geoDB=false
 ```
 
-As can be seen, the content type indicated by the HTTP header is included, as well as the content type that was detected. In addition, the source of the File is specified (e.g: from HTTP, Mail attachment etc), as well the identifier of the connection where it originated from.
+1. Open the YARA page and check engine availability. A `noyara` build cannot
+   scan; an unavailable engine or zero enabled rules is not a clean result.
+2. Upload [`docs/examples/synthetic-file.yar`](examples/synthetic-file.yar)
+   and enable the rule. It looks only for the synthetic body string.
+3. Select the lab analysis and scan its extracted file. Expect
+   `Netcap_Documentation_Fixture`; this match says nothing about malware.
+4. Compare a file without that marker and confirm no match, keeping engine/rule
+   status distinct from scan results.
 
-The Hash field currently holds an MD5 hash of the file, Location points to the path on disk where the file is stored.
+The equivalent local API check, after capture finalization, is below. It creates
+`negative.txt` only as a labeled scanner control, not as claimed capture evidence:
 
-> This will likely be replaced with a stronger hash function in the future.
-
-## Usage
-
-File capture is enabled by default and will store extracted files in the **files** subdirectory within your output directory. The **-fileStorage** flag allows you to customize this path (relative to the output directory):
-
-```
-$ net capture -read traffic.pcap -fileStorage files
-```
-
-To disable file extraction, set an empty string:
-
-```
-$ net capture -read traffic.pcap -fileStorage ""
-```
-
-After capturing, lets inspect the directory contents:
-
-```
-$ tree files
-files
-├── application
-│   └── x-gzip
-│       └── unknown-193.24.227.12->216.66.80.30-80->60075.gz
-├── image
-│   └── x-icon
-│       └── favicon.ico-193.24.227.12->216.66.80.30-80->60076.ico
-└── text
-    └── html
-        ├── unknown-193.24.227.12->216.66.80.30-80->55031.html
-        ├── unknown-193.24.227.12->216.66.80.30-80->55032.html
-        ├── unknown-193.24.227.12->216.66.80.30-80->55033.html
-        └── unknown-80.237.133.136->192.168.110.10-80->1152.html
-
-6 directories, 6 files
+<!-- docs:run yara-scan -->
+```sh
+curl -fsS http://127.0.0.1:8080/api/yara/status > doc-fixtures/yara-status.json
+python3 -c 'import json; assert json.load(open("doc-fixtures/yara-status.json"))["available"], "YARA is unavailable"'
+curl -fsS -F file=@docs/examples/synthetic-file.yar \
+  http://127.0.0.1:8080/api/yara/rules/upload > doc-fixtures/yara-upload.json
+net dump -read doc-fixtures/yara-audit/File.ncap.gz -json > doc-fixtures/yara-files.ndjson
+python3 -c 'import json,pathlib; r=json.loads(open("doc-fixtures/yara-files.ndjson").readline()); p=pathlib.Path(r["Location"]).resolve(); base=pathlib.Path("doc-fixtures/yara-audit/files").resolve(); json.dump({"filePath":str(p.relative_to(base))},open("doc-fixtures/yara-request.json","w")); (base/"negative.txt").write_text("Synthetic negative scanner control.\n")'
+curl -fsS -H 'Content-Type: application/json' --data-binary @doc-fixtures/yara-request.json \
+  http://127.0.0.1:8080/api/yara/scan-file > doc-fixtures/yara-positive.json
+curl -fsS -H 'Content-Type: application/json' --data-binary '{"filePath":"negative.txt"}' \
+  http://127.0.0.1:8080/api/yara/scan-file > doc-fixtures/yara-negative.json
 ```
 
-As you can see, files are sorted by their MIME types retrieved from classifying them using the go standard library and named after the TCP connection they originated from.
+`make docs-check` runs this case when YARA is available and reports an explicit
+skip otherwise. For native release qualification, require it with
+`python3 scripts/check-docs.py --net /absolute/path/to/net --require-yara`.
 
-By default, only complete requests and responses are captured, if you also want to extract incomplete data, use the **-writeincomplete** flag:
+The WebUI API exposes `/api/yara/status`, `/api/yara/rules` and
+`/api/yara/scan-file`; MCP exposes `get_yara_status`, `list_yara_rules` and
+`execute_yara_scan`. The latter scans the selected session's files and is
+synchronous. Use its [generated contract](mcp/tools.md), not a guessed CLI
+`-yara` flag. Uploading rules or scanning is separate from capture-time matching.
 
-```
-$ net capture -read traffic.pcap -fileStorage files -writeincomplete
-```
+## Incomplete content
 
-Dumping a File on the commandline looks like this:
+`-writeincomplete` permits supported paths to write incomplete bodies. A stored
+file is not proof of a complete transfer: inspect gaps, parser state, declared
+lengths and [stream evidence](reassembly.md). Encodings/decompression can make
+stored bytes differ from their on-wire representation.
 
-```
-$ net dump -read File.ncap.gz -struc
-NC_File
-Timestamp: "2015-03-08 14:05:29.664213 +0000 UTC"
-Name: "ads.bmp"
-Length: 126
-Hash: "2d5a035011854b04a456b244b15a583b"
-Location: "files/image/bmp/ads.bmp-80.239.178.178->192.168.0.51-80->41214.bmp"
-Ident: "80.239.178.178->192.168.0.51-80->41214"
-Source: "HTTP RESPONSE from /ads.bmp"
-Context: <
-  SrcIP: "192.168.0.51"
-  DstIP: "80.239.178.178"
-  SrcPort: "41214"
-  DstPort: "80"
->
-ContentTypeDetected: "image/bmp"
-...
-```
-
-For properly exploring files for each host I recommend using the Maltego Integration:
-
-{% content-ref url="maltego-integration.md" %}
-[maltego-integration.md](maltego-integration.md)
-{% endcontent-ref %}
-
-![](<.gitbook/assets/files (1).png>)
+Transferred files can be executable or hostile. Retain them as evidence; the
+fact that Netcap wrote an artifact does not mean it is safe to open. Preserve
+the source capture/hash for repeat analysis.

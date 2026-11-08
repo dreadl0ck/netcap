@@ -59,26 +59,52 @@ func (z *zabbixReader) Decode() {
 		return
 	}
 
-	for _, d := range z.conversation.Data {
-		raw := d.Raw()
-		if len(raw) < zabbixHeaderLen {
-			continue
-		}
-
-		records := z.parseZabbixMessages(raw)
-		for _, rec := range records {
-			rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = z.conversation.Endpoints(d)
-			rec.Flow = z.conversation.Ident
-			rec.Timestamp = core.FragmentTime(d)
-
-			err := Decoder.Writer.Write(rec)
-			if err != nil {
-				zabbixLog.Error("failed to write zabbix record", zap.Error(err))
-			} else {
-				atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+	var regions [2]core.DataFragments
+	var sizes [2]int
+	flush := func(direction int) {
+		data, index := core.Flatten(regions[direction])
+		regions[direction] = nil
+		sizes[direction] = 0
+		for offset := 0; offset+zabbixHeaderLen <= len(data); {
+			if !bytes.Equal(data[offset:offset+5], zabbixMagic) {
+				break
 			}
+			length := binary.LittleEndian.Uint64(data[offset+5 : offset+13])
+			if length == 0 || length > uint64(len(data)-offset-zabbixHeaderLen) {
+				break
+			}
+			next := offset + zabbixHeaderLen + int(length)
+			for _, rec := range z.parseZabbixMessages(data[offset:next]) {
+				rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = z.conversation.EndpointsAt(index, offset)
+				rec.Flow = z.conversation.Ident
+				rec.CommunityID = z.conversation.CommunityID
+				rec.Timestamp, _ = index.At(offset)
+				if err := Decoder.Writer.Write(rec); err != nil {
+					zabbixLog.Error("failed to write zabbix record", zap.Error(err))
+				} else {
+					atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+				}
+			}
+			offset = next
 		}
 	}
+	for _, d := range z.conversation.Data {
+		direction := 0
+		if core.FromServer(d) {
+			direction = 1
+		}
+		if stream, ok := d.(*core.StreamData); ok && stream.SkippedBytes != 0 {
+			flush(direction)
+		}
+		if sizes[direction]+len(d.Raw()) > 16<<20 {
+			flush(direction)
+			continue
+		}
+		regions[direction] = append(regions[direction], d)
+		sizes[direction] += len(d.Raw())
+	}
+	flush(0)
+	flush(1)
 }
 
 func (z *zabbixReader) parseZabbixMessages(data []byte) []*types.Zabbix {

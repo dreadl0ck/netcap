@@ -377,6 +377,11 @@ func (s *smbReader) readSMBMessage(b *bufio.Reader, isClient bool) error {
 		return err
 	}
 
+	msgLen := int(nbHeader[1])<<16 | int(nbHeader[2])<<8 | int(nbHeader[3])
+	if msgLen > 4*1024*1024 {
+		return fmt.Errorf("SMB message length exceeds limit: %d", msgLen)
+	}
+
 	// NetBIOS session message type should be 0x00 (Session Message)
 	// Other types: 0x81 (Session Request), 0x82 (Positive Response), etc.
 	if nbHeader[0] != 0x00 {
@@ -385,22 +390,12 @@ func (s *smbReader) readSMBMessage(b *bufio.Reader, isClient bool) error {
 			zap.Uint8("type", nbHeader[0]),
 			zap.String("ident", s.conversation.Ident),
 		)
-		return nil
+		_, err = io.CopyN(io.Discard, b, int64(msgLen))
+		return err
 	}
 
-	// Calculate message length (24-bit big-endian)
-	msgLen := int(nbHeader[1])<<16 | int(nbHeader[2])<<8 | int(nbHeader[3])
 	if msgLen < 4 {
-		return nil
-	}
-
-	// Safety check for message length
-	if msgLen > 4*1024*1024 { // 4MB max
-		smbLog.Warn("SMB message too large, skipping",
-			zap.Int("length", msgLen),
-			zap.String("ident", s.conversation.Ident),
-		)
-		return nil
+		return fmt.Errorf("SMB message shorter than signature: %d", msgLen)
 	}
 
 	// Read the SMB message
@@ -462,6 +457,8 @@ func (s *smbReader) parseSMB1Message(msg []byte, isClient bool) error {
 	multiplexID := binary.LittleEndian.Uint16(msg[30:32])
 
 	s.treeID = uint32(treeID)
+	s.sessionID = uint64(userID)
+	s.messageID = uint64(multiplexID)
 
 	// SMB1: Response flag is in Flags byte (bit 7)
 	isResponse := (flags & 0x80) != 0
@@ -499,11 +496,18 @@ func (s *smbReader) parseSMB1Message(msg []byte, isClient bool) error {
 	case SMB1_COM_SESSION_SETUP_ANDX:
 		s.parseSMB1SessionSetup(paramWords, dataBytes, isResponse, status)
 	case SMB1_COM_TREE_CONNECT_ANDX:
-		s.parseSMB1TreeConnect(paramWords, dataBytes, isResponse)
+		s.action = "TREE_CONNECT"
+		if !isResponse {
+			s.shareName = smb1TreePath(paramWords, dataBytes, 35+wordCount*2, flags2)
+		}
 	case SMB1_COM_NT_CREATE_ANDX:
-		s.parseSMB1NTCreate(paramWords, dataBytes, isResponse)
+		if !isResponse || status == 0 {
+			s.parseSMB1NTCreate(paramWords, dataBytes, isResponse, flags2, 35+wordCount*2)
+		}
 	case SMB1_COM_OPEN_ANDX, SMB1_COM_OPEN, SMB1_COM_CREATE:
-		s.filename = extractSMB1Filename(dataBytes)
+		if !isResponse {
+			s.filename = smb1Path(dataBytes, 35+wordCount*2, flags2, command != SMB1_COM_OPEN_ANDX)
+		}
 		s.action = "OPEN"
 	case SMB1_COM_READ_ANDX, SMB1_COM_READ:
 		s.action = "READ"
@@ -512,7 +516,9 @@ func (s *smbReader) parseSMB1Message(msg []byte, isClient bool) error {
 	case SMB1_COM_CLOSE:
 		s.action = "CLOSE"
 	case SMB1_COM_DELETE:
-		s.filename = extractSMB1Filename(dataBytes)
+		if !isResponse {
+			s.filename = smb1Path(dataBytes, 35+wordCount*2, flags2, true)
+		}
 		s.action = "DELETE"
 	case SMB1_COM_RENAME:
 		s.action = "RENAME"
@@ -715,35 +721,23 @@ func (s *smbReader) parseSMB1SessionSetup(params, data []byte, isResponse bool, 
 	}
 }
 
-// parseSMB1TreeConnect parses SMB1 TREE_CONNECT_ANDX
-func (s *smbReader) parseSMB1TreeConnect(params, data []byte, isResponse bool) {
-	s.action = "TREE_CONNECT"
-
-	if !isResponse && len(data) > 0 {
-		// Data contains: Password + Path + Service
-		// Path is typically in format \\server\share
-		s.shareName = extractSMB1SharePath(data)
-	}
-}
-
 // parseSMB1NTCreate parses SMB1 NT_CREATE_ANDX
-func (s *smbReader) parseSMB1NTCreate(params, data []byte, isResponse bool) {
+func (s *smbReader) parseSMB1NTCreate(params, data []byte, isResponse bool, flags2 uint16, dataOffset int) {
 	s.action = "CREATE"
 
 	if !isResponse {
-		if len(params) >= 24 {
-			// Access mask at offset 4-7
-			s.accessMask = binary.LittleEndian.Uint32(params[4:8])
-			// Create disposition at offset 16-19
-			s.createDisp = binary.LittleEndian.Uint32(params[16:20])
+		if len(params) != 48 {
+			return
 		}
-		s.filename = extractSMB1Filename(data)
-	} else if len(params) >= 12 {
-		// Response contains FileID
-		// This is the FID (File ID) which is 16-bit in SMB1
-		s.fileID = uint64(binary.LittleEndian.Uint16(params[2:4]))
-		// Check if directory
-		s.isDirectory = (params[11] & 0x01) != 0
+		s.filename = smb1CreateName(params, data, dataOffset, flags2)
+		s.accessMask = binary.LittleEndian.Uint32(params[15:19])
+		s.fileAttributes = binary.LittleEndian.Uint32(params[27:31])
+		s.createDisp = binary.LittleEndian.Uint32(params[35:39])
+		s.isDirectory = binary.LittleEndian.Uint32(params[39:43])&1 != 0
+	} else if len(params) >= 68 {
+		s.fileID = uint64(binary.LittleEndian.Uint16(params[5:7]))
+		s.fileAttributes = binary.LittleEndian.Uint32(params[43:47])
+		s.isDirectory = params[67] != 0
 	}
 }
 
@@ -1150,39 +1144,6 @@ func (s *smbReader) parseNTLMAuthenticate(ntlmssp []byte) {
 }
 
 // Helper functions
-
-func extractSMB1Filename(data []byte) string {
-	// SMB1 filenames are typically null-terminated ASCII or UTF-16LE
-	if len(data) == 0 {
-		return ""
-	}
-
-	// Check for UTF-16LE (starts with non-null, has null bytes)
-	if len(data) >= 2 && data[1] == 0 {
-		return decodeUTF16LE(data)
-	}
-
-	// ASCII
-	end := bytes.IndexByte(data, 0)
-	if end > 0 {
-		return string(data[:end])
-	}
-	return string(data)
-}
-
-func extractSMB1SharePath(data []byte) string {
-	// SMB1 share path is typically \\server\share followed by null
-	// Skip password if present (first null-terminated string)
-	idx := bytes.IndexByte(data, 0)
-	if idx >= 0 && idx+1 < len(data) {
-		pathData := data[idx+1:]
-		end := bytes.IndexByte(pathData, 0)
-		if end > 0 {
-			return string(pathData[:end])
-		}
-	}
-	return ""
-}
 
 func decodeUTF16LE(data []byte) string {
 	if len(data) < 2 {

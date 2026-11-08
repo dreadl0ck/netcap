@@ -1,26 +1,25 @@
----
-description: Save storage space
----
+# Compression
 
-# Data Compression
+Local protobuf capture output normally uses gzip (`TYPE.ncap.gz`). Disable it
+explicitly when needed:
 
-To reduce the amount of disk space used for storing the audit records, netcap compresses them by default with **gzip**. Compressed files have the extension **.ncap.gz.**
+```sh
+net capture -read traffic.pcap -out plain-audit -compress=false -dpi=false
+net dump -read plain-audit/UDP.ncap -json
+```
 
-For this purpose Netcap currently uses the following gzip implementation:
+`-compress` is the current flag; historical `-comp` examples are obsolete. The
+buffered/parallel gzip implementation trades CPU, buffers and I/O differently
+for each workload. Local writer concurrency and distributed collector gzip are
+not one universal configuration.
 
-{% embed url="https://github.com/klauspost/pgzip" caption="" %}
+| Concern | Guidance |
+| --- | --- |
+| Storage | Measure on representative records; there is no universal percentage reduction |
+| Streaming readers | Consume complete framed messages and report gzip integrity failures |
+| Truncated capture/output | Decompression success alone does not prove full analysis completion |
+| Evidence | Record source/output hashes and keep the original compressed file |
 
-This implementation will split the data into blocks that are compressed in parallel, which can be useful for compressing big amounts of data. The output is a standard gzip file.
-
-The gzip decompression is modified so it decompresses ahead of the current reader. This means that reads will be non-blocking and CRC calculation also takes place in a separate goroutine.
-
-This design implements input buffering to the compressor which has a nice performance effect: writes to the compressor only block if the compressor is already compressing the number of blocks specified. This reduces waiting time for the workers which they can instead use to decode packets.
-
-To get any performance gains, you should at least be compressing more than 1 megabyte of data at the time.
-
-You should at least have a block size of 100k and at least a number of blocks that match the number of cores you would like to utilize, but about twice the number of blocks would be the best.
-
-The default configuration uses 1MB block size and 2x NumCPUs as the number of blocks.
-
-Netcap only uses the parallel gzip implementation for reading and writing audit records, as only there the required amounts of data are reached to allow a speedup. For tasks where the data size can vary heavily, such as decompressing HTTP requests and responses, the standard library **compress/gzip** is used instead.
-
+Compression is neither encryption nor anonymization. Payloads and credentials
+remain sensitive after gzip compression. [Record format](specification.md)
+explains the framing inside the stream.

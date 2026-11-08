@@ -578,5 +578,5 @@ func atomicBytes(path string, b []byte) error {
 	if err := f.Close(); err != nil {
 		return err
 	}
-	return os.Rename(f.Name(), path)
+	return replaceAtomicFile(f.Name(), path)
 }

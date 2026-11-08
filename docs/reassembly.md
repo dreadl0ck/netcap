@@ -1,64 +1,78 @@
----
-description: TCP stream reassembly
----
+# TCP reassembly
 
-# Reassembly
+Application messages can span TCP segments, share one segment or arrive with
+retransmissions/out-of-order delivery. Netcap assembles directional streams
+before protocol-specific parsing; a packet boundary is not an HTTP/DNP3/Modbus
+message boundary.
 
-## Implementation
-
-For reassembling TCP streams the gopacket/reassembly implementation is used. This allows to parse application layer protocols such as HTTP and POP3. The reassembly package currrently only implements reassembling stream over IPv4. To overcome this limitation for HTTP capture, you can use the **proxy** tool.
-
-{% page-ref page="http-proxy.md" %}
-
-## Architecture
-
-The gopacket reassembly implementation leaves several options for using it.
-
-Netcap currently uses one dedicated assembler for each worker and a single shared connection pool for all streams.
-
-Another option would be using a dedicated assembler for each worker for each L7 protocol with a shared stream pool for that specific protocol. This would potentially decrease lock contention for the reassembly, and might be implemented to improve performance in future versions.
-
-## Configuration
-
-The following fields of the **decoder.Config** affect the TCP stream reassembly:
-
-```go
-// Interval to apply connection flushes
-FlushEvery         int
-
-// Do not use IPv4 defragger
-NoDefrag           bool
-
-// Dont verify the packet checksums
-Checksum           bool
-
-// Dont check TCP options
-NoOptCheck         bool
-
-// Ignore TCP state machine errors
-IgnoreFSMerr       bool
-
-// TCP state machine allow missing init in three way handshake
-AllowMissingInit   bool
-
-// Toggle debug mode
-Debug              bool
-
-// Dump packet contents as hex for debugging
-HexDump            bool
-
-// Wait until all connections finished processing when receiving shutdown signal
-WaitForConnections bool
-
-// Write incomplete HTTP responses to disk when extracting files
-WriteIncomplete    bool
+```sh
+net capture -read traffic.pcap -out streams -reassemble-connections=true \
+  -conns -dpi=false
 ```
 
-## Debugging
+## Boundaries and missing bytes
 
-To see debug output for the reassembly, run with the **-debug** flag and check the **reassembly.log** file.
+| Condition | Consequence |
+| --- | --- |
+| Missing SYN/initial payload | Direction/boundary can be uncertain; inspect parser-specific states |
+| Known-size gap | A parser may have a restricted resynchronization rule |
+| Unknown-size gap | Parsing may stop rather than guess framing |
+| Retransmission | Reassembly suppresses/reconciles bytes according to its policy |
+| Per-direction buffer limit | Evidence can be incomplete when bounds are reached |
+| Connection finalization | Stream records and alerts may only become visible on completion/flush |
+| Reader payload-budget exhaustion | Capture aborts; stream evidence labels local discards separately from network sequence gaps. |
 
-For more general troubleshooting advice, please refer to the Troubleshooting page:
+Fallback decoder probing uses `DataFragments.ContiguousBytes()`: deliveries can
+complete a header only within one observed byte run. Known and unknown gaps
+cannot join partial signatures into a protocol match. A leading midstream marker
+still permits probing the first observed run; it does not establish completeness.
 
-{% page-ref page="troubleshooting.md" %}
+Go v0.15.2's default maximum buffered size is 10 MiB per direction. Zero-valued
+page limits can mean unlimited; [resource budgets](workers.md) are not a global
+memory guarantee. Use the installed help and health sidecars for actual policy.
 
+Live collection sends ordered maintenance to every worker once per second,
+including when no new packets arrive (`internal/collector/live_maintenance.go`).
+`-live-maintenance-interval` (`NC_LIVE_MAINTENANCE_INTERVAL`) overrides that interval; a negative
+value disables it. Both directions must be older than `CloseInactiveTimeOut`
+before an open stream expires. Pending bytes are delivered with gap evidence,
+and timeout closure is labeled `idle-expired`.
+
+| Maintenance | Time basis / effect |
+| --- | --- |
+| Pending-byte deadline | `FlushOptions.T` releases old sequence heads with gap evidence. |
+| Closed-state retention | `FlushOptions.TC` removes retained closed connections. |
+| Live idle expiry | Explicit `FlushOptions.TI` closes idle open connections; zero disables it. An opt-in deadline index avoids scanning every active stream. |
+| Output snapshots | `-live-flush-interval` (`NC_LIVE_FLUSH_INTERVAL`) flushes writers/current records; zero disables snapshots. It does not expire streams. |
+
+Offline collection does not start a wall-clock maintenance timer or enable idle
+expiry; its existing packet-driven capture-time policy is preserved.
+
+Completed TCP connections finish decoding, conversation persistence and banner
+extraction before closing/joining both reader tasks. Raw fragment/decoder references
+are released and reader-registry slots reused (`tcp/tcp_resources.go`); lifetime
+byte counters and any retained closed-connection FSM metadata remain available.
+This releases completed-stream state during capture, without claiming a global
+bound on still-open streams or decoder-owned caches.
+
+## Inspect the evidence
+
+With `-conns`, `stream-evidence/stream-*/` contains `client.bin`, `server.bin`
+and a manifest recording direction, offsets, times, gaps and UDP boundaries where
+applicable. The display transcript is separate. Never remove gap markers and
+pass concatenated bytes to an experiment as if they were contiguous.
+
+Protocol parsers differ. Modbus stops or resynchronizes only at defined points;
+DNP3 CRC/framing evidence and HTTP recovery have their own limits. Read the
+protocol-specific guide before interpreting `lost`, `unmatched` or a recovered
+record as complete coverage.
+
+The HTTP API/view exposes `reassemblyStatus` and string-valued `timestampNs`.
+Empty reassembly status does not establish completeness; missing capture time
+stays unavailable. Generic numeric JSON timestamps are not relabeled as exact
+nanoseconds (`cmd/capture/webui/audit_semantics_test.go`).
+
+`TCPReassemblyHealth.json` qualifies checksum policy and rejections. Malformed
+input, encrypted payloads and unsupported protocols can all yield no application
+records. [Capture health](evidence.md) helps distinguish missing visibility from
+an observed negative.

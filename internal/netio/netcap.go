@@ -203,6 +203,10 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.RDP)
 	case types.Type_NC_DNP3:
 		record = new(types.DNP3)
+	case types.Type_NC_RTP:
+		record = new(types.RTP)
+	case types.Type_NC_DTMF:
+		record = new(types.DTMF)
 	case types.Type_NC_SOCKS:
 		record = new(types.SOCKS)
 	case types.Type_NC_GTP:
