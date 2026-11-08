@@ -3,6 +3,7 @@ package collector
 import (
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -362,6 +363,118 @@ func TestW76MDNSMulticastSemantics(t *testing.T) {
 		} else if r.TransactionStatus != "mdns_query" || r.Questions[0].Class != 0x8001 {
 			t.Fatal("QU bit lost")
 		}
+	}
+}
+
+func TestW76SIPFramingControls(t *testing.T) {
+	for _, tcp := range []bool{false, true} {
+		t.Run(fmt.Sprint("TCP=", tcp), func(t *testing.T) {
+			b, input := newBookCapture(t)
+			message := "OPTIONS sip:peer@example.test SIP/2.0\r\ni: framed\r\nf: <sip:a@example.test>;tag=one\r\nCSeq: 1 OPTIONS\r\nl: 4\r\n\r\nbody"
+			if tcp {
+				send := b.openTCP("192.0.2.1", "192.0.2.2", 45060, 5060, false)
+				send(false, false, false, message[:9])
+				send(false, false, false, message[9:]+message)
+				// A duplicate compact/full length poisons framing; never resync to
+				// the request-looking bytes following the ambiguous body.
+				send(false, false, false, strings.Replace(message, "l: 4", "l: 4\r\nContent-Length: 4", 1)+message)
+			} else {
+				b.udp("192.0.2.1", "192.0.2.2", 5060, 5060, []byte(message))
+				b.udp("192.0.2.1", "192.0.2.2", 5060, 5060, []byte(message))
+				for _, bad := range []string{
+					strings.Replace(message, "l: 4", "l: 4\r\nContent-Length: 4", 1),
+					strings.Replace(message, "i: framed", "i: framed\r\nCall-ID: other", 1),
+					strings.Replace(message, "l: 4", "l: 5", 1),
+				} {
+					b.udp("192.0.2.1", "192.0.2.2", 5060, 5060, []byte(bad))
+				}
+			}
+			for _, workers := range []int{1, 4} {
+				out := runVoIP(t, input, "SIP", workers)
+				records := bookRecords(t, out, "SIP", func() *types.SIP { return new(types.SIP) })
+				if len(records) != 2 {
+					t.Fatalf("records=%d, expected 2", len(records))
+				}
+				for _, r := range records {
+					if r.CallID != "framed" || r.ContentLength != 4 || r.MethodName != "OPTIONS" {
+						t.Fatalf("framing: %v", r)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestW76DNP3DatagramControls(t *testing.T) {
+	b, input := newBookCapture(t)
+	frame, err := hex.DecodeString("05640bc403000400ef7ac1c1013c0206b576")
+	if err != nil {
+		t.Fatal(err)
+	}
+	bad := append([]byte(nil), frame...)
+	bad[len(bad)-1] ^= 1
+	for _, payload := range [][]byte{frame, frame[:12], frame[12:], bad, append(append([]byte(nil), frame...), frame...)} {
+		b.udp("192.0.2.1", "192.0.2.2", 40000, 20000, payload)
+	}
+	for _, workers := range []int{1, 4} {
+		out := runVoIP(t, input, "DNP3", workers)
+		records := bookRecords(t, out, "DNP3", func() *types.DNP3 { return new(types.DNP3) })
+		valid := 0
+		for _, r := range records {
+			if r.CommunityID != streamutils.CalcCommunityIDUDP(r.SrcIP, r.DstIP, uint16(r.SrcPort), uint16(r.DstPort)) {
+				t.Fatal("TCP CommunityID on UDP")
+			}
+			if r.FunctionCode == 1 {
+				valid++
+				if !r.HeaderCRCValid || !r.BlockCRCValid {
+					t.Fatalf("unchecked CRC: %v", r)
+				}
+			} else if r.ParseStatus != "lost" && r.ParseStatus != "malformed" {
+				t.Fatalf("unqualified datagram: %v", r)
+			}
+		}
+		if valid != 3 {
+			t.Fatalf("decoded %d requests, expected 3 independent complete frames", valid)
+		}
+	}
+}
+
+func TestW76NegotiatedEventIntersection(t *testing.T) {
+	for _, ambiguous := range []bool{false, true} {
+		t.Run(fmt.Sprint("ambiguous=", ambiguous), func(t *testing.T) {
+			b, input := newBookCapture(t)
+			for _, tag := range []string{"offer", "other"} {
+				if tag == "other" && !ambiguous {
+					continue
+				}
+				offer := strings.ReplaceAll(voipSIP("INVITE sip:callee@example.test SIP/2.0", strings.ReplaceAll(voipSDP("192.0.2.1", 4000, 110), "fmtp:110 0-15", "fmtp:110 0-5")), "tag=offer", "tag="+tag)
+				answer := strings.ReplaceAll(voipSIP("SIP/2.0 200 OK", strings.ReplaceAll(voipSDP("192.0.2.2", 5000, 110), "fmtp:110 0-15", "fmtp:110 5-15")), "tag=offer", "tag="+tag)
+				b.udp("192.0.2.1", "192.0.2.2", 5060, 5060, []byte(offer))
+				b.udp("192.0.2.2", "192.0.2.1", 5060, 5060, []byte(answer))
+			}
+			for _, digit := range []byte{4, 5, 6} {
+				b.udp("192.0.2.1", "192.0.2.2", 4000, 5000, voipRTP(uint16(digit), uint32(digit), 42, 110, []byte{digit, 138, 0, 160}))
+			}
+			for _, workers := range []int{1, 4} {
+				out := runVoIP(t, input, "SIP,RTP,DTMF", workers)
+				if ambiguous {
+					signals := bookRecords(t, out, "SIP", func() *types.SIP { return new(types.SIP) })
+					if len(signals) != 4 {
+						t.Fatalf("missing signaling: %d", len(signals))
+					}
+					for _, name := range []string{"RTP.ncap", "RTP.ncap.gz", "DTMF.ncap", "DTMF.ncap.gz"} {
+						if _, err := os.Stat(filepath.Join(out, name)); !os.IsNotExist(err) {
+							t.Fatalf("guessed ambiguous dialog: %s: %v", name, err)
+						}
+					}
+				} else {
+					events := bookRecords(t, out, "DTMF", func() *types.DTMF { return new(types.DTMF) })
+					if len(events) != 1 || events[0].Digit != "5" {
+						t.Fatalf("negotiated intersection: %v", events)
+					}
+				}
+			}
+		})
 	}
 }
 
