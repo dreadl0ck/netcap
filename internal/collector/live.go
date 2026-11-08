@@ -48,7 +48,7 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) (resultE
 		c.captureRunError = resultErr
 		finish()
 		c.cleanup(false)
-		resultErr = stdErrors.Join(resultErr, c.flowExportError, c.captureEvidenceError)
+		resultErr = stdErrors.Join(resultErr, c.flowExportError, c.captureEvidenceError, c.artifactAnalysisError)
 	}()
 
 	// open interface in live mode
@@ -109,6 +109,8 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) (resultE
 
 	stopProgress := c.printProgressInterval()
 	stopPeriodicFlush := c.startPeriodicFlush()
+	stopMaintenance := c.startLiveMaintenance()
+	defer close(stopMaintenance)
 
 	c.mu.Lock()
 	c.isLive = true

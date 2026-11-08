@@ -1,18 +1,24 @@
+//go:build e2e
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
  * License: GNU General Public License v3.0
  */
 
-//go:build e2e
-
 package tests_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -37,9 +43,21 @@ import (
 func TestNewDecoders_UltimatePCAP(t *testing.T) {
 	repoRoot, _ := filepath.Abs("..")
 	pcapFile := filepath.Join(repoRoot, "tests", "The Ultimate PCAP v20260316.pcapng")
-	if _, err := os.Stat(pcapFile); os.IsNotExist(err) {
-		t.Skip("The Ultimate PCAP v20260316.pcapng not found in tests/")
+	pcap, err := os.Open(pcapFile)
+	if err != nil {
+		t.Fatal(err)
 	}
+	hash := sha256.New()
+	_, err = io.Copy(hash, pcap)
+	_ = pcap.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := fmt.Sprintf("%x", hash.Sum(nil)); got != "da101f5fcdda39399a440a9b994ce835d54fe73b4a2325d26de47c4d168a252c" {
+		t.Fatalf("Ultimate PCAP fixture changed: %s", got)
+	}
+	wantKerberos := kerberosKDCOracle(t, pcapFile)
+	wantIPP := ippHTTPOracle(t, pcapFile)
 
 	// Build the netcap binary
 	binaryPath := filepath.Join(t.TempDir(), "netcap-test")
@@ -66,9 +84,9 @@ func TestNewDecoders_UltimatePCAP(t *testing.T) {
 	t.Log("Running netcap capture on The Ultimate PCAP v20260316.pcapng...")
 	out, err := captureCmd.CombinedOutput()
 	if ctx.Err() == context.DeadlineExceeded {
-		t.Log("Capture timed out during cleanup (records already written)")
+		t.Fatalf("Capture timed out: %s", out)
 	} else if err != nil {
-		t.Logf("Capture finished with: %v\nOutput: %s", err, string(out))
+		t.Fatalf("Capture failed: %v\nOutput: %s", err, string(out))
 	}
 	t.Log("Capture complete.")
 
@@ -82,24 +100,22 @@ func TestNewDecoders_UltimatePCAP(t *testing.T) {
 		minCount int // minimum expected records
 	}{
 		// Packet decoders — counts match or are close to tshark
-		{"LLMNR", "LLMNR.ncap.gz", types.Type_NC_LLMNR, 18},       // tshark: 18, exact match
-		{"STUN", "STUN.ncap.gz", types.Type_NC_STUN, 22},           // tshark: 22, exact match
-		{"PIM", "PIM.ncap.gz", types.Type_NC_PIM, 300},             // tshark: 384, netcap: ~333
+		{"LLMNR", "LLMNR.ncap.gz", types.Type_NC_LLMNR, 18},              // tshark: 18, exact match
+		{"STUN", "STUN.ncap.gz", types.Type_NC_STUN, 22},                 // tshark: 22, exact match
+		{"PIM", "PIM.ncap.gz", types.Type_NC_PIM, 300},                   // tshark: 384, netcap: ~333
 		{"NetFlowV9", "NetFlowV9.ncap.gz", types.Type_NC_NetFlowV9, 190}, // tshark(cflow): 196, exact match
-		{"CLDAP", "CLDAP.ncap.gz", types.Type_NC_CLDAP, 100},      // tshark: 106, exact match
-		{"ISIS", "ISIS.ncap.gz", types.Type_NC_ISIS, 670},          // tshark: 678, exact match
-		{"OCSP", "OCSP.ncap.gz", types.Type_NC_OCSP, 10},          // tshark: 29, netcap: ~16 (many in TLS)
-		{"RARP", "RARP.ncap.gz", types.Type_NC_RARP, 1},           // tshark(rarp): 0, netcap: 4 (detected via EtherType)
+		{"CLDAP", "CLDAP.ncap.gz", types.Type_NC_CLDAP, 100},             // tshark: 106, exact match
+		{"ISIS", "ISIS.ncap.gz", types.Type_NC_ISIS, 670},                // tshark: 678, exact match
+		{"OCSP", "OCSP.ncap.gz", types.Type_NC_OCSP, 10},                 // tshark: 29, netcap: ~16 (many in TLS)
+		{"RARP", "RARP.ncap.gz", types.Type_NC_RARP, 1},                  // tshark(rarp): 0, netcap: 4 (detected via EtherType)
 
 		// Stream decoders — counts differ from tshark frame counts
-		// Kerberos current baseline after collector pool resets landed: ~208–210.
-		// Older value 243-246 reflected runs where UDP stream pool state leaked
-		// between captures in the same process. Threshold lowered accordingly.
-		{"Kerberos", "Kerberos.ncap.gz", types.Type_NC_Kerberos, 200},  // tshark: 268, netcap: ~208-210
-		{"TACACS", "TACACS.ncap.gz", types.Type_NC_TACACS, 18},         // tshark(tacplus): 18, exact match
-		{"DCERPC", "DCERPC.ncap.gz", types.Type_NC_DCERPC, 350},       // tshark: 420, netcap: ~368
-		{"IPP", "IPP.ncap.gz", types.Type_NC_IPP, 30},                 // tshark: 38, netcap: ~39
-		{"Zabbix", "Zabbix.ncap.gz", types.Type_NC_Zabbix, 40},        // tshark: 150, netcap: ~51 (session-based)
+		// The other 134 tshark Kerberos packets are embedded SMB/RPC tokens.
+		{"Kerberos", "Kerberos.ncap.gz", types.Type_NC_Kerberos, 134},
+		{"TACACS", "TACACS.ncap.gz", types.Type_NC_TACACS, 18},  // tshark(tacplus): 18, exact match
+		{"DCERPC", "DCERPC.ncap.gz", types.Type_NC_DCERPC, 350}, // tshark: 420, netcap: ~368
+		{"IPP", "IPP.ncap.gz", types.Type_NC_IPP, 38},           // 19 requests + 19 responses, verified below
+		{"Zabbix", "Zabbix.ncap.gz", types.Type_NC_Zabbix, 40},  // tshark: 150, netcap: ~51 (session-based)
 	}
 
 	for _, dt := range decoderTests {
@@ -121,6 +137,8 @@ func TestNewDecoders_UltimatePCAP(t *testing.T) {
 			}
 
 			count := 0
+			gotKerberos := make(map[string]int)
+			gotIPP := make(map[string]int)
 			record := netio.InitRecord(dt.typ)
 			if record == nil {
 				t.Fatalf("InitRecord returned nil for type %s", dt.typ)
@@ -128,9 +146,32 @@ func TestNewDecoders_UltimatePCAP(t *testing.T) {
 
 			for {
 				if err := reader.Next(record); err != nil {
+					if err != io.EOF {
+						t.Fatalf("decode %s: %v", dt.name, err)
+					}
 					break
 				}
 				count++
+				if rec, ok := record.(*types.IPP); ok {
+					key := fmt.Sprintf("%d|%d|%s|%s|%d|%d|%d", rec.RequestID, rec.OperationOrStatus, rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort, rec.VersionMajor<<8|rec.VersionMinor)
+					gotIPP[key]++
+					if rec.CommunityID == "" || rec.Timestamp == 0 || rec.SrcPort == 631 && rec.OperationName != "successful-ok" {
+						t.Fatalf("IPP observation missing attribution or response semantics: %v", rec)
+					}
+				}
+				if rec, ok := record.(*types.Kerberos); ok {
+					key := fmt.Sprintf("%d|%s|%s|%d|%d", rec.MessageTypeCode, rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort)
+					gotKerberos[key]++
+					if rec.CommunityID == "" || rec.Timestamp == 0 {
+						t.Fatal("Kerberos observation missing correlation or timestamp")
+					}
+				}
+			}
+			if dt.typ == types.Type_NC_Kerberos && !reflect.DeepEqual(gotKerberos, wantKerberos) {
+				t.Errorf("KDC message/direction multiset differs from tshark:\ngot %v\nwant %v", gotKerberos, wantKerberos)
+			}
+			if dt.typ == types.Type_NC_IPP && !reflect.DeepEqual(gotIPP, wantIPP) {
+				t.Errorf("IPP message/direction multiset differs from tshark:\ngot %v\nwant %v", gotIPP, wantIPP)
 			}
 
 			t.Logf("%s: %d records (minimum expected: %d)", dt.name, count, dt.minCount)
@@ -149,4 +190,74 @@ func TestNewDecoders_UltimatePCAP(t *testing.T) {
 			}
 		})
 	}
+}
+
+func ippHTTPOracle(t *testing.T, pcap string) map[string]int {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "tshark", "-r", pcap, "-Y", "ipp", "-T", "fields", "-E", "occurrence=f",
+		"-e", "ipp.request_id", "-e", "ipp.operation_id", "-e", "ipp.status_code", "-e", "ipv6.src", "-e", "ipv6.dst",
+		"-e", "tcp.srcport", "-e", "tcp.dstport", "-e", "ipp.version").Output()
+	if err != nil {
+		t.Fatalf("IPP oracle failed: %v", err)
+	}
+	result := make(map[string]int)
+	requests, responses := 0, 0
+	for _, line := range strings.Split(strings.TrimSuffix(string(out), "\n"), "\n") {
+		fields := strings.Split(line, "\t")
+		if len(fields) != 8 {
+			t.Fatalf("invalid IPP oracle row: %q", line)
+		}
+		code := fields[1]
+		if code == "" {
+			code = fields[2]
+			responses++
+		} else {
+			requests++
+		}
+		n, err := strconv.ParseUint(code, 0, 16)
+		if err != nil {
+			t.Fatalf("invalid IPP operation/status: %q", line)
+		}
+		result[fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s", fields[0], n, fields[3], fields[4], fields[5], fields[6], fields[7])]++
+	}
+	if requests != 19 || responses != 19 {
+		t.Fatalf("IPP corpus changed: %d requests, %d responses", requests, responses)
+	}
+	return result
+}
+
+func kerberosKDCOracle(t *testing.T, pcap string) map[string]int {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	version, err := exec.CommandContext(ctx, "tshark", "--version").Output()
+	if err != nil {
+		t.Fatalf("required tshark oracle: %v", err)
+	}
+	t.Log(strings.SplitN(string(version), "\n", 2)[0])
+	out, err := exec.CommandContext(ctx, "tshark", "-r", pcap, "-Y", "kerberos && tcp.port == 88", "-T", "fields", "-E", "occurrence=f",
+		"-e", "kerberos.msg_type", "-e", "ip.src", "-e", "ipv6.src", "-e", "ip.dst", "-e", "ipv6.dst", "-e", "tcp.srcport", "-e", "tcp.dstport").Output()
+	if err != nil {
+		t.Fatalf("KDC oracle failed: %v", err)
+	}
+	result := make(map[string]int)
+	histogram := make(map[int]int)
+	for _, line := range strings.Split(strings.TrimSuffix(string(out), "\n"), "\n") {
+		fields := strings.Split(line, "\t")
+		if len(fields) != 7 {
+			t.Fatalf("invalid KDC oracle row: %q", line)
+		}
+		code, err := strconv.Atoi(fields[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		histogram[code]++
+		result[strings.Join([]string{fields[0], fields[1] + fields[2], fields[3] + fields[4], fields[5], fields[6]}, "|")]++
+	}
+	if !reflect.DeepEqual(histogram, map[int]int{10: 35, 11: 16, 12: 32, 13: 32, 30: 19}) {
+		t.Fatalf("pinned standalone KDC histogram changed: %v", histogram)
+	}
+	return result
 }

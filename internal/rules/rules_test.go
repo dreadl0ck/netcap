@@ -272,21 +272,20 @@ func TestEngine(t *testing.T) {
 
 // TestExampleRulesCompilation tests that all example rule files compile successfully
 func TestExampleRulesCompilation(t *testing.T) {
-	exampleRules := []string{
-		"suspicious_traffic.yml",
-		"data_exfiltration.yml",
-		"malware_communication.yml",
-		"network_reconnaissance.yml",
-		"web_attacks.yml",
-		"mitre_attack_tactics.yml",
-		"zeek_inspired_detections.yml",
-		"threshold_detections.yml",
-		"important_ports.yml",
-		"industrial_ports.yml",
-		"s7comm_hunt.yml",
-		"suricata_inspired_detections.yml",
-		"application_detections.yml",
+	entries, err := embeddedRulesFS.ReadDir("examples")
+	if err != nil {
+		t.Fatal(err)
 	}
+	var exampleRules []string
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".yml" {
+			exampleRules = append(exampleRules, entry.Name())
+		}
+	}
+	if len(exampleRules) == 0 {
+		t.Fatal("embedded rule catalogue is empty")
+	}
+	names := make(map[string]string)
 
 	for _, ruleFile := range exampleRules {
 		t.Run(ruleFile, func(t *testing.T) {
@@ -295,14 +294,24 @@ func TestExampleRulesCompilation(t *testing.T) {
 
 			// Check if file exists
 			if _, err := os.Stat(rulesPath); os.IsNotExist(err) {
-				t.Skipf("Rule file does not exist: %s", rulesPath)
-				return
+				t.Fatalf("embedded rule file missing from checkout: %s", rulesPath)
 			}
 
 			// Load rules
 			config, err := LoadRulesFromFile(rulesPath)
 			if err != nil {
 				t.Fatalf("Failed to load %s: %v", ruleFile, err)
+			}
+			for _, rule := range config.Rules {
+				if rule == nil || rule.Name == "" {
+					t.Fatalf("unnamed or null rule in %s", ruleFile)
+				}
+				if previous, exists := names[rule.Name]; exists {
+					t.Errorf("duplicate rule %q in %s and %s", rule.Name, previous, ruleFile)
+				}
+				names[rule.Name] = ruleFile
+				// Disabled templates must compile before an operator can enable them.
+				rule.Enabled = true
 			}
 
 			// Compile rules

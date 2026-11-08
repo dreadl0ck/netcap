@@ -20,6 +20,9 @@
 package profinet
 
 import (
+	"bytes"
+	"encoding/binary"
+
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
@@ -71,10 +74,6 @@ const (
 	dceRPCAuth3            = 0x10
 )
 
-// PROFINET IO interface UUID prefix (first 4 bytes for quick matching)
-// Full UUID: dea00001-6c97-11d1-8271-00a02442df7d
-var profinetIOUUID = []byte{0xde, 0xa0, 0x00, 0x01}
-
 // PROFINET block types
 const (
 	BlockTypeAlarmNotificationHigh     = 0x0001
@@ -122,10 +121,7 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
-	// Varies with the data: PROFINET CM is DCE/RPC version 4, and accepting
-	// version 5 as well makes every Windows MSRPC conversation a candidate.
-	Specificity: core.SpecificityWeak,
-	Confidence:  profinetConfidence,
+	Specificity: core.SpecificityMagic,
 
 	CanDecode: func(client, server []byte) bool {
 		// Check both directions for PROFINET traffic over DCE/RPC
@@ -138,81 +134,56 @@ var Decoder = &decoder.StreamDecoder{
 	Typ:     core.TCP, // PROFINET CM uses TCP port 34964
 }
 
-// canDecodePROFINET checks if the data looks like a PROFINET message.
-// PROFINET uses DCE/RPC as transport, so we look for DCE/RPC headers
-// with PROFINET-specific interface UUIDs.
-// profinetConfidence separates real PROFINET from the DCE/RPC it tolerates.
-//
-// PROFINET CM runs over DCE/RPC version 4, the connectionless form.
-// canDecodePROFINET also accepts version 5 to stay usable mid-session, but
-// version 5 is the connection-oriented form Windows RPC uses, so on a dynamic
-// port a v5 conversation is far more likely to be MSRPC. Measured on The
-// Ultimate PCAP, ranking PROFINET above dcerpc without this took 15 genuine
-// MSRPC conversations on ports 49667 and 61737.
-func profinetConfidence(client, server []byte) int {
-	best := core.SpecificityWeak
-
-	for _, data := range [][]byte{client, server} {
-		if !canDecodePROFINET(data) {
-			continue
-		}
-
-		// A Bind carrying the PROFINET interface UUID is conclusive.
-		if packetType := data[2]; packetType == dceRPCBind || packetType == dceRPCAlterContext {
-			return core.SpecificityMagic
-		}
-
-		if data[0] == dceRPCVersion {
-			best = max(best, core.SpecificityStructural)
-		}
+// RPC version/packet type alone cannot identify PNIO. Match its full interface
+// UUID at a defined header/context offset, respecting the wire byte order.
+func canDecodePROFINET(data []byte) bool {
+	if len(data) < 16 || (data[4] != 0 && data[4] != 0x10) || data[5] != 0 || data[6] != 0 {
+		return false
 	}
-
-	return best
+	var order binary.ByteOrder = binary.BigEndian
+	if data[4] == 0x10 {
+		order = binary.LittleEndian
+	}
+	if data[0] == 4 {
+		// Connectionless RPC has an 80-byte header and packet type at byte 1.
+		return len(data) >= 80 && data[1] <= dceRPCCancelACK &&
+			profinetUUID(data[24:40], order) && order.Uint32(data[60:64]) == 1 &&
+			order.Uint16(data[68:70]) <= 5
+	}
+	if data[0] != 5 || data[1] != 0 || data[7] != 0 || (data[2] != dceRPCBind && data[2] != dceRPCAlterContext) {
+		return false
+	}
+	n, auth := int(order.Uint16(data[8:10])), int(order.Uint16(data[10:12]))
+	if n < 72 || auth > n-24 || len(data) < 28 {
+		return false
+	}
+	end := n
+	if auth != 0 {
+		end -= auth + 8
+	}
+	data = data[:min(end, len(data))]
+	if len(data) < 28 || data[24] == 0 || data[25] != 0 || data[26] != 0 || data[27] != 0 {
+		return false
+	}
+	matched := false
+	for count, offset := int(data[24]), 28; count > 0; count-- {
+		if offset+24 > len(data) || data[offset+2] == 0 || data[offset+3] != 0 {
+			return false
+		}
+		next := offset + 24 + 20*int(data[offset+2])
+		if next > end || next > len(data) {
+			return false
+		}
+		matched = matched || profinetUUID(data[offset+4:offset+20], order)
+		offset = next
+	}
+	return matched
 }
 
-func canDecodePROFINET(data []byte) bool {
-	if len(data) < dceRPCHeaderSize {
-		return false
-	}
-
-	// Check DCE/RPC version (byte 0 should be 4 for PROFINET)
-	// PROFINET uses a special version of DCE/RPC
-	version := data[0]
-	if version != dceRPCVersion && version != 5 {
-		return false
-	}
-
-	// Check packet type (byte 2) is valid
-	packetType := data[2]
-	if !isValidDCERPCPacketType(packetType) {
-		return false
-	}
-
-	// For Bind and Request packets, check if the interface UUID matches PROFINET
-	// The interface UUID starts at offset 24 in Bind packets
-	if packetType == dceRPCBind || packetType == dceRPCAlterContext {
-		if len(data) < dceRPCHeaderSize+16 {
-			return false
-		}
-		// Check for PROFINET IO UUID prefix at expected offset
-		// After the 24-byte DCE/RPC header, there's context negotiation
-		// which includes the interface UUID
-		return containsPROFINETUUID(data[dceRPCHeaderSize:])
-	}
-
-	// For other packet types, be more permissive as they may be part of
-	// an established PROFINET session
-	// Check fragment length sanity
-	fragLen := uint16(data[8]) | uint16(data[9])<<8
-	if fragLen < 4 || fragLen > 65535 {
-		// May be big-endian
-		fragLen = uint16(data[9]) | uint16(data[8])<<8
-		if fragLen < 4 || fragLen > 65535 {
-			return false
-		}
-	}
-
-	return true
+func profinetUUID(uuid []byte, order binary.ByteOrder) bool {
+	id := order.Uint32(uuid[:4])
+	return id >= 0xdea00000 && id <= 0xdea00005 && order.Uint16(uuid[4:6]) == 0x6c97 &&
+		order.Uint16(uuid[6:8]) == 0x11d1 && bytes.Equal(uuid[8:], []byte{0x82, 0x71, 0, 0xa0, 0x24, 0x42, 0xdf, 0x7d})
 }
 
 // isValidDCERPCPacketType checks if the packet type is a valid DCE/RPC type.
@@ -225,38 +196,6 @@ func isValidDCERPCPacketType(t uint8) bool {
 		dceRPCAlterContextResp, dceRPCShutdown, dceRPCAuth3:
 		return true
 	}
-	return false
-}
-
-// containsPROFINETUUID checks if the data contains the PROFINET IO UUID.
-func containsPROFINETUUID(data []byte) bool {
-	if len(data) < 4 {
-		return false
-	}
-
-	// Search for PROFINET UUID prefix in the first 64 bytes
-	limit := min(len(data), 64)
-
-	for i := 0; i <= limit-4; i++ {
-		if data[i] == profinetIOUUID[0] &&
-			data[i+1] == profinetIOUUID[1] &&
-			data[i+2] == profinetIOUUID[2] &&
-			data[i+3] == profinetIOUUID[3] {
-			return true
-		}
-	}
-
-	// Also check for variant UUIDs used in PROFINET
-	// DEA00000-6C97-11D1-8271-00A02442DF7D (Endpoint Mapper)
-	// DEA00001-6C97-11D1-8271-00A02442DF7D (PNIO)
-	// DEA00002-6C97-11D1-8271-00A02442DF7D (PNIO-CM)
-	for i := 0; i <= limit-4; i++ {
-		if data[i] == 0xde && data[i+1] == 0xa0 &&
-			data[i+2] == 0x00 && data[i+3] <= 0x05 {
-			return true
-		}
-	}
-
 	return false
 }
 

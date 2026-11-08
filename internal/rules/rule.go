@@ -218,6 +218,9 @@ func LoadRulesFromFile(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse rules YAML: %w", err)
 	}
 
+	if err := validateRuleNames(&config); err != nil {
+		return nil, err
+	}
 	return &config, nil
 }
 
@@ -246,11 +249,17 @@ func LoadRulesFromDirectory(dirPath string) (*Config, error) {
 		config.Rules = append(config.Rules, fileConfig.Rules...)
 	}
 
+	if err := validateRuleNames(config); err != nil {
+		return nil, err
+	}
 	return config, nil
 }
 
 // CompileRules compiles all rule expressions in the configuration.
 func CompileRules(config *Config) error {
+	if err := validateRuleNames(config); err != nil {
+		return err
+	}
 	for i, rule := range config.Rules {
 		// Validate sequences even when disabled: hunt templates ship disabled,
 		// and a broken one must not surface only when an operator enables it.
@@ -295,6 +304,41 @@ func CompileRules(config *Config) error {
 	}
 
 	return nil
+}
+
+func validateRuleNames(config *Config) error {
+	if config == nil {
+		return fmt.Errorf("rules configuration is nil")
+	}
+	names := make(map[string]struct{}, len(config.Rules))
+	for index, rule := range config.Rules {
+		if rule == nil {
+			return fmt.Errorf("rule %d is null", index)
+		}
+		if rule.Name == "" || rule.Name != strings.TrimSpace(rule.Name) {
+			return fmt.Errorf("rule %d requires a nonempty name without surrounding whitespace", index)
+		}
+		if _, exists := names[rule.Name]; exists {
+			return fmt.Errorf("duplicate rule name %q", rule.Name)
+		}
+		names[rule.Name] = struct{}{}
+	}
+	return nil
+}
+
+func cloneRuleConfig(config *Config) (*Config, error) {
+	if err := validateRuleNames(config); err != nil {
+		return nil, err
+	}
+	data, err := yaml.Marshal(config)
+	if err != nil {
+		return nil, fmt.Errorf("copy rule configuration: %w", err)
+	}
+	var copy Config
+	if err := yaml.Unmarshal(data, &copy); err != nil {
+		return nil, fmt.Errorf("copy rule configuration: %w", err)
+	}
+	return &copy, nil
 }
 
 // EvaluateRule evaluates a rule against an audit record and returns an alert if it matches.

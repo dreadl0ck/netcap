@@ -10,7 +10,6 @@
   <a href="docs/quickstart.md">First capture</a>
 </p>
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/dreadl0ck/netcap)](https://goreportcard.com/report/github.com/dreadl0ck/netcap)
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://raw.githubusercontent.com/dreadl0ck/netcap/master/LICENSE)
 [![Golang](https://img.shields.io/badge/Go-1.27-blue.svg)](https://go.dev)
 ![Linux](https://img.shields.io/badge/Supports-Linux-green.svg)
@@ -20,7 +19,7 @@
 [![Homepage](https://img.shields.io/badge/Homepage-blue.svg)](https://netcap.io)
 [![Documentation](https://img.shields.io/badge/Documentation-blue.svg)](https://docs.netcap.io)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap?ref=badge_shield)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/dreadl0ck/netcap)
+[![Ask DeepWiki](https://img.shields.io/badge/Ask-DeepWiki-blue.svg)](https://deepwiki.com/dreadl0ck/netcap)
 
 **Netcap** (NETwork CAPture) converts network packets into structured Protocol Buffer audit records for security monitoring, forensic analysis and dataset preparation. The Go binary includes concurrent packet/stream decoders and a local web UI. Discover its actual inventory with `net capture -overview`; record definitions are in `types/netcap.proto`.
 

@@ -26,6 +26,7 @@ import (
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/mail"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
@@ -98,8 +99,9 @@ const (
 )
 
 type smtpReader struct {
-	conversation *core.ConversationInfo
-	greeting     string
+	bufferReleases []func()
+	conversation   *core.ConversationInfo
+	greeting       string
 
 	smtpRequests  []*types.SMTPRequest
 	smtpResponses []*types.SMTPResponse
@@ -143,6 +145,11 @@ func (h *smtpReader) New(conv *core.ConversationInfo) core.StreamDecoderInterfac
 
 // Decode parses the stream according to the SMTP protocol.
 func (h *smtpReader) Decode() {
+	defer func() {
+		for _, release := range h.bufferReleases {
+			release()
+		}
+	}()
 	// prevent nil pointer access if decoder is not initialized
 	if Decoder.Writer == nil {
 		return
@@ -255,7 +262,11 @@ nextLine:
 	if validSMTPCommand(cmd) {
 
 		if cmd == smtpDATA {
-			goto nextLine
+			body, release, readErr := mail.ReadDotMessage(b)
+			h.bufferReleases = append(h.bufferReleases, release)
+			file.RecordExtractionIssue(readErr)
+			h.smtpRequests = append(h.smtpRequests, &types.SMTPRequest{Command: smtpDATA, Data: string(body)})
+			return readErr
 		}
 
 		h.smtpRequests = append(h.smtpRequests, &types.SMTPRequest{
@@ -405,6 +416,7 @@ func (h *smtpReader) processSMTPConversation() (mailIDs []string) {
 		case smtpDATA:
 
 			m := mail.Parse(h.conversation, []byte(r.Data), from, to, smtpLog, serviceSMTP, numMails)
+			r.Data = strings.ToValidUTF8(r.Data, "�")
 			mail.WriteMail(m)
 			mailIDs = append(mailIDs, m.ID)
 			numMails++

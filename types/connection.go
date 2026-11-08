@@ -20,6 +20,7 @@
 package types
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
@@ -119,6 +120,10 @@ var fieldsConnection = []string{
 	"NumPackets64",
 	"LegacyCountersSaturated",
 	"ObservationBoundary",
+	"NetworkScope",
+	"Encapsulations",
+	"ReassembledDatagrams",
+	"Normalization",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -180,7 +185,19 @@ func (c *Connection) CSVRecord() []string {
 		formatInt64(c.NumPackets64),
 		strconv.FormatBool(c.LegacyCountersSaturated),
 		c.ObservationBoundary,
+		c.NetworkScope,
+		c.encapsulationsJSON(),
+		strconv.FormatUint(c.ReassembledDatagrams, 10),
+		c.Normalization,
 	})
+}
+
+func (c *Connection) encapsulationsJSON() string {
+	if len(c.Encapsulations) == 0 {
+		return ""
+	}
+	data, _ := json.Marshal(c.Encapsulations)
+	return string(data)
 }
 
 // Time returns the timestamp associated with the audit record.
@@ -344,6 +361,10 @@ func (c *Connection) Encode() []string {
 		connectionEncoder.Int64("NumPackets64", c.NumPackets64),
 		connectionEncoder.Bool(c.LegacyCountersSaturated),
 		connectionEncoder.String("ObservationBoundary", c.ObservationBoundary),
+		connectionEncoder.String("NetworkScope", c.NetworkScope),
+		connectionEncoder.String("Encapsulations", c.encapsulationsJSON()),
+		connectionEncoder.Uint64("ReassembledDatagrams", c.ReassembledDatagrams),
+		connectionEncoder.String("Normalization", c.Normalization),
 	})
 }
 

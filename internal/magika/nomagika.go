@@ -22,6 +22,21 @@
 // Package magika provides stubs when Magika support is disabled.
 package magika
 
+import (
+	"context"
+	"fmt"
+)
+
+type Classifier struct{ Digest string }
+
+func NewClassifier() (*Classifier, error) { return nil, fmt.Errorf("Magika support not compiled in") }
+func (c *Classifier) Classify(context.Context, string) (*Result, error) {
+	return nil, fmt.Errorf("Magika support not compiled in")
+}
+func (c *Classifier) ClassifyBytes(context.Context, []byte) (*Result, error) {
+	return nil, fmt.Errorf("Magika support not compiled in")
+}
+
 // Result holds the Magika classification result for a file.
 type Result struct {
 	Label       string
@@ -29,6 +44,7 @@ type Result struct {
 	Group       string
 	Description string
 	IsText      bool
+	Score       float64
 }
 
 // Init is a stub that does nothing when Magika is disabled.

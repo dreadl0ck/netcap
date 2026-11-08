@@ -23,6 +23,8 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"io"
 	"mime"
 	"os"
@@ -104,6 +106,10 @@ func SaveFileEnhanced(
 	if len(body) == 0 {
 		return nil
 	}
+	if err := admitArtifact(); err != nil {
+		RecordExtractionIssue(err)
+		return err
+	}
 
 	// Check size limits
 	if cfg.FileExtraction.SizeLimits.MaxFileSize > 0 && int64(len(body)) > cfg.FileExtraction.SizeLimits.MaxFileSize {
@@ -111,7 +117,9 @@ func SaveFileEnhanced(
 			zap.Int("size", len(body)),
 			zap.Int64("limit", cfg.FileExtraction.SizeLimits.MaxFileSize),
 		)
-		return nil
+		err := fmt.Errorf("artifact exceeds configured byte limit")
+		RecordExtractionIssue(err)
+		return err
 	}
 
 	if name == "" || name == "/" {
@@ -122,18 +130,20 @@ func SaveFileEnhanced(
 	// This decodes gzip/deflate/base64 content to hash the actual content
 	// and tracks compression information for the audit record
 	contentInfo, hashErr := ComputeContentHash(body, encoding)
+	defer func() {
+		if contentInfo != nil && contentInfo.release != nil {
+			contentInfo.release()
+		}
+	}()
+	RecordExtractionIssue(hashErr)
+	RecordExtractionIssue(extractionErr)
 	if hashErr != nil {
 		saveFileLog.Error("failed to compute content hash",
 			zap.String("ident", conv.Ident),
 			zap.Error(hashErr),
 		)
 		// Continue with original body if hash computation fails
-		contentInfo = &ContentInfo{
-			Hash:           "",
-			DecodedContent: body,
-			WasCompressed:  false,
-			CompressedSize: int64(len(body)),
-		}
+		// ComputeContentHash retains the original bytes and their SHA-256 on failure.
 	}
 	streamMissing, initialLossUnknown := conversationLoss(conv)
 	var completeness []string
@@ -141,7 +151,11 @@ func SaveFileEnhanced(
 		completeness = append(completeness, "extraction-error")
 	}
 	if hashErr != nil {
-		completeness = append(completeness, "content-decoding-error")
+		if errors.Is(hashErr, ErrContentDecodeDisabled) {
+			completeness = append(completeness, "content-decoding-disabled")
+		} else {
+			completeness = append(completeness, "content-decoding-error")
+		}
 	}
 	if streamMissing > 0 {
 		completeness = append(completeness, "unattributed-stream-gap")
@@ -194,7 +208,24 @@ func SaveFileEnhanced(
 	}
 
 	// Root path based on content type
-	root := path.Join(decoderconfig.Instance.Out, decoderconfig.Instance.FileStorage, cTypeDetected)
+	root := path.Join(decoderconfig.Instance.Out, decoderconfig.Instance.FileStorage)
+	if cfg.FileExtraction.Storage.OrganizeByProtocol {
+		label := strings.ToUpper(protocol)
+		if len(label) == 0 || len(label) > 64 || strings.ContainsFunc(label, func(r rune) bool { return !(r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_' || r == '-') }) {
+			label = "UNKNOWN"
+		}
+		root = path.Join(root, label)
+	}
+	if cfg.FileExtraction.Storage.OrganizeByDate {
+		label := "unknown-date"
+		if !conv.FirstClientPacket.IsZero() {
+			label = conv.FirstClientPacket.UTC().Format("2006-01-02")
+		}
+		root = path.Join(root, label)
+	}
+	if cfg.FileExtraction.Storage.OrganizeByMime {
+		root = path.Join(root, cTypeDetected)
+	}
 
 	// File extension based on detected content type
 	ext := ExtensionForContentType(cTypeDetected)
@@ -239,7 +270,12 @@ func SaveFileEnhanced(
 
 	// Check for duplicate content using deduplication cache
 	saveFileMu.Lock()
-	defer saveFileMu.Unlock()
+	locked := true
+	defer func() {
+		if locked {
+			saveFileMu.Unlock()
+		}
+	}()
 
 	var target string
 	var length int64
@@ -291,8 +327,9 @@ func SaveFileEnhanced(
 		}
 
 		// Create file for writing
-		f, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+		f, err := os.CreateTemp(path.Dir(target), ".netcap-artifact-")
 		if err != nil {
+			RecordArtifactWriteError(err)
 			saveFileLog.Error("failed to create file",
 				zap.String("ident", conv.Ident),
 				zap.String("target", target),
@@ -301,6 +338,7 @@ func SaveFileEnhanced(
 			return err
 		}
 
+		defer os.Remove(f.Name())
 		// Use streaming hash writer for efficiency
 		hashWriter := NewStreamingHashWriter(f)
 
@@ -309,15 +347,15 @@ func SaveFileEnhanced(
 
 		// Copy data while computing hashes
 		w, errCopy := io.Copy(hashWriter, r)
-		errClose := hashWriter.Close()
+		errClose := errors.Join(f.Sync(), hashWriter.Close())
 		if errCopy != nil {
+			RecordArtifactWriteError(errCopy)
 			saveFileLog.Error("failed to save file",
 				zap.String("ident", conv.Ident),
 				zap.String("target", target),
 				zap.Int64("bytesWritten", w),
 				zap.Error(errCopy),
 			)
-			_ = os.Remove(target)
 			return errCopy
 		} else {
 			length = w
@@ -328,8 +366,17 @@ func SaveFileEnhanced(
 			)
 		}
 		if errClose != nil {
-			_ = os.Remove(target)
+			RecordArtifactWriteError(errClose)
 			return errClose
+		}
+		// Publish complete bytes atomically without replacing an existing artifact.
+		if err := os.Link(f.Name(), target); err != nil {
+			RecordArtifactWriteError(err)
+			return err
+		}
+		if err := os.Remove(f.Name()); err != nil {
+			RecordArtifactWriteError(err)
+			return err
 		}
 
 		// Register in dedup cache AFTER successful write with final path
@@ -380,12 +427,16 @@ func SaveFileEnhanced(
 		flowDirection = "unknown"
 	}
 
-	// Perform security analysis on the decompressed file content
+	saveFileMu.Unlock()
+	locked = false
+	// File observations remain independent of content/analysis deduplication.
 	analysis := AnalyzeFile(contentInfo.DecodedContent, fileName)
 
 	// AI-based file type classification (if enabled)
 	var magikaResult *magikapkg.Result
-	if cfg.FileExtraction.Advanced.EnableMagika && magikapkg.IsEnabled() {
+	if currentAnalysis() != nil {
+		analysis.YaraMatches, magikaResult = analyzeStored(target, contentInfo.Hash, contentInfo.DecodedContent)
+	} else if cfg.FileExtraction.Advanced.EnableMagika && magikapkg.IsEnabled() {
 		magikaResult, err = magikapkg.ClassifyBytes(contentInfo.DecodedContent)
 		if err != nil {
 			saveFileLog.Warn("magika classification failed",

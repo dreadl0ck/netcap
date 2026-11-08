@@ -20,189 +20,23 @@
 package collector
 
 import (
-	stdErrors "errors"
-	"fmt"
-	"io"
+	"context"
 	"os"
-	"sync/atomic"
-	"time"
-
-	"github.com/dustin/go-humanize"
-	"github.com/gopacket/gopacket"
-	"github.com/gopacket/gopacket/pcapgo"
-	"github.com/pkg/errors"
 )
 
-// openPcap opens pcap files.
-type scopedNgReader struct {
-	*pcapgo.NgReader
-	interfaceBase int
-}
-
-func (r *scopedNgReader) ReadPacketData() ([]byte, gopacket.CaptureInfo, error) {
-	data, ci, err := r.NgReader.ReadPacketData()
-	ci.InterfaceIndex += r.interfaceBase
-	return data, ci, err
-}
-
-func (r *scopedNgReader) ZeroCopyReadPacketData() ([]byte, gopacket.CaptureInfo, error) {
-	data, ci, err := r.NgReader.ZeroCopyReadPacketData()
-	ci.InterfaceIndex += r.interfaceBase
-	return data, ci, err
-}
-
-func openPcapNG(file string) (*scopedNgReader, *os.File, error) {
-	// get file handle
-	f, err := os.Open(file)
+func openPcapNG(path string) (*scopedNgReader, *os.File, error) {
+	r, f, err := openCaptureInput(path, true)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	// try to create pcap reader
-	// Enable mixed link types to support pcapng files with multiple interface types
-	// (e.g., Ethernet + FPP for IS-IS, different encapsulations)
-	opts := pcapgo.DefaultNgReaderOptions
-	opts.WantMixedLinkType = true
-	scoped := &scopedNgReader{}
-	// Source IDs reset in each section; expose capture-wide interface ordinals.
-	opts.SectionEndCallback = func(interfaces []pcapgo.NgInterface, _ pcapgo.NgSectionInfo) {
-		scoped.interfaceBase += len(interfaces)
-	}
-	r, err := pcapgo.NewNgReader(f, opts)
-	if err != nil {
-		// Close the file before returning error
-		f.Close()
-		// Enhance the error with file type detection
-		return nil, nil, enhancePcapError(file, err)
-	}
-
-	scoped.NgReader = r
-	return scoped, f, nil
+	return r.(*scopedNgReader), f, nil
 }
 
-// countPackets returns the number of packets in a PCAP file.
-func countPacketsNG(path string) (count int64, err error) {
-	// get reader and file handle
-	r, f, err := openPcapNG(path)
-	if err != nil {
-		return
-	}
-
-	defer func() {
-		errClose := f.Close()
-		if errClose != nil && !errors.Is(errClose, io.EOF) {
-			fmt.Println(errClose)
-		}
-	}()
-
-	for {
-		// loop over packets and discard all data
-		_, _, err = r.ZeroCopyReadPacketData()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-
-			return count, errors.Wrap(err, "error reading packet data: ")
-		}
-
-		// increment counter
-		count++
-	}
-
-	return
+func countPacketsNG(path string) (int64, error) {
+	return countCaptureInput(context.Background(), path, true)
 }
 
-// CollectPcapNG implements parallel decoding of incoming packets.
-func (c *Collector) CollectPcapNG(path string) (resultErr error) {
-	c.captureKind, c.captureSource = "file", path
-	// Recover from any panics during processing
-	defer c.recoverFromPanic()
-	ctx, finish, err := c.beginCapture()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		c.captureRunError = resultErr
-		finish()
-		c.cleanup(false)
-		resultErr = stdErrors.Join(resultErr, c.flowExportError, c.captureEvidenceError)
-	}()
-
-	// stat input file
-	stat, err := os.Stat(path)
-	if err != nil {
-		return errors.Wrap(err, "failed to open file")
-	}
-
-	// file exists.
-	c.clearLine()
-	c.printlnStdOut("opening", path+" | size:", humanize.Bytes(uint64(stat.Size())))
-
-	// set input filesize on collector
-	c.inputSize = stat.Size()
-
-	// display total packet count
-	c.printStdOut("counting packets...")
-
-	start := time.Now()
-
-	numPackets, err := countPacketsNG(path)
-	if err != nil && !(errors.Is(err, io.EOF)) {
-		return err
-	}
-	atomic.StoreInt64(&c.numPackets, numPackets)
-
-	c.clearLine()
-	c.printlnStdOut("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
-
-	r, f, err := openPcapNG(path)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		errClose := f.Close()
-		if errClose != nil && !errors.Is(errClose, io.EOF) {
-			fmt.Println(errClose)
-		}
-	}()
-
-	if err = c.handleLinkType(r.LinkType()); err != nil {
-		return err
-	}
-	defer interruptCapture(ctx, ctx, func() { _ = f.Close() })()
-
-	// initialize collector
-	if err = c.Init(); err != nil {
-		return err
-	}
-
-	var (
-		data         []byte
-		ci           gopacket.CaptureInfo
-		stopProgress = c.printProgressInterval()
-	)
-
-	for {
-		// fetch the next packet data and packet header
-		data, ci, err = r.ReadPacketData()
-		if err != nil {
-			if ctx.Err() != nil || errors.Is(err, io.EOF) {
-				c.captureComplete = ctx.Err() == nil && errors.Is(err, io.EOF)
-				break
-			}
-
-			return errors.Wrap(err, errReadingPacketData+" file: "+path)
-		}
-
-		if !c.handleRawPacketData(data, &ci) {
-			break
-		}
-	}
-
-	// Stop progress reporting
-	close(stopProgress)
-
-	return nil
+// CollectPcapNG shares the bounded count/process policy with CollectPcap.
+func (c *Collector) CollectPcapNG(path string) error {
+	return c.collectCaptureInput(path, true)
 }

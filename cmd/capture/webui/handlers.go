@@ -42,6 +42,7 @@ import (
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
@@ -68,16 +69,17 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := StatusResponse{
-		IsProcessing:    s.processingLocked(),
-		OutputDir:       s.outDir,
-		InputFiles:      inputFiles,
-		ServerStarted:   serverStartTime,
-		ActiveInputFile: s.activeInputFile,
-		IsMultiFile:     len(inputFiles) > 1,
-		IsServiceMode:   s.isServiceMode,
-		IsLiveMode:      s.isLiveMode,
-		SessionID:       s.currentSession, // Include current session ID in service mode
-		LogoSubText:     logoSubText,
+		ChildAnalysisVersion: 1,
+		IsProcessing:         s.processingLocked(),
+		OutputDir:            s.outDir,
+		InputFiles:           inputFiles,
+		ServerStarted:        serverStartTime,
+		ActiveInputFile:      s.activeInputFile,
+		IsMultiFile:          len(inputFiles) > 1,
+		IsServiceMode:        s.isServiceMode,
+		IsLiveMode:           s.isLiveMode,
+		SessionID:            s.currentSession, // Include current session ID in service mode
+		LogoSubText:          logoSubText,
 	}
 
 	// Add completed files info
@@ -113,15 +115,17 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			}
 
 			fileInfo := FileInfo{
-				ID:               session.SessionID, // Use session ID as file ID
-				Name:             session.InputFilename,
-				Path:             session.InputFile,
-				Size:             session.InputFileSize,
-				ModifiedTime:     session.UploadTimestamp.Unix(),
-				IsCompleted:      session.Status == StatusCompleted,
-				BPFFilter:        session.BPFFilter,
-				ProcessingTime:   session.ProcessingTime,
-				SessionID:        session.SessionID,
+				ID:              session.SessionID, // Use session ID as file ID
+				Name:            session.InputFilename,
+				Path:            session.InputFile,
+				Size:            session.InputFileSize,
+				ModifiedTime:    session.UploadTimestamp.Unix(),
+				IsCompleted:     session.Status == StatusCompleted,
+				BPFFilter:       session.BPFFilter,
+				ProcessingTime:  session.ProcessingTime,
+				SessionID:       session.SessionID,
+				ParentSessionID: session.ParentSessionID,
+				ParentRunID:     session.ParentRunID, AnalysisSelector: session.AnalysisSelector, PacketSelection: session.PacketSelection,
 				HasReportedIssue: session.HasReportedIssue,
 			}
 
@@ -145,15 +149,17 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			}
 
 			fileInfo := FileInfo{
-				ID:               session.SessionID, // Use session ID as file ID
-				Name:             session.InputFilename,
-				Path:             session.InputFile,
-				Size:             session.InputFileSize,
-				ModifiedTime:     session.UploadTimestamp.Unix(),
-				IsCompleted:      session.Status == StatusCompleted,
-				BPFFilter:        session.BPFFilter,
-				ProcessingTime:   session.ProcessingTime,
-				SessionID:        session.SessionID,
+				ID:              session.SessionID, // Use session ID as file ID
+				Name:            session.InputFilename,
+				Path:            session.InputFile,
+				Size:            session.InputFileSize,
+				ModifiedTime:    session.UploadTimestamp.Unix(),
+				IsCompleted:     session.Status == StatusCompleted,
+				BPFFilter:       session.BPFFilter,
+				ProcessingTime:  session.ProcessingTime,
+				SessionID:       session.SessionID,
+				ParentSessionID: session.ParentSessionID,
+				ParentRunID:     session.ParentRunID, AnalysisSelector: session.AnalysisSelector, PacketSelection: session.PacketSelection,
 				HasReportedIssue: session.HasReportedIssue,
 			}
 
@@ -181,7 +187,7 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	completedFiles := make(map[string]bool)
 	maps.Copy(completedFiles, s.completedFiles)
-	inputFiles := s.inputFiles
+	inputFiles := slices.Clone(s.inputFiles)
 	fileErrors := make(map[string]FileError)
 	maps.Copy(fileErrors, s.fileErrors)
 	fileBPFFilters := make(map[string]string)
@@ -190,21 +196,36 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 	maps.Copy(fileProcessingTime, s.fileProcessingTime)
 	reportedIssues := make(map[string]bool)
 	maps.Copy(reportedIssues, s.reportedIssues)
+	children := make(map[string]childAnalysis)
+	maps.Copy(children, s.childAnalyses)
 	s.mu.RUnlock()
 
 	files := make([]FileInfo, 0)
 	for _, path := range inputFiles {
 		info, err := os.Stat(path)
-		if err != nil {
+		child, isChild := children[path]
+		if err != nil && !isChild {
 			continue
+		}
+		var size, modifiedTime int64
+		if err == nil {
+			size, modifiedTime = info.Size(), info.ModTime().Unix()
+		} else {
+			modifiedTime = child.CreatedAt.Unix()
 		}
 
 		// Calculate file hash - use this as the file ID
-		hash := calculateFileHash(path)
+		hash := ""
+		if err == nil {
+			hash = calculateFileHash(path)
+		}
 		fileID := hash
 		if fileID == "" {
 			// Fallback to basename if hash calculation fails
 			fileID = filepath.Base(path)
+		}
+		if child, ok := children[path]; ok {
+			fileID = child.AnalysisID
 		}
 
 		// Store the mapping from ID to path
@@ -216,13 +237,15 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			ID:               fileID,
 			Name:             filepath.Base(path),
 			Path:             path,
-			Size:             info.Size(),
-			ModifiedTime:     info.ModTime().Unix(),
+			Size:             size,
+			ModifiedTime:     modifiedTime,
 			IsCompleted:      completedFiles[path],
 			BPFFilter:        fileBPFFilters[path],
 			ProcessingTime:   fileProcessingTime[path],
 			Hash:             hash,
 			HasReportedIssue: reportedIssues[hash],
+			ParentInputFile:  children[path].ParentInputFile,
+			ParentRunID:      children[path].ParentRunID, AnalysisSelector: children[path].Selector, PacketSelection: children[path].PacketSelection,
 		}
 
 		// Add error information if available
@@ -290,37 +313,47 @@ func (s *Server) handleAuditFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	HandleAuditFiles(outDir)(w, r)
+	selected, ok := s.selectedCapture(w, r)
+	if !ok {
+		return
+	}
+	HandleAuditFiles(selected.OutputDir)(w, r)
 }
 
 // handleAuditFilesFiltered delegates to the shared handler with community ID filtering
 func (s *Server) handleAuditFilesFiltered(w http.ResponseWriter, r *http.Request) {
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	HandleAuditFilesFiltered(outDir)(w, r)
+	selected, ok := s.selectedCapture(w, r)
+	if !ok {
+		return
+	}
+	HandleAuditFilesFiltered(selected.OutputDir)(w, r)
 }
 
 // handleLogFiles delegates to the shared handler
 func (s *Server) handleLogFiles(w http.ResponseWriter, r *http.Request) {
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	HandleLogFiles(outDir)(w, r)
+	selected, ok := s.selectedCapture(w, r)
+	if !ok {
+		return
+	}
+	HandleLogFiles(selected.OutputDir)(w, r)
 }
 
 // handleAuditRecords delegates to the shared handler
 func (s *Server) handleAuditRecords(w http.ResponseWriter, r *http.Request) {
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	HandleAuditRecords(outDir)(w, r)
+	selected, ok := s.selectedCapture(w, r)
+	if !ok {
+		return
+	}
+	HandleAuditRecords(selected.OutputDir)(w, r)
 }
 
 // handleLogContent delegates to the shared handler
 func (s *Server) handleLogContent(w http.ResponseWriter, r *http.Request) {
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	HandleLogContent(outDir)(w, r)
+	selected, ok := s.selectedCapture(w, r)
+	if !ok {
+		return
+	}
+	HandleLogContent(selected.OutputDir)(w, r)
 }
 
 // handleDatabaseInfo returns information about the currently loaded databases
@@ -620,7 +653,7 @@ func (s *Server) handleSetDirectory(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleReanalyze handles requests to reanalyze a PCAP file
-// This deletes all existing audit records and queues a new analysis job
+// Each request creates a child analysis; parent results remain available.
 func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -628,17 +661,45 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		InputFile string `json:"inputFile"`
-		SessionID string `json:"sessionId,omitempty"` // For service mode
+		InputFile string                `json:"inputFile"`
+		SessionID string                `json:"sessionId,omitempty"` // For service mode
+		RunID     string                `json:"runId,omitempty"`
+		Selection *childPacketSelection `json:"selection,omitempty"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&req); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
+		return
+	}
+	var extra any
+	if decoder.Decode(&extra) != io.EOF {
+		http.Error(w, "A single JSON request is required", http.StatusBadRequest)
 		return
 	}
 
 	if req.InputFile == "" && req.SessionID == "" {
 		http.Error(w, "Input file or session ID required", http.StatusBadRequest)
+		return
+	}
+	selected, err := s.resolveBodyCapture(r, req.InputFile, req.SessionID, req.RunID)
+	if err != nil {
+		writeSelectionError(w, err)
+		return
+	}
+	req.InputFile = selected.InputFile
+	if req.Selection != nil {
+		if err := req.Selection.validate(selected.RunID); err != nil {
+			writeSelectionError(w, err)
+			return
+		}
+	}
+	if s.isServiceMode {
+		req.SessionID = selected.SessionID
+	}
+	if s.isServiceMode && (s.sessionManager == nil || req.SessionID == "") {
+		http.Error(w, "Session ID required", http.StatusBadRequest)
 		return
 	}
 
@@ -650,9 +711,13 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Session not found", http.StatusNotFound)
 			return
 		}
+		if req.InputFile != "" && req.InputFile != session.InputFile {
+			http.Error(w, "Input file conflicts with session", http.StatusConflict)
+			return
+		}
 
 		// Check access rights
-		if !session.IsPreloaded && session.IP != clientIP {
+		if !session.IsPreloaded && session.IP != clientIP && !captureAdminAuthorized(r) {
 			http.Error(w, "Access denied", http.StatusForbidden)
 			return
 		}
@@ -663,61 +728,13 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Verify input file exists
-		if _, err := os.Stat(session.InputFile); os.IsNotExist(err) {
-			http.Error(w, "Input file no longer exists", http.StatusNotFound)
-			return
-		}
-
-		// Delete all existing audit records in the output directory
 		release, available := leaseOfflineMutation(session.OutputDir)
 		if !available {
 			http.Error(w, "Capture output is busy", http.StatusConflict)
 			return
 		}
 		defer release()
-		if err := s.deleteAuditRecords(session.OutputDir); err != nil {
-			log.Printf("[WebUI] Error deleting audit records for reanalysis: %v", err)
-			http.Error(w, fmt.Sprintf("Failed to delete existing data: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		// Reset session status
-		s.sessionManager.UpdateSessionStatus(req.SessionID, StatusQueued, "", "")
-		s.sessionManager.UpdateSessionProcessingTime(req.SessionID, 0)
-
-		// Get DPI configuration
-		s.mu.RLock()
-		enableDPI := s.dpiConfigured
-		s.mu.RUnlock()
-
-		// Load BPF filter from saved configuration
-		bpfConfig := s.loadBPFConfig()
-
-		// Create new analysis job
-		job := &AnalysisJob{
-			SessionID:       req.SessionID,
-			InputFile:       session.InputFile,
-			OutputDir:       session.OutputDir,
-			EnableDPI:       enableDPI,
-			BPFFilter:       bpfConfig.Filter,
-			IncludeDecoders: "",
-			ExcludeDecoders: "",
-		}
-
-		// Queue the job
-		if err := s.enqueueAnalysis(job, false); err != nil {
-			s.recordAnalysisFailure(job, err.Error(), "")
-			http.Error(w, err.Error(), http.StatusServiceUnavailable)
-			return
-		}
-		log.Printf("[WebUI] Reanalysis job queued for session %s: %s", req.SessionID, session.InputFilename)
-
-		respondJSON(w, http.StatusOK, map[string]any{
-			"success":   true,
-			"message":   "Reanalysis queued successfully",
-			"sessionId": req.SessionID,
-		})
+		s.queueChildAnalysis(w, r, session.InputFile, session.OutputDir, session.SessionID, clientIP, req.Selection, selected.RunID)
 		return
 	}
 
@@ -754,7 +771,7 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 		outputDir = filepath.Join(s.baseOutDir, dirName)
 	}
 
-	// Reset completion status and errors
+	// Keep the parent stable while its source and provenance are snapshotted.
 	release, available := leaseOfflineMutation(outputDir)
 	if !available {
 		s.mu.Unlock()
@@ -762,108 +779,8 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer release()
-	delete(s.completedFiles, req.InputFile)
-	delete(s.fileErrors, req.InputFile)
-	delete(s.fileProcessingTime, req.InputFile)
-
-	// Get DPI configuration
-	enableDPI := s.dpiConfigured
 	s.mu.Unlock()
-
-	// Verify input file exists
-	if _, err := os.Stat(req.InputFile); os.IsNotExist(err) {
-		http.Error(w, "Input file no longer exists", http.StatusNotFound)
-		return
-	}
-
-	// Delete all existing audit records in the output directory
-	if err := s.deleteAuditRecords(outputDir); err != nil {
-		log.Printf("[WebUI] Error deleting audit records for reanalysis: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to delete existing data: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Load BPF filter from saved configuration
-	bpfConfig := s.loadBPFConfig()
-
-	// Create analysis job using filename as session ID (like in handleUpload)
-	sessionID := filepath.Base(req.InputFile)
-	job := &AnalysisJob{
-		SessionID:       sessionID,
-		InputFile:       req.InputFile,
-		OutputDir:       outputDir,
-		EnableDPI:       enableDPI,
-		BPFFilter:       bpfConfig.Filter,
-		IncludeDecoders: "",
-		ExcludeDecoders: "",
-	}
-
-	// Queue the job
-	if s.jobQueue == nil {
-		http.Error(w, "Analysis queue not available", http.StatusServiceUnavailable)
-		return
-	}
-
-	if err := s.enqueueAnalysis(job, false); err != nil {
-		s.recordAnalysisFailure(job, err.Error(), "")
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		return
-	}
-	log.Printf("[WebUI] Reanalysis job queued for file: %s -> %s", req.InputFile, outputDir)
-
-	respondJSON(w, http.StatusOK, map[string]any{
-		"success":  true,
-		"message":  "Reanalysis queued successfully",
-		"filename": filepath.Base(req.InputFile),
-		"path":     req.InputFile,
-	})
-}
-
-// deleteAuditRecords removes all audit record files from the output directory
-func (s *Server) deleteAuditRecords(outputDir string) error {
-	if outputDir == "" {
-		return fmt.Errorf("output directory not specified")
-	}
-
-	// Check if directory exists
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		// Directory doesn't exist, nothing to delete
-		return nil
-	}
-
-	// Read directory contents
-	entries, err := os.ReadDir(outputDir)
-	if err != nil {
-		return fmt.Errorf("failed to read output directory: %w", err)
-	}
-
-	deletedCount := 0
-	for _, entry := range entries {
-		if entry.Name() == ".offline-rule-evaluation.lock" {
-			continue
-		}
-		if entry.IsDir() {
-			// Delete subdirectories like "files", "tcp", "udp"
-			subDir := filepath.Join(outputDir, entry.Name())
-			if err := os.RemoveAll(subDir); err != nil {
-				log.Printf("[WebUI] Warning: failed to delete subdirectory %s: %v", subDir, err)
-			} else {
-				log.Printf("[WebUI] Deleted subdirectory: %s", subDir)
-				deletedCount++
-			}
-		} else {
-			// Delete files (ncap.gz files, logs, etc.)
-			filePath := filepath.Join(outputDir, entry.Name())
-			if err := os.Remove(filePath); err != nil {
-				log.Printf("[WebUI] Warning: failed to delete file %s: %v", filePath, err)
-			} else {
-				deletedCount++
-			}
-		}
-	}
-
-	log.Printf("[WebUI] Deleted %d items from output directory: %s", deletedCount, outputDir)
-	return nil
+	s.queueChildAnalysis(w, r, req.InputFile, outputDir, "", "", req.Selection, selected.RunID)
 }
 
 // handleVersion returns version information
@@ -2430,20 +2347,17 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Determine the output directory
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	if outDir == "" {
-		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": "No output directory selected",
-		})
+	filesDir, ok := s.artifactDirectory(w, r)
+	if !ok {
 		return
 	}
-
-	// Get the files directory within the output directory
-	filesDir := filepath.Join(outDir, "files")
+	outDir := filepath.Dir(filesDir)
 
 	// Check if files directory exists
+	if info, err := os.Lstat(filesDir); err == nil && (!info.IsDir() || info.Mode()&os.ModeSymlink != 0) {
+		artifactAccessError(w, artifactio.ErrPath)
+		return
+	}
 	if _, err := os.Stat(filesDir); os.IsNotExist(err) {
 		// Return empty list if directory doesn't exist
 		RespondJSON(w, http.StatusOK, map[string]any{
@@ -2456,6 +2370,10 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 	// Read File audit records to get hash and protocol information
 	type fileAuditInfo struct {
+		Occurrences         []map[string]string
+		SHA256              string
+		IsComplete          bool
+		CompletenessReason  string
 		Name                string // Original filename from network traffic
 		Hash                string
 		Protocol            string
@@ -2480,16 +2398,28 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	}
 	fileInfoMap := make(map[string]fileAuditInfo) // filename -> {name, hash, protocol}
 	fileAuditPath := filepath.Join(outDir, "File.ncap.gz")
+	if _, err := os.Stat(fileAuditPath); os.IsNotExist(err) {
+		fileAuditPath = filepath.Join(outDir, "File.ncap")
+	}
 	if _, err := os.Stat(fileAuditPath); err == nil {
 		// File audit exists, read it to get hashes and protocols
 		reader, err := netio.Open(fileAuditPath, defaults.BufferSize)
 		if err == nil {
+			header, headerErr := reader.ReadHeader()
+			if headerErr != nil || header.Type != types.Type_NC_File {
+				reader.Close()
+				RespondJSON(w, 500, map[string]any{"error": "Invalid File audit header"})
+				return
+			}
 			var file types.File
 			for {
 				err := reader.Next(&file)
 				if err != nil {
 					if err != io.EOF {
 						log.Printf("[WebUI] Error reading File audit record: %v", err)
+						reader.Close()
+						RespondJSON(w, 500, map[string]any{"error": "Cannot read File audit evidence"})
+						return
 					}
 					break
 				}
@@ -2497,7 +2427,21 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 				// Location paths may differ from current filesystem paths due to directory changes
 				if file.Location != "" {
 					filename := filepath.Base(file.Location)
+					prior := fileInfoMap[filename]
+					occurrences := prior.Occurrences
+					if len(occurrences) < 1024 {
+						occurrences = append(occurrences, map[string]string{"name": file.Name, "timestampNs": fmt.Sprint(file.Timestamp), "communityId": file.CommunityID, "connectionUid": file.ConnectionUID, "protocol": file.Protocol, "parentFileId": file.ParentFileID, "flowDirection": file.FlowDirection})
+					}
 					fileInfoMap[filename] = fileAuditInfo{
+						Occurrences: occurrences,
+						SHA256: func() string {
+							if file.Hashes != nil {
+								return file.Hashes.SHA256
+							}
+							return ""
+						}(),
+						IsComplete:          file.IsComplete,
+						CompletenessReason:  file.CompletenessReason,
 						Name:                file.Name,
 						Hash:                file.Hash,
 						Protocol:            file.Protocol,
@@ -2522,6 +2466,9 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			reader.Close()
+		} else {
+			RespondJSON(w, 500, map[string]any{"error": "Cannot open File audit evidence"})
+			return
 		}
 		log.Printf("[WebUI] Loaded %d file records from File audit records", len(fileInfoMap))
 	}
@@ -2530,13 +2477,21 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	var extractedFiles []map[string]any
 	err := filepath.Walk(filesDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			log.Printf("[WebUI] Error walking files directory: %v", err)
-			return nil // Continue walking
+			return err
 		}
 
 		// Skip directories
 		if info.IsDir() {
 			return nil
+		}
+		if !info.Mode().IsRegular() {
+			return artifactio.ErrPath
+		}
+		if strings.HasPrefix(info.Name(), ".netcap-artifact-") {
+			return nil
+		}
+		if len(extractedFiles) >= 4096 {
+			return fmt.Errorf("artifact listing limit exceeded")
 		}
 
 		// Get relative path from files directory
@@ -2567,6 +2522,11 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		// Add name, hash, protocol, and security indicators from File audit records
 		// Match by filename since full paths may differ
 		if auditInfo, ok := fileInfoMap[info.Name()]; ok {
+			fileInfo["occurrences"] = auditInfo.Occurrences
+			fileInfo["occurrencesCapped"] = len(auditInfo.Occurrences) == 1024
+			fileInfo["sha256"] = auditInfo.SHA256
+			fileInfo["isComplete"] = auditInfo.IsComplete
+			fileInfo["completenessReason"] = auditInfo.CompletenessReason
 			if auditInfo.Name != "" {
 				fileInfo["originalName"] = auditInfo.Name
 			}
@@ -2654,51 +2614,13 @@ func (s *Server) handleDownloadExtractedFile(w http.ResponseWriter, r *http.Requ
 
 	log.Printf("[WebUI] Download extracted file request: encodedPath=%s, decodedPath=%s", encodedPath, relativePath)
 
-	// Determine the output directory
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	if outDir == "" {
-		http.Error(w, "No output directory selected", http.StatusServiceUnavailable)
+	filesDir, ok := s.artifactDirectory(w, r)
+	if !ok {
 		return
 	}
-
-	// Build full path to the file
-	filesDir := filepath.Join(outDir, "files")
-	fullPath := filepath.Join(filesDir, filepath.Clean(relativePath))
-
-	log.Printf("[WebUI] File download: filesDir=%s, relativePath=%s, fullPath=%s", filesDir, relativePath, fullPath)
-
-	// Security check: ensure the file is within the files directory
-	if !strings.HasPrefix(fullPath, filesDir) {
-		log.Printf("[WebUI] Security violation: attempt to access file outside files directory: %s", relativePath)
-		http.Error(w, "Invalid file path", http.StatusForbidden)
-		return
-	}
-
-	// Check if file exists
-	fileInfo, err := os.Stat(fullPath)
+	file, fileInfo, err := artifactio.Open(filesDir, relativePath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			log.Printf("[WebUI] File not found: %s (fullPath: %s)", relativePath, fullPath)
-			http.Error(w, "File not found", http.StatusNotFound)
-		} else {
-			log.Printf("[WebUI] Error accessing file %s: %v", relativePath, err)
-			http.Error(w, "Error accessing file", http.StatusInternalServerError)
-		}
-		return
-	}
-
-	// Ensure it's not a directory
-	if fileInfo.IsDir() {
-		http.Error(w, "Cannot download directory", http.StatusBadRequest)
-		return
-	}
-
-	// Open the file
-	file, err := os.Open(fullPath)
-	if err != nil {
-		log.Printf("[WebUI] Failed to open file %s: %v", relativePath, err)
-		http.Error(w, "Failed to open file", http.StatusInternalServerError)
+		artifactAccessError(w, err)
 		return
 	}
 	defer file.Close()
@@ -2763,47 +2685,13 @@ func (s *Server) handleExtractedFileContent(w http.ResponseWriter, r *http.Reque
 		limit = 64 * 1024
 	}
 
-	// Determine the output directory
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	if outDir == "" {
-		http.Error(w, "No output directory selected", http.StatusServiceUnavailable)
+	filesDir, ok := s.artifactDirectory(w, r)
+	if !ok {
 		return
 	}
-
-	// Build full path to the file
-	filesDir := filepath.Join(outDir, "files")
-	fullPath := filepath.Join(filesDir, filepath.Clean(relativePath))
-
-	// Security check: ensure the file is within the files directory
-	if !strings.HasPrefix(fullPath, filesDir) {
-		log.Printf("[WebUI] Security violation: attempt to access file outside files directory: %s", relativePath)
-		http.Error(w, "Invalid file path", http.StatusForbidden)
-		return
-	}
-
-	// Check if file exists
-	fileInfo, err := os.Stat(fullPath)
+	file, fileInfo, err := artifactio.Open(filesDir, relativePath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			http.Error(w, "File not found", http.StatusNotFound)
-		} else {
-			http.Error(w, "Error accessing file", http.StatusInternalServerError)
-		}
-		return
-	}
-
-	// Ensure it's not a directory
-	if fileInfo.IsDir() {
-		http.Error(w, "Cannot read directory", http.StatusBadRequest)
-		return
-	}
-
-	// Open the file
-	file, err := os.Open(fullPath)
-	if err != nil {
-		log.Printf("[WebUI] Failed to open file %s: %v", relativePath, err)
-		http.Error(w, "Failed to open file", http.StatusInternalServerError)
+		artifactAccessError(w, err)
 		return
 	}
 	defer file.Close()

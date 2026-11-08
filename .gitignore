@@ -58,6 +58,7 @@ pcaps
 !tests/The Ultimate PCAP v20260316.pcapng
 !internal/behavior/testdata/qualification/**/*.pcap
 !internal/networkdetect/testdata/**/*.pcap
+!internal/collector/testdata/voip/*.pcap
 !tests/flightsim-lab/
 !tests/flightsim-lab/**
 zeus/.history

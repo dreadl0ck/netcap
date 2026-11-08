@@ -30,6 +30,8 @@ type CaptureConfig struct {
 	RetainPackets   bool   `json:"retainPackets"`
 	SegmentBytes    int64  `json:"segmentBytes,string"`
 	RetentionBytes  int64  `json:"retentionBytes,string"`
+
+	MaxRetainedTCPBytes int64 `json:"maxRetainedTCPBytes,omitempty,string"`
 }
 
 type CaptureSegment struct {

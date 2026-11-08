@@ -4,14 +4,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/dreadl0ck/netcap/internal/dbs"
 	"github.com/dreadl0ck/netcap/internal/enrichment"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 )
 
 func attachKEV(result *VulnerabilitiesResponse) {
 	result.KEVStatus = "unavailable"
-	root, e := dbs.CommunitySigningRoot()
+	root, e := catalogueSigningRoot()
 	if e != nil {
 		return
 	}

@@ -69,7 +69,18 @@ type NetworkDataFragments []NetworkDataFragment
 // calculated once at the stream level and passed through to harvesters.
 func SaveConversation(proto string, conversation core.DataFragments, ident string, firstPacket time.Time, transport gopacket.Flow, communityID string) error {
 	// prevent processing zero bytes
-	if len(conversation) == 0 || conversation.Size() == 0 {
+	if len(conversation) == 0 {
+		return nil
+	}
+	if conversation.Size() == 0 {
+		if decoderconfig.Instance.SaveConns {
+			for _, fragment := range conversation {
+				if data, ok := fragment.(*core.StreamData); ok && data.DiscardedBytes > 0 {
+					_, err := SaveStreamEvidence(decoderconfig.Instance.Out, proto, conversation, ident, firstPacket, communityID)
+					return err
+				}
+			}
+		}
 		return nil
 	}
 
@@ -370,7 +381,7 @@ func createBannerFromConversation(conversation core.DataFragments) []byte {
 	// to use for the credential harvesters
 	// This limits the amount of data processed to prevent performance issues with large streams
 	for _, d := range conversation {
-		if fragment, ok := d.(*core.StreamData); ok && fragment.SkippedBytes != 0 {
+		if fragment, ok := d.(*core.StreamData); ok && (fragment.SkippedBytes != 0 || fragment.DiscardedBytes > 0) {
 			break
 		}
 		for _, b := range d.Raw() {

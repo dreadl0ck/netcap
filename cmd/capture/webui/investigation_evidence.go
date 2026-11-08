@@ -30,37 +30,6 @@ func readEvidenceJSON(path string, target any) error {
 }
 
 func (s *Server) resolveEvidenceOutput(r *http.Request) (string, bool) {
-	q := r.URL.Query()
-	if len(q["sessionId"]) > 1 || len(q["inputFile"]) > 1 {
-		return "", false
-	}
-	if id := q.Get("sessionId"); id != "" {
-		if s.sessionManager == nil {
-			return "", false
-		}
-		session, ok := s.sessionManager.GetSession(id)
-		if !ok {
-			return "", false
-		}
-		return session.OutputDir, session.OutputDir != ""
-	}
-	if input := q.Get("inputFile"); input != "" {
-		s.mu.RLock()
-		known := false
-		for _, path := range s.inputFiles {
-			if path == input {
-				known = true
-				break
-			}
-		}
-		if _, ok := s.fileOutputDirs[input]; ok {
-			known = true
-		}
-		s.mu.RUnlock()
-		if !known {
-			return "", false
-		}
-	}
 	return s.resolveOutDirFromRequest(r)
 }
 

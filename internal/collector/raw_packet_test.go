@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
@@ -72,7 +73,18 @@ func checkRawPacket(t *testing.T, got gopacket.Packet, data []byte, base gopacke
 	if !bytes.Equal(got.Data(), want.Data()) || !reflect.DeepEqual(got.Layers(), want.Layers()) {
 		t.Errorf("packet content differs: got %v, want %v", got, want)
 	}
-	if !reflect.DeepEqual(got.Metadata(), want.Metadata()) {
+	metadata := *got.Metadata()
+	metadata.AncillaryData = nil
+	for _, value := range got.Metadata().AncillaryData {
+		if context, ok := value.(*packetview.Context); ok {
+			if len(context.Packets) != 1 || context.Packets[0].Ordinal == 0 || context.Packets[0].Timestamp != ci.Timestamp.UnixNano() || context.Packets[0].InterfaceIndex != int32(ci.InterfaceIndex) {
+				t.Errorf("raw capture reference lost: %+v", context)
+			}
+			continue
+		}
+		metadata.AncillaryData = append(metadata.AncillaryData, value)
+	}
+	if !reflect.DeepEqual(&metadata, want.Metadata()) {
 		t.Errorf("metadata = %+v, want %+v", got.Metadata(), want.Metadata())
 	}
 	if (got.ErrorLayer() != nil) != (want.ErrorLayer() != nil) {

@@ -65,6 +65,8 @@ func init() {
 }
 
 func flushTCPStreams(numTotal int) {
+	pending := StreamFactory.readerSnapshot()
+	numTotal = len(pending)
 	if numTotal == 0 {
 		return
 	}
@@ -77,7 +79,7 @@ func flushTCPStreams(numTotal int) {
 	sp.numTotal = numTotal
 
 	// flush the remaining streams to disk
-	for _, s := range StreamFactory.streamReaders {
+	for _, s := range pending {
 		if s != nil { // never feed a nil stream
 			sp.handleStream(s)
 		}
@@ -93,6 +95,11 @@ func flushTCPStreams(numTotal int) {
 		sp.workers[i] = nil // Nil out reference to help GC
 	}
 	sp.workerWG.Wait()
+	for _, reader := range pending {
+		if owned, ok := reader.(*tcpStreamReader); ok {
+			owned.parent.releaseResources()
+		}
+	}
 }
 
 // internal data structure to parallelize processing of tcp streams

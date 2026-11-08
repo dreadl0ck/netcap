@@ -20,6 +20,7 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,7 +30,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -37,6 +37,8 @@ import (
 
 // HTTPSummary represents HTTP request/response information
 type HTTPSummary struct {
+	TimestampNs            string            `json:"timestampNs"`
+	ReassemblyStatus       string            `json:"reassemblyStatus"`
 	Timestamp              int64             `json:"timestamp"`
 	Proto                  string            `json:"proto"`
 	Method                 string            `json:"method"`
@@ -166,7 +168,13 @@ func readHTTP(outDir string) ([]HTTPSummary, error) {
 			continue
 		}
 
+		timestampNs := ""
+		if httpRec.Timestamp > 0 {
+			timestampNs = fmt.Sprint(httpRec.Timestamp)
+		}
 		httpRecords = append(httpRecords, HTTPSummary{
+			TimestampNs:            timestampNs,
+			ReassemblyStatus:       httpRec.ReassemblyStatus,
 			Timestamp:              httpRec.Timestamp,
 			Proto:                  httpRec.Proto,
 			Method:                 httpRec.Method,
@@ -234,14 +242,13 @@ func (s *Server) handleHTTPDownloadPCAP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Get query parameters
-	srcIP := r.URL.Query().Get("srcIP")
-	dstIP := r.URL.Query().Get("dstIP")
-
-	if srcIP == "" || dstIP == "" {
-		http.Error(w, "Missing required parameters", http.StatusBadRequest)
+	query := r.URL.Query()
+	selection, err := parseTCPPacketSelection(query)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	srcIP, dstIP := query.Get("srcIP"), query.Get("dstIP")
 
 	activeInputFile, _ := s.resolveInputFileFromRequest(r)
 
@@ -256,21 +263,24 @@ func (s *Server) handleHTTPDownloadPCAP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Create BPF filter for HTTP traffic
-	// Format: (host srcIP and host dstIP) and (tcp port 80 or tcp port 443 or tcp port 8080)
-	bpf := fmt.Sprintf("(host %s and host %s) and (tcp port 80 or tcp port 443 or tcp port 8080)",
-		srcIP, dstIP)
-
-	// Create temporary output file
-	tempDir := os.TempDir()
-	outputFile := filepath.Join(tempDir, fmt.Sprintf("http_%s_%s.pcap",
-		strings.ReplaceAll(srcIP, ".", "_"),
-		strings.ReplaceAll(dstIP, ".", "_")))
+	temp, err := os.CreateTemp("", "netcap-http-*.pcap")
+	if err != nil {
+		http.Error(w, "Failed to create HTTP packet export", http.StatusInternalServerError)
+		return
+	}
+	outputFile := temp.Name()
+	defer os.Remove(outputFile)
+	if err := temp.Close(); err != nil {
+		http.Error(w, "Failed to close HTTP packet export", http.StatusInternalServerError)
+		return
+	}
 
 	// Filter the PCAP entirely in-process (no external tcpdump).
-	log.Printf("[WebUI] Filtering HTTP PCAP in-process: %s -> %s (bpf: %s)", activeInputFile, outputFile, bpf)
+	log.Printf("[WebUI] Filtering HTTP PCAP in-process: %s -> %s (bpf: %s)", activeInputFile, outputFile, selection.bpf)
 
-	written, err := filterPCAPToFileWithTimeout(r.Context(), activeInputFile, bpf, outputFile, 30*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+	written, err := filterPCAPSelectionContext(ctx, activeInputFile, selection.bpf, outputFile, selection.contains)
 	if err != nil {
 		log.Printf("[WebUI] PCAP filter error: %v", err)
 		os.Remove(outputFile)

@@ -24,11 +24,14 @@ import "time"
 // ConversationInfo is wrapper structure for traffic sent over a Transport protocol
 // to allow Transport agnostic decoding of data streams.
 type ConversationInfo struct {
-	Data DataFragments
+	Transport TransportProtocol
+	Data      DataFragments
 	// TCP directions in reassembly order; capture timestamps can run backwards.
-	ClientData        DataFragments
-	ServerData        DataFragments
-	Ident             string
+	ClientData DataFragments
+	ServerData DataFragments
+	Ident      string
+	// Immutable packetview scope shared by every packet in this conversation.
+	NetworkScope      string
 	FirstClientPacket time.Time
 	FirstServerPacket time.Time
 
@@ -41,6 +44,8 @@ type ConversationInfo struct {
 
 	// True only when SYN, SYN-ACK and the acknowledging client ACK were observed.
 	TCPHandshakeComplete bool
+	// syn, syn-ack, service-port, or first-observed (roles unknown).
+	TCPRoleSource string
 
 	// CommunityID is the Corelight Community ID v1 for this stream.
 	// This provides a standardized flow identifier compatible with

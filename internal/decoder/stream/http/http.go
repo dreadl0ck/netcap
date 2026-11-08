@@ -21,9 +21,9 @@ package http
 
 import (
 	"bytes"
-	"net/http"
-	"net/url"
 	"strings"
+
+	"golang.org/x/net/http2"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"go.uber.org/zap"
@@ -58,6 +58,9 @@ var Decoder = &decoder.StreamDecoder{
 	Specificity: core.SpecificityStructural,
 
 	CanDecode: func(client, server []byte) bool {
+		if bytes.HasPrefix(client, []byte(http2.ClientPreface)) || bytes.HasPrefix(server, []byte(http2.ClientPreface)) {
+			return true
+		}
 		return containsHTTPMethod(client) || containsHTTPMethod(server) || containsHTTPProtocolName(server) || containsHTTPProtocolName(client) || (httpStart(client, false) >= 0 && httpStart(server, true) >= 0) || (httpStart(server, false) >= 0 && httpStart(client, true) >= 0)
 	},
 	DeInit: func(sd *decoder.StreamDecoder) error {
@@ -102,22 +105,8 @@ func containsHTTPMethod(data []byte) bool {
 	if !ok || len(line) > 8192 {
 		return false
 	}
-	parts := strings.Split(string(line), " ")
-	if len(parts) != 3 || parts[1] == "" || (parts[2] != "HTTP/1.0" && parts[2] != "HTTP/1.1") {
-		return false
-	}
-	for _, m := range httpMethods {
-		if parts[0] == string(m) {
-			var err error
-			if parts[0] == methodCONNECT {
-				_, err = http.NewRequest(parts[0], parts[1], nil)
-			} else {
-				_, err = url.ParseRequestURI(escapeTargetControls(parts[1]))
-			}
-			return err == nil
-		}
-	}
-	return false
+	_, _, _, _, valid := requestLine(line)
+	return valid
 }
 
 // A protocol preface is skipped only with a complete HTTP header on both sides.

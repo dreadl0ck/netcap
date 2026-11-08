@@ -168,11 +168,14 @@ type Config struct {
 	// This makes data visible while capture is ongoing.
 	// If zero, no periodic flushing is performed (records only flushed on shutdown).
 	// Recommended: 30s to 60s for most use cases.
-	LiveFlushInterval    time.Duration
-	FlowExports          bool
-	FlowExportPorts      string
-	CaptureEvidence      bool
-	RetainPackets        bool
-	PacketSegmentBytes   int64
-	PacketRetentionBytes int64
+	LiveFlushInterval time.Duration
+	// LiveMaintenanceInterval schedules ordered stream expiry independently of output snapshots.
+	// Zero selects one second; negative disables it. Offline replay never uses wall-clock maintenance.
+	LiveMaintenanceInterval time.Duration
+	FlowExports             bool
+	FlowExportPorts         string
+	CaptureEvidence         bool
+	RetainPackets           bool
+	PacketSegmentBytes      int64
+	PacketRetentionBytes    int64
 }

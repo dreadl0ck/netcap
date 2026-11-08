@@ -14,10 +14,10 @@ import (
 
 // makeTeamViewerPacket creates a minimal TeamViewer protocol packet with the given command code
 func makeTeamViewerPacket(cmdCode uint8) []byte {
-	data := make([]byte, 10)
+	data := make([]byte, 21)
 	binary.BigEndian.PutUint16(data[0:2], rdMagicV1) // TeamViewer v1 magic
-	data[2] = 0x00                                   // padding
-	data[3] = cmdCode                                // command code
+	data[2] = cmdCode
+	binary.LittleEndian.PutUint16(data[3:5], 16)
 	return data
 }
 

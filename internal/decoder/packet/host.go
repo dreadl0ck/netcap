@@ -133,6 +133,9 @@ func updateHost(ipAddr string, i *decoderutils.PacketInfo, source bool) {
 
 	// Application Layer: DHCP fingerprinting (lightweight, keep immediate)
 	handleDHCPFingerprinting(p, i)
+	if !dpi.IsEnabled() {
+		return
+	}
 
 	// Ensure streamPackets is initialized (defensive check)
 	if p.streamPackets == nil {
@@ -143,18 +146,12 @@ func updateHost(ipAddr string, i *decoderutils.PacketInfo, source bool) {
 	key := getStreamKey(i)
 	if packets, exists := p.streamPackets[key]; exists {
 		if len(packets) < maxPacketsPerStream {
-			p.streamPackets[key] = append(packets, bufferedPacket{
-				data:      copyPacketData(i.Packet),
-				timestamp: i.Timestamp,
-			})
+			p.streamPackets[key] = append(packets, bufferDPIPacket(i.Packet))
 		}
 	} else {
 		// Only create new stream buffer if under stream limit
 		if len(p.streamPackets) < maxStreamsPerProfile {
-			p.streamPackets[key] = []bufferedPacket{{
-				data:      copyPacketData(i.Packet),
-				timestamp: i.Timestamp,
-			}}
+			p.streamPackets[key] = []bufferedPacket{bufferDPIPacket(i.Packet)}
 		}
 	}
 }
@@ -250,10 +247,9 @@ func createNewHost(ipAddr string, i *decoderutils.PacketInfo, source bool) *host
 	// Initialize stream packet buffer with first packet (copy data to avoid buffer reuse)
 	streamPackets := make(map[streamKey][]bufferedPacket)
 	key := getStreamKey(i)
-	streamPackets[key] = []bufferedPacket{{
-		data:      copyPacketData(i.Packet),
-		timestamp: i.Timestamp,
-	}}
+	if dpi.IsEnabled() {
+		streamPackets[key] = []bufferedPacket{bufferDPIPacket(i.Packet)}
+	}
 
 	return &hostEntry{
 		Host: &types.Host{
@@ -357,9 +353,7 @@ func processHostDeferredDPI(p *hostEntry) {
 			if len(pkt.data) == 0 {
 				continue
 			}
-			// Decode the packet from raw bytes for DPI analysis
-			// Use the detected base layer type from the pcap file
-			packet := gopacket.NewPacket(pkt.data, baseLayerType, gopacket.Default)
+			packet := pkt.packet()
 			dpiResults := dpi.GetProtocols(packet)
 			for protocol, res := range dpiResults {
 				if prot, ok := p.Protocols[protocol]; ok {
@@ -389,9 +383,7 @@ func processHostDeferredDPIWithoutClear(p *hostEntry) {
 			if len(pkt.data) == 0 {
 				continue
 			}
-			// Decode the packet from raw bytes for DPI analysis
-			// Use the detected base layer type from the pcap file
-			packet := gopacket.NewPacket(pkt.data, baseLayerType, gopacket.Default)
+			packet := pkt.packet()
 			dpiResults := dpi.GetProtocols(packet)
 			for protocol, res := range dpiResults {
 				if prot, ok := p.Protocols[protocol]; ok {

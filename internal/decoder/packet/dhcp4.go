@@ -76,10 +76,13 @@ var dhcpv4Decoder = newGoPacketDecoder(
 			)
 
 			for i, o := range dhcp4.Options {
+				data, encoding := types.DHCPOptionPresentation(o.Data)
 				opts = append(opts, &types.DHCPOption{
-					Data:   string(o.Data),
-					Length: int32(o.Length),
-					Type:   int32(o.Type),
+					Data:         data,
+					RawData:      append([]byte(nil), o.Data...),
+					DataEncoding: encoding,
+					Length:       int32(o.Length),
+					Type:         int32(o.Type),
 				})
 				if ja4.Enabled {
 					optTypes = append(optTypes, uint8(o.Type))
@@ -109,9 +112,9 @@ var dhcpv4Decoder = newGoPacketDecoder(
 						serverIdentifier = parseIPv4(o.Data[:4])
 					}
 				case dhcpOptHostname:
-					hostname = string(o.Data)
+					hostname, _ = types.DHCPOptionPresentation(o.Data)
 				case dhcpOptVendorClass:
-					vendorClass = string(o.Data)
+					vendorClass, _ = types.DHCPOptionPresentation(o.Data)
 				case dhcpOptParamRequestList:
 					if ja4.Enabled {
 						paramRequestList = make([]uint8, len(o.Data))

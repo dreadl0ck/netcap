@@ -1,8 +1,10 @@
 package collector
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
+
 	decoderpacket "github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/gopacket/gopacket"
@@ -33,7 +35,8 @@ func (c *Collector) initCaptureEvidence() error {
 		retention = 512 << 20
 	}
 	manifest, err := evidence.NewCapture(c.runCtx, directory, evidence.CaptureConfig{Kind: kind, Source: source, BPF: c.Bpf, SnapLen: c.config.SnapLen, Workers: c.config.Workers,
-		IncludeDecoders: c.config.DecoderConfig.IncludeDecoders, ExcludeDecoders: c.config.DecoderConfig.ExcludeDecoders, Reassembly: c.config.ReassembleConnections, RetainPackets: c.config.RetainPackets, SegmentBytes: segment, RetentionBytes: retention})
+		MaxRetainedTCPBytes: c.config.DecoderConfig.MaxRetainedTCPBytes,
+		IncludeDecoders:     c.config.DecoderConfig.IncludeDecoders, ExcludeDecoders: c.config.DecoderConfig.ExcludeDecoders, Reassembly: c.config.ReassembleConnections, RetainPackets: c.config.RetainPackets, SegmentBytes: segment, RetentionBytes: retention})
 	if err != nil {
 		return err
 	}
@@ -43,6 +46,13 @@ func (c *Collector) initCaptureEvidence() error {
 
 func (c *Collector) observeCaptureEvidence(packet gopacket.Packet) {
 	if c.captureEvidence == nil {
+		return
+	}
+	ci := packet.Metadata().CaptureInfo
+	if c.config.RetainPackets && ((c.captureLinkType == 239 && inputPacketInfo(ci).Order == binary.BigEndian) || !supportedRetentionTimestamp(ci.Timestamp)) {
+		// The evidence segment writer always emits little-endian, timestamped EPBs.
+		// Refuse rather than mislabel native-order NFLOG or invent a timestamp.
+		c.captureEvidenceError = fmt.Errorf("packet retention does not support big-endian NFLOG or absent/out-of-range timestamps; retain the original capture")
 		return
 	}
 	var vlans []uint16
@@ -68,6 +78,9 @@ func (c *Collector) finalizeCaptureEvidence() {
 	status := "stopped"
 	if c.captureComplete {
 		status = "done"
+	}
+	if c.captureInputStatus == "partial" || c.captureInputStatus == "unsupported" {
+		status = "partial"
 	}
 	if err := c.captureEvidence.Close(status, c.admittedPackets, c.behaviorQueueDrops, errors.Join(c.captureRunError, c.flowExportError, c.captureEvidenceError)); err != nil {
 		c.captureEvidenceError = err

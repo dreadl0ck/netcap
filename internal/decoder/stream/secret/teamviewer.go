@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -117,6 +118,7 @@ var rdCommandNames = map[uint8]string{
 	58: "CARRIER_SWITCH",
 	60: "ROUTER_CMD",
 	61: "PARTNER_RECONNECT",
+	63: "ACK",
 }
 
 // rdPacket represents a parsed remote desktop protocol packet
@@ -126,29 +128,42 @@ type rdPacket struct {
 	CommandCode uint8
 	CommandName string
 	IsAuthEvent bool
+	Size        int
+	Payload     []byte
 }
 
 // parseRemoteDesktopPacket attempts to parse TeamViewer protocol data
 func parseRemoteDesktopPacket(data []byte) *rdPacket {
-	if len(data) < 4 {
+	if len(data) < 5 {
 		return nil
 	}
 
 	magic := binary.BigEndian.Uint16(data[0:2])
 
-	// Check for known magic bytes
+	// Command1: magic(2), command(1), LE length(2), payload.
+	// Command2: magic(2), command(1), flags(1), LE length(4),
+	// packet/request/class/header-offset(4 each), payload.
+	// See random-wireshark-dissectors@3896597a/teamviewer.lua.
 	var version string
+	header, length := 5, 0
 	switch magic {
 	case rdMagicV1:
-		version = "1.x"
+		version = "command1"
+		length = int(binary.LittleEndian.Uint16(data[3:5]))
 	case rdMagicV2:
-		version = "2.x"
+		if len(data) < 24 || data[3] != 0 || binary.LittleEndian.Uint32(data[20:24]) != 24 {
+			return nil
+		}
+		version, header = "command2", 24
+		length = int(binary.LittleEndian.Uint32(data[4:8]))
 	default:
 		return nil
 	}
 
-	// Command code is at offset 3
-	cmdCode := data[3]
+	if length > 1<<20 || length > len(data)-header {
+		return nil
+	}
+	cmdCode := data[2]
 
 	cmdName, found := rdCommandNames[cmdCode]
 	if !found {
@@ -164,47 +179,129 @@ func parseRemoteDesktopPacket(data []byte) *rdPacket {
 		CommandCode: cmdCode,
 		CommandName: cmdName,
 		IsAuthEvent: isAuth,
+		Size:        header + length,
+		Payload:     data[header : header+length],
 	}
 }
 
 // teamviewerHarvesterFunc detects TeamViewer remote access sessions
 // This is useful for identifying unauthorized remote access attempts
 func teamviewerHarvesterFunc(data []byte, ident string, ts time.Time) *types.Secret {
-	if len(data) < 10 {
+	for len(data) > 0 {
+		pkt := parseRemoteDesktopPacket(data)
+		if pkt == nil {
+			return nil
+		}
+		data = data[pkt.Size:]
+		if s := teamviewerSecret(pkt, ident, ts.UnixNano()); s != nil {
+			return s
+		}
+	}
+	return nil
+}
+
+func teamviewerSecret(pkt *rdPacket, ident string, at int64) *types.Secret {
+	if !isSecurityCriticalCommand(pkt.CommandCode) {
+		return nil
+	}
+	// Authentication is not a header-only event. Challenge/response carry
+	// opaque proof material; result/login messages carry at least a word.
+	minimum := 4
+	if pkt.CommandCode == 102 || pkt.CommandCode == 103 {
+		minimum = 16
+	}
+	if len(pkt.Payload) < minimum {
 		return nil
 	}
 
-	// Search for TeamViewer protocol packets in the data
-	for i := 0; i < len(data)-4; i++ {
-		pkt := parseRemoteDesktopPacket(data[i:])
-		if pkt == nil {
-			continue
-		}
+	notes := fmt.Sprintf("Remote Desktop Auth Event (%s) - %s; encrypted/opaque authentication material", pkt.Version, pkt.CommandName)
 
-		// Only emit credentials for security-critical events (auth, login, meeting auth)
-		// Skip keepalive, ping, and other non-credential protocol messages
-		if !isSecurityCriticalCommand(pkt.CommandCode) {
-			continue
-		}
-
-		notes := fmt.Sprintf("SECURITY: Remote Desktop Auth Event v%s - %s", pkt.Version, pkt.CommandName)
-
-		service := serviceRemoteDesktop
-		if pkt.IsAuthEvent {
-			service = "TeamViewer Auth"
-		}
-
-		return &types.Secret{
-			Timestamp: ts.UnixNano(),
-			Service:   service,
-			Flow:      ident,
-			User:      pkt.CommandName,
-			Password:  "",
-			Notes:     notes,
-		}
+	service := serviceRemoteDesktop
+	if pkt.IsAuthEvent {
+		service = "TeamViewer Auth"
 	}
 
-	return nil
+	return &types.Secret{
+		Timestamp: at,
+		Service:   service,
+		Flow:      ident,
+		User:      pkt.CommandName,
+		Password:  "",
+		Notes:     notes,
+	}
+}
+
+// Per-direction framing preserves split messages without searching unrelated
+// payloads or joining bytes across capture loss. UDP encapsulation is not parsed.
+func harvestTeamViewerConversation(c *core.ConversationInfo, emit func(*types.Secret)) {
+	type side struct {
+		data          []byte
+		at            int64
+		seen, stopped bool
+	}
+	var sides [2]side
+	for _, f := range c.Data {
+		i := 0
+		if core.FromServer(f) {
+			i = 1
+		}
+		s := &sides[i]
+		if s.stopped {
+			continue
+		}
+		if d, ok := f.(*core.StreamData); ok && (d.DiscardedBytes > 0 || d.SkippedBytes != 0 && (d.SkippedBytes > 0 || s.seen)) {
+			s.stopped, s.data = true, nil
+			continue
+		}
+		s.seen = true
+		data := f.Raw()
+		for len(data) > 0 {
+			if len(s.data) == 0 {
+				s.at = core.FragmentTime(f)
+			}
+			target := 5
+			if len(s.data) >= 5 {
+				switch binary.BigEndian.Uint16(s.data) {
+				case rdMagicV1:
+					target += int(binary.LittleEndian.Uint16(s.data[3:5]))
+				case rdMagicV2:
+					target = 24
+					if len(s.data) >= 24 {
+						target += int(binary.LittleEndian.Uint32(s.data[4:8]))
+					}
+				default:
+					s.stopped = true
+				}
+			}
+			if target > (1<<20)+24 || s.stopped {
+				s.stopped, s.data = true, nil
+				break
+			}
+			n := min(target-len(s.data), len(data))
+			s.data = append(s.data, data[:n]...)
+			data = data[n:]
+			if len(s.data) < target {
+				break
+			}
+			// First fill the fixed header; then its declared payload.
+			if target == 5 && len(s.data) == 5 && (s.data[0] == 0x11 || binary.LittleEndian.Uint16(s.data[3:5]) != 0) {
+				continue
+			}
+			if target == 24 && s.data[0] == 0x11 && binary.LittleEndian.Uint32(s.data[4:8]) != 0 {
+				continue
+			}
+			pkt := parseRemoteDesktopPacket(s.data)
+			if pkt == nil {
+				s.stopped, s.data = true, nil
+				break
+			}
+			if secret := teamviewerSecret(pkt, c.Ident, s.at); secret != nil {
+				secret.CommunityID = c.CommunityID
+				emit(secret)
+			}
+			s.data = s.data[:0]
+		}
+	}
 }
 
 // teamviewerHarvester is the harvester definition for TeamViewer

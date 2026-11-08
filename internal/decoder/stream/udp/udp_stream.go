@@ -33,8 +33,10 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/service"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
+	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
+	"github.com/dreadl0ck/netcap/internal/sipaudit"
 	"github.com/dreadl0ck/netcap/internal/utils"
 )
 
@@ -54,6 +56,7 @@ type udpStream struct {
 	sync.Mutex
 	data    core.DataFragments
 	decoder core.StreamDecoderInterface
+	scope   string
 }
 
 // udpStreamPool holds a pool of UDP streams.
@@ -86,11 +89,18 @@ func udpConversationKey(packet gopacket.Packet) uint64 {
 		key ^= net.NetworkFlow().FastHash()
 	}
 
-	return key
+	return key ^ packetview.ScopeHash(packet)
 }
 
 // HandleUDP takes an UDP packet and tracks the data seen for the conversation.
 func (u *udpStreamPool) HandleUDP(packet gopacket.Packet, udpLayer gopacket.Layer) {
+	// Signaling is needed even when only RTP/DTMF output was selected. Observe
+	// it before the EOF UDP drain, independently of the SIP audit writer.
+	if wire, _, err := sipaudit.Parse(udpLayer.LayerPayload(), false); err == nil {
+		msg := sipaudit.Record(wire, packet.Metadata().Timestamp.UnixNano())
+		msg.NetworkScope = packetview.Scope(packet)
+		sipaudit.Media.Observe(msg)
+	}
 	key := udpConversationKey(packet)
 
 	u.Lock()
@@ -108,6 +118,7 @@ func (u *udpStreamPool) HandleUDP(packet gopacket.Packet, udpLayer gopacket.Laye
 	} else {
 		// add new
 		str := new(udpStream)
+		str.scope = packetview.Scope(packet)
 		str.data = append(str.data, &core.StreamData{
 			RawData:            udpLayer.LayerPayload(),
 			CaptureInformation: packet.Metadata().CaptureInfo,
@@ -136,12 +147,10 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 		serv.Lock()
 		defer serv.Unlock()
 
-		// ensure we don't duplicate any flows
-		if slices.Contains(serv.Flows, flowIdent) {
-			return
+		// Separate scoped conversations can share the displayed flow identifier.
+		if !slices.Contains(serv.Flows, flowIdent) {
+			serv.Flows = append(serv.Flows, flowIdent)
 		}
-
-		serv.Flows = append(serv.Flows, flowIdent)
 
 		// if this flow had a longer response from the server then what we have previously (in case we dont have c.Banner bytes yet)
 		// set this service response on the service and update the timestamp
@@ -218,10 +227,11 @@ func (u *udpStream) decode() {
 
 	// first message defines the client
 	clientTransport := u.data[0].Transport()
+	clientNetwork := u.data[0].Network()
 
 	// search for the first server reply
 	for _, d := range u.data {
-		if d.Transport() != clientTransport {
+		if d.Transport() != clientTransport || d.Network() != clientNetwork {
 			sr = d.Raw()
 			serverFirstReply = d.CaptureInfo().Timestamp
 			break
@@ -232,7 +242,7 @@ func (u *udpStream) decode() {
 	// TODO: this is a bit of a hack, since we are reusing the constants from the TCP reassembly
 	// TODO: add generic stream direction types in netcap and use those in the readers Decode() implementations instead
 	for _, d := range u.data {
-		if d.Transport() == clientTransport {
+		if d.Transport() == clientTransport && d.Network() == clientNetwork {
 			// client
 			d.SetDirection(reassembly.TCPDirClientToServer)
 		} else {
@@ -242,6 +252,8 @@ func (u *udpStream) decode() {
 	}
 
 	conv := &core.ConversationInfo{
+		Transport:         core.UDP,
+		NetworkScope:      u.scope,
 		Data:              u.data,
 		Ident:             utils.CreateFlowIdentFromLayerFlows(u.data[0].Network(), u.data[0].Transport()),
 		FirstClientPacket: u.data[0].CaptureInfo().Timestamp,

@@ -90,6 +90,7 @@ func TestFlightSimCapturedReplay(t *testing.T) {
 					alerts = append(alerts, got...)
 				}
 			}
+			alerts = append(alerts, e.Flush()...)
 			for _, want := range tc.Expected {
 				found := false
 				for _, alert := range alerts {

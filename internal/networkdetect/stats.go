@@ -28,7 +28,7 @@ func ReadStats(path string) (Stats, error) {
 	if err := d.Decode(new(any)); err != io.EOF {
 		return s, errors.New("invalid detection status framing")
 	}
-	if s.Schema != 1 || s.Keys < 0 || s.Keys > 100000 || s.Flows < 0 || s.Flows > 10000 || s.Indicators < 0 || s.Indicators > 4096 || len(s.Error) > 4096 {
+	if s.Schema != 1 || s.Keys < 0 || s.Keys > 100000 || s.Flows < 0 || s.Flows > 10000 || s.Indicators < 0 || s.Indicators > 4096 || s.PendingAggregates < 0 || s.PendingAggregates > 100000 || len(s.Error) > 4096 || len(s.AggregationMode) > 256 || len(s.ApplicationMode) > 256 {
 		return s, errors.New("invalid detection status")
 	}
 	return s, nil

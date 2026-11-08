@@ -1,9 +1,10 @@
 package networkdetect
 
 import (
-	"fmt"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
+
+	"github.com/dreadl0ck/netcap/internal/packetview"
 )
 
 func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
@@ -15,7 +16,14 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 		return nil
 	}
 	net := packet.NetworkLayer().NetworkFlow()
-	base := Event{At: packet.Metadata().CaptureInfo.Timestamp.UnixNano(), Scope: scope, SrcIP: net.Src().String(), DstIP: net.Dst().String()}
+	ci := packet.Metadata().CaptureInfo
+	at := ci.Timestamp
+	if c := packetview.FromCapture(ci); c != nil && c.Reassembled {
+		// Fragment evidence predates admission; using it here would make a newly
+		// completed datagram late behind unrelated, already admitted packets.
+		at = c.CompletedAt
+	}
+	base := Event{At: at.UnixNano(), Scope: scope, SrcIP: net.Src().String(), DstIP: net.Dst().String()}
 	var events []Event
 	if layer := packet.Layer(layers.LayerTypeDNS); layer != nil {
 		dns := layer.(*layers.DNS)
@@ -94,9 +102,7 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 
 func PacketScope(packet gopacket.Packet, scope Scope) Scope {
 	scope.VLANs = nil
-	if index := packet.Metadata().CaptureInfo.InterfaceIndex; index > 0 {
-		scope.Interface = fmt.Sprintf("%s#%d", scope.Interface, index)
-	}
+	scope.Interface = packetview.ScopeInterface(packet, scope.Interface)
 	for _, layer := range packet.Layers() {
 		if vlan, ok := layer.(*layers.Dot1Q); ok {
 			scope.VLANs = append(scope.VLANs, vlan.VLANIdentifier)

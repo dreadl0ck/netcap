@@ -168,6 +168,7 @@ func (r *protobufReader) processData(b *bufio.Reader, isClient bool) error {
 	}
 
 	pb := &types.Protobuf{
+		CommunityID:       r.conversation.CommunityID,
 		Timestamp:         ts,
 		SrcIP:             r.conversation.ClientIP,
 		DstIP:             r.conversation.ServerIP,
@@ -179,6 +180,10 @@ func (r *protobufReader) processData(b *bufio.Reader, isClient bool) error {
 		Fields:            make(map[string]string),
 		FieldAlternatives: make(map[string]string),
 		DetectionMethod:   "heuristic",
+	}
+	if !isClient {
+		pb.SrcIP, pb.DstIP = pb.DstIP, pb.SrcIP
+		pb.SrcPort, pb.DstPort = pb.DstPort, pb.SrcPort
 	}
 
 	// Try direct parsing first, then fall back to length-prefixed framing

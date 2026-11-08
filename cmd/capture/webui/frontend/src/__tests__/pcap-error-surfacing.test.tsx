@@ -16,6 +16,7 @@ import { NetcapProvider } from '@dreadl0ck/netcap-ui/providers';
 import { CommunityIDFilterProvider, LearnModeProvider } from '@dreadl0ck/netcap-ui/contexts';
 import { PcapsPage } from '@dreadl0ck/netcap-ui/pages';
 import type { FileInfo } from '@dreadl0ck/netcap-ui';
+import { SWRConfig } from 'swr';
 
 const FAILED_FILE: FileInfo = {
   id: 'abc123hash',
@@ -40,7 +41,7 @@ const LOCAL_MODE_STATUS = {
   isServiceMode: false,
 };
 
-function renderPcaps(overrides: Record<string, unknown> = {}) {
+function renderPcaps(overrides: Record<string, unknown> = {}, fetcher?: typeof fetch) {
   const getErrorLogContent = vi.fn().mockResolvedValue(
     'geolocation database not found: GeoLite2-City.mmdb\n',
   );
@@ -62,9 +63,11 @@ function renderPcaps(overrides: Record<string, unknown> = {}) {
   // exposes no `api` override, and this needs one to drive the page without a
   // live backend.
   render(
+    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
     <NetcapProvider
       config={{
         backendUrl: 'http://127.0.0.1:1234',
+        fetch: fetcher,
         api: api as never,
         router: {
           pathname: '/pcaps',
@@ -81,10 +84,11 @@ function renderPcaps(overrides: Record<string, unknown> = {}) {
           <PcapsPage />
         </CommunityIDFilterProvider>
       </LearnModeProvider>
-    </NetcapProvider>,
+    </NetcapProvider>
+    </SWRConfig>,
   );
 
-  return { getErrorLogContent };
+  return { getErrorLogContent, api };
 }
 
 describe('PCAPs page error surfacing in local mode', () => {
@@ -155,5 +159,69 @@ describe('PCAPs page error surfacing in local mode', () => {
     await waitFor(() => {
       expect(getErrorLogContent).toHaveBeenCalledWith(FAILED_FILE.id);
     });
+  });
+});
+
+describe('PCAP child analysis', () => {
+  it('does not reselect the child row when its Parent action is clicked', async () => {
+    const parent = { ...FAILED_FILE, isCompleted: true, error: undefined };
+    const child = { ...parent, id: 'analysis-child', name: 'selected.pcapng', path: '/analysis-child/source/selected.pcapng', parentInputFile: parent.path };
+    let active = child.path;
+    const setActiveDirectory = vi.fn(async (path: string) => { active = path; return { success: true, outputDir: '/owned' }; });
+    renderPcaps({
+      getInputFiles: vi.fn(async () => [parent, child]), setActiveDirectory,
+      getStatus: vi.fn(async () => ({ ...LOCAL_MODE_STATUS, activeInputFile: active, isMultiFile: true, childAnalysisVersion: 1 })),
+    });
+    const childRow = await screen.findByRole('row', { name: /selected.pcapng/ });
+    await waitFor(() => expect(within(childRow).getByLabelText('Currently viewing', { exact: true })).toBeInTheDocument());
+    await userEvent.click(within(childRow).getByRole('button', { name: 'Parent' }));
+    await waitFor(() => expect(setActiveDirectory).toHaveBeenCalledExactlyOnceWith(parent.path));
+    expect(active).toBe(parent.path);
+  });
+
+  async function openDialog() {
+    await userEvent.click((await screen.findAllByRole('button', { name: /retry analysis/i }))[0]);
+    return screen.findByRole('dialog');
+  }
+
+  it('refuses reanalysis against a backend without the child-analysis contract', async () => {
+    const reanalyzeFile = vi.fn();
+    renderPcaps({ reanalyzeFile });
+    const dialog = await openDialog();
+    expect(within(dialog).getByText(/does not advertise version 1/)).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Reanalyze' })).toBeDisabled();
+    expect(reanalyzeFile).not.toHaveBeenCalled();
+  });
+
+  it('binds subset requests to the parent generation and preserves nanosecond strings', async () => {
+    const reanalyzeFile = vi.fn().mockResolvedValue({ success: true, sessionId: 'analysis-child' });
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ runId: 'generation-parent', inputSHA256: 'a'.repeat(64) })));
+    renderPcaps({ getStatus: vi.fn().mockResolvedValue({ ...LOCAL_MODE_STATUS, childAnalysisVersion: 1 }), reanalyzeFile }, fetcher);
+    const dialog = await openDialog();
+    const user = userEvent.setup();
+    await user.click(within(dialog).getByRole('combobox', { name: 'Analysis scope' }));
+    await user.click(screen.getByRole('option', { name: 'Selected packets' }));
+    for (const [label, value] of [['Packet selection BPF', 'tcp port 9243'], ['Start time (inclusive nanoseconds)', '1700000000000000001'], ['End time (inclusive nanoseconds)', '1700000000000000002']]) {
+      await user.click(within(dialog).getByLabelText(label));
+      await user.paste(value);
+    }
+    await user.click(within(dialog).getByRole('button', { name: 'Reanalyze' }));
+    await waitFor(() => expect(reanalyzeFile).toHaveBeenCalledWith(FAILED_FILE.path, undefined, {
+      runId: 'generation-parent', selection: { version: 1, sourceSHA256: 'a'.repeat(64), bpf: 'tcp port 9243',
+        startNs: '1700000000000000001', endNs: '1700000000000000002' },
+    }));
+    expect(new URL(fetcher.mock.calls[0][0]).searchParams.get('inputFile')).toBe(FAILED_FILE.path);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getAllByText(FAILED_FILE.error!).length).toBeGreaterThan(0);
+  });
+
+  it('retains the dialog and parent evidence when preparation is rejected', async () => {
+    const reanalyzeFile = vi.fn().mockRejectedValue(new Error('Capture generation is stale'));
+    renderPcaps({ getStatus: vi.fn().mockResolvedValue({ ...LOCAL_MODE_STATUS, childAnalysisVersion: 1 }), reanalyzeFile });
+    const dialog = await openDialog();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Reanalyze' }));
+    expect(await within(dialog).findByText('Capture generation is stale')).toBeInTheDocument();
+    expect(screen.getAllByText(FAILED_FILE.error!).length).toBeGreaterThan(0);
+    expect(within(dialog).getByRole('button', { name: 'Reanalyze' })).toBeEnabled();
   });
 });

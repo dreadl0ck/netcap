@@ -44,6 +44,7 @@ var fieldsZabbix = []string{
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	"CommunityID",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -55,16 +56,17 @@ func (a *Zabbix) CSVHeader() []string {
 func (a *Zabbix) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		a.RequestType,              // string
-		a.Host,                     // string
-		a.Key,                      // string
-		a.Value,                    // string
-		formatInt32(a.DataLength),  // int32
+		a.RequestType,             // string
+		a.Host,                    // string
+		a.Key,                     // string
+		a.Value,                   // string
+		formatInt32(a.DataLength), // int32
 		a.Flow,
 		a.SrcIP,
 		a.DstIP,
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
+		a.CommunityID,
 	})
 }
 
@@ -123,6 +125,7 @@ func (a *Zabbix) Encode() []string {
 		zabbixEncoder.String(fieldDstIP, a.DstIP),
 		zabbixEncoder.Int32(fieldSrcPort, a.SrcPort),
 		zabbixEncoder.Int32(fieldDstPort, a.DstPort),
+		zabbixEncoder.String("CommunityID", a.CommunityID),
 	})
 }
 

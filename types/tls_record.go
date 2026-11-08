@@ -12,6 +12,7 @@ var fieldsTLSRecord = []string{
 	fieldTimestamp, fieldSrcIP, fieldDstIP, fieldSrcPort, fieldDstPort, fieldCommunityID,
 	"Flow", "Direction", "Index", "Offset", "ContentType", "RecordVersion", "Length", "ObservedLength",
 	"HeaderComplete", "Incomplete", "Loss", "SkippedBytes", "Status", "PlaintextAlert", "AlertLevel", "AlertDescription", "AlertState",
+	"TCPObservation",
 }
 
 func (r *TLSRecord) CSVHeader() []string { return filter(fieldsTLSRecord) }
@@ -22,6 +23,7 @@ func (r *TLSRecord) CSVRecord() []string {
 		formatUint32(r.RecordVersion), formatUint32(r.Length), formatUint32(r.ObservedLength),
 		strconv.FormatBool(r.HeaderComplete), strconv.FormatBool(r.Incomplete), strconv.FormatBool(r.Loss), strconv.FormatInt(r.SkippedBytes, 10),
 		r.Status, strconv.FormatBool(r.PlaintextAlert), formatUint32(r.AlertLevel), formatUint32(r.AlertDescription), r.AlertState,
+		r.TCPObservation,
 	})
 }
 func (r *TLSRecord) Time() int64 { return r.Timestamp }
@@ -55,5 +57,6 @@ func (r *TLSRecord) Encode() []string {
 		tlsRecordEncoder.Bool(r.HeaderComplete), tlsRecordEncoder.Bool(r.Incomplete), tlsRecordEncoder.Bool(r.Loss), tlsRecordEncoder.Int64("SkippedBytes", r.SkippedBytes),
 		tlsRecordEncoder.String("Status", r.Status), tlsRecordEncoder.Bool(r.PlaintextAlert), tlsRecordEncoder.Uint32("AlertLevel", r.AlertLevel),
 		tlsRecordEncoder.Uint32("AlertDescription", r.AlertDescription), tlsRecordEncoder.String("AlertState", r.AlertState),
+		tlsRecordEncoder.String("TCPObservation", r.TCPObservation),
 	})
 }

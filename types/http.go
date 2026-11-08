@@ -20,6 +20,8 @@
 package types
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
@@ -70,6 +72,9 @@ var fieldsHTTP = []string{
 	fieldFlow,
 	fieldJa4h,
 	"ReassemblyStatus",
+	"CommunityID",
+	"RawRequestLine", "RawResponseLine", "RequestHeaders", "ResponseHeaders",
+	"ParseQualifications", "HTTP2StreamID", "RequestTrailers", "ResponseTrailers",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -111,7 +116,17 @@ func (h *HTTP) CSVRecord() []string {
 		h.Flow,
 		h.Ja4H,
 		h.ReassemblyStatus,
+		h.CommunityID,
+		base64.StdEncoding.EncodeToString(h.RawRequestLine), base64.StdEncoding.EncodeToString(h.RawResponseLine),
+		httpEvidenceJSON(h.RequestHeaders), httpEvidenceJSON(h.ResponseHeaders),
+		httpEvidenceJSON(h.ParseQualifications), strconv.FormatUint(uint64(h.HTTP2StreamID), 10),
+		httpEvidenceJSON(h.RequestTrailers), httpEvidenceJSON(h.ResponseTrailers),
 	})
+}
+
+func httpEvidenceJSON(v any) string {
+	b, _ := json.Marshal(v)
+	return string(b)
 }
 
 func (c *HTTPCookie) toString() string {
@@ -152,11 +167,12 @@ func (h *HTTP) Time() int64 {
 // JSON returns the JSON representation of the audit record.
 func (h *HTTP) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
-	h.Timestamp /= int64(time.Millisecond)
+	copy := *h
+	copy.Timestamp /= int64(time.Millisecond)
 
-	h.RequestBody = nil  // TODO: dont kill elastic
-	h.ResponseBody = nil // TODO: dont kill elastic
-	return jsonMarshaler.MarshalToString(h)
+	copy.RequestBody = nil
+	copy.ResponseBody = nil
+	return jsonMarshaler.MarshalToString(&copy)
 }
 
 var httpMetric = prometheus.NewCounterVec(
@@ -214,6 +230,15 @@ func (h *HTTP) Encode() []string {
 		httpEncoder.String(fieldFlow, h.Flow),
 		httpEncoder.String(fieldJa4h, h.Ja4H),
 		httpEncoder.String("ReassemblyStatus", h.ReassemblyStatus),
+		httpEncoder.String("CommunityID", h.CommunityID),
+		httpEncoder.String("RawRequestLine", base64.StdEncoding.EncodeToString(h.RawRequestLine)),
+		httpEncoder.String("RawResponseLine", base64.StdEncoding.EncodeToString(h.RawResponseLine)),
+		httpEncoder.String("RequestHeaders", httpEvidenceJSON(h.RequestHeaders)),
+		httpEncoder.String("ResponseHeaders", httpEvidenceJSON(h.ResponseHeaders)),
+		httpEncoder.String("ParseQualifications", httpEvidenceJSON(h.ParseQualifications)),
+		httpEncoder.String("HTTP2StreamID", strconv.FormatUint(uint64(h.HTTP2StreamID), 10)),
+		httpEncoder.String("RequestTrailers", httpEvidenceJSON(h.RequestTrailers)),
+		httpEncoder.String("ResponseTrailers", httpEvidenceJSON(h.ResponseTrailers)),
 	})
 }
 

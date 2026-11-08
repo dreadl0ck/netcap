@@ -20,6 +20,7 @@
 import { useState, useEffect } from 'react';
 import {
   Box,
+  Alert,
   Button,
   Chip,
   CircularProgress,
@@ -51,7 +52,8 @@ import Layout from '../components/Layout';
 import ResponsiveDataView from '../components/ResponsiveDataView';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import { formatBytes, formatTimestamp, formatDuration, type FileInfo } from '../lib/api';
+import { formatBytes, formatTimestamp, formatDuration, type FileInfo, type ChildAnalysisOptions } from '../lib/api';
+import { useNetcapConfig } from '../providers';
 import { parseSearchQuery, matchesSingleValue } from '../lib/tableSearch';
 import useSWR from 'swr';
 import ReportIssueDialog from '../components/ReportIssueDialog';
@@ -85,6 +87,7 @@ export default function PCAPs() {
   const isMobile = useIsMobile();
   const router = useNetcapRouter();
   const api = useNetcapApi();
+  const config = useNetcapConfig();
   const { data: files, error, mutate } = useSWR('inputFiles', () => api.getInputFiles(), {
     refreshInterval: 5000, // Auto-refresh every 5 seconds to catch new uploads
   });
@@ -105,6 +108,11 @@ export default function PCAPs() {
   const [loadingErrorLog, setLoadingErrorLog] = useState(false);
   const [reanalyzeFile, setReanalyzeFile] = useState<{ path: string; name: string; sessionId?: string } | null>(null);
   const [reanalyzing, setReanalyzing] = useState<string | null>(null);
+  const [analysisScope, setAnalysisScope] = useState('whole');
+  const [selectionBPF, setSelectionBPF] = useState('');
+  const [selectionStart, setSelectionStart] = useState('');
+  const [selectionEnd, setSelectionEnd] = useState('');
+  const [reanalysisError, setReanalysisError] = useState('');
   
   // Listen for directory changes and refresh input files
   useEffect(() => {
@@ -199,6 +207,25 @@ export default function PCAPs() {
       alert('Failed to switch to this file');
     } finally {
       setActivating(null);
+    }
+  };
+
+  const parentFile = (file: FileInfo) => files?.find(candidate =>
+    file.parentSessionId ? candidate.sessionId === file.parentSessionId : candidate.path === file.parentInputFile);
+
+  const selectionLabel = (file: FileInfo) => file.packetSelection
+    ? `Selected packets: ${file.packetSelection.bpf || 'all packets in window'}${file.packetSelection.startNs ? `; ${file.packetSelection.startNs}–${file.packetSelection.endNs} ns` : ''}`
+    : file.analysisSelector === 'whole-capture' ? 'Whole-capture child analysis' : '';
+
+  const handleSelectParent = async (file: FileInfo) => {
+    const parent = parentFile(file);
+    if (!parent) return;
+    try {
+      await api.setActiveDirectory(parent.path);
+      await mutateStatus();
+      window.dispatchEvent(new CustomEvent('directory-changed'));
+    } catch (err) {
+      setReanalysisError(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -349,6 +376,11 @@ export default function PCAPs() {
   };
 
   const handleReanalyzeClick = (file: { path: string; name: string; sessionId?: string }) => {
+    setAnalysisScope('whole');
+    setSelectionBPF('');
+    setSelectionStart('');
+    setSelectionEnd('');
+    setReanalysisError('');
     setReanalyzeFile(file);
   };
 
@@ -358,22 +390,38 @@ export default function PCAPs() {
 
   const handleConfirmReanalyze = async () => {
     if (!reanalyzeFile) return;
+    if (status?.childAnalysisVersion !== 1) return;
     
     setReanalyzing(reanalyzeFile.path);
-    handleCloseReanalyzeDialog();
+    setReanalysisError('');
     
     try {
-      const result = await api.reanalyzeFile(reanalyzeFile.path, reanalyzeFile.sessionId);
+      let options: ChildAnalysisOptions | undefined;
+      if (analysisScope === 'subset') {
+        if (!selectionBPF.trim() && !selectionStart) throw new Error('Provide a BPF expression or a time range.');
+        if (Boolean(selectionStart) !== Boolean(selectionEnd)) throw new Error('Provide both inclusive time bounds.');
+        if (selectionStart && (!/^-?\d+$/.test(selectionStart) || !/^-?\d+$/.test(selectionEnd) || BigInt(selectionStart) > BigInt(selectionEnd))) throw new Error('Time bounds must be ordered integer nanosecond strings.');
+        const query = new URLSearchParams(reanalyzeFile.sessionId ? { sessionId: reanalyzeFile.sessionId } : { inputFile: reanalyzeFile.path });
+        const response = await (config.fetch ?? fetch)(`${config.apiBaseUrl}/investigation/capture?${query}`);
+        if (!response.ok) throw new Error(await response.text() || 'Parent provenance is unavailable.');
+        const parent = await response.json() as { runId?: string; inputSHA256?: string };
+        if (!parent.runId || !parent.inputSHA256) throw new Error('Subset analysis requires the parent run ID and input SHA256.');
+        options = { runId: parent.runId, selection: { version: 1, sourceSHA256: parent.inputSHA256,
+          bpf: selectionBPF.trim(), ...(selectionStart ? { startNs: selectionStart, endNs: selectionEnd } : {}) } };
+      }
+      const result = await api.reanalyzeFile(reanalyzeFile.path, reanalyzeFile.sessionId, options);
+      if (!result.success) throw new Error(result.message || 'Child analysis was not queued.');
       console.log('[PCAPs] Reanalysis queued:', result);
       
       // Refresh the file list to show the file as processing
       await mutate();
+      handleCloseReanalyzeDialog();
       
       // Show success feedback (you could also use a snackbar here)
       console.log('[PCAPs] File queued for reanalysis successfully');
     } catch (err) {
       console.error('[PCAPs] Failed to reanalyze file:', err);
-      alert(`Failed to reanalyze file: ${err instanceof Error ? err.message : String(err)}`);
+      setReanalysisError(err instanceof Error ? err.message : String(err));
     } finally {
       setReanalyzing(null);
     }
@@ -471,6 +519,7 @@ export default function PCAPs() {
   return (
     <Layout title="PCAP Files">
       <Box sx={{ minWidth: 0 }}>
+        {reanalysisError && !reanalyzeFile && <Alert severity="error">{reanalysisError}</Alert>}
         {/* Search Bar */}
         <Box mb={3}>
           <SearchInput
@@ -583,7 +632,10 @@ export default function PCAPs() {
                           opacity: file.isCompleted ? 1 : 0.6,
                           '&:hover': ((isMultiFile || status?.isServiceMode) && file.isCompleted) ? { backgroundColor: 'action.hover', cursor: 'pointer' } : {}
                         }}
-                        onClick={((isMultiFile || status?.isServiceMode) && file.isCompleted) ? () => handleSelectFile(file.path) : undefined}
+                        onClick={((isMultiFile || status?.isServiceMode) && file.isCompleted) ? event => {
+                          if (event.target instanceof Element && event.target.closest('button, a, [role="button"]')) return;
+                          handleSelectFile(file.path);
+                        } : undefined}
                       >
                       <TableCell>
                         <Box display="flex" alignItems="center" gap={1}>
@@ -606,7 +658,9 @@ export default function PCAPs() {
                                 whiteSpace: 'nowrap'
                               }}
                             >
-                              {file.name}
+                              {file.name}{(file.parentSessionId || file.parentInputFile) && ' (child analysis)'}
+                              {(file.parentSessionId || file.parentInputFile) && <Button size="small" onClick={() => handleSelectParent(file)} disabled={!parentFile(file)}>Parent</Button>}
+                              {selectionLabel(file) && <Typography component="span" display="block" variant="caption" sx={{ overflowWrap: 'anywhere' }}>{selectionLabel(file)}</Typography>}
                               {!file.isCompleted && !file.error && (
                                 <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                                   {progressData[file.path]?.percent > 0
@@ -749,10 +803,11 @@ export default function PCAPs() {
                                     <NotificationsIcon />
                                   </IconButton>
                                 </Tooltip>
-                                <Tooltip title="Reanalyze with current configuration">
+                                 <Tooltip title="Reanalyze with current configuration">
                                   <span>
-                                    <IconButton
-                                      size="small"
+                                     <IconButton
+                                       size="small"
+                                       aria-label={`Create child analysis for ${file.name}`}
                                       onClick={() => handleReanalyzeClick({ path: file.path, name: file.name, sessionId: file.sessionId })}
                                       disabled={activating === file.path || reanalyzing === file.path}
                                       color="secondary"
@@ -898,7 +953,9 @@ export default function PCAPs() {
                       <HourglassEmptyIcon color="disabled" fontSize="small" />
                     ) : null}
                     <Typography variant="subtitle2" noWrap sx={{ fontFamily: 'monospace', flex: 1 }}>
-                      {file.name}
+                      {file.name}{(file.parentSessionId || file.parentInputFile) && ' (child analysis)'}
+                      {(file.parentSessionId || file.parentInputFile) && <Button size="small" onClick={() => handleSelectParent(file)} disabled={!parentFile(file)}>Parent</Button>}
+                      {selectionLabel(file) && <Typography component="span" display="block" variant="caption">{selectionLabel(file)}</Typography>}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1047,7 +1104,7 @@ export default function PCAPs() {
         {/* Reanalyze Confirmation Dialog */}
         <Dialog
           open={reanalyzeFile !== null}
-          onClose={handleCloseReanalyzeDialog}
+          onClose={() => { if (!reanalyzing) handleCloseReanalyzeDialog(); }}
           maxWidth="sm"
           fullWidth
           fullScreen={isMobile}
@@ -1059,7 +1116,7 @@ export default function PCAPs() {
                 <Typography variant="h6">Reanalyze PCAP File</Typography>
               </Box>
               {isMobile && (
-                <IconButton onClick={handleCloseReanalyzeDialog} edge="end">
+                <IconButton onClick={handleCloseReanalyzeDialog} edge="end" disabled={Boolean(reanalyzing)}>
                   <CloseIcon />
                 </IconButton>
               )}
@@ -1069,6 +1126,8 @@ export default function PCAPs() {
             <Typography variant="body1" paragraph>
               Are you sure you want to reanalyze this file?
             </Typography>
+            {status?.childAnalysisVersion !== 1 && <Alert severity="warning">This backend does not advertise version 1 child analysis. Upgrade it before reanalyzing.</Alert>}
+            {reanalysisError && <Alert severity="error">{reanalysisError}</Alert>}
             {reanalyzeFile && (
               <Paper sx={{ p: 2, bgcolor: 'background.default', mb: 2 }}>
                 <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
@@ -1076,22 +1135,33 @@ export default function PCAPs() {
                 </Typography>
               </Paper>
             )}
-            <Typography variant="body2" color="warning.main" paragraph>
-              ⚠️ This will delete all existing audit records and extracted files for this capture and rerun the analysis with the current netcap configuration.
+            <Typography variant="body2" paragraph>
+              This creates a separate child analysis with a copied capture and the current configuration. Existing results remain available. The copy requires additional disk space.
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Use this if you&apos;ve changed decoder settings, harvesters, or other configuration options and want to regenerate the analysis results.
             </Typography>
+            <TextField select label="Analysis scope" value={analysisScope} onChange={event => setAnalysisScope(event.target.value)} fullWidth margin="normal" disabled={Boolean(reanalyzing)}>
+              <MenuItem value="whole">Whole capture</MenuItem>
+              <MenuItem value="subset">Selected packets</MenuItem>
+            </TextField>
+            {analysisScope === 'subset' && <Box>
+              <TextField label="Packet selection BPF" value={selectionBPF} onChange={event => setSelectionBPF(event.target.value)} placeholder="host 192.0.2.10 and tcp port 9243" fullWidth margin="normal" disabled={Boolean(reanalyzing)} />
+              <TextField label="Start time (inclusive nanoseconds)" value={selectionStart} onChange={event => setSelectionStart(event.target.value)} fullWidth margin="normal" disabled={Boolean(reanalyzing)} />
+              <TextField label="End time (inclusive nanoseconds)" value={selectionEnd} onChange={event => setSelectionEnd(event.target.value)} fullWidth margin="normal" disabled={Boolean(reanalyzing)} />
+              <Typography variant="caption">Up to 1,000,000 packets and 256 MiB; preparation times out after 60 seconds. Tuple/time selection can include reused connections.</Typography>
+            </Box>}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseReanalyzeDialog}>Cancel</Button>
+            <Button onClick={handleCloseReanalyzeDialog} disabled={Boolean(reanalyzing)}>Cancel</Button>
             <Button 
               onClick={handleConfirmReanalyze}
               variant="contained"
               color="secondary"
-              startIcon={<RefreshIcon />}
+              startIcon={reanalyzing ? <CircularProgress size={16} /> : <RefreshIcon />}
+              disabled={Boolean(reanalyzing) || status?.childAnalysisVersion !== 1}
             >
-              Reanalyze
+              {reanalyzing ? 'Preparing child…' : 'Reanalyze'}
             </Button>
           </DialogActions>
         </Dialog>
@@ -1099,4 +1169,3 @@ export default function PCAPs() {
     </Layout>
   );
 }
-

@@ -323,15 +323,16 @@ type Config struct {
 	// Default: 10485760 (10MB) to prevent excessive memory usage from large transfers.
 	MaxStreamBytes int
 
-	// MaxBufferedPagesPerConnection is the maximum number of pages (~1900 bytes each) to buffer
-	// per connection for out-of-order packets. If <= 0, this is unlimited.
-	// When exceeded, forces flush of oldest buffered packet. Default: 0 (unlimited)
+	// MaxBufferedPagesPerConnection is an out-of-order page pressure threshold per connection.
+	// Nonpositive values are unlimited; pressure advances the oldest buffered sequence head.
 	MaxBufferedPagesPerConnection int
 
-	// MaxBufferedPagesTotal is the maximum total number of pages (~1900 bytes each) to buffer
-	// across all connections for out-of-order packets. If <= 0, this is unlimited.
-	// When exceeded, forces flush globally. Default: 0 (unlimited)
+	// MaxBufferedPagesTotal is a per-worker assembler pressure threshold (~1900-byte pages).
+	// Zero is unlimited; pressure advances the current connection across pending gaps.
 	MaxBufferedPagesTotal int
+	// MaxRetainedTCPBytes bounds copied TCP reader payload across all workers; zero is unlimited.
+	// Exhaustion cancels collection and marks audit output failed.
+	MaxRetainedTCPBytes int64
 
 	// PerfTracker tracks performance metrics
 	PerfTracker *performance.Tracker

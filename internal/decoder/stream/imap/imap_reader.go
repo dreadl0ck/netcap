@@ -38,7 +38,8 @@ type imapReader struct {
 
 	// timestamp of the message currently being read, from the packet that
 	// carried its first byte.
-	timestamp int64
+	timestamp   int64
+	observation string
 
 	currentMailbox  string
 	username        string
@@ -80,6 +81,7 @@ func (i *imapReader) readClient(b *bufio.Reader, pos *streamutils.ReadPosition) 
 	}
 	// Taken before the line is consumed.
 	i.timestamp = pos.Timestamp()
+	i.observation = pos.TCPObservation()
 
 	line, err := b.ReadString('\n')
 	if err != nil {
@@ -149,6 +151,7 @@ func (i *imapReader) readServer(b *bufio.Reader, pos *streamutils.ReadPosition) 
 		return io.EOF
 	}
 	i.timestamp = pos.Timestamp()
+	i.observation = pos.TCPObservation()
 
 	line, err := b.ReadString('\n')
 	if err != nil {
@@ -239,6 +242,26 @@ func (i *imapReader) writeIMAPRecord(isResponse bool, tag, command string, argum
 		srcIP, dstIP = dstIP, srcIP
 		srcPort, dstPort = dstPort, srcPort
 	}
+	var notes []string
+	if !i.conversation.TCPHandshakeComplete {
+		notes = append(notes, "TCP establishment incomplete")
+	}
+	peer := i.conversation.ServerData
+	if isResponse {
+		peer = i.conversation.ClientData
+	}
+	if len(peer.FirstNonEmpty()) == 0 {
+		notes = append(notes, "peer not observed")
+	}
+	switch i.conversation.TCPRoleSource {
+	case "first-observed":
+		notes = append(notes, "endpoint role unknown; first-observed direction")
+	case "service-port":
+		notes = append(notes, "endpoint role inferred from service port")
+	}
+	if i.observation != "" {
+		notes = append(notes, i.observation+"; endpoint delivery unconfirmed")
+	}
 
 	imap := &types.IMAP{
 		Timestamp:         i.timestamp,
@@ -260,6 +283,7 @@ func (i *imapReader) writeIMAPRecord(isResponse bool, tag, command string, argum
 		IsEncrypted:       i.isEncrypted,
 		Capabilities:      i.capabilities,
 		CommunityID:       i.conversation.CommunityID,
+		Notes:             strings.Join(notes, "; "),
 	}
 
 	atomic.AddInt64(&Decoder.NumRecordsWritten, 1)

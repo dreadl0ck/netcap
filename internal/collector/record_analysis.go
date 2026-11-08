@@ -216,15 +216,19 @@ func (c *Collector) finishApplicationDetection(stats *networkdetect.Stats) error
 	})
 	e := networkdetect.NewApplication(c.applicationConfig)
 	for _, o := range events {
-		for _, alert := range e.Observe(o) {
-			if err := c.networkAlertWriter.WriteAlert(alert); err != nil {
-				return err
-			}
-			atomic.AddInt64(&c.alertCount, 1)
+		if err := c.writeDetectionAlerts(e.Observe(o)); err != nil {
+			return err
 		}
+	}
+	if err := c.writeDetectionAlerts(e.Flush()); err != nil {
+		return err
 	}
 	stats.Alerts += e.Alerts
 	stats.ApplicationAlerts = e.Alerts
 	stats.Overflow += overflow + e.Overflow
+	matches, capacity := e.AggregationStats()
+	stats.Matches += matches
+	stats.CapacityFlushes += capacity
+	stats.Late += e.Late
 	return nil
 }

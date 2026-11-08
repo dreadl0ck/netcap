@@ -60,7 +60,7 @@ func (c *NetcapClient) StreamAuditRecords(auditType string, q url.Values, maxByt
 		return nil, nil, "", fmt.Errorf("GET %s: %w", req.URL.Path, err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
 		return nil, nil, "", fmt.Errorf("GET %s: %s: %s",
 			req.URL.Path, resp.Status, truncate(string(body), 500))

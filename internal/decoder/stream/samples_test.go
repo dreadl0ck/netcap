@@ -216,12 +216,32 @@ func zabbixRequest() []byte {
 	return append(msg, payload...)
 }
 
+func pnioRequest() []byte {
+	data := make([]byte, 80)
+	data[0], data[4] = 4, 0x10
+	copy(data[24:40], hexBytes("0100a0de976cd111827100a02442df7d"))
+	binary.LittleEndian.PutUint32(data[60:64], 1)
+	return data
+}
+
+func rdpCookie(user string) []byte {
+	cotp := append([]byte{0, 0xe0, 0, 0, 0, 0, 0}, []byte("Cookie: mstshash="+user+"\r\n")...)
+	cotp[0] = byte(len(cotp) - 1)
+	return tpktFrame(cotp)
+}
+
 // samples is one entry per registered decoder.
 //
 // A decoder with no entry is a hole in the matrix, which TestEveryDecoderHasASample
 // reports.
 func samples() []sample {
 	return []sample{
+		{decoder: "SIP", port: 5060, transport: core.TCP,
+			client: []byte("OPTIONS sip:test@example.test SIP/2.0\r\nCSeq: 1 OPTIONS\r\nContent-Length: 0\r\n\r\n"),
+			server: []byte("SIP/2.0 200 OK\r\nCSeq: 1 OPTIONS\r\nContent-Length: 0\r\n\r\n"), note: "RFC 3261 framing"},
+		{decoder: "RTP", port: 5000, transport: core.UDP, wantVia: ViaUDPList,
+			client: hexBytes("80000001000000010000002a01"), server: hexBytes("80000002000000020000002b02"),
+			note: "RFC 3550 metadata, with SDP supplied by prepareMediaSample"},
 		{
 			decoder: "FTP", port: 21, transport: core.TCP,
 			client: []byte("USER anonymous\r\n"),
@@ -312,7 +332,7 @@ func samples() []sample {
 		},
 		{
 			decoder: "IPP", port: 631, transport: core.TCP,
-			client: append([]byte("POST /ipp/print HTTP/1.1\r\nContent-Type: application/ipp\r\n\r\n"),
+			client: append([]byte("POST /ipp/print HTTP/1.1\r\nContent-Type: application/ipp\r\nContent-Length: 9\r\n\r\n"),
 				[]byte{2, 0, 0, 2, 0, 0, 0, 1, 3}...),
 		},
 		{
@@ -341,8 +361,7 @@ func samples() []sample {
 		{
 			decoder: "RDP", port: 3389, transport: core.TCP,
 			// TPKT + X.224 Connection Request + the mstshash cookie.
-			client: tpktFrame(append([]byte{0x0e, 0xe0, 0x00, 0x00, 0x00, 0x00, 0x00},
-				[]byte("Cookie: mstshash=user\r\n")...)),
+			client: rdpCookie("user"),
 		},
 		{
 			decoder: "OPCUA", port: 4840, transport: core.TCP,
@@ -371,8 +390,7 @@ func samples() []sample {
 		},
 		{
 			decoder: "PROFINET", port: 34964, transport: core.TCP,
-			// DCE/RPC v4, packet type 0 (Request), 24-byte header then body.
-			client: append([]byte{0x04, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x40, 0x00}, make([]byte, 32)...),
+			client: pnioRequest(),
 		},
 		{
 			decoder: "BACnetIP", port: 47808, transport: core.UDP,

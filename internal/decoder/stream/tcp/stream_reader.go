@@ -37,6 +37,7 @@ type streamReader interface {
 
 	// DataChan returns a channel for sending stream data.
 	DataChan() chan *core.StreamData
+	CloseData()
 
 	// StoreData records a fragment synchronously so completion sees queued data.
 	StoreData(*core.StreamData)

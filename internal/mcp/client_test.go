@@ -30,7 +30,7 @@ func TestGetAs(t *testing.T) {
 		{name: "partial decode", body: `{"name":"discard","count":"bad"}`, status: 200, decodeError: true},
 		{name: "empty", status: 204, decodeError: true},
 		{name: "http error", body: `upstream failed`, status: 500},
-		{name: "redirect status policy", body: `{"count":3}`, status: 302, want: response{Count: 3}},
+		{name: "redirect is not API success", body: `{"count":3}`, status: 302},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			query := url.Values{"inputFile": {"a b&c.pcap"}, "tag": {"one", "two"}}
@@ -53,11 +53,11 @@ func TestGetAs(t *testing.T) {
 				if err == nil || !strings.Contains(err.Error(), "decoding GET /api/test response:") || (!errors.As(err, &syntax) && !errors.As(err, &mismatch)) {
 					t.Fatalf("expected wrapped JSON error, got %v", err)
 				}
-			} else if (err != nil) != (tt.status >= 400) {
+			} else if (err != nil) != (tt.status >= 300) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			raw, rawErr := client.Get("/api/test", query)
-			if tt.status >= 400 {
+			if tt.status >= 300 {
 				if raw != nil || rawErr == nil || err == nil || err.Error() != rawErr.Error() {
 					t.Fatalf("HTTP error differs from Get: %q, %v, %v", raw, rawErr, err)
 				}

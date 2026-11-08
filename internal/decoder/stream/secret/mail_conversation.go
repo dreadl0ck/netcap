@@ -22,6 +22,9 @@ func HarvestAdditionalConversation(c *core.ConversationInfo) {
 		return
 	}
 	for _, h := range tcpConnectionHarvesters {
+		if h.Name == "TeamViewer" {
+			harvestTeamViewerConversation(c, WriteSecret)
+		}
 		if h.Name == "POP3" || h.Name == "IMAP" {
 			if !decoderconfig.Instance.HarvesterPortFilter || harvesterMatchesPort(h.Name, int(c.ClientPort), int(c.ServerPort)) {
 				parseMailAuth(c, h.Name, writeConversationSecret)

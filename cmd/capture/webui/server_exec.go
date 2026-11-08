@@ -83,6 +83,23 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		"-y",        // Force overwrite without prompting (required for non-interactive mode)
 		"-http", "", // Disable web UI server
 	}
+	if job.requireCaptureEvidence {
+		args = append(args, "-capture-evidence=true")
+	}
+	if len(job.ArtifactConfig) == 0 {
+		snapshot, err := snapshotArtifactConfig()
+		if err != nil {
+			s.recordAnalysisFailure(job, err.Error(), "")
+			return
+		}
+		job.ArtifactConfig = snapshot
+	}
+	artifactConfigPath := filepath.Join(job.OutputDir, "artifact-config.yml")
+	if err := os.WriteFile(artifactConfigPath, job.ArtifactConfig, 0600); err != nil {
+		s.recordAnalysisFailure(job, "Cannot persist artifact configuration: "+err.Error(), "")
+		return
+	}
+	args = append(args, "-file-config", artifactConfigPath)
 	behaviorOptions, err := s.behaviorOptionsForJob(job)
 	if err != nil {
 		s.recordAnalysisFailure(job, fmt.Sprintf("behavioral baseline setup: %v", err), "")

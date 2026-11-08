@@ -8,7 +8,11 @@
 
 package file
 
-import "time"
+import (
+	"context"
+	"fmt"
+	"time"
+)
 
 // YaraScanner is a no-op stub when built with the noyara tag.
 type YaraScanner struct{}
@@ -36,6 +40,11 @@ func (ys *YaraScanner) LastLoad() time.Time { return time.Time{} }
 
 // YaraAvailable returns false when built without yara-x support.
 func YaraAvailable() bool { return false }
+
+func (ys *YaraScanner) Digest() string { return "unavailable" }
+func (ys *YaraScanner) ScanBytesContext(context.Context, []byte) ([]string, error) {
+	return nil, fmt.Errorf("YARA support not compiled in")
+}
 
 // ValidateYaraSource is a no-op stub.
 func ValidateYaraSource(source string) error { return nil }

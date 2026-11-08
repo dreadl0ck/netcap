@@ -21,6 +21,7 @@ package capture
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"time"
 
@@ -539,6 +540,17 @@ func GetFlags() []cli.Flag {
 			Sources: cli.EnvVars("NC_CLOSE_PENDING_TIMEOUT"),
 		},
 		&cli.DurationFlag{
+			Name:    "live-maintenance-interval",
+			Value:   time.Second,
+			Usage:   "live reassembly maintenance interval; negative disables idle expiry (independent of output snapshots)",
+			Sources: cli.EnvVars("NC_LIVE_MAINTENANCE_INTERVAL"),
+		},
+		&cli.DurationFlag{
+			Name:    "live-flush-interval",
+			Usage:   "live audit-output snapshot interval; zero disables snapshots (does not expire streams)",
+			Sources: cli.EnvVars("NC_LIVE_FLUSH_INTERVAL"),
+		},
+		&cli.DurationFlag{
 			Name:    "close-inactive-timeout",
 			Value:   defaults.CloseInactiveTimeout,
 			Usage:   "reassembly: close connections that are inactive",
@@ -632,13 +644,24 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.IntFlag{
 			Name:    "max-buffered-pages-per-conn",
-			Usage:   "maximum pages to buffer per connection for out-of-order packets (0 = unlimited, ~1900 bytes per page)",
+			Usage:   "out-of-order page pressure threshold per connection (0 = unlimited, ~1900 bytes per page)",
 			Sources: cli.EnvVars("NC_MAX_BUFFERED_PAGES_PER_CONN"),
 		},
 		&cli.IntFlag{
 			Name:    "max-buffered-pages-total",
-			Usage:   "maximum total pages to buffer across all connections (0 = unlimited, ~1900 bytes per page)",
+			Usage:   "out-of-order page pressure threshold per worker assembler (0 = unlimited, ~1900 bytes per page)",
 			Sources: cli.EnvVars("NC_MAX_BUFFERED_PAGES_TOTAL"),
+		},
+		&cli.Int64Flag{
+			Name:    "max-retained-tcp-bytes",
+			Usage:   "maximum copied TCP reader payload across all workers (bytes, 0 = unlimited); exhaustion aborts capture",
+			Sources: cli.EnvVars("NC_MAX_RETAINED_TCP_BYTES"),
+			Action: func(_ context.Context, _ *cli.Command, value int64) error {
+				if value < 0 {
+					return fmt.Errorf("max-retained-tcp-bytes cannot be negative")
+				}
+				return nil
+			},
 		},
 		&cli.IntFlag{
 			Name:    "compression-block-size",

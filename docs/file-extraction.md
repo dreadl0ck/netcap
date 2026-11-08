@@ -5,6 +5,55 @@ metadata. It is distinct from packet payload retention and complete source-PCAP
 retention. Encrypted content remains unavailable without a supported plaintext
 analysis path.
 
+## Bounded extraction and analysis
+
+`-file-config FILE` loads strict YAML over the defaults in
+`internal/decoder/stream/file/config.go`; invalid or unsupported settings fail
+instead of silently falling back. Capture admission freezes extraction policy
+and private analyzer snapshots. Service helper jobs receive an immutable
+`artifact-config.yml` snapshot.
+
+```yaml
+file_extraction:
+  size_limits:
+    max_file_size: 104857600
+    max_inflight_bytes: 268435456
+    max_files_per_session: 0
+  advanced:
+    enable_yara_scanning: true
+    yara_rules_path: /absolute/path/to/owned-rules
+    enable_magika: false
+```
+
+```sh
+net capture -read traffic.pcap -out ./audit -fileStorage files \
+  -file-config extraction.yml -http ""
+```
+
+| Boundary | Contract |
+| --- | --- |
+| Buffers | Raw bodies and each decoded layer use the per-file limit, optional `reassembly.max_buffer_size` ceiling (10 MiB default), and capture-owned in-flight reservations. `max_inflight_bytes` must be at least twice `max_file_size`, at most 1 GiB; `max_file_size` is 1–100 MiB. |
+| Stream limits | `-max-stream-bytes=0` disables that reassembly-depth limit, not artifact budgets. Compression/storage policy remains separate. |
+| Content fidelity | HTTP files preserve extracted bytes; MIME attachments use structural multipart/base64/quoted-printable parsing. SMTP dot unstuffing and POP3 retained lines preserve binary data/CRLF before extraction. Eight MIME nesting levels and 128 parts are admitted. |
+| Publication | Complete blob writes are synced and atomically published without replacing a destination. Duplicate content reuses the blob while retaining File observations. |
+| YARA-X | Configured rules must exist and contain enabled rules. Metadata in `yara-rules-meta.json` disables named files. Includes are disabled; independently load bounded sources. Invalid reload retains the previous ruleset and reports failure. |
+| Ruleset budget | At most 1,024 enabled files, 1 MiB/source and 16 MiB total; scan results reject more than 4,096 matches. |
+| Magika | Optional installed executable, bounded by a 60-second context, 1 MiB stdout and 64 KiB stderr. Executable SHA-256 is recorded; changed executable identity fails. Unix cancellation kills the owned process group. |
+| Workers/cache | Two capture-owned workers, 32 queued jobs and 256 MiB active/queued content budget. Cache is capture-local, capped at 1,024 entries/16 MiB. Exhaustion is reported as rejection; this version does not evict retained results. |
+| Result identity | `artifact-analysis.json` version 1 binds capture RunID, config/rules/tool digests and content SHA-256. The YARA Go binding version is recorded; its native-library version is not exposed by the binding. |
+| Outcomes | Disabled, ready, queued, running, completed, failed, timed-out and cancelled are distinct. Completed YARA carries matched/no-match; Magika carries classified. Queue/cache refusal is counted and recorded in extraction issues, never a clean result. |
+| Finalization | Accepted analysis finishes before audit readiness. Analyzer failure preserves the artifact, persists partial coverage and returns an error for requested analysis. Extraction-only partial coverage remains inspectable without converting a successful capture into a scan failure. Result/output persistence failure prevents readiness. |
+| Visibility | Files page and file preview show analysis coverage and transfer occurrences; YARA scan APIs distinguish completed scans from failures. `GET /api/artifact-analysis` supports the same explicit input/session selectors as artifact access. Legacy/missing reports are unavailable, not clean. |
+
+Only regular files inside the selected extraction root can be downloaded,
+previewed or scanned. Traversal, stored symlinks, nonregular files and unknown
+capture selectors are rejected (`internal/artifactio`).
+
+`Hashes.SHA256` identifies exact content; legacy `Hash` remains MD5. Analyzer
+enablement requires SHA-256. `IsComplete`/`CompletenessReason` qualify bytes;
+`StreamMissingBytes` is unattributed stream loss, not a measured missing-byte
+count for every file. General archive recursion remains unsupported.
+
 ## Usage
 
 ```sh

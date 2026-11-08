@@ -22,14 +22,13 @@ package collector
 import (
 	"bufio"
 	"encoding/binary"
+	stdErrors "errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/gopacket/gopacket"
-	"github.com/gopacket/gopacket/layers"
-	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/pkg/errors"
 
 	"github.com/dreadl0ck/netcap/defaults"
@@ -242,6 +241,7 @@ func enhancePcapError(filePath string, originalErr error) error {
 
 // close errors.pcap and unknown.pcap.
 func (c *Collector) closePcapFiles() error {
+	c.captureEvidenceError = stdErrors.Join(c.captureEvidenceError, c.unkownPcapWriterAtomic.failure(), c.errorsPcapWriterAtomic.failure())
 	// unknown.pcap
 
 	if c.unkownPcapWriterBuffered != nil {
@@ -334,14 +334,7 @@ func (c *Collector) createUnknownPcap() error {
 	}
 
 	c.unkownPcapWriterBuffered = bufio.NewWriterSize(c.unknownPcapFile, defaults.BufferSize)
-	pcapWriter := pcapgo.NewWriter(c.unkownPcapWriterBuffered)
-
-	// set global pcap writer
-	c.unkownPcapWriterAtomic = newAtomicPcapGoWriter(pcapWriter)
-
-	if err = pcapWriter.WriteFileHeader(1024, layers.LinkTypeEthernet); err != nil {
-		return err
-	}
+	c.unkownPcapWriterAtomic = newAtomicPcapGoWriter(c.unkownPcapWriterBuffered, c.captureLinkType)
 
 	return nil
 }
@@ -357,14 +350,7 @@ func (c *Collector) createErrorsPcap() error {
 	}
 
 	c.errorsPcapWriterBuffered = bufio.NewWriterSize(c.errorsPcapFile, defaults.BufferSize)
-	pcapWriter := pcapgo.NewWriter(c.errorsPcapWriterBuffered)
-
-	// set global pcap writer
-	c.errorsPcapWriterAtomic = newAtomicPcapGoWriter(pcapWriter)
-
-	if err = pcapWriter.WriteFileHeader(1024, layers.LinkTypeEthernet); err != nil {
-		return err
-	}
+	c.errorsPcapWriterAtomic = newAtomicPcapGoWriter(c.errorsPcapWriterBuffered, c.captureLinkType)
 
 	return nil
 }
