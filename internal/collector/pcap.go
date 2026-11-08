@@ -21,6 +21,7 @@ package collector
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
@@ -191,7 +192,8 @@ func OpenPCAP(file string) (*pcapgo.Reader, *os.File, error) {
 	return r, f, nil
 }
 
-// IsPcap checks whether a file is a PCAP file.
+// IsPcap classifies classic PCAP by magic, including gzip streams. It does not
+// validate headers: unsupported or damaged PCAP stays on the PCAP error path.
 func IsPcap(file string) (bool, error) {
 	// get file handle
 	f, err := os.Open(file)
@@ -206,15 +208,23 @@ func IsPcap(file string) (bool, error) {
 		}
 	}()
 
-	// try to create pcap reader
-	_, err = pcapgo.NewReader(f)
+	s, err := newCaptureStream(f)
 	if err != nil {
-		// file exists but is not a pcap
-		// dont return error in this case
+		return false, err
+	}
+	var magic [4]byte
+	if _, err := io.ReadFull(s.r, magic[:]); err != nil {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			return false, nil
+		}
+		return false, err
+	}
+	switch binary.BigEndian.Uint32(magic[:]) {
+	case 0xa1b2c3d4, 0xd4c3b2a1, 0xa1b23c4d, 0x4d3cb2a1:
+		return true, nil
+	default:
 		return false, nil
 	}
-
-	return true, nil
 }
 
 // countPackets returns the number of packets in a PCAP file.

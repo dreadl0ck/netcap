@@ -58,7 +58,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	//clearLine()
 	//fmt.Println("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
 
-	r, f, err := collector.OpenPCAP(flagInput)
+	f, err := os.Open(flagInput)
 	if err != nil {
 		log.Fatal("failed to open pcap:", err)
 	}
@@ -69,6 +69,10 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			fmt.Println("failed to close:", errClose)
 		}
 	}()
+	r, err := collector.NewPCAPReader(f)
+	if err != nil {
+		return fmt.Errorf("open pcap: %w", err)
+	}
 
 	fmt.Println("detected link type:", r.LinkType())
 

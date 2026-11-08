@@ -80,6 +80,7 @@ type boundedPCAPReader struct {
 	*captureStream
 	order   binary.ByteOrder
 	nanos   bool
+	minor   uint16
 	snaplen uint32
 	link    layers.LinkType
 	buffer  []byte
@@ -107,9 +108,11 @@ func newBoundedPCAPReader(input io.Reader) (*boundedPCAPReader, error) {
 	default:
 		return nil, fmt.Errorf("unknown PCAP magic %x", header[:4])
 	}
-	if r.order.Uint16(header[4:6]) != 2 || r.order.Uint16(header[6:8]) != 4 {
-		return nil, fmt.Errorf("unsupported PCAP version (require 2.4)")
+	major, minor := r.order.Uint16(header[4:6]), r.order.Uint16(header[6:8])
+	if major != 2 || minor > 4 {
+		return nil, fmt.Errorf("unsupported PCAP version %d.%d (require 2.0–2.4)", major, minor)
 	}
+	r.minor = minor
 	r.snaplen = r.order.Uint32(header[16:20])
 	// The upper 16 bits are additional information, not part of LINKTYPE.
 	r.link = layers.LinkType(r.order.Uint32(header[20:24]) & 0xffff)
@@ -140,6 +143,10 @@ func (r *boundedPCAPReader) readPacket(reuse bool) ([]byte, gopacket.CaptureInfo
 		return nil, ci, r.fail(offset, fmt.Sprintf("PCAP record header: %v", err), false)
 	}
 	caplen, wire := r.order.Uint32(header[8:12]), r.order.Uint32(header[12:16])
+	// libpcap sf-pcap.c: pre-2.3 lengths are reversed; 2.3 exists in both orders.
+	if r.minor < 3 || r.minor == 3 && caplen > wire {
+		caplen, wire = wire, caplen
+	}
 	if caplen > maxInputPacket {
 		return nil, ci, r.fail(offset, fmt.Sprintf("PCAP caplen %d exceeds hard packet cap %d", caplen, maxInputPacket), false)
 	}
