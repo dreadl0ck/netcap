@@ -45,6 +45,11 @@ func NewFilteringWriter(underlying netio.AuditRecordWriter, collector *Collector
 
 // Write applies filtering and rules evaluation before writing the record.
 func (fw *FilteringWriter) Write(msg proto.Message) error {
+	return fw.WriteScoped(msg, "")
+}
+
+// WriteScoped carries packet provenance without adding transient wire fields.
+func (fw *FilteringWriter) WriteScoped(msg proto.Message, scope string) error {
 	// Try to cast to AuditRecord
 	auditRecord, ok := msg.(types.AuditRecord)
 	if !ok {
@@ -55,7 +60,7 @@ func (fw *FilteringWriter) Write(msg proto.Message) error {
 	// First, evaluate rules (even if the record will be filtered out)
 	// This ensures we don't miss alerts for filtered traffic
 	rulesStart := time.Now()
-	alertsGenerated := fw.collector.EvaluateRulesWithMetrics(auditRecord)
+	alertsGenerated := fw.collector.evaluateRulesWithScope(auditRecord, scope)
 	if fw.collector.perfTracker != nil {
 		fw.collector.perfTracker.RecordRulesEvaluation(time.Since(rulesStart), alertsGenerated)
 	}

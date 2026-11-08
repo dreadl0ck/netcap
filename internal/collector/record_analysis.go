@@ -15,15 +15,17 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/internal/identity"
 	"github.com/dreadl0ck/netcap/internal/networkdetect"
+	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
 )
 
 type recordScope struct {
-	Scope     networkdetect.Scope
-	Key       string
-	Ambiguous bool
+	Scope        networkdetect.Scope
+	Key          string
+	NetworkScope string
+	Ambiguous    bool
 }
 
 type recordCallback struct{ observe func(proto.Message) }
@@ -96,7 +98,7 @@ func (c *Collector) observeRecordScope(p gopacket.Packet, scope networkdetect.Sc
 	}
 	remember := func(m map[string]recordScope, id string) {
 		old, ok := m[id]
-		if ok && old.Key != key {
+		if ok && (old.Key != key || old.NetworkScope != packetview.Scope(p)) {
 			old.Ambiguous = true
 			m[id] = old
 			return
@@ -106,7 +108,7 @@ func (c *Collector) observeRecordScope(p gopacket.Packet, scope networkdetect.Sc
 				c.analysisOverflow++
 				return
 			}
-			m[id] = recordScope{Scope: scope, Key: key}
+			m[id] = recordScope{Scope: scope, Key: key, NetworkScope: packetview.Scope(p)}
 		}
 	}
 	n := p.NetworkLayer().NetworkFlow()

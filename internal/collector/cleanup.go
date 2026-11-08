@@ -72,6 +72,7 @@ func (c *Collector) cleanup(force bool) {
 			}
 		}
 		if c.log == nil {
+			c.finalizeRules()
 			c.finalizeCaptureEvidence()
 			return
 		}
@@ -222,6 +223,8 @@ func (c *Collector) teardown() {
 			c.files[name] = humanize.Bytes(uint64(size))
 		}
 	}
+
+	c.finalizeRules()
 
 	if alert.SocketConn != nil {
 		err := alert.SocketConn.Close()

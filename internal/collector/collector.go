@@ -190,6 +190,8 @@ type Collector struct {
 	// filtering and rules
 	filterPrograms             map[types.Type]*filter.CompiledFilter
 	rulesEngine                *rules.Engine
+	rulesErrorMu               sync.Mutex
+	rulesError                 error
 	filteredCount              int64
 	alertCount                 int64
 	behaviorEngine             *behavior.Engine
@@ -330,36 +332,33 @@ func (c *Collector) ShouldWriteRecord(record types.AuditRecord) bool {
 
 // EvaluateRules evaluates all rules against a record and generates alerts if matched.
 func (c *Collector) EvaluateRules(record types.AuditRecord) {
-	if c.rulesEngine == nil {
-		return
-	}
-
-	alertsGenerated, err := c.rulesEngine.Evaluate(record)
-	if err != nil {
-		c.log.Warn("rules evaluation error", zap.String("type", record.NetcapType().String()), zap.Error(err))
-		return
-	}
-
-	if alertsGenerated > 0 {
-		atomic.AddInt64(&c.alertCount, int64(alertsGenerated))
-	}
+	c.EvaluateRulesWithMetrics(record)
 }
 
 // EvaluateRulesWithMetrics evaluates rules and returns the number of alerts generated.
 // This is used by the FilteringWriter to track metrics.
 func (c *Collector) EvaluateRulesWithMetrics(record types.AuditRecord) int {
+	return c.evaluateRulesWithScope(record, "")
+}
+
+func (c *Collector) evaluateRulesWithScope(record types.AuditRecord, scope string) int {
 	if c.rulesEngine == nil {
 		return 0
 	}
 
-	alertsGenerated, err := c.rulesEngine.Evaluate(record)
-	if err != nil {
-		c.log.Warn("rules evaluation error", zap.String("type", record.NetcapType().String()), zap.Error(err))
-		return 0
-	}
-
+	alertsGenerated, err := c.evaluateObservedRules(record, scope)
 	if alertsGenerated > 0 {
 		atomic.AddInt64(&c.alertCount, int64(alertsGenerated))
+	}
+	if err != nil {
+		c.rulesErrorMu.Lock()
+		if c.rulesError == nil {
+			c.rulesError = err
+		}
+		c.rulesErrorMu.Unlock()
+		if c.log != nil {
+			c.log.Warn("rules evaluation error", zap.String("type", record.NetcapType().String()), zap.Error(err))
+		}
 	}
 
 	return alertsGenerated

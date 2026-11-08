@@ -35,6 +35,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/internal/netio"
+	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
@@ -302,7 +303,14 @@ func (pd *Decoder) Decode(p gopacket.Packet, ctx *types.PacketContext) error {
 		// increase counter
 		atomic.AddInt64(&pd.NumRecordsWritten, 1)
 
-		err := pd.Writer.Write(record)
+		var err error
+		if scoped, ok := pd.Writer.(interface {
+			WriteScoped(proto.Message, string) error
+		}); ok {
+			err = scoped.WriteScoped(record, packetview.Scope(p))
+		} else {
+			err = pd.Writer.Write(record)
+		}
 		if err != nil {
 			return err
 		}

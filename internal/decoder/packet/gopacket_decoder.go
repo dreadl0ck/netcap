@@ -244,7 +244,14 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 		}
 
 		atomic.AddInt64(&dec.numRecords, 1)
-		err := dec.writer.Write(record)
+		var err error
+		if scoped, ok := dec.writer.(interface {
+			WriteScoped(proto.Message, string) error
+		}); ok {
+			err = scoped.WriteScoped(record, packetview.Scope(p))
+		} else {
+			err = dec.writer.Write(record)
+		}
 		if err != nil {
 			return err
 		}

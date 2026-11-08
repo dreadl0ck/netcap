@@ -20,6 +20,7 @@
 package rules
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -225,6 +226,40 @@ func (e *Engine) Evaluate(record types.AuditRecord) (int, error) {
 		return e.ordered.observe(record)
 	}
 	return e.EvaluateScoped("", record)
+}
+
+// EvaluateObserved retains the observed interface/encapsulation scope inside the
+// declared source timeline. The declaration alone cannot isolate mixed inputs.
+func (e *Engine) EvaluateObserved(scope string, record types.AuditRecord) (int, error) {
+	if e.ordered == nil {
+		return e.Evaluate(record)
+	}
+	if err := requireScope(scope, record); err != nil {
+		return 0, err
+	}
+	key := sha256.Sum256([]byte(scopedKey(e.ordered.scope, "observation", scope)))
+	return e.ordered.observeScoped(fmt.Sprintf("%x", key), record)
+}
+
+func (e *Engine) AppliesTo(record types.AuditRecord) bool {
+	e.generationMu.RLock()
+	defer e.generationMu.RUnlock()
+	for _, rule := range e.config.Rules {
+		if !rule.Enabled {
+			continue
+		}
+		typ, _ := parseRecordType(rule.Type)
+		if typ == record.NetcapType() {
+			return true
+		}
+		if rule.Sequence != nil && rule.Sequence.AfterType != "" {
+			typ, _ = parseRecordType(rule.Sequence.AfterType)
+			if typ == record.NetcapType() {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // EvaluateScoped evaluates ordered records in an explicit capture/source scope.

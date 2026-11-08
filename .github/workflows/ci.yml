@@ -28,6 +28,47 @@ env:
   BUILDER_IMAGE: netcap-builder:ci-yara122
 
 jobs:
+  native-runtime:
+    if: inputs.scope == 'full'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        variant: [alpine, alpine-nodpi, ubuntu, ubuntu-nodpi]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: cmd/capture/webui/frontend/pnpm-lock.yaml
+      - name: Build embedded frontend
+        working-directory: cmd/capture/webui/frontend
+        run: pnpm install --frozen-lockfile && pnpm build
+      - name: Rebuild and qualify the final native x86 runtime
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          test "$(uname -m)" = x86_64
+          case "$VARIANT" in
+            alpine) builder=alpine-dpi; tags='' ;;
+            alpine-nodpi) builder=alpine; tags='-tags nodpi' ;;
+            ubuntu) builder=ubuntu-dpi; tags='' ;;
+            ubuntu-nodpi) builder=ubuntu; tags='-tags nodpi' ;;
+          esac
+          image=$(python3 zeus/scripts/builder-image.py "$builder")
+          docker run --rm --cpus=2 -v "$PWD:/netcap:ro" -w /netcap "$image" sh scripts/qualify-native-builder.sh
+          docker buildx build --load --platform linux/amd64 \
+            --build-context netcap-webui=cmd/capture/webui/frontend/dist \
+            --build-arg "TAGS=$tags" --build-arg "NETCAP_BUILDER_IMAGE=$image" \
+            -f "docker/$VARIANT/Dockerfile" -t netcap-final-native .
+          python3 scripts/native-runtime-smoke.py --image netcap-final-native
+
   go:
     if: inputs.scope == 'full'
     name: Go build and test

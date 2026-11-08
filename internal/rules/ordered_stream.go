@@ -16,6 +16,7 @@ const maxPendingRecords = 4096
 const maxPendingBytes = 32 << 20
 
 type pendingRecord struct {
+	scope  string
 	record types.AuditRecord
 	wire   []byte
 	charge int
@@ -73,6 +74,10 @@ func (s *OrderedStream) Push(record types.AuditRecord) error {
 }
 
 func (s *OrderedStream) push(record types.AuditRecord) error {
+	return s.pushScoped(s.scope, record)
+}
+
+func (s *OrderedStream) pushScoped(scope string, record types.AuditRecord) error {
 	if s.err != nil {
 		return s.err
 	}
@@ -93,19 +98,23 @@ func (s *OrderedStream) push(record types.AuditRecord) error {
 	if err != nil {
 		return err
 	}
-	charge := int(offlineMemory(reflect.ValueOf(record))) + len(wire) + 1024
+	charge := int(offlineMemory(reflect.ValueOf(record))) + len(wire) + len(scope) + 1024
 	if s.bytes+charge > maxPendingBytes {
 		return ErrStateCapacity
 	}
-	s.pending = append(s.pending, pendingRecord{record: proto.Clone(message).(types.AuditRecord), wire: wire, charge: charge})
+	s.pending = append(s.pending, pendingRecord{scope: scope, record: proto.Clone(message).(types.AuditRecord), wire: wire, charge: charge})
 	s.bytes += charge
 	return nil
 }
 
 func (s *OrderedStream) observe(record types.AuditRecord) (int, error) {
+	return s.observeScoped(s.scope, record)
+}
+
+func (s *OrderedStream) observeScoped(scope string, record types.AuditRecord) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if err := s.push(record); err != nil {
+	if err := s.pushScoped(scope, record); err != nil {
 		s.err = err
 		return 0, err
 	}
@@ -154,7 +163,7 @@ func (s *OrderedStream) advance(watermark int64) (int, error) {
 		if p.record.Time() > watermark {
 			break
 		}
-		n, err := s.engine.EvaluateScoped(s.scope, p.record)
+		n, err := s.engine.EvaluateScoped(p.scope, p.record)
 		count += n
 		if err != nil {
 			s.err = fmt.Errorf("ordered rule stream incomplete: %w", err)

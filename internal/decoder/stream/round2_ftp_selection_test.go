@@ -38,6 +38,7 @@ func TestRound2FTPSecretOn8884(t *testing.T) {
 	}
 	c := &core.ConversationInfo{Data: data, Ident: "ftp-8884", CommunityID: "1:fixture", ClientIP: "192.0.2.1", ServerIP: "192.0.2.2", ClientPort: 45678, ServerPort: 8884, FirstClientPacket: time.Unix(1, 1)}
 	for _, include := range []string{"", "Secret"} {
+		w.records = nil
 		decoderconfig.Instance.IncludeDecoders = include
 		sel, ok := SelectDecoder(&SelectionInput{Transport: core.TCP, ServerPort: 8884, PortClient: client, PortServer: server, ScanClient: client, ScanServer: server, Conversation: c})
 		if !ok || sel.Name != "FTP" {
