@@ -2,6 +2,8 @@ package collector
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +12,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,13 +23,14 @@ import (
 
 func TestTLSRound2Corpus(t *testing.T) {
 	if os.Getenv("NETCAP_TLS_CORPUS") != "1" {
-		t.Skip("set NETCAP_TLS_CORPUS=1 to fetch the pinned, size/hash-checked small Zeek fixtures")
+		t.Skip("set NETCAP_TLS_CORPUS=1 to fetch the pinned, size/hash-checked small Zeek/Suricata fixtures")
 	}
 	var manifest struct {
 		Source  string
 		Samples []struct {
-			Path, SHA256, Format string
-			Size, Client, Server int
+			Path, SHA256, Format, ServerFormat, Source string
+			Size, Client, Server                       int
+			ClientHello, ServerHello                   map[string]any
 		}
 	}
 	manifestPath := os.Getenv("NETCAP_TLS_MANIFEST")
@@ -43,7 +47,11 @@ func TestTLSRound2Corpus(t *testing.T) {
 	client := &http.Client{Timeout: 45 * time.Second}
 	for _, sample := range manifest.Samples {
 		t.Run(sample.Path, func(t *testing.T) {
-			resp, err := client.Get(manifest.Source + sample.Path)
+			source := manifest.Source
+			if sample.Source != "" {
+				source = sample.Source
+			}
+			resp, err := client.Get(source + sample.Path)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -64,7 +72,15 @@ func TestTLSRound2Corpus(t *testing.T) {
 				for name, want := range map[string]int{"TLSClientHello": sample.Client, "TLSServerHello": sample.Server} {
 					path := filepath.Join(out, name+".ncap")
 					if _, err := os.Stat(path); err == nil {
-						current[name] = tlsRound2Records(t, path, sample.Format, os.Getenv("NETCAP_TLS_BASELINE") == "1")
+						format := sample.Format
+						expect := sample.ClientHello
+						if name == "TLSServerHello" && sample.ServerFormat != "" {
+							format = sample.ServerFormat
+						}
+						if name == "TLSServerHello" {
+							expect = sample.ServerHello
+						}
+						current[name] = tlsRound2Records(t, path, format, expect, os.Getenv("NETCAP_TLS_BASELINE") == "1")
 					}
 					t.Logf("workers=%d packets=%d %s=%d expected=%d sha256=%s", workers, packets, name, len(current[name]), want, sample.SHA256)
 					if os.Getenv("NETCAP_TLS_BASELINE") != "1" && len(current[name]) != want {
@@ -80,7 +96,7 @@ func TestTLSRound2Corpus(t *testing.T) {
 	}
 }
 
-func tlsRound2Records(t *testing.T, path, format string, baseline bool) []string {
+func tlsRound2Records(t *testing.T, path, format string, expect map[string]any, baseline bool) []string {
 	t.Helper()
 	r, err := netio.Open(path, defaults.BufferSize)
 	if err != nil {
@@ -114,10 +130,24 @@ func tlsRound2Records(t *testing.T, path, format string, baseline bool) []string
 			t.Fatal(err)
 		}
 		if !baseline {
-			if fields["HelloFormat"] != format || fields["CommunityID"] == nil || fields["SrcIP"] == nil || fields["Timestamp"] == nil {
+			for key, want := range expect {
+				got := fields[key]
+				if strings.HasSuffix(key, "Hex") {
+					encoded, _ := fields[strings.TrimSuffix(key, "Hex")].(string)
+					b, err := base64.StdEncoding.DecodeString(encoded)
+					if err != nil {
+						t.Fatal(err)
+					}
+					got = hex.EncodeToString(b)
+				}
+				if !reflect.DeepEqual(got, want) {
+					t.Fatalf("%s: got %v want %v", key, got, want)
+				}
+			}
+			if fields["HelloFormat"] != format || fields["CommunityID"] == nil || fields["SrcIP"] == nil || fields["DstIP"] == nil || fields["SrcPort"] == nil || fields["DstPort"] == nil || fields["Timestamp"] == nil {
 				t.Fatal("missing protocol/flow/time metadata", fields)
 			}
-			if format == "SSLv2" && (fields["Ja4"] != nil || fields["Ja4s"] != nil || fields["SSLv2CipherSpecs"] == nil) {
+			if format == "SSLv2" && (fields["Ja4"] != nil || fields["Ja4s"] != nil || fields["SSLv2CipherSpecs"] == nil || fields["CipherSuites"] != nil || fields["CipherSuite"] != nil || fields["Random"] != nil) {
 				t.Fatal("fabricated TLS fingerprint or missing 24-bit cipher specs", fields)
 			}
 		}

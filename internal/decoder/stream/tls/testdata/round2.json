@@ -1,13 +1,22 @@
 {
   "issues": ["D2-11", "DS-1"],
-  "unavailable_artifacts": ["/Users/pmieden/Downloads/netcap-datasets-round2.md", "Original /workspace/mta/datasets2/ report outputs and full R1-R13 corpus were not available for this worker's verification."],
+  "unavailable_artifacts": ["Original /workspace/mta/datasets2/ report outputs and full R1-R13 corpus were not available for this worker's verification."],
   "source": "https://raw.githubusercontent.com/zeek/zeek/5862ccc5e13e6127cda5932a7f18aaf070c8b63b/testing/btest/Traces/",
   "command": "NETCAP_TLS_CORPUS=1 GOWORK=off GOMAXPROCS=2 go test -p 1 -tags nodpi,noyara,nomagika ./internal/collector -run '^TestTLSRound2Corpus$' -count=1 -v",
   "oracle_command": "tshark -r FILE -Y 'tls.handshake.type==1 || tls.handshake.type==2 || tls.ssl2.handshake.type' -T fields -e frame.number -e _ws.col.Info -e tcp.stream",
   "verification_scope": "Pinned small upstream samples; counts, protocol qualification, tuple/time/community metadata and protobuf-content invariance across 1 and 2 workers. This does not assert a full original-corpus replay or a baseline replay.",
+  "validation": {
+    "environment": "GOWORK=off GOMAXPROCS=2; go1.27.0 darwin/arm64; -p 1 -tags nodpi,noyara,nomagika",
+    "race": "go test -race ./internal/decoder/stream/tls ./types: 181 tests including subtests; NETCAP_TLS_CORPUS=1 go test -race ./internal/collector -run '^TestTLSRound2Corpus$' -count=1: 19 captures at 1/2 workers, 20 tests including parent",
+    "transport_regressions": "go test -short ./internal/decoder/stream/tcp ./internal/reassembly: 140 tests including subtests",
+    "fuzz": "go test ./internal/decoder/stream/tls -run '^$' -fuzz NAME -fuzztime=10s -parallel=2: FuzzSSLv2Framing and FuzzNegotiatedUpgrade passed",
+    "vet": "go vet ./internal/decoder/stream/tls ./types ./internal/collector passed",
+    "oracle": "tshark 4.6.6; named Suricata hello frames and wire bytes checked independently; non-hello CONNECT payloads remain negative controls",
+    "generation": "protoc 33.0; protoc-gen-gogofaster v1.3.2 built with GOTOOLCHAIN=go1.27.0; repeated generation identical; types/netcap.pb.go SHA-256 1dbab054910d3bec5e0a1b5bc5a71256c408b27e94ece0e7fe4b4eb44e76fc9b"
+  },
   "samples": [
-    {"path":"tls/ssl-v2.pcap","size":3908,"sha256":"7096791786926b8551d0ebe9f1d01614c1ed29ba623a099d1a16ad0c0fe01c4a","client":1,"server":1,"format":"SSLv2"},
-    {"path":"tls/sslv2-repeated-server-hello.pcap","size":6184,"sha256":"54640f3e03cd9e9f92c303b11a5c152fc1da477ea879b6926e1539dfc532d0ca","client":1,"server":10,"format":"SSLv2"},
+    {"path":"tls/ssl-v2.pcap","size":3908,"sha256":"7096791786926b8551d0ebe9f1d01614c1ed29ba623a099d1a16ad0c0fe01c4a","client":1,"server":1,"format":"SSLv2","clientHello":{"HandshakeVersion":2,"SSLv2ChallengeHex":"1c30e2b12f4c04525476f280c07abee5"},"serverHello":{"Version":2}},
+    {"path":"tls/sslv2-repeated-server-hello.pcap","size":6184,"sha256":"54640f3e03cd9e9f92c303b11a5c152fc1da477ea879b6926e1539dfc532d0ca","client":1,"server":10,"format":"SSLv2","clientHello":{"HandshakeVersion":2,"SSLv2CipherSpecs":[65664],"SSLv2ChallengeHex":"41414141414141414141414141414141"},"serverHello":{"Version":2,"SSLv2CipherSpecs":[65664],"SSLv2ConnectionIDHex":"42424242424242424242424242424242"}},
     {"path":"http/connect-with-header.pcap","size":64527,"sha256":"91bd9fdd6456d104914c99fb511134d43d471850ab0679a9b6ec9898895e6c06","client":1,"server":1,"format":"TLS"},
     {"path":"ldap/ldap-starttls.pcap","size":6009,"sha256":"e9898ac40a2c1ae7df135044c8d29b747384ed1dfd9c2ed47ff5f8ed5d119bdd","client":1,"server":1,"format":"TLS"},
     {"path":"postgresql/psql-aws-ssl-require.pcap","size":7804,"sha256":"10c865115a2022839850ea4ef35499d88b552bf3730da8471b5798e69ae94d5e","client":1,"server":1,"format":"TLS"},
@@ -18,6 +27,12 @@
     {"path":"rdp/rdp-to-ssl.pcap","size":134982,"sha256":"ff44d3567d2583bd17c1a6fdd765049b082c800f671481a4d01bdf70721654eb","client":2,"server":2,"format":"TLS"},
     {"path":"tls/smtp-starttls.pcap","size":8693,"sha256":"5b25d421b15989b25be2ad75da91eebff03db7c7d3ee0d9f9abbbd5c5e07b7d5","client":1,"server":1,"format":"TLS"},
     {"path":"tls/pop3-starttls.pcap","size":5841,"sha256":"032a328c466af619da540ebf860053f202e4b10f0478d026990676b027dfe698","client":1,"server":1,"format":"TLS"},
-    {"path":"tls/imap-starttls.pcap","size":8511,"sha256":"0753e55846eea1a469c923f3038d2aff0527ae7227399fdb10ed3b2a66788a15","client":1,"server":1,"format":"TLS"}
+    {"path":"tls/imap-starttls.pcap","size":8511,"sha256":"0753e55846eea1a469c923f3038d2aff0527ae7227399fdb10ed3b2a66788a15","client":1,"server":1,"format":"TLS"},
+    {"source":"https://raw.githubusercontent.com/OISF/suricata-verify/9a9178a7e4d45ff1d990e8f178c1e2f54b772f39/","path":"tests/http-connect/http-connect-tls/input.pcap","size":1169,"sha256":"b3613c6d3db52353e37941e74eba7b083d8826651668e16a7708a228ba1222be","client":0,"server":0,"format":"TLS","semantics":"Extra LF after CONNECT; TLS-looking bytes are not a valid hello and must not be searched for."},
+    {"source":"https://raw.githubusercontent.com/OISF/suricata-verify/9a9178a7e4d45ff1d990e8f178c1e2f54b772f39/","path":"tests/http-connect/http-connect-fragmented/input.pcap","size":1528,"sha256":"1a51f82ed535b44edfa86aff9430988083f3840d2d85f4dd656ab48359b8d458","client":0,"server":0,"format":"TLS"},
+    {"source":"https://raw.githubusercontent.com/OISF/suricata-verify/9a9178a7e4d45ff1d990e8f178c1e2f54b772f39/","path":"tests/http-connect/http-connect-fail/input.pcap","size":1158,"sha256":"af4fc863fe72b143f453d3bc3923b28a3280ea690836c3a6bbe0c3dc244c73bd","client":0,"server":0,"format":"TLS"},
+    {"source":"https://raw.githubusercontent.com/OISF/suricata-verify/9a9178a7e4d45ff1d990e8f178c1e2f54b772f39/","path":"tests/sslv2-tls-upgrade-01/ssl-v2-s1.pcap","size":20485,"sha256":"78cad4e66cfe5b767d1cea3b1b81ae60936829a8b2eb5e9fc31a22c1c8f382b8","client":1,"server":1,"format":"SSLv2","serverFormat":"TLS","clientHello":{"HandshakeVersion":769,"SSLv2ChallengeHex":"3143c465d52771e466a42be1701787fd"},"serverHello":{"Version":769,"CipherSuite":57},"semantics":"SSLv2-compatible TLS 1.0 ClientHello with 26 full 24-bit cipher specs; TLS ServerHello selects 0x0039."},
+    {"source":"https://raw.githubusercontent.com/OISF/suricata-verify/9a9178a7e4d45ff1d990e8f178c1e2f54b772f39/","path":"tests/ldap-starttls/input.pcap","size":7401,"sha256":"967357ae15165423dbaefcca249e5de6d4736b82c105814ff6d4cdc9383cc595","client":1,"server":1,"format":"TLS"},
+    {"source":"https://raw.githubusercontent.com/OISF/suricata-verify/9a9178a7e4d45ff1d990e8f178c1e2f54b772f39/","path":"tests/bug-2430/backwards.pcap","size":8034,"sha256":"887be17ccdb346aed5eb89df56be9d8f98be3df0f1ef4781006cf61dc5a1be48","client":1,"server":1,"format":"TLS","clientHello":{"SNI":"qagpublic.qg1.apps.qualys.com"},"semantics":"Reverse-direction CONNECT upgrade; preserve inner TLS roles and SNI."}
   ]
 }
