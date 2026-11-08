@@ -90,13 +90,12 @@ release third-party source archive and is also available from crates.io.
 YARA-X native libraries
 ---------------------------
 DPI builder images and service images include the unmodified YARA-X C API
-library 1.14.0 under BSD-3-Clause; macOS bundles C API 1.15.0. Their statically linked Rust dependencies and license
+library 1.22.0 under BSD-3-Clause on Linux and macOS. Its statically linked Rust dependencies and license
 texts are listed in THIRD_PARTY_RUST_LICENSES.txt. The YARA-X license is also
 reproduced in THIRD_PARTY_LICENSES.txt under github.com/VirusTotal/yara-x/go
-v1.14.0.
+v1.22.0.
 
-  Source: https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.14.0.tar.gz
-  macOS source: https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.15.0.tar.gz
+  Source: https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.22.0.tar.gz
 
 Native DPI libraries
 --------------------

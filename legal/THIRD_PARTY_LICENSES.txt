@@ -2828,10 +2828,10 @@ Apache License
    limitations under the License.
 
 ================================================================================
-github.com/VirusTotal/yara-x/go v1.14.0
+github.com/VirusTotal/yara-x/go v1.22.0
 License: BSD-3-Clause
 Used by: darwin-dpi, darwin-nodpi, linux-dpi
-Source: https://pkg.go.dev/github.com/VirusTotal/yara-x/go@v1.14.0
+Source: https://pkg.go.dev/github.com/VirusTotal/yara-x/go@v1.22.0
 
 --- LICENSE ---
 Copyright (c) 2024. The YARA-X Authors. All Rights Reserved.
