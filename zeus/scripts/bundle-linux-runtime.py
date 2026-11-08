@@ -23,13 +23,16 @@ def bundle(image, destination, executable="/usr/bin/net"):
     destination = Path(destination).resolve()
     if not destination.is_dir():
         raise ValueError("archive staging directory does not exist")
+    platform = subprocess.check_output(["docker", "image", "inspect", "--format", "{{.Os}}/{{.Architecture}}", image], text=True).strip()
+    if platform != 'linux/amd64':
+        raise ValueError('qualified runtime packaging supports linux/amd64 only')
     output = subprocess.check_output(
-        ["docker", "run", "--rm", "--entrypoint", "ldd", image, executable], text=True
+        ["docker", "run", "--rm", "--platform", "linux/amd64", "--cpus=2", "--network=none", "--entrypoint", "ldd", image, executable], text=True
     )
     paths, loader = dependencies(output)
     lib = destination / "lib"
     lib.mkdir()
-    container = subprocess.check_output(["docker", "create", image], text=True).strip()
+    container = subprocess.check_output(["docker", "create", "--platform", "linux/amd64", image], text=True).strip()
     try:
         for source in paths:
             subprocess.run(["docker", "cp", "-L", f"{container}:{source}", str(lib / Path(source).name)], check=True)

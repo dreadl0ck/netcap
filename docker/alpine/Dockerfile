@@ -1,13 +1,16 @@
 ARG NETCAP_BUILDER_IMAGE=docker.io/dreadl0ck/netcap-builder:alpine-dpi-yara1.22.0-84980998-20261108@sha256:eb0472fc0b30b11c4482cf458c1727881eef2938f569c50ce15afdc1c660e779
 FROM --platform=linux/amd64 ${NETCAP_BUILDER_IMAGE} AS builder
 RUN pkg-config --exact-version=1.22.0 yara_x_capi
+ENV GOFLAGS="-mod=readonly -p=2" GOMAXPROCS=2 RAYON_NUM_THREADS=2
 
 # Copy netcap source
 WORKDIR /netcap
 COPY . .
 COPY --from=netcap-webui / /netcap/cmd/capture/webui/frontend/dist/
 
-ENV VERSION XXX
+ARG NETCAP_BUILD_VERSION=XXX
+ARG NETCAP_BUILD_COMMIT=development
+ENV VERSION=${NETCAP_BUILD_VERSION}
 ARG TAGS="-tags noyara"
 RUN echo "tags: $TAGS"
 
@@ -17,6 +20,7 @@ RUN GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}
     GOOS=linux GOARCH=amd64 go build ${TAGS} -trimpath \
     -ldflags "-r /usr/local/lib -s -w \
         -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
+        -X github.com/dreadl0ck/netcap.Commit=${NETCAP_BUILD_COMMIT} \
         -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
         -X github.com/dreadl0ck/netcap/internal/dpi.NDPIVersion=4.14.0 \
         -X github.com/dreadl0ck/netcap/internal/dpi.LibprotoidentVersion=2.0.15-1 \

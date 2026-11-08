@@ -106,6 +106,7 @@ else
     # Standard single-platform build for local use
     echo "[INFO] Building single-platform image for current architecture"
     docker build \
+        --platform linux/amd64 \
         --build-arg NETCAP_BUILDER_IMAGE="${NETCAP_BUILDER_IMAGE:?set a qualified YARA-X 1.22.0 builder image}" \
         --build-arg VERSION="${VERSION}" \
         -t "${IMAGE_TAG}" \
