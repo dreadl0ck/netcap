@@ -67,7 +67,7 @@ func analyzeBGPSecurity(msg *types.BGP) {
 	}
 
 	// Prefix Security Analysis
-	if len(msg.NLRI) > 0 || len(msg.WithdrawnRoutes) > 0 {
+	if len(msg.NLRI)+len(msg.WithdrawnRoutes)+len(msg.IPv6NLRI)+len(msg.IPv6Withdrawn) > 0 {
 		analyzePrefixes(msg, &riskFactors, &riskScore)
 	}
 
@@ -106,7 +106,10 @@ func analyzeASPath(msg *types.BGP, riskFactors *[]string, riskScore *int) {
 
 	// Check for AS path loops - always a problem
 	seen := make(map[uint32]bool)
-	for _, as := range msg.ASPath {
+	for i, as := range msg.ASPath {
+		if i > 0 && as == msg.ASPath[i-1] {
+			continue
+		} // Consecutive prepends are normal routing policy.
 		if seen[as] {
 			msg.HasASPathLoop = true
 			*riskFactors = append(*riskFactors, fmt.Sprintf("as_path_loop_as_%d", as))
@@ -146,14 +149,14 @@ func analyzeASPath(msg *types.BGP, riskFactors *[]string, riskScore *int) {
 
 // analyzePrefixes performs security analysis on announced/withdrawn prefixes
 func analyzePrefixes(msg *types.BGP, riskFactors *[]string, riskScore *int) {
-	msg.PrefixCount = int32(len(msg.NLRI))
-	msg.WithdrawnCount = int32(len(msg.WithdrawnRoutes))
+	msg.PrefixCount = int32(len(msg.NLRI) + len(msg.IPv6NLRI))
+	msg.WithdrawnCount = int32(len(msg.WithdrawnRoutes) + len(msg.IPv6Withdrawn))
 
-	minLen := 32
+	minLen := 129
 	maxLen := 0
 
 	// Analyze announced prefixes
-	for _, prefix := range msg.NLRI {
+	for _, prefix := range append(append([]string(nil), msg.NLRI...), msg.IPv6NLRI...) {
 		ip, prefixLen := parsePrefix(prefix)
 		if ip == nil {
 			continue
@@ -174,7 +177,7 @@ func analyzePrefixes(msg *types.BGP, riskFactors *[]string, riskScore *int) {
 		}
 
 		// Check for bogon prefix - definitely malicious
-		if isBogonPrefix(ip) {
+		if prefixLen != 0 && isBogonPrefix(ip) {
 			msg.HasBogonPrefix = true
 			msg.BogonPrefixes = append(msg.BogonPrefixes, prefix)
 			*riskFactors = append(*riskFactors, fmt.Sprintf("bogon_prefix_%s", prefix))
@@ -182,7 +185,7 @@ func analyzePrefixes(msg *types.BGP, riskFactors *[]string, riskScore *int) {
 		}
 	}
 
-	if minLen < 32 {
+	if minLen < 129 {
 		msg.SmallestPrefixLen = int32(minLen)
 	}
 	if maxLen > 0 {
@@ -264,10 +267,7 @@ func isBogonAS(as uint32) bool {
 	if as == 0 {
 		return true
 	}
-	// AS 23456 is AS_TRANS (RFC 6793)
-	if as == 23456 {
-		return true
-	}
+	// AS_TRANS (23456) is valid transition evidence under RFC 6793.
 	// Documentation ASes (RFC 5398): 64496-64511, 65536-65551
 	if (as >= 64496 && as <= 64511) || (as >= 65536 && as <= 65551) {
 		return true

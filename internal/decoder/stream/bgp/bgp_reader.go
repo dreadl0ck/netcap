@@ -56,6 +56,9 @@ const (
 
 type bgpReader struct {
 	conversation *core.ConversationInfo
+	asWidth      int
+	addPathIPv4  bool
+	addPathIPv6  bool
 }
 
 // New returns a new BGP reader.
@@ -72,45 +75,84 @@ func (b *bgpReader) Decode() {
 		return
 	}
 
-	// Flattened with an index, so a message spanning fragments still parses
-	// while keeping the capture time and direction of the fragment its first
-	// byte arrived in. Concatenating alone loses both.
-	data, index := core.Flatten(b.conversation.Data)
-	offset := 0
-
-	for offset < len(data)-19 {
-		// Look for BGP marker
-		if !bytes.Equal(data[offset:offset+16], bgpMarker) {
-			offset++
-			continue
+	b.decodeMessages(func(msg *types.BGP) {
+		err := Decoder.Writer.Write(msg)
+		if err != nil {
+			bgpLog.Error("failed to write BGP record", zap.Error(err))
+		} else {
+			atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 		}
+	})
+}
 
-		// Parse BGP header
-		length := int(binary.BigEndian.Uint16(data[offset+16 : offset+18]))
-		msgType := data[offset+18]
-
-		if length < 19 || length > 4096 || offset+length > len(data) {
-			offset++
-			continue
+// Each direction retains at most one RFC 4271 message. Gaps invalidate both
+// framing and capability negotiation; they cannot splice a synthetic message.
+func (b *bgpReader) decodeMessages(emit func(*types.BGP)) {
+	var pending [2][]byte
+	var timestamps [2][]int64
+	var opened, fourByte [2]bool
+	var addPath [2]map[uint32]byte
+	for _, fragment := range b.conversation.Data {
+		direction := 0
+		if core.FromServer(fragment) {
+			direction = 1
 		}
-
-		msgData := data[offset : offset+length]
-		msg := b.parseBGPMessage(msgType, msgData)
-
-		if msg != nil {
-			msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = b.conversation.EndpointsAt(index, offset)
-			msg.Timestamp, _ = index.At(offset)
-			msg.CommunityID = b.conversation.CommunityID
-
-			err := Decoder.Writer.Write(msg)
-			if err != nil {
-				bgpLog.Error("failed to write BGP record", zap.Error(err))
-			} else {
-				atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+		if s, ok := fragment.(*core.StreamData); ok && s.HasGap(len(pending[direction]) != 0 || opened[direction]) {
+			pending[direction], timestamps[direction] = nil, nil
+			opened, fourByte = [2]bool{}, [2]bool{}
+			addPath = [2]map[uint32]byte{}
+		}
+		timestamp := core.FragmentTime(fragment)
+		for _, octet := range fragment.Raw() {
+			pending[direction] = append(pending[direction], octet)
+			timestamps[direction] = append(timestamps[direction], timestamp)
+			data := pending[direction]
+			if len(data) < 19 {
+				continue
 			}
+			length := int(binary.BigEndian.Uint16(data[16:18]))
+			if !bytes.Equal(data[:16], bgpMarker) || length < 19 || length > 4096 {
+				pending[direction] = data[1:]
+				timestamps[direction] = timestamps[direction][1:]
+				continue
+			}
+			if len(data) < length {
+				continue
+			}
+			b.asWidth = 0
+			b.addPathIPv4, b.addPathIPv6 = false, false
+			if opened[0] && opened[1] {
+				b.asWidth = 2
+				if fourByte[0] && fourByte[1] {
+					b.asWidth = 4
+				}
+				b.addPathIPv4 = addPath[direction][0x101]&2 != 0 && addPath[1-direction][0x101]&1 != 0
+				b.addPathIPv6 = addPath[direction][0x201]&2 != 0 && addPath[1-direction][0x201]&1 != 0
+			}
+			msg := b.parseBGPMessage(data[18], data)
+			if msg != nil {
+				msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = b.conversation.Endpoints(fragment)
+				msg.Timestamp = timestamps[direction][0]
+				msg.CommunityID = b.conversation.CommunityID
+				if msg.Type == BGPMsgOpen {
+					opened[direction], fourByte[direction] = true, false
+					addPath[direction] = make(map[uint32]byte)
+					for _, capability := range msg.Capabilities {
+						if capability.Code == 65 && len(capability.Value) == 4 {
+							fourByte[direction] = true
+						}
+						if capability.Code == 69 {
+							for i := 0; i+4 <= len(capability.Value); i += 4 {
+								value := capability.Value[i : i+4]
+								addPath[direction][uint32(binary.BigEndian.Uint16(value))<<8|uint32(value[2])] = value[3]
+							}
+						}
+					}
+				}
+				emit(msg)
+			}
+			pending[direction], timestamps[direction] = nil, nil
 		}
-
-		offset += length
 	}
 }
 
@@ -120,13 +162,33 @@ func (b *bgpReader) parseBGPMessage(msgType uint8, data []byte) *types.BGP {
 	}
 
 	msg := &types.BGP{
-		// Timestamp is assigned by the caller from the fragment index.
+		// Timestamp is assigned from the first observed frame byte.
 		Length:   int32(binary.BigEndian.Uint16(data[16:18])),
 		Type:     int32(msgType),
 		TypeName: getBGPMessageTypeName(msgType),
 	}
 
 	payload := data[19:]
+	if (msgType == BGPMsgOpen && len(payload) < 10) ||
+		(msgType == BGPMsgUpdate && len(payload) < 4) ||
+		(msgType == BGPMsgNotification && len(payload) < 2) ||
+		(msgType == BGPMsgKeepalive && len(payload) != 0) ||
+		(msgType == BGPMsgRouteRefresh && len(payload) != 4) || msgType < 1 || msgType > 5 {
+		return nil
+	}
+	if msgType == BGPMsgOpen && (payload[0] != 4 || len(payload) != 10+int(payload[9])) {
+		return nil
+	}
+	if msgType == BGPMsgUpdate {
+		withdrawn := int(binary.BigEndian.Uint16(payload))
+		if withdrawn > len(payload)-4 {
+			return nil
+		}
+		attributes := int(binary.BigEndian.Uint16(payload[2+withdrawn:]))
+		if attributes > len(payload)-4-withdrawn {
+			return nil
+		}
+	}
 
 	switch msgType {
 	case BGPMsgOpen:
@@ -231,10 +293,11 @@ func (b *bgpReader) parseCapabilities(msg *types.BGP, data []byte) {
 			}
 		case 64: // Graceful Restart
 			if capLen >= 2 {
-				flags := cap.Value[0] >> 4
 				time := binary.BigEndian.Uint16(cap.Value[0:2]) & 0x0FFF
 				cap.GracefulRestartTime = int32(time)
-				cap.GracefulRestartForwarding = flags&0x8 != 0
+				for i := 2; i+4 <= len(cap.Value); i += 4 {
+					cap.GracefulRestartForwarding = cap.GracefulRestartForwarding || cap.Value[i+3]&0x80 != 0
+				}
 				cap.ParsedValue = fmt.Sprintf("Time=%d, Forwarding=%v", time, cap.GracefulRestartForwarding)
 			}
 		case 69: // ADD-PATH
@@ -244,8 +307,8 @@ func (b *bgpReader) parseCapabilities(msg *types.BGP, data []byte) {
 				sendRecv := cap.Value[3]
 				cap.AFI = int32(afi)
 				cap.SAFI = int32(safi)
-				cap.AddPathSend = sendRecv&0x01 != 0
-				cap.AddPathReceive = sendRecv&0x02 != 0
+				cap.AddPathSend = sendRecv&0x02 != 0
+				cap.AddPathReceive = sendRecv&0x01 != 0
 				cap.ParsedValue = fmt.Sprintf("AFI=%d, SAFI=%d, Send=%v, Receive=%v",
 					afi, safi, cap.AddPathSend, cap.AddPathReceive)
 			}
@@ -270,6 +333,9 @@ func (b *bgpReader) parseUpdateMessage(msg *types.BGP, data []byte) {
 	// Withdrawn Routes Length
 	withdrawnLen := int(binary.BigEndian.Uint16(data[offset : offset+2]))
 	offset += 2
+	if withdrawnLen > len(data)-offset {
+		return
+	}
 
 	// Parse withdrawn routes
 	if withdrawnLen > 0 && offset+withdrawnLen <= len(data) {
@@ -284,6 +350,9 @@ func (b *bgpReader) parseUpdateMessage(msg *types.BGP, data []byte) {
 	// Total Path Attribute Length
 	pathAttrLen := int(binary.BigEndian.Uint16(data[offset : offset+2]))
 	offset += 2
+	if pathAttrLen > len(data)-offset {
+		return
+	}
 
 	// Parse path attributes
 	if pathAttrLen > 0 && offset+pathAttrLen <= len(data) {
@@ -302,8 +371,17 @@ func (b *bgpReader) parsePrefixes(data []byte) []string {
 	offset := 0
 
 	for offset < len(data) {
+		if b.addPathIPv4 {
+			if len(data)-offset < 5 {
+				break
+			}
+			offset += 4
+		}
 		prefixLen := int(data[offset])
 		offset++
+		if prefixLen > 32 {
+			break
+		}
 
 		// Calculate number of bytes needed for prefix
 		prefixBytes := (prefixLen + 7) / 8
@@ -315,7 +393,7 @@ func (b *bgpReader) parsePrefixes(data []byte) []string {
 		// Build IP prefix
 		ip := make([]byte, 4)
 		copy(ip, data[offset:offset+prefixBytes])
-		prefix := fmt.Sprintf("%s/%d", net.IP(ip).String(), prefixLen)
+		prefix := (&net.IPNet{IP: net.IP(ip).Mask(net.CIDRMask(prefixLen, 32)), Mask: net.CIDRMask(prefixLen, 32)}).String()
 		prefixes = append(prefixes, prefix)
 
 		offset += prefixBytes
@@ -327,6 +405,7 @@ func (b *bgpReader) parsePrefixes(data []byte) []string {
 func (b *bgpReader) parsePathAttributes(msg *types.BGP, data []byte) {
 	offset := 0
 	knownTypes := getKnownAttributeTypes()
+	var as4Path []uint32
 
 	for offset < len(data)-2 {
 		flags := data[offset]
@@ -425,13 +504,12 @@ func (b *bgpReader) parsePathAttributes(msg *types.BGP, data []byte) {
 			b.parseMPUnreachNLRI(msg, attrData)
 			attr.ParsedValue = "MP_UNREACH_NLRI"
 		case BGPAttrAS4Path: // AS4_PATH (type 17)
-			// Parse 4-byte AS path for AS_TRANS stitching
-			as4Path, _, _, _ := b.parseASPathExtended(attrData)
-			if len(as4Path) > 0 {
-				// AS4_PATH takes precedence for 4-byte AS numbers
-				msg.ASPath = as4Path
-			}
+			var set, confed, confedSet []uint32
+			as4Path, set, confed, confedSet = parseASPathWidth(attrData, 4)
 			attr.ParsedValue = joinUint32s(as4Path)
+			if len(set)+len(confed)+len(confedSet) > 0 {
+				as4Path = nil
+			}
 		case BGPAttrAS4Aggregator: // AS4_AGGREGATOR (type 18)
 			msg.AggregatorAS, msg.AggregatorIP = parseAggregator(attrData, true)
 			attr.ParsedValue = fmt.Sprintf("AS%s:%s", msg.AggregatorAS, msg.AggregatorIP)
@@ -439,6 +517,12 @@ func (b *bgpReader) parsePathAttributes(msg *types.BGP, data []byte) {
 
 		msg.PathAttributes = append(msg.PathAttributes, attr)
 		offset += attrLen
+	}
+	// Attribute wire order is immaterial. Retain the leading legacy sequence;
+	// do not flatten AS_SET/confederation semantics into an invented sequence.
+	if b.asWidth != 4 && len(msg.ASPathSet)+len(msg.ASPathConfedSeq)+len(msg.ASPathConfedSet) == 0 &&
+		len(as4Path) > 0 && len(as4Path) <= len(msg.ASPath) {
+		msg.ASPath = append(msg.ASPath[:len(msg.ASPath)-len(as4Path)], as4Path...)
 	}
 }
 
@@ -450,30 +534,38 @@ func (b *bgpReader) parseASPath(data []byte) []uint32 {
 // parseASPathExtended parses AS path with segment type awareness
 // Returns: AS_SEQUENCE, AS_SET, AS_CONFED_SEQUENCE, AS_CONFED_SET
 func (b *bgpReader) parseASPathExtended(data []byte) ([]uint32, []uint32, []uint32, []uint32) {
+	if b.asWidth == 2 || b.asWidth == 4 {
+		return parseASPathWidth(data, b.asWidth)
+	}
+	// Midstream captures have no negotiation witness. Only accept an
+	// unambiguous complete encoding, never guess width from bytes remaining.
+	a, s, c, d := parseASPathWidth(data, 2)
+	e, f, g, h := parseASPathWidth(data, 4)
+	valid2 := len(a)+len(s)+len(c)+len(d) > 0
+	valid4 := len(e)+len(f)+len(g)+len(h) > 0
+	if valid2 && !valid4 {
+		return a, s, c, d
+	}
+	if valid4 && !valid2 {
+		return e, f, g, h
+	}
+	return nil, nil, nil, nil
+}
+
+func parseASPathWidth(data []byte, asSize int) ([]uint32, []uint32, []uint32, []uint32) {
 	var asSequence, asSet, asConfedSeq, asConfedSet []uint32
 	offset := 0
 
-	for offset < len(data)-1 {
+	for offset < len(data) {
 		if offset+2 > len(data) {
-			break
+			return nil, nil, nil, nil
 		}
 		segType := data[offset]
 		segLen := int(data[offset+1])
 		offset += 2
 
-		if segLen == 0 {
-			continue
-		}
-
-		// Determine AS size based on remaining data
-		// Try 4-byte first (RFC 6793), fall back to 2-byte
-		var asSize int
-		if offset+segLen*4 <= len(data) {
-			asSize = 4
-		} else if offset+segLen*2 <= len(data) {
-			asSize = 2
-		} else {
-			break
+		if segLen == 0 || segType < 1 || segType > 4 || offset+segLen*asSize > len(data) {
+			return nil, nil, nil, nil
 		}
 
 		var segmentASes []uint32
@@ -562,11 +654,20 @@ func (b *bgpReader) parseIPv6Prefixes(data []byte) []string {
 	offset := 0
 
 	for offset < len(data) {
+		if b.addPathIPv6 {
+			if len(data)-offset < 5 {
+				break
+			}
+			offset += 4
+		}
 		if offset >= len(data) {
 			break
 		}
 		prefixLen := int(data[offset])
 		offset++
+		if prefixLen > 128 {
+			break
+		}
 
 		// Calculate number of bytes needed for prefix
 		prefixBytes := (prefixLen + 7) / 8
@@ -578,7 +679,7 @@ func (b *bgpReader) parseIPv6Prefixes(data []byte) []string {
 		// Build IPv6 prefix
 		ip := make([]byte, 16)
 		copy(ip, data[offset:offset+prefixBytes])
-		prefix := fmt.Sprintf("%s/%d", net.IP(ip).String(), prefixLen)
+		prefix := (&net.IPNet{IP: net.IP(ip).Mask(net.CIDRMask(prefixLen, 128)), Mask: net.CIDRMask(prefixLen, 128)}).String()
 		prefixes = append(prefixes, prefix)
 
 		offset += prefixBytes
