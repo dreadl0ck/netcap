@@ -16,6 +16,8 @@ and source-file notices for the actual terms.
 | Enrichment datasets | `DATABASE_NOTICES.txt` and `RELEASE_MANIFEST.json` |
 | Plain JA4 TLS fingerprint | BSD terms included with the implementation |
 | Optional JA4+ source build | Separate opt-in terms; excluded from official binaries |
+| Standalone firewall | Netcap GPL terms plus bundled Go module notices; `docker/firewall/Dockerfile` retains `/legal/BUILD_MODULES.txt` and module licenses |
+| Coraza / CRS | Optional linked engine and embedded rule-set notices travel with the firewall package; Netcap licensing does not replace their terms |
 
 `net licenses -h` describes the executable's license inspection commands.
 A license for Netcap does not replace third-party data/runtime obligations.

@@ -4,7 +4,7 @@ description: Choose the public Go command for the job.
 
 # Commands
 
-Go v0.15.2 registers the commands below in `cmd/net/main.go`. Run `net -h` and
+Current Go source registers the commands below in `cmd/net/main.go`. Run `net -h` and
 `net COMMAND -h` for their installed options. The executable is `net`; version
 inspection is `net --version`, not a `version` subcommand.
 
@@ -24,9 +24,17 @@ inspection is `net --version`, not a `version` subcommand.
 | `label` | Suricata/custom mappings for dataset labels | [Labeling](audit-record-labeling.md) |
 | `transform` | Maltego transform integration | [Maltego](maltego-integration.md) |
 | `inject` | Linux NFQueue inline manipulation | [Response actions](FIREWALL_RESPONSE_ACTIONS.md) |
+| `split` | Read-only capture inspection, bounded packet subsets and time shards | [Packet evidence](evidence.md#export-packet-evidence) |
+| `firewall` | Explicit WAF, protocol gateways, policy control and scoped Linux enforcement | [Application firewall](APPLICATION_FIREWALL.md) |
 
-`split` and `analyze` are not registered v0.15.2 commands. A source directory,
-legacy completion result or historical README row is not an executable interface.
+`split` and `firewall` are current-source additions after v0.15.2; the v0.15.2
+archive does not expose them. `analyze` remains unregistered. A source directory
+or legacy completion result alone does not establish an executable interface.
+
+The standalone `netcap-firewall` executable accepts `serve`, `validate`,
+`healthcheck`, `gateway`, `network` and its other subcommands directly;
+`net firewall` accepts the same subcommands with the prefix. Its `version`
+subcommand is separate from the capture executable's `net --version`.
 
 ## Common operations
 
@@ -34,6 +42,8 @@ The [offline grouped rule evaluator](RULES_ENGINE.md#offline-grouped-thresholds)
 (`investigate rules`) is available in current source after v0.15.2. It is not
 present in the v0.15.2 release binary. The [sensor bundle commands](sensor-bundles.md)
 are a separate completed-output workflow from live agent transport.
+Current source also adds [scoped capture rules](RULES_ENGINE.md#scoped-capture-time-rules)
+and the explicit `investigate deliver-alerts` [webhook outbox](RULES_ENGINE.md#durable-webhook-delivery).
 
 ```sh
 net util -interfaces

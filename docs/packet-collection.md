@@ -14,6 +14,15 @@ The first command exits after flushing. The second explicitly keeps the browser
 interface running. `-read` supports the input selection described by its help;
 quote shell globs when the application, rather than the shell, should expand them.
 
+Current bounded readers accept classic PCAP versions 2.0–2.4, both byte orders,
+and microsecond/nanosecond framing, including gzip input. Historical swapped
+captured/wire-length ordering is handled by version; unequal lengths retain
+truncation evidence (`internal/collector/capture_legacy_test.go`). Unsupported
+versions and truncated/oversized records fail explicitly rather than becoming a
+successful empty capture. Reader support does not imply gzip support in every
+packet-export path; [inspection and splitting](evidence.md#export-packet-evidence)
+document their separate limits.
+
 ## Select the observation boundary
 
 | Control | Stage | Consequence |

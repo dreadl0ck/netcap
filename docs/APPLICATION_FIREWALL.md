@@ -5,6 +5,92 @@ firewall, fleet controller and shared counters. The rootless WAF needs no captur
 device or host privileges. Linux enforcement is a separate opt-in package.
 Direct origin traffic bypasses the WAF; protect the origin independently.
 
+## Quickstart
+
+Build the standalone executable from the same checkout as your configuration.
+`netcap-firewall` has no `firewall` prefix; the full executable exposes the same
+commands as `net firewall …`. Coraza and HTTP/3 require the named build tags.
+
+```bash
+GOWORK=off CGO_ENABLED=0 go build -tags coraza,http3 -o netcap-firewall ./cmd/netcap-firewall
+./netcap-firewall version
+./netcap-firewall serve --help
+```
+
+Run a backend you own at `127.0.0.1:18081`. Save the following as
+`firewall-local.yaml` and `firewall-policy.yaml` in the current directory. The
+application and admin listeners are loopback-only; this file-mode example has no
+remote policy-management credentials or response-action broker.
+
+```yaml
+# firewall-local.yaml
+version: netcap-firewall/v1
+listen: '127.0.0.1:18080'
+adminListen: '127.0.0.1:19090'
+upstream: http://127.0.0.1:18081
+policyFile: firewall-policy.yaml
+maxBodyBytes: 1048576
+maxResponseBytes: 1048576
+maxBufferedBytes: 16777216
+maxConcurrent: 8
+bodyTimeout: 15s
+inspectResponse: false
+corazaCRS: false
+```
+
+```yaml
+# firewall-policy.yaml
+version: netcap-policy/v1
+id: local-example
+mode: monitor
+default: allow
+rules:
+  - id: deny-example-path
+    phase: request
+    expression: 'Path == "/blocked"'
+    action: deny
+    status: 403
+```
+
+```bash
+./netcap-firewall validate --config firewall-local.yaml
+./netcap-firewall serve --config firewall-local.yaml
+# In another terminal:
+./netcap-firewall healthcheck --url http://127.0.0.1:19090/readyz
+curl -i http://127.0.0.1:18080/blocked
+```
+
+| Mode / step | Expected result |
+| --- | --- |
+| `mode: monitor` | Native deny decisions become `would-deny`; request reaches the backend and no native effect intent is emitted. Backend status depends on that backend. |
+| `mode: enforce` | Change the policy, validate, then restart this file-mode process. `/blocked` returns 403; verify that this request is absent from backend logs. |
+| Coraza | Set `corazaCRS: true` with a Coraza-enabled build. Monitor records disruptive CRS matches; malformed framing, structural validation, quotas and evaluation errors can still reject traffic in monitor mode. |
+| Recovery | Restore the prior validated files and restart. This example changes no host packet rules; origin routing and firewall deployment rollback have separate procedures below. |
+
+The loopback example proves one literal path rule, not a canonicalization or
+production WAF policy. The repository's `examples/firewall/smoke.sh` adds an owned
+origin, CRS/chunked-body controls and origin-log denial checks. For deployment,
+choose an ownership mode before provisioning persistent state:
+
+| Mode | Select when | Update / rollback owner |
+| --- | --- | --- |
+| File | Mounted reviewed policy; default `serve` | Files and process/Helm rollout; retain previous image and files |
+| Managed | One target with durable policy API | `--managed --state-dir …`, scoped auth and SQLite policy activation; one replica |
+| Fleet | Explicit enrolled stable targets | Fleet controller generations and acknowledgments; cannot overlap managed ownership |
+| Network / leases | Named Linux namespace inline path or finite future containment | Explicit `network`/`enforcer`; rootless HTTP mode never installs host rules |
+
+## Find the operator contract
+
+| Task | Section |
+| --- | --- |
+| Request/response bounds, TLS, WebSocket, gRPC, HTTP/3 | [Runtime and policy contract](#runtime-and-policy-contract) |
+| Helm, private admin listener and origin isolation | [Kubernetes](#kubernetes) |
+| REST/MCP grants, console, revisions and approvals | [Policy control and replica state](#policy-control-and-replica-state) |
+| Shared native counters, sequences and authority failure | [Distributed native rule state](#distributed-native-rule-state) |
+| DNS/OT/database/file gateways, packet mode and capture bridge | [Protocol gateways and optional enforcer](#protocol-gateways-and-optional-enforcer) |
+| Deployment evidence and limitations | [Infrastructure qualification](#infrastructure-qualification), [deferred roadmap](#deferred-roadmap) |
+| Package and dependency terms | [License](license.md), [third-party components](license.md#third-party-components-and-data) |
+
 ## Scope and delivery phases
 
 | Surface | Shipped boundary |

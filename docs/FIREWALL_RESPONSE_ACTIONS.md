@@ -1,23 +1,37 @@
 # Firewall Response Actions
 
-Go v0.15.2 contains Linux firewall-manager and rule-action implementations, but
-the public capture CLI does not construct or attach a firewall manager. Adding
+Current source supplies an explicit [application firewall and scoped nftables
+enforcer](APPLICATION_FIREWALL.md). The older `iptables_*` capture-rule actions
+use a different internal manager: the public capture CLI does not attach it. Adding
 `iptables_block` to a YAML rule alone does not enable blocking: the executor
 returns `firewall manager not configured` without an attached manager.
 
 ## Overview
 
-| Capability | v0.15.2 boundary |
+| Capability | Current boundary |
 | --- | --- |
 | Detection alerts | Available through the normal rules engine |
 | `iptables_block`, `iptables_reject` | Require explicitly integrated Linux manager |
-| `iptables_log` | Diagnostic logging, not a complete iptables LOG-target implementation |
-| `iptables_rate_limit` | Placeholder; not an enforced traffic-rate control |
+| `iptables_log`, `iptables_rate_limit` | Return `ErrUnsupportedResponseAction`; action failure is counted, no LOG/rate enforcement |
 | Firewall manager | Internal Go package, not a public importable SDK |
+| `net firewall serve` / `netcap-firewall serve` | Explicit inline HTTP enforcement; rootless, separate policy format |
+| `capture -firewall-policy FILE` | Retrospective decoder evaluation; replay cannot contact an enforcer |
+| Live capture bridge plus `-firewall-effects-config FILE` | Explicitly admitted, source-attributed future containment; cannot recall the triggering transaction |
+
+## Choose a response path
+
+| Goal | Operator path |
+| --- | --- |
+| Observe and notify | Capture rules, [scoped correlation](RULES_ENGINE.md#scoped-capture-time-rules), then [durable redacted webhook delivery](RULES_ENGINE.md#durable-webhook-delivery) |
+| Prevent HTTP/message forwarding | [WAF quickstart](APPLICATION_FIREWALL.md#quickstart); origin must accept only the intended proxy path |
+| Gate a supported non-HTTP protocol | [Protocol gateways](APPLICATION_FIREWALL.md#protocol-gateways-and-optional-enforcer); deny a write in the request phase |
+| Gate packets in Linux | `netcap-firewall network`; existing named namespace and explicit protected scope required |
+| Contain future traffic from a live observation | Capture audit bridge and scoped `enforcer`; qualify live source attribution and expiration; select `--dry-run` explicitly for lease previews |
 
 This corrects the old guide's implication that ordinary CLI capture automatically
 blocks matches. `internal/rules/engine.go` exposes `SetFirewallManager`, but the
-released command paths do not call it.
+capture command paths do not call it. The separate `--firewall-effects-config`
+bridge does not change the legacy action-manager contract.
 
 ## Requirements
 
@@ -113,4 +127,4 @@ the policy being tested.
 | Unsupported platform | Linux-only implementation |
 | Permission/chain errors | Capabilities, binary availability and network namespace |
 | Alert but no block | Action error, allowlist, dry-run and manager attachment |
-| No rate limit | Placeholder action does not enforce one |
+| No rate limit | `iptables_rate_limit` is unsupported; inspect the action error |

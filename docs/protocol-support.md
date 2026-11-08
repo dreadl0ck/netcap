@@ -14,7 +14,9 @@ net dump -read analysis/HTTP.ncap.gz -fields
 ```
 
 The authoritative definitions are the release's
-[`types/netcap.proto`](https://github.com/dreadl0ck/netcap/blob/v0.15.2/types/netcap.proto).
+[`types/netcap.proto`](https://github.com/dreadl0ck/netcap/blob/master/types/netcap.proto)
+from the exact source revision reported by your executable. The `master` schema
+includes additive fields absent from older release archives.
 This avoids hand-maintained counts that confuse record types, nested protobuf
 messages, packet decoders and port registrations.
 
@@ -49,12 +51,37 @@ check their exact header/schema before ingestion (`types/netcap.proto`).
 
 | Feature | What is supported |
 | --- | --- |
-| HTTP | HTTP/1.0/1.1 message/transaction parsing; do not infer HTTP/2/3 decoding from a port or DPI label |
+| HTTP/1 | Message/transaction parsing; optional [incremental HTTP/1](reassembly.md#incremental-transactions) needs an observed handshake |
+| Cleartext HTTP/2 | Bounded preface/HPACK and validated h2c upgrade decoding into HTTP records; completion-only capture path, not generic gRPC message decoding |
 | QUIC | Recognized Initial packet processing and ClientHello extraction; not arbitrary HTTP/3 plaintext |
 | TLS | Handshake/certificate/fingerprint metadata without decryption; supplied secrets plus external `tshark` are a separate workflow |
 | Service identity | Bounded SSH/HTTP/SMTP/FTP greeting parsers; IANA port names are a separate lookup |
 | Vulnerabilities | Structured CPE applicability from schema-2 NVD data; unknown prerequisites remain unknown |
 | Identity | Observed host/account facts and conflicts; directory traffic does not automatically identify the server as the subject |
+
+## Cleartext HTTP/2 evidence
+
+Current source's `internal/decoder/stream/http/h2.go` handles observed cleartext
+HTTP/2 client-preface sessions and validated HTTP/1.1 h2c upgrades. Inspect the
+existing HTTP output using the normal capture and dump commands:
+
+```sh
+net capture -read h2c.pcap -out h2-audit -dpi=false -geoDB=false
+net dump -read h2-audit/HTTP.ncap.gz -json
+```
+
+| Field / limit | Interpretation |
+| --- | --- |
+| `Proto`, `HTTP2StreamID` | `HTTP/2.0` plus observed multiplexed stream ID; stream ID zero can carry connection-level failure evidence |
+| Header/trailer evidence | Directional request/response fields preserve decoded HPACK evidence; gaps and invalid/missing framing produce `ParseQualifications` / `ReassemblyStatus` |
+| Framing bounds | 64 KiB maximum frame, 16 KiB HPACK table, 128 active streams, 4,096 transactions and 100,000 frames per conversation |
+| Retained bodies/headers | 1 MiB/body, 8 MiB aggregate bodies and 2 MiB aggregate header accounting; these are parser bounds, not process RSS |
+| Visibility | Opaque TLS and QUIC do not expose this cleartext path. HTTP/2 headers or `application/grpc` alone do not establish decoded protobuf application messages |
+
+This corrects the earlier HTTP/1-only inventory for current source. HTTP/2
+completion decoding and the firewall's live gRPC/HTTP/3 termination adapters are
+different interfaces. Tests in `h2_test.go` cover split headers, multiplexing,
+h2c, gap/framing failures and bounds; installed releases require matching support.
 
 Packet decoders can be selected with `-include`/`-exclude`; names come from
 `capture -overview`. Disabling a producer can remove the records downstream

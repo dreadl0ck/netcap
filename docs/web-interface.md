@@ -28,6 +28,27 @@ not analysis completion.
 | Alerts / behavior | Which detector or approved baseline produced a finding? |
 | Investigation evidence | Was capture complete enough, and which records/packets support the claim? |
 
+## Source-bound investigation workflow
+
+Use **Investigation Evidence** (`/investigation-evidence`) for the version 1
+[analyst workspace](evidence.md#bound-analyst-workspace):
+
+| Step | Result to retain |
+| --- | --- |
+| Include captures explicitly | One primary capture and up to seven declared baselines; each bound to RunID, source and manifest hashes |
+| Search exact hash, domain, endpoint or allowlisted text | Every matching occurrence, per-type coverage and novelty only within the included baseline |
+| Resolve a table, Graph or Timeline occurrence | Exact file/frame/ordinal reference; changed evidence fails rather than switching captures |
+| Save a query or report | Original source bindings, snapshot, references and revision; explicit analyst review changes draft to reviewed |
+| Inspect packets or reanalyze | [Bounded source inspection/splits](evidence.md#export-packet-evidence) and [isolated child analysis](evidence.md#reanalyze-a-capture); parent output remains available |
+| Review diagnostics | Safe log projection approved against its digest; [reproduction metadata](evidence.md#export-reproduction-metadata) omits raw secrets, paths, logs and payload |
+
+Generic Records offers **Reload current capture with exact occurrence actions**
+for supported unfiltered/Community ID streams. Capability absence disables the
+bound workflow. Catalogue paging retains one snapshot; a changed file requires
+a new query. Chart coverage labels persist in PNG/SVG exports, including prefix
+selection, caps and schematic relationships; an unlabeled legacy count is not
+automatically complete (`data-netcap-coverage=v1`).
+
 Select the intended analysis/session before querying. Data loaded in one session
 is not a global search across every directory on the host. Late aggregate output
 and postprocessing can change views while analysis is active.
@@ -58,7 +79,17 @@ and response contracts; there is no blanket OpenAPI parity promise.
 | `/api/flows/query` | Bounded Connection rankings |
 | `/api/behavior`, `/api/behavior/health` | Baseline state and coverage |
 | `/api/alerts/stream` | Bounded live alert feed with reconnect/gap semantics |
+| `/api/analyst/capabilities` | Versioned source-bound catalogue/workspace capabilities and limits |
+| `/api/investigation/reproduction` | Metadata-only reproduction export; optional explicitly reviewed log projection |
 
 Start integrations with [MCP](mcp.md) when its narrower tool contracts cover the
 task. Query features and capture features have different lifetimes; changing
 settings does not rewrite historical output.
+
+The alert stream is a resumable observation feed, not a durable webhook queue
+or authorization to block an address. Honor `Last-Event-ID`/cursor resume and
+HTTP 409/`gap` responses before consuming it for automation. Use
+[durable delivery](RULES_ENGINE.md#durable-webhook-delivery) for saved redacted
+notices and the separate [firewall admin API](APPLICATION_FIREWALL.md#identity-and-authorization)
+for authenticated enforcement operations. The local capture API hosting boundary
+above still applies.

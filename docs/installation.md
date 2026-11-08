@@ -74,6 +74,18 @@ does not prove bit-for-bit reproducibility.
 
 ## Development Build
 
+For current `master` features, check out the exact reviewed commit instead of
+the `v0.15.2` tag in the build recipe above, then rebuild the embedded UI and Go
+binary together. Check `capture -h` for `-incremental-http`,
+`-capture-time-idle-expiry` and the three retained-state controls; check
+`investigate -h` for `deliver-alerts`, and `split -h` for inspection/sharding.
+These additions are not retroactive changes to the v0.15.2 archive.
+
+The CGO-free standalone firewall builds independently of the capture UI/native
+dependencies; follow its [quickstart](APPLICATION_FIREWALL.md#quickstart).
+For native capture images, use the [matched builder/runtime](docker-containers.md)
+recipes rather than mixing YARA-X Go bindings with an older C library.
+
 Follow [macOS development](macos-development-setup.md) for platform tooling and
 [testing](tests.md) for scoped verification. Schema generation uses
 `protoc-gen-gogofaster`; it is unnecessary for an unchanged release checkout.
