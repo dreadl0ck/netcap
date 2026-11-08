@@ -18,6 +18,7 @@ export default function ReproductionDownload({ selection, reviewedLog = false }:
       if (!response.ok) throw new Error(`Reproduction metadata unavailable (HTTP ${response.status}).`);
       const bundle = await response.json();
       if (bundle.schema !== 'netcap-reproduction-metadata/v1' || bundle.state !== 'metadata-only') throw new Error('Unsupported reproduction metadata response.');
+      if (config.saveJSON) { await config.saveJSON('netcap-reproduction-metadata.json', bundle); return; }
       const url = URL.createObjectURL(new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' }));
       try {
         const link = document.createElement('a');

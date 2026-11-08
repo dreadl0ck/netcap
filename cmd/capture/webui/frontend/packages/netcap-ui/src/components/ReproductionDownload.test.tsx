@@ -3,10 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ReproductionDownload from './ReproductionDownload';
 
 const { request } = vi.hoisted(() => ({ request: vi.fn() }));
-vi.mock('../providers', () => ({ useNetcapConfig: () => ({ apiBaseUrl: '/api', fetch: request }) }));
+const host = vi.hoisted(() => ({ saveJSON: undefined as undefined | ReturnType<typeof vi.fn> }));
+vi.mock('../providers', () => ({ useNetcapConfig: () => ({ apiBaseUrl: '/api', fetch: request, saveJSON: host.saveJSON }) }));
 const createURL = URL.createObjectURL, revokeURL = URL.revokeObjectURL;
 beforeEach(() => {
   request.mockReset();
+  host.saveJSON = undefined;
   URL.createObjectURL = vi.fn().mockReturnValue('blob:owned');
   URL.revokeObjectURL = vi.fn();
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
@@ -14,6 +16,16 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); URL.createObjectURL = createURL; URL.revokeObjectURL = revokeURL; });
 
 describe('reproduction metadata download', () => {
+  it('awaits native saves and surfaces write failures without a browser fallback', async () => {
+    const bundle = { schema: 'netcap-reproduction-metadata/v1', state: 'metadata-only' };
+    request.mockResolvedValue({ ok: true, json: async () => bundle });
+    host.saveJSON = vi.fn().mockRejectedValue(new Error('Native save failed'));
+    render(<ReproductionDownload selection={{ inputFile: '/owned.pcap' }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Download reproduction metadata' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Native save failed');
+    expect(host.saveJSON).toHaveBeenCalledWith('netcap-reproduction-metadata.json', bundle);
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
   it('never falls back to an active capture when the row has no identity', async () => {
     render(<ReproductionDownload selection={{}} />);
     fireEvent.click(screen.getByRole('button', { name: 'Download reproduction metadata' }));
