@@ -17,7 +17,7 @@
 * [Filtering](FILTERING.md)
 * [CSV, JSON and record inspection](filtering-and-export.md)
 * [Audit records](protocol-support.md)
-* [TCP reassembly](reassembly.md)
+* [TCP reassembly and incremental HTTP](reassembly.md)
 * [Payload retention](payload-capture.md)
 * [File extraction](file-extraction.md)
 * [Email extraction](mail-extraction.md)
@@ -27,9 +27,9 @@
 * [Hosts and identity](host-identity.md)
 * [Device profiles](device-profiles.md)
 * [Credential observations](credential-analysis.md)
-* [Related evidence and capture health](evidence.md)
+* [Evidence, analyst workspace and packet subsets](evidence.md)
 * [Flow analysis](flow-analysis.md)
-* [Rules engine](RULES_ENGINE.md)
+* [Rules, correlation and alert delivery](RULES_ENGINE.md)
 * [Network detections](network-detections.md)
 * [Behavioral monitoring](behavioral-monitoring.md)
 * [Industrial control systems](industrial-control-systems.md)
@@ -56,8 +56,10 @@
 * [HTTP reverse proxy](http-proxy.md)
 * [Maltego](maltego-integration.md)
 * [Labeling datasets](audit-record-labeling.md)
-* [Firewall response actions](FIREWALL_RESPONSE_ACTIONS.md)
+
+## Firewall and response
 * [Application firewall](APPLICATION_FIREWALL.md)
+* [Firewall response actions](FIREWALL_RESPONSE_ACTIONS.md)
 
 ## Develop and extend
 * [Architecture](internals.md)

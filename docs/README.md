@@ -11,11 +11,13 @@ observations to hosts, services, files, detections and investigation evidence.
 Use the `net` executable to analyze PCAP/PCAPNG files, inspect a live interface,
 browse results locally or supply structured evidence to an AI agent.
 
-These docs cover the **public Go implementation**, with executable examples
-targeting [v0.15.2](https://github.com/dreadl0ck/netcap/releases/tag/v0.15.2).
-GitBook's `master` variant follows the public repository; historical variants
-describe older interfaces. Server-side database publication may evolve without
-changing the signed client protocol.
+These docs cover the **public Go implementation**. GitBook's `master` variant
+follows current source, including features added after
+[v0.15.2](https://github.com/dreadl0ck/netcap/releases/tag/v0.15.2); those additions
+require a matching source build or newer release. Check `net --version` and
+`net capture -h` before using new flags. Historical variants describe older
+interfaces; [releases and migration](changelog.md) separates source changes from
+published archives.
 
 ## Start with a question
 
@@ -29,6 +31,11 @@ changing the signed client protocol.
 | Find unusual connections or learn a baseline | [Network detections](network-detections.md), [behavioral monitoring](behavioral-monitoring.md) |
 | Automate analysis with an AI client | [MCP](mcp.md) |
 | Integrate records into another tool | [CSV/JSON](filtering-and-export.md), [record format](specification.md) |
+| Inspect HTTP transactions before a TCP connection closes | [Incremental transactions](reassembly.md#incremental-transactions) |
+| Search explicit captures, save queries and review reports | [Bound analyst workspace](evidence.md#bound-analyst-workspace) |
+| Inspect or split packet evidence without changing the source | [Packet evidence](evidence.md#export-packet-evidence) |
+| Deliver redacted alerts with durable retries | [Webhook delivery](RULES_ENGINE.md#durable-webhook-delivery) |
+| Gate traffic before it reaches an application | [Application firewall quickstart](APPLICATION_FIREWALL.md#quickstart) |
 
 ## From packets to evidence
 

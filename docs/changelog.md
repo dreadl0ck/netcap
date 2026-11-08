@@ -8,6 +8,31 @@ description: Detailed Version History Information
 
 These changes follow v0.15.2; they do not change an existing release archive.
 
+The `master` documentation describes current Go source. Build the matching
+checkout using [installation](installation.md#development-build); use installed
+help to establish availability in a packaged executable. Firewall release bundles
+have their own qualification/publication process in `scripts/firewall_release.py`.
+
+| Area | User-facing addition / boundary |
+| --- | --- |
+| Firewall | [Rootless HTTP WAF quickstart](APPLICATION_FIREWALL.md#quickstart), native/Coraza policies, routed TLS, WS/gRPC and optional HTTP/3 ingress; separate Linux network/enforcer opt-in |
+| Firewall control | Scoped REST/MCP authorization, managed revisions/rollback, fleet ownership, shared native state, bounded audit/metrics and SQLite/Postgres recovery; [operator contract](APPLICATION_FIREWALL.md#policy-control-and-replica-state) |
+| Incremental HTTP/1 | `-incremental-http` emits completed supported transactions while TCP remains open; observed handshake and bounded framing required; [fallback/limits](reassembly.md#incremental-transactions) |
+| Capture lifecycle | `-capture-time-idle-expiry`, independent live maintenance/output snapshots, completed TCP release and separate shared reader/page/parser budgets; [resource controls](workers.md) are not global RSS limits |
+| Rule correlation | [Scoped capture-time groups and typed joins](RULES_ENGINE.md#scoped-capture-time-rules), bounded lateness/reload/finalization; tuple identity alone does not establish session or causality |
+| Alert delivery | [Durable private webhook outbox](RULES_ENGINE.md#durable-webhook-delivery), stable idempotency key, bounded retries and explicit receipts; at-least-once receivers must deduplicate |
+| Credentials | [Every emitted Secret occurrence](credential-analysis.md), observed protocol/outcome context and safe alert/metric projections; original audit remains sensitive |
+| Analyst workspace | [Explicit multi-capture catalogue](evidence.md#bound-analyst-workspace), exact occurrence resolution, saved queries/reviewed reports and coverage-qualified charts |
+| Packet evidence | `split --inspect`, bounded BPF/time subsets and disjoint time shards with hashes/manifests; [selection contract](evidence.md#export-packet-evidence) |
+| Reanalysis / diagnostics | [Isolated source-bound child runs](evidence.md#reanalyze-a-capture), restart recovery and [metadata-only reproduction export](evidence.md#export-reproduction-metadata) with optional reviewed safe logs |
+| Native packaging | Matched YARA-X 1.22.0 C API/builders, Alpine 3.24.4 capture runtime and real YARA/BPF probes; [container build boundaries](docker-containers.md) |
+| HTTP/2 visibility | [Cleartext preface/HPACK and validated h2c](protocol-support.md#cleartext-http2-evidence), multiplexed HTTP record IDs and explicit framing/loss qualifications; no generic gRPC payload claim |
+| Readers / audit semantics | Legacy PCAP reader compatibility, effective-transport CommunityID, directional protocol evidence, qualified RDP outcomes and capture-time TLS assessment; [record contract](protocol-support.md#correlation-and-security-outcomes) |
+
+These Go contracts do not establish native Rust child-analysis parity,
+incremental decoding for every protocol or qualification on every deployment
+platform. Missing capture fields and unobserved protocol outcomes remain unknown.
+
 | Change | Migration/qualification |
 | --- | --- |
 | S7 requests gated by message role; response allowlist uses destination initiator | “Completed” rule renamed to acknowledgment; no header-only execution claim |

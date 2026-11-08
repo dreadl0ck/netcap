@@ -16,6 +16,11 @@ captured bytes. It does not establish that authentication never occurred.
 
 ## Review each observation
 
+Current `WriteSecret` retains every emitted occurrence, including repeated
+credentials in the same flow and hash-only observations. Count occurrences and
+distinct credential identities separately; repetition can represent different
+transactions (`internal/decoder/stream/secret/secret.go`, `types/secret.go`).
+
 | Evidence | Interpretation |
 | --- | --- |
 | Protocol and endpoints | Identify the owning framed exchange and initiator; raw token-shaped bytes alone do not establish host attribution |
@@ -23,6 +28,9 @@ captured bytes. It does not establish that authentication never occurred.
 | `Notes` / protocol response | Preserve observed success, rejection or unknown result; TCP reset/timeout alone is not an authentication failure |
 | Capture time and stream scope | Join only to the relevant connection and visible exchange |
 | User/account names | Advertised or observed identities; not proof of the human operator |
+| `AuthSuccessSet` / `AuthSuccess` | Only a set outcome distinguishes observed success from rejection; unset remains unknown |
+| `Realm`, `Uri`, `SipCallId` | Preserve the protocol's observed context; absent fields cannot be inferred from another occurrence |
+| `CommunityID` | Tuple correlation only; qualify capture/source scope, time and session reuse before a cross-record join |
 
 SMTP LOGIN/PLAIN results and STARTTLS boundaries are described in
 [email extraction](mail-extraction.md). Windows account/principal evidence and
@@ -51,6 +59,14 @@ credentials to validate extraction. The WebUI's Credentials view and MCP
 [tool reference](mcp/tools.md) before automation.
 
 ## Preserve and share
+
+[Scoped rule joins](RULES_ENGINE.md#scoped-capture-time-rules) retain hash-only
+contributors and bounded matched-record projections. Secret alert projections
+and Prometheus labels exclude credential material; [webhook notices](RULES_ENGINE.md#durable-webhook-delivery)
+also omit raw records, notes and credential fields. This protection applies to
+those projections, not the original `Secret.ncap.gz`, raw `dump -json` output or
+the local Credentials view. Some specialist views filter records without a
+username/password; use the audit file to check hash-only occurrences.
 
 Limit access to the original capture, `Secret` files and screenshots. Redacting
 an exported table does not redact retained payloads or other output files.

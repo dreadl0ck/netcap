@@ -47,3 +47,19 @@ Build dashboards from the actual `/metrics` output and installed Grafana version
 Historical 2019 dashboards/plugins are not a current schema contract. A zero
 application counter can mean unsupported/encrypted traffic rather than no
 activity; [capture health](evidence.md) provides the qualification.
+
+## Firewall operations
+
+The firewall's `/metrics`, `/readyz` and `/livez` belong to its separate admin
+listener, default port `9090`; `net export` does not monitor a running WAF.
+With scoped `--auth-config`, `/metrics` requires a `metrics` grant; health routes
+remain bearer-free. Keep admin off the application Ingress and configure
+administrative TLS/Secret references as described in
+[Kubernetes](APPLICATION_FIREWALL.md#kubernetes).
+
+Read policy revision, deny versus would-deny decisions, body-budget admission and
+authority readiness together. A healthy socket alone does not prove an available
+policy-state database. Gateway/packet `--operations-listen` is a separate opt-in
+loopback status/metrics listener; consult the exact subcommand help.
+Alert SSE cursors, [webhook receipts](RULES_ENGINE.md#durable-webhook-delivery)
+and enforcer lease state represent different delivery/enforcement boundaries.

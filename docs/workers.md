@@ -19,6 +19,8 @@ and compare output witnesses as well as elapsed time and memory.
 | Reassembly maximum buffered size: 10 MiB | Per stream direction; zero means unlimited |
 | Out-of-order page pressure thresholds: zero | Per worker/connection; unlimited unless configured, not a global RAM cap |
 | Retained TCP payload: zero | `-max-retained-tcp-bytes` bounds reader-owned payload copies across all workers; zero is unlimited. |
+| Retained reassembly pages: zero | `-max-retained-reassembly-bytes` caps allocated TCP page payload/metadata across all workers; zero is unlimited. |
+| Incremental TCP state: 64 MiB | `-max-retained-tcp-state-bytes` accounts parser storage and pool/connection credits while `-incremental-http` is enabled; zero is unlimited. |
 | DPI automatic contexts | Up to 8; distinct from protocol workers |
 | Evidence index | 64 MiB accounted storage plus record/link bounds |
 | Optional packet retention | Default selected budgets: 32 MiB segments / 512 MiB retained |
@@ -61,6 +63,25 @@ files. These local omissions do not increment network `missingBytes`.
 The bound excludes assembler pages, connection/fragment metadata, decoder-owned
 caches and process RSS. Existing page thresholds remain per-worker pressure
 controls. A budget-aborted output is partial evidence, not a finalized analysis.
+
+For separate reader, page and incremental-state caps:
+
+```sh
+net capture -read traffic.pcap -out bounded-http -workers 4 -dpi=false \
+  -incremental-http -capture-time-idle-expiry \
+  -max-retained-tcp-bytes 67108864 \
+  -max-retained-reassembly-bytes 67108864 \
+  -max-retained-tcp-state-bytes 67108864
+```
+
+These are three accounted-storage budgets, not a combined 192 MiB RSS limit.
+Each exhaustion aborts capture and prevents readiness. Inspect
+`TCPReassemblyPageBudget.json`, `TCPStreamStateBudget.json` and
+`TCPIncrementalHealth.json` alongside the existing reader health.
+[Incremental transactions](reassembly.md#incremental-transactions) documents the
+observed-handshake HTTP/1 subset, completion-only fallback, `-conns` retention
+and independent capture-time expiry policy. Other protocols retain their own
+completion and cache lifecycles.
 
 ## Operational tuning
 

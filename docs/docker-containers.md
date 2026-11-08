@@ -19,6 +19,20 @@ does not supply that named context.
 
 ## Run Containers
 
+Current source pins matched YARA-X `1.22.0` builders and verifies the C API with
+`pkg-config --exact-version=1.22.0 yara_x_capi` before compiling. Alpine capture
+and service runtimes use `3.24.4`; the separately packaged firewall enforcer
+retains its own pinned runtime. Do not substitute that runtime for the capture
+builder (`docker/alpine*/Dockerfile`, `docker/service/Dockerfile`,
+`docker/enforcer/Dockerfile`).
+
+`scripts/qualify-native-builder.sh` checks actual YARA compile/match/nonmatch/
+invalid-source behavior and libpcap BPF match/nonmatch inside the target builder.
+`scripts/native-runtime-smoke.py` checks packaged execution; generated local
+service recipes retain the selected matched builder. A successful emulated build
+does not qualify native execution on another CPU/OS. Retain image digest,
+architecture, package inventory and the actual smoke report.
+
 Offline analysis needs an input mount and writable output, not access to a host
 capture interface. For a locally verified image named `netcap-local`:
 
@@ -44,3 +58,11 @@ Docker Desktop's Linux VM does not automatically expose a macOS host interface.
 Do not use privileged mode as a substitute for selecting the right observation
 point. Keep the [local WebUI/API](web-interface.md#hosting-boundary) behind its
 intended hosting boundary.
+
+## Firewall containers
+
+The [application firewall](APPLICATION_FIREWALL.md#quickstart) has a separate
+`docker/firewall/Dockerfile`: CGO-free `scratch`, UID/GID 10001, embedded
+Coraza/HTTP/3, no libpcap/DPI/YARA runtime. Use its Compose example or
+`charts/netcap-firewall`; the capture-service image is not this reverse proxy.
+The optional Linux enforcer has its own image/chart and named-namespace scope.
