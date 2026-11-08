@@ -162,7 +162,9 @@ func reconstruct(header, payload []byte, v6 bool, previousNext int, proto byte) 
 // transport emission and reconstruction from the tail of a rejected set.
 func (p *Processor) defrag(d *datagram, c *Context, ci gopacket.CaptureInfo) ([]byte, *Context, gopacket.CaptureInfo, string) {
 	if d.v6 && d.offset == 0 && !d.more {
-		return reconstruct(d.raw[:d.headerEnd], d.payload, true, d.previousNext, byte(d.proto)), c, ci, "complete"
+		atomic := *c
+		atomic.SyntheticNetwork = true
+		return reconstruct(d.raw[:d.headerEnd], d.payload, true, d.previousNext, byte(d.proto)), &atomic, ci, "complete"
 	}
 	key := fragmentKey(d, c.Scope)
 	f := p.sets[key]
@@ -279,6 +281,10 @@ func (p *Processor) defrag(d *datagram, c *Context, ci gopacket.CaptureInfo) ([]
 	}
 	out := reconstruct(f.header, payload, d.v6, f.previousNext, f.proto)
 	context := *c
+	// Nested reconstruction inherits the completing outer datagram's admission time.
+	if !c.Reassembled {
+		context.CompletedAt = ci.Timestamp
+	}
 	context.Packets, context.Reassembled, context.SyntheticNetwork = f.refs, true, true
 	sort.Slice(context.Packets, func(i, j int) bool { return context.Packets[i].Ordinal < context.Packets[j].Ordinal })
 	ci = f.ci

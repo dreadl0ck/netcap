@@ -17,6 +17,9 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 	}
 	net := packet.NetworkLayer().NetworkFlow()
 	base := Event{At: packet.Metadata().CaptureInfo.Timestamp.UnixNano(), Scope: scope, SrcIP: net.Src().String(), DstIP: net.Dst().String()}
+	if c := packetview.FromCapture(packet.Metadata().CaptureInfo); c != nil && c.Reassembled {
+		base.At = c.CompletedAt.UnixNano()
+	}
 	var events []Event
 	if layer := packet.Layer(layers.LayerTypeDNS); layer != nil {
 		dns := layer.(*layers.DNS)
