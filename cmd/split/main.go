@@ -2,109 +2,123 @@ package split
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
 
-	"github.com/dustin/go-humanize"
-	"github.com/gopacket/gopacket"
-	"github.com/gopacket/gopacket/layers"
+	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/urfave/cli/v3"
-
-	"github.com/dreadl0ck/netcap/internal/collector"
 )
 
-// Run parses the subcommand flags and handles the arguments.
-// This is a compatibility wrapper for the old Run() interface.
-func Run() {
-	// Create a new CLI app just for parsing flags
-	cmd := &cli.Command{
-		Name:  "split",
-		Usage: "split pcap files",
-		Flags: GetFlags(),
-		Action: func(ctx context.Context, c *cli.Command) error {
-			return RunWithContext(ctx, c)
-		},
-	}
+func GetCommand() *cli.Command {
+	return &cli.Command{Name: "split", Usage: "export one bounded BPF/time packet subset with a provenance manifest", Flags: GetFlags(), Action: RunWithContext}
+}
 
-	if err := cmd.Run(context.Background(), os.Args[1:]); err != nil {
-		log.Fatal(err)
+func Run() {
+	if err := GetCommand().Run(context.Background(), os.Args[1:]); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 	}
 }
 
-// RunWithContext runs the split command with a CLI context.
 func RunWithContext(ctx context.Context, c *cli.Command) error {
-	flagInput := c.String("read")
-
-	// stat input file
-	stat, err := os.Stat(flagInput)
-	if err != nil {
-		log.Fatal("failed to open pcap:", err)
+	selection := evidence.Selection{BPF: strings.TrimSpace(c.String("bpf")), MaxPackets: c.Int("max-packets")}
+	start, end := c.String("start-ns"), c.String("end-ns")
+	if (start == "") != (end == "") {
+		return fmt.Errorf("start-ns and end-ns must be supplied together")
 	}
-
-	// file exists.
-	println("opening", flagInput+" | size:", humanize.Bytes(uint64(stat.Size())))
-
-	// TODO: display progress
-	// display total packet count
-	//print("counting packets...")
-	//start := time.Now()
-	//c.numPackets, err = countPackets(path)
-	//if err != nil {
-	//	return err
-	//}
-	//clearLine()
-	//fmt.Println("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
-
-	f, err := os.Open(flagInput)
-	if err != nil {
-		log.Fatal("failed to open pcap:", err)
+	if start != "" {
+		a, err := strconv.ParseInt(start, 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid start-ns: %w", err)
+		}
+		b, err := strconv.ParseInt(end, 10, 64)
+		if err != nil || b < a {
+			return fmt.Errorf("invalid end-ns or reversed time range")
+		}
+		selection.StartNs, selection.EndNs = &a, &b
 	}
-
+	if selection.BPF == "" && selection.StartNs == nil {
+		return fmt.Errorf("a BPF or inclusive time selection is required")
+	}
+	if len(selection.BPF) > 8192 || selection.MaxPackets < 1 || selection.MaxPackets > 1_000_000 {
+		return fmt.Errorf("BPF/packet limit exceeds supported bounds")
+	}
+	limit := c.Int64("max-bytes")
+	if limit < 1 || limit > 1<<30 {
+		return fmt.Errorf("max-bytes must be 1–1073741824")
+	}
+	input, out := c.String("read"), c.String("out")
+	if input == "" || out == "" {
+		return fmt.Errorf("read and out are required")
+	}
+	info, err := os.Lstat(input)
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("source must be a regular file, not a symlink")
+	}
+	// Reserve the destination first: existing files/directories are never replaced.
+	if err := os.Mkdir(out, 0700); err != nil {
+		return fmt.Errorf("reserve output: %w", err)
+	}
+	complete := false
 	defer func() {
-		errClose := f.Close()
-		if errClose != nil && !errors.Is(errClose, io.EOF) {
-			fmt.Println("failed to close:", errClose)
+		if !complete {
+			_ = os.RemoveAll(out)
 		}
 	}()
-	r, err := collector.NewPCAPReader(f)
+	f, err := os.OpenFile(filepath.Join(out, "selected.pcapng"), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if err != nil {
-		return fmt.Errorf("open pcap: %w", err)
+		return err
 	}
-
-	fmt.Println("detected link type:", r.LinkType())
-
-	var (
-		data []byte
-		ci   gopacket.CaptureInfo
-	)
-
-	print("processing packets... ")
-
-	for {
-		// fetch the next packetdata and packetheader
-		// for pcap, currently ZeroCopyReadPacketData() is not supported
-		data, ci, err = r.ReadPacketData()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			log.Fatal("reading pcaps failed: ", err)
-		}
-
-		// TODO: parse timestamp from ci
-		//  create a directory for each day
-		//  and write the corresponding packets there
-		p := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.Lazy)
-		fmt.Println(p, ci)
-
-		// If using pool mode, dispose of the packet to return it to the pool
-		if pooledPkt, ok := p.(gopacket.PooledPacket); ok {
-			pooledPkt.Dispose()
-		}
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	writer := &boundedWriter{output: f, remaining: limit}
+	manifest, exportErr := evidence.ExportPackets(ctx, input, writer, selection)
+	if exportErr == nil {
+		exportErr = f.Sync()
 	}
+	closeErr := f.Close()
+	if exportErr != nil {
+		return exportErr
+	}
+	if closeErr != nil {
+		return closeErr
+	}
+	if manifest.Selected == 0 {
+		return fmt.Errorf("selection matched no packets")
+	}
+	if expected := c.String("source-sha256"); expected != "" && !strings.EqualFold(expected, manifest.SourceSHA256) {
+		return fmt.Errorf("source SHA256 mismatch")
+	}
+	data, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(out, "packet-selection.json"), data, 0600); err != nil {
+		return err
+	}
+	complete = true
+	_, err = fmt.Fprintln(c.Writer, string(data))
+	return err
+}
 
-	return nil
+type boundedWriter struct {
+	output    io.Writer
+	remaining int64
+}
+
+func (w *boundedWriter) Write(data []byte) (int, error) {
+	if int64(len(data)) > w.remaining {
+		return 0, fmt.Errorf("packet subset output byte limit exceeded")
+	}
+	n, err := w.output.Write(data)
+	w.remaining -= int64(n)
+	return n, err
 }

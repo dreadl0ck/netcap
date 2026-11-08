@@ -43,6 +43,7 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/licenses"
 	"github.com/dreadl0ck/netcap/cmd/mcp"
 	"github.com/dreadl0ck/netcap/cmd/proxy"
+	"github.com/dreadl0ck/netcap/cmd/split"
 	"github.com/dreadl0ck/netcap/cmd/transform"
 	"github.com/dreadl0ck/netcap/cmd/util"
 	"github.com/dreadl0ck/netcap/defaults"
@@ -106,6 +107,7 @@ func main() {
 			},
 		},
 		Commands: []*cli.Command{
+			split.GetCommand(),
 			firewall.GetCommand(),
 			triage.GetCommand(),
 			investigate.GetCommand(),
