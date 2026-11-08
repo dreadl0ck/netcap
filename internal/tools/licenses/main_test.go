@@ -124,6 +124,7 @@ func TestCollectEveryAncestorAndPackageLegalFile(t *testing.T) {
 	write("LICENSE", mitGrant)
 	write("sub/LICENSE", bsdGrant)
 	write("sub/pkg/NOTICE", "package attribution")
+	write("sub/pkg/notice.go", "package pq\nfunc NoticeHandler() {}\n")
 	write("other/COPYING", "GNU GENERAL PUBLIC LICENSE Version 3")
 	first, err := findLicenseFiles(filepath.Join(root, "sub/pkg"), root)
 	if err != nil {

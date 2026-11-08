@@ -1,11 +1,11 @@
 [
   {
     "module": "modernc.org/libc",
-    "version": "v1.77.1",
+    "version": "v1.79.0",
     "file": "LICENSE-3RD-PARTY.md",
     "sha256": "de2e7c240a45e22cd9f3e4e627cee0f64e23425dee2ab3adb89862f208deb83a",
     "licenses": ["BSD-3-Clause", "MIT"],
-    "reason": "Pins this module version to the FOSSA 21407524/26/28/29/30 build-file review. Catalogue covers Go (BSD), musl, go-netdb and nixpkgs (MIT); it does not supersede generated-header terms. Selected GCC headers use Runtime Library Exception 3.1; full terms and scope are in THIRD_PARTY_NOTICES.txt. Re-review source headers and build selection when upgrading."
+    "reason": "Catalogue text is unchanged from v1.77.1 after whitespace normalization: Go (BSD), musl, go-netdb and nixpkgs (MIT). This catalogue review does not supersede the FOSSA 21407524/26/28/29/30 generated-header dispositions in THIRD_PARTY_NOTICES.txt; selected GCC headers use Runtime Library Exception 3.1. Re-review source headers and build selection when upgrading."
   },
   {
     "module": "github.com/hashicorp/go-uuid",
@@ -25,11 +25,11 @@
   },
   {
     "module": "modernc.org/sqlite",
-    "version": "v1.60.1",
+    "version": "v1.61.1",
     "file": "LICENSE-3RD-PARTY.md",
-    "sha256": "77b00d378fa8a729f1b99b0a84fbbd081c7950ebcabb6406f6a2d2a9a46d5ca6",
+    "sha256": "d782121ab8bc21a30d401f333c3d769394651cd0d162f00a70b1655858378506",
     "licenses": ["BSD-3-Clause", "MIT", "public-domain", "Apache-2.0 (test tooling)", "MPL-2.0 (module-graph tooling)"],
-    "reason": "FOSSA 21407527 matches only this catalogue. Sections 1-4 separate runtime, tests, module-graph tools and source-only material. MPL belongs to hashicorp/golang-lru/v2 v2.0.7 in section 3; Netcap's selected sqlite packages do not import it. Retain the entire catalogue without treating its licenses as alternatives. Generated-header review is separate in THIRD_PARTY_NOTICES.txt."
+    "reason": "Reviewed v1.61.1 catalogue: component versions advance to SQLite 3.54.1/libc v1.79.0; license grants and runtime/test/tooling separation remain unchanged. MPL belongs to hashicorp/golang-lru/v2 v2.0.7 in section 3; Netcap's selected sqlite packages do not import it. Retain the entire catalogue without treating its licenses as alternatives. Generated-header review is separate in THIRD_PARTY_NOTICES.txt; the earlier FOSSA 21407527 disposition covered the earlier catalogue."
   },
   {
     "module": "modernc.org/memory",
@@ -49,7 +49,7 @@
   },
   {
     "module": "github.com/prometheus/client_model",
-    "version": "v0.6.2",
+    "version": "v0.6.3",
     "file": "NOTICE",
     "sha256": "1c6ae0107fb9e87ce26f8098d5d173914331217f4d11d7ff3956d37ecb9c49a3",
     "licenses": ["Attribution notice"],
@@ -57,7 +57,7 @@
   },
   {
     "module": "github.com/prometheus/client_golang",
-    "version": "v1.23.2",
+    "version": "v1.25.0",
     "file": "NOTICE",
     "sha256": "f6c7b09c73554da233e12f776eede9a9a3f1a0f7e00b19178e41473af53853b4",
     "licenses": ["Attribution notice"],
@@ -65,7 +65,7 @@
   },
   {
     "module": "github.com/prometheus/procfs",
-    "version": "v0.18.0",
+    "version": "v0.22.0",
     "file": "NOTICE",
     "sha256": "322c24deae12157c69417716f0237cb08f4f99953d21be813067a62551227edc",
     "licenses": ["Attribution notice"],
@@ -73,7 +73,7 @@
   },
   {
     "module": "github.com/prometheus/common",
-    "version": "v0.67.1",
+    "version": "v0.72.0",
     "file": "NOTICE",
     "sha256": "a964149ae204f5510720cb1e569beabf22458a8a571d9d4e9773bbe3f895d13e",
     "licenses": ["Attribution notice"],

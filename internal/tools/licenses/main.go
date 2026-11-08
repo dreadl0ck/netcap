@@ -385,6 +385,9 @@ func licenseFilesInDir(dir string) ([]licenseFile, error) {
 
 func isLegalFile(name string) bool {
 	upper := strings.ToUpper(name)
+	if strings.HasSuffix(upper, ".GO") {
+		return false // e.g. lib/pq's notice.go implements database notices.
+	}
 	return strings.HasPrefix(upper, "LICENSE") || strings.HasPrefix(upper, "LICENCE") ||
 		strings.HasPrefix(upper, "COPYING") || strings.HasPrefix(upper, "NOTICE")
 }
