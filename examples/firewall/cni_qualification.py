@@ -6,6 +6,7 @@ import os
 import pathlib
 import secrets
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -13,8 +14,28 @@ import yaml
 from kind_smoke import NODE, ROOT
 from control_k8s import qualify as qualify_control
 
+sys.path.insert(0, str(ROOT / 'scripts'))
+from firewall_download import verified_read
+
 CILIUM = '1.17.2'
 FIXTURE = 'nginx:1.28.0-alpine@sha256:30f1c0d78e0ad60901648be663a710bdadf19e4c10ac6782c235200619158284'
+METRICS_VERSION = '3.12.2'
+METRICS_URL = f'https://github.com/kubernetes-sigs/metrics-server/releases/download/metrics-server-helm-chart-{METRICS_VERSION}/metrics-server-{METRICS_VERSION}.tgz'
+# Official https://kubernetes-sigs.github.io/metrics-server/index.yaml, version 3.12.2.
+METRICS_SHA256 = 'e904ffa2fe33c429e12cac8aa013ba38f42d944e315d060e94230a53b98985cf'
+
+
+def metrics_chart(directory):
+    data = verified_read(METRICS_URL, METRICS_SHA256)
+    path = directory / f'metrics-server-{METRICS_VERSION}.tgz'
+    path.write_bytes(data)
+    return path
+
+
+def install_metrics(run, chart, cluster):
+    run('helm', 'install', 'metrics-server', str(chart),
+        '--namespace', 'kube-system', '--kube-context', 'kind-' + cluster,
+        '--set', 'args[0]=--kubelet-insecure-tls', '--wait', '--timeout', '180s')
 
 
 def main():
@@ -27,6 +48,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='netcap-fw-cni-') as directory:
         temp = pathlib.Path(directory)
         env = dict(os.environ, KUBECONFIG=str(temp / 'kubeconfig'))
+        metrics = metrics_chart(temp)
 
         def run(*command, **kwargs):
             return subprocess.run(command, env=env, text=True, check=True, timeout=600, **kwargs)
@@ -127,10 +149,7 @@ def main():
                 '--wait', '--timeout', '180s')
             hpa = json.loads(k('get', 'hpa', '-o', 'json', capture_output=True).stdout)['items'][0]
             assert hpa['spec']['minReplicas'] == 3 and hpa['spec']['maxReplicas'] == 4
-            run('helm', 'install', 'metrics-server', 'metrics-server',
-                '--repo', 'https://kubernetes-sigs.github.io/metrics-server/', '--version', '3.12.2',
-                '--namespace', 'kube-system', '--kube-context', 'kind-' + cluster,
-                '--set', 'args[0]=--kubelet-insecure-tls', '--wait', '--timeout', '180s')
+            install_metrics(run, metrics, cluster)
             run('helm', 'upgrade', 'cni', str(ROOT / 'charts/netcap-firewall'), '--reuse-values',
                 '--set', 'autoscaling.targetCPUUtilizationPercentage=1',
                 '-n', 'firewall', '--kube-context', 'kind-' + cluster, '--wait', '--timeout', '180s')
@@ -228,6 +247,7 @@ def main():
                 raise AssertionError(network_table.stderr)
             controls = qualify_control(env, 'kind-' + cluster, temp, args.image)
             report = {'result': 'pass', 'kind_node': NODE, 'cilium_chart': CILIUM,
+                      'metrics_chart': {'version': METRICS_VERSION, 'url': METRICS_URL, 'sha256': METRICS_SHA256},
                       'control_plane': controls,
                       'architecture': node['status']['nodeInfo']['architecture'],
                       'checks': ['restricted admission install', 'client through WAF allowed',

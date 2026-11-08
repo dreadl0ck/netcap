@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
 import time
@@ -323,6 +324,7 @@ class Contracts(unittest.TestCase):
         image['inventory'] = release.record(self.root, path)
         with self.assertRaisesRegex(ValueError, 'missing artifact'):
             self.validate()
+        inv['packages'][0]['source'] = copy.deepcopy(self.m['source'])
         inv['packages'][0]['license'] = 'NOASSERTION'
         release.write(path, inv)
         image['inventory'] = release.record(self.root, path)
@@ -341,6 +343,35 @@ class Contracts(unittest.TestCase):
         item['source'] = '../outside'
         with self.assertRaisesRegex(ValueError, 'supplemental export'):
             build.inventories(out, 'waf', 'sha256:' + 'a' * 64, {'release-fixture@1.0.0': item}, self.root)
+
+    def test_pending_inventory_blocks_publication_but_not_candidate_integrity(self):
+        image = self.m['images']['waf']['platforms']['amd64']
+        path = self.root / image['inventory']['path']
+        inv = json.loads(path.read_text())
+        inv['packages'][0]['license'] = 'NOASSERTION'
+        inv['unresolved'] = ['release-fixture@1.0.0: unresolved license']
+        release.write(path, inv)
+        image['inventory'] = release.record(self.root, path)
+        self.validate()
+        # Test only the publication inventory boundary; no review approval is invented.
+        self.m['qualificationMode'] = 'native'
+        for q in self.m['native'].values():
+            q['native'] = True
+        self.save()
+        with self.assertRaisesRegex(ValueError, 'blocks publication'):
+            release.validate(self.root, publication=True)
+        inv['packages'] = []
+        inv['unresolved'] = ['release-fixture@1.0.0']
+        release.write(path, inv)
+        image['inventory'] = release.record(self.root, path)
+        self.save()
+        release.validate(self.root)
+        inv['unresolved'] = []
+        release.write(path, inv)
+        image['inventory'] = release.record(self.root, path)
+        self.save()
+        with self.assertRaisesRegex(ValueError, 'not fully recorded'):
+            release.validate(self.root)
 
     def test_workflow_least_privilege_and_no_release_mutations(self):
         wf = yaml.load((release.ROOT / '.github/workflows/firewall-release.yml').read_text(), Loader=yaml.BaseLoader)
@@ -371,6 +402,160 @@ class Contracts(unittest.TestCase):
         self.assertEqual(config['version'], 2)
         self.assertTrue(config['release']['disable'])
         self.assertEqual({b['id'] for b in config['builds']}, set(release.KINDS))
+
+
+class NativeJoin(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        self.m = fixture(self.root)
+        for arch, q in self.m['native'].items():
+            logs = self.root / arch / 'evidence'
+            logs.mkdir()
+            for name, item in q['evidence'].items():
+                path = logs / (name + '.log')
+                shutil.move(self.root / item['path'], path)
+                item['path'] = str(path.relative_to(self.root))
+            release.write(self.root / arch / 'native.json', q)
+            release.write(self.root / arch / 'images.json', {k: i['platforms'][arch] for k, i in self.m['images'].items()})
+
+    def join(self):
+        return build.native_inputs(self.root, self.m['commit'], self.m['version'], native=False)
+
+    def test_producer_and_legacy_join_keep_architecture_prefix(self):
+        receipt = build.evidence(self.root, self.root / 'amd64/evidence', 'producer',
+                                 [sys.executable, '-c', 'print("fixture only")'])
+        self.assertEqual(receipt['path'], 'amd64/evidence/producer.log')
+        release.checked_file(self.root, receipt)
+        for arch in release.ARCHES:
+            path = self.root / arch / 'native.json'
+            q = json.loads(path.read_text())
+            for name, item in q['evidence'].items():
+                if name != 'version-smoke':
+                    item['path'] = 'evidence/' + name + '.log'
+            release.write(path, q)
+        native, images = self.join()
+        for arch in release.ARCHES:
+            for name, item in native[arch]['evidence'].items():
+                self.assertEqual(item['path'], arch + '/evidence/' + name + '.log')
+                release.checked_file(self.root, item)
+            self.assertEqual(native[arch]['digests'], {k: images[arch][k]['digest'] for k in release.KINDS})
+
+    def test_join_rejects_every_missing_or_tampered_mandatory_file(self):
+        self.join()
+        records = list(self.m['native']['amd64']['evidence'].values())
+        for image in self.m['images'].values():
+            platform = image['platforms']['amd64']
+            records += [platform[k] for k in ('archive', 'binary', 'sbom', 'inventory')]
+        records += [self.m['source'], release.record(self.root, self.root / 'fixture-LICENSE')]
+        for item in records:
+            path = self.root / item['path']
+            data = path.read_bytes()
+            misplaced = path.with_suffix('.misplaced')
+            with self.subTest(path=item['path']):
+                path.rename(misplaced)
+                try:
+                    with self.assertRaisesRegex(ValueError, 'missing artifact'):
+                        self.join()
+                finally:
+                    misplaced.rename(path)
+                path.write_bytes(data + b'tampered')
+                try:
+                    with self.assertRaisesRegex(ValueError, 'checksum mismatch'):
+                        self.join()
+                finally:
+                    path.write_bytes(data)
+
+    def test_join_rejects_relabelled_commit_or_version(self):
+        for commit, version in [('b' * 40, self.m['version']), (self.m['commit'], '9.9.9')]:
+            with self.assertRaisesRegex(ValueError, 'commit/version mismatch'):
+                build.native_inputs(self.root, commit, version, native=False)
+
+    def test_join_requires_both_native_receipt_and_image_manifests(self):
+        for arch in release.ARCHES:
+            for name in ('native.json', 'images.json'):
+                path = self.root / arch / name
+                misplaced = path.with_suffix('.misplaced')
+                path.rename(misplaced)
+                try:
+                    with self.assertRaises(FileNotFoundError):
+                        self.join()
+                finally:
+                    misplaced.rename(path)
+
+
+@unittest.skipUnless(os.environ.get('FIREWALL_RELEASE_CI_ARTIFACTS'), 'downloaded native CI artifact opt-in')
+class CIArtifactJoin(unittest.TestCase):
+    def test_actual_two_native_receipts_and_offline_candidate(self):
+        source = Path(os.environ['FIREWALL_RELEASE_CI_ARTIFACTS'])
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for arch in release.ARCHES:
+                shutil.copytree(source / ('firewall-candidate-' + arch) / arch, root / arch, copy_function=os.link)
+            candidate = json.loads((source / 'ci-candidate/candidate.json').read_text())
+            native, images = build.native_inputs(root, candidate['commit'], candidate['version'])
+            candidate['native'] = native
+            for kind in release.KINDS:
+                for arch in release.ARCHES:
+                    self.assertEqual(candidate['images'][kind]['platforms'][arch], images[arch][kind])
+                item = candidate['images'][kind]['index']
+                shutil.copyfile(source / 'ci-candidate' / item['path'], root / item['path'])
+            for chart in candidate['charts']:
+                item = chart['archive']
+                shutil.copyfile(source / 'ci-candidate' / item['path'], root / item['path'])
+            release.write(root / 'candidate.json', candidate)
+            release.validate(root)
+            with self.assertRaisesRegex(ValueError, 'blocks publication'):
+                release.validate(root, publication=True)
+
+    @unittest.skipUnless(os.environ.get('FIREWALL_RELEASE_INTEGRATION') == '1', 'explicit loopback integration opt-in')
+    def test_actual_native_assembly_without_rebuild(self):
+        source = Path(os.environ['FIREWALL_RELEASE_CI_ARTIFACTS'])
+        parent = os.environ.get('FIREWALL_RELEASE_TEST_OUTPUT')
+        tmp = tempfile.TemporaryDirectory(prefix='firewall-native-join-', dir=parent)
+        root = Path(tmp.name)
+        if parent:
+            tmp._finalizer.detach()
+        else:
+            self.addCleanup(tmp.cleanup)
+        original = json.loads((source / 'ci-candidate/candidate.json').read_text())
+        for arch in release.ARCHES:
+            shutil.copytree(source / ('firewall-candidate-' + arch) / arch, root / arch, copy_function=os.link)
+        host = registry(self, root.name)
+        args = argparse.Namespace(output=root, version=original['version'], commit=original['commit'],
+                                  registry=host + '/candidate', reviews=None, qualification_run=None)
+        real_run = build.run
+
+        def assemble_only(*command, **kwargs):
+            self.assertIn(command[0], ('crane', 'helm'))
+            return real_run(*command, **kwargs)
+
+        with patch.object(build, 'run', side_effect=assemble_only):
+            build.assemble(args)
+        candidate = release.validate(root)
+        checklist = json.loads((root / 'candidate-checklist.json').read_text())
+        self.assertFalse(checklist['publicationApproved'])
+        self.assertEqual(set(checklist['sourceAndLicenseBlockers']), set(release.ARCHES))
+        self.assertTrue(all(review['decision'] == 'pending' for review in candidate['reviews'].values()))
+        self.assertEqual(candidate['native']['amd64']['commit'], original['commit'])
+        self.assertEqual(candidate['native']['arm64']['commit'], original['commit'])
+        for kind in release.KINDS:
+            self.assertEqual(candidate['images'][kind]['digest'], original['images'][kind]['digest'])
+            self.assertEqual(candidate['images'][kind]['platforms'], original['images'][kind]['platforms'])
+        with self.assertRaisesRegex(ValueError, 'blocks publication'):
+            release.validate(root, publication=True)
+        release.checksums(root)
+        for line in (root / 'SHA256SUMS').read_text().splitlines():
+            digest, path = line.split('  ', 1)
+            release.checked_file(root, {'path': path, 'sha256': digest})
+        release.write(root / 'join-test-result.json', {'sourceCommit': original['commit'],
+                      'assemblyCodeCommit': release.run('git', 'rev-parse', 'HEAD'),
+                      'assemblyCodeDirty': bool(release.run('git', 'status', '--porcelain')),
+                      'assemblyCodeSHA256': {p: release.sha(release.ROOT / 'scripts' / p) for p in ('firewall_release.py', 'firewall_release_build.py')},
+                      'digestsUnchanged': True, 'allFileChecksums': 'passed',
+                      'publicationApproved': False, 'rebuiltImages': False})
+        print('Actual native CI assembly artifacts:', root)
 
 
 @unittest.skipUnless(os.environ.get('FIREWALL_RELEASE_INTEGRATION') == '1', 'explicit loopback integration opt-in')

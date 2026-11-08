@@ -9,8 +9,59 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 	"unicode/utf8"
 )
+
+type ftpSession struct {
+	mu      sync.Mutex
+	up      net.Conn
+	passive net.Listener
+	closed  bool
+}
+
+func (s *ftpSession) clearPassiveLocked() {
+	if s.passive != nil {
+		s.passive.Close()
+		s.passive = nil
+	}
+}
+
+func (s *ftpSession) clearPassive() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.clearPassiveLocked()
+}
+
+func (s *ftpSession) registerPassive(ctx context.Context, l net.Listener) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed || ctx.Err() != nil {
+		l.Close()
+		return false
+	}
+	s.clearPassiveLocked()
+	s.passive = l
+	return true
+}
+
+func (s *ftpSession) close() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return
+	}
+	s.closed = true
+	// Origin EOF must never precede passive-listener teardown.
+	s.clearPassiveLocked()
+	s.up.Close()
+}
+
+type ftpDataListener interface {
+	net.Listener
+	SetDeadline(time.Time) error
+}
 
 func ftpControlText(s string) bool {
 	if !utf8.ValidString(s) {
@@ -78,8 +129,9 @@ func (g *Gateway) ftpClient(ctx context.Context, c net.Conn, ip string) {
 	if err != nil {
 		return
 	}
-	defer up.Close()
-	stop := context.AfterFunc(ctx, func() { up.Close() })
+	session := &ftpSession{up: up}
+	defer session.close()
+	stop := context.AfterFunc(ctx, session.close)
 	defer stop()
 	r, ur := bufio.NewReaderSize(c, 4096), bufio.NewReaderSize(up, 4096)
 	reply, code, err := g.ftpReply(ctx, up, ur)
@@ -89,10 +141,8 @@ func (g *Gateway) ftpClient(ctx context.Context, c net.Conn, ip string) {
 	var passive *net.TCPListener
 	var target string
 	clear := func() {
-		if passive != nil {
-			passive.Close()
-			passive = nil
-		}
+		session.clearPassive()
+		passive = nil
 		target = ""
 	}
 	defer clear()
@@ -166,6 +216,9 @@ func (g *Gateway) ftpClient(ctx context.Context, c net.Conn, ip string) {
 			if err != nil {
 				return
 			}
+			if !session.registerPassive(ctx, passive) {
+				return
+			}
 			if g.writeFrame(ctx, c, []byte(fmt.Sprintf("229 Entering Extended Passive Mode (|||%d|)\r\n", passive.Addr().(*net.TCPAddr).Port))) != nil {
 				return
 			}
@@ -197,16 +250,15 @@ func (g *Gateway) ftpClient(ctx context.Context, c net.Conn, ip string) {
 	}
 }
 
-func (g *Gateway) ftpTransfer(ctx context.Context, c, up net.Conn, ur *bufio.Reader, l *net.TCPListener, target, ip, cmd string, line []byte, attrs map[string]string) bool {
+func (g *Gateway) ftpTransfer(ctx context.Context, c, up net.Conn, ur *bufio.Reader, l ftpDataListener, target, ip, cmd string, line []byte, attrs map[string]string) bool {
 	// The synthetic preliminary reply lets an upload finish before STOR can have
 	// a native file-system effect. No origin data socket exists until authorization.
 	if g.writeFrame(ctx, c, []byte("150 gateway buffering bounded transfer\r\n")) != nil {
 		return false
 	}
 	l.SetDeadline(deadline(ctx, g.cfg.IOTimeout))
-	stop := context.AfterFunc(ctx, func() { l.Close() })
-	defer stop()
-	down, err := l.AcceptTCP()
+	down, err := l.Accept()
+	l.Close()
 	if err != nil {
 		return false
 	}

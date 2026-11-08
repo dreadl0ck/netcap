@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -127,5 +128,62 @@ func TestFleetOperationsGrantsComposeAcrossTransports(t *testing.T) {
 	}
 	if w := request(h, "POST", "/api/v1/fleet/retention_preview", authorToken, `{"scope":{"tenant":"two","app":"web"}}`, ""); w.Code != 403 {
 		t.Fatal("cross-tenant retention")
+	}
+}
+
+func TestFleetRejectedStageAuditAcrossAuthoritiesAndTransports(t *testing.T) {
+	for _, identity := range []bool{false, true} {
+		for _, transport := range []string{"REST", "MCP"} {
+			t.Run(fmt.Sprintf("identity=%t/%s", identity, transport), func(t *testing.T) {
+				a, err := firewallauth.New(firewallauth.Config{Static: []firewallauth.Static{{Token: authorToken, Principal: firewallauth.Principal{ID: "author", Grants: []firewallauth.Grant{{Scope: scope, Actions: []firewallauth.Action{firewallauth.Author, firewallauth.Audit}}}}}}})
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer a.Close()
+				cfg := firewallfleet.Config{Token: authorToken, Environment: scope.Environment, StateDir: filepath.Join(t.TempDir(), "fleet"), AuditRequired: true}
+				actor, grant := "administrator", "operator"
+				if identity {
+					cfg.Token, cfg.Auth = "", a
+					actor, grant = "author", "author"
+				}
+				s, err := firewallfleet.New(cfg)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer s.Close()
+				resource := firewallfleet.Scope{Tenant: scope.Tenant, App: scope.App}
+				h := s.Handler()
+				if transport == "REST" {
+					w := request(h, "POST", "/api/v1/fleet/stage", authorToken, `{"scope":{"tenant":"one","app":"web"},"bundle":"{\"invalid\":true}"}`, "")
+					if w.Code != 400 {
+						t.Fatalf("stage: %d %s", w.Code, w.Body.String())
+					}
+				} else if rpc(t, h, authorToken, "fleet_stage", map[string]any{"scope": resource, "bundle": `{"invalid":true}`}) {
+					t.Fatal("invalid stage accepted")
+				}
+				out, err := s.Execute(context.Background(), authorToken, "audit", firewallfleet.Request{Scope: resource})
+				if err != nil {
+					t.Fatal(err)
+				}
+				records := out.([]firewallfleet.Audit)
+				if len(records) != 1 {
+					t.Fatalf("audit: %+v", records)
+				}
+				r := records[0]
+				if r.Actor != actor || r.Grant != grant || r.Outcome != "rejected" || r.Reason != "invalid" || r.Scope != resource {
+					t.Fatalf("rejection: %+v", r)
+				}
+				for _, token := range []string{"invalid", authorToken} {
+					foreign := firewallfleet.Scope{Tenant: "foreign", App: "web"}
+					if identity || token == "invalid" {
+						_, _ = s.Execute(context.Background(), token, "stage", firewallfleet.Request{Scope: foreign, Bundle: `{"invalid":true}`})
+					}
+				}
+				out, err = s.Execute(context.Background(), authorToken, "audit", firewallfleet.Request{Scope: resource})
+				if err != nil || len(out.([]firewallfleet.Audit)) != 1 {
+					t.Fatalf("untrusted request altered audit: %v %v", out, err)
+				}
+			})
+		}
 	}
 }

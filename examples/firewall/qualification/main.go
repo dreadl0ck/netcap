@@ -36,6 +36,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/firewalltransport"
 	"github.com/dreadl0ck/netcap/internal/policy"
 	"github.com/dreadl0ck/netcap/internal/waf"
+	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 )
 
@@ -198,15 +199,36 @@ func newProfile(ctx context.Context, rules int, crs bool, proto int) (*profile, 
 		return nil, err
 	}
 	local, cancel := context.WithCancel(ctx)
+	// The fixture destination is IPv4 loopback. Own an IPv4 socket as well:
+	// macOS can allocate a dual-stack ephemeral port already held by an IPv4
+	// socket, diverting replies away from http3.Transport's default client.
+	clientUDP, err := net.ListenPacket("udp4", "127.0.0.1:0")
+	if err != nil {
+		cancel()
+		_ = udp.Close()
+		cert.Close()
+		_ = p.FW.Close()
+		origin.Close()
+		return nil, err
+	}
+	clientQUIC := &quic.Transport{Conn: clientUDP}
 	done := make(chan error, 1)
 	go func() {
 		done <- firewalltransport.ServeHTTP3(local, udp, firewalltransport.HTTP3Config{TLS: cert.TLS, MaxConnections: 32, MaxStreams: 32, IdleTimeout: 5 * time.Second, ShutdownTimeout: 3 * time.Second}, p.FW)
 	}()
-	transport := &http3.Transport{TLSClientConfig: &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS13}}
+	transport := &http3.Transport{TLSClientConfig: &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS13}, Dial: func(ctx context.Context, address string, tlsConfig *tls.Config, config *quic.Config) (*quic.Conn, error) {
+		peer, err := net.ResolveUDPAddr("udp4", address)
+		if err != nil {
+			return nil, err
+		}
+		return clientQUIC.DialEarly(ctx, peer, tlsConfig, config)
+	}}
 	p.Client = &http.Client{Transport: transport, Timeout: 3 * time.Second}
 	p.URL = "https://" + udp.LocalAddr().String()
 	p.Close = func() {
 		_ = transport.Close()
+		_ = clientQUIC.Close()
+		_ = clientUDP.Close()
 		cancel()
 		<-done
 		_ = udp.Close()

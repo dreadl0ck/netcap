@@ -176,14 +176,20 @@ def validate(root, publication=False, rehearsal=False):
             inventory = json.loads(checked_file(root, image['inventory']).read_text())
             require(inventory['imageDigest'] == image['digest'], 'inventory digest mismatch')
             require(inventory['schema'] == 'netcap-source-inventory/v1', 'unknown inventory schema')
-            require(not inventory.get('unresolved'), 'unresolved source/license inventory')
             packages = {p['SPDXID'] for p in sbom['packages']}
             entries = inventory['packages']
-            require(len(entries) == len(packages) and {p['id'] for p in entries} == packages, 'missing non-GPL license/source inventory')
+            ids = {p['id'] for p in entries}
+            require(len(ids) == len(entries) and ids <= packages, 'missing non-GPL license/source inventory')
+            unresolved = {p['name'] + '@' + p.get('versionInfo', '') for p in sbom['packages'] if p['SPDXID'] not in ids}
             for entry in entries:
-                require(entry['license'] and entry['license'] not in ('NOASSERTION', 'NONE', 'UNKNOWN'), 'unresolved component license')
+                if not entry['license'] or entry['license'] in ('NOASSERTION', 'NONE', 'UNKNOWN'):
+                    package = next(p for p in sbom['packages'] if p['SPDXID'] == entry['id'])
+                    unresolved.add(package['name'] + '@' + package.get('versionInfo', '') + ': unresolved license')
                 require(checked_file(root, entry['licenseFile']).stat().st_size > 0, 'empty license text')
                 require(checked_file(root, entry['source']).stat().st_size > 0, 'empty corresponding source')
+            require(set(inventory.get('unresolved', [])) == unresolved, 'unresolved component license/source inventory is not fully recorded')
+            if publication:
+                require(not unresolved, 'unresolved source/license inventory blocks publication')
     for kind in KINDS:
         image = m['images'][kind]
         require(image['repository'] == POLICY['registry'] + '/netcap-firewall-' + kind, 'untrusted image repository')
