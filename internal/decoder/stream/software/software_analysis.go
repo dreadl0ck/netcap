@@ -20,7 +20,6 @@
 package software
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -88,21 +87,6 @@ var automationIndicators = []string{
 var proxyIndicators = []string{
 	"proxy", "squid", "nginx", "haproxy", "varnish",
 	"traefik", "envoy", "caddy", "apache traffic server",
-}
-
-// Known EOL software patterns
-var eolPatterns = map[*regexp.Regexp]bool{
-	regexp.MustCompile(`(?i)windows\s*(xp|vista|7|8|8\.1)`):              true,
-	regexp.MustCompile(`(?i)internet\s*explorer\s*(6|7|8|9|10|11)`):      true,
-	regexp.MustCompile(`(?i)python\s*(2\.[0-7])`):                        true,
-	regexp.MustCompile(`(?i)php\s*(5\.[0-6]|7\.[0-3])`):                  true,
-	regexp.MustCompile(`(?i)apache\s*(1\.|2\.[0-2])`):                    true,
-	regexp.MustCompile(`(?i)nginx\s*(0\.|1\.[0-9]\.)`):                   true,
-	regexp.MustCompile(`(?i)openssl\s*(0\.|1\.0\.[0-1])`):                true,
-	regexp.MustCompile(`(?i)java\s*(1\.[0-7]|8|9|10|11)`):                true, // Java 8-11 LTS still supported but older
-	regexp.MustCompile(`(?i)node\s*(0\.|4\.|6\.|8\.|10\.|12\.|14\.)`):    true, // Node older versions
-	regexp.MustCompile(`(?i)ruby\s*(1\.|2\.[0-5])`):                      true,
-	regexp.MustCompile(`(?i)perl\s*(5\.(8|10|12|14|16|18|20|22|24|26))`): true,
 }
 
 // EnhanceSoftwareRecord adds detection context and behavioral fields to a Software record
@@ -298,21 +282,9 @@ func isEmulated(s *types.Software) bool {
 	return false
 }
 
-// checkEOLStatus checks if the software version is end-of-life
+// A banner alone cannot establish vendor/product cycle, support channel or
+// assessment date. Unknown remains explicit until a dated lifecycle source is bound.
 func checkEOLStatus(s *types.Software) (bool, string) {
-	combined := s.Product + " " + s.Version
-
-	for pattern := range eolPatterns {
-		if pattern.MatchString(combined) {
-			return true, SupportEOL
-		}
-	}
-
-	// Check for very old versions (version starts with 0. or 1.)
-	if strings.HasPrefix(s.Version, "0.") {
-		return false, SupportMaintenance // Pre-1.0 versions might be in development
-	}
-
 	return false, SupportUnknown
 }
 
