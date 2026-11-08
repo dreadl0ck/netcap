@@ -22,7 +22,6 @@ package webui
 import (
 	"bufio"
 	"context"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	stdio "io"
@@ -33,6 +32,8 @@ import (
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcap"
 	"github.com/gopacket/gopacket/pcapgo"
+
+	"github.com/dreadl0ck/netcap/internal/collector"
 )
 
 // pcapReader is the subset of *pcapgo.Reader / *pcapgo.NgReader this file uses.
@@ -151,26 +152,9 @@ func isPCAPFilterTimeout(err error) bool {
 // newPacketReader picks the pcap or pcapng reader from the file's magic bytes
 // and returns it together with the capture link type.
 func newPacketReader(f *os.File) (pcapReader, layers.LinkType, error) {
-	magic := make([]byte, 4)
-	if _, err := stdio.ReadFull(f, magic); err != nil {
-		return nil, 0, fmt.Errorf("read magic: %w", err)
-	}
-	if _, err := f.Seek(0, stdio.SeekStart); err != nil {
-		return nil, 0, fmt.Errorf("seek: %w", err)
-	}
-
-	// A PCAPNG section header block starts with 0x0A0D0D0A.
-	if binary.BigEndian.Uint32(magic) == 0x0a0d0d0a {
-		ng, err := pcapgo.NewNgReader(f, pcapgo.NgReaderOptions{ErrorOnMismatchingLinkType: true})
-		if err != nil {
-			return nil, 0, fmt.Errorf("open pcapng: %w", err)
-		}
-		return ng, ng.LinkType(), nil
-	}
-
-	r, err := pcapgo.NewReader(f)
+	r, err := collector.NewCaptureReader(f)
 	if err != nil {
-		return nil, 0, fmt.Errorf("open pcap: %w", err)
+		return nil, 0, fmt.Errorf("open capture: %w", err)
 	}
 	return r, r.LinkType(), nil
 }

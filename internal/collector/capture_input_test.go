@@ -23,6 +23,8 @@ func TestCaptureInputSynthetic(t *testing.T) {
 	pcap = append(pcap, inputPCAPRecord(le, 123, 0, 64, 64, frame)...)
 	bad := inputPCAPRecord(le, 124, 0, 64, 63, frame)
 	last := inputPCAPRecord(le, 125, 0, 64, 64, frame)
+	legacy := bytes.Clone(pcap)
+	le.PutUint16(legacy[6:], 1)
 	ng := append(inputNGSection(le), inputNGInterface(le, 1, 1)...)
 	ng = append(ng, inputNGPacket(le, 0, 64, 64, frame)...)
 	ngBad := inputNGPacket(le, 0, 100, 100, frame)
@@ -36,6 +38,7 @@ func TestCaptureInputSynthetic(t *testing.T) {
 	}{
 		{"pcap-recover", append(append(bytes.Clone(pcap), bad...), last...), false, 2, 1, true},
 		{"pcap-truncated", append(bytes.Clone(pcap), last[:23]...), false, 1, 0, false},
+		{"legacy-pcap-truncated", append(legacy, last[:23]...), false, 1, 0, false},
 		{"pcap-short-header", append(bytes.Clone(pcap), last[:7]...), false, 1, 0, false},
 		{"ng-recover", append(append(bytes.Clone(ng), ngBad...), ngLast...), true, 2, 1, true},
 		{"ng-truncated", append(bytes.Clone(ng), ngLast[:29]...), true, 1, 0, false},
