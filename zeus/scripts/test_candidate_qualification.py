@@ -110,6 +110,14 @@ class MacCandidateTests(unittest.TestCase):
 
 
 class NativeCandidateTests(unittest.TestCase):
+    def test_release_stamp_preserves_revision_and_rejects_non_semver(self):
+        command = LINUX.plan('a' * 40, 'linux/amd64', ['alpine'], 'owned-builder', 'test', '0.16.0')[0]['command']
+        self.assertIn('NETCAP_BUILD_VERSION=0.16.0', command)
+        self.assertIn('NETCAP_BUILD_COMMIT=' + 'a' * 40, command)
+        for invalid in ('v0.16.0', '0.16', '00.16.0', '0.16.0 -X injected=true'):
+            with self.assertRaises(ValueError):
+                LINUX.plan('a' * 40, 'linux/amd64', ['alpine'], 'owned-builder', 'test', invalid)
+
     def test_plan_all_four_builds_pins_revision_arch_and_never_pushes(self):
         revision = 'a' * 40
         commands = LINUX.plan(revision, 'linux/amd64', list(LINUX.VARIANTS), 'owned-builder', 'test')

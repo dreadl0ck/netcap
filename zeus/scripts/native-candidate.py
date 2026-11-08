@@ -34,9 +34,11 @@ def check_source(revision):
         raise ValueError('candidate source checkout must be clean')
 
 
-def plan(revision, platform, variants, builder, nonce):
+def plan(revision, platform, variants, builder, nonce, release_version=None):
     if platform != 'linux/amd64':
         raise ValueError('qualified native builders support linux/amd64 only')
+    if release_version is not None and not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', release_version):
+        raise ValueError('invalid release version')
     spec = importlib.util.spec_from_file_location('builder_image', Path(__file__).with_name('builder-image.py'))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -46,7 +48,7 @@ def plan(revision, platform, variants, builder, nonce):
         reference = module.resolve(variant, platform)
         command = ['docker', 'buildx', 'build', '--builder', builder, '--platform', platform,
                    '--build-arg', 'NETCAP_BUILDER_IMAGE=' + reference,
-                   '--build-arg', 'NETCAP_BUILD_VERSION=native-' + revision[:12],
+                   '--build-arg', 'NETCAP_BUILD_VERSION=' + (release_version or 'native-' + revision[:12]),
                    '--build-arg', 'NETCAP_BUILD_COMMIT=' + revision,
                    '--build-arg', 'TAGS=' + ('' if variant.endswith('-dpi') else '-tags=nodpi'),
                    '--build-context', 'netcap-webui=./cmd/capture/webui/frontend/dist',
@@ -58,6 +60,7 @@ def plan(revision, platform, variants, builder, nonce):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--revision', required=True)
+    parser.add_argument('--release-version', help='SemVer without v; omit for a native qualification candidate')
     parser.add_argument('--platform', default='linux/amd64')
     parser.add_argument('--variant', choices=('all', *VARIANTS), default='all')
     parser.add_argument('--output', type=lambda p: Path(p).resolve(), required=True)
@@ -67,7 +70,7 @@ def main():
     nonce = uuid.uuid4().hex[:10]
     builder = 'netcap-candidate-' + nonce
     variants = list(VARIANTS) if args.variant == 'all' else [args.variant]
-    commands = plan(args.revision, args.platform, variants, builder, nonce)
+    commands = plan(args.revision, args.platform, variants, builder, nonce, args.release_version)
     if args.plan:
         print(json.dumps(commands, indent=2))
         return
@@ -76,6 +79,7 @@ def main():
         raise ValueError('build the real frontend from the approved revision before packaging')
     args.output.mkdir(parents=True, exist_ok=False)
     report = dict(schema='netcap-linux-candidate/v1', sourceRevision=args.revision, platform=args.platform,
+                  releaseVersion=args.release_version,
                   cpuLimit=2, state='building', images=[], frontendSHA256={
                       str(p.relative_to(frontend)): sha(p) for p in sorted(frontend.rglob('*')) if p.is_file()})
     created = False

@@ -1,4 +1,44 @@
-## Module consumption and catalogue integration fixes
+## Capture analysis and application firewall
+
+`v0.16.0` includes the qualified changes since v0.15.4. The `net` archives
+include `net firewall`; standalone firewall binaries and deployment examples
+are distributed separately with this release.
+
+| Area | Change |
+| --- | --- |
+| Analyst workflows | Source-bound catalogue, occurrence navigation, host identities, software applicability evidence, endpoint/log review, reproduction downloads and explicit chart/artifact completeness status in CLI, WebUI and MCP |
+| Capture inspection | Bounded PCAP/PCAPNG inspection and `net split` packet/time subsets and time shards; time-only exports work without a native BPF runtime |
+| Rules and delivery | Capture-time scoped ordered rules, credential occurrence context, readiness/finalization checks and a durable alert outbox with CLI delivery controls |
+| Streaming | Bounded incremental HTTP/1 transactions, capture-time expiry, shared TCP page limits and live application-detection checkpoints |
+| Protocol recovery | Correct BGP directions, bounded Syslog framing, CIP context, RADIUS reachability, SMB compounds, legacy PCAP versions and retained round-2 transport/fragment/VoIP qualifications |
+| Application firewall | Routed HTTP/HTTPS and API inspection, scoped identities/approvals, Coraza/HTTP3 build profile, SMB/FTP gateways, typed response actions, transactional control/recovery, embedded policy console and Helm deployment examples |
+| Firewall qualification | Owned multi-protocol soak, image/chart contracts and digest-bound candidate/review tooling; inclusion does not assert an independently approved production appliance or promote OCI images |
+| Dependencies | Matched YARA-X Go/C API 1.22.0, Alpine 3.24.4 and digest-pinned Linux builders; qualified dependency updates and refreshed Go/Rust/native notices |
+| Gopacket | Upstream v1.7.2 replaced by `dreadl0ck/gopacket` at `f2eeabc1ff6e`; live-only close wakeups, bounded readers and portable descriptor lifecycle checks; fork attribution is in `legal/THIRD_PARTY_NOTICES.txt` |
+| Performance | Shared single-pass entropy calculation; ARM64 entropy and SIMD text-classification experiments remain bounded by their measured replay coverage |
+| Enrichment | Signed optional catalogues remain opt-in; NetAPI popularity filtering defaults on with PSL-aware matching, while no popularity corpus is bundled |
+
+## Runtime and source delivery
+
+| Artifact | Scope |
+| --- | --- |
+| Linux amd64 glibc/musl, DPI and no-DPI | Bundled native library closure, inventory, supplier notices and exact source links; matched YARA-X 1.22.0 |
+| macOS arm64 DPI | Minimum OS 26.0; Developer ID signed and notarized; execution qualified on the current macOS 26.6 host |
+| macOS arm64 no-DPI | Minimum Mach-O target 15.0; Developer ID signed and notarized; execution qualified on the current macOS 26.6 host, not on a clean macOS 15 machine |
+| Windows amd64 no-DPI | Driver-free offline client build; native Npcap interface/live-capture qualification remains unavailable; YARA-X is excluded |
+| Source and provenance | Netcap tag source, third-party source archive, macOS supplier source/recipe archive, checksums and qualification receipts accompany the binaries |
+
+Keep `lib/` beside the macOS executable and the full Linux launcher/runtime
+directory intact. CLI notarization uses Apple's online ticket lookup; raw
+Mach-O/ZIP files do not support stapling. JA4+ remains source-only and opt-in.
+
+Install signed data with `net util -download-dbs`, refresh it with
+`net util -update-dbs`, and request optional enrichment with
+`net util --download-enrichment`.
+
+Full changes: https://github.com/dreadl0ck/netcap/compare/v0.15.4...v0.16.0
+
+## Earlier module consumption and catalogue integration fixes
 
 `v0.15.4` repairs module consumption and optional enrichment integration from
 v0.15.3. Install the reviewed optional channel with `net util --download-enrichment`.

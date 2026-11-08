@@ -184,7 +184,9 @@ def build(args):
     bundle = args.output / 'bundle'
     bundle.mkdir()
     fork = run(['go', 'list', '-m', '-f', '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}', 'github.com/gopacket/gopacket'], cwd=root, env=env).strip()
-    flags = '-X github.com/dreadl0ck/netcap.Version=native-' + args.revision[:12]
+    if args.release_version and not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', args.release_version):
+        raise ValueError('invalid release version')
+    flags = '-X github.com/dreadl0ck/netcap.Version=' + ('v' + args.release_version if args.release_version else 'native-' + args.revision[:12])
     flags += ' -X github.com/dreadl0ck/netcap.Commit=' + args.revision + ' -X github.com/dreadl0ck/netcap.GopacketVersion=' + fork
     if args.variant == 'dpi':
         for package, field in [('libndpi', 'NDPIVersion'), ('libprotoident', 'LibprotoidentVersion')]:
@@ -224,6 +226,7 @@ def build(args):
             member.size, member.mode, member.mtime = len(data), (0o755 if path.name == 'net' else 0o644), 0
             tar.addfile(member, io.BytesIO(data))
     receipt = dict(schema='netcap-macos-build/v1', sourceRevision=args.revision, minimumOS=minimum, cpuLimit=2,
+                   releaseVersion=args.release_version,
                    variant=args.variant, state='built-and-local-smoke-passed', archiveSHA256=sha(archive), members=records,
                    frontendSHA256={str(p.relative_to(frontend)): sha(p) for p in sorted(frontend.rglob('*')) if p.is_file()})
     (args.output / 'build-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
@@ -235,6 +238,7 @@ def main():
     commands = parser.add_subparsers(dest='command', required=True)
     building = commands.add_parser('build')
     building.add_argument('--revision', required=True)
+    building.add_argument('--release-version', help='SemVer without v; omit for a native qualification candidate')
     building.add_argument('--variant', choices=('dpi', 'nodpi'), required=True)
     building.add_argument('--yara-prefix', type=Path, required=True)
     building.add_argument('--output', type=lambda p: Path(p).resolve(), required=True)
