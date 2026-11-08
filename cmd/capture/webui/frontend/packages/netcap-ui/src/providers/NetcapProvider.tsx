@@ -113,6 +113,8 @@ export interface NetcapConfig {
 
   /** Optional: native window fullscreen; defaults to the browser Fullscreen API */
   fullscreen?: FullscreenAdapter;
+  /** Native JSON save dialog; browser hosts use an ordinary download. */
+  saveJSON?: (filename: string, data: unknown) => Promise<void>;
 }
 
 /**
