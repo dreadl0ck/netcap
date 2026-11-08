@@ -193,7 +193,8 @@ jobs:
           ./net.exe --version
           go test -tags nodpi,noyara ./internal/dbs ./internal/vulndb
           # This runner has no Npcap; BPF/export and POSIX permission suites run on Linux.
-          go test -race -p 2 -timeout=15m -tags nodpi,noyara ./internal/netio ./cmd/split ./internal/decoder/stream/cip
+          go test -race -p 2 -timeout=15m -tags nodpi,noyara ./cmd/split ./internal/decoder/stream/cip
+          go test -race -p 2 -timeout=15m -tags nodpi,noyara ./internal/netio -run '^Test(Reader|Writer|CountRecords|ChanWriter|ProtoWriter|DelimitedProtoWriter|SortRejects)'
           go test -race -p 2 -timeout=15m -tags nodpi,noyara ./internal/collector -run '^Test(LegacyPCAP|CaptureReader|CaptureInput(Synthetic|MixedInterfaces|EmptyPacket|DecodeQualification))'
           export NC_CONFIG_ROOT="$RUNNER_TEMP/netcap-db-qualification"
           ./net.exe util -download-dbs

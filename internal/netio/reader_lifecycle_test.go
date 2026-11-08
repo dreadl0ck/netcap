@@ -3,7 +3,6 @@ package netio
 import (
 	"bytes"
 	"compress/gzip"
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -35,8 +34,8 @@ func TestReaderReleasesReadOnlyFile(t *testing.T) {
 			if err := r.Close(); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := r.file.Stat(); !errors.Is(err, os.ErrClosed) {
-				t.Fatalf("descriptor still open: %v", err)
+			if fd := r.file.Fd(); fd != ^uintptr(0) {
+				t.Fatalf("descriptor still open: %d", fd)
 			}
 			if err := os.Remove(path); err != nil {
 				t.Fatal(err)
