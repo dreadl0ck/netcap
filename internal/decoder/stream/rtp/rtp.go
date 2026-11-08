@@ -114,6 +114,12 @@ func (r *reader) decode(emit func(*types.RTP), event func(*types.DTMF)) {
 		}
 		m.Timestamp = core.FragmentTime(f)
 		m.SrcIP, m.DstIP, m.SrcPort, m.DstPort = r.conversation.Endpoints(f)
+		m.CommunityID = r.conversation.CommunityID
+		if qualification := sipaudit.Media.Qualification(m.Timestamp); qualification != "" {
+			m.AssociationQualification = qualification
+			emit(m)
+			continue
+		}
 		id, codec, ok := sipaudit.Media.Lookup(r.conversation.NetworkScope, m.SrcIP, m.DstIP, m.SrcPort, m.DstPort, m.PayloadType, m.Timestamp)
 		if !ok {
 			continue

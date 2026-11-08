@@ -7,6 +7,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/sipaudit"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -34,7 +35,12 @@ func (r *reader) Decode() {
 }
 
 func (r *reader) decode(emit func(*types.SIP)) {
-	c := r.conversation
+	for _, run := range streamutils.TransportRuns(r.conversation) {
+		r.decodeRun(run.Conversation, run.Observation, emit)
+	}
+}
+
+func (r *reader) decodeRun(c *core.ConversationInfo, observation string, emit func(*types.SIP)) {
 	directions := []core.DataFragments{c.ClientData, c.ServerData}
 	if len(c.ClientData)+len(c.ServerData) == 0 {
 		for _, f := range c.Data {
@@ -51,9 +57,9 @@ func (r *reader) decode(emit func(*types.SIP)) {
 		broken := false
 		observed := false
 		for _, f := range fragments {
-			if loss, ok := f.(*core.StreamData); ok && loss.SkippedBytes != 0 {
+			if loss, ok := f.(*core.StreamData); ok && (loss.SkippedBytes != 0 || loss.DiscardedBytes > 0) {
 				// Only an unknown leading prefix may begin at an observed SIP boundary.
-				if loss.SkippedBytes > 0 || observed {
+				if loss.SkippedBytes > 0 || loss.DiscardedBytes > 0 || observed {
 					broken = true
 				}
 			}
@@ -90,6 +96,7 @@ func (r *reader) decode(emit func(*types.SIP)) {
 					msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = c.Endpoints(f)
 					msg.CommunityID, msg.Transport = c.CommunityID, "TCP"
 					msg.NetworkScope = c.NetworkScope
+					msg.TCPObservation = observation
 					sipaudit.Analyze(msg)
 					sipaudit.Media.Observe(msg)
 					if config.Instance == nil || !config.Instance.IncludePayloads {

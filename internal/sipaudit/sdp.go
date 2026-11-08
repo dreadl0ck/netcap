@@ -10,8 +10,10 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-const maxCalls = 256
-const maxDescriptions = 8
+// Retain historical negotiations until capture reset: UDP drains after signaling.
+// Accounting deliberately overestimates Go objects, maps and slice growth.
+const associationBudget = 16 << 20
+const CapacityLoss = "sip-association-capacity; RTP candidate only, association unavailable"
 const associationLifetime int64 = 3600e9
 
 type Codec struct {
@@ -26,6 +28,7 @@ type media struct {
 	disabled bool
 }
 type description struct {
+	from, to     string
 	at           int64
 	seq          int32
 	method       string
@@ -35,33 +38,82 @@ type description struct {
 type call struct {
 	id           string
 	scope        string
-	latest       int64
 	descriptions []description
 }
 
 // Associations stores signaling metadata only. Capture-time intervals, rather
 // than arrival order or wall time, also support UDP replay after TCP readers drain.
 type Associations struct {
-	mu    sync.RWMutex
-	calls map[string]*call
+	mu          sync.RWMutex
+	calls       map[string]*call
+	used, limit int
+	lost        bool
+	lostAt      int64
+	rejected    uint64
+}
+
+type AssociationCoverage struct {
+	Status               string `json:"status"`
+	Policy               string `json:"policy"`
+	LimitBytes           int    `json:"limitBytes"`
+	RetainedBytes        int    `json:"retainedBytes"`
+	RetainedCalls        int    `json:"retainedCalls"`
+	RetainedDescriptions int    `json:"retainedDescriptions"`
+	RejectedDescriptions uint64 `json:"rejectedDescriptions"`
+	UntrustedFrom        int64  `json:"untrustedFromNs"`
+}
+
+func (a *Associations) Coverage() AssociationCoverage {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	c := AssociationCoverage{Status: "complete", Policy: "retain-history; fail-closed from earliest rejected signaling timestamp across all scopes", LimitBytes: a.limit, RetainedBytes: a.used, RetainedCalls: len(a.calls), RejectedDescriptions: a.rejected, UntrustedFrom: a.lostAt}
+	if a.lost {
+		c.Status = "capacity-loss"
+	}
+	for _, call := range a.calls {
+		c.RetainedDescriptions += len(call.descriptions)
+	}
+	return c
 }
 
 var Media = NewAssociations()
 
-func NewAssociations() *Associations { return &Associations{calls: map[string]*call{}} }
-func (a *Associations) Reset()       { a.mu.Lock(); defer a.mu.Unlock(); a.calls = map[string]*call{} }
+func NewAssociations() *Associations { return NewAssociationsWithBudget(associationBudget) }
+
+// NewAssociationsWithBudget bounds retained signaling metadata, never packet buffers.
+func NewAssociationsWithBudget(bytes int) *Associations {
+	return &Associations{calls: map[string]*call{}, limit: bytes}
+}
+func (a *Associations) Reset() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.calls, a.used, a.lost, a.lostAt = map[string]*call{}, 0, false, 0
+	a.rejected = 0
+}
+
+func (a *Associations) Qualification(at int64) string {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	if a.lost && at >= a.lostAt {
+		return CapacityLoss
+	}
+	return ""
+}
 
 func fromTag(from string) string {
 	for _, part := range strings.Split(from, ";")[1:] {
 		key, value, ok := strings.Cut(strings.TrimSpace(part), "=")
 		if ok && strings.EqualFold(key, "tag") {
-			return value
+			return strings.Clone(value)
 		}
 	}
 	return ""
 }
 
 func (a *Associations) Observe(s *types.SIP) {
+	if s.TCPObservation != "" {
+		return
+	}
 	if s.CallID == "" || len(s.CallID) > 256 {
 		return
 	}
@@ -69,9 +121,14 @@ func (a *Associations) Observe(s *types.SIP) {
 	if tag == "" || len(tag) > 128 {
 		return
 	}
-	d := description{at: s.Timestamp, seq: s.CSeqNumber, method: s.CSeqMethod, answer: s.IsResponse}
+	to := fromTag(s.To)
+	if len(to) > 128 {
+		return
+	}
+	d := description{from: tag, to: to, at: s.Timestamp, seq: s.CSeqNumber, method: strings.Clone(s.CSeqMethod), answer: s.IsResponse}
 	if !s.IsResponse && (s.MethodName == "BYE" || s.MethodName == "CANCEL") {
 		d.stop = true
+		d.method = strings.Clone(s.MethodName)
 	} else {
 		if d.method != "INVITE" && d.method != "UPDATE" {
 			return
@@ -88,38 +145,54 @@ func (a *Associations) Observe(s *types.SIP) {
 			return
 		}
 	}
-	key := s.NetworkScope + "\x00" + s.CallID + "\x00" + tag
+	key := s.NetworkScope + "\x00" + s.CallID
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	c := a.calls[key]
-	if c == nil {
-		if len(a.calls) >= maxCalls {
-			oldKey, oldest := "", int64(1<<63-1)
-			for k, v := range a.calls {
-				if v.latest < oldest || (v.latest == oldest && k < oldKey) {
-					oldKey, oldest = k, v.latest
+	// Retransmissions do not extend a negotiation's validity or consume slots.
+	if c != nil {
+		for i := range c.descriptions {
+			old := &c.descriptions[i]
+			if old.from == d.from && old.to == d.to && old.seq == d.seq && old.method == d.method && old.answer == d.answer && old.stop == d.stop && sameMedia(old.media, d.media) {
+				if d.at < old.at {
+					old.at = d.at
+					sort.SliceStable(c.descriptions, func(i, j int) bool { return c.descriptions[i].at < c.descriptions[j].at })
 				}
-			}
-			if d.at < oldest {
 				return
 			}
-			delete(a.calls, oldKey)
 		}
-		c = &call{id: s.CallID, scope: s.NetworkScope, latest: d.at}
+	}
+	cost := 512 + len(tag) + len(to) + len(d.method)
+	if c == nil {
+		cost += 512 + 2*len(key)
+	}
+	for _, m := range d.media {
+		cost += 256 + len(m.ip)
+		for _, codec := range m.codecs {
+			cost += 256 + len(codec.Encoding) + len(codec.Events)
+		}
+	}
+	if a.lost || cost > a.limit-a.used {
+		a.rejected++
+		if !a.lost || d.at < a.lostAt {
+			a.lostAt = d.at
+		}
+		a.lost = true
+		return
+	}
+	a.used += cost
+	if c == nil {
+		c = &call{id: strings.Clone(s.CallID), scope: strings.Clone(s.NetworkScope)}
 		a.calls[key] = c
 	}
-	// Retransmissions do not extend a negotiation's validity or consume slots.
-	for _, old := range c.descriptions {
-		if old.seq == d.seq && old.method == d.method && old.answer == d.answer && old.stop == d.stop && sameMedia(old.media, d.media) {
-			return
-		}
-	}
-	c.latest = max(c.latest, d.at)
 	c.descriptions = append(c.descriptions, d)
 	sort.SliceStable(c.descriptions, func(i, j int) bool { return c.descriptions[i].at < c.descriptions[j].at })
-	if len(c.descriptions) > maxDescriptions {
-		c.descriptions = c.descriptions[len(c.descriptions)-maxDescriptions:]
-	}
+}
+
+// A missing To tag is an early offer shared by its response forks.
+func sameDialog(d, answer *description) bool {
+	return d.from == answer.from && (d.to == "" || d.to == answer.to) ||
+		d.to == answer.from && d.from == answer.to
 }
 
 func sameMedia(a, b []media) bool {
@@ -145,84 +218,114 @@ func sameMedia(a, b []media) bool {
 func (a *Associations) Lookup(scope, src, dst string, sport, dport int32, pt uint32, at int64) (string, Codec, bool) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
+	if a.lost && at >= a.lostAt {
+		return "", Codec{}, false
+	}
 	var foundID string
 	var foundCall *call
 	var found Codec
+	var foundDialog string
 	for _, c := range a.calls {
 		if c.scope != scope {
 			continue
 		}
-		var offer *description
-		var answer *description
-		for i := range c.descriptions {
-			d := &c.descriptions[i]
+		// Only the latest response per directed dialog can be current. Keep ties
+		// for ambiguity checks without rescanning every historical answer.
+		type tags struct{ from, to string }
+		latest := map[tags]int64{}
+		for _, d := range c.descriptions {
 			if d.at > at {
 				break
 			}
-			if d.stop {
-				offer, answer = nil, nil
-				continue
-			}
-			if !d.answer {
-				offer, answer = d, nil
-				continue
-			}
-			if offer != nil && d.seq == offer.seq && d.method == offer.method {
-				answer = d
+			if d.answer {
+				latest[tags{d.from, d.to}] = d.at
 			}
 		}
-		if offer == nil || answer == nil || at-offer.at > associationLifetime {
-			continue
-		}
-		for i, x := range offer.media {
-			if i >= len(answer.media) {
-				break
-			}
-			y := answer.media[i]
-			if x.disabled || y.disabled {
+		for ai := range c.descriptions {
+			answer := &c.descriptions[ai]
+			if !answer.answer || answer.at > at || answer.at != latest[tags{answer.from, answer.to}] {
 				continue
 			}
-			if src == x.ip && sport == x.port && dst == y.ip && dport == y.port {
-				x, y = y, x // x is the receiver's payload map
-			} else if !(src == y.ip && sport == y.port && dst == x.ip && dport == x.port) {
+			var offer *description
+			var stop *description
+			valid := true
+			for di := range c.descriptions {
+				d := &c.descriptions[di]
+				if d.at > at {
+					break
+				}
+				if !sameDialog(d, answer) {
+					continue
+				}
+				if d.stop && (d.method == "CANCEL" || answer.to == "" || d.to != "") {
+					stop = d
+				}
+				if !d.answer && !d.stop {
+					if d.at <= answer.at && d.from == answer.from && (d.to == answer.to || d.to == "") {
+						offer = d
+					} else if d.at > answer.at {
+						valid = false
+					}
+				}
+				if d.answer && d.at > answer.at && d.from == answer.from && d.to == answer.to {
+					valid = false
+				}
+			}
+			if !valid || offer == nil || stop != nil && stop.at >= offer.at || offer.seq != answer.seq || offer.method != answer.method || at-offer.at > associationLifetime {
 				continue
 			}
-			codec, ok := x.codecs[pt]
-			if !ok {
-				continue
-			}
-			compatible := false
-			var allowed [16]bool
-			for _, peer := range y.codecs {
-				if peer.Encoding == codec.Encoding && peer.Rate == codec.Rate {
-					if codec.Encoding == "telephone-event" {
-						for event := range uint32(16) {
-							if codec.AllowsEvent(event) && peer.AllowsEvent(event) {
-								allowed[event] = true
+			dialog := answer.from + "\x00" + answer.to
+			for i, x := range offer.media {
+				if i >= len(answer.media) {
+					break
+				}
+				y := answer.media[i]
+				if x.disabled || y.disabled {
+					continue
+				}
+				if src == x.ip && sport == x.port && dst == y.ip && dport == y.port {
+					x, y = y, x // x is the receiver's payload map
+				} else if !(src == y.ip && sport == y.port && dst == x.ip && dport == x.port) {
+					continue
+				}
+				codec, ok := x.codecs[pt]
+				if !ok {
+					continue
+				}
+				compatible := false
+				var allowed [16]bool
+				for _, peer := range y.codecs {
+					if peer.Encoding == codec.Encoding && peer.Rate == codec.Rate {
+						if codec.Encoding == "telephone-event" {
+							for event := range uint32(16) {
+								if codec.AllowsEvent(event) && peer.AllowsEvent(event) {
+									allowed[event] = true
+								}
 							}
 						}
-					}
-					compatible = true
-				}
-			}
-			if codec.Encoding == "telephone-event" {
-				var events []string
-				for event, ok := range allowed {
-					if ok {
-						events = append(events, strconv.Itoa(event))
+						compatible = true
 					}
 				}
-				compatible = len(events) > 0
-				codec.Events = strings.Join(events, ",")
+				if codec.Encoding == "telephone-event" {
+					var events []string
+					for event, ok := range allowed {
+						if ok {
+							events = append(events, strconv.Itoa(event))
+						}
+					}
+					compatible = len(events) > 0
+					codec.Events = strings.Join(events, ",")
+				}
+				if !compatible {
+					continue
+				}
+				if foundCall != nil && (foundCall != c || found != codec || foundDialog != dialog) {
+					return "", Codec{}, false
+				}
+				foundID, found = c.id, codec
+				foundCall = c
+				foundDialog = dialog
 			}
-			if !compatible {
-				continue
-			}
-			if foundCall != nil && (foundCall != c || found != codec) {
-				return "", Codec{}, false
-			}
-			foundID, found = c.id, codec
-			foundCall = c
 		}
 	}
 	return foundID, found, foundID != ""
@@ -319,9 +422,9 @@ func parseSDP(body []byte) []media {
 				if err != nil || rate == 0 || rate > 384000 {
 					continue
 				}
-				codec.Encoding, codec.Rate = strings.ToLower(parts[0]), uint32(rate)
+				codec.Encoding, codec.Rate = strings.Clone(strings.ToLower(parts[0])), uint32(rate)
 			} else if name == "fmtp" && len(fields[1]) <= 128 {
-				codec.Events = fields[1]
+				codec.Events = strings.Clone(fields[1])
 			}
 			m.codecs[uint32(pt)] = codec
 		}

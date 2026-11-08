@@ -94,6 +94,7 @@ var fieldsSIP = []string{
 	fieldSDPMediaType,
 	fieldCommunityID,
 	"Transport",
+	"TCPObservation",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -144,6 +145,7 @@ func (s *SIP) CSVRecord() []string {
 		s.SDPMediaType,
 		s.CommunityID,
 		s.Transport,
+		s.TCPObservation,
 	})
 }
 
@@ -238,6 +240,7 @@ func (s *SIP) Encode() []string {
 		sipEncoder.String(fieldSDPMediaType, s.SDPMediaType),
 		sipEncoder.String(fieldCommunityID, s.CommunityID),
 		sipEncoder.String("Transport", s.Transport),
+		sipEncoder.String("TCPObservation", s.TCPObservation),
 	})
 }
 

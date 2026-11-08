@@ -8,7 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-var fieldsRTP = []string{"Timestamp", "SrcIP", "DstIP", "SrcPort", "DstPort", "CommunityID", "CallID", "SSRC", "Sequence", "ExtendedSequence", "MediaTimestamp", "ExtendedTimestamp", "PayloadType", "Encoding", "ClockRate", "Marker", "PayloadLength", "CSRC", "ExtensionProfile", "ExtensionLength", "PaddingLength", "Reordered"}
+var fieldsRTP = []string{"Timestamp", "SrcIP", "DstIP", "SrcPort", "DstPort", "CommunityID", "CallID", "SSRC", "Sequence", "ExtendedSequence", "MediaTimestamp", "ExtendedTimestamp", "PayloadType", "Encoding", "ClockRate", "Marker", "PayloadLength", "CSRC", "ExtensionProfile", "ExtensionLength", "PaddingLength", "Reordered", "AssociationQualification"}
 
 func (r *RTP) CSVHeader() []string { return filter(fieldsRTP) }
 func (r *RTP) CSVRecord() []string {
@@ -19,7 +19,7 @@ func (r *RTP) CSVRecord() []string {
 	return filter([]string{formatTimestamp(r.Timestamp), r.SrcIP, r.DstIP, formatInt32(r.SrcPort), formatInt32(r.DstPort), r.CommunityID, r.CallID,
 		formatUint32(r.SSRC), formatUint32(r.Sequence), strconv.FormatInt(r.ExtendedSequence, 10), formatUint32(r.MediaTimestamp), strconv.FormatInt(r.ExtendedTimestamp, 10),
 		formatUint32(r.PayloadType), r.Encoding, formatUint32(r.ClockRate), strconv.FormatBool(r.Marker), formatUint32(r.PayloadLength), join(csrc...),
-		formatUint32(r.ExtensionProfile), formatUint32(r.ExtensionLength), formatUint32(r.PaddingLength), strconv.FormatBool(r.Reordered)})
+		formatUint32(r.ExtensionProfile), formatUint32(r.ExtensionLength), formatUint32(r.PaddingLength), strconv.FormatBool(r.Reordered), r.AssociationQualification})
 }
 func (r *RTP) Time() int64 { return r.Timestamp }
 func (r *RTP) JSON() (string, error) {
@@ -82,7 +82,7 @@ func encodeMediaCSV(fields, values []string, timestamp int64, enc *encoder.Value
 		switch name {
 		case "Timestamp":
 			values[i] = enc.Int64(name, timestamp)
-		case "SrcIP", "DstIP", "CommunityID", "CallID", "Encoding", "Digit", "CSRC":
+		case "SrcIP", "DstIP", "CommunityID", "CallID", "Encoding", "Digit", "CSRC", "AssociationQualification":
 			values[i] = enc.String(name, values[i])
 		case "Marker", "Reordered":
 			values[i] = enc.Bool(values[i] == "true")

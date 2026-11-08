@@ -19,6 +19,7 @@ import (
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/encoder"
 	"github.com/dreadl0ck/netcap/internal/netio"
+	"github.com/dreadl0ck/netcap/internal/sipaudit"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
@@ -31,6 +32,9 @@ func TestW76VoIPProcess(t *testing.T) {
 		return
 	}
 	workers, _ := strconv.Atoi(os.Getenv("W76_WORKERS"))
+	if budget, err := strconv.Atoi(os.Getenv("W76_ASSOC_BUDGET")); err == nil {
+		sipaudit.Media = sipaudit.NewAssociationsWithBudget(budget)
+	}
 	dc := config.DefaultConfig.Clone()
 	dc.Out, dc.Source, dc.Quiet = os.Getenv("W76_OUT"), input, true
 	dc.IncludeDecoders = os.Getenv("W76_INCLUDE")
@@ -239,6 +243,163 @@ func voipRTP(seq uint16, ts, ssrc uint32, pt byte, body []byte) []byte {
 	binary.BigEndian.PutUint32(b[4:], ts)
 	binary.BigEndian.PutUint32(b[8:], ssrc)
 	return append(b, body...)
+}
+
+func TestW76DelayedMediaHistory(t *testing.T) {
+	for _, tcp := range []bool{false, true} {
+		t.Run(fmt.Sprint("TCP=", tcp), func(t *testing.T) {
+			b, input := newBookCapture(t)
+			send := b.openTCP("192.0.2.1", "192.0.2.2", 45060, 5060, false)
+			want := map[string]int{}
+			for i := range 300 {
+				id := fmt.Sprintf("history-%03d", i)
+				negotiations := 1
+				if i == 0 {
+					negotiations = 12
+				} // more than eight descriptions in one call
+				for n := range negotiations {
+					sp, dp := 10000+i*2, 10001+i*2
+					for _, answer := range []bool{false, true} {
+						start, ip, port := "INVITE sip:callee@example.test SIP/2.0", "192.0.2.1", sp
+						if answer {
+							start, ip, port = "SIP/2.0 200 OK", "192.0.2.2", dp
+						}
+						wire := strings.ReplaceAll(voipSIP(start, voipSDP(ip, port, 110+n)), "call-w76", id)
+						wire = strings.ReplaceAll(wire, "CSeq: 1 INVITE", fmt.Sprintf("CSeq: %d INVITE", n+1))
+						if tcp {
+							send(answer, false, false, wire)
+						} else if answer {
+							b.udp("192.0.2.2", "192.0.2.1", 5060, 5060, []byte(wire))
+						} else {
+							b.udp("192.0.2.1", "192.0.2.2", 5060, 5060, []byte(wire))
+						}
+					}
+					b.udp("192.0.2.1", "192.0.2.2", uint16(sp), uint16(dp), voipRTP(uint16(n), uint32(n+1), 42, byte(110+n), []byte{5, 138, 0, 160}))
+					want[id]++
+				}
+			}
+			for _, workers := range []int{1, 4} {
+				out := runVoIP(t, input, "RTP,DTMF", workers)
+				rtp := bookRecords(t, out, "RTP", func() *types.RTP { return new(types.RTP) })
+				events := bookRecords(t, out, "DTMF", func() *types.DTMF { return new(types.DTMF) })
+				got, gotEvents := map[string]int{}, map[string]int{}
+				for _, r := range rtp {
+					got[r.CallID]++
+					if r.Encoding != "telephone-event" || r.ClockRate != 8000 || r.AssociationQualification != "" || r.SrcPort < 10000 || r.DstPort != r.SrcPort+1 || r.CallID != fmt.Sprintf("history-%03d", (r.SrcPort-10000)/2) || r.PayloadType != 110+r.Sequence || r.MediaTimestamp != r.Sequence+1 {
+						t.Fatalf("lost historical semantics: %v", r)
+					}
+				}
+				for _, e := range events {
+					if e.CallID != fmt.Sprintf("history-%03d", (e.SrcPort-10000)/2) || e.Event != 5 || e.Duration != 160 || e.PayloadType != 109+e.MediaTimestamp {
+						t.Fatalf("historical event attribution: %v", e)
+					}
+					gotEvents[e.CallID]++
+				}
+				if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(gotEvents, want) {
+					t.Fatalf("workers=%d RTP=%d DTMF=%d, want 311 historically attributed packets/events", workers, len(rtp), len(events))
+				}
+				coverage := readAssociationCoverage(t, out)
+				if coverage.Status != "complete" || coverage.RetainedCalls != 300 || coverage.RetainedDescriptions != 622 {
+					t.Fatalf("coverage: %+v", coverage)
+				}
+			}
+		})
+	}
+}
+
+func readAssociationCoverage(t *testing.T, out string) sipaudit.AssociationCoverage {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(out, "sip-association-coverage.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var coverage sipaudit.AssociationCoverage
+	if err := json.Unmarshal(data, &coverage); err != nil {
+		t.Fatal(err)
+	}
+	return coverage
+}
+
+func TestW76AssociationCapacityCoverage(t *testing.T) {
+	t.Setenv("W76_ASSOC_BUDGET", "4096")
+	b, input := newBookCapture(t)
+	for i := range 3 {
+		id := fmt.Sprintf("capacity-%d", i)
+		for _, answer := range []bool{false, true} {
+			start, ip, port := "INVITE sip:callee@example.test SIP/2.0", "192.0.2.1", 4000
+			if answer {
+				start, ip, port = "SIP/2.0 200 OK", "192.0.2.2", 5000
+			}
+			wire := strings.ReplaceAll(voipSIP(start, voipSDP(ip, port, 110)), "call-w76", id)
+			b.udp("192.0.2.1", "192.0.2.2", 5060, 5060, []byte(wire))
+		}
+		b.udp("192.0.2.1", "192.0.2.2", 4000, 5000, voipRTP(uint16(i), uint32(i+1), 42, 110, []byte{5, 138, 0, 160}))
+	}
+	for _, include := range []string{"RTP,DTMF", "DTMF"} {
+		out := runVoIP(t, input, include, 1)
+		c := readAssociationCoverage(t, out)
+		if c.Status != "capacity-loss" || c.RetainedBytes > c.LimitBytes || c.RejectedDescriptions == 0 {
+			t.Fatalf("silent capacity loss: %+v", c)
+		}
+		events := bookRecords(t, out, "DTMF", func() *types.DTMF { return new(types.DTMF) })
+		if len(events) != 1 || events[0].CallID != "capacity-0" {
+			t.Fatalf("historical event lost or overflow guessed: %v", events)
+		}
+		if include == "DTMF" {
+			continue
+		}
+		rtp := bookRecords(t, out, "RTP", func() *types.RTP { return new(types.RTP) })
+		if len(rtp) != 3 || rtp[0].CallID != "capacity-0" || rtp[0].AssociationQualification != "" {
+			t.Fatalf("historical attribution: %v", rtp)
+		}
+		for _, r := range rtp[1:] {
+			if r.CallID != "" || r.Encoding != "" || r.AssociationQualification != sipaudit.CapacityLoss {
+				t.Fatalf("overflow trusted: %v", r)
+			}
+		}
+	}
+}
+
+func TestW76ReverseBYEPortReuse(t *testing.T) {
+	for _, tcp := range []bool{false, true} {
+		t.Run(fmt.Sprint("TCP=", tcp), func(t *testing.T) {
+			b, input := newBookCapture(t)
+			send := b.openTCP("192.0.2.1", "192.0.2.2", 45060, 5060, false)
+			signal := func(answer bool, wire string) {
+				if tcp {
+					send(answer, false, false, wire)
+				} else if answer {
+					b.udp("192.0.2.2", "192.0.2.1", 5060, 5060, []byte(wire))
+				} else {
+					b.udp("192.0.2.1", "192.0.2.2", 5060, 5060, []byte(wire))
+				}
+			}
+			media := func(seq uint16) {
+				b.udp("192.0.2.1", "192.0.2.2", 4000, 5000, voipRTP(seq, uint32(seq), 42, 110, []byte{5, 138, 0, 160}))
+			}
+			for _, id := range []string{"old-dialog", "new-dialog"} {
+				offer := strings.ReplaceAll(voipSIP("INVITE sip:callee@example.test SIP/2.0", voipSDP("192.0.2.1", 4000, 110)), "call-w76", id)
+				answer := strings.ReplaceAll(voipSIP("SIP/2.0 200 OK", voipSDP("192.0.2.2", 5000, 110)), "call-w76", id)
+				answer = strings.ReplaceAll(answer, "t: <sip:callee@example.test>", "t: <sip:callee@example.test>;tag=callee")
+				signal(false, offer)
+				signal(true, answer)
+				if id == "new-dialog" {
+					media(3)
+					break
+				}
+				media(1)
+				signal(true, "BYE sip:caller@example.test SIP/2.0\r\ni: old-dialog\r\nf: <sip:callee@example.test>;tag=callee\r\nt: <sip:caller@example.test>;tag=offer\r\nCSeq: 2 BYE\r\nl: 0\r\n\r\n")
+				media(2) // old ports after the callee's BYE must not retain the old mapping
+			}
+			for _, workers := range []int{1, 4} {
+				out := runVoIP(t, input, "RTP,DTMF", workers)
+				records := bookRecords(t, out, "RTP", func() *types.RTP { return new(types.RTP) })
+				if len(records) != 2 || records[0].CallID != "old-dialog" || records[0].Sequence != 1 || records[1].CallID != "new-dialog" || records[1].Sequence != 3 {
+					t.Fatalf("reverse BYE/port reuse: %v", records)
+				}
+			}
+		})
+	}
 }
 
 func TestW76NegotiatedMedia(t *testing.T) {
