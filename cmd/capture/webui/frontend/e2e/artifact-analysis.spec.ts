@@ -33,7 +33,7 @@ for (const [state, outcome] of [['completed', 'matched'], ['completed', 'no-matc
     await expect(dialog.getByText(new RegExp(`yara-x: ${state}`))).toBeVisible();
     if (outcome) await expect(dialog.getByText(new RegExp(`yara-x: ${state}.*${outcome}`))).toBeVisible();
     if (state !== 'completed') await expect(dialog.getByText(/not a clean scan/)).toBeVisible();
-    await expect(dialog.getByText('Artifact completeness: no-reported-loss')).toBeVisible();
+    await expect(dialog.getByText('Artifact completeness: complete — no-reported-loss', { exact: true })).toBeVisible();
     expect(unexpected).toEqual([]); expect(errors).toEqual([]);
   });
 }
