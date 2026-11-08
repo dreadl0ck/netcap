@@ -4,9 +4,11 @@ from pathlib import Path
 import tarfile
 import tempfile
 import unittest
+import urllib.error
 from unittest.mock import patch
 
 import firewall_release_tools as tools
+import firewall_download as download
 
 
 class ReleaseToolAssets(unittest.TestCase):
@@ -54,6 +56,50 @@ class ReleaseToolAssets(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'missing upstream checksum'):
                 tools.install(Path(tmp))
             self.assertEqual(fetch.call_count, 1)
+            self.assertFalse(list(Path(tmp).iterdir()))
+
+    def test_checksum_504_recovers_but_bad_archive_is_not_retried(self):
+        tag = tools.POLICY['tools']['syft']
+        base = f'https://github.com/anchore/syft/releases/download/{tag}/'
+        name = f'syft_{tag[1:]}_linux_amd64.tar.gz'
+        sums = base + f'syft_{tag[1:]}_checksums.txt'
+        error = urllib.error.HTTPError(sums, 504, 'timeout', {}, io.BytesIO())
+        responses = [error, io.BytesIO(('0' * 64 + '  ' + name + '\n').encode()), io.BytesIO(b'bad archive')]
+        with tempfile.TemporaryDirectory() as tmp, patch.object(tools.platform, 'system', return_value='Linux'), \
+                patch.object(tools.platform, 'machine', return_value='x86_64'), \
+                patch.object(tools.urllib.request, 'urlopen', side_effect=responses) as fetch, \
+                patch.object(download.time, 'sleep'):
+            with self.assertRaisesRegex(ValueError, 'checksum mismatch'):
+                tools.install(Path(tmp))
+            self.assertEqual([c.args[0] for c in fetch.call_args_list], [sums, sums, base + name])
+            self.assertFalse(list(Path(tmp).iterdir()))
+
+    def test_invalid_archive_layout_is_not_retried(self):
+        tag = tools.POLICY['tools']['syft']
+        name = f'syft_{tag[1:]}_linux_amd64.tar.gz'
+        data = io.BytesIO()
+        with tarfile.open(fileobj=data, mode='w:gz'):
+            pass
+        payload = data.getvalue()
+        responses = [io.BytesIO((hashlib.sha256(payload).hexdigest() + '  ' + name).encode()), io.BytesIO(payload)]
+        with tempfile.TemporaryDirectory() as tmp, patch.object(tools.platform, 'system', return_value='Linux'), \
+                patch.object(tools.platform, 'machine', return_value='x86_64'), \
+                patch.object(tools.urllib.request, 'urlopen', side_effect=responses) as fetch:
+            with self.assertRaisesRegex(ValueError, 'archive layout'):
+                tools.install(Path(tmp))
+            self.assertEqual(fetch.call_count, 2)
+            self.assertFalse(list(Path(tmp).iterdir()))
+
+    def test_oversized_checksum_response_is_not_retried(self):
+        response = io.BytesIO()
+        response.headers = {'Content-Length': str(download.CHECKSUM_LIMIT + 1)}
+        with tempfile.TemporaryDirectory() as tmp, patch.object(tools.platform, 'system', return_value='Linux'), \
+                patch.object(tools.platform, 'machine', return_value='x86_64'), \
+                patch.object(tools.urllib.request, 'urlopen', return_value=response) as fetch:
+            with self.assertRaisesRegex(ValueError, 'byte limit'):
+                tools.install(Path(tmp))
+            fetch.assert_called_once()
+            self.assertTrue(response.closed)
             self.assertFalse(list(Path(tmp).iterdir()))
 
 
