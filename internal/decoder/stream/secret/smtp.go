@@ -86,7 +86,7 @@ func smtpHarvesterFunc(data []byte, ident string, ts time.Time) *types.Secret {
 func decodeSMTPLogin(in [][]byte, typ string) (user, pass string) {
 	usernameBin, err := base64.StdEncoding.DecodeString(string(in[1]))
 	if err != nil {
-		credLog.Warn("captured "+typ+" credentials, but could not decode them", zap.String("input", string(in[1])))
+		credLog.Warn("captured "+typ+" credentials, but could not decode them", zap.Error(err))
 
 		return
 	}
@@ -94,7 +94,7 @@ func decodeSMTPLogin(in [][]byte, typ string) (user, pass string) {
 	passwordBin, err := base64.StdEncoding.DecodeString(string(in[2]))
 	if err != nil {
 		credLog.Warn("captured credentials, but could not decode them",
-			zap.String("input", string(in[2])),
+			zap.Error(err),
 			zap.String("type", typ),
 		)
 	}
@@ -105,7 +105,7 @@ func decodeSMTPLogin(in [][]byte, typ string) (user, pass string) {
 func decodeSMTPAuthPlain(in string) (user, pass string) {
 	data, err := base64.StdEncoding.DecodeString(in)
 	if err != nil {
-		credLog.Warn("captured SMTP Auth Plain credentials, but could not decode them", zap.String("input", in))
+		credLog.Warn("captured SMTP Auth Plain credentials, but could not decode them", zap.Error(err))
 
 		return
 	}

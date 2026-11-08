@@ -20,7 +20,6 @@
 package secret
 
 import (
-	"encoding/json"
 	"log"
 	"regexp"
 	"strings"
@@ -109,8 +108,8 @@ var Decoder = &decoder.AbstractDecoder{
 	},
 }
 
-// WriteSecret is a util that should be used to write credential audit to disk
-// it will deduplicate the audit records to avoid repeating information on disk.
+// WriteSecret retains each observed occurrence, including repeated credentials
+// in the same flow. Identity deduplication must not discard transaction evidence.
 func WriteSecret(creds *types.Secret) {
 	// Credentials are harvested by the protocol decoders, so this is reached
 	// even when the Secret decoder itself was not selected and has no writer.
@@ -119,24 +118,9 @@ func WriteSecret(creds *types.Secret) {
 	}
 
 	// Skip credentials with empty username AND password - they provide no useful information
-	if creds.User == "" && creds.Password == "" {
+	if creds == nil || creds.User == "" && creds.Password == "" && creds.Hash == "" && creds.HashcatFormat == "" {
 		return
 	}
-
-	// Cross-flow deduplication discarded whichever observation finished second.
-	encoded, _ := json.Marshal([4]string{creds.Service, creds.User, creds.Password, creds.Flow})
-	ident := string(encoded)
-
-	// prevent saving duplicate credentials
-	credStoreMu.Lock()
-	if _, ok := credStore[ident]; ok {
-		credStoreMu.Unlock()
-
-		return
-	}
-
-	credStore[ident] = creds.Flow
-	credStoreMu.Unlock()
 
 	if decoderconfig.Instance.ExportMetrics {
 		creds.Inc()

@@ -58,6 +58,10 @@ type Engine struct {
 	// Sequence tracking: map[ruleName]tracker. Each tracker records when a
 	// group last produced a record matching the rule's precondition.
 	sequenceTrackers map[string]*sequenceTracker
+	scopedCounts     map[string]*scopedCount
+	scopedJoins      map[string]*scopedJoin
+	scopedEntries    int
+	ordered          *OrderedStream
 
 	// Performance tracking
 	perfTracker *performance.Tracker
@@ -122,6 +126,13 @@ func NewEngine(rulesPath string, alertWriter AlertWriter) (*Engine, error) {
 	if err != nil {
 		return nil, err
 	}
+	if config.CaptureTime == nil {
+		for _, rule := range config.Rules {
+			if rule.Enabled && (len(rule.GroupBy) > 0 || rule.Sequence != nil && rule.Sequence.AfterType != "") {
+				return nil, fmt.Errorf("scoped capture rules require capture_time scope/lateness configuration")
+			}
+		}
+	}
 
 	return NewEngineFromConfig(config, alertWriter)
 }
@@ -157,6 +168,9 @@ func NewEngineFromConfig(config *Config, alertWriter AlertWriter) (*Engine, erro
 		actionStats:       &ActionStats{},
 	}
 
+	if c := config.CaptureTime; c != nil {
+		engine.ordered = &OrderedStream{engine: engine, scope: c.Scope, lateness: int64(c.LatenessSeconds) * int64(time.Second)}
+	}
 	return engine, nil
 }
 
@@ -207,14 +221,35 @@ func (e *Engine) SetPerformanceTracker(tracker *performance.Tracker) {
 // Evaluate evaluates all applicable rules against an audit record.
 // It returns the number of alerts generated.
 func (e *Engine) Evaluate(record types.AuditRecord) (int, error) {
+	if e.ordered != nil {
+		return e.ordered.observe(record)
+	}
+	return e.EvaluateScoped("", record)
+}
+
+// EvaluateScoped evaluates ordered records in an explicit capture/source scope.
+// Use OrderedStream for bounded reordering; unscoped legacy rules retain their API.
+func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, error) {
 	e.generationMu.RLock()
 	defer e.generationMu.RUnlock()
+	if record == nil || reflect.ValueOf(record).Kind() == reflect.Pointer && reflect.ValueOf(record).IsNil() {
+		return 0, fmt.Errorf("nil audit record")
+	}
 	recordType := record.NetcapType()
 	alertCount := 0
 
 	for _, rule := range e.config.Rules {
 		if !rule.Enabled {
 			continue
+		}
+		var joinSatisfied bool
+		var contributors []string
+		if rule.Sequence != nil && rule.Sequence.AfterType != "" {
+			var err error
+			joinSatisfied, contributors, err = e.crossSequence(scope, rule, record)
+			if err != nil {
+				return alertCount, err
+			}
 		}
 
 		// Check if rule applies to this record type
@@ -237,17 +272,25 @@ func (e *Engine) Evaluate(record types.AuditRecord) (int, error) {
 		}
 
 		matched := alert != nil
+		if alert != nil && scope != "" {
+			// Scoped alerts expose evidence coordinates, not application payloads
+			// such as passwords in HTTP headers, URI parameters or response bodies.
+			alert.MatchedRecord = scopedProjection(record)
+		}
 		alertGenerated := false
 
 		// Ordered correlation gate. This runs for every record of the rule's
 		// type, not only matching ones: the earlier record of a sequence
 		// usually does not match the rule's own expression.
 		sequenceSatisfied := true
-		if rule.Sequence != nil {
+		if rule.Sequence != nil && rule.Sequence.AfterType == "" {
 			sequenceSatisfied, err = e.checkSequence(rule, record)
 			if err != nil {
 				return alertCount, err
 			}
+		}
+		if rule.Sequence != nil && rule.Sequence.AfterType != "" {
+			sequenceSatisfied = joinSatisfied
 		}
 
 		if alert != nil {
@@ -278,7 +321,15 @@ func (e *Engine) Evaluate(record types.AuditRecord) (int, error) {
 				// Skip dedup for the same reason threshold rules do.
 			} else if rule.Threshold > 1 {
 				// Check threshold - if rule has threshold > 1, track matches
-				thresholdReached := e.checkThreshold(rule, record)
+				thresholdReached := false
+				if len(rule.GroupBy) > 0 {
+					thresholdReached, err = e.scopedThreshold(scope, rule, record)
+					if err != nil {
+						return alertCount, err
+					}
+				} else {
+					thresholdReached = e.checkThreshold(rule, record)
+				}
 				if !thresholdReached {
 					// Threshold not reached yet, don't generate alert
 					matched = true
@@ -292,7 +343,7 @@ func (e *Engine) Evaluate(record types.AuditRecord) (int, error) {
 				// itself provides rate limiting. The threshold tracker already ensures
 				// we don't alert too frequently, and we want to alert each time the
 				// threshold is reached (not just once per dedup window).
-			} else {
+			} else if scope == "" && (rule.Sequence == nil || rule.Sequence.AfterType == "") {
 				// Check deduplication only for non-threshold rules
 				if e.isDuplicate(alert) {
 					matched = true
@@ -305,7 +356,7 @@ func (e *Engine) Evaluate(record types.AuditRecord) (int, error) {
 			}
 
 			// Check rate limiting
-			if e.isRateLimited(rule.Name) {
+			if scope == "" && len(rule.GroupBy) == 0 && (rule.Sequence == nil || rule.Sequence.AfterType == "") && e.isRateLimited(rule.Name) {
 				matched = true
 				alertGenerated = false
 				if e.perfTracker != nil {
@@ -315,6 +366,9 @@ func (e *Engine) Evaluate(record types.AuditRecord) (int, error) {
 			}
 
 			// Write the alert
+			if len(contributors) > 0 {
+				alert.Notes = joinEvidence(scope, contributors)
+			}
 			err = e.alertWriter.WriteAlert(alert)
 			if err != nil {
 				return alertCount, fmt.Errorf("error writing alert: %w", err)
@@ -423,7 +477,7 @@ func (e *Engine) checkThreshold(rule *Rule, record types.AuditRecord) bool {
 	// Remove matches outside the time window
 	validMatches := make([]int64, 0)
 	for _, matchTime := range tracker.matches {
-		if now-matchTime <= windowNanos {
+		if matchTime <= now && now-matchTime <= windowNanos {
 			validMatches = append(validMatches, matchTime)
 		}
 	}
@@ -495,6 +549,9 @@ func (e *Engine) checkDistinctThreshold(rule *Rule, record types.AuditRecord) bo
 	// Prune values outside the window and count what remains.
 	count := 0
 	for v, ts := range values {
+		if ts > now {
+			continue
+		}
 		if now-ts > windowNanos {
 			delete(values, v)
 			continue
@@ -620,17 +677,19 @@ func (e *Engine) GetStats() map[string]any {
 	}
 
 	return map[string]any{
-		"config_generation":   e.generation,
-		"reload_state_policy": "reset-on-reload",
-		"total_rules":         len(e.config.Rules),
-		"enabled_rules":       enabledRules,
-		"threshold_rules":     thresholdRules,
-		"recent_alerts":       len(e.recentAlerts),
-		"dedup_window":        e.dedupWindow.String(),
-		"rate_limit":          e.rateLimit,
-		"tracked_thresholds":  len(e.thresholdTrackers),
-		"tracked_distinct":    len(e.distinctTrackers),
-		"tracked_sequences":   len(e.sequenceTrackers),
+		"scoped_groups":          len(e.scopedCounts) + len(e.scopedJoins),
+		"scoped_pending_matches": e.scopedEntries,
+		"config_generation":      e.generation,
+		"reload_state_policy":    "reset-on-reload",
+		"total_rules":            len(e.config.Rules),
+		"enabled_rules":          enabledRules,
+		"threshold_rules":        thresholdRules,
+		"recent_alerts":          len(e.recentAlerts),
+		"dedup_window":           e.dedupWindow.String(),
+		"rate_limit":             e.rateLimit,
+		"tracked_thresholds":     len(e.thresholdTrackers),
+		"tracked_distinct":       len(e.distinctTrackers),
+		"tracked_sequences":      len(e.sequenceTrackers),
 	}
 }
 
@@ -644,6 +703,18 @@ func (e *Engine) UpdateConfig(config *Config) error {
 	if err := CompileRules(owned); err != nil {
 		return fmt.Errorf("failed to compile rules: %w", err)
 	}
+	if e.ordered != nil {
+		e.ordered.mu.Lock()
+		defer e.ordered.mu.Unlock()
+		if owned.CaptureTime == nil || owned.CaptureTime.Scope != e.ordered.scope || int64(owned.CaptureTime.LatenessSeconds)*int64(time.Second) != e.ordered.lateness {
+			return fmt.Errorf("capture_time scope/lateness cannot change during an engine lifetime")
+		}
+		if _, err := e.ordered.advance(e.ordered.maxSeen); err != nil {
+			return err
+		}
+	} else if owned.CaptureTime != nil {
+		return fmt.Errorf("capture_time mode cannot change during an engine lifetime")
+	}
 
 	e.generationMu.Lock()
 	defer e.generationMu.Unlock()
@@ -653,6 +724,9 @@ func (e *Engine) UpdateConfig(config *Config) error {
 	e.thresholdTrackers = make(map[string]*thresholdTracker)
 	e.distinctTrackers = make(map[string]*distinctTracker)
 	e.sequenceTrackers = make(map[string]*sequenceTracker)
+	e.scopedCounts = nil
+	e.scopedJoins = nil
+	e.scopedEntries = 0
 	e.recentAlerts = make(map[string]int64)
 	e.ruleCounters = make(map[string]*rateCounter)
 	e.mu.Unlock()
@@ -662,11 +736,24 @@ func (e *Engine) UpdateConfig(config *Config) error {
 
 // Close closes the alert writer.
 func (e *Engine) Close() error {
+	_, finishErr := e.Finalize()
 	if closer, ok := e.alertWriter.(interface{ Close() error }); ok {
-		return closer.Close()
+		return errors.Join(finishErr, closer.Close())
 	}
-	return nil
+	return finishErr
 }
+
+// Finalize drains capture-time records before the owner publishes readiness.
+// It is idempotent and leaves the alert writer open for coordinated teardown.
+func (e *Engine) Finalize() (int, error) {
+	if e.ordered != nil {
+		return e.ordered.Finish()
+	}
+	return 0, nil
+}
+
+// CaptureTimeEnabled reports whether this engine owns a single scoped timeline.
+func (e *Engine) CaptureTimeEnabled() bool { return e.ordered != nil }
 
 // executeResponseActions executes all enabled response actions for a rule.
 func (e *Engine) executeResponseActions(rule *Rule, record types.AuditRecord, alert *types.Alert) {
