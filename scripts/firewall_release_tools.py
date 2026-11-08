@@ -14,9 +14,10 @@ def install(destination):
     destination.mkdir(parents=True, exist_ok=True)
     system = platform.system().lower()
     arch = {'x86_64': 'amd64', 'aarch64': 'arm64', 'arm64': 'arm64'}[platform.machine()]
+    goreleaser_arch = 'x86_64' if arch == 'amd64' else arch
     for tool, repo, asset, checksum in [
         ('syft', 'anchore/syft', f'syft_{{v}}_{system}_{arch}.tar.gz', 'syft_{v}_checksums.txt'),
-        ('goreleaser', 'goreleaser/goreleaser', f'goreleaser_{system.title()}_{arch}.tar.gz', 'checksums.txt'),
+        ('goreleaser', 'goreleaser/goreleaser', f'goreleaser_{system.title()}_{goreleaser_arch}.tar.gz', 'checksums.txt'),
         ('helm', None, f'helm-{{tag}}-{system}-{arch}.tar.gz', None),
     ]:
         tag = POLICY['tools'][tool]
