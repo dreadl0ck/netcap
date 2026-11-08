@@ -114,7 +114,37 @@ func (c *Collector) doCleanup(force bool) {
 		// Flushes every pool, then closes and joins the stream readers.
 		// Readers must finish before teardown() closes the log files.
 		tcp.CleanupReassembly(!force, c.assemblers)
+		for _, assembler := range c.assemblers {
+			assembler.Release()
+		}
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, tcp.PayloadRetentionError())
+		c.captureEvidenceError = errors.Join(c.captureEvidenceError, tcp.IncrementalError())
+	}
+	if c.streamStateBudget != nil {
+		c.captureEvidenceError = errors.Join(c.captureEvidenceError, c.streamStateBudget.Error())
+		data, err := json.MarshalIndent(c.streamStateBudget.Health(), "", "  ")
+		if err == nil {
+			err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "TCPStreamStateBudget.json"), append(data, '\n'), 0600)
+		}
+		c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
+		data, err = json.MarshalIndent(tcp.IncrementalHealthSnapshot(), "", "  ")
+		if err == nil {
+			err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "TCPIncrementalHealth.json"), append(data, '\n'), 0600)
+		}
+		c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
+	}
+	if c.captureKind == "file" && c.config.DecoderConfig.CaptureTimeIdleExpiry {
+		data, err := json.MarshalIndent(struct {
+			Policy      string `json:"policy"`
+			WatermarkNS string `json:"watermarkNs"`
+			LatePackets uint64 `json:"latePackets"`
+		}{
+			Policy: "maximum observed packet timestamp; one-second event-time ticks before advancing packets; both directions idle; EOF flushes all; late packets never rewind", WatermarkNS: fmt.Sprint(c.offlineWatermark.UnixNano()), LatePackets: c.offlineLatePackets,
+		}, "", "  ")
+		if err == nil {
+			err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "CaptureTimeMaintenance.json"), append(data, '\n'), 0600)
+		}
+		c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
 	}
 	if c.reassemblyPageBudget != nil {
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, c.reassemblyPageBudget.Error())

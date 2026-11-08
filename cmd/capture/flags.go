@@ -674,6 +674,19 @@ func GetFlags() []cli.Flag {
 				return nil
 			},
 		},
+		&cli.BoolFlag{Name: "incremental-http", Usage: "opt HTTP/1 with observed TCP handshake into bounded transaction-time decoding; other protocols remain completion-only", Sources: cli.EnvVars("NC_INCREMENTAL_HTTP")},
+		&cli.BoolFlag{Name: "capture-time-idle-expiry", Usage: "expire offline TCP state at monotonic packet-time watermarks (one-second capture-time maintenance); EOF flushes remaining state", Sources: cli.EnvVars("NC_CAPTURE_TIME_IDLE_EXPIRY")},
+		&cli.Int64Flag{
+			Name: "max-retained-tcp-state-bytes", Value: 64 << 20,
+			Usage:   "shared incremental parser storage and TCP connection credits when incremental-http is enabled (0 = unlimited; excludes RSS)",
+			Sources: cli.EnvVars("NC_MAX_RETAINED_TCP_STATE_BYTES"),
+			Action: func(_ context.Context, _ *cli.Command, value int64) error {
+				if value < 0 {
+					return fmt.Errorf("max-retained-tcp-state-bytes cannot be negative")
+				}
+				return nil
+			},
+		},
 		&cli.IntFlag{
 			Name:    "compression-block-size",
 			Value:   defaults.CompressionBlockSize,

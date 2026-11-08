@@ -46,7 +46,13 @@ and timeout closure is labeled `idle-expired`.
 | Output snapshots | `-live-flush-interval` (`NC_LIVE_FLUSH_INTERVAL`) flushes writers/current records; zero disables snapshots. It does not expire streams. |
 
 Offline collection does not start a wall-clock maintenance timer or enable idle
-expiry; its existing packet-driven capture-time policy is preserved.
+expiry by default. `-capture-time-idle-expiry` / `NC_CAPTURE_TIME_IDLE_EXPIRY`
+opts into one-second capture-time maintenance, ordered before the packet that
+advances the watermark. The watermark is the maximum observed packet timestamp;
+late packets never rewind it. Both directions must be idle before expiry, and
+EOF flushes the remaining state. `CaptureTimeMaintenance.json` records policy,
+quoted `watermarkNs` and `latePackets`. Replay pauses and worker count do not
+change these timeout decisions (`internal/collector/capture_time_test.go`).
 
 Completed TCP connections finish decoding, conversation persistence and banner
 extraction before closing/joining both reader tasks. Raw fragment/decoder references
@@ -58,15 +64,72 @@ bound on still-open streams or decoder-owned caches.
 both saved/queued lists and clears delivery scratch references
 (`internal/reassembly/page_budget_test.go`).
 
+## Incremental transactions
+
+`-incremental-http` / `NC_INCREMENTAL_HTTP` opts HTTP/1 into transaction-time
+decoding. A completed keepalive transaction can produce an HTTP record and an
+application alert while its TCP connection remains open. The native CLI and
+collector API tests exercise 40 requests on one still-open connection at 1/4
+workers (`tests/e2e/incremental_http_test.go`,
+`internal/collector/incremental_http_test.go`). The default remains completion
+decoding; the opt-in is propagated into service collectors and manifests.
+
+| Input / condition | Incremental contract |
+| --- | --- |
+| Observed SYN handshake, unambiguous direction, HTTP/1 header within `64 KiB` | Normal decoder selection remains authoritative, including IPP specialization. Selected HTTP/1 uses `core.IncrementalFactory`; other selected decoders remain completion-only. |
+| Fixed-length/chunked requests and responses, pipelining, HEAD, interim 1xx | Directional framing spans arbitrary deliveries. Each completed transaction is decoded once; interim responses stay with the final response. Chunk/trailer framing is validated without extraction side effects before accepting the next boundary. |
+| Close-delimited response | Waits for finalization. Without an observed server FIN, `response-end-not-observed` preserves the missing end witness. |
+| Gap or local discard | Flush the qualified partial tail, reset framing, and retain known/unknown loss counts and local-discard reasons for delegated extraction. Bytes and requests cannot join across the hole. Later loss does not retroactively rewrite an already emitted complete transaction; final health retains the loss. |
+| Malformed/ambiguous framing | The affected tail waits for the evidence parser at finalization; bytes after an untrusted boundary cannot become clean incremental transactions. |
+| CONNECT, Upgrade or 101 after HTTP/1 | The bounded remaining tail is completion-only, including existing HTTP/2 and TLS-upgrade inspection. Retired HTTP/1 prefixes are not replayed. |
+| HTTP/2 preface, missing handshake, uncertain roles, other protocols | Existing completion decoding. `TCPIncrementalHealth.json` publishes support boundaries, selected completion-only decoder counts, incremental transaction counts, gap resets and deferred tails. |
+
+`core.IncrementalDecoder.Push` borrows its input only during the call; retained
+parser bytes are copied under the shared state budget. `Finish` receives the
+completion reason and observed directional FINs; `Abort` releases state without
+interpreting omitted bytes as EOF. Both are idempotent. See
+`internal/decoder/core/incremental.go` and HTTP segmentation/corruption tests in
+`internal/decoder/stream/http/incremental_test.go`.
+
+Without `-conns`, completed parser storage and TCP reader prefixes retire during
+capture; only the bounded initial service banner remains in the reader. With
+`-conns`, records still emit incrementally but full raw conversation retention
+continues under `-max-retained-tcp-bytes`. Whole-conversation generic harvesters
+are not replayed over retired prefixes; HTTP's own extraction/identity/software
+paths still run per transaction, and deferred upgrades retain their inspectors.
+
+The HTTP/1 parser limits accounted working state to `8 MiB` per connection,
+headers/trailers to `64 KiB` each, chunk lines to `8 KiB`, and pending requests
+to `1,024`. `-max-retained-tcp-state-bytes` /
+`NC_MAX_RETAINED_TCP_STATE_BYTES` adds a shared `64 MiB` default while the opt-in
+is enabled; `0` is unlimited and negative values fail. It charges owned parser
+buffers/bookkeeping, transaction working reservations, reusable reassembly pool
+slots and fixed connection credits across all workers. Pool slots allocate one
+at a time; retained closed FSMs keep their connection credit until retirement.
+`TCPStreamStateBudget.json` records current/peak/rejected bytes and exhaustion.
+Exhaustion cancels capture, records manifest status `error`, and prevents audit
+readiness. `MaxStreamBytes` remains a separate lifetime byte limit; setting it
+to `0` does not disable these parser/state budgets.
+
+The state accounting excludes downstream writer queues, decoder/enrichment
+caches, native memory and allocator/GC overhead. Credits are not an RSS limit.
+Failed HTTP writes propagate through the incremental lifecycle into cancellation
+and manifest failure (`TestIncrementalHTTPWriteFailurePreventsReadiness`).
+Pool reuse must create the stream factory before waiting for a retired slot's
+lock (`TestConnectionReuseDoesNotHoldPoolMutex`); reversing that order deadlocks
+callback-ordered callers.
+
 ## Shared retention budgets
 
 | Control | Accounted storage / exhaustion |
 | --- | --- |
 | `-max-retained-tcp-bytes` / `NC_MAX_RETAINED_TCP_BYTES` | Copied TCP reader payload across every worker; exhaustion aborts capture. |
 | `-max-retained-reassembly-bytes` / `NC_MAX_RETAINED_REASSEMBLY_BYTES` | TCP page payload arrays plus fixed page metadata across every worker. Reservations precede allocation, multi-page requests are atomic, and consumed pages leave no free-page cache. Exhaustion aborts capture. |
+| `-max-retained-tcp-state-bytes` / `NC_MAX_RETAINED_TCP_STATE_BYTES` | With `-incremental-http`, shared parser storage/working reservations and pool/connection credits; exhaustion aborts capture. |
 | `-max-buffered-pages-total` | Per-worker pressure threshold; it can force gap delivery and is not an aggregate byte cap. |
 
-Both byte controls default to `0` (unlimited) and reject negative values.
+Reader/page byte controls default to `0` (unlimited); the incremental state
+control defaults to `64 MiB`. All reject negative values.
 `TCPReassemblyPageBudget.json` records the page limit, current/peak bytes,
 rejected allocation bytes and exhaustion. `capture-manifest.json` records
 `maxRetainedReassemblyBytes` as a quoted integer; budget failure produces status

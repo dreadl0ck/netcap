@@ -97,15 +97,17 @@ type httpReader struct {
 	bufferReleases []func()
 	conversation   *core.ConversationInfo
 
-	requests             []*httpRequest
-	responses            []*httpResponse
-	captureLoss          bool
-	pairingQualification string
-	directionBroken      [2]bool
-	preface              bool
-	initialUnknown       bool
-	responseRequestIndex int
-	transportObservation string
+	requests              []*httpRequest
+	responses             []*httpResponse
+	captureLoss           bool
+	pairingQualification  string
+	directionBroken       [2]bool
+	preface               bool
+	initialUnknown        bool
+	responseRequestIndex  int
+	transportObservation  string
+	unobservedResponseEnd bool
+	writeError            error
 }
 
 // New constructs a new http stream decoder.
@@ -124,8 +126,11 @@ func (h *httpReader) Decode() {
 		return
 	}
 	for _, run := range runs {
-		reader := &httpReader{conversation: run.Conversation, transportObservation: run.Observation}
+		reader := &httpReader{conversation: run.Conversation, transportObservation: run.Observation, unobservedResponseEnd: h.unobservedResponseEnd, captureLoss: h.captureLoss, directionBroken: h.directionBroken}
 		reader.decodeTransportRun()
+		if h.writeError == nil {
+			h.writeError = reader.writeError
+		}
 	}
 }
 
@@ -190,7 +195,11 @@ func (h *httpReader) decodeTransportRun() {
 		if res.readIssue {
 			ht.ReassemblyStatus = strings.Trim(ht.ReassemblyStatus+",incomplete_response_body", ",")
 		}
-		writeHTTP(ht, h.conversation.Ident)
+		connect := res.response.Request != nil && res.response.Request.Method == methodCONNECT && res.response.StatusCode >= 200 && res.response.StatusCode < 300
+		if h.unobservedResponseEnd && !connect && res.response.ContentLength < 0 && len(res.response.TransferEncoding) == 0 {
+			addStatus(ht, "response-end-not-observed")
+		}
+		h.emitHTTP(ht)
 	}
 
 	// iterate over unanswered requests
@@ -213,7 +222,7 @@ func (h *httpReader) decodeTransportRun() {
 				addStatus(ht, "unknown-initial-stream-loss")
 			}
 			h.qualifyPairing(ht, false)
-			writeHTTP(ht, h.conversation.Ident)
+			h.emitHTTP(ht)
 		} else {
 			atomic.AddInt64(&streamutils.Stats.NumNilRequests, 1)
 		}
@@ -289,7 +298,13 @@ func (h *httpReader) searchForLoginParams(req *http.Request) {
 	}
 }
 
-func writeHTTP(h *types.HTTP, ident string) {
+func (h *httpReader) emitHTTP(record *types.HTTP) {
+	if err := writeHTTP(record, h.conversation.Ident); err != nil && h.writeError == nil {
+		h.writeError = err
+	}
+}
+
+func writeHTTP(h *types.HTTP, ident string) error {
 	// TODO: this kills performance, make configurable
 	// updateHTTPStore(h)
 
@@ -305,16 +320,17 @@ func writeHTTP(h *types.HTTP, ident string) {
 	}
 
 	// write record to disk
-	atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 	err := Decoder.Writer.Write(h)
 	if err != nil {
 		decoderutils.ErrorMap.Inc(err.Error())
+		return err
 	}
+	atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 
 	soft := software.WhatSoftwareHTTP(ident, h)
 
 	if len(soft) == 0 {
-		return
+		return nil
 	}
 
 	communityID := h.CommunityID
@@ -335,6 +351,7 @@ func writeHTTP(h *types.HTTP, ident string) {
 		}
 		s.Unlock()
 	})
+	return nil
 }
 
 // HTTP Response

@@ -18,6 +18,9 @@ func (t *tcpConnection) releaseResources() {
 		return
 	}
 	t.releaseOnce.Do(func() {
+		if t.incremental != nil {
+			t.incremental.Abort()
+		}
 		readers := []streamReader{t.client, t.server}
 		for _, reader := range readers {
 			reader.CloseData()
@@ -34,6 +37,7 @@ func (t *tcpConnection) releaseResources() {
 			}
 		}
 		t.merged, t.decoder = nil, nil
+		t.incrementalBanner = nil
 		clear(t.retentionMarkers[:])
 		clear(t.pageBudgetMarkers[:])
 		clear(t.postCloseMarkers[:])

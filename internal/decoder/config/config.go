@@ -105,8 +105,9 @@ var DefaultConfig = &Config{
 	NumStreamWorkers:              runtime.NumCPU(),
 	StreamBufferSize:              100,
 	MaxStreamBytes:                10485760, // 10MB per stream direction by default
-	MaxBufferedPagesPerConnection: 0,        // unlimited by default
-	MaxBufferedPagesTotal:         0,        // unlimited by default
+	MaxRetainedTCPStateBytes:      64 << 20,
+	MaxBufferedPagesPerConnection: 0, // unlimited by default
+	MaxBufferedPagesTotal:         0, // unlimited by default
 }
 
 // Config contains configuration parameters
@@ -336,6 +337,11 @@ type Config struct {
 
 	// MaxRetainedReassemblyBytes bounds shared TCP page allocations; zero is unlimited.
 	MaxRetainedReassemblyBytes int64
+	// IncrementalHTTP opts HTTP/1 into transaction-time decoding and retirement.
+	IncrementalHTTP          bool
+	MaxRetainedTCPStateBytes int64
+	// CaptureTimeIdleExpiry opts offline assembly into capture-watermark idle expiry.
+	CaptureTimeIdleExpiry bool
 
 	// PerfTracker tracks performance metrics
 	PerfTracker *performance.Tracker

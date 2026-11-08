@@ -143,6 +143,18 @@ func NewAssembler(pool *StreamPool) *Assembler {
 	}
 }
 
+// Release drops a stopped assembler's private pool and allocation caches after
+// FlushAll. Callers must have joined every user of that pool first.
+func (a *Assembler) Release() {
+	if a.pc.used != 0 {
+		panic("releasing assembler with outstanding pages")
+	}
+	a.connPool.Reset()
+	a.ret, a.cacheSG.all = nil, nil
+	a.cacheLP = livePacket{}
+	a.pc.free, a.pc.size = nil, 0
+}
+
 // Dump returns a short string describing the page usage of the Assembler.
 func (a *Assembler) Dump() string {
 	s := ""

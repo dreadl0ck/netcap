@@ -37,6 +37,9 @@ func (c *Collector) initCaptureEvidence() error {
 	manifest, err := evidence.NewCapture(c.runCtx, directory, evidence.CaptureConfig{Kind: kind, Source: source, BPF: c.Bpf, SnapLen: c.config.SnapLen, Workers: c.config.Workers,
 		MaxRetainedTCPBytes:        c.config.DecoderConfig.MaxRetainedTCPBytes,
 		MaxRetainedReassemblyBytes: c.config.DecoderConfig.MaxRetainedReassemblyBytes,
+		IncrementalHTTP:            c.config.DecoderConfig.IncrementalHTTP,
+		MaxRetainedTCPStateBytes:   c.config.DecoderConfig.MaxRetainedTCPStateBytes,
+		CaptureTimeIdleExpiry:      c.config.DecoderConfig.CaptureTimeIdleExpiry,
 		IncludeDecoders:            c.config.DecoderConfig.IncludeDecoders, ExcludeDecoders: c.config.DecoderConfig.ExcludeDecoders, Reassembly: c.config.ReassembleConnections, RetainPackets: c.config.RetainPackets, SegmentBytes: segment, RetentionBytes: retention})
 	if err != nil {
 		return err

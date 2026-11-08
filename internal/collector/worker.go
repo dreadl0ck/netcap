@@ -324,7 +324,10 @@ func (c *Collector) initWorkers() []chan gopacket.Packet {
 	// create assemblers
 	for i := range workers {
 		var pool *reassembly.StreamPool
-		if c.captureKind == "live" && c.config.LiveMaintenanceInterval >= 0 {
+		idleExpiry := c.captureKind == "live" && c.config.LiveMaintenanceInterval >= 0 || c.captureKind == "file" && c.config.DecoderConfig.CaptureTimeIdleExpiry
+		if c.streamStateBudget != nil {
+			pool = reassembly.NewStreamPoolWithAllocationBudget(tcp.StreamFactory, c.streamStateBudget, idleExpiry)
+		} else if idleExpiry {
 			pool = reassembly.NewStreamPoolWithIdleExpiry(tcp.StreamFactory)
 		} else {
 			pool = reassembly.NewStreamPool(tcp.StreamFactory)
