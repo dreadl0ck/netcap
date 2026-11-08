@@ -2,6 +2,7 @@ package sipaudit
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 
@@ -15,6 +16,73 @@ func signal(id string, at int64, answer bool, seq int32, pt int) *types.SIP {
 	}
 	return &types.SIP{Timestamp: at, CallID: id, From: "<sip:a@example.test>;tag=one", CSeqNumber: seq, CSeqMethod: "INVITE", MethodName: "INVITE", IsResponse: answer, ResponseCode: 200,
 		ContentType: "application/sdp", Body: []byte(fmt.Sprintf("v=0\r\nc=IN IP4 %s\r\nm=audio %d RTP/AVP %d\r\na=rtpmap:%d telephone-event/8000\r\na=fmtp:%d 0-15\r\n", ip, port, pt, pt, pt))}
+}
+
+func TestNegotiatedTelephoneEvents(t *testing.T) {
+	for _, tc := range []struct {
+		offer, answer string
+		want          bool
+	}{
+		{"0-5", "5-15", true},
+		{"0-4", "5-15", false},
+		{"0-15,garbage", "0-15", false},
+		{"0-15", "0-15,garbage", false},
+		{"0-15,9-2", "0-15", false},
+	} {
+		t.Run(tc.offer+"/"+tc.answer, func(t *testing.T) {
+			a := NewAssociations()
+			for _, answer := range []bool{false, true} {
+				s := signal("call", 1, answer, 1, 110)
+				events := tc.offer
+				if answer {
+					events = tc.answer
+				}
+				s.Body = []byte(strings.ReplaceAll(string(s.Body), "fmtp:110 0-15", "fmtp:110 "+events))
+				a.Observe(s)
+			}
+			for _, reverse := range []bool{false, true} {
+				src, dst, sp, dp := "192.0.2.1", "192.0.2.2", int32(4000), int32(5000)
+				if reverse {
+					src, dst, sp, dp = dst, src, dp, sp
+				}
+				_, codec, ok := a.Lookup(src, dst, sp, dp, 110, 2)
+				if ok != tc.want || ok && (!codec.AllowsEvent(5) || codec.AllowsEvent(4) || codec.AllowsEvent(6)) {
+					t.Fatalf("association=%v codec=%+v", ok, codec)
+				}
+			}
+		})
+	}
+}
+
+func TestSameCallIDDifferentDialogsAreAmbiguous(t *testing.T) {
+	a := NewAssociations()
+	for _, tag := range []string{"one", "two"} {
+		for _, answer := range []bool{false, true} {
+			s := signal("same-call", 1, answer, 1, 110)
+			s.From = strings.ReplaceAll(s.From, "tag=one", "tag="+tag)
+			a.Observe(s)
+		}
+	}
+	if _, _, ok := a.Lookup("192.0.2.1", "192.0.2.2", 4000, 5000, 110, 2); ok {
+		t.Fatal("overlapping dialogs with the same Call-ID were guessed")
+	}
+}
+
+func TestMultipleTelephoneEventPayloadMaps(t *testing.T) {
+	a := NewAssociations()
+	offer := signal("call", 1, false, 1, 110)
+	offer.Body = []byte(strings.ReplaceAll(string(offer.Body), "RTP/AVP 110", "RTP/AVP 110 111"))
+	offer.Body = []byte(strings.ReplaceAll(string(offer.Body), "fmtp:110 0-15", "fmtp:110 0-5") + "a=rtpmap:111 telephone-event/8000\r\na=fmtp:111 6\r\n")
+	answer := signal("call", 2, true, 1, 112)
+	answer.Body = []byte(strings.ReplaceAll(string(answer.Body), "fmtp:112 0-15", "fmtp:112 5-15"))
+	a.Observe(offer)
+	a.Observe(answer)
+	for range 100 {
+		_, codec, ok := a.Lookup("192.0.2.1", "192.0.2.2", 4000, 5000, 112, 3)
+		if !ok || codec.Events != "5,6" {
+			t.Fatalf("nondeterministic peer payload map: %+v, %v", codec, ok)
+		}
+	}
 }
 
 func TestAssociationLifetimeAndNegotiation(t *testing.T) {

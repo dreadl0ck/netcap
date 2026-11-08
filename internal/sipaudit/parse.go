@@ -86,8 +86,10 @@ func Parse(data []byte, tcp bool) (*layers.SIP, int, error) {
 	if len(data) < total {
 		return nil, 0, ErrIncomplete
 	}
-	if len(s.Headers["cseq"]) > 1 {
-		return nil, 0, ErrMalformed
+	for _, key := range []string{"cseq", "call-id", "from", "to", "content-type"} {
+		if len(s.Headers[key]) > 1 {
+			return nil, 0, ErrMalformed
+		}
 	}
 	if cseq := s.Headers["cseq"]; len(cseq) == 1 {
 		parts := strings.Fields(cseq[0])
