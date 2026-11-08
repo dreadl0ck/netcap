@@ -41,7 +41,7 @@ func (f *Firewall) MessageHandler(websocket, grpc bool) (http.Handler, error) {
 	c.Begin = func(r *http.Request) firewalltransport.InspectFunc {
 		p := f.Policy()
 		client, err := f.clientIP(r)
-		if err != nil || f.draining.Load() || !validQuery(r.URL.RawQuery) || !boundedInspectionHeaders(r.Header) || argumentCount(r.URL.RawQuery) > maxArguments {
+		if err != nil || !f.dataReady() || !validQuery(r.URL.RawQuery) || !boundedInspectionHeaders(r.Header) || argumentCount(r.URL.RawQuery) > maxArguments {
 			return nil
 		}
 		if len(f.cfg.AllowedHosts) > 0 {

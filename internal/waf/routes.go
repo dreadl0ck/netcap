@@ -1,6 +1,7 @@
 package waf
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -52,6 +53,20 @@ type routeTable struct {
 	retired  bool
 }
 type routeRouter struct{ current atomic.Pointer[routeTable] }
+
+type routeContextKey struct{}
+
+// BoundRouteID is supplied by the selected immutable binding, never by headers.
+func BoundRouteID(ctx context.Context) string {
+	id, _ := ctx.Value(routeContextKey{}).(string)
+	return id
+}
+
+type routeAttachment struct {
+	policy    atomic.Pointer[policy.Compiled]
+	draining  atomic.Bool
+	readiness atomic.Pointer[readinessHook]
+}
 
 var routeToken = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
 var methodToken = regexp.MustCompile(`^[A-Z]{1,32}$`)
@@ -128,6 +143,10 @@ func validateRoutes(c Config) error {
 }
 
 func readRoutePolicy(file string) (*policy.Compiled, error) {
+	return readRoutePolicyOptions(file, false)
+}
+
+func readRoutePolicyOptions(file string, effects bool) (*policy.Compiled, error) {
 	f, err := os.Open(file)
 	if err != nil {
 		return nil, err
@@ -151,13 +170,28 @@ func readRoutePolicy(file string) (*policy.Compiled, error) {
 	if err != nil {
 		return nil, err
 	}
-	return policy.Compile(bundle)
+	return policy.CompileWithOptions(bundle, policy.CompileOptions{AllowEffects: effects})
 }
 
 func (f *Firewall) compileRoutes() (*routeTable, error) {
 	t := &routeTable{}
 	for _, r := range f.cfg.Routes {
-		p, err := readRoutePolicy(r.PolicyFile)
+		var previous *Firewall
+		if current := f.router.current.Load(); current != nil {
+			for _, old := range current.bindings {
+				if old.config.ID == r.ID {
+					previous = old.firewall
+					break
+				}
+			}
+		}
+		var p *policy.Compiled
+		var err error
+		if previous != nil && previous.attachment != nil && f.options.OwnRoutePolicy {
+			p = previous.Policy()
+		} else {
+			p, err = readRoutePolicyOptions(r.PolicyFile, f.options.AllowEffects && r.ID == f.options.RuntimeRouteID)
+		}
 		if err != nil {
 			t.close()
 			return nil, fmt.Errorf("route %s: %w", r.ID, err)
@@ -172,6 +206,20 @@ func (f *Firewall) compileRoutes() (*routeTable, error) {
 			return nil, fmt.Errorf("route %s: %w", r.ID, err)
 		}
 		child.parent = f
+		child.routeID = r.ID
+		if r.ID == f.options.RuntimeRouteID {
+			if previous != nil && f.options.OwnRoutePolicy {
+				child.attachment = previous.attachment
+			}
+			if child.attachment == nil {
+				child.attachment = &routeAttachment{}
+				child.attachment.policy.Store(p)
+				if previous != nil && previous.attachment != nil {
+					child.attachment.readiness.Store(previous.attachment.readiness.Load())
+					child.attachment.draining.Store(previous.attachment.draining.Load())
+				}
+			}
+		}
 		// Policy generations share the binding's admission limit.
 		if current := f.router.current.Load(); current != nil {
 			for _, old := range current.bindings {
@@ -280,7 +328,7 @@ func (f *Firewall) serveRoute(w http.ResponseWriter, r *http.Request) {
 		if !slices.Contains(b.config.Methods, r.Method) || !prefixMatch(b.config.PathPrefix, r.URL.Path) {
 			continue
 		}
-		b.handler.ServeHTTP(w, r)
+		b.handler.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), routeContextKey{}, b.config.ID)))
 		return
 	}
 	if hostKnown {
@@ -309,6 +357,48 @@ func (f *Firewall) RouteTarget(id string) (*RoutePolicyTarget, error) {
 type RoutePolicyTarget struct {
 	f            *Firewall
 	id, policyID string
+}
+
+func (t *RoutePolicyTarget) SetDraining(v bool) {
+	t.f.routeMu.Lock()
+	defer t.f.routeMu.Unlock()
+	for _, b := range t.f.router.current.Load().bindings {
+		if b.config.ID == t.id {
+			if b.firewall.attachment != nil {
+				b.firewall.attachment.draining.Store(v)
+			} else {
+				b.firewall.SetDraining(v)
+			}
+			return
+		}
+	}
+}
+
+func (t *RoutePolicyTarget) SetReadinessCheck(check func() bool) error {
+	t.f.bootstrap.Lock()
+	defer t.f.bootstrap.Unlock()
+	if t.f.started {
+		return errors.New("route readiness must be installed before serving")
+	}
+	t.f.routeMu.Lock()
+	defer t.f.routeMu.Unlock()
+	for _, b := range t.f.router.current.Load().bindings {
+		if b.config.ID == t.id {
+			return b.firewall.SetReadinessCheck(check)
+		}
+	}
+	return errors.New("unknown route")
+}
+
+func (t *RoutePolicyTarget) Ready() bool {
+	t.f.routeMu.Lock()
+	defer t.f.routeMu.Unlock()
+	for _, b := range t.f.router.current.Load().bindings {
+		if b.config.ID == t.id {
+			return b.firewall.dataReady() && !t.f.draining.Load() && t.f.lifetime.Err() == nil
+		}
+	}
+	return false
 }
 
 func (t *RoutePolicyTarget) ValidatePolicy(p *policy.Compiled) error {

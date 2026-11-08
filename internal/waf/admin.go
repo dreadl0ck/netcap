@@ -59,6 +59,7 @@ func (f *Firewall) AdminHandler() http.Handler {
 		f.Operations.Handler().ServeHTTP(w, r)
 	})
 	m.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
+		f.ready()
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(f.Operations.Status())
 	})

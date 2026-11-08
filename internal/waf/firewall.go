@@ -28,6 +28,9 @@ import (
 type Firewall struct {
 	Operations  *runtimeobs.Monitor
 	parent      *Firewall
+	routeID     string
+	attachment  *routeAttachment
+	options     Options
 	router      *routeRouter
 	messageWS   bool
 	messageGRPC bool
@@ -71,11 +74,33 @@ type rejection struct{ status int }
 func (e rejection) Error() string { return http.StatusText(e.status) }
 
 func New(c Config, p *policy.Compiled) (*Firewall, error) {
+	return NewWithOptions(c, p, Options{})
+}
+
+// Options are trusted process bootstrap admission, never runtime configuration.
+type Options struct {
+	RuntimeRouteID string
+	AllowEffects   bool
+	OwnRoutePolicy bool
+}
+
+func NewWithOptions(c Config, p *policy.Compiled, options Options) (*Firewall, error) {
 	if err := ValidateConfig(c); err != nil {
 		return nil, err
 	}
 	if p == nil {
 		return nil, errors.New("initial policy required")
+	}
+	if options.RuntimeRouteID != "" {
+		found := false
+		for _, r := range c.Routes {
+			found = found || r.ID == options.RuntimeRouteID
+		}
+		if !found {
+			return nil, errors.New("runtime route must name a bootstrap binding")
+		}
+	} else if len(c.Routes) > 0 && (options.AllowEffects || options.OwnRoutePolicy) {
+		return nil, errors.New("routed effect admission and ownership require a runtime route")
 	}
 	encoded, err := json.Marshal(c)
 	if err != nil {
@@ -91,7 +116,7 @@ func New(c Config, p *policy.Compiled) (*Firewall, error) {
 	c.TrustedProxyCIDRs = append([]string(nil), c.TrustedProxyCIDRs...)
 	c.AllowedHosts = append([]string(nil), c.AllowedHosts...)
 	c.CRSTargetExclusions = append([]CRSTargetExclusion(nil), c.CRSTargetExclusions...)
-	f := &Firewall{Operations: runtimeobs.New("waf"), cfg: c, slots: make(chan struct{}, c.MaxConcurrent), audit: make(chan AuditRecord, 256), stats: &counters{}}
+	f := &Firewall{options: options, Operations: runtimeobs.New("waf"), cfg: c, slots: make(chan struct{}, c.MaxConcurrent), audit: make(chan AuditRecord, 256), stats: &counters{}}
 	f.buffers, _ = firewalltransport.NewBufferBudget(c.MaxBufferedBytes)
 	if c.DescriptorPath != "" {
 		var err error
@@ -117,6 +142,11 @@ func New(c Config, p *policy.Compiled) (*Firewall, error) {
 			return nil, err
 		}
 		f.router.current.Store(t)
+		for _, b := range t.bindings {
+			if b.config.ID == options.RuntimeRouteID {
+				f.Operations.Revision(b.firewall.Policy().Revision())
+			}
+		}
 		return f, nil
 	}
 	f.engine, err = newInspectionEngine(c)
@@ -177,11 +207,22 @@ func New(c Config, p *policy.Compiled) (*Firewall, error) {
 
 func (f *Firewall) SetPolicy(p *policy.Compiled) {
 	if p != nil {
-		f.current.Store(p)
-		f.Operations.Revision(p.Revision())
+		if f.attachment != nil {
+			f.attachment.policy.Store(p)
+		} else {
+			f.current.Store(p)
+		}
+		if f.parent == nil || f.attachment != nil {
+			f.Operations.Revision(p.Revision())
+		}
 	}
 }
-func (f *Firewall) Policy() *policy.Compiled { return f.current.Load() }
+func (f *Firewall) Policy() *policy.Compiled {
+	if f.attachment != nil {
+		return f.attachment.policy.Load()
+	}
+	return f.current.Load()
+}
 func (f *Firewall) SetDraining(v bool) {
 	if v || f.lifetime.Err() == nil {
 		f.draining.Store(v)
@@ -267,7 +308,7 @@ func (f *Firewall) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	f.stats.requests.Add(1)
-	if f.draining.Load() || f.lifetime.Err() != nil {
+	if !f.dataReady() {
 		f.reject(w, r, 503)
 		return
 	}
@@ -605,6 +646,7 @@ func (f *Firewall) evaluate(ctx context.Context, p *policy.Compiled, e policy.Ev
 	hook := f.evaluator.Load()
 	if f.parent != nil {
 		hook = f.parent.evaluator.Load()
+		ctx = context.WithValue(ctx, routeContextKey{}, f.routeID)
 	}
 	if hook != nil {
 		d, err = hook.evaluate(ctx, p, e)

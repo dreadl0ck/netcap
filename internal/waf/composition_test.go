@@ -29,7 +29,11 @@ func composedFirewall(t *testing.T, c Config, p *policy.Compiled, routed bool) (
 	}
 	c.DescriptorPath, c.DescriptorSHA256, c.APIValidateResponse = "", "", false
 	c.Routes = []RouteConfig{r}
-	f := firewall(t, c, p)
+	f, err := NewWithOptions(c, p, Options{RuntimeRouteID: r.ID, OwnRoutePolicy: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = f.Close() })
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Host = "api.example"
 		f.ServeHTTP(w, r)

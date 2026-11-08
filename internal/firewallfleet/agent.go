@@ -126,6 +126,9 @@ func Run(ctx context.Context, cfg AgentConfig, target Target) error {
 		var record cacheRecord
 		if e = firewallstate.Decode(raw, &record); e == nil && record.Binding == binding && validMAC(record, cfg.Token) {
 			c, _, verify := verifyDesired(record.Desired, cfg)
+			if verify == nil {
+				verify = validateTargetPolicy(target, c)
+			}
 			if verify == nil && !record.Contact.IsZero() && !record.Contact.After(time.Now().Add(time.Minute)) {
 				current = record.Desired
 				if c != nil {
@@ -161,6 +164,9 @@ func Run(ctx context.Context, cfg AgentConfig, target Target) error {
 		err = firewallstate.RequestJSON(ctx, client, "GET", strings.TrimSuffix(u.String(), "/")+"/api/v1/fleet/desired", cfg.Token, nil, &desired, 2*MaxArtifactBytes)
 		if err == nil {
 			c, _, e := verifyDesired(desired, cfg)
+			if e == nil {
+				e = validateTargetPolicy(target, c)
+			}
 			err = e
 			if err == nil && (desired.Generation < current.Generation || desired.Generation == current.Generation && current.Generation > 0 && (desired.Revision != current.Revision || desired.Hash != current.Hash || desired.Draining != current.Draining || desired.Revoked != current.Revoked)) {
 				err = errors.New("controller generation regression or revision equivocation")
@@ -212,6 +218,16 @@ func Run(ctx context.Context, cfg AgentConfig, target Target) error {
 		}
 	}
 }
+
+func validateTargetPolicy(target Target, p *policy.Compiled) error {
+	if p != nil {
+		if bound, ok := target.(interface{ ValidatePolicy(*policy.Compiled) error }); ok {
+			return bound.ValidatePolicy(p)
+		}
+	}
+	return nil
+}
+
 func verifyDesired(d Desired, cfg AgentConfig) (*policy.Compiled, []byte, error) {
 	if d.Version != 1 || d.TargetID != cfg.TargetID || d.Scope != cfg.Scope || d.Generation < 1 || len(d.Bundle) > MaxArtifactBytes || d.Revoked && !d.Draining {
 		return nil, nil, errors.New("invalid desired identity, version, generation or hash")

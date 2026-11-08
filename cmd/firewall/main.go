@@ -166,7 +166,7 @@ func validate(ctx context.Context, c *cli.Command) error {
 	if err := validateRouteRuntime(c, cfg); err != nil {
 		return err
 	}
-	r, err := newEvaluator(ctx, c, cfg.PolicyFile)
+	r, err := newEvaluator(ctx, c, runtimePolicyFile(c, cfg))
 	if err != nil {
 		return err
 	}
@@ -175,7 +175,7 @@ func validate(ctx context.Context, c *cli.Command) error {
 	if err := validateServeOptions(c, cfg); err != nil {
 		return err
 	}
-	f, err := waf.New(cfg, p)
+	f, err := waf.NewWithOptions(cfg, p, routeOptions(c, cfg, r.broker != nil))
 	if err != nil {
 		return err
 	}
@@ -214,17 +214,28 @@ func serve(ctx context.Context, c *cli.Command) error {
 	if err := validateRouteRuntime(c, cfg); err != nil {
 		return err
 	}
-	runtime, err := newEvaluator(ctx, c, cfg.PolicyFile)
+	runtime, err := newEvaluator(ctx, c, runtimePolicyFile(c, cfg))
 	if err != nil {
 		return err
 	}
 	defer runtime.Close()
-	f, err := waf.New(cfg, runtime.Policy())
+	f, err := waf.NewWithOptions(cfg, runtime.Policy(), routeOptions(c, cfg, runtime.broker != nil))
 	if err != nil {
 		return err
 	}
 	runtime.attachOperations(f.Operations)
 	defer f.Close()
+	var runtimeTarget interface {
+		policycontrol.Target
+		SetDraining(bool)
+		SetReadinessCheck(func() bool) error
+	} = f
+	if len(cfg.Routes) > 0 && c.String("route-id") != "" {
+		runtimeTarget, err = f.RouteTarget(c.String("route-id"))
+		if err != nil {
+			return err
+		}
+	}
 	if err = f.SetEvaluator(func(ctx context.Context, p *policy.Compiled, e policy.Event) (policy.Decision, error) {
 		return runtime.evaluateContext(ctx, p, e)
 	}); err != nil {
@@ -247,7 +258,7 @@ func serve(ctx context.Context, c *cli.Command) error {
 					fmt.Fprintln(c.Root().ErrWriter, "firewall TLS reload rejected:", err)
 					continue
 				}
-				if len(cfg.Routes) > 0 && !c.Bool("managed") {
+				if len(cfg.Routes) > 0 {
 					if err := f.ReloadRoutePolicies(); err != nil {
 						fmt.Fprintln(c.Root().ErrWriter, "firewall route reload rejected:", err)
 					}
@@ -255,8 +266,8 @@ func serve(ctx context.Context, c *cli.Command) error {
 			}
 		}
 	}()
-	if runtime.guard != nil || runtime.nativeState != nil {
-		if err = f.SetReadinessCheck(runtime.Ready); err != nil {
+	if runtime.guard != nil || runtime.nativeState != nil || c.String("fleet-agent-config") != "" {
+		if err = runtimeTarget.SetReadinessCheck(runtime.Ready); err != nil {
 			return err
 		}
 		runtime.startProbes(ctx)
@@ -269,12 +280,12 @@ func serve(ctx context.Context, c *cli.Command) error {
 		}
 	}
 	errs := make(chan error, 4)
-	stopAgent, err := runtime.startAgent(ctx, c, f, f.SetDraining, errs)
+	stopAgent, err := runtime.startAgent(ctx, c, runtimeTarget, runtimeTarget.SetDraining, errs)
 	if err != nil {
 		return err
 	}
 	defer stopAgent()
-	stopMaintenance := startPolicyMaintenance(ctx, f.Policy, c.Root().ErrWriter)
+	stopMaintenance := startPolicyMaintenance(ctx, runtimeTarget.Policy, c.Root().ErrWriter)
 	defer stopMaintenance()
 	admin := http.NewServeMux()
 	admin.Handle("/", f.AdminHandler())
@@ -295,14 +306,7 @@ func serve(ctx context.Context, c *cli.Command) error {
 		if !loopbackAddress(cfg.AdminListen) && (c.String("admin-cert") == "" || c.String("admin-key") == "") {
 			return errors.New("network-accessible policy management requires admin-cert and admin-key; otherwise bind adminListen to loopback")
 		}
-		var target policycontrol.Target = f
-		if len(cfg.Routes) > 0 {
-			target, err = f.RouteTarget(c.String("route-id"))
-			if err != nil {
-				return err
-			}
-		}
-		s, err := policycontrol.New(ac, target)
+		s, err := policycontrol.New(ac, runtimeTarget)
 		if err != nil {
 			return err
 		}
@@ -402,18 +406,32 @@ func validateRouteRuntime(c *cli.Command, cfg waf.Config) error {
 		}
 		return nil
 	}
-	if c.String("fleet-agent-config") != "" || c.String("shared-rate-config") != "" || c.String("policy-state-config") != "" || c.String("effects-config") != "" {
-		return errors.New("routed runtime does not support fleet-agent-config, shared-rate-config, policy-state-config or effects-config: these adapters lack route-scoped bootstrap bindings")
-	}
-	if c.Bool("managed") || os.Getenv("NETCAP_FIREWALL_ADMIN_TOKEN") != "" || c.String("route-id") != "" {
+	if c.Bool("managed") || c.String("auth-config") != "" || os.Getenv("NETCAP_FIREWALL_ADMIN_TOKEN") != "" || c.String("route-id") != "" || c.String("fleet-agent-config") != "" || c.String("shared-rate-config") != "" || c.String("policy-state-config") != "" || c.String("effects-config") != "" {
 		for _, r := range cfg.Routes {
 			if r.ID == c.String("route-id") {
 				return nil
 			}
 		}
-		return errors.New("routed policy management requires route-id naming one bootstrap route")
+		return errors.New("routed runtime adapters require route-id naming one bootstrap route")
 	}
 	return nil
+}
+
+func runtimePolicyFile(c *cli.Command, cfg waf.Config) string {
+	for _, r := range cfg.Routes {
+		if r.ID == c.String("route-id") {
+			return r.PolicyFile
+		}
+	}
+	return cfg.PolicyFile
+}
+
+func routeOptions(c *cli.Command, cfg waf.Config, effects bool) waf.Options {
+	id := ""
+	if len(cfg.Routes) > 0 {
+		id = c.String("route-id")
+	}
+	return waf.Options{RuntimeRouteID: id, AllowEffects: effects, OwnRoutePolicy: id != ""}
 }
 
 type localTarget struct {

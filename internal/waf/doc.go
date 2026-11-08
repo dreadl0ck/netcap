@@ -77,10 +77,13 @@ requests pin their binding through response inspection. Retired generations clos
 after their last request. Listener concurrency and retained-byte quotas cover all
 bindings. MessageHandler builds WS/compression and gRPC/H3 adapters on each same
 bound origin, transport, policy and contract, including after file reloads.
-The CLI requires --route-id for authenticated route management; one console/MCP
-owns one bootstrap route. Global SetPolicy cannot update tenants. Fleet, effects,
-shared-rate and native-state CLI adapters reject routes until their bootstrap
-configurations provide explicit per-route scopes.
+The CLI requires --route-id for management, fleet, effects, shared-rate and native
+state; one immutable bootstrap attachment owns that route. Private dispatch
+context supplies its route ID; duplicate bundle IDs and client headers cannot
+select remote counters or effects. Other routes evaluate locally. Root readiness
+ANDs bound dependencies; attachment drain/unavailability rejects that route only.
+Fleet checks target policy identity before cache persistence and acknowledgment.
+Effects compile only on the selected route with explicit broker admission.
 
 DescriptorPath, DescriptorSHA256 and APIValidateResponse belong to each route;
 only trusted BootstrapDir is inherited. An absent contract never falls back to
@@ -103,8 +106,9 @@ ClientCA enables listener mTLS. UpstreamCert/UpstreamKey enable upstream mTLS;
 HTTPS routes require explicit UpstreamServerName and always verify certificates.
 TLSConfig provides per-handshake listener snapshots. ReloadTLS validates complete
 identity pairs and client trust before publication; failures retain live state.
-CLI SIGHUP reloads TLS and then route policy files, except in managed mode where
-the control service exclusively owns policies. Route/upstream configuration
+CLI SIGHUP reloads TLS and atomically reloads local route policy files, retaining
+the selected attachment's externally owned policy pointer. Inflight requests keep
+their admitted revision and API contract. Route/upstream configuration
 changes require restart. Existing TLS connections retain their handshake identity.
 */
 package waf

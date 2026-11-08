@@ -126,6 +126,7 @@ type rateFile struct {
 }
 
 type runtimeEvaluator struct {
+	routeID      string
 	ctx          context.Context
 	p            atomic.Pointer[policy.Compiled]
 	guard        *firewallstate.Guard
@@ -143,7 +144,7 @@ func newEvaluator(ctx context.Context, c *cli.Command, path string) (*runtimeEva
 	if err != nil {
 		return nil, err
 	}
-	r := &runtimeEvaluator{ctx: ctx, broker: b}
+	r := &runtimeEvaluator{ctx: ctx, broker: b, routeID: c.String("route-id")}
 	fail := func(err error) (*runtimeEvaluator, error) { r.Close(); return nil, err }
 	p, err := loadPolicyOptions(path, b != nil)
 	if err != nil {
@@ -272,6 +273,9 @@ func (r *runtimeEvaluator) evaluate(p *policy.Compiled, e policy.Event) (policy.
 func (r *runtimeEvaluator) evaluateContext(ctx context.Context, p *policy.Compiled, e policy.Event) (policy.Decision, error) {
 	if p == nil {
 		return policy.Decision{Verdict: "deny", Status: 503}, errors.New("policy target unready")
+	}
+	if r.routeID != "" && waf.BoundRouteID(ctx) != r.routeID {
+		return p.Evaluate(e)
 	}
 	if r.fleetUnready.Load() {
 		return policy.Decision{Verdict: "deny", Status: 503, Revision: p.Revision()}, nil
