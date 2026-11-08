@@ -9,7 +9,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"time"
 
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcap"
@@ -70,15 +73,11 @@ func ExportPackets(ctx context.Context, input string, output io.Writer, selectio
 	if err := ctx.Err(); err != nil {
 		return manifest, err
 	}
-	in, err := os.Open(input)
+	in, before, err := artifactio.Open(filepath.Dir(input), filepath.Base(input))
 	if err != nil {
 		return manifest, err
 	}
 	defer in.Close()
-	before, err := in.Stat()
-	if err != nil {
-		return manifest, err
-	}
 	if !before.Mode().IsRegular() {
 		return manifest, fmt.Errorf("packet source must be a regular file")
 	}
@@ -125,6 +124,9 @@ func ExportPackets(ctx context.Context, input string, output io.Writer, selectio
 			return manifest, fmt.Errorf("capture packet: %w", err)
 		}
 		manifest.SourcePackets++
+		if !time.Unix(0, ci.Timestamp.UnixNano()).Equal(ci.Timestamp) {
+			return manifest, fmt.Errorf("capture timestamp is outside signed Unix nanoseconds")
+		}
 		if ci.Length < ci.CaptureLength {
 			return manifest, fmt.Errorf("captured packet is longer than declared wire length")
 		}
@@ -214,6 +216,16 @@ func ExportPackets(ctx context.Context, input string, output io.Writer, selectio
 	}
 	if before.Size() != after.Size() || !before.ModTime().Equal(after.ModTime()) {
 		return manifest, fmt.Errorf("packet source changed during export")
+	}
+	current, currentInfo, err := artifactio.Open(filepath.Dir(input), filepath.Base(input))
+	if err != nil {
+		return manifest, err
+	}
+	if err = current.Close(); err != nil {
+		return manifest, err
+	}
+	if !os.SameFile(before, currentInfo) {
+		return manifest, fmt.Errorf("packet source replaced during export")
 	}
 	if err := ctx.Err(); err != nil {
 		return manifest, err

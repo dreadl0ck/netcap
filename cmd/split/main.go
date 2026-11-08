@@ -26,6 +26,18 @@ func Run() {
 }
 
 func RunWithContext(ctx context.Context, c *cli.Command) error {
+	if c.Bool("inspect") {
+		if c.String("out") != "" || c.String("bpf") != "" || c.String("start-ns") != "" || c.String("end-ns") != "" || c.String("shard-ns") != "" {
+			return fmt.Errorf("inspection cannot include output or selection")
+		}
+		ctx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+		result, err := evidence.InspectCapture(ctx, c.String("read"), c.Int("max-packets"), c.Int64("max-bytes"))
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(c.Writer).Encode(result)
+	}
 	selection := evidence.Selection{BPF: strings.TrimSpace(c.String("bpf")), MaxPackets: c.Int("max-packets")}
 	start, end := c.String("start-ns"), c.String("end-ns")
 	if (start == "") != (end == "") {
@@ -62,6 +74,9 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	}
 	if !info.Mode().IsRegular() {
 		return fmt.Errorf("source must be a regular file, not a symlink")
+	}
+	if c.String("shard-ns") != "" {
+		return splitTimeShards(ctx, c, selection, limit)
 	}
 	// Reserve the destination first: existing files/directories are never replaced.
 	if err := os.Mkdir(out, 0700); err != nil {

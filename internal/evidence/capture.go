@@ -10,9 +10,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
+	"runtime/debug"
 	"sync"
 	"time"
 
+	"github.com/dreadl0ck/netcap"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
@@ -47,28 +50,69 @@ type CaptureSegment struct {
 }
 
 type CaptureManifest struct {
-	CommunityScopes  *ScopeLedger     `json:"communityScopes,omitempty"`
-	Version          int              `json:"version"`
-	RunID            string           `json:"runId"`
-	CreatedAt        string           `json:"createdAt"`
-	Status           string           `json:"status"`
-	Error            string           `json:"error,omitempty"`
-	Config           CaptureConfig    `json:"config"`
-	ConfigSHA256     string           `json:"configSHA256"`
-	InputSHA256      string           `json:"inputSHA256,omitempty"`
-	IngressPackets   uint64           `json:"ingressPackets"`
-	AdmittedPackets  uint64           `json:"admittedPackets"`
-	QueueDrops       uint64           `json:"queueDrops"`
-	CapturedBytes    uint64           `json:"capturedBytes,string"`
-	WireBytes        uint64           `json:"wireBytes,string"`
-	TruncatedPackets uint64           `json:"truncatedPackets"`
-	FirstNs          *int64           `json:"firstNs,omitempty,string"`
-	LastNs           *int64           `json:"lastNs,omitempty,string"`
-	KernelReceived   *uint64          `json:"kernelReceived"`
-	KernelDrops      *uint64          `json:"kernelDrops"`
-	KernelStatsError string           `json:"kernelStatsError,omitempty"`
-	Segments         []CaptureSegment `json:"segments"`
-	Limitations      []string         `json:"limitations"`
+	Producer         *ProducerIdentity `json:"producer,omitempty"`
+	CommunityScopes  *ScopeLedger      `json:"communityScopes,omitempty"`
+	Version          int               `json:"version"`
+	RunID            string            `json:"runId"`
+	CreatedAt        string            `json:"createdAt"`
+	Status           string            `json:"status"`
+	Error            string            `json:"error,omitempty"`
+	Config           CaptureConfig     `json:"config"`
+	ConfigSHA256     string            `json:"configSHA256"`
+	InputSHA256      string            `json:"inputSHA256,omitempty"`
+	IngressPackets   uint64            `json:"ingressPackets"`
+	AdmittedPackets  uint64            `json:"admittedPackets"`
+	QueueDrops       uint64            `json:"queueDrops"`
+	CapturedBytes    uint64            `json:"capturedBytes,string"`
+	WireBytes        uint64            `json:"wireBytes,string"`
+	TruncatedPackets uint64            `json:"truncatedPackets"`
+	FirstNs          *int64            `json:"firstNs,omitempty,string"`
+	LastNs           *int64            `json:"lastNs,omitempty,string"`
+	KernelReceived   *uint64           `json:"kernelReceived"`
+	KernelDrops      *uint64           `json:"kernelDrops"`
+	KernelStatsError string            `json:"kernelStatsError,omitempty"`
+	Segments         []CaptureSegment  `json:"segments"`
+	Limitations      []string          `json:"limitations"`
+}
+
+type ProducerIdentity struct {
+	Version            string `json:"version"`
+	Commit             string `json:"commit"`
+	GoVersion          string `json:"goVersion"`
+	Platform           string `json:"platform"`
+	ExecutableModule   string `json:"executableModule,omitempty"`
+	ExecutableRevision string `json:"executableRevision,omitempty"`
+	ExecutableModified *bool  `json:"executableModified,omitempty"`
+	CoreModuleVersion  string `json:"coreModuleVersion,omitempty"`
+	CoreModuleReplaced bool   `json:"coreModuleReplaced,omitempty"`
+}
+
+func CurrentProducerIdentity() *ProducerIdentity {
+	p := &ProducerIdentity{Version: netcap.Version, Commit: netcap.Commit, GoVersion: runtime.Version(), Platform: runtime.GOOS + "/" + runtime.GOARCH}
+	if info, ok := debug.ReadBuildInfo(); ok {
+		p.ExecutableModule = info.Main.Path
+		for _, setting := range info.Settings {
+			switch setting.Key {
+			case "vcs.revision":
+				p.ExecutableRevision = setting.Value
+			case "vcs.modified":
+				modified := setting.Value == "true"
+				p.ExecutableModified = &modified
+			}
+		}
+		if info.Main.Path == "github.com/dreadl0ck/netcap" {
+			p.CoreModuleVersion = info.Main.Version
+		} else {
+			for _, dep := range info.Deps {
+				if dep.Path == "github.com/dreadl0ck/netcap" {
+					p.CoreModuleVersion = dep.Version
+					p.CoreModuleReplaced = dep.Replace != nil
+					break
+				}
+			}
+		}
+	}
+	return p
 }
 
 type Capture struct {
@@ -120,6 +164,7 @@ func NewCapture(ctx context.Context, directory string, config CaptureConfig) (*C
 		"kernel counters are unavailable unless reported; null does not mean zero",
 		"retained derivatives preserve packet bytes and timestamps but do not copy original interface options or secrets",
 	}}}
+	c.manifest.Producer = CurrentProducerIdentity()
 	if config.Kind == "file" {
 		file, err := os.Open(config.Source)
 		if err != nil {
