@@ -37,7 +37,8 @@ RUN apk update && \
 
 # Install wandio (required by libtrace)
 RUN cd /tmp && \
-    wget https://github.com/wanduow/wandio/archive/4.2.3-1.tar.gz && \
+    wget -O 4.2.3-1.tar.gz https://codeload.github.com/LibtraceTeam/wandio/tar.gz/refs/tags/4.2.3-1 && \
+    echo '0b7499dd73fd167dfb35abe80b25b36fe757e51f7cbd8bf5810d24951ca41735  4.2.3-1.tar.gz' | sha256sum -c - && \
     tar xfz 4.2.3-1.tar.gz && \
     cd wandio-4.2.3-1 && \
     ./bootstrap.sh && \
@@ -49,7 +50,8 @@ RUN cd /tmp && \
 
 # Install libtrace
 RUN cd /tmp && \
-    wget https://github.com/LibtraceTeam/libtrace/archive/4.0.17-1.tar.gz && \
+    wget -O 4.0.17-1.tar.gz https://codeload.github.com/LibtraceTeam/libtrace/tar.gz/refs/tags/4.0.17-1 && \
+    echo 'e3238661e5bf9133dd9f864c6d2f7a40c91ef07eada6d60f6defccea1d4536bd  4.0.17-1.tar.gz' | sha256sum -c - && \
     tar xfz 4.0.17-1.tar.gz && \
     cd libtrace-4.0.17-1 && \
     ./bootstrap.sh && \
@@ -61,7 +63,8 @@ RUN cd /tmp && \
 
 # Install libflowmanager (required by libprotoident)
 RUN cd /tmp && \
-    wget https://github.com/wanduow/libflowmanager/archive/3.0.0.tar.gz && \
+    wget -O 3.0.0.tar.gz https://codeload.github.com/LibtraceTeam/libflowmanager/tar.gz/refs/tags/3.0.0 && \
+    echo 'c0eb2a25eedecad150a15e25650750078cb525c35aec3add2214a1a9a7fae0a9  3.0.0.tar.gz' | sha256sum -c - && \
     tar xfz 3.0.0.tar.gz && \
     cd libflowmanager-3.0.0 && \
     ./bootstrap.sh && \
@@ -73,7 +76,8 @@ RUN cd /tmp && \
 
 # Install libprotoident
 RUN cd /tmp && \
-    wget https://github.com/wanduow/libprotoident/archive/2.0.15-1.tar.gz && \
+    wget -O 2.0.15-1.tar.gz https://codeload.github.com/LibtraceTeam/libprotoident/tar.gz/refs/tags/2.0.15-1 && \
+    echo 'cfa7c2d8db8e701db9f991e4f58fd9a284db65e866194ad54e413202163b7289  2.0.15-1.tar.gz' | sha256sum -c - && \
     tar xfz 2.0.15-1.tar.gz && \
     cd libprotoident-2.0.15-1 && \
     ./bootstrap.sh && \
@@ -85,7 +89,8 @@ RUN cd /tmp && \
 
 # Install nDPI
 RUN cd /tmp && \
-    wget https://github.com/ntop/nDPI/archive/4.14.tar.gz && \
+    wget -O 4.14.tar.gz https://codeload.github.com/ntop/nDPI/tar.gz/refs/tags/4.14 && \
+    echo '954135ee14ad6bd74a78a10db560b534b8f2083ad0615f5c1a2c376fff0301e0  4.14.tar.gz' | sha256sum -c - && \
     tar xfz 4.14.tar.gz && \
     cd nDPI-4.14 && \
     ./autogen.sh && \
@@ -118,12 +123,9 @@ RUN ldconfig /usr/local/lib/* 2>/dev/null || true && \
 # Downloaded with wget to a file and executed directly, so there is no pipeline
 # whose exit status can hide a missing downloader.
 #
-# Not apk's rust: Alpine ships 1.87, and yara-x 1.14 pulls in cranelift/wasmtime
-# which require 1.89. rustup tracks stable and is the only option here.
-RUN wget -O /tmp/rustup-init.sh https://sh.rustup.rs && \
-    chmod +x /tmp/rustup-init.sh && \
-    /tmp/rustup-init.sh -y --profile minimal --default-toolchain stable && \
-    rm /tmp/rustup-init.sh
+# The installer and toolchain are pinned in scripts/.
+COPY scripts/yara-x.env scripts/install-yara-rust.sh scripts/build-yara-x.sh /opt/netcap-native/
+RUN sh /opt/netcap-native/install-yara-rust.sh
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Assert the toolchain exists before anything depends on it.
@@ -136,8 +138,10 @@ RUN rustc --version && cargo --version
 # (gcc -dumpmachine reports x86_64-alpine-linux-musl). Without this every crate
 # with a build script fails at "linker `musl-gcc` not found".
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=gcc
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=gcc
+ENV GOMAXPROCS=4 GOFLAGS=-p=4 CARGO_BUILD_JOBS=4
 
-# Build and install yara-x v1.14.0 C API library.
+# Build and install the matched YARA-X C API from scripts/yara-x.env.
 #
 # NOTE the absence of `|| true`. The previous version ended with
 # `... && cp yara_x.h && ldconfig || true && cd / && rm -rf ...`, and `||` binds
@@ -159,17 +163,7 @@ ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=gcc
 # The resulting libyara_x_capi.so is then dynamically linked against musl, which
 # is what the runtime stage expects: docker/service/Dockerfile copies
 # /usr/local/lib/* into an Alpine image and runs ldconfig over it.
-RUN cd /tmp && \
-    wget https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.14.0.tar.gz && \
-    tar xfz v1.14.0.tar.gz && \
-    cd yara-x-1.14.0 && \
-    RUSTFLAGS="-C target-feature=-crt-static" cargo build --release -p yara-x-capi && \
-    cp target/release/libyara_x_capi.so /usr/local/lib/ && \
-    cp target/release/libyara_x_capi.a /usr/local/lib/ && \
-    mkdir -p /usr/local/include && \
-    cp capi/include/yara_x.h /usr/local/include/ && \
-    cd / && \
-    rm -rf /tmp/v1.14.0.tar.gz /tmp/yara-x-1.14.0
+RUN PREFIX=/usr/local RUSTFLAGS="-C target-feature=-crt-static" sh /opt/netcap-native/build-yara-x.sh
 RUN ldconfig /usr/local/lib 2>/dev/null || true
 
 # Fail the build here rather than in every downstream netcap build.
@@ -184,17 +178,7 @@ RUN test -f /usr/local/include/yara_x.h || (echo "yara_x.h missing" && exit 1) &
 COPY LICENSE /usr/share/licenses/netcap/LICENSE
 COPY legal /usr/share/licenses/netcap/
 
-# Create pkg-config file for yara-x
-RUN mkdir -p /usr/local/lib/pkgconfig && \
-    echo 'prefix=/usr/local' > /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'libdir=${prefix}/lib' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'includedir=${prefix}/include' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo '' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Name: yara_x_capi' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Description: YARA-X C API' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Version: 1.14.0' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Libs: -L${libdir} -lyara_x_capi' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
-    echo 'Cflags: -I${includedir}' >> /usr/local/lib/pkgconfig/yara_x_capi.pc
+RUN pkg-config --exact-version=1.22.0 yara_x_capi
 
 # Protocol buffer compiler and the gogofaster plugin.
 #

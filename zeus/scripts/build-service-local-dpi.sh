@@ -242,6 +242,7 @@ if [[ "${USE_BUILDX}" == "true" && "${NETCAP_PUSH_IMAGES}" == "true" ]]; then
     
     echo "[INFO] Building container..."
     docker buildx build \
+        --build-arg NETCAP_BUILDER_IMAGE="${NETCAP_BUILDER_IMAGE:?set a qualified YARA-X 1.22.0 builder image}" \
         --platform "${PLATFORMS}" \
         --build-arg VERSION="${VERSION}" \
         -t "${IMAGE_TAG}" \
@@ -260,6 +261,7 @@ if [[ "${USE_BUILDX}" == "true" && "${NETCAP_PUSH_IMAGES}" == "true" ]]; then
         
         echo "[INFO] Building and pushing latest tag for: ${PLATFORMS}"
         docker buildx build \
+            --build-arg NETCAP_BUILDER_IMAGE="${NETCAP_BUILDER_IMAGE:?set a qualified YARA-X 1.22.0 builder image}" \
             --platform "${PLATFORMS}" \
             --build-arg VERSION="${VERSION}" \
             -t "${LATEST_TAG}" \
@@ -309,6 +311,7 @@ else
     cp -r "$GO_DPI_ABS_PATH" "$BUILD_CONTEXT/go-dpi"
     
     docker build \
+        --build-arg NETCAP_BUILDER_IMAGE="${NETCAP_BUILDER_IMAGE:?set a qualified YARA-X 1.22.0 builder image}" \
         --build-arg VERSION="${VERSION}" \
         -t "${IMAGE_TAG}" \
         -f "$NETCAP_ROOT/docker/service-local-dpi/Dockerfile" \

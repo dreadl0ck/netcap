@@ -1,4 +1,6 @@
-FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-dpi-latest@sha256:f745720790c835f1f225c08aa13fa8147f8c96adef6b291b87516b190d8e7229 as builder
+ARG NETCAP_BUILDER_IMAGE
+FROM --platform=linux/amd64 ${NETCAP_BUILDER_IMAGE} AS builder
+RUN pkg-config --exact-version=1.22.0 yara_x_capi
 
 # Copy netcap source
 WORKDIR /netcap
