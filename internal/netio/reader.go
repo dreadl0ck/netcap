@@ -22,6 +22,7 @@ package netio
 import (
 	"bufio"
 	"compress/gzip"
+	stderrors "errors"
 	"os"
 	"path/filepath"
 
@@ -60,6 +61,7 @@ func Open(file string, memBufSize int) (*Reader, error) {
 	if filepath.Ext(file) == ".gz" {
 		r.gReader, err = gzip.NewReader(r.bReader)
 		if err != nil {
+			_ = h.Close()
 			return nil, err
 		}
 
@@ -73,19 +75,12 @@ func Open(file string, memBufSize int) (*Reader, error) {
 
 // Close the file.
 func (r *Reader) Close() error {
+	var err error
 	if r.gReader != nil {
-		err := r.gReader.Close()
-		if err != nil {
-			return err
-		}
+		err = r.gReader.Close()
 	}
-
-	err := r.file.Sync()
-	if err != nil {
-		return err
-	}
-
-	return r.file.Close()
+	// The descriptor is read-only; Sync fails on Windows and must not prevent Close.
+	return stderrors.Join(err, r.file.Close())
 }
 
 // Next Message.
