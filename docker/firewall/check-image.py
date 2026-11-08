@@ -29,7 +29,7 @@ try:
                     assert '-tags=coraza,http3' in modules
                     assert 'github.com/quic-go/quic-go' in modules
                     assert 'github.com/lib/pq\tv1.12.3' in modules
-                    assert 'google.golang.org/protobuf\tv1.36.11' in modules
+                    assert 'google.golang.org/protobuf\tv1.36.12' in modules
                     assert 'CGO_ENABLED=0' in modules
         assert export.wait() == 0
     assert not required, 'missing distribution files: ' + str(required)
