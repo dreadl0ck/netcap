@@ -65,11 +65,15 @@ func TestRepeatedHTTP3FaultRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { p.Close() }()
+	var maxRecovery float64
 	for generation := 1; generation <= 200; generation++ {
-		if _, err := p.exerciseFault(context.Background(), generation); err != nil {
-			t.Fatalf("generation=%d: %v", generation, err)
+		receipt, err := p.exerciseFault(context.Background(), generation)
+		if err != nil {
+			t.Fatalf("generation=%d receipt=%v: %v", generation, receipt, err)
 		}
+		maxRecovery = max(maxRecovery, receipt["recovery_ms"].(float64))
 	}
+	t.Logf("owned HTTP3 restarts=200 max_recovery_ms=%.3f", maxRecovery)
 }
 
 func TestInterruptedRunPersistsFailureAndDoesNotClaim24h(t *testing.T) {
