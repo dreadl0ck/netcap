@@ -1,8 +1,12 @@
 ## Capture analysis and application firewall
 
-`v0.16.0` includes the qualified changes since v0.15.4. The `net` archives
+`v0.16.1` includes the qualified changes since v0.15.4. The `net` archives
 include `net firewall`; standalone firewall binaries and deployment examples
 are distributed separately with this release.
+
+`v0.16.0` remains a qualification prerelease. `v0.16.1` restores the tracked
+frontend bootstrap required by immutable Go module consumers; module-zip tests
+now reject an archive that omits it even when the ZIP itself is valid.
 
 | Area | Change |
 | --- | --- |
@@ -36,7 +40,7 @@ Install signed data with `net util -download-dbs`, refresh it with
 `net util -update-dbs`, and request optional enrichment with
 `net util --download-enrichment`.
 
-Full changes: https://github.com/dreadl0ck/netcap/compare/v0.15.4...v0.16.0
+Full changes: https://github.com/dreadl0ck/netcap/compare/v0.15.4...v0.16.1
 
 ## Earlier module consumption and catalogue integration fixes
 

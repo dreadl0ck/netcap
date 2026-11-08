@@ -2,6 +2,7 @@ package modulearchive
 
 import (
 	"archive/tar"
+	archivezip "archive/zip"
 	"bytes"
 	"io"
 	"os"
@@ -69,7 +70,7 @@ func TestTrackedSourceIsConsumableAsGoModule(t *testing.T) {
 	if len(checked.Valid) < 100 {
 		t.Fatalf("unexpectedly empty source inventory: %d", len(checked.Valid))
 	}
-	version := module.Version{Path: "github.com/dreadl0ck/netcap", Version: "v0.15.4"}
+	version := module.Version{Path: "github.com/dreadl0ck/netcap", Version: "v0.16.1"}
 	path := filepath.Join(t.TempDir(), "module.zip")
 	file, err := os.Create(path)
 	if err != nil {
@@ -86,4 +87,17 @@ func TestTrackedSourceIsConsumableAsGoModule(t *testing.T) {
 	if _, err = zip.CheckZip(version, path); err != nil {
 		t.Fatal(err)
 	}
+	// ZIP validity alone does not guarantee that go:embed has an input.
+	reader, err := archivezip.OpenReader(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reader.Close()
+	bootstrap := version.Path + "@" + version.Version + "/cmd/capture/webui/frontend/dist/MODULE_PLACEHOLDER.txt"
+	for _, member := range reader.File {
+		if member.Name == bootstrap && member.UncompressedSize64 > 0 {
+			return
+		}
+	}
+	t.Fatal("Go module archive omits the embedded frontend bootstrap required by immutable consumers")
 }
