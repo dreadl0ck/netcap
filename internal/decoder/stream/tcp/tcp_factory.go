@@ -20,6 +20,8 @@
 package tcp
 
 import (
+	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
+	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"strconv"
 	"sync"
 
@@ -109,19 +111,35 @@ func GetStreamPool() *reassembly.StreamPool {
 // and spawn the stream decoder routines for processing the data.
 type connectionFactory struct {
 	sync.Mutex
-	streamReaders   []streamReader
-	numActive       int64
-	StreamPool      *reassembly.StreamPool
-	wg              sync.WaitGroup
-	FSMOptions      reassembly.TCPSimpleFSMOptions
-	freeReaderSlots []int
-	payloadBudget   *retainedPayloadBudget
+	streamReaders        []streamReader
+	numActive            int64
+	StreamPool           *reassembly.StreamPool
+	wg                   sync.WaitGroup
+	FSMOptions           reassembly.TCPSimpleFSMOptions
+	freeReaderSlots      []int
+	payloadBudget        *retainedPayloadBudget
+	stateBudget          *core.StateBudget
+	stateError           error
+	stateCancel          func()
+	incrementalStreams   uint64
+	incrementalCompleted uint64
+	incrementalGapResets uint64
+	completionOnly       map[string]uint64
+	deferredTails        uint64
 }
 
 // New handles a new stream received from the assembler
 // this is the entry point for new network streams
 // a dedicated stream reader instance will be started and subsequently fed with new data from the stream.
 func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembly.AssemblerContext) reassembly.Stream {
+	factory.Lock()
+	budget := factory.stateBudget
+	factory.Unlock()
+	credit := int64(4096 + 16*decoderconfig.Instance.StreamDecoderBufSize)
+	if err := budget.Reserve(credit); err != nil {
+		factory.failIncremental(err)
+		return refusedConnection{}
+	}
 	reassemblyLog.Debug("new stream",
 		zap.String("net", net.String()),
 		zap.String("transport", transport.String()),
@@ -129,6 +147,8 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 
 	// parent structure for tracking the bidirectional connection
 	str := &tcpConnection{
+		stateBudget: budget,
+		stateCredit: credit,
 		factory:     factory,
 		net:         net,
 		transport:   transport,

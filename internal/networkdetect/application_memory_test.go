@@ -43,3 +43,21 @@ func TestApplicationScanClearsConsumedStringSlots(t *testing.T) {
 		}
 	}
 }
+
+func TestQualifiedHTTPBoundariesCannotBecomeBeaconEvidence(t *testing.T) {
+	for _, qualification := range []string{"capture_loss_elsewhere", "locally-truncated", "response-end-not-observed", ""} {
+		cfg := DefaultConfig()
+		cfg.BeaconSamples = 4
+		e := NewApplication(cfg)
+		for i := range 8 {
+			e.Observe(ApplicationObservation{At: int64(i) * 10e9, Scope: Scope{Sensor: "test", Interface: "pcap"}, Kind: "http", SrcIP: "192.0.2.1", DstIP: "198.51.100.1", DstPort: 80, Method: "GET", Host: "fixture.test", Path: "/periodic", Status: 200, Qualification: qualification})
+		}
+		alerts := e.Flush()
+		if qualification != "" && (len(alerts) != 0 || len(e.beacons) != 0) {
+			t.Fatal("qualified boundary became a complete transaction", qualification, alerts)
+		}
+		if qualification == "" && len(alerts) == 0 {
+			t.Fatal("clean periodic transaction negative control did not alert")
+		}
+	}
+}

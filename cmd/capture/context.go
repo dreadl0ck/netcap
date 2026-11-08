@@ -145,6 +145,9 @@ var (
 	flagMaxBufferedPagesTotal          int
 	flagMaxRetainedTCPBytes            int64
 	flagMaxRetainedReassemblyBytes     int64
+	flagIncrementalHTTP                bool
+	flagMaxRetainedTCPStateBytes       int64
+	flagCaptureTimeIdleExpiry          bool
 	flagCompressionBlockSize           int
 	flagCompressionLevel               string
 	flagHTTP                           string
@@ -290,6 +293,9 @@ func setFlagsFromContext(c *cli.Command) {
 	flagMaxBufferedPagesTotal = c.Int("max-buffered-pages-total")
 	flagMaxRetainedTCPBytes = c.Int64("max-retained-tcp-bytes")
 	flagMaxRetainedReassemblyBytes = c.Int64("max-retained-reassembly-bytes")
+	flagIncrementalHTTP = c.Bool("incremental-http")
+	flagMaxRetainedTCPStateBytes = c.Int64("max-retained-tcp-state-bytes")
+	flagCaptureTimeIdleExpiry = c.Bool("capture-time-idle-expiry")
 	flagCompressionBlockSize = c.Int("compression-block-size")
 	flagCompressionLevel = c.String("compression-level")
 	flagHTTP = c.String("http")

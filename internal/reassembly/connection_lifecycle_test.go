@@ -28,6 +28,32 @@ type lifecycleStream struct {
 	onComplete func() bool
 }
 
+type retirementStream struct {
+	lifecycleStream
+	onRetire func()
+}
+
+func (s *retirementStream) ReassemblyRetired() { s.onRetire() }
+
+func TestRetirementCallbackDoesNotHoldPoolMutex(t *testing.T) {
+	s := new(retirementStream)
+	p := NewStreamPool(lifecycleFactory(func(gopacket.Flow, gopacket.Flow, AssemblerContext) Stream { return s }))
+	calls := 0
+	s.onRetire = func() { _ = p.DumpString(); calls++ }
+	k := snapshotKey(1)
+	ref, _ := p.getConnection(&k, false, time.Now(), nil)
+	done := make(chan struct{})
+	go func() { ref.lock(); p.remove(ref.conn); p.remove(ref.conn); ref.conn.mu.Unlock(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("retirement callback deadlocked on pool inspection")
+	}
+	if calls != 1 {
+		t.Fatal("retirement was not exactly once", calls)
+	}
+}
+
 func (s *lifecycleStream) ReassemblyComplete(AssemblerContext, gopacket.Flow, string) bool {
 	s.completed++
 	if s.onComplete != nil {

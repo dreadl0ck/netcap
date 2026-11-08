@@ -188,6 +188,9 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.A
 	if o.DstPort == 443 || o.SrcPort == 443 {
 		add("policy.http-on-443", "low", "policy-observation", 1, 1, o.At, []string{"Decoded plaintext HTTP request on TCP/443"}, "Port convention violations can be intentional; malware identity is not inferred")
 	}
+	if o.Qualification != "" {
+		return alerts
+	}
 	if len(e.scans) >= e.config.MaxKeys && e.scans[key] == nil {
 		e.Overflow++
 		return alerts

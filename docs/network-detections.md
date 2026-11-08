@@ -43,11 +43,14 @@ scan/beacon activity. Consumed observations release reservations and references.
 Stored text is bounded and copied, avoiding retention of whole parser buffers
 through small substring views (`internal/networkdetect/application.go`).
 
-TCP application decoding still runs at connection completion
-(`internal/decoder/stream/tcp/tcp_connection.go`). Live checkpoints reduce the
-subsequent detector delay; they do not emit transactions from an open keepalive
-connection. Gap/truncation-qualified HTTP responses do not count as complete
-failed transactions for `http.scan` (`internal/collector/application_live_test.go`).
+`-incremental-http` enables HTTP/1 transaction emission from qualified open
+keepalive connections; live checkpoints then process those records before
+shutdown. Other protocols, uncertain TCP roles and deferred upgrade tails retain
+completion decoding. [TCP reassembly](reassembly.md#incremental-transactions)
+documents eligibility, budgets and finalization witnesses.
+Qualified HTTP boundaries do not count as complete transactions for `http.scan`
+or `c2.beacon` (`internal/collector/application_live_test.go`,
+`internal/networkdetect/application_memory_test.go`).
 
 ## Indicators and policy
 

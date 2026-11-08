@@ -72,14 +72,25 @@ func NumSavedTCPConns() int64 {
 // and manage the stream lifecycle
 // this structure has an optimized field order to avoid excessive padding.
 type tcpConnection struct {
-	payloadBudget        *retainedPayloadBudget
-	retainedPayloadBytes int64
-	retentionMarkers     [2]*core.StreamData
-	pageBudgetMarkers    [2]*core.StreamData
-	postCloseMarkers     [2]*core.StreamData
-	postCloseBytes       [2]int
-	resetObserved        bool
-	pendingFIN           [2]*layers.TCP
+	incremental            core.IncrementalDecoder
+	incrementalDeclined    bool
+	incrementalProbeIndex  int
+	incrementalProbeBytes  int
+	incrementalProbeTail   uint32
+	incrementalBannerBytes int
+	incrementalBanner      *core.StreamData
+	completion             core.StreamCompletion
+	stateBudget            *core.StateBudget
+	stateCredit            int64
+	retireOnce             sync.Once
+	payloadBudget          *retainedPayloadBudget
+	retainedPayloadBytes   int64
+	retentionMarkers       [2]*core.StreamData
+	pageBudgetMarkers      [2]*core.StreamData
+	postCloseMarkers       [2]*core.StreamData
+	postCloseBytes         [2]int
+	resetObserved          bool
+	pendingFIN             [2]*layers.TCP
 	sync.Mutex
 	factory        *connectionFactory
 	releaseOnce    sync.Once
@@ -228,6 +239,9 @@ func (t *tcpConnection) FINContiguous(dir reassembly.TCPFlowDirection) {
 	side := 0
 	if dir == reassembly.TCPDirServerToClient {
 		side = 1
+		t.completion.ServerFIN = true
+	} else {
+		t.completion.ClientFIN = true
 	}
 	if fin := t.pendingFIN[side]; fin != nil {
 		t.tcpstate.CheckState(fin, dir)
@@ -315,6 +329,16 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 			reassemblyLog.Info("retaining unconfirmed TCP observation", zap.String("ident", t.ident), zap.String("direction", dir.String()), zap.String("qualification", observation), zap.Int("limitBytes", maxPostCloseBytes))
 		}
 	}
+	if t.incremental != nil && !decoderconfig.Instance.SaveConns {
+		if observation != "" {
+			t.incrementalBannerBytes = decoderconfig.Instance.BannerSize
+		}
+		if !t.retainIncrementalBanner(dir, data, ac) {
+			return
+		}
+		t.pushIncremental(&core.StreamData{RawData: data, AssemblerContext: ac, CaptureInformation: ac.GetCaptureInfo(), Dir: dir, TCPObservation: observation})
+		return
+	}
 	if t.payloadBudget != nil {
 		if !t.payloadBudget.reserve(int64(len(data))) {
 			t.recordRetentionDiscard(dir, len(data), ac)
@@ -348,7 +372,11 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 			TCPObservation:     observation,
 		}
 		t.client.StoreData(streamData)
-		t.client.DataChan() <- streamData
+		if t.incremental == nil {
+			t.client.DataChan() <- streamData
+		} else {
+			t.pushIncremental(streamData)
+		}
 	} else {
 		streamData := &core.StreamData{
 			RawData:            dataCpy,
@@ -358,7 +386,11 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 			TCPObservation:     observation,
 		}
 		t.server.StoreData(streamData)
-		t.server.DataChan() <- streamData
+		if t.incremental == nil {
+			t.server.DataChan() <- streamData
+		} else {
+			t.pushIncremental(streamData)
+		}
 	}
 
 	tcpStreamFeedDataTime.WithLabelValues(dir.String()).Set(float64(time.Since(ti).Nanoseconds()))
@@ -387,10 +419,16 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 	t.updateStats(sg, skip, length, saved, startTime, end, dir)
 	if skip != 0 {
 		gap := &core.StreamData{AssemblerContext: ac, Dir: dir, SkippedBytes: skip}
-		if dir == reassembly.TCPDirClientToServer {
-			t.client.StoreData(gap)
-		} else {
-			t.server.StoreData(gap)
+		if t.incremental != nil {
+			t.pushIncremental(gap)
+			t.incrementalBannerBytes = decoderconfig.Instance.BannerSize
+		}
+		if t.incremental == nil || decoderconfig.Instance.SaveConns {
+			if dir == reassembly.TCPDirClientToServer {
+				t.client.StoreData(gap)
+			} else {
+				t.server.StoreData(gap)
+			}
 		}
 	}
 
@@ -408,6 +446,7 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 			t.feedData(dir, data, context)
 		})
 	}
+	t.tryIncremental()
 }
 
 func (t *tcpConnection) reorder(ac reassembly.AssemblerContext, firstFlow gopacket.Flow) {
@@ -466,6 +505,7 @@ func (t *tcpConnection) flipRoles() {
 // It can return false if it want to see subsequent packets with Accept(), e.g. to
 // see FIN-ACK, for deeper state-machine analysis.
 func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, firstFlow gopacket.Flow, reason string) bool {
+	t.completion.Reason = reason
 	// reorder the stream fragments
 	t.reorder(ac, firstFlow)
 
@@ -551,10 +591,26 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 
 	// optionally, do not remove the connection to allow last ACK
 	t.releaseResources()
-	return decoderconfig.Instance.RemoveClosedStreams
+	return decoderconfig.Instance.RemoveClosedStreams || reason == "idle-expired"
 }
 
 func (t *tcpConnection) decode() {
+	if t.incremental != nil {
+		if err := t.incremental.Finish(t.completion); err != nil {
+			t.factory.failIncremental(err)
+		}
+		if reporter, ok := t.incremental.(core.IncrementalReporter); ok {
+			report := reporter.IncrementalReport()
+			t.factory.Lock()
+			t.factory.incrementalCompleted += report.CompletedTransactions
+			t.factory.incrementalGapResets += report.GapResets
+			if report.DeferredTail != "" {
+				t.factory.deferredTails++
+			}
+			t.factory.Unlock()
+		}
+		return
+	}
 
 	t.Lock()
 	defer t.Unlock()
@@ -664,6 +720,7 @@ func (t *tcpConnection) decode() {
 		)
 	}
 	stream.ObserveTLSUpgrade(conv, sel.Name)
+	t.factory.recordCompletionOnly(sel.Name)
 }
 
 // ReassemblePacket takes care of submitting a TCP / UDP packet to the reassembly.

@@ -40,14 +40,23 @@ func (t *tcpConnection) ObservePostClose() bool { return true }
 
 func (t *tcpConnection) ReassemblyDiscarded(dir reassembly.TCPFlowDirection, size int, ac reassembly.AssemblerContext) {
 	t.recordDiscard(&t.pageBudgetMarkers, "tcp-reassembly-page-budget", dir, size, ac)
+	if t.incremental != nil {
+		t.pushIncremental(&core.StreamData{Dir: dir, AssemblerContext: ac, DiscardedBytes: int64(size), DiscardReason: "tcp-reassembly-page-budget"})
+	}
 }
 
 func (t *tcpConnection) recordPostCloseDiscard(dir reassembly.TCPFlowDirection, size int, ac reassembly.AssemblerContext) {
 	t.recordDiscard(&t.postCloseMarkers, "tcp-post-close-budget", dir, size, ac)
+	if t.incremental != nil {
+		t.pushIncremental(&core.StreamData{Dir: dir, AssemblerContext: ac, DiscardedBytes: int64(size), DiscardReason: "tcp-post-close-budget"})
+	}
 }
 
 func (t *tcpConnection) recordRetentionDiscard(dir reassembly.TCPFlowDirection, size int, ac reassembly.AssemblerContext) {
 	t.recordDiscard(&t.retentionMarkers, "tcp-retained-payload-budget", dir, size, ac)
+	if t.incremental != nil {
+		t.pushIncremental(&core.StreamData{Dir: dir, AssemblerContext: ac, DiscardedBytes: int64(size), DiscardReason: "tcp-retained-payload-budget"})
+	}
 }
 
 func (t *tcpConnection) recordDiscard(markers *[2]*core.StreamData, reason string, dir reassembly.TCPFlowDirection, size int, ac reassembly.AssemblerContext) {

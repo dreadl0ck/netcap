@@ -100,6 +100,10 @@ type Collector struct {
 	applicationPeakBytes   int64
 	applicationQueueDrops  uint64
 	reassemblyPageBudget   *reassembly.PageBudget
+	streamStateBudget      *core.StateBudget
+	offlineWatermark       time.Time
+	offlineMaintenance     time.Time
+	offlineLatePackets     uint64
 	analysisOverflow       uint64
 	analysisUnscoped       uint64
 	lifecycleMu            sync.Mutex // full initialization and task registration
@@ -745,6 +749,7 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	}
 	// Capture metadata before transferring ownership to the worker.
 	ref := p.Metadata().CaptureInfo.Timestamp
+	ref = c.advanceCaptureTime(ref)
 	capturedBytes := uint64(len(p.Data()))
 	// Observe ingress serially before pooled-packet ownership moves to a worker.
 	c.flowIngressOrdinal++

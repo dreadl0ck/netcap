@@ -7,6 +7,7 @@ import (
 	"sort"
 	"sync"
 	"time"
+	"unsafe"
 )
 
 /*
@@ -42,10 +43,33 @@ type StreamPool struct {
 	closedDue          deadlineHeap
 	idleDue            deadlineHeap
 	trackIdle          bool // Immutable after construction.
+	allocationBudget   AllocationBudget
+	allocationCredits  int64
 }
 
-func (p *StreamPool) grow() {
-	conns := make([]connection, p.nextAlloc)
+type AllocationBudget interface {
+	Reserve(int64) error
+	Release(int64)
+}
+
+// Budgeted pools allocate one reusable slot at a time, without per-worker
+// geometric caches. Reservations survive recycling until the pool is released.
+func NewStreamPoolWithAllocationBudget(factory streamFactory, budget AllocationBudget, idleExpiry bool) *StreamPool {
+	return &StreamPool{conns: make(map[key]*connection), factory: factory, nextAlloc: 1, allocationBudget: budget, trackIdle: idleExpiry}
+}
+
+func (p *StreamPool) grow() bool {
+	count := p.nextAlloc
+	if p.allocationBudget != nil {
+		count = 1
+		// Fixed pool storage plus conservative map/key/slice bookkeeping credit.
+		credit := int64(unsafe.Sizeof(connection{})+unsafe.Sizeof(key{})) + 192
+		if err := p.allocationBudget.Reserve(credit); err != nil {
+			return false
+		}
+		p.allocationCredits += credit
+	}
+	conns := make([]connection, count)
 	p.all = append(p.all, conns)
 	for i := range conns {
 		p.free = append(p.free, &conns[i])
@@ -54,6 +78,10 @@ func (p *StreamPool) grow() {
 		log.Println("StreamPool: created", p.nextAlloc, "new connections")
 	}
 	p.nextAlloc *= 2
+	if p.allocationBudget != nil {
+		p.nextAlloc = 1
+	}
+	return true
 }
 
 // dump logs all connections.
@@ -81,6 +109,7 @@ func (p *StreamPool) DumpString() string {
 
 // remove requires conn.mu. Reuse waits for that lock without holding p.mu.
 func (p *StreamPool) remove(conn *connection) {
+	var retired Stream
 	p.mu.Lock()
 	if conn.live && p.conns[*conn.key] == conn {
 		if conn.connectionDue != nil {
@@ -90,10 +119,15 @@ func (p *StreamPool) remove(conn *connection) {
 			conn.dueClaimed = false
 		}
 		conn.live = false
+		retired = conn.c2s.stream
+		conn.c2s.stream, conn.s2c.stream = nil, nil
 		delete(p.conns, *conn.key)
 		p.free = append(p.free, conn)
 	}
 	p.mu.Unlock()
+	if observer, ok := retired.(interface{ ReassemblyRetired() }); ok {
+		observer.ReassemblyRetired()
+	}
 }
 
 // Reset clears all internal state and releases backing arrays.
@@ -106,6 +140,10 @@ func (p *StreamPool) Reset() {
 	defer p.createMu.Unlock()
 	for _, ref := range p.connections(nil) {
 		if ref.lock() {
+			if observer, ok := ref.conn.c2s.stream.(interface{ ReassemblyRetired() }); ok {
+				observer.ReassemblyRetired()
+			}
+			ref.conn.c2s.stream, ref.conn.s2c.stream = nil, nil
 			ref.conn.live = false
 			ref.conn.mu.Unlock()
 		}
@@ -127,9 +165,18 @@ func (p *StreamPool) Reset() {
 		p.all[i] = nil
 	}
 	p.all = nil
+	if p.allocationBudget != nil {
+		p.allocationBudget.Release(p.allocationCredits)
+		p.allocationCredits = 0
+	}
 
 	// Reset allocation counter to initial size
 	p.nextAlloc = initialAllocSize
+	if p.allocationBudget != nil {
+		p.conns = make(map[key]*connection)
+		p.free = nil
+		p.nextAlloc = 1
+	}
 	p.newConnectionCount = 0
 
 	if Debug {
@@ -197,7 +244,10 @@ func (p *StreamPool) newConnection(k *key, s Stream, ts time.Time) *connection {
 	}
 
 	if len(p.free) == 0 {
-		p.grow()
+		if !p.grow() {
+			p.mu.Unlock()
+			return nil
+		}
 	}
 
 	index := len(p.free) - 1
@@ -250,6 +300,17 @@ func (p *StreamPool) getConnection(k *key, end bool, ts time.Time, ac AssemblerC
 
 	s := p.factory.New(k[0], k[1], ac)
 	conn := p.newConnection(k, s, ts)
+	if conn == nil {
+		if aborter, ok := s.(interface{ ReassemblyAllocationFailed() }); ok {
+			aborter.ReassemblyAllocationFailed()
+		} else {
+			s.ReassemblyComplete(ac, k[0], "pool-budget-exhausted")
+			if observer, ok := s.(interface{ ReassemblyRetired() }); ok {
+				observer.ReassemblyRetired()
+			}
+		}
+		return connectionRef{}, false
+	}
 	p.mu.Lock()
 	p.conns[*k] = conn
 	ref = connectionRef{conn: conn, generation: conn.generation}

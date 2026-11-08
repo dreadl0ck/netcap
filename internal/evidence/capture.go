@@ -33,6 +33,9 @@ type CaptureConfig struct {
 
 	MaxRetainedTCPBytes        int64 `json:"maxRetainedTCPBytes,omitempty,string"`
 	MaxRetainedReassemblyBytes int64 `json:"maxRetainedReassemblyBytes,omitempty,string"`
+	IncrementalHTTP            bool  `json:"incrementalHTTP,omitempty"`
+	MaxRetainedTCPStateBytes   int64 `json:"maxRetainedTCPStateBytes,omitempty,string"`
+	CaptureTimeIdleExpiry      bool  `json:"captureTimeIdleExpiry,omitempty"`
 }
 
 type CaptureSegment struct {

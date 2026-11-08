@@ -23,6 +23,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
+	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
@@ -53,6 +54,14 @@ func (c *Collector) Init() (err error) {
 		return fmt.Errorf("max-retained-tcp-bytes cannot be negative")
 	}
 	c.contextLocked()
+	c.streamStateBudget, err = core.NewStateBudget(c.config.DecoderConfig.MaxRetainedTCPStateBytes, c.runCancel)
+	if err != nil {
+		return err
+	}
+	if !c.config.DecoderConfig.IncrementalHTTP {
+		c.streamStateBudget = nil
+	}
+	tcp.ConfigureIncrementalState(c.streamStateBudget, c.runCancel)
 	c.reassemblyPageBudget, err = reassembly.NewPageBudget(c.config.DecoderConfig.MaxRetainedReassemblyBytes, c.runCancel)
 	if err != nil {
 		return err
