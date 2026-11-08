@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -76,7 +77,11 @@ func Read(ctx context.Context, directory, name string, limit int64) ([]byte, err
 	if limit <= 0 || info.Size() > limit {
 		return nil, fmt.Errorf("artifact exceeds %d byte limit", limit)
 	}
-	b, err := io.ReadAll(io.LimitReader(&contextReader{ctx, f}, limit+1))
+	readLimit := limit
+	if readLimit < math.MaxInt64 {
+		readLimit++
+	}
+	b, err := io.ReadAll(io.LimitReader(&contextReader{ctx, f}, readLimit))
 	if err != nil {
 		return nil, err
 	}
