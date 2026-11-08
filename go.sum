@@ -1,7 +1,7 @@
 github.com/RoaringBitmap/roaring v1.9.4 h1:yhEIoH4YezLYT04s1nHehNO64EKFTop/wBhxv2QzDdQ=
 github.com/RoaringBitmap/roaring v1.9.4/go.mod h1:6AXUsoIEzDTFFQCe1RbGA6uFONMhvejWj5rqITANK90=
-github.com/VirusTotal/yara-x/go v1.14.0 h1:B8JDAVDN7TmzU2T1uVTMiMgpNIb1Lt4UZVePfFgthqs=
-github.com/VirusTotal/yara-x/go v1.14.0/go.mod h1:lgXP/nkYX349MVowrtTtU5hzMdCOWQLv3+wKll9+0F8=
+github.com/VirusTotal/yara-x/go v1.22.0 h1:LKYFN6vEV0u/1IHEmDiDZllwqDEmqYr/+MczfzPD3ws=
+github.com/VirusTotal/yara-x/go v1.22.0/go.mod h1:VAytYJjaDJ6MTSty/n+uXT2W/QejPHRQECB0rgDGJN4=
 github.com/VividCortex/ewma v1.2.0 h1:f58SaIzcDXrSy3kWaHNvuJgJ3Nmz59Zji6XoJR/q1ow=
 github.com/VividCortex/ewma v1.2.0/go.mod h1:nz4BbCtbLyFDeC9SUHbtcT5644juEuWfUAUnGx7j5l4=
 github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de h1:FxWPpzIjnTlhPwqqXc4/vE0f7GvRjuAsbW+HOIe8KnA=
