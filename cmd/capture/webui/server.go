@@ -132,25 +132,26 @@ type RuntimeConfig struct {
 	LocalDNS     bool
 
 	// TCP Reassembly
-	ReassembleConnections   bool
-	FlowExports             bool
-	CaptureEvidence         bool
-	RetainPackets           bool
-	PacketSegmentBytes      int64
-	PacketRetentionBytes    int64
-	FlowExportPorts         string
-	FlushEvery              int
-	Checksum                bool
-	NoOptCheck              bool
-	IgnoreFSMErr            bool
-	AllowMissingInit        bool
-	ModbusRTUEndpoints      string
-	DNP3PointMap            string
-	ClosePendingTimeout     time.Duration
-	CloseInactiveTimeout    time.Duration
-	LiveMaintenanceInterval time.Duration
-	LiveFlushInterval       time.Duration
-	MaxRetainedTCPBytes     int64
+	ReassembleConnections      bool
+	FlowExports                bool
+	CaptureEvidence            bool
+	RetainPackets              bool
+	PacketSegmentBytes         int64
+	PacketRetentionBytes       int64
+	FlowExportPorts            string
+	FlushEvery                 int
+	Checksum                   bool
+	NoOptCheck                 bool
+	IgnoreFSMErr               bool
+	AllowMissingInit           bool
+	ModbusRTUEndpoints         string
+	DNP3PointMap               string
+	ClosePendingTimeout        time.Duration
+	CloseInactiveTimeout       time.Duration
+	LiveMaintenanceInterval    time.Duration
+	LiveFlushInterval          time.Duration
+	MaxRetainedTCPBytes        int64
+	MaxRetainedReassemblyBytes int64
 
 	// Output Format
 	Proto bool
@@ -1804,7 +1805,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	captureEvidence, retainPackets := true, false
 	var segmentBytes, retentionBytes int64
 	var maintenanceInterval, flushInterval time.Duration
-	var maxRetainedTCPBytes int64
+	var maxRetainedTCPBytes, maxRetainedReassemblyBytes int64
 	s.mu.RLock()
 	if s.runtimeConfig != nil {
 		flowExports = s.runtimeConfig.FlowExports
@@ -1813,6 +1814,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		segmentBytes, retentionBytes = s.runtimeConfig.PacketSegmentBytes, s.runtimeConfig.PacketRetentionBytes
 		maintenanceInterval, flushInterval = s.runtimeConfig.LiveMaintenanceInterval, s.runtimeConfig.LiveFlushInterval
 		maxRetainedTCPBytes = s.runtimeConfig.MaxRetainedTCPBytes
+		maxRetainedReassemblyBytes = s.runtimeConfig.MaxRetainedReassemblyBytes
 	}
 	s.mu.RUnlock()
 	if job.requireCaptureEvidence {
@@ -1855,7 +1857,8 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		Scatter:              true,
 		ScatterDuration:      5 * time.Minute,
 		DecoderConfig: &config.Config{
-			MaxRetainedTCPBytes: maxRetainedTCPBytes,
+			MaxRetainedTCPBytes:        maxRetainedTCPBytes,
+			MaxRetainedReassemblyBytes: maxRetainedReassemblyBytes,
 
 			Quiet:            true,
 			PrintProgress:    false,

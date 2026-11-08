@@ -20,6 +20,7 @@
 package collector
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -115,6 +116,14 @@ func (c *Collector) doCleanup(force bool) {
 		tcp.CleanupReassembly(!force, c.assemblers)
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, tcp.PayloadRetentionError())
 	}
+	if c.reassemblyPageBudget != nil {
+		c.captureEvidenceError = errors.Join(c.captureEvidenceError, c.reassemblyPageBudget.Error())
+		data, err := json.MarshalIndent(c.reassemblyPageBudget.Health(), "", "  ")
+		if err == nil {
+			err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "TCPReassemblyPageBudget.json"), append(data, '\n'), 0600)
+		}
+		c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
+	}
 	c.assemblers = nil
 
 	// CRITICAL: Close and nil worker channels to allow GC
@@ -132,6 +141,7 @@ func (c *Collector) doCleanup(force bool) {
 	}
 	if err := c.closeNetworkDetection(); err != nil {
 		c.log.Error("network detection finalization failed", zap.Error(err))
+		c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
 	}
 	c.teardown()
 	c.detachRecordAnalysis()

@@ -49,24 +49,29 @@ type Evidence struct {
 }
 
 type Stats struct {
-	Matches             uint64 `json:"matches"`
-	PendingAggregates   int    `json:"pendingAggregates"`
-	CapacityFlushes     uint64 `json:"capacityFlushes"`
-	FTPDataExclusions   uint64 `json:"ftpDataExclusions"`
-	SMTPRelayExclusions uint64 `json:"smtpRelayExclusions"`
-	AggregationMode     string `json:"aggregationMode,omitempty"`
-	ApplicationMode     string `json:"applicationMode,omitempty"`
-	ApplicationAlerts   uint64 `json:"applicationAlerts,omitempty"`
-	Schema              int    `json:"schema"`
-	Events              uint64 `json:"events"`
-	Alerts              uint64 `json:"alerts"`
-	Overflow            uint64 `json:"overflow"`
-	Late                uint64 `json:"late"`
-	StreamGaps          uint64 `json:"streamGaps"`
-	Keys                int    `json:"keys"`
-	Flows               int    `json:"flows"`
-	Indicators          int    `json:"indicators"`
-	Error               string `json:"error,omitempty"`
+	Matches                uint64 `json:"matches"`
+	PendingAggregates      int    `json:"pendingAggregates"`
+	CapacityFlushes        uint64 `json:"capacityFlushes"`
+	FTPDataExclusions      uint64 `json:"ftpDataExclusions"`
+	SMTPRelayExclusions    uint64 `json:"smtpRelayExclusions"`
+	AggregationMode        string `json:"aggregationMode,omitempty"`
+	ApplicationMode        string `json:"applicationMode,omitempty"`
+	ApplicationAlerts      uint64 `json:"applicationAlerts,omitempty"`
+	ApplicationQueuedBytes int64  `json:"applicationQueuedBytes,omitempty"`
+	ApplicationPeakBytes   int64  `json:"applicationPeakBytes,omitempty"`
+	ApplicationQueueLimit  int64  `json:"applicationQueueLimit,omitempty"`
+	ApplicationQueueDrops  uint64 `json:"applicationQueueDrops,omitempty"`
+	ApplicationLate        uint64 `json:"applicationLate,omitempty"`
+	Schema                 int    `json:"schema"`
+	Events                 uint64 `json:"events"`
+	Alerts                 uint64 `json:"alerts"`
+	Overflow               uint64 `json:"overflow"`
+	Late                   uint64 `json:"late"`
+	StreamGaps             uint64 `json:"streamGaps"`
+	Keys                   int    `json:"keys"`
+	Flows                  int    `json:"flows"`
+	Indicators             int    `json:"indicators"`
+	Error                  string `json:"error,omitempty"`
 }
 
 type window struct {

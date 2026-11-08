@@ -190,6 +190,7 @@ type assemblerAction struct {
 //	zero or one call to ReassembledSG on a single stream
 //	zero or one call to ReassemblyComplete on the same stream
 func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac AssemblerContext) {
+	defer func() { a.cacheLP = livePacket{} }()
 	var (
 		conn    *connection
 		half    *halfconnection
@@ -515,6 +516,10 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 	a.cacheLP.seq = start
 	if len(bytes) > 0 && queue {
 		p, p2, numPages := a.cacheLP.convertToPages(a.pc, 0, ac)
+		if p == nil {
+			pageDiscard(half, len(bytes), ac)
+			return
+		}
 		half.queuedPackets++
 		half.queuedBytes += len(bytes)
 		half.totalBytes += len(bytes)
@@ -849,6 +854,10 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 	// Iterate over pages that should be kept (from ndx to end)
 	for _, r := range a.cacheSG.all[ndx:] {
 		first, last, nb := r.convertToPages(a.pc, skip, ac)
+		if first == nil {
+			pageDiscard(half, r.length()-skip, ac)
+			continue
+		}
 
 		if half.saved == nil {
 			half.saved = first
@@ -898,6 +907,12 @@ func (a *Assembler) sendToConnection(conn *connection, half *halfconnection) Seq
 
 	half.stream.ReassembledSG(&a.cacheSG, ac)
 	a.cleanSG(half, ac)
+	a.Lock()
+	clear(a.ret[:cap(a.ret)])
+	a.ret = a.ret[:0]
+	clear(a.cacheSG.all[:cap(a.cacheSG.all)])
+	a.cacheSG.all = a.cacheSG.all[:0]
+	a.Unlock()
 
 	if end {
 		a.closeHalfConnection(conn, half, "END signal received (FIN or RST flag)")
@@ -1023,11 +1038,15 @@ func (a *Assembler) closeHalfConnection(conn *connection, half *halfconnection, 
 
 	half.closed = true
 
-	for p := half.first; p != nil; p = p.next {
-		// FIXME: it should be already empty
-		a.pc.replace(p)
-		half.pages--
+	for _, head := range []*page{half.first, half.saved} {
+		for p := head; p != nil; {
+			next := p.next
+			a.pc.replace(p)
+			p = next
+		}
 	}
+	half.first, half.last, half.saved = nil, nil, nil
+	half.pages = 0
 
 	if conn.s2c.closed && conn.c2s.closed {
 		// pass context with timestamp of the first packet seen

@@ -53,6 +53,10 @@ func (c *Collector) Init() (err error) {
 		return fmt.Errorf("max-retained-tcp-bytes cannot be negative")
 	}
 	c.contextLocked()
+	c.reassemblyPageBudget, err = reassembly.NewPageBudget(c.config.DecoderConfig.MaxRetainedReassemblyBytes, c.runCancel)
+	if err != nil {
+		return err
+	}
 	if err := tcp.ConfigureRetainedPayloadBudget(c.config.DecoderConfig.MaxRetainedTCPBytes, c.runCancel); err != nil {
 		return err
 	}

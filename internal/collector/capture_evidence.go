@@ -35,8 +35,9 @@ func (c *Collector) initCaptureEvidence() error {
 		retention = 512 << 20
 	}
 	manifest, err := evidence.NewCapture(c.runCtx, directory, evidence.CaptureConfig{Kind: kind, Source: source, BPF: c.Bpf, SnapLen: c.config.SnapLen, Workers: c.config.Workers,
-		MaxRetainedTCPBytes: c.config.DecoderConfig.MaxRetainedTCPBytes,
-		IncludeDecoders:     c.config.DecoderConfig.IncludeDecoders, ExcludeDecoders: c.config.DecoderConfig.ExcludeDecoders, Reassembly: c.config.ReassembleConnections, RetainPackets: c.config.RetainPackets, SegmentBytes: segment, RetentionBytes: retention})
+		MaxRetainedTCPBytes:        c.config.DecoderConfig.MaxRetainedTCPBytes,
+		MaxRetainedReassemblyBytes: c.config.DecoderConfig.MaxRetainedReassemblyBytes,
+		IncludeDecoders:            c.config.DecoderConfig.IncludeDecoders, ExcludeDecoders: c.config.DecoderConfig.ExcludeDecoders, Reassembly: c.config.ReassembleConnections, RetainPackets: c.config.RetainPackets, SegmentBytes: segment, RetentionBytes: retention})
 	if err != nil {
 		return err
 	}

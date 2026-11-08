@@ -17,6 +17,7 @@ import (
 // pageCache is a concurrency-unsafe store of page objects we use to avoid
 // memory allocation as much as we can.
 type pageCache struct {
+	budget       *PageBudget
 	free         []*page
 	pcSize       int
 	size, used   int
@@ -71,6 +72,13 @@ func (c *pageCache) tryShrink() {
 
 // next returns a clean, ready-to-use page object.
 func (c *pageCache) next(ts time.Time) (p *page) {
+	if c.budget != nil {
+		c.used++
+		c.size++
+		p = &page{seen: ts}
+		p.bytes = p.buf[:0]
+		return p
+	}
 	if Debug {
 		c.pageRequests++
 		if c.pageRequests&0xFFFF == 0 {
@@ -100,10 +108,17 @@ func (c *pageCache) next(ts time.Time) (p *page) {
 // replace replaces a page into the pageCache.
 func (c *pageCache) replace(p *page) {
 	c.used--
+	if c.budget != nil {
+		c.size--
+		*p = page{}
+		c.budget.release()
+		return
+	}
 	if Debug {
 		log.Printf("replacing %s\n", p)
 	}
 	p.prev = nil
 	p.next = nil
+	p.ac = nil
 	c.free = append(c.free, p)
 }

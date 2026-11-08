@@ -27,6 +27,28 @@ The engine includes scan, DNS, periodic-connection and transfer patterns, plus
 application-policy observations. Some application findings finalize after record
 processing; absence before completion is not a negative verdict.
 
+## Application timing and bounds
+
+| Capture mode | Application observations |
+| --- | --- |
+| Live | Each maintenance tick and output checkpoint drains decoded observations in capture-time order within that batch, then emits partial aggregates. Scan/beacon history survives checkpoints. A record older than the previous batch's event watermark is excluded and counted in `applicationLate`; wall-clock time never advances that watermark. |
+| Offline | Decoded observations remain capture-time sorted at EOF, independent of replay speed. |
+
+The shared observation queue has a `16 MiB` accounting limit and a `100,000`
+record ceiling across all workers, including a detached checkpoint batch.
+`NetworkDetectionStats.json` exposes `applicationQueueLimit`,
+`applicationQueuedBytes`, `applicationPeakBytes` and `applicationQueueDrops`.
+Overflow discards observations explicitly; it does not establish an absence of
+scan/beacon activity. Consumed observations release reservations and references.
+Stored text is bounded and copied, avoiding retention of whole parser buffers
+through small substring views (`internal/networkdetect/application.go`).
+
+TCP application decoding still runs at connection completion
+(`internal/decoder/stream/tcp/tcp_connection.go`). Live checkpoints reduce the
+subsequent detector delay; they do not emit transactions from an open keepalive
+connection. Gap/truncation-qualified HTTP responses do not count as complete
+failed transactions for `http.scan` (`internal/collector/application_live_test.go`).
+
 ## Indicators and policy
 
 Use the complete minimal example
