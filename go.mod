@@ -2,6 +2,9 @@ module github.com/dreadl0ck/netcap
 
 go 1.27.0
 
+// v1.7.2 plus live-only Close wakeups; avoids macOS dead-handle pcap_breakloop crashes.
+replace github.com/gopacket/gopacket => github.com/dreadl0ck/gopacket v1.1.16-0.20261108103455-f2eeabc1ff6e
+
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/VirusTotal/yara-x/go v1.14.0 // Paired with the v1.14.0 C API in docker/builders/.
@@ -29,7 +32,7 @@ require (
 	github.com/go-jose/go-jose/v4 v4.1.9
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/pprof v0.0.0-20261016150608-1facf8f91b50
-	github.com/gopacket/gopacket v1.7.2 // v1.7.5 NewBPF/Close crashes in pcap_breakloop on macOS.
+	github.com/gopacket/gopacket v1.7.2
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/klauspost/pgzip v1.3.0
 	github.com/lib/pq v1.12.3
