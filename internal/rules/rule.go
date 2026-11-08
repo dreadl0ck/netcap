@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -71,6 +72,9 @@ type Rule struct {
 	// Only applicable when Threshold > 1. Default is 60 seconds (1 minute)
 	ThresholdWindow int `yaml:"threshold_window,omitempty"`
 
+	// GroupBy opts repeated-count rules into explicit scoped capture-time state.
+	GroupBy []string `yaml:"group_by,omitempty"`
+
 	// DistinctField enables cardinality-based detection: instead of counting raw
 	// matches, the engine counts the number of DISTINCT values of this field
 	// observed per source IP within ThresholdWindow. When the distinct count
@@ -108,6 +112,10 @@ type Rule struct {
 
 // Sequence configures ordered, grouped correlation for a rule.
 type Sequence struct {
+	// AfterType permits a qualified cross-record join. It requires explicit scope.
+	AfterType string `yaml:"after_type,omitempty"`
+	// AfterGroupBy maps antecedent fields positionally to GroupBy.
+	AfterGroupBy []string `yaml:"after_group_by,omitempty"`
 	// After is the expression identifying the earlier record. It is evaluated
 	// against the same record type as the rule.
 	After string `yaml:"after"`
@@ -192,8 +200,15 @@ func (a *ResponseAction) Validate() error {
 
 // Config holds a collection of rules loaded from a YAML file.
 type Config struct {
-	Description string  `yaml:"description"`
-	Rules       []*Rule `yaml:"rules"`
+	// CaptureTime opts capture-time evaluation into one caller-qualified scope.
+	CaptureTime *CaptureTimeConfig `yaml:"capture_time,omitempty"`
+	Description string             `yaml:"description"`
+	Rules       []*Rule            `yaml:"rules"`
+}
+
+type CaptureTimeConfig struct {
+	Scope           string `yaml:"scope"`
+	LatenessSeconds int    `yaml:"lateness_seconds"`
 }
 
 // LoadRulesFromFile loads rules from a YAML file.
@@ -247,6 +262,12 @@ func LoadRulesFromDirectory(dirPath string) (*Config, error) {
 		}
 
 		config.Rules = append(config.Rules, fileConfig.Rules...)
+		if c := fileConfig.CaptureTime; c != nil {
+			if config.CaptureTime != nil && *config.CaptureTime != *c {
+				return nil, fmt.Errorf("conflicting capture_time configuration in rules directory")
+			}
+			config.CaptureTime = c
+		}
 	}
 
 	if err := validateRuleNames(config); err != nil {
@@ -260,7 +281,16 @@ func CompileRules(config *Config) error {
 	if err := validateRuleNames(config); err != nil {
 		return err
 	}
+	if c := config.CaptureTime; c != nil && (c.Scope == "" || len(c.Scope) > 256 || c.LatenessSeconds < 0 || c.LatenessSeconds > maxSequenceWithinSeconds) {
+		return fmt.Errorf("capture_time requires a scope and lateness_seconds in 0..%d", maxSequenceWithinSeconds)
+	}
 	for i, rule := range config.Rules {
+		if config.CaptureTime != nil && rule.Enabled && (rule.DistinctField != "" || rule.Threshold > 1 && len(rule.GroupBy) == 0 || rule.Sequence != nil && rule.Sequence.AfterType == "") {
+			return fmt.Errorf("rule %s: capture_time requires explicit group_by for counts and after_type for sequences; legacy distinct rules require the legacy engine", rule.Name)
+		}
+		if rule.Threshold < 0 || rule.Threshold > 100000 || rule.ThresholdWindow < 0 || rule.ThresholdWindow > maxSequenceWithinSeconds {
+			return fmt.Errorf("rule %s: threshold/window outside supported bounds", rule.Name)
+		}
 		// Validate sequences even when disabled: hunt templates ship disabled,
 		// and a broken one must not surface only when an operator enables it.
 		if rule.Sequence != nil {
@@ -290,12 +320,38 @@ func CompileRules(config *Config) error {
 		}
 
 		config.Rules[i].compiled = program
+		if len(rule.GroupBy) > 0 {
+			if rule.Threshold < 2 || rule.DistinctField != "" {
+				return fmt.Errorf("rule %s: group_by requires an ordinary repeated-count threshold", rule.Name)
+			}
+			if err := validateGroupFields(rule.GroupBy, recordType); err != nil {
+				return fmt.Errorf("rule %s: %w", rule.Name, err)
+			}
+		}
 
 		if seq := rule.Sequence; seq != nil {
 			if err = validateGroupFields(seq.GroupBy, recordType); err != nil {
 				return fmt.Errorf("rule %s: %w", rule.Name, err)
 			}
-			after, err := filter.CompileExpression(seq.After, recordType)
+			afterType := recordType
+			if seq.AfterType != "" {
+				afterType, err = parseRecordType(seq.AfterType)
+				if err != nil {
+					return err
+				}
+				if len(seq.AfterGroupBy) != len(seq.GroupBy) {
+					return fmt.Errorf("rule %s: after_group_by must map every group_by field", rule.Name)
+				}
+				if afterType == recordType && !slices.Equal(seq.AfterGroupBy, seq.GroupBy) {
+					return fmt.Errorf("rule %s: same-type sequences require identical field mappings", rule.Name)
+				}
+				if err := validateJoinFields(seq.GroupBy, recordType, seq.AfterGroupBy, afterType); err != nil {
+					return fmt.Errorf("rule %s: %w", rule.Name, err)
+				}
+			} else if len(seq.AfterGroupBy) > 0 {
+				return fmt.Errorf("rule %s: after_group_by requires after_type", rule.Name)
+			}
+			after, err := filter.CompileExpression(seq.After, afterType)
 			if err != nil {
 				return fmt.Errorf("failed to compile sequence for rule %s: %w", rule.Name, err)
 			}
@@ -401,9 +457,15 @@ func EvaluateRule(rule *Rule, record types.AuditRecord) (*types.Alert, error) {
 	// Try to marshal the record as JSON for context
 	recordJSON, err := json.Marshal(record)
 	if err == nil {
-		alert.MatchedRecord = string(recordJSON)
 		digest := sha256.Sum256(recordJSON)
 		alert.MatchedRecordSHA256 = hex.EncodeToString(digest[:])
+		if secret, ok := record.(*types.Secret); ok {
+			// Authentication material remains only in the restricted Secret audit.
+			public, _ := json.Marshal(map[string]any{"Timestamp": secret.Timestamp, "Service": secret.Service, "Flow": secret.Flow, "CommunityID": secret.CommunityID, "AuthSuccess": secret.AuthSuccess, "AuthSuccessSet": secret.AuthSuccessSet})
+			alert.MatchedRecord = string(public)
+		} else {
+			alert.MatchedRecord = string(recordJSON)
+		}
 	}
 
 	return alert, nil

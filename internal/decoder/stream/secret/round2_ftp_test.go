@@ -120,16 +120,9 @@ func TestRound2FTPOutcomeQualification(t *testing.T) {
 func TestRound2FTPHasOneEmissionPath(t *testing.T) {
 	oldWriter, oldCount, oldConfig, oldUse := Decoder.Writer, Decoder.NumRecordsWritten, decoderconfig.Instance, useHarvesters
 	oldHarvesters, oldPorts, oldMapping, oldHC := tcpConnectionHarvesters, harvesterPorts, harvesterPortMapping, harvesterConfig
-	credStoreMu.Lock()
-	oldStore := credStore
-	credStore = map[string]string{}
-	credStoreMu.Unlock()
 	t.Cleanup(func() {
 		Decoder.Writer, Decoder.NumRecordsWritten, decoderconfig.Instance, useHarvesters = oldWriter, oldCount, oldConfig, oldUse
 		tcpConnectionHarvesters, harvesterPorts, harvesterPortMapping, harvesterConfig = oldHarvesters, oldPorts, oldMapping, oldHC
-		credStoreMu.Lock()
-		credStore = oldStore
-		credStoreMu.Unlock()
 	})
 	w := &observationWriter{}
 	Decoder.Writer, useHarvesters = w, true
@@ -147,7 +140,6 @@ func TestRound2FTPHasOneEmissionPath(t *testing.T) {
 	if len(w.records) != 0 {
 		t.Fatal("legacy banner path still emits FTP")
 	}
-	HarvestFTPConversation(c)
 	HarvestFTPConversation(c)
 	if len(w.records) != 1 || w.records[0].Timestamp != 2 || w.records[0].CommunityID != "cid" {
 		t.Fatalf("duplicates or lost identity: %v", w.records)

@@ -58,14 +58,12 @@ func imapHarvesterFunc(data []byte, ident string, ts time.Time) *types.Secret {
 		if err != nil {
 			credLog.Warn("captured IMAP credentials, but could not decode them",
 				zap.Error(err),
-				zap.String("input", string(matchesPlainSeparate[1])),
 			)
 		}
 		passwordBin, err := base64.StdEncoding.DecodeString(string(matchesPlainSeparate[2]))
 		if err != nil {
 			credLog.Warn("captured IMAP credentials, but could not decode them",
 				zap.Error(err),
-				zap.String("input", string(matchesPlainSeparate[2])),
 			)
 		}
 		username = string(usernameBin)
@@ -78,7 +76,6 @@ func imapHarvesterFunc(data []byte, ident string, ts time.Time) *types.Secret {
 		if err != nil {
 			credLog.Warn("captured IMAP credentials, but could not decode them",
 				zap.Error(err),
-				zap.String("input", string(matchesLogin[1])),
 			)
 		}
 
@@ -113,7 +110,6 @@ func imapHarvesterFunc(data []byte, ident string, ts time.Time) *types.Secret {
 		if err != nil {
 			credLog.Warn("captured IMAP credentials, but could not decode them",
 				zap.Error(err),
-				zap.String("input", string(matchesCramMd5[1])),
 			)
 		}
 		username = string(usernameBin) // This is really the challenge
@@ -121,7 +117,6 @@ func imapHarvesterFunc(data []byte, ident string, ts time.Time) *types.Secret {
 		if err != nil {
 			credLog.Warn("captured IMAP credentials, but could not decode them",
 				zap.Error(err),
-				zap.String("input", string(matchesCramMd5[2])),
 			)
 		}
 		password = string(passwordBin) // And this is the hash

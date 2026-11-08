@@ -20,6 +20,8 @@
 package types
 
 import (
+	"net/netip"
+	"strconv"
 	"strings"
 	"time"
 
@@ -70,9 +72,10 @@ func (c *Secret) Time() int64 {
 // JSON returns the JSON representation of the audit record.
 func (c *Secret) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
-	c.Timestamp /= int64(time.Millisecond)
+	copy := *c
+	copy.Timestamp /= int64(time.Millisecond)
 
-	return jsonMarshaler.MarshalToString(c)
+	return jsonMarshaler.MarshalToString(&copy)
 }
 
 var secretMetric = prometheus.NewCounterVec(
@@ -80,26 +83,51 @@ var secretMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_Secret.String()),
 		Help: Type_NC_Secret.String() + " audit records",
 	},
-	fieldsSecret[1:],
+	[]string{fieldService},
 )
 
 // Inc increments the metrics for the audit record.
 func (c *Secret) Inc() {
-	secretMetric.WithLabelValues(c.CSVRecord()[1:]...).Inc()
+	secretMetric.WithLabelValues(c.Service).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (a *Secret) SetPacketContext(*PacketContext) {}
 
-// Src TODO: preserve source and destination mac adresses for Secret and return them here.
 // Src returns the source address of the audit record.
 func (c *Secret) Src() string {
-	return ""
+	src, _, ok := strings.Cut(c.Flow, "->")
+	if !ok {
+		return ""
+	}
+	return secretFlowAddress(src)
 }
 
-// Dst TODO: preserve source and destination mac adresses for Secret and return them here.
 // Dst returns the destination address of the audit record.
 func (c *Secret) Dst() string {
+	_, dst, ok := strings.Cut(c.Flow, "->")
+	if !ok {
+		return ""
+	}
+	return secretFlowAddress(dst)
+}
+
+// Flow is an observed directional tuple, not a claim about authentication roles.
+func secretFlowAddress(endpoint string) string {
+	if ap, err := netip.ParseAddrPort(endpoint); err == nil {
+		return ap.Addr().String()
+	}
+	// Historical flow identifiers render IPv6 without brackets.
+	i := strings.LastIndexByte(endpoint, ':')
+	if i < 0 {
+		return ""
+	}
+	if _, err := strconv.ParseUint(endpoint[i+1:], 10, 16); err != nil {
+		return ""
+	}
+	if addr, err := netip.ParseAddr(endpoint[:i]); err == nil {
+		return addr.String()
+	}
 	return ""
 }
 

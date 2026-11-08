@@ -1081,6 +1081,9 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		if err != nil {
 			return errors.Join(fmt.Errorf("create rules engine: %w", err), alertWriter.Close())
 		}
+		if rulesEngine.CaptureTimeEnabled() && len(inputFiles) > 1 {
+			return errors.Join(fmt.Errorf("capture-time rules require one qualified input source per engine; process inputs separately"), rulesEngine.Close())
+		}
 
 		// Set rules engine in collector
 		coll.SetRulesEngine(rulesEngine)
@@ -1088,7 +1091,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		// Register alert writer for cleanup
 		defer func() {
 			if err := rulesEngine.Close(); err != nil {
-				log.Println("error closing rules engine:", err)
+				runErr = errors.Join(runErr, fmt.Errorf("finalize rules engine: %w", err))
 			}
 		}()
 

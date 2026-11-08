@@ -20,10 +20,8 @@
 package secret
 
 import (
-	"encoding/hex"
 	"fmt"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -125,26 +123,11 @@ var (
 
 	// harvesterConfig stores the current harvester configuration
 	harvesterConfig *HarvestersConfigFile
-
-	// credStore is used to deduplicate the credentials written to disk
-	// it maps an identifier in the format: c.Service + c.User + c.Password
-	// to the flow ident where the data was observed.
-	credStore   = make(map[string]string)
-	credStoreMu sync.Mutex
 )
 
-// ResetSecretStore clears the credentials deduplication store
-// This should be called when resetting state between processing different files
-func ResetSecretStore() {
-	credStoreMu.Lock()
-	credStore = make(map[string]string)
-	credStoreMu.Unlock()
-}
-
-//goland:noinspection GoUnusedFunction
-func harvesterDebug(ident string, data []byte, args ...any) {
-	fmt.Println(ident, "\n", hex.Dump(data), args)
-}
+// ResetSecretStore remains for capture lifecycle compatibility. Occurrences are
+// no longer deduplicated, so no credential-identity state survives a write.
+func ResetSecretStore() {}
 
 // InitializeHarvesters sets up the harvesters based on the provided configuration
 func InitializeHarvesters(config *HarvestersConfigFile) error {

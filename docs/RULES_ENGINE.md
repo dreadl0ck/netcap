@@ -74,6 +74,78 @@ confirmed tunnels, and a MITRE label/severity does not validate intent.
 └──────────────┘
 ```
 
+## Scoped capture-time rules
+
+`internal/rules/ordered_stream.go` adds bounded capture-time evaluation to the
+existing `capture -rules FILE` path. Configure one qualified capture/source scope;
+use separate engines for different interfaces/VLANs or captures. The CLI rejects
+multiple input files in this mode. A configured scope is a caller declaration;
+mixed-interface/VLAN dispatch requires the collector's observed scope routing.
+
+```yaml
+capture_time:
+  scope: capture-001/sensor-01/interface-0/vlan-20
+  lateness_seconds: 600
+rules:
+  - name: Scoped SYN observations
+    type: TCP
+    expression: SYN
+    enabled: true
+    threshold: 50
+    threshold_window: 600
+    group_by: [SrcIP, DstIP, DstPort]
+```
+
+| Contract | Implementation |
+| --- | --- |
+| Group/window | `group_by` scalar keys are length-framed; counters include scope and unique rule name. Inclusive capture-time windows reset at each crossing. Choose service/account fields explicitly; missing string keys do not join. |
+| Reordering | `lateness_seconds` holds equal-time records together and canonically sorts timestamp/type/protobuf bytes. Older-than-watermark arrivals fail explicitly. Replays within the allowance yield the same crossings; arbitrary lateness is unsupported. |
+| Bounds | 4,096 queued records, 1 MiB protobuf frame, 32 MiB accounted reorder storage, 10,000 scoped groups and 100,000 pending count timestamps; exhaustion returns `ErrStateCapacity`. These are accounted-state bounds, not whole-process RSS limits. |
+| Reload | Compilation failure preserves pending evidence/state. Successful capture-time reload drains admitted records under the old rules, then resets correlation/dedup/rate state. Scope/lateness changes require a new engine. |
+| Finalization | `Engine.Finalize()` drains before readiness; `Close()` also drains and reports errors. Capture CLI returns finalization errors. A lifecycle owner must call `Finalize()` before publishing `audit-output-ready.json`; CLI deferred Close alone runs after collector readiness. |
+| API | `NewOrderedStream` supports caller-controlled `Advance(watermark)` and `Finish()`; explicit-stream `Reload` refuses pending records. `EvaluateScoped` requires already ordered records. |
+| Compatibility | Without `capture_time`, legacy rule semantics remain. Capture-time mode requires typed `after_type` sequences and rejects legacy distinct-cardinality rules. Wall-clock dedup/rate suppression is disabled for explicitly scoped evaluation. Scoped count/join rules loaded by `NewEngine` require `capture_time`; existing finalized `netcap-offline-rules/v1` packs retain their separate contract. |
+
+`sequence.after_type` and `sequence.after_group_by` add exact cross-record joins.
+The mapped scalar types must agree; `sequence.group_by` names the triggering
+record's fields. Example: `after_type: Secret`, `after: AuthSuccessSet && !AuthSuccess`,
+`after_group_by: [CommunityID]`, `group_by: [CommunityID]`, `within: 60`.
+`CommunityID` qualifies a tuple only; use an observed session/transaction key
+where tuple reuse is possible. The engine does not infer an account, login
+outcome or causal relationship. Alert `Notes.netcapJoin` retains two hash-only
+contributors; scope separates unrelated captures/sources. Scoped matched-record
+projections retain only time/type/endpoints/CommunityID plus the full-record hash,
+so application headers, bodies and credential material do not enter these alerts.
+
+`WriteSecret` retains every emitted occurrence, including repeated same-flow
+credentials and hash-only observations. Existing `Realm`, `Uri`, `SipCallId`,
+`AuthSuccess`/`AuthSuccessSet` and flow context remain on each Secret record.
+`Secret.Src/Dst` parse observed directional flow endpoints; unknown formats stay
+unavailable. Secret alert projections and Prometheus labels exclude credential
+material; the original Secret audit remains sensitive evidence.
+
+## Durable webhook delivery
+
+`net investigate deliver-alerts` sends redacted notices from saved alert output:
+
+```sh
+net investigate deliver-alerts -read ./audit -outbox ./private-alert-outbox \
+  -scope capture-001/sensor-01 -endpoint https://receiver.example/alerts \
+  -limit 1000 -timeout 1m
+```
+
+| Contract | Implementation |
+| --- | --- |
+| Opt-in | Only the explicit command or `internal/delivery.Writer` enqueues notices; `Outbox.Deliver` performs bounded serial POST attempts. No background worker or production destination is configured. |
+| Durable retries | Private SQLite transactions use `synchronous(FULL)`; pending attempts, due times and delivered/rejected receipts survive restart. Rerun the same command to retry. 408/425/429/5xx and transport failures use 1s exponential backoff capped at 1h; other non-2xx responses remain rejected. Redirects are not followed. |
+| Idempotency | `Idempotency-Key` is a stable SHA-256 notice identity. Identical semantic notices share a durable receipt. Delivery is at least once: receiver acceptance followed by a crash before local receipt commit can repeat a POST, so receivers must deduplicate that key. |
+| Limits | 10,000 entries including receipts, 4 KiB notices, 64 MiB SQLite page ceiling, 5s request timeout and 4 KiB response drain. Full capacity refuses admission; receipts are not silently evicted. Source scanning is bounded by `-limit` (maximum 10,000). |
+| Credentials | `NETCAP_ALERT_WEBHOOK_TOKEN` supplies an optional runtime bearer. URLs cannot contain userinfo, query or fragments; destinations are digest-pinned per outbox. Notices omit raw records, descriptions, expressions, tags, notes and credential fields. Transport errors do not echo URLs/tokens/bodies. |
+| Outcome | JSON reports pending/delivered/rejected counts; pending/rejected notices produce a nonzero exit. Rejected receipts require operator inspection; they are not silently retried. `iptables_rate_limit`/`iptables_log` retain `ErrUnsupportedResponseAction`. |
+
+Pitfall: credential-identity deduplication erased repeated transactions; preserve
+occurrences in `Secret.ncap` and deduplicate only delivery receipts.
+
 ## Offline grouped thresholds
 
 Availability: current source after v0.15.2. The v0.15.2 release binary has no

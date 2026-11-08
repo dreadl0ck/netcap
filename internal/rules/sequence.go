@@ -15,6 +15,9 @@ import (
 // validateGroupFields rejects group keys the engine could never build, which
 // would otherwise disable the rule with no error and no alert.
 func validateGroupFields(fields []string, recordType types.Type) error {
+	if len(fields) > 16 {
+		return fmt.Errorf("group_by exceeds 16 fields")
+	}
 	record := netio.InitRecord(recordType)
 	if record == nil {
 		return fmt.Errorf("unsupported record type: %s", recordType.String())
@@ -110,6 +113,16 @@ func (e *Engine) checkSequence(rule *Rule, record types.AuditRecord) (bool, erro
 	}
 
 	if isAfter && now >= tracker.seen[key] {
+		if _, exists := tracker.seen[key]; !exists && len(tracker.seen) >= maxSequenceGroups {
+			for k, at := range tracker.seen {
+				if now >= at && now-at > windowNanos {
+					delete(tracker.seen, k)
+				}
+			}
+			if len(tracker.seen) >= maxSequenceGroups {
+				return false, ErrStateCapacity
+			}
+		}
 		tracker.seen[key] = now
 		tracker.evalCount++
 		if tracker.evalCount%sequenceSweepInterval == 0 || len(tracker.seen) > maxSequenceGroups {
