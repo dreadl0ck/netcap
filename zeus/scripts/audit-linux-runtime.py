@@ -5,7 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
-from native_supplier import yara_evidence
+from native_supplier import UBUNTU_LIBRARIES, libtrace_evidence, yara_evidence
 
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('image')
@@ -50,6 +50,10 @@ else exit 3; fi
     if not owned and file.name=='libyara_x_capi.so' and a.supplier_image:
         record.update(yara_evidence(a.supplier_image,file))
         record['packageEvidence']=json.dumps({key:record[key] for key in ('supplierLibrarySHA256','supplierRecipes','supplierVersion','sourceSHA256')},sort_keys=True)
+        owned=True
+    if not owned and a.supplier_image and 'ubuntu' in evidence_image and file.name in UBUNTU_LIBRARIES:
+        record.update(libtrace_evidence(a.supplier_image,file,history))
+        record['packageEvidence']=json.dumps({key:record[key] for key in ('supplierLibrarySHA256','supplierBuildArgument','supplierVersion','sourceSHA256')},sort_keys=True)
         owned=True
     if not owned and file.name=='libndpi.so.4':
         record.update(requiresSupplierEvidence=False,correspondingSource='https://github.com/ntop/nDPI/archive/refs/tags/4.14.tar.gz',sourceSHA256='954135ee14ad6bd74a78a10db560b534b8f2083ad0615f5c1a2c376fff0301e0',license='LGPL-3.0-or-later')

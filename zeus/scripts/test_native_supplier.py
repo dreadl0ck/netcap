@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from native_supplier import yara_evidence
+from native_supplier import UBUNTU_LIBRARIES, libtrace_evidence, yara_evidence
 
 
 class YaraSupplierTests(unittest.TestCase):
@@ -43,6 +43,24 @@ class YaraSupplierTests(unittest.TestCase):
                        self.output.replace('/opt/netcap-native/build-yara-x.sh', '/different-recipe')):
             with self.subTest(output=output), self.assertRaises(ValueError):
                 self.evidence(output)
+
+
+class LibtraceSupplierTests(unittest.TestCase):
+    def test_matching_bytes_require_exact_recipe_source_hash_and_version(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for name, (repo, argument, version, source_hash) in UBUNTU_LIBRARIES.items():
+                library = Path(directory) / name
+                library.write_bytes(b'qualified library')
+                digest = hashlib.sha256(library.read_bytes()).hexdigest()
+                history = argument + '=' + version + ' https://github.com/' + repo + '/archive/refs/tags/${' + argument + '}.tar.gz ' + source_hash
+                with patch('native_supplier.subprocess.check_output', return_value=digest + '  /usr/local/lib/' + name):
+                    self.assertFalse(libtrace_evidence('qualified-image', library, history)['requiresSupplierEvidence'])
+                    for bad in (history.replace(version, '0.0.0'), history.replace(source_hash, '0' * 64), history.replace(repo, 'wrong/repo')):
+                        with self.subTest(name=name), self.assertRaisesRegex(ValueError, 'build history'):
+                            libtrace_evidence('qualified-image', library, bad)
+                    library.write_bytes(b'changed bytes')
+                    with self.assertRaisesRegex(ValueError, 'bytes differ'):
+                        libtrace_evidence('qualified-image', library, history)
 
 
 if __name__ == '__main__':
