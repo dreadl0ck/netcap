@@ -8,6 +8,7 @@ package mcp
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -47,12 +48,15 @@ func (c *NetcapClient) BaseURL() string { return c.baseURL }
 // response body. Non-2xx responses are returned as errors with a truncated
 // body for context.
 func (c *NetcapClient) Get(path string, query url.Values) (json.RawMessage, error) {
+	return c.GetContext(context.Background(), path, query)
+}
+func (c *NetcapClient) GetContext(ctx context.Context, path string, query url.Values) (json.RawMessage, error) {
 	u := c.baseURL + path
 	if len(query) > 0 {
 		u += "?" + query.Encode()
 	}
 
-	req, err := http.NewRequest(http.MethodGet, u, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -77,13 +81,16 @@ func (c *NetcapClient) GetAs[T any](path string, query url.Values) (T, error) {
 
 // PostJSON sends a JSON-encoded POST request and returns the raw response.
 func (c *NetcapClient) PostJSON(path string, body any) (json.RawMessage, error) {
+	return c.PostJSONContext(context.Background(), path, body)
+}
+func (c *NetcapClient) PostJSONContext(ctx context.Context, path string, body any) (json.RawMessage, error) {
 	var buf bytes.Buffer
 	if body != nil {
 		if err := json.NewEncoder(&buf).Encode(body); err != nil {
 			return nil, fmt.Errorf("encoding request: %w", err)
 		}
 	}
-	req, err := http.NewRequest(http.MethodPost, c.baseURL+path, &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, &buf)
 	if err != nil {
 		return nil, err
 	}

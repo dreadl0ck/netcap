@@ -1849,9 +1849,16 @@ function createApiWithBase(apiBase: string) {
     onComplete?: (total: number, scanned?: number, executionTimeMs?: number) => void,
     onError?: (error: string) => void,
     filter?: string,
-    communityIds?: readonly string[]
+    communityIds?: readonly string[],
+    evidenceSource?: import('./analyst').AnalystSource
   ): EventSource {
     let url = `${apiBase}/audit/${type}/stream?offset=${offset}&limit=${limit}`;
+    if (evidenceSource) {
+      const params = new URLSearchParams({ evidence: '1', runId: evidenceSource.binding.runId, sourceSHA256: evidenceSource.binding.sourceSHA256, manifestSHA256: evidenceSource.binding.manifestSHA256 });
+      if (evidenceSource.sessionId) params.set('sessionId', evidenceSource.sessionId);
+      if (evidenceSource.inputFile) params.set('inputFile', evidenceSource.inputFile);
+      url += `&${params}`;
+    }
     if (filter) {
       url += `&filter=${encodeURIComponent(filter)}`;
     }

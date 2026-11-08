@@ -7,9 +7,11 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/internal/analyst"
 	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 )
@@ -84,8 +86,36 @@ func (s *Server) handleReproductionBundle(w http.ResponseWriter, r *http.Request
 		"attachments": attachments,
 		"limitations": []string{"Metadata-only bundle, not a self-contained replay", "Exporter version is not proof of the capture producer version", "Source hash is recorded provenance, not a fresh verification of the source file", "Free-text settings, source paths, logs, errors and payloads are omitted to avoid exporting credentials; attach separately only after analyst review", "Missing/read-failed attachments are not successful empty exports"},
 	}
+	if capture.Producer != nil {
+		bundle["producer"] = reproductionProducer(capture.Producer)
+		bundle["producerVersion"] = reproductionProducer(capture.Producer)["version"]
+	}
+	if r.URL.Query().Get("reviewedLog") == "true" {
+		binding, e := analyst.BindDiagnostic(r.Context(), selected.OutputDir)
+		if e != nil {
+			analystFailure(w, e)
+			return
+		}
+		review, e := analyst.ReviewedLog(r.Context(), selected.OutputDir, binding)
+		if e != nil {
+			analystFailure(w, e)
+			return
+		}
+		bundle["reviewedLog"] = map[string]any{"version": review.Version, "name": "reviewed-diagnostic-log", "binding": review.Binding, "fileSHA256": review.FileSHA256, "start": review.Start, "end": review.End, "lines": review.Lines, "projectionSHA256": review.ProjectionSHA256, "state": review.State}
+	}
 	w.Header().Set("Content-Disposition", `attachment; filename="netcap-reproduction-metadata.json"`)
 	RespondJSON(w, http.StatusOK, bundle)
+}
+
+func reproductionProducer(producer *evidence.ProducerIdentity) map[string]any {
+	value := func(raw, pattern string) string {
+		if len(raw) <= 128 && regexp.MustCompile(pattern).MatchString(raw) {
+			return raw
+		}
+		return "unavailable"
+	}
+	return map[string]any{"version": value(producer.Version, `^v[0-9]+\.[0-9]+\.[0-9]+$`), "commit": value(producer.Commit, `^([a-f0-9]{40}|development)$`), "goVersion": value(producer.GoVersion, `^go[0-9]+\.[0-9]+(\.[0-9]+)?$`), "platform": value(producer.Platform, `^(darwin|linux|windows|freebsd)/(amd64|arm64|386|arm|riscv64)$`), "executableRevision": value(producer.ExecutableRevision, `^[a-f0-9]{40}$`), "executableModified": producer.ExecutableModified, "coreModuleReplaced": producer.CoreModuleReplaced,
+		"executableModuleSHA256": digestBytes([]byte(producer.ExecutableModule)), "coreModuleVersionSHA256": digestBytes([]byte(producer.CoreModuleVersion))}
 }
 
 func digestBytes(data []byte) string { hash := sha256.Sum256(data); return hex.EncodeToString(hash[:]) }

@@ -6,6 +6,7 @@ import FileSelectorHeader from '../components/FileSelectorHeader';
 import { useNetcapApi } from '../hooks';
 import { useNetcapConfig } from '../providers';
 import { behaviorSelection } from '../lib/behavior';
+import AnalystWorkbench from '../components/AnalystWorkbench';
 
 async function investigationRequest<T>(fetcher: typeof fetch, url: string): Promise<T> {
   const response = await fetcher(url);
@@ -112,6 +113,7 @@ export default function InvestigationPage({ downloadArtifact }: InvestigationPag
   };
   return <Layout title="Investigation evidence" headerAction={<FileSelectorHeader inputFiles={files ?? []} status={status} switchingFile={switching} onFileChange={changeCapture} />}>
     <Stack spacing={3}>
+      <AnalystWorkbench files={files ?? []} serviceMode={status?.isServiceMode} />
       {error && <Alert severity="error">{error}</Alert>}
       <Paper sx={{ p: 2 }}><Stack spacing={2}>
         <Typography variant="h6" component="h2">Capture provenance and coverage</Typography>

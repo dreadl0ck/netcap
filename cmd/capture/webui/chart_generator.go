@@ -24,6 +24,7 @@ import (
 	"fmt"
 	stdhtml "html"
 	"io"
+	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -52,6 +53,7 @@ type kvPair struct {
 
 // ChartGenerator handles chart generation from audit records
 type ChartGenerator struct {
+	Coverage      RenderedChartCoverage
 	auditType     string
 	field         string
 	chartType     string
@@ -87,6 +89,7 @@ func (cg *ChartGenerator) GenerateChart(outDir string) (io.Reader, error) {
 // audit file are skipped silently. Returns an error if no directory yields
 // any data.
 func (cg *ChartGenerator) GenerateChartFromDirs(outDirs []string) (io.Reader, error) {
+	cg.Coverage = RenderedChartCoverage{Basis: "retained-audit-records", Selection: "prefix-of-usable-values", PointLimit: cg.maxDataPoints, SourcesRequested: len(outDirs)}
 	if len(outDirs) == 0 {
 		return nil, fmt.Errorf("no output directories provided")
 	}
@@ -99,11 +102,14 @@ func (cg *ChartGenerator) GenerateChartFromDirs(outDirs []string) (io.Reader, er
 		path := filepath.Join(dir, cg.auditType+defaults.FileExtension+".gz")
 		r, err := NewAuditRecordReader(path)
 		if err != nil {
-			continue
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, err
 		}
 		if _, hErr := r.ReadHeader(); hErr != nil {
 			r.Close()
-			continue
+			return nil, hErr
 		}
 		probeReader = r
 		probePath = path
@@ -126,6 +132,8 @@ func (cg *ChartGenerator) GenerateChartFromDirs(outDirs []string) (io.Reader, er
 	// It must not call GenerateChart, which re-enters here and recursed until
 	// the stack overflowed, killing the whole process.
 	if !isNumeric && cg.chartType == "sankey" {
+		cg.Coverage.Selection = "first-available-capture-only; schematic links"
+		cg.Coverage.SourcesRead = 1
 		sankeyReader, err := NewAuditRecordReader(probePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to reopen audit file for sankey: %w", err)
@@ -220,7 +228,11 @@ func (cg *ChartGenerator) collectNumericDataMulti(outDirs []string) ([]dataPoint
 		if err != nil {
 			return nil, fmt.Errorf("invalid interval: %w", err)
 		}
+		if d <= 0 {
+			return nil, fmt.Errorf("interval must be positive")
+		}
 		duration = d
+		cg.Coverage.Selection = "prefix-of-time-bucket-means"
 	}
 	timeBuckets := make(map[int64][]float64)
 
@@ -231,12 +243,17 @@ func (cg *ChartGenerator) collectNumericDataMulti(outDirs []string) ([]dataPoint
 		filePath := filepath.Join(dir, cg.auditType+defaults.FileExtension+".gz")
 		reader, err := NewAuditRecordReader(filePath)
 		if err != nil {
-			continue
+			if os.IsNotExist(err) {
+				cg.Coverage.AbsentSources++
+				continue
+			}
+			return nil, err
 		}
 		if _, err := reader.ReadHeader(); err != nil {
 			reader.Close()
-			continue
+			return nil, err
 		}
+		cg.Coverage.SourcesRead++
 
 		for bucketing || len(all) < cg.maxDataPoints {
 			msg, err := reader.NextRecord()
@@ -244,7 +261,8 @@ func (cg *ChartGenerator) collectNumericDataMulti(outDirs []string) ([]dataPoint
 				break
 			}
 			if err != nil {
-				break
+				reader.Close()
+				return nil, err
 			}
 			ar, ok := msg.(netcaptypes.AuditRecord)
 			if !ok {
@@ -283,7 +301,13 @@ func (cg *ChartGenerator) collectNumericDataMulti(outDirs []string) ([]dataPoint
 	// Cap final size to avoid blowing up the chart with very large multi-dir
 	// aggregates.
 	if len(all) > cg.maxDataPoints {
+		cg.Coverage.LimitReached = true
 		all = all[:cg.maxDataPoints]
+	}
+	cg.Coverage.ValuesKnown = true
+	cg.Coverage.RenderedValues = len(all)
+	if !bucketing && len(all) >= cg.maxDataPoints {
+		cg.Coverage.LimitReached = true
 	}
 	return all, nil
 }
@@ -300,25 +324,32 @@ func (cg *ChartGenerator) collectCategoricalDataMulti(outDirs []string) (map[str
 		filePath := filepath.Join(dir, cg.auditType+defaults.FileExtension+".gz")
 		reader, err := NewAuditRecordReader(filePath)
 		if err != nil {
-			continue
+			if os.IsNotExist(err) {
+				cg.Coverage.AbsentSources++
+				continue
+			}
+			return nil, err
 		}
 		if _, err := reader.ReadHeader(); err != nil {
 			reader.Close()
-			continue
+			return nil, err
 		}
+		cg.Coverage.SourcesRead++
 		for totalRecords < cg.maxDataPoints {
 			msg, err := reader.NextRecord()
 			if err == io.EOF {
 				break
 			}
 			if err != nil {
-				break
+				reader.Close()
+				return nil, err
 			}
 			value, err := extractStringField(msg, cg.field)
 			if err != nil || value == "" {
 				continue
 			}
 			if len(value) > 100 {
+				cg.Coverage.TruncatedLabels++
 				value = value[:100] + "..."
 			}
 			counts[value]++
@@ -326,6 +357,9 @@ func (cg *ChartGenerator) collectCategoricalDataMulti(outDirs []string) (map[str
 		}
 		reader.Close()
 	}
+	cg.Coverage.ValuesKnown = true
+	cg.Coverage.RenderedValues = totalRecords
+	cg.Coverage.LimitReached = totalRecords >= cg.maxDataPoints
 	return counts, nil
 }
 

@@ -28,7 +28,9 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/analyst"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/gogo/protobuf/proto"
 )
 
 const (
@@ -76,15 +78,17 @@ type timelineMetaJSON struct {
 
 // timelineEventJSON is one record occurrence on the timeline.
 type timelineEventJSON struct {
-	ID      string `json:"id"`
-	Type    string `json:"type"`
-	Layer   string `json:"layer"`
-	Time    string `json:"time"`
-	End     string `json:"end,omitempty"`
-	Src     string `json:"src,omitempty"`
-	Dst     string `json:"dst,omitempty"`
-	Ordinal int32  `json:"ordinal"`
-	Cursor  string `json:"cursor"`
+	Occurrence *analyst.Reference       `json:"occurrence,omitempty"`
+	Source     *analyst.SourceSelection `json:"source,omitempty"`
+	ID         string                   `json:"id"`
+	Type       string                   `json:"type"`
+	Layer      string                   `json:"layer"`
+	Time       string                   `json:"time"`
+	End        string                   `json:"end,omitempty"`
+	Src        string                   `json:"src,omitempty"`
+	Dst        string                   `json:"dst,omitempty"`
+	Ordinal    int32                    `json:"ordinal"`
+	Cursor     string                   `json:"cursor"`
 }
 
 // timelineEventsJSON is the response of /api/timeline/events.
@@ -221,7 +225,7 @@ func (s *Server) handleTimelineMeta(w http.ResponseWriter, r *http.Request) {
 
 // handleTimelineEvents returns a chronological page of records for a window.
 func (s *Server) handleTimelineEvents(w http.ResponseWriter, r *http.Request) {
-	_, status, ok := s.timelineIndexFromRequest(w, r)
+	outDir, status, ok := s.timelineIndexFromRequest(w, r)
 	if !ok {
 		return
 	}
@@ -261,6 +265,9 @@ func (s *Server) handleTimelineEvents(w http.ResponseWriter, r *http.Request) {
 		if hit := query.nearest(at); hit != nil {
 			resp.Events = append(resp.Events, timelineEventOf(*hit))
 		}
+		if !attachTimelineOccurrences(w, r, outDir, resp.Events) {
+			return
+		}
 
 		RespondJSON(w, http.StatusOK, resp)
 
@@ -271,6 +278,9 @@ func (s *Server) handleTimelineEvents(w http.ResponseWriter, r *http.Request) {
 
 	for _, hit := range hits {
 		resp.Events = append(resp.Events, timelineEventOf(hit))
+	}
+	if !attachTimelineOccurrences(w, r, outDir, resp.Events) {
+		return
 	}
 
 	if len(hits) > 0 {
@@ -370,6 +380,43 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 
+		return
+	}
+	if encoded := r.URL.Query().Get("reference"); encoded != "" {
+		if len(encoded) > 8192 {
+			http.Error(w, "Occurrence reference too large", 400)
+			return
+		}
+		selected, ok := s.selectedCapture(w, r)
+		if !ok {
+			return
+		}
+		if !r.URL.Query().Has("sessionId") && !r.URL.Query().Has("inputFile") {
+			http.Error(w, "Explicit occurrence source required", 400)
+			return
+		}
+		var ref analyst.Reference
+		if json.Unmarshal([]byte(encoded), &ref) != nil {
+			http.Error(w, "Invalid occurrence reference", 400)
+			return
+		}
+		for key, value := range map[string]string{"type": ref.Type, "ordinal": ref.Ordinal, "time": ref.TimestampNs} {
+			if q := r.URL.Query().Get(key); q != "" && q != value {
+				http.Error(w, "Conflicting timeline reference", 409)
+				return
+			}
+		}
+		ctx, done, ok := analystContext(w, r)
+		if !ok {
+			return
+		}
+		defer done()
+		record, err := analyst.Resolve(ctx, selected.OutputDir, ref)
+		if err != nil {
+			analystFailure(w, err)
+			return
+		}
+		RespondJSON(w, 200, map[string]any{"version": 1, "reference": ref, "record": record})
 		return
 	}
 
@@ -489,6 +536,61 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RespondJSON(w, http.StatusOK, resp)
+}
+
+func attachTimelineOccurrences(w http.ResponseWriter, r *http.Request, dir string, events []timelineEventJSON) bool {
+	if r.URL.Query().Get("evidence") != "1" {
+		return true
+	}
+	source := analyst.SourceSelection{SessionID: r.URL.Query().Get("sessionId"), InputFile: r.URL.Query().Get("inputFile"), Binding: analyst.Binding{RunID: r.URL.Query().Get("runId"), SourceSHA256: r.URL.Query().Get("sourceSHA256"), ManifestSHA256: r.URL.Query().Get("manifestSHA256")}}
+	if source.SessionID == "" && source.InputFile == "" {
+		http.Error(w, "Explicit occurrence source required", 400)
+		return false
+	}
+	ctx, done, ok := analystContext(w, r)
+	if !ok {
+		return false
+	}
+	defer done()
+	if err := analyst.Check(ctx, dir, source.Binding); err != nil {
+		analystFailure(w, err)
+		return false
+	}
+	groups := map[string]map[string]int{}
+	for i, event := range events {
+		if groups[event.Type] == nil {
+			groups[event.Type] = map[string]int{}
+		}
+		groups[event.Type][strconv.Itoa(int(event.Ordinal))] = i
+	}
+	if len(groups) > 8 {
+		http.Error(w, "Bound timeline requests support at most eight explicit audit types", 422)
+		return false
+	}
+	for typ, ordinals := range groups {
+		err := analyst.Walk(ctx, dir, source.Binding, typ, func(ref analyst.Reference, _ proto.Message) error {
+			if i, exists := ordinals[ref.Ordinal]; exists {
+				if ref.TimestampNs != events[i].Time {
+					return analyst.ErrStale
+				}
+				copy := ref
+				events[i].Occurrence = &copy
+				events[i].Source = &source
+			}
+			return nil
+		})
+		if err != nil {
+			analystFailure(w, err)
+			return false
+		}
+	}
+	for _, event := range events {
+		if event.Occurrence == nil {
+			analystFailure(w, analyst.ErrStale)
+			return false
+		}
+	}
+	return true
 }
 
 // timelineQueryFromRequest builds a query from the request parameters, falling

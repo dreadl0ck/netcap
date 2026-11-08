@@ -569,6 +569,10 @@ func HandleAuditMeta(w http.ResponseWriter, r *http.Request, filePath, auditType
 // HandleAuditStream streams audit records via Server-Sent Events
 func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditType string) {
 	startTime := time.Now()
+	if r.URL.Query().Has("evidence") {
+		handleBoundAuditStream(w, r, filePath, auditType)
+		return
+	}
 
 	// Parse query parameters
 	offset := 0
@@ -699,7 +703,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 		if err != nil {
 			fmt.Fprintf(w, "event: error\ndata: {\"error\": \"%v\"}\n\n", err)
 			flusher.Flush()
-			break
+			return
 		}
 
 		totalScanned++
@@ -710,7 +714,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			record, err = auditReader.DecodeRecord(raw)
 			if err != nil {
 				sendError(fmt.Sprintf("Failed to decode audit record: %v", err))
-				break
+				return
 			}
 		}
 		if len(communityIDs) > 0 && (candidates == nil || int64(totalScanned) > indexedTotal) && !auditRecordMatchesCommunityID(record, communityIDs) {

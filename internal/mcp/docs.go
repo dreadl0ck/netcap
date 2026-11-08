@@ -7,6 +7,7 @@
 package mcp
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -58,7 +59,14 @@ func writeToolSection(b *strings.Builder, t *server.ServerTool) {
 	}
 
 	writeAnnotations(b, t.Tool.Annotations)
-	writeArguments(b, t.Tool.InputSchema)
+	if len(t.Tool.RawInputSchema) > 0 {
+		var pretty bytes.Buffer
+		if json.Indent(&pretty, t.Tool.RawInputSchema, "", "  ") == nil {
+			fmt.Fprintf(b, "**Arguments (JSON Schema):**\n\n```json\n%s\n```\n", pretty.String())
+		}
+	} else {
+		writeArguments(b, t.Tool.InputSchema)
+	}
 	b.WriteString("\n")
 }
 

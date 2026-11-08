@@ -692,6 +692,14 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/flows/exports/query", s.handleFlowExportQuery)
 	mux.HandleFunc("/api/investigation/capture", s.handleCaptureEvidence)
 	mux.HandleFunc("/api/investigation/reproduction", s.handleReproductionBundle)
+	mux.HandleFunc("/api/analyst/capabilities", s.handleAnalystCapabilities)
+	mux.HandleFunc("/api/analyst/binding", s.handleAnalystBinding)
+	mux.HandleFunc("/api/analyst/catalogue", s.handleAnalystCatalogue)
+	mux.HandleFunc("/api/analyst/occurrences", s.handleAnalystOccurrences)
+	mux.HandleFunc("/api/analyst/resolve", s.handleAnalystOccurrence)
+	mux.HandleFunc("/api/analyst/workspace", s.handleAnalystWorkspace)
+	mux.HandleFunc("/api/analyst/log-review", s.handleAnalystLogReview)
+	mux.HandleFunc("/api/analyst/inspect", s.handleAnalystInspect)
 	mux.HandleFunc("/api/investigation/health", s.handleInvestigationHealth)
 	mux.HandleFunc("/api/investigation/streams", s.handleStreamEvidence)
 	mux.HandleFunc("/api/connections/top-by-traffic", s.handleConnectionsTopByTraffic)
@@ -783,7 +791,7 @@ func (s *Server) Start() error {
 
 	s.httpServer = &http.Server{
 		Addr:         s.addr,
-		Handler:      gzipMiddleware(s.corsMiddleware(s.captureSelectionMiddleware(mux))),
+		Handler:      gzipMiddleware(s.corsMiddleware(s.captureSelectionMiddleware(chartCoverageMiddleware(mux)))),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 5 * time.Minute,
 		IdleTimeout:  120 * time.Second,

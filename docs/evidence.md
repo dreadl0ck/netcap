@@ -90,8 +90,20 @@ writes `selected.pcapng` and `packet-selection.json` into a new private director
 Optional `--start-ns`/`--end-ns` are inclusive decimal nanoseconds;
 `--source-sha256` refuses changed source content. Defaults are 1,000,000 selected
 packets, 256 MiB output and a 1-minute deadline; limits fail rather than truncate.
-The source stays unchanged and failed exports are removed. This is a single subset,
-not automatic multi-shard partitioning or capinfos-style inspection.
+The source stays unchanged and failed exports are removed. `--shard-ns 60000000000`
+partitions an explicit `--start-ns`/`--end-ns` window into at most 16 disjoint
+inclusive windows. A single total packet/byte/deadline budget applies to all shards;
+`split-manifest.json` records each derivative's hash, selection and empty windows.
+Repeated source scans must retain the same hash. Host/paired-connection splits use
+the same BPF; no protocol guessing or automatic directory scanning occurs.
+
+`net split --read traffic.pcapng --inspect` returns capinfos-style JSON: stored
+source hash/size, PCAP/PCAPNG/gzip framing, packet/captured/wire-byte counts,
+truncation, exact min/max Unix nanoseconds, out-of-order timestamps and interfaces.
+Inspection defaults to 1,000,000 packets and 256 MiB stored/decoded input, with a
+1-minute deadline. Unsupported, corrupt, oversized, changed or symlinked inputs
+fail instead of returning a partial successful report. Gzip inspection does not
+imply compressed input support for packet export.
 
 Explicit `sessionId`/`inputFile` selectors must resolve to a registered capture;
 unknown selectors return 404, conflicting selectors or stale `runId` return 409,
@@ -198,13 +210,87 @@ and optional `runId`; private sessions require ownership. A missing manifest is
 
 `netcap-reproduction-metadata/v1` is explicitly `metadata-only`: exporter version,
 recorded source/configuration identity, numeric/boolean effective settings and
-attachment digests/outcomes. It does not establish the producer version or freshly
-verify source bytes. Each attachment distinguishes `digest-only`, `missing`,
+attachment digests/outcomes. New `capture-manifest.json` files record `producer`
+at creation: core version/commit, Go/platform, executable VCS revision/dirty state
+and available module provenance. Legacy producer identity remains unavailable;
+the exporter version is separate. Recorded hashes do not freshly verify source
+bytes. Each attachment distinguishes `digest-only`, `missing`,
 `read-failed` and `invalid-json`; the projected capture manifest is bounded to
 4 MiB, as is each of four optional attachments.
 
 Source paths, raw BPF/decoder strings, logs, free-text errors and payloads are
 omitted; settings retain SHA256 digests. This is not a self-contained replay
-bundle. Attach additional material only after analyst review. There is no upload
-or automatic issue submission. `reproduction_test.go` checks sentinel secrets,
+bundle. The analyst workspace previews at most 200 selected log lines from a
+4 MiB regular local `.log`: only hashes and fixed diagnostic classes are exposed,
+never raw text. Explicit approval stores the exact projection; `reviewedLog=true`
+exports it only while the source/manifest/log digest still matches. A changed or
+missing reviewed log fails; it never becomes an empty attachment. There is no
+upload or automatic issue submission. `reproduction_test.go` checks sentinel secrets,
 symlink confinement, missing reads, stale selectors and private ownership.
+
+## Bound analyst workspace
+
+`/investigation-evidence` offers explicit capture inclusion, catalogue search,
+table/Graph/Timeline occurrence actions, saved queries/reports and diagnostic review.
+`GET /api/analyst/capabilities` declares version 1 features, limits and supported
+type/field paths. Clients refuse missing versions rather than falling back to the
+active capture. `GET /api/analyst/binding?inputFile=...` (or `sessionId`) returns
+the run, recorded source SHA256 and manifest SHA256; finalized captures require a
+matching audit-ready marker. `diagnostic=true` permits failed captures for log review.
+
+| POST endpoint | Contract |
+| --- | --- |
+| `/api/analyst/catalogue` | `sources` explicitly includes 1–8 authorized bindings; `query` selects `sha256`, exact case-insensitive `domain`, IP/socket `endpoint`, or case-sensitive allowlisted metadata `text`. `types` must be supported explicitly. |
+| `/api/analyst/occurrences` | One bound type, at most 4,096 references; larger inputs require a narrower catalogue query. |
+| `/api/analyst/resolve` | Exact version/type/file hash/original frame hash/ordinal/timestamp and source binding; changed evidence is 409. Protobuf JSON preserves integer strings. |
+| `/api/analyst/inspect` | Read-only source inspection; the actual input hash must match the requested capture binding. |
+| `/api/analyst/workspace` | Load without `document`; save with `document` and `expectedRevision`. At most 64 documents, 16 KiB body and 16 primary-capture references/document; 2 MiB private atomic workspace. |
+| `/api/analyst/log-review` | Bounded preview or explicit approval of the same source-bound safe projection. |
+
+Catalogue source zero is the novelty target; later sources are the declared baseline.
+Every occurrence survives, including duplicate frames and duplicate hashes. Each
+type reports file identity, read counts and absent/partial-field coverage. Missing
+indicator fields make novelty `unknown`, never “new globally”. Overlapping or child
+captures may represent the same traffic; occurrences are not independent events.
+Socket matching keeps endpoint/port pairs; `tcp://`/`udp://` requires explicit
+Connection transport. Port zero and inferred transport are unsupported.
+
+The catalogue is a finite on-demand scan, not a global background index. Limits:
+100,000 total decoded records, 4,096 returned matches, 64 MiB stored/128 MiB decoded
+per type, 4 MiB/frame, 30 seconds and 2 concurrent operations. Exceeding a limit
+fails without publishing partial results. Optional `page: {offset, limit}` accepts
+1–200 matches/page; every page after zero requires `expectedSnapshotSHA256` from
+page zero. The snapshot includes all requested file identities, coverage and
+matches, so changed files cannot silently mix pages. The UI pages 100 items and
+exports the complete returned catalogue with source/coverage qualifications.
+
+Saved queries persist their original `includedSources` and catalogue snapshot.
+Reports persist their primary-capture references and explicit `draft`/`reviewed`
+state. Review requires an unchanged saved revision and a reviewer; edits return
+to draft. Revision CAS and `.analyst-workspace.lock` prevent concurrent overwrite;
+stale locks require explicit operator removal. Public preloaded captures cannot
+have a shared writable workspace. Secondary source ownership is rechecked on load
+and save. New MCP tools expose the same typed contracts; playbooks never approve
+their own reports automatically.
+
+Generic Records → **Reload current capture with exact occurrence actions** opts
+into `evidence=1` streaming. The finite selected page is published only after the
+complete audit file passes integrity checks. Unfiltered and exact Community ID
+views are supported; arbitrary expression filters remain outside that bound path.
+Timeline events optionally receive the same references with `evidence=1` and the
+complete binding; `/api/timeline/record?reference=<JSON>` resolves it strictly.
+The catalogue's table, paged graph and timeline use `/api/analyst/resolve`; graph
+layout is schematic and equal IPs in different captures do not become one host.
+
+Chart HTML carries `data-netcap-coverage=v1` and an ECharts graphic retained by
+PNG/SVG exports. Generic charts declare prefix selection, cap reached, source counts
+and truncated labels; label truncation can merge categories. Other legacy charts
+declare unreported sampling/completeness rather than inventing full coverage.
+Protocol hierarchy links remain explicitly schematic. JSON chart coverage stays
+machine-readable, and zero-duration buckets are rejected.
+
+Pitfalls: `gofmt` from an older installed toolchain rejects generic methods in the
+existing MCP client; use the Go 1.27 toolchain formatter. Browser fixture loading
+uses a resolved path because this package's Playwright config transpiles tests as
+CommonJS. `analyst-renderer.html` is checked against the real coverage renderer by
+`TestAnalystRenderedCoverageFixture`.

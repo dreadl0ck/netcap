@@ -33,9 +33,267 @@ Each tool exposes the standard MCP hint annotations (read-only,
 destructive, idempotent, open-world). Treat them as advisory: a
 `destructive` tool should prompt the user before invocation.
 
-## Tool catalogue (48 tools)
+## Tool catalogue (56 tools)
 
 Auto-generated from the live tool registry. Do not edit by hand; run `go test ./internal/mcp/ -run TestToolDocsUpToDate -update` to regenerate.
+
+### `analyst_workspace`
+
+Load local saved queries/reports when document is absent. Explicit document saves use expectedRevision CAS; new documents must be draft. Review requires unchanged persisted content and explicit reviewer. No automatic approval.
+
+**Arguments (JSON Schema):**
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "inputFile": {
+          "type": "string"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "binding"
+      ],
+      "additionalProperties": false
+    },
+    "document": {
+      "type": [
+        "null",
+        "object"
+      ],
+      "properties": {
+        "catalogueSnapshotSHA256": {
+          "type": "string"
+        },
+        "includedSources": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string"
+              },
+              "inputFile": {
+                "type": "string"
+              },
+              "binding": {
+                "type": "object",
+                "properties": {
+                  "runId": {
+                    "type": "string"
+                  },
+                  "sourceSHA256": {
+                    "type": "string"
+                  },
+                  "manifestSHA256": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "runId",
+                  "sourceSHA256",
+                  "manifestSHA256"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "binding"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "id": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string"
+            },
+            "value": {
+              "type": "string"
+            },
+            "types": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "types"
+          ],
+          "additionalProperties": false
+        },
+        "references": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "integer"
+              },
+              "binding": {
+                "type": "object",
+                "properties": {
+                  "runId": {
+                    "type": "string"
+                  },
+                  "sourceSHA256": {
+                    "type": "string"
+                  },
+                  "manifestSHA256": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "runId",
+                  "sourceSHA256",
+                  "manifestSHA256"
+                ],
+                "additionalProperties": false
+              },
+              "type": {
+                "type": "string"
+              },
+              "file": {
+                "type": "string"
+              },
+              "fileSHA256": {
+                "type": "string"
+              },
+              "ordinal": {
+                "type": "string"
+              },
+              "recordSHA256": {
+                "type": "string"
+              },
+              "timestampNs": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "version",
+              "binding",
+              "type",
+              "file",
+              "fileSHA256",
+              "ordinal",
+              "recordSHA256",
+              "timestampNs"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "review": {
+          "type": "string"
+        },
+        "reviewer": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "includedSources",
+        "id",
+        "revision",
+        "kind",
+        "title",
+        "body",
+        "binding",
+        "references",
+        "review",
+        "updatedAt"
+      ],
+      "additionalProperties": false
+    },
+    "expectedRevision": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "source",
+    "expectedRevision"
+  ],
+  "additionalProperties": false
+}
+```
 
 ### `carve_subpcap_for_certificate`
 
@@ -179,6 +437,30 @@ Summary statistics for alerts in this session.
 | name | type | required | description |
 | --- | --- | --- | --- |
 | `session_id` | string | yes | Session identifier. |
+
+
+### `get_analyst_binding`
+
+Get explicit registered capture binding for analyst version 1 workflows; diagnostic=true permits failed captures for log review.
+
+**Hints:** read-only, destructive, open-world
+
+**Arguments:**
+
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `diagnostic` | boolean |  |  |
+| `inputFile` | string |  |  |
+| `sessionId` | string |  |  |
+
+
+### `get_analyst_capabilities`
+
+Read analyst contract versions, finite limits, explicit-source policy and supported catalogue field paths. No capture is selected or scanned.
+
+**Hints:** read-only, destructive
+
+**Arguments:** none
 
 
 ### `get_audit_record_fields`
@@ -337,6 +619,61 @@ Ingest a local PCAP/PCAPNG file into a new netcap analysis session. Returns imme
 | `path` | string | yes | Absolute filesystem path of the .pcap or .pcapng file to ingest. |
 
 
+### `inspect_bound_capture`
+
+Bounded original capture metadata, interfaces, exact time bounds, wire/captured bytes, truncation and ordering. Verify the stored source hash against the included run.
+
+**Hints:** read-only
+
+**Arguments (JSON Schema):**
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "inputFile": {
+          "type": "string"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "binding"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "source"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### `list_alerts`
 
 Alerts raised by detection rules, YARA, and other sources in this session.
@@ -391,6 +728,65 @@ Authentication activity timeline (successes/failures by service).
 | --- | --- | --- | --- |
 | `session_id` | string | yes | Session identifier. |
 
+
+### `list_bound_occurrences`
+
+List at most 4096 exact occurrence references for one explicitly bound audit type; larger scopes must use catalogue search.
+
+**Hints:** read-only
+
+**Arguments (JSON Schema):**
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "inputFile": {
+          "type": "string"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "binding"
+      ],
+      "additionalProperties": false
+    },
+    "type": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "source",
+    "type"
+  ],
+  "additionalProperties": false
+}
+```
 
 ### `list_certificates`
 
@@ -687,6 +1083,116 @@ Supports the netcap filter-expression language in `filter` (an `expr`-style bool
 | `type` | string | yes | Audit record type name without the NC_ prefix, e.g. "DNS", "HTTP", "Modbus", "SMB". Case-sensitive. |
 
 
+### `query_capture_catalogue`
+
+Search 1–8 explicitly included bound finalized captures; every matching occurrence retains source/run/file/frame identity. Supported kinds sha256, domain, endpoint IP/socket, allowlisted text. Explicit tcp:// or udp:// endpoints require Connection transport evidence. First source is novelty target, remaining sources baseline. No estate scanning; overflow fails.
+
+**Hints:** read-only
+
+**Arguments (JSON Schema):**
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "page": {
+      "type": [
+        "null",
+        "object"
+      ],
+      "properties": {
+        "offset": {
+          "type": "integer"
+        },
+        "limit": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "offset",
+        "limit"
+      ],
+      "additionalProperties": false
+    },
+    "expectedSnapshotSHA256": {
+      "type": "string"
+    },
+    "sources": {
+      "type": [
+        "null",
+        "array"
+      ],
+      "items": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "inputFile": {
+            "type": "string"
+          },
+          "binding": {
+            "type": "object",
+            "properties": {
+              "runId": {
+                "type": "string"
+              },
+              "sourceSHA256": {
+                "type": "string"
+              },
+              "manifestSHA256": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "runId",
+              "sourceSHA256",
+              "manifestSHA256"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "binding"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "query": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "types": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "types"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "sources",
+    "query"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### `reanalyze_session`
 
 Create a separately retained child analysis; parent results remain available. Server-wide BPF/DPI/decoder settings apply (configure them out-of-band before calling). Optional bounded BPF/time subsets require run_id and source_sha256 from parent provenance. Poll get_session_info with the returned child ID.
@@ -721,6 +1227,277 @@ Run one of netcap's local resolvers against a value: reverse DNS, GeoIP lookup, 
 | `protocol` | string |  | For iana_service only: "tcp" or "udp" (default tcp). |
 | `value` | string | yes | Lookup key: an IP for dns/geoip, MAC for mac_vendor, port for iana_service, fingerprint hash for ja4*. |
 
+
+### `resolve_audit_occurrence`
+
+Resolve the exact original content-bound audit occurrence. Stale source, manifest, file or frame bindings fail instead of rebinding an ordinal.
+
+**Hints:** read-only
+
+**Arguments (JSON Schema):**
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "inputFile": {
+          "type": "string"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "binding"
+      ],
+      "additionalProperties": false
+    },
+    "reference": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "integer"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        },
+        "type": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "fileSHA256": {
+          "type": "string"
+        },
+        "ordinal": {
+          "type": "string"
+        },
+        "recordSHA256": {
+          "type": "string"
+        },
+        "timestampNs": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "binding",
+        "type",
+        "file",
+        "fileSHA256",
+        "ordinal",
+        "recordSHA256",
+        "timestampNs"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "source",
+    "reference"
+  ],
+  "additionalProperties": false
+}
+```
+
+### `review_diagnostic_log`
+
+Preview a finite log-line projection containing only hashes and fixed diagnostic classes, never raw log text. Explicit approve persists the exact unchanged preview. Intended for analyst review before reproduction attachment.
+
+**Arguments (JSON Schema):**
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "inputFile": {
+          "type": "string"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "binding"
+      ],
+      "additionalProperties": false
+    },
+    "file": {
+      "type": "string"
+    },
+    "start": {
+      "type": "integer"
+    },
+    "end": {
+      "type": "integer"
+    },
+    "approve": {
+      "type": [
+        "null",
+        "object"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        },
+        "file": {
+          "type": "string"
+        },
+        "fileSHA256": {
+          "type": "string"
+        },
+        "start": {
+          "type": "integer"
+        },
+        "end": {
+          "type": "integer"
+        },
+        "lines": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "ordinal": {
+                "type": "integer"
+              },
+              "sha256": {
+                "type": "string"
+              },
+              "classes": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "ordinal",
+              "sha256",
+              "classes"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "projectionSHA256": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "binding",
+        "file",
+        "fileSHA256",
+        "start",
+        "end",
+        "lines",
+        "projectionSHA256",
+        "state"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "source",
+    "file",
+    "start",
+    "end"
+  ],
+  "additionalProperties": false
+}
+```
 
 ### `stop_live_capture`
 
