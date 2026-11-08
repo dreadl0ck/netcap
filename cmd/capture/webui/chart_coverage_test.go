@@ -3,6 +3,7 @@ package webui
 import (
 	"encoding/json"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -61,5 +62,28 @@ func TestChartFieldDiscoveryQualifiesPrefix(t *testing.T) {
 	}
 	if hierarchy.Basis != "schematic" || len(hierarchy.Limitations) != 2 {
 		t.Fatalf("unqualified relationships: %+v", hierarchy)
+	}
+}
+
+func TestRenderedChartCoverageReportsPrefixAndRejectsZeroInterval(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFile(t, dir, "TCP", types.Type_NC_TCP, []proto.Message{&types.TCP{Timestamp: 1, SrcPort: 1}, &types.TCP{Timestamp: 2, SrcPort: 2}, &types.TCP{Timestamp: 3, SrcPort: 3}})
+	for _, interval := range []string{"", "1ns"} {
+		generator := NewChartGenerator("TCP", "SrcPort", "line", interval, true, 2)
+		if _, err := generator.GenerateChart(dir); err != nil {
+			t.Fatal(err)
+		}
+		coverage := generator.Coverage
+		if !coverage.ValuesKnown || !coverage.LimitReached || coverage.RenderedValues != 2 || coverage.SourcesRead != 1 || coverage.SourcesRequested != 1 {
+			t.Fatalf("incorrect HTML coverage %+v", coverage)
+		}
+	}
+	generator := NewChartGenerator("TCP", "SrcPort", "line", "0s", true, 2)
+	if _, err := generator.GenerateChart(dir); err == nil {
+		t.Fatal("zero interval accepted")
+	}
+	s := &Server{}
+	if _, err := s.extractChartData(filepath.Join(dir, "TCP.ncap.gz"), "TCP", "SrcPort", "0s"); err == nil {
+		t.Fatal("zero JSON interval accepted")
 	}
 }

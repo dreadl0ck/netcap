@@ -58,6 +58,9 @@ import {
 import Layout from '../components/Layout';
 import { RecordSemantics } from '../components/RecordSemantics';
 import { formatRecordUnits as convertTimestamps } from '../lib/recordUnits';
+import { useNetcapConfig } from '../providers';
+import { analystRequest, type AnalystSource, type CaptureBinding } from '../lib/analyst';
+import OccurrenceAction from '../components/OccurrenceAction';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatBytes, getBackendUrl, FilteredAuditFileInfo } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
@@ -215,6 +218,7 @@ function RecordUI({ data, level = 0, recordType, evidence }: RecordUIProps) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: level === 0 ? 0.75 : 0.5 }}>
         {level === 0 && <RecordSemantics data={evidence || data} recordType={recordType} />}
+        {level === 0 && <OccurrenceAction data={evidence || data} />}
         {entries.map(([key, value]) => {
           const fieldColor = getFieldColor(key);
           
@@ -277,6 +281,7 @@ function RecordUI({ data, level = 0, recordType, evidence }: RecordUIProps) {
 export default function AuditRecords() {
   const router = useNetcapRouter();
   const api = useNetcapApi();
+  const config = useNetcapConfig();
   const isMobile = useIsMobile();
   const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
   
@@ -299,6 +304,9 @@ export default function AuditRecords() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [switchingSession, setSwitchingSession] = useState(false);
   const filterInputRef = React.useRef<HTMLInputElement>(null);
+  const occurrenceRequest = React.useRef<AbortController | null>(null);
+  const recordStream = React.useRef<EventSource | null>(null);
+  useEffect(() => () => { occurrenceRequest.current?.abort(); recordStream.current?.close(); }, []);
   const [filterInputFocused, setFilterInputFocused] = useState(false);
   // Expand all sections by default
   const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set([
@@ -352,6 +360,7 @@ export default function AuditRecords() {
   // Listen for directory changes and refresh audit files
   useEffect(() => {
     const handleDirectoryChange = () => {
+      occurrenceRequest.current?.abort(); recordStream.current?.close(); setSelectedType(null); setRecords([]);
       console.log('Directory changed, refreshing audit files...');
       mutate(); // Refresh audit files
     };
@@ -462,7 +471,9 @@ export default function AuditRecords() {
     }
   }, [selectedType]);
 
-  const handleViewRecords = (type: string, filter?: string) => {
+  const handleViewRecords = async (type: string, filter?: string, bindEvidence = false) => {
+    occurrenceRequest.current?.abort(); recordStream.current?.close();
+    const controller = new AbortController(); occurrenceRequest.current = controller;
     setSelectedType(type);
     setRecords([]);
     setProgress(0);
@@ -473,31 +484,53 @@ export default function AuditRecords() {
     setStreamError(null);
     setActiveFilter(filter || '');
 
+    let evidenceSource: AnalystSource | undefined;
+    if (bindEvidence) {
+      try {
+        if (filter?.trim()) throw new Error('Bound actions support unfiltered or exact Community ID views. Use the analyst catalogue for indicator queries.');
+        const caps = await analystRequest<{ version: number; occurrenceVersion: number; boundStreamVersion: number }>(config.fetch ?? fetch, config.apiBaseUrl, 'capabilities', undefined, controller.signal);
+        if (caps.version !== 1 || caps.occurrenceVersion !== 1 || caps.boundStreamVersion !== 1) throw new Error('Content-bound stream contract version 1 required.');
+        const file = inputFiles?.find(file => file.path === status?.activeInputFile);
+        const selector = status?.isServiceMode ? { sessionId: status.sessionId || file?.sessionId || file?.id } : { inputFile: status?.activeInputFile };
+        const params = new URLSearchParams(); Object.entries(selector).forEach(([key, val]) => { if (val) params.set(key, val); });
+        if (!params.size) throw new Error('An explicit registered capture is required.');
+        const binding = await analystRequest<CaptureBinding>(config.fetch ?? fetch, config.apiBaseUrl, `binding?${params}`, undefined, controller.signal);
+        evidenceSource = { ...selector, binding };
+      } catch (error) { if (!controller.signal.aborted) { setStreamError(error instanceof Error ? error.message : 'Occurrence binding unavailable'); setLoading(false); } return; }
+    }
+    if (controller.signal.aborted) return;
     const eventSource = api.streamAuditRecords(
       type,
       0,
       100, // Return up to 100 records (backend scans all records to get accurate count)
       (record) => {
+        if (controller.signal.aborted) return;
+        if (bindEvidence && (!record._netcapOccurrence || !record._netcapSource)) { setStreamError('Backend did not supply content-bound occurrence references.'); setLoading(false); return; }
         setRecords((prev) => [...prev, record]);
       },
       (count, scanned) => {
+        if (controller.signal.aborted) return;
         setProgress(count);
         if (scanned !== undefined) setScanned(scanned);
       },
       (total, scanned, executionTimeMs) => {
+        if (controller.signal.aborted) return;
         setTotal(total);
         if (scanned !== undefined) setScanned(scanned);
         if (executionTimeMs !== undefined) setExecutionTime(executionTimeMs);
         setLoading(false);
       },
       (error) => {
+        if (controller.signal.aborted) return;
         console.error('Stream error:', error);
         setStreamError(error);
         setLoading(false);
       },
       filter || undefined,
-      isCommunityIDFilterActive ? communityIDsArray : undefined
+      isCommunityIDFilterActive ? communityIDsArray : undefined,
+      evidenceSource
     );
+    recordStream.current = eventSource;
 
     return () => eventSource.close();
   };
@@ -679,6 +712,7 @@ export default function AuditRecords() {
   };
 
   const handleClose = () => {
+    occurrenceRequest.current?.abort(); recordStream.current?.close();
     setSelectedType(null);
     setRecords([]);
     setStreamError(null);
@@ -1130,6 +1164,7 @@ export default function AuditRecords() {
           <Box display="flex" alignItems="center" justifyContent="space-between">
             <Box display="flex" alignItems="center" gap={2}>
               <Typography variant="h6">{selectedType} Records</Typography>
+              <Button onClick={() => handleViewRecords(selectedType!, activeFilter, true)}>Reload current capture with exact occurrence actions</Button>
               <Box sx={{ display: 'flex', gap: 0.5 }}>
                 <Button
                   data-learn="JSON View: Display records as raw JSON format for technical analysis and debugging."

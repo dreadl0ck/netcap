@@ -102,3 +102,15 @@ func TestAnalystEvidenceHandlersEnforcePrivateSessionOwnership(t *testing.T) {
 		}
 	}
 }
+
+func TestReproductionProducerProjectionDoesNotCopyArbitraryMetadata(t *testing.T) {
+	raw := reproductionProducer(&evidence.ProducerIdentity{Version: "RAW_SECRET_SENTINEL", Commit: "RAW_SECRET_SENTINEL", GoVersion: "RAW_SECRET_SENTINEL", Platform: "RAW_SECRET_SENTINEL", ExecutableModule: "RAW_SECRET_SENTINEL", CoreModuleVersion: "RAW_SECRET_SENTINEL", ExecutableRevision: "RAW_SECRET_SENTINEL"})
+	data, _ := json.Marshal(raw)
+	if strings.Contains(string(data), "RAW_SECRET_SENTINEL") {
+		t.Fatal("untrusted producer free text leaked")
+	}
+	qualified := reproductionProducer(&evidence.ProducerIdentity{Version: "v0.15.4", Commit: strings.Repeat("a", 40), GoVersion: "go1.27.0", Platform: "darwin/arm64"})
+	if qualified["version"] != "v0.15.4" || qualified["commit"] != strings.Repeat("a", 40) {
+		t.Fatal("qualified producer identity lost")
+	}
+}

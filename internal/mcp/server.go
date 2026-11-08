@@ -371,6 +371,7 @@ func (s *Server) registerAll() error {
 		s.registerPipelineTools,
 		s.registerRecordTools,
 		s.registerInventoryTools,
+		s.registerAnalystTools,
 		s.registerFlowTools,
 		s.registerProtocolTools,
 		s.registerFileTools,

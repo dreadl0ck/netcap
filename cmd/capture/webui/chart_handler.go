@@ -88,6 +88,7 @@ func HandleChartData(outDir string) http.HandlerFunc {
 		}
 
 		// Serve HTML
+		w.Header().Set("X-Netcap-Chart-Coverage", generator.Coverage.Header())
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if _, err := io.Copy(w, chartHTML); err != nil {
 			log.Printf("[WebUI] Failed to write chart HTML: %v", err)
@@ -413,6 +414,7 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Serve HTML
+	w.Header().Set("X-Netcap-Chart-Coverage", generator.Coverage.Header())
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if _, err := io.Copy(w, chartHTML); err != nil {
 		log.Printf("[WebUI] Failed to write chart HTML: %v", err)
@@ -516,6 +518,9 @@ func (s *Server) extractChartData(filePath, auditType, fieldName, intervalStr st
 	duration, err := time.ParseDuration(intervalStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid interval: %w", err)
+	}
+	if duration <= 0 {
+		return nil, fmt.Errorf("chart interval must be positive")
 	}
 
 	// Map to aggregate values by time bucket

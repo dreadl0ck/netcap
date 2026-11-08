@@ -3,7 +3,7 @@ import { Alert, Box, Button } from '@mui/material';
 import { useNetcapConfig } from '../providers';
 import type { OfflineSelection } from '../lib/api';
 
-export default function ReproductionDownload({ selection }: { selection: OfflineSelection & { runId?: string } }) {
+export default function ReproductionDownload({ selection, reviewedLog = false }: { selection: OfflineSelection & { runId?: string }; reviewedLog?: boolean }) {
   const config = useNetcapConfig();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -13,6 +13,7 @@ export default function ReproductionDownload({ selection }: { selection: Offline
       if (!selection.sessionId && !selection.inputFile) throw new Error('Select a capture before exporting reproduction metadata.');
       const query = new URLSearchParams();
       for (const [key, value] of Object.entries(selection)) if (value) query.set(key, value);
+      if (reviewedLog) query.set('reviewedLog', 'true');
       const response = await (config.fetch || fetch)(`${config.apiBaseUrl}/investigation/reproduction?${query}`);
       if (!response.ok) throw new Error(`Reproduction metadata unavailable (HTTP ${response.status}).`);
       const bundle = await response.json();
@@ -26,7 +27,7 @@ export default function ReproductionDownload({ selection }: { selection: Offline
     finally { setBusy(false); }
   };
   return <Box onClick={event => event.stopPropagation()}>
-    <Button size="small" disabled={busy} onClick={download}>Download reproduction metadata</Button>
+    <Button size="small" disabled={busy} onClick={download}>{reviewedLog ? 'Download reproduction with reviewed log projection' : 'Download reproduction metadata'}</Button>
     {error && <Alert severity="error">{error}</Alert>}
   </Box>;
 }
