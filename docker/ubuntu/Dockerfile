@@ -23,7 +23,7 @@ RUN find / -iname libtrace.h
 RUN ls /usr/lib/*
 
 # Extract library versions from go.mod
-RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
+RUN GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket) && \
     GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
     GOOS=linux GOARCH=amd64 go build ${TAGS} -trimpath \
     -ldflags "-s -w \
