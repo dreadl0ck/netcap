@@ -147,12 +147,10 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 		serv.Lock()
 		defer serv.Unlock()
 
-		// ensure we don't duplicate any flows
-		if slices.Contains(serv.Flows, flowIdent) {
-			return
+		// Separate scoped conversations can share the displayed flow identifier.
+		if !slices.Contains(serv.Flows, flowIdent) {
+			serv.Flows = append(serv.Flows, flowIdent)
 		}
-
-		serv.Flows = append(serv.Flows, flowIdent)
 
 		// if this flow had a longer response from the server then what we have previously (in case we dont have c.Banner bytes yet)
 		// set this service response on the service and update the timestamp

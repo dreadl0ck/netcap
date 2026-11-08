@@ -128,7 +128,7 @@ func TestAssociationBoundsAndConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for i := range maxCalls {
+			for i := range 300 {
 				id := fmt.Sprintf("%d/%d", worker, i)
 				a.Observe(signal(id, int64(i), false, 1, 110))
 				a.Lookup("", "192.0.2.1", "192.0.2.2", 4000, 5000, 110, int64(i))
@@ -136,20 +136,89 @@ func TestAssociationBoundsAndConcurrentAccess(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	if len(a.calls) > maxCalls {
-		t.Fatal("call bound")
+	if len(a.calls) != 1200 || a.Coverage().Status != "complete" {
+		t.Fatal("historical calls lost")
 	}
 	for i := range 40 {
 		a.Observe(signal("bounded", int64(10000+i), false, int32(i), 110))
 	}
-	if len(a.calls["\x00bounded\x00one"].descriptions) != maxDescriptions {
-		t.Fatal("description bound")
+	if len(a.calls["\x00bounded"].descriptions) != 40 {
+		t.Fatal("historical descriptions lost")
 	}
 	for i := range 100 {
 		a.Observe(signal("bounded", int64(20000+i), false, 39, 110))
 	}
-	if len(a.calls["\x00bounded\x00one"].descriptions) != maxDescriptions {
+	if len(a.calls["\x00bounded"].descriptions) != 40 {
 		t.Fatal("retransmissions consume slots")
+	}
+}
+
+func TestAssociationBudgetPreservesHistoricalPrefix(t *testing.T) {
+	a := NewAssociationsWithBudget(4096)
+	a.Observe(signal("retained", 1, false, 1, 110))
+	a.Observe(signal("retained", 2, true, 1, 110))
+	for i := range 20 {
+		a.Observe(signal(fmt.Sprint(i), int64(10+i), false, 1, 110))
+	}
+	c := a.Coverage()
+	if c.Status != "capacity-loss" || c.RetainedBytes > c.LimitBytes || c.RejectedDescriptions == 0 || c.UntrustedFrom != 10 {
+		t.Fatalf("coverage: %+v", c)
+	}
+	if id, _, ok := a.Lookup("", "192.0.2.1", "192.0.2.2", 4000, 5000, 110, 3); !ok || id != "retained" {
+		t.Fatal("overflow erased retained historical attribution")
+	}
+	if _, _, ok := a.Lookup("", "192.0.2.1", "192.0.2.2", 4000, 5000, 110, 10); ok || a.Qualification(10) != CapacityLoss {
+		t.Fatal("incomplete history trusted after overflow")
+	}
+	// TCP signaling can arrive after UDP observation with earlier capture time.
+	a.Observe(signal("late-worker", 5, false, 1, 110))
+	if a.Qualification(5) == "" || a.Qualification(4) != "" {
+		t.Fatal("capture-time loss boundary")
+	}
+	a.Reset()
+	if c := a.Coverage(); c.Status != "complete" || c.RetainedBytes != 0 || c.RejectedDescriptions != 0 {
+		t.Fatalf("reset: %+v", c)
+	}
+}
+
+func TestReverseBYEForksAndPortReuse(t *testing.T) {
+	a := NewAssociations()
+	a.Observe(signal("old", 1, false, 1, 110))
+	for _, tag := range []string{"callee-a", "callee-b"} {
+		s := signal("old", 2, true, 1, 110)
+		s.To = "<sip:b@example.test>;tag=" + tag
+		a.Observe(s)
+	}
+	lookup := func(at int64, want string) {
+		t.Helper()
+		id, _, ok := a.Lookup("", "192.0.2.1", "192.0.2.2", 4000, 5000, 110, at)
+		if ok != (want != "") || id != want {
+			t.Fatalf("at %d: id=%q ok=%v want=%q", at, id, ok, want)
+		}
+	}
+	lookup(3, "") // identical media on two forks remains ambiguous
+	a.Observe(&types.SIP{Timestamp: 3, CallID: "old", From: "<sip:a@example.test>;tag=one", MethodName: "BYE"})
+	lookup(3, "") // a BYE missing the remote tag cannot terminate both forks
+	bye := &types.SIP{Timestamp: 4, CallID: "old", From: "<sip:b@example.test>;tag=callee-a", To: "<sip:a@example.test>;tag=one", MethodName: "BYE", CSeqMethod: "BYE"}
+	a.Observe(bye)
+	lookup(4, "old") // the other fork survives
+	bye2 := *bye
+	bye2.Timestamp, bye2.From = 5, "<sip:b@example.test>;tag=callee-b"
+	a.Observe(&bye2)
+	lookup(5, "")
+	a.Observe(signal("new", 6, false, 1, 110))
+	a.Observe(signal("new", 7, true, 1, 110))
+	lookup(8, "new")
+	lookup(4, "old") // delayed RTP still belongs to the surviving old fork
+}
+
+func TestStopBeforeAnswerCannotReviveOffer(t *testing.T) {
+	a := NewAssociations()
+	a.Observe(signal("call", 1, false, 1, 110))
+	a.Observe(&types.SIP{Timestamp: 2, CallID: "call", From: "<sip:a@example.test>;tag=one", MethodName: "CANCEL"})
+	a.Observe(signal("call", 3, true, 1, 110))
+	if _, _, ok := a.Lookup("", "192.0.2.1", "192.0.2.2", 4000, 5000, 110, 4); ok {
+		t.Fatal("answer revived cancelled offer")
 	}
 }
 

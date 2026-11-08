@@ -1320,6 +1320,7 @@ message SIP {
   string CommunityID = 38;              // Corelight Community ID v1 for cross-tool correlation
   string Transport = 39;                // UDP or TCP signaling
   string NetworkScope = 40;             // Capture interface and encapsulation identity
+  string TCPObservation = 41;           // Post-close evidence; endpoint delivery unconfirmed
 }
 
 // The Internet Group Management Protocol (IGMP) is a communications protocol
@@ -4787,6 +4788,7 @@ message RTP {
   uint32 ExtensionLength = 20;
   uint32 PaddingLength = 21;
   bool Reordered = 22;
+  string AssociationQualification = 23; // Nonempty: RTP candidate only; no trusted SIP association
 }
 
 // One completed RFC 4733 telephone event; retransmitted end packets are deduplicated.

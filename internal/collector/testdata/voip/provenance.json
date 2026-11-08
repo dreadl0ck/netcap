@@ -10,7 +10,8 @@
     "fc04Observed": {"SIP": 19, "RTP": 3113, "DTMF": 15},
     "baseline": "No baseline corpus replay performed in this worktree. Base source already populates SIP ResponseCode/ResponseStatus; D2-16 retained as an export regression.",
     "schema": "Base enum maximum 148; RTP=200 and DTMF=201 were unused. gogofaster regeneration is byte-identical; DHCP schema unchanged.",
-    "limitations": "RTP requires observed cleartext SIP/SDP offer/answer and advertised endpoints; encrypted, NAT-translated, directional-only and ambiguous media are not guessed. Association history is bounded to 256 calls and 8 descriptions per call. Full corpus/RSS qualification belongs to integration."
+    "limitations": "RTP requires observed cleartext SIP/SDP offer/answer and advertised endpoints; encrypted, NAT-translated, directional-only and ambiguous media are not guessed. Historical association metadata is retained without eviction within a conservatively accounted 16 MiB budget; exhaustion preserves the historical prefix and qualifies RTP candidates from the earliest rejected signaling timestamp across all scopes. sip-association-coverage.json reports capacity loss even for DTMF-only output. Post-close TCP signaling is exported with TCPObservation and cannot authorize media. Full corpus/RSS qualification belongs to integration.",
+    "reviewRegressions": "TestW76DelayedMediaHistory: 300 calls, 12 negotiations on one call, 311 attributed RTP/DTMF events, UDP and TCP signaling, 1/4 workers; TestW76AssociationCapacityCoverage: bounded overflow and historical prefix including DTMF-only; TestW76ReverseBYEPortReuse: reversed dialog tags, historical RTP and reused ports over UDP/TCP with 1/4 workers."
   },
   "zeek": {
     "revision": "5862ccc5e13e6127cda5932a7f18aaf070c8b63b",

@@ -35,6 +35,20 @@ func TestRTPBounds(t *testing.T) {
 	}
 }
 
+func TestCapacityLossDoesNotIdentifyArbitraryUDPAsRTP(t *testing.T) {
+	old := sipaudit.Media
+	sipaudit.Media = sipaudit.NewAssociationsWithBudget(0)
+	t.Cleanup(func() { sipaudit.Media = old })
+	sipaudit.Media.Observe(&types.SIP{Timestamp: 1, CallID: "overflow", From: "<sip:a@example.test>;tag=a", MethodName: "BYE"})
+	if sipaudit.Media.Qualification(2) == "" {
+		t.Fatal("missing overflow precondition")
+	}
+	c := &core.ConversationInfo{Data: core.DataFragments{&core.StreamData{RawData: []byte{0x80, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 1}, CaptureInformation: gopacket.CaptureInfo{Timestamp: time.Unix(0, 2)}}}}
+	if Matches(c) {
+		t.Fatal("capacity loss must not turn version bits into protocol identification")
+	}
+}
+
 func FuzzRTP(f *testing.F) {
 	f.Add([]byte{0x80, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 1})
 	f.Add([]byte{0x90, 110, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 5, 138, 0, 160})

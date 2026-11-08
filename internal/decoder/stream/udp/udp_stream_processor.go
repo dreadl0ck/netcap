@@ -21,7 +21,10 @@ package udp
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"sync"
 	"time"
@@ -31,6 +34,7 @@ import (
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
+	"github.com/dreadl0ck/netcap/internal/sipaudit"
 	"github.com/dreadl0ck/netcap/internal/utils"
 )
 
@@ -90,12 +94,27 @@ func FlushUDPStreams() {
 
 	// reassemblyLog.Info("waiting for stream processor wait group... ")
 	sp.wg.Wait()
+	writeAssociationCoverage()
 
 	// explicitly feed a nil stream to exit the goroutines used for processing
 	for i, w := range sp.workers {
 		w <- nil            // Signal worker to exit
 		close(w)            // Close the channel
 		sp.workers[i] = nil // Nil out reference to help GC
+	}
+}
+
+// Independent of SIP/RTP writer selection, including DTMF-only captures.
+func writeAssociationCoverage() {
+	if decoderconfig.Instance.Out == "" {
+		return
+	}
+	data, err := json.MarshalIndent(sipaudit.Media.Coverage(), "", "  ")
+	if err == nil {
+		err = os.WriteFile(filepath.Join(decoderconfig.Instance.Out, "sip-association-coverage.json"), append(data, '\n'), 0o600)
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "write SIP association coverage: %v\n", err)
 	}
 }
 

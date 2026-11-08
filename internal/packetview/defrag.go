@@ -15,6 +15,7 @@ import (
 type Limits struct {
 	MaxDatagrams, MaxBytes, MaxFragments, MaxDepth int
 	Timeout                                        time.Duration
+	Checksum                                       bool // validate original IPv4 fragment headers before reconstruction
 }
 
 func DefaultLimits() Limits {
@@ -22,6 +23,7 @@ func DefaultLimits() Limits {
 }
 
 type Stats struct {
+	RejectedIPv4Checksums                                                                  uint64
 	Completed, Duplicates, Rejected, Expired, Incomplete, Limited, Malformed, DepthLimited uint64
 	Datagrams, BufferedBytes                                                               int
 }
@@ -183,6 +185,13 @@ func (p *Processor) defrag(d *datagram, c *Context, ci gopacket.CaptureInfo) ([]
 	if f.closed {
 		p.stats.Duplicates++
 		return nil, c, ci, "fragment-rejected"
+	}
+	// Reconstruction replaces the header checksum; validate every constituent,
+	// including duplicate fragments, while the captured header is still intact.
+	if p.limits.Checksum && !d.v6 && gopacket.FoldChecksum(gopacket.ComputeChecksum(d.raw[:d.headerEnd], 0)) != 0 {
+		p.stats.RejectedIPv4Checksums++
+		p.reject(f, false)
+		return nil, c, ci, "ipv4-checksum-rejected"
 	}
 	end := d.offset + len(d.payload)
 	maxPayload := 65535 - 20
