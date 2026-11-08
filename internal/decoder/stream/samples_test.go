@@ -332,7 +332,7 @@ func samples() []sample {
 		},
 		{
 			decoder: "IPP", port: 631, transport: core.TCP,
-			client: append([]byte("POST /ipp/print HTTP/1.1\r\nContent-Type: application/ipp\r\n\r\n"),
+			client: append([]byte("POST /ipp/print HTTP/1.1\r\nContent-Type: application/ipp\r\nContent-Length: 9\r\n\r\n"),
 				[]byte{2, 0, 0, 2, 0, 0, 0, 1, 3}...),
 		},
 		{

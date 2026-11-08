@@ -20,13 +20,18 @@
 package ipp
 
 import (
-	"bytes"
 	"encoding/binary"
+	"io"
+	"mime"
+	"net/http"
+	"strings"
 	"sync/atomic"
 
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
+	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -86,8 +91,6 @@ const (
 	tagPrinterAttributes   = 0x04
 )
 
-var httpHeaderEnd = []byte("\r\n\r\n")
-
 // Decode parses IPP messages from the stream.
 func (r *ippReader) Decode() {
 	if Decoder.Writer == nil {
@@ -95,23 +98,76 @@ func (r *ippReader) Decode() {
 		return
 	}
 
-	for _, d := range r.conversation.Data {
-		raw := d.Raw()
-		if len(raw) < 8 {
-			continue
+	var directions [2]core.DataFragments
+	if r.conversation.ClientData != nil || r.conversation.ServerData != nil {
+		directions[0], directions[1] = r.conversation.ClientData, r.conversation.ServerData
+	} else {
+		for _, d := range r.conversation.Data {
+			side := 0
+			if d.Direction() == reassembly.TCPDirServerToClient {
+				side = 1
+			}
+			directions[side] = append(directions[side], d)
 		}
+	}
+	for side, fragments := range directions {
+		// Never complete an HTTP message across capture loss or a TCP close.
+		var contiguous core.DataFragments
+		started := false
+		for _, d := range fragments {
+			if s, ok := d.(*core.StreamData); ok && (s.HasGap(started) || s.TCPObservation != "") {
+				break
+			}
+			contiguous = append(contiguous, d)
+			started = started || len(d.Raw()) > 0
+		}
+		r.decodeDirection(contiguous, side == 1)
+	}
+}
 
-		rec := r.parseIPPMessage(raw)
+func (r *ippReader) decodeDirection(fragments core.DataFragments, server bool) {
+	b, pos := streamutils.FragmentReader(fragments, server)
+	for {
+		timestamp := pos.Timestamp()
+		var body io.ReadCloser
+		var contentType string
+		if server {
+			res, err := http.ReadResponse(b, nil)
+			if err != nil {
+				return
+			}
+			body, contentType = res.Body, res.Header.Get("Content-Type")
+		} else {
+			req, err := http.ReadRequest(b)
+			if err != nil {
+				return
+			}
+			body, contentType = req.Body, req.Header.Get("Content-Type")
+		}
+		typ, _, _ := mime.ParseMediaType(strings.TrimSpace(contentType))
+		var payload []byte
+		var err error
+		if typ == "application/ipp" {
+			payload, err = io.ReadAll(body)
+		}
+		_, drainErr := io.Copy(io.Discard, body)
+		_ = body.Close()
+		if err != nil || drainErr != nil {
+			return
+		}
+		rec := r.parseIPPMessage(payload, server)
 		if rec == nil {
 			continue
 		}
-
-		rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = r.conversation.Endpoints(d)
+		rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = r.conversation.ClientIP, r.conversation.ServerIP, r.conversation.ClientPort, r.conversation.ServerPort
+		if server {
+			rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = rec.DstIP, rec.SrcIP, rec.DstPort, rec.SrcPort
+		}
 		rec.Flow = r.conversation.Ident
 		rec.CommunityID = r.conversation.CommunityID
-		rec.Timestamp = core.FragmentTime(d)
+		rec.Timestamp = timestamp
 
-		err := Decoder.Writer.Write(rec)
+		err = Decoder.Writer.Write(rec)
 		if err != nil {
 			ippLog.Error("failed to write ipp record", zap.Error(err))
 		} else {
@@ -120,13 +176,7 @@ func (r *ippReader) Decode() {
 	}
 }
 
-func (r *ippReader) parseIPPMessage(data []byte) *types.IPP {
-	// Find the IPP body after HTTP headers
-	ippBody := data
-	if idx := bytes.Index(data, httpHeaderEnd); idx >= 0 {
-		ippBody = data[idx+4:]
-	}
-
+func (r *ippReader) parseIPPMessage(ippBody []byte, server bool) *types.IPP {
 	// IPP body: version-major(1) + version-minor(1) + operation-id/status-code(2) + request-id(4)
 	if len(ippBody) < 8 {
 		return nil
@@ -145,7 +195,7 @@ func (r *ippReader) parseIPPMessage(data []byte) *types.IPP {
 
 	// Determine operation/status name
 	opName := operationNames[int(operationOrStatus)]
-	if opName == "" {
+	if server {
 		opName = statusNames[int(operationOrStatus)]
 	}
 	if opName == "" {
