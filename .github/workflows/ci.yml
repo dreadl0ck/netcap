@@ -21,6 +21,9 @@ permissions:
   contents: read
 
 env:
+  GOWORK: 'off'
+  GOMAXPROCS: '4'
+  GOFLAGS: '-p=2'
   # Build the native recipe from this revision; a shared tag can carry an old ABI.
   BUILDER_IMAGE: netcap-builder:ci-yara122
 
@@ -106,7 +109,8 @@ jobs:
           docker run --rm -i \
             -v "${{ github.workspace }}:/netcap" \
             -w /netcap \
-            -e GOFLAGS=-buildvcs=false \
+            -e 'GOFLAGS=-buildvcs=false -p=2' \
+            -e GOWORK=off -e GOMAXPROCS=4 \
             -e 'GOPROXY=https://proxy.golang.org|direct' \
             "$BUILDER_IMAGE" \
             sh -eux <<'SCRIPT'
@@ -152,7 +156,7 @@ jobs:
           # it. collector was temporarily excluded after this suite found a TCP
           # reassembly race; it is back under the detector now that the fragment
           # ownership and completion lifecycle are fixed.
-          go test -short -race ./...
+          go test -short -race -timeout=15m ./...
           GOWORK=off go test -tags=nodpi,noyara,nomagika ./cmd/capture -run '^TestCPUProfile' -count=1
           GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestOfflineRulesCLI$' -count=1
           GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestDHCPOption55CLI$' -count=1
@@ -188,6 +192,7 @@ jobs:
           go build -tags nodpi,noyara -o net.exe ./cmd/net
           ./net.exe --version
           go test -tags nodpi,noyara ./internal/dbs ./internal/vulndb
+          go test -race -p 2 -timeout=15m -tags nodpi,noyara ./internal/collector ./cmd/capture/webui ./cmd/split ./internal/decoder/stream/cip
           export NC_CONFIG_ROOT="$RUNNER_TEMP/netcap-db-qualification"
           ./net.exe util -download-dbs
           ./net.exe util -update-dbs

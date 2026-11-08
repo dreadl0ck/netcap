@@ -161,6 +161,9 @@ func collectGoDependencies(root string) ([]dependency, error) {
 				continue
 			}
 			mod := pkg.Module
+			if mod.Replace != nil && mod.Replace.Version != "" {
+				mod = mod.Replace
+			}
 			licenseDir := mod.Dir
 			if mod.Replace != nil && mod.Replace.Dir != "" {
 				licenseDir = mod.Replace.Dir

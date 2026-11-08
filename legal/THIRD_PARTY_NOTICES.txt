@@ -87,6 +87,13 @@ release third-party source archive and is also available from crates.io.
   Source: https://github.com/google/magika/archive/refs/tags/cli/v1.0.2.tar.gz
   License: Apache-2.0, reproduced in THIRD_PARTY_LICENSES.txt
 
+Gopacket maintenance fork
+------------------------
+github.com/gopacket/gopacket v1.7.2 is replaced by github.com/dreadl0ck/gopacket
+at f2eeabc1ff6e52e2b18f4642100b3d1ecf584f1a (BSD-3-Clause). This retains the
+v1.7.2 baseline and adds live-handle Close wakeups; it does not adopt v1.7.7.
+The replacement version and license text are in THIRD_PARTY_LICENSES.txt.
+
 YARA-X native libraries
 ---------------------------
 DPI builder images and service images include the unmodified YARA-X C API
