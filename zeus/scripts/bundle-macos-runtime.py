@@ -15,6 +15,7 @@ import urllib.request
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('binary',type=Path)
 p.add_argument('--variant',required=True,choices=['dpi','nodpi'])
+p.add_argument('--yara-prefix',type=Path,help='isolated installation from scripts/build-yara-x.sh')
 a=p.parse_args()
 binary=a.binary.resolve(strict=True)
 root=Path(__file__).resolve().parents[2]
@@ -48,6 +49,10 @@ def fetch(url,digest,destination):
         return
     if url.startswith('http://'):url='https://'+url[7:]
     if not url.startswith('https://'):raise ValueError('non-HTTPS source URL')
+    github_archive=re.fullmatch(r'https://github.com/([^/]+/[^/]+)/archive/(.+)\.tar\.gz',url)
+    if github_archive:
+        url=f'https://codeload.github.com/{github_archive[1]}/tar.gz/{github_archive[2]}'
+    print('Fetching',url,flush=True)
     h=hashlib.sha256();size=0
     with tempfile.NamedTemporaryFile(dir=sources,delete=False) as out:
         temporary=Path(out.name)
@@ -64,7 +69,8 @@ while pending:
     path=pending.pop()
     for dependency in deps(path):
         if dependency.startswith(('/usr/lib/','/System/')):continue
-        if not dependency.startswith('/opt/homebrew/'):raise ValueError('unresolved native dependency '+dependency)
+        isolated_yara = a.yara_prefix is not None and Path(dependency).resolve() == (a.yara_prefix/'lib/libyara_x_capi.dylib').resolve(strict=True)
+        if not isolated_yara and not dependency.startswith('/opt/homebrew/'):raise ValueError('unresolved native dependency '+dependency)
         if dependency in copied:continue
         original=Path(dependency).resolve(strict=True)
         destination=lib/original.name
@@ -72,9 +78,23 @@ while pending:
         shutil.copyfile(original,destination)
         copied[dependency]=destination
         pending.append(original)
+        if isolated_yara:
+            pins=dict(line.split('=',1) for line in (root/'scripts/yara-x.env').read_text().splitlines() if line)
+            package,version='yara-x',pins['YARA_X_VERSION']
+            pc=(a.yara_prefix/'lib/pkgconfig/yara_x_capi.pc').read_text()
+            if f'Version: {version}\n' not in pc:raise ValueError('YARA-X installation version does not match source pin')
+            url=f'https://github.com/VirusTotal/yara-x/archive/refs/tags/v{version}.tar.gz'
+            archive=sources/(package+'-'+version+'.tar.gz')
+            fetch(url,pins['YARA_X_SHA256'],archive)
+            for recipe in ('yara-x.env','build-yara-x.sh'):
+                shutil.copyfile(root/'scripts'/recipe,sources/recipe)
+            source_records[package]={'package':package,'version':version,'url':url,'sha256':pins['YARA_X_SHA256'],'archive':archive.name}
+            records.append({'file':'lib/'+destination.name,'originalPath':dependency,'originalSHA256':sha(original),'package':package,'version':version,'source':source_records[package],'minimumOS':minimum_os(original)})
+            continue
         parts=original.parts
         index=parts.index('Cellar')
         package,version=parts[index+1:index+3]
+        if package=='yara-x':raise ValueError('use the pinned isolated YARA-X installation with --yara-prefix')
         keg=Path(*parts[:index+3])
         formula=keg/'.brew'/(package+'.rb')
         text=formula.read_text()

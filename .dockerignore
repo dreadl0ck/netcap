@@ -67,6 +67,13 @@ graphics/
 
 # Build and deployment scripts
 scripts/
+!scripts/yara-x.env
+!scripts/install-yara-rust.sh
+!scripts/build-yara-x.sh
+.qualification/
+.native/
+dist-macos-runtime/
+dist-macos-sources/
 zeus/
 
 # Docker files (don't need to copy Docker files into Docker)

@@ -1,4 +1,6 @@
-FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-latest@sha256:f21aab4be6e2c0b0fdc89fdc09bbe8152c985aeebb28c623af9874d895593136 as builder
+ARG NETCAP_BUILDER_IMAGE
+FROM --platform=linux/amd64 ${NETCAP_BUILDER_IMAGE} AS builder
+RUN pkg-config --exact-version=1.22.0 yara_x_capi
 
 # Copy netcap source
 WORKDIR /netcap

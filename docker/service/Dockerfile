@@ -1,6 +1,7 @@
 # Netcap Try Service - Alpine Linux
 # Container for running the try service with file upload capabilities (with DPI support)
 
+ARG NETCAP_BUILDER_IMAGE
 # Frontend stage - build the web UI from source.
 #
 # cmd/capture/webui/embed.go does `//go:embed all:frontend/dist`, so the Go build
@@ -22,6 +23,7 @@
 FROM --platform=$BUILDPLATFORM node:22-alpine3.24@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS frontend
 
 WORKDIR /frontend
+ENV GOMAXPROCS=4
 
 # pnpm 9.15.0 is what package.json declares and what wrote pnpm-lock.yaml
 # (lockfileVersion 9.0). Pinning it keeps --frozen-lockfile meaningful.
@@ -44,7 +46,8 @@ ENV NETCAP_ROOT=/netcap-legal
 RUN pnpm build && test -f dist/index.html
 
 # Build stage - Use official netcap builder with DPI support
-FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-dpi-latest AS builder
+FROM --platform=linux/amd64 ${NETCAP_BUILDER_IMAGE} AS builder
+RUN pkg-config --exact-version=1.22.0 yara_x_capi
 
 # Copy netcap source
 WORKDIR /netcap

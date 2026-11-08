@@ -84,6 +84,31 @@ sudo apt-get install libndpi-dev libprotoident-dev
 zeus install-linux
 ```
 
+## Matched YARA-X runtime
+
+YARA-enabled builds pair `github.com/VirusTotal/yara-x/go v1.22.0` with the
+C API pinned in `scripts/yara-x.env`. Install Rust `1.95.0` first, then build
+into a dedicated prefix:
+
+```sh
+PREFIX="$PWD/.native/yara-x" sh scripts/build-yara-x.sh
+YARA_X_PREFIX="$PWD/.native/yara-x" sh scripts/with-yara-x.sh go build -o bin/net ./cmd/net
+otool -L bin/net # macOS: confirm the isolated libyara_x_capi.dylib
+```
+
+`with-yara-x.sh` keys CGO compilation on the library checksum: changing only
+`PKG_CONFIG_PATH` can reuse cached linker flags for an older installation.
+The generated `.pc` names the library absolutely so another dependency's `-L`
+cannot select Homebrew's YARA-X. For macOS distribution, pass the same prefix
+as `--yara-prefix` to `zeus/scripts/bundle-macos-runtime.py`.
+
+Linux packaging requires `NETCAP_BUILDER_IMAGE` naming a builder produced from
+the matching `docker/builders/*Dockerfile`; downstream images reject C APIs
+other than `1.22.0`. Pass it as a build argument to Docker or an environment
+variable to the `zeus/scripts/build-*.sh` wrappers. Qualification uses local
+image names; publish and pin a qualified builder digest before a release.
+`appstore,nodpi,noyara` excludes the YARA Go package and native library.
+
 ## Building Without DPI
 
 To explicitly build without DPI support:
@@ -171,4 +196,3 @@ export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 - [Deep Packet Inspection Documentation](deep-packet-inspection.md)
 - [Device Profiles](device-profiles.md)
-

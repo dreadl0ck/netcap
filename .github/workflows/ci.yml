@@ -21,9 +21,8 @@ permissions:
   contents: read
 
 env:
-  # The same image the released service container is built from, so CI compiles
-  # against the exact nDPI, libprotoident and yara-x it ships with.
-  BUILDER_IMAGE: dreadl0ck/netcap-builder:alpine-dpi-latest
+  # Build the native recipe from this revision; a shared tag can carry an old ABI.
+  BUILDER_IMAGE: netcap-builder:ci-yara122
 
 jobs:
   go:
@@ -82,17 +81,14 @@ jobs:
           pnpm build
           test -f dist/index.html
 
-      - name: Pull the builder image
-        run: docker pull "$BUILDER_IMAGE"
+      - name: Build the matched native toolchain
+        run: docker build --platform linux/amd64 -f docker/builders/alpine-dpi-builder.Dockerfile -t "$BUILDER_IMAGE" .
 
       # Everything below runs inside the builder image rather than on the
       # runner.
       #
       # The Go build needs nDPI headers, libprotoident and the yara-x C API.
-      # Installing those on the runner means compiling nDPI and a Rust project
-      # from source on every run; the builder image already has them, pinned to
-      # the versions the release is built with, so CI and the shipped binary
-      # cannot drift.
+      # The builder above compiles the pinned native sources from this revision.
       #
       # It is invoked with `docker run` rather than a job-level `container:`
       # because GitHub injects its own glibc-linked Node into container jobs to

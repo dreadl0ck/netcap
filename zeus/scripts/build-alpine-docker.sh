@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -eo pipefail
+: "${NETCAP_BUILDER_IMAGE:?set a qualified YARA-X 1.22.0 builder image}"
 test -s cmd/capture/webui/frontend/dist/index.html || { echo "Build the WebUI with pnpm build before packaging Linux" >&2; exit 1; }
 
 if [ -z "$NODPI" ]; then
@@ -31,9 +32,9 @@ echo "[INFO] $tag args: ${ARGS}"
 # build image directly from project root
 # dont quote ARGS or passing arguments wont work anymore
 if [ -n "${ARGS:-}" ]; then
-  docker build --platform linux/amd64 --build-context netcap-webui=./cmd/capture/webui/frontend/dist ${ARGS} -t "$tag" -f Dockerfile .
+  docker build --platform linux/amd64 --build-arg NETCAP_BUILDER_IMAGE="$NETCAP_BUILDER_IMAGE" --build-context netcap-webui=./cmd/capture/webui/frontend/dist ${ARGS} -t "$tag" -f Dockerfile .
 else
-  docker build --platform linux/amd64 --build-context netcap-webui=./cmd/capture/webui/frontend/dist -t "$tag" -f Dockerfile .
+  docker build --platform linux/amd64 --build-arg NETCAP_BUILDER_IMAGE="$NETCAP_BUILDER_IMAGE" --build-context netcap-webui=./cmd/capture/webui/frontend/dist -t "$tag" -f Dockerfile .
 fi
 BUILD_EXIT_CODE=$?
 
@@ -75,7 +76,7 @@ docker rm $CONTAINER_ID
 
 cp LICENSE dist-linux/${ARCHIVE}
 cp -R legal dist-linux/${ARCHIVE}/
-supplier=$(python3 -c 'from pathlib import Path; print(Path("Dockerfile").read_text().splitlines()[0].split()[2])')
+supplier="$NETCAP_BUILDER_IMAGE"
 docker pull --platform linux/amd64 "$supplier"
 python3 zeus/scripts/audit-linux-runtime.py "$tag" "dist-linux/${ARCHIVE}" --supplier-image "$supplier"
 cp README.md dist-linux/${ARCHIVE}

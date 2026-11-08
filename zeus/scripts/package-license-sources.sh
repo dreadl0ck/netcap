@@ -32,8 +32,8 @@ fetch "https://github.com/LibtraceTeam/libflowmanager/archive/refs/tags/3.0.0-3.
 fetch "https://github.com/LibtraceTeam/wandio/archive/refs/tags/4.2.3-1.tar.gz" "wandio-4.2.3-1.tar.gz" "0b7499dd73fd167dfb35abe80b25b36fe757e51f7cbd8bf5810d24951ca41735"
 fetch "https://github.com/LibtraceTeam/wandio/archive/refs/tags/4.2.7-1.tar.gz" "wandio-4.2.7-1.tar.gz" "45021795b5c4d1609ba509358e730ea605c4c9621704d75214abb003f37602ab"
 fetch "https://github.com/google/magika/archive/refs/tags/cli/v1.0.2.tar.gz" "magika-cli-1.0.2.tar.gz" "bae42b31c8f419f34043cc2cf26fa42d2ade7f7c91e2fb54919914432f799699"
-fetch "https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.14.0.tar.gz" "yara-x-1.14.0.tar.gz" "3a251473fc75673196b0acd678893f90478b83a6dd5ce255f53e2ac086a50254"
-fetch "https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.15.0.tar.gz" "yara-x-1.15.0.tar.gz" "c335bbf41f483b4bbaf12b5c573055ba8ae5d4747357e1451ae5e656bc95f672"
+. "$(git rev-parse --show-toplevel)/scripts/yara-x.env"
+fetch "https://github.com/VirusTotal/yara-x/archive/refs/tags/v${YARA_X_VERSION}.tar.gz" "yara-x-${YARA_X_VERSION}.tar.gz" "$YARA_X_SHA256"
 fetch "https://crates.io/api/v1/crates/colored/3.0.0/download" "colored-3.0.0.crate" "fde0e0ec90c9dfb3b4b1a0891a7dcd0e2bffde2f7efed5fe7c9bb00e5bfb915e"
 
 cp LICENSE "$bundle/GPL-3.0.txt"
