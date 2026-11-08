@@ -21,6 +21,21 @@ def render(*args, success=True):
 
 
 class ControlContract(unittest.TestCase):
+    def test_identity_mount_and_role_environment(self):
+        args = [*ARGS, '--set', 'authConfigSecret.name=identity',
+                '--set', 'tokenEnvironment[0].name=VIEWER_TOKEN',
+                '--set', 'tokenEnvironment[0].secretName=roles',
+                '--set', 'tokenEnvironment[0].secretKey=viewer']
+        docs = render(*args)
+        pod = next(d for d in docs if d['kind'] == 'Deployment')['spec']['template']['spec']
+        container = pod['containers'][0]
+        self.assertTrue(next(v for v in container['volumeMounts'] if v['name'] == 'auth')['readOnly'])
+        self.assertEqual(next(v for v in pod['volumes'] if v['name'] == 'auth')['secret']['items'], [{'key': 'auth.json', 'path': 'auth.json'}])
+        self.assertEqual(container['env'][0]['valueFrom']['secretKeyRef'], {'name': 'roles', 'key': 'viewer'})
+        for service in ['sharedstate', 'policy-state']:
+            render(*args, '--set', 'service=' + service, success=False)
+        render(*args, '--set', 'tokenEnvironment[0].name=BAD-NAME', success=False)
+
     def test_backup_cronjob_security_and_retention_scope(self):
         pg = ['--set', 'persistence.backend=postgres', '--set', 'replicaCount=2',
               '--set', 'persistence.postgres.databaseURLEnv=CONTROL_DATABASE_URL',

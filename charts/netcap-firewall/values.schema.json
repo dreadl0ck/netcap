@@ -4,11 +4,14 @@
   "additionalProperties": false,
   "required": ["upstream", "image", "runtime", "policy"],
   "properties": {
+    "apiArtifactsConfigMap": {"type": "string"},
+    "apiContract": {"oneOf": [{"type": "object", "maxProperties": 0}, {"$ref": "#/definitions/apiContract"}]},
     "routeID": {"type": "string", "pattern": "^$|^[A-Za-z0-9_-]{1,64}$"},
     "routes": {"type": "array", "maxItems": 128, "items": {
       "type": "object", "additionalProperties": false,
       "required": ["id", "priority", "hosts", "methods", "pathPrefix", "upstream", "policy", "maxBodyBytes", "maxResponseBytes", "maxConcurrent"],
       "properties": {
+        "apiContract": {"$ref": "#/definitions/apiContract"},
         "id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$"},
         "priority": {"type": "integer"},
         "hosts": {"type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
@@ -70,6 +73,9 @@
     },
     "tls": {"type": "object", "additionalProperties": false, "properties": {"secretName": {"type": "string"}, "clientCASecretName": {"type": "string"}}},
     "upstreamTLS": {"type": "object", "additionalProperties": false, "properties": {"caSecretName": {"type": "string"}, "serverName": {"type": "string"}, "clientSecretName": {"type": "string"}}},
+    "legacyAdmin": {"type": "boolean"},
+    "authConfigSecret": {"type": "object", "additionalProperties": false, "required": ["name", "key"], "properties": {"name": {"type": "string"}, "key": {"type": "string", "minLength": 1}}},
+    "tokenEnvironment": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["name", "secretName", "secretKey"], "properties": {"name": {"type": "string", "pattern": "^[A-Z_][A-Z0-9_]*$"}, "secretName": {"type": "string", "minLength": 1}, "secretKey": {"type": "string", "minLength": 1}}}},
     "adminTokenSecret": {"type": "object", "additionalProperties": false, "properties": {"name": {"type": "string"}, "key": {"type": "string", "minLength": 1}}},
     "adminTLS": {"type": "object", "additionalProperties": false, "properties": {"secretName": {"type": "string"}}},
     "adminService": {"type": "object", "additionalProperties": false, "properties": {"enabled": {"type": "boolean"}, "port": {"type": "integer", "minimum": 1, "maximum": 65535}}},
@@ -174,17 +180,21 @@
     {
       "if": {"properties": {"mode": {"const": "managed"}}, "required": ["mode"]},
       "then": {
-        "required": ["replicaCount", "adminTokenSecret", "adminTLS"],
+        "required": ["replicaCount", "adminTLS"],
         "properties": {
           "replicaCount": {"const": 1},
           "autoscaling": {"properties": {"enabled": {"const": false}}},
-          "adminTokenSecret": {"required": ["name"], "properties": {"name": {"minLength": 1}}},
           "adminTLS": {"required": ["secretName"], "properties": {"secretName": {"minLength": 1}}}
         }
       }
     }
   ],
   "definitions": {
+    "apiContract": {"type": "object", "additionalProperties": false, "required": ["descriptorPath", "descriptorSHA256"], "properties": {
+      "descriptorPath": {"type": "string", "pattern": "^[A-Za-z0-9_-][A-Za-z0-9_.-]{0,127}$"},
+      "descriptorSHA256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+      "apiValidateResponse": {"type": "boolean"}
+    }},
     "crsProfile": {
       "type": "object", "additionalProperties": false,
       "required": ["paranoiaLevel", "inboundThreshold", "outboundThreshold"],

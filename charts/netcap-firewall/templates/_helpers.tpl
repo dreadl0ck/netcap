@@ -11,6 +11,13 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | quote }}
 {{- end -}}
 {{- define "firewall.config" -}}
+{{- if and .Values.apiContract (not .Values.apiArtifactsConfigMap) }}{{ fail "apiContract requires apiArtifactsConfigMap" }}{{- end }}
+{{- if and .Values.apiContract .Values.routes }}{{ fail "routed listeners require per-route apiContract" }}{{- end }}
+{{- if ne (not (empty .Values.adminTokenSecret.name)) .Values.legacyAdmin }}{{ fail "adminTokenSecret requires explicit legacyAdmin=true; prefer authConfigSecret" }}{{- end }}
+{{- if and .Values.legacyAdmin .Values.authConfigSecret.name }}{{ fail "legacyAdmin and authConfigSecret are mutually exclusive" }}{{- end }}
+{{- if and (eq .Values.mode "managed") (not (or .Values.authConfigSecret.name .Values.legacyAdmin)) }}{{ fail "managed mode requires authConfigSecret or explicit legacyAdmin" }}{{- end }}
+{{- if and .Values.authConfigSecret.name (not .Values.adminTLS.secretName) }}{{ fail "authConfigSecret requires adminTLS.secretName" }}{{- end }}
+{{- if and .Values.tokenEnvironment (not .Values.authConfigSecret.name) }}{{ fail "tokenEnvironment requires authConfigSecret" }}{{- end }}
 {{- if and .Values.tls.clientCASecretName (not .Values.tls.secretName) }}{{ fail "clientCASecretName requires listener TLS" }}{{- end }}
 {{- if and .Values.runtime.crsProfile (not .Values.runtime.corazaCRS) }}{{ fail "crsProfile requires corazaCRS" }}{{- end }}
 {{- range .Values.routes }}
@@ -18,7 +25,7 @@ helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | quote }}
 {{- end }}
 {{- if .Values.routes }}
 {{- if or (eq .Values.mode "fleet") .Values.sharedRate.configSecretName .Values.policyState.configSecretName }}{{ fail "routes do not support fleet, sharedRate or policyState without route-scoped bootstrap bindings" }}{{- end }}
-{{- if or (eq .Values.mode "managed") .Values.adminTokenSecret.name .Values.routeID }}
+{{- if or (eq .Values.mode "managed") .Values.adminTokenSecret.name .Values.authConfigSecret.name .Values.routeID }}
 {{- $found := false }}
 {{- range .Values.routes }}{{- if eq .id $.Values.routeID }}{{- $found = true }}{{- end }}{{- end }}
 {{- if not $found }}{{ fail "routed policy management requires routeID naming one bootstrap route" }}{{- end }}
@@ -38,8 +45,8 @@ helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | quote }}
 {{- if and .Values.adminTokenSecret.name (not .Values.adminTLS.secretName) -}}
 {{- fail "adminTokenSecret requires adminTLS.secretName for the network-accessible admin listener" -}}
 {{- end -}}
-{{- if and .Values.adminService.enabled (not (and .Values.adminTLS.secretName .Values.adminTokenSecret.name)) -}}
-{{- fail "adminService requires adminTLS.secretName and adminTokenSecret.name" -}}
+{{- if and .Values.adminService.enabled (not (and .Values.adminTLS.secretName (or .Values.adminTokenSecret.name .Values.authConfigSecret.name))) -}}
+{{- fail "adminService requires adminTLS.secretName and authConfigSecret or adminTokenSecret.name" -}}
 {{- end -}}
 {{- if and (or .Values.upstreamTLS.caSecretName .Values.upstreamTLS.serverName .Values.upstreamTLS.clientSecretName) (not (hasPrefix "https://" .Values.upstream)) -}}
 {{- fail "upstreamTLS options require an https:// upstream" -}}
@@ -50,13 +57,23 @@ adminListen: ':9090'
 upstream: {{ required "upstream is required" .Values.upstream | quote }}
 policyFile: /etc/netcap-firewall/policy.yaml
 {{ toYaml .Values.runtime }}
+{{- if .Values.apiArtifactsConfigMap }}
+bootstrapDir: /etc/api-bootstrap
+{{- end }}
+{{- with .Values.apiContract }}
+{{ toYaml . }}
+{{- end }}
 {{- if .Values.routes }}
 routes:
 {{- $ids := dict }}
 {{- range $index, $binding := .Values.routes }}
 {{- if hasKey $ids .id }}{{ fail "route IDs must be unique" }}{{- end }}
 {{- $_ := set $ids .id true }}
-{{- $route := omit . "policy" "upstreamTLS" }}
+{{- $route := omit . "policy" "upstreamTLS" "apiContract" }}
+{{- with .apiContract }}
+{{- if not $.Values.apiArtifactsConfigMap }}{{ fail "route apiContract requires apiArtifactsConfigMap" }}{{- end }}
+{{- range $key, $value := . }}{{- $_ := set $route $key $value }}{{- end }}
+{{- end }}
 {{- with .upstreamTLS }}
 {{- if and (or .caSecretName .clientSecretName .serverName) (not (hasPrefix "https://" $binding.upstream)) }}{{ fail "route upstreamTLS requires HTTPS" }}{{- end }}
 {{- if .caSecretName }}{{- $_ := set $route "upstreamCA" (printf "/etc/netcap-firewall/route-tls/%d/ca/ca.crt" $index) }}{{- end }}

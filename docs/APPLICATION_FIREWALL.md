@@ -114,7 +114,7 @@ Routed runtime composition is implemented in `internal/waf/routes.go` and
 | TLS reload | `SIGHUP` stages listener/client identity for all bindings before publication, then atomically reloads local route policies while retaining the selected attachment's externally owned policy. Inflight requests keep their policy/API snapshot; existing TLS connections retain handshake identity. |
 | CRS exclusions | `crsProfile.exclusions` supports exact `path`/`method` with existing owner/reason/expiry. `parameter` uses Coraza ARGS names, including `json.text`. Legacy `crsTargetExclusions` enters the same registry, mapping `argument` to `parameter`, preserving exact path/method and no-expiry semantics. API, native and structural gates remain active. |
 | Routed CLI adapters | `--route-id=<bootstrap ID>` binds fleet, shared-rate, native-state and effects to one immutable attachment. Private router context selects the evaluator, never headers or bundle ID alone. Fleet checks bundle ID before persistence/ack. Only the selected route admits effect rules when a broker exists; other routes compile without effect admission. Root readiness includes the attachment's dependencies; cold/drained/revoked/unavailable attachment rejects its own data without draining local neighbors. |
-| Helm API artifacts | `values.schema.json` does not expose descriptor/artifact mounts; use a separately mounted trusted CLI bootstrap configuration for API contracts. The chart supports routed WS/gRPC/H3 and explicitly scoped managed mode. |
+| Helm API artifacts | `apiArtifactsConfigMap` mounts reviewed declarations and artifacts read-only at `/etc/api-bootstrap`; `apiContract` (or each route's `apiContract`) supplies relative `descriptorPath`, required 64-hex `descriptorSHA256` and optional `apiValidateResponse`. Missing mount references, traversal and unpinned declarations are rejected. Declare artifact paths relative to that same bootstrap root; provision the ConfigMap before installation. |
 
 `charts/netcap-firewall` requires Kubernetes 1.25+ and an explicit `upstream`.
 Defaults are a two-replica file-mode Deployment, immutable content-addressed
@@ -264,10 +264,20 @@ The embedded `/console/` preserves `Origin` in identity mode and requires the
 configured exact first-party origin for browser API requests; bearers remain in
 browser memory. `ActionApprovalDigest` binds action kind, profile and exact flow;
 `CreateApprovalDigest` remains the legacy default-action helper.
-Legacy `serve`/`enforcer` tokens require `--legacy-admin`; the Helm
-chart maps an explicitly configured `adminTokenSecret` to that flag. Legacy
+Legacy `serve`/`enforcer` tokens require `--legacy-admin`; Helm requires
+`legacyAdmin: true` plus `adminTokenSecret` (enforcer: `tokenSecret`) to select that compatibility mode. Legacy
 service `tokenEnv`/`identities`/`principals` remain explicit compatibility
 bootstrap and cannot be mixed with `authConfig` identities.
+
+| Packaging integration | Contract |
+| --- | --- |
+| Role bootstrap | `examples/firewall/managed-values.yaml` selects `authConfigSecret` and individual `tokenEnvironment` Secret keys; `examples/firewall/auth.json` grants reader `read,metrics` and operator `read,author,evaluate,deploy,rollback` only for `example/web/lab/edge`. Replace synthetic scope/origin before use. No default unrestricted bearer is generated. |
+| All three charts | `authConfigSecret: {name: firewall-auth, key: auth.json}` mounts `/etc/firewall-auth/auth.json` read-only. WAF passes `--auth-config`; the enforcer entrypoint uses `ENFORCER_AUTH_CONFIG`; fleet-controller's existing `config.json` must reference `"authConfig":"/etc/firewall-auth/auth.json"`. `sharedstate` and `policy-state` use their own scoped principal bootstrap, not fleet auth fields. |
+| Console origin | Set JSON `origin` to the exact externally used scheme/host/port with no path. Browser `Origin` must also equal the listener's scheme and HTTP Host; forwarded headers cannot redefine it (`firewallui.WrapOrigin`). CLI bearer requests can omit `Origin`. |
+| Durable approvals | Auth `stateDir` must be inside a writable persistent mount (`/var/lib/netcap-firewall/identity`, `/var/lib/control/identity`, or `/var/lib/netcap-enforcer/identity`). PostgreSQL uses dedicated `databaseURLEnv`/`databaseNamespace` instead of `stateDir`; mixing these fields is a CLI error, not a Helm rewrite. `approvalKeyEnv` is a Secret-backed Ed25519 private key; protected deploy/rollback/lease actions use the typed receipts described above. |
+| Local proof | `roles_smoke.py` tests actual shipping Compose TLS APIs: reader/foreign stage and activation return 403; operator activates with revision CAS; embedded `/console/` is present. `kind_smoke.py` repeats role denials through the Helm-installed service and verifies PVC recovery. |
+| Kubernetes authority proof | `cni_qualification.py` installs all three charts in a disposable kind/Cilium lab: enforcer reader/foreign lease creation returns 403 while the operator creates a timed rule; fleet viewer/foreign rollout returns 403. Inspect timed rules using the shipping image's pinned `nft`; kind node `nft` exited 139 on that fixture. |
+| CI surfaces | `.github/workflows/firewall.yml` includes auth/UI/API contracts/appliance/protocol/routing/metrics packages, release-tool tests and qualification negative-control tests. Manual `browser: true` installs `@playwright/test@1.51.1` and drives actual local API fixtures. Publication and production pilot approval remain separate. |
 
 Pitfalls: shared-identity lease/status reads never reconcile or deploy; the
 process-owned maintenance loops do that. Fleet authority enrollment omits

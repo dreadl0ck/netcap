@@ -38,6 +38,11 @@ scope:
   table: netcap_firewall_lab
   protectedCIDRs: []
   managementDestinations: []
+legacyAdmin: false
+authConfigSecret:
+  name: ""
+  key: auth.json
+tokenEnvironment: []
 tokenSecret:
   name: ''
   key: token

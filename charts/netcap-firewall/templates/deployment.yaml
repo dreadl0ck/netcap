@@ -48,8 +48,11 @@ spec:
             - serve
             - --config
             - /etc/netcap-firewall/config.yaml
-            {{- if .Values.adminTokenSecret.name }}
+            {{- if .Values.legacyAdmin }}
             - --legacy-admin
+            {{- end }}
+            {{- if .Values.authConfigSecret.name }}
+            - --auth-config=/etc/firewall-auth/auth.json
             {{- end }}
             {{- if .Values.websocket }}
             - --websocket
@@ -88,6 +91,11 @@ spec:
             readOnlyRootFilesystem: true
             capabilities: {drop: [ALL]}
           env:
+            {{- range .Values.tokenEnvironment }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef: {name: {{ .secretName | quote }}, key: {{ .secretKey | quote }}}
+            {{- end }}
             {{- if .Values.adminTokenSecret.name }}
             - name: NETCAP_FIREWALL_ADMIN_TOKEN
               valueFrom:
@@ -130,6 +138,12 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
+            {{- if .Values.apiArtifactsConfigMap }}
+            - {name: api-artifacts, mountPath: /etc/api-bootstrap, readOnly: true}
+            {{- end }}
+            {{- if .Values.authConfigSecret.name }}
+            - {name: auth, mountPath: /etc/firewall-auth, readOnly: true}
+            {{- end }}
             - {name: config, mountPath: /etc/netcap-firewall, readOnly: true}
             - {name: tmp, mountPath: /tmp}
             {{- if .Values.tls.clientCASecretName }}
@@ -171,6 +185,17 @@ spec:
             - {name: upstream-ca, mountPath: /etc/netcap-firewall/upstream, readOnly: true}
             {{- end }}
       volumes:
+        {{- if .Values.apiArtifactsConfigMap }}
+        - name: api-artifacts
+          configMap: {name: {{ .Values.apiArtifactsConfigMap | quote }}, defaultMode: 0444}
+        {{- end }}
+        {{- if .Values.authConfigSecret.name }}
+        - name: auth
+          secret:
+            secretName: {{ .Values.authConfigSecret.name | quote }}
+            defaultMode: 0440
+            items: [{key: {{ .Values.authConfigSecret.key | quote }}, path: auth.json}]
+        {{- end }}
         {{- if .Values.tls.clientCASecretName }}
         - name: client-ca
           secret: {secretName: {{ .Values.tls.clientCASecretName | quote }}, defaultMode: 0440}

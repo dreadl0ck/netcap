@@ -60,13 +60,19 @@ def main():
                 try:
                     context = ssl.create_default_context(cafile=str(temp / 'tls.crt'))
 
-                    def api(op, data=None):
+                    def api(op, data=None, role='operator', expected=200):
                         req = urllib.request.Request(
                             f'https://localhost:{port}/api/v1/policy/{op}',
                             data=None if data is None else json.dumps(data).encode(),
-                            headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
-                        with urllib.request.urlopen(req, context=context, timeout=10) as response:
-                            return json.load(response)
+                             headers={'Authorization': 'Bearer ' + tokens[role], 'Content-Type': 'application/json'})
+                        try:
+                            response = urllib.request.urlopen(req, context=context, timeout=10)
+                        except urllib.error.HTTPError as error:
+                            response = error
+                        with response:
+                            body = response.read()
+                            assert response.status == expected, (role, op, response.status, body)
+                            return json.loads(body) if expected == 200 else None
 
                     for _ in range(60):
                         if process.poll() is not None:
@@ -116,7 +122,7 @@ def main():
             traffic('file-netcap-firewall', '/blocked', 200)
             print('PASS: file-mode install, Service traffic, immutable policy upgrade, and Helm rollback', flush=True)
 
-            token = secrets.token_hex(32)
+            tokens = {role: secrets.token_hex(32) for role in ['reader', 'operator', 'foreign']}
             run('openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
                 '-keyout', str(temp / 'tls.key'), '-out', str(temp / 'tls.crt'),
                 '-subj', '/CN=localhost', '-addext', 'subjectAltName=DNS:localhost',
@@ -124,13 +130,28 @@ def main():
             kubectl('create', 'secret', 'tls', 'firewall-admin-tls', '--cert=' + str(temp / 'tls.crt'),
                     '--key=' + str(temp / 'tls.key'))
             kubectl('apply', '-f', '-', input=yaml.safe_dump({'apiVersion': 'v1', 'kind': 'Secret',
-                    'metadata': {'name': 'firewall-admin-token'}, 'type': 'Opaque', 'stringData': {'token': token}}))
+                    'metadata': {'name': 'firewall-role-tokens'}, 'type': 'Opaque', 'stringData': tokens}))
+            auth = json.loads((ROOT / 'examples/firewall/auth.json').read_text())
+            auth['static'].append({'tokenEnv': 'FOREIGN_TOKEN', 'principal': {'id': 'foreign', 'grants': [
+                {'scope': dict(auth['scope'], tenant='foreign'), 'actions': ['read', 'author', 'deploy']}]}})
+            kubectl('apply', '-f', '-', input=yaml.safe_dump({'apiVersion': 'v1', 'kind': 'Secret',
+                    'metadata': {'name': 'firewall-auth'}, 'stringData': {'auth.json': json.dumps(auth)}}))
+            role_values = temp / 'role-values.yaml'
+            role_values.write_text(yaml.safe_dump({'tokenEnvironment': [
+                {'name': 'FIREWALL_READER_TOKEN' if role == 'reader' else 'FIREWALL_OPERATOR_TOKEN' if role == 'operator' else 'FOREIGN_TOKEN',
+                 'secretName': 'firewall-role-tokens', 'secretKey': role} for role in tokens]}))
             helm('install', 'managed', str(ROOT / 'charts/netcap-firewall'),
-                 '-f', str(ROOT / 'examples/firewall/managed-values.yaml'),
+                  '-f', str(ROOT / 'examples/firewall/managed-values.yaml'),
+                  '-f', str(role_values),
                  '--set', 'image.pullPolicy=Never', '--wait', '--timeout', '180s')
             traffic('managed-netcap-firewall', '/blocked', 200)
             with management() as api:
                 before = api('revision')['revision']
+                api('revision', role='reader')
+                api('revision', role='foreign', expected=403)
+                for role in ['reader', 'foreign']:
+                    api('stage', {'bundle': yaml.safe_dump(policy), 'idempotency_key': 'denied-stage'}, role=role, expected=403)
+                    api('activate', {'revision': before, 'expected_revision': before, 'idempotency_key': 'denied-activate'}, role=role, expected=403)
                 staged = api('stage', {'bundle': yaml.safe_dump(policy), 'idempotency_key': 'kind-stage'})
                 revision = staged['revision']
                 api('activate', {'revision': revision, 'expected_revision': before, 'idempotency_key': 'kind-activate'})

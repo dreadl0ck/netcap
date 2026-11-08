@@ -1,4 +1,6 @@
 {{- if .Values.enabled }}
+{{- if ne (not (empty .Values.tokenSecret.name)) .Values.legacyAdmin }}{{ fail "tokenSecret requires explicit legacyAdmin=true; prefer authConfigSecret" }}{{- end }}
+{{- if and .Values.legacyAdmin .Values.authConfigSecret.name }}{{ fail "legacyAdmin and authConfigSecret are mutually exclusive" }}{{- end }}
 {{- if ne (empty .Values.policyState.configSecretName) (empty .Values.policyState.credentialsSecretName) }}{{ fail "policyState requires config and credentials Secret references" }}{{- end }}
 {{- if .Values.policyState.configSecretName }}
 {{- if ne .Values.mode "network" }}{{ fail "policyState is supported only in network mode" }}{{- end }}
@@ -12,7 +14,7 @@
 {{- $secret := .Values.tokenSecret.name }}
 {{- if eq .Values.mode "leases" }}
 {{- $destination = required "scope.destination required" $destination }}
-{{- $secret = required "tokenSecret.name required" $secret }}
+{{- if not (or .Values.authConfigSecret.name .Values.legacyAdmin) }}{{ fail "leases requires authConfigSecret or explicit legacyAdmin with tokenSecret.name required" }}{{- end }}
 {{- else }}
 {{- if not .Values.scope.protectedCIDRs }}{{ fail "network mode requires scope.protectedCIDRs" }}{{- end }}
 {{- end }}
@@ -49,8 +51,19 @@ spec:
             seccompProfile: {type: Unconfined}
             appArmorProfile: {type: Unconfined}
           env:
+            {{- range .Values.tokenEnvironment }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef: {name: {{ .secretName | quote }}, key: {{ .secretKey | quote }}}
+            {{- end }}
+            {{- if .Values.authConfigSecret.name }}
+            - {name: ENFORCER_AUTH_CONFIG, value: /etc/firewall-auth/auth.json}
+            {{- end }}
+            {{- if .Values.legacyAdmin }}
+            - {name: ENFORCER_LEGACY_ADMIN, value: 'true'}
+            {{- end }}
             - {name: ENFORCER_MODE, value: {{ .Values.mode | quote }}}
-            {{- if eq .Values.mode "leases" }}
+            {{- if and (eq .Values.mode "leases") .Values.legacyAdmin }}
             - name: NETCAP_FIREWALL_ADMIN_TOKEN
               valueFrom:
                 secretKeyRef: {name: {{ $secret | quote }}, key: {{ .Values.tokenSecret.key | quote }}}
@@ -91,6 +104,9 @@ spec:
             - secretRef: {name: {{ .Values.policyState.credentialsSecretName | quote }}}
           {{- end }}
           volumeMounts:
+            {{- if .Values.authConfigSecret.name }}
+            - {name: auth, mountPath: /etc/firewall-auth, readOnly: true}
+            {{- end }}
             - {name: netns, mountPath: /run/netns, readOnly: true, mountPropagation: HostToContainer}
             - {name: locks, mountPath: /run/netcap-enforcer}
             - {name: state, mountPath: /var/lib/netcap-enforcer}
@@ -102,6 +118,13 @@ spec:
             - {name: policy, mountPath: /etc/netcap-network, readOnly: true}
             {{- end }}
       volumes:
+        {{- if .Values.authConfigSecret.name }}
+        - name: auth
+          secret:
+            secretName: {{ .Values.authConfigSecret.name | quote }}
+            defaultMode: 0440
+            items: [{key: {{ .Values.authConfigSecret.key | quote }}, path: auth.json}]
+        {{- end }}
         {{- if .Values.policyState.configSecretName }}
         - name: policy-state
           secret: {secretName: {{ .Values.policyState.configSecretName | quote }}, defaultMode: 0440}

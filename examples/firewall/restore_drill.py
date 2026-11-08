@@ -84,7 +84,7 @@ def main():
             def serve(state):
                 with (temp / 'process.log').open('w+') as log:
                     process = subprocess.Popen([str(args.binary.resolve()), 'serve', '--config', str(config),
-                                                '--managed', '--state-dir', str(state), '--admin-cert',
+                                                '--legacy-admin', '--managed', '--state-dir', str(state), '--admin-cert',
                                                 str(temp / 'tls.crt'), '--admin-key', str(temp / 'tls.key')],
                                                env=dict(os.environ, NETCAP_FIREWALL_ADMIN_TOKEN=token),
                                                stdout=log, stderr=log)
