@@ -140,7 +140,7 @@ var Decoder = &decoder.StreamDecoder{
 		return cipLog.Sync()
 	},
 	Factory: &cipReader{},
-	Typ:     core.TCP, // CIP typically uses TCP port 44818 (EtherNet/IP) or 2222
+	Typ:     core.All, // ENIP-encapsulated CIP; raw UDP I/O is not decoded.
 }
 
 // cipConfidence reports whether an ENIP message carried CIP at all.

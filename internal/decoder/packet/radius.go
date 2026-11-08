@@ -30,6 +30,13 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+func init() {
+	// The pinned gopacket mapping only includes authentication port 1812.
+	for _, port := range []layers.UDPPort{1813, 1645, 1646} {
+		layers.RegisterUDPPortLayerType(port, layers.LayerTypeRADIUS)
+	}
+}
+
 var radiusDecoder = newGoPacketDecoder(
 	types.Type_NC_RADIUS,
 	layers.LayerTypeRADIUS,

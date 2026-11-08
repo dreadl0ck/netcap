@@ -77,34 +77,20 @@ func (s *syslogReader) Decode() {
 		return
 	}
 
-	for _, d := range s.conversation.Data {
-		raw := d.Raw()
-		if len(raw) < 4 {
-			continue
+	s.decodeMessages(func(msg *types.Syslog) {
+		err := Decoder.Writer.Write(msg)
+		if err != nil {
+			syslogLog.Error("failed to write syslog record", zap.Error(err))
+		} else {
+			atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 		}
-
-		msg := s.parseSyslogMessage(raw)
-		if msg != nil {
-			// Time and direction come from the datagram that carried the
-			// message. Every record used to take FirstClientPacket and the
-			// client's addresses, which collapses a session to one instant and
-			// records a reply as though the client had sent it.
-			msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = s.conversation.Endpoints(d)
-			msg.Timestamp = core.FragmentTime(d)
-			msg.Protocol = "UDP"
-			msg.CommunityID = s.conversation.CommunityID
-
-			err := Decoder.Writer.Write(msg)
-			if err != nil {
-				syslogLog.Error("failed to write syslog record", zap.Error(err))
-			} else {
-				atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
-			}
-		}
-	}
+	})
 }
 
 func (s *syslogReader) parseSyslogMessage(data []byte) *types.Syslog {
+	if !validPRI(data) {
+		return nil
+	}
 	msg := string(data)
 
 	// Try RFC 5424 format first

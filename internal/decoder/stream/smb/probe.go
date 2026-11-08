@@ -26,6 +26,12 @@ func probeSMB(data []byte) bool {
 			}
 		case 0:
 			body := data[4:min(len(data), n+4)]
+			if n >= 52 && len(body) >= 52 && bytes.HasPrefix(body, []byte("\xfdSMB")) {
+				return binary.LittleEndian.Uint16(body[42:44]) == 1
+			}
+			if n >= 16 && len(body) >= 16 && bytes.HasPrefix(body, []byte("\xfcSMB")) {
+				return true
+			}
 			if n >= 64 && len(body) >= 20 && bytes.HasPrefix(body, []byte(SMB2Signature)) {
 				return binary.LittleEndian.Uint16(body[4:6]) == 64 && binary.LittleEndian.Uint16(body[12:14]) <= 0x12
 			}
