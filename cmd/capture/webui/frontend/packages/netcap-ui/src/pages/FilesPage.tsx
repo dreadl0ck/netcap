@@ -1813,7 +1813,8 @@ export default function ExtractedFilesPage() {
           <DialogContent dividers sx={{ p: 0, display: 'flex', flexDirection: 'column' }}>
             {previewFile && <Box sx={{ p: 2 }}>
               <ArtifactAnalysisPanel selection={status?.sessionId ? { sessionId: status.sessionId } : { inputFile: status?.activeInputFile }} sha256={previewFile.sha256} />
-              {previewFile.completenessReason && <Alert severity={previewFile.isComplete ? 'info' : 'warning'}>Artifact completeness: {previewFile.completenessReason}</Alert>}
+              <Typography sx={{ overflowWrap: 'anywhere', fontFamily: 'monospace' }}>SHA-256: {previewFile.sha256 || 'unavailable'}</Typography>
+              <Alert severity={previewFile.isComplete === false ? 'warning' : 'info'}>Artifact completeness: {previewFile.isComplete === undefined ? 'unavailable' : previewFile.isComplete ? 'complete' : 'incomplete'}{previewFile.completenessReason ? ` — ${previewFile.completenessReason}` : ''}</Alert>
               {previewFile.occurrences && <details><summary>Transfer occurrences ({previewFile.occurrences.length}{previewFile.occurrencesCapped ? '+, capped' : ''})</summary><Box component="pre" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify(previewFile.occurrences, null, 2)}</Box></details>}
             </Box>}
             {previewLoading ? (

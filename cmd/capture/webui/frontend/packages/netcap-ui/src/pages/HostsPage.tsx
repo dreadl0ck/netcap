@@ -63,6 +63,7 @@ import {
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import BehaviorAssetContext from '../components/BehaviorAssetContext';
+import HostIdentity, { type HostIdentityData } from '../components/HostIdentity';
 import ResponsiveDataView from '../components/ResponsiveDataView';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import SearchInput from '../components/SearchInput';
@@ -112,8 +113,9 @@ export interface HostSummary {
 }
 
 interface HostsResponse {
-  hosts: HostSummary[];
-  totalCount: number;
+	hosts: HostSummary[];
+	totalCount: number;
+	identity?: HostIdentityData;
 }
 
 type HostSortField = 'addr' | 'type' | 'packets' | 'bytes';
@@ -155,7 +157,10 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
   // Fetch hosts data
   const { data: hostsData, error, mutate } = useSWR<HostsResponse>(
     'hosts',
-    () => fetch(`${getBackendUrl()}/api/hosts`).then(res => res.json()),
+    () => fetch(`${getBackendUrl()}/api/hosts`).then(res => {
+      if (!res.ok) throw new Error('Failed to load host evidence');
+      return res.json();
+    }),
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
       refreshInterval: 0,
@@ -837,6 +842,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
                                 {rowActions && rowActions(host)}
                               </Box>
 
+                              <HostIdentity identity={hostsData?.identity} ip={host.addr} />
                               <Grid container spacing={2}>
                                 {/* Time Range */}
                                 <Grid item xs={12} md={6}>

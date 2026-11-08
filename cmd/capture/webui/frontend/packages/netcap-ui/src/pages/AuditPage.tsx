@@ -63,6 +63,7 @@ import { useNetcapRouter, useNetcapApi, useIsMobile } from '../hooks';
 import FilterExpressionHighlight, { FilterExpressionBlock } from '../components/FilterExpressionHighlight';
 
 import { syntaxHighlightJSON } from '../lib/html';
+import { formatRecordUnits as convertTimestamps } from '../lib/recordUnits';
 interface LayerGroup {
   layerName: string;
   files: any[];
@@ -263,72 +264,6 @@ function RecordUI({ data, level = 0 }: RecordUIProps) {
       {String(data)}
     </Typography>
   );
-}
-
-// Helper function to convert unix timestamps to human-readable format
-function convertTimestamps(obj: any): any {
-  if (obj === null || obj === undefined) return obj;
-  
-  if (typeof obj === 'number' && obj > 1000000000) {
-    // Determine if timestamp is in nanoseconds (19 digits), microseconds (16 digits), milliseconds (13 digits), or seconds (10 digits)
-    let timestampMs: number;
-    if (obj > 1e15) {
-      // Nanoseconds (19 digits) or microseconds (16 digits)
-      if (obj > 1e17) {
-        // Nanoseconds - divide by 1,000,000
-        timestampMs = obj / 1000000;
-      } else {
-        // Microseconds - divide by 1,000
-        timestampMs = obj / 1000;
-      }
-    } else if (obj > 1e12) {
-      // Already in milliseconds (13 digits)
-      timestampMs = obj;
-    } else {
-      // Seconds (10 digits) - multiply by 1000
-      timestampMs = obj * 1000;
-    }
-    
-    try {
-      const date = new Date(timestampMs);
-      if (isNaN(date.getTime())) {
-        return obj; // Return original if invalid
-      }
-      return date.toISOString();
-    } catch (e) {
-      return obj; // Return original on error
-    }
-  }
-  
-  if (typeof obj === 'string' && obj.match(/^\d{10,19}$/)) {
-    // String that looks like a unix timestamp
-    const num = parseInt(obj, 10);
-    if (num > 1000000000) {
-      return convertTimestamps(num); // Recursively convert as number
-    }
-  }
-  
-  if (typeof obj !== 'object') return obj;
-  
-  if (Array.isArray(obj)) {
-    return obj.map(item => convertTimestamps(item));
-  }
-  
-  const result: any = {};
-  for (const [key, value] of Object.entries(obj)) {
-    // Check if this is a timestamp field by name
-    if ((key.toLowerCase().includes('timestamp') || 
-         key.toLowerCase().includes('time') ||
-         key === 'Timestamp' ||
-         key === 'Time') && 
-        typeof value === 'number' && 
-        value > 1000000000) {
-      result[key] = convertTimestamps(value);
-    } else {
-      result[key] = convertTimestamps(value);
-    }
-  }
-  return result;
 }
 
 // Syntax highlighting for JSON

@@ -2371,6 +2371,7 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	// Read File audit records to get hash and protocol information
 	type fileAuditInfo struct {
 		Occurrences         []map[string]string
+		OccurrencesCapped   bool
 		SHA256              string
 		IsComplete          bool
 		CompletenessReason  string
@@ -2430,10 +2431,11 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 					prior := fileInfoMap[filename]
 					occurrences := prior.Occurrences
 					if len(occurrences) < 1024 {
-						occurrences = append(occurrences, map[string]string{"name": file.Name, "timestampNs": fmt.Sprint(file.Timestamp), "communityId": file.CommunityID, "connectionUid": file.ConnectionUID, "protocol": file.Protocol, "parentFileId": file.ParentFileID, "flowDirection": file.FlowDirection})
+						occurrences = append(occurrences, map[string]string{"name": file.Name, "timestampNs": fmt.Sprint(file.Timestamp), "communityId": file.CommunityID, "connectionUid": file.ConnectionUID, "protocol": file.Protocol, "parentFileId": file.ParentFileID, "flowDirection": file.FlowDirection, "isComplete": fmt.Sprint(file.IsComplete), "completenessReason": file.CompletenessReason})
 					}
 					fileInfoMap[filename] = fileAuditInfo{
-						Occurrences: occurrences,
+						Occurrences:       occurrences,
+						OccurrencesCapped: prior.OccurrencesCapped || len(prior.Occurrences) >= 1024,
 						SHA256: func() string {
 							if file.Hashes != nil {
 								return file.Hashes.SHA256
@@ -2523,7 +2525,7 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		// Match by filename since full paths may differ
 		if auditInfo, ok := fileInfoMap[info.Name()]; ok {
 			fileInfo["occurrences"] = auditInfo.Occurrences
-			fileInfo["occurrencesCapped"] = len(auditInfo.Occurrences) == 1024
+			fileInfo["occurrencesCapped"] = auditInfo.OccurrencesCapped
 			fileInfo["sha256"] = auditInfo.SHA256
 			fileInfo["isComplete"] = auditInfo.IsComplete
 			fileInfo["completenessReason"] = auditInfo.CompletenessReason

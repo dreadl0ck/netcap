@@ -50,6 +50,7 @@ Produce a sub-PCAP for the TCP flow that carried a given TLS certificate (identi
 | `dst_ip` | string | yes | Destination IP. |
 | `dst_port` | string | yes | Destination port. |
 | `end_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with start_ns. |
+| `run_id` | string |  | Expected capture generation; stale generations are rejected by the backend. |
 | `session_id` | string | yes | Session identifier. |
 | `src_ip` | string | yes | Source IP of the TLS flow. |
 | `src_port` | string | yes | Source port. |
@@ -70,6 +71,7 @@ Produce a bidirectional sub-PCAP for an explicit TCP/UDP tuple. Optional inclusi
 | `dst_port` | string | yes | Destination port. |
 | `end_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with start_ns. |
 | `protocol` | string | yes | Observed transport protocol. |
+| `run_id` | string |  | Expected capture generation; stale generations are rejected by the backend. |
 | `session_id` | string | yes | Session identifier. |
 | `src_ip` | string | yes | Source IP. |
 | `src_port` | string | yes | Source port. |
@@ -87,6 +89,7 @@ Produce a sub-PCAP filtered to all traffic involving one host IP. Returns the ca
 | name | type | required | description |
 | --- | --- | --- | --- |
 | `host` | string | yes | Host IP (v4 or v6). |
+| `run_id` | string |  | Expected capture generation; stale generations are rejected by the backend. |
 | `session_id` | string | yes | Session identifier. |
 
 
@@ -103,6 +106,7 @@ Produce a bidirectional sub-PCAP for the observed HTTP TCP tuple, including nons
 | `dst_ip` | string | yes | Destination IP. |
 | `dst_port` | string | yes | Observed destination port. |
 | `end_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with start_ns. |
+| `run_id` | string |  | Expected capture generation; stale generations are rejected by the backend. |
 | `session_id` | string | yes | Session identifier. |
 | `src_ip` | string | yes | Source IP. |
 | `src_port` | string | yes | Observed source port. |

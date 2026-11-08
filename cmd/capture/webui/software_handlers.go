@@ -27,24 +27,27 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 
 	"github.com/dreadl0ck/netcap/types"
 )
 
 // SoftwareSummary represents aggregated information for software
 type SoftwareSummary struct {
-	Product     string   `json:"product"`
-	Vendor      string   `json:"vendor"`
-	Version     string   `json:"version"`
-	OS          string   `json:"os"`
-	Count       int      `json:"count"`
-	Devices     []string `json:"devices"`
-	Services    []string `json:"services"`
-	DPIResults  []string `json:"dpiResults"`
-	FirstSeen   int64    `json:"firstSeen"`
-	LastSeen    int64    `json:"lastSeen"`
-	SourceNames []string `json:"sourceNames"`
-	Flows       []string `json:"flows"`
+	Observations       []SoftwareObservation `json:"observations"`
+	ObservationsCapped bool                  `json:"observationsCapped"`
+	Product            string                `json:"product"`
+	Vendor             string                `json:"vendor"`
+	Version            string                `json:"version"`
+	OS                 string                `json:"os"`
+	Count              int                   `json:"count"`
+	Devices            []string              `json:"devices"`
+	Services           []string              `json:"services"`
+	DPIResults         []string              `json:"dpiResults"`
+	FirstSeen          int64                 `json:"firstSeen"`
+	LastSeen           int64                 `json:"lastSeen"`
+	SourceNames        []string              `json:"sourceNames"`
+	Flows              []string              `json:"flows"`
 	// Detection context
 	DetectionMethod string `json:"detectionMethod"`
 	ConfidenceLevel string `json:"confidenceLevel"`
@@ -61,6 +64,13 @@ type SoftwareSummary struct {
 	CommunityIDs []string `json:"communityIds"`
 }
 
+type SoftwareObservation struct {
+	Host                    string `json:"host"`
+	Role                    string `json:"role"`
+	TimestampNs             string `json:"timestampNs"`
+	VulnerabilityAssessment string `json:"vulnerabilityAssessment"`
+}
+
 // SoftwareResponse contains the list of software
 type SoftwareResponse struct {
 	Software   []SoftwareSummary `json:"software"`
@@ -74,7 +84,11 @@ func (s *Server) handleSoftware(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	outDir, _ := s.resolveOutDirFromRequest(r)
+	selected, ok := s.selectedCapture(w, r)
+	if !ok {
+		return
+	}
+	outDir := selected.OutputDir
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -121,7 +135,7 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 	}
 
 	// Software aggregation map - keyed by product+vendor+version
-	softwareMap := make(map[string]*softwareAggregator)
+	softwareMap := make(map[[3]string]*softwareAggregator)
 
 	// Read all records
 	for {
@@ -130,8 +144,7 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading Software record: %v", err)
-			continue
+			return nil, err
 		}
 
 		// Type assert to Software
@@ -147,7 +160,7 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 		}
 
 		// Create unique key (use merged product, no vendor since it's merged)
-		key := product + "|" + sw.Version
+		key := [3]string{product, sw.Vendor, sw.Version}
 
 		agg, exists := softwareMap[key]
 		if !exists {
@@ -181,6 +194,18 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 		}
 
 		agg.count++
+		if len(agg.observations) < 1024 {
+			assessment := sw.VulnerabilityAssessment
+			if assessment == "" {
+				assessment = "unavailable"
+			}
+			agg.observations = append(agg.observations, SoftwareObservation{
+				Host: sw.ObservedHost, Role: sw.ObservationRole,
+				TimestampNs: strconv.FormatInt(sw.Timestamp, 10), VulnerabilityAssessment: assessment,
+			})
+		} else {
+			agg.observationsCapped = true
+		}
 
 		// Aggregate devices
 		for _, device := range sw.DeviceProfiles {
@@ -262,18 +287,20 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 		}
 
 		software = append(software, SoftwareSummary{
-			Product:     agg.product,
-			Vendor:      agg.vendor,
-			Version:     agg.version,
-			OS:          agg.os,
-			Count:       agg.count,
-			Devices:     devices,
-			Services:    services,
-			DPIResults:  dpiResults,
-			FirstSeen:   agg.firstSeen,
-			LastSeen:    agg.lastSeen,
-			SourceNames: sourceNames,
-			Flows:       flows,
+			Observations:       agg.observations,
+			ObservationsCapped: agg.observationsCapped,
+			Product:            agg.product,
+			Vendor:             agg.vendor,
+			Version:            agg.version,
+			OS:                 agg.os,
+			Count:              agg.count,
+			Devices:            devices,
+			Services:           services,
+			DPIResults:         dpiResults,
+			FirstSeen:          agg.firstSeen,
+			LastSeen:           agg.lastSeen,
+			SourceNames:        sourceNames,
+			Flows:              flows,
 			// Detection context
 			DetectionMethod: agg.detectionMethod,
 			ConfidenceLevel: agg.confidenceLevel,
@@ -301,19 +328,21 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 
 // softwareAggregator holds temporary aggregation data for software
 type softwareAggregator struct {
-	product      string
-	vendor       string
-	version      string
-	os           string
-	count        int
-	devices      map[string]bool
-	services     map[string]bool
-	dpiResults   map[string]bool
-	sourceNames  map[string]bool
-	flows        map[string]bool
-	communityIDs map[string]bool
-	firstSeen    int64
-	lastSeen     int64
+	observations       []SoftwareObservation
+	observationsCapped bool
+	product            string
+	vendor             string
+	version            string
+	os                 string
+	count              int
+	devices            map[string]bool
+	services           map[string]bool
+	dpiResults         map[string]bool
+	sourceNames        map[string]bool
+	flows              map[string]bool
+	communityIDs       map[string]bool
+	firstSeen          int64
+	lastSeen           int64
 	// Detection context
 	detectionMethod string
 	confidenceLevel string

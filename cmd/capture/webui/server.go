@@ -688,6 +688,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/flows/query", s.handleFlowQuery)
 	mux.HandleFunc("/api/flows/exports/query", s.handleFlowExportQuery)
 	mux.HandleFunc("/api/investigation/capture", s.handleCaptureEvidence)
+	mux.HandleFunc("/api/investigation/reproduction", s.handleReproductionBundle)
 	mux.HandleFunc("/api/investigation/health", s.handleInvestigationHealth)
 	mux.HandleFunc("/api/investigation/streams", s.handleStreamEvidence)
 	mux.HandleFunc("/api/connections/top-by-traffic", s.handleConnectionsTopByTraffic)

@@ -309,7 +309,7 @@ func HandleLogFiles(outputDir string) http.HandlerFunc {
 
 		entries, err := os.ReadDir(outputDir)
 		if err != nil {
-			RespondJSON(w, http.StatusOK, []FileInfo{})
+			RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": "Cannot read analysis log directory"})
 			return
 		}
 

@@ -525,6 +525,7 @@ export default function Visualize() {
                   </Alert>
                 )}
 
+                <Alert severity="info">Schematic protocol relationships: links are synthesized from typical encapsulation and retained audit counts. They are not measured packet-level relationships or wire-volume estimates.</Alert>
                 {hierarchyData && hierarchyData.stats && (
                   <TableContainer>
                     <Table size="small">
