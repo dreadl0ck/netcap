@@ -15,6 +15,18 @@ SPEC.loader.exec_module(BUILDER)
 
 
 class BuilderPublicationTests(unittest.TestCase):
+    def test_every_builder_rejects_incompatible_platforms(self):
+        for variant in ('alpine', 'alpine-dpi', 'ubuntu', 'ubuntu-dpi'):
+            for platform in ('linux/arm64', 'windows/amd64', 'linux/amd64,linux/arm64'):
+                with self.subTest(variant=variant, platform=platform):
+                    with self.assertRaises(ValueError):
+                        BUILDER.resolve(variant, platform)
+        for name in ('build-alpine-docker.sh', 'build-ubuntu-docker.sh'):
+            result = subprocess.run(['bash', str(ROOT / 'zeus/scripts' / name)], capture_output=True, text=True,
+                                    env=dict(os.environ, NETCAP_PLATFORMS='linux/arm64'))
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('linux/amd64 only', result.stderr)
+
     def test_runtime_defaults_match_immutable_inventory(self):
         variants = {"alpine": "alpine-dpi", "alpine-nodpi": "alpine",
                     "ubuntu": "ubuntu-dpi", "ubuntu-nodpi": "ubuntu", "service": "alpine-dpi"}
@@ -22,6 +34,7 @@ class BuilderPublicationTests(unittest.TestCase):
             with self.subTest(directory=directory):
                 text = (ROOT / "docker" / directory / "Dockerfile").read_text()
                 self.assertIn("ARG NETCAP_BUILDER_IMAGE=" + BUILDER.resolve(variant) + "\n", text)
+                self.assertIn('FROM --platform=linux/amd64 ${NETCAP_BUILDER_IMAGE} AS builder', text)
 
     def test_only_not_found_means_candidate_is_absent(self):
         token = io.BytesIO(json.dumps({"token": "test-only"}).encode())

@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import tempfile
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("bundle", Path(__file__).with_name("bundle-linux-runtime.py"))
 module = importlib.util.module_from_spec(spec)
@@ -8,6 +10,12 @@ spec.loader.exec_module(module)
 
 
 class RuntimeDependencies(unittest.TestCase):
+    def test_incompatible_image_fails_before_launch_or_copy(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(module.subprocess, 'check_output', return_value='linux/arm64\n') as execute:
+            with self.assertRaisesRegex(ValueError, 'linux/amd64 only'):
+                module.bundle('test-only:arm64', directory)
+            self.assertEqual(execute.call_count, 1)
+
     def test_glibc_and_transitive_dependencies(self):
         paths, loader = module.dependencies("""
 linux-vdso.so.1 (0x00001)

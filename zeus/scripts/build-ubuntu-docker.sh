@@ -3,6 +3,7 @@
 # Not used atm.
 
 set -eo pipefail
+[[ "${NETCAP_PLATFORMS:-linux/amd64}" == linux/amd64 ]] || { echo 'Qualified native builds support linux/amd64 only' >&2; exit 1; }
 test -s cmd/capture/webui/frontend/dist/index.html || { echo "Build the WebUI with pnpm build before packaging Linux" >&2; exit 1; }
 
 if [ -z "$NODPI" ]; then

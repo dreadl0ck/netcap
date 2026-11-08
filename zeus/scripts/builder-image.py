@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Resolve a release builder from the published, digest-pinned inventory."""
 
+import argparse
 import json
 from pathlib import Path
 import re
@@ -10,9 +11,11 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 
-def resolve(variant):
+def resolve(variant, platform='linux/amd64'):
     root = Path(__file__).resolve().parents[2]
     lock = json.loads((root / "docker/builders/images.lock.json").read_text())
+    if platform != 'linux/amd64' or lock['platform'] != platform:
+        raise ValueError('qualified native builders support linux/amd64 only')
     image = lock["images"][variant]
     if not re.fullmatch(r"docker.io/dreadl0ck/netcap-builder:[\w.-]+@sha256:[0-9a-f]{64}", image):
         raise ValueError("builder must be a published immutable reference")
@@ -40,10 +43,16 @@ def manifest(reference):
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == "--ensure-absent":
-        if manifest(sys.argv[2]) is not None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('variant', nargs='?', choices=('alpine', 'alpine-dpi', 'ubuntu', 'ubuntu-dpi'))
+    parser.add_argument('--platform', default='linux/amd64', choices=('linux/amd64',))
+    parser.add_argument('--ensure-absent')
+    parser.add_argument('--verify-public', action='store_true')
+    args = parser.parse_args()
+    if args.ensure_absent:
+        if manifest(args.ensure_absent) is not None:
             sys.exit("Refusing to replace an existing candidate tag")
-    elif sys.argv[1] == "--verify-public":
+    elif args.verify_public:
         for variant in ("alpine", "alpine-dpi", "ubuntu", "ubuntu-dpi"):
             reference = resolve(variant)
             result = manifest(reference)
@@ -53,6 +62,9 @@ if __name__ == "__main__":
             assert digest == reference.split("@", 1)[1], reference
             platforms = [m["platform"] for m in index["manifests"]]
             assert {"architecture": "amd64", "os": "linux"} in platforms, platforms
+            assert all(p['architecture'] == 'unknown' or (p['architecture'], p['os']) == ('amd64', 'linux') for p in platforms), platforms
             print(variant, reference)
     else:
-        print(resolve(sys.argv[1]))
+        if not args.variant:
+            parser.error('choose a builder variant or a registry operation')
+        print(resolve(args.variant, args.platform))
