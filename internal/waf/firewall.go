@@ -704,11 +704,20 @@ func (f *Firewall) inspectResponse(resp *http.Response) error {
 	var inspected *bodyStore
 	apiResponse := f.cfg.APIValidateResponse && s.operation != nil
 	inspectBody := f.cfg.InspectResponse || apiResponse
+	bodyless := resp.Request.Method == http.MethodHead || resp.StatusCode >= 100 && resp.StatusCode < 200 || resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusNotModified
 	if inspectBody && resp.StatusCode == 101 {
 		_ = resp.Body.Close()
 		return rejection{502}
 	}
-	if inspectBody && resp.Request.Method != http.MethodHead && resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusNotModified {
+	if bodyless && resp.StatusCode != http.StatusSwitchingProtocols {
+		_ = resp.Body.Close()
+		resp.Body = http.NoBody
+		resp.TransferEncoding = nil
+		resp.Header.Del("Transfer-Encoding")
+		resp.Header.Del("Trailer")
+		resp.Trailer = nil
+	}
+	if inspectBody && !bodyless {
 		if resp.Header.Get("Content-Encoding") != "" && resp.Header.Get("Content-Range") != "" {
 			_ = resp.Body.Close()
 			return rejection{502}
@@ -769,7 +778,7 @@ func (f *Firewall) inspectResponse(resp *http.Response) error {
 			_ = resp.Body.Close()
 			return rejection{503}
 		}
-		err := s.operation.ValidateResponse(resp.StatusCode, resp.Header, reader)
+		err := s.operation.ValidateResponseForMethod(resp.Request.Method, resp.StatusCode, resp.Header, reader)
 		f.buffers.Release(apiValidationCharge)
 		if err != nil {
 			_ = resp.Body.Close()

@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -26,6 +27,95 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 )
+
+func TestAPIResponseMethodAndBodylessStatusMatrix(t *testing.T) {
+	response := `{"description":"representation","headers":{"X-Result":{"required":true,"schema":{"type":"integer","minimum":1}}},"content":{"application/json":{"schema":{"type":"object","required":["ok"],"properties":{"ok":{"const":true}}}}}}`
+	responses := fmt.Sprintf(`{"200":%s,"201":%s,"204":%s,"304":%s}`, response, response, response, response)
+	operation := `{"responses":` + responses + `}`
+	doc := `{"openapi":"3.1.0","info":{"title":"methods","version":"1"},"paths":{"/items":{"get":` + operation + `,"head":` + operation + `}}}`
+	for _, routed := range []bool{false, true} {
+		for _, method := range []string{http.MethodGet, http.MethodHead} {
+			for _, status := range []int{200, 201, 204, 304} {
+				for _, variant := range []string{"valid", "missing-body", "invalid-body", "missing-header", "invalid-header", "wrong-type", "duplicate-type", "missing-type"} {
+					t.Run(fmt.Sprintf("routed=%t/%s/%d/%s", routed, method, status, variant), func(t *testing.T) {
+						bodyless := method == http.MethodHead || status == 204 || status == 304
+						want := status
+						if variant == "missing-header" || variant == "invalid-header" || variant == "wrong-type" || variant == "duplicate-type" || !bodyless && variant != "valid" {
+							want = 502
+						}
+						// net/http removes Content-Type from 304 responses at the origin.
+						if status == 304 && (variant == "wrong-type" || variant == "duplicate-type") {
+							want = status
+						}
+						origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							w.Header().Set("Content-Type", "application/json")
+							w.Header().Set("X-Result", "1")
+							switch variant {
+							case "missing-header":
+								w.Header().Del("X-Result")
+							case "invalid-header":
+								w.Header().Set("X-Result", "0")
+							case "wrong-type":
+								w.Header().Set("Content-Type", "text/plain")
+							case "duplicate-type":
+								w.Header().Add("Content-Type", "application/json")
+							case "missing-type":
+								w.Header()["Content-Type"] = nil
+							}
+							payload := `{"ok":true}`
+							if variant == "invalid-body" {
+								payload = `{"ok":false}`
+							}
+							if variant == "missing-body" {
+								payload = ""
+							}
+							if status == 200 || status == 201 {
+								w.Header().Set("Content-Length", fmt.Sprint(len(payload)))
+							}
+							w.WriteHeader(status)
+							_, _ = io.WriteString(w, payload)
+						}))
+						defer origin.Close()
+						c := apiConfig(t, config(origin.URL), map[string][]byte{"openapi.json": []byte(doc)}, apipolicy.Declaration{OpenAPI: "openapi.json"})
+						c.APIValidateResponse = true
+						if routed {
+							r := routeFixture(t, origin.URL, "methods", "api.example", "/", 1)
+							r.Methods = []string{http.MethodGet, http.MethodHead}
+							r.DescriptorPath, r.DescriptorSHA256, r.APIValidateResponse = c.DescriptorPath, c.DescriptorSHA256, true
+							c.DescriptorPath, c.DescriptorSHA256, c.APIValidateResponse = "", "", false
+							c.Routes = []RouteConfig{r}
+						}
+						h := firewall(t, c, compiled(t, "enforce", "request", ""))
+						proxy := httptest.NewServer(h)
+						defer proxy.Close()
+						req, _ := http.NewRequest(method, proxy.URL+"/items", nil)
+						req.Host = "api.example"
+						resp, err := proxy.Client().Do(req)
+						if err != nil {
+							t.Fatal(err)
+						}
+						data, err := io.ReadAll(resp.Body)
+						resp.Body.Close()
+						if err != nil || resp.StatusCode != want {
+							t.Fatalf("status=%d want=%d body=%s err=%v", resp.StatusCode, want, data, err)
+						}
+						if method == http.MethodHead || want == 204 || want == 304 {
+							if len(data) != 0 || len(resp.TransferEncoding) != 0 {
+								t.Fatalf("bodyless payload=%q transfer=%v", data, resp.TransferEncoding)
+							}
+						}
+						if method == http.MethodHead && (want == 200 || want == 201) && variant == "valid" && resp.ContentLength != 11 {
+							t.Fatalf("representation length lost: %d", resp.ContentLength)
+						}
+						if want == 502 && bytes.Contains(data, []byte(`"ok"`)) {
+							t.Fatalf("origin payload leaked: %s", data)
+						}
+					})
+				}
+			}
+		}
+	}
+}
 
 func apiConfig(t *testing.T, c Config, artifacts map[string][]byte, d apipolicy.Declaration) Config {
 	t.Helper()

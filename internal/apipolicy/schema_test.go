@@ -11,6 +11,7 @@ import (
 	"net/textproto"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -403,5 +404,52 @@ func TestOpenAPIValidation(t *testing.T) {
 				t.Fatal("response schema ignored")
 			}
 		})
+	}
+}
+
+func TestResponseBodySemanticsPreserveMetadataValidation(t *testing.T) {
+	for _, status := range []int{200, 204, 304} {
+		b := &Bundle{}
+		fixture := strings.Replace(contract, `"200":`, `"`+strconv.Itoa(status)+`":`, 1)
+		if err := b.compileOpenAPI(parsed(t, fixture)); err != nil {
+			t.Fatal(err)
+		}
+		op, err := b.Resolve("POST", "/items/3")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, method := range []string{http.MethodGet, http.MethodHead} {
+			bodyless := method == http.MethodHead || status == 204 || status == 304
+			for _, variant := range []string{"valid", "missing-header", "invalid-header", "wrong-type", "duplicate-type", "bad-charset", "missing-type"} {
+				t.Run(method+"/"+strconv.Itoa(status)+"/"+variant, func(t *testing.T) {
+					h := http.Header{"X-Result": {"1"}, "Content-Type": {"application/json"}}
+					switch variant {
+					case "missing-header":
+						h.Del("X-Result")
+					case "invalid-header":
+						h.Set("X-Result", "0")
+					case "wrong-type":
+						h.Set("Content-Type", "text/plain")
+					case "duplicate-type":
+						h.Add("Content-Type", "application/json")
+					case "bad-charset":
+						h.Set("Content-Type", "application/json;charset=latin1")
+					case "missing-type":
+						h.Del("Content-Type")
+					}
+					want := bodyless && (variant == "valid" || variant == "missing-type")
+					if got := op.ValidateResponseForMethod(method, status, h, strings.NewReader("not JSON")) == nil; got != want {
+						t.Fatalf("accepted=%t want=%t", got, want)
+					}
+					if op.ValidateResponseForMethod(method, 404, h, nil) == nil {
+						t.Fatal("undeclared status accepted")
+					}
+				})
+			}
+		}
+		h := http.Header{"X-Result": {"1"}, "Content-Type": {"application/json"}}
+		if status == 200 && op.ValidateResponse(status, h, nil) == nil {
+			t.Fatal("legacy API accepted missing required GET body")
+		}
 	}
 }

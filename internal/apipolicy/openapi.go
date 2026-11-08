@@ -652,6 +652,12 @@ func (b bodyPolicy) check(contentType string, r io.Reader) error {
 // ValidateResponse runs only when the caller explicitly enables its delivery
 // gate. The origin has already executed; no response gate is a transaction undo.
 func (o *Operation) ValidateResponse(status int, headers http.Header, body io.Reader) error {
+	return o.ValidateResponseForMethod("", status, headers, body)
+}
+
+// ValidateResponseForMethod validates representation metadata without requiring
+// payload bytes where HTTP forbids a response body.
+func (o *Operation) ValidateResponseForMethod(method string, status int, headers http.Header, body io.Reader) error {
 	if len(headers.Values("Content-Type")) > 1 {
 		return ErrInvalid
 	}
@@ -666,6 +672,30 @@ func (o *Operation) ValidateResponse(status int, headers http.Header, body io.Re
 		if err := p.check(headers.Values(p.name)); err != nil {
 			return err
 		}
+	}
+	if method == http.MethodHead || status >= 100 && status < 200 || status == http.StatusNoContent || status == http.StatusNotModified {
+		contentType := headers.Get("Content-Type")
+		if contentType != "" && len(r.body.content) > 0 {
+			media, params, err := mime.ParseMediaType(contentType)
+			if err != nil {
+				return ErrInvalid
+			}
+			if _, ok := r.body.content[media]; !ok {
+				return ErrInvalid
+			}
+			if media == "multipart/form-data" {
+				if len(params) != 1 || params["boundary"] == "" {
+					return ErrInvalid
+				}
+				return nil
+			}
+			for k, v := range params {
+				if k != "charset" || !strings.EqualFold(v, "utf-8") {
+					return ErrInvalid
+				}
+			}
+		}
+		return nil
 	}
 	return r.body.check(headers.Get("Content-Type"), body)
 }
