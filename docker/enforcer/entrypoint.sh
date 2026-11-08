@@ -20,7 +20,16 @@ fi
 [ "$mode" = leases ] || exit 64
 : "${ENFORCER_DESTINATION:?destination CIDR required}"
 : "${ENFORCER_PORT:?destination port required}"
-: "${NETCAP_FIREWALL_ADMIN_TOKEN:?bearer token required}"
+if [ -n "${ENFORCER_AUTH_CONFIG:-}" ]; then
+  [ "${ENFORCER_LEGACY_ADMIN:-false}" = false ] || exit 64
+  set -- --auth-config "$ENFORCER_AUTH_CONFIG" "$@"
+elif [ "${ENFORCER_LEGACY_ADMIN:-false}" = true ]; then
+  : "${NETCAP_FIREWALL_ADMIN_TOKEN:?legacy lab bearer token required}"
+  set -- --legacy-admin "$@"
+else
+  printf '%s\n' 'leases requires ENFORCER_AUTH_CONFIG or explicit ENFORCER_LEGACY_ADMIN=true' >&2
+  exit 64
+fi
 exec /netcap-firewall enforcer --listen 127.0.0.1:9091 \
   --namespace "$ENFORCER_NAMESPACE" --interface "$ENFORCER_INTERFACE" \
   --destination "$ENFORCER_DESTINATION" --port "$ENFORCER_PORT" \

@@ -18,12 +18,22 @@ def render(*args, success=True):
     return [doc for doc in yaml.safe_load_all(result.stdout) if doc]
 
 
-ARGS = ['--set', 'enabled=true', '--set-string', 'nodeSelector.netcap-lab=true',
+ARGS = ['--set', 'legacyAdmin=true', '--set', 'enabled=true', '--set-string', 'nodeSelector.netcap-lab=true',
         '--set', 'scope.namespace=netcap-fw-lab', '--set', 'scope.interface=ingress',
         '--set', 'scope.destination=198.51.100.0/24', '--set', 'tokenSecret.name=lab-token']
 
 
 class EnforcerBoundary(unittest.TestCase):
+    def test_scoped_auth_and_legacy_optin(self):
+        render(*ARGS, '--set', 'legacyAdmin=false', success=False)
+        render(*ARGS, '--set', 'authConfigSecret.name=auth', success=False)
+        docs = render(*ARGS, '--set', 'legacyAdmin=false', '--set', 'tokenSecret.name=',
+                      '--set', 'authConfigSecret.name=auth')
+        pod = docs[0]['spec']['template']['spec']
+        c = pod['containers'][0]
+        self.assertNotIn('NETCAP_FIREWALL_ADMIN_TOKEN', {e['name'] for e in c['env']})
+        self.assertTrue(next(v for v in c['volumeMounts'] if v['name'] == 'auth')['readOnly'])
+
     def test_disabled_by_default(self):
         self.assertEqual(render(), [])
 

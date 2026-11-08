@@ -106,7 +106,7 @@ class DeploymentContract(unittest.TestCase):
             args = next(d for d in composed if d['kind'] == 'Deployment')['spec']['template']['spec']['containers'][0]['args']
             self.assertIn('--websocket', args)
             self.assertIn('--grpc', args)
-            managed = ['--set', 'mode=managed', '--set', 'replicaCount=1', '--set', 'adminTokenSecret.name=token', '--set', 'adminTLS.secretName=admin']
+            managed = ['--set', 'legacyAdmin=true', '--set', 'mode=managed', '--set', 'replicaCount=1', '--set', 'adminTokenSecret.name=token', '--set', 'adminTLS.secretName=admin']
             render('-f', str(values), *managed, success=False)
             docs = render('-f', str(values), *managed, '--set', 'routeID=a')
             args = next(d for d in docs if d['kind'] == 'Deployment')['spec']['template']['spec']['containers'][0]['args']
@@ -179,7 +179,7 @@ class DeploymentContract(unittest.TestCase):
     def test_optional_resources_and_secrets(self):
         docs = render('--set', 'ingress.enabled=true', '--set', 'ingress.host=waf.example.test',
                       '--set', 'autoscaling.enabled=true', '--set', 'pdb.enabled=true',
-                      '--set', 'adminTokenSecret.name=admin', '--set', 'tls.secretName=tls',
+                      '--set', 'legacyAdmin=true', '--set', 'adminTokenSecret.name=admin', '--set', 'tls.secretName=tls',
                       '--set', 'adminTLS.secretName=admin-tls',
                       '--set', 'upstreamTLS.caSecretName=origin-ca', '--set', 'upstream=https://backend:8080')
         self.assertTrue({'Ingress', 'HorizontalPodAutoscaler', 'PodDisruptionBudget'} <= {d['kind'] for d in docs})
@@ -189,7 +189,7 @@ class DeploymentContract(unittest.TestCase):
 
     def test_managed_singleton_and_tls(self):
         args = ['--set', 'mode=managed', '--set', 'replicaCount=1',
-                '--set', 'adminTokenSecret.name=token', '--set', 'adminTLS.secretName=admin-tls',
+                '--set', 'legacyAdmin=true', '--set', 'adminTokenSecret.name=token', '--set', 'adminTLS.secretName=admin-tls',
                 '--set', 'adminService.enabled=true']
         docs = render(*args)
         deploy = next(d for d in docs if d['kind'] == 'Deployment')
@@ -210,11 +210,55 @@ class DeploymentContract(unittest.TestCase):
     def test_admin_is_not_exposed_without_tls_and_auth(self):
         render('--set', 'adminService.enabled=true', success=False)
 
+    def test_grant_bootstrap_and_legacy_optin(self):
+        args = ['--set', 'mode=managed', '--set', 'replicaCount=1',
+                '--set', 'adminTLS.secretName=tls', '--set', 'authConfigSecret.name=auth',
+                '--set', 'tokenEnvironment[0].name=READER_TOKEN',
+                '--set', 'tokenEnvironment[0].secretName=roles',
+                '--set', 'tokenEnvironment[0].secretKey=reader']
+        docs = render(*args)
+        pod = next(d for d in docs if d['kind'] == 'Deployment')['spec']['template']['spec']
+        c = pod['containers'][0]
+        self.assertIn('--auth-config=/etc/firewall-auth/auth.json', c['args'])
+        self.assertNotIn('--legacy-admin', c['args'])
+        self.assertTrue(next(v for v in c['volumeMounts'] if v['name'] == 'auth')['readOnly'])
+        self.assertEqual(c['env'][0]['valueFrom']['secretKeyRef'], {'name': 'roles', 'key': 'reader'})
+        for option in ['legacyAdmin=true', 'adminTokenSecret.name=token', 'adminTLS.secretName=', 'authConfigSecret.name=']:
+            render(*args, '--set', option, success=False)
+        render('--set', 'adminTLS.secretName=tls', '--set', 'adminTokenSecret.name=token', success=False)
+
+    def test_api_artifacts_are_mounted_and_digest_bound(self):
+        contract = {'descriptorPath': 'declaration.json', 'descriptorSHA256': 'a' * 64,
+                    'apiValidateResponse': True}
+        route = {'id': 'api', 'priority': 1, 'hosts': ['api.example'], 'methods': ['POST'],
+                 'pathPrefix': '/', 'upstream': 'http://backend:8080',
+                 'policy': {'version': 'netcap-policy/v1', 'id': 'api', 'mode': 'enforce', 'default': 'allow', 'rules': []},
+                 'maxBodyBytes': 1024, 'maxResponseBytes': 1024, 'maxConcurrent': 8,
+                 'apiContract': contract}
+        with tempfile.TemporaryDirectory() as directory:
+            values = pathlib.Path(directory) / 'api.yaml'
+            for routed in [False, True]:
+                data = {'routes': [route]} if routed else {'apiContract': contract}
+                values.write_text(yaml.safe_dump(data))
+                render('-f', str(values), success=False)
+                docs = render('-f', str(values), '--set', 'apiArtifactsConfigMap=reviewed-contracts')
+                config = yaml.safe_load(next(d for d in docs if d['kind'] == 'ConfigMap')['data']['config.yaml'])
+                self.assertEqual(config['bootstrapDir'], '/etc/api-bootstrap')
+                binding = config['routes'][0] if routed else config
+                self.assertEqual({k: binding[k] for k in contract}, contract)
+                self.assertNotIn('apiContract', binding)
+                pod = next(d for d in docs if d['kind'] == 'Deployment')['spec']['template']['spec']
+                self.assertEqual(next(v for v in pod['volumes'] if v['name'] == 'api-artifacts')['configMap']['name'], 'reviewed-contracts')
+                self.assertTrue(next(v for v in pod['containers'][0]['volumeMounts'] if v['name'] == 'api-artifacts')['readOnly'])
+            for change in [{'descriptorPath': '../escape'}, {'descriptorSHA256': ''}, {'descriptorSHA256': 'sha256:' + 'a' * 64}]:
+                values.write_text(yaml.safe_dump({'apiContract': dict(contract, **change)}))
+                render('-f', str(values), '--set', 'apiArtifactsConfigMap=reviewed-contracts', success=False)
+
     def test_file_token_requires_tls_in_schema(self):
         error = render('--set', 'mode=file', '--set', 'adminTokenSecret.name=token', success=False)
         self.assertIn("don't meet the specifications of the schema", error)
         self.assertRegex(error, r'adminTLS[./]secretName')
-        docs = render('--set', 'mode=file', '--set', 'adminTokenSecret.name=token',
+        docs = render('--set', 'legacyAdmin=true', '--set', 'mode=file', '--set', 'adminTokenSecret.name=token',
                       '--set', 'adminTLS.secretName=admin-tls')
         pod = next(d for d in docs if d['kind'] == 'Deployment')['spec']['template']['spec']
         self.assertNotIn('--managed', pod['containers'][0]['args'])

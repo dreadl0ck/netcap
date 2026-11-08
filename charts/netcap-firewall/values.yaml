@@ -52,6 +52,13 @@ upstreamTLS:
   caSecretName: ''
   serverName: ''
   clientSecretName: ''
+legacyAdmin: false
+apiArtifactsConfigMap: ''
+apiContract: {}
+authConfigSecret:
+  name: ""
+  key: auth.json
+tokenEnvironment: []
 adminTokenSecret:
   name: ''
   key: token

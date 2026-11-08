@@ -3,6 +3,7 @@
 set -eu
 test -f /.dockerenv
 export NETCAP_FIREWALL_ADMIN_TOKEN=isolated-lab-token-not-a-real-credential
+export ENFORCER_LEGACY_ADMIN=true # Trusted isolated lab compatibility only.
 export ENFORCER_NAMESPACE=nce_package ENFORCER_INTERFACE=lo
 export ENFORCER_DESTINATION=198.51.100.0/24 ENFORCER_PORT=8080 ENFORCER_HOOK=input
 ip netns add "$ENFORCER_NAMESPACE"

@@ -1,11 +1,16 @@
 name: Application firewall
 on:
   pull_request:
-    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policystate/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/networkfirewall/**', 'internal/transparentfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'internal/runtimeobs/**', 'configs/firewall-operations-*', 'scripts/test-firewall-operations.sh', 'Makefile', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
+    paths: &shipping-paths ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policystate/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/firewallauth/**', 'internal/firewallui/**', 'internal/apipolicy/**', 'internal/appliance/**', 'internal/protocoltest/**', 'internal/networkfirewall/**', 'internal/transparentfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'internal/runtimeobs/**', 'configs/firewall-operations-*', 'scripts/*firewall*', 'Makefile', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall*.yml']
   push:
     branches: [master, main]
-    paths: ['cmd/netcap-firewall/**', 'cmd/firewall/**', 'cmd/capture/**', 'internal/firewallaudit/**', 'internal/waf/**', 'internal/policy/**', 'internal/policystate/**', 'internal/policycontrol/**', 'internal/firewallstate/**', 'internal/firewallfleet/**', 'internal/firewalltransport/**', 'internal/networkfirewall/**', 'internal/transparentfirewall/**', 'internal/responseactions/**', 'internal/gateway/**', 'internal/enforcer/**', 'internal/runtimeobs/**', 'configs/firewall-operations-*', 'scripts/test-firewall-operations.sh', 'Makefile', 'go.mod', 'go.sum', 'LICENSE', 'legal/**', 'docker/firewall/**', 'docker/enforcer/**', 'charts/netcap-firewall*/**', 'charts/netcap-enforcer/**', 'examples/firewall/**', 'docs/APPLICATION_FIREWALL.md', '.github/workflows/firewall.yml']
+    paths: *shipping-paths
   workflow_dispatch:
+    inputs:
+      browser:
+        description: Run Chromium against local role-scoped APIs
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -52,12 +57,28 @@ jobs:
         env:
           CGO_ENABLED: '1'
         run: |
-          packages='./cmd/netcap-firewall ./cmd/firewall ./internal/waf ./internal/policy ./internal/policystate ./internal/policycontrol ./internal/gateway ./internal/enforcer ./internal/networkfirewall ./internal/transparentfirewall ./internal/firewallstate ./internal/firewallfleet ./internal/firewalltransport ./internal/responseactions'
+          packages='./cmd/netcap-firewall ./cmd/firewall ./internal/waf ./internal/policy ./internal/policystate ./internal/policycontrol ./internal/gateway ./internal/enforcer ./internal/networkfirewall ./internal/transparentfirewall ./internal/firewallstate ./internal/firewallfleet ./internal/firewalltransport ./internal/responseactions ./internal/firewallauth ./internal/firewallui ./internal/apipolicy ./internal/appliance ./internal/protocoltest ./internal/runtimeobs'
           go test -race $packages
           go test -race -tags coraza $packages
-          go test -race -tags coraza,http3 ./cmd/netcap-firewall ./cmd/firewall ./internal/firewalltransport ./internal/waf
+          go test -race -tags coraza,http3 ./cmd/netcap-firewall ./cmd/firewall ./internal/firewalltransport ./internal/waf ./examples/firewall/qualification
       - name: Prometheus rules and percentile fixtures
         run: make test-firewall-operations
+      - name: Release tooling and qualification negative-control unit tests
+        run: |
+          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.11 -shellcheck= .github/workflows/firewall.yml .github/workflows/firewall-release.yml
+          python3 -m unittest discover -s scripts -p 'test_firewall_release.py'
+          python3 -m unittest discover -s examples/firewall/qualification -p 'test_*.py'
+      - name: Short real-wire qualification and deliberately leaking negative control
+        run: |
+          go build -tags coraza,http3 -o "$RUNNER_TEMP/firewall-qualification" ./examples/firewall/qualification
+          evidence=$(mktemp -d "$RUNNER_TEMP/qualification.XXXXXX")
+          "$RUNNER_TEMP/firewall-qualification" -quick -duration 5s -rate 40 -rules 0,10 -mixed -output "$evidence"
+          negative=$(mktemp -d "$RUNNER_TEMP/negative-control.XXXXXX")
+          if "$RUNNER_TEMP/firewall-qualification" -quick -duration 2s -rate 40 -rules 0 -inject-leak -output "$negative"; then
+            exit 1
+          else
+            test "$?" -eq 1
+          fi
       - name: Operations metric name and cardinality contract
         env:
           CGO_ENABLED: '1'
@@ -76,6 +97,7 @@ jobs:
           docker compose -f examples/firewall/compose.yaml config --quiet
           bash examples/firewall/smoke.sh
           python3 docker/firewall/check-image.py
+          python3 examples/firewall/roles_smoke.py
       - name: Native Linux nft/netns qualification, no host mounts or test skips
         run: |
           python3 examples/firewall/enforcer_lab.py
@@ -113,6 +135,26 @@ jobs:
           name: firewall-image-${{ matrix.arch }}
           path: ${{ runner.temp }}/firewall-image.tar
           retention-days: 1
+  browser:
+    if: github.event_name == 'workflow_dispatch' && inputs.browser
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GOWORK: 'off'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.0'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+      - name: Install pinned browser driver
+        run: |
+          npm install --prefix "$RUNNER_TEMP/firewall-browser" --no-audit --no-fund @playwright/test@1.51.1
+          "$RUNNER_TEMP/firewall-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Real local API and grant-aware console integration
+        run: FIREWALL_PLAYWRIGHT_MODULE="$RUNNER_TEMP/firewall-browser/node_modules/@playwright/test" go test -count=1 -run '^TestBrowser$' -v ./internal/firewallui
   capture-bridge:
     runs-on: ubuntu-24.04
     timeout-minutes: 20

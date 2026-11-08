@@ -1,4 +1,5 @@
 {{- if .Values.enabled }}
+{{- if and .Values.authConfigSecret.name (ne .Values.service "fleet-controller") }}{{ fail "authConfigSecret is fleet-controller only; state authorities use scoped principal config" }}{{- end }}
 {{- $name := printf "%s-control" .Release.Name | trunc 50 | trimSuffix "-" }}
 {{- $config := required "configSecretName required (config.json with the selected persistence backend)" .Values.configSecretName }}
 {{- $credentials := required "credentialsSecretName required (tokenEnv keys)" .Values.credentialsSecretName }}
@@ -43,6 +44,14 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args: [{{ .Values.service | quote }}, --config, /bootstrap/config.json, --listen, ':9092', --tls-cert, /tls/tls.crt, --tls-key, /tls/tls.key]
           envFrom: [{secretRef: {name: {{ $credentials | quote }}}}]
+          {{- with .Values.tokenEnvironment }}
+          env:
+            {{- range . }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef: {name: {{ .secretName | quote }}, key: {{ .secretKey | quote }}}
+            {{- end }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -51,6 +60,9 @@ spec:
           readinessProbe: {tcpSocket: {port: control}, periodSeconds: 5}
           resources: {{ toYaml .Values.resources | nindent 12 }}
           volumeMounts:
+            {{- if .Values.authConfigSecret.name }}
+            - {name: auth, mountPath: /etc/firewall-auth, readOnly: true}
+            {{- end }}
             - {name: bootstrap, mountPath: /bootstrap, readOnly: true}
             - {name: tls, mountPath: /tls, readOnly: true}
             {{- if eq .Values.persistence.backend "sqlite" }}
@@ -79,6 +91,13 @@ spec:
             - {name: health-ca, mountPath: /probe-ca, readOnly: true}
         {{- end }}
       volumes:
+        {{- if .Values.authConfigSecret.name }}
+        - name: auth
+          secret:
+            secretName: {{ .Values.authConfigSecret.name | quote }}
+            defaultMode: 0440
+            items: [{key: {{ .Values.authConfigSecret.key | quote }}, path: auth.json}]
+        {{- end }}
         {{- if .Values.healthProbe.enabled }}
         - name: health-script
           configMap: {name: {{ $probeConfig }}, defaultMode: 0444}

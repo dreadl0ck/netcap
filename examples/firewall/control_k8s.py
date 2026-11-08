@@ -58,18 +58,28 @@ def qualify(env, context, temp, image):
     ca = (temp / 'control.crt').read_text()
     secret('control-tls', {'tls.crt': ca, 'tls.key': (temp / 'control.key').read_text()})
     scope = {'tenant': 'lab', 'app': 'kubernetes'}
-    tokens = {key: secrets.token_hex(32) for key in ['OPERATOR_TOKEN', 'TARGET0_TOKEN', 'TARGET1_TOKEN', 'STATE_TOKEN']}
+    tokens = {key: secrets.token_hex(32) for key in ['OPERATOR_TOKEN', 'VIEWER_TOKEN', 'FOREIGN_TOKEN', 'TARGET0_TOKEN', 'TARGET1_TOKEN', 'STATE_TOKEN']}
     secret('fleet-tokens', {key: value for key, value in tokens.items() if key != 'STATE_TOKEN'})
     secret('target-tokens', {key: value for key, value in tokens.items() if key.startswith('TARGET')})
     secret('state-tokens', {'STATE_TOKEN': tokens['STATE_TOKEN']})
+    auth_scope = dict(scope, environment='lab', target='*')
+    identities = []
+    for key, actor, grant, actions in [
+            ('OPERATOR_TOKEN', 'operator', auth_scope, ['read', 'author', 'deploy']),
+            ('VIEWER_TOKEN', 'viewer', auth_scope, ['read']),
+            ('FOREIGN_TOKEN', 'foreign', dict(auth_scope, tenant='foreign', app='other'), ['read', 'author', 'deploy']),
+            *[(f'TARGET{i}_TOKEN', f'fixed-{i}', dict(auth_scope, target=f'fixed-{i}'), ['lease']) for i in [0, 1]]]:
+        identities.append({'tokenEnv': key, 'principal': {'id': actor, 'grants': [{'scope': grant, 'actions': actions}]}})
+    secret('fleet-auth', {'auth.json': json.dumps({'scope': dict(scope, environment='lab', target=''), 'static': identities})})
     secret('fleet-bootstrap', {'config.json': json.dumps({'stateDir': '/var/lib/control/state',
-            'identities': [{'id': 'operator', 'tokenEnv': 'OPERATOR_TOKEN', 'scope': scope}],
-            'targets': [{'id': f'fixed-{i}', 'tokenEnv': f'TARGET{i}_TOKEN', 'scope': scope} for i in [0, 1]]})})
+            'authConfig': '/etc/firewall-auth/auth.json',
+            'targets': [{'id': f'fixed-{i}', 'scope': scope} for i in [0, 1]]})})
     secret('state-bootstrap', {'config.json': json.dumps({'stateDir': '/var/lib/control/state',
             'maxKeys': 1000, 'principals': [{'id': 'wafs', 'tokenEnv': 'STATE_TOKEN', 'scope': scope}]})})
     image_values = {'repository': image.rsplit(':', 1)[0], 'tag': image.rsplit(':', 1)[1], 'pullPolicy': 'Never'}
     for release, service in [('fc', 'fleet-controller'), ('sc', 'sharedstate')]:
         helm(release, 'netcap-firewall-control', {'enabled': True, 'service': service, 'image': image_values,
+             'authConfigSecret': {'name': 'fleet-auth' if release == 'fc' else ''},
              'configSecretName': 'fleet-bootstrap' if release == 'fc' else 'state-bootstrap',
              'credentialsSecretName': 'fleet-tokens' if release == 'fc' else 'state-tokens', 'tlsSecretName': 'control-tls'})
     agent_configs = {'ca.crt': ca}
@@ -97,17 +107,35 @@ def qualify(env, context, temp, image):
     try:
         tls = ssl.create_default_context(cafile=str(temp / 'control.crt'))
 
-        def api(op, data=None):
+        def api(op, data=None, token='OPERATOR_TOKEN', expected=200):
+            if data is None and '?' not in op:
+                op += '?tenant=lab&app=kubernetes'
+            elif data is not None:
+                data = dict({'scope': scope}, **data)
             req = urllib.request.Request(f'https://localhost:{port}/api/v1/fleet/{op}',
                                          data=None if data is None else json.dumps(data).encode(),
-                                         headers={'Authorization': 'Bearer ' + tokens['OPERATOR_TOKEN'], 'Content-Type': 'application/json'})
-            with urllib.request.urlopen(req, context=tls, timeout=5) as response:
-                return json.load(response)
+                                         headers={'Authorization': 'Bearer ' + tokens[token], 'Content-Type': 'application/json'})
+            try:
+                response = urllib.request.urlopen(req, context=tls, timeout=5)
+            except urllib.error.HTTPError as error:
+                response = error
+            with response:
+                body = response.read()
+                assert response.status == expected, (op, token, response.status, body)
+                return json.loads(body) if expected == 200 else None
 
         wait(lambda: api('status'))
         policy = {'version': 'netcap-policy/v1', 'id': 'kubernetes-fleet', 'mode': 'enforce', 'default': 'allow',
                   'rules': [{'id': 'block', 'phase': 'request', 'expression': 'Path == "/blocked"', 'action': 'deny', 'status': 403}]}
         revision = api('stage', {'bundle': json.dumps(policy)})['revision']
+        api('status', token='VIEWER_TOKEN')
+        api('stage', {'bundle': json.dumps(policy)}, token='VIEWER_TOKEN', expected=403)
+        api('status?tenant=lab&app=kubernetes', token='FOREIGN_TOKEN', expected=403)
+        for token in ['VIEWER_TOKEN', 'FOREIGN_TOKEN']:
+            api('rollout', {'id': 'forbidden', 'scope': scope,
+                           'revision': revision, 'targets': ['fixed-0'], 'expected': {'fixed-0': 0},
+                           'deadline': (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=10)).isoformat()},
+                token=token, expected=403)
         api('rollout', {'id': 'kubernetes-bootstrap', 'revision': revision, 'targets': ['fixed-0', 'fixed-1'],
                         'expected': {'fixed-0': 0, 'fixed-1': 0},
                         'deadline': (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=10)).isoformat()})
@@ -136,6 +164,7 @@ def qualify(env, context, temp, image):
         traffic(replacement, '/blocked', 403)
         assert set(api('status')['targets']) == {'fixed-0', 'fixed-1'}
         return {'result': 'pass', 'checks': ['two single-owner TLS control charts', 'restricted admission',
+                'viewer cannot stage/rollout; foreign tenant cannot read/rollout lab targets',
                 'fixed-identity StatefulSet plus per-pod cache PVC', 'fleet acknowledgments and deny traffic',
                 'shared global count across pods', 'same enrolled identity and policy after pod replacement']}
     finally:
