@@ -138,6 +138,43 @@ func TestSSLv2CompatibleClientTLSReply(t *testing.T) {
 	}
 }
 
+func TestHelloDoesNotCrossDiscardedPayload(t *testing.T) {
+	h, cw, _ := helloTestWriters(t)
+	for _, hello := range [][]byte{legacyHello(false, false, 2), legacyHello(false, true, 2), upgradeHello()} {
+		for cut := range len(hello) {
+			cw.messages = nil
+			c := *h.conversation
+			marker := fragment(nil, false, 2)
+			marker.DiscardedBytes, marker.DiscardReason = 1, "retention-budget"
+			c.Data = core.DataFragments{fragment(hello[:cut], false, 1), marker, fragment(hello[cut:], false, 3)}
+			(&tlsReader{conversation: &c}).frameConversation()
+			if len(cw.messages) != 0 {
+				t.Fatalf("hello crossed discarded payload at %d", cut)
+			}
+		}
+	}
+}
+
+func TestTLSDiscardIsNotNetworkLoss(t *testing.T) {
+	h, w := recordTestSetup(t)
+	hello := upgradeHello()
+	for cut := range len(hello) {
+		w.records = nil
+		c := *h.conversation
+		marker := fragment(nil, false, 2)
+		marker.DiscardedBytes, marker.DiscardReason = 123, "retention-budget"
+		c.Data = core.DataFragments{fragment(hello[:cut], false, 1), marker, fragment(hello[cut:], false, 3)}
+		(&tlsReader{conversation: &c}).frameConversation()
+		if len(w.records) != 1 {
+			t.Fatalf("cut=%d: %+v", cut, w.records)
+		}
+		r := w.records[0]
+		if r.Status != "discarded" || !r.Incomplete || r.Loss || r.SkippedBytes != 0 {
+			t.Fatalf("cut=%d: local discard misreported as network loss: %+v", cut, r)
+		}
+	}
+}
+
 func FuzzSSLv2Framing(f *testing.F) {
 	f.Add(legacyHello(false, false, 2), uint16(1))
 	f.Add(legacyHello(true, true, 2), uint16(5))
