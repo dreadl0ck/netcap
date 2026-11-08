@@ -45,7 +45,7 @@ func TestNegotiatedTelephoneEvents(t *testing.T) {
 				if reverse {
 					src, dst, sp, dp = dst, src, dp, sp
 				}
-				_, codec, ok := a.Lookup(src, dst, sp, dp, 110, 2)
+				_, codec, ok := a.Lookup("", src, dst, sp, dp, 110, 2)
 				if ok != tc.want || ok && (!codec.AllowsEvent(5) || codec.AllowsEvent(4) || codec.AllowsEvent(6)) {
 					t.Fatalf("association=%v codec=%+v", ok, codec)
 				}
@@ -63,7 +63,7 @@ func TestSameCallIDDifferentDialogsAreAmbiguous(t *testing.T) {
 			a.Observe(s)
 		}
 	}
-	if _, _, ok := a.Lookup("192.0.2.1", "192.0.2.2", 4000, 5000, 110, 2); ok {
+	if _, _, ok := a.Lookup("", "192.0.2.1", "192.0.2.2", 4000, 5000, 110, 2); ok {
 		t.Fatal("overlapping dialogs with the same Call-ID were guessed")
 	}
 }
@@ -78,7 +78,7 @@ func TestMultipleTelephoneEventPayloadMaps(t *testing.T) {
 	a.Observe(offer)
 	a.Observe(answer)
 	for range 100 {
-		_, codec, ok := a.Lookup("192.0.2.1", "192.0.2.2", 4000, 5000, 112, 3)
+		_, codec, ok := a.Lookup("", "192.0.2.1", "192.0.2.2", 4000, 5000, 112, 3)
 		if !ok || codec.Events != "5,6" {
 			t.Fatalf("nondeterministic peer payload map: %+v, %v", codec, ok)
 		}

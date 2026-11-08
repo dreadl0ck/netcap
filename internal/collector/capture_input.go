@@ -28,7 +28,6 @@ type CaptureInputReport struct {
 	ReadErrors        int64               `json:"readErrors"`
 	LinkErrors        int64               `json:"linkErrors"`
 	DecodeErrors      int64               `json:"decodeErrors"`
-	LinkErrors        int64               `json:"linkErrors"`
 	Unsupported       int64               `json:"unsupportedPackets"`
 	SnaplenOverrides  int64               `json:"snaplenOverrides"`
 	SnapshotTruncated int64               `json:"snapshotTruncatedPackets"`
@@ -243,7 +242,7 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 	}
 	resultErr = errors.Join(report.result(), ctx.Err())
 	c.captureInputStatus = report.Status
-	c.captureComplete = report.ReachedEOF && resultErr == nil
+	c.captureComplete = report.ReachedEOF && report.Status == "complete" && resultErr == nil
 	data, err := json.MarshalIndent(report, "", "  ")
 	if err == nil {
 		err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "capture-input.json"), append(data, '\n'), 0600)
