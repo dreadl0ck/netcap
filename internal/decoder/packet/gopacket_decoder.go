@@ -27,6 +27,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/packetview"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
@@ -38,6 +40,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/internal/netio"
+	"github.com/dreadl0ck/netcap/internal/sipaudit"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -102,6 +105,7 @@ func (dec *GoPacketDecoder) NumRecords() int64 {
 func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*GoPacketDecoder, err error) {
 	decoders = map[gopacket.LayerType][]*GoPacketDecoder{}
 	dnsTx.Reset()
+	sipaudit.Media.Reset()
 
 	active, err := decoderutils.SelectDecoders(defaultGoPacketDecoders, c.IncludeDecoders, c.ExcludeDecoders, func(d *GoPacketDecoder) string {
 		return d.Layer.String()
@@ -211,7 +215,7 @@ func newGoPacketDecoder(nt types.Type, lt gopacket.LayerType, description string
 // this calls the handler function of the decoder
 // and writes the serialized protobuf into the data pipe.
 func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, l gopacket.Layer) error {
-	if dec.Type == types.Type_NC_DNS && p.Layer(layers.LayerTypeTCP) != nil {
+	if (dec.Type == types.Type_NC_DNS || dec.Type == types.Type_NC_SIP) && p.Layer(layers.LayerTypeTCP) != nil {
 		return nil // The stream producer owns TCP framing and emits each DNS message once.
 	}
 	record := dec.Handler(l, p.Metadata().Timestamp.UnixNano())
@@ -226,13 +230,16 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 				log.Fatal("type does not implement the types.AuditRecord interface")
 			}
 			if d, ok := record.(*types.DNS); ok {
-				scope := fmt.Sprintf("%d", p.Metadata().CaptureInfo.InterfaceIndex)
-				for _, layer := range p.Layers() {
-					if vlan, ok := layer.(*layers.Dot1Q); ok {
-						scope += fmt.Sprintf("/%d", vlan.VLANIdentifier)
-					}
-				}
-				dnsTx.ObserveScoped(d, scope)
+				dnsTx.ObserveScoped(d, packetview.Scope(p))
+			}
+		}
+
+		if s, ok := record.(*types.SIP); ok {
+			s.NetworkScope = packetview.Scope(p)
+			s.Transport = "UDP"
+			sipaudit.Analyze(s)
+			if !conf.IncludePayloads {
+				s.Body = nil
 			}
 		}
 

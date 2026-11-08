@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/types"
@@ -50,6 +51,7 @@ func (f *ftpReader) New(c *core.ConversationInfo) core.StreamDecoderInterface {
 }
 
 func (f *ftpReader) Decode() {
+	secret.HarvestFTPConversation(f.conversation)
 	streamutils.DecodeConversationAt(f.conversation.Ident, f.conversation.Data, f.readClient, f.readServer)
 	f.finishTransfer()
 }

@@ -69,6 +69,7 @@ var fieldsIMAP = []string{
 	fieldFlags,
 	fieldSTARTTLSRequested,
 	fieldSTARTTLSSuccess,
+	fieldNotes,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -102,6 +103,7 @@ func (m *IMAP) CSVRecord() []string {
 		join(m.Flags...),
 		strconv.FormatBool(m.STARTTLSRequested),
 		strconv.FormatBool(m.STARTTLSSuccess),
+		m.Notes,
 	})
 }
 
@@ -177,6 +179,7 @@ func (m *IMAP) Encode() []string {
 		imapEncoder.String(fieldFlags, join(m.Flags...)),
 		imapEncoder.Bool(m.STARTTLSRequested),
 		imapEncoder.Bool(m.STARTTLSSuccess),
+		imapEncoder.String(fieldNotes, m.Notes),
 	})
 }
 

@@ -8,6 +8,7 @@
     "DstIP": "127.0.0.7",
     "DstPort": "3333",
     "MITRE": "T1496",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "protocol.stratum",
     "RecordType": "NetworkDetection",
     "Severity": "medium",
@@ -15,6 +16,21 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"protocol.stratum\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363756025256000,\"lastSeen\":1791363756026515000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"mining.subscribe\"],\"limitations\":[\"Mining protocol activity does not establish unauthorized mining\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"protocol.stratum\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363756025256000,\"lastSeen\":1791363756026515000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"mining.subscribe\"],\"limitations\":[\"Mining protocol activity does not establish unauthorized mining\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "4f3f632d5431b35b3d63dfeb39f18cfdb86050d90926556cd48b1822833f0fb8",
+    "Count": 15,
+    "FirstSeen": 1791363756026515000,
+    "LastSeen": 1791363756073165000,
+    "Examples": [
+      "{\"at\":1791363756026515000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"57393\",\"dstIP\":\"127.0.0.7\",\"dstPort\":\"3333\",\"observed\":1,\"firstSeen\":1791363756025256000,\"samples\":[\"mining.subscribe\"]}",
+      "{\"at\":1791363756028743000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"41017\",\"dstIP\":\"127.0.0.7\",\"dstPort\":\"3333\",\"observed\":1,\"firstSeen\":1791363756028680000,\"samples\":[\"mining.subscribe\"]}",
+      "{\"at\":1791363756032692000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"38259\",\"dstIP\":\"127.0.0.7\",\"dstPort\":\"3333\",\"observed\":1,\"firstSeen\":1791363756032632000,\"samples\":[\"mining.subscribe\"]}",
+      "{\"at\":1791363756036732000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"33357\",\"dstIP\":\"127.0.0.7\",\"dstPort\":\"3333\",\"observed\":1,\"firstSeen\":1791363756036636000,\"samples\":[\"mining.subscribe\"]}",
+      "{\"at\":1791363756039649000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"39543\",\"dstIP\":\"127.0.0.7\",\"dstPort\":\"3333\",\"observed\":1,\"firstSeen\":1791363756039587000,\"samples\":[\"mining.subscribe\"]}",
+      "{\"at\":1791363756042555000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55295\",\"dstIP\":\"127.0.0.7\",\"dstPort\":\"3333\",\"observed\":1,\"firstSeen\":1791363756042434000,\"samples\":[\"mining.subscribe\"]}",
+      "{\"at\":1791363756044733000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"49995\",\"dstIP\":\"127.0.0.7\",\"dstPort\":\"3333\",\"observed\":1,\"firstSeen\":1791363756044683000,\"samples\":[\"mining.subscribe\"]}",
+      "{\"at\":1791363756073165000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"34551\",\"dstIP\":\"127.0.0.7\",\"dstPort\":\"3333\",\"observed\":1,\"firstSeen\":1791363756073009000,\"samples\":[\"mining.subscribe\"]}"
+    ]
   }
 ]

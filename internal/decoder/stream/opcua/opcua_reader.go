@@ -154,6 +154,7 @@ func (o *opcuaReader) Decode() {
 		msg, consumed := o.parseOPCUAMessage(frameData[offset:])
 		if msg != nil {
 			msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = o.conversation.EndpointsAt(index, offset)
+			msg.CommunityID = o.conversation.CommunityID
 			msg.Timestamp, _ = index.At(offset)
 
 			err := Decoder.Writer.Write(msg)

@@ -117,20 +117,22 @@ jobs:
           go version
 
           # Database archive tests run pack-dbs.sh and its Python metadata validator.
-          apk add --no-cache bash python3
+          apk add --no-cache bash python3 tshark
 
           # Regenerate types/netcap.pb.go so it provably matches
           # types/netcap.proto. The file is tracked again since 3dbcc508
           # (it ships in the release archives), so this no longer rescues a
           # clean checkout -- it catches a proto edit committed without the
-          # regenerated output. protoc and the gogofaster plugin ship in the
-          # builder image for this.
+          # regenerated output. The script pins the plugin's source/toolchain;
+          # the builder supplies protoc.
           #
           # --proto_path=types is required, not decoration: without it the
           # output lands in types/proto/ and the descriptor registers as
           # "types/netcap.proto" instead of "netcap.proto".
-          protoc --proto_path=types --gogofaster_out=types/. types/netcap.proto
+          cp types/netcap.pb.go /tmp/netcap.pb.go.expected
+          sh scripts/gen-proto.sh
           test -s types/netcap.pb.go
+          cmp /tmp/netcap.pb.go.expected types/netcap.pb.go
 
           go build ./...
           go vet ./...
@@ -158,6 +160,16 @@ jobs:
           GOWORK=off go test -tags=nodpi,noyara,nomagika ./cmd/capture -run '^TestCPUProfile' -count=1
           GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestOfflineRulesCLI$' -count=1
           GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestDHCPOption55CLI$' -count=1
+          GOWORK=off go test -tags=e2e,nodpi,nomagika ./tests/e2e -run '^TestArtifactAnalysisCLI$' -count=1
+          GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestAuditSemanticsCLI$' -count=1
+          GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests/e2e -run '^TestTCPRetentionBudgetCLI$' -count=1 -timeout=8m
+          GOWORK=off go test -tags=e2e,nodpi,noyara,nomagika ./tests -run '^TestNewDecoders_UltimatePCAP$' -count=1 -timeout=8m
+          GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/decoder/stream/tls -run '^$' -fuzz '^FuzzCertificateHandshakeSemantics$' -fuzztime=5s -parallel=2
+          GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/decoder/stream/rdp -run '^$' -fuzz '^FuzzNegotiationEvidence$' -fuzztime=5s -parallel=2
+          NETCAP_TLS_CORPUS=1 GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/collector -run '^TestTLSRound2Corpus$' -count=1 -timeout=4m
+          NETCAP_SMB_CORPUS=1 GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/decoder/stream/dcerpc -run '^TestSMBPinnedCorpus$' -count=1 -timeout=4m
+          GOWORK=off go test -tags=nodpi,noyara,nomagika ./types -run '^$' -fuzz '^FuzzDHCPOptionRoundTrip$' -fuzztime=5s -parallel=2
+          GOWORK=off go test -tags=nodpi,noyara,nomagika ./internal/packetview -run '^$' -fuzz '^FuzzPacketPipeline$' -fuzztime=5s -parallel=2
           SCRIPT
 
       - name: Verify distributable license bundle

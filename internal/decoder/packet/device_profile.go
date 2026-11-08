@@ -51,8 +51,25 @@ type streamKey struct {
 // bufferedPacket holds a copy of packet data for deferred DPI analysis
 // We store raw bytes to avoid gopacket buffer reuse issues
 type bufferedPacket struct {
-	data      []byte
-	timestamp int64
+	data []byte
+	base gopacket.LayerType
+	info gopacket.CaptureInfo
+}
+
+func bufferDPIPacket(p gopacket.Packet) bufferedPacket {
+	base := gopacket.LayerTypePayload
+	if ls := p.Layers(); len(ls) > 0 {
+		base = ls[0].LayerType()
+	}
+	ci := p.Metadata().CaptureInfo
+	ci.AncillaryData = append([]any(nil), ci.AncillaryData...)
+	return bufferedPacket{data: copyPacketData(p), base: base, info: ci}
+}
+
+func (p bufferedPacket) packet() gopacket.Packet {
+	decoded := gopacket.NewPacket(p.data, p.base, gopacket.Default)
+	decoded.Metadata().CaptureInfo = p.info
+	return decoded
 }
 
 // streamBuffer holds buffered packets for a stream
@@ -298,10 +315,7 @@ func newDeviceProfile(i *decoderutils.PacketInfo) *deviceProfile {
 	key := getStreamKey(i)
 	if dpi.IsEnabled() {
 		streamBuffers[key] = &streamBuffer{
-			packets: []bufferedPacket{{
-				data:      copyPacketData(i.Packet),
-				timestamp: i.Timestamp,
-			}},
+			packets: []bufferedPacket{bufferDPIPacket(i.Packet)},
 		}
 	}
 
@@ -356,19 +370,13 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 	if buf, exists := p.streamBuffers[key]; exists {
 		// Stream already exists, add packet if under limit
 		if len(buf.packets) < maxPacketsPerStream {
-			buf.packets = append(buf.packets, bufferedPacket{
-				data:      copyPacketData(i.Packet),
-				timestamp: i.Timestamp,
-			})
+			buf.packets = append(buf.packets, bufferDPIPacket(i.Packet))
 		}
 	} else {
 		// New stream, create buffer only if under stream limit
 		if len(p.streamBuffers) < maxStreamsPerProfile {
 			p.streamBuffers[key] = &streamBuffer{
-				packets: []bufferedPacket{{
-					data:      copyPacketData(i.Packet),
-					timestamp: i.Timestamp,
-				}},
+				packets: []bufferedPacket{bufferDPIPacket(i.Packet)},
 			}
 		}
 	}
@@ -639,9 +647,7 @@ func processDeferredDPI(p *deviceProfile) {
 			if len(pkt.data) == 0 {
 				continue
 			}
-			// Decode the packet from raw bytes for DPI analysis
-			// Use the detected base layer type from the pcap file
-			packet := gopacket.NewPacket(pkt.data, baseLayerType, gopacket.Default)
+			packet := pkt.packet()
 			dpiResults := dpi.GetProtocols(packet)
 			for protocol := range dpiResults {
 				p.applications[protocol] = struct{}{}
@@ -667,9 +673,7 @@ func processDeferredDPIWithoutClear(p *deviceProfile) {
 			if len(pkt.data) == 0 {
 				continue
 			}
-			// Decode the packet from raw bytes for DPI analysis
-			// Use the detected base layer type from the pcap file
-			packet := gopacket.NewPacket(pkt.data, baseLayerType, gopacket.Default)
+			packet := pkt.packet()
 			dpiResults := dpi.GetProtocols(packet)
 			for protocol := range dpiResults {
 				p.applications[protocol] = struct{}{}

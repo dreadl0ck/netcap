@@ -8,6 +8,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -15,7 +16,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363797890791000,\"lastSeen\":1791363797890791000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363797890791000,\"lastSeen\":1791363797890791000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "6a94def8a12ba3d5d023bcb242e67b21d230b89931957c65261139c06b9af05a",
+    "Count": 2,
+    "FirstSeen": 1791363797890791000,
+    "LastSeen": 1791363797890833000,
+    "Examples": [
+      "{\"at\":1791363797890791000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun\",\"observed\":1,\"firstSeen\":1791363797890791000,\"samples\":[\"dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun\"]}",
+      "{\"at\":1791363797890833000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun\",\"observed\":1,\"firstSeen\":1791363797890833000,\"samples\":[\"dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun\"]}"
+    ]
   },
   {
     "Timestamp": 1791363798134017000,
@@ -26,6 +36,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -33,7 +44,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363798134017000,\"lastSeen\":1791363798134017000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363798134017000,\"lastSeen\":1791363798134017000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "a47cf399f160b6145186bd2dbf1f10a9b792233f60333c13b66a4f43cdb7d40b",
+    "Count": 2,
+    "FirstSeen": 1791363798134017000,
+    "LastSeen": 1791363798134078000,
+    "Examples": [
+      "{\"at\":1791363798134017000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun\",\"observed\":1,\"firstSeen\":1791363798134017000,\"samples\":[\"hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun\"]}",
+      "{\"at\":1791363798134078000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun\",\"observed\":1,\"firstSeen\":1791363798134078000,\"samples\":[\"hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun\"]}"
+    ]
   },
   {
     "Timestamp": 1791363798475729000,
@@ -44,6 +64,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "nlktauervlycgnkxtoxwyngffiphquxir.oast.fun",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -51,7 +72,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363798475729000,\"lastSeen\":1791363798475729000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"nlktauervlycgnkxtoxwyngffiphquxir.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363798475729000,\"lastSeen\":1791363798475729000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"nlktauervlycgnkxtoxwyngffiphquxir.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "0116af1dfc20d90e8c9919577b2c8d8c687a18c12bdb026a9484a31cad4d23d9",
+    "Count": 2,
+    "FirstSeen": 1791363798475729000,
+    "LastSeen": 1791363798475826000,
+    "Examples": [
+      "{\"at\":1791363798475729000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"nlktauervlycgnkxtoxwyngffiphquxir.oast.fun\",\"observed\":1,\"firstSeen\":1791363798475729000,\"samples\":[\"nlktauervlycgnkxtoxwyngffiphquxir.oast.fun\"]}",
+      "{\"at\":1791363798475826000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"nlktauervlycgnkxtoxwyngffiphquxir.oast.fun\",\"observed\":1,\"firstSeen\":1791363798475826000,\"samples\":[\"nlktauervlycgnkxtoxwyngffiphquxir.oast.fun\"]}"
+    ]
   },
   {
     "Timestamp": 1791363798585641000,
@@ -62,6 +92,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "rnamjdyeujaiqvriltlfndaunipetffux.oast.fun",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -69,7 +100,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363798585641000,\"lastSeen\":1791363798585641000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"rnamjdyeujaiqvriltlfndaunipetffux.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363798585641000,\"lastSeen\":1791363798585641000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"rnamjdyeujaiqvriltlfndaunipetffux.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "7d9d78e5b498c174a3e60203fdb315027c8fd6934e5a514208a146e8cd7a8760",
+    "Count": 2,
+    "FirstSeen": 1791363798585641000,
+    "LastSeen": 1791363798585680000,
+    "Examples": [
+      "{\"at\":1791363798585641000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rnamjdyeujaiqvriltlfndaunipetffux.oast.fun\",\"observed\":1,\"firstSeen\":1791363798585641000,\"samples\":[\"rnamjdyeujaiqvriltlfndaunipetffux.oast.fun\"]}",
+      "{\"at\":1791363798585680000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rnamjdyeujaiqvriltlfndaunipetffux.oast.fun\",\"observed\":1,\"firstSeen\":1791363798585680000,\"samples\":[\"rnamjdyeujaiqvriltlfndaunipetffux.oast.fun\"]}"
+    ]
   },
   {
     "Timestamp": 1791363798947123000,
@@ -80,6 +120,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -87,7 +128,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363798947123000,\"lastSeen\":1791363798947123000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363798947123000,\"lastSeen\":1791363798947123000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "e15bf5ea9e9ecddea4c3ad4038fdb3a14a75aa89009c94c26e1e6e006071d618",
+    "Count": 2,
+    "FirstSeen": 1791363798947123000,
+    "LastSeen": 1791363798947246000,
+    "Examples": [
+      "{\"at\":1791363798947123000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun\",\"observed\":1,\"firstSeen\":1791363798947123000,\"samples\":[\"hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun\"]}",
+      "{\"at\":1791363798947246000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun\",\"observed\":1,\"firstSeen\":1791363798947246000,\"samples\":[\"hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun\"]}"
+    ]
   },
   {
     "Timestamp": 1791363799317780000,
@@ -98,6 +148,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -105,7 +156,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363799317780000,\"lastSeen\":1791363799317780000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363799317780000,\"lastSeen\":1791363799317780000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "1f751786855791d2bd08a1ab352fe4977f84d8d1d6bda34ee940964ed646b215",
+    "Count": 2,
+    "FirstSeen": 1791363799317780000,
+    "LastSeen": 1791363799317814000,
+    "Examples": [
+      "{\"at\":1791363799317780000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun\",\"observed\":1,\"firstSeen\":1791363799317780000,\"samples\":[\"mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun\"]}",
+      "{\"at\":1791363799317814000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun\",\"observed\":1,\"firstSeen\":1791363799317814000,\"samples\":[\"mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun\"]}"
+    ]
   },
   {
     "Timestamp": 1791363799768014000,
@@ -116,6 +176,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -123,7 +184,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363799768014000,\"lastSeen\":1791363799768014000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363799768014000,\"lastSeen\":1791363799768014000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "d7c19fee8f25dc6026d0f6b88ee1a9602781ba6c764dd9641be84f035a2ce43e",
+    "Count": 2,
+    "FirstSeen": 1791363799768014000,
+    "LastSeen": 1791363799768061000,
+    "Examples": [
+      "{\"at\":1791363799768014000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun\",\"observed\":1,\"firstSeen\":1791363799768014000,\"samples\":[\"npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun\"]}",
+      "{\"at\":1791363799768061000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun\",\"observed\":1,\"firstSeen\":1791363799768061000,\"samples\":[\"npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun\"]}"
+    ]
   },
   {
     "Timestamp": 1791363799965485000,
@@ -134,6 +204,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -141,7 +212,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363799965485000,\"lastSeen\":1791363799965485000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363799965485000,\"lastSeen\":1791363799965485000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "b4fecdec3d93badd60cb2133c29fd64c7b4947421bd4360450a3cc47791f2c08",
+    "Count": 2,
+    "FirstSeen": 1791363799965485000,
+    "LastSeen": 1791363799965546000,
+    "Examples": [
+      "{\"at\":1791363799965485000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun\",\"observed\":1,\"firstSeen\":1791363799965485000,\"samples\":[\"pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun\"]}",
+      "{\"at\":1791363799965546000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun\",\"observed\":1,\"firstSeen\":1791363799965546000,\"samples\":[\"pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun\"]}"
+    ]
   },
   {
     "Timestamp": 1791363800451884000,
@@ -152,6 +232,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "jtvrazovsrluopgafukmiprxncamcenlm.oast.fun",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -159,7 +240,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363800451884000,\"lastSeen\":1791363800451884000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"jtvrazovsrluopgafukmiprxncamcenlm.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363800451884000,\"lastSeen\":1791363800451884000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"jtvrazovsrluopgafukmiprxncamcenlm.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "c13d3409d3ba9b144c6db9cbae2b4bc7c58e65cff3d5db8af902dd1c2f30f27d",
+    "Count": 2,
+    "FirstSeen": 1791363800451884000,
+    "LastSeen": 1791363800451942000,
+    "Examples": [
+      "{\"at\":1791363800451884000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jtvrazovsrluopgafukmiprxncamcenlm.oast.fun\",\"observed\":1,\"firstSeen\":1791363800451884000,\"samples\":[\"jtvrazovsrluopgafukmiprxncamcenlm.oast.fun\"]}",
+      "{\"at\":1791363800451942000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jtvrazovsrluopgafukmiprxncamcenlm.oast.fun\",\"observed\":1,\"firstSeen\":1791363800451942000,\"samples\":[\"jtvrazovsrluopgafukmiprxncamcenlm.oast.fun\"]}"
+    ]
   },
   {
     "Timestamp": 1791363800625535000,
@@ -170,6 +260,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "qfredejuroevckrielyyohawhqijpdjcn.oast.fun",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -177,7 +268,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363800625535000,\"lastSeen\":1791363800625535000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"qfredejuroevckrielyyohawhqijpdjcn.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363800625535000,\"lastSeen\":1791363800625535000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"qfredejuroevckrielyyohawhqijpdjcn.oast.fun\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "b873b69a195e81057d35b48d373cd30699c510c561ff415b613c5dd189619367",
+    "Count": 2,
+    "FirstSeen": 1791363800625535000,
+    "LastSeen": 1791363800625720000,
+    "Examples": [
+      "{\"at\":1791363800625535000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qfredejuroevckrielyyohawhqijpdjcn.oast.fun\",\"observed\":1,\"firstSeen\":1791363800625535000,\"samples\":[\"qfredejuroevckrielyyohawhqijpdjcn.oast.fun\"]}",
+      "{\"at\":1791363800625720000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qfredejuroevckrielyyohawhqijpdjcn.oast.fun\",\"observed\":1,\"firstSeen\":1791363800625720000,\"samples\":[\"qfredejuroevckrielyyohawhqijpdjcn.oast.fun\"]}"
+    ]
   },
   {
     "Timestamp": 1791363801006666000,
@@ -188,6 +288,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -195,7 +296,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363801006666000,\"lastSeen\":1791363801006666000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363801006666000,\"lastSeen\":1791363801006666000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "e2827b283e8683f556d14a80489bfc89336cb99b6874c2d6c53541ceb14b77c2",
+    "Count": 2,
+    "FirstSeen": 1791363801006666000,
+    "LastSeen": 1791363801006698000,
+    "Examples": [
+      "{\"at\":1791363801006666000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live\",\"observed\":1,\"firstSeen\":1791363801006666000,\"samples\":[\"yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live\"]}",
+      "{\"at\":1791363801006698000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live\",\"observed\":1,\"firstSeen\":1791363801006698000,\"samples\":[\"yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live\"]}"
+    ]
   },
   {
     "Timestamp": 1791363801284881000,
@@ -206,6 +316,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -213,7 +324,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363801284881000,\"lastSeen\":1791363801284881000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363801284881000,\"lastSeen\":1791363801284881000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "c49eb85dbca16b0571e663b08511ef81a8cac723cef1a9ad4547ba690058e177",
+    "Count": 2,
+    "FirstSeen": 1791363801284881000,
+    "LastSeen": 1791363801284926000,
+    "Examples": [
+      "{\"at\":1791363801284881000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live\",\"observed\":1,\"firstSeen\":1791363801284881000,\"samples\":[\"ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live\"]}",
+      "{\"at\":1791363801284926000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live\",\"observed\":1,\"firstSeen\":1791363801284926000,\"samples\":[\"ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live\"]}"
+    ]
   },
   {
     "Timestamp": 1791363801780069000,
@@ -224,6 +344,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -231,7 +352,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363801780069000,\"lastSeen\":1791363801780069000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363801780069000,\"lastSeen\":1791363801780069000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "8192cf5b5337051b8c35d13fa4b46c24c76527e0b9c6df83f32d3f7e7463d291",
+    "Count": 2,
+    "FirstSeen": 1791363801780069000,
+    "LastSeen": 1791363801780110000,
+    "Examples": [
+      "{\"at\":1791363801780069000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live\",\"observed\":1,\"firstSeen\":1791363801780069000,\"samples\":[\"xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live\"]}",
+      "{\"at\":1791363801780110000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live\",\"observed\":1,\"firstSeen\":1791363801780110000,\"samples\":[\"xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live\"]}"
+    ]
   },
   {
     "Timestamp": 1791363802067496000,
@@ -242,6 +372,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -249,7 +380,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363802067496000,\"lastSeen\":1791363802067496000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363802067496000,\"lastSeen\":1791363802067496000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "83d01f010e06fdc8b40e6481e5bcb85c5706e3a217a783134197d7f80b03504e",
+    "Count": 2,
+    "FirstSeen": 1791363802067496000,
+    "LastSeen": 1791363802067527000,
+    "Examples": [
+      "{\"at\":1791363802067496000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live\",\"observed\":1,\"firstSeen\":1791363802067496000,\"samples\":[\"qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live\"]}",
+      "{\"at\":1791363802067527000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live\",\"observed\":1,\"firstSeen\":1791363802067527000,\"samples\":[\"qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live\"]}"
+    ]
   },
   {
     "Timestamp": 1791363802359618000,
@@ -260,6 +400,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -267,7 +408,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363802359618000,\"lastSeen\":1791363802359618000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363802359618000,\"lastSeen\":1791363802359618000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "d2092e430c6296fa48cfaeb47892b5a39723bf6e55a74f0ae3ee530df240eef3",
+    "Count": 2,
+    "FirstSeen": 1791363802359618000,
+    "LastSeen": 1791363802359618000,
+    "Examples": [
+      "{\"at\":1791363802359618000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live\",\"observed\":1,\"firstSeen\":1791363802359618000,\"samples\":[\"pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live\"]}",
+      "{\"at\":1791363802359618000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live\",\"observed\":1,\"firstSeen\":1791363802359618000,\"samples\":[\"pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live\"]}"
+    ]
   },
   {
     "Timestamp": 1791363802850715000,
@@ -278,6 +428,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "roemjegugridrjzrdxxitozckgbjjfkyn.oast.live",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -285,7 +436,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363802850715000,\"lastSeen\":1791363802850715000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"roemjegugridrjzrdxxitozckgbjjfkyn.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363802850715000,\"lastSeen\":1791363802850715000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"roemjegugridrjzrdxxitozckgbjjfkyn.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "77da42e056c095c0d959ace16f9e21b6aaea2b1c1962e5052372fb42778601c5",
+    "Count": 2,
+    "FirstSeen": 1791363802850715000,
+    "LastSeen": 1791363802850774000,
+    "Examples": [
+      "{\"at\":1791363802850715000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"roemjegugridrjzrdxxitozckgbjjfkyn.oast.live\",\"observed\":1,\"firstSeen\":1791363802850715000,\"samples\":[\"roemjegugridrjzrdxxitozckgbjjfkyn.oast.live\"]}",
+      "{\"at\":1791363802850774000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"roemjegugridrjzrdxxitozckgbjjfkyn.oast.live\",\"observed\":1,\"firstSeen\":1791363802850774000,\"samples\":[\"roemjegugridrjzrdxxitozckgbjjfkyn.oast.live\"]}"
+    ]
   },
   {
     "Timestamp": 1791363803121048000,
@@ -296,6 +456,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -303,7 +464,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363803121048000,\"lastSeen\":1791363803121048000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363803121048000,\"lastSeen\":1791363803121048000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "eed2d19329bcae1a6021d7c329d758bfeae7ec502a1f300e8060d2599f14124e",
+    "Count": 2,
+    "FirstSeen": 1791363803121048000,
+    "LastSeen": 1791363803121088000,
+    "Examples": [
+      "{\"at\":1791363803121048000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live\",\"observed\":1,\"firstSeen\":1791363803121048000,\"samples\":[\"hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live\"]}",
+      "{\"at\":1791363803121088000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live\",\"observed\":1,\"firstSeen\":1791363803121088000,\"samples\":[\"hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live\"]}"
+    ]
   },
   {
     "Timestamp": 1791363803262423000,
@@ -314,6 +484,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -321,7 +492,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363803262423000,\"lastSeen\":1791363803262423000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363803262423000,\"lastSeen\":1791363803262423000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "11aa2065f3cf8fbb7961c8a781e8e7127f3a211f2e0f93081b708ee7b7138aa6",
+    "Count": 2,
+    "FirstSeen": 1791363803262423000,
+    "LastSeen": 1791363803262460000,
+    "Examples": [
+      "{\"at\":1791363803262423000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live\",\"observed\":1,\"firstSeen\":1791363803262423000,\"samples\":[\"kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live\"]}",
+      "{\"at\":1791363803262460000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live\",\"observed\":1,\"firstSeen\":1791363803262460000,\"samples\":[\"kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live\"]}"
+    ]
   },
   {
     "Timestamp": 1791363803666121000,
@@ -332,6 +512,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -339,7 +520,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363803666121000,\"lastSeen\":1791363803666121000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363803666121000,\"lastSeen\":1791363803666121000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "692585441ec9a8a7fa31fcf4ecac20e4b1efed4e3922fb171a53e2a9ea1dd5fb",
+    "Count": 2,
+    "FirstSeen": 1791363803666121000,
+    "LastSeen": 1791363803666166000,
+    "Examples": [
+      "{\"at\":1791363803666121000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live\",\"observed\":1,\"firstSeen\":1791363803666121000,\"samples\":[\"gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live\"]}",
+      "{\"at\":1791363803666166000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live\",\"observed\":1,\"firstSeen\":1791363803666166000,\"samples\":[\"gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live\"]}"
+    ]
   },
   {
     "Timestamp": 1791363804162530000,
@@ -350,6 +540,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "scvxlojjplymrukripmhttcgubivthphm.oast.me",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -357,7 +548,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363804162530000,\"lastSeen\":1791363804162530000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"scvxlojjplymrukripmhttcgubivthphm.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363804162530000,\"lastSeen\":1791363804162530000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"scvxlojjplymrukripmhttcgubivthphm.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "d8a97d937de39c256e2e35bb38d82055887258d65b9080cccf10db183ce5fbe3",
+    "Count": 2,
+    "FirstSeen": 1791363804162530000,
+    "LastSeen": 1791363804162572000,
+    "Examples": [
+      "{\"at\":1791363804162530000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"scvxlojjplymrukripmhttcgubivthphm.oast.me\",\"observed\":1,\"firstSeen\":1791363804162530000,\"samples\":[\"scvxlojjplymrukripmhttcgubivthphm.oast.me\"]}",
+      "{\"at\":1791363804162572000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"scvxlojjplymrukripmhttcgubivthphm.oast.me\",\"observed\":1,\"firstSeen\":1791363804162572000,\"samples\":[\"scvxlojjplymrukripmhttcgubivthphm.oast.me\"]}"
+    ]
   },
   {
     "Timestamp": 1791363804646432000,
@@ -368,6 +568,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -375,7 +576,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363804646432000,\"lastSeen\":1791363804646432000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363804646432000,\"lastSeen\":1791363804646432000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "d23d78384cd719f8a3a168ad12a61d5132f0ac6b913f9d054504bacb6010e82c",
+    "Count": 2,
+    "FirstSeen": 1791363804646432000,
+    "LastSeen": 1791363804646432000,
+    "Examples": [
+      "{\"at\":1791363804646432000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me\",\"observed\":1,\"firstSeen\":1791363804646432000,\"samples\":[\"qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me\"]}",
+      "{\"at\":1791363804646432000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me\",\"observed\":1,\"firstSeen\":1791363804646432000,\"samples\":[\"qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me\"]}"
+    ]
   },
   {
     "Timestamp": 1791363804938145000,
@@ -386,6 +596,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -393,7 +604,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363804938145000,\"lastSeen\":1791363804938145000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363804938145000,\"lastSeen\":1791363804938145000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "990c612de03511a000893fb5dfe09ac7aef977a697b00f37346e97afe4959cf0",
+    "Count": 2,
+    "FirstSeen": 1791363804938145000,
+    "LastSeen": 1791363804938185000,
+    "Examples": [
+      "{\"at\":1791363804938145000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me\",\"observed\":1,\"firstSeen\":1791363804938145000,\"samples\":[\"uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me\"]}",
+      "{\"at\":1791363804938185000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me\",\"observed\":1,\"firstSeen\":1791363804938185000,\"samples\":[\"uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me\"]}"
+    ]
   },
   {
     "Timestamp": 1791363805226908000,
@@ -404,6 +624,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "omepvmcxfvwycqjahuketffnqhymkehkc.oast.me",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -411,7 +632,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363805226908000,\"lastSeen\":1791363805226908000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"omepvmcxfvwycqjahuketffnqhymkehkc.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363805226908000,\"lastSeen\":1791363805226908000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"omepvmcxfvwycqjahuketffnqhymkehkc.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "c850463d517fb8019c528ea7106248518e8a5bffd491ea7fb1f85d58381f1930",
+    "Count": 2,
+    "FirstSeen": 1791363805226908000,
+    "LastSeen": 1791363805226953000,
+    "Examples": [
+      "{\"at\":1791363805226908000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"omepvmcxfvwycqjahuketffnqhymkehkc.oast.me\",\"observed\":1,\"firstSeen\":1791363805226908000,\"samples\":[\"omepvmcxfvwycqjahuketffnqhymkehkc.oast.me\"]}",
+      "{\"at\":1791363805226953000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"omepvmcxfvwycqjahuketffnqhymkehkc.oast.me\",\"observed\":1,\"firstSeen\":1791363805226953000,\"samples\":[\"omepvmcxfvwycqjahuketffnqhymkehkc.oast.me\"]}"
+    ]
   },
   {
     "Timestamp": 1791363805446458000,
@@ -422,6 +652,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -429,7 +660,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363805446458000,\"lastSeen\":1791363805446458000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363805446458000,\"lastSeen\":1791363805446458000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "bf7964ee54ae5b7a88d530881b9594dcc486f92432fd4fe0f78701ee683acaa0",
+    "Count": 2,
+    "FirstSeen": 1791363805446458000,
+    "LastSeen": 1791363805446490000,
+    "Examples": [
+      "{\"at\":1791363805446458000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me\",\"observed\":1,\"firstSeen\":1791363805446458000,\"samples\":[\"riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me\"]}",
+      "{\"at\":1791363805446490000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me\",\"observed\":1,\"firstSeen\":1791363805446490000,\"samples\":[\"riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me\"]}"
+    ]
   },
   {
     "Timestamp": 1791363805658732000,
@@ -440,6 +680,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -447,7 +688,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363805658732000,\"lastSeen\":1791363805658732000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363805658732000,\"lastSeen\":1791363805658732000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "27ce11800be7e120307d221755fe2e7b82cebb2b9c1db8479af1f9d1fa905996",
+    "Count": 2,
+    "FirstSeen": 1791363805658732000,
+    "LastSeen": 1791363805658803000,
+    "Examples": [
+      "{\"at\":1791363805658732000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me\",\"observed\":1,\"firstSeen\":1791363805658732000,\"samples\":[\"jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me\"]}",
+      "{\"at\":1791363805658803000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me\",\"observed\":1,\"firstSeen\":1791363805658803000,\"samples\":[\"jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me\"]}"
+    ]
   },
   {
     "Timestamp": 1791363805812535000,
@@ -458,6 +708,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -465,7 +716,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363805812535000,\"lastSeen\":1791363805812535000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363805812535000,\"lastSeen\":1791363805812535000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "c6f487b1144e4ee3d7b4b2f6898954b13ce1edb70d04265bca69ebde864a32d3",
+    "Count": 2,
+    "FirstSeen": 1791363805812535000,
+    "LastSeen": 1791363805812888000,
+    "Examples": [
+      "{\"at\":1791363805812535000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me\",\"observed\":1,\"firstSeen\":1791363805812535000,\"samples\":[\"pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me\"]}",
+      "{\"at\":1791363805812888000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me\",\"observed\":1,\"firstSeen\":1791363805812888000,\"samples\":[\"pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me\"]}"
+    ]
   },
   {
     "Timestamp": 1791363806017154000,
@@ -476,6 +736,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -483,7 +744,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363806017154000,\"lastSeen\":1791363806017154000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363806017154000,\"lastSeen\":1791363806017154000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "eeb16039e57ba48ae1c43dabab8948271c47b94087b7b59e9acd2b1561287577",
+    "Count": 2,
+    "FirstSeen": 1791363806017154000,
+    "LastSeen": 1791363806017212000,
+    "Examples": [
+      "{\"at\":1791363806017154000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me\",\"observed\":1,\"firstSeen\":1791363806017154000,\"samples\":[\"cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me\"]}",
+      "{\"at\":1791363806017212000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me\",\"observed\":1,\"firstSeen\":1791363806017212000,\"samples\":[\"cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me\"]}"
+    ]
   },
   {
     "Timestamp": 1791363806405667000,
@@ -494,6 +764,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -501,7 +772,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363806405667000,\"lastSeen\":1791363806405667000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363806405667000,\"lastSeen\":1791363806405667000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "0ee650c959d5229d1ddbeae810a8acceb5697b81a3ad23ac912cabaaf6e47b2e",
+    "Count": 2,
+    "FirstSeen": 1791363806405667000,
+    "LastSeen": 1791363806405899000,
+    "Examples": [
+      "{\"at\":1791363806405667000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me\",\"observed\":1,\"firstSeen\":1791363806405667000,\"samples\":[\"qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me\"]}",
+      "{\"at\":1791363806405899000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me\",\"observed\":1,\"firstSeen\":1791363806405899000,\"samples\":[\"qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me\"]}"
+    ]
   },
   {
     "Timestamp": 1791363806562945000,
@@ -512,6 +792,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -519,7 +800,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363806562945000,\"lastSeen\":1791363806562945000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363806562945000,\"lastSeen\":1791363806562945000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "8977aeecc192586525ccb1f45ec06f16f8546a73fdb802fb2099fea7c26c6fb7",
+    "Count": 2,
+    "FirstSeen": 1791363806562945000,
+    "LastSeen": 1791363806563147000,
+    "Examples": [
+      "{\"at\":1791363806562945000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me\",\"observed\":1,\"firstSeen\":1791363806562945000,\"samples\":[\"bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me\"]}",
+      "{\"at\":1791363806563147000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me\",\"observed\":1,\"firstSeen\":1791363806563147000,\"samples\":[\"bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me\"]}"
+    ]
   },
   {
     "Timestamp": 1791363807199461000,
@@ -530,6 +820,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -537,7 +828,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363807199461000,\"lastSeen\":1791363807199461000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363807199461000,\"lastSeen\":1791363807199461000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "ae1898c499881b3b5cdb133efa7af9d0499ac05c1852009237890e13b2e50f0e",
+    "Count": 2,
+    "FirstSeen": 1791363807199461000,
+    "LastSeen": 1791363807199496000,
+    "Examples": [
+      "{\"at\":1791363807199461000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online\",\"observed\":1,\"firstSeen\":1791363807199461000,\"samples\":[\"srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online\"]}",
+      "{\"at\":1791363807199496000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online\",\"observed\":1,\"firstSeen\":1791363807199496000,\"samples\":[\"srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online\"]}"
+    ]
   },
   {
     "Timestamp": 1791363807418910000,
@@ -548,6 +848,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -555,7 +856,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363807418910000,\"lastSeen\":1791363807418910000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363807418910000,\"lastSeen\":1791363807418910000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "d4556a8e96c7e0073e2797e310d51a03752b9a0efc5d7c3ffd20602eb447ac39",
+    "Count": 2,
+    "FirstSeen": 1791363807418910000,
+    "LastSeen": 1791363807418911000,
+    "Examples": [
+      "{\"at\":1791363807418910000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online\",\"observed\":1,\"firstSeen\":1791363807418910000,\"samples\":[\"xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online\"]}",
+      "{\"at\":1791363807418911000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online\",\"observed\":1,\"firstSeen\":1791363807418911000,\"samples\":[\"xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online\"]}"
+    ]
   },
   {
     "Timestamp": 1791363807757112000,
@@ -566,6 +876,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "vkqrhejhvhemlpfihgyshkerscaqernno.oast.online",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -573,7 +884,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363807757112000,\"lastSeen\":1791363807757112000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"vkqrhejhvhemlpfihgyshkerscaqernno.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363807757112000,\"lastSeen\":1791363807757112000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"vkqrhejhvhemlpfihgyshkerscaqernno.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "f86c48ea0ade5c3ab8a1836212a2aa5d7044015037e587894bfa8bdeb46d9e4b",
+    "Count": 2,
+    "FirstSeen": 1791363807757112000,
+    "LastSeen": 1791363807757181000,
+    "Examples": [
+      "{\"at\":1791363807757112000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"vkqrhejhvhemlpfihgyshkerscaqernno.oast.online\",\"observed\":1,\"firstSeen\":1791363807757112000,\"samples\":[\"vkqrhejhvhemlpfihgyshkerscaqernno.oast.online\"]}",
+      "{\"at\":1791363807757181000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"vkqrhejhvhemlpfihgyshkerscaqernno.oast.online\",\"observed\":1,\"firstSeen\":1791363807757181000,\"samples\":[\"vkqrhejhvhemlpfihgyshkerscaqernno.oast.online\"]}"
+    ]
   },
   {
     "Timestamp": 1791363808076222000,
@@ -584,6 +904,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -591,7 +912,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363808076222000,\"lastSeen\":1791363808076222000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363808076222000,\"lastSeen\":1791363808076222000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "469bb1ea242353554705ae439274e0f92796ee0744233aa71ac74e6027de3a87",
+    "Count": 2,
+    "FirstSeen": 1791363808076222000,
+    "LastSeen": 1791363808076266000,
+    "Examples": [
+      "{\"at\":1791363808076222000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online\",\"observed\":1,\"firstSeen\":1791363808076222000,\"samples\":[\"tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online\"]}",
+      "{\"at\":1791363808076266000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online\",\"observed\":1,\"firstSeen\":1791363808076266000,\"samples\":[\"tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online\"]}"
+    ]
   },
   {
     "Timestamp": 1791363808463549000,
@@ -602,6 +932,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -609,7 +940,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363808463549000,\"lastSeen\":1791363808463549000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363808463549000,\"lastSeen\":1791363808463549000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "3b98e8622e07e0b57739f4356c8273586e831c4e0879976fe29aba7785646573",
+    "Count": 2,
+    "FirstSeen": 1791363808463549000,
+    "LastSeen": 1791363808463596000,
+    "Examples": [
+      "{\"at\":1791363808463549000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online\",\"observed\":1,\"firstSeen\":1791363808463549000,\"samples\":[\"kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online\"]}",
+      "{\"at\":1791363808463596000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online\",\"observed\":1,\"firstSeen\":1791363808463596000,\"samples\":[\"kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online\"]}"
+    ]
   },
   {
     "Timestamp": 1791363808958127000,
@@ -620,6 +960,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "cfqrwgofbgcjdmelbduatrkksloabopal.oast.online",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -627,7 +968,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363808958127000,\"lastSeen\":1791363808958127000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"cfqrwgofbgcjdmelbduatrkksloabopal.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363808958127000,\"lastSeen\":1791363808958127000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"cfqrwgofbgcjdmelbduatrkksloabopal.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "91a5f585be136ab1acb69f06b9415cf261d17ad25a14b6f4be20a46a07abd81c",
+    "Count": 2,
+    "FirstSeen": 1791363808958127000,
+    "LastSeen": 1791363808958163000,
+    "Examples": [
+      "{\"at\":1791363808958127000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"cfqrwgofbgcjdmelbduatrkksloabopal.oast.online\",\"observed\":1,\"firstSeen\":1791363808958127000,\"samples\":[\"cfqrwgofbgcjdmelbduatrkksloabopal.oast.online\"]}",
+      "{\"at\":1791363808958163000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"cfqrwgofbgcjdmelbduatrkksloabopal.oast.online\",\"observed\":1,\"firstSeen\":1791363808958163000,\"samples\":[\"cfqrwgofbgcjdmelbduatrkksloabopal.oast.online\"]}"
+    ]
   },
   {
     "Timestamp": 1791363809331001000,
@@ -638,6 +988,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -645,7 +996,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363809331001000,\"lastSeen\":1791363809331001000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363809331001000,\"lastSeen\":1791363809331001000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "dcfa6d9de2908054a7937c179f4a80a07734bb81ac69984222bd82d6a714f556",
+    "Count": 2,
+    "FirstSeen": 1791363809331001000,
+    "LastSeen": 1791363809331040000,
+    "Examples": [
+      "{\"at\":1791363809331001000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online\",\"observed\":1,\"firstSeen\":1791363809331001000,\"samples\":[\"qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online\"]}",
+      "{\"at\":1791363809331040000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online\",\"observed\":1,\"firstSeen\":1791363809331040000,\"samples\":[\"qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online\"]}"
+    ]
   },
   {
     "Timestamp": 1791363809694008000,
@@ -656,6 +1016,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -663,7 +1024,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363809694008000,\"lastSeen\":1791363809694008000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363809694008000,\"lastSeen\":1791363809694008000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "60269bd52a68c258cd866a67c5de90a385fa31f0165bce406596b1c54e766872",
+    "Count": 2,
+    "FirstSeen": 1791363809694008000,
+    "LastSeen": 1791363809694040000,
+    "Examples": [
+      "{\"at\":1791363809694008000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online\",\"observed\":1,\"firstSeen\":1791363809694008000,\"samples\":[\"iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online\"]}",
+      "{\"at\":1791363809694040000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online\",\"observed\":1,\"firstSeen\":1791363809694040000,\"samples\":[\"iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online\"]}"
+    ]
   },
   {
     "Timestamp": 1791363810035208000,
@@ -674,6 +1044,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -681,7 +1052,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363810035208000,\"lastSeen\":1791363810035208000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363810035208000,\"lastSeen\":1791363810035208000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "765554798888cc81b1a1e57be5e38e76a125f228c146390dc8a40ed9f07e2217",
+    "Count": 2,
+    "FirstSeen": 1791363810035208000,
+    "LastSeen": 1791363810035331000,
+    "Examples": [
+      "{\"at\":1791363810035208000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810035208000,\"samples\":[\"bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro\"]}",
+      "{\"at\":1791363810035331000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810035331000,\"samples\":[\"bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro\"]}"
+    ]
   },
   {
     "Timestamp": 1791363810386918000,
@@ -692,6 +1072,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "wnjquocshydpplmpnbpojethpouaympvc.oast.pro",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -699,7 +1080,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363810386918000,\"lastSeen\":1791363810386918000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"wnjquocshydpplmpnbpojethpouaympvc.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363810386918000,\"lastSeen\":1791363810386918000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"wnjquocshydpplmpnbpojethpouaympvc.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "c6b5641dabdaac1deebf913c131c3338c56391b84b24a7d7f99eade8f9571252",
+    "Count": 2,
+    "FirstSeen": 1791363810386918000,
+    "LastSeen": 1791363810386949000,
+    "Examples": [
+      "{\"at\":1791363810386918000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"wnjquocshydpplmpnbpojethpouaympvc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810386918000,\"samples\":[\"wnjquocshydpplmpnbpojethpouaympvc.oast.pro\"]}",
+      "{\"at\":1791363810386949000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"wnjquocshydpplmpnbpojethpouaympvc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810386949000,\"samples\":[\"wnjquocshydpplmpnbpojethpouaympvc.oast.pro\"]}"
+    ]
   },
   {
     "Timestamp": 1791363810754535000,
@@ -710,6 +1100,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -717,7 +1108,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363810754535000,\"lastSeen\":1791363810754535000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363810754535000,\"lastSeen\":1791363810754535000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "b12afbc4789f661e9fa781cf55694a9e57dddb85dd22184f0cfac4da79395165",
+    "Count": 2,
+    "FirstSeen": 1791363810754535000,
+    "LastSeen": 1791363810754574000,
+    "Examples": [
+      "{\"at\":1791363810754535000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810754535000,\"samples\":[\"swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro\"]}",
+      "{\"at\":1791363810754574000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810754574000,\"samples\":[\"swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro\"]}"
+    ]
   },
   {
     "Timestamp": 1791363811005180000,
@@ -728,6 +1128,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -735,7 +1136,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363811005180000,\"lastSeen\":1791363811005180000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363811005180000,\"lastSeen\":1791363811005180000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "7f6dfc949514535e3ccef197c3dfbe17c041144e680b89f29236b43996315a26",
+    "Count": 2,
+    "FirstSeen": 1791363811005180000,
+    "LastSeen": 1791363811005221000,
+    "Examples": [
+      "{\"at\":1791363811005180000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro\",\"observed\":1,\"firstSeen\":1791363811005180000,\"samples\":[\"tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro\"]}",
+      "{\"at\":1791363811005221000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro\",\"observed\":1,\"firstSeen\":1791363811005221000,\"samples\":[\"tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro\"]}"
+    ]
   },
   {
     "Timestamp": 1791363811462384000,
@@ -746,6 +1156,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -753,7 +1164,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363811462384000,\"lastSeen\":1791363811462384000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363811462384000,\"lastSeen\":1791363811462384000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "1336033e1f1ccf57411ea44f079049b9cab1f5dd229a6aa47410980340ade1ed",
+    "Count": 2,
+    "FirstSeen": 1791363811462384000,
+    "LastSeen": 1791363811462431000,
+    "Examples": [
+      "{\"at\":1791363811462384000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro\",\"observed\":1,\"firstSeen\":1791363811462384000,\"samples\":[\"ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro\"]}",
+      "{\"at\":1791363811462431000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro\",\"observed\":1,\"firstSeen\":1791363811462431000,\"samples\":[\"ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro\"]}"
+    ]
   },
   {
     "Timestamp": 1791363811738923000,
@@ -764,6 +1184,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -771,7 +1192,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363811738923000,\"lastSeen\":1791363811738923000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363811738923000,\"lastSeen\":1791363811738923000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "3bea9537b47b3d4a46dd24146d0363f222ddf88575137bff0daa6c995b351059",
+    "Count": 2,
+    "FirstSeen": 1791363811738923000,
+    "LastSeen": 1791363811738952000,
+    "Examples": [
+      "{\"at\":1791363811738923000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro\",\"observed\":1,\"firstSeen\":1791363811738923000,\"samples\":[\"yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro\"]}",
+      "{\"at\":1791363811738952000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro\",\"observed\":1,\"firstSeen\":1791363811738952000,\"samples\":[\"yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro\"]}"
+    ]
   },
   {
     "Timestamp": 1791363812015664000,
@@ -782,6 +1212,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -789,7 +1220,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363812015664000,\"lastSeen\":1791363812015664000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363812015664000,\"lastSeen\":1791363812015664000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "071f1846fe4909d03e1b925d3c90ae672e72b89ee03bec7078a94adb1be01edd",
+    "Count": 2,
+    "FirstSeen": 1791363812015664000,
+    "LastSeen": 1791363812015706000,
+    "Examples": [
+      "{\"at\":1791363812015664000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro\",\"observed\":1,\"firstSeen\":1791363812015664000,\"samples\":[\"xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro\"]}",
+      "{\"at\":1791363812015706000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro\",\"observed\":1,\"firstSeen\":1791363812015706000,\"samples\":[\"xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro\"]}"
+    ]
   },
   {
     "Timestamp": 1791363812374214000,
@@ -800,6 +1240,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -807,7 +1248,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363812374214000,\"lastSeen\":1791363812374214000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363812374214000,\"lastSeen\":1791363812374214000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "665690fb11d1a0b33712c7af516118a59f63a6645cdf199b1337623c315af39e",
+    "Count": 2,
+    "FirstSeen": 1791363812374214000,
+    "LastSeen": 1791363812374255000,
+    "Examples": [
+      "{\"at\":1791363812374214000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro\",\"observed\":1,\"firstSeen\":1791363812374214000,\"samples\":[\"ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro\"]}",
+      "{\"at\":1791363812374255000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro\",\"observed\":1,\"firstSeen\":1791363812374255000,\"samples\":[\"ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro\"]}"
+    ]
   },
   {
     "Timestamp": 1791363812577475000,
@@ -818,6 +1268,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -825,7 +1276,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363812577475000,\"lastSeen\":1791363812577475000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363812577475000,\"lastSeen\":1791363812577475000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "bde4e34c11cc4e97dd3d2edce9f4ead15e5c11cf20f49c1fff3ecf8dae354b6c",
+    "Count": 2,
+    "FirstSeen": 1791363812577475000,
+    "LastSeen": 1791363812577506000,
+    "Examples": [
+      "{\"at\":1791363812577475000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro\",\"observed\":1,\"firstSeen\":1791363812577475000,\"samples\":[\"huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro\"]}",
+      "{\"at\":1791363812577506000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro\",\"observed\":1,\"firstSeen\":1791363812577506000,\"samples\":[\"huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro\"]}"
+    ]
   },
   {
     "Timestamp": 1791363812985771000,
@@ -836,6 +1296,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -843,7 +1304,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363812985771000,\"lastSeen\":1791363812985771000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363812985771000,\"lastSeen\":1791363812985771000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "4699ad237fc8da8170d6caef55cb9663769b8ace60982e8468ee05588f23b5ae",
+    "Count": 2,
+    "FirstSeen": 1791363812985771000,
+    "LastSeen": 1791363812985810000,
+    "Examples": [
+      "{\"at\":1791363812985771000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site\",\"observed\":1,\"firstSeen\":1791363812985771000,\"samples\":[\"rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site\"]}",
+      "{\"at\":1791363812985810000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site\",\"observed\":1,\"firstSeen\":1791363812985810000,\"samples\":[\"rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site\"]}"
+    ]
   },
   {
     "Timestamp": 1791363813479336000,
@@ -854,6 +1324,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -861,7 +1332,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363813479336000,\"lastSeen\":1791363813479336000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363813479336000,\"lastSeen\":1791363813479336000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "5ff02d55e5beb46d0262b7ccf3e1f4afa715980a429f20cb4d720ff1640f1e0a",
+    "Count": 2,
+    "FirstSeen": 1791363813479336000,
+    "LastSeen": 1791363813479378000,
+    "Examples": [
+      "{\"at\":1791363813479336000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site\",\"observed\":1,\"firstSeen\":1791363813479336000,\"samples\":[\"rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site\"]}",
+      "{\"at\":1791363813479378000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site\",\"observed\":1,\"firstSeen\":1791363813479378000,\"samples\":[\"rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site\"]}"
+    ]
   },
   {
     "Timestamp": 1791363813870029000,
@@ -872,6 +1352,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "gojgdimpamkrxljdwedkilolmpngebokw.oast.site",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -879,7 +1360,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363813870029000,\"lastSeen\":1791363813870029000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"gojgdimpamkrxljdwedkilolmpngebokw.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363813870029000,\"lastSeen\":1791363813870029000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"gojgdimpamkrxljdwedkilolmpngebokw.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "bbfed1fe2f024bfea0998fb34c90100b844d1d77d0599db5634d0794425424ad",
+    "Count": 2,
+    "FirstSeen": 1791363813870029000,
+    "LastSeen": 1791363813870427000,
+    "Examples": [
+      "{\"at\":1791363813870029000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"gojgdimpamkrxljdwedkilolmpngebokw.oast.site\",\"observed\":1,\"firstSeen\":1791363813870029000,\"samples\":[\"gojgdimpamkrxljdwedkilolmpngebokw.oast.site\"]}",
+      "{\"at\":1791363813870427000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"gojgdimpamkrxljdwedkilolmpngebokw.oast.site\",\"observed\":1,\"firstSeen\":1791363813870427000,\"samples\":[\"gojgdimpamkrxljdwedkilolmpngebokw.oast.site\"]}"
+    ]
   },
   {
     "Timestamp": 1791363813986228000,
@@ -890,6 +1380,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -897,7 +1388,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363813986228000,\"lastSeen\":1791363813986228000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363813986228000,\"lastSeen\":1791363813986228000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "a8ac94e7a1466b9e699fad214ed4a1b4e3fcf3a7502b9fd8cb0b4ece1bd1e8a2",
+    "Count": 2,
+    "FirstSeen": 1791363813986228000,
+    "LastSeen": 1791363813986262000,
+    "Examples": [
+      "{\"at\":1791363813986228000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site\",\"observed\":1,\"firstSeen\":1791363813986228000,\"samples\":[\"xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site\"]}",
+      "{\"at\":1791363813986262000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site\",\"observed\":1,\"firstSeen\":1791363813986262000,\"samples\":[\"xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site\"]}"
+    ]
   },
   {
     "Timestamp": 1791363814181959000,
@@ -908,6 +1408,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -915,7 +1416,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363814181959000,\"lastSeen\":1791363814181959000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363814181959000,\"lastSeen\":1791363814181959000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "9864074c2b15b34b3405b7972231974b0b516b3ca426cc0f523e327ede9e5e38",
+    "Count": 2,
+    "FirstSeen": 1791363814181959000,
+    "LastSeen": 1791363814181999000,
+    "Examples": [
+      "{\"at\":1791363814181959000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site\",\"observed\":1,\"firstSeen\":1791363814181959000,\"samples\":[\"xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site\"]}",
+      "{\"at\":1791363814181999000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site\",\"observed\":1,\"firstSeen\":1791363814181999000,\"samples\":[\"xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site\"]}"
+    ]
   },
   {
     "Timestamp": 1791363814387121000,
@@ -926,6 +1436,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -933,7 +1444,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363814387121000,\"lastSeen\":1791363814387121000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363814387121000,\"lastSeen\":1791363814387121000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "564c5252b24bc678540667cfffb0d674c0c1a77e80faab8f5b8864b122c1666a",
+    "Count": 2,
+    "FirstSeen": 1791363814387121000,
+    "LastSeen": 1791363814387171000,
+    "Examples": [
+      "{\"at\":1791363814387121000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site\",\"observed\":1,\"firstSeen\":1791363814387121000,\"samples\":[\"jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site\"]}",
+      "{\"at\":1791363814387171000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site\",\"observed\":1,\"firstSeen\":1791363814387171000,\"samples\":[\"jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site\"]}"
+    ]
   },
   {
     "Timestamp": 1791363814546222000,
@@ -944,6 +1464,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -951,7 +1472,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363814546222000,\"lastSeen\":1791363814546222000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363814546222000,\"lastSeen\":1791363814546222000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "6a63218837c60e39704697b190170607fc6918dc6ccf6140fed72093ab6ebf91",
+    "Count": 2,
+    "FirstSeen": 1791363814546222000,
+    "LastSeen": 1791363814546260000,
+    "Examples": [
+      "{\"at\":1791363814546222000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site\",\"observed\":1,\"firstSeen\":1791363814546222000,\"samples\":[\"fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site\"]}",
+      "{\"at\":1791363814546260000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site\",\"observed\":1,\"firstSeen\":1791363814546260000,\"samples\":[\"fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site\"]}"
+    ]
   },
   {
     "Timestamp": 1791363814902524000,
@@ -962,6 +1492,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -969,7 +1500,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363814902524000,\"lastSeen\":1791363814902524000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363814902524000,\"lastSeen\":1791363814902524000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "be3a361068154c6ffe3a188d7970c5b2d4799fb865a8170cb2f9086747d15e6e",
+    "Count": 2,
+    "FirstSeen": 1791363814902524000,
+    "LastSeen": 1791363814902573000,
+    "Examples": [
+      "{\"at\":1791363814902524000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site\",\"observed\":1,\"firstSeen\":1791363814902524000,\"samples\":[\"rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site\"]}",
+      "{\"at\":1791363814902573000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site\",\"observed\":1,\"firstSeen\":1791363814902573000,\"samples\":[\"rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site\"]}"
+    ]
   },
   {
     "Timestamp": 1791363815035526000,
@@ -980,6 +1520,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "fotozpojskklpffjsgatuzftleftuzjsp.oast.site",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -987,7 +1528,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363815035526000,\"lastSeen\":1791363815035526000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"fotozpojskklpffjsgatuzftleftuzjsp.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363815035526000,\"lastSeen\":1791363815035526000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"fotozpojskklpffjsgatuzftleftuzjsp.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "96a97e59d997e6e6fca87f6507a21c3de385ab8f603cbd49ded90961a72aec43",
+    "Count": 2,
+    "FirstSeen": 1791363815035526000,
+    "LastSeen": 1791363815035564000,
+    "Examples": [
+      "{\"at\":1791363815035526000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"fotozpojskklpffjsgatuzftleftuzjsp.oast.site\",\"observed\":1,\"firstSeen\":1791363815035526000,\"samples\":[\"fotozpojskklpffjsgatuzftleftuzjsp.oast.site\"]}",
+      "{\"at\":1791363815035564000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"fotozpojskklpffjsgatuzftleftuzjsp.oast.site\",\"observed\":1,\"firstSeen\":1791363815035564000,\"samples\":[\"fotozpojskklpffjsgatuzftleftuzjsp.oast.site\"]}"
+    ]
   },
   {
     "Timestamp": 1791363815459383000,
@@ -998,6 +1548,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -1005,7 +1556,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363815459383000,\"lastSeen\":1791363815459383000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363815459383000,\"lastSeen\":1791363815459383000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "61cafc7127ddfc105ef31355185d751bb8a427255b18b2d59f6fef0db68c877a",
+    "Count": 2,
+    "FirstSeen": 1791363815459383000,
+    "LastSeen": 1791363815459451000,
+    "Examples": [
+      "{\"at\":1791363815459383000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site\",\"observed\":1,\"firstSeen\":1791363815459383000,\"samples\":[\"mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site\"]}",
+      "{\"at\":1791363815459451000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site\",\"observed\":1,\"firstSeen\":1791363815459451000,\"samples\":[\"mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site\"]}"
+    ]
   },
   {
     "Timestamp": 1791363816207141000,
@@ -1016,6 +1576,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "yvikvazbpamiowoxewrhildairbacgnms.oastify.com",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -1023,7 +1584,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363816207141000,\"lastSeen\":1791363816207141000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"yvikvazbpamiowoxewrhildairbacgnms.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363816207141000,\"lastSeen\":1791363816207141000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"yvikvazbpamiowoxewrhildairbacgnms.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "5b607c93d43af72fd6a7cd8441c1ed3915c09ec544a5f15ef456993e353f67de",
+    "Count": 2,
+    "FirstSeen": 1791363816207141000,
+    "LastSeen": 1791363816207178000,
+    "Examples": [
+      "{\"at\":1791363816207141000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"yvikvazbpamiowoxewrhildairbacgnms.oastify.com\",\"observed\":1,\"firstSeen\":1791363816207141000,\"samples\":[\"yvikvazbpamiowoxewrhildairbacgnms.oastify.com\"]}",
+      "{\"at\":1791363816207178000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"yvikvazbpamiowoxewrhildairbacgnms.oastify.com\",\"observed\":1,\"firstSeen\":1791363816207178000,\"samples\":[\"yvikvazbpamiowoxewrhildairbacgnms.oastify.com\"]}"
+    ]
   },
   {
     "Timestamp": 1791363816407400000,
@@ -1034,6 +1604,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -1041,7 +1612,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363816407400000,\"lastSeen\":1791363816407400000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363816407400000,\"lastSeen\":1791363816407400000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "cd74d4b449b40f9a77c6914b98e4f0ea6ac0e2b142650c7cf7fb1d5dee3c15d4",
+    "Count": 2,
+    "FirstSeen": 1791363816407400000,
+    "LastSeen": 1791363816407546000,
+    "Examples": [
+      "{\"at\":1791363816407400000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com\",\"observed\":1,\"firstSeen\":1791363816407400000,\"samples\":[\"oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com\"]}",
+      "{\"at\":1791363816407546000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com\",\"observed\":1,\"firstSeen\":1791363816407546000,\"samples\":[\"oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com\"]}"
+    ]
   },
   {
     "Timestamp": 1791363816719808000,
@@ -1052,6 +1632,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -1059,7 +1640,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363816719808000,\"lastSeen\":1791363816719808000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363816719808000,\"lastSeen\":1791363816719808000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "1779a23f61a05b46dca0b4754b4faa4fba9ac9900c62a9d78e3d89ae3f8a59b9",
+    "Count": 2,
+    "FirstSeen": 1791363816719808000,
+    "LastSeen": 1791363816719841000,
+    "Examples": [
+      "{\"at\":1791363816719808000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com\",\"observed\":1,\"firstSeen\":1791363816719808000,\"samples\":[\"jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com\"]}",
+      "{\"at\":1791363816719841000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com\",\"observed\":1,\"firstSeen\":1791363816719841000,\"samples\":[\"jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com\"]}"
+    ]
   },
   {
     "Timestamp": 1791363817079461000,
@@ -1070,6 +1660,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -1077,7 +1668,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363817079461000,\"lastSeen\":1791363817079461000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363817079461000,\"lastSeen\":1791363817079461000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "057faba521bc9c9eebf1e5a85bf731a7dfab8eb336e9e4388d98d71603bf760f",
+    "Count": 2,
+    "FirstSeen": 1791363817079461000,
+    "LastSeen": 1791363817079503000,
+    "Examples": [
+      "{\"at\":1791363817079461000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com\",\"observed\":1,\"firstSeen\":1791363817079461000,\"samples\":[\"ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com\"]}",
+      "{\"at\":1791363817079503000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com\",\"observed\":1,\"firstSeen\":1791363817079503000,\"samples\":[\"ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com\"]}"
+    ]
   },
   {
     "Timestamp": 1791363817233644000,
@@ -1088,6 +1688,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -1095,7 +1696,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363817233644000,\"lastSeen\":1791363817233644000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363817233644000,\"lastSeen\":1791363817233644000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "7cb265a25cb502438768556b0568edcfbdf83adaacb759b33a0f81b77e83e6ed",
+    "Count": 2,
+    "FirstSeen": 1791363817233644000,
+    "LastSeen": 1791363817233678000,
+    "Examples": [
+      "{\"at\":1791363817233644000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com\",\"observed\":1,\"firstSeen\":1791363817233644000,\"samples\":[\"ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com\"]}",
+      "{\"at\":1791363817233678000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com\",\"observed\":1,\"firstSeen\":1791363817233678000,\"samples\":[\"ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com\"]}"
+    ]
   },
   {
     "Timestamp": 1791363817416630000,
@@ -1106,6 +1716,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -1113,7 +1724,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363817416630000,\"lastSeen\":1791363817416630000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363817416630000,\"lastSeen\":1791363817416630000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "91f6e837360e15dbc8234de75eba6ef6d1eabe5e03ade7145acc69c55f06b040",
+    "Count": 2,
+    "FirstSeen": 1791363817416630000,
+    "LastSeen": 1791363817416666000,
+    "Examples": [
+      "{\"at\":1791363817416630000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com\",\"observed\":1,\"firstSeen\":1791363817416630000,\"samples\":[\"wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com\"]}",
+      "{\"at\":1791363817416666000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com\",\"observed\":1,\"firstSeen\":1791363817416666000,\"samples\":[\"wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com\"]}"
+    ]
   },
   {
     "Timestamp": 1791363817649622000,
@@ -1124,6 +1744,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -1131,7 +1752,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363817649622000,\"lastSeen\":1791363817649622000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363817649622000,\"lastSeen\":1791363817649622000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "525e78af93342cfa8c7af026b47bc528d376c506ca6cb9cc7ed04e1978df9bbb",
+    "Count": 2,
+    "FirstSeen": 1791363817649622000,
+    "LastSeen": 1791363817649671000,
+    "Examples": [
+      "{\"at\":1791363817649622000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com\",\"observed\":1,\"firstSeen\":1791363817649622000,\"samples\":[\"mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com\"]}",
+      "{\"at\":1791363817649671000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com\",\"observed\":1,\"firstSeen\":1791363817649671000,\"samples\":[\"mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com\"]}"
+    ]
   },
   {
     "Timestamp": 1791363817853578000,
@@ -1142,6 +1772,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -1149,7 +1780,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363817853578000,\"lastSeen\":1791363817853578000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363817853578000,\"lastSeen\":1791363817853578000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "eb85012f187b7dfefe880a2cf71840a3c0c9f09706524dcc369183fdfd5d4be9",
+    "Count": 2,
+    "FirstSeen": 1791363817853578000,
+    "LastSeen": 1791363817853613000,
+    "Examples": [
+      "{\"at\":1791363817853578000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com\",\"observed\":1,\"firstSeen\":1791363817853578000,\"samples\":[\"bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com\"]}",
+      "{\"at\":1791363817853613000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com\",\"observed\":1,\"firstSeen\":1791363817853613000,\"samples\":[\"bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com\"]}"
+    ]
   },
   {
     "Timestamp": 1791363818309936000,
@@ -1160,6 +1800,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -1167,7 +1808,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363818309936000,\"lastSeen\":1791363818309936000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363818309936000,\"lastSeen\":1791363818309936000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "7246e0d86cc33694accb3d5c4c5e5f2f41a58420ff24f949c17cc7baafc93e4c",
+    "Count": 2,
+    "FirstSeen": 1791363818309936000,
+    "LastSeen": 1791363818310029000,
+    "Examples": [
+      "{\"at\":1791363818309936000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com\",\"observed\":1,\"firstSeen\":1791363818309936000,\"samples\":[\"xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com\"]}",
+      "{\"at\":1791363818310029000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com\",\"observed\":1,\"firstSeen\":1791363818310029000,\"samples\":[\"xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com\"]}"
+    ]
   },
   {
     "Timestamp": 1791363818492699000,
@@ -1178,6 +1828,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -1185,7 +1836,16 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363818492699000,\"lastSeen\":1791363818492699000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363818492699000,\"lastSeen\":1791363818492699000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "cb41262acaaa530755fa721cdbeadd6968915ceb1e98005bb08419cba9484369",
+    "Count": 2,
+    "FirstSeen": 1791363818492699000,
+    "LastSeen": 1791363818492740000,
+    "Examples": [
+      "{\"at\":1791363818492699000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com\",\"observed\":1,\"firstSeen\":1791363818492699000,\"samples\":[\"vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com\"]}",
+      "{\"at\":1791363818492740000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com\",\"observed\":1,\"firstSeen\":1791363818492740000,\"samples\":[\"vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com\"]}"
+    ]
   },
   {
     "Timestamp": 1791363818635908000,
@@ -1196,6 +1856,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
     "RecordType": "NetworkDetection",
     "Severity": "low",
@@ -1203,6 +1864,15 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363818635908000,\"lastSeen\":1791363818635908000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.oast\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363818635908000,\"lastSeen\":1791363818635908000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com\"],\"limitations\":[\"Authorized application testing also uses OAST\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "15b074e60900211eb93b315640baf812429b127285d1ea632abe6dd727b570ad",
+    "Count": 2,
+    "FirstSeen": 1791363818635908000,
+    "LastSeen": 1791363818638369000,
+    "Examples": [
+      "{\"at\":1791363818635908000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com\",\"observed\":1,\"firstSeen\":1791363818635908000,\"samples\":[\"hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com\"]}",
+      "{\"at\":1791363818638369000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com\",\"observed\":1,\"firstSeen\":1791363818638369000,\"samples\":[\"hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com\"]}"
+    ]
   }
 ]

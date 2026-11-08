@@ -23,12 +23,12 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 	ja4 "github.com/dreadl0ck/netcap/internal/ja4plusadapter"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/types"
@@ -41,7 +41,12 @@ import (
 // set HTTP request on types.HTTP.
 func setRequest(h *types.HTTP, req *httpRequest) {
 	if req.incomplete {
-		h.ReassemblyStatus = "incomplete_request_body"
+		addStatus(h, "incomplete_request_body")
+	}
+	h.RawRequestLine, h.RequestHeaders = req.evidence.line, req.evidence.headers
+	h.ParseQualifications = appendUnique(h.ParseQualifications, req.evidence.issues...)
+	for _, issue := range req.evidence.issues {
+		addStatus(h, issue)
 	}
 	// set basic info
 	h.Timestamp = req.timestamp
@@ -53,19 +58,23 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	h.ContentType = req.request.Header.Get(headerContentType)
 	h.RequestHeader = readHeader(req.request.Header)
 
-	body, err := ioutil.ReadAll(req.request.Body)
+	body, release, err := file.ReadBody(req.request.Body)
+	defer release()
 	req.request.Body = io.NopCloser(bytes.NewReader(body))
 	if decoderconfig.Instance != nil && decoderconfig.Instance.IncludePayloads {
 		h.RequestBody = body
 	}
-	if err == nil {
+	if err == nil && !req.evidence.unsafe {
 		h.ContentTypeDetected = http.DetectContentType(body)
 
 		// decompress if required
 		if h.ReqContentEncoding == "gzip" {
 			r, errReader := gzip.NewReader(bytes.NewReader(body))
 			if errReader == nil {
-				body, err = ioutil.ReadAll(r)
+				var releaseDecoded func()
+				body, releaseDecoded, err = file.ReadBody(r)
+				defer releaseDecoded()
+				_ = r.Close()
 				if err == nil {
 					h.ContentTypeDetected = http.DetectContentType(body)
 				}
@@ -76,9 +85,6 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	h.UserAgent = req.request.UserAgent()
 	h.Referer = req.request.Referer()
 	h.URL = req.request.RequestURI
-	if req.parseIssue != "" {
-		h.ReassemblyStatus = req.parseIssue
-	}
 
 	// retrieve ip addresses and ports set on the request while processing
 	h.SrcIP = req.clientIP
@@ -142,7 +148,8 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 	)
 
 	// read body data
-	body, err := ioutil.ReadAll(res.Body)
+	body, release, err := file.ReadBody(res.Body)
+	defer release()
 	if err == nil {
 
 		if contentLength == -1 {
@@ -154,7 +161,10 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 		if res.Header.Get(headerContentEncoding) == "gzip" {
 			r, errReader := gzip.NewReader(bytes.NewReader(body))
 			if errReader == nil {
-				body, err = ioutil.ReadAll(r)
+				var releaseDecoded func()
+				body, releaseDecoded, err = file.ReadBody(r)
+				defer releaseDecoded()
+				_ = r.Close()
 				if err == nil {
 					detected = http.DetectContentType(body)
 				}

@@ -24,6 +24,28 @@ The detection rules are organized by security domain and detection objective. Ea
 - **Tags**: Categorization labels
 - **Enabled**: Whether the rule is active by default
 
+Names must be nonempty, unique across the loaded catalogue and free of surrounding
+whitespace (`CompileRules`). `TestExampleRulesCompilation` discovers every embedded
+YAML file and also compiles disabled templates; missing files fail qualification.
+Invalid explicitly configured directories return errors instead of default rules.
+
+`Engine.UpdateConfig` publishes an owned configuration snapshot only after it
+compiles. Each successful reload resets threshold, distinct, sequence, dedup and
+rate-limit state; in-flight records finish in their original generation. Failed
+reloads preserve both configuration and pending evidence. `GetStats` reports
+`config_generation` and `reload_state_policy=reset-on-reload`; emitted alerts
+remain in their writer.
+
+`iptables_rate_limit` and `iptables_log` are unimplemented firewall actions.
+They return `ErrUnsupportedResponseAction` and increment `actions_failed`, never
+`actions_success`; generating an alert does not establish firewall enforcement.
+
+| Identity correction | Canonical location/name |
+| --- | --- |
+| Duplicate Cloudflare name | Cache-header variant is `Cloudflare Cache Headers Detected`; CDN/WAF variant keeps `Cloudflare CDN Detected`. |
+| Anchored versus broad UA matches | `suspicious_user_agents.yml` uses `PowerShell Prefix User Agent Detected` and `Wget Prefix User Agent Detected`; broad names remain in `web_attacks.yml`. |
+| Duplicate protocol-upgrade rules | `HTTP Upgrade to Unknown Protocol` and `Unexpected Protocol Switch` are defined in `suspicious_traffic.yml`; include that file when loading only the HTTP/2 example pack. |
+
 ## Rule Files
 
 ### `network_reconnaissance.yml`

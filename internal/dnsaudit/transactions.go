@@ -92,6 +92,17 @@ func (t *dnsTransactions) observe(d *types.DNS) {
 }
 
 func (t *dnsTransactions) observeScoped(d *types.DNS, scope string) {
+	// RFC 6762: ID zero and shared multicast destinations are not unicast
+	// transaction keys. Preserve the QU/cache-flush high bits in Class verbatim.
+	// This also covers QU unicast replies and legacy queries to port 5353.
+	if d.SrcPort == 5353 || d.DstPort == 5353 {
+		d.RTT, d.QueryTransmissions = 0, 0
+		d.TransactionStatus = "mdns_query"
+		if d.QR {
+			d.TransactionStatus = "mdns_response"
+		}
+		return
+	}
 	key, ok := dnsKey(d)
 	if !ok {
 		return

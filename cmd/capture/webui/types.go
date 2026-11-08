@@ -23,19 +23,24 @@ import "time"
 
 // FileInfo represents file metadata
 type FileInfo struct {
-	ID               string  `json:"id"` // Unique identifier for the file (used for API calls)
-	Name             string  `json:"name"`
-	Path             string  `json:"path"`
-	Size             int64   `json:"size"`
-	ModifiedTime     int64   `json:"modifiedTime"`
-	IsCompleted      bool    `json:"isCompleted"`
-	Error            *string `json:"error,omitempty"`
-	ErrorLogPath     *string `json:"errorLogPath,omitempty"`   // Path to detailed error log file
-	BPFFilter        string  `json:"bpfFilter,omitempty"`      // BPF filter used during capture
-	ProcessingTime   float64 `json:"processingTime,omitempty"` // Processing duration in seconds
-	Hash             string  `json:"hash,omitempty"`           // SHA256 hash of the file
-	HasReportedIssue bool    `json:"hasReportedIssue"`         // Whether an issue report has been submitted for this file
-	SessionID        string  `json:"sessionId,omitempty"`      // Session ID (service mode only)
+	ID               string                `json:"id"` // Unique identifier for the file (used for API calls)
+	Name             string                `json:"name"`
+	Path             string                `json:"path"`
+	Size             int64                 `json:"size"`
+	ModifiedTime     int64                 `json:"modifiedTime"`
+	IsCompleted      bool                  `json:"isCompleted"`
+	Error            *string               `json:"error,omitempty"`
+	ErrorLogPath     *string               `json:"errorLogPath,omitempty"`   // Path to detailed error log file
+	BPFFilter        string                `json:"bpfFilter,omitempty"`      // BPF filter used during capture
+	ProcessingTime   float64               `json:"processingTime,omitempty"` // Processing duration in seconds
+	Hash             string                `json:"hash,omitempty"`           // SHA256 hash of the file
+	HasReportedIssue bool                  `json:"hasReportedIssue"`         // Whether an issue report has been submitted for this file
+	SessionID        string                `json:"sessionId,omitempty"`      // Session ID (service mode only)
+	ParentSessionID  string                `json:"parentSessionId,omitempty"`
+	ParentInputFile  string                `json:"parentInputFile,omitempty"`
+	ParentRunID      string                `json:"parentRunId,omitempty"`
+	AnalysisSelector string                `json:"analysisSelector,omitempty"`
+	PacketSelection  *childPacketSelection `json:"packetSelection,omitempty"`
 
 	// ErrorLogID is the identifier to pass to /api/error-log/{id}: the session
 	// ID in service mode, the hashed file ID in local mode.
@@ -57,16 +62,17 @@ type AuditFileInfo struct {
 
 // StatusResponse represents the capture status
 type StatusResponse struct {
-	IsProcessing    bool      `json:"isProcessing"`
-	OutputDir       string    `json:"outputDir"`
-	InputFiles      []string  `json:"inputFiles"`
-	ServerStarted   time.Time `json:"serverStarted"`
-	ActiveInputFile string    `json:"activeInputFile"`
-	IsMultiFile     bool      `json:"isMultiFile"`
-	IsServiceMode   bool      `json:"isServiceMode,omitempty"`
-	IsLiveMode      bool      `json:"isLiveMode"`
-	SessionID       string    `json:"sessionId,omitempty"`   // Current session ID (service mode only)
-	LogoSubText     string    `json:"logoSubText,omitempty"` // Custom label shown below NETCAP logo
+	ChildAnalysisVersion int       `json:"childAnalysisVersion"`
+	IsProcessing         bool      `json:"isProcessing"`
+	OutputDir            string    `json:"outputDir"`
+	InputFiles           []string  `json:"inputFiles"`
+	ServerStarted        time.Time `json:"serverStarted"`
+	ActiveInputFile      string    `json:"activeInputFile"`
+	IsMultiFile          bool      `json:"isMultiFile"`
+	IsServiceMode        bool      `json:"isServiceMode,omitempty"`
+	IsLiveMode           bool      `json:"isLiveMode"`
+	SessionID            string    `json:"sessionId,omitempty"`   // Current session ID (service mode only)
+	LogoSubText          string    `json:"logoSubText,omitempty"` // Custom label shown below NETCAP logo
 }
 
 // AuditStatsResponse represents the audit record statistics response
@@ -99,12 +105,14 @@ type UserDPIPreferences struct {
 
 // AnalysisJob represents a job in the analysis queue (service mode only)
 type AnalysisJob struct {
-	processingDone  func()
-	SessionID       string
-	InputFile       string
-	OutputDir       string
-	EnableDPI       bool
-	BPFFilter       string // BPF filter to apply during capture
-	IncludeDecoders string // Decoders to include
-	ExcludeDecoders string // Decoders to exclude
+	requireCaptureEvidence bool
+	ArtifactConfig         []byte
+	processingDone         func()
+	SessionID              string
+	InputFile              string
+	OutputDir              string
+	EnableDPI              bool
+	BPFFilter              string // BPF filter to apply during capture
+	IncludeDecoders        string // Decoders to include
+	ExcludeDecoders        string // Decoders to exclude
 }

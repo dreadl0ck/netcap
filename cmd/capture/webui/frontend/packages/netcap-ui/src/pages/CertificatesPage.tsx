@@ -56,6 +56,7 @@ import {
   BarChart as BarChartIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import { CertificateAssessmentNotice, certificateValidityLabel } from '../components/RecordSemantics';
 import ResponsiveDataView from '../components/ResponsiveDataView';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import SearchInput from '../components/SearchInput';
@@ -68,6 +69,9 @@ import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 import { ChartFrame } from '../components/ChartFrame';
 export interface CertificateSummary {
+  assessmentBasis?: string; assessmentTimeNs?: string; validityState?: string;
+  selfSignatureState?: string; certificateSender?: string;
+  notBeforeRFC3339?: string; notAfterRFC3339?: string;
   timestamp: number;
   srcIP: string;
   srcPort: number;
@@ -195,9 +199,9 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
       filtered = filtered.filter(cert => {
         switch (filterType) {
           case 'expired':
-            return cert.isExpired;
+            return cert.assessmentBasis === 'capture-time' && cert.validityState === 'expired';
           case 'selfSigned':
-            return cert.isSelfSigned;
+            return cert.selfSignatureState === 'verified';
           case 'weakSecurity':
             return cert.hasWeakSignature || cert.hasShortKeySize;
           default:
@@ -369,21 +373,22 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
 
   // Calculate statistics
   const stats = useMemo(() => ({
-    expiredCount: certificates.filter(c => c.isExpired).length,
-    selfSignedCount: certificates.filter(c => c.isSelfSigned).length,
+    expiredCount: certificates.filter(c => c.assessmentBasis === 'capture-time' && c.validityState === 'expired').length,
+    selfSignedCount: certificates.filter(c => c.selfSignatureState === 'verified').length,
     weakCount: certificates.filter(c => c.hasWeakSignature || c.hasShortKeySize).length,
     uniqueIssuers: new Set(certificates.map(c => c.issuerCommonName)).size,
   }), [certificates]);
 
   // Helper function to get status icon
   const getStatusIcon = (cert: CertificateSummary) => {
-    if (cert.isExpired) {
+    if (cert.assessmentBasis !== 'capture-time' || cert.validityState === 'unavailable' || !cert.validityState) return <WarningIcon color="warning" />;
+    if (cert.validityState === 'expired') {
       return <ErrorIcon color="error" />;
     }
     if (cert.hasWeakSignature || cert.hasShortKeySize) {
       return <WarningIcon color="warning" />;
     }
-    if (cert.isSelfSigned) {
+    if (cert.selfSignatureState === 'verified') {
       return <WarningIcon color="warning" />;
     }
     if (cert.daysUntilExpiration < 30) {
@@ -616,7 +621,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                   </Box>
                   <Typography variant="caption" color="text.secondary" display="block">
                     Issuer: {cert.issuerCommonName || '-'}
-                    {cert.isSelfSigned && ' (Self-Signed)'}
+                     {cert.selfSignatureState === 'verified' && ' (Self-Signed)'}
                   </Typography>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
                     <Typography
@@ -627,7 +632,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                         'text.secondary'
                       }
                     >
-                      {cert.isExpired ? 'Expired' : `Expires in ${cert.daysUntilExpiration} days`}
+                       {certificateValidityLabel(cert)}
                     </Typography>
                     <Box display="flex" gap={0.5} alignItems="center">
                       <Chip
@@ -746,7 +751,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                             <Typography variant="body2">
                               {cert.issuerCommonName || '-'}
                             </Typography>
-                            {cert.isSelfSigned && (
+                             {cert.selfSignatureState === 'verified' && (
                               <Chip label="Self-Signed" size="small" color="warning" sx={{ fontSize: '0.65rem', height: 18, mt: 0.5 }} />
                             )}
                           </TableCell>
@@ -759,7 +764,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                                 'text.primary'
                               }
                             >
-                              {cert.isExpired ? 'Expired' : `${cert.daysUntilExpiration} days`}
+                               {certificateValidityLabel(cert)}
                             </Typography>
                           </TableCell>
                           <TableCell align="right">
@@ -782,6 +787,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                           <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
                             <Collapse in={expandedRow === rowKey} timeout="auto" unmountOnExit>
                               <Box sx={{ py: 2 }} data-learn="Certificate Details: Extended information about this TLS certificate including validity, algorithms, fingerprints, and connection details.">
+                                <CertificateAssessmentNotice cert={cert} />
                                 <Grid container spacing={2}>
                                   {/* Certificate Status Summary */}
                                   <Grid item xs={12}>
@@ -792,19 +798,19 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                                       <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
                                         Observed: {cert.seenCount} time{cert.seenCount !== 1 ? 's' : ''}
                                       </Typography>
-                                      {cert.isExpired && (
+                                      {cert.assessmentBasis === 'capture-time' && cert.validityState === 'expired' && (
                                         <Chip label="EXPIRED" size="small" color="error" sx={{ fontSize: '0.75rem' }} />
                                       )}
-                                      {cert.isNotYetValid && (
+                                      {cert.assessmentBasis === 'capture-time' && cert.validityState === 'not-yet-valid' && (
                                         <Chip label="Not Yet Valid" size="small" color="error" sx={{ fontSize: '0.75rem' }} />
                                       )}
-                                      {cert.isSelfSigned && (
+                                      {cert.selfSignatureState === 'verified' && (
                                         <Chip label="Self-Signed" size="small" color="warning" sx={{ fontSize: '0.75rem' }} />
                                       )}
-                                      {!cert.isExpired && !cert.isNotYetValid && cert.daysUntilExpiration < 30 && (
+                                      {cert.assessmentBasis === 'capture-time' && cert.validityState === 'valid' && cert.daysUntilExpiration < 30 && (
                                         <Chip label={`Expires in ${cert.daysUntilExpiration} days`} size="small" color="warning" sx={{ fontSize: '0.75rem' }} />
                                       )}
-                                      {!cert.isExpired && !cert.isNotYetValid && cert.daysUntilExpiration >= 30 && (
+                                      {cert.assessmentBasis === 'capture-time' && cert.validityState === 'valid' && cert.daysUntilExpiration >= 30 && (
                                         <Chip label={`Valid for ${cert.daysUntilExpiration} days`} size="small" color="success" sx={{ fontSize: '0.75rem' }} />
                                       )}
                                     </Box>
@@ -841,16 +847,13 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                                       Validity Period
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                      Not Before: {formatTimestamp(cert.notBefore)}
+                                      Not Before: {cert.notBeforeRFC3339 || (cert.notBefore ? formatTimestamp(cert.notBefore) : 'Unavailable')}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                      Not After: {formatTimestamp(cert.notAfter)}
+                                      Not After: {cert.notAfterRFC3339 || (cert.notAfter ? formatTimestamp(cert.notAfter) : 'Unavailable')}
                                     </Typography>
-                                    <Typography variant="body2" color={cert.isExpired ? 'error.main' : cert.daysUntilExpiration < 30 ? 'warning.main' : 'success.main'}>
-                                      {cert.isExpired 
-                                        ? `Expired ${Math.abs(cert.daysUntilExpiration)} days ago`
-                                        : `Valid for ${cert.daysUntilExpiration} more days`
-                                      }
+                                    <Typography variant="body2" color={cert.assessmentBasis !== 'capture-time' || cert.validityState === 'unavailable' ? 'text.secondary' : cert.isExpired ? 'error.main' : cert.daysUntilExpiration < 30 ? 'warning.main' : 'success.main'}>
+                                      {certificateValidityLabel(cert)}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                                       Certificate Version: X.509 v{cert.version}
@@ -910,7 +913,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                                         Country: {cert.issuerCountry}
                                       </Typography>
                                     )}
-                                    {cert.isSelfSigned && (
+                                    {cert.selfSignatureState === 'verified' && (
                                       <Box sx={{ mt: 0.5 }}>
                                         <Chip 
                                           label="Self-Signed Certificate" 
@@ -921,7 +924,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                                         />
                                       </Box>
                                     )}
-                                    {!cert.issuerOrganization && !cert.issuerCountry && !cert.isSelfSigned && (
+                                    {!cert.issuerOrganization && !cert.issuerCountry && cert.selfSignatureState !== 'verified' && (
                                       <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
                                         No additional issuer information
                                       </Typography>

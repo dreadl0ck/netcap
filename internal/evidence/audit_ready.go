@@ -9,6 +9,8 @@ import (
 
 const AuditReadyFile = "audit-output-ready.json"
 
+func (c *Capture) RunID() string { c.mu.Lock(); defer c.mu.Unlock(); return c.manifest.RunID }
+
 // MarkAuditOutputReady is called only after stream finalization and writer teardown.
 func (c *Capture) MarkAuditOutputReady() (resultErr error) {
 	c.mu.Lock()

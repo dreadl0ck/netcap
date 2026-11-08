@@ -56,6 +56,7 @@ var fieldsTACACS = []string{
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	"CommunityID",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -86,6 +87,7 @@ func (a *TACACS) CSVRecord() []string {
 		a.DstIP,
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
+		a.CommunityID,
 	})
 }
 
@@ -142,7 +144,7 @@ func (a *TACACS) Encode() []string {
 		tacacsEncoder.Int32(fieldSequenceNumber, a.SequenceNumber), // int32
 		tacacsEncoder.Int32(fieldFlags, a.Flags),                   // int32
 		tacacsEncoder.Int32(fieldSessionID, a.SessionID),           // int32
-		tacacsEncoder.Int32(fieldLength, a.Length),                  // int32
+		tacacsEncoder.Int32(fieldLength, a.Length),                 // int32
 		tacacsEncoder.String(fieldAction, a.Action),                // string
 		tacacsEncoder.String(fieldUser, a.User),                    // string
 		tacacsEncoder.String(fieldRemoteAddr, a.RemoteAddr),        // string
@@ -154,6 +156,7 @@ func (a *TACACS) Encode() []string {
 		tacacsEncoder.String(fieldDstIP, a.DstIP),
 		tacacsEncoder.Int32(fieldSrcPort, a.SrcPort),
 		tacacsEncoder.Int32(fieldDstPort, a.DstPort),
+		tacacsEncoder.String("CommunityID", a.CommunityID),
 	})
 }
 

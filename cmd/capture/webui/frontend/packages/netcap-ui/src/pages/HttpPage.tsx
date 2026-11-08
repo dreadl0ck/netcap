@@ -63,12 +63,15 @@ import CommunityIDChip from '../components/CommunityIDChip';
 import SearchInput from '../components/SearchInput';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
+import { HTTPReassemblyNotice } from '../components/RecordSemantics';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 import { ChartFrame } from '../components/ChartFrame';
 interface HTTPSummary {
+  timestampNs?: string;
+  reassemblyStatus?: string;
   timestamp: number;
   proto: string;
   method: string;
@@ -395,6 +398,9 @@ export default function HTTPPage() {
       const params = new URLSearchParams({
         srcIP: http.srcIP,
         dstIP: http.dstIP,
+        srcPort: String(http.srcPort),
+        dstPort: String(http.dstPort),
+        protocol: 'TCP',
       });
       const downloadUrl = `${getBackendUrl()}/api/http/download-pcap?${params}`;
       
@@ -990,6 +996,7 @@ export default function HTTPPage() {
                           <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
                             <Collapse in={expandedRow === rowKey} timeout="auto" unmountOnExit>
                               <Box sx={{ py: 2 }} data-learn="HTTP Details: Extended information about this HTTP request and response including headers, cookies, encoding, and endpoints.">
+                                <HTTPReassemblyNotice status={http.reassemblyStatus} timestampNs={http.timestampNs} />
                                 <Grid container spacing={2}>
                                   {/* Basic Info */}
                                   <Grid item xs={12} md={6}>
@@ -1386,7 +1393,7 @@ export default function HTTPPage() {
                                         </Button>
                                       )}
                                       <Button
-                                        data-learn="Download as PCAP: Download a filtered PCAP file containing only the packets from this HTTP request/response."
+                                        data-learn="Export the matching bidirectional TCP tuple using its observed ports. Reused connections and other transactions on that tuple may be included."
                                         variant="outlined"
                                         startIcon={<DownloadIcon />}
                                         onClick={(e) => {
@@ -1432,4 +1439,3 @@ export default function HTTPPage() {
     </Layout>
   );
 }
-

@@ -73,6 +73,8 @@ var fieldsDNS = []string{
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	"CommunityID",
+	"RTT", "TransactionStatus", "QueryTransmissions",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -124,6 +126,8 @@ func (d *DNS) CSVRecord() []string {
 		d.DstIP,
 		formatInt32(d.SrcPort),
 		formatInt32(d.DstPort),
+		d.CommunityID,
+		strconv.FormatInt(d.RTT, 10), d.TransactionStatus, formatInt32(d.QueryTransmissions),
 	})
 }
 
@@ -254,9 +258,9 @@ func (q *DNSMX) toString() string {
 // JSON returns the JSON representation of the audit record.
 func (d *DNS) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
-	d.Timestamp /= int64(time.Millisecond)
-
-	return jsonMarshaler.MarshalToString(d)
+	copy := *d
+	copy.Timestamp /= int64(time.Millisecond)
+	return jsonMarshaler.MarshalToString(&copy)
 }
 
 var dnsMetric = prometheus.NewCounterVec(
@@ -338,6 +342,8 @@ func (d *DNS) Encode() []string {
 		dnsEncoder.String(fieldDstIP, d.DstIP),
 		dnsEncoder.Int32(fieldSrcPort, d.SrcPort),
 		dnsEncoder.Int32(fieldDstPort, d.DstPort),
+		dnsEncoder.String("CommunityID", d.CommunityID),
+		dnsEncoder.Int64("RTT", d.RTT), dnsEncoder.String("TransactionStatus", d.TransactionStatus), dnsEncoder.Int32("QueryTransmissions", d.QueryTransmissions),
 	})
 }
 

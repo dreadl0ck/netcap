@@ -87,14 +87,19 @@ func TestInvestigationKnownForeignSessionSelection(t *testing.T) {
 			streamID = filepath.Base(stream)
 		}
 	}
-	// Session IDs are shareable read selectors; selection must not change global state.
+	// The owner can select another session without changing global state.
 	response := httptest.NewRecorder()
-	s.handleStreamEvidence(response, httptest.NewRequest("GET", "/?sessionId=foreign", nil))
+	ownerRequest := func(url string) *http.Request {
+		r := httptest.NewRequest("GET", url, nil)
+		r.RemoteAddr = "192.0.2.2:42460"
+		return r
+	}
+	s.handleStreamEvidence(response, ownerRequest("/?sessionId=foreign"))
 	if response.Code != 200 || !strings.Contains(response.Body.String(), "foreign-only") || strings.Contains(response.Body.String(), "active-only") {
 		t.Fatalf("foreign listing mixed with active evidence: %d %s", response.Code, response.Body)
 	}
 	response = httptest.NewRecorder()
-	s.handleStreamEvidence(response, httptest.NewRequest("GET", "/?sessionId=foreign&id="+streamID+"&direction=client", nil))
+	s.handleStreamEvidence(response, ownerRequest("/?sessionId=foreign&id="+streamID+"&direction=client"))
 	if response.Code != 200 || !bytes.Equal(response.Body.Bytes(), []byte("foreign-only")) {
 		t.Fatalf("foreign download mixed with active evidence: %d %s", response.Code, response.Body)
 	}
@@ -116,7 +121,7 @@ func TestInvestigationKnownForeignSessionSelection(t *testing.T) {
 		t.Fatal(err)
 	}
 	response = httptest.NewRecorder()
-	s.handleStreamEvidence(response, httptest.NewRequest("GET", "/?sessionId=foreign", nil))
+	s.handleStreamEvidence(response, ownerRequest("/?sessionId=foreign"))
 	if response.Code != http.StatusUnprocessableEntity || !strings.Contains(response.Body.String(), "Incomplete stream evidence:") {
 		t.Fatalf("missing manifest became empty/active listing: %d %s", response.Code, response.Body)
 	}

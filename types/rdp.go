@@ -72,6 +72,7 @@ var fieldsRDP = []string{
 	fieldRDPUsesTLS,
 	fieldRDPUsesCredSSP,
 	fieldRDPErrorDescription,
+	"CommunityID", "NegotiationOutcome", "AuthenticationOutcome", "NegotiatedSecurityKnown",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -104,6 +105,7 @@ func (r *RDP) CSVRecord() []string {
 		strconv.FormatBool(r.UsesTLS),
 		strconv.FormatBool(r.UsesCredSSP),
 		r.ErrorDescription,
+		r.CommunityID, r.NegotiationOutcome, r.AuthenticationOutcome, strconv.FormatBool(r.NegotiatedSecurityKnown),
 	})
 }
 
@@ -178,6 +180,7 @@ func (r *RDP) Encode() []string {
 		rdpEncoder.Bool(r.UsesTLS),
 		rdpEncoder.Bool(r.UsesCredSSP),
 		rdpEncoder.String(fieldRDPErrorDescription, r.ErrorDescription),
+		rdpEncoder.String("CommunityID", r.CommunityID), rdpEncoder.String("NegotiationOutcome", r.NegotiationOutcome), rdpEncoder.String("AuthenticationOutcome", r.AuthenticationOutcome), rdpEncoder.Bool(r.NegotiatedSecurityKnown),
 	})
 }
 

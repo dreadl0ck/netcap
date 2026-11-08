@@ -189,7 +189,6 @@ type ChartFieldInfo struct {
 func (s *Server) resolveChartScopeDirs(scope string, r *http.Request) ([]string, int, error) {
 	s.mu.RLock()
 	isServiceMode := s.isServiceMode
-	currentSession := s.currentSession
 	outDir := s.outDir
 	baseOutDir := s.baseOutDir
 	inputFiles := append([]string(nil), s.inputFiles...)
@@ -223,12 +222,14 @@ func (s *Server) resolveChartScopeDirs(scope string, r *http.Request) ([]string,
 
 	switch scope {
 	case "", "current":
-		dir := outDir
-		if isServiceMode && currentSession != "" && s.sessionManager != nil {
-			if sess, ok := s.sessionManager.GetSession(currentSession); ok {
-				dir = sess.OutputDir
+		selected, err := s.resolveCaptureSelection(r)
+		if err != nil {
+			if typed, ok := err.(*captureSelectionError); ok {
+				return nil, typed.Status, err
 			}
+			return nil, 500, err
 		}
+		dir := selected.OutputDir
 		if dir == "" {
 			return nil, http.StatusServiceUnavailable, fmt.Errorf("no output directory available")
 		}

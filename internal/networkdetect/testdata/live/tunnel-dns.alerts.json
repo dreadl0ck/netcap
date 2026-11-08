@@ -9,6 +9,7 @@
     "DstPort": "0",
     "MITRE": "T1071.004",
     "Domain": "sandbox.alphasoc.xyz",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "dns.tunnel",
     "RecordType": "NetworkDetection",
     "Severity": "medium",
@@ -16,6 +17,21 @@
       "network-detection",
       "behavioral-suspicion"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"dns.tunnel\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363780118010000,\"lastSeen\":1791363781936160000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"dptfdrswrudztjbculvosbphurprhe\",\"gxnaqsxruopdhiibkaitjcxkjheakf\",\"jnsysldgdohnrksxpmuzkbhtdbrdbd\",\"meqwiusunrjezqakiwswcwvdamnycf\",\"ppueuhhdnqcfpwzokfsodmwezxpyfw\",\"uhzajwysbdrtrrcqpegneagolgnniu\",\"ujljnmwtursuwtiompfsxjezgpoabd\",\"xrqxdgcbhyrqrwfzepuihucgpwlxvr\"],\"limitations\":[\"High-entropy TXT queries can also be legitimate\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"dns.tunnel\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363780118010000,\"lastSeen\":1791363781936160000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"dptfdrswrudztjbculvosbphurprhe\",\"gxnaqsxruopdhiibkaitjcxkjheakf\",\"jnsysldgdohnrksxpmuzkbhtdbrdbd\",\"meqwiusunrjezqakiwswcwvdamnycf\",\"ppueuhhdnqcfpwzokfsodmwezxpyfw\",\"uhzajwysbdrtrrcqpegneagolgnniu\",\"ujljnmwtursuwtiompfsxjezgpoabd\",\"xrqxdgcbhyrqrwfzepuihucgpwlxvr\"],\"limitations\":[\"High-entropy TXT queries can also be legitimate\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "937ffe8be6db647289936d1d15df7d9d9b889a55fda2d6c59c9426a704224016",
+    "Count": 41,
+    "FirstSeen": 1791363781936160000,
+    "LastSeen": 1791363790001370000,
+    "Examples": [
+      "{\"at\":1791363781936160000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sandbox.alphasoc.xyz\",\"observed\":10,\"firstSeen\":1791363780118010000,\"samples\":[\"dptfdrswrudztjbculvosbphurprhe\",\"gxnaqsxruopdhiibkaitjcxkjheakf\",\"jnsysldgdohnrksxpmuzkbhtdbrdbd\",\"meqwiusunrjezqakiwswcwvdamnycf\",\"ppueuhhdnqcfpwzokfsodmwezxpyfw\",\"uhzajwysbdrtrrcqpegneagolgnniu\",\"ujljnmwtursuwtiompfsxjezgpoabd\",\"xrqxdgcbhyrqrwfzepuihucgpwlxvr\"]}",
+      "{\"at\":1791363782137403000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sandbox.alphasoc.xyz\",\"observed\":11,\"firstSeen\":1791363780118010000,\"samples\":[\"dptfdrswrudztjbculvosbphurprhe\",\"gxnaqsxruopdhiibkaitjcxkjheakf\",\"jnsysldgdohnrksxpmuzkbhtdbrdbd\",\"meqwiusunrjezqakiwswcwvdamnycf\",\"ppueuhhdnqcfpwzokfsodmwezxpyfw\",\"uhzajwysbdrtrrcqpegneagolgnniu\",\"ujljnmwtursuwtiompfsxjezgpoabd\",\"xrqxdgcbhyrqrwfzepuihucgpwlxvr\"]}",
+      "{\"at\":1791363782338793000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sandbox.alphasoc.xyz\",\"observed\":12,\"firstSeen\":1791363780118010000,\"samples\":[\"bsmpnxhklhchsfqioczyrixuiojyrs\",\"dptfdrswrudztjbculvosbphurprhe\",\"gxnaqsxruopdhiibkaitjcxkjheakf\",\"jnsysldgdohnrksxpmuzkbhtdbrdbd\",\"meqwiusunrjezqakiwswcwvdamnycf\",\"ppueuhhdnqcfpwzokfsodmwezxpyfw\",\"uhzajwysbdrtrrcqpegneagolgnniu\",\"ujljnmwtursuwtiompfsxjezgpoabd\"]}",
+      "{\"at\":1791363782540100000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sandbox.alphasoc.xyz\",\"observed\":13,\"firstSeen\":1791363780118010000,\"samples\":[\"bsmpnxhklhchsfqioczyrixuiojyrs\",\"dptfdrswrudztjbculvosbphurprhe\",\"gxnaqsxruopdhiibkaitjcxkjheakf\",\"jnsysldgdohnrksxpmuzkbhtdbrdbd\",\"meqwiusunrjezqakiwswcwvdamnycf\",\"ppueuhhdnqcfpwzokfsodmwezxpyfw\",\"rgenvpkywpxsiqroysljezfctdvlqe\",\"uhzajwysbdrtrrcqpegneagolgnniu\"]}",
+      "{\"at\":1791363782742414000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sandbox.alphasoc.xyz\",\"observed\":14,\"firstSeen\":1791363780118010000,\"samples\":[\"bjpctzmscecwfpcwzzfjjgixlpiyja\",\"bsmpnxhklhchsfqioczyrixuiojyrs\",\"dptfdrswrudztjbculvosbphurprhe\",\"gxnaqsxruopdhiibkaitjcxkjheakf\",\"jnsysldgdohnrksxpmuzkbhtdbrdbd\",\"meqwiusunrjezqakiwswcwvdamnycf\",\"ppueuhhdnqcfpwzokfsodmwezxpyfw\",\"rgenvpkywpxsiqroysljezfctdvlqe\"]}",
+      "{\"at\":1791363782937968000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sandbox.alphasoc.xyz\",\"observed\":15,\"firstSeen\":1791363780118010000,\"samples\":[\"bizfxwgjcbitaybiiiyubiuyqxajhl\",\"bjpctzmscecwfpcwzzfjjgixlpiyja\",\"bsmpnxhklhchsfqioczyrixuiojyrs\",\"dptfdrswrudztjbculvosbphurprhe\",\"gxnaqsxruopdhiibkaitjcxkjheakf\",\"jnsysldgdohnrksxpmuzkbhtdbrdbd\",\"meqwiusunrjezqakiwswcwvdamnycf\",\"ppueuhhdnqcfpwzokfsodmwezxpyfw\"]}",
+      "{\"at\":1791363783139580000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sandbox.alphasoc.xyz\",\"observed\":16,\"firstSeen\":1791363780118010000,\"samples\":[\"bizfxwgjcbitaybiiiyubiuyqxajhl\",\"bjpctzmscecwfpcwzzfjjgixlpiyja\",\"bsmpnxhklhchsfqioczyrixuiojyrs\",\"dptfdrswrudztjbculvosbphurprhe\",\"gxnaqsxruopdhiibkaitjcxkjheakf\",\"jnsysldgdohnrksxpmuzkbhtdbrdbd\",\"meqwiusunrjezqakiwswcwvdamnycf\",\"oopglpqphlyjxzlktgtszqclihqlni\"]}",
+      "{\"at\":1791363790001370000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sandbox.alphasoc.xyz\",\"observed\":50,\"firstSeen\":1791363780118010000,\"samples\":[\"acpbkzfldcwqngcvazpokfzqronsxe\",\"aewemminklldrfmwmjipaqpmptzcmi\",\"aqmyiuqfciofsrrpzyvbqgzchnrmbx\",\"bizfxwgjcbitaybiiiyubiuyqxajhl\",\"bjpctzmscecwfpcwzzfjjgixlpiyja\",\"bnjwpcxozckaymfeakdxamnbzvbxtc\",\"bsmpnxhklhchsfqioczyrixuiojyrs\",\"ceejfyimmxfyhqvxcuvggtmrzzqeyc\"]}"
+    ]
   }
 ]

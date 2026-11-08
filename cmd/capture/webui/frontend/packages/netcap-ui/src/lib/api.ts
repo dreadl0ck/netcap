@@ -164,6 +164,7 @@ function createNoOpApi(): NetcapApiClient {
     reportIssue: noOpReturn({ success: false, issueId: '', message: '', remaining: 0 }),
     getRules: noOpReturn({ rules: [] }),
     getOfflinePacks: noOp,
+    getArtifactAnalysis: noOp,
     validateOfflinePack: noOp,
     executeOfflinePack: noOp,
     getOfflineEvaluations: noOp,
@@ -282,6 +283,7 @@ export interface AuditStatsResponse {
 }
 
 export interface StatusResponse {
+  childAnalysisVersion?: number;
   isProcessing: boolean;
   outputDir: string;
   inputFiles: string[];
@@ -296,6 +298,16 @@ export interface StatusResponse {
 }
 
 export interface OfflineSelection { inputFile?: string; sessionId?: string }
+export interface ArtifactAnalyzerResult {
+  engine: string; state: string; outcome?: string; error?: string; digest: string;
+  matches?: string[]; classification?: { Label: string; MimeType: string; Score?: number };
+}
+export interface ArtifactAnalysisReport {
+  analyzers?: ArtifactAnalyzerResult[];
+  version: number; runId: string; state: string; error?: string; configDigest: string;
+  rejected: number; extractionIssues?: string[];
+  results: Record<string, { sha256: string; configDigest: string; analyzers: ArtifactAnalyzerResult[] }>;
+}
 export interface OfflineRule {
   id: string; name: string; type: 'TCP' | 'UDP' | 'HTTP' | 'DNS'; expression: string;
   enabled: boolean; severity: string; threshold: { count: number; window: string; groupBy: string[] };
@@ -464,6 +476,11 @@ export interface TrySession {
 }
 
 export interface FileInfo {
+  parentSessionId?: string;
+  parentInputFile?: string;
+  parentRunId?: string;
+  analysisSelector?: string;
+  packetSelection?: ChildAnalysisOptions['selection'];
   id: string;  // Unique identifier for the file (used for API calls)
   name: string;
   path: string;
@@ -483,7 +500,25 @@ export interface FileInfo {
   hasReportedIssue?: boolean;  // Optional, whether an issue has been reported for this file
 }
 
+export interface ChildAnalysisOptions {
+  runId?: string;
+  selection?: {
+    version: 1;
+    sourceSHA256: string;
+    bpf: string;
+    startNs?: string;
+    endNs?: string;
+    maxPackets?: number;
+    maxOutputBytes?: string;
+  };
+}
+
 export interface ExtractedFileInfo {
+  occurrences?: { name: string; timestampNs: string; communityId: string; connectionUid: string; protocol: string; parentFileId: string; flowDirection: string }[];
+  occurrencesCapped?: boolean;
+  sha256?: string;
+  isComplete?: boolean;
+  completenessReason?: string;
   name: string;
   originalName?: string; // Original filename from network traffic (File.Name)
   path: string;
@@ -533,6 +568,7 @@ export interface YaraRuleInfo {
 }
 
 export interface YaraScanResult {
+  state?: string; outcome?: string; error?: string;
   filePath: string;
   fileName: string;
   matches: string[];
@@ -540,6 +576,7 @@ export interface YaraScanResult {
 }
 
 export interface YaraScanResponse {
+  state?: string; failed?: number;
   results: YaraScanResult[];
   totalFiles: number;
   filesScanned: number;
@@ -2037,6 +2074,12 @@ function createApiWithBase(apiBase: string) {
   async getOfflinePacks(): Promise<{ format: string; packs: { name: string; yaml: string }[]; upload: boolean; limits: Record<string, number> }> {
     return offlineResponse(await fetch(`${apiBase}/rules/offline/packs`));
   },
+  async getArtifactAnalysis(selection: OfflineSelection): Promise<ArtifactAnalysisReport> {
+    const query = new URLSearchParams();
+    if (selection.inputFile) query.set('inputFile', selection.inputFile);
+    if (selection.sessionId) query.set('sessionId', selection.sessionId);
+    return offlineResponse(await fetch(`${apiBase}/artifact-analysis?${query}`));
+  },
   async validateOfflinePack(yaml: string): Promise<OfflineValidation> {
     const res = await fetch(`${apiBase}/rules/offline/validate`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ yaml }),
@@ -2600,12 +2643,11 @@ function createApiWithBase(apiBase: string) {
     return res.json();
   },
 
-  // Reanalyze a PCAP file - deletes existing data and reruns analysis with current config
-  async reanalyzeFile(inputFile: string, sessionId?: string): Promise<{success: boolean; message: string; filename?: string; path?: string; sessionId?: string}> {
+  async reanalyzeFile(inputFile: string, sessionId?: string, options?: ChildAnalysisOptions): Promise<{success: boolean; message: string; filename?: string; path?: string; sessionId?: string}> {
     const res = await fetch(`${apiBase}/reanalyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inputFile, sessionId }),
+      body: JSON.stringify({ inputFile, sessionId, ...options }),
     });
     if (!res.ok) {
       const errorText = await res.text();

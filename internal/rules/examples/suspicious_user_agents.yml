@@ -1517,7 +1517,7 @@ rules:
     tags: ["network", "cryptcat"]
     enabled: true
 
-  - name: PowerShell User Agent Detected
+  - name: PowerShell Prefix User Agent Detected
     description: PowerShell command-line shell and scripting language
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^powershell")
@@ -1580,7 +1580,7 @@ rules:
     tags: ["scripting", "perl"]
     enabled: true
 
-  - name: Wget User Agent Detected
+  - name: Wget Prefix User Agent Detected
     description: Wget file retrieval utility
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^wget")
@@ -1714,4 +1714,3 @@ rules:
     mitre: []
     tags: ["scraping", "mechanicalsoup"]
     enabled: true
-

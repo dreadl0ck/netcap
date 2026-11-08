@@ -20,13 +20,19 @@
 package ipp
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
+	"io"
+	"mime"
+	"net/http"
+	"strings"
 	"sync/atomic"
 
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -95,19 +101,10 @@ func (r *ippReader) Decode() {
 		return
 	}
 
-	for _, d := range r.conversation.Data {
-		raw := d.Raw()
-		if len(raw) < 8 {
-			continue
-		}
-
-		rec := r.parseIPPMessage(raw)
-		if rec == nil {
-			continue
-		}
-
+	r.decodeHTTPMessages(func(rec *types.IPP, d *core.StreamData) {
 		rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = r.conversation.Endpoints(d)
 		rec.Flow = r.conversation.Ident
+		rec.CommunityID = r.conversation.CommunityID
 		rec.Timestamp = core.FragmentTime(d)
 
 		err := Decoder.Writer.Write(rec)
@@ -115,6 +112,120 @@ func (r *ippReader) Decode() {
 			ippLog.Error("failed to write ipp record", zap.Error(err))
 		} else {
 			atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+		}
+	})
+}
+
+type countedIPPReader struct {
+	source io.Reader
+	read   int64
+}
+
+func (r *countedIPPReader) Read(p []byte) (int, error) {
+	n, err := r.source.Read(p)
+	r.read += int64(n)
+	return n, err
+}
+
+// TCP fragment boundaries are not HTTP message boundaries. Never join across loss.
+func (r *ippReader) decodeHTTPMessages(emit func(*types.IPP, *core.StreamData)) {
+	const maxHeader = 16 << 10
+	const maxBody = 8 << 20
+	for _, direction := range []reassembly.TCPFlowDirection{reassembly.TCPDirClientToServer, reassembly.TCPDirServerToClient} {
+		var readers []io.Reader
+		var fragments []*core.StreamData
+		var ends []int64
+		var total int64
+		for _, data := range r.conversation.Data {
+			fragment, ok := data.(*core.StreamData)
+			if !ok {
+				break
+			}
+			if fragment.Direction() != direction {
+				continue
+			}
+			if fragment.HasGap(total > 0) || fragment.TCPObservation != "" {
+				break
+			}
+			if len(fragment.Raw()) == 0 {
+				continue
+			}
+			readers = append(readers, bytes.NewReader(fragment.Raw()))
+			fragments = append(fragments, fragment)
+			total += int64(len(fragment.Raw()))
+			ends = append(ends, total)
+		}
+		counter := &countedIPPReader{source: io.MultiReader(readers...)}
+		reader := bufio.NewReaderSize(counter, maxHeader)
+		fragmentIndex := 0
+		for {
+			offset := counter.read - int64(reader.Buffered())
+			prefix, err := reader.Peek(5)
+			if err != nil {
+				break
+			}
+			response := bytes.Equal(prefix, []byte("HTTP/"))
+			// Bound header allocation before net/http parses it.
+			complete := false
+			for size := 4; size <= maxHeader; size++ {
+				header, peekErr := reader.Peek(size)
+				if peekErr != nil {
+					break
+				}
+				if bytes.HasSuffix(header, httpHeaderEnd) {
+					complete = true
+					break
+				}
+			}
+			if !complete {
+				break
+			}
+			var body io.ReadCloser
+			var contentType string
+			var length int64
+			if response {
+				message, err := http.ReadResponse(reader, nil)
+				if err != nil {
+					break
+				}
+				body, contentType, length = message.Body, message.Header.Get("Content-Type"), message.ContentLength
+			} else {
+				message, err := http.ReadRequest(reader)
+				if err != nil {
+					break
+				}
+				body, contentType, length = message.Body, message.Header.Get("Content-Type"), message.ContentLength
+			}
+			if length > maxBody {
+				break
+			}
+			data, err := io.ReadAll(io.LimitReader(body, maxBody+1))
+			if err != nil || len(data) > maxBody {
+				break
+			}
+			if err := body.Close(); err != nil {
+				break
+			}
+			typ, _, err := mime.ParseMediaType(strings.TrimSpace(contentType))
+			if err != nil || typ != "application/ipp" {
+				continue
+			}
+			record := r.parseIPPBody(data)
+			if record == nil {
+				continue
+			}
+			if response {
+				record.OperationName = statusNames[int(record.OperationOrStatus)]
+				if record.OperationName == "" {
+					record.OperationName = "Unknown"
+				}
+			}
+			for fragmentIndex < len(ends)-1 && offset >= ends[fragmentIndex] {
+				fragmentIndex++
+			}
+			if fragmentIndex < len(fragments) {
+				emit(record, fragments[fragmentIndex])
+			}
 		}
 	}
 }
@@ -125,6 +236,10 @@ func (r *ippReader) parseIPPMessage(data []byte) *types.IPP {
 	if idx := bytes.Index(data, httpHeaderEnd); idx >= 0 {
 		ippBody = data[idx+4:]
 	}
+	return r.parseIPPBody(ippBody)
+}
+
+func (r *ippReader) parseIPPBody(ippBody []byte) *types.IPP {
 
 	// IPP body: version-major(1) + version-minor(1) + operation-id/status-code(2) + request-id(4)
 	if len(ippBody) < 8 {

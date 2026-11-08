@@ -101,6 +101,7 @@ func (t *tacacsReader) Decode() {
 			rec.SrcPort = srcPort
 			rec.DstPort = dstPort
 			rec.Flow = t.conversation.Ident
+			rec.CommunityID = t.conversation.CommunityID
 			rec.Timestamp = timestamp
 
 			err := Decoder.Writer.Write(rec)

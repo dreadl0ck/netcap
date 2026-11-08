@@ -8,6 +8,7 @@
     "DstIP": "203.0.113.130",
     "DstPort": "143",
     "MITRE": "T1046",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "network.scan",
     "RecordType": "NetworkDetection",
     "Severity": "medium",
@@ -15,7 +16,22 @@
       "network-detection",
       "behavioral-suspicion"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363758521136000,\"lastSeen\":1791363759819068000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"],\"limitations\":[\"Distinct ports on one host; outcomes and intent are not inferred\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363758521136000,\"lastSeen\":1791363759819068000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"],\"limitations\":[\"Distinct ports on one host; outcomes and intent are not inferred\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "fa4c5618ff7c7d08813c2f5eb39957cf3f4fbb42ea5f65faf25c0a896b70b264",
+    "Count": 12,
+    "FirstSeen": 1791363759819068000,
+    "LastSeen": 1791363761423533000,
+    "Examples": [
+      "{\"at\":1791363759819068000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"48019\",\"dstIP\":\"203.0.113.130\",\"dstPort\":\"143\",\"observed\":10,\"firstSeen\":1791363758521136000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"]}",
+      "{\"at\":1791363759963790000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"33007\",\"dstIP\":\"203.0.113.130\",\"dstPort\":\"389\",\"observed\":11,\"firstSeen\":1791363758521136000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"]}",
+      "{\"at\":1791363760107282000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"53675\",\"dstIP\":\"203.0.113.130\",\"dstPort\":\"443\",\"observed\":12,\"firstSeen\":1791363758521136000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"]}",
+      "{\"at\":1791363760255257000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"41385\",\"dstIP\":\"203.0.113.130\",\"dstPort\":\"445\",\"observed\":13,\"firstSeen\":1791363758521136000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"]}",
+      "{\"at\":1791363760404518000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"60903\",\"dstIP\":\"203.0.113.130\",\"dstPort\":\"1433\",\"observed\":14,\"firstSeen\":1791363758521136000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"1433\",\"21\",\"22\",\"23\"]}",
+      "{\"at\":1791363760549180000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"56935\",\"dstIP\":\"203.0.113.130\",\"dstPort\":\"1521\",\"observed\":15,\"firstSeen\":1791363758521136000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"1433\",\"1521\",\"21\",\"22\"]}",
+      "{\"at\":1791363760692207000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"41661\",\"dstIP\":\"203.0.113.130\",\"dstPort\":\"3306\",\"observed\":16,\"firstSeen\":1791363758521136000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"1433\",\"1521\",\"21\",\"22\"]}",
+      "{\"at\":1791363761423533000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"37513\",\"dstIP\":\"203.0.113.130\",\"dstPort\":\"8443\",\"observed\":21,\"firstSeen\":1791363758521136000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"1433\",\"1521\",\"21\",\"22\"]}"
+    ]
   },
   {
     "Timestamp": 1791363762822857000,
@@ -26,6 +42,7 @@
     "DstIP": "203.0.113.139",
     "DstPort": "143",
     "MITRE": "T1046",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "network.scan",
     "RecordType": "NetworkDetection",
     "Severity": "medium",
@@ -33,7 +50,22 @@
       "network-detection",
       "behavioral-suspicion"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363761522330000,\"lastSeen\":1791363762822857000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"],\"limitations\":[\"Distinct ports on one host; outcomes and intent are not inferred\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363761522330000,\"lastSeen\":1791363762822857000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"],\"limitations\":[\"Distinct ports on one host; outcomes and intent are not inferred\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "eae66485ad88a30a74ebd76aeae601784f01ed205fabd61c357e0c06fcfb21e6",
+    "Count": 12,
+    "FirstSeen": 1791363762822857000,
+    "LastSeen": 1791363764412815000,
+    "Examples": [
+      "{\"at\":1791363762822857000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"46965\",\"dstIP\":\"203.0.113.139\",\"dstPort\":\"143\",\"observed\":10,\"firstSeen\":1791363761522330000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"]}",
+      "{\"at\":1791363762968862000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"39955\",\"dstIP\":\"203.0.113.139\",\"dstPort\":\"389\",\"observed\":11,\"firstSeen\":1791363761522330000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"]}",
+      "{\"at\":1791363763114972000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"34637\",\"dstIP\":\"203.0.113.139\",\"dstPort\":\"443\",\"observed\":12,\"firstSeen\":1791363761522330000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"]}",
+      "{\"at\":1791363763259994000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"58539\",\"dstIP\":\"203.0.113.139\",\"dstPort\":\"445\",\"observed\":13,\"firstSeen\":1791363761522330000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"]}",
+      "{\"at\":1791363763403664000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"51433\",\"dstIP\":\"203.0.113.139\",\"dstPort\":\"1433\",\"observed\":14,\"firstSeen\":1791363761522330000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"1433\",\"21\",\"22\",\"23\"]}",
+      "{\"at\":1791363763547497000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"35123\",\"dstIP\":\"203.0.113.139\",\"dstPort\":\"1521\",\"observed\":15,\"firstSeen\":1791363761522330000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"1433\",\"1521\",\"21\",\"22\"]}",
+      "{\"at\":1791363763692938000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"34421\",\"dstIP\":\"203.0.113.139\",\"dstPort\":\"3306\",\"observed\":16,\"firstSeen\":1791363761522330000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"1433\",\"1521\",\"21\",\"22\"]}",
+      "{\"at\":1791363764412815000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"59983\",\"dstIP\":\"203.0.113.139\",\"dstPort\":\"8443\",\"observed\":21,\"firstSeen\":1791363761522330000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"1433\",\"1521\",\"21\",\"22\"]}"
+    ]
   },
   {
     "Timestamp": 1791363765822447000,
@@ -44,6 +76,7 @@
     "DstIP": "203.0.113.250",
     "DstPort": "143",
     "MITRE": "T1046",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "network.scan",
     "RecordType": "NetworkDetection",
     "Severity": "medium",
@@ -51,6 +84,21 @@
       "network-detection",
       "behavioral-suspicion"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363764525780000,\"lastSeen\":1791363765822447000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"],\"limitations\":[\"Distinct ports on one host; outcomes and intent are not inferred\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363764525780000,\"lastSeen\":1791363765822447000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"],\"limitations\":[\"Distinct ports on one host; outcomes and intent are not inferred\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "87528733333778743f42e50ac40f2e67b663932ffee441f15b1673f93b77be85",
+    "Count": 12,
+    "FirstSeen": 1791363765822447000,
+    "LastSeen": 1791363767423865000,
+    "Examples": [
+      "{\"at\":1791363765822447000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"59395\",\"dstIP\":\"203.0.113.250\",\"dstPort\":\"143\",\"observed\":10,\"firstSeen\":1791363764525780000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"]}",
+      "{\"at\":1791363765967693000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"34275\",\"dstIP\":\"203.0.113.250\",\"dstPort\":\"389\",\"observed\":11,\"firstSeen\":1791363764525780000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"]}",
+      "{\"at\":1791363766112695000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"48079\",\"dstIP\":\"203.0.113.250\",\"dstPort\":\"443\",\"observed\":12,\"firstSeen\":1791363764525780000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"]}",
+      "{\"at\":1791363766260820000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"40387\",\"dstIP\":\"203.0.113.250\",\"dstPort\":\"445\",\"observed\":13,\"firstSeen\":1791363764525780000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"21\",\"22\",\"23\",\"25\"]}",
+      "{\"at\":1791363766405109000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"53919\",\"dstIP\":\"203.0.113.250\",\"dstPort\":\"1433\",\"observed\":14,\"firstSeen\":1791363764525780000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"1433\",\"21\",\"22\",\"23\"]}",
+      "{\"at\":1791363766552749000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"60457\",\"dstIP\":\"203.0.113.250\",\"dstPort\":\"1521\",\"observed\":15,\"firstSeen\":1791363764525780000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"1433\",\"1521\",\"21\",\"22\"]}",
+      "{\"at\":1791363766699540000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55369\",\"dstIP\":\"203.0.113.250\",\"dstPort\":\"3306\",\"observed\":16,\"firstSeen\":1791363764525780000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"1433\",\"1521\",\"21\",\"22\"]}",
+      "{\"at\":1791363767423865000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"47087\",\"dstIP\":\"203.0.113.250\",\"dstPort\":\"8443\",\"observed\":21,\"firstSeen\":1791363764525780000,\"samples\":[\"111\",\"135\",\"139\",\"143\",\"1433\",\"1521\",\"21\",\"22\"]}"
+    ]
   }
 ]

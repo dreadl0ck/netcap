@@ -31,7 +31,6 @@ import (
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/internal/dnscontext"
 	"github.com/dreadl0ck/netcap/internal/dpi"
-	"github.com/dreadl0ck/netcap/internal/magika"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/types"
@@ -50,7 +49,13 @@ func (c *Collector) Init() (err error) {
 	if c.initialized {
 		return nil
 	}
+	if c.config.DecoderConfig.MaxRetainedTCPBytes < 0 {
+		return fmt.Errorf("max-retained-tcp-bytes cannot be negative")
+	}
 	c.contextLocked()
+	if err := tcp.ConfigureRetainedPayloadBudget(c.config.DecoderConfig.MaxRetainedTCPBytes, c.runCancel); err != nil {
+		return err
+	}
 	// set configuration for decoder pkgs
 	c.config.DecoderConfig.PerfTracker = c.perfTracker
 	packet.SetConfig(c.config.DecoderConfig)
@@ -99,16 +104,13 @@ func (c *Collector) Init() (err error) {
 	}
 
 	// init deep packet inspection
+	if err := file.StartAnalysis(c.config.DecoderConfig.Out, ""); err != nil {
+		return fmt.Errorf("artifact analysis admission: %w", err)
+	}
+	c.artifactAnalysisStarted.Store(true)
 	if c.config.DPI {
 		c.printlnStdOut("initializing dpi libs")
 		dpi.InitWithConfig(c.config.DPIModules, dpi.RuntimeConfig{Workers: c.config.DPIWorkers})
-	}
-
-	// init AI-based file type classification
-	fileCfg := file.GetGlobalConfig()
-	if fileCfg.FileExtraction.Advanced.EnableMagika {
-		c.printlnStdOut("initializing magika AI file classifier")
-		magika.Init(fileCfg.FileExtraction.Advanced.MagikaAssetsDir, fileCfg.FileExtraction.Advanced.MagikaModelName)
 	}
 
 	// initialize resolvers
@@ -217,6 +219,7 @@ func (c *Collector) Init() (err error) {
 	}()
 
 	go func() {
+		// Stream post-init hooks consume abstract-decoder loggers and enrichment.
 		<-abstractReady
 		var errInit error
 		c.streamDecoders, errInit = stream.InitDecoders(c.config.DecoderConfig)
@@ -280,6 +283,11 @@ func (c *Collector) Init() (err error) {
 	if err := c.initCaptureEvidence(); err != nil {
 		return err
 	}
+	runID := ""
+	if c.captureEvidence != nil {
+		runID = c.captureEvidence.RunID()
+	}
+	file.BindAnalysisRunID(runID)
 	c.initWorkers()
 	c.log.Info("spawned workers", zap.Int("total", c.config.Workers))
 	c.initialized = true

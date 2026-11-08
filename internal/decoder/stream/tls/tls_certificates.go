@@ -20,6 +20,7 @@
 package tls
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"sync"
@@ -78,6 +79,13 @@ func addOrUpdateCertificate(cert *types.TLSCertificate) bool {
 	defer certificates.Unlock()
 
 	fingerprint := cert.SHA256Fingerprint
+	if cert.AssessmentBasis != "" {
+		identity, _ := json.Marshal([]any{fingerprint, cert.CommunityID, cert.CertificateSender, cert.Timestamp, cert.ChainIndex, cert.SrcIP, cert.DstIP, cert.SrcPort, cert.DstPort})
+		fingerprint = string(identity)
+	}
+	if cert.TCPObservation != "" {
+		fingerprint += "\x00" + cert.TCPObservation
+	}
 	if entry, exists := certificates.Items[fingerprint]; exists {
 		// Update existing certificate
 		entry.Lock()
@@ -257,5 +265,12 @@ func GetCertificate(fingerprint string) *types.TLSCertificate {
 	if entry, exists := certificates.Items[fingerprint]; exists {
 		return entry.TLSCertificate
 	}
-	return nil
+	var earliest *types.TLSCertificate
+	for _, entry := range certificates.Items {
+		cert := entry.TLSCertificate
+		if cert.SHA256Fingerprint == fingerprint && (earliest == nil || cert.Timestamp < earliest.Timestamp || (cert.Timestamp == earliest.Timestamp && certificateObservationKey(cert) < certificateObservationKey(earliest))) {
+			earliest = cert
+		}
+	}
+	return earliest
 }

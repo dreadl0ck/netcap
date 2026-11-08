@@ -20,6 +20,7 @@
 package file
 
 import (
+	"fmt"
 	"os"
 	"slices"
 	"sync"
@@ -61,6 +62,7 @@ type SizeLimitsConfig struct {
 	MaxFileSize         int64 `yaml:"max_file_size"`
 	IncludeMissingBytes bool  `yaml:"include_missing_bytes"`
 	MaxFilesPerSession  int   `yaml:"max_files_per_session"`
+	MaxInflightBytes    int64 `yaml:"max_inflight_bytes"`
 }
 
 // HashAlgorithmsConfig defines which hash algorithms to compute
@@ -118,6 +120,7 @@ type AdvancedConfig struct {
 
 var (
 	globalConfig *Config
+	frozenConfig *Config
 	configMutex  sync.RWMutex
 )
 
@@ -128,32 +131,75 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, err
 	}
 
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	cfg := GetDefaultConfig()
+	if err := yaml.UnmarshalStrict(data, cfg); err != nil {
 		return nil, err
 	}
+	if err := ValidateConfig(cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
 
-	return &cfg, nil
+func ValidateConfig(cfg *Config) error {
+	if cfg == nil {
+		return fmt.Errorf("file extraction config is nil")
+	}
+	s := cfg.FileExtraction.SizeLimits
+	if s.MaxFileSize <= 0 || s.MaxFileSize > 100<<20 || s.MaxFilesPerSession < 0 || s.MaxInflightBytes < 2*s.MaxFileSize || s.MaxInflightBytes > 1<<30 {
+		return fmt.Errorf("artifact limits require 0 < max_file_size <=100 MiB, nonnegative file count and 2*max_file_size <= max_inflight_bytes <=1 GiB")
+	}
+	if cfg.FileExtraction.Reassembly.MaxBufferSize < 0 {
+		return fmt.Errorf("max_buffer_size cannot be negative")
+	}
+	if cfg.FileExtraction.Storage.CompressStoredFiles {
+		return fmt.Errorf("compress_stored_files is unsupported; use transport decoding or disable this option")
+	}
+	a := cfg.FileExtraction.Advanced
+	if (a.EnableYaraScanning || a.EnableMagika) && !cfg.FileExtraction.HashAlgorithms.SHA256 {
+		return fmt.Errorf("artifact analysis requires SHA256 hashing")
+	}
+	if a.EnableYaraScanning && a.YaraRulesPath == "" {
+		return fmt.Errorf("YARA scanning requires yara_rules_path")
+	}
+	return nil
 }
 
 // SetGlobalConfig sets the global configuration
 func SetGlobalConfig(cfg *Config) {
 	configMutex.Lock()
 	defer configMutex.Unlock()
-	globalConfig = cfg
+	if cfg == nil {
+		globalConfig = nil
+		return
+	}
+	copy := *cfg
+	copy.FileExtraction.MimeTypes.Whitelist = append([]string(nil), cfg.FileExtraction.MimeTypes.Whitelist...)
+	copy.FileExtraction.MimeTypes.Blacklist = append([]string(nil), cfg.FileExtraction.MimeTypes.Blacklist...)
+	globalConfig = &copy
 }
 
 // GetGlobalConfig returns the global configuration
 func GetGlobalConfig() *Config {
 	configMutex.RLock()
 	defer configMutex.RUnlock()
+	if frozenConfig != nil {
+		return cloneConfig(frozenConfig)
+	}
 
 	if globalConfig == nil {
 		// Return default configuration
 		return GetDefaultConfig()
 	}
 
-	return globalConfig
+	return cloneConfig(globalConfig)
+}
+
+func cloneConfig(cfg *Config) *Config {
+	copy := *cfg
+	copy.FileExtraction.MimeTypes.Whitelist = append([]string(nil), cfg.FileExtraction.MimeTypes.Whitelist...)
+	copy.FileExtraction.MimeTypes.Blacklist = append([]string(nil), cfg.FileExtraction.MimeTypes.Blacklist...)
+	return &copy
 }
 
 // GetDefaultConfig returns the default configuration
@@ -174,6 +220,7 @@ func GetDefaultConfig() *Config {
 				MaxFileSize:         104857600, // 100MB
 				IncludeMissingBytes: true,
 				MaxFilesPerSession:  0, // Unlimited
+				MaxInflightBytes:    256 << 20,
 			},
 			HashAlgorithms: HashAlgorithmsConfig{
 				MD5:    true,

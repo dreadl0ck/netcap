@@ -71,8 +71,8 @@ func confusables() []confusable {
 			name: "PROFINET context manager", want: "PROFINET", rival: "DCERPC",
 			transport: core.TCP,
 			// DCE/RPC v4, connectionless: what PROFINET CM actually uses.
-			client: append([]byte{0x04, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x40, 0x00}, make([]byte, 32)...),
-			why:    "dcerpc requires version 5, so only profinet should take v4",
+			client: pnioRequest(),
+			why:    "PNIO requires its interface UUID, not just RPC version 4",
 		},
 		{
 			name: "SMTP submission banner", want: "SMTP", rival: "FTP",
@@ -98,9 +98,8 @@ func confusables() []confusable {
 		{
 			name: "RDP connection request", want: "RDP", rival: "S7Comm",
 			transport: core.TCP,
-			client: tpktFrame(append([]byte{0x0e, 0xe0, 0x00, 0x00, 0x00, 0x00, 0x00},
-				[]byte("Cookie: mstshash=admin\r\n")...)),
-			why: "s7comm accepts any non-DT COTP PDU, and an X.224 connection request is one",
+			client:    rdpCookie("admin"),
+			why:       "s7comm accepts any non-DT COTP PDU, and an X.224 connection request is one",
 		},
 		{
 			name: "S7comm read request", want: "S7Comm", rival: "RDP",
@@ -109,11 +108,11 @@ func confusables() []confusable {
 			why:       "both ride TPKT; only s7comm validates an S7 protocol id",
 		},
 		{
-			name: "ENIP List Services, no CIP payload", want: "PROFINET", rival: "CIP",
+			name: "ENIP List Services, no CIP payload", want: "CIP", rival: "PROFINET",
 			transport: core.TCP,
 			// A DCE/RPC v4 header that cip also reads as ENIP command 0x0004.
 			client: append([]byte{0x04, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x40, 0x00}, make([]byte, 32)...),
-			why:    "cip's header-only commands carry nothing to validate",
+			why:    "an ENIP command is not evidence for PNIO without its interface UUID",
 		},
 		{
 			name: "ENIP carrying CIP", want: "CIP", rival: "PROFINET",
@@ -144,7 +143,7 @@ func confusables() []confusable {
 			// application tag. The header CRC is recomputed for that address,
 			// so this is a frame a device could really have sent.
 			client: hexBytes("05641ac46a0004005785c1c1030c0128010001000301640000007b5e6400000000005b"),
-			why: "kerberos used to read byte 4 as an application tag",
+			why:    "kerberos used to read byte 4 as an application tag",
 		},
 		{
 			name: "Modbus with a TACACS-shaped transaction id", want: "Modbus", rival: "TACACS",
@@ -288,7 +287,6 @@ func itoa(n int) string {
 
 	return string(b)
 }
-
 
 // Two requests on one keep-alive connection, sent at different times, must not
 // share a timestamp.

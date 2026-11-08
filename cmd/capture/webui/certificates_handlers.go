@@ -20,6 +20,7 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,7 +30,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -37,6 +37,13 @@ import (
 
 // CertificateSummary represents aggregated information for a single TLS certificate
 type CertificateSummary struct {
+	AssessmentTime      string   `json:"assessmentTimeNs"`
+	AssessmentBasis     string   `json:"assessmentBasis"`
+	ValidityState       string   `json:"validityState"`
+	SelfSignatureState  string   `json:"selfSignatureState"`
+	CertificateSender   string   `json:"certificateSender"`
+	NotBeforeRFC3339    string   `json:"notBeforeRFC3339"`
+	NotAfterRFC3339     string   `json:"notAfterRFC3339"`
 	Timestamp           int64    `json:"timestamp"`
 	SrcIP               string   `json:"srcIP"`
 	SrcPort             int32    `json:"srcPort"`
@@ -171,6 +178,9 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 			// Fallback to serial number + issuer if no fingerprint
 			key = cert.SerialNumber + "|" + cert.IssuerCommonName
 		}
+		if cert.AssessmentBasis != "" {
+			key += fmt.Sprintf("|%s|%s|%s|%s", cert.AssessmentBasis, cert.ValidityState, cert.SelfSignatureState, cert.CertificateSender)
+		}
 		if cert.CommunityID != "" {
 			if communityIDs[key] == nil {
 				communityIDs[key] = make(map[string]struct{})
@@ -183,6 +193,11 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 			existing.SeenCount++
 			if cert.Timestamp < existing.FirstSeen || existing.FirstSeen == 0 {
 				existing.FirstSeen = cert.Timestamp
+				existing.Timestamp = cert.Timestamp
+				existing.AssessmentTime = fmt.Sprint(cert.AssessmentTime)
+				existing.DaysUntilExpiration = cert.DaysUntilExpiration
+				existing.SrcIP, existing.DstIP = cert.SrcIP, cert.DstIP
+				existing.SrcPort, existing.DstPort = cert.SrcPort, cert.DstPort
 			}
 			if cert.Timestamp > existing.LastSeen {
 				existing.LastSeen = cert.Timestamp
@@ -190,6 +205,33 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 		} else {
 			// Add new certificate
 			certMap[key] = &CertificateSummary{
+				AssessmentTime: fmt.Sprint(cert.AssessmentTime),
+				AssessmentBasis: func() string {
+					if cert.AssessmentBasis == "" {
+						return "legacy-unqualified"
+					}
+					return cert.AssessmentBasis
+				}(),
+				ValidityState: func() string {
+					if cert.ValidityState == "" {
+						return "legacy-unqualified"
+					}
+					return cert.ValidityState
+				}(),
+				SelfSignatureState: func() string {
+					if cert.SelfSignatureState == "" {
+						return "legacy-unqualified"
+					}
+					return cert.SelfSignatureState
+				}(),
+				CertificateSender: func() string {
+					if cert.CertificateSender == "" {
+						return "unknown"
+					}
+					return cert.CertificateSender
+				}(),
+				NotBeforeRFC3339:    cert.NotBeforeRFC3339,
+				NotAfterRFC3339:     cert.NotAfterRFC3339,
 				Timestamp:           cert.Timestamp,
 				SrcIP:               cert.SrcIP,
 				SrcPort:             cert.SrcPort,
@@ -264,16 +306,14 @@ func (s *Server) handleCertificateDownloadPCAP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Get query parameters
-	srcIP := r.URL.Query().Get("srcIP")
-	srcPort := r.URL.Query().Get("srcPort")
-	dstIP := r.URL.Query().Get("dstIP")
-	dstPort := r.URL.Query().Get("dstPort")
-
-	if srcIP == "" || srcPort == "" || dstIP == "" || dstPort == "" {
-		http.Error(w, "Missing required parameters", http.StatusBadRequest)
+	query := r.URL.Query()
+	selection, err := parseTCPPacketSelection(query)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	srcIP, srcPort := query.Get("srcIP"), query.Get("srcPort")
+	dstIP, dstPort := query.Get("dstIP"), query.Get("dstPort")
 
 	activeInputFile, _ := s.resolveInputFileFromRequest(r)
 
@@ -288,22 +328,24 @@ func (s *Server) handleCertificateDownloadPCAP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Create BPF filter for the connection (TLS is typically on TCP)
-	bpf := fmt.Sprintf("(host %s and port %s) and (host %s and port %s) and tcp",
-		srcIP, srcPort, dstIP, dstPort)
-
-	// Create temporary output file
-	tempDir := os.TempDir()
-	outputFile := filepath.Join(tempDir, fmt.Sprintf("certificate_%s-%s_%s-%s.pcap",
-		strings.ReplaceAll(srcIP, ".", "_"),
-		srcPort,
-		strings.ReplaceAll(dstIP, ".", "_"),
-		dstPort))
+	temp, err := os.CreateTemp("", "netcap-certificate-*.pcap")
+	if err != nil {
+		http.Error(w, "Failed to create certificate packet export", http.StatusInternalServerError)
+		return
+	}
+	outputFile := temp.Name()
+	defer os.Remove(outputFile)
+	if err := temp.Close(); err != nil {
+		http.Error(w, "Failed to close certificate packet export", http.StatusInternalServerError)
+		return
+	}
 
 	// Filter the PCAP entirely in-process (no external tcpdump).
-	log.Printf("[WebUI] Filtering PCAP for certificate in-process: %s -> %s (bpf: %s)", activeInputFile, outputFile, bpf)
+	log.Printf("[WebUI] Filtering PCAP for certificate in-process: %s -> %s (bpf: %s)", activeInputFile, outputFile, selection.bpf)
 
-	written, err := filterPCAPToFileWithTimeout(r.Context(), activeInputFile, bpf, outputFile, 30*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+	written, err := filterPCAPSelectionContext(ctx, activeInputFile, selection.bpf, outputFile, selection.contains)
 	if err != nil {
 		log.Printf("[WebUI] PCAP filter error: %v", err)
 		os.Remove(outputFile)

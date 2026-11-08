@@ -124,6 +124,8 @@ var (
 	flagFlowTimeOut                    time.Duration
 	flagClosePendingTimeout            time.Duration
 	flagCloseInactiveTimeout           time.Duration
+	flagLiveMaintenanceInterval        time.Duration
+	flagLiveFlushInterval              time.Duration
 	flagUseRE2                         bool
 	flagStopAfterHarvesterMatch        bool
 	flagStopAfterServiceProbeMatch     bool
@@ -141,6 +143,7 @@ var (
 	flagMaxStreamBytes                 int
 	flagMaxBufferedPagesPerConnection  int
 	flagMaxBufferedPagesTotal          int
+	flagMaxRetainedTCPBytes            int64
 	flagCompressionBlockSize           int
 	flagCompressionLevel               string
 	flagHTTP                           string
@@ -265,6 +268,8 @@ func setFlagsFromContext(c *cli.Command) {
 	flagFlowTimeOut = c.Duration("flow-timeout")
 	flagClosePendingTimeout = c.Duration("close-pending-timeout")
 	flagCloseInactiveTimeout = c.Duration("close-inactive-timeout")
+	flagLiveMaintenanceInterval = c.Duration("live-maintenance-interval")
+	flagLiveFlushInterval = c.Duration("live-flush-interval")
 	flagUseRE2 = c.Bool("re2")
 	flagStopAfterHarvesterMatch = c.Bool("stop-after-harvester-match")
 	flagStopAfterServiceProbeMatch = c.Bool("stop-after-service-match")
@@ -282,6 +287,7 @@ func setFlagsFromContext(c *cli.Command) {
 	flagMaxStreamBytes = c.Int("max-stream-bytes")
 	flagMaxBufferedPagesPerConnection = c.Int("max-buffered-pages-per-conn")
 	flagMaxBufferedPagesTotal = c.Int("max-buffered-pages-total")
+	flagMaxRetainedTCPBytes = c.Int64("max-retained-tcp-bytes")
 	flagCompressionBlockSize = c.Int("compression-block-size")
 	flagCompressionLevel = c.String("compression-level")
 	flagHTTP = c.String("http")

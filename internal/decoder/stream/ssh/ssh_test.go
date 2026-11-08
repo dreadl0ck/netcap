@@ -34,12 +34,11 @@ func TestCanDecodeSSH(t *testing.T) {
 			true,
 		},
 		{
-			// Server-driven: the reader emits a record from the server's
-			// identification, so a client greeting alone is not an SSH service.
+			// A partial observation, without asserting an SSH service at the peer.
 			"client only",
 			[]byte("SSH-2.0-OpenSSH_9.6\r\n"),
 			nil,
-			false,
+			true,
 		},
 		{
 			"server only",

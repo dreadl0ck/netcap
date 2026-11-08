@@ -43,6 +43,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/udp"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
+	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/utils"
 )
@@ -71,7 +72,16 @@ func NumSavedTCPConns() int64 {
 // and manage the stream lifecycle
 // this structure has an optimized field order to avoid excessive padding.
 type tcpConnection struct {
+	payloadBudget        *retainedPayloadBudget
+	retainedPayloadBytes int64
+	retentionMarkers     [2]*core.StreamData
+	postCloseMarkers     [2]*core.StreamData
+	postCloseBytes       [2]int
+	resetObserved        bool
+	pendingFIN           [2]*layers.TCP
 	sync.Mutex
+	factory        *connectionFactory
+	releaseOnce    sync.Once
 	net, transport gopacket.Flow
 
 	optchecker reassembly.TCPOptionCheck
@@ -82,23 +92,42 @@ type tcpConnection struct {
 	client streamReader
 	server streamReader
 
-	ident    string
-	decoder  core.StreamDecoderInterface
-	tcpstate *reassembly.TCPSimpleFSM
+	ident        string
+	networkScope string
+	decoder      core.StreamDecoderInterface
+	tcpstate     *reassembly.TCPSimpleFSM
 
-	wasMerged bool
-	fsmerr    bool
-	initStage uint8
-	clientISN uint32
-	serverISN uint32
+	wasMerged       bool
+	fsmerr          bool
+	initStage       uint8
+	clientISN       uint32
+	serverISN       uint32
+	roleSource      string
+	clientDirection reassembly.TCPFlowDirection
 }
 
 // Accept decides whether the TCP packet should be accepted
 // start could be modified to force a start even if no SYN have been seen.
 func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection, nextSeq reassembly.Sequence) bool {
+	side := 0
+	if dir == reassembly.TCPDirServerToClient {
+		side = 1
+	}
+	// Validation is transactional: a rejected close must not poison the FSM
+	// or the advertised-window state used by subsequent observations.
+	state, options := *t.tcpstate, t.optchecker
 	// Finite State Machine
-	staleReset := tcp.RST && nextSeq >= 0 && int32(tcp.Seq-uint32(nextSeq)) < 0
-	if staleReset || !t.tcpstate.CheckState(tcp, dir) {
+	staleReset := tcp.RST && nextSeq >= 0 && tcp.Seq != uint32(nextSeq)
+	futureFIN := tcp.FIN && nextSeq >= 0 && int32(tcp.Seq-uint32(nextSeq)) > 0
+	invalidFIN := tcp.FIN && nextSeq >= 0 && (futureFIN && len(tcp.Payload) == 0 || int32(tcp.Seq+uint32(len(tcp.Payload))-uint32(nextSeq)) < 0)
+	invalidRefusal := tcp.RST && nextSeq < 0 && t.initStage == 1 && (!tcp.ACK || tcp.Ack != t.clientISN+1)
+	invalidClose := staleReset || invalidFIN || invalidRefusal || tcp.RST && tcp.FIN || (tcp.RST || tcp.FIN) && (tcp.SYN || reassembly.ValidateTCPOptions(tcp) != nil)
+	lateSYNACK := tcp.SYN && tcp.ACK && t.initStage == 1 && tcp.Ack == t.clientISN+1
+	checked := *tcp
+	if futureFIN {
+		checked.FIN = false
+	}
+	if invalidClose || !state.CheckState(&checked, dir) && !(t.resetObserved && (!tcp.SYN || lateSYNACK)) {
 
 		reassemblyLog.Debug("packet rejected by FSM", zap.String("ident", t.ident), zap.String("state", t.tcpstate.String()))
 
@@ -111,13 +140,13 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 		}
 		streamutils.Stats.Unlock()
 
-		if staleReset || !decoderconfig.Instance.IgnoreFSMerr {
+		if invalidClose || !decoderconfig.Instance.IgnoreFSMerr {
 			return false
 		}
 	}
 
 	// TCP Options
-	err := t.optchecker.Accept(tcp, dir, nextSeq)
+	err := options.Accept(tcp, dir, nextSeq)
 	if err != nil {
 		reassemblyLog.Debug("packet rejected by OptionChecker", zap.String("ident", t.ident), zap.Error(err))
 		streamutils.Stats.Lock()
@@ -151,10 +180,27 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 		streamutils.Stats.RejectChecksum++
 		streamutils.Stats.Unlock()
 	}
+	if accept {
+		*t.tcpstate, t.optchecker = state, options
+		t.resetObserved = t.resetObserved || tcp.RST
+		if futureFIN && t.pendingFIN[side] == nil {
+			t.pendingFIN[side] = &layers.TCP{FIN: true, ACK: tcp.ACK}
+		}
+	}
 
 	if accept && !tcp.RST && !tcp.FIN {
 		// decode() reads initStage under the same lock
 		t.Lock()
+		if tcp.SYN && t.roleSource == "" {
+			t.roleSource, t.clientDirection = "syn", dir
+			if tcp.ACK {
+				t.roleSource = "syn-ack"
+				t.clientDirection = reassembly.TCPDirClientToServer
+				if dir == reassembly.TCPDirClientToServer {
+					t.clientDirection = reassembly.TCPDirServerToClient
+				}
+			}
+		}
 
 		switch t.initStage {
 		case 0:
@@ -174,6 +220,18 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 		t.Unlock()
 	}
 	return accept
+}
+
+// FINContiguous commits a queued FIN only after its preceding bytes arrive.
+func (t *tcpConnection) FINContiguous(dir reassembly.TCPFlowDirection) {
+	side := 0
+	if dir == reassembly.TCPDirServerToClient {
+		side = 1
+	}
+	if fin := t.pendingFIN[side]; fin != nil {
+		t.tcpstate.CheckState(fin, dir)
+		t.pendingFIN[side] = nil
+	}
 }
 
 func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, length int, saved int, start bool, end bool, dir reassembly.TCPFlowDirection) {
@@ -233,6 +291,38 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 }
 
 func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) {
+	observation := ""
+	if c, ok := ac.(interface{ TCPObservation() string }); ok {
+		observation = c.TCPObservation()
+	}
+	if observation != "" {
+		index := 0
+		if dir == reassembly.TCPDirServerToClient {
+			index = 1
+		}
+		n := min(len(data), maxPostCloseBytes-t.postCloseBytes[index])
+		dropped := len(data) - n
+		t.postCloseBytes[index] += n
+		if dropped > 0 {
+			defer t.recordPostCloseDiscard(dir, dropped, ac)
+		}
+		data = data[:n]
+		if n == 0 {
+			return
+		}
+		if t.postCloseBytes[index] == n {
+			reassemblyLog.Info("retaining unconfirmed TCP observation", zap.String("ident", t.ident), zap.String("direction", dir.String()), zap.String("qualification", observation), zap.Int("limitBytes", maxPostCloseBytes))
+		}
+	}
+	if t.payloadBudget != nil {
+		if !t.payloadBudget.reserve(int64(len(data))) {
+			t.recordRetentionDiscard(dir, len(data), ac)
+			return
+		}
+		t.Lock()
+		t.retainedPayloadBytes += int64(len(data))
+		t.Unlock()
+	}
 	// fmt.Println(t.ident, "feedData", ansi.White, dir, ansi.Cyan, len(data), ansi.Yellow, ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset)
 	// fmt.Println(hex.Dump(data))
 
@@ -254,6 +344,7 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 			AssemblerContext:   ac,
 			CaptureInformation: ac.GetCaptureInfo(),
 			Dir:                dir,
+			TCPObservation:     observation,
 		}
 		t.client.StoreData(streamData)
 		t.client.DataChan() <- streamData
@@ -263,12 +354,25 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 			AssemblerContext:   ac,
 			CaptureInformation: ac.GetCaptureInfo(),
 			Dir:                dir,
+			TCPObservation:     observation,
 		}
 		t.server.StoreData(streamData)
 		t.server.DataChan() <- streamData
 	}
 
 	tcpStreamFeedDataTime.WithLabelValues(dir.String()).Set(float64(time.Since(ti).Nanoseconds()))
+}
+
+// ValidateNewSYN runs before an old incarnation is retired, without changing it.
+func (t *tcpConnection) ValidateNewSYN(tcp *layers.TCP) bool {
+	if reassembly.ValidateTCPOptions(tcp) != nil {
+		return false
+	}
+	if decoderconfig.Instance.Checksum {
+		checksum, err := tcp.ComputeChecksum()
+		return err == nil && checksum == 0
+	}
+	return true
 }
 
 // ReassembledSG is called zero or more times and delivers the data for a stream
@@ -306,40 +410,50 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 }
 
 func (t *tcpConnection) reorder(ac reassembly.AssemblerContext, firstFlow gopacket.Flow) {
-	// fmt.Println(t.ident, "t.firstPacket:", t.firstPacket, "ac.Timestamp", ac.GetCaptureInfo().Timestamp, "firstFlow", firstFlow)
-	// fmt.Println(t.ident, !t.firstPacket.Equal(ac.GetCaptureInfo().Timestamp), "&&", t.firstPacket.After(ac.GetCaptureInfo().Timestamp))
-
-	// is this packet older than the oldest packet we saw for this connection?
-	// if yes, if check the direction of the client is correct
-	if !t.firstPacket.Equal(ac.GetCaptureInfo().Timestamp) && t.firstPacket.After(ac.GetCaptureInfo().Timestamp) { // update first packet timestamp on connection
+	older := t.firstPacket.After(ac.GetCaptureInfo().Timestamp)
+	if older {
 		t.Lock()
 		t.firstPacket = ac.GetCaptureInfo().Timestamp
 		t.Unlock()
-
-		if t.client != nil && t.server != nil {
-			// check if firstFlow is identical or needs to be flipped
-			if !(t.client.Network() == firstFlow) { // flip
-				t.client.SetClient(false)
-				t.server.SetClient(true)
-
-				t.Lock()
-				t.ident = utils.ReverseFlowIdent(t.ident)
-				// fmt.Println("flip! new", ansi.Red+t.ident+ansi.Reset, t.firstPacket)
-
-				t.client, t.server = t.server, t.client
-				t.transport, t.net = t.transport.Reverse(), t.net.Reverse()
-
-				// fix directions for all data fragments
-				for _, d := range t.client.DataSlice() {
-					d.SetDirection(reassembly.TCPDirClientToServer)
-				}
-
-				for _, d := range t.server.DataSlice() {
-					d.SetDirection(reassembly.TCPDirServerToClient)
-				}
-				t.Unlock()
-			}
+	}
+	if t.roleSource != "" {
+		if t.clientDirection == reassembly.TCPDirServerToClient {
+			t.flipRoles()
+			t.clientDirection = reassembly.TCPDirClientToServer
 		}
+		return
+	}
+	// Only a unique registered service port is a role hint; port ordering is not.
+	src := stream.DefaultStreamDecoders[utils.DecodePort(t.transport.Src().Raw())]
+	dst := stream.DefaultStreamDecoders[utils.DecodePort(t.transport.Dst().Raw())]
+	if (src != nil) != (dst != nil) {
+		t.roleSource = "service-port"
+		if src != nil {
+			t.flipRoles()
+		}
+		return
+	}
+	if older {
+		if t.client != nil && t.server != nil && t.net != firstFlow {
+			t.flipRoles()
+		}
+	}
+	t.roleSource = "first-observed"
+}
+
+func (t *tcpConnection) flipRoles() {
+	t.client.SetClient(false)
+	t.server.SetClient(true)
+	t.Lock()
+	defer t.Unlock()
+	t.ident = utils.ReverseFlowIdent(t.ident)
+	t.client, t.server = t.server, t.client
+	t.transport, t.net = t.transport.Reverse(), t.net.Reverse()
+	for _, d := range t.client.DataSlice() {
+		d.SetDirection(reassembly.TCPDirClientToServer)
+	}
+	for _, d := range t.server.DataSlice() {
+		d.SetDirection(reassembly.TCPDirServerToClient)
 	}
 }
 
@@ -435,6 +549,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 	)
 
 	// optionally, do not remove the connection to allow last ACK
+	t.releaseResources()
 	return decoderconfig.Instance.RemoveClosedStreams
 }
 
@@ -457,6 +572,7 @@ func (t *tcpConnection) decode() {
 		ClientData:           t.client.DataSlice(),
 		ServerData:           t.server.DataSlice(),
 		Ident:                t.ident,
+		NetworkScope:         t.networkScope,
 		FirstClientPacket:    t.client.FirstPacket(),
 		FirstServerPacket:    t.server.FirstPacket(),
 		ClientIP:             cIP,
@@ -465,6 +581,7 @@ func (t *tcpConnection) decode() {
 		ServerPort:           sPort,
 		CommunityID:          streamutils.CalcCommunityIDTCP(cIP, sIP, uint16(cPort), uint16(sPort)),
 		TCPHandshakeComplete: t.initStage == 3,
+		TCPRoleSource:        t.roleSource,
 	}
 	for _, fragment := range conv.ClientData {
 		if ac, ok := fragment.Context().(interface{ GetLinkFlow() gopacket.Flow }); ok {
@@ -491,15 +608,15 @@ func (t *tcpConnection) decode() {
 	secret.HarvestSMTPConversation(conv)
 	secret.HarvestAdditionalConversation(conv)
 
-	// The fallback scan sees a whole direction concatenated, because a
-	// length-prefixed protocol cannot be recognized from its first fragment
-	// alone. The port pass sees only that fragment.
+	// Probing can span deliveries, but cannot invent a signature across a gap.
 	sel, found := stream.SelectDecoder(&stream.SelectionInput{
-		Transport:    core.TCP,
-		ServerPort:   serverPort,
-		PortClient:   cr,
-		PortServer:   sr,
-		ScanBytes:    func() ([]byte, []byte) { return t.client.DataSlice().Bytes(), t.server.DataSlice().Bytes() },
+		Transport:  core.TCP,
+		ServerPort: serverPort,
+		PortClient: cr,
+		PortServer: sr,
+		ScanBytes: func() ([]byte, []byte) {
+			return t.client.DataSlice().ContiguousBytes(), t.server.DataSlice().ContiguousBytes()
+		},
 		Conversation: conv,
 	})
 
@@ -614,7 +731,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	streamutils.Stats.Totalsz += int64(len(tcp.Payload))
 	streamutils.Stats.Unlock()
 
-	ac := &context{CaptureInfo: packet.Metadata().CaptureInfo}
+	ac := &context{CaptureInfo: packet.Metadata().CaptureInfo, scope: packetview.Scope(packet)}
 	if ll := packet.LinkLayer(); ll != nil {
 		ac.link = ll.LinkFlow()
 	}
@@ -631,9 +748,7 @@ func CleanupReassembly(_ bool, assemblers []*reassembly.Assembler) {
 		}
 	}
 	decoderconfig.UnlockInstance()
-	StreamFactory.Lock()
-	numTotal := len(StreamFactory.streamReaders)
-	StreamFactory.Unlock()
+	numTotal := len(StreamFactory.readerSnapshot())
 	if !decoderconfig.Instance.Quiet && numTotal > 1 {
 		fmt.Println("\nprocessing last TCP streams")
 	}

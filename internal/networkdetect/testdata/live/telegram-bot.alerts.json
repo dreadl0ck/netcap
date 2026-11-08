@@ -8,6 +8,7 @@
     "DstIP": "127.0.0.1",
     "DstPort": "0",
     "Domain": "api.telegram.org",
+    "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.telegram-api",
     "RecordType": "NetworkDetection",
     "Severity": "info",
@@ -15,6 +16,15 @@
       "network-detection",
       "policy-observation"
     ],
-    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.telegram-api\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363821205349000,\"lastSeen\":1791363821205349000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"api.telegram.org\"],\"limitations\":[\"Encrypted traffic does not reveal bot method, token or intent\"]}"
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.telegram-api\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363821205349000,\"lastSeen\":1791363821205349000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"api.telegram.org\"],\"limitations\":[\"Encrypted traffic does not reveal bot method, token or intent\"]}",
+    "TimestampBasis": "capture-time",
+    "AggregateKey": "61c1d3189e2abd714f7b7661b0c2df1fc1533a84368934294dccd7681008f689",
+    "Count": 2,
+    "FirstSeen": 1791363821205349000,
+    "LastSeen": 1791363821205489000,
+    "Examples": [
+      "{\"at\":1791363821205349000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"api.telegram.org\",\"observed\":1,\"firstSeen\":1791363821205349000,\"samples\":[\"api.telegram.org\"]}",
+      "{\"at\":1791363821205489000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"api.telegram.org\",\"observed\":1,\"firstSeen\":1791363821205489000,\"samples\":[\"api.telegram.org\"]}"
+    ]
   }
 ]

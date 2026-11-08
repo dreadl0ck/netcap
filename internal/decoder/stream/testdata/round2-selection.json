@@ -1,0 +1,55 @@
+[
+  {
+    "file": "http-multiple100.pcap",
+    "sha256": "9ebde60a0eff42ece86ff95d645b7edc25c64737dbb67896d95d48712718e03d",
+    "url": "https://raw.githubusercontent.com/OISF/suricata-verify/9a9178a7e4d45ff1d990e8f178c1e2f54b772f39/tests/http-multiple100/input.pcap",
+    "issues": ["D2-6"], "have": ["HTTP"], "absent": ["SMB"]
+  },
+  {
+    "file": "dns_axfr.pcapng",
+    "sha256": "05e70fef44efc6eacb2f08266b4dd6727e10dd2a53fe9c6166d97f68658b4469",
+    "url": "https://raw.githubusercontent.com/chrissanders/packets/0412fb1dc0aa671128f9da6689e0dbd4459c0b51/dns_axfr.pcapng",
+    "issues": ["D2-6"], "have": ["DNS"], "absent": ["PROFINET"]
+  },
+  {
+    "file": "mmsX.pcap",
+    "sha256": "f77be0d74532d93937db2380984816747b28ccba43e5cf85814c2f8ccccf4c9d",
+    "url": "https://raw.githubusercontent.com/zeek/zeek/5862ccc5e13e6127cda5932a7f18aaf070c8b63b/testing/btest/Traces/mmsX.pcap",
+    "issues": ["D2-6", "DS-10"], "absent": ["RDP", "S7Comm"]
+  },
+  {
+    "file": "rdp-invalid-length.pcap",
+    "sha256": "77b3027630ce8cee21d640b03e4cc7850715f52deeab3d2b9e46a823350318ec",
+    "url": "https://raw.githubusercontent.com/zeek/zeek/5862ccc5e13e6127cda5932a7f18aaf070c8b63b/testing/btest/Traces/rdp/rdp-invalid-length.pcap",
+    "issues": ["D2-6"], "absent": ["S7Comm", "RDP"],
+    "disposition": "Malformed TPKT/X.224/RDP negotiation remains unknown; port 3389 alone cannot identify it."
+  },
+  {
+    "file": "modbus-and-non-modbus-p502.pcap",
+    "sha256": "ef18bb9af83affda8419c77f03e8efb1ca1353c6916525b982dc8823b9076d6d",
+    "url": "https://raw.githubusercontent.com/zeek/zeek/5862ccc5e13e6127cda5932a7f18aaf070c8b63b/testing/btest/Traces/modbus/modbus-and-non-modbus-p502.pcap",
+    "issues": ["D2-6"], "have": ["Modbus", "RDP"], "absent": ["S7Comm", "PROFINET"],
+    "disposition": "Frame 80 is a valid RDP cookie/negotiation request on TCP/502; preserving it is intentional. The HTTP scan stream emits no records before integration of the TCP/HTTP lanes; this replay does not assert HTTP coverage."
+  },
+  {
+    "file": "krb_kinit.pcap",
+    "sha256": "c8ac97a5761802f33a382bb277aabeca364bab6ea293fd4d0c266fd1061ca276",
+    "url": "https://raw.githubusercontent.com/zeek/zeek/5862ccc5e13e6127cda5932a7f18aaf070c8b63b/testing/btest/Traces/krb/kinit.pcap",
+    "issues": ["D2-9"], "have": ["Kerberos"], "absent": ["TeamViewer"]
+  },
+  {
+    "file": "teamviewer.pcap",
+    "sha256": "f8c4bc73cbb439d7f2d68da84b35098bf87fa5d094a48c80cfa66ca934063e11",
+    "url": "https://raw.githubusercontent.com/ntop/nDPI/d0eeed4f4dd27b0b1fdde8e95c00c56e99e91a9d/tests/cfgs/default/pcap/teamviewer.pcap",
+    "issues": ["D2-9"], "absent": ["TeamViewer"],
+    "disposition": "Real command1/command2 framing positive; routed opaque traffic, no directly framed authentication command. Auth-event positives are synthetic protocol fixtures."
+  },
+  {
+    "file": "attack-trace.pcap_",
+    "sha256": "1a524565df030328987ccbcf804e9e472c891a4e482be5114d4f1d9d5937cedf",
+    "url": "https://media.githubusercontent.com/media/honeynet/forensic_challenges/2499cfdbdd21c1107146ec1ee3f918fd3039956e/zip_files/challenges/fc01.zip",
+    "archive_sha256": "b9f155b2d374732cbe4b7fc46c705cb162a27efc6e5d69c6953fc2263a82fec4",
+    "prepare": "Unzip using the password in that revision's README, then gzip -dk attack-trace.pcap_.gz. The ZIP contains only this capture.",
+    "issues": ["D2-15"], "have": ["FTP", "FTPSecret"]
+  }
+]

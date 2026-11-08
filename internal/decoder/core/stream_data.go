@@ -34,7 +34,11 @@ type StreamData struct {
 	// tcp specific fields
 	AssemblerContext reassembly.AssemblerContext
 	Dir              reassembly.TCPFlowDirection
-	SkippedBytes     int // Gap before this fragment; -1 means unknown initial loss.
+	SkippedBytes     int   // Gap before this fragment; -1 means unknown initial loss.
+	DiscardedBytes   int64 // Observed payload omitted locally, not a network sequence gap.
+	DiscardReason    string
+	// after-fin / after-rst: observed on the wire, endpoint delivery unconfirmed.
+	TCPObservation string
 
 	// capture metadata of the packet this fragment was taken from, set for TCP and UDP
 	CaptureInformation gopacket.CaptureInfo
@@ -42,6 +46,12 @@ type StreamData struct {
 	// udp specific fields
 	Net   gopacket.Flow
 	Trans gopacket.Flow
+}
+
+// HasGap distinguishes an unknown initial sequence from a hole in observed data.
+// Local budget loss always breaks framing, including before the first byte.
+func (s *StreamData) HasGap(started bool) bool {
+	return s.DiscardedBytes > 0 || s.SkippedBytes != 0 && (s.SkippedBytes != -1 || started)
 }
 
 // dataFragment interface implementation

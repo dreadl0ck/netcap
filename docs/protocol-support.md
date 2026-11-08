@@ -18,6 +18,23 @@ The authoritative definitions are the release's
 This avoids hand-maintained counts that confuse record types, nested protobuf
 messages, packet decoders and port registrations.
 
+## Correlation and security outcomes
+
+| Contract | Current behavior |
+| --- | --- |
+| CommunityID | Community ID v1, seed 0; TCP/UDP/SCTP use the observed effective transport after IPv6 extensions. Missing transport ports do not become a zero-port TCP tuple. ICMP keeps its specified paired-message mapping. |
+| Stream records | Kerberos, TACACS, IPP, Zabbix, Protobuf, OPCUA, S7Comm and PROFINET copy the conversation ID. Their CSV exports, plus HTTP/DNS, append `CommunityID`; existing columns keep their position. |
+| Observation scope | A tuple hash is not a unique session ID. Retain capture RunID, scope/record witnesses and observation boundaries for tuple reuse, VLAN/interface collisions and NAT. |
+| Protobuf direction | Response records name the server as sender, with server-side capture time; the generic decoder does not implement HTTP/2 gRPC framing. |
+| RDP requested versus selected | `RequestedProtocolsFlags/Names` describe the offer. `UsesTLS/NLA/CredSSP` describe only an observed server-selected protocol when `NegotiatedSecurityKnown` is true. |
+| RDP outcomes | `NegotiationOutcome` distinguishes accepted, rejected, not-observed, malformed and unavailable-after-capture-loss. `AuthenticationOutcome` remains unknown: this negotiation decoder has no login-result evidence. |
+| Legacy RDP boolean | `ConnectionSuccessful` retains its historical negotiation-acceptance meaning for compatibility. It is not proof of a login; new rules/UI should use the explicit outcome fields. Missing new fields on retained output are legacy/unknown. |
+| Certificates | Capture-time validity, cryptographic self-signature state and actual sender are qualified explicitly; see [certificate assessments](tls-fingerprinting.md#certificate-observation-and-assessment). |
+
+The additive protobuf fields remain readable alongside old records. Append-only
+CSV evolution still requires position-based consumers and feature matrices to
+check their exact header/schema before ingestion (`types/netcap.proto`).
+
 ## Record families
 
 | Family | Examples | Interpretation |

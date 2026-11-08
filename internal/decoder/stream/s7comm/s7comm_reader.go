@@ -63,6 +63,7 @@ func (s *s7commReader) Decode() {
 		msg, consumed := s.parseTPKTMessage(frameData[offset:])
 		if msg != nil {
 			msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = s.conversation.EndpointsAt(index, offset)
+			msg.CommunityID = s.conversation.CommunityID
 			msg.Timestamp, _ = index.At(offset)
 
 			err := Decoder.Writer.Write(msg)

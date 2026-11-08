@@ -20,6 +20,8 @@
 package s7comm
 
 import (
+	"encoding/binary"
+
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
@@ -271,10 +273,7 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
-	// Varies with the data: a data-transfer PDU carrying a validated S7
-	// protocol id is strong, a bare TPKT/COTP header is not.
-	Specificity: core.SpecificityWeak,
-	Confidence:  s7CommConfidence,
+	Specificity: core.SpecificityStructural,
 	CanDecode: func(client, server []byte) bool {
 		// S7comm is encapsulated in TPKT (RFC 1006) on TCP port 102
 		// Check for TPKT header signature
@@ -287,125 +286,59 @@ var Decoder = &decoder.StreamDecoder{
 	Typ:     core.TCP, // S7comm uses TCP port 102
 }
 
-// s7CommConfidence reports how much of an S7 message was actually recognized.
-//
-// canDecodeS7Comm accepts connection requests, confirms and the other non-DT
-// COTP PDU types without ever looking for an S7 payload, because at that point
-// in a session there is none to look for. That is correct for S7, and it also
-// means every X.224 connection request matches -- including RDP's, which is why
-// rdp at port 3389 was unreachable through the port-independent scan while
-// s7comm sat at 102.
-//
-// So the claim is only strong when an S7 protocol id was validated.
-func s7CommConfidence(client, server []byte) int {
-	if hasValidatedS7Payload(client) || hasValidatedS7Payload(server) {
-		return core.SpecificityStructural
-	}
-
-	return core.SpecificityWeak
-}
-
-// hasValidatedS7Payload reports whether data is a COTP data transfer whose
-// payload carries a recognized S7 protocol id.
-func hasValidatedS7Payload(data []byte) bool {
-	if !canDecodeS7Comm(data) {
-		return false
-	}
-
-	cotpOffset := minTPKTSize
-	if data[cotpOffset+1]&0xF0 != COTPTypeDT {
-		return false
-	}
-
-	s7commOffset := cotpOffset + 1 + int(data[cotpOffset])
-	if s7commOffset >= len(data) {
-		return false
-	}
-
-	return data[s7commOffset] == s7commProtocolID || data[s7commOffset] == s7commPlusProtocolID
-}
-
-// canDecodeS7Comm checks if the data looks like a TPKT/COTP/S7comm message.
-// S7comm is encapsulated in TPKT (RFC 1006) and COTP (ISO 8073).
+// Skip complete COTP setup frames, but identify S7 only from its own header.
 func canDecodeS7Comm(data []byte) bool {
-	if len(data) < minTPKTSize+minCOTPDTSize {
-		return false
-	}
-
-	// Check TPKT header
-	// Byte 0: Version (must be 3)
-	// Byte 1: Reserved (typically 0)
-	// Bytes 2-3: Length (big-endian, must be at least 7 for minimal valid message)
-	if data[0] != tpktVersion {
-		return false
-	}
-
-	// Reserved byte should be 0
-	if data[1] != 0x00 {
-		return false
-	}
-
-	// Get TPKT length (big-endian)
-	tpktLength := int(data[2])<<8 | int(data[3])
-	if tpktLength < minTPKTSize+minCOTPDTSize || tpktLength > 65535 {
-		return false
-	}
-
-	// Check that we have enough data
-	if len(data) < tpktLength {
-		// Partial message is still potentially valid
-		if len(data) < minTPKTSize+minCOTPDTSize+minS7CommSize {
+	for len(data) >= 7 {
+		n := int(binary.BigEndian.Uint16(data[2:4]))
+		if data[0] != tpktVersion || data[1] != 0 || n < 7 || data[4] < 2 || int(data[4])+5 > n {
 			return false
 		}
+		switch data[5] {
+		case COTPTypeCR, COTPTypeCC:
+			if data[4] < 6 || int(data[4])+5 != n || len(data) < n || data[10] != 0 {
+				return false
+			}
+			// COTP parameters are length-delimited, not application payload.
+			for p := 11; p < n; {
+				if p+2 > n || p+2+int(data[p+1]) > n {
+					return false
+				}
+				p += 2 + int(data[p+1])
+			}
+		case COTPTypeDT:
+			if data[4] != 2 || data[6] != 0x80 {
+				return false
+			}
+			return probeS7Payload(data[7:min(n, len(data))], n-7)
+		default:
+			return false
+		}
+		data = data[n:]
 	}
+	return false
+}
 
-	// Parse COTP header
-	cotpOffset := minTPKTSize
-	cotpLength := int(data[cotpOffset])
-	if cotpLength < 2 {
+func probeS7Payload(data []byte, size int) bool {
+	if len(data) < 10 {
 		return false
 	}
-
-	cotpPDUType := data[cotpOffset+1] & 0xF0 // Upper nibble is PDU type
-
-	// Validate COTP PDU type
-	switch cotpPDUType {
-	case COTPTypeCR, COTPTypeCC, COTPTypeDR, COTPTypeDC, COTPTypeDT, COTPTypeER:
-		// Valid PDU types for S7comm
+	if data[0] == s7commPlusProtocolID {
+		length := int(binary.BigEndian.Uint16(data[2:4]))
+		return data[1] >= 1 && data[1] <= 3 && length >= 4 && length+4 <= size &&
+			data[4] >= s7PlusOpcodeRequest && data[4] <= s7PlusOpcodeNotification
+	}
+	if data[0] != s7commProtocolID || data[2] != 0 || data[3] != 0 {
+		return false
+	}
+	header := 10
+	switch data[1] {
+	case S7CommMsgTypeJobRequest, S7CommMsgTypeUserData:
+	case S7CommMsgTypeAck, S7CommMsgTypeAckData:
+		header = 12
 	default:
 		return false
 	}
-
-	// For Data Transfer (DT), check for S7comm payload
-	if cotpPDUType == COTPTypeDT {
-		// DT header is minimal, just check for S7comm protocol ID
-		s7commOffset := cotpOffset + 1 + cotpLength
-		if s7commOffset >= len(data) {
-			// No S7comm payload, but TPKT/COTP is valid
-			// Could be a COTP-only message
-			return true
-		}
-
-		// Check S7comm protocol ID (0x32 for classic, 0x72 for S7Comm Plus)
-		protocolID := data[s7commOffset]
-		if protocolID != s7commProtocolID && protocolID != s7commPlusProtocolID {
-			return false
-		}
-
-		// For classic S7Comm, validate message type
-		if protocolID == s7commProtocolID && s7commOffset+1 < len(data) {
-			msgType := data[s7commOffset+1]
-			switch msgType {
-			case S7CommMsgTypeJobRequest, S7CommMsgTypeAck, S7CommMsgTypeAckData, S7CommMsgTypeUserData:
-				// Valid message type
-			default:
-				return false
-			}
-		}
-		// S7Comm Plus (0x72) has different structure, accept it if protocol ID matches
-	}
-
-	return true
+	return len(data) >= header && header+int(binary.BigEndian.Uint16(data[6:8]))+int(binary.BigEndian.Uint16(data[8:10])) == size
 }
 
 // isS7CommPlus checks if this is an S7Comm Plus (TIA Portal) message

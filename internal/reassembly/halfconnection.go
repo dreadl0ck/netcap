@@ -31,6 +31,9 @@ type halfconnection struct {
 	closed        bool
 	synSeen       bool
 	synSeq        uint32
+	finSeen       bool
+	finPending    bool
+	finSeq        Sequence
 
 	// track total bytes reassembled for this halfconnection
 	totalBytes int

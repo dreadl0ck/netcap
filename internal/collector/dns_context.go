@@ -1,10 +1,11 @@
 package collector
 
 import (
-	"github.com/dreadl0ck/netcap/internal/dnsaudit"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
-	"strconv"
+
+	"github.com/dreadl0ck/netcap/internal/dnsaudit"
+	"github.com/dreadl0ck/netcap/internal/packetview"
 )
 
 func (c *Collector) observeDNSContext(packet gopacket.Packet) {
@@ -12,12 +13,7 @@ func (c *Collector) observeDNSContext(packet gopacket.Packet) {
 		return
 	}
 	ci := &packet.Metadata().CaptureInfo
-	scope := strconv.Itoa(ci.InterfaceIndex)
-	for _, layer := range packet.Layers() {
-		if vlan, ok := layer.(*layers.Dot1Q); ok {
-			scope += "/" + strconv.Itoa(int(vlan.VLANIdentifier))
-		}
-	}
+	scope := packetview.Scope(packet)
 	network := packet.NetworkLayer()
 	if network == nil {
 		return

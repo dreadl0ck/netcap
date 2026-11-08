@@ -91,6 +91,22 @@ func (d DataFragments) Bytes() []byte {
 	return b.Bytes()
 }
 
+// ContiguousBytes returns the first observed byte run without joining across loss.
+// A leading loss marker is permitted; it cannot bridge two observed byte ranges.
+func (d DataFragments) ContiguousBytes() []byte {
+	var b bytes.Buffer
+	for _, fragment := range d {
+		if fragment == nil {
+			continue
+		}
+		if stream, ok := fragment.(*StreamData); ok && (stream.SkippedBytes != 0 || stream.DiscardedBytes > 0) && b.Len() > 0 {
+			break
+		}
+		b.Write(fragment.Raw())
+	}
+	return b.Bytes()
+}
+
 // reader returns a reader that iterates over the fragments without copying data.
 func (d DataFragments) reader() io.Reader {
 	readers := make([]io.Reader, len(d))

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/gopacket/gopacket"
@@ -74,5 +75,56 @@ func TestStreamEvidenceUDPPreservesDatagramBoundaries(t *testing.T) {
 	}
 	if len(m.Spans) != 3 || !m.Spans[0].Datagram || m.Spans[1].Direction != "server" || m.Spans[2].Offset != 3 {
 		t.Fatalf("datagrams collapsed: %+v", m)
+	}
+}
+
+func TestLocalRetentionOmissionIsDistinctFromNetworkLoss(t *testing.T) {
+	fragments := core.DataFragments{&core.StreamData{RawData: []byte("prefix")},
+		&core.StreamData{DiscardedBytes: 9, DiscardReason: "tcp-retained-payload-budget"},
+		&core.StreamData{SkippedBytes: 42}, &core.StreamData{RawData: []byte("suffix")}}
+	directory, err := SaveStreamEvidence(t.TempDir(), "TCP", fragments, "owned", time.Unix(1, 0), "owned")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(directory, "manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var manifest StreamEvidenceManifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		t.Fatal(err)
+	}
+	if manifest.Status != "locally-truncated" || manifest.Spans[1].DiscardedBytes != 9 || manifest.Spans[1].MissingBytes != 0 || manifest.Spans[1].DiscardReason != "tcp-retained-payload-budget" || manifest.Spans[2].MissingBytes != 42 {
+		t.Fatalf("local and network loss were conflated: %+v", manifest)
+	}
+	if got := string(fragments.ContiguousBytes()); got != "prefix" {
+		t.Fatal("local omission fabricated contiguous bytes", got)
+	}
+}
+
+func TestLossOnlyConversationStillPublishesQualifiedStreamEvidence(t *testing.T) {
+	previous := decoderconfig.Instance
+	configuration := *decoderconfig.DefaultConfig
+	configuration.Out, configuration.SaveConns = t.TempDir(), true
+	decoderconfig.Instance = &configuration
+	t.Cleanup(func() { decoderconfig.Instance = previous })
+	fragments := core.DataFragments{&core.StreamData{DiscardedBytes: 64, DiscardReason: "tcp-retained-payload-budget"}}
+	if err := SaveConversation("TCP", fragments, "owned", time.Unix(1, 0), gopacket.Flow{}, "owned"); err != nil {
+		t.Fatal(err)
+	}
+	paths, err := filepath.Glob(filepath.Join(configuration.Out, "stream-evidence", "stream-*", "manifest.json"))
+	if err != nil || len(paths) != 1 {
+		t.Fatalf("discarded observations vanished: paths=%v err=%v", paths, err)
+	}
+	data, err := os.ReadFile(paths[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	var manifest StreamEvidenceManifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		t.Fatal(err)
+	}
+	if manifest.Status != "locally-truncated" || manifest.Client.Length != 0 || manifest.Spans[0].DiscardedBytes != 64 {
+		t.Fatalf("loss-only stream became empty clean evidence: %+v", manifest)
 	}
 }

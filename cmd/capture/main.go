@@ -78,7 +78,6 @@ import (
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/vulnerability"
 	"github.com/dreadl0ck/netcap/internal/dpi"
-	"github.com/dreadl0ck/netcap/internal/magika"
 	"github.com/dreadl0ck/netcap/internal/metrics"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
@@ -438,19 +437,11 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 	if flagFileConfig != "" {
 		cfg, err := file.LoadConfig(flagFileConfig)
 		if err != nil {
-			log.Printf("Warning: Failed to load file extraction config from %s: %v", flagFileConfig, err)
-			log.Printf("Using default file extraction configuration")
+			return fmt.Errorf("load file extraction configuration: %w", err)
 		} else {
 			file.SetGlobalConfig(cfg)
 			log.Printf("Loaded file extraction configuration from: %s", flagFileConfig)
 
-			// Initialize Magika if enabled in config
-			if cfg.FileExtraction.Advanced.EnableMagika {
-				log.Printf("Initializing Magika AI file classifier (assets: %s, model: %s)",
-					cfg.FileExtraction.Advanced.MagikaAssetsDir,
-					cfg.FileExtraction.Advanced.MagikaModelName)
-				magika.Init(cfg.FileExtraction.Advanced.MagikaAssetsDir, cfg.FileExtraction.Advanced.MagikaModelName)
-			}
 		}
 	}
 
@@ -724,34 +715,37 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			ReassembleConnections: flagReassembleConnections,
 			FlowExports:           flagFlowExports,
 			CaptureEvidence:       flagCaptureEvidence, RetainPackets: flagRetainPackets, PacketSegmentBytes: flagPacketSegmentBytes, PacketRetentionBytes: flagPacketRetentionBytes,
-			FlowExportPorts:      flagFlowExportPorts,
-			FlushEvery:           flagFlushevery,
-			Checksum:             flagChecksum,
-			NoOptCheck:           flagNooptcheck,
-			IgnoreFSMErr:         flagIgnorefsmerr,
-			AllowMissingInit:     flagAllowmissinginit,
-			ModbusRTUEndpoints:   flagModbusRTUEndpoints,
-			DNP3PointMap:         flagDNP3PointMap,
-			ClosePendingTimeout:  flagClosePendingTimeout,
-			CloseInactiveTimeout: flagCloseInactiveTimeout,
-			Proto:                flagProto,
-			JSON:                 flagJSON,
-			CSV:                  flagCSV,
-			Elastic:              flagElastic,
-			ElasticAddrs:         flagElasticAddrs,
-			ElasticUser:          flagElasticUser,
-			IgnoreUnknown:        flagIgnoreUnknown,
-			FreeOSMemory:         flagFreeOSMemory,
-			ConnFlushInterval:    flagConnFlushInterval,
-			ConnTimeout:          flagConnTimeOut,
-			FlowFlushInterval:    flagFlowFlushInterval,
-			FlowTimeout:          flagFlowTimeOut,
-			Entropy:              flagCalcEntropy,
-			TCPDebug:             flagTCPDebug,
-			SaveConns:            flagSaveConns,
-			DefragIPv4:           flagDefragIPv4,
-			HexDump:              flagHexdump,
-			BannerSize:           flagBannerSize,
+			FlowExportPorts:         flagFlowExportPorts,
+			FlushEvery:              flagFlushevery,
+			Checksum:                flagChecksum,
+			NoOptCheck:              flagNooptcheck,
+			IgnoreFSMErr:            flagIgnorefsmerr,
+			AllowMissingInit:        flagAllowmissinginit,
+			ModbusRTUEndpoints:      flagModbusRTUEndpoints,
+			DNP3PointMap:            flagDNP3PointMap,
+			ClosePendingTimeout:     flagClosePendingTimeout,
+			CloseInactiveTimeout:    flagCloseInactiveTimeout,
+			LiveMaintenanceInterval: flagLiveMaintenanceInterval,
+			LiveFlushInterval:       flagLiveFlushInterval,
+			MaxRetainedTCPBytes:     flagMaxRetainedTCPBytes,
+			Proto:                   flagProto,
+			JSON:                    flagJSON,
+			CSV:                     flagCSV,
+			Elastic:                 flagElastic,
+			ElasticAddrs:            flagElasticAddrs,
+			ElasticUser:             flagElasticUser,
+			IgnoreUnknown:           flagIgnoreUnknown,
+			FreeOSMemory:            flagFreeOSMemory,
+			ConnFlushInterval:       flagConnFlushInterval,
+			ConnTimeout:             flagConnTimeOut,
+			FlowFlushInterval:       flagFlowFlushInterval,
+			FlowTimeout:             flagFlowTimeOut,
+			Entropy:                 flagCalcEntropy,
+			TCPDebug:                flagTCPDebug,
+			SaveConns:               flagSaveConns,
+			DefragIPv4:              flagDefragIPv4,
+			HexDump:                 flagHexdump,
+			BannerSize:              flagBannerSize,
 		}
 
 		// Create server in local mode (unrestricted)
@@ -924,22 +918,24 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 
 	// init collector
 	coll := collector.New(collector.Config{
-		NetworkDetection:       flagNetworkDetection,
-		DNSResolutionContext:   flagDNSResolutionContext,
-		NetworkDetectionConfig: flagNetworkDetectionConfig,
-		Workers:                flagWorkers,
-		PacketBufferSize:       flagPacketBuffer,
-		WriteUnknownPackets:    !flagIgnoreUnknown,
-		Promisc:                flagPromiscMode,
-		SnapLen:                flagSnapLen,
-		BaseLayer:              utils.GetBaseLayer(flagBaseLayer),
-		DecodeOptions:          utils.GetDecodeOptions(flagDecodeOptions),
-		DPI:                    flagDPI,
-		DPIModules:             flagDPIModules,
-		DPIWorkers:             flagDPIWorkers,
-		ReassembleConnections:  flagReassembleConnections,
-		FlowExports:            flagFlowExports,
-		CaptureEvidence:        flagCaptureEvidence, RetainPackets: flagRetainPackets, PacketSegmentBytes: flagPacketSegmentBytes, PacketRetentionBytes: flagPacketRetentionBytes,
+		NetworkDetection:        flagNetworkDetection,
+		DNSResolutionContext:    flagDNSResolutionContext,
+		NetworkDetectionConfig:  flagNetworkDetectionConfig,
+		Workers:                 flagWorkers,
+		PacketBufferSize:        flagPacketBuffer,
+		LiveMaintenanceInterval: flagLiveMaintenanceInterval,
+		LiveFlushInterval:       flagLiveFlushInterval,
+		WriteUnknownPackets:     !flagIgnoreUnknown,
+		Promisc:                 flagPromiscMode,
+		SnapLen:                 flagSnapLen,
+		BaseLayer:               utils.GetBaseLayer(flagBaseLayer),
+		DecodeOptions:           utils.GetDecodeOptions(flagDecodeOptions),
+		DPI:                     flagDPI,
+		DPIModules:              flagDPIModules,
+		DPIWorkers:              flagDPIWorkers,
+		ReassembleConnections:   flagReassembleConnections,
+		FlowExports:             flagFlowExports,
+		CaptureEvidence:         flagCaptureEvidence, RetainPackets: flagRetainPackets, PacketSegmentBytes: flagPacketSegmentBytes, PacketRetentionBytes: flagPacketRetentionBytes,
 		FlowExportPorts:      flagFlowExportPorts,
 		FreeOSMem:            flagFreeOSMemory,
 		LogErrors:            flagLogErrors,
@@ -1016,6 +1012,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			MaxStreamBytes:                 flagMaxStreamBytes,
 			MaxBufferedPagesPerConnection:  flagMaxBufferedPagesPerConnection,
 			MaxBufferedPagesTotal:          flagMaxBufferedPagesTotal,
+			MaxRetainedTCPBytes:            flagMaxRetainedTCPBytes,
 			IgnoreDecoderInitErrors:        flagIgnoreInitErrs,
 			DisableGenericVersionHarvester: flagDisableGenericVersionHarvester,
 			RemoveClosedStreams:            flagRemoveClosedStreams,
@@ -1294,22 +1291,24 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 
 			// Create a fresh collector instance with updated configuration for this file
 			coll = collector.New(collector.Config{
-				NetworkDetection:       flagNetworkDetection,
-				DNSResolutionContext:   flagDNSResolutionContext,
-				NetworkDetectionConfig: flagNetworkDetectionConfig,
-				Workers:                flagWorkers,
-				PacketBufferSize:       flagPacketBuffer,
-				WriteUnknownPackets:    !flagIgnoreUnknown,
-				Promisc:                flagPromiscMode,
-				SnapLen:                flagSnapLen,
-				BaseLayer:              utils.GetBaseLayer(flagBaseLayer),
-				DecodeOptions:          utils.GetDecodeOptions(flagDecodeOptions),
-				DPI:                    flagDPI,
-				DPIModules:             flagDPIModules,
-				DPIWorkers:             flagDPIWorkers,
-				ReassembleConnections:  flagReassembleConnections,
-				FlowExports:            flagFlowExports,
-				CaptureEvidence:        flagCaptureEvidence, RetainPackets: flagRetainPackets, PacketSegmentBytes: flagPacketSegmentBytes, PacketRetentionBytes: flagPacketRetentionBytes,
+				NetworkDetection:        flagNetworkDetection,
+				DNSResolutionContext:    flagDNSResolutionContext,
+				NetworkDetectionConfig:  flagNetworkDetectionConfig,
+				Workers:                 flagWorkers,
+				PacketBufferSize:        flagPacketBuffer,
+				LiveMaintenanceInterval: flagLiveMaintenanceInterval,
+				LiveFlushInterval:       flagLiveFlushInterval,
+				WriteUnknownPackets:     !flagIgnoreUnknown,
+				Promisc:                 flagPromiscMode,
+				SnapLen:                 flagSnapLen,
+				BaseLayer:               utils.GetBaseLayer(flagBaseLayer),
+				DecodeOptions:           utils.GetDecodeOptions(flagDecodeOptions),
+				DPI:                     flagDPI,
+				DPIModules:              flagDPIModules,
+				DPIWorkers:              flagDPIWorkers,
+				ReassembleConnections:   flagReassembleConnections,
+				FlowExports:             flagFlowExports,
+				CaptureEvidence:         flagCaptureEvidence, RetainPackets: flagRetainPackets, PacketSegmentBytes: flagPacketSegmentBytes, PacketRetentionBytes: flagPacketRetentionBytes,
 				FlowExportPorts:      flagFlowExportPorts,
 				FreeOSMem:            flagFreeOSMemory,
 				LogErrors:            flagLogErrors,
@@ -1386,6 +1385,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 					MaxStreamBytes:                 flagMaxStreamBytes,
 					MaxBufferedPagesPerConnection:  flagMaxBufferedPagesPerConnection,
 					MaxBufferedPagesTotal:          flagMaxBufferedPagesTotal,
+					MaxRetainedTCPBytes:            flagMaxRetainedTCPBytes,
 					IgnoreDecoderInitErrors:        flagIgnoreInitErrs,
 					DisableGenericVersionHarvester: flagDisableGenericVersionHarvester,
 					RemoveClosedStreams:            flagRemoveClosedStreams,

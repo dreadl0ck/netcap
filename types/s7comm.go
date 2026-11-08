@@ -29,49 +29,49 @@ import (
 )
 
 const (
-	fieldS7CommTPKTVersion           = "TPKTVersion"
-	fieldS7CommTPKTLength            = "TPKTLength"
-	fieldS7CommCOTPLength            = "COTPLength"
-	fieldS7CommCOTPPDUType           = "COTPPDUType"
-	fieldS7CommCOTPPDUTypeName       = "COTPPDUTypeName"
-	fieldS7CommCOTPDestRef           = "COTPDestRef"
-	fieldS7CommCOTPSrcRef            = "COTPSrcRef"
-	fieldS7CommCOTPClass             = "COTPClass"
-	fieldS7CommCOTPTPDUNumber        = "COTPTPDUNumber"
-	fieldS7CommCOTPLastDataUnit      = "COTPLastDataUnit"
-	fieldS7CommProtocolId            = "ProtocolId"
-	fieldS7CommMessageType           = "MessageType"
-	fieldS7CommMessageTypeName       = "MessageTypeName"
-	fieldS7CommReserved              = "Reserved"
-	fieldS7CommPDUReference          = "PDUReference"
-	fieldS7CommParameterLength       = "ParameterLength"
-	fieldS7CommDataLength            = "DataLength"
-	fieldS7CommErrorClass            = "ErrorClass"
-	fieldS7CommErrorCode             = "ErrorCode"
-	fieldS7CommErrorName             = "ErrorName"
-	fieldS7CommFunctionCode          = "FunctionCode"
-	fieldS7CommFunctionName          = "FunctionName"
-	fieldS7CommSubFunction           = "SubFunction"
-	fieldS7CommSubFunctionName       = "SubFunctionName"
-	fieldS7CommItemCount             = "ItemCount"
-	fieldS7CommMaxAmqCalling         = "MaxAmqCalling"
-	fieldS7CommMaxAmqCalled          = "MaxAmqCalled"
-	fieldS7CommPDUSize               = "PDUSize"
-	fieldS7CommCPUType               = "CPUType"
-	fieldS7CommPLCSerialNumber       = "PLCSerialNumber"
-	fieldS7CommModuleTypeName        = "ModuleTypeName"
-	fieldS7CommPlantIdentification   = "PlantIdentification"
-	fieldS7CommUserDataMethodType    = "UserDataMethodType"
-	fieldS7CommUserDataFunctionGroup = "UserDataFunctionGroup"
+	fieldS7CommTPKTVersion               = "TPKTVersion"
+	fieldS7CommTPKTLength                = "TPKTLength"
+	fieldS7CommCOTPLength                = "COTPLength"
+	fieldS7CommCOTPPDUType               = "COTPPDUType"
+	fieldS7CommCOTPPDUTypeName           = "COTPPDUTypeName"
+	fieldS7CommCOTPDestRef               = "COTPDestRef"
+	fieldS7CommCOTPSrcRef                = "COTPSrcRef"
+	fieldS7CommCOTPClass                 = "COTPClass"
+	fieldS7CommCOTPTPDUNumber            = "COTPTPDUNumber"
+	fieldS7CommCOTPLastDataUnit          = "COTPLastDataUnit"
+	fieldS7CommProtocolId                = "ProtocolId"
+	fieldS7CommMessageType               = "MessageType"
+	fieldS7CommMessageTypeName           = "MessageTypeName"
+	fieldS7CommReserved                  = "Reserved"
+	fieldS7CommPDUReference              = "PDUReference"
+	fieldS7CommParameterLength           = "ParameterLength"
+	fieldS7CommDataLength                = "DataLength"
+	fieldS7CommErrorClass                = "ErrorClass"
+	fieldS7CommErrorCode                 = "ErrorCode"
+	fieldS7CommErrorName                 = "ErrorName"
+	fieldS7CommFunctionCode              = "FunctionCode"
+	fieldS7CommFunctionName              = "FunctionName"
+	fieldS7CommSubFunction               = "SubFunction"
+	fieldS7CommSubFunctionName           = "SubFunctionName"
+	fieldS7CommItemCount                 = "ItemCount"
+	fieldS7CommMaxAmqCalling             = "MaxAmqCalling"
+	fieldS7CommMaxAmqCalled              = "MaxAmqCalled"
+	fieldS7CommPDUSize                   = "PDUSize"
+	fieldS7CommCPUType                   = "CPUType"
+	fieldS7CommPLCSerialNumber           = "PLCSerialNumber"
+	fieldS7CommModuleTypeName            = "ModuleTypeName"
+	fieldS7CommPlantIdentification       = "PlantIdentification"
+	fieldS7CommUserDataMethodType        = "UserDataMethodType"
+	fieldS7CommUserDataFunctionGroup     = "UserDataFunctionGroup"
 	fieldS7CommUserDataFunctionGroupName = "UserDataFunctionGroupName"
-	fieldS7CommUserDataSubFunction   = "UserDataSubFunction"
-	fieldS7CommUserDataSequenceNumber = "UserDataSequenceNumber"
-	fieldS7CommIsSecurityRelevant    = "IsSecurityRelevant"
-	fieldS7CommIsCriticalOperation   = "IsCriticalOperation"
-	fieldS7CommPayloadObscured       = "PayloadObscured"
-	fieldS7CommS7PlusOpcode          = "S7PlusOpcode"
-	fieldS7CommS7PlusOpcodeName      = "S7PlusOpcodeName"
-	fieldS7CommS7PlusFunction        = "S7PlusFunction"
+	fieldS7CommUserDataSubFunction       = "UserDataSubFunction"
+	fieldS7CommUserDataSequenceNumber    = "UserDataSequenceNumber"
+	fieldS7CommIsSecurityRelevant        = "IsSecurityRelevant"
+	fieldS7CommIsCriticalOperation       = "IsCriticalOperation"
+	fieldS7CommPayloadObscured           = "PayloadObscured"
+	fieldS7CommS7PlusOpcode              = "S7PlusOpcode"
+	fieldS7CommS7PlusOpcodeName          = "S7PlusOpcodeName"
+	fieldS7CommS7PlusFunction            = "S7PlusFunction"
 )
 
 var fieldsS7Comm = []string{
@@ -123,6 +123,7 @@ var fieldsS7Comm = []string{
 	fieldS7CommS7PlusOpcode,
 	fieldS7CommS7PlusOpcodeName,
 	fieldS7CommS7PlusFunction,
+	"CommunityID",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -181,6 +182,7 @@ func (s *S7Comm) CSVRecord() []string {
 		formatInt32(s.S7PlusOpcode),
 		s.S7PlusOpcodeName,
 		formatInt32(s.S7PlusFunction),
+		s.CommunityID,
 	})
 }
 
@@ -281,6 +283,7 @@ func (s *S7Comm) Encode() []string {
 		s7commEncoder.Int32(fieldS7CommS7PlusOpcode, s.S7PlusOpcode),
 		s7commEncoder.String(fieldS7CommS7PlusOpcodeName, s.S7PlusOpcodeName),
 		s7commEncoder.Int32(fieldS7CommS7PlusFunction, s.S7PlusFunction),
+		s7commEncoder.String("CommunityID", s.CommunityID),
 	})
 }
 
@@ -291,4 +294,3 @@ func (s *S7Comm) Analyze() {}
 func (s *S7Comm) NetcapType() Type {
 	return Type_NC_S7Comm
 }
-

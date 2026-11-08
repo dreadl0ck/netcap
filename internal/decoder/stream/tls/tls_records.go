@@ -9,6 +9,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -41,6 +42,13 @@ type tlsRecordFramer struct {
 }
 
 func (h *tlsReader) frameConversation() {
+	for _, run := range streamutils.TransportRuns(h.conversation) {
+		reader := &tlsReader{conversation: run.Conversation, transportObservation: run.Observation}
+		reader.frameTransportRun()
+	}
+}
+
+func (h *tlsReader) frameTransportRun() {
 	c, s := h.conversation.ClientData, h.conversation.ServerData
 	if c == nil && s == nil {
 		for _, d := range h.conversation.Data {
@@ -69,8 +77,21 @@ func (h *tlsReader) frameConversation() {
 			atomic.AddInt64(&RecordDecoder.NumRecordsWritten, 1)
 		}
 	}
-	client := &tlsRecordFramer{reader: h, dir: reassembly.TCPDirClientToServer, emit: write}
-	server := &tlsRecordFramer{reader: h, dir: reassembly.TCPDirServerToClient, emit: write}
+	type framer interface {
+		feed([]byte, int64)
+		gap(int, int64)
+		discard(int64)
+		eof()
+	}
+	clientTLS := &tlsRecordFramer{reader: h, dir: reassembly.TCPDirClientToServer, emit: write}
+	serverTLS := &tlsRecordFramer{reader: h, dir: reassembly.TCPDirServerToClient, emit: write}
+	var client, server framer = clientTLS, serverTLS
+	if sslv2HelloType(helloPrefix(c)) != 0 {
+		client = &sslv2Framer{reader: h, dir: reassembly.TCPDirClientToServer, tls: clientTLS}
+	}
+	if sslv2HelloType(helloPrefix(s)) != 0 {
+		server = &sslv2Framer{reader: h, dir: reassembly.TCPDirServerToClient, tls: serverTLS}
+	}
 	feed := func(d *core.StreamData, fromServer bool) {
 		f := client
 		if fromServer {
@@ -82,6 +103,9 @@ func (h *tlsReader) frameConversation() {
 		}
 		if d.SkippedBytes != 0 {
 			f.gap(d.SkippedBytes, timestamp.UnixNano())
+		}
+		if d.DiscardedBytes > 0 {
+			f.discard(timestamp.UnixNano())
 		}
 		f.feed(d.Raw(), timestamp.UnixNano())
 	}
@@ -111,27 +135,33 @@ func (h *tlsReader) frameConversation() {
 }
 
 func helloPrefixType(data core.DataFragments) byte {
+	prefix := helloPrefix(data)
+	if len(prefix) >= 6 && prefix[0] == 22 && prefix[1] == 3 && prefix[2] <= 3 {
+		return prefix[5]
+	}
+	return sslv2HelloType(prefix)
+}
+
+func helloPrefix(data core.DataFragments) []byte {
 	var prefix []byte
 	for _, d := range data {
-		if f, ok := d.(*core.StreamData); ok && f.SkippedBytes != 0 && len(prefix) > 0 {
-			return 0
+		if f, ok := d.(*core.StreamData); ok && (f.DiscardedBytes > 0 || f.SkippedBytes != 0 && (f.SkippedBytes > 0 || len(prefix) > 0)) {
+			break
 		}
-		n := min(6-len(prefix), len(d.Raw()))
+		n := min(14-len(prefix), len(d.Raw()))
 		prefix = append(prefix, d.Raw()[:n]...)
-		if len(prefix) == 6 {
+		if len(prefix) == 14 {
 			break
 		}
 	}
-	if len(prefix) == 6 && prefix[0] == 22 && prefix[1] == 3 && prefix[2] <= 3 {
-		return prefix[5]
-	}
-	return 0
+	return prefix
 }
 
 func (f *tlsRecordFramer) begin(timestamp int64) {
 	c := f.reader.conversation
 	r := &types.TLSRecord{Timestamp: timestamp, Flow: c.Ident, CommunityID: c.CommunityID,
-		Direction: f.dir.String(), Index: f.index, Offset: f.offset,
+		TCPObservation: f.reader.transportObservation,
+		Direction:      f.dir.String(), Index: f.index, Offset: f.offset,
 		SrcIP: c.ClientIP, DstIP: c.ServerIP, SrcPort: c.ClientPort, DstPort: c.ServerPort}
 	if f.dir == reassembly.TCPDirServerToClient {
 		r.SrcIP, r.DstIP, r.SrcPort, r.DstPort = c.ServerIP, c.ClientIP, c.ServerPort, c.ClientPort
@@ -233,7 +263,7 @@ func (f *tlsRecordFramer) feed(data []byte, timestamp int64) {
 					break
 				}
 				if f.handshake[0] == handshakeTypeCertificate && Decoder.Writer != nil {
-					f.reader.parseCertificateMessage(f.handshake[4:4+length], f.handshakeTS)
+					f.reader.parseCertificateMessage(f.handshake[4:4+length], f.handshakeTS, f.dir)
 				}
 				if f.handshake[0] == handshakeTypeServerHello && f.dir == reassembly.TCPDirServerToClient && length+4 <= 65535 {
 					wire := append([]byte{22, 3, 3, byte((length + 4) >> 8), byte(length + 4)}, f.handshake[:length+4]...)
@@ -304,6 +334,18 @@ func (f *tlsRecordFramer) gap(skipped int, timestamp int64) {
 	// No speculative resynchronization inside ciphertext after loss.
 	f.stopped = true
 	f.handshake = nil
+}
+
+func (f *tlsRecordFramer) discard(timestamp int64) {
+	if f.stopped {
+		return
+	}
+	if f.record == nil {
+		f.begin(timestamp)
+	}
+	f.record.Incomplete = true
+	f.finish("discarded")
+	f.stopped, f.handshake = true, nil
 }
 
 func (f *tlsRecordFramer) eof() {

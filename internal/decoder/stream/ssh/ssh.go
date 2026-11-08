@@ -52,11 +52,9 @@ var Decoder = &decoder.StreamDecoder{
 	Specificity: core.SpecificityStructural,
 
 	CanDecode: func(client, server []byte) bool {
-		// Server-driven on purpose: the reader keys on the server's
-		// identification string and emits a record from it, so a client
-		// greeting with no server reply is not evidence of an SSH service.
-		// ssh_pcap_test.go pins that.
-		result := hasSSHIdentification(server)
+		// A client-only identification is an observed SSH attempt, not proof
+		// of an SSH service at the peer. The reader qualifies partial handshakes.
+		result := hasSSHIdentification(server) || len(server) == 0 && hasSSHIdentification(client)
 		if result {
 			sshLog.Info("SSH traffic detected - CanDecode matched",
 				zap.Int("clientLen", len(client)),
@@ -101,23 +99,24 @@ var sshIdentPrefix = []byte("SSH-")
 // prose that happens to begin "SSH-2.0". The server may send other lines first,
 // so the anchor is the line start rather than offset zero.
 func hasSSHIdentification(data []byte) bool {
+	_, end := sshIdentification(data)
+	return end != 0
+}
+
+func sshIdentification(data []byte) (string, int) {
+	data = data[:min(len(data), maxSSHPrefix)]
 	for offset := 0; offset < len(data); {
-		idx := bytes.Index(data[offset:], sshIdentPrefix)
-		if idx < 0 {
-			return false
+		end := bytes.IndexByte(data[offset:], '\n')
+		if end < 0 {
+			break
 		}
-
-		idx += offset
-		if idx == 0 || data[idx-1] == '\n' {
-			if hasSSHVersionField(data[idx+len(sshIdentPrefix):]) {
-				return true
-			}
+		line := bytes.TrimSuffix(data[offset:offset+end], []byte{'\r'})
+		if len(line) <= 253 && bytes.HasPrefix(line, sshIdentPrefix) && hasSSHVersionField(line[len(sshIdentPrefix):]) {
+			return string(line), offset + end + 1
 		}
-
-		offset = idx + 1
+		offset += end + 1
 	}
-
-	return false
+	return "", 0
 }
 
 // hasSSHVersionField reports whether b opens with a protocol version followed
@@ -129,5 +128,5 @@ func hasSSHVersionField(b []byte) bool {
 
 	// At least one version character, then the second hyphen, then something
 	// for the software version to be.
-	return i > 0 && i < len(b) && b[i] == '-'
+	return i > 0 && b[0] >= '0' && b[0] <= '9' && i+1 < len(b) && b[i] == '-' && b[i+1] > ' '
 }

@@ -20,8 +20,6 @@
 package smb
 
 import (
-	"bytes"
-
 	"github.com/dreadl0ck/netcap/internal/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
@@ -59,15 +57,10 @@ var Decoder = &decoder.StreamDecoder{
 		startSMBCleanup()
 		return nil
 	},
-	// a four-byte signature containing a non-ASCII anchor.
 	Specificity: core.SpecificityMagic,
 
 	CanDecode: func(client, server []byte) bool {
-		// Check for SMB1 or SMB2/3 signature
-		return bytes.Contains(server, []byte(SMB1Signature)) ||
-			bytes.Contains(server, []byte(SMB2Signature)) ||
-			bytes.Contains(client, []byte(SMB1Signature)) ||
-			bytes.Contains(client, []byte(SMB2Signature))
+		return probeSMB(client) || probeSMB(server)
 	},
 	DeInit: func(sd *decoder.StreamDecoder) error {
 		return smbLog.Sync()

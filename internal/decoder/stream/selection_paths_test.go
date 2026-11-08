@@ -259,6 +259,8 @@ func TestParseableReaderFixturesReachTheirDecoder(t *testing.T) {
 					ScanClient: client, ScanServer: server,
 					Conversation: &core.ConversationInfo{},
 				}
+				in.Conversation.ServerPort = port
+				cleanup := prepareMediaSample(s, in.Conversation)
 				if s.transport == core.UDP {
 					in.Datagrams = []Datagram{{Data: client, Client: true}}
 					if len(server) > 0 {
@@ -266,6 +268,7 @@ func TestParseableReaderFixturesReachTheirDecoder(t *testing.T) {
 					}
 				}
 				sel, ok := SelectDecoder(in)
+				cleanup()
 				want := s.decoder
 				if port != s.port && s.portOnly {
 					want = "-"
