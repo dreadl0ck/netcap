@@ -51,33 +51,11 @@ var Decoder = &decoder.StreamDecoder{
 	Specificity: core.SpecificityWeak,
 
 	CanDecode: func(client, server []byte) bool {
-		// Syslog messages start with <PRI> where PRI is 1-3 digits
-		// Check for '<' followed by digits and '>'
-		if len(server) > 3 && server[0] == '<' {
-			for i := 1; i < len(server) && i < 5; i++ {
-				if server[i] == '>' {
-					return true
-				}
-				if server[i] < '0' || server[i] > '9' {
-					break
-				}
-			}
-		}
-		if len(client) > 3 && client[0] == '<' {
-			for i := 1; i < len(client) && i < 5; i++ {
-				if client[i] == '>' {
-					return true
-				}
-				if client[i] < '0' || client[i] > '9' {
-					break
-				}
-			}
-		}
-		return false
+		return hasSyslogPrefix(client) || hasSyslogPrefix(server)
 	},
 	DeInit: func(sd *decoder.StreamDecoder) error {
 		return syslogLog.Sync()
 	},
 	Factory: &syslogReader{},
-	Typ:     core.UDP, // Syslog primarily uses UDP (port 514)
+	Typ:     core.All,
 }

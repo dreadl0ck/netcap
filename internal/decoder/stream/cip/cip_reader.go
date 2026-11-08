@@ -100,6 +100,12 @@ func (c *cipReader) Decode() {
 		cipLog.Error("CIP Decoder.Writer is nil")
 		return
 	}
+	if c.conversation.Transport == core.UDP {
+		for _, fragment := range c.conversation.Data {
+			c.frameDirection(core.DataFragments{fragment})
+		}
+		return
+	}
 
 	if c.conversation.ClientData != nil || c.conversation.ServerData != nil {
 		c.frameDirection(c.conversation.ClientData)
@@ -110,23 +116,35 @@ func (c *cipReader) Decode() {
 }
 
 func (c *cipReader) frameDirection(fragments core.DataFragments) {
-	data, index := core.Flatten(fragments)
-	offset := 0
-
-	for offset+enipHeaderSize <= len(data) {
-		// Only parse ENIP-encapsulated CIP (has strong signature)
-		if c.isENIPHeader(data[offset:]) {
-			c.timestamp, c.fromServer = index.At(offset)
-			consumed := c.parseENIPMessage(data[offset:])
-			if consumed > 0 {
-				offset += consumed
-				continue
+	var pending [2][]byte
+	var times [2][]int64
+	for _, fragment := range fragments {
+		direction := 0
+		if core.FromServer(fragment) {
+			direction = 1
+		}
+		if v, ok := fragment.(*core.StreamData); ok && v.HasGap(len(pending[direction]) > 0) {
+			pending[direction], times[direction] = nil, nil
+		}
+		for _, octet := range fragment.Raw() {
+			pending[direction] = append(pending[direction], octet)
+			times[direction] = append(times[direction], core.FragmentTime(fragment))
+			for len(pending[direction]) >= enipHeaderSize {
+				data := pending[direction]
+				command := binary.LittleEndian.Uint16(data)
+				if !knownENIPCommand(command) {
+					pending[direction], times[direction] = data[1:], times[direction][1:]
+					continue
+				}
+				length := enipHeaderSize + int(binary.LittleEndian.Uint16(data[2:4]))
+				if len(data) < length {
+					break
+				}
+				c.timestamp, c.fromServer = times[direction][0], direction == 1
+				c.parseENIPMessage(data[:length])
+				pending[direction], times[direction] = data[length:], times[direction][length:]
 			}
 		}
-
-		// Skip byte and try again - don't fall back to raw CIP parsing
-		// as it causes too many false positives
-		offset++
 	}
 }
 
@@ -166,7 +184,14 @@ func (c *cipReader) isENIPHeader(data []byte) bool {
 	command := binary.LittleEndian.Uint16(data[0:2])
 	length := binary.LittleEndian.Uint16(data[2:4])
 
-	// Validate command is a known ENIP command
+	if !knownENIPCommand(command) {
+		return false
+	}
+
+	return len(data) >= enipHeaderSize+int(length)
+}
+
+func knownENIPCommand(command uint16) bool {
 	switch command {
 	case ENIPCommandNOP,
 		ENIPCommandListServices,
@@ -176,18 +201,11 @@ func (c *cipReader) isENIPHeader(data []byte) bool {
 		ENIPCommandUnregisterSession,
 		ENIPCommandSendRRData,
 		ENIPCommandSendUnitData:
-		// Valid command
+		return true
 	default:
 		return false
 	}
 
-	// Check that we have enough data for the header + payload
-	totalSize := enipHeaderSize + int(length)
-	if len(data) < totalSize {
-		return false
-	}
-
-	return true
 }
 
 // parseENIPMessage parses an ENIP message and extracts CIP payloads

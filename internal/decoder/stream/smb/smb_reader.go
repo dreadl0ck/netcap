@@ -416,6 +416,8 @@ func (s *smbReader) readSMBMessage(b *bufio.Reader, isClient bool) error {
 		return s.parseSMB1Message(msg, isClient)
 	case SMB2Signature:
 		return s.parseSMB2Message(msg, isClient)
+	case "\xfdSMB", "\xfcSMB":
+		return s.parseOpaqueTransform(msg, isClient)
 	default:
 		smbLog.Debug("Unknown SMB signature",
 			zap.String("signature", hex.EncodeToString(msg[0:4])),
@@ -559,6 +561,49 @@ func (s *smbReader) parseSMB1Message(msg []byte, isClient bool) error {
 
 // parseSMB2Message parses an SMB2/3 protocol message
 func (s *smbReader) parseSMB2Message(msg []byte, isClient bool) error {
+	for count := 0; len(msg) > 0; count++ {
+		if count >= 1024 || len(msg) < 64 || string(msg[:4]) != SMB2Signature {
+			return fmt.Errorf("invalid SMB2 compound header")
+		}
+		next := int(binary.LittleEndian.Uint32(msg[20:24]))
+		length := len(msg)
+		if next != 0 {
+			if next < 64 || next%8 != 0 || next > len(msg)-64 {
+				return fmt.Errorf("invalid SMB2 NextCommand: %d", next)
+			}
+			length = next
+		}
+		s.resetMessageState()
+		if err := s.parseSMB2Command(msg[:length], isClient); err != nil {
+			return err
+		}
+		if next == 0 {
+			return nil
+		}
+		msg = msg[next:]
+	}
+	return nil
+}
+
+func (s *smbReader) parseOpaqueTransform(msg []byte, isClient bool) error {
+	name, operation := "COMPRESSED_TRANSFORM", "opaque-compressed"
+	var session uint64
+	if msg[0] == 0xfd {
+		if len(msg) < 52 || binary.LittleEndian.Uint16(msg[42:44]) != 1 {
+			return fmt.Errorf("invalid SMB3 encryption transform")
+		}
+		session = binary.LittleEndian.Uint64(msg[44:52])
+		name, operation = "ENCRYPTED_TRANSFORM", "opaque-encrypted"
+	} else if len(msg) < 16 || uint64(binary.LittleEndian.Uint32(msg[12:16])) > uint64(len(msg)-16) {
+		return fmt.Errorf("invalid SMB3 compression transform")
+	}
+	// The envelope proves no command, status, authentication result or file.
+	opaque := &smbReader{conversation: s.conversation, timestamp: s.timestamp, version: 3, sessionID: session}
+	opaque.writeSMBRecord(-1, name, 0, 0, 0, !isClient, operation, false, "")
+	return nil
+}
+
+func (s *smbReader) parseSMB2Command(msg []byte, isClient bool) error {
 	if len(msg) < 64 {
 		return nil
 	}
@@ -593,6 +638,17 @@ func (s *smbReader) parseSMB2Message(msg []byte, isClient bool) error {
 	messageID := binary.LittleEndian.Uint64(msg[24:32])
 	treeID := binary.LittleEndian.Uint32(msg[36:40])
 	sessionID := binary.LittleEndian.Uint64(msg[40:48])
+	if flags&SMB2_FLAGS_ASYNC_COMMAND != 0 {
+		treeID = 0
+	}
+	if flags&SMB2_FLAGS_RELATED_OPERATIONS != 0 {
+		if treeID == 0xffffffff {
+			treeID = s.treeID
+		}
+		if sessionID == 0xffffffffffffffff {
+			sessionID = s.sessionID
+		}
+	}
 
 	// Check if this is a response
 	isResponse := (flags & SMB2_FLAGS_SERVER_TO_REDIR) != 0

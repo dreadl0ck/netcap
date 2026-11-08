@@ -18,6 +18,41 @@ type evidenceWriter struct {
 	records []*types.CIP
 }
 
+func TestCIPDirectionalGapAndDatagramBoundaries(t *testing.T) {
+	oldWriter, oldCount := Decoder.Writer, Decoder.NumRecordsWritten
+	t.Cleanup(func() { Decoder.Writer, Decoder.NumRecordsWritten = oldWriter, oldCount })
+	fragment := func(data []byte, server bool, gap int) *core.StreamData {
+		d := &core.StreamData{RawData: data, SkippedBytes: gap, CaptureInformation: gopacket.CaptureInfo{Timestamp: time.Unix(0, 123)}}
+		if server {
+			d.Dir = reassembly.TCPDirServerToClient
+		}
+		return d
+	}
+	for _, tc := range []struct {
+		name      string
+		transport core.TransportProtocol
+		data      core.DataFragments
+		count     int
+	}{
+		{"interleaved", core.TCP, core.DataFragments{fragment(sampleENIPCIPRequest[:30], false, 0), fragment(sampleENIPCIPResponse, true, 0), fragment(sampleENIPCIPRequest[30:], false, 0)}, 2},
+		{"gap", core.TCP, core.DataFragments{fragment(sampleENIPCIPRequest[:30], false, 0), fragment(sampleENIPCIPRequest[30:], false, 1)}, 0},
+		{"udp", core.UDP, core.DataFragments{fragment(sampleENIPCIPRequest, false, 0), fragment(sampleENIPCIPResponse, true, 0)}, 2},
+		{"udp-no-join", core.UDP, core.DataFragments{fragment(sampleENIPCIPRequest[:30], false, 0), fragment(sampleENIPCIPRequest[30:], false, 0)}, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			w := &evidenceWriter{}
+			Decoder.Writer = w
+			(&cipReader{conversation: &core.ConversationInfo{Transport: tc.transport, Data: tc.data, ClientIP: "192.0.2.1", ServerIP: "192.0.2.2"}}).Decode()
+			if len(w.records) != tc.count {
+				t.Fatalf("got %d want %d", len(w.records), tc.count)
+			}
+		})
+	}
+	if Decoder.Typ != core.All {
+		t.Fatal("UDP CIP unreachable")
+	}
+}
+
 func (w *evidenceWriter) Write(m proto.Message) error {
 	w.records = append(w.records, proto.Clone(m).(*types.CIP))
 	return nil
