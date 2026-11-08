@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/dreadl0ck/netcap/internal/policy"
 )
 
 func TestFTPPyftpdlibPreventiveUploadsAndCommands(t *testing.T) {
@@ -59,7 +61,13 @@ s.serve_forever(timeout=0.1)
 	if port == "" {
 		t.Fatal("pinned pyftpdlib fixture failed startup")
 	}
-	eval := compileGatewayPolicy(t, `(Protocol == "ftp" && Method == "DELE") || Body contains "forbidden"`)
+	eval, err := policy.Compile(policy.Bundle{Version: "1", ID: "ftp-live", Mode: "enforce", Default: "allow", Rules: []policy.Rule{
+		{ID: "block-write", Phase: "request", Action: "deny", Expression: `(Protocol == "ftp" && Method == "DELE") || Body contains "forbidden"`},
+		{ID: "block-download", Phase: "response", Action: "deny", Expression: `Protocol == "ftp" && Body contains "forbidden"`},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
 	c, _, _ := startTCPGateway(t, Config{Protocol: "ftp", Upstream: net.JoinHostPort("127.0.0.1", port)}, eval)
 	r := bufio.NewReader(c)
 	want := func(code string) {
