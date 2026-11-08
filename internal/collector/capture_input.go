@@ -26,6 +26,7 @@ type CaptureInputReport struct {
 	ProcessedPackets  int64               `json:"processedPackets"`
 	SkippedRecords    int64               `json:"skippedRecords"`
 	ReadErrors        int64               `json:"readErrors"`
+	LinkErrors        int64               `json:"linkErrors"`
 	DecodeErrors      int64               `json:"decodeErrors"`
 	Unsupported       int64               `json:"unsupportedPackets"`
 	SnaplenOverrides  int64               `json:"snaplenOverrides"`
@@ -43,7 +44,7 @@ type CaptureInputIssue struct {
 type CaptureInputError struct{ Report CaptureInputReport }
 
 func (e *CaptureInputError) Error() string {
-	message := fmt.Sprintf("capture input %s: processed=%d skipped=%d read-errors=%d decode-errors=%d unsupported=%d", e.Report.Status, e.Report.ProcessedPackets, e.Report.SkippedRecords, e.Report.ReadErrors, e.Report.DecodeErrors, e.Report.Unsupported)
+	message := fmt.Sprintf("capture input %s: processed=%d skipped=%d read-errors=%d link-errors=%d decode-errors=%d unsupported=%d", e.Report.Status, e.Report.ProcessedPackets, e.Report.SkippedRecords, e.Report.ReadErrors, e.Report.LinkErrors, e.Report.DecodeErrors, e.Report.Unsupported)
 	if len(e.Report.Issues) > 0 {
 		message += fmt.Sprintf("; offset %d: %s", e.Report.Issues[0].Offset, e.Report.Issues[0].Reason)
 	}
@@ -67,13 +68,13 @@ func (r *CaptureInputReport) result() error {
 	if r.Unsupported > 0 {
 		r.Status = "unsupported"
 	}
-	if r.ReadErrors > 0 || r.DecodeErrors > 0 {
+	if r.ReadErrors > 0 || r.LinkErrors > 0 {
 		r.Status = "partial"
 		if r.ProcessedPackets == 0 {
 			r.Status = "error"
 		}
 	}
-	if r.ReadErrors+r.DecodeErrors+r.Unsupported > 0 {
+	if r.ReadErrors+r.LinkErrors+r.Unsupported > 0 {
 		return &CaptureInputError{Report: *r}
 	}
 	return nil
@@ -155,7 +156,7 @@ func countCaptureInput(ctx context.Context, path string, ng bool) (int64, error)
 	defer f.Close()
 	report := CaptureInputReport{}
 	walkCaptureInput(ctx, r, &report, nil)
-	return report.ProcessedPackets, report.result()
+	return report.ProcessedPackets, errors.Join(report.result(), ctx.Err())
 }
 
 func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) {
@@ -218,7 +219,12 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 			if errors.As(failure.Error(), &linkErr) && linkErr.Unsupported {
 				report.Unsupported++
 				kind = "unsupported"
+			} else if linkErr != nil || p.Layers()[0] == failure {
+				report.LinkErrors++
+				kind = "link"
 			} else {
+				// Valid capture records can contain malformed upper-layer traffic.
+				// Keep that qualification separate from input coverage failures.
 				report.DecodeErrors++
 			}
 			report.issue(inputPacketInfo(ci).Offset, kind, failure.Error().Error(), true)
@@ -229,7 +235,7 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 		report.ReadErrors++
 		report.issue(0, "read", "packet count changed between count and processing passes", false)
 	}
-	resultErr = report.result()
+	resultErr = errors.Join(report.result(), ctx.Err())
 	c.captureComplete = report.ReachedEOF && resultErr == nil
 	data, err := json.MarshalIndent(report, "", "  ")
 	if err == nil {

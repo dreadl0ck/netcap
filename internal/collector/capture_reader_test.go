@@ -7,6 +7,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
@@ -341,6 +343,25 @@ func TestCaptureReaderEpochAndGzipTruncation(t *testing.T) {
 	report, packets, _ := scanInputBytes(t, data[:len(data)-4], false, true)
 	if report.result() == nil || report.ProcessedPackets != 1 || report.ReachedEOF || !bytes.Equal(packets[0], packet) {
 		t.Fatalf("truncated gzip lost prefix or claimed complete: %+v", report)
+	}
+}
+
+func TestCaptureReaderCountCancellation(t *testing.T) {
+	for _, ng := range []bool{false, true} {
+		input := inputPCAPHeader(binary.LittleEndian, false, 64, 1)
+		if ng {
+			input = inputNGSection(binary.LittleEndian)
+		}
+		path := filepath.Join(t.TempDir(), "empty.capture")
+		if err := os.WriteFile(path, input, 0600); err != nil {
+			t.Fatal(err)
+		}
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		count, err := countCaptureInput(ctx, path, ng)
+		if count != 0 || !errors.Is(err, context.Canceled) {
+			t.Fatalf("ng=%t: canceled counting returned %d, %v", ng, count, err)
+		}
 	}
 }
 

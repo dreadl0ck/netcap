@@ -1,7 +1,7 @@
 {
   "issues": ["D2-12", "D2-13", "DS-4", "DS-18"],
   "reproduce": "NETCAP_INPUT_CORPUS=/absolute/fixture/cache NETCAP_INPUT_FETCH=1 NETCAP_INPUT_RESULTS=/absolute/results GOWORK=off GOMAXPROCS=2 go test -p 1 -tags nodpi,noyara,nomagika ./internal/collector -run '^TestCaptureInputCorpus$' -count=1 -v",
-  "notes": "Opt-in downloads only, capped at each declared size and SHA-256 verified. Collector outputs and child stdout are retained when NETCAP_INPUT_RESULTS is set. NETCAP_INPUT_BASELINE=1 records observations without post-fix assertions. The original /Users/pmieden/Downloads/netcap-datasets-round2.md report is unavailable; the authoritative W76 plan and source guide implementation. Upstream krb/smb2_krb.pcap is the pinned reproducer for the plan's named krb_smb2_krb.pcap; equivalence to the unavailable original artifact is unverified. No keytab is fetched. Large MCFP captures and original /workspace/mta/datasets2 outputs are not available locally.",
+  "notes": "Opt-in downloads only, capped at each declared size and SHA-256 verified. Collector outputs and child stdout are retained when NETCAP_INPUT_RESULTS is set. NETCAP_INPUT_BASELINE=1 records observations without post-fix assertions. The original /Users/pmieden/Downloads/netcap-datasets-round2.md report and W76 plan were read. Upstream krb/smb2_krb.pcap is the pinned reproducer for the report's named krb_smb2_krb.pcap; equivalence to the original artifact is unverified. No keytab is fetched. Large MCFP captures and original /workspace/mta/datasets2 outputs are not available locally.",
   "samples": [
     {
       "name": "zeek-smb2-krb", "issue": "D2-12",
