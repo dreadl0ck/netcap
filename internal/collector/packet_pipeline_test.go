@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -137,6 +138,9 @@ func pipelinePCAP(t *testing.T, path string) (int, int64) {
 			write(testutil.Fragment(ip, id, 0, 8, true))
 		}
 	}
+	atomic := testutil.IP(true, false, layers.IPProtocolICMPv6, append([]byte{128, 0, 0, 0, 0, 24, 0, 13}, []byte("atomic echo payload")...))
+	copy(atomic[8:24], net.ParseIP("2001:db8::a").To16())
+	write(testutil.Fragment(atomic, 600, 0, len(atomic)-40, false))
 	return count, wire
 }
 
@@ -150,7 +154,7 @@ func TestPacketPipelineProcess(t *testing.T) {
 	workers, _ := strconv.Atoi(os.Getenv("NETCAP_PIPELINE_WORKERS"))
 	c := New(Config{Workers: workers, PacketBufferSize: 8, ReassembleConnections: true, CaptureEvidence: true, NoSignalHandling: true, NoPrompt: true,
 		BaseLayer: layers.LayerTypeEthernet, DecodeOptions: gopacket.Default,
-		DecoderConfig: &config.Config{Out: os.Getenv("NETCAP_PIPELINE_OUT"), Quiet: true, IncludeDecoders: "HTTP,Connection,IPv4,IPv6,TCP,UDP,ICMPv4,ICMPv6", Proto: true, AddContext: true,
+		DecoderConfig: &config.Config{Out: os.Getenv("NETCAP_PIPELINE_OUT"), Quiet: true, IncludeDecoders: "HTTP,Connection,IPv4,IPv6,TCP,UDP,ICMPv4,ICMPv6", Proto: true, AddContext: true, IncludePayloads: true,
 			Buffer: true, MemBufferSize: 4096, WaitForConnections: true, NoOptCheck: true, FlushEvery: 7, ClosePendingTimeOut: 5 * time.Second, CloseInactiveTimeOut: time.Minute,
 			StreamBufferSize: 8, StreamDecoderBufSize: 8, NumStreamWorkers: 2, BannerSize: 256}})
 	if err := c.CollectPcap(input); err != nil {
@@ -266,8 +270,32 @@ func TestPacketPipelinePCAP(t *testing.T) {
 			}
 			icmp4 := pipelineRead(t, out, "ICMPv4", func() proto.Message { return &types.ICMPv4{} })
 			icmp6 := pipelineRead(t, out, "ICMPv6", func() proto.Message { return &types.ICMPv6{} })
-			if len(icmp4) != 1 || len(icmp6) != 1 {
+			if len(icmp4) != 1 || len(icmp6) != 2 {
 				t.Fatal("fragmented ICMP not decoded exactly once")
+			}
+			udp := pipelineRead(t, out, "UDP", func() proto.Message { return &types.UDP{} })
+			innerUDP := 0
+			for _, m := range udp {
+				r := m.(*types.UDP)
+				if r.SrcPort == 5555 && r.DstPort == 5556 {
+					innerUDP++
+					if string(r.Payload) != "UDP pipeline payload" || (r.SrcIP != "10.0.0.1" && r.SrcIP != "2001:db8::1") || (r.DstIP != "10.0.0.2" && r.DstIP != "2001:db8::2") {
+						t.Fatalf("reconstructed UDP evidence: %v", r)
+					}
+				}
+			}
+			if innerUDP != 2 {
+				t.Fatalf("fragmented UDP dispatched %d times, want 2", innerUDP)
+			}
+			ipv6 := pipelineRead(t, out, "IPv6", func() proto.Message { return &types.IPv6{} })
+			atomicHeaders := 0
+			for _, m := range ipv6 {
+				if m.(*types.IPv6).SrcIP == "2001:db8::a" {
+					atomicHeaders++
+				}
+			}
+			if atomicHeaders != 1 {
+				t.Fatalf("atomic fragment IPv6 audited %d times, want 1", atomicHeaders)
 			}
 		})
 	}
@@ -290,5 +318,45 @@ func TestPipelineDetectionAndCommunityAttribution(t *testing.T) {
 			t.Fatal("detection VNI scopes merged")
 		}
 		lastScope = events[0].Scope
+	}
+}
+
+func TestPipelineFragmentDetectionTime(t *testing.T) {
+	for _, v6 := range []bool{false, true} {
+		for _, nested := range []bool{false, true} {
+			t.Run(fmt.Sprintf("v6=%t/nested=%t", v6, nested), func(t *testing.T) {
+				p := packetview.New(packetview.Limits{})
+				ip := testutil.TCP(v6, false, 10, 0, "S", "")
+				header := 20
+				if v6 {
+					header = 40
+				}
+				var completed gopacket.Packet
+				ordinal := uint64(0)
+				for i, fragment := range [][]byte{testutil.Fragment(ip, 701, 0, 8, true), testutil.Fragment(ip, 701, 8, len(ip)-header, false)} {
+					parts := [][]byte{fragment}
+					if nested {
+						outer := testutil.Tunnel("geneve-gre", 17, fragment)
+						parts = [][]byte{testutil.Fragment(outer, uint32(702+i), 0, 32, true), testutil.Fragment(outer, uint32(702+i), 32, len(outer)-20, false)}
+					}
+					for _, part := range parts {
+						capture := testutil.Packet(testutil.Ethernet(part), 0, ordinal)
+						capture.Metadata().Timestamp = time.Unix(int64(ordinal), 0)
+						ordinal++
+						completed = p.Process(capture, ordinal).Packet
+					}
+				}
+				if completed == nil {
+					t.Fatal("missing completed SYN")
+				}
+				events := networkdetect.PacketEvents(completed, networkdetect.Scope{Sensor: "local", Interface: "pcap"})
+				if len(events) != 1 || events[0].Kind != "syn" || events[0].At != int64(ordinal-1)*int64(time.Second) {
+					t.Fatalf("detection must observe completion time: %+v", events)
+				}
+				if completed.Metadata().Timestamp.UnixNano() != 0 {
+					t.Fatal("original epoch-zero evidence timestamp lost")
+				}
+			})
+		}
 	}
 }
