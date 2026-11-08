@@ -108,9 +108,9 @@ func (f *sslv2Framer) feed(b []byte, ts int64) {
 	}
 }
 
-func (f *sslv2Framer) gap(skipped int, _ int64) {
+func (f *sslv2Framer) gap(skipped int, ts int64) {
 	if f.handoff && f.tls != nil {
-		f.tls.gap(skipped, f.ts)
+		f.tls.gap(skipped, ts)
 		return
 	}
 	if skipped == -1 && !f.seen {
@@ -125,6 +125,13 @@ func (f *sslv2Framer) eof() {
 	if f.handoff && f.tls != nil {
 		f.tls.eof()
 	}
+}
+
+func (f *sslv2Framer) discard(ts int64) {
+	if f.handoff && f.tls != nil {
+		f.tls.discard(ts)
+	}
+	f.stopped, f.buf = true, nil
 }
 
 func sslv2Ciphers(b []byte) []uint32 {

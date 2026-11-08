@@ -43,7 +43,7 @@ func upgradeCases() []upgradeCase {
 }
 
 func TestUpgradeExactBoundaries(t *testing.T) {
-	h, cw, _ := helloTestWriters(t)
+	h, cw, sw := helloTestWriters(t)
 	for _, tc := range upgradeCases() {
 		t.Run(tc.name, func(t *testing.T) {
 			client := append(bytes.Clone(tc.client), upgradeHello()...)
@@ -54,25 +54,28 @@ func TestUpgradeExactBoundaries(t *testing.T) {
 			}
 			for _, reverse := range []bool{false, true} {
 				for split := 0; split <= len(client); split++ {
-					cw.messages = nil
+					cw.messages, sw.messages = nil, nil
 					c := *h.conversation
 					// A complete opposing direction may be delivered between split request bytes.
 					c.Data = core.DataFragments{fragment(client[:split], reverse, 1), fragment(server, !reverse, 2), fragment(client[split:], reverse, 3)}
 					ObserveUpgrade(&c, tc.name)
-					if len(cw.messages) != 1 {
-						t.Fatalf("reverse=%v client split=%d: %v", reverse, split, cw.messages)
+					if len(cw.messages) != 1 || len(sw.messages) != 1 {
+						t.Fatalf("reverse=%v client split=%d: %v %v", reverse, split, cw.messages, sw.messages)
 					}
 					if cw.messages[0].(*types.TLSClientHello).SrcIP != map[bool]string{false: c.ClientIP, true: c.ServerIP}[reverse] {
 						t.Fatal("wrong upgraded role")
 					}
+					if sw.messages[0].(*types.TLSServerHello).SrcIP != map[bool]string{false: c.ServerIP, true: c.ClientIP}[reverse] {
+						t.Fatal("wrong upgraded server role")
+					}
 				}
 				for split := 0; split <= len(server); split++ {
-					cw.messages = nil
+					cw.messages, sw.messages = nil, nil
 					c := *h.conversation
 					c.Data = core.DataFragments{fragment(server[:split], !reverse, 1), fragment(client, reverse, 2), fragment(server[split:], !reverse, 3)}
 					ObserveUpgrade(&c, tc.name)
-					if len(cw.messages) != 1 {
-						t.Fatalf("reverse=%v server split=%d: %v", reverse, split, cw.messages)
+					if len(cw.messages) != 1 || len(sw.messages) != 1 {
+						t.Fatalf("reverse=%v server split=%d: %v %v", reverse, split, cw.messages, sw.messages)
 					}
 				}
 			}
@@ -148,7 +151,7 @@ func TestUpgradeRejectedAndMalformed(t *testing.T) {
 			}
 			cw.messages, sw.messages = nil, nil
 			conversation := *h.conversation
-			conversation.Data = core.DataFragments{fragment(c, false, 1), fragment(s, true, 2)}
+			conversation.Data = core.DataFragments{fragment(append(bytes.Clone(c), upgradeHello()...), false, 1), fragment(append(bytes.Clone(s), recordHello(2)...), true, 2)}
 			ObserveUpgrade(&conversation, tc.name)
 			if len(cw.messages) != 0 || len(sw.messages) != 0 {
 				t.Fatal("rejected upgrade emitted TLS metadata")
@@ -165,6 +168,61 @@ func TestUpgradeRejectedAndMalformed(t *testing.T) {
 	}
 	if _, ok := ldapBounds(upgradeCases()[1].client, []byte{0x30, 12, 2, 1, 2, 0x78, 7, 10, 1, 0, 4, 0, 4, 0}); ok {
 		t.Fatal("LDAP message ID not correlated")
+	}
+}
+
+func TestIRCRequiresSTARTTLSCommand(t *testing.T) {
+	response := []byte(":server 670 * :STARTTLS successful\r\n")
+	for _, request := range []string{"", "NICK user\r\n", "CAP LS\r\nNICK user\r\n", "STARTTLS ignored\r\n"} {
+		if _, ok := ircBounds([]byte(request), response); ok {
+			t.Fatalf("unsolicited IRC acceptance for %q", request)
+		}
+	}
+}
+
+func TestUpgradeLossBoundaries(t *testing.T) {
+	h, cw, _ := helloTestWriters(t)
+	cases := upgradeCases()
+	for _, tc := range []struct{ name, request, response string }{
+		{"SMTP", "STARTTLS\r\n", "220 Ready\r\n"},
+		{"POP3", "STLS\r\n", "+OK Begin TLS\r\n"},
+		{"IMAP", "A1 STARTTLS\r\n", "A1 OK Begin TLS\r\n"},
+		{"FTP", "AUTH TLS\r\n", "234 Begin TLS\r\n"},
+	} {
+		cases = append(cases, upgradeCase{name: tc.name, client: []byte(tc.request), server: []byte(tc.response)})
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, serverLoss := range []bool{false, true} {
+				for _, discarded := range []bool{false, true} {
+					// Exercise a hole inside negotiation, at the handoff, and inside the hello.
+					preamble := tc.client
+					if serverLoss {
+						preamble = tc.server
+					}
+					for _, cut := range []int{1, len(preamble), len(preamble) + 10} {
+						cw.messages = nil
+						c := *h.conversation
+						payload := append(bytes.Clone(preamble), upgradeHello()...)
+						marker := fragment(nil, serverLoss, 3)
+						if discarded {
+							marker.DiscardedBytes, marker.DiscardReason = 1, "retention-budget"
+						} else {
+							marker.SkippedBytes = 1
+						}
+						other := tc.server
+						if serverLoss {
+							other = tc.client
+						}
+						c.Data = core.DataFragments{fragment(payload[:cut], serverLoss, 1), marker, fragment(payload[cut:], serverLoss, 4), fragment(other, !serverLoss, 5)}
+						ObserveUpgrade(&c, tc.name)
+						if len(cw.messages) != 0 {
+							t.Fatalf("server=%v discarded=%v cut=%d: crossed loss boundary", serverLoss, discarded, cut)
+						}
+					}
+				}
+			}
+		})
 	}
 }
 

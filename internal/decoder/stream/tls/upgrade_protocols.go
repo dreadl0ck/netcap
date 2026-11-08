@@ -20,7 +20,7 @@ func upgradePrefixes(fragments core.DataFragments) [2][]byte {
 	var stopped [2]bool
 	for _, f := range fragments {
 		side := fragmentSide(f)
-		if d, ok := f.(*core.StreamData); ok && d.SkippedBytes != 0 && (d.SkippedBytes > 0 || len(data[side]) > 0) {
+		if d, ok := f.(*core.StreamData); ok && (d.DiscardedBytes > 0 || d.SkippedBytes != 0 && (d.SkippedBytes > 0 || len(data[side]) > 0)) {
 			stopped[side] = true
 		}
 		if !stopped[side] {
@@ -54,7 +54,7 @@ func negotiatedUpgrade(fragments core.DataFragments, primary string) ([2]int, bo
 	}
 	switch primary {
 	case "SMTP", "POP3", "IMAP", "FTP", "":
-		return cleartextUpgrade(fragments)
+		return cleartextUpgrade(fragments, primary)
 	}
 	return [2]int{}, false
 }
@@ -279,6 +279,7 @@ func xmppBounds(c, s []byte) ([2]int, bool) {
 
 func ircBounds(c, s []byte) ([2]int, bool) {
 	var bounds [2]int
+	requested := false
 	for side, data := range [][]byte{c, s} {
 		for len(data) > 0 {
 			end := bytes.IndexByte(data, '\n')
@@ -307,10 +308,11 @@ func ircBounds(c, s []byte) ([2]int, bool) {
 				return [2]int{}, false
 			}
 			if side == 0 && len(fields) == 1 && strings.EqualFold(fields[0], "STARTTLS") {
+				requested = true
 				break
 			}
 			if side == 1 && len(fields) >= 2 && fields[0] == "670" {
-				return bounds, true
+				return bounds, requested
 			}
 			if side == 1 && len(fields) > 0 && fields[0] == "691" {
 				return [2]int{}, false

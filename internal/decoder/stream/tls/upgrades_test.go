@@ -76,8 +76,24 @@ func TestTLSUpgradeRequiresAcknowledgedControlExchange(t *testing.T) {
 		{&core.StreamData{RawData: []byte("DATA\r\nSTARTTLS\r\n")}, &core.StreamData{RawData: []byte("220 text\r\n"), Dir: reassembly.TCPDirServerToClient}},
 		{&core.StreamData{RawData: []byte("STARTTLS\r\n")}, &core.StreamData{RawData: []byte("220 Ready\r\n"), SkippedBytes: 1, Dir: reassembly.TCPDirServerToClient}},
 	} {
-		if _, ok := cleartextUpgrade(fragments); ok {
+		if _, ok := cleartextUpgrade(fragments, ""); ok {
 			t.Fatal("unconfirmed upgrade accepted")
+		}
+	}
+}
+
+func TestCleartextUpgradeUsesPrimaryProtocol(t *testing.T) {
+	for _, tc := range []struct{ primary, request, response string }{
+		{"SMTP", "STARTTLS\r\n", "220 Ready\r\n"},
+		{"POP3", "STLS\r\n", "+OK Begin TLS\r\n"},
+		{"IMAP", "A1 STARTTLS\r\n", "A1 OK Begin TLS\r\n"},
+		{"FTP", "AUTH TLS\r\n", "234 Begin TLS\r\n"},
+	} {
+		for _, primary := range []string{"SMTP", "POP3", "IMAP", "FTP"} {
+			fragments := core.DataFragments{fragment([]byte(tc.request), false, 1), fragment([]byte(tc.response), true, 2)}
+			if _, ok := cleartextUpgrade(fragments, primary); ok != (primary == tc.primary) {
+				t.Fatalf("%s command accepted=%v for %s", tc.primary, ok, primary)
+			}
 		}
 	}
 }
