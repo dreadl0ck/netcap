@@ -1,16 +1,21 @@
 {
   "issues": ["W76 D2-16", "W76 D2-17 UDP/VoIP"],
   "unavailableArtifacts": {
-    "/Users/pmieden/Downloads/netcap-datasets-round2.md": "macOS EPERM; original report inaccessible, plan and source used",
     "/workspace/mta/datasets2/": "original full-corpus outputs unavailable locally; no full-corpus replay claimed"
   },
   "verification": {
-    "date": "2026-11-07",
+    "date": "2026-11-08",
     "result": "Pinned captures and synthetic collector regressions passed; pinned fixtures and synthetic media tested with 1 and 4 workers; fc04 passed with 2 workers",
     "fc04Observed": {"SIP": 19, "RTP": 3113, "DTMF": 15},
     "baseline": "No baseline corpus replay performed in this worktree. Base source already populates SIP ResponseCode/ResponseStatus; D2-16 retained as an export regression.",
-    "schema": "Base enum maximum 148; RTP=200 and DTMF=201 were unused. gogofaster regeneration is byte-identical; DHCP schema unchanged.",
+    "schema": "Base enum maximum 148; RTP=200 and DTMF=201 were unused. Regenerated with gogofaster v1.3.2 built by Go 1.27.0; repeated generation SHA-256 f6fbee8882ef26ca796cfcd5421d519b526c7694b3f2da677a5340ca177058b7. DHCP schema unchanged.",
     "limitations": "RTP requires observed cleartext SIP/SDP offer/answer and advertised endpoints; encrypted, NAT-translated, directional-only and ambiguous media are not guessed. Association history is bounded to 256 calls and 8 descriptions per call. Full corpus/RSS qualification belongs to integration."
+  },
+  "followUp": {
+    "report": "/Users/pmieden/Downloads/netcap-datasets-round2.md read successfully on 2026-11-08; D2-16 and all VoIP D2-17 requirements checked",
+    "changes": "Reject duplicate singleton SIP headers, ambiguous overlapping same-Call-ID dialogs and malformed event ranges; telephone-event output requires the offer/answer event intersection",
+    "collectorControls": "TestW76SIPFramingControls, TestW76DNP3DatagramControls and TestW76NegotiatedEventIntersection run through the registered collector at 1 and 4 workers",
+    "integration": "Coordinator already owns network-scope isolation in 9b43a52c; retain it when applying this follow-up. Regenerate combined schemas rather than replacing the coordinator's generated file."
   },
   "zeek": {
     "revision": "5862ccc5e13e6127cda5932a7f18aaf070c8b63b",
