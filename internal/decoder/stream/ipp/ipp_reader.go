@@ -214,6 +214,12 @@ func (r *ippReader) decodeHTTPMessages(emit func(*types.IPP, *core.StreamData)) 
 			if record == nil {
 				continue
 			}
+			if response {
+				record.OperationName = statusNames[int(record.OperationOrStatus)]
+				if record.OperationName == "" {
+					record.OperationName = "Unknown"
+				}
+			}
 			for fragmentIndex < len(ends)-1 && offset >= ends[fragmentIndex] {
 				fragmentIndex++
 			}

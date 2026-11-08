@@ -51,6 +51,7 @@ const (
 	fieldHelloFormat      = "HelloFormat"
 	fieldSSLv2CipherSpecs = "SSLv2CipherSpecs"
 	fieldSSLv2Challenge   = "SSLv2Challenge"
+	fieldReassemblyStatus = "ReassemblyStatus"
 )
 
 var fieldsTLSClientHello = []string{
@@ -84,7 +85,7 @@ var fieldsTLSClientHello = []string{
 	fieldHelloFormat,
 	fieldSSLv2CipherSpecs,
 	fieldSSLv2Challenge,
-	"ReassemblyStatus",
+	fieldReassemblyStatus,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -263,7 +264,7 @@ func (t *TLSClientHello) Encode() []string {
 		tlsClientHelloEncoder.String(fieldHelloFormat, t.HelloFormat),
 		tlsClientHelloEncoder.String(fieldSSLv2CipherSpecs, joinUints(t.SSLv2CipherSpecs)),
 		tlsClientHelloEncoder.String(fieldSSLv2Challenge, hex.EncodeToString(t.SSLv2Challenge)),
-		tlsClientHelloEncoder.String("ReassemblyStatus", t.ReassemblyStatus),
+		tlsClientHelloEncoder.String(fieldReassemblyStatus, t.ReassemblyStatus),
 	})
 }
 

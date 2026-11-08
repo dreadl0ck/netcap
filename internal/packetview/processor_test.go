@@ -284,6 +284,10 @@ func TestIPv6ExtensionsAndAtomicFragment(t *testing.T) {
 	if r.Packet == nil || r.Packet.TransportLayer() == nil {
 		t.Fatal("atomic fragment failed")
 	}
+	c := packetview.FromCapture(r.Packet.Metadata().CaptureInfo)
+	if !c.SyntheticNetwork || c.Reassembled || len(c.Packets) != 1 || len(r.Evidence) != 1 || r.Evidence[0].Layer(layers.LayerTypeIPv6Fragment) == nil {
+		t.Fatalf("atomic fragment must audit the captured header only once: %+v", c)
+	}
 	if process(p, last, 3).Packet == nil {
 		t.Fatal("atomic fragment destroyed pending set")
 	}

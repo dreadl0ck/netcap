@@ -57,6 +57,7 @@ func TestNewDecoders_UltimatePCAP(t *testing.T) {
 		t.Fatalf("Ultimate PCAP fixture changed: %s", got)
 	}
 	wantKerberos := kerberosKDCOracle(t, pcapFile)
+	wantIPP := ippHTTPOracle(t, pcapFile)
 
 	// Build the netcap binary
 	binaryPath := filepath.Join(t.TempDir(), "netcap-test")
@@ -113,7 +114,7 @@ func TestNewDecoders_UltimatePCAP(t *testing.T) {
 		{"Kerberos", "Kerberos.ncap.gz", types.Type_NC_Kerberos, 134},
 		{"TACACS", "TACACS.ncap.gz", types.Type_NC_TACACS, 18},  // tshark(tacplus): 18, exact match
 		{"DCERPC", "DCERPC.ncap.gz", types.Type_NC_DCERPC, 350}, // tshark: 420, netcap: ~368
-		{"IPP", "IPP.ncap.gz", types.Type_NC_IPP, 30},           // tshark: 38, netcap: ~39
+		{"IPP", "IPP.ncap.gz", types.Type_NC_IPP, 38},           // 19 requests + 19 responses, verified below
 		{"Zabbix", "Zabbix.ncap.gz", types.Type_NC_Zabbix, 40},  // tshark: 150, netcap: ~51 (session-based)
 	}
 
@@ -137,6 +138,7 @@ func TestNewDecoders_UltimatePCAP(t *testing.T) {
 
 			count := 0
 			gotKerberos := make(map[string]int)
+			gotIPP := make(map[string]int)
 			record := netio.InitRecord(dt.typ)
 			if record == nil {
 				t.Fatalf("InitRecord returned nil for type %s", dt.typ)
@@ -150,6 +152,13 @@ func TestNewDecoders_UltimatePCAP(t *testing.T) {
 					break
 				}
 				count++
+				if rec, ok := record.(*types.IPP); ok {
+					key := fmt.Sprintf("%d|%d|%s|%s|%d|%d|%d", rec.RequestID, rec.OperationOrStatus, rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort, rec.VersionMajor<<8|rec.VersionMinor)
+					gotIPP[key]++
+					if rec.CommunityID == "" || rec.Timestamp == 0 || rec.SrcPort == 631 && rec.OperationName != "successful-ok" {
+						t.Fatalf("IPP observation missing attribution or response semantics: %v", rec)
+					}
+				}
 				if rec, ok := record.(*types.Kerberos); ok {
 					key := fmt.Sprintf("%d|%s|%s|%d|%d", rec.MessageTypeCode, rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort)
 					gotKerberos[key]++
@@ -160,6 +169,9 @@ func TestNewDecoders_UltimatePCAP(t *testing.T) {
 			}
 			if dt.typ == types.Type_NC_Kerberos && !reflect.DeepEqual(gotKerberos, wantKerberos) {
 				t.Errorf("KDC message/direction multiset differs from tshark:\ngot %v\nwant %v", gotKerberos, wantKerberos)
+			}
+			if dt.typ == types.Type_NC_IPP && !reflect.DeepEqual(gotIPP, wantIPP) {
+				t.Errorf("IPP message/direction multiset differs from tshark:\ngot %v\nwant %v", gotIPP, wantIPP)
 			}
 
 			t.Logf("%s: %d records (minimum expected: %d)", dt.name, count, dt.minCount)
@@ -178,6 +190,42 @@ func TestNewDecoders_UltimatePCAP(t *testing.T) {
 			}
 		})
 	}
+}
+
+func ippHTTPOracle(t *testing.T, pcap string) map[string]int {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "tshark", "-r", pcap, "-Y", "ipp", "-T", "fields", "-E", "occurrence=f",
+		"-e", "ipp.request_id", "-e", "ipp.operation_id", "-e", "ipp.status_code", "-e", "ipv6.src", "-e", "ipv6.dst",
+		"-e", "tcp.srcport", "-e", "tcp.dstport", "-e", "ipp.version").Output()
+	if err != nil {
+		t.Fatalf("IPP oracle failed: %v", err)
+	}
+	result := make(map[string]int)
+	requests, responses := 0, 0
+	for _, line := range strings.Split(strings.TrimSuffix(string(out), "\n"), "\n") {
+		fields := strings.Split(line, "\t")
+		if len(fields) != 8 {
+			t.Fatalf("invalid IPP oracle row: %q", line)
+		}
+		code := fields[1]
+		if code == "" {
+			code = fields[2]
+			responses++
+		} else {
+			requests++
+		}
+		n, err := strconv.ParseUint(code, 0, 16)
+		if err != nil {
+			t.Fatalf("invalid IPP operation/status: %q", line)
+		}
+		result[fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s", fields[0], n, fields[3], fields[4], fields[5], fields[6], fields[7])]++
+	}
+	if requests != 19 || responses != 19 {
+		t.Fatalf("IPP corpus changed: %d requests, %d responses", requests, responses)
+	}
+	return result
 }
 
 func kerberosKDCOracle(t *testing.T, pcap string) map[string]int {

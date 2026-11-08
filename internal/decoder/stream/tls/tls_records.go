@@ -80,6 +80,7 @@ func (h *tlsReader) frameTransportRun() {
 	type framer interface {
 		feed([]byte, int64)
 		gap(int, int64)
+		discard(int64)
 		eof()
 	}
 	clientTLS := &tlsRecordFramer{reader: h, dir: reassembly.TCPDirClientToServer, emit: write}
@@ -102,6 +103,9 @@ func (h *tlsReader) frameTransportRun() {
 		}
 		if d.SkippedBytes != 0 {
 			f.gap(d.SkippedBytes, timestamp.UnixNano())
+		}
+		if d.DiscardedBytes > 0 {
+			f.discard(timestamp.UnixNano())
 		}
 		f.feed(d.Raw(), timestamp.UnixNano())
 	}
@@ -141,7 +145,7 @@ func helloPrefixType(data core.DataFragments) byte {
 func helloPrefix(data core.DataFragments) []byte {
 	var prefix []byte
 	for _, d := range data {
-		if f, ok := d.(*core.StreamData); ok && f.SkippedBytes != 0 && (f.SkippedBytes > 0 || len(prefix) > 0) {
+		if f, ok := d.(*core.StreamData); ok && (f.DiscardedBytes > 0 || f.SkippedBytes != 0 && (f.SkippedBytes > 0 || len(prefix) > 0)) {
 			break
 		}
 		n := min(14-len(prefix), len(d.Raw()))
@@ -330,6 +334,18 @@ func (f *tlsRecordFramer) gap(skipped int, timestamp int64) {
 	// No speculative resynchronization inside ciphertext after loss.
 	f.stopped = true
 	f.handshake = nil
+}
+
+func (f *tlsRecordFramer) discard(timestamp int64) {
+	if f.stopped {
+		return
+	}
+	if f.record == nil {
+		f.begin(timestamp)
+	}
+	f.record.Incomplete = true
+	f.finish("discarded")
+	f.stopped, f.handshake = true, nil
 }
 
 func (f *tlsRecordFramer) eof() {

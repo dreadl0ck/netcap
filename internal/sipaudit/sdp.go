@@ -146,6 +146,7 @@ func (a *Associations) Lookup(scope, src, dst string, sport, dport int32, pt uin
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 	var foundID string
+	var foundCall *call
 	var found Codec
 	for _, c := range a.calls {
 		if c.scope != scope {
@@ -191,19 +192,37 @@ func (a *Associations) Lookup(scope, src, dst string, sport, dport int32, pt uin
 				continue
 			}
 			compatible := false
+			var allowed [16]bool
 			for _, peer := range y.codecs {
 				if peer.Encoding == codec.Encoding && peer.Rate == codec.Rate {
+					if codec.Encoding == "telephone-event" {
+						for event := range uint32(16) {
+							if codec.AllowsEvent(event) && peer.AllowsEvent(event) {
+								allowed[event] = true
+							}
+						}
+					}
 					compatible = true
-					break
 				}
+			}
+			if codec.Encoding == "telephone-event" {
+				var events []string
+				for event, ok := range allowed {
+					if ok {
+						events = append(events, strconv.Itoa(event))
+					}
+				}
+				compatible = len(events) > 0
+				codec.Events = strings.Join(events, ",")
 			}
 			if !compatible {
 				continue
 			}
-			if foundID != "" && (foundID != c.id || found != codec) {
+			if foundCall != nil && (foundCall != c || found != codec) {
 				return "", Codec{}, false
 			}
 			foundID, found = c.id, codec
+			foundCall = c
 		}
 	}
 	return foundID, found, foundID != ""
@@ -342,6 +361,7 @@ func (c Codec) AllowsEvent(event uint32) bool {
 	if c.Events == "" {
 		return true
 	} // RFC 4733 default events 0-15
+	allowed := false
 	for _, part := range strings.Split(c.Events, ",") {
 		lo, hi, rangeValue := strings.Cut(part, "-")
 		start, err := strconv.ParseUint(lo, 10, 8)
@@ -356,9 +376,12 @@ func (c Codec) AllowsEvent(event uint32) bool {
 				return false
 			}
 		}
+		if start > end {
+			return false
+		}
 		if uint64(event) >= start && uint64(event) <= end {
-			return true
+			allowed = true
 		}
 	}
-	return false
+	return allowed
 }

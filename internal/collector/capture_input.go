@@ -26,8 +26,8 @@ type CaptureInputReport struct {
 	ProcessedPackets  int64               `json:"processedPackets"`
 	SkippedRecords    int64               `json:"skippedRecords"`
 	ReadErrors        int64               `json:"readErrors"`
-	DecodeErrors      int64               `json:"decodeErrors"`
 	LinkErrors        int64               `json:"linkErrors"`
+	DecodeErrors      int64               `json:"decodeErrors"`
 	Unsupported       int64               `json:"unsupportedPackets"`
 	SnaplenOverrides  int64               `json:"snaplenOverrides"`
 	SnapshotTruncated int64               `json:"snapshotTruncatedPackets"`
@@ -156,7 +156,7 @@ func countCaptureInput(ctx context.Context, path string, ng bool) (int64, error)
 	defer f.Close()
 	report := CaptureInputReport{}
 	walkCaptureInput(ctx, r, &report, nil)
-	return report.ProcessedPackets, report.result()
+	return report.ProcessedPackets, errors.Join(report.result(), ctx.Err())
 }
 
 func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) {
@@ -224,7 +224,7 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 					report.LinkErrors++
 					kind = "link"
 				}
-			} else if c.captureLinkType == layers.LinkTypeEthernet && p.LinkLayer() == nil {
+			} else if p.Layers()[0] == failure || c.captureLinkType == layers.LinkTypeEthernet && p.LinkLayer() == nil {
 				report.LinkErrors++
 				kind = "link"
 			} else {
@@ -240,9 +240,9 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 		report.ReadErrors++
 		report.issue(0, "read", "packet count changed between count and processing passes", false)
 	}
-	resultErr = report.result()
+	resultErr = errors.Join(report.result(), ctx.Err())
 	c.captureInputStatus = report.Status
-	c.captureComplete = report.ReachedEOF && report.Status == "complete"
+	c.captureComplete = report.ReachedEOF && report.Status == "complete" && resultErr == nil
 	data, err := json.MarshalIndent(report, "", "  ")
 	if err == nil {
 		err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "capture-input.json"), append(data, '\n'), 0600)

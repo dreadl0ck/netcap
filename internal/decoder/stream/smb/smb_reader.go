@@ -377,6 +377,11 @@ func (s *smbReader) readSMBMessage(b *bufio.Reader, isClient bool) error {
 		return err
 	}
 
+	msgLen := int(nbHeader[1])<<16 | int(nbHeader[2])<<8 | int(nbHeader[3])
+	if msgLen > 4*1024*1024 {
+		return fmt.Errorf("SMB message length exceeds limit: %d", msgLen)
+	}
+
 	// NetBIOS session message type should be 0x00 (Session Message)
 	// Other types: 0x81 (Session Request), 0x82 (Positive Response), etc.
 	if nbHeader[0] != 0x00 {
@@ -385,22 +390,12 @@ func (s *smbReader) readSMBMessage(b *bufio.Reader, isClient bool) error {
 			zap.Uint8("type", nbHeader[0]),
 			zap.String("ident", s.conversation.Ident),
 		)
-		return nil
+		_, err = io.CopyN(io.Discard, b, int64(msgLen))
+		return err
 	}
 
-	// Calculate message length (24-bit big-endian)
-	msgLen := int(nbHeader[1])<<16 | int(nbHeader[2])<<8 | int(nbHeader[3])
 	if msgLen < 4 {
-		return nil
-	}
-
-	// Safety check for message length
-	if msgLen > 4*1024*1024 { // 4MB max
-		smbLog.Warn("SMB message too large, skipping",
-			zap.Int("length", msgLen),
-			zap.String("ident", s.conversation.Ident),
-		)
-		return nil
+		return fmt.Errorf("SMB message shorter than signature: %d", msgLen)
 	}
 
 	// Read the SMB message

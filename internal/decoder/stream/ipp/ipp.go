@@ -58,28 +58,8 @@ var Decoder = &decoder.StreamDecoder{
 
 	CanDecode: func(client, server []byte) bool {
 		for _, data := range [][]byte{client, server} {
-			for interim := 0; interim < 8; interim++ {
-				header, remainder, complete := bytes.Cut(data, []byte("\r\n\r\n"))
-				if len(header) > 16384 {
-					break
-				}
-				for _, line := range strings.Split(string(header), "\r\n") {
-					name, value, ok := strings.Cut(line, ":")
-					if ok && strings.EqualFold(name, "Content-Type") {
-						typ, _, err := mime.ParseMediaType(strings.TrimSpace(value))
-						if err == nil && typ == "application/ipp" {
-							return true
-						}
-					}
-				}
-				if !complete || !bytes.HasPrefix(header, []byte("HTTP/")) {
-					break
-				}
-				response, err := http.ReadResponse(bufio.NewReader(bytes.NewReader(data[:len(header)+4])), nil)
-				if err != nil || response.StatusCode < 100 || response.StatusCode >= 200 || response.StatusCode == 101 {
-					break
-				}
-				data = remainder
+			if matchesHTTP(data) {
+				return true
 			}
 		}
 		return false
@@ -89,4 +69,38 @@ var Decoder = &decoder.StreamDecoder{
 	},
 	Factory: &ippReader{},
 	Typ:     core.TCP,
+}
+
+// Informational responses precede the final HTTP response and have no body.
+// Only walk those headers; a Content-Type literal inside a body is not evidence.
+func matchesHTTP(data []byte) bool {
+	data = data[:min(len(data), 16384)]
+	for interim := 0; len(data) > 0 && interim < 8; interim++ {
+		header, rest, complete := bytes.Cut(data, []byte("\r\n\r\n"))
+		if !complete {
+			return false
+		}
+		b := bufio.NewReader(bytes.NewReader(data[:len(header)+4]))
+		var contentType string
+		if bytes.HasPrefix(header, []byte("HTTP/1.")) {
+			res, err := http.ReadResponse(b, nil)
+			if err != nil {
+				return false
+			}
+			if res.StatusCode >= 100 && res.StatusCode < 200 && res.StatusCode != 101 {
+				data = rest
+				continue
+			}
+			contentType = res.Header.Get("Content-Type")
+		} else {
+			req, err := http.ReadRequest(b)
+			if err != nil {
+				return false
+			}
+			contentType = req.Header.Get("Content-Type")
+		}
+		typ, _, err := mime.ParseMediaType(strings.TrimSpace(contentType))
+		return err == nil && typ == "application/ipp"
+	}
+	return false
 }

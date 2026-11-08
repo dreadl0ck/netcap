@@ -59,6 +59,7 @@ func observeUpgradeRun(c *core.ConversationInfo, primary string) {
 		if original, ok := f.(*core.StreamData); ok {
 			d.TCPObservation = original.TCPObservation
 			d.SkippedBytes = original.SkippedBytes
+			d.DiscardedBytes, d.DiscardReason = original.DiscardedBytes, original.DiscardReason
 			if start < bounds[side] {
 				d.SkippedBytes = 0
 			}
@@ -83,7 +84,7 @@ func fragmentSide(f core.DataFragment) int {
 	return 0
 }
 
-func cleartextUpgrade(fragments core.DataFragments) ([2]int, bool) {
+func cleartextUpgrade(fragments core.DataFragments, primary string) ([2]int, bool) {
 	var lines [2][]byte
 	var consumed [2]int
 	var seen [2]int
@@ -91,12 +92,12 @@ func cleartextUpgrade(fragments core.DataFragments) ([2]int, bool) {
 	var smtpData [2]bool
 	for _, f := range fragments {
 		side := fragmentSide(f)
+		if d, ok := f.(*core.StreamData); ok && (d.DiscardedBytes > 0 || d.SkippedBytes != 0 && (d.SkippedBytes > 0 || seen[side] > 0)) {
+			return [2]int{}, false
+		}
 		if pending != "" && side == requestSide {
 			// Everything after the command belongs to the proposed TLS stream.
 			continue
-		}
-		if d, ok := f.(*core.StreamData); ok && d.SkippedBytes != 0 && (d.SkippedBytes > 0 || seen[side] > 0) {
-			return [2]int{}, false
 		}
 		if seen[side] >= maxUpgradeBytes {
 			return [2]int{}, false
@@ -153,6 +154,10 @@ func cleartextUpgrade(fragments core.DataFragments) ([2]int, bool) {
 				smtpData[side] = true
 				continue
 			default:
+				continue
+			}
+			if primary != "" && !strings.EqualFold(pending, primary) {
+				pending = ""
 				continue
 			}
 			requestSide, requestEnd = side, consumed[side]

@@ -155,3 +155,65 @@ func TestCaptureInputEmptyPacket(t *testing.T) {
 		t.Fatal("empty captured frame must not become opaque success")
 	}
 }
+
+func TestCaptureInputDecodeQualification(t *testing.T) {
+	order := binary.LittleEndian
+	good := rawPacketFixture(t, false, 64)
+	badUDP := bytes.Clone(good)
+	binary.BigEndian.PutUint16(badUDP[38:40], 7) // UDP length cannot be smaller than its header.
+	if p := inputDecode(badUDP, 1, order); p.ErrorLayer() == nil || p.NetworkLayer() == nil {
+		t.Fatal("fixture must retain IPv4 and fail UDP decoding")
+	}
+	for _, tc := range []struct {
+		name   string
+		bad    []byte
+		status string
+		link   int64
+		decode int64
+	}{
+		{"upper-layer", badUDP, "complete", 0, 1},
+		{"link-header", good[:8], "partial", 1, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			input := inputPCAPHeader(order, false, 65535, 1)
+			for i, frame := range [][]byte{good, tc.bad, good} {
+				input = append(input, inputPCAPRecord(order, uint32(123+i), 0, uint32(len(frame)), uint32(len(frame)), frame)...)
+			}
+			path := filepath.Join(root, "input.pcap")
+			if err := os.WriteFile(path, input, 0600); err != nil {
+				t.Fatal(err)
+			}
+			for _, workers := range []int{1, 4} {
+				out := filepath.Join(root, fmt.Sprintf("w%d", workers))
+				result := runInputRepro(t, path, out, workers)
+				var report CaptureInputReport
+				readInputJSON(t, filepath.Join(out, "capture-input.json"), &report)
+				if result.Packets != 3 || (result.Error != "") != (tc.link > 0) || report.Status != tc.status || report.LinkErrors != tc.link || report.DecodeErrors != tc.decode || report.CountedPackets != 3 || report.ProcessedPackets != 3 || report.ReadErrors != 0 || !report.ReachedEOF {
+					t.Fatalf("result=%+v report=%+v", result, report)
+				}
+				udp := bookRecords(t, out, "UDP", func() *types.UDP { return &types.UDP{} })
+				valid, malformed := 0, 0
+				for _, record := range udp {
+					if record.Length == 7 {
+						malformed++
+					} else if record.Timestamp == 123_000_000_000 || record.Timestamp == 125_000_000_000 {
+						valid++
+					}
+				}
+				if valid != 2 || int64(malformed) != tc.decode || len(udp) != valid+malformed {
+					t.Fatalf("UDP evidence: valid=%d malformed=%d total=%d", valid, malformed, len(udp))
+				}
+				var capture evidence.CaptureManifest
+				readInputJSON(t, filepath.Join(out, "capture-manifest.json"), &capture)
+				wantStatus := "done"
+				if tc.link > 0 {
+					wantStatus = "error"
+				}
+				if capture.Status != wantStatus || capture.IngressPackets != 3 {
+					t.Fatalf("wrong input coverage: %+v", capture)
+				}
+			}
+		})
+	}
+}

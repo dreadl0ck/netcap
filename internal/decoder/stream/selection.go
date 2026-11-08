@@ -27,6 +27,7 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/dcerpc"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/ipp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/modbus"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/rtp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
@@ -119,6 +120,16 @@ func SelectDecoder(in *SelectionInput) (Selection, bool) {
 	}
 
 	if sel, ok := selectByPort(in); ok {
+		// IPP specializes HTTP. A POST header may span deliveries, and a
+		// response-only capture may start with 100 Continue rather than IPP.
+		if sel.Name == "HTTP" && in.Transport == core.TCP && configuredDecoder("IPP") &&
+			(bytes.HasPrefix(in.PortClient, []byte("POST ")) || bytes.HasPrefix(in.PortServer, []byte("POST ")) ||
+				bytes.HasPrefix(in.PortClient, []byte("HTTP/1.")) || bytes.HasPrefix(in.PortServer, []byte("HTTP/1."))) {
+			in.loadScanBytes()
+			if ipp.Decoder.CanDecodeStream(in.ScanClient, in.ScanServer) {
+				return Selection{API: ipp.Decoder, Decoder: ipp.Decoder.Factory.New(in.Conversation), Name: "IPP", Port: 631, Via: ViaFallback}, true
+			}
+		}
 		portScore, _ := matchScore(sel.API, in, true)
 		// A short banner can match several services. Keep the usual fast port
 		// path for structural evidence; only compare weak port matches with

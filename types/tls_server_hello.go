@@ -86,7 +86,7 @@ var fieldsTLSServerHello = []string{
 	fieldSSLv2ConnectionID,
 	fieldSSLv2SessionIDHit,
 	fieldSSLv2CertificateType,
-	"ReassemblyStatus",
+	fieldReassemblyStatus,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -155,7 +155,7 @@ var tlsServerMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_TLSServerHello.String()),
 		Help: Type_NC_TLSServerHello.String() + " audit records",
 	},
-	fieldsTLSServerHello[1:len(fieldsTLSServerHello)-6], // Exclude connection-specific data.
+	fieldsTLSServerHello[1:len(fieldsTLSServerHello)-6], // Exclude legacy connection data and framing status.
 )
 
 // Inc increments the metrics for the audit record.
@@ -214,7 +214,7 @@ func (t *TLSServerHello) Encode() []string {
 		tlsServerHelloEncoder.String(fieldSSLv2ConnectionID, hex.EncodeToString(t.SSLv2ConnectionID)),
 		tlsServerHelloEncoder.Bool(t.SSLv2SessionIDHit),
 		tlsServerHelloEncoder.Uint32(fieldSSLv2CertificateType, t.SSLv2CertificateType),
-		tlsServerHelloEncoder.String("ReassemblyStatus", t.ReassemblyStatus),
+		tlsServerHelloEncoder.String(fieldReassemblyStatus, t.ReassemblyStatus),
 	})
 }
 

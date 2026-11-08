@@ -66,6 +66,8 @@ type smbPipeRequest struct {
 	sequence uint64
 	limit    uint32
 	trans    *smbPipeTransaction
+	async    bool
+	asyncID  uint64
 }
 
 type smbPipeTransport struct {
