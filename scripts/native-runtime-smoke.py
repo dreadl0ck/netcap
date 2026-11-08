@@ -31,6 +31,7 @@ def main():
             if args.binary:
                 return [str(Path(args.binary).resolve()), *options]
             base = ["docker", "run", "--rm", "--cpus=2", "--memory=2g", "--pids-limit=256",
+                    "--user", f"{os.getuid()}:{os.getgid()}",
                     "--cap-drop=ALL", "--security-opt=no-new-privileges", "-v", f"{root}:{root}",
                     "-e", "HOME", "-e", "NC_CONFIG_ROOT", "-e", "GOMAXPROCS=2"]
             base += ["-p", f"127.0.0.1:{port}:{port}"] if port else ["--network=none"]
