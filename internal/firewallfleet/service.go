@@ -542,7 +542,8 @@ func (s *Service) audit(st *snapshot, actor, op string, scope Scope, object stri
 // Execute is the authenticated administrative REST/MCP boundary. Target tokens
 // cannot invoke this API; HTTP desired/ack derive their attachment from enrollment.
 func (s *Service) Execute(ctx context.Context, token, op string, r Request) (any, error) {
-	out, err := s.execute(ctx, token, op, r)
+	var identity rejectionIdentity
+	out, err := s.execute(ctx, token, op, r, &identity)
 	if err == nil {
 		return out, nil
 	}
@@ -550,8 +551,7 @@ func (s *Service) Execute(ctx context.Context, token, op string, r Request) (any
 	if !known || d.op == "status" || d.op == "capabilities" || d.op == "audit" || d.op == "audit_export" || d.op == "retention_preview" {
 		return out, err
 	}
-	actor, scope, authErr := s.admin(token, r.Scope)
-	if authErr != nil {
+	if identity.actor == "" {
 		return out, err
 	}
 	reason := "unavailable"
@@ -576,23 +576,25 @@ func (s *Service) Execute(ctx context.Context, token, op string, r Request) (any
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	_ = s.transaction(ctx, func(st *snapshot) error {
-		s.audit(st, actor, op, scope, object)
+		s.audit(st, identity.actor, op, identity.scope, object)
 		if !st.AuditOverflow {
 			a := &st.Audit[len(st.Audit)-1]
 			a.Outcome = "rejected"
 			a.Reason = reason
-			for _, p := range s.cfg.Identities {
-				if p.ID == actor && p.Role != "" {
-					a.Grant = p.Role
-				}
-			}
+			a.Grant = identity.grant
 		}
 		return nil
 	})
 	return out, err
 }
 
-func (s *Service) execute(ctx context.Context, token, op string, r Request) (any, error) {
+type rejectionIdentity struct {
+	actor string
+	scope Scope
+	grant string
+}
+
+func (s *Service) execute(ctx context.Context, token, op string, r Request, identity *rejectionIdentity) (any, error) {
 	if op == "metrics" {
 		if s.cfg.Auth != nil {
 			p, err := s.cfg.Auth.Authenticate(ctx, token)
@@ -623,9 +625,17 @@ func (s *Service) execute(ctx context.Context, token, op string, r Request) (any
 	if err != nil {
 		return nil, err
 	}
+	if s.cfg.Auth == nil {
+		*identity = rejectionIdentity{actor, scope, "operator"}
+	} else if principal.Allows(firewallauth.Operation(op), firewallauth.Scope{Tenant: scope.Tenant, App: scope.App, Environment: s.cfg.Environment}) {
+		*identity = rejectionIdentity{actor, scope, string(firewallauth.Operation(op))}
+	}
 	for _, p := range s.cfg.Identities {
 		if p.ID != actor {
 			continue
+		}
+		if s.cfg.Auth == nil && p.Role != "" {
+			identity.grant = p.Role
 		}
 		if p.Role == "viewer" && (op == "audit_export" || op == "audit") || (p.Role == "viewer" || p.Role == "auditor") && op != "audit" && op != "audit_export" && op != "status" && op != "capabilities" && op != "retention_preview" {
 			return nil, firewallstate.Fail(403, "role does not grant operation")
@@ -694,6 +704,7 @@ func (s *Service) execute(ctx context.Context, token, op string, r Request) (any
 				return nil, firewallstate.Fail(403, "fleet grant required")
 			}
 		}
+		*identity = rejectionIdentity{actor, scope, string(firewallauth.Operation(op))}
 		if s.cfg.Approvals != nil {
 			if err := s.cfg.Approvals.CheckTargets(ctx, firewallauth.Operation(op), firewallauth.Scope{Tenant: scope.Tenant, App: scope.App, Environment: s.cfg.Environment}, targets, ApprovalDigest(op, r), r.Receipt); err != nil {
 				return nil, firewallstate.Fail(403, "valid unused approval required")
