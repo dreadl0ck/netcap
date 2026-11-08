@@ -617,6 +617,8 @@ func (t headerDeadlineTransport) RoundTrip(r *http.Request) (*http.Response, err
 		cancel()
 		return nil, err
 	}
+	// Closing the origin body ends forwarding, not response-policy inspection.
+	resp.Request = r
 	if rw, ok := resp.Body.(io.ReadWriteCloser); ok {
 		resp.Body = &cancelReadWriteBody{ReadWriteCloser: rw, cancel: cancel}
 	} else {

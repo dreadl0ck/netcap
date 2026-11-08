@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"testing"
@@ -189,6 +190,47 @@ func TestRoutedSharedStateAcrossProcessesAndLocalIsolation(t *testing.T) {
 			state := followStart(t, service, "--config", serverConfig, "--listen", addr)
 			followListen(t, state, addr)
 			clientCfg := map[string]any{"url": "http://" + addr, "tokenEnv": "ROUTED_STATE"}
+			var traceMu sync.Mutex
+			phases := map[string]int{}
+			if native {
+				upstream := followClient(t)
+				trace := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					input, _ := io.ReadAll(r.Body)
+					var evaluation struct {
+						Event policy.Event `json:"event"`
+					}
+					_ = json.Unmarshal(input, &evaluation)
+					out, _ := http.NewRequestWithContext(r.Context(), r.Method, "http://"+addr+r.URL.RequestURI(), bytes.NewReader(input))
+					out.Header = r.Header.Clone()
+					resp, err := upstream.Do(out)
+					if err != nil {
+						http.Error(w, "authority unavailable", 503)
+						return
+					}
+					defer resp.Body.Close()
+					raw, _ := io.ReadAll(resp.Body)
+					if r.Method == "POST" {
+						if evaluation.Event.Host != "a.example" || evaluation.Event.ClientIP != "192.0.2.20" {
+							t.Errorf("authority received unbound host/source: %s %s", evaluation.Event.Host, evaluation.Event.ClientIP)
+						}
+						var decision policy.Decision
+						if resp.StatusCode != 200 || json.Unmarshal(raw, &decision) != nil {
+							t.Errorf("native authority: HTTP %d %s", resp.StatusCode, raw)
+						}
+						traceMu.Lock()
+						phases[evaluation.Event.Phase]++
+						traceMu.Unlock()
+						t.Logf("native authority phase=%s event-status=%d: HTTP %d verdict=%s decision-status=%d", evaluation.Event.Phase, evaluation.Event.Status, resp.StatusCode, decision.Verdict, decision.Status)
+					}
+					for k, v := range resp.Header {
+						w.Header()[k] = v
+					}
+					w.WriteHeader(resp.StatusCode)
+					_, _ = w.Write(raw)
+				}))
+				defer trace.Close()
+				clientCfg["url"] = trace.URL
+			}
 			if !native {
 				clientCfg["id"] = "requests"
 				clientCfg["window"] = int64(time.Minute)
@@ -228,6 +270,13 @@ func TestRoutedSharedStateAcrossProcessesAndLocalIsolation(t *testing.T) {
 				if got := routedStatus(t, c, data[i%2], "a", "/", "192.0.2.20"); got != want {
 					t.Fatalf("cross-process route count %d: got=%d want=%d", i, got, want)
 				}
+			}
+			if native {
+				traceMu.Lock()
+				if phases["request"] != 3 || phases["response"] != 2 {
+					t.Errorf("authority phase counts=%v; want 3 requests and 2 response decisions", phases)
+				}
+				traceMu.Unlock()
 			}
 			state.stop(t)
 			for i, p := range proxies {
