@@ -2,8 +2,11 @@ package artifactio
 
 import (
 	"context"
+	"io"
+	"math"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 )
 
@@ -48,5 +51,78 @@ func TestConfinedArtifacts(t *testing.T) {
 	cancel()
 	if _, err := Read(ctx, root, "nested/ok", 100); err == nil {
 		t.Fatal("cancelled read succeeded")
+	}
+}
+
+func TestMaximumReadLimitDoesNotOverflow(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "data"), []byte("evidence"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Read(context.Background(), root, "data", math.MaxInt64)
+	if err != nil || string(got) != "evidence" {
+		t.Fatalf("got %q: %v", got, err)
+	}
+}
+
+func TestDescriptorSurvivesRootReplacement(t *testing.T) {
+	parent := t.TempDir()
+	root := filepath.Join(parent, "root")
+	if err := os.Mkdir(root, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "data"), []byte("owned evidence"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	f, _, err := Open(root, "data")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	if err := os.Rename(root, filepath.Join(parent, "old-root")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(root, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "data"), []byte("replacement sentinel"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := io.ReadAll(f)
+	if err != nil || string(got) != "owned evidence" {
+		t.Fatalf("descriptor rebound: %q %v", got, err)
+	}
+}
+
+func TestConcurrentSymlinkReplacementCannotDiscloseSentinel(t *testing.T) {
+	root := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "secret")
+	if err := os.WriteFile(outside, []byte("private sentinel"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, "data")
+	stop := make(chan struct{})
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+			}
+			_ = os.Remove(path)
+			_ = os.Symlink(outside, path)
+			_ = os.Remove(path)
+			_ = os.WriteFile(path, []byte("public"), 0600)
+		}
+	}()
+	defer func() { close(stop); wg.Wait() }()
+	for range 500 {
+		got, err := Read(context.Background(), root, "data", 100)
+		if err == nil && string(got) != "public" && len(got) != 0 {
+			t.Fatalf("disclosed bytes %q", got)
+		}
 	}
 }
