@@ -188,7 +188,17 @@ def build(args):
     flags += ' -X github.com/dreadl0ck/netcap.Commit=' + args.revision + ' -X github.com/dreadl0ck/netcap.GopacketVersion=' + fork
     if args.variant == 'dpi':
         for package, field in [('libndpi', 'NDPIVersion'), ('libprotoident', 'LibprotoidentVersion')]:
-            flags += ' -X github.com/dreadl0ck/netcap/internal/dpi.' + field + '=' + run(['pkg-config', '--modversion', package], env=env).strip()
+            try:
+                native_version = run(['pkg-config', '--modversion', package], env=env).strip()
+            except subprocess.CalledProcessError:
+                if package != 'libprotoident':
+                    raise
+                # The installed libprotoident formula supplies no pkg-config file.
+                installed = run(['brew', 'list', '--versions', 'libprotoident'], env=env).split()
+                if len(installed) != 2 or installed[0] != 'libprotoident':
+                    raise ValueError('one installed libprotoident version is required')
+                native_version = installed[1]
+            flags += ' -X github.com/dreadl0ck/netcap/internal/dpi.' + field + '=' + native_version
         flags += ' -X github.com/dreadl0ck/netcap/internal/dpi.GoDPIVersion=' + run(['go', 'list', '-m', '-f', '{{.Version}}', 'github.com/dreadl0ck/go-dpi'], cwd=root, env=env).strip()
     command = ['sh', 'scripts/with-yara-x.sh', 'env', 'GOMAXPROCS=2', 'GOFLAGS=-mod=readonly -p=2', 'go', 'build', '-trimpath', '-ldflags', flags, '-o', str(bundle / 'net')]
     if args.variant == 'nodpi':
