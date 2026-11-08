@@ -747,7 +747,11 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	c.flowIngressOrdinal++
 	c.observeCaptureEvidence(p)
 	if c.packetPipeline == nil {
-		c.packetPipeline = packetview.New(packetview.DefaultLimits())
+		limits := packetview.DefaultLimits()
+		if c.config != nil && c.config.DecoderConfig != nil {
+			limits.Checksum = c.config.DecoderConfig.Checksum
+		}
+		c.packetPipeline = packetview.New(limits)
 	}
 	views := c.packetPipeline.Process(p, c.flowIngressOrdinal)
 	route := p
