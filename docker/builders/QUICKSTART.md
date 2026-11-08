@@ -6,16 +6,18 @@ Speed up your Linux builds by 60-75% with pre-built base images.
 
 ## Quick Setup (2 steps)
 
-### 1. Build the builder images (one-time, ~15 minutes)
+### 1. Pull the qualified builders
 
 ```bash
 cd /path/to/netcap
-./zeus/scripts/build-builder-images.sh
+for variant in alpine alpine-dpi ubuntu ubuntu-dpi; do
+  docker pull --platform linux/amd64 "$(python3 zeus/scripts/builder-image.py "$variant")"
+done
 ```
 
-Or using zeus:
+To build new candidate builders instead:
 ```bash
-zeus build-builder-images
+BUILDER_VERSION="yara1.22.0-$(git rev-parse --short=12 HEAD)-$(date -u +%Y%m%d)-candidate1" zeus build-builder-images
 ```
 
 ### 2. Build netcap as usual
@@ -50,31 +52,24 @@ Push builder images to registry so your team can use them:
 docker login
 
 # Build and push
-PUSH=true ./zeus/scripts/build-builder-images.sh
+BUILDER_VERSION="yara1.22.0-$(git rev-parse --short=12 HEAD)-$(date -u +%Y%m%d)-candidate2" PUSH=true ./zeus/scripts/build-builder-images.sh
 ```
 
 Team members can then skip step 1 and just pull:
 ```bash
-docker pull dreadl0ck/netcap-builder:alpine-latest
-docker pull dreadl0ck/netcap-builder:alpine-dpi-latest
-docker pull dreadl0ck/netcap-builder:ubuntu-latest
-docker pull dreadl0ck/netcap-builder:ubuntu-dpi-latest
+for variant in alpine alpine-dpi ubuntu ubuntu-dpi; do
+  docker pull --platform linux/amd64 "$(python3 zeus/scripts/builder-image.py "$variant")"
+done
 ```
 
 ## Verify It's Working
 
-Check that builder images exist:
+Verify anonymous registry availability and linux/amd64 manifest selection:
 ```bash
-docker images | grep netcap-builder
+python3 zeus/scripts/builder-image.py --verify-public
 ```
 
-You should see:
-```
-dreadl0ck/netcap-builder   alpine-dpi-latest   ...   
-dreadl0ck/netcap-builder   alpine-latest       ...   
-dreadl0ck/netcap-builder   ubuntu-dpi-latest   ...   
-dreadl0ck/netcap-builder   ubuntu-latest       ...   
-```
+The command prints four digest-qualified references from `images.lock.json`. These native images support linux/amd64 only; arm64 and multi-platform requests are rejected. Candidate publication never replaces existing tags or shared `latest` tags.
 
 ## When to Rebuild
 
@@ -85,7 +80,7 @@ Rebuild builder images when:
 
 Just run the build command again:
 ```bash
-./zeus/scripts/build-builder-images.sh
+BUILDER_VERSION="yara1.22.0-$(git rev-parse --short=12 HEAD)-$(date -u +%Y%m%d)-candidate3" ./zeus/scripts/build-builder-images.sh
 ```
 
 ## Troubleshooting
@@ -94,22 +89,21 @@ Just run the build command again:
 
 **Solution**: Build or pull the builder images first
 ```bash
-# Option 1: Build locally
-./zeus/scripts/build-builder-images.sh
+# Option 1: Build a uniquely named candidate locally
+BUILDER_VERSION="yara1.22.0-$(git rev-parse --short=12 HEAD)-$(date -u +%Y%m%d)-candidate4" ./zeus/scripts/build-builder-images.sh
 
 # Option 2: Pull from registry
-docker pull dreadl0ck/netcap-builder:alpine-latest
-docker pull dreadl0ck/netcap-builder:alpine-dpi-latest
-docker pull dreadl0ck/netcap-builder:ubuntu-latest
-docker pull dreadl0ck/netcap-builder:ubuntu-dpi-latest
+for variant in alpine alpine-dpi ubuntu ubuntu-dpi; do
+  docker pull --platform linux/amd64 "$(python3 zeus/scripts/builder-image.py "$variant")"
+done
 ```
 
 ### Build is still slow
 
-**Solution**: Clear Docker cache and rebuild
+**Solution**: Inspect the selected builder and build log before rebuilding
 ```bash
-docker builder prune -a
-./zeus/scripts/build-builder-images.sh
+python3 zeus/scripts/builder-image.py --verify-public
+docker image inspect "$(python3 zeus/scripts/builder-image.py alpine-dpi)"
 ```
 
 ## Need More Info?
@@ -122,28 +116,26 @@ docker builder prune -a
 
 ```bash
 # Build all builder images locally
-./zeus/scripts/build-builder-images.sh
+BUILDER_VERSION="yara1.22.0-$(git rev-parse --short=12 HEAD)-$(date -u +%Y%m%d)-candidate5" ./zeus/scripts/build-builder-images.sh
 
 # Build and push to registry
-PUSH=true ./zeus/scripts/build-builder-images.sh
+BUILDER_VERSION="yara1.22.0-$(git rev-parse --short=12 HEAD)-$(date -u +%Y%m%d)-candidate6" PUSH=true ./zeus/scripts/build-builder-images.sh
 
-# Use custom registry
-REGISTRY=your-registry PUSH=true ./zeus/scripts/build-builder-images.sh
+# Use the full supported Docker Hub namespace
+REGISTRY=docker.io/dreadl0ck BUILDER_VERSION="yara1.22.0-$(git rev-parse --short=12 HEAD)-$(date -u +%Y%m%d)-candidate7" PUSH=true ./zeus/scripts/build-builder-images.sh
 
 # Build with version tag
-VERSION=v0.7.0 ./zeus/scripts/build-builder-images.sh
+BUILDER_VERSION="yara1.22.0-$(git rev-parse --short=12 HEAD)-$(date -u +%Y%m%d)-candidate8" ./zeus/scripts/build-builder-images.sh
 
 # List builder images
 docker images | grep netcap-builder
 
-# Remove old builder images
-docker rmi dreadl0ck/netcap-builder:alpine-latest
-docker rmi dreadl0ck/netcap-builder:alpine-dpi-latest
-docker rmi dreadl0ck/netcap-builder:ubuntu-latest
-docker rmi dreadl0ck/netcap-builder:ubuntu-dpi-latest
+# Plan final artifact builds without building or publishing
+python3 zeus/scripts/native-candidate.py --revision "$REVISION" --output .qualification/final-linux --plan
 ```
+
+Signing, notarization, actual native-host execution and the Windows Npcap manual gate are documented in `README.md` under “Candidate artifact qualification.” Builder availability alone does not certify every release platform.
 
 ---
 
 **Questions?** Check the full documentation in `docker/builders/README.md`
-
