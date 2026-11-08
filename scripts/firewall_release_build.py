@@ -29,11 +29,11 @@ def import_oci(archive, ref):
         run('crane', 'push', tmp, ref)
 
 
-def evidence(out, name, command, env=None):
+def evidence(root, out, name, command, env=None):
     path = out / (name + '.log')
     with path.open('w') as log:
         subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True, env=env)
-    return record(out.parent, path)
+    return record(root, path)
 
 
 def source_export(out):
@@ -148,12 +148,12 @@ def native(args):
     proofs['version-smoke'] = record(out.parent, logs / 'version-smoke.log')
     for chart in CHARTS:
         name = 'chart-' + chart
-        proofs[name] = evidence(logs, name, ['python3', str(ROOT / 'charts' / chart / 'tests/test_render.py')])
+        proofs[name] = evidence(out.parent, logs, name, ['python3', str(ROOT / 'charts' / chart / 'tests/test_render.py')])
     for name, tags in [('race', ''), ('race-coraza', 'coraza'), ('race-http3', 'coraza,http3')]:
         extra = ['./examples/firewall/qualification'] if tags == 'coraza,http3' else []
-        proofs[name] = evidence(logs, name, ['go', 'test', '-race', '-count=1'] + (['-tags', tags] if tags else []) + packages + extra, env)
-    proofs['gateway'] = evidence(logs, 'gateway', ['python3', 'examples/firewall/gateway_smoke.py', str(context / 'netcap-firewall-waf')])
-    proofs['image-smoke'] = evidence(logs, 'image-smoke', ['bash', 'examples/firewall/smoke.sh'], dict(os.environ, SKIP_BUILD='1', FIREWALL_IMAGE='netcap-release-waf:' + args.version))
+        proofs[name] = evidence(out.parent, logs, name, ['go', 'test', '-race', '-count=1'] + (['-tags', tags] if tags else []) + packages + extra, env)
+    proofs['gateway'] = evidence(out.parent, logs, 'gateway', ['python3', 'examples/firewall/gateway_smoke.py', str(context / 'netcap-firewall-waf')])
+    proofs['image-smoke'] = evidence(out.parent, logs, 'image-smoke', ['bash', 'examples/firewall/smoke.sh'], dict(os.environ, SKIP_BUILD='1', FIREWALL_IMAGE='netcap-release-waf:' + args.version))
     run('docker', 'tag', 'netcap-release-enforcer:' + args.version, 'netcap-enforcer:0.1.0-local')
     # The test overlay is separate; the runtime image is never rebuilt after qualification.
     run('docker', 'build', '-f', 'docker/enforcer/Dockerfile', '--target', 'qualification', '-t', 'netcap-enforcer-test-base', '.')
@@ -167,7 +167,7 @@ def native(args):
         command += ['--image', 'netcap-' + ('enforcer' if name == 'network' else name) + '-release-test']
         if name != 'network':
             command.append('--skip-build')
-        proofs[name] = evidence(logs, name, command)
+        proofs[name] = evidence(out.parent, logs, name, command)
     source_export(out)
     with tarfile.open(out / 'licenses.tar.gz', 'w:gz') as tf:
         tf.add(context / 'legal', arcname='legal')
@@ -196,20 +196,54 @@ def native(args):
     shutil.rmtree(out / 'goreleaser')
 
 
+def native_inputs(root, commit, release_version, native=True):
+    qualifications, images = {}, {}
+    checked = set()
+
+    def check(item):
+        key = (item['path'], item['sha256'])
+        if key not in checked:
+            checked_file(root, item)
+            checked.add(key)
+
+    for arch in ARCHES:
+        q = json.loads((root / arch / 'native.json').read_text())
+        require(q['commit'] == commit and q['version'] == release_version, 'qualification commit/version mismatch')
+        require(q['architecture'] == arch and q['os'] == 'linux' and q['native'] is native, 'native platform mismatch')
+        require(set(q['tests']) == set(TESTS) and all(v == 'passed' for v in q['tests'].values()), 'missing/failed qualification')
+        require(set(q['evidence']) == set(TESTS), 'missing named test evidence')
+        for name, item in q['evidence'].items():
+            # Receipts before the root fix used architecture-local log paths.
+            if item['path'] == 'evidence/' + name + '.log':
+                item['path'] = arch + '/' + item['path']
+            check(item)
+        images[arch] = json.loads((root / arch / 'images.json').read_text())
+        require(set(images[arch]) == set(KINDS), 'missing native image')
+        for kind, image in images[arch].items():
+            require(image['digest'] == q['digests'][kind], 'tested digest mismatch')
+            for key in ('archive', 'binary', 'sbom', 'inventory'):
+                check(image[key])
+            inventory = json.loads((root / image['inventory']['path']).read_text())
+            for package in inventory['packages']:
+                check(package['source'])
+                check(package['licenseFile'])
+        qualifications[arch] = q
+    return qualifications, images
+
+
 def assemble(args):
     import yaml
     root = args.output.resolve()
     version(args.version)
-    m = {'schema': 'netcap-firewall-release/v1', 'qualificationMode': 'native', 'version': args.version, 'tag': 'firewall-v' + args.version, 'commit': run('git', 'rev-parse', 'HEAD'), 'schemas': {'config': POLICY['configSchema'], 'policy': POLICY['policySchema']}, 'native': {}, 'images': {}, 'charts': [], 'reviews': {k: {'decision': 'pending', 'reviewer': '', 'uri': '', 'evidence': None} for k in POLICY['externalReviews']}}
+    m = {'schema': 'netcap-firewall-release/v1', 'qualificationMode': 'native', 'version': args.version, 'tag': 'firewall-v' + args.version, 'commit': getattr(args, 'commit', None) or run('git', 'rev-parse', 'HEAD'), 'schemas': {'config': POLICY['configSchema'], 'policy': POLICY['policySchema']}, 'native': {}, 'images': {}, 'charts': [], 'reviews': {k: {'decision': 'pending', 'reviewer': '', 'uri': '', 'evidence': None} for k in POLICY['externalReviews']}}
     if getattr(args, 'rehearsal', False):
         m['qualificationMode'] = 'rehearsal'
-    for arch in ARCHES:
-        m['native'][arch] = json.loads((root / arch / 'native.json').read_text())
+    m['native'], native_images = native_inputs(root, m['commit'], args.version, m['qualificationMode'] == 'native')
     for kind in KINDS:
         refs = []
         platforms = {}
         for arch in ARCHES:
-            image = json.loads((root / arch / 'images.json').read_text())[kind]
+            image = native_images[arch][kind]
             ref = args.registry + '/netcap-firewall-' + kind + ':' + args.version + '-' + arch
             import_oci(root / image['archive']['path'], ref)
             require(run('crane', 'digest', ref) == image['digest'], 'OCI import changed tested digest')
@@ -259,7 +293,8 @@ def assemble(args):
         write(root / 'soak-binding.json', {'commit': m['commit'], 'digests': {k: i['digest'] for k, i in m['images'].items()}, 'manifest': record(root, dest / 'manifest.json')})
         m['soak'] = record(root, root / 'soak-binding.json')
     write(root / 'candidate.json', m)
-    write(root / 'candidate-checklist.json', {'schema': 'netcap-release-checklist/v1', 'candidateSHA256': sha(root / 'candidate.json'), 'externalReviews': m['reviews'], 'operatorSignoffRequired': True, 'requirements': ['both native Linux qualifications', 'exact tested digests and index children', 'per-architecture pinned Syft SPDX', 'every component license and corresponding source export', 'three Helm3 charts appVersion/image digest coherence', 'cosign OIDC signature and SLSA v1 attestations', 'offline verification with pinned trust root', 'protected release environment and immutable tag'], 'publicationApproved': False})
+    blockers = {arch: {kind: json.loads((root / image['inventory']['path']).read_text())['unresolved'] for kind, image in native_images[arch].items()} for arch in ARCHES}
+    write(root / 'candidate-checklist.json', {'schema': 'netcap-release-checklist/v1', 'candidateSHA256': sha(root / 'candidate.json'), 'externalReviews': m['reviews'], 'sourceAndLicenseBlockers': blockers, 'operatorSignoffRequired': True, 'requirements': ['both native Linux qualifications', 'exact tested digests and index children', 'per-architecture pinned Syft SPDX', 'every component license and corresponding source export', 'three Helm3 charts appVersion/image digest coherence', 'cosign OIDC signature and SLSA v1 attestations', 'offline verification with pinned trust root', 'protected release environment and immutable tag'], 'publicationApproved': False})
 
 
 if __name__ == '__main__':
@@ -271,6 +306,7 @@ if __name__ == '__main__':
     p.add_argument('--arch', choices=ARCHES)
     p.add_argument('--supplements', type=Path)
     p.add_argument('--reviews', type=Path)
+    p.add_argument('--commit', help='expected tested source commit for assembly; defaults to HEAD, never relabels native receipts')
     p.add_argument('--qualification-run', type=Path, help='completed exact-candidate owned 24h run; required for publication')
     p.add_argument('--rehearsal', action='store_true', help='assemble fixture receipts only; never authorizes publication')
     args = p.parse_args()
