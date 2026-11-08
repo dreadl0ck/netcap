@@ -515,6 +515,7 @@ commands:
             - build-linux-nodpi
             - package-license-sources
             - run-goreleaser
+            - package-macos-runtime-sources
             - update-release-assets
         exec: echo "release v$VERSION done"
 
@@ -530,10 +531,18 @@ commands:
             `goreleaser check` is given an explicit config path because without
             one it validates 0 files and still exits 0, so the guard in front of
             the release would pass no matter what was in .goreleaser.yml.
-        exec: python3 scripts/check-release-notes.py && goreleaser check .goreleaser.yml && GOWORK=off goreleaser release --skip-validate --release-notes RELEASE_NOTES.md
+        exec: python3 scripts/check-release-notes.py && goreleaser check .goreleaser.yml && GOWORK=off sh scripts/with-yara-x.sh goreleaser release --skip-validate --release-notes RELEASE_NOTES.md
+
+    package-macos-runtime-sources:
+        description: package verified supplier sources after both macOS runtime bundles exist
+        exec: python3 zeus/scripts/package-macos-sources.py "${VERSION}"
 
     update-release-assets:
         exec: |
+            macos_sources="dist-macos-sources/netcap-macos-runtime-source-v${VERSION}.tar.gz"
+            test -s "$macos_sources" || exit 1
+            gh release upload --clobber v$VERSION "$macos_sources"
+            shasum -a 256 "$macos_sources" >> dist-linux/checksums.txt
             # upload linux build archives
             for f in dist-linux/*.tar.gz; do
                 gh release upload --clobber v$VERSION $f
@@ -562,7 +571,7 @@ commands:
             - version-bump-test
             - gen-proto-release
             - licenses
-        exec: goreleaser check .goreleaser.yml && GOWORK=off goreleaser release --clean --skip-publish --skip-validate; zeus version-bump-test-undo
+        exec: goreleaser check .goreleaser.yml && GOWORK=off sh scripts/with-yara-x.sh goreleaser release --clean --skip-publish --skip-validate; zeus version-bump-test-undo
 
     # run a test release
     release-test-debug:
@@ -572,7 +581,7 @@ commands:
             - version-bump-test
             - gen-proto-release
             - licenses
-        exec: goreleaser check .goreleaser.yml && GOWORK=off goreleaser release --clean --skip-publish --skip-validate --debug; zeus version-bump-test-undo
+        exec: goreleaser check .goreleaser.yml && GOWORK=off sh scripts/with-yara-x.sh goreleaser release --clean --skip-publish --skip-validate --debug; zeus version-bump-test-undo
 
     release-test-full:
          dependencies:
@@ -861,8 +870,9 @@ commands:
     build-builder-images:
         stopOnError: true
         arguments:
-            - push:Bool? = true
+            - push:Bool? = false
         description: builds and optionally pushes base builder docker images that are reused for faster Linux builds
+        help: Set BUILDER_VERSION=yara1.22.0-<revision>-<YYYYMMDD> for a new candidate; published release builders are selected by digest in docker/builders/images.lock.json.
         exec: PUSH=${push} zeus/scripts/build-builder-images.sh
 
     # build and push the linux docker containers

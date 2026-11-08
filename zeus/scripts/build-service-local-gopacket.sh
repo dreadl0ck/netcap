@@ -5,6 +5,8 @@
 
 set -e
 
+NETCAP_BUILDER_IMAGE="${NETCAP_BUILDER_IMAGE:-$(python3 "$(dirname "$0")/builder-image.py" alpine-dpi)}"
+
 # Get the netcap root directory (parent of zeus directory)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 NETCAP_ROOT="$( cd "${SCRIPT_DIR}/../.." && pwd )"

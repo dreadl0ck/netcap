@@ -1,4 +1,4 @@
-ARG NETCAP_BUILDER_IMAGE
+ARG NETCAP_BUILDER_IMAGE=docker.io/dreadl0ck/netcap-builder:ubuntu-dpi-yara1.22.0-84980998-20261108@sha256:80a2254dffa4235f177d5385231468dc69426d1f47f68cc03610c8b042def670
 FROM --platform=linux/amd64 ${NETCAP_BUILDER_IMAGE} AS builder
 RUN pkg-config --exact-version=1.22.0 yara_x_capi
 

@@ -3,12 +3,15 @@
 # Not used atm.
 
 set -eo pipefail
-: "${NETCAP_BUILDER_IMAGE:?set a qualified YARA-X 1.22.0 builder image}"
 test -s cmd/capture/webui/frontend/dist/index.html || { echo "Build the WebUI with pnpm build before packaging Linux" >&2; exit 1; }
 
 if [ -z "$NODPI" ]; then
   NODPI=true
 fi
+
+builder_variant=ubuntu-dpi
+if $NODPI; then builder_variant=ubuntu; fi
+NETCAP_BUILDER_IMAGE="${NETCAP_BUILDER_IMAGE:-$(python3 zeus/scripts/builder-image.py "$builder_variant")}"
 
 if $NODPI; then
   echo "[INFO] copying the docker/ubuntu-nodpi/Dockerfile into the project root"

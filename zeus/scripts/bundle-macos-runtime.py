@@ -15,7 +15,7 @@ import urllib.request
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('binary',type=Path)
 p.add_argument('--variant',required=True,choices=['dpi','nodpi'])
-p.add_argument('--yara-prefix',type=Path,help='isolated installation from scripts/build-yara-x.sh')
+p.add_argument('--yara-prefix',type=Path,default=Path(os.environ['YARA_X_PREFIX']) if os.environ.get('YARA_X_PREFIX') else None,help='isolated installation from scripts/build-yara-x.sh (or YARA_X_PREFIX)')
 a=p.parse_args()
 binary=a.binary.resolve(strict=True)
 root=Path(__file__).resolve().parents[2]
@@ -86,7 +86,7 @@ while pending:
             url=f'https://github.com/VirusTotal/yara-x/archive/refs/tags/v{version}.tar.gz'
             archive=sources/(package+'-'+version+'.tar.gz')
             fetch(url,pins['YARA_X_SHA256'],archive)
-            for recipe in ('yara-x.env','build-yara-x.sh'):
+            for recipe in ('yara-x.env','build-yara-x.sh','install-yara-rust.sh'):
                 shutil.copyfile(root/'scripts'/recipe,sources/recipe)
             source_records[package]={'package':package,'version':version,'url':url,'sha256':pins['YARA_X_SHA256'],'archive':archive.name}
             records.append({'file':'lib/'+destination.name,'originalPath':dependency,'originalSHA256':sha(original),'package':package,'version':version,'source':source_records[package],'minimumOS':minimum_os(original)})

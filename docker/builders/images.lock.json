@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "platform": "linux/amd64",
+  "yara_x": "1.22.0",
+  "recipe_revision": "8498099814f6049599c92ee787b40961f6ea8abf",
+  "images": {
+    "alpine": "docker.io/dreadl0ck/netcap-builder:alpine-yara1.22.0-84980998-20261108@sha256:28609aba3e542885acd228eec8ab7cf2a2291a90e42f80f600e27edada09a24b",
+    "alpine-dpi": "docker.io/dreadl0ck/netcap-builder:alpine-dpi-yara1.22.0-84980998-20261108@sha256:eb0472fc0b30b11c4482cf458c1727881eef2938f569c50ce15afdc1c660e779",
+    "ubuntu": "docker.io/dreadl0ck/netcap-builder:ubuntu-yara1.22.0-84980998-20261108@sha256:c50ccee7fc32abb1e1091cfa1610e457d458a4a36a25b237728ce24eaac27efd",
+    "ubuntu-dpi": "docker.io/dreadl0ck/netcap-builder:ubuntu-dpi-yara1.22.0-84980998-20261108@sha256:80a2254dffa4235f177d5385231468dc69426d1f47f68cc03610c8b042def670"
+  }
+}

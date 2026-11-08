@@ -5,6 +5,8 @@
 
 set -e
 
+NETCAP_BUILDER_IMAGE="${NETCAP_BUILDER_IMAGE:-$(python3 "$(dirname "$0")/builder-image.py" alpine-dpi)}"
+
 # Get the netcap root directory (parent of zeus directory)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 NETCAP_ROOT="$( cd "${SCRIPT_DIR}/../.." && pwd )"
@@ -50,7 +52,11 @@ GO_DPI_ABS_PATH=$(cd "$GO_DPI_PATH" && pwd)
 echo "[INFO] Using go-dpi from: ${GO_DPI_ABS_PATH}"
 
 # Check if we should build multi-platform images
-PLATFORMS="${NETCAP_PLATFORMS:-linux/amd64,linux/arm64}"
+PLATFORMS="${NETCAP_PLATFORMS:-linux/amd64}"
+if [[ "$PLATFORMS" != linux/amd64 ]]; then
+    echo 'The qualified native service builder supports linux/amd64 only.' >&2
+    exit 1
+fi
 USE_BUILDX="${NETCAP_USE_BUILDX:-true}"
 
 # Check if docker/service-local-dpi directory exists, create if needed
