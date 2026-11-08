@@ -145,7 +145,7 @@ func ExportPackets(ctx context.Context, input string, output io.Writer, selectio
 			}
 		}
 		bpf := bpfs[intf.LinkType]
-		if bpf == nil {
+		if selection.BPF != "" && bpf == nil {
 			compileType := intf.LinkType
 			// Capture LINKTYPE_RAW (101) differs from platform-specific DLT_RAW.
 			if compileType == layers.LinkTypeRaw {
@@ -164,7 +164,7 @@ func ExportPackets(ctx context.Context, input string, output io.Writer, selectio
 		if selection.StartNs != nil && (ci.Timestamp.UnixNano() < *selection.StartNs || ci.Timestamp.UnixNano() > *selection.EndNs) {
 			continue
 		}
-		if !bpf.Matches(ci, data) {
+		if bpf != nil && !bpf.Matches(ci, data) {
 			continue
 		}
 		if manifest.Selected >= uint64(selection.MaxPackets) {

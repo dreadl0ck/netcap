@@ -83,18 +83,18 @@ func TestBoundedSplitCommand(t *testing.T) {
 		if _, _, err := r.ReadPacketData(); err != io.EOF {
 			t.Fatalf("extra packet: %v", err)
 		}
-		if err := run(context.Background(), out, "--bpf", "len >= 0"); err == nil {
+		if err := run(context.Background(), out, "--start-ns", "1", "--end-ns", "3"); err == nil {
 			t.Fatal("overwrote prior output")
 		}
 	})
 	for name, args := range map[string][]string{
-		"packet limit":     {"--bpf", "len >= 0", "--max-packets", "1"},
-		"byte limit":       {"--bpf", "len >= 0", "--max-bytes", "1"},
+		"packet limit":     {"--start-ns", "1", "--end-ns", "3", "--max-packets", "1"},
+		"byte limit":       {"--start-ns", "1", "--end-ns", "3", "--max-bytes", "1"},
 		"invalid filter":   {"--bpf", "invalid ["},
 		"no matches":       {"--start-ns", "4", "--end-ns", "5"},
 		"unpaired time":    {"--start-ns", "1"},
 		"reversed time":    {"--start-ns", "3", "--end-ns", "1"},
-		"changed source":   {"--bpf", "len >= 0", "--source-sha256", "bad"},
+		"changed source":   {"--start-ns", "1", "--end-ns", "3", "--source-sha256", "bad"},
 		"missing selector": {},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -111,7 +111,7 @@ func TestBoundedSplitCommand(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 		out := filepath.Join(t.TempDir(), "out")
-		if err := run(ctx, out, "--bpf", "len >= 0"); err == nil {
+		if err := run(ctx, out, "--start-ns", "1", "--end-ns", "3"); err == nil {
 			t.Fatal("accepted cancellation")
 		}
 		if _, err := os.Stat(out); !os.IsNotExist(err) {
