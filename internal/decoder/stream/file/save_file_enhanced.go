@@ -56,7 +56,7 @@ func sanitizeStringFields(source, host, contentType, cTypeDetected, flowDirectio
 var saveFileLog = zap.NewNop()
 
 // Protect dedup lookup through publication, and filename allocation across contents.
-var saveFileMu sync.Mutex
+var saveFileLocks [256]sync.Mutex
 
 // SetSaveFileLogger sets the logger for file saving operations
 func SetSaveFileLogger(logger *zap.Logger) {
@@ -285,11 +285,13 @@ func SaveFileEnhanced(
 	}
 
 	// Check for duplicate content using deduplication cache
-	saveFileMu.Lock()
+	bucket, _ := strconv.ParseUint(digest[:2], 16, 8)
+	publicationLock := &saveFileLocks[bucket]
+	publicationLock.Lock()
 	locked := true
 	defer func() {
 		if locked {
-			saveFileMu.Unlock()
+			publicationLock.Unlock()
 		}
 	}()
 
@@ -443,7 +445,7 @@ func SaveFileEnhanced(
 		flowDirection = "unknown"
 	}
 
-	saveFileMu.Unlock()
+	publicationLock.Unlock()
 	locked = false
 	// File observations remain independent of content/analysis deduplication.
 	analysis := AnalyzeFile(contentInfo.DecodedContent, fileName)

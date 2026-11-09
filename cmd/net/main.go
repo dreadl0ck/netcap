@@ -49,6 +49,7 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/env"
 	"github.com/dreadl0ck/netcap/internal/netio"
+	"github.com/dreadl0ck/netcap/internal/runtimebudget"
 )
 
 const (
@@ -78,6 +79,7 @@ const (
 )
 
 func main() {
+	runtimebudget.Configure()
 	// Remove date/time from log output to prevent duplicate timestamps
 	// when running in Docker/systemd (which add their own timestamps)
 	log.SetFlags(0)

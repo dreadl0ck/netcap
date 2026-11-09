@@ -61,6 +61,21 @@ class SummaryTests(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertEqual(report['baselineArtifactComparison']['missingUniqueHashes'], 0)
 
+    def test_resume_requires_same_binary_and_capture_checksums(self):
+        capture = self.root / 'test.pcap'
+        capture.write_bytes(b'capture')
+        receipt = dict(date='2021-06-16', pcap='test.pcap', sourcePath=str(capture), sha256=recheck.sha(capture))
+        row = dict(receipt, exit=0, errors=[])
+        (self.run / 'results.json').write_text(json.dumps(dict(binarySHA256='binary', rows=[row])))
+        self.assertEqual(recheck.completed_rows(self.run, [receipt], 'binary', self.root), [row])
+        with self.assertRaisesRegex(ValueError, 'different binary'):
+            recheck.completed_rows(self.run, [receipt], 'other-binary', self.root)
+        with self.assertRaisesRegex(ValueError, 'changed capture receipts'):
+            recheck.completed_rows(self.run, [dict(receipt, sha256='other-capture')], 'binary', self.root)
+        capture.write_bytes(b'tampered capture')
+        with self.assertRaisesRegex(ValueError, 'changed capture bytes'):
+            recheck.completed_rows(self.run, [receipt], 'binary', self.root)
+
 
 if __name__ == '__main__':
     unittest.main()

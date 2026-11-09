@@ -17,8 +17,45 @@ def sha(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+def receipts(args):
+    if args.inputs:
+        paths=sorted(p for p in args.inputs.rglob('*') if p.is_file() and p.suffix.lower() in {'.pcap','.pcapng','.cap','.gz'})
+        if len({p.stem for p in paths})!=len(paths):
+            raise ValueError('input basenames must be unique within a group')
+        return [dict(date=args.group,pcap=p.name,sourcePath=str(p.resolve()),sha256=sha(p)) for p in paths]
+    return [r for path in sorted(args.root.glob('*/receipts.json')) for r in json.loads(path.read_text()) if not args.dates or r['date'] in args.dates.split(',')]
+
+
+def capture_path(root, receipt):
+    return Path(receipt['sourcePath']) if 'sourcePath' in receipt else root / receipt['date'] / Path(receipt['pcap']).name
+
+
+def completed_rows(output, inputs, binary_hash, root):
+    previous=json.loads((output/'results.json').read_text())
+    if previous['binarySHA256']!=binary_hash:
+        raise ValueError('cannot resume with a different binary')
+    expected={(r['date'],Path(r['pcap']).name):r for r in inputs}
+    rows=[]
+    for row in previous['rows']:
+        if row.get('exit')!=0 or row['errors']: continue
+        key=(row['date'],row['pcap'])
+        receipt=expected.get(key)
+        if receipt is None or receipt['sha256']!=row['sha256']:
+            raise ValueError('cannot resume changed capture receipts: '+row['pcap'])
+        if sha(capture_path(root,receipt))!=row['sha256']:
+            raise ValueError('cannot resume changed capture bytes: '+row['pcap'])
+        rows.append(row)
+    return rows
+
+
+def store_results(output, binary_hash, rows):
+    temporary=output/'results.json.pending'
+    temporary.write_text(json.dumps(dict(binarySHA256=binary_hash,rows=rows),indent=2)+'\n')
+    temporary.replace(output/'results.json')
+
+
 def replay(binary, root, output, receipt):
-    source = root / receipt['date'] / Path(receipt['pcap']).name
+    source = capture_path(root, receipt)
     if sha(source) != receipt['sha256']:
         raise ValueError('capture checksum mismatch: ' + str(source))
     destination = output / receipt['date'] / source.stem
@@ -98,9 +135,9 @@ def reference(args):
     if count!=1: raise ValueError('HTTP scorer audit adapter no longer matches')
     adapted=args.output/'scoring-httpcmp.py'
     adapted.write_text(source)
-    receipts=[r for p in args.root.glob('*/receipts.json') for r in json.loads(p.read_text())]
+    inputs=receipts(args)
     def run(r):
-        source=args.root/r['date']/Path(r['pcap']).name
+        source=capture_path(args.root,r)
         audit=args.output/r['date']/source.stem/'audit'
         if sha(source)!=r['sha256']: raise ValueError('capture checksum changed')
         env=dict(os.environ,NETBIN=str(args.binary.resolve()))
@@ -110,7 +147,7 @@ def reference(args):
         return dict(pcap=source.name,**data)
     rows=[]
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        for row in pool.map(run,receipts): rows.append(row)
+        for row in pool.map(run,inputs): rows.append(row)
     report=dict(scorerSHA256=sha(scorer),captures=len(rows),totals={key:sum(r[key] for r in rows) for key in ('ts','nc','missing','extra','comma')},missing=[dict(pcap=r['pcap'],count=r['missing']) for r in rows if r['missing']])
     (args.output/'reference-summary.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2))
@@ -147,6 +184,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--binary', type=Path)
     p.add_argument('--root', type=Path)
+    p.add_argument('--inputs', type=Path, help='replay a directory of external captures and record their checksums')
+    p.add_argument('--group', default='external')
     p.add_argument('--output', type=Path)
     p.add_argument('--summary', type=Path)
     p.add_argument('--baseline', type=Path)
@@ -156,7 +195,11 @@ def main():
     p.add_argument('--scoring-repo', type=Path)
     p.add_argument('--dates', default='')
     p.add_argument('--jobs', type=int, default=2)
+    p.add_argument('--resume', action='store_true', help='resume the same binary and receipts after an interrupted replay')
     args = p.parse_args()
+    if args.inputs:
+        args.root=args.inputs
+        if not args.group or Path(args.group).name!=args.group or args.group in {'.','..'}: p.error('--group must be one directory name')
     if args.summary: return summarize(args.summary,args.baseline,args.binary)
     if args.questions:
         if not all((args.binary,args.output,args.scoring_repo)): p.error('--questions requires --binary, --output and --scoring-repo')
@@ -171,19 +214,33 @@ def main():
         print(json.dumps(dict(expected=sum(expected.values()),actual=sum(actual.values()),differences={date:dict(expected=n,actual=actual.get(date,0)) for date,n in expected.items() if actual.get(date,0)!=n}),indent=2))
         return 0
     if not args.binary or not args.root or not args.output: p.error('--binary, --root and --output are required for replay')
-    receipts = [r for path in sorted(args.root.glob('*/receipts.json')) for r in json.loads(path.read_text()) if not args.dates or r['date'] in args.dates.split(',')]
-    args.output.mkdir(parents=True, mode=0o700, exist_ok=False)
-    rows = []
+    inputs = receipts(args)
+    if not inputs: p.error('no capture receipts found')
+    binary_hash=sha(args.binary)
+    rows=completed_rows(args.output,inputs,binary_hash,args.root) if args.resume else []
+    done={(r['date'],r['pcap']) for r in rows}
+    args.output.mkdir(parents=True, mode=0o700, exist_ok=args.resume)
+    (args.output/'receipts.json').write_text(json.dumps(inputs,indent=2)+'\n')
+    pending=[r for r in inputs if (r['date'],Path(r['pcap']).name) not in done]
+    if args.resume:
+        for r in pending:
+            destination=args.output/r['date']/Path(r['pcap']).stem
+            if destination.exists():
+                archived=args.output/'.interrupted'/r['date']/(destination.name+'-'+str(time.time_ns()))
+                archived.parent.mkdir(parents=True,mode=0o700,exist_ok=True)
+                destination.rename(archived)
+    store_results(args.output,binary_hash,rows)
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        futures = {pool.submit(replay, args.binary.resolve(), args.root, args.output, r): r for r in receipts}
+        futures = {pool.submit(replay, args.binary.resolve(), args.root, args.output, r): r for r in pending}
         for future in concurrent.futures.as_completed(futures):
             try:
                 row = future.result()
             except Exception as error:
-                row = dict(pcap=Path(futures[future]['pcap']).name, errors=[str(error)])
+                receipt=futures[future]
+                row = dict(date=receipt['date'],pcap=Path(receipt['pcap']).name,sha256=receipt['sha256'],errors=[str(error)])
             rows.append(row)
             print(json.dumps(row), flush=True)
-            (args.output / 'results.json').write_text(json.dumps(dict(binarySHA256=sha(args.binary), rows=rows), indent=2)+'\n')
+            store_results(args.output,binary_hash,rows)
     return int(any(r.get('exit') != 0 or r['errors'] for r in rows))
 
 

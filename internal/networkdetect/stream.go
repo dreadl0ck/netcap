@@ -17,6 +17,7 @@ type direction struct {
 	ftpLine   []byte
 }
 type flow struct {
+	closed        bool
 	synSequence   uint32
 	client        string
 	first         int64
@@ -43,7 +44,7 @@ func flowKey(ev Event) string {
 func (e *Engine) startFlow(ev Event) *flow {
 	key := flowKey(ev)
 	if f, ok := e.flows[key]; ok {
-		if ev.At-f.last <= e.config.WindowNS && f.synSequence == ev.Seq && f.client == endpoint(ev.SrcIP, ev.SrcPort) {
+		if !f.closed && ev.At-f.last <= e.config.WindowNS && f.synSequence == ev.Seq && f.client == endpoint(ev.SrcIP, ev.SrcPort) {
 			return f
 		}
 		e.revokeFTP(key)
@@ -130,6 +131,9 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 	}
 	if d.gap {
 		return
+	}
+	if f.closed {
+		return // Retain overlap evidence after FIN/RST, without reviving protocol state.
 	}
 	e.observeFTP(ev, f, d, payload)
 	text := string(d.prefix)

@@ -1,11 +1,13 @@
 package file
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
@@ -119,5 +121,64 @@ func TestSaveFileConcurrent(t *testing.T) {
 				t.Fatalf("bytes saved: %d", stats.BytesSaved)
 			}
 		})
+	}
+}
+
+func TestArtifactPublicationDoesNotSerializeUnrelatedHashes(t *testing.T) {
+	oldConfig, oldDecoderConfig := GetGlobalConfig(), decoderconfig.Instance
+	oldWriter, oldCount := Decoder.Writer, Decoder.NumRecordsWritten
+	cfg := GetDefaultConfig()
+	cfg.FileExtraction.Advanced.UseMagicDetection = false
+	SetGlobalConfig(cfg)
+	decoderconfig.Instance = &decoderconfig.Config{Out: t.TempDir(), FileStorage: "files"}
+	Decoder.Writer = &savedFileWriter{}
+	ResetDedupCache()
+	t.Cleanup(func() {
+		SetGlobalConfig(oldConfig)
+		decoderconfig.Instance = oldDecoderConfig
+		Decoder.Writer, Decoder.NumRecordsWritten = oldWriter, oldCount
+		ResetDedupCache()
+	})
+	held, other := []byte("blocked publication"), []byte("independent publication")
+	heldHash, otherHash := sha256.Sum256(held), sha256.Sum256(other)
+	if heldHash[0] == otherHash[0] {
+		t.Fatal("fixture hashes share a lock shard")
+	}
+	lock := &saveFileLocks[heldHash[0]]
+	lock.Lock()
+	var wg sync.WaitGroup
+	defer wg.Wait()
+	defer func() {
+		if lock != nil {
+			lock.Unlock()
+		}
+	}()
+	save := func(body []byte) <-chan error {
+		done := make(chan error, 1)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			done <- SaveFileEnhanced(&core.ConversationInfo{Ident: "fixture"}, "fixture", "fixture.bin", nil, body, nil, "", "", 0, "", "", "HTTP")
+		}()
+		return done
+	}
+	heldDone, otherDone := save(held), save(other)
+	select {
+	case err := <-otherDone:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("unrelated content waited for blocked publication")
+	}
+	select {
+	case <-heldDone:
+		t.Fatal("same-hash publication bypassed its lock")
+	default:
+	}
+	lock.Unlock()
+	lock = nil
+	if err := <-heldDone; err != nil {
+		t.Fatal(err)
 	}
 }

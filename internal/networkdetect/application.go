@@ -218,7 +218,7 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.A
 		switch {
 		case o.Method == "e3514235-4b06-11d1-ab04-00c04fc2dcd2" && o.Status == 3:
 			add("ad.directory-replication", "medium", "policy-observation", 1, 1, o.At, samples, "DRSGetNCChanges is also normal domain-controller replication; unauthorized DCSync is not established")
-		case o.Method == "367abb81-9844-35f1-ad32-98f038001003" && (o.Status == 12 || o.Status == 19):
+		case o.Method == "367abb81-9844-35f1-ad32-98f038001003" && (o.Status == 12 || o.Status == 19 || o.Status == 24 || o.Status == 31):
 			add("smb.remote-service-control", "medium", "policy-observation", 1, 1, o.At, samples, "Remote service creation/start also occurs in authorized administration; execution success is not inferred")
 		case o.Method == "12345678-1234-abcd-ef00-0123456789ab" && o.Status == 65:
 			add("ad.printer-notification", "low", "policy-observation", 1, 1, o.At, samples, "Printer notification RPC can be legitimate; coercion and relay success are not inferred")
@@ -226,7 +226,7 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.A
 			add("ad.domain-role-operation", "low", "policy-observation", 1, 1, o.At, samples, "Domain setup/role operations do not alone establish exploitation")
 		}
 	}
-	if o.Kind == "kerberos" || o.Kind == "rpc" && o.Method == "12345678-1234-abcd-ef00-01234567cffb" && o.Status == 26 {
+	if o.Kind == "kerberos" || o.Kind == "rpc" && o.Method == "12345678-1234-abcd-ef00-01234567cffb" && (o.Status == 15 || o.Status == 26) {
 		windowKey := stableKey(key, o.Kind, o.Method)
 		if len(e.scans) >= e.config.MaxKeys && e.scans[windowKey] == nil {
 			e.Overflow++
@@ -251,7 +251,7 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.A
 				add("ad.kerberos-user-diversity", "medium", "behavioral-suspicion", len(names), 10, w.samples[0].at, []string{"At least ten distinct user principals requested AS tickets from one source within the detection window"}, "Enumeration, password spraying and authorized multi-user gateways can look alike; password failure is not inferred")
 			}
 		} else if len(w.samples) >= 32 {
-			add("ad.netlogon-authentication-burst", "medium", "behavioral-suspicion", len(w.samples), 32, w.samples[0].at, []string{"Repeated NetrServerAuthenticate3 calls for one source and destination service"}, "A Netlogon authentication burst is compatible with Zerologon probing or administrative activity; zero credentials and exploitation success are not established")
+			add("ad.netlogon-authentication-burst", "medium", "behavioral-suspicion", len(w.samples), 32, w.samples[0].at, []string{"Repeated NetrServerAuthenticate2/3 calls for one source and destination service"}, "A Netlogon authentication burst is compatible with Zerologon probing or administrative activity; zero credentials and exploitation success are not established")
 		}
 	}
 	if o.Kind != "http" {
@@ -341,9 +341,19 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.A
 	if len(times) >= e.config.BeaconSamples {
 		recent := times[len(times)-e.config.BeaconSamples:]
 		mean, jitter := BeaconStats(recent)
+		cadence := false
+		if o.Method == "POST" && jitter > e.config.BeaconJitter {
+			if interval, deviation, ok := skippedCadence(recent); ok && interval >= float64(e.config.BeaconMinIntervalNS) && deviation <= e.config.BeaconJitter {
+				mean, jitter, cadence = interval, deviation, true
+			}
+		}
 		if mean >= float64(e.config.BeaconMinIntervalNS) && jitter <= e.config.BeaconJitter {
 			group = beaconKey
-			add("c2.beacon", "low", "behavioral-suspicion", len(recent), e.config.BeaconSamples, recent[0], []string{fmt.Sprintf("HTTP %s %s; interval %.3fs; jitter %.3f", o.Method, path, mean/1e9, jitter)}, "Periodic HTTP transactions can be legitimate monitoring or telemetry; C2 intent is not established")
+			sample := fmt.Sprintf("HTTP %s %s; interval %.3fs; jitter %.3f", o.Method, path, mean/1e9, jitter)
+			if cadence {
+				sample = fmt.Sprintf("HTTP POST; cadence %.3fs; maximum phase error %.3f; skipped cycles fitted", mean/1e9, jitter)
+			}
+			add("c2.beacon", "low", "behavioral-suspicion", len(recent), e.config.BeaconSamples, recent[0], []string{sample}, "Periodic HTTP transactions can be legitimate monitoring or telemetry; C2 intent is not established")
 		}
 	}
 	return alerts

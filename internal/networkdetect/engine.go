@@ -309,8 +309,11 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 			f.serverSynSeen, f.serverISN = true, ev.Seq
 		}
 	case "end":
-		e.revokeFTP(flowKey(ev))
-		delete(e.flows, flowKey(ev))
+		key := flowKey(ev)
+		e.revokeFTP(key)
+		if f := e.flows[key]; f != nil {
+			f.closed, f.last, f.ftpDisabled, f.ftp = true, ev.At, true, nil
+		}
 	case "refused":
 		if f := e.flows[flowKey(ev)]; f != nil && f.ftpData && ev.At-f.last <= e.config.WindowNS {
 			break

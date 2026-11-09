@@ -108,7 +108,7 @@ var wellKnownInterfaces = map[string]string{
 	"367abb81-9844-35f1-ad32-98f038001003": "SVCCTL",
 	"1ff70682-0a51-30e8-076d-740be8cee98b": "ATSVC",
 	"86d35949-83c9-4044-b424-db363231fd0c": "ITaskSchedulerService",
-	"12345778-1234-abcd-ef00-01234567cffb": "NETLOGON",
+	"12345678-1234-abcd-ef00-01234567cffb": "NETLOGON",
 	"6bffd098-a112-3610-9833-46c3f87e345a": "WKSSVC",
 	"3919286a-b10c-11d0-9ba8-00c04fd92ef5": "DSSETUP",
 	"e3514235-4b06-11d1-ab04-00c04fc2dcd2": "DRSUAPI",
@@ -121,7 +121,8 @@ var wellKnownInterfaces = map[string]string{
 // MS-LSAT/MS-LSAD. An opnum outside this table yields an empty name.
 var operationNames = map[string]map[uint16]string{
 	"SVCCTL": {0: "RCloseServiceHandle", 1: "RControlService", 2: "RDeleteService", 11: "RChangeServiceConfigW", 12: "RCreateServiceW",
-		15: "ROpenSCManagerW", 16: "ROpenServiceW", 19: "RStartServiceW", 24: "RCreateServiceA", 44: "RCreateServiceWOW64W"},
+		15: "ROpenSCManagerW", 16: "ROpenServiceW", 19: "RStartServiceW", 24: "RCreateServiceA", 31: "RStartServiceA", 44: "RCreateServiceWOW64W"},
+	"NETLOGON":              {4: "NetrServerReqChallenge", 15: "NetrServerAuthenticate2", 26: "NetrServerAuthenticate3"},
 	"ATSVC":                 {0: "NetrJobAdd", 1: "NetrJobDel", 2: "NetrJobEnum", 3: "NetrJobGetInfo"},
 	"ITaskSchedulerService": {1: "SchRpcRegisterTask", 12: "SchRpcRun", 13: "SchRpcDelete"},
 	"DRSUAPI":               {0: "IDL_DRSBind", 1: "IDL_DRSUnbind", 3: "IDL_DRSGetNCChanges", 12: "IDL_DRSCrackNames"},

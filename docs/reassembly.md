@@ -73,7 +73,9 @@ cleanup does not make truncated stream evidence complete.
 `TCPReassemblyHealth.json` reports overlap packet/byte counts. Network detection
 also compares retransmissions against a bounded 4,096-byte directional prefix;
 different bytes produce `tcp.overlap-conflict` with qualified first-arrival
-semantics. Matching retransmissions do not produce this alert.
+semantics. FIN/RST retains that prefix until the detection window expires or a
+new SYN replaces the session; closed flows cannot resume protocol detection.
+Matching retransmissions do not produce this alert (`networkdetect/recheck_test.go`).
 
 HTTP headers cannot be completed across a TCP close. If a complete pre-close
 header frames contiguous body bytes observed after closure, extraction can retain
@@ -85,25 +87,56 @@ decoded-prefix child linked by `ParentFileID` to the retained wire artifact.
 
 `scripts/recheck-mta.py` replays checksum-pinned MTA receipts, reads every audit,
 and compares extracted SHA256 sets against a matched baseline. The local
-`750de163-recheck` candidate uses `nodpi,noyara,nomagika`.
+`b866b61-followup` candidate uses `nodpi,noyara,nomagika` unless noted below.
 
 | Check | Result / evidence |
 | --- | --- |
-| MTA replay, Darwin/arm64, Go 1.27.0 | 143/143 successful; no unreadable audits or missing baseline artifact hashes (`mta-final/summary.json`) |
-| HTTP request comparison | 33,931 tshark requests; 0 missing; 34,422 netcap records, including 491 comparison extras (`mta-final/reference-summary.json`) |
-| Host/user scorer | 98 `ok`, 2 `wrong`, 8 unhandled; 0 baseline regressions. Both `wrong` rows expect the nonliteral label `all 3` (`mta-final/questions-summary.json`). This is not the full question/fact score. |
-| Sequential capture time | 172.77 s candidate / 145.14 s v0.15.2, same config databases; V-6 remains open |
-| IoT-23 1-1, Darwin/arm64 | 145,928,231-byte capture; 67.58 s, 5,363,974,144-byte peak RSS; DS-12 remains open |
-| IoT-23 1-1, Linux/amd64, Go 1.27.1 | Default configuration OOM-killed at a 4 GiB container limit; `GOMEMLIMIT=3GiB` completes at the same limit in 178.3 s, 1,686,291/1,686,291 packets admitted, 0 queue drops, 21/21 audits readable. GC tuning is not a global retained-state bound. |
+| MTA replay, Darwin/arm64, Go 1.27.0 | 143/143 successful; no unreadable audits or missing baseline artifact hashes (`mta-qualified-followup/summary.json`) |
+| HTTP request comparison | 33,931 tshark requests; 0 missing; 34,422 netcap records, including 491 comparison extras (`mta-qualified-followup/reference-summary.json`) |
+| Host/user scorer | 98 `ok`, 2 `wrong`, 8 unhandled; 0 baseline regressions. Both `wrong` rows expect the nonliteral label `all 3` (`mta-qualified-followup/questions-summary.json`). This is not the full question/fact score. |
+| Sequential capture time | 171.49 s candidate / 145.14 s v0.15.2, same config databases; median per-capture ratio 1.036×, aggregate ratio 1.182×. V-6 remains open. |
+| IoT-23 1-1, Linux/amd64, Go 1.27.1 | Final nodpi/YARA-enabled archive completes with default settings at a 4 GiB container limit: 184.7 s, 1,686,291/1,686,291 packets admitted, 0 queue drops, 21/21 audits readable, all 46 baseline file hashes retained (`iot23-final-archive/`). |
+| FTP size regression | Default CLI extracts all 27,888,036 bytes with matching stored/audit SHA256 at 1/4 workers (`tests/e2e/large_ftp_test.go`); the original FOR572 capture remains unqualified. |
+| FKIE C2 captures | 67/67 successful; 1,224 tshark HTTP requests, 0 missing, including the embedded-key FormBook capture (`fkie-followup/`). |
+| Injection captures | 14/14 successful with qualified overlap/SYN-ACK conflict alerts; retransmission, expiry and new-session negative controls pass (`injection-closed-fixed/`, `networkdetect/recheck_test.go`). |
+| HTTP polling | The 2025-06-13 capture emits 2 `c2.beacon` incidents after fitting skipped POST polls; fit requires 2 direct intervals, at most 8 cycles per gap and bounded phase error. Irregular timing, Range transfers and GET fitting are negative controls (`mta-cadence-qualification/`, `networkdetect/recheck_test.go`). |
+| PCAP-ATTACK | 26/26 successful; 6 qualified observations across Netlogon bursts, remote service control, Kerberos user diversity and printer notification (`attack-qualified-followup/`). Missing interface binds/encrypted payloads remain visibility limits. |
+| CTU-13 scenario 5 | 219 tshark HTTP requests, 0 missing (`ctu5-followup/`); responder-originated requests survive the binary preface. |
+| SSH/CVE false positives | IoT-23 3-1 emits 0 `ssh.nonstandard-port` alerts; Nitroba emits 0 of the 3 reported CVEs against Apache 1.3.37, with 0 duplicate host/product/version/CVE tuples (`iot23-3-followup/`, `nitroba-followup/`). |
+| Native archives | Fresh glibc/musl × DPI/nodpi binaries execute through symlinked launchers in clean Alpine 3.24.4; each emits 1 HTTP/1 and 2 HTTP/2 records from the upstream h2c fixture. Runtime inventories verify 17/11/9/4 supplier-matched libraries (`qualification/followup-*`). Builds use `nomagika`; native YARA tests pass. |
 
 The IoT-23 source is `CTU-IoT-Malware-Capture-1-1/2018-05-09-192.168.100.103.pcap`
 under `https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/IndividualScenarios/`;
 SHA256 `8ebcd17af4e2d20b1cf7ad564760756f457a80b791a0757a2b1a624b2724969c`.
-The Linux runs use 4 CPUs, 4 workers, no network, and a 4 GiB memory/swap cap;
-native DPI/YARA/Magika builds and the full Phase B inventory remain unqualified.
+The Linux capture runs use 4 CPUs, 4 workers, no network, and a 4 GiB memory/swap
+cap under amd64 emulation. The CLI sets Go's soft memory limit to 75% of the
+smallest visible cgroup memory limit unless `GOMEMLIMIT` or an existing runtime
+limit overrides it (`internal/runtimebudget/memory.go`); manifests record
+`producer.goMemoryLimitBytes`. The pre-headroom binary was OOM-killed at 4 GiB.
+This controls GC headroom, not decoder-state cardinality: the remaining large
+Phase B captures and external Magika classification remain unqualified.
 This replay retains 620,639 Connection and 602,818 Host records; heap profiling
 identifies connection/host accumulators, stream-pool entries and UDP flow state
 as DS-12 follow-ups (`iot23-heap.pprof`).
+
+| External fixture source | Pin |
+| --- | --- |
+| [FKIE malware C2](https://github.com/fkie-cad/malware_c2_dataset) | Revision `324d555e57161275abf3d5f910b74f40f56ca94c`; `dataset.zip` SHA256 `ba39c32b2ccb74bf37cf43ca061b7e802e5fe499b59144fc971e6a5c82c9b912`; only `.pcapng` members extracted |
+| [Fox-IT Quantum Insert](https://github.com/fox-it/quantuminsert) | Revision `7b54983bdd3e33ce943e27f5772e010f08606481`, 7 captures under `pcaps/` |
+| [HoneyBadger/Netresec](https://github.com/david415/honeybadger-pcap-files) | Revision `f74e56078bbf3244d9713df44ed47879ddca522a`, 4 root captures and 3 under `netresec/` |
+| [PCAP-ATTACK](https://github.com/sbousseaden/PCAP-ATTACK) | Revision `9ef5476dd6b083f565a1b9d2e59e4a3ae8be8c95`, 26 captures |
+| [Suricata h2c](https://github.com/OISF/suricata-verify/tree/9a9178a7e4d45ff1d990e8f178c1e2f54b772f39/tests/http2-h2c-doh2-force-proto-change) | `input.pcap` SHA256 `92df1f0a385252357739989381269322fd1de80867f5f4d4d74da8703b711673` |
+| [IoT-23 3-1](https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/IndividualScenarios/CTU-IoT-Malware-Capture-3-1/2018-05-21_capture.pcap) | SHA256 `c674dc0c8d584fa66e6f00c60df973c5fbacad551c850a76d75ec9952641d00b` |
+| [Nitroba](https://for572.com/nitrobapcap) | SHA256 `f783d89ee1f6862a10e34923fb16165fdcc85811036a5a3f2a79fed8f019484a` |
+
+Use `scripts/recheck-mta.py --inputs <directory> --group <name> --binary <net>
+--output <new-directory>` for external captures; it records per-file SHA256
+receipts. `--resume` requires the same binary and capture checksums and preserves
+interrupted outputs separately. The 4,695-file Phase B inventory and original
+answer/OCR corpus are required to reproduce the report's full score exactly.
+`TestReassemblyPageBudgetCLI` builds an untagged native CLI; its 12 cases pass in
+the matched Linux builder. Local older YARA-X headers fail on
+`C.yrx_compiler_max_warnings` before the test runs (`recheck-native-page-e2e.log`).
 
 Inventory pitfall: the report's 148 MTA PCAPs resolve to 143 upstream captures;
 `2016-07-07` publishes 1 PCAP and 6 malicious emails, rather than 6 PCAPs.

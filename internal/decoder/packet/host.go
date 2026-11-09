@@ -160,7 +160,7 @@ func updateHost(ipAddr string, i *decoderutils.PacketInfo, source bool) {
 func createNewHost(ipAddr string, i *decoderutils.PacketInfo, source bool) *hostEntry {
 	var (
 		dataLen = uint64(len(i.Packet.Data()))
-		sniMap  = make(map[string]int64)
+		sniMap  map[string]int64
 	)
 
 	// Network Layer: IP Geolocation
@@ -176,6 +176,7 @@ func createNewHost(ipAddr string, i *decoderutils.PacketInfo, source bool) *host
 	ch := tlsx.GetClientHello(i.Packet)
 	if ch != nil {
 		if ch.SNI != "" {
+			sniMap = make(map[string]int64)
 			sniMap[ch.SNI] = 1
 		}
 		ja4CipherSuites := make([]uint16, len(ch.CipherSuites))
@@ -245,9 +246,10 @@ func createNewHost(ipAddr string, i *decoderutils.PacketInfo, source bool) *host
 	}
 
 	// Initialize stream packet buffer with first packet (copy data to avoid buffer reuse)
-	streamPackets := make(map[streamKey][]bufferedPacket)
-	key := getStreamKey(i)
+	var streamPackets map[streamKey][]bufferedPacket
 	if dpi.IsEnabled() {
+		streamPackets = make(map[streamKey][]bufferedPacket)
+		key := getStreamKey(i)
 		streamPackets[key] = []bufferedPacket{bufferDPIPacket(i.Packet)}
 	}
 
@@ -259,7 +261,6 @@ func createNewHost(ipAddr string, i *decoderutils.PacketInfo, source bool) *host
 			DNSNames:         names,
 			TimestampFirst:   i.Timestamp,
 			TimestampLast:    i.Timestamp,
-			Protocols:        make(map[string]*types.Protocol), // Will be populated during flush
 			Bytes:            dataLen,
 			SrcPorts:         srcPorts,
 			DstPorts:         dstPorts,
@@ -279,6 +280,9 @@ func handleTLSFingerprinting(p *hostEntry, i *decoderutils.PacketInfo) {
 	ch := tlsx.GetClientHello(i.Packet)
 	if ch != nil {
 		if ch.SNI != "" {
+			if p.SNIs == nil {
+				p.SNIs = make(map[string]int64)
+			}
 			p.SNIs[ch.SNI]++
 		}
 		ja4CipherSuites := make([]uint16, len(ch.CipherSuites))
@@ -359,6 +363,9 @@ func processHostDeferredDPI(p *hostEntry) {
 				if prot, ok := p.Protocols[protocol]; ok {
 					prot.Packets++
 				} else {
+					if p.Protocols == nil {
+						p.Protocols = make(map[string]*types.Protocol)
+					}
 					p.Protocols[protocol] = dpi.NewProto(&res)
 				}
 			}
@@ -389,6 +396,9 @@ func processHostDeferredDPIWithoutClear(p *hostEntry) {
 				if prot, ok := p.Protocols[protocol]; ok {
 					prot.Packets++
 				} else {
+					if p.Protocols == nil {
+						p.Protocols = make(map[string]*types.Protocol)
+					}
 					p.Protocols[protocol] = dpi.NewProto(&res)
 				}
 			}
