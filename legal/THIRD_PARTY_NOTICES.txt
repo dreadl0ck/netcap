@@ -137,8 +137,8 @@ Ubuntu DPI builds:
   libprotoident 2.0.15-2
   https://github.com/LibtraceTeam/libprotoident/archive/refs/tags/2.0.15-2.tar.gz
 
-  libtrace 4.0.23-1 (loaded libtrace.so.7 in the qualified glibc image)
-  https://github.com/LibtraceTeam/libtrace/archive/refs/tags/4.0.23-1.tar.gz
+  libtrace 4.0.34-1
+  https://github.com/LibtraceTeam/libtrace/archive/refs/tags/4.0.34-1.tar.gz
 
   libwandder 2.0.8-1
   https://github.com/wanduow/libwandder/archive/refs/tags/2.0.8-1.tar.gz
@@ -146,8 +146,8 @@ Ubuntu DPI builds:
   libflowmanager 3.0.0-3
   https://github.com/LibtraceTeam/libflowmanager/archive/refs/tags/3.0.0-3.tar.gz
 
-  wandio 4.2.6-1 (loaded libwandio.so.6 in the qualified glibc image)
-  https://github.com/LibtraceTeam/wandio/archive/refs/tags/4.2.6-1.tar.gz
+  wandio 4.2.7-1
+  https://github.com/LibtraceTeam/wandio/archive/refs/tags/4.2.7-1.tar.gz
 
 Bundled Linux runtimes
 ----------------------

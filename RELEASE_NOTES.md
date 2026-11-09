@@ -1,3 +1,26 @@
+## Stream cleanup and failed-capture diagnostics
+
+`v0.16.2` fixes two regressions found during the v0.16 try/desktop rollout.
+
+| Area | Fix |
+| --- | --- |
+| TCP reassembly | Closing a direction at its stream byte limit now releases queued `KeepFrom` pages after scatter/gather cleanup; the Brazil replay no longer triggers the assembler panic |
+| Failed captures | Admitted source identity and bounded failure metadata remain exportable when processing fails before a capture manifest exists; stale manifests and replaced source aliases are rejected |
+| Desktop downloads | Desktop hosts can save reproduction metadata through native dialogs and their local-output mapping instead of fetching a missing capture route |
+| Native attribution | Global Ubuntu notices now match the qualified libtrace 4.0.34-1 and wandio 4.2.7-1 suppliers; per-archive inventories and source hashes remain authoritative |
+
+Malformed captures remain partial/error with their observed packet/link/decode
+counts. A downloadable diagnostic does not turn a failed capture into a complete
+analysis or establish evidence the capture did not contain.
+
+Archives include the seven CLI variants, standalone Linux amd64/arm64 firewall
+profiles, exact supplier sources, checksums and qualification receipts. Both
+macOS CLI variants are Developer ID signed and notarized. Hosted Windows and
+macOS smoke checks do not claim Windows Npcap or full clean-macOS-15 BPF/YARA
+certification.
+
+Full changes: https://github.com/dreadl0ck/netcap/compare/v0.16.1...v0.16.2
+
 ## Capture analysis and application firewall
 
 `v0.16.1` includes the qualified changes since v0.15.4. The `net` archives
