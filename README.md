@@ -23,6 +23,13 @@
 
 **Netcap** (NETwork CAPture) converts network packets into structured Protocol Buffer audit records for security monitoring, forensic analysis and dataset preparation. The Go binary includes concurrent packet/stream decoders and a local web UI. Discover its actual inventory with `net capture -overview`; record definitions are in `types/netcap.proto`.
 
+[Go v0.16.2](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.2) includes
+the capture-analysis and firewall features in [releases and migration](docs/changelog.md),
+plus stream byte-limit cleanup and early-failure reproduction metadata fixes.
+[NETCAP Pro 1.5.1](https://github.com/dreadl0ck/netcap-pro/releases/tag/v1.5.1)
+uses the v0.16.2 backend and shared UI. See [installation](docs/installation.md)
+for archives and platform qualification limits.
+
 <a href="docs/GALLERY.md">
   <img alt="Netcap Web UI — Protocol Hierarchy" src="docs/gallery/protocol-hierarchy-sankey.png" width="100%">
 </a>

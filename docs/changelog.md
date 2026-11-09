@@ -4,14 +4,35 @@ description: Detailed Version History Information
 
 # Changelog
 
+## v0.16.2
+
+The [Go release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.2)
+ships commit `2f0c3fc0a5a083dd7341803f9968b84058c2946e`.
+[NETCAP Pro 1.5.1](https://github.com/dreadl0ck/netcap-pro/releases/tag/v1.5.1)
+uses that backend and shared UI.
+
+| Area | Released fix / boundary |
+| --- | --- |
+| TCP byte limits | Direction closure releases queued `KeepFrom` pages after scatter/gather cleanup; fixes the Brazil replay assembler panic without restoring discarded bytes |
+| Early capture failures | Reproduction metadata retains admitted source SHA-256, byte count and failed-output mapping even without a capture manifest; missing producer, RunID and effective settings remain explicitly unavailable |
+| Source binding | Stale manifests and replaced source aliases are rejected; malformed captures remain failed/partial |
+| Desktop diagnostics | Native save dialogs use the failed capture's local-output mapping |
+| Distribution | Seven CLI variants and separate Linux amd64/arm64 `netcap-firewall` archives, supplier sources, checksums and qualification receipts |
+
+Both macOS CLI variants are Developer ID signed and notarized. Windows Npcap
+runtime operation and full clean-macOS-15 BPF/YARA operation remain uncertified;
+see [installation](installation.md#binary-distributions).
+
 ## Source-only corrections
 
-These changes follow v0.15.2; they do not change an existing release archive.
+This heading preserves links to changes originally documented as source-only
+after v0.15.2. The additions below shipped in v0.16.1 and remain in v0.16.2;
+they do not change an already downloaded v0.15.2 archive.
 
-The `master` documentation describes current Go source. Build the matching
-checkout using [installation](installation.md#development-build); use installed
-help to establish availability in a packaged executable. Firewall release bundles
-have their own qualification/publication process in `scripts/firewall_release.py`.
+Use the [v0.16.2 installation](installation.md) and installed help for packaged
+availability. Standalone firewall bundles have a separate qualification process
+in `scripts/firewall_release.py`; publication does not approve a production
+appliance or promote OCI images.
 
 | Area | User-facing addition / boundary |
 | --- | --- |
@@ -36,8 +57,8 @@ platform. Missing capture fields and unobserved protocol outcomes remain unknown
 | Change | Migration/qualification |
 | --- | --- |
 | S7 requests gated by message role; response allowlist uses destination initiator | “Completed” rule renamed to acknowledgment; no header-only execution claim |
-| DNP3 group 60 variation 1 mapped to Class 0; 2–4 to classes 1–3 | Corrected integrity-poll rule; released binaries need an external corrected pack or a future release |
-| Grouped offline rules and audit readiness | Source-only `investigate rules`; separate pack format and finalized-capture requirements |
+| DNP3 group 60 variation 1 mapped to Class 0; 2–4 to classes 1–3 | Corrected integrity-poll rule ships in v0.16.2; v0.15.2 needs an external corrected pack or upgrade |
+| Grouped offline rules and audit readiness | Released `investigate rules`; separate pack format and finalized-capture requirements |
 | Documentation contracts | `make docs-check` runs published lab commands; `make docs-source-check` checks schema/rule examples |
 
 ## v0.15.2

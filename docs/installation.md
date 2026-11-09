@@ -1,7 +1,8 @@
 # Installation
 
 These instructions target the public Go release
-[v0.15.2](https://github.com/dreadl0ck/netcap/releases/tag/v0.15.2).
+[v0.16.2](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.2),
+commit `2f0c3fc0a5a083dd7341803f9968b84058c2946e`.
 Start with an archive matching your operating system, architecture and native
 runtime; keep the archive's executable and libraries together.
 
@@ -13,11 +14,16 @@ runtime; keep the archive's executable and libraries together.
 | Linux musl | Alpine-compatible runtime; use the musl archive rather than the libc archive |
 | macOS DPI | macOS 26+; retain adjacent `lib/` native libraries |
 | macOS nodpi | macOS 15+; no native DPI classification |
-| Windows | Match architecture; install compatible Npcap for live capture and BPF-dependent workflows |
+| Windows amd64 nodpi | Driver-free offline client; YARA-X excluded. Live capture/BPF workflows require compatible Npcap and remain unqualified |
+| Standalone firewall | Separate `netcap-firewall-v0.16.2-linux-{amd64,arm64}.tar.gz` archives; not the capture runtime |
 
 Linux wrappers load their private runtime; they do not install libraries into
 system directories. macOS libraries use executable-relative install names.
 Full supplier sources/build recipes accompany the macOS runtime asset.
+Both macOS CLI variants are Developer ID signed and notarized; native execution
+was qualified on macOS 26.6.2. The nodpi 15.0 minimum does not certify full
+BPF/YARA operation on a clean macOS 15 machine. Windows Npcap runtime operation
+also remains uncertified. See the release's checksums and qualification receipts.
 
 ```sh
 net --version
@@ -52,7 +58,7 @@ and libpcap headers. Native DPI and YARA require additional libraries; the
 following reduced build disables those two optional integrations:
 
 ```sh
-git clone --branch v0.15.2 https://github.com/dreadl0ck/netcap.git
+git clone --branch v0.16.2 https://github.com/dreadl0ck/netcap.git
 cd netcap/cmd/capture/webui/frontend
 pnpm install --frozen-lockfile
 pnpm build
@@ -75,11 +81,12 @@ does not prove bit-for-bit reproducibility.
 ## Development Build
 
 For current `master` features, check out the exact reviewed commit instead of
-the `v0.15.2` tag in the build recipe above, then rebuild the embedded UI and Go
-binary together. Check `capture -h` for `-incremental-http`,
+the `v0.16.2` tag in the build recipe above, then rebuild the embedded UI and Go
+binary together. v0.16.2 already includes `-incremental-http`,
 `-capture-time-idle-expiry` and the three retained-state controls; check
 `investigate -h` for `deliver-alerts`, and `split -h` for inspection/sharding.
-These additions are not retroactive changes to the v0.15.2 archive.
+These features do not require a development build; installed help remains the
+reference for the selected executable.
 
 The CGO-free standalone firewall builds independently of the capture UI/native
 dependencies; follow its [quickstart](APPLICATION_FIREWALL.md#quickstart).

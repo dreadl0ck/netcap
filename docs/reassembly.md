@@ -63,6 +63,10 @@ bound on still-open streams or decoder-owned caches.
 `KeepFrom` pages previously survived half-connection closure; closure now releases
 both saved/queued lists and clears delivery scratch references
 (`internal/reassembly/page_budget_test.go`).
+Go v0.16.2 also releases queued `KeepFrom` pages after scatter/gather cleanup
+when a stream byte limit closes a direction, fixing the Brazil replay assembler
+panic (`internal/reassembly/assembler.go`). Discarded bytes remain missing;
+cleanup does not make truncated stream evidence complete.
 
 ## Incremental transactions
 

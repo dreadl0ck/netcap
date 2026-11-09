@@ -91,7 +91,8 @@ Existing ZIP destinations are refused.
 a temporary workspace and asserts records, file bytes, the positive/benign
 rule cases and the selected packet count. It also checks links, shell syntax,
 configuration examples and the baseline lifecycle. It never probes an external
-target. Source-only features are labeled separately from v0.15.2 examples.
+target. The lab retains its v0.15.2 baseline; newer released features and
+availability are listed in the [changelog](changelog.md).
 
 `make docs-source-check` separately checks protobuf excerpts and concrete rule
 expressions against the checkout's schema/engine.

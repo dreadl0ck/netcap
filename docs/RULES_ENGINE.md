@@ -148,10 +148,9 @@ occurrences in `Secret.ncap` and deduplicate only delivery receipts.
 
 ## Offline grouped thresholds
 
-Availability: current source after v0.15.2. The v0.15.2 release binary has no
-`investigate rules` command or audit-readiness marker; build current source to
-use this section. The capture-time YAML format elsewhere on this page is a
-separate v0.15.2 interface.
+Availability: Go v0.16.2 includes `investigate rules` and audit-readiness markers;
+the v0.15.2 binary has neither. The capture-time YAML format elsewhere on this
+page is a separate interface.
 
 `net investigate rules` evaluates `netcap-offline-rules/v1` packs against
 completed captures. The separate format rejects actions, sequences and distinct

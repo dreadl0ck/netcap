@@ -186,12 +186,12 @@ net capture -read plant.pcap -include S7Comm,Connection \
 Request records carry the initiator in `SrcIP`; response records carry it in
 `DstIP`. Negate the approved set on the appropriate endpoint, not always on
 `SrcIP`. The v0.15.2 acknowledgment rule checks the PLC's source address and
-misnames the observation as a completed operation. Current source corrects the
-direction and renames it `S7comm Critical Operation Acknowledgment`; that source
-change does not alter an already downloaded v0.15.2 binary or its embedded rules.
+misnames the observation as a completed operation. Go v0.16.2 corrects the
+direction and renames it `S7comm Critical Operation Acknowledgment`; this does
+not alter an already downloaded v0.15.2 binary or its embedded rules.
 Use a reviewed external rule pack with `-rules` to apply corrections on v0.15.2.
 
-The source request rules now require `MessageType == 1`; the S7CommPlus visibility
+The v0.16.2 request rules require `MessageType == 1`; the S7CommPlus visibility
 rule reports both directions without inferring an approved initiator.
 
 > **Do not allowlist by hostname pattern inside the query.** If a compromised

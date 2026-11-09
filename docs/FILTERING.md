@@ -42,7 +42,7 @@ threshold/sequence/action behavior.
 ## Helper reference
 
 These signatures describe capture-time rules and `dump`'s expr environment,
-not the separate source-only offline-pack expression subset.
+not the separate offline-pack expression subset released in Go v0.16.2.
 
 | Helper | Input/result | Example/limit |
 | --- | --- | --- |

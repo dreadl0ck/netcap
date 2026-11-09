@@ -205,8 +205,19 @@ whole-observation counters and estimated rates.
 
 Failed PCAP rows offer **Download reproduction metadata**. The read-only
 `GET /api/investigation/reproduction` accepts the same exact capture selectors
-and optional `runId`; private sessions require ownership. A missing manifest is
-404, an invalid manifest is 422 and a read failure is 500.
+and optional `runId`; private sessions require ownership.
+
+Go v0.16.2 and NETCAP Pro 1.5.1 also export metadata for admitted failed captures
+that never created `capture-manifest.json` or an output directory. That fallback
+retains the admitted source SHA-256, byte count and failed-output mapping;
+manifest, producer identity, RunID and effective settings remain explicitly
+unavailable. Bounded requested settings do not establish effective settings.
+Unknown, conflicting, stale or unauthorized selectors remain rejected, including
+stale manifests and replaced source aliases. A missing manifest without an
+eligible admitted failure remains 404; an invalid manifest is 422 and a read
+failure is 500. Exporting diagnostics does not make malformed input a successful
+analysis. Desktop exports use the selected failed capture's local-output mapping
+and native save dialog.
 
 `netcap-reproduction-metadata/v1` is explicitly `metadata-only`: exporter version,
 recorded source/configuration identity, numeric/boolean effective settings and

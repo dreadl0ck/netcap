@@ -11,13 +11,11 @@ observations to hosts, services, files, detections and investigation evidence.
 Use the `net` executable to analyze PCAP/PCAPNG files, inspect a live interface,
 browse results locally or supply structured evidence to an AI agent.
 
-These docs cover the **public Go implementation**. GitBook's `master` variant
-follows current source, including features added after
-[v0.15.2](https://github.com/dreadl0ck/netcap/releases/tag/v0.15.2); those additions
-require a matching source build or newer release. Check `net --version` and
-`net capture -h` before using new flags. Historical variants describe older
-interfaces; [releases and migration](changelog.md) separates source changes from
-published archives.
+These docs cover the **public Go implementation**, released as
+[v0.16.2](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.2).
+GitBook's `master` variant follows current source; [releases and migration](changelog.md)
+records packaged availability. Check `net --version` and `net capture -h` before
+using new flags. Historical variants describe older interfaces.
 
 ## Start with a question
 

@@ -4,7 +4,7 @@ description: Choose the public Go command for the job.
 
 # Commands
 
-Current Go source registers the commands below in `cmd/net/main.go`. Run `net -h` and
+Go v0.16.2 registers the commands below in `cmd/net/main.go`. Run `net -h` and
 `net COMMAND -h` for their installed options. The executable is `net`; version
 inspection is `net --version`, not a `version` subcommand.
 
@@ -27,22 +27,24 @@ inspection is `net --version`, not a `version` subcommand.
 | `split` | Read-only capture inspection, bounded packet subsets and time shards | [Packet evidence](evidence.md#export-packet-evidence) |
 | `firewall` | Explicit WAF, protocol gateways, policy control and scoped Linux enforcement | [Application firewall](APPLICATION_FIREWALL.md) |
 
-`split` and `firewall` are current-source additions after v0.15.2; the v0.15.2
-archive does not expose them. `analyze` remains unregistered. A source directory
+`split` and `firewall` ship in the v0.16.2 `net` archives; the v0.15.2 archive
+does not expose them. `analyze` remains unregistered. A source directory
 or legacy completion result alone does not establish an executable interface.
 
 The standalone `netcap-firewall` executable accepts `serve`, `validate`,
 `healthcheck`, `gateway`, `network` and its other subcommands directly;
 `net firewall` accepts the same subcommands with the prefix. Its `version`
 subcommand is separate from the capture executable's `net --version`.
+The [v0.16.2 release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.2)
+publishes separate standalone Linux amd64/arm64 firewall archives.
 
 ## Common operations
 
 The [offline grouped rule evaluator](RULES_ENGINE.md#offline-grouped-thresholds)
-(`investigate rules`) is available in current source after v0.15.2. It is not
-present in the v0.15.2 release binary. The [sensor bundle commands](sensor-bundles.md)
+(`investigate rules`) ships in v0.16.2. It is absent from the v0.15.2 release
+binary. The [sensor bundle commands](sensor-bundles.md)
 are a separate completed-output workflow from live agent transport.
-Current source also adds [scoped capture rules](RULES_ENGINE.md#scoped-capture-time-rules)
+v0.16.2 also includes [scoped capture rules](RULES_ENGINE.md#scoped-capture-time-rules)
 and the explicit `investigate deliver-alerts` [webhook outbox](RULES_ENGINE.md#durable-webhook-delivery).
 
 ```sh
