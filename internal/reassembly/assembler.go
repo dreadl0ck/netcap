@@ -404,6 +404,10 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 			observer.FINContiguous(half.dir)
 		}
 	}
+	// Delivery may retain pages with KeepFrom; close only after cleaning that SG.
+	if !half.closed && a.MaxStreamBytes > 0 && half.totalBytes >= a.MaxStreamBytes {
+		a.closeHalfConnection(conn, half, "maximum stream bytes reached")
+	}
 
 	if Debug {
 		log.Printf("%v nextSeq:%d", flowKey, half.nextSeq)
@@ -677,14 +681,6 @@ func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection
 			a.addNextFromConn(half)
 		}
 
-		// Check if maximum stream bytes limit is reached
-		if a.MaxStreamBytes > 0 && half.totalBytes >= a.MaxStreamBytes {
-			if Debug {
-				log.Printf("hit max stream bytes: %d >= %d, closing half connection", half.totalBytes, a.MaxStreamBytes)
-			}
-			half.closed = true
-		}
-
 		a.dump("handleBytes after queue", half)
 	} else {
 		a.cacheLP.bytes, a.cacheLP.seq = a.overlapExisting(half, seq, a.cacheLP.bytes)
@@ -693,14 +689,6 @@ func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection
 		// Track bytes for non-queued (in-order) data
 		if len(a.cacheLP.bytes) > 0 {
 			half.totalBytes += len(a.cacheLP.bytes)
-
-			// Check if maximum stream bytes limit is reached for in-order data
-			if a.MaxStreamBytes > 0 && half.totalBytes >= a.MaxStreamBytes {
-				if Debug {
-					log.Printf("hit max stream bytes: %d >= %d, closing half connection (in-order path)", half.totalBytes, a.MaxStreamBytes)
-				}
-				half.closed = true
-			}
 		}
 
 		if len(a.cacheLP.bytes) != 0 || end || start {
