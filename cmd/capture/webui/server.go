@@ -199,12 +199,13 @@ type Server struct {
 	processingWork       int
 	processingStopping   bool
 	enqueueMu            sync.RWMutex
-	isLiveMode           bool                           // Whether in live capture mode
-	stopCapture          context.CancelFunc             // Function to stop live capture
-	activeInputFile      string                         // Currently selected input file for viewing
-	completedFiles       map[string]bool                // Tracks which files have completed processing
-	processingStats      ProcessingStats                // Live processing statistics
-	fileErrors           map[string]FileError           // Tracks errors for each file
+	isLiveMode           bool                 // Whether in live capture mode
+	stopCapture          context.CancelFunc   // Function to stop live capture
+	activeInputFile      string               // Currently selected input file for viewing
+	completedFiles       map[string]bool      // Tracks which files have completed processing
+	processingStats      ProcessingStats      // Live processing statistics
+	fileErrors           map[string]FileError // Tracks errors for each file
+	failedReproductions  map[string]failedReproduction
 	debugLogging         bool                           // Runtime debug logging state
 	payloadCapture       bool                           // Runtime payload capture state (default false)
 	features             *featureSet                    // Optional feature toggles shown in Settings

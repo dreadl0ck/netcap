@@ -47,6 +47,8 @@ func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
 		}
 		job.ArtifactConfig = snapshot
 	}
+	job.reproductionSource = snapshotReproductionSource(job.InputFile)
+	job.reproductionSource.PreviousManifestSHA256 = priorReproductionManifest(job.OutputDir)
 	done := s.beginProcessingWork()
 	if done == nil {
 		return errAnalysisStopping

@@ -29,14 +29,35 @@ func (s *Server) handleReproductionBundle(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
-	selected, ok := s.selectedCapture(w, r)
-	if !ok {
+	selected, selectionErr := s.resolveCaptureSelection(r)
+	if selectionErr != nil {
+		writeSelectionError(w, selectionErr)
+		return
+	}
+	if failure, failed := s.failedReproductionFor(selected); failed {
+		if reproductionSourceConflict(selected, failure.Source.SHA256) {
+			http.Error(w, "Analysis source identity is stale", http.StatusConflict)
+			return
+		}
+		if failure.OutputDir == "" {
+			s.writeFailedReproduction(w, r, selected, "unavailable")
+			return
+		}
+	}
+	if selected.OutputDir == "" {
+		if s.writeFailedReproduction(w, r, selected, "missing") {
+			return
+		}
+		http.Error(w, "No output directory selected", http.StatusServiceUnavailable)
 		return
 	}
 	data, err := artifactio.Read(r.Context(), selected.OutputDir, "capture-manifest.json", 4<<20)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, os.ErrNotExist) {
+			if s.writeFailedReproduction(w, r, selected, "missing") {
+				return
+			}
 			status = http.StatusNotFound
 		}
 		http.Error(w, "Capture manifest unavailable; reproduction metadata cannot be exported", status)
@@ -45,6 +66,14 @@ func (s *Server) handleReproductionBundle(w http.ResponseWriter, r *http.Request
 	var capture evidence.CaptureManifest
 	if json.Unmarshal(data, &capture) != nil || capture.Version != 1 || !validHexIdentity(capture.RunID, 16) {
 		http.Error(w, "Invalid capture manifest", 422)
+		return
+	}
+	if failure, failed := s.failedReproductionFor(selected); failed && (capture.InputSHA256 != failure.Source.SHA256 || digestBytes(data) == failure.Source.PreviousManifestSHA256) {
+		s.writeFailedReproduction(w, r, selected, "stale")
+		return
+	}
+	if reproductionSourceConflict(selected, capture.InputSHA256) {
+		http.Error(w, "Analysis source identity is stale", http.StatusConflict)
 		return
 	}
 	if selected.RunID != "" && selected.RunID != capture.RunID {

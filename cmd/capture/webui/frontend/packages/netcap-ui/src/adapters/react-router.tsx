@@ -60,6 +60,7 @@ export interface ReactRouterNetcapProviderProps {
   navigationItems?: NavigationItem[];
   /** Native window fullscreen (desktop shells) */
   fullscreen?: FullscreenAdapter;
+  saveJSON?: NetcapConfig['saveJSON'];
 }
 
 /**
@@ -88,6 +89,7 @@ export function ReactRouterNetcapProvider({
   includeLearnMode = true,
   navigationItems,
   fullscreen,
+  saveJSON,
 }: ReactRouterNetcapProviderProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -98,6 +100,7 @@ export function ReactRouterNetcapProvider({
     debug,
     navigationItems,
     fullscreen,
+    saveJSON,
     router: {
       pathname: location.pathname,
       query: Object.fromEntries(searchParams),
@@ -106,7 +109,7 @@ export function ReactRouterNetcapProvider({
       replace: (path: string) => { navigate(path, { replace: true }); },
     },
     Link: ReactRouterLinkAdapter,
-  }), [backendUrl, debug, navigationItems, fullscreen, location.pathname, searchParams, navigate]);
+  }), [backendUrl, debug, navigationItems, fullscreen, saveJSON, location.pathname, searchParams, navigate]);
 
   const content = includeLearnMode ? (
     <LearnModeProvider>
