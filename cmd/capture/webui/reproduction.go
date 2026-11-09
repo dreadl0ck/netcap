@@ -29,14 +29,25 @@ func (s *Server) handleReproductionBundle(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
-	selected, ok := s.selectedCapture(w, r)
-	if !ok {
+	selected, selectionErr := s.resolveCaptureSelection(r)
+	if selectionErr != nil {
+		writeSelectionError(w, selectionErr)
+		return
+	}
+	if selected.OutputDir == "" {
+		if s.writeFailedReproduction(w, r, selected) {
+			return
+		}
+		http.Error(w, "No output directory selected", http.StatusServiceUnavailable)
 		return
 	}
 	data, err := artifactio.Read(r.Context(), selected.OutputDir, "capture-manifest.json", 4<<20)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, os.ErrNotExist) {
+			if s.writeFailedReproduction(w, r, selected) {
+				return
+			}
 			status = http.StatusNotFound
 		}
 		http.Error(w, "Capture manifest unavailable; reproduction metadata cannot be exported", status)

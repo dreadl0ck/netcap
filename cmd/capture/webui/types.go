@@ -108,6 +108,7 @@ type AnalysisJob struct {
 	requireCaptureEvidence bool
 	ArtifactConfig         []byte
 	processingDone         func()
+	reproductionSource     reproductionSource
 	SessionID              string
 	InputFile              string
 	OutputDir              string
