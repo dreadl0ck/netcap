@@ -4,6 +4,14 @@ description: Detailed Version History Information
 
 # Changelog
 
+## v0.16.3
+
+The [Go release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.3)
+ships commit `d0a9c4705e67c4efbac6c1b0ead682ffa50aa8a6`, including both recheck-fix
+commits. See [release notes](../RELEASE_NOTES.md#recheck-reliability-and-portable-runtimes)
+for the changes and [recheck qualification](reassembly.md#recheck-qualification)
+for measured coverage and the remaining full-corpus/performance limits.
+
 ## v0.16.2
 
 The [Go release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.2)
@@ -29,7 +37,7 @@ This heading preserves links to changes originally documented as source-only
 after v0.15.2. The additions below shipped in v0.16.1 and remain in v0.16.2;
 they do not change an already downloaded v0.15.2 archive.
 
-Use the [v0.16.2 installation](installation.md) and installed help for packaged
+Use the [current installation](installation.md) and installed help for packaged
 availability. Standalone firewall bundles have a separate qualification process
 in `scripts/firewall_release.py`; publication does not approve a production
 appliance or promote OCI images.

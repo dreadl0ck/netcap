@@ -1,8 +1,8 @@
 # Installation
 
 These instructions target the public Go release
-[v0.16.2](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.2),
-commit `2f0c3fc0a5a083dd7341803f9968b84058c2946e`.
+[v0.16.3](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.3),
+commit `d0a9c4705e67c4efbac6c1b0ead682ffa50aa8a6`.
 Start with an archive matching your operating system, architecture and native
 runtime; keep the archive's executable and libraries together.
 
@@ -15,7 +15,7 @@ runtime; keep the archive's executable and libraries together.
 | macOS DPI | macOS 26+; retain adjacent `lib/` native libraries |
 | macOS nodpi | macOS 15+; no native DPI classification |
 | Windows amd64 nodpi | Driver-free offline client; YARA-X excluded. Live capture/BPF workflows require compatible Npcap and remain unqualified |
-| Standalone firewall | Separate `netcap-firewall-v0.16.2-linux-{amd64,arm64}.tar.gz` archives; not the capture runtime |
+| Standalone firewall | Separate `netcap-firewall-v0.16.3-linux-{amd64,arm64}.tar.gz` archives; not the capture runtime |
 
 Linux wrappers load their private runtime; they do not install libraries into
 system directories. macOS libraries use executable-relative install names.
@@ -58,7 +58,7 @@ and libpcap headers. Native DPI and YARA require additional libraries; the
 following reduced build disables those two optional integrations:
 
 ```sh
-git clone --branch v0.16.2 https://github.com/dreadl0ck/netcap.git
+git clone --branch v0.16.3 https://github.com/dreadl0ck/netcap.git
 cd netcap/cmd/capture/webui/frontend
 pnpm install --frozen-lockfile
 pnpm build
@@ -81,7 +81,7 @@ does not prove bit-for-bit reproducibility.
 ## Development Build
 
 For current `master` features, check out the exact reviewed commit instead of
-the `v0.16.2` tag in the build recipe above, then rebuild the embedded UI and Go
+the `v0.16.3` tag in the build recipe above, then rebuild the embedded UI and Go
 binary together. v0.16.2 already includes `-incremental-http`,
 `-capture-time-idle-expiry` and the three retained-state controls; check
 `investigate -h` for `deliver-alerts`, and `split -h` for inspection/sharding.
