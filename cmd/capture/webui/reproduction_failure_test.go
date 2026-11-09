@@ -127,3 +127,70 @@ func TestFailedReproductionDoesNotMaskCorruptOrUnsafeManifest(t *testing.T) {
 		t.Fatalf("unsafe manifest hidden by fallback: %d", w.Code)
 	}
 }
+
+func TestFailedReproductionRejectsPreviousRunManifest(t *testing.T) {
+	for _, sameSource := range []bool{false, true} {
+		t.Run(map[bool]string{false: "different-source", true: "same-source-old-run"}[sameSource], func(t *testing.T) {
+			s, job, admitted := failedReproductionFixture(t, false)
+			if err := os.Mkdir(job.OutputDir, 0700); err != nil {
+				t.Fatal(err)
+			}
+			hash := strings.Repeat("b", 64)
+			if sameSource {
+				hash = digestBytes(admitted)
+			}
+			oldRun := strings.Repeat("a", 32)
+			old := []byte(`{"version":1,"runId":"` + oldRun + `","status":"done","inputSHA256":"` + hash + `"}`)
+			if err := os.WriteFile(filepath.Join(job.OutputDir, "capture-manifest.json"), old, 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := s.enqueueAnalysis(job, false); err != nil {
+				t.Fatal(err)
+			}
+			<-s.jobQueue
+			defer job.processingDone()
+			s.recordAnalysisFailure(job, "RAW_SECRET_SENTINEL", "")
+			w := failureReproductionRequest(s, "sessionId=owned", "127.0.0.1:1234", "")
+			if w.Code != 200 || !strings.Contains(w.Body.String(), `"metadataBasis":"failed-job-admission"`) || !strings.Contains(w.Body.String(), `"name":"capture-manifest.json","state":"stale"`) || strings.Contains(w.Body.String(), oldRun) {
+				t.Fatalf("previous run relabelled as current: %d %s", w.Code, w.Body.String())
+			}
+			if w := failureReproductionRequest(s, "sessionId=owned&runId="+oldRun, "127.0.0.1:1234", ""); w.Code != 409 {
+				t.Fatalf("explicit previous generation accepted: %d", w.Code)
+			}
+		})
+	}
+}
+
+func TestFailedReproductionRejectsOldContentAddressedAlias(t *testing.T) {
+	s, job, admitted := failedReproductionFixture(t, false)
+	oldID := digestBytes(admitted)
+	s.fileIDToPath[oldID] = job.InputFile
+	changed := []byte(strings.Repeat("y", 80))
+	if err := os.WriteFile(job.InputFile, changed, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.enqueueAnalysis(job, false); err != nil {
+		t.Fatal(err)
+	}
+	<-s.jobQueue
+	defer job.processingDone()
+	s.recordAnalysisFailure(job, "RAW_SECRET_SENTINEL", "")
+	newID := digestBytes(changed)
+	s.fileIDToPath[newID] = job.InputFile
+	if w := failureReproductionRequest(s, "sessionId="+oldID, "127.0.0.1:1234", ""); w.Code != 409 {
+		t.Fatalf("old alias exported another upload: %d %s", w.Code, w.Body.String())
+	}
+	if w := failureReproductionRequest(s, "sessionId="+newID, "127.0.0.1:1234", ""); w.Code != 200 || !strings.Contains(w.Body.String(), newID) {
+		t.Fatalf("new upload lost admitted source: %d %s", w.Code, w.Body.String())
+	}
+}
+
+func TestFailedReproductionWithoutOutputSelectionDoesNotUseActiveManifest(t *testing.T) {
+	s, job, _ := failedReproductionFixture(t, false)
+	job.OutputDir = ""
+	s.recordAnalysisFailure(job, "RAW_SECRET_SENTINEL", "")
+	w := failureReproductionRequest(s, "sessionId=owned", "127.0.0.1:1234", "")
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"name":"capture-manifest.json","state":"unavailable"`) {
+		t.Fatalf("missing output selection lost failed source: %d %s", w.Code, w.Body.String())
+	}
+}

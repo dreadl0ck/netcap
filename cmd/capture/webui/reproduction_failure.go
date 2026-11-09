@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
@@ -9,17 +10,31 @@ import (
 	"strconv"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 )
 
 type reproductionSource struct {
-	SHA256 string
-	Bytes  int64
+	SHA256                 string
+	Bytes                  int64
+	PreviousManifestSHA256 string
 }
 
 type failedReproduction struct {
 	Source      reproductionSource
 	FailureHash string
 	Settings    map[string]any
+	OutputDir   string
+}
+
+func priorReproductionManifest(dir string) string {
+	if dir == "" {
+		return ""
+	}
+	data, err := artifactio.Read(context.Background(), dir, "capture-manifest.json", 4<<20)
+	if err != nil {
+		return ""
+	}
+	return digestBytes(data)
 }
 
 // Capture the admitted bytes before a helper can fail or the input can change.
@@ -53,6 +68,10 @@ func failureReproductionKey(service bool, session, input string) string {
 	return "input:" + input
 }
 
+func reproductionSourceConflict(selected captureSelection, hash string) bool {
+	return selected.SessionID == "" && validHexIdentity(selected.AnalysisID, 32) && selected.AnalysisID != hash
+}
+
 func (s *Server) rememberFailedReproduction(job *AnalysisJob, message string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -61,7 +80,7 @@ func (s *Server) rememberFailedReproduction(job *AnalysisJob, message string) {
 	}
 	key := failureReproductionKey(s.isServiceMode, job.SessionID, job.InputFile)
 	s.failedReproductions[key] = failedReproduction{
-		Source: job.reproductionSource, FailureHash: digestBytes([]byte(message)),
+		Source: job.reproductionSource, FailureHash: digestBytes([]byte(message)), OutputDir: job.OutputDir,
 		Settings: map[string]any{"dpiRequested": job.EnableDPI, "bpfSHA256": digestBytes([]byte(job.BPFFilter)), "includeDecodersSHA256": digestBytes([]byte(job.IncludeDecoders)), "excludeDecodersSHA256": digestBytes([]byte(job.ExcludeDecoders)), "artifactConfigSHA256": digestBytes(job.ArtifactConfig)},
 	}
 	if !s.isServiceMode && job.OutputDir != "" {
@@ -73,28 +92,44 @@ func (s *Server) rememberFailedReproduction(job *AnalysisJob, message string) {
 	}
 }
 
-func (s *Server) writeFailedReproduction(w http.ResponseWriter, r *http.Request, selected captureSelection) bool {
+func (s *Server) failedReproductionFor(selected captureSelection) (failedReproduction, bool) {
 	s.mu.RLock()
 	service, manager := s.isServiceMode, s.sessionManager
 	failure, exists := s.failedReproductions[failureReproductionKey(service, selected.SessionID, selected.InputFile)]
 	fileError, localFailed := s.fileErrors[selected.InputFile]
 	s.mu.RUnlock()
 	if !exists {
-		return false
+		return failure, false
 	}
 	if service {
 		if manager == nil {
-			return false
+			return failure, false
 		}
 		manager.mu.RLock()
 		session, found := manager.sessions[selected.SessionID]
 		failed := found && session.Status == StatusFailed
 		manager.mu.RUnlock()
 		if !failed {
-			return false
+			return failure, false
 		}
 	} else if !localFailed || digestBytes([]byte(fileError.Error)) != failure.FailureHash {
+		return failure, false
+	}
+	return failure, true
+}
+
+func (s *Server) writeFailedReproduction(w http.ResponseWriter, r *http.Request, selected captureSelection, manifestState string) bool {
+	failure, exists := s.failedReproductionFor(selected)
+	if !exists {
 		return false
+	}
+	if reproductionSourceConflict(selected, failure.Source.SHA256) {
+		http.Error(w, "Analysis source identity is stale", http.StatusConflict)
+		return true
+	}
+	if selected.RunID != "" {
+		http.Error(w, "Capture generation is unavailable or stale", http.StatusConflict)
+		return true
 	}
 	if !validHexIdentity(failure.Source.SHA256, 32) {
 		http.Error(w, "Admitted source identity unavailable; reproduction metadata cannot be bound safely", http.StatusConflict)
@@ -109,9 +144,9 @@ func (s *Server) writeFailedReproduction(w http.ResponseWriter, r *http.Request,
 		"exporter": map[string]string{"version": netcap.Version, "commit": netcap.Commit}, "producerVersion": "unavailable", "runId": "unavailable", "captureStatus": "error",
 		"sourceSHA256": failure.Source.SHA256, "sourceBytes": strconv.FormatInt(failure.Source.Bytes, 10), "sourceBinding": "server-admission-snapshot",
 		"failureSHA256": failure.FailureHash, "requestedSettings": failure.Settings,
-		"effectiveSettings": map[string]string{"state": "unavailable", "reason": "capture-manifest-missing"},
-		"attachments":       []reproductionAttachment{{Name: "capture-manifest.json", State: "missing"}, {Name: "audit-output-ready.json", State: "missing"}, {Name: "logs-and-payloads", State: "omitted-sensitive"}},
-		"limitations":       []string{"Analysis failed before capture metadata was available; this is a server job-admission snapshot, not a fabricated capture manifest", "Source digest identifies admitted bytes, not proof of which bytes a failed producer processed", "Producer identity, run ID and effective settings are unavailable without a capture manifest", "Requested setting digests do not establish effective producer settings", "No source paths, raw logs, payloads or free-text errors are attached"},
+		"effectiveSettings": map[string]string{"state": "unavailable", "reason": "capture-manifest-" + manifestState},
+		"attachments":       []reproductionAttachment{{Name: "capture-manifest.json", State: manifestState}, {Name: "audit-output-ready.json", State: "unavailable"}, {Name: "logs-and-payloads", State: "omitted-sensitive"}},
+		"limitations":       []string{"Current analysis failed before bound capture metadata was available; this is a server job-admission snapshot, not a fabricated capture manifest", "Source digest identifies admitted bytes, not proof of which bytes a failed producer processed", "Producer identity, run ID and effective settings are unavailable without a current capture manifest", "Requested setting digests do not establish effective producer settings", "No source paths, raw logs, payloads or free-text errors are attached"},
 	}
 	w.Header().Set("Content-Disposition", `attachment; filename="netcap-reproduction-metadata.json"`)
 	RespondJSON(w, http.StatusOK, bundle)
