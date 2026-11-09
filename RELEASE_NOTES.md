@@ -1,3 +1,26 @@
+## Recheck reliability and portable runtimes
+
+`v0.16.3` includes the full recheck-fix branch following v0.16.2.
+
+| Area | Change |
+| --- | --- |
+| TCP and output finalization | Fix queued-overlap page ownership, preserve readable audits on cleanup errors, remove drain-only reader goroutines, and close independent writers concurrently |
+| Linux archives and memory | Relocate absolute ELF dependencies, resolve launcher symlinks, avoid unused host/connection maps, and apply cgroup-aware Go GC headroom while respecting explicit `GOMEMLIMIT` |
+| Protocol recovery | Restore HTTP/SMTP artifacts, support larger FTP transfers, preserve responder-originated HTTP/TLS and post-close commands, and recover additional SMB-carried DCE/RPC |
+| Identity and links | Add NBNS and IEEE 802.15.4 audit records, retain scoped hostname assertions, reject domain/PTR hostname pollution, and handle SLL2 RARP |
+| TLS secrets | Decode supported authenticated TLS 1.2/1.3 HTTP from embedded pcapng NSS key logs; mark decrypted records explicitly |
+| Detection | Retain conflicting-overlap evidence after FIN/RST, aggregate beacon incidents, detect skipped POST polling, cover additional service-control/Netlogon operations, and reduce Redis/SMTP, SSH-role and Apache CVE false positives |
+| Input and replay | Identify captures by content, distinguish partial/unsupported exits, report effective gopacket replacements, and add checksum-pinned resumable corpus replay |
+
+Pre-release checks completed 143/143 MTA captures with no missing tshark HTTP
+requests or baseline artifact hashes, 67/67 FKIE captures, 26/26 PCAP-ATTACK
+captures and 14/14 injection captures. The default IoT-23 1-1 replay completes
+under a 4 GiB Linux container limit. The full 4,695-file Phase B inventory and
+original fact-score corpus remain unverified; aggregate MTA capture time remains
+18.2% above v0.15.2. Follow-up testing is planned.
+
+Full changes: https://github.com/dreadl0ck/netcap/compare/v0.16.2...v0.16.3
+
 ## Stream cleanup and failed-capture diagnostics
 
 `v0.16.2` fixes two regressions found during the v0.16 try/desktop rollout.
