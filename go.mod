@@ -7,11 +7,11 @@ replace github.com/gopacket/gopacket => github.com/dreadl0ck/gopacket v1.1.16-0.
 
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
-	github.com/VirusTotal/yara-x/go v1.22.0 // Paired with scripts/yara-x.env and docker/builders/.
+	github.com/VirusTotal/yara-x/go v1.23.0 // Paired with scripts/yara-x.env and docker/builders/.
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/bufbuild/protocompile v0.14.1
 	github.com/cheggaaa/pb v1.0.30
-	github.com/cheggaaa/pb/v3 v3.2.1
+	github.com/cheggaaa/pb/v3 v3.3.0
 	github.com/corazawaf/coraza-coreruleset/v4 v4.25.0
 	github.com/corazawaf/coraza/v3 v3.8.1
 	github.com/coreos/go-iptables v0.8.0
@@ -53,11 +53,11 @@ require (
 	github.com/urfave/cli/v3 v3.14.0
 	github.com/yosida95/uritemplate/v3 v3.0.2
 	go.uber.org/zap v1.28.0
-	golang.org/x/crypto v0.57.0
+	golang.org/x/crypto v0.58.0
 	golang.org/x/mod v0.42.0
-	golang.org/x/net v0.59.0
+	golang.org/x/net v0.60.0
 	golang.org/x/sys v0.49.0
-	golang.org/x/term v0.46.0
+	golang.org/x/term v0.47.0
 	gonum.org/v1/gonum v0.17.0
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/yaml.v2 v2.4.0
@@ -95,9 +95,9 @@ require (
 	github.com/kaptinlin/jsonschema v0.4.6 // indirect
 	github.com/klauspost/compress v1.20.3 // indirect
 	github.com/magefile/mage v1.17.0 // indirect
-	github.com/mattn/go-colorable v0.1.15 // indirect
+	github.com/mattn/go-colorable v0.1.16 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
-	github.com/mattn/go-runewidth v0.0.27 // indirect
+	github.com/mattn/go-runewidth v0.0.31 // indirect
 	github.com/mdlayher/netlink v1.9.0 // indirect
 	github.com/mdlayher/socket v0.5.1 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
@@ -119,7 +119,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
 	golang.org/x/sync v0.24.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	modernc.org/libc v1.79.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
