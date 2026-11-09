@@ -3,6 +3,7 @@ package dcerpc
 import (
 	"bytes"
 	"encoding/binary"
+	"strings"
 
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 )
@@ -186,7 +187,10 @@ func (t *smbPipeTransport) smb2(message []byte, dir reassembly.TCPFlowDirection,
 							t.fail(r, "short-write")
 						}
 					case 11:
-						if valid(49, 48) && binary.LittleEndian.Uint32(body[4:]) == 0x11c017 && r.pipe != nil && bytes.Equal(body[8:24], r.pipe.id[:]) {
+						if valid(49, 48) && binary.LittleEndian.Uint32(body[4:]) == 0x11c017 && r.pipe != nil && ioctlReplyHandle(body[8:24], r.pipe.id[:]) {
+							if !bytes.Equal(body[8:24], r.pipe.id[:]) && !strings.Contains(r.pipe.c.Ident, "|smb-zero-persistent-id") {
+								r.pipe.c.Ident += "|smb-zero-persistent-id"
+							}
 							count := binary.LittleEndian.Uint32(body[36:])
 							data := smbSlice(frame, binary.LittleEndian.Uint32(body[32:]), count, 112)
 							if count <= r.limit && uint32(len(data)) == count {
@@ -210,4 +214,13 @@ func (t *smbPipeTransport) smb2(message []byte, dir reassembly.TCPFlowDirection,
 		}
 		message = message[next:]
 	}
+}
+
+func ioctlReplyHandle(reply, request []byte) bool {
+	if bytes.Equal(reply, request) {
+		return true
+	}
+	// Some Samba replies zero the persistent half. MID/session/tree and the
+	// nonzero volatile half still correlate this response to the proven pipe.
+	return len(reply) == 16 && len(request) == 16 && binary.LittleEndian.Uint64(reply) == 0 && binary.LittleEndian.Uint64(reply[8:]) != 0 && bytes.Equal(reply[8:], request[8:])
 }

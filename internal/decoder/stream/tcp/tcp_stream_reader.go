@@ -47,22 +47,22 @@ func SetLogger(l *zap.Logger) {
 // this structure has an optimized field order to avoid excessive padding.
 type tcpStreamReader struct {
 	sync.Mutex
-	data        core.DataFragments
-	ident       string
-	parent      *tcpConnection
-	numBytes    int
-	dataChan    chan *core.StreamData
-	hexdump     bool
-	isClient    bool
-	saved       bool
-	closeOnce   sync.Once
-	done        chan struct{}
-	factorySlot int
+	data               core.DataFragments
+	ident              string
+	parent             *tcpConnection
+	numBytes           int
+	dataChan           chan *core.StreamData
+	hexdump            bool
+	isClient           bool
+	saved              bool
+	closeOnce          sync.Once
+	done               chan struct{}
+	factorySlot        int
+	synchronousFactory *connectionFactory
 }
 
 func (t *tcpConnection) newTCPStreamReader(client bool) *tcpStreamReader {
 	return &tcpStreamReader{
-		dataChan:    make(chan *core.StreamData, decoderconfig.Instance.StreamDecoderBufSize),
 		ident:       t.ident,
 		hexdump:     decoderconfig.Instance.HexDump,
 		parent:      t,
@@ -81,6 +81,13 @@ func (t *tcpStreamReader) CloseData() {
 	t.closeOnce.Do(func() {
 		if t.dataChan != nil {
 			close(t.dataChan)
+		} else {
+			if t.synchronousFactory != nil {
+				t.Cleanup(t.synchronousFactory)
+			}
+			if t.done != nil {
+				close(t.done)
+			}
 		}
 	})
 }

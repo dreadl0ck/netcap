@@ -171,6 +171,7 @@ func (d *dcerpcReader) decode(emit func(*types.DCERPC)) {
 	type side struct {
 		data []byte
 		at   int64
+		seen bool
 	}
 	var sides [2]side
 	for _, f := range fragments {
@@ -179,7 +180,7 @@ func (d *dcerpcReader) decode(emit func(*types.DCERPC)) {
 			index = 1
 		}
 		b := &sides[index]
-		if gap, ok := f.(*core.StreamData); ok && gap.SkippedBytes != 0 {
+		if gap, ok := f.(*core.StreamData); ok && gap.HasGap(b.seen) {
 			b.data = nil
 			d.contexts = map[uint16]string{}
 			d.ndr32 = map[uint16]bool{}
@@ -191,6 +192,7 @@ func (d *dcerpcReader) decode(emit func(*types.DCERPC)) {
 			continue
 		}
 		raw := f.Raw()
+		b.seen = b.seen || len(raw) > 0
 		for len(raw) > 0 {
 			if len(b.data) == 0 {
 				b.at = core.FragmentTime(f)

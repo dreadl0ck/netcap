@@ -20,7 +20,6 @@
 package tcp
 
 import (
-	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"strconv"
 	"sync"
@@ -135,7 +134,7 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 	factory.Lock()
 	budget := factory.stateBudget
 	factory.Unlock()
-	credit := int64(4096 + 16*decoderconfig.Instance.StreamDecoderBufSize)
+	credit := int64(4096)
 	if err := budget.Reserve(credit); err != nil {
 		factory.failIncremental(err)
 		return refusedConnection{}
@@ -172,6 +171,7 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 	str.client, str.server = client, server
 
 	factory.wg.Add(2)
+	client.synchronousFactory, server.synchronousFactory = factory, factory
 
 	factory.Lock()
 	str.payloadBudget = factory.payloadBudget
@@ -189,9 +189,8 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 	factory.numActive += 2
 	factory.Unlock()
 
-	// launch stream readers
-	go str.client.Run(factory)
-	go str.server.Run(factory)
+	// StoreData owns each delivery synchronously; no drain-only goroutine or
+	// per-direction buffered channel is needed for production readers.
 
 	return str
 }

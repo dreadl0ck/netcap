@@ -638,8 +638,8 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.IntFlag{
 			Name:    "max-stream-bytes",
-			Value:   10485760,
-			Usage:   "maximum number of bytes to reassemble per stream direction (0 = unlimited, default = 10MB)",
+			Value:   100 << 20,
+			Usage:   "maximum number of bytes to reassemble per stream direction (0 = unlimited)",
 			Sources: cli.EnvVars("NC_MAX_STREAM_BYTES"),
 		},
 		&cli.IntFlag{

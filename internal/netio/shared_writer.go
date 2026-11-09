@@ -32,11 +32,15 @@ import (
 // writerRegistry manages shared writers for the same output file.
 // This prevents race conditions when the same decoder is registered on multiple ports.
 type writerRegistry struct {
-	mu      sync.Mutex
-	writers map[string]*sharedWriterEntry
+	nextGeneration uint64
+	mu             sync.Mutex
+	writers        map[string]*sharedWriterEntry
 }
 
 type sharedWriterEntry struct {
+	generation    uint64
+	closing       bool
+	closed        chan struct{}
 	writer        AuditRecordWriter
 	refCount      int
 	totalRecords  int64
@@ -52,6 +56,8 @@ var globalWriterRegistry = &writerRegistry{
 // localRecords is updated atomically because the same *sharedWriter pointer is
 // reached from multiple decoder worker goroutines (e.g. connection writers).
 type sharedWriter struct {
+	generation   uint64
+	closed       atomic.Bool
 	key          string // registry key (file path)
 	localRecords int64  // records written by this instance (atomic)
 }
@@ -61,6 +67,12 @@ type sharedWriter struct {
 // Otherwise creates a new writer using the provided factory function.
 func (r *writerRegistry) getOrCreateWriter(key string, factory func() AuditRecordWriter) *sharedWriter {
 	r.mu.Lock()
+	for entry := r.writers[key]; entry != nil && entry.closing; entry = r.writers[key] {
+		done := entry.closed
+		r.mu.Unlock()
+		<-done
+		r.mu.Lock()
+	}
 	defer r.mu.Unlock()
 
 	entry, exists := r.writers[key]
@@ -69,25 +81,35 @@ func (r *writerRegistry) getOrCreateWriter(key string, factory func() AuditRecor
 		ioLog.Info("reusing existing writer",
 			zap.String("key", key),
 			zap.Int("refCount", entry.refCount))
-		return &sharedWriter{key: key}
+		return &sharedWriter{key: key, generation: entry.generation}
 	}
 
 	// Create new writer
 	writer := factory()
-	r.writers[key] = &sharedWriterEntry{
-		writer:   writer,
-		refCount: 1,
+	r.nextGeneration++
+	entry = &sharedWriterEntry{
+		generation: r.nextGeneration,
+		writer:     writer,
+		refCount:   1,
+		closed:     make(chan struct{}),
 	}
+	r.writers[key] = entry
 	ioLog.Info("created new shared writer",
 		zap.String("key", key))
 
-	return &sharedWriter{key: key}
+	return &sharedWriter{key: key, generation: entry.generation}
 }
 
 // Write writes a record through the shared writer.
 func (sw *sharedWriter) Write(msg proto.Message) error {
+	if sw.closed.Load() {
+		return nil
+	}
 	globalWriterRegistry.mu.Lock()
 	entry := globalWriterRegistry.writers[sw.key]
+	if entry != nil && (entry.closing || sw.generation != entry.generation) {
+		entry = nil
+	}
 	globalWriterRegistry.mu.Unlock()
 
 	if entry == nil {
@@ -103,11 +125,14 @@ func (sw *sharedWriter) Write(msg proto.Message) error {
 
 // WriteHeader writes the header (only once per shared writer).
 func (sw *sharedWriter) WriteHeader(t types.Type) error {
+	if sw.closed.Load() {
+		return nil
+	}
 	globalWriterRegistry.mu.Lock()
 	defer globalWriterRegistry.mu.Unlock()
 
 	entry := globalWriterRegistry.writers[sw.key]
-	if entry == nil {
+	if entry == nil || entry.closing || sw.generation != entry.generation {
 		return nil // Writer already closed
 	}
 
@@ -125,8 +150,14 @@ func (sw *sharedWriter) WriteHeader(t types.Type) error {
 
 // Flush flushes any buffered data.
 func (sw *sharedWriter) Flush() error {
+	if sw.closed.Load() {
+		return nil
+	}
 	globalWriterRegistry.mu.Lock()
 	entry := globalWriterRegistry.writers[sw.key]
+	if entry != nil && (entry.closing || sw.generation != entry.generation) {
+		entry = nil
+	}
 	globalWriterRegistry.mu.Unlock()
 
 	if entry == nil {
@@ -139,11 +170,14 @@ func (sw *sharedWriter) Flush() error {
 // Close decrements the reference count and closes the underlying writer when it reaches zero.
 // The numRecords parameter is the count from THIS caller, not the total.
 func (sw *sharedWriter) Close(numRecords int64) (name string, size int64) {
+	if sw.closed.Swap(true) {
+		return "", 0
+	}
 	globalWriterRegistry.mu.Lock()
-	defer globalWriterRegistry.mu.Unlock()
 
 	entry := globalWriterRegistry.writers[sw.key]
-	if entry == nil {
+	if entry == nil || entry.closing || sw.generation != entry.generation {
+		globalWriterRegistry.mu.Unlock()
 		return "", 0
 	}
 
@@ -159,20 +193,34 @@ func (sw *sharedWriter) Close(numRecords int64) (name string, size int64) {
 
 	// Only close the actual writer when all references are done
 	if entry.refCount <= 0 {
+		entry.closing = true
+		globalWriterRegistry.mu.Unlock()
 		name, size = entry.writer.Close(entry.totalRecords)
-		delete(globalWriterRegistry.writers, sw.key)
+		globalWriterRegistry.mu.Lock()
+		if globalWriterRegistry.writers[sw.key] == entry {
+			delete(globalWriterRegistry.writers, sw.key)
+		}
+		close(entry.closed)
+		globalWriterRegistry.mu.Unlock()
 		return name, size
 	}
 
 	// More references exist, don't close yet
+	globalWriterRegistry.mu.Unlock()
 	return "", 0
 }
 
 // GetChan returns the underlying writer's record channel, or nil if it is not a channel writer.
 // Every sharedWriter for one key returns the same channel.
 func (sw *sharedWriter) GetChan() <-chan []byte {
+	if sw.closed.Load() {
+		return nil
+	}
 	globalWriterRegistry.mu.Lock()
 	entry := globalWriterRegistry.writers[sw.key]
+	if entry != nil && (entry.closing || sw.generation != entry.generation) {
+		entry = nil
+	}
 	globalWriterRegistry.mu.Unlock()
 
 	if entry == nil {

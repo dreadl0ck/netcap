@@ -241,6 +241,10 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.QUICClientHello)
 	case types.Type_NC_LLMNR:
 		record = new(types.LLMNR)
+	case types.Type_NC_NBNS:
+		record = new(types.NBNS)
+	case types.Type_NC_IEEE802154:
+		record = new(types.IEEE802154)
 	case types.Type_NC_STUN:
 		record = new(types.STUN)
 	case types.Type_NC_Kerberos:

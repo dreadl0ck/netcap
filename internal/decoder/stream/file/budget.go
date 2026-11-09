@@ -50,16 +50,21 @@ func ReadBodyLimit(r io.Reader, limit int64) (body []byte, release func(), err e
 	if limit <= 0 || limit > 100<<20 {
 		limit = 100 << 20
 	}
-	if bufferLimit := GetGlobalConfig().FileExtraction.Reassembly.MaxBufferSize; bufferLimit > 0 {
-		limit = min(limit, bufferLimit)
-	}
 	var reserved int64
+	emptyReads := 0
 	var once sync.Once
 	release = func() { once.Do(func() { releaseBuffer(reserved) }) }
 	for {
 		if int64(len(body)) == limit {
 			var extra [1]byte
 			n, e := r.Read(extra[:])
+			if n == 0 && e == nil {
+				emptyReads++
+				if emptyReads >= 100 {
+					return body, release, io.ErrNoProgress
+				}
+				continue
+			}
 			if n > 0 {
 				return body, release, fmt.Errorf("%w: per-file %d", ErrArtifactLimit, limit)
 			}
@@ -88,7 +93,12 @@ func ReadBodyLimit(r io.Reader, limit int64) (body []byte, release func(), err e
 			return body, release, e
 		}
 		if n == 0 {
-			return body, release, io.ErrNoProgress
+			emptyReads++
+			if emptyReads >= 100 {
+				return body, release, io.ErrNoProgress
+			}
+		} else {
+			emptyReads = 0
 		}
 	}
 }

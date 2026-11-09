@@ -14,7 +14,7 @@ func TestCaptureTimeRulesRefuseMultipleInputs(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("NC_CONFIG_ROOT", filepath.Join(dir, "config"))
 	for _, name := range []string{"a.pcap", "b.pcap"} {
-		if err := os.WriteFile(filepath.Join(dir, name), nil, 0600); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte{0xd4, 0xc3, 0xb2, 0xa1, 2, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0, 0, 1, 0, 0, 0}, 0600); err != nil {
 			t.Fatal(err)
 		}
 	}

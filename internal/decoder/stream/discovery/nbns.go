@@ -188,6 +188,9 @@ func nbnsDecodeName(data []byte, offset int) (string, string, int) {
 	}
 
 	role, _ := nbnsSuffixRoles[suffix]
+	if suffix != 0x00 && suffix != 0x03 && suffix != 0x20 {
+		return "", role, offset // Browser/controller registrations name domains.
+	}
 	return name, role, offset
 }
 

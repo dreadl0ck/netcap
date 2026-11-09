@@ -29,6 +29,7 @@ import (
 	"mime"
 	"os"
 	"path"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -144,9 +145,24 @@ func SaveFileEnhanced(
 		)
 		// Continue with original body if hash computation fails
 		// ComputeContentHash retains the original bytes and their SHA-256 on failure.
+		if cfg.FileExtraction.Advanced.DecodeCompressed && !errors.Is(hashErr, ErrArtifactLimit) && cfg.FileExtraction.SizeLimits.IncludeMissingBytes && len(encoding) == 1 && strings.EqualFold(strings.TrimSpace(encoding[0]), "gzip") {
+			if decoded, release, decodeErr := recoverGzipPrefix(body, GetMaxFileSize()); decoded != nil {
+				prefixErr := SaveFileEnhanced(conv, source+" decoded-prefix", "decoded-"+name, errors.Join(extractionErr, decodeErr), decoded, nil, host, contentType, depth+1, contentInfo.Hash, flowDirection, protocol)
+				release()
+				RecordExtractionIssue(prefixErr)
+			}
+		}
 	}
 	streamMissing, initialLossUnknown := conversationLoss(conv)
 	var completeness []string
+	for _, fragment := range conv.Data {
+		if d, ok := fragment.(*core.StreamData); ok && d.TCPObservation != "" {
+			qualification := "transport-" + d.TCPObservation
+			if !slices.Contains(completeness, qualification) {
+				completeness = append(completeness, qualification)
+			}
+		}
+	}
 	if extractionErr != nil {
 		completeness = append(completeness, "extraction-error")
 	}

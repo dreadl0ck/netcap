@@ -73,6 +73,10 @@ func (h *httpReader) decodeDirections() {
 		c.FirstClientPacket, c.FirstServerPacket = c.FirstServerPacket, c.FirstClientPacket
 		h.conversation = &c
 	}
+	h.directionalEvidence = directions
+	if h.artifactRecovery && bytes.HasPrefix(prefix(directions[0]), []byte(http2.ClientPreface)) {
+		return
+	}
 	if bytes.HasPrefix(prefix(directions[0]), []byte(http2.ClientPreface)) {
 		h.decodeH2(directions, nil)
 		return

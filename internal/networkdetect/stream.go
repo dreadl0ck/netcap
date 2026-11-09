@@ -8,23 +8,26 @@ import (
 )
 
 type direction struct {
-	next    uint32
-	started bool
-	prefix  []byte
-	bytes   uint64
-	gap     bool
-	ftpLine []byte
+	next      uint32
+	started   bool
+	prefix    []byte
+	prefixSeq uint32
+	bytes     uint64
+	gap       bool
+	ftpLine   []byte
 }
 type flow struct {
-	synSequence uint32
-	client      string
-	first       int64
-	last        int64
-	directions  map[string]*direction
-	ssh         bool
-	ftp         *ftpControl
-	ftpDisabled bool
-	ftpData     bool
+	synSequence   uint32
+	client        string
+	first         int64
+	last          int64
+	directions    map[string]*direction
+	ssh           bool
+	ftp           *ftpControl
+	ftpDisabled   bool
+	ftpData       bool
+	serverSynSeen bool
+	serverISN     uint32
 }
 
 func endpoint(ip string, port uint16) string { return fmt.Sprintf("%s/%d", ip, port) }
@@ -79,7 +82,11 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 	}
 	if !d.started {
 		d.next = ev.Seq
+		d.prefixSeq = ev.Seq
 		d.started = true
+	}
+	if len(d.prefix) == 0 {
+		d.prefixSeq = d.next
 	}
 	delta := int32(ev.Seq - d.next)
 	if delta > 0 {
@@ -92,6 +99,20 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 	}
 	payload := ev.Payload
 	if delta < 0 {
+		start := int64(int32(ev.Seq - d.prefixSeq))
+		begin := max(int64(0), -start)
+		end := min(int64(len(ev.Payload)), int64(len(d.prefix))-start, -int64(delta))
+		conflicts := uint64(0)
+		for i := begin; i < end; i++ {
+			if ev.Payload[i] != d.prefix[start+i] {
+				conflicts++
+			}
+		}
+		if conflicts > 0 {
+			e.stats.ConflictingOverlaps++
+			e.stats.ConflictingOverlapBytes += conflicts
+			add("tcp.overlap-conflict", "behavioral-suspicion", "medium", "T1557", conflicts, 1, []string{"Different bytes at already observed TCP sequence positions within the retained 4096-byte prefix"}, f.first, nil, "First-arrival decoding is retained; packet evidence is needed to determine which bytes the endpoint accepted")
+		}
 		skip := -int64(delta)
 		if skip >= int64(len(payload)) {
 			return
@@ -119,7 +140,7 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 			if source != f.client && f.client != "" {
 				port = ev.SrcPort
 			}
-			if port != 22 {
+			if port != 22 && ev.SrcPort != 22 && ev.DstPort != 22 && f.client != "" {
 				add("ssh.nonstandard-port", "behavioral-suspicion", "medium", "T1571", uint64(port), 22, []string{"SSH version banner"}, f.first, nil, "SSH service identification does not establish exfiltration")
 			}
 		}
@@ -145,7 +166,8 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 		add("protocol.irc", "policy-observation", "info", "", 1, 1, []string{"IRC NICK and USER commands"}, f.first, nil, "IRC is also used legitimately")
 	}
 	tlsRecord := len(d.prefix) >= 5 && d.prefix[0] >= 20 && d.prefix[0] <= 23 && d.prefix[1] == 3 && d.prefix[2] <= 4 && binary.BigEndian.Uint16(d.prefix[3:5]) <= 18432
-	if f.client != "" && d.bytes >= 128 && (ev.DstPort == 443 || ev.SrcPort == 443) && !tlsRecord && !f.ssh {
+	sslV2 := len(d.prefix) >= 11 && d.prefix[0]&0x80 != 0 && d.prefix[2] == 1 && (d.prefix[3] == 3 || d.prefix[3] == 0 && d.prefix[4] == 2)
+	if source == f.client && d.bytes >= 128 && ev.DstPort == 443 && !tlsRecord && !sslV2 && !f.ssh {
 		add("policy.non-tls-on-443", "policy-observation", "low", "T1571", d.bytes, 128, []string{"At least 128 contiguous TCP payload bytes whose prefix is not a TLS record"}, f.first, nil, "A non-TLS prefix on TCP/443 can be intentional or precede a protocol upgrade; C2 intent is not established")
 	}
 	if len(d.prefix) >= 64 && (ev.DstPort == 21 || ev.DstPort == 23 || ev.DstPort == 110 || ev.DstPort == 143 || ev.DstPort == 873) && !f.ssh && !tlsRecord {

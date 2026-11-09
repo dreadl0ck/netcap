@@ -4,9 +4,9 @@
     "Name": "intel.imposter",
     "Description": "intel.imposter: indicator-match",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "57587",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "imposter.example",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "intel.imposter",
@@ -23,14 +23,14 @@
     "FirstSeen": 1791363753472298000,
     "LastSeen": 1791363753574552000,
     "Examples": [
-      "{\"at\":1791363753472298000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753472298000,\"samples\":[\"imposter.example\"]}",
-      "{\"at\":1791363753472336000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753472336000,\"samples\":[\"imposter.example\"]}",
-      "{\"at\":1791363753478351000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753478351000,\"samples\":[\"imposter.example\"]}",
-      "{\"at\":1791363753478431000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753478431000,\"samples\":[\"imposter.example\"]}",
-      "{\"at\":1791363753484909000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753484909000,\"samples\":[\"imposter.example\"]}",
-      "{\"at\":1791363753484936000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753484936000,\"samples\":[\"imposter.example\"]}",
-      "{\"at\":1791363753491248000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753491248000,\"samples\":[\"imposter.example\"]}",
-      "{\"at\":1791363753574552000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753574552000,\"samples\":[\"imposter.example\"]}"
+      "{\"at\":1791363753472298000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"57587\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753472298000,\"samples\":[\"imposter.example\"]}",
+      "{\"at\":1791363753472336000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55332\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753472336000,\"samples\":[\"imposter.example\"]}",
+      "{\"at\":1791363753478351000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"58430\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753478351000,\"samples\":[\"imposter.example\"]}",
+      "{\"at\":1791363753478431000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"35711\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753478431000,\"samples\":[\"imposter.example\"]}",
+      "{\"at\":1791363753484909000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"51377\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753484909000,\"samples\":[\"imposter.example\"]}",
+      "{\"at\":1791363753484936000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55118\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753484936000,\"samples\":[\"imposter.example\"]}",
+      "{\"at\":1791363753491248000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"36015\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753491248000,\"samples\":[\"imposter.example\"]}",
+      "{\"at\":1791363753574552000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"53842\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"imposter.example\",\"observed\":1,\"firstSeen\":1791363753574552000,\"samples\":[\"imposter.example\"]}"
     ]
   }
 ]

@@ -4,9 +4,9 @@
     "Name": "dns.dga",
     "Description": "dns.dga: behavioral-suspicion",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "47502",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "MITRE": "T1568.002",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "dns.dga",
@@ -23,14 +23,14 @@
     "FirstSeen": 1791363750919283000,
     "LastSeen": 1791363750958214000,
     "Examples": [
-      "{\"at\":1791363750919283000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":10,\"firstSeen\":1791363750865210000,\"samples\":[\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\",\"suycr1ax.com\"]}",
-      "{\"at\":1791363750919429000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":10,\"firstSeen\":1791363750865210000,\"samples\":[\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\",\"suycr1ax.com\"]}",
-      "{\"at\":1791363750928181000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":11,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\"]}",
-      "{\"at\":1791363750928217000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":11,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\"]}",
-      "{\"at\":1791363750931774000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":12,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"bhfy6vdn.com\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\"]}",
-      "{\"at\":1791363750931798000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":12,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"bhfy6vdn.com\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\"]}",
-      "{\"at\":1791363750937091000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":13,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"bhfy6vdn.com\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\"]}",
-      "{\"at\":1791363750958214000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"observed\":15,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"3nwllcmp.com\",\"bhfy6vdn.com\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\"]}"
+      "{\"at\":1791363750919283000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"47502\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"observed\":10,\"firstSeen\":1791363750865210000,\"samples\":[\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\",\"suycr1ax.com\"]}",
+      "{\"at\":1791363750919429000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"48719\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"observed\":10,\"firstSeen\":1791363750865210000,\"samples\":[\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\",\"suycr1ax.com\"]}",
+      "{\"at\":1791363750928181000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55700\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"observed\":11,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\"]}",
+      "{\"at\":1791363750928217000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"48271\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"observed\":11,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\"]}",
+      "{\"at\":1791363750931774000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"39305\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"observed\":12,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"bhfy6vdn.com\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\"]}",
+      "{\"at\":1791363750931798000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55024\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"observed\":12,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"bhfy6vdn.com\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\"]}",
+      "{\"at\":1791363750937091000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"46586\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"observed\":13,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"bhfy6vdn.com\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\"]}",
+      "{\"at\":1791363750958214000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"58188\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"observed\":15,\"firstSeen\":1791363750865210000,\"samples\":[\"0fqdrekj.xyz\",\"3nwllcmp.com\",\"bhfy6vdn.com\",\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\"]}"
     ]
   }
 ]

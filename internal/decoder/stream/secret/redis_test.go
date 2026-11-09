@@ -46,7 +46,7 @@ func TestRedisHarvester_ValidAuth(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			result := redisHarvesterFunc([]byte(tc.data), "test-flow", ts)
+			result := redisHarvesterFunc([]byte(tc.data), "192.0.2.1:12345->192.0.2.2:6379", ts)
 			if tc.expectNil {
 				if result != nil {
 					t.Errorf("Expected nil, got credential with Password=%q", result.Password)
@@ -106,5 +106,19 @@ func TestRedisHarvester_FalsePositives(t *testing.T) {
 				t.Errorf("Expected nil for false positive %q, got credential with Password=%q", tc.name, result.Password)
 			}
 		})
+	}
+}
+
+func TestRedisRequiresProtocolContextOutsideServicePorts(t *testing.T) {
+	flow := "192.0.2.1:12345->192.0.2.2:25"
+	for _, data := range []string{"EHLO client\r\nAUTH LOGIN\r\n", "AUTH PLAIN dGVzdA==\r\n", "AUTH LOGIN dGVzdA==\r\n", "AUTH arbitrary\r\n", "*2\r\n$4\r\nAUTH\r\n$99999999999999999999999999\r\nx\r\n", "*2\r\n$4\r\nAUTH\r\n$4\r\npassXX"} {
+		if redisHarvesterFunc([]byte(data), flow, time.Unix(1, 0)) != nil {
+			t.Fatal("unqualified AUTH accepted")
+		}
+	}
+	for _, data := range []string{"AUTH arbitrary\r\n+OK\r\n", "*2\r\n$4\r\nAUTH\r\n$4\r\npass\r\n"} {
+		if redisHarvesterFunc([]byte(data), flow, time.Unix(1, 0)) == nil {
+			t.Fatal("framed Redis on nonstandard port lost")
+		}
 	}
 }

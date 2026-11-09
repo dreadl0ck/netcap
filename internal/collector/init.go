@@ -34,6 +34,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
+	"github.com/dreadl0ck/netcap/internal/tlsdecrypt"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -70,11 +71,19 @@ func (c *Collector) Init() (err error) {
 		return err
 	}
 	// set configuration for decoder pkgs
+	if c.captureKind != "file" || c.config.DecoderConfig.TLSSecrets == nil {
+		c.config.DecoderConfig.TLSSecrets = tlsdecrypt.NewSecrets()
+	}
 	c.config.DecoderConfig.PerfTracker = c.perfTracker
 	packet.SetConfig(c.config.DecoderConfig)
 
 	// Wire up device enrichment callback for network discovery protocols
 	streamutils.DeviceEnricher = func(ip string, hostnames, deviceTypes, roles []string, os string) {
+		c.analysisMu.Lock()
+		if bound, ok := c.ipScopes[ip]; ok && !bound.Ambiguous && c.hostIdentity != nil {
+			c.hostIdentity.Discover(bound.Key, ip, hostnames)
+		}
+		c.analysisMu.Unlock()
 		if dp := packet.DeviceProfiles.FindByIP(ip); dp != nil {
 			dp.EnrichFromDiscovery(hostnames, deviceTypes, roles, os)
 		}

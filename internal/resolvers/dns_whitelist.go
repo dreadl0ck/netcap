@@ -303,6 +303,9 @@ func InitDNSWhitelist() error {
 	} else {
 		list, stats, err = LoadDomainPopularityList(path, format, DataBaseFolderPath)
 	}
+	if path == "" && os.IsNotExist(err) {
+		return nil // The optional managed list is absent; no popularity suppression.
+	}
 	log.Printf("domain popularity: rows=%d loaded=%d duplicates=%d invalid=%d skipped=%d error=%v", stats.Rows, stats.Loaded, stats.Duplicates, stats.Invalid, stats.Skipped, err)
 	if err != nil {
 		return fmt.Errorf("domain popularity: %w (update databases or use --no-domain-popularity)", err)

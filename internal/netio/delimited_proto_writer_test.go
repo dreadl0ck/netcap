@@ -17,7 +17,7 @@ import (
 
 func TestProtoWriterBufferReuse(t *testing.T) {
 	var got, want bytes.Buffer
-	w := &protoWriter{wc: &WriterConfig{PerfTracker: performance.NewTracker()}, pWriter: newDelimitedProtoWriter(delimited.NewWriter(&got))}
+	w := &protoWriter{initialized: true, wc: &WriterConfig{PerfTracker: performance.NewTracker()}, pWriter: newDelimitedProtoWriter(delimited.NewWriter(&got))}
 	baseline := delimited.NewWriter(&want)
 	for _, size := range []int{0, 64, 65536, 17, 2 << 20, 32, 0} {
 		msg := &types.TCP{SrcIP: "192.0.2.1", Payload: bytes.Repeat([]byte{'x'}, size)}

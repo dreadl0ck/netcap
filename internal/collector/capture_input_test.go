@@ -114,12 +114,16 @@ func TestCaptureInputMixedInterfaces(t *testing.T) {
 		result := runInputRepro(t, path, out, workers)
 		var report CaptureInputReport
 		readInputJSON(t, filepath.Join(out, "capture-input.json"), &report)
-		if result.Packets != 8 || result.Error == "" || report.Status != "unsupported" || report.Unsupported != 2 || report.DecodeErrors != 0 || report.CountedPackets != 8 {
+		if result.Packets != 8 || result.Error == "" || report.Status != "unsupported" || report.Unsupported != 1 || report.DecodeErrors != 0 || report.CountedPackets != 8 {
 			t.Fatalf("mixed: %+v %+v", result, report)
 		}
 		udp := bookRecords(t, out, "UDP", func() *types.UDP { return &types.UDP{} })
 		if len(udp) != 5 {
 			t.Fatalf("expected exactly five UDP packets, got %d", len(udp))
+		}
+		mac := bookRecords(t, out, "IEEE802154", func() *types.IEEE802154 { return &types.IEEE802154{} })
+		if len(mac) != 2 {
+			t.Fatalf("expected two MAC audit records, got %d", len(mac))
 		}
 		var capture evidence.CaptureManifest
 		readInputJSON(t, filepath.Join(out, "capture-manifest.json"), &capture)
@@ -192,7 +196,7 @@ func TestCaptureInputDecodeQualification(t *testing.T) {
 				result := runInputRepro(t, path, out, workers)
 				var report CaptureInputReport
 				readInputJSON(t, filepath.Join(out, "capture-input.json"), &report)
-				if result.Packets != 3 || (result.Error != "") != (tc.link > 0) || report.Status != tc.status || report.LinkErrors != tc.link || report.DecodeErrors != tc.decode || report.CountedPackets != 3 || report.ProcessedPackets != 3 || report.ReadErrors != 0 || !report.ReachedEOF {
+				if result.Packets != 3 || result.Error != "" || report.Status != tc.status || report.LinkErrors != tc.link || report.DecodeErrors != tc.decode || report.CountedPackets != 3 || report.ProcessedPackets != 3 || report.ReadErrors != 0 || !report.ReachedEOF {
 					t.Fatalf("result=%+v report=%+v", result, report)
 				}
 				udp := bookRecords(t, out, "UDP", func() *types.UDP { return &types.UDP{} })
@@ -211,7 +215,7 @@ func TestCaptureInputDecodeQualification(t *testing.T) {
 				readInputJSON(t, filepath.Join(out, "capture-manifest.json"), &capture)
 				wantStatus := "done"
 				if tc.link > 0 {
-					wantStatus = "error"
+					wantStatus = "partial"
 				}
 				if capture.Status != wantStatus || capture.IngressPackets != 3 {
 					t.Fatalf("wrong input coverage: %+v", capture)

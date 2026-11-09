@@ -233,6 +233,11 @@ func matchScore(sd core.StreamDecoderAPI, in *SelectionInput, portPass bool) (in
 		client, server = in.PortClient, in.PortServer
 	}
 	if !sd.CanDecodeStream(client, server) {
+		if in.Transport == core.TCP && in.Conversation != nil && in.Conversation.TCPHandshakeComplete && bytes.Equal(client, []byte("QUIT\r\n")) && len(server) == 0 {
+			if sd.GetName() == "FTP" && in.ServerPort == 21 || sd.GetName() == "SMTP" && (in.ServerPort == 25 || in.ServerPort == 587) {
+				return core.SpecificityWeak, true
+			}
+		}
 		if sd.GetName() == "POP3" && in.ServerPort == 110 && (bytes.HasPrefix(server, []byte("+OK ")) || bytes.HasPrefix(server, []byte("+OK\r\n"))) {
 			return core.SpecificityWeak, true
 		}

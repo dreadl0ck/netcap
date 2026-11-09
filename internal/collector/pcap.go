@@ -227,6 +227,28 @@ func IsPcap(file string) (bool, error) {
 	}
 }
 
+// IsCapture recognizes supported capture containers independently of filenames.
+func IsCapture(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	s, err := newCaptureStream(f)
+	if err != nil {
+		return false
+	}
+	var magic [4]byte
+	if _, err := io.ReadFull(s.r, magic[:]); err != nil {
+		return false
+	}
+	switch binary.BigEndian.Uint32(magic[:]) {
+	case 0xa1b2c3d4, 0xd4c3b2a1, 0xa1b23c4d, 0x4d3cb2a1, 0x0a0d0d0a:
+		return true
+	}
+	return false
+}
+
 // countPackets returns the number of packets in a PCAP file.
 func countPackets(path string) (count int64, err error) {
 	return countCaptureInput(context.Background(), path, false)

@@ -4,9 +4,9 @@
     "Name": "policy.telegram-api",
     "Description": "policy.telegram-api: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "41844",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "api.telegram.org",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.telegram-api",
@@ -23,8 +23,8 @@
     "FirstSeen": 1791363821205349000,
     "LastSeen": 1791363821205489000,
     "Examples": [
-      "{\"at\":1791363821205349000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"api.telegram.org\",\"observed\":1,\"firstSeen\":1791363821205349000,\"samples\":[\"api.telegram.org\"]}",
-      "{\"at\":1791363821205489000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"api.telegram.org\",\"observed\":1,\"firstSeen\":1791363821205489000,\"samples\":[\"api.telegram.org\"]}"
+      "{\"at\":1791363821205349000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"41844\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"api.telegram.org\",\"observed\":1,\"firstSeen\":1791363821205349000,\"samples\":[\"api.telegram.org\"]}",
+      "{\"at\":1791363821205489000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"48315\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"api.telegram.org\",\"observed\":1,\"firstSeen\":1791363821205489000,\"samples\":[\"api.telegram.org\"]}"
     ]
   }
 ]

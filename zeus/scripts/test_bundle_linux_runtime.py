@@ -2,6 +2,7 @@ import importlib.util
 from pathlib import Path
 import unittest
 import tempfile
+import subprocess
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("bundle", Path(__file__).with_name("bundle-linux-runtime.py"))
@@ -10,6 +11,22 @@ spec.loader.exec_module(module)
 
 
 class RuntimeDependencies(unittest.TestCase):
+    def test_launcher_resolves_relative_and_absolute_symlink_chains(self):
+        with tempfile.TemporaryDirectory(prefix='netcap archive ') as folder:
+            root = Path(folder)
+            (root / 'lib').mkdir()
+            loader = root / 'lib' / 'loader'
+            loader.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n')
+            loader.chmod(0o755)
+            entry = root / 'net'
+            entry.write_text(module.launcher('loader'))
+            entry.chmod(0o755)
+            (root / 'relative').symlink_to('net')
+            (root / 'absolute').symlink_to(root / 'relative')
+            for name in ('net', 'relative', 'absolute'):
+                output = subprocess.check_output([str(root / name), 'argument with spaces'], text=True)
+                self.assertEqual(output.splitlines(), ['--library-path', str(root / 'lib'), str(root / 'lib/net.bin'), 'argument with spaces'])
+
     def test_incompatible_image_fails_before_launch_or_copy(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(module.subprocess, 'check_output', return_value='linux/arm64\n') as execute:
             with self.assertRaisesRegex(ValueError, 'linux/amd64 only'):

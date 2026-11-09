@@ -165,6 +165,19 @@ func (e *Engine) account(scope, ip, name, domain, source, flow string, at int64)
 }
 func (e *Engine) Observe(scope string, m proto.Message) {
 	switch r := m.(type) {
+	case *types.NBNS:
+		if r.ResponseCode != 0 || !r.Response && r.OpCode != 5 && r.OpCode != 8 {
+			return
+		}
+		for _, n := range r.Names {
+			if n.Section == "question" || n.Group || n.Type != 0x20 || n.IP == "" || n.Suffix != 0 && n.Suffix != 3 && n.Suffix != 0x20 {
+				continue
+			}
+			if !r.Response && n.IP != r.SrcIP {
+				continue
+			}
+			e.add(scope, n.IP, "hostname", n.Name, "NBNS address assertion", "community:"+r.CommunityID, r.Timestamp)
+		}
 	case *types.Secret:
 		if r.Service == secret.IdentityService {
 			if ip, _, _, _, ok := secret.SecretEndpoints(r.Flow); ok {
@@ -257,6 +270,32 @@ func (e *Engine) Seed(scope string, p *types.DeviceProfile) {
 		}
 	}
 }
+
+func (e *Engine) Discover(scope, ip string, names []string) {
+	for _, name := range names {
+		e.add(scope, ip, "hostname", name, "discovery address assertion", "", 0)
+	}
+}
+
+// SeedBoundProfile covers captures with link-source observations but no ARP/DHCP.
+// A MAC carrying several IPs is a possible gateway, so it cannot transfer names.
+func (e *Engine) SeedBoundProfile(p *types.DeviceProfile) {
+	var candidate *state
+	for _, h := range e.hosts {
+		if _, ok := h.bindings[p.MacAddr]; !ok {
+			continue
+		}
+		if candidate != nil {
+			return
+		}
+		candidate = h
+	}
+	if candidate != nil {
+		for _, name := range p.Hostnames {
+			e.add(candidate.host.Scope, candidate.host.IP, "hostname", name, "profile with unique link-source binding", "", 0)
+		}
+	}
+}
 func (e *Engine) Report() Report {
 	r := Report{Schema: 1, Overflow: e.overflow, Limitations: []string{"Bindings retain competing MAC observations; link-source counts alone do not establish IP ownership", "Directory names are joined to observed accounts, never to an LDAP/RPC server merely carrying the response", "Unknown or conflicting identities are retained; absence is not proof of no account"}}
 	directoryIndex := map[string][]directory{}
@@ -280,7 +319,7 @@ func (e *Engine) Report() Report {
 		names := map[string]string{}
 		for _, v := range h.Evidence {
 			if v.Kind == "hostname" {
-				key := strings.ToLower(v.Value)
+				key := strings.TrimSuffix(strings.TrimSuffix(strings.ToLower(v.Value), "."), ".local")
 				if old, ok := names[key]; !ok || v.Value < old {
 					names[key] = v.Value
 				}

@@ -322,7 +322,7 @@ func TestSMTPRelayRolesAreDetectorSpecific(t *testing.T) {
 				events = append(events, ev)
 			}
 			alerts, stats := packetReplay(t, c, events)
-			expected := mode == "inbound-relay" || mode == "outbound-relay" || mode == "internal-relay"
+			expected := mode == "inbound-relay" || mode == "outbound-relay" || mode == "internal-relay" || mode == "unknown" || mode == "relay-only" || mode == "networks-only"
 			if expected {
 				if len(alerts) != 0 || stats.SMTPRelayExclusions != 15 {
 					t.Fatal(alerts, stats)

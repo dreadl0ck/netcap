@@ -97,6 +97,11 @@ func canonicalIdentity(vendor, product, version string) (Identity, bool) {
 	return Identity{"a", v, p, version}, true
 }
 
+// CanonicalSoftwareIdentity exposes the same explicit aliases for audit deduplication.
+func CanonicalSoftwareIdentity(vendor, product, version string) (Identity, bool) {
+	return canonicalIdentity(vendor, product, version)
+}
+
 // Three-valued results prevent an unobserved OS/edition prerequisite becoming a match.
 type truth uint8
 

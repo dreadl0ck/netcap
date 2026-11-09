@@ -373,7 +373,9 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 		}
 		t.client.StoreData(streamData)
 		if t.incremental == nil {
-			t.client.DataChan() <- streamData
+			if ch := t.client.DataChan(); ch != nil {
+				ch <- streamData
+			}
 		} else {
 			t.pushIncremental(streamData)
 		}
@@ -387,7 +389,9 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 		}
 		t.server.StoreData(streamData)
 		if t.incremental == nil {
-			t.server.DataChan() <- streamData
+			if ch := t.server.DataChan(); ch != nil {
+				ch <- streamData
+			}
 		} else {
 			t.pushIncremental(streamData)
 		}
@@ -812,17 +816,14 @@ func CleanupReassembly(_ bool, assemblers []*reassembly.Assembler) {
 	}
 
 	// Flush every private pool while reader channels can still receive data.
-	for i, a := range assemblers {
+	closed := reassembly.FlushIndependent(assemblers)
+	for i := range assemblers {
 		reassemblyLog.Info("flushing tcp assembler",
 			zap.Int("current", i+1),
 			zap.Int("numAssemblers", len(assemblers)),
 		)
 
-		if i == 0 && (!decoderconfig.Instance.Quiet || decoderconfig.Instance.PrintProgress) && numTotal > 1 {
-			reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAllProgress()))
-		} else {
-			reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAll()))
-		}
+		reassemblyLog.Info("assembler flush", zap.Int("closed", closed[i]))
 	}
 
 	CloseStreamReaderChannelsAndWait()

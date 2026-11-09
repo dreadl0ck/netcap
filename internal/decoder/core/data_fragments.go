@@ -21,6 +21,7 @@ package core
 
 import (
 	"bytes"
+	"github.com/dreadl0ck/netcap/internal/packetview"
 	"io"
 	"time"
 )
@@ -38,14 +39,13 @@ type DataFragments []dataFragment
 // queued. Sorting the concatenation instead reorders bytes within a direction
 // and corrupts every consumer that reads the result as a byte stream.
 //
-// Fragments with equal timestamps - such as the pages a single large segment
-// is split into - keep their input order, with a taking precedence over b.
+// Equal timestamps use capture ordinals when available; otherwise a precedes b.
 func MergeByTimestamp(a, b DataFragments) DataFragments {
 	merged := make(DataFragments, 0, len(a)+len(b))
 
 	var i, j int
 	for i < len(a) && j < len(b) {
-		if fragmentTimestamp(a[i]).After(fragmentTimestamp(b[j])) {
+		if FragmentBefore(b[j], a[i]) {
 			merged = append(merged, b[j])
 			j++
 
@@ -68,7 +68,28 @@ func fragmentTimestamp(d dataFragment) time.Time {
 		return ctx.GetCaptureInfo().Timestamp
 	}
 
-	return time.Time{}
+	return d.CaptureInfo().Timestamp
+}
+
+// FragmentBefore uses original capture order to disambiguate coarse timestamps.
+// It is used only between directions; stream byte order remains authoritative.
+func FragmentBefore(a, b dataFragment) bool {
+	at, bt := fragmentTimestamp(a), fragmentTimestamp(b)
+	if !at.Equal(bt) {
+		return at.Before(bt)
+	}
+	ordinal := func(d dataFragment) uint64 {
+		ci := d.CaptureInfo()
+		if c := d.Context(); c != nil {
+			ci = c.GetCaptureInfo()
+		}
+		if c := packetview.FromCapture(ci); c != nil && len(c.Packets) > 0 {
+			return c.Packets[0].Ordinal
+		}
+		return 0
+	}
+	x, y := ordinal(a), ordinal(b)
+	return x != 0 && y != 0 && x < y
 }
 
 // Size returns the fragments total data size.
@@ -156,14 +177,7 @@ func (d DataFragments) Len() int {
 
 // Less will check if the value at index i is less than the one at index j.
 func (d DataFragments) Less(i, j int) bool {
-	data1 := d[i]
-	data2 := d[j]
-
-	if data1.Context() == nil || data2.Context() == nil {
-		return false
-	}
-
-	return data1.Context().GetCaptureInfo().Timestamp.Before(data2.Context().GetCaptureInfo().Timestamp)
+	return FragmentBefore(d[i], d[j])
 }
 
 // Swap will flip both values.

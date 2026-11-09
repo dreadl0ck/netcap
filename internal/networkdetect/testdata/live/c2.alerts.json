@@ -4,9 +4,9 @@
     "Name": "intel.c2",
     "Description": "intel.c2: indicator-match",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "38420",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "c2.example",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "intel.c2",
@@ -23,14 +23,14 @@
     "FirstSeen": 1791363748225784000,
     "LastSeen": 1791363748346969000,
     "Examples": [
-      "{\"at\":1791363748225784000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748225784000,\"samples\":[\"c2.example\"]}",
-      "{\"at\":1791363748225814000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748225814000,\"samples\":[\"c2.example\"]}",
-      "{\"at\":1791363748232724000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748232724000,\"samples\":[\"c2.example\"]}",
-      "{\"at\":1791363748232754000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748232754000,\"samples\":[\"c2.example\"]}",
-      "{\"at\":1791363748241557000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748241557000,\"samples\":[\"c2.example\"]}",
-      "{\"at\":1791363748241593000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748241593000,\"samples\":[\"c2.example\"]}",
-      "{\"at\":1791363748246833000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748246833000,\"samples\":[\"c2.example\"]}",
-      "{\"at\":1791363748346969000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748346969000,\"samples\":[\"c2.example\"]}"
+      "{\"at\":1791363748225784000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"38420\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748225784000,\"samples\":[\"c2.example\"]}",
+      "{\"at\":1791363748225814000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"41085\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748225814000,\"samples\":[\"c2.example\"]}",
+      "{\"at\":1791363748232724000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"45043\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748232724000,\"samples\":[\"c2.example\"]}",
+      "{\"at\":1791363748232754000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"39362\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748232754000,\"samples\":[\"c2.example\"]}",
+      "{\"at\":1791363748241557000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"36343\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748241557000,\"samples\":[\"c2.example\"]}",
+      "{\"at\":1791363748241593000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"37384\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748241593000,\"samples\":[\"c2.example\"]}",
+      "{\"at\":1791363748246833000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"38481\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748246833000,\"samples\":[\"c2.example\"]}",
+      "{\"at\":1791363748346969000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"44878\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"c2.example\",\"observed\":1,\"firstSeen\":1791363748346969000,\"samples\":[\"c2.example\"]}"
     ]
   },
   {

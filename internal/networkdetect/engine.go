@@ -20,6 +20,7 @@ type Scope struct {
 
 // Event is capture-derived; fixture scenario labels are never detector inputs.
 type Event struct {
+	Ack     uint32 `json:"ack,omitempty"`
 	At      int64  `json:"at"`
 	Scope   Scope  `json:"scope"`
 	Kind    string `json:"kind"`
@@ -49,29 +50,31 @@ type Evidence struct {
 }
 
 type Stats struct {
-	Matches                uint64 `json:"matches"`
-	PendingAggregates      int    `json:"pendingAggregates"`
-	CapacityFlushes        uint64 `json:"capacityFlushes"`
-	FTPDataExclusions      uint64 `json:"ftpDataExclusions"`
-	SMTPRelayExclusions    uint64 `json:"smtpRelayExclusions"`
-	AggregationMode        string `json:"aggregationMode,omitempty"`
-	ApplicationMode        string `json:"applicationMode,omitempty"`
-	ApplicationAlerts      uint64 `json:"applicationAlerts,omitempty"`
-	ApplicationQueuedBytes int64  `json:"applicationQueuedBytes,omitempty"`
-	ApplicationPeakBytes   int64  `json:"applicationPeakBytes,omitempty"`
-	ApplicationQueueLimit  int64  `json:"applicationQueueLimit,omitempty"`
-	ApplicationQueueDrops  uint64 `json:"applicationQueueDrops,omitempty"`
-	ApplicationLate        uint64 `json:"applicationLate,omitempty"`
-	Schema                 int    `json:"schema"`
-	Events                 uint64 `json:"events"`
-	Alerts                 uint64 `json:"alerts"`
-	Overflow               uint64 `json:"overflow"`
-	Late                   uint64 `json:"late"`
-	StreamGaps             uint64 `json:"streamGaps"`
-	Keys                   int    `json:"keys"`
-	Flows                  int    `json:"flows"`
-	Indicators             int    `json:"indicators"`
-	Error                  string `json:"error,omitempty"`
+	ConflictingOverlaps     uint64 `json:"conflictingOverlaps,omitempty"`
+	ConflictingOverlapBytes uint64 `json:"conflictingOverlapBytes,omitempty"`
+	Matches                 uint64 `json:"matches"`
+	PendingAggregates       int    `json:"pendingAggregates"`
+	CapacityFlushes         uint64 `json:"capacityFlushes"`
+	FTPDataExclusions       uint64 `json:"ftpDataExclusions"`
+	SMTPRelayExclusions     uint64 `json:"smtpRelayExclusions"`
+	AggregationMode         string `json:"aggregationMode,omitempty"`
+	ApplicationMode         string `json:"applicationMode,omitempty"`
+	ApplicationAlerts       uint64 `json:"applicationAlerts,omitempty"`
+	ApplicationQueuedBytes  int64  `json:"applicationQueuedBytes,omitempty"`
+	ApplicationPeakBytes    int64  `json:"applicationPeakBytes,omitempty"`
+	ApplicationQueueLimit   int64  `json:"applicationQueueLimit,omitempty"`
+	ApplicationQueueDrops   uint64 `json:"applicationQueueDrops,omitempty"`
+	ApplicationLate         uint64 `json:"applicationLate,omitempty"`
+	Schema                  int    `json:"schema"`
+	Events                  uint64 `json:"events"`
+	Alerts                  uint64 `json:"alerts"`
+	Overflow                uint64 `json:"overflow"`
+	Late                    uint64 `json:"late"`
+	StreamGaps              uint64 `json:"streamGaps"`
+	Keys                    int    `json:"keys"`
+	Flows                   int    `json:"flows"`
+	Indicators              int    `json:"indicators"`
+	Error                   string `json:"error,omitempty"`
 }
 
 type window struct {
@@ -225,11 +228,11 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 	switch ev.Kind {
 	case "dns":
 		label, parent, _ := strings.Cut(ev.Name, ".")
-		if len(label) >= 24 && entropy([]byte(label)) >= 3.5 && ev.QType == 16 {
-			count, first, samples := e.count(ev, "dns-tunnel|"+parent, label)
+		if encoded, zone, suspicious := dnsTunnelPayload(ev.Name, ev.QType); suspicious {
+			count, first, samples := e.count(ev, "dns-tunnel|"+zone, encoded)
 			if count >= e.config.DNSNames {
-				ev.Name = parent
-				add("dns.tunnel", "behavioral-suspicion", "medium", "T1071.004", uint64(count), uint64(e.config.DNSNames), samples, first, nil, "High-entropy TXT queries can also be legitimate")
+				ev.Name = zone
+				add("dns.tunnel", "behavioral-suspicion", "medium", "T1071.004", uint64(count), uint64(e.config.DNSNames), samples, first, nil, "Encoded query-name diversity also occurs in legitimate services; the observed source may be a DNS forwarder")
 			}
 		}
 		digits := strings.ContainsAny(label, "0123456789")
@@ -298,6 +301,13 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 		}
 	case "data":
 		e.observeStream(ev, add)
+	case "synack":
+		if f := e.flows[flowKey(ev)]; f != nil && f.client != "" && ev.Ack == f.synSequence+1 {
+			if f.serverSynSeen && f.serverISN != ev.Seq {
+				add("tcp.synack-conflict", "behavioral-suspicion", "medium", "T1557", 1, 1, []string{"Competing SYN-ACK sequence numbers for one observed client SYN"}, f.first, nil, "A race, middlebox or capture artifact can also produce competing handshakes; endpoint acceptance is not inferred")
+			}
+			f.serverSynSeen, f.serverISN = true, ev.Seq
+		}
 	case "end":
 		e.revokeFTP(flowKey(ev))
 		delete(e.flows, flowKey(ev))

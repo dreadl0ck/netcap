@@ -91,11 +91,17 @@ func SaveConversation(proto string, conversation core.DataFragments, ident strin
 
 	// Run network discovery extractors and enrich device profiles
 	if DeviceEnricher != nil {
-		srcIP := conversation.SourceIP()
-		if srcIP != "" {
-			for _, r := range discovery.RunDiscovery(banner, transport, ident, firstPacket, srcIP) {
+		observe := func(data []byte, srcIP string, at time.Time) {
+			for _, r := range discovery.RunDiscovery(data, transport, ident, at, srcIP) {
 				DeviceEnricher(r.SourceIP, r.Hostnames, r.DeviceTypes, r.Roles, r.OS)
 			}
+		}
+		if proto == protoUDP {
+			for _, fragment := range conversation {
+				observe(fragment.Raw(), fragment.Network().Src().String(), fragment.CaptureInfo().Timestamp)
+			}
+		} else if srcIP := conversation.SourceIP(); srcIP != "" {
+			observe(banner, srcIP, firstPacket)
 		}
 	}
 

@@ -27,9 +27,10 @@ complete a header only within one observed byte run. Known and unknown gaps
 cannot join partial signatures into a protocol match. A leading midstream marker
 still permits probing the first observed run; it does not establish completeness.
 
-Go v0.15.2's default maximum buffered size is 10 MiB per direction. Zero-valued
-page limits can mean unlimited; [resource budgets](workers.md) are not a global
-memory guarantee. Use the installed help and health sidecars for actual policy.
+The current `-max-stream-bytes` default is 100 MiB per direction, matching the
+default extracted-file limit (`internal/decoder/config/config.go`); v0.16.2 used
+10 MiB. Zero-valued page limits can mean unlimited; [resource budgets](workers.md)
+are not a global memory guarantee. Inspect installed help and health sidecars.
 
 Live collection sends ordered maintenance to every worker once per second,
 including when no new packets arrive (`internal/collector/live_maintenance.go`).
@@ -55,8 +56,9 @@ quoted `watermarkNs` and `latePackets`. Replay pauses and worker count do not
 change these timeout decisions (`internal/collector/capture_time_test.go`).
 
 Completed TCP connections finish decoding, conversation persistence and banner
-extraction before closing/joining both reader tasks. Raw fragment/decoder references
-are released and reader-registry slots reused (`tcp/tcp_resources.go`); lifetime
+extraction before closing directional readers. Production readers retain fragments
+synchronously, without per-direction drain channels/goroutines. Raw references
+are released and slots reused (`internal/decoder/stream/tcp/tcp_resources.go`); lifetime
 byte counters and any retained closed-connection FSM metadata remain available.
 This releases completed-stream state during capture, without claiming a global
 bound on still-open streams or decoder-owned caches.
@@ -67,6 +69,44 @@ Go v0.16.2 also releases queued `KeepFrom` pages after scatter/gather cleanup
 when a stream byte limit closes a direction, fixing the Brazil replay assembler
 panic (`internal/reassembly/assembler.go`). Discarded bytes remain missing;
 cleanup does not make truncated stream evidence complete.
+
+`TCPReassemblyHealth.json` reports overlap packet/byte counts. Network detection
+also compares retransmissions against a bounded 4,096-byte directional prefix;
+different bytes produce `tcp.overlap-conflict` with qualified first-arrival
+semantics. Matching retransmissions do not produce this alert.
+
+HTTP headers cannot be completed across a TCP close. If a complete pre-close
+header frames contiguous body bytes observed after closure, extraction can retain
+an explicitly incomplete artifact without emitting an ordinary cross-close HTTP
+transaction (`http/artifact_recovery.go`). Failed gzip integrity can preserve a
+decoded-prefix child linked by `ParentFileID` to the retained wire artifact.
+
+## Recheck qualification
+
+`scripts/recheck-mta.py` replays checksum-pinned MTA receipts, reads every audit,
+and compares extracted SHA256 sets against a matched baseline. The local
+`750de163-recheck` candidate uses `nodpi,noyara,nomagika`.
+
+| Check | Result / evidence |
+| --- | --- |
+| MTA replay, Darwin/arm64, Go 1.27.0 | 143/143 successful; no unreadable audits or missing baseline artifact hashes (`mta-final/summary.json`) |
+| HTTP request comparison | 33,931 tshark requests; 0 missing; 34,422 netcap records, including 491 comparison extras (`mta-final/reference-summary.json`) |
+| Host/user scorer | 98 `ok`, 2 `wrong`, 8 unhandled; 0 baseline regressions. Both `wrong` rows expect the nonliteral label `all 3` (`mta-final/questions-summary.json`). This is not the full question/fact score. |
+| Sequential capture time | 172.77 s candidate / 145.14 s v0.15.2, same config databases; V-6 remains open |
+| IoT-23 1-1, Darwin/arm64 | 145,928,231-byte capture; 67.58 s, 5,363,974,144-byte peak RSS; DS-12 remains open |
+| IoT-23 1-1, Linux/amd64, Go 1.27.1 | Default configuration OOM-killed at a 4 GiB container limit; `GOMEMLIMIT=3GiB` completes at the same limit in 178.3 s, 1,686,291/1,686,291 packets admitted, 0 queue drops, 21/21 audits readable. GC tuning is not a global retained-state bound. |
+
+The IoT-23 source is `CTU-IoT-Malware-Capture-1-1/2018-05-09-192.168.100.103.pcap`
+under `https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/IndividualScenarios/`;
+SHA256 `8ebcd17af4e2d20b1cf7ad564760756f457a80b791a0757a2b1a624b2724969c`.
+The Linux runs use 4 CPUs, 4 workers, no network, and a 4 GiB memory/swap cap;
+native DPI/YARA/Magika builds and the full Phase B inventory remain unqualified.
+This replay retains 620,639 Connection and 602,818 Host records; heap profiling
+identifies connection/host accumulators, stream-pool entries and UDP flow state
+as DS-12 follow-ups (`iot23-heap.pprof`).
+
+Inventory pitfall: the report's 148 MTA PCAPs resolve to 143 upstream captures;
+`2016-07-07` publishes 1 PCAP and 6 malicious emails, rather than 6 PCAPs.
 
 ## Incremental transactions
 

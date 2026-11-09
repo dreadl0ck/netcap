@@ -23,6 +23,7 @@ type captureNGInterface struct {
 }
 
 type scopedNgReader struct {
+	keyLog func([]byte)
 	*captureStream
 	order         binary.ByteOrder
 	interfaces    []captureNGInterface
@@ -256,6 +257,17 @@ func (r *scopedNgReader) ZeroCopyReadPacketData() ([]byte, gopacket.CaptureInfo,
 			err = r.addInterface(body, offset)
 		case 2, 3, 6:
 			return r.packet(kind, body, offset)
+		case 10: // Decryption Secrets Block, TLS key log (TLSK).
+			if len(body) < 8 {
+				return nil, gopacket.CaptureInfo{}, fmt.Errorf("short decryption secrets block")
+			}
+			size := r.order.Uint32(body[4:])
+			if size > uint32(len(body)-8) || size > 4<<20 {
+				return nil, gopacket.CaptureInfo{}, fmt.Errorf("invalid decryption secrets length")
+			}
+			if r.order.Uint32(body) == 0x544c534b && r.keyLog != nil {
+				r.keyLog(body[8 : 8+int(size)])
+			}
 		}
 		if err != nil {
 			return nil, gopacket.CaptureInfo{}, err
