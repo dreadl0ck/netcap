@@ -4,9 +4,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "37625",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -23,8 +23,8 @@
     "FirstSeen": 1791363797890791000,
     "LastSeen": 1791363797890833000,
     "Examples": [
-      "{\"at\":1791363797890791000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun\",\"observed\":1,\"firstSeen\":1791363797890791000,\"samples\":[\"dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun\"]}",
-      "{\"at\":1791363797890833000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun\",\"observed\":1,\"firstSeen\":1791363797890833000,\"samples\":[\"dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun\"]}"
+      "{\"at\":1791363797890791000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"37625\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun\",\"observed\":1,\"firstSeen\":1791363797890791000,\"samples\":[\"dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun\"]}",
+      "{\"at\":1791363797890833000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"36315\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun\",\"observed\":1,\"firstSeen\":1791363797890833000,\"samples\":[\"dpvijeivvuybkomcypdlwempwbqsxdxtq.oast.fun\"]}"
     ]
   },
   {
@@ -32,9 +32,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "37116",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -51,8 +51,8 @@
     "FirstSeen": 1791363798134017000,
     "LastSeen": 1791363798134078000,
     "Examples": [
-      "{\"at\":1791363798134017000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun\",\"observed\":1,\"firstSeen\":1791363798134017000,\"samples\":[\"hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun\"]}",
-      "{\"at\":1791363798134078000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun\",\"observed\":1,\"firstSeen\":1791363798134078000,\"samples\":[\"hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun\"]}"
+      "{\"at\":1791363798134017000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"37116\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun\",\"observed\":1,\"firstSeen\":1791363798134017000,\"samples\":[\"hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun\"]}",
+      "{\"at\":1791363798134078000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"49845\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun\",\"observed\":1,\"firstSeen\":1791363798134078000,\"samples\":[\"hskwinwajemqtcmndzgythsqjxyxfposz.oast.fun\"]}"
     ]
   },
   {
@@ -60,9 +60,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "42171",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "nlktauervlycgnkxtoxwyngffiphquxir.oast.fun",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -79,8 +79,8 @@
     "FirstSeen": 1791363798475729000,
     "LastSeen": 1791363798475826000,
     "Examples": [
-      "{\"at\":1791363798475729000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"nlktauervlycgnkxtoxwyngffiphquxir.oast.fun\",\"observed\":1,\"firstSeen\":1791363798475729000,\"samples\":[\"nlktauervlycgnkxtoxwyngffiphquxir.oast.fun\"]}",
-      "{\"at\":1791363798475826000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"nlktauervlycgnkxtoxwyngffiphquxir.oast.fun\",\"observed\":1,\"firstSeen\":1791363798475826000,\"samples\":[\"nlktauervlycgnkxtoxwyngffiphquxir.oast.fun\"]}"
+      "{\"at\":1791363798475729000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"42171\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"nlktauervlycgnkxtoxwyngffiphquxir.oast.fun\",\"observed\":1,\"firstSeen\":1791363798475729000,\"samples\":[\"nlktauervlycgnkxtoxwyngffiphquxir.oast.fun\"]}",
+      "{\"at\":1791363798475826000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"40961\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"nlktauervlycgnkxtoxwyngffiphquxir.oast.fun\",\"observed\":1,\"firstSeen\":1791363798475826000,\"samples\":[\"nlktauervlycgnkxtoxwyngffiphquxir.oast.fun\"]}"
     ]
   },
   {
@@ -88,9 +88,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "41855",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "rnamjdyeujaiqvriltlfndaunipetffux.oast.fun",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -107,8 +107,8 @@
     "FirstSeen": 1791363798585641000,
     "LastSeen": 1791363798585680000,
     "Examples": [
-      "{\"at\":1791363798585641000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rnamjdyeujaiqvriltlfndaunipetffux.oast.fun\",\"observed\":1,\"firstSeen\":1791363798585641000,\"samples\":[\"rnamjdyeujaiqvriltlfndaunipetffux.oast.fun\"]}",
-      "{\"at\":1791363798585680000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rnamjdyeujaiqvriltlfndaunipetffux.oast.fun\",\"observed\":1,\"firstSeen\":1791363798585680000,\"samples\":[\"rnamjdyeujaiqvriltlfndaunipetffux.oast.fun\"]}"
+      "{\"at\":1791363798585641000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"41855\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"rnamjdyeujaiqvriltlfndaunipetffux.oast.fun\",\"observed\":1,\"firstSeen\":1791363798585641000,\"samples\":[\"rnamjdyeujaiqvriltlfndaunipetffux.oast.fun\"]}",
+      "{\"at\":1791363798585680000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"47966\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"rnamjdyeujaiqvriltlfndaunipetffux.oast.fun\",\"observed\":1,\"firstSeen\":1791363798585680000,\"samples\":[\"rnamjdyeujaiqvriltlfndaunipetffux.oast.fun\"]}"
     ]
   },
   {
@@ -116,9 +116,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "35261",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -135,8 +135,8 @@
     "FirstSeen": 1791363798947123000,
     "LastSeen": 1791363798947246000,
     "Examples": [
-      "{\"at\":1791363798947123000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun\",\"observed\":1,\"firstSeen\":1791363798947123000,\"samples\":[\"hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun\"]}",
-      "{\"at\":1791363798947246000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun\",\"observed\":1,\"firstSeen\":1791363798947246000,\"samples\":[\"hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun\"]}"
+      "{\"at\":1791363798947123000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"35261\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun\",\"observed\":1,\"firstSeen\":1791363798947123000,\"samples\":[\"hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun\"]}",
+      "{\"at\":1791363798947246000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"49087\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun\",\"observed\":1,\"firstSeen\":1791363798947246000,\"samples\":[\"hwucsauylpzvatljbdmhiigqnvinksvqw.oast.fun\"]}"
     ]
   },
   {
@@ -144,9 +144,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "42014",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -163,8 +163,8 @@
     "FirstSeen": 1791363799317780000,
     "LastSeen": 1791363799317814000,
     "Examples": [
-      "{\"at\":1791363799317780000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun\",\"observed\":1,\"firstSeen\":1791363799317780000,\"samples\":[\"mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun\"]}",
-      "{\"at\":1791363799317814000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun\",\"observed\":1,\"firstSeen\":1791363799317814000,\"samples\":[\"mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun\"]}"
+      "{\"at\":1791363799317780000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"42014\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun\",\"observed\":1,\"firstSeen\":1791363799317780000,\"samples\":[\"mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun\"]}",
+      "{\"at\":1791363799317814000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"35543\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun\",\"observed\":1,\"firstSeen\":1791363799317814000,\"samples\":[\"mnquxwmzrmttpbhbflsyliyzjskihohue.oast.fun\"]}"
     ]
   },
   {
@@ -172,9 +172,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "40727",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -191,8 +191,8 @@
     "FirstSeen": 1791363799768014000,
     "LastSeen": 1791363799768061000,
     "Examples": [
-      "{\"at\":1791363799768014000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun\",\"observed\":1,\"firstSeen\":1791363799768014000,\"samples\":[\"npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun\"]}",
-      "{\"at\":1791363799768061000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun\",\"observed\":1,\"firstSeen\":1791363799768061000,\"samples\":[\"npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun\"]}"
+      "{\"at\":1791363799768014000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"40727\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun\",\"observed\":1,\"firstSeen\":1791363799768014000,\"samples\":[\"npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun\"]}",
+      "{\"at\":1791363799768061000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"52048\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun\",\"observed\":1,\"firstSeen\":1791363799768061000,\"samples\":[\"npwlppuafxcctwvqghwckcimemhcjlrsg.oast.fun\"]}"
     ]
   },
   {
@@ -200,9 +200,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "33425",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -219,8 +219,8 @@
     "FirstSeen": 1791363799965485000,
     "LastSeen": 1791363799965546000,
     "Examples": [
-      "{\"at\":1791363799965485000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun\",\"observed\":1,\"firstSeen\":1791363799965485000,\"samples\":[\"pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun\"]}",
-      "{\"at\":1791363799965546000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun\",\"observed\":1,\"firstSeen\":1791363799965546000,\"samples\":[\"pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun\"]}"
+      "{\"at\":1791363799965485000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"33425\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun\",\"observed\":1,\"firstSeen\":1791363799965485000,\"samples\":[\"pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun\"]}",
+      "{\"at\":1791363799965546000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"58283\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun\",\"observed\":1,\"firstSeen\":1791363799965546000,\"samples\":[\"pfgqnhndkrcnbbiisfumvokyrzokojtop.oast.fun\"]}"
     ]
   },
   {
@@ -228,9 +228,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "54231",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "jtvrazovsrluopgafukmiprxncamcenlm.oast.fun",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -247,8 +247,8 @@
     "FirstSeen": 1791363800451884000,
     "LastSeen": 1791363800451942000,
     "Examples": [
-      "{\"at\":1791363800451884000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jtvrazovsrluopgafukmiprxncamcenlm.oast.fun\",\"observed\":1,\"firstSeen\":1791363800451884000,\"samples\":[\"jtvrazovsrluopgafukmiprxncamcenlm.oast.fun\"]}",
-      "{\"at\":1791363800451942000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jtvrazovsrluopgafukmiprxncamcenlm.oast.fun\",\"observed\":1,\"firstSeen\":1791363800451942000,\"samples\":[\"jtvrazovsrluopgafukmiprxncamcenlm.oast.fun\"]}"
+      "{\"at\":1791363800451884000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"54231\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"jtvrazovsrluopgafukmiprxncamcenlm.oast.fun\",\"observed\":1,\"firstSeen\":1791363800451884000,\"samples\":[\"jtvrazovsrluopgafukmiprxncamcenlm.oast.fun\"]}",
+      "{\"at\":1791363800451942000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"33232\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"jtvrazovsrluopgafukmiprxncamcenlm.oast.fun\",\"observed\":1,\"firstSeen\":1791363800451942000,\"samples\":[\"jtvrazovsrluopgafukmiprxncamcenlm.oast.fun\"]}"
     ]
   },
   {
@@ -256,9 +256,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "58201",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "qfredejuroevckrielyyohawhqijpdjcn.oast.fun",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -275,8 +275,8 @@
     "FirstSeen": 1791363800625535000,
     "LastSeen": 1791363800625720000,
     "Examples": [
-      "{\"at\":1791363800625535000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qfredejuroevckrielyyohawhqijpdjcn.oast.fun\",\"observed\":1,\"firstSeen\":1791363800625535000,\"samples\":[\"qfredejuroevckrielyyohawhqijpdjcn.oast.fun\"]}",
-      "{\"at\":1791363800625720000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qfredejuroevckrielyyohawhqijpdjcn.oast.fun\",\"observed\":1,\"firstSeen\":1791363800625720000,\"samples\":[\"qfredejuroevckrielyyohawhqijpdjcn.oast.fun\"]}"
+      "{\"at\":1791363800625535000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"58201\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"qfredejuroevckrielyyohawhqijpdjcn.oast.fun\",\"observed\":1,\"firstSeen\":1791363800625535000,\"samples\":[\"qfredejuroevckrielyyohawhqijpdjcn.oast.fun\"]}",
+      "{\"at\":1791363800625720000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"35885\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"qfredejuroevckrielyyohawhqijpdjcn.oast.fun\",\"observed\":1,\"firstSeen\":1791363800625720000,\"samples\":[\"qfredejuroevckrielyyohawhqijpdjcn.oast.fun\"]}"
     ]
   },
   {
@@ -284,9 +284,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "42066",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -303,8 +303,8 @@
     "FirstSeen": 1791363801006666000,
     "LastSeen": 1791363801006698000,
     "Examples": [
-      "{\"at\":1791363801006666000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live\",\"observed\":1,\"firstSeen\":1791363801006666000,\"samples\":[\"yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live\"]}",
-      "{\"at\":1791363801006698000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live\",\"observed\":1,\"firstSeen\":1791363801006698000,\"samples\":[\"yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live\"]}"
+      "{\"at\":1791363801006666000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"42066\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live\",\"observed\":1,\"firstSeen\":1791363801006666000,\"samples\":[\"yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live\"]}",
+      "{\"at\":1791363801006698000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"41873\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live\",\"observed\":1,\"firstSeen\":1791363801006698000,\"samples\":[\"yvrypusuwvqnadwpeyhbexeixktcbloyw.oast.live\"]}"
     ]
   },
   {
@@ -312,9 +312,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "39079",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -331,8 +331,8 @@
     "FirstSeen": 1791363801284881000,
     "LastSeen": 1791363801284926000,
     "Examples": [
-      "{\"at\":1791363801284881000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live\",\"observed\":1,\"firstSeen\":1791363801284881000,\"samples\":[\"ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live\"]}",
-      "{\"at\":1791363801284926000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live\",\"observed\":1,\"firstSeen\":1791363801284926000,\"samples\":[\"ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live\"]}"
+      "{\"at\":1791363801284881000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"39079\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live\",\"observed\":1,\"firstSeen\":1791363801284881000,\"samples\":[\"ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live\"]}",
+      "{\"at\":1791363801284926000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"53740\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live\",\"observed\":1,\"firstSeen\":1791363801284926000,\"samples\":[\"ssrlvvfvzhwgsbcxpfpjvmnrbcofiuthq.oast.live\"]}"
     ]
   },
   {
@@ -340,9 +340,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "34631",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -359,8 +359,8 @@
     "FirstSeen": 1791363801780069000,
     "LastSeen": 1791363801780110000,
     "Examples": [
-      "{\"at\":1791363801780069000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live\",\"observed\":1,\"firstSeen\":1791363801780069000,\"samples\":[\"xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live\"]}",
-      "{\"at\":1791363801780110000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live\",\"observed\":1,\"firstSeen\":1791363801780110000,\"samples\":[\"xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live\"]}"
+      "{\"at\":1791363801780069000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"34631\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live\",\"observed\":1,\"firstSeen\":1791363801780069000,\"samples\":[\"xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live\"]}",
+      "{\"at\":1791363801780110000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"56506\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live\",\"observed\":1,\"firstSeen\":1791363801780110000,\"samples\":[\"xsymgcsjmeekazpxkynwrrvplgpkdgoga.oast.live\"]}"
     ]
   },
   {
@@ -368,9 +368,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "32929",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -387,8 +387,8 @@
     "FirstSeen": 1791363802067496000,
     "LastSeen": 1791363802067527000,
     "Examples": [
-      "{\"at\":1791363802067496000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live\",\"observed\":1,\"firstSeen\":1791363802067496000,\"samples\":[\"qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live\"]}",
-      "{\"at\":1791363802067527000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live\",\"observed\":1,\"firstSeen\":1791363802067527000,\"samples\":[\"qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live\"]}"
+      "{\"at\":1791363802067496000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"32929\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live\",\"observed\":1,\"firstSeen\":1791363802067496000,\"samples\":[\"qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live\"]}",
+      "{\"at\":1791363802067527000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"46120\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live\",\"observed\":1,\"firstSeen\":1791363802067527000,\"samples\":[\"qtlpmcrdbxjfhxdlihosvupcvhvepqdmo.oast.live\"]}"
     ]
   },
   {
@@ -396,9 +396,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "46187",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -415,8 +415,8 @@
     "FirstSeen": 1791363802359618000,
     "LastSeen": 1791363802359618000,
     "Examples": [
-      "{\"at\":1791363802359618000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live\",\"observed\":1,\"firstSeen\":1791363802359618000,\"samples\":[\"pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live\"]}",
-      "{\"at\":1791363802359618000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live\",\"observed\":1,\"firstSeen\":1791363802359618000,\"samples\":[\"pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live\"]}"
+      "{\"at\":1791363802359618000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"46187\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live\",\"observed\":1,\"firstSeen\":1791363802359618000,\"samples\":[\"pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live\"]}",
+      "{\"at\":1791363802359618000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"38648\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live\",\"observed\":1,\"firstSeen\":1791363802359618000,\"samples\":[\"pbnqajjjvrqkvibsqeouevkpykuyvmknd.oast.live\"]}"
     ]
   },
   {
@@ -424,9 +424,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "40558",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "roemjegugridrjzrdxxitozckgbjjfkyn.oast.live",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -443,8 +443,8 @@
     "FirstSeen": 1791363802850715000,
     "LastSeen": 1791363802850774000,
     "Examples": [
-      "{\"at\":1791363802850715000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"roemjegugridrjzrdxxitozckgbjjfkyn.oast.live\",\"observed\":1,\"firstSeen\":1791363802850715000,\"samples\":[\"roemjegugridrjzrdxxitozckgbjjfkyn.oast.live\"]}",
-      "{\"at\":1791363802850774000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"roemjegugridrjzrdxxitozckgbjjfkyn.oast.live\",\"observed\":1,\"firstSeen\":1791363802850774000,\"samples\":[\"roemjegugridrjzrdxxitozckgbjjfkyn.oast.live\"]}"
+      "{\"at\":1791363802850715000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"40558\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"roemjegugridrjzrdxxitozckgbjjfkyn.oast.live\",\"observed\":1,\"firstSeen\":1791363802850715000,\"samples\":[\"roemjegugridrjzrdxxitozckgbjjfkyn.oast.live\"]}",
+      "{\"at\":1791363802850774000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55845\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"roemjegugridrjzrdxxitozckgbjjfkyn.oast.live\",\"observed\":1,\"firstSeen\":1791363802850774000,\"samples\":[\"roemjegugridrjzrdxxitozckgbjjfkyn.oast.live\"]}"
     ]
   },
   {
@@ -452,9 +452,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "44630",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -471,8 +471,8 @@
     "FirstSeen": 1791363803121048000,
     "LastSeen": 1791363803121088000,
     "Examples": [
-      "{\"at\":1791363803121048000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live\",\"observed\":1,\"firstSeen\":1791363803121048000,\"samples\":[\"hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live\"]}",
-      "{\"at\":1791363803121088000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live\",\"observed\":1,\"firstSeen\":1791363803121088000,\"samples\":[\"hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live\"]}"
+      "{\"at\":1791363803121048000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"44630\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live\",\"observed\":1,\"firstSeen\":1791363803121048000,\"samples\":[\"hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live\"]}",
+      "{\"at\":1791363803121088000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"48161\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live\",\"observed\":1,\"firstSeen\":1791363803121088000,\"samples\":[\"hdnrvjzyqfrdwrrnxjnwpmqatvolphkzd.oast.live\"]}"
     ]
   },
   {
@@ -480,9 +480,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "47652",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -499,8 +499,8 @@
     "FirstSeen": 1791363803262423000,
     "LastSeen": 1791363803262460000,
     "Examples": [
-      "{\"at\":1791363803262423000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live\",\"observed\":1,\"firstSeen\":1791363803262423000,\"samples\":[\"kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live\"]}",
-      "{\"at\":1791363803262460000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live\",\"observed\":1,\"firstSeen\":1791363803262460000,\"samples\":[\"kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live\"]}"
+      "{\"at\":1791363803262423000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"47652\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live\",\"observed\":1,\"firstSeen\":1791363803262423000,\"samples\":[\"kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live\"]}",
+      "{\"at\":1791363803262460000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"60686\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live\",\"observed\":1,\"firstSeen\":1791363803262460000,\"samples\":[\"kkbmjvtxdkvhfoftltmsauahqsdstufly.oast.live\"]}"
     ]
   },
   {
@@ -508,9 +508,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "50438",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -527,8 +527,8 @@
     "FirstSeen": 1791363803666121000,
     "LastSeen": 1791363803666166000,
     "Examples": [
-      "{\"at\":1791363803666121000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live\",\"observed\":1,\"firstSeen\":1791363803666121000,\"samples\":[\"gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live\"]}",
-      "{\"at\":1791363803666166000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live\",\"observed\":1,\"firstSeen\":1791363803666166000,\"samples\":[\"gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live\"]}"
+      "{\"at\":1791363803666121000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"50438\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live\",\"observed\":1,\"firstSeen\":1791363803666121000,\"samples\":[\"gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live\"]}",
+      "{\"at\":1791363803666166000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"36539\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live\",\"observed\":1,\"firstSeen\":1791363803666166000,\"samples\":[\"gutmxtehjbvhqlcbcuujtwuiftdyjtwlh.oast.live\"]}"
     ]
   },
   {
@@ -536,9 +536,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "33227",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "scvxlojjplymrukripmhttcgubivthphm.oast.me",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -555,8 +555,8 @@
     "FirstSeen": 1791363804162530000,
     "LastSeen": 1791363804162572000,
     "Examples": [
-      "{\"at\":1791363804162530000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"scvxlojjplymrukripmhttcgubivthphm.oast.me\",\"observed\":1,\"firstSeen\":1791363804162530000,\"samples\":[\"scvxlojjplymrukripmhttcgubivthphm.oast.me\"]}",
-      "{\"at\":1791363804162572000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"scvxlojjplymrukripmhttcgubivthphm.oast.me\",\"observed\":1,\"firstSeen\":1791363804162572000,\"samples\":[\"scvxlojjplymrukripmhttcgubivthphm.oast.me\"]}"
+      "{\"at\":1791363804162530000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"33227\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"scvxlojjplymrukripmhttcgubivthphm.oast.me\",\"observed\":1,\"firstSeen\":1791363804162530000,\"samples\":[\"scvxlojjplymrukripmhttcgubivthphm.oast.me\"]}",
+      "{\"at\":1791363804162572000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"60971\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"scvxlojjplymrukripmhttcgubivthphm.oast.me\",\"observed\":1,\"firstSeen\":1791363804162572000,\"samples\":[\"scvxlojjplymrukripmhttcgubivthphm.oast.me\"]}"
     ]
   },
   {
@@ -564,9 +564,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "56398",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -583,8 +583,8 @@
     "FirstSeen": 1791363804646432000,
     "LastSeen": 1791363804646432000,
     "Examples": [
-      "{\"at\":1791363804646432000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me\",\"observed\":1,\"firstSeen\":1791363804646432000,\"samples\":[\"qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me\"]}",
-      "{\"at\":1791363804646432000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me\",\"observed\":1,\"firstSeen\":1791363804646432000,\"samples\":[\"qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me\"]}"
+      "{\"at\":1791363804646432000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"56398\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me\",\"observed\":1,\"firstSeen\":1791363804646432000,\"samples\":[\"qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me\"]}",
+      "{\"at\":1791363804646432000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"44166\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me\",\"observed\":1,\"firstSeen\":1791363804646432000,\"samples\":[\"qnknlifwkytkyxddqgylbirmtysdthbqe.oast.me\"]}"
     ]
   },
   {
@@ -592,9 +592,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "34278",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -611,8 +611,8 @@
     "FirstSeen": 1791363804938145000,
     "LastSeen": 1791363804938185000,
     "Examples": [
-      "{\"at\":1791363804938145000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me\",\"observed\":1,\"firstSeen\":1791363804938145000,\"samples\":[\"uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me\"]}",
-      "{\"at\":1791363804938185000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me\",\"observed\":1,\"firstSeen\":1791363804938185000,\"samples\":[\"uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me\"]}"
+      "{\"at\":1791363804938145000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"34278\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me\",\"observed\":1,\"firstSeen\":1791363804938145000,\"samples\":[\"uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me\"]}",
+      "{\"at\":1791363804938185000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"43888\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me\",\"observed\":1,\"firstSeen\":1791363804938185000,\"samples\":[\"uquqvvmvklfqpkgoevyhbpvjrebnlkhgr.oast.me\"]}"
     ]
   },
   {
@@ -620,9 +620,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "60552",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "omepvmcxfvwycqjahuketffnqhymkehkc.oast.me",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -639,8 +639,8 @@
     "FirstSeen": 1791363805226908000,
     "LastSeen": 1791363805226953000,
     "Examples": [
-      "{\"at\":1791363805226908000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"omepvmcxfvwycqjahuketffnqhymkehkc.oast.me\",\"observed\":1,\"firstSeen\":1791363805226908000,\"samples\":[\"omepvmcxfvwycqjahuketffnqhymkehkc.oast.me\"]}",
-      "{\"at\":1791363805226953000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"omepvmcxfvwycqjahuketffnqhymkehkc.oast.me\",\"observed\":1,\"firstSeen\":1791363805226953000,\"samples\":[\"omepvmcxfvwycqjahuketffnqhymkehkc.oast.me\"]}"
+      "{\"at\":1791363805226908000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"60552\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"omepvmcxfvwycqjahuketffnqhymkehkc.oast.me\",\"observed\":1,\"firstSeen\":1791363805226908000,\"samples\":[\"omepvmcxfvwycqjahuketffnqhymkehkc.oast.me\"]}",
+      "{\"at\":1791363805226953000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"53696\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"omepvmcxfvwycqjahuketffnqhymkehkc.oast.me\",\"observed\":1,\"firstSeen\":1791363805226953000,\"samples\":[\"omepvmcxfvwycqjahuketffnqhymkehkc.oast.me\"]}"
     ]
   },
   {
@@ -648,9 +648,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "45139",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -667,8 +667,8 @@
     "FirstSeen": 1791363805446458000,
     "LastSeen": 1791363805446490000,
     "Examples": [
-      "{\"at\":1791363805446458000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me\",\"observed\":1,\"firstSeen\":1791363805446458000,\"samples\":[\"riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me\"]}",
-      "{\"at\":1791363805446490000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me\",\"observed\":1,\"firstSeen\":1791363805446490000,\"samples\":[\"riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me\"]}"
+      "{\"at\":1791363805446458000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"45139\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me\",\"observed\":1,\"firstSeen\":1791363805446458000,\"samples\":[\"riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me\"]}",
+      "{\"at\":1791363805446490000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55463\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me\",\"observed\":1,\"firstSeen\":1791363805446490000,\"samples\":[\"riqicwjckywysujqcjrudvnlgnrzbdxnd.oast.me\"]}"
     ]
   },
   {
@@ -676,9 +676,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "35577",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -695,8 +695,8 @@
     "FirstSeen": 1791363805658732000,
     "LastSeen": 1791363805658803000,
     "Examples": [
-      "{\"at\":1791363805658732000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me\",\"observed\":1,\"firstSeen\":1791363805658732000,\"samples\":[\"jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me\"]}",
-      "{\"at\":1791363805658803000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me\",\"observed\":1,\"firstSeen\":1791363805658803000,\"samples\":[\"jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me\"]}"
+      "{\"at\":1791363805658732000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"35577\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me\",\"observed\":1,\"firstSeen\":1791363805658732000,\"samples\":[\"jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me\"]}",
+      "{\"at\":1791363805658803000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"40970\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me\",\"observed\":1,\"firstSeen\":1791363805658803000,\"samples\":[\"jjkuafxvgmzzbetymnzftvbrobhaupcom.oast.me\"]}"
     ]
   },
   {
@@ -704,9 +704,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "53578",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -723,8 +723,8 @@
     "FirstSeen": 1791363805812535000,
     "LastSeen": 1791363805812888000,
     "Examples": [
-      "{\"at\":1791363805812535000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me\",\"observed\":1,\"firstSeen\":1791363805812535000,\"samples\":[\"pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me\"]}",
-      "{\"at\":1791363805812888000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me\",\"observed\":1,\"firstSeen\":1791363805812888000,\"samples\":[\"pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me\"]}"
+      "{\"at\":1791363805812535000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"53578\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me\",\"observed\":1,\"firstSeen\":1791363805812535000,\"samples\":[\"pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me\"]}",
+      "{\"at\":1791363805812888000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"33103\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me\",\"observed\":1,\"firstSeen\":1791363805812888000,\"samples\":[\"pxsqxyvhneabsjwfmmoimjkchjqcopwoy.oast.me\"]}"
     ]
   },
   {
@@ -732,9 +732,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "48839",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -751,8 +751,8 @@
     "FirstSeen": 1791363806017154000,
     "LastSeen": 1791363806017212000,
     "Examples": [
-      "{\"at\":1791363806017154000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me\",\"observed\":1,\"firstSeen\":1791363806017154000,\"samples\":[\"cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me\"]}",
-      "{\"at\":1791363806017212000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me\",\"observed\":1,\"firstSeen\":1791363806017212000,\"samples\":[\"cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me\"]}"
+      "{\"at\":1791363806017154000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"48839\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me\",\"observed\":1,\"firstSeen\":1791363806017154000,\"samples\":[\"cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me\"]}",
+      "{\"at\":1791363806017212000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"44625\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me\",\"observed\":1,\"firstSeen\":1791363806017212000,\"samples\":[\"cokzriunmgqufvsvbjzjgbaxtglqqmbqo.oast.me\"]}"
     ]
   },
   {
@@ -760,9 +760,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "34742",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -779,8 +779,8 @@
     "FirstSeen": 1791363806405667000,
     "LastSeen": 1791363806405899000,
     "Examples": [
-      "{\"at\":1791363806405667000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me\",\"observed\":1,\"firstSeen\":1791363806405667000,\"samples\":[\"qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me\"]}",
-      "{\"at\":1791363806405899000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me\",\"observed\":1,\"firstSeen\":1791363806405899000,\"samples\":[\"qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me\"]}"
+      "{\"at\":1791363806405667000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"34742\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me\",\"observed\":1,\"firstSeen\":1791363806405667000,\"samples\":[\"qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me\"]}",
+      "{\"at\":1791363806405899000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"41595\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me\",\"observed\":1,\"firstSeen\":1791363806405899000,\"samples\":[\"qmqcsqbdstwwmicnophxrjwmkjvfuqypz.oast.me\"]}"
     ]
   },
   {
@@ -788,9 +788,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "45847",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -807,8 +807,8 @@
     "FirstSeen": 1791363806562945000,
     "LastSeen": 1791363806563147000,
     "Examples": [
-      "{\"at\":1791363806562945000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me\",\"observed\":1,\"firstSeen\":1791363806562945000,\"samples\":[\"bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me\"]}",
-      "{\"at\":1791363806563147000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me\",\"observed\":1,\"firstSeen\":1791363806563147000,\"samples\":[\"bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me\"]}"
+      "{\"at\":1791363806562945000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"45847\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me\",\"observed\":1,\"firstSeen\":1791363806562945000,\"samples\":[\"bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me\"]}",
+      "{\"at\":1791363806563147000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55960\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me\",\"observed\":1,\"firstSeen\":1791363806563147000,\"samples\":[\"bnmfdyilvcesrceaiagjgdmcbsuqwmbpn.oast.me\"]}"
     ]
   },
   {
@@ -816,9 +816,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "58838",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -835,8 +835,8 @@
     "FirstSeen": 1791363807199461000,
     "LastSeen": 1791363807199496000,
     "Examples": [
-      "{\"at\":1791363807199461000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online\",\"observed\":1,\"firstSeen\":1791363807199461000,\"samples\":[\"srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online\"]}",
-      "{\"at\":1791363807199496000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online\",\"observed\":1,\"firstSeen\":1791363807199496000,\"samples\":[\"srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online\"]}"
+      "{\"at\":1791363807199461000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"58838\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online\",\"observed\":1,\"firstSeen\":1791363807199461000,\"samples\":[\"srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online\"]}",
+      "{\"at\":1791363807199496000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"51782\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online\",\"observed\":1,\"firstSeen\":1791363807199496000,\"samples\":[\"srcpdnnzkdkhyivcvxayjysfywfldiuot.oast.online\"]}"
     ]
   },
   {
@@ -844,9 +844,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "51830",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -863,8 +863,8 @@
     "FirstSeen": 1791363807418910000,
     "LastSeen": 1791363807418911000,
     "Examples": [
-      "{\"at\":1791363807418910000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online\",\"observed\":1,\"firstSeen\":1791363807418910000,\"samples\":[\"xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online\"]}",
-      "{\"at\":1791363807418911000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online\",\"observed\":1,\"firstSeen\":1791363807418911000,\"samples\":[\"xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online\"]}"
+      "{\"at\":1791363807418910000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"51830\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online\",\"observed\":1,\"firstSeen\":1791363807418910000,\"samples\":[\"xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online\"]}",
+      "{\"at\":1791363807418911000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"56495\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online\",\"observed\":1,\"firstSeen\":1791363807418911000,\"samples\":[\"xbjuioencgvobkdyyfrwfjlexhkdfqxye.oast.online\"]}"
     ]
   },
   {
@@ -872,9 +872,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "43448",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "vkqrhejhvhemlpfihgyshkerscaqernno.oast.online",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -891,8 +891,8 @@
     "FirstSeen": 1791363807757112000,
     "LastSeen": 1791363807757181000,
     "Examples": [
-      "{\"at\":1791363807757112000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"vkqrhejhvhemlpfihgyshkerscaqernno.oast.online\",\"observed\":1,\"firstSeen\":1791363807757112000,\"samples\":[\"vkqrhejhvhemlpfihgyshkerscaqernno.oast.online\"]}",
-      "{\"at\":1791363807757181000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"vkqrhejhvhemlpfihgyshkerscaqernno.oast.online\",\"observed\":1,\"firstSeen\":1791363807757181000,\"samples\":[\"vkqrhejhvhemlpfihgyshkerscaqernno.oast.online\"]}"
+      "{\"at\":1791363807757112000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"43448\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"vkqrhejhvhemlpfihgyshkerscaqernno.oast.online\",\"observed\":1,\"firstSeen\":1791363807757112000,\"samples\":[\"vkqrhejhvhemlpfihgyshkerscaqernno.oast.online\"]}",
+      "{\"at\":1791363807757181000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"33968\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"vkqrhejhvhemlpfihgyshkerscaqernno.oast.online\",\"observed\":1,\"firstSeen\":1791363807757181000,\"samples\":[\"vkqrhejhvhemlpfihgyshkerscaqernno.oast.online\"]}"
     ]
   },
   {
@@ -900,9 +900,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "52759",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -919,8 +919,8 @@
     "FirstSeen": 1791363808076222000,
     "LastSeen": 1791363808076266000,
     "Examples": [
-      "{\"at\":1791363808076222000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online\",\"observed\":1,\"firstSeen\":1791363808076222000,\"samples\":[\"tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online\"]}",
-      "{\"at\":1791363808076266000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online\",\"observed\":1,\"firstSeen\":1791363808076266000,\"samples\":[\"tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online\"]}"
+      "{\"at\":1791363808076222000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"52759\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online\",\"observed\":1,\"firstSeen\":1791363808076222000,\"samples\":[\"tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online\"]}",
+      "{\"at\":1791363808076266000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"50552\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online\",\"observed\":1,\"firstSeen\":1791363808076266000,\"samples\":[\"tgenmchxbdgoxkpkbnmcsspebgcsltpxt.oast.online\"]}"
     ]
   },
   {
@@ -928,9 +928,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "49580",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -947,8 +947,8 @@
     "FirstSeen": 1791363808463549000,
     "LastSeen": 1791363808463596000,
     "Examples": [
-      "{\"at\":1791363808463549000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online\",\"observed\":1,\"firstSeen\":1791363808463549000,\"samples\":[\"kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online\"]}",
-      "{\"at\":1791363808463596000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online\",\"observed\":1,\"firstSeen\":1791363808463596000,\"samples\":[\"kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online\"]}"
+      "{\"at\":1791363808463549000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"49580\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online\",\"observed\":1,\"firstSeen\":1791363808463549000,\"samples\":[\"kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online\"]}",
+      "{\"at\":1791363808463596000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"33598\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online\",\"observed\":1,\"firstSeen\":1791363808463596000,\"samples\":[\"kflbcqgjfhybdfkeryumyurofxqlscqlk.oast.online\"]}"
     ]
   },
   {
@@ -956,9 +956,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "60293",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "cfqrwgofbgcjdmelbduatrkksloabopal.oast.online",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -975,8 +975,8 @@
     "FirstSeen": 1791363808958127000,
     "LastSeen": 1791363808958163000,
     "Examples": [
-      "{\"at\":1791363808958127000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"cfqrwgofbgcjdmelbduatrkksloabopal.oast.online\",\"observed\":1,\"firstSeen\":1791363808958127000,\"samples\":[\"cfqrwgofbgcjdmelbduatrkksloabopal.oast.online\"]}",
-      "{\"at\":1791363808958163000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"cfqrwgofbgcjdmelbduatrkksloabopal.oast.online\",\"observed\":1,\"firstSeen\":1791363808958163000,\"samples\":[\"cfqrwgofbgcjdmelbduatrkksloabopal.oast.online\"]}"
+      "{\"at\":1791363808958127000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"60293\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"cfqrwgofbgcjdmelbduatrkksloabopal.oast.online\",\"observed\":1,\"firstSeen\":1791363808958127000,\"samples\":[\"cfqrwgofbgcjdmelbduatrkksloabopal.oast.online\"]}",
+      "{\"at\":1791363808958163000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"41718\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"cfqrwgofbgcjdmelbduatrkksloabopal.oast.online\",\"observed\":1,\"firstSeen\":1791363808958163000,\"samples\":[\"cfqrwgofbgcjdmelbduatrkksloabopal.oast.online\"]}"
     ]
   },
   {
@@ -984,9 +984,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "41544",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1003,8 +1003,8 @@
     "FirstSeen": 1791363809331001000,
     "LastSeen": 1791363809331040000,
     "Examples": [
-      "{\"at\":1791363809331001000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online\",\"observed\":1,\"firstSeen\":1791363809331001000,\"samples\":[\"qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online\"]}",
-      "{\"at\":1791363809331040000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online\",\"observed\":1,\"firstSeen\":1791363809331040000,\"samples\":[\"qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online\"]}"
+      "{\"at\":1791363809331001000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"41544\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online\",\"observed\":1,\"firstSeen\":1791363809331001000,\"samples\":[\"qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online\"]}",
+      "{\"at\":1791363809331040000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"58968\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online\",\"observed\":1,\"firstSeen\":1791363809331040000,\"samples\":[\"qpcycxpinhrlgiznvhabjeqtyktmqkmos.oast.online\"]}"
     ]
   },
   {
@@ -1012,9 +1012,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "48256",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1031,8 +1031,8 @@
     "FirstSeen": 1791363809694008000,
     "LastSeen": 1791363809694040000,
     "Examples": [
-      "{\"at\":1791363809694008000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online\",\"observed\":1,\"firstSeen\":1791363809694008000,\"samples\":[\"iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online\"]}",
-      "{\"at\":1791363809694040000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online\",\"observed\":1,\"firstSeen\":1791363809694040000,\"samples\":[\"iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online\"]}"
+      "{\"at\":1791363809694008000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"48256\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online\",\"observed\":1,\"firstSeen\":1791363809694008000,\"samples\":[\"iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online\"]}",
+      "{\"at\":1791363809694040000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"48941\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online\",\"observed\":1,\"firstSeen\":1791363809694040000,\"samples\":[\"iznbnrwoweypbvbxsiaohoiapcglrozmz.oast.online\"]}"
     ]
   },
   {
@@ -1040,9 +1040,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "56261",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1059,8 +1059,8 @@
     "FirstSeen": 1791363810035208000,
     "LastSeen": 1791363810035331000,
     "Examples": [
-      "{\"at\":1791363810035208000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810035208000,\"samples\":[\"bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro\"]}",
-      "{\"at\":1791363810035331000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810035331000,\"samples\":[\"bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro\"]}"
+      "{\"at\":1791363810035208000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"56261\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810035208000,\"samples\":[\"bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro\"]}",
+      "{\"at\":1791363810035331000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"48085\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810035331000,\"samples\":[\"bhqnpekmclawhboeeuejhtbuijqetvhzc.oast.pro\"]}"
     ]
   },
   {
@@ -1068,9 +1068,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "39566",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "wnjquocshydpplmpnbpojethpouaympvc.oast.pro",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1087,8 +1087,8 @@
     "FirstSeen": 1791363810386918000,
     "LastSeen": 1791363810386949000,
     "Examples": [
-      "{\"at\":1791363810386918000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"wnjquocshydpplmpnbpojethpouaympvc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810386918000,\"samples\":[\"wnjquocshydpplmpnbpojethpouaympvc.oast.pro\"]}",
-      "{\"at\":1791363810386949000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"wnjquocshydpplmpnbpojethpouaympvc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810386949000,\"samples\":[\"wnjquocshydpplmpnbpojethpouaympvc.oast.pro\"]}"
+      "{\"at\":1791363810386918000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"39566\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"wnjquocshydpplmpnbpojethpouaympvc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810386918000,\"samples\":[\"wnjquocshydpplmpnbpojethpouaympvc.oast.pro\"]}",
+      "{\"at\":1791363810386949000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"52671\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"wnjquocshydpplmpnbpojethpouaympvc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810386949000,\"samples\":[\"wnjquocshydpplmpnbpojethpouaympvc.oast.pro\"]}"
     ]
   },
   {
@@ -1096,9 +1096,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "40724",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1115,8 +1115,8 @@
     "FirstSeen": 1791363810754535000,
     "LastSeen": 1791363810754574000,
     "Examples": [
-      "{\"at\":1791363810754535000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810754535000,\"samples\":[\"swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro\"]}",
-      "{\"at\":1791363810754574000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810754574000,\"samples\":[\"swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro\"]}"
+      "{\"at\":1791363810754535000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"40724\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810754535000,\"samples\":[\"swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro\"]}",
+      "{\"at\":1791363810754574000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"57606\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro\",\"observed\":1,\"firstSeen\":1791363810754574000,\"samples\":[\"swcwavvokmzkvtvdtxdvvvqyztdesyfkc.oast.pro\"]}"
     ]
   },
   {
@@ -1124,9 +1124,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "60977",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1143,8 +1143,8 @@
     "FirstSeen": 1791363811005180000,
     "LastSeen": 1791363811005221000,
     "Examples": [
-      "{\"at\":1791363811005180000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro\",\"observed\":1,\"firstSeen\":1791363811005180000,\"samples\":[\"tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro\"]}",
-      "{\"at\":1791363811005221000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro\",\"observed\":1,\"firstSeen\":1791363811005221000,\"samples\":[\"tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro\"]}"
+      "{\"at\":1791363811005180000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"60977\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro\",\"observed\":1,\"firstSeen\":1791363811005180000,\"samples\":[\"tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro\"]}",
+      "{\"at\":1791363811005221000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"60675\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro\",\"observed\":1,\"firstSeen\":1791363811005221000,\"samples\":[\"tlbjnhajcmdabfxpqetaffwlnimlukxaq.oast.pro\"]}"
     ]
   },
   {
@@ -1152,9 +1152,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "59631",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1171,8 +1171,8 @@
     "FirstSeen": 1791363811462384000,
     "LastSeen": 1791363811462431000,
     "Examples": [
-      "{\"at\":1791363811462384000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro\",\"observed\":1,\"firstSeen\":1791363811462384000,\"samples\":[\"ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro\"]}",
-      "{\"at\":1791363811462431000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro\",\"observed\":1,\"firstSeen\":1791363811462431000,\"samples\":[\"ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro\"]}"
+      "{\"at\":1791363811462384000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"59631\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro\",\"observed\":1,\"firstSeen\":1791363811462384000,\"samples\":[\"ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro\"]}",
+      "{\"at\":1791363811462431000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"39829\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro\",\"observed\":1,\"firstSeen\":1791363811462431000,\"samples\":[\"ppkxbibswmjsakhudfjfzvvmuckvdpkmr.oast.pro\"]}"
     ]
   },
   {
@@ -1180,9 +1180,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "58905",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1199,8 +1199,8 @@
     "FirstSeen": 1791363811738923000,
     "LastSeen": 1791363811738952000,
     "Examples": [
-      "{\"at\":1791363811738923000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro\",\"observed\":1,\"firstSeen\":1791363811738923000,\"samples\":[\"yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro\"]}",
-      "{\"at\":1791363811738952000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro\",\"observed\":1,\"firstSeen\":1791363811738952000,\"samples\":[\"yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro\"]}"
+      "{\"at\":1791363811738923000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"58905\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro\",\"observed\":1,\"firstSeen\":1791363811738923000,\"samples\":[\"yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro\"]}",
+      "{\"at\":1791363811738952000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"35036\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro\",\"observed\":1,\"firstSeen\":1791363811738952000,\"samples\":[\"yoerwjsaztqjjgapvryjwozngafsaihaj.oast.pro\"]}"
     ]
   },
   {
@@ -1208,9 +1208,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "56497",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1227,8 +1227,8 @@
     "FirstSeen": 1791363812015664000,
     "LastSeen": 1791363812015706000,
     "Examples": [
-      "{\"at\":1791363812015664000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro\",\"observed\":1,\"firstSeen\":1791363812015664000,\"samples\":[\"xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro\"]}",
-      "{\"at\":1791363812015706000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro\",\"observed\":1,\"firstSeen\":1791363812015706000,\"samples\":[\"xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro\"]}"
+      "{\"at\":1791363812015664000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"56497\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro\",\"observed\":1,\"firstSeen\":1791363812015664000,\"samples\":[\"xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro\"]}",
+      "{\"at\":1791363812015706000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"33023\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro\",\"observed\":1,\"firstSeen\":1791363812015706000,\"samples\":[\"xdhygqbettdbrxizzqjtoviqmkfofwmgc.oast.pro\"]}"
     ]
   },
   {
@@ -1236,9 +1236,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "46032",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1255,8 +1255,8 @@
     "FirstSeen": 1791363812374214000,
     "LastSeen": 1791363812374255000,
     "Examples": [
-      "{\"at\":1791363812374214000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro\",\"observed\":1,\"firstSeen\":1791363812374214000,\"samples\":[\"ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro\"]}",
-      "{\"at\":1791363812374255000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro\",\"observed\":1,\"firstSeen\":1791363812374255000,\"samples\":[\"ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro\"]}"
+      "{\"at\":1791363812374214000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"46032\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro\",\"observed\":1,\"firstSeen\":1791363812374214000,\"samples\":[\"ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro\"]}",
+      "{\"at\":1791363812374255000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"60053\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro\",\"observed\":1,\"firstSeen\":1791363812374255000,\"samples\":[\"ylvuhwugtfkomdeysbjayfxdgqbceechr.oast.pro\"]}"
     ]
   },
   {
@@ -1264,9 +1264,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "35252",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1283,8 +1283,8 @@
     "FirstSeen": 1791363812577475000,
     "LastSeen": 1791363812577506000,
     "Examples": [
-      "{\"at\":1791363812577475000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro\",\"observed\":1,\"firstSeen\":1791363812577475000,\"samples\":[\"huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro\"]}",
-      "{\"at\":1791363812577506000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro\",\"observed\":1,\"firstSeen\":1791363812577506000,\"samples\":[\"huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro\"]}"
+      "{\"at\":1791363812577475000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"35252\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro\",\"observed\":1,\"firstSeen\":1791363812577475000,\"samples\":[\"huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro\"]}",
+      "{\"at\":1791363812577506000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"57790\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro\",\"observed\":1,\"firstSeen\":1791363812577506000,\"samples\":[\"huaomcopzqcjtbkktqfaobkcjjsrshcna.oast.pro\"]}"
     ]
   },
   {
@@ -1292,9 +1292,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "55222",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1311,8 +1311,8 @@
     "FirstSeen": 1791363812985771000,
     "LastSeen": 1791363812985810000,
     "Examples": [
-      "{\"at\":1791363812985771000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site\",\"observed\":1,\"firstSeen\":1791363812985771000,\"samples\":[\"rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site\"]}",
-      "{\"at\":1791363812985810000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site\",\"observed\":1,\"firstSeen\":1791363812985810000,\"samples\":[\"rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site\"]}"
+      "{\"at\":1791363812985771000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"55222\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site\",\"observed\":1,\"firstSeen\":1791363812985771000,\"samples\":[\"rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site\"]}",
+      "{\"at\":1791363812985810000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"42116\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site\",\"observed\":1,\"firstSeen\":1791363812985810000,\"samples\":[\"rpnioqgsqbkayqasrwlghruwdnpsprezp.oast.site\"]}"
     ]
   },
   {
@@ -1320,9 +1320,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "50115",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1339,8 +1339,8 @@
     "FirstSeen": 1791363813479336000,
     "LastSeen": 1791363813479378000,
     "Examples": [
-      "{\"at\":1791363813479336000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site\",\"observed\":1,\"firstSeen\":1791363813479336000,\"samples\":[\"rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site\"]}",
-      "{\"at\":1791363813479378000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site\",\"observed\":1,\"firstSeen\":1791363813479378000,\"samples\":[\"rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site\"]}"
+      "{\"at\":1791363813479336000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"50115\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site\",\"observed\":1,\"firstSeen\":1791363813479336000,\"samples\":[\"rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site\"]}",
+      "{\"at\":1791363813479378000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"37061\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site\",\"observed\":1,\"firstSeen\":1791363813479378000,\"samples\":[\"rgfhjvdlojzlvevyywcajbbvppzethbvq.oast.site\"]}"
     ]
   },
   {
@@ -1348,9 +1348,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "56908",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "gojgdimpamkrxljdwedkilolmpngebokw.oast.site",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1367,8 +1367,8 @@
     "FirstSeen": 1791363813870029000,
     "LastSeen": 1791363813870427000,
     "Examples": [
-      "{\"at\":1791363813870029000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"gojgdimpamkrxljdwedkilolmpngebokw.oast.site\",\"observed\":1,\"firstSeen\":1791363813870029000,\"samples\":[\"gojgdimpamkrxljdwedkilolmpngebokw.oast.site\"]}",
-      "{\"at\":1791363813870427000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"gojgdimpamkrxljdwedkilolmpngebokw.oast.site\",\"observed\":1,\"firstSeen\":1791363813870427000,\"samples\":[\"gojgdimpamkrxljdwedkilolmpngebokw.oast.site\"]}"
+      "{\"at\":1791363813870029000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"56908\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"gojgdimpamkrxljdwedkilolmpngebokw.oast.site\",\"observed\":1,\"firstSeen\":1791363813870029000,\"samples\":[\"gojgdimpamkrxljdwedkilolmpngebokw.oast.site\"]}",
+      "{\"at\":1791363813870427000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"50822\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"gojgdimpamkrxljdwedkilolmpngebokw.oast.site\",\"observed\":1,\"firstSeen\":1791363813870427000,\"samples\":[\"gojgdimpamkrxljdwedkilolmpngebokw.oast.site\"]}"
     ]
   },
   {
@@ -1376,9 +1376,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "56017",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1395,8 +1395,8 @@
     "FirstSeen": 1791363813986228000,
     "LastSeen": 1791363813986262000,
     "Examples": [
-      "{\"at\":1791363813986228000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site\",\"observed\":1,\"firstSeen\":1791363813986228000,\"samples\":[\"xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site\"]}",
-      "{\"at\":1791363813986262000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site\",\"observed\":1,\"firstSeen\":1791363813986262000,\"samples\":[\"xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site\"]}"
+      "{\"at\":1791363813986228000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"56017\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site\",\"observed\":1,\"firstSeen\":1791363813986228000,\"samples\":[\"xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site\"]}",
+      "{\"at\":1791363813986262000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"39568\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site\",\"observed\":1,\"firstSeen\":1791363813986262000,\"samples\":[\"xntbnwtyevprsurawzmfqzoziqoqktyat.oast.site\"]}"
     ]
   },
   {
@@ -1404,9 +1404,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "46741",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1423,8 +1423,8 @@
     "FirstSeen": 1791363814181959000,
     "LastSeen": 1791363814181999000,
     "Examples": [
-      "{\"at\":1791363814181959000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site\",\"observed\":1,\"firstSeen\":1791363814181959000,\"samples\":[\"xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site\"]}",
-      "{\"at\":1791363814181999000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site\",\"observed\":1,\"firstSeen\":1791363814181999000,\"samples\":[\"xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site\"]}"
+      "{\"at\":1791363814181959000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"46741\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site\",\"observed\":1,\"firstSeen\":1791363814181959000,\"samples\":[\"xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site\"]}",
+      "{\"at\":1791363814181999000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"56510\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site\",\"observed\":1,\"firstSeen\":1791363814181999000,\"samples\":[\"xrjamhfsmwgylzvhavhooatcguecgtiec.oast.site\"]}"
     ]
   },
   {
@@ -1432,9 +1432,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "37042",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1451,8 +1451,8 @@
     "FirstSeen": 1791363814387121000,
     "LastSeen": 1791363814387171000,
     "Examples": [
-      "{\"at\":1791363814387121000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site\",\"observed\":1,\"firstSeen\":1791363814387121000,\"samples\":[\"jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site\"]}",
-      "{\"at\":1791363814387171000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site\",\"observed\":1,\"firstSeen\":1791363814387171000,\"samples\":[\"jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site\"]}"
+      "{\"at\":1791363814387121000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"37042\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site\",\"observed\":1,\"firstSeen\":1791363814387121000,\"samples\":[\"jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site\"]}",
+      "{\"at\":1791363814387171000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"48852\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site\",\"observed\":1,\"firstSeen\":1791363814387171000,\"samples\":[\"jjryjviramcydydrnyjkzpkhywtqmmefk.oast.site\"]}"
     ]
   },
   {
@@ -1460,9 +1460,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "44702",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1479,8 +1479,8 @@
     "FirstSeen": 1791363814546222000,
     "LastSeen": 1791363814546260000,
     "Examples": [
-      "{\"at\":1791363814546222000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site\",\"observed\":1,\"firstSeen\":1791363814546222000,\"samples\":[\"fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site\"]}",
-      "{\"at\":1791363814546260000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site\",\"observed\":1,\"firstSeen\":1791363814546260000,\"samples\":[\"fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site\"]}"
+      "{\"at\":1791363814546222000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"44702\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site\",\"observed\":1,\"firstSeen\":1791363814546222000,\"samples\":[\"fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site\"]}",
+      "{\"at\":1791363814546260000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"43460\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site\",\"observed\":1,\"firstSeen\":1791363814546260000,\"samples\":[\"fneyqchnhjplpzyiduuqbjnsidptthalo.oast.site\"]}"
     ]
   },
   {
@@ -1488,9 +1488,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "43148",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1507,8 +1507,8 @@
     "FirstSeen": 1791363814902524000,
     "LastSeen": 1791363814902573000,
     "Examples": [
-      "{\"at\":1791363814902524000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site\",\"observed\":1,\"firstSeen\":1791363814902524000,\"samples\":[\"rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site\"]}",
-      "{\"at\":1791363814902573000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site\",\"observed\":1,\"firstSeen\":1791363814902573000,\"samples\":[\"rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site\"]}"
+      "{\"at\":1791363814902524000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"43148\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site\",\"observed\":1,\"firstSeen\":1791363814902524000,\"samples\":[\"rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site\"]}",
+      "{\"at\":1791363814902573000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"35129\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site\",\"observed\":1,\"firstSeen\":1791363814902573000,\"samples\":[\"rihgxlzopnmjxlrdmortarupybhcrwgcr.oast.site\"]}"
     ]
   },
   {
@@ -1516,9 +1516,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "42740",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "fotozpojskklpffjsgatuzftleftuzjsp.oast.site",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1535,8 +1535,8 @@
     "FirstSeen": 1791363815035526000,
     "LastSeen": 1791363815035564000,
     "Examples": [
-      "{\"at\":1791363815035526000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"fotozpojskklpffjsgatuzftleftuzjsp.oast.site\",\"observed\":1,\"firstSeen\":1791363815035526000,\"samples\":[\"fotozpojskklpffjsgatuzftleftuzjsp.oast.site\"]}",
-      "{\"at\":1791363815035564000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"fotozpojskklpffjsgatuzftleftuzjsp.oast.site\",\"observed\":1,\"firstSeen\":1791363815035564000,\"samples\":[\"fotozpojskklpffjsgatuzftleftuzjsp.oast.site\"]}"
+      "{\"at\":1791363815035526000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"42740\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"fotozpojskklpffjsgatuzftleftuzjsp.oast.site\",\"observed\":1,\"firstSeen\":1791363815035526000,\"samples\":[\"fotozpojskklpffjsgatuzftleftuzjsp.oast.site\"]}",
+      "{\"at\":1791363815035564000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"59326\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"fotozpojskklpffjsgatuzftleftuzjsp.oast.site\",\"observed\":1,\"firstSeen\":1791363815035564000,\"samples\":[\"fotozpojskklpffjsgatuzftleftuzjsp.oast.site\"]}"
     ]
   },
   {
@@ -1544,9 +1544,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "38023",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1563,8 +1563,8 @@
     "FirstSeen": 1791363815459383000,
     "LastSeen": 1791363815459451000,
     "Examples": [
-      "{\"at\":1791363815459383000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site\",\"observed\":1,\"firstSeen\":1791363815459383000,\"samples\":[\"mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site\"]}",
-      "{\"at\":1791363815459451000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site\",\"observed\":1,\"firstSeen\":1791363815459451000,\"samples\":[\"mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site\"]}"
+      "{\"at\":1791363815459383000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"38023\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site\",\"observed\":1,\"firstSeen\":1791363815459383000,\"samples\":[\"mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site\"]}",
+      "{\"at\":1791363815459451000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"47732\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site\",\"observed\":1,\"firstSeen\":1791363815459451000,\"samples\":[\"mgksjgdhavqvpflpctentnuyfpuebhrsp.oast.site\"]}"
     ]
   },
   {
@@ -1572,9 +1572,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "43554",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "yvikvazbpamiowoxewrhildairbacgnms.oastify.com",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1591,8 +1591,8 @@
     "FirstSeen": 1791363816207141000,
     "LastSeen": 1791363816207178000,
     "Examples": [
-      "{\"at\":1791363816207141000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"yvikvazbpamiowoxewrhildairbacgnms.oastify.com\",\"observed\":1,\"firstSeen\":1791363816207141000,\"samples\":[\"yvikvazbpamiowoxewrhildairbacgnms.oastify.com\"]}",
-      "{\"at\":1791363816207178000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"yvikvazbpamiowoxewrhildairbacgnms.oastify.com\",\"observed\":1,\"firstSeen\":1791363816207178000,\"samples\":[\"yvikvazbpamiowoxewrhildairbacgnms.oastify.com\"]}"
+      "{\"at\":1791363816207141000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"43554\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"yvikvazbpamiowoxewrhildairbacgnms.oastify.com\",\"observed\":1,\"firstSeen\":1791363816207141000,\"samples\":[\"yvikvazbpamiowoxewrhildairbacgnms.oastify.com\"]}",
+      "{\"at\":1791363816207178000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"46835\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"yvikvazbpamiowoxewrhildairbacgnms.oastify.com\",\"observed\":1,\"firstSeen\":1791363816207178000,\"samples\":[\"yvikvazbpamiowoxewrhildairbacgnms.oastify.com\"]}"
     ]
   },
   {
@@ -1600,9 +1600,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "56159",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1619,8 +1619,8 @@
     "FirstSeen": 1791363816407400000,
     "LastSeen": 1791363816407546000,
     "Examples": [
-      "{\"at\":1791363816407400000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com\",\"observed\":1,\"firstSeen\":1791363816407400000,\"samples\":[\"oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com\"]}",
-      "{\"at\":1791363816407546000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com\",\"observed\":1,\"firstSeen\":1791363816407546000,\"samples\":[\"oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com\"]}"
+      "{\"at\":1791363816407400000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"56159\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com\",\"observed\":1,\"firstSeen\":1791363816407400000,\"samples\":[\"oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com\"]}",
+      "{\"at\":1791363816407546000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"49267\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com\",\"observed\":1,\"firstSeen\":1791363816407546000,\"samples\":[\"oxfdzrmwkqnxnrptvbhixsmhvtxjxujpd.oastify.com\"]}"
     ]
   },
   {
@@ -1628,9 +1628,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "40463",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1647,8 +1647,8 @@
     "FirstSeen": 1791363816719808000,
     "LastSeen": 1791363816719841000,
     "Examples": [
-      "{\"at\":1791363816719808000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com\",\"observed\":1,\"firstSeen\":1791363816719808000,\"samples\":[\"jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com\"]}",
-      "{\"at\":1791363816719841000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com\",\"observed\":1,\"firstSeen\":1791363816719841000,\"samples\":[\"jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com\"]}"
+      "{\"at\":1791363816719808000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"40463\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com\",\"observed\":1,\"firstSeen\":1791363816719808000,\"samples\":[\"jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com\"]}",
+      "{\"at\":1791363816719841000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"43669\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com\",\"observed\":1,\"firstSeen\":1791363816719841000,\"samples\":[\"jtydoklqepktmgafojqccwgbhkntwgifk.oastify.com\"]}"
     ]
   },
   {
@@ -1656,9 +1656,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "57594",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1675,8 +1675,8 @@
     "FirstSeen": 1791363817079461000,
     "LastSeen": 1791363817079503000,
     "Examples": [
-      "{\"at\":1791363817079461000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com\",\"observed\":1,\"firstSeen\":1791363817079461000,\"samples\":[\"ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com\"]}",
-      "{\"at\":1791363817079503000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com\",\"observed\":1,\"firstSeen\":1791363817079503000,\"samples\":[\"ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com\"]}"
+      "{\"at\":1791363817079461000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"57594\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com\",\"observed\":1,\"firstSeen\":1791363817079461000,\"samples\":[\"ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com\"]}",
+      "{\"at\":1791363817079503000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"43257\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com\",\"observed\":1,\"firstSeen\":1791363817079503000,\"samples\":[\"ehfibvtywrjijybmzsluuvzumoepatxbu.oastify.com\"]}"
     ]
   },
   {
@@ -1684,9 +1684,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "36461",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1703,8 +1703,8 @@
     "FirstSeen": 1791363817233644000,
     "LastSeen": 1791363817233678000,
     "Examples": [
-      "{\"at\":1791363817233644000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com\",\"observed\":1,\"firstSeen\":1791363817233644000,\"samples\":[\"ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com\"]}",
-      "{\"at\":1791363817233678000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com\",\"observed\":1,\"firstSeen\":1791363817233678000,\"samples\":[\"ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com\"]}"
+      "{\"at\":1791363817233644000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"36461\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com\",\"observed\":1,\"firstSeen\":1791363817233644000,\"samples\":[\"ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com\"]}",
+      "{\"at\":1791363817233678000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"57285\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com\",\"observed\":1,\"firstSeen\":1791363817233678000,\"samples\":[\"ipxoclonyfjmzvmksdvwtkvakndtxrbth.oastify.com\"]}"
     ]
   },
   {
@@ -1712,9 +1712,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "53392",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1731,8 +1731,8 @@
     "FirstSeen": 1791363817416630000,
     "LastSeen": 1791363817416666000,
     "Examples": [
-      "{\"at\":1791363817416630000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com\",\"observed\":1,\"firstSeen\":1791363817416630000,\"samples\":[\"wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com\"]}",
-      "{\"at\":1791363817416666000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com\",\"observed\":1,\"firstSeen\":1791363817416666000,\"samples\":[\"wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com\"]}"
+      "{\"at\":1791363817416630000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"53392\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com\",\"observed\":1,\"firstSeen\":1791363817416630000,\"samples\":[\"wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com\"]}",
+      "{\"at\":1791363817416666000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"46745\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com\",\"observed\":1,\"firstSeen\":1791363817416666000,\"samples\":[\"wddlzdxxondvrbmlfbczrzrdggsadsclq.oastify.com\"]}"
     ]
   },
   {
@@ -1740,9 +1740,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "40539",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1759,8 +1759,8 @@
     "FirstSeen": 1791363817649622000,
     "LastSeen": 1791363817649671000,
     "Examples": [
-      "{\"at\":1791363817649622000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com\",\"observed\":1,\"firstSeen\":1791363817649622000,\"samples\":[\"mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com\"]}",
-      "{\"at\":1791363817649671000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com\",\"observed\":1,\"firstSeen\":1791363817649671000,\"samples\":[\"mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com\"]}"
+      "{\"at\":1791363817649622000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"40539\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com\",\"observed\":1,\"firstSeen\":1791363817649622000,\"samples\":[\"mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com\"]}",
+      "{\"at\":1791363817649671000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"46193\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com\",\"observed\":1,\"firstSeen\":1791363817649671000,\"samples\":[\"mkbyoesoqdlurdlgyotuzdmwvyxaozxeu.oastify.com\"]}"
     ]
   },
   {
@@ -1768,9 +1768,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "34751",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1787,8 +1787,8 @@
     "FirstSeen": 1791363817853578000,
     "LastSeen": 1791363817853613000,
     "Examples": [
-      "{\"at\":1791363817853578000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com\",\"observed\":1,\"firstSeen\":1791363817853578000,\"samples\":[\"bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com\"]}",
-      "{\"at\":1791363817853613000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com\",\"observed\":1,\"firstSeen\":1791363817853613000,\"samples\":[\"bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com\"]}"
+      "{\"at\":1791363817853578000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"34751\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com\",\"observed\":1,\"firstSeen\":1791363817853578000,\"samples\":[\"bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com\"]}",
+      "{\"at\":1791363817853613000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"39856\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com\",\"observed\":1,\"firstSeen\":1791363817853613000,\"samples\":[\"bfavvcfunogbqtmzefnhlibbsqhtswhcd.oastify.com\"]}"
     ]
   },
   {
@@ -1796,9 +1796,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "32875",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1815,8 +1815,8 @@
     "FirstSeen": 1791363818309936000,
     "LastSeen": 1791363818310029000,
     "Examples": [
-      "{\"at\":1791363818309936000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com\",\"observed\":1,\"firstSeen\":1791363818309936000,\"samples\":[\"xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com\"]}",
-      "{\"at\":1791363818310029000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com\",\"observed\":1,\"firstSeen\":1791363818310029000,\"samples\":[\"xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com\"]}"
+      "{\"at\":1791363818309936000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"32875\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com\",\"observed\":1,\"firstSeen\":1791363818309936000,\"samples\":[\"xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com\"]}",
+      "{\"at\":1791363818310029000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"51182\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com\",\"observed\":1,\"firstSeen\":1791363818310029000,\"samples\":[\"xtnmuvaqejrkwxdftdbhwcdufjjduilww.oastify.com\"]}"
     ]
   },
   {
@@ -1824,9 +1824,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "43111",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1843,8 +1843,8 @@
     "FirstSeen": 1791363818492699000,
     "LastSeen": 1791363818492740000,
     "Examples": [
-      "{\"at\":1791363818492699000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com\",\"observed\":1,\"firstSeen\":1791363818492699000,\"samples\":[\"vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com\"]}",
-      "{\"at\":1791363818492740000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com\",\"observed\":1,\"firstSeen\":1791363818492740000,\"samples\":[\"vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com\"]}"
+      "{\"at\":1791363818492699000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"43111\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com\",\"observed\":1,\"firstSeen\":1791363818492699000,\"samples\":[\"vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com\"]}",
+      "{\"at\":1791363818492740000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"52692\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com\",\"observed\":1,\"firstSeen\":1791363818492740000,\"samples\":[\"vborclnsukpkbqbquqqxjboulqmksngpt.oastify.com\"]}"
     ]
   },
   {
@@ -1852,9 +1852,9 @@
     "Name": "policy.oast",
     "Description": "policy.oast: policy-observation",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "49210",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "policy.oast",
@@ -1871,8 +1871,8 @@
     "FirstSeen": 1791363818635908000,
     "LastSeen": 1791363818638369000,
     "Examples": [
-      "{\"at\":1791363818635908000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com\",\"observed\":1,\"firstSeen\":1791363818635908000,\"samples\":[\"hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com\"]}",
-      "{\"at\":1791363818638369000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com\",\"observed\":1,\"firstSeen\":1791363818638369000,\"samples\":[\"hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com\"]}"
+      "{\"at\":1791363818635908000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"49210\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com\",\"observed\":1,\"firstSeen\":1791363818635908000,\"samples\":[\"hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com\"]}",
+      "{\"at\":1791363818638369000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"42000\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com\",\"observed\":1,\"firstSeen\":1791363818638369000,\"samples\":[\"hywkofkwbimqxzqnuzxiqicksthjskzjv.oastify.com\"]}"
     ]
   }
 ]

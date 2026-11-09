@@ -2,7 +2,9 @@ package collector
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/internal/linkaudit"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
@@ -13,7 +15,7 @@ var (
 		return decodeNFLOG(data, p, binary.NativeEndian)
 	})})
 	layerCHDLC      = gopacket.RegisterLayerType(12002, gopacket.LayerTypeMetadata{Name: "CiscoHDLC", Decoder: gopacket.DecodeFunc(decodeCHDLC)})
-	layerIEEE802154 = gopacket.RegisterLayerType(12003, gopacket.LayerTypeMetadata{Name: "IEEE802.15.4-noFCS", Decoder: gopacket.DecodeFunc(decodeIEEE802154)})
+	layerIEEE802154 = linkaudit.LayerIEEE802154
 	layerRawIP      = gopacket.RegisterLayerType(12004, gopacket.LayerTypeMetadata{Name: "CaptureRawIP", Decoder: gopacket.DecodeFunc(decodeRawIP)})
 )
 
@@ -136,77 +138,22 @@ func decodeCHDLC(data []byte, p gopacket.PacketBuilder) error {
 	return p.NextDecoder(layer.Protocol)
 }
 
-type ieee802154Layer struct {
-	layers.BaseLayer
-	FrameControl              uint16
-	Sequence                  byte
-	DestinationPAN, SourcePAN []byte
-	Destination, Source       []byte
-}
-
-func (*ieee802154Layer) LayerType() gopacket.LayerType { return layerIEEE802154 }
+type ieee802154Layer = linkaudit.IEEE802154
 
 func decodeIEEE802154(data []byte, p gopacket.PacketBuilder) error {
-	if len(data) < 3 {
-		p.SetTruncated()
-		return badLink("IEEE 802.15.4 header shorter than 3 bytes")
+	return ieee802154Error(linkaudit.DecodeIEEE802154(data, p))
+}
+func decodeIEEE802154FCS(data []byte, p gopacket.PacketBuilder) error {
+	return ieee802154Error(linkaudit.DecodeIEEE802154FCS(data, p))
+}
+func ieee802154Error(err error) error {
+	if err == nil {
+		return nil
 	}
-	fcf := binary.LittleEndian.Uint16(data[:2])
-	layer := &ieee802154Layer{BaseLayer: layers.BaseLayer{Contents: data[:3]}, FrameControl: fcf, Sequence: data[2]}
-	p.AddLayer(layer)
-	version, dst, src, kind := (fcf>>12)&3, (fcf>>10)&3, (fcf>>14)&3, fcf&7
-	if dst == 1 || src == 1 || fcf&0x80 != 0 {
-		return badLink("IEEE 802.15.4 reserved address mode/control bit")
+	if errors.Is(err, linkaudit.ErrUnsupported) {
+		return unsupportedLink("%v", err)
 	}
-	if version >= 2 || kind > 3 {
-		return unsupportedLink("unsupported IEEE 802.15.4 frame version/type %d/%d", version, kind)
-	}
-	if fcf&0x300 != 0 {
-		return badLink("IEEE 802.15.4 legacy frame uses sequence suppression/IE bits")
-	}
-	compressed := fcf&0x40 != 0
-	if compressed && (src == 0 || dst == 0) {
-		return badLink("IEEE 802.15.4 PAN compression without both addresses")
-	}
-	offset := 3
-	take := func(n int) []byte {
-		if offset+n > len(data) {
-			return nil
-		}
-		value := data[offset : offset+n]
-		offset += n
-		return value
-	}
-	addrSize := func(mode uint16) int {
-		if mode == 2 {
-			return 2
-		}
-		return 8
-	}
-	if dst != 0 {
-		layer.DestinationPAN = take(2)
-		layer.Destination = take(addrSize(dst))
-		if layer.DestinationPAN == nil || layer.Destination == nil {
-			p.SetTruncated()
-			return badLink("truncated IEEE 802.15.4 destination")
-		}
-	}
-	if src != 0 {
-		layer.SourcePAN = layer.DestinationPAN
-		if !compressed {
-			layer.SourcePAN = take(2)
-		}
-		layer.Source = take(addrSize(src))
-		if layer.SourcePAN == nil || layer.Source == nil {
-			p.SetTruncated()
-			return badLink("truncated IEEE 802.15.4 source")
-		}
-	}
-	layer.BaseLayer = layers.BaseLayer{Contents: data[:offset], Payload: data[offset:]}
-	if kind == 2 && fcf&0x08 == 0 && src == 0 && dst == 0 && offset == len(data) {
-		return nil // Legacy ACK has no payload or FCS in LINKTYPE 230.
-	}
-	return unsupportedLink("unsupported IEEE 802.15.4 payload (frame type %d, security=%t); MAC header retained", kind, fcf&0x08 != 0)
+	return badLink("%v", err)
 }
 
 func decodeIPPayload(data []byte, p gopacket.PacketBuilder, version byte) error {
@@ -243,6 +190,9 @@ func decodeSLL2(data []byte, p gopacket.PacketBuilder) error {
 	}
 	p.AddLayer(sll)
 	p.SetLinkLayer(sll)
+	if uint16(sll.ProtocolType) == 0x8035 && sll.ARPHardwareType == 1 {
+		return p.NextDecoder(layers.LayerTypeARP)
+	}
 	if sll.NextLayerType() == gopacket.LayerTypeZero {
 		return unsupportedLink("unsupported Linux SLL2 hardware/protocol %d/0x%04x", sll.ARPHardwareType, uint16(sll.ProtocolType))
 	}

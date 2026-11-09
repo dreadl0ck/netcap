@@ -76,9 +76,8 @@ func TestCaptureLinks(t *testing.T) {
 	if !ok || !bytes.Equal(mac.DestinationPAN, []byte{0x34, 0x12}) || !bytes.Equal(mac.SourcePAN, mac.DestinationPAN) || !bytes.Equal(mac.Source, []byte{0xbc, 0x9a}) || !bytes.Equal(mac.Destination, []byte{0x78, 0x56}) || !bytes.Equal(mac.Payload, []byte{1, 2, 3, 4}) {
 		t.Fatalf("no-FCS MAC addressing or payload lost: %+v", mac)
 	}
-	var linkErr *captureLinkError
-	if p.ErrorLayer() == nil || !errors.As(p.ErrorLayer().Error(), &linkErr) || !linkErr.Unsupported {
-		t.Fatal("unimplemented WPAN payload must be explicitly qualified")
+	if p.ErrorLayer() != nil || mac.PayloadProtocol != "opaque" {
+		t.Fatal("valid MAC payload must remain explicitly opaque")
 	}
 }
 
@@ -116,8 +115,7 @@ func TestCaptureLinksMalformedAndUnsupported(t *testing.T) {
 		{"wpan-address-mode", 230, []byte{1, 4, 0}, false},
 		{"wpan-address-truncated", 230, []byte{1, 8, 0}, false},
 		{"wpan-pan-compression", 230, []byte{0x41, 0, 0}, false},
-		{"wpan-v2", 230, []byte{1, 0x20, 0}, true},
-		{"wpan-data", 230, []byte{1, 0, 0, 0x45}, true},
+		{"wpan-reserved-version", 230, []byte{1, 0x30, 0}, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := inputDecode(tc.data, tc.lt, le)

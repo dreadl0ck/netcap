@@ -21,6 +21,7 @@ package netio
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -40,7 +41,9 @@ import (
 
 // protoWriter is a structure that supports writing protobuf audit records to disk.
 type protoWriter struct {
-	mu sync.Mutex
+	initialized   bool
+	pendingHeader *types.Header
+	mu            sync.Mutex
 
 	bWriter *bufio.Writer
 	gWriter *pgzip.Writer
@@ -67,6 +70,19 @@ func newProtoWriter(wc *WriterConfig) *protoWriter {
 		w.file = createFile(filepath.Join(wc.Out, wc.Name), defaults.FileExtension)
 	}
 	ioLog.Info("create protoWriter", zap.String("base", filepath.Join(wc.Out, wc.Name)), zap.String("type", wc.Type.String()))
+	if wc.Compress && (wc.CompressionLevel < -2 || wc.CompressionLevel > 9) {
+		panic(fmt.Errorf("gzip: invalid compression level: %d", wc.CompressionLevel))
+	}
+	return w
+}
+
+// Compression and large buffers are needed only for protocols that write data.
+// Files are still opened at construction so output-path failures remain immediate.
+func (w *protoWriter) initialize() {
+	if w.initialized {
+		return
+	}
+	wc := w.wc
 
 	// buffer data?
 	if wc.Buffer {
@@ -110,7 +126,18 @@ func newProtoWriter(wc *WriterConfig) *protoWriter {
 		}
 	}
 
-	return w
+	w.initialized = true
+}
+
+func (w *protoWriter) writePendingHeader() error {
+	if w.pendingHeader == nil {
+		return nil
+	}
+	_, err := w.pWriter.putProto(w.pendingHeader)
+	if err == nil {
+		w.pendingHeader = nil
+	}
+	return err
 }
 
 // WriteProto writes a protobuf message.
@@ -121,6 +148,10 @@ func (w *protoWriter) Write(msg proto.Message) error {
 	// Check if writer has been closed
 	if w.closed {
 		return nil // Silently ignore writes to closed writer
+	}
+	w.initialize()
+	if err := w.writePendingHeader(); err != nil {
+		return err
 	}
 
 	// Track disk I/O performance
@@ -150,8 +181,11 @@ func (w *protoWriter) WriteHeader(t types.Type) error {
 		return nil // Silently ignore writes to closed writer
 	}
 
-	_, err := w.pWriter.putProto(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime))
-	return err
+	w.pendingHeader = NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime)
+	if !w.initialized {
+		return nil
+	}
+	return w.writePendingHeader()
 }
 
 // Flush flushes any buffered data to disk without closing the writer.
@@ -163,6 +197,10 @@ func (w *protoWriter) Flush() error {
 	// Check if writer has been closed
 	if w.closed {
 		return nil
+	}
+	w.initialize()
+	if err := w.writePendingHeader(); err != nil {
+		return err
 	}
 
 	// Flush the buffered writer
@@ -202,6 +240,28 @@ func (w *protoWriter) Close(numRecords int64) (name string, size int64) {
 
 	// Mark as closed to prevent further writes
 	w.closed = true
+	if numRecords == 0 {
+		// Header-only files are discarded. Do not flush buffered headers or
+		// fsync an output that will immediately be unlinked.
+		if w.gWriter != nil {
+			closeGzipWriters(w.gWriter)
+		}
+		if w.file != nil {
+			path := w.file.Name()
+			if err := w.file.Close(); err != nil {
+				ioLog.Error("close empty audit file", zap.Error(err))
+			}
+			if err := os.Remove(path); err != nil {
+				ioLog.Error("remove empty audit file", zap.Error(err))
+			}
+			return filepath.Base(path), 0
+		}
+		return "", 0
+	}
+	w.initialize()
+	if err := w.writePendingHeader(); err != nil {
+		ioLog.Error("write final audit header", zap.Error(err))
+	}
 
 	if w.wc.Buffer {
 		flushWriters(w.bWriter)

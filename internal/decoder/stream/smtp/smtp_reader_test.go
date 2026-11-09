@@ -20,9 +20,44 @@
 package smtp
 
 import (
+	"bufio"
+	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"go.uber.org/zap"
+	"io"
 	"reflect"
+	"strings"
 	"testing"
 )
+
+func TestSMTPDataStateSurvives354DirectionChange(t *testing.T) {
+	previousLogger := smtpLog
+	smtpLog = zap.NewNop()
+	t.Cleanup(func() { smtpLog = previousLogger })
+	h := &smtpReader{conversation: &core.ConversationInfo{Ident: "fixture"}}
+	defer func() {
+		for _, release := range h.bufferReleases {
+			release()
+		}
+	}()
+	if err := h.readRequest(bufio.NewReader(strings.NewReader("DATA\r\n"))); err != io.EOF {
+		t.Fatal(err)
+	}
+	if h.pendingData == nil {
+		t.Fatal("DATA state lost before server reply")
+	}
+	if err := h.readResponse(bufio.NewReader(strings.NewReader("354 Continue\r\n"))); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.readRequest(bufio.NewReader(strings.NewReader("From: sender@example.test\r\nTo: recipient@example.test\r\n\r\nSITE\r\nQUIT\r\nDATA\r\n.\r\n"))); err != nil {
+		t.Fatal(err)
+	}
+	if len(h.smtpRequests) != 1 || h.smtpRequests[0].Command != "DATA" || !strings.Contains(h.smtpRequests[0].Data, "SITE\r\nQUIT\r\nDATA\r\n") {
+		t.Fatal("message body became SMTP commands")
+	}
+	if h.pendingData != nil {
+		t.Fatal("completed body retained pending DATA state")
+	}
+}
 
 // TestValidSMTPCommand pins the set of client commands recognised by the
 // reader. A regression here (e.g. a renamed constant) would silently drop

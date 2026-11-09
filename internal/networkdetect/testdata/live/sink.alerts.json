@@ -4,9 +4,9 @@
     "Name": "intel.sink",
     "Description": "intel.sink: indicator-match",
     "SrcIP": "127.0.0.1",
-    "SrcPort": "0",
+    "SrcPort": "36760",
     "DstIP": "127.0.0.1",
-    "DstPort": "0",
+    "DstPort": "53",
     "Domain": "sink.example",
     "Notes": "aggregation=capture-time; windowNS=300000000000; flush=eof; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest",
     "RuleName": "intel.sink",
@@ -23,14 +23,14 @@
     "FirstSeen": 1791363769937057000,
     "LastSeen": 1791363769993573000,
     "Examples": [
-      "{\"at\":1791363769937057000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769937057000,\"samples\":[\"sink.example\"]}",
-      "{\"at\":1791363769937201000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769937201000,\"samples\":[\"sink.example\"]}",
-      "{\"at\":1791363769942161000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769942161000,\"samples\":[\"sink.example\"]}",
-      "{\"at\":1791363769942214000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769942214000,\"samples\":[\"sink.example\"]}",
-      "{\"at\":1791363769946052000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769946052000,\"samples\":[\"sink.example\"]}",
-      "{\"at\":1791363769946085000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769946085000,\"samples\":[\"sink.example\"]}",
-      "{\"at\":1791363769950164000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769950164000,\"samples\":[\"sink.example\"]}",
-      "{\"at\":1791363769993573000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"0\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"0\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769993573000,\"samples\":[\"sink.example\"]}"
+      "{\"at\":1791363769937057000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"36760\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769937057000,\"samples\":[\"sink.example\"]}",
+      "{\"at\":1791363769937201000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"37121\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769937201000,\"samples\":[\"sink.example\"]}",
+      "{\"at\":1791363769942161000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"45667\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769942161000,\"samples\":[\"sink.example\"]}",
+      "{\"at\":1791363769942214000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"33735\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769942214000,\"samples\":[\"sink.example\"]}",
+      "{\"at\":1791363769946052000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"35049\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769946052000,\"samples\":[\"sink.example\"]}",
+      "{\"at\":1791363769946085000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"33643\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769946085000,\"samples\":[\"sink.example\"]}",
+      "{\"at\":1791363769950164000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"60846\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769950164000,\"samples\":[\"sink.example\"]}",
+      "{\"at\":1791363769993573000,\"srcIP\":\"127.0.0.1\",\"srcPort\":\"33077\",\"dstIP\":\"127.0.0.1\",\"dstPort\":\"53\",\"domain\":\"sink.example\",\"observed\":1,\"firstSeen\":1791363769993573000,\"samples\":[\"sink.example\"]}"
     ]
   },
   {

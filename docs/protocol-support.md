@@ -41,7 +41,7 @@ check their exact header/schema before ingestion (`types/netcap.proto`).
 
 | Family | Examples | Interpretation |
 | --- | --- | --- |
-| Packet layers | Ethernet, ARP, IPv4/IPv6, TCP, UDP, ICMP, DNS | Decoded packet fields; visibility depends on link type and captured bytes |
+| Packet layers | Ethernet, ARP, IPv4/IPv6, TCP, UDP, ICMP, DNS, NBNS, IEEE802154 | Decoded packet fields; visibility depends on link type and captured bytes |
 | Reassembled protocols | HTTP, TLS, SSH, SMTP/IMAP/POP3, SMB, LDAP, Kerberos, DCE/RPC, FTP | Messages/transactions from streams, with protocol-specific limits |
 | OT and routing | Modbus, DNP3, S7Comm, CIP/ENIP, OPCUA, PROFINET, BACnet, BGP | Typed observations, not universal device/model support |
 | Network summaries | Connection, Host, DeviceProfile, Service, Software | Aggregates and derived claims; review scope, timing and provenance |
@@ -54,10 +54,24 @@ check their exact header/schema before ingestion (`types/netcap.proto`).
 | HTTP/1 | Message/transaction parsing; optional [incremental HTTP/1](reassembly.md#incremental-transactions) needs an observed handshake |
 | Cleartext HTTP/2 | Bounded preface/HPACK and validated h2c upgrade decoding into HTTP records; completion-only capture path, not generic gRPC message decoding |
 | QUIC | Recognized Initial packet processing and ClientHello extraction; not arbitrary HTTP/3 plaintext |
-| TLS | Handshake/certificate/fingerprint metadata without decryption; supplied secrets plus external `tshark` are a separate workflow |
+| TLS | Handshake/certificate/fingerprint metadata; embedded pcapng TLS key logs enable authenticated TLS 1.2/1.3 HTTP decoding for supported AEAD suites (`internal/tlsdecrypt/decrypt.go`) |
+| IEEE 802.15.4 | MAC beacon/data/ACK/command metadata on link types 195/230, PAN/address fields, 2015 sequence suppression and FCS assessment. Uncompressed 6LoWPAN IPv6 is decoded; protected/IPHC payloads remain explicit in `PayloadProtocol`. |
 | Service identity | Bounded SSH/HTTP/SMTP/FTP greeting parsers; IANA port names are a separate lookup |
 | Vulnerabilities | Structured CPE applicability from schema-2 NVD data; unknown prerequisites remain unknown |
-| Identity | Observed host/account facts and conflicts; directory traffic does not automatically identify the server as the subject |
+| Identity | `Hosts.json` retains scoped profile, NBNS registration and browser-name evidence. `.local` aliases are reconciled; PTR owners and domain-browser names do not become hostnames. Directory traffic does not automatically identify the server as the subject. |
+
+## Captured TLS secrets
+
+The pcapng reader admits `TLSK` Decryption Secrets Blocks before stream decoding,
+including blocks placed after packets. Supported TLS 1.2/1.3 AES-GCM and
+ChaCha20-Poly1305 suites use NSS key-log secrets; failed record authentication,
+missing keys and unsupported suites leave the affected ciphertext opaque.
+Decoded HTTP records carry `ParseQualifications: ["decrypted-tls-key-log"]`.
+The implementation and TLS 1.2/1.3 end-to-end controls are in
+`internal/tlsdecrypt/` and `internal/collector/tls_dsb_test.go`.
+
+Secrets remain capture-local memory. Retained packet segments do not copy DSBs;
+keep the original pcapng when a reproduction needs its embedded keys.
 
 ## Cleartext HTTP/2 evidence
 

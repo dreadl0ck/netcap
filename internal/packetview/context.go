@@ -139,6 +139,9 @@ func attach(p gopacket.Packet, ci gopacket.CaptureInfo, c *Context) gopacket.Pac
 func vlanScope(ls []gopacket.Layer) string {
 	var b strings.Builder
 	for _, l := range ls {
+		if scoped, ok := l.(interface{ ScopeTag() string }); ok {
+			b.WriteString(scoped.ScopeTag())
+		}
 		if v, ok := l.(*layers.Dot1Q); ok {
 			fmt.Fprintf(&b, "/vlan:%d", v.VLANIdentifier)
 		}

@@ -126,7 +126,7 @@ func (c *Collector) observeRecordScope(p gopacket.Packet, scope networkdetect.Sc
 }
 func (c *Collector) observeDecodedRecord(m proto.Message) {
 	switch m.(type) {
-	case *types.HTTP, *types.File, *types.SMB, *types.Kerberos, *types.LDAP, *types.DCERPC, *types.DHCPv4:
+	case *types.HTTP, *types.File, *types.SMB, *types.Kerberos, *types.LDAP, *types.DCERPC, *types.DHCPv4, *types.NBNS:
 	case *types.Secret:
 		if m.(*types.Secret).Service != secret.IdentityService {
 			return
@@ -194,6 +194,9 @@ func (c *Collector) finishHostIdentity() error {
 	packet.DeviceProfiles.Unlock()
 	c.analysisMu.Lock()
 	for _, dp := range snapshots {
+		if len(dp.DeviceIPs) == 0 {
+			c.hostIdentity.SeedBoundProfile(dp)
+		}
 		for _, ip := range dp.DeviceIPs {
 			if bound, ok := c.ipScopes[ip]; ok && !bound.Ambiguous {
 				copy := *dp
@@ -210,7 +213,11 @@ func (c *Collector) finishHostIdentity() error {
 		if h.HostnameState != "observed" {
 			continue
 		}
-		if dp := packet.DeviceProfiles.FindByIP(h.IP); dp != nil {
+		dp := packet.DeviceProfiles.FindByIP(h.IP)
+		if dp == nil && h.MAC != "" {
+			dp = packet.DeviceProfiles.FindByMAC(h.MAC)
+		}
+		if dp != nil {
 			dp.EnrichFromDiscovery([]string{h.Hostname}, nil, nil, "")
 		}
 	}

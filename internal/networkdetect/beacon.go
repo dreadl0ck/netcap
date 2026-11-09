@@ -45,6 +45,37 @@ func BeaconStats(times []int64) (mean, jitter float64) {
 	return mean, math.Sqrt(variance/n) / mean
 }
 
+// skippedCadence fits integer multiples of the shortest observed interval.
+// Two direct intervals and at most eight cycles per gap constrain the fit.
+func skippedCadence(times []int64) (interval, errorRatio float64, ok bool) {
+	if len(times) < 4 {
+		return 0, 0, false
+	}
+	interval = math.Inf(1)
+	for i := 1; i < len(times); i++ {
+		gap := float64(times[i] - times[i-1])
+		if gap <= 0 {
+			return 0, 0, false
+		}
+		interval = min(interval, gap)
+	}
+	direct, skipped := 0, false
+	for i := 1; i < len(times); i++ {
+		gap := float64(times[i] - times[i-1])
+		cycles := math.Round(gap / interval)
+		if cycles < 1 || cycles > 8 {
+			return 0, 0, false
+		}
+		if cycles == 1 {
+			direct++
+		} else {
+			skipped = true
+		}
+		errorRatio = max(errorRatio, math.Abs(gap-cycles*interval)/interval)
+	}
+	return interval, errorRatio, direct >= 2 && skipped
+}
+
 // observeBeacon times TCP connection starts per source and destination
 // service and reports the latest BeaconSamples when their intervals are
 // regular.

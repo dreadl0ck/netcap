@@ -34,6 +34,18 @@ func (e *Engine) networkRole(ip string) string {
 
 func (e *Engine) smtpRole(ev Event) (expected bool, qualification string) {
 	src, dst := e.networkRole(ev.SrcIP), e.networkRole(ev.DstIP)
+	if ev.DstPort == 25 {
+		if src == "external" && dst == "internal" {
+			return true, "inbound SMTP: external source to configured internal destinations"
+		}
+		if len(e.config.InternalNetworks) == 0 {
+			a, ae := netip.ParseAddr(ev.SrcIP)
+			b, be := netip.ParseAddr(ev.DstIP)
+			if ae == nil && be == nil && a.IsGlobalUnicast() && !a.IsPrivate() && b.IsPrivate() {
+				return true, "inbound SMTP candidate inferred from public-to-private addressing; organizational ownership is unconfirmed"
+			}
+		}
+	}
 	role := "unknown (smtpRelays not configured)"
 	if len(e.config.SMTPRelays) > 0 {
 		role = "unlisted source"

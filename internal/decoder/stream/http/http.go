@@ -113,10 +113,23 @@ func containsHTTPMethod(data []byte) bool {
 func httpStart(data []byte, response bool) int {
 	data = data[:min(len(data), 16384)]
 	for i := range data {
-		if i > 0 && data[i-1] != '\n' && data[i-1] != 0 {
-			continue
-		}
 		rest := data[i:]
+		if response {
+			if !bytes.HasPrefix(rest, []byte("HTTP/1.")) {
+				continue
+			}
+		} else {
+			candidate := false
+			for _, method := range httpMethods {
+				if len(rest) > len(method) && bytes.Equal(rest[:len(method)], method) && rest[len(method)] == ' ' {
+					candidate = true
+					break
+				}
+			}
+			if !candidate {
+				continue
+			}
+		}
 		valid := containsHTTPMethod(rest)
 		if response {
 			valid = containsHTTPProtocolName(rest)

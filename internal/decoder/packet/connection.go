@@ -510,9 +510,12 @@ func makeConnection(p gopacket.Packet, connID connectionID, ll gopacket.LinkLaye
 	co.BytesClientToServer += wireBytes
 
 	// DPI: detect applications
-	apps := make(map[string]struct{})
+	var apps map[string]struct{}
 	dpiResults := dpi.GetProtocols(p)
 	for protocol := range dpiResults {
+		if apps == nil {
+			apps = make(map[string]struct{})
+		}
 		apps[protocol] = struct{}{}
 	}
 

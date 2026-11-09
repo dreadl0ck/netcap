@@ -102,7 +102,11 @@ func FPrintBuildInfo(w io.Writer) {
 				if version == "(devel)" {
 					version = netcap.GopacketVersion
 				}
-				_, _ = fmt.Fprintln(w, "> gopacket:", d.Path, "version:", version)
+				if d.Replace != nil {
+					_, _ = fmt.Fprintln(w, "> gopacket:", d.Path, "version:", version, "replacement:", d.Replace.Path, d.Replace.Version)
+				} else {
+					_, _ = fmt.Fprintln(w, "> gopacket:", d.Path, "version:", version)
+				}
 			}
 			if path.Base(d.Path) == "go-dpi" && dpi.HasDPISupport() {
 				version := d.Version
@@ -218,7 +222,7 @@ func Dump(w *os.File, c DumpConfig) error {
 
 	for {
 		err = r.Next(record)
-		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		if errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
 			return fmt.Errorf("failed to read next audit record: %w", err)

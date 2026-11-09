@@ -147,12 +147,6 @@ func expandPcapFiles(pattern string) ([]string, error) {
 			return []string{}, nil
 		}
 
-		// Check if it's a valid pcap/pcapng file
-		if !strings.HasSuffix(strings.ToLower(pattern), ".pcap") && !strings.HasSuffix(strings.ToLower(pattern), ".pcapng") {
-			// Not a pcap file, silently skip it
-			return []string{}, nil
-		}
-
 		return []string{pattern}, nil
 	}
 
@@ -177,8 +171,8 @@ func expandPcapFiles(pattern string) ([]string, error) {
 			continue
 		}
 
-		// Only include files with .pcap or .pcapng extension
-		if strings.HasSuffix(strings.ToLower(match), ".pcap") || strings.HasSuffix(strings.ToLower(match), ".pcapng") {
+		// Identify glob matches by capture magic.
+		if collector.IsCapture(match) {
 			pcapFiles = append(pcapFiles, match)
 		}
 	}
@@ -506,8 +500,8 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			continue
 		}
 
-		// Only accept files with .pcap or .pcapng extension
-		if strings.HasSuffix(strings.ToLower(arg), ".pcap") || strings.HasSuffix(strings.ToLower(arg), ".pcapng") {
+		// Identify additional inputs by capture magic.
+		if collector.IsCapture(arg) {
 			additionalFiles = append(additionalFiles, arg)
 		}
 	}

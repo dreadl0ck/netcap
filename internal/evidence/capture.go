@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -80,6 +81,7 @@ type CaptureManifest struct {
 }
 
 type ProducerIdentity struct {
+	GoMemoryLimitBytes int64  `json:"goMemoryLimitBytes,omitempty,string"`
 	Version            string `json:"version"`
 	Commit             string `json:"commit"`
 	GoVersion          string `json:"goVersion"`
@@ -93,6 +95,9 @@ type ProducerIdentity struct {
 
 func CurrentProducerIdentity() *ProducerIdentity {
 	p := &ProducerIdentity{Version: netcap.Version, Commit: netcap.Commit, GoVersion: runtime.Version(), Platform: runtime.GOOS + "/" + runtime.GOARCH}
+	if limit := debug.SetMemoryLimit(-1); limit < math.MaxInt64 {
+		p.GoMemoryLimitBytes = limit
+	}
 	if info, ok := debug.ReadBuildInfo(); ok {
 		p.ExecutableModule = info.Main.Path
 		for _, setting := range info.Settings {

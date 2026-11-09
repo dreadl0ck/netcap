@@ -146,13 +146,22 @@ func NewAssembler(pool *StreamPool) *Assembler {
 // Release drops a stopped assembler's private pool and allocation caches after
 // FlushAll. Callers must have joined every user of that pool first.
 func (a *Assembler) Release() {
+	if err := a.ReleaseChecked(); err != nil {
+		panic(err.Error())
+	}
+}
+
+// ReleaseChecked lets a collector finalize audit writers even if an ownership
+// invariant failed. A failed release must remain an explicit capture error.
+func (a *Assembler) ReleaseChecked() error {
 	if a.pc.used != 0 {
-		panic("releasing assembler with outstanding pages")
+		return fmt.Errorf("releasing assembler with outstanding pages: %d", a.pc.used)
 	}
 	a.connPool.Reset()
 	a.ret, a.cacheSG.all = nil, nil
 	a.cacheLP = livePacket{}
 	a.pc.free, a.pc.size = nil, 0
+	return nil
 }
 
 // Dump returns a short string describing the page usage of the Assembler.
@@ -439,6 +448,7 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 	//          [s6           :           e6]
 	//   [s1:e1][s2:e2] -- [s3:e3] -- [s4:e4][s5:e5]
 	//             [s <--ds-- : --de--> e]
+overlaps:
 	for cur != nil {
 		if Debug {
 			log.Printf("cur = %p (%s)\n", cur, cur)
@@ -504,6 +514,7 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 				log.Printf("case 2\n")
 			}
 			cur.bytes = cur.bytes[:-start.difference(cur.seq)]
+			break overlaps
 		case diffStart > 0 && end.difference(cur.seq) < 0:
 			if Debug {
 				log.Printf("case 4\n")
@@ -1190,6 +1201,28 @@ func (a *Assembler) FlushAll() (closed int) {
 	//wg.Wait()
 
 	return
+}
+
+// FlushIndependent drains worker-owned pools concurrently. Assemblers sharing
+// a pool remain serial because their page caches are assembler-local.
+func FlushIndependent(assemblers []*Assembler) []int {
+	groups := make(map[*StreamPool][]int)
+	for i, a := range assemblers {
+		groups[a.connPool] = append(groups[a.connPool], i)
+	}
+	closed := make([]int, len(assemblers))
+	var wg sync.WaitGroup
+	for _, indexes := range groups {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for _, i := range indexes {
+				closed[i] = assemblers[i].FlushAll()
+			}
+		}()
+	}
+	wg.Wait()
+	return closed
 }
 
 // FlushAllProgress behaves like FlushAll, but displays a progress bar additionally.

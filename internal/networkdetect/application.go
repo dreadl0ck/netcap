@@ -13,6 +13,8 @@ import (
 )
 
 type ApplicationObservation struct {
+	RangeTransfer                                  bool
+	DecryptedTLS                                   bool
 	At                                             int64
 	Scope                                          Scope
 	Kind, SrcIP, DstIP                             string
@@ -30,6 +32,17 @@ func Observation(m proto.Message) (ApplicationObservation, bool) {
 			return o, false
 		}
 		o = ApplicationObservation{At: r.Timestamp, Kind: "http", SrcIP: r.SrcIP, DstIP: r.DstIP, SrcPort: uint16(r.SrcPort), DstPort: uint16(r.DstPort), Method: r.Method, Path: r.URL, Host: r.Host, Status: int(r.StatusCode), CommunityID: r.CommunityID, Qualification: r.ReassemblyStatus}
+		o.RangeTransfer = r.StatusCode == 206
+		for _, q := range r.ParseQualifications {
+			if q == "decrypted-tls-key-log" {
+				o.DecryptedTLS = true
+			}
+		}
+		for _, header := range r.RequestHeaders {
+			if strings.EqualFold(string(header.Name), "Range") {
+				o.RangeTransfer = true
+			}
+		}
 	case *types.File:
 		if r.Protocol != "HTTP" || !(r.IsPEExecutable || r.IsELFExecutable || r.IsMachO) {
 			return o, false
@@ -44,11 +57,25 @@ func Observation(m proto.Message) (ApplicationObservation, bool) {
 			o.SrcIP, o.DstIP = o.DstIP, o.SrcIP
 			o.SrcPort, o.DstPort = o.DstPort, o.SrcPort
 		}
+	case *types.DCERPC:
+		if r.PacketType != 0 || r.InterfaceUUID == "" {
+			return o, false
+		}
+		o = ApplicationObservation{At: r.Timestamp, Kind: "rpc", SrcIP: r.SrcIP, DstIP: r.DstIP, SrcPort: uint16(r.SrcPort), DstPort: uint16(r.DstPort), Method: strings.ToLower(r.InterfaceUUID), Path: r.OperationName, Status: int(r.OpNum), CommunityID: r.CommunityID}
+	case *types.Kerberos:
+		if r.MessageTypeCode != 10 || r.ClientName == "" || strings.HasSuffix(r.ClientName, "$") {
+			return o, false
+		}
+		o = ApplicationObservation{At: r.Timestamp, Kind: "kerberos", SrcIP: r.SrcIP, DstIP: r.DstIP, SrcPort: uint16(r.SrcPort), DstPort: uint16(r.DstPort), Method: "AS-REQ", Path: r.ClientName, CommunityID: r.CommunityID}
 	default:
 		return o, false
 	}
 	o.SrcIP, o.DstIP = boundedText(o.SrcIP, 64), boundedText(o.DstIP, 64)
-	o.Method, o.Path = boundedText(o.Method, 32), boundedText(o.Path, 1024)
+	methodLimit := 32
+	if o.Kind == "rpc" {
+		methodLimit = 64
+	}
+	o.Method, o.Path = boundedText(o.Method, methodLimit), boundedText(o.Path, 1024)
 	o.Host, o.CommunityID = boundedText(o.Host, 253), boundedText(o.CommunityID, 128)
 	o.Qualification = boundedText(o.Qualification, 256)
 	return o, true
@@ -140,7 +167,11 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.A
 		return nil
 	}
 	o.SrcIP, o.DstIP = src.Unmap().String(), dst.Unmap().String()
-	o.Method, o.Path = boundedText(o.Method, 32), boundedText(o.Path, 1024)
+	methodLimit := 32
+	if o.Kind == "rpc" {
+		methodLimit = 64
+	}
+	o.Method, o.Path = boundedText(o.Method, methodLimit), boundedText(o.Path, 1024)
 	o.Host, o.CommunityID = boundedText(o.Host, 253), boundedText(o.CommunityID, 128)
 	if e.observed && o.At < e.watermark {
 		e.Late++
@@ -182,10 +213,51 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.A
 	if o.Kind == "executable" && o.DstPort != 80 && o.DstPort != 443 {
 		add("policy.executable-unusual-port", "low", "policy-observation", 1, 1, o.At, []string{"Executable file magic observed over HTTP"}, "Executable delivery and an unusual service port do not establish execution or maliciousness")
 	}
+	if o.Kind == "rpc" {
+		samples := []string{fmt.Sprintf("interface=%s opnum=%d operation=%s", o.Method, o.Status, o.Path)}
+		switch {
+		case o.Method == "e3514235-4b06-11d1-ab04-00c04fc2dcd2" && o.Status == 3:
+			add("ad.directory-replication", "medium", "policy-observation", 1, 1, o.At, samples, "DRSGetNCChanges is also normal domain-controller replication; unauthorized DCSync is not established")
+		case o.Method == "367abb81-9844-35f1-ad32-98f038001003" && (o.Status == 12 || o.Status == 19 || o.Status == 24 || o.Status == 31):
+			add("smb.remote-service-control", "medium", "policy-observation", 1, 1, o.At, samples, "Remote service creation/start also occurs in authorized administration; execution success is not inferred")
+		case o.Method == "12345678-1234-abcd-ef00-0123456789ab" && o.Status == 65:
+			add("ad.printer-notification", "low", "policy-observation", 1, 1, o.At, samples, "Printer notification RPC can be legitimate; coercion and relay success are not inferred")
+		case o.Method == "3919286a-b10c-11d0-9ba8-00c04fd92ef5":
+			add("ad.domain-role-operation", "low", "policy-observation", 1, 1, o.At, samples, "Domain setup/role operations do not alone establish exploitation")
+		}
+	}
+	if o.Kind == "kerberos" || o.Kind == "rpc" && o.Method == "12345678-1234-abcd-ef00-01234567cffb" && (o.Status == 15 || o.Status == 26) {
+		windowKey := stableKey(key, o.Kind, o.Method)
+		if len(e.scans) >= e.config.MaxKeys && e.scans[windowKey] == nil {
+			e.Overflow++
+			return alerts
+		}
+		w := e.scans[windowKey]
+		if w == nil {
+			w = &httpScan{}
+			e.scans[windowKey] = w
+		}
+		e.last[windowKey] = o.At
+		w.samples = append(w.samples, httpSample{at: o.At, path: o.Path})
+		for len(w.samples) > 0 && (o.At-w.samples[0].at > e.config.WindowNS || len(w.samples) > 128) {
+			w.samples = w.samples[1:]
+		}
+		if o.Kind == "kerberos" {
+			names := map[string]bool{}
+			for _, s := range w.samples {
+				names[strings.ToLower(s.path)] = true
+			}
+			if len(names) >= 10 {
+				add("ad.kerberos-user-diversity", "medium", "behavioral-suspicion", len(names), 10, w.samples[0].at, []string{"At least ten distinct user principals requested AS tickets from one source within the detection window"}, "Enumeration, password spraying and authorized multi-user gateways can look alike; password failure is not inferred")
+			}
+		} else if len(w.samples) >= 32 {
+			add("ad.netlogon-authentication-burst", "medium", "behavioral-suspicion", len(w.samples), 32, w.samples[0].at, []string{"Repeated NetrServerAuthenticate2/3 calls for one source and destination service"}, "A Netlogon authentication burst is compatible with Zerologon probing or administrative activity; zero credentials and exploitation success are not established")
+		}
+	}
 	if o.Kind != "http" {
 		return alerts
 	}
-	if o.DstPort == 443 || o.SrcPort == 443 {
+	if !o.DecryptedTLS && (o.DstPort == 443 || o.SrcPort == 443) {
 		add("policy.http-on-443", "low", "policy-observation", 1, 1, o.At, []string{"Decoded plaintext HTTP request on TCP/443"}, "Port convention violations can be intentional; malware identity is not inferred")
 	}
 	if o.Qualification != "" {
@@ -241,10 +313,14 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.A
 		}
 		add("http.scan", "medium", "behavioral-suspicion", len(paths), 32, s.samples[0].at, samples, "High path diversity and at least 80% HTTP 4xx responses; authorization and exploit success are not inferred")
 	}
-	if e.config.BeaconSamples == 0 {
+	if e.config.BeaconSamples == 0 || o.RangeTransfer {
 		return alerts
 	}
-	beaconKey := stableKey(key, o.Method, strings.ToLower(o.Host), path)
+	beaconPath := path
+	if o.Method == "POST" {
+		beaconPath = ""
+	} // Encoded C2 paths can vary on every poll.
+	beaconKey := stableKey(key, o.Method, strings.ToLower(o.Host), beaconPath)
 	if len(e.beacons) >= e.config.MaxKeys && e.beacons[beaconKey] == nil {
 		e.Overflow++
 		return alerts
@@ -265,9 +341,19 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.A
 	if len(times) >= e.config.BeaconSamples {
 		recent := times[len(times)-e.config.BeaconSamples:]
 		mean, jitter := BeaconStats(recent)
-		if mean >= 1e9 && jitter <= e.config.BeaconJitter {
+		cadence := false
+		if o.Method == "POST" && jitter > e.config.BeaconJitter {
+			if interval, deviation, ok := skippedCadence(recent); ok && interval >= float64(e.config.BeaconMinIntervalNS) && deviation <= e.config.BeaconJitter {
+				mean, jitter, cadence = interval, deviation, true
+			}
+		}
+		if mean >= float64(e.config.BeaconMinIntervalNS) && jitter <= e.config.BeaconJitter {
 			group = beaconKey
-			add("c2.beacon", "low", "behavioral-suspicion", len(recent), e.config.BeaconSamples, recent[0], []string{fmt.Sprintf("HTTP %s %s; interval %.3fs; jitter %.3f", o.Method, path, mean/1e9, jitter)}, "Periodic HTTP transactions can be legitimate monitoring or telemetry; C2 intent is not established")
+			sample := fmt.Sprintf("HTTP %s %s; interval %.3fs; jitter %.3f", o.Method, path, mean/1e9, jitter)
+			if cadence {
+				sample = fmt.Sprintf("HTTP POST; cadence %.3fs; maximum phase error %.3f; skipped cycles fitted", mean/1e9, jitter)
+			}
+			add("c2.beacon", "low", "behavioral-suspicion", len(recent), e.config.BeaconSamples, recent[0], []string{sample}, "Periodic HTTP transactions can be legitimate monitoring or telemetry; C2 intent is not established")
 		}
 	}
 	return alerts

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 
@@ -20,17 +21,19 @@ type aggregate struct {
 // Windows are [first match, first match + dedupNS). Live checkpoints emit
 // partial windows without advancing capture time. Capacity flushes preserve every match.
 type aggregator struct {
-	windowNS    int64
-	maxKeys     int
-	pending     map[string]*aggregate
-	matches     uint64
-	capacity    uint64
-	oldest      int64
-	oldestKnown bool
+	beaconIdleNS int64
+	beaconSweep  int64
+	windowNS     int64
+	maxKeys      int
+	pending      map[string]*aggregate
+	matches      uint64
+	capacity     uint64
+	oldest       int64
+	oldestKnown  bool
 }
 
 func newAggregator(c Config) *aggregator {
-	return &aggregator{windowNS: c.DedupNS, maxKeys: c.MaxKeys, pending: make(map[string]*aggregate)}
+	return &aggregator{windowNS: c.DedupNS, beaconIdleNS: max(c.BeaconWindowNS, c.DedupNS), maxKeys: c.MaxKeys, pending: make(map[string]*aggregate)}
 }
 
 func stableKey(parts ...any) string {
@@ -87,7 +90,7 @@ func (g *aggregator) add(key string, a *types.Alert) []*types.Alert {
 		a.TimestampBasis = "capture-time"
 		entry = &aggregate{alert: a}
 		g.pending[key] = entry
-		if len(g.pending) == 1 || g.oldestKnown && a.FirstSeen < g.oldest {
+		if a.Name != "c2.beacon" && (len(g.pending) == 1 || g.oldestKnown && a.FirstSeen < g.oldest) {
 			g.oldest, g.oldestKnown = a.FirstSeen, true
 		}
 	}
@@ -130,18 +133,38 @@ func (g *aggregator) take(key, reason string) *types.Alert {
 }
 
 func (g *aggregator) advance(at int64) []*types.Alert {
+	var out []*types.Alert
+	if g.beaconSweep == 0 || at-g.beaconSweep >= 1e9 {
+		g.beaconSweep = at
+		var expired []string
+		for key, entry := range g.pending {
+			if entry.alert.Name == "c2.beacon" && at-entry.alert.LastSeen >= g.beaconIdleNS {
+				expired = append(expired, key)
+			}
+		}
+		sort.Strings(expired)
+		for _, key := range expired {
+			out = append(out, g.take(key, "beacon-idle"))
+		}
+	}
 	if !g.oldestKnown {
+		g.oldest, g.oldestKnown = math.MaxInt64, true
 		for _, entry := range g.pending {
+			if entry.alert.Name == "c2.beacon" {
+				continue
+			}
 			if !g.oldestKnown || entry.alert.FirstSeen < g.oldest {
 				g.oldest, g.oldestKnown = entry.alert.FirstSeen, true
 			}
 		}
 	}
 	if !g.oldestKnown || at-g.oldest < g.windowNS {
-		return nil
+		return out
 	}
-	var out []*types.Alert
 	for _, k := range g.orderedKeys() {
+		if g.pending[k].alert.Name == "c2.beacon" {
+			continue
+		}
 		if at-g.pending[k].alert.FirstSeen >= g.windowNS {
 			out = append(out, g.take(k, "window"))
 		}

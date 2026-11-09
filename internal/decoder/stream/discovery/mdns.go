@@ -96,18 +96,24 @@ func mdnsExtract(data []byte, ident string, ts time.Time) *DiscoveryResult {
 				}
 			}
 		case dnsTypePTR:
-			if name != "" && !containsStr(hostnames, name) {
-				hostnames = append(hostnames, name)
-			}
+			// PTR owners identify reverse lookups or service instances, not hosts.
+			continue
 		case dnsTypeSRV:
 			if len(rdata) >= 6 {
 				target, _ := parseDNSName(data, rdataStart+6)
-				if target != "" && !containsStr(hostnames, target) {
+				if validMDNSHostname(target) && !containsStr(hostnames, target) {
 					hostnames = append(hostnames, target)
 				}
 			}
 		}
 	}
+	filtered := hostnames[:0]
+	for _, name := range hostnames {
+		if validMDNSHostname(name) {
+			filtered = append(filtered, name)
+		}
+	}
+	hostnames = filtered
 
 	if len(hostnames) == 0 {
 		return nil
@@ -116,6 +122,11 @@ func mdnsExtract(data []byte, ident string, ts time.Time) *DiscoveryResult {
 	return &DiscoveryResult{
 		Hostnames: hostnames,
 	}
+}
+
+func validMDNSHostname(name string) bool {
+	name = strings.ToLower(strings.TrimSuffix(name, "."))
+	return name != "" && !strings.Contains(name, "_") && !strings.HasSuffix(name, ".arpa")
 }
 
 // parseDNSName parses a DNS-encoded name with compression pointer support.

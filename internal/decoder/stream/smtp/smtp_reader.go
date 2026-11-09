@@ -111,6 +111,7 @@ type smtpReader struct {
 	user, pass, token string
 	upgradePending    bool
 	encrypted         bool
+	pendingData       *types.SMTPRequest
 }
 
 func validSMTPCommand(cmd string) bool {
@@ -215,6 +216,9 @@ func (h *smtpReader) readRequest(b *bufio.Reader) error {
 	if h.encrypted {
 		return io.EOF
 	}
+	if h.pendingData != nil {
+		return h.readDataMessage(b)
+	}
 	var (
 		tp   = textproto.NewReader(b)
 		data []string
@@ -262,11 +266,9 @@ nextLine:
 	if validSMTPCommand(cmd) {
 
 		if cmd == smtpDATA {
-			body, release, readErr := mail.ReadDotMessage(b)
-			h.bufferReleases = append(h.bufferReleases, release)
-			file.RecordExtractionIssue(readErr)
-			h.smtpRequests = append(h.smtpRequests, &types.SMTPRequest{Command: smtpDATA, Data: string(body)})
-			return readErr
+			h.pendingData = &types.SMTPRequest{Command: smtpDATA}
+			h.smtpRequests = append(h.smtpRequests, h.pendingData)
+			return h.readDataMessage(b)
 		}
 
 		h.smtpRequests = append(h.smtpRequests, &types.SMTPRequest{
@@ -288,6 +290,20 @@ nextLine:
 	}
 
 	return nil
+}
+
+func (h *smtpReader) readDataMessage(b *bufio.Reader) error {
+	// DATA and its body normally occupy separate client runs around the 354
+	// reply. Keep protocol state so body lines cannot become SMTP commands.
+	if _, err := b.Peek(1); err != nil {
+		return err
+	}
+	body, release, err := mail.ReadDotMessage(b)
+	h.bufferReleases = append(h.bufferReleases, release)
+	file.RecordExtractionIssue(err)
+	h.pendingData.Data = string(body)
+	h.pendingData = nil
+	return err
 }
 
 // cuts the line into command and arguments.
@@ -355,6 +371,9 @@ nextLine:
 	}
 
 	code, err := strconv.Atoi(cmd)
+	if code >= 400 {
+		h.pendingData = nil
+	}
 	if err != nil {
 		smtpDebug("invalid response code",
 			zap.String("ident", h.conversation.Ident),
@@ -369,7 +388,7 @@ nextLine:
 	})
 
 	// if QUIT was acked - quit
-	if code == smtpOK && strings.Contains(args[len(args)-1], smtpQUIT) {
+	if code == smtpOK && len(args) > 0 && strings.Contains(args[len(args)-1], smtpQUIT) {
 		return io.EOF
 	}
 

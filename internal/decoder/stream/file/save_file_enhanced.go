@@ -29,6 +29,7 @@ import (
 	"mime"
 	"os"
 	"path"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -55,7 +56,7 @@ func sanitizeStringFields(source, host, contentType, cTypeDetected, flowDirectio
 var saveFileLog = zap.NewNop()
 
 // Protect dedup lookup through publication, and filename allocation across contents.
-var saveFileMu sync.Mutex
+var saveFileLocks [256]sync.Mutex
 
 // SetSaveFileLogger sets the logger for file saving operations
 func SetSaveFileLogger(logger *zap.Logger) {
@@ -144,9 +145,24 @@ func SaveFileEnhanced(
 		)
 		// Continue with original body if hash computation fails
 		// ComputeContentHash retains the original bytes and their SHA-256 on failure.
+		if cfg.FileExtraction.Advanced.DecodeCompressed && !errors.Is(hashErr, ErrArtifactLimit) && cfg.FileExtraction.SizeLimits.IncludeMissingBytes && len(encoding) == 1 && strings.EqualFold(strings.TrimSpace(encoding[0]), "gzip") {
+			if decoded, release, decodeErr := recoverGzipPrefix(body, GetMaxFileSize()); decoded != nil {
+				prefixErr := SaveFileEnhanced(conv, source+" decoded-prefix", "decoded-"+name, errors.Join(extractionErr, decodeErr), decoded, nil, host, contentType, depth+1, contentInfo.Hash, flowDirection, protocol)
+				release()
+				RecordExtractionIssue(prefixErr)
+			}
+		}
 	}
 	streamMissing, initialLossUnknown := conversationLoss(conv)
 	var completeness []string
+	for _, fragment := range conv.Data {
+		if d, ok := fragment.(*core.StreamData); ok && d.TCPObservation != "" {
+			qualification := "transport-" + d.TCPObservation
+			if !slices.Contains(completeness, qualification) {
+				completeness = append(completeness, qualification)
+			}
+		}
+	}
 	if extractionErr != nil {
 		completeness = append(completeness, "extraction-error")
 	}
@@ -269,11 +285,13 @@ func SaveFileEnhanced(
 	}
 
 	// Check for duplicate content using deduplication cache
-	saveFileMu.Lock()
+	bucket, _ := strconv.ParseUint(digest[:2], 16, 8)
+	publicationLock := &saveFileLocks[bucket]
+	publicationLock.Lock()
 	locked := true
 	defer func() {
 		if locked {
-			saveFileMu.Unlock()
+			publicationLock.Unlock()
 		}
 	}()
 
@@ -427,7 +445,7 @@ func SaveFileEnhanced(
 		flowDirection = "unknown"
 	}
 
-	saveFileMu.Unlock()
+	publicationLock.Unlock()
 	locked = false
 	// File observations remain independent of content/analysis deduplication.
 	analysis := AnalyzeFile(contentInfo.DecodedContent, fileName)

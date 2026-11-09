@@ -22,6 +22,7 @@ package secret
 import (
 	"bytes"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -63,13 +64,8 @@ func redisHarvesterFunc(data []byte, ident string, ts time.Time) *types.Secret {
 		lengthPos := bytes.Index(data, matchesRESP[0])
 		if lengthPos != -1 {
 			passwordStart := lengthPos + len(matchesRESP[0])
-			var passwordLen int
-			for _, ch := range lengthStr {
-				if ch >= '0' && ch <= '9' {
-					passwordLen = passwordLen*10 + int(ch-'0')
-				}
-			}
-			if passwordLen > 0 && passwordStart+passwordLen <= len(data) {
+			passwordLen, err := strconv.Atoi(lengthStr)
+			if err == nil && passwordLen > 0 && passwordLen <= len(data)-passwordStart-2 && bytes.Equal(data[passwordStart+passwordLen:passwordStart+passwordLen+2], []byte("\r\n")) {
 				password := string(data[passwordStart : passwordStart+passwordLen])
 
 				return &types.Secret{
@@ -82,6 +78,18 @@ func redisHarvesterFunc(data []byte, ident string, ts time.Time) *types.Secret {
 				}
 			}
 		}
+	}
+	// Inline AUTH overlaps SASL and FTP. Require a Redis service port or an
+	// independently framed Redis response before interpreting its arguments.
+	_, srcPort, _, dstPort, _ := SecretEndpoints(ident)
+	redisPort := srcPort == 6379 || dstPort == 6379 || srcPort == 6380 || dstPort == 6380
+	corroborated := bytes.Contains(data, []byte("\r\n+OK\r\n")) || bytes.Contains(data, []byte("-NOAUTH Authentication required")) || bytes.Contains(data, []byte("-WRONGPASS "))
+	if !redisPort && !corroborated {
+		return nil
+	}
+	upper := strings.ToUpper(string(data))
+	if strings.Contains(upper, "EHLO ") || strings.Contains(upper, "HELO ") || strings.Contains(upper, "AUTH LOGIN") || strings.Contains(upper, "AUTH PLAIN") {
+		return nil
 	}
 
 	// Try ACL AUTH (two capture groups - more specific than simple AUTH)

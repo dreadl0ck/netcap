@@ -5,6 +5,54 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import struct
+
+
+def relocate_executable(path, libraries):
+    """Repoint absolute DT_NEEDED entries at their existing basename strings."""
+    data = bytearray(path.read_bytes())
+    if data[:6] != b'\x7fELF\x02\x01':
+        raise ValueError('expected a little-endian ELF64 executable')
+    phoff = struct.unpack_from('<Q', data, 32)[0]
+    phsize, phcount = struct.unpack_from('<HH', data, 54)
+    headers = [struct.unpack_from('<IIQQQQQQ', data, phoff + i * phsize) for i in range(phcount)]
+    dynamic = next(h for h in headers if h[0] == 2)
+    entries = [(offset, *struct.unpack_from('<qQ', data, offset)) for offset in range(dynamic[2], dynamic[2] + dynamic[5], 16)]
+    straddr = next(value for _, tag, value in entries if tag == 5)
+    segment = next(h for h in headers if h[0] == 1 and h[3] <= straddr < h[3] + h[5])
+    strings = segment[2] + straddr - segment[3]
+    for offset, tag, value in entries:
+        if tag not in (1, 15, 29):
+            continue
+        begin = strings + value
+        end = data.index(0, begin)
+        text = bytes(data[begin:end])
+        if tag == 1 and b'/' in text:
+            name = text.rsplit(b'/', 1)[1].decode()
+            if name not in libraries:
+                raise ValueError('absolute dependency is not bundled: ' + name)
+            struct.pack_into('<Q', data, offset + 8, value + text.rindex(b'/') + 1)
+        elif tag in (15, 29):
+            if len(text) < len(b'$ORIGIN'):
+                raise ValueError('runtime search path too short to relocate')
+            data[begin:end] = b'$ORIGIN' + bytes(len(text) - len(b'$ORIGIN'))
+    path.write_bytes(data)
+
+
+def launcher(loader):
+    return ('#!/bin/sh\nset -eu\n'
+            'target=$0\n'
+            'case "$target" in */*) ;; *) target=$(command -v -- "$target");; esac\n'
+            'hops=0\n'
+            'while [ -L "$target" ]; do\n'
+            '  hops=$((hops + 1))\n'
+            '  [ "$hops" -le 40 ] || { printf "%s\\n" "launcher symlink loop" >&2; exit 1; }\n'
+            '  root=$(CDPATH= cd -- "$(dirname -- "$target")" && pwd)\n'
+            '  target=$(readlink -- "$target")\n'
+            '  case "$target" in /*) ;; *) target=$root/$target;; esac\n'
+            'done\n'
+            'root=$(CDPATH= cd -- "$(dirname -- "$target")" && pwd)\n'
+            f'exec "$root/lib/{loader}" --library-path "$root/lib" "$root/lib/net.bin" "$@"\n')
 
 
 def dependencies(output):
@@ -39,13 +87,10 @@ def bundle(image, destination, executable="/usr/bin/net"):
         subprocess.run(["docker", "cp", "-L", f"{container}:{executable}", str(lib / "net.bin")], check=True)
     finally:
         subprocess.run(["docker", "rm", container], check=True, stdout=subprocess.DEVNULL)
-    launcher = destination / "net"
-    launcher.write_text(
-        '#!/bin/sh\nset -eu\n'
-        'root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\n'
-        f'exec "$root/lib/{Path(loader).name}" --library-path "$root/lib" "$root/lib/net.bin" "$@"\n'
-    )
-    os.chmod(launcher, 0o755)
+    relocate_executable(lib / 'net.bin', {Path(p).name for p in paths})
+    entrypoint = destination / "net"
+    entrypoint.write_text(launcher(Path(loader).name))
+    os.chmod(entrypoint, 0o755)
 
 
 if __name__ == "__main__":

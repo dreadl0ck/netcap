@@ -198,6 +198,50 @@ enum Type {
   NC_LDAP = 148;
   NC_RTP = 200;
   NC_DTMF = 201;
+  NC_NBNS = 202;
+  NC_IEEE802154 = 203;
+}
+
+message IEEE802154 {
+  int64 Timestamp = 1;
+  uint32 FrameControl = 2;
+  uint32 FrameType = 3;
+  uint32 FrameVersion = 4;
+  uint32 Sequence = 5;
+  bool SequenceSuppressed = 6;
+  string SourcePAN = 7;
+  string DestinationPAN = 8;
+  string Source = 9;
+  string Destination = 10;
+  uint32 HeaderLength = 11;
+  uint32 PayloadLength = 12;
+  string PayloadProtocol = 13;
+  bool HasFCS = 14;
+  bool FCSValid = 15;
+  uint32 FCS = 16;
+}
+
+message NBNSName {
+  string Name = 1;
+  uint32 Suffix = 2;
+  bool Group = 3;
+  string IP = 4;
+  string Section = 5;
+  uint32 Type = 6;
+}
+
+message NBNS {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  string CommunityID = 6;
+  uint32 ID = 7;
+  bool Response = 8;
+  uint32 OpCode = 9;
+  uint32 ResponseCode = 10;
+  repeated NBNSName Names = 11;
 }
 
 message TLSRecord {

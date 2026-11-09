@@ -81,6 +81,9 @@ func (p *Processor) Process(original gopacket.Packet, ordinal uint64) Result {
 			r.Evidence = append(r.Evidence, attach(levelPacket(d, link, nil, false), ci, &fragment))
 			if data == nil {
 				r.Status = status
+				if status == "fragment-rejected" || status == "ipv4-checksum-rejected" {
+					r.Opaque = r.Evidence[len(r.Evidence)-1]
+				}
 				return r
 			}
 			raw, c, ci = data, next, nextCI

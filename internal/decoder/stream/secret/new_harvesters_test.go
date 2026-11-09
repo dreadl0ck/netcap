@@ -86,7 +86,7 @@ func TestRedisHarvester(t *testing.T) {
 
 	// Test case-insensitive matching
 	data = []byte("auth testpass\r\n")
-	creds = redisHarvester.HarvesterFunc(data, "test-flow", time.Now())
+	creds = redisHarvester.HarvesterFunc(data, "192.0.2.1:12345->192.0.2.2:6379", time.Now())
 	if creds == nil {
 		t.Fatal("Expected to extract Redis credentials (case-insensitive)")
 	}

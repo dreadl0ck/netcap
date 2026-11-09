@@ -11,6 +11,8 @@ import (
 )
 
 type ReassemblyHealth struct {
+	OverlapPackets        int64    `json:"overlapPackets"`
+	OverlapBytes          int64    `json:"overlapBytes"`
 	Version               int      `json:"version"`
 	ChecksumPolicy        string   `json:"checksumPolicy"`
 	RejectedChecksums     int64    `json:"rejectedChecksums"`
@@ -42,6 +44,8 @@ func WriteReassemblyHealth() error {
 	h.RejectedOptions = streamutils.Stats.RejectOpt
 	h.RejectedFSM = streamutils.Stats.RejectFsm
 	h.MissingBytes = streamutils.Stats.MissedBytes
+	h.OverlapPackets = streamutils.Stats.OverlapPackets
+	h.OverlapBytes = streamutils.Stats.OverlapBytes
 	streamutils.Stats.Unlock()
 	b, err := json.MarshalIndent(h, "", "  ")
 	if err != nil {

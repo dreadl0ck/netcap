@@ -26,9 +26,13 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/decoder"
+	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/alert"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/network"
@@ -116,7 +120,7 @@ func (c *Collector) doCleanup(force bool) {
 		// Readers must finish before teardown() closes the log files.
 		tcp.CleanupReassembly(!force, c.assemblers)
 		for _, assembler := range c.assemblers {
-			assembler.Release()
+			c.captureEvidenceError = errors.Join(c.captureEvidenceError, assembler.ReleaseChecked())
 		}
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, tcp.PayloadRetentionError())
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, tcp.IncrementalError())
@@ -216,41 +220,68 @@ func (c *Collector) FlushAssemblers() {
 func (c *Collector) teardown() {
 	c.log.Info("teardown")
 
-	// flush all gopacket decoders
-	for _, decoders := range c.goPacketDecoders {
-		for _, e := range decoders {
-			name, size := e.Destroy()
+	var decoders []core.DecoderAPI
+	for _, group := range c.goPacketDecoders {
+		for _, d := range group {
+			decoders = append(decoders, d)
+		}
+	}
+	for _, d := range c.packetDecoders {
+		decoders = append(decoders, d)
+	}
+	for _, d := range c.streamDecoders {
+		decoders = append(decoders, d)
+	}
+	for _, d := range c.abstractDecoders {
+		decoders = append(decoders, d)
+	}
+	// Finalizers can emit dependent audit records. Keep every writer open until
+	// those ordered finalizers finish, then overlap independent flush/fsync work.
+	var native []core.DecoderAPI
+	for _, d := range decoders {
+		switch d.(type) {
+		case *packet.GoPacketDecoder, *packet.Decoder, *decoder.StreamDecoder, *decoder.AbstractDecoder:
+			if err := d.DeInitFunc(); err != nil {
+				c.captureEvidenceError = errors.Join(c.captureEvidenceError, fmt.Errorf("finalize %s: %w", d.GetName(), err))
+			}
+			native = append(native, d)
+		default:
+			name, size := d.Destroy()
 			if size != 0 {
 				c.totalBytesWritten += size
 				c.files[name] = humanize.Bytes(uint64(size))
 			}
 		}
 	}
-
-	// flush all custom decoders
-	for _, d := range c.packetDecoders {
-		name, size := d.Destroy()
-		if size != 0 {
-			c.totalBytesWritten += size
-			c.files[name] = humanize.Bytes(uint64(size))
-		}
+	decoders = native
+	type closedWriter struct {
+		name string
+		size int64
 	}
-
-	// flush all stream decoders
-	for _, d := range c.streamDecoders {
-		name, size := d.Destroy()
-		if size != 0 {
-			c.totalBytesWritten += size
-			c.files[name] = humanize.Bytes(uint64(size))
-		}
+	results := make([]closedWriter, len(decoders))
+	tasks := make(chan int, len(decoders))
+	for i := range decoders {
+		tasks <- i
 	}
-
-	// flush all abstract decoders
-	for _, d := range c.abstractDecoders {
-		name, size := d.Destroy()
-		if size != 0 {
-			c.totalBytesWritten += size
-			c.files[name] = humanize.Bytes(uint64(size))
+	close(tasks)
+	var closers sync.WaitGroup
+	for range min(8, max(1, c.numWorkers)) {
+		closers.Add(1)
+		go func() {
+			defer closers.Done()
+			for i := range tasks {
+				d := decoders[i]
+				if w := d.GetWriter(); w != nil {
+					results[i].name, results[i].size = w.Close(d.NumRecords())
+				}
+			}
+		}()
+	}
+	closers.Wait()
+	for _, r := range results {
+		if r.size != 0 {
+			c.totalBytesWritten += r.size
+			c.files[r.name] = humanize.Bytes(uint64(r.size))
 		}
 	}
 

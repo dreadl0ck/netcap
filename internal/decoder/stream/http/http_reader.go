@@ -94,8 +94,10 @@ type httpResponse struct {
 }
 
 type httpReader struct {
-	bufferReleases []func()
-	conversation   *core.ConversationInfo
+	artifactRecovery    bool
+	directionalEvidence [2]core.DataFragments
+	bufferReleases      []func()
+	conversation        *core.ConversationInfo
 
 	requests              []*httpRequest
 	responses             []*httpResponse
@@ -132,6 +134,13 @@ func (h *httpReader) Decode() {
 			h.writeError = reader.writeError
 		}
 	}
+	if !h.artifactRecovery && decoderconfig.Instance.FileStorage != "" {
+		// Complete headers establish object framing before a TCP close. Preserve
+		// contiguous body bytes observed after it as qualified artifact evidence,
+		// without inventing an ordinary cross-close HTTP transaction.
+		recovery := &httpReader{conversation: h.conversation, artifactRecovery: true, transportObservation: "cross-close-body"}
+		recovery.decodeTransportRun()
+	}
 }
 
 func (h *httpReader) decodeTransportRun() {
@@ -146,6 +155,9 @@ func (h *httpReader) decodeTransportRun() {
 	}
 
 	h.decodeDirections()
+	if h.artifactRecovery {
+		return
+	}
 
 	// iterate over responses
 	for _, res := range h.responses { // populate types.HTTP with all infos from response
@@ -299,6 +311,12 @@ func (h *httpReader) searchForLoginParams(req *http.Request) {
 }
 
 func (h *httpReader) emitHTTP(record *types.HTTP) {
+	if h.artifactRecovery {
+		return
+	}
+	if h.conversation.TLSDecrypted {
+		record.ParseQualifications = appendUnique(record.ParseQualifications, "decrypted-tls-key-log")
+	}
 	if err := writeHTTP(record, h.conversation.Ident); err != nil && h.writeError == nil {
 		h.writeError = err
 	}
@@ -361,6 +379,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	// used to carry FirstServerPacket, so a keep-alive connection serving
 	// dozens of them reported one time for all of them.
 	timestamp := pos.Timestamp()
+	headerStart := pos.Offset()
 
 	// try to read HTTP response from the buffered reader
 	var request *http.Request
@@ -381,6 +400,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		)
 		return err
 	}
+	headerEnd := pos.Offset()
 
 	var body []byte
 	var passiveReport webtech.Report
@@ -396,7 +416,9 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		var release func()
 		body, release, err = file.ReadBody(res.Body)
 		h.bufferReleases = append(h.bufferReleases, release)
-		software.ObserveWebtech(observation, bytes.NewReader(body), res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+		if !h.artifactRecovery {
+			software.ObserveWebtech(observation, bytes.NewReader(body), res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+		}
 	}
 	file.RecordExtractionIssue(err)
 	s := len(body)
@@ -461,7 +483,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	}
 
 	// write responses to disk if configured
-	if h.transportObservation == "" && !evidence.unsafe && (err == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
+	if !evidence.unsafe && (err == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" && (!h.artifactRecovery || !h.preface && h.crossCloseBody(true, headerStart, headerEnd, pos.Offset())) {
 
 		var (
 			name        = "unknown"
@@ -536,6 +558,7 @@ func (h *httpReader) findRequest(res *http.Response) *httpRequest {
 func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition) error {
 	// Taken before the request is consumed; see readResponse.
 	requestTimestamp := pos.Timestamp()
+	headerStart := pos.Offset()
 
 	// Extract header order for JA4H fingerprinting before parsing
 	// We need to peek at the raw bytes to preserve header order
@@ -553,6 +576,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 		return err
 	}
 
+	headerEnd := pos.Offset()
 	body, release, bodyErr := file.ReadBody(req.Body)
 	file.RecordExtractionIssue(bodyErr)
 	h.bufferReleases = append(h.bufferReleases, release)
@@ -620,7 +644,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 
 	if req.Method == methodPOST {
 		// write request payload to disk if configured
-		if h.transportObservation == "" && !evidence.unsafe && (bodyErr == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
+		if !evidence.unsafe && (bodyErr == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" && (!h.artifactRecovery || !h.preface && h.crossCloseBody(false, headerStart, headerEnd, pos.Offset())) {
 			// Use new file extraction framework
 			extractor, ok := file.GetExtractor("HTTP")
 			if !ok {

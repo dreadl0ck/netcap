@@ -22,6 +22,7 @@ package smb
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
@@ -45,7 +46,11 @@ func (s *SMBFileExtractor) ExtractFile(conv *core.ConversationInfo, data []byte,
 	// Build source description
 	source := "SMB"
 	if metadata.SMBShare != "" {
-		source = fmt.Sprintf("SMB \\\\%s\\%s", metadata.Host, metadata.SMBShare)
+		share := strings.TrimRight(metadata.SMBShare, "\\")
+		if !strings.HasPrefix(share, `\\`) {
+			share = fmt.Sprintf(`\\%s\%s`, metadata.Host, strings.TrimLeft(share, "\\"))
+		}
+		source = "SMB " + share
 		if metadata.SMBPath != "" {
 			source = fmt.Sprintf("%s\\%s", source, metadata.SMBPath)
 		}

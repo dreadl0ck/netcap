@@ -56,6 +56,10 @@ func (c *Collector) decodeRawPacketData(data []byte, ci *gopacket.CaptureInfo) g
 				baseLayer = gopacket.DecodeFunc(func(data []byte, p gopacket.PacketBuilder) error { return decodeNFLOG(data, p, order) })
 			} else if lt == layers.LinkTypeLinuxSLL2 {
 				baseLayer = gopacket.DecodeFunc(decodeSLL2)
+			} else if lt == 195 {
+				baseLayer = gopacket.DecodeFunc(decodeIEEE802154FCS)
+			} else if lt == 230 {
+				baseLayer = gopacket.DecodeFunc(decodeIEEE802154)
 			} else if lt == 274 && len(data) > 8 {
 				// LINKTYPE_ETHERNET_MPACKET (FPP): strip 8-byte Ethernet preamble+SFD
 				data = data[8:]
@@ -123,7 +127,7 @@ func linkTypeToLayerType(lt layers.LinkType) gopacket.LayerType {
 		return layers.LayerTypeLinuxSLL2
 	case layers.LinkTypeC_HDLC:
 		return layerCHDLC
-	case 230:
+	case 195, 230:
 		return layerIEEE802154
 	case 239:
 		return layerNFLOG

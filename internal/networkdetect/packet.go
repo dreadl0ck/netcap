@@ -24,6 +24,14 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 		at = c.CompletedAt
 	}
 	base := Event{At: at.UnixNano(), Scope: scope, SrcIP: net.Src().String(), DstIP: net.Dst().String()}
+	if layer := packet.Layer(layers.LayerTypeUDP); layer != nil {
+		udp := layer.(*layers.UDP)
+		base.SrcPort, base.DstPort = uint16(udp.SrcPort), uint16(udp.DstPort)
+	}
+	if layer := packet.Layer(layers.LayerTypeTCP); layer != nil {
+		tcp := layer.(*layers.TCP)
+		base.SrcPort, base.DstPort = uint16(tcp.SrcPort), uint16(tcp.DstPort)
+	}
 	var events []Event
 	if layer := packet.Layer(layers.LayerTypeDNS); layer != nil {
 		dns := layer.(*layers.DNS)
@@ -48,6 +56,12 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 		base.SrcPort = uint16(tcp.SrcPort)
 		base.DstPort = uint16(tcp.DstPort)
 		base.Seq = tcp.Seq
+		base.Ack = tcp.Ack
+		if tcp.SYN && tcp.ACK && !tcp.RST {
+			ev := base
+			ev.Kind = "synack"
+			events = append(events, ev)
+		}
 		if tcp.RST && tcp.ACK {
 			ev := base
 			ev.Kind = "refused"

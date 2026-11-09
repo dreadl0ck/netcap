@@ -26,6 +26,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/performance"
+	"github.com/dreadl0ck/netcap/internal/tlsdecrypt"
 	"sync"
 
 	"github.com/dreadl0ck/netcap/internal/label/manager"
@@ -104,7 +105,7 @@ var DefaultConfig = &Config{
 	CompressionLevel:              defaults.CompressionLevel,
 	NumStreamWorkers:              runtime.NumCPU(),
 	StreamBufferSize:              100,
-	MaxStreamBytes:                10485760, // 10MB per stream direction by default
+	MaxStreamBytes:                100 << 20, // Matches the default maximum extracted file size.
 	MaxRetainedTCPStateBytes:      64 << 20,
 	MaxBufferedPagesPerConnection: 0, // unlimited by default
 	MaxBufferedPagesTotal:         0, // unlimited by default
@@ -114,6 +115,7 @@ var DefaultConfig = &Config{
 // for the decoders
 // this structure has an optimized field order to avoid excessive padding.
 type Config struct {
+	TLSSecrets     *tlsdecrypt.Secrets `json:"-" yaml:"-"`
 	RecordObserver func(proto.Message) `json:"-" yaml:"-"`
 	// Output path
 	Out string

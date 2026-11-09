@@ -98,6 +98,23 @@ func decodeAll(conv *core.ConversationInfo) (out []*types.DCERPC) {
 	return out
 }
 
+func TestOppositeInitialSequenceDoesNotEraseRPCBinding(t *testing.T) {
+	for _, skip := range []int{-1, 10} {
+		marker := &core.StreamData{Dir: reassembly.TCPDirServerToClient, SkippedBytes: skip}
+		c := &core.ConversationInfo{Data: core.DataFragments{fragment(bind(1, uuidSVCCTL), 1, false), marker, fragment(response(ptypeResponse, 1, 0, 0), 2, true), fragment(request(2, 0, 19), 3, false)}}
+		records := decodeAll(c)
+		if len(records) != 3 {
+			t.Fatal("RPC framing changed", len(records))
+		}
+		if skip == -1 && records[2].InterfaceUUID != uuidSVCCTL {
+			t.Fatal("initial server sequence erased the client bind")
+		}
+		if skip > 0 && records[2].InterfaceUUID != "" {
+			t.Fatal("RPC binding survived a real capture gap")
+		}
+	}
+}
+
 func TestRequestsCarryInterfaceAndOperationAcrossSplits(t *testing.T) {
 	client := cat(bind(1, uuidSVCCTL, uuidSAMR), request(2, 0, 12), request(3, 1, 64), request(4, 0, 19))
 	server := cat(response(ptypeResponse, 2, 0, 0), response(ptypeFault, 4, 0, 5), response(ptypeResponse, 3, 1, 0))

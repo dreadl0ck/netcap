@@ -14,6 +14,7 @@ import (
 	"github.com/gopacket/gopacket/layers"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
+	"github.com/dreadl0ck/netcap/internal/tlsdecrypt"
 )
 
 // CaptureInputReport describes input coverage independently of audit counts.
@@ -42,6 +43,16 @@ type CaptureInputIssue struct {
 }
 
 type CaptureInputError struct{ Report CaptureInputReport }
+
+func (e *CaptureInputError) ExitCode() int {
+	if e.Report.Status == "unsupported" {
+		return 3
+	}
+	if e.Report.Status == "partial" {
+		return 2
+	}
+	return 1
+}
 
 func (e *CaptureInputError) Error() string {
 	message := fmt.Sprintf("capture input %s: processed=%d skipped=%d read-errors=%d link-errors=%d decode-errors=%d unsupported=%d", e.Report.Status, e.Report.ProcessedPackets, e.Report.SkippedRecords, e.Report.ReadErrors, e.Report.LinkErrors, e.Report.DecodeErrors, e.Report.Unsupported)
@@ -75,6 +86,9 @@ func (r *CaptureInputReport) result() error {
 		}
 	}
 	if r.ReadErrors+r.LinkErrors+r.Unsupported > 0 {
+		if r.ReachedEOF && r.ProcessedPackets > 0 && r.ReadErrors == 0 && r.Unsupported == 0 {
+			return nil // Coverage retains recoverable frame errors; the run completed.
+		}
 		return &CaptureInputError{Report: *r}
 	}
 	return nil
@@ -148,12 +162,15 @@ func walkCaptureInput(ctx context.Context, r captureReader, report *CaptureInput
 	}
 }
 
-func countCaptureInput(ctx context.Context, path string, ng bool) (int64, error) {
+func countCaptureInput(ctx context.Context, path string, ng bool, keys ...*tlsdecrypt.Secrets) (int64, error) {
 	r, f, err := openCaptureInput(path, ng)
 	if err != nil {
 		return 0, err
 	}
 	defer f.Close()
+	if reader, ok := r.(*scopedNgReader); ok && len(keys) > 0 {
+		reader.keyLog = keys[0].Add
+	}
 	report := CaptureInputReport{}
 	walkCaptureInput(ctx, r, &report, nil)
 	return report.ProcessedPackets, errors.Join(report.result(), ctx.Err())
@@ -180,7 +197,8 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 		return fmt.Errorf("capture input must be a regular file")
 	}
 	c.inputSize = stat.Size()
-	count, countErr := countCaptureInput(ctx, path, ng)
+	c.config.DecoderConfig.TLSSecrets = tlsdecrypt.NewSecrets()
+	count, countErr := countCaptureInput(ctx, path, ng, c.config.DecoderConfig.TLSSecrets)
 	atomic.StoreInt64(&c.numPackets, count)
 	if ctx.Err() != nil {
 		return ctx.Err()
@@ -199,6 +217,9 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 	packet.SetBaseLayerType(c.config.BaseLayer)
 	if err := c.Init(); err != nil {
 		return err
+	}
+	if reader, ok := r.(*scopedNgReader); ok {
+		reader.keyLog = c.config.DecoderConfig.TLSSecrets.Add
 	}
 	c.printlnStdOut("counted", count, "readable packets in", path)
 	if countErr != nil {

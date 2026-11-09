@@ -81,6 +81,7 @@ func (h *tlsReader) Decode() {
 		return
 	}
 	h.frameConversation()
+	h.decryptApplication()
 
 	tlsLog.Info("TLS decode complete",
 		zap.String("ident", h.conversation.Ident),

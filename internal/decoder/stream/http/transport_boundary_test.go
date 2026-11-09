@@ -56,7 +56,7 @@ func TestHTTPTransportBoundary(t *testing.T) {
 	}
 }
 
-func TestHTTPPostCloseSuppressesExtraction(t *testing.T) {
+func TestHTTPPostClosePreservesFramedArtifactEvidence(t *testing.T) {
 	oldWriter, oldConfig, oldCount := Decoder.Writer, config.Instance, Decoder.NumRecordsWritten
 	oldExtractor, ok := file.GetExtractor("HTTP")
 	if !ok {
@@ -76,7 +76,35 @@ func TestHTTPPostCloseSuppressesExtraction(t *testing.T) {
 		request.TCPObservation, response.TCPObservation = reason, reason
 		(&httpReader{conversation: &core.ConversationInfo{Data: core.DataFragments{request, response}}}).Decode()
 	}
-	if strings.Join(e.bodies, ",") != "DATA,BODY" {
+	if strings.Join(e.bodies, ",") != "DATA,BODY,DATA,BODY,DATA,BODY" {
 		t.Fatalf("extracted bodies = %q", e.bodies)
+	}
+}
+
+func TestHTTPQualifiedBodyRecoveryRequiresPreCloseHeader(t *testing.T) {
+	oldWriter, oldConfig := Decoder.Writer, config.Instance
+	oldExtractor, _ := file.GetExtractor("HTTP")
+	t.Cleanup(func() { Decoder.Writer, config.Instance = oldWriter, oldConfig; file.RegisterExtractor(oldExtractor) })
+	config.Instance = &config.Config{FileStorage: t.TempDir(), IncludePayloads: true}
+	for _, headerComplete := range []bool{false, true} {
+		e := &transportExtractor{}
+		file.RegisterExtractor(e)
+		writer := &httpEvidenceWriter{}
+		Decoder.Writer = writer
+		request := wireFragment(0, []byte("GET /file HTTP/1.1\r\nHost: test\r\n\r\n"), 1)
+		prefix, tail := "HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\nDA", "TA"
+		if !headerComplete {
+			prefix, tail = "HTTP/1.1 200 OK\r\nContent-Len", "gth: 4\r\n\r\nDATA"
+		}
+		first := wireFragment(1, []byte(prefix), 2)
+		last := wireFragment(1, []byte(tail), 3)
+		last.TCPObservation = "after-fin"
+		(&httpReader{conversation: &core.ConversationInfo{Data: core.DataFragments{request, first, last}}}).Decode()
+		if headerComplete && strings.Join(e.bodies, ",") != "DATA" {
+			t.Fatalf("qualified body lost: %q", e.bodies)
+		}
+		if !headerComplete && len(e.bodies) != 0 {
+			t.Fatal("header reconstructed across close")
+		}
 	}
 }
