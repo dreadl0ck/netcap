@@ -32,10 +32,6 @@ export function RecordSemantics({ data, recordType }: { data: Record<string, unk
   return null;
 }
 
-export function HTTPReassemblyNotice({ status, timestampNs }: { status?: string; timestampNs?: string }) {
-  const observedNs = timestampNs && /^[1-9]\d*$/.test(timestampNs) ? timestampNs : undefined;
-  return <Alert severity={status ? 'warning' : 'info'} sx={{ mb: 2 }}>
-    {status ? `HTTP reassembly: ${status}.` : 'HTTP reassembly qualification is not recorded; this does not establish completeness.'}
-    {' '}Exact capture timestamp: {observedNs || 'unavailable'}{observedNs ? ' ns' : ''}.
-  </Alert>;
+export function HTTPReassemblyNotice({ status }: { status?: string; timestampNs?: string }) {
+  return status ? <Alert severity="warning" sx={{ mb: 2 }}>HTTP reassembly: {status}.</Alert> : null;
 }

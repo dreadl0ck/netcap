@@ -64,6 +64,7 @@ import {
 import ResponsiveDataView from '../components/ResponsiveDataView';
 import Layout from '../components/Layout';
 import BehaviorAssetContext from '../components/BehaviorAssetContext';
+import DirectionalTraffic from '../components/DirectionalTraffic';
 import ConversationModal from '../components/ConversationModal';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
@@ -1452,20 +1453,9 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                                     <Typography variant="subtitle2" gutterBottom>
                                       Traffic Statistics
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Total Size: {formatBytes(conn.totalSize)}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      App Payload: {formatBytes(conn.appPayloadSize)}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Packets: {conn.numPackets.toLocaleString()}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Client→Server: {formatBytes(conn.bytesClientToServer)}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Server→Client: {formatBytes(conn.bytesServerToClient)}
+                                    <DirectionalTraffic client={conn.bytesClientToServer} server={conn.bytesServerToClient} />
+                                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                                      {conn.numPackets.toLocaleString()} packets · {formatBytes(conn.appPayloadSize)} payload · {formatBytes(conn.totalSize)} captured
                                     </Typography>
                                     <ProducerConsumerEvidence produced={conn.bytesClientToServer} consumed={conn.bytesServerToClient} />
                                   </Grid>
@@ -1511,25 +1501,15 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                                   {/* Security Behavioral Analysis */}
                                   {(conn.packetsClientToServer > 0 || conn.packetsServerToClient > 0) && (
                                     <Grid item xs={12} md={6}>
-                                      <Typography variant="subtitle2" gutterBottom data-learn="Security Behavioral Analysis: Traffic patterns useful for detecting beaconing, data exfiltration, and other suspicious activity.">
-                                        Security Behavioral Analysis
+                                      <Typography variant="subtitle2" gutterBottom>
+                                        Traffic behavior
                                       </Typography>
-                                      <Typography variant="body2" color="text.secondary">
-                                        Packets C→S: {conn.packetsClientToServer?.toLocaleString() || 0}
-                                      </Typography>
-                                      <Typography variant="body2" color="text.secondary">
-                                        Packets S→C: {conn.packetsServerToClient?.toLocaleString() || 0}
-                                      </Typography>
-                                      {conn.avgPacketSizeClientToServer > 0 && (
-                                        <Typography variant="body2" color="text.secondary">
-                                          Avg Pkt Size C→S: {conn.avgPacketSizeClientToServer} bytes
-                                        </Typography>
-                                      )}
-                                      {conn.avgPacketSizeServerToClient > 0 && (
-                                        <Typography variant="body2" color="text.secondary">
-                                          Avg Pkt Size S→C: {conn.avgPacketSizeServerToClient} bytes
-                                        </Typography>
-                                      )}
+                                      <Table size="small" aria-label="Directional packet statistics" sx={{ '& td, & th': { px: 1, py: 0.5 }, fontVariantNumeric: 'tabular-nums' }}>
+                                        <TableHead><TableRow><TableCell>Metric</TableCell><TableCell align="right">Client → Server</TableCell><TableCell align="right">Server → Client</TableCell></TableRow></TableHead>
+                                        <TableBody><TableRow><TableCell>Packets</TableCell><TableCell align="right">{conn.packetsClientToServer?.toLocaleString() || 0}</TableCell><TableCell align="right">{conn.packetsServerToClient?.toLocaleString() || 0}</TableCell></TableRow>
+                                          <TableRow><TableCell>Avg. packet</TableCell><TableCell align="right">{conn.avgPacketSizeClientToServer > 0 ? `${conn.avgPacketSizeClientToServer} B` : '—'}</TableCell><TableCell align="right">{conn.avgPacketSizeServerToClient > 0 ? `${conn.avgPacketSizeServerToClient} B` : '—'}</TableCell></TableRow></TableBody>
+                                      </Table>
+                                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 1 }}>
                                       {conn.byteRatio > 0 && (
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                                           <Typography variant="body2" color="text.secondary">
@@ -1538,7 +1518,7 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                                           <Chip 
                                             label={conn.byteRatio.toFixed(2)} 
                                             size="small" 
-                                            color={conn.byteRatio > 0.9 && conn.byteRatio < 1.1 ? 'warning' : 'default'}
+                                            color="default"
                                             variant="outlined"
                                             sx={{ fontSize: '0.7rem' }}
                                             data-learn="Byte Ratio: Client/Server byte symmetry within this connection. It does not measure periodicity."
@@ -1553,13 +1533,14 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                                           <Chip 
                                             label={conn.packetRatio.toFixed(2)} 
                                             size="small" 
-                                            color={conn.packetRatio > 0.9 && conn.packetRatio < 1.1 ? 'warning' : 'default'}
+                                            color="default"
                                             variant="outlined"
                                             sx={{ fontSize: '0.7rem' }}
                                             data-learn="Packet Ratio: Client/Server packet symmetry within this connection. It does not measure periodicity."
                                           />
                                         </Box>
                                       )}
+                                      </Box>
                                     </Grid>
                                   )}
                                   

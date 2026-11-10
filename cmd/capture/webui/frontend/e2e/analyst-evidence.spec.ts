@@ -36,6 +36,14 @@ for (const available of [true, false]) {
     });
     await page.goto('/hosts');
     await page.getByRole('row').filter({ hasText: '192.0.2.1' }).first().click();
+    const context = page.getByRole('button', { name: /Behavioral context/ });
+    await expect(context).toHaveAttribute('aria-expanded', 'false');
+    await context.focus();
+    await page.keyboard.press('Enter');
+    await expect(context).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByText('No observations for this asset.')).toBeVisible();
+    await context.click();
+    await expect(context).toHaveAttribute('aria-expanded', 'false');
     if (available) {
       await expect(page.getByText('Scope: vlan-1')).toBeVisible();
       await expect(page.getByText('Scope: vlan-2')).toBeVisible();
@@ -49,6 +57,40 @@ for (const available of [true, false]) {
     expect(unexpected).toEqual([]); expect(errors).toEqual([]);
   });
 }
+
+test('ui-mocked: service detail shows directional traffic and an expandable banner', async ({ page, baseURL }) => {
+  const unexpected: string[] = [], errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.context().route('**/*', async route => {
+    const url = new URL(route.request().url());
+    if (url.origin !== baseURL) { unexpected.push(url.href); return route.abort(); }
+    if (!url.pathname.startsWith('/api/')) return route.continue();
+    let json: unknown;
+    switch (url.pathname) {
+      case '/api/status': json = { activeInputFile: '/owned.pcap', outputDir: '/owned', isProcessing: false }; break;
+      case '/api/files/input': json = [{ path: '/owned.pcap', name: 'owned.pcap', isCompleted: true }]; break;
+      case '/api/version': json = { version: 'ui-mocked' }; break;
+      case '/api/menu-counts': json = {}; break;
+      case '/api/alerts/stats': json = { totalAlerts: 0, groupCount: 0, bySeverity: {}, byRule: {}, recentAlerts: [] }; break;
+      case '/api/dbs/status': json = { satisfied: true, missing: [] }; break;
+      case '/api/services': json = { totalCount: 1, services: [{ ip: '192.0.2.80', port: 80, name: 'http', protocol: 'TCP', product: 'FixtureServer', version: '1.0', timestamp: 1700000000000000000, bytesClient: 100, bytesServer: 900, numFlows: 1, applications: [], banner: 'HTTP/1.1 200 OK\r\nServer: FixtureServer\r\nContent-Type: text/css' }] }; break;
+      default: unexpected.push(url.pathname); return route.abort();
+    }
+    return route.fulfill({ json });
+  });
+  await page.goto('/services');
+  await page.getByRole('row').filter({ hasText: '192.0.2.80' }).first().click();
+  await expect(page.getByText('192.0.2.80:80', { exact: true })).toBeVisible();
+  await expect(page.getByRole('img', { name: /Client to server/ })).toHaveAccessibleName('Client to server 100 B, server to client 900 B');
+  await expect(page.getByText('(10.0%)')).toBeVisible();
+  const banner = page.getByRole('button', { name: /Server banner/ });
+  await expect(banner).toHaveAttribute('aria-expanded', 'false');
+  await banner.click();
+  await expect(page.getByText(/Content-Type: text\/css/)).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(banner).toBeVisible();
+  expect(unexpected).toEqual([]); expect(errors).toEqual([]);
+});
 
 test('ui-mocked: failed capture downloads metadata for its own identity without selecting the active row', async ({ page, baseURL }) => {
   const unexpected: string[] = [], errors: string[] = [];

@@ -61,6 +61,7 @@ import FileSelectorHeader from '../components/FileSelectorHeader';
 import SearchInput from '../components/SearchInput';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
+import ServiceOverview from '../components/ServiceOverview';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
@@ -696,104 +697,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                             <Collapse in={expandedRow === rowKey} timeout="auto" unmountOnExit>
                               <Box sx={{ py: 2 }} data-learn="Service Details: Extended information about this network service including banner, version, hostname, and traffic statistics.">
                                 <Grid container spacing={2}>
-                                  {/* Service Information */}
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      Service Information
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Timestamp: {formatTimestamp(svc.timestamp)}
-                                    </Typography>
-                                    {svc.name && (
-                                      <Typography variant="body2" color="text.secondary">
-                                        Name: {svc.name}
-                                      </Typography>
-                                    )}
-                                    {svc.protocol && (
-                                      <Typography variant="body2" color="text.secondary">
-                                        Protocol: {svc.protocol}
-                                      </Typography>
-                                    )}
-                                    {svc.detectedProtocolName && (
-                                      <Typography variant="body2" color="text.secondary">
-                                        Detected Protocol: {svc.detectedProtocolName}
-                                      </Typography>
-                                    )}
-                                  </Grid>
-
-                                  {/* Product & Version */}
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      Product & Version
-                                    </Typography>
-                                    {svc.product && (
-                                      <Typography variant="body2" color="text.secondary">
-                                        Product: {svc.product}
-                                      </Typography>
-                                    )}
-                                    {svc.vendor && (
-                                      <Typography variant="body2" color="text.secondary">
-                                        Vendor: {svc.vendor}
-                                      </Typography>
-                                    )}
-                                    {svc.version && (
-                                      <Typography variant="body2" color="text.secondary">
-                                        Version: {svc.version}
-                                      </Typography>
-                                    )}
-                                    {svc.os && (
-                                      <Typography variant="body2" color="text.secondary">
-                                        OS: {svc.os}
-                                      </Typography>
-                                    )}
-                                  </Grid>
-
-                                  {/* Traffic Statistics */}
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      Traffic Statistics
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Total Bytes: {formatBytes(totalBytes)}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Bytes Server→Client: {formatBytes(svc.bytesServer)}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Bytes Client→Server: {formatBytes(svc.bytesClient)}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Number of Flows: {svc.numFlows.toLocaleString()}
-                                    </Typography>
-                                  </Grid>
-
-                                  {/* Host Information */}
-                                  {(svc.hostname || svc.banner) && (
-                                    <Grid item xs={12} md={6}>
-                                      <Typography variant="subtitle2" gutterBottom>
-                                        Host Information
-                                      </Typography>
-                                      {svc.hostname && (
-                                        <Typography variant="body2" color="text.secondary">
-                                          Hostname: {svc.hostname}
-                                        </Typography>
-                                      )}
-                                      {svc.banner && (
-                                        <Typography
-                                          variant="body2"
-                                          color="text.secondary"
-                                          sx={{
-                                            fontFamily: 'monospace',
-                                            fontSize: '0.75rem',
-                                            whiteSpace: 'pre-wrap',
-                                            wordBreak: 'break-all'
-                                          }}
-                                        >
-                                          Banner:{'\n'}{svc.banner}
-                                        </Typography>
-                                      )}
-                                    </Grid>
-                                  )}
+                                  <Grid item xs={12}><ServiceOverview service={svc} /></Grid>
 
                                   {/* Applications */}
                                   {(svc.applications || []).length > 0 && (

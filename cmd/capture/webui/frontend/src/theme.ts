@@ -119,7 +119,7 @@ export const netcapTheme = createTheme({
     MuiButton: {
       defaultProps: { disableElevation: true },
       styleOverrides: {
-        root: { borderRadius: 9, minHeight: 36, paddingInline: 15 },
+        root: { borderRadius: 9, minHeight: 36, paddingInline: 15, '&.Mui-focusVisible': { outline: `2px solid ${colors.blueBright}`, outlineOffset: 2 } },
         containedPrimary: {
           background: `linear-gradient(135deg, ${colors.blue}, ${colors.violet})`,
           color: '#fff',
@@ -128,7 +128,9 @@ export const netcapTheme = createTheme({
         outlined: { borderColor: colors.border, '&:hover': { borderColor: alpha(colors.blueBright, 0.55), backgroundColor: alpha(colors.blue, 0.07) } },
       },
     },
-    MuiIconButton: { styleOverrides: { root: { borderRadius: 9 } } },
+    MuiIconButton: { styleOverrides: { root: { borderRadius: 9, '&:hover': { backgroundColor: alpha(colors.blue, 0.12) }, '&.Mui-focusVisible': { outline: `2px solid ${colors.blueBright}`, outlineOffset: 2 } } } },
+    MuiAccordionSummary: { styleOverrides: { root: { cursor: 'pointer', borderRadius: 8, '&:hover': { backgroundColor: alpha(colors.blue, 0.08) }, '&.Mui-focusVisible': { outline: `2px solid ${colors.blueBright}`, outlineOffset: -2 } } } },
+    MuiLink: { styleOverrides: { root: { '&:hover': { textDecoration: 'underline', textUnderlineOffset: 3 }, '&:focus-visible': { outline: `2px solid ${colors.blueBright}`, outlineOffset: 2 } } } },
     MuiOutlinedInput: {
       styleOverrides: {
         root: {

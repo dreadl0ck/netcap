@@ -4,15 +4,14 @@ import { CertificateAssessmentNotice, certificateValidityLabel, HTTPReassemblyNo
 
 afterEach(cleanup);
 describe('audit evidence semantics', () => {
-  it('preserves HTTP gap qualifications and exact observation time', () => {
+  it('preserves actionable HTTP reassembly status without raw timestamp prose', () => {
     render(<HTTPReassemblyNotice status="unpaired_after_capture_loss" timestampNs="1590969600000000123" />);
     expect(screen.getByText(/unpaired_after_capture_loss/)).toBeInTheDocument();
-    expect(screen.getByText(/1590969600000000123 ns/)).toBeInTheDocument();
+    expect(screen.queryByText(/1590969600000000123 ns/)).not.toBeInTheDocument();
   });
   it('does not label a rounded generic HTTP timestamp as exact', () => {
     render(<RecordSemantics data={{ ReassemblyStatus: '', Timestamp: 1590969600000000123 }} />);
-    expect(screen.getByText(/does not establish completeness/)).toBeInTheDocument();
-    expect(screen.getByText(/Exact capture timestamp: unavailable/)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
   it('does not infer validity from legacy false flags', () => {
     expect(certificateValidityLabel({ daysUntilExpiration: 100 })).toContain('unavailable');
@@ -41,6 +40,6 @@ describe('audit evidence semantics', () => {
   });
   it('does not relabel an already formatted timestamp as exact nanoseconds', () => {
     render(<HTTPReassemblyNotice timestampNs="2020-06-01T00:00:00.000Z" />);
-    expect(screen.getByText(/Exact capture timestamp: unavailable/)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });
