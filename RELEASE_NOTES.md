@@ -1,3 +1,31 @@
+## Capture evidence and resource fixes
+
+| Area | Change |
+| --- | --- |
+| Raw IP | Accept historical on-disk link value 12 as well as LINKTYPE_RAW 101; retain original capture link values during filtered evidence export |
+| HTTP and identity | Export bounded multipart fields (1 MiB total, 1,024 parts, no temporary files); retain LDAP computer names as directory subjects without inventing an IP binding; distinguish a unique scoped hostname claim from untimed aliases |
+| ICMP | Export quoted IPv4 source/destination/protocol in separate fields, including JSON/protobuf/CSV; quotations do not create observed peers |
+| 443 policy | Avoid duplicate generic observations for recognizable HTTP requests and exclude client-source-port-only matches |
+| Memory | Size out-of-order payload buffers to captured bytes instead of reserving 1,900 bytes for every small segment; release burst allocations and retain at most 1,024 free pages per unbudgeted assembler; avoid oversized empty/small HTTP body allocations and repeated request-body copies |
+| Scan performance | Index large host port sets and classify retained TCP prefixes only when their bytes grow, preserving detector match counts |
+
+The 148-capture MTA replay retains all baseline carved-file hashes and has no
+missing tshark HTTP requests. Both Raw-IP injection witnesses decode; the FKIE
+DSB witness retains all 10 tshark-visible TLS HTTP requests. CTU-13 scenario 3
+completes 495,056 packets with no SSH role-swap alerts; the ACM forwarder produces
+two DNS tunnel incidents with destination port 53.
+
+The full 1.7 GB ACM capture completes 4,156,081 packets at 5.97 GB peak RSS on
+macOS, replacing the earlier 11 GB OOM on a smaller slice. Payload-sized pages
+reduce the GeekLounge 151022 replay from 8.51 GB to 5.75 GB peak RSS while retaining
+all 2,274,747 packets. These are measured process peaks, not hard `GOMEMLIMIT`
+guarantees. The matched four-vCPU Linux 2018-12-18 benchmark improves from a
+v0.15.2 median of 4.12 s to 3.48 s, retaining every baseline artifact hash.
+
+The historical 5,510-unit inventory includes 415 failed HTML downloads under
+`sc-html-failed`; these are not packet captures. Unsupported formats, damaged
+inputs and unavailable archive sources retain separate dispositions.
+
 ## Recheck reliability and portable runtimes
 
 `v0.16.3` includes the full recheck-fix branch following v0.16.2.

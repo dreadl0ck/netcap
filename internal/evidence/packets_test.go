@@ -14,10 +14,44 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/packetview/testutil"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
 )
+
+func TestHistoricalRawIPSelectionPreservesCaptureLinkValue(t *testing.T) {
+	for _, link := range []layers.LinkType{12, layers.LinkTypeRaw} {
+		for _, v6 := range []bool{false, true} {
+			var source bytes.Buffer
+			w := pcapgo.NewWriter(&source)
+			if err := w.WriteFileHeader(65535, link); err != nil {
+				t.Fatal(err)
+			}
+			data := testutil.TCP(v6, false, 100, 0, "S", "")
+			if err := w.WritePacket(gopacket.CaptureInfo{Timestamp: time.Unix(1, 0), Length: len(data), CaptureLength: len(data)}, data); err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(t.TempDir(), "raw.pcap")
+			if err := os.WriteFile(path, source.Bytes(), 0600); err != nil {
+				t.Fatal(err)
+			}
+			var output bytes.Buffer
+			m, err := ExportPackets(context.Background(), path, &output, Selection{BPF: "tcp port 80", MaxPackets: 2})
+			if err != nil || m.Selected != 1 {
+				t.Fatalf("link=%d ipv6=%t: %+v %v", link, v6, m, err)
+			}
+			r, err := pcapgo.NewNgReader(bytes.NewReader(output.Bytes()), pcapgo.DefaultNgReaderOptions)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, _, err := r.ReadPacketData()
+			if err != nil || r.LinkType() != link || !bytes.Equal(got, data) {
+				t.Fatal("selection changed source evidence", err)
+			}
+		}
+	}
+}
 
 func TestPacketEvidencePreservesInterfacesSectionsAndHashes(t *testing.T) {
 	var source bytes.Buffer

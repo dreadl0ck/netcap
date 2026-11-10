@@ -63,6 +63,8 @@ const (
  */
 
 type httpRequest struct {
+	body         []byte
+	bodyLoaded   bool
 	pairable     bool
 	evidence     messageEvidence
 	incomplete   bool
@@ -606,6 +608,8 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	t := requestTimestamp
 
 	request := &httpRequest{
+		body:         body,
+		bodyLoaded:   true,
 		pairable:     !h.directionBroken[0] && !evidence.unsafe && bodyErr == nil,
 		evidence:     evidence,
 		incomplete:   bodyErr != nil,
@@ -624,6 +628,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	// parse form values
 	err = parseEvidenceForm(req, body)
 	if err != nil {
+		request.evidence.issues = appendUnique(request.evidence.issues, "incomplete-request-form")
 		httpLog.Error(
 			"failed to read HTTP form values",
 			zap.String("ident", h.conversation.Ident),

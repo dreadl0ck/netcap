@@ -10,9 +10,10 @@ import (
 
 var ErrPageBudget = errors.New("TCP reassembly page budget exceeded")
 
-// PageAllocationBytes includes the payload array and the page's fixed metadata.
+// PageAllocationBytes conservatively credits both allocations, including Go
+// size-class rounding. Small packets can use less than the maximum payload.
 // Packet contexts, connection state, parser copies and RSS are outside this budget.
-const PageAllocationBytes = int64(unsafe.Sizeof(page{}))
+const PageAllocationBytes = 2048 + 2*int64(unsafe.Sizeof(page{}))
 
 type PageBudget struct {
 	limit                int64

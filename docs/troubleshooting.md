@@ -21,6 +21,29 @@ into a fresh directory.
 
 ## Pitfalls
 
+Offline capture exit codes describe input coverage, not whether output files
+exist. Inspect `capture-input.json` alongside `capture-manifest.json`.
+
+| Exit | Meaning |
+| --- | --- |
+| `0` | Readable input consumed; upper-layer decode warnings do not fail the run. Snaplen truncation or recoverable frame errors can still leave a `partial` coverage report. |
+| `1` | Fatal setup/runtime error, or input error before any readable packet. |
+| `2` | Input framing/read loss after a readable prefix; that prefix is retained. |
+| `3` | Unsupported capture content; supported records may still have been written. |
+
+Malformed fragments retain `Connection.Normalization: fragment-rejected` without
+inventing transport ports. ICMP error quotations use `QuotedSrcIP`/`QuotedDstIP`;
+those addresses are quoted claims, not additional observed network peers.
+
+`Hosts.json` uses `observed-with-unattributed-aliases` when one scoped protocol
+hostname is accompanied by untimed profile/discovery names. `hostnameAliases`
+and the complete evidence remain available; competing scoped claims still use
+`conflicting-observations`. Names are observations, not authenticated identities.
+
+`max-retained-reassembly-bytes` reserves conservative maximum-page credits
+(`reassembly.PageAllocationBytes`). Small payload buffers can consume less;
+packet contexts, parser state and total process RSS have separate costs.
+
 Use explicit boolean values such as `-dpi=false`. Generic `-gen-config` is
 unimplemented despite appearing in help. `net export` starts a metrics exporter;
 CSV/JSON conversion uses `net dump`.

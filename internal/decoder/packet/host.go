@@ -79,10 +79,16 @@ func ResetHosts() {
 type hostEntry struct {
 	sync.Mutex
 	*types.Host
+	srcPortIndex, dstPortIndex, contactedPortIndex map[hostPortKey]*types.Port
 
 	// buffer packets for deferred DPI analysis (keyed by stream)
 	// Uses bufferedPacket to store copied data, avoiding gopacket buffer reuse issues
 	streamPackets map[streamKey][]bufferedPacket
+}
+
+type hostPortKey struct {
+	port     int32
+	protocol string
 }
 
 // updateHost updates or creates an IP profile, buffering packets for deferred DPI
@@ -496,84 +502,46 @@ func getHost(ipAddr string, i *decoderutils.PacketInfo, source bool) *hostEntry 
 }
 
 func doSrcPortUpdate(p *hostEntry, srcPort int32, layerType string, dataLen uint64) {
-	var found bool
-
-	// source port
-	for _, port := range p.SrcPorts {
-		if port.PortNumber == srcPort && port.Protocol == layerType {
-
-			atomic.AddUint64(&port.Stats.Bytes, dataLen)
-			atomic.AddUint64(&port.Stats.Packets, 1)
-
-			found = true
-
-			break
-		}
-	}
-
-	if !found {
-		p.SrcPorts = append(p.SrcPorts, &types.Port{
-			PortNumber: srcPort,
-			Protocol:   layerType,
-			Stats: &types.PortStats{
-				Bytes:   dataLen,
-				Packets: 1,
-			},
-		})
-	}
+	updateHostPort(&p.SrcPorts, &p.srcPortIndex, srcPort, layerType, dataLen)
 }
 
 func doContactedPortUpdate(p *hostEntry, dstPort int32, layerType string, dataLen uint64) {
-	var found bool
-
-	for _, port := range p.ContactedPorts {
-		if port.PortNumber == dstPort && port.Protocol == layerType {
-
-			atomic.AddUint64(&port.Stats.Bytes, dataLen)
-			atomic.AddUint64(&port.Stats.Packets, 1)
-
-			found = true
-
-			break
-		}
-	}
-
-	if !found {
-		p.ContactedPorts = append(p.ContactedPorts, &types.Port{
-			PortNumber: dstPort,
-			Protocol:   layerType,
-			Stats: &types.PortStats{
-				Bytes:   dataLen,
-				Packets: 1,
-			},
-		})
-	}
+	updateHostPort(&p.ContactedPorts, &p.contactedPortIndex, dstPort, layerType, dataLen)
 }
 
 func doDstPortUpdate(p *hostEntry, dstPort int32, layerType string, dataLen uint64) {
-	var found bool
+	updateHostPort(&p.DstPorts, &p.dstPortIndex, dstPort, layerType, dataLen)
+}
 
-	// destination port
-	for _, port := range p.DstPorts {
-		if port.PortNumber == dstPort && port.Protocol == layerType {
-			atomic.AddUint64(&port.Stats.Bytes, dataLen)
-			atomic.AddUint64(&port.Stats.Packets, 1)
-
-			found = true
-
-			break
+// Called under the host lock. Small hosts keep only the ordered output slice.
+func updateHostPort(ports *[]*types.Port, index *map[hostPortKey]*types.Port, number int32, protocol string, bytes uint64) {
+	key := hostPortKey{number, protocol}
+	if *index == nil && len(*ports) >= 16 {
+		*index = make(map[hostPortKey]*types.Port, len(*ports))
+		for _, port := range *ports {
+			(*index)[hostPortKey{port.PortNumber, port.Protocol}] = port
 		}
 	}
-
-	if !found {
-		p.DstPorts = append(p.DstPorts, &types.Port{
-			PortNumber: dstPort,
-			Protocol:   layerType,
-			Stats: &types.PortStats{
-				Bytes:   dataLen,
-				Packets: 1,
-			},
-		})
+	var found *types.Port
+	if *index != nil {
+		found = (*index)[key]
+	} else {
+		for _, port := range *ports {
+			if port.PortNumber == number && port.Protocol == protocol {
+				found = port
+				break
+			}
+		}
+	}
+	if found != nil {
+		atomic.AddUint64(&found.Stats.Bytes, bytes)
+		atomic.AddUint64(&found.Stats.Packets, 1)
+		return
+	}
+	port := &types.Port{PortNumber: number, Protocol: protocol, Stats: &types.PortStats{Bytes: bytes, Packets: 1}}
+	*ports = append(*ports, port)
+	if *index != nil {
+		(*index)[key] = port
 	}
 }
 

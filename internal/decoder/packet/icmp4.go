@@ -20,9 +20,11 @@
 package packet
 
 import (
+	"encoding/binary"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
+	"net"
 
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -74,7 +76,7 @@ var icmpv4Decoder = newGoPacketDecoder(
 				payload = icmp4.Payload
 			}
 
-			return &types.ICMPv4{
+			record := &types.ICMPv4{
 				Timestamp:            timestamp,
 				TypeCode:             int32(icmp4.TypeCode),
 				Checksum:             int32(icmp4.Checksum),
@@ -94,6 +96,18 @@ var icmpv4Decoder = newGoPacketDecoder(
 				IsTimeExceeded:       icmpType == 11,
 				Payload:              payload,
 			}
+			if icmpType == 3 || icmpType == 4 || icmpType == 5 || icmpType == 11 || icmpType == 12 {
+				quoted := icmp4.Payload
+				if len(quoted) >= 20 && quoted[0]>>4 == 4 {
+					header := int(quoted[0]&15) * 4
+					if header >= 20 && header <= len(quoted) && int(binary.BigEndian.Uint16(quoted[2:4])) >= header {
+						record.QuotedSrcIP = net.IP(quoted[12:16]).String()
+						record.QuotedDstIP = net.IP(quoted[16:20]).String()
+						record.QuotedIPProtocol = uint32(quoted[9])
+					}
+				}
+			}
+			return record
 		}
 
 		return nil

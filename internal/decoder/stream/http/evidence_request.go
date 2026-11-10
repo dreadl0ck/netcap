@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -101,6 +102,9 @@ func appendUnique(dst []string, values ...string) []string {
 }
 
 func addStatus(record *types.HTTP, value string) {
+	if value == "incomplete-request-form" {
+		return // Form syntax does not establish transport/framing loss.
+	}
 	record.ReassemblyStatus = strings.Join(appendUnique(strings.FieldsFunc(record.ReassemblyStatus, func(r rune) bool { return r == ',' }), value), ",")
 }
 
@@ -341,7 +345,10 @@ func evidenceQuery(raw string) (url.Values, error) {
 func parseEvidenceForm(r *http.Request, body []byte) error {
 	var queryErr error
 	r.Form, queryErr = evidenceQuery(r.URL.RawQuery)
-	contentType, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	contentType, params, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if (r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH") && contentType == "multipart/form-data" {
+		return errors.Join(queryErr, parseEvidenceMultipart(r, body, params["boundary"]))
+	}
 	if (r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH") && contentType == "application/x-www-form-urlencoded" {
 		post, err := evidenceQuery(string(body))
 		r.PostForm = post
@@ -354,4 +361,43 @@ func parseEvidenceForm(r *http.Request, body []byte) error {
 		return queryErr
 	}
 	return queryErr
+}
+
+// Parse fields in memory; uploaded files remain in the original carved body.
+func parseEvidenceMultipart(r *http.Request, body []byte, boundary string) error {
+	const maxFields = 1024
+	const maxFieldBytes = 1 << 20
+	if boundary == "" {
+		return fmt.Errorf("multipart form lacks boundary")
+	}
+	reader := multipart.NewReader(bytes.NewReader(body), boundary)
+	r.PostForm = url.Values{}
+	query, _ := evidenceQuery(r.URL.RawQuery)
+	remaining := int64(maxFieldBytes)
+	for range maxFields {
+		part, err := reader.NextPart()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		name := part.FormName()
+		if name == "" || part.FileName() != "" {
+			_ = part.Close()
+			continue
+		}
+		value, err := io.ReadAll(io.LimitReader(part, remaining+1))
+		_ = part.Close()
+		if err != nil {
+			return err
+		}
+		if int64(len(value))+int64(len(name)) > remaining {
+			return fmt.Errorf("multipart fields exceed %d bytes", maxFieldBytes)
+		}
+		remaining -= int64(len(value) + len(name))
+		r.PostForm.Add(name, string(value))
+		r.Form[name] = append(append([]string(nil), r.PostForm[name]...), query[name]...)
+	}
+	return fmt.Errorf("multipart form exceeds %d parts", maxFields)
 }

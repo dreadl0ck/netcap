@@ -49,11 +49,14 @@ func TestPopularityPreflightFailsBeforeDispatch(t *testing.T) {
 		resolvers.InitDNSWhitelist()
 	})
 	resolvers.DataBaseFolderPath = t.TempDir()
+	resolvers.CurrentConfig = resolvers.Config{DomainPopularityFormat: "rank-domain"}
+	if err := resolvers.InitDNSWhitelist(); err != nil {
+		t.Fatalf("missing optional managed list: %v", err)
+	}
 	for _, args := range [][]string{
-		{"transform", "toHTTPHostsFiltered"},
-		{"transform", "toIncomingConnsFiltered"},
-		{"transform", "toOutgoingConnsFiltered"},
 		{"transform", "--domain-popularity-list", filepath.Join(t.TempDir(), "missing.csv"), "toHTTPHostsFiltered"},
+		{"transform", "--domain-popularity-format", "invalid", "toIncomingConnsFiltered"},
+		{"transform", "--domain-popularity-list", filepath.Join(t.TempDir(), "missing.csv"), "toOutgoingConnsFiltered"},
 	} {
 		cmd := &cli.Command{Name: "transform", Flags: GetFlags(), Action: RunWithContext}
 		if err := cmd.Run(context.Background(), args); err == nil {

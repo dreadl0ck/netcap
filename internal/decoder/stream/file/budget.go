@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"sync"
 )
 
@@ -47,6 +48,9 @@ func releaseBuffer(n int64) {
 // ReadBody retains its allocation reservation until release, including partial reads.
 func ReadBody(r io.Reader) ([]byte, func(), error) { return ReadBodyLimit(r, GetMaxFileSize()) }
 func ReadBodyLimit(r io.Reader, limit int64) (body []byte, release func(), err error) {
+	if r == http.NoBody {
+		return nil, func() {}, nil
+	}
 	if limit <= 0 || limit > 100<<20 {
 		limit = 100 << 20
 	}
@@ -74,7 +78,7 @@ func ReadBodyLimit(r io.Reader, limit int64) (body []byte, release func(), err e
 			return body, release, e
 		}
 		if len(body) == cap(body) {
-			next := min(limit, max(int64(32<<10), int64(cap(body))*2))
+			next := min(limit, max(int64(512), int64(cap(body))*2))
 			if e := reserveBuffer(next); e != nil {
 				return body, release, e
 			}

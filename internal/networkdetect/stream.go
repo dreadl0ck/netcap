@@ -8,13 +8,15 @@ import (
 )
 
 type direction struct {
-	next      uint32
-	started   bool
-	prefix    []byte
-	prefixSeq uint32
-	bytes     uint64
-	gap       bool
-	ftpLine   []byte
+	next          uint32
+	started       bool
+	prefix        []byte
+	prefixSeq     uint32
+	bytes         uint64
+	gap           bool
+	ftpLine       []byte
+	prefixScanned int
+	traits        prefixTraits
 }
 type flow struct {
 	closed        bool
@@ -136,45 +138,76 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 		return // Retain overlap evidence after FIN/RST, without reviving protocol state.
 	}
 	e.observeFTP(ev, f, d, payload)
-	text := string(d.prefix)
-	if strings.HasPrefix(text, "SSH-2.0-") || strings.HasPrefix(text, "SSH-1.99-") {
-		if strings.Contains(text, "\n") {
-			f.ssh = true
-			port := ev.DstPort
-			if source != f.client && f.client != "" {
-				port = ev.SrcPort
-			}
-			if port != 22 && ev.SrcPort != 22 && ev.DstPort != 22 && f.client != "" {
-				add("ssh.nonstandard-port", "behavioral-suspicion", "medium", "T1571", uint64(port), 22, []string{"SSH version banner"}, f.first, nil, "SSH service identification does not establish exfiltration")
-			}
+	if len(d.prefix) != d.prefixScanned {
+		d.traits = classifyPrefix(d.prefix)
+		d.prefixScanned = len(d.prefix)
+	}
+	if d.traits.ssh {
+		f.ssh = true
+		port := ev.DstPort
+		if source != f.client && f.client != "" {
+			port = ev.SrcPort
+		}
+		if port != 22 && ev.SrcPort != 22 && ev.DstPort != 22 && f.client != "" {
+			add("ssh.nonstandard-port", "behavioral-suspicion", "medium", "T1571", uint64(port), 22, []string{"SSH version banner"}, f.first, nil, "SSH service identification does not establish exfiltration")
 		}
 	}
 	if f.ssh && source == f.client && d.bytes >= e.config.SSHBytes {
 		add("ssh.large-upload", "behavioral-suspicion", "medium", "T1048.002", d.bytes, e.config.SSHBytes, []string{"Unique contiguous client TCP payload bytes"}, f.first, nil, "Encrypted content and authorization are unavailable; configured source exceptions apply")
 	}
+	if d.traits.stratum {
+		add("protocol.stratum", "policy-observation", "medium", "T1496", 1, 1, []string{"mining.subscribe"}, f.first, nil, "Mining protocol activity does not establish unauthorized mining")
+	}
+	if d.traits.irc {
+		add("protocol.irc", "policy-observation", "info", "", 1, 1, []string{"IRC NICK and USER commands"}, f.first, nil, "IRC is also used legitimately")
+	}
+	if source == f.client && d.bytes >= 128 && ev.DstPort == 443 && !d.traits.tls && !d.traits.sslv2 && !f.ssh && !d.traits.http {
+		add("policy.non-tls-on-443", "policy-observation", "low", "T1571", d.bytes, 128, []string{"At least 128 contiguous TCP payload bytes whose prefix is not a TLS record"}, f.first, nil, "A non-TLS prefix on TCP/443 can be intentional or precede a protocol upgrade; C2 intent is not established")
+	}
+	if len(d.prefix) >= 64 && (ev.DstPort == 21 || ev.DstPort == 23 || ev.DstPort == 110 || ev.DstPort == 143 || ev.DstPort == 873) && !f.ssh && !d.traits.tls {
+		add("policy.cleartext-service", "policy-observation", "low", "", uint64(len(d.prefix)), 64, []string{fmt.Sprintf("TCP destination port %d", ev.DstPort)}, f.first, nil, "Port and observed payload do not identify the application protocol or prove credentials were sent")
+	}
+}
+
+type prefixTraits struct{ ssh, stratum, irc, tls, sslv2, http bool }
+
+// First-arrival prefix bytes are immutable; a full prefix need not be reparsed.
+func classifyPrefix(prefix []byte) prefixTraits {
+	text := string(prefix)
+	t := prefixTraits{
+		ssh:   (strings.HasPrefix(text, "SSH-2.0-") || strings.HasPrefix(text, "SSH-1.99-")) && strings.Contains(text, "\n"),
+		tls:   len(prefix) >= 5 && prefix[0] >= 20 && prefix[0] <= 23 && prefix[1] == 3 && prefix[2] <= 4 && binary.BigEndian.Uint16(prefix[3:5]) <= 18432,
+		sslv2: len(prefix) >= 11 && prefix[0]&0x80 != 0 && prefix[2] == 1 && (prefix[3] == 3 || prefix[3] == 0 && prefix[4] == 2),
+		http:  httpRequestPrefix(text),
+	}
+	nick, user := false, false
 	for _, line := range strings.Split(text, "\n") {
 		var request struct {
 			Method string `json:"method"`
 		}
 		if json.Unmarshal([]byte(line), &request) == nil && request.Method == "mining.subscribe" {
-			add("protocol.stratum", "policy-observation", "medium", "T1496", 1, 1, []string{"mining.subscribe"}, f.first, nil, "Mining protocol activity does not establish unauthorized mining")
-			break
+			t.stratum = true
 		}
-	}
-	nick, user := false, false
-	for _, line := range strings.Split(text, "\n") {
 		nick = nick || strings.HasPrefix(line, "NICK ")
 		user = user || strings.HasPrefix(line, "USER ")
 	}
-	if nick && user {
-		add("protocol.irc", "policy-observation", "info", "", 1, 1, []string{"IRC NICK and USER commands"}, f.first, nil, "IRC is also used legitimately")
+	t.irc = nick && user
+	return t
+}
+
+// Decoded HTTP has its own policy observation; do not emit a second generic one.
+func httpRequestPrefix(text string) bool {
+	line, _, ok := strings.Cut(text, "\n")
+	if !ok {
+		return false
 	}
-	tlsRecord := len(d.prefix) >= 5 && d.prefix[0] >= 20 && d.prefix[0] <= 23 && d.prefix[1] == 3 && d.prefix[2] <= 4 && binary.BigEndian.Uint16(d.prefix[3:5]) <= 18432
-	sslV2 := len(d.prefix) >= 11 && d.prefix[0]&0x80 != 0 && d.prefix[2] == 1 && (d.prefix[3] == 3 || d.prefix[3] == 0 && d.prefix[4] == 2)
-	if source == f.client && d.bytes >= 128 && ev.DstPort == 443 && !tlsRecord && !sslV2 && !f.ssh {
-		add("policy.non-tls-on-443", "policy-observation", "low", "T1571", d.bytes, 128, []string{"At least 128 contiguous TCP payload bytes whose prefix is not a TLS record"}, f.first, nil, "A non-TLS prefix on TCP/443 can be intentional or precede a protocol upgrade; C2 intent is not established")
+	fields := strings.Fields(strings.TrimSuffix(line, "\r"))
+	if len(fields) != 3 || fields[2] != "HTTP/1.0" && fields[2] != "HTTP/1.1" {
+		return false
 	}
-	if len(d.prefix) >= 64 && (ev.DstPort == 21 || ev.DstPort == 23 || ev.DstPort == 110 || ev.DstPort == 143 || ev.DstPort == 873) && !f.ssh && !tlsRecord {
-		add("policy.cleartext-service", "policy-observation", "low", "", uint64(len(d.prefix)), 64, []string{fmt.Sprintf("TCP destination port %d", ev.DstPort)}, f.first, nil, "Port and observed payload do not identify the application protocol or prove credentials were sent")
+	switch fields[0] {
+	case "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "TRACE", "CONNECT", "PATCH":
+		return true
 	}
+	return false
 }
