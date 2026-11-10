@@ -210,7 +210,7 @@ func (c *Collector) finishHostIdentity() error {
 	report.UnscopedRecords = c.analysisUnscoped
 	c.analysisMu.Unlock()
 	for _, h := range report.Hosts {
-		if h.HostnameState != "observed" {
+		if h.HostnameState != "observed" && h.HostnameState != "observed-with-unattributed-aliases" {
 			continue
 		}
 		dp := packet.DeviceProfiles.FindByIP(h.IP)

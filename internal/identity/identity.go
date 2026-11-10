@@ -35,15 +35,16 @@ type Binding struct {
 	Source string `json:"source"`
 }
 type Host struct {
-	MAC           string     `json:"mac,omitempty"`
-	MACState      string     `json:"macState"`
-	Scope         string     `json:"scope"`
-	IP            string     `json:"ip"`
-	Hostname      string     `json:"hostname,omitempty"`
-	HostnameState string     `json:"hostnameState"`
-	Evidence      []Evidence `json:"evidence"`
-	Accounts      []Account  `json:"accounts"`
-	Bindings      []Binding  `json:"bindings"`
+	MAC             string     `json:"mac,omitempty"`
+	MACState        string     `json:"macState"`
+	Scope           string     `json:"scope"`
+	IP              string     `json:"ip"`
+	Hostname        string     `json:"hostname,omitempty"`
+	HostnameAliases []string   `json:"hostnameAliases,omitempty"`
+	HostnameState   string     `json:"hostnameState"`
+	Evidence        []Evidence `json:"evidence"`
+	Accounts        []Account  `json:"accounts"`
+	Bindings        []Binding  `json:"bindings"`
 }
 type Report struct {
 	Directory       []DirectoryObservation `json:"directory,omitempty"`
@@ -55,6 +56,7 @@ type Report struct {
 }
 type DirectoryObservation struct {
 	SID      string   `json:"sid,omitempty"`
+	Hostname string   `json:"hostname,omitempty"`
 	Scope    string   `json:"scope"`
 	Account  string   `json:"account,omitempty"`
 	Domain   string   `json:"domain,omitempty"`
@@ -228,7 +230,10 @@ func (e *Engine) Observe(scope string, m proto.Message) {
 			full = strings.TrimSpace(values["givenname"] + " " + values["sn"])
 		}
 		d := directory{Scope: scope, Name: name, Domain: strings.Join(dc, "."), FullName: full, Hostname: values["dnshostname"], Source: "LDAP " + r.DN, Flow: r.Flow, At: r.Timestamp}
-		if name != "" || full != "" {
+		if d.Hostname == "" && (strings.Contains(strings.ToLower(r.DN), ",cn=computers,") || strings.Contains(strings.ToLower(r.DN), ",ou=domain controllers,")) {
+			d.Hostname = values["name"]
+		}
+		if name != "" || full != "" || d.Hostname != "" {
 			e.rememberDirectory(d)
 		}
 		if ip := values["iphostnumber"]; ip != "" && d.Hostname != "" {
@@ -251,7 +256,7 @@ func (e *Engine) Observe(scope string, m proto.Message) {
 	}
 }
 func (e *Engine) rememberDirectory(d directory) {
-	key := d.Scope + "|" + strings.ToLower(d.Domain+"|"+d.Name) + "|" + d.FullName + "|" + d.Source + "|" + d.Client + "|" + d.SID
+	key := d.Scope + "|" + strings.ToLower(d.Domain+"|"+d.Name) + "|" + d.FullName + "|" + d.Source + "|" + d.Client + "|" + d.SID + "|" + d.Hostname
 	if old, ok := e.directory[key]; ok {
 		if old.At < d.At || old.At == d.At && old.Flow <= d.Flow {
 			return
@@ -310,18 +315,29 @@ func (e *Engine) Report() Report {
 		}
 	}
 	for _, d := range e.directory {
-		r.Directory = append(r.Directory, DirectoryObservation{SID: d.SID, Scope: d.Scope, Account: d.Name, Domain: d.Domain, FullName: d.FullName, Client: d.Client, Evidence: Evidence{At: d.At, Kind: "directory-subject", Value: d.FullName, Source: d.Source, Flow: d.Flow}})
+		value := d.FullName
+		if value == "" {
+			value = d.Hostname
+		}
+		r.Directory = append(r.Directory, DirectoryObservation{SID: d.SID, Hostname: d.Hostname, Scope: d.Scope, Account: d.Name, Domain: d.Domain, FullName: d.FullName, Client: d.Client, Evidence: Evidence{At: d.At, Kind: "directory-subject", Value: value, Source: d.Source, Flow: d.Flow}})
 		key := d.Scope + "|" + strings.ToLower(d.Name)
 		directoryIndex[key] = append(directoryIndex[key], d)
 	}
 	for _, s := range e.hosts {
 		h := s.host
 		names := map[string]string{}
+		attributed := map[string]string{}
 		for _, v := range h.Evidence {
 			if v.Kind == "hostname" {
 				key := strings.TrimSuffix(strings.TrimSuffix(strings.ToLower(v.Value), "."), ".local")
 				if old, ok := names[key]; !ok || v.Value < old {
 					names[key] = v.Value
+				}
+				// Untimed aggregates remain aliases of a unique scoped protocol claim.
+				if v.Source != "discovery address assertion" && !strings.HasPrefix(v.Source, "profile ") {
+					if old, ok := attributed[key]; !ok || v.Value < old {
+						attributed[key] = v.Value
+					}
 				}
 			}
 		}
@@ -406,6 +422,17 @@ func (e *Engine) Report() Report {
 			h.HostnameState = "observed"
 		} else if len(names) > 1 {
 			h.HostnameState = "conflicting-observations"
+			if len(attributed) == 1 {
+				for key, name := range attributed {
+					h.Hostname, h.HostnameState = name, "observed-with-unattributed-aliases"
+					for aliasKey, alias := range names {
+						if aliasKey != key {
+							h.HostnameAliases = append(h.HostnameAliases, alias)
+						}
+					}
+				}
+				sort.Strings(h.HostnameAliases)
+			}
 		}
 		sort.Slice(h.Evidence, func(i, j int) bool {
 			a, b := h.Evidence[i], h.Evidence[j]
@@ -426,7 +453,7 @@ func (e *Engine) Report() Report {
 	sort.Slice(r.Hosts, func(i, j int) bool { return r.Hosts[i].Scope+"|"+r.Hosts[i].IP < r.Hosts[j].Scope+"|"+r.Hosts[j].IP })
 	sort.Slice(r.Directory, func(i, j int) bool {
 		x, y := r.Directory[i], r.Directory[j]
-		return x.Scope+"|"+x.Domain+"|"+x.Account+"|"+x.FullName+"|"+x.Evidence.Source+"|"+x.Client+"|"+x.SID < y.Scope+"|"+y.Domain+"|"+y.Account+"|"+y.FullName+"|"+y.Evidence.Source+"|"+y.Client+"|"+y.SID
+		return x.Scope+"|"+x.Domain+"|"+x.Account+"|"+x.FullName+"|"+x.Evidence.Source+"|"+x.Client+"|"+x.SID+"|"+x.Hostname < y.Scope+"|"+y.Domain+"|"+y.Account+"|"+y.FullName+"|"+y.Evidence.Source+"|"+y.Client+"|"+y.SID+"|"+y.Hostname
 	})
 	return r
 }

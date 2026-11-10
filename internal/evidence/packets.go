@@ -150,7 +150,7 @@ func ExportPackets(ctx context.Context, input string, output io.Writer, selectio
 		if selection.BPF != "" && bpf == nil {
 			compileType := intf.LinkType
 			// Capture LINKTYPE_RAW (101) differs from platform-specific DLT_RAW.
-			if compileType == layers.LinkTypeRaw {
+			if compileType == 12 || compileType == layers.LinkTypeRaw {
 				dlt := pcap.DatalinkNameToVal("RAW")
 				if dlt < 0 || dlt > 255 {
 					return manifest, fmt.Errorf("unsupported RAW datalink: %d", dlt)

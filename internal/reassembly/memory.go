@@ -19,65 +19,48 @@ import (
 type pageCache struct {
 	budget       *PageBudget
 	free         []*page
-	pcSize       int
 	size, used   int
 	pageRequests int64
-	ops          int
-	nextShrink   int
 }
 
 const initialAllocSize = 1024
 
 func newPageCache() *pageCache {
-	return &pageCache{pcSize: initialAllocSize}
+	return &pageCache{}
 }
 
-// grow exponentially increases the size of our page cache as much as necessary.
+// Pages own separate allocations so one live page cannot pin an entire slab.
 func (c *pageCache) grow() {
 	if c.free == nil {
-		c.free = make([]*page, 0, c.pcSize)
+		c.free = make([]*page, 0, initialAllocSize)
 	}
-	pages := make([]page, c.pcSize)
-	c.size += c.pcSize
-	for i := range pages {
-		c.free = append(c.free, &pages[i])
+	c.size += initialAllocSize
+	for range initialAllocSize {
+		c.free = append(c.free, new(page))
 	}
 	if Debug {
-		log.Println("PageCache: created", c.pcSize, "new pages, size:", c.size, "cap:", cap(c.free), "len:", len(c.free))
+		log.Println("PageCache: created", initialAllocSize, "new pages, size:", c.size, "cap:", cap(c.free), "len:", len(c.free))
 	}
-	// control next shrink attempt
-	c.nextShrink = c.pcSize
-	c.ops = 0
-	// prepare for next alloc
-	c.pcSize *= 2
-}
-
-// Remove references to unused pages to let GC collect them
-// Note: memory used by c.free itself it not collected.
-func (c *pageCache) tryShrink() {
-	minimum := max(c.pcSize/2, initialAllocSize)
-
-	if len(c.free) <= minimum {
-		return
-	}
-
-	for i := range c.free[minimum:] {
-		c.free[minimum+i] = nil
-	}
-
-	c.size -= len(c.free) - minimum
-	c.free = c.free[:minimum]
-	c.pcSize = minimum
 }
 
 // next returns a clean, ready-to-use page object.
-func (c *pageCache) next(ts time.Time) (p *page) {
+func (c *pageCache) next(ts time.Time, sizes ...int) (p *page) {
+	size := pageBytes
+	if len(sizes) > 0 {
+		size = min(pageBytes, max(0, sizes[0]))
+	}
+	prepare := func(p *page) *page {
+		if cap(p.buf) < size || cap(p.buf) > max(64, 2*size) {
+			p.buf = make([]byte, size)
+		}
+		p.buf = p.buf[:size]
+		p.seen, p.bytes = ts, p.buf[:0]
+		return p
+	}
 	if c.budget != nil {
 		c.used++
 		c.size++
-		p = &page{seen: ts}
-		p.bytes = p.buf[:0]
-		return p
+		return prepare(new(page))
 	}
 	if Debug {
 		c.pageRequests++
@@ -89,19 +72,14 @@ func (c *pageCache) next(ts time.Time) (p *page) {
 		c.grow()
 	}
 	i := len(c.free) - 1
-	p, c.free = c.free[i], c.free[:i]
-	p.seen = ts
-	p.bytes = p.buf[:0]
+	p = c.free[i]
+	c.free[i] = nil
+	c.free = c.free[:i]
+	prepare(p)
 	c.used++
 	if Debug {
 		log.Printf("allocator returns %s\n", p)
 	}
-	c.ops++
-	if c.ops > c.nextShrink {
-		c.ops = 0
-		c.tryShrink()
-	}
-
 	return p
 }
 
@@ -120,5 +98,9 @@ func (c *pageCache) replace(p *page) {
 	p.prev = nil
 	p.next = nil
 	p.ac = nil
+	if len(c.free) >= initialAllocSize {
+		c.size--
+		return
+	}
 	c.free = append(c.free, p)
 }

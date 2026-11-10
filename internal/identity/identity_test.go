@@ -62,6 +62,38 @@ func TestDirectorySubjectWithoutAccountIsRetainedUnattributed(t *testing.T) {
 	}
 }
 
+func TestDirectoryComputerWithoutAccountHasNoInventedIPBinding(t *testing.T) {
+	for _, attr := range []string{"dNSHostName", "name"} {
+		e := New()
+		e.Observe("scope", &types.LDAP{Timestamp: 42, Flow: "ldap-flow", SrcIP: "10.0.0.1", DstIP: "10.0.0.2", Operation: "SearchResultEntry", DN: "CN=OTHER-PC,CN=Computers,DC=example,DC=test", Attributes: []*types.LDAPAttribute{{Name: attr, Values: [][]byte{[]byte("OTHER-PC.example.test")}}}})
+		r := e.Report()
+		if len(r.Hosts) != 0 || len(r.Directory) != 1 || r.Directory[0].Hostname != "OTHER-PC.example.test" || r.Directory[0].Evidence.Value != "OTHER-PC.example.test" || r.Directory[0].Evidence.Flow != "ldap-flow" {
+			t.Fatal(r)
+		}
+	}
+}
+
+func TestAttributedHostnameKeepsUnattributedAliasesAndRealConflicts(t *testing.T) {
+	e := New()
+	e.add("scope", "10.0.0.2", "hostname", "WORK-MBP", "NBNS address assertion", "flow", 0)
+	e.Discover("scope", "10.0.0.2", []string{"work-MBP", "work-MacBook-Pro.local"})
+	h := e.Report().Hosts[0]
+	if h.Hostname != "WORK-MBP" || h.HostnameState != "observed-with-unattributed-aliases" || len(h.HostnameAliases) != 1 || h.HostnameAliases[0] != "work-MacBook-Pro.local" || len(h.Evidence) != 3 {
+		t.Fatal(h)
+	}
+	e.add("scope", "10.0.0.2", "hostname", "OTHER-PC", "DHCP", "other-flow", 1)
+	h = e.Report().Hosts[0]
+	if h.Hostname != "" || h.HostnameState != "conflicting-observations" {
+		t.Fatal("competing attributed claims were hidden", h)
+	}
+	e = New()
+	e.Discover("scope", "10.0.0.2", []string{"first", "second"})
+	h = e.Report().Hosts[0]
+	if h.Hostname != "" || h.HostnameState != "conflicting-observations" {
+		t.Fatal("unattributed claims invented a primary name", h)
+	}
+}
+
 func TestSAMRUnknownDomainMatchIsLimitedToObservedClient(t *testing.T) {
 	e := New()
 	for _, ip := range []string{"10.0.0.2", "10.0.0.3"} {

@@ -25,7 +25,7 @@ type page struct {
 	seq   Sequence
 	prev  *page
 	next  *page
-	buf   [pageBytes]byte
+	buf   []byte
 	start bool
 	end   bool
 

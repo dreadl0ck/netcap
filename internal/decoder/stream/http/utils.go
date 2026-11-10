@@ -58,8 +58,13 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	h.ContentType = req.request.Header.Get(headerContentType)
 	h.RequestHeader = readHeader(req.request.Header)
 
-	body, release, err := file.ReadBody(req.request.Body)
-	defer release()
+	body := req.body
+	var err error
+	if !req.bodyLoaded {
+		var release func()
+		body, release, err = file.ReadBody(req.request.Body)
+		defer release()
+	}
 	req.request.Body = io.NopCloser(bytes.NewReader(body))
 	if decoderconfig.Instance != nil && decoderconfig.Instance.IncludePayloads {
 		h.RequestBody = body

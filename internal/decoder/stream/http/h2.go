@@ -550,7 +550,9 @@ func (c *h2Connection) write(s *h2Transaction, final bool) {
 			if httpReq.Host == "" {
 				httpReq.Host = httpReq.Header.Get("Host")
 			}
-			_ = parseEvidenceForm(httpReq, request.body)
+			if err := parseEvidenceForm(httpReq, request.body); err != nil {
+				issues = appendUnique(issues, "incomplete-request-form")
+			}
 			v := c.reader.conversation
 			req = &httpRequest{request: httpReq, timestamp: request.timestamp, clientIP: v.ClientIP, serverIP: v.ServerIP, clientPort: v.ClientPort, serverPort: v.ServerPort, flow: v.Ident}
 		}

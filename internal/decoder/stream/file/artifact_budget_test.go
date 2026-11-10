@@ -3,10 +3,37 @@ package file
 import (
 	"bytes"
 	"errors"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+func TestSmallBodiesDoNotConsumeLargeAllocationReservations(t *testing.T) {
+	cfg, old := GetDefaultConfig(), GetGlobalConfig()
+	cfg.FileExtraction.SizeLimits.MaxFileSize = 1024
+	cfg.FileExtraction.SizeLimits.MaxInflightBytes = 2048
+	SetGlobalConfig(cfg)
+	t.Cleanup(func() { SetGlobalConfig(old) })
+	if err := StartAnalysis(t.TempDir(), "small-body"); err != nil {
+		t.Fatal(err)
+	}
+	defer FinishAnalysis()
+	var releases []func()
+	defer func() {
+		for _, release := range releases {
+			release()
+		}
+	}()
+	for _, r := range []io.Reader{http.NoBody, bytes.NewReader([]byte("small")), bytes.NewReader([]byte("small")), bytes.NewReader([]byte("small"))} {
+		body, release, err := ReadBody(r)
+		releases = append(releases, release)
+		if err != nil || len(body) > 5 {
+			t.Fatal("small body exceeded in-flight budget", len(body), err)
+		}
+	}
+}
 
 func TestArtifactConfigDefaultsAndFreeze(t *testing.T) {
 	old := GetGlobalConfig()

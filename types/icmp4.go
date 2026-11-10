@@ -40,6 +40,9 @@ var fieldsICMPv4 = []string{
 	fieldSeq,      // int32
 	fieldSrcIP,
 	fieldDstIP,
+	"QuotedSrcIP",
+	"QuotedDstIP",
+	"QuotedIPProtocol",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -57,6 +60,9 @@ func (i *ICMPv4) CSVRecord() []string {
 		formatInt32(i.Seq),
 		i.SrcIP,
 		i.DstIP,
+		i.QuotedSrcIP,
+		i.QuotedDstIP,
+		formatUint32(i.QuotedIPProtocol),
 	})
 }
 
@@ -114,6 +120,9 @@ func (i *ICMPv4) Encode() []string {
 		icmp4Encoder.Int32(fieldSeq, i.Seq),
 		icmp4Encoder.String(fieldSrcIP, i.SrcIP),
 		icmp4Encoder.String(fieldDstIP, i.DstIP),
+		icmp4Encoder.String("QuotedSrcIP", i.QuotedSrcIP),
+		icmp4Encoder.String("QuotedDstIP", i.QuotedDstIP),
+		icmp4Encoder.Int32("QuotedIPProtocol", int32(i.QuotedIPProtocol)),
 	})
 }
 

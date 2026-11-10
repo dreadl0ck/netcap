@@ -833,6 +833,9 @@ message ICMPv4 {
   
   // Payload data for tunneling/covert channel detection
   bytes Payload = 20;                   // Raw ICMP payload data (echo data, tunneled content)
+  string QuotedSrcIP = 21;              // Error-message quotation, not an observed sender
+  string QuotedDstIP = 22;
+  uint32 QuotedIPProtocol = 23;
 }
 
 message ICMPv6 {

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/evidence"
+	"github.com/dreadl0ck/netcap/internal/packetview/testutil"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
@@ -160,6 +161,35 @@ func TestCaptureInputEmptyPacket(t *testing.T) {
 	p := c.decodeRawPacketData(nil, &ci)
 	if p.ErrorLayer() == nil {
 		t.Fatal("empty captured frame must not become opaque success")
+	}
+}
+
+func TestHistoricalRawIPCapture(t *testing.T) {
+	le := binary.LittleEndian
+	for _, ipv6 := range []bool{false, true} {
+		frame := testutil.IP(ipv6, false, layers.IPProtocolUDP, testutil.Serialize(&layers.UDP{SrcPort: 40000, DstPort: 40001}, gopacket.Payload("raw fixture")))
+		for _, link := range []layers.LinkType{12, layers.LinkTypeRaw} {
+			for _, ng := range []bool{false, true} {
+				t.Run(fmt.Sprintf("ipv6=%t/link=%d/ng=%t", ipv6, link, ng), func(t *testing.T) {
+					data := append(inputPCAPHeader(le, false, 65535, link), inputPCAPRecord(le, 1, 0, uint32(len(frame)), uint32(len(frame)), frame)...)
+					if ng {
+						data = append(inputNGSection(le), inputNGInterface(le, link, 65535)...)
+						data = append(data, inputNGPacket(le, 0, uint32(len(frame)), uint32(len(frame)), frame)...)
+					}
+					path := filepath.Join(t.TempDir(), "raw.pcap")
+					if err := os.WriteFile(path, data, 0600); err != nil {
+						t.Fatal(err)
+					}
+					out := filepath.Join(t.TempDir(), "audit")
+					result := runInputRepro(t, path, out, 1)
+					var report CaptureInputReport
+					readInputJSON(t, filepath.Join(out, "capture-input.json"), &report)
+					if result.Error != "" || !result.Complete || report.Status != "complete" || report.Unsupported != 0 || len(bookRecords(t, out, "UDP", func() *types.UDP { return &types.UDP{} })) != 1 {
+						t.Fatalf("raw IP: %+v %+v", result, report)
+					}
+				})
+			}
+		}
 	}
 }
 

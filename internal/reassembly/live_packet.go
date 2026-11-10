@@ -51,7 +51,7 @@ func (lp *livePacket) convertToPages(pc *pageCache, skip int, _ AssemblerContext
 		return nil, nil, 0
 	}
 	ts := lp.captureInfo().Timestamp
-	first := pc.next(ts)
+	first := pc.next(ts, len(lp.bytes)-skip)
 	current := first
 	current.prev = nil
 	first.ac = lp.ac
@@ -70,7 +70,7 @@ func (lp *livePacket) convertToPages(pc *pageCache, skip int, _ AssemblerContext
 			break
 		}
 		seq = seq.add(length)
-		current.next = pc.next(ts)
+		current.next = pc.next(ts, len(bytes))
 		current.next.prev = current
 		current = current.next
 		current.ac = lp.ac

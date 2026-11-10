@@ -45,3 +45,30 @@ func TestCaptureSnapshotTruncationRemainsPartial(t *testing.T) {
 		t.Fatalf("snapshot truncation became complete: result=%+v report=%+v manifest=%+v", result, report, manifest)
 	}
 }
+
+func TestCaptureInputExitCoverageMatrix(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		report CaptureInputReport
+		status string
+		code   int
+	}{
+		{"decode-warning", CaptureInputReport{ReachedEOF: true, ProcessedPackets: 1, DecodeErrors: 1}, "complete", 0},
+		{"frame-warning", CaptureInputReport{ReachedEOF: true, ProcessedPackets: 2, LinkErrors: 1}, "partial", 0},
+		{"no-readable-input", CaptureInputReport{ReachedEOF: true, LinkErrors: 1}, "error", 1},
+		{"read-loss", CaptureInputReport{ReachedEOF: true, ProcessedPackets: 2, ReadErrors: 1}, "partial", 2},
+		{"unsupported", CaptureInputReport{ReachedEOF: true, ProcessedPackets: 2, Unsupported: 1}, "unsupported", 3},
+		{"mixed-loss", CaptureInputReport{ReachedEOF: true, ProcessedPackets: 2, ReadErrors: 1, Unsupported: 1}, "partial", 2},
+		{"snapshot", CaptureInputReport{ReachedEOF: true, ProcessedPackets: 1, SnapshotTruncated: 1}, "partial", 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			code := 0
+			if err := tc.report.result(); err != nil {
+				code = err.(*CaptureInputError).ExitCode()
+			}
+			if tc.report.Status != tc.status || code != tc.code {
+				t.Fatalf("status=%s exit=%d; want %s/%d", tc.report.Status, code, tc.status, tc.code)
+			}
+		})
+	}
+}

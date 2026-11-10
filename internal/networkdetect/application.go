@@ -257,7 +257,7 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.A
 	if o.Kind != "http" {
 		return alerts
 	}
-	if !o.DecryptedTLS && (o.DstPort == 443 || o.SrcPort == 443) {
+	if !o.DecryptedTLS && o.Method != "" && o.DstPort == 443 {
 		add("policy.http-on-443", "low", "policy-observation", 1, 1, o.At, []string{"Decoded plaintext HTTP request on TCP/443"}, "Port convention violations can be intentional; malware identity is not inferred")
 	}
 	if o.Qualification != "" {
