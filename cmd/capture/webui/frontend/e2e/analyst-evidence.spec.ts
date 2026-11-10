@@ -88,7 +88,11 @@ test('ui-mocked: service detail shows directional traffic and an expandable bann
   await banner.click();
   await expect(page.getByText(/Content-Type: text\/css/)).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(banner).toBeVisible();
+  const card = page.getByRole('button', { name: 'Service 192.0.2.80:80' });
+  await card.click();
+  await expect(card).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('button', { name: /Server banner/ })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(unexpected).toEqual([]); expect(errors).toEqual([]);
 });
 

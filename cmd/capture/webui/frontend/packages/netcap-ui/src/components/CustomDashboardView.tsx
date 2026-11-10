@@ -4,7 +4,7 @@
  * License: GNU General Public License v3.0
  */
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -17,7 +17,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 
-import { Responsive, WidthProvider, type Layout, type LayoutItem } from 'react-grid-layout/legacy';
+import { Responsive, type Layout, type LayoutItem } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 
 import DashboardChartTile from './DashboardChartTile';
@@ -26,7 +26,52 @@ import { useNetcapApi } from '../hooks';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { DashboardApiError, type Dashboard, type DashboardChart } from '../lib/api';
 
-const ResponsiveGridLayout = WidthProvider(Responsive);
+
+type Breakpoint = 'lg' | 'md' | 'sm' | 'xs' | 'xxs';
+const BREAKPOINTS: Record<Breakpoint, number> = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 };
+
+/** Derives a layout for a narrower grid from the saved 12-column layout so
+ * items never overflow and stagger: proportional down to 768px, stacked below. */
+export function layoutsFor(charts: DashboardChart[], cols: number, pack = false): Record<Breakpoint, LayoutItem[]> {
+  const saved = charts.map((c) => ({ i: c.id, x: c.layout.x, y: c.layout.y, w: Math.min(c.layout.w, cols), h: c.layout.h, minW: 2, minH: 2 }));
+  // Packing re-flows the visible charts in reading order so a hidden chart
+  // leaves no hole; editing keeps the saved coordinates.
+  const base = pack ? packRows(saved, cols) : saved;
+  const scale = (target: number) => base.map((l) => {
+    const x = Math.min(target - 1, Math.round((l.x * target) / cols));
+    return { ...l, x, w: Math.max(1, Math.min(target - x, Math.round((l.w * target) / cols))), minW: Math.min(2, target) };
+  });
+  const stacked = (target: number) => [...base]
+    .sort((a, b) => a.y - b.y || a.x - b.x)
+    .reduce<LayoutItem[]>((out, l) => [...out, { ...l, x: 0, w: target, minW: 1, y: out.reduce((y, o) => y + o.h, 0) }], []);
+  return { lg: base, md: scale(10), sm: scale(6), xs: stacked(4), xxs: stacked(2) };
+}
+
+function packRows(items: LayoutItem[], cols: number): LayoutItem[] {
+  let x = 0, y = 0, rowH = 0;
+  return [...items].sort((a, b) => a.y - b.y || a.x - b.x).map((l) => {
+    if (x + l.w > cols) { x = 0; y += rowH; rowH = 0; }
+    const placed = { ...l, x, y };
+    x += l.w; rowH = Math.max(rowH, l.h);
+    return placed;
+  });
+}
+
+/** Tracks an element's content width, including sidebar and window changes. */
+function useWidth() {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setWidth(Math.floor(el.getBoundingClientRect().width));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  });
+  return [ref, width] as const;
+}
 
 function describeError(err: unknown): string {
   if (err instanceof DashboardApiError) return err.message;
@@ -65,6 +110,18 @@ export default function CustomDashboardView({ dashboardId, scope, onForkComplete
   const [actionError, setActionError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingChart, setEditingChart] = useState<DashboardChart | null>(null);
+  const [breakpoint, setBreakpoint] = useState<Breakpoint>('lg');
+  const [gridRef, gridWidth] = useWidth();
+  const [emptyCharts, setEmptyCharts] = useState<Set<string>>(new Set());
+  const handleEmptyChange = useCallback((chartId: string, empty: boolean) => {
+    setEmptyCharts((prev) => {
+      if (prev.has(chartId) === empty) return prev;
+      const next = new Set(prev);
+      if (empty) next.add(chartId); else next.delete(chartId);
+      return next;
+    });
+  }, []);
+  useEffect(() => { setEmptyCharts(new Set()); }, [scope, dashboardId]);
 
   useEffect(() => {
     if (loaded) {
@@ -87,7 +144,8 @@ export default function CustomDashboardView({ dashboardId, scope, onForkComplete
   const availableTypes = useMemo(() => (auditFiles || []).map((f) => f.type), [auditFiles]);
 
   const handleLayoutChange = useCallback((layout: Layout) => {
-    if (!dashboard || !editing) return;
+    // Only the full-width layout is persisted; narrower ones are derived.
+    if (!dashboard || !editing || breakpoint !== 'lg') return;
     setDashboard((prev) => {
       if (!prev) return prev;
       return {
@@ -100,7 +158,7 @@ export default function CustomDashboardView({ dashboardId, scope, onForkComplete
       };
     });
     setDirty(true);
-  }, [dashboard, editing]);
+  }, [dashboard, editing, breakpoint]);
 
   const openAddChart = () => { setEditingChart(null); setDialogOpen(true); };
   const openEditChart = (chart: DashboardChart) => { setEditingChart(chart); setDialogOpen(true); };
@@ -187,15 +245,9 @@ export default function CustomDashboardView({ dashboardId, scope, onForkComplete
     );
   }
 
-  const layoutItems: LayoutItem[] = dashboard.charts.map((c) => ({
-    i: c.id,
-    x: c.layout.x,
-    y: c.layout.y,
-    w: c.layout.w,
-    h: c.layout.h,
-    minW: 2,
-    minH: 2,
-  }));
+  const visibleCharts = editing ? dashboard.charts : dashboard.charts.filter((c) => !emptyCharts.has(c.id));
+  const layouts = layoutsFor(visibleCharts, dashboard.gridCols || 12, !editing);
+  const allEmpty = !editing && dashboard.charts.length > 0 && visibleCharts.length === 0;
 
   return (
     <Stack spacing={2}>
@@ -234,25 +286,30 @@ export default function CustomDashboardView({ dashboardId, scope, onForkComplete
         <Alert severity="info">
           This dashboard has no charts. {editing ? 'Click "Add Chart" to add one.' : 'Click "Edit" then "Add Chart".'}
         </Alert>
+      ) : allEmpty ? (
+        <Alert severity="info">No data for these charts in the current scope.</Alert>
       ) : (
-        <Box sx={{
+        <Box ref={gridRef} sx={{
+          minWidth: 0,
           '& .react-grid-placeholder': { background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', opacity: 0.2, borderRadius: 2 },
           '& .react-resizable-handle::after': { borderColor: 'primary.main' },
         }}>
-          <ResponsiveGridLayout
+          {gridWidth > 0 && <Responsive
             className="layout"
-            layouts={{ lg: layoutItems, md: layoutItems, sm: layoutItems, xs: layoutItems, xxs: layoutItems }}
-            breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+            width={gridWidth}
+            layouts={layouts}
+            breakpoints={BREAKPOINTS}
             cols={{ lg: dashboard.gridCols || 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
             rowHeight={dashboard.rowHeight || 80}
             margin={[12, 12]}
-            isDraggable={editing}
-            isResizable={editing}
+            isDraggable={editing && breakpoint === 'lg'}
+            isResizable={editing && breakpoint === 'lg'}
             draggableHandle=".dashboard-tile-header"
+            onBreakpointChange={(bp: string) => setBreakpoint(bp as Breakpoint)}
             onLayoutChange={(l: Layout) => handleLayoutChange(l)}
             compactType="vertical"
           >
-            {dashboard.charts.map((c) => (
+            {visibleCharts.map((c) => (
               <div key={c.id}>
                 <DashboardChartTile
                   chart={c}
@@ -261,10 +318,11 @@ export default function CustomDashboardView({ dashboardId, scope, onForkComplete
                   available={availableTypes.length === 0 ? true : availableTypes.includes(c.auditType)}
                   onEdit={openEditChart}
                   onDelete={handleDeleteChart}
+                  onEmptyChange={handleEmptyChange}
                 />
               </div>
             ))}
-          </ResponsiveGridLayout>
+          </Responsive>}
         </Box>
       )}
 

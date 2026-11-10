@@ -16,7 +16,7 @@ const server = createServer(async (req, res) => {
     res.writeHead(503); return res.end('Explicit browser mock required');
   }
   const path = resolve(root, `.${pathname}`);
-  if (!path.startsWith(`${root}/`)) { res.writeHead(403); return res.end(); }
+  if (path !== root && !path.startsWith(`${root}/`)) { res.writeHead(403); return res.end(); }
   try {
     const file = extname(path) ? path : resolve(root, 'index.html');
     const data = await readFile(file);

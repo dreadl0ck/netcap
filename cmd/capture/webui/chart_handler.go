@@ -21,6 +21,7 @@ package webui
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -81,6 +82,10 @@ func HandleChartData(outDir string) http.HandlerFunc {
 		// Generate chart using go-echarts
 		generator := NewChartGenerator(auditType, field, chartType, interval, showLegend, maxDataPoints)
 		chartHTML, err := generator.GenerateChart(outDir)
+		if errors.Is(err, errNoChartData) {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 		if err != nil {
 			log.Printf("[WebUI] Failed to generate chart: %v", err)
 			http.Error(w, fmt.Sprintf("Failed to generate chart: %v", err), http.StatusInternalServerError)
@@ -404,6 +409,10 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	generator := NewChartGenerator(auditType, field, chartType, interval, showLegend, maxDataPoints)
 	chartHTML, err := generator.GenerateChartFromDirs(dirs)
+	if errors.Is(err, errNoChartData) {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	if err != nil {
 		log.Printf("[WebUI] Failed to generate chart (type=%s field=%s scope=%s dirs=%d): %v", auditType, field, scope, len(dirs), err)
 		http.Error(w, fmt.Sprintf("Failed to generate chart: %v", err), http.StatusInternalServerError)
@@ -450,6 +459,9 @@ func (s *Server) aggregateChartDataAcrossDirs(dirs []string, auditType, field, i
 			continue // tolerate missing per-type files
 		}
 		resp, err := s.extractChartData(filePath, auditType, field, interval)
+		if errors.Is(err, errNoChartData) {
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -571,7 +583,7 @@ func (s *Server) extractChartData(filePath, auditType, fieldName, intervalStr st
 	}
 
 	if totalCount == 0 {
-		return nil, fmt.Errorf("no records found with valid numeric field %s", fieldName)
+		return nil, fmt.Errorf("%w: no records found with valid numeric field %s", errNoChartData, fieldName)
 	}
 
 	// Aggregate buckets

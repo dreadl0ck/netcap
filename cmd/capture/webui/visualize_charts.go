@@ -79,47 +79,54 @@ canvas {
 }
 </style>
 <script>
-// Force resize chart to fill viewport after load.
-window.addEventListener('load', function() {
-	var charts = document.querySelectorAll('[_echarts_instance_]');
-	charts.forEach(function(el) {
-		if (el && el.style) {
-			el.style.height = window.innerHeight + 'px';
-			el.style.width = window.innerWidth + 'px';
-		}
-		// Trigger echarts resize
-		if (window.echarts) {
-			var chart = echarts.getInstanceByDom(el);
-			if (chart) {
-				setTimeout(function() {
-					chart.resize({
-						width: window.innerWidth,
-						height: window.innerHeight
-					});
-				}, 100);
-			}
+// Keep the chart sized to its frame and adapt dense layouts to the width.
+function netcapAdapt(chart, w, h) {
+	var o = chart.getOption() || {};
+	var series = o.series || [];
+	var narrow = w < 640;
+	var hasLegend = (o.legend || []).some(function(l) { return l.show !== false; });
+	var patch = { title: [{ textStyle: { fontSize: narrow ? 13 : 16 } }] };
+	if (series.some(function(s) { return s.type === 'pie'; })) {
+		patch.legend = [{
+			type: 'scroll', orient: narrow ? 'horizontal' : 'vertical',
+			left: narrow ? 'center' : 'auto', right: narrow ? 'auto' : 12,
+			top: narrow ? 'auto' : 44, bottom: narrow ? 6 : 16,
+			textStyle: { color: '#e2e8f0', width: narrow ? 110 : Math.max(120, Math.floor(w * 0.32)), overflow: 'truncate' },
+			pageTextStyle: { color: '#cbd5e1' }
+		}];
+		patch.tooltip = [{ trigger: 'item', formatter: '{b}: {c} ({d}%)' }];
+		patch.series = series.map(function(s) {
+			if (s.type !== 'pie') return {};
+			return {
+				center: hasLegend && !narrow ? ['32%', '56%'] : ['50%', narrow && hasLegend ? '46%' : '56%'],
+				radius: ['34%', narrow ? '54%' : '66%'],
+				avoidLabelOverlap: true,
+				label: { show: !hasLegend && w > 520, formatter: '{b}: {d}%', width: 120, overflow: 'truncate' },
+				labelLine: { show: !hasLegend && w > 520 }
+			};
+		});
+	} else if ((o.xAxis || []).some(function(x) { return x.type === 'category'; })) {
+		patch.grid = [{ left: narrow ? 56 : 72, right: 24, top: 56, bottom: 16, containLabel: true }];
+		patch.xAxis = (o.xAxis || []).map(function() {
+			return { axisLabel: { hideOverlap: true, rotate: narrow ? 40 : 25, width: narrow ? 72 : 100, overflow: 'truncate', color: '#cbd5e1' } };
+		});
+	}
+	chart.setOption(patch);
+}
+function netcapResize() {
+	var w = window.innerWidth, h = window.innerHeight;
+	document.querySelectorAll('[_echarts_instance_]').forEach(function(el) {
+		el.style.height = h + 'px';
+		el.style.width = w + 'px';
+		var chart = window.echarts && echarts.getInstanceByDom(el);
+		if (chart) {
+			netcapAdapt(chart, w, h);
+			chart.resize({ width: w, height: h });
 		}
 	});
-});
-// Resize on window resize
-window.addEventListener('resize', function() {
-	var charts = document.querySelectorAll('[_echarts_instance_]');
-	charts.forEach(function(el) {
-		if (el && el.style) {
-			el.style.height = window.innerHeight + 'px';
-			el.style.width = window.innerWidth + 'px';
-		}
-		if (window.echarts) {
-			var chart = echarts.getInstanceByDom(el);
-			if (chart) {
-				chart.resize({
-					width: window.innerWidth,
-					height: window.innerHeight
-				});
-			}
-		}
-	});
-});
+}
+window.addEventListener('load', function() { setTimeout(netcapResize, 50); });
+window.addEventListener('resize', netcapResize);
 </script>`
 
 	html = strings.Replace(html, "<head>", cssInjection, 1)

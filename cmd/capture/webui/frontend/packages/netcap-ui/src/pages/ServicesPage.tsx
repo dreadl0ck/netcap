@@ -485,9 +485,19 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
             rowsPerPageOptions={[10, 25, 50, 100]}
             renderCard={(svc) => {
               const svcTotalBytes = svc.bytesServer + svc.bytesClient;
+              const cardKey = `card-${svc.ip}-${svc.port}-${svc.protocol}`;
+              const open = expandedRow === cardKey;
               return (
                 <Card variant="outlined">
-                  <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+                  <CardContent
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={open}
+                    aria-label={`Service ${svc.ip}:${svc.port}`}
+                    onClick={() => handleRowClick(cardKey)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRowClick(cardKey); } }}
+                    sx={{ py: 1.5, px: 2, cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' }, '&:last-child': { pb: 1.5 } }}
+                  >
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                       <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#2196f3', fontWeight: 'bold' }}>
                         {svc.ip}
@@ -521,6 +531,9 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                       </Typography>
                     </Box>
                   </CardContent>
+                  <Collapse in={open} timeout="auto" unmountOnExit>
+                    <Box sx={{ p: 1.5, pt: 0 }}><ServiceOverview service={svc} /></Box>
+                  </Collapse>
                 </Card>
               );
             }}

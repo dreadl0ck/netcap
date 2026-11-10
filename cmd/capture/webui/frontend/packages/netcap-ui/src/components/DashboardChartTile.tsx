@@ -29,6 +29,8 @@ interface Props {
   scope?: string;
   onEdit?: (chart: DashboardChart) => void;
   onDelete?: (chartId: string) => void;
+  /** Reports whether the chart has data in the current scope. */
+  onEmptyChange?: (chartId: string, empty: boolean) => void;
   // react-grid-layout passes through these props on the wrapped element
   className?: string;
   style?: CSSProperties;
@@ -39,11 +41,12 @@ interface Props {
 }
 
 const DashboardChartTile = forwardRef<HTMLDivElement, Props>(function DashboardChartTile(
-  { chart, editing, available, scope, onEdit, onDelete, className, style, children, onMouseDown, onMouseUp, onTouchEnd },
+  { chart, editing, available, scope, onEdit, onDelete, onEmptyChange, className, style, children, onMouseDown, onMouseUp, onTouchEnd },
   ref,
 ) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [empty, setEmpty] = useState(false);
 
   const iframeSrc = useMemo(() => {
     const params = new URLSearchParams({
@@ -63,21 +66,32 @@ const DashboardChartTile = forwardRef<HTMLDivElement, Props>(function DashboardC
   // The iframe still renders in parallel for the success path, avoiding a
   // double-load delay.
   useEffect(() => {
-    if (!available) return;
+    if (!available) {
+      onEmptyChange?.(chart.id, true);
+      return;
+    }
     let cancelled = false;
     setLoadError(null);
+    setEmpty(false);
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 30000);
     fetch(iframeSrc, { method: 'GET', signal: controller.signal })
       .then(async (res) => {
         if (cancelled) return;
+        const noData = res.status === 204;
+        setEmpty(noData);
+        onEmptyChange?.(chart.id, noData);
         if (!res.ok) {
           const body = (await res.text()).trim();
           setLoadError(body || `Chart endpoint returned HTTP ${res.status}`);
         }
       })
       .catch((err) => {
-        if (cancelled || (err && err.name === 'AbortError')) return;
+        if (cancelled) return;
+        if (err && err.name === 'AbortError') {
+          setLoadError('Chart request timed out');
+          return;
+        }
         console.error('[DashboardChartTile] chart probe failed', err);
         setLoadError((err as Error).message || 'Failed to load chart');
       })
@@ -89,7 +103,7 @@ const DashboardChartTile = forwardRef<HTMLDivElement, Props>(function DashboardC
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [iframeSrc, available, refreshKey]);
+  }, [iframeSrc, available, refreshKey, chart.id, onEmptyChange]);
 
   return (
     <Box
@@ -166,10 +180,10 @@ const DashboardChartTile = forwardRef<HTMLDivElement, Props>(function DashboardC
           </Box>
         </Box>
         <CardContent sx={{ flex: 1, p: 0, '&:last-child': { p: 0 }, position: 'relative', minHeight: 0 }}>
-          {!available ? (
+          {!available || empty ? (
             <Box sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Typography variant="body2" color="text.secondary" align="center">
-                Audit record type <strong>{chart.auditType}</strong> not present in the current output directory.
+                No data in the current scope.
               </Typography>
             </Box>
           ) : loadError ? (

@@ -21,6 +21,7 @@ package webui
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	stdhtml "html"
 	"io"
@@ -49,6 +50,33 @@ type dataPoint struct {
 type kvPair struct {
 	key   string
 	value int
+}
+
+// maxChartCategories keeps categorical charts readable.
+const maxChartCategories = 20
+
+// errNoChartData marks an absence of plottable values, as opposed to a read
+// or configuration failure. Handlers answer it with 204 so the UI can hide
+// the chart rather than present an error.
+var errNoChartData = errors.New("no chart data")
+
+// topCategories returns the most frequent categories, ties broken by name so
+// the cut-off is deterministic.
+func topCategories(counts map[string]int, limit int) []kvPair {
+	sorted := make([]kvPair, 0, len(counts))
+	for k, v := range counts {
+		sorted = append(sorted, kvPair{k, v})
+	}
+	sort.Slice(sorted, func(i, j int) bool {
+		if sorted[i].value != sorted[j].value {
+			return sorted[i].value > sorted[j].value
+		}
+		return sorted[i].key < sorted[j].key
+	})
+	if limit > 0 && len(sorted) > limit {
+		sorted = sorted[:limit]
+	}
+	return sorted
 }
 
 // ChartGenerator handles chart generation from audit records
@@ -116,11 +144,14 @@ func (cg *ChartGenerator) GenerateChartFromDirs(outDirs []string) (io.Reader, er
 		break
 	}
 	if probeReader == nil {
-		return nil, fmt.Errorf("audit file %s not found in any of %d directories", cg.auditType, len(outDirs))
+		return nil, fmt.Errorf("%w: audit file %s not found in any of %d directories", errNoChartData, cg.auditType, len(outDirs))
 	}
 
 	isNumeric, err := cg.isFieldNumeric(probeReader)
 	probeReader.Close()
+	if errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("%w: %s contains no records", errNoChartData, probePath)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to probe field type for %s: %w", probePath, err)
 	}
@@ -159,7 +190,7 @@ func (cg *ChartGenerator) generateNumericChartFromDirs(outDirs []string) (io.Rea
 		return nil, err
 	}
 	if len(dataPoints) == 0 {
-		return nil, fmt.Errorf("no records found with valid numeric field %s in any of %d directories", cg.field, len(outDirs))
+		return nil, fmt.Errorf("%w: no records found with valid numeric field %s in any of %d directories", errNoChartData, cg.field, len(outDirs))
 	}
 	switch cg.chartType {
 	case "line":
@@ -187,19 +218,10 @@ func (cg *ChartGenerator) generateCategoricalChartFromDirs(outDirs []string) (io
 		return nil, err
 	}
 	if len(counts) == 0 {
-		return nil, fmt.Errorf("no records found with valid field %s in any of %d directories", cg.field, len(outDirs))
+		return nil, fmt.Errorf("%w: no records found with valid field %s in any of %d directories", errNoChartData, cg.field, len(outDirs))
 	}
 
-	var sorted []kvPair
-	for k, v := range counts {
-		sorted = append(sorted, kvPair{k, v})
-	}
-	sort.Slice(sorted, func(i, j int) bool {
-		return sorted[i].value > sorted[j].value
-	})
-	if len(sorted) > 20 {
-		sorted = sorted[:20]
-	}
+	sorted := topCategories(counts, maxChartCategories)
 
 	switch cg.chartType {
 	case "pie":
@@ -431,7 +453,7 @@ func (cg *ChartGenerator) generateNumericChart(reader *AuditRecordReader) (io.Re
 		}
 
 		if len(dataPoints) == 0 {
-			return nil, fmt.Errorf("no records found with valid numeric field %s", cg.field)
+			return nil, fmt.Errorf("%w: no records found with valid numeric field %s", errNoChartData, cg.field)
 		}
 
 		// Sort by timestamp
@@ -480,7 +502,7 @@ func (cg *ChartGenerator) generateNumericChart(reader *AuditRecordReader) (io.Re
 		}
 
 		if len(timeBuckets) == 0 {
-			return nil, fmt.Errorf("no records found with valid numeric field %s", cg.field)
+			return nil, fmt.Errorf("%w: no records found with valid numeric field %s", errNoChartData, cg.field)
 		}
 
 		// Aggregate buckets and sort by timestamp
@@ -553,22 +575,10 @@ func (cg *ChartGenerator) generateCategoricalChart(reader *AuditRecordReader, ou
 	}
 
 	if len(valueCounts) == 0 {
-		return nil, fmt.Errorf("no records found with valid field %s", cg.field)
+		return nil, fmt.Errorf("%w: no records found with valid field %s", errNoChartData, cg.field)
 	}
 
-	// Sort by count
-	var sorted []kvPair
-	for k, v := range valueCounts {
-		sorted = append(sorted, kvPair{k, v})
-	}
-	sort.Slice(sorted, func(i, j int) bool {
-		return sorted[i].value > sorted[j].value
-	})
-
-	// Limit to top 20 categories
-	if len(sorted) > 20 {
-		sorted = sorted[:20]
-	}
+	sorted := topCategories(valueCounts, maxChartCategories)
 
 	// Generate chart based on type
 	switch cg.chartType {

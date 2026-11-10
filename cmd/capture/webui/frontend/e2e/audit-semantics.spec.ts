@@ -71,7 +71,7 @@ test('ui-mocked: HTTP packet export carries observed nonstandard ports', async (
   await page.goto('/http');
   await page.getByRole('row').filter({ hasText: 'owned.example.test' }).first().click();
   await expect(page.getByText(/HTTP reassembly: unpaired_after_capture_loss/)).toBeVisible();
-  await expect(page.getByText(/1590969600000000123 ns/)).toBeVisible();
+  await expect(page.getByText(/1590969600000000123 ns/)).toHaveCount(0);
   const request = page.waitForRequest(r => new URL(r.url()).pathname === '/api/http/download-pcap');
   await page.getByRole('button', { name: 'Download PCAP', exact: true }).click();
   expect(Object.fromEntries(new URL((await request).url()).searchParams)).toEqual({ srcIP: '192.0.2.1', dstIP: '198.51.100.1', srcPort: '52123', dstPort: '9243', protocol: 'TCP' });
