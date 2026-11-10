@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "sourceCommit": "8d865839",
+  "sourceReport": "netcap-full-recheck-v0.16.3.md",
+  "builds": ["darwin/arm64 nodpi,noyara,nomagika", "linux/amd64 nodpi with YARA-X 1.22.0", "linux/amd64 DPI with YARA-X 1.22.0"],
+  "goChecks": {
+    "suite": "GOMAXPROCS=2 GOWORK=off go test -p 1 -tags nodpi,noyara,nomagika ./... -short -count=1",
+    "racePackages": ["internal/collector", "internal/reassembly", "internal/identity", "internal/networkdetect", "internal/evidence", "internal/decoder/packet", "internal/decoder/stream/http", "internal/decoder/stream/file", "types"],
+    "vet": "scoped changed packages",
+    "protobufRegenerationSHA256": "c491002901b2e5dd5548ddb2f722e022929a5cc19bd33d82027d18de49fda572"
+  },
+  "mta": {
+    "captures": 148,
+    "exitZero": 148,
+    "panics": 0,
+    "tsharkHTTPRequestMatches": 33952,
+    "missingTsharkHTTPRequests": 0,
+    "baselineArtifactCapturesCompared": 143,
+    "missingBaselineArtifactHashes": 0
+  },
+  "otherDatasets": {
+    "replayUnits": 4965,
+    "exitCodes": {"0": 4576, "1": 37, "2": 23, "3": 329},
+    "panics": 0,
+    "timeouts": 0,
+    "resourceKills": 0,
+    "exitOneDisposition": "All 37 remaining inputs have non-PCAP/non-PCAPNG magic: unsupported containers or non-capture data.",
+    "harnessCorrection": "Hash the full relative input path, including extension, into output and quarantine names. Six colliding .pcap/.pcapng units were replayed successfully.",
+    "historicalInvalidDownloadsExcluded": 415,
+    "historicalCoverageBoundary": "The original 5510-unit inventory is not claimed byte-identical: it includes invalid HTML downloads, unavailable archive sources and repaired local derivatives. Reacquired source revisions and expanded Wireshark inputs are qualified separately."
+  },
+  "witnesses": {
+    "V163-1_NEW-2": "CAT-BOMB-W10-PC retained in multipart HTTP parameters and unattributed LDAP computer observations; no invented IP binding.",
+    "DS-2": "Unit42 172.16.1.38 prefers scoped NBNS JEREMIAHS-MBP, retains the Bonjour name as an unattributed alias, and preserves all evidence. Competing scoped claims remain conflicts.",
+    "V163-2_D2-13": {"rawLink": 12, "hao123Packets": 202, "id1Packets": 155, "injectionAlert": "tcp.overlap-conflict", "workersTested": [1, 4]},
+    "DS-14": {"capture": "botnet-capture-20110812-rbot.pcap", "packets": 495056, "sshNonstandardPortFalsePositives": 0},
+    "DS-15": "Nitroba has no CVE-2004-0942, CVE-2004-0174 or CVE-2006-20001 matches against Apache 1.3.37; legitimate matches for other versions remain.",
+    "DS-19_DS-21": {"capture": "sample-1500.pcap", "forwarder": "192.168.88.2", "destination": "165.227.88.15", "dnsTunnelIncidents": 2, "destinationPort": 53},
+    "DS-22": {"capture": "240307-whf9fshd84-behavioral2.pcapng", "tsharkVisibleTLSHTTPRequests": 10, "missingRequests": 0},
+    "V-3": "No missing carved-file hashes against the retained v0.15.2 comparison set.",
+    "V-7": "Exit status/coverage matrix and original malformed-frame witnesses verified. Completed warnings remain qualified; unsupported input and real I/O errors are not converted to success.",
+    "V-8": "ipv4/fragmented-1.pcap has invalid/overlapping fragment framing. Retain fragment-rejected network accounting without inventing transport ports.",
+    "2017-02-11_fact": {"quotedDestination": "10.3.14.2", "icmpErrorQuotations": 4, "observedPeerInvented": false}
+  },
+  "resourceMeasurements": {
+    "platform": "darwin/arm64 Go 1.27.0, nodpi,noyara,nomagika",
+    "GOMEMLIMIT": "4GiB soft GC target",
+    "GOMAXPROCS": 2,
+    "acm": {"sha256": "affe1b8224086b2c63bf0a3c852f429f2e2e2b848e4154c3ea6bf197888fc0fd", "inputBytes": 1702570671, "processedPackets": 4156081, "reachedEOF": true, "peakRSSBytes": 5479006208, "sourceSnapshotTruncatedPackets": 676433},
+    "geekLounge151022": {"sha256": "82529c23906416dc73d7f1926a0d38b82527f1f2a7ff8c6f755ce3208feb9643", "processedPackets": 2274747, "reachedEOF": true, "peakRSSBytes": 5745819648}
+  },
+  "V-6": {
+    "platform": "linux/amd64 container under Docker Desktop emulation, four-vCPU CPU limit",
+    "capture": "2018-12-18-traffic-analysis-exercise.pcap",
+    "repeats": 3,
+    "v0152MedianSeconds": 4.335418418981135,
+    "candidateMedianSeconds": 3.5629966679844074,
+    "v0152UniqueArtifactHashes": 1223,
+    "candidateUniqueArtifactHashes": 1224,
+    "missingBaselineHashes": 0,
+    "qualification": "Paired same-platform/same-storage trials; artifact durability and extraction remain enabled. No claim that every individual capture is faster."
+  }
+}

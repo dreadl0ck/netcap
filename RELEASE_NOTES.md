@@ -15,16 +15,18 @@ DSB witness retains all 10 tshark-visible TLS HTTP requests. CTU-13 scenario 3
 completes 495,056 packets with no SSH role-swap alerts; the ACM forwarder produces
 two DNS tunnel incidents with destination port 53.
 
-The full 1.7 GB ACM capture completes 4,156,081 packets at 5.97 GB peak RSS on
-macOS, replacing the earlier 11 GB OOM on a smaller slice. Payload-sized pages
-reduce the GeekLounge 151022 replay from 8.51 GB to 5.75 GB peak RSS while retaining
-all 2,274,747 packets. These are measured process peaks, not hard `GOMEMLIMIT`
-guarantees. The matched four-vCPU Linux 2018-12-18 benchmark improves from a
-v0.15.2 median of 4.12 s to 3.48 s, retaining every baseline artifact hash.
+With `GOMEMLIMIT=4GiB`, the full 1.7 GB ACM capture completes 4,156,081 packets
+at 5.48 GB peak RSS on macOS, replacing the earlier 11 GB OOM on a smaller slice.
+GeekLounge 151022 retains all 2,274,747 packets at 5.75 GB peak RSS under the same
+soft limit. With `GOMEMLIMIT=8GiB`, its peak is 8.88 GB; a soft GC target is not
+a hard process-memory guarantee. The matched four-vCPU Linux 2018-12-18 benchmark
+improves from a v0.15.2 median of 4.34 s to 3.56 s, retaining every baseline artifact
+hash.
 
 The historical 5,510-unit inventory includes 415 failed HTML downloads under
 `sc-html-failed`; these are not packet captures. Unsupported formats, damaged
 inputs and unavailable archive sources retain separate dispositions.
+The qualification receipt is `internal/collector/testdata/recheck-v0163.json`.
 
 ## Recheck reliability and portable runtimes
 
