@@ -1,5 +1,7 @@
 ## Capture evidence and resource fixes
 
+`v0.16.4` includes the capture-evidence and resource fixes following v0.16.3.
+
 | Area | Change |
 | --- | --- |
 | Raw IP | Accept historical on-disk link value 12 as well as LINKTYPE_RAW 101; retain original capture link values during filtered evidence export |

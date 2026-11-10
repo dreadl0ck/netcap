@@ -4,6 +4,15 @@ description: Detailed Version History Information
 
 # Changelog
 
+## v0.16.4
+
+The [Go release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.4)
+ships the [capture-evidence and resource fixes](../RELEASE_NOTES.md#capture-evidence-and-resource-fixes).
+The [qualification receipt](../internal/collector/testdata/recheck-v0163.json)
+records the 148-capture MTA replay, 4,965 additional replay units, memory
+measurements and matched Linux performance trials. Unsupported formats and
+damaged inputs retain their explicit coverage dispositions.
+
 ## v0.16.3
 
 The [Go release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.3)
