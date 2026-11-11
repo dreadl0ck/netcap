@@ -105,6 +105,11 @@ function netcapAdapt(chart, w, h) {
 				labelLine: { show: !hasLegend && w > 520 }
 			};
 		});
+	} else if (series.some(function(s) { return s.type === 'wordCloud'; })) {
+		patch.legend = [{ show: false }];
+	} else if ((o.dataZoom || []).length) {
+		// Time series: keep labels horizontal so they clear the zoom slider.
+		patch.xAxis = (o.xAxis || []).map(function() { return { axisLabel: { hideOverlap: true, rotate: 0, color: '#cbd5e1' } }; });
 	} else if ((o.xAxis || []).some(function(x) { return x.type === 'category'; })) {
 		patch.grid = [{ left: narrow ? 56 : 72, right: 24, top: 56, bottom: 16, containLabel: true }];
 		patch.xAxis = (o.xAxis || []).map(function() {
