@@ -4,6 +4,13 @@ description: Detailed Version History Information
 
 # Changelog
 
+## v0.16.5
+
+The [Go release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.5)
+ships the [analyst web UI changes](../RELEASE_NOTES.md#analyst-web-ui) on top of
+v0.16.4. The chart endpoint answers `204 No Content` when the selected scope has
+no plottable values; capture and decoder behavior is unchanged from v0.16.4.
+
 ## v0.16.4
 
 The [Go release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.4)

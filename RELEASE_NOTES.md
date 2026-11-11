@@ -1,3 +1,16 @@
+## Analyst web UI
+
+`v0.16.5` ships the shared web UI `@dreadl0ck/netcap-ui` 0.13.3 on the v0.16.4
+analysis engine. Capture, decoder and audit-record behavior is unchanged.
+
+| Area | Change |
+| --- | --- |
+| Charts | Categorical charts show the 20 most frequent values, with ties broken by name. `/api/chart/data` answers `204 No Content` when no plottable values exist in scope and `200` with an empty series for `format=json`; read and configuration failures stay `500` |
+| Dashboards | Charts without data in the selected scope are hidden and the grid closes the gap. The grid follows its container width, keeps rows aligned and stacks below 768 px; pie legends scroll and axis labels truncate |
+| Connections and services | Behavioral context is collapsed by default and lists observations as a table. Directional byte bars and an aligned packet table replace stacked statistics; service details show endpoint, traffic split, identity and an expandable banner |
+| Offline rules | Pack, validation and evaluation are three steps with status. Limits are shown in readable units; results summarise alerts, records, matched rules and elapsed time |
+| Copy | Removes repeated disclaimers, the HTTP reassembly completeness note and raw nanosecond timestamps; actionable statuses remain |
+
 ## Capture evidence and resource fixes
 
 `v0.16.4` includes the capture-evidence and resource fixes following v0.16.3.
