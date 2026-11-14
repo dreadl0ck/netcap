@@ -1,277 +1,513 @@
-# MCP tool reference
+# Netcap MCP tool reference
 
-Every entry below is one tool name you can call on the netcap MCP server (`net mcp`). For setup and a worked workflow, see [AI agents and MCP](../mcp.md).
+<!--- DO NOT EDIT — regenerate with: go test ./internal/mcp/ -run TestToolDocsUpToDate -update -->
 
-## Sessions
+This catalogue is generated from the live tool registry in
+`internal/mcp/`. Every entry corresponds to one `tools/call`
+name on the netcap MCP server.
 
-A `session_id` is either a 32-character hex ID (service mode) or an absolute filesystem path (local mode). Pass back exactly what `ingest_pcap` or `list_sessions` returned.
+Sessions
+--------
 
-## Response limits
+A `session_id` here may be either a 32-char hex (service-mode session
+selected via `/api/try/session/<id>`) or an absolute filesystem path
+(local-mode session selected via `/api/set-directory`). The shape is
+hidden behind the `session_id` argument — pass back exactly what
+`ingest_pcap` or `list_sessions` returns.
 
-* Every tool response is capped at 256 KiB. If a response is too large, the tool returns an error that tells the agent to paginate.
-* `query_audit_records` and the `list_*` tools take `limit` and `offset`.
-* Ingest and reanalysis return immediately. Poll `get_session_info` and wait for `completed`, or call `wait_for_session`. YARA scans and detection-rule runs block until they finish.
+Response limits
+---------------
 
-## Hints
+- Every tool response is capped at 256 KiB. Oversized payloads come back
+  as a clear error directing the LLM to paginate.
+- `query_audit_records` and the list_* tools support
+  `limit` / `offset` server-side.
+- Long-running operations (ingest, reanalyze) return immediately and are
+  polled via `get_session_info` (look at the `completed`
+  field). YARA scans and detection-rule executions are synchronous.
 
-Each tool carries the standard MCP hint annotations: read-only, destructive, idempotent and open-world. Your client should ask the user before it calls a destructive tool.
+Hints
+-----
 
-## Bound captures
-
-The analyst tools work on a bound capture, identified by an object with these fields.
-
-**`source`**
-
-| name        | type   | required | description                                                             |
-| ----------- | ------ | -------- | ----------------------------------------------------------------------- |
-| `binding`   | object | yes      | `runId`, `sourceSHA256` and `manifestSHA256`, all strings, all required |
-| `sessionId` | string |          | Session identifier                                                      |
-| `inputFile` | string |          | Path of the input file                                                  |
-
-**`reference`** points to one exact audit record occurrence. All fields are required.
-
-| name           | type    | description                               |
-| -------------- | ------- | ----------------------------------------- |
-| `version`      | integer | Reference format version                  |
-| `binding`      | object  | `runId`, `sourceSHA256`, `manifestSHA256` |
-| `type`         | string  | Audit record type                         |
-| `file`         | string  | Audit file                                |
-| `fileSHA256`   | string  | Hash of the audit file                    |
-| `ordinal`      | string  | Record position in the file               |
-| `recordSHA256` | string  | Hash of the record                        |
-| `timestampNs`  | string  | Capture time in Unix nanoseconds          |
+Each tool exposes the standard MCP hint annotations (read-only,
+destructive, idempotent, open-world). Treat them as advisory: a
+`destructive` tool should prompt the user before invocation.
 
 ## Tool catalogue (56 tools)
 
+Auto-generated from the live tool registry. Do not edit by hand; run `go test ./internal/mcp/ -run TestToolDocsUpToDate -update` to regenerate.
+
 ### `analyst_workspace`
 
-Load saved queries and reports from the local workspace when `document` is absent. Saving a document requires `expectedRevision` (compare-and-swap), and new documents must be drafts. A review needs unchanged persisted content and a named reviewer. Nothing is approved automatically.
+Load local saved queries/reports when document is absent. Explicit document saves use expectedRevision CAS; new documents must be draft. Review requires unchanged persisted content and explicit reviewer. No automatic approval.
 
-**Arguments:**
+**Arguments (JSON Schema):**
 
-| name               | type           | required | description                    |
-| ------------------ | -------------- | -------- | ------------------------------ |
-| `source`           | source         | yes      | Bound capture                  |
-| `expectedRevision` | integer        | yes      | Revision you expect to replace |
-| `document`         | object or null |          | Document to save; omit to load |
-
-**`document` fields:**
-
-| name                      | type               | required | description                                                                 |
-| ------------------------- | ------------------ | -------- | --------------------------------------------------------------------------- |
-| `includedSources`         | array of source    | yes      | Sources the document covers                                                 |
-| `id`                      | string             | yes      |                                                                             |
-| `revision`                | integer            | yes      |                                                                             |
-| `kind`                    | string             | yes      |                                                                             |
-| `title`                   | string             | yes      |                                                                             |
-| `body`                    | string             | yes      |                                                                             |
-| `binding`                 | object             | yes      | `runId`, `sourceSHA256`, `manifestSHA256`                                   |
-| `references`              | array of reference | yes      |                                                                             |
-| `review`                  | string             | yes      |                                                                             |
-| `updatedAt`               | string             | yes      |                                                                             |
-| `catalogueSnapshotSHA256` | string             |          |                                                                             |
-| `query`                   | object or null     |          | `kind` (string), `value` (string), `types` (array of strings), all required |
-| `reviewer`                | string             |          |                                                                             |
+```json
+{
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "inputFile": {
+          "type": "string"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "binding"
+      ],
+      "additionalProperties": false
+    },
+    "document": {
+      "type": [
+        "null",
+        "object"
+      ],
+      "properties": {
+        "catalogueSnapshotSHA256": {
+          "type": "string"
+        },
+        "includedSources": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string"
+              },
+              "inputFile": {
+                "type": "string"
+              },
+              "binding": {
+                "type": "object",
+                "properties": {
+                  "runId": {
+                    "type": "string"
+                  },
+                  "sourceSHA256": {
+                    "type": "string"
+                  },
+                  "manifestSHA256": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "runId",
+                  "sourceSHA256",
+                  "manifestSHA256"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "binding"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "id": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string"
+            },
+            "value": {
+              "type": "string"
+            },
+            "types": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "types"
+          ],
+          "additionalProperties": false
+        },
+        "references": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "integer"
+              },
+              "binding": {
+                "type": "object",
+                "properties": {
+                  "runId": {
+                    "type": "string"
+                  },
+                  "sourceSHA256": {
+                    "type": "string"
+                  },
+                  "manifestSHA256": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "runId",
+                  "sourceSHA256",
+                  "manifestSHA256"
+                ],
+                "additionalProperties": false
+              },
+              "type": {
+                "type": "string"
+              },
+              "file": {
+                "type": "string"
+              },
+              "fileSHA256": {
+                "type": "string"
+              },
+              "ordinal": {
+                "type": "string"
+              },
+              "recordSHA256": {
+                "type": "string"
+              },
+              "timestampNs": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "version",
+              "binding",
+              "type",
+              "file",
+              "fileSHA256",
+              "ordinal",
+              "recordSHA256",
+              "timestampNs"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "review": {
+          "type": "string"
+        },
+        "reviewer": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "includedSources",
+        "id",
+        "revision",
+        "kind",
+        "title",
+        "body",
+        "binding",
+        "references",
+        "review",
+        "updatedAt"
+      ],
+      "additionalProperties": false
+    },
+    "expectedRevision": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "source",
+    "expectedRevision"
+  ],
+  "additionalProperties": false
+}
+```
 
 ### `carve_subpcap_for_certificate`
 
-Write a sub-PCAP for the TCP flow that carried a given TLS certificate, identified by its 4-tuple.
+Produce a sub-PCAP for the TCP flow that carried a given TLS certificate (identified by its 4-tuple).
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                                                              |
-| ------------ | ------ | -------- | ------------------------------------------------------------------------ |
-| `dst_ip`     | string | yes      | Destination IP                                                           |
-| `dst_port`   | string | yes      | Destination port                                                         |
-| `end_ns`     | string |          | Inclusive end time in UTC Unix nanoseconds; use together with `start_ns` |
-| `run_id`     | string |          | Expected capture generation; the backend rejects stale generations       |
-| `session_id` | string | yes      | Session identifier                                                       |
-| `src_ip`     | string | yes      | Source IP of the TLS flow                                                |
-| `src_port`   | string | yes      | Source port                                                              |
-| `start_ns`   | string |          | Inclusive start time in UTC Unix nanoseconds; use together with `end_ns` |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `dst_ip` | string | yes | Destination IP. |
+| `dst_port` | string | yes | Destination port. |
+| `end_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with start_ns. |
+| `run_id` | string |  | Expected capture generation; stale generations are rejected by the backend. |
+| `session_id` | string | yes | Session identifier. |
+| `src_ip` | string | yes | Source IP of the TLS flow. |
+| `src_port` | string | yes | Source port. |
+| `start_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with end_ns. |
+
 
 ### `carve_subpcap_for_connection`
 
-Write a bidirectional sub-PCAP for a TCP or UDP tuple. Optional inclusive time bounds narrow the result when the tuple was reused. Without bounds, all matching occurrences are included.
+Produce a bidirectional sub-PCAP for an explicit TCP/UDP tuple. Optional inclusive capture-time bounds narrow tuple reuse; omitting bounds selects all matching occurrences.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                                                              |
-| ------------ | ------ | -------- | ------------------------------------------------------------------------ |
-| `dst_ip`     | string | yes      | Destination IP                                                           |
-| `dst_port`   | string | yes      | Destination port                                                         |
-| `end_ns`     | string |          | Inclusive end time in UTC Unix nanoseconds; use together with `start_ns` |
-| `protocol`   | string | yes      | Transport protocol                                                       |
-| `run_id`     | string |          | Expected capture generation; the backend rejects stale generations       |
-| `session_id` | string | yes      | Session identifier                                                       |
-| `src_ip`     | string | yes      | Source IP                                                                |
-| `src_port`   | string | yes      | Source port                                                              |
-| `start_ns`   | string |          | Inclusive start time in UTC Unix nanoseconds; use together with `end_ns` |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `dst_ip` | string | yes | Destination IP. |
+| `dst_port` | string | yes | Destination port. |
+| `end_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with start_ns. |
+| `protocol` | string | yes | Observed transport protocol. |
+| `run_id` | string |  | Expected capture generation; stale generations are rejected by the backend. |
+| `session_id` | string | yes | Session identifier. |
+| `src_ip` | string | yes | Source IP. |
+| `src_port` | string | yes | Source port. |
+| `start_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with end_ns. |
+
 
 ### `carve_subpcap_for_host`
 
-Write a sub-PCAP with all traffic involving one host IP. Returns the file's path on disk, its sha256 and a `netcap://carve/{id}` resource URI for direct byte access.
+Produce a sub-PCAP filtered to all traffic involving one host IP. Returns the carved file's on-disk path, sha256, and an netcap://carve/{id} resource URI for direct byte access.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                                                        |
-| ------------ | ------ | -------- | ------------------------------------------------------------------ |
-| `host`       | string | yes      | Host IP (v4 or v6)                                                 |
-| `run_id`     | string |          | Expected capture generation; the backend rejects stale generations |
-| `session_id` | string | yes      | Session identifier                                                 |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `host` | string | yes | Host IP (v4 or v6). |
+| `run_id` | string |  | Expected capture generation; stale generations are rejected by the backend. |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `carve_subpcap_for_http_pair`
 
-Write a bidirectional sub-PCAP for an observed HTTP TCP tuple, including nonstandard ports. Without time bounds, all matching occurrences of the tuple are included.
+Produce a bidirectional sub-PCAP for the observed HTTP TCP tuple, including nonstandard ports. Without time bounds, all matching tuple occurrences are included.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                                                              |
-| ------------ | ------ | -------- | ------------------------------------------------------------------------ |
-| `dst_ip`     | string | yes      | Destination IP                                                           |
-| `dst_port`   | string | yes      | Observed destination port                                                |
-| `end_ns`     | string |          | Inclusive end time in UTC Unix nanoseconds; use together with `start_ns` |
-| `run_id`     | string |          | Expected capture generation; the backend rejects stale generations       |
-| `session_id` | string | yes      | Session identifier                                                       |
-| `src_ip`     | string | yes      | Source IP                                                                |
-| `src_port`   | string | yes      | Observed source port                                                     |
-| `start_ns`   | string |          | Inclusive start time in UTC Unix nanoseconds; use together with `end_ns` |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `dst_ip` | string | yes | Destination IP. |
+| `dst_port` | string | yes | Observed destination port. |
+| `end_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with start_ns. |
+| `run_id` | string |  | Expected capture generation; stale generations are rejected by the backend. |
+| `session_id` | string | yes | Session identifier. |
+| `src_ip` | string | yes | Source IP. |
+| `src_port` | string | yes | Observed source port. |
+| `start_ns` | string |  | Inclusive UTC Unix nanoseconds; supply together with end_ns. |
+
 
 ### `delete_session`
 
-Remove a session from the netcap WebUI and delete its files on disk (uploads, results and error logs). Service mode only. In local mode the CLI process owns the sessions and cleans them up on exit.
+Remove a session from the netcap webui and delete its on-disk artefacts (uploads/<sid>, results/<sid>, any error log). Available in service mode only — local mode sessions are owned by the CLI process and cleaned up at exit.
 
 **Hints:** destructive, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                              |
-| ------------ | ------ | -------- | ---------------------------------------- |
-| `session_id` | string | yes      | Session identifier (service-mode hex ID) |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier (service-mode hex id). |
+
 
 ### `execute_detection_rules`
 
-Run all enabled netcap detection rules against the session. Blocks until done. The response has per-rule results, and new alerts also appear in `list_alerts`.
+Execute all enabled netcap detection rules against the session. SYNCHRONOUS: blocks until completion. The response includes per-rule execution results; new alerts also appear in list_alerts.
 
 **Hints:** idempotent
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `session_id` | string | yes      | Session identifier |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `execute_yara_scan`
 
-Run all loaded YARA rules against the session's extracted files. Blocks until the scan finishes, which takes seconds to a few minutes (the HTTP client times out after 5 minutes). The response contains all matches.
+Run all loaded YARA rules against the session's extracted files. SYNCHRONOUS: this call blocks until the scan completes (typically seconds to a few minutes; HTTP client timeout is 5 min). The response contains the full set of matches.
 
 **Hints:** idempotent
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `session_id` | string | yes      | Session identifier |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `extract_iocs_from_file`
 
-Scan one carved file for indicators of compromise: URLs, hostnames, domains, IPv4 and IPv6 addresses and email addresses. Returns all kinds by default. Restrict them with `kinds`. The file is read the same way as in `get_extracted_file_content`.
+Scan one carved file for indicators of compromise: URLs, hostnames, domains, IPv4/IPv6 addresses, and email addresses. By default all kinds are returned; restrict via `kinds` (CSV of url,domain,ip,email). File is fetched via the same path semantics as get_extracted_file_content.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name           | type   | required | description                                                          |
-| -------------- | ------ | -------- | -------------------------------------------------------------------- |
-| `file_path`    | string | yes      | Relative path inside `files/`, as returned by `list_extracted_files` |
-| `kinds`        | string |          | Comma-separated kinds: `url`, `domain`, `ip`, `email`. Default: all  |
-| `max_per_kind` | number |          | Maximum distinct matches per kind (default 200, max 5000)            |
-| `session_id`   | string | yes      | Session identifier                                                   |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `file_path` | string | yes | Relative path inside files/, as returned by list_extracted_files. |
+| `kinds` | string |  | CSV of IOC kinds to extract. Allowed: url,domain,ip,email. Default: all. |
+| `max_per_kind` | number |  | Cap distinct matches returned per kind (default 200, max 5000). |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `get_alert_stats`
 
-Summary statistics for the alerts in this session.
+Summary statistics for alerts in this session.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `session_id` | string | yes      | Session identifier |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `get_analyst_binding`
 
-Get the registered capture binding for analyst version 1 workflows. `diagnostic=true` also allows failed captures, for log review.
+Get explicit registered capture binding for analyst version 1 workflows; diagnostic=true permits failed captures for log review.
 
 **Hints:** read-only, destructive, open-world
 
 **Arguments:**
 
-| name         | type    | required | description |
-| ------------ | ------- | -------- | ----------- |
-| `diagnostic` | boolean |          |             |
-| `inputFile`  | string  |          |             |
-| `sessionId`  | string  |          |             |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `diagnostic` | boolean |  |  |
+| `inputFile` | string |  |  |
+| `sessionId` | string |  |  |
+
 
 ### `get_analyst_capabilities`
 
-Read the analyst contract versions, limits, source policy and supported catalogue field paths. Does not select or scan a capture.
+Read analyst contract versions, finite limits, explicit-source policy and supported catalogue field paths. No capture is selected or scanned.
 
 **Hints:** read-only, destructive
 
 **Arguments:** none
 
+
 ### `get_audit_record_fields`
 
-Return the field schema of one audit record type: name, Go-style type (string, int, bool, repeated, struct) and whether the field is nested. Use these field names in `query_audit_records` filters.
+Return the field schema for one audit record type: name, Go-style type (string/int/bool/repeated/struct), and whether it's nested. Use the returned field names in query_audit_records' filter expressions.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name   | type   | required | description                                                 |
-| ------ | ------ | -------- | ----------------------------------------------------------- |
-| `type` | string | yes      | Audit record type name without the `NC_` prefix, e.g. `DNS` |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `type` | string | yes | Audit record type name without the NC_ prefix, e.g. "DNS". |
+
 
 ### `get_audit_record_values`
 
-For one audit record type in a session, return the distinct values observed for each field. This is a quick cardinality overview to read before you write a filter.
+For one audit record type in a session, return the distinct observed values per field (a fast cardinality snapshot — useful before crafting a filter).
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                                     |
-| ------------ | ------ | -------- | ----------------------------------------------- |
-| `session_id` | string | yes      | Session identifier                              |
-| `type`       | string | yes      | Audit record type name without the `NC_` prefix |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+| `type` | string | yes | Audit record type name without the NC_ prefix. |
+
 
 ### `get_chart_data`
 
-Aggregate one audit record field as a time series. Use it to find beaconing (connections at regular intervals), DGA activity, or any other per-field trend over time. Returns JSON: `{type, field, interval, data: [{timestamp, value}], count, min_value, max_value, avg_value}`.
+Aggregate one audit-record field as a time series. Useful for beacon detection (regular interval connections), DGA hunts, or any per-field-over-time analytics. Returns JSON: {type, field, interval, data: [{timestamp, value}], count, min_value, max_value, avg_value}.
 
-Use `get_audit_record_fields` to find the available fields.
+Use get_audit_record_fields to discover available fields.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name              | type   | required | description                                                                                         |
-| ----------------- | ------ | -------- | --------------------------------------------------------------------------------------------------- |
-| `field`           | string | yes      | Numeric or boolean field to aggregate. Use dot notation for nested fields, e.g. `Questions[0].Name` |
-| `interval`        | string |          | Bucket size as a Go duration (`1s`, `100ms`, `1m`, `1h`). Default `1s`                              |
-| `max_data_points` | number |          | Down-sample to this many points. Default 1000, max 10000                                            |
-| `session_id`      | string | yes      | Session identifier                                                                                  |
-| `type`            | string | yes      | Audit record type name without the `NC_` prefix, e.g. `Connection`                                  |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `field` | string | yes | Field to aggregate (numeric or boolean). Use dot notation for nested fields, e.g. "Questions[0].Name". |
+| `interval` | string |  | Bucket size as a Go duration string (1s, 100ms, 1m, 1h). Default 1s. |
+| `max_data_points` | number |  | Down-sample to this many points. Default 1000, max 10000. |
+| `session_id` | string | yes | Session identifier. |
+| `type` | string | yes | Audit record type name (no NC_ prefix), e.g. "Connection". |
+
 
 ### `get_conversation`
 
@@ -281,213 +517,317 @@ Return the detailed conversation (bidirectional flow) for a 4-tuple.
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `dst_ip`     | string | yes      | Destination IP     |
-| `dst_port`   | string | yes      | Destination port   |
-| `session_id` | string | yes      | Session identifier |
-| `src_ip`     | string | yes      | Source IP          |
-| `src_port`   | string | yes      | Source port        |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `dst_ip` | string | yes | Destination IP. |
+| `dst_port` | string | yes | Destination port. |
+| `session_id` | string | yes | Session identifier. |
+| `src_ip` | string | yes | Source IP. |
+| `src_port` | string | yes | Source port. |
+
 
 ### `get_extracted_file_content`
 
-Return a chunk of one extracted file as hex. Use `offset` and `limit` to page through the file (at most 64 KiB per call). Use it to inspect a suspicious payload before you run YARA or a disassembler.
+Return a chunk of one extracted file's bytes, hex-encoded. The backing endpoint paginates: offset/limit slice into the file (limit is capped at 64 KiB per call). Use this to inspect a suspicious carved payload before running YARA or a disassembler.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                                                                                  |
-| ------------ | ------ | -------- | -------------------------------------------------------------------------------------------- |
-| `file_path`  | string | yes      | Relative path inside the session's `files/` directory, as returned by `list_extracted_files` |
-| `limit`      | number |          | Bytes to read (default 16384, max 65536)                                                     |
-| `offset`     | number |          | Byte offset to start at (default 0)                                                          |
-| `session_id` | string | yes      | Session identifier                                                                           |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `file_path` | string | yes | Relative path of the file inside the session's files/ directory, as returned by list_extracted_files. |
+| `limit` | number |  | Number of bytes to read (default 16384, max 65536). |
+| `offset` | number |  | Byte offset to start reading from (default 0). |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `get_image_exif`
 
-Parse the EXIF metadata of a carved image. Returns a flat list of `{ifd_path, tag_id, tag_name, type_name, value}` entries, or an empty list if the image has no EXIF segment.
+Parse EXIF metadata from a carved image file. Returns a flat list of {ifd_path, tag_id, tag_name, type_name, value} entries. Returns an empty list (not an error) when the file carries no EXIF segment.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                                                          |
-| ------------ | ------ | -------- | -------------------------------------------------------------------- |
-| `file_path`  | string | yes      | Relative path inside `files/`, as returned by `list_extracted_files` |
-| `session_id` | string | yes      | Session identifier                                                   |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `file_path` | string | yes | Relative path inside files/, as returned by list_extracted_files. |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `get_live_capture_status`
 
-Report whether the netcap WebUI is in live-capture mode (reading from a network interface instead of a PCAP file). Returns `{is_live_mode, is_processing, current_session, ...}` from the `/api/status` endpoint.
+Report whether the netcap webui is currently in live-capture mode (reading from a network interface rather than a finite PCAP file). Returns {is_live_mode, is_processing, current_session, ...} from the /api/status endpoint.
 
 **Hints:** read-only, idempotent
 
 **Arguments:** none
+
 
 ### `get_protocol_hierarchy`
 
-Wireshark-style nested protocol hierarchy as JSON, with packet counts and bytes per layer.
+Wireshark-style nested protocol hierarchy as JSON: layer counts and bytes.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `session_id` | string | yes      | Session identifier |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `get_session_info`
 
-Return metadata for one analysis session: completion status, error message if any, input filename and size, audit record counts per type, and `capture_provenance` (`runId`, `inputSHA256`) when available. If provenance is missing, the response has an error field saying so. Poll this tool to follow an ingest or a child analysis.
+Return metadata for one analysis session: completion status, error message if any, input filename and size, per-record-type audit counts and capture_provenance (runId/inputSHA256) when available. Missing provenance has an explicit error field. Use this to poll ingest or child analysis.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                                                     |
-| ------------ | ------ | -------- | --------------------------------------------------------------- |
-| `session_id` | string | yes      | Session identifier returned by `ingest_pcap` or `list_sessions` |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier returned by ingest_pcap or list_sessions. |
+
 
 ### `get_yara_status`
 
-Return the YARA engine status: enabled, rule count and last reload.
+Return YARA engine status (enabled, rule count, last reload).
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `session_id` | string | yes      | Session identifier |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `ingest_pcap`
 
-Ingest a local PCAP or PCAPNG file into a new analysis session. Returns a `session_id` immediately and ingests in the background. Poll `get_session_info` until `completed=true` before you run analysis tools. `dpi`, `bpf`, `include_decoders` and `exclude_decoders` are stored and applied on the next `reanalyze_session`, not on the initial ingest.
+Ingest a local PCAP/PCAPNG file into a new netcap analysis session. Returns immediately with a session_id; ingest runs asynchronously. Poll get_session_info until the session reports completed=true before running analytical tools. dpi/bpf/include_decoders/exclude_decoders are recorded and may be applied on the next reanalyze_session — they are not honoured on initial ingest in v1.
 
 **Arguments:**
 
-| name               | type    | required | description                                                    |
-| ------------------ | ------- | -------- | -------------------------------------------------------------- |
-| `bpf`              | string  |          | BPF filter to use on reanalysis, e.g. `tcp port 443`           |
-| `dpi`              | boolean |          | Enable DPI on the next reanalysis. Default false               |
-| `exclude_decoders` | string  |          | Comma-separated decoder names to exclude on reanalysis         |
-| `include_decoders` | string  |          | Comma-separated decoder names to use exclusively on reanalysis |
-| `path`             | string  | yes      | Absolute path of the `.pcap` or `.pcapng` file                 |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `bpf` | string |  | Optional BPF filter to remember for reanalyze (e.g. "tcp port 443"). |
+| `dpi` | boolean |  | Request DPI on the next reanalyze. Default false. |
+| `exclude_decoders` | string |  | CSV of decoder names to exclude on reanalyze. |
+| `include_decoders` | string |  | CSV of decoder names to include exclusively on reanalyze. |
+| `path` | string | yes | Absolute filesystem path of the .pcap or .pcapng file to ingest. |
+
 
 ### `inspect_bound_capture`
 
-Original capture metadata: interfaces, exact time bounds, wire and captured bytes, truncation and packet ordering. Verify the stored source hash against the included run.
+Bounded original capture metadata, interfaces, exact time bounds, wire/captured bytes, truncation and ordering. Verify the stored source hash against the included run.
 
 **Hints:** read-only
 
-**Arguments:**
+**Arguments (JSON Schema):**
 
-| name     | type   | required | description   |
-| -------- | ------ | -------- | ------------- |
-| `source` | source | yes      | Bound capture |
+```json
+{
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "inputFile": {
+          "type": "string"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "binding"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "source"
+  ],
+  "additionalProperties": false
+}
+```
 
 ### `list_alerts`
 
-Alerts raised by detection rules, YARA and other sources in this session.
+Alerts raised by detection rules, YARA, and other sources in this session.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                          |
-| ------------ | ------ | -------- | ------------------------------------ |
-| `limit`      | number |          | Maximum number of results            |
-| `offset`     | number |          | Pagination offset                    |
-| `search`     | string |          | Substring filter applied server-side |
-| `session_id` | string | yes      | Session identifier                   |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_alerts_grouped`
 
-Alerts grouped by rule or source.
+Alerts grouped by rule/source.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `session_id` | string | yes      | Session identifier |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_audit_records`
 
-List the audit record files of one session (`DNS.ncap.gz`, `HTTP.ncap.gz`, `Connection.ncap.gz`, ...) with record counts and sizes on disk.
+List the audit-record files produced for one session (DNS.ncap.gz, HTTP.ncap.gz, Connection.ncap.gz, ...) with their record counts and on-disk sizes.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `session_id` | string | yes      | Session identifier |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_auth_activity`
 
-Authentication timeline: successes and failures by service.
+Authentication activity timeline (successes/failures by service).
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `session_id` | string | yes      | Session identifier |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_bound_occurrences`
 
-List up to 4096 exact occurrence references for one audit type in a bound capture. For larger sets, use `query_capture_catalogue`.
+List at most 4096 exact occurrence references for one explicitly bound audit type; larger scopes must use catalogue search.
 
 **Hints:** read-only
 
-**Arguments:**
+**Arguments (JSON Schema):**
 
-| name     | type   | required | description       |
-| -------- | ------ | -------- | ----------------- |
-| `source` | source | yes      | Bound capture     |
-| `type`   | string | yes      | Audit record type |
+```json
+{
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "inputFile": {
+          "type": "string"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "binding"
+      ],
+      "additionalProperties": false
+    },
+    "type": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "source",
+    "type"
+  ],
+  "additionalProperties": false
+}
+```
 
 ### `list_certificates`
 
-All TLS certificates seen in the session: issuer, subject, SANs and validity.
+All TLS certificates observed in the session (issuer, subject, sans, validity).
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                          |
-| ------------ | ------ | -------- | ------------------------------------ |
-| `limit`      | number |          | Maximum number of results            |
-| `offset`     | number |          | Pagination offset                    |
-| `search`     | string |          | Substring filter applied server-side |
-| `session_id` | string | yes      | Session identifier                   |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_connections`
 
-List the reconstructed connections in the session, with bytes, packets and timing. Narrow the list with `search`, `limit` and `offset`. Sort by `total_size` to find the top talkers.
+List all reconstructed connections in the session, with bytes/packets and timing. Use search/limit/offset to scope. The LLM can sort by total_size for top talkers.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                          |
-| ------------ | ------ | -------- | ------------------------------------ |
-| `limit`      | number |          | Maximum number of results            |
-| `offset`     | number |          | Pagination offset                    |
-| `search`     | string |          | Substring filter applied server-side |
-| `session_id` | string | yes      | Session identifier                   |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_decoders`
 
-List all packet and stream decoders with descriptions. Use these names for `include_decoders` and `exclude_decoders` in `ingest_pcap` and `reanalyze_session`.
+List all available packet and stream decoders, with descriptions. Use the names returned here as values for include_decoders / exclude_decoders on ingest_pcap and reanalyze_session.
 
 **Hints:** read-only, idempotent
 
 **Arguments:** none
+
 
 ### `list_devices`
 
@@ -497,341 +837,689 @@ List all devices (MAC addresses) seen in the session, with vendor lookups.
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `session_id` | string | yes      | Session identifier |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_domains`
 
-Domains queried in the session, with counts. Sort by count on the client for a top-N view.
+Domains queried in the session, with counts. Sort by count client-side for a top-N view.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                          |
-| ------------ | ------ | -------- | ------------------------------------ |
-| `limit`      | number |          | Maximum number of results            |
-| `offset`     | number |          | Pagination offset                    |
-| `search`     | string |          | Substring filter applied server-side |
-| `session_id` | string | yes      | Session identifier                   |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_extracted_files`
 
-All files carved from the session's traffic by the file decoder. Each entry has the MIME type, size, source and destination IPs, and a relative path to use as `file_path` in `get_extracted_file_content`.
+All files carved out of the session's traffic by netcap's file decoder. Each entry includes MIME type, size, source/destination IPs, and a relative path usable as `file_path` for get_extracted_file_content.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                          |
-| ------------ | ------ | -------- | ------------------------------------ |
-| `limit`      | number |          | Maximum number of results            |
-| `offset`     | number |          | Pagination offset                    |
-| `search`     | string |          | Substring filter applied server-side |
-| `session_id` | string | yes      | Session identifier                   |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_fingerprints`
 
-JA4, JA4S and JA4SSH fingerprints seen in the session.
+Cryptographic fingerprints (JA4/JA4S/JA4SSH) observed in the session.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                          |
-| ------------ | ------ | -------- | ------------------------------------ |
-| `limit`      | number |          | Maximum number of results            |
-| `offset`     | number |          | Pagination offset                    |
-| `search`     | string |          | Substring filter applied server-side |
-| `session_id` | string | yes      | Session identifier                   |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_hosts`
 
-List all hosts (IP profiles) seen in the session, with packet and byte counts. Sort on the client for a top-talkers view.
+List all hosts (IP profiles) seen in the session, with packet and byte counts. Sort client-side to obtain a top-talkers view.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `session_id` | string | yes      | Session identifier |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_http_records`
 
-All HTTP records in the session, with request and response details.
+All HTTP records in the session (request + response details).
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                          |
-| ------------ | ------ | -------- | ------------------------------------ |
-| `limit`      | number |          | Maximum number of results            |
-| `offset`     | number |          | Pagination offset                    |
-| `search`     | string |          | Substring filter applied server-side |
-| `session_id` | string | yes      | Session identifier                   |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_network_interfaces`
 
-List the network interfaces of the host netcap runs on. Not specific to a session. Useful only on a machine with network interfaces, for live capture.
+List the local network interfaces visible to netcap (host-level info, not session-scoped). Useful only when running on a machine with NICs (live capture).
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `session_id` | string | yes      | Session identifier |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_rules`
 
-List the netcap detection rules available to run.
+List netcap detection rules available for execution.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `session_id` | string | yes      | Session identifier |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_secrets`
 
-Credentials and secrets recovered from cleartext protocols.
+Credentials / secrets recovered from cleartext protocols.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                          |
-| ------------ | ------ | -------- | ------------------------------------ |
-| `limit`      | number |          | Maximum number of results            |
-| `offset`     | number |          | Pagination offset                    |
-| `search`     | string |          | Substring filter applied server-side |
-| `session_id` | string | yes      | Session identifier                   |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_services`
 
-List all detected services (host, port, banner, product) in the session.
+List all detected services (host+port+banner+product) in the session.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `session_id` | string | yes      | Session identifier |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_sessions`
 
-List the analysis sessions on this server. In service mode this is the operator's session inventory. In CLI mode it is the pre-loaded session (if any) plus everything added with `ingest_pcap` in this process. Every entry has `session_id`, `mode`, `input_file`, `input_name`, `size_bytes`, `completed` and `status`, plus mode-specific fields. Page with `limit` and `offset`. Use `completed_only` to list only ready sessions.
+List analysis sessions visible to this server. In service mode this returns the operator's session inventory; in CLI mode it returns the pre-loaded session (if any) plus everything uploaded via ingest_pcap in this process. Response shape is identical across modes: every entry has session_id, mode, input_file, input_name, size_bytes, completed, status, plus mode-specific fields. Use limit/offset to paginate; completed_only filters to ready sessions.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name             | type    | required | description                                                            |
-| ---------------- | ------- | -------- | ---------------------------------------------------------------------- |
-| `completed_only` | boolean |          | Return only sessions whose analysis has completed                      |
-| `failed_only`    | boolean |          | Return only failed sessions                                            |
-| `limit`          | number  |          | Maximum sessions to return (default 100, max 500)                      |
-| `offset`         | number  |          | Pagination offset                                                      |
-| `search`         | string  |          | Case-insensitive substring match against `input_name` and `input_file` |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `completed_only` | boolean |  | If true, return only sessions whose analysis has completed. |
+| `failed_only` | boolean |  | If true, return only sessions in a failed state. |
+| `limit` | number |  | Max sessions to return (default 100, max 500). |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Case-insensitive substring match against input_name and input_file. |
+
 
 ### `list_software`
 
-Software products detected in the session (vendor, product and version), taken from banners, JA4 fingerprints, user agents and similar sources.
+Software products detected in the session (vendor/product/version, sourced from banners, JA4, user-agents, etc.).
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                          |
-| ------------ | ------ | -------- | ------------------------------------ |
-| `limit`      | number |          | Maximum number of results            |
-| `offset`     | number |          | Pagination offset                    |
-| `search`     | string |          | Substring filter applied server-side |
-| `session_id` | string | yes      | Session identifier                   |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_vulnerabilities`
 
-Vulnerabilities (CVE matches) flagged for the detected software.
+Vulnerabilities flagged against detected software (CVE matches).
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description                          |
-| ------------ | ------ | -------- | ------------------------------------ |
-| `limit`      | number |          | Maximum number of results            |
-| `offset`     | number |          | Pagination offset                    |
-| `search`     | string |          | Substring filter applied server-side |
-| `session_id` | string | yes      | Session identifier                   |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `list_yara_rules`
 
-List the YARA rules currently loaded for scanning extracted files.
+List YARA rules currently loaded for scanning extracted files.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type   | required | description        |
-| ------------ | ------ | -------- | ------------------ |
-| `session_id` | string | yes      | Session identifier |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier. |
+
 
 ### `lookup_cve`
 
-Fetch the NVD record for a CVE ID: description, CVSS v3 score and vector, CWE classifications and references. Returns an error when the server runs without `-allow-fetch` or when `NETCAP_MCP_DISABLE_NETWORK=1` is set. Results are cached in memory for 6 hours (found) or 5 minutes (not found).
+Fetch the NVD record for a CVE id: description, CVSS v3 score and vector, CWE classifications, references. Disabled (returns an error) when the server was constructed without AllowNetwork, or when NETCAP_MCP_DISABLE_NETWORK=1 in the environment. Results are cached in-process for 6h (positive) or 5min (negative).
 
 **Hints:** read-only, idempotent, open-world
 
 **Arguments:**
 
-| name     | type   | required | description                           |
-| -------- | ------ | -------- | ------------------------------------- |
-| `cve_id` | string | yes      | CVE identifier, e.g. `CVE-2021-44228` |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `cve_id` | string | yes | CVE identifier, e.g. "CVE-2021-44228". |
+
 
 ### `lookup_dhcp_fingerprint`
 
-DHCP fingerprint enrichment is disabled until an independently sourced catalogue is available, so this tool reports that it is disabled. Packet decoding is unaffected. The tool makes no network requests.
+Reports DHCP fingerprint enrichment as disabled pending an independently sourced catalogue. Packet decoding remains available; no network or legacy dataset access.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name          | type   | required | description                                               |
-| ------------- | ------ | -------- | --------------------------------------------------------- |
-| `fingerprint` | string | yes      | DHCP option list, comma-separated (e.g. `1,3,6,15,33,43`) |
-| `vendor`      | string |          | Vendor Class Identifier                                   |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `fingerprint` | string | yes | DHCP option list, comma-separated (e.g. "1,3,6,15,33,43"). |
+| `vendor` | string |  | Optional Vendor Class Identifier hint. |
+
 
 ### `query_audit_records`
 
-Query one audit record type in a session. Works for all \~124 record types, not only those with a dedicated `list_*` tool. Use `list_audit_records` to see which types the session has and `get_audit_record_fields` to see the fields of a type.
+Query one audit-record type from a session (works for ALL ~124 netcap record types, not just the ones with dedicated list_* tools). Use list_audit_records to discover what's available in the session, and get_audit_record_fields to enumerate the queryable fields of a type.
 
-`filter` takes a netcap filter expression, an `expr`-style boolean over record fields. `limit` is capped at 500 per call. Page with `offset`.
+Supports the netcap filter-expression language in `filter` (an `expr`-style boolean over record fields). limit caps at 500 per call; paginate with offset.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name         | type    | required | description                                                                                                                                                    |
-| ------------ | ------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `count_only` | boolean |          | Return only the scanned and matched counts, without record bodies                                                                                              |
-| `filter`     | string  |          | Filter expression, e.g. `SrcPort == 443 && DstIP startsWith '10.'`. Field names are CamelCase as in the proto schema; list them with `get_audit_record_fields` |
-| `limit`      | number  |          | Maximum records to return (default 100, max 500)                                                                                                               |
-| `offset`     | number  |          | Pagination offset. Only applies when `filter` is empty                                                                                                         |
-| `session_id` | string  | yes      | Session identifier                                                                                                                                             |
-| `type`       | string  | yes      | Audit record type without the `NC_` prefix, e.g. `DNS`, `HTTP`, `Modbus`, `SMB`. Case-sensitive                                                                |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `count_only` | boolean |  | If true, return only the scanned/matched counts without record bodies. |
+| `filter` | string |  | Optional filter expression (e.g. "SrcPort == 443 && DstIP startsWith '10.'"). Field names are CamelCase as in the proto schema; use get_audit_record_fields to enumerate. |
+| `limit` | number |  | Maximum records to return (default 100, max 500). |
+| `offset` | number |  | Pagination offset (only honoured when filter is empty). |
+| `session_id` | string | yes | Session identifier. |
+| `type` | string | yes | Audit record type name without the NC_ prefix, e.g. "DNS", "HTTP", "Modbus", "SMB". Case-sensitive. |
+
 
 ### `query_capture_catalogue`
 
-Search 1 to 8 finalized captures that you list. Every match keeps its source, run, file and frame identity. Supported query kinds: `sha256`, domain, endpoint (IP or socket) and allowlisted text. `tcp://` and `udp://` endpoints need Connection transport evidence. The first source is the novelty target and the others are the baseline. Only the listed captures are searched. The call fails if the result overflows.
+Search 1–8 explicitly included bound finalized captures; every matching occurrence retains source/run/file/frame identity. Supported kinds sha256, domain, endpoint IP/socket, allowlisted text. Explicit tcp:// or udp:// endpoints require Connection transport evidence. First source is novelty target, remaining sources baseline. No estate scanning; overflow fails.
 
 **Hints:** read-only
 
-**Arguments:**
+**Arguments (JSON Schema):**
 
-| name                     | type            | required | description                                                                         |
-| ------------------------ | --------------- | -------- | ----------------------------------------------------------------------------------- |
-| `sources`                | array of source | yes      | 1 to 8 bound captures                                                               |
-| `query`                  | object          | yes      | `kind` (string), `value` (string), `types` (array of strings or null), all required |
-| `page`                   | object or null  |          | `offset` and `limit`, both integers and required                                    |
-| `expectedSnapshotSHA256` | string          |          | Catalogue snapshot you expect                                                       |
+```json
+{
+  "type": "object",
+  "properties": {
+    "page": {
+      "type": [
+        "null",
+        "object"
+      ],
+      "properties": {
+        "offset": {
+          "type": "integer"
+        },
+        "limit": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "offset",
+        "limit"
+      ],
+      "additionalProperties": false
+    },
+    "expectedSnapshotSHA256": {
+      "type": "string"
+    },
+    "sources": {
+      "type": [
+        "null",
+        "array"
+      ],
+      "items": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "inputFile": {
+            "type": "string"
+          },
+          "binding": {
+            "type": "object",
+            "properties": {
+              "runId": {
+                "type": "string"
+              },
+              "sourceSHA256": {
+                "type": "string"
+              },
+              "manifestSHA256": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "runId",
+              "sourceSHA256",
+              "manifestSHA256"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "binding"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "query": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "types": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "types"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "sources",
+    "query"
+  ],
+  "additionalProperties": false
+}
+```
 
 ### `reanalyze_session`
 
-Create a child analysis that is retained separately. The parent results stay available. The server-wide BPF, DPI and decoder settings apply, so configure them before you call this tool. To analyze a subset by BPF filter or time range, pass `run_id` and `source_sha256` from the parent's provenance. Poll `get_session_info` with the returned child ID.
+Create a separately retained child analysis; parent results remain available. Server-wide BPF/DPI/decoder settings apply (configure them out-of-band before calling). Optional bounded BPF/time subsets require run_id and source_sha256 from parent provenance. Poll get_session_info with the returned child ID.
 
 **Hints:** destructive
 
 **Arguments:**
 
-| name               | type   | required | description                                                                               |
-| ------------------ | ------ | -------- | ----------------------------------------------------------------------------------------- |
-| `end_ns`           | string |          | Inclusive end capture time as a decimal nanosecond string; requires `start_ns`            |
-| `max_output_bytes` | string |          | Output byte limit for the subset, as a decimal string (default 268435456, max 1073741824) |
-| `max_packets`      | number |          | Packet limit for the subset, at most 1000000                                              |
-| `run_id`           | string |          | Parent capture `runId`; required for subsets                                              |
-| `selection_bpf`    | string |          | BPF filter for the child input, e.g. `host 192.0.2.10 and tcp port 9243`                  |
-| `session_id`       | string | yes      | Session identifier                                                                        |
-| `source_sha256`    | string |          | Parent `inputSHA256`; required for subsets                                                |
-| `start_ns`         | string |          | Inclusive start capture time as a decimal nanosecond string; requires `end_ns`            |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `end_ns` | string |  | Inclusive end capture timestamp as an exact decimal nanosecond string; requires start_ns. |
+| `max_output_bytes` | string |  | Subset output-byte limit as a decimal string; default 268435456, maximum 1073741824. |
+| `max_packets` | number |  | Subset packet limit, at most 1000000. |
+| `run_id` | string |  | Expected parent capture runId; required for subsets. |
+| `selection_bpf` | string |  | BPF for the retained child input, e.g. host 192.0.2.10 and tcp port 9243. |
+| `session_id` | string | yes | Session identifier. |
+| `source_sha256` | string |  | Parent inputSHA256; required for subsets. |
+| `start_ns` | string |  | Inclusive start capture timestamp as an exact decimal nanosecond string; requires end_ns. |
+
 
 ### `resolve`
 
-Run one of netcap's local resolvers on a value: reverse DNS, GeoIP, MAC vendor (OUI), IANA service by port, or the product behind a JA4 fingerprint. All lookups are local and make no outbound HTTP requests. The netcap databases (loaded by `net dbs` or at WebUI startup) must be on disk.
+Run one of netcap's local resolvers against a value: reverse DNS, GeoIP lookup, MAC vendor (OUI), IANA service-by-port, or JA4 fingerprint product mapping. All lookups are LOCAL — no outbound HTTP. Requires the netcap databases (loaded by `net dbs` or on webui startup) to be present on disk.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name       | type   | required | description                                                                                                                       |
-| ---------- | ------ | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `kind`     | string | yes      | One of `dns`, `geoip`, `mac_vendor`, `iana_service`, `ja4`, `ja4s`, `ja4h`, `ja4x`, `ja4t`, `ja4ts`, `ja4tscan`                   |
-| `protocol` | string |          | For `iana_service`: `tcp` or `udp` (default `tcp`)                                                                                |
-| `value`    | string | yes      | The key to look up: an IP for `dns` and `geoip`, a MAC for `mac_vendor`, a port for `iana_service`, a fingerprint hash for `ja4*` |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `kind` | string | yes | One of: dns, geoip, mac_vendor, iana_service, ja4, ja4s, ja4h, ja4x, ja4t, ja4ts, ja4tscan. |
+| `protocol` | string |  | For iana_service only: "tcp" or "udp" (default tcp). |
+| `value` | string | yes | Lookup key: an IP for dns/geoip, MAC for mac_vendor, port for iana_service, fingerprint hash for ja4*. |
+
 
 ### `resolve_audit_occurrence`
 
-Resolve the exact audit record that an occurrence reference points to. If the source, manifest, file or frame binding is stale, the call fails instead of rebinding the ordinal.
+Resolve the exact original content-bound audit occurrence. Stale source, manifest, file or frame bindings fail instead of rebinding an ordinal.
 
 **Hints:** read-only
 
-**Arguments:**
+**Arguments (JSON Schema):**
 
-| name        | type      | required | description                              |
-| ----------- | --------- | -------- | ---------------------------------------- |
-| `source`    | source    | yes      | Bound capture                            |
-| `reference` | reference | yes      | Occurrence from `list_bound_occurrences` |
+```json
+{
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "inputFile": {
+          "type": "string"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "binding"
+      ],
+      "additionalProperties": false
+    },
+    "reference": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "integer"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        },
+        "type": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "fileSHA256": {
+          "type": "string"
+        },
+        "ordinal": {
+          "type": "string"
+        },
+        "recordSHA256": {
+          "type": "string"
+        },
+        "timestampNs": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "binding",
+        "type",
+        "file",
+        "fileSHA256",
+        "ordinal",
+        "recordSHA256",
+        "timestampNs"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "source",
+    "reference"
+  ],
+  "additionalProperties": false
+}
+```
 
 ### `review_diagnostic_log`
 
-Preview a projection of log lines that contains only hashes and fixed diagnostic classes, never raw log text. Passing `approve` saves the exact preview unchanged. Use it to review a log before you attach it to a bug report.
+Preview a finite log-line projection containing only hashes and fixed diagnostic classes, never raw log text. Explicit approve persists the exact unchanged preview. Intended for analyst review before reproduction attachment.
 
-**Arguments:**
+**Arguments (JSON Schema):**
 
-| name      | type           | required | description                        |
-| --------- | -------------- | -------- | ---------------------------------- |
-| `source`  | source         | yes      | Bound capture                      |
-| `file`    | string         | yes      | Log file                           |
-| `start`   | integer        | yes      | First line                         |
-| `end`     | integer        | yes      | Last line                          |
-| `approve` | object or null |          | Approval of a previewed projection |
-
-`approve` has these fields, all required:
-
-| name               | type    | description                                                                          |
-| ------------------ | ------- | ------------------------------------------------------------------------------------ |
-| `version`          | integer |                                                                                      |
-| `binding`          | object  | `runId`, `sourceSHA256`, `manifestSHA256`                                            |
-| `file`             | string  |                                                                                      |
-| `fileSHA256`       | string  |                                                                                      |
-| `start`, `end`     | integer |                                                                                      |
-| `lines`            | array   | Objects with `ordinal` (integer), `sha256` (string) and `classes` (array of strings) |
-| `projectionSHA256` | string  |                                                                                      |
-| `state`            | string  |                                                                                      |
+```json
+{
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "inputFile": {
+          "type": "string"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "binding"
+      ],
+      "additionalProperties": false
+    },
+    "file": {
+      "type": "string"
+    },
+    "start": {
+      "type": "integer"
+    },
+    "end": {
+      "type": "integer"
+    },
+    "approve": {
+      "type": [
+        "null",
+        "object"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer"
+        },
+        "binding": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            },
+            "sourceSHA256": {
+              "type": "string"
+            },
+            "manifestSHA256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "sourceSHA256",
+            "manifestSHA256"
+          ],
+          "additionalProperties": false
+        },
+        "file": {
+          "type": "string"
+        },
+        "fileSHA256": {
+          "type": "string"
+        },
+        "start": {
+          "type": "integer"
+        },
+        "end": {
+          "type": "integer"
+        },
+        "lines": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "ordinal": {
+                "type": "integer"
+              },
+              "sha256": {
+                "type": "string"
+              },
+              "classes": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "ordinal",
+              "sha256",
+              "classes"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "projectionSHA256": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "binding",
+        "file",
+        "fileSHA256",
+        "start",
+        "end",
+        "lines",
+        "projectionSHA256",
+        "state"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "source",
+    "file",
+    "start",
+    "end"
+  ],
+  "additionalProperties": false
+}
+```
 
 ### `stop_live_capture`
 
-Stop a running live capture on the WebUI host. Returns immediately, and audit record processing continues until the buffers drain. Returns an error if the WebUI is not in live-capture mode.
+Stop an in-progress live capture on the netcap webui host. Returns immediately; ongoing audit-record processing continues until the existing buffers drain. No-op (and returns an error) if the webui isn't currently in live-capture mode.
 
 **Hints:** destructive, idempotent
 
 **Arguments:** none
 
+
 ### `wait_for_session`
 
-Poll `get_session_info` on the server until the session completes or the timeout passes. Returns the final session info, so the agent does not spend conversation turns on polling.
+Poll get_session_info server-side until the session is completed or the timeout elapses. Returns the final session_info payload verbatim (so the LLM can read it without an extra round-trip). Spares the LLM from burning conversation turns on polling loops.
 
 **Hints:** read-only, idempotent
 
 **Arguments:**
 
-| name               | type   | required | description                                       |
-| ------------------ | ------ | -------- | ------------------------------------------------- |
-| `poll_interval_ms` | number |          | Polling interval (default 500, min 100, max 5000) |
-| `session_id`       | string | yes      | Session identifier                                |
-| `timeout_seconds`  | number |          | Maximum wait (default 60, max 300)                |
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `poll_interval_ms` | number |  | How frequently to poll (default 500, min 100, max 5000). |
+| `session_id` | string | yes | Session identifier. |
+| `timeout_seconds` | number |  | Maximum time to wait (default 60, max 300). |
+
+

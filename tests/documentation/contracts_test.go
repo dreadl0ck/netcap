@@ -58,8 +58,8 @@ func TestDocumentationRuleControls(t *testing.T) {
 		record types.AuditRecord
 		want   bool
 	}{
-		{"Documentation UDP Observation", &types.UDP{DstPort: 9999}, true},
-		{"Documentation UDP Observation", &types.UDP{DstPort: 53}, false},
+		{"Scripted HTTP Client", &types.HTTP{UserAgent: "curl/8.10.1"}, true},
+		{"Scripted HTTP Client", &types.HTTP{UserAgent: "Mozilla/5.0"}, false},
 		{"TCP_SYN_Observation", &types.TCP{SYN: true}, true},
 		{"TCP_SYN_Observation", &types.TCP{SYN: true, ACK: true}, false},
 		{"ICMP_Echo_Request", &types.ICMPv4{Type: 8}, true},
