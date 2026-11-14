@@ -35,16 +35,19 @@ type Binding struct {
 	Source string `json:"source"`
 }
 type Host struct {
-	MAC             string     `json:"mac,omitempty"`
-	MACState        string     `json:"macState"`
-	Scope           string     `json:"scope"`
-	IP              string     `json:"ip"`
-	Hostname        string     `json:"hostname,omitempty"`
-	HostnameAliases []string   `json:"hostnameAliases,omitempty"`
-	HostnameState   string     `json:"hostnameState"`
-	Evidence        []Evidence `json:"evidence"`
-	Accounts        []Account  `json:"accounts"`
-	Bindings        []Binding  `json:"bindings"`
+	MAC             string   `json:"mac,omitempty"`
+	MACState        string   `json:"macState"`
+	Scope           string   `json:"scope"`
+	IP              string   `json:"ip"`
+	Hostname        string   `json:"hostname,omitempty"`
+	HostnameAliases []string `json:"hostnameAliases,omitempty"`
+	HostnameState   string   `json:"hostnameState"`
+	// DirectoryMatches are LDAP computer objects whose name equals one of this
+	// host's observed names. The name join does not bind the object to an IP.
+	DirectoryMatches []DirectoryObservation `json:"directoryMatches,omitempty"`
+	Evidence         []Evidence             `json:"evidence"`
+	Accounts         []Account              `json:"accounts"`
+	Bindings         []Binding              `json:"bindings"`
 }
 type Report struct {
 	Directory       []DirectoryObservation `json:"directory,omitempty"`
@@ -301,8 +304,50 @@ func (e *Engine) SeedBoundProfile(p *types.DeviceProfile) {
 		}
 	}
 }
+func nameKey(name string) string {
+	return strings.TrimSuffix(strings.TrimSuffix(strings.ToLower(name), "."), ".local")
+}
+
+// sameName reports whether two normalised names denote one machine: equal, or a
+// bare label against an FQDN that starts with it. Two different FQDNs never match.
+func sameName(a, b string) bool {
+	if a == b {
+		return true
+	}
+	if !strings.Contains(a, ".") {
+		return strings.HasPrefix(b, a+".")
+	}
+	if !strings.Contains(b, ".") {
+		return strings.HasPrefix(a, b+".")
+	}
+	return false
+}
+
+// foldShortNames maps each bare label onto the single FQDN that extends it, so a
+// host seen as both "web" and "web.corp.example" is not reported as conflicting.
+func foldShortNames(keys map[string]string) map[string]string {
+	fold := map[string]string{}
+	for short := range keys {
+		if strings.Contains(short, ".") {
+			continue
+		}
+		var target string
+		n := 0
+		for k := range keys {
+			if strings.HasPrefix(k, short+".") {
+				target = k
+				n++
+			}
+		}
+		if n == 1 {
+			fold[short] = target
+		}
+	}
+	return fold
+}
+
 func (e *Engine) Report() Report {
-	r := Report{Schema: 1, Overflow: e.overflow, Limitations: []string{"Bindings retain competing MAC observations; link-source counts alone do not establish IP ownership", "Directory names are joined to observed accounts, never to an LDAP/RPC server merely carrying the response", "Unknown or conflicting identities are retained; absence is not proof of no account"}}
+	r := Report{Schema: 1, Overflow: e.overflow, Limitations: []string{"Bindings retain competing MAC observations; link-source counts alone do not establish IP ownership", "Directory names are joined to observed accounts, never to an LDAP/RPC server merely carrying the response", "A directory computer name is matched to a host by hostname only (directoryMatches); no IP binding is derived from it", "Unknown or conflicting identities are retained; absence is not proof of no account"}}
 	directoryIndex := map[string][]directory{}
 	accountDomains := map[string]map[string]bool{}
 	for _, s := range e.hosts {
@@ -329,7 +374,7 @@ func (e *Engine) Report() Report {
 		attributed := map[string]string{}
 		for _, v := range h.Evidence {
 			if v.Kind == "hostname" {
-				key := strings.TrimSuffix(strings.TrimSuffix(strings.ToLower(v.Value), "."), ".local")
+				key := nameKey(v.Value)
 				if old, ok := names[key]; !ok || v.Value < old {
 					names[key] = v.Value
 				}
@@ -341,6 +386,31 @@ func (e *Engine) Report() Report {
 				}
 			}
 		}
+		for short, target := range foldShortNames(names) {
+			if _, ok := attributed[short]; ok {
+				delete(attributed, short)
+				if _, exists := attributed[target]; !exists {
+					attributed[target] = names[target]
+				}
+			}
+			delete(names, short)
+		}
+		for _, d := range e.directory {
+			if d.Hostname == "" || d.Scope != h.Scope {
+				continue
+			}
+			dk := nameKey(d.Hostname)
+			for k := range names {
+				if sameName(dk, k) {
+					h.DirectoryMatches = append(h.DirectoryMatches, DirectoryObservation{SID: d.SID, Hostname: d.Hostname, Scope: d.Scope, Account: d.Name, Domain: d.Domain, FullName: d.FullName, Client: d.Client, Evidence: Evidence{At: d.At, Kind: "directory-subject", Value: d.Hostname, Source: d.Source, Flow: d.Flow}})
+					break
+				}
+			}
+		}
+		sort.Slice(h.DirectoryMatches, func(i, j int) bool {
+			x, y := h.DirectoryMatches[i], h.DirectoryMatches[j]
+			return x.Hostname+"|"+x.Evidence.Source+"|"+x.Evidence.Flow < y.Hostname+"|"+y.Evidence.Source+"|"+y.Evidence.Flow
+		})
 		for _, a := range s.accounts {
 			var candidates []directory
 			for _, d := range directoryIndex[h.Scope+"|"+strings.ToLower(a.Name)] {

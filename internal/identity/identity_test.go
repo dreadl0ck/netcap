@@ -114,3 +114,38 @@ func TestSAMRUnknownDomainMatchIsLimitedToObservedClient(t *testing.T) {
 		}
 	}
 }
+
+func TestShortAndFQDNHostnamesDoNotConflict(t *testing.T) {
+	e := New()
+	e.add("scope", "10.0.0.2", "hostname", "WEB01", "DHCP", "", 1)
+	e.add("scope", "10.0.0.2", "hostname", "web01.corp.example", "Kerberos", "", 2)
+	h := e.Report().Hosts[0]
+	if h.HostnameState != "observed" || h.Hostname != "web01.corp.example" || len(h.HostnameAliases) != 0 {
+		t.Fatalf("short name and FQDN reported as conflict: %+v", h)
+	}
+
+	e = New()
+	e.add("scope", "10.0.0.3", "hostname", "web01.corp.example", "DHCP", "", 1)
+	e.add("scope", "10.0.0.3", "hostname", "web01.other.example", "DHCP", "", 2)
+	if h := e.Report().Hosts[0]; h.HostnameState != "conflicting-observations" {
+		t.Fatalf("different FQDNs must stay conflicting: %+v", h)
+	}
+}
+
+func TestLDAPComputerNameMatchesHostWithoutBindingIP(t *testing.T) {
+	e := New()
+	e.Observe("scope", &types.Kerberos{SrcIP: "10.0.0.2", MessageTypeCode: 10, ClientName: "WS7$", Realm: "CORP.EXAMPLE"})
+	e.Observe("scope", &types.LDAP{Timestamp: 5, Flow: "f", SrcIP: "10.0.0.1", DstIP: "10.0.0.9", Operation: "SearchResultEntry", DN: "CN=WS7,CN=Computers,DC=corp,DC=example", Attributes: []*types.LDAPAttribute{{Name: "name", Values: [][]byte{[]byte("WS7")}}}})
+	e.Observe("scope", &types.LDAP{Timestamp: 6, Flow: "f", SrcIP: "10.0.0.1", DstIP: "10.0.0.9", Operation: "SearchResultEntry", DN: "CN=NOBODY,CN=Computers,DC=corp,DC=example", Attributes: []*types.LDAPAttribute{{Name: "name", Values: [][]byte{[]byte("NOBODY")}}}})
+	r := e.Report()
+	if len(r.Hosts) != 1 || r.Hosts[0].IP != "10.0.0.2" {
+		t.Fatalf("LDAP names must not create hosts: %+v", r.Hosts)
+	}
+	m := r.Hosts[0].DirectoryMatches
+	if len(m) != 1 || m[0].Hostname != "WS7" {
+		t.Fatalf("directory match: %+v", m)
+	}
+	if len(r.Directory) != 2 {
+		t.Fatal("directory[] must keep every observation")
+	}
+}
