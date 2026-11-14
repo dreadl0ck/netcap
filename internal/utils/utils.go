@@ -73,28 +73,29 @@ func CopyFile(src, dst string) {
 	}
 }
 
-// Confirm displays a prompt message to the terminal and returns a bool indicating the user decision.
-func Confirm(s string) bool {
-	r := bufio.NewReader(os.Stdin)
+// StdinIsTerminal reports whether an interactive prompt can be answered.
+var StdinIsTerminal = func() bool { return term.IsTerminal(int(os.Stdin.Fd())) }
 
-	fmt.Printf("%s [Y/n]: ", s)
+// Confirm displays a prompt message to the terminal and returns the user decision.
+// A read error (e.g. EOF on a closed stdin) is returned instead of terminating the process.
+func Confirm(s string) (bool, error) {
+	return confirm(os.Stdin, os.Stdout, s)
+}
 
-	res, err := r.ReadString('\n')
+func confirm(in io.Reader, out io.Writer, s string) (bool, error) {
+	fmt.Fprintf(out, "%s [Y/n]: ", s)
+
+	res, err := bufio.NewReader(in).ReadString('\n')
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	// empty input, e.g: "\n"
-	if len(res) < 2 {
-		return true
+		return false, err
 	}
 
 	trimmed := strings.TrimSpace(res)
 	if len(trimmed) == 0 {
-		return true
+		return true, nil
 	}
 
-	return strings.ToLower(trimmed)[0] != 'n'
+	return strings.ToLower(trimmed)[0] != 'n', nil
 }
 
 // noPluralsMap contains words for which to make an exception when pluralizing nouns.

@@ -38,7 +38,10 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var errAborted = errors.New("operation aborted by user")
+var (
+	errAborted        = errors.New("operation aborted by user")
+	errNotInteractive = errors.New("cannot prompt for overwrite")
+)
 
 // Init sets up the collector and starts the configured number of workers
 // must be called prior to usage of the collector instance.
@@ -175,7 +178,16 @@ func (c *Collector) Init() (err error) {
 				msg = "Data from previous runs found in output path! Overwrite?"
 			}
 
-			if !utils.Confirm(msg) {
+			if !utils.StdinIsTerminal() {
+				return fmt.Errorf("%w: output path %q is not empty and stdin is not a terminal; pass -y to overwrite", errNotInteractive, c.config.DecoderConfig.Out)
+			}
+
+			ok, err := utils.Confirm(msg)
+			if err != nil {
+				return fmt.Errorf("%w: reading confirmation: %v", errNotInteractive, err)
+			}
+
+			if !ok {
 				return errAborted
 			}
 		}

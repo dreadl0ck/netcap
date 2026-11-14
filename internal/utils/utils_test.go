@@ -20,6 +20,7 @@
 package utils
 
 import (
+	"io"
 	"strconv"
 	"strings"
 	"testing"
@@ -101,5 +102,17 @@ func BenchmarkProgress(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		Progress(int64(n), int64(b.N))
+	}
+}
+
+func TestConfirm(t *testing.T) {
+	for in, want := range map[string]bool{"\n": true, "y\n": true, "Yes\n": true, "n\n": false, "No\n": false} {
+		got, err := confirm(strings.NewReader(in), io.Discard, "q")
+		if err != nil || got != want {
+			t.Errorf("%q: got %v, %v", in, got, err)
+		}
+	}
+	if got, err := confirm(strings.NewReader(""), io.Discard, "q"); err == nil || got {
+		t.Error("EOF must be an error, not an implicit yes or a process exit")
 	}
 }
