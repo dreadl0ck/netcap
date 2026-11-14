@@ -111,8 +111,14 @@ func linkTypeToLayerType(lt layers.LinkType) gopacket.LayerType {
 		return layers.LayerTypeIPv4
 	case layers.LinkTypeIPv6:
 		return layers.LayerTypeIPv6
-	case layers.LinkTypeNull:
+	case layers.LinkTypeNull, layers.LinkTypeLoop: // 108 is the same header with a network-order family
 		return layers.LayerTypeLoopback
+	case layers.LinkTypePPP_HDLC: // the PPP decoder strips the 0xff03 address/control prefix
+		return layers.LayerTypePPP
+	case layers.LinkTypePFLog:
+		return layers.LayerTypePFLog
+	case layers.LinkTypePrismHeader:
+		return layers.LayerTypePrismHeader
 	case layers.LinkTypeFDDI:
 		return layers.LayerTypeFDDI
 	case layers.LinkTypeIEEE802_11:

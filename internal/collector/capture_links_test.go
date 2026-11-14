@@ -213,3 +213,51 @@ func FuzzCaptureLinks(f *testing.F) {
 		}
 	})
 }
+
+func TestCaptureLinksLoopPPPHDLCPFLogPrism(t *testing.T) {
+	ip := rawPacketFixture(t, false, 64)[14:]
+	loop := append([]byte{0, 0, 0, 2}, ip...) // OpenBSD LOOP: family in network byte order
+	ppp := append([]byte{0xff, 0x03, 0x00, 0x21}, ip...)
+	pflog := make([]byte, 64)
+	pflog[0], pflog[1] = 64, 2 // header length, AF_INET
+	pflog = append(pflog, ip...)
+	for _, tc := range []struct {
+		name  string
+		lt    layers.LinkType
+		data  []byte
+		layer gopacket.LayerType
+	}{
+		{"loop", 108, loop, layers.LayerTypeLoopback},
+		{"ppp-hdlc", 50, ppp, layers.LayerTypePPP},
+		{"pflog", 117, pflog, layers.LayerTypePFLog},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := inputDecode(tc.data, tc.lt, binary.LittleEndian)
+			if p.ErrorLayer() != nil || p.Layer(tc.layer) == nil || p.Layer(layers.LayerTypeUDP) == nil {
+				t.Fatalf("link %d not decoded: %v", tc.lt, p)
+			}
+			if p.NetworkLayer().NetworkFlow().Src().String() != "10.0.0.1" {
+				t.Fatal("wrong network tuple")
+			}
+		})
+	}
+
+	prism := make([]byte, 24)
+	binary.LittleEndian.PutUint32(prism, 0x44)
+	binary.LittleEndian.PutUint32(prism[4:], 24)
+	p := inputDecode(prism, 119, binary.LittleEndian)
+	if p.Layer(layers.LayerTypePrismHeader) == nil {
+		t.Fatalf("prism header not decoded: %v", p)
+	}
+	var le *captureLinkError
+	if f := p.ErrorLayer(); f != nil && errors.As(f.Error(), &le) && le.Unsupported {
+		t.Fatal("prism still reported as unsupported link type")
+	}
+
+	if got := dltDescriptions[289]; got != "DLT_ATSC_ALP - ATSC Link-Layer Protocol frames" {
+		t.Fatalf("DLT 289 label: %q", got)
+	}
+	if got := dltDescriptions[300]; got[:7] != "DLT_MDB" {
+		t.Fatalf("DLT 300 label: %q", got)
+	}
+}
