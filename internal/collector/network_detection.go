@@ -68,6 +68,47 @@ func (c *Collector) observeNetworkDetection(packet gopacket.Packet) {
 
 func (c *Collector) writeDetectionAlerts(alerts []*types.Alert) error {
 	for _, alert := range alerts {
+		// Offline runs hold c2.beacon rows until close so that the TCP-timing and
+		// HTTP-timing detectors, which aggregate independently, can mark each other.
+		if alert.Name == "c2.beacon" && c.captureKind == "file" {
+			c.heldBeacons = append(c.heldBeacons, alert)
+			continue
+		}
+		if err := c.networkAlertWriter.WriteAlert(alert); err != nil {
+			return err
+		}
+		atomic.AddInt64(&c.alertCount, 1)
+	}
+	return nil
+}
+
+// corroborateBeacons tags every c2.beacon row whose (src, dst, port) was also
+// reported by the other detector. The rows stay separate: two independent timers
+// agreeing is evidence worth keeping visible, not a duplicate to merge away.
+func corroborateBeacons(alerts []*types.Alert) {
+	type key struct{ src, dst, port string }
+	seen := map[key]map[string]bool{}
+	for _, a := range alerts {
+		k := key{a.SrcIP, a.DstIP, a.DstPort}
+		if seen[k] == nil {
+			seen[k] = map[string]bool{}
+		}
+		seen[k][a.RecordType] = true
+	}
+	for _, a := range alerts {
+		for recordType := range seen[key{a.SrcIP, a.DstIP, a.DstPort}] {
+			if recordType != a.RecordType {
+				a.Tags = append(a.Tags, "corroborated-by:"+recordType)
+			}
+		}
+	}
+}
+
+func (c *Collector) writeHeldBeacons() error {
+	held := c.heldBeacons
+	c.heldBeacons = nil
+	corroborateBeacons(held)
+	for _, alert := range held {
 		if err := c.networkAlertWriter.WriteAlert(alert); err != nil {
 			return err
 		}
@@ -113,6 +154,7 @@ func (c *Collector) closeNetworkDetection() error {
 	if err := c.finishApplicationDetection(&stats); err != nil {
 		c.networkDetectionError = errors.Join(c.networkDetectionError, err)
 	}
+	c.networkDetectionError = errors.Join(c.networkDetectionError, c.writeHeldBeacons())
 	if c.networkDetectionError != nil {
 		stats.Error = c.networkDetectionError.Error()
 	}

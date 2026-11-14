@@ -212,6 +212,7 @@ type Collector struct {
 	artifactAnalysisStarted    atomic.Bool
 	captureRunError            error
 	captureKind, captureSource string
+	heldBeacons                []*types.Alert // c2.beacon rows awaiting cross-detector tagging (offline only)
 	captureLinkType            layers.LinkType
 	captureComplete            bool
 	captureInputStatus         string
