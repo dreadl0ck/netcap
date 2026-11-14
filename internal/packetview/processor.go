@@ -43,6 +43,10 @@ func (p *Processor) Process(original gopacket.Packet, ordinal uint64) Result {
 		}
 		link = append(link, l)
 		offset += len(l.LayerContents())
+		// gopacket leaves the 0xff03 address/control bytes out of PPP's contents.
+		if ppp, ok := l.(*layers.PPP); ok && ppp.HasPPTPHeader {
+			offset += 2
+		}
 	}
 	c := &Context{Scope: "if:" + strconv.Itoa(ci.InterfaceIndex) + vlanScope(link), Status: "complete",
 		Packets: []*types.CapturePacketRef{{Ordinal: ordinal, Timestamp: ci.Timestamp.UnixNano(), CaptureLength: int32(ci.CaptureLength), WireLength: int32(ci.Length), InterfaceIndex: int32(ci.InterfaceIndex)}}}

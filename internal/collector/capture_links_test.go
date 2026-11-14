@@ -6,12 +6,16 @@ import (
 	"errors"
 	"io"
 	"math"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 func inputNFLOG(order binary.ByteOrder, family byte, payload []byte) []byte {
@@ -259,5 +263,32 @@ func TestCaptureLinksLoopPPPHDLCPFLogPrism(t *testing.T) {
 	}
 	if got := dltDescriptions[300]; got[:7] != "DLT_MDB" {
 		t.Fatalf("DLT 300 label: %q", got)
+	}
+}
+
+// DLT 9 and 50 frames with the 0xff03 prefix must reach the transport decoders:
+// gopacket excludes that prefix from the PPP layer's contents.
+func TestCapturePPPWithHDLCPrefixDecodesTransport(t *testing.T) {
+	order := binary.LittleEndian
+	ip := rawPacketFixture(t, false, 64)[14:]
+	frame := append([]byte{0xff, 0x03, 0x00, 0x21}, ip...)
+	for _, lt := range []layers.LinkType{layers.LinkTypePPP, layers.LinkTypePPP_HDLC} {
+		root := t.TempDir()
+		input := inputPCAPHeader(order, false, 65535, lt)
+		input = append(input, inputPCAPRecord(order, 123, 0, uint32(len(frame)), uint32(len(frame)), frame)...)
+		path := filepath.Join(root, "ppp.pcap")
+		if err := os.WriteFile(path, input, 0600); err != nil {
+			t.Fatal(err)
+		}
+		out := filepath.Join(root, "out")
+		runInputRepro(t, path, out, 1)
+		var report CaptureInputReport
+		readInputJSON(t, filepath.Join(out, "capture-input.json"), &report)
+		if report.Status != "complete" || report.DecodeErrors != 0 || report.Unsupported != 0 {
+			t.Fatalf("link %d: %+v", lt, report)
+		}
+		if udp := bookRecords(t, out, "UDP", func() *types.UDP { return &types.UDP{} }); len(udp) != 1 {
+			t.Fatalf("link %d: UDP records %d, want 1", lt, len(udp))
+		}
 	}
 }
