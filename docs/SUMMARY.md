@@ -3,14 +3,16 @@
 * [Netcap](README.md)
 
 ## Start here
+
 * [Installation](installation.md)
 * [First capture](quickstart.md)
-* [Investigate a synthetic transfer](investigation-walkthrough.md)
+* [Investigate a file transfer](investigation-walkthrough.md)
 * [Commands](commands.md)
 * [Configuration](configuration.md)
 * [Troubleshooting](troubleshooting.md)
 
 ## Capture and inspect
+
 * [Packet collection](packet-collection.md)
 * [Live capture](live-collection.md)
 * [Web interface](web-interface.md)
@@ -24,6 +26,7 @@
 * [USB capture](usb-capture.md)
 
 ## Investigate evidence
+
 * [Hosts and identity](host-identity.md)
 * [Device profiles](device-profiles.md)
 * [Credential observations](credential-analysis.md)
@@ -39,6 +42,7 @@
 * [Active protocol experiments](protocol-experiments.md)
 
 ## Enrichment
+
 * [Database updates](database-updates.md)
 * [Vulnerability applicability](vulnerability-analysis.md)
 * [Resolvers](resolvers.md)
@@ -46,6 +50,7 @@
 * [TLS fingerprinting](tls-fingerprinting.md)
 
 ## Integrations and operations
+
 * [AI agents and MCP](mcp.md)
 * [MCP tool reference](mcp/tools.md)
 * [Distributed collection](distributed-collection.md)
@@ -58,10 +63,12 @@
 * [Labeling datasets](audit-record-labeling.md)
 
 ## Firewall and response
+
 * [Application firewall](APPLICATION_FIREWALL.md)
 * [Firewall response actions](FIREWALL_RESPONSE_ACTIONS.md)
 
 ## Develop and extend
+
 * [Architecture](internals.md)
 * [Workers and resource budgets](workers.md)
 * [Record format](specification.md)
@@ -74,6 +81,7 @@
 * [Contributing](contributing.md)
 
 ## Reference
+
 * [FAQ](faq.md)
 * [Shell completion](bash-completion.md)
 * [Downloads](cheatsheets.md)

@@ -1,80 +1,58 @@
-# Firewall Response Actions
+# Firewall response actions
 
-Current source supplies an explicit [application firewall and scoped nftables
-enforcer](APPLICATION_FIREWALL.md). The older `iptables_*` capture-rule actions
-use a different internal manager: the public capture CLI does not attach it. Adding
-`iptables_block` to a YAML rule alone does not enable blocking: the executor
-returns `firewall manager not configured` without an attached manager.
-
-## Overview
-
-| Capability | Current boundary |
-| --- | --- |
-| Detection alerts | Available through the normal rules engine |
-| `iptables_block`, `iptables_reject` | Require explicitly integrated Linux manager |
-| `iptables_log`, `iptables_rate_limit` | Return `ErrUnsupportedResponseAction`; action failure is counted, no LOG/rate enforcement |
-| Firewall manager | Internal Go package, not a public importable SDK |
-| `net firewall serve` / `netcap-firewall serve` | Explicit inline HTTP enforcement; rootless, separate policy format |
-| `capture -firewall-policy FILE` | Retrospective decoder evaluation; replay cannot contact an enforcer |
-| Live capture bridge plus `-firewall-effects-config FILE` | Explicitly admitted, source-attributed future containment; cannot recall the triggering transaction |
+To block traffic, use the [application firewall and nftables enforcer](APPLICATION_FIREWALL.md). The `iptables_*` actions in capture rules do not work from `net capture`. A rule that uses `iptables_block` fails with `firewall manager not configured`.
 
 ## Choose a response path
 
-| Goal | Operator path |
-| --- | --- |
-| Observe and notify | Capture rules, [scoped correlation](RULES_ENGINE.md#scoped-capture-time-rules), then [durable redacted webhook delivery](RULES_ENGINE.md#durable-webhook-delivery) |
-| Prevent HTTP/message forwarding | [WAF quickstart](APPLICATION_FIREWALL.md#quickstart); origin must accept only the intended proxy path |
-| Gate a supported non-HTTP protocol | [Protocol gateways](APPLICATION_FIREWALL.md#protocol-gateways-and-optional-enforcer); deny a write in the request phase |
-| Gate packets in Linux | `netcap-firewall network`; existing named namespace and explicit protected scope required |
-| Contain future traffic from a live observation | Capture audit bridge and scoped `enforcer`; qualify live source attribution and expiration; select `--dry-run` explicitly for lease previews |
+| Goal                                                                     | Use                                                                                                                                                       |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Get an alert and notify someone                                          | Capture rules, [scoped correlation](RULES_ENGINE.md#scoped-capture-time-rules), then [durable webhook delivery](RULES_ENGINE.md#durable-webhook-delivery) |
+| Stop HTTP requests or messages from reaching a backend                   | [WAF quickstart](APPLICATION_FIREWALL.md#quickstart). The origin must accept traffic only from the proxy.                                                 |
+| Gate a non-HTTP protocol (DNS, Redis, Postgres, SMTP, Modbus and others) | [Protocol gateways](APPLICATION_FIREWALL.md#protocol-gateways-and-optional-enforcer). Deny writes in the request phase.                                   |
+| Filter packets on a Linux router                                         | `netcap-firewall network`, which needs an existing named namespace and a protected scope                                                                  |
+| Block a host that a live capture just saw                                | The capture audit bridge and the `enforcer`. Add `--dry-run` to preview leases.                                                                           |
 
-This corrects the old guide's implication that ordinary CLI capture automatically
-blocks matches. `internal/rules/engine.go` exposes `SetFirewallManager`, but the
-capture command paths do not call it. The separate `--firewall-effects-config`
-bridge does not change the legacy action-manager contract.
+Capture rules only detect and alert. `net capture -firewall-policy FILE` evaluates a policy against decoded records, and a pcap replay never contacts an enforcer. A live capture with `-firewall-effects-config FILE` can block the offending host for a limited time. It cannot recall the request that triggered the block.
 
-## Requirements
+## Example: block a scanner for ten minutes
 
-An application integrating `internal/firewall` within this module needs Linux,
-iptables/ip6tables, suitable network-administration privileges and the intended
-network namespace. Non-Linux implementations return an unsupported error.
-Detecting packets on a SPAN sensor does not place that sensor in the forwarding
-path of the observed hosts.
+Web scanners probe paths such as `/.env`, which a normal visitor never requests. The policy below denies that request and asks the enforcer to block the client's source address for ten minutes:
 
-## Architecture
+```yaml
+version: netcap-policy/v1
+id: block-env-probes
+mode: enforce
+default: allow
+rules:
+  - id: deny-env-probe
+    phase: request
+    expression: 'Protocol == "http" && Path == "/.env"'
+    action: deny
+    status: 403
+    effects:
+      - {kind: block_source, target: client, duration: 10m, scope: lab-edge}
+```
 
-`Engine` evaluates a rule, generates an alert and dispatches configured actions.
-An explicitly attached manager owns a custom chain (default `NETCAP`), active
-block state, allowlist and expiration cleanup. Setup inserts jumps from INPUT,
-FORWARD and OUTPUT in that namespace; this is a real policy change even before
-the first block action.
+`scope` must name an entry under `scopes` in the effects config (`examples/firewall/effects-config.json`). That entry sets the enforcer endpoint, its token variable, the protected network and the traffic to block. A policy cannot set an endpoint. The shipped example blocks forward TCP/8080 traffic to `198.51.100.0/24` on interface `lab0` and protects `192.0.2.0/24`. A lease lasts at most 15 minutes.
 
-## Configuration
+## The iptables actions
 
-The internal integration points are:
+The `iptables_*` actions only work in a Go program that embeds the firewall manager. They need Linux, iptables and ip6tables, network-administration privileges and the right network namespace. `net capture` has no such manager.
 
-| File | Contract |
-| --- | --- |
-| `internal/firewall/config.go` | Manager defaults/configuration |
-| `internal/firewall/manager.go` | Linux setup, block/unblock and cleanup |
-| `internal/rules/engine.go` | Manager attachment and action dispatch |
-| `internal/rules/rule.go` | Action configuration/validation |
+| Action                                | Status                                                     |
+| ------------------------------------- | ---------------------------------------------------------- |
+| `iptables_block`, `iptables_reject`   | Need the manager                                           |
+| `iptables_log`, `iptables_rate_limit` | Not supported. They return `ErrUnsupportedResponseAction`. |
 
-Use `DryRun` for a manager integration test and inspect its actual initialization
-requirements; it is not a documented `capture` CLI flag. Allowlist and expiration
-behavior must be verified for the chosen policy and address family.
-
-## Response Action Types
-
-The following disabled rule illustrates action syntax for a custom integration:
+A rule for such a program looks like this. It blocks any host that sends a SYN to Telnet for 5 minutes:
 
 ```yaml
 rules:
-  - name: Lab TCP Policy Candidate
-    description: Observe a destination port explicitly prohibited by lab policy
+  - name: Telnet probe
+    description: Source host sent a SYN to port 23, which nothing here serves
     type: TCP
-    expression: DstPort == 9999 && SYN && !ACK
-    severity: low
+    expression: DstPort == 23 && SYN && !ACK
+    severity: medium
     enabled: false
     actions:
       - type: iptables_block
@@ -83,48 +61,20 @@ rules:
           duration: 5m
 ```
 
-`target` selects the matched record's source/destination address. `duration`
-accepts supported duration strings; inspect the executor for numeric handling.
-Missing/ambiguous endpoints are not permission to substitute another address.
+`target` selects the source or destination address of the matched record. `duration` takes a duration string such as `5m`. If the record has no usable address, nothing is blocked.
 
-## Rule Examples
+The manager creates its own chain (default `NETCAP`) and inserts jumps from INPUT, FORWARD and OUTPUT into it. That changes the firewall policy of the namespace before the first block.
 
-Use [rules](RULES_ENGINE.md) and [network detections](network-detections.md) to
-collect candidates first. SYN counts do not prove SSH authentication failures;
-long DNS names do not establish tunneling; a port number does not establish
-malware. Response policy needs validated evidence beyond those heuristics.
-
-## Firewall Manager API
-
-For development inside this module, inspect `NewManager`, `BlockIP`, `BlockCIDR`,
-`UnblockIP`, `UnblockCIDR` and `Close`. Handle errors and close orderly. External
-Go modules cannot directly import this repository's `internal/firewall` package.
-
-## Safety Features
-
-Allowlist checks, bounded-duration blocks and orderly cleanup are implementation
-mechanisms, not an independent recovery guarantee. A crash can prevent cleanup;
-an IPv6 initialization warning does not prove IPv6 enforcement is active.
-
-## Monitoring & Statistics
-
-Check action errors separately from alert creation. An `Alert.ncap.gz` entry
-does not prove an action succeeded or traffic was blocked. Compare manager state
-with the real ruleset in the intended namespace when qualifying an integration.
-
-## Best Practices
-
-Keep detection-only rules separate from enabled response policy, test on an
-isolated Linux fixture, and verify expiration/unblock and failure paths before
-relying on automation. Preserve administrative recovery access independently of
-the policy being tested.
+An alert in `Alert.ncap.gz` does not mean the action ran. Check for action errors, and compare the manager state with the real ruleset in the namespace. If the process crashes, cleanup can fail, so keep a way into the machine that does not depend on the policy you are testing.
 
 ## Troubleshooting
 
-| Symptom | Check |
-| --- | --- |
-| `firewall manager not configured` | Released CLI has no manager wiring; YAML does not create it |
-| Unsupported platform | Linux-only implementation |
-| Permission/chain errors | Capabilities, binary availability and network namespace |
-| Alert but no block | Action error, allowlist, dry-run and manager attachment |
-| No rate limit | `iptables_rate_limit` is unsupported; inspect the action error |
+| Symptom                           | Check                                                             |
+| --------------------------------- | ----------------------------------------------------------------- |
+| `firewall manager not configured` | `net capture` has no manager. Use the enforcer or the WAF.        |
+| Unsupported platform              | The manager only runs on Linux.                                   |
+| Permission or chain errors        | Capabilities, the iptables binary and the network namespace       |
+| Alert but no block                | Action error, allowlist, dry run, manager attached                |
+| No rate limit                     | `iptables_rate_limit` is not supported. Look at the action error. |
+
+To find candidates for a response rule, start with [rules](RULES_ENGINE.md) and [network detections](network-detections.md). A SYN count does not show failed SSH logins, so check what a rule really matches before it can block anything.

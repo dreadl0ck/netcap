@@ -1,11 +1,11 @@
 # Device profiles
 
-`DeviceProfile` summarizes observed traffic around a MAC address. `Host` and
-`Connection` describe related address/communication observations. None is an
-authenticated asset inventory simply because a hostname or manufacturer is shown.
+A `DeviceProfile` summarises the traffic seen for one MAC address. `Host` and `Connection` records describe the addresses and conversations around it. A hostname or manufacturer shown in a profile comes from the traffic. It is not a verified asset inventory.
+
+To profile the devices on a home or office network, capture its traffic and dump the profiles:
 
 ```sh
-net capture -read traffic.pcap -out inventory-audit -dpi=false
+net capture -read home-network.pcap -out inventory-audit -dpi=false
 net dump -read inventory-audit/DeviceProfile.ncap.gz -fields
 net dump -read inventory-audit/DeviceProfile.ncap.gz -json
 net triage -read inventory-audit -json
@@ -13,27 +13,21 @@ net triage -read inventory-audit -json
 
 ## Read the layers separately
 
-| Evidence | Interpretation |
-| --- | --- |
-| MAC / OUI | Observed link-layer address and vendor-table attribution |
-| Device IPs | Addresses seen with the device; NAT, relays and lease changes complicate ownership |
-| Contacts and counters | Captured peer/traffic summary, not a complete history of all activity |
-| Applications | Classifier/decoder output available in this build |
-| Hostname/account bindings | Use `Hosts.json` and its provenance/conflicts |
-| Behavior baseline | Explicitly reviewed state, separate from an observed profile |
+| Evidence                  | What it tells you                                                            |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| MAC / OUI                 | The link-layer address and the vendor assigned to its prefix                 |
+| Device IPs                | Addresses seen with the device. NAT, relays and lease changes blur ownership |
+| Contacts and counters     | A summary of peers and traffic, not the full history                         |
+| Applications              | Classifier and decoder output available in this build                        |
+| Hostname/account bindings | See `Hosts.json` for provenance and conflicts                                |
+| Behavior baseline         | State you reviewed and approved, separate from the observed profile          |
 
-Profiles depend on input link type and observation point. Routed traffic may
-show a gateway MAC for remote addresses; do not assign all of those addresses to
-one physical endpoint.
+What a profile contains depends on the link type and where you captured. Routed traffic shows the gateway's MAC for remote addresses, so don't assign all of those addresses to one physical device.
 
-## Timing and bounds
+## Timing and limits
 
-Aggregate records can finalize at shutdown. A still-running capture need not
-contain every completed profile. DeviceProfile contact sampling and deduplication
-are bounded: inspect `ContactObservations`, `ContactCountLowerBound` and
-`ContactsTruncated` rather than equating a displayed list with exact cardinality.
-The implementation retains at most 4,096 sampled contacts and 65,536 dedup keys.
+Profiles are written when the capture ends, so a running capture may not have every profile yet.
 
-Use current fields from `types/netcap.proto`; historical `IPProfile` schema
-snippets do not describe the current Host/Connection model. [Identity](host-identity.md)
-and [behavior](behavioral-monitoring.md) guide the next investigation step.
+Contact lists are sampled: a profile keeps at most 4,096 contacts and 65,536 deduplication keys. Check `ContactObservations`, `ContactCountLowerBound` and `ContactsTruncated` instead of counting the displayed list.
+
+Field definitions are in `types/netcap.proto`. Next, check [identity](host-identity.md) for names and accounts, or [behavior](behavioral-monitoring.md) for baselines.

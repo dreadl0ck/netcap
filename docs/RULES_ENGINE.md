@@ -1,86 +1,50 @@
-# NETCAP Rules Engine
+# Rules, correlation and alert delivery
 
-The NETCAP Rules Engine allows you to define detection rules that automatically generate alerts when specific network patterns are observed. Rules use expr-lang expressions to match audit records and can be configured to detect various attack patterns, anomalies, and policy violations.
+Rules are YAML files with expr-lang expressions that match audit records. When a record matches, netcap writes an alert to `Alert.ncap.gz`.
 
 ## First rule
 
-Create the benign input from [First capture](quickstart.md), then save this as
-`documentation-rule.yml`:
+This rule flags HTTP requests from command-line clients such as curl, wget and Python scripts. On a capture from an office LAN, those are usually updaters, scripts or a download from a malware sample. Save it as `scripted-http.yml`:
 
 ```yaml
 rules:
-  - name: Documentation UDP Observation
-    description: Match the synthetic walkthrough destination port
-    type: UDP
-    expression: DstPort == 9999
+  - name: Scripted HTTP Client
+    description: HTTP request from curl, wget or a Python HTTP library
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^(curl/|wget/|python[-/])")
     severity: low
-    tags: [documentation, fixture]
+    tags: [scripting, http]
     enabled: true
 ```
 
+Run it on a capture and read the alerts:
+
 ```sh
-net capture -read example.pcap -out rule-audit -rules documentation-rule.yml \
+net capture -read office-lan.pcap -out rule-audit -rules scripted-http.yml \
   -dpi=false -geoDB=false
 net dump -read rule-audit/Alert.ncap.gz -json
 ```
 
-Inspect `RuleName`, matched-record evidence and record-time timestamps. Alert
-deduplication can reduce alert count; do not equate alert rows with matched
-packets. This rule observes a port, not malicious activity. The examples below
-are hypothesis templates: SYNs are not failed logins, long DNS names are not
-confirmed tunnels, and a MITRE label/severity does not validate intent.
+Check `RuleName`, the matched-record evidence and the record-time timestamps. Deduplication can reduce the number of alerts, so alert rows don't map one-to-one to matched packets.
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Rule Configuration](#rule-configuration)
-- [Writing Rules](#writing-rules)
-- [Alert Structure](#alert-structure)
-- [MITRE ATT&CK Integration](#mitre-attck-integration)
-- [Example Rules](#example-rules)
-- [Offline grouped thresholds](#offline-grouped-thresholds)
-- [Best Practices](#best-practices)
+Run a new rule on a capture of normal traffic first to see how often it fires.
 
 ## Overview
 
-### Features
+* **Expression-based matching**: expr-lang expressions define the detection logic.
+* **Ordered correlation**: require an earlier related record before a rule alerts.
+* **MITRE ATT\&CK mapping**: attach ATT\&CK technique IDs to rules.
+* **Deduplication**: repeated alerts are merged within a configurable time window.
+* **Rate limiting**: a per-rule limit prevents alert floods.
+* **Severity levels**: low, medium, high or critical.
+* **Tags**: organize rules with your own tags.
+* **Audit record output**: alerts are written as NETCAP audit records.
 
-- **Expression-based matching**: Use powerful expr-lang expressions to define detection logic
-- **Ordered correlation**: Require an earlier related record before a rule alerts
-- **MITRE ATT&CK mapping**: Associate rules with MITRE ATT&CK techniques
-- **Alert deduplication**: Automatic deduplication within configurable time windows
-- **Rate limiting**: Prevent alert flooding with per-rule rate limits
-- **Multiple severity levels**: Categorize alerts as low, medium, high, or critical
-- **Flexible tagging**: Organize rules with custom tags
-- **Audit record output**: Alerts are written as NETCAP audit records for analysis
-
-### Architecture
-
-```
-┌──────────────┐
-│ Audit Records│
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│ Rules Engine │
-└──────┬───────┘
-       │
-       ├─► Alert (if match)
-       │
-       ▼
-┌──────────────┐
-│ Alert.ncap.gz│
-└──────────────┘
-```
+Audit records go into the rules engine, and matches are written to `Alert.ncap.gz`.
 
 ## Scoped capture-time rules
 
-`internal/rules/ordered_stream.go` adds bounded capture-time evaluation to the
-existing `capture -rules FILE` path. Configure one qualified capture/source scope;
-use separate engines for different interfaces/VLANs or captures. The CLI rejects
-multiple input files in this mode. A configured scope is a caller declaration;
-mixed-interface/VLAN dispatch requires the collector's observed scope routing.
+Capture-time evaluation adds ordered, windowed counting to `capture -rules FILE`. It handles one capture and source scope. Use a separate engine for each interface, VLAN or capture. The CLI rejects multiple input files in this mode. The scope is a label you set and netcap does not verify it. For mixed interface or VLAN input, the collector must route records to the right engine by observed scope.
 
 ```yaml
 capture_time:
@@ -96,37 +60,25 @@ rules:
     group_by: [SrcIP, DstIP, DstPort]
 ```
 
-| Contract | Implementation |
-| --- | --- |
-| Group/window | `group_by` scalar keys are length-framed; counters include scope and unique rule name. Inclusive capture-time windows reset at each crossing. Choose service/account fields explicitly; missing string keys do not join. |
-| Reordering | `lateness_seconds` holds equal-time records together and canonically sorts timestamp/type/protobuf bytes. Older-than-watermark arrivals fail explicitly. Replays within the allowance yield the same crossings; arbitrary lateness is unsupported. |
-| Bounds | 4,096 queued records, 1 MiB protobuf frame, 32 MiB accounted reorder storage, 10,000 scoped groups and 100,000 pending count timestamps; exhaustion returns `ErrStateCapacity`. These are accounted-state bounds, not whole-process RSS limits. |
-| Reload | Compilation failure preserves pending evidence/state. Successful capture-time reload drains admitted records under the old rules, then resets correlation/dedup/rate state. Scope/lateness changes require a new engine. |
-| Finalization | `Engine.Finalize()` drains before readiness; `Close()` also drains and reports errors. Capture CLI returns finalization errors. A lifecycle owner must call `Finalize()` before publishing `audit-output-ready.json`; CLI deferred Close alone runs after collector readiness. |
-| API | `NewOrderedStream` supports caller-controlled `Advance(watermark)` and `Finish()`; explicit-stream `Reload` refuses pending records. `EvaluateScoped` requires already ordered records. |
-| Compatibility | Without `capture_time`, legacy rule semantics remain. Capture-time mode requires typed `after_type` sequences and rejects legacy distinct-cardinality rules. Wall-clock dedup/rate suppression is disabled for explicitly scoped evaluation. Scoped count/join rules loaded by `NewEngine` require `capture_time`; existing finalized `netcap-offline-rules/v1` packs retain their separate contract. |
+| Topic         | Behavior                                                                                                                                                                                                                                                                                                                                                             |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Group/window  | `group_by` keys are string or integer fields. Counters are kept per scope and rule name. Windows are inclusive and reset each time they are crossed. Pick fields that identify the service or account. Records with a missing string key don't join.                                                                                                                 |
+| Reordering    | `lateness_seconds` holds records with equal times together and sorts them by timestamp, type and protobuf bytes. A record older than the watermark fails with an error. Replays within the allowance give the same crossings. Lateness beyond it is unsupported.                                                                                                     |
+| Limits        | 4,096 queued records, 1 MiB protobuf frame, 32 MiB reorder storage, 10,000 scoped groups and 100,000 pending count timestamps. Beyond these, `ErrStateCapacity` is returned. These limit rule state, not total process memory.                                                                                                                                       |
+| Reload        | If the new rules fail to compile, pending state is kept. After a successful reload, admitted records drain under the old rules, then correlation, dedup and rate state reset. A change of scope or lateness needs a new engine.                                                                                                                                      |
+| Finalization  | `Engine.Finalize()` drains pending records before readiness. `Close()` also drains and reports errors. The capture CLI returns finalization errors. Code that embeds the engine must call `Finalize()` before it writes `audit-output-ready.json`.                                                                                                                   |
+| API           | `NewOrderedStream` gives you `Advance(watermark)` and `Finish()`. `Reload` on an explicit stream refuses pending records. `EvaluateScoped` needs records that are already ordered.                                                                                                                                                                                   |
+| Compatibility | Without `capture_time`, the default rule semantics apply. Capture-time mode needs typed `after_type` sequences and rejects distinct-cardinality rules. Wall-clock dedup and rate limiting are off in scoped evaluation. Scoped count and join rules loaded by `NewEngine` need `capture_time`. Offline rule packs (`netcap-offline-rules/v1`) keep their own format. |
 
-`sequence.after_type` and `sequence.after_group_by` add exact cross-record joins.
-The mapped scalar types must agree; `sequence.group_by` names the triggering
-record's fields. Example: `after_type: Secret`, `after: AuthSuccessSet && !AuthSuccess`,
-`after_group_by: [CommunityID]`, `group_by: [CommunityID]`, `within: 60`.
-`CommunityID` qualifies a tuple only; use an observed session/transaction key
-where tuple reuse is possible. The engine does not infer an account, login
-outcome or causal relationship. Alert `Notes.netcapJoin` retains two hash-only
-contributors; scope separates unrelated captures/sources. Scoped matched-record
-projections retain only time/type/endpoints/CommunityID plus the full-record hash,
-so application headers, bodies and credential material do not enter these alerts.
+`sequence.after_type` and `sequence.after_group_by` add exact joins across record types. The mapped scalar types must agree, and `sequence.group_by` names the fields of the triggering record. For example, to alert on a rejected login: `after_type: Secret`, `after: AuthSuccessSet && !AuthSuccess`, `after_group_by: [CommunityID]`, `group_by: [CommunityID]`, `within: 60`.
 
-`WriteSecret` retains every emitted occurrence, including repeated same-flow
-credentials and hash-only observations. Existing `Realm`, `Uri`, `SipCallId`,
-`AuthSuccess`/`AuthSuccessSet` and flow context remain on each Secret record.
-`Secret.Src/Dst` parse observed directional flow endpoints; unknown formats stay
-unavailable. Secret alert projections and Prometheus labels exclude credential
-material; the original Secret audit remains sensitive evidence.
+`CommunityID` identifies a tuple only. If tuples can be reused, join on a session or transaction key. The alert's `Notes.netcapJoin` keeps two hash-only contributors, and the scope separates unrelated captures. Scoped matched-record projections keep only time, type, endpoints, CommunityID and the hash of the full record, so application headers, bodies and credentials don't end up in these alerts.
+
+`Secret` records keep every occurrence. See [credential observations](credential-analysis.md). Secret alert projections and Prometheus labels exclude credential material.
 
 ## Durable webhook delivery
 
-`net investigate deliver-alerts` sends redacted notices from saved alert output:
+`net investigate deliver-alerts` sends redacted notices from saved alert output to a webhook:
 
 ```sh
 net investigate deliver-alerts -read ./audit -outbox ./private-alert-outbox \
@@ -134,35 +86,28 @@ net investigate deliver-alerts -read ./audit -outbox ./private-alert-outbox \
   -limit 1000 -timeout 1m
 ```
 
-| Contract | Implementation |
-| --- | --- |
-| Opt-in | Only the explicit command or `internal/delivery.Writer` enqueues notices; `Outbox.Deliver` performs bounded serial POST attempts. No background worker or production destination is configured. |
-| Durable retries | Private SQLite transactions use `synchronous(FULL)`; pending attempts, due times and delivered/rejected receipts survive restart. Rerun the same command to retry. 408/425/429/5xx and transport failures use 1s exponential backoff capped at 1h; other non-2xx responses remain rejected. Redirects are not followed. |
-| Idempotency | `Idempotency-Key` is a stable SHA-256 notice identity. Identical semantic notices share a durable receipt. Delivery is at least once: receiver acceptance followed by a crash before local receipt commit can repeat a POST, so receivers must deduplicate that key. |
-| Limits | 10,000 entries including receipts, 4 KiB notices, 64 MiB SQLite page ceiling, 5s request timeout and 4 KiB response drain. Full capacity refuses admission; receipts are not silently evicted. Source scanning is bounded by `-limit` (maximum 10,000). |
-| Credentials | `NETCAP_ALERT_WEBHOOK_TOKEN` supplies an optional runtime bearer. URLs cannot contain userinfo, query or fragments; destinations are digest-pinned per outbox. Notices omit raw records, descriptions, expressions, tags, notes and credential fields. Transport errors do not echo URLs/tokens/bodies. |
-| Outcome | JSON reports pending/delivered/rejected counts; pending/rejected notices produce a nonzero exit. Rejected receipts require operator inspection; they are not silently retried. `iptables_rate_limit`/`iptables_log` retain `ErrUnsupportedResponseAction`. |
-
-Pitfall: credential-identity deduplication erased repeated transactions; preserve
-occurrences in `Secret.ncap` and deduplicate only delivery receipts.
+| Topic           | Behavior                                                                                                                                                                                                                                                                                                                                  |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Opt-in          | Notices are queued only by this command. Delivery is serial POST attempts with bounded retries. No background worker runs and no destination is preconfigured.                                                                                                                                                                            |
+| Durable retries | A private SQLite database (`synchronous(FULL)`) keeps pending attempts, due times and delivered or rejected receipts across restarts. Run the same command again to retry. 408, 425, 429, 5xx and transport failures retry with exponential backoff from 1 s up to 1 h. Other non-2xx responses are rejected. Redirects are not followed. |
+| Idempotency     | `Idempotency-Key` is a stable SHA-256 of the notice. Identical notices share one receipt. Delivery is at least once: if the receiver accepts a POST and the sender crashes before it saves the receipt, the POST repeats. Receivers must deduplicate on that key.                                                                         |
+| Limits          | 10,000 entries including receipts, 4 KiB per notice, a 64 MiB SQLite database, a 5 s request timeout and 4 KiB of response drained. When the outbox is full, new notices are refused and receipts are never evicted. Source scanning is limited by `-limit` (maximum 10,000).                                                             |
+| Credentials     | `NETCAP_ALERT_WEBHOOK_TOKEN` supplies an optional bearer token at runtime. URLs can't contain userinfo, a query or a fragment. Each outbox is pinned to the digest of its destination. Notices leave out raw records, descriptions, expressions, tags, notes and credential fields. Transport errors don't echo URLs, tokens or bodies.   |
+| Outcome         | The JSON report shows pending, delivered and rejected counts. Pending or rejected notices give a nonzero exit code. Rejected receipts need an operator to inspect them and are not retried. `iptables_rate_limit` and `iptables_log` return `ErrUnsupportedResponseAction`.                                                               |
 
 ## Offline grouped thresholds
 
-Availability: Go v0.16.2 includes `investigate rules` and audit-readiness markers;
-the v0.15.2 binary has neither. The capture-time YAML format elsewhere on this
-page is a separate interface.
+`net investigate rules` evaluates `netcap-offline-rules/v1` packs against a completed capture. The format differs from the capture-time YAML above. It rejects actions, sequences and distinct gates, and the capture engine rejects offline packs.
 
-`net investigate rules` evaluates `netcap-offline-rules/v1` packs against
-completed captures. The separate format rejects actions, sequences and distinct
-gates; the legacy capture engine rejects offline packs before processing.
+This example counts SYN packets per source, destination and port in a capture from your network:
 
 ```sh
-net capture -read sample.pcap -out ./audit -include TCP -context=true \
+net capture -read office-lan.pcap -out ./audit -include TCP -context=true \
   -capture-evidence=true -dpi=false -geoDB=false -http ""
 net investigate rules -read ./audit -rules grouped.yaml
 ```
 
-Save this opt-in pack as `grouped.yaml`:
+Save this pack as `grouped.yaml`:
 
 ```yaml
 format: netcap-offline-rules/v1
@@ -179,52 +124,40 @@ rules:
       group_by: [SrcIP, DstIP, DstPort]
 ```
 
-This counts stored SYN observations, including retransmissions. It does not
-establish authentication failure or unique connection attempts.
+It counts stored SYN packets, retransmissions included.
 
-| Contract | Behavior |
-| --- | --- |
-| Admission | Matching finalized `capture-manifest.json` and `audit-output-ready.json`, one unambiguous completed scope, no scope overflow or offline BPF. Older captures without readiness require recapture; do not manufacture a marker. |
-| Types | TCP, UDP, DNS and HTTP. Missing required files produce partial coverage; corrupt input fails before publication. |
-| Grouping | 1–8 unique exact Go scalar field names; strings and integers only. Empty strings withhold observations and mark coverage partial. Numeric zero is valid. Aliases/nested fields are rejected. |
-| Expressions | Scalar comparisons, boolean operators, `contains`, `startsWith`, `endsWith`, and literal-array `in`. Calls, methods, maps, iteration, arithmetic and regex are rejected, including in disabled rules. |
-| Windows | Positive capture timestamps; observations sorted by time and canonical content. Inclusive `[t-window,t]`; the Nth match alerts and resets only that group. No wall-clock rate limiting or deduplication. |
-| Configuration | Strict single-document YAML; stable unique IDs, count 2–65,536, positive duration up to 720h (default 60s). At least one rule must be enabled. |
-| Identity | Event IDs bind canonical retained input, observation policy, normalized pack, group and crossing. Workers/source paths/run IDs remain provenance and do not change semantic identity. |
-| Output | Root `Alert.ncap.gz` plus `rule-evaluations/<id>.json`. CLI prints a JSON report; failures and partial coverage return nonzero. |
-| Evidence | Trigger JSON and digest remain unchanged. `Notes.netcapOffline` holds grouping, time bounds and up to 16 contributor references, with explicit truncation. Nanoseconds/ordinals/counters are decimal strings; integer groups contain typed decimal values. |
-| Concurrency | Evaluation, alert clearing and reanalysis share an output lease. A stale `.offline-rule-evaluation.lock` needs operator inspection; it is not automatically removed. |
+| Topic         | Behavior                                                                                                                                                                                                                                                                |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admission     | Needs a matching finalized `capture-manifest.json` and `audit-output-ready.json`, one completed scope, no scope overflow and no offline BPF. Captures without the readiness marker must be captured again. Don't create a marker by hand.                               |
+| Types         | TCP, UDP, DNS and HTTP. Missing required files give partial coverage. Corrupt input fails before anything is published.                                                                                                                                                 |
+| Grouping      | 1 to 8 unique Go scalar field names, strings and integers only. An empty string withholds the observation and marks coverage partial. Numeric zero is valid. Aliases and nested fields are rejected.                                                                    |
+| Expressions   | Scalar comparisons, boolean operators, `contains`, `startsWith`, `endsWith` and `in` with a literal array. Calls, methods, maps, iteration, arithmetic and regex are rejected, even in disabled rules.                                                                  |
+| Windows       | Positive capture timestamps. Observations are sorted by time and canonical content. The window is inclusive, `[t-window,t]`. The Nth match alerts and resets only that group. There is no wall-clock rate limiting or deduplication.                                    |
+| Configuration | One strict YAML document. Stable unique IDs, count 2 to 65,536, positive duration up to 720h (default 60s). At least one rule must be enabled.                                                                                                                          |
+| Identity      | Event IDs bind the canonical retained input, the observation policy, the normalized pack, the group and the crossing. Workers, source paths and run IDs are provenance only and don't change an event's identity.                                                       |
+| Output        | `Alert.ncap.gz` in the output root plus `rule-evaluations/<id>.json`. The CLI prints a JSON report. Failures and partial coverage give a nonzero exit code.                                                                                                             |
+| Evidence      | The trigger JSON and digest are unchanged. `Notes.netcapOffline` holds the grouping, time bounds and up to 16 contributor references, and says when it was truncated. Nanoseconds, ordinals and counters are decimal strings. Integer groups hold typed decimal values. |
+| Concurrency   | Evaluation, alert clearing and reanalysis share an output lease. Inspect a stale `.offline-rule-evaluation.lock` by hand. It is not removed automatically.                                                                                                              |
 
-| Default refusal limit | Value |
-| --- | --- |
-| Rules / records | 64 / 100,000 per execution |
-| Frame / decoded bytes | 4 MiB / 256 MiB |
-| Sort data / state | 128 MiB per type / 64 MiB |
-| Groups | 4,096 per rule / 16,384 per job |
-| Pending matches | 65,536 per rule / 262,144 per job |
-| Alerts / time | 10,000 or 32 MiB / 2 minutes |
-| Group key / execution history | 1,024 bytes / 100 reports |
+| Default refusal limit         | Value                             |
+| ----------------------------- | --------------------------------- |
+| Rules / records               | 64 / 100,000 per execution        |
+| Frame / decoded bytes         | 4 MiB / 256 MiB                   |
+| Sort data / state             | 128 MiB per type / 64 MiB         |
+| Groups                        | 4,096 per rule / 16,384 per job   |
+| Pending matches               | 65,536 per rule / 262,144 per job |
+| Alerts / time                 | 10,000 or 32 MiB / 2 minutes      |
+| Group key / execution history | 1,024 bytes / 100 reports         |
 
-Bounds are accounted-storage limits, not an exact process-RSS ceiling. Large
-inputs refuse rather than spill to disk. Evaluation covers retained audit
-records; previously filtered/discarded records cannot be recovered.
+These limit accounted storage, not process memory. A job over a limit is refused and does not spill to disk. Evaluation covers the retained audit records, so records that were filtered out or discarded during capture can't be recovered.
 
-Publication is durable per alert member, not transactional across the job.
-`publish-failed` reports record the committed prefix; `committing` after an
-interruption means unknown publication progress. Inspect the report and alert
-history before retrying. Explicit reruns append another evaluation.
+Publication is durable for each alert, not transactional across the job. A `publish-failed` report records the prefix that was committed. A `committing` state after an interruption means the progress is unknown. Inspect the report and the alert history before you retry. Each explicit rerun appends another evaluation.
 
-The WebUI Rules page accepts a YAML upload, validates a read-only preview and
-executes against the selected completed capture. Alerts expose grouped evidence
-and incomplete-history warnings. Routes: `GET /api/rules/offline/packs`,
-`POST /api/rules/offline/validate`, `POST /api/rules/offline/execute`, and
-`GET /api/rules/offline/evaluations`. POST bodies contain `yaml` plus an optional
-local `inputFile` or service `sessionId`; unknown selectors never fall back to a
-different capture. Capability absence disables the panel on older backends.
+The WebUI Rules page accepts a YAML upload, validates a read-only preview and runs it against the selected completed capture. Alerts show their grouped evidence and warn about incomplete history. The routes are `GET /api/rules/offline/packs`, `POST /api/rules/offline/validate`, `POST /api/rules/offline/execute` and `GET /api/rules/offline/evaluations`. POST bodies hold `yaml` and an optional local `inputFile` or service `sessionId`. An unknown selector never falls back to a different capture. If the backend does not support offline rules, the panel is disabled.
 
 ## Rule Configuration
 
-Rules are defined in YAML files with the following structure:
+Rules are defined in YAML:
 
 ```yaml
 rules:
@@ -241,70 +174,52 @@ rules:
 ### Field Reference
 
 #### `name` (required)
-Unique identifier for the rule. Used in alert generation and logging.
+
+Unique name of the rule. Used in alerts and logging.
 
 **Example**: `SSH_Bruteforce_Attempt`
 
 #### `description` (required)
-Human-readable explanation of what the rule detects.
+
+What the rule detects.
 
 **Example**: `Detect high frequency SSH connection attempts indicating possible brute force attack`
 
 #### `type` (required)
-The audit record type this rule applies to. Can be specified with or without the `NC_` prefix.
 
-Use actual audit types such as `TCP`, `UDP`, `HTTP`, `DNS`, `TLSClientHello`,
-`IPv4`, `IPv6` or `ICMPv4`. Generic labels such as `TLS` and `ICMP` are not
-substitutes for record names. Discover fields with `dump -fields` and check
-their types in `types/netcap.proto`.
+The audit record type the rule applies to, with or without the `NC_` prefix. Use real record names such as `TCP`, `UDP`, `HTTP`, `DNS`, `TLSClientHello`, `IPv4`, `IPv6` or `ICMPv4`. Generic names such as `TLS` and `ICMP` don't work. List the fields of a record type with `dump -fields`, and find their types in `types/netcap.proto`.
 
-**Examples**:
-- `TCP` or `NC_TCP`
-- `HTTP` or `NC_HTTP`
+**Examples**: `TCP` or `NC_TCP`, `HTTP` or `NC_HTTP`
 
 #### `expression` (required)
-An expr-lang expression that evaluates to true when the rule matches. Has access to all fields of the audit record type.
+
+An expr-lang expression that is true when the rule matches. It can use all fields of the record type.
 
 **Example**: `DstPort == 22 && SYN && !ACK`
 
 #### `severity` (required)
-Alert severity level.
 
-**Valid values**: `low`, `medium`, `high`, `critical` (case-insensitive)
+Alert severity: `low`, `medium`, `high` or `critical` (case-insensitive).
 
 #### `mitre` (optional)
-Array of MITRE ATT&CK technique IDs associated with this detection.
 
-**Format**: `["T####.###", ...]`
-
-**Example**: `["T1110.001", "T1021.004"]`
-
-Find technique IDs at: https://attack.mitre.org/
+A list of MITRE ATT\&CK technique IDs, for example `["T1110.001", "T1021.004"]`. Look up IDs at https://attack.mitre.org/.
 
 #### `tags` (optional)
-Custom tags for organizing and categorizing rules.
 
-**Example**: `["ssh", "bruteforce", "authentication"]`
+Tags for organizing rules, for example `["ssh", "bruteforce", "authentication"]`.
 
 #### `enabled` (required)
-Whether the rule is active. Disabled rules are not evaluated.
 
-**Valid values**: `true`, `false`
+`true` or `false`. Disabled rules are not evaluated.
 
 #### `threshold` / `threshold_window` (optional)
-Fire only after `threshold` matches occur within `threshold_window` seconds
-(default window: 60). These legacy counters are shared by rule name, without
-entity grouping. They use record timestamps when available but retain
-arrival-order and wall-clock suppression behavior. Use
-[offline grouped thresholds](#offline-grouped-thresholds) for deterministic,
-entity-grouped evaluation of finalized retained records.
+
+Alert only after `threshold` matches within `threshold_window` seconds (default 60). These counters are shared per rule name and are not grouped by host. They use record timestamps when available, but arrival order and wall-clock suppression still apply. For deterministic counting per entity on finalized records, use [offline grouped thresholds](RULES_ENGINE.md#offline-grouped-thresholds).
 
 #### `distinct_field` / `distinct_threshold` (optional)
-Cardinality-based (fan-out) detection. Instead of counting raw matches, the
-engine counts the number of **distinct values** of `distinct_field` observed
-**per source IP** within `threshold_window`, and fires when the count reaches
-`distinct_threshold` (default 2). This expresses "one source touching many
-distinct destinations" — e.g. an internal host sweeping many controllers:
+
+Fan-out detection. The engine counts the **distinct values** of `distinct_field` seen **per source IP** within `threshold_window`, and alerts when the count reaches `distinct_threshold` (default 2). This finds one source touching many destinations, for example an internal host sweeping many controllers:
 
 ```yaml
 - name: S7comm Horizontal Enumeration
@@ -318,9 +233,8 @@ distinct destinations" — e.g. an internal host sweeping many controllers:
 ```
 
 #### `sequence` (optional)
-Require an earlier **related** record before the rule may alert. This expresses
-"B after A within a window, for the same group" — for example a write to a
-register that the same source read minutes earlier.
+
+Require an earlier **related** record before the rule can alert: "B after A within a window, for the same group". For example, a write to a register that the same source read minutes earlier.
 
 ```yaml
 sequence:
@@ -329,56 +243,26 @@ sequence:
   within: 900   # seconds, default 60
 ```
 
-- `after` (required) — expression identifying the **earlier** record. It is
-  compiled against the same record type as the rule, so both expressions see
-  the same fields. The rule's own `expression` stays the **trigger**.
-- `group_by` (required, at least one field) — top-level record fields whose
-  values must be equal on the earlier and the triggering record.
-- `within` (optional) — how many seconds the earlier record stays eligible.
-  Defaults to 60; a negative value is rejected at load time.
+* `after` (required): expression for the **earlier** record. It is compiled against the rule's record type, so both expressions see the same fields. The rule's own `expression` is the **trigger**.
+* `group_by` (required, at least one field): top-level record fields that must be equal on the earlier and the triggering record.
+* `within` (optional): how many seconds the earlier record stays eligible. Default 60. A negative value is rejected when the rules load.
 
-Semantics:
+How it behaves:
 
-- **Gate placement.** The gate runs before `threshold` and `distinct_field`
-  counting, so those only ever see completed sequences and otherwise behave
-  exactly as they do for an ungated rule. Rules without a `sequence` block are
-  completely unaffected and allocate no sequence state.
-- **`after` is evaluated on every record of the rule's type**, not only on
-  records that match the trigger expression — the earlier record of a sequence
-  usually does not match the rule's own `expression`.
-- **Exact equality only.** `group_by` compares field values for equality
-  (string and integer fields). It cannot express range overlap: grouping on a
-  start address pairs a write with an earlier read of the *same* start address,
-  never with a read whose span merely overlaps the write.
-- **No self-satisfaction.** The lookup happens before the current record is
-  recorded, so a record matching both `expression` and `after` can never
-  satisfy its own precondition; it can only gate later records.
-- **Complete group keys are required.** If any `group_by` field is empty, or of
-  a kind other than string or integer, the record is not correlated at all —
-  neither as a trigger nor as a precondition.
-- **Record-time ordering.** Windows use the record's own timestamp (wall clock
-  only for records that report no time), so offline replay behaves like live
-  capture. A trigger timestamped before its precondition does not match, and a
-  gap of exactly `within` still matches while one second more does not.
-- **Evaluation order matters too.** The precondition must have been *seen* by
-  the engine before the trigger. For record types written at stream
-  completion/flush rather than per packet, records from different connections
-  can reach the engine out of timestamp order; such pairs are not matched.
-- **Observations are not consumed.** One earlier record can gate every trigger
-  in its group until the window expires, and a newer `after` match refreshes
-  the group's timestamp.
-- **State is bounded.** Tracking is per rule and keyed by group. Aged-out
-  groups are reclaimed by periodic sweeps and the number of tracked groups is
-  capped; hitting the cap costs missed correlations, not unbounded memory.
-- **Alerts describe the triggering record only.** The earlier record is not
-  attached to the alert — retrieve it from the audit records using the group
-  fields and the window.
+* The sequence check runs before `threshold` and `distinct_field` counting, so those only see completed sequences. Rules without a `sequence` block are unaffected.
+* `after` is evaluated on every record of the rule's type, not only on records that match the trigger. The earlier record usually does not match the rule's own `expression`.
+* `group_by` compares values for equality (string and integer fields). It can't express range overlap. Grouping on a start address pairs a write with an earlier read of the same start address, never with a read whose span merely overlaps it.
+* A record that matches both `expression` and `after` can't satisfy its own precondition. It can only gate later records.
+* If any `group_by` field is empty or is neither a string nor an integer, the record is not correlated, neither as trigger nor as precondition.
+* Windows use the record's own timestamp, and the wall clock only for records without one, so offline replay behaves like live capture. A trigger timestamped before its precondition does not match. A gap of exactly `within` matches, and one second more does not.
+* The engine must have seen the precondition before the trigger. Record types written when a stream completes or flushes can reach the engine out of timestamp order, and such pairs don't match.
+* Earlier records are not consumed. One earlier record can gate every trigger in its group until the window expires, and a newer `after` match refreshes the group's timestamp.
+* Tracking is per rule and per group. Aged-out groups are cleaned up periodically and the number of groups is capped. Hitting the cap means missed correlations, not unbounded memory.
+* The alert describes only the triggering record. Look up the earlier record in the audit records using the group fields and the window.
 
-The web UI cannot author sequences yet, but it preserves them when saving rules
-or toggling rule sets.
+The web UI can't author sequences yet, but it keeps them when you save rules or toggle rule sets.
 
-**Worked example** (shipped disabled in
-[`internal/rules/examples/modbus_hunt.yml`](https://github.com/dreadl0ck/netcap/blob/v0.15.2/internal/rules/examples/modbus_hunt.yml)):
+**Worked example**, shipped disabled as [`modbus_hunt.yml`](https://github.com/dreadl0ck/netcap/blob/v0.15.2/internal/rules/examples/modbus_hunt.yml):
 
 ```yaml
 - name: Modbus Write After Read Same Register
@@ -398,32 +282,24 @@ or toggling rule sets.
   enabled: false
 ```
 
-Given reads and writes between `192.0.2.10` and `192.0.2.20`, unit 1, bank
-`holding_registers`:
+Take an engineering workstation at `10.0.0.10` reading and writing registers on a PLC at `10.0.0.20`, unit 1, bank `holding_registers`:
 
-| Earlier record | Trigger | Alert? |
-| --- | --- | --- |
-| FC3 read of address 40 at `t` | FC6 write of address 40 at `t+600` | yes |
-| FC3 read of address 40 at `t` | FC6 write of address 40 at `t+901` | no — outside `within` |
-| FC3 read of address 40 at `t` | FC6 write of address 41 at `t+600` | no — grouping is equality, even if the read covered 40..45 |
-| FC3 read of address 40 at `t` | FC6 write of address 40 by another source | no — `SrcIP` is in `group_by` |
-| none | FC6 write of address 40 | no |
+| Earlier record                | Trigger                                   | Alert?                                                    |
+| ----------------------------- | ----------------------------------------- | --------------------------------------------------------- |
+| FC3 read of address 40 at `t` | FC6 write of address 40 at `t+600`        | yes                                                       |
+| FC3 read of address 40 at `t` | FC6 write of address 40 at `t+901`        | no: outside `within`                                      |
+| FC3 read of address 40 at `t` | FC6 write of address 41 at `t+600`        | no: grouping is equality, even if the read covered 40..45 |
+| FC3 read of address 40 at `t` | FC6 write of address 40 by another source | no: `SrcIP` is in `group_by`                              |
+| none                          | FC6 write of address 40                   | no                                                        |
 
 ### Additional helper functions
 
-Beyond the network/string/time helpers, the following are available in
-expressions:
+Besides the network, string and time helpers, expressions can use:
 
-- `IsApprovedWorkstation(ip)` / `InAllowlist(ip)` — true if `ip` is in the
-  approved-workstation allowlist loaded via `-approved-workstations`
-  (`net capture`). Negate it (`!IsApprovedWorkstation(SrcIP)`) to escalate
-  activity from non-authorized sources. See
-  [S7 Threat Hunt](s7-threat-hunt-AA26-231A.md).
-- `HourOfDay(ts)` — local hour 0–23 of a nanosecond timestamp.
-- `Weekday(ts)` — local weekday 0 (Sun) – 6 (Sat).
-- `IsBusinessHours(ts, startHour, endHour)` — true within
-  `[startHour, endHour)` on Mon–Fri. Use `!IsBusinessHours(Timestamp, 8, 18)`
-  for off-hours detection.
+* `IsApprovedWorkstation(ip)` / `InAllowlist(ip)`: true if `ip` is in the approved-workstation allowlist loaded with `-approved-workstations` (`net capture`). Negate it (`!IsApprovedWorkstation(SrcIP)`) to escalate activity from unauthorized sources. See [S7 Threat Hunt](s7-threat-hunt-AA26-231A.md).
+* `HourOfDay(ts)`: local hour 0 to 23 of a nanosecond timestamp.
+* `Weekday(ts)`: local weekday, 0 (Sunday) to 6 (Saturday).
+* `IsBusinessHours(ts, startHour, endHour)`: true within `[startHour, endHour)` on Monday to Friday. Use `!IsBusinessHours(Timestamp, 8, 18)` to find off-hours activity.
 
 ## Writing Rules
 
@@ -432,7 +308,7 @@ expressions:
 ```yaml
 rules:
   - name: TCP_443_Observation
-    description: Observe TCP records addressed to port 443; protocol not established
+    description: TCP traffic to port 443
     type: TCP
     expression: DstPort == 443
     severity: low
@@ -442,12 +318,12 @@ rules:
 
 ### Using Helper Functions
 
-Rules have access to all helper functions available in filtering:
+Rules can use all the helper functions available in filtering:
 
 ```yaml
 rules:
   - name: Private_to_Public
-    description: Detect outbound traffic from private networks
+    description: Outbound traffic from private networks
     type: IPv4
     expression: IsPrivateIP(SrcIP) && IsPublicIP(DstIP)
     severity: low
@@ -457,12 +333,12 @@ rules:
 
 ### Complex Expressions
 
-Combine multiple conditions for sophisticated detections:
+Combine conditions to narrow a rule:
 
 ```yaml
 rules:
   - name: Suspicious_HTTP_Upload
-    description: Detect large POST requests with suspicious user agents
+    description: Large POST requests from command-line user agents
     type: HTTP
     expression: |
       Method == "POST" && 
@@ -476,12 +352,12 @@ rules:
 
 ### Field Access
 
-Access nested fields using dot notation:
+Access nested fields with dot notation:
 
 ```yaml
 rules:
   - name: DNS_Large_Query
-    description: Detect DNS queries with long domain names
+    description: DNS queries with long domain names
     type: DNS
     expression: len(Questions) > 0 && len(Questions[0].Name) > 100
     severity: medium
@@ -492,7 +368,7 @@ rules:
 
 ## Alert Structure
 
-When a rule matches, an alert is generated with the following information:
+When a rule matches, netcap writes an alert with these fields:
 
 ```go
 type Alert struct {
@@ -512,12 +388,9 @@ type Alert struct {
 }
 ```
 
-Alerts are written to `Alert.ncap.gz` in the output directory and can be analyzed like any other audit record:
+This is an excerpt. Alerts also carry `DetectedAt` (processing time), `TimestampBasis`, `RuleDigest`, `RuleExpression`, the threshold configuration and evidence references. Read the emitted fields before you join alerts across captures.
 
-The excerpt is not the complete current schema. `DetectedAt` records processing
-time separately; `TimestampBasis`, `RuleDigest`, `RuleExpression`, threshold
-configuration and evidence references preserve interpretation/provenance. Read
-the emitted fields before joining alerts across captures.
+Alerts go to `Alert.ncap.gz` in the output directory and can be analyzed like any other audit record:
 
 ```bash
 # View all alerts
@@ -530,30 +403,30 @@ net dump -read Alert.ncap.gz -filter "Severity == 'critical'"
 net dump -read Alert.ncap.gz -filter "RuleName in ['SSH_Bruteforce_Attempt', 'SSH_Tunnel_Detection']"
 ```
 
-## MITRE ATT&CK Integration
+## MITRE ATT\&CK Integration
 
-NETCAP rules can be mapped to MITRE ATT&CK tactics and techniques to provide context about detected threats.
+Map rules to MITRE ATT\&CK techniques to give alerts context.
 
 ### Common Technique Mappings
 
-| Technique ID | Name | Use Case |
-|--------------|------|----------|
-| T1046 | Network Service Scanning | Port scans, service enumeration |
-| T1071.001 | Web Protocols | HTTP/HTTPS C2 communication |
-| T1071.004 | DNS | DNS tunneling, exfiltration |
-| T1110 | Brute Force | Password guessing attacks |
-| T1190 | Exploit Public-Facing Application | Web application attacks |
-| T1021.004 | SSH | Remote access via SSH |
-| T1041 | Exfiltration Over C2 Channel | Data exfiltration |
-| T1048 | Exfiltration Over Alternative Protocol | Non-standard exfiltration methods |
-| T1572 | Protocol Tunneling | Encapsulation for evasion |
+| Technique ID | Name                                   | Use Case                          |
+| ------------ | -------------------------------------- | --------------------------------- |
+| T1046        | Network Service Scanning               | Port scans, service enumeration   |
+| T1071.001    | Web Protocols                          | HTTP/HTTPS C2 communication       |
+| T1071.004    | DNS                                    | DNS tunneling, exfiltration       |
+| T1110        | Brute Force                            | Password guessing attacks         |
+| T1190        | Exploit Public-Facing Application      | Web application attacks           |
+| T1021.004    | SSH                                    | Remote access via SSH             |
+| T1041        | Exfiltration Over C2 Channel           | Data exfiltration                 |
+| T1048        | Exfiltration Over Alternative Protocol | Non-standard exfiltration methods |
+| T1572        | Protocol Tunneling                     | Encapsulation for evasion         |
 
 ### Example with MITRE Mapping
 
 ```yaml
 rules:
   - name: SQL_Injection_Attempt
-    description: Detect SQL injection patterns in HTTP requests
+    description: SQL injection patterns in HTTP requests
     type: HTTP
     expression: MatchesPattern(URL, "(?i)(union.*select|insert.*into|delete.*from)")
     severity: critical
@@ -570,7 +443,7 @@ rules:
 rules:
   # Port Scanning
   - name: TCP_SYN_Observation
-    description: Observe an initiating SYN; a single packet is not a scan
+    description: Initiating SYN packets. Add a threshold to detect scans
     type: TCP
     expression: SYN && !ACK && !RST
     severity: medium
@@ -580,7 +453,7 @@ rules:
 
   # ICMP Reconnaissance
   - name: ICMP_Echo_Request
-    description: Observe an echo request; aggregate distinct destinations to assess a sweep
+    description: ICMP echo requests. Count distinct destinations to find a sweep
     type: ICMPv4
     expression: Type == 8
     severity: low
@@ -595,7 +468,7 @@ rules:
 rules:
   # DNS Exfiltration
   - name: DNS_Tunneling
-    description: Detect suspiciously large DNS queries
+    description: Very long DNS query names
     type: DNS
     expression: len(Questions) > 0 && len(Questions[0].Name) > 100
     severity: high
@@ -605,7 +478,7 @@ rules:
 
   # Large Upload
   - name: Large_HTTP_Upload
-    description: Detect large HTTP uploads
+    description: Large HTTP uploads
     type: HTTP
     expression: Method == "POST" && ReqContentLength > 50000000
     severity: high
@@ -620,7 +493,7 @@ rules:
 rules:
   # IRC C2
   - name: TCP_IRC_Port_Observation
-    description: Observe common IRC destination ports; neither IRC nor C2 is confirmed
+    description: TCP traffic to the common IRC ports 6667 to 6669
     type: TCP
     expression: DstPort >= 6667 && DstPort <= 6669
     severity: low
@@ -629,7 +502,7 @@ rules:
 
   # Suspicious Port
   - name: TCP_31337_Observation
-    description: Observe a port associated with some historical tools; no malware verdict
+    description: TCP traffic on port 31337, used by some older tools
     type: TCP
     expression: DstPort == 31337 || SrcPort == 31337
     severity: low
@@ -643,7 +516,7 @@ rules:
 rules:
   # SQL Injection
   - name: SQL_Injection
-    description: Detect SQL injection attempts
+    description: SQL injection attempts
     type: HTTP
     expression: MatchesPattern(URL, "(?i)(union.*select|insert.*into)")
     severity: critical
@@ -653,7 +526,7 @@ rules:
 
   # Directory Traversal
   - name: Directory_Traversal
-    description: Detect path traversal attempts
+    description: Path traversal attempts
     type: HTTP
     expression: MatchesPattern(URL, "\\.\\./")
     severity: high
@@ -666,121 +539,124 @@ rules:
 
 ### Rule Design
 
-1. **Be Specific**: Target specific behaviors rather than broad patterns
-   ```yaml
-   # Good - specific
-   expression: Method == "POST" && DstPort == 80 && ReqContentLength > 10000000
-   
-   # Bad - too broad
-   expression: ReqContentLength > 0
-   ```
+1.  **Be specific**: target specific behaviors rather than broad patterns.
 
-2. **Balance False Positives**: Adjust thresholds to minimize false alerts
-   ```yaml
-   # May generate false positives
-   expression: DstPort == 22
-   
-   # Better - more specific
-   expression: DstPort == 22 && SYN && !ACK && IsPublicIP(SrcIP)
-   ```
+    ```yaml
+    # Good - specific
+    expression: Method == "POST" && DstPort == 80 && ReqContentLength > 10000000
 
-3. **Use Appropriate Severity**: Match severity to actual threat level
-   - `low`: Informational, minor anomalies
-   - `medium`: Suspicious activity, requires investigation
-   - `high`: Likely malicious activity
-   - `critical`: Active attacks, immediate response needed
+    # Bad - too broad
+    expression: ReqContentLength > 0
+    ```
+2.  **Limit false positives**: add conditions until the rule matches what you mean.
+
+    ```yaml
+    # May generate false positives
+    expression: DstPort == 22
+
+    # Better - more specific
+    expression: DstPort == 22 && SYN && !ACK && IsPublicIP(SrcIP)
+    ```
+3. **Match severity to impact**:
+   * `low`: informational, minor anomalies
+   * `medium`: suspicious activity that needs investigation
+   * `high`: likely malicious activity
+   * `critical`: active attacks that need an immediate response
 
 ### Rule Organization
 
-1. **Group Related Rules**: Create separate files for different categories
-   ```
-   internal/rules/
-   ├── reconnaissance.yml
-   ├── exfiltration.yml
-   ├── malware.yml
-   └── web_attacks.yml
-   ```
+1.  **Group related rules**: use a separate file per category.
 
-2. **Use Descriptive Names**: Make rule purpose clear from name
-   ```yaml
-   # Good
-   name: SSH_Bruteforce_External_Source
-   
-   # Bad
-   name: Rule_1
-   ```
+    ```
+    rules/
+    ├── reconnaissance.yml
+    ├── exfiltration.yml
+    ├── malware.yml
+    └── web_attacks.yml
+    ```
+2.  **Use descriptive names**:
 
-3. **Add Comprehensive Tags**: Enable filtering and analysis
-   ```yaml
-   tags: ["protocol:ssh", "attack:bruteforce", "source:external"]
-   ```
+    ```yaml
+    # Good
+    name: SSH_Bruteforce_External_Source
+
+    # Bad
+    name: Rule_1
+    ```
+3.  **Add tags** so you can filter and analyze alerts:
+
+    ```yaml
+    tags: ["protocol:ssh", "attack:bruteforce", "source:external"]
+    ```
 
 ### Testing Rules
 
-1. **Test Against Known Traffic**: Verify rules work as expected
-   ```bash
-   # Test rule file
-   net capture -read traffic.pcap -rules test_rules.yml -out test_output
-   
-   # Check generated alerts
-   net dump -read test_output/Alert.ncap.gz
-   ```
+1.  **Test against known traffic**:
 
-2. **Monitor Alert Volume**: Ensure rules don't generate excessive alerts
-   ```bash
-   # Count alerts per rule
-    net dump -read Alert.ncap.gz -json | python3 -c 'import collections,json,sys; print(collections.Counter(json.loads(line)["RuleName"] for line in sys.stdin))'
-   ```
+    ```bash
+    # Test rule file
+    net capture -read traffic.pcap -rules test_rules.yml -out test_output
 
-3. **Review False Positives**: Refine rules based on real-world results
-   ```bash
-   # Review specific rule alerts
-   net dump -read Alert.ncap.gz -filter "RuleName == 'SSH_Bruteforce'"
-   ```
+    # Check generated alerts
+    net dump -read test_output/Alert.ncap.gz
+    ```
+2.  **Watch the alert volume**:
+
+    ```bash
+    # Count alerts per rule
+     net dump -read Alert.ncap.gz -json | python3 -c 'import collections,json,sys; print(collections.Counter(json.loads(line)["RuleName"] for line in sys.stdin))'
+    ```
+3.  **Review false positives and refine the rule**:
+
+    ```bash
+    # Review specific rule alerts
+    net dump -read Alert.ncap.gz -filter "RuleName == 'SSH_Bruteforce'"
+    ```
 
 ### Performance Optimization
 
-1. **Limit Regex Complexity**: Simple patterns are faster
-   ```yaml
-   # Fast
-   expression: Method == "POST"
-   
-   # Slower
-   expression: MatchesPattern(Method, "^(POST|PUT|DELETE)$")
-   ```
+1.  **Keep regexes simple**:
 
-2. **Order Conditions**: Place fast checks first
-   ```yaml
-   # Good - fast check first
-   expression: DstPort == 80 && MatchesPattern(URL, "complex_regex")
-   
-   # Suboptimal - slow check first
-   expression: MatchesPattern(URL, "complex_regex") && DstPort == 80
-   ```
+    ```yaml
+    # Fast
+    expression: Method == "POST"
 
-3. **Use Helper Functions**: Optimized native implementations
-   ```yaml
-   # Prefer
-   expression: IsPrivateIP(SrcIP)
-   
-   # Over
-   expression: InSubnet(SrcIP, "10.0.0.0/8") || InSubnet(SrcIP, "172.16.0.0/12")
-   ```
+    # Slower
+    expression: MatchesPattern(Method, "^(POST|PUT|DELETE)$")
+    ```
+2.  **Put cheap checks first**:
+
+    ```yaml
+    # Good - fast check first
+    expression: DstPort == 80 && MatchesPattern(URL, "complex_regex")
+
+    # Suboptimal - slow check first
+    expression: MatchesPattern(URL, "complex_regex") && DstPort == 80
+    ```
+3.  **Use helper functions**, which are native and fast:
+
+    ```yaml
+    # Prefer
+    expression: IsPrivateIP(SrcIP)
+
+    # Over
+    expression: InSubnet(SrcIP, "10.0.0.0/8") || InSubnet(SrcIP, "172.16.0.0/12")
+    ```
 
 ## Troubleshooting
 
 ### Rule Not Triggering
 
-1. **Check rule is enabled**: `enabled: true`
-2. **Verify record type**: Ensure rule type matches audit records
-3. **Test expression**: Use filter on dump command to test expression
-4. **Check field names**: Use `-fields` flag to see available fields
+1. Check that the rule is enabled: `enabled: true`.
+2. Check that the rule `type` matches the audit record type.
+3. Test the expression with `-filter` on the `dump` command.
+4. Check field names with the `-fields` flag.
 
 ### Too Many Alerts
 
-1. **Increase specificity**: Add more conditions to reduce false positives
-2. **Adjust thresholds**: Increase numeric thresholds
-3. **Check deduplication**: Ensure deduplication window is appropriate
+1. Add conditions to make the rule more specific.
+2. Raise numeric thresholds.
+3. Check that the deduplication window suits the rule.
 
 ### Expression Errors
 
@@ -799,7 +675,7 @@ rules:
 
 ## Next Steps
 
-- Review [example rules](https://github.com/dreadl0ck/netcap/tree/v0.15.2/internal/rules/examples) for more patterns
-- See [FILTERING.md](FILTERING.md) for expression syntax details
-- Check the [expr-lang documentation](https://expr-lang.org/docs/language-definition)
-- Explore MITRE ATT&CK framework at https://attack.mitre.org/
+* Review [example rules](https://github.com/dreadl0ck/netcap/tree/v0.15.2/internal/rules/examples) for more patterns
+* See [FILTERING.md](FILTERING.md) for expression syntax details
+* Check the [expr-lang documentation](https://expr-lang.org/docs/language-definition)
+* Explore the MITRE ATT\&CK framework at https://attack.mitre.org/

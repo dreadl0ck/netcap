@@ -6,23 +6,19 @@ description: A collection of cheatsheets and useful resources
 
 ## Releases
 
-You can find the latest release on the releases page on GitHub:
+The latest release is on the GitHub releases page:
 
 {% embed url="https://github.com/dreadl0ck/netcap/releases" %}
 
 ## Publications
 
-In this paper, we explore Graph based analysis using Maltego to visualise data from NETCAP during a forensic investigation:
+This paper explores graph-based analysis with Maltego to visualise NETCAP data during a forensic investigation:
 
 ### Thesis
 
-{% file src=".gitbook/assets/mied18 (2).pdf" %}
+{% file src=".gitbook/assets/mied18.pdf" %}
 Implementation and Evaluation of secure and scalable anomaly-based Network Intrusion Detection
 {% endfile %}
-
-### Thesis Presentation
-
-### SecurIT Cup 2018 Presentation
 
 ## External Publications
 
@@ -32,13 +28,11 @@ The authors used the framework to process their recorded PCAP dumps:
 
 ## Cheatsheets
 
-The PDFs below are historical publications, not the v0.15.2 command/schema
-reference. Use [commands](commands.md), [record inspection](filtering-and-export.md)
-and `net COMMAND -h` for current executable examples.
+These PDFs are older cheatsheets and can differ from the current commands and schemas. For up-to-date examples see [commands](commands.md), [record inspection](filtering-and-export.md) and `net COMMAND -h`.
 
 ### List of all supported protocols and fields
 
-{% file src=".gitbook/assets/overview-2 (1).pdf" %}
+{% file src=".gitbook/assets/overview-2.pdf" %}
 
 ### Command Cheatsheet
 

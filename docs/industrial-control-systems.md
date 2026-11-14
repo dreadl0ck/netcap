@@ -1,94 +1,69 @@
 ---
-description: Passive industrial protocol evidence and its interpretation limits.
+description: Which industrial protocols Netcap decodes, and how to hunt in them.
 ---
 
-# Industrial Control Systems
+# Industrial control systems
 
 ## Protocol Support
 
-| Record/protocol | Typical transport | Evidence boundary |
-| --- | --- | --- |
-| S7Comm / S7CommPlus | TPKT/COTP TCP/102 | Classic functions and visible Plus framing; not universal controller/model coverage |
-| Modbus | TCP/502; explicitly configured RTU-over-TCP | Per-function requests/responses, correlation and loss markers |
-| DNP3 | TCP/20000 | Link/application metadata, object headers and group-12 controls |
-| CIP / ENIP | TCP/44818, UDP/2222 | Supported encapsulation/services; inspect selected record type |
-| OPCUA | TCP/4840 | Supported visible framing/metadata; encryption limits payload interpretation |
-| PROFINET | UDP/34964 | Supported CM/DCE-RPC structures |
-| BACnet/IP | UDP/47808 | Supported service/object observations |
-| IEC62351-related decoder | Registered TCP/2404 | Selected recognized formats; the name does not promise complete IEC 60870/MMS coverage |
+| Record/protocol          | Typical transport                           | Coverage                                                             |
+| ------------------------ | ------------------------------------------- | -------------------------------------------------------------------- |
+| S7Comm / S7CommPlus      | TPKT/COTP TCP/102                           | Classic S7 functions; S7CommPlus framing only. Not every PLC model.  |
+| Modbus                   | TCP/502; RTU-over-TCP on endpoints you list | Per-function requests and responses, correlation, loss markers       |
+| DNP3                     | TCP/20000                                   | Link and application metadata, object headers, group 12 controls     |
+| CIP / ENIP               | TCP/44818, UDP/2222                         | Supported encapsulation and services; check the record type          |
+| OPCUA                    | TCP/4840                                    | Visible framing and metadata; encrypted payloads are unreadable      |
+| PROFINET                 | UDP/34964                                   | CM and DCE-RPC structures                                            |
+| BACnet/IP                | UDP/47808                                   | Service and object observations                                      |
+| IEC62351-related decoder | Registered TCP/2404                         | Selected recognized formats. Does not cover all of IEC 60870 or MMS. |
 
-Use `net capture -overview` for the installed inventory. A record type, a
-well-known port and a full protocol implementation are different claims.
+Run `net capture -overview` to list the decoders and fields in your build.
 
 ## Threat hunting
 
-Collect both directions at an agreed observation point, preserve the original
-capture and inspect health before interpreting negative results. Analyze a copy;
-do not replay control messages to validate a passive finding.
+Capture both directions at an agreed TAP or SPAN port and keep the original capture. Check for capture loss before you trust an empty result. Analyze a copy, and never replay control messages to confirm a finding.
 
-| Workflow | Guide and rule pack |
-| --- | --- |
-| S7 functions, workstation baseline and response limits | [S7 hunt](s7-threat-hunt-AA26-231A.md); `internal/rules/examples/s7comm_hunt.yml` |
-| Modbus writes, banks/ranges and diagnostics | [Modbus hunt](modbus-threat-hunting.md); `internal/rules/examples/modbus_hunt.yml` |
-| DNP3 controls, SBO and point mapping | [DNP3 hunt](dnp3-threat-hunting.md); `internal/rules/examples/dnp3_hunt.yml` |
+A typical hunt starts with a capture from a plant network, for example `plc-network.pcap`: an HMI polls a PLC and writes a few setpoints, and you look for any other host sending writes, restarts or CPU stops. Each guide below follows one such workflow for its protocol.
 
-Site-dependent examples require the site's approved initiators, point/register
-maps and maintenance policy. [Rules](RULES_ENGINE.md) and
-[filtering](FILTERING.md) explain typed expressions and local-time helpers.
+| Workflow                                                         | Guide and rule pack                                                                |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| S7 functions, workstation baseline, CPU stop and download        | [S7 hunt](s7-threat-hunt-AA26-231A.md); `internal/rules/examples/s7comm_hunt.yml`  |
+| Modbus writes, register ranges and diagnostics                   | [Modbus hunt](modbus-threat-hunting.md); `internal/rules/examples/modbus_hunt.yml` |
+| DNP3 controls, restarts, select-before-operate and point mapping | [DNP3 hunt](dnp3-threat-hunting.md); `internal/rules/examples/dnp3_hunt.yml`       |
+
+Some rules need your approved initiators, register or point maps and maintenance windows before they are useful. [Rules](RULES_ENGINE.md) and [filtering](FILTERING.md) cover typed expressions and the local-time helpers.
+
+### Practice captures
+
+The Wireshark sample captures wiki (https://wiki.wireshark.org/SampleCaptures) lists Modbus/TCP, DNP3 and S7comm captures. The ICS-pcap collection by automayt on GitHub and the 4SICS ICS lab captures published by Netresec also contain industrial traffic. Run the guides against these before you use a production capture.
 
 ## Decoder selection off the standard port
 
-The selector compares eligible parsers' evidence specificity; ascending
-registered port order only breaks ties. A weak registered-port signature can
-lose to stronger protocol evidence. Unknown-port UDP checks are datagram-aware;
-MQTT-SN's ambiguous short signature is restricted to its registered ports.
+Netcap decodes industrial protocols by content, so they are found on non-standard ports. When more than one decoder could match a stream, the one with the more specific evidence wins, and registered port order only breaks ties. Short, weak signatures therefore do not hide stronger ones. For UDP on unknown ports, MQTT-SN is only tried on its registered ports.
 
-DNP3 Secure Authentication can be selected by `dnp3` rather than `iec62351`
-off-port because DNP3 validates its link CRC. Recognition does not establish
-cryptographic verification of Secure Authentication. See [selector developer
-references](internals.md#decoder-qualification) for the implementation and
-confusable/reader regression tests.
+Off the standard port, DNP3 Secure Authentication traffic is decoded as `dnp3` rather than `iec62351`, because DNP3 validates its link CRC. Netcap recognizes the traffic and does not verify the authentication.
 
 ## Record timing and direction
 
-Readers map a message's first captured byte to its timestamp and observed
-direction. Stream/transaction records can still be emitted only on completion
-or flush. Packet timestamps, decoder emission order and transaction orientation
-must not be treated as interchangeable; inspect each record's contract.
+A record's timestamp is the first captured byte of the message, and its direction comes from the stream. Stream and transaction records can be written only when the connection completes or flushes, so record order can differ from packet order. Check each record type's field reference before you sort or join on time.
 
 ## S7comm
 
-Classic protocol ID `0x32` exposes function/message/error fields. Ack-Data
-`ErrorClass == 0 && ErrorCode == 0` is header status only. Inspect item results,
-request/PDU reference and controller/process evidence before claiming success.
-For responses the initiator is the destination, not the PLC source address.
+Classic S7 (protocol ID `0x32`) exposes function, message and error fields. An Ack-Data with `ErrorClass == 0 && ErrorCode == 0` only means the header reports no error. Check the item results and the request/PDU reference before you report success. In response records the initiator is the destination (`DstIP`), not the PLC source address.
 
-Plus protocol ID `0x72` exposes supported framing/opcodes. The decoder sets
-`PayloadObscured`; that is a visibility limitation, not proof that every version
-uses the same encryption/integrity scheme. [The S7 guide](s7-threat-hunt-AA26-231A.md)
-records released-rule limitations separately from source corrections.
+S7CommPlus (protocol ID `0x72`) exposes framing and opcodes. Netcap sets `PayloadObscured` because it cannot read the body. See [the S7 guide](s7-threat-hunt-AA26-231A.md).
 
 ## Modbus
 
-The stream decoder distinguishes role, bank, zero-based wire address, quantity,
-values, exceptions and matched/unmatched/ambiguous responses. RTU endpoints need
-explicit `-modbus-rtu-endpoints`. Loss markers qualify missing coverage; a reply
-does not identify a user or independently prove a process effect. Follow the
-[field-level Modbus guide](modbus-threat-hunting.md).
+The stream decoder reports role, bank, zero-based wire address, quantity, values, exceptions, and whether each response is matched, unmatched or ambiguous. RTU endpoints need `-modbus-rtu-endpoints`. Loss markers show where coverage is missing. A reply identifies neither a user nor a process change. See the [Modbus guide](modbus-threat-hunting.md).
 
 ## DNP3
 
-Header/data CRCs qualify framing, not authenticated identity. Point indexes need
-the outstation's device map. Group-12 control blocks are parsed; most other
-values are stepped over, not interpreted. A successful control response is
-distinct from independently observed equipment movement. See [DNP3 limits and
-the v0.15.2 Class 0 correction](dnp3-threat-hunting.md#reconnaissance).
+The header and data CRCs validate framing, not identity. Point indexes mean something only with the outstation's device map. Netcap parses group 12 control blocks and steps over other object values without decoding them. See the [DNP3 guide](dnp3-threat-hunting.md#reconnaissance).
 
 ## CIP
 
-This endpoint excerpt matches the released
-[`CIP` schema](https://github.com/dreadl0ck/netcap/blob/v0.15.2/types/netcap.proto).
-It is not a complete message definition:
+The endpoint fields of the `CIP` record in [`types/netcap.proto`](https://github.com/dreadl0ck/netcap/blob/master/types/netcap.proto) are:
 
 ```proto
 message CIP {
@@ -100,10 +75,11 @@ message CIP {
 }
 ```
 
+This is an excerpt, not the full message.
+
 ## ENIP
 
-The corresponding released endpoint fields are direct fields, not the obsolete
-`PacketContext Context = 9` from older docs:
+The `ENIP` endpoint fields:
 
 ```proto
 message ENIP {
@@ -114,6 +90,4 @@ message ENIP {
 }
 ```
 
-Generate bindings from the tagged `types/netcap.proto`, never from partial
-documentation excerpts. `make docs-check` verifies excerpt field numbers/types
-against that schema.
+Generate bindings from `types/netcap.proto` itself, not from these excerpts.

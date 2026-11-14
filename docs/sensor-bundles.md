@@ -1,63 +1,63 @@
 # Signed sensor bundles
 
-`investigate sensor-seal`, `sensor-import` and `sensor-prune` package completed
-capture output for a receiving sensor namespace. They are separate from the
-live agent/collector TLS transport and from the Ed25519 community database
-publisher. Sensor bundles use HMAC-SHA256 shared-key authentication.
+Use sensor bundles to move finished capture output from one network to another, for example from a sensor on an air-gapped plant network to an analysis workstation. The sensor seals its audit output into a signed bundle. You carry it over on removable media or another file transfer, and the receiving side verifies and imports it.
 
-## Seal completed output
+The commands are `net investigate sensor-seal`, `sensor-import` and `sensor-prune`. They are independent of the live agent/collector connection ([Distributed collection](distributed-collection.md)) and of the Ed25519 community database publisher. Bundles are authenticated with HMAC-SHA256 and a shared key.
 
-First run the [synthetic transfer lab](investigation-walkthrough.md).
-The fixture generator creates a deterministic 32-byte `sensor.key` solely for
-this offline demonstration. It is publicly known and unsuitable for real sensors.
+## Create a key
 
-<!-- docs:run sensor-seal -->
+Create one random key per sensor and give a copy to the receiving side over a channel you trust. Keys are 32 to 4096 bytes read from a file.
+
 ```sh
-net investigate sensor-seal -read doc-fixtures/audit -out doc-fixtures/sealed \
-  -sensor-id docs-lab -key-file doc-fixtures/sensor.key -retention 1h \
-  > doc-fixtures/sealed.json
+openssl rand -out sensor.key 32
+chmod 600 sensor.key
 ```
 
-The command prints a JSON string containing the published directory path under
-`doc-fixtures/sealed/docs-lab/<run-id>/`. The directory contains
-`sensor-bundle.json`; do not invent a run ID. The private store is created with mode 0700.
-An existing group/world-accessible store is rejected rather than silently fixed.
+## Seal output on the sensor
 
-## Verify and import
+Seal the audit directory a capture wrote:
 
-<!-- docs:run sensor-import -->
 ```sh
-python3 -c 'import json; print(json.load(open("doc-fixtures/sealed.json")))' > doc-fixtures/bundle-path.txt
-net investigate sensor-import -read "$(python3 -c 'print(open("doc-fixtures/bundle-path.txt").read().strip())')" \
-  -out doc-fixtures/imported -sensor-id docs-lab -key-file doc-fixtures/sensor.key \
-  -retention 1h > doc-fixtures/imported.json
+net investigate sensor-seal -read /var/netcap/audit -out /var/netcap/sealed \
+  -sensor-id plant-a -key-file /etc/netcap/sensor.key -retention 24h \
+  > sealed.json
 ```
 
-The receiver independently supplies the authorized sensor ID, key, byte and
-retention limits. The upload cannot authorize its own namespace. Verification
-checks manifest authentication, expiry and file hashes; it does not establish
-the identity of every endpoint/user named inside the packet evidence.
+The command prints a JSON string with the path of the new bundle directory, `/var/netcap/sealed/plant-a/<run-id>/`. The directory contains `sensor-bundle.json`. The seal store is created with mode 0700. If an existing store is readable by group or others, the command stops instead of changing its permissions.
 
-| Control | Default/requirement |
-| --- | --- |
-| Key material | 32–4096 bytes read from a file |
-| `-max-bytes` | 1 GiB imported bundle bytes |
-| `-retention` | 24h default; at most 30 days |
-| `-timeout` | 2 minutes |
-| Sensor ID | Lowercase ASCII letters/digits with `_`/`-`, maximum 64 characters |
+Print the bundle path and copy that directory to your transfer media:
 
-For production, generate and distribute secret random keys through the sensor's
-existing credential-management path. HMAC proves possession of a shared secret;
-either holder can create a valid bundle. It is not public-key nonrepudiation.
+```sh
+jq -r . sealed.json
+```
+
+## Verify and import on the receiving side
+
+```sh
+net investigate sensor-import -read /media/usb/plant-a/<run-id> \
+  -out /srv/netcap/imported -sensor-id plant-a -key-file /etc/netcap/plant-a.key \
+  -retention 24h > imported.json
+```
+
+The receiver sets the sensor ID, key, size limit and retention itself. A bundle cannot grant itself a namespace. Import checks the manifest signature, the expiry and every file hash. It cannot confirm who the endpoints or users named in the packets are.
+
+| Option       | Default / requirement                                                   |
+| ------------ | ----------------------------------------------------------------------- |
+| Key material | 32–4096 bytes read from a file                                          |
+| `-max-bytes` | 1 GiB of imported bundle data                                           |
+| `-retention` | 24h by default, at most 30 days                                         |
+| `-timeout`   | 2 minutes                                                               |
+| Sensor ID    | Lowercase ASCII letters and digits with `_` or `-`, up to 64 characters |
+
+HMAC means anyone who holds the key can create a valid bundle. If you need proof of which party signed, bundles do not provide it.
 
 ## Prune expired imports
 
-<!-- docs:run sensor-prune -->
+`sensor-prune` deletes expired imports in the namespace you name:
+
 ```sh
-net investigate sensor-prune -out doc-fixtures/imported -sensor-id docs-lab \
-  -key-file doc-fixtures/sensor.key -retention 1h > doc-fixtures/pruned.json
+net investigate sensor-prune -out /srv/netcap/imported -sensor-id plant-a \
+  -key-file /etc/netcap/plant-a.key -retention 24h > pruned.json
 ```
 
-Pruning removes expired imports in the explicitly authorized namespace; it is a
-deletion operation. In this newly created one-hour lab store, nothing should
-have expired. Source captures and the seal store have independent retention.
+Run it from cron or a systemd timer on the receiving side. It does not touch the original captures or the sensor's seal store. Those have their own retention.

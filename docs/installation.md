@@ -1,38 +1,26 @@
 # Installation
 
-These instructions target the public Go release
-[v0.16.5](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.5).
-Its source revision is recorded in the release's `release-qualification.json`.
-Start with an archive matching your operating system, architecture and native
-runtime; keep the archive's executable and libraries together.
+Download the archive for your operating system and architecture from the [v0.16.5 release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.5). Keep the `net` executable and its `lib/` directory together.
 
 ## Binary Distributions
 
-| Distribution | Runtime requirement |
-| --- | --- |
-| Linux libc | Debian/Ubuntu-compatible runtime; retain `net`, `lib/net.bin` and bundled loader/libraries |
-| Linux musl | Alpine-compatible runtime; use the musl archive rather than the libc archive |
-| macOS DPI | macOS 26+; retain adjacent `lib/` native libraries |
-| macOS nodpi | macOS 15+; no native DPI classification |
-| Windows amd64 nodpi | Driver-free offline client; YARA-X excluded. Live capture/BPF workflows require compatible Npcap and remain unqualified |
-| Standalone firewall | Separate `netcap-firewall-v0.16.5-linux-{amd64,arm64}.tar.gz` archives; not the capture runtime |
+| Distribution        | Requirements                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Linux libc          | Debian/Ubuntu or compatible. Keep `net`, `lib/net.bin` and the bundled loader and libraries together.               |
+| Linux musl          | Alpine or compatible. Use this archive, not the libc one.                                                           |
+| macOS DPI           | macOS 26 or later. Keep the `lib/` directory next to the executable.                                                |
+| macOS nodpi         | macOS 15 or later. No native DPI classification.                                                                    |
+| Windows amd64 nodpi | Offline analysis without a driver, no YARA-X. Live capture and BPF filters need Npcap and are untested.             |
+| Standalone firewall | `netcap-firewall-v0.16.5-linux-{amd64,arm64}.tar.gz`. A separate archive that does not include the capture runtime. |
 
-Linux wrappers load their private runtime; they do not install libraries into
-system directories. macOS libraries use executable-relative install names.
-Full supplier sources/build recipes accompany the macOS runtime asset.
-Both macOS CLI variants are Developer ID signed and notarized; native execution
-was qualified on macOS 26.6.2. The nodpi 15.0 minimum does not certify full
-BPF/YARA operation on a clean macOS 15 machine. Windows Npcap runtime operation
-also remains uncertified. See the release's checksums and qualification receipts.
+On Linux the `net` wrapper loads its own runtime and installs nothing into system directories. Both macOS variants are Developer ID signed and notarized. Checksums are published with each release.
 
 ```sh
 net --version
 net capture -h
 ```
 
-Check that `net --version` resolves the intended executable and reports the
-expected commit/DPI status. A previously installed `net` elsewhere in `PATH` can
-hide the new archive. Continue with the [synthetic first capture](quickstart.md).
+`net --version` should show the version you just installed. If it does not, an older `net` earlier in your `PATH` is taking priority. Continue with [First capture](quickstart.md).
 
 ## Homebrew
 
@@ -42,20 +30,15 @@ brew install netcap
 net --version
 ```
 
-The formula installs its complete native runtime under `libexec`. The tap may
-advance beyond the release documented here; record the installed version when
-reproducing results.
+The formula installs the full native runtime under `libexec`. The tap can be newer than v0.16.5, so note the output of `net --version` when you report or reproduce results.
 
 ## Go Get
 
-`go get` manages dependencies; it does not install current Go executables.
-Clone the release and build its embedded browser assets before compiling Go.
+`go get` does not install the current executables. Clone the release and build the embedded browser assets before compiling the Go code, as described below.
 
 ## Manual Build
 
-Install the Go version declared in `go.mod`, Node/pnpm for the UI, a C toolchain
-and libpcap headers. Native DPI and YARA require additional libraries; the
-following reduced build disables those two optional integrations:
+You need the Go version declared in `go.mod`, Node and pnpm for the UI, a C toolchain and the libpcap headers. Native DPI and YARA need additional libraries. This reduced build leaves both out:
 
 ```sh
 git clone --branch v0.16.5 https://github.com/dreadl0ck/netcap.git
@@ -67,47 +50,27 @@ GOWORK=off go build -tags nodpi,noyara -o net ./cmd/net
 ./net --version
 ```
 
-This is a source build, not the packaged runtime distribution. `nodpi` does not
-remove libpcap requirements. Run it as `./net` so an older executable in `PATH`
-cannot be selected accidentally.
+`nodpi` still needs libpcap. Run the result as `./net` so an older executable in your `PATH` is not picked up.
 
 ## Reproducible Builds via Go Modules
 
-`go.mod`/`go.sum` pin module dependencies. Reproduction also requires a recorded
-source commit, Go/C toolchains, build tags, embedded UI and native libraries.
-Use `GOWORK=off` to avoid local workspace replacements. Dependency pinning alone
-does not prove bit-for-bit reproducibility.
+`go.mod` and `go.sum` pin the module dependencies. For an identical build, also record the source commit, the Go and C toolchains, the build tags, the embedded UI and the native libraries. Set `GOWORK=off` to ignore local workspace replacements.
 
 ## Development Build
 
-For current `master` features, check out the exact reviewed commit instead of
-the `v0.16.5` tag in the build recipe above, then rebuild the embedded UI and Go
-binary together. v0.16.2 already includes `-incremental-http`,
-`-capture-time-idle-expiry` and the three retained-state controls; check
-`investigate -h` for `deliver-alerts`, and `split -h` for inspection/sharding.
-These features do not require a development build; installed help remains the
-reference for the selected executable.
+To build current `master`, check out the commit you want instead of the `v0.16.5` tag in the recipe above, then rebuild the UI and the Go binary together. `net COMMAND -h` shows the flags of the executable you built.
 
-The CGO-free standalone firewall builds independently of the capture UI/native
-dependencies; follow its [quickstart](APPLICATION_FIREWALL.md#quickstart).
-For native capture images, use the [matched builder/runtime](docker-containers.md)
-recipes rather than mixing YARA-X Go bindings with an older C library.
+The standalone firewall is CGO-free and builds without the capture UI or native dependencies. Follow its [quickstart](APPLICATION_FIREWALL.md#quickstart). For native capture images, use the [matched builder/runtime](docker-containers.md) recipes. Do not mix the YARA-X Go bindings with an older C library.
 
-Follow [macOS development](macos-development-setup.md) for platform tooling and
-[testing](tests.md) for scoped verification. Schema generation uses
-`protoc-gen-gogofaster`; it is unnecessary for an unchanged release checkout.
+See [macOS development](macos-development-setup.md) for platform tooling and [testing](tests.md) for running the tests. Schema generation needs `protoc-gen-gogofaster`; you only need it if you change the schema.
 
 ## Cross Compilation
 
-CGO and native dependencies mean `GOOS`/`GOARCH` alone are insufficient. Use
-the platform build recipes in `zeus/scripts/` and supply the matching C compiler,
-headers and runtime. Verify the resulting archive on its target OS.
+CGO and the native dependencies mean that setting `GOOS` and `GOARCH` is not enough. Use the platform build recipes in `zeus/scripts/` with the matching C compiler, headers and runtime, then test the result on the target OS.
 
 ## Buildsystem
 
-[Zeus](https://github.com/dreadl0ck/zeus) drives builds/releases through
-`zeus/commands.yml`; the root Makefile provides test entrypoints. Run `zeus`
-without arguments to inspect available commands.
+[Zeus](https://github.com/dreadl0ck/zeus) drives builds and releases through `zeus/commands.yml`. The root Makefile has the test targets. Run `zeus` without arguments to list the available commands.
 
 ## Optional enrichment
 
@@ -116,7 +79,4 @@ net util -download-dbs
 net util -update-dbs
 ```
 
-Signed clients verify publisher metadata. The default data directory is
-`~/.config/netcap/dbs`; `NC_CONFIG_ROOT` changes its parent. Follow
-[database updates](database-updates.md) for trust, source inventory and retired
-catalogues. Packet-only analysis can proceed without this optional enrichment.
+Signed clients verify the publisher metadata. The databases go to `~/.config/netcap/dbs`; set `NC_CONFIG_ROOT` to change the parent directory. See [database updates](database-updates.md) for trust and sources. Analysis works without them.

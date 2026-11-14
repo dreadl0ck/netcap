@@ -1,81 +1,70 @@
 # Filtering
 
-Choose a filter stage deliberately. BPF selects packets; decoder options select
-producers; typed expressions select records. These controls are not equivalent.
+Three things can narrow what you see, and they work at different stages. BPF drops packets before decoding. Decoder options decide which record types are produced. Typed expressions filter records after capture.
 
 ## Packet filters
 
+Keep only DNS from an office LAN capture:
+
 ```sh
-net capture -read traffic.pcap -out dns-audit -bpf 'udp port 53' -dpi=false
+net capture -read office-lan.pcap -out dns-audit -bpf 'udp port 53' -dpi=false
 ```
 
-BPF requires a working platform libpcap/Npcap path. It can remove the SYN,
-response or handshake a decoder needs. Filtered offline input does not promise
-the same PCAPNG interface metadata as unfiltered input; inspect scope health.
+BPF needs libpcap (Npcap on Windows). It can remove the SYN, the response or the handshake a decoder needs, so filter packets only when you are sure you do not need that context. PCAPNG interface metadata may be missing from filtered output, so check the scope health.
 
 ## Post-capture expressions
 
-Start by discovering fields:
+List the fields of a record file first, then filter:
 
 ```sh
 net dump -read analysis/UDP.ncap.gz -fields
-net dump -read analysis/UDP.ncap.gz -filter 'DstPort == 9999' -json
+net dump -read analysis/UDP.ncap.gz -filter 'DstPort == 53' -json
 net dump -read analysis/Connection.ncap.gz \
   -filter 'DstPort == "443"' -json
 ```
 
-`dump` compiles the expression for the file's type. Connection and TCP/UDP
-ports have different types. Parenthesize combined conditions and quote the
-whole expression for the shell. Match semantics come from the installed
-expr-language environment and helpers, not SQL or BPF syntax.
+`dump` compiles the expression for the type of the file it reads. TCP and UDP ports are numbers, Connection ports are strings, so the two filters above are written differently. Wrap combined conditions in parentheses and quote the whole expression for your shell. The syntax is the expr language, not SQL or BPF.
 
-| Expression shape | Meaning |
-| --- | --- |
-| `DstPort == 443 && SYN && !ACK` | TCP packet condition; not proof of a completed session |
-| `DstPort == "443"` | Connection record port equality |
-| `InSubnet(SrcIP, "192.0.2.0/24")` | Network helper on a record exposing string `SrcIP` |
+| Expression                          | Matches                                        |
+| ----------------------------------- | ---------------------------------------------- |
+| `DstPort == 443 && SYN && !ACK`     | TCP packets that open a connection to port 443 |
+| `DstPort == "443"`                  | Connection records with destination port 443   |
+| `InSubnet(SrcIP, "192.168.1.0/24")` | Records whose `SrcIP` is in the subnet         |
 
-Do not reuse fields across record types without checking `dump -fields`.
-[Rules](RULES_ENGINE.md) use typed record expressions too, but have additional
-threshold/sequence/action behavior.
+Check `dump -fields` before you reuse a field name on another record type. [Rules](RULES_ENGINE.md) use the same typed expressions and add thresholds, sequences and actions.
 
 ## Helper reference
 
-These signatures describe capture-time rules and `dump`'s expr environment,
-not the separate offline-pack expression subset released in Go v0.16.2.
+These helpers work in capture-time rules and in `dump -filter`.
 
-| Helper | Input/result | Example/limit |
-| --- | --- | --- |
-| `InSubnet(ip, cidr)` | Strings → bool | `InSubnet(SrcIP, "192.0.2.0/24")` |
-| `IsPrivateIP(ip)`, `IsPublicIP(ip)` | String → bool | Private includes special-use/documentation ranges, not just RFC1918; it is not a trust decision |
-| `IsApprovedWorkstation(ip)`, `InAllowlist(ip)` | String → bool | Exact loaded IP membership; empty allowlist returns false |
-| `ParsePort(port)` | String → integer | For Connection string ports; validate unexpected input separately |
-| `PortInRange(port, start, end)` | Integers → bool | Inclusive bounds; use `ParsePort` on string ports |
-| `TimeInRange(ts, start, end)` | Unix-nanosecond integers → bool | Inclusive bounds; units must match |
-| `DurationSince(ts)` | Unix-nanosecond integer → elapsed nanoseconds | Uses current wall clock; unsuitable for capture-relative replay windows |
-| `FormatTime(ts, layout)` | Timestamp and Go layout → string | Layout `2006-01-02` is Go syntax, not strftime |
-| `HourOfDay(ts)`, `Weekday(ts)` | Timestamp → local hour / weekday | Process local timezone; weekday 0 is Sunday |
-| `IsBusinessHours(ts, start, end)` | Timestamp/hour integers → bool | Mon–Fri, `[start,end)`, process local timezone; set `TZ=UTC` for reproducible UTC policy |
-| `ContainsAny(text, parts...)` | String and string arguments → bool | Literal substring checks |
-| `MatchesPattern(text, pattern)` | Strings → bool | Regex matching; use `(?i)` for case-insensitivity |
-| `DNSResolutionMatches(...)` | Six typed arguments → bool | Advanced capture-time DNS context helper; see the signature in `internal/filter/filter.go` before use |
+| Helper                                         | Input and result                             | Notes                                                                       |
+| ---------------------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------- |
+| `InSubnet(ip, cidr)`                           | Strings, returns bool                        | `InSubnet(SrcIP, "192.168.1.0/24")`                                         |
+| `IsPrivateIP(ip)`, `IsPublicIP(ip)`            | String, returns bool                         | Private also covers special-use and documentation ranges, not just RFC 1918 |
+| `IsApprovedWorkstation(ip)`, `InAllowlist(ip)` | String, returns bool                         | Exact match against the loaded list. An empty list always returns false.    |
+| `ParsePort(port)`                              | String, returns integer                      | Converts Connection string ports                                            |
+| `PortInRange(port, start, end)`                | Integers, returns bool                       | Inclusive. Use `ParsePort` first on string ports.                           |
+| `TimeInRange(ts, start, end)`                  | Unix-nanosecond integers, returns bool       | Inclusive. All values must use the same unit.                               |
+| `DurationSince(ts)`                            | Unix-nanosecond integer, returns nanoseconds | Uses the current clock, so it does not suit replay of old captures          |
+| `FormatTime(ts, layout)`                       | Timestamp and Go layout, returns string      | Layouts use Go syntax (`2006-01-02`), not strftime                          |
+| `HourOfDay(ts)`, `Weekday(ts)`                 | Timestamp, returns local hour / weekday      | Local timezone. Sunday is 0.                                                |
+| `IsBusinessHours(ts, start, end)`              | Timestamp and hours, returns bool            | Monday to Friday, `[start,end)`, local timezone. Set `TZ=UTC` for UTC.      |
+| `ContainsAny(text, parts...)`                  | String and strings, returns bool             | Literal substring match                                                     |
+| `MatchesPattern(text, pattern)`                | Strings, returns bool                        | Regular expression. Use `(?i)` to ignore case.                              |
+| `DNSResolutionMatches(...)`                    | Six typed arguments, returns bool            | DNS context helper for capture-time rules                                   |
 
-Nested list predicates use expr syntax, for example
-`len(Questions) > 0 && any(Questions, {.Name == "docs.example.test"})` on DNS.
-Guard missing nested data. CSV flattening does not make every flattened column
-a top-level field in every expression environment; inspect the actual schema.
+Filter on nested lists with expr syntax, for example DNS questions for a domain:
 
-## Capture-time compatibility filter
+```
+len(Questions) > 0 && any(Questions, {.Name == "example.com"})
+```
 
-In Go v0.15.2, `capture -filter` is compiled against TCP. Compilation warns
-rather than failing the capture, and evaluation errors can pass records through;
-other record types are not generally filtered. It is **not** an all-record
-filter or a data-minimization boundary. For a predictable analysis workflow,
-retain the capture and apply `dump -filter` to an explicit audit type.
+Check that nested data exists before you read it. CSV columns are flattened, so a CSV column name is not always a field you can use in an expression. Check the actual schema.
 
-## Preserve provenance
+## Capture-time filter
 
-Record the input hash, command, expression, version and output hash when sharing
-an export. A selected record set is not a selected packet capture. Use
-[packet evidence](evidence.md) when the recipient needs original packet bytes
-and a selection manifest.
+`capture -filter` only filters TCP records. If the expression fails to compile, capture continues with a warning, and if evaluating it fails, the record passes through. Don't use it to drop data or to minimise what is stored. Keep the capture and run `dump -filter` on a record file instead.
+
+## Share filtered results
+
+When you share an export, include the input hash, the command, the expression, the Netcap version and the output hash. A filtered set of records is not a filtered packet capture. If the recipient needs the original packets, use [packet evidence](evidence.md), which also records which packets were selected.

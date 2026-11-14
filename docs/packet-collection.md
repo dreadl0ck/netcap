@@ -1,55 +1,46 @@
 # Packet collection
 
-Use a fresh output directory and keep the original capture. Netcap decodes bytes
-present at its input; it cannot reconstruct packets never captured upstream.
+Keep the original capture and write each analysis to a fresh output directory. Netcap decodes the bytes it is given and cannot recover packets that were never captured.
 
-## Offline input
+## Read a capture file
+
+Analyse a PCAP you downloaded, for example an exercise from Malware-Traffic-Analysis.net or a sample from the Wireshark sample captures wiki:
 
 ```sh
-net capture -read traffic.pcap -out analysis -dpi=false -geoDB=false
-net capture -read traffic.pcapng -out analysis-ng -http 127.0.0.1:8080
+net capture -read office-lan.pcap -out analysis -dpi=false -geoDB=false
 ```
 
-The first command exits after flushing. The second explicitly keeps the browser
-interface running. `-read` supports the input selection described by its help;
-quote shell globs when the application, rather than the shell, should expand them.
+The command exits after flushing the output. To browse the results afterwards, add `-http` and the capture keeps serving the web interface:
 
-Current bounded readers accept classic PCAP versions 2.0–2.4, both byte orders,
-and microsecond/nanosecond framing, including gzip input. Historical swapped
-captured/wire-length ordering is handled by version; unequal lengths retain
-truncation evidence (`internal/collector/capture_legacy_test.go`). Unsupported
-versions and truncated/oversized records fail explicitly rather than becoming a
-successful empty capture. Reader support does not imply gzip support in every
-packet-export path; [inspection and splitting](evidence.md#export-packet-evidence)
-document their separate limits.
+```sh
+net capture -read office-lan.pcapng -out analysis-ng -http 127.0.0.1:8080
+```
 
-## Select the observation boundary
+`-read` accepts classic PCAP (versions 2.0 to 2.4, both byte orders, microsecond or nanosecond timestamps), PCAPNG and gzip-compressed files. Quote shell globs if Netcap should expand them. Truncated or oversized records and unsupported versions fail with an error. If a packet's captured length is shorter than its wire length, Netcap records the truncation.
 
-| Control | Stage | Consequence |
-| --- | --- | --- |
-| `-bpf 'udp port 53'` | Packet selection | Nonselected packets never reach decoding; may break stream/handshake context |
-| `-include` / `-exclude` | Decoder selection | Controls emitted record types and downstream inputs |
-| `dump -filter` | Post-capture record selection | Preserves source audit files and filters one known type |
-| `capture -filter` | Legacy capture-time record filter | TCP-only compilation and fail-open error behavior in v0.15.2; not a general filtering/privacy boundary |
+Gzip input works for reading, but not in every packet-export command. See [inspection and splitting](evidence.md#export-packet-evidence) for those limits.
 
-[Filtering](FILTERING.md) provides examples. Reducing visible traffic changes
-detector coverage, connection attribution and evidence completeness.
+## Choose what Netcap sees
+
+| Option                  | Effect                                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------- |
+| `-bpf 'udp port 53'`    | Drops all other packets before decoding. Stream and handshake context can be lost.                      |
+| `-include` / `-exclude` | Chooses which decoders run, and so which record types are written.                                      |
+| `dump -filter`          | Filters one record file after capture. The audit files are left untouched.                              |
+| `capture -filter`       | Filters TCP records only, and lets records through if the expression fails. Use `dump -filter` instead. |
+
+See [Filtering](FILTERING.md) for examples. Hiding traffic changes what detectors can see and which connections they can attribute.
 
 ## Output and shutdown
 
-Local protobuf output normally produces `TYPE.ncap.gz`, with a header and framed
-records. `-json` or `-csv` selects another writer; flags do not imply all formats
-are emitted simultaneously. Higher-level records may be written only during
-flush/finalization. Let Ctrl-C complete graceful cleanup before copying output.
+By default Netcap writes one `TYPE.ncap.gz` file per record type, each with a header followed by framed records. Use `-json` or `-csv` to pick a different writer. Some higher-level records are only written when the capture is flushed, so stop live captures with Ctrl-C and wait for cleanup to finish before you copy the output.
 
-| Artifact | Purpose |
-| --- | --- |
-| `*.ncap.gz` | Audit records by type |
-| `capture-manifest.json` | Input/configuration identity, scope and admission/drop observations when enabled |
-| `Hosts.json` | Capture-derived identities for `net triage` |
-| `TCPReassemblyHealth.json` | Reassembly policy/rejection evidence where produced |
-| `stream-evidence/` | Directional bytes/manifests when connection evidence is enabled |
+| File                       | Contents                                                                |
+| -------------------------- | ----------------------------------------------------------------------- |
+| `*.ncap.gz`                | Audit records by type                                                   |
+| `capture-manifest.json`    | Input, configuration, scope, and admission/drop counters when enabled   |
+| `Hosts.json`               | Hosts identified in the capture, used by `net triage`                   |
+| `TCPReassemblyHealth.json` | Reassembly policy and rejected segments                                 |
+| `stream-evidence/`         | Per-direction stream bytes and manifests when connection evidence is on |
 
-Review actual artifacts before scripting their existence; enabled decoders,
-traffic and options determine output. [Evidence](evidence.md) explains scope and
-health. [Live capture](live-collection.md) covers privileges and interfaces.
+Which files you get depends on the decoders, the traffic and the options you set, so check the directory before scripting around a file. [Evidence](evidence.md) covers scope and health. [Live capture](live-collection.md) covers privileges and interfaces.

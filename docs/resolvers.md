@@ -1,151 +1,117 @@
 ---
-description: Lookup everything!
+description: Resolve IP addresses, MAC addresses and ports to locations, vendors and names.
 ---
 
 # Resolvers
 
-## Motivation
+Resolvers add context to the addresses in a capture: an IP address becomes a country and network, a MAC address becomes a manufacturer, a port becomes a service name. They read local databases and cache results in memory.
 
-Lots of information is not available on first sight, and we need to combine our data with knowledge from other data sources to make it easier to understand for humans.
+## Install the databases
 
-Think of resolving IP addresses to geolocations, hardware addresses to manufacturers, or identifying service names from port numbers. The filtered Maltego transforms can optionally suppress popular domains; popularity does not establish legitimacy or safety.
+```sh
+net util -download-dbs
+net util -update-dbs
+```
 
-The resolvers package provides primitives for such tasks, and if possible, caches results in memory for better performance.
+The first command installs the databases, the second refreshes them. See [Database updates](database-updates.md) for details and troubleshooting.
 
-## Design
+The databases live in `~/.config/netcap/dbs`. Set `NC_CONFIG_ROOT` to use another directory.
 
-External data sources are stored in a central directory on the system, which defaults to **~/.config/netcap/dbs** but can be overridden using the **NC\_CONFIG\_ROOT** environment variable.
-
-| Community file | Purpose |
-| --- | --- |
-| `netcap.sqlite` | NVD CVEs, structured CPE applicability and external reference links; SQLite schema 2 |
-| `dbip-city-lite.mmdb`, `dbip-asn-lite.mmdb`, `geoip-sources.json` | DB-IP Lite location/ASN and source inventory |
-| `service-names-port-numbers.csv` | IANA port names |
-| `regexes.yaml` | UA-parser software/OS signatures |
-| `hasshdb.json` | Pinned HASSH SSH software catalogue in signed releases |
-| `netapi-top1m.csv` | NetAPI Top 1M popularity ranking (CC BY 4.0) |
-| `RELEASE_MANIFEST.json`, `DATABASE_NOTICES.txt` | Exact file/source inventory and full applicable notices |
+| File                                                              | Purpose                                                           |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `netcap.sqlite`                                                   | NVD CVEs, CPE applicability and reference links (SQLite schema 2) |
+| `dbip-city-lite.mmdb`, `dbip-asn-lite.mmdb`, `geoip-sources.json` | DB-IP Lite location and ASN, and the source list                  |
+| `service-names-port-numbers.csv`                                  | IANA port names                                                   |
+| `regexes.yaml`                                                    | UA-parser software and OS signatures                              |
+| `hasshdb.json`                                                    | HASSH SSH software catalogue                                      |
+| `netapi-top1m.csv`                                                | NetAPI Top 1M domain popularity ranking (CC BY 4.0)               |
+| `RELEASE_MANIFEST.json`, `DATABASE_NOTICES.txt`                   | File and source inventory, and the licence notices                |
 
 ## Configuration
 
-Use `net capture -h` for current defaults and the `-reverse-dns`, `-local-dns`,
-`-macDB`, `-serviceDB` and `-geoDB` options. `-ja3DB` is retired. Configuration
-and environment overrides are described in:
+Run `net capture -h` for the defaults of `-reverse-dns`, `-local-dns`, `-macDB`, `-serviceDB` and `-geoDB`. Config files and environment variables are described here:
 
-{% page-ref page="configuration.md" %}
-
-## Quickstart
-
-Run `net util -download-dbs`; repeat with `net util -update-dbs` to refresh.
-Signed-release clients verify the embedded publisher root, signing certificate,
-expiry, monotonic release sequence and exact archive/source hashes. Explicit
-operator registries remain available for private publishers.
-
-Netcap v0.14.0 uses the frozen `/dbs/v3/` compatibility snapshot. New signed
-clients use `/dbs/signed/v1/`. Legacy v1/v2 distribution returns HTTP 410.
-
-## DNS
-
-Reverse DNS lookups can be used to identify the domains associated with an address. By default the standard system resolver will be contacted for this.
-
-### Passive / Local DNS
-
-Passive DNS will read the hosts mapping from a file and load it into memory, instead of looking up encountered adresses by contacting a resolver. This can be used to provide names for known hosts in your network for example.
-
-To avoid producing lookups that leave the network, you can generate a hosts mapping based on the DNS traffic in your dumpfile using tshark:
-
-```text
-$ tshark -r traffic.pcap -q -z hosts
-```
-
-And provide it to netcaps resolver via a **hosts** file in the database directory.
-
-## Domain Whitelisting
-
-The 3 filtered Maltego transforms use **managed NetAPI Top 1M by default** from
-`dbs/netapi-top1m.csv`, acquired by the database publisher and included in new
-signed database releases. Update databases before using these defaults. The
-retired Alexa `dbs/domain-whitelist.csv` remains inert.
-
-Use `net transform --no-domain-popularity <transform> <Maltego arguments>` to
-disable suppression. An unavailable or invalid selected list fails the transform;
-initialization reuses the validated list instead of parsing it twice.
-
-To override NetAPI, place an independently obtained CSV outside the managed database directory, for
-example `~/.config/netcap/user-data/popularity.csv`. Pass its explicit path before
-the transform name and the usual Maltego positional arguments:
-
-```text
-net transform --domain-popularity-list /absolute/path/popularity.csv --domain-popularity-format rank-domain toHTTPHostsFiltered <Maltego arguments>
-```
-
-| `--domain-popularity-format` | Required CSV shape |
-| --- | --- |
-| `rank-domain` (default; Tranco-style) | 2 columns: positive integer rank, registrable domain; no header |
-| `netapi` | 2 columns; exact `NetAPI_Rank,Domain` header |
-| `majestic` | 12 columns; exact `GlobalRank,TldRank,Domain,TLD,RefSubNets,RefIPs,IDN_Domain,IDN_TLD,PrevGlobalRank,PrevTldRank,PrevRefSubNets,PrevRefIPs` header; uses GlobalRank and Domain |
-
-The 3 filtered transforms (`toHTTPHostsFiltered`, `toIncomingConnsFiltered`,
-`toOutgoingConnsFiltered`) use the same membership rules as their byte-count
-helpers. Parsing accepts quoted CSV and CRLF, normalizes case, a final DNS dot
-and IDNA, and rejects IPs, unknown/public suffixes, malformed names, subdomain-only
-list entries and duplicate ranks. Duplicate normalized domains are counted once.
-ICANN and PRIVATE Public Suffix List rules, including wildcards and exceptions,
-keep `alice.github.io` separate from `bob.github.io`; matching never takes just
-the last 2 labels. HTTP Host matching also accepts a numeric port in 1–65535.
-
-Limits are 128 MiB and 1,000,000 data rows. An explicit invalid/missing file fails
-CLI preflight. Counts (`rows`, `loaded`, `duplicates`, `invalid`, `skipped`) are reported;
-failed loads publish no partial suppression data. Core database replacement never
-writes the external file. Paths inside `dbs`, including resolved symlinks, are
-rejected for overrides. The managed importer skips syntactically valid entries
-that are PSL roots, use unknown/retired suffixes or are not registrable domains;
-external overrides remain strict. Skipping prevents a shared suffix from
-suppressing every tenant beneath it. The distributed CSV is unchanged.
-
-Rust provides the equivalent `netcap_resolvers::popularity::{Config,List}` API
-and resolver-runtime configuration. Its capture CLI accepts
-`--domain-popularity-list` and `--domain-popularity-format` (also YAML keys),
-loads and reports the optional list, but does not suppress capture records.
-Rust has no filtered Maltego transforms; this is not transform parity. Its help
-and successful-load diagnostic explicitly say `no suppression of capture records`.
-
-NetAPI / CodeRockers LTD publishes the [Top 1M](https://netapi.com/top-1-mln-websites/)
-under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-[ToS §4.3](https://netapi.com/tos/#open-data), effective 2026-11-07, expressly
-overrides §4.2's redistribution restrictions for this CSV. Slava clarified the
-Majestic Million (CC BY 3.0) and Chrome UX Report (CC BY 4.0) inputs and confirmed
-bundling/mirroring in [issue #102](https://github.com/dreadl0ck/netcap/issues/102#issuecomment-6711862258).
-The publisher policy and archive notices retain attribution and the dataset link.
+{% content-ref url="configuration.md" %}
+[configuration.md](configuration.md)
+{% endcontent-ref %}
 
 ## Geolocation
 
-`-geoProviders dbip,geolite2` uses bundled DB-IP Lite first and optional
-user-installed GeoLite2 second. Use `dbip`, `geolite2` or `geolite2,dbip` to
-control loading and priority; `NC_GEO_PROVIDERS` sets the same order.
-Location and ASN fall back separately. The Databases page saves an order for new
-captures and shows availability, loaded providers and build timestamps.
-`-geoDB=false` disables enrichment.
+Netcap resolves public IP addresses to a country, a city and an ASN. Use it to answer questions like "which countries and networks did this host talk to?":
 
-DB-IP Lite (CC BY 4.0) is credited through the web UI footer and archive notices.
-City names are approximate. User-installed MaxMind files are never included in
-community archives. See [provider and installation instructions](https://github.com/dreadl0ck/netcap/blob/v0.15.2/internal/dbs/README.md#geolocation-providers).
+```sh
+net capture -read traffic.pcap -out geo-audit
+net dump -read geo-audit/Connection.ncap.gz -csv \
+  -filter 'SrcIP == "192.168.1.20"' \
+  -select DstIP,DstGeoLocation,DstASN,Sni
+```
 
-## Vendor Identification
+Private addresses and addresses that cannot be resolved have empty location fields. `Host` records also carry a `Geolocation` field per address.
 
-MAC vendor lookup uses the embedded OUI table. The macaddress.io download and
-external catalogue reader are retired; `-macDB` does not fetch that service.
+By default Netcap uses DB-IP Lite. `-geoProviders dbip,geolite2` also loads MaxMind GeoLite2 if you installed it yourself. The first provider in the list takes priority, and location and ASN fall back separately. Use `dbip`, `geolite2` or `geolite2,dbip` to pick the order. `NC_GEO_PROVIDERS` sets the same order. The Databases page of the web UI saves an order for new captures and shows which providers are loaded. `-geoDB=false` turns geolocation off.
 
-## Service Identification
+DB-IP Lite (CC BY 4.0) is credited in the web UI footer and in the archive notices. City names are approximate. Netcap archives do not include MaxMind files because GeoLite2 needs your own MaxMind account and licence. See the [provider and installation instructions](https://github.com/dreadl0ck/netcap/blob/master/internal/dbs/README.md#geolocation-providers).
 
-Port names come from IANA's CSV mapping. They describe registered assignments,
-not confirmation of the application actually using a port:
+## DNS
 
-{% embed url="https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv" caption="IANA service names and ports" %}
+Reverse DNS finds the domain names for an address. By default Netcap asks the system resolver (`-reverse-dns`).
 
-## TLS Fingerprints
+### Local DNS
 
-JA3/JA4 fingerprint calculation does not imply a catalogue lookup. The community
-release ships no JA3 identification corpus; JA4+ remains an opt-in source build.
-Legacy CMS and DHCP OS catalogue enrichment is disabled. Packet decoding and
-built-in service-signature classification remain available without those files.
+To avoid lookups that leave your network, give Netcap a hosts file instead (`-local-dns`). Netcap loads it into memory and uses it in place of a resolver. You can also use it to name the hosts on your own network.
+
+You can generate the file from the DNS traffic in your capture with tshark:
+
+```
+$ tshark -r traffic.pcap -q -z hosts
+```
+
+Save the output as a file named `hosts` in the database directory.
+
+## Domain popularity filter
+
+The three filtered Maltego transforms (`toHTTPHostsFiltered`, `toIncomingConnsFiltered`, `toOutgoingConnsFiltered`) hide popular domains, so the graph shows the domains that are unusual for your traffic. They use the NetAPI Top 1M list in `dbs/netapi-top1m.csv`, which comes with the database downloads. Update the databases before you use the filter.
+
+To see all domains, pass `--no-domain-popularity`:
+
+```
+net transform --no-domain-popularity <transform> <Maltego arguments>
+```
+
+If the selected list is missing or invalid, the transform fails.
+
+### Use your own list
+
+Place the CSV outside the `dbs` directory, for example `~/.config/netcap/user-data/popularity.csv`. Files inside `dbs`, including symlinks that resolve into it, are rejected. Pass the path before the transform name:
+
+```
+net transform --domain-popularity-list /absolute/path/popularity.csv --domain-popularity-format rank-domain toHTTPHostsFiltered <Maltego arguments>
+```
+
+| `--domain-popularity-format`          | CSV format                                                                                                                                                                                |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rank-domain` (default, Tranco style) | 2 columns: positive integer rank, registrable domain. No header.                                                                                                                          |
+| `netapi`                              | 2 columns, with the header `NetAPI_Rank,Domain`                                                                                                                                           |
+| `majestic`                            | 12 columns, with the header `GlobalRank,TldRank,Domain,TLD,RefSubNets,RefIPs,IDN_Domain,IDN_TLD,PrevGlobalRank,PrevTldRank,PrevRefSubNets,PrevRefIPs`. Netcap uses GlobalRank and Domain. |
+
+The parser accepts quoted CSV and CRLF line endings. It normalises case, a trailing dot and IDNA names. It rejects IP addresses, unknown or public suffixes, malformed names, entries that are only a subdomain, and duplicate ranks. Duplicate domains after normalisation count once. Matching uses the Public Suffix List (ICANN and PRIVATE rules, including wildcards and exceptions), so `alice.github.io` and `bob.github.io` stay separate. An HTTP Host header may carry a port from 1 to 65535.
+
+The limits are 128 MiB and 1,000,000 data rows. A missing or invalid file fails before the transform starts, and a failed load applies no partial list. Netcap reports the counts `rows`, `loaded`, `duplicates`, `invalid` and `skipped`. When it builds the managed list, Netcap skips public suffix roots, unknown suffixes and names that are not registrable domains, so one shared suffix cannot hide every site under it. Your own list is checked strictly instead.
+
+The Rust capture CLI also accepts `--domain-popularity-list` and `--domain-popularity-format` (and the same YAML keys). It loads and reports the list but does not filter capture records, and there are no filtered Maltego transforms in Rust.
+
+NetAPI / CodeRockers LTD publishes the [Top 1M](https://netapi.com/top-1-mln-websites/) under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Its [terms of service, section 4.3](https://netapi.com/tos/#open-data) allow redistribution of this CSV. The publisher also confirmed the Majestic Million (CC BY 3.0) and Chrome UX Report (CC BY 4.0) inputs and permission to bundle and mirror them in [issue #102](https://github.com/dreadl0ck/netcap/issues/102#issuecomment-6711862258). The archive notices keep the attribution and the dataset link.
+
+## MAC vendors
+
+Netcap looks up MAC address vendors in an OUI table built into the binary (`-macDB`). It does not call macaddress.io.
+
+## Service names
+
+Port names come from IANA's CSV list and tell you what a port is registered for. They do not tell you what runs on it. For that, see [Service identification and DPI](deep-packet-inspection.md).
+
+{% embed url="https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv" %}
+
+## TLS fingerprints
+
+Netcap computes a fingerprint from each TLS client hello. It does not ship a list that maps fingerprints to software. See [TLS fingerprinting](tls-fingerprinting.md) for how to check them against a list of your own.

@@ -1,9 +1,8 @@
 # CSV, JSON and record inspection
 
-`net dump` reads audit files. It is the command for record inspection and
-file-format conversion; `net export` is a Prometheus-oriented exporter.
+`net dump` reads audit files. Use it to look at records and to convert them to CSV or JSON. (`net export` is a different command that feeds Prometheus.)
 
-## Inspect before selecting
+## Look at a record file
 
 ```sh
 net dump -read analysis/UDP.ncap.gz -header
@@ -11,43 +10,29 @@ net dump -read analysis/UDP.ncap.gz -fields
 net dump -read analysis/UDP.ncap.gz -json
 ```
 
-`-fields` lists protobuf names one per line. JSON mode emits newline-delimited
-objects, not one enclosing array. Use the record schema for types and meanings.
-The structured terminal display is the default; explicitly request CSV or JSON
-for machine-readable output.
+`-header` prints the file header, and `-fields` lists the field names, one per line. JSON output is one object per line, not a single array. Without `-csv` or `-json`, `dump` prints a structured view for the terminal.
 
-## Export selected columns
+## Export columns to CSV
+
+Pull the timestamp and ports out of a DNS capture:
 
 ```sh
 net dump -read analysis/UDP.ncap.gz -csv -sep ',' \
   -select Timestamp,SrcPort,DstPort > udp.csv
 ```
 
-CSV's default separator is `;`, so pass `-sep ','` when consumers expect commas.
-`-select` orders/selects fields but does not itself request CSV. Nested records,
-maps and repeated values require inspection before mapping to a flat table.
-Treat CSV output as data; spreadsheet tools may interpret cells as formulas.
+The default CSV separator is `;`, so pass `-sep ','` if your tool expects commas. `-select` chooses and orders the columns but does not switch on CSV, so keep `-csv`. Nested records, maps and repeated values do not flatten cleanly, so look at them with `-json` first. Spreadsheet programs can run cell contents as formulas, so don't open CSV from untrusted traffic without checking it.
 
 ## Filter records
 
 ```sh
-net dump -read analysis/UDP.ncap.gz -filter 'DstPort == 9999' -json
+net dump -read analysis/UDP.ncap.gz -filter 'DstPort == 53' -json
 ```
 
-Expressions are typed against this file's record type. Keep shell quoting around
-the expression, and check errors rather than treating failure as zero matches.
-For TCP/UDP numeric ports compare integers; for Connection strings compare
-quoted strings. See [Filtering](FILTERING.md).
+The expression is checked against the record type of the file. Keep the shell quoting around it, and check for errors, because a failing expression is not the same as zero matches. TCP and UDP ports are numbers. Connection ports are strings and need quotes. See [Filtering](FILTERING.md).
 
 ## Time order
 
-Go v0.15.2 enables timestamp ordering for `dump` through `-sort-time`; inspect
-`dump -h` for overrides. Sorting uses bounded-memory temporary files. Stream
-completion and concurrent writers mean original file order can differ from
-capture time. Sorting changes presentation, not the source evidence or packet
-ordering. UTC/string display is separate from raw nanosecond timestamps.
+`dump` can sort records by capture time with `-sort-time`. Check `dump -h` for the options. Sorting uses temporary files, so memory use stays low. Without it, records can come out of capture order, because streams finish at different times and several writers run at once. Sorting changes only the order of the output, not the records. `dump` can show timestamps in UTC, while the stored value is always Unix nanoseconds.
 
-Use a new destination when preserving a prior export: shell `>` truncates an
-existing file. This differs from evidence commands that explicitly refuse
-replacement. For packet-preserving selection and provenance, use
-[`investigate packet-evidence`](evidence.md#export-packet-evidence).
+Shell `>` overwrites an existing file, so write exports to a new name if you want to keep the previous one. To save packets together with a record of what was selected, use [`investigate packet-evidence`](evidence.md#export-packet-evidence).

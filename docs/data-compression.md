@@ -1,25 +1,19 @@
 # Compression
 
-Local protobuf capture output normally uses gzip (`TYPE.ncap.gz`). Disable it
-explicitly when needed:
+Capture output is gzip-compressed by default (`TYPE.ncap.gz`). To write plain files, turn compression off:
 
 ```sh
 net capture -read traffic.pcap -out plain-audit -compress=false -dpi=false
 net dump -read plain-audit/UDP.ncap -json
 ```
 
-`-compress` is the current flag; historical `-comp` examples are obsolete. The
-buffered/parallel gzip implementation trades CPU, buffers and I/O differently
-for each workload. Local writer concurrency and distributed collector gzip are
-not one universal configuration.
+The gzip writer is buffered and parallel, so its CPU, memory and I/O cost depends on your workload.
 
-| Concern | Guidance |
-| --- | --- |
-| Storage | Measure on representative records; there is no universal percentage reduction |
-| Streaming readers | Consume complete framed messages and report gzip integrity failures |
-| Truncated capture/output | Decompression success alone does not prove full analysis completion |
-| Evidence | Record source/output hashes and keep the original compressed file |
+| Topic                    | Guidance                                                                    |
+| ------------------------ | --------------------------------------------------------------------------- |
+| Storage                  | Measure on your own records; the savings vary                               |
+| Streaming readers        | Read complete framed messages and report gzip integrity errors              |
+| Truncated capture/output | A file that decompresses cleanly can still come from an incomplete analysis |
+| Evidence                 | Record source and output hashes and keep the original compressed file       |
 
-Compression is neither encryption nor anonymization. Payloads and credentials
-remain sensitive after gzip compression. [Record format](specification.md)
-explains the framing inside the stream.
+Compression is not encryption or anonymization. Payloads and credentials stay sensitive after gzip. [Record format](specification.md) describes the framing inside the stream.

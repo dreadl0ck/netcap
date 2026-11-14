@@ -1,10 +1,8 @@
-# USB Capture
+# USB capture
 
-USB audit records are available for supported USB capture representations.
-A PCAP link-type name alone does not prove the selected decoder understands
-that operating system's USB header layout.
+Netcap decodes USB traffic from PCAP files that use a supported USB link type. The USB header layout differs between operating systems, so capture with a tool and platform that you have confirmed works.
 
-## Offline from dumpfile
+## Read a USB capture file
 
 ```sh
 net capture -read usb.pcap -out usb-audit -base usb -payload -dpi=false
@@ -12,26 +10,17 @@ net dump -read usb-audit/USB.ncap.gz -fields
 net dump -read usb-audit/USB.ncap.gz -json
 ```
 
-Use a small known fixture from the capture tool/platform you intend to support.
-Check record counts and payload fields against the source. Historical
-`net.cap -r` examples use an obsolete executable/flag; use `net capture -read`.
+Compare the record count and payload fields with what you see in the original capture. Use `-payload` to keep the payload bytes that the capture contains.
 
-## Live Capture
+## Live capture
 
-USB interfaces depend on the OS, driver, permissions and capture-tool support.
-List the interfaces visible to the installed runtime with `net util -interfaces`.
-Do not assume an `XHC20` interface from older macOS versions exists or can be
-captured on current macOS. Capture with a compatible platform tool first if the
-Netcap live driver cannot supply the expected link format.
+Which USB interfaces exist depends on your OS, driver, permissions and capture tool. List what Netcap can see with `net util -interfaces`. Recent macOS versions do not expose an `XHC20` interface. If Netcap's live driver can't capture USB in a format it can decode, capture to a file with another tool and read that file.
 
-## Audit Records
+## Audit records
 
-| Record | Evidence |
-| --- | --- |
-| `USB` | Transfer/event metadata, bus/device/endpoint, status, lengths and supported payload |
-| `USBRequestBlockSetup` | Setup request type, request, value, index and length |
+| Record                 | Contents                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------ |
+| `USB`                  | Transfer or event metadata, bus, device, endpoint, status, lengths and payload |
+| `USBRequestBlockSetup` | Setup request type, request, value, index and length                           |
 
-Read `types/netcap.proto` and `dump -fields` for current types; timestamps are
-integer nanoseconds rather than the historical string schema. `-payload`
-preserves available supported payload fields but cannot recover bytes omitted
-by the source capture.
+See `types/netcap.proto` or `dump -fields` for the current fields. Timestamps are integer nanoseconds. `-payload` cannot recover bytes that the capture tool did not record.

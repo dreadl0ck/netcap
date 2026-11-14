@@ -1,68 +1,45 @@
-# Docker Containers
+# Containers
 
-The repository contains Ubuntu/Alpine runtime recipes, nodpi variants and a
-service image. Select a matching source revision and inspect its recipe before
-building; old `ubuntu-v0.5`/`alpine-v0.5` images do not represent Go v0.15.2.
+Netcap ships Dockerfiles for Ubuntu and Alpine runtime images, variants without DPI (`nodpi`) and a service image for the WebUI. Pick an image from [Docker Hub](https://hub.docker.com/r/dreadl0ck/netcap/tags) or build one from the checkout.
 
-## Docker Hub
+After you pull an image, run `net --version` inside it to see which release it contains, and note the image digest in your records.
 
-[Published tags](https://hub.docker.com/r/dreadl0ck/netcap/tags) are a registry
-inventory, not proof of the source revision running inside an image. Record the
-image digest and check `net --version` inside it. No current tag is assumed here.
+## Build locally
 
-## Pull Containers
+Use the recipes in `zeus/commands.yml` and `zeus/scripts/`. They also provide the embedded WebUI build context that the Dockerfiles need. A bare `docker build .` does not.
 
-Use an exact tag/digest that you have verified. For a local build, use the
-checkout's `zeus/commands.yml` and `zeus/scripts/` recipes; they also supply the
-embedded WebUI build context required by Dockerfiles. A bare `docker build .`
-does not supply that named context.
+## Analyze a capture in a container
 
-## Run Containers
-
-Current source pins matched YARA-X `1.22.0` builders and verifies the C API with
-`pkg-config --exact-version=1.22.0 yara_x_capi` before compiling. Alpine capture
-and service runtimes use `3.24.4`; the separately packaged firewall enforcer
-retains its own pinned runtime. Do not substitute that runtime for the capture
-builder (`docker/alpine*/Dockerfile`, `docker/service/Dockerfile`,
-`docker/enforcer/Dockerfile`).
-
-`scripts/qualify-native-builder.sh` checks actual YARA compile/match/nonmatch/
-invalid-source behavior and libpcap BPF match/nonmatch inside the target builder.
-`scripts/native-runtime-smoke.py` checks packaged execution; generated local
-service recipes retain the selected matched builder. A successful emulated build
-does not qualify native execution on another CPU/OS. Retain image digest,
-architecture, package inventory and the actual smoke report.
-
-Offline analysis needs an input mount and writable output, not access to a host
-capture interface. For a locally verified image named `netcap-local`:
+Offline analysis needs a read-only mount for your captures and a writable mount for the output. It does not need access to a network interface.
 
 ```sh
+mkdir -p output
+
 docker run --rm \
-  --mount type=bind,src="$PWD/input",dst=/input,readonly \
+  --mount type=bind,src=/captures,dst=/input,readonly \
   --mount type=bind,src="$PWD/output",dst=/output \
-  netcap-local net capture -read /input/traffic.pcap -out /output/audit -dpi=false
+  dreadl0ck/netcap:<tag> net capture -read /input/office-lan.pcap -out /output/audit -dpi=false
 ```
 
-Create `input`/`output` first and place the capture in `input/traffic.pcap`.
-Check the image's entrypoint: this example assumes the shell-style runtime
-images, where the command is explicitly `net`.
+Replace `<tag>` with a tag from Docker Hub, or use the name of your local image. The example writes the command as `net ...`. If your image already uses `net` as its entrypoint, leave the leading `net` out.
 
-| Mode | Additional boundary |
-| --- | --- |
-| Offline | Host ownership/permissions and disk budget for output |
-| Live | Linux network namespace, interface visibility and capture capabilities |
-| Service | Published listener, uploads/storage budgets and authentication boundary |
-| DPI | Matching native libraries, architecture and build tags |
+The audit records end up in `./output/audit` on the host. Check that the user inside the container can write to the output directory.
 
-Docker Desktop's Linux VM does not automatically expose a macOS host interface.
-Do not use privileged mode as a substitute for selecting the right observation
-point. Keep the [local WebUI/API](web-interface.md#hosting-boundary) behind its
-intended hosting boundary.
+## What each mode needs
+
+| Mode    | You need                                                                             |
+| ------- | ------------------------------------------------------------------------------------ |
+| Offline | Read access to the captures and a writable output directory with enough disk         |
+| Live    | A Linux network namespace that can see the interface, plus capture capabilities      |
+| Service | A published port, storage for uploads and results, and authentication in front of it |
+| DPI     | Native libraries, CPU architecture and build tags that match the image               |
+
+Docker Desktop runs containers in a Linux VM, so a container there cannot see your Mac's network interfaces. Do not use privileged mode to work around this. Capture on a host or network namespace that actually carries the traffic you want.
+
+Keep the [local WebUI/API](web-interface.md#hosting-boundary) behind the hosting boundary described there.
 
 ## Firewall containers
 
-The [application firewall](APPLICATION_FIREWALL.md#quickstart) has a separate
-`docker/firewall/Dockerfile`: CGO-free `scratch`, UID/GID 10001, embedded
-Coraza/HTTP/3, no libpcap/DPI/YARA runtime. Use its Compose example or
-`charts/netcap-firewall`; the capture-service image is not this reverse proxy.
-The optional Linux enforcer has its own image/chart and named-namespace scope.
+The [application firewall](APPLICATION_FIREWALL.md#quickstart) has its own `docker/firewall/Dockerfile`. It builds a minimal `scratch` image that runs as UID/GID 10001 and contains no libpcap, DPI or YARA. Use its Compose example or the `charts/netcap-firewall` chart. The capture-service image is not the reverse proxy.
+
+The optional Linux enforcer has its own image and chart and works only within the namespaces you name.

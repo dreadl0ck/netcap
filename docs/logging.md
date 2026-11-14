@@ -1,7 +1,6 @@
 # Logging
 
-Capture logs, audit records and health artifacts answer different questions.
-Record the output directory and exact command when collecting diagnostics.
+Netcap produces three kinds of output: console and log files, audit records, and [health artifacts](evidence.md). When you collect diagnostics, note the output directory and the exact command you ran.
 
 ## Quiet mode
 
@@ -9,29 +8,20 @@ Record the output directory and exact command when collecting diagnostics.
 net capture -read traffic.pcap -out quiet-audit -quiet -dpi=false
 ```
 
-`-quiet` reduces console output; it does not disable decoding, evidence files or
-every subsystem's diagnostics. Inspect the resulting logs rather than treating
-an empty terminal as success.
+`-quiet` reduces console output. Decoding and evidence files are unaffected. Check the log files in the output directory to see whether the run succeeded.
 
 ## Decoding errors
 
-`-log-errors` controls verbose packet-decoding error logging. Error logs may
-include raw packet bytes and therefore credentials or personal data. Preserve
-them with the capture's access controls; use a minimal sanitized reproducer for
-public bug reports.
+`-log-errors` turns on verbose logging of packet decoding errors. These logs can contain raw packet bytes, including credentials and personal data. Store them with the same access controls as the capture. For a public bug report, reduce the capture to a small sanitized sample.
 
-## Log files in debug mode
+## Debug logs
 
-`capture -debug` enables additional diagnostics. Depending on enabled paths,
-logs can include `debug.log`, `errors.log`, `reassembly.log` and subsystem logs.
-Use actual startup/output paths rather than assuming every file is created in
-the shell's original working directory.
+`capture -debug` writes extra diagnostics. Depending on what ran, you will find `debug.log`, `errors.log`, `reassembly.log` and logs for other subsystems. Look in the output directory you passed with `-out`.
 
-## Automatic removal of empty log files
+## Empty log files
 
-Some writers remove empty files at orderly shutdown. Missing empty logs are not
-evidence that a subsystem ran successfully; abrupt termination can also prevent
-normal flush/cleanup. Check exit status and [health artifacts](evidence.md).
+Some writers delete empty log files on a clean shutdown, so a missing log does not tell you whether a subsystem ran. If the process was killed, buffers may not have been flushed either. Check the exit status and the [health artifacts](evidence.md).
 
-For the stdio MCP server, stdout is JSON-RPC transport. Keep operational
-diagnostics on stderr; shell banners or redirected logs on stdout break clients.
+## MCP server
+
+`net mcp` uses stdout for JSON-RPC. Keep logs on stderr. Shell banners or log redirection to stdout break the MCP client.

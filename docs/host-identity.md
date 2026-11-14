@@ -1,43 +1,35 @@
 # Hosts and identity
 
-`net triage` presents the capture-derived `Hosts.json` report. It complements
-packet and DeviceProfile records by distinguishing evidence about a host from
-directory subjects mentioned in traffic.
+`net triage` shows the `Hosts.json` report built from a capture: the hosts, accounts and directory names that appeared in the traffic.
 
 ```sh
-net capture -read traffic.pcap -out identity-audit -dpi=false
+net capture -read office-lan.pcap -out identity-audit -dpi=false
 net triage -read identity-audit
 net triage -read identity-audit -json
 ```
 
-The report depends on enabled decoders and visible traffic. A capture with no
-identity-bearing protocols can legitimately have few facts.
+What you see depends on the decoders enabled and the protocols in the capture. A capture without ARP, DHCP, Kerberos, NTLM or LDAP traffic yields few facts.
 
 ## Read claims with their evidence
 
-| Observation | Interpretation |
-| --- | --- |
-| ARP/DHCP/NDP binding | Address/MAC relationship in the observed scope/time |
-| DHCP hostname/vendor data | A client-advertised claim, not authenticated identity |
-| Kerberos / NTLM | Visible principals or account claims; retain source and outcome context |
-| LDAP / SAMR / LSA | Directory subjects and selected RPC identity evidence |
-| Conflicting bindings/names | Multiple observations to investigate, not a reason to discard contrary evidence |
+| Observation                | What it tells you                                                        |
+| -------------------------- | ------------------------------------------------------------------------ |
+| ARP/DHCP/NDP binding       | This address and MAC were paired at this time, in this capture           |
+| DHCP hostname/vendor data  | What the client says about itself. It is not verified                    |
+| Kerberos / NTLM            | Principals or accounts visible in the exchange. Check source and outcome |
+| LDAP / SAMR / LSA          | Directory subjects and some RPC identity data                            |
+| Conflicting bindings/names | Investigate them and keep both observations                              |
 
-An account returned by a directory server is not automatically an account on that
-server. A raw NTLM-shaped byte sequence without a framed owning protocol is not
-host attribution. Encryption, missing RPC state and unsupported encodings can
-prevent extraction.
+An account returned by a directory server belongs to the directory, not necessarily to that server. NTLM-looking bytes outside a recognised protocol exchange cannot be tied to a host. Encryption, missing RPC state and unsupported encodings can stop extraction.
 
 ## Investigation sequence
 
-1. Select the host by address and capture scope, not hostname alone.
-2. Inspect the binding/name/account state and underlying evidence source.
-3. Compare timestamps with DHCP lease changes, NAT and interface/VLAN boundaries.
-4. Pivot to [related records](evidence.md) using exact selectors.
-5. Preserve conflicting and incomplete observations in any exported conclusion.
+1. Select the host by IP address and capture, not by hostname alone.
+2. Inspect the binding, name or account and the evidence behind it.
+3. Compare timestamps with DHCP lease changes, NAT and interface or VLAN boundaries.
+4. Pivot to [related records](evidence.md) with exact selectors.
+5. Keep conflicting and incomplete observations in anything you export.
 
-`Hosts.json` schema 1 includes bounded host/account/directory observations and
-overflow reporting. Overflow limits completeness. Full JSON retains provenance
-that the compact terminal table cannot show. See [device profiles](device-profiles.md)
-for MAC-centered aggregation and [behavior](behavioral-monitoring.md) for approved
-baseline state; neither is interchangeable with identity evidence.
+`Hosts.json` caps the number of host, account and directory observations. The report says when a cap was hit, and the list is then incomplete. The JSON output keeps provenance that the terminal table omits.
+
+For aggregation by MAC address, see [device profiles](device-profiles.md). For approved baseline state, see [behavior](behavioral-monitoring.md). Neither replaces identity evidence.

@@ -1,98 +1,58 @@
-# Investigate a synthetic transfer
+# Investigate a file transfer
 
-This lab follows DNS → HTTP → extracted file → rule alert → packet export.
-Python 3 writes PCAP bytes locally; no packets are transmitted. Use the current
-repository checkout for `scripts/docs-fixtures.py` and `docs/examples/`, plus
-the released Go v0.15.2 `net` executable. Run all commands from that checkout's
-root. The fixture script refuses an existing destination directory.
+This walkthrough follows a file downloaded over plain HTTP: the DNS lookup, the HTTP request, the extracted file and the packets that back it up. You need `tcpdump`, `curl`, a web server you control and the `net` executable. [First capture](quickstart.md) covers the basics.
 
-## Create the evidence
+## Record the transfer
 
-<!-- docs:run fixtures -->
+On a machine in your LAN, serve a directory that contains `report.txt`:
+
 ```sh
-python3 scripts/docs-fixtures.py
+python3 -m http.server 8080
 ```
 
-| Input | Expected evidence |
-| --- | --- |
-| `doc-fixtures/investigation.pcap` | One DNS A answer for `docs.example.test`, then one HTTP/1 transfer on TCP/8080 |
-| `doc-fixtures/benign.pcap` | The same benign DNS exchange, with no HTTP transfer |
-| `doc-fixtures/baseline.pcap`, `unchanged.pcap`, `changed.pcap` | Synthetic ARP observations for the [baseline lab](behavioral-monitoring.md#reproducible-baseline-lab) |
-| `doc-fixtures/client.bin`, `other-client.bin` | Seven-byte offline [protocol hypotheses](protocol-experiments.md#offline-hypotheses-first) |
+On your workstation, record the traffic to that server and DNS, then download the file by hostname so the lookup is part of the capture. The server here is `fileserver.lan` at 192.168.1.20:
 
-The domain is under `.test`; addresses are `192.0.2.10` and `192.0.2.20`.
-The generated `sensor.key` is public deterministic lab material, never a real
-sensor credential. Inspect the fixture generator before reusing any bytes.
-
-## Capture and inspect
-
-<!-- docs:run investigation -->
 ```sh
-net capture -read doc-fixtures/investigation.pcap -out doc-fixtures/audit \
-  -rules docs/examples/http-observation.yml -conns -dpi=false -geoDB=false
-net dump -read doc-fixtures/audit/DNS.ncap.gz -json > doc-fixtures/dns.ndjson
-net dump -read doc-fixtures/audit/HTTP.ncap.gz -json > doc-fixtures/http.ndjson
-net dump -read doc-fixtures/audit/File.ncap.gz -json > doc-fixtures/files.ndjson
-net dump -read doc-fixtures/audit/Alert.ncap.gz -json > doc-fixtures/alerts.ndjson
+sudo tcpdump -i en0 -w file-transfer.pcap 'host 192.168.1.20 or port 53'
 ```
 
-Expect two DNS messages, one HTTP record with `/fixture.txt`, a `File` record
-whose stored body is `Netcap synthetic evidence.` followed by a newline, and
-a `Documentation HTTP Transfer` rule alert. The rule in
-[`docs/examples/http-observation.yml`](examples/http-observation.yml) marks a
-known fixture; it does not classify the transfer as malicious.
-
-Inspect `IsComplete`, `CompletenessReason` and `Hashes.SHA256` on the file.
-Its legacy `Hash` field is MD5. Preserve both the source capture and the actual
-stored bytes; a MIME label or filename is not a content-integrity check.
-
-## Follow the relationship
-
-<!-- docs:run related -->
 ```sh
-net investigate related -read doc-fixtures/audit -type HTTP -ordinal 0 \
-  > doc-fixtures/related.json
+curl -O http://fileserver.lan:8080/report.txt
+shasum -a 256 report.txt
 ```
 
-Read relationship labels, scope and limitations in `related.json`. Compare the
-HTTP record's Community ID with its Connection and DNS evidence. A temporally
-related DNS answer is a candidate explanation, not causal proof. A returned
-record ID binds file content; do not reuse it after replacing output.
+Stop `tcpdump` with Ctrl-C and write down the SHA-256 of the downloaded file.
 
-## Verify a benign control
+## Analyze and dump the records
 
-<!-- docs:run control -->
 ```sh
-net capture -read doc-fixtures/benign.pcap -out doc-fixtures/control \
-  -rules docs/examples/http-observation.yml -dpi=false -geoDB=false
+net capture -read file-transfer.pcap -out transfer-audit -conns -dpi=false -geoDB=false
+net dump -read transfer-audit/DNS.ncap.gz -json > dns.ndjson
+net dump -read transfer-audit/HTTP.ncap.gz -json > http.ndjson
+net dump -read transfer-audit/File.ncap.gz -json > files.ndjson
 ```
 
-The control must produce no `Documentation HTTP Transfer` alert. Depending on
-empty-writer cleanup, `Alert.ncap.gz` can be absent or contain no matching rows.
-A successful compile alone does not establish that a rule matches the intended
-traffic or avoids benign input.
+`dns.ndjson` holds the lookup for `fileserver.lan`. `http.ndjson` holds the request for `/report.txt`. `files.ndjson` holds the extracted file, and its content is stored under `transfer-audit/files/`.
 
-## Preserve selected packets
+## Check the file
 
-<!-- docs:run packet-export -->
+Open the `File` record. `Hashes.SHA256` should match the `shasum` output from the download. The older `Hash` field is MD5. `IsComplete` and `CompletenessReason` tell you whether Netcap saw the whole body, for example when packets were lost or the transfer was cut off.
+
+Keep the source capture and the extracted file. Trust the hash for what the bytes are, not the filename or MIME type in the record.
+
+## Follow the connection
+
 ```sh
-net investigate packet-evidence -read doc-fixtures/investigation.pcap \
-  -bpf 'host 192.0.2.10 and tcp port 8080' -out doc-fixtures/http-evidence.zip
+net investigate related -read transfer-audit -type HTTP -ordinal 0 > related.json
 ```
 
-The ZIP contains `packets.pcapng` and `manifest.json`. Its selection contains
-the eight TCP packets, not the two DNS packets. The manifest binds source and
-output hashes; preserve the original ten-packet capture for the DNS context.
-Existing ZIP destinations are refused.
+`related.json` lists the records related to the first HTTP record, with a label for each relationship. Compare the HTTP record's Community ID with the Connection and DNS records. A DNS answer that arrived just before the request is probably the lookup behind it. Record IDs belong to one output directory, so do not reuse them after you analyze into it again.
 
-## Repeatable checks
+## Save the packets
 
-`make docs-check NETCAP_BIN=/absolute/path/to/net` runs the marked commands in
-a temporary workspace and asserts records, file bytes, the positive/benign
-rule cases and the selected packet count. It also checks links, shell syntax,
-configuration examples and the baseline lifecycle. It never probes an external
-target. The lab retains its v0.15.2 baseline; newer released features and
-availability are listed in the [changelog](changelog.md).
+```sh
+net investigate packet-evidence -read file-transfer.pcap \
+  -bpf 'host 192.168.1.20 and tcp port 8080' -out http-evidence.zip
+```
 
-`make docs-source-check` separately checks protobuf excerpts and concrete rule
-expressions against the checkout's schema/engine.
+The ZIP contains `packets.pcapng` with the selected TCP packets and `manifest.json` with hashes of the source capture and the output. The DNS packets are not selected, so keep the original capture for the lookup. `net` refuses to overwrite an existing ZIP.

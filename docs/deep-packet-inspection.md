@@ -1,15 +1,26 @@
 # Service identification and DPI
 
-Netcap has several identification mechanisms. A port name, a protocol parser,
-a banner product and a native DPI label answer different questions.
+Netcap has four ways to find out what a service is. They answer different questions, so use the one that fits.
 
-| Mechanism | Input | Claim |
-| --- | --- | --- |
-| IANA lookup | Port and transport | Registered service name; not confirmation of actual protocol |
-| Stream selector | Captured framing/signatures | Eligible parser chosen by evidence specificity |
-| Built-in service signatures | Bounded passive greeting bytes | SSH, HTTP/1, SMTP or FTP recognition and supported banner fields |
-| Native DPI | Native flow classifier | Application/category label available in this build |
-| NVD lookup | Concrete software identity/version | Applicability candidate evaluated under stored CPE conditions |
+| Method                      | Input                          | Result                                                                               |
+| --------------------------- | ------------------------------ | ------------------------------------------------------------------------------------ |
+| IANA lookup                 | Port and transport             | The service registered for that port                                                 |
+| Built-in service signatures | The first bytes a server sends | SSH, HTTP/1, SMTP or FTP, plus the banner fields                                     |
+| Native DPI                  | Flow classifier                | An application or category label                                                     |
+| NVD lookup                  | Product and version            | CVEs that could apply (see [Vulnerability applicability](vulnerability-analysis.md)) |
+
+The stream decoder also picks a protocol parser by looking at the framing and signatures in the captured bytes.
+
+## Example: SSH on a nonstandard port
+
+A server accepts SSH on port 2222. The IANA port name says nothing about SSH, but the SSH identification string in its greeting does:
+
+```sh
+net capture -read traffic.pcap -out classified -dpi=false
+net dump -read classified/Service.ncap.gz -csv -select IP,Port,PortName,Name,Product,Version,Banner
+```
+
+`PortName` is the IANA result. `Name`, `Product`, `Version` and `Banner` come from the greeting. Pass the product and version on to the [vulnerability check](vulnerability-analysis.md) to see which CVEs apply.
 
 ## Choose a build
 
@@ -18,33 +29,24 @@ net --version
 net capture -read traffic.pcap -out classified -dpi=false
 ```
 
-The version output reports whether DPI is compiled in. DPI-enabled release
-archives include native libraries; nodpi builds do not become DPI-enabled merely
-by setting a flag. `lpi`, `ndpi` and Go module choices depend on the installed
-build. Inspect `capture -h` for supported selection options.
+`net --version` shows whether DPI is compiled in. DPI release archives include the native libraries. A build without DPI cannot enable it with a flag. Run `net capture -h` to see the DPI options, such as `-dpi` and `-dpi-modules lpi,ndpi,go`.
 
-Native contexts have their own flow/context/idle budgets. A label is not a full
-decode of every transaction or proof that the named program executed. A TLS or
-QUIC classification does not imply decrypted HTTP/2/3 application content.
+A DPI label names the application. It does not decode the traffic. A TLS or QUIC label does not give you the HTTP content inside.
 
-## Independent service signatures
+## Built-in service signatures
 
-Official builds no longer read Nmap's `nmap-service-probes`. The replacement
-`netcap-service-signatures` schema 1 uses bounded protocol parsers with declared
-provenance. The initial built-in catalogue covers SSH identification, HTTP/1
-response status, unambiguous SMTP and FTP greetings. Bare `220` is insufficient
-to distinguish the last two. Catalogue inventory/status reports degraded or
-missing optional inputs instead of silently claiming Nmap coverage parity.
+Netcap does not use Nmap's `nmap-service-probes`. The built-in signatures (`netcap-service-signatures`, schema 1) recognise:
 
-Custom catalogue operations validate the same format. A managed signed release
-and a local user override have separate ownership; do not contaminate the signed
-archive directory. Legacy probe APIs return 410.
+* SSH identification strings
+* HTTP/1 response status lines
+* SMTP and FTP greetings
 
-## Limitations
+A bare `220` greeting does not separate SMTP from FTP, so Netcap only labels greetings that are clear. The catalogue status lists missing optional inputs.
 
-Encrypted bytes, incomplete greetings, parser ambiguity and stream gaps can
-prevent identification. Legacy CMS/DHCP OS catalogues are disabled. HASSH and
-UA identification require their local data; classification does not authenticate
-the device's advertised software. [TLS fingerprints](tls-fingerprinting.md),
-[resolvers](resolvers.md) and [record support](protocol-support.md) explain the
-remaining distinctions.
+A custom catalogue uses the same format. Keep it outside the signed archive directory so an update does not overwrite your file.
+
+## Limits
+
+Encrypted traffic, incomplete greetings, ambiguous protocols and gaps in a stream can prevent identification. HASSH and user-agent identification need their local databases. The label comes from what the device announces, so a server can report software it does not run.
+
+See [TLS fingerprinting](tls-fingerprinting.md), [Resolvers](resolvers.md) and [record support](protocol-support.md).

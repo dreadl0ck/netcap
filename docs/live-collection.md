@@ -1,37 +1,26 @@
 # Live capture
 
-List visible interfaces before selecting one:
+List the interfaces Netcap can see, then capture from one of them:
 
 ```sh
 net util -interfaces
 net capture -iface en0 -out live-audit -dpi=false -http 127.0.0.1:8080
 ```
 
-`en0` is an example, not a portable interface name. Live capture needs the
-platform driver and sufficient permissions. Unfiltered offline analysis does
-not require those same live-capture privileges.
+`en0` is the usual Wi-Fi or Ethernet interface on a Mac. On Linux it is often `eth0` or `enp3s0`; use the name `net util -interfaces` prints. Live capture needs the platform capture driver and enough privileges to open the interface. Reading a PCAP file does not.
 
-| Platform | Capture boundary |
-| --- | --- |
-| Linux | libpcap or supported packet-socket path; interface/network namespace and capabilities matter |
-| macOS | BPF device permissions; seeing a local interface does not imply switch-wide visibility |
-| Windows | Compatible Npcap for live capture/enumeration and BPF-dependent workflows |
+| Platform | Requirements                                                               |
+| -------- | -------------------------------------------------------------------------- |
+| Linux    | libpcap or a packet socket. Run as root or grant the capture capabilities. |
+| macOS    | Read access to the BPF devices (`/dev/bpf*`).                              |
+| Windows  | A compatible Npcap install for live capture and interface listing.         |
 
-Promiscuous mode cannot create SPAN/TAP traffic that never reaches the interface.
-Choose the observation point with network owners; record interface/VLAN, clock,
-snaplen, BPF and expected traffic before interpreting absence.
+You only see traffic that reaches the interface. On a switched network that means your own traffic and broadcasts unless the port is a SPAN/mirror port or a TAP, and promiscuous mode does not change that. Before you conclude that something is missing, note the interface, VLAN, snaplen, BPF filter and clock of the capture host.
 
 ## Run and stop
 
-Use a new output directory, monitor health and stop with Ctrl-C so finalization
-can flush streams and aggregates. Killing the process can leave partial files
-and unfinalized scope. `-http` explicitly keeps the UI available; bind it to
-loopback under the [local hosting model](web-interface.md#hosting-boundary).
+Write to a new output directory and stop with Ctrl-C so Netcap can flush streams and aggregates. Killing the process leaves partial files. `-http` keeps the web interface running while you capture. Bind it to loopback, as described under [hosting](web-interface.md#hosting-boundary).
 
-The default live snaplen is 1,514 bytes in this release; larger frames can be
-truncated unless configured appropriately. Watch application admission/drop
-counters separately from kernel statistics. Unavailable kernel measurements are
-not zero drops. Test live loss separately from offline replay throughput.
+The default snaplen is 1,514 bytes, so larger frames (jumbo frames, or offloaded segments on some NICs) are truncated unless you raise `-snaplen`. Watch Netcap's own admission and drop counters and the kernel's statistics separately. If the kernel does not report drops, that is not the same as zero drops. Test a live capture's loss rate on your own link. Replaying a file tells you nothing about it.
 
-For remote sensors, use [distributed collection](distributed-collection.md).
-For packet-preserving subsets, use [evidence export](evidence.md).
+To collect from remote sensors, see [distributed collection](distributed-collection.md). To save a packet-preserving subset, see [evidence export](evidence.md).

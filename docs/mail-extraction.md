@@ -1,44 +1,29 @@
-# Email Extraction
+# Email extraction
 
-Go Netcap decodes supported plaintext POP3, IMAP and SMTP exchanges. Transaction
-records, message bodies/attachments and authentication observations are separate
-outputs; visibility depends on captured bytes and protocol state.
+Netcap decodes plaintext POP3, IMAP and SMTP. It writes transaction records, message bodies and attachments, and authentication observations as separate outputs.
+
+Analyse a capture of a mail client talking to a server, then look at the records:
 
 ```sh
 net capture -read mail.pcap -out mail-audit -dpi=false
-```
-
-Inspect files actually emitted, for example:
-
-```sh
 net dump -read mail-audit/SMTP.ncap.gz -fields
 net dump -read mail-audit/Secret.ncap.gz -json
 ```
 
+Check which files the capture wrote first. You only get a file for the protocols that appear in the traffic.
+
 ## POP3
 
-Supported retrievals can contain parsed `Mail`/`MailPart` metadata and bodies.
-A banner-only conversation does not imply a fetched message. Successful STLS
-ends plaintext parsing; subsequent encrypted bytes are not mail text.
+A fetched message produces `Mail` and `MailPart` records with the headers and bodies. A conversation that contains only the server banner has no message. After a successful `STLS`, the rest of the session is encrypted and Netcap stops parsing it.
 
 ## IMAP
 
-Supported plaintext exchanges expose protocol records. Literal framing,
-partial responses and missing bytes can limit reconstruction. Successful
-STARTTLS ends plaintext parsing; the old statement that all IMAP support is
-future work is obsolete.
+Plaintext IMAP sessions produce protocol records. Literals split across segments, partial responses and missing bytes can leave a message incomplete. After a successful `STARTTLS`, Netcap stops parsing the session.
 
 ## SMTP
 
-SMTP command/response records and LOGIN/PLAIN authentication observations are
-available. `Secret.Notes` distinguishes observed success, rejection and unknown
-result. A failed connection or incomplete response is not an authentication
-failure. Successful STARTTLS ends plaintext parsing.
+SMTP produces command and response records, and records `AUTH LOGIN` and `AUTH PLAIN` logins as `Secret` records. `Secret.Notes` says whether the login succeeded, was rejected, or ended with an unknown result. A dropped connection or an incomplete response is recorded as unknown, not as a failed login. After a successful `STARTTLS`, Netcap stops parsing the session.
 
-## Interpretation
+## Reading the results
 
-Use current record fields from `types/netcap.proto`; historical schema snippets
-with string timestamps are obsolete. Mail headers are sender-supplied evidence,
-not verified ownership. Credentials, recipients and attachments require the same
-access boundaries as the original capture. Follow [file extraction](file-extraction.md)
-and [evidence linking](evidence.md) to trace reconstructed content.
+Check the field names in `types/netcap.proto` or with `dump -fields`. Mail headers such as `From` are supplied by the sender and can be forged. Treat captured credentials, recipients and attachments with the same care as the capture itself. To follow an attachment, see [file extraction](file-extraction.md) and [evidence linking](evidence.md).

@@ -1,129 +1,103 @@
 ---
-description: Graphical link analysis to the rescue!
+description: Explore PCAP files as link graphs in Maltego
 ---
 
-# Maltego Integration
+# Maltego
 
-## Introduction
-
-**Maltego** is an open source intelligence (OSINT) and graphical link analysis tool for gathering and connecting information for investigative tasks.
+**Maltego** is an open source intelligence (OSINT) and link analysis tool. You run transforms on entities and see the results as a graph.
 
 {% embed url="https://www.maltego.com" %}
 
-It allows to transform data using external knowledge and visualize the results in a graph topology.
-
-Transforms are small pieces of code that automatically fetch data from different sources and return the results as visual entities in the desktop client. Transforms are the central elements of Maltego which enable its users to unleash the full potential of the software whilst using a point-and-click logic to run analyses.
-
-Netcap provides a set of entities and transformations to analyze packet capture dump files in Maltego!
-
-The current implementation focuses on behavorial analysis of entities within the traffic dump.
+A transform is a small program that fetches data and returns it as new entities in the desktop client. Netcap provides entities and transforms that let you analyze a PCAP in Maltego, focused on the behavior of the hosts and devices in the capture.
 
 ## Installation
 
-Install the current public Go release and check the executable selected by the
-Maltego transform configuration:
-
-```
-$ net --version
-```
-
-Historical transform bundles used `/usr/local/bin/net`. Update their executable
-path to your actual installation, retaining the release's adjacent native
-libraries rather than moving only its binary:
+Install `net` and check which executable the transforms will call:
 
 ```
 $ which net
 /usr/local/bin/net
+$ net --version
 ```
 
+The transforms expect `net` at `/usr/local/bin/net`. If yours is elsewhere, update the executable path in the transform configuration. Keep the native libraries that came with your release next to the binary.
+
+To generate the Maltego configuration, run `zeus gen-maltego-config` in a source checkout. Import the result in Maltego with Import / Export Config → Import Config.
+
 {% hint style="info" %}
-Transformations in maltego have to specify a working directory. Currently /**usr/local** is used for this so make sure the current user has sufficient right to enter the directory. No data will be written there, all logs from transformations that invoke the netcap core are written into dedicated directories for each processed pcap file.
+Maltego transforms need a working directory. Netcap uses `/usr/local`, so the current user must be able to enter it. Nothing is written there. The logs of transforms that run the netcap core go into a separate directory for each processed PCAP.
 {% endhint %}
 
-The old v0.5 downloadable transform ZIP has been retired. Current transform
-implementations live in `cmd/transform` and entity/configuration code in
-`internal/maltego`. Source checkouts provide `zeus gen-maltego-config` for
-configuration generation; qualify the result against your installed Maltego
-version before importing it through Import / Export Config → Import Config.
+## Load a PCAP
 
-The gallery below documents the historical graph workflow; it does not promise
-that a v0.5 bundle implements every v0.15.2 record or modern evidence link.
+You have two options:
 
-## Loading PCAP files into Maltego
+1. Drag the file into a Maltego graph. It arrives as a **maltego.File** entity with the file path in its notes. Change the entity type to **netcap.PCAP**, open its detail view, and copy the path from the **Notes** tab into the **path** property.
+2. Create a new **netcap.PCAP** entity and set its **path** property to the path of your PCAP.
 
-To load a pcap file into maltego you have two options:
+## Run transforms
 
-1\) Drag and Drop the file into a maltego graph. The files type will be **maltego.File** by default, and the path to the file on disk is set as a note on the entity.
+Right-click an entity and type **Get** in the search bar to see the transforms for that entity type. You can also open the **Run View** in the **Windows** tab and start transforms with one click.
 
-Now, change the entities type to **netcap.PCAP**, and double click it to open the detail view. Copy the filesystem path from the **Notes** tab into the **path** property of the PCAP entity.
-
-2\) Create a new **netcap.PCAP** entity and set the **path** property to the path of your pcap file on disk
-
-## Running Transformations
-
-Right click an entity and start typing **Get** into the search bar to see all available transformations for the selected type. Alternatively you can also use the **Run View** in the **Windows** tab to see and launch available transformations with a single click.
-
-Transformations are usually bound to specific entities. For example, the **netcap.DeviceProfiles** entity, which represents the device profiles that have been derived from an input PCAP file, currently only offers the following two transformations:
+The **netcap.DeviceProfiles** entity represents the device profiles derived from a PCAP. It offers two transforms:
 
 ![](.gitbook/assets/screenshot-2020-04-22-at-11.50.20.png)
 
-**GetDeviceProfilesWithDPI** enables deep packet inspection, which requires to install dependencies and can slow down the processing drastically. When not using DPI the transformations making use of this data will simply return no results.
+**GetDeviceProfilesWithDPI** turns on deep packet inspection. It needs extra dependencies and can slow processing down a lot. Without DPI, the transforms that depend on DPI data return nothing.
 
-To add the actual devices to the graph, use the **GetDevices** transformation.
+Run **GetDevices** to add the devices to the graph.
 
 ![](.gitbook/assets/screenshot-2020-04-22-at-11.50.26.png)
 
-This bring the first usable entities to the graph, of type **netcap.Device**. A device has contacts and addresses it has been using to access network services by itself. When selecting a device entity, you will see the following transformations:
+This adds entities of type **netcap.Device**. A device lists the contacts and addresses it used to reach network services. These are the transforms for a device:
 
 ![](.gitbook/assets/screenshot-2020-04-22-at-11.50.07.png)
 
-The generated entities will be of type **netcap.IPAddr** and contain information about the host, as well as a set of transforms to further drill down and investigate.
-
-When selecting an entity of type **netcap.IPAddr**, the following transformations are offered:
+They create **netcap.IPAddr** entities with information about the host and more transforms to drill down. These are the transforms for a **netcap.IPAddr**:
 
 ![netcap.IPAddr transformations](.gitbook/assets/screenshot-2020-04-22-at-11.49.53.png)
 
 ## Configuration
 
-Netcap offers an **OpenFile** maltego transform, which will pass filetypes except for executables to the default system application for the corresponding file format. On macOS the open utility will be used for this and on the linux the default is gio open. You can override the application used for this by setting **NC\_MALTEGO\_OPEN\_FILE**.
+The **OpenFile** transform opens extracted files, except executables, in the default application for their type. On macOS it uses `open`, on Linux `gio open`. Set `NC_MALTEGO_OPEN_FILE` to use a different application.
 
 ## Examples
 
-Search for DHCP information from the selected hosts:
+Find DHCP information for the selected hosts:
 
 ![](.gitbook/assets/dhcp.mov.gif)
 
-Add Server Names provided as SNI on the TLS handshake:
+Add the server names sent as SNI in TLS handshakes:
 
 ![](.gitbook/assets/snis.mov.gif)
 
-Use Deep Packet Inspection to list all identified application categories:
+List the application categories found by deep packet inspection:
 
 ![](.gitbook/assets/dpicategories2.mov.gif)
 
-Extraction of a POP3 authentication token:
+Extract a POP3 authentication token:
 
 ![](.gitbook/assets/mailtoken.mov.gif)
 
 ## Gallery
 
-When working with larger amount of nodes, the organic topology can be useful:
+With many nodes, the organic layout keeps the graph readable:
 
 ![Graph during an investigation (organic topology)](.gitbook/assets/screenshot-2020-03-25-at-01.22.54.png)
 
-Example of interaction with a PHP webshell:
+Interaction with a PHP webshell:
 
-![PHP webshell interaction](<.gitbook/assets/screenshot-2020-03-25-at-15.00.45 (1).png>)
+![PHP webshell interaction](.gitbook/assets/screenshot-2020-03-25-at-15.00.45.png)
 
-Example of an exploit abusing a HTTP parameter command injection vulnerability:
+An exploit that injects commands through an HTTP parameter:
 
 ![HTTP parameter command injection](.gitbook/assets/screenshot-2020-03-25-at-15.00.55.png)
 
-Graph during an investigation where the attacker has been identified and further information is gathered:
+An investigation after the attacker was identified, with further information gathered:
 
 ![Dataset investigation](.gitbook/assets/screenshot-2020-03-25-at-00.20.06.png)
 
-![Dataset investigation](<.gitbook/assets/files (1).png>)
+![Dataset investigation](.gitbook/assets/files.png)
 
 ![Flow Graph](.gitbook/assets/screenshot-2020-03-25-at-20.19.15.png)
 

@@ -1,108 +1,77 @@
 ---
-description: Analyze a small, synthetic capture and inspect its records.
+description: Record some of your own traffic, analyze it with Netcap and read the records.
 ---
 
 # First capture
 
-This walkthrough uses Go Netcap v0.15.2 and Python 3. It creates two synthetic
-Ethernet/IPv4/UDP packets on documentation-only addresses: no traffic is sent.
-Install the appropriate [binary distribution](installation.md) first.
+You will record a few seconds of your own traffic with `tcpdump`, analyze the file with `net` and read the records. Install a [binary distribution](installation.md) first. You also need `tcpdump`, `dig` and `curl`.
 
-## 1. Verify the executable
+## 1. Check the executable
 
 ```sh
 net --version
 ```
 
-Check the printed version, commit and DPI status. Run commands from a writable
-working directory. Use a fresh output directory for each analysis.
+Note the version, commit and DPI status. Run the commands from a writable directory and use a new output directory for each analysis.
 
-## 2. Create a benign PCAP
+## 2. Record some traffic
 
-```python
-import socket
-import struct
-from pathlib import Path
+List your interfaces with `net util -interfaces`, then start a capture on the one you use for the network:
 
-def checksum(data):
-    if len(data) % 2:
-        data += b"\0"
-    total = sum(struct.unpack("!%dH" % (len(data) // 2), data))
-    while total >> 16:
-        total = (total & 65535) + (total >> 16)
-    return (~total) & 65535
-
-frames = []
-for index in range(2):
-    payload = b"netcap documentation fixture"
-    udp = struct.pack("!HHHH", 40000, 9999, 8 + len(payload), 0) + payload
-    ip = struct.pack("!BBHHHBBH4s4s", 0x45, 0, 20 + len(udp), index,
-                     0, 64, 17, 0, socket.inet_aton("192.0.2.10"),
-                     socket.inet_aton("192.0.2.20"))
-    ip = ip[:10] + struct.pack("!H", checksum(ip)) + ip[12:]
-    ethernet = bytes.fromhex("0200000000200200000000100800")
-    frames.append(ethernet + ip + udp)
-
-with Path("example.pcap").open("xb") as output:
-    output.write(struct.pack("<IHHIIII", 0xa1b2c3d4, 2, 4, 0, 0, 65535, 1))
-    for index, frame in enumerate(frames):
-        output.write(struct.pack("<IIII", 1700000000 + index, 0,
-                                 len(frame), len(frame)))
-        output.write(frame)
+```sh
+sudo tcpdump -i en0 -w office-lan.pcap
 ```
 
-Save as `example.py` and run `python3 example.py`. Exclusive creation refuses
-to replace an existing `example.pcap`.
+In a second terminal, make a DNS lookup and a plain HTTP request:
+
+```sh
+dig example.com
+curl http://neverssl.com
+```
+
+Stop `tcpdump` with Ctrl-C. Use `eth0` or `wlan0` instead of `en0` on most Linux machines. The file contains everything your machine sent on that interface, so keep it private.
+
+If you would rather not record anything, use a small public capture such as `http.cap` from Wireshark's sample captures wiki and substitute its name for `office-lan.pcap` below.
 
 ## 3. Analyze the file
 
 ```sh
-net capture -read example.pcap -out example-audit -dpi=false -geoDB=false
+net capture -read office-lan.pcap -out office-audit -dpi=false -geoDB=false
 ```
 
-The process exits after flushing records. `-dpi=false` makes this example usable
-with nodpi builds; `-geoDB=false` avoids a GeoIP prerequisite. Some other
-enrichment may report unavailable local data. [Database updates](database-updates.md)
-are optional for this packet-only exercise.
+The command exits after it has written all records. `-dpi=false` lets the command run with nodpi builds and `-geoDB=false` skips the GeoIP database. Enrichment that needs other local databases may report them as unavailable; [database updates](database-updates.md) are optional here.
 
-Expect `example-audit/UDP.ncap.gz` with two UDP records, along with other enabled
-record files and health artifacts. Empty protocol files are not proof of a
-problem: this fixture deliberately has no HTTP, TLS, DNS or credentials.
+`office-audit/` now holds one file per record type that occurred in the capture, such as `UDP.ncap.gz`, `TCP.ncap.gz`, `DNS.ncap.gz` and `HTTP.ncap.gz`, plus health files. A type that is missing did not appear in your traffic.
 
 ## 4. Inspect and export
 
 ```sh
-net dump -read example-audit/UDP.ncap.gz -header
-net dump -read example-audit/UDP.ncap.gz -fields
-net dump -read example-audit/UDP.ncap.gz -json
-net dump -read example-audit/UDP.ncap.gz -csv -sep ',' \
+net dump -read office-audit/UDP.ncap.gz -header
+net dump -read office-audit/UDP.ncap.gz -fields
+net dump -read office-audit/UDP.ncap.gz -json
+net dump -read office-audit/UDP.ncap.gz -csv -sep ',' \
   -select Timestamp,SrcPort,DstPort > udp.csv
+net dump -read office-audit/DNS.ncap.gz -json
 ```
 
-The header identifies `NC_UDP`. Field discovery prints one protobuf field name
-per line. JSON mode emits one object per record; the CSV header is
-`Timestamp,SrcPort,DstPort`. Port values are 40000 → 9999. Timestamp formatting
-depends on display options; raw record timestamps are Unix nanoseconds.
+The header shows the record type, `NC_UDP`. `-fields` prints one field name per line. `-json` prints one object per record. The CSV header is `Timestamp,SrcPort,DstPort`, and your DNS lookups show up with destination port 53. Raw record timestamps are Unix nanoseconds; the displayed format depends on the options you use.
 
 ## 5. Open the local WebUI
 
-Analyze again into another fresh directory:
+Analyze again into a new directory and serve the result:
 
 ```sh
-net capture -read example.pcap -out example-browser -dpi=false -geoDB=false \
+net capture -read office-lan.pcap -out office-browser -dpi=false -geoDB=false \
   -http 127.0.0.1:8080
 ```
 
-Open `http://127.0.0.1:8080`. The explicit HTTP flag keeps the process running;
-stop it with Ctrl-C when finished. Do not publish this unauthenticated local API
-directly to the Internet. [Web interface](web-interface.md) explains modes and
-the hosting boundary.
+Open `http://127.0.0.1:8080`. The process keeps running until you stop it with Ctrl-C. The local API has no authentication, so do not expose it to the Internet. [Web interface](web-interface.md) describes the modes and hosting.
 
 ## Next steps
 
-| Question | Continue with |
-| --- | --- |
-| How do I capture an interface? | [Live capture](live-collection.md) |
-| How do I select packets or records? | [Filtering](FILTERING.md) |
-| What happened on a connection? | [Evidence linking](evidence.md) |
-| Which data enriches an observation? | [Resolvers](resolvers.md) |
+| Question                            | Continue with                      |
+| ----------------------------------- | ---------------------------------- |
+| How do I capture an interface?      | [Live capture](live-collection.md) |
+| How do I select packets or records? | [Filtering](FILTERING.md)          |
+| What happened on a connection?      | [Evidence linking](evidence.md)    |
+| Which data enriches an observation? | [Resolvers](resolvers.md)          |

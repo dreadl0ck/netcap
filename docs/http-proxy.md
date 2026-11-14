@@ -1,26 +1,20 @@
-# HTTP Proxy
+# HTTP reverse proxy
 
-`net proxy` is an HTTP reverse proxy that records requests handled through it.
-It changes the traffic path; it is separate from passive PCAP analysis and does
-not provide automatic visibility into all encrypted traffic on a network.
+`net proxy` is an HTTP reverse proxy that records every request it forwards. Put it in front of a web app you run, such as a staging server, to get audit records for its traffic. It only sees requests sent through its listener. It does not decrypt other traffic on your network.
 
-## Usage
+## Proxy one application
 
-For an application you operate at `127.0.0.1:8080`:
+If your app listens on `127.0.0.1:8080`:
 
 ```sh
 net proxy -local 127.0.0.1:4000 -remote http://127.0.0.1:8080
 ```
 
-Send test requests to port 4000. Only requests through that listener are proxied.
-Upstream TLS verification remains enabled by default; `-skipTlsVerify` weakens
-that boundary and is not required for the local HTTP example.
+Send your test requests to port 4000. The proxy verifies TLS certificates of upstream servers. `-skipTlsVerify` turns that off. You do not need it for this plain HTTP example.
 
-## Configuration
+## Proxy several applications
 
-Multiple listeners use the dedicated `-proxy-config` file, whose default path is
-`net.proxy-config.yml`. This is different from the generic unimplemented
-configuration-generation flags.
+For more than one listener, use a config file. The default path is `net.proxy-config.yml`; change it with `-proxy-config`.
 
 ```yaml
 proxies:
@@ -34,16 +28,10 @@ logdir: logs
 net proxy -proxy-config net.proxy-config.yml
 ```
 
-TLS listeners additionally use `tls: true` and the top-level `certFile` and
-`keyFile`. Supply a certificate appropriate for that listener; this is not a
-transparent interception CA.
+To serve TLS on a listener, set `tls: true` on it and add `certFile` and `keyFile` at the top level. Use a certificate that is valid for the hostname clients connect to. The proxy does not generate certificates or intercept TLS transparently.
 
-## Help
+## Options
 
-Run `net proxy -h` for timeout and trace options. Defaults include a 30-second
-dial timeout, 90-second idle timeout and 15-second TLS handshake timeout.
-`-dump` prints audit records as JSON; `-trace` is enabled by default.
+Run `net proxy -h` for timeout and trace options. The defaults are a 30-second dial timeout, a 90-second idle timeout and a 15-second TLS handshake timeout. `-dump` prints the audit records as JSON, and `-trace` is on by default.
 
-Historical claims that passive reassembly is IPv4-only are obsolete. Proxy
-logging also does not establish complete HTTP/2 or HTTP/3 transaction decoding;
-check [protocol coverage](protocol-support.md) for the selected capture path.
+The proxy does not fully decode HTTP/2 or HTTP/3 transactions. See [protocol coverage](protocol-support.md).

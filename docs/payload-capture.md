@@ -1,25 +1,21 @@
 # Payload retention
 
-`capture -payload` includes raw payload fields where the selected decoder
-supports them. It does not decrypt TLS or recover upstream-truncated packets.
+`capture -payload` stores the raw payload bytes in the audit records of decoders that support it. It does not decrypt TLS, and it cannot recover bytes that the capture tool cut off.
+
+Keep the payload of every UDP packet in a capture, then read it:
 
 ```sh
-net capture -read traffic.pcap -out payload-audit -payload -dpi=false
+net capture -read office-lan.pcap -out payload-audit -payload -dpi=false
 net dump -read payload-audit/UDP.ncap.gz -json
 ```
 
-JSON represents protobuf byte fields as base64. CSV/custom record renderers may
-use another representation; consult the record schema before interpreting a
-string as text. Payload field coverage is decoder-specific.
+JSON shows byte fields as base64. CSV and other renderers may show them differently, so check the record schema before you treat a value as text. Which records carry a payload field depends on the decoder.
 
-| Option/artifact | Different purpose |
-| --- | --- |
-| `-payload` | Raw bytes in supported audit records |
-| `-conns` | Directional stream evidence and conversation output |
-| File extraction | Reconstruct transferred file artifacts with completeness metadata |
-| `-retain-packets` | Rotating PCAPNG packet retention with a manifest |
+| Option            | What it keeps                                            |
+| ----------------- | -------------------------------------------------------- |
+| `-payload`        | Raw bytes in supported audit records                     |
+| `-conns`          | Per-direction stream bytes and conversation output       |
+| File extraction   | Files rebuilt from transfers, with completeness metadata |
+| `-retain-packets` | Rotating PCAPNG packet files with a manifest             |
 
-Retained bytes can contain credentials, personal data and executable content.
-Set collection, access and retention boundaries for the actual output directory.
-Compression is not anonymization. Preserve the original capture for reruns;
-missing payloads in an old record require reanalysis from available source bytes.
+Retained bytes can contain credentials, personal data and executables. Decide who may read the output directory and how long you keep it. Compression does not anonymise anything. Keep the original capture, because records written without `-payload` cannot be filled in later. You have to analyse the capture again.

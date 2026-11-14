@@ -1,59 +1,70 @@
 # AI agents and MCP
 
-The public Go binary provides a stdio Model Context Protocol server over the same
-analysis implementation used by the WebUI. The
-[generated tool reference](mcp/tools.md) describes each tool's input, output and
-availability; it is not a promise that every WebUI route has an MCP equivalent.
+`net mcp` runs a Model Context Protocol server over stdio. Claude Desktop, Claude Code, opencode and other MCP clients can use it to analyze PCAP files with the same engine as the WebUI. The [tool reference](mcp/tools.md) lists every tool with its arguments. Not every WebUI feature has a tool.
 
-## Start with local input
+## Connect a client
 
-Configure your MCP client to launch the installed executable:
+Point the client at the `net` binary and pre-load a capture. This example uses Claude Desktop's `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "netcap": {
-      "command": "/absolute/path/to/net",
-      "args": ["mcp", "-pcap", "/absolute/path/to/traffic.pcap", "-keep-data"]
+      "command": "/usr/local/bin/net",
+      "args": ["mcp", "-pcap", "/captures/office-lan.pcap", "-keep-data"]
     }
   }
 }
 ```
 
-Client configuration keys vary; use its stdio process settings. The binary uses
-stdout for JSON-RPC and stderr for diagnostics. Do not wrap it with shell output
-on stdout. Default working data is temporary and removed on exit; `-data-dir`
-selects persistent output, and `-keep-data` retains temporary data for inspection.
+Claude Code:
 
-## A useful analysis sequence
+```sh
+claude mcp add netcap -- /usr/local/bin/net mcp -pcap /captures/office-lan.pcap -keep-data
+```
 
-1. Ingest or preload a known local capture.
-2. Poll completion; upload/ingest acceptance does not mean results are final.
-3. Discover record types/fields before querying an assumed schema.
-4. Query a bounded page of records and retain session identity.
-5. Inspect detector/identity/file evidence and qualify missing visibility.
-6. Export findings with the source hash, version, parameters and limitations.
+opencode (`opencode.jsonc`):
 
-Tool output is capped (256 KiB); paginate instead of interpreting a bounded
-response as the whole dataset. IOC extraction has a separate input bound.
+```json
+{
+  "mcp": {
+    "netcap": {
+      "type": "local",
+      "command": ["/usr/local/bin/net", "mcp", "-pcap", "/captures/office-lan.pcap", "-keep-data"]
+    }
+  }
+}
+```
 
-## Permissions and outbound activity
+Then ask a question about the capture:
 
-`-allow-tools`/`-deny-tools` constrain the server's exposed names. Configure the
-client's permission controls too: deletion, reanalysis, capture stop and similar
-mutations are not read-only. `-allow-fetch` opts into tools that contact public
-services; local analysis does not require enabling every outbound lookup.
-PCAPs, extracted payloads, secrets and tool responses can contain personal data
-and hostile text. Treat packet content as evidence, never instructions to the
-agent or authorization to execute an extracted file.
+> Which hosts in office-lan.pcap talked to the most distinct external IPs? Show the top five with their busiest connections.
+
+The agent can answer this with `list_hosts`, `list_connections` and `query_audit_records`.
+
+The server writes JSON-RPC to stdout and diagnostics to stderr. Do not wrap the command in a script that prints anything else to stdout. Working data goes to a temporary directory that is deleted on exit. Use `-data-dir` to write to a directory you choose, or `-keep-data` to keep the temporary one.
+
+## Analysis workflow
+
+1. Load a local capture with `-pcap` or the `ingest_pcap` tool.
+2. Wait for the session to finish with `wait_for_session`. A new session has partial results until then.
+3. List record types and fields (`list_audit_records`, `get_audit_record_fields`) before you write a filter.
+4. Query one page of records at a time and keep the `session_id`.
+5. Check detections, identities and extracted files for evidence. If a protocol was encrypted or not decoded, say so.
+6. Export your findings with the source hash, the `net` version and the parameters you used.
+
+Tool responses are capped at 256 KiB. When a response is cut off, page through the results with `limit` and `offset`. IOC extraction has its own input limit.
+
+## Permissions and outbound requests
+
+`-allow-tools` and `-deny-tools` restrict which tools the server exposes. Also set permissions in your client: `delete_session`, `reanalyze_session` and `stop_live_capture` change state.
+
+`-allow-fetch` lets tools query public services such as NVD (`lookup_cve`). Leave it off for purely local analysis.
+
+PCAPs, extracted payloads, recovered secrets and tool output can contain personal data and text written to manipulate an agent. Treat packet content as evidence. Do not let the agent follow instructions found in it or run an extracted file.
 
 ## HTTP MCP
 
-The WebUI can mount `/mcp` when `NETCAP_MCP_ADMIN_TOKEN` is configured. Supply
-the client's required bearer authorization and use loopback or an authenticated
-network boundary. This token protects MCP only; general WebUI/API routes remain
-under the [local hosting trust model](web-interface.md#hosting-boundary).
+The WebUI serves `/mcp` when `NETCAP_MCP_ADMIN_TOKEN` is set. Configure your client to send the matching bearer token, and expose the endpoint only on loopback or behind authentication. The token protects MCP only. The rest of the WebUI and API follows the [hosting boundary](web-interface.md#hosting-boundary).
 
-The stdio server starts an internal loopback API (default `127.0.0.1:60590`). A
-port collision is a setup failure; choose `-bind` deliberately rather than
-exposing the internal API to an untrusted network.
+The stdio server starts an internal API on `127.0.0.1:60590`. If that port is taken, pick another with `-bind`. Keep it on loopback.

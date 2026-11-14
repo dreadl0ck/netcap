@@ -1,74 +1,48 @@
 # Credential observations
 
-`Secret` records retain supported credential/authentication observations from
-visible traffic. A captured password, challenge/response or token is sensitive
-evidence; the record's existence does not establish successful authentication.
+`Secret` records hold the credentials and authentication data netcap finds in traffic: passwords, challenge/response pairs and tokens. Treat them as sensitive. A record shows that a credential was sent, not that the login succeeded.
+
+To look for cleartext logins, run a capture that contains one (for example a plain HTTP or FTP login) and dump the `Secret` file:
 
 ```sh
-net capture -read traffic.pcap -out credential-audit -dpi=false
+net capture -read login-capture.pcap -out credential-audit -dpi=false
 net dump -read credential-audit/Secret.ncap.gz -fields
 net dump -read credential-audit/Secret.ncap.gz -json
 ```
 
-Only inspect a file the capture produced. No `Secret` records can mean absent
-plaintext, encryption, unsupported framing, disabled harvesters or insufficient
-captured bytes. It does not establish that authentication never occurred.
+If you get no `Secret` records, the traffic may be encrypted, use an unsupported protocol or framing, the harvesters may be disabled, or the capture may not hold enough bytes.
 
 ## Review each observation
 
-Current `WriteSecret` retains every emitted occurrence, including repeated
-credentials in the same flow and hash-only observations. Count occurrences and
-distinct credential identities separately; repetition can represent different
-transactions (`internal/decoder/stream/secret/secret.go`, `types/secret.go`).
+Every occurrence is kept, including repeated credentials in one flow and hash-only observations. Count occurrences and distinct credentials separately, because repeats can be separate logins.
 
-| Evidence | Interpretation |
-| --- | --- |
-| Protocol and endpoints | Identify the owning framed exchange and initiator; raw token-shaped bytes alone do not establish host attribution |
-| Credential representation | Distinguish plaintext, encoded text, challenge/response and hashed material; base64 is encoding, not encryption |
-| `Notes` / protocol response | Preserve observed success, rejection or unknown result; TCP reset/timeout alone is not an authentication failure |
-| Capture time and stream scope | Join only to the relevant connection and visible exchange |
-| User/account names | Advertised or observed identities; not proof of the human operator |
-| `AuthSuccessSet` / `AuthSuccess` | Only a set outcome distinguishes observed success from rejection; unset remains unknown |
-| `Realm`, `Uri`, `SipCallId` | Preserve the protocol's observed context; absent fields cannot be inferred from another occurrence |
-| `CommunityID` | Tuple correlation only; qualify capture/source scope, time and session reuse before a cross-record join |
+| Field                            | What it tells you                                                                          |
+| -------------------------------- | ------------------------------------------------------------------------------------------ |
+| Protocol and endpoints           | The exchange the credential came from and who started it                                   |
+| Credential representation        | Plaintext, encoded text, challenge/response or hash. Base64 is encoding, not encryption    |
+| `Notes` / protocol response      | Whether the server accepted or rejected it. A TCP reset or timeout is not a failed login   |
+| Capture time and stream          | Use these to join to the right connection                                                  |
+| User/account names               | The name sent in the exchange, which is not necessarily the person behind it               |
+| `AuthSuccessSet` / `AuthSuccess` | The outcome is known only when `AuthSuccessSet` is true. Otherwise it is unknown           |
+| `Realm`, `Uri`, `SipCallId`      | Protocol context from this occurrence only. Don't fill gaps from another record            |
+| `CommunityID`                    | Identifies the connection tuple. Tuples get reused, so check the time range before joining |
 
-SMTP LOGIN/PLAIN results and STARTTLS boundaries are described in
-[email extraction](mail-extraction.md). Windows account/principal evidence and
-directory subjects are covered by [hosts and identity](host-identity.md).
-Encrypted sessions can expose endpoints/timing while hiding the result.
+SMTP LOGIN/PLAIN results and STARTTLS boundaries are in [email extraction](mail-extraction.md). Windows accounts and directory subjects are in [hosts and identity](host-identity.md). Encrypted sessions show endpoints and timing but hide the result.
 
 ## Configure and qualify harvesters
 
-The [transfer lab](investigation-walkthrough.md) contains a synthetic HTTP Basic
-header encoding `lab-user:lab-password`. These are fictional values embedded
-offline, never submitted to a server. Inspect `doc-fixtures/audit/Secret.ncap.gz`
-and the owning HTTP record; the DNS-only benign control must have no credential
-observation. The HTTP 200 response alone does not prove which authentication
-policy a real service applied.
+HTTP Basic authentication is a good first test. The `Authorization: Basic` header is the base64 of `user:password`, so one login to a test web app over plain HTTP gives you a record to inspect. Compare it with the HTTP record for the same request.
 
-`capture -harvesters-config` loads the feature-specific YAML described by the
-checkout's `configs/` and harvester implementation. Use the installed help for
-per-stream byte bounds and selection; `-payload` is not a universal credential
-enable/disable control. Generic regex harvesting and protocol-specific parsing
-have different false-positive boundaries.
+`capture -harvesters-config` loads a YAML file that configures the harvesters. See the `configs/` directory of the netcap repository for the format. `-hbsize` sets how many bytes of each stream go to the harvesters (default 256, recommended 512 to 8192), and `-reCustom` adds your own regex.
 
-Test configuration on a synthetic positive exchange and a benign conversation
-that contains similar text outside an authentication frame. Do not replay real
-credentials to validate extraction. The WebUI's Credentials view and MCP
-`list_secrets`/`list_auth_activity` are distinct views; check the
-[tool reference](mcp/tools.md) before automation.
+Test a configuration on a capture of a real login to a system you control, and on a capture of ordinary browsing. Generic regex harvesting can match text outside an authentication exchange, so check each match against the owning protocol exchange. Don't replay real credentials to test extraction.
+
+The WebUI's Credentials view and the MCP tools `list_secrets` and `list_auth_activity` show different slices of the data. Check the [tool reference](mcp/tools.md) before you automate.
 
 ## Preserve and share
 
-[Scoped rule joins](RULES_ENGINE.md#scoped-capture-time-rules) retain hash-only
-contributors and bounded matched-record projections. Secret alert projections
-and Prometheus labels exclude credential material; [webhook notices](RULES_ENGINE.md#durable-webhook-delivery)
-also omit raw records, notes and credential fields. This protection applies to
-those projections, not the original `Secret.ncap.gz`, raw `dump -json` output or
-the local Credentials view. Some specialist views filter records without a
-username/password; use the audit file to check hash-only occurrences.
+[Scoped rule joins](RULES_ENGINE.md#scoped-capture-time-rules) keep hash-only references to the records they join. Secret alert projections, Prometheus labels and [webhook notices](RULES_ENGINE.md#durable-webhook-delivery) leave out credential material.
 
-Limit access to the original capture, `Secret` files and screenshots. Redacting
-an exported table does not redact retained payloads or other output files.
-Preserve source references for authorized incident handling; avoid including
-credential values in rule names, public issues or documentation examples.
+The original `Secret.ncap.gz`, raw `dump -json` output and the local Credentials view still contain it. Some specialist views skip records without a username or password, so use the audit file to find hash-only occurrences.
+
+Limit access to the capture, the `Secret` files and screenshots. Redacting an exported table doesn't redact retained payloads or other output files. Keep source references for incident handling, and keep credential values out of rule names, public issues and documentation.

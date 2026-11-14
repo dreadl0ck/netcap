@@ -1,86 +1,50 @@
 # Network detections
 
-Go's network-detection engine observes packet and application patterns separately
-from YAML rules and approved behavioral baselines. `-network-detection` is
-enabled by default; `-network-detection-config` supplies its JSON policy.
+The network-detection engine looks for patterns in packet and application traffic: scans, DNS patterns, periodic connections and large transfers, plus application policy observations. It is on by default. `-network-detection-config` takes a JSON policy file.
 
-| Mechanism | Input | Interpretation |
-| --- | --- | --- |
-| YAML rules | Typed audit records | Explicit expression/threshold/sequence match |
-| Network detections | Packet/application observations | Pattern, indicator or policy evidence |
-| Behavior | Scoped facts and explicitly approved baseline | Change/deviation from reviewed state |
+It works alongside YAML rules and approved behavioral baselines:
 
-Use the alert's detector identifier, evidence and observation time to decide
-which mechanism produced it. A benign policy observation is not necessarily an
-attack; a scan/beacon pattern alone does not prove compromise.
+| Mechanism          | Input                                 | What it reports                            |
+| ------------------ | ------------------------------------- | ------------------------------------------ |
+| YAML rules         | Typed audit records                   | An expression, threshold or sequence match |
+| Network detections | Packet and application observations   | A pattern, indicator or policy match       |
+| Behavior           | Scoped facts and an approved baseline | A change from the state you approved       |
+
+The alert's detector identifier, evidence and observation time tell you which mechanism produced it.
 
 ## Investigate a finding
 
-1. Check capture scope, gaps and admission health.
-2. Read detector evidence rather than inferring intent from the title.
+1. Check the capture scope, gaps and admission health.
+2. Read the detector's evidence, not just the alert title.
 3. Compare endpoints and time with decoded transactions and connection summaries.
-4. Preserve protocol visibility: encrypted traffic can expose timing/edges
-   without exposing authentication or application commands.
-5. Add benign controls before changing a threshold or allowlist.
+4. Remember that encrypted traffic shows timing and endpoints, not authentication or commands.
+5. Test against benign traffic before you change a threshold or allowlist.
 
-The engine includes scan, DNS, periodic-connection and transfer patterns, plus
-application-policy observations. Some application findings finalize after record
-processing; absence before completion is not a negative verdict.
+Some application findings are produced only after record processing finishes, so check the final output rather than a partial run.
 
 ## Application timing and bounds
 
-| Capture mode | Application observations |
-| --- | --- |
-| Live | Each maintenance tick and output checkpoint drains decoded observations in capture-time order within that batch, then emits partial aggregates. Scan/beacon history survives checkpoints. A record older than the previous batch's event watermark is excluded and counted in `applicationLate`; wall-clock time never advances that watermark. |
-| Offline | Decoded observations remain capture-time sorted at EOF, independent of replay speed. |
+| Capture mode | Application observations                                                                                                                                                                                                                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Live         | Each maintenance tick and output checkpoint drains decoded observations in capture-time order within that batch, then emits partial aggregates. Scan and beacon history survives checkpoints. A record older than the previous batch's event watermark is skipped and counted in `applicationLate`. Wall-clock time never advances the watermark. |
+| Offline      | Observations are sorted by capture time at end of file, whatever the replay speed.                                                                                                                                                                                                                                                                |
 
-The shared observation queue has a `16 MiB` accounting limit and a `100,000`
-record ceiling across all workers, including a detached checkpoint batch.
-`NetworkDetectionStats.json` exposes `applicationQueueLimit`,
-`applicationQueuedBytes`, `applicationPeakBytes` and `applicationQueueDrops`.
-Overflow discards observations explicitly; it does not establish an absence of
-scan/beacon activity. Consumed observations release reservations and references.
-Stored text is bounded and copied, avoiding retention of whole parser buffers
-through small substring views (`internal/networkdetect/application.go`).
+All workers share one observation queue, limited to 16 MiB and 100,000 records, including a checkpoint batch being processed. `NetworkDetectionStats.json` reports `applicationQueueLimit`, `applicationQueuedBytes`, `applicationPeakBytes` and `applicationQueueDrops`. When the queue overflows, observations are dropped, so check `applicationQueueDrops` before you conclude that no scanning or beaconing happened.
 
-`-incremental-http` enables HTTP/1 transaction emission from qualified open
-keepalive connections; live checkpoints then process those records before
-shutdown. Other protocols, uncertain TCP roles and deferred upgrade tails retain
-completion decoding. [TCP reassembly](reassembly.md#incremental-transactions)
-documents eligibility, budgets and finalization witnesses.
-Qualified HTTP boundaries do not count as complete transactions for `http.scan`
-or `c2.beacon` (`internal/collector/application_live_test.go`,
-`internal/networkdetect/application_memory_test.go`).
+`-incremental-http` emits HTTP/1 transactions from qualified open keep-alive connections, so live checkpoints process them before shutdown. Other protocols, TCP streams with uncertain roles and deferred upgrade tails are decoded at completion. See [TCP reassembly](reassembly.md#incremental-transactions) for eligibility, budgets and finalization. Transactions emitted at these boundaries do not count as complete transactions for `http.scan` or `c2.beacon`.
 
 ## Indicators and policy
 
-Use the complete minimal example
-[`docs/examples/network-detection.json`](examples/network-detection.json).
-Omitted thresholds retain the defaults in the released loader; unknown keys
-are rejected. Times are integer Unix nanoseconds, not seconds.
+Start from the minimal example [`docs/examples/network-detection.json`](examples/network-detection.json). Omitted thresholds take the loader's defaults, and unknown keys are rejected. Times are integer Unix nanoseconds, not seconds.
 
-After creating the [lab fixtures](investigation-walkthrough.md#create-the-evidence):
+The example's indicator is a placeholder. Replace it with your own: a domain or IP from a threat report or a sinkhole feed, with its source, version and the capture-time window in which it is valid. Don't remove those fields to make an expired indicator look current. Netcap ships no threat-intelligence feed and does not ingest STIX/TAXII.
 
-<!-- docs:run network-policy -->
 ```sh
-net capture -read doc-fixtures/investigation.pcap -out doc-fixtures/policy-audit \
-  -network-detection-config docs/examples/network-detection.json \
+net capture -read office-lan.pcap -out policy-audit \
+  -network-detection-config network-detection.json \
   -dpi=false -geoDB=false
 ```
 
-The sample marks a `.test` domain as a synthetic indicator valid only over the
-fixture's capture-time interval. It is not live threat intelligence. Replace
-source/version/validity explicitly for real indicators; do not remove those
-fields to make an expired entry appear current.
+The [JSON config types](https://github.com/dreadl0ck/netcap/blob/v0.15.2/internal/networkdetect/config.go) define the thresholds, approved sources and IP/domain indicators.
 
-The versioned JSON types in
-[`internal/networkdetect/config.go`](https://github.com/dreadl0ck/netcap/blob/v0.15.2/internal/networkdetect/config.go)
-define thresholds, approved sources and IP/domain indicators. Indicators require
-source, version and capture-time validity. There is no bundled live intelligence
-feed or implicit STIX/TAXII ingestion. Distinguish an indicator match from
-independently verified malicious activity.
-
-The WebUI's Alerts view displays available evidence. [Related-record linking](evidence.md)
-does not automatically treat these alerts as YAML-rule matched records.
-[Behavioral monitoring](behavioral-monitoring.md) has a separate learning and
-approval lifecycle.
+The WebUI's Alerts view shows the available evidence. [Related-record linking](evidence.md) does not treat these alerts as YAML-rule matches. [Behavioral monitoring](behavioral-monitoring.md) has its own learning and approval lifecycle.

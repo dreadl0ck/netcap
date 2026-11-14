@@ -1,23 +1,32 @@
 # Metrics
 
-`net export` serves Prometheus metrics from audit files, PCAP input or live
-capture. CSV/JSON conversion uses `net dump` instead.
+`net export` serves Prometheus metrics from audit files, a PCAP or a live capture. Scrape them with Prometheus and graph them in Grafana. To convert audit records to CSV or JSON, use `net dump` instead.
 
-## Usage
+## Export metrics
+
+Export a finished audit file:
 
 ```sh
 net export -read example-audit/UDP.ncap.gz -address 127.0.0.1:7777
 ```
 
-Other inputs use `-read traffic.pcap`, `-dir analysis`, or `-iface en0`.
-Select the real interface with `net util -interfaces`. `-replay` applies only
-when exporting audit records directly; inspect `net export -h` for that mode's
-options.
+Other inputs:
 
-## Configuration
+* `-read traffic.pcap` for a PCAP
+* `-dir analysis` for a directory of audit records
+* `-iface en0` for a live capture. Find your interface name with `net util -interfaces`.
 
-The default endpoint is `http://127.0.0.1:7777/metrics`.
-Configure a separately installed Prometheus instance:
+For a live sensor on a server, run `net export -iface eth0 -address 0.0.0.0:7777` and restrict who can reach port 7777. `-replay` works only when exporting audit records directly. Run `net export -h` for its options.
+
+The metrics are at `http://127.0.0.1:7777/metrics` by default. Open them with `curl` to see the metric names you can graph:
+
+```sh
+curl -s http://127.0.0.1:7777/metrics | less
+```
+
+## Scrape with Prometheus
+
+Add a job to your `prometheus.yml`:
 
 ```yaml
 global:
@@ -30,36 +39,26 @@ scrape_configs:
       - targets: ["127.0.0.1:7777"]
 ```
 
-Loopback is relative to Prometheus's own network namespace. A containerized
-Prometheus cannot reach a host listener using its own `127.0.0.1`. Configure
-connectivity deliberately before changing bind addresses.
+If Prometheus runs in a container, `127.0.0.1` is the container itself, not the host. Start `net export` on an address the container can reach, and use that address as the target.
 
-## Interpretation
+## Graph in Grafana
 
-| Signal | Interpretation |
-| --- | --- |
-| Go/process metrics | Exporter runtime resource use |
-| Record counters | Observed/processed records for enabled decoders |
-| Capture/drop metrics | Read with the corresponding health witness and availability |
-| Grafana dashboard | Visualization of the selected metric names/labels |
+Add Prometheus as a data source in Grafana and build panels from the metric names in your `/metrics` output.
 
-Build dashboards from the actual `/metrics` output and installed Grafana version.
-Historical 2019 dashboards/plugins are not a current schema contract. A zero
-application counter can mean unsupported/encrypted traffic rather than no
-activity; [capture health](evidence.md) provides the qualification.
+| Metrics          | What they show                                                                  |
+| ---------------- | ------------------------------------------------------------------------------- |
+| Go and process   | CPU and memory use of the exporter                                              |
+| Record counters  | Records processed by each enabled decoder                                       |
+| Capture and drop | Packets seen and dropped; read them together with [capture health](evidence.md) |
 
-## Firewall operations
+A counter that stays at zero can mean the traffic is encrypted or no enabled decoder handles it. [Capture health](evidence.md) tells you which.
 
-The firewall's `/metrics`, `/readyz` and `/livez` belong to its separate admin
-listener, default port `9090`; `net export` does not monitor a running WAF.
-With scoped `--auth-config`, `/metrics` requires a `metrics` grant; health routes
-remain bearer-free. Keep admin off the application Ingress and configure
-administrative TLS/Secret references as described in
-[Kubernetes](APPLICATION_FIREWALL.md#kubernetes).
+## Firewall metrics
 
-Read policy revision, deny versus would-deny decisions, body-budget admission and
-authority readiness together. A healthy socket alone does not prove an available
-policy-state database. Gateway/packet `--operations-listen` is a separate opt-in
-loopback status/metrics listener; consult the exact subcommand help.
-Alert SSE cursors, [webhook receipts](RULES_ENGINE.md#durable-webhook-delivery)
-and enforcer lease state represent different delivery/enforcement boundaries.
+The firewall serves `/metrics`, `/readyz` and `/livez` on its own admin listener, port `9090` by default. `net export` does not monitor a running firewall.
+
+With a scoped `--auth-config`, `/metrics` requires a `metrics` grant. The health routes need no bearer token. Keep the admin listener off the application Ingress and configure its TLS and Secret references as described in [Kubernetes](APPLICATION_FIREWALL.md#kubernetes).
+
+Watch these together: policy revision, deny and would-deny decisions, body-budget admission and authority readiness. A responding admin port does not mean the policy-state database is available.
+
+Gateway and packet modes have an optional `--operations-listen` status and metrics listener on loopback. Run the subcommand's `-h` for details. Alert SSE cursors, [webhook receipts](RULES_ENGINE.md#durable-webhook-delivery) and enforcer lease state are tracked separately.
