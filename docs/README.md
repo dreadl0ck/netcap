@@ -4,7 +4,7 @@ description: Turn network captures into structured records you can search and in
 
 # Netcap
 
-![Netcap — network traffic analysis](.gitbook/assets/logo.png)
+![](.gitbook/assets/logo.png)
 
 Netcap turns network packets into typed audit records and links them to hosts, services, files, detections and evidence. Use the `net` executable to analyze PCAP/PCAPNG files, capture from a live interface, browse results in a browser or give structured evidence to an AI agent.
 
