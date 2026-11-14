@@ -8,7 +8,7 @@ description: Turn network captures into structured records you can search and in
 
 Netcap turns network packets into typed audit records and links them to hosts, services, files, detections and evidence. Use the `net` executable to analyze PCAP/PCAPNG files, capture from a live interface, browse results in a browser or give structured evidence to an AI agent.
 
-These docs cover the open-source Go implementation, currently [v0.16.5](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.5). The `master` variant follows the current source and may describe flags your release does not have, so check `net --version` and `net capture -h`. Older variants describe older releases. [Releases and migration](changelog.md) lists what each release contains.
+These docs cover the open-source Go implementation, currently [v0.16.6](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.6). The `master` variant follows the current source and may describe flags your release does not have, so check `net --version` and `net capture -h`. Older variants describe older releases. [Releases and migration](changelog.md) lists what each release contains.
 
 ## Start with a question
 

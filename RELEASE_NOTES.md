@@ -1,3 +1,22 @@
+## Recheck fixes
+
+`v0.16.6` fixes the open items from the v0.16.4 full recheck that do not need a
+large machine. DS-12 and DS-14 (memory on the 49 estimator-skipped captures) are not addressed.
+
+| Area | Change |
+| --- | --- |
+| `policy.http-on-443` | Fires only for an answered request with a well-formed `HTTP/1.x` or `HTTP/2.0` version and no reassembly qualification. Unanswered probes, version-less request lines and records qualified by capture loss no longer alert. The h2c preface (`PRI * HTTP/2.0`) is no longer also reported as `policy.non-tls-on-443` |
+| Overwrite prompt | With a non-empty output directory and no `-y`, a non-terminal stdin now fails with `pass -y to overwrite` and keeps the previous output. It no longer prints `Overwrite? [Y/n]:` and exits on EOF |
+| NBNS | Node-status (type 0x21) responses are decoded. They previously failed in the DNS parser and were dropped, so captures with only NBSTAT traffic had no `NBNS.ncap.gz` |
+| Link types | Adds DLT 108 (OpenBSD loopback), 50 (PPP in HDLC), 117 (PFLog) and 119 (Prism). PPP frames with the `0xff03` prefix, including DLT 9, now reach the transport decoders. DLT labels in `capture-input.json` come from the tcpdump registry; several ranges were off by one (289 and 300 printed no or wrong names) |
+| Host identity | `Hosts.json` hosts gain `directoryMatches`, the LDAP computer objects whose name equals a host's observed name. No IP is bound from LDAP. A bare name and its FQDN (`web01`, `web01.corp.example`) are one name instead of `conflicting-observations`; two different FQDNs still conflict |
+| `c2.beacon` | The TCP-timing and HTTP-timing detectors still emit separate rows. In offline runs each row now carries `corroborated-by:<RecordType>` when the other detector reported the same source, destination and port |
+| Tests only | V-8: a rejected fragment set keeps its `fragment-rejected` Connection with no ports, by design. V-7: a malformed 802.11 information element is a decode error and leaves the input `complete`; snaplen truncation is what makes it `partial` |
+
+Not changed: unsupported link types such as 165, 209, 249, 289 and 300 still end as `unsupported`.
+The missing `10.3.14.2` fact on 2017-02-11 is probably an ICMP-quoted or ARP-target address,
+which netcap deliberately does not report as a peer; the capture was not available to confirm it.
+
 ## Analyst web UI
 
 `v0.16.5` ships the shared web UI `@dreadl0ck/netcap-ui` 0.13.3 on the v0.16.4

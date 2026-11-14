@@ -30,7 +30,9 @@ The exit code of an offline capture reports how much of the input was read, not 
 
 Malformed fragments show `Connection.Normalization: fragment-rejected` and have no transport ports. ICMP error messages quote the original packet in `QuotedSrcIP` and `QuotedDstIP`; those hosts are not additional peers on the network.
 
-`Hosts.json` marks a host `observed-with-unattributed-aliases` when one protocol hostname has a timestamp and other names from profile or discovery traffic do not. `hostnameAliases` keeps all of them. Conflicting hostnames with timestamps are marked `conflicting-observations`. A hostname comes from traffic and is not an authenticated identity.
+`Hosts.json` marks a host `observed-with-unattributed-aliases` when one protocol hostname has a timestamp and other names from profile or discovery traffic do not. `hostnameAliases` keeps all of them. Conflicting hostnames with timestamps are marked `conflicting-observations`. A bare name and its FQDN count as one name. A hostname comes from traffic and is not an authenticated identity. `directoryMatches` lists LDAP computer objects with the same name; it does not bind them to an IP address.
+
+A capture into a non-empty output directory asks before overwriting. When stdin is not a terminal it stops with `pass -y to overwrite` and keeps the previous output.
 
 `max-retained-reassembly-bytes` reserves the maximum page size for each buffer, so small payloads can use less than the limit. Packet contexts, parser state and total process memory are counted separately.
 

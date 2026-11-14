@@ -4,6 +4,10 @@ description: Detailed Version History Information
 
 # Releases and migration
 
+## v0.16.6
+
+The [Go release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.6) contains the [recheck fixes](../RELEASE_NOTES.md#recheck-fixes). Stricter `policy.http-on-443`, NBNS node-status decoding, four more link types (50, 108, 117, 119), `directoryMatches` in `Hosts.json` and a non-interactive overwrite error are the visible changes. Memory use on very large captures is not addressed.
+
 ## v0.16.5
 
 The [Go release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.5) adds the [analyst web UI changes](../RELEASE_NOTES.md#analyst-web-ui). The chart endpoint returns `204 No Content` when the selected scope has no plottable values. Capture and decoder behavior is the same as in v0.16.4.

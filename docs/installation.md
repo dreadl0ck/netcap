@@ -1,6 +1,6 @@
 # Installation
 
-Download the archive for your operating system and architecture from the [v0.16.5 release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.5). Keep the `net` executable and its `lib/` directory together.
+Download the archive for your operating system and architecture from the [v0.16.6 release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.6). Keep the `net` executable and its `lib/` directory together.
 
 ## Binary Distributions
 
@@ -11,7 +11,7 @@ Download the archive for your operating system and architecture from the [v0.16.
 | macOS DPI           | macOS 26 or later. Keep the `lib/` directory next to the executable.                                                |
 | macOS nodpi         | macOS 15 or later. No native DPI classification.                                                                    |
 | Windows amd64 nodpi | Offline analysis without a driver, no YARA-X. Live capture and BPF filters need Npcap and are untested.             |
-| Standalone firewall | `netcap-firewall-v0.16.5-linux-{amd64,arm64}.tar.gz`. A separate archive that does not include the capture runtime. |
+| Standalone firewall | `netcap-firewall-v0.16.6-linux-{amd64,arm64}.tar.gz`. A separate archive that does not include the capture runtime. |
 
 On Linux the `net` wrapper loads its own runtime and installs nothing into system directories. Both macOS variants are Developer ID signed and notarized. Checksums are published with each release.
 
@@ -30,7 +30,7 @@ brew install netcap
 net --version
 ```
 
-The formula installs the full native runtime under `libexec`. The tap can be newer than v0.16.5, so note the output of `net --version` when you report or reproduce results.
+The formula installs the full native runtime under `libexec`. The tap can be newer than v0.16.6, so note the output of `net --version` when you report or reproduce results.
 
 ## Go Get
 
@@ -41,7 +41,7 @@ The formula installs the full native runtime under `libexec`. The tap can be new
 You need the Go version declared in `go.mod`, Node and pnpm for the UI, a C toolchain and the libpcap headers. Native DPI and YARA need additional libraries. This reduced build leaves both out:
 
 ```sh
-git clone --branch v0.16.5 https://github.com/dreadl0ck/netcap.git
+git clone --branch v0.16.6 https://github.com/dreadl0ck/netcap.git
 cd netcap/cmd/capture/webui/frontend
 pnpm install --frozen-lockfile
 pnpm build
@@ -58,7 +58,7 @@ GOWORK=off go build -tags nodpi,noyara -o net ./cmd/net
 
 ## Development Build
 
-To build current `master`, check out the commit you want instead of the `v0.16.5` tag in the recipe above, then rebuild the UI and the Go binary together. `net COMMAND -h` shows the flags of the executable you built.
+To build current `master`, check out the commit you want instead of the `v0.16.6` tag in the recipe above, then rebuild the UI and the Go binary together. `net COMMAND -h` shows the flags of the executable you built.
 
 The standalone firewall is CGO-free and builds without the capture UI or native dependencies. Follow its [quickstart](APPLICATION_FIREWALL.md#quickstart). For native capture images, use the [matched builder/runtime](docker-containers.md) recipes. Do not mix the YARA-X Go bindings with an older C library.
 
