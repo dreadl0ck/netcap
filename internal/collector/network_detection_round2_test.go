@@ -159,7 +159,7 @@ func TestRound2ApplicationAggregationWriter(t *testing.T) {
 	c.recordScopes[endpoints("192.0.2.1", 40000, "198.51.100.1", 443)] = recordScope{Scope: scope, Key: "fixture"}
 	// Decoder callbacks can arrive out of order; replay sorts capture time.
 	for _, at := range []int64{2e9, 0, 1e9} {
-		c.observeDecodedRecord(&types.HTTP{Timestamp: at, SrcIP: "192.0.2.1", DstIP: "198.51.100.1", SrcPort: 40000, DstPort: 443, Method: "GET", URL: "/", StatusCode: 200})
+		c.observeDecodedRecord(&types.HTTP{Timestamp: at, SrcIP: "192.0.2.1", DstIP: "198.51.100.1", SrcPort: 40000, DstPort: 443, Method: "GET", URL: "/", StatusCode: 200, Proto: "HTTP/1.1"})
 	}
 	if err := c.closeNetworkDetection(); err != nil {
 		t.Fatal(err)
