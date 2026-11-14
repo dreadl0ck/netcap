@@ -453,3 +453,26 @@ func FuzzPacketPipeline(f *testing.F) {
 		p.Reset()
 	})
 }
+
+// V-8: a rejected UDP fragment set keeps its network view but exposes no
+// transport layer, so the Connection record carries no invented ports.
+func TestRejectedFragmentSetExposesNoTransportPorts(t *testing.T) {
+	udp := testutil.Serialize(&layers.UDP{SrcPort: 123, DstPort: 137}, gopacket.Payload(make([]byte, 200)))
+	ip := testutil.IP(false, false, layers.IPProtocolUDP, udp)
+	p := packetview.New(packetview.Limits{})
+	// A non-final fragment whose payload (18 bytes) is not a multiple of 8 is invalid.
+	frames := [][]byte{
+		testutil.Fragment(ip, 242, 0, 18, true),
+		testutil.Fragment(ip, 242, 48, 164, false),
+		testutil.Fragment(ip, 242, 0, 18, true),
+	}
+	for i, f := range frames {
+		r := process(p, f, uint64(i+1))
+		if r.Packet != nil || r.Status != "fragment-rejected" {
+			t.Fatalf("frame %d: packet=%v status=%q", i, r.Packet != nil, r.Status)
+		}
+		if r.Opaque == nil || r.Opaque.NetworkLayer() == nil || r.Opaque.TransportLayer() != nil {
+			t.Fatalf("frame %d: opaque view must carry IP and no transport layer", i)
+		}
+	}
+}

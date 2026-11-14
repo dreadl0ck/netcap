@@ -254,3 +254,45 @@ func TestCaptureInputDecodeQualification(t *testing.T) {
 		})
 	}
 }
+
+// V-7: a malformed 802.11 information element is a decode error and leaves the
+// input complete; only snaplen truncation makes the same frame partial.
+func TestCaptureInputDot11ShortInformationElement(t *testing.T) {
+	order := binary.LittleEndian
+	frame := []byte{0, 0, 8, 0, 0, 0, 0, 0}                   // radiotap
+	frame = append(frame, 0x80, 0, 0, 0)                      // beacon frame control, duration
+	frame = append(frame, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // addr1
+	frame = append(frame, 2, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 1) // addr2, addr3
+	frame = append(frame, 0, 0)                               // sequence control
+	frame = append(frame, make([]byte, 8)...)                 // timestamp
+	frame = append(frame, 0x64, 0, 0x01, 0x04)                // interval, capabilities
+	frame = append(frame, 0, 11, 'a', 'b', 'c', 'd', 'e', 'f', 'g')
+
+	for _, tc := range []struct {
+		name    string
+		origLen int
+		status  string
+		decode  int64
+		trunc   int64
+	}{
+		{"complete", len(frame), "complete", 1, 0},
+		{"snaplen-truncated", len(frame) + 4, "partial", 1, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			input := inputPCAPHeader(order, false, 65535, 127)
+			input = append(input, inputPCAPRecord(order, 123, 0, uint32(len(frame)), uint32(tc.origLen), frame)...)
+			path := filepath.Join(root, "dot11.pcap")
+			if err := os.WriteFile(path, input, 0600); err != nil {
+				t.Fatal(err)
+			}
+			out := filepath.Join(root, "out")
+			runInputRepro(t, path, out, 1)
+			var report CaptureInputReport
+			readInputJSON(t, filepath.Join(out, "capture-input.json"), &report)
+			if report.Status != tc.status || report.DecodeErrors != tc.decode || report.LinkErrors != 0 || report.SnapshotTruncated != tc.trunc || report.Unsupported != 0 {
+				t.Fatalf("report=%+v", report)
+			}
+		})
+	}
+}
