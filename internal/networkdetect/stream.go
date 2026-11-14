@@ -202,6 +202,9 @@ func httpRequestPrefix(text string) bool {
 		return false
 	}
 	fields := strings.Fields(strings.TrimSuffix(line, "\r"))
+	if len(fields) == 3 && fields[0] == "PRI" && fields[1] == "*" && fields[2] == "HTTP/2.0" {
+		return true // h2c preface; covered by the decoded-HTTP observation
+	}
 	if len(fields) != 3 || fields[2] != "HTTP/1.0" && fields[2] != "HTTP/1.1" {
 		return false
 	}

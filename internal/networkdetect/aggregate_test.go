@@ -124,7 +124,7 @@ func TestApplicationEpochZeroAndBeaconAggregation(t *testing.T) {
 	c := DefaultConfig()
 	e := NewApplication(c)
 	o := httpObservation(0)
-	o.At, o.DstPort = 0, 443
+	o.At, o.DstPort, o.Proto, o.Status = 0, 443, "HTTP/1.1", 200
 	if rows := e.Observe(o); len(rows) != 0 {
 		t.Fatal(rows)
 	}

@@ -20,6 +20,7 @@ type ApplicationObservation struct {
 	Kind, SrcIP, DstIP                             string
 	SrcPort, DstPort                               uint16
 	Method, Path, Host, CommunityID, Qualification string
+	Proto                                          string
 	Status                                         int
 	Executable                                     bool
 }
@@ -31,7 +32,7 @@ func Observation(m proto.Message) (ApplicationObservation, bool) {
 		if r.Method == "" {
 			return o, false
 		}
-		o = ApplicationObservation{At: r.Timestamp, Kind: "http", SrcIP: r.SrcIP, DstIP: r.DstIP, SrcPort: uint16(r.SrcPort), DstPort: uint16(r.DstPort), Method: r.Method, Path: r.URL, Host: r.Host, Status: int(r.StatusCode), CommunityID: r.CommunityID, Qualification: r.ReassemblyStatus}
+		o = ApplicationObservation{At: r.Timestamp, Kind: "http", SrcIP: r.SrcIP, DstIP: r.DstIP, SrcPort: uint16(r.SrcPort), DstPort: uint16(r.DstPort), Method: r.Method, Path: r.URL, Host: r.Host, Status: int(r.StatusCode), CommunityID: r.CommunityID, Qualification: r.ReassemblyStatus, Proto: r.Proto}
 		o.RangeTransfer = r.StatusCode == 206
 		for _, q := range r.ParseQualifications {
 			if q == "decrypted-tls-key-log" {
@@ -79,6 +80,10 @@ func Observation(m proto.Message) (ApplicationObservation, bool) {
 	o.Host, o.CommunityID = boundedText(o.Host, 253), boundedText(o.CommunityID, 128)
 	o.Qualification = boundedText(o.Qualification, 256)
 	return o, true
+}
+
+func cleanHTTPProto(p string) bool {
+	return p == "HTTP/1.0" || p == "HTTP/1.1" || p == "HTTP/2.0"
 }
 
 type httpSample struct {
@@ -257,8 +262,10 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.A
 	if o.Kind != "http" {
 		return alerts
 	}
-	if !o.DecryptedTLS && o.Method != "" && o.DstPort == 443 {
-		add("policy.http-on-443", "low", "policy-observation", 1, 1, o.At, []string{"Decoded plaintext HTTP request on TCP/443"}, "Port convention violations can be intentional; malware identity is not inferred")
+	// Only an answered request with a well-formed version shows a peer speaking
+	// HTTP on 443; probes, truncated records and version-less lines do not.
+	if !o.DecryptedTLS && o.Method != "" && o.DstPort == 443 && o.Qualification == "" && o.Status >= 100 && cleanHTTPProto(o.Proto) {
+		add("policy.http-on-443", "low", "policy-observation", 1, 1, o.At, []string{fmt.Sprintf("Decoded plaintext HTTP request on TCP/443 (%s, status %d)", o.Proto, o.Status)}, "Port convention violations can be intentional; malware identity is not inferred")
 	}
 	if o.Qualification != "" {
 		return alerts

@@ -54,7 +54,7 @@ func TestPrefixClassificationRetainsMatchCountsAndResetsForNewSYN(t *testing.T) 
 }
 
 func Test443PolicySeparatesHTTPFromOpaqueAndTLS(t *testing.T) {
-	for _, mode := range []string{"http", "opaque", "tls", "sslv2", "midstream", "server"} {
+	for _, mode := range []string{"http", "h2c", "opaque", "tls", "sslv2", "midstream", "server"} {
 		t.Run(mode, func(t *testing.T) {
 			e, _ := New(DefaultConfig())
 			ev := baseEvent("syn", 0)
@@ -69,6 +69,8 @@ func Test443PolicySeparatesHTTPFromOpaqueAndTLS(t *testing.T) {
 			switch mode {
 			case "http":
 				ev.Payload = []byte("POST / HTTP/1.1\r\nHost: fixture.test\r\nContent-Length: 160\r\n\r\n" + strings.Repeat("x", 160))
+			case "h2c":
+				ev.Payload = []byte("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n" + strings.Repeat("x", 160))
 			case "tls":
 				copy(ev.Payload, []byte{22, 3, 3, 0, 155})
 			case "sslv2":
@@ -90,11 +92,19 @@ func Test443PolicySeparatesHTTPFromOpaqueAndTLS(t *testing.T) {
 			}
 		})
 	}
-	for _, mode := range []string{"plain", "decrypted", "response", "client-port"} {
+	for _, mode := range []string{"plain", "h2c", "decrypted", "response", "client-port", "qualified", "unanswered", "no-version"} {
 		e := NewApplication(DefaultConfig())
 		o := httpObservation(1)
-		o.DstPort = 443
+		o.DstPort, o.Proto, o.Status = 443, "HTTP/1.1", 200
 		switch mode {
+		case "h2c":
+			o.Proto = "HTTP/2.0"
+		case "qualified":
+			o.Qualification = "unpaired_after_capture_loss"
+		case "unanswered":
+			o.Status = 0
+		case "no-version":
+			o.Proto = ""
 		case "decrypted":
 			o.DecryptedTLS = true
 		case "response":
@@ -103,7 +113,7 @@ func Test443PolicySeparatesHTTPFromOpaqueAndTLS(t *testing.T) {
 			o.DstPort, o.SrcPort = 80, 443
 		}
 		got := append(e.Observe(o), e.Flush()...)
-		if mode == "plain" {
+		if mode == "plain" || mode == "h2c" {
 			if len(got) != 1 || got[0].Name != "policy.http-on-443" {
 				t.Fatal(got)
 			}
