@@ -143,6 +143,9 @@ func (c *Collector) Init() (err error) {
 				c.config.DecoderConfig.AggregateStore = nil
 			}
 		}()
+		packet.ResetConnections()
+		packet.ResetHosts()
+		packet.ResetDeviceProfiles()
 	}
 	if err := file.StartAnalysis(c.config.DecoderConfig.Out, ""); err != nil {
 		return fmt.Errorf("artifact analysis admission: %w", err)

@@ -184,16 +184,8 @@ func (c *Collector) finishHostIdentity() error {
 	if c.hostIdentity == nil {
 		return nil
 	}
-	var snapshots []*types.DeviceProfile
-	packet.DeviceProfiles.Lock()
-	for _, dp := range packet.DeviceProfiles.Items {
-		dp.Lock()
-		snapshots = append(snapshots, proto.Clone(dp.DeviceProfile).(*types.DeviceProfile))
-		dp.Unlock()
-	}
-	packet.DeviceProfiles.Unlock()
 	c.analysisMu.Lock()
-	for _, dp := range snapshots {
+	err := packet.WalkDeviceProfiles(func(dp *types.DeviceProfile) error {
 		if len(dp.DeviceIPs) == 0 {
 			c.hostIdentity.SeedBoundProfile(dp)
 		}
@@ -204,6 +196,11 @@ func (c *Collector) finishHostIdentity() error {
 				c.hostIdentity.Seed(bound.Key, &copy)
 			}
 		}
+		return nil
+	})
+	if err != nil {
+		c.analysisMu.Unlock()
+		return err
 	}
 	report := c.hostIdentity.Report()
 	report.Overflow += c.analysisOverflow

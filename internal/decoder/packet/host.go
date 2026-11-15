@@ -31,6 +31,7 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 
+	"github.com/dreadl0ck/netcap/internal/aggregate"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/internal/devicecatalog"
 	"github.com/dreadl0ck/netcap/internal/dpi"
@@ -49,6 +50,7 @@ var (
 
 // atomicHostMap contains all connections and provides synchronized access.
 type atomicHostMap struct {
+	operations sync.RWMutex
 	// SrcIP to DeviceProfiles
 	Items map[string]*hostEntry
 	sync.Mutex
@@ -56,6 +58,13 @@ type atomicHostMap struct {
 
 // Size returns the number of elements in the Items map.
 func (a *atomicHostMap) Size() int {
+	a.operations.RLock()
+	defer a.operations.RUnlock()
+	if conf != nil && conf.AggregateStore != nil {
+		var count int64
+		_ = conf.AggregateStore.Do(func(tx *aggregate.Tx) error { var err error; count, err = tx.Count("host/base/"); return err })
+		return int(count)
+	}
 	a.Lock()
 	defer a.Unlock()
 
@@ -70,6 +79,11 @@ var hosts = &atomicHostMap{
 // ResetHosts clears all IP profiles from memory
 // This should be called when resetting state between processing different files
 func ResetHosts() {
+	hosts.operations.Lock()
+	defer hosts.operations.Unlock()
+	if conf != nil && conf.AggregateStore != nil {
+		_ = conf.AggregateStore.Do(func(tx *aggregate.Tx) error { return tx.Delete("host/") })
+	}
 	hosts.Lock()
 	hosts.Items = make(map[string]*hostEntry)
 	hosts.Unlock()
@@ -94,6 +108,12 @@ type hostPortKey struct {
 // updateHost updates or creates an IP profile, buffering packets for deferred DPI
 func updateHost(ipAddr string, i *decoderutils.PacketInfo, source bool) {
 	if ipAddr == "" {
+		return
+	}
+	hosts.operations.RLock()
+	defer hosts.operations.RUnlock()
+	if conf != nil && conf.AggregateStore != nil {
+		updateStoredHost(ipAddr, i, source)
 		return
 	}
 
@@ -433,6 +453,12 @@ var hostDecoder = newAccumulatingPacketDecoder(
 	},
 	func(d *Decoder) error {
 		// Take a snapshot of items under lock to avoid race conditions
+		hosts.operations.Lock()
+		defer hosts.operations.Unlock()
+		if conf != nil && conf.AggregateStore != nil {
+			_, err := flushStoredHosts(d, true)
+			return err
+		}
 		hosts.Lock()
 		addrs := make([]string, 0, len(hosts.Items))
 		for addr := range hosts.Items {
@@ -460,6 +486,12 @@ var hostDecoder = newAccumulatingPacketDecoder(
 	},
 	// FlushState: Write current state without clearing in-memory data
 	func(d *Decoder) int64 {
+		hosts.operations.RLock()
+		defer hosts.operations.RUnlock()
+		if conf != nil && conf.AggregateStore != nil {
+			count, _ := flushStoredHosts(d, false)
+			return count
+		}
 		var numFlushed int64
 
 		// Take a snapshot of items under lock to avoid race conditions

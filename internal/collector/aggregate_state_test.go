@@ -6,11 +6,15 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/aggregate"
 	"github.com/dreadl0ck/netcap/internal/evidence"
+	"github.com/dreadl0ck/netcap/internal/identity"
+	"github.com/gopacket/gopacket/layers"
 )
 
 func TestAggregateCaptureProcess(t *testing.T) {
@@ -105,5 +109,46 @@ func TestAggregateFailureCancelsAndFailsCapture(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(cfg.DecoderConfig.Out, "audit-output-ready.json")); !errors.Is(err, os.ErrNotExist) {
 		t.Fatal("failed capture advertised ready audit output", err)
+	}
+}
+
+func TestAggregateSpillingPreservesIdentitySeeding(t *testing.T) {
+	input := filepath.Join(t.TempDir(), "identity.pcap")
+	start := time.Unix(1700000000, 0)
+	dhcp := replayDHCP(start, 5)
+	d := dhcp.stack[len(dhcp.stack)-1].(*layers.DHCPv4)
+	d.Options = append(d.Options, layers.DHCPOption{Type: layers.DHCPOptHostname, Length: 12, Data: []byte("fixture-host")})
+	writeBehaviorPCAP(t, input, []behaviorPacket{dhcp, replayARP(start.Add(time.Second), "192.0.2.130", 5), replayNDP(start.Add(2*time.Second), 5), replaySYN(start.Add(3*time.Second), "192.0.2.130", "192.0.2.10", 80, 1)})
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var expected *identity.Report
+	for _, mode := range []struct {
+		limit   int64
+		workers int
+	}{{0, 1}, {2048, 1}, {2048, 4}} {
+		out := t.TempDir()
+		cmd := exec.Command(exe, "-test.run=^TestAggregateCaptureProcess$", "-test.count=1", "-test.timeout=2m")
+		cmd.Env = append(os.Environ(), "NETCAP_AGGREGATE_INPUT="+input, "NETCAP_AGGREGATE_OUT="+out, "NETCAP_AGGREGATE_LIMIT="+strconv.FormatInt(mode.limit, 10), "NETCAP_AGGREGATE_WORKERS="+strconv.Itoa(mode.workers))
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("capture failed: %v\n%s", err, output)
+		}
+		var report identity.Report
+		readInputJSON(t, filepath.Join(out, identity.Filename), &report)
+		if expected == nil {
+			expected = &report
+		} else if !reflect.DeepEqual(report, *expected) {
+			t.Fatalf("identity changed with limit=%d workers=%d\ngot: %+v\nwant: %+v", mode.limit, mode.workers, report, *expected)
+		}
+		found := false
+		for _, host := range report.Hosts {
+			if host.IP == "192.0.2.130" && (host.Hostname == "fixture-host" || slices.Contains(host.HostnameAliases, "fixture-host")) {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("identity fixture produced no bound hostname: %+v", report.Hosts)
+		}
 	}
 }

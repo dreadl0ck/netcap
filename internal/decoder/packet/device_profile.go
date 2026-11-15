@@ -33,6 +33,7 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 
+	"github.com/dreadl0ck/netcap/internal/aggregate"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
@@ -104,6 +105,8 @@ func GetBaseLayerType() gopacket.LayerType {
 type deviceProfile struct {
 	sync.Mutex
 	*types.DeviceProfile
+	storage           *aggregate.Store
+	storageGeneration uint64
 
 	// track unique applications detected via DPI
 	applications map[string]struct{}
@@ -118,12 +121,19 @@ type deviceProfile struct {
 // atomicDeviceProfileMap contains all connections and provides synchronized access.
 type atomicDeviceProfileMap struct {
 	sync.Mutex
+	operations sync.RWMutex
+	generation uint64
 	// SrcMAC to deviceProfiles
 	Items map[string]*deviceProfile
 }
 
 // Size returns the number of elements in the Items map.
 func (a *atomicDeviceProfileMap) Size() int {
+	a.operations.RLock()
+	defer a.operations.RUnlock()
+	if conf != nil && conf.AggregateStore != nil {
+		return int(atomic.LoadInt64(&deviceProfiles))
+	}
 	a.Lock()
 	defer a.Unlock()
 
@@ -133,6 +143,11 @@ func (a *atomicDeviceProfileMap) Size() int {
 // FindByIP returns the device profile that has the given IP in its DeviceIPs list.
 // Returns nil if no match is found.
 func (a *atomicDeviceProfileMap) FindByIP(ip string) *deviceProfile {
+	a.operations.RLock()
+	defer a.operations.RUnlock()
+	if conf != nil && conf.AggregateStore != nil {
+		return findStoredDevice("", ip)
+	}
 	a.Lock()
 	defer a.Unlock()
 
@@ -153,6 +168,14 @@ func (a *atomicDeviceProfileMap) FindByIP(ip string) *deviceProfile {
 
 // EnrichFromDiscovery merges discovery data into the device profile.
 func (dp *deviceProfile) EnrichFromDiscovery(hostnames, deviceTypes, roles []string, os string) {
+	if dp.storage != nil {
+		DeviceProfiles.operations.RLock()
+		defer DeviceProfiles.operations.RUnlock()
+		if conf != nil && conf.AggregateStore == dp.storage && dp.storageGeneration == DeviceProfiles.generation {
+			enrichStoredDevice(dp.storage, dp.MacAddr, hostnames, deviceTypes, roles, os)
+		}
+		return
+	}
 	dp.Lock()
 	defer dp.Unlock()
 
@@ -203,6 +226,12 @@ var (
 // ResetDeviceProfiles clears all device profiles from memory
 // This should be called when resetting state between processing different files
 func ResetDeviceProfiles() {
+	DeviceProfiles.operations.Lock()
+	defer DeviceProfiles.operations.Unlock()
+	DeviceProfiles.generation++
+	if conf != nil && conf.AggregateStore != nil {
+		_ = conf.AggregateStore.Do(func(tx *aggregate.Tx) error { return tx.Delete("device/") })
+	}
 	DeviceProfiles.Lock()
 	DeviceProfiles.Items = make(map[string]*deviceProfile)
 	DeviceProfiles.Unlock()
@@ -257,6 +286,12 @@ func getStreamKey(i *decoderutils.PacketInfo) streamKey {
 // updateDeviceProfile can be used to update the profile for the passed identifiers.
 func updateDeviceProfile(i *decoderutils.PacketInfo) {
 	if i.SrcMAC == "" {
+		return
+	}
+	DeviceProfiles.operations.RLock()
+	defer DeviceProfiles.operations.RUnlock()
+	if conf != nil && conf.AggregateStore != nil {
+		updateStoredDevice(i)
 		return
 	}
 	// lookup profile
@@ -384,6 +419,11 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 
 // FindByMAC returns the device profile for the given MAC address.
 func (a *atomicDeviceProfileMap) FindByMAC(mac string) *deviceProfile {
+	a.operations.RLock()
+	defer a.operations.RUnlock()
+	if conf != nil && conf.AggregateStore != nil {
+		return findStoredDevice(mac, "")
+	}
 	a.Lock()
 	defer a.Unlock()
 
@@ -571,6 +611,14 @@ var deviceProfileDecoder = newAccumulatingPacketDecoder(
 	},
 	func(d *Decoder) error {
 		// Take a snapshot of items under lock to avoid race conditions
+		DeviceProfiles.operations.Lock()
+		defer DeviceProfiles.operations.Unlock()
+		if conf != nil && conf.AggregateStore != nil {
+			return walkStoredDevices(true, true, func(p *types.DeviceProfile, apps map[string]struct{}) error {
+				d.writeDeviceProfile(p, apps)
+				return nil
+			})
+		}
 		DeviceProfiles.Lock()
 		macs := make([]string, 0, len(DeviceProfiles.Items))
 		for mac := range DeviceProfiles.Items {
@@ -600,6 +648,17 @@ var deviceProfileDecoder = newAccumulatingPacketDecoder(
 	},
 	// FlushState: Write current state without clearing in-memory data
 	func(d *Decoder) int64 {
+		DeviceProfiles.operations.RLock()
+		defer DeviceProfiles.operations.RUnlock()
+		if conf != nil && conf.AggregateStore != nil {
+			var count int64
+			_ = walkStoredDevices(true, false, func(p *types.DeviceProfile, apps map[string]struct{}) error {
+				d.writeDeviceProfile(p, apps)
+				count++
+				return nil
+			})
+			return count
+		}
 		var numFlushed int64
 
 		// Take a snapshot of items under lock to avoid race conditions

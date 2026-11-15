@@ -192,6 +192,7 @@ func (c *Collector) doCleanup(force bool) {
 
 	if err := c.finishHostIdentity(); err != nil {
 		c.log.Error("host identity finalization failed", zap.Error(err))
+		c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
 	}
 	if err := c.closeNetworkDetection(); err != nil {
 		c.log.Error("network detection finalization failed", zap.Error(err))
@@ -201,7 +202,6 @@ func (c *Collector) doCleanup(force bool) {
 	if state := c.config.DecoderConfig.AggregateStore; state != nil {
 		health := state.Health()
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, state.Close())
-		c.config.DecoderConfig.AggregateStore = nil
 		data, err := json.MarshalIndent(health, "", "  ")
 		if err == nil {
 			err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "AggregateStateHealth.json"), append(data, '\n'), 0600)

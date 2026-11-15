@@ -40,6 +40,7 @@ type Store struct {
 	tx     *sql.Tx
 	path   string
 	cache  map[string]*list.Element
+	dirty  map[string]*entry
 	lru    list.List
 	health Health
 	err    error
@@ -69,7 +70,7 @@ func Open(directory string, limit int64, cancel func()) (*Store, error) {
 		return nil, err
 	}
 	path = absolute
-	s := &Store{path: path, cache: map[string]*list.Element{}, cancel: cancel, health: Health{LimitBytes: limit}}
+	s := &Store{path: path, cache: map[string]*list.Element{}, dirty: map[string]*entry{}, cancel: cancel, health: Health{LimitBytes: limit}}
 	uriPath := filepath.ToSlash(path)
 	if !strings.HasPrefix(uriPath, "/") {
 		uriPath = "/" + uriPath
@@ -121,10 +122,11 @@ func (s *Store) write(e *entry) error {
 	if !e.dirty {
 		return nil
 	}
-	if _, err := s.tx.Exec(`INSERT INTO state(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value`, e.key, e.value); err != nil {
+	if _, err := s.tx.Exec(`INSERT INTO state(key,value) VALUES(?,coalesce(?,x'')) ON CONFLICT(key) DO UPDATE SET value=excluded.value`, e.key, e.value); err != nil {
 		return err
 	}
 	e.dirty = false
+	delete(s.dirty, e.key)
 	s.health.DiskWrites++
 	return nil
 }
@@ -136,6 +138,7 @@ func (s *Store) remember(key string, value []byte, dirty bool) error {
 		s.health.ResidentBytes -= charge(old)
 		s.lru.Remove(element)
 		delete(s.cache, key)
+		delete(s.dirty, key)
 	}
 	e := &entry{key: key, value: value, dirty: dirty}
 	cost := charge(e)
@@ -154,6 +157,9 @@ func (s *Store) remember(key string, value []byte, dirty bool) error {
 		s.health.Evictions++
 	}
 	s.cache[key] = s.lru.PushFront(e)
+	if dirty {
+		s.dirty[key] = e
+	}
 	s.health.ResidentBytes += cost
 	s.health.PeakBytes = max(s.health.PeakBytes, s.health.ResidentBytes)
 	return nil
@@ -194,7 +200,22 @@ func (t *Tx) Delete(prefix string) error {
 			s.health.ResidentBytes -= charge(element.Value.(*entry))
 			s.lru.Remove(element)
 			delete(s.cache, key)
+			delete(s.dirty, key)
 		}
+	}
+	return nil
+}
+
+func (t *Tx) DeleteKey(key string) error {
+	s := t.store
+	if _, err := s.tx.Exec(`DELETE FROM state WHERE key=?`, key); err != nil {
+		return err
+	}
+	if element := s.cache[key]; element != nil {
+		s.health.ResidentBytes -= charge(element.Value.(*entry))
+		s.lru.Remove(element)
+		delete(s.cache, key)
+		delete(s.dirty, key)
 	}
 	return nil
 }
@@ -229,6 +250,9 @@ func (t *Tx) Find(prefix, upper string, descending bool) (string, []byte, bool, 
 	var value []byte
 	err := s.tx.QueryRow(query, args...).Scan(&key, &value)
 	found := err == nil
+	if found {
+		s.health.DiskReads++
+	}
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return "", nil, false, err
 	}
@@ -244,12 +268,53 @@ func (t *Tx) Find(prefix, upper string, descending bool) (string, []byte, bool, 
 }
 
 func (t *Tx) flush() error {
-	for element := t.store.lru.Back(); element != nil; element = element.Prev() {
-		if err := t.store.write(element.Value.(*entry)); err != nil {
+	for _, entry := range t.store.dirty {
+		if err := t.store.write(entry); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// Next returns one ordered row after flushing pending writes. An empty after
+// starts at prefix. Callers can release Do's lock between successive records.
+func (t *Tx) Next(prefix, after string) (string, []byte, bool, error) {
+	if err := t.flush(); err != nil {
+		return "", nil, false, err
+	}
+	query := `SELECT key,value FROM state WHERE key>? AND key<? ORDER BY key LIMIT 1`
+	if after == "" {
+		after = prefix
+		query = `SELECT key,value FROM state WHERE key>=? AND key<? ORDER BY key LIMIT 1`
+	}
+	var key string
+	var value []byte
+	err := t.store.tx.QueryRow(query, after, prefixEnd(prefix)).Scan(&key, &value)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil, false, nil
+	}
+	if err != nil {
+		return "", nil, false, err
+	}
+	t.store.health.DiskReads++
+	return key, value, true, nil
+}
+
+func (t *Tx) Last(prefix string) (string, []byte, bool, error) {
+	if err := t.flush(); err != nil {
+		return "", nil, false, err
+	}
+	var key string
+	var value []byte
+	err := t.store.tx.QueryRow(`SELECT key,value FROM state WHERE key>=? AND key<? ORDER BY key DESC LIMIT 1`, prefix, prefixEnd(prefix)).Scan(&key, &value)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil, false, nil
+	}
+	if err != nil {
+		return "", nil, false, err
+	}
+	t.store.health.DiskReads++
+	return key, value, true, nil
 }
 
 // Each visits an ordered range with one row resident at a time. The callback may
@@ -273,6 +338,7 @@ func (t *Tx) Each(prefix string, fn func(string, []byte) error) error {
 		if err != nil {
 			return err
 		}
+		t.store.health.DiskReads++
 		if element := t.store.cache[key]; element != nil {
 			value = append([]byte(nil), element.Value.(*entry).value...)
 		}
@@ -309,6 +375,7 @@ func (s *Store) Close() error {
 	}
 	err = errors.Join(err, s.db.Close(), os.Remove(s.path))
 	s.cache = nil
+	s.dirty = nil
 	s.lru.Init()
 	s.health.ResidentBytes = 0
 	return errors.Join(s.err, err)

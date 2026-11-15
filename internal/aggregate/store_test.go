@@ -258,3 +258,47 @@ func TestStoreRelativeDirectoryWithURICharacters(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestStoreEmptyValuesAndExactDeletion(t *testing.T) {
+	s, err := Open(t.TempDir(), 0, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	if err = s.Do(func(tx *Tx) error {
+		for _, key := range []string{"a/1", "a/10", "a/100"} {
+			if err := tx.Put(key, nil); err != nil {
+				return err
+			}
+		}
+		if err := tx.DeleteKey("a/1"); err != nil {
+			return err
+		}
+		for _, key := range []string{"a/10", "a/100"} {
+			value, found, err := tx.Get(key)
+			if err != nil {
+				return err
+			}
+			if !found || len(value) != 0 {
+				return errors.New("empty value or adjacent key lost")
+			}
+		}
+		key, _, found, err := tx.Last("a/")
+		if err != nil {
+			return err
+		}
+		if !found || key != "a/100" {
+			return fmt.Errorf("last key=%q found=%v", key, found)
+		}
+		key, _, found, err = tx.Next("a/", "")
+		if err != nil {
+			return err
+		}
+		if !found || key != "a/10" {
+			return fmt.Errorf("first key=%q found=%v", key, found)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
