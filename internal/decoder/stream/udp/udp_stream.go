@@ -21,7 +21,6 @@ package udp
 
 import (
 	"reflect"
-	"slices"
 	"strconv"
 	"sync"
 	"time"
@@ -53,6 +52,7 @@ func ResetStreams() {
 
 // udpData represents a udp data stream.
 type udpStream struct {
+	refused bool
 	sync.Mutex
 	data    core.DataFragments
 	decoder core.StreamDecoderInterface
@@ -148,9 +148,7 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 		defer serv.Unlock()
 
 		// Separate scoped conversations can share the displayed flow identifier.
-		if !slices.Contains(serv.Flows, flowIdent) {
-			serv.Flows = append(serv.Flows, flowIdent)
-		}
+		serv.AddFlow(flowIdent)
 
 		// if this flow had a longer response from the server then what we have previously (in case we dont have c.Banner bytes yet)
 		// set this service response on the service and update the timestamp
@@ -177,7 +175,7 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 	serv.Port = utils.DecodePort(transport.Dst().Raw())
 
 	// set flow ident, h.parent.ident is the client flow
-	serv.Flows = []string{flowIdent}
+	serv.AddFlow(flowIdent)
 
 	// Safely extract transport destination port for service name lookup
 	if len(transport.Dst().Raw()) > 0 {
@@ -198,9 +196,7 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 		service.Store.Unlock()
 		existing.Lock()
 		defer existing.Unlock()
-		if !slices.Contains(existing.Flows, flowIdent) {
-			existing.Flows = append(existing.Flows, flowIdent)
-		}
+		existing.AddFlow(flowIdent)
 		if existing.PreferObservation(banner, firstPacket.UnixNano(), serverBytes, clientBytes) {
 			existing.ResetProbeMatch()
 			service.MatchServiceProbes(existing, banner, flowIdent)
@@ -220,21 +216,25 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 func (u *udpStream) decode() {
 	// choose the decoder to run against the data stream
 	var (
-		cr               = u.data[0].Raw()
-		sr               []byte
-		serverFirstReply time.Time
+		cr                []byte
+		sr                []byte
+		clientFirstPacket time.Time
+		serverFirstReply  time.Time
 	)
 
 	// first message defines the client
-	clientTransport := u.data[0].Transport()
-	clientNetwork := u.data[0].Network()
+	clientNetwork, clientTransport := clientFlows(u.data)
 
 	// search for the first server reply
 	for _, d := range u.data {
-		if d.Transport() != clientTransport || d.Network() != clientNetwork {
+		if d.Transport() == clientTransport && d.Network() == clientNetwork {
+			if cr == nil {
+				cr = d.Raw()
+				clientFirstPacket = d.CaptureInfo().Timestamp
+			}
+		} else if sr == nil {
 			sr = d.Raw()
 			serverFirstReply = d.CaptureInfo().Timestamp
-			break
 		}
 	}
 
@@ -255,13 +255,13 @@ func (u *udpStream) decode() {
 		Transport:         core.UDP,
 		NetworkScope:      u.scope,
 		Data:              u.data,
-		Ident:             utils.CreateFlowIdentFromLayerFlows(u.data[0].Network(), u.data[0].Transport()),
-		FirstClientPacket: u.data[0].CaptureInfo().Timestamp,
+		Ident:             utils.CreateFlowIdentFromLayerFlows(clientNetwork, clientTransport),
+		FirstClientPacket: clientFirstPacket,
 		FirstServerPacket: serverFirstReply,
-		ClientIP:          u.data[0].Network().Src().String(),
-		ServerIP:          u.data[0].Network().Dst().String(),
-		ClientPort:        utils.DecodePort(u.data[0].Transport().Src().Raw()),
-		ServerPort:        utils.DecodePort(u.data[0].Transport().Dst().Raw()),
+		ClientIP:          clientNetwork.Src().String(),
+		ServerIP:          clientNetwork.Dst().String(),
+		ClientPort:        utils.DecodePort(clientTransport.Src().Raw()),
+		ServerPort:        utils.DecodePort(clientTransport.Dst().Raw()),
 		CommunityID: streamutils.CalcCommunityIDUDP(
 			u.data[0].Network().Src().String(),
 			u.data[0].Network().Dst().String(),
@@ -281,7 +281,7 @@ func (u *udpStream) decode() {
 	}
 	if sel, found := stream.SelectDecoder(&stream.SelectionInput{
 		Transport:    core.UDP,
-		ServerPort:   utils.DecodePort(u.data[0].Transport().Dst().Raw()),
+		ServerPort:   utils.DecodePort(clientTransport.Dst().Raw()),
 		PortClient:   cr,
 		PortServer:   sr,
 		ScanClient:   cr,

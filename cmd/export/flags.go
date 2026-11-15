@@ -44,6 +44,7 @@ func GetFlags() []cli.Flag {
 	return []cli.Flag{
 		&cli.BoolFlag{
 			Name:    "gen-config",
+			Hidden:  true,
 			Usage:   "generate config",
 			Sources: cli.EnvVars("NC_GEN_CONFIG"),
 		},

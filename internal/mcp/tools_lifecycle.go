@@ -96,6 +96,7 @@ func (s *Server) deleteHTTP(path string) (json.RawMessage, error) {
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/json")
+	c.authorizeBackend(req)
 	resp, err := c.hc.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("DELETE %s: %w", path, err)

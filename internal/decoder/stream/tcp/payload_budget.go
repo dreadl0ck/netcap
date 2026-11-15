@@ -63,6 +63,7 @@ func (t *tcpConnection) recordDiscard(markers *[2]*core.StreamData, reason strin
 	if size <= 0 {
 		return
 	}
+	t.ensureReaders()
 	index := 0
 	reader := t.client
 	if dir == reassembly.TCPDirServerToClient {
@@ -122,6 +123,9 @@ func (f *connectionFactory) configurePayloadBudget(limit int64, cancel func()) e
 	}
 	f.Lock()
 	defer f.Unlock()
+	if f.pendingPayloads > 0 {
+		return fmt.Errorf("cannot replace TCP payload budget while connections are active")
+	}
 	for _, reader := range f.streamReaders {
 		if reader != nil {
 			return fmt.Errorf("cannot replace TCP payload budget while readers are registered")

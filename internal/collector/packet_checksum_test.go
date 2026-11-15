@@ -17,7 +17,7 @@ func TestPacketPipelineChecksumConfig(t *testing.T) {
 		for _, bad := range []bool{false, true} {
 			t.Run(fmt.Sprintf("strict=%t/bad=%t", strict, bad), func(t *testing.T) {
 				c := rawPacketCollector(1, 4, gopacket.Default)
-				c.config.DecoderConfig = &config.Config{Checksum: strict}
+				c.config.DecoderConfig = &config.Config{Checksum: strict, DefragIPv4: true}
 				ip := rawPacketFixture(t, true, 80)[14:]
 				parts := [][]byte{testutil.Fragment(ip, 73, 0, 16, true), testutil.Fragment(ip, 73, 16, len(ip)-20, false)}
 				for i, part := range parts {

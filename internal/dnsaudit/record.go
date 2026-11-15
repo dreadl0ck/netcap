@@ -20,12 +20,14 @@
 package dnsaudit
 
 import (
+	"bytes"
 	"math"
 	"sort"
 	"strings"
 
 	"github.com/gopacket/gopacket/layers"
 
+	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -49,13 +51,13 @@ func QueryNameEntropy(name string) float64 {
 	if len(name) == 0 {
 		return 0
 	}
-	freq := make(map[rune]float64)
-	for _, c := range name {
+	freq := make(map[byte]float64)
+	for _, c := range []byte(name) {
 		freq[c]++
 	}
 
 	// Summing in map order would vary the floating point rounding per run.
-	runes := make([]rune, 0, len(freq))
+	runes := make([]byte, 0, len(freq))
 	for c := range freq {
 		runes = append(runes, c)
 	}
@@ -98,20 +100,31 @@ func Record(dns *layers.DNS, timestamp int64, calculateEntropy bool) *types.DNS 
 		questions := make([]*types.DNSQuestion, 0, len(dns.Questions))
 		for _, q := range dns.Questions {
 			questions = append(questions, &types.DNSQuestion{
-				Class: int32(q.Class),
-				Name:  string(q.Name),
-				Type:  int32(q.Type),
+				Class:   int32(q.Class),
+				Name:    utils.PrintableBytes(q.Name),
+				NameRaw: bytes.Clone(q.Name),
+				Type:    int32(q.Type),
 			})
 		}
 		newNetResourceRecord := func(a layers.DNSResourceRecord) *types.DNSResourceRecord {
+			text := make([]string, 0, len(a.TXTs))
+			for _, segment := range a.TXTs {
+				text = append(text, utils.PrintableBytes(segment))
+			}
+			ip := ""
+			if len(a.IP) != 0 {
+				ip = a.IP.String()
+			}
 			return &types.DNSResourceRecord{
-				Name:       string(a.Name),
+				Name:       utils.PrintableBytes(a.Name),
+				NameRaw:    bytes.Clone(a.Name),
+				TXTStrings: text,
 				Type:       int32(a.Type),
 				Class:      int32(a.Class),
 				TTL:        a.TTL,
 				DataLength: int32(a.DataLength),
 				Data:       a.Data,
-				IP:         a.IP.String(),
+				IP:         ip,
 				NS:         a.NS,
 				CNAME:      a.CNAME,
 				PTR:        a.PTR,
@@ -132,7 +145,8 @@ func Record(dns *layers.DNS, timestamp int64, calculateEntropy bool) *types.DNS 
 				},
 				MX: &types.DNSMX{
 					Preference: int32(a.MX.Preference),
-					Name:       string(a.MX.Name),
+					Name:       utils.PrintableBytes(a.MX.Name),
+					NameRaw:    bytes.Clone(a.MX.Name),
 				},
 				TXTs: a.TXTs,
 				SVCB: dnsSVCB(a),
@@ -189,6 +203,7 @@ func Record(dns *layers.DNS, timestamp int64, calculateEntropy bool) *types.DNS 
 		packetSize := int32(len(dns.Contents))
 
 		return &types.DNS{
+			ParseStatus:  "valid",
 			Timestamp:    timestamp,
 			ID:           int32(dns.ID),
 			QR:           dns.QR,

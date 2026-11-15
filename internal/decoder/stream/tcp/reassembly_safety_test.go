@@ -141,8 +141,8 @@ func TestPrivatePoolCleanup(t *testing.T) {
 				t.Fatal("private pools retained an unused singleton pool")
 			}
 			pending := StreamFactory.readerSnapshot()
-			if len(pending) != workers {
-				t.Fatalf("pending readers = %d, want %d after maintenance released completed readers", len(pending), workers)
+			if len(pending) != 0 {
+				t.Fatalf("SYN-only connections allocated %d payload readers", len(pending))
 			}
 			for _, s := range pending {
 				if s.Saved() {
@@ -223,7 +223,7 @@ func TestCloseStreamReadersAfterFactoryReset(t *testing.T) {
 	}
 }
 
-func TestDefragUnsupportedWarning(t *testing.T) {
+func TestDefragDoesNotEmitObsoleteUnsupportedWarning(t *testing.T) {
 	oldConfig, oldLog := decoderconfig.Instance, reassemblyLog
 	defer func() { decoderconfig.Instance, reassemblyLog = oldConfig, oldLog }()
 	core, logs := observer.New(zap.WarnLevel)
@@ -234,8 +234,8 @@ func TestDefragUnsupportedWarning(t *testing.T) {
 	}
 	decoderconfig.Instance.DefragIPv4 = true
 	SetLogger(zap.New(core))
-	if logs.FilterMessageSnippet("DefragIPv4 is unsupported").Len() != 1 {
-		t.Fatal("missing initialization warning for unsupported defragmentation")
+	if logs.Len() != 0 {
+		t.Fatal("supported packet-pipeline defragmentation labelled unsupported")
 	}
 }
 

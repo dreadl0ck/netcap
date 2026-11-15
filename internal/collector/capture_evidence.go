@@ -40,6 +40,9 @@ func (c *Collector) initCaptureEvidence() error {
 		IncrementalHTTP:            c.config.DecoderConfig.IncrementalHTTP,
 		MaxRetainedTCPStateBytes:   c.config.DecoderConfig.MaxRetainedTCPStateBytes,
 		CaptureTimeIdleExpiry:      c.config.DecoderConfig.CaptureTimeIdleExpiry,
+		DefragIPv4:                 c.config.DecoderConfig.DefragIPv4,
+		MergePCAPNGSections:        c.config.MergePCAPNGSections,
+		Enrichment:                 c.enrichmentSnapshot,
 		IncludeDecoders:            c.config.DecoderConfig.IncludeDecoders, ExcludeDecoders: c.config.DecoderConfig.ExcludeDecoders, Reassembly: c.config.ReassembleConnections, RetainPackets: c.config.RetainPackets, SegmentBytes: segment, RetentionBytes: retention})
 	if err != nil {
 		return err
@@ -53,7 +56,7 @@ func (c *Collector) observeCaptureEvidence(packet gopacket.Packet) {
 		return
 	}
 	ci := packet.Metadata().CaptureInfo
-	if c.config.RetainPackets && ((c.captureLinkType == 239 && inputPacketInfo(ci).Order == binary.BigEndian) || !supportedRetentionTimestamp(ci.Timestamp)) {
+	if c.config.RetainPackets && (inputPacketInfo(ci).NoTimestamp || (c.captureLinkType == 239 && inputPacketInfo(ci).Order == binary.BigEndian) || !supportedRetentionTimestamp(ci.Timestamp)) {
 		// The evidence segment writer always emits little-endian, timestamped EPBs.
 		// Refuse rather than mislabel native-order NFLOG or invent a timestamp.
 		c.captureEvidenceError = fmt.Errorf("packet retention does not support big-endian NFLOG or absent/out-of-range timestamps; retain the original capture")

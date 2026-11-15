@@ -216,8 +216,7 @@ func CalcCommunityID(p gopacket.Packet) string {
 	case 132: // SCTP
 		ft = gommunityid.MakeFlowTupleSCTP(srcIP, dstIP, srcPort, dstPort)
 	default:
-		// Generic flow tuple for other protocols
-		ft = gommunityid.MakeFlowTuple(srcIP, dstIP, srcPort, dstPort, proto)
+		return portlessCommunityID(srcIP, dstIP, proto)
 	}
 
 	return communityIDGenerator.CalcBase64(ft)
@@ -353,19 +352,24 @@ func ShowDecoders(verbose bool) {
 	fmt.Println()
 
 	var totalFields, totalAuditRecords int
+	seen := make(map[types.Type]bool)
 	printDecoderStats := func(name string, d []core.DecoderAPI) {
 
 		var newFields, newAuditRecords int
 		var sum strings.Builder
 
 		for _, de := range d {
+			if seen[de.GetType()] {
+				continue
+			}
+			seen[de.GetType()] = true
 			newAuditRecords++
 			f := countFields(de.GetType())
 			newFields += f
 			sum.WriteString(pad("+ "+strings.TrimPrefix(de.GetType().String(), defaults.NetcapTypePrefix)+" ( "+strconv.Itoa(f)+" )", 35) + " " + de.GetDescription() + "\n")
 		}
 
-		fmt.Println(name+" Audit Records (", len(d), "/", newFields, ")")
+		fmt.Println(name+" Audit Records (", newAuditRecords, "/", newFields, ")")
 		fmt.Println(sum.String())
 		fmt.Println() // newline
 

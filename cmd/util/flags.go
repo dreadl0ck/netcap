@@ -59,6 +59,7 @@ func GetFlags() []cli.Flag {
 		&cli.StringFlag{Name: "dbs-approvals-sha256", Sources: cli.EnvVars("NC_DBS_APPROVALS_SHA256"), Usage: "out-of-band SHA-256 pin of the operator approval registry"},
 		&cli.BoolFlag{
 			Name:    "gen-config",
+			Hidden:  true,
 			Usage:   "generate config",
 			Sources: cli.EnvVars("NC_GEN_CONFIG"),
 		},

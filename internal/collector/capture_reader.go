@@ -31,10 +31,13 @@ func (e *captureReadError) Error() string {
 }
 
 type capturePacketInfo struct {
-	Order           binary.ByteOrder
-	Offset          int64
-	SnaplenOverride bool
-	NoTimestamp     bool
+	FCSKnown            bool
+	FCSBytes            int
+	TimestampNormalized bool
+	Order               binary.ByteOrder
+	Offset              int64
+	SnaplenOverride     bool
+	NoTimestamp         bool
 }
 
 type captureReader interface {
@@ -78,12 +81,15 @@ func (s *captureStream) fail(offset int64, reason string, recoverable bool) erro
 
 type boundedPCAPReader struct {
 	*captureStream
-	order   binary.ByteOrder
-	nanos   bool
-	minor   uint16
-	snaplen uint32
-	link    layers.LinkType
-	buffer  []byte
+	order    binary.ByteOrder
+	nanos    bool
+	patched  bool
+	fcsKnown bool
+	fcsBytes int
+	minor    uint16
+	snaplen  uint32
+	link     layers.LinkType
+	buffer   []byte
 }
 
 func newBoundedPCAPReader(input io.Reader) (*boundedPCAPReader, error) {
@@ -105,6 +111,10 @@ func newBoundedPCAPReader(input io.Reader) (*boundedPCAPReader, error) {
 		r.order, r.nanos = binary.LittleEndian, true
 	case 0x4d3cb2a1:
 		r.order, r.nanos = binary.BigEndian, true
+	case 0xa1b2cd34:
+		r.order, r.patched = binary.LittleEndian, true
+	case 0x34cdb2a1:
+		r.order, r.patched = binary.BigEndian, true
 	default:
 		return nil, fmt.Errorf("unknown PCAP magic %x", header[:4])
 	}
@@ -116,6 +126,11 @@ func newBoundedPCAPReader(input io.Reader) (*boundedPCAPReader, error) {
 	r.snaplen = r.order.Uint32(header[16:20])
 	// The upper 16 bits are additional information, not part of LINKTYPE.
 	r.link = layers.LinkType(r.order.Uint32(header[20:24]) & 0xffff)
+	word := r.order.Uint32(header[20:24])
+	r.fcsKnown = word&0x04000000 != 0
+	if r.fcsKnown {
+		r.fcsBytes = int(word>>28) * 2
+	}
 	return r, nil
 }
 
@@ -135,8 +150,12 @@ func (r *boundedPCAPReader) readPacket(reuse bool) ([]byte, gopacket.CaptureInfo
 		return nil, ci, r.failed
 	}
 	offset := r.offset
-	var header [16]byte
-	if err := r.read(header[:]); err != nil {
+	var header [24]byte
+	headerSize := 16
+	if r.patched {
+		headerSize = 24
+	}
+	if err := r.read(header[:headerSize]); err != nil {
 		if err == io.EOF && r.offset == offset {
 			return nil, ci, io.EOF
 		}
@@ -168,12 +187,9 @@ func (r *boundedPCAPReader) readPacket(reuse bool) ([]byte, gopacket.CaptureInfo
 	if r.nanos {
 		units = 1_000_000_000
 	}
-	if frac >= units {
-		return nil, ci, r.fail(offset, "invalid PCAP timestamp fraction", true)
-	}
 	ci.Timestamp = time.Unix(int64(r.order.Uint32(header[:4])), int64(frac)*int64(1_000_000_000/units)).UTC()
 	ci.CaptureLength, ci.Length = int(caplen), int(wire)
-	ci.AncillaryData = []any{r.link, capturePacketInfo{Order: r.order, Offset: offset, SnaplenOverride: caplen > r.snaplen}}
+	ci.AncillaryData = []any{r.link, capturePacketInfo{Order: r.order, Offset: offset, SnaplenOverride: caplen > r.snaplen, TimestampNormalized: frac >= units, FCSKnown: r.fcsKnown, FCSBytes: r.fcsBytes}}
 	return data, ci, nil
 }
 

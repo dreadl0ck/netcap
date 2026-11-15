@@ -282,8 +282,7 @@ func OpenPCAP(file string) (*pcapgo.Reader, *os.File, error) {
 	return r, f, nil
 }
 
-// IsPcap classifies classic PCAP by magic, including gzip streams. It does not
-// validate headers: unsupported or damaged PCAP stays on the PCAP error path.
+// IsPcap distinguishes classic PCAP from PCAPNG, rejecting unrecognized containers.
 func IsPcap(file string) (bool, error) {
 	// get file handle
 	f, err := os.Open(file)
@@ -302,19 +301,29 @@ func IsPcap(file string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	var magic [4]byte
-	if _, err := io.ReadFull(s.r, magic[:]); err != nil {
-		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-			return false, nil
-		}
-		return false, err
+	var header [12]byte
+	n, readErr := io.ReadFull(s.r, header[:])
+	if n == 0 && readErr != nil {
+		return false, fmt.Errorf("empty capture input: %w", readErr)
 	}
-	switch binary.BigEndian.Uint32(magic[:]) {
-	case 0xa1b2c3d4, 0xd4c3b2a1, 0xa1b23c4d, 0x4d3cb2a1:
+	if n < 4 {
+		return false, fmt.Errorf("truncated capture header (%d bytes)", n)
+	}
+	switch binary.BigEndian.Uint32(header[:4]) {
+	case 0xa1b2c3d4, 0xd4c3b2a1, 0xa1b23c4d, 0x4d3cb2a1, 0xa1b2cd34, 0x34cdb2a1:
 		return true, nil
-	default:
+	case 0x0a0d0d0a:
 		return false, nil
+	case 0xaaaaaaaa:
+		return false, fmt.Errorf("unsupported InfoVista 5View capture; convert to PCAPNG with editcap")
 	}
+	if n >= 12 {
+		order := binary.BigEndian.Uint32(header[8:12])
+		if order == 0x1a2b3c4d || order == 0x4d3c2b1a {
+			return false, fmt.Errorf("corrupt PCAPNG section header magic %x", header[:4])
+		}
+	}
+	return false, fmt.Errorf("unrecognized capture format (magic %x); expected PCAP or PCAPNG", header[:4])
 }
 
 // IsCapture recognizes supported capture containers independently of filenames.
@@ -333,7 +342,7 @@ func IsCapture(path string) bool {
 		return false
 	}
 	switch binary.BigEndian.Uint32(magic[:]) {
-	case 0xa1b2c3d4, 0xd4c3b2a1, 0xa1b23c4d, 0x4d3cb2a1, 0x0a0d0d0a:
+	case 0xa1b2c3d4, 0xd4c3b2a1, 0xa1b23c4d, 0x4d3cb2a1, 0xa1b2cd34, 0x34cdb2a1, 0x0a0d0d0a:
 		return true
 	}
 	return false

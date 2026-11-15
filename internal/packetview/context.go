@@ -27,6 +27,36 @@ type Context struct {
 	SyntheticNetwork bool // its original fragment headers were already audited
 }
 
+// CaptureInterface is an explicit logical identity; capture refs retain physical ordinals.
+type CaptureInterface int
+
+type TimestampMissing bool
+
+func TimeUnavailable(ci gopacket.CaptureInfo) bool {
+	for _, value := range ci.AncillaryData {
+		if missing, ok := value.(TimestampMissing); ok && bool(missing) {
+			return true
+		}
+		if context, ok := value.(*Context); ok {
+			for _, ref := range context.Packets {
+				if ref.TimestampUnavailable {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func LogicalInterface(ci gopacket.CaptureInfo) int {
+	for _, value := range ci.AncillaryData {
+		if logical, ok := value.(CaptureInterface); ok {
+			return int(logical)
+		}
+	}
+	return ci.InterfaceIndex
+}
+
 func FromCapture(ci gopacket.CaptureInfo) *Context {
 	for _, a := range ci.AncillaryData {
 		if c, ok := a.(*Context); ok {
@@ -40,7 +70,7 @@ func Scope(p gopacket.Packet) string {
 	if c := FromCapture(p.Metadata().CaptureInfo); c != nil {
 		return c.Scope
 	}
-	s := "if:" + strconv.Itoa(p.Metadata().InterfaceIndex)
+	s := "if:" + strconv.Itoa(LogicalInterface(p.Metadata().CaptureInfo))
 	for _, l := range p.Layers() {
 		if v, ok := l.(*layers.Dot1Q); ok {
 			s += fmt.Sprintf("/vlan:%d", v.VLANIdentifier)
@@ -61,7 +91,7 @@ func ScopeHash(p gopacket.Packet) uint64 {
 // ScopeFlow supplies an opaque, direction-independent third reassembly key.
 // Network endpoints remain unmodified for checksums and application attribution.
 func ScopeFlow(ci gopacket.CaptureInfo) gopacket.Flow {
-	s := "if:" + strconv.Itoa(ci.InterfaceIndex)
+	s := "if:" + strconv.Itoa(LogicalInterface(ci))
 	if c := FromCapture(ci); c != nil {
 		s = c.Scope
 	}
@@ -78,13 +108,14 @@ func ScopeInterface(p gopacket.Packet, base string) string {
 		h := sha256.Sum256([]byte(c.Scope))
 		return fmt.Sprintf("%s@tunnel:%x", base, h[:16])
 	}
-	if i := p.Metadata().InterfaceIndex; i != 0 {
+	if i := LogicalInterface(p.Metadata().CaptureInfo); i != 0 {
 		return fmt.Sprintf("%s#%d", base, i)
 	}
 	return base
 }
 
 func FillContext(dst *types.PacketContext, p gopacket.Packet) {
+	dst.TimestampUnavailable = TimeUnavailable(p.Metadata().CaptureInfo)
 	dst.NetworkScope = Scope(p)
 	if c := FromCapture(p.Metadata().CaptureInfo); c != nil {
 		dst.Encapsulations, dst.CapturePackets = c.Tunnels, c.Packets
@@ -119,6 +150,15 @@ func tunnelScope(t *types.Encapsulation) string {
 	}
 	if t.Protocol == "geneve" {
 		port = 6081
+	}
+	if t.Protocol == "gtpu" {
+		port = 2152
+	}
+	if t.Protocol == "teredo" {
+		port = 3544
+	}
+	if t.Protocol == "l2tpv2" {
+		port = 1701
 	}
 	return fmt.Sprintf("/%s:%s,%s:%d:%t:%d:%d:%d", t.Protocol, a, b, port, t.KeyPresent, t.GREKey, t.Identifier, t.VLAN)
 }

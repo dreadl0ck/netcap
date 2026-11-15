@@ -22,7 +22,7 @@
 // Claude Code, mcp-inspector).
 //
 // On startup we spin up an embedded webui.Server bound to a loopback port
-// (no auth, no rate limit — local-user trust). All MCP tool handlers talk
+// (authenticated with a per-run credential). All MCP tool handlers talk
 // to this loopback API so a single set of analytical implementations
 // services both the browser UI and MCP clients. When the process exits,
 // the embedded webui and (optionally) the temporary data directory are
@@ -35,6 +35,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -142,6 +143,10 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	mcpLog := log.New(mcpLogOut, "[MCP] ", log.LstdFlags|log.Lmicroseconds)
 
 	bind := c.String("bind")
+	host, _, err := net.SplitHostPort(bind)
+	if err != nil || host != "localhost" && !net.ParseIP(host).IsLoopback() {
+		return fmt.Errorf("MCP --bind must be a loopback host:port")
+	}
 	dataDir := c.String("data-dir")
 	cleanup := false
 	if dataDir == "" {
@@ -181,17 +186,17 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		}
 	}()
 
-	baseURL := "http://" + bind
+	baseURL := webSrv.GetURL()
 
 	// Wait for the embedded webui to be ready. We probe /api/version
 	// up to 30 times at 100 ms intervals (~3 s budget) so slow CI hosts
 	// don't race the first MCP request against an un-bound listener.
-	if err := waitForServer(baseURL); err != nil {
+	if err := waitForServer(baseURL, webSrv.LocalAccessToken()); err != nil {
 		return fmt.Errorf("embedded webui never became reachable on %s: %w", bind, err)
 	}
 	mcpLog.Printf("embedded webui ready")
 
-	client := netcapmcp.NewNetcapClient(baseURL)
+	client := netcapmcp.NewAuthenticatedNetcapClient(baseURL, webSrv.LocalAccessToken())
 
 	activeSession := ""
 	if pcap := c.String("pcap"); pcap != "" {
@@ -225,6 +230,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 
 	mcpSrv, err := netcapmcp.New(netcapmcp.Options{
 		BaseURL:         baseURL,
+		AdminToken:      webSrv.LocalAccessToken(),
 		ActiveSession:   activeSession,
 		AllowedTools:    splitCSV(c.String("allow-tools")),
 		DisallowedTools: splitCSV(c.String("deny-tools")),
@@ -247,7 +253,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 
 // waitForServer polls /api/version on baseURL until it answers or 3
 // seconds elapse. Returns nil on success.
-func waitForServer(baseURL string) error {
+func waitForServer(baseURL string, tokens ...string) error {
 	deadline := time.Now().Add(3 * time.Second)
 	var lastErr error
 	hc := &http.Client{Timeout: 500 * time.Millisecond}
@@ -257,10 +263,17 @@ func waitForServer(baseURL string) error {
 		return err
 	}
 	for time.Now().Before(deadline) {
-		resp, err := hc.Get(u)
+		req, err := http.NewRequest(http.MethodGet, u, nil)
+		if err != nil {
+			return err
+		}
+		if len(tokens) > 0 {
+			req.Header.Set("Authorization", "Bearer "+tokens[0])
+		}
+		resp, err := hc.Do(req)
 		if err == nil {
 			resp.Body.Close()
-			if resp.StatusCode < 500 {
+			if resp.StatusCode == http.StatusOK {
 				return nil
 			}
 			lastErr = fmt.Errorf("status %d", resp.StatusCode)

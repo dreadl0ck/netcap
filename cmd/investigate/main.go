@@ -35,6 +35,7 @@ func GetCommand() *cli.Command {
 			&cli.StringFlag{Name: "read", Required: true, Usage: "PCAP/PCAPNG containing the TLS handshake and application traffic"},
 			&cli.StringFlag{Name: "key-log", Required: true, Usage: "NSS-format session secret log; never included in output"},
 			&cli.IntFlag{Name: "stream", Value: 0, Usage: "tshark TLS follow-stream index"},
+			&cli.StringFlag{Name: "community-id", Usage: "select a unique TCP stream by Netcap Community ID instead of tshark's index"},
 			&cli.DurationFlag{Name: "timeout", Value: time.Minute},
 		}, Action: runTLSCapture},
 		{Name: "protocol-proxy", Usage: "one bounded TCP session: framed application edits (optional TLS termination) or opaque passthrough", Flags: []cli.Flag{
@@ -174,7 +175,18 @@ func runTLSCapture(ctx context.Context, cmd *cli.Command) error {
 	}
 	ctx, cancel := context.WithTimeout(ctx, cmd.Duration("timeout"))
 	defer cancel()
-	result, err := protocoltest.AnalyzeTLSCapture(ctx, cmd.String("read"), cmd.String("key-log"), cmd.Int("stream"))
+	stream := cmd.Int("stream")
+	if id := cmd.String("community-id"); id != "" {
+		if cmd.IsSet("stream") {
+			return fmt.Errorf("choose --community-id or --stream")
+		}
+		var err error
+		stream, err = protocoltest.TLSStreamByCommunityID(ctx, cmd.String("read"), id)
+		if err != nil {
+			return err
+		}
+	}
+	result, err := protocoltest.AnalyzeTLSCapture(ctx, cmd.String("read"), cmd.String("key-log"), stream)
 	if err != nil {
 		return err
 	}

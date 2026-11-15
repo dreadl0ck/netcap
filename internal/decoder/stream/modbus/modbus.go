@@ -78,7 +78,7 @@ var Decoder = &decoder.StreamDecoder{
 
 	CanDecode: func(client, server []byte) bool {
 		// Check both directions for Modbus TCP traffic
-		return canDecodeModbus(client) || canDecodeModbus(server)
+		return canDecodeModbusRequest(client) || canDecodeModbusRequest(server)
 	},
 	DeInit: func(sd *decoder.StreamDecoder) error {
 		return modbusLog.Sync()
@@ -128,6 +128,19 @@ func canDecodeModbus(data []byte) bool {
 	}
 
 	return parsePDU(data[mbapHeaderSize:total], "unknown").ParseStatus == "valid"
+}
+
+func canDecodeModbusRequest(data []byte) bool {
+	if !canDecodeModbus(data) {
+		return false
+	}
+	total := 6 + int(uint16(data[4])<<8|uint16(data[5]))
+	return parsePDU(data[mbapHeaderSize:total], "request").ParseStatus == "valid"
+}
+
+// Registered-port selection can retain a structurally valid response-only capture.
+func CanDecodeOnPort(client, server []byte) bool {
+	return canDecodeModbus(client) || canDecodeModbus(server)
 }
 
 // isValidFunctionCode checks if the function code is a known Modbus function.

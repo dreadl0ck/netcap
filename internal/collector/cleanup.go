@@ -51,6 +51,18 @@ import (
 func (c *Collector) cleanup(force bool) {
 	// Use sync.Once to ensure cleanup only runs once, preventing double-close of log files
 	c.cleanupOnce.Do(func() {
+		defer func() {
+			if tx := c.outputReplacement; tx != nil {
+				var err error
+				if c.initialized {
+					err = tx.commit()
+				} else {
+					err = tx.rollback()
+				}
+				c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
+				c.outputReplacement = nil
+			}
+		}()
 		c.lifecycleMu.Lock()
 		c.lifecycleStopped = true
 		if c.runCancel != nil {
@@ -65,6 +77,13 @@ func (c *Collector) cleanup(force bool) {
 		c.statMutex.Unlock()
 		c.closePacketAdmission()
 		c.stopWorkers()
+		if c.packetPipeline != nil && c.config.DecoderConfig.Out != "" {
+			data, err := json.MarshalIndent(c.packetPipeline.Stats(), "", "  ")
+			if err == nil {
+				err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "packet-normalization.json"), append(data, '\n'), 0600)
+			}
+			c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
+		}
 		c.producersWG.Wait()
 		c.backgroundWG.Wait()
 		if c.flowExports != nil {

@@ -51,10 +51,35 @@ func (c *Collector) observeNetworkDetection(packet gopacket.Packet) {
 		scope.Interface = c.behaviorScope.Interface
 	}
 	c.observeRecordScope(packet, networkdetect.PacketScope(packet, scope))
+	if inputPacketInfo(packet.Metadata().CaptureInfo).NoTimestamp {
+		return
+	}
 	if c.networkDetector == nil || c.networkDetectionError != nil {
 		return
 	}
-	for _, event := range networkdetect.PacketEvents(packet, scope) {
+	c.observeDetectionEvents(networkdetect.PacketEvents(packet, scope))
+}
+
+func (c *Collector) observeNormalizationIssues(packet gopacket.Packet, issues []string) {
+	if len(issues) == 0 || packet.NetworkLayer() == nil || c.networkDetector == nil || c.networkDetectionError != nil {
+		return
+	}
+	scope := networkdetect.Scope{Sensor: "local", Interface: "pcap"}
+	if c.behaviorScope.Sensor != "" {
+		scope.Sensor = c.behaviorScope.Sensor
+	}
+	if c.behaviorScope.Interface != "" {
+		scope.Interface = c.behaviorScope.Interface
+	}
+	scope = networkdetect.PacketScope(packet, scope)
+	flow := packet.NetworkLayer().NetworkFlow()
+	for _, issue := range issues {
+		c.observeDetectionEvents([]networkdetect.Event{{At: packet.Metadata().Timestamp.UnixNano(), Scope: scope, Kind: issue, SrcIP: flow.Src().String(), DstIP: flow.Dst().String()}})
+	}
+}
+
+func (c *Collector) observeDetectionEvents(events []networkdetect.Event) {
+	for _, event := range events {
 		alerts, err := c.networkDetector.Observe(event)
 		if err = errors.Join(err, c.writeDetectionAlerts(alerts)); err != nil {
 			c.networkDetectionError = err

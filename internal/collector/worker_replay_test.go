@@ -2,6 +2,7 @@ package collector
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -18,9 +19,9 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
-	"github.com/mgutz/ansi"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
+	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -312,10 +313,14 @@ func mustScan(line, format string, ns *int64) bool {
 func workerReplayVerify(tb testing.TB, out string, segments int) {
 	tb.Helper()
 	want := make(map[workerReplayConversation]int)
+	legacyWant := make(map[string]int)
 	for i := range workerReplayFlows {
-		want[workerReplayMessages(i, segments)]++
+		message := workerReplayMessages(i, segments)
+		want[message]++
+		legacyWant[message.Client+message.Server]++
 	}
 	got := make(map[workerReplayConversation]int)
+	legacyGot := make(map[string]int)
 	err := filepath.WalkDir(filepath.Join(out, "tcp"), func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -327,31 +332,40 @@ func workerReplayVerify(tb testing.TB, out string, segments int) {
 		if err != nil {
 			return err
 		}
-		var client, server strings.Builder
-		for s := string(data); s != ""; {
-			var dst *strings.Builder
-			switch {
-			case strings.HasPrefix(s, ansi.Red):
-				dst = &client
-				s = strings.TrimPrefix(s, ansi.Red)
-			case strings.HasPrefix(s, ansi.Blue):
-				dst = &server
-				s = strings.TrimPrefix(s, ansi.Blue)
-			default:
-				return fmt.Errorf("unexpected conversation framing in %s: %q", path, s)
-			}
-			chunk, rest, ok := strings.Cut(s, ansi.Reset)
-			if !ok {
-				return fmt.Errorf("missing color reset in %s", path)
-			}
-			dst.WriteString(chunk)
-			s = rest
-		}
-		got[workerReplayConversation{Client: client.String(), Server: server.String()}]++
+		legacyGot[string(data)]++
 		return nil
 	})
 	if err != nil {
 		tb.Fatal(err)
+	}
+	if !reflect.DeepEqual(legacyGot, legacyWant) {
+		tb.Fatal("legacy conversation bytes changed or gained presentation markup")
+	}
+	manifests, err := filepath.Glob(filepath.Join(out, "stream-evidence", "*", "manifest.json"))
+	if err != nil {
+		tb.Fatal(err)
+	}
+	for _, path := range manifests {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			tb.Fatal(err)
+		}
+		var manifest streamutils.StreamEvidenceManifest
+		if err := json.Unmarshal(data, &manifest); err != nil {
+			tb.Fatal(err)
+		}
+		if manifest.Protocol != "TCP" {
+			continue
+		}
+		client, err := os.ReadFile(filepath.Join(filepath.Dir(path), manifest.Client.Name))
+		if err != nil {
+			tb.Fatal(err)
+		}
+		server, err := os.ReadFile(filepath.Join(filepath.Dir(path), manifest.Server.Name))
+		if err != nil {
+			tb.Fatal(err)
+		}
+		got[workerReplayConversation{Client: string(client), Server: string(server)}]++
 	}
 	if !reflect.DeepEqual(got, want) {
 		for msg, count := range want {

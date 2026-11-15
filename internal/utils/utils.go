@@ -277,23 +277,34 @@ func TrimFileExtension(file string) string {
 
 // TimeToUTC returns a time string in netcap format to a UTC string.
 func TimeToUTC(val string) string {
-	if slice := strings.Split(val, "."); len(slice) == 2 {
-		// seconds
-		seconds, err := strconv.ParseInt(slice[0], 10, 64)
-		if err != nil {
-			return err.Error()
-		}
-
-		// microseconds
-		micro, err := strconv.ParseInt(slice[1], 10, 64)
-		if err != nil {
-			return err.Error()
-		}
-
-		return time.Unix(seconds, micro*1000).UTC().String()
+	result, err := ParseTimestampUTC(val)
+	if err != nil {
+		return err.Error()
 	}
+	return result
+}
 
-	return val
+func ParseTimestampUTC(val string) (string, error) {
+	whole, fraction, dotted := strings.Cut(val, ".")
+	seconds, err := strconv.ParseInt(whole, 10, 64)
+	if err != nil {
+		return "", fmt.Errorf("invalid timestamp %q: %w", val, err)
+	}
+	var nanos int64
+	if dotted {
+		if len(fraction) == 0 || len(fraction) > 9 || strings.Trim(fraction, "0123456789") != "" {
+			return "", fmt.Errorf("invalid timestamp fraction %q: require 1–9 decimal digits", fraction)
+		}
+		nanos, _ = strconv.ParseInt(fraction+strings.Repeat("0", 9-len(fraction)), 10, 64)
+		if strings.HasPrefix(val, "-") {
+			nanos = -nanos
+		}
+	}
+	stamp := time.Unix(seconds, nanos).UTC()
+	if stamp.Year() < 1 || stamp.Year() > 9999 {
+		return "", fmt.Errorf("timestamp %q outside years 1–9999", val)
+	}
+	return stamp.String(), nil
 }
 
 // UnixTimeToUTC returns a time string in netcap format to a UTC string.

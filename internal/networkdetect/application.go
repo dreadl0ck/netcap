@@ -208,6 +208,9 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.A
 	group := ""
 	add := func(name, severity, class string, count, threshold int, first int64, samples []string, limitations ...string) {
 		id := stableKey(key, "application", name, group)
+		if name == "c2.beacon" {
+			id = stableKey(key, "application", name)
+		}
 		data, _ := json.Marshal(Evidence{Schema: 1, Detector: name, Classification: class, Scope: o.Scope, FirstSeen: first, LastSeen: o.At, Observed: uint64(count), Threshold: uint64(threshold), WindowNS: e.config.WindowNS, Samples: samples, Limitations: limitations})
 		alert := &types.Alert{Timestamp: o.At, Name: name, RuleName: name, RecordType: "ApplicationDetection", SrcIP: o.SrcIP, DstIP: o.DstIP, SrcPort: fmt.Sprint(o.SrcPort), DstPort: fmt.Sprint(o.DstPort), Severity: severity, Description: name + ": " + class, CommunityID: o.CommunityID, Tags: []string{"application-detection", class}, MatchedRecord: string(data)}
 		alerts = append(alerts, e.aggregates.add(id, alert)...)

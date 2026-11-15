@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
@@ -510,10 +511,18 @@ func TestW76MDNSMulticastSemantics(t *testing.T) {
 	b.udp("192.0.2.3", "224.0.0.251", 5353, 5353, []byte{0, 0, 0, 0})
 	out := runVoIP(t, input, "DNS", 4)
 	records := bookRecords(t, out, "DNS", func() *types.DNS { return new(types.DNS) })
-	if len(records) != 4 {
+	if len(records) != 5 {
 		t.Fatalf("mDNS count %d", len(records))
 	}
+	malformed := 0
 	for _, r := range records {
+		if r.ParseError != "" {
+			malformed++
+			if r.ParseStatus != "malformed-header" || !bytes.Equal(r.RawMessage, []byte{0, 0, 0, 0}) {
+				t.Fatal("malformed mDNS evidence lost", r)
+			}
+			continue
+		}
 		if r.RTT != 0 || r.QueryTransmissions != 0 {
 			t.Fatal("multicast falsely paired")
 		}
@@ -524,6 +533,9 @@ func TestW76MDNSMulticastSemantics(t *testing.T) {
 		} else if r.TransactionStatus != "mdns_query" || r.Questions[0].Class != 0x8001 {
 			t.Fatal("QU bit lost")
 		}
+	}
+	if malformed != 1 {
+		t.Fatalf("retained %d malformed mDNS messages", malformed)
 	}
 }
 

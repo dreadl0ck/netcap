@@ -21,8 +21,11 @@ package zabbix
 
 import (
 	"bytes"
+	"compress/zlib"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
+	"io"
 	"sync/atomic"
 
 	"go.uber.org/zap"
@@ -66,14 +69,12 @@ func (z *zabbixReader) Decode() {
 		regions[direction] = nil
 		sizes[direction] = 0
 		for offset := 0; offset+zabbixHeaderLen <= len(data); {
-			if !bytes.Equal(data[offset:offset+5], zabbixMagic) {
+			length, err := zabbixFrameLength(data[offset:])
+			if err != nil {
+				zabbixLog.Warn("invalid Zabbix frame", zap.Error(err))
 				break
 			}
-			length := binary.LittleEndian.Uint64(data[offset+5 : offset+13])
-			if length == 0 || length > uint64(len(data)-offset-zabbixHeaderLen) {
-				break
-			}
-			next := offset + zabbixHeaderLen + int(length)
+			next := offset + length
 			for _, rec := range z.parseZabbixMessages(data[offset:next]) {
 				rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = z.conversation.EndpointsAt(index, offset)
 				rec.Flow = z.conversation.Ident
@@ -114,27 +115,25 @@ func (z *zabbixReader) parseZabbixMessages(data []byte) []*types.Zabbix {
 	for offset+zabbixHeaderLen <= len(data) {
 		remaining := data[offset:]
 
-		// Look for ZBXD\x01 magic
-		if !bytes.Equal(remaining[:5], zabbixMagic) {
-			// Try to find the next magic header
-			idx := bytes.Index(remaining[1:], zabbixMagic)
-			if idx < 0 {
-				break
-			}
-			offset += 1 + idx
-			continue
-		}
-
-		// Data length is 8 bytes, little-endian int64
-		dataLen := int64(binary.LittleEndian.Uint64(remaining[5:13]))
-		if dataLen <= 0 || int64(offset)+int64(zabbixHeaderLen)+dataLen > int64(len(data)) {
+		length, err := zabbixFrameLength(remaining)
+		if err != nil {
 			break
 		}
-
-		payload := remaining[zabbixHeaderLen : zabbixHeaderLen+int(dataLen)]
+		payload := remaining[zabbixHeaderLen:length]
+		if remaining[4]&2 != 0 {
+			r, err := zlib.NewReader(bytes.NewReader(payload))
+			if err != nil {
+				break
+			}
+			payload, err = io.ReadAll(io.LimitReader(r, maxZabbixPayload+1))
+			closeErr := r.Close()
+			if err != nil || closeErr != nil || len(payload) > maxZabbixPayload || uint32(len(payload)) != binary.LittleEndian.Uint32(remaining[9:13]) {
+				break
+			}
+		}
 
 		rec := &types.Zabbix{
-			DataLength: int32(dataLen),
+			DataLength: int32(len(payload)),
 		}
 
 		// Parse JSON payload
@@ -147,8 +146,22 @@ func (z *zabbixReader) parseZabbixMessages(data []byte) []*types.Zabbix {
 		}
 
 		results = append(results, rec)
-		offset += zabbixHeaderLen + int(dataLen)
+		offset += length
 	}
 
 	return results
+}
+
+const maxZabbixPayload = 16 << 20
+
+func zabbixFrameLength(data []byte) (int, error) {
+	if len(data) < zabbixHeaderLen || !zabbixPrefix(data) {
+		return 0, fmt.Errorf("unsupported or truncated Zabbix header")
+	}
+	length, expanded := binary.LittleEndian.Uint32(data[5:9]), binary.LittleEndian.Uint32(data[9:13])
+	if length == 0 || length > maxZabbixPayload || uint64(length)+zabbixHeaderLen > uint64(len(data)) ||
+		data[4] == 1 && expanded != 0 || data[4] == 3 && (expanded == 0 || expanded > maxZabbixPayload) {
+		return 0, fmt.Errorf("invalid or over-limit Zabbix lengths")
+	}
+	return zabbixHeaderLen + int(length), nil
 }

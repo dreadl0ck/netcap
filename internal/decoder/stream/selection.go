@@ -203,7 +203,7 @@ func configuredDecoder(name string) bool {
 
 func decoderListed(list, name string) bool {
 	for _, item := range strings.Split(list, ",") {
-		if item == name {
+		if strings.EqualFold(strings.TrimSpace(item), name) {
 			return true
 		}
 	}
@@ -233,6 +233,9 @@ func matchScore(sd core.StreamDecoderAPI, in *SelectionInput, portPass bool) (in
 		client, server = in.PortClient, in.PortServer
 	}
 	if !sd.CanDecodeStream(client, server) {
+		if portPass && sd.GetName() == "Modbus" && in.ServerPort == 502 && modbus.CanDecodeOnPort(client, server) {
+			return core.SpecificityStructural, true
+		}
 		if in.Transport == core.TCP && in.Conversation != nil && in.Conversation.TCPHandshakeComplete && bytes.Equal(client, []byte("QUIT\r\n")) && len(server) == 0 {
 			if sd.GetName() == "FTP" && in.ServerPort == 21 || sd.GetName() == "SMTP" && (in.ServerPort == 25 || in.ServerPort == 587) {
 				return core.SpecificityWeak, true

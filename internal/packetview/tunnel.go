@@ -82,6 +82,21 @@ func tunnel(d *datagram) (t *types.Encapsulation, raw []byte, protocol uint16, h
 			return nil, nil, 0, nil, nil
 		}
 		port := u.DstPort
+		if port != 2152 && port != 3544 && port != 1701 {
+			if u.SrcPort == 2152 || u.SrcPort == 3544 || u.SrcPort == 1701 {
+				port = u.SrcPort
+			}
+		}
+		if port == 2152 || port == 3544 || port == 1701 {
+			t, raw, protocol, err = mobileTunnel(u, uint16(port), newTunnel)
+			if t != nil {
+				headers = append(headers, u)
+				if int(u.Length) > len(d.payload) {
+					err = errMalformed
+				}
+			}
+			return
+		}
 		if port != 4789 && port != 6081 {
 			return
 		}

@@ -172,7 +172,7 @@ func TestModerncReviewBuildScope(t *testing.T) {
 	want := []variant{
 		{"linux-dpi", "linux", "amd64", ""},
 		{"linux-dpi-noyara", "linux", "amd64", "noyara"},
-		{"linux-nodpi", "linux", "amd64", "nodpi,noyara"},
+		{"linux-nodpi", "linux", "amd64", "nodpi"},
 		{"darwin-dpi", "darwin", "arm64", ""},
 		{"darwin-nodpi", "darwin", "arm64", "nodpi"},
 		{"windows-nodpi", "windows", "amd64", "nodpi,noyara"},

@@ -22,6 +22,7 @@ package collector
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/dreadl0ck/netcap/internal/linkaudit"
 	"os"
 	"runtime"
 	"strconv"
@@ -48,7 +49,21 @@ func (c *Collector) decodeRawPacketData(data []byte, ci *gopacket.CaptureInfo) g
 	var baseLayer gopacket.Decoder = c.config.BaseLayer
 	if len(ci.AncillaryData) > 0 {
 		if lt, ok := ci.AncillaryData[0].(layers.LinkType); ok {
-			if lt == 239 {
+			if lt == layers.LinkTypeIEEE802_11 || lt == layers.LinkTypeIEEE80211Radio {
+				info := inputPacketInfo(*ci)
+				check := &linkaudit.FrameCheck{Known: info.FCSKnown, Present: info.FCSBytes == 4}
+				ci.AncillaryData = append(append([]any(nil), ci.AncillaryData...), check)
+				if lt == layers.LinkTypeIEEE80211Radio {
+					baseLayer = gopacket.DecodeFunc(func(data []byte, p gopacket.PacketBuilder) error { return linkaudit.DecodeRadioTap(data, p, check) })
+				} else {
+					baseLayer = gopacket.DecodeFunc(func(data []byte, p gopacket.PacketBuilder) error {
+						return linkaudit.DecodeDot11(data, p, check.Present)
+					})
+				}
+			} else if lt == 189 || lt == 220 || lt == 249 {
+				order := inputPacketInfo(*ci).Order
+				baseLayer = gopacket.DecodeFunc(func(data []byte, p gopacket.PacketBuilder) error { return decodeCaptureUSB(data, p, lt, order) })
+			} else if lt == 239 {
 				order := inputPacketInfo(*ci).Order
 				if order == nil {
 					order = binary.NativeEndian
@@ -105,6 +120,8 @@ func linkTypeToLayerType(lt layers.LinkType) gopacket.LayerType {
 		return gopacket.LayerTypePayload
 	case layers.LinkTypeEthernet:
 		return layers.LayerTypeEthernet
+	case 189, 220, 249:
+		return layers.LayerTypeUSB
 	case 12, layers.LinkTypeRaw: // Historical DLT_RAW captures also use 12 on disk.
 		return layerRawIP
 	case layers.LinkTypeIPv4:

@@ -56,10 +56,10 @@ var Decoder = &decoder.StreamDecoder{
 	Specificity: core.SpecificityMagic,
 
 	CanDecode: func(client, server []byte) bool {
-		if len(client) >= 5 && bytes.Equal(client[:5], zabbixMagic) {
+		if zabbixPrefix(client) {
 			return true
 		}
-		if len(server) >= 5 && bytes.Equal(server[:5], zabbixMagic) {
+		if zabbixPrefix(server) {
 			return true
 		}
 		return false
@@ -69,4 +69,8 @@ var Decoder = &decoder.StreamDecoder{
 	},
 	Factory: &zabbixReader{},
 	Typ:     core.TCP,
+}
+
+func zabbixPrefix(data []byte) bool {
+	return len(data) >= 5 && bytes.Equal(data[:4], zabbixMagic[:4]) && (data[4] == 1 || data[4] == 3)
 }

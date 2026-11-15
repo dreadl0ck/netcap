@@ -56,6 +56,11 @@ var Decoder = &decoder.StreamDecoder{
 	CanDecode: func(client, server []byte) bool {
 		c, s := strings.ToUpper(string(client)), strings.ToUpper(string(server))
 		if !strings.HasPrefix(s, "220 ") && !strings.HasPrefix(s, "220-") {
+			for _, command := range []string{"CWD ", "CDUP\r\n", "PWD\r\n", "AUTH TLS\r\n"} {
+				if strings.HasPrefix(c, command) {
+					return true
+				}
+			}
 			return false
 		}
 		for _, command := range []string{"EHLO ", "HELO ", "MAIL FROM:", "AUTH PLAIN", "AUTH LOGIN", "AUTH CRAM-MD5", "AUTH XOAUTH2"} {
@@ -67,7 +72,7 @@ var Decoder = &decoder.StreamDecoder{
 		if strings.Contains(line, "FTP") {
 			return true
 		}
-		for _, command := range []string{"USER ", "PASS ", "RETR ", "STOR ", "PASV\r\n", "EPSV\r\n"} {
+		for _, command := range []string{"USER ", "PASS ", "RETR ", "STOR ", "PASV\r\n", "EPSV\r\n", "CWD ", "CDUP\r\n", "PWD\r\n", "QUIT\r\n", "AUTH TLS\r\n", "TYPE "} {
 			if strings.HasPrefix(c, command) || strings.Contains(c, "\r\n"+command) {
 				return true
 			}

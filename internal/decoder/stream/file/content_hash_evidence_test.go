@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"github.com/andybalholm/brotli"
 	"io"
 	"os"
 	"strings"
@@ -26,6 +27,8 @@ func encodedFixture(t *testing.T, body []byte, kind string) []byte {
 	switch kind {
 	case "gzip":
 		writer = gzip.NewWriter(&output)
+	case "br":
+		writer = brotli.NewWriter(&output)
 	case "zlib":
 		writer = zlib.NewWriter(&output)
 	case "raw-deflate":
@@ -50,11 +53,14 @@ func TestContentHashQualifiedDecoding(t *testing.T) {
 		body[i] = byte(i)
 	}
 	hash := sha256.Sum256(body)
-	for _, kind := range []string{"gzip", "zlib", "raw-deflate"} {
+	for _, kind := range []string{"gzip", "zlib", "raw-deflate", "br"} {
 		t.Run(kind, func(t *testing.T) {
 			encoding := "deflate"
 			if kind == "gzip" {
 				encoding = "gzip"
+			}
+			if kind == "br" {
+				encoding = "br"
 			}
 			info, err := ComputeContentHashWithLimit(encodedFixture(t, body, kind), []string{encoding}, 1024)
 			if err != nil {
@@ -89,6 +95,8 @@ func TestContentHashFailuresRetainWireEvidence(t *testing.T) {
 		{"invalid-base64", []byte("%%%"), []string{"base64"}, 1024},
 		{"unsupported", body, []string{"unknown"}, 1024},
 		{"expansion-limit", gz, []string{"gzip"}, 16},
+		{"brotli-expansion-limit", encodedFixture(t, body, "br"), []string{"br"}, 16},
+		{"brotli-truncated", []byte{0x1b, 0x00}, []string{"br"}, 1024},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			info, err := ComputeContentHashWithLimit(tc.body, tc.encoding, tc.limit)

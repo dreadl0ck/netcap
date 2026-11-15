@@ -34,6 +34,7 @@ func TestFragmentDetectionProcess(t *testing.T) {
 		BaseLayer: layers.LayerTypeEthernet, DecodeOptions: gopacket.Default, NetworkDetection: true,
 		NetworkDetectionConfig: os.Getenv("NETCAP_FRAGMENT_DETECTION_CONFIG"),
 		DecoderConfig: &config.Config{Out: os.Getenv("NETCAP_FRAGMENT_DETECTION_OUT"), Quiet: true,
+			DefragIPv4:      true,
 			IncludeDecoders: "IPv4,IPv6,TCP,UDP,DNS,ICMPv4,ICMPv6", Proto: true, AddContext: true,
 			Buffer: true, MemBufferSize: 4096, NoOptCheck: true}})
 	if err := c.CollectPcap(input); err != nil {

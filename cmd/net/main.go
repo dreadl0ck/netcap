@@ -258,7 +258,9 @@ func commandExitCode(err error) int {
 		return code
 	}
 	if wrapped, ok := err.(interface{ Unwrap() error }); ok {
-		return commandExitCode(wrapped.Unwrap())
+		if inner := wrapped.Unwrap(); inner != nil {
+			return commandExitCode(inner)
+		}
 	}
 	if err == nil {
 		return 0

@@ -8,7 +8,7 @@ import (
 )
 
 func dnsTunnelPayload(name string, qtype uint16) (payload, zone string, suspicious bool) {
-	if qtype != 1 && qtype != 5 && qtype != 15 && qtype != 16 && qtype != 28 {
+	if qtype != 1 && qtype != 5 && qtype != 10 && qtype != 15 && qtype != 16 && qtype != 28 {
 		return
 	}
 	labels := strings.Split(name, ".")
@@ -38,5 +38,18 @@ func dnsTunnelPayload(name string, qtype uint16) (payload, zone string, suspicio
 	if qtype == 16 && len(parts) > 0 && len(parts[0]) >= 24 && entropy([]byte(parts[0])) >= 3.5 {
 		return encoded, zone, true
 	}
+	if validDomain(zone) && (qtype == 10 && len(encoded) >= 24 && entropy([]byte(encoded)) >= 3 || len(encoded) >= 48 && entropy([]byte(encoded)) >= 4) {
+		return encoded, zone, true
+	}
 	return "", "", false
+}
+
+func normalizeDNSWireName(name string) string {
+	b := []byte(strings.TrimSuffix(name, "."))
+	for i, c := range b {
+		if c >= 'A' && c <= 'Z' {
+			b[i] = c + ('a' - 'A')
+		}
+	}
+	return string(b)
 }

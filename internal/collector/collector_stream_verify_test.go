@@ -20,6 +20,8 @@
 package collector
 
 import (
+	"bytes"
+	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -27,6 +29,7 @@ import (
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
+	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/utils"
 )
 
@@ -43,6 +46,8 @@ func TestStreamDirectionHTTP(t *testing.T) {
 		Workers:               4, // Use multiple workers to verify sharding fixes directionality
 		PacketBufferSize:      100,
 		DPI:                   false,
+		NoSignalHandling:      true,
+		NoPrompt:              true,
 		ReassembleConnections: true,
 		DecoderConfig: &config.Config{
 			Out:                     outDir,
@@ -57,11 +62,7 @@ func TestStreamDirectionHTTP(t *testing.T) {
 			StreamBufferSize:        100,
 			NumStreamWorkers:        4,
 			IgnoreDecoderInitErrors: true,
-			// Exclude the Connection stream decoder. DeviceProfile and IPProfile
-			// are packet decoders (handled separately) and listing them here
-			// triggers stream.InitDecoders to reject them as unknown stream
-			// decoder names.
-			ExcludeDecoders: "Connection",
+			IncludeDecoders:         "Ethernet,IPv4,TCP,HTTP,Connection",
 			// Use defaults for others
 			BannerSize: 256,
 		},
@@ -128,43 +129,33 @@ func TestStreamDirectionHTTP(t *testing.T) {
 		t.Fatal("GET request not found in conversation")
 	}
 
-	// Check color
-	lastColor := getColorBeforeIndex(s, idxGET)
-	if lastColor != "red" {
-		t.Errorf("GET request should be Red (Client), but found color: %s", lastColor)
+	paths, err := filepath.Glob(filepath.Join(outDir, "stream-evidence", "*", "manifest.json"))
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	// Check for 200 OK
-	idx200 := strings.Index(s, "200 OK")
-	if idx200 != -1 {
-		lastColorResponse := getColorBeforeIndex(s, idx200)
-		if lastColorResponse != "blue" {
-			t.Errorf("200 OK response should be Blue (Server), but found color: %s", lastColorResponse)
+	matched := false
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
 		}
-	} else {
-		t.Log("200 OK not found in conversation (maybe partial capture)")
-	}
-}
-
-func getColorBeforeIndex(s string, idx int) string {
-	// Common ANSI codes
-	redCodes := []string{"\x1b[0;31m", "\x1b[31m"}
-	blueCodes := []string{"\x1b[0;34m", "\x1b[34m"}
-
-	for i := idx; i >= 0; i-- {
-		if s[i] == 0x1b { // ESC
-			sub := s[i:]
-			for _, code := range redCodes {
-				if strings.HasPrefix(sub, code) {
-					return "red"
-				}
-			}
-			for _, code := range blueCodes {
-				if strings.HasPrefix(sub, code) {
-					return "blue"
-				}
-			}
+		var manifest streamutils.StreamEvidenceManifest
+		if err := json.Unmarshal(data, &manifest); err != nil {
+			t.Fatal(err)
+		}
+		client, err := os.ReadFile(filepath.Join(filepath.Dir(path), manifest.Client.Name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		server, err := os.ReadFile(filepath.Join(filepath.Dir(path), manifest.Server.Name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if bytes.Contains(client, []byte("GET")) && bytes.Equal(append(bytes.Clone(client), server...), content) {
+			matched = true
 		}
 	}
-	return "unknown"
+	if !matched {
+		t.Fatal("raw HTTP conversation differs from directional payload evidence")
+	}
 }

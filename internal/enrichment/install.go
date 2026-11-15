@@ -323,6 +323,9 @@ func OpenVersion(dir string, trust ed25519.PublicKey, now time.Time, fresh bool)
 	if err != nil {
 		return nil, err
 	}
+	if id := filepath.Base(dir); validDigest(id) && id != Digest(e.Payload) {
+		return nil, fmt.Errorf("enrichment version digest mismatch")
+	}
 	p, _, err := Verify(e, trust, now, fresh)
 	if err != nil {
 		return nil, err
@@ -345,11 +348,11 @@ func OpenVersion(dir string, trust ed25519.PublicKey, now time.Time, fresh bool)
 	return m, validateMembers(m, p)
 }
 func Open(root string, trust ed25519.PublicKey, now time.Time) (map[string][]byte, error) {
-	dir, e := activeDir(root)
+	dir, e := runtimeDir(root)
 	if e != nil {
 		return nil, e
 	}
-	return OpenVersion(dir, trust, now, true)
+	return OpenVersion(dir, trust, now, false)
 }
 
 // Download is an explicit utility action; capture/analysis never calls it.

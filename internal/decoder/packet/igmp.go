@@ -32,6 +32,9 @@ var igmpDecoder = newGoPacketDecoder(
 	layers.LayerTypeIGMP,
 	"The Internet Group Management Protocol (IGMP) is a communications protocol used by hosts and adjacent routers on IPv4 networks to establish multicast group memberships",
 	func(layer gopacket.Layer, timestamp int64) proto.Message {
+		if igmp, ok := layer.(*layers.IGMPv1or2); ok {
+			return &types.IGMP{Timestamp: timestamp, Type: int32(igmp.Type), MaxResponseTime: uint64(igmp.MaxResponseTime), Checksum: int32(igmp.Checksum), GroupAddress: parseIPv4(igmp.GroupAddress), Version: int32(igmp.Version)}
+		}
 		if igmp, ok := layer.(*layers.IGMP); ok {
 			addresses := make([]string, 0, len(igmp.SourceAddresses))
 			for _, ip := range igmp.SourceAddresses {

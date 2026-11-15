@@ -30,15 +30,19 @@ zeus gen-version
 # docker rmi -f $(docker images -a -q)
 
 tag="dreadl0ck/netcap:ubuntu-${VERSION}"
+release_version="${VERSION#nodpi-}"
+release_version="${release_version#nodpi_}"
+release_version="${release_version#v}"
+build_commit="$(git rev-parse --verify HEAD)"
 
 echo "[INFO] $tag args: ${ARGS}"
 
 # build image directly from project root
 # dont quote ARGS or passing arguments wont work anymore
 if [ -n "${ARGS:-}" ]; then
-  docker build --platform linux/amd64 --build-arg NETCAP_BUILDER_IMAGE="$NETCAP_BUILDER_IMAGE" --build-context netcap-webui=./cmd/capture/webui/frontend/dist ${ARGS} -t "$tag" -f Dockerfile .
+  docker build --platform linux/amd64 --build-arg NETCAP_BUILD_VERSION="$release_version" --build-arg NETCAP_BUILD_COMMIT="$build_commit" --build-arg NETCAP_BUILDER_IMAGE="$NETCAP_BUILDER_IMAGE" --build-context netcap-webui=./cmd/capture/webui/frontend/dist ${ARGS} -t "$tag" -f Dockerfile .
 else
-  docker build --platform linux/amd64 --build-arg NETCAP_BUILDER_IMAGE="$NETCAP_BUILDER_IMAGE" --build-context netcap-webui=./cmd/capture/webui/frontend/dist -t "$tag" -f Dockerfile .
+  docker build --platform linux/amd64 --build-arg NETCAP_BUILD_VERSION="$release_version" --build-arg NETCAP_BUILD_COMMIT="$build_commit" --build-arg NETCAP_BUILDER_IMAGE="$NETCAP_BUILDER_IMAGE" --build-context netcap-webui=./cmd/capture/webui/frontend/dist -t "$tag" -f Dockerfile .
 fi
 BUILD_EXIT_CODE=$?
 
@@ -82,12 +86,13 @@ docker pull --platform linux/amd64 "$supplier"
 python3 zeus/scripts/audit-linux-runtime.py "$tag" "dist-linux/${ARCHIVE}" --supplier-image "$supplier"
 cp README.md dist-linux/${ARCHIVE}
 mkdir -p dist-linux/${ARCHIVE}/docs
-cp "docs/NETCAP Software Report.pdf" dist-linux/${ARCHIVE}/docs/
+cp -R docs/. dist-linux/${ARCHIVE}/docs/
 
 cd dist-linux
 
 # create tar archive for linux
 COPYFILE_DISABLE=1 tar --no-xattrs -czvf ${ARCHIVE}.tar.gz ${ARCHIVE}
+python3 ../scripts/check-release-archive.py "${ARCHIVE}.tar.gz"
 
 # add checksum - goreleaser needs to be patched for this to work
 # by default the checksums.txt file is truncated when being opened

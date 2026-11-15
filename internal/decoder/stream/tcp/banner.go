@@ -1,7 +1,6 @@
 package tcp
 
 import (
-	"slices"
 	"strconv"
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
@@ -44,9 +43,7 @@ func saveTCPServiceBanner(s streamReader) {
 		defer sv.Unlock()
 
 		// Reused endpoint tuples can carry distinct service observations.
-		if !slices.Contains(sv.Flows, ident) {
-			sv.Flows = append(sv.Flows, ident)
-		}
+		sv.AddFlow(ident)
 
 		// if this flow had a longer response from the server then what we have previously (in case we dont have c.Banner bytes yet)
 		// set this service response on the service and update the timestamp
@@ -72,7 +69,7 @@ func saveTCPServiceBanner(s streamReader) {
 	serv.Port = utils.DecodePort(s.Transport().Dst().Raw())
 
 	// set flow ident, h.parent.ident is the client flow
-	serv.Flows = []string{s.Ident()}
+	serv.AddFlow(s.Ident())
 
 	// Safely extract transport destination port for service name lookup
 	if len(s.Transport().Dst().Raw()) > 0 {
@@ -99,9 +96,7 @@ func saveTCPServiceBanner(s streamReader) {
 		sv.Lock()
 		defer sv.Unlock()
 
-		if !slices.Contains(sv.Flows, ident) {
-			sv.Flows = append(sv.Flows, ident)
-		}
+		sv.AddFlow(ident)
 
 		if sv.PreferObservation(banner, s.FirstPacket().UnixNano(), s.NumBytes(), s.Client().NumBytes()) {
 			sv.ResetProbeMatch()

@@ -52,6 +52,7 @@ func IncrementalError() error {
 // Pool retirement, rather than decoder completion, releases the fixed credit:
 // retained closed FSMs still own connection metadata after their payload retires.
 func (t *tcpConnection) ReassemblyRetired() {
+	t.releasePayloadAdmission()
 	t.retireOnce.Do(func() { t.stateBudget.Release(t.stateCredit) })
 }
 

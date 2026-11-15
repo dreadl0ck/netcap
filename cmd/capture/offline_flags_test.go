@@ -15,7 +15,9 @@ func TestOfflineHTTPOptIn(t *testing.T) {
 		{[]string{"capture", "--read", "fixture.pcap", "--http", "localhost:9090"}, "localhost:9090"},
 		{[]string{"capture", "--read", "fixture.pcap", "--http", ""}, ""},
 		{[]string{"capture", "--service"}, "localhost:8080"},
-		{[]string{"capture"}, "localhost:8080"},
+		{[]string{"capture"}, ""},
+		{[]string{"capture", "--iface", "lo0"}, ""},
+		{[]string{"capture", "--iface", "lo0", "--http", "localhost:8080"}, "localhost:8080"},
 	} {
 		cmd := &cli.Command{Flags: GetFlags(), Action: func(_ context.Context, c *cli.Command) error {
 			setFlagsFromContext(c)

@@ -40,6 +40,7 @@ import (
 	"github.com/gopacket/gopacket/layers"
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
+	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/internal/dnsaudit"
 	"github.com/dreadl0ck/netcap/internal/dnscontext"
 	"github.com/dreadl0ck/netcap/internal/dpi"
@@ -457,13 +458,7 @@ func makeConnection(p gopacket.Packet, connID connectionID, ll gopacket.LinkLaye
 	if generation > 0 {
 		co.ObservationBoundary = "new-syn-observed"
 	}
-	// Use Community ID v1 specification for standardized flow identification
-	// Falls back to MD5 hash if Community ID cannot be computed (e.g., missing layers)
-	if cid := CalcCommunityID(p); cid != "" {
-		co.CommunityID = cid
-	} else {
-		co.CommunityID = calcMd5(connID.String())
-	}
+	co.CommunityID = CalcCommunityID(p)
 	co.TimestampFirst, co.TimestampLast = first, last
 	co.TotalSize64 = wireBytes
 	co.TotalSize = connectionLegacyCounter(co.TotalSize64, co)
@@ -754,13 +749,12 @@ func (d *Decoder) writeConn(conn *types.Connection, clientIP, clientPort string,
 	// Set detected protocol name from DPI or transport protocol
 	if len(conn.Applications) > 0 {
 		// Use the first DPI-detected application as the protocol name
-		conn.DetectedProtocolName = conn.Applications[0]
+		conn.DetectedProtocolName = decoderutils.CanonicalProtocol(conn.Applications[0])
 	} else if conn.ApplicationProto != "" && conn.ApplicationProto != "Payload" && conn.ApplicationProto != "DecodeFailure" {
 		// Fallback to application layer protocol if available and meaningful
-		conn.DetectedProtocolName = conn.ApplicationProto
-	} else if conn.ServerPortName != "" {
-		// Fallback to the service name if we have one
-		conn.DetectedProtocolName = conn.ServerPortName
+		conn.DetectedProtocolName = decoderutils.CanonicalProtocol(conn.ApplicationProto)
+	} else {
+		conn.DetectedProtocolName = ""
 	}
 
 	if conf.ExportMetrics {

@@ -54,6 +54,7 @@ func (c *NetcapClient) StreamAuditRecords(auditType string, q url.Values, maxByt
 	// The webui's gzip middleware bypasses compression for SSE. Setting
 	// Accept explicitly avoids any ambiguity.
 	req.Header.Set("Accept", "text/event-stream")
+	c.authorizeBackend(req)
 
 	resp, err := c.hc.Do(req)
 	if err != nil {

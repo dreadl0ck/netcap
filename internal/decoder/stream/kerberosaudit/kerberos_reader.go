@@ -51,6 +51,7 @@ var messageTypeNames = map[int]string{
 	14: "AP-REQ",
 	15: "AP-REP",
 	30: "KRB-ERROR",
+	20: "KRB-SAFE",
 }
 
 // Decode parses Kerberos messages from the stream.
@@ -191,6 +192,20 @@ func (k *kerberosReader) parseSingleMessage(data []byte) *types.Kerberos {
 		return nil
 	}
 	tagNum := int(tag & 0x1f)
+	if tagNum == 20 {
+		var application asn1.RawValue
+		if _, err := asn1.Unmarshal(data, &application); err != nil {
+			return nil
+		}
+		fields := kerberosFields(application.Bytes)
+		var version, kind int
+		if _, err := asn1.Unmarshal(fields[0], &version); err != nil || version != 5 {
+			return nil
+		}
+		if _, err := asn1.Unmarshal(fields[1], &kind); err != nil || kind != 20 || len(fields[2]) == 0 || len(fields[3]) == 0 {
+			return nil
+		}
+	}
 
 	msgTypeName, ok := messageTypeNames[tagNum]
 	if !ok {

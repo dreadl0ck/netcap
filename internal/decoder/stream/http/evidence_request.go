@@ -12,15 +12,17 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func escapeTargetControls(target string) string {
 	var out strings.Builder
+	invalidUTF8 := !utf8.ValidString(target)
 	for i := 0; i < len(target); i++ {
 		b := target[i]
-		if b < 32 || b == 127 {
+		if b < 32 || b == 127 || invalidUTF8 && b >= 128 {
 			fmt.Fprintf(&out, "%%%02X", b)
 		} else {
 			out.WriteByte(b)
@@ -168,14 +170,14 @@ func requestLine(line []byte) (method, target, version string, issues []string, 
 func readEvidenceHead(b *bufio.Reader) (messageEvidence, http.Header, error) {
 	e := messageEvidence{}
 	header := make(http.Header)
-	line, err := b.ReadSlice('\n')
+	line, err := readHTTPLine(b, maxHTTPHeaders)
 	e.line = bytes.Clone(line)
 	if err != nil {
 		return e, header, err
 	}
 	total := len(line)
 	for {
-		line, err = b.ReadSlice('\n')
+		line, err = readHTTPLine(b, maxHTTPHeaders-total)
 		total += len(line)
 		if total > maxHTTPHeaders || len(e.headers) >= maxHTTPHeaderCount || err == bufio.ErrBufferFull {
 			e.issue("http-header-limit")
@@ -204,6 +206,20 @@ func readEvidenceHead(b *bufio.Reader) (messageEvidence, http.Header, error) {
 			e.issue("incomplete-http-headers")
 			e.unsafe = true
 			return e, header, nil
+		}
+	}
+}
+
+func readHTTPLine(b *bufio.Reader, limit int) ([]byte, error) {
+	var line []byte
+	for {
+		part, err := b.ReadSlice('\n')
+		if len(part) > limit-len(line) {
+			return line, bufio.ErrBufferFull
+		}
+		line = append(line, part...)
+		if err != bufio.ErrBufferFull {
+			return line, err
 		}
 	}
 }
@@ -253,6 +269,9 @@ func readEvidenceRequest(b *bufio.Reader) (*http.Request, messageEvidence, error
 		return nil, e, errors.New("invalid HTTP request line")
 	}
 	e.issues = append(e.issues, issues...)
+	if !utf8.ValidString(target) {
+		e.issue("non-utf8-request-target")
+	}
 	qualifyFraming(&e, header)
 	cleanTarget := strings.ReplaceAll(escapeTargetControls(target), " ", "%20")
 	parseVersion := version
@@ -263,7 +282,12 @@ func readEvidenceRequest(b *bufio.Reader) (*http.Request, messageEvidence, error
 	fmt.Fprintf(&wire, "%s %s %s\r\n", method, cleanTarget, parseVersion)
 	for _, field := range e.headers {
 		if !e.unsafe {
-			wire.Write(field.Raw)
+			if strings.EqualFold(string(field.Name), "Host") && !utf8.Valid(field.Value) {
+				wire.WriteString("Host: non-utf8.invalid\r\n")
+				e.issue("non-utf8-http-host")
+			} else {
+				wire.Write(field.Raw)
+			}
 		}
 	}
 	wire.WriteString("\r\n")
@@ -279,6 +303,9 @@ func readEvidenceRequest(b *bufio.Reader) (*http.Request, messageEvidence, error
 		r = &http.Request{Method: method, URL: u, Body: http.NoBody}
 	}
 	r.Header, r.RequestURI, r.Proto = header, target, version
+	if original := header.Get("Host"); !utf8.ValidString(original) && (r.URL == nil || r.URL.Host == "") {
+		r.Host = original
+	}
 	if r.Host == "" {
 		r.Host = header.Get("Host")
 		if r.Host == "" {

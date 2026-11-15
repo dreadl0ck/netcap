@@ -22,6 +22,7 @@ package webui
 import (
 	"compress/gzip"
 	"context"
+	"crypto/rand"
 	"fmt"
 	stdio "io"
 	"log"
@@ -187,6 +188,7 @@ type BehaviorOptions = behaviorcommand.Options
 
 // Server represents the web UI HTTP server
 type Server struct {
+	localAccessToken     string
 	addr                 string
 	outDir               string
 	baseOutDir           string // Original output directory for multi-file mode
@@ -310,6 +312,9 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 		isServiceMode: isServiceMode,
 		serviceConfig: serviceConfig,
 		devMode:       devMode,
+	}
+	if !isServiceMode {
+		s.localAccessToken = rand.Text()
 	}
 
 	log.Printf("[WebUI] Server initialized: outDir=%s, baseOutDir=%s", s.outDir, s.baseOutDir)
@@ -792,7 +797,7 @@ func (s *Server) Start() error {
 
 	s.httpServer = &http.Server{
 		Addr:         s.addr,
-		Handler:      gzipMiddleware(s.corsMiddleware(s.captureSelectionMiddleware(chartCoverageMiddleware(mux)))),
+		Handler:      s.localSecurityMiddleware(gzipMiddleware(s.corsMiddleware(s.captureSelectionMiddleware(chartCoverageMiddleware(mux))))),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 5 * time.Minute,
 		IdleTimeout:  120 * time.Second,
@@ -1207,22 +1212,7 @@ func corsAllowedOrigins() map[string]bool {
 	return allowed
 }
 
-// corsMiddleware adds CORS headers.
-//
-// The policy differs by mode, because the risk does:
-//
-//   - Local mode is a single-user tool bound to the operator's own machine,
-//     analysing captures the operator already has. Permissive CORS costs
-//     nothing and keeps cross-origin dev setups working.
-//
-//   - Service mode is public and unauthenticated, and the API serves data
-//     extracted from capture files -- including secrets, DNS queries and
-//     certificates. "Access-Control-Allow-Origin: *" there let any website on
-//     the internet read it, with no credential needed since there is none.
-//     Same-origin only, unless origins are explicitly configured.
-//
-// The web UI itself never needs CORS: the same server serves the SPA and the
-// API, and the chart iframes load same-origin URLs.
+// Cross-origin access requires an explicit origin, in either mode.
 func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	s.mu.RLock()
 	isServiceMode := s.isServiceMode
@@ -1241,17 +1231,12 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 		}
 
 		switch {
-		case !isServiceMode:
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
 		case allowed[r.Header.Get("Origin")]:
 			// Echo the specific origin rather than "*", and vary on it so a
 			// cache cannot serve one origin's response to another.
 			w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			w.Header().Add("Vary", "Origin")
 
 		default:
@@ -1534,8 +1519,6 @@ func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 }
 
 // getExcludeDecoders returns the list of decoders to exclude for this job.
-// When DPI is disabled, DPI-dependent decoders are excluded to prevent crashes.
-//
 // The list is filtered against the decoders actually registered in this build:
 // the collector rejects an exclude naming a decoder it does not have
 // (ErrInvalidDecoder), and the App Store build compiles several decoders out
@@ -1548,17 +1531,6 @@ func getExcludeDecoders(job *AnalysisJob) string {
 			excludeDecoders += "," + required
 		} else {
 			excludeDecoders = required
-		}
-	}
-
-	// When DPI is disabled, exclude DPI-dependent decoders
-	// These decoders can cause nil pointer crashes if DPI is not properly initialized
-	if !job.EnableDPI {
-		dpiDependentDecoders := "DeviceProfile,IPProfile,Connection"
-		if excludeDecoders != "" {
-			excludeDecoders += "," + dpiDependentDecoders
-		} else {
-			excludeDecoders = dpiDependentDecoders
 		}
 	}
 

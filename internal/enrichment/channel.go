@@ -170,7 +170,10 @@ func Verify(e Envelope, root ed25519.PublicKey, now time.Time, fresh bool) (Payl
 		return fail()
 	}
 	if fresh && (now.Unix() >= p.ExpiresAt || now.Unix() < k.NotBefore) {
-		return fail()
+		if now.Unix() >= p.ExpiresAt {
+			return p, k, fmt.Errorf("enrichment release expired at %s", time.Unix(p.ExpiresAt, 0).UTC().Format(time.RFC3339))
+		}
+		return p, k, fmt.Errorf("enrichment signing key is not valid before %s", time.Unix(k.NotBefore, 0).UTC().Format(time.RFC3339))
 	}
 	return p, k, nil
 }

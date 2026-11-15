@@ -17,13 +17,16 @@ func (t *tcpConnection) releaseResources() {
 	if t.factory == nil {
 		return
 	}
+	t.releasePayloadAdmission()
 	t.releaseOnce.Do(func() {
 		if t.incremental != nil {
 			t.incremental.Abort()
 		}
 		readers := []streamReader{t.client, t.server}
 		for _, reader := range readers {
-			reader.CloseData()
+			if reader != nil {
+				reader.CloseData()
+			}
 		}
 		for _, reader := range readers {
 			if owned, ok := reader.(*tcpStreamReader); ok && owned.done != nil {
@@ -56,4 +59,16 @@ func (t *tcpConnection) releaseResources() {
 			}
 		}
 	})
+}
+
+func (t *tcpConnection) releasePayloadAdmission() {
+	if t.factory == nil {
+		return
+	}
+	t.factory.Lock()
+	defer t.factory.Unlock()
+	if t.payloadAdmission {
+		t.payloadAdmission = false
+		t.factory.pendingPayloads--
+	}
 }

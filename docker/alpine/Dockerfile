@@ -11,7 +11,7 @@ COPY --from=netcap-webui / /netcap/cmd/capture/webui/frontend/dist/
 ARG NETCAP_BUILD_VERSION=XXX
 ARG NETCAP_BUILD_COMMIT=development
 ENV VERSION=${NETCAP_BUILD_VERSION}
-ARG TAGS="-tags noyara"
+ARG TAGS=""
 RUN echo "tags: $TAGS"
 
 # Extract library versions from go.mod

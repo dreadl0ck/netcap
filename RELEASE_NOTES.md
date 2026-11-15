@@ -1,3 +1,33 @@
+## Capture and local API corrections
+
+`v0.16.7` addresses the 53-row v0.16.6 issue report. The
+[issue ledger](internal/collector/testdata/recheck-v0166.json) records 45 implemented,
+3 implemented with explicit policy, 2 partial, 1 open and 2 by-design dispositions.
+These describe source changes and local regressions; the evaluator's complete
+MTA/CTF/Wireshark corpus and `/workspace/hunt/repro/` were unavailable locally.
+
+| Area | Change |
+| --- | --- |
+| Local HTTP and MCP | Offline/live UI is opt-in; per-run authentication, strict Host/Origin checks and same-origin CORS protect the local API. Browser bootstrap uses an HttpOnly SameSite cookie; MCP authenticates its backend requests. Service-mode authentication behavior is unchanged |
+| Output and CLI | Finalize gzip CSV through EOF; stage owned outputs and restore them after failed initialization while preserving unrelated files. Preserve leaf-error exit codes, validate decoder selection and operands, parse decimal timestamps without float rounding, and explicitly reject obsolete generation flags |
+| Capture formats | Read patched/Kuznetzov PCAP and normalize timestamp carry. Preserve missing timestamps in PCAPNG SPBs; `--pcapng-merge-sections` explicitly enables compatible-interface continuity. Add USB link types 189, 220 and 249; identify unsupported 5View and damaged PCAPNG inputs |
+| Packet evidence | Normalize bounded GTP-U, Teredo and L2TPv2 inner traffic; retain tunnel scope. Persist fragment diagnostics and honor the defrag switch. Correct portless Community IDs, IGMPv1/v2 and capture-aware wireless FCS handling; export SSID, ordered IEs and WEP metadata |
+| Protocol recovery | Preserve long/non-UTF8 HTTP headers, bounded brotli artifacts, compressed Zabbix, KRB-SAFE, FTP navigation and directional Telnet credentials. Add attributed HTTP form aliases and bounded readable TLS HTTP/2 output. Tighten off-port Modbus recognition |
+| DNS, identity and detections | Retain malformed/raw DNS and exact name/TXT bytes; detect binary NULL tunnels. Correct reply-first UDP roles and ICMP-refused service claims, avoid keepalive overlap false positives, aggregate per-URI beacon incidents, and keep port guesses separate from observed protocol labels |
+| Enrichment | Verify snapshot authenticity independently of freshness; retain expiry diagnostics, digest pins and capture provenance |
+| Performance | Indexed service-flow membership reduces the 40k-UDP-flow regression from 3.21 s to 1.09 s on the isolated Linux runner. Lazy TCP payload readers reduce retained heap for 50k SYNs from 207,694,408 to 183,410,096 bytes |
+| Packaging | Enable YARA in Linux DPI/nodpi builds, stamp version/commit through Linux build arguments, include documentation trees and validate README-linked Markdown in actual archives |
+
+| Remaining qualification or policy | Disposition |
+| --- | --- |
+| DS-12/DS-14 | Open: bounded aggregate-state spilling and qualification of the 49 large captures remain outstanding |
+| H-28 | Partial: lazy TCP readers reduce allocation; general per-flow state and full 200k-flow RSS qualification remain |
+| D2-13 | Partial: USB 189/220/249 are supported; exotic families including 165/192/209/289/300 remain unsupported |
+| H-5 | Conflicting fragment sets remain rejected; first-arrival reconstruction is not implemented |
+| H-11 | PCAPNG sections remain isolated unless `--pcapng-merge-sections` is selected |
+| DS-2 / NEW-2 | Preserve qualified aliases and LDAP directory matches without inventing IP ownership |
+| External replay | Full evaluator replay, including the original TLS capture/key log and large-capture corpus, remains required |
+
 ## Recheck fixes
 
 `v0.16.6` fixes the open items from the v0.16.4 full recheck that do not need a

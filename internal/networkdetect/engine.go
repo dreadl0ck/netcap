@@ -1,6 +1,7 @@
 package networkdetect
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"net/netip"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -20,18 +22,19 @@ type Scope struct {
 
 // Event is capture-derived; fixture scenario labels are never detector inputs.
 type Event struct {
-	Ack     uint32 `json:"ack,omitempty"`
-	At      int64  `json:"at"`
-	Scope   Scope  `json:"scope"`
-	Kind    string `json:"kind"`
-	SrcIP   string `json:"srcIP"`
-	DstIP   string `json:"dstIP"`
-	SrcPort uint16 `json:"srcPort,omitempty"`
-	DstPort uint16 `json:"dstPort,omitempty"`
-	Name    string `json:"name,omitempty"`
-	QType   uint16 `json:"qType,omitempty"`
-	Seq     uint32 `json:"seq,omitempty"`
-	Payload []byte `json:"payload,omitempty"`
+	KeepAliveEligible bool   `json:"keepAliveEligible,omitempty"`
+	Ack               uint32 `json:"ack,omitempty"`
+	At                int64  `json:"at"`
+	Scope             Scope  `json:"scope"`
+	Kind              string `json:"kind"`
+	SrcIP             string `json:"srcIP"`
+	DstIP             string `json:"dstIP"`
+	SrcPort           uint16 `json:"srcPort,omitempty"`
+	DstPort           uint16 `json:"dstPort,omitempty"`
+	Name              string `json:"name,omitempty"`
+	QType             uint16 `json:"qType,omitempty"`
+	Seq               uint32 `json:"seq,omitempty"`
+	Payload           []byte `json:"payload,omitempty"`
 }
 
 type Evidence struct {
@@ -204,7 +207,20 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 		alerts = append(alerts, e.aggregates.add(key, alert)...)
 	}
 	if ev.Kind == "dns" {
-		ev.Name = strings.ToLower(strings.TrimSuffix(ev.Name, "."))
+		ev.Name = normalizeDNSWireName(ev.Name)
+		if encoded, zone, suspicious := dnsTunnelPayload(ev.Name, ev.QType); suspicious {
+			value := encoded
+			if !utf8.ValidString(value) {
+				value = "base64:" + base64.StdEncoding.EncodeToString([]byte(value))
+			}
+			count, first, samples := e.count(ev, "dns-tunnel|"+zone, value)
+			if count >= e.config.DNSNames {
+				name := ev.Name
+				ev.Name = zone
+				add("dns.tunnel", "behavioral-suspicion", "medium", "T1071.004", uint64(count), uint64(e.config.DNSNames), samples, first, nil, "Encoded query-name diversity also occurs in legitimate services; the observed source may be a DNS forwarder")
+				ev.Name = name
+			}
+		}
 		if !validDomain(ev.Name) {
 			return alerts, nil
 		}
@@ -226,15 +242,14 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 		}
 	}
 	switch ev.Kind {
+	case "dns.malformed":
+		add(ev.Kind, "policy-observation", "low", "", 1, 1, []string{"Malformed DNS message retained with parse error and raw bytes"}, ev.At, nil, "Malformed traffic may be accidental; payload content is not used as a hostname")
+	case "ip.fragment-overlap-conflict":
+		add(ev.Kind, "behavioral-suspicion", "medium", "T1562.006", 1, 1, []string{"Conflicting bytes in overlapping IP fragments; datagram rejected"}, ev.At, nil, "Conflicting wire evidence does not establish which bytes the endpoint accepted")
+	case "ip.tiny-fragment":
+		add(ev.Kind, "policy-observation", "info", "", 1, 1, []string{"Non-final IPv4 fragment carries at most 8 payload bytes"}, ev.At, nil, "Tiny fragments also occur legitimately; reassembly remains bounded")
 	case "dns":
 		label, parent, _ := strings.Cut(ev.Name, ".")
-		if encoded, zone, suspicious := dnsTunnelPayload(ev.Name, ev.QType); suspicious {
-			count, first, samples := e.count(ev, "dns-tunnel|"+zone, encoded)
-			if count >= e.config.DNSNames {
-				ev.Name = zone
-				add("dns.tunnel", "behavioral-suspicion", "medium", "T1071.004", uint64(count), uint64(e.config.DNSNames), samples, first, nil, "Encoded query-name diversity also occurs in legitimate services; the observed source may be a DNS forwarder")
-			}
-		}
 		digits := strings.ContainsAny(label, "0123456789")
 		if !strings.Contains(parent, ".") && len(label) >= 7 && len(label) <= 20 && digits && entropy([]byte(label)) >= 2.5 {
 			count, first, samples := e.count(ev, "dns-dga", ev.Name)

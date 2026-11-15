@@ -87,7 +87,12 @@ func TestServerStopPreservesUnrelatedListener(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = owned.Stop(context.Background()) })
 	client := &http.Client{Timeout: time.Second}
-	ready, err := client.Get(owned.GetURL() + "/api/status")
+	request, err := http.NewRequest(http.MethodGet, owned.GetURL()+"/api/status", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.Header.Set("Authorization", "Bearer "+owned.LocalAccessToken())
+	ready, err := client.Do(request)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -38,6 +38,7 @@ jobs:
           asset="netcap-${VARIANT}${RELEASE_TAG}-${TARGET}.tar.gz"
           # A read-only Actions token can download a public prerelease, not a draft.
           gh release download "$RELEASE_TAG" --pattern "$asset" --pattern checksums.txt --pattern netcap.rb --dir "$RUNNER_TEMP/release"
+          python scripts/check-release-archive.py "$RUNNER_TEMP/release/$asset"
           python - <<'PY'
           import hashlib,os,pathlib
           root=pathlib.Path(os.environ['RUNNER_TEMP'])/'release'

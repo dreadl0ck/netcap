@@ -77,7 +77,7 @@ func TestCPUProfileCommandReturns(t *testing.T) {
 		args       []string
 	}{
 		{"missing", "expand input pattern", []string{"--read", "missing.pcap"}},
-		{"malformed", "collect pcapng", []string{"--read", "bad.pcap"}},
+		{"malformed", "truncated capture header", []string{"--read", "bad.pcap"}},
 		{"service", "unsupported", []string{"--service"}},
 		{"upload", "unsupported", []string{"--http", "localhost:8080"}},
 	} {

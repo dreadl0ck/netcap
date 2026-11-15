@@ -3,6 +3,7 @@ package collector
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/dreadl0ck/netcap/internal/packetview"
 	"io"
 	"math"
 	"math/bits"
@@ -15,15 +16,20 @@ import (
 const ngSection = 0x0a0d0d0a
 
 type captureNGInterface struct {
-	link    layers.LinkType
-	snaplen uint32
-	units   uint64
-	offset  int64
-	valid   bool
+	fcsKnown  bool
+	fcsBytes  int
+	name, mac string
+	link      layers.LinkType
+	snaplen   uint32
+	units     uint64
+	offset    int64
+	valid     bool
 }
 
 type scopedNgReader struct {
-	keyLog func([]byte)
+	mergeSections bool
+	continuity    map[int]captureNGInterface
+	keyLog        func([]byte)
 	*captureStream
 	order         binary.ByteOrder
 	interfaces    []captureNGInterface
@@ -154,6 +160,15 @@ func (r *scopedNgReader) addInterface(body []byte, offset int64) error {
 	intf := captureNGInterface{link: layers.LinkType(r.order.Uint16(body[:2])), snaplen: r.order.Uint32(body[4:8]), units: 1_000_000, valid: true}
 	err := ngOptions(body[8:], r.order, func(code uint16, value []byte) error {
 		switch code {
+		case 13:
+			if len(value) != 1 || value[0]%8 != 0 {
+				return fmt.Errorf("invalid if_fcslen")
+			}
+			intf.fcsKnown, intf.fcsBytes = true, int(value[0])/8
+		case 2:
+			intf.name = string(value)
+		case 6:
+			intf.mac = string(value)
 		case 9: // if_tsresol
 			if len(value) != 1 {
 				return fmt.Errorf("invalid if_tsresol length")
@@ -185,6 +200,12 @@ func (r *scopedNgReader) addInterface(body []byte, offset int64) error {
 		return r.fail(offset, err.Error(), true)
 	}
 	r.interfaces[len(r.interfaces)-1] = intf
+	if r.interfaceBase == 0 {
+		if r.continuity == nil {
+			r.continuity = make(map[int]captureNGInterface)
+		}
+		r.continuity[len(r.interfaces)-1] = intf
+	}
 	return nil
 }
 
@@ -205,6 +226,7 @@ func (r *scopedNgReader) packet(kind uint32, body []byte, offset int64) ([]byte,
 	if kind == 3 {
 		wire = r.order.Uint32(body[:4])
 		caplen = wire
+		ci.Timestamp = time.Unix(0, 0).UTC()
 	} else {
 		iface = r.order.Uint32(body[:4])
 		if kind == 2 {
@@ -240,7 +262,13 @@ func (r *scopedNgReader) packet(kind uint32, body []byte, offset int64) ([]byte,
 		ci.Timestamp = time.Unix(int64(secs)+intf.offset, int64(nanos)).UTC()
 	}
 	ci.CaptureLength, ci.Length, ci.InterfaceIndex = int(caplen), int(wire), r.interfaceBase+int(iface)
-	ci.AncillaryData = []any{intf.link, capturePacketInfo{Order: r.order, Offset: offset, SnaplenOverride: intf.snaplen != 0 && caplen > intf.snaplen, NoTimestamp: kind == 3}}
+	ci.AncillaryData = []any{intf.link, capturePacketInfo{Order: r.order, Offset: offset, SnaplenOverride: intf.snaplen != 0 && caplen > intf.snaplen, NoTimestamp: kind == 3, FCSKnown: intf.fcsKnown, FCSBytes: intf.fcsBytes}}
+	if r.mergeSections && r.continuity[int(iface)] == intf {
+		ci.AncillaryData = append(ci.AncillaryData, packetview.CaptureInterface(iface))
+	}
+	if kind == 3 {
+		ci.AncillaryData = append(ci.AncillaryData, packetview.TimestampMissing(true))
+	}
 	return body[header : header+int(caplen)], ci, nil
 }
 

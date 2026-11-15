@@ -40,6 +40,15 @@ func NewNetcapClient(baseURL string) *NetcapClient {
 	}
 }
 
+func NewAuthenticatedNetcapClient(baseURL, token string) *NetcapClient {
+	c := NewNetcapClient(baseURL)
+	c.adminToken = token
+	if token != "" {
+		c.hc.CheckRedirect = func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
+	}
+	return c
+}
+
 // BaseURL returns the configured webui base URL, useful for forming
 // downloadable artefact URLs in tool responses.
 func (c *NetcapClient) BaseURL() string { return c.baseURL }

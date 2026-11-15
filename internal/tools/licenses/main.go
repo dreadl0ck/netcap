@@ -75,7 +75,7 @@ type variant struct {
 var variants = []variant{
 	{name: "linux-dpi", goos: "linux", goarch: "amd64"},
 	{name: "linux-dpi-noyara", goos: "linux", goarch: "amd64", tags: "noyara"},
-	{name: "linux-nodpi", goos: "linux", goarch: "amd64", tags: "nodpi,noyara"},
+	{name: "linux-nodpi", goos: "linux", goarch: "amd64", tags: "nodpi"},
 	{name: "darwin-dpi", goos: "darwin", goarch: "arm64"},
 	{name: "darwin-nodpi", goos: "darwin", goarch: "arm64", tags: "nodpi"},
 	{name: "windows-nodpi", goos: "windows", goarch: "amd64", tags: "nodpi,noyara"},
@@ -90,6 +90,7 @@ var allowedFrontendLicenses = map[string]bool{
 func main() {
 	check := flag.Bool("check", false, "verify that the generated bundle is current")
 	output := flag.String("output", defaultOutput, "bundle output path")
+	frontendInventory := flag.String("frontend-inventory", "", "offline pnpm licenses list --prod --json inventory; installed license files are still verified")
 	flag.Parse()
 
 	root, err := repositoryRoot()
@@ -101,7 +102,7 @@ func main() {
 	if err != nil {
 		fatal(err)
 	}
-	frontend, err := collectFrontendDependencies(root)
+	frontend, err := collectFrontendDependenciesFrom(root, *frontendInventory)
 	if err != nil {
 		fatal(err)
 	}
@@ -406,10 +407,20 @@ func mergeLicenseFiles(first, second []licenseFile) []licenseFile {
 }
 
 func collectFrontendDependencies(root string) ([]dependency, error) {
+	return collectFrontendDependenciesFrom(root, "")
+}
+
+func collectFrontendDependenciesFrom(root, inventory string) ([]dependency, error) {
 	frontendDir := filepath.Join(root, "cmd/capture/webui/frontend")
-	cmd := exec.Command("pnpm", "licenses", "list", "--prod", "--json")
-	cmd.Dir = frontendDir
-	out, err := cmd.Output()
+	var out []byte
+	var err error
+	if inventory != "" {
+		out, err = os.ReadFile(inventory)
+	} else {
+		cmd := exec.Command("pnpm", "licenses", "list", "--prod", "--json")
+		cmd.Dir = frontendDir
+		out, err = cmd.Output()
+	}
 	if err != nil {
 		return nil, fmt.Errorf("list frontend licenses (run pnpm install --frozen-lockfile first): %w", err)
 	}

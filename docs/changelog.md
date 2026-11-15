@@ -4,6 +4,10 @@ description: Detailed Version History Information
 
 # Releases and migration
 
+## v0.16.7
+
+The [Go release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.7) contains the [capture and local API corrections](../RELEASE_NOTES.md#capture-and-local-api-corrections). The [53-row disposition ledger](../internal/collector/testdata/recheck-v0166.json) identifies local regressions and remaining evaluator work. Local UI authentication, gzip CSV finalization, staged output replacement, protocol/input corrections and indexed UDP flow accounting are included; DS-12/DS-14 aggregate memory and remaining exotic link types are not closed.
+
 ## v0.16.6
 
 The [Go release](https://github.com/dreadl0ck/netcap/releases/tag/v0.16.6) contains the [recheck fixes](../RELEASE_NOTES.md#recheck-fixes). Stricter `policy.http-on-443`, NBNS node-status decoding, four more link types (50, 108, 117, 119), `directoryMatches` in `Hosts.json` and a non-interactive overwrite error are the visible changes. Memory use on very large captures is not addressed.

@@ -32,7 +32,6 @@ import (
 	"github.com/dreadl0ck/go-dpi/modules/wrappers"
 	. "github.com/dreadl0ck/go-dpi/types"
 	"github.com/gopacket/gopacket"
-	"github.com/mgutz/ansi"
 
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -78,8 +77,6 @@ func InitWithConfig(modules string, config RuntimeConfig) {
 		return
 	}
 
-	log.Println(ansi.Yellow + "[DPI] Init() called" + ansi.Reset)
-
 	moduleSet := parseModules(modules)
 	if len(moduleSet) == 0 {
 		log.Println("DPI: no modules enabled, defaulting to all modules")
@@ -94,7 +91,6 @@ func InitWithConfig(modules string, config RuntimeConfig) {
 	// Enable DPI after successful initialization
 	disableDPI.Store(false)
 
-	log.Println(ansi.Yellow + "[DPI] Init() done" + ansi.Reset)
 }
 
 // parseModules parses a comma-separated list of module names and returns a set.
@@ -139,8 +135,6 @@ func Destroy() {
 		return
 	}
 
-	log.Println(ansi.Red + "[DPI] Destroy() called" + ansi.Reset)
-
 	if dpiPool != nil {
 		dpiPool.close()
 		dpiPool = nil
@@ -151,16 +145,12 @@ func Destroy() {
 func Reset(modules string) {
 
 	disabled := disableDPI.Load()
-	log.Printf(ansi.Red+"[DPI] Reset() called, disabled=%t"+ansi.Reset, disabled)
 
 	if !disabled {
-
-		log.Printf("[DPI] Resetting DPI state with modules: %s", modules)
 
 		Destroy()
 	}
 
-	log.Println(ansi.Red + "[DPI] Reset() returning" + ansi.Reset)
 }
 
 // GetProtocols returns a map of all the identified protocol names to a result datastructure

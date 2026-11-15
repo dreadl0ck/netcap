@@ -10,20 +10,25 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 type TLSCaptureResult struct {
-	Version      int      `json:"version"`
-	InputSHA256  string   `json:"inputSHA256"`
-	KeyLogSHA256 string   `json:"keyLogSHA256"`
-	ToolVersion  string   `json:"toolVersion"`
-	Stream       int      `json:"stream"`
-	Client       []byte   `json:"node0Bytes"`
-	Server       []byte   `json:"node1Bytes"`
-	ClientSHA256 string   `json:"node0SHA256"`
-	ServerSHA256 string   `json:"node1SHA256"`
-	Nodes        []string `json:"nodes"`
-	Limitations  []string `json:"limitations"`
+	Node0Text    string            `json:"node0Text,omitempty"`
+	Node1Text    string            `json:"node1Text,omitempty"`
+	HTTP2        []TLSHTTP2Message `json:"http2,omitempty"`
+	DecodeErrors []string          `json:"decodeErrors,omitempty"`
+	Version      int               `json:"version"`
+	InputSHA256  string            `json:"inputSHA256"`
+	KeyLogSHA256 string            `json:"keyLogSHA256"`
+	ToolVersion  string            `json:"toolVersion"`
+	Stream       int               `json:"stream"`
+	Client       []byte            `json:"node0Bytes"`
+	Server       []byte            `json:"node1Bytes"`
+	ClientSHA256 string            `json:"node0SHA256"`
+	ServerSHA256 string            `json:"node1SHA256"`
+	Nodes        []string          `json:"nodes"`
+	Limitations  []string          `json:"limitations"`
 }
 
 type cappedBuffer struct {
@@ -101,6 +106,13 @@ func AnalyzeTLSCapture(ctx context.Context, input, keyLog string, stream int) (T
 	}
 	clientHash, serverHash := sha256.Sum256(result.Client), sha256.Sum256(result.Server)
 	result.ClientSHA256, result.ServerSHA256 = hex.EncodeToString(clientHash[:]), hex.EncodeToString(serverHash[:])
+	if utf8.Valid(result.Client) {
+		result.Node0Text = string(result.Client)
+	}
+	if utf8.Valid(result.Server) {
+		result.Node1Text = string(result.Server)
+	}
+	result.HTTP2, result.DecodeErrors = decodeTLSHTTP2(result.Client, result.Server)
 	check, err := boundedFile(input, 256<<20)
 	if err != nil {
 		return result, err

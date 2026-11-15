@@ -211,6 +211,8 @@ def build(args):
     run(['python3', 'zeus/scripts/bundle-macos-runtime.py', bundle / 'net', '--variant', args.variant], cwd=root, env=env)
     shutil.copyfile(root / 'LICENSE', bundle / 'LICENSE')
     shutil.copytree(root / 'legal', bundle / 'legal')
+    shutil.copyfile(root / 'README.md', bundle / 'README.md')
+    shutil.copytree(root / 'docs', bundle / 'docs')
     shutil.copyfile(root / 'dist-macos-runtime' / args.variant / 'inventory.json', bundle / 'native-runtime-inventory.json')
     shutil.copyfile(root / 'dist-macos-runtime' / args.variant / 'NOTICES.txt', bundle / 'legal/native-runtime-notices.txt')
     records = inspect(bundle, minimum)
@@ -225,6 +227,7 @@ def build(args):
             member = tarfile.TarInfo(str(path.relative_to(bundle)))
             member.size, member.mode, member.mtime = len(data), (0o755 if path.name == 'net' else 0o644), 0
             tar.addfile(member, io.BytesIO(data))
+    run(['python3', root / 'scripts/check-release-archive.py', archive], cwd=root)
     receipt = dict(schema='netcap-macos-build/v1', sourceRevision=args.revision, minimumOS=minimum, cpuLimit=2,
                    releaseVersion=args.release_version,
                    variant=args.variant, state='built-and-local-smoke-passed', archiveSHA256=sha(archive), members=records,

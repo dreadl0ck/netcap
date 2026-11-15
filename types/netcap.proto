@@ -359,6 +359,7 @@ message PacketContext {
   bool ReassembledIP = 8;
   repeated CapturePacketRef CapturePackets = 9; // Original ingress packets, including duplicate fragments
   string Normalization = 10; // complete | fragment-pending | fragment-rejected | malformed | depth-limit
+  bool TimestampUnavailable = 11;
 }
 
 // a connection has the following attributes:
@@ -549,6 +550,20 @@ message Dot11 {
   int32 ReasonCode = 19;                // Reason code for deauth/disassoc
   string ReasonCodeName = 20;           // Human-readable reason
   bool IsRetry = 21;                    // Retry flag set (jamming indicator)
+  string SSID = 22;
+  bytes SSIDRaw = 23;
+  repeated Dot11InformationElement InformationElements = 24;
+  bytes WEPIV = 25;
+  int32 WEPKeyID = 26;
+  bool FCSKnown = 27;
+  bool FCSPresent = 28;
+  bool IEsTruncated = 29;
+}
+
+message Dot11InformationElement {
+  uint32 ID = 1;
+  bytes Data = 2;
+  bool Truncated = 3;
 }
 
 message Dot11QOS {
@@ -1124,6 +1139,9 @@ message DNS {
   int64 RTT = 33;                  // Response minus the latest matching query, in ns; 0 when unpaired
   string TransactionStatus = 34;   // query | retransmission | answered | late | unsolicited | reordered | mdns_query | mdns_response
   int32 QueryTransmissions = 35;   // Matching queries seen for this transaction (>1 means retransmitted)
+  bytes RawMessage = 36; // Retained when parsing fails
+  string ParseError = 37;
+  string ParseStatus = 38;
 }
 
 message DNSResourceRecord {
@@ -1145,6 +1163,8 @@ message DNSResourceRecord {
   DNSMX MX = 13;
   repeated bytes TXTs = 14;
   DNSSVCB SVCB = 15;
+  bytes NameRaw = 16; // Expanded name bytes before text presentation
+  repeated string TXTStrings = 17;
 }
 
 message DNSSVCB {
@@ -1193,6 +1213,7 @@ message DNSSRV {
 message DNSMX {
   int32 Preference = 1;
   string Name = 2;
+  bytes NameRaw = 3;
 }
 
 // DNSQuestion wraps a single request (question) within a DNS query.
@@ -1200,6 +1221,7 @@ message DNSQuestion {
   string Name = 1;
   int32 Type = 2;
   int32 Class = 3; // Raw class; mDNS bit 15 is QU (unicast response requested)
+  bytes NameRaw = 4;
 }
 
 message DHCPv4 {
@@ -4876,4 +4898,5 @@ message CapturePacketRef {
   int32 CaptureLength = 3;
   int32 WireLength = 4;
   int32 InterfaceIndex = 5;
+  bool TimestampUnavailable = 6;
 }

@@ -496,20 +496,19 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		// Check if it's a regular file (not a directory)
 		info, err := os.Stat(arg)
 		if err != nil || info.IsDir() {
-			// Skip directories and inaccessible files
-			continue
+			return fmt.Errorf("unexpected capture argument %q; additional arguments must be capture files (quote the entire --bpf expression)", arg)
 		}
 
 		// Identify additional inputs by capture magic.
 		if collector.IsCapture(arg) {
 			additionalFiles = append(additionalFiles, arg)
+		} else {
+			return fmt.Errorf("unexpected capture argument %q; expected a capture file (quote the entire --bpf expression)", arg)
 		}
 	}
 
 	if flagGenerateConfig {
-		// TODO: Update GenerateConfig to work with urfave/cli
-		fmt.Println("gen-config not yet implemented with urfave/cli")
-		return nil
+		return fmt.Errorf("capture --gen-config is not implemented; use NC_* environment variables or command flags")
 	}
 
 	// print a markdown overview of all available decoders and fields
@@ -756,6 +755,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			log.Printf("Failed to start web UI server: %v\n", err)
 		} else {
 			fmt.Printf("\n%sWeb UI available at: %s%s\n\n", ansi.Green, webUIServer.GetURL(), ansi.Reset)
+			fmt.Fprintf(os.Stderr, "Local Web UI access token: %s\n", webUIServer.LocalAccessToken())
 
 			// In upload-only mode, print helpful message
 			if uploadOnlyMode {
@@ -916,6 +916,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 
 	// init collector
 	coll := collector.New(collector.Config{
+		MergePCAPNGSections:     flagMergePCAPNGSections,
 		NetworkDetection:        flagNetworkDetection,
 		DNSResolutionContext:    flagDNSResolutionContext,
 		NetworkDetectionConfig:  flagNetworkDetectionConfig,
@@ -1296,6 +1297,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 
 			// Create a fresh collector instance with updated configuration for this file
 			coll = collector.New(collector.Config{
+				MergePCAPNGSections:     flagMergePCAPNGSections,
 				NetworkDetection:        flagNetworkDetection,
 				DNSResolutionContext:    flagDNSResolutionContext,
 				NetworkDetectionConfig:  flagNetworkDetectionConfig,

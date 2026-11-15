@@ -117,6 +117,7 @@ type connectionFactory struct {
 	FSMOptions           reassembly.TCPSimpleFSMOptions
 	freeReaderSlots      []int
 	payloadBudget        *retainedPayloadBudget
+	pendingPayloads      int
 	stateBudget          *core.StateBudget
 	stateError           error
 	stateCancel          func()
@@ -146,15 +147,16 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 
 	// parent structure for tracking the bidirectional connection
 	str := &tcpConnection{
-		stateBudget: budget,
-		stateCredit: credit,
-		factory:     factory,
-		net:         net,
-		transport:   transport,
-		tcpstate:    reassembly.NewTCPSimpleFSM(factory.FSMOptions),
-		ident:       utils.CreateFlowIdentFromLayerFlows(net, transport),
-		optchecker:  reassembly.NewTCPOptionCheck(),
-		firstPacket: ac.GetCaptureInfo().Timestamp,
+		payloadAdmission: true,
+		stateBudget:      budget,
+		stateCredit:      credit,
+		factory:          factory,
+		net:              net,
+		transport:        transport,
+		tcpstate:         reassembly.NewTCPSimpleFSM(factory.FSMOptions),
+		ident:            utils.CreateFlowIdentFromLayerFlows(net, transport),
+		optchecker:       reassembly.NewTCPOptionCheck(),
+		firstPacket:      ac.GetCaptureInfo().Timestamp,
 	}
 	str.networkScope = "if:" + strconv.Itoa(ac.GetCaptureInfo().InterfaceIndex)
 	if c := packetview.FromCapture(ac.GetCaptureInfo()); c != nil {
@@ -167,14 +169,29 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 	str.decoder = &tcpReader{
 		parent: str,
 	}
-	client, server := str.newTCPStreamReader(true), str.newTCPStreamReader(false)
-	str.client, str.server = client, server
-
-	factory.wg.Add(2)
-	client.synchronousFactory, server.synchronousFactory = factory, factory
-
 	factory.Lock()
 	str.payloadBudget = factory.payloadBudget
+	factory.pendingPayloads++
+	factory.Unlock()
+
+	// StoreData owns each delivery synchronously; no drain-only goroutine or
+	// per-direction buffered channel is needed for production readers.
+
+	return str
+}
+
+// SYN-only connections need validation state, but no payload readers or tasks.
+func (t *tcpConnection) ensureReaders() {
+	if t.client != nil {
+		return
+	}
+	client, server := t.newTCPStreamReader(true), t.newTCPStreamReader(false)
+	t.client, t.server = client, server
+	factory := t.factory
+	factory.wg.Add(2)
+	client.synchronousFactory, server.synchronousFactory = factory, factory
+	factory.Lock()
+	defer factory.Unlock()
 	for _, reader := range []*tcpStreamReader{client, server} {
 		slot := len(factory.streamReaders)
 		if last := len(factory.freeReaderSlots) - 1; last >= 0 {
@@ -187,12 +204,6 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 		reader.factorySlot = slot
 	}
 	factory.numActive += 2
-	factory.Unlock()
-
-	// StoreData owns each delivery synchronously; no drain-only goroutine or
-	// per-direction buffered channel is needed for production readers.
-
-	return str
 }
 
 // context is the assembler context.

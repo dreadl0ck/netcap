@@ -155,18 +155,6 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	// Build exclude decoders list
 	excludeDecoders := job.ExcludeDecoders
 
-	// When DPI is disabled or to prevent crashes, exclude DPI-dependent decoders
-	// These decoders can cause nil pointer crashes if DPI is not properly initialized
-	if !job.EnableDPI {
-		dpiDependentDecoders := "DeviceProfile,IPProfile,Connection"
-		if excludeDecoders != "" {
-			excludeDecoders += "," + dpiDependentDecoders
-		} else {
-			excludeDecoders = dpiDependentDecoders
-		}
-		log.Printf("[Service] DPI disabled - excluding DPI-dependent decoders for session %s", job.SessionID)
-	}
-
 	if excludeDecoders != "" {
 		args = append(args, "-exclude", excludeDecoders)
 		log.Printf("[Service] Excluding decoders for session %s: %s", job.SessionID, excludeDecoders)

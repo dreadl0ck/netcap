@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/gopacket/gopacket"
-	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/defaults"
@@ -168,46 +167,10 @@ retry:
 	// TODO: make buffer size configurable
 	w := bufio.NewWriterSize(f, 4096)
 
-	if proto == protoTCP {
-		// create the buffer with the entire conversation
-		for _, d := range conversation {
-
-			if d.Direction() == reassembly.TCPDirClientToServer {
-				_, _ = w.WriteString(ansi.Red)
-				_, _ = w.Write(d.Raw())
-				_, _ = w.WriteString(ansi.Reset)
-			} else {
-				_, _ = w.WriteString(ansi.Blue)
-				_, _ = w.Write(d.Raw())
-				_, _ = w.WriteString(ansi.Reset)
-			}
-
-			if decoderconfig.Instance.Debug {
-				var ts string
-				if d.Context() != nil {
-					ts = "\n[" + d.Context().GetCaptureInfo().Timestamp.String() + "]\n"
-				}
-
-				_, _ = w.WriteString(ts)
-			}
-		}
-	} else { // UDP
-		clientTransport := conversation[0].Transport()
-		for _, d := range conversation {
-			if d.Transport() == clientTransport {
-				// client
-				_, _ = w.WriteString(ansi.Red)
-				_, _ = w.Write(d.Raw())
-				_, _ = w.WriteString(ansi.Reset)
-			} else {
-				// server
-				_, _ = w.WriteString(ansi.Blue)
-				_, _ = w.Write(d.Raw())
-				_, _ = w.WriteString(ansi.Reset)
-			}
-			if decoderconfig.Instance.Debug {
-				_, _ = w.WriteString("\n[" + d.CaptureInfo().Timestamp.String() + "]\n")
-			}
+	for _, d := range conversation {
+		if _, err := w.Write(d.Raw()); err != nil {
+			f.Close()
+			return err
 		}
 	}
 
@@ -319,22 +282,10 @@ retryNetwork:
 	// TODO: make buffer size configurable
 	w := bufio.NewWriterSize(f, 4096)
 
-	// Write conversation data with direction colors
-	clientNetwork := conversation[0].Network()
 	for _, d := range conversation {
-		if d.Network() == clientNetwork {
-			// client (initiator)
-			_, _ = w.WriteString(ansi.Red)
-			_, _ = w.Write(d.Raw())
-			_, _ = w.WriteString(ansi.Reset)
-		} else {
-			// server (responder)
-			_, _ = w.WriteString(ansi.Blue)
-			_, _ = w.Write(d.Raw())
-			_, _ = w.WriteString(ansi.Reset)
-		}
-		if decoderconfig.Instance.Debug {
-			_, _ = w.WriteString("\n[" + d.CaptureInfo().Timestamp.String() + "]\n")
+		if _, err := w.Write(d.Raw()); err != nil {
+			f.Close()
+			return err
 		}
 	}
 

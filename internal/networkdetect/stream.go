@@ -92,6 +92,9 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 		d.prefixSeq = d.next
 	}
 	delta := int32(ev.Seq - d.next)
+	if !f.closed && ev.KeepAliveEligible && delta == -1 && len(ev.Payload) == 1 {
+		return // RFC 1122 keep-alive probes carry no new sequence-space data.
+	}
 	if delta > 0 {
 		if !d.gap {
 			e.stats.StreamGaps++

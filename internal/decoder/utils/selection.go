@@ -9,9 +9,15 @@ import (
 // SelectDecoders selects a private slice of defaults using globally registered names.
 func SelectDecoders[T any](defaults []T, include, exclude string, nameOf func(T) string, invalidDecoder error) ([]T, error) {
 	active := append([]T(nil), defaults...)
-	in := strings.Split(include, ",")
-	// A leading empty name disables the entire include phase, including validation.
-	if in[0] != "" {
+	in, err := NormalizeDecoderList(include, invalidDecoder)
+	if err != nil {
+		return nil, err
+	}
+	out, err := NormalizeDecoderList(exclude, invalidDecoder)
+	if err != nil {
+		return nil, err
+	}
+	if len(in) != 0 {
 		inMap := make(map[string]bool)
 		for _, name := range in {
 			if name != "" {
@@ -31,7 +37,7 @@ func SelectDecoders[T any](defaults []T, include, exclude string, nameOf func(T)
 		active = selection
 	}
 
-	for _, name := range strings.Split(exclude, ",") {
+	for _, name := range out {
 		if name != "" {
 			if _, ok := AllDecoderNames[name]; !ok {
 				return nil, errors.Wrap(invalidDecoder, name)
@@ -45,4 +51,24 @@ func SelectDecoders[T any](defaults []T, include, exclude string, nameOf func(T)
 		}
 	}
 	return active, nil
+}
+
+func NormalizeDecoderList(list string, invalidDecoder error) ([]string, error) {
+	canonical := make(map[string]string, len(AllDecoderNames))
+	for name := range AllDecoderNames {
+		canonical[strings.ToLower(name)] = name
+	}
+	var names []string
+	for _, item := range strings.Split(list, ",") {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+		name, ok := canonical[strings.ToLower(item)]
+		if !ok {
+			return nil, errors.Wrap(invalidDecoder, item)
+		}
+		names = append(names, name)
+	}
+	return names, nil
 }

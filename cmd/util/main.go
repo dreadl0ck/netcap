@@ -69,9 +69,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	}
 
 	if c.Bool("gen-config") {
-		// TODO: Update GenerateConfig to work with urfave/cli
-		fmt.Println("gen-config not yet implemented with urfave/cli")
-		return nil
+		return fmt.Errorf("util --gen-config is not implemented; use NC_* environment variables or command flags")
 	}
 
 	if c.Bool("generate-dbs") {
@@ -115,7 +113,11 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	// util to convert netcap timestamp to UTC time
 	flagToUTC := c.String("ts2utc")
 	if flagToUTC != "" {
-		fmt.Println(utils.TimeToUTC(flagToUTC))
+		value, err := utils.ParseTimestampUTC(flagToUTC)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(c.Writer, value)
 		return nil
 	}
 

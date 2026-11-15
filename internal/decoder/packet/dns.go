@@ -1,6 +1,7 @@
 package packet
 
 import (
+	"bytes"
 	"github.com/dreadl0ck/netcap/internal/dnsaudit"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
@@ -11,6 +12,13 @@ import (
 var dnsTx = dnsaudit.NewPacketTracker()
 
 func init() {
+	gopacket.OverrideLayerType(int(layers.LayerTypeDNS), gopacket.LayerTypeMetadata{Name: "DNS", Decoder: gopacket.DecodeFunc(func(data []byte, p gopacket.PacketBuilder) error {
+		d := &layers.DNS{BaseLayer: layers.BaseLayer{Contents: data}}
+		err := d.DecodeFromBytes(data, p)
+		p.AddLayer(d)
+		p.SetApplicationLayer(d)
+		return err
+	})})
 	layers.RegisterUDPPortLayerType(5353, layers.LayerTypeDNS)
 }
 
@@ -21,6 +29,19 @@ var dnsDecoder = newGoPacketDecoder(types.Type_NC_DNS, layers.LayerTypeDNS,
 		}
 		return nil
 	})
+
+func qualifyDNSRecord(record *types.DNS, p gopacket.Packet) {
+	if failed := p.ErrorLayer(); failed != nil {
+		record.ParseStatus = "partial"
+		record.ParseError = failed.Error().Error()
+		if wire, ok := p.Layer(layers.LayerTypeDNS).(*layers.DNS); ok {
+			record.RawMessage = bytes.Clone(wire.Contents)
+			if len(wire.Contents) < 12 {
+				record.ParseStatus = "malformed-header"
+			}
+		}
+	}
+}
 
 func dnsQueryNameEntropy(name string) float64            { return dnsaudit.QueryNameEntropy(name) }
 func extractTLD(name string) string                      { return dnsaudit.TLD(name) }

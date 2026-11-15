@@ -60,6 +60,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/udp"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/internal/dnscontext"
+	"github.com/dreadl0ck/netcap/internal/enrichment"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/filter"
 	"github.com/dreadl0ck/netcap/internal/flowexport"
@@ -88,6 +89,8 @@ var (
 // Collector provides an interface to collect data from PCAP or a network interface.
 // this structure has an optimized field order to avoid excessive padding.
 type Collector struct {
+	outputReplacement      *outputReplacement
+	enrichmentSnapshot     *enrichment.Snapshot
 	recordObserverHandle   *atomic.Pointer[recordCallback]
 	userRecordObserver     func(proto.Message)
 	analysisMu             sync.Mutex
@@ -750,7 +753,10 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	}
 	// Capture metadata before transferring ownership to the worker.
 	ref := p.Metadata().CaptureInfo.Timestamp
-	ref = c.advanceCaptureTime(ref)
+	timeAvailable := !inputPacketInfo(p.Metadata().CaptureInfo).NoTimestamp
+	if timeAvailable {
+		ref = c.advanceCaptureTime(ref)
+	}
 	capturedBytes := uint64(len(p.Data()))
 	// Observe ingress serially before pooled-packet ownership moves to a worker.
 	c.flowIngressOrdinal++
@@ -759,17 +765,23 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 		limits := packetview.DefaultLimits()
 		if c.config != nil && c.config.DecoderConfig != nil {
 			limits.Checksum = c.config.DecoderConfig.Checksum
+			limits.DisableIPv4Defrag = !c.config.DecoderConfig.DefragIPv4
 		}
 		c.packetPipeline = packetview.New(limits)
 	}
 	views := c.packetPipeline.Process(p, c.flowIngressOrdinal)
+	c.observeNormalizationIssues(p, views.Issues)
 	route := p
 	if logical := views.Packet; logical != nil {
 		route = logical
 		c.observeFlowExport(logical)
-		c.observeBehavior(logical)
+		if timeAvailable {
+			c.observeBehavior(logical)
+		}
 		c.observeNetworkDetection(logical)
-		c.observeDNSContext(logical)
+		if timeAvailable {
+			c.observeDNSContext(logical)
+		}
 	}
 	idx := c.getSymmetricWorkerIndex(route)
 	queued := p

@@ -35,7 +35,11 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 	var events []Event
 	if layer := packet.Layer(layers.LayerTypeDNS); layer != nil {
 		dns := layer.(*layers.DNS)
-		if !dns.QR {
+		if packet.ErrorLayer() != nil {
+			ev := base
+			ev.Kind = "dns.malformed"
+			events = append(events, ev)
+		} else if !dns.QR {
 			for n, q := range dns.Questions {
 				if n >= 32 {
 					break
@@ -57,6 +61,7 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 		base.DstPort = uint16(tcp.DstPort)
 		base.Seq = tcp.Seq
 		base.Ack = tcp.Ack
+		base.KeepAliveEligible = tcp.ACK && !tcp.SYN && !tcp.FIN && !tcp.RST
 		if tcp.SYN && tcp.ACK && !tcp.RST {
 			ev := base
 			ev.Kind = "synack"

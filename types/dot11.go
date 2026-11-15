@@ -20,6 +20,9 @@
 package types
 
 import (
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
@@ -57,6 +60,7 @@ var fieldsDot11 = []string{
 	fieldChecksum,       // uint32
 	fieldQOS,            // *Dot11QOS
 	fieldHTControl,      // *Dot11HTControl
+	"TypeName", "SubtypeName", "SSID", "SSIDRaw", "InformationElements", "WEPIV", "WEPKeyID", "FCSKnown", "FCSPresent", "IEsTruncated",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -81,6 +85,7 @@ func (d *Dot11) CSVRecord() []string {
 		formatUint32(d.Checksum),      // uint32
 		d.QOS.toString(),              // *Dot11QOS
 		d.HTControl.toString(),        // *Dot11HTControl
+		d.TypeName, d.SubtypeName, d.SSID, base64.StdEncoding.EncodeToString(d.SSIDRaw), dot11IEs(d.InformationElements), hex.EncodeToString(d.WEPIV), formatInt32(d.WEPKeyID), strconv.FormatBool(d.FCSKnown), strconv.FormatBool(d.FCSPresent), strconv.FormatBool(d.IEsTruncated),
 	})
 }
 
@@ -286,7 +291,13 @@ func (d *Dot11) Encode() []string {
 		// TODO: flatten
 		dot11Encoder.String(fieldQOS, d.QOS.toString()),             // *Dot11QOS
 		dot11Encoder.String(fieldHTControl, d.HTControl.toString()), // *Dot11HTControl
+		dot11Encoder.String("TypeName", d.TypeName), dot11Encoder.String("SubtypeName", d.SubtypeName), dot11Encoder.String("SSID", d.SSID), dot11Encoder.String("SSIDRaw", base64.StdEncoding.EncodeToString(d.SSIDRaw)), dot11Encoder.String("InformationElements", dot11IEs(d.InformationElements)), dot11Encoder.String("WEPIV", hex.EncodeToString(d.WEPIV)), dot11Encoder.Int32("WEPKeyID", d.WEPKeyID), dot11Encoder.String("FCSKnown", strconv.FormatBool(d.FCSKnown)), dot11Encoder.String("FCSPresent", strconv.FormatBool(d.FCSPresent)), dot11Encoder.String("IEsTruncated", strconv.FormatBool(d.IEsTruncated)),
 	})
+}
+
+func dot11IEs(elements []*Dot11InformationElement) string {
+	data, _ := json.Marshal(elements)
+	return string(data)
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.

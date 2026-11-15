@@ -184,12 +184,13 @@ func (usp *udpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan *udpStream 
 
 			// check who is client and who server based on first packet
 			if len(s.data) > 0 {
-				clientTransport = s.data[0].Transport()
-				clientNetwork = s.data[0].Network()
+				clientNetwork, clientTransport = clientFlows(s.data)
 				firstPacket = s.data[0].CaptureInfo().Timestamp
 				ident = utils.CreateFlowIdentFromLayerFlows(clientNetwork, clientTransport)
 			} else {
 				// skip empty conns
+				s.Unlock()
+				wg.Done()
 				continue
 			}
 
@@ -214,6 +215,7 @@ func (usp *udpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan *udpStream 
 					}
 				}
 			}
+			refused := s.refused
 			s.Unlock()
 
 			// call stream decoders
@@ -243,16 +245,18 @@ func (usp *udpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan *udpStream 
 				serverAddr += clientTransport.Dst().String()
 			}
 
-			saveUDPServiceBanner(
-				serverBanner.Bytes(),
-				ident,
-				serverAddr,
-				firstPacket,
-				serverBytes,
-				clientBytes,
-				clientNetwork,
-				clientTransport,
-			)
+			if !refused || serverBytes > 0 {
+				saveUDPServiceBanner(
+					serverBanner.Bytes(),
+					ident,
+					serverAddr,
+					firstPacket,
+					serverBytes,
+					clientBytes,
+					clientNetwork,
+					clientTransport,
+				)
+			}
 
 			usp.Lock()
 			usp.numDone++

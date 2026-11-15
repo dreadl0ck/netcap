@@ -22,6 +22,7 @@ package http
 import (
 	"bytes"
 	"compress/gzip"
+	"github.com/dreadl0ck/netcap/internal/utils"
 	"io"
 	"net/http"
 	"net/url"
@@ -52,7 +53,7 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	h.Timestamp = req.timestamp
 	h.Proto = req.request.Proto
 	h.Method = req.request.Method
-	h.Host = req.request.Host
+	h.Host = utils.PrintableBytes([]byte(req.request.Host))
 	h.ReqContentLength = int32(req.request.ContentLength)
 	h.ReqContentEncoding = req.request.Header.Get(headerContentEncoding)
 	h.ContentType = req.request.Header.Get(headerContentType)
@@ -89,7 +90,7 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 
 	h.UserAgent = req.request.UserAgent()
 	h.Referer = req.request.Referer()
-	h.URL = req.request.RequestURI
+	h.URL = utils.PrintableBytes([]byte(req.request.RequestURI))
 
 	// retrieve ip addresses and ports set on the request while processing
 	h.SrcIP = req.clientIP
@@ -221,7 +222,7 @@ func extractAuthType(authHeader string) string {
 func readHeader(h http.Header) map[string]string {
 	m := make(map[string]string)
 	for k, vals := range h {
-		m[k] = strings.Join(vals, " ")
+		m[k] = utils.PrintableBytes([]byte(strings.Join(vals, " ")))
 	}
 	return m
 }

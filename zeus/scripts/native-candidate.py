@@ -100,6 +100,8 @@ def main():
             run(['python3', 'zeus/scripts/bundle-linux-runtime.py', item['image'], str(stage)])
             shutil.copyfile(ROOT / 'LICENSE', stage / 'LICENSE')
             shutil.copytree(ROOT / 'legal', stage / 'legal')
+            shutil.copyfile(ROOT / 'README.md', stage / 'README.md')
+            shutil.copytree(ROOT / 'docs', stage / 'docs')
             archive = args.output / (item['variant'] + '.tar.gz')
             def normalize(member):
                 member.uid = member.gid = member.mtime = 0
@@ -107,6 +109,7 @@ def main():
                 return member
             with archive.open('wb') as stream, gzip.GzipFile(fileobj=stream, mode='wb', mtime=0, filename='') as gz, tarfile.open(fileobj=gz, mode='w') as tar:
                 tar.add(stage, arcname='.', filter=normalize)
+            run(['python3', 'scripts/check-release-archive.py', str(archive)])
             report['images'].append(dict(variant=item['variant'], image=item['image'], builder=item['builder'],
                                          archive=archive.name, archiveSHA256=sha(archive),
                                          config=metadata['Config'], rootFS=metadata['RootFS'], imageID=metadata['Id']))

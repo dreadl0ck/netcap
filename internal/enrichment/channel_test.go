@@ -176,8 +176,11 @@ func TestInstallAtomicAndOffline(t *testing.T) {
 	if string(before) != string(after) {
 		t.Fatal("failed update changed active")
 	}
-	if _, e = Open(dir, root, now.Add(2*time.Hour)); e == nil {
-		t.Fatal("stale runtime data accepted")
+	if _, e = Open(dir, root, now.Add(2*time.Hour)); e != nil {
+		t.Fatal("verified offline data expired", e)
+	}
+	if state := Inspect(dir, root, now.Add(2*time.Hour)); state.State != "stale" {
+		t.Fatal("missing freshness qualification", state)
 	}
 }
 

@@ -79,6 +79,7 @@ var DefaultConfigDPI = Config{
 // for the Collector instance.
 // this structure has an optimized field order to avoid excessive padding.
 type Config struct {
+	MergePCAPNGSections    bool
 	NetworkDetection       bool
 	DNSResolutionContext   bool
 	NetworkDetectionConfig string

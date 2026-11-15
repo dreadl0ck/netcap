@@ -12,6 +12,7 @@ import (
 // Result separates original header evidence from the one datagram eligible for
 // application dispatch. Original owns pooled memory until all views are consumed.
 type Result struct {
+	Issues   []string
 	Original gopacket.Packet
 	Evidence []gopacket.Packet
 	Packet   gopacket.Packet
@@ -48,8 +49,8 @@ func (p *Processor) Process(original gopacket.Packet, ordinal uint64) Result {
 			offset += 2
 		}
 	}
-	c := &Context{Scope: "if:" + strconv.Itoa(ci.InterfaceIndex) + vlanScope(link), Status: "complete",
-		Packets: []*types.CapturePacketRef{{Ordinal: ordinal, Timestamp: ci.Timestamp.UnixNano(), CaptureLength: int32(ci.CaptureLength), WireLength: int32(ci.Length), InterfaceIndex: int32(ci.InterfaceIndex)}}}
+	c := &Context{Scope: "if:" + strconv.Itoa(LogicalInterface(ci)) + vlanScope(link), Status: "complete",
+		Packets: []*types.CapturePacketRef{{Ordinal: ordinal, Timestamp: ci.Timestamp.UnixNano(), CaptureLength: int32(ci.CaptureLength), WireLength: int32(ci.Length), InterfaceIndex: int32(ci.InterfaceIndex), TimestampUnavailable: TimeUnavailable(ci)}}}
 	// Network layer contents/payload form a contiguous range in the captured data.
 	if offset > len(original.Data()) {
 		r.Status = "malformed"
@@ -71,6 +72,15 @@ func (p *Processor) Process(original gopacket.Packet, ordinal uint64) Result {
 			return r
 		}
 		if d.fragment {
+			if !d.v6 && p.limits.DisableIPv4Defrag {
+				p.stats.IPv4DefragDisabled++
+				r.Status = "ipv4-defrag-disabled"
+				fragment := *c
+				fragment.Status = r.Status
+				r.Opaque = attach(levelPacket(d, link, nil, false), ci, &fragment)
+				r.Evidence = append(r.Evidence, r.Opaque)
+				return r
+			}
 			if d.truncated {
 				p.stats.Malformed++
 				r.Status = "malformed"
@@ -80,7 +90,14 @@ func (p *Processor) Process(original gopacket.Packet, ordinal uint64) Result {
 				return r
 			}
 			fragment := *c
+			before := p.stats
 			data, next, nextCI, status := p.defrag(d, c, ci)
+			if p.stats.ConflictingOverlaps > before.ConflictingOverlaps {
+				r.Issues = append(r.Issues, "ip.fragment-overlap-conflict")
+			}
+			if p.stats.TinyFragments > before.TinyFragments {
+				r.Issues = append(r.Issues, "ip.tiny-fragment")
+			}
 			fragment.Status = status
 			r.Evidence = append(r.Evidence, attach(levelPacket(d, link, nil, false), ci, &fragment))
 			if data == nil {

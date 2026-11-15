@@ -13,6 +13,7 @@ import (
 )
 
 type Limits struct {
+	DisableIPv4Defrag                              bool
 	MaxDatagrams, MaxBytes, MaxFragments, MaxDepth int
 	Timeout                                        time.Duration
 	Checksum                                       bool // validate original IPv4 fragment headers before reconstruction
@@ -23,6 +24,7 @@ func DefaultLimits() Limits {
 }
 
 type Stats struct {
+	Overlaps, ConflictingOverlaps, TinyFragments, IPv4DefragDisabled                       uint64
 	RejectedIPv4Checksums                                                                  uint64
 	Completed, Duplicates, Rejected, Expired, Incomplete, Limited, Malformed, DepthLimited uint64
 	Datagrams, BufferedBytes                                                               int
@@ -34,6 +36,7 @@ type fragmentPiece struct {
 	more   bool
 }
 type fragmentSet struct {
+	tinyReported      bool
 	pieces            []fragmentPiece
 	header, signature []byte
 	previousNext      int
@@ -186,6 +189,10 @@ func (p *Processor) defrag(d *datagram, c *Context, ci gopacket.CaptureInfo) ([]
 		p.stats.Duplicates++
 		return nil, c, ci, "fragment-rejected"
 	}
+	if !d.v6 && d.more && len(d.payload) <= 8 && !f.tinyReported {
+		f.tinyReported = true
+		p.stats.TinyFragments++
+	}
 	// Reconstruction replaces the header checksum; validate every constituent,
 	// including duplicate fragments, while the captured header is still intact.
 	if p.limits.Checksum && !d.v6 && gopacket.FoldChecksum(gopacket.ComputeChecksum(d.raw[:d.headerEnd], 0)) != 0 {
@@ -228,6 +235,11 @@ func (p *Processor) defrag(d *datagram, c *Context, ci gopacket.CaptureInfo) ([]
 			if d.offset == piece.offset && end == piece.offset+len(piece.data) && d.more == piece.more && bytes.Equal(d.payload, piece.data) {
 				duplicate = true
 				break
+			}
+			p.stats.Overlaps++
+			start, finish := max(d.offset, piece.offset), min(end, piece.offset+len(piece.data))
+			if !bytes.Equal(d.payload[start-d.offset:finish-d.offset], piece.data[start-piece.offset:finish-piece.offset]) {
+				p.stats.ConflictingOverlaps++
 			}
 			p.reject(f, false)
 			return nil, c, ci, "fragment-rejected"

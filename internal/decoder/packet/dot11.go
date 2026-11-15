@@ -20,7 +20,9 @@
 package packet
 
 import (
+	"bytes"
 	"encoding/binary"
+	"github.com/dreadl0ck/netcap/internal/utils"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
@@ -39,6 +41,16 @@ var dot11TypeNames = map[layers.Dot11Type]string{
 
 // dot11SubtypeNames maps management frame subtypes to names
 var dot11SubtypeNames = map[layers.Dot11Type]string{
+	layers.Dot11TypeData:                  "Data",
+	layers.Dot11TypeDataCFAck:             "Data CF Ack",
+	layers.Dot11TypeDataCFPoll:            "Data CF Poll",
+	layers.Dot11TypeDataCFAckPoll:         "Data CF Ack Poll",
+	layers.Dot11TypeDataNull:              "Null Data",
+	layers.Dot11TypeDataQOSData:           "QoS Data",
+	layers.Dot11TypeDataQOSNull:           "QoS Null",
+	layers.Dot11TypeCtrlAck:               "ACK",
+	layers.Dot11TypeCtrlCTS:               "CTS",
+	layers.Dot11TypeCtrlRTS:               "RTS",
 	layers.Dot11TypeMgmtAssociationReq:    "Association Request",
 	layers.Dot11TypeMgmtAssociationResp:   "Association Response",
 	layers.Dot11TypeMgmtReassociationReq:  "Reassociation Request",
@@ -212,7 +224,7 @@ var dot11Decoder = newGoPacketDecoder(
 			// Check retry flag (could indicate jamming if excessive)
 			isRetry := (dot11.Flags & layers.Dot11FlagsRetry) != 0
 
-			return &types.Dot11{
+			record := &types.Dot11{
 				Timestamp:          timestamp,
 				Type:               int32(dot11.Type),
 				Proto:              int32(dot11.Proto),
@@ -235,8 +247,61 @@ var dot11Decoder = newGoPacketDecoder(
 				ReasonCodeName:     reasonCodeName,
 				IsRetry:            isRetry,
 			}
+			populateDot11Metadata(dot11, record)
+			return record
 		}
 
 		return nil
 	},
 )
+
+func populateDot11Metadata(wire *layers.Dot11, record *types.Dot11) {
+	body := wire.Payload
+	if wire.Flags.WEP() {
+		if len(body) >= 4 && body[3]&0x20 == 0 {
+			record.WEPIV = bytes.Clone(body[:3])
+			record.WEPKeyID = int32(body[3] >> 6)
+		}
+		return
+	}
+	skip := 0
+	switch wire.Type {
+	case layers.Dot11TypeMgmtBeacon, layers.Dot11TypeMgmtProbeResp:
+		skip = 12
+	case layers.Dot11TypeMgmtAssociationReq:
+		skip = 4
+	case layers.Dot11TypeMgmtAssociationResp, layers.Dot11TypeMgmtReassociationResp, layers.Dot11TypeMgmtAuthentication:
+		skip = 6
+	case layers.Dot11TypeMgmtReassociationReq:
+		skip = 10
+	case layers.Dot11TypeMgmtProbeReq:
+	default:
+		return
+	}
+	if len(body) < skip {
+		record.IEsTruncated = true
+		return
+	}
+	body = body[skip:]
+	ssidSeen := false
+	for len(body) > 0 {
+		if len(record.InformationElements) >= 256 || len(body) < 2 {
+			record.IEsTruncated = true
+			break
+		}
+		size := int(body[1])
+		available := min(size, len(body)-2)
+		element := &types.Dot11InformationElement{ID: uint32(body[0]), Data: bytes.Clone(body[2 : 2+available]), Truncated: size > available}
+		record.InformationElements = append(record.InformationElements, element)
+		if element.ID == 0 && !ssidSeen {
+			record.SSIDRaw = bytes.Clone(element.Data)
+			record.SSID = utils.PrintableBytes(element.Data)
+			ssidSeen = true
+		}
+		if element.Truncated {
+			record.IEsTruncated = true
+			break
+		}
+		body = body[2+size:]
+	}
+}

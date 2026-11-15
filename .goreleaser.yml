@@ -74,7 +74,7 @@ archives:
       - legal/DEVICE_CATALOGUE_NOTICES.txt
       - legal/licenses/*
       - README.md
-      - docs/NETCAP Software Report.pdf
+      - docs/**
       - types/cpp/*
       - types/csharp/*
       - types/java/*
@@ -102,7 +102,7 @@ archives:
       - legal/DEVICE_CATALOGUE_NOTICES.txt
       - legal/licenses/*
       - README.md
-      - docs/NETCAP Software Report.pdf
+      - docs/**
       - types/cpp/*
       - types/csharp/*
       - types/java/*
@@ -130,7 +130,7 @@ archives:
       - legal/DEVICE_CATALOGUE_NOTICES.txt
       - legal/licenses/*
       - README.md
-      - docs/NETCAP Software Report.pdf
+      - docs/**
       - types/cpp/*
       - types/csharp/*
       - types/java/*

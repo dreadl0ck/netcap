@@ -118,7 +118,7 @@ func TestCaptureReaderPCAPRecovery(t *testing.T) {
 			}{
 				{"clean", suffix, 2, 0, true},
 				{"caplen-origlen", append(inputPCAPRecord(order, 11, 0, 64, 63, good), suffix...), 2, 1, true},
-				{"timestamp", append(inputPCAPRecord(order, 11, 1_000_000_000, 64, 64, good), suffix...), 2, 1, true},
+				{"timestamp", append(inputPCAPRecord(order, 11, 1_000_000_000, 64, 64, good), suffix...), 3, 0, true},
 				{"short-header", suffix[:9], 1, 0, false},
 				{"short-payload", suffix[:20], 1, 0, false},
 				{"missing-payload", suffix[:16], 1, 0, false},
@@ -134,6 +134,9 @@ func TestCaptureReaderPCAPRecovery(t *testing.T) {
 					if got.SnaplenOverrides != tc.count || !bytes.Equal(packets[0], good) || infos[0].Timestamp.Unix() != 10 {
 						t.Fatal("lost bytes or timestamps while overriding snaplen")
 					}
+					if tc.name == "timestamp" && (got.NormalizedTimestamps != 1 || !infos[1].Timestamp.Equal(time.Unix(11, map[bool]int64{false: 1_000_000_000_000, true: 1_000_000_000}[nanos]))) {
+						t.Fatal("timestamp carry lost", got, infos)
+					}
 					wantFrac := 456789
 					if !nanos {
 						wantFrac *= 1000
@@ -141,7 +144,7 @@ func TestCaptureReaderPCAPRecovery(t *testing.T) {
 					if infos[0].Timestamp.Nanosecond() != wantFrac {
 						t.Fatal("timestamp precision lost")
 					}
-					if tc.name != "clean" && got.result() == nil {
+					if tc.name != "clean" && tc.name != "timestamp" && got.result() == nil {
 						t.Fatal("corruption reported as success")
 					}
 				})
@@ -240,7 +243,7 @@ func TestCaptureReaderNGSimpleAndObsoletePacket(t *testing.T) {
 	order.PutUint16(old[10:], 12) // PB drops count, not part of interface id.
 	input = append(input, old...)
 	report, packets, infos := scanInputBytes(t, input, true, true)
-	if report.ProcessedPackets != 2 || report.Unsupported != 1 || report.result() == nil || !infos[0].Timestamp.IsZero() || infos[0].Length != 100 || !bytes.Equal(packets[1], packet) {
+	if report.ProcessedPackets != 2 || report.Unsupported != 0 || report.MissingTimestamps != 1 || !inputPacketInfo(infos[0]).NoTimestamp || !infos[0].Timestamp.Equal(time.Unix(0, 0)) || infos[0].Length != 100 || !bytes.Equal(packets[1], packet) {
 		t.Fatalf("SPB/PB: %+v %+v", report, infos)
 	}
 }

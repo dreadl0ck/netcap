@@ -205,7 +205,10 @@ func Dump(w *os.File, c DumpConfig) error {
 		c.Structured = false
 	}
 
-	types.Select(record, c.Selection)
+	if err := types.Select(record, c.Selection); err != nil {
+		return err
+	}
+	defer types.Select(record, "")
 	types.UTC = c.UTC
 
 	if !c.Structured && !c.Table && !c.JSON {
@@ -246,7 +249,21 @@ func Dump(w *os.File, c DumpConfig) error {
 
 			// JSON
 			if c.JSON {
-				marshaled, errMarshal := json.Marshal(p)
+				var output any = p
+				if strings.TrimSpace(c.Selection) != "" {
+					selected := make(map[string]any)
+					value := reflect.ValueOf(p).Elem()
+					for _, name := range strings.Split(c.Selection, ",") {
+						name = strings.TrimSpace(name)
+						field := value.FieldByName(name)
+						if !field.IsValid() || !field.CanInterface() {
+							return fmt.Errorf("field %q has no JSON representation", name)
+						}
+						selected[name] = field.Interface()
+					}
+					output = selected
+				}
+				marshaled, errMarshal := json.Marshal(output)
 				if errMarshal != nil {
 					return fmt.Errorf("failed to marshal json: %w", errMarshal)
 				}

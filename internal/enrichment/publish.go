@@ -360,11 +360,11 @@ func serveHistorical(dir string, trust ed25519.PublicKey, w http.ResponseWriter,
 
 // Resolve returns the verified active immutable directory for domain-specific readers.
 func Resolve(root string, trust ed25519.PublicKey, now time.Time) (string, error) {
-	dir, e := activeDir(root)
+	dir, e := runtimeDir(root)
 	if e != nil {
 		return "", e
 	}
-	if _, e = OpenVersion(dir, trust, now, true); e != nil {
+	if _, e = OpenVersion(dir, trust, now, false); e != nil {
 		return "", e
 	}
 	return dir, nil

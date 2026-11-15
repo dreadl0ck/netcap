@@ -43,6 +43,7 @@ func Flags() (flags []string) {
 // GetFlags returns the CLI flags for the capture subcommand.
 func GetFlags() []cli.Flag {
 	return append([]cli.Flag{
+		&cli.BoolFlag{Name: "pcapng-merge-sections", Usage: "treat matching section-local interfaces as continuous across concatenated PCAPNG sections", Sources: cli.EnvVars("NC_PCAPNG_MERGE_SECTIONS")},
 		&cli.StringFlag{Name: "firewall-policy", Usage: "explicit audit-record response policy (retrospective; does not intercept completed transactions)"},
 		&cli.StringFlag{Name: "firewall-effects-config", Usage: "explicit response broker JSON; dispatch only during -iface live capture"},
 		&cli.BoolFlag{Name: "firewall-schema", Usage: "print versioned audit policy field types, sensitivity and projection bounds as JSON, then exit"},
@@ -55,6 +56,7 @@ func GetFlags() []cli.Flag {
 		&cli.IntFlag{Name: "evidence-links-max-links", Value: 500, Usage: "related records returned per query", Sources: cli.EnvVars("NC_EVIDENCE_LINKS_MAX_LINKS")},
 		&cli.BoolFlag{
 			Name:    "gen-config",
+			Hidden:  true,
 			Usage:   "generate config",
 			Sources: cli.EnvVars("NC_GEN_CONFIG"),
 		},
@@ -433,7 +435,7 @@ func GetFlags() []cli.Flag {
 		&cli.BoolFlag{
 			Name:    "ip4defrag",
 			Value:   defaults.DefragIPv4,
-			Usage:   "Defragment IPv4 packets",
+			Usage:   "reassemble IPv4 fragments; false retains fragment evidence without transport decoding",
 			Sources: cli.EnvVars("NC_IP4DEFRAG"),
 		},
 		&cli.BoolFlag{
@@ -481,7 +483,7 @@ func GetFlags() []cli.Flag {
 		&cli.IntFlag{
 			Name:    "sbuf-size",
 			Value:   10,
-			Usage:   "size for channel used to pass data to the stream decoders. default is unbuffered",
+			Usage:   "channel capacity for stream decoder work; 0 = unbuffered",
 			Sources: cli.EnvVars("NC_SBUF_SIZE"),
 		},
 		&cli.BoolFlag{
@@ -701,8 +703,8 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:    "http",
-			Value:   "localhost:8080",
-			Usage:   "start web UI server and keep running after analysis (offline files default to no server)",
+			Value:   "",
+			Usage:   "opt in to the web UI and keep running after analysis; disabled by default outside service mode",
 			Sources: cli.EnvVars("NC_HTTP"),
 		},
 		&cli.StringFlag{
@@ -728,13 +730,13 @@ func GetFlags() []cli.Flag {
 		&cli.Int64Flag{
 			Name:    "service-max-file-size",
 			Value:   100 * 1024 * 1024,
-			Usage:   "maximum upload file size in bytes for service mode (default: 100MB)",
+			Usage:   "maximum upload file size in bytes for service mode",
 			Sources: cli.EnvVars("NC_SERVICE_MAX_FILE_SIZE"),
 		},
 		&cli.IntFlag{
 			Name:    "service-max-per-hour",
 			Value:   10,
-			Usage:   "maximum number of analyses per IP per hour in service mode (default: 10, 0 = unlimited)",
+			Usage:   "maximum analyses per IP per hour in service mode; 0 = unlimited",
 			Sources: cli.EnvVars("NC_SERVICE_MAX_PER_HOUR"),
 		},
 		&cli.IntFlag{
@@ -752,13 +754,13 @@ func GetFlags() []cli.Flag {
 		&cli.Int64Flag{
 			Name:    "service-max-storage",
 			Value:   10 * 1024 * 1024 * 1024,
-			Usage:   "maximum total storage in bytes for service mode (default: 10GB, 0 = unlimited)",
+			Usage:   "maximum total storage in bytes for service mode; 0 = unlimited",
 			Sources: cli.EnvVars("NC_SERVICE_MAX_STORAGE"),
 		},
 		&cli.IntFlag{
 			Name:    "service-preload-largest-n",
 			Value:   20,
-			Usage:   "load only the N largest files from pcaps folder (default: 0 = all files)",
+			Usage:   "load only the N largest files from pcaps folder; 0 = all files",
 			Sources: cli.EnvVars("NC_SERVICE_PRELOAD_LARGEST_N"),
 		},
 		&cli.BoolFlag{

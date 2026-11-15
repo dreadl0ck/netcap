@@ -27,6 +27,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/linkaudit"
 	"github.com/dreadl0ck/netcap/internal/packetview"
 
 	"github.com/davecgh/go-spew/spew"
@@ -220,6 +221,13 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 	}
 	record := dec.Handler(l, p.Metadata().Timestamp.UnixNano())
 	if record != nil {
+		if dns, ok := record.(*types.DNS); ok {
+			qualifyDNSRecord(dns, p)
+		}
+		if wireless, ok := record.(*types.Dot11); ok {
+			check := linkaudit.FrameCheckInfo(p.Metadata().CaptureInfo)
+			wireless.FCSKnown, wireless.FCSPresent = check.Known, check.Present
+		}
 
 		if ctx != nil {
 			// assert to audit record

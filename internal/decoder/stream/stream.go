@@ -5,7 +5,6 @@ import (
 	"log"
 	"maps"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -187,11 +186,15 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 	tls.Decoder.Writer = nil
 	sip.Decoder.Writer = nil
 	rtp.Decoder.Writer = nil
+	in, err := decoderutils.NormalizeDecoderList(c.IncludeDecoders, errInvalidStreamDecoder)
+	if err != nil {
+		return nil, err
+	}
+	ex, err := decoderutils.NormalizeDecoderList(c.ExcludeDecoders, errInvalidStreamDecoder)
+	if err != nil {
+		return nil, err
+	}
 	var (
-		// values from command-line flags
-		in = strings.Split(c.IncludeDecoders, ",")
-		ex = strings.Split(c.ExcludeDecoders, ",")
-
 		// include map
 		inMap = make(map[string]bool)
 

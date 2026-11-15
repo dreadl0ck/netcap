@@ -69,8 +69,8 @@ func TestOpenConnectionsDoNotAllocateDrainTasks(t *testing.T) {
 	for range 1000 {
 		c := factory.New(flow, transport, ctx).(*tcpConnection)
 		connections = append(connections, c)
-		if c.client.DataChan() != nil || c.server.DataChan() != nil {
-			t.Fatal("drain-only channels allocated")
+		if c.client != nil || c.server != nil {
+			t.Fatal("payload readers allocated before any payload or gap")
 		}
 	}
 	runtime.ReadMemStats(&after)
@@ -79,7 +79,7 @@ func TestOpenConnectionsDoNotAllocateDrainTasks(t *testing.T) {
 	}
 	factory.wg.Wait()
 	allocated := after.TotalAlloc - before.TotalAlloc
-	if allocated > 16<<20 {
+	if allocated > 2<<20 {
 		t.Fatalf("1000 idle streams allocated %d bytes", allocated)
 	}
 	t.Logf("1000 open streams allocated %d bytes", allocated)

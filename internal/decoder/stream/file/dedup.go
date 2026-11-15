@@ -33,6 +33,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/andybalholm/brotli"
 	gzip "github.com/klauspost/pgzip"
 	"go.uber.org/zap"
 )
@@ -137,7 +138,7 @@ func ComputeContentHash(body []byte, encoding []string) (*ContentInfo, error) {
 	policy := GetGlobalConfig().FileExtraction.Advanced
 	for _, enc := range encoding {
 		kind := strings.ToLower(strings.TrimSpace(enc))
-		if (kind == "base64" && !policy.DecodeBase64) || ((kind == "gzip" || kind == "deflate") && !policy.DecodeCompressed) {
+		if (kind == "base64" && !policy.DecodeBase64) || ((kind == "gzip" || kind == "deflate" || kind == "br") && !policy.DecodeCompressed) {
 			sum := sha256.Sum256(body)
 			return &ContentInfo{Hash: hex.EncodeToString(sum[:]), DecodedContent: body, CompressedSize: int64(len(body))}, ErrContentDecodeDisabled
 		}
@@ -188,6 +189,8 @@ func ComputeContentHashWithLimit(body []byte, encoding []string, limit int64) (*
 			}
 		case "base64":
 			reader = base64.NewDecoder(base64.StdEncoding, bytes.NewReader(current))
+		case "br":
+			reader = brotli.NewReader(bytes.NewReader(current))
 		default:
 			return fallback(fmt.Errorf("unsupported content encoding %q", enc))
 		}
@@ -206,7 +209,7 @@ func ComputeContentHashWithLimit(body []byte, encoding []string, limit int64) (*
 			releaseDecoded()
 			return fallback(fmt.Errorf("decoded-content limit exceeded: %d", limit))
 		}
-		if enc == "gzip" || enc == "deflate" {
+		if enc == "gzip" || enc == "deflate" || enc == "br" {
 			compressed = append(compressed, enc)
 		}
 		release()

@@ -63,9 +63,7 @@ func Run() {
 // RunWithContext runs the proxy command with a CLI context.
 func RunWithContext(ctx context.Context, c *cli.Command) error {
 	if c.Bool("gen-config") {
-		// TODO: Update GenerateConfig to work with urfave/cli
-		fmt.Println("gen-config not yet implemented with urfave/cli")
-		return nil
+		return fmt.Errorf("proxy --gen-config is not implemented; use NC_* environment variables or command flags")
 	}
 
 	netio.PrintBuildInfo()

@@ -30,7 +30,7 @@ import (
 var dot1QDecoder = newGoPacketDecoder(
 	types.Type_NC_Dot1Q,
 	layers.LayerTypeDot1Q,
-	"IEEE 802.11 is part of the IEEE 802 set of local area network protocols, and specifies the set of media access control and physical layer protocols for implementing wireless local area network Wi-Fi",
+	"IEEE 802.1Q VLAN tagging carries priority, drop eligibility and VLAN identifiers",
 	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if dot1q, ok := layer.(*layers.Dot1Q); ok {
 			return &types.Dot1Q{

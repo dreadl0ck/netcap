@@ -40,6 +40,7 @@ func GetFlags() []cli.Flag {
 		&cli.BoolFlag{Name: "sort-time", Value: true, Usage: "stable timestamp order using bounded-memory external sorting; false preserves storage order", Sources: cli.EnvVars("NC_SORT_TIME")},
 		&cli.BoolFlag{
 			Name:    "gen-config",
+			Hidden:  true,
 			Usage:   "generate config",
 			Sources: cli.EnvVars("NC_GEN_CONFIG"),
 		},
@@ -50,7 +51,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:    "select",
-			Usage:   "select specific fields of an audit records when generating csv or tables",
+			Usage:   "select specific fields for CSV, tables or JSON",
 			Sources: cli.EnvVars("NC_SELECT"),
 		},
 		&cli.BoolFlag{

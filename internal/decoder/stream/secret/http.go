@@ -222,11 +222,37 @@ var httpFormPasswordFields = []string{
 	"ahd_password", "pass", "password", "_password", "passwd", "session_password",
 	"sessionpassword", "login_password", "loginpassword", "form_pw", "userpassword",
 	"upassword", "login_password", "passwort", "passwrd", "wppassword", "upasswd",
-	"j_password", "pwd", "secret", "credentials", "credential", "pw",
+	"j_password", "pwd", "secret", "credentials", "credential", "pw", "pswrd",
 }
 
 // maxHTTPFormBodyLength limits the POST body size to prevent false positives on large uploads
 const maxHTTPFormBodyLength = 2000
+
+// HTTPFormCredentials shares configured field names with the parsed HTTP reader.
+func HTTPFormCredentials(form url.Values) (user, password string, found bool) {
+	keys := make([]string, 0, len(form))
+	for key := range form {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+	lookup := func(fields []string) (string, bool) {
+		for _, field := range fields {
+			if values, ok := form[field]; ok && len(values) > 0 {
+				return values[0], true
+			}
+			for _, key := range keys {
+				values := form[key]
+				if strings.EqualFold(key, field) && len(values) > 0 {
+					return values[0], true
+				}
+			}
+		}
+		return "", false
+	}
+	user, _ = lookup(getHTTPFormUsernameFields())
+	password, found = lookup(getHTTPFormPasswordFields())
+	return user, password, user != "" && found
+}
 
 // sensitiveParamNames contains common parameter names that may contain sensitive tokens or keys
 // This can be overridden by configuration

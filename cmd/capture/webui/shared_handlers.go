@@ -406,7 +406,7 @@ func HandleAuditStats(outputDir string) http.HandlerFunc {
 			TotalRecords:       0,
 			ExploitCount:       0,
 			VulnerabilityCount: 0,
-			SecretCount:   0,
+			SecretCount:        0,
 			SoftwareCount:      0,
 		}
 
@@ -613,7 +613,6 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	// Helper function to send SSE error event
 	sendError := func(errorMsg string) {

@@ -72,6 +72,7 @@ func ultimateCaptureConfig(out string, workers, flush int) Config {
 		BaseLayer: layers.LayerTypeEthernet, DecodeOptions: gopacket.Lazy,
 		DecoderConfig: &config.Config{
 			Out: out, Quiet: true, Proto: true, Buffer: true,
+			DefragIPv4:      true,
 			ExcludeDecoders: "Software,Exploit,Vulnerability",
 			MemBufferSize:   defaults.BufferSize, Compression: false,
 			SaveConns: false, WaitForConnections: true,

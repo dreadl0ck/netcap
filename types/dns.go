@@ -20,6 +20,7 @@
 package types
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"strconv"
 	"strings"
@@ -75,6 +76,7 @@ var fieldsDNS = []string{
 	fieldDstPort,
 	"CommunityID",
 	"RTT", "TransactionStatus", "QueryTransmissions",
+	"RawMessage", "ParseError", "ParseStatus",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -128,6 +130,7 @@ func (d *DNS) CSVRecord() []string {
 		formatInt32(d.DstPort),
 		d.CommunityID,
 		strconv.FormatInt(d.RTT, 10), d.TransactionStatus, formatInt32(d.QueryTransmissions),
+		base64.StdEncoding.EncodeToString(d.RawMessage), d.ParseError, d.ParseStatus,
 	})
 }
 
@@ -344,6 +347,7 @@ func (d *DNS) Encode() []string {
 		dnsEncoder.Int32(fieldDstPort, d.DstPort),
 		dnsEncoder.String("CommunityID", d.CommunityID),
 		dnsEncoder.Int64("RTT", d.RTT), dnsEncoder.String("TransactionStatus", d.TransactionStatus), dnsEncoder.Int32("QueryTransmissions", d.QueryTransmissions),
+		dnsEncoder.String("RawMessage", base64.StdEncoding.EncodeToString(d.RawMessage)), dnsEncoder.String("ParseError", d.ParseError), dnsEncoder.String("ParseStatus", d.ParseStatus),
 	})
 }
 

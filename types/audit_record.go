@@ -22,13 +22,10 @@ package types
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"strings"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
-	"github.com/mgutz/ansi"
 )
 
 var (
@@ -90,7 +87,7 @@ type AuditRecord interface {
 }
 
 // selectFields returns an array with the indices of the desired fields for selection.
-func selectFields(all []string, selection string) (s []int) {
+func selectFields(all []string, selection string) (s []int, err error) {
 	var (
 		fields = strings.Split(selection, ",")
 		ok     bool
@@ -99,6 +96,7 @@ func selectFields(all []string, selection string) (s []int) {
 	s = make([]int, len(fields))
 
 	for i, val := range fields {
+		val = strings.TrimSpace(val)
 		for index, name := range all {
 			if name == val {
 				s[i] = index
@@ -109,27 +107,28 @@ func selectFields(all []string, selection string) (s []int) {
 		}
 
 		if !ok {
-			fmt.Println("invalid field: ", ansi.Red+val+ansi.Reset)
-			fmt.Println("available fields: ", ansi.Yellow+strings.Join(all, ",")+ansi.Reset)
-			os.Exit(1)
+			return nil, fmt.Errorf("invalid field %q; available fields: %s", val, strings.Join(all, ","))
 		}
 
 		ok = false
 	}
 
-	return s
+	return s, nil
 }
 
 // Select takes a proto.Message and sets the selection on the package level.
-func Select(msg proto.Message, vals string) {
-	if vals != "" && vals != " " {
-		if p, ok := msg.(AuditRecord); ok {
-			selection = selectFields(p.CSVHeader(), vals)
-		} else {
-			fmt.Printf("type: %#v\n", msg)
-			log.Fatal("type does not implement the types.AuditRecord interface")
-		}
+func Select(msg proto.Message, vals string) error {
+	selection = nil
+	if strings.TrimSpace(vals) == "" {
+		return nil
 	}
+	p, ok := msg.(AuditRecord)
+	if !ok {
+		return fmt.Errorf("type %T does not implement types.AuditRecord", msg)
+	}
+	var err error
+	selection, err = selectFields(p.CSVHeader(), vals)
+	return err
 }
 
 // filter applies a selection if configured.

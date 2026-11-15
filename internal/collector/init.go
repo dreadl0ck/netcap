@@ -3,25 +3,16 @@ package collector
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/encoder"
 	"github.com/dreadl0ck/netcap/internal/label/manager"
 
-	"github.com/dreadl0ck/netcap/internal/utils"
-
-	"github.com/davecgh/go-spew/spew"
-	"github.com/mgutz/ansi"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap/defaults"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
@@ -53,6 +44,13 @@ func (c *Collector) Init() (err error) {
 	}
 	if c.initialized {
 		return nil
+	}
+	if _, err := decoderutils.SelectDecoders([]string(nil), c.config.DecoderConfig.IncludeDecoders, c.config.DecoderConfig.ExcludeDecoders, func(name string) string { return name }, packet.ErrInvalidDecoder); err != nil {
+		return fmt.Errorf("decoder selection: %w", err)
+	}
+	c.outputReplacement, err = c.prepareOutputReplacement()
+	if err != nil {
+		return err
 	}
 	if c.config.DecoderConfig.MaxRetainedTCPBytes < 0 {
 		return fmt.Errorf("max-retained-tcp-bytes cannot be negative")
@@ -151,57 +149,6 @@ func (c *Collector) Init() (err error) {
 		packet.LocalDNS = true
 	}
 
-	// check for files from previous run in the output directory
-	// and ask the user if they can be overwritten
-	var (
-		// create paths
-		files, _     = filepath.Glob(filepath.Join(c.config.DecoderConfig.Out, "*.ncap.gz"))
-		filesBare, _ = filepath.Glob(filepath.Join(c.config.DecoderConfig.Out, "*.ncap"))
-		udpPath      = filepath.Join(c.config.DecoderConfig.Out, "udp")
-		tcpPath      = filepath.Join(c.config.DecoderConfig.Out, "tcp")
-
-		// make stat syscall
-		_, errStreams = os.Stat(udpPath)
-		_, errConns   = os.Stat(tcpPath)
-	)
-
-	// collect files
-	files = append(files, filesBare...)
-
-	// check
-	if len(files) > 0 || errStreams == nil || errConns == nil {
-
-		// only prompt if quiet mode is not active AND prompting for human interaction is not disabled
-		if !c.config.DecoderConfig.Quiet && !c.config.NoPrompt {
-			msg := strconv.Itoa(len(files)) + " audit record files found in output path! Overwrite?"
-			if errStreams == nil {
-				msg = "Data from previous runs found in output path! Overwrite?"
-			}
-
-			if !utils.StdinIsTerminal() {
-				return fmt.Errorf("%w: output path %q is not empty and stdin is not a terminal; pass -y to overwrite", errNotInteractive, c.config.DecoderConfig.Out)
-			}
-
-			ok, err := utils.Confirm(msg)
-			if err != nil {
-				return fmt.Errorf("%w: reading confirmation: %v", errNotInteractive, err)
-			}
-
-			if !ok {
-				return errAborted
-			}
-		}
-
-		// wipe extracted files
-		_ = os.RemoveAll(filepath.Join(c.config.DecoderConfig.Out, defaults.FileStorage))
-
-		// clear streams if present
-		if errStreams == nil || errConns == nil {
-			_ = os.RemoveAll(udpPath)
-			_ = os.RemoveAll(tcpPath)
-		}
-	}
-
 	c.printStdOut("initializing decoders... ")
 	if err = c.initNetworkDetection(); err != nil {
 		return fmt.Errorf("network detection: %w", err)
@@ -217,8 +164,7 @@ func (c *Collector) Init() (err error) {
 		for i, m := range types.Metrics {
 			err = prometheus.Register(m)
 			if err != nil {
-				spew.Dump(m)
-				log.Fatal("array index:", i, ", error:", err)
+				return fmt.Errorf("register decoder metrics %d: %w", i, err)
 			}
 		}
 	}
@@ -235,36 +181,29 @@ func (c *Collector) Init() (err error) {
 	)
 
 	wg.Add(4)
+	var initErrors [4]error
 	abstractReady := make(chan struct{})
 
 	go func() {
 		// initialize decoders
-		var errInit error
-		c.goPacketDecoders, errInit = packet.InitGoPacketDecoders(c.config.DecoderConfig)
-		handleDecoderInitError(errInit, "gopacket")
+		c.goPacketDecoders, initErrors[0] = packet.InitGoPacketDecoders(c.config.DecoderConfig)
 		wg.Done()
 	}()
 
 	go func() {
-		var errInit error
-		c.packetDecoders, errInit = packet.InitPacketDecoders(c.config.DecoderConfig)
-		handleDecoderInitError(errInit, "packet")
+		c.packetDecoders, initErrors[1] = packet.InitPacketDecoders(c.config.DecoderConfig)
 		wg.Done()
 	}()
 
 	go func() {
 		// Stream post-init hooks consume abstract-decoder loggers and enrichment.
 		<-abstractReady
-		var errInit error
-		c.streamDecoders, errInit = stream.InitDecoders(c.config.DecoderConfig)
-		handleDecoderInitError(errInit, "stream")
+		c.streamDecoders, initErrors[2] = stream.InitDecoders(c.config.DecoderConfig)
 		wg.Done()
 	}()
 
 	go func() {
-		var errInit error
-		c.abstractDecoders, errInit = stream.InitAbstractDecoders(c.config.DecoderConfig)
-		handleDecoderInitError(errInit, "abstract")
+		c.abstractDecoders, initErrors[3] = stream.InitAbstractDecoders(c.config.DecoderConfig)
 		close(abstractReady)
 		wg.Done()
 	}()
@@ -274,14 +213,10 @@ func (c *Collector) Init() (err error) {
 
 	// create pcap files for packets
 	// with unknown protocols or errors while decoding
-	if err = c.createUnknownPcap(); err != nil {
-		log.Fatal("failed to create pcap file for unknown packets: ", err)
-	}
+	unknownErr := c.createUnknownPcap()
 
 	// create error pcap file for packets that had an error during processing
-	if err = c.createErrorsPcap(); err != nil {
-		log.Fatal("failed to create pcap decoding errors file: ", err)
-	}
+	packetErrorsErr := c.createErrorsPcap()
 
 	// start routine to force releasing memory back to the OS in a fixed interval
 	// this is meant for diagnostic purposes and should not be used in production
@@ -296,6 +231,9 @@ func (c *Collector) Init() (err error) {
 
 	// wait for decoder init to finish
 	wg.Wait()
+	if err = errors.Join(append(initErrors[:], unknownErr, packetErrorsErr)...); err != nil {
+		return fmt.Errorf("initialize decoders: %w", err)
+	}
 	if err = c.persistServiceSignatures(); err != nil {
 		return fmt.Errorf("record service signature inventory: %w", err)
 	}
@@ -330,25 +268,4 @@ func (c *Collector) Init() (err error) {
 	}
 
 	return nil
-}
-
-func handleDecoderInitError(err error, target string) {
-	if errors.Is(err, packet.ErrInvalidDecoder) {
-		// Safety check: extract decoder name from error message
-		errMsg := errors.Unwrap(err).Error()
-		parts := strings.Split(errMsg, ":")
-		if len(parts) > 0 {
-			invalidDecoder(parts[0])
-		} else {
-			invalidDecoder(errMsg)
-		}
-	} else if err != nil {
-		log.Fatal("failed to initialize "+target+" decoders: ", err)
-	}
-}
-
-func invalidDecoder(name string) {
-	fmt.Println("invalid decoder: " + ansi.Red + name + ansi.Reset)
-	packet.ShowDecoders(false)
-	os.Exit(1)
 }

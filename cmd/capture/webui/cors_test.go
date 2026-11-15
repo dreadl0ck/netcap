@@ -47,13 +47,12 @@ func TestCORSServiceModeIsSameOriginByDefault(t *testing.T) {
 	}
 }
 
-// Local mode is a single-user tool on the operator's own machine; permissive
-// CORS there costs nothing and keeps cross-origin dev setups working.
-func TestCORSLocalModeStaysPermissive(t *testing.T) {
+func TestCORSLocalModeIsSameOriginByDefault(t *testing.T) {
+	t.Setenv("NC_CORS_ALLOWED_ORIGINS", "")
 	s := &Server{isServiceMode: false}
 
-	if got := corsProbe(t, s, "http://localhost:5173").Get("Access-Control-Allow-Origin"); got != "*" {
-		t.Errorf("local mode: got ACAO %q, want *", got)
+	if got := corsProbe(t, s, "http://localhost:5173").Get("Access-Control-Allow-Origin"); got != "" {
+		t.Errorf("local mode: got ACAO %q, want none", got)
 	}
 }
 

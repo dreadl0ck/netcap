@@ -17,23 +17,27 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/internal/enrichment"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
 )
 
 type CaptureConfig struct {
-	Source          string `json:"source"`
-	Kind            string `json:"kind"`
-	BPF             string `json:"bpf"`
-	SnapLen         int    `json:"snapLen"`
-	Workers         int    `json:"workers"`
-	IncludeDecoders string `json:"includeDecoders"`
-	ExcludeDecoders string `json:"excludeDecoders"`
-	Reassembly      bool   `json:"reassembly"`
-	RetainPackets   bool   `json:"retainPackets"`
-	SegmentBytes    int64  `json:"segmentBytes,string"`
-	RetentionBytes  int64  `json:"retentionBytes,string"`
+	Enrichment          *enrichment.Snapshot `json:"enrichment,omitempty"`
+	Source              string               `json:"source"`
+	Kind                string               `json:"kind"`
+	BPF                 string               `json:"bpf"`
+	SnapLen             int                  `json:"snapLen"`
+	Workers             int                  `json:"workers"`
+	IncludeDecoders     string               `json:"includeDecoders"`
+	ExcludeDecoders     string               `json:"excludeDecoders"`
+	Reassembly          bool                 `json:"reassembly"`
+	DefragIPv4          bool                 `json:"defragIPv4"`
+	MergePCAPNGSections bool                 `json:"mergePCAPNGSections"`
+	RetainPackets       bool                 `json:"retainPackets"`
+	SegmentBytes        int64                `json:"segmentBytes,string"`
+	RetentionBytes      int64                `json:"retentionBytes,string"`
 
 	MaxRetainedTCPBytes        int64 `json:"maxRetainedTCPBytes,omitempty,string"`
 	MaxRetainedReassemblyBytes int64 `json:"maxRetainedReassemblyBytes,omitempty,string"`

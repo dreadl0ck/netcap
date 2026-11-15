@@ -72,6 +72,22 @@ func Tunnel(kind string, id uint32, inner []byte) []byte {
 		iptype = 0x86dd
 	}
 	switch kind {
+	case "gtpu":
+		proto = layers.IPProtocolUDP
+		header := []byte{0x30, 0xff, 0, 0, 0, 0, 0, 0}
+		binary.BigEndian.PutUint16(header[2:], uint16(len(inner)))
+		binary.BigEndian.PutUint32(header[4:], id)
+		payload = Serialize(&layers.UDP{SrcPort: 2152, DstPort: 2152}, gopacket.Payload(append(header, inner...)))
+	case "teredo":
+		proto = layers.IPProtocolUDP
+		payload = Serialize(&layers.UDP{SrcPort: 3544, DstPort: 3544}, gopacket.Payload(inner))
+	case "l2tpv2":
+		proto = layers.IPProtocolUDP
+		header := []byte{0, 2, 0, 1, byte(id >> 8), byte(id), 0xff, 3, 0, 0x21}
+		if iptype == 0x86dd {
+			header[9] = 0x57
+		}
+		payload = Serialize(&layers.UDP{SrcPort: 1701, DstPort: 1701}, gopacket.Payload(append(header, inner...)))
 	case "gre":
 		payload = Serialize(&layers.GRE{KeyPresent: true, Key: id, Protocol: layers.EthernetType(iptype)}, gopacket.Payload(inner))
 	case "gre-ethernet":

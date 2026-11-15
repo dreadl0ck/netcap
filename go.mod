@@ -8,6 +8,7 @@ replace github.com/gopacket/gopacket => github.com/dreadl0ck/gopacket v1.1.16-0.
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/VirusTotal/yara-x/go v1.22.0 // Paired with scripts/yara-x.env and docker/builders/.
+	github.com/andybalholm/brotli v1.2.1
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/bufbuild/protocompile v0.14.1
 	github.com/cheggaaa/pb v1.0.30

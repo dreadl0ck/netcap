@@ -39,6 +39,7 @@ func pipelineCases() []pipelineFixture {
 		{name: "erspan-i", tunnel: "erspan-i"}, {name: "erspan-ii", tunnel: "erspan-ii", id: 2}, {name: "erspan-iii", tunnel: "erspan-iii", id: 3},
 		{name: "vxlan-a", tunnel: "vxlan", id: 4}, {name: "vxlan-b", tunnel: "vxlan", id: 5},
 		{name: "geneve", tunnel: "geneve", id: 6}, {name: "nested", tunnel: "geneve-gre", id: 7},
+		{name: "gtpu", tunnel: "gtpu", id: 10}, {name: "teredo", tunnel: "teredo", v6: true}, {name: "l2tpv2", tunnel: "l2tpv2", id: 11},
 		{name: "fragment4", fragmentation: "inner"}, {name: "fragment6", fragmentation: "inner", v6: true},
 		{name: "inner-fragments", tunnel: "vxlan", id: 8, fragmentation: "inner"},
 		{name: "outer-fragments", tunnel: "geneve-gre", id: 9, fragmentation: "outer"},
@@ -155,7 +156,8 @@ func TestPacketPipelineProcess(t *testing.T) {
 	c := New(Config{Workers: workers, PacketBufferSize: 8, ReassembleConnections: true, CaptureEvidence: true, NoSignalHandling: true, NoPrompt: true,
 		BaseLayer: layers.LayerTypeEthernet, DecodeOptions: gopacket.Default,
 		DecoderConfig: &config.Config{Out: os.Getenv("NETCAP_PIPELINE_OUT"), Quiet: true, IncludeDecoders: "HTTP,Connection,IPv4,IPv6,TCP,UDP,ICMPv4,ICMPv6", Proto: true, AddContext: true, IncludePayloads: true,
-			Buffer: true, MemBufferSize: 4096, WaitForConnections: true, NoOptCheck: true, FlushEvery: 7, ClosePendingTimeOut: 5 * time.Second, CloseInactiveTimeOut: time.Minute,
+			DefragIPv4: true,
+			Buffer:     true, MemBufferSize: 4096, WaitForConnections: true, NoOptCheck: true, FlushEvery: 7, ClosePendingTimeOut: 5 * time.Second, CloseInactiveTimeOut: time.Minute,
 			StreamBufferSize: 8, StreamDecoderBufSize: 8, NumStreamWorkers: 2, BannerSize: 256}})
 	if err := c.CollectPcap(input); err != nil {
 		t.Fatal(err)

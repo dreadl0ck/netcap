@@ -146,16 +146,14 @@ func (w *csvWriter) Flush() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	// Flush the buffered writer
-	if w.wc.Buffer && w.bWriter != nil {
-		if err := w.bWriter.Flush(); err != nil {
-			return err
-		}
-	}
-
 	// For compressed streams, flush the gzip writer
 	if w.wc.Compress && w.gWriter != nil {
 		if err := w.gWriter.Flush(); err != nil {
+			return err
+		}
+	}
+	if w.bWriter != nil {
+		if err := w.bWriter.Flush(); err != nil {
 			return err
 		}
 	}
@@ -175,12 +173,11 @@ func (w *csvWriter) Close(numRecords int64) (name string, size int64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if w.wc.Buffer {
-		flushWriters(w.bWriter)
-	}
-
 	if w.wc.Compress {
 		closeGzipWriters(w.gWriter)
+	}
+	if w.wc.Buffer {
+		flushWriters(w.bWriter)
 	}
 
 	// Track file sync performance

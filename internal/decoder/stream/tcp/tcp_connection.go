@@ -85,6 +85,7 @@ type tcpConnection struct {
 	retireOnce             sync.Once
 	payloadBudget          *retainedPayloadBudget
 	retainedPayloadBytes   int64
+	payloadAdmission       bool
 	retentionMarkers       [2]*core.StreamData
 	pageBudgetMarkers      [2]*core.StreamData
 	postCloseMarkers       [2]*core.StreamData
@@ -306,6 +307,7 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 }
 
 func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) {
+	t.ensureReaders()
 	observation := ""
 	if c, ok := ac.(interface{ TCPObservation() string }); ok {
 		observation = c.TCPObservation()
@@ -418,6 +420,9 @@ func (t *tcpConnection) ValidateNewSYN(tcp *layers.TCP) bool {
 func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.AssemblerContext) {
 	length, saved := sg.Lengths()
 	dir, startTime, end, skip := sg.Info()
+	if length > 0 || skip != 0 {
+		t.ensureReaders()
+	}
 
 	// update stats
 	t.updateStats(sg, skip, length, saved, startTime, end, dir)
@@ -450,7 +455,9 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 			t.feedData(dir, data, context)
 		})
 	}
-	t.tryIncremental()
+	if t.client != nil {
+		t.tryIncremental()
+	}
 }
 
 func (t *tcpConnection) reorder(ac reassembly.AssemblerContext, firstFlow gopacket.Flow) {
@@ -510,6 +517,10 @@ func (t *tcpConnection) flipRoles() {
 // see FIN-ACK, for deeper state-machine analysis.
 func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, firstFlow gopacket.Flow, reason string) bool {
 	t.completion.Reason = reason
+	if t.client == nil && t.server == nil {
+		t.releasePayloadAdmission()
+		return decoderconfig.Instance.RemoveClosedStreams || reason == "idle-expired"
+	}
 	// reorder the stream fragments
 	t.reorder(ac, firstFlow)
 
@@ -667,6 +678,7 @@ func (t *tcpConnection) decode() {
 
 	stream.ObserveFTPData(conv)
 	secret.HarvestSMTPConversation(conv)
+	secret.HarvestTelnetConversation(conv)
 	secret.HarvestAdditionalConversation(conv)
 
 	// Probing can span deliveries, but cannot invent a signature across a gap.
@@ -738,8 +750,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 			return
 		}
 	}
-	// DefragIPv4 is unsupported: retain fragments as network conversations,
-	// never as partial TCP/UDP segments. Avoid decoding ordinary TCP payloads.
+	// Only packetview's completed datagrams may enter transport reassembly.
 	switch ip := packet.NetworkLayer().(type) {
 	case *layers.IPv4:
 		if ip.FragOffset != 0 || ip.Flags&layers.IPv4MoreFragments != 0 {
@@ -753,6 +764,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		}
 	}
 
+	udp.Streams.ObserveICMPRefusal(packet)
 	// TODO: make transport layer reassembler configurable
 	// prevent passing any non TCP packets in here
 	tcpLayer := packet.Layer(layers.LayerTypeTCP)

@@ -25,6 +25,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
+	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	logging "github.com/dreadl0ck/netcap/internal/logger"
 	"github.com/dreadl0ck/netcap/types"
 	"go.uber.org/zap"
@@ -82,13 +83,11 @@ var Decoder = &decoder.AbstractDecoder{
 			// Set DetectedProtocolName based on available information
 			if len(item.Service.Applications) > 0 {
 				// Use the first DPI-detected application as the protocol name
-				item.Service.DetectedProtocolName = item.Service.Applications[0]
-			} else if item.Service.Product != "" {
-				// Use product name if available from service probe matching
-				item.Service.DetectedProtocolName = item.Service.Product
-			} else if item.Service.Name != "" {
-				// Fallback to the service name from port lookup
-				item.Service.DetectedProtocolName = item.Service.Name
+				item.Service.DetectedProtocolName = decoderutils.CanonicalProtocol(item.Service.Applications[0])
+			} else if item.Service.MatchedProbeID != "" {
+				item.Service.DetectedProtocolName = decoderutils.CanonicalProtocol(item.Service.Name)
+			} else {
+				item.Service.DetectedProtocolName = ""
 			}
 
 			err = e.Writer.Write(item.Service)

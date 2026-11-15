@@ -34,6 +34,21 @@ type service struct {
 
 	// track unique applications detected via DPI for flows associated with this service
 	applications map[string]struct{}
+	flowIDs      map[string]struct{}
+}
+
+// AddFlow requires the service lock, or an unpublished service.
+func (s *service) AddFlow(id string) {
+	if s.flowIDs == nil {
+		s.flowIDs = make(map[string]struct{}, len(s.Flows)+1)
+		for _, existing := range s.Flows {
+			s.flowIDs[existing] = struct{}{}
+		}
+	}
+	if _, exists := s.flowIDs[id]; !exists {
+		s.flowIDs[id] = struct{}{}
+		s.Flows = append(s.Flows, id)
+	}
 }
 
 // atomicDeviceProfileMap contains all connections and provides synchronized access.

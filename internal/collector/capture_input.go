@@ -20,19 +20,21 @@ import (
 // CaptureInputReport describes input coverage independently of audit counts.
 // Issues is bounded; counters include every occurrence, even after it fills.
 type CaptureInputReport struct {
-	Format            string              `json:"format"`
-	Status            string              `json:"status"`
-	ReachedEOF        bool                `json:"reachedEOF"`
-	CountedPackets    int64               `json:"countedPackets"`
-	ProcessedPackets  int64               `json:"processedPackets"`
-	SkippedRecords    int64               `json:"skippedRecords"`
-	ReadErrors        int64               `json:"readErrors"`
-	LinkErrors        int64               `json:"linkErrors"`
-	DecodeErrors      int64               `json:"decodeErrors"`
-	Unsupported       int64               `json:"unsupportedPackets"`
-	SnaplenOverrides  int64               `json:"snaplenOverrides"`
-	SnapshotTruncated int64               `json:"snapshotTruncatedPackets"`
-	Issues            []CaptureInputIssue `json:"issues,omitempty"`
+	NormalizedTimestamps int64               `json:"normalizedTimestamps,omitempty"`
+	MissingTimestamps    int64               `json:"missingTimestamps,omitempty"`
+	Format               string              `json:"format"`
+	Status               string              `json:"status"`
+	ReachedEOF           bool                `json:"reachedEOF"`
+	CountedPackets       int64               `json:"countedPackets"`
+	ProcessedPackets     int64               `json:"processedPackets"`
+	SkippedRecords       int64               `json:"skippedRecords"`
+	ReadErrors           int64               `json:"readErrors"`
+	LinkErrors           int64               `json:"linkErrors"`
+	DecodeErrors         int64               `json:"decodeErrors"`
+	Unsupported          int64               `json:"unsupportedPackets"`
+	SnaplenOverrides     int64               `json:"snaplenOverrides"`
+	SnapshotTruncated    int64               `json:"snapshotTruncatedPackets"`
+	Issues               []CaptureInputIssue `json:"issues,omitempty"`
 }
 
 type CaptureInputIssue struct {
@@ -94,7 +96,7 @@ func (r *CaptureInputReport) result() error {
 	return nil
 }
 
-func openCaptureInput(path string, ng bool) (captureReader, *os.File, error) {
+func openCaptureInput(path string, ng bool, mergeSections ...bool) (captureReader, *os.File, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, nil, err
@@ -102,6 +104,9 @@ func openCaptureInput(path string, ng bool) (captureReader, *os.File, error) {
 	var r captureReader
 	if ng {
 		r, err = newBoundedNGReader(f)
+		if reader, ok := r.(*scopedNgReader); ok && len(mergeSections) > 0 {
+			reader.mergeSections = mergeSections[0]
+		}
 	} else {
 		r, err = newBoundedPCAPReader(f)
 	}
@@ -149,6 +154,9 @@ func walkCaptureInput(ctx context.Context, r captureReader, report *CaptureInput
 		}
 		report.ProcessedPackets++
 		info := inputPacketInfo(ci)
+		if info.TimestampNormalized {
+			report.NormalizedTimestamps++
+		}
 		if info.SnaplenOverride {
 			report.SnaplenOverrides++
 		}
@@ -156,14 +164,18 @@ func walkCaptureInput(ctx context.Context, r captureReader, report *CaptureInput
 			report.SnapshotTruncated++
 		}
 		if info.NoTimestamp {
-			report.Unsupported++
-			report.issue(info.Offset, "unsupported", "PCAPNG simple packet has no timestamp; no timestamp inferred", true)
+			report.MissingTimestamps++
+			report.issue(info.Offset, "timestamp-unavailable", "PCAPNG simple packet has no timestamp; record timestamp zero is a placeholder", true)
 		}
 	}
 }
 
 func countCaptureInput(ctx context.Context, path string, ng bool, keys ...*tlsdecrypt.Secrets) (int64, error) {
-	r, f, err := openCaptureInput(path, ng)
+	return countCaptureInputWithSections(ctx, path, ng, false, keys...)
+}
+
+func countCaptureInputWithSections(ctx context.Context, path string, ng, merge bool, keys ...*tlsdecrypt.Secrets) (int64, error) {
+	r, f, err := openCaptureInput(path, ng, merge)
 	if err != nil {
 		return 0, err
 	}
@@ -198,12 +210,12 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 	}
 	c.inputSize = stat.Size()
 	c.config.DecoderConfig.TLSSecrets = tlsdecrypt.NewSecrets()
-	count, countErr := countCaptureInput(ctx, path, ng, c.config.DecoderConfig.TLSSecrets)
+	count, countErr := countCaptureInputWithSections(ctx, path, ng, c.config.MergePCAPNGSections, c.config.DecoderConfig.TLSSecrets)
 	atomic.StoreInt64(&c.numPackets, count)
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
-	r, f, err := openCaptureInput(path, ng)
+	r, f, err := openCaptureInput(path, ng, c.config.MergePCAPNGSections)
 	if err != nil {
 		return err
 	}

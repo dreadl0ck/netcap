@@ -32,6 +32,7 @@ var (
 	flagGenerateConfig                 bool
 	flagGenerateElasticIndices         bool
 	flagInput                          string
+	flagMergePCAPNGSections            bool
 	flagMetricsAddr                    string
 	flagOutDir                         string
 	flagTimeout                        time.Duration
@@ -180,6 +181,7 @@ func setFlagsFromContext(c *cli.Command) {
 	flagGenerateConfig = c.Bool("gen-config")
 	flagGenerateElasticIndices = c.Bool("gen-elastic-indices")
 	flagInput = c.String("read")
+	flagMergePCAPNGSections = c.Bool("pcapng-merge-sections")
 	flagMetricsAddr = c.String("metrics")
 	flagOutDir = c.String("out")
 	flagTimeout = c.Duration("timeout")
@@ -301,8 +303,8 @@ func setFlagsFromContext(c *cli.Command) {
 	flagHTTP = c.String("http")
 	flagHTTPAssets = c.String("http-assets")
 	flagService = c.Bool("service")
-	if flagInput != "" && !flagService && !c.IsSet("http") {
-		flagHTTP = ""
+	if flagService && !c.IsSet("http") {
+		flagHTTP = "localhost:8080"
 	}
 	flagServiceDataDir = c.String("service-data-dir")
 	flagServicePreloadDir = c.String("service-preload-dir")

@@ -180,7 +180,7 @@ func (h *httpReader) decodeTransportRun() {
 		// now add request information
 		if matchedReq != nil && res.response.Request != nil {
 			if secret.Decoder.Writer != nil && h.transportObservation == "" {
-				h.searchForLoginParams(res.response.Request)
+				h.searchForLoginParams(matchedReq)
 				h.searchForBasicAuth(res.response.Request)
 			}
 
@@ -223,7 +223,7 @@ func (h *httpReader) decodeTransportRun() {
 			setRequest(ht, req)
 
 			if secret.Decoder.Writer != nil && h.transportObservation == "" {
-				h.searchForLoginParams(req.request)
+				h.searchForLoginParams(req)
 				h.searchForBasicAuth(req.request)
 			}
 
@@ -280,36 +280,12 @@ func (h *httpReader) searchForBasicAuth(req *http.Request) {
 }
 
 // search for user name and password in http url params and body params.
-func (h *httpReader) searchForLoginParams(req *http.Request) {
-	for name, values := range req.Form {
-		if !(name == "user" || name == "username") {
-			continue
-		}
-
-		var (
-			pass string
-			arr  []string
-			ok   bool
-		)
-
-		arr, ok = req.Form["pass"]
-		if !ok {
-			arr = req.Form["password"]
-		}
-
-		if len(arr) > 0 {
-			pass = strings.Join(arr, "; ")
-		}
-
-		secret.WriteSecret(&types.Secret{
-			Timestamp: h.conversation.FirstClientPacket.UnixNano(),
-			Service:   "HTTP",
-			Flow:      h.conversation.Ident,
-			User:      strings.Join(values, "; "),
-			Password:  pass,
-			Notes:     "Login Parameters",
-		})
+func (h *httpReader) searchForLoginParams(req *httpRequest) {
+	user, password, found := secret.HTTPFormCredentials(req.request.Form)
+	if !found {
+		return
 	}
+	secret.WriteSecret(&types.Secret{Timestamp: req.timestamp, Service: "HTTP", Flow: h.conversation.Ident, CommunityID: h.conversation.CommunityID, User: user, Password: password, Notes: "Login Parameters"})
 }
 
 func (h *httpReader) emitHTTP(record *types.HTTP) {

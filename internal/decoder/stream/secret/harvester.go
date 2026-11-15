@@ -311,7 +311,7 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 }
 
 func conversationHarvester(name string) bool {
-	return name == "SMTP" || name == "POP3" || name == "IMAP" || name == "FTP" || name == "TeamViewer"
+	return name == "SMTP" || name == "POP3" || name == "IMAP" || name == "FTP" || name == "TeamViewer" || name == "Telnet"
 }
 
 // harvesterMatchesPort checks if a harvester is configured for the given ports
