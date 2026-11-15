@@ -36,9 +36,6 @@ func (s *Server) registerProtocolTools() error {
 		simpleSessionTool(s, "list_secrets",
 			"Credentials / secrets recovered from cleartext protocols.",
 			"/api/secrets", []queryArg{qLimit(500), qOffset(), qSearch()}),
-		simpleSessionTool(s, "list_auth_activity",
-			"Authentication activity timeline (successes/failures by service).",
-			"/api/auth-activity", nil),
 	}
 
 	for _, t := range tools {

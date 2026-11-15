@@ -39,10 +39,11 @@ const serverInstructions = `# Netcap MCP
 Netcap converts PCAP files into structured audit records and exposes them
 as analytical queries. To use this server:
 
-1. Call ` + "`ingest_pcap`" + ` with an absolute file path; capture the
+1. Discover ` + "`get_features`" + ` and configure future analyses with
+   ` + "`set_bpf_config`" + ` / ` + "`set_decoder_config`" + ` when needed.
+   Call ` + "`ingest_pcap`" + ` with an absolute file path; capture the
    ` + "`session_id`" + ` from the response.
-2. Poll ` + "`get_session_info`" + ` with the session_id until
-   ` + "`status: completed`" + ` (typically a few seconds for a small PCAP).
+2. Use ` + "`wait_for_session`" + ` with the session_id until completed=true.
 3. Run analytical tools (` + "`list_hosts`" + `, ` + "`list_connections`" + `,
    ` + "`list_http_records`" + `, etc.) passing the same session_id. Use
    ` + "`limit`" + `/` + "`offset`" + `/` + "`search`" + ` arguments to keep
@@ -54,8 +55,17 @@ Notes:
  - A session id in this server may be a 32-char hex (service mode) or an
    absolute path to a PCAP file (CLI mode). Pass back exactly what
    ` + "`ingest_pcap`" + ` returned.
- - Per-tool calls serialise through the underlying webui's single
-   currentSession; parallel calls against different sessions may queue.
+ - Session-scoped analytical calls use explicit request selectors and can
+   run in parallel. Configuration changes are process-wide, not per-session.
+ - Use ` + "`query_flows`" + ` for cumulative-snapshot-safe rankings and
+   ` + "`query_flow_exports`" + ` for exporter-scoped NetFlow/IPFIX/sFlow.
+ - Check ` + "`get_capture_evidence`" + `, ` + "`get_investigation_health`" + `,
+   ` + "`get_artifact_analysis`" + ` and related-evidence qualifications before
+   claiming complete coverage. Missing evidence is not a negative finding.
+ - Offline packs: list_offline_rule_packs -> validate_offline_rule_pack ->
+   execute_offline_rule_pack -> list_offline_evaluations / list_alerts.
+ - Behavior: get_behavior -> get_asset_context / get_behavior_records;
+   change_behavior requires the observed baseline version and a reason.
  - YARA scans and rule executions are synchronous — they may take seconds
    to minutes; results are returned inline. Use ` + "`list_alerts`" + ` to
    review historical alerts.
@@ -71,7 +81,8 @@ type Server struct {
 
 	// adminToken, if non-empty, is required as a Bearer token on every
 	// HTTP request to /mcp. Stdio mode does not consult this field.
-	adminToken string
+	adminToken   string
+	backendToken string
 
 	// activeSession is set when the server has a single "blessed" session
 	// (used by `net mcp --pcap <path>`). Exposed to the LLM as a resource.
@@ -89,7 +100,9 @@ type Server struct {
 
 	// cve fetches CVE details from NVD with caching. Disabled when the
 	// AllowNetwork option is false (or NETCAP_MCP_DISABLE_NETWORK is set).
-	cve *CVELookup
+	cve            *CVELookup
+	networkAllowed bool
+	protocolJobs   protocolJobs
 
 	// carve holds previously-extracted sub-PCAPs for delivery via the
 	// netcap://carve/{id} resource URI. Capped at 32 entries / 1h TTL by
@@ -111,6 +124,8 @@ type Options struct {
 	// AdminToken, if non-empty, is required as a Bearer token on the HTTP
 	// transport. Ignored by the stdio transport.
 	AdminToken string
+	// BackendToken authenticates internal API requests; defaults to AdminToken.
+	BackendToken string
 	// ActiveSession marks a single pre-loaded session as the default for
 	// the CLI stdio server (so LLMs can discover it without arguments).
 	// May be a 32-char hex (service id) or an absolute PCAP path (local).
@@ -147,14 +162,19 @@ func New(opts Options) (*Server, error) {
 	}
 
 	networkEnabled := opts.AllowNetwork && os.Getenv("NETCAP_MCP_DISABLE_NETWORK") != "1"
+	if opts.BackendToken == "" {
+		opts.BackendToken = opts.AdminToken
+	}
 	s := &Server{
 		baseURL:         strings.TrimRight(opts.BaseURL, "/"),
 		adminToken:      opts.AdminToken,
+		backendToken:    opts.BackendToken,
 		activeSession:   strings.TrimSpace(opts.ActiveSession),
 		allowedTools:    toSet(opts.AllowedTools),
 		disallowedTools: toSet(opts.DisallowedTools),
 		logger:          opts.Logger,
 		cve:             NewCVELookup(networkEnabled),
+		networkAllowed:  networkEnabled,
 		carve:           NewCarveStore(opts.CarveDir, 32, time.Hour),
 		metrics:         NewMetrics(),
 	}
@@ -195,6 +215,7 @@ func (s *Server) HTTPHandler() http.Handler {
 // ServeStdio runs the server over stdio until the context is cancelled or
 // stdin is closed. Intended for `net mcp` CLI usage with desktop clients.
 func (s *Server) ServeStdio(ctx context.Context) error {
+	defer s.stopProtocolJobs()
 	stdio := server.NewStdioServer(s.mcpSrv)
 	stdio.SetErrorLogger(s.logger)
 	return stdio.Listen(ctx, stdinReader(), stdoutWriter())
@@ -338,14 +359,24 @@ func (s *Server) addTool(t server.ServerTool) error {
 			return nil
 		}
 	}
+	if s.mcpSrv.GetTool(name) != nil {
+		return fmt.Errorf("mcp: duplicate tool registration %q", name)
+	}
 	s.mcpSrv.AddTools(t)
 	return nil
 }
 
 // newClient builds a fresh NetcapClient for the current request.
 func (s *Server) newClient() *NetcapClient {
-	return NewAuthenticatedNetcapClient(s.baseURL, s.adminToken)
+	token := s.backendToken
+	if token == "" {
+		token = s.adminToken
+	}
+	return NewAuthenticatedNetcapClient(s.baseURL, token)
 }
+
+// Close cancels owned bounded listener/proxy jobs; it does not remove evidence.
+func (s *Server) Close() { s.stopProtocolJobs() }
 
 // TokenFingerprint returns the first 8 hex chars of the SHA-256 of the
 // admin token, suitable for logging at startup. Empty string when no
@@ -367,6 +398,16 @@ func (s *Server) registerAll() error {
 		s.registerRecordTools,
 		s.registerInventoryTools,
 		s.registerAnalystTools,
+		s.registerCapabilityTools,
+		s.registerExperimentTools,
+		s.registerProtocolJobs,
+		s.registerOperationTools,
+		s.registerCapabilityInventory,
+		s.registerProtobufConfiguration,
+		s.registerSourceAnalysisTools,
+		s.registerLiveDeletion,
+		s.registerFlowReceiver,
+		s.registerBindingTools,
 		s.registerFlowTools,
 		s.registerProtocolTools,
 		s.registerFileTools,

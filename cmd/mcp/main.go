@@ -46,16 +46,18 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/cmd/capture/webui"
+	behaviorcommand "github.com/dreadl0ck/netcap/internal/behavior/command"
 	netcapmcp "github.com/dreadl0ck/netcap/internal/mcp"
 )
 
 // GetFlags returns the urfave/cli flag list for the `net mcp` subcommand.
 func GetFlags() []cli.Flag {
-	return []cli.Flag{
+	return append([]cli.Flag{
 		&cli.StringFlag{
 			Name:  "pcap",
 			Usage: "Pre-load a PCAP/PCAPNG file into a default session before serving MCP",
 		},
+		&cli.StringFlag{Name: "operator-bindings", Usage: "Private startup JSON enrolling named sensor authorities and webhook destinations; credentials are referenced by private files", Sources: cli.EnvVars("NETCAP_MCP_BINDINGS_FILE")},
 		&cli.StringFlag{
 			Name:  "data-dir",
 			Usage: "Working directory for audit-record output (default: a temp dir, removed on exit)",
@@ -91,9 +93,9 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.BoolFlag{
 			Name:  "allow-fetch",
-			Usage: "Allow outbound HTTP from tools that talk to public services (e.g. NVD for lookup_cve)",
+			Usage: "Enable network tools: NVD lookup, active protocol experiments and owned experiment/flow-export listeners",
 		},
-	}
+	}, append(captureFlags(), behaviorcommand.Flags()...)...)
 }
 
 // Flags returns the flag names for the legacy bash-completion code path.
@@ -141,6 +143,10 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		mcpLogOut = io.Discard
 	}
 	mcpLog := log.New(mcpLogOut, "[MCP] ", log.LstdFlags|log.Lmicroseconds)
+	runtimeConfig, err := captureRuntimeConfig(c)
+	if err != nil {
+		return err
+	}
 
 	bind := c.String("bind")
 	host, _, err := net.SplitHostPort(bind)
@@ -173,7 +179,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 
 	webSrv := webui.NewServer(
 		bind, dataDir, nil /*inputFiles*/, "" /*assetsPath*/, c.Bool("debug"), c.Bool("dpi"),
-		false /*isServiceMode*/, nil /*serviceConfig*/, nil /*runtimeConfig*/, false, /*devMode*/
+		false /*isServiceMode*/, nil /*serviceConfig*/, runtimeConfig, false, /*devMode*/
 	)
 	if err := webSrv.Start(); err != nil {
 		return fmt.Errorf("starting embedded webui: %w", err)
@@ -208,7 +214,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			return fmt.Errorf("stat pcap %s: %w", abs, err)
 		}
 		mcpLog.Printf("pre-loading pcap: %s", abs)
-		raw, err := client.UploadPCAP(abs)
+		raw, err := client.UploadPCAPContext(ctx, abs)
 		if err != nil {
 			return fmt.Errorf("preloading pcap: %w", err)
 		}

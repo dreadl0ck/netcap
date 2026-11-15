@@ -29,6 +29,7 @@ type FileInfo struct {
 	Size             int64                 `json:"size"`
 	ModifiedTime     int64                 `json:"modifiedTime"`
 	IsCompleted      bool                  `json:"isCompleted"`
+	SourceKind       string                `json:"sourceKind,omitempty"`
 	Error            *string               `json:"error,omitempty"`
 	ErrorLogPath     *string               `json:"errorLogPath,omitempty"`   // Path to detailed error log file
 	BPFFilter        string                `json:"bpfFilter,omitempty"`      // BPF filter used during capture
@@ -105,6 +106,7 @@ type UserDPIPreferences struct {
 
 // AnalysisJob represents a job in the analysis queue (service mode only)
 type AnalysisJob struct {
+	settings               *jobSettings
 	requireCaptureEvidence bool
 	ArtifactConfig         []byte
 	processingDone         func()

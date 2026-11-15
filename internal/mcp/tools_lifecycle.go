@@ -72,7 +72,7 @@ func (s *Server) registerLifecycleTools() error {
 	return nil
 }
 
-func (s *Server) handleDeleteSession(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+func (s *Server) handleDeleteSession(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
 		return errResult(err), nil
@@ -81,7 +81,7 @@ func (s *Server) handleDeleteSession(_ context.Context, req mcplib.CallToolReque
 		return errResult(fmt.Errorf("delete_session is service-mode only; local-mode session %q is owned by the CLI process", ref.ID)), nil
 	}
 	endpoint := "/api/try/session/" + url.PathEscape(ref.ID)
-	body, dErr := s.deleteHTTP(endpoint)
+	body, dErr := s.deleteHTTPContext(ctx, endpoint)
 	if dErr != nil {
 		return errResult(fmt.Errorf("delete: %w", dErr)), nil
 	}
@@ -90,8 +90,12 @@ func (s *Server) handleDeleteSession(_ context.Context, req mcplib.CallToolReque
 
 // deleteHTTP issues a DELETE against the webui's loopback API.
 func (s *Server) deleteHTTP(path string) (json.RawMessage, error) {
+	return s.deleteHTTPContext(context.Background(), path)
+}
+
+func (s *Server) deleteHTTPContext(ctx context.Context, path string) (json.RawMessage, error) {
 	c := s.newClient()
-	req, err := http.NewRequest(http.MethodDelete, c.BaseURL()+path, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.BaseURL()+path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -134,12 +138,12 @@ func (s *Server) handleWaitForSession(ctx context.Context, req mcplib.CallToolRe
 	q := ref.sessionQueryParams()
 
 	for {
-		statsBody, sErr := client.Get("/api/audit-stats", q)
+		statsBody, sErr := client.GetContext(ctx, "/api/audit-stats", q)
 		if sErr != nil {
 			return errResult(fmt.Errorf("audit-stats: %w", sErr)), nil
 		}
-		statusBody, _ := client.Get("/api/status", q)
-		filesBody, _ := client.Get("/api/files/input", nil)
+		statusBody, _ := client.GetContext(ctx, "/api/status", q)
+		filesBody, _ := client.GetContext(ctx, "/api/files/input", nil)
 
 		completed := deriveCompleted(ref, filesBody, statusBody)
 		if completed {

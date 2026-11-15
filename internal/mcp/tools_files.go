@@ -58,7 +58,7 @@ func (s *Server) registerFileTools() error {
 	return nil
 }
 
-func (s *Server) handleGetExtractedFileContent(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+func (s *Server) handleGetExtractedFileContent(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
 		return errResult(err), nil
@@ -82,7 +82,7 @@ func (s *Server) handleGetExtractedFileContent(_ context.Context, req mcplib.Cal
 	q.Set("offset", fmt.Sprintf("%d", offset))
 	q.Set("limit", fmt.Sprintf("%d", limit))
 
-	raw, gErr := client.Get(endpoint, q)
+	raw, gErr := client.GetContext(ctx, endpoint, q)
 	if gErr != nil {
 		return errResult(fmt.Errorf("read file %s: %w", filePath, gErr)), nil
 	}
@@ -94,8 +94,8 @@ func (s *Server) handleGetExtractedFileContent(_ context.Context, req mcplib.Cal
 	}
 	upstream["session_id"] = ref.ID
 	upstream["file_path"] = filePath
-	upstream["download_url"] = fmt.Sprintf("%s/api/extracted-files/download/%s",
-		client.BaseURL(), url.PathEscape(filePath))
+	upstream["download_url"] = fmt.Sprintf("%s/api/extracted-files/download/%s?%s",
+		client.BaseURL(), url.PathEscape(filePath), ref.sessionQueryParams().Encode())
 	upstream["encoding"] = "hex" // documented for the LLM; the upstream API hex-encodes its 'data' field.
 	return jsonResult(upstream), nil
 }

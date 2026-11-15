@@ -55,7 +55,8 @@ func (s *Server) registerCarveTools() error {
 		{
 			Tool: mcplib.NewTool("carve_subpcap_for_connection",
 				mcplib.WithString("run_id", mcplib.Description("Expected capture generation; stale generations are rejected by the backend.")),
-				mcplib.WithDescription("Produce a bidirectional sub-PCAP for an explicit TCP/UDP tuple. Optional inclusive capture-time bounds narrow tuple reuse; omitting bounds selects all matching occurrences."),
+				mcplib.WithDescription("Produce a bidirectional sub-PCAP for an explicit TCP/UDP tuple. format=evidence exports a ZIP containing PCAPNG and provenance manifest instead. Optional inclusive capture-time bounds narrow tuple reuse; omitting bounds selects all matching occurrences."),
+				mcplib.WithString("format", mcplib.Enum("pcap", "evidence"), mcplib.Description("pcap (default) or evidence ZIP with verifiable provenance.")),
 				mcplib.WithString("protocol", mcplib.Description("Observed transport protocol."), mcplib.Enum("TCP", "UDP"), mcplib.Required()),
 				mcplib.WithString("start_ns", mcplib.Description("Inclusive UTC Unix nanoseconds; supply together with end_ns.")),
 				mcplib.WithString("end_ns", mcplib.Description("Inclusive UTC Unix nanoseconds; supply together with start_ns.")),
@@ -148,7 +149,7 @@ func (s *Server) handleCarveResource(_ context.Context, req mcplib.ReadResourceR
 	return []mcplib.ResourceContents{
 		mcplib.BlobResourceContents{
 			URI:      uri,
-			MIMEType: "application/vnd.tcpdump.pcap",
+			MIMEType: entry.MIMEType,
 			Blob:     base64.StdEncoding.EncodeToString(entry.Bytes),
 		},
 	}, nil
@@ -221,6 +222,12 @@ func (s *Server) carveFourTuple(req mcplib.CallToolRequest, endpoint, label stri
 		}
 	}
 	q.Set("protocol", protocol)
+	if value := req.GetString("format", ""); value != "" {
+		if endpoint != "/api/connections/download-pcap" || (value != "pcap" && value != "evidence") {
+			return errResult(fmt.Errorf("format must be pcap or evidence for connection exports")), nil
+		}
+		q.Set("format", value)
+	}
 	for _, field := range []string{"start_ns", "end_ns"} {
 		if value := req.GetString(field, ""); value != "" {
 			q.Set(carveQueryKey(field), value)
@@ -256,7 +263,7 @@ func (s *Server) doCarve(ref SessionRef, endpoint, label string, q url.Values) (
 			label, len(body), MaxCarveBytes)), nil
 	}
 
-	entry, uri, sErr := s.carve.Put(ref.ID, label, source, body)
+	entry, uri, sErr := s.carve.PutTyped(ref.ID, label, source, ct, body)
 	if sErr != nil {
 		return errResult(fmt.Errorf("store carve: %w", sErr)), nil
 	}

@@ -8,31 +8,20 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
 
-// registerLiveCaptureTools registers tools that control live capture
-// from the MCP layer. We deliberately only expose the read + stop side
-// of the live-capture lifecycle; spawning a fresh capture from MCP
-// requires CAP_NET_RAW (or root) on the netcap host AND would let an
-// LLM run arbitrary BPF on a production interface. That stays out of v1.
-//
-// list_network_interfaces is already registered by registerInventoryTools;
-// here we add get_live_capture_status and stop_live_capture, gated by
-// the NETCAP_MCP_ALLOW_LIVE env var (the webui's live-mode flag itself
-// is enforced server-side so this is a defence-in-depth gate).
+// Start and discovery use the strict backend contract in tools_capabilities.go.
 func (s *Server) registerLiveCaptureTools() error {
 	tools := []server.ServerTool{
 		{
 			Tool: mcplib.NewTool("get_live_capture_status",
-				mcplib.WithDescription(
-					"Report whether the netcap webui is currently in live-capture mode "+
-						"(reading from a network interface rather than a finite PCAP file). "+
-						"Returns {is_live_mode, is_processing, current_session, ...} from "+
-						"the /api/status endpoint."),
+				mcplib.WithDescription("Read owned live-capture completion/error/deadline and backend live state. Optional session_id pins the owned capture. Legacy backend status remains available without a selector."),
+				mcplib.WithString("session_id", mcplib.Description("Optional owned capture ID from start_live_capture.")),
 				mcplib.WithReadOnlyHintAnnotation(true),
 				mcplib.WithDestructiveHintAnnotation(false),
 				mcplib.WithIdempotentHintAnnotation(true),
@@ -47,6 +36,7 @@ func (s *Server) registerLiveCaptureTools() error {
 						"Returns immediately; ongoing audit-record processing continues "+
 						"until the existing buffers drain. No-op (and returns an error) "+
 						"if the webui isn't currently in live-capture mode."),
+				mcplib.WithString("session_id", mcplib.Description("Owned capture ID; when supplied a different session cannot be stopped.")),
 				mcplib.WithReadOnlyHintAnnotation(false),
 				mcplib.WithDestructiveHintAnnotation(true),
 				mcplib.WithIdempotentHintAnnotation(true),
@@ -63,10 +53,20 @@ func (s *Server) registerLiveCaptureTools() error {
 	return nil
 }
 
-func (s *Server) handleLiveStatus(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	st, err := s.newClient().GetAs[map[string]any]("/api/status", nil)
+func (s *Server) handleLiveStatus(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+	q := newSessionRef(req.GetString("session_id", "")).sessionQueryParams()
+	if raw, err := s.newClient().GetContext(ctx, "/api/live-capture", q); err == nil {
+		return rawJSONResult(raw), nil
+	} else if len(q) > 0 {
+		return errResult(err), nil
+	}
+	raw, err := s.newClient().GetContext(ctx, "/api/status", nil)
 	if err != nil {
 		return errResult(fmt.Errorf("status: %w", err)), nil
+	}
+	var st map[string]any
+	if err := json.Unmarshal(raw, &st); err != nil {
+		return errResult(err), nil
 	}
 	out := map[string]any{
 		"is_live_mode":    st["isLiveMode"],
@@ -78,8 +78,12 @@ func (s *Server) handleLiveStatus(_ context.Context, _ mcplib.CallToolRequest) (
 	return jsonResult(out), nil
 }
 
-func (s *Server) handleStopLiveCapture(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	raw, err := s.newClient().PostEmpty("/api/stop-capture", nil)
+func (s *Server) handleStopLiveCapture(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+	q := newSessionRef(req.GetString("session_id", "")).sessionQueryParams()
+	if _, present := req.GetArguments()["session_id"]; present && len(q) == 0 {
+		return errResult(fmt.Errorf("session_id cannot be empty")), nil
+	}
+	raw, err := s.newClient().PostEmptyContext(ctx, "/api/stop-capture", q)
 	if err != nil {
 		return errResult(fmt.Errorf("stop-capture: %w", err)), nil
 	}

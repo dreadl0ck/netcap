@@ -41,7 +41,7 @@ const MaxResponseBytes = 256 * 1024
 // most LLM clients render badly.
 func errResult(err error) *mcp.CallToolResult {
 	return &mcp.CallToolResult{
-		Content: []mcp.Content{mcp.NewTextContent("Error: " + err.Error())},
+		Content: []mcp.Content{mcp.NewTextContent("Error: " + truncate(err.Error(), 4000))},
 		IsError: true,
 	}
 }

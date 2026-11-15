@@ -59,7 +59,9 @@ import (
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/evidencelink"
 	"github.com/dreadl0ck/netcap/internal/filter"
+	"github.com/dreadl0ck/netcap/internal/mcp/bindings"
 	"github.com/dreadl0ck/netcap/internal/netio"
+	"github.com/dreadl0ck/netcap/internal/protocoltest"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/types"
@@ -96,7 +98,9 @@ type FileError struct {
 // RuntimeConfig holds the actual runtime configuration values passed from the capture package
 // This allows the webUI to display the actual values the application was started with
 type RuntimeConfig struct {
-	Behavior *BehaviorOptions
+	OperatorBindingsFile *string `json:"-"`
+	OperatorNetwork      *bool   `json:"-"`
+	Behavior             *BehaviorOptions
 	// Features holds startup state of optional features by name; a missing
 	// name means enabled. See features.go.
 	Features      map[string]bool
@@ -123,6 +127,7 @@ type RuntimeConfig struct {
 	DecodeOptions string
 	Payload       bool
 	Context       bool
+	DPIModules    string
 
 	// Database/Enrichment
 	MacDB        bool
@@ -235,21 +240,28 @@ type Server struct {
 	dashboardsFolderOverride string
 
 	// Service mode fields (nil in local mode)
-	isServiceMode     bool              // Flag to differentiate modes
-	sessionManager    *SessionManager   // Session manager (nil in local mode)
-	serviceConfig     *ServiceConfig    // Service configuration (nil in local mode)
-	jobQueue          chan *AnalysisJob // Job queue (nil in local mode)
-	shutdownChan      chan struct{}     // Shutdown channel for graceful shutdown
-	shutdownOnce      sync.Once         // Ensure shutdown channel is only closed once
-	wg                sync.WaitGroup    // Track background workers
-	currentSession    string            // Currently active session for webUI viewing (service mode only)
-	jobsScheduled     int64             // Total number of jobs scheduled (atomic counter)
-	jobsProcessed     int64             // Total number of jobs processed (atomic counter)
-	currentJobMutex   sync.RWMutex      // Mutex for currentProcessingJob
-	currentProcessing *AnalysisJob      // Currently processing job (service mode only)
-	currentProc       *os.Process       // Currently running out-of-process net capture (for cleanup; nil in the in-process/appstore build)
-	currentCmdMutex   sync.RWMutex      // Mutex for currentProc
-	alertStreams      int               // protected by mu
+	isServiceMode       bool              // Flag to differentiate modes
+	sessionManager      *SessionManager   // Session manager (nil in local mode)
+	serviceConfig       *ServiceConfig    // Service configuration (nil in local mode)
+	jobQueue            chan *AnalysisJob // Job queue (nil in local mode)
+	shutdownChan        chan struct{}     // Shutdown channel for graceful shutdown
+	shutdownOnce        sync.Once         // Ensure shutdown channel is only closed once
+	wg                  sync.WaitGroup    // Track background workers
+	currentSession      string            // Currently active session for webUI viewing (service mode only)
+	jobsScheduled       int64             // Total number of jobs scheduled (atomic counter)
+	jobsProcessed       int64             // Total number of jobs processed (atomic counter)
+	currentJobMutex     sync.RWMutex      // Mutex for currentProcessingJob
+	currentProcessing   *AnalysisJob      // Currently processing job (service mode only)
+	currentProc         *os.Process       // Currently running out-of-process net capture (for cleanup; nil in the in-process/appstore build)
+	currentCmdMutex     sync.RWMutex      // Mutex for currentProc
+	alertStreams        int               // protected by mu
+	ownedLive           *ownedLiveCapture
+	liveInputs          map[string]*ownedLiveCapture
+	liveRunner          func(context.Context, []string, string) (func() error, error)
+	tlsAnalyzer         func(context.Context, string, string, int) (protocoltest.TLSCaptureResult, error)
+	mcpCleanup          func()
+	sourceAnalysisSlots chan struct{}
+	operatorBindings    *bindings.Manager
 }
 
 // UploadCallbackFunc is called when files are uploaded via the web UI
@@ -538,7 +550,7 @@ func (s *Server) loadPreloadedPcaps() {
 			SessionID:       sessionID,
 			InputFile:       pcapFile.path,
 			OutputDir:       resultsDir,
-			EnableDPI:       s.dpiConfigured,
+			EnableDPI:       s.configuredDPI(),
 			BPFFilter:       bpfConfig.Filter,
 			IncludeDecoders: "",
 			ExcludeDecoders: "",
@@ -562,6 +574,9 @@ func (s *Server) loadPreloadedPcaps() {
 
 // Start starts the HTTP server in a goroutine
 func (s *Server) Start() error {
+	if err := s.initOperatorBindings(); err != nil {
+		return err
+	}
 	listener, err := net.Listen("tcp", s.addr)
 	if err != nil {
 		return err
@@ -574,6 +589,11 @@ func (s *Server) Start() error {
 
 	// API endpoints
 	mux.HandleFunc("/api/status", s.handleStatus)
+	mux.HandleFunc("/api/mcp/operator/bindings", s.handleOperatorBindings)
+	mux.HandleFunc("/api/mcp/operator/sensor", s.handleSensorBinding)
+	mux.HandleFunc("/api/mcp/operator/sensor-archive", s.handleSensorArchive)
+	mux.HandleFunc("/api/mcp/operator/delivery", s.handleAlertDeliveryBinding)
+	mux.HandleFunc("/api/live-capture", s.handleOwnedLiveCapture)
 	mux.HandleFunc("/api/stats", s.handleStats)
 	mux.HandleFunc("/api/audit-stats", s.handleAuditStats)
 	mux.HandleFunc("/api/menu-counts", s.handleMenuCounts)
@@ -596,6 +616,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/enrichment/attribution", s.handleEnrichmentAttribution)
 	mux.HandleFunc("/api/hyperscan", s.handleHyperscanInfo)
 	mux.HandleFunc("/api/config", s.handleConfig)
+	mux.HandleFunc("/api/analysis/settings", s.handleAnalysisSettings)
 	mux.HandleFunc("/api/config/debug", s.handleDebugToggle)
 	mux.HandleFunc("/api/config/payload", s.handlePayloadToggle)
 	mux.HandleFunc("/api/config/bpf", s.handleBPFConfig)
@@ -709,6 +730,10 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/analyst/inspect", s.handleAnalystInspect)
 	mux.HandleFunc("/api/investigation/health", s.handleInvestigationHealth)
 	mux.HandleFunc("/api/investigation/streams", s.handleStreamEvidence)
+	mux.HandleFunc("/api/investigation/stream-content", s.handleStreamContent)
+	mux.HandleFunc("/api/investigation/interpret-stream", s.handleInterpretStream)
+	mux.HandleFunc("/api/investigation/tls-capture", s.handleTLSCapture)
+	mux.HandleFunc("/api/investigation/packet-export", s.handlePacketExport)
 	mux.HandleFunc("/api/connections/top-by-traffic", s.handleConnectionsTopByTraffic)
 	mux.HandleFunc("/api/connections/protocols", s.handleConnectionsProtocols)
 	mux.HandleFunc("/api/connections/applications", s.handleConnectionsApplications)
@@ -870,6 +895,17 @@ func (s *Server) handleDecodersRouter(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Stop(ctx context.Context) error {
 	log.Println("[WebUI] Shutting down server...")
 	s.stopProcessingAdmission()
+	s.mu.RLock()
+	cleanupMCP := s.mcpCleanup
+	s.mu.RUnlock()
+	if cleanupMCP != nil {
+		cleanupMCP()
+	}
+	s.mu.RLock()
+	if s.ownedLive != nil && s.ownedLive.Cancel != nil {
+		s.ownedLive.Cancel()
+	}
+	s.mu.RUnlock()
 
 	// Kill any running out-of-process net capture (non-appstore builds only;
 	// the in-process analysis path never sets currentProc).
@@ -1024,7 +1060,7 @@ func (s *Server) AddInputFile(filePath string) {
 		SessionID:       sessionID,
 		InputFile:       filePath,
 		OutputDir:       resultsDir,
-		EnableDPI:       s.dpiConfigured,
+		EnableDPI:       s.configuredDPI(),
 		BPFFilter:       bpfConfig.Filter,
 		IncludeDecoders: "",
 		ExcludeDecoders: "",
@@ -1787,27 +1823,20 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		log.Printf("[WebUI] File extraction enabled for session %s: %s", job.SessionID, filesDir)
 	}
 
-	flowExports, flowPorts := true, ""
-	captureEvidence, retainPackets := true, false
-	var segmentBytes, retentionBytes int64
-	var maintenanceInterval, flushInterval time.Duration
-	var maxRetainedTCPBytes, maxRetainedReassemblyBytes int64
-	var incrementalHTTP, captureTimeIdleExpiry bool
-	maxRetainedTCPStateBytes := int64(64 << 20)
-	maxAggregateStateBytes := int64(32 << 20)
-	s.mu.RLock()
-	if s.runtimeConfig != nil {
-		flowExports = s.runtimeConfig.FlowExports
-		flowPorts = s.runtimeConfig.FlowExportPorts
-		captureEvidence, retainPackets = s.runtimeConfig.CaptureEvidence, s.runtimeConfig.RetainPackets
-		segmentBytes, retentionBytes = s.runtimeConfig.PacketSegmentBytes, s.runtimeConfig.PacketRetentionBytes
-		maintenanceInterval, flushInterval = s.runtimeConfig.LiveMaintenanceInterval, s.runtimeConfig.LiveFlushInterval
-		maxRetainedTCPBytes = s.runtimeConfig.MaxRetainedTCPBytes
-		maxAggregateStateBytes = s.runtimeConfig.MaxAggregateStateBytes
-		maxRetainedReassemblyBytes = s.runtimeConfig.MaxRetainedReassemblyBytes
-		incrementalHTTP, maxRetainedTCPStateBytes, captureTimeIdleExpiry = s.runtimeConfig.IncrementalHTTP, s.runtimeConfig.MaxRetainedTCPStateBytes, s.runtimeConfig.CaptureTimeIdleExpiry
+	settings, settingsErr := s.settingsForJob(job)
+	if settingsErr != nil {
+		s.recordAnalysisFailure(job, settingsErr.Error(), "")
+		return
 	}
-	s.mu.RUnlock()
+	defer settings.cleanup()
+	runtimeSnapshot := settings.Runtime
+	flowExports, flowPorts := runtimeSnapshot.FlowExports, runtimeSnapshot.FlowExportPorts
+	captureEvidence, retainPackets := runtimeSnapshot.CaptureEvidence, runtimeSnapshot.RetainPackets
+	segmentBytes, retentionBytes := runtimeSnapshot.PacketSegmentBytes, runtimeSnapshot.PacketRetentionBytes
+	maintenanceInterval, flushInterval := runtimeSnapshot.LiveMaintenanceInterval, runtimeSnapshot.LiveFlushInterval
+	maxRetainedTCPBytes, maxRetainedReassemblyBytes := runtimeSnapshot.MaxRetainedTCPBytes, runtimeSnapshot.MaxRetainedReassemblyBytes
+	incrementalHTTP, captureTimeIdleExpiry := runtimeSnapshot.IncrementalHTTP, runtimeSnapshot.CaptureTimeIdleExpiry
+	maxRetainedTCPStateBytes, maxAggregateStateBytes := runtimeSnapshot.MaxRetainedTCPStateBytes, runtimeSnapshot.MaxAggregateStateBytes
 	if job.requireCaptureEvidence {
 		captureEvidence = true
 	}
@@ -1818,9 +1847,13 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		return
 	}
 	defer restoreArtifactConfig()
+	protoSettings := settings.Protobuf
+	effectiveJob := *job
+	effectiveJob.IncludeDecoders = settings.IncludeDecoders
+	effectiveJob.ExcludeDecoders = settings.ExcludeDecoders
 	c := collector.New(collector.Config{
-		NetworkDetection:        s.featureEnabled(featureNetworkDetection),
-		DNSResolutionContext:    s.featureEnabled(featureDNSResolutionContext),
+		NetworkDetection:        settings.NetworkDetection,
+		DNSResolutionContext:    settings.DNSContext,
 		NetworkDetectionConfig:  os.Getenv("NC_NETWORK_DETECTION_CONFIG"),
 		Workers:                 defaults.CaptureWorkers(),
 		PacketBufferSize:        defaults.PacketBuffer,
@@ -1832,7 +1865,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		BaseLayer:               utils.GetBaseLayer("ethernet"),
 		DecodeOptions:           utils.GetDecodeOptions("default"),
 		DPI:                     job.EnableDPI,
-		DPIModules:              "",
+		DPIModules:              runtimeSnapshot.DPIModules,
 		ReassembleConnections:   true,
 		FlowExports:             flowExports,
 		CaptureEvidence:         captureEvidence,
@@ -1848,6 +1881,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		Scatter:              true,
 		ScatterDuration:      5 * time.Minute,
 		DecoderConfig: &config.Config{
+			ProtoSearchPaths: protoSettings.Paths, ProtoMessageTypes: protoSettings.Mappings, ProtoShowAlternatives: protoSettings.Alternatives,
 			MaxRetainedTCPBytes:        maxRetainedTCPBytes,
 			MaxRetainedReassemblyBytes: maxRetainedReassemblyBytes,
 			IncrementalHTTP:            incrementalHTTP,
@@ -1869,14 +1903,14 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			ElasticConfig:    netio.ElasticConfig{},
 			BulkSizeGoPacket: 2000,
 			BulkSizeCustom:   1000,
-			IncludeDecoders:  job.IncludeDecoders,
-			ExcludeDecoders:  getExcludeDecoders(job),
+			IncludeDecoders:  settings.IncludeDecoders,
+			ExcludeDecoders:  getExcludeDecoders(&effectiveJob),
 			Out:              job.OutputDir,
 			Proto:            true,
 			JSON:             false,
 			Chan:             false,
 			Source:           job.InputFile,
-			IncludePayloads:  s.GetPayloadCapture(),
+			IncludePayloads:  settings.Payload,
 			ExportMetrics:    false,
 			AddContext:       true,
 			FlushEvery:       defaults.FlushEvery,
@@ -1886,16 +1920,10 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			IgnoreFSMerr:     true, // Ignore FSM errors for better reliability
 			AllowMissingInit: true, // Allow streams without handshake
 			ModbusRTUEndpoints: func() string {
-				if s.runtimeConfig != nil {
-					return s.runtimeConfig.ModbusRTUEndpoints
-				}
-				return ""
+				return runtimeSnapshot.ModbusRTUEndpoints
 			}(),
 			DNP3PointMap: func() string {
-				if s.runtimeConfig != nil {
-					return s.runtimeConfig.DNP3PointMap
-				}
-				return ""
+				return runtimeSnapshot.DNP3PointMap
 			}(),
 			Debug:           false,
 			HexDump:         false,
@@ -1930,7 +1958,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		ResolverConfig: inProcessResolverConfig(),
 	})
 
-	c.Bpf = job.BPFFilter
+	c.Bpf = settings.BPF
 	c.InputFile = job.InputFile
 	behaviorOptions, err := s.behaviorOptionsForJob(job)
 	if err != nil {

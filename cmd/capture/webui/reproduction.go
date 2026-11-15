@@ -87,7 +87,7 @@ func (s *Server) handleReproductionBundle(w http.ResponseWriter, r *http.Request
 		}
 	}
 	attachments := []reproductionAttachment{{Name: "capture-manifest.json", State: "projected", SHA256: digestBytes(data), Bytes: len(data)}}
-	for _, name := range []string{"audit-output-ready.json", "analysis-parent.json", "packet-selection.json", "artifact-analysis.json"} {
+	for _, name := range []string{"audit-output-ready.json", "analysis-parent.json", "packet-selection.json", "artifact-analysis.json", "analysis-runtime.json"} {
 		data, err := artifactio.Read(r.Context(), selected.OutputDir, name, 4<<20)
 		a := reproductionAttachment{Name: name, State: "digest-only"}
 		if errors.Is(err, os.ErrNotExist) {

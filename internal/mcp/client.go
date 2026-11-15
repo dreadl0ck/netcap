@@ -30,6 +30,17 @@ type NetcapClient struct {
 	adminToken string
 }
 
+// BackendError preserves the HTTP status and bounded backend diagnostic body.
+type BackendError struct {
+	Method, Path string
+	StatusCode   int
+	Body         json.RawMessage
+}
+
+func (e *BackendError) Error() string {
+	return fmt.Sprintf("%s %s: HTTP %d: %s", e.Method, e.Path, e.StatusCode, truncate(string(e.Body), 4000))
+}
+
 // NewNetcapClient constructs a client targeting baseURL (e.g.
 // "http://127.0.0.1:54321"). The default timeout is generous (5 minutes)
 // because some endpoints (YARA, reanalyze) genuinely take that long.
@@ -93,17 +104,33 @@ func (c *NetcapClient) PostJSON(path string, body any) (json.RawMessage, error) 
 	return c.PostJSONContext(context.Background(), path, body)
 }
 func (c *NetcapClient) PostJSONContext(ctx context.Context, path string, body any) (json.RawMessage, error) {
+	return c.jsonContext(ctx, http.MethodPost, path, body)
+}
+func (c *NetcapClient) jsonContext(ctx context.Context, method, path string, body any) (json.RawMessage, error) {
 	var buf bytes.Buffer
 	if body != nil {
 		if err := json.NewEncoder(&buf).Encode(body); err != nil {
 			return nil, fmt.Errorf("encoding request: %w", err)
 		}
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, &buf)
+	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, &buf)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	return c.do(req)
+}
+
+func (c *NetcapClient) postArchiveContext(ctx context.Context, path string, data []byte) (json.RawMessage, error) {
+	if len(data) > 16<<20 {
+		return nil, fmt.Errorf("archive exceeds 16 MiB")
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/zip")
 	req.Header.Set("Accept", "application/json")
 	return c.do(req)
 }
@@ -123,11 +150,14 @@ func (c *NetcapClient) PostForm(path string, form url.Values) (json.RawMessage, 
 // PostEmpty sends a POST with no body and optional query params — used
 // to trigger actions that take no body (yara scan, execute rules).
 func (c *NetcapClient) PostEmpty(path string, query url.Values) (json.RawMessage, error) {
+	return c.PostEmptyContext(context.Background(), path, query)
+}
+func (c *NetcapClient) PostEmptyContext(ctx context.Context, path string, query url.Values) (json.RawMessage, error) {
 	u := c.baseURL + path
 	if len(query) > 0 {
 		u += "?" + query.Encode()
 	}
-	req, err := http.NewRequest(http.MethodPost, u, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +168,10 @@ func (c *NetcapClient) PostEmpty(path string, query url.Values) (json.RawMessage
 // UploadPCAP uploads a PCAP/PCAPNG file via the webui's /api/upload
 // multipart endpoint. The file is streamed from disk; no in-memory copy.
 func (c *NetcapClient) UploadPCAP(pcapPath string) (json.RawMessage, error) {
+	return c.UploadPCAPContext(context.Background(), pcapPath)
+}
+
+func (c *NetcapClient) UploadPCAPContext(ctx context.Context, pcapPath string) (json.RawMessage, error) {
 	f, err := os.Open(pcapPath)
 	if err != nil {
 		return nil, fmt.Errorf("opening pcap: %w", err)
@@ -146,6 +180,7 @@ func (c *NetcapClient) UploadPCAP(pcapPath string) (json.RawMessage, error) {
 
 	// Build the multipart body in a pipe so we don't buffer the whole file.
 	pr, pw := io.Pipe()
+	defer pr.Close()
 	mw := multipart.NewWriter(pw)
 
 	uploadErr := make(chan error, 1)
@@ -164,7 +199,7 @@ func (c *NetcapClient) UploadPCAP(pcapPath string) (json.RawMessage, error) {
 		uploadErr <- nil
 	}()
 
-	req, err := http.NewRequest(http.MethodPost, c.baseURL+"/api/upload", pr)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/upload", pr)
 	if err != nil {
 		return nil, err
 	}
@@ -172,6 +207,11 @@ func (c *NetcapClient) UploadPCAP(pcapPath string) (json.RawMessage, error) {
 	req.Header.Set("Accept", "application/json")
 
 	body, doErr := c.do(req)
+	// An early backend rejection or cancellation must release the writer.
+	_ = pr.CloseWithError(doErr)
+	if doErr != nil {
+		return nil, doErr
+	}
 	if writerErr := <-uploadErr; writerErr != nil {
 		return nil, fmt.Errorf("streaming upload: %w", writerErr)
 	}
@@ -181,11 +221,14 @@ func (c *NetcapClient) UploadPCAP(pcapPath string) (json.RawMessage, error) {
 // GetRaw returns the response bytes for endpoints that don't reply in
 // JSON (e.g. /api/extracted-files/download/<id> which streams binary).
 func (c *NetcapClient) GetRaw(path string, query url.Values) ([]byte, string, error) {
+	return c.GetRawContext(context.Background(), path, query)
+}
+func (c *NetcapClient) GetRawContext(ctx context.Context, path string, query url.Values) ([]byte, string, error) {
 	u := c.baseURL + path
 	if len(query) > 0 {
 		u += "?" + query.Encode()
 	}
-	req, err := http.NewRequest(http.MethodGet, u, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, "", err
 	}
@@ -195,7 +238,7 @@ func (c *NetcapClient) GetRaw(path string, query url.Values) ([]byte, string, er
 		return nil, "", fmt.Errorf("GET %s: %w", path, err)
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
+	body, err := readAllBounded(resp.Body, 16<<20)
 	if err != nil {
 		return nil, "", fmt.Errorf("reading response: %w", err)
 	}
@@ -213,14 +256,24 @@ func (c *NetcapClient) do(req *http.Request) (json.RawMessage, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := readAllBounded(resp.Body, 16<<20)
 	if err != nil {
 		return nil, fmt.Errorf("reading response: %w", err)
 	}
 
 	if resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("%s %s: %s: %s",
-			req.Method, req.URL.Path, resp.Status, truncate(string(body), 500))
+		return nil, &BackendError{Method: req.Method, Path: req.URL.Path, StatusCode: resp.StatusCode, Body: body}
+	}
+	return body, nil
+}
+
+func readAllBounded(r io.Reader, max int) ([]byte, error) {
+	body, err := io.ReadAll(io.LimitReader(r, int64(max)+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(body) > max {
+		return nil, fmt.Errorf("backend response exceeds %d bytes", max)
 	}
 	return body, nil
 }

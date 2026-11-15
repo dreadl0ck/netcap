@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/defaults"
@@ -84,8 +85,8 @@ type SecretSummary struct {
 
 // SecretsResponse contains the list of credentials
 type SecretsResponse struct {
-	Secrets []SecretSummary `json:"secrets"`
-	TotalCount  int                 `json:"totalCount"`
+	Secrets    []SecretSummary `json:"secrets"`
+	TotalCount int             `json:"totalCount"`
 }
 
 // handleSecrets returns list of all credentials
@@ -113,8 +114,8 @@ func (s *Server) handleSecrets(w http.ResponseWriter, r *http.Request) {
 	if outDir == "" {
 		log.Printf("[Credentials] No output directory set, returning empty response")
 		RespondJSON(w, http.StatusOK, SecretsResponse{
-			Secrets: []SecretSummary{},
-			TotalCount:  0,
+			Secrets:    []SecretSummary{},
+			TotalCount: 0,
 		})
 		return
 	}
@@ -130,8 +131,8 @@ func (s *Server) handleSecrets(w http.ResponseWriter, r *http.Request) {
 		if _, err := os.Stat(filePathUncompressed); os.IsNotExist(err) {
 
 			RespondJSON(w, http.StatusOK, SecretsResponse{
-				Secrets: []SecretSummary{},
-				TotalCount:  0,
+				Secrets:    []SecretSummary{},
+				TotalCount: 0,
 			})
 			return
 		}
@@ -268,8 +269,8 @@ func (s *Server) handleSecrets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RespondJSON(w, http.StatusOK, SecretsResponse{
-		Secrets: credentials,
-		TotalCount:  len(credentials),
+		Secrets:    credentials,
+		TotalCount: len(credentials),
 	})
 }
 
@@ -288,8 +289,10 @@ type AuthActivityEvent struct {
 
 // AuthActivityResponse contains all authentication events
 type AuthActivityResponse struct {
-	Events     []AuthActivityEvent `json:"events"`
-	TotalCount int                 `json:"totalCount"`
+	Events      []AuthActivityEvent `json:"events"`
+	TotalCount  int                 `json:"totalCount"`
+	Coverage    map[string]string   `json:"coverage,omitempty"`
+	Limitations []string            `json:"limitations,omitempty"`
 }
 
 // handleAuthActivity returns a unified authentication activity timeline
@@ -300,14 +303,12 @@ func (s *Server) handleAuthActivity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
+	selection, err := s.resolveCaptureSelection(r)
+	if err != nil {
+		writeSelectionError(w, err)
+		return
 	}
-	s.mu.RUnlock()
+	outDir := selection.OutputDir
 
 	if outDir == "" {
 		RespondJSON(w, http.StatusOK, AuthActivityResponse{Events: []AuthActivityEvent{}})
@@ -315,19 +316,40 @@ func (s *Server) handleAuthActivity(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var events []AuthActivityEvent
+	coverage := map[string]string{"TACACS": "unavailable", "Kerberos": "unavailable", "Secret": "unavailable"}
+	eventBytes := 0
+	keepEvent := func(event AuthActivityEvent) bool {
+		eventBytes += 512 + len(event.Protocol) + len(event.User) + len(event.Service) + len(event.Action) + len(event.Status) + len(event.SrcIP) + len(event.DstIP) + len(event.Details)
+		if eventBytes > 8<<20 {
+			return false
+		}
+		events = append(events, event)
+		return true
+	}
+	scanned := 0
 
 	// Load TACACS+ records
 	tacacsFile := filepath.Join(outDir, "TACACS"+defaults.FileExtension+".gz")
 	if _, err := os.Stat(tacacsFile); err == nil {
 		if reader, err := netio.Open(tacacsFile, defaults.BufferSize); err == nil {
 			defer reader.Close()
-			if _, err := reader.ReadHeader(); err == nil {
+			coverage["TACACS"] = "invalid"
+			if header, err := reader.ReadHeader(); err == nil && header.Type == types.Type_NC_TACACS {
+				coverage["TACACS"] = "available"
 				var rec types.TACACS
 				for {
+					scanned++
+					if scanned > 100000 || r.Context().Err() != nil {
+						http.Error(w, "authentication activity scan budget exceeded or canceled", 422)
+						return
+					}
 					if err := reader.Next(&rec); err != nil {
+						if err != io.EOF {
+							coverage["TACACS"] = "unreadable"
+						}
 						break
 					}
-					events = append(events, AuthActivityEvent{
+					if !keepEvent(AuthActivityEvent{
 						Timestamp: rec.Timestamp,
 						Protocol:  "TACACS+",
 						User:      rec.User,
@@ -337,7 +359,10 @@ func (s *Server) handleAuthActivity(w http.ResponseWriter, r *http.Request) {
 						SrcIP:     rec.SrcIP,
 						DstIP:     rec.DstIP,
 						Details:   fmt.Sprintf("Type=%s Seq=%d Session=%d", rec.TypeName, rec.SequenceNumber, rec.SessionID),
-					})
+					}) {
+						http.Error(w, "authentication event memory budget exceeded; use scoped audit-record queries", 422)
+						return
+					}
 				}
 			}
 		}
@@ -348,17 +373,27 @@ func (s *Server) handleAuthActivity(w http.ResponseWriter, r *http.Request) {
 	if _, err := os.Stat(kerbFile); err == nil {
 		if reader, err := netio.Open(kerbFile, defaults.BufferSize); err == nil {
 			defer reader.Close()
-			if _, err := reader.ReadHeader(); err == nil {
+			coverage["Kerberos"] = "invalid"
+			if header, err := reader.ReadHeader(); err == nil && header.Type == types.Type_NC_Kerberos {
+				coverage["Kerberos"] = "available"
 				var rec types.Kerberos
 				for {
+					scanned++
+					if scanned > 100000 || r.Context().Err() != nil {
+						http.Error(w, "authentication activity scan budget exceeded or canceled", 422)
+						return
+					}
 					if err := reader.Next(&rec); err != nil {
+						if err != io.EOF {
+							coverage["Kerberos"] = "unreadable"
+						}
 						break
 					}
 					status := rec.MessageType
 					if rec.ErrorCode != 0 {
 						status = fmt.Sprintf("%s (error %d: %s)", rec.MessageType, rec.ErrorCode, rec.ErrorMessage)
 					}
-					events = append(events, AuthActivityEvent{
+					if !keepEvent(AuthActivityEvent{
 						Timestamp: rec.Timestamp,
 						Protocol:  "Kerberos",
 						User:      rec.ClientName,
@@ -368,7 +403,10 @@ func (s *Server) handleAuthActivity(w http.ResponseWriter, r *http.Request) {
 						SrcIP:     rec.SrcIP,
 						DstIP:     rec.DstIP,
 						Details:   fmt.Sprintf("Realm=%s Etype=%s", rec.Realm, rec.EncryptionTypeName),
-					})
+					}) {
+						http.Error(w, "authentication event memory budget exceeded; use scoped audit-record queries", 422)
+						return
+					}
 				}
 			}
 		}
@@ -379,10 +417,20 @@ func (s *Server) handleAuthActivity(w http.ResponseWriter, r *http.Request) {
 	if _, err := os.Stat(credFile); err == nil {
 		if reader, err := netio.Open(credFile, defaults.BufferSize); err == nil {
 			defer reader.Close()
-			if _, err := reader.ReadHeader(); err == nil {
+			coverage["Secret"] = "invalid"
+			if header, err := reader.ReadHeader(); err == nil && header.Type == types.Type_NC_Secret {
+				coverage["Secret"] = "available"
 				var rec types.Secret
 				for {
+					scanned++
+					if scanned > 100000 || r.Context().Err() != nil {
+						http.Error(w, "authentication activity scan budget exceeded or canceled", 422)
+						return
+					}
 					if err := reader.Next(&rec); err != nil {
+						if err != io.EOF {
+							coverage["Secret"] = "unreadable"
+						}
 						break
 					}
 					if rec.User == "" && rec.Password == "" {
@@ -396,7 +444,7 @@ func (s *Server) handleAuthActivity(w http.ResponseWriter, r *http.Request) {
 							status = "failure"
 						}
 					}
-					events = append(events, AuthActivityEvent{
+					if !keepEvent(AuthActivityEvent{
 						Timestamp: rec.Timestamp,
 						Protocol:  rec.Service,
 						User:      rec.User,
@@ -406,15 +454,38 @@ func (s *Server) handleAuthActivity(w http.ResponseWriter, r *http.Request) {
 						SrcIP:     "",
 						DstIP:     "",
 						Details:   fmt.Sprintf("Flow=%s", rec.Flow),
-					})
+					}) {
+						http.Error(w, "authentication event memory budget exceeded; use scoped audit-record queries", 422)
+						return
+					}
 				}
 			}
 		}
 	}
 
+	total := len(events)
+	offset, limit := 0, 500
+	if r.URL.Query().Has("offset") {
+		offset, err = strconv.Atoi(r.URL.Query().Get("offset"))
+		if err != nil || offset < 0 || offset > 100000 {
+			http.Error(w, "invalid event offset", 400)
+			return
+		}
+	}
+	if r.URL.Query().Has("limit") {
+		limit, err = strconv.Atoi(r.URL.Query().Get("limit"))
+		if err != nil || limit < 1 || limit > 500 {
+			http.Error(w, "event limit must be 1..500", 400)
+			return
+		}
+	}
+	offset = min(offset, total)
+	end := min(offset+limit, total)
 	RespondJSON(w, http.StatusOK, AuthActivityResponse{
-		Events:     events,
-		TotalCount: len(events),
+		Events:      events[offset:end],
+		TotalCount:  total,
+		Coverage:    coverage,
+		Limitations: []string{"Retained source observations only; unavailable, invalid or unreadable sources do not establish absence of authentication."},
 	})
 }
 

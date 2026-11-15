@@ -87,6 +87,10 @@ func (s *Server) localSecurityMiddleware(next http.Handler) http.Handler {
 			token = value
 		}
 		if !valid(token) {
+			if (r.URL.Path == "/mcp" || r.URL.Path == "/mcp/" || r.URL.Path == "/mcp/metrics") && captureAdminAuthorized(r) {
+				next.ServeHTTP(w, r)
+				return
+			}
 			cookie, err := r.Cookie(localSessionCookie)
 			if err != nil || !valid(cookie.Value) {
 				if r.Method == http.MethodGet && !strings.HasPrefix(r.URL.Path, "/api/") {

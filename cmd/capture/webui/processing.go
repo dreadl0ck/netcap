@@ -40,6 +40,12 @@ func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
 	if job == nil || s.jobQueue == nil {
 		return errAnalysisUnavailable
 	}
+	s.mu.RLock()
+	liveBusy := s.ownedLive != nil && !s.ownedLive.Completed
+	s.mu.RUnlock()
+	if liveBusy {
+		return errAnalysisUnavailable
+	}
 	if len(job.ArtifactConfig) == 0 {
 		snapshot, err := snapshotArtifactConfig()
 		if err != nil {
@@ -47,19 +53,39 @@ func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
 		}
 		job.ArtifactConfig = snapshot
 	}
+	if job.settings == nil {
+		if job.IncludeDecoders == "" && job.ExcludeDecoders == "" {
+			config := s.loadDecoderConfig()
+			job.IncludeDecoders = config.IncludeDecoders
+			job.ExcludeDecoders = config.ExcludeDecoders
+		}
+		snapshot, err := s.snapshotJobSettings()
+		if err != nil {
+			return err
+		}
+		snapshot.DPI = job.EnableDPI
+		snapshot.BPF = job.BPFFilter
+		snapshot.IncludeDecoders = job.IncludeDecoders
+		snapshot.ExcludeDecoders = job.ExcludeDecoders
+		if job.requireCaptureEvidence {
+			snapshot.Runtime.CaptureEvidence = true
+		}
+		job.settings = snapshot
+	}
 	job.reproductionSource = snapshotReproductionSource(job.InputFile)
 	job.reproductionSource.PreviousManifestSHA256 = priorReproductionManifest(job.OutputDir)
 	done := s.beginProcessingWork()
 	if done == nil {
+		job.settings.cleanup()
 		return errAnalysisStopping
 	}
-	job.processingDone = done
+	job.processingDone = func() { job.settings.cleanup(); done() }
 	atomic.AddInt64(&s.jobsScheduled, 1)
 	accepted := false
 	defer func() {
 		if !accepted {
 			atomic.AddInt64(&s.jobsScheduled, -1)
-			done()
+			job.processingDone()
 		}
 	}()
 	if wait {

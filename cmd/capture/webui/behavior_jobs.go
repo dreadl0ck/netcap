@@ -10,8 +10,12 @@ import (
 func (s *Server) behaviorOptionsForJob(job *AnalysisJob) (BehaviorOptions, error) {
 	s.mu.RLock()
 	var options BehaviorOptions
-	if s.runtimeConfig != nil && s.runtimeConfig.Behavior != nil {
-		options = *s.runtimeConfig.Behavior
+	runtimeConfig := s.runtimeConfig
+	if job.settings != nil {
+		runtimeConfig = &job.settings.Runtime
+	}
+	if runtimeConfig != nil && runtimeConfig.Behavior != nil {
+		options = *runtimeConfig.Behavior
 		options.Prefixes = append([]string(nil), options.Prefixes...)
 		if options.Policy != nil {
 			policy := *options.Policy

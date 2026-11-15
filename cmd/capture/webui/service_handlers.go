@@ -421,7 +421,7 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 		SessionID:       sessionID,
 		InputFile:       inputPath,
 		OutputDir:       resultsDir,
-		EnableDPI:       s.dpiConfigured,
+		EnableDPI:       s.configuredDPI(),
 		BPFFilter:       bpfConfig.Filter,
 		IncludeDecoders: "", // TODO: Get from request if provided
 		ExcludeDecoders: "", // TODO: Get from request if provided

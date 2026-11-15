@@ -52,6 +52,12 @@ func inProcessRequiredExcludes() string { return "" }
 // out to the "net" CLI. This is the direct-edition path; the App Store build
 // replaces it with the in-process collector (see server_inprocess.go).
 func (s *Server) runAnalysis(job *AnalysisJob) {
+	settings, settingsErr := s.settingsForJob(job)
+	if settingsErr != nil {
+		s.recordAnalysisFailure(job, settingsErr.Error(), "")
+		return
+	}
+	defer settings.cleanup()
 	if s.isServiceMode {
 		log.Printf("[Service] Starting analysis for session %s", job.SessionID)
 	} else {
@@ -83,6 +89,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		"-y",        // Force overwrite without prompting (required for non-interactive mode)
 		"-http", "", // Disable web UI server
 	}
+	args = append(args, settings.helperArgs()...)
 	if job.requireCaptureEvidence {
 		args = append(args, "-capture-evidence=true")
 	}
@@ -121,10 +128,6 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		args = append(args, "-fileStorage", fileStorageRelPath)
 	}
 
-	if job.EnableDPI {
-		args = append(args, "-dpi")
-	}
-
 	// Snapshot the order for this job; later UI changes apply to subsequent captures.
 	selection := s.geoProviderSelection()
 	args = append(args, "-geoProviders", selection)
@@ -135,28 +138,26 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	}
 
 	// Add payload capture flag if enabled
-	if s.GetPayloadCapture() {
-		args = append(args, "-payload")
+	if settings.Payload {
 		log.Printf("[Service] Payload capture enabled for session %s", job.SessionID)
 	}
 
 	// Apply BPF filter if set
-	if job.BPFFilter != "" {
-		args = append(args, "-bpf", job.BPFFilter)
-		log.Printf("[Service] Applying BPF filter for session %s: %s", job.SessionID, job.BPFFilter)
+	args = append(args, "-bpf="+settings.BPF, "-include="+settings.IncludeDecoders)
+	if settings.BPF != "" {
+		log.Printf("[Service] Applying BPF filter for session %s: %s", job.SessionID, settings.BPF)
 	}
 
 	// Apply decoder config if set
-	if job.IncludeDecoders != "" {
-		args = append(args, "-include", job.IncludeDecoders)
-		log.Printf("[Service] Including decoders for session %s: %s", job.SessionID, job.IncludeDecoders)
+	if settings.IncludeDecoders != "" {
+		log.Printf("[Service] Including decoders for session %s: %s", job.SessionID, settings.IncludeDecoders)
 	}
 
 	// Build exclude decoders list
-	excludeDecoders := job.ExcludeDecoders
+	excludeDecoders := settings.ExcludeDecoders
+	args = append(args, "-exclude="+excludeDecoders)
 
 	if excludeDecoders != "" {
-		args = append(args, "-exclude", excludeDecoders)
 		log.Printf("[Service] Excluding decoders for session %s: %s", job.SessionID, excludeDecoders)
 	}
 
@@ -205,6 +206,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 
 	// Run the capture command
 	cmd := exec.Command(executable, args...)
+	cmd.Env = helperEnvironment()
 
 	// If we have an error log file, capture output there; otherwise use standard output
 	if errorLogFile != nil {

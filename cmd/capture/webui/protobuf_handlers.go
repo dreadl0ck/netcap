@@ -25,25 +25,28 @@ import (
 
 // protoState tracks the runtime state of protobuf schema configuration.
 type protoState struct {
-	mu            sync.RWMutex
-	searchPaths   []string
-	uploadDir     string // directory for uploaded .proto files
-	errors        []string
-	lastCompiled  time.Time
+	mu           sync.RWMutex
+	editMu       sync.Mutex
+	searchPaths  []string
+	uploadDir    string // directory for uploaded .proto files
+	errors       []string
+	lastCompiled time.Time
+	mappings     []string
+	alternatives *bool
 }
 
 var protoRuntime = &protoState{}
 
 // ProtoStatusResponse is the response for GET /api/proto/status.
 type ProtoStatusResponse struct {
-	Loaded           bool              `json:"loaded"`
-	FileCount        int               `json:"fileCount"`
-	MessageCount     int               `json:"messageCount"`
-	SearchPaths      []string          `json:"searchPaths"`
-	ShowAlternatives bool              `json:"showAlternatives"`
-	PortMappings     []PortMapping     `json:"portMappings"`
-	Errors           []string          `json:"errors"`
-	LastCompiled     string            `json:"lastCompiled"`
+	Loaded           bool          `json:"loaded"`
+	FileCount        int           `json:"fileCount"`
+	MessageCount     int           `json:"messageCount"`
+	SearchPaths      []string      `json:"searchPaths"`
+	ShowAlternatives bool          `json:"showAlternatives"`
+	PortMappings     []PortMapping `json:"portMappings"`
+	Errors           []string      `json:"errors"`
+	LastCompiled     string        `json:"lastCompiled"`
 }
 
 // PortMapping represents a port-to-message-type mapping.
@@ -59,13 +62,14 @@ type ProtoMessagesResponse struct {
 
 func (s *Server) getProtoStatus() ProtoStatusResponse {
 	protoRuntime.mu.RLock()
-	defer protoRuntime.mu.RUnlock()
 
 	resp := ProtoStatusResponse{
-		SearchPaths:      protoRuntime.searchPaths,
-		ShowAlternatives: decoderconfig.Instance != nil && decoderconfig.Instance.ProtoShowAlternatives,
-		Errors:           protoRuntime.errors,
+		Errors: append([]string{}, protoRuntime.errors...),
 	}
+	lastCompiled := protoRuntime.lastCompiled
+	protoRuntime.mu.RUnlock()
+	settings := currentProtobufSettings()
+	resp.SearchPaths, resp.ShowAlternatives = settings.Paths, settings.Alternatives
 
 	if len(resp.SearchPaths) == 0 {
 		resp.SearchPaths = []string{}
@@ -74,8 +78,8 @@ func (s *Server) getProtoStatus() ProtoStatusResponse {
 		resp.Errors = []string{}
 	}
 
-	if !protoRuntime.lastCompiled.IsZero() {
-		resp.LastCompiled = protoRuntime.lastCompiled.Format(time.RFC3339)
+	if !lastCompiled.IsZero() {
+		resp.LastCompiled = lastCompiled.Format(time.RFC3339)
 	}
 
 	reg := pb.GetSchemaRegistry()
@@ -92,12 +96,8 @@ func (s *Server) getProtoStatus() ProtoStatusResponse {
 }
 
 func getPortMappings() []PortMapping {
-	if decoderconfig.Instance == nil {
-		return []PortMapping{}
-	}
-
 	var mappings []PortMapping
-	for _, m := range decoderconfig.Instance.ProtoMessageTypes {
+	for _, m := range currentProtobufSettings().Mappings {
 		parts := strings.SplitN(m, ":", 2)
 		if len(parts) != 2 {
 			continue
@@ -150,6 +150,9 @@ func (s *Server) handleProtoMessages(w http.ResponseWriter, r *http.Request) {
 
 // handleProtoSearchPaths handles POST/DELETE /api/proto/search-paths.
 func (s *Server) handleProtoSearchPaths(w http.ResponseWriter, r *http.Request) {
+	protoRuntime.editMu.Lock()
+	defer protoRuntime.editMu.Unlock()
+	initial := currentProtobufSettings()
 	var req struct {
 		Path string `json:"path"`
 	}
@@ -165,6 +168,9 @@ func (s *Server) handleProtoSearchPaths(w http.ResponseWriter, r *http.Request) 
 	}
 
 	protoRuntime.mu.Lock()
+	if protoRuntime.searchPaths == nil {
+		protoRuntime.searchPaths = append([]string{}, initial.Paths...)
+	}
 
 	switch r.Method {
 	case http.MethodPost:
@@ -224,6 +230,9 @@ func (s *Server) handleProtoSearchPaths(w http.ResponseWriter, r *http.Request) 
 
 // handleProtoUpload handles POST /api/proto/upload (multipart form).
 func (s *Server) handleProtoUpload(w http.ResponseWriter, r *http.Request) {
+	protoRuntime.editMu.Lock()
+	defer protoRuntime.editMu.Unlock()
+	initial := currentProtobufSettings()
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -243,6 +252,9 @@ func (s *Server) handleProtoUpload(w http.ResponseWriter, r *http.Request) {
 
 	// Ensure upload directory exists
 	protoRuntime.mu.Lock()
+	if protoRuntime.searchPaths == nil {
+		protoRuntime.searchPaths = append([]string{}, initial.Paths...)
+	}
 	if protoRuntime.uploadDir == "" {
 		protoRuntime.uploadDir = filepath.Join(os.TempDir(), "netcap-proto-uploads")
 	}
@@ -317,6 +329,8 @@ func (s *Server) handleProtoUpload(w http.ResponseWriter, r *http.Request) {
 
 // handleProtoMappings handles GET/POST/DELETE /api/proto/mappings.
 func (s *Server) handleProtoMappings(w http.ResponseWriter, r *http.Request) {
+	protoRuntime.editMu.Lock()
+	defer protoRuntime.editMu.Unlock()
 	switch r.Method {
 	case http.MethodGet:
 		w.Header().Set("Content-Type", "application/json")
@@ -343,6 +357,27 @@ func (s *Server) handleProtoMappings(w http.ResponseWriter, r *http.Request) {
 		}
 
 		mapping := fmt.Sprintf("%d:%s", req.Port, req.MessageType)
+		registry := pb.GetSchemaRegistry()
+		if registry == nil {
+			jsonError(w, "load a schema before mapping a message type", 422)
+			return
+		}
+		if _, ok := registry.LookupMessage(req.MessageType); !ok {
+			jsonError(w, "message type is not in the loaded schema registry", 400)
+			return
+		}
+		settings := currentProtobufSettings()
+		updated := []string{}
+		for _, m := range settings.Mappings {
+			if !strings.HasPrefix(m, fmt.Sprintf("%d:", req.Port)) {
+				updated = append(updated, m)
+			}
+		}
+		updated = append(updated, mapping)
+		protoRuntime.mu.Lock()
+		protoRuntime.mappings = updated
+		protoRuntime.mu.Unlock()
+		pb.ParseMessageTypeMappings(updated)
 
 		if decoderconfig.Instance != nil {
 			decoderconfig.LockInstance()
@@ -376,6 +411,17 @@ func (s *Server) handleProtoMappings(w http.ResponseWriter, r *http.Request) {
 			jsonError(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
 			return
 		}
+		settings := currentProtobufSettings()
+		updated := []string{}
+		for _, m := range settings.Mappings {
+			if !strings.HasPrefix(m, fmt.Sprintf("%d:", req.Port)) {
+				updated = append(updated, m)
+			}
+		}
+		protoRuntime.mu.Lock()
+		protoRuntime.mappings = updated
+		protoRuntime.mu.Unlock()
+		pb.ParseMessageTypeMappings(updated)
 
 		if decoderconfig.Instance != nil {
 			decoderconfig.LockInstance()
@@ -405,6 +451,8 @@ func (s *Server) handleProtoMappings(w http.ResponseWriter, r *http.Request) {
 
 // handleProtoPreferences handles POST /api/proto/preferences.
 func (s *Server) handleProtoPreferences(w http.ResponseWriter, r *http.Request) {
+	protoRuntime.editMu.Lock()
+	defer protoRuntime.editMu.Unlock()
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -419,6 +467,9 @@ func (s *Server) handleProtoPreferences(w http.ResponseWriter, r *http.Request) 
 	}
 
 	pb.SetShowAlternatives(req.ShowAlternatives)
+	protoRuntime.mu.Lock()
+	protoRuntime.alternatives = &req.ShowAlternatives
+	protoRuntime.mu.Unlock()
 	if decoderconfig.Instance != nil {
 		decoderconfig.LockInstance()
 		decoderconfig.Instance.ProtoShowAlternatives = req.ShowAlternatives
@@ -434,15 +485,14 @@ func (s *Server) handleProtoPreferences(w http.ResponseWriter, r *http.Request) 
 
 // handleProtoRecompile handles POST /api/proto/recompile.
 func (s *Server) handleProtoRecompile(w http.ResponseWriter, r *http.Request) {
+	protoRuntime.editMu.Lock()
+	defer protoRuntime.editMu.Unlock()
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	protoRuntime.mu.RLock()
-	paths := make([]string, len(protoRuntime.searchPaths))
-	copy(paths, protoRuntime.searchPaths)
-	protoRuntime.mu.RUnlock()
+	paths := currentProtobufSettings().Paths
 
 	if len(paths) == 0 {
 		jsonError(w, "No search paths configured", http.StatusBadRequest)
@@ -471,7 +521,14 @@ func recompileSchemas(paths []string) {
 		return
 	}
 
-	registry, err := pb.NewSchemaRegistry(paths)
+	snapshot, err := snapshotSchemaSources(&jobSettings{SchemaPaths: paths})
+	if err != nil {
+		protoRuntime.errors = []string{err.Error()}
+		protoRuntime.lastCompiled = time.Now()
+		return
+	}
+	defer snapshot.cleanup()
+	registry, err := pb.NewSchemaRegistry(snapshot.Protobuf.Paths)
 	if err != nil {
 		protoRuntime.errors = []string{err.Error()}
 		protoRuntime.lastCompiled = time.Now()

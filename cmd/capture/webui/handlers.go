@@ -198,20 +198,27 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 	maps.Copy(reportedIssues, s.reportedIssues)
 	children := make(map[string]childAnalysis)
 	maps.Copy(children, s.childAnalyses)
+	liveInputs := map[string]ownedLiveCapture{}
+	for path, state := range s.liveInputs {
+		liveInputs[path] = *state
+	}
 	s.mu.RUnlock()
 
 	files := make([]FileInfo, 0)
 	for _, path := range inputFiles {
 		info, err := os.Stat(path)
 		child, isChild := children[path]
-		if err != nil && !isChild {
+		live, isLive := liveInputs[path]
+		if err != nil && !isChild && !isLive {
 			continue
 		}
 		var size, modifiedTime int64
 		if err == nil {
 			size, modifiedTime = info.Size(), info.ModTime().Unix()
-		} else {
+		} else if isChild {
 			modifiedTime = child.CreatedAt.Unix()
+		} else if isLive {
+			modifiedTime = live.StartedAt.Unix()
 		}
 
 		// Calculate file hash - use this as the file ID
@@ -226,6 +233,9 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 		}
 		if child, ok := children[path]; ok {
 			fileID = child.AnalysisID
+		}
+		if isLive {
+			fileID = live.SessionID
 		}
 
 		// Store the mapping from ID to path
@@ -246,6 +256,10 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			HasReportedIssue: reportedIssues[hash],
 			ParentInputFile:  children[path].ParentInputFile,
 			ParentRunID:      children[path].ParentRunID, AnalysisSelector: children[path].Selector, PacketSelection: children[path].PacketSelection,
+		}
+		if isLive {
+			fileInfo.Name = "Live " + live.Interface
+			fileInfo.SourceKind = "live-retained-segments"
 		}
 
 		// Add error information if available
@@ -1043,27 +1057,64 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if we're in service mode with a current session
+	selected, selectionErr := s.resolveCaptureSelection(r)
+	if selectionErr != nil && (r.URL.Query().Has("sessionId") || r.URL.Query().Has("inputFile") || r.URL.Query().Has("runId")) {
+		writeSelectionError(w, selectionErr)
+		return
+	}
 	var sessionConfig *SessionInfo
 	sessionID := ""
 
 	s.mu.RLock()
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+	if s.isServiceMode && selected.SessionID != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(selected.SessionID); ok {
 			sessionConfig = session
-			sessionID = s.currentSession
+			sessionID = selected.SessionID
 		}
 	}
 	s.mu.RUnlock()
 
 	// Configuration is always read-only in webUI
+	if !s.isServiceMode && selectionErr == nil && selected.InputFile != "" {
+		s.mu.RLock()
+		sessionConfig = &SessionInfo{InputFile: selected.InputFile, OutputDir: selected.OutputDir, BPFFilter: s.fileBPFFilters[selected.InputFile]}
+		s.mu.RUnlock()
+	}
 	// Pass session config if available for session-specific configuration
 	config := s.getConfigOptions(sessionConfig)
+	if selectionErr == nil {
+		for i := range config {
+			switch config[i].Name {
+			case "input":
+				config[i].Value = selected.InputFile
+			case "out":
+				config[i].Value = selected.OutputDir
+			}
+		}
+	}
 
 	response := map[string]any{
-		"readOnly":      true,
-		"isServiceMode": s.isServiceMode,
-		"options":       config,
+		"readOnly":            true,
+		"isServiceMode":       s.isServiceMode,
+		"options":             config,
+		"configurationOrigin": "server runtime with selected input/output and stored session settings; use capture evidence for historical producer settings",
+	}
+	if selectionErr == nil {
+		response["inputFile"] = selected.InputFile
+		response["sessionSpecific"] = true
+		if data, err := artifactio.Read(r.Context(), selected.OutputDir, "analysis-runtime.json", 2<<20); err == nil {
+			var admitted jobSettings
+			if json.Unmarshal(data, &admitted) == nil && admitted.Version == 1 {
+				values := map[string]any{"bpf": admitted.BPF, "include": admitted.IncludeDecoders, "exclude": admitted.ExcludeDecoders, "dpi": admitted.DPI, "payload": admitted.Payload}
+				for i := range config {
+					if value, ok := values[config[i].Name]; ok {
+						config[i].Value = value
+					}
+				}
+				response["admittedSettings"] = map[string]any{"dpi": admitted.DPI, "payload": admitted.Payload, "networkDetection": admitted.NetworkDetection, "dnsResolutionContext": admitted.DNSContext, "bpf": admitted.BPF, "includeDecoders": admitted.IncludeDecoders, "excludeDecoders": admitted.ExcludeDecoders, "schemaFiles": len(admitted.SchemaHashes)}
+				response["configurationOrigin"] = "admission snapshot for controlled options; other options are server runtime defaults; capture evidence records producer settings"
+			}
+		}
 	}
 
 	// Add session information if in service mode with active session
@@ -1083,11 +1134,19 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 // If sessionConfig is provided, it will use session-specific configuration values
 func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 	// Use runtime config values if available, otherwise fall back to defaults
-	rc := s.runtimeConfig
+	s.mu.RLock()
+	var rc *RuntimeConfig
+	if s.runtimeConfig != nil {
+		copy := *s.runtimeConfig
+		rc = &copy
+	}
+	dpiConfigured := s.dpiConfigured
+	serverOutput := s.outDir
+	s.mu.RUnlock()
 
 	// Determine input and output based on session or global config
 	inputValue := s.getInputValue()
-	outputValue := s.outDir
+	outputValue := serverOutput
 
 	if sessionConfig != nil {
 		inputValue = sessionConfig.InputFile
@@ -1382,7 +1441,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "dpi",
-			Value:       s.dpiConfigured,
+			Value:       dpiConfigured,
 			Default:     false,
 			Type:        "bool",
 			Description: "Use DPI libs to enrich IPProfile audit records",
@@ -1742,6 +1801,21 @@ func (s *Server) handlePayloadToggle(w http.ResponseWriter, r *http.Request) {
 // handleStopCapture handles requests to stop the live capture
 func (s *Server) handleStopCapture(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
+		if r.URL.Query().Has("sessionId") || r.URL.Query().Has("inputFile") {
+			selected, err := s.resolveCaptureSelection(r)
+			if err != nil {
+				writeSelectionError(w, err)
+				return
+			}
+			s.mu.RLock()
+			owned := s.ownedLive
+			matches := owned != nil && owned.Output == selected.OutputDir
+			s.mu.RUnlock()
+			if !matches {
+				http.Error(w, "selector is not the owned live capture", 409)
+				return
+			}
+		}
 		s.mu.Lock()
 
 		// Check if we're in live mode

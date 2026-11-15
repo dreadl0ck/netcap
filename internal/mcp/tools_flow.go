@@ -28,7 +28,9 @@ func (s *Server) registerFlowTools() error {
 			"/api/visualize/protocol-hierarchy", nil),
 		{
 			Tool: mcplib.NewTool("get_conversation",
-				mcplib.WithDescription("Return the detailed conversation (bidirectional flow) for a 4-tuple."),
+				mcplib.WithDescription("Return a bounded presentation-conversation page for an explicit TCP/UDP tuple. Use get_stream_content for verified directional bytes and loss metadata."),
+				mcplib.WithString("protocol", mcplib.Enum("TCP", "UDP"), mcplib.Description("Transport, default TCP.")),
+				apiInteger("offset", "Conversation byte offset.", 0, 1073741824, false), apiInteger("limit", "Conversation byte count, default 1024.", 1, 32768, false),
 				mcplib.WithString("session_id", mcplib.Description("Session identifier."), mcplib.Required()),
 				mcplib.WithString("src_ip", mcplib.Description("Source IP."), mcplib.Required()),
 				mcplib.WithString("src_port", mcplib.Description("Source port."), mcplib.Required()),
@@ -50,7 +52,7 @@ func (s *Server) registerFlowTools() error {
 	return nil
 }
 
-func (s *Server) handleGetConversation(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+func (s *Server) handleGetConversation(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
 		return errResult(err), nil
@@ -77,8 +79,19 @@ func (s *Server) handleGetConversation(_ context.Context, req mcplib.CallToolReq
 	q.Set("srcPort", srcPort)
 	q.Set("dstIP", dstIP)
 	q.Set("dstPort", dstPort)
+	protocol := req.GetString("protocol", "TCP")
+	if protocol != "TCP" && protocol != "UDP" {
+		return errResult(fmt.Errorf("protocol must be TCP or UDP")), nil
+	}
+	q.Set("protocol", protocol)
+	offset, limit := req.GetInt("offset", 0), req.GetInt("limit", 1024)
+	if offset < 0 || limit < 1 || limit > 32768 {
+		return errResult(fmt.Errorf("invalid conversation page bounds")), nil
+	}
+	q.Set("offset", fmt.Sprint(offset))
+	q.Set("limit", fmt.Sprint(limit))
 
-	raw, gErr := s.newClient().Get("/api/connections/conversation", q)
+	raw, gErr := s.newClient().GetContext(ctx, "/api/connections/conversation", q)
 	if gErr != nil {
 		return errResult(fmt.Errorf("conversation: %w", gErr)), nil
 	}

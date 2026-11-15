@@ -36,15 +36,16 @@ type CarveStore struct {
 }
 
 type carveEntry struct {
-	ID         string
-	Path       string // on-disk path (may be "")
-	Bytes      []byte // in-memory copy (nil after expiry to free RAM)
-	SizeBytes  int64
-	SHA256     string
-	Kind       string
-	Source     string // download URL for reproducibility
-	SessionID  string
-	CreatedAt  time.Time
+	ID        string
+	Path      string // on-disk path (may be "")
+	Bytes     []byte // in-memory copy (nil after expiry to free RAM)
+	SizeBytes int64
+	SHA256    string
+	Kind      string
+	Source    string // download URL for reproducibility
+	SessionID string
+	CreatedAt time.Time
+	MIMEType  string
 }
 
 // NewCarveStore initialises a store; dir defaults when empty.
@@ -69,6 +70,10 @@ func NewCarveStore(dir string, maxEntries int, maxAge time.Duration) *CarveStore
 // Put stores a carved PCAP and returns the canonical entry plus an MCP
 // resource URI suitable for inclusion in tool responses.
 func (c *CarveStore) Put(sessionID, kind, source string, body []byte) (*carveEntry, string, error) {
+	return c.PutTyped(sessionID, kind, source, "application/vnd.tcpdump.pcap", body)
+}
+
+func (c *CarveStore) PutTyped(sessionID, kind, source, mime string, body []byte) (*carveEntry, string, error) {
 	if len(body) == 0 {
 		return nil, "", errors.New("empty body")
 	}
@@ -77,7 +82,18 @@ func (c *CarveStore) Put(sessionID, kind, source string, body []byte) (*carveEnt
 		return nil, "", err
 	}
 	sum := sha256.Sum256(body)
-	filename := fmt.Sprintf("%s-%s.pcap", kind, id[:8])
+	ext := ".pcap"
+	switch mime {
+	case "application/zip":
+		ext = ".zip"
+	case "application/json":
+		ext = ".json"
+	case "application/octet-stream":
+		ext = ".bin"
+	case "text/plain":
+		ext = ".txt"
+	}
+	filename := fmt.Sprintf("%s-%s%s", kind, id[:8], ext)
 	path := filepath.Join(c.dir, filename)
 	if err := os.WriteFile(path, body, 0o600); err != nil {
 		// Fall back to memory-only if disk write fails.
@@ -93,6 +109,7 @@ func (c *CarveStore) Put(sessionID, kind, source string, body []byte) (*carveEnt
 		Source:    source,
 		SessionID: sessionID,
 		CreatedAt: time.Now(),
+		MIMEType:  mime,
 	}
 	c.mu.Lock()
 	c.entries = append(c.entries, entry)
@@ -105,9 +122,12 @@ func (c *CarveStore) Put(sessionID, kind, source string, body []byte) (*carveEnt
 func (c *CarveStore) Get(id string) *carveEntry {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.gcLocked()
 	for _, e := range c.entries {
 		if e.ID == id {
-			return e
+			copy := *e
+			copy.Bytes = append([]byte{}, e.Bytes...)
+			return &copy
 		}
 	}
 	return nil

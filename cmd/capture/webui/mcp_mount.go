@@ -31,8 +31,7 @@ const EnvMCPAdminToken = "NETCAP_MCP_ADMIN_TOKEN"
 //
 // The MCP server tools are thin shims that talk to this same webui over
 // loopback. We pass loopbackBase so a single physical webui instance can
-// service both browser users (over its public bind) and MCP tool calls
-// (over loopback, no auth, no rate limit).
+// service browser users and MCP calls; loopback calls retain API authentication.
 func (s *Server) mountMCP(mux *http.ServeMux, loopbackBase string) {
 	token := os.Getenv(EnvMCPAdminToken)
 	if token == "" {
@@ -41,10 +40,15 @@ func (s *Server) mountMCP(mux *http.ServeMux, loopbackBase string) {
 
 	resolved := loopbackize(loopbackBase)
 	mcpLog := log.New(log.Writer(), "[MCP] ", log.LstdFlags|log.Lmicroseconds)
-	allowFetch := os.Getenv("NETCAP_MCP_ALLOW_FETCH") == "1"
+	allowFetch := s.operatorNetworkAllowed()
+	backendToken := token
+	if !s.isServiceMode {
+		backendToken = s.LocalAccessToken()
+	}
 	srv, err := netcapmcp.New(netcapmcp.Options{
 		BaseURL:      resolved,
 		AdminToken:   token,
+		BackendToken: backendToken,
 		Logger:       mcpLog,
 		AllowNetwork: allowFetch,
 	})
@@ -52,6 +56,9 @@ func (s *Server) mountMCP(mux *http.ServeMux, loopbackBase string) {
 		log.Printf("[MCP] Failed to construct server: %v (endpoint not mounted)", err)
 		return
 	}
+	s.mu.Lock()
+	s.mcpCleanup = srv.Close
+	s.mu.Unlock()
 
 	// Streamable HTTP exposes both POST and GET on /mcp (SSE for server
 	// notifications). Mount both the bare path and the trailing-slash

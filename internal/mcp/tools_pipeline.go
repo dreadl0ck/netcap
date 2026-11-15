@@ -29,20 +29,10 @@ func (s *Server) registerPipelineTools() error {
 					"Ingest a local PCAP/PCAPNG file into a new netcap analysis session. "+
 						"Returns immediately with a session_id; ingest runs asynchronously. "+
 						"Poll get_session_info until the session reports completed=true "+
-						"before running analytical tools. dpi/bpf/include_decoders/"+
-						"exclude_decoders are recorded and may be applied on the next "+
-						"reanalyze_session — they are not honoured on initial ingest in v1."),
+						"before running analytical tools. Configure future analyses with set_bpf_config, set_decoder_config and set_feature first. Legacy per-ingest options are rejected because the upload API cannot honor them."),
 				mcplib.WithString("path",
 					mcplib.Description("Absolute filesystem path of the .pcap or .pcapng file to ingest."),
 					mcplib.Required()),
-				mcplib.WithBoolean("dpi",
-					mcplib.Description("Request DPI on the next reanalyze. Default false.")),
-				mcplib.WithString("bpf",
-					mcplib.Description("Optional BPF filter to remember for reanalyze (e.g. \"tcp port 443\").")),
-				mcplib.WithString("include_decoders",
-					mcplib.Description("CSV of decoder names to include exclusively on reanalyze.")),
-				mcplib.WithString("exclude_decoders",
-					mcplib.Description("CSV of decoder names to exclude on reanalyze.")),
 				mcplib.WithReadOnlyHintAnnotation(false),
 				mcplib.WithDestructiveHintAnnotation(false),
 				mcplib.WithIdempotentHintAnnotation(false),
@@ -98,8 +88,8 @@ func (s *Server) registerPipelineTools() error {
 			Tool: mcplib.NewTool("list_decoders",
 				mcplib.WithDescription(
 					"List all available packet and stream decoders, with descriptions. "+
-						"Use the names returned here as values for include_decoders / "+
-						"exclude_decoders on ingest_pcap and reanalyze_session."),
+						"Use the names returned here as includeDecoders / excludeDecoders "+
+						"on set_decoder_config before ingest_pcap or reanalyze_session."),
 				mcplib.WithReadOnlyHintAnnotation(true),
 				mcplib.WithDestructiveHintAnnotation(false),
 				mcplib.WithIdempotentHintAnnotation(true),
@@ -127,7 +117,7 @@ func (s *Server) registerPipelineTools() error {
 			Tool: mcplib.NewTool("reanalyze_session",
 				mcplib.WithDescription(
 					"Create a separately retained child analysis; parent results remain available. Server-wide BPF/DPI/decoder "+
-						"settings apply (configure them out-of-band before calling). "+
+						"settings apply (use set_bpf_config, set_decoder_config and set_feature before calling). "+
 						"Optional bounded BPF/time subsets require run_id and source_sha256 from parent provenance. Poll get_session_info with the returned child ID."),
 				mcplib.WithString("session_id",
 					mcplib.Description("Session identifier."),
@@ -159,7 +149,12 @@ func (s *Server) registerPipelineTools() error {
 // handleIngestPCAP uploads the PCAP, normalises the heterogeneous
 // service/local response shapes into a single shape that always includes
 // `session_id`, and tells the LLM how to proceed.
-func (s *Server) handleIngestPCAP(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+func (s *Server) handleIngestPCAP(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+	for key := range req.GetArguments() {
+		if key != "path" {
+			return errResult(fmt.Errorf("per-ingest option %q is unsupported; configure future analyses before ingest using set_bpf_config, set_decoder_config or set_feature (DPI is a net mcp startup setting)", key)), nil
+		}
+	}
 	path, err := req.RequireString("path")
 	if err != nil {
 		return errResult(err), nil
@@ -178,7 +173,7 @@ func (s *Server) handleIngestPCAP(_ context.Context, req mcplib.CallToolRequest)
 
 	s.logger.Printf("ingest_pcap: uploading %s (%d bytes)", abs, fi.Size())
 	client := s.newClient()
-	raw, err := client.UploadPCAP(abs)
+	raw, err := client.UploadPCAPContext(ctx, abs)
 	if err != nil {
 		return errResult(fmt.Errorf("uploading pcap %s: %w", abs, err)), nil
 	}
@@ -207,18 +202,6 @@ func (s *Server) handleIngestPCAP(_ context.Context, req mcplib.CallToolRequest)
 		"session_id":      sessionID,
 		"upload_response": raw1,
 		"next_step":       "Call get_session_info with this session_id; poll until completed=true, then use analytical tools.",
-	}
-	if dpi := req.GetBool("dpi", false); dpi {
-		out["dpi_requested"] = true
-	}
-	if bpf := req.GetString("bpf", ""); bpf != "" {
-		out["bpf_requested"] = bpf
-	}
-	if inc := req.GetString("include_decoders", ""); inc != "" {
-		out["include_decoders_requested"] = inc
-	}
-	if exc := req.GetString("exclude_decoders", ""); exc != "" {
-		out["exclude_decoders_requested"] = exc
 	}
 	return jsonResult(out), nil
 }
@@ -584,7 +567,7 @@ func (s *Server) handleListAuditRecords(_ context.Context, req mcplib.CallToolRe
 
 // handleReanalyzeSession POSTs the right JSON shape to /api/reanalyze
 // based on whether the session id is a path (local) or a hex id (service).
-func (s *Server) handleReanalyzeSession(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+func (s *Server) handleReanalyzeSession(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	allowed := map[string]bool{"session_id": true, "run_id": true, "source_sha256": true, "selection_bpf": true, "start_ns": true, "end_ns": true, "max_packets": true, "max_output_bytes": true}
 	for name := range req.GetArguments() {
 		if !allowed[name] {
@@ -599,7 +582,7 @@ func (s *Server) handleReanalyzeSession(_ context.Context, req mcplib.CallToolRe
 	var capabilities struct {
 		ChildAnalysisVersion int `json:"childAnalysisVersion"`
 	}
-	status, err := client.Get("/api/status", nil)
+	status, err := client.GetContext(ctx, "/api/status", nil)
 	if err != nil || json.Unmarshal(status, &capabilities) != nil || capabilities.ChildAnalysisVersion != 1 {
 		return errResult(fmt.Errorf("backend does not advertise version 1 child analysis")), nil
 	}
@@ -621,7 +604,7 @@ func (s *Server) handleReanalyzeSession(_ context.Context, req mcplib.CallToolRe
 	if len(selection) > 1 {
 		body["selection"] = selection
 	}
-	raw, err := client.PostJSON("/api/reanalyze", body)
+	raw, err := client.PostJSONContext(ctx, "/api/reanalyze", body)
 	if err != nil {
 		return errResult(fmt.Errorf("reanalyze: %w", err)), nil
 	}

@@ -30,10 +30,6 @@ func (s *Server) registerInventoryTools() error {
 		simpleSessionTool(s, "list_services",
 			"List all detected services (host+port+banner+product) in the session.",
 			"/api/services", nil),
-		simpleSessionTool(s, "list_network_interfaces",
-			"List the local network interfaces visible to netcap (host-level info, not session-scoped). "+
-				"Useful only when running on a machine with NICs (live capture).",
-			"/api/network-interfaces", nil),
 	}
 	for _, t := range tools {
 		if err := s.addTool(t); err != nil {
@@ -64,7 +60,7 @@ func simpleSessionTool(s *Server, name, desc, endpoint string, queryArgs []query
 	}
 	return server.ServerTool{
 		Tool: mcplib.NewTool(name, opts...),
-		Handler: func(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+		Handler: func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 			ref, err := s.requireSessionID(req)
 			if err != nil {
 				return errResult(err), nil
@@ -75,7 +71,7 @@ func simpleSessionTool(s *Server, name, desc, endpoint string, queryArgs []query
 					q.Set(k, v)
 				}
 			}
-			body, gErr := s.newClient().Get(endpoint, q)
+			body, gErr := s.newClient().GetContext(ctx, endpoint, q)
 			if gErr != nil {
 				return errResult(fmt.Errorf("%s: %w", endpoint, gErr)), nil
 			}
