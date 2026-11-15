@@ -3607,10 +3607,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-github.com/dreadl0ck/gopacket v1.1.16-0.20261108103455-f2eeabc1ff6e
+github.com/dreadl0ck/gopacket v1.1.16-0.20261108153543-61002f918d93
 License inventory: BSD-3-Clause
 Used by: darwin-dpi, darwin-nodpi, linux-dpi, linux-dpi-noyara, linux-hyperscan, linux-nodpi, windows-nodpi
-Source: https://pkg.go.dev/github.com/dreadl0ck/gopacket@v1.1.16-0.20261108103455-f2eeabc1ff6e
+Source: https://pkg.go.dev/github.com/dreadl0ck/gopacket@v1.1.16-0.20261108153543-61002f918d93
 
 --- LICENSE ---
 Copyright (c) 2012 Google, Inc. All rights reserved.

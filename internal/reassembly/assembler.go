@@ -166,6 +166,8 @@ func (a *Assembler) ReleaseChecked() error {
 
 // Dump returns a short string describing the page usage of the Assembler.
 func (a *Assembler) Dump() string {
+	a.pc.mu.Lock()
+	defer a.pc.mu.Unlock()
 	s := ""
 	s += fmt.Sprintf("pageCache: used: %d, size: %d, free: %d", a.pc.used, a.pc.size, len(a.pc.free))
 
@@ -333,12 +335,12 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 
 		return
 	}
+	if t.SYN && half.nextSeq != invalidSequence {
+		return
+	}
 	if t.SYN && !half.synSeen {
 		half.synSeen = true
 		half.synSeq = t.Seq
-	}
-	if t.RST {
-		conn.resetSeen = true
 	}
 	if observesClose && t.FIN && !half.finSeen && !half.finPending {
 		half.finPending, half.finSeq = true, Sequence(t.Seq).add(len(t.Payload))
@@ -384,6 +386,8 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 			if Debug {
 				log.Printf("%v gap in sequence numbers (%v, %v) diff %v, storing into connection", flowKey, half.nextSeq, seq, diff)
 			}
+		} else if !observesClose && (t.RST && diff < 0 || t.FIN && half.nextSeq.difference(seq.add(len(bytes))) < 0) {
+			return
 		} else {
 			if Debug {
 				log.Printf("%v found contiguous data (%v, %v), returning immediately: len:%d", flowKey, seq, half.nextSeq, len(bytes))
@@ -392,6 +396,15 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		}
 	}
 
+	if !observesClose && t.RST && action.queue {
+		return
+	}
+	if t.RST {
+		conn.resetSeen = true
+	}
+	if !observesClose && t.FIN && action.queue {
+		half.finPending, half.finSeq = true, seq.add(len(bytes))
+	}
 	action = a.handleBytes(bytes, seq, half, t.SYN, (t.RST || t.FIN) && !observesClose, action, ac)
 	a.Lock()
 	l := len(a.ret)
@@ -406,7 +419,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 			half.nextSeq = half.nextSeq.add(1)
 		}
 	}
-	if half.finPending && half.nextSeq != invalidSequence && half.finSeq.difference(half.nextSeq) >= 0 {
+	if observesClose && half.finPending && half.nextSeq != invalidSequence && half.finSeq.difference(half.nextSeq) >= 0 {
 		half.finPending, half.finSeen = false, true
 		conn.observeClose = true
 		if observer, ok := half.stream.(interface{ FINContiguous(TCPFlowDirection) }); ok {
@@ -682,9 +695,9 @@ func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection
 		a.checkOverlap(half, true, ac)
 
 		if (a.MaxBufferedPagesPerConnection > 0 && half.pages >= a.MaxBufferedPagesPerConnection) ||
-			(a.MaxBufferedPagesTotal > 0 && a.pc.used >= a.MaxBufferedPagesTotal) {
+			(a.MaxBufferedPagesTotal > 0 && a.pc.usedCount() >= a.MaxBufferedPagesTotal) {
 			if Debug {
-				log.Printf("hit max buffer size: %+v, %v, %v", a.assemblerOptions, half.pages, a.pc.used)
+				log.Printf("hit max buffer size: %+v, %v, %v", a.assemblerOptions, half.pages, a.pc.usedCount())
 			}
 
 			action.queue = false
@@ -777,6 +790,17 @@ func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
 	a.Unlock()
 
 	a.cacheSG.all = a.ret
+	if half.finPending && nextSeq == half.finSeq && len(a.ret) > 0 {
+		if observer, ok := half.stream.(PostCloseObserver); !ok || !observer.ObservePostClose() {
+			switch last := a.ret[len(a.ret)-1].(type) {
+			case *page:
+				last.end = true
+			case *livePacket:
+				last.end = true
+			}
+			half.finPending = false
+		}
+	}
 	a.cacheSG.Direction = half.dir
 	a.cacheSG.Skip = skip
 	a.cacheSG.saved = saved
@@ -867,7 +891,12 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 		first, last, nb := r.convertToPages(a.pc, skip, ac)
 		if first == nil {
 			pageDiscard(half, r.length()-skip, ac)
+			skip = 0
 			continue
+		}
+		skip = 0
+		if _, live := r.(*livePacket); live {
+			half.pages += nb
 		}
 
 		if half.saved == nil {
@@ -960,7 +989,7 @@ func (a *Assembler) addPending(half *halfconnection, firstSeq Sequence) int {
 		var next *page
 		for p := half.saved; p != nil; p = next {
 			next = p.next
-			p.release(a.pc)
+			half.pages -= p.release(a.pc)
 		}
 
 		half.saved = nil
@@ -1100,7 +1129,7 @@ func (a *Assembler) addNextFromConn(conn *halfconnection) {
 
 // FlushOptions provide options for flushing connections.
 type FlushOptions struct {
-	T  time.Time // Pending sequence heads strictly older than T are flushed.
+	T  time.Time // Pending bytes strictly older than T, and preceding gaps, are flushed.
 	TC time.Time // Fully closed connections with both lastSeen times before TC are removed.
 	TI time.Time // Open connections idle before TI are closed; zero disables idle expiry.
 }
@@ -1155,6 +1184,11 @@ func (a *Assembler) flushClose(conn *connection, half *halfconnection, t time.Ti
 
 	flushed, closed := false, false
 
+	for p := half.last; p != nil && p.prev != nil; p = p.prev {
+		if p.seen.Before(p.prev.seen) {
+			p.prev.seen = p.seen
+		}
+	}
 	for half.first != nil && half.first.seen.Before(t) {
 		flushed = true
 

@@ -26,9 +26,9 @@ type Sequence int64
 // wrapping the uint32 space.
 func (s Sequence) difference(t Sequence) int {
 	if s > uint32Max-uint32Max/4 && t < uint32Max/4 {
-		t += uint32Max
+		t += uint32Max + 1
 	} else if t > uint32Max-uint32Max/4 && s < uint32Max/4 {
-		s += uint32Max
+		s += uint32Max + 1
 	}
 	return int(t - s)
 }

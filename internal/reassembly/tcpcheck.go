@@ -59,6 +59,9 @@ func (t *TCPOptionCheck) Accept(tcp *layers.TCP, dir TCPFlowDirection, nextSeq S
 		return err
 	}
 	options := t.getOptions(dir)
+	if tcp.SYN && nextSeq != invalidSequence {
+		return nil
+	}
 
 	if tcp.SYN {
 		mss := -1
@@ -94,7 +97,7 @@ func (t *TCPOptionCheck) Accept(tcp *layers.TCP, dir TCPFlowDirection, nextSeq S
 		if diff == -1 && (length == 1 || length == 0) {
 			// This is probably a Keep-alive
 			// TODO: check byte is ok
-		} else if diff < 0 {
+		} else if diff < 0 && diff+length <= 0 {
 			return fmt.Errorf("re-emitted packet (diff:%d,seq:%d,rev-ack:%d)", diff,
 				tcp.Seq, nextSeq)
 		} else if revOptions.mss > 0 && length > revOptions.mss {

@@ -909,9 +909,8 @@ func TestFlush(t *testing.T) {
 						Seq:       1001,
 						BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}},
 					},
-					// gets queued just before the first packet
-					// and should close its half-connection (RST) during next flush
-					want: []Reassembly{},
+					// Out-of-order RST is ignored; the original queued data expires.
+					want: []Reassembly{{Skip: -1, Bytes: []byte{5, 6, 7}}},
 				},
 				{
 					// triggers flush/close
@@ -921,13 +920,7 @@ func TestFlush(t *testing.T) {
 						Seq:       1010,
 						BaseLayer: layers.BaseLayer{Payload: []byte{10, 11, 12}},
 					},
-					want: []Reassembly{
-						{
-							Skip:  -1,
-							End:   true,
-							Bytes: []byte{1, 2, 3},
-						},
-					},
+					want: []Reassembly{},
 				},
 			},
 			delay:          time.Millisecond * 40,

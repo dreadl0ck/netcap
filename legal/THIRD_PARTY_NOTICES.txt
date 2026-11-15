@@ -89,9 +89,9 @@ release third-party source archive and is also available from crates.io.
 
 Gopacket maintenance fork
 ------------------------
-github.com/gopacket/gopacket v1.7.2 is replaced by github.com/dreadl0ck/gopacket
-at f2eeabc1ff6e52e2b18f4642100b3d1ecf584f1a (BSD-3-Clause). This retains the
-v1.7.2 baseline and adds live-handle Close wakeups; it does not adopt v1.7.7.
+github.com/gopacket/gopacket v1.7.7 is replaced by github.com/dreadl0ck/gopacket
+at 61002f918d9387b20017790d40c5f5737870de95 (BSD-3-Clause). This uses the
+v1.7.7 baseline plus live-only Close wakeups from upstream PR #178.
 The replacement version and license text are in THIRD_PARTY_LICENSES.txt.
 
 YARA-X native libraries

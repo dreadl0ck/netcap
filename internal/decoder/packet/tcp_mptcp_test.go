@@ -76,8 +76,8 @@ func TestTCPMPTCP(t *testing.T) {
 			if err := tcp.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
 				t.Fatal(err)
 			}
-			if len(tcp.Options[1].OptionData) != 0 {
-				t.Fatal("upstream raw-data assumption changed")
+			if !bytes.Equal(tcp.Options[1].OptionData, tt.option[2:]) {
+				t.Fatal("upstream MPTCP option bytes differ from the wire")
 			}
 			record := tcpDecoder.Handler(&tcp, 123).(*types.TCP)
 			o := record.Options[1]

@@ -8,6 +8,7 @@ package reassembly
 
 import (
 	"log"
+	"sync"
 	"time"
 )
 
@@ -17,6 +18,7 @@ import (
 // pageCache is a concurrency-unsafe store of page objects we use to avoid
 // memory allocation as much as we can.
 type pageCache struct {
+	mu           sync.Mutex
 	budget       *PageBudget
 	free         []*page
 	size, used   int
@@ -45,11 +47,14 @@ func (c *pageCache) grow() {
 
 // next returns a clean, ready-to-use page object.
 func (c *pageCache) next(ts time.Time, sizes ...int) (p *page) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	size := pageBytes
 	if len(sizes) > 0 {
 		size = min(pageBytes, max(0, sizes[0]))
 	}
 	prepare := func(p *page) *page {
+		p.owner = c
 		if cap(p.buf) < size || cap(p.buf) > max(64, 2*size) {
 			p.buf = make([]byte, size)
 		}
@@ -85,6 +90,11 @@ func (c *pageCache) next(ts time.Time, sizes ...int) (p *page) {
 
 // replace replaces a page into the pageCache.
 func (c *pageCache) replace(p *page) {
+	if p.owner != nil {
+		c = p.owner
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.used--
 	if c.budget != nil {
 		c.size--
@@ -103,4 +113,10 @@ func (c *pageCache) replace(p *page) {
 		return
 	}
 	c.free = append(c.free, p)
+}
+
+func (c *pageCache) usedCount() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.used
 }

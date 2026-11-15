@@ -130,7 +130,7 @@ func TestFreshSYNAfterResetRetiresOldTupleIncarnation(t *testing.T) {
 		a.assemble(flow, tcp)
 	}
 	packet(100, true, false, "")
-	packet(9000, false, true, "")
+	packet(101, false, true, "")
 	packet(100, true, false, "")
 	if len(streams) != 1 {
 		t.Fatal("late SYN retransmission created a new incarnation")

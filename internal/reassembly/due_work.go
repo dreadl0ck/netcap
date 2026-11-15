@@ -86,8 +86,12 @@ func (p *StreamPool) refreshDueLocked(conn *connection, releaseClaim bool) {
 	state := dueState{}
 	for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
 		// Closed halves can still contain pointers to recycled pages.
-		if !half.closed && half.first != nil && (!state.hasPending || half.first.seen.Before(state.pending)) {
-			state.pending, state.hasPending = half.first.seen, true
+		if !half.closed {
+			for page := half.first; page != nil; page = page.next {
+				if !state.hasPending || page.seen.Before(state.pending) {
+					state.pending, state.hasPending = page.seen, true
+				}
+			}
 		}
 	}
 	if closed {

@@ -1,3 +1,10 @@
+## Gopacket dependency
+
+| Area | Change |
+| --- | --- |
+| Packet decoding | Upgrade from upstream v1.7.2 to v1.7.7, retaining the macOS dead-handle Close fix through `dreadl0ck/gopacket@61002f918d93` (upstream PR #178) |
+| Copied TCP reassembly | Port sequence-wrap, retained-page accounting, cross-assembler page ownership, oldest-queued expiry, stale control-segment and queued-FIN fixes into `internal/reassembly`; retain netcap's post-close evidence observation and generation-safe pool lifecycle |
+
 ## Capture and local API corrections
 
 `v0.16.7` addresses the 53-row v0.16.6 issue report. The

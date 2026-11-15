@@ -122,8 +122,12 @@ func checkDueHeaps(t *testing.T, p *StreamPool) map[key]dueState {
 		c := ref.conn
 		state := dueState{}
 		for _, h := range []*halfconnection{&c.s2c, &c.c2s} {
-			if !h.closed && h.first != nil && (!state.hasPending || h.first.seen.Before(state.pending)) {
-				state.pending, state.hasPending = h.first.seen, true
+			if !h.closed {
+				for page := h.first; page != nil; page = page.next {
+					if !state.hasPending || page.seen.Before(state.pending) {
+						state.pending, state.hasPending = page.seen, true
+					}
+				}
 			}
 		}
 		if c.s2c.closed && c.c2s.closed {
@@ -291,10 +295,10 @@ func TestDueWorkHeadDeadlines(t *testing.T) {
 	p.step(t, duePacket(0, false, 100, "S", "", -5))
 	p.step(t, duePacket(0, false, 110, "", "old", -2))
 	p.step(t, duePacket(0, false, 105, "", "new", 5))
-	if n := p.step(t, dueFlush(0, 0)); n != [2]int{} {
-		t.Fatal("older page behind newer head flushed prematurely")
+	if n := p.step(t, dueFlush(0, 0)); n != [2]int{1, 0} {
+		t.Fatal("older follower did not flush the preceding newer head")
 	}
-	p.step(t, duePacket(0, false, 105, "", "NEW", 8)) // Replace head with later timestamp.
+	p.step(t, duePacket(0, false, 115, "", "NEW", 8))
 	if n := p.step(t, dueFlush(8, 0)); n != [2]int{} {
 		t.Fatal("head flushed at equality or retained replaced deadline")
 	}

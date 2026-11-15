@@ -30,6 +30,7 @@ type page struct {
 	end   bool
 
 	packetStart bool // Only the first page contributes to packet statistics.
+	owner       *pageCache
 }
 
 func (p *page) getBytes() []byte {
