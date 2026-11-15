@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -48,18 +49,34 @@ type StreamEvidenceManifest struct {
 // SaveStreamEvidence preserves payload bytes separately from presentation markup.
 // Each call has its own directory, including when a tuple is reused.
 func SaveStreamEvidence(out, protocol string, conversation core.DataFragments, ident string, first time.Time, communityID string) (string, error) {
+	return SaveSourceEvidence(out, protocol, core.SliceSource(conversation), ident, first, communityID)
+}
+
+func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident string, first time.Time, communityID string) (string, error) {
 	if protocol != "TCP" && protocol != "UDP" {
 		return "", fmt.Errorf("unsupported stream evidence protocol")
 	}
-	if len(conversation) > 1000000 {
+	if source.Count() > 1000000 {
 		return "", fmt.Errorf("stream evidence span limit exceeded")
 	}
 	var size int64
-	for _, fragment := range conversation {
+	var firstFragment core.DataFragment
+	var scanErr error
+	if err := source.Walk(func(fragment core.DataFragment) bool {
+		if firstFragment == nil {
+			firstFragment = fragment
+		}
 		size += int64(len(fragment.Raw()))
 		if size > 256<<20 {
-			return "", fmt.Errorf("stream evidence byte limit exceeded")
+			scanErr = fmt.Errorf("stream evidence byte limit exceeded")
+			return false
 		}
+		return true
+	}); err != nil {
+		return "", err
+	}
+	if scanErr != nil {
+		return "", scanErr
 	}
 	root := filepath.Join(out, "stream-evidence")
 	if err := os.MkdirAll(root, 0700); err != nil {
@@ -70,6 +87,11 @@ func SaveStreamEvidence(out, protocol string, conversation core.DataFragments, i
 		return "", err
 	}
 	defer os.RemoveAll(dir)
+	spanFile, err := os.OpenFile(filepath.Join(dir, ".spans"), os.O_CREATE|os.O_EXCL|os.O_RDWR, 0600)
+	if err != nil {
+		return "", err
+	}
+	defer spanFile.Close()
 	client, err := os.OpenFile(filepath.Join(dir, "client.bin"), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if err != nil {
 		return "", err
@@ -83,17 +105,19 @@ func SaveStreamEvidence(out, protocol string, conversation core.DataFragments, i
 	clientHash, serverHash := sha256.New(), sha256.New()
 	writers := []io.Writer{io.MultiWriter(client, clientHash), io.MultiWriter(server, serverHash)}
 	manifest := StreamEvidenceManifest{Version: 1, Protocol: protocol, ConnectionKey: ident, CommunityID: communityID, FirstPacketNs: fmt.Sprint(first.UnixNano()), Status: "no-reported-gap",
-		Client: StreamEvidenceFile{Name: "client.bin"}, Server: StreamEvidenceFile{Name: "server.bin"}, Spans: []StreamEvidenceSpan{},
+		Client: StreamEvidenceFile{Name: "client.bin"}, Server: StreamEvidenceFile{Name: "server.bin"},
 		Limitations: []string{"bytes are concatenated observed fragments; gaps are explicit and must not be parsed as contiguous data", "stream completeness and packet provenance require the original capture", "direction follows the reassembler; midstream client role may be uncertain"}}
 	offsets := [2]int64{}
 	hasGap, hasDiscard := false, false
-	for _, fragment := range conversation {
+	var visitErr error
+	var spans int64
+	err = source.Walk(func(fragment core.DataFragment) bool {
 		direction := 0
 		if fragment.Direction() == reassembly.TCPDirServerToClient {
 			direction = 1
 		}
-		if protocol == "UDP" && len(conversation) > 0 {
-			if fragment.Transport() == conversation[0].Transport() {
+		if protocol == "UDP" && firstFragment != nil {
+			if fragment.Transport() == firstFragment.Transport() {
 				direction = 0
 			} else {
 				direction = 1
@@ -123,10 +147,37 @@ func SaveStreamEvidence(out, protocol string, conversation core.DataFragments, i
 		span := StreamEvidenceSpan{Direction: name, Offset: offsets[direction], Length: len(fragment.Raw()), TimestampNs: fmt.Sprint(capture.Timestamp.UnixNano()), MissingBytes: missing, Datagram: protocol == "UDP"}
 		span.DiscardedBytes, span.DiscardReason = discarded, discardReason
 		if _, err := writers[direction].Write(fragment.Raw()); err != nil {
-			return "", err
+			visitErr = err
+			return false
 		}
 		offsets[direction] += int64(span.Length)
-		manifest.Spans = append(manifest.Spans, span)
+		if spans > 0 {
+			if _, err := spanFile.WriteString(","); err != nil {
+				visitErr = err
+				return false
+			}
+		}
+		wire, err := json.Marshal(span)
+		if err != nil {
+			visitErr = err
+			return false
+		}
+		if _, err = spanFile.Write(wire); err != nil {
+			visitErr = err
+			return false
+		}
+		spans++
+		if spans > 1000000 {
+			visitErr = fmt.Errorf("stream evidence span limit exceeded")
+			return false
+		}
+		return true
+	})
+	if err != nil {
+		return "", err
+	}
+	if visitErr != nil {
+		return "", visitErr
 	}
 	if hasDiscard {
 		manifest.Status = "locally-truncated"
@@ -152,7 +203,26 @@ func SaveStreamEvidence(out, protocol string, conversation core.DataFragments, i
 	if err != nil {
 		return "", err
 	}
-	if _, err := file.Write(data); err != nil {
+	marker := []byte(`"spans":null`)
+	position := bytes.Index(data, marker)
+	if position < 0 {
+		file.Close()
+		return "", fmt.Errorf("stream evidence span placeholder missing")
+	}
+	prefix := append(append([]byte(nil), data[:position]...), []byte(`"spans":[`)...)
+	if _, err := file.Write(prefix); err != nil {
+		file.Close()
+		return "", err
+	}
+	if _, err = spanFile.Seek(0, io.SeekStart); err != nil {
+		file.Close()
+		return "", err
+	}
+	if _, err = io.Copy(file, spanFile); err != nil {
+		file.Close()
+		return "", err
+	}
+	if _, err = file.Write(append([]byte("]"), data[position+len(marker):]...)); err != nil {
 		file.Close()
 		return "", err
 	}
@@ -161,6 +231,12 @@ func SaveStreamEvidence(out, protocol string, conversation core.DataFragments, i
 		return "", err
 	}
 	if err := file.Close(); err != nil {
+		return "", err
+	}
+	if err = spanFile.Close(); err != nil {
+		return "", err
+	}
+	if err = os.Remove(filepath.Join(dir, ".spans")); err != nil {
 		return "", err
 	}
 	target := filepath.Join(root, "stream-"+strings.TrimPrefix(filepath.Base(dir), ".pending-"))

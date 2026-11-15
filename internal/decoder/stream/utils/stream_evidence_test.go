@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
+	"runtime"
 	"testing"
 	"time"
 
@@ -127,4 +129,104 @@ func TestLossOnlyConversationStillPublishesQualifiedStreamEvidence(t *testing.T)
 	if manifest.Status != "locally-truncated" || manifest.Client.Length != 0 || manifest.Spans[0].DiscardedBytes != 64 {
 		t.Fatalf("loss-only stream became empty clean evidence: %+v", manifest)
 	}
+}
+
+func TestDatagramSourcePreservesLegacyBytesAndEvidence(t *testing.T) {
+	previous, enricher := decoderconfig.Instance, DeviceEnricher
+	defer func() { decoderconfig.Instance, DeviceEnricher = previous, enricher }()
+	DeviceEnricher = nil
+	forward := gopacket.NewFlow(gopacket.EndpointType(4), []byte{1, 2}, []byte{3, 4})
+	fragments := core.DataFragments{&core.StreamData{RawData: []byte{0, 1, 2, 0xff}, Trans: forward, CaptureInformation: gopacket.CaptureInfo{Timestamp: time.Unix(1, 2)}}, &core.StreamData{RawData: []byte("reply"), Trans: forward.Reverse(), Dir: reassembly.TCPDirServerToClient, CaptureInformation: gopacket.CaptureInfo{Timestamp: time.Unix(1, 3)}}}
+	var reference []byte
+	var referenceManifest *StreamEvidenceManifest
+	for _, source := range []bool{false, true} {
+		cfg := decoderconfig.DefaultConfig.Clone()
+		cfg.Out, cfg.SaveConns = t.TempDir(), true
+		decoderconfig.Instance = cfg
+		var err error
+		if source {
+			err = SaveDatagramConversation(core.SliceSource(fragments), "fixture", time.Unix(1, 2), forward, "id")
+		} else {
+			err = SaveConversation("UDP", fragments, "fixture", time.Unix(1, 2), forward, "id")
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		files, err := filepath.Glob(filepath.Join(cfg.Out, "udp", "*", "*.bin"))
+		if err != nil || len(files) != 1 {
+			t.Fatal(files, err)
+		}
+		data, err := os.ReadFile(files[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		manifests, _ := filepath.Glob(filepath.Join(cfg.Out, "stream-evidence", "stream-*", "manifest.json"))
+		if len(manifests) != 1 {
+			t.Fatal(manifests)
+		}
+		wire, err := os.ReadFile(manifests[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		var manifest StreamEvidenceManifest
+		if err = json.Unmarshal(wire, &manifest); err != nil {
+			t.Fatal(err)
+		}
+		if !source {
+			reference, referenceManifest = data, &manifest
+		} else if !bytes.Equal(reference, data) || !reflect.DeepEqual(*referenceManifest, manifest) {
+			t.Fatal("datagram source changed payload or directional evidence")
+		}
+	}
+}
+
+type generatedEvidence struct {
+	count  int
+	sample func()
+}
+
+func (s generatedEvidence) Count() int64 { return int64(s.count) }
+func (s generatedEvidence) Walk(yield func(core.DataFragment) bool) error {
+	payload := make([]byte, 1024)
+	for i := 0; i < s.count; i++ {
+		if i == s.count/2 && s.sample != nil {
+			s.sample()
+		}
+		if !yield(&core.StreamData{RawData: payload, CaptureInformation: gopacket.CaptureInfo{Timestamp: time.Unix(1, int64(i))}}) {
+			break
+		}
+	}
+	return nil
+}
+
+func TestSourceEvidenceDoesNotRetainEverySpan(t *testing.T) {
+	runtime.GC()
+	var before runtime.MemStats
+	runtime.ReadMemStats(&before)
+	var peak int64
+	source := generatedEvidence{count: 50000, sample: func() {
+		runtime.GC()
+		var now runtime.MemStats
+		runtime.ReadMemStats(&now)
+		peak = max(peak, int64(now.HeapAlloc)-int64(before.HeapAlloc))
+	}}
+	dir, err := SaveSourceEvidence(t.TempDir(), "UDP", source, "fixture", time.Unix(1, 0), "id")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if peak > 4<<20 {
+		t.Fatalf("retained %d bytes while writing 50000 spans", peak)
+	}
+	wire, err := os.ReadFile(filepath.Join(dir, "manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var manifest StreamEvidenceManifest
+	if err = json.Unmarshal(wire, &manifest); err != nil {
+		t.Fatal(err)
+	}
+	if len(manifest.Spans) != 50000 || manifest.Client.Length != 50000*1024 {
+		t.Fatal("streaming evidence lost spans or bytes")
+	}
+	t.Logf("retained Go heap while writing 50000 evidence spans: %d bytes", peak)
 }

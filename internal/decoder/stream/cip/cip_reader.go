@@ -101,7 +101,7 @@ func (c *cipReader) Decode() {
 		return
 	}
 	if c.conversation.Transport == core.UDP {
-		for _, fragment := range c.conversation.Data {
+		for fragment := range c.conversation.Fragments() {
 			c.frameDirection(core.DataFragments{fragment})
 		}
 		return

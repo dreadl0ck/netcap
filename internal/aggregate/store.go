@@ -79,7 +79,7 @@ func Open(directory string, limit int64, cancel func()) (*Store, error) {
 	s.db, err = sql.Open("sqlite", uri)
 	if err == nil {
 		s.db.SetMaxOpenConns(1)
-		_, err = s.db.Exec(`PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF; PRAGMA cache_size=-1024; PRAGMA mmap_size=0; PRAGMA temp_store=FILE; CREATE TABLE state (key TEXT PRIMARY KEY, value BLOB NOT NULL) WITHOUT ROWID`)
+		_, err = s.db.Exec(`PRAGMA page_size=16384; PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF; PRAGMA cache_size=-1024; PRAGMA mmap_size=0; PRAGMA temp_store=FILE; CREATE TABLE state (key TEXT PRIMARY KEY, value BLOB NOT NULL) WITHOUT ROWID`)
 	}
 	if err == nil {
 		s.tx, err = s.db.Begin()

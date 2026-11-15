@@ -46,10 +46,13 @@ func (m *mqttsnReader) Decode() {
 		return
 	}
 
-	// Flattened with an index, so a message spanning fragments still parses
-	// while keeping the capture time and direction of the fragment its first
-	// byte arrived in. Concatenating alone loses both.
-	frameData, index := core.Flatten(m.conversation.Data)
+	for fragment := range m.conversation.Fragments() {
+		m.decodeDatagram(core.DataFragments{fragment})
+	}
+}
+
+func (m *mqttsnReader) decodeDatagram(fragments core.DataFragments) {
+	frameData, index := core.Flatten(fragments)
 	offset := 0
 
 	for offset < len(frameData) {

@@ -106,6 +106,10 @@ type readerReport struct {
 // driveReader runs one decoder over a conversation whose two directions carry
 // different bytes at clearly different times.
 func driveReader(t *testing.T, s sample) (readerReport, bool) {
+	return driveReaderConfigured(t, s, nil)
+}
+
+func driveReaderConfigured(t *testing.T, s sample, configure func(*core.ConversationInfo)) (readerReport, bool) {
 	t.Helper()
 
 	var sd *decoder.StreamDecoder
@@ -185,6 +189,9 @@ func driveReader(t *testing.T, s sample) (readerReport, bool) {
 		FirstClientPacket:    time.Unix(0, clientFirst),
 		FirstServerPacket:    time.Unix(0, serverFirst),
 	}
+	if configure != nil {
+		configure(conv)
+	}
 
 	defer prepareMediaSample(s, conv)()
 	sd.Factory.New(conv).Decode()
@@ -236,6 +243,49 @@ func driveReader(t *testing.T, s sample) (readerReport, bool) {
 	sort.Strings(report.srcIPs)
 
 	return report, true
+}
+
+func TestUDPReadersAcceptRestartableFragments(t *testing.T) {
+	matchingEnv(t)
+	for _, s := range samples() {
+		eligibleUDP := s.transport == core.UDP
+		for _, api := range DefaultStreamDecoders {
+			if api.GetName() == s.decoder && (api.Transport() == core.UDP || api.Transport() == core.All) {
+				eligibleUDP = true
+			}
+		}
+		if !eligibleUDP {
+			continue
+		}
+		t.Run(s.decoder, func(t *testing.T) {
+			var reference []proto.Message
+			for _, stored := range []bool{false, true} {
+				report, _ := driveReaderConfigured(t, s, func(c *core.ConversationInfo) {
+					c.Transport = core.UDP
+					c.ClientData, c.ServerData = nil, nil
+					if stored {
+						c.Source = core.SliceSource(c.Data)
+						c.Data = nil
+					}
+				})
+				if len(report.messages) == 0 {
+					t.Fatal("UDP fixture produced no records")
+				}
+				if !stored {
+					reference = report.messages
+					continue
+				}
+				if len(report.messages) != len(reference) {
+					t.Fatalf("source emitted %d records, want %d", len(report.messages), len(reference))
+				}
+				for i := range reference {
+					if !proto.Equal(reference[i], report.messages[i]) {
+						t.Fatalf("source changed UDP record %d\n%v\n%v", i, reference[i], report.messages[i])
+					}
+				}
+			}
+		})
+	}
 }
 
 func readerFixture(t *testing.T, s sample) (clientBytes, serverBytes []byte) {

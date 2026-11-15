@@ -211,9 +211,9 @@ func decoderListed(list, name string) bool {
 }
 
 func matchScore(sd core.StreamDecoderAPI, in *SelectionInput, portPass bool) (int, bool) {
-	if in.Transport == core.UDP && len(in.Datagrams) > 0 {
+	if in.Transport == core.UDP && (len(in.Datagrams) > 0 || in.Conversation != nil && in.Conversation.Source != nil) {
 		best, matched := 0, false
-		for _, datagram := range in.Datagrams {
+		scoreDatagram := func(datagram Datagram) {
 			client, server := datagram.Data, []byte(nil)
 			if !datagram.Client {
 				client, server = nil, datagram.Data
@@ -224,6 +224,15 @@ func matchScore(sd core.StreamDecoderAPI, in *SelectionInput, portPass bool) (in
 					best = score
 				}
 				matched = true
+			}
+		}
+		if in.Conversation != nil && in.Conversation.Source != nil {
+			for fragment := range in.Conversation.Fragments() {
+				scoreDatagram(Datagram{Data: fragment.Raw(), Client: !core.FromServer(fragment)})
+			}
+		} else {
+			for _, datagram := range in.Datagrams {
+				scoreDatagram(datagram)
 			}
 		}
 		return best, matched

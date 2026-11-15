@@ -131,6 +131,15 @@ func (r *protobufReader) Decode() {
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if r.conversation.Transport == core.UDP {
+		for fragment := range r.conversation.Fragments() {
+			conversation := *r.conversation
+			conversation.FirstClientPacket, conversation.FirstServerPacket = fragment.CaptureInfo().Timestamp, fragment.CaptureInfo().Timestamp
+			reader := &protobufReader{conversation: &conversation}
+			_ = reader.processData(bufio.NewReader(bytes.NewReader(fragment.Raw())), !core.FromServer(fragment))
+		}
+		return
+	}
 
 	streamutils.DecodeConversation(
 		r.conversation.Ident,

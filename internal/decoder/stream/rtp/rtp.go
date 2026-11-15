@@ -64,7 +64,7 @@ func Matches(c *core.ConversationInfo) bool {
 	if c == nil {
 		return false
 	}
-	for _, f := range c.Data {
+	for f := range c.Fragments() {
 		if r, _ := parse(f.Raw()); r != nil {
 			src, dst, sp, dp := c.Endpoints(f)
 			if _, _, ok := sipaudit.Media.Lookup(c.NetworkScope, src, dst, sp, dp, r.PayloadType, core.FragmentTime(f)); ok {
@@ -107,7 +107,7 @@ func (r *reader) decode(emit func(*types.RTP), event func(*types.DTMF)) {
 	}
 	states := map[source]highWater{}
 	ends := map[eventKey]int64{}
-	for _, f := range r.conversation.Data {
+	for f := range r.conversation.Fragments() {
 		m, payload := parse(f.Raw())
 		if m == nil {
 			continue

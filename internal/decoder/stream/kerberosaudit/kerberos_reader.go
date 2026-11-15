@@ -89,7 +89,7 @@ func (k *kerberosReader) decodeMessages(emit func(*types.Kerberos, core.DataFrag
 		started bool
 	}
 	states := [2]pending{}
-	for _, d := range k.conversation.Data {
+	for d := range k.conversation.Fragments() {
 		if d == nil {
 			continue
 		}

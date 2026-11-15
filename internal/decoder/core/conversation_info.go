@@ -27,6 +27,9 @@ type ConversationInfo struct {
 	TLSDecrypted bool
 	Transport    TransportProtocol
 	Data         DataFragments
+	Source       FragmentSource
+	// Owned by the decoder goroutine; source failures also fail its capture.
+	FragmentError error
 	// TCP directions in reassembly order; capture timestamps can run backwards.
 	ClientData DataFragments
 	ServerData DataFragments

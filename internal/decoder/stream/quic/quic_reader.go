@@ -63,11 +63,11 @@ func (q *quicReader) Decode() {
 		zap.Int32("clientPort", q.conversation.ClientPort),
 		zap.String("serverIP", q.conversation.ServerIP),
 		zap.Int32("serverPort", q.conversation.ServerPort),
-		zap.Int("numPackets", len(q.conversation.Data)),
+		zap.Int64("numPackets", q.conversation.FragmentCount()),
 	)
 
 	// Process each packet in the conversation
-	for _, data := range q.conversation.Data {
+	for data := range q.conversation.Fragments() {
 		payload := data.Raw()
 		if len(payload) < 5 {
 			continue

@@ -123,6 +123,20 @@ func (h *httpReader) New(conversation *core.ConversationInfo) core.StreamDecoder
 
 // Decode parses the stream according to the HTTP protocol.
 func (h *httpReader) Decode() {
+	if h.conversation.Transport == core.UDP {
+		for fragment := range h.conversation.Fragments() {
+			conversation := *h.conversation
+			conversation.Source = nil
+			conversation.Data = core.DataFragments{fragment}
+			conversation.ClientData, conversation.ServerData = nil, nil
+			reader := &httpReader{conversation: &conversation}
+			reader.decodeTransportRun()
+			if h.writeError == nil {
+				h.writeError = reader.writeError
+			}
+		}
+		return
+	}
 	runs := streamutils.TransportRuns(h.conversation)
 	if len(runs) == 1 {
 		h.transportObservation = runs[0].Observation

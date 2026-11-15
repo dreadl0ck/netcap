@@ -6,27 +6,21 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"fmt"
-	"time"
 
 	"github.com/dreadl0ck/netcap/internal/aggregate"
-	"github.com/dreadl0ck/netcap/internal/linkaudit"
-	"github.com/dreadl0ck/netcap/internal/packetview"
+	"github.com/dreadl0ck/netcap/internal/packetmeta"
 	"github.com/gopacket/gopacket"
 )
 
 type storedDPIPacket struct {
-	Data                                               []byte
-	Base                                               int
-	Timestamp                                          time.Time
-	CaptureLength, Length, Interface, LogicalInterface int
-	MissingTime                                        bool
-	Context                                            *packetview.Context
-	FCS                                                linkaudit.FrameCheck
+	Data    []byte
+	Base    int
+	Capture packetmeta.Capture
 }
 
 func marshalBufferedPacket(p bufferedPacket) ([]byte, error) {
 	var buffer bytes.Buffer
-	err := gob.NewEncoder(&buffer).Encode(storedDPIPacket{Data: p.data, Base: int(p.base), Timestamp: p.info.Timestamp, CaptureLength: p.info.CaptureLength, Length: p.info.Length, Interface: p.info.InterfaceIndex, LogicalInterface: packetview.LogicalInterface(p.info), MissingTime: packetview.TimeUnavailable(p.info), Context: packetview.FromCapture(p.info), FCS: linkaudit.FrameCheckInfo(p.info)})
+	err := gob.NewEncoder(&buffer).Encode(storedDPIPacket{Data: p.data, Base: int(p.base), Capture: packetmeta.Save(p.info)})
 	return buffer.Bytes(), err
 }
 
@@ -39,12 +33,7 @@ func unmarshalBufferedPacket(wire []byte) (bufferedPacket, error) {
 	if reader.Len() != 0 {
 		return bufferedPacket{}, fmt.Errorf("trailing deferred packet state")
 	}
-	ci := gopacket.CaptureInfo{Timestamp: saved.Timestamp, CaptureLength: saved.CaptureLength, Length: saved.Length, InterfaceIndex: saved.Interface}
-	ci.AncillaryData = []any{packetview.CaptureInterface(saved.LogicalInterface), packetview.TimestampMissing(saved.MissingTime), &saved.FCS}
-	if saved.Context != nil {
-		ci.AncillaryData = append(ci.AncillaryData, saved.Context)
-	}
-	return bufferedPacket{data: saved.Data, base: gopacket.LayerType(saved.Base), info: ci}, nil
+	return bufferedPacket{data: saved.Data, base: gopacket.LayerType(saved.Base), info: saved.Capture.Restore()}, nil
 }
 
 func storageKey(text string) string { return base64.RawURLEncoding.EncodeToString([]byte(text)) }

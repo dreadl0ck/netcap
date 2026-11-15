@@ -28,7 +28,7 @@ func (d *dnp3Reader) frameDatagrams(emit func(*types.DNP3)) {
 			outstations = append(outstations, r)
 		}
 	}
-	for _, f := range d.conversation.Data {
+	for f := range d.conversation.Fragments() {
 		at, server := core.FragmentTime(f), core.FromServer(f)
 		for k, a := range pending {
 			if at-a.at > 30e9 || at < a.at {

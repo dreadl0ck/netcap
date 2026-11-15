@@ -64,6 +64,10 @@ func init() {
 
 // FlushUDPStreams will flush all collected UDP streams to disk.
 func FlushUDPStreams() {
+	if decoderconfig.Instance.AggregateStore != nil {
+		flushStoredUDP()
+		return
+	}
 	numTotal := Streams.size()
 
 	sp := new(udpStreamProcessor)

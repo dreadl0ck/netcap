@@ -17,7 +17,7 @@ More workers do not always give more throughput. Disk, parsing, native analyzers
 | Retained TCP payload: zero                  | `-max-retained-tcp-bytes` limits reader-owned payload copies across all workers; zero is unlimited.                                        |
 | Retained reassembly pages: zero             | `-max-retained-reassembly-bytes` limits allocated TCP page payload and metadata across all workers; zero is unlimited.                     |
 | Incremental TCP state: 64 MiB               | `-max-retained-tcp-state-bytes` counts parser storage and pool/connection credits while `-incremental-http` is enabled; zero is unlimited. |
-| Encoded aggregates: 32 MiB                | `-max-aggregate-state-bytes` bounds the resident Connection/Host/DeviceProfile/Service cache, with excess state on disk; zero selects the in-memory implementation. |
+| Encoded capture state: 32 MiB             | `-max-aggregate-state-bytes` bounds the resident Connection/Host/DeviceProfile/Service/UDP cache, with excess state on disk; zero selects the in-memory implementation. |
 | DPI automatic contexts                      | Up to 8; separate from protocol workers                                                                                                    |
 | Evidence index                              | 64 MiB of accounted storage plus record and link limits                                                                                    |
 | Optional packet retention                   | Default 32 MiB segments / 512 MiB retained                                                                                                 |
@@ -73,7 +73,7 @@ update does not rewrite an ever-growing aggregate.
 | Property | Contract |
 | --- | --- |
 | Cache | Encoded values, keys and 256 bytes per entry; at most 4,096 entries. `AggregateStateHealth.json` records the limit, peak, disk reads/writes, evictions and database bytes |
-| Other memory | SQLite has a separate 1 MiB page cache. The decoded output record, codec scratch, TCP reassembly, Software state and UDP payload retention are outside this limit |
+| Other memory | SQLite has a separate 1 MiB page cache and 16 KiB pages. The decoded output record, codec scratch, TCP reassembly and Software state are outside this limit |
 | Scratch lifecycle | `.netcap-aggregate-*.sqlite` uses mode `0600` on POSIX and the output directory's inherited ACL on Windows; normal cleanup removes it. It is not a restart/recovery log |
 | Failure | Storage errors cancel capture, propagate as capture errors and prevent `audit-output-ready.json`; a failed write never falls back to discarding aggregate state |
 | Configuration | `NC_MAX_AGGREGATE_STATE_BYTES`; the effective value is recorded in `capture-manifest.json.config.maxAggregateStateBytes` |
@@ -94,6 +94,15 @@ Identity seeding visits one DeviceProfile at a time through `WalkDeviceProfiles`
 flow references against the in-memory implementation, including banner selection
 and application labels. `TestServiceProbeCanReenterAggregateStore` checks that a
 service signature can emit a software lookup that accesses the same store.
+
+UDP datagrams use restartable, capture-time-ordered storage. All 10 eligible
+stream readers consume one datagram at a time, and stream-evidence spans are
+spooled rather than accumulated in a slice. `TestStoredUDPDoesNotRetainConversationPayload`
+retains 61,072 bytes of Go heap for 32 MiB of UDP payload with a 65,536-byte cache;
+the backing database occupies 44,056,576 bytes. `TestAggregateUDPReplyFirstAndPayloadEvidence`
+compares reply-first audits, raw conversation bytes and directional manifests
+against the in-memory path. Separate datagrams are not concatenated for HTTP,
+MQTT-SN or Protobuf parsing.
 
 For 200,000 generated SYN tuples, each comparison used one Linux/amd64 test
 binary, 2 CPUs, an 8 GiB container and a 1 MiB encoded cache. Runtime includes

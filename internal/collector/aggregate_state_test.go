@@ -1,6 +1,8 @@
 package collector
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"os"
 	"os/exec"
@@ -12,8 +14,11 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/aggregate"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/identity"
+	viewtestutil "github.com/dreadl0ck/netcap/internal/packetview/testutil"
+	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 )
 
@@ -33,6 +38,7 @@ func TestAggregateCaptureProcess(t *testing.T) {
 	cfg := ultimateCaptureConfig(os.Getenv("NETCAP_AGGREGATE_OUT"), workers, 0)
 	cfg.CaptureEvidence = true
 	cfg.DecoderConfig.MaxAggregateStateBytes = limit
+	cfg.DecoderConfig.SaveConns = os.Getenv("NETCAP_AGGREGATE_SAVE_CONNS") == "1"
 	c := New(cfg)
 	if err = c.CollectPcap(input); err != nil {
 		t.Fatal(err)
@@ -149,6 +155,67 @@ func TestAggregateSpillingPreservesIdentitySeeding(t *testing.T) {
 		}
 		if !found {
 			t.Fatalf("identity fixture produced no bound hostname: %+v", report.Hosts)
+		}
+	}
+}
+
+func TestAggregateUDPReplyFirstAndPayloadEvidence(t *testing.T) {
+	input := filepath.Join(t.TempDir(), "udp.pcap")
+	reply := viewtestutil.Serialize(&layers.DNS{ID: 7, QR: true})
+	query := viewtestutil.Serialize(&layers.DNS{ID: 7})
+	frame := func(reverse bool, src, dst layers.UDPPort, payload []byte) []byte {
+		return viewtestutil.Ethernet(viewtestutil.IP(false, reverse, layers.IPProtocolUDP, viewtestutil.Serialize(&layers.UDP{SrcPort: src, DstPort: dst}, gopacket.Payload(payload))))
+	}
+	if err := os.WriteFile(input, huntPCAP(1, frame(true, 137, 53000, reply), frame(false, 53000, 137, query), frame(true, 137, 53000, reply), frame(false, 53000, 137, []byte("<13>fixture log message"))), 0600); err != nil {
+		t.Fatal(err)
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var referenceCounts map[string]int
+	var referenceDigests map[string]string
+	var referencePayload []byte
+	var referenceEvidence *utils.StreamEvidenceManifest
+	for _, limit := range []int64{0, 2048} {
+		out := t.TempDir()
+		cmd := exec.Command(exe, "-test.run=^TestAggregateCaptureProcess$", "-test.count=1", "-test.timeout=2m")
+		cmd.Env = append(os.Environ(), "NETCAP_AGGREGATE_INPUT="+input, "NETCAP_AGGREGATE_OUT="+out, "NETCAP_AGGREGATE_LIMIT="+strconv.FormatInt(limit, 10), "NETCAP_AGGREGATE_WORKERS=4", "NETCAP_AGGREGATE_SAVE_CONNS=1")
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("capture failed: %v\n%s", err, output)
+		}
+		counts, digests := ultimateRecords(t, out)
+		if counts["Syslog"] == 0 {
+			t.Fatal("fixture did not exercise the UDP stream decoder")
+		}
+		paths, _ := filepath.Glob(filepath.Join(out, "udp", "*", "*.bin"))
+		if len(paths) != 1 {
+			t.Fatal(paths)
+		}
+		payload, err := os.ReadFile(paths[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		paths, _ = filepath.Glob(filepath.Join(out, "stream-evidence", "stream-*", "manifest.json"))
+		if len(paths) != 1 {
+			t.Fatal(paths)
+		}
+		wire, err := os.ReadFile(paths[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		var evidence utils.StreamEvidenceManifest
+		if err = json.Unmarshal(wire, &evidence); err != nil {
+			t.Fatal(err)
+		}
+		if len(evidence.Spans) != 4 {
+			t.Fatal("UDP spans lost", evidence)
+		}
+		if limit == 0 {
+			referenceCounts, referenceDigests = counts, digests
+			referencePayload, referenceEvidence = payload, &evidence
+		} else if !reflect.DeepEqual(referenceCounts, counts) || !reflect.DeepEqual(referenceDigests, digests) || !bytes.Equal(referencePayload, payload) || !reflect.DeepEqual(*referenceEvidence, evidence) {
+			t.Fatal("stored UDP changed audits, payload bytes or evidence")
 		}
 	}
 }

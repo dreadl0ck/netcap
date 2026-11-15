@@ -26,6 +26,7 @@ import (
 
 	"github.com/gopacket/gopacket"
 
+	"github.com/dreadl0ck/netcap/internal/aggregate"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream"
@@ -43,6 +44,9 @@ var Streams = newUDPStreamPool()
 // ResetStreams creates a new UDP stream pool to clear all stream state
 // This should be called when resetting state between processing different files
 func ResetStreams() {
+	if decoderconfig.Instance.AggregateStore != nil {
+		_ = decoderconfig.Instance.AggregateStore.Do(func(tx *aggregate.Tx) error { return tx.Delete("udp/") })
+	}
 	Streams = newUDPStreamPool()
 }
 
@@ -96,6 +100,10 @@ func (u *udpStreamPool) HandleUDP(packet gopacket.Packet, udpLayer gopacket.Laye
 		msg := sipaudit.Record(wire, packet.Metadata().Timestamp.UnixNano())
 		msg.NetworkScope = packetview.Scope(packet)
 		sipaudit.Media.Observe(msg)
+	}
+	if decoderconfig.Instance.AggregateStore != nil {
+		u.storePacket(packet, udpLayer.LayerPayload())
+		return
 	}
 	key := udpConversationKey(packet)
 

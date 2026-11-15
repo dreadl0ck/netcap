@@ -3,6 +3,8 @@ package udp
 import (
 	"encoding/binary"
 
+	"github.com/dreadl0ck/netcap/internal/aggregate"
+	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/gopacket/gopacket"
@@ -63,6 +65,21 @@ func (u *udpStreamPool) ObserveICMPRefusal(packet gopacket.Packet) {
 		return
 	}
 	key := udp.TransportFlow().FastHash() ^ inner.NetworkLayer().NetworkFlow().FastHash() ^ packetview.ScopeHash(packet)
+	if decoderconfig.Instance.AggregateStore != nil {
+		_ = decoderconfig.Instance.AggregateStore.Do(func(tx *aggregate.Tx) error {
+			wire, found, err := tx.Get(udpFlowKey(key))
+			if err != nil || !found {
+				return err
+			}
+			flow, err := decodeUDPFlow(wire)
+			if err != nil {
+				return err
+			}
+			flow.refused = true
+			return tx.Put(udpFlowKey(key), encodeUDPFlow(flow))
+		})
+		return
+	}
 	u.Lock()
 	stream := u.streams[key]
 	u.Unlock()

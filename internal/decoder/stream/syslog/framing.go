@@ -51,7 +51,7 @@ func (s *syslogReader) decodeMessages(emit func(*types.Syslog)) {
 	var pending [2][]byte
 	var times [2][]int64
 	var stopped [2]bool
-	for _, f := range s.conversation.Data {
+	for f := range s.conversation.Fragments() {
 		d := 0
 		if core.FromServer(f) {
 			d = 1

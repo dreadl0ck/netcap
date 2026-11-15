@@ -211,7 +211,7 @@ func (b *bacnetipReader) Decode() {
 	}
 
 	// BACnet/IP is UDP-based, each datagram is a complete message
-	for _, data := range b.conversation.Data {
+	for data := range b.conversation.Fragments() {
 		frameData := data.Raw()
 		if len(frameData) < minBVLCHeaderSize {
 			continue

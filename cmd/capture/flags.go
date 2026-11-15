@@ -691,7 +691,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.Int64Flag{
 			Name: "max-aggregate-state-bytes", Value: 32 << 20,
-			Usage:   "resident encoded Connection/Host/DeviceProfile/Service aggregate cache; excess state spills to private scratch storage (0 = in-memory; excludes decoded records, SQLite cache and RSS)",
+			Usage:   "resident encoded Connection/Host/DeviceProfile/Service/UDP cache; excess state spills to private scratch storage (0 = in-memory; excludes decoded records, SQLite cache and RSS)",
 			Sources: cli.EnvVars("NC_MAX_AGGREGATE_STATE_BYTES"),
 			Action: func(_ context.Context, _ *cli.Command, value int64) error {
 				if value < 0 {
