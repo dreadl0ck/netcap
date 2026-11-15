@@ -65,7 +65,7 @@ net capture -read office-lan.pcap -out office-browser -dpi=false -geoDB=false \
   -http 127.0.0.1:8080
 ```
 
-Open `http://127.0.0.1:8080`. The process keeps running until you stop it with Ctrl-C. The local API has no authentication, so do not expose it to the Internet. [Web interface](web-interface.md) describes the modes and hosting.
+Open `http://127.0.0.1:8080` and sign in at `/auth` with the per-run token printed in the terminal. Keep tokens out of URLs. The process keeps running until Ctrl-C. [Web interface](web-interface.md) describes the modes and hosting.
 
 ## Next steps
 
