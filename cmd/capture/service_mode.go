@@ -113,6 +113,7 @@ func runServiceMode(command *cli.Command) {
 		MaxRetainedReassemblyBytes: flagMaxRetainedReassemblyBytes,
 		IncrementalHTTP:            flagIncrementalHTTP,
 		MaxRetainedTCPStateBytes:   flagMaxRetainedTCPStateBytes,
+		MaxAggregateStateBytes:     flagMaxAggregateStateBytes,
 		CaptureTimeIdleExpiry:      flagCaptureTimeIdleExpiry,
 		Proto:                      flagProto,
 		JSON:                       flagJSON,

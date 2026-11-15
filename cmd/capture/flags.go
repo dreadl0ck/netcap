@@ -689,6 +689,17 @@ func GetFlags() []cli.Flag {
 				return nil
 			},
 		},
+		&cli.Int64Flag{
+			Name: "max-aggregate-state-bytes", Value: 32 << 20,
+			Usage:   "resident encoded Connection aggregate cache; excess state spills to private scratch storage (0 = in-memory; excludes decoded records, SQLite cache and RSS)",
+			Sources: cli.EnvVars("NC_MAX_AGGREGATE_STATE_BYTES"),
+			Action: func(_ context.Context, _ *cli.Command, value int64) error {
+				if value < 0 {
+					return fmt.Errorf("max-aggregate-state-bytes cannot be negative")
+				}
+				return nil
+			},
+		},
 		&cli.IntFlag{
 			Name:    "compression-block-size",
 			Value:   defaults.CompressionBlockSize,

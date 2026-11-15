@@ -111,7 +111,8 @@ func (s *Server) handleReproductionBundle(w http.ResponseWriter, r *http.Request
 		"effectiveSettings": map[string]any{"snapLen": config.SnapLen, "workers": config.Workers, "reassembly": config.Reassembly,
 			"retainPackets": config.RetainPackets, "segmentBytes": strconv.FormatInt(config.SegmentBytes, 10),
 			"retentionBytes": strconv.FormatInt(config.RetentionBytes, 10), "maxRetainedTCPBytes": strconv.FormatInt(config.MaxRetainedTCPBytes, 10),
-			"bpfSHA256": digestBytes([]byte(config.BPF)), "includeDecodersSHA256": digestBytes([]byte(config.IncludeDecoders)), "excludeDecodersSHA256": digestBytes([]byte(config.ExcludeDecoders))},
+			"maxAggregateStateBytes": strconv.FormatInt(config.MaxAggregateStateBytes, 10),
+			"bpfSHA256":              digestBytes([]byte(config.BPF)), "includeDecodersSHA256": digestBytes([]byte(config.IncludeDecoders)), "excludeDecodersSHA256": digestBytes([]byte(config.ExcludeDecoders))},
 		"attachments": attachments,
 		"limitations": []string{"Metadata-only bundle, not a self-contained replay", "Exporter version is not proof of the capture producer version", "Source hash is recorded provenance, not a fresh verification of the source file", "Free-text settings, source paths, logs, errors and payloads are omitted to avoid exporting credentials; attach separately only after analyst review", "Missing/read-failed attachments are not successful empty exports"},
 	}

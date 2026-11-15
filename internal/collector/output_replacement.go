@@ -31,7 +31,7 @@ func managedCaptureOutput(name string) bool {
 		}
 	}
 	switch name {
-	case "FlowExportsHealth.json", "FlowExports.jsonl", "capture-manifest.json", "capture-input.json", "audit-output-ready.json", "artifact-analysis.json", "packet-normalization.json", "enrichment-status.json",
+	case "AggregateStateHealth.json", "FlowExportsHealth.json", "FlowExports.jsonl", "capture-manifest.json", "capture-input.json", "audit-output-ready.json", "artifact-analysis.json", "packet-normalization.json", "enrichment-status.json",
 		"tcp", "udp", "network", "stream-evidence", "packet-evidence", defaults.FileStorage:
 		return true
 	}

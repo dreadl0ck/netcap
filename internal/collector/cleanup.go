@@ -198,6 +198,16 @@ func (c *Collector) doCleanup(force bool) {
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
 	}
 	c.teardown()
+	if state := c.config.DecoderConfig.AggregateStore; state != nil {
+		health := state.Health()
+		c.captureEvidenceError = errors.Join(c.captureEvidenceError, state.Close())
+		c.config.DecoderConfig.AggregateStore = nil
+		data, err := json.MarshalIndent(health, "", "  ")
+		if err == nil {
+			err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "AggregateStateHealth.json"), append(data, '\n'), 0600)
+		}
+		c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
+	}
 	c.detachRecordAnalysis()
 
 	// Reset package-level stream pools so a subsequent CollectPcap call in

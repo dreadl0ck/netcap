@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/aggregate"
 	"github.com/dreadl0ck/netcap/internal/encoder"
 	"github.com/dreadl0ck/netcap/internal/label/manager"
 
@@ -54,6 +55,9 @@ func (c *Collector) Init() (err error) {
 	}
 	if c.config.DecoderConfig.MaxRetainedTCPBytes < 0 {
 		return fmt.Errorf("max-retained-tcp-bytes cannot be negative")
+	}
+	if c.config.DecoderConfig.MaxAggregateStateBytes < 0 {
+		return fmt.Errorf("max-aggregate-state-bytes cannot be negative")
 	}
 	c.contextLocked()
 	c.streamStateBudget, err = core.NewStateBudget(c.config.DecoderConfig.MaxRetainedTCPStateBytes, c.runCancel)
@@ -127,6 +131,19 @@ func (c *Collector) Init() (err error) {
 	}
 
 	// init deep packet inspection
+	c.config.DecoderConfig.AggregateStore = nil
+	if c.config.DecoderConfig.MaxAggregateStateBytes > 0 {
+		c.config.DecoderConfig.AggregateStore, err = aggregate.Open(c.config.DecoderConfig.Out, c.config.DecoderConfig.MaxAggregateStateBytes, c.runCancel)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if err != nil {
+				err = errors.Join(err, c.config.DecoderConfig.AggregateStore.Close())
+				c.config.DecoderConfig.AggregateStore = nil
+			}
+		}()
+	}
 	if err := file.StartAnalysis(c.config.DecoderConfig.Out, ""); err != nil {
 		return fmt.Errorf("artifact analysis admission: %w", err)
 	}

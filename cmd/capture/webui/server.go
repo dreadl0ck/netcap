@@ -155,6 +155,7 @@ type RuntimeConfig struct {
 	MaxRetainedReassemblyBytes int64
 	IncrementalHTTP            bool
 	MaxRetainedTCPStateBytes   int64
+	MaxAggregateStateBytes     int64
 	CaptureTimeIdleExpiry      bool
 
 	// Output Format
@@ -1793,6 +1794,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	var maxRetainedTCPBytes, maxRetainedReassemblyBytes int64
 	var incrementalHTTP, captureTimeIdleExpiry bool
 	maxRetainedTCPStateBytes := int64(64 << 20)
+	maxAggregateStateBytes := int64(32 << 20)
 	s.mu.RLock()
 	if s.runtimeConfig != nil {
 		flowExports = s.runtimeConfig.FlowExports
@@ -1801,6 +1803,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		segmentBytes, retentionBytes = s.runtimeConfig.PacketSegmentBytes, s.runtimeConfig.PacketRetentionBytes
 		maintenanceInterval, flushInterval = s.runtimeConfig.LiveMaintenanceInterval, s.runtimeConfig.LiveFlushInterval
 		maxRetainedTCPBytes = s.runtimeConfig.MaxRetainedTCPBytes
+		maxAggregateStateBytes = s.runtimeConfig.MaxAggregateStateBytes
 		maxRetainedReassemblyBytes = s.runtimeConfig.MaxRetainedReassemblyBytes
 		incrementalHTTP, maxRetainedTCPStateBytes, captureTimeIdleExpiry = s.runtimeConfig.IncrementalHTTP, s.runtimeConfig.MaxRetainedTCPStateBytes, s.runtimeConfig.CaptureTimeIdleExpiry
 	}
@@ -1849,6 +1852,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			MaxRetainedReassemblyBytes: maxRetainedReassemblyBytes,
 			IncrementalHTTP:            incrementalHTTP,
 			MaxRetainedTCPStateBytes:   maxRetainedTCPStateBytes,
+			MaxAggregateStateBytes:     maxAggregateStateBytes,
 			CaptureTimeIdleExpiry:      captureTimeIdleExpiry,
 
 			Quiet:            true,

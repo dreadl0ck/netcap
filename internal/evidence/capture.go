@@ -43,6 +43,7 @@ type CaptureConfig struct {
 	MaxRetainedReassemblyBytes int64 `json:"maxRetainedReassemblyBytes,omitempty,string"`
 	IncrementalHTTP            bool  `json:"incrementalHTTP,omitempty"`
 	MaxRetainedTCPStateBytes   int64 `json:"maxRetainedTCPStateBytes,omitempty,string"`
+	MaxAggregateStateBytes     int64 `json:"maxAggregateStateBytes,omitempty,string"`
 	CaptureTimeIdleExpiry      bool  `json:"captureTimeIdleExpiry,omitempty"`
 }
 

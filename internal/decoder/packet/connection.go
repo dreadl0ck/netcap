@@ -39,6 +39,7 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 
+	"github.com/dreadl0ck/netcap/internal/aggregate"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/internal/dnsaudit"
@@ -144,6 +145,17 @@ type atomicConnMap struct {
 
 // Size returns the number of elements in the Items map.
 func (a *atomicConnMap) Size() int {
+	a.operations.RLock()
+	defer a.operations.RUnlock()
+	if conf != nil && conf.AggregateStore != nil {
+		var count int64
+		_ = conf.AggregateStore.Do(func(tx *aggregate.Tx) error {
+			var err error
+			count, err = tx.Count("connection/")
+			return err
+		})
+		return int(count)
+	}
 	a.Lock()
 	defer a.Unlock()
 
@@ -160,6 +172,9 @@ var conns = &atomicConnMap{
 func ResetConnections() {
 	conns.operations.Lock()
 	defer conns.operations.Unlock()
+	if conf != nil && conf.AggregateStore != nil {
+		_ = conf.AggregateStore.Do(func(tx *aggregate.Tx) error { return tx.Delete("connection/") })
+	}
 	conns.Lock()
 	conns.Items = make(map[string]*connection)
 	conns.History = make(map[string][]*connection)
@@ -177,6 +192,10 @@ var connectionDecoder = newAccumulatingPacketDecoder(
 	func(decoder *Decoder) error {
 		conns.operations.Lock()
 		defer conns.operations.Unlock()
+		if conf != nil && conf.AggregateStore != nil {
+			_, err := flushStoredConnections(decoder)
+			return err
+		}
 
 		cp := connectionProcessor{}
 		cp.initWorkers(decoderconfig.Instance.StreamBufferSize, decoderconfig.Instance.NumStreamWorkers)
@@ -212,6 +231,10 @@ var connectionDecoder = newAccumulatingPacketDecoder(
 	func(decoder *Decoder) int64 {
 		conns.operations.RLock()
 		defer conns.operations.RUnlock()
+		if conf != nil && conf.AggregateStore != nil {
+			count, _ := flushStoredConnections(decoder)
+			return count
+		}
 		var numFlushed int64
 
 		// Take a snapshot of items under lock to avoid race conditions
@@ -292,6 +315,10 @@ func handlePacket(p gopacket.Packet) proto.Message {
 
 	// lookup connection
 	key := connID.String()
+	if conf != nil && conf.AggregateStore != nil {
+		handleStoredConnection(p, connID, ll, nl, tl)
+		return nil
+	}
 retry:
 	conns.Lock()
 
@@ -329,107 +356,111 @@ retry:
 			return nil
 		}
 
-		// check if received packet from the same connection
-		// was captured BEFORE the connections FIRST seen timestamp
-		if p.Metadata().Timestamp.Before(time.Unix(0, conn.TimestampFirst).UTC()) {
-
-			// rewrite timestamp
-			conn.TimestampFirst = p.Metadata().Timestamp.UnixNano()
-
-			// rewrite source and destination parameters
-			// since the first packet decides about the connection direction
-			if ll != nil {
-				if len(ll.LinkFlow().Src().Raw()) > 0 {
-					conn.SrcMAC = ll.LinkFlow().Src().String()
-				}
-				if len(ll.LinkFlow().Dst().Raw()) > 0 {
-					conn.DstMAC = ll.LinkFlow().Dst().String()
-				}
-			}
-
-			if nl != nil {
-				if len(nl.NetworkFlow().Src().Raw()) > 0 {
-					conn.SrcIP = nl.NetworkFlow().Src().String()
-				}
-				if len(nl.NetworkFlow().Dst().Raw()) > 0 {
-					conn.DstIP = nl.NetworkFlow().Dst().String()
-				}
-			}
-
-			if tl != nil {
-				// TODO: change field type to int and use binary.LittleEndian.Uint16(...Src().Raw())
-				// Check if the endpoint has valid data before converting to string
-				conn.SrcPort = connectionPort(tl.TransportFlow().Src())
-				conn.DstPort = connectionPort(tl.TransportFlow().Dst())
-			}
-			if conn.clientIP != conn.SrcIP || conn.clientPort != conn.SrcPort {
-				conn.clientIP, conn.clientPort = conn.SrcIP, conn.SrcPort
-				conn.BytesClientToServer, conn.BytesServerToClient = conn.BytesServerToClient, conn.BytesClientToServer
-				conn.packetsClientToServer, conn.packetsServerToClient = conn.packetsServerToClient, conn.packetsClientToServer
-				conn.finClient, conn.finServer = conn.finServer, conn.finClient
-			}
-		}
-
-		// track amount of transferred bytes (application layer payload)
-		// Use transport layer payload to capture all app data, not just decoded application layers
-		// ApplicationLayer() only returns decoded protocols (DNS, TLS, etc.), not raw HTTP/other data
-		if tl != nil {
-			conn.AppPayloadSize64 += int64(len(tl.LayerPayload()))
-		}
-
-		packetCount, wireBytes, first, last := packetview.Accounting(p)
-		conn.TimestampFirst = min(conn.TimestampFirst, first)
-		conn.TimestampLast = max(conn.TimestampLast, last)
-		if context := packetview.FromCapture(p.Metadata().CaptureInfo); context != nil && context.Reassembled {
-			conn.ReassembledDatagrams++
-		}
-		if nl != nil {
-			if conn.clientIP == nl.NetworkFlow().Src().String() && (tl == nil || conn.clientPort == connectionPort(tl.TransportFlow().Src())) {
-				conn.BytesClientToServer += wireBytes
-				conn.packetsClientToServer += packetCount
-			} else {
-				conn.BytesServerToClient += wireBytes
-				conn.packetsServerToClient += packetCount
-			}
-		}
-		conn.NumPackets64 += packetCount
-		conn.NumPackets = connectionLegacyCounter(conn.NumPackets64, conn.Connection)
-		conn.AppPayloadSize = connectionLegacyCounter(conn.AppPayloadSize64, conn.Connection)
-		trackTCPStats(conn, p)
-		trackConnectionLifecycle(conn, p)
-		trackJA4LTiming(conn, p)
-		conn.TotalSize64 += wireBytes
-		conn.TotalSize = connectionLegacyCounter(conn.TotalSize64, conn.Connection)
-
-		// check if LAST timestamp was before the current packet
-		if conn.TimestampLast < p.Metadata().Timestamp.UnixNano() {
-			// current packet is newer
-			// update last seen timestamp
-			conn.TimestampLast = p.Metadata().Timestamp.UnixNano()
-
-			// the duration will be calculated once the connection is written to the audit record writer
-			// so there is no need to calculate it in real-time
-		} // else: do nothing, timestamp is still the oldest one
-
-		// DPI: detect applications
-		dpiStart := time.Now()
-		dpiResults := dpi.GetProtocols(p)
-		if dpiResults != nil && conf.PerfTracker != nil {
-			conf.PerfTracker.RecordDPI(time.Since(dpiStart))
-		}
-		for protocol := range dpiResults {
-			if conn.applications == nil {
-				conn.applications = make(map[string]struct{})
-			}
-			conn.applications[protocol] = struct{}{}
-		}
-
+		updateConnection(conn, p, ll, nl, tl)
 		conn.Unlock()
-	} else { // create a new Connection
+	} else {
 		conns.Items[key] = makeConnection(p, connID, ll, nl, tl, 0)
 		conns.Unlock()
 	}
 	return nil
+}
+
+func updateConnection(conn *connection, p gopacket.Packet, ll gopacket.LinkLayer, nl gopacket.NetworkLayer, tl gopacket.TransportLayer) {
+	// check if received packet from the same connection
+	// was captured BEFORE the connections FIRST seen timestamp
+	if p.Metadata().Timestamp.Before(time.Unix(0, conn.TimestampFirst).UTC()) {
+
+		// rewrite timestamp
+		conn.TimestampFirst = p.Metadata().Timestamp.UnixNano()
+
+		// rewrite source and destination parameters
+		// since the first packet decides about the connection direction
+		if ll != nil {
+			if len(ll.LinkFlow().Src().Raw()) > 0 {
+				conn.SrcMAC = ll.LinkFlow().Src().String()
+			}
+			if len(ll.LinkFlow().Dst().Raw()) > 0 {
+				conn.DstMAC = ll.LinkFlow().Dst().String()
+			}
+		}
+
+		if nl != nil {
+			if len(nl.NetworkFlow().Src().Raw()) > 0 {
+				conn.SrcIP = nl.NetworkFlow().Src().String()
+			}
+			if len(nl.NetworkFlow().Dst().Raw()) > 0 {
+				conn.DstIP = nl.NetworkFlow().Dst().String()
+			}
+		}
+
+		if tl != nil {
+			// TODO: change field type to int and use binary.LittleEndian.Uint16(...Src().Raw())
+			// Check if the endpoint has valid data before converting to string
+			conn.SrcPort = connectionPort(tl.TransportFlow().Src())
+			conn.DstPort = connectionPort(tl.TransportFlow().Dst())
+		}
+		if conn.clientIP != conn.SrcIP || conn.clientPort != conn.SrcPort {
+			conn.clientIP, conn.clientPort = conn.SrcIP, conn.SrcPort
+			conn.BytesClientToServer, conn.BytesServerToClient = conn.BytesServerToClient, conn.BytesClientToServer
+			conn.packetsClientToServer, conn.packetsServerToClient = conn.packetsServerToClient, conn.packetsClientToServer
+			conn.finClient, conn.finServer = conn.finServer, conn.finClient
+		}
+	}
+
+	// track amount of transferred bytes (application layer payload)
+	// Use transport layer payload to capture all app data, not just decoded application layers
+	// ApplicationLayer() only returns decoded protocols (DNS, TLS, etc.), not raw HTTP/other data
+	if tl != nil {
+		conn.AppPayloadSize64 += int64(len(tl.LayerPayload()))
+	}
+
+	packetCount, wireBytes, first, last := packetview.Accounting(p)
+	conn.TimestampFirst = min(conn.TimestampFirst, first)
+	conn.TimestampLast = max(conn.TimestampLast, last)
+	if context := packetview.FromCapture(p.Metadata().CaptureInfo); context != nil && context.Reassembled {
+		conn.ReassembledDatagrams++
+	}
+	if nl != nil {
+		if conn.clientIP == nl.NetworkFlow().Src().String() && (tl == nil || conn.clientPort == connectionPort(tl.TransportFlow().Src())) {
+			conn.BytesClientToServer += wireBytes
+			conn.packetsClientToServer += packetCount
+		} else {
+			conn.BytesServerToClient += wireBytes
+			conn.packetsServerToClient += packetCount
+		}
+	}
+	conn.NumPackets64 += packetCount
+	conn.NumPackets = connectionLegacyCounter(conn.NumPackets64, conn.Connection)
+	conn.AppPayloadSize = connectionLegacyCounter(conn.AppPayloadSize64, conn.Connection)
+	trackTCPStats(conn, p)
+	trackConnectionLifecycle(conn, p)
+	trackJA4LTiming(conn, p)
+	conn.TotalSize64 += wireBytes
+	conn.TotalSize = connectionLegacyCounter(conn.TotalSize64, conn.Connection)
+
+	// check if LAST timestamp was before the current packet
+	if conn.TimestampLast < p.Metadata().Timestamp.UnixNano() {
+		// current packet is newer
+		// update last seen timestamp
+		conn.TimestampLast = p.Metadata().Timestamp.UnixNano()
+
+		// the duration will be calculated once the connection is written to the audit record writer
+		// so there is no need to calculate it in real-time
+	} // else: do nothing, timestamp is still the oldest one
+
+	// DPI: detect applications
+	dpiStart := time.Now()
+	dpiResults := dpi.GetProtocols(p)
+	if dpiResults != nil && conf.PerfTracker != nil {
+		conf.PerfTracker.RecordDPI(time.Since(dpiStart))
+	}
+	for protocol := range dpiResults {
+		if conn.applications == nil {
+			conn.applications = make(map[string]struct{})
+		}
+		conn.applications[protocol] = struct{}{}
+	}
+
 }
 
 func makeConnection(p gopacket.Packet, connID connectionID, ll gopacket.LinkLayer, nl gopacket.NetworkLayer, tl gopacket.TransportLayer, generation uint64) *connection {

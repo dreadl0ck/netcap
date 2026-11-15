@@ -101,8 +101,11 @@ func TestHuntCLIRegressions(t *testing.T) {
 			t.Fatal(err)
 		}
 		var manifest struct {
-			RunID    string `json:"runId"`
-			Status   string `json:"status"`
+			RunID  string `json:"runId"`
+			Status string `json:"status"`
+			Config struct {
+				MaxAggregateStateBytes int64 `json:"maxAggregateStateBytes,string"`
+			} `json:"config"`
 			Producer struct {
 				Commit string `json:"commit"`
 			} `json:"producer"`
@@ -114,6 +117,23 @@ func TestHuntCLIRegressions(t *testing.T) {
 		if manifest.Producer.Commit != buildCommit {
 			t.Fatal("capture producer lost build commit", manifest.Producer.Commit)
 		}
+		if manifest.Config.MaxAggregateStateBytes != 32<<20 {
+			t.Fatal("CLI did not enable the default aggregate cache", manifest.Config)
+		}
+		data, err = os.ReadFile(filepath.Join(out, "AggregateStateHealth.json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var health struct {
+			LimitBytes, PeakBytes int64
+			DiskWrites            uint64
+		}
+		if err = json.Unmarshal(data, &health); err != nil || health.LimitBytes != 32<<20 || health.PeakBytes == 0 || health.PeakBytes > health.LimitBytes || health.DiskWrites == 0 {
+			t.Fatalf("aggregate cache was not exercised: %s %v", data, err)
+		}
+		if paths, err := filepath.Glob(filepath.Join(out, ".netcap-aggregate-*")); err != nil || len(paths) > 0 {
+			t.Fatal("aggregate scratch survived CLI completion", paths, err)
+		}
 	}
 	if data, err := os.ReadFile(filepath.Join(out, "notes.csv")); err != nil || !bytes.Equal(data, notes) {
 		t.Fatal("overwrite removed unrelated operator data", err)
@@ -123,7 +143,7 @@ func TestHuntCLIRegressions(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantHash := sha256.Sum256(old)
-	for _, extra := range [][]string{{"--include", "Bogus"}, {"--flow-export-ports", "invalid"}} {
+	for _, extra := range [][]string{{"--include", "Bogus"}, {"--flow-export-ports", "invalid"}, {"--max-aggregate-state-bytes", "-1"}} {
 		args := append(append([]string{}, capture...), extra...)
 		if output, err := run(args...); err == nil {
 			t.Fatalf("invalid startup succeeded: %s", output)

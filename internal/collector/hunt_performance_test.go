@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
+	"strconv"
 	"testing"
 	"time"
 
@@ -53,9 +54,23 @@ func TestSYNScanHeapProfile(t *testing.T) {
 	if profile == "" {
 		t.Skip("set NETCAP_SYN_HEAP to profile retained SYN-only state")
 	}
-	const count = 50000
+	count := 50000
+	if value := os.Getenv("NETCAP_SYN_FLOWS"); value != "" {
+		var err error
+		count, err = strconv.Atoi(value)
+		if err != nil || count < 1 || count > 1000000 {
+			t.Fatal("NETCAP_SYN_FLOWS must be between 1 and 1000000")
+		}
+	}
 	cfg := ultimateCaptureConfig(t.TempDir(), 2, 0)
 	cfg.NetworkDetection = true
+	if value := os.Getenv("NETCAP_AGGREGATE_STATE_BYTES"); value != "" {
+		limit, err := strconv.ParseInt(value, 10, 64)
+		if err != nil || limit < 0 {
+			t.Fatal("NETCAP_AGGREGATE_STATE_BYTES must be a nonnegative integer")
+		}
+		cfg.DecoderConfig.MaxAggregateStateBytes = limit
+	}
 	c := New(cfg)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
@@ -72,8 +87,9 @@ func TestSYNScanHeapProfile(t *testing.T) {
 		binary.BigEndian.PutUint16(ip[2:], 40)
 		copy(ip[12:], []byte{192, 0, 2, 1})
 		copy(ip[16:], []byte{198, 51, 100, 1})
+		ip[14], ip[15] = byte(i/60000), byte(i/60000+1)
 		tcp := frame[34:]
-		binary.BigEndian.PutUint16(tcp, uint16(i+1024))
+		binary.BigEndian.PutUint16(tcp, uint16(i%60000+1024))
 		binary.BigEndian.PutUint16(tcp[2:], 80)
 		tcp[12], tcp[13] = 0x50, 2
 		p := gopacket.NewPacket(frame, layers.LayerTypeEthernet, gopacket.Default)
@@ -86,7 +102,14 @@ func TestSYNScanHeapProfile(t *testing.T) {
 	runtime.GC()
 	var after runtime.MemStats
 	runtime.ReadMemStats(&after)
-	t.Logf("SYN-only retained heap: %d bytes for %d flows (%.1f bytes/flow)", after.HeapAlloc-before.HeapAlloc, count, float64(after.HeapAlloc-before.HeapAlloc)/count)
+	t.Logf("SYN-only retained heap: %d bytes for %d flows (%.1f bytes/flow)", after.HeapAlloc-before.HeapAlloc, count, float64(after.HeapAlloc-before.HeapAlloc)/float64(count))
+	if state := c.config.DecoderConfig.AggregateStore; state != nil {
+		health := state.Health()
+		t.Logf("aggregate store: %+v", health)
+		if health.PeakBytes > health.LimitBytes || count > 4096 && health.DiskWrites == 0 {
+			t.Fatal("aggregate state did not spill within its cache bound", health)
+		}
+	}
 	f, err := os.Create(profile)
 	if err != nil {
 		t.Fatal(err)

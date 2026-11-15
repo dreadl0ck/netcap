@@ -17,6 +17,7 @@ More workers do not always give more throughput. Disk, parsing, native analyzers
 | Retained TCP payload: zero                  | `-max-retained-tcp-bytes` limits reader-owned payload copies across all workers; zero is unlimited.                                        |
 | Retained reassembly pages: zero             | `-max-retained-reassembly-bytes` limits allocated TCP page payload and metadata across all workers; zero is unlimited.                     |
 | Incremental TCP state: 64 MiB               | `-max-retained-tcp-state-bytes` counts parser storage and pool/connection credits while `-incremental-http` is enabled; zero is unlimited. |
+| Encoded Connection aggregates: 32 MiB      | `-max-aggregate-state-bytes` bounds the resident encoded cache, with excess state on disk; zero selects the in-memory implementation. |
 | DPI automatic contexts                      | Up to 8; separate from protocol workers                                                                                                    |
 | Evidence index                              | 64 MiB of accounted storage plus record and link limits                                                                                    |
 | Optional packet retention                   | Default 32 MiB segments / 512 MiB retained                                                                                                 |
@@ -61,6 +62,32 @@ net capture -read traffic.pcap -out bounded-http -workers 4 -dpi=false \
 ```
 
 These are three separate storage limits. Together they do not add up to a 192 MiB RSS limit. Exceeding any of them aborts the capture and prevents readiness. Check `TCPReassemblyPageBudget.json`, `TCPStreamStateBudget.json` and `TCPIncrementalHealth.json` alongside the reader health. [Incremental transactions](reassembly.md#incremental-transactions) describes the HTTP/1 subset, the completion-only fallback, `-conns` retention and capture-time expiry. Other protocols keep their own completion and cache lifecycles.
+
+## Spill Connection audit state
+
+`-max-aggregate-state-bytes` defaults to 33,554,432 bytes in the CLI. Connection
+counters, observation generations and late-packet updates use a private SQLite
+scratch file rather than retaining every decoded Connection until EOF.
+
+| Property | Contract |
+| --- | --- |
+| Cache | Encoded values, keys and 256 bytes per entry; at most 4,096 entries. `AggregateStateHealth.json` records the limit, peak, disk reads/writes, evictions and database bytes |
+| Other memory | SQLite has a separate 1 MiB page cache. The decoded record, codec scratch, TCP reassembly, Host/DeviceProfile/Service state and UDP payload retention are outside this limit |
+| Scratch lifecycle | `.netcap-aggregate-*.sqlite` uses mode `0600` on POSIX and the output directory's inherited ACL on Windows; normal cleanup removes it. It is not a restart/recovery log |
+| Failure | Storage errors cancel capture, propagate as capture errors and prevent `audit-output-ready.json`; a failed write never falls back to discarding aggregate state |
+| Configuration | `NC_MAX_AGGREGATE_STATE_BYTES`; the effective value is recorded in `capture-manifest.json.config.maxAggregateStateBytes` |
+
+`TestAggregateSpillingPreservesCaptureAuditSets` compares all audit-record hashes
+for 1,500 generated UDP flows with the in-memory path and a 2 KiB cache, using
+1 and 4 workers. `TestSpilledConnectionsMatchMemoryAcrossEvictionAndTupleReuse`
+also checks repeated snapshots, reused tuples and late packets.
+
+For 200,000 generated SYN tuples in one Linux/amd64 test binary, 2 CPUs and an
+8 GiB container, a 1 MiB cache reduced retained Go heap from 701,100,008 to
+458,418,520 bytes and peak RSS from 2,244,902,912 to 1,247,657,984 bytes. Runtime
+including finalization increased from 11.314 to 16.259 seconds. These synthetic
+measurements do not close DS-12/DS-14 or qualify the unavailable large corpus;
+see `internal/collector/testdata/recheck-v0166.json`.
 
 ## Operational tuning
 

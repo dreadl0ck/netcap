@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/aggregate"
 	"github.com/dreadl0ck/netcap/internal/performance"
 	"github.com/dreadl0ck/netcap/internal/tlsdecrypt"
 	"sync"
@@ -107,6 +108,7 @@ var DefaultConfig = &Config{
 	StreamBufferSize:              100,
 	MaxStreamBytes:                100 << 20, // Matches the default maximum extracted file size.
 	MaxRetainedTCPStateBytes:      64 << 20,
+	MaxAggregateStateBytes:        32 << 20,
 	MaxBufferedPagesPerConnection: 0, // unlimited by default
 	MaxBufferedPagesTotal:         0, // unlimited by default
 }
@@ -115,8 +117,10 @@ var DefaultConfig = &Config{
 // for the decoders
 // this structure has an optimized field order to avoid excessive padding.
 type Config struct {
-	TLSSecrets     *tlsdecrypt.Secrets `json:"-" yaml:"-"`
-	RecordObserver func(proto.Message) `json:"-" yaml:"-"`
+	AggregateStore         *aggregate.Store `json:"-" yaml:"-"`
+	MaxAggregateStateBytes int64
+	TLSSecrets             *tlsdecrypt.Secrets `json:"-" yaml:"-"`
+	RecordObserver         func(proto.Message) `json:"-" yaml:"-"`
 	// Output path
 	Out string
 
@@ -368,24 +372,24 @@ type Config struct {
 	ProtoMessageTypes []string
 }
 
-// Clone returns a shallow copy of the receiver.
+// Clone copies settings without sharing live aggregate storage.
 //
 // Config used to embed a sync.Mutex, which made `dup := *c` here a copylocks
 // violation -- reported by `go vet` on every run, and annotated with a
 // //nolint:govet that go vet does not honour (that directive is golangci-lint's).
 // The mutex was never locked anywhere in the tree: removing it makes the copy
-// legal rather than merely excused, and Clone no longer has to reset anything.
+// legal rather than merely excused.
 //
 // Callers wanting a mutable copy of an existing configuration (typically tests
 // starting from DefaultConfig) should still use Clone rather than `cfg := *src`,
-// so there is one place to change if Config ever gains a field that must not be
-// shared between copies.
+// so runtime-owned fields are reset in one place.
 func (c *Config) Clone() *Config {
 	if c == nil {
 		return nil
 	}
 
 	dup := *c
+	dup.AggregateStore = nil
 
 	return &dup
 }
