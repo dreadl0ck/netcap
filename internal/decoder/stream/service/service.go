@@ -20,6 +20,7 @@
 package service
 
 import (
+	"errors"
 	"sort"
 	"sync/atomic"
 
@@ -54,6 +55,12 @@ var Decoder = &decoder.AbstractDecoder{
 		return initServiceProbes()
 	},
 	DeInit: func(e *decoder.AbstractDecoder) error {
+		Store.operations.Lock()
+		defer Store.operations.Unlock()
+		if decoderconfig.Instance.AggregateStore != nil {
+			err := walkStoredServices(func(s *types.Service, apps map[string]struct{}) error { return writeService(e, s, apps) })
+			return errors.Join(err, serviceLog.Sync())
+		}
 		// flush writer
 		var err error
 
@@ -67,38 +74,33 @@ var Decoder = &decoder.AbstractDecoder{
 		for _, ident := range idents {
 			item := Store.Items[ident]
 			item.Lock()
-			sort.Strings(item.Service.Flows)
-
-			// populate Applications from DPI results
-			if len(item.applications) > 0 {
-				item.Service.Applications = make([]string, 0, len(item.applications))
-				for app := range item.applications {
-					item.Service.Applications = append(item.Service.Applications, app)
-				}
-				// DetectedProtocolName below takes the first entry, so the map
-				// order would otherwise decide which protocol gets reported.
-				sort.Strings(item.Service.Applications)
-			}
-
-			// Set DetectedProtocolName based on available information
-			if len(item.Service.Applications) > 0 {
-				// Use the first DPI-detected application as the protocol name
-				item.Service.DetectedProtocolName = decoderutils.CanonicalProtocol(item.Service.Applications[0])
-			} else if item.Service.MatchedProbeID != "" {
-				item.Service.DetectedProtocolName = decoderutils.CanonicalProtocol(item.Service.Name)
-			} else {
-				item.Service.DetectedProtocolName = ""
-			}
-
-			err = e.Writer.Write(item.Service)
-			if err != nil {
-				serviceLog.Error("failed to flush service audit record", zap.Error(err))
-			}
+			err = errors.Join(err, writeService(e, item.Service, item.applications))
 			item.Unlock()
-
-			atomic.AddInt64(&e.NumRecordsWritten, 1)
 		}
 
-		return serviceLog.Sync()
+		return errors.Join(err, serviceLog.Sync())
 	},
+}
+
+func writeService(d *decoder.AbstractDecoder, s *types.Service, apps map[string]struct{}) error {
+	sort.Strings(s.Flows)
+	if len(apps) > 0 {
+		s.Applications = make([]string, 0, len(apps))
+		for app := range apps {
+			s.Applications = append(s.Applications, app)
+		}
+		sort.Strings(s.Applications)
+	}
+	if len(s.Applications) > 0 {
+		s.DetectedProtocolName = decoderutils.CanonicalProtocol(s.Applications[0])
+	} else if s.MatchedProbeID != "" {
+		s.DetectedProtocolName = decoderutils.CanonicalProtocol(s.Name)
+	} else {
+		s.DetectedProtocolName = ""
+	}
+	if err := d.Writer.Write(s); err != nil {
+		return err
+	}
+	atomic.AddInt64(&d.NumRecordsWritten, 1)
+	return nil
 }

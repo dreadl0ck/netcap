@@ -17,7 +17,7 @@ More workers do not always give more throughput. Disk, parsing, native analyzers
 | Retained TCP payload: zero                  | `-max-retained-tcp-bytes` limits reader-owned payload copies across all workers; zero is unlimited.                                        |
 | Retained reassembly pages: zero             | `-max-retained-reassembly-bytes` limits allocated TCP page payload and metadata across all workers; zero is unlimited.                     |
 | Incremental TCP state: 64 MiB               | `-max-retained-tcp-state-bytes` counts parser storage and pool/connection credits while `-incremental-http` is enabled; zero is unlimited. |
-| Encoded packet aggregates: 32 MiB         | `-max-aggregate-state-bytes` bounds the resident Connection/Host/DeviceProfile cache, with excess state on disk; zero selects the in-memory implementation. |
+| Encoded aggregates: 32 MiB                | `-max-aggregate-state-bytes` bounds the resident Connection/Host/DeviceProfile/Service cache, with excess state on disk; zero selects the in-memory implementation. |
 | DPI automatic contexts                      | Up to 8; separate from protocol workers                                                                                                    |
 | Evidence index                              | 64 MiB of accounted storage plus record and link limits                                                                                    |
 | Optional packet retention                   | Default 32 MiB segments / 512 MiB retained                                                                                                 |
@@ -66,14 +66,14 @@ These are three separate storage limits. Together they do not add up to a 192 Mi
 ## Spill aggregate audit state
 
 `-max-aggregate-state-bytes` defaults to 33,554,432 bytes in the CLI. Connection,
-Host and DeviceProfile state use a private SQLite scratch file. Port/SNI counters,
-profile labels, contacts and deferred-DPI samples are separate records, so an
+Host, DeviceProfile and Service state use a private SQLite scratch file. Port/SNI counters,
+profile labels, contacts, service-flow membership and deferred-DPI samples are separate records, so an
 update does not rewrite an ever-growing aggregate.
 
 | Property | Contract |
 | --- | --- |
 | Cache | Encoded values, keys and 256 bytes per entry; at most 4,096 entries. `AggregateStateHealth.json` records the limit, peak, disk reads/writes, evictions and database bytes |
-| Other memory | SQLite has a separate 1 MiB page cache. The decoded output record, codec scratch, TCP reassembly, Service state and UDP payload retention are outside this limit |
+| Other memory | SQLite has a separate 1 MiB page cache. The decoded output record, codec scratch, TCP reassembly, Software state and UDP payload retention are outside this limit |
 | Scratch lifecycle | `.netcap-aggregate-*.sqlite` uses mode `0600` on POSIX and the output directory's inherited ACL on Windows; normal cleanup removes it. It is not a restart/recovery log |
 | Failure | Storage errors cancel capture, propagate as capture errors and prevent `audit-output-ready.json`; a failed write never falls back to discarding aggregate state |
 | Configuration | `NC_MAX_AGGREGATE_STATE_BYTES`; the effective value is recorded in `capture-manifest.json.config.maxAggregateStateBytes` |
@@ -89,6 +89,11 @@ capture timestamps, logical interfaces, tunnel scope and FCS metadata.
 `TestStoredContactSamplingMatchesBoundedMemoryPolicy` checks the existing
 65,536-key tracking limit and 4,096-contact sample across 67,000 distinct contacts.
 Identity seeding visits one DeviceProfile at a time through `WalkDeviceProfiles`.
+
+`TestStoredServicesPreserveRepresentativeAndFlowMembership` checks 5,000 distinct
+flow references against the in-memory implementation, including banner selection
+and application labels. `TestServiceProbeCanReenterAggregateStore` checks that a
+service signature can emit a software lookup that accesses the same store.
 
 For 200,000 generated SYN tuples, each comparison used one Linux/amd64 test
 binary, 2 CPUs, an 8 GiB container and a 1 MiB encoded cache. Runtime includes

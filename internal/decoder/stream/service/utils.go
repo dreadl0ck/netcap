@@ -24,6 +24,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/dreadl0ck/netcap/internal/aggregate"
+	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -54,12 +56,18 @@ func (s *service) AddFlow(id string) {
 // atomicDeviceProfileMap contains all connections and provides synchronized access.
 type atomicServiceMap struct {
 	sync.Mutex
+	operations sync.RWMutex
 	// map server IP + Port to service
 	Items map[string]*service
 }
 
 // Size returns the number of elements in the Items map.
 func (a *atomicServiceMap) Size() int {
+	a.operations.RLock()
+	defer a.operations.RUnlock()
+	if decoderconfig.Instance.AggregateStore != nil {
+		return int(storedServices.Load())
+	}
 	a.Lock()
 	defer a.Unlock()
 
@@ -74,6 +82,12 @@ var Store = &atomicServiceMap{
 // ResetStore clears all services from memory
 // This should be called when resetting state between processing different files
 func ResetStore() {
+	Store.operations.Lock()
+	defer Store.operations.Unlock()
+	if decoderconfig.Instance.AggregateStore != nil {
+		_ = decoderconfig.Instance.AggregateStore.Do(func(tx *aggregate.Tx) error { return tx.Delete("service/") })
+	}
+	storedServices.Store(0)
 	Store.Lock()
 	Store.Items = make(map[string]*service)
 	Store.Unlock()
@@ -156,6 +170,15 @@ func (s *service) ResetProbeMatch() {
 // AddApplications adds DPI-detected application protocols to a service.
 // This function is thread-safe and can be called from packet decoders.
 func AddApplications(serviceIdent string, applications []string) {
+	Store.operations.RLock()
+	defer Store.operations.RUnlock()
+	lock := observationLock(serviceIdent)
+	lock.Lock()
+	defer lock.Unlock()
+	if decoderconfig.Instance.AggregateStore != nil {
+		addStoredApplications(serviceIdent, applications)
+		return
+	}
 	Store.Lock()
 	defer Store.Unlock()
 

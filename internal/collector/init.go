@@ -19,6 +19,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/service"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tcp"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
@@ -146,6 +147,7 @@ func (c *Collector) Init() (err error) {
 		packet.ResetConnections()
 		packet.ResetHosts()
 		packet.ResetDeviceProfiles()
+		service.ResetStore()
 	}
 	if err := file.StartAnalysis(c.config.DecoderConfig.Out, ""); err != nil {
 		return fmt.Errorf("artifact analysis admission: %w", err)

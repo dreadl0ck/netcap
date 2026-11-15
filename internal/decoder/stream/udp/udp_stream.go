@@ -21,7 +21,6 @@ package udp
 
 import (
 	"reflect"
-	"strconv"
 	"sync"
 	"time"
 
@@ -34,15 +33,12 @@ import (
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
-	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/sipaudit"
 	"github.com/dreadl0ck/netcap/internal/utils"
 )
 
 // Streams contains a pool of UDP data streams
 var Streams = newUDPStreamPool()
-
-const typeUDP = "udp"
 
 // ResetStreams creates a new UDP stream pool to clear all stream state
 // This should be called when resetting state between processing different files
@@ -138,77 +134,12 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 		banner = banner[:decoderconfig.Instance.BannerSize]
 	}
 
-	// check if we already have a banner for the IP + Port combination
-	service.Store.Lock()
-	if serv, ok := service.Store.Items[serviceIdent]; ok {
-		service.Store.Unlock()
-
-		// Lock the individual service to ensure thread-safe modification
-		serv.Lock()
-		defer serv.Unlock()
-
-		// Separate scoped conversations can share the displayed flow identifier.
-		serv.AddFlow(flowIdent)
-
-		// if this flow had a longer response from the server then what we have previously (in case we dont have c.Banner bytes yet)
-		// set this service response on the service and update the timestamp
-		// more data means more information and is therefore preferred for identification purposes
-		if serv.PreferObservation(banner, firstPacket.UnixNano(), serverBytes, clientBytes) {
-			serv.ResetProbeMatch()
-			service.MatchServiceProbes(serv, banner, flowIdent)
-		}
-
-		return
+	created, _ := service.ObserveFlowBanner(serviceIdent, flowIdent, banner, firstPacket, serverBytes, clientBytes, net, transport, "UDP")
+	if created {
+		streamutils.Stats.Lock()
+		streamutils.Stats.NumServices++
+		streamutils.Stats.Unlock()
 	}
-	service.Store.Unlock()
-
-	// nope. lets create a new one
-	// Safely extract network destination
-	var networkDst string
-	if len(net.Dst().Raw()) > 0 {
-		networkDst = net.Dst().String()
-	}
-
-	serv := service.NewService(firstPacket.UnixNano(), serverBytes, clientBytes, networkDst)
-	serv.Banner = string(banner)
-	serv.IP = networkDst
-	serv.Port = utils.DecodePort(transport.Dst().Raw())
-
-	// set flow ident, h.parent.ident is the client flow
-	serv.AddFlow(flowIdent)
-
-	// Safely extract transport destination port for service name lookup
-	if len(transport.Dst().Raw()) > 0 {
-		dst, err := strconv.Atoi(transport.Dst().String())
-		if err == nil {
-			serv.Protocol = "UDP"
-			serv.Name = resolvers.LookupServiceByPort(dst, typeUDP)
-			serv.PortName = serv.Name // Set PortName to the same lookup result
-		}
-	}
-
-	service.MatchServiceProbes(serv, banner, flowIdent)
-
-	// Probe matching is outside the store lock. Recheck before insertion because
-	// another stream may have created this service in the meantime.
-	service.Store.Lock()
-	if existing, ok := service.Store.Items[serviceIdent]; ok {
-		service.Store.Unlock()
-		existing.Lock()
-		defer existing.Unlock()
-		existing.AddFlow(flowIdent)
-		if existing.PreferObservation(banner, firstPacket.UnixNano(), serverBytes, clientBytes) {
-			existing.ResetProbeMatch()
-			service.MatchServiceProbes(existing, banner, flowIdent)
-		}
-		return
-	}
-	service.Store.Items[serviceIdent] = serv
-	service.Store.Unlock()
-
-	streamutils.Stats.Lock()
-	streamutils.Stats.NumServices++
-	streamutils.Stats.Unlock()
 }
 
 // TODO: ensure that only decoders of protocols are called that actually support being transported via UDP
