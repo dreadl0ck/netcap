@@ -21,6 +21,20 @@ GOWORK=off go test -tags nodpi,noyara ./internal/delimited ./types
 
 Run the package you changed and its regression tests first, then the wider suite.
 
+## Offline workflow qualification
+
+```sh
+make docs-check NETCAP_BIN="$(command -v net)"
+```
+
+[`scripts/check-docs.py`](../scripts/check-docs.py) validates navigation, links,
+anchors and shell syntax, then runs [`scripts/docs-workflows.sh`](../scripts/docs-workflows.sh)
+against synthetic captures from [`scripts/docs-fixtures.py`](../scripts/docs-fixtures.py).
+It checks HTTP/file hashes, credential extraction, rule controls, packet subsets,
+grammar comparison, signed sensor bundles and baseline approval/change detection.
+YARA builds also run matched/unmatched scanner controls. No interface is captured;
+the temporary local API uses its own per-run token. `--static-only` skips execution.
+
 ## Capture regressions
 
 | Command                 | Scope                                                               |

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate published Markdown and execute its marked, offline lab commands."""
+"""Validate published Markdown and execute the documented offline contract lab."""
 
 import argparse
 import hashlib
@@ -12,14 +12,20 @@ import subprocess
 import tempfile
 import time
 from urllib.parse import unquote, urlsplit
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 FENCES = re.compile(r"^```[^\n]*\n.*?^```[ \t]*$", re.M | re.S)
-LINKS = re.compile(r"!?\[[^\]]*\]\((<[^>]+>|[^\s)]+)(?:\s+[^)]*)?\)|(?:src|page|url)=[\"']([^\"']+)[\"']")
+LINKS = re.compile(r"!?\[[^\]]*\]\((<[^>]+>|[^\s)]+)(?:\s+[^)]*)?\)|(?:src|href|page|url)=[\"']([^\"']+)[\"']")
 MARKED = re.compile(r"<!-- docs:(run|serve) ([\w-]+) -->\s*```sh\n(.*?)```", re.S)
+WORKFLOWS = {
+    **dict.fromkeys(("fixtures", "investigation", "related", "control", "packet-export",
+                     "network-policy", "grammar", "sensor-seal", "sensor-import",
+                     "sensor-prune", "approve-baseline", "monitor-baseline", "yara-scan"), "run"),
+    "baseline": "serve", "yara": "serve",
+}
 
 
 def targets(text):
@@ -34,8 +40,10 @@ def anchors(text):
 
 def static_checks():
     pages = [DOCS / unquote(urlsplit(t).path) for t in targets((DOCS / "SUMMARY.md").read_text())]
+    readme = ROOT / "README.md"
+    validate_readme(readme.read_text())
     marked = {}
-    for page in pages:
+    for page in [*pages, readme]:
         text = page.read_text()
         assert "\0" not in text, f"NUL bytes: {page}"
         for target in targets(text):
@@ -51,8 +59,16 @@ def static_checks():
         for mode, name, block in MARKED.findall(text):
             assert name not in marked, f"Duplicate runnable block {name}"
             marked[name] = mode, block
-    print(f"PASS: {len(pages)} navigation pages, local links/anchors and shell syntax", flush=True)
+    workflow = ROOT / "scripts/docs-workflows.sh"
+    subprocess.run(["bash", "-n", str(workflow)], check=True, capture_output=True)
+    for name, mode in WORKFLOWS.items():
+        marked.setdefault(name, (mode, f"exec bash scripts/docs-workflows.sh {name}\n"))
+    print(f"PASS: {len(pages)} navigation pages and compact README, local links/anchors and shell syntax", flush=True)
     return marked
+
+
+def validate_readme(text):
+    assert len(text.splitlines()) <= 160 and len(text.split()) <= 1200, "README must stay a compact summary (160 lines / 1200 words); move feature detail into docs and link it"
 
 
 def ndjson(path):
@@ -72,7 +88,16 @@ def qualify(binary, marked, workspace, require_yara=False):
                                 capture_output=True, text=True, timeout=120)
         if result.returncode:
             raise RuntimeError(f"Documentation block {name} failed ({result.returncode})\n{result.stdout}\n{result.stderr}")
-        print(f"PASS: published block {name}", flush=True)
+        print(f"PASS: offline workflow {name}", flush=True)
+
+    def local_request(path, log_name):
+        log = (workspace / log_name).read_text(errors="replace")
+        token = re.search(r"Local Web UI access token: (\S+)", log)
+        if not token:
+            raise ValueError("Local API token is not available yet")
+        env["NETCAP_DOCS_TOKEN"] = token.group(1)
+        return Request("http://127.0.0.1:8080" + path,
+                       headers={"Authorization": "Bearer " + token.group(1)})
 
     def dump(path):
         if not path.exists():
@@ -132,7 +157,7 @@ def qualify(binary, marked, workspace, require_yara=False):
             while True:
                 assert process.poll() is None, "Baseline server exited; inspect baseline-server.log"
                 try:
-                    with urlopen("http://127.0.0.1:8080/api/behavior", timeout=1) as response:
+                    with urlopen(local_request("/api/behavior", "baseline-server.log"), timeout=1) as response:
                         state = json.load(response)
                     if state.get("samples", 0) >= 4 and state["watermark"] - state["learningStarted"] >= 1_000_000_000:
                         break
@@ -160,6 +185,7 @@ def qualify(binary, marked, workspace, require_yara=False):
 
     mode, serve = marked["yara"]
     assert mode == "serve"
+    env.pop("NETCAP_DOCS_TOKEN", None)
     with (workspace / "yara-server.log").open("w") as log:
         process = subprocess.Popen(["bash", "-c", prefix + serve], cwd=workspace, env=env,
                                    stdout=log, stderr=log, start_new_session=True)
@@ -168,7 +194,7 @@ def qualify(binary, marked, workspace, require_yara=False):
             while True:
                 assert process.poll() is None, "YARA lab server exited"
                 try:
-                    with urlopen("http://127.0.0.1:8080/api/yara/status", timeout=1) as response:
+                    with urlopen(local_request("/api/yara/status", "yara-server.log"), timeout=1) as response:
                         status = json.load(response)
                     if (fixtures / "yara-audit/File.ncap.gz").exists():
                         # Wait for shutdown/finalization of the offline processing,
@@ -187,7 +213,7 @@ def qualify(binary, marked, workspace, require_yara=False):
                 positive = json.loads((fixtures / "yara-positive.json").read_text())
                 negative = json.loads((fixtures / "yara-negative.json").read_text())
                 assert "Netcap_Documentation_Fixture" in positive["matches"], positive
-                assert negative["matches"] == [], negative
+                assert negative["state"] == "completed" and negative["outcome"] == "no-match" and negative["matches"] in (None, []), negative
                 print("PASS: native YARA positive and negative scanner controls", flush=True)
         finally:
             os.killpg(process.pid, signal.SIGINT)

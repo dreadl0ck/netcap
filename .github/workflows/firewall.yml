@@ -41,6 +41,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: python3 -m pip install PyYAML==6.0.2
+      - name: Capture harness headers
+        run: sudo apt-get update && sudo apt-get install -y libpcap-dev
       - name: Verify native runner and Docker architecture
         run: |
           case '${{ matrix.arch }}' in
@@ -58,8 +60,8 @@ jobs:
           CGO_ENABLED: '1'
         run: |
           packages='./cmd/netcap-firewall ./cmd/firewall ./internal/waf ./internal/policy ./internal/policystate ./internal/policycontrol ./internal/gateway ./internal/enforcer ./internal/networkfirewall ./internal/transparentfirewall ./internal/firewallstate ./internal/firewallfleet ./internal/firewalltransport ./internal/responseactions ./internal/firewallauth ./internal/firewallui ./internal/apipolicy ./internal/appliance ./internal/protocoltest ./internal/runtimeobs'
-          go test -race $packages
-          go test -race -tags coraza $packages
+          go test -race -tags nodpi,noyara,nomagika $packages
+          go test -race -tags coraza,nodpi,noyara,nomagika $packages
           go test -race -tags coraza,http3 ./cmd/netcap-firewall ./cmd/firewall ./internal/firewalltransport ./internal/waf ./examples/firewall/qualification
       - name: Prometheus rules and percentile fixtures
         run: make test-firewall-operations
