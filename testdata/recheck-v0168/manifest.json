@@ -1,0 +1,18 @@
+{
+  "archiveSHA256": "592f9c7bb78b48aeab0bc3db5011d2f0d969e31fab9e50fcee5ddea80cad4c06",
+  "report": "netcap-full-recheck-v0.16.8.md",
+  "source": "netcap-v0.16.8-synthetic-repros.zip",
+  "files": {
+    "base_http.pcap": {"sha256":"5f8dbb33c56ed7152f687fc40ee73caddf9830f67c07d734f2f855dec604637c","member":"repro/edge/base_http.pcap"},
+    "http_pipelined.pcap": {"sha256":"bbe85fe0edc393367f986d0208fec7bbae738c395bdd2a10f2f12f7432d2da18","member":"repro/edge/http_pipelined.pcap"},
+    "http_long_header_64k.pcap": {"sha256":"0ab0990336d671c7069b8f71313977e8311ec6b465399077dc6faf13e5b23423","member":"repro/edge/http_long_header_64k.pcap"},
+    "http_nonutf8.pcap": {"sha256":"bd52dc04cea528aa6335fd1ae04e7c4409f5468d31218bde1c7124d4f2abc526","member":"repro/edge/http_nonutf8.pcap"},
+    "hv_std_userpass.pcap": {"sha256":"d95e2b268b1e7f3fb49c56066e30ea39bfcc8bf1b2e60b07f5b8c5e03dc1d364","member":"repro/v167/edge/hv_std_userpass.pcap"},
+    "ng_shb_trailer_mismatch.pcapng": {"sha256":"dc14258c6fbeefdc0623c079a8c27a2bea7d1200b81406cc888d80b662c31223","member":"repro/v167/edge/ng_shb_trailer_mismatch.pcapng"},
+    "nbns_refresh_fp.pcap": {"sha256":"aad6c1ca1617b7a0ab40c65feeb943d6547280d004e7fc3d7af2b2e5f265de9a","member":"repro/v168/edge/nbns_refresh_fp.pcap"},
+    "nbns_query_fp.pcap": {"sha256":"9a00eda0f61e41634be750d38aa883564ce12a589036dba9ccce87a15792c65a","member":"repro/v168/edge/nbns_query_fp.pcap"},
+    "dns_query_fp.pcap": {"sha256":"10e5b3f8cac5e709594d688e27bece3054c02860c3a720bde4fd273efedf1e5f","member":"repro/v168/edge/dns_query_fp.pcap"},
+    "dns_response_fp.pcap": {"sha256":"3e2692a26b80b522748c9193c26b298d686b4270227ceecdb164e9e3f72893d0","member":"repro/v168/edge/dns_response_fp.pcap"},
+    "v168_udp_uniqflows_10k.pcap": {"sha256":"9733ac366d76638f73ea98b6838edac4277890b8b4873bd4914601b00c6496c3","member":"repro/v168/edge/v168_udp_uniqflows_10k.pcap"}
+  }
+}
