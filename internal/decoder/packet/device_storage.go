@@ -173,15 +173,15 @@ func updateStoredDevice(i *decoderutils.PacketInfo) {
 func loadDeviceFields(tx *aggregate.Tx, p *types.DeviceProfile) (map[string]struct{}, error) {
 	prefix := deviceFields(p.MacAddr)
 	for field, target := range map[string]*[]string{"ips": &p.DeviceIPs, "services": &p.AdvertisedServices, "devices": &p.Devices, "names": &p.Hostnames, "types": &p.DeviceTypes, "roles": &p.Roles} {
-		if err := tx.Each(prefix+"sets/"+field+"/", func(_ string, wire []byte) error { *target = append(*target, string(wire)); return nil }); err != nil {
+		if err := tx.EachStable(prefix+"sets/"+field+"/", func(_ string, wire []byte) error { *target = append(*target, string(wire)); return nil }); err != nil {
 			return nil, err
 		}
 	}
-	if err := tx.Each(prefix+"contacts/sample/", func(_ string, wire []byte) error { p.Contacts = append(p.Contacts, string(wire)); return nil }); err != nil {
+	if err := tx.EachStable(prefix+"contacts/sample/", func(_ string, wire []byte) error { p.Contacts = append(p.Contacts, string(wire)); return nil }); err != nil {
 		return nil, err
 	}
 	apps := map[string]struct{}{}
-	err := tx.Each(prefix+"applications/", func(_ string, wire []byte) error { apps[string(wire)] = struct{}{}; return nil })
+	err := tx.EachStable(prefix+"applications/", func(_ string, wire []byte) error { apps[string(wire)] = struct{}{}; return nil })
 	for app := range apps {
 		p.Applications = append(p.Applications, app)
 	}
@@ -190,7 +190,7 @@ func loadDeviceFields(tx *aggregate.Tx, p *types.DeviceProfile) (map[string]stru
 }
 
 func processStoredDeviceDPI(tx *aggregate.Tx, prefix string, clear bool) error {
-	if err := tx.Each(prefix+"dpi/packets/", func(_ string, wire []byte) error {
+	if err := tx.EachStable(prefix+"dpi/packets/", func(_ string, wire []byte) error {
 		packet, err := unmarshalBufferedPacket(wire)
 		if err != nil {
 			return err

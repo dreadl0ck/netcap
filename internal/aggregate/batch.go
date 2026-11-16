@@ -15,8 +15,12 @@ func (t *Tx) NextBatch(prefix, after string) ([]Row, error) {
 	if err := t.flush(); err != nil {
 		return nil, err
 	}
+	return t.readBatch(prefix, after, after == "")
+}
+
+func (t *Tx) readBatch(prefix, after string, first bool) ([]Row, error) {
 	query := `SELECT key,value FROM state WHERE key>? AND key<? ORDER BY key LIMIT ?`
-	if after == "" {
+	if first {
 		after = prefix
 		query = `SELECT key,value FROM state WHERE key>=? AND key<? ORDER BY key LIMIT ?`
 	}
@@ -51,4 +55,27 @@ func (t *Tx) NextBatch(prefix, after string) ([]Row, error) {
 		return nil, err
 	}
 	return batch, nil
+}
+
+// EachStable batches a range whose membership and future rows do not change.
+// The callback may rewrite its current row; SQL cursors close before callbacks.
+func (t *Tx) EachStable(prefix string, fn func(string, []byte) error) error {
+	if err := t.flush(); err != nil {
+		return err
+	}
+	last := ""
+	first := true
+	for {
+		rows, err := t.readBatch(prefix, last, first)
+		if err != nil || len(rows) == 0 {
+			return err
+		}
+		for _, row := range rows {
+			if err := fn(row.Key, row.Value); err != nil {
+				return err
+			}
+			last = row.Key
+		}
+		first = false
+	}
 }

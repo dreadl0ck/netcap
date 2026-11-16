@@ -120,7 +120,7 @@ func updateStoredHost(addr string, i *decoderutils.PacketInfo, source bool) {
 }
 
 func processStoredHostDPI(tx *aggregate.Tx, prefix string, clear bool) error {
-	if err := tx.Each(prefix+"dpi/packets/", func(_ string, wire []byte) error {
+	if err := tx.EachStable(prefix+"dpi/packets/", func(_ string, wire []byte) error {
 		packet, err := unmarshalBufferedPacket(wire)
 		if err != nil {
 			return err
@@ -164,7 +164,7 @@ func processStoredHostDPI(tx *aggregate.Tx, prefix string, clear bool) error {
 
 func loadHostFields(tx *aggregate.Tx, prefix string, host *types.Host) error {
 	for name, target := range map[string]*[]*types.Port{"src": &host.SrcPorts, "dst": &host.DstPorts, "contacted": &host.ContactedPorts} {
-		if err := tx.Each(prefix+"ports/"+name+"/", func(_ string, wire []byte) error {
+		if err := tx.EachStable(prefix+"ports/"+name+"/", func(_ string, wire []byte) error {
 			port := &types.Port{}
 			if err := proto.Unmarshal(wire, port); err != nil {
 				return err
@@ -176,11 +176,11 @@ func loadHostFields(tx *aggregate.Tx, prefix string, host *types.Host) error {
 		}
 	}
 	for name, target := range map[string]*[]string{"devices": &host.Devices, "ja4": &host.Ja4Fingerprints, "ja4s": &host.Ja4SFingerprints} {
-		if err := tx.Each(prefix+"sets/"+name+"/", func(_ string, wire []byte) error { *target = append(*target, string(wire)); return nil }); err != nil {
+		if err := tx.EachStable(prefix+"sets/"+name+"/", func(_ string, wire []byte) error { *target = append(*target, string(wire)); return nil }); err != nil {
 			return err
 		}
 	}
-	if err := tx.Each(prefix+"sni/", func(key string, wire []byte) error {
+	if err := tx.EachStable(prefix+"sni/", func(key string, wire []byte) error {
 		if len(wire) != 8 {
 			return fmt.Errorf("invalid stored SNI count")
 		}
@@ -196,7 +196,7 @@ func loadHostFields(tx *aggregate.Tx, prefix string, host *types.Host) error {
 	}); err != nil {
 		return err
 	}
-	return tx.Each(prefix+"protocols/", func(key string, wire []byte) error {
+	return tx.EachStable(prefix+"protocols/", func(key string, wire []byte) error {
 		name, err := base64DecodeStorageKey(key[len(prefix+"protocols/"):])
 		if err != nil {
 			return err

@@ -175,7 +175,7 @@ func handleStoredConnection(p gopacket.Packet, id connectionID, ll gopacket.Link
 func flushStoredConnections(d *Decoder) (int64, error) {
 	var count int64
 	err := conf.AggregateStore.Do(func(tx *aggregate.Tx) error {
-		return tx.Each("connection/", func(key string, wire []byte) error {
+		return tx.EachStable("connection/", func(key string, wire []byte) error {
 			c, err := unmarshalConnection(wire)
 			if err != nil {
 				return err
