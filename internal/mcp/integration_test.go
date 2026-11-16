@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/testutil"
 	"github.com/mark3labs/mcp-go/client"
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 )
@@ -99,7 +100,7 @@ func TestIntegrationFullWorkflow(t *testing.T) {
 	// 2. ingest_pcap — this stub doesn't actually shell out to net capture,
 	// the fake webui's /api/upload returns a canned session id.
 	ingest := callTool(t, cli, ctx, "ingest_pcap", map[string]any{
-		"path": "/etc/hosts", // any existing file; only the upload path is exercised
+		"path": testutil.Recheck168Capture(t, "base_http.pcap"),
 	})
 	if ingest.IsError {
 		t.Fatalf("ingest_pcap error: %s", contentText(ingest))

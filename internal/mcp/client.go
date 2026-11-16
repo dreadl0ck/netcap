@@ -15,7 +15,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -172,7 +171,7 @@ func (c *NetcapClient) UploadPCAP(pcapPath string) (json.RawMessage, error) {
 }
 
 func (c *NetcapClient) UploadPCAPContext(ctx context.Context, pcapPath string) (json.RawMessage, error) {
-	f, err := os.Open(pcapPath)
+	f, size, err := openCaptureUpload(pcapPath, maxCaptureUpload)
 	if err != nil {
 		return nil, fmt.Errorf("opening pcap: %w", err)
 	}
@@ -185,22 +184,21 @@ func (c *NetcapClient) UploadPCAPContext(ctx context.Context, pcapPath string) (
 
 	uploadErr := make(chan error, 1)
 	go func() {
-		defer pw.Close()
-		defer mw.Close()
 		part, err := mw.CreateFormFile("file", filepath.Base(pcapPath))
-		if err != nil {
-			uploadErr <- err
-			return
+		if err == nil {
+			_, err = io.CopyN(part, f, size)
 		}
-		if _, err := io.Copy(part, f); err != nil {
-			uploadErr <- err
-			return
+		if err == nil {
+			err = mw.Close()
 		}
-		uploadErr <- nil
+		_ = pw.CloseWithError(err)
+		uploadErr <- err
 	}()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/upload", pr)
 	if err != nil {
+		_ = pr.CloseWithError(err)
+		<-uploadErr
 		return nil, err
 	}
 	req.Header.Set("Content-Type", mw.FormDataContentType())
@@ -209,10 +207,11 @@ func (c *NetcapClient) UploadPCAPContext(ctx context.Context, pcapPath string) (
 	body, doErr := c.do(req)
 	// An early backend rejection or cancellation must release the writer.
 	_ = pr.CloseWithError(doErr)
+	writerErr := <-uploadErr
 	if doErr != nil {
 		return nil, doErr
 	}
-	if writerErr := <-uploadErr; writerErr != nil {
+	if writerErr != nil {
 		return nil, fmt.Errorf("streaming upload: %w", writerErr)
 	}
 	return body, doErr

@@ -279,25 +279,17 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Parse multipart form (limit to max file size + some overhead)
-	maxMemory := s.serviceConfig.MaxFileSize + (10 * 1024 * 1024) // 10MB overhead
-	if err := r.ParseMultipartForm(maxMemory); err != nil {
-		log.Printf("[WebUI] Failed to parse multipart form: %v", err)
-		respondJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "Failed to parse upload form",
-		})
-		return
-	}
-
-	// Get the uploaded file
-	file, header, err := r.FormFile("file")
+	file, header, err := receiveCaptureUpload(w, r, s.serviceConfig.MaxFileSize)
 	if err != nil {
 		respondJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "No file provided",
+			"error": err.Error(),
 		})
 		return
 	}
-	defer file.Close()
+	defer func() {
+		file.Close()
+		os.Remove(file.Name())
+	}()
 
 	// Validate file size
 	if header.Size > s.serviceConfig.MaxFileSize {
@@ -381,7 +373,12 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 	}
 	defer outFile.Close()
 
-	if _, err := io.Copy(outFile, file); err != nil {
+	_, err = io.Copy(outFile, file)
+	if closeErr := outFile.Close(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		os.Remove(inputPath)
 		log.Printf("[WebUI] Failed to write input file: %v", err)
 		respondJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "Failed to save uploaded file",

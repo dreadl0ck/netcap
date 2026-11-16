@@ -1855,37 +1855,24 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse multipart form
-	// In service mode: 200MB + overhead
-	// In local mode: allow larger files (10GB max for form parsing)
-	maxMemory := int64(210 * 1024 * 1024) // 210MB for service mode
-	if !s.isServiceMode {
-		maxMemory = int64(10 * 1024 * 1024 * 1024) // 10GB for local mode
+	limit := localUploadLimit
+	if s.isServiceMode {
+		limit = 200 << 20
 	}
-	if err := r.ParseMultipartForm(maxMemory); err != nil {
-		log.Printf("[WebUI] Failed to parse multipart form: %v", err)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
-			"error":   "Failed to parse upload form",
-			"success": false,
-		})
-		return
-	}
-
-	// Get the uploaded file
-	file, header, err := r.FormFile("file")
+	file, header, err := receiveCaptureUpload(w, r, limit)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
-			"error":   "No file provided",
+		respondJSON(w, http.StatusBadRequest, map[string]any{
+			"error":   err.Error(),
 			"success": false,
 		})
 		return
 	}
-	defer file.Close()
+	defer func() {
+		file.Close()
+		os.Remove(file.Name())
+	}()
 
-	// Validate file size (only in service mode; no limit in local mode)
-	// Note: In local mode, users can upload files of any size
+	// Service mode keeps its smaller admission limit.
 	if s.isServiceMode {
 		maxSize := int64(200 * 1024 * 1024)
 		if header.Size > maxSize {
@@ -1964,7 +1951,11 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	defer outFile.Close()
 
 	written, err := io.Copy(outFile, file)
+	if closeErr := outFile.Close(); err == nil {
+		err = closeErr
+	}
 	if err != nil {
+		os.Remove(inputPath)
 		log.Printf("[WebUI] Failed to write input file: %v", err)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
