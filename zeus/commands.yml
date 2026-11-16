@@ -571,7 +571,7 @@ commands:
             - version-bump-test
             - gen-proto-release
             - licenses
-        exec: goreleaser check .goreleaser.yml && GOWORK=off sh scripts/with-yara-x.sh goreleaser release --clean --skip-publish --skip-validate; zeus version-bump-test-undo
+        exec: goreleaser check .goreleaser.yml && GOWORK=off sh scripts/with-yara-x.sh goreleaser release --snapshot --clean --skip-publish --skip-validate; zeus version-bump-test-undo
 
     # run a test release
     release-test-debug:
@@ -581,7 +581,7 @@ commands:
             - version-bump-test
             - gen-proto-release
             - licenses
-        exec: goreleaser check .goreleaser.yml && GOWORK=off sh scripts/with-yara-x.sh goreleaser release --clean --skip-publish --skip-validate --debug; zeus version-bump-test-undo
+        exec: goreleaser check .goreleaser.yml && GOWORK=off sh scripts/with-yara-x.sh goreleaser release --snapshot --clean --skip-publish --skip-validate --debug; zeus version-bump-test-undo
 
     release-test-full:
          dependencies:
