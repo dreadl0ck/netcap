@@ -213,7 +213,7 @@ var dot11Decoder = newGoPacketDecoder(
 			// The reason code is a 2-byte little-endian value at the start of the frame body
 			var reasonCode int32
 			var reasonCodeName string
-			if (isDeauth || isDisassoc) && len(dot11.Payload) >= 2 {
+			if (isDeauth || isDisassoc) && !dot11.Flags.WEP() && len(dot11.Payload) >= 2 {
 				reasonCode = int32(binary.LittleEndian.Uint16(dot11.Payload[:2]))
 				reasonCodeName = dot11ReasonCodeNames[uint16(reasonCode)]
 				if reasonCodeName == "" {

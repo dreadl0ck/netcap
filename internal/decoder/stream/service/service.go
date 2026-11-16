@@ -98,6 +98,9 @@ func writeService(d *decoder.AbstractDecoder, s *types.Service, apps map[string]
 	} else {
 		s.DetectedProtocolName = ""
 	}
+	if s.MatchedProbeID == "" {
+		s.Name = s.DetectedProtocolName
+	}
 	if err := d.Writer.Write(s); err != nil {
 		return err
 	}

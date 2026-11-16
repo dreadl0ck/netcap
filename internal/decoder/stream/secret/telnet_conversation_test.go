@@ -1,12 +1,40 @@
 package secret
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+func BenchmarkTelnetBinaryConversation(b *testing.B) {
+	c := &core.ConversationInfo{Data: core.DataFragments{
+		&core.StreamData{Dir: reassembly.TCPDirServerToClient, RawData: bytes.Repeat([]byte{0x80, 0xc0, 0xfe, 0x16}, 600)},
+	}}
+	b.ReportAllocs()
+	b.SetBytes(2400)
+	for b.Loop() {
+		parseTelnetAuth(c, func(*types.Secret) { b.Fatal("binary data harvested") })
+	}
+}
+
+func TestTelnetOffPortRequiresBoundedPromptEvidence(t *testing.T) {
+	for _, tc := range []struct {
+		wire []byte
+		want bool
+	}{
+		{[]byte("Welcome\r\nLoGiN:"), true},
+		{bytes.Repeat([]byte{0x16, 0x80, 0xc0, 0xfe}, 2048), false},
+		{append(bytes.Repeat([]byte{'x'}, 4096), []byte("login:")...), false},
+	} {
+		c := &core.ConversationInfo{ServerPort: 443, Data: core.DataFragments{&core.StreamData{Dir: reassembly.TCPDirServerToClient, RawData: tc.wire}}}
+		if telnetPromptEvidence(c) != tc.want {
+			t.Fatalf("unexpected prompt classification, length %d", len(tc.wire))
+		}
+	}
+}
 
 func TestTelnetDirectionalCredentialsWithNULAndNegotiation(t *testing.T) {
 	for _, padded := range []bool{false, true} {

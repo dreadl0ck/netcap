@@ -363,7 +363,7 @@ Load local saved queries/reports when document is absent. Explicit document save
 
 ### `analyze_tls_capture`
 
-Analyze a registered PCAP/TLS stream using an explicitly supplied backend-local NSS keyLog and installed tshark. sourceSHA256 binds the capture; stream (default 0) and communityId are exclusive. Input and secrets are privately snapshotted; secret contents/paths are never included in output. Node ordering and completeness remain qualified. Service mode requires its existing administrator identity.
+Analyze a registered PCAP/TLS stream using an explicitly supplied backend-local NSS keyLog and installed tshark. sourceSHA256 binds the capture; stream (TLS follow index) and communityId are exclusive. Omit both to select the unique decryptable stream; ambiguity requires explicit selection. Input and secrets are privately snapshotted; secret contents/paths are never included in output. Node ordering and completeness remain qualified. Service mode requires its existing administrator identity.
 
 **Hints:** read-only
 

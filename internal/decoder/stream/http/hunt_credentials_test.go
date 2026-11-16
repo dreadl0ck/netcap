@@ -53,3 +53,44 @@ func TestHTTPNonUTF8HeadersRemainPairable(t *testing.T) {
 		t.Fatal("HTTP evidence lost invalid octets", string(data), err)
 	}
 }
+
+func TestHTTPJSONCredentialsPreserveRepeatedOccurrences(t *testing.T) {
+	old, count := secret.Decoder.Writer, secret.Decoder.NumRecordsWritten
+	defer func() { secret.Decoder.Writer, secret.Decoder.NumRecordsWritten = old, count }()
+	w := &formSecretWriter{}
+	secret.Decoder.Writer = w
+	body := `{"userid":"analyst","pswrd":"S3cret","nested":{"password":"ignore"}}`
+	request := fmt.Sprintf("POST /login HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/json\r\nContent-Length: %d\r\n\r\n%s", len(body), body)
+	response := "HTTP/1.1 302 Found\r\nContent-Length: 0\r\n\r\n"
+	captureHTTP(t, core.DataFragments{wireFragment(0, []byte(request+request), 10), wireFragment(1, []byte(response+response), 11)})
+	if len(w.records) != 2 {
+		t.Fatalf("want two independent occurrences, got %+v", w.records)
+	}
+	for _, r := range w.records {
+		if r.User != "analyst" || r.Password != "S3cret" {
+			t.Fatal(r)
+		}
+	}
+}
+
+func TestHTTPQuerySecretsAreTypedAndOccurrenceScoped(t *testing.T) {
+	old, count := secret.Decoder.Writer, secret.Decoder.NumRecordsWritten
+	defer func() { secret.Decoder.Writer, secret.Decoder.NumRecordsWritten = old, count }()
+	w := &formSecretWriter{}
+	secret.Decoder.Writer = w
+	request := "GET /login?username=bob&password=QueryPass&api_key=synthetic-key&token=synthetic-token HTTP/1.1\r\nHost: fixture.test\r\n\r\n"
+	response := "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+	captureHTTP(t, core.DataFragments{wireFragment(0, []byte(request+request), 10), wireFragment(1, []byte(response+response), 11)})
+	if len(w.records) != 6 {
+		t.Fatalf("want 3 values in each of 2 requests: %+v", w.records)
+	}
+	for i, r := range w.records {
+		if i%3 == 0 {
+			if r.User != "bob" || r.Password != "QueryPass" || r.Kind != "password" {
+				t.Fatal(r)
+			}
+		} else if r.User != "" || r.Password != "" || r.Value == "" || r.Parameter == "" || (r.Kind != "api-key" && r.Kind != "token") {
+			t.Fatal("non-password mapped to password", r)
+		}
+	}
+}

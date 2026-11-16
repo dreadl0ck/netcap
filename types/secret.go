@@ -45,6 +45,7 @@ var fieldsSecret = []string{
 	fieldUser,     // string
 	fieldPassword, // string
 	fieldNotes,    // string
+	"Kind", "Value", "Parameter",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -61,6 +62,7 @@ func (c *Secret) CSVRecord() []string {
 		c.User,
 		c.Password,
 		c.Notes,
+		c.Kind, c.Value, c.Parameter,
 	})
 }
 
@@ -142,6 +144,9 @@ func (c *Secret) Encode() []string {
 		secretEncoder.String(fieldUser, c.User),
 		secretEncoder.String(fieldPassword, c.Password),
 		secretEncoder.String(fieldNotes, c.Notes),
+		secretEncoder.String("Kind", c.Kind),
+		secretEncoder.String("Value", c.Value),
+		secretEncoder.String("Parameter", c.Parameter),
 	})
 }
 

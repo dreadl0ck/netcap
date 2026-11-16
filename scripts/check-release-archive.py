@@ -15,8 +15,13 @@ def check_archive(path):
             name = PurePosixPath(member.name)
             if name.is_absolute() or ".." in name.parts:
                 raise ValueError(f"unsafe archive member: {member.name}")
+            if ".gitbook" in name.parts or name.name == ".DS_Store":
+                raise ValueError(f"unwanted release asset: {member.name}")
             if member.isfile():
                 files[str(name)] = member
+        doc_bytes = sum(m.size for name, m in files.items() if "docs" in PurePosixPath(name).parts)
+        if doc_bytes > 16 << 20:
+            raise ValueError(f"release documentation exceeds 16 MiB: {doc_bytes}")
         readmes = sorted((name for name in files if PurePosixPath(name).name == "README.md"), key=len)
         if not readmes:
             raise ValueError("release archive has no README.md")

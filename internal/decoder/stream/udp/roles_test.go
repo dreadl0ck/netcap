@@ -49,4 +49,8 @@ func TestICMPRefusalMarksOnlyObservedUDPAttempt(t *testing.T) {
 	if len(empty.streams) != 0 {
 		t.Fatal("ICMP quote created service state")
 	}
+	empty.HandleUDP(probe, probe.TransportLayer())
+	if len(empty.streams) != 1 || !empty.streams[udpConversationKey(probe)].refused {
+		t.Fatal("worker scheduling before UDP observation lost refusal")
+	}
 }

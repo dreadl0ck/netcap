@@ -11,6 +11,30 @@ spec.loader.exec_module(module)
 
 
 class ReleaseArchiveTests(unittest.TestCase):
+    def test_media_and_metadata_are_rejected(self):
+        for name in ("netcap/docs/.gitbook/movie.mov", "netcap/docs/.DS_Store"):
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "release.tar.gz"
+                with tarfile.open(path, "w:gz") as archive:
+                    member = tarfile.TarInfo(name)
+                    member.size = 1
+                    archive.addfile(member, io.BytesIO(b"x"))
+                with self.assertRaisesRegex(ValueError, "unwanted release asset"):
+                    module.check_archive(path)
+
+    def test_staging_keeps_nested_markdown_without_media(self):
+        stage_spec = importlib.util.spec_from_file_location("stage_docs", Path(__file__).with_name("stage-release-docs.py"))
+        staging = importlib.util.module_from_spec(stage_spec)
+        stage_spec.loader.exec_module(staging)
+        with tempfile.TemporaryDirectory() as directory:
+            source, destination = Path(directory) / "source", Path(directory) / "docs"
+            for name in ("guide.md", "nested/topic.md", ".gitbook/movie.mov", ".gitbook/hidden.md", ".DS_Store"):
+                file = source / name
+                file.parent.mkdir(parents=True, exist_ok=True)
+                file.write_bytes(b"fixture")
+            staging.stage(source, destination)
+            self.assertEqual(sorted(str(p.relative_to(destination)) for p in destination.rglob("*") if p.is_file()), ["guide.md", "nested/topic.md"])
+
     def test_actual_archive_members_determine_link_validity(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "release.tar.gz"

@@ -127,6 +127,9 @@ func Record(dns *layers.DNS, timestamp int64, calculateEntropy bool) *types.DNS 
 				IP:         ip,
 				NS:         a.NS,
 				CNAME:      a.CNAME,
+				CNAMEText:  utils.PrintableBytes(a.CNAME),
+				NSText:     utils.PrintableBytes(a.NS),
+				PTRText:    utils.PrintableBytes(a.PTR),
 				PTR:        a.PTR,
 				SOA: &types.DNSSOA{
 					MName:   a.SOA.MName,

@@ -1165,6 +1165,9 @@ message DNSResourceRecord {
   DNSSVCB SVCB = 15;
   bytes NameRaw = 16; // Expanded name bytes before text presentation
   repeated string TXTStrings = 17;
+  string CNAMEText = 18;
+  string NSText = 19;
+  string PTRText = 20;
 }
 
 message DNSSVCB {
@@ -3101,6 +3104,9 @@ message Secret {
   string SipFrom = 35;         // SIP From header
   string SipTo = 36;           // SIP To header
   string CommunityID = 37;     // Corelight Community ID v1 for cross-tool correlation
+  string Kind = 38;            // password, api-key, token or session
+  string Value = 39;           // Non-password secret value
+  string Parameter = 40;       // Observed parameter name
 }
 
 message SSH {

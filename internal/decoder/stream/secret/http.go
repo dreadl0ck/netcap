@@ -20,11 +20,13 @@
 package secret
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"encoding/base64"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"regexp"
 	"slices"
@@ -35,6 +37,9 @@ import (
 )
 
 const serviceHTTP = "HTTP"
+
+// ParsedHTTPActive lets the message reader own complete HTTP occurrences.
+var ParsedHTTPActive func() bool
 
 var (
 	reHTTPBasic  = regexp.MustCompile(`(?:.*?)HTTP(?:[\s\S]*)(?:Authorization: Basic )(.*?)\r\n`)
@@ -103,12 +108,12 @@ func httpHarvesterFunc(data []byte, ident string, ts time.Time) *types.Secret {
 	}
 
 	// Extract credentials from HTTP POST form data
-	if formCreds := extractHTTPFormSecret(data, ident, ts); formCreds != nil {
+	if formCreds := extractHTTPFormSecret(data, ident, ts); formCreds != nil && (ParsedHTTPActive == nil || !ParsedHTTPActive()) {
 		return formCreds
 	}
 
 	// Extract sensitive URL parameters (keys, tokens, etc.)
-	if urlParams := extractSensitiveURLParams(data, ident, ts); urlParams != nil {
+	if urlParams := extractSensitiveURLParams(data, ident, ts); urlParams != nil && (ParsedHTTPActive == nil || !ParsedHTTPActive()) {
 		return urlParams
 	}
 
@@ -357,43 +362,52 @@ func extractSensitiveURLParams(data []byte, ident string, ts time.Time) *types.S
 		return nil
 	}
 
-	queryParams := parsedURL.Query()
+	records := HTTPQuerySecrets(parsedURL.Query(), ident, ts.UnixNano())
+	if len(records) > 0 {
+		records[0].Method, records[0].Uri = method, uri
+		records[0].Notes = fmt.Sprintf("Method: %s, Host: %s, URI: %s", method, extractHostFromHTTPRequest(data), uri)
+		return records[0]
+	}
+	return nil
+}
 
-	// Look for sensitive parameter names
-	var foundParams []string
-	for _, paramName := range getSensitiveParamNames() {
-		if values, exists := queryParams[paramName]; exists && len(values) > 0 {
-			// Get the first value if multiple exist
-			value := values[0]
-			// Only include if value is non-empty and looks like it could be a token/key
-			// (at least 8 characters to filter out short values like "1", "true", etc.)
-			if len(value) >= 8 {
-				foundParams = append(foundParams, fmt.Sprintf("%s=%s", paramName, value))
+// HTTPQuerySecrets emits typed values in stable parameter order per request.
+func HTTPQuerySecrets(query url.Values, ident string, timestamp int64) []*types.Secret {
+	var records []*types.Secret
+	user, password, login := HTTPFormCredentials(query)
+	if login {
+		records = append(records, &types.Secret{Timestamp: timestamp, Flow: ident, Service: "HTTP URL Parameter", Kind: "password", User: user, Password: password})
+	}
+	keys := make([]string, 0, len(query))
+	for key := range query {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+	for _, key := range keys {
+		name := strings.ToLower(key)
+		isPassword := slices.Contains(getHTTPFormPasswordFields(), name)
+		if !isPassword && !slices.Contains(getSensitiveParamNames(), name) {
+			continue
+		}
+		if isPassword && login {
+			continue
+		}
+		for _, value := range query[key] {
+			if value == "" || !isPassword && len(value) < 8 {
+				continue
 			}
+			r := &types.Secret{Timestamp: timestamp, Flow: ident, Service: "HTTP URL Parameter", Parameter: key, Kind: "token", Value: value}
+			if isPassword {
+				r.Kind, r.Password, r.Value = "password", value, ""
+			} else if strings.Contains(name, "key") {
+				r.Kind = "api-key"
+			} else if strings.HasPrefix(name, "session") {
+				r.Kind = "session"
+			}
+			records = append(records, r)
 		}
 	}
-
-	if len(foundParams) == 0 {
-		return nil
-	}
-
-	// Extract the host from the HTTP request if available
-	host := extractHostFromHTTPRequest(data)
-
-	// Create credentials record
-	notes := fmt.Sprintf("Method: %s, URI: %s", method, uri)
-	if host != "" {
-		notes = fmt.Sprintf("Method: %s, Host: %s, URI: %s", method, host, uri)
-	}
-
-	return &types.Secret{
-		Timestamp: ts.UnixNano(),
-		Service:   "HTTP URL Parameter",
-		Flow:      ident,
-		User:      host,
-		Password:  strings.Join(foundParams, "; "),
-		Notes:     notes,
-	}
+	return records
 }
 
 // extractHostFromHTTPRequest extracts the Host header from an HTTP request
@@ -485,11 +499,14 @@ func extractHTTPFormSecret(data []byte, ident string, ts time.Time) *types.Secre
 		return nil
 	}
 
-	body := data[bodyStart:]
-
-	// Limit body size to prevent false positives on large uploads
-	if len(body) > maxHTTPFormBodyLength {
-		body = body[:maxHTTPFormBodyLength]
+	request, err := http.ReadRequest(bufio.NewReader(bytes.NewReader(data)))
+	if err != nil || request.ContentLength < 0 || request.ContentLength > maxHTTPFormBodyLength {
+		return nil
+	}
+	body, err := io.ReadAll(io.LimitReader(request.Body, maxHTTPFormBodyLength+1))
+	_ = request.Body.Close()
+	if err != nil || len(body) > maxHTTPFormBodyLength {
+		return nil
 	}
 
 	// Parse form data (URL-encoded: key=value&key2=value2)

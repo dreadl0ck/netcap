@@ -41,6 +41,9 @@ type SecretSummary struct {
 	Flow      string `json:"flow"`
 	User      string `json:"user"`
 	Password  string `json:"password"`
+	Kind      string `json:"kind,omitempty"`
+	Value     string `json:"value,omitempty"`
+	Parameter string `json:"parameter,omitempty"`
 	Notes     string `json:"notes"`
 	// Hash-based credentials
 	Hash          string `json:"hash"`
@@ -196,7 +199,7 @@ func (s *Server) handleSecrets(w http.ResponseWriter, r *http.Request) {
 		recordCount++
 
 		// Skip credentials with empty username AND password - they provide no useful information
-		if cred.User == "" && cred.Password == "" {
+		if cred.User == "" && cred.Password == "" && cred.Value == "" && cred.Hash == "" {
 			continue
 		}
 
@@ -206,7 +209,8 @@ func (s *Server) handleSecrets(w http.ResponseWriter, r *http.Request) {
 			Flow:      cred.Flow,
 			User:      cred.User,
 			Password:  cred.Password,
-			Notes:     cred.Notes,
+			Kind:      cred.Kind, Value: cred.Value, Parameter: cred.Parameter,
+			Notes: cred.Notes,
 			// Hash-based credentials
 			Hash:          cred.Hash,
 			HashType:      cred.HashType,
@@ -433,7 +437,7 @@ func (s *Server) handleAuthActivity(w http.ResponseWriter, r *http.Request) {
 						}
 						break
 					}
-					if rec.User == "" && rec.Password == "" {
+					if rec.User == "" && rec.Password == "" && rec.Value == "" && rec.Hash == "" {
 						continue
 					}
 					status := "captured"

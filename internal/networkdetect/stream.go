@@ -10,6 +10,8 @@ import (
 type direction struct {
 	next          uint32
 	started       bool
+	finSeen       bool
+	finSequence   uint32
 	prefix        []byte
 	prefixSeq     uint32
 	bytes         uint64
@@ -20,6 +22,8 @@ type direction struct {
 }
 type flow struct {
 	closed        bool
+	finObserved   bool
+	reset         bool
 	synSequence   uint32
 	client        string
 	first         int64
@@ -92,7 +96,7 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 		d.prefixSeq = d.next
 	}
 	delta := int32(ev.Seq - d.next)
-	if !f.closed && ev.KeepAliveEligible && delta == -1 && len(ev.Payload) == 1 {
+	if (!f.closed || f.finObserved) && !f.reset && ev.KeepAliveEligible && len(ev.Payload) == 1 && (delta == -1 || d.finSeen && ev.Seq == d.finSequence) {
 		return // RFC 1122 keep-alive probes carry no new sequence-space data.
 	}
 	if delta > 0 {

@@ -191,7 +191,7 @@ func (s *Server) handleTLSCapture(w http.ResponseWriter, r *http.Request) {
 	if analyze == nil {
 		analyze = protocoltest.AnalyzeTLSCapture
 	}
-	stream := 0
+	stream := -1
 	if request.Stream != nil {
 		stream = *request.Stream
 	}

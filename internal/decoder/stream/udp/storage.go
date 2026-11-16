@@ -144,6 +144,11 @@ func (u *udpStreamPool) storePacket(packet gopacket.Packet, payload []byte) {
 			return err
 		}
 		flow := storedUDPFlow{scope: packetview.Scope(packet)}
+		if _, refused, err := tx.Get(fmt.Sprintf("udp/refused/%016x", key)); err != nil {
+			return err
+		} else {
+			flow.refused = refused
+		}
 		if found {
 			flow, err = decodeUDPFlow(wire)
 			if err != nil {

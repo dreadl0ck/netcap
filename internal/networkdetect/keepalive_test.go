@@ -51,3 +51,34 @@ func TestKeepAliveDoesNotBecomeInjection(t *testing.T) {
 		}
 	}
 }
+
+func TestKeepAliveAfterFINConsumesSequenceSpace(t *testing.T) {
+	for _, sequence := range []uint32{100, ^uint32(0) - 3} {
+		for _, peerFIN := range []bool{false, true} {
+			e, _ := New(DefaultConfig())
+			ev := baseEvent("data", 1)
+			ev.Seq, ev.Payload = sequence, []byte("abcdefgh")
+			e.Observe(ev)
+			end := ev
+			end.At, end.Kind, end.Payload, end.FIN = end.At+1, "end", nil, true
+			end.Seq = sequence + 8
+			if peerFIN {
+				end.SrcIP, end.DstIP, end.SrcPort, end.DstPort = ev.DstIP, ev.SrcIP, ev.DstPort, ev.SrcPort
+			}
+			e.Observe(end)
+			ev.Seq = sequence + 8
+			if peerFIN {
+				ev.Seq--
+			}
+			ev.Payload, ev.KeepAliveEligible = []byte{0}, true
+			for range 3 {
+				ev.At += 2
+				ev.Ack++
+				e.Observe(ev)
+			}
+			if e.Stats().ConflictingOverlaps != 0 {
+				t.Fatalf("FIN keepalive treated as overlap: %+v", e.Stats())
+			}
+		}
+	}
+}

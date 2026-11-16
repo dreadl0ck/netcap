@@ -41,12 +41,21 @@ def main():
 
         def traffic(name, path, status):
             # A pod connects through ClusterIP/DNS, not a pod port-forward.
-            result = subprocess.run([*k, 'exec', 'deploy/backend', '--', 'wget', '-S', '-O-',
-                                     'http://' + name + ':8080' + path], env=env,
-                                    text=True, capture_output=True, timeout=30)
-            assert ('HTTP/1.1 ' + str(status)) in result.stderr, result.stderr
-            if status == 200:
-                assert 'origin-ok' in result.stdout, result.stdout
+            last = ''
+            for _ in range(6):
+                try:
+                    result = subprocess.run([*k, 'exec', 'deploy/backend', '--', 'wget', '-T', '5', '-S', '-O-',
+                                             'http://' + name + ':8080' + path], env=env,
+                                            text=True, capture_output=True, timeout=10)
+                    last = result.stderr
+                    if ('HTTP/1.1 ' + str(status)) in result.stderr:
+                        if status == 200:
+                            assert 'origin-ok' in result.stdout, result.stdout
+                        return
+                except subprocess.TimeoutExpired as error:
+                    last = str(error)
+                time.sleep(1)
+            raise AssertionError(f'{name}{path}: expected HTTP {status}: {last}')
 
         @contextlib.contextmanager
         def management():

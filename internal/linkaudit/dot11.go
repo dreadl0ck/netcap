@@ -37,6 +37,9 @@ func DecodeDot11View(data []byte, p gopacket.PacketBuilder, present bool) error 
 	if d.DataLayer != nil {
 		p.AddLayer(d.DataLayer)
 	}
+	if d.Flags.WEP() && d.Type.MainType() == layers.Dot11TypeMgmt {
+		return p.NextDecoder(gopacket.LayerTypePayload)
+	}
 	return p.NextDecoder(d.NextLayerType())
 }
 

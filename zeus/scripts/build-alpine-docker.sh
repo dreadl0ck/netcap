@@ -89,7 +89,7 @@ docker pull --platform linux/amd64 "$supplier"
 python3 zeus/scripts/audit-linux-runtime.py "$tag" "dist-linux/${ARCHIVE}" --supplier-image "$supplier"
 cp README.md dist-linux/${ARCHIVE}
 mkdir -p dist-linux/${ARCHIVE}/docs
-cp -R docs/. dist-linux/${ARCHIVE}/docs/
+python3 scripts/stage-release-docs.py docs "dist-linux/${ARCHIVE}/docs"
 
 cd dist-linux
 

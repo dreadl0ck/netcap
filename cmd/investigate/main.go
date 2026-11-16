@@ -34,8 +34,8 @@ func GetCommand() *cli.Command {
 		{Name: "tls-capture", Usage: "analyze TLS plaintext using supplied session secrets and installed tshark", Flags: []cli.Flag{
 			&cli.StringFlag{Name: "read", Required: true, Usage: "PCAP/PCAPNG containing the TLS handshake and application traffic"},
 			&cli.StringFlag{Name: "key-log", Required: true, Usage: "NSS-format session secret log; never included in output"},
-			&cli.IntFlag{Name: "stream", Value: 0, Usage: "tshark TLS follow-stream index"},
-			&cli.StringFlag{Name: "community-id", Usage: "select a unique TCP stream by Netcap Community ID instead of tshark's index"},
+			&cli.IntFlag{Name: "stream", Value: -1, Usage: "tshark TLS follow-stream index (default: select the unique decryptable stream)"},
+			&cli.StringFlag{Name: "community-id", Usage: "select a unique TLS stream by Netcap Community ID instead of tshark's index"},
 			&cli.DurationFlag{Name: "timeout", Value: time.Minute},
 		}, Action: runTLSCapture},
 		{Name: "protocol-proxy", Usage: "one bounded TCP session: framed application edits (optional TLS termination) or opaque passthrough", Flags: []cli.Flag{

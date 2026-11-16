@@ -46,6 +46,9 @@ func (b *cappedBuffer) Write(data []byte) (int, error) {
 // AnalyzeTLSCapture delegates cryptographic dissection to the installed tshark.
 // Node direction follows tshark's reported endpoints; no client-role inference is made.
 func AnalyzeTLSCapture(ctx context.Context, input, keyLog string, stream int) (TLSCaptureResult, error) {
+	if stream == -1 {
+		return analyzeUniqueTLSCapture(ctx, input, keyLog)
+	}
 	result := TLSCaptureResult{Version: 1, Stream: stream, Nodes: []string{}, Limitations: []string{"external tshark adapter: plaintext depends on available secrets, supported ciphers and complete records", "node ordering is reported by tshark, not asserted to be client/server", "reassembled plaintext alone does not establish capture completeness or endpoint effects"}}
 	if stream < 0 {
 		return result, fmt.Errorf("stream must be nonnegative")
@@ -102,7 +105,7 @@ func AnalyzeTLSCapture(ctx context.Context, input, keyLog string, stream int) (T
 		}
 	}
 	if len(result.Nodes) != 2 || len(result.Client)+len(result.Server) == 0 {
-		return result, fmt.Errorf("no decrypted application bytes: secrets, stream selection or capture coverage may be insufficient")
+		return result, errNoDecryptedTLS
 	}
 	clientHash, serverHash := sha256.Sum256(result.Client), sha256.Sum256(result.Server)
 	result.ClientSHA256, result.ServerSHA256 = hex.EncodeToString(clientHash[:]), hex.EncodeToString(serverHash[:])

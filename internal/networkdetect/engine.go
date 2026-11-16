@@ -23,6 +23,7 @@ type Scope struct {
 // Event is capture-derived; fixture scenario labels are never detector inputs.
 type Event struct {
 	KeepAliveEligible bool   `json:"keepAliveEligible,omitempty"`
+	FIN               bool   `json:"fin,omitempty"`
 	Ack               uint32 `json:"ack,omitempty"`
 	At                int64  `json:"at"`
 	Scope             Scope  `json:"scope"`
@@ -328,6 +329,14 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 		e.revokeFTP(key)
 		if f := e.flows[key]; f != nil {
 			f.closed, f.last, f.ftpDisabled, f.ftp = true, ev.At, true, nil
+			if ev.FIN {
+				f.finObserved = true
+				if d := f.directions[endpoint(ev.SrcIP, ev.SrcPort)]; d != nil {
+					d.finSeen, d.finSequence = true, ev.Seq
+				}
+			} else {
+				f.reset = true
+			}
 		}
 	case "refused":
 		if f := e.flows[flowKey(ev)]; f != nil && f.ftpData && ev.At-f.last <= e.config.WindowNS {

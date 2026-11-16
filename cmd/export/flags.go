@@ -115,7 +115,7 @@ func GetFlags() []cli.Flag {
 		&cli.StringFlag{
 			Name:    "fileStorage",
 			Value:   "files",
-			Usage:   "path to created extracted files (relative to output directory, empty string disables file extraction, currently only for HTTP)",
+			Usage:   "path to extracted files (relative to output directory, empty string disables file extraction)",
 			Sources: cli.EnvVars("NC_FILESTORAGE"),
 		},
 		&cli.BoolFlag{

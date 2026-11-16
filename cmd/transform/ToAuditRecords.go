@@ -24,9 +24,9 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/maltego"
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
-	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/utils"
@@ -77,6 +77,7 @@ var maltegoBaseConfig = collector.Config{
 		UseRE2:                         true,
 		BannerSize:                     256,
 		HarvesterBannerSize:            256,
+		HarvesterPortFilter:            true,
 		StreamDecoderBufSize:           100,
 		StopAfterHarvesterMatch:        true,
 		RemoveClosedStreams:            false,
@@ -94,10 +95,10 @@ var maltegoBaseConfig = collector.Config{
 	DecodeOptions: utils.GetDecodeOptions("lazy"),
 	DPI:           false,
 	ResolverConfig: resolvers.Config{
-		ReverseDNS:    false,
-		LocalDNS:      true,
-		MACDB:         true,
-		
+		ReverseDNS: false,
+		LocalDNS:   true,
+		MACDB:      true,
+
 		ServiceDB:     true,
 		GeolocationDB: true,
 	},

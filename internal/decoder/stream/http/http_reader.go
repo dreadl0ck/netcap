@@ -295,7 +295,12 @@ func (h *httpReader) searchForBasicAuth(req *http.Request) {
 
 // search for user name and password in http url params and body params.
 func (h *httpReader) searchForLoginParams(req *httpRequest) {
-	user, password, found := secret.HTTPFormCredentials(req.request.Form)
+	for _, record := range secret.HTTPQuerySecrets(req.request.URL.Query(), h.conversation.Ident, req.timestamp) {
+		record.CommunityID = h.conversation.CommunityID
+		record.Method, record.Uri = req.request.Method, req.request.RequestURI
+		secret.WriteSecret(record)
+	}
+	user, password, found := secret.HTTPFormCredentials(req.request.PostForm)
 	if !found {
 		return
 	}

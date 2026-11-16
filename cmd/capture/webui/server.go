@@ -1940,6 +1940,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			BannerSize:                     256,
 			StreamDecoderBufSize:           10,
 			HarvesterBannerSize:            256,
+			HarvesterPortFilter:            true,
 			StopAfterHarvesterMatch:        false,
 			StopAfterServiceProbeMatch:     false,
 			StopAfterServiceCategoryMiss:   false,

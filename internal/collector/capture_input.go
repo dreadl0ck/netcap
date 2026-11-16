@@ -104,7 +104,7 @@ func openCaptureInput(path string, ng bool, mergeSections ...bool) (captureReade
 	var r captureReader
 	if ng {
 		r, err = newBoundedNGReader(f)
-		if reader, ok := r.(*scopedNgReader); ok && len(mergeSections) > 0 {
+		if reader, ok := r.(*scopedNgReader); err == nil && ok && reader != nil && len(mergeSections) > 0 {
 			reader.mergeSections = mergeSections[0]
 		}
 	} else {

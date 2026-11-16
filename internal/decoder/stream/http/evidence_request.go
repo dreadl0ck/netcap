@@ -3,6 +3,7 @@ package http
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -373,6 +374,24 @@ func parseEvidenceForm(r *http.Request, body []byte) error {
 	var queryErr error
 	r.Form, queryErr = evidenceQuery(r.URL.RawQuery)
 	contentType, params, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if (r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH") && (contentType == "application/json" || strings.HasSuffix(contentType, "+json")) {
+		if len(body) > 1<<20 {
+			return fmt.Errorf("JSON form exceeds 1 MiB")
+		}
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(body, &fields); err != nil {
+			return errors.Join(queryErr, err)
+		}
+		r.PostForm = url.Values{}
+		for key, raw := range fields {
+			var value string
+			if json.Unmarshal(raw, &value) == nil {
+				r.PostForm.Set(key, value)
+				r.Form[key] = append([]string{value}, r.Form[key]...)
+			}
+		}
+		return queryErr
+	}
 	if (r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH") && contentType == "multipart/form-data" {
 		return errors.Join(queryErr, parseEvidenceMultipart(r, body, params["boundary"]))
 	}

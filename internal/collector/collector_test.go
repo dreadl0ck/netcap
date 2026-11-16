@@ -93,7 +93,7 @@ func TestCapturePCAP(t *testing.T) {
 			Proto:                   true,
 			IncludeDecoders:         "",
 			ExcludeDecoders:         "",
-			Out:                     "../../tests/collector-test",
+			Out:                     t.TempDir(),
 			Source:                  "unit tests",
 			IncludePayloads:         false,
 			ExportMetrics:           false,

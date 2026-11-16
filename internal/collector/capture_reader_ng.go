@@ -161,10 +161,17 @@ func (r *scopedNgReader) addInterface(body []byte, offset int64) error {
 	err := ngOptions(body[8:], r.order, func(code uint16, value []byte) error {
 		switch code {
 		case 13:
-			if len(value) != 1 || value[0]%8 != 0 {
+			if len(value) != 1 {
 				return fmt.Errorf("invalid if_fcslen")
 			}
-			intf.fcsKnown, intf.fcsBytes = true, int(value[0])/8
+			// Writers use both octets (Wireshark: 4) and the draft's bits (32).
+			// Unknown optional metadata must not discard the interface's packets.
+			switch value[0] {
+			case 0:
+				intf.fcsKnown, intf.fcsBytes = true, 0
+			case 4, 32:
+				intf.fcsKnown, intf.fcsBytes = true, 4
+			}
 		case 2:
 			intf.name = string(value)
 		case 6:

@@ -62,12 +62,14 @@ type udpStream struct {
 // udpStreamPool holds a pool of UDP streams.
 type udpStreamPool struct {
 	sync.Mutex
-	streams map[uint64]*udpStream
+	streams  map[uint64]*udpStream
+	refusals map[uint64]bool
 }
 
 func newUDPStreamPool() *udpStreamPool {
 	return &udpStreamPool{
-		streams: make(map[uint64]*udpStream),
+		streams:  make(map[uint64]*udpStream),
+		refusals: make(map[uint64]bool),
 	}
 }
 
@@ -122,6 +124,8 @@ func (u *udpStreamPool) HandleUDP(packet gopacket.Packet, udpLayer gopacket.Laye
 	} else {
 		// add new
 		str := new(udpStream)
+		str.refused = u.refusals[key]
+		delete(u.refusals, key)
 		str.scope = packetview.Scope(packet)
 		str.data = append(str.data, &core.StreamData{
 			RawData:            udpLayer.LayerPayload(),

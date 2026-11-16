@@ -387,11 +387,11 @@ Accept-Language: en-US,en;q=0.8`)
 		t.Fatalf("expected service 'HTTP URL Parameter', got: %s", c.Service)
 	}
 
-	if c.User != "officialsurvey.info" {
-		t.Fatalf("expected host 'officialsurvey.info', got: %s", c.User)
+	if c.User != "" || c.Password != "" || c.Kind != "api-key" {
+		t.Fatalf("API key misclassified as login: %+v", c)
 	}
 
-	if !strings.Contains(c.Password, "key=19a59f6e0085f717c5d5b1f9fb79f923") {
+	if c.Parameter != "key" || c.Value != "19a59f6e0085f717c5d5b1f9fb79f923" {
 		t.Fatalf("expected password to contain key parameter, got: %s", c.Password)
 	}
 
@@ -411,7 +411,7 @@ Accept: application/json`)
 		t.Fatal("expected credentials to be found for api_key")
 	}
 
-	if !strings.Contains(c.Password, "api_key=sk_live_51H3k4fE2eZvKYlo2C") {
+	if c.Parameter != "api_key" || c.Value != "sk_live_51H3k4fE2eZvKYlo2C" {
 		t.Fatalf("expected password to contain api_key parameter, got: %s", c.Password)
 	}
 
@@ -427,7 +427,7 @@ Content-Type: application/json`)
 		t.Fatal("expected credentials to be found for access_token")
 	}
 
-	if !strings.Contains(c.Password, "access_token=") {
+	if c.Parameter != "access_token" || c.Kind != "token" || c.Password != "" {
 		t.Fatalf("expected password to contain access_token parameter, got: %s", c.Password)
 	}
 
@@ -446,13 +446,8 @@ Host: multi.example.com`)
 		t.Fatal("expected credentials to be found for multiple parameters")
 	}
 
-	// Should contain both token and api_secret
-	if !strings.Contains(c.Password, "token=abc123456789") {
-		t.Fatalf("expected password to contain token parameter, got: %s", c.Password)
-	}
-
-	if !strings.Contains(c.Password, "api_secret=secret987654321") {
-		t.Fatalf("expected password to contain api_secret parameter, got: %s", c.Password)
+	if c.Parameter != "api_secret" || c.Value != "secret987654321" {
+		t.Fatalf("expected stable first typed parameter, got: %+v", c)
 	}
 
 	// Test case 5: Short values should be filtered out (less than 8 characters)
@@ -463,7 +458,7 @@ Host: test.example.com`)
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-5", time.Now())
 
 	// Should return nil because "short" is only 5 characters
-	if c != nil && strings.Contains(c.Password, "key=short") {
+	if c != nil {
 		t.Fatal("expected short key values to be filtered out")
 	}
 
@@ -478,7 +473,7 @@ Host: protected.example.com`)
 		t.Fatal("expected credentials to be found for bearer token")
 	}
 
-	if !strings.Contains(c.Password, "bearer=") {
+	if c.Parameter != "bearer" || c.Kind != "token" || c.Password != "" {
 		t.Fatalf("expected password to contain bearer parameter, got: %s", c.Password)
 	}
 
@@ -493,7 +488,7 @@ Host: app.example.com`)
 		t.Fatal("expected credentials to be found for sessionid")
 	}
 
-	if !strings.Contains(c.Password, "sessionid=") {
+	if c.Parameter != "sessionid" || c.Kind != "session" || c.Password != "" {
 		t.Fatalf("expected password to contain sessionid parameter, got: %s", c.Password)
 	}
 
@@ -520,7 +515,7 @@ Host: jwt.example.com`)
 		t.Fatal("expected credentials to be found for jwt")
 	}
 
-	if !strings.Contains(c.Password, "jwt=") {
+	if c.Parameter != "jwt" || c.Kind != "token" || c.Password != "" {
 		t.Fatalf("expected password to contain jwt parameter, got: %s", c.Password)
 	}
 }
@@ -538,7 +533,7 @@ User-Agent: test`)
 		t.Fatal("expected credentials even without Host header")
 	}
 
-	if !strings.Contains(c.Password, "key=12345678abcdefgh") {
+	if c.Parameter != "key" || c.Value != "12345678abcdefgh" {
 		t.Fatalf("expected password to contain key parameter, got: %s", c.Password)
 	}
 
@@ -560,11 +555,8 @@ Host: mixedcase.example.com`)
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 
-	// Note: Our implementation is case-sensitive by default
-	// This test documents that behavior
-	if c != nil && strings.Contains(c.Password, "Api_Key") {
-		// If we wanted case-insensitive matching, we'd need to normalize parameter names
-		t.Logf("Found mixed-case parameter: %s", c.Password)
+	if c == nil || c.Parameter != "Api_Key" || c.Value != "12345678ABCDEFGH" {
+		t.Fatalf("mixed-case API key lost: %+v", c)
 	}
 
 	// Test case 4: Empty parameter value
@@ -575,7 +567,7 @@ Host: empty.example.com`)
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 
 	// Should not match empty values
-	if c != nil && strings.Contains(c.Password, "key=") && !strings.Contains(c.Password, "key=.") {
+	if c != nil {
 		t.Fatal("expected empty key values to be filtered out")
 	}
 
@@ -591,7 +583,7 @@ Host: longtoken.example.com`, longToken)
 		t.Fatal("expected credentials for long token")
 	}
 
-	if !strings.Contains(c.Password, "token=") {
+	if c.Parameter != "token" || c.Value != longToken || c.Password != "" {
 		t.Fatalf("expected password to contain token parameter, got: %s", c.Password)
 	}
 }
@@ -783,7 +775,7 @@ func TestHTTPFormSecrets(t *testing.T) {
 	data := []byte(`POST /login HTTP/1.1
 Host: example.com
 Content-Type: application/x-www-form-urlencoded
-Content-Length: 32
+Content-Length: 33
 
 username=admin&password=secret123`)
 
@@ -818,7 +810,7 @@ username=admin&password=secret123`)
 	data = []byte(`POST /wp-login.php HTTP/1.1
 Host: myblog.com
 Content-Type: application/x-www-form-urlencoded
-Content-Length: 50
+Content-Length: 41
 
 log=wpuser&pwd=wppass123&wp-submit=Log+In`)
 
@@ -841,7 +833,7 @@ log=wpuser&pwd=wppass123&wp-submit=Log+In`)
 	data = []byte(`POST /auth/login HTTP/1.1
 Host: service.com
 Content-Type: application/x-www-form-urlencoded
-Content-Length: 45
+Content-Length: 42
 
 email=user@example.com&password=myPassword`)
 
@@ -860,7 +852,7 @@ email=user@example.com&password=myPassword`)
 	data = []byte(`POST /j_security_check HTTP/1.1
 Host: enterprise.com
 Content-Type: application/x-www-form-urlencoded
-Content-Length: 50
+Content-Length: 51
 
 j_username=enterpriseuser&j_password=enterprisepass`)
 
@@ -883,7 +875,7 @@ j_username=enterpriseuser&j_password=enterprisepass`)
 	data = []byte(`POST /lookup HTTP/1.1
 Host: app.com
 Content-Type: application/x-www-form-urlencoded
-Content-Length: 20
+Content-Length: 19
 
 username=lookupuser`)
 
@@ -928,7 +920,7 @@ Content-Length: 45
 	data = []byte(`POST /login HTTP/1.1
 Host: example.com
 Content-Type: application/x-www-form-urlencoded
-Content-Length: 50
+Content-Length: 49
 
 username=user%40example.com&password=p%40ss%26123`)
 
@@ -969,6 +961,21 @@ login=testuser&passwd=testpass`)
 
 	if !strings.Contains(c.Notes, "mysite.com") {
 		t.Fatalf("expected notes to contain host, got: %s", c.Notes)
+	}
+}
+
+func TestHTTPFormStopsAtMessageBoundary(t *testing.T) {
+	for _, body := range []string{"username=bob&password=S3cret", "login=bob&pass=S3cret"} {
+		request := fmt.Sprintf("POST /login HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\n\r\n%s", len(body), body)
+		request += "HTTP/1.1 302 Found\r\nLocation: /home\r\nContent-Length: 0\r\n\r\n"
+		r := extractHTTPFormSecret([]byte(request), "fixture", time.Unix(1, 0))
+		if r == nil || r.User != "bob" || r.Password != "S3cret" {
+			t.Fatalf("response contaminated credential: %+v", r)
+		}
+	}
+	truncated := "POST /login HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 100\r\n\r\nusername=bob&password=partial"
+	if r := extractHTTPFormSecret([]byte(truncated), "fixture", time.Unix(1, 0)); r != nil {
+		t.Fatalf("truncated form accepted: %+v", r)
 	}
 }
 
@@ -1039,6 +1046,7 @@ data=%s&username=hiddenuser&password=hiddenpass`, strings.Repeat("x", 2500))
 	data = []byte(`POST /login HTTP/1.1
 Host: example.com
 Content-Type: application/x-www-form-urlencoded
+Content-Length: 25
 
 user=first&pass=firstpass`)
 

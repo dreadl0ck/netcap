@@ -1,7 +1,7 @@
 package secret
 
 import (
-	"strings"
+	"bytes"
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
@@ -19,7 +19,7 @@ func HarvestTelnetConversation(c *core.ConversationInfo) {
 			break
 		}
 	}
-	if !enabled || decoderconfig.Instance.HarvesterPortFilter && !harvesterMatchesPort("Telnet", int(c.ClientPort), int(c.ServerPort)) {
+	if !enabled || decoderconfig.Instance.HarvesterPortFilter && !harvesterMatchesPort("Telnet", int(c.ClientPort), int(c.ServerPort)) && !telnetPromptEvidence(c) {
 		return
 	}
 	parseTelnetAuth(c, func(record *types.Secret) {
@@ -27,6 +27,34 @@ func HarvestTelnetConversation(c *core.ConversationInfo) {
 		record.CommunityID = c.CommunityID
 		WriteSecret(record)
 	})
+}
+
+func telnetPromptEvidence(c *core.ConversationInfo) bool {
+	var prefix []byte
+collect:
+	for _, fragment := range c.Data {
+		if !core.FromServer(fragment) {
+			continue
+		}
+		if data, ok := fragment.(*core.StreamData); ok && (data.SkippedBytes != 0 || data.DiscardedBytes != 0) {
+			prefix = nil
+		}
+		for _, b := range fragment.Raw() {
+			if b >= 'A' && b <= 'Z' {
+				b += 'a' - 'A'
+			}
+			prefix = append(prefix, b)
+			if len(prefix) == 4096 {
+				break collect
+			}
+		}
+	}
+	for _, pattern := range getTelnetLoginPatterns() {
+		if pattern != "" && bytes.Contains(prefix, bytes.ToLower([]byte(pattern))) {
+			return true
+		}
+	}
+	return false
 }
 
 type telnetText struct{ state uint8 }
@@ -73,10 +101,30 @@ func parseTelnetAuth(c *core.ConversationInfo, emit func(*types.Secret)) {
 	stage := 0
 	user := ""
 	processed, emitted := 0, 0
-	matches := func(patterns []string) bool {
-		value := strings.ToLower(string(prompt))
+	maxPrompt := 1
+	normalize := func(patterns []string) [][]byte {
+		result := make([][]byte, 0, len(patterns))
 		for _, pattern := range patterns {
-			if strings.HasSuffix(value, strings.ToLower(pattern)) {
+			value := []byte(pattern)
+			for i, b := range value {
+				if b >= 'A' && b <= 'Z' {
+					value[i] = b + ('a' - 'A')
+				}
+			}
+			if len(value) > maxPrompt {
+				maxPrompt = len(value)
+			}
+			if len(value) > 0 {
+				result = append(result, value)
+			}
+		}
+		return result
+	}
+	loginPatterns := normalize(getTelnetLoginPatterns())
+	passwordPatterns := normalize(getTelnetPasswordPatterns())
+	matches := func(patterns [][]byte) bool {
+		for _, pattern := range patterns {
+			if bytes.HasSuffix(prompt, pattern) {
 				return true
 			}
 		}
@@ -104,16 +152,20 @@ func parseTelnetAuth(c *core.ConversationInfo, emit func(*types.Secret)) {
 				continue
 			}
 			if side == 1 {
-				prompt = append(prompt, b)
-				if len(prompt) > 512 {
-					prompt = prompt[len(prompt)-512:]
+				if b >= 'A' && b <= 'Z' {
+					b += 'a' - 'A'
 				}
-				if matches(getTelnetLoginPatterns()) {
+				if len(prompt) == maxPrompt {
+					copy(prompt, prompt[1:])
+					prompt = prompt[:len(prompt)-1]
+				}
+				prompt = append(prompt, b)
+				if matches(loginPatterns) {
 					stage = 1
 					user = ""
 					line = nil
 					prompt = nil
-				} else if stage == 3 && matches(getTelnetPasswordPatterns()) {
+				} else if stage == 3 && matches(passwordPatterns) {
 					stage = 2
 					line = nil
 					prompt = nil

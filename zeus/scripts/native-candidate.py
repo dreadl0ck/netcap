@@ -101,7 +101,7 @@ def main():
             shutil.copyfile(ROOT / 'LICENSE', stage / 'LICENSE')
             shutil.copytree(ROOT / 'legal', stage / 'legal')
             shutil.copyfile(ROOT / 'README.md', stage / 'README.md')
-            shutil.copytree(ROOT / 'docs', stage / 'docs')
+            subprocess.run(['python3', str(ROOT / 'scripts/stage-release-docs.py'), str(ROOT / 'docs'), str(stage / 'docs')], check=True)
             archive = args.output / (item['variant'] + '.tar.gz')
             def normalize(member):
                 member.uid = member.gid = member.mtime = 0

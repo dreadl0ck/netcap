@@ -64,7 +64,7 @@ func (c *Collector) prepareOutputReplacement() (*outputReplacement, error) {
 	if !hasRun {
 		return nil, nil
 	}
-	if !c.config.DecoderConfig.Quiet && !c.config.NoPrompt {
+	if !c.config.NoPrompt {
 		if !utils.StdinIsTerminal() {
 			return nil, fmt.Errorf("%w: output path %q is not empty and stdin is not a terminal; pass -y to overwrite", errNotInteractive, out)
 		}

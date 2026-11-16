@@ -26,6 +26,7 @@ import (
 	"golang.org/x/net/http2"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
@@ -36,6 +37,10 @@ import (
 )
 
 var httpLog = zap.NewNop()
+
+func init() {
+	secret.ParsedHTTPActive = func() bool { return Decoder.Writer != nil }
+}
 
 // Decoder for protocol analysis and writing audit records to disk.
 var Decoder = &decoder.StreamDecoder{

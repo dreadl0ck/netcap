@@ -76,6 +76,9 @@ export interface SecretSummary {
   flow: string;
   user: string;
   password: string;
+  kind?: string;
+  value?: string;
+  parameter?: string;
   notes: string;
   // Hash-based credentials
   hash: string;
@@ -361,6 +364,7 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
           c.service,
           c.user,
           c.password,
+          c.value ?? '', c.kind ?? '', c.parameter ?? '',
           c.flow,
           c.notes || '',
         ], searchTerms)
@@ -381,7 +385,7 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
           comparison = a.user.localeCompare(b.user);
           break;
         case 'password':
-          comparison = a.password.localeCompare(b.password);
+          comparison = (a.password || a.value || '').localeCompare(b.password || b.value || '');
           break;
       }
       // Stable secondary sort by flow identifier for consistent ordering
@@ -470,7 +474,7 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
   const stats = useMemo(() => ({
     uniqueServices: new Set(credentials.map(c => c.service)).size,
     uniqueUsers: new Set(credentials.map(c => c.user)).size,
-    uniquePasswords: new Set(credentials.map(c => c.password)).size,
+    uniquePasswords: new Set(credentials.map(c => c.password).filter(Boolean)).size,
     avgPerService: credentials.length > 0 
       ? credentials.length / new Set(credentials.map(c => c.service)).size
       : 0,
@@ -749,6 +753,11 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
                       {getServiceInfo(cred.service).passLabel}: {truncateString(cred.password, 30)}
                     </Typography>
                   )}
+                  {cred.value && (
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', overflowWrap: 'anywhere' }}>
+                      {cred.kind ?? 'token'} ({cred.parameter}): {cred.value}
+                    </Typography>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -795,7 +804,7 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
                         direction={sortField === 'password' ? sortOrder : 'asc'}
                         onClick={() => handleSort('password')}
                       >
-                        Password
+                        Password / token
                       </TableSortLabel>
                     </TableCell>
                     <TableCell data-learn="Flow Identifier: Network flow where this credential was captured.">
@@ -858,9 +867,9 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
                                 fontSize: '0.875rem',
                               }}
                               data-learn="Password: The captured password from the authentication attempt."
-                              title={cred.password.length > 25 ? cred.password : undefined}
+                              title={cred.value || (cred.password.length > 25 ? cred.password : undefined)}
                             >
-                              {truncateString(cred.password, 25)}
+                              {cred.value ? `${cred.kind ?? 'token'} (${cred.parameter ?? ''}): ${truncateString(cred.value, 25)}` : truncateString(cred.password, 25)}
                             </Typography>
                           </TableCell>
                           <TableCell>
@@ -1310,4 +1319,3 @@ function AuthActivityView() {
     </>
   );
 }
-

@@ -90,6 +90,11 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 		if tcp.FIN || tcp.RST {
 			ev := base
 			ev.Kind = "end"
+			ev.FIN = tcp.FIN && !tcp.RST
+			ev.Seq += uint32(len(tcp.Payload))
+			if tcp.SYN {
+				ev.Seq++
+			}
 			events = append(events, ev)
 		}
 	}

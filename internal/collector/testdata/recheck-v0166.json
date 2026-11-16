@@ -3,6 +3,31 @@
   "release": "v0.16.7",
   "scope": "53 deduplicated report rows; implemented means source and synthetic regressions, not verification of unavailable evaluator captures",
   "originalCorpus": "Evaluator /workspace/hunt/repro and complete MTA/CTF/Wireshark corpus are not available locally",
+  "recheckV0167": {
+    "report": "netcap-full-recheck-v0.16.7.md (2026-11-15; release commit 28e1145d)",
+    "evaluatorBaseline": "42 fixed, 8 partial, 1 open, 2 by design; MTA 289/289 questions and 1676/1677 facts",
+    "qualification": "The following changes have local synthetic coverage; original repro/v167 generators, 146 crash inputs and the external evaluator corpus are unavailable",
+    "localEvidence": {"portableSuite":"GOWORK=off go test -tags nodpi,noyara,nomagika ./... -timeout 5m passed on darwin/arm64 with Go 1.27.3","race":"Secret, HTTP, UDP, Service and types package suites passed with -race","vet":"collector, stream decoders, networkdetect, protocoltest, capture/Web UI, MCP and types passed","native":"DPI/YARA-X (nomagika) secret/HTTP/UDP/service/networkdetect/linkaudit/dnsaudit/protocoltest/net/MCP suites and tests/e2e TestHuntCLIRegressions passed","fuzz":"FuzzOpenCaptureInput: 24125 executions in 30 seconds, 2 workers, no crash","frontend":"pnpm build passed including TypeScript declarations and embedded Vite bundle","archive":"3 release archive/staging unit tests passed; actual new archives still pending","linux":"Offline decoder suites passed; full collector run failed only TestLiveCaptureWorkerPools (network-isolated container captured no loopback packets); no Linux live qualification claimed"},
+    "issues": [
+      {"id":"V167-1","status":"implemented","tests":["TestQuietDoesNotAuthorizeOverwrite"],"fix":"Quiet controls presentation only; noninteractive overwrite requires explicit -y and retains original bytes on refusal"},
+      {"id":"V167-2","status":"implemented_pending_archive_qualification","tests":["ReleaseArchiveTests.test_media_and_metadata_are_rejected","ReleaseArchiveTests.test_staging_keeps_nested_markdown_without_media"],"fix":"Ship recursive text documentation, exclude .gitbook and .DS_Store, reject documentation over 16 MiB in actual release archives"},
+      {"id":"V167-3","status":"implemented","tests":["TestNGFCSOptionKeepsReadableInterfaces"],"fix":"Accept both observed octet value 4 and bit value 32 for a four-byte FCS; unknown optional values do not discard readable interfaces; both endiannesses tested"},
+      {"id":"V167-4","status":"implemented","tests":["TestHTTPFormStopsAtMessageBoundary","TestHTTPJSONCredentialsPreserveRepeatedOccurrences"],"fix":"Frame banner form bodies with net/http; the parsed message reader owns complete form occurrences when enabled, preventing response contamination and duplicate banner extraction"},
+      {"id":"V167-5","status":"implemented","tests":["TestHTTPQuerySecretsAreTypedAndOccurrenceScoped","TestHTTPSensitiveURLParameters"],"fix":"Query logins use actual username/password values; tokens, API keys and sessions use additive Kind/Value/Parameter fields, with CSV, protobuf and Web UI support"},
+      {"id":"V167-6","status":"implemented","tests":["TestOpenCaptureInputRejectsFirstSectionErrors","FuzzOpenCaptureInput"],"fix":"Check constructor error and typed nil before configuring PCAPNG section merging"},
+      {"id":"V167-7","status":"implemented_pending_matched_capture_timing","tests":["TestTelnetDirectionalCredentialsWithNULAndNegotiation","BenchmarkTelnetBinaryConversation"],"fix":"Incremental ASCII-only bounded prompt matching with precomputed patterns; restore CLI port filtering while retaining off-port prompt evidence","measurement":"Apple M5 Max, Go 1.27.3, 2400-byte binary server conversation: 42014 ns/op, 57.12 MB/s, 480 B/op, 13 allocations; original evaluator traffic remains unavailable"}
+    ],
+    "residualChanges": [
+      {"id":"H-17","tests":["TestKeepAliveAfterFINConsumesSequenceSpace"],"fix":"Track observed FIN sequence space separately from resets; retain repeated half-closed keepalive eligibility without suppressing generic conflicting retransmissions","originalResidual":"47 evaluator trigger frames remain unavailable for replay"},
+      {"id":"CTF-13","tests":["TestHTTPJSONCredentialsPreserveRepeatedOccurrences","TestHTTPFormAliasesEmitAttributedSecrets"],"fix":"Add pswrd to the installed default configuration and parse bounded top-level JSON string fields"},
+      {"id":"CTF-2","fix":"Service.Name no longer falls back to a port guess when no service probe matched; PortName retains the guess"},
+      {"id":"CTF-4","tests":["TestICMPRefusalMarksOnlyObservedUDPAttempt","TestUltimatePCAPWorkerInvariance","TestUltimatePCAPRepeatability"],"fix":"Retain refusal tombstones when a worker observes ICMP before the quoted UDP attempt; normalized backing records and legacy state agree"},
+      {"id":"CTF-14","tests":["TestTLSCaptureAdapterDecryptsKnownSecrets"],"fix":"Omitted selection resolves only a unique decryptable TLS stream; explicit zero remains explicit; Community IDs resolve tshark TLS follow indexes rather than unrelated TCP indexes; real TLS 1.2/1.3 fixtures exercise selection and ambiguity"},
+      {"id":"V-7","tests":["TestProtectedManagementBodyIsOpaque"],"fix":"Protected management bodies remain opaque, including reason codes and information elements"},
+      {"id":"H-18","tests":["TestResourceNamesHaveLosslessReadableCompanions"],"fix":"Add reversible CNAMEText/NSText/PTRText companions while preserving raw bytes"},
+      {"id":"H-21","fix":"Remove the stale HTTP-only fileStorage help claim from export"}
+    ]
+  },
   "followupQualification": {
     "pushTarget": "master (confirmed by user; GitHub default branch)",
     "blocked": ["Windows host with Npcap is unavailable (confirmed by user)", "Full evaluator corpus and replay harness are unavailable (confirmed by user)"],

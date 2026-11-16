@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
+
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
@@ -103,12 +105,13 @@ func TestTLSCaptureAdapterDecryptsKnownSecrets(t *testing.T) {
 				t.Fatal(err)
 			}
 			seq := [2]uint32{100, 200}
+			clientPort := layers.TCPPort(12344)
 			index := 0
 			emit := func(direction int, data []byte, syn, ack bool) {
 				t.Helper()
 				other := 1 - direction
 				ip := &layers.IPv4{Version: 4, TTL: 64, Protocol: layers.IPProtocolTCP, SrcIP: []net.IP{net.IPv4(192, 0, 2, 1), net.IPv4(192, 0, 2, 2)}[direction], DstIP: []net.IP{net.IPv4(192, 0, 2, 1), net.IPv4(192, 0, 2, 2)}[other]}
-				tcp := &layers.TCP{SrcPort: []layers.TCPPort{12345, 443}[direction], DstPort: []layers.TCPPort{12345, 443}[other], Seq: seq[direction], Ack: seq[other], SYN: syn, ACK: ack, PSH: len(data) > 0, Window: 65535}
+				tcp := &layers.TCP{SrcPort: []layers.TCPPort{clientPort, 443}[direction], DstPort: []layers.TCPPort{clientPort, 443}[other], Seq: seq[direction], Ack: seq[other], SYN: syn, ACK: ack, PSH: len(data) > 0, Window: 65535}
 				if err := tcp.SetNetworkLayerForChecksum(ip); err != nil {
 					t.Fatal(err)
 				}
@@ -127,6 +130,12 @@ func TestTLSCaptureAdapterDecryptsKnownSecrets(t *testing.T) {
 					seq[direction]++
 				}
 			}
+			emit(0, nil, true, false) // Stream zero is deliberately not decryptable.
+			emit(1, nil, true, true)
+			emit(0, nil, false, true)
+			emit(0, recorder.chunks[0].data, false, true)
+			clientPort = 12345
+			seq = [2]uint32{100, 200}
 			emit(0, nil, true, false)
 			emit(1, nil, true, true)
 			emit(0, nil, false, true)
@@ -146,19 +155,55 @@ func TestTLSCaptureAdapterDecryptsKnownSecrets(t *testing.T) {
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			result, err := AnalyzeTLSCapture(ctx, capture, keys, 0)
+			result, err := AnalyzeTLSCapture(ctx, capture, keys, -1)
 			if err != nil {
 				t.Fatal(err)
+			}
+			if result.Stream != 1 {
+				t.Fatalf("default selected stream %d, want 1", result.Stream)
+			}
+			if _, err := AnalyzeTLSCapture(ctx, capture, keys, 0); err == nil {
+				t.Fatal("explicit stream zero was silently replaced")
 			}
 			plaintext := append(append([]byte(nil), result.Client...), result.Server...)
 			if !bytes.Contains(plaintext, []byte("GET /fixture")) || !bytes.Contains(plaintext, []byte("fixture-decrypted-response")) {
 				t.Fatalf("plaintext mismatch: %q %q", result.Client, result.Server)
 			}
+			id := streamutils.CalcCommunityIDTCP("192.0.2.1", "192.0.2.2", 12345, 443)
+			if index, err := TLSStreamByCommunityID(ctx, capture, id); err != nil || index != 1 {
+				t.Fatalf("Community ID selected %d: %v", index, err)
+			}
+			file, err = os.OpenFile(capture, os.O_APPEND|os.O_WRONLY, 0600)
+			if err != nil {
+				t.Fatal(err)
+			}
+			writer = pcapgo.NewWriterNanos(file)
+			clientPort, seq = 12346, [2]uint32{100, 200}
+			emit(0, nil, true, false)
+			emit(1, nil, true, true)
+			emit(0, nil, false, true)
+			for _, chunk := range recorder.chunks {
+				direction := 1
+				if chunk.outbound {
+					direction = 0
+				}
+				for len(chunk.data) > 0 {
+					n := min(len(chunk.data), 1400)
+					emit(direction, chunk.data[:n], false, true)
+					chunk.data = chunk.data[n:]
+				}
+			}
+			if err := file.Close(); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := AnalyzeTLSCapture(ctx, capture, keys, -1); err == nil || !strings.Contains(err.Error(), "multiple decryptable TLS streams [1 2]") {
+				t.Fatalf("ambiguous streams silently selected: %v", err)
+			}
 			bad := []byte(strings.ReplaceAll(keyLog.String(), " ", " 00"))
 			if err := os.WriteFile(keys, bad, 0600); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := AnalyzeTLSCapture(ctx, capture, keys, 0); err == nil {
+			if _, err := AnalyzeTLSCapture(ctx, capture, keys, 1); err == nil {
 				t.Fatal("invalid secrets reported successful plaintext")
 			}
 		})

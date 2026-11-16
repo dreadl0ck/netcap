@@ -212,7 +212,7 @@ def build(args):
     shutil.copyfile(root / 'LICENSE', bundle / 'LICENSE')
     shutil.copytree(root / 'legal', bundle / 'legal')
     shutil.copyfile(root / 'README.md', bundle / 'README.md')
-    shutil.copytree(root / 'docs', bundle / 'docs')
+    subprocess.run(['python3', str(root / 'scripts/stage-release-docs.py'), str(root / 'docs'), str(bundle / 'docs')], check=True)
     shutil.copyfile(root / 'dist-macos-runtime' / args.variant / 'inventory.json', bundle / 'native-runtime-inventory.json')
     shutil.copyfile(root / 'dist-macos-runtime' / args.variant / 'NOTICES.txt', bundle / 'legal/native-runtime-notices.txt')
     records = inspect(bundle, minimum)

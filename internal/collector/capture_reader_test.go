@@ -368,6 +368,78 @@ func TestCaptureReaderCountCancellation(t *testing.T) {
 	}
 }
 
+func TestNGFCSOptionKeepsReadableInterfaces(t *testing.T) {
+	for _, order := range []binary.ByteOrder{binary.LittleEndian, binary.BigEndian} {
+		for _, value := range []byte{0, 4, 32, 7} {
+			option := make([]byte, 8)
+			order.PutUint16(option, 13)
+			order.PutUint16(option[2:], 1)
+			option[4] = value
+			data := append(inputNGSection(order), inputNGInterface(order, 1, 65535, option...)...)
+			packet := rawPacketFixture(t, false, 64)
+			data = append(data, inputNGPacket(order, 0, uint32(len(packet)), uint32(len(packet)), packet)...)
+			report, packets, _ := scanInputBytes(t, data, true, true)
+			if report.ReadErrors != 0 || report.ProcessedPackets != 1 || len(packets) != 1 || !bytes.Equal(packets[0], packet) {
+				t.Fatalf("FCS %d: %+v", value, report)
+			}
+		}
+	}
+}
+
+func TestOpenCaptureInputRejectsFirstSectionErrors(t *testing.T) {
+	for _, order := range []binary.ByteOrder{binary.LittleEndian, binary.BigEndian} {
+		trailer := inputNGSection(order)
+		order.PutUint32(trailer[len(trailer)-4:], uint32(len(trailer)+4))
+		overrun := inputNGSection(order)
+		order.PutUint32(overrun[4:8], uint32(len(overrun)+100))
+		body := append([]byte(nil), inputNGSection(order)[8:24]...)
+		body = append(body, 1, 0, 255, 127)
+		options := inputNGBlock(order, ngSection, body)
+		for _, data := range [][]byte{trailer, overrun, options} {
+			path := filepath.Join(t.TempDir(), "bad.pcapng")
+			if err := os.WriteFile(path, data, 0600); err != nil {
+				t.Fatal(err)
+			}
+			for _, merge := range []bool{false, true} {
+				r, file, err := openCaptureInput(path, true, merge)
+				if err == nil || r != nil || file != nil {
+					t.Fatalf("invalid first SHB accepted: %v %v %v", r, file, err)
+				}
+			}
+		}
+	}
+}
+
+func FuzzOpenCaptureInput(f *testing.F) {
+	valid := inputNGSection(binary.LittleEndian)
+	f.Add(valid)
+	invalid := bytes.Clone(valid)
+	binary.LittleEndian.PutUint32(invalid[len(invalid)-4:], uint32(len(invalid)+4))
+	f.Add(invalid)
+	f.Fuzz(func(t *testing.T, data []byte) {
+		if len(data) > 65536 {
+			t.Skip()
+		}
+		path := filepath.Join(t.TempDir(), "input.pcapng")
+		if err := os.WriteFile(path, data, 0600); err != nil {
+			t.Fatal(err)
+		}
+		r, file, err := openCaptureInput(path, true, false)
+		if err != nil {
+			if r != nil || file != nil {
+				t.Fatal("failed opener leaked ownership")
+			}
+			return
+		}
+		if r == nil || file == nil {
+			t.Fatal("successful opener returned nil ownership")
+		}
+		if err := file.Close(); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
 func FuzzCaptureReaders(f *testing.F) {
 	f.Add(inputPCAPHeader(binary.LittleEndian, false, 64, 1), false)
 	f.Add(inputNGSection(binary.LittleEndian), true)

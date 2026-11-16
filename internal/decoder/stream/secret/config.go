@@ -122,7 +122,7 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 						"session_password", "sessionpassword", "login_password",
 						"loginpassword", "form_pw", "userpassword", "upassword",
 						"passwort", "passwrd", "wppassword", "upasswd", "j_password",
-						"pwd", "secret", "credentials", "credential", "pw",
+						"pwd", "secret", "credentials", "credential", "pw", "pswrd",
 					},
 				},
 			},

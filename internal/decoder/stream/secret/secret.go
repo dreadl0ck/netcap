@@ -118,7 +118,7 @@ func WriteSecret(creds *types.Secret) {
 	}
 
 	// Skip credentials with empty username AND password - they provide no useful information
-	if creds == nil || creds.User == "" && creds.Password == "" && creds.Hash == "" && creds.HashcatFormat == "" {
+	if creds == nil || creds.User == "" && creds.Password == "" && creds.Hash == "" && creds.HashcatFormat == "" && creds.Value == "" {
 		return
 	}
 
