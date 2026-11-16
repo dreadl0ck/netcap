@@ -49,6 +49,13 @@ func init() {
 
 // FlushNetworkStreams will flush all collected network-layer streams to disk
 func FlushNetworkStreams() {
+	if decoderconfig.Instance == nil {
+		return
+	}
+	if decoderconfig.Instance.AggregateStore != nil {
+		flushStoredNetwork()
+		return
+	}
 	numTotal := Streams.size()
 	if numTotal == 0 {
 		return

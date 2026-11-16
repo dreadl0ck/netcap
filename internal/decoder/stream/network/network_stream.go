@@ -26,6 +26,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/aggregate"
+	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
+
 	"github.com/dreadl0ck/netcap/internal/packetview"
 
 	"github.com/gopacket/gopacket"
@@ -39,6 +42,9 @@ var Streams = newNetworkStreamPool()
 // ResetStreams creates a new network stream pool to clear all stream state
 // This should be called when resetting state between processing different files
 func ResetStreams() {
+	if decoderconfig.Instance != nil && decoderconfig.Instance.AggregateStore != nil {
+		_ = decoderconfig.Instance.AggregateStore.Do(func(tx *aggregate.Tx) error { return tx.Delete("network/") })
+	}
 	Streams = newNetworkStreamPool()
 }
 
@@ -95,6 +101,9 @@ func (n NetworkDataFragments) Len() int {
 
 // Less compares two fragments by timestamp
 func (n NetworkDataFragments) Less(i, j int) bool {
+	if n[i].CaptureInformation.Timestamp.Equal(n[j].CaptureInformation.Timestamp) {
+		return networkOrdinal(n[i].CaptureInformation) < networkOrdinal(n[j].CaptureInformation)
+	}
 	return n[i].CaptureInformation.Timestamp.Before(n[j].CaptureInformation.Timestamp)
 }
 
@@ -114,7 +123,7 @@ func (n NetworkDataFragments) Size() int {
 
 // Sort sorts the fragments by timestamp
 func (n NetworkDataFragments) Sort() {
-	sort.Sort(n)
+	sort.Stable(n)
 }
 
 // networkStream represents a network-layer conversation between two IPs
@@ -144,8 +153,15 @@ func (p *networkStreamPool) size() int {
 
 // HandleNetworkPacket takes a network-layer packet without transport layer and tracks it
 func (p *networkStreamPool) HandleNetworkPacket(packet gopacket.Packet, payload []byte, protocol string) {
+	if decoderconfig.Instance == nil || !decoderconfig.Instance.SaveConns {
+		return
+	}
 	nl := packet.NetworkLayer()
 	if nl == nil {
+		return
+	}
+	if decoderconfig.Instance.AggregateStore != nil {
+		storeNetworkPacket(packet, payload, protocol)
 		return
 	}
 

@@ -17,7 +17,7 @@ More workers do not always give more throughput. Disk, parsing, native analyzers
 | Retained TCP payload: zero                  | `-max-retained-tcp-bytes` limits reader-owned payload copies across all workers; zero is unlimited.                                        |
 | Retained reassembly pages: zero             | `-max-retained-reassembly-bytes` limits allocated TCP page payload and metadata across all workers; zero is unlimited.                     |
 | Incremental TCP state: 64 MiB               | `-max-retained-tcp-state-bytes` counts parser storage and pool/connection credits while `-incremental-http` is enabled; zero is unlimited. |
-| Encoded capture state: 32 MiB             | `-max-aggregate-state-bytes` bounds the resident Connection/Host/DeviceProfile/Service/Software/UDP cache, with excess state on disk; zero selects the in-memory implementation. |
+| Encoded capture state: 32 MiB             | `-max-aggregate-state-bytes` bounds the resident Connection/Host/DeviceProfile/Service/Software/UDP/network cache, with excess state on disk; zero selects the in-memory implementation. |
 | DPI automatic contexts                      | Up to 8; separate from protocol workers                                                                                                    |
 | Evidence index                              | 64 MiB of accounted storage plus record and link limits                                                                                    |
 | Optional packet retention                   | Default 32 MiB segments / 512 MiB retained                                                                                                 |
@@ -73,7 +73,7 @@ update does not rewrite an ever-growing aggregate.
 | Property | Contract |
 | --- | --- |
 | Cache | Encoded values, keys and 256 bytes per entry; at most 4,096 entries. `AggregateStateHealth.json` records the limit, peak, disk reads/writes, evictions and database bytes |
-| Other memory | SQLite has a separate 1 MiB page cache and 16 KiB pages. Decoded output records, codec scratch, TCP reassembly, network-layer payloads and vulnerability/exploit accumulators are outside this limit |
+| Other memory | SQLite has a separate 1 MiB page cache and 16 KiB pages. Decoded output records, codec scratch, TCP reassembly and vulnerability/exploit accumulators are outside this limit |
 | User-agent cache | `LookupUserAgent` bounds the shared HTTP/mail result cache to 1 MiB of encoded results, keys and 256 bytes per entry, with at most 4,096 entries. Eviction reparses without dropping observations; uap-go's three ARC caches are separately configured with `CacheSize: 1024` and remain outside this byte budget |
 | Scratch lifecycle | `.netcap-aggregate-*.sqlite` uses mode `0600` on POSIX and the output directory's inherited ACL on Windows; normal cleanup removes it. It is not a restart/recovery log |
 | Failure | Storage errors cancel capture, propagate as capture errors and prevent `audit-output-ready.json`; a failed write never falls back to discarding aggregate state |
@@ -112,6 +112,14 @@ the backing database occupies 44,056,576 bytes. `TestAggregateUDPReplyFirstAndPa
 compares reply-first audits, raw conversation bytes and directional manifests
 against the in-memory path. Separate datagrams are not concatenated for HTTP,
 MQTT-SN or Protobuf parsing.
+
+Network-layer conversations retain no payload state unless `-conns` is enabled.
+When enabled, `TestStoredNetworkPreservesLegacyConversationBytes` checks the
+restartable backing path against the legacy files. Capture time and ingress
+ordinal determine ordering; metadata and directions survive repeated reads.
+`TestAggregateNetworkPreservesCaptureAuditSetsAndPayloads` compares ICMPv4/ICMPv6
+audits and raw conversation bytes with 1 and 4 workers. Network output errors
+fail the capture and prevent readiness (`TestAggregateNetworkOutputFailurePreventsReady`).
 
 For 200,000 generated SYN tuples, each comparison used one Linux/amd64 test
 binary, 2 CPUs, an 8 GiB container and a 1 MiB encoded cache. Runtime includes

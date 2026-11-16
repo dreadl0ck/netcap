@@ -21,6 +21,7 @@ package utils
 
 import (
 	"bufio"
+	"errors"
 	"os"
 	"path"
 	"path/filepath"
@@ -61,6 +62,19 @@ type NetworkDataFragment interface {
 
 // NetworkDataFragments is a slice of network data fragments
 type NetworkDataFragments []NetworkDataFragment
+
+type NetworkFragmentSource interface {
+	Walk(func(NetworkDataFragment) bool) error
+}
+
+func (n NetworkDataFragments) Walk(yield func(NetworkDataFragment) bool) error {
+	for _, fragment := range n {
+		if !yield(fragment) {
+			break
+		}
+	}
+	return nil
+}
 
 // SaveConversation will save TCP / UDP conversations to disk
 // this also invokes the harvesters on the conversation banner
@@ -217,21 +231,21 @@ retry:
 // SaveNetworkConversation will save network-layer conversations (ICMP, IGMP, GRE, etc.) to disk
 // Protocol should be the network layer protocol name (e.g., "ICMPv4", "ICMPv6", "IGMP", "GRE")
 func SaveNetworkConversation(protocol string, conversation NetworkDataFragments, ident string, firstPacket time.Time) error {
-	// prevent processing zero bytes
-	if len(conversation) == 0 {
-		return nil
-	}
+	return SaveNetworkSource(protocol, conversation, ident, firstPacket)
+}
 
-	// Calculate total size
-	var totalSize int
-	for _, d := range conversation {
-		totalSize += len(d.Raw())
-	}
-	if totalSize == 0 {
-		return nil
-	}
-
+func SaveNetworkSource(protocol string, source NetworkFragmentSource, ident string, firstPacket time.Time) error {
 	if !decoderconfig.Instance.SaveConns {
+		return nil
+	}
+	hasPayload := false
+	if err := source.Walk(func(d NetworkDataFragment) bool {
+		hasPayload = len(d.Raw()) > 0
+		return !hasPayload
+	}); err != nil {
+		return err
+	}
+	if !hasPayload {
 		return nil
 	}
 
@@ -246,19 +260,12 @@ func SaveNetworkConversation(protocol string, conversation NetworkDataFragments,
 	// make sure root path exists
 	err := os.MkdirAll(root, defaults.DirectoryPermission)
 	if err != nil {
-		reassemblyLog.Warn("failed to create directory",
-			zap.String("path", root),
-			zap.Int("perm", defaults.DirectoryPermission),
-		)
+		return err
 	}
 
 	base = path.Join(root, base)
 
 	reassemblyLog.Info("saveNetworkConversation", zap.String("base", base), zap.String("protocol", protocol))
-
-	Stats.Lock()
-	Stats.SavedNetworkConnections++
-	Stats.Unlock()
 
 retryNetwork:
 	// append to files
@@ -282,47 +289,17 @@ retryNetwork:
 	// TODO: make buffer size configurable
 	w := bufio.NewWriterSize(f, 4096)
 
-	for _, d := range conversation {
-		if _, err := w.Write(d.Raw()); err != nil {
-			f.Close()
-			return err
-		}
+	var writeErr error
+	sourceErr := source.Walk(func(d NetworkDataFragment) bool {
+		_, writeErr = w.Write(d.Raw())
+		return writeErr == nil
+	})
+	if err := errors.Join(sourceErr, writeErr, w.Flush(), f.Sync(), f.Close()); err != nil {
+		return err
 	}
-
-	err = w.Flush()
-	if err != nil {
-		reassemblyLog.Info("failed to flush buffer",
-			zap.String("ident", ident),
-			zap.String("protocol", protocol),
-			zap.String("base", base),
-		)
-	}
-
-	err = f.Sync()
-	if err != nil {
-		reassemblyLog.Info("failed to sync file",
-			zap.String("ident", ident),
-			zap.String("protocol", protocol),
-			zap.String("base", base),
-		)
-	}
-
-	// close file
-	err = f.Close()
-	if err != nil {
-		reassemblyLog.Error(
-			"failed to close network conversation file",
-			zap.String("path", base),
-			zap.Error(err),
-		)
-	} else {
-		reassemblyLog.Info("saved network conversation",
-			zap.String("ident", ident),
-			zap.String("protocol", protocol),
-			zap.String("base", base),
-		)
-	}
-
+	Stats.Lock()
+	Stats.SavedNetworkConnections++
+	Stats.Unlock()
 	return nil
 }
 

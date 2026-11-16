@@ -99,6 +99,94 @@ func TestAggregateSoftwarePreservesCaptureAuditSets(t *testing.T) {
 	}
 }
 
+func aggregateNetworkInput(t *testing.T) string {
+	t.Helper()
+	var frames [][]byte
+	for i := range 6 {
+		reverse := i%2 == 1
+		v4Type := uint8(8)
+		v6Type := uint8(128)
+		if reverse {
+			v4Type, v6Type = 0, 129
+		}
+		payload := gopacket.Payload(fmt.Sprintf("network-payload-%d", i))
+		v4 := viewtestutil.Serialize(&layers.ICMPv4{TypeCode: layers.CreateICMPv4TypeCode(v4Type, 0), Id: 7, Seq: uint16(i)}, payload)
+		v6 := viewtestutil.Serialize(&layers.ICMPv6{TypeCode: layers.CreateICMPv6TypeCode(v6Type, 0)}, &layers.ICMPv6Echo{Identifier: 7, SeqNumber: uint16(i)}, payload)
+		frames = append(frames, viewtestutil.Ethernet(viewtestutil.IP(false, reverse, layers.IPProtocolICMPv4, v4)), viewtestutil.Ethernet(viewtestutil.IP(true, reverse, layers.IPProtocolICMPv6, v6)))
+	}
+	input := filepath.Join(t.TempDir(), "network.pcap")
+	if err := os.WriteFile(input, huntPCAP(1, frames...), 0600); err != nil {
+		t.Fatal(err)
+	}
+	return input
+}
+
+func TestAggregateNetworkPreservesCaptureAuditSetsAndPayloads(t *testing.T) {
+	input := aggregateNetworkInput(t)
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var expectedCounts map[string]int
+	var expectedDigests map[string]string
+	var expectedFiles map[string]string
+	for _, mode := range []struct {
+		limit   int64
+		workers int
+	}{{0, 1}, {1, 1}, {2048, 4}} {
+		out := t.TempDir()
+		cmd := exec.Command(exe, "-test.run=^TestAggregateCaptureProcess$", "-test.count=1", "-test.timeout=2m")
+		cmd.Env = append(os.Environ(), "NETCAP_AGGREGATE_INPUT="+input, "NETCAP_AGGREGATE_OUT="+out, "NETCAP_AGGREGATE_LIMIT="+strconv.FormatInt(mode.limit, 10), "NETCAP_AGGREGATE_WORKERS="+strconv.Itoa(mode.workers), "NETCAP_AGGREGATE_SAVE_CONNS=1")
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("network capture failed: %v\n%s", err, output)
+		}
+		counts, digests := ultimateRecords(t, out)
+		paths, err := filepath.Glob(filepath.Join(out, "network", "*", "*.bin"))
+		if err != nil || len(paths) != 2 || counts["ICMPv4"] != 6 || counts["ICMPv6"] != 6 {
+			t.Fatal("fixture did not exercise both network conversations", paths, counts, err)
+		}
+		files := map[string]string{}
+		for _, path := range paths {
+			wire, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			relative, err := filepath.Rel(out, path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			files[relative] = string(wire)
+		}
+		if expectedCounts == nil {
+			expectedCounts, expectedDigests, expectedFiles = counts, digests, files
+		} else if !reflect.DeepEqual(counts, expectedCounts) || !reflect.DeepEqual(digests, expectedDigests) || !reflect.DeepEqual(files, expectedFiles) {
+			t.Fatalf("network spilling changed audits or opaque payloads: %v", ultimateOutputDiff(expectedCounts, expectedDigests, counts, digests))
+		}
+	}
+}
+
+func TestAggregateNetworkOutputFailurePreventsReady(t *testing.T) {
+	input := aggregateNetworkInput(t)
+	cfg := ultimateCaptureConfig(t.TempDir(), 1, 0)
+	cfg.CaptureEvidence = true
+	cfg.DecoderConfig.SaveConns = true
+	cfg.DecoderConfig.MaxAggregateStateBytes = 1024
+	c := New(cfg)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	defer c.Stop()
+	if err := os.WriteFile(filepath.Join(cfg.DecoderConfig.Out, "network"), []byte("block directory"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.CollectPcap(input); err == nil {
+		t.Fatal("failed network conversation output reported success")
+	}
+	if _, err := os.Stat(filepath.Join(cfg.DecoderConfig.Out, "audit-output-ready.json")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatal("failed network output advertised ready audits", err)
+	}
+}
+
 func TestAggregateSpillingPreservesCaptureAuditSets(t *testing.T) {
 	input := filepath.Join(t.TempDir(), "udp.pcap")
 	writeUniqueUDPFlows(t, input, 1500)
