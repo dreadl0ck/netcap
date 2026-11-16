@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"sort"
 	"strconv"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
@@ -47,6 +48,7 @@ func (s *Server) registerRecordTools() error {
 					mcplib.Description("Offset in matching records; also supported with a filter.")),
 				mcplib.WithBoolean("count_only",
 					mcplib.Description("If true, return only the scanned/matched counts without record bodies.")),
+				mcplib.WithString("fields", mcplib.Description("Optional comma-separated top-level fields or JSON Pointer paths, e.g. Method,RequestHeader or /RequestHeaders/0/Value. Full values are preserved; oversized records provide a complete JSON artifact readable with read_mcp_artifact.")),
 				mcplib.WithReadOnlyHintAnnotation(true),
 				mcplib.WithDestructiveHintAnnotation(false),
 				mcplib.WithIdempotentHintAnnotation(true),
@@ -124,6 +126,10 @@ func (s *Server) handleQueryAuditRecords(_ context.Context, req mcplib.CallToolR
 	filterExpr := req.GetString("filter", "")
 
 	q := ref.sessionQueryParams()
+	q.Set("full", "true")
+	if fields := req.GetString("fields", ""); fields != "" {
+		q.Set("fields", fields)
+	}
 	if countOnly {
 		q.Set("countOnly", "true")
 	}
@@ -136,7 +142,7 @@ func (s *Server) handleQueryAuditRecords(_ context.Context, req mcplib.CallToolR
 	}
 
 	client := s.newClient()
-	records, completeJSON, terminal, sErr := client.StreamAuditRecords(auditType, q, 8<<20)
+	records, completeJSON, terminal, sErr := client.StreamAuditRecords(auditType, q, 32<<20)
 	if sErr != nil {
 		return errResult(fmt.Errorf("stream %s: %w", auditType, sErr)), nil
 	}
@@ -145,6 +151,26 @@ func (s *Server) handleQueryAuditRecords(_ context.Context, req mcplib.CallToolR
 		var em map[string]any
 		_ = json.Unmarshal(completeJSON, &em)
 		return errResult(fmt.Errorf("server: %v", em["error"])), nil
+	}
+	if terminal != "complete" {
+		return errResult(fmt.Errorf("audit stream did not complete; no partial success is returned")), nil
+	}
+	for i, record := range records {
+		if len(record) <= 192<<10 {
+			continue
+		}
+		entry, uri, err := s.carve.PutTyped(ref.ID, "audit-record", "query_audit_records:"+auditType, "application/json", record)
+		if err != nil {
+			return errResult(err), nil
+		}
+		var object map[string]json.RawMessage
+		_ = json.Unmarshal(record, &object)
+		keys := make([]string, 0, len(object))
+		for key := range object {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		records[i], _ = json.Marshal(map[string]any{"_oversized": true, "artifact_id": entry.ID, "resource_uri": uri, "sha256": entry.SHA256, "size_bytes": entry.SizeBytes, "fields": keys, "next_step": "Use fields to project structured values or read_mcp_artifact to read the complete JSON in bounded byte pages."})
 	}
 
 	out := map[string]any{
@@ -165,7 +191,11 @@ func (s *Server) handleQueryAuditRecords(_ context.Context, req mcplib.CallToolR
 	}
 	out["returned"] = len(records)
 
-	return jsonResult(out), nil
+	raw, err := json.Marshal(out)
+	if err != nil {
+		return errResult(err), nil
+	}
+	return rawJSONResult(raw), nil
 }
 
 func (s *Server) handleGetAuditRecordFields(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {

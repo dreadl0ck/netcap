@@ -286,4 +286,30 @@ func TestRecheck168SameNameCaptureIsolation(t *testing.T) {
 	if counts.Returned != 0 || counts.Records != nil || counts.Summary.Count != 0 || counts.Summary.Total != 10000 {
 		t.Fatalf("large count-only result was capped or transferred records: %+v", counts)
 	}
+	var longSession struct {
+		ID string `json:"session_id"`
+	}
+	call("ingest_pcap", map[string]any{"path": testutil.Recheck168Capture(t, "http_long_header_64k.pcap")}, &longSession)
+	var longState struct{ Completed bool }
+	call("wait_for_session", map[string]any{"session_id": longSession.ID, "timeout_seconds": 20, "poll_interval_ms": 100}, &longState)
+	if !longState.Completed {
+		t.Fatal("long-header control did not complete")
+	}
+	var projected struct {
+		Records []struct {
+			Method        string
+			RequestHeader map[string]string
+		}
+	}
+	call("query_audit_records", map[string]any{"session_id": longSession.ID, "type": "HTTP", "fields": "Method,RequestHeader", "limit": 1}, &projected)
+	if len(projected.Records) != 1 || projected.Records[0].Method == "" {
+		t.Fatal("structured long-header record missing")
+	}
+	headerBytes := 0
+	for _, value := range projected.Records[0].RequestHeader {
+		headerBytes += len(value)
+	}
+	if headerBytes < 60000 {
+		t.Fatalf("long header was truncated: %d bytes", headerBytes)
+	}
 }

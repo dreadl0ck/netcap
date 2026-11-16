@@ -76,7 +76,7 @@ func (c *NetcapClient) StreamAuditRecords(auditType string, q url.Values, maxByt
 	// SSE events are separated by blank lines; each event is one or more
 	// header lines ("event: name", "data: payload") followed by \n\n.
 	scanner := bufio.NewScanner(limited)
-	scanner.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
+	scanner.Buffer(make([]byte, 0, 64*1024), (16<<20)+1024)
 
 	var (
 		curEvent string

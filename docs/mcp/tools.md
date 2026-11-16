@@ -3825,6 +3825,7 @@ Supports the netcap filter-expression language in `filter` (an `expr`-style bool
 | name | type | required | description |
 | --- | --- | --- | --- |
 | `count_only` | boolean |  | If true, return only the scanned/matched counts without record bodies. |
+| `fields` | string |  | Optional comma-separated top-level fields or JSON Pointer paths, e.g. Method,RequestHeader or /RequestHeaders/0/Value. Full values are preserved; oversized records provide a complete JSON artifact readable with read_mcp_artifact. |
 | `filter` | string |  | Optional typed filter expression (Connection: "SrcPort == '443' && DstIP startsWith '10.'"; TCP/HTTP ports are numeric). Field names are CamelCase as in the proto schema; use get_audit_record_fields to enumerate. |
 | `limit` | number |  | Maximum records to return (default 100, max 500). |
 | `offset` | number |  | Offset in matching records; also supported with a filter. |

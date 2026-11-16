@@ -578,6 +578,8 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	offset := 0
 	limit := 500 // Default limit (max 500)
 	countOnly := r.URL.Query().Get("countOnly") == "true"
+	fullRecords := r.URL.Query().Get("full") == "true"
+	fields := r.URL.Query().Get("fields")
 
 	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
 		if val, err := strconv.Atoi(offsetStr); err == nil && val >= 0 {
@@ -679,6 +681,8 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	count := 0
 	totalScanned := 0
 	matchedCount := 0
+	pageBytes := 0
+	pageFull := false
 
 	for {
 		if r.Context().Err() != nil {
@@ -742,7 +746,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 
 		// Only send records if we haven't reached the limit yet
 		// But continue scanning to get accurate totalScanned count
-		if count < limit {
+		if count < limit && !pageFull {
 			// Convert record to JSON
 			jsonData, err := json.Marshal(record)
 			if err != nil {
@@ -753,7 +757,23 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			// Truncate large records to prevent UI issues with very large record types (e.g., DeviceProfile)
 			const maxRecordSize = 2000
 			jsonStr := string(jsonData)
-			if len(jsonStr) > maxRecordSize {
+			if fullRecords {
+				jsonData, err = projectRecordJSON(jsonData, fields)
+				if err != nil {
+					sendError(err.Error())
+					return
+				}
+				if len(jsonData) > 16<<20 {
+					sendError("record exceeds 16 MiB; select smaller fields with fields")
+					return
+				}
+				if count > 0 && pageBytes+len(jsonData) > 192<<10 {
+					pageFull = true
+					continue
+				}
+				pageBytes += len(jsonData)
+				jsonStr = string(jsonData)
+			} else if len(jsonStr) > maxRecordSize {
 				// Create a truncated response with valid JSON structure
 				truncatedData := map[string]any{
 					"_truncated":     true,
@@ -783,8 +803,8 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	executionTime := time.Since(startTime)
 
 	// Send completion event with execution time
-	fmt.Fprintf(w, "event: complete\ndata: {\"total\": %d, \"scanned\": %d, \"count\": %d, \"executionTimeMs\": %d}\n\n",
-		matchedCount, totalScanned, count, executionTime.Milliseconds())
+	fmt.Fprintf(w, "event: complete\ndata: {\"total\": %d, \"scanned\": %d, \"count\": %d, \"executionTimeMs\": %d, \"nextOffset\": %d, \"hasMore\": %t}\n\n",
+		matchedCount, totalScanned, count, executionTime.Milliseconds(), offset+count, !countOnly && offset+count < matchedCount)
 	flusher.Flush()
 }
 
