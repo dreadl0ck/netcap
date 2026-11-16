@@ -2157,7 +2157,7 @@ Discover every capture MCP workflow, exact tool coverage, native scoped firewall
 
 ### `get_capture_evidence`
 
-Read capture run/source identity, effective configuration, packet-retention coverage and producer health. Missing evidence is an error, never proof of complete coverage.
+Read capture run/source identity, effective configuration, packet-retention coverage and producer health. Missing evidence is an error. Oversized manifests return a complete JSON artifact; select fields for bounded structured inspection.
 
 **Hints:** read-only
 
@@ -2167,6 +2167,10 @@ Read capture run/source identity, effective configuration, packet-retention cove
 {
   "additionalProperties": false,
   "properties": {
+    "fields": {
+      "description": "Comma-separated top-level fields or JSON Pointer paths, e.g. runId,inputSHA256 or /interfaces/0.",
+      "type": "string"
+    },
     "session_id": {
       "description": "Explicit session identifier returned by ingest_pcap or list_sessions.",
       "type": "string"
@@ -3283,6 +3287,8 @@ Alerts raised by detection rules, YARA, and other sources in this session.
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
+| `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
 | `limit` | number |  | Maximum number of results to return. |
 | `offset` | number |  | Pagination offset. |
 | `search` | string |  | Substring filter applied server-side. |
@@ -3422,6 +3428,8 @@ All TLS certificates observed in the session (issuer, subject, sans, validity).
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
+| `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
 | `limit` | number |  | Maximum number of results to return. |
 | `offset` | number |  | Pagination offset. |
 | `search` | string |  | Substring filter applied server-side. |
@@ -3463,6 +3471,11 @@ List all devices (MAC addresses) seen in the session, with vendor lookups.
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
+| `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
 | `session_id` | string | yes | Session identifier. |
 
 
@@ -3476,6 +3489,8 @@ Domains queried in the session, with counts. Sort by count client-side for a top
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
+| `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
 | `limit` | number |  | Maximum number of results to return. |
 | `offset` | number |  | Pagination offset. |
 | `search` | string |  | Substring filter applied server-side. |
@@ -3492,6 +3507,8 @@ All files carved out of the session's traffic by netcap's file decoder. Each ent
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
+| `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
 | `limit` | number |  | Maximum number of results to return. |
 | `offset` | number |  | Pagination offset. |
 | `search` | string |  | Substring filter applied server-side. |
@@ -3524,6 +3541,11 @@ List all hosts (IP profiles) seen in the session, with packet and byte counts. S
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
+| `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
 | `session_id` | string | yes | Session identifier. |
 
 
@@ -3537,6 +3559,8 @@ All HTTP records in the session (request + response details).
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
+| `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
 | `limit` | number |  | Maximum number of results to return. |
 | `offset` | number |  | Pagination offset. |
 | `search` | string |  | Substring filter applied server-side. |
@@ -3628,6 +3652,11 @@ List netcap detection rules available for execution.
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
+| `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
 | `session_id` | string | yes | Session identifier. |
 
 
@@ -3641,6 +3670,8 @@ Credentials / secrets recovered from cleartext protocols.
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
+| `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
 | `limit` | number |  | Maximum number of results to return. |
 | `offset` | number |  | Pagination offset. |
 | `search` | string |  | Substring filter applied server-side. |
@@ -3657,6 +3688,11 @@ List all detected services (host+port+banner+product) in the session.
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
+| `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
 | `session_id` | string | yes | Session identifier. |
 
 
@@ -3687,6 +3723,8 @@ Software products detected in the session (vendor/product/version, sourced from 
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
+| `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
 | `limit` | number |  | Maximum number of results to return. |
 | `offset` | number |  | Pagination offset. |
 | `search` | string |  | Substring filter applied server-side. |

@@ -506,6 +506,9 @@ func (s *Server) handleGetRules(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	if respondCollectionPage(w, r, response.Rules, "rules") {
+		return
+	}
 	RespondJSON(w, http.StatusOK, response)
 }
 

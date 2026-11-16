@@ -45,6 +45,26 @@ func (s *Server) registerInventoryTools() error {
 // longer holds the session gate; multiple parallel tool calls against
 // different sessions can now run concurrently.
 func simpleSessionTool(s *Server, name, desc, endpoint string, queryArgs []queryArg) server.ServerTool {
+	collectionKey, paged := pagedCollectionKeys[name]
+	if paged {
+		queryArgs = append([]queryArg(nil), queryArgs...)
+		for _, extra := range []queryArg{qLimit(500), qOffset(), qSearch(), {Name: "fields", Description: "Optional comma-separated fields or JSON Pointer paths."}, {Name: "generation", Description: "Generation from the previous page; changed collections reject continuation."}} {
+			found := false
+			for _, existing := range queryArgs {
+				if existing.Name == extra.Name {
+					found = true
+				}
+			}
+			if !found {
+				queryArgs = append(queryArgs, extra)
+			}
+		}
+		for i := range queryArgs {
+			if queryArgs[i].Name == "limit" {
+				queryArgs[i].MaxNumber = 500
+			}
+		}
+	}
 	opts := []mcplib.ToolOption{
 		mcplib.WithDescription(desc),
 		mcplib.WithString("session_id",
@@ -66,6 +86,11 @@ func simpleSessionTool(s *Server, name, desc, endpoint string, queryArgs []query
 				return errResult(err), nil
 			}
 			q := buildQuery(req, queryArgs)
+			if paged {
+				if err := collectionQuery(req, q); err != nil {
+					return errResult(err), nil
+				}
+			}
 			for k, vs := range ref.sessionQueryParams() {
 				for _, v := range vs {
 					q.Set(k, v)
@@ -74,6 +99,9 @@ func simpleSessionTool(s *Server, name, desc, endpoint string, queryArgs []query
 			body, gErr := s.newClient().GetContext(ctx, endpoint, q)
 			if gErr != nil {
 				return errResult(fmt.Errorf("%s: %w", endpoint, gErr)), nil
+			}
+			if paged {
+				return s.collectionResult(ref, collectionKey, body), nil
 			}
 			return rawJSONResult(body), nil
 		},

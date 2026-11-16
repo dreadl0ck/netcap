@@ -114,6 +114,9 @@ func (s *Server) handleSecrets(w http.ResponseWriter, r *http.Request) {
 
 		// Try uncompressed version
 		if _, err := os.Stat(filePathUncompressed); os.IsNotExist(err) {
+			if respondCollectionPage(w, r, []SecretSummary{}, "secrets") {
+				return
+			}
 
 			RespondJSON(w, http.StatusOK, SecretsResponse{
 				Secrets:    []SecretSummary{},
@@ -254,6 +257,9 @@ func (s *Server) handleSecrets(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if respondCollectionPage(w, r, credentials, "secrets") {
+		return
+	}
 	RespondJSON(w, http.StatusOK, SecretsResponse{
 		Secrets:    credentials,
 		TotalCount: len(credentials),

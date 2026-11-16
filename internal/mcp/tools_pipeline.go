@@ -425,10 +425,12 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 	if sErr != nil {
 		return errResult(fmt.Errorf("audit-stats: %w", sErr)), nil
 	}
-	status, _ := client.Get("/api/status", nil)
-	files, _ := client.Get("/api/files/input", nil)
+	files, filesErr := client.Get("/api/files/input", nil)
+	if filesErr != nil {
+		return errResult(filesErr), nil
+	}
 
-	completed := deriveCompleted(ref, files, status)
+	completed := deriveCompleted(ref, files, nil)
 	if completed {
 		stats, sErr = client.Get("/api/audit-stats", statsQ)
 		if sErr != nil {
@@ -440,7 +442,7 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 		"mode_path":    ref.isPath,
 		"completed":    completed,
 		"audit_stats":  json.RawMessage(stats),
-		"capture_stat": json.RawMessage(status),
+		"capture_stat": map[string]any{"sessionId": ref.ID, "isProcessing": !completed},
 	}
 	provenance, provenanceErr := client.Get("/api/investigation/capture", ref.sessionQueryParams())
 	if provenanceErr != nil {
@@ -448,7 +450,18 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 	} else if !json.Valid(provenance) || string(provenance) == "null" {
 		out["capture_provenance_error"] = "Capture provenance is unavailable"
 	} else {
-		out["capture_provenance"] = provenance
+		var manifest map[string]json.RawMessage
+		if err := json.Unmarshal(provenance, &manifest); err != nil {
+			return errResult(err), nil
+		}
+		summary := make(map[string]json.RawMessage)
+		for _, key := range []string{"runId", "status", "inputSHA256", "inputSize", "inputPath", "version", "startedAt", "finishedAt", "parentRunId", "parentInputSHA256"} {
+			if value := manifest[key]; len(value) > 0 && len(value) < 4096 {
+				summary[key] = value
+			}
+		}
+		out["capture_provenance"] = summary
+		out["capture_provenance_details"] = "get_capture_evidence provides the full manifest or a complete paged JSON artifact"
 	}
 
 	// Surface per-file errors (local mode) and session error fields

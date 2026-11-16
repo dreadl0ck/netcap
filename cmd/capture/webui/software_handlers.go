@@ -108,6 +108,9 @@ func (s *Server) handleSoftware(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	if respondCollectionPage(w, r, response.Software, "software") {
+		return
+	}
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -284,6 +287,9 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 		communityIDs := make([]string, 0, len(agg.communityIDs))
 		for cid := range agg.communityIDs {
 			communityIDs = append(communityIDs, cid)
+		}
+		for _, values := range [][]string{devices, services, dpiResults, sourceNames, flows, communityIDs} {
+			sort.Strings(values)
 		}
 
 		software = append(software, SoftwareSummary{

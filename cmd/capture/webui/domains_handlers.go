@@ -103,6 +103,9 @@ func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	if respondCollectionPage(w, r, response.Domains, "domains") {
+		return
+	}
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -340,6 +343,10 @@ func aggregateDomains(domainMap map[string]*domainAggregator) []DomainSummary {
 		for cid := range agg.communityIds {
 			communityIDs = append(communityIDs, cid)
 		}
+		sort.Strings(recordTypes)
+		sort.Slice(responseCodes, func(i, j int) bool { return responseCodes[i] < responseCodes[j] })
+		sort.Strings(resolvedIPs)
+		sort.Strings(communityIDs)
 
 		// Determine if subdomain and parent domain
 		isSubdomain := false

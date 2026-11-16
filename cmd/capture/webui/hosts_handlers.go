@@ -118,6 +118,9 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	if respondCollectionPage(w, r, response.Hosts, "hosts") {
+		return
+	}
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -180,6 +183,9 @@ func readHosts(outDir string) ([]HostSummary, error) {
 			}
 			// Sort by packet count descending
 			sort.Slice(protos, func(i, j int) bool {
+				if protos[i].packets == protos[j].packets {
+					return protos[i].name < protos[j].name
+				}
 				return protos[i].packets > protos[j].packets
 			})
 			// Take top 5

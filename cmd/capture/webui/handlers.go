@@ -2415,6 +2415,9 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	}
 	if _, err := os.Stat(filesDir); os.IsNotExist(err) {
 		// Return empty list if directory doesn't exist
+		if respondCollectionPage(w, r, []map[string]any{}, "files") {
+			return
+		}
 		RespondJSON(w, http.StatusOK, map[string]any{
 			"files":      []map[string]any{},
 			"totalCount": 0,
@@ -2640,6 +2643,9 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	// Sort by modified time (newest first)
 	// Note: This is a simple sort, could be optimized if needed
 
+	if respondCollectionPage(w, r, extractedFiles, "files") {
+		return
+	}
 	RespondJSON(w, http.StatusOK, map[string]any{
 		"files":      extractedFiles,
 		"totalCount": len(extractedFiles),

@@ -50,6 +50,16 @@ func (s *Server) handleCaptureEvidence(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
+	if fields := r.URL.Query().Get("fields"); fields != "" {
+		raw, _ := json.Marshal(manifest)
+		projected, err := projectRecordJSON(raw, fields)
+		if err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		w.Write(projected)
+		return
+	}
 	_ = json.NewEncoder(w).Encode(manifest)
 }
 

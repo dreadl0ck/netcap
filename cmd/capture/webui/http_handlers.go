@@ -123,6 +123,9 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	if respondCollectionPage(w, r, response.HTTP, "http") {
+		return
+	}
 	json.NewEncoder(w).Encode(response)
 }
 

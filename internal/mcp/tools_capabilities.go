@@ -157,6 +157,13 @@ func (s *Server) registerAPITool(spec apiTool) error {
 			}
 			return result, nil
 		}
+		if spec.name == "get_capture_evidence" {
+			record, err := s.completeRecordJSON(newSessionRef(sessionID), spec.name, raw)
+			if err != nil {
+				return errResult(err), nil
+			}
+			return rawJSONResult(record), nil
+		}
 		return rawJSONResult(raw), nil
 	}})
 }
@@ -196,7 +203,7 @@ func (s *Server) registerCapabilityTools() error {
 		{name: "set_bpf_config", path: "/api/config/bpf", post: true, description: "Validate and persist a process-wide BPF filter for future analyses (including child reanalysis). Empty filter clears it; does not change existing results.", options: []mcplib.ToolOption{apiString("filter", "BPF expression, or empty to clear.", true)}},
 		{name: "get_decoder_config", path: "/api/decoders/config", description: "Read the persisted decoder selection for future analyses."},
 		{name: "set_decoder_config", path: "/api/decoders/config", post: true, description: "Replace process-wide decoder selection for future analyses. Supply both includeDecoders and excludeDecoders (CSV); empty strings reset to all. Discover valid names with list_decoders.", options: []mcplib.ToolOption{apiString("includeDecoders", "Exclusive decoder CSV, or empty.", true), apiString("excludeDecoders", "Excluded decoder CSV, or empty.", true)}},
-		{name: "get_capture_evidence", path: "/api/investigation/capture", session: true, description: "Read capture run/source identity, effective configuration, packet-retention coverage and producer health. Missing evidence is an error, never proof of complete coverage."},
+		{name: "get_capture_evidence", path: "/api/investigation/capture", session: true, description: "Read capture run/source identity, effective configuration, packet-retention coverage and producer health. Missing evidence is an error. Oversized manifests return a complete JSON artifact; select fields for bounded structured inspection.", options: []mcplib.ToolOption{apiString("fields", "Comma-separated top-level fields or JSON Pointer paths, e.g. runId,inputSHA256 or /interfaces/0.", false)}},
 		{name: "get_investigation_health", path: "/api/investigation/health", session: true, description: "Read FTP data-channel or TCP reassembly health, including partial/lost evidence qualifications.", options: []mcplib.ToolOption{apiString("kind", "Health report.", true, "ftp", "reassembly")}},
 		{name: "get_stream_evidence", path: "/api/investigation/streams", session: true, description: "List retained stream manifests (up to 1000 streams, span bodies omitted), or get one exact manifest by id and direction=manifest. Binary stream bodies are not returned by this tool.", options: []mcplib.ToolOption{apiString("id", "Optional stream-* id from this session.", false), apiString("direction", "Set manifest when supplying id.", false, "manifest")}},
 		{name: "get_reproduction_metadata", path: "/api/investigation/reproduction", session: true, description: "Export metadata-only reproduction evidence, including failed captures. No source paths, raw logs or packet bodies. Optional runId binds generation.", options: []mcplib.ToolOption{apiString("runId", "Expected capture run id.", false)}},

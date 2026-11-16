@@ -209,6 +209,9 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Apply pagination
+	if respondCollectionPage(w, r, filtered, "alerts") {
+		return
+	}
 	totalCount := len(filtered)
 	start := offset
 	end := offset + limit

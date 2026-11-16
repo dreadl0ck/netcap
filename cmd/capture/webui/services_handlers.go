@@ -85,6 +85,9 @@ func (s *Server) handleServices(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	if respondCollectionPage(w, r, response.Services, "services") {
+		return
+	}
 	json.NewEncoder(w).Encode(response)
 }
 

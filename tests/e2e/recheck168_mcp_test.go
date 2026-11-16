@@ -286,6 +286,46 @@ func TestRecheck168SameNameCaptureIsolation(t *testing.T) {
 	if counts.Returned != 0 || counts.Records != nil || counts.Summary.Count != 0 || counts.Summary.Total != 10000 {
 		t.Fatalf("large count-only result was capped or transferred records: %+v", counts)
 	}
+	type rulePage struct {
+		Rules      []struct{ Name string }
+		Total      int  `json:"totalCount"`
+		Next       int  `json:"next_offset"`
+		More       bool `json:"has_more"`
+		Generation string
+	}
+	var firstRules, secondRules rulePage
+	call("list_rules", map[string]any{"session_id": largeSession.ID, "limit": 3, "fields": "name,type"}, &firstRules)
+	if len(firstRules.Rules) != 3 || !firstRules.More || firstRules.Total <= 3 || firstRules.Generation == "" {
+		t.Fatal("rules did not paginate", firstRules)
+	}
+	call("list_rules", map[string]any{"session_id": largeSession.ID, "limit": 3, "offset": firstRules.Next, "generation": firstRules.Generation, "fields": "name,type"}, &secondRules)
+	if len(secondRules.Rules) != 3 || secondRules.Rules[0].Name == firstRules.Rules[0].Name || secondRules.Generation != firstRules.Generation {
+		t.Fatal("rule continuation repeated or changed")
+	}
+	var searchedRules rulePage
+	call("list_rules", map[string]any{"session_id": largeSession.ID, "search": firstRules.Rules[0].Name, "limit": 3}, &searchedRules)
+	if len(searchedRules.Rules) == 0 {
+		t.Fatal("rules search ignored")
+	}
+	var firstHTTP, secondHTTP struct {
+		HTTP       []map[string]any `json:"http"`
+		Total      int              `json:"totalCount"`
+		Next       int              `json:"next_offset"`
+		Generation string
+	}
+	call("list_http_records", map[string]any{"session_id": ids[1], "limit": 1}, &firstHTTP)
+	call("list_http_records", map[string]any{"session_id": ids[1], "limit": 1, "offset": firstHTTP.Next, "generation": firstHTTP.Generation}, &secondHTTP)
+	if len(firstHTTP.HTTP) != 1 || len(secondHTTP.HTTP) != 1 || firstHTTP.Total != 3 || secondHTTP.Total != 3 || firstHTTP.Next == secondHTTP.Next {
+		t.Fatal("HTTP inventory ignored pagination")
+	}
+	var identity struct {
+		RunID string `json:"runId"`
+		Hash  string `json:"inputSHA256"`
+	}
+	call("get_capture_evidence", map[string]any{"session_id": largeSession.ID, "fields": "runId,inputSHA256"}, &identity)
+	if identity.RunID == "" || identity.Hash == "" {
+		t.Fatal("projected capture identity missing")
+	}
 	var longSession struct {
 		ID string `json:"session_id"`
 	}

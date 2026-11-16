@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"sort"
 	"strconv"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
@@ -156,21 +155,10 @@ func (s *Server) handleQueryAuditRecords(_ context.Context, req mcplib.CallToolR
 		return errResult(fmt.Errorf("audit stream did not complete; no partial success is returned")), nil
 	}
 	for i, record := range records {
-		if len(record) <= 192<<10 {
-			continue
-		}
-		entry, uri, err := s.carve.PutTyped(ref.ID, "audit-record", "query_audit_records:"+auditType, "application/json", record)
+		records[i], err = s.completeRecordJSON(ref, "query_audit_records:"+auditType, record)
 		if err != nil {
 			return errResult(err), nil
 		}
-		var object map[string]json.RawMessage
-		_ = json.Unmarshal(record, &object)
-		keys := make([]string, 0, len(object))
-		for key := range object {
-			keys = append(keys, key)
-		}
-		sort.Strings(keys)
-		records[i], _ = json.Marshal(map[string]any{"_oversized": true, "artifact_id": entry.ID, "resource_uri": uri, "sha256": entry.SHA256, "size_bytes": entry.SizeBytes, "fields": keys, "next_step": "Use fields to project structured values or read_mcp_artifact to read the complete JSON in bounded byte pages."})
 	}
 
 	out := map[string]any{

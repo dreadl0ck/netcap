@@ -125,6 +125,9 @@ func (s *Server) handleCertificates(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	if respondCollectionPage(w, r, response.Certificates, "certificates") {
+		return
+	}
 	json.NewEncoder(w).Encode(response)
 }
 
