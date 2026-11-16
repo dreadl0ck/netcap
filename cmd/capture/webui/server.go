@@ -1338,6 +1338,8 @@ func gzipMiddleware(next http.Handler) http.Handler {
 			strings.HasPrefix(path, "/api/extracted-files/download") ||
 			strings.HasPrefix(path, "/api/connections/download-pcap") ||
 			strings.HasPrefix(path, "/api/hosts/download-pcap") ||
+			strings.HasPrefix(path, "/api/http/download-pcap") ||
+			strings.HasPrefix(path, "/api/certificates/download-pcap") ||
 			strings.HasPrefix(path, "/api/chart/data") {
 			next.ServeHTTP(w, r)
 			return

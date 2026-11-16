@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -70,6 +71,78 @@ func observedTuplePCAP(t *testing.T) (string, time.Time) {
 		t.Fatal(err)
 	}
 	return path, base
+}
+
+func TestPacketDownloadsPreserveBinaryHTTPFraming(t *testing.T) {
+	input, _ := observedTuplePCAP(t)
+	s := &Server{activeInputFile: input, localAccessToken: "synthetic-download-token"}
+	mux := http.NewServeMux()
+	for path, handler := range map[string]http.HandlerFunc{
+		"/api/http/download-pcap":         s.handleHTTPDownloadPCAP,
+		"/api/certificates/download-pcap": s.handleCertificateDownloadPCAP,
+		"/api/connections/download-pcap":  s.handleConnectionDownloadPCAP,
+		"/api/hosts/download-pcap":        s.handleHostDownloadPCAP,
+	} {
+		mux.HandleFunc(path, handler)
+	}
+	ts := httptest.NewUnstartedServer(s.localSecurityMiddleware(gzipMiddleware(s.corsMiddleware(s.captureSelectionMiddleware(chartCoverageMiddleware(mux))))))
+	s.addr = ts.Listener.Addr().String()
+	ts.Start()
+	defer ts.Close()
+	query := url.Values{"srcIP": {"192.0.2.1"}, "dstIP": {"198.51.100.1"}, "srcPort": {"52123"}, "dstPort": {"9243"}, "protocol": {"TCP"}, "host": {"192.0.2.1"}}
+	for _, path := range []string{"/api/http/download-pcap", "/api/certificates/download-pcap", "/api/connections/download-pcap", "/api/hosts/download-pcap"} {
+		t.Run(path, func(t *testing.T) {
+			var expected []byte
+			for _, encoding := range []string{"identity", "", "gzip"} {
+				req, err := http.NewRequest(http.MethodGet, ts.URL+path+"?"+query.Encode(), nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+				req.Header.Set("Authorization", "Bearer "+s.localAccessToken)
+				if encoding != "" {
+					req.Header.Set("Accept-Encoding", encoding)
+				}
+				resp, err := ts.Client().Do(req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				data, err := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				if err != nil || resp.StatusCode != 200 {
+					t.Fatalf("encoding=%q: %d %v %s", encoding, resp.StatusCode, err, data)
+				}
+				if resp.Header.Get("Content-Encoding") != "" {
+					t.Fatal("binary capture was recompressed")
+				}
+				if length := resp.Header.Get("Content-Length"); length != strconv.Itoa(len(data)) {
+					t.Fatalf("framing length=%s actual=%d", length, len(data))
+				}
+				if expected == nil {
+					expected = data
+				} else if !bytes.Equal(data, expected) {
+					t.Fatal("capture bytes changed with Accept-Encoding")
+				}
+				reader, err := pcapgo.NewReader(bytes.NewReader(data))
+				if err != nil {
+					t.Fatal(err)
+				}
+				count := 0
+				for {
+					_, _, err := reader.ReadPacketData()
+					if err == io.EOF {
+						break
+					}
+					if err != nil {
+						t.Fatal(err)
+					}
+					count++
+				}
+				if count == 0 {
+					t.Fatal("empty binary download control")
+				}
+			}
+		})
+	}
 }
 
 func TestHTTPPacketExportUsesObservedTupleTransportAndTime(t *testing.T) {

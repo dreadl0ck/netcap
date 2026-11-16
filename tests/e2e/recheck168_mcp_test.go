@@ -3,16 +3,19 @@
 package e2e
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/testutil"
+	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/mark3labs/mcp-go/client"
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 )
@@ -178,6 +181,40 @@ func TestRecheck168SameNameCaptureIsolation(t *testing.T) {
 				t.Fatalf("session %d returned another capture: got %d HTTP records, want %d", i, records.Summary.Total, want)
 			}
 		}
+	}
+	var httpRecords struct {
+		Records []struct {
+			SrcIP, DstIP     string
+			SrcPort, DstPort int
+		}
+	}
+	call("query_audit_records", map[string]any{"session_id": ids[0], "type": "HTTP", "limit": 1}, &httpRecords)
+	if len(httpRecords.Records) != 1 || httpRecords.Records[0].SrcIP == "" {
+		t.Fatal("missing HTTP tuple control", httpRecords)
+	}
+	tuple := httpRecords.Records[0]
+	var priorCarve []byte
+	for _, name := range []string{"carve_subpcap_for_http_pair", "carve_subpcap_for_certificate"} {
+		var carved struct {
+			Path string `json:"file_path"`
+			Size int    `json:"size_bytes"`
+		}
+		call(name, map[string]any{"session_id": ids[0], "src_ip": tuple.SrcIP, "dst_ip": tuple.DstIP, "src_port": strconv.Itoa(tuple.SrcPort), "dst_port": strconv.Itoa(tuple.DstPort)}, &carved)
+		raw, err := os.ReadFile(carved.Path)
+		if err != nil || len(raw) != carved.Size {
+			t.Fatal("incomplete carve", name, err)
+		}
+		reader, err := pcapgo.NewReader(bytes.NewReader(raw))
+		if err != nil {
+			t.Fatal(name, err)
+		}
+		if _, _, err := reader.ReadPacketData(); err != nil {
+			t.Fatal(name, "empty or invalid carve", err)
+		}
+		if priorCarve != nil && !bytes.Equal(raw, priorCarve) {
+			t.Fatal("same tuple produced different packet exports")
+		}
+		priorCarve = raw
 	}
 	var beforeDevices map[string]any
 	call("list_devices", map[string]any{"session_id": ids[0]}, &beforeDevices)
