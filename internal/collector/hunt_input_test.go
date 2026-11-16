@@ -28,7 +28,7 @@ func TestHuntInputProcess(t *testing.T) {
 	}
 	out := os.Getenv("NETCAP_HUNT_OUT")
 	cfg := ultimateCaptureConfig(out, 2, 0)
-	cfg.DecoderConfig.IncludeDecoders = "HTTP,Connection,IPv4,IPv6,TCP,UDP,DNS,Dot11,Alert,USB,USBRequestBlockSetup,Service"
+	cfg.DecoderConfig.IncludeDecoders = "HTTP,Connection,IPv4,IPv6,TCP,UDP,DNS,Dot11,Alert,USB,USBRequestBlockSetup,Service,LinkFrame"
 	cfg.DecoderConfig.ExcludeDecoders = ""
 	cfg.NetworkDetection, cfg.CaptureEvidence = true, true
 	cfg.MergePCAPNGSections = os.Getenv("NETCAP_HUNT_MODE") == "merge"

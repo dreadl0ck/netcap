@@ -68,9 +68,11 @@ func (c *Collector) decodeRawPacketData(data []byte, ci *gopacket.CaptureInfo) g
 					order = binary.NativeEndian
 				}
 				baseLayer = gopacket.DecodeFunc(func(data []byte, p gopacket.PacketBuilder) error { return decodePPI(data, p, order, 0, check) })
-			} else if lt == 189 || lt == 220 || lt == 249 {
+			} else if lt == 189 || lt == 220 || lt == 249 || lt == 266 {
 				order := inputPacketInfo(*ci).Order
 				baseLayer = gopacket.DecodeFunc(func(data []byte, p gopacket.PacketBuilder) error { return decodeCaptureUSB(data, p, lt, order) })
+			} else if decoder := captureBusDecoder(lt); decoder != nil {
+				baseLayer = decoder
 			} else if lt == 239 {
 				order := inputPacketInfo(*ci).Order
 				if order == nil {
@@ -119,6 +121,8 @@ func (c *Collector) decodeRawPacketData(data []byte, ci *gopacket.CaptureInfo) g
 // Returns 0 if the link type is not recognized.
 func linkTypeToLayerType(lt layers.LinkType) gopacket.LayerType {
 	switch lt {
+	case 3, 165, 187, 201, 209, 243, 252, 289, 300:
+		return linkaudit.LayerLinkFrame
 	case 192:
 		return layerPPI
 	case 258: // LINKTYPE_PKTAP is portable; DLT 149 is USER2 outside Darwin.
@@ -130,7 +134,7 @@ func linkTypeToLayerType(lt layers.LinkType) gopacket.LayerType {
 		return gopacket.LayerTypePayload
 	case layers.LinkTypeEthernet:
 		return layers.LayerTypeEthernet
-	case 189, 220, 249:
+	case 189, 220, 249, 266:
 		return layers.LayerTypeUSB
 	case 12, layers.LinkTypeRaw: // Historical DLT_RAW captures also use 12 on disk.
 		return layerRawIP

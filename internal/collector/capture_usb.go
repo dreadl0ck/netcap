@@ -81,6 +81,60 @@ func decodeCaptureUSB(data []byte, p gopacket.PacketBuilder, link layers.LinkTyp
 			setup = body[:8]
 			body = body[8:]
 		}
+	case 266:
+		if len(data) < 32 {
+			p.SetTruncated()
+			return badLink("Darwin USB header shorter than 32 bytes")
+		}
+		if binary.LittleEndian.Uint16(data[:2]) != 0x0100 {
+			return unsupportedLink("unsupported Darwin USB header version 0x%04x", binary.LittleEndian.Uint16(data[:2]))
+		}
+		header := int(data[2])
+		if header < 32 || header > len(data) {
+			return badLink("invalid Darwin USB header length %d", header)
+		}
+		if data[3] > 1 || data[29] > 127 || data[30]&0x70 != 0 {
+			return badLink("invalid Darwin USB request/device/endpoint fields")
+		}
+		if data[31] > 3 {
+			return unsupportedLink("unsupported Darwin USB endpoint type %d", data[31])
+		}
+		u.ID = binary.LittleEndian.Uint64(data[16:24])
+		u.BusID = uint16(binary.LittleEndian.Uint32(data[24:28]) >> 24)
+		u.DeviceAddress, u.EndpointNumber = data[29], data[30]&0x0f
+		u.Direction = layers.USBDirectionTypeOut
+		if data[30]&0x80 != 0 {
+			u.Direction = layers.USBDirectionTypeIn
+		}
+		u.TransferType = [4]layers.USBTransportType{layers.USBTransportTypeControl, layers.USBTransportTypeIsochronous, layers.USBTransportTypeBulk, layers.USBTransportTypeInterrupt}[data[31]]
+		u.EventType = layers.USBEventTypeSubmit
+		if data[3] == 1 {
+			u.EventType = layers.USBEventTypeComplete
+		}
+		u.Status, u.UrbLength = int32(binary.LittleEndian.Uint32(data[8:12])), binary.LittleEndian.Uint32(data[4:8])
+		u.IsoNumDesc = binary.LittleEndian.Uint32(data[12:16])
+		u.BaseLayer = layers.BaseLayer{Contents: data[:header]}
+		body = data[header:]
+		u.Setup = data[3] == 0 && data[31] == 0
+		if u.Setup {
+			if len(body) < 8 {
+				p.SetTruncated()
+				return badLink("short Darwin USB setup data")
+			}
+			setup, body = body[:8], body[8:]
+		}
+		if data[31] == 1 {
+			if err := validateDarwinISO(body, u.IsoNumDesc, data[3] == 1, header); err != nil {
+				return err
+			}
+		} else if u.IsoNumDesc != 0 {
+			return badLink("non-isochronous Darwin USB request has frame descriptors")
+		}
+		u.UrbDataLength = uint32(len(body))
+		if data[3] == 1 && data[31] != 1 {
+			u.UrbDataLength = u.UrbLength
+		}
+		u.Data = len(body) > 0
 	default:
 		return unsupportedLink("unsupported USB link type %d", link)
 	}
@@ -101,4 +155,35 @@ func decodeCaptureUSB(data []byte, p gopacket.PacketBuilder, link layers.LinkTyp
 		p.AddLayer(s)
 	}
 	return p.NextDecoder(gopacket.LayerTypePayload)
+}
+
+func validateDarwinISO(data []byte, count uint32, complete bool, base int) error {
+	minimum := 20
+	if complete {
+		minimum = 28
+	}
+	if uint64(count) > uint64(len(data))/uint64(minimum) {
+		return badLink("Darwin USB isochronous frame count exceeds packet")
+	}
+	offset := 0
+	for range count {
+		if len(data)-offset < minimum {
+			return badLink("short Darwin USB isochronous frame header")
+		}
+		header, size := uint64(binary.LittleEndian.Uint32(data[offset:])), uint64(binary.LittleEndian.Uint32(data[offset+4:]))
+		if header < uint64(minimum) || header > uint64(len(data)-offset) {
+			return badLink("invalid Darwin USB isochronous header length")
+		}
+		offset += int(header)
+		if complete {
+			if size > uint64(len(data)-offset) {
+				return badLink("Darwin USB isochronous data exceeds packet")
+			}
+			offset += int(size)
+		}
+		if offset < len(data) {
+			offset += (4 - (base+offset)&3) & 3
+		}
+	}
+	return nil
 }

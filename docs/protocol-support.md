@@ -53,6 +53,34 @@ CSV columns are only ever appended. If you read CSV by column position or use fe
 | Vulnerabilities  | CPE matching from NVD schema 2 data. If a prerequisite is unknown, the result stays unknown.                                                                                                                                                   |
 | Identity         | `Hosts.json` keeps host profiles, NBNS registrations and browser names. `.local` aliases are merged. PTR owners and domain browser names are not treated as hostnames, and a directory server in the traffic is not assumed to be the subject. |
 
+## Capture link framing
+
+`LinkFrame` records validated non-IP capture headers, bounded metadata and exact
+header bytes. `PayloadProtocol: "opaque"` and `Qualifications` name the limits;
+accepting a link header does not mean its application protocol was decoded.
+`-payload` adds captured payload bytes to these records.
+
+| Link type | Framing and downstream decoding |
+| --- | --- |
+| 3, AX.25 | Bounded destination/source/digipeater chain and control/PID fields; UI IPv4 payloads reach the IP decoder. Extended control mode is not inferred |
+| 165, BACnet MS/TP | Preamble, frame type, bus addresses and declared data length. CRC bytes are retained with `MS/TP-CRC-not-verified`; NPDU/APDU and proprietary bodies remain opaque |
+| 187/201, Bluetooth HCI H4 | Packet indicator, command/event/ACL/SCO/ISO lengths and optional direction pseudo-header. HCI payloads remain opaque |
+| 209, Linux I2C | Six-byte bus/event/flags/address header, using network byte order for flags. Payloads remain opaque |
+| 243, MPEG-2 TS | Whole 188-byte frames, sync/adaptation bounds and first PID/continuity metadata; elementary streams are not decoded |
+| 252, Wireshark Upper PDU | Bounded TLVs, the first protocol selector, raw option evidence and exported address metadata. Known packet dissectors are invoked; heuristic/table selectors and unknown dissectors remain opaque. Exported metadata is not an original Ethernet/IP header |
+| 266, Darwin USB | Versioned little-endian URB headers, 64-bit request IDs, bus/device/endpoint/direction, control setup and bounded ISO descriptors; emitted through `USB`/`USBRequestBlockSetup` |
+| 289, ATSC ALP | Base/extended headers, substream/extension bounds and declared lengths. Unsegmented IPv4 reaches IP decoding. Segment/concatenation reconstruction, signalling bodies and compressed TS reconstruction remain explicitly opaque |
+| 300, MDB | Version/event/address framing, master/peripheral direction and checksum metadata; device-specific transaction fields are not inferred |
+
+Wire references: [tcpdump link registry](https://www.tcpdump.org/linktypes.html),
+[Upper PDU TLVs](https://gitlab.com/wireshark/wireshark/-/blob/master/wsutil/exported_pdu_tlvs.h),
+[Darwin USB parser](https://gitlab.com/wireshark/wireshark/-/blob/master/epan/dissectors/packet-usb.c)
+and [MDB capture format](https://www.kaiser.cx/pcap-mdb.html).
+The tcpdump Darwin diagram labels the request ID as four bytes; the working
+layout uses eight bytes at offset 16, with location at 24 and endpoint type at 31
+(`TestDarwinUSBHeaderMappingAndSetup`). Submitted ISO descriptors can be 20 bytes;
+completed descriptors include the timestamp and require 28 bytes.
+
 ## Captured TLS secrets
 
 If a PCAPNG file contains `TLSK` Decryption Secrets Blocks, even after the packets, Netcap reads them before decoding streams. TLS 1.2 and 1.3 with AES-GCM or ChaCha20-Poly1305 are decrypted using the NSS key log secrets. Records that fail authentication, lack a key or use an unsupported suite stay encrypted. Decrypted HTTP records carry `ParseQualifications: ["decrypted-tls-key-log"]`.

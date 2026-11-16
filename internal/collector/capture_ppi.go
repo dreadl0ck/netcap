@@ -84,7 +84,7 @@ func decodePPI(data []byte, p gopacket.PacketBuilder, order binary.ByteOrder, de
 		decoder = gopacket.DecodeFunc(func(data []byte, p gopacket.PacketBuilder) error { return linkaudit.DecodeDot11(data, p, fcs) })
 	case layers.LinkTypeIEEE80211Radio:
 		decoder = gopacket.DecodeFunc(func(data []byte, p gopacket.PacketBuilder) error { return linkaudit.DecodeRadioTap(data, p, check) })
-	case 189, 220, 249:
+	case 189, 220, 249, 266:
 		decoder = gopacket.DecodeFunc(func(data []byte, p gopacket.PacketBuilder) error { return decodeCaptureUSB(data, p, lt, order) })
 	case 239:
 		decoder = gopacket.DecodeFunc(func(data []byte, p gopacket.PacketBuilder) error { return decodeNFLOG(data, p, order) })
@@ -93,7 +93,9 @@ func decodePPI(data []byte, p gopacket.PacketBuilder, order binary.ByteOrder, de
 	case 230:
 		decoder = gopacket.DecodeFunc(decodeIEEE802154)
 	default:
-		if next := linkTypeToLayerType(lt); next != 0 {
+		if next := captureBusDecoder(lt); next != nil {
+			decoder = next
+		} else if next := linkTypeToLayerType(lt); next != 0 {
 			decoder = next
 		}
 	}

@@ -200,6 +200,22 @@ enum Type {
   NC_DTMF = 201;
   NC_NBNS = 202;
   NC_IEEE802154 = 203;
+  NC_LinkFrame = 204;
+}
+
+message LinkFrame {
+  int64 Timestamp = 1;
+  uint32 LinkType = 2;
+  string Protocol = 3;
+  string Source = 4;
+  string Destination = 5;
+  uint32 HeaderLength = 6;
+  uint32 PayloadLength = 7;
+  string PayloadProtocol = 8;
+  map<string,string> Fields = 9;
+  bytes Header = 10;
+  bytes Payload = 11;
+  repeated string Qualifications = 12;
 }
 
 message IEEE802154 {
