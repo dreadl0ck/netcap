@@ -80,7 +80,8 @@ type SelectionInput struct {
 	// UDP datagrams are independent messages. If the first is incomplete or
 	// unrecognized, a later complete one may still identify the conversation;
 	// their bytes must never be concatenated as though this were TCP.
-	Datagrams []Datagram
+	Datagrams          []Datagram
+	datagramCacheTried bool
 
 	// Conversation is handed to the winning decoder's factory.
 	Conversation *core.ConversationInfo
@@ -218,6 +219,7 @@ func matchScore(sd core.StreamDecoderAPI, in *SelectionInput, portPass bool) (in
 	}
 	explicitProtobuf := sd.GetName() == "Protobuf" && protobuf.ExplicitlyConfigured(clientPort, in.ServerPort)
 	if in.Transport == core.UDP && (len(in.Datagrams) > 0 || in.Conversation != nil && in.Conversation.Source != nil) {
+		in.cacheUDPClassifierBytes()
 		best, matched := 0, false
 		scoreDatagram := func(datagram Datagram) {
 			client, server := datagram.Data, []byte(nil)
@@ -232,13 +234,13 @@ func matchScore(sd core.StreamDecoderAPI, in *SelectionInput, portPass bool) (in
 				matched = true
 			}
 		}
-		if in.Conversation != nil && in.Conversation.Source != nil {
-			for fragment := range in.Conversation.Fragments() {
-				scoreDatagram(Datagram{Data: fragment.Raw(), Client: !core.FromServer(fragment)})
-			}
-		} else {
+		if len(in.Datagrams) > 0 {
 			for _, datagram := range in.Datagrams {
 				scoreDatagram(datagram)
+			}
+		} else if in.Conversation != nil && in.Conversation.Source != nil {
+			for fragment := range in.Conversation.Fragments() {
+				scoreDatagram(Datagram{Data: fragment.Raw(), Client: !core.FromServer(fragment)})
 			}
 		}
 		return best, matched
@@ -265,6 +267,35 @@ func matchScore(sd core.StreamDecoderAPI, in *SelectionInput, portPass bool) (in
 		return 0, false
 	}
 	return sd.MatchSpecificity(client, server), true
+}
+
+func (in *SelectionInput) cacheUDPClassifierBytes() {
+	if in.datagramCacheTried || len(in.Datagrams) > 0 || in.Conversation == nil || in.Conversation.Source == nil {
+		return
+	}
+	in.datagramCacheTried = true
+	source := in.Conversation.Source
+	if source.Count() < 1 || source.Count() > 32 {
+		return
+	}
+	datagrams := make([]Datagram, 0, int(source.Count()))
+	payloadBytes, complete := 0, true
+	err := source.Walk(func(fragment core.DataFragment) bool {
+		payloadBytes += len(fragment.Raw())
+		if payloadBytes > 256<<10 || len(datagrams) == 32 {
+			complete = false
+			return false
+		}
+		datagrams = append(datagrams, Datagram{Data: bytes.Clone(fragment.Raw()), Client: !core.FromServer(fragment)})
+		return true
+	})
+	if err != nil {
+		in.Conversation.FragmentError = err
+		return
+	}
+	if complete {
+		in.Datagrams = datagrams
+	}
 }
 
 // selectModbusRTU applies the RTU-over-TCP endpoint allowlist.
