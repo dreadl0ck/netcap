@@ -14,8 +14,8 @@ import (
 // SessionRef is the abstraction the MCP server uses to address an
 // analysis across both webui deployment modes:
 //
-//   - Service mode: 16-byte hex id (e.g. "abcdef0123456789...").
-//   - Local mode: absolute filesystem path to a PCAP/PCAPNG.
+//   - Uploaded analyses: opaque id in both service and local modes.
+//   - Legacy local inputs: absolute filesystem path to a PCAP/PCAPNG.
 //
 // The webui's session_resolver.resolveOutDirFromRequest accepts either
 // shape via the ?sessionId= and ?inputFile= query parameters, so the
@@ -33,7 +33,7 @@ func newSessionRef(id string) SessionRef {
 	}
 }
 
-// looksLikePath is a heuristic: a 32-hex-character string is a service
+// looksLikePath is a heuristic: a 32-hex-character string is an analysis
 // session id; anything containing a path separator or a known PCAP
 // extension is treated as a local-mode input file path.
 func looksLikePath(s string) bool {
@@ -46,7 +46,7 @@ func looksLikePath(s string) bool {
 			return true
 		}
 	}
-	// 32-char hex → service session id.
+	// 32-char hex → analysis id.
 	if len(s) == 32 && isHex(s) {
 		return false
 	}

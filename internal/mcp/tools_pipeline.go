@@ -341,6 +341,9 @@ func unifiedSession(mode string, raw map[string]any) map[string]any {
 	case "local":
 		path := firstString(raw, "path")
 		out["session_id"] = path
+		if id := firstString(raw, "sessionId"); id != "" {
+			out["session_id"] = id
+		}
 		out["input_file"] = path
 		out["input_name"] = firstString(raw, "name")
 		out["size_bytes"] = raw["size"]

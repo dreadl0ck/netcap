@@ -130,6 +130,9 @@ func (s *Server) resolveCaptureSelection(r *http.Request) (captureSelection, err
 			if child, exists := s.childAnalyses[input]; exists {
 				selected.AnalysisID = child.AnalysisID
 			}
+			if upload, exists := s.localUploads[input]; exists {
+				selected.AnalysisID = upload.AnalysisID
+			}
 		} else {
 			selected.InputFile, selected.OutputDir = activeInput, activeOutput
 		}

@@ -95,3 +95,83 @@ func TestRecheck168PackagedMCPHelperIdentity(t *testing.T) {
 		})
 	}
 }
+
+func TestRecheck168SameNameCaptureIsolation(t *testing.T) {
+	binary := os.Getenv("NETCAP_RECHECK168_BIN")
+	if binary == "" {
+		t.Skip("set NETCAP_RECHECK168_BIN to a built CLI")
+	}
+	root := t.TempDir()
+	cli, err := client.NewStdioMCPClient(binary, os.Environ(), "mcp", "--quiet", "--bind", "127.0.0.1:0", "--data-dir", filepath.Join(root, "sessions"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cli.Close()
+	if stderr, ok := client.GetStderr(cli); ok {
+		go io.Copy(io.Discard, stderr)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+	if _, err := cli.Initialize(ctx, mcplib.InitializeRequest{Params: mcplib.InitializeParams{ProtocolVersion: "2025-11-25", ClientInfo: mcplib.Implementation{Name: "recheck168-isolation", Version: "1"}}}); err != nil {
+		t.Fatal(err)
+	}
+	call := func(name string, args map[string]any, out any) {
+		t.Helper()
+		result, err := cli.CallTool(ctx, mcplib.CallToolRequest{Params: mcplib.CallToolParams{Name: name, Arguments: args}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var body strings.Builder
+		for _, content := range result.Content {
+			if text, ok := content.(mcplib.TextContent); ok {
+				body.WriteString(text.Text)
+			}
+		}
+		if result.IsError {
+			t.Fatal(name, body.String())
+		}
+		if err := json.Unmarshal([]byte(body.String()), out); err != nil {
+			t.Fatal(name, err, body.String())
+		}
+	}
+	ids := []string{}
+	for _, fixture := range []string{"base_http.pcap", "http_pipelined.pcap", "base_http.pcap"} {
+		data, err := os.ReadFile(testutil.Recheck168Capture(t, fixture))
+		if err != nil {
+			t.Fatal(err)
+		}
+		path := filepath.Join(t.TempDir(), "x.pcap")
+		if err := os.WriteFile(path, data, 0600); err != nil {
+			t.Fatal(err)
+		}
+		var session struct {
+			ID string `json:"session_id"`
+		}
+		call("ingest_pcap", map[string]any{"path": path}, &session)
+		if session.ID == "" || strings.ContainsAny(session.ID, "/\\") {
+			t.Fatal("expected opaque analysis ID", session.ID)
+		}
+		for _, prior := range ids {
+			if prior == session.ID {
+				t.Fatal("analysis ID reused")
+			}
+		}
+		ids = append(ids, session.ID)
+		var state struct{ Completed bool }
+		call("wait_for_session", map[string]any{"session_id": session.ID, "timeout_seconds": 20, "poll_interval_ms": 100}, &state)
+		if !state.Completed {
+			t.Fatal("capture did not complete")
+		}
+		for i, id := range ids {
+			var records struct{ Summary struct{ Total int } }
+			call("query_audit_records", map[string]any{"session_id": id, "type": "HTTP", "count_only": true, "limit": 10}, &records)
+			want := 1
+			if i == 1 {
+				want = 3
+			}
+			if records.Summary.Total != want {
+				t.Fatalf("session %d returned another capture: got %d HTTP records, want %d", i, records.Summary.Total, want)
+			}
+		}
+	}
+}

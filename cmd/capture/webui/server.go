@@ -229,6 +229,7 @@ type Server struct {
 	reportedIssues       map[string]bool                // Tracks which file hashes have had issues reported
 	fileIDToPath         map[string]string              // Maps file IDs to file paths (local mode)
 	childAnalyses        map[string]childAnalysis
+	localUploads         map[string]localUpload
 	devMode              bool // Development mode: use current binary instead of "net"
 
 	// Rules cache

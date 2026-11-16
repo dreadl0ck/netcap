@@ -199,6 +199,8 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 	children := make(map[string]childAnalysis)
 	maps.Copy(children, s.childAnalyses)
 	liveInputs := map[string]ownedLiveCapture{}
+	uploads := make(map[string]localUpload, len(s.localUploads))
+	maps.Copy(uploads, s.localUploads)
 	for path, state := range s.liveInputs {
 		liveInputs[path] = *state
 	}
@@ -237,6 +239,9 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 		if isLive {
 			fileID = live.SessionID
 		}
+		if upload, ok := uploads[path]; ok {
+			fileID = upload.AnalysisID
+		}
 
 		// Store the mapping from ID to path
 		s.mu.Lock()
@@ -260,6 +265,10 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 		if isLive {
 			fileInfo.Name = "Live " + live.Interface
 			fileInfo.SourceKind = "live-retained-segments"
+		}
+		if upload, ok := uploads[path]; ok {
+			fileInfo.Name = upload.Filename
+			fileInfo.SessionID = upload.AnalysisID
 		}
 
 		// Add error information if available
@@ -1899,7 +1908,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	// Create uploads directory in output dir
 	s.mu.RLock()
-	outDir := s.outDir
+	outDir := s.baseOutDir
 	s.mu.RUnlock()
 
 	if outDir == "" {
@@ -1926,19 +1935,11 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Save uploaded file
-	var savedFilename string
-	if s.isServiceMode {
-		// Service mode: add timestamp prefix to avoid conflicts
-		timestamp := time.Now().Format("20060102-150405")
-		savedFilename = fmt.Sprintf("uploaded-%s-%s", timestamp, filepath.Base(filename))
-	} else {
-		// Local mode: use original filename
-		savedFilename = filepath.Base(filename)
-	}
+	analysisID := generateSessionID()
+	savedFilename := analysisID + ext
 	inputPath := filepath.Join(uploadsDir, savedFilename)
 
-	outFile, err := os.Create(inputPath)
+	outFile, err := os.OpenFile(inputPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if err != nil {
 		log.Printf("[WebUI] Failed to create input file: %v", err)
 		w.Header().Set("Content-Type", "application/json")
@@ -1982,25 +1983,11 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	// Queue analysis job for local mode
 	if !s.isServiceMode && s.jobQueue != nil {
-		// Create output directory based on original filename (without extension)
-		// In local mode, savedFilename is the original filename without timestamp prefix
-		baseFilename := filepath.Base(inputPath)
-		// Remove extension to get directory name
-		dirName := strings.TrimSuffix(baseFilename, filepath.Ext(baseFilename))
-
-		// Create output directory in baseOutDir
-		s.mu.RLock()
-		baseOutDir := s.baseOutDir
-		s.mu.RUnlock()
-
-		if baseOutDir == "" {
-			baseOutDir = outDir
-		}
-
-		outputDir := filepath.Join(baseOutDir, dirName)
+		outputDir := filepath.Join(outDir, analysisID)
 
 		// Create the output directory
-		if err := os.MkdirAll(outputDir, 0755); err != nil {
+		if err := os.Mkdir(outputDir, 0700); err != nil {
+			os.Remove(inputPath)
 			log.Printf("[WebUI] Failed to create output directory %s: %v", outputDir, err)
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]any{
@@ -2022,7 +2009,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 		// Create analysis job
 		job := &AnalysisJob{
-			SessionID:       savedFilename, // Use filename as session ID in local mode
+			SessionID:       analysisID,
 			InputFile:       inputPath,
 			OutputDir:       outputDir,
 			EnableDPI:       enableDPI,
@@ -2030,22 +2017,29 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 			IncludeDecoders: "",
 			ExcludeDecoders: "",
 		}
+		s.mu.Lock()
+		if s.localUploads == nil {
+			s.localUploads = make(map[string]localUpload)
+		}
+		s.localUploads[inputPath] = localUpload{AnalysisID: analysisID, Filename: filename}
+		s.fileIDToPath[analysisID] = inputPath
+		s.fileOutputDirs[inputPath] = outputDir
+		s.inputFiles = append(s.inputFiles, inputPath)
+		s.mu.Unlock()
 
 		// Queue the job
 		log.Printf("[WebUI] Queueing analysis job for uploaded file: %s -> %s", inputPath, outputDir)
 		if err := s.enqueueAnalysis(job, false); err == nil {
 			log.Printf("[WebUI] Analysis job queued successfully")
-
-			// Add the uploaded file to inputFiles so it appears in the UI
-			s.mu.Lock()
-			// Check if file is already in the list to avoid duplicates
-			fileExists := slices.Contains(s.inputFiles, inputPath)
-			if !fileExists {
-				s.inputFiles = append(s.inputFiles, inputPath)
-				log.Printf("[WebUI] Added uploaded file to inputFiles list: %s", inputPath)
-			}
-			s.mu.Unlock()
 		} else {
+			s.mu.Lock()
+			delete(s.localUploads, inputPath)
+			delete(s.fileIDToPath, analysisID)
+			delete(s.fileOutputDirs, inputPath)
+			s.inputFiles = slices.DeleteFunc(s.inputFiles, func(path string) bool { return path == inputPath })
+			s.mu.Unlock()
+			os.Remove(inputPath)
+			os.Remove(outputDir)
 			log.Printf("[WebUI] Job queue is full, cannot queue analysis")
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]any{
@@ -2056,12 +2050,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Calculate file ID (hash) for the uploaded file
-	fileID := calculateFileHash(inputPath)
-	if fileID == "" {
-		// Fallback to basename if hash calculation fails
-		fileID = filepath.Base(inputPath)
-	}
+	fileID := analysisID
 
 	// Store the mapping from ID to path
 	s.mu.Lock()
@@ -2073,12 +2062,13 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success":  true,
-		"message":  "File uploaded successfully and queued for analysis",
-		"filename": savedFilename,
-		"path":     inputPath,
-		"size":     written,
-		"id":       fileID, // Include file ID in response
+		"success":   true,
+		"message":   "File uploaded successfully and queued for analysis",
+		"filename":  filename,
+		"sessionId": analysisID,
+		"path":      inputPath,
+		"size":      written,
+		"id":        fileID, // Include file ID in response
 	})
 }
 
