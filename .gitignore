@@ -53,6 +53,8 @@ pcaps
 */*.pcap
 */*.pcapng
 *.ncap*
+!testdata/recheck-v0168/*.pcap
+!testdata/recheck-v0168/*.pcapng
 # Re-include specific tracked test fixtures and Go test sources under
 # tests/. Must come after the broad *.pcap / *.pcapng / tests/* rules
 # above, otherwise the negations are ignored.
