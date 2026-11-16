@@ -9,6 +9,9 @@ func (s *Server) completeAnalysis(job *AnalysisJob, duration time.Duration) erro
 	if err := s.executeRulesForJob(job); err != nil {
 		return fmt.Errorf("post-analysis rules: %w", err)
 	}
+	if err := s.waitForAnalysisTimeline(job.OutputDir); err != nil {
+		return err
+	}
 	if s.sessionManager != nil {
 		s.sessionManager.UpdateSessionProcessingTime(job.SessionID, duration.Seconds())
 		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusCompleted, "", "")
@@ -34,4 +37,23 @@ func (s *Server) completeAnalysis(job *AnalysisJob, duration time.Duration) erro
 		}
 	}
 	return nil
+}
+
+func (s *Server) waitForAnalysisTimeline(dir string) error {
+	ticker := time.NewTicker(25 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		status := timelineIndexFor(dir)
+		switch status.State {
+		case timelineStateReady:
+			return nil
+		case timelineStateError:
+			return fmt.Errorf("post-analysis timeline: %s", status.Err)
+		}
+		select {
+		case <-s.shutdownChan:
+			return errAnalysisStopping
+		case <-ticker.C:
+		}
+	}
 }

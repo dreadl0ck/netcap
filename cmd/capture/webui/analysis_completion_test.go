@@ -81,7 +81,60 @@ func TestAnalysisCompletionWaitsForFinalAlerts(t *testing.T) {
 			if count != 1 {
 				t.Fatalf("final alerts=%d want 1", count)
 			}
+			if status := timelineIndexFor(dir); status.State != timelineStateReady {
+				t.Fatalf("completed analysis timeline is %s", status.State)
+			}
 		})
+	}
+}
+
+func TestAnalysisCompletionWaitsForTimelineGeneration(t *testing.T) {
+	s, input, dir := reanalysisFixture(t)
+	s.fileBPFFilters = make(map[string]string)
+	s.rulesConfig = &rules.Config{}
+	delete(s.completedFiles, input)
+	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
+	timelineBuildSlot <- struct{}{}
+	held := true
+	defer func() {
+		if held {
+			<-timelineBuildSlot
+		}
+	}()
+	done := make(chan error, 1)
+	go func() {
+		done <- s.completeAnalysis(&AnalysisJob{InputFile: input, OutputDir: dir, SessionID: "timeline"}, time.Second)
+	}()
+	deadline := time.After(2 * time.Second)
+	for {
+		if status := timelineIndexFor(dir); status.State == timelineStateIndexing {
+			break
+		}
+		select {
+		case <-deadline:
+			t.Fatal("timeline build did not start")
+		default:
+			time.Sleep(time.Millisecond)
+		}
+	}
+	select {
+	case err := <-done:
+		t.Fatalf("completion bypassed timeline barrier: %v", err)
+	case <-time.After(30 * time.Millisecond):
+	}
+	s.mu.RLock()
+	completed := s.completedFiles[input]
+	s.mu.RUnlock()
+	if completed {
+		t.Fatal("completed while timeline generation was indexing")
+	}
+	<-timelineBuildSlot
+	held = false
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	if status := timelineIndexFor(dir); status.State != timelineStateReady {
+		t.Fatal(status.State)
 	}
 }
 
@@ -107,7 +160,7 @@ func TestFinalStatisticsUseSelectedAnalysis(t *testing.T) {
 }
 
 func TestAnalysisCompletionRejectsRuleFailures(t *testing.T) {
-	for _, failure := range []string{"engine", "writer", "read"} {
+	for _, failure := range []string{"engine", "writer", "read", "timeline"} {
 		t.Run(failure, func(t *testing.T) {
 			s, input, dir := reanalysisFixture(t)
 			delete(s.completedFiles, input)
@@ -115,6 +168,9 @@ func TestAnalysisCompletionRejectsRuleFailures(t *testing.T) {
 			s.rulesConfig = &rules.Config{Rules: []*rules.Rule{rule}}
 			writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
 			switch failure {
+			case "timeline":
+				s.rulesConfig = &rules.Config{}
+				dir = input
 			case "engine":
 				rule.Expression = "invalid expression ("
 			case "writer":

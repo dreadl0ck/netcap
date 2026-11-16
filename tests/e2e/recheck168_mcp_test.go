@@ -162,6 +162,11 @@ func TestRecheck168SameNameCaptureIsolation(t *testing.T) {
 		if !state.Completed {
 			t.Fatal("capture did not complete")
 		}
+		var timeline struct{ Status, Generation string }
+		call("get_timeline_meta", map[string]any{"session_id": session.ID}, &timeline)
+		if timeline.Status != "ready" || timeline.Generation == "" {
+			t.Fatalf("completed session timeline was not ready: %+v", timeline)
+		}
 		for i, id := range ids {
 			var records struct{ Summary struct{ Total int } }
 			call("query_audit_records", map[string]any{"session_id": id, "type": "HTTP", "count_only": true, "limit": 10}, &records)
