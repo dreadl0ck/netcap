@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.16.7
+    VERSION: 0.16.9
 
 # command data
 commands:

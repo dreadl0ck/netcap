@@ -1,3 +1,33 @@
+## MCP reliability and bounded capture state
+
+`v0.16.9` implements all 17 MCP findings from the v0.16.8 recheck and adds
+decoder, capture-state and link-reconstruction fixes. Source and synthetic
+qualification are recorded in
+[`internal/collector/testdata/recheck-v0166.json`](internal/collector/testdata/recheck-v0166.json).
+
+| Area | Change |
+| --- | --- |
+| MCP identity and isolation | Reuse the running CLI and bundled loader for capture helpers; allocate opaque upload IDs and separate fixed-root outputs; bind secret/device inventories to the requested capture |
+| MCP input and lifecycle | Stream bounded uploads to private files; reject special-file sources; publish completion after rules, finalized alerts and timeline indexing; return explicit failed/not-ready errors; delete only terminal owned uploads and scoped artifacts |
+| MCP data access | Add byte-bounded inventory pages, search, matched totals, generation checks, structured field/JSON Pointer projection and complete oversized JSON artifacts. Count-only queries scan all matches without transferring record bodies |
+| MCP protocol and transport | Publish output schemas and bounded structured results; correct read-only hints, resource URI encoding, PCAP download framing, bearer-scheme case handling, CORS grants and beyond-EOF stream pages. Order stream evidence by capture identity |
+| Protobuf / HTTP | Require multi-field protocol evidence for automatic Protobuf identification while preserving configured single-field decoding. Retain one qualified HTTP pair across malformed presentation metadata, including the supplied non-UTF8/NUL witness |
+| TLS adapter | Discover the installed `tshark` follower namespace: modern `tls.stream`, or legacy `tcp.stream` after an unsupported-field diagnostic. Preserve explicit zero and reject ambiguous decryptable selections |
+| Bounded state | Back TCP control/reassembly payloads, normalized Software observations, vulnerability/exploit deduplication and optional network-layer payloads with private bounded storage. Bound user-agent caches and materialization; backing/output failures prevent readiness |
+| Spill performance | Reuse prepared SQL statements, batch frozen UDP walks and stable packet exports, and cache bounded classifier bytes. Latest matched 10,000-flow backed median improves from 3.215 s to 2.811 s with identical audit counts/digests |
+| Link reconstruction | Add Darwin USB and bounded `LinkFrame` paths for AX.25, MS/TP, Bluetooth H4, I2C, MPEG-TS, Upper PDU, ALP and MDB. Reconstruct supported ALP/MS/TP/6LoBAC/ROHC payloads and retain source ranges and transformations |
+| Upper profiles | Add BACnet NPDU/APDU metadata, MPEG-TS program/PES and H.264/H.265/AAC headers, Bluetooth ACL/L2CAP/ATT/SMP metadata, USB descriptor correlation and explicit `-link-profiles` device mappings. Exact supported variants remain listed in [`docs/protocol-support.md`](docs/protocol-support.md) |
+| Windows packaging | Sign production Windows CLI executables before archive/checksum generation; snapshot builds remain unsigned |
+
+| Qualification | Result or remaining gap |
+| --- | --- |
+| Local checks | Focused package race/vet checks, native DPI comparisons, supplied-capture collector integration, fresh MCP stdio and Linux bundled-loader tests pass; the release qualification asset records packaged-runtime results |
+| TCP memory witness | A matched 200,000-SYN synthetic run reduced retained heap to 44,090,648 bytes and peak RSS to 280,322,048 bytes. A separate 32-MiB TCP payload fixture retained 82,128 additional heap bytes; these are synthetic measurements |
+| DS-12/DS-14 / H-28 / V168-3 | Still partial: the latest 10,000-flow backed run is 2.17× memory-only time, above the proposed 2× target. Encoded-cache limits are not hard RSS limits; decoded records and optional accumulators retain separate budgets |
+| Original witnesses | The original large-capture/GeekLounge corpus, 49 estimator-skipped captures and H-17's three residual frames remain unavailable. No new evaluator-wide MTA score is claimed |
+| TLS and exotic profiles | Real `tshark 4.6.6` TLS 1.2/1.3 selection/decryption passes; legacy 4.4 namespace behavior has source/adapter coverage, not an installed-4.4 replay. Advanced/vendor-specific link profiles and independent real inventory still require qualification |
+| Windows | Signing/cross-compilation and any packaged startup checks do not establish Windows/Npcap capture-runtime qualification |
+
 ## Retest corrections
 
 `v0.16.8` implements the seven findings in `netcap-full-recheck-v0.16.7.md`.
