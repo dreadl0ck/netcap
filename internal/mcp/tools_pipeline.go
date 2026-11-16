@@ -429,6 +429,12 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 	files, _ := client.Get("/api/files/input", nil)
 
 	completed := deriveCompleted(ref, files, status)
+	if completed {
+		stats, sErr = client.Get("/api/audit-stats", statsQ)
+		if sErr != nil {
+			return errResult(fmt.Errorf("audit-stats: %w", sErr)), nil
+		}
+	}
 	out := map[string]any{
 		"session_id":   ref.ID,
 		"mode_path":    ref.isPath,

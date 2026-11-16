@@ -84,6 +84,9 @@ func TestWaitForSessionPollsUntilCompleted(t *testing.T) {
 	var poll int32
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/audit-stats", func(w http.ResponseWriter, r *http.Request) {
+		if atomic.LoadInt32(&poll) < 3 {
+			t.Error("final statistics read before completion barrier")
+		}
 		fmt.Fprint(w, `{"totalRecords":42}`)
 	})
 	mux.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {

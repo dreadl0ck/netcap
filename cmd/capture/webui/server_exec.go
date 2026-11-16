@@ -318,35 +318,9 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		}
 	}
 
-	if s.sessionManager != nil {
-		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusCompleted, "", "")
-		// Store the processing time
-		s.sessionManager.UpdateSessionProcessingTime(job.SessionID, duration.Seconds())
-
-		// Auto-select this file if no active file is currently set (service mode only)
-		// This makes the first completed capture immediately available for viewing
-		s.mu.Lock()
-		if s.activeInputFile == "" {
-			// Get session info to set as active
-			if session, ok := s.sessionManager.GetSession(job.SessionID); ok {
-				s.currentSession = job.SessionID
-				s.outDir = job.OutputDir
-				s.activeInputFile = session.InputFile
-				log.Printf("[Service] Auto-selected first completed capture: session=%s, file=%s",
-					job.SessionID, session.InputFilename)
-			}
-		}
-		s.mu.Unlock()
-	} else {
-		// Local mode: track completion
-		s.MarkFileCompleted(job.InputFile)
-		s.SetFileProcessingTime(job.InputFile, duration.Seconds())
-		s.SetFileOutputDir(job.InputFile, job.OutputDir)
-		s.SetFileBPFFilter(job.InputFile, job.BPFFilter)
+	if err := s.completeAnalysis(job, duration); err != nil {
+		s.recordAnalysisFailure(job, err.Error(), "")
 	}
-
-	// Execute rules automatically after successful analysis (async to not block next job)
-	s.startProcessingWork(func() { s.executeRulesForJob(job) })
 }
 
 // analysisErrorSummaryLimit is how many trailing bytes of the helper's output

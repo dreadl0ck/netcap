@@ -1623,7 +1623,7 @@ func (s *Server) countExtractedFiles(filesDir string) int {
 }
 
 // executeRulesForJob executes all enabled rules for a completed analysis job
-func (s *Server) executeRulesForJob(job *AnalysisJob) {
+func (s *Server) executeRulesForJob(job *AnalysisJob) (resultErr error) {
 	mode := "[Service]"
 	if !s.isServiceMode {
 		mode = "[WebUI]"
@@ -1634,7 +1634,7 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 	config, err := s.loadRulesConfig()
 	if err != nil {
 		log.Printf("%s Failed to load rules config for session %s: %v", mode, job.SessionID, err)
-		return
+		return err
 	}
 
 	// Filter for enabled rules only
@@ -1647,7 +1647,7 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 
 	if len(enabledRules) == 0 {
 		log.Printf("%s No enabled rules found for session %s, skipping rule execution", mode, job.SessionID)
-		return
+		return nil
 	}
 
 	log.Printf("%s Executing %d enabled rules for session %s", mode, len(enabledRules), job.SessionID)
@@ -1662,11 +1662,14 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 	alertWriter, err := rules.NewFileAlertWriter(job.OutputDir)
 	if err != nil {
 		log.Printf("%s Failed to create alert writer for session %s: %v", mode, job.SessionID, err)
-		return
+		return err
 	}
 	defer func() {
 		if err := alertWriter.Close(); err != nil {
 			log.Printf("%s Failed to close alert writer for session %s: %v", mode, job.SessionID, err)
+			if resultErr == nil {
+				resultErr = err
+			}
 		}
 	}()
 
@@ -1680,7 +1683,7 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 	for typeStr, typeRules := range rulesByType {
 		select {
 		case <-s.shutdownChan:
-			return
+			return errAnalysisStopping
 		default:
 		}
 		// Skip if no rules for this type
@@ -1707,21 +1710,21 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 		engine, err := rules.NewEngineFromConfig(typeConfig, alertWriter)
 		if err != nil {
 			log.Printf("%s Failed to create rules engine for type %s: %v", mode, typeStr, err)
-			continue
+			return err
 		}
 
 		// Open audit record reader
 		reader, err := NewAuditRecordReader(auditFile)
 		if err != nil {
 			log.Printf("%s Failed to open audit file %s: %v", mode, auditFile, err)
-			continue
+			return err
 		}
 
 		// Read header
 		if _, err := reader.ReadHeader(); err != nil {
 			reader.Close()
 			log.Printf("%s Failed to read header for %s: %v", mode, auditFile, err)
-			continue
+			return err
 		}
 
 		// Process records
@@ -1733,7 +1736,7 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 			select {
 			case <-s.shutdownChan:
 				reader.Close()
-				return
+				return errAnalysisStopping
 			default:
 			}
 			record, err := reader.NextRecord()
@@ -1742,7 +1745,8 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 					break
 				}
 				log.Printf("%s Error reading record from %s: %v", mode, auditFile, err)
-				break
+				reader.Close()
+				return err
 			}
 
 			batchRecords++
@@ -1758,12 +1762,17 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 			if err != nil {
 				reader.Close()
 				log.Printf("%s Rule execution failed for session %s: %v", mode, job.SessionID, err)
-				return
+				return err
 			}
 			batchAlerts += alerts
 		}
 
 		reader.Close()
+		finalAlerts, err := engine.Finalize()
+		if err != nil {
+			return err
+		}
+		batchAlerts += finalAlerts
 
 		totalAlerts += batchAlerts
 		totalRecords += batchRecords
@@ -1777,6 +1786,7 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 
 	log.Printf("%s Rule execution completed for session %s: %d rules processed, %d total alerts from %d total records (took %v)",
 		mode, job.SessionID, totalRulesProcessed, totalAlerts, totalRecords, executionTime)
+	return nil
 }
 
 // runAnalysisInProcess executes a netcap capture analysis in-process
@@ -2094,34 +2104,9 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		log.Printf("[WebUI] Extracted %d file(s) for session %s", fileCount, job.SessionID)
 	}
 
-	if s.sessionManager != nil {
-		s.sessionManager.UpdateSessionProcessingTime(job.SessionID, duration.Seconds())
-		// TODO: Extract packet count from collector if available
-		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusCompleted, "", "")
-
-		// Auto-select this file if no active file is currently set (service mode only)
-		// This makes the first completed capture immediately available for viewing
-		s.mu.Lock()
-		if s.activeInputFile == "" {
-			// Get session info to set as active
-			if session, ok := s.sessionManager.GetSession(job.SessionID); ok {
-				s.currentSession = job.SessionID
-				s.outDir = job.OutputDir
-				s.activeInputFile = session.InputFile
-				log.Printf("[WebUI] Auto-selected first completed capture: session=%s, file=%s",
-					job.SessionID, session.InputFilename)
-			}
-		}
-		s.mu.Unlock()
-	} else {
-		s.MarkFileCompleted(job.InputFile)
-		s.SetFileProcessingTime(job.InputFile, duration.Seconds())
-		s.SetFileOutputDir(job.InputFile, job.OutputDir)
-		s.SetFileBPFFilter(job.InputFile, job.BPFFilter)
+	if err := s.completeAnalysis(job, duration); err != nil {
+		s.recordAnalysisFailure(job, err.Error(), "")
 	}
-
-	// Execute rules automatically after successful analysis
-	s.executeRulesForJob(job)
 
 	// ==================================================================================
 	// CRITICAL: Memory cleanup after each job to prevent OOM in long-running service

@@ -138,15 +138,15 @@ func (s *Server) handleWaitForSession(ctx context.Context, req mcplib.CallToolRe
 	q := ref.sessionQueryParams()
 
 	for {
-		statsBody, sErr := client.GetContext(ctx, "/api/audit-stats", q)
-		if sErr != nil {
-			return errResult(fmt.Errorf("audit-stats: %w", sErr)), nil
-		}
 		statusBody, _ := client.GetContext(ctx, "/api/status", q)
 		filesBody, _ := client.GetContext(ctx, "/api/files/input", nil)
 
 		completed := deriveCompleted(ref, filesBody, statusBody)
 		if completed {
+			statsBody, sErr := client.GetContext(ctx, "/api/audit-stats", q)
+			if sErr != nil {
+				return errResult(fmt.Errorf("audit-stats: %w", sErr)), nil
+			}
 			out := map[string]any{
 				"session_id":   ref.ID,
 				"completed":    true,

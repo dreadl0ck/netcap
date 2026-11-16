@@ -63,6 +63,14 @@ func (s *Server) handleAuditStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if q := r.URL.Query(); q.Has("sessionId") || q.Has("inputFile") || q.Has("runId") {
+		selection, ok := s.selectedCapture(w, r)
+		if !ok {
+			return
+		}
+		RespondJSON(w, http.StatusOK, s.getAuditStatsForDirectory(selection.OutputDir))
+		return
+	}
 	s.mu.RLock()
 	isServiceMode := s.isServiceMode
 	s.mu.RUnlock()
@@ -87,7 +95,7 @@ func (s *Server) handleServiceModeAuditStats(w http.ResponseWriter, r *http.Requ
 		TotalRecords:       0,
 		ExploitCount:       0,
 		VulnerabilityCount: 0,
-		SecretCount:   0,
+		SecretCount:        0,
 		SoftwareCount:      0,
 	}
 
@@ -121,7 +129,7 @@ func (s *Server) getAuditStatsForDirectory(outputDir string) AuditStatsResponse 
 		TotalRecords:       0,
 		ExploitCount:       0,
 		VulnerabilityCount: 0,
-		SecretCount:   0,
+		SecretCount:        0,
 		SoftwareCount:      0,
 	}
 
