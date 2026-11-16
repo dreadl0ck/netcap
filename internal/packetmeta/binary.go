@@ -42,6 +42,9 @@ func Marshal(ci gopacket.CaptureInfo) ([]byte, error) {
 		flags |= 8
 	}
 	out := appendTime([]byte{1, flags}, c.Timestamp)
+	if c.Context != nil && len(c.Context.LinkTransformations) != 0 {
+		out[0] = 2
+	}
 	for _, n := range []int{c.CaptureLength, c.Length, c.Interface, c.LogicalInterface} {
 		out = binary.AppendVarint(out, int64(n))
 	}
@@ -74,6 +77,16 @@ func Marshal(ci gopacket.CaptureInfo) ([]byte, error) {
 			return nil, err
 		}
 		out = appendBytes(out, wire)
+	}
+	if out[0] == 2 {
+		out = binary.AppendUvarint(out, uint64(len(c.Context.LinkTransformations)))
+		for _, item := range c.Context.LinkTransformations {
+			wire, err := proto.Marshal(item)
+			if err != nil {
+				return nil, err
+			}
+			out = appendBytes(out, wire)
+		}
 	}
 	return out, nil
 }
@@ -150,7 +163,8 @@ func (c *cursor) timestamp() time.Time {
 
 func Unmarshal(wire []byte) (gopacket.CaptureInfo, error) {
 	c := &cursor{data: wire}
-	if c.byte() != 1 {
+	version := c.byte()
+	if version != 1 && version != 2 {
 		return gopacket.CaptureInfo{}, fmt.Errorf("unsupported capture metadata version")
 	}
 	flags := c.byte()
@@ -189,6 +203,19 @@ func Unmarshal(wire []byte) (gopacket.CaptureInfo, error) {
 				return gopacket.CaptureInfo{}, err
 			}
 			saved.Context.Packets = append(saved.Context.Packets, item)
+		}
+		if version == 2 {
+			n = c.unsigned()
+			if n > uint64(len(c.data)) {
+				return gopacket.CaptureInfo{}, io.ErrUnexpectedEOF
+			}
+			for range n {
+				item := &types.LinkTransformation{}
+				if err := proto.Unmarshal(c.bytes(), item); err != nil {
+					return gopacket.CaptureInfo{}, err
+				}
+				saved.Context.LinkTransformations = append(saved.Context.LinkTransformations, item)
+			}
 		}
 	}
 	if c.err != nil {

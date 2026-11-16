@@ -172,7 +172,7 @@ func TestMSTPChecksumsAndTrailerBounds(t *testing.T) {
 		}
 		if kind == 32 {
 			f := p.Layer(linkaudit.LayerLinkFrame).(*linkaudit.LinkFrame)
-			if _, found := f.Fields["data_crc_valid"]; found || !strings.Contains(strings.Join(f.Qualifications, ","), "CRC32K-not-verified") {
+			if _, found := f.Fields["data_crc_valid"]; found || f.Fields["cobs_valid"] != "false" {
 				t.Fatal("COBS encoded checksum was treated as CRC16", f)
 			}
 		}

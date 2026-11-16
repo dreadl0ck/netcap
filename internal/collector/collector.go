@@ -66,6 +66,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/flowexport"
 	"github.com/dreadl0ck/netcap/internal/identity"
 	"github.com/dreadl0ck/netcap/internal/label/manager"
+	"github.com/dreadl0ck/netcap/internal/linkaudit"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/networkdetect"
 	"github.com/dreadl0ck/netcap/internal/packetview"
@@ -127,6 +128,7 @@ type Collector struct {
 	workers                []chan gopacket.Packet
 	dispatchMu             sync.Mutex            // admission, controls, and assembler lifecycle
 	packetPipeline         *packetview.Processor // protected by dispatchMu
+	linkReconstruction     *linkReconstructor
 	behaviorHealthMu       sync.Mutex
 	behaviorCaptureHealth  behavior.CaptureHealth
 	behaviorQueueDrops     uint64
@@ -521,6 +523,12 @@ func (c *Collector) stopWorkers() {
 		}
 	}
 	if !c.workersStopped {
+		if c.linkReconstruction != nil {
+			c.linkReconstruction.finish()
+			for _, event := range c.linkReconstruction.drainEvents() {
+				c.queuePacketViews(event, packetview.Result{Evidence: []gopacket.Packet{event}}, nil)
+			}
+		}
 		c.workersStopped = true
 		for _, w := range c.workers {
 			w <- nil
@@ -769,38 +777,58 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 		}
 		c.packetPipeline = packetview.New(limits)
 	}
-	views := c.packetPipeline.Process(p, c.flowIngressOrdinal)
-	c.observeNormalizationIssues(p, views.Issues)
-	route := p
-	if logical := views.Packet; logical != nil {
-		route = logical
-		c.observeFlowExport(logical)
-		if timeAvailable {
-			c.observeBehavior(logical)
+	var children []gopacket.Packet
+	handledLink := false
+	views := packetview.Result{}
+	if c.linkReconstruction != nil {
+		c.linkReconstruction.advance(p, c.flowIngressOrdinal)
+	}
+	if frame, ok := p.Layer(linkaudit.LayerLinkFrame).(*linkaudit.LinkFrame); ok && frame.ALP != nil && p.ErrorLayer() == nil {
+		handledLink = true
+		if c.linkReconstruction == nil {
+			c.linkReconstruction = &linkReconstructor{}
 		}
-		c.observeNetworkDetection(logical)
-		if timeAvailable {
-			c.observeDNSContext(logical)
+		children = c.linkReconstruction.process(p, frame, c.flowIngressOrdinal)
+		views.Evidence = []gopacket.Packet{linkEvidence(p, frame, c.flowIngressOrdinal)}
+	} else {
+		views = c.packetPipeline.Process(p, c.flowIngressOrdinal)
+	}
+	if c.linkReconstruction != nil {
+		for _, event := range c.linkReconstruction.drainEvents() {
+			if !c.queuePacketViews(event, packetview.Result{Evidence: []gopacket.Packet{event}}, deadline) {
+				c.linkReconstruction.err = fmt.Errorf("link reconstruction event dispatch timed out")
+				if c.runCancel != nil {
+					c.runCancel()
+				}
+			}
 		}
 	}
-	idx := c.getSymmetricWorkerIndex(route)
-	queued := p
-	if views.Packet != p || len(views.Evidence) > 0 {
-		queued = &packetWork{Packet: p, views: views}
-	}
-	c.wg.Add(1)
 	atomic.AddInt64(&c.current, 1)
-	select {
-	case c.workers[idx] <- queued:
-		accepted = true
-	case <-deadline:
-		c.behaviorQueueDrops++
-		c.wg.Done()
+	accepted = c.queuePacketViews(p, views, deadline)
+	if !accepted {
 		atomic.AddInt64(&c.current, -1)
+		if handledLink {
+			c.linkReconstruction.err = fmt.Errorf("link source packet dispatch timed out")
+			if c.runCancel != nil {
+				c.runCancel()
+			}
+		}
 		return false
 	}
 	c.admittedPackets++
 	c.admittedBytes += capturedBytes
+	for _, child := range children {
+		if !c.queuePacketViews(child, c.packetPipeline.Process(child, c.flowIngressOrdinal), deadline) {
+			c.linkReconstruction.err = fmt.Errorf("derived link packet dispatch timed out")
+			if c.runCancel != nil {
+				c.runCancel()
+			}
+			return false
+		}
+	}
+	if c.linkReconstruction != nil && c.linkReconstruction.err != nil && c.runCancel != nil {
+		c.runCancel()
+	}
 	if c.behaviorEngine != nil {
 		c.behaviorPackets++
 	}
@@ -812,6 +840,36 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 		}
 	}
 	return true
+}
+
+// Caller owns dispatchMu. Each work item owns its original packet independently.
+func (c *Collector) queuePacketViews(p gopacket.Packet, views packetview.Result, deadline <-chan time.Time) bool {
+	c.observeNormalizationIssues(p, views.Issues)
+	route := p
+	if logical := views.Packet; logical != nil {
+		route = logical
+		c.observeFlowExport(logical)
+		if !packetview.TimeUnavailable(logical.Metadata().CaptureInfo) {
+			c.observeBehavior(logical)
+		}
+		c.observeNetworkDetection(logical)
+		if !packetview.TimeUnavailable(logical.Metadata().CaptureInfo) {
+			c.observeDNSContext(logical)
+		}
+	}
+	queued := p
+	if views.Packet != p || len(views.Evidence) > 0 {
+		queued = &packetWork{Packet: p, views: views, linkEvidence: views.Packet == nil && len(views.Evidence) == 1 && views.Evidence[0].Layer(linkaudit.LayerLinkFrame) != nil}
+	}
+	c.wg.Add(1)
+	select {
+	case c.workers[c.getSymmetricWorkerIndex(route)] <- queued:
+		return true
+	case <-deadline:
+		c.behaviorQueueDrops++
+		c.wg.Done()
+		return false
+	}
 }
 
 // PacketPipelineStats reports bounded normalization/defragmentation outcomes.

@@ -43,6 +43,7 @@ type fragmentSet struct {
 	proto             byte
 	end, size         int
 	refs              []*types.CapturePacketRef
+	transforms        []*types.LinkTransformation
 	ci                gopacket.CaptureInfo
 	created, wall     time.Time
 	closed            bool
@@ -129,6 +130,7 @@ func (p *Processor) ExpireIdle(now time.Time) { p.expire(now, true) }
 func (p *Processor) close(f *fragmentSet) {
 	p.stats.BufferedBytes -= f.size
 	f.pieces, f.header, f.signature, f.refs, f.ci.AncillaryData = nil, nil, nil, nil, nil
+	f.transforms = nil
 	f.size, f.closed = 0, true
 }
 
@@ -247,6 +249,12 @@ func (p *Processor) defrag(d *datagram, c *Context, ci gopacket.CaptureInfo) ([]
 	}
 	// Every retained provenance ref is budgeted; duplicates cannot grow a set forever.
 	need := len(c.Packets) * 64
+	for _, transform := range c.LinkTransformations {
+		need += 256 + len(transform.Protocol) + len(transform.Status) + len(transform.Sources)*64
+		for _, field := range transform.Synthesized {
+			need += len(field) + 16
+		}
+	}
 	if !duplicate {
 		need += len(d.payload)
 	}
@@ -263,6 +271,7 @@ func (p *Processor) defrag(d *datagram, c *Context, ci gopacket.CaptureInfo) ([]
 	f.size += need
 	p.stats.BufferedBytes += need
 	f.refs = append(f.refs, c.Packets...)
+	f.transforms = append(f.transforms, c.LinkTransformations...)
 	if f.signature == nil {
 		f.signature = signature
 	}
@@ -307,6 +316,7 @@ func (p *Processor) defrag(d *datagram, c *Context, ci gopacket.CaptureInfo) ([]
 		context.CompletedAt = ci.Timestamp
 	}
 	context.Packets, context.Reassembled, context.SyntheticNetwork = f.refs, true, true
+	context.LinkTransformations = f.transforms
 	sort.Slice(context.Packets, func(i, j int) bool { return context.Packets[i].Ordinal < context.Packets[j].Ordinal })
 	ci = f.ci
 	// Timestamp the observation at its earliest captured constituent, including epoch zero.

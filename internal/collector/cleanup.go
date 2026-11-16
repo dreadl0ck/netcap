@@ -77,6 +77,16 @@ func (c *Collector) cleanup(force bool) {
 		c.statMutex.Unlock()
 		c.closePacketAdmission()
 		c.stopWorkers()
+		if r := c.linkReconstruction; r != nil {
+			c.captureEvidenceError = errors.Join(c.captureEvidenceError, r.err)
+			if c.config.DecoderConfig.Out != "" {
+				data, err := json.MarshalIndent(r.health, "", "  ")
+				if err == nil {
+					err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "LinkReconstructionHealth.json"), append(data, '\n'), 0600)
+				}
+				c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
+			}
+		}
 		if c.packetPipeline != nil && c.config.DecoderConfig.Out != "" {
 			data, err := json.MarshalIndent(c.packetPipeline.Stats(), "", "  ")
 			if err == nil {

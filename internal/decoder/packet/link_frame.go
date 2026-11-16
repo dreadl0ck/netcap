@@ -18,6 +18,7 @@ var linkFrameDecoder = newPacketDecoder(types.Type_NC_LinkFrame, "LinkFrame", "V
 	r := &types.LinkFrame{Timestamp: p.Metadata().Timestamp.UnixNano(), LinkType: l.Type, Protocol: l.Protocol, Source: l.Source, Destination: l.Destination, HeaderLength: uint32(len(l.Header)), PayloadLength: uint32(len(l.Payload)), PayloadProtocol: l.PayloadProtocol, Header: bytes.Clone(l.Header), Fields: l.Fields, Qualifications: l.Qualifications}
 	if decoderconfig.Instance.IncludePayloads {
 		r.Payload = bytes.Clone(l.Payload)
+		r.DecodedPayload = bytes.Clone(l.Decoded)
 	}
 	return r
 }, nil)

@@ -55,21 +55,22 @@ CSV columns are only ever appended. If you read CSV by column position or use fe
 
 ## Capture link framing
 
-`LinkFrame` records validated non-IP capture headers, bounded metadata and exact
-header bytes. `PayloadProtocol: "opaque"` and `Qualifications` name the limits;
+`LinkFrame` records non-IP capture framing, exact header bytes and reconstruction
+outcomes. `PayloadProtocol: "opaque"` and `Qualifications` name the limits;
 accepting a link header does not mean its application protocol was decoded.
-`-payload` adds captured payload bytes to these records.
+`-payload` adds captured payload bytes; MS/TP and signalling also expose their
+decoded bodies as `DecodedPayload`. `Payload` always retains the captured form.
 
 | Link type | Framing and downstream decoding |
 | --- | --- |
 | 3, AX.25 | Bounded destination/source/digipeater chain and control/PID fields; UI IPv4 payloads reach the IP decoder. Extended control mode is not inferred |
-| 165, BACnet MS/TP | Preamble, frame type, bus addresses and declared data/trailer bounds. Header CRC8 and non-COBS data CRC16 have explicit validity fields; invalid checksums retain wire evidence. COBS CRC32K, NPDU/APDU and proprietary bodies remain opaque |
+| 165, BACnet MS/TP | Header CRC8, legacy data CRC16, bounded COBS decoding and extended CRC32K validation. Encoding validity and checksum validity are separate; invalid frames retain wire evidence. BACnet NPDU/APDU, 6LoBAC/IPHC and proprietary application bodies remain undecoded |
 | 187/201, Bluetooth HCI H4 | Packet indicator, command/event/ACL/SCO/ISO lengths and optional direction pseudo-header. HCI payloads remain opaque |
 | 209, Linux I2C | Six-byte bus/event/flags/address header, using network byte order for flags. Payloads remain opaque |
 | 243, MPEG-2 TS | Whole 188-byte frames, sync/adaptation bounds and first PID/continuity metadata; elementary streams are not decoded |
 | 252, Wireshark Upper PDU | Bounded TLVs, the first protocol selector, raw option evidence and exported address metadata. Known packet dissectors are invoked; heuristic/table selectors and unknown dissectors remain opaque. Exported metadata is not an original Ethernet/IP header |
 | 266, Darwin USB | Versioned little-endian URB headers, 64-bit request IDs, bus/device/endpoint/direction, control setup and bounded ISO descriptors; emitted through `USB`/`USBRequestBlockSetup` |
-| 289, ATSC ALP | Base/extended headers, substream/extension bounds and declared lengths. Unsegmented IPv4 reaches IP decoding. Segment/concatenation reconstruction, signalling bodies and compressed TS reconstruction remain explicitly opaque |
+| 289, ATSC ALP | Single and segmented IPv4, 2–9 concatenated packets, compressed TS reconstruction, signalling headers, binary LMT fields, JSON/XML validation and bounded DEFLATE decoding. ROHC/compressed IPv4, RDT semantics and private extensions remain undecoded |
 | 300, MDB | Version/event/address framing, master/peripheral direction and checksum metadata; device-specific transaction fields are not inferred |
 
 Wire references: [tcpdump link registry](https://www.tcpdump.org/linktypes.html),
@@ -80,6 +81,40 @@ The tcpdump Darwin diagram labels the request ID as four bytes; the working
 layout uses eight bytes at offset 16, with location at 24 and endpoint type at 31
 (`TestDarwinUSBHeaderMappingAndSetup`). Submitted ISO descriptors can be 20 bytes;
 completed descriptors include the timestamp and require 28 bytes.
+
+## Link reconstruction
+
+ALP reconstruction runs before flow sharding (`collector/link_reconstruction.go`).
+Each completed IPv4 child enters ordinary normalization, detection and TCP/UDP
+processing. Captured-packet counters and retained capture bytes count each original
+once; derived flow counters count logical packets and their decoded lengths.
+
+| Contract | Implementation and evidence |
+| --- | --- |
+| Provenance | `PacketContext.LinkTransformations` carries child ordinals, packet-relative source byte ranges and synthesized-byte descriptions. Capture references retain timestamps and physical lengths; IP defragmentation and backing-store metadata preserve the transformation chain |
+| Isolation | Interface/section scope, SID presence/value, available PLP identity and packet type separate assemblies. Without PLP metadata, an interface must represent one ALP stream; no PLP identity is inferred |
+| Bounds | Shared 8-MiB retained-state credits, 1,024 assemblies, 32 segments and 65,535 decoded bytes per assembly; these are scoped allocation credits, not an RSS cap |
+| Lifecycle | Sequence 0 starts/replaces an assembly. Identical repeats of the previous non-initial segment are ignored; conflicting/out-of-order segments retire it. Expiry uses a monotonic 30-second capture-time window or 4,096 subsequent ingress packets. EOF emits incomplete-reconstruction records and releases state |
+| Failure | State-budget exhaustion cancels capture, records an error manifest and prevents readiness (`TestALPExpiryAndBudgetReadiness`). `LinkReconstructionHealth.json` reports limits, peak credits and incomplete outcomes |
+| TS reconstruction | At most 16 transmitted TS packets plus 128 declared deleted null packets per ALP frame. Restored sync bytes, common headers/counters and null filler are explicitly marked as synthesized |
+| Signalling | Packed LMT entries are bounded to 4,096. Raw DEFLATE output totals at most 1 MiB per ALP payload; XML depth is limited to 64. Generic JSON/XML bodies require `-payload`; default output records format/length validation. Signalled multicast addresses do not create observed IP traffic |
+
+`TestALPDerivedCaptureWorkerInvariance` checks byte/audit equivalence with 1, 2, 4
+and 8 workers. `TestALPInsidePPIPreservesAbsoluteSourceRanges` covers nested PPI;
+`TestALPDerivedIPFragmentsKeepAllTransformations` covers subsequent IP reassembly.
+`TestALPTSReconstruction` compares PIDs and continuity counters with installed
+`tshark`; it does not qualify elementary-stream decoding.
+
+MS/TP uses [RFC 8163 Appendices B–D](https://www.rfc-editor.org/rfc/rfc8163.html#appendix-B):
+CRC32K covers the encoded data, and the five-byte checksum field is COBS-decoded
+separately. `TestMSTPCOBSAndCRC32KRFC8163` checks the published 547-byte wire
+example and 533-byte decoded payload. Successful COBS decoding alone does not
+dispatch frame type 34 as IPv6; that requires 6LoBAC/IPHC support.
+
+ALP lengths/counts follow [A/330:2026-04 §5.1](https://www.atsc.org/atsc-30-standard/a3302016-link-layer-protocol/):
+the base length holds the 11 LSBs, and concatenation has `count + 1` component
+lengths for `count + 2` packets. The preceding decoder got both rules wrong;
+Wireshark's ALP parser is not an oracle for segmentation/concatenation reconstruction.
 
 ## Captured TLS secrets
 

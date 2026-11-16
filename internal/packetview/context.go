@@ -18,13 +18,14 @@ import (
 
 // Context is immutable after dispatch and survives TCP/UDP capture-info copies.
 type Context struct {
-	Scope            string
-	Tunnels          []*types.Encapsulation
-	Packets          []*types.CapturePacketRef
-	Reassembled      bool
-	CompletedAt      time.Time // admission time; CaptureInfo.Timestamp remains the earliest evidence
-	Status           string
-	SyntheticNetwork bool // its original fragment headers were already audited
+	Scope               string
+	Tunnels             []*types.Encapsulation
+	Packets             []*types.CapturePacketRef
+	Reassembled         bool
+	CompletedAt         time.Time // admission time; CaptureInfo.Timestamp remains the earliest evidence
+	Status              string
+	SyntheticNetwork    bool // its original fragment headers were already audited
+	LinkTransformations []*types.LinkTransformation
 }
 
 // CaptureInterface is an explicit logical identity; capture refs retain physical ordinals.
@@ -108,6 +109,10 @@ func ScopeInterface(p gopacket.Packet, base string) string {
 		h := sha256.Sum256([]byte(c.Scope))
 		return fmt.Sprintf("%s@tunnel:%x", base, h[:16])
 	}
+	if c := FromCapture(p.Metadata().CaptureInfo); c != nil && len(c.LinkTransformations) > 0 {
+		h := sha256.Sum256([]byte(c.Scope))
+		return fmt.Sprintf("%s@link:%x", base, h[:16])
+	}
 	if i := LogicalInterface(p.Metadata().CaptureInfo); i != 0 {
 		return fmt.Sprintf("%s#%d", base, i)
 	}
@@ -120,6 +125,7 @@ func FillContext(dst *types.PacketContext, p gopacket.Packet) {
 	if c := FromCapture(p.Metadata().CaptureInfo); c != nil {
 		dst.Encapsulations, dst.CapturePackets = c.Tunnels, c.Packets
 		dst.ReassembledIP, dst.Normalization = c.Reassembled, c.Status
+		dst.LinkTransformations = c.LinkTransformations
 	}
 }
 
@@ -133,6 +139,9 @@ func Accounting(p gopacket.Packet) (count, bytes, first, last int64) {
 		for _, r := range c.Packets {
 			bytes += int64(r.WireLength)
 			first, last = min(first, r.Timestamp), max(last, r.Timestamp)
+		}
+		if len(c.LinkTransformations) != 0 {
+			count, bytes = 1, int64(len(p.Data()))
 		}
 	}
 	return

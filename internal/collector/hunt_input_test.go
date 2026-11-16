@@ -33,6 +33,7 @@ func TestHuntInputProcess(t *testing.T) {
 	cfg.NetworkDetection, cfg.CaptureEvidence = true, true
 	cfg.MergePCAPNGSections = os.Getenv("NETCAP_HUNT_MODE") == "merge"
 	cfg.DecoderConfig.DefragIPv4 = os.Getenv("NETCAP_HUNT_MODE") != "no-defrag"
+	cfg.DecoderConfig.IncludePayloads = os.Getenv("NETCAP_HUNT_MODE") == "link-payload"
 	c := New(cfg)
 	collect := c.CollectPcap
 	if isPCAPNG(t, input) {

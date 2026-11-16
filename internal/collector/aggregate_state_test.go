@@ -60,6 +60,9 @@ func TestAggregateCaptureProcess(t *testing.T) {
 	if err = collect(input); err != nil {
 		t.Fatal(err)
 	}
+	if c.linkReconstruction != nil && c.GetNumPackets() != int64(c.admittedPackets) {
+		t.Fatal("derived packets changed captured count", c.GetNumPackets(), c.admittedPackets)
+	}
 }
 
 func aggregateSoftwareInput(t *testing.T) string {

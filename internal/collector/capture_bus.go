@@ -217,11 +217,14 @@ func decodeBACnetMSTP(data []byte, p gopacket.PacketBuilder) error {
 	if data[2] > 7 {
 		f.Qualifications = append(f.Qualifications, "extended-or-proprietary-MS/TP-body-opaque")
 	}
-	if len(data) != 8+length+trailer {
+	end := 8 + length + trailer
+	if len(data) == end+1 && data[end] == 0xff {
+		f.Fields["optional_trailer"] = "0xff"
+	} else if len(data) != end {
 		f.Qualifications = append(f.Qualifications, "trailing-capture-bytes")
 	}
 	if cobs {
-		f.Qualifications = append(f.Qualifications, "MS/TP-COBS-CRC32K-not-verified")
+		decodeMSTPExtended(f, data[8:end])
 	} else if trailer != 0 {
 		crc := binary.LittleEndian.Uint16(data[8+length:])
 		f.Fields["data_crc"] = fmt.Sprintf("0x%04x", crc)

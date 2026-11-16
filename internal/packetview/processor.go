@@ -51,6 +51,10 @@ func (p *Processor) Process(original gopacket.Packet, ordinal uint64) Result {
 	}
 	c := &Context{Scope: "if:" + strconv.Itoa(LogicalInterface(ci)) + vlanScope(link), Status: "complete",
 		Packets: []*types.CapturePacketRef{{Ordinal: ordinal, Timestamp: ci.Timestamp.UnixNano(), CaptureLength: int32(ci.CaptureLength), WireLength: int32(ci.Length), InterfaceIndex: int32(ci.InterfaceIndex), TimestampUnavailable: TimeUnavailable(ci)}}}
+	if inherited := FromCapture(ci); inherited != nil && len(inherited.LinkTransformations) != 0 {
+		copy := *inherited
+		c = &copy
+	}
 	// Network layer contents/payload form a contiguous range in the captured data.
 	if offset > len(original.Data()) {
 		r.Status = "malformed"

@@ -30,6 +30,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/aggregate"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tcp"
+	"github.com/dreadl0ck/netcap/internal/linkaudit"
 	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/utils"
@@ -53,7 +54,8 @@ type workerControl struct {
 
 type packetWork struct {
 	gopacket.Packet
-	views packetview.Result
+	views        packetview.Result
+	linkEvidence bool
 }
 
 // worker spawns a new worker goroutine
@@ -112,7 +114,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			views := []gopacket.Packet{pkt}
 			logical := pkt
 			var opaque gopacket.Packet
+			auditLink := false
 			if work, ok := pkt.(*packetWork); ok {
+				auditLink = work.linkEvidence
 				original, logical = work.Packet, work.views.Packet
 				views = work.views.Evidence
 				opaque = work.views.Opaque
@@ -207,6 +211,10 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 						goto done
 					}
 
+					if layer.LayerType() == linkaudit.LayerLinkFrame {
+						continue
+					}
+
 					// pick decoders from the decoderMap by looking up the layer type
 					if decoders, ok = c.goPacketDecoders[layer.LayerType()]; ok {
 						for _, dec = range decoders {
@@ -249,6 +257,13 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 				custom := c.packetDecoders
 				if pkt != logical {
 					custom = nil
+					if auditLink {
+						for _, dec := range c.packetDecoders {
+							if dec.GetName() == "LinkFrame" {
+								custom = append(custom, dec)
+							}
+						}
+					}
 					if pkt == opaque {
 						for _, dec := range c.packetDecoders {
 							if dec.GetName() == "Connection" {

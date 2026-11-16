@@ -216,6 +216,8 @@ message LinkFrame {
   bytes Header = 10;
   bytes Payload = 11;
   repeated string Qualifications = 12;
+  bytes DecodedPayload = 13;
+  PacketContext PacketContext = 14;
 }
 
 message IEEE802154 {
@@ -376,6 +378,22 @@ message PacketContext {
   repeated CapturePacketRef CapturePackets = 9; // Original ingress packets, including duplicate fragments
   string Normalization = 10; // complete | fragment-pending | fragment-rejected | malformed | depth-limit
   bool TimestampUnavailable = 11;
+  repeated LinkTransformation LinkTransformations = 12;
+}
+
+message LinkTransformation {
+  string Protocol = 1;
+  uint32 ChildOrdinal = 2;
+  repeated LinkSourceRange Sources = 3;
+  repeated string Synthesized = 4;
+  uint32 DecodedLength = 5;
+  string Status = 6;
+}
+
+message LinkSourceRange {
+  uint64 CaptureOrdinal = 1;
+  uint32 Offset = 2;
+  uint32 Length = 3;
 }
 
 // a connection has the following attributes:

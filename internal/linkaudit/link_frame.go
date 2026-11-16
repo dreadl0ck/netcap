@@ -8,8 +8,22 @@ type LinkFrame struct {
 	Type                                           uint32
 	Protocol, Source, Destination, PayloadProtocol string
 	Header, Payload                                []byte
+	Decoded                                        []byte
 	Fields                                         map[string]string
 	Qualifications                                 []string
+	ALP                                            *ALPFrame
+}
+
+type ALPFrame struct {
+	PacketType       uint8
+	Segmented, Last  bool
+	Sequence         uint8
+	ComponentLengths []int
+	Offset, Length   int
+	SIDPresent       bool
+	SID              uint8
+	PLPPresent       bool
+	PLP              uint8
 }
 
 func (*LinkFrame) LayerType() gopacket.LayerType { return LayerLinkFrame }
