@@ -132,7 +132,7 @@ func confusables() []confusable {
 			// The committed UDP AddressBook corpus, whose first byte is 0x0a:
 			// field 1, wire type 2, the opening of almost every protobuf message.
 			client: hexBytes("0a420a054a61736f6e10e9071a114a61736f6e406578616d706c652e636f6d" +
-				"220c0a08383735363132333410012f220d0a0b31333538383838363636362a0608a18b97fc05"),
+				"220c0a0838373536313233341001220d0a0b31333538383838363636362a0608a18b97fc05"),
 			why: "gQUIC accepts any first byte with the connection-id bit set, the version bit " +
 				"clear and the top three clear, which 0x0a satisfies",
 		},
