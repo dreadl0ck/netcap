@@ -466,7 +466,11 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 			out["status"] = fStatus
 		}
 	}
-	return jsonResult(out), nil
+	result := jsonResult(out)
+	if message, _ := out["error"].(string); message != "" {
+		result.IsError = true
+	}
+	return result, nil
 }
 
 // extractSessionError walks /api/files/input and pulls out the error
@@ -507,6 +511,9 @@ func extractSessionError(ref SessionRef, files json.RawMessage) (msg, logPath, s
 		if v, ok := row["status"].(string); ok {
 			status = v
 		}
+		if strings.EqualFold(status, "failed") && msg == "" {
+			msg = "Analysis failed"
+		}
 		break
 	}
 	return msg, logPath, status, found
@@ -515,13 +522,16 @@ func extractSessionError(ref SessionRef, files json.RawMessage) (msg, logPath, s
 // deriveCompleted reads /api/files/input + /api/status to figure out
 // whether the session is ready for analytical queries. Best-effort:
 // returns false when uncertain.
-func deriveCompleted(ref SessionRef, files, status json.RawMessage) bool {
+func deriveCompleted(ref SessionRef, files, _ json.RawMessage) bool {
 	if len(files) > 0 {
 		var fl []map[string]any
 		if err := json.Unmarshal(files, &fl); err == nil {
 			for _, f := range fl {
 				if ref.isPath {
 					if p, _ := f["path"].(string); p == ref.ID {
+						if firstString(f, "error", "errorMessage") != "" || strings.EqualFold(firstString(f, "status"), "failed") {
+							return false
+						}
 						b, _ := f["isCompleted"].(bool)
 						return b
 					}
@@ -531,6 +541,9 @@ func deriveCompleted(ref SessionRef, files, status json.RawMessage) bool {
 						sid, _ = f["id"].(string)
 					}
 					if sid == ref.ID {
+						if firstString(f, "error", "errorMessage") != "" || strings.EqualFold(firstString(f, "status"), "failed") {
+							return false
+						}
 						b, _ := f["isCompleted"].(bool)
 						return b
 					}
@@ -539,14 +552,6 @@ func deriveCompleted(ref SessionRef, files, status json.RawMessage) bool {
 			// Idle does not imply success for failed, unknown, or unqueued files.
 			if len(fl) > 0 {
 				return false
-			}
-		}
-	}
-	if len(status) > 0 {
-		var st map[string]any
-		if err := json.Unmarshal(status, &st); err == nil {
-			if processing, _ := st["isProcessing"].(bool); !processing {
-				return true
 			}
 		}
 	}

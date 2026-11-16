@@ -205,4 +205,25 @@ func TestRecheck168SameNameCaptureIsolation(t *testing.T) {
 	if string(before) != string(after) {
 		t.Fatalf("cross-session devices: before %s after %s", before, after)
 	}
+	var failedSession struct {
+		ID string `json:"session_id"`
+	}
+	call("ingest_pcap", map[string]any{"path": testutil.Recheck168Capture(t, "ng_shb_trailer_mismatch.pcapng")}, &failedSession)
+	for _, name := range []string{"wait_for_session", "get_session_info", "list_hosts", "list_secrets", "list_devices", "list_audit_records", "query_audit_records"} {
+		args := map[string]any{"session_id": failedSession.ID}
+		if name == "wait_for_session" {
+			args["timeout_seconds"] = 20
+			args["poll_interval_ms"] = 100
+		}
+		if name == "query_audit_records" {
+			args["type"] = "HTTP"
+		}
+		result, err := cli.CallTool(ctx, mcplib.CallToolRequest{Params: mcplib.CallToolParams{Name: name, Arguments: args}})
+		if err != nil {
+			t.Fatal(name, err)
+		}
+		if !result.IsError {
+			t.Fatalf("%s returned empty success for a failed capture: %+v", name, result)
+		}
+	}
 }

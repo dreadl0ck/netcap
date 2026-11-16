@@ -89,6 +89,7 @@ func TestServiceCaptureSelectionAccess(t *testing.T) {
 		"public":  {IsPreloaded: true, InputFile: "public.pcap", OutputDir: "public-output"},
 	} {
 		session.SessionID = id
+		session.Status = StatusCompleted
 		sm.AddSession(session)
 	}
 	s := &Server{isServiceMode: true, sessionManager: sm, currentSession: "own", outDir: "own-output"}

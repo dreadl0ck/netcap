@@ -64,6 +64,10 @@ func TestCompletionUsesFileStateRatherThanIdleServer(t *testing.T) {
 		{"incomplete", `[{"path":"/data/x.pcap","isCompleted":false}]`, false},
 		{"failed", `[{"path":"/data/x.pcap","isCompleted":false,"error":"analysis failed"}]`, false},
 		{"unknown", `[{"path":"/data/other.pcap","isCompleted":true}]`, false},
+		{"empty", `[]`, false},
+		{"missing", ``, false},
+		{"invalid", `broken`, false},
+		{"stale-completed", `[{"path":"/data/x.pcap","isCompleted":true,"error":"analysis failed"}]`, false},
 		{"completed", `[{"path":"/data/x.pcap","isCompleted":true}]`, true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -205,6 +209,9 @@ func TestWaitForSessionSurfacesError(t *testing.T) {
 	_ = json.Unmarshal([]byte(contentText(res)), &out)
 	if out["error"] != "corrupt pcap" {
 		t.Errorf("error = %v", out["error"])
+	}
+	if !res.IsError {
+		t.Error("failed session returned isError=false")
 	}
 	if out["completed"] != false {
 		t.Errorf("completed = %v", out["completed"])

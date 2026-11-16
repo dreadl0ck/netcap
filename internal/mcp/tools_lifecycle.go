@@ -138,7 +138,10 @@ func (s *Server) handleWaitForSession(ctx context.Context, req mcplib.CallToolRe
 	q := ref.sessionQueryParams()
 
 	for {
-		statusBody, _ := client.GetContext(ctx, "/api/status", q)
+		statusBody, statusErr := client.GetContext(ctx, "/api/status", q)
+		if statusErr != nil {
+			return errResult(fmt.Errorf("session status: %w", statusErr)), nil
+		}
 		filesBody, _ := client.GetContext(ctx, "/api/files/input", nil)
 
 		completed := deriveCompleted(ref, filesBody, statusBody)
@@ -176,7 +179,9 @@ func (s *Server) handleWaitForSession(ctx context.Context, req mcplib.CallToolRe
 				"error_log_path": logPath,
 				"status":         fStatus,
 			}
-			return jsonResult(out), nil
+			result := jsonResult(out)
+			result.IsError = true
+			return result, nil
 		}
 
 		if time.Now().After(deadline) {
