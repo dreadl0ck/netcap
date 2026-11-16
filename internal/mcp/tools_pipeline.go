@@ -199,9 +199,11 @@ func (s *Server) handleIngestPCAP(ctx context.Context, req mcplib.CallToolReques
 	}
 
 	out := map[string]any{
-		"session_id":      sessionID,
-		"upload_response": raw1,
-		"next_step":       "Call get_session_info with this session_id; poll until completed=true, then use analytical tools.",
+		"session_id":           sessionID,
+		"summary_resource_uri": sessionResourceURI(sessionID, "summary"),
+		"graph_resource_uri":   sessionResourceURI(sessionID, "graph"),
+		"upload_response":      raw1,
+		"next_step":            "Call get_session_info with this session_id; poll until completed=true, then use analytical tools.",
 	}
 	return jsonResult(out), nil
 }
@@ -363,6 +365,10 @@ func unifiedSession(mode string, raw map[string]any) map[string]any {
 		if b, ok := raw["cli_preloaded_flag"].(bool); ok && b {
 			out["source"] = "cli-preloaded"
 		}
+	}
+	if id, _ := out["session_id"].(string); id != "" {
+		out["summary_resource_uri"] = sessionResourceURI(id, "summary")
+		out["graph_resource_uri"] = sessionResourceURI(id, "graph")
 	}
 	return out
 }

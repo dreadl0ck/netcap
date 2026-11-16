@@ -9,6 +9,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
@@ -90,6 +91,10 @@ func (s *Server) handleSessionSummaryResource(_ context.Context, req mcplib.Read
 		return nil, fmt.Errorf("unexpected resource URI: %s", uri)
 	}
 	sessionID := strings.TrimSuffix(strings.TrimPrefix(uri, prefix), suffix)
+	sessionID, decodeErr := url.PathUnescape(sessionID)
+	if decodeErr != nil {
+		return nil, fmt.Errorf("invalid encoded resource session")
+	}
 	if sessionID == "" {
 		return nil, fmt.Errorf("missing session_id in resource URI %s", uri)
 	}
@@ -107,4 +112,8 @@ func (s *Server) handleSessionSummaryResource(_ context.Context, req mcplib.Read
 			Text:     string(raw),
 		},
 	}, nil
+}
+
+func sessionResourceURI(id, kind string) string {
+	return "netcap://session/" + url.PathEscape(id) + "/" + kind
 }

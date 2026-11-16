@@ -74,7 +74,9 @@ func TestRecheck168PackagedMCPHelperIdentity(t *testing.T) {
 				return body.String()
 			}
 			var session struct {
-				ID string `json:"session_id"`
+				ID         string `json:"session_id"`
+				SummaryURI string `json:"summary_resource_uri"`
+				GraphURI   string `json:"graph_resource_uri"`
 			}
 			if err := json.Unmarshal([]byte(call("ingest_pcap", map[string]any{"path": testutil.Recheck168Capture(t, "base_http.pcap")})), &session); err != nil || session.ID == "" {
 				t.Fatal("ingest session", err)
@@ -87,6 +89,15 @@ func TestRecheck168PackagedMCPHelperIdentity(t *testing.T) {
 			}
 			if err := json.Unmarshal([]byte(completion), &state); err != nil || !state.Completed || state.Error != nil || state.Status == "failed" {
 				t.Fatal(completion, err)
+			}
+			for _, uri := range []string{session.SummaryURI, session.GraphURI} {
+				if uri == "" {
+					t.Fatal("ingest omitted resource URI")
+				}
+				resource, err := cli.ReadResource(ctx, mcplib.ReadResourceRequest{Params: mcplib.ReadResourceParams{URI: uri}})
+				if err != nil || len(resource.Contents) != 1 {
+					t.Fatalf("resource dispatch %s: %v", uri, err)
+				}
 			}
 			records := call("query_audit_records", map[string]any{"session_id": session.ID, "type": "HTTP", "count_only": true, "limit": 10})
 			if !strings.Contains(records, `"total": 1`) && !strings.Contains(records, `"total":1`) {
@@ -148,7 +159,9 @@ func TestRecheck168SameNameCaptureIsolation(t *testing.T) {
 			t.Fatal(err)
 		}
 		var session struct {
-			ID string `json:"session_id"`
+			ID         string `json:"session_id"`
+			SummaryURI string `json:"summary_resource_uri"`
+			GraphURI   string `json:"graph_resource_uri"`
 		}
 		call("ingest_pcap", map[string]any{"path": path}, &session)
 		if session.ID == "" || strings.ContainsAny(session.ID, "/\\") {
@@ -164,6 +177,15 @@ func TestRecheck168SameNameCaptureIsolation(t *testing.T) {
 		call("wait_for_session", map[string]any{"session_id": session.ID, "timeout_seconds": 20, "poll_interval_ms": 100}, &state)
 		if !state.Completed {
 			t.Fatal("capture did not complete")
+		}
+		for _, uri := range []string{session.SummaryURI, session.GraphURI} {
+			if uri == "" {
+				t.Fatal("ingest omitted resource URI")
+			}
+			resource, err := cli.ReadResource(ctx, mcplib.ReadResourceRequest{Params: mcplib.ReadResourceParams{URI: uri}})
+			if err != nil || len(resource.Contents) != 1 {
+				t.Fatalf("resource dispatch %s: %v", uri, err)
+			}
 		}
 		var timeline struct{ Status, Generation string }
 		call("get_timeline_meta", map[string]any{"session_id": session.ID}, &timeline)
