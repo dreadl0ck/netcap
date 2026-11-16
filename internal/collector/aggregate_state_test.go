@@ -15,11 +15,13 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/aggregate"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/software"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/identity"
 	viewtestutil "github.com/dreadl0ck/netcap/internal/packetview/testutil"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
+	"github.com/dreadl0ck/netcap/types"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 )
@@ -51,7 +53,8 @@ func TestAggregateCaptureProcess(t *testing.T) {
 	}
 }
 
-func TestAggregateSoftwarePreservesCaptureAuditSets(t *testing.T) {
+func aggregateSoftwareInput(t *testing.T) string {
+	t.Helper()
 	input := filepath.Join(t.TempDir(), "software.pcap")
 	var frames [][]byte
 	seq := [2]uint32{1, 1}
@@ -71,6 +74,11 @@ func TestAggregateSoftwarePreservesCaptureAuditSets(t *testing.T) {
 	if err := os.WriteFile(input, huntPCAP(1, frames...), 0600); err != nil {
 		t.Fatal(err)
 	}
+	return input
+}
+
+func TestAggregateSoftwarePreservesCaptureAuditSets(t *testing.T) {
+	input := aggregateSoftwareInput(t)
 	exe, err := os.Executable()
 	if err != nil {
 		t.Fatal(err)
@@ -95,6 +103,36 @@ func TestAggregateSoftwarePreservesCaptureAuditSets(t *testing.T) {
 			expectedCounts, expectedDigests = counts, digests
 		} else if !reflect.DeepEqual(counts, expectedCounts) || !reflect.DeepEqual(digests, expectedDigests) {
 			t.Fatalf("software spill changed capture audits: %v", ultimateOutputDiff(expectedCounts, expectedDigests, counts, digests))
+		}
+	}
+}
+
+func TestAggregateSoftwareStartsFreshAcrossSequentialCaptures(t *testing.T) {
+	input := aggregateSoftwareInput(t)
+	oldDB := resolvers.DataBaseFolderPath
+	resolvers.DataBaseFolderPath = t.TempDir()
+	t.Cleanup(func() { resolvers.DataBaseFolderPath = oldDB })
+	for run := range 2 {
+		software.Store.Lock()
+		software.Store.Items["legacy-fixture"] = &software.AtomicSoftware{Software: &types.Software{Product: "legacy"}}
+		software.Store.Unlock()
+		cfg := ultimateCaptureConfig(t.TempDir(), 2, 0)
+		cfg.DecoderConfig.ExcludeDecoders = "Exploit,Vulnerability"
+		cfg.DecoderConfig.MaxAggregateStateBytes = 2048
+		c := New(cfg)
+		defer c.Stop()
+		if err := c.Init(); err != nil {
+			t.Fatal(err)
+		}
+		if software.Store.Size() != 0 || len(software.Store.Items) != 0 {
+			t.Fatal("new capture retained old Software state", run)
+		}
+		if err := c.CollectPcap(input); err != nil {
+			t.Fatal(err)
+		}
+		counts, _ := ultimateRecords(t, cfg.DecoderConfig.Out)
+		if counts["Software"] != 49 || software.Store.Size() != 49 {
+			t.Fatal("Software state leaked between captures", run, counts["Software"], software.Store.Size())
 		}
 	}
 }

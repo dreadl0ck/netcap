@@ -18,10 +18,13 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/exploit"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/service"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/software"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tcp"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/vulnerability"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/internal/dnscontext"
 	"github.com/dreadl0ck/netcap/internal/dpi"
@@ -148,6 +151,9 @@ func (c *Collector) Init() (err error) {
 		packet.ResetHosts()
 		packet.ResetDeviceProfiles()
 		service.ResetStore()
+		software.ResetCaches()
+		vulnerability.ResetVulnStore()
+		exploit.ResetExploitStore()
 	}
 	if err := file.StartAnalysis(c.config.DecoderConfig.Out, ""); err != nil {
 		return fmt.Errorf("artifact analysis admission: %w", err)
