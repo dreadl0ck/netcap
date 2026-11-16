@@ -153,6 +153,8 @@ If a PCAPNG file contains `TLSK` Decryption Secrets Blocks, even after the packe
 
 Secrets stay in memory during the capture. Retained packet segments do not include the key blocks, so keep the original PCAPNG if you need to decrypt again.
 
+The external `analyze_tls_capture` adapter uses the installed `tshark` follower's index namespace: `tls.stream` when available, or legacy `tcp.stream` only after an unsupported-field diagnostic. Wireshark 4.4.18 registers TLS follow with `tcp_follow_index_filter`; newer TLS indices can differ from TCP indices when plaintext flows precede TLS. Auto-selection requires exactly one decryptable stream; explicit stream `0` is never replaced.
+
 ## Cleartext HTTP/2 evidence
 
 Netcap decodes cleartext HTTP/2 sessions that start with the client preface, and HTTP/1.1 upgrades to h2c. Capture and dump the HTTP records as usual:

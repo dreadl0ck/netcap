@@ -106,12 +106,13 @@ func TestTLSCaptureAdapterDecryptsKnownSecrets(t *testing.T) {
 			}
 			seq := [2]uint32{100, 200}
 			clientPort := layers.TCPPort(12344)
+			serverPort := layers.TCPPort(443)
 			index := 0
 			emit := func(direction int, data []byte, syn, ack bool) {
 				t.Helper()
 				other := 1 - direction
 				ip := &layers.IPv4{Version: 4, TTL: 64, Protocol: layers.IPProtocolTCP, SrcIP: []net.IP{net.IPv4(192, 0, 2, 1), net.IPv4(192, 0, 2, 2)}[direction], DstIP: []net.IP{net.IPv4(192, 0, 2, 1), net.IPv4(192, 0, 2, 2)}[other]}
-				tcp := &layers.TCP{SrcPort: []layers.TCPPort{clientPort, 443}[direction], DstPort: []layers.TCPPort{clientPort, 443}[other], Seq: seq[direction], Ack: seq[other], SYN: syn, ACK: ack, PSH: len(data) > 0, Window: 65535}
+				tcp := &layers.TCP{SrcPort: []layers.TCPPort{clientPort, serverPort}[direction], DstPort: []layers.TCPPort{clientPort, serverPort}[other], Seq: seq[direction], Ack: seq[other], SYN: syn, ACK: ack, PSH: len(data) > 0, Window: 65535}
 				if err := tcp.SetNetworkLayerForChecksum(ip); err != nil {
 					t.Fatal(err)
 				}
@@ -130,7 +131,13 @@ func TestTLSCaptureAdapterDecryptsKnownSecrets(t *testing.T) {
 					seq[direction]++
 				}
 			}
-			emit(0, nil, true, false) // Stream zero is deliberately not decryptable.
+			clientPort, serverPort = 12343, 80
+			emit(0, nil, true, false)
+			emit(1, nil, true, true)
+			emit(0, nil, false, true)
+			emit(0, []byte("GET /plain HTTP/1.1\r\nHost: fixture\r\n\r\n"), false, true)
+			clientPort, serverPort, seq = 12344, 443, [2]uint32{100, 200}
+			emit(0, nil, true, false) // TLS zero is deliberately not decryptable; TCP zero is plaintext.
 			emit(1, nil, true, true)
 			emit(0, nil, false, true)
 			emit(0, recorder.chunks[0].data, false, true)

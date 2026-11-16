@@ -26,14 +26,12 @@ func analyzeUniqueTLSCapture(ctx context.Context, input, keyLog string) (TLSCapt
 	if err != nil {
 		return empty, fmt.Errorf("TLS selection requires tshark: %w", err)
 	}
-	command := exec.CommandContext(ctx, tool, "-n", "-r", input, "-Y", "tls", "-T", "fields", "-E", "occurrence=l", "-e", "tls.stream")
-	output, stderr := &cappedBuffer{limit: 4 << 20}, &cappedBuffer{limit: 65536}
-	command.Stdout, command.Stderr = output, stderr
-	if err := command.Run(); err != nil {
-		return empty, fmt.Errorf("TLS stream discovery: %w", err)
+	rows, namespace, err := tlsDiscoveryRows(ctx, tool, input, false)
+	if err != nil {
+		return empty, err
 	}
 	indexes := map[int]bool{}
-	for _, value := range strings.Fields(output.String()) {
+	for _, value := range strings.Fields(rows) {
 		index, err := strconv.Atoi(value)
 		if err != nil || index < 0 {
 			return empty, fmt.Errorf("invalid TLS stream discovery output")
@@ -59,6 +57,7 @@ func analyzeUniqueTLSCapture(ctx context.Context, input, keyLog string) (TLSCapt
 			return empty, err
 		}
 		matches = append(matches, index)
+		result.StreamIndexField = namespace
 		selected = result
 	}
 	if len(matches) == 0 {
@@ -81,13 +80,38 @@ func TLSStreamByCommunityID(ctx context.Context, input, id string) (int, error) 
 	if err != nil {
 		return 0, fmt.Errorf("TLS selection requires tshark: %w", err)
 	}
-	command := exec.CommandContext(ctx, tool, "-n", "-r", input, "-Y", "tls", "-T", "fields", "-E", "occurrence=l", "-e", "tls.stream", "-e", "ip.src", "-e", "ipv6.src", "-e", "tcp.srcport", "-e", "ip.dst", "-e", "ipv6.dst", "-e", "tcp.dstport")
-	output, stderr := &cappedBuffer{limit: 32 << 20}, &cappedBuffer{limit: 65536}
-	command.Stdout, command.Stderr = output, stderr
-	if err := command.Run(); err != nil {
-		return 0, fmt.Errorf("TLS stream discovery: %w", err)
+	rows, _, err := tlsDiscoveryRows(ctx, tool, input, true)
+	if err != nil {
+		return 0, err
 	}
-	return selectTLSStream(output.String(), id)
+	return selectTLSStream(rows, id)
+}
+
+func tlsDiscoveryRows(ctx context.Context, tool, input string, tuples bool) (string, string, error) {
+	// Wireshark 4.4 registers the TLS follower with tcp_follow_index_filter;
+	// newer TLS followers have their own tls.stream namespace.
+	for _, namespace := range []string{"tls.stream", "tcp.stream"} {
+		args := []string{"-n", "-r", input, "-Y", "tls && tcp", "-T", "fields", "-E", "occurrence=l", "-e", namespace}
+		if tuples {
+			args = append(args, "-e", "ip.src", "-e", "ipv6.src", "-e", "tcp.srcport", "-e", "ip.dst", "-e", "ipv6.dst", "-e", "tcp.dstport")
+		}
+		command := exec.CommandContext(ctx, tool, args...)
+		output, stderr := &cappedBuffer{limit: 32 << 20}, &cappedBuffer{limit: 65536}
+		command.Stdout, command.Stderr = output, stderr
+		if err := command.Run(); err != nil {
+			diagnostic := strings.TrimSpace(stderr.String())
+			lower := strings.ToLower(diagnostic)
+			if namespace == "tls.stream" && strings.Contains(lower, "tls.stream") && (strings.Contains(lower, "fields aren't valid") || strings.Contains(lower, "not a valid field") || strings.Contains(lower, "invalid field")) && ctx.Err() == nil {
+				continue
+			}
+			if len(diagnostic) > 4096 {
+				diagnostic = diagnostic[:4096]
+			}
+			return "", "", fmt.Errorf("TLS stream discovery: %w: %s", err, diagnostic)
+		}
+		return output.String(), namespace, nil
+	}
+	return "", "", fmt.Errorf("TLS stream discovery fields are unavailable")
 }
 
 func selectTLSStream(rows, id string) (int, error) {
