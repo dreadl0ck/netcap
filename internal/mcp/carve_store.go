@@ -169,6 +169,26 @@ func (c *CarveStore) Stats() (count int, totalBytes int64) {
 	return count, totalBytes
 }
 
+func (c *CarveStore) DeleteSessions(ids ...string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	kept := c.entries[:0]
+	for _, entry := range c.entries {
+		remove := false
+		for _, id := range ids {
+			if id != "" && entry.SessionID == id {
+				remove = true
+			}
+		}
+		if remove {
+			c.removeFile(entry)
+		} else {
+			kept = append(kept, entry)
+		}
+	}
+	c.entries = kept
+}
+
 func randomHex(n int) (string, error) {
 	b := make([]byte, n)
 	if _, err := rand.Read(b); err != nil {

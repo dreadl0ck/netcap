@@ -789,11 +789,11 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/report-issue", s.handleReportIssue)
 	mux.HandleFunc("/api/progress/", s.handleProgress)
 
+	mux.HandleFunc("/api/try/session/", s.handleSessionSelect)
 	// Service-specific endpoints (only registered in service mode)
 	if s.isServiceMode {
 		mux.HandleFunc("/api/quota", s.handleQuota)
 		mux.HandleFunc("/api/try/sessions", s.handleListSessions)
-		mux.HandleFunc("/api/try/session/", s.handleSessionSelect)
 		mux.HandleFunc("/api/status/", s.handleStatus) // Session-specific status for polling
 		mux.HandleFunc("/view/", s.handleViewSession)
 		mux.HandleFunc("/health", s.handleHealth)

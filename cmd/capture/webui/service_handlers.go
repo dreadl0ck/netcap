@@ -126,6 +126,10 @@ func (s *Server) handleListSessions(w http.ResponseWriter, r *http.Request) {
 // removing it from the manager and on-disk storage (DELETE).
 func (s *Server) handleSessionSelect(w http.ResponseWriter, r *http.Request) {
 	if !s.isServiceMode {
+		if r.Method == http.MethodDelete {
+			s.deleteLocalUpload(w, r)
+			return
+		}
 		http.Error(w, "Not available in local mode", http.StatusNotFound)
 		return
 	}
@@ -165,6 +169,14 @@ func (s *Server) handleSessionSelect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodDelete {
+		if session.IsPreloaded {
+			http.Error(w, "Preloaded sessions cannot be deleted", 403)
+			return
+		}
+		if session.Status == StatusQueued || session.Status == StatusProcessing {
+			http.Error(w, "Wait for analysis to stop before deletion", 409)
+			return
+		}
 		removed := s.sessionManager.DeleteSession(sessionID)
 		if removed == nil {
 			respondJSON(w, http.StatusNotFound, map[string]string{"error": "Session not found"})

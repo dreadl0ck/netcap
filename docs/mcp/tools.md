@@ -645,7 +645,7 @@ Delete one completed owned local live capture and its output, freeing the eight-
 
 ### `delete_session`
 
-Remove a session from the netcap webui and delete its on-disk artefacts (uploads/<sid>, results/<sid>, any error log). Available in service mode only — local mode sessions are owned by the CLI process and cleaned up at exit.
+Delete a terminal owned upload and its result artifacts in local or service mode. Queued/running analyses, preloaded captures and external original files are protected. Retained MCP artifacts for that session are also removed.
 
 **Hints:** destructive, idempotent
 
@@ -653,7 +653,7 @@ Remove a session from the netcap webui and delete its on-disk artefacts (uploads
 
 | name | type | required | description |
 | --- | --- | --- | --- |
-| `session_id` | string | yes | Session identifier (service-mode hex id). |
+| `session_id` | string | yes | Owned upload analysis ID returned by ingest_pcap. |
 
 
 ### `evaluate_firewall_policy`

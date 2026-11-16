@@ -2021,7 +2021,10 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		if s.localUploads == nil {
 			s.localUploads = make(map[string]localUpload)
 		}
-		s.localUploads[inputPath] = localUpload{AnalysisID: analysisID, Filename: filename}
+		rootInfo, _ := os.Stat(outDir)
+		inputInfo, _ := os.Stat(inputPath)
+		outputInfo, _ := os.Stat(outputDir)
+		s.localUploads[inputPath] = localUpload{AnalysisID: analysisID, Filename: filename, RootInfo: rootInfo, InputInfo: inputInfo, OutputInfo: outputInfo}
 		s.fileIDToPath[analysisID] = inputPath
 		s.fileOutputDirs[inputPath] = outputDir
 		s.inputFiles = append(s.inputFiles, inputPath)

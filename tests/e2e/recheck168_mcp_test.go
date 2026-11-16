@@ -106,6 +106,11 @@ func TestRecheck168PackagedMCPHelperIdentity(t *testing.T) {
 			if _, err := os.Stat(marker); !os.IsNotExist(err) {
 				t.Fatal("PATH helper executed")
 			}
+			call("delete_session", map[string]any{"session_id": session.ID})
+			if _, err := cli.ReadResource(ctx, mcplib.ReadResourceRequest{Params: mcplib.ReadResourceParams{URI: session.SummaryURI}}); err == nil {
+				t.Fatal("deleted session resource remained readable")
+			}
+			_ = testutil.Recheck168Capture(t, "base_http.pcap")
 		})
 	}
 }

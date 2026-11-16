@@ -26,12 +26,10 @@ func (s *Server) registerLifecycleTools() error {
 		{
 			Tool: mcplib.NewTool("delete_session",
 				mcplib.WithDescription(
-					"Remove a session from the netcap webui and delete its on-disk "+
-						"artefacts (uploads/<sid>, results/<sid>, any error log). "+
-						"Available in service mode only — local mode sessions are "+
-						"owned by the CLI process and cleaned up at exit."),
+					"Delete a terminal owned upload and its result artifacts in local or service mode. "+
+						"Queued/running analyses, preloaded captures and external original files are protected. Retained MCP artifacts for that session are also removed."),
 				mcplib.WithString("session_id",
-					mcplib.Description("Session identifier (service-mode hex id)."),
+					mcplib.Description("Owned upload analysis ID returned by ingest_pcap."),
 					mcplib.Required()),
 				mcplib.WithReadOnlyHintAnnotation(false),
 				mcplib.WithDestructiveHintAnnotation(true),
@@ -77,14 +75,17 @@ func (s *Server) handleDeleteSession(ctx context.Context, req mcplib.CallToolReq
 	if err != nil {
 		return errResult(err), nil
 	}
-	if ref.isPath {
-		return errResult(fmt.Errorf("delete_session is service-mode only; local-mode session %q is owned by the CLI process", ref.ID)), nil
-	}
 	endpoint := "/api/try/session/" + url.PathEscape(ref.ID)
 	body, dErr := s.deleteHTTPContext(ctx, endpoint)
 	if dErr != nil {
 		return errResult(fmt.Errorf("delete: %w", dErr)), nil
 	}
+	var deleted struct {
+		SessionID string `json:"session_id"`
+		Input     string `json:"input_file"`
+	}
+	_ = json.Unmarshal(body, &deleted)
+	s.carve.DeleteSessions(ref.ID, deleted.SessionID, deleted.Input)
 	return rawJSONResult(body), nil
 }
 
