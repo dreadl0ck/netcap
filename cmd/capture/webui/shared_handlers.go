@@ -577,6 +577,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	// Parse query parameters
 	offset := 0
 	limit := 500 // Default limit (max 500)
+	countOnly := r.URL.Query().Get("countOnly") == "true"
 
 	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
 		if val, err := strconv.Atoi(offsetStr); err == nil && val >= 0 {
@@ -674,21 +675,15 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 		}
 	}
 
-	// Skip to offset (only if no filter - filtering requires scanning all records)
-	if filterExpr == "" && len(communityIDs) == 0 {
-		if err := auditReader.Skip(offset); err != nil {
-			fmt.Fprintf(w, "event: error\ndata: {\"error\": \"Failed to skip to offset\"}\n\n")
-			flusher.Flush()
-			return
-		}
-	}
-
 	// Stream records
 	count := 0
 	totalScanned := 0
 	matchedCount := 0
 
 	for {
+		if r.Context().Err() != nil {
+			return
+		}
 		var record proto.Message
 		var raw []byte
 		if candidates != nil {
@@ -741,8 +736,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			matchedCount++
 		}
 
-		// Skip records before offset (when filtering)
-		if (filterExpr != "" || len(communityIDs) > 0) && matchedCount <= offset {
+		if countOnly || matchedCount <= offset {
 			continue
 		}
 
@@ -789,8 +783,8 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	executionTime := time.Since(startTime)
 
 	// Send completion event with execution time
-	fmt.Fprintf(w, "event: complete\ndata: {\"total\": %d, \"scanned\": %d, \"executionTimeMs\": %d}\n\n",
-		count, totalScanned, executionTime.Milliseconds())
+	fmt.Fprintf(w, "event: complete\ndata: {\"total\": %d, \"scanned\": %d, \"count\": %d, \"executionTimeMs\": %d}\n\n",
+		matchedCount, totalScanned, count, executionTime.Milliseconds())
 	flusher.Flush()
 }
 

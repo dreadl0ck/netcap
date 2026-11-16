@@ -9,10 +9,10 @@ name on the netcap MCP server.
 Sessions
 --------
 
-A `session_id` here may be either a 32-char hex (service-mode session
-selected via `/api/try/session/<id>`) or an absolute filesystem path
-(local-mode session selected via `/api/set-directory`). The shape is
-hidden behind the `session_id` argument — pass back exactly what
+A `session_id` may be an opaque analysis ID for an uploaded capture in
+either mode, or an absolute filesystem path for a legacy local input. It is
+passed as a request selector without changing the globally active capture.
+Pass back exactly what
 `ingest_pcap` or `list_sessions` returns.
 
 Response limits
@@ -3825,9 +3825,9 @@ Supports the netcap filter-expression language in `filter` (an `expr`-style bool
 | name | type | required | description |
 | --- | --- | --- | --- |
 | `count_only` | boolean |  | If true, return only the scanned/matched counts without record bodies. |
-| `filter` | string |  | Optional filter expression (e.g. "SrcPort == 443 && DstIP startsWith '10.'"). Field names are CamelCase as in the proto schema; use get_audit_record_fields to enumerate. |
+| `filter` | string |  | Optional typed filter expression (Connection: "SrcPort == '443' && DstIP startsWith '10.'"; TCP/HTTP ports are numeric). Field names are CamelCase as in the proto schema; use get_audit_record_fields to enumerate. |
 | `limit` | number |  | Maximum records to return (default 100, max 500). |
-| `offset` | number |  | Pagination offset (only honoured when filter is empty). |
+| `offset` | number |  | Offset in matching records; also supported with a filter. |
 | `session_id` | string | yes | Session identifier. |
 | `type` | string | yes | Audit record type name without the NC_ prefix, e.g. "DNS", "HTTP", "Modbus", "SMB". Case-sensitive. |
 

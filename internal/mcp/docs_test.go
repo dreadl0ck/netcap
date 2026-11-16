@@ -35,10 +35,10 @@ name on the netcap MCP server.
 Sessions
 --------
 
-A ` + "`session_id`" + ` here may be either a 32-char hex (service-mode session
-selected via ` + "`/api/try/session/<id>`" + `) or an absolute filesystem path
-(local-mode session selected via ` + "`/api/set-directory`" + `). The shape is
-hidden behind the ` + "`session_id`" + ` argument — pass back exactly what
+A ` + "`session_id`" + ` may be an opaque analysis ID for an uploaded capture in
+either mode, or an absolute filesystem path for a legacy local input. It is
+passed as a request selector without changing the globally active capture.
+Pass back exactly what
 ` + "`ingest_pcap`" + ` or ` + "`list_sessions`" + ` returns.
 
 Response limits

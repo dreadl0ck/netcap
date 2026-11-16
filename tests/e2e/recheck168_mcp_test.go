@@ -268,4 +268,22 @@ func TestRecheck168SameNameCaptureIsolation(t *testing.T) {
 			t.Fatalf("%s returned empty success for a failed capture: %+v", name, result)
 		}
 	}
+	var largeSession struct {
+		ID string `json:"session_id"`
+	}
+	call("ingest_pcap", map[string]any{"path": testutil.Recheck168Capture(t, "v168_udp_uniqflows_10k.pcap")}, &largeSession)
+	var largeState struct{ Completed bool }
+	call("wait_for_session", map[string]any{"session_id": largeSession.ID, "timeout_seconds": 20, "poll_interval_ms": 100}, &largeState)
+	if !largeState.Completed {
+		t.Fatal("large count control did not complete")
+	}
+	var counts struct {
+		Returned int
+		Records  json.RawMessage
+		Summary  struct{ Total, Count int }
+	}
+	call("query_audit_records", map[string]any{"session_id": largeSession.ID, "type": "Connection", "count_only": true, "limit": 1}, &counts)
+	if counts.Returned != 0 || counts.Records != nil || counts.Summary.Count != 0 || counts.Summary.Total != 10000 {
+		t.Fatalf("large count-only result was capped or transferred records: %+v", counts)
+	}
 }

@@ -38,13 +38,13 @@ func (s *Server) registerRecordTools() error {
 					mcplib.Description("Audit record type name without the NC_ prefix, e.g. \"DNS\", \"HTTP\", \"Modbus\", \"SMB\". Case-sensitive."),
 					mcplib.Required()),
 				mcplib.WithString("filter",
-					mcplib.Description("Optional filter expression (e.g. \"SrcPort == 443 && DstIP startsWith '10.'\"). "+
+					mcplib.Description("Optional typed filter expression (Connection: \"SrcPort == '443' && DstIP startsWith '10.'\"; TCP/HTTP ports are numeric). "+
 						"Field names are CamelCase as in the proto schema; use get_audit_record_fields to enumerate.")),
 				mcplib.WithNumber("limit",
 					mcplib.Description("Maximum records to return (default 100, max 500)."),
 					mcplib.Max(500)),
 				mcplib.WithNumber("offset",
-					mcplib.Description("Pagination offset (only honoured when filter is empty).")),
+					mcplib.Description("Offset in matching records; also supported with a filter.")),
 				mcplib.WithBoolean("count_only",
 					mcplib.Description("If true, return only the scanned/matched counts without record bodies.")),
 				mcplib.WithReadOnlyHintAnnotation(true),
@@ -124,6 +124,9 @@ func (s *Server) handleQueryAuditRecords(_ context.Context, req mcplib.CallToolR
 	filterExpr := req.GetString("filter", "")
 
 	q := ref.sessionQueryParams()
+	if countOnly {
+		q.Set("countOnly", "true")
+	}
 	q.Set("limit", strconv.Itoa(limit))
 	if offset > 0 {
 		q.Set("offset", strconv.Itoa(offset))

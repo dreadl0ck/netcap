@@ -30,7 +30,7 @@ func TestAuditStreamCommunityBitmapPreservesFilteringAndCounts(t *testing.T) {
 		return rec.Body.String()
 	}
 	page := stream("communityId=one&communityId=two&offset=1&limit=1")
-	if strings.Count(page, "event: record\n") != 1 || !strings.Contains(page, `"SrcIP":"10.0.0.2"`) || !strings.Contains(page, `"total": 1, "scanned": 4`) {
+	if strings.Count(page, "event: record\n") != 1 || !strings.Contains(page, `"SrcIP":"10.0.0.2"`) || !strings.Contains(page, `"total": 3, "scanned": 4, "count": 1`) {
 		t.Fatalf("multi-ID page = %s", page)
 	}
 	matched := stream("communityId=two&filter=SrcIP%20%3D%3D%20%2210.0.0.1%22")
