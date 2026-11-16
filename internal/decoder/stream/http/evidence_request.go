@@ -197,10 +197,13 @@ func readEvidenceHead(b *bufio.Reader) (messageEvidence, http.Header, error) {
 		name, value, valid := bytes.Cut(text, []byte(":"))
 		item := &types.HTTPHeaderEvidence{Raw: raw, Name: bytes.Clone(name), Value: bytes.Clone(value)}
 		e.headers = append(e.headers, item)
-		if !valid || !validHeaderName(string(name)) || bytes.ContainsAny(value, "\x00\r\n") {
+		if !valid || !validHeaderName(string(name)) || bytes.ContainsAny(value, "\r\n") || bytes.ContainsRune(value, 0) && !recoverableMetadataHeader(name) {
 			e.issue("invalid-http-header")
 			e.unsafe = true
 		} else {
+			if bytes.ContainsRune(value, 0) {
+				e.issue("invalid-http-metadata-value")
+			}
 			header.Add(string(name), strings.Trim(string(value), " \t"))
 		}
 		if err != nil {
@@ -209,6 +212,14 @@ func readEvidenceHead(b *bufio.Reader) (messageEvidence, http.Header, error) {
 			return e, header, nil
 		}
 	}
+}
+
+func recoverableMetadataHeader(name []byte) bool {
+	switch strings.ToLower(string(name)) {
+	case "user-agent", "server", "referer":
+		return true
+	}
+	return false
 }
 
 func readHTTPLine(b *bufio.Reader, limit int) ([]byte, error) {
@@ -283,6 +294,9 @@ func readEvidenceRequest(b *bufio.Reader) (*http.Request, messageEvidence, error
 	fmt.Fprintf(&wire, "%s %s %s\r\n", method, cleanTarget, parseVersion)
 	for _, field := range e.headers {
 		if !e.unsafe {
+			if recoverableMetadataHeader(field.Name) && bytes.ContainsRune(field.Value, 0) {
+				continue
+			}
 			if strings.EqualFold(string(field.Name), "Host") && !utf8.Valid(field.Value) {
 				wire.WriteString("Host: non-utf8.invalid\r\n")
 				e.issue("non-utf8-http-host")
@@ -331,6 +345,9 @@ func readEvidenceResponse(b *bufio.Reader, request *http.Request) (*http.Respons
 	wire.Write(e.line)
 	for _, field := range e.headers {
 		if !e.unsafe {
+			if recoverableMetadataHeader(field.Name) && bytes.ContainsRune(field.Value, 0) {
+				continue
+			}
 			wire.Write(field.Raw)
 		}
 	}
