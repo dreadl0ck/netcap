@@ -3,6 +3,14 @@
   "release": "v0.16.7",
   "scope": "53 deduplicated report rows; implemented means source and synthetic regressions, not verification of unavailable evaluator captures",
   "originalCorpus": "Evaluator /workspace/hunt/repro and complete MTA/CTF/Wireshark corpus are not available locally",
+  "recheckV0168": {
+    "report": "netcap-full-recheck-v0.16.8.md; release f30370ea",
+    "syntheticArchiveSHA256": "592f9c7bb78b48aeab0bc3db5011d2f0d969e31fab9e50fcee5ddea80cad4c06",
+    "fixtures": "testdata/recheck-v0168/manifest.json pins the imported evaluator captures",
+    "issues": [
+      {"id":"V168-3","status":"partial","fix":"Reuse transaction-bound prepared SQL shapes for point/range/upsert/delete operations; close statements with scratch-store teardown","tests":["TestPreparedStatementsDoNotScaleWithRows","TestRecheck168UDPSpillAuditEquivalence"],"qualification":"Aggregate/UDP race suites pass; supplied 10000-flow capture retains identical per-type audit multisets in memory and at 32 MiB. Focused backed capture plus digest verification took 2.555 s versus pre-fix capture-only baseline 5.256 s on the same isolated Linux/amd64 2-CPU environment; these timings have different digest scopes and are not a ratio benchmark","remaining":"Bounded traversal and repeated UDP walks still need optimization and matched timing; GeekLounge is independent"}
+    ]
+  },
   "recheckV0167": {
     "report": "netcap-full-recheck-v0.16.7.md (2026-11-15; release commit 28e1145d)",
     "evaluatorBaseline": "42 fixed, 8 partial, 1 open, 2 by design; MTA 289/289 questions and 1676/1677 facts",

@@ -22,30 +22,32 @@ type entry struct {
 }
 
 type Health struct {
-	LimitBytes    int64  `json:"limitBytes"`
-	ResidentBytes int64  `json:"residentBytes"`
-	PeakBytes     int64  `json:"peakBytes"`
-	DiskReads     uint64 `json:"diskReads"`
-	DiskWrites    uint64 `json:"diskWrites"`
-	Evictions     uint64 `json:"evictions"`
-	DatabaseBytes int64  `json:"databaseBytes"`
+	LimitBytes         int64  `json:"limitBytes"`
+	ResidentBytes      int64  `json:"residentBytes"`
+	PeakBytes          int64  `json:"peakBytes"`
+	DiskReads          uint64 `json:"diskReads"`
+	DiskWrites         uint64 `json:"diskWrites"`
+	Evictions          uint64 `json:"evictions"`
+	DatabaseBytes      int64  `json:"databaseBytes"`
+	PreparedStatements uint64 `json:"preparedStatements"`
 }
 
 // Store owns an ephemeral SQLite file. ResidentBytes charges encoded values,
 // keys and 256 bytes per LRU entry; SQLite has a separate 1 MiB page cache.
 // A caller's decoded record and serialization scratch are outside this cache.
 type Store struct {
-	mu     sync.Mutex
-	db     *sql.DB
-	tx     *sql.Tx
-	path   string
-	cache  map[string]*list.Element
-	dirty  map[string]*entry
-	lru    list.List
-	health Health
-	err    error
-	cancel func()
-	closed bool
+	mu         sync.Mutex
+	db         *sql.DB
+	tx         *sql.Tx
+	path       string
+	cache      map[string]*list.Element
+	dirty      map[string]*entry
+	lru        list.List
+	health     Health
+	err        error
+	cancel     func()
+	closed     bool
+	statements map[string]*sql.Stmt
 }
 
 // Tx is valid only inside Do's callback. Callbacks must not call Store methods.
@@ -70,7 +72,7 @@ func Open(directory string, limit int64, cancel func()) (*Store, error) {
 		return nil, err
 	}
 	path = absolute
-	s := &Store{path: path, cache: map[string]*list.Element{}, dirty: map[string]*entry{}, cancel: cancel, health: Health{LimitBytes: limit}}
+	s := &Store{path: path, cache: map[string]*list.Element{}, dirty: map[string]*entry{}, statements: map[string]*sql.Stmt{}, cancel: cancel, health: Health{LimitBytes: limit}}
 	uriPath := filepath.ToSlash(path)
 	if !strings.HasPrefix(uriPath, "/") {
 		uriPath = "/" + uriPath
@@ -122,13 +124,31 @@ func (s *Store) write(e *entry) error {
 	if !e.dirty {
 		return nil
 	}
-	if _, err := s.tx.Exec(`INSERT INTO state(key,value) VALUES(?,coalesce(?,x'')) ON CONFLICT(key) DO UPDATE SET value=excluded.value`, e.key, e.value); err != nil {
+	statement, err := s.statement(`INSERT INTO state(key,value) VALUES(?,coalesce(?,x'')) ON CONFLICT(key) DO UPDATE SET value=excluded.value`)
+	if err != nil {
+		return err
+	}
+	if _, err := statement.Exec(e.key, e.value); err != nil {
 		return err
 	}
 	e.dirty = false
 	delete(s.dirty, e.key)
 	s.health.DiskWrites++
 	return nil
+}
+
+// All callers hold mu. Query text comes only from the fixed internal SQL shapes.
+func (s *Store) statement(query string) (*sql.Stmt, error) {
+	if statement := s.statements[query]; statement != nil {
+		return statement, nil
+	}
+	statement, err := s.tx.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+	s.statements[query] = statement
+	s.health.PreparedStatements++
+	return statement, nil
 }
 
 func (s *Store) remember(key string, value []byte, dirty bool) error {
@@ -172,7 +192,11 @@ func (t *Tx) Get(key string) ([]byte, bool, error) {
 		return append([]byte(nil), element.Value.(*entry).value...), true, nil
 	}
 	var value []byte
-	err := s.tx.QueryRow(`SELECT value FROM state WHERE key=?`, key).Scan(&value)
+	statement, err := s.statement(`SELECT value FROM state WHERE key=?`)
+	if err != nil {
+		return nil, false, err
+	}
+	err = statement.QueryRow(key).Scan(&value)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, false, nil
 	}
@@ -192,7 +216,11 @@ func (t *Tx) Put(key string, value []byte) error {
 
 func (t *Tx) Delete(prefix string) error {
 	s := t.store
-	if _, err := s.tx.Exec(`DELETE FROM state WHERE key>=? AND key<?`, prefix, prefixEnd(prefix)); err != nil {
+	statement, err := s.statement(`DELETE FROM state WHERE key>=? AND key<?`)
+	if err != nil {
+		return err
+	}
+	if _, err := statement.Exec(prefix, prefixEnd(prefix)); err != nil {
 		return err
 	}
 	for key, element := range s.cache {
@@ -208,7 +236,11 @@ func (t *Tx) Delete(prefix string) error {
 
 func (t *Tx) DeleteKey(key string) error {
 	s := t.store
-	if _, err := s.tx.Exec(`DELETE FROM state WHERE key=?`, key); err != nil {
+	statement, err := s.statement(`DELETE FROM state WHERE key=?`)
+	if err != nil {
+		return err
+	}
+	if _, err := statement.Exec(key); err != nil {
 		return err
 	}
 	if element := s.cache[key]; element != nil {
@@ -225,7 +257,11 @@ func (t *Tx) Count(prefix string) (int64, error) {
 		return 0, err
 	}
 	var count int64
-	err := t.store.tx.QueryRow(`SELECT count(*) FROM state WHERE key>=? AND key<?`, prefix, prefixEnd(prefix)).Scan(&count)
+	statement, err := t.store.statement(`SELECT count(*) FROM state WHERE key>=? AND key<?`)
+	if err != nil {
+		return 0, err
+	}
+	err = statement.QueryRow(prefix, prefixEnd(prefix)).Scan(&count)
 	return count, err
 }
 
@@ -248,7 +284,11 @@ func (t *Tx) Find(prefix, upper string, descending bool) (string, []byte, bool, 
 	}
 	var key string
 	var value []byte
-	err := s.tx.QueryRow(query, args...).Scan(&key, &value)
+	statement, err := s.statement(query)
+	if err != nil {
+		return "", nil, false, err
+	}
+	err = statement.QueryRow(args...).Scan(&key, &value)
 	found := err == nil
 	if found {
 		s.health.DiskReads++
@@ -289,7 +329,11 @@ func (t *Tx) Next(prefix, after string) (string, []byte, bool, error) {
 	}
 	var key string
 	var value []byte
-	err := t.store.tx.QueryRow(query, after, prefixEnd(prefix)).Scan(&key, &value)
+	statement, err := t.store.statement(query)
+	if err != nil {
+		return "", nil, false, err
+	}
+	err = statement.QueryRow(after, prefixEnd(prefix)).Scan(&key, &value)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil, false, nil
 	}
@@ -306,7 +350,11 @@ func (t *Tx) Last(prefix string) (string, []byte, bool, error) {
 	}
 	var key string
 	var value []byte
-	err := t.store.tx.QueryRow(`SELECT key,value FROM state WHERE key>=? AND key<? ORDER BY key DESC LIMIT 1`, prefix, prefixEnd(prefix)).Scan(&key, &value)
+	statement, err := t.store.statement(`SELECT key,value FROM state WHERE key>=? AND key<? ORDER BY key DESC LIMIT 1`)
+	if err != nil {
+		return "", nil, false, err
+	}
+	err = statement.QueryRow(prefix, prefixEnd(prefix)).Scan(&key, &value)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil, false, nil
 	}
@@ -331,7 +379,11 @@ func (t *Tx) Each(prefix string, fn func(string, []byte) error) error {
 		}
 		var key string
 		var value []byte
-		err := t.store.tx.QueryRow(query, last, prefixEnd(prefix)).Scan(&key, &value)
+		statement, err := t.store.statement(query)
+		if err != nil {
+			return err
+		}
+		err = statement.QueryRow(last, prefixEnd(prefix)).Scan(&key, &value)
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil
 		}
@@ -368,12 +420,17 @@ func (s *Store) Close() error {
 		return s.err
 	}
 	s.closed = true
+	var statementError error
+	for _, statement := range s.statements {
+		statementError = errors.Join(statementError, statement.Close())
+	}
+	s.statements = nil
 	// This is scratch storage, not a recovery log. No capture state is reused.
 	err := s.tx.Rollback()
 	if errors.Is(err, sql.ErrTxDone) {
 		err = nil
 	}
-	err = errors.Join(err, s.db.Close(), os.Remove(s.path))
+	err = errors.Join(statementError, err, s.db.Close(), os.Remove(s.path))
 	s.cache = nil
 	s.dirty = nil
 	s.lru.Init()
