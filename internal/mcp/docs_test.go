@@ -44,8 +44,12 @@ Pass back exactly what
 Response limits
 ---------------
 
-- Every tool response is capped at 256 KiB. Oversized payloads come back
-  as a clear error directing the LLM to paginate.
+- Every serialized tool result, including text and structured content, is
+  capped at 256 KiB. Oversized successful JSON is retained as an artifact
+  readable in bounded pages with ` + "`read_mcp_artifact`" + `.
+- Successful results match an ` + "`outputSchema`" + ` and include
+  ` + "`structuredContent`" + `. Object fields remain native; top-level arrays
+  and scalars use ` + "`data`" + `, and plain text uses ` + "`text`" + `.
 - ` + "`query_audit_records`" + ` and the list_* tools support
   ` + "`limit`" + ` / ` + "`offset`" + ` server-side.
 - Long-running operations (ingest, reanalyze) return immediately and are

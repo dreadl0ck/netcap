@@ -362,6 +362,24 @@ func (s *Server) addTool(t server.ServerTool) error {
 	if s.mcpSrv.GetTool(name) != nil {
 		return fmt.Errorf("mcp: duplicate tool registration %q", name)
 	}
+	if t.Tool.Annotations.ReadOnlyHint != nil && *t.Tool.Annotations.ReadOnlyHint {
+		t.Tool.Annotations.DestructiveHint = mcplib.ToBoolPtr(false)
+	}
+	switch name {
+	case "get_analyst_binding", "get_analyst_capabilities", "get_capability_inventory", "read_mcp_artifact":
+		t.Tool.Annotations.OpenWorldHint = mcplib.ToBoolPtr(false)
+	}
+	if t.Tool.OutputSchema.Type == "" && len(t.Tool.RawOutputSchema) == 0 {
+		t.Tool.RawOutputSchema = toolOutputSchema(name)
+	}
+	handler := t.Handler
+	t.Handler = func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+		result, err := handler(ctx, req)
+		if err != nil {
+			return result, err
+		}
+		return s.structuredToolResult(req, name, result), nil
+	}
 	s.mcpSrv.AddTools(t)
 	return nil
 }

@@ -74,7 +74,7 @@ func respondCollectionPage(w http.ResponseWriter, r *http.Request, rows any, key
 		if len(raw) > 8<<20 {
 			return fail(413, fmt.Errorf("row exceeds 8 MiB; select smaller fields"))
 		}
-		if len(page) > 0 && used+len(raw) > 192<<10 {
+		if len(page) > 0 && used+len(raw) > 80<<10 {
 			break
 		}
 		page = append(page, raw)

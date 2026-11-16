@@ -18,8 +18,12 @@ Pass back exactly what
 Response limits
 ---------------
 
-- Every tool response is capped at 256 KiB. Oversized payloads come back
-  as a clear error directing the LLM to paginate.
+- Every serialized tool result, including text and structured content, is
+  capped at 256 KiB. Oversized successful JSON is retained as an artifact
+  readable in bounded pages with `read_mcp_artifact`.
+- Successful results match an `outputSchema` and include
+  `structuredContent`. Object fields remain native; top-level arrays
+  and scalars use `data`, and plain text uses `text`.
 - `query_audit_records` and the list_* tools support
   `limit` / `offset` server-side.
 - Long-running operations (ingest, reanalyze) return immediately and are
@@ -1886,7 +1890,7 @@ Discover actual future-analysis DPI support/module selection, payload capture, b
 
 Get explicit registered capture binding for analyst version 1 workflows; diagnostic=true permits failed captures for log review.
 
-**Hints:** read-only, destructive, open-world
+**Hints:** read-only
 
 **Arguments:**
 
@@ -1901,7 +1905,7 @@ Get explicit registered capture binding for analyst version 1 workflows; diagnos
 
 Read analyst contract versions, finite limits, explicit-source policy and supported catalogue field paths. No capture is selected or scanned.
 
-**Hints:** read-only, destructive
+**Hints:** read-only
 
 **Arguments:** none
 
@@ -2150,7 +2154,7 @@ Read the persisted BPF filter and syntax examples used for future analyses.
 
 Discover every capture MCP workflow, exact tool coverage, native scoped firewall MCP entrypoints and explicit configuration-only boundaries. Does not contact other servers or share credentials.
 
-**Hints:** read-only, destructive, open-world
+**Hints:** read-only
 
 **Arguments:** none
 
@@ -4254,7 +4258,7 @@ Read a bounded timeline event page. Preserve exact timestamp strings and occurre
 
 Read a bounded base64 page of a retained MCP artifact/report/evidence ZIP. Use artifact_id, or the final id segment of netcap://carve/{id}. Session-derived artifacts require the original session_id. TTL 1h, store capacity 32; content type and SHA256 identify the complete artifact.
 
-**Hints:** read-only, destructive, open-world
+**Hints:** read-only
 
 **Arguments:**
 

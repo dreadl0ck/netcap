@@ -767,7 +767,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 					sendError("record exceeds 16 MiB; select smaller fields with fields")
 					return
 				}
-				if count > 0 && pageBytes+len(jsonData) > 192<<10 {
+				if count > 0 && pageBytes+len(jsonData) > 80<<10 {
 					pageFull = true
 					continue
 				}
