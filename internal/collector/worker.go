@@ -334,7 +334,11 @@ func (c *Collector) initWorkers() []chan gopacket.Packet {
 			pool = reassembly.NewStreamPool(tcp.StreamFactory)
 		}
 		if state := c.config.DecoderConfig.AggregateStore; state != nil {
-			if err := pool.EnableColdStorage(state, 4096); err != nil {
+			hot := 4096
+			if c.streamStateBudget != nil && c.streamStateBudget.Health().LimitBytes > 0 {
+				hot = min(hot, max(1, int(c.streamStateBudget.Health().LimitBytes/int64(max(c.config.Workers, 1))/8192)))
+			}
+			if err := pool.EnableColdStorage(state, hot); err != nil {
 				_ = state.Do(func(*aggregate.Tx) error { return err })
 			}
 		}

@@ -110,13 +110,14 @@ type tcpConnection struct {
 	decoder      core.StreamDecoderInterface
 	tcpstate     *reassembly.TCPSimpleFSM
 
-	wasMerged       bool
-	fsmerr          bool
-	initStage       uint8
-	clientISN       uint32
-	serverISN       uint32
-	roleSource      string
-	clientDirection reassembly.TCPFlowDirection
+	wasMerged         bool
+	resourcesReleased bool
+	fsmerr            bool
+	initStage         uint8
+	clientISN         uint32
+	serverISN         uint32
+	roleSource        string
+	clientDirection   reassembly.TCPFlowDirection
 }
 
 // Accept decides whether the TCP packet should be accepted
@@ -341,7 +342,13 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 		t.pushIncremental(&core.StreamData{RawData: data, AssemblerContext: ac, CaptureInformation: ac.GetCaptureInfo(), Dir: dir, TCPObservation: observation})
 		return
 	}
-	if t.payloadBudget != nil {
+	reader := t.client
+	if dir == reassembly.TCPDirServerToClient {
+		reader = t.server
+	}
+	_, owned := reader.(*tcpStreamReader)
+	spooling := owned && reader.DataChan() == nil && decoderconfig.Instance.AggregateStore != nil && !decoderconfig.Instance.IncrementalHTTP
+	if t.payloadBudget != nil && !spooling {
 		if !t.payloadBudget.reserve(int64(len(data))) {
 			t.recordRetentionDiscard(dir, len(data), ac)
 			return

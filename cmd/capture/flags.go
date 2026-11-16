@@ -656,6 +656,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.Int64Flag{
 			Name:    "max-retained-tcp-bytes",
+			Value:   64 << 20,
 			Usage:   "maximum copied TCP reader payload across all workers (bytes, 0 = unlimited); exhaustion aborts capture",
 			Sources: cli.EnvVars("NC_MAX_RETAINED_TCP_BYTES"),
 			Action: func(_ context.Context, _ *cli.Command, value int64) error {
@@ -667,6 +668,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.Int64Flag{
 			Name:    "max-retained-reassembly-bytes",
+			Value:   32 << 20,
 			Usage:   "maximum TCP reassembly page allocation bytes shared by all workers (0 = unlimited, excludes parser state and RSS); exhaustion aborts capture",
 			Sources: cli.EnvVars("NC_MAX_RETAINED_REASSEMBLY_BYTES"),
 			Action: func(_ context.Context, _ *cli.Command, value int64) error {
@@ -680,7 +682,7 @@ func GetFlags() []cli.Flag {
 		&cli.BoolFlag{Name: "capture-time-idle-expiry", Usage: "expire offline TCP state at monotonic packet-time watermarks (one-second capture-time maintenance); EOF flushes remaining state", Sources: cli.EnvVars("NC_CAPTURE_TIME_IDLE_EXPIRY")},
 		&cli.Int64Flag{
 			Name: "max-retained-tcp-state-bytes", Value: 64 << 20,
-			Usage:   "shared incremental parser storage and TCP connection credits when incremental-http is enabled (0 = unlimited; excludes RSS)",
+			Usage:   "shared TCP connection, parser and backing-reader materialization credits (0 = unlimited; excludes RSS); exhaustion aborts capture",
 			Sources: cli.EnvVars("NC_MAX_RETAINED_TCP_STATE_BYTES"),
 			Action: func(_ context.Context, _ *cli.Command, value int64) error {
 				if value < 0 {

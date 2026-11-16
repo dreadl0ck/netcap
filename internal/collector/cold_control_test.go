@@ -57,3 +57,71 @@ func TestColdControlsPreserveLateHandshakeAndCaptureAudits(t *testing.T) {
 		}
 	}
 }
+
+func TestColdPayloadFlowsPreserveEOFOrderAndCaptureAudits(t *testing.T) {
+	var frames [][]byte
+	request := "GET /stored HTTP/1.1\r\nHost: stored-fixture.test\r\n\r\n"
+	response := "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+	for i := range 5000 {
+		tcp := &layers.TCP{SrcPort: layers.TCPPort(40000 + i), DstPort: 80, Seq: 1000, Ack: 2000, ACK: true, PSH: true, Window: 65535}
+		frames = append(frames, testutil.Ethernet(testutil.IP(false, false, layers.IPProtocolTCP, testutil.Serialize(tcp, gopacket.Payload(request)))))
+	}
+	for i := range 5000 {
+		tcp := &layers.TCP{SrcPort: 80, DstPort: layers.TCPPort(40000 + i), Seq: 2000, Ack: 1000 + uint32(len(request)), ACK: true, PSH: true, Window: 65535}
+		frames = append(frames, testutil.Ethernet(testutil.IP(false, true, layers.IPProtocolTCP, testutil.Serialize(tcp, gopacket.Payload(response)))))
+	}
+	input := filepath.Join(t.TempDir(), "payload.pcap")
+	if err := os.WriteFile(input, huntPCAP(1, frames...), 0600); err != nil {
+		t.Fatal(err)
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var expectedCounts map[string]int
+	var expectedDigests map[string]string
+	for _, mode := range []struct {
+		limit   int64
+		workers int
+	}{{0, 1}, {2048, 1}, {2048, 4}} {
+		out := t.TempDir()
+		cmd := exec.Command(exe, "-test.run=^TestAggregateCaptureProcess$", "-test.count=1", "-test.timeout=3m")
+		cmd.Env = append(os.Environ(), "NETCAP_AGGREGATE_INPUT="+input, "NETCAP_AGGREGATE_OUT="+out, "NETCAP_AGGREGATE_LIMIT="+strconv.FormatInt(mode.limit, 10), "NETCAP_AGGREGATE_WORKERS="+strconv.Itoa(mode.workers), "NETCAP_AGGREGATE_SAVE_CONNS=0")
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("stored TCP payload capture failed: %v\n%s", err, output)
+		}
+		counts, digests := ultimateRecords(t, out)
+		if counts["HTTP"] != 5000 || counts["Connection"] != 5000 {
+			t.Fatal("fixture lost payload-bearing conversations", counts)
+		}
+		if expectedCounts == nil {
+			expectedCounts, expectedDigests = counts, digests
+		} else if !reflect.DeepEqual(counts, expectedCounts) || !reflect.DeepEqual(digests, expectedDigests) {
+			t.Fatalf("payload spilling changed audit sets: %v", ultimateOutputDiff(expectedCounts, expectedDigests, counts, digests))
+		}
+	}
+}
+
+func TestStoredTCPPayloadPreservesUltimateCaptureAuditSets(t *testing.T) {
+	input := ultimatePCAPPath(t)
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var expectedCounts map[string]int
+	var expectedDigests map[string]string
+	for _, limit := range []int64{0, 1048576} {
+		out := t.TempDir()
+		cmd := exec.Command(exe, "-test.run=^TestAggregateCaptureProcess$", "-test.count=1", "-test.timeout=3m")
+		cmd.Env = append(os.Environ(), "NETCAP_AGGREGATE_INPUT="+input, "NETCAP_AGGREGATE_OUT="+out, "NETCAP_AGGREGATE_LIMIT="+strconv.FormatInt(limit, 10), "NETCAP_AGGREGATE_WORKERS=1")
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("stored TCP real capture failed: %v\n%s", err, output)
+		}
+		counts, digests := ultimateRecords(t, out)
+		if expectedCounts == nil {
+			expectedCounts, expectedDigests = counts, digests
+		} else if !reflect.DeepEqual(counts, expectedCounts) || !reflect.DeepEqual(digests, expectedDigests) {
+			t.Fatalf("stored TCP changed real capture audit sets: %v", ultimateOutputDiff(expectedCounts, expectedDigests, counts, digests))
+		}
+	}
+}

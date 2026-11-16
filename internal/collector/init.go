@@ -68,7 +68,7 @@ func (c *Collector) Init() (err error) {
 	if err != nil {
 		return err
 	}
-	if !c.config.DecoderConfig.IncrementalHTTP {
+	if !c.config.DecoderConfig.IncrementalHTTP && c.config.DecoderConfig.MaxRetainedTCPStateBytes == 0 {
 		c.streamStateBudget = nil
 	}
 	tcp.ConfigureIncrementalState(c.streamStateBudget, c.runCancel)

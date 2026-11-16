@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -14,12 +15,13 @@ import (
 	"github.com/dreadl0ck/netcap/internal/packetmeta"
 )
 
-// ColdStream keeps control-only validation state recoverable without live readers.
+// ColdStream keeps validation and backed payload state recoverable without live readers.
 type ColdStream interface {
 	Stream
 	ColdEligible() bool
 	SaveColdState() ([]byte, error)
 	ColdSuspended()
+	ColdRetired()
 }
 
 type ColdFactory interface {
@@ -198,6 +200,18 @@ func (s coldConnection) lastSeen() (time.Time, error) {
 
 func (s *coldStorage) row(id string) string { return s.prefix + "states/" + id + "/" }
 
+func coldOrder(c coldConnection) (string, error) {
+	var k key
+	for i := range k {
+		flow, err := c.Key[i].Restore()
+		if err != nil {
+			return "", err
+		}
+		k[i] = flow
+	}
+	return hex.EncodeToString([]byte(k.String())), nil
+}
+
 func (s *coldStorage) index(id string, c coldConnection, idle bool) (string, error) {
 	kind := "closed/"
 	if !c.ObserveClose && !(c.Halves[0].Closed && c.Halves[1].Closed) {
@@ -225,6 +239,13 @@ func (s *coldStorage) put(tx *aggregate.Tx, id string, c coldConnection, idle bo
 	if err := tx.Put(s.row(id), wire); err != nil {
 		return err
 	}
+	order, err := coldOrder(c)
+	if err != nil {
+		return err
+	}
+	if err := tx.Put(s.prefix+"order/"+order+"/", []byte(id)); err != nil {
+		return err
+	}
 	if index != "" {
 		return tx.Put(index, []byte(id))
 	}
@@ -241,7 +262,93 @@ func (s *coldStorage) erase(tx *aggregate.Tx, id string, c coldConnection, idle 
 			return err
 		}
 	}
+	order, err := coldOrder(c)
+	if err != nil {
+		return err
+	}
+	if err := tx.Delete(s.prefix + "order/" + order + "/"); err != nil {
+		return err
+	}
 	return tx.Delete(s.row(id))
+}
+
+func (a *Assembler) closeOrderedWithCold(conns []connectionRef, progress func()) int {
+	p := a.connPool
+	if p.cold == nil {
+		closed := 0
+		for _, ref := range conns {
+			if a.closeConn(ref) {
+				closed++
+			}
+			if progress != nil {
+				progress()
+			}
+		}
+		return closed
+	}
+	p.createMu.Lock()
+	defer p.createMu.Unlock()
+	closed, index, last := 0, 0, ""
+	for {
+		var orderKey, id string
+		var snap coldConnection
+		var found bool
+		err := p.cold.state.Do(func(tx *aggregate.Tx) error {
+			key, value, exists, err := tx.Next(p.cold.prefix+"order/", last)
+			if err != nil || !exists {
+				return err
+			}
+			orderKey, id, found = key, string(value), true
+			wire, exists, err := tx.Get(p.cold.row(id))
+			if err != nil {
+				return err
+			}
+			if !exists {
+				return fmt.Errorf("TCP cold order entry has no state")
+			}
+			snap, err = decodeCold(wire)
+			return err
+		})
+		if err != nil {
+			return closed
+		}
+		if found {
+			encoded := strings.TrimSuffix(strings.TrimPrefix(orderKey, p.cold.prefix+"order/"), "/")
+			for index < len(conns) {
+				hot := conns[index].conn
+				if hot != nil && hot.key != nil && hex.EncodeToString([]byte(hot.key.String())) > encoded {
+					break
+				}
+				if a.closeConn(conns[index]) {
+					closed++
+				}
+				if progress != nil {
+					progress()
+				}
+				index++
+			}
+			if err := p.finishCold(id, snap, "no bytes saved", false); err != nil {
+				_ = p.cold.state.Do(func(*aggregate.Tx) error { return err })
+				return closed
+			}
+			closed++
+			if progress != nil {
+				progress()
+			}
+			last = orderKey
+			continue
+		}
+		for index < len(conns) {
+			if a.closeConn(conns[index]) {
+				closed++
+			}
+			if progress != nil {
+				progress()
+			}
+			index++
+		}
+		return closed
+	}
 }
 
 func (p *StreamPool) makeColdRoom() error {
@@ -382,6 +489,7 @@ func (p *StreamPool) finishCold(id string, snap coldConnection, reason string, r
 	if err != nil {
 		return err
 	}
+	defer stream.(ColdStream).ColdSuspended()
 	if !retire && !(snap.Halves[0].Closed && snap.Halves[1].Closed) {
 		ci, err := packetmeta.Unmarshal(snap.Context)
 		if err != nil {
@@ -441,9 +549,7 @@ func (p *StreamPool) finishCold(id string, snap coldConnection, reason string, r
 		return nil
 	})
 	if err == nil && retire {
-		if observer, ok := stream.(interface{ ReassemblyRetired() }); ok {
-			observer.ReassemblyRetired()
-		}
+		stream.(ColdStream).ColdRetired()
 		p.cold.count.Add(-1)
 	}
 	return err

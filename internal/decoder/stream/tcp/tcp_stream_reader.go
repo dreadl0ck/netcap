@@ -29,6 +29,7 @@ import (
 	"github.com/gopacket/gopacket"
 	"go.uber.org/zap"
 
+	"github.com/dreadl0ck/netcap/internal/aggregate"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 )
@@ -45,6 +46,8 @@ func SetLogger(l *zap.Logger) {
 type tcpStreamReader struct {
 	sync.Mutex
 	data               core.DataFragments
+	stored             *storedTCPReader
+	storedMarkers      map[*core.StreamData]uint64
 	ident              string
 	parent             *tcpConnection
 	numBytes           int
@@ -93,10 +96,50 @@ func (t *tcpStreamReader) CloseData() {
 // assembler's delivery path so completion sees fragments still queued for draining.
 func (t *tcpStreamReader) StoreData(data *core.StreamData) {
 	t.parent.Lock()
-	t.data = append(t.data, data)
+	defer t.parent.Unlock()
+	if t.stored == nil && decoderconfig.Instance != nil && decoderconfig.Instance.AggregateStore != nil && !decoderconfig.Instance.IncrementalHTTP && t.dataChan == nil {
+		id := tcpReaderSequence.Add(1)
+		t.stored = &storedTCPReader{state: decoderconfig.Instance.AggregateStore, prefix: fmt.Sprintf("tcp/payload/%016x/", id), budget: t.parent.stateBudget, payloadBudget: t.parent.payloadBudget}
+	}
+	if t.stored != nil {
+		if data.DiscardReason != "" {
+			if t.storedMarkers == nil {
+				t.storedMarkers = map[*core.StreamData]uint64{}
+			}
+			t.storedMarkers[data] = t.stored.count
+		}
+		if err := t.stored.append(data); err != nil {
+			return
+		}
+		if t.stored.loaded {
+			t.data = append(t.data, data)
+		}
+	} else {
+		t.data = append(t.data, data)
+	}
 	t.parent.wasMerged = false
 	t.numBytes += len(data.RawData)
-	t.parent.Unlock()
+}
+
+func (t *tcpStreamReader) updateStoredMarker(data *core.StreamData) {
+	t.parent.Lock()
+	defer t.parent.Unlock()
+	if index, found := t.storedMarkers[data]; found {
+		_ = t.stored.state.Do(func(tx *aggregate.Tx) error {
+			wire, err := encodeTCPFragment(data)
+			if err != nil {
+				return err
+			}
+			return tx.Put(fmt.Sprintf("%s%016x", t.stored.prefix, index), wire)
+		})
+		if t.stored.loaded {
+			for _, fragment := range t.data {
+				if stored, ok := fragment.(*core.StreamData); ok && stored.DiscardReason == data.DiscardReason && stored.Dir == data.Dir {
+					stored.DiscardedBytes = data.DiscardedBytes
+				}
+			}
+		}
+	}
 }
 
 // Cleanup will tear down the stream processing.
@@ -110,6 +153,12 @@ func (t *tcpStreamReader) Cleanup(f *connectionFactory) {
 // DataSlice will return all gathered data fragments.
 // CAUTION: underlying tcpConnection needs to be locked when calling this, and working with the result!
 func (t *tcpStreamReader) DataSlice() core.DataFragments {
+	if t.stored != nil && !t.stored.loaded {
+		data, err := t.stored.read()
+		if err == nil {
+			t.data, t.stored.loaded = data, true
+		}
+	}
 	return t.data
 }
 

@@ -85,3 +85,34 @@ func TestNegativeTCPRetentionBudgetRefusesInitialization(t *testing.T) {
 		t.Fatal("invalid budget started workers")
 	}
 }
+
+func TestBackedTCPMaterializationFailurePreventsReadiness(t *testing.T) {
+	for _, mode := range []string{"payload", "state"} {
+		t.Run(mode, func(t *testing.T) {
+			wire, input := newBookCapture(t)
+			send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 65000, false)
+			for range 4 {
+				send(false, false, false, string(bytes.Repeat([]byte{0xff}, 8192)))
+			}
+			out := t.TempDir()
+			configuration := ultimateCaptureConfig(out, 1, 0)
+			configuration.CaptureEvidence = true
+			configuration.DecoderConfig.IncludeDecoders = "TCP,Connection"
+			configuration.DecoderConfig.MaxAggregateStateBytes = 1024
+			if mode == "payload" {
+				configuration.DecoderConfig.MaxRetainedTCPBytes = 16384
+			} else {
+				configuration.DecoderConfig.MaxRetainedTCPStateBytes = 16384
+			}
+			err := New(configuration).CollectPcap(input)
+			manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
+			_, readyErr := os.Stat(filepath.Join(out, evidence.AuditReadyFile))
+			if err == nil || manifest.Status != "error" || !os.IsNotExist(readyErr) {
+				t.Fatalf("backing materialization failure advertised success: err=%v manifest=%+v ready=%v", err, manifest, readyErr)
+			}
+			if !strings.Contains(err.Error(), "materialization") && !strings.Contains(err.Error(), "stream state budget exceeded") {
+				t.Fatal("unexpected capture failure", err)
+			}
+		})
+	}
+}

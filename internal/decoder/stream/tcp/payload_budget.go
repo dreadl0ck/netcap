@@ -80,6 +80,8 @@ func (t *tcpConnection) recordDiscard(markers *[2]*core.StreamData, reason strin
 	t.Unlock()
 	if created {
 		reader.StoreData(marker)
+	} else if owned, ok := reader.(*tcpStreamReader); ok && owned.stored != nil {
+		owned.updateStoredMarker(marker)
 	}
 }
 

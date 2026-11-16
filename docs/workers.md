@@ -14,9 +14,9 @@ More workers do not always give more throughput. Disk, parsing, native analyzers
 | Writer buffer: 64 KiB                       | Per decoder writer; not total process memory                                                                                               |
 | Reassembly maximum buffered size: 10 MiB    | Per stream direction; zero means unlimited                                                                                                 |
 | Out-of-order page pressure thresholds: zero | Per worker/connection; unlimited unless set                                                                                                |
-| Retained TCP payload: zero                  | `-max-retained-tcp-bytes` limits reader-owned payload copies across all workers; zero is unlimited.                                        |
-| Retained reassembly pages: zero             | `-max-retained-reassembly-bytes` limits allocated TCP page payload and metadata across all workers; zero is unlimited.                     |
-| Incremental TCP state: 64 MiB               | `-max-retained-tcp-state-bytes` counts parser storage and pool/connection credits while `-incremental-http` is enabled; zero is unlimited. |
+| Retained TCP payload: 64 MiB                 | `-max-retained-tcp-bytes` limits resident reader payload, including backing-store materialization, across all workers; zero is unlimited. |
+| Retained reassembly pages: 32 MiB            | `-max-retained-reassembly-bytes` limits allocated TCP page payload and metadata across all workers; zero is unlimited. |
+| TCP state: 64 MiB                           | `-max-retained-tcp-state-bytes` counts parser storage, backing-reader materialization and pool/connection credits; zero is unlimited. |
 | Encoded capture state: 32 MiB             | `-max-aggregate-state-bytes` bounds the resident Connection/Host/DeviceProfile/Service/Software/UDP/network cache and vulnerability/exploit deduplication keys, with excess state on disk; zero selects the in-memory implementation. |
 | DPI automatic contexts                      | Up to 8; separate from protocol workers                                                                                                    |
 | Evidence index                              | 64 MiB of accounted storage plus record and link limits                                                                                    |
@@ -129,21 +129,34 @@ fail the capture and prevent readiness (`TestAggregateNetworkOutputFailurePreven
 
 ### TCP control-state storage
 
-With aggregate backing enabled, each assembler pool targets a 4,096-candidate
-control-state cache, spilling the least-recently-used candidate. Shared-pool
+With aggregate backing enabled, each assembler pool targets at most 4,096
+candidates, reduced to `max(1, stateLimit / workers / 8192)` under a finite state
+budget, spilling the least-recently-used candidate. Shared-pool
 assemblers can temporarily add their in-flight streams before publication.
 `ControlStorageHealth` distinguishes resident controls, total resident connections
-and stored controls. Ordinary payload-bearing streams are not eligible for this
-control-state path.
+and stored controls. Synchronous payload readers keep fragments in the same
+backing store until decoder completion (`tcp/retained_store.go`).
 
 | Contract | Implementation and check |
 | --- | --- |
-| Eligibility | No payload readers, incremental parser, pending FIN callback or retained reassembly pages; established control-only and closed control-only streams remain eligible |
+| Eligibility | No materialized reader fragments, incremental parser, pending FIN callback, mutable discard marker or retained reassembly pages. Ordinary synchronous readers with backed payload remain eligible |
 | Recovery | Preserve network/transport/scope keys, TCP FSM, MSS/window options, sequence/ACK/FIN state, directions, first/last timestamps and capture metadata. Restore before processing a later packet; `TestColdControlsPreserveLateHandshakeAndCaptureAudits` compares every audit hash across a 5,000-flow pressure fixture |
-| Lifecycle | EOF closes stored controls without allocating one pool slot per historical flow. Repeated flushes and later closed-state expiry retain their existing semantics; `TestColdTCPPoolBoundsSYNStatesAndPreservesLateControls` checks counters and retirement |
+| Lifecycle | EOF merges resident and stored streams in the existing key order without allocating one pool slot per historical flow. Repeated flushes and expiry preserve semantics; `TestColdPayloadFlowsPreserveEOFOrderAndCaptureAudits` compares 5,000 request/response flows with 1 and 4 workers |
 | Deadlines and sharing | Disk indexes use strict last-seen cutoffs; scope keys remain direction-independent. `TestColdTCPIdleExpiryUsesStrictRestoredLastSeen` and `TestColdTCPSharedPoolPreservesScopeAndConcurrentGenerations` run under the race detector |
 | Failure | Invalid snapshots fail and cancel the backing store instead of starting a new TCP incarnation (`TestColdTCPRestoreCorruptionCancelsBackingStore`) |
-| Limits | This bounds control-state residency, not active payload/parser state or RSS. TCP payload, page and incremental-state budgets remain separate. Unbudgeted pool allocation batches stop growing at 4,096 slots |
+| Limits | Backed fragments reserve encoded size plus 256 bytes each when materialized, and raw payload bytes against the payload budget. Pool/connection credits remain separate from page allocation. Unbudgeted pool allocation batches stop growing at 4,096 slots; none is an RSS cap |
+
+`TestStoredTCPReaderPayloadDoesNotAccumulateBeforeCompletion` stores 32 MiB in
+32,768 fragments without a resident fragment list, using a 64-KiB encoded cache;
+the test requires retained heap growth below 8 MiB. Materialization is bounded
+and can abort a capture that previously fitted on disk.
+The Linux/amd64 2-CPU fixture measured an 82,128-byte post-GC heap delta and a
+52,936,704-byte database; this is retained heap, not peak RSS.
+`TestBackedTCPMaterializationFailurePreventsReadiness` checks both state and
+payload exhaustion against the capture manifest and readiness marker.
+`TestStoredTCPPayloadPreservesUltimateCaptureAuditSets` compares all audit hashes
+for the available Ultimate capture. Parser-created copies, merged byte buffers,
+packet-context allocations and native libraries remain outside these credits.
 
 On the Linux/amd64 2-CPU, 8-GiB fixture, 200,000 SYN flows with a 1-MiB encoded
 cache retained 44,090,648 bytes of Go heap at 280,322,048-byte peak RSS, taking

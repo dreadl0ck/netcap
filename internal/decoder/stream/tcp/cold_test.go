@@ -3,6 +3,7 @@ package tcp
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -122,14 +123,19 @@ func TestColdTCPRestoreCorruptionCancelsBackingStore(t *testing.T) {
 		feedColdControl(a, network, &layers.TCP{SrcPort: layers.TCPPort(40000 + i), DstPort: 80, Seq: 100, SYN: true, Window: 5000}, time.Unix(100, int64(i)), "if:1")
 	}
 	if err := state.Do(func(tx *aggregate.Tx) error {
-		key, _, found, err := tx.Next("tcp/control/", "")
-		if err != nil {
+		target := ""
+		if err := tx.Each("tcp/control/", func(key string, _ []byte) error {
+			if strings.Contains(key, "/states/") {
+				target = key
+			}
+			return nil
+		}); err != nil {
 			return err
 		}
-		if !found {
+		if target == "" {
 			t.Fatal("fixture did not spill a control state")
 		}
-		return tx.Put(key, []byte("not a control snapshot"))
+		return tx.Put(target, []byte("not a control snapshot"))
 	}); err != nil {
 		t.Fatal(err)
 	}

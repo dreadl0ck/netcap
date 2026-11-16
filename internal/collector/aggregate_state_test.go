@@ -42,13 +42,22 @@ func TestAggregateCaptureProcess(t *testing.T) {
 	cfg := ultimateCaptureConfig(os.Getenv("NETCAP_AGGREGATE_OUT"), workers, 0)
 	cfg.CaptureEvidence = true
 	cfg.DecoderConfig.MaxAggregateStateBytes = limit
+	if limit > 0 {
+		cfg.DecoderConfig.MaxRetainedTCPBytes = 64 << 20
+		cfg.DecoderConfig.MaxRetainedReassemblyBytes = 32 << 20
+		cfg.DecoderConfig.MaxRetainedTCPStateBytes = 64 << 20
+	}
 	cfg.DecoderConfig.SaveConns = os.Getenv("NETCAP_AGGREGATE_SAVE_CONNS") == "1"
 	if os.Getenv("NETCAP_AGGREGATE_SOFTWARE") == "1" {
 		cfg.DecoderConfig.ExcludeDecoders = "Exploit,Vulnerability"
 		resolvers.DataBaseFolderPath = t.TempDir()
 	}
 	c := New(cfg)
-	if err = c.CollectPcap(input); err != nil {
+	collect := c.CollectPcap
+	if isPCAPNG(t, input) {
+		collect = c.CollectPcapNG
+	}
+	if err = collect(input); err != nil {
 		t.Fatal(err)
 	}
 }

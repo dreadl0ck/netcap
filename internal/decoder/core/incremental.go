@@ -111,5 +111,5 @@ func (b *StateBudget) Error() error {
 }
 
 func (b *StateBudget) Health() StateBudgetHealth {
-	return StateBudgetHealth{Scope: "tcp-pool-slot-and-connection-credits-and-incremental-parser-storage", LimitBytes: b.limit, RetainedBytes: b.used.Load(), PeakBytes: b.peak.Load(), RejectedBytes: b.rejected.Load(), Exceeded: b.failed.Load()}
+	return StateBudgetHealth{Scope: "tcp-pool-connection-parser-and-backing-reader-credits", LimitBytes: b.limit, RetainedBytes: b.used.Load(), PeakBytes: b.peak.Load(), RejectedBytes: b.rejected.Load(), Exceeded: b.failed.Load()}
 }

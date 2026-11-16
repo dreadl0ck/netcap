@@ -37,9 +37,14 @@ func (t *tcpConnection) releaseResources() {
 		for _, reader := range readers {
 			if owned, ok := reader.(*tcpStreamReader); ok {
 				owned.data = nil
+				owned.storedMarkers = nil
+				if owned.stored != nil {
+					_ = owned.stored.clear()
+				}
 			}
 		}
 		t.merged, t.decoder = nil, nil
+		t.resourcesReleased = true
 		t.incrementalBanner = nil
 		clear(t.retentionMarkers[:])
 		clear(t.pageBudgetMarkers[:])
