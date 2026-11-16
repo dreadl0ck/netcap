@@ -174,4 +174,35 @@ func TestRecheck168SameNameCaptureIsolation(t *testing.T) {
 			}
 		}
 	}
+	var beforeDevices map[string]any
+	call("list_devices", map[string]any{"session_id": ids[0]}, &beforeDevices)
+	if count, ok := beforeDevices["totalCount"].(float64); !ok || count == 0 {
+		t.Fatal("device isolation requires a nonempty control", beforeDevices)
+	}
+	var credentialSession struct {
+		ID string `json:"session_id"`
+	}
+	call("ingest_pcap", map[string]any{"path": testutil.Recheck168Capture(t, "hv_std_userpass.pcap")}, &credentialSession)
+	var credentialState struct{ Completed bool }
+	call("wait_for_session", map[string]any{"session_id": credentialSession.ID, "timeout_seconds": 20, "poll_interval_ms": 100}, &credentialState)
+	if !credentialState.Completed {
+		t.Fatal("credential capture did not complete")
+	}
+	for _, tc := range []struct {
+		id   string
+		want int
+	}{{ids[0], 0}, {credentialSession.ID, 1}, {ids[0], 0}} {
+		var secrets struct{ TotalCount int }
+		call("list_secrets", map[string]any{"session_id": tc.id}, &secrets)
+		if secrets.TotalCount != tc.want {
+			t.Fatalf("cross-session secrets: got %d want %d", secrets.TotalCount, tc.want)
+		}
+	}
+	var afterDevices map[string]any
+	call("list_devices", map[string]any{"session_id": ids[0]}, &afterDevices)
+	before, _ := json.Marshal(beforeDevices)
+	after, _ := json.Marshal(afterDevices)
+	if string(before) != string(after) {
+		t.Fatalf("cross-session devices: before %s after %s", before, after)
+	}
 }

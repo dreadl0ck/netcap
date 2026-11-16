@@ -61,21 +61,11 @@ func (s *Server) handleDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
-
-	if outDir == "" {
-		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
+	selection, ok := s.selectedCapture(w, r)
+	if !ok {
 		return
 	}
+	outDir := selection.OutputDir
 
 	devices, err := readDeviceProfiles(outDir)
 	if err != nil {

@@ -99,29 +99,11 @@ func (s *Server) handleSecrets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Determine the output directory
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-			log.Printf("[Credentials] Using session output dir: %s (session: %s)", outDir, s.currentSession)
-		}
-	}
-	s.mu.RUnlock()
-
-	log.Printf("[Credentials] API request - outDir: %s, isServiceMode: %v", outDir, s.isServiceMode)
-
-	if outDir == "" {
-		log.Printf("[Credentials] No output directory set, returning empty response")
-		RespondJSON(w, http.StatusOK, SecretsResponse{
-			Secrets:    []SecretSummary{},
-			TotalCount: 0,
-		})
+	selection, ok := s.selectedCapture(w, r)
+	if !ok {
 		return
 	}
+	outDir := selection.OutputDir
 
 	// Try to find Credentials audit file - try both compressed and uncompressed
 	filePath := filepath.Join(outDir, "Secret"+defaults.FileExtension+".gz")
