@@ -164,7 +164,8 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	// Determine executable for job execution
 	// In dev mode, use the current binary; otherwise locate the bundled helper
 	var executable string
-	if s.devMode {
+	var helperPrefix []string
+	if s.devMode && !standaloneCLI() {
 		// Dev mode: use the current executable (e.g., ./tmp/main when running with air)
 		execPath, err := os.Executable()
 		if err != nil {
@@ -175,13 +176,13 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 			log.Printf("[Service] Dev mode: using current executable: %s", executable)
 		}
 	} else {
-		executable = resolveHelperExecutable()
+		executable, helperPrefix = captureHelperCommand()
 		if executable == "" {
 			// Say which binary is missing. Falling through to exec.Command("net")
 			// here would run Windows' own net.exe or Samba's, and report the
 			// resulting usage error as a netcap failure.
 			msg := fmt.Sprintf(
-				"capture helper %q not found next to the application or on PATH; reinstall Netcap Pro",
+				"matching capture helper %q is unavailable for this installation",
 				helperName())
 			log.Printf("[Service] %s", msg)
 			s.recordAnalysisFailure(job, msg, "")
@@ -205,6 +206,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	log.Printf("[Service] Executing command: %s %s", executable, strings.Join(args, " "))
 
 	// Run the capture command
+	args = append(helperPrefix, args...)
 	cmd := exec.Command(executable, args...)
 	cmd.Env = helperEnvironment()
 

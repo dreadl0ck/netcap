@@ -16,7 +16,7 @@ func liveCaptureFailure(err error, out string) string {
 }
 
 func (s *Server) startLiveHelper(ctx context.Context, args []string, out string) (func() error, error) {
-	path := resolveHelperExecutable()
+	path, prefix := captureHelperCommand()
 	if path == "" {
 		return nil, fmt.Errorf("capture helper is unavailable")
 	}
@@ -24,7 +24,7 @@ func (s *Server) startLiveHelper(ctx context.Context, args []string, out string)
 	if err != nil {
 		return nil, err
 	}
-	cmd := exec.CommandContext(ctx, path, args...)
+	cmd := exec.CommandContext(ctx, path, append(prefix, args...)...)
 	cmd.Env = helperEnvironment()
 	cmd.Stdout = log
 	cmd.Stderr = log
