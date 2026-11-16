@@ -161,7 +161,15 @@ func (s *Server) resolveCaptureSelection(r *http.Request) (captureSelection, err
 
 func captureAdminAuthorized(r *http.Request) bool {
 	token := os.Getenv(EnvMCPAdminToken)
-	return token != "" && subtle.ConstantTimeCompare([]byte(r.Header.Get("Authorization")), []byte("Bearer "+token)) == 1
+	return token != "" && subtle.ConstantTimeCompare([]byte(bearerCredential(r)), []byte(token)) == 1
+}
+
+func bearerCredential(r *http.Request) string {
+	scheme, token, ok := strings.Cut(r.Header.Get("Authorization"), " ")
+	if !ok || !strings.EqualFold(scheme, "Bearer") {
+		return ""
+	}
+	return strings.TrimLeft(token, " ")
 }
 
 func (s *Server) outDirForKnownInputLocked(input string) string {

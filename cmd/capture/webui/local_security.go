@@ -82,10 +82,7 @@ func (s *Server) localSecurityMiddleware(next http.Handler) http.Handler {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
-		token := ""
-		if value, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
-			token = value
-		}
+		token := bearerCredential(r)
 		if !valid(token) {
 			if (r.URL.Path == "/mcp" || r.URL.Path == "/mcp/" || r.URL.Path == "/mcp/metrics") && captureAdminAuthorized(r) {
 				next.ServeHTTP(w, r)

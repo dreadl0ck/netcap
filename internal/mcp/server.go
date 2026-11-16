@@ -255,17 +255,17 @@ func (s *Server) adminAuth(next http.Handler) http.Handler {
 	})
 }
 
-// corsForMCP installs a permissive CORS policy on the MCP endpoint that
-// includes Authorization in Allow-Headers so browser-based MCP clients
-// can present a Bearer token. The outer webui's corsMiddleware does not
-// include Authorization.
+// Preserve only the explicit origin authorized by the outer webui allowlist.
 func (s *Server) corsForMCP(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept, Mcp-Session-Id, Last-Event-ID")
-		w.Header().Set("Access-Control-Expose-Headers", "Mcp-Session-Id")
-		w.Header().Set("Access-Control-Max-Age", "86400")
+		w.Header().Add("Vary", "Origin")
+		if origin := w.Header().Get("Access-Control-Allow-Origin"); origin != "" && origin != "*" && origin == r.Header.Get("Origin") {
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept, Mcp-Session-Id, Last-Event-ID")
+			w.Header().Set("Access-Control-Expose-Headers", "Mcp-Session-Id")
+		} else {
+			w.Header().Del("Access-Control-Allow-Origin")
+		}
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
