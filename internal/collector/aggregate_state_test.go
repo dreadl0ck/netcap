@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,6 +19,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/identity"
 	viewtestutil "github.com/dreadl0ck/netcap/internal/packetview/testutil"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 )
@@ -39,9 +41,61 @@ func TestAggregateCaptureProcess(t *testing.T) {
 	cfg.CaptureEvidence = true
 	cfg.DecoderConfig.MaxAggregateStateBytes = limit
 	cfg.DecoderConfig.SaveConns = os.Getenv("NETCAP_AGGREGATE_SAVE_CONNS") == "1"
+	if os.Getenv("NETCAP_AGGREGATE_SOFTWARE") == "1" {
+		cfg.DecoderConfig.ExcludeDecoders = "Exploit,Vulnerability"
+		resolvers.DataBaseFolderPath = t.TempDir()
+	}
 	c := New(cfg)
 	if err = c.CollectPcap(input); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestAggregateSoftwarePreservesCaptureAuditSets(t *testing.T) {
+	input := filepath.Join(t.TempDir(), "software.pcap")
+	var frames [][]byte
+	seq := [2]uint32{1, 1}
+	frame := func(reverse bool, payload string) []byte {
+		side, src, dst := 0, layers.TCPPort(50000), layers.TCPPort(80)
+		if reverse {
+			side, src, dst = 1, dst, src
+		}
+		tcp := &layers.TCP{SrcPort: src, DstPort: dst, Seq: seq[side], Ack: seq[1-side], ACK: true, PSH: true, Window: 65535}
+		seq[side] += uint32(len(payload))
+		return viewtestutil.Ethernet(viewtestutil.IP(false, reverse, layers.IPProtocolTCP, viewtestutil.Serialize(tcp, gopacket.Payload(payload))))
+	}
+	for i := range 48 {
+		frames = append(frames, frame(false, fmt.Sprintf("GET /fixture HTTP/1.1\r\nHost: fixture.test\r\nUser-Agent: Mozilla/5.0 Firefox/%d.0\r\n\r\n", 100+i)))
+		frames = append(frames, frame(true, "HTTP/1.1 200 OK\r\nServer: Apache/2.4.1\r\nContent-Length: 0\r\n\r\n"))
+	}
+	if err := os.WriteFile(input, huntPCAP(1, frames...), 0600); err != nil {
+		t.Fatal(err)
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var expectedCounts map[string]int
+	var expectedDigests map[string]string
+	for _, mode := range []struct {
+		limit   int64
+		workers int
+	}{{0, 1}, {1, 1}, {2048, 4}} {
+		out := t.TempDir()
+		cmd := exec.Command(exe, "-test.run=^TestAggregateCaptureProcess$", "-test.count=1", "-test.timeout=2m")
+		cmd.Env = append(os.Environ(), "NETCAP_AGGREGATE_INPUT="+input, "NETCAP_AGGREGATE_OUT="+out, "NETCAP_AGGREGATE_LIMIT="+strconv.FormatInt(mode.limit, 10), "NETCAP_AGGREGATE_WORKERS="+strconv.Itoa(mode.workers), "NETCAP_AGGREGATE_SOFTWARE=1")
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("software capture failed: %v\n%s", err, output)
+		}
+		counts, digests := ultimateRecords(t, out)
+		if counts["HTTP"] != 48 || counts["Software"] != 49 {
+			t.Fatal("fixture did not exercise full HTTP/Software pipeline", counts)
+		}
+		if expectedCounts == nil {
+			expectedCounts, expectedDigests = counts, digests
+		} else if !reflect.DeepEqual(counts, expectedCounts) || !reflect.DeepEqual(digests, expectedDigests) {
+			t.Fatalf("software spill changed capture audits: %v", ultimateOutputDiff(expectedCounts, expectedDigests, counts, digests))
+		}
 	}
 }
 

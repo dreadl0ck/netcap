@@ -21,6 +21,7 @@ package software
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
@@ -35,6 +36,7 @@ import (
 	"github.com/ua-parser/uap-go/uaparser"
 	"go.uber.org/zap"
 
+	"github.com/dreadl0ck/netcap/internal/aggregate"
 	"github.com/dreadl0ck/netcap/internal/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/db"
@@ -105,6 +107,14 @@ var Decoder = &decoder.AbstractDecoder{
 		return nil
 	},
 	DeInit: func(e *decoder.AbstractDecoder) error {
+		Store.operations.Lock()
+		defer Store.operations.Unlock()
+		if softwareState() != nil {
+			err := walkStoredSoftware(func(s *types.Software) error { return flushSoftware(e, s) })
+			db.Close(db.VulnerabilitiesIndex)
+			writeWebtechDiagnostics()
+			return errors.Join(err, softwareLog.Sync())
+		}
 		// TODO: make collecting and dumping unique user agents, server names and header fields configurable
 		//httpStore.Lock()
 		//var rows [][]string
@@ -133,25 +143,18 @@ var Decoder = &decoder.AbstractDecoder{
 			item := Store.Items[ident]
 			item.Lock()
 
-			// Enhance software record with detection context and behavioral fields
-			EnhanceSoftwareRecord(item.Software)
-
-			// Update instance count based on number of flows
-			item.Software.InstanceCount = int32(len(item.Software.Flows))
-
-			err = e.Writer.Write(item.Software)
+			err = errors.Join(err, flushSoftware(e, item.Software))
 			if err != nil {
 				softwareLog.Error("failed to flush software audit record", zap.Error(err))
 			}
 
-			atomic.AddInt64(&e.NumRecordsWritten, 1)
 			item.Unlock()
 		}
 
 		db.Close(db.VulnerabilitiesIndex)
 		writeWebtechDiagnostics()
 
-		return softwareLog.Sync()
+		return errors.Join(err, softwareLog.Sync())
 	},
 }
 
@@ -181,6 +184,7 @@ type AtomicSoftware struct {
 // atomicDeviceProfileMap contains all connections and provides synchronized access.
 type atomicSoftwareMap struct {
 	sync.Mutex
+	operations sync.RWMutex
 	// mapped product + version to software
 	Items map[string]*AtomicSoftware
 }
@@ -190,7 +194,6 @@ var (
 	UserAgentCache   = make(map[string]*userAgent)
 	regExpServerName = regexp.MustCompile(`(.*?)(?:/(.*?))?(?:\s*?)(?:\((.*?)\))?$`)
 	regexpXPoweredBy = regexp.MustCompile(`(.*?)(?:(?:\s|/)(.*?))?$`)
-	cacheMutex       sync.Mutex
 
 	// RegexGenericVersion is a regular expression for anything that could be a product / version indicator.
 	RegexGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)(\d+)\.(\d+)\.(\d+)(.*?)(?:$)`)
@@ -216,6 +219,11 @@ type cmsInfo struct {
 
 // Size returns the number of elements in the Items map.
 func (a *atomicSoftwareMap) Size() int {
+	a.operations.RLock()
+	defer a.operations.RUnlock()
+	if softwareState() != nil {
+		return int(storedSoftwareCount.Load())
+	}
 	a.Lock()
 	defer a.Unlock()
 
@@ -375,18 +383,7 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 	// HTTP User Agents
 	if h.UserAgent != "" && h.UserAgent != " " {
 
-		UserAgentParserMutex.Lock()
-
-		userInfo, ok := UserAgentCache[h.UserAgent]
-		if !ok {
-			userInfo = ParseUserAgent(h.UserAgent)
-			if userInfo != nil {
-				UserAgentCache[h.UserAgent] = userInfo
-				softwareLog.Debug("UserAgent:", zap.String("userInfo", userInfo.Full))
-			}
-		}
-
-		UserAgentParserMutex.Unlock()
+		userInfo := LookupUserAgent(h.UserAgent)
 
 		if userInfo != nil {
 			if userInfo.Product != "" || userInfo.Vendor != "" || userInfo.Version != "" {
@@ -679,6 +676,12 @@ func cmsCandidateProducts(headers []header, cookies []cookie) map[string]struct{
 
 // WriteSoftware can be used to write software to the software audit record writer.
 func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
+	if softwareState() != nil {
+		writeStoredSoftwareBatch(software, update, nil)
+		return
+	}
+	Store.operations.RLock()
+	defer Store.operations.RUnlock()
 	var newSoftwareProducts []*AtomicSoftware
 
 	// add new audit records or update existing
@@ -694,13 +697,7 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 			continue
 		}
 
-		ident := s.Product + "/" + s.Version
-		if s.SourceName == "Passive WebTech" {
-			ident += "/" + s.Notes + "/" + strings.Join(s.Flows, ",")
-		}
-		if s.ObservedHost != "" {
-			ident += "/" + s.ObservedHost + "/" + s.ObservationRole
-		}
+		ident := softwareIdentity(s.Software)
 
 		// trim version field if its too long
 		// likely a regex matched too much text
@@ -784,19 +781,36 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 // between multi-file processing runs.
 // CRITICAL: This must be called between file processing to prevent unbounded memory growth.
 func ResetCaches() {
+	Store.operations.Lock()
+	defer Store.operations.Unlock()
 	// Clear UserAgent cache
-	cacheMutex.Lock()
+	UserAgentParserMutex.Lock()
 	UserAgentCache = make(map[string]*userAgent)
-	cacheMutex.Unlock()
+	userAgentOrder, userAgentCacheBytes = nil, 0
+	UserAgentParserMutex.Unlock()
 
 	// CRITICAL: Clear software store - accumulates ALL software detections
 	Store.Lock()
 	Store.Items = make(map[string]*AtomicSoftware)
 	Store.Unlock()
+	storedSoftwareCount.Store(0)
+	if state := softwareState(); state != nil {
+		_ = state.Do(func(tx *aggregate.Tx) error { return tx.Delete("software/") })
+	}
 	webtechRuntime.Lock()
 	webtechRuntime.claims = 0
 	webtechRuntime.Unlock()
 
 	_ = loadCmsDB()
 	buildCMSHSIndex()
+}
+
+func flushSoftware(d *decoder.AbstractDecoder, s *types.Software) error {
+	EnhanceSoftwareRecord(s)
+	s.InstanceCount = int32(len(s.Flows))
+	if err := d.Writer.Write(s); err != nil {
+		return err
+	}
+	atomic.AddInt64(&d.NumRecordsWritten, 1)
+	return nil
 }

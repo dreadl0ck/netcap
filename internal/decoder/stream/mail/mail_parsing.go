@@ -206,18 +206,8 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 	// software detection: check User-Agent header
 	if ua := hdr["User-Agent"]; ua != "" {
 
-		software.UserAgentParserMutex.Lock()
-
-		userInfo, ok := software.UserAgentCache[ua]
-		if !ok {
-			userInfo = software.ParseUserAgent(ua)
-			software.UserAgentCache[ua] = userInfo
-			mailLog.Debug("UserAgent:", zap.String("userInfo", userInfo.Full))
-		}
-
-		software.UserAgentParserMutex.Unlock()
-
-		if userInfo.Product != "" || userInfo.Vendor != "" || userInfo.Version != "" {
+		userInfo := software.LookupUserAgent(ua)
+		if userInfo != nil && (userInfo.Product != "" || userInfo.Vendor != "" || userInfo.Version != "") {
 			software.WriteSoftware([]*software.AtomicSoftware{
 				{
 					Software: &types.Software{

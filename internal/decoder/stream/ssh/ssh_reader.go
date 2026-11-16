@@ -21,7 +21,6 @@ import (
 	"io"
 	"regexp"
 	"strings"
-	"sync"
 	"sync/atomic"
 
 	"go.uber.org/zap"
@@ -216,21 +215,11 @@ func (h *sshReader) Decode() {
 	}
 
 	// add new audit records or update existing
-	software.Store.Lock()
-	for _, s := range h.software {
-		if _, ok := software.Store.Items[s.Product+"/"+s.Version]; ok {
-			// TODO updateSoftwareAuditRecord(dp, p, i)
-		} else {
-			software.Store.Items[s.Product+"/"+s.Version] = &software.AtomicSoftware{
-				Software: s,
-				Mutex:    sync.Mutex{},
-			}
-			streamutils.Stats.Lock()
-			streamutils.Stats.NumSoftware++
-			streamutils.Stats.Unlock()
-		}
+	if created := software.StorePassiveSoftware(h.software); created > 0 {
+		streamutils.Stats.Lock()
+		streamutils.Stats.NumSoftware += int64(created)
+		streamutils.Stats.Unlock()
 	}
-	software.Store.Unlock()
 }
 
 func (h *sshReader) notes(index int, noKex bool) string {

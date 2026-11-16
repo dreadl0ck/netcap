@@ -17,7 +17,7 @@ More workers do not always give more throughput. Disk, parsing, native analyzers
 | Retained TCP payload: zero                  | `-max-retained-tcp-bytes` limits reader-owned payload copies across all workers; zero is unlimited.                                        |
 | Retained reassembly pages: zero             | `-max-retained-reassembly-bytes` limits allocated TCP page payload and metadata across all workers; zero is unlimited.                     |
 | Incremental TCP state: 64 MiB               | `-max-retained-tcp-state-bytes` counts parser storage and pool/connection credits while `-incremental-http` is enabled; zero is unlimited. |
-| Encoded capture state: 32 MiB             | `-max-aggregate-state-bytes` bounds the resident Connection/Host/DeviceProfile/Service/UDP cache, with excess state on disk; zero selects the in-memory implementation. |
+| Encoded capture state: 32 MiB             | `-max-aggregate-state-bytes` bounds the resident Connection/Host/DeviceProfile/Service/Software/UDP cache, with excess state on disk; zero selects the in-memory implementation. |
 | DPI automatic contexts                      | Up to 8; separate from protocol workers                                                                                                    |
 | Evidence index                              | 64 MiB of accounted storage plus record and link limits                                                                                    |
 | Optional packet retention                   | Default 32 MiB segments / 512 MiB retained                                                                                                 |
@@ -66,14 +66,15 @@ These are three separate storage limits. Together they do not add up to a 192 Mi
 ## Spill aggregate audit state
 
 `-max-aggregate-state-bytes` defaults to 33,554,432 bytes in the CLI. Connection,
-Host, DeviceProfile and Service state use a private SQLite scratch file. Port/SNI counters,
-profile labels, contacts, service-flow membership and deferred-DPI samples are separate records, so an
+Host, DeviceProfile, Service and Software state use a private SQLite scratch file. Port/SNI counters,
+profile labels, contacts, service/software-flow membership and deferred-DPI samples are separate records, so an
 update does not rewrite an ever-growing aggregate.
 
 | Property | Contract |
 | --- | --- |
 | Cache | Encoded values, keys and 256 bytes per entry; at most 4,096 entries. `AggregateStateHealth.json` records the limit, peak, disk reads/writes, evictions and database bytes |
-| Other memory | SQLite has a separate 1 MiB page cache and 16 KiB pages. The decoded output record, codec scratch, TCP reassembly and Software state are outside this limit |
+| Other memory | SQLite has a separate 1 MiB page cache and 16 KiB pages. Decoded output records, codec scratch, TCP reassembly, network-layer payloads and vulnerability/exploit accumulators are outside this limit |
+| User-agent cache | `LookupUserAgent` bounds the shared HTTP/mail result cache to 1 MiB of encoded results, keys and 256 bytes per entry, with at most 4,096 entries. Eviction reparses without dropping observations; uap-go's three ARC caches are separately configured with `CacheSize: 1024` and remain outside this byte budget |
 | Scratch lifecycle | `.netcap-aggregate-*.sqlite` uses mode `0600` on POSIX and the output directory's inherited ACL on Windows; normal cleanup removes it. It is not a restart/recovery log |
 | Failure | Storage errors cancel capture, propagate as capture errors and prevent `audit-output-ready.json`; a failed write never falls back to discarding aggregate state |
 | Configuration | `NC_MAX_AGGREGATE_STATE_BYTES`; the effective value is recorded in `capture-manifest.json.config.maxAggregateStateBytes` |
@@ -94,6 +95,14 @@ Identity seeding visits one DeviceProfile at a time through `WalkDeviceProfiles`
 flow references against the in-memory implementation, including banner selection
 and application labels. `TestServiceProbeCanReenterAggregateStore` checks that a
 service signature can emit a software lookup that accesses the same store.
+
+| Software check | Coverage |
+| --- | --- |
+| `TestStoredSoftwareMatchesMemoryWithFlowChurnAndCallbacks` | 5,000 flows, duplicate observations, ordered lists, callback replacement, host/role identity and tiny-cache equivalence; hot rows contain no accumulated memberships |
+| `TestStoredSoftwareConcurrentMembershipAndSnapshotIsolation` | Concurrent flow/CID updates, detached snapshots and reset |
+| `TestStoredSoftwareLookupCanReenterBackingStore` | CVE callbacks run outside backing-store and row locks; lookup snapshots retain their original evidence |
+| `TestStoredPassiveSoftwareDoesNotInvokeCVELookups` | SSH fingerprint observations retain their existing no-lookup policy and use the same bounded store |
+| `TestAggregateSoftwarePreservesCaptureAuditSets` | All audit hashes agree for 48 HTTP transactions and 49 Software records in memory, with a 1-byte cache and with four packet workers |
 
 UDP datagrams use restartable, capture-time-ordered storage. All 10 eligible
 stream readers consume one datagram at a time, and stream-evidence spans are

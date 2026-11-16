@@ -26,7 +26,6 @@ import (
 	"io"
 	"net/http"
 	"path"
-	"slices"
 	"strings"
 	"sync/atomic"
 
@@ -348,24 +347,7 @@ func writeHTTP(h *types.HTTP, ident string) error {
 		return nil
 	}
 
-	communityID := h.CommunityID
-	software.WriteSoftware(soft, func(s *software.AtomicSoftware) {
-		s.Lock()
-		// Check if flow already exists
-		flowExists := slices.Contains(s.Flows, ident)
-		// Add flow if not exists
-		if !flowExists {
-			s.Flows = append(s.Flows, ident)
-		}
-		// Add community ID if not exists
-		if communityID != "" {
-			cidExists := slices.Contains(s.CommunityIDs, communityID)
-			if !cidExists {
-				s.CommunityIDs = append(s.CommunityIDs, communityID)
-			}
-		}
-		s.Unlock()
-	})
+	software.WriteHTTPSoftware(soft, ident, h.CommunityID)
 	return nil
 }
 
