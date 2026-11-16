@@ -430,6 +430,21 @@ func TestMCPStreamContentPagesVerifySourceAndConfinement(t *testing.T) {
 	if w := request(q); w.Code != 200 {
 		t.Fatal(w.Body)
 	}
+	q.Set("offset", "100")
+	end := request(q)
+	var empty struct {
+		Data   []byte
+		Offset int64
+		More   bool `json:"hasMore"`
+	}
+	if err := json.Unmarshal(end.Body.Bytes(), &empty); err != nil || end.Code != 200 || len(empty.Data) != 0 || empty.More || empty.Offset != 100 {
+		t.Fatalf("beyond-EOF page: %d %s %v", end.Code, end.Body.String(), err)
+	}
+	q.Set("manifestSHA256", strings.Repeat("0", 64))
+	if w := request(q); w.Code != 409 {
+		t.Fatal("beyond-EOF request bypassed manifest identity")
+	}
+	q.Set("manifestSHA256", page.Manifest)
 	os.WriteFile(filepath.Join(stream, "client.bin"), []byte("modified evidence"), 0600)
 	if w := request(q); w.Code != 409 {
 		t.Fatal("changed stream bytes accepted")

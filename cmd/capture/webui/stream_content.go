@@ -72,8 +72,8 @@ func (s *Server) handleStreamContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer f.Close()
-	if info.Size() > 256<<20 || info.Size() != file.Length || offset > info.Size() {
-		http.Error(w, "stream size does not match manifest or offset", 409)
+	if info.Size() > 256<<20 || info.Size() != file.Length {
+		http.Error(w, "stream size does not match manifest", 409)
 		return
 	}
 	hash := sha256.New()

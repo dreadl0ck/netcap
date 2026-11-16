@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
@@ -141,6 +143,23 @@ func (s *Server) handleStreamEvidence(w http.ResponseWriter, r *http.Request) {
 			manifest.Spans = nil
 			rows = append(rows, row{entry.Name(), manifest, count, true})
 		}
+		sort.Slice(rows, func(i, j int) bool {
+			a, b := rows[i].Manifest, rows[j].Manifest
+			ta, ea := strconv.ParseInt(a.FirstPacketNs, 10, 64)
+			tb, eb := strconv.ParseInt(b.FirstPacketNs, 10, 64)
+			if ea == nil && eb == nil && ta != tb {
+				return ta < tb
+			}
+			if (ea == nil) != (eb == nil) {
+				return ea == nil
+			}
+			ka := strings.Join([]string{a.FirstPacketNs, a.Protocol, a.ConnectionKey, a.CommunityID, a.Client.SHA256, a.Server.SHA256}, "\x00")
+			kb := strings.Join([]string{b.FirstPacketNs, b.Protocol, b.ConnectionKey, b.CommunityID, b.Client.SHA256, b.Server.SHA256}, "\x00")
+			if ka != kb {
+				return ka < kb
+			}
+			return rows[i].ID < rows[j].ID
+		})
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(rows)
 		return
