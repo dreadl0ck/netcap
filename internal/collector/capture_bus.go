@@ -194,8 +194,12 @@ func decodeBACnetMSTP(data []byte, p gopacket.PacketBuilder) error {
 		return badLink("short or invalid BACnet MS/TP preamble/header")
 	}
 	length := int(binary.BigEndian.Uint16(data[5:7]))
+	cobs := data[2] >= 32 && data[2] <= 127
+	if cobs && (length < 5 || length > 2043) {
+		return badLink("BACnet MS/TP COBS length outside 5..2043")
+	}
 	trailer := 0
-	if length > 0 && data[2] <= 7 {
+	if length > 0 {
 		trailer = 2
 	}
 	if length+trailer > len(data)-8 {
@@ -206,15 +210,57 @@ func decodeBACnetMSTP(data []byte, p gopacket.PacketBuilder) error {
 	f.Source, f.Destination = strconv.Itoa(int(data[4])), strconv.Itoa(int(data[3]))
 	f.Fields["frame_type"], f.Fields["declared_payload_length"] = strconv.Itoa(int(data[2])), strconv.Itoa(length)
 	f.Fields["header_crc"] = fmt.Sprintf("0x%02x", data[7])
-	f.Qualifications = append(f.Qualifications, "MS/TP-CRC-not-verified")
-	if data[2] > 7 { f.Qualifications = append(f.Qualifications, "extended-or-proprietary-MS/TP-body-opaque") }
+	f.Fields["header_crc_valid"] = strconv.FormatBool(mstpHeaderCRC(data[2:7]) == data[7])
+	if f.Fields["header_crc_valid"] == "false" {
+		f.Qualifications = append(f.Qualifications, "invalid-MS/TP-header-CRC")
+	}
+	if data[2] > 7 {
+		f.Qualifications = append(f.Qualifications, "extended-or-proprietary-MS/TP-body-opaque")
+	}
 	if len(data) != 8+length+trailer {
 		f.Qualifications = append(f.Qualifications, "trailing-capture-bytes")
 	}
-	if trailer != 0 {
-		f.Fields["data_crc"] = fmt.Sprintf("0x%04x", binary.LittleEndian.Uint16(data[8+length:]))
+	if cobs {
+		f.Qualifications = append(f.Qualifications, "MS/TP-COBS-CRC32K-not-verified")
+	} else if trailer != 0 {
+		crc := binary.LittleEndian.Uint16(data[8+length:])
+		f.Fields["data_crc"] = fmt.Sprintf("0x%04x", crc)
+		f.Fields["data_crc_valid"] = strconv.FormatBool(mstpDataCRC(data[8:8+length]) == crc)
+		if f.Fields["data_crc_valid"] == "false" {
+			f.Qualifications = append(f.Qualifications, "invalid-MS/TP-data-CRC")
+		}
 	}
 	return finishBusFrame(data, 8, f, p, nil)
+}
+
+func mstpHeaderCRC(data []byte) byte {
+	crc := byte(0xff)
+	for _, value := range data {
+		crc ^= value
+		for range 8 {
+			bit := crc & 1
+			crc >>= 1
+			if bit != 0 {
+				crc ^= 0x81
+			}
+		}
+	}
+	return ^crc
+}
+
+func mstpDataCRC(data []byte) uint16 {
+	crc := uint16(0xffff)
+	for _, value := range data {
+		crc ^= uint16(value)
+		for range 8 {
+			bit := crc & 1
+			crc >>= 1
+			if bit != 0 {
+				crc ^= 0x8408
+			}
+		}
+	}
+	return ^crc
 }
 
 func decodeMDB(data []byte, p gopacket.PacketBuilder) error {

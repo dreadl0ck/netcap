@@ -3,7 +3,12 @@ package collector
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/linkaudit"
@@ -129,6 +134,73 @@ func TestBusFramingRejectsLengthOverclaims(t *testing.T) {
 	p := gopacket.NewPacket([]byte{0, 40, 0x45}, captureBusDecoder(289), gopacket.Default)
 	if p.ErrorLayer() == nil {
 		t.Fatal("overclaimed ALP payload accepted")
+	}
+}
+
+func TestMSTPChecksumsAndTrailerBounds(t *testing.T) {
+	wire, err := hex.DecodeString("55ff0302010003fb616263259e")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, variant := range []string{"valid", "header", "data"} {
+		t.Run(variant, func(t *testing.T) {
+			data := bytes.Clone(wire)
+			if variant == "header" {
+				data[7] ^= 1
+			} else if variant == "data" {
+				data[8] ^= 1
+			}
+			p := gopacket.NewPacket(data, captureBusDecoder(165), gopacket.Default)
+			if p.ErrorLayer() != nil {
+				t.Fatal("checksum failure lost framing", p.ErrorLayer())
+			}
+			f := p.Layer(linkaudit.LayerLinkFrame).(*linkaudit.LinkFrame)
+			if f.Fields["header_crc_valid"] != strconv.FormatBool(variant != "header") || f.Fields["data_crc_valid"] != strconv.FormatBool(variant != "data") || !bytes.Equal(p.Data(), data) {
+				t.Fatal("CRC status or original bytes changed", f)
+			}
+		})
+	}
+	for _, kind := range []byte{5, 8, 32, 128} {
+		data := []byte{0x55, 0xff, kind, 2, 1, 0, 5, 0, 1, 2, 3, 4, 5}
+		if p := gopacket.NewPacket(data, captureBusDecoder(165), gopacket.Default); p.ErrorLayer() == nil {
+			t.Fatal("MS/TP accepted missing two-byte trailer", kind)
+		}
+		data = append(data, 0, 0)
+		p := gopacket.NewPacket(data, captureBusDecoder(165), gopacket.Default)
+		if p.ErrorLayer() != nil {
+			t.Fatal("complete MS/TP body rejected", kind, p.ErrorLayer())
+		}
+		if kind == 32 {
+			f := p.Layer(linkaudit.LayerLinkFrame).(*linkaudit.LinkFrame)
+			if _, found := f.Fields["data_crc_valid"]; found || !strings.Contains(strings.Join(f.Qualifications, ","), "CRC32K-not-verified") {
+				t.Fatal("COBS encoded checksum was treated as CRC16", f)
+			}
+		}
+	}
+}
+
+func TestMSTPChecksumReferenceTshark(t *testing.T) {
+	tshark, err := exec.LookPath("tshark")
+	if err != nil {
+		t.Skip("tshark is required for independent MS/TP CRC qualification")
+	}
+	wire, err := hex.DecodeString("55ff0302010003fb616263259e")
+	if err != nil {
+		t.Fatal(err)
+	}
+	bad := bytes.Clone(wire)
+	bad[7] ^= 1
+	bad[8] ^= 1
+	path := filepath.Join(t.TempDir(), "mstp.pcap")
+	if err := os.WriteFile(path, huntPCAP(165, wire, bad), 0600); err != nil {
+		t.Fatal(err)
+	}
+	output, err := exec.Command(tshark, "-n", "-r", path, "-T", "fields", "-e", "mstp.checksum.status").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(string(output)) != "1,1\n0,0" {
+		t.Fatalf("independent checksum reference disagrees: %q", output)
 	}
 }
 

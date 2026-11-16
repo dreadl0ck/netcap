@@ -63,7 +63,7 @@ accepting a link header does not mean its application protocol was decoded.
 | Link type | Framing and downstream decoding |
 | --- | --- |
 | 3, AX.25 | Bounded destination/source/digipeater chain and control/PID fields; UI IPv4 payloads reach the IP decoder. Extended control mode is not inferred |
-| 165, BACnet MS/TP | Preamble, frame type, bus addresses and declared data length. CRC bytes are retained with `MS/TP-CRC-not-verified`; NPDU/APDU and proprietary bodies remain opaque |
+| 165, BACnet MS/TP | Preamble, frame type, bus addresses and declared data/trailer bounds. Header CRC8 and non-COBS data CRC16 have explicit validity fields; invalid checksums retain wire evidence. COBS CRC32K, NPDU/APDU and proprietary bodies remain opaque |
 | 187/201, Bluetooth HCI H4 | Packet indicator, command/event/ACL/SCO/ISO lengths and optional direction pseudo-header. HCI payloads remain opaque |
 | 209, Linux I2C | Six-byte bus/event/flags/address header, using network byte order for flags. Payloads remain opaque |
 | 243, MPEG-2 TS | Whole 188-byte frames, sync/adaptation bounds and first PID/continuity metadata; elementary streams are not decoded |
