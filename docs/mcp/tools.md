@@ -43,7 +43,7 @@ Auto-generated from the live tool registry. Do not edit by hand; run `go test ./
 
 ### `add_protobuf_search_path`
 
-Add an existing backend-local directory or .proto file to custom Protobuf search paths and recompile. This changes the process-wide registry; inspect get_protobuf_status for compile errors.
+Add an absolute dedicated schema directory or regular .proto file and recompile. System roots/symlinks are rejected; sources are snapshotted within 256 files (2 MiB each), 16 MiB total, 10000 entries and 16 levels. This changes the process-wide registry; inspect get_protobuf_status for compile errors.
 
 **Arguments (JSON Schema):**
 
@@ -52,7 +52,7 @@ Add an existing backend-local directory or .proto file to custom Protobuf search
   "additionalProperties": false,
   "properties": {
     "path": {
-      "description": "Existing backend-local directory or .proto file.",
+      "description": "Absolute dedicated schema directory or regular .proto file.",
       "type": "string"
     }
   },
@@ -3872,7 +3872,7 @@ Supports the netcap filter-expression language in `filter` (an `expr`-style bool
 | `limit` | number |  | Maximum records to return (default 100, max 500). |
 | `offset` | number |  | Offset in matching records; also supported with a filter. |
 | `session_id` | string | yes | Session identifier. |
-| `type` | string | yes | Audit record type name without the NC_ prefix, e.g. "DNS", "HTTP", "Modbus", "SMB". Case-sensitive. |
+| `type` | string | yes | Audit record type without NC_, e.g. DNS, HTTP, Modbus, SMB. Case-insensitive; the canonical name is returned. |
 
 
 ### `query_capture_catalogue`

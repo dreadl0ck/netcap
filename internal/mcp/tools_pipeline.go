@@ -159,6 +159,9 @@ func (s *Server) handleIngestPCAP(ctx context.Context, req mcplib.CallToolReques
 	if err != nil {
 		return errResult(err), nil
 	}
+	if strings.TrimSpace(path) == "" || !filepath.IsAbs(path) {
+		return errResult(fmt.Errorf("path must be an absolute PCAP/PCAPNG file path")), nil
+	}
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		return errResult(fmt.Errorf("resolve path %q: %w", path, err)), nil
@@ -214,16 +217,13 @@ func (s *Server) handleIngestPCAP(ctx context.Context, req mcplib.CallToolReques
 // branch on `mode`. Filters (search/completed_only/failed_only) and
 // pagination (limit/offset) are applied after normalisation.
 func (s *Server) handleListSessions(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	limit := req.GetInt("limit", 100)
-	if limit <= 0 {
-		limit = 100
+	limit, err := pageInteger(req, "limit", 100, 1, 500)
+	if err != nil {
+		return errResult(err), nil
 	}
-	if limit > 500 {
-		limit = 500
-	}
-	offset := req.GetInt("offset", 0)
-	if offset < 0 {
-		offset = 0
+	offset, err := pageInteger(req, "offset", 0, 0, 1000000000)
+	if err != nil {
+		return errResult(err), nil
 	}
 	search := strings.ToLower(strings.TrimSpace(req.GetString("search", "")))
 	completedOnly := req.GetBool("completed_only", false)
@@ -254,14 +254,9 @@ func (s *Server) handleListSessions(_ context.Context, req mcplib.CallToolReques
 	}
 
 	total := len(filtered)
-	end := offset + limit
-	if offset > total {
-		offset = total
-	}
-	if end > total {
-		end = total
-	}
-	page := filtered[offset:end]
+	start := min(offset, total)
+	end := min(start+limit, total)
+	page := filtered[start:end]
 
 	return jsonResult(map[string]any{
 		"mode":     mode,

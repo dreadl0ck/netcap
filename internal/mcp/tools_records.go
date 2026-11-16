@@ -12,6 +12,9 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
+
+	"github.com/dreadl0ck/netcap/types"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -35,7 +38,7 @@ func (s *Server) registerRecordTools() error {
 					mcplib.Description("Session identifier."),
 					mcplib.Required()),
 				mcplib.WithString("type",
-					mcplib.Description("Audit record type name without the NC_ prefix, e.g. \"DNS\", \"HTTP\", \"Modbus\", \"SMB\". Case-sensitive."),
+					mcplib.Description("Audit record type without NC_, e.g. DNS, HTTP, Modbus, SMB. Case-insensitive; the canonical name is returned."),
 					mcplib.Required()),
 				mcplib.WithString("filter",
 					mcplib.Description("Optional typed filter expression (Connection: \"SrcPort == '443' && DstIP startsWith '10.'\"; TCP/HTTP ports are numeric). "+
@@ -107,19 +110,17 @@ func (s *Server) handleQueryAuditRecords(_ context.Context, req mcplib.CallToolR
 	if err != nil {
 		return errResult(err), nil
 	}
-	if !validAuditTypeName(auditType) {
-		return errResult(fmt.Errorf("invalid audit type %q (must be a NetCAP record type name like \"DNS\")", auditType)), nil
+	auditType, err = canonicalAuditTypeName(auditType)
+	if err != nil {
+		return errResult(err), nil
 	}
-	limit := req.GetInt("limit", 100)
-	if limit <= 0 {
-		limit = 100
+	limit, err := pageInteger(req, "limit", 100, 1, 500)
+	if err != nil {
+		return errResult(err), nil
 	}
-	if limit > 500 {
-		limit = 500
-	}
-	offset := req.GetInt("offset", 0)
-	if offset < 0 {
-		offset = 0
+	offset, err := pageInteger(req, "offset", 0, 0, 1000000000)
+	if err != nil {
+		return errResult(err), nil
 	}
 	countOnly := req.GetBool("count_only", false)
 	filterExpr := req.GetString("filter", "")
@@ -191,8 +192,9 @@ func (s *Server) handleGetAuditRecordFields(_ context.Context, req mcplib.CallTo
 	if err != nil {
 		return errResult(err), nil
 	}
-	if !validAuditTypeName(auditType) {
-		return errResult(fmt.Errorf("invalid audit type %q", auditType)), nil
+	auditType, err = canonicalAuditTypeName(auditType)
+	if err != nil {
+		return errResult(err), nil
 	}
 	// /api/audit/<Type>/fields is session-independent (it inspects the
 	// proto type), so we don't need to switch session here.
@@ -212,8 +214,9 @@ func (s *Server) handleGetAuditRecordValues(_ context.Context, req mcplib.CallTo
 	if err != nil {
 		return errResult(err), nil
 	}
-	if !validAuditTypeName(auditType) {
-		return errResult(fmt.Errorf("invalid audit type %q", auditType)), nil
+	auditType, err = canonicalAuditTypeName(auditType)
+	if err != nil {
+		return errResult(err), nil
 	}
 	raw, gErr := s.newClient().Get("/api/audit/"+url.PathEscape(auditType)+"/values", ref.sessionQueryParams())
 	if gErr != nil {
@@ -240,4 +243,17 @@ func validAuditTypeName(s string) bool {
 		}
 	}
 	return true
+}
+
+func canonicalAuditTypeName(name string) (string, error) {
+	name = strings.TrimSpace(name)
+	if validAuditTypeName(name) {
+		for fullName := range types.Type_value {
+			canonical := strings.TrimPrefix(fullName, "NC_")
+			if strings.EqualFold(name, canonical) {
+				return canonical, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("unknown audit record type %q; use list_audit_records", name)
 }

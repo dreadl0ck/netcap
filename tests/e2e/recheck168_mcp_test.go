@@ -99,9 +99,22 @@ func TestRecheck168PackagedMCPHelperIdentity(t *testing.T) {
 					t.Fatalf("resource dispatch %s: %v", uri, err)
 				}
 			}
-			records := call("query_audit_records", map[string]any{"session_id": session.ID, "type": "HTTP", "count_only": true, "limit": 10})
+			records := call("query_audit_records", map[string]any{"session_id": session.ID, "type": "hTtP", "count_only": true, "limit": 10})
 			if !strings.Contains(records, `"total": 1`) && !strings.Contains(records, `"total":1`) {
 				t.Fatal("matching helper did not produce supplied HTTP record", records)
+			}
+			for _, limit := range []any{0, -1, 1.5, 999999999999} {
+				result, err := cli.CallTool(ctx, mcplib.CallToolRequest{Params: mcplib.CallToolParams{Name: "query_audit_records", Arguments: map[string]any{"session_id": session.ID, "type": "HTTP", "limit": limit}}})
+				if err != nil || !result.IsError {
+					t.Fatalf("invalid limit accepted: %v %v", limit, err)
+				}
+			}
+			var end struct {
+				Returned int
+				Summary  struct{ Count int }
+			}
+			if err := json.Unmarshal([]byte(call("query_audit_records", map[string]any{"session_id": session.ID, "type": "HTTP", "offset": 9999, "limit": 1})), &end); err != nil || end.Returned != 0 || end.Summary.Count != 0 {
+				t.Fatal("beyond-EOF record page failed", err)
 			}
 			if _, err := os.Stat(marker); !os.IsNotExist(err) {
 				t.Fatal("PATH helper executed")

@@ -166,6 +166,14 @@ func (s *Server) handleProtoSearchPaths(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Path is required", http.StatusBadRequest)
 		return
 	}
+	if r.Method == http.MethodPost {
+		path, err := admitSchemaSearchPath(req.Path)
+		if err != nil {
+			jsonError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		req.Path = path
+	}
 
 	protoRuntime.mu.Lock()
 	if protoRuntime.searchPaths == nil {
