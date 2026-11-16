@@ -1,0 +1,9 @@
+{
+  "source": "dreadl0ck/common/signing",
+  "sha256": {
+    "windows_sign.py": "e9292f7ed5d6b63d8dfcb3b343bd4d972141543ea0ac6a52383528b44b628caa",
+    "verify-windows-signature.ps1": "6c9393695ae90c6e31c59c2969d0336657cbf36446afb590583ed01fe65c61c3",
+    "release.py": "948f7a44dbbf7e027d66e4b6c02b6ca51926dc0cc7e3a6bf932839c53f649531",
+    "native-check.ps1": "fe8173010d551c332313a0e6935acf77122b81537782bd53f1aa3fa7e92f33c1"
+  }
+}

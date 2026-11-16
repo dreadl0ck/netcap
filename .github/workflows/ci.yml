@@ -269,6 +269,37 @@ jobs:
           name: netcap-windows-qualified
           path: net.exe
 
+  sign-windows-cli:
+    if: github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v')
+    needs: windows
+    runs-on: windows-2022
+    environment: windows-signing
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: netcap-windows-qualified
+          path: bin/signed-windows
+      - name: Sign and verify Windows CLI
+        shell: pwsh
+        env:
+          SSL_COM_PASSWORD: ${{ secrets.SSL_COM_PASSWORD }}
+          SSL_COM_TOTP_SECRET: ${{ secrets.SSL_COM_TOTP_SECRET }}
+        run: |
+          $env:JAVA = Join-Path $env:JAVA_HOME_21_X64 'bin/java.exe'
+          python scripts/sign-windows-cli.py bin/signed-windows/net.exe false
+          if ($LASTEXITCODE) { throw 'CLI signing failed' }
+          python scripts/windows-signing/windows_sign.py verify bin/signed-windows/net.exe
+          if ($LASTEXITCODE) { throw 'CLI signature verification failed' }
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: netcap-windows-signed
+          path: bin/signed-windows/net.exe
+          if-no-files-found: error
+
   macos:
     if: inputs.scope == 'macos'
     strategy:

@@ -1,0 +1,40 @@
+name: Qualify signed Windows CLI archive
+on:
+  workflow_dispatch:
+    inputs:
+      draft_tag:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      source:
+        required: true
+        type: string
+permissions:
+  contents: write # Required to download a private draft.
+jobs:
+  qualify:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Download exact signed archive
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRAFT_TAG: ${{ inputs.draft_tag }}
+        run: |
+          if ($env:DRAFT_TAG -notmatch '^signing-qualification-[a-zA-Z0-9.-]+$') { throw 'Invalid qualification tag' }
+          gh release download "$env:DRAFT_TAG" --repo "$env:GITHUB_REPOSITORY" --pattern '*windows-amd64*' --pattern windows-signing.json --dir bin/signed-windows
+          if ($LASTEXITCODE) { throw 'Draft download failed' }
+      - name: Verify archive and Authenticode trust
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          SOURCE_SHA: ${{ inputs.source }}
+        run: |
+          python scripts/verify-signed-cli.py bin/signed-windows "$env:RELEASE_VERSION" "$env:SOURCE_SHA"
+          if ($LASTEXITCODE) { throw 'Signed CLI qualification failed' }

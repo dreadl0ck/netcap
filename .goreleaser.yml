@@ -47,6 +47,9 @@ builds:
   - main: ./cmd/net
     id: netcap_nodpi
     binary: net
+    hooks:
+      post:
+        - python3 scripts/sign-windows-cli.py "{{ .Path }}" "{{ .IsSnapshot }}"
     env:
       - CGO_ENABLED=1
       - CC=x86_64-w64-mingw32-gcc

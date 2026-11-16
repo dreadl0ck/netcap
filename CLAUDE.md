@@ -4,6 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build Commands
 
+Production Windows GoReleaser builds run `scripts/sign-windows-cli.py` before
+archives/checksums; snapshots skip signing. eSigner password/TOTP seed come from
+the tag-only `windows-signing` Environment in CI, or `SSL_COM_ENV_FILE` locally
+(defaults to sibling `products/.env`). No manual code entry is required.
+
 ```bash
 # Build main binary (CGO required for libpcap)
 go build -o net ./cmd/net/
