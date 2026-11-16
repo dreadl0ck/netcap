@@ -182,35 +182,77 @@ type udpFragmentSource struct {
 	count                          int64
 	roles                          bool
 	clientNetwork, clientTransport gopacket.Flow
+	frozen                         bool
+	cached                         []aggregate.Row
+	cacheReady                     bool
 }
 
 func (s *udpFragmentSource) Count() int64 { return s.count }
 func (s *udpFragmentSource) Walk(yield func(core.DataFragment) bool) error {
+	if s.frozen && s.count > 0 && s.count < aggregate.BatchRows && !s.cacheReady {
+		var rows []aggregate.Row
+		if err := s.state.Do(func(tx *aggregate.Tx) error { var err error; rows, err = tx.NextBatch(s.prefix, ""); return err }); err != nil {
+			return err
+		}
+		bytes := 0
+		for _, row := range rows {
+			bytes += len(row.Key) + len(row.Value) + 64
+		}
+		if len(rows) == int(s.count) && bytes <= aggregate.BatchBytes {
+			s.cached, s.cacheReady = rows, true
+		}
+	}
+	if s.cacheReady {
+		for _, row := range s.cached {
+			fragment, err := decodeUDPData(append([]byte(nil), row.Value...))
+			if err != nil {
+				_ = s.state.Do(func(*aggregate.Tx) error { return err })
+				return err
+			}
+			if s.roles && !(fragment.Network() == s.clientNetwork && fragment.Transport() == s.clientTransport) {
+				fragment.Dir = reassembly.TCPDirServerToClient
+			}
+			if !yield(fragment) {
+				return nil
+			}
+		}
+		return nil
+	}
 	last := ""
 	for {
-		var key string
-		var wire []byte
-		var found bool
+		var rows []aggregate.Row
 		err := s.state.Do(func(tx *aggregate.Tx) error {
 			var err error
-			key, wire, found, err = tx.Next(s.prefix, last)
+			if s.frozen {
+				rows, err = tx.NextBatch(s.prefix, last)
+			} else {
+				var key string
+				var wire []byte
+				var found bool
+				key, wire, found, err = tx.Next(s.prefix, last)
+				if found {
+					rows = []aggregate.Row{{Key: key, Value: wire}}
+				}
+			}
 			return err
 		})
-		if err != nil || !found {
+		if err != nil || len(rows) == 0 {
 			return err
 		}
-		fragment, err := decodeUDPData(wire)
-		if err != nil {
-			_ = s.state.Do(func(*aggregate.Tx) error { return err })
-			return err
+		for _, row := range rows {
+			fragment, err := decodeUDPData(row.Value)
+			if err != nil {
+				_ = s.state.Do(func(*aggregate.Tx) error { return err })
+				return err
+			}
+			if s.roles && !(fragment.Network() == s.clientNetwork && fragment.Transport() == s.clientTransport) {
+				fragment.Dir = reassembly.TCPDirServerToClient
+			}
+			if !yield(fragment) {
+				return nil
+			}
+			last = row.Key
 		}
-		if s.roles && !(fragment.Network() == s.clientNetwork && fragment.Transport() == s.clientTransport) {
-			fragment.Dir = reassembly.TCPDirServerToClient
-		}
-		if !yield(fragment) {
-			return nil
-		}
-		last = key
 	}
 }
 
@@ -219,7 +261,7 @@ func processStoredUDP(key uint64, flow storedUDPFlow) error {
 	if flow.count > uint64(^uint64(0)>>1) {
 		return fmt.Errorf("UDP datagram count exceeds signed range")
 	}
-	source := &udpFragmentSource{state: state, prefix: udpDataPrefix(key), count: int64(flow.count)}
+	source := &udpFragmentSource{state: state, prefix: udpDataPrefix(key), count: int64(flow.count), frozen: true}
 	var first core.DataFragment
 	if err := source.Walk(func(f core.DataFragment) bool { first = f; return false }); err != nil {
 		return err
@@ -277,31 +319,32 @@ func flushStoredUDP() {
 	state := decoderconfig.Instance.AggregateStore
 	last := ""
 	for {
-		var key string
-		var flow storedUDPFlow
-		var found bool
+		var rows []aggregate.Row
 		err := state.Do(func(tx *aggregate.Tx) error {
-			var wire []byte
 			var err error
-			key, wire, found, err = tx.Next("udp/flows/", last)
-			if err != nil || !found {
-				return err
-			}
-			flow, err = decodeUDPFlow(wire)
+			rows, err = tx.NextBatch("udp/flows/", last)
 			return err
 		})
-		if err != nil || !found {
+		if err != nil || len(rows) == 0 {
 			break
 		}
-		var id uint64
-		if _, err = fmt.Sscanf(key, "udp/flows/%x", &id); err == nil {
-			err = processStoredUDP(id, flow)
+		for _, row := range rows {
+			key := row.Key
+			flow, err := decodeUDPFlow(row.Value)
+			if err != nil {
+				_ = state.Do(func(*aggregate.Tx) error { return err })
+				return
+			}
+			var id uint64
+			if _, err = fmt.Sscanf(key, "udp/flows/%x", &id); err == nil {
+				err = processStoredUDP(id, flow)
+			}
+			if err != nil {
+				_ = state.Do(func(*aggregate.Tx) error { return err })
+				break
+			}
+			last = key
 		}
-		if err != nil {
-			_ = state.Do(func(*aggregate.Tx) error { return err })
-			break
-		}
-		last = key
 	}
 	writeAssociationCoverage()
 }

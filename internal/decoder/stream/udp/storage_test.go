@@ -106,7 +106,7 @@ func TestStoredUDPDoesNotRetainConversationPayload(t *testing.T) {
 		t.Fatalf("retained %d bytes for a 32 MiB UDP conversation", retained)
 	}
 	p := storedUDPPacket(nil, time.Unix(0, 0), 1)
-	source := &udpFragmentSource{state: state, prefix: udpDataPrefix(udpConversationKey(p)), count: count}
+	source := &udpFragmentSource{state: state, prefix: udpDataPrefix(udpConversationKey(p)), count: count, frozen: true}
 	n := 0
 	if err := source.Walk(func(f core.DataFragment) bool {
 		if !bytes.Equal(f.Raw(), payload) {
@@ -120,5 +120,36 @@ func TestStoredUDPDoesNotRetainConversationPayload(t *testing.T) {
 	if n != count || len(pool.streams) != 0 {
 		t.Fatal("datagrams lost or retained", n, len(pool.streams))
 	}
+	if source.cacheReady || len(source.cached) != 0 {
+		t.Fatal("large frozen conversation was cached whole")
+	}
 	t.Logf("retained Go heap for 32 MiB UDP payload: %d bytes; cache health: %+v", retained, state.Health())
+}
+
+func TestFrozenUDPWorkingSetIsRestartableAndDetached(t *testing.T) {
+	state := storedUDPSetup(t, 1024)
+	pool := newUDPStreamPool()
+	for i := 1; i <= 3; i++ {
+		p := storedUDPPacket([]byte(fmt.Sprint(i)), time.Unix(100, int64(i)), uint64(i))
+		pool.HandleUDP(p, p.TransportLayer())
+	}
+	p := storedUDPPacket(nil, time.Unix(100, 0), 1)
+	source := &udpFragmentSource{state: state, prefix: udpDataPrefix(udpConversationKey(p)), count: 3, frozen: true}
+	if err := source.Walk(func(f core.DataFragment) bool {
+		f.Raw()[0] = 'x'
+		if err := state.Do(func(tx *aggregate.Tx) error { _, _, err := tx.Get("unrelated"); return err }); err != nil {
+			t.Fatal(err)
+		}
+		return false
+	}); err != nil {
+		t.Fatal(err)
+	}
+	reads := state.Health().DiskReads
+	var values []string
+	if err := source.Walk(func(f core.DataFragment) bool { values = append(values, string(f.Raw())); return true }); err != nil {
+		t.Fatal(err)
+	}
+	if fmt.Sprint(values) != "[1 2 3]" || state.Health().DiskReads != reads {
+		t.Fatal("working-set cache changed data or reread storage", values)
+	}
 }
