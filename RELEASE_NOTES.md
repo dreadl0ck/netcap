@@ -1,3 +1,34 @@
+## Retest corrections
+
+`v0.16.8` implements the seven findings in `netcap-full-recheck-v0.16.7.md`.
+The [issue ledger](internal/collector/testdata/recheck-v0166.json) distinguishes
+local regression coverage from the unavailable original evaluator replay.
+
+| Area | Change |
+| --- | --- |
+| V167-7 | Replace per-byte Unicode lowercasing with bounded incremental ASCII prompt matching. Restore CLI harvester port filtering; Telnet prompt evidence still permits off-port recovery |
+| V167-6 | Return malformed first-section PCAPNG errors before configuring the reader; 24,125 full-opener fuzz executions passed without a crash |
+| V167-3 | Accept four-byte FCS metadata encoded as `4` or `32`; unfamiliar optional FCS values no longer discard readable interfaces |
+| V167-1 | `--quiet` no longer authorizes overwrite; noninteractive replacement requires `-y` |
+| V167-4 / CTF-13 | Respect HTTP request-body framing, suppress duplicate banner form extraction when the parsed reader is active, add configured `pswrd`, and harvest bounded top-level JSON credentials. Repeated requests retain separate occurrences |
+| V167-5 | Query logins use actual user/password values. Tokens, API keys and sessions use additive `Secret.Kind`, `Value` and `Parameter` fields, including CSV and Web UI display |
+| V167-2 | Ship recursive Markdown documentation without `.gitbook` recordings or `.DS_Store`; validate actual archives against a 16 MiB documentation limit |
+| Service evidence | Retain ICMP refusal observations that workers process before the quoted UDP attempt. Keep port guesses in `PortName`; `Service.Name` uses observed application/probe evidence |
+| TCP and TLS | Track FIN sequence space for half-closed keepalives. Omitted TLS selection requires one decryptable stream; explicit zero remains explicit and ambiguous captures require selection. Community IDs resolve TLS follow indexes |
+| Wireless and DNS | Protected management bodies remain opaque. Add readable CNAME/NS/PTR companions while preserving raw bytes |
+| D2-13 | Add bounded PPI/DLT 192 decoding with nested Ethernet/raw IP, aligned metadata and wireless FCS provenance |
+| Memory | Spill Connection, Host, DeviceProfile, Service and retained UDP state through a shared bounded encoded cache with private SQLite backing. Stream UDP datagrams and directional evidence spans instead of retaining their complete payload/span sets |
+| MCP | Expand the local tool registry from 56 to 119 tools; analysis settings, live capture, protocol experiments, packet/artifact evidence and startup-bound operator workflows have backend/parity coverage |
+
+| Qualification | Result or remaining gap |
+| --- | --- |
+| Local checks | Full portable Go suite, focused race/vet, native DPI/YARA, CLI/MCP E2E, frontend build and TLS 1.2/1.3 selection tests passed |
+| Matched synthetic memory | Linux/amd64, 2 CPUs, 200,000 SYN flows: enabling a 1 MiB encoded cache reduced retained heap from 701,117,288 to 422,654,640 bytes and peak RSS from 2,274,717,696 to 1,171,546,112 bytes; runtime increased from 10.61 to 28.25 seconds. This compares this revision's memory and spill modes, not the unavailable evaluator captures |
+| DS-12/DS-14 / H-28 | Still partial: TCP reassembly/factory state, optional accumulators and decoded output records remain outside the encoded-cache limit. Spilling is not a hard process-memory bound; the 49 estimator-skipped captures still need external qualification |
+| D2-13 | Exotic link types including 3/165/201/209/243/252/266/289/300 remain unsupported; PPI support does not imply support for every possible encapsulated DLT |
+| Original witnesses | The evaluator's MTA/CTF/Wireshark corpus, `repro/v167`, 146 crash inputs and residual trigger frames were unavailable. Local synthetic tests do not establish a new MTA score or closure of every reported residual |
+| Windows | Cross-compilation only; no Windows host with Npcap was available for runtime qualification |
+
 ## Gopacket dependency
 
 | Area | Change |
