@@ -27,6 +27,7 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 
+	"github.com/dreadl0ck/netcap/internal/aggregate"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tcp"
 	"github.com/dreadl0ck/netcap/internal/packetview"
@@ -331,6 +332,11 @@ func (c *Collector) initWorkers() []chan gopacket.Packet {
 			pool = reassembly.NewStreamPoolWithIdleExpiry(tcp.StreamFactory)
 		} else {
 			pool = reassembly.NewStreamPool(tcp.StreamFactory)
+		}
+		if state := c.config.DecoderConfig.AggregateStore; state != nil {
+			if err := pool.EnableColdStorage(state, 4096); err != nil {
+				_ = state.Do(func(*aggregate.Tx) error { return err })
+			}
 		}
 		a := reassembly.NewAssembler(pool)
 		a.SetPageBudget(c.reassemblyPageBudget)

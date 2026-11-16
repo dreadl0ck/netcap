@@ -75,6 +75,7 @@ func (p *StreamPool) refreshDueLocked(conn *connection, releaseClaim bool) {
 	if !conn.live {
 		return
 	}
+	p.refreshColdLocked(conn)
 	closed := conn.s2c.closed && conn.c2s.closed || conn.observeClose
 	pending := (!conn.s2c.closed && conn.s2c.first != nil) || (!conn.c2s.closed && conn.c2s.first != nil)
 	if !p.trackIdle && !pending && !closed && (conn.connectionDue == nil || (!releaseClaim && !conn.due.hasPending && !conn.due.hasClosed)) {

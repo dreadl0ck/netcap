@@ -127,6 +127,31 @@ ordinal determine ordering; metadata and directions survive repeated reads.
 audits and raw conversation bytes with 1 and 4 workers. Network output errors
 fail the capture and prevent readiness (`TestAggregateNetworkOutputFailurePreventsReady`).
 
+### TCP control-state storage
+
+With aggregate backing enabled, each assembler pool targets a 4,096-candidate
+control-state cache, spilling the least-recently-used candidate. Shared-pool
+assemblers can temporarily add their in-flight streams before publication.
+`ControlStorageHealth` distinguishes resident controls, total resident connections
+and stored controls. Ordinary payload-bearing streams are not eligible for this
+control-state path.
+
+| Contract | Implementation and check |
+| --- | --- |
+| Eligibility | No payload readers, incremental parser, pending FIN callback or retained reassembly pages; established control-only and closed control-only streams remain eligible |
+| Recovery | Preserve network/transport/scope keys, TCP FSM, MSS/window options, sequence/ACK/FIN state, directions, first/last timestamps and capture metadata. Restore before processing a later packet; `TestColdControlsPreserveLateHandshakeAndCaptureAudits` compares every audit hash across a 5,000-flow pressure fixture |
+| Lifecycle | EOF closes stored controls without allocating one pool slot per historical flow. Repeated flushes and later closed-state expiry retain their existing semantics; `TestColdTCPPoolBoundsSYNStatesAndPreservesLateControls` checks counters and retirement |
+| Deadlines and sharing | Disk indexes use strict last-seen cutoffs; scope keys remain direction-independent. `TestColdTCPIdleExpiryUsesStrictRestoredLastSeen` and `TestColdTCPSharedPoolPreservesScopeAndConcurrentGenerations` run under the race detector |
+| Failure | Invalid snapshots fail and cancel the backing store instead of starting a new TCP incarnation (`TestColdTCPRestoreCorruptionCancelsBackingStore`) |
+| Limits | This bounds control-state residency, not active payload/parser state or RSS. TCP payload, page and incremental-state budgets remain separate. Unbudgeted pool allocation batches stop growing at 4,096 slots |
+
+On the Linux/amd64 2-CPU, 8-GiB fixture, 200,000 SYN flows with a 1-MiB encoded
+cache retained 44,090,648 bytes of Go heap at 280,322,048-byte peak RSS, taking
+58.25 seconds including finalization. The database occupied 650,346,496 bytes.
+The preceding matched aggregate-only spill run retained 422,654,640 bytes at
+1,171,546,112-byte peak RSS in 28.25 seconds. These are synthetic resource results;
+the original evaluator corpus remains unavailable.
+
 For 200,000 generated SYN tuples, each comparison used one Linux/amd64 test
 binary, 2 CPUs, an 8 GiB container and a 1 MiB encoded cache. Runtime includes
 finalization; values below compare each spill mode to its matched in-memory run.

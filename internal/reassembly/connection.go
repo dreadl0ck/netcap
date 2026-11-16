@@ -1,6 +1,7 @@
 package reassembly
 
 import (
+	"container/list"
 	"fmt"
 	"sync"
 	"time"
@@ -20,6 +21,7 @@ type connection struct {
 
 	ac        assemblerSimpleContext
 	firstFlow gopacket.Flow
+	coldHot   *list.Element
 
 	// Most connections never queue pages or remain closed in the pool.
 	*connectionDue
@@ -36,6 +38,9 @@ func (c *connection) reset(k *key, s Stream, ts time.Time) {
 	c.resetSeen = false
 	c.observeClose = false
 	c.connectionDue = nil
+	c.ac = assemblerSimpleContext{}
+	c.firstFlow = gopacket.Flow{}
+	c.coldHot = nil
 	c.key = k
 	base := halfconnection{
 		nextSeq:   invalidSequence,

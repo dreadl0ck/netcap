@@ -1156,6 +1156,7 @@ type FlushOptions struct {
 // Returns the number of halves flushed and closed. Concurrent maintenance may
 // claim disjoint batches; newly published deadlines are considered on the next call.
 func (a *Assembler) FlushWithOptions(opt FlushOptions) (flushed, closed int) {
+	closed += a.connPool.flushColdDue(opt)
 	// Hand over the scratch array: if the batch outgrows it, cleanup sees only
 	// the replacement, and the old array must not retain connection references.
 	batch := a.dueBatch
@@ -1233,6 +1234,7 @@ func (a *Assembler) FlushAll() (closed int) {
 	}
 
 	//wg.Wait()
+	closed += a.connPool.flushColdAll(false)
 
 	return
 }
@@ -1264,7 +1266,11 @@ func (a *Assembler) FlushAllProgress() (closed int) {
 	conns := a.connPool.connections(nil)
 	sortConnections(conns)
 
-	bar := pb.StartNew(len(conns))
+	total := len(conns)
+	if a.connPool.cold != nil {
+		total += int(a.connPool.cold.count.Load())
+	}
+	bar := pb.StartNew(total)
 
 	// Sequential like FlushAll: an Assembler is not safe for concurrent use,
 	// closing connections from several goroutines corrupts the shared page
@@ -1276,6 +1282,9 @@ func (a *Assembler) FlushAllProgress() (closed int) {
 		bar.Increment()
 	}
 
+	cold := a.connPool.flushColdAll(false)
+	closed += cold
+	bar.Add(cold)
 	bar.Finish()
 
 	return

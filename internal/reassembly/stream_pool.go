@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 	"unsafe"
+
+	"github.com/dreadl0ck/netcap/internal/aggregate"
 )
 
 /*
@@ -45,6 +47,7 @@ type StreamPool struct {
 	trackIdle          bool // Immutable after construction.
 	allocationBudget   AllocationBudget
 	allocationCredits  int64
+	cold               *coldStorage
 }
 
 type AllocationBudget interface {
@@ -77,7 +80,7 @@ func (p *StreamPool) grow() bool {
 	if Debug {
 		log.Println("StreamPool: created", p.nextAlloc, "new connections")
 	}
-	p.nextAlloc *= 2
+	p.nextAlloc = min(p.nextAlloc*2, 4096)
 	if p.allocationBudget != nil {
 		p.nextAlloc = 1
 	}
@@ -112,6 +115,7 @@ func (p *StreamPool) remove(conn *connection) {
 	var retired Stream
 	p.mu.Lock()
 	if conn.live && p.conns[*conn.key] == conn {
+		p.removeColdHotLocked(conn)
 		if conn.connectionDue != nil {
 			p.pendingDue.remove(&conn.pendingEntry)
 			p.closedDue.remove(&conn.closedEntry)
@@ -136,6 +140,7 @@ func (p *StreamPool) remove(conn *connection) {
 // garbage collection of the underlying connection arrays.
 // CRITICAL for preventing memory leaks in multi-file processing.
 func (p *StreamPool) Reset() {
+	p.flushColdAll(true)
 	p.createMu.Lock()
 	defer p.createMu.Unlock()
 	for _, ref := range p.connections(nil) {
@@ -145,6 +150,7 @@ func (p *StreamPool) Reset() {
 			}
 			ref.conn.c2s.stream, ref.conn.s2c.stream = nil, nil
 			ref.conn.live = false
+			ref.conn.coldHot = nil
 			ref.conn.mu.Unlock()
 		}
 	}
@@ -178,6 +184,10 @@ func (p *StreamPool) Reset() {
 		p.nextAlloc = 1
 	}
 	p.newConnectionCount = 0
+	if p.cold != nil {
+		p.cold.hot.Init()
+		p.cold.count.Store(0)
+	}
 
 	if Debug {
 		log.Println("StreamPool: reset complete, all backing arrays released")
@@ -283,7 +293,7 @@ func (p *StreamPool) getConnection(k *key, end bool, ts time.Time, ac AssemblerC
 	p.mu.RLock()
 	ref, reverse := p.lookup(k)
 	p.mu.RUnlock()
-	if end || ref.conn != nil {
+	if ref.conn != nil || end && p.cold == nil {
 		return ref, reverse
 	}
 
@@ -296,6 +306,22 @@ func (p *StreamPool) getConnection(k *key, end bool, ts time.Time, ac AssemblerC
 	p.mu.RUnlock()
 	if ref.conn != nil {
 		return ref, reverse
+	}
+	if p.cold != nil {
+		coldRef, coldReverse, found, err := p.restoreCold(k)
+		if err != nil {
+			_ = p.cold.state.Do(func(*aggregate.Tx) error { return err })
+			return connectionRef{}, false
+		}
+		if found {
+			return coldRef, coldReverse
+		}
+		if err := p.makeColdRoom(); err != nil {
+			return connectionRef{}, false
+		}
+	}
+	if end {
+		return connectionRef{}, false
 	}
 
 	s := p.factory.New(k[0], k[1], ac)
