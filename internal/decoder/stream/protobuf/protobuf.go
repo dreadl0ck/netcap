@@ -108,6 +108,7 @@ type Field struct {
 	Type         string            // "varint", "fixed64", "string", "bytes", "nested", "fixed32", "packed_varint", "packed_fixed32", "packed_fixed64"
 	Value        string            // string representation of the value
 	Alternatives map[string]string // alternative interpretations keyed by type name (e.g. "sint64", "double", "bool")
+	children     []Field
 }
 
 // protobufReader implements core.StreamDecoderFactory and core.StreamDecoderInterface.
@@ -230,6 +231,12 @@ func (r *protobufReader) processData(b *bufio.Reader, isClient bool) error {
 	}
 
 	pb.IsValid = true
+	if !ExplicitlyConfigured(r.conversation.ClientPort, r.conversation.ServerPort) && !strongFieldEvidence(messages) {
+		return nil
+	}
+	if ExplicitlyConfigured(r.conversation.ClientPort, r.conversation.ServerPort) {
+		pb.DetectionMethod = "configured"
+	}
 	pb.MessageCount = int32(len(messages))
 
 	// Try to resolve message type from port mappings
@@ -301,7 +308,7 @@ func stripLengthPrefixedFraming(data []byte) []byte {
 		pos += 4 + msgLen
 	}
 
-	if len(result) == 0 {
+	if len(result) == 0 || pos != len(data) {
 		return nil
 	}
 
@@ -316,6 +323,7 @@ const (
 	maxFieldSize        = 1 << 20 // 1 MB
 	maxVarintBytes      = 10
 	maxFieldNumber      = 1<<29 - 1 // protobuf max
+	maxNestedDepth      = 32
 )
 
 // startsWithTag reports whether data opens with a structurally valid protobuf
@@ -372,22 +380,9 @@ func hasValidFirstTag(data []byte) bool {
 	return false
 }
 
-// IsProtobufData uses heuristics to detect if data might be protobuf encoded.
-// It requires a structurally valid opening tag, then applies byte statistics:
-// varint continuation patterns, wire type spread, and sufficient entropy to
-// distinguish from text protocols.
-//
-// The statistics alone are a weak signature and were the sole test until
-// 2026-09-22. They reduce to "contains a byte >= 0x80 and has entropy above
-// 3.0", which uniform random bytes of length >= 12 satisfy essentially always,
-// so this decoder adopted any unrecognised binary conversation it was offered.
-// Because it registers as core.All it takes part in every UDP fallback scan,
-// and it was producing Protobuf audit records for NetBIOS Name Service and DNS
-// traffic -- 20 of them across the test corpus, every one unparseable.
-//
-// Raising the entropy threshold cannot fix that: the tightest payload this must
-// still accept measures 3.278 bits and the lowest observed false positive 3.521,
-// which is no margin at all. Validating the tag is what separates them.
+// Autodetection requires complete wire parsing and multiple independent field
+// numbers, including nested messages. Wire-valid single-field data needs intent
+// from a configured message mapping or explicit Protobuf selection.
 func IsProtobufData(data []byte) bool {
 	if len(data) < 2 {
 		return false
@@ -417,7 +412,65 @@ func IsProtobufData(data []byte) bool {
 
 	entropy := CalculateEntropy(data)
 
-	return hasVarintPattern && len(wireTypeCount) >= 2 && entropy > 3.0
+	if !hasVarintPattern || len(wireTypeCount) < 2 || entropy <= 3.0 {
+		return false
+	}
+	messages, err := DecodeMessages(data)
+	if err != nil {
+		framed := stripLengthPrefixedFraming(data)
+		if framed == nil {
+			return false
+		}
+		messages, err = DecodeMessages(framed)
+	}
+	return err == nil && strongFieldEvidence(messages)
+}
+
+func strongFieldEvidence(messages [][]Field) bool {
+	for _, fields := range messages {
+		numbers := map[uint64]bool{}
+		for _, field := range fields {
+			numbers[field.Number] = true
+			if len(field.children) > 0 && strongFieldEvidence([][]Field{field.children}) {
+				return true
+			}
+		}
+		if len(numbers) >= 2 {
+			return true
+		}
+	}
+	return false
+}
+
+func ExplicitlyConfigured(clientPort, serverPort int32) bool {
+	if _, ok := lookupMessageTypeByPort(clientPort); ok {
+		return true
+	}
+	if _, ok := lookupMessageTypeByPort(serverPort); ok {
+		return true
+	}
+	if decoderconfig.Instance != nil {
+		for _, name := range strings.Split(decoderconfig.Instance.IncludeDecoders, ",") {
+			if strings.EqualFold(strings.TrimSpace(name), "Protobuf") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func ValidConfiguredData(data []byte) bool {
+	if len(data) == 0 {
+		return false
+	}
+	if _, err := DecodeMessages(data); err == nil {
+		return true
+	}
+	if framed := stripLengthPrefixedFraming(data); framed != nil {
+		_, err := DecodeMessages(framed)
+		return err == nil
+	}
+	return false
 }
 
 // DecodeMessages attempts to decode one or more protobuf messages from raw bytes.
@@ -449,6 +502,9 @@ func DecodeMessages(data []byte) ([][]Field, error) {
 	if len(messages) == 0 {
 		return nil, fmt.Errorf("no valid protobuf messages found")
 	}
+	if buf.Len() != 0 {
+		return nil, fmt.Errorf("protobuf message budget exceeded")
+	}
 
 	return messages, nil
 }
@@ -456,6 +512,13 @@ func DecodeMessages(data []byte) ([][]Field, error) {
 // ParseMessage parses a single protobuf message from a reader.
 // Returns fields in wire order.
 func ParseMessage(buf *bytes.Reader) ([]Field, error) {
+	return parseMessageAt(buf, 0)
+}
+
+func parseMessageAt(buf *bytes.Reader, depth int) ([]Field, error) {
+	if depth > maxNestedDepth {
+		return nil, fmt.Errorf("protobuf nesting exceeds %d", maxNestedDepth)
+	}
 	var fields []Field
 	fieldCount := 0
 
@@ -537,11 +600,12 @@ func ParseMessage(buf *bytes.Reader) ([]Field, error) {
 			// Priority: nested message > printable string > packed repeated > raw bytes.
 			// String check before packed varints prevents ASCII text from being
 			// misidentified as packed repeated fields.
-			if nested, nErr := tryParseNested(value); nErr == nil && len(nested) > 0 {
+			if nested, nErr := tryParseNestedAt(value, depth+1); nErr == nil && len(nested) > 0 {
 				f := Field{
-					Number: fieldNumber,
-					Type:   "nested",
-					Value:  formatNested(nested),
+					Number:   fieldNumber,
+					Type:     "nested",
+					Value:    formatNested(nested),
+					children: nested,
 				}
 				if showAlternatives {
 					f.Alternatives = lengthDelimitedAlternatives(value)
@@ -587,7 +651,7 @@ func ParseMessage(buf *bytes.Reader) ([]Field, error) {
 				fields = append(fields, f)
 			}
 
-		case 3, 4: // Deprecated group start/end — skip gracefully
+		case 3, 4:
 			continue
 
 		case 5: // 32-bit fixed
@@ -630,12 +694,16 @@ func formatNested(fields []Field) string {
 // tryParseNested attempts to parse bytes as a nested protobuf message.
 // Returns nil if the data doesn't look like a valid message.
 func tryParseNested(data []byte) ([]Field, error) {
+	return tryParseNestedAt(data, 1)
+}
+
+func tryParseNestedAt(data []byte, depth int) ([]Field, error) {
 	if len(data) < 2 {
 		return nil, fmt.Errorf("too short")
 	}
 
 	buf := bytes.NewReader(data)
-	msg, err := ParseMessage(buf)
+	msg, err := parseMessageAt(buf, depth)
 	if err != nil {
 		return nil, err
 	}
@@ -643,8 +711,7 @@ func tryParseNested(data []byte) ([]Field, error) {
 		return nil, fmt.Errorf("empty nested message")
 	}
 
-	// Only accept if we consumed most of the data (avoids false positives)
-	if buf.Len() > len(data)/4 {
+	if buf.Len() != 0 {
 		return nil, fmt.Errorf("too much remaining data for nested message")
 	}
 

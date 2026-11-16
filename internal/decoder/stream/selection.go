@@ -29,6 +29,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/dcerpc"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/ipp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/modbus"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/protobuf"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/rtp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/smtp"
@@ -211,6 +212,11 @@ func decoderListed(list, name string) bool {
 }
 
 func matchScore(sd core.StreamDecoderAPI, in *SelectionInput, portPass bool) (int, bool) {
+	clientPort := int32(0)
+	if in.Conversation != nil {
+		clientPort = in.Conversation.ClientPort
+	}
+	explicitProtobuf := sd.GetName() == "Protobuf" && protobuf.ExplicitlyConfigured(clientPort, in.ServerPort)
 	if in.Transport == core.UDP && (len(in.Datagrams) > 0 || in.Conversation != nil && in.Conversation.Source != nil) {
 		best, matched := 0, false
 		scoreDatagram := func(datagram Datagram) {
@@ -218,7 +224,7 @@ func matchScore(sd core.StreamDecoderAPI, in *SelectionInput, portPass bool) (in
 			if !datagram.Client {
 				client, server = nil, datagram.Data
 			}
-			if sd.CanDecodeStream(client, server) {
+			if sd.CanDecodeStream(client, server) || explicitProtobuf && protobuf.ValidConfiguredData(datagram.Data) {
 				score := sd.MatchSpecificity(client, server)
 				if !matched || score > best {
 					best = score
@@ -241,7 +247,7 @@ func matchScore(sd core.StreamDecoderAPI, in *SelectionInput, portPass bool) (in
 	if portPass {
 		client, server = in.PortClient, in.PortServer
 	}
-	if !sd.CanDecodeStream(client, server) {
+	if !sd.CanDecodeStream(client, server) && !(explicitProtobuf && (protobuf.ValidConfiguredData(client) || protobuf.ValidConfiguredData(server))) {
 		if portPass && sd.GetName() == "Modbus" && in.ServerPort == 502 && modbus.CanDecodeOnPort(client, server) {
 			return core.SpecificityStructural, true
 		}
