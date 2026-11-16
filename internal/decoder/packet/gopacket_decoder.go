@@ -228,6 +228,13 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 			check := linkaudit.FrameCheckInfo(p.Metadata().CaptureInfo)
 			wireless.FCSKnown, wireless.FCSPresent = check.Known, check.Present
 		}
+		if usb, ok := record.(*types.USB); ok {
+			for _, item := range p.Metadata().CaptureInfo.AncillaryData {
+				if metadata, ok := item.(*linkaudit.USBMetadata); ok {
+					usb.Fields = metadata.Fields
+				}
+			}
+		}
 
 		if ctx != nil {
 			// assert to audit record

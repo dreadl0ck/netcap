@@ -44,6 +44,7 @@ func (snapshot *jobSettings) helperArgs() []string {
 		"retain-packets": strconv.FormatBool(rc.RetainPackets), "packet-segment-mb": strconv.FormatInt(rc.PacketSegmentBytes>>20, 10), "packet-retention-mb": strconv.FormatInt(rc.PacketRetentionBytes>>20, 10),
 		"max-retained-tcp-bytes": strconv.FormatInt(rc.MaxRetainedTCPBytes, 10), "max-retained-reassembly-bytes": strconv.FormatInt(rc.MaxRetainedReassemblyBytes, 10),
 		"max-retained-tcp-state-bytes": strconv.FormatInt(rc.MaxRetainedTCPStateBytes, 10), "max-aggregate-state-bytes": strconv.FormatInt(rc.MaxAggregateStateBytes, 10),
+		"link-profiles":    rc.LinkProfilesPath,
 		"incremental-http": strconv.FormatBool(rc.IncrementalHTTP), "capture-time-idle-expiry": strconv.FormatBool(rc.CaptureTimeIdleExpiry),
 		"modbus-rtu-endpoints": rc.ModbusRTUEndpoints, "dnp3-point-map": rc.DNP3PointMap, "flow-export-ports": rc.FlowExportPorts,
 		"network-detection": strconv.FormatBool(snapshot.NetworkDetection), "dns-resolution-context": strconv.FormatBool(snapshot.DNSContext),

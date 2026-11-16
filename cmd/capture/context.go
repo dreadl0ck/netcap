@@ -20,6 +20,7 @@
 package capture
 
 import (
+	"path/filepath"
 	"time"
 
 	"github.com/urfave/cli/v3"
@@ -149,6 +150,7 @@ var (
 	flagIncrementalHTTP                bool
 	flagMaxRetainedTCPStateBytes       int64
 	flagMaxAggregateStateBytes         int64
+	flagLinkProfiles                   string
 	flagCaptureTimeIdleExpiry          bool
 	flagCompressionBlockSize           int
 	flagCompressionLevel               string
@@ -299,6 +301,12 @@ func setFlagsFromContext(c *cli.Command) {
 	flagIncrementalHTTP = c.Bool("incremental-http")
 	flagMaxRetainedTCPStateBytes = c.Int64("max-retained-tcp-state-bytes")
 	flagMaxAggregateStateBytes = c.Int64("max-aggregate-state-bytes")
+	flagLinkProfiles = c.String("link-profiles")
+	if flagLinkProfiles != "" {
+		if absolute, err := filepath.Abs(flagLinkProfiles); err == nil {
+			flagLinkProfiles = absolute
+		}
+	}
 	flagCaptureTimeIdleExpiry = c.Bool("capture-time-idle-expiry")
 	flagCompressionBlockSize = c.Int("compression-block-size")
 	flagCompressionLevel = c.String("compression-level")

@@ -161,6 +161,7 @@ type RuntimeConfig struct {
 	IncrementalHTTP            bool
 	MaxRetainedTCPStateBytes   int64
 	MaxAggregateStateBytes     int64
+	LinkProfilesPath           string
 	CaptureTimeIdleExpiry      bool
 
 	// Output Format
@@ -1887,6 +1888,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			IncrementalHTTP:            incrementalHTTP,
 			MaxRetainedTCPStateBytes:   maxRetainedTCPStateBytes,
 			MaxAggregateStateBytes:     maxAggregateStateBytes,
+			LinkProfilesPath:           runtimeSnapshot.LinkProfilesPath,
 			CaptureTimeIdleExpiry:      captureTimeIdleExpiry,
 
 			Quiet:            true,

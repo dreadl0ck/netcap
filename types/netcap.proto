@@ -394,6 +394,7 @@ message LinkSourceRange {
   uint64 CaptureOrdinal = 1;
   uint32 Offset = 2;
   uint32 Length = 3;
+  string Purpose = 4;
 }
 
 // a connection has the following attributes:
@@ -1880,6 +1881,7 @@ message USB {
   uint32 UrbCopyOfTransferFlags = 18;
   uint32 IsoNumDesc = 19;
   bytes Payload = 20;
+  map<string,string> Fields = 21;
 }
 
 message USBRequestBlockSetup {
@@ -4205,6 +4207,7 @@ message BACnetIP {
   
   // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
   string CommunityID = 47;
+  repeated string ParseQualifications = 48;
 }
 
 // MQTTSN (MQTT for Sensor Networks) is a publish/subscribe messaging protocol

@@ -59,6 +59,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tcp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/udp"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
+	"github.com/dreadl0ck/netcap/internal/deviceprofile"
 	"github.com/dreadl0ck/netcap/internal/dnscontext"
 	"github.com/dreadl0ck/netcap/internal/enrichment"
 	"github.com/dreadl0ck/netcap/internal/evidence"
@@ -129,6 +130,7 @@ type Collector struct {
 	dispatchMu             sync.Mutex            // admission, controls, and assembler lifecycle
 	packetPipeline         *packetview.Processor // protected by dispatchMu
 	linkReconstruction     *linkReconstructor
+	linkProfiles           *deviceprofile.Config
 	behaviorHealthMu       sync.Mutex
 	behaviorCaptureHealth  behavior.CaptureHealth
 	behaviorQueueDrops     uint64
@@ -783,12 +785,41 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	if c.linkReconstruction != nil {
 		c.linkReconstruction.advance(p, c.flowIngressOrdinal)
 	}
-	if frame, ok := p.Layer(linkaudit.LayerLinkFrame).(*linkaudit.LinkFrame); ok && frame.ALP != nil && p.ErrorLayer() == nil {
+	if p.Layer(layers.LayerTypeUSB) != nil {
+		if c.linkReconstruction == nil {
+			c.linkReconstruction = &linkReconstructor{profiles: c.linkProfiles}
+		}
+		link := uint32(c.captureLinkType)
+		for _, item := range p.Metadata().CaptureInfo.AncillaryData {
+			if value, ok := item.(layers.LinkType); ok {
+				link = uint32(value)
+				break
+			}
+		}
+		c.linkReconstruction.enrichUSB(p, link, c.flowIngressOrdinal)
+	}
+	if frame, ok := p.Layer(linkaudit.LayerLinkFrame).(*linkaudit.LinkFrame); ok && (frame.Type == 209 || frame.Type == 300) && c.linkProfiles != nil {
+		if c.linkReconstruction == nil {
+			c.linkReconstruction = &linkReconstructor{profiles: c.linkProfiles}
+		}
+		c.linkReconstruction.enrichDeviceProfile(p, frame, c.flowIngressOrdinal)
+	}
+	if frame, ok := p.Layer(linkaudit.LayerLinkFrame).(*linkaudit.LinkFrame); ok && (frame.ALP != nil || frame.Type == 3 || frame.Type == 243 || frame.Type == 187 || frame.Type == 201 || frame.Type == 165 && frame.Fields["frame_type"] == "34") && p.ErrorLayer() == nil {
 		handledLink = true
 		if c.linkReconstruction == nil {
-			c.linkReconstruction = &linkReconstructor{}
+			c.linkReconstruction = &linkReconstructor{profiles: c.linkProfiles}
 		}
-		children = c.linkReconstruction.process(p, frame, c.flowIngressOrdinal)
+		if frame.ALP != nil {
+			children = c.linkReconstruction.process(p, frame, c.flowIngressOrdinal)
+		} else if frame.Type == 243 {
+			c.linkReconstruction.enrichMPEGTS(p, frame, c.flowIngressOrdinal)
+		} else if frame.Type == 187 || frame.Type == 201 {
+			c.linkReconstruction.enrichHCI(p, frame, c.flowIngressOrdinal)
+		} else if frame.Type == 3 {
+			children = c.linkReconstruction.processAX25(p, frame, c.flowIngressOrdinal)
+		} else {
+			children = c.linkReconstruction.processLoBAC(p, frame, c.flowIngressOrdinal)
+		}
 		views.Evidence = []gopacket.Packet{linkEvidence(p, frame, c.flowIngressOrdinal)}
 	} else {
 		views = c.packetPipeline.Process(p, c.flowIngressOrdinal)
@@ -818,6 +849,9 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	c.admittedPackets++
 	c.admittedBytes += capturedBytes
 	for _, child := range children {
+		if frame, ok := child.Layer(linkaudit.LayerLinkFrame).(*linkaudit.LinkFrame); ok && frame.Type == 243 {
+			c.linkReconstruction.enrichMPEGTS(child, frame, c.flowIngressOrdinal)
+		}
 		if !c.queuePacketViews(child, c.packetPipeline.Process(child, c.flowIngressOrdinal), deadline) {
 			c.linkReconstruction.err = fmt.Errorf("derived link packet dispatch timed out")
 			if c.runCancel != nil {

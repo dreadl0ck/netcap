@@ -114,6 +114,7 @@ func runServiceMode(command *cli.Command) {
 		IncrementalHTTP:            flagIncrementalHTTP,
 		MaxRetainedTCPStateBytes:   flagMaxRetainedTCPStateBytes,
 		MaxAggregateStateBytes:     flagMaxAggregateStateBytes,
+		LinkProfilesPath:           flagLinkProfiles,
 		CaptureTimeIdleExpiry:      flagCaptureTimeIdleExpiry,
 		Proto:                      flagProto,
 		JSON:                       flagJSON,

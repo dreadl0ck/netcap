@@ -26,6 +26,7 @@ import (
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/vulnerability"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
+	"github.com/dreadl0ck/netcap/internal/deviceprofile"
 	"github.com/dreadl0ck/netcap/internal/dnscontext"
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
@@ -52,6 +53,12 @@ func (c *Collector) Init() (err error) {
 	}
 	if _, err := decoderutils.SelectDecoders([]string(nil), c.config.DecoderConfig.IncludeDecoders, c.config.DecoderConfig.ExcludeDecoders, func(name string) string { return name }, packet.ErrInvalidDecoder); err != nil {
 		return fmt.Errorf("decoder selection: %w", err)
+	}
+	if path := c.config.DecoderConfig.LinkProfilesPath; path != "" {
+		c.linkProfiles, err = deviceprofile.Load(path)
+		if err != nil {
+			return fmt.Errorf("link profiles: %w", err)
+		}
 	}
 	c.outputReplacement, err = c.prepareOutputReplacement()
 	if err != nil {

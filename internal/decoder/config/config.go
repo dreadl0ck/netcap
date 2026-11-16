@@ -119,6 +119,7 @@ var DefaultConfig = &Config{
 type Config struct {
 	AggregateStore         *aggregate.Store `json:"-" yaml:"-"`
 	MaxAggregateStateBytes int64
+	LinkProfilesPath       string
 	TLSSecrets             *tlsdecrypt.Secrets `json:"-" yaml:"-"`
 	RecordObserver         func(proto.Message) `json:"-" yaml:"-"`
 	// Output path

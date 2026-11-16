@@ -1,8 +1,11 @@
 package linkaudit
 
 import "github.com/gopacket/gopacket"
+import "github.com/dreadl0ck/netcap/internal/rohc"
 
 var LayerLinkFrame = gopacket.RegisterLayerType(12006, gopacket.LayerTypeMetadata{Name: "LinkFrame"})
+
+type USBMetadata struct{ Fields map[string]string }
 
 type LinkFrame struct {
 	Type                                           uint32
@@ -24,6 +27,7 @@ type ALPFrame struct {
 	SID              uint8
 	PLPPresent       bool
 	PLP              uint8
+	RDTs             []rohc.Description
 }
 
 func (*LinkFrame) LayerType() gopacket.LayerType { return LayerLinkFrame }

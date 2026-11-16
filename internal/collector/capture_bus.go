@@ -170,6 +170,7 @@ func decodeAX25(data []byte, p gopacket.PacketBuilder) error {
 		f.Fields["digipeaters"] = strings.Join(addresses[2:], ",")
 	}
 	control := data[offset]
+	f.Fields["control_offset"] = strconv.Itoa(offset)
 	offset++
 	f.Fields["control"] = fmt.Sprintf("0x%02x", control)
 	var next gopacket.Decoder
@@ -233,6 +234,7 @@ func decodeBACnetMSTP(data []byte, p gopacket.PacketBuilder) error {
 			f.Qualifications = append(f.Qualifications, "invalid-MS/TP-data-CRC")
 		}
 	}
+	decodeMSTPNPDU(f, data[2], data[8:8+length])
 	return finishBusFrame(data, 8, f, p, nil)
 }
 

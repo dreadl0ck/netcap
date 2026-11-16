@@ -20,6 +20,7 @@
 package types
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
@@ -67,6 +68,7 @@ var fieldsUSB = []string{
 	fieldUrbStartFrame,
 	fieldUrbCopyOfTransferFlags,
 	fieldIsoNumDesc,
+	"Fields",
 	//fieldPayload,
 }
 
@@ -77,6 +79,7 @@ func (u *USB) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (u *USB) CSVRecord() []string {
+	fields, _ := json.Marshal(u.Fields)
 	return filter([]string{
 		formatTimestamp(u.Timestamp), // string
 		formatUint64(u.ID),
@@ -97,6 +100,7 @@ func (u *USB) CSVRecord() []string {
 		formatUint32(u.UrbStartFrame),
 		formatUint32(u.UrbCopyOfTransferFlags),
 		formatUint32(u.IsoNumDesc),
+		string(fields),
 		//hex.EncodeToString(u.Payload),
 	})
 }
@@ -119,12 +123,13 @@ var usbMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_USB.String()),
 		Help: Type_NC_USB.String() + " audit records",
 	},
-	fieldsUSB[1:],
+	fieldsUSB[1:len(fieldsUSB)-1],
 )
 
 // Inc increments the metrics for the audit record.
 func (u *USB) Inc() {
-	usbMetric.WithLabelValues(u.CSVRecord()[1:]...).Inc()
+	values := u.CSVRecord()
+	usbMetric.WithLabelValues(values[1 : len(values)-1]...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
@@ -146,6 +151,7 @@ var usbEncoder = encoder.NewValueEncoder()
 
 // Encode will encode categorical values and normalize according to configuration
 func (u *USB) Encode() []string {
+	fields, _ := json.Marshal(u.Fields)
 	return filter([]string{
 		usbEncoder.Int64(fieldTimestamp, u.Timestamp), // int64
 		usbEncoder.Uint64(fieldID, u.ID),
@@ -166,6 +172,7 @@ func (u *USB) Encode() []string {
 		usbEncoder.Uint32(fieldUrbStartFrame, u.UrbStartFrame),
 		usbEncoder.Uint32(fieldUrbCopyOfTransferFlags, u.UrbCopyOfTransferFlags),
 		usbEncoder.Uint32(fieldIsoNumDesc, u.IsoNumDesc),
+		usbEncoder.String("Fields", string(fields)),
 	})
 }
 

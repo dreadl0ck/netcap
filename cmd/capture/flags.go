@@ -691,6 +691,7 @@ func GetFlags() []cli.Flag {
 				return nil
 			},
 		},
+		&cli.StringFlag{Name: "link-profiles", Usage: "path to explicit interface/bus/device profile JSON (maximum 64 KiB; no device model inference)", Sources: cli.EnvVars("NC_LINK_PROFILES")},
 		&cli.Int64Flag{
 			Name: "max-aggregate-state-bytes", Value: 32 << 20,
 			Usage:   "resident encoded aggregate state, datagrams and deduplication keys; excess spills to private scratch storage (0 = in-memory; excludes decoded records, SQLite cache and RSS)",

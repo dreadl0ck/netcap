@@ -63,15 +63,15 @@ decoded bodies as `DecodedPayload`. `Payload` always retains the captured form.
 
 | Link type | Framing and downstream decoding |
 | --- | --- |
-| 3, AX.25 | Bounded destination/source/digipeater chain and control/PID fields; UI IPv4 payloads reach the IP decoder. Extended control mode is not inferred |
-| 165, BACnet MS/TP | Header CRC8, legacy data CRC16, bounded COBS decoding and extended CRC32K validation. Encoding validity and checksum validity are separate; invalid frames retain wire evidence. BACnet NPDU/APDU, 6LoBAC/IPHC and proprietary application bodies remain undecoded |
-| 187/201, Bluetooth HCI H4 | Packet indicator, command/event/ACL/SCO/ISO lengths and optional direction pseudo-header. HCI payloads remain opaque |
-| 209, Linux I2C | Six-byte bus/event/flags/address header, using network byte order for flags. Payloads remain opaque |
-| 243, MPEG-2 TS | Whole 188-byte frames, sync/adaptation bounds and first PID/continuity metadata; elementary streams are not decoded |
-| 252, Wireshark Upper PDU | Bounded TLVs, the first protocol selector, raw option evidence and exported address metadata. Known packet dissectors are invoked; heuristic/table selectors and unknown dissectors remain opaque. Exported metadata is not an original Ethernet/IP header |
-| 266, Darwin USB | Versioned little-endian URB headers, 64-bit request IDs, bus/device/endpoint/direction, control setup and bounded ISO descriptors; emitted through `USB`/`USBRequestBlockSetup` |
-| 289, ATSC ALP | Single and segmented IPv4, 2–9 concatenated packets, compressed TS reconstruction, signalling headers, binary LMT fields, JSON/XML validation and bounded DEFLATE decoding. ROHC/compressed IPv4, RDT semantics and private extensions remain undecoded |
-| 300, MDB | Version/event/address framing, master/peripheral direction and checksum metadata; device-specific transaction fields are not inferred |
+| 3, AX.25 | UI and negotiated I-frame IPv4/ARP dispatch; basic/extended sequence fields require observed SABM/SABME and reverse UA. Unknown control modes/PIDs remain opaque |
+| 165, BACnet MS/TP | CRC8/CRC16/COBS/CRC32K; checksum-valid NPDU/APDU metadata shares `internal/bacnet` with BACnet/IP. Frame 34 supports scoped 6LoBAC/IPHC IPv6 dispatch. Unknown contexts, vendor bodies and unreassembled APDU segments are qualified |
+| 187/201, Bluetooth HCI H4 | Controller/version/address events, bounded ACL/L2CAP reconstruction, signalling, ATT headers/handles/UUIDs/MTU and SMP pairing metadata. Directionless fragments, SCO/ISO codecs and dynamic channel profiles remain qualified; ATT values and SMP keys are not copied into metadata |
+| 209, Linux I2C | Six-byte bus/event/flags/address header; explicit EEPROM-8/EEPROM-16 profiles expose transfer lengths and write address pointers |
+| 243, MPEG-2 TS | Continuity-aware PAT/PMT section assembly and CRC32, bounded PES header/PTS/DTS parsing, H.264/H.265 SPS dimensions/profile/level, IDR/IRAP and MPEG-video/AAC-ADTS headers. This is media metadata, not audio/video rendering |
+| 252, Wireshark Upper PDU | Known dissectors plus registered `ethertype`, `ip.proto`, `ipv6.nxt`, `udp.port` numeric tables and the bounded `dns_udp` heuristic. The table value must immediately follow the selected table TLV. Unknown selectors stay opaque; exported addresses do not fabricate IP headers |
+| 266, Darwin USB | Versioned URB headers, 64-bit IDs, control setup and bounded ISO descriptors; standard device/configuration/string and HID report descriptors are matched to captured control requests. Explicit HID boot profiles decode reports. These profiles also support USB 189/220/249 |
+| 289, ATSC ALP | IPv4 segmentation/concatenation, TS restoration, LMT/RDT metadata, JSON/XML validation and bounded DEFLATE. Qualified ROHC UDP profile 0x0002 supports direct IPv4/IPv6 IR/IR-DYN, UO-0/UO-1 and basic UOR-2 with extensions 0/1; tunnel chains, extension lists and extensions 2/3 remain qualified |
+| 300, MDB | Direction/checksum metadata; explicit coin-changer/bill-validator profiles identify commands and decode checksum-valid setup replies matched to the preceding request |
 
 Wire references: [tcpdump link registry](https://www.tcpdump.org/linktypes.html),
 [Upper PDU TLVs](https://gitlab.com/wireshark/wireshark/-/blob/master/wsutil/exported_pdu_tlvs.h),
@@ -84,8 +84,8 @@ completed descriptors include the timestamp and require 28 bytes.
 
 ## Link reconstruction
 
-ALP reconstruction runs before flow sharding (`collector/link_reconstruction.go`).
-Each completed IPv4 child enters ordinary normalization, detection and TCP/UDP
+Link reconstruction runs before flow sharding (`collector/link_reconstruction.go`).
+Each completed IP child enters ordinary normalization, detection and TCP/UDP
 processing. Captured-packet counters and retained capture bytes count each original
 once; derived flow counters count logical packets and their decoded lengths.
 
@@ -108,8 +108,38 @@ and 8 workers. `TestALPInsidePPIPreservesAbsoluteSourceRanges` covers nested PPI
 MS/TP uses [RFC 8163 Appendices B–D](https://www.rfc-editor.org/rfc/rfc8163.html#appendix-B):
 CRC32K covers the encoded data, and the five-byte checksum field is COBS-decoded
 separately. `TestMSTPCOBSAndCRC32KRFC8163` checks the published 547-byte wire
-example and 533-byte decoded payload. Successful COBS decoding alone does not
-dispatch frame type 34 as IPv6; that requires 6LoBAC/IPHC support.
+example and 533-byte decoded payload. `TestLoBACContextLearningAndRFC8163IPv6`
+checks the resulting 558-byte IPv6 packet and ICMPv6 checksum after prefix learning.
+
+| Follow-up | Bounds and qualification |
+| --- | --- |
+| 6LoBAC | RFC 6282 traffic/address/multicast/UDP and bounded NHC extension decoding. Prefixes come from scope-local 6CO Router Advertisements with link-local source, hop limit 255 and verified ICMPv6 checksum. At most 4,096 contexts share the 8-MiB credit budget; advertised lifetime and 65,536-ingress expiry apply. Missing, conflicting, expired and future contexts are not applied |
+| UDP checksum elision | `internal/lowpan` restores checksums only with independently verified additional integrity. MS/TP CRC alone is not treated as upper-layer authorization; otherwise the packet remains qualified instead of being fabricated |
+| ROHC | RDT supplies per-PLP CID configuration. CRC8 validates IR/IR-DYN; CRC3/CRC7 validate compressed headers before context updates. Explicit PLP metadata is required. Description/context changes and late packets are qualified; each channel reserves 64 KiB plus its table bytes against the shared budget |
+| MPEG-TS | At most 256 PID states, 64 scopes, 512 retained stream entries/scope, 1,024 PAT programs, 128 source references per partial header and 8-KiB elementary prefixes. Scrambling, errors and discontinuities reset pending parsing. H.264/H.265 fixtures were generated from independent FFmpeg encoders (`TestSPSMetadataMatchesEncoderFixtures`) |
+| Bluetooth | At most 128 pending ACL streams, 256 fragments and 65,539 reassembled bytes; fragments require a captured direction. Fixed ATT CID 4 is bounded to MTU 517. Standard signalling fields and pairing capabilities are metadata; signed ATT remains explicitly unverified |
+| Provenance | Compression-context and AX.25 negotiation dependencies are identified by `LinkSourceRange.Purpose`; they do not inflate observed packet counts/timestamps. TS sources distinguish decoded ALP children from offsets into original capture packets |
+
+## Explicit device profiles
+
+`net capture -link-profiles profiles.json` selects profiles by logical interface,
+link type, bus, address and endpoint. The file is capped at 64 KiB/64 rules;
+unknown or duplicate selectors fail initialization. `NC_LINK_PROFILES` is the
+equivalent startup setting, inherited by subsequent service analyses. The profile
+file SHA-256 accompanies selected-profile metadata.
+
+```json
+{"Profiles":[
+  {"Interface":0,"LinkType":209,"Bus":1,"Address":80,"Profile":"i2c-eeprom16"},
+  {"Interface":0,"LinkType":266,"Bus":26,"Address":7,"Endpoint":1,"Profile":"usb-hid-boot-keyboard"},
+  {"Interface":0,"LinkType":300,"Address":8,"Profile":"mdb-coin-changer"}
+]}
+```
+
+Other supported names are `i2c-eeprom8`, `usb-hid-boot-mouse` and
+`mdb-bill-validator` (address 48). USB descriptor metadata needs no profile file;
+boot-report interpretation does. No EEPROM width, USB report layout or vendor
+transaction format is inferred from a device address.
 
 ALP lengths/counts follow [A/330:2026-04 §5.1](https://www.atsc.org/atsc-30-standard/a3302016-link-layer-protocol/):
 the base length holds the 11 LSBs, and concatenation has `count + 1` component

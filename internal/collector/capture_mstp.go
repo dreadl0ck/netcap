@@ -1,10 +1,13 @@
 package collector
 
 import (
+	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
+	"github.com/dreadl0ck/netcap/internal/bacnet"
 	"github.com/dreadl0ck/netcap/internal/linkaudit"
 )
 
@@ -33,6 +36,36 @@ func decodeMSTPCOBS(wire []byte) ([]byte, error) {
 		}
 	}
 	return out, nil
+}
+
+func decodeMSTPNPDU(f *linkaudit.LinkFrame, kind byte, body []byte) {
+	if f.Fields["header_crc_valid"] != "true" {
+		return
+	}
+	if kind == 5 || kind == 6 {
+		if f.Fields["data_crc_valid"] != "true" {
+			return
+		}
+	} else if kind == 32 || kind == 33 {
+		if f.Fields["cobs_valid"] != "true" || f.Fields["data_crc32k_valid"] != "true" {
+			return
+		}
+		body = f.Decoded
+	} else {
+		return
+	}
+	pdu, err := bacnet.ParseNPDU(body)
+	if err != nil {
+		f.Qualifications = append(f.Qualifications, "invalid-BACnet-NPDU-or-APDU")
+		return
+	}
+	wire, _ := json.Marshal(pdu)
+	f.Fields["bacnet_npdu"] = string(wire)
+	f.Decoded = bytes.Clone(body)
+	markLinkDecoded(f, "BACnet-NPDU")
+	if pdu.APDU != nil {
+		f.Qualifications = append(f.Qualifications, pdu.APDU.Qualifications...)
+	}
 }
 
 func mstpCRC32K(wire []byte) uint32 {

@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/dreadl0ck/netcap/internal/linkaudit"
+	"github.com/dreadl0ck/netcap/internal/rohc"
 )
 
 type alpMulticast struct {
@@ -81,6 +82,7 @@ func decodeALPSignalling(f *linkaudit.LinkFrame, data []byte, lengths []int) {
 		lengths = []int{len(data)}
 	}
 	var tables []any
+	var rdts []rohc.Description
 	offset := 0
 	decodedBytes := 0
 	var decodedPayload []byte
@@ -121,6 +123,16 @@ func decodeALPSignalling(f *linkaudit.LinkFrame, data []byte, lengths []int) {
 		decodedLengths = append(decodedLengths, len(body))
 		switch format {
 		case "0":
+			if f.Fields["signalling_type"] == "2" && f.Fields["signalling_type_extension"] == "65535" {
+				description, err := rohc.ParseRDT(body)
+				if err != nil {
+					f.Qualifications = append(f.Qualifications, "invalid-ALP-ROHC-description-table")
+					return
+				}
+				tables = append(tables, description)
+				rdts = append(rdts, description)
+				continue
+			}
 			if f.Fields["signalling_type"] != "1" || f.Fields["signalling_type_extension"] != "65535" {
 				f.Qualifications = append(f.Qualifications, "ALP-signalling-table-not-decoded")
 				return
@@ -195,4 +207,7 @@ func decodeALPSignalling(f *linkaudit.LinkFrame, data []byte, lengths []int) {
 	}
 	f.Fields["decoded_component_lengths"] = strings.Join(parts, ",")
 	f.Decoded = decodedPayload
+	if f.ALP != nil {
+		f.ALP.RDTs = rdts
+	}
 }

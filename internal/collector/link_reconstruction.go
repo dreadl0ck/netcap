@@ -8,7 +8,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/bluetooth"
+	"github.com/dreadl0ck/netcap/internal/deviceprofile"
 	"github.com/dreadl0ck/netcap/internal/linkaudit"
+	"github.com/dreadl0ck/netcap/internal/mpegts"
 	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gopacket/gopacket"
@@ -82,11 +85,19 @@ type alpAssembly struct {
 }
 
 type linkReconstructor struct {
-	assemblies map[string]*alpAssembly
-	watermark  time.Time
-	health     linkHealth
-	err        error
-	events     []gopacket.Packet
+	assemblies    map[string]*alpAssembly
+	watermark     time.Time
+	health        linkHealth
+	err           error
+	events        []gopacket.Packet
+	lobacContexts map[lobacKey]lobacContext
+	rohcChannels  map[string]*rohcChannel
+	transport     *mpegts.Processor
+	hci           *bluetooth.Processor
+	ax25Modes     map[string]*ax25Mode
+	profiles      *deviceprofile.Config
+	usbRequests   map[string]usbRequest
+	mdbRequests   map[string]mdbRequest
 }
 
 func (r *linkReconstructor) remove(key string, incomplete bool, reason ...string) {
@@ -109,6 +120,28 @@ func (r *linkReconstructor) remove(key string, incomplete bool, reason ...string
 }
 
 func (r *linkReconstructor) finish() {
+	for key := range r.usbRequests {
+		delete(r.usbRequests, key)
+		r.health.BufferedBytes -= 256
+	}
+	for key := range r.mdbRequests {
+		delete(r.mdbRequests, key)
+		r.health.BufferedBytes -= 256
+	}
+	for key := range r.ax25Modes {
+		delete(r.ax25Modes, key)
+		r.health.BufferedBytes -= 512
+	}
+	r.finishHCI()
+	r.finishMPEGTS()
+	for key, channel := range r.rohcChannels {
+		r.health.BufferedBytes -= channel.credit
+		delete(r.rohcChannels, key)
+	}
+	for key := range r.lobacContexts {
+		delete(r.lobacContexts, key)
+		r.health.BufferedBytes -= 512
+	}
 	keys := make([]string, 0, len(r.assemblies))
 	for key := range r.assemblies {
 		keys = append(keys, key)
@@ -166,7 +199,14 @@ func linkEvidence(p gopacket.Packet, f *linkaudit.LinkFrame, ordinal uint64) gop
 	if scope == "" {
 		scope = packetview.Scope(p)
 	}
-	view.Metadata().CaptureInfo = linkCaptureContext(p.Metadata().CaptureInfo, &packetview.Context{Scope: scope, Status: "alp-source", Packets: []*types.CapturePacketRef{linkRef(p, ordinal)}})
+	status := "alp-source"
+	if f.Type == 165 {
+		status = "mstp-source"
+	}
+	if f.Type == 243 {
+		status = "mpeg-ts-source"
+	}
+	view.Metadata().CaptureInfo = linkCaptureContext(p.Metadata().CaptureInfo, &packetview.Context{Scope: scope, Status: status, Packets: []*types.CapturePacketRef{linkRef(p, ordinal)}})
 	return view
 }
 
@@ -174,7 +214,7 @@ func markLinkDecoded(f *linkaudit.LinkFrame, protocol string) {
 	f.PayloadProtocol = protocol
 	qualifications := make([]string, 0, len(f.Qualifications))
 	for _, q := range f.Qualifications {
-		if q != "upper-layer-not-decoded" {
+		if q != "upper-layer-not-decoded" && q != "extended-or-proprietary-MS/TP-body-opaque" {
 			qualifications = append(qualifications, q)
 		}
 	}
@@ -196,6 +236,16 @@ func (r *linkReconstructor) advance(p gopacket.Packet, ordinal uint64) {
 	if !packetview.TimeUnavailable(ci) && ci.Timestamp.After(r.watermark) {
 		r.watermark = ci.Timestamp
 	}
+	r.expireLoBACContexts(ordinal)
+	r.expireROHC(ordinal)
+	if r.transport != nil {
+		r.transport.Expire(ordinal)
+	}
+	if r.hci != nil {
+		r.hci.Expire(ordinal)
+	}
+	r.expireAX25(ordinal)
+	r.expireDevices(ordinal)
 	var expired []string
 	for key, a := range r.assemblies {
 		if (!a.last.IsZero() && a.last.Add(30*time.Second).Before(r.watermark)) || (ordinal >= a.ordinal && ordinal-a.ordinal > 4096) {
@@ -325,7 +375,11 @@ func (r *linkReconstructor) process(p gopacket.Packet, f *linkaudit.LinkFrame, o
 	f.Fields["reconstruction_status"] = status
 	if a.PacketType == 4 {
 		decodeALPSignalling(f, data, a.ComponentLengths)
+		r.installROHC(p, f, refs, ordinal)
 		return nil
+	}
+	if a.PacketType == 2 {
+		return r.reconstructROHC(p, f, data, scope, refs, ranges, ordinal)
 	}
 	if a.PacketType == 7 {
 		return r.reconstructTS(data, f, ci, scope, refs, ranges, p.Metadata().CaptureInfo.Timestamp)

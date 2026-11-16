@@ -29,46 +29,46 @@ import (
 )
 
 const (
-	fieldBACnetIPBVLCType                = "BVLCType"
-	fieldBACnetIPBVLCFunction            = "BVLCFunction"
-	fieldBACnetIPBVLCFunctionName        = "BVLCFunctionName"
-	fieldBACnetIPBVLCLength              = "BVLCLength"
-	fieldBACnetIPNPDUVersion             = "NPDUVersion"
-	fieldBACnetIPNPDUControl             = "NPDUControl"
-	fieldBACnetIPNPDUExpectsReply        = "NPDUExpectsReply"
-	fieldBACnetIPNPDUNetworkLayerMsg     = "NPDUNetworkLayerMsg"
-	fieldBACnetIPNPDUPriority            = "NPDUPriority"
-	fieldBACnetIPDNET                    = "DNET"
-	fieldBACnetIPDADR                    = "DADR"
-	fieldBACnetIPSNET                    = "SNET"
-	fieldBACnetIPSADR                    = "SADR"
-	fieldBACnetIPHopCount                = "HopCount"
-	fieldBACnetIPNetworkMessageType      = "NetworkMessageType"
-	fieldBACnetIPNetworkMessageTypeName  = "NetworkMessageTypeName"
-	fieldBACnetIPAPDUType                = "APDUType"
-	fieldBACnetIPAPDUTypeName            = "APDUTypeName"
-	fieldBACnetIPSegmentedMessage        = "SegmentedMessage"
-	fieldBACnetIPMoreFollows             = "MoreFollows"
+	fieldBACnetIPBVLCType                  = "BVLCType"
+	fieldBACnetIPBVLCFunction              = "BVLCFunction"
+	fieldBACnetIPBVLCFunctionName          = "BVLCFunctionName"
+	fieldBACnetIPBVLCLength                = "BVLCLength"
+	fieldBACnetIPNPDUVersion               = "NPDUVersion"
+	fieldBACnetIPNPDUControl               = "NPDUControl"
+	fieldBACnetIPNPDUExpectsReply          = "NPDUExpectsReply"
+	fieldBACnetIPNPDUNetworkLayerMsg       = "NPDUNetworkLayerMsg"
+	fieldBACnetIPNPDUPriority              = "NPDUPriority"
+	fieldBACnetIPDNET                      = "DNET"
+	fieldBACnetIPDADR                      = "DADR"
+	fieldBACnetIPSNET                      = "SNET"
+	fieldBACnetIPSADR                      = "SADR"
+	fieldBACnetIPHopCount                  = "HopCount"
+	fieldBACnetIPNetworkMessageType        = "NetworkMessageType"
+	fieldBACnetIPNetworkMessageTypeName    = "NetworkMessageTypeName"
+	fieldBACnetIPAPDUType                  = "APDUType"
+	fieldBACnetIPAPDUTypeName              = "APDUTypeName"
+	fieldBACnetIPSegmentedMessage          = "SegmentedMessage"
+	fieldBACnetIPMoreFollows               = "MoreFollows"
 	fieldBACnetIPSegmentedResponseAccepted = "SegmentedResponseAccepted"
-	fieldBACnetIPInvokeID                = "InvokeID"
-	fieldBACnetIPSequenceNumber          = "SequenceNumber"
-	fieldBACnetIPProposedWindowSize      = "ProposedWindowSize"
-	fieldBACnetIPServiceChoice           = "ServiceChoice"
-	fieldBACnetIPServiceName             = "ServiceName"
-	fieldBACnetIPIsConfirmed             = "IsConfirmed"
-	fieldBACnetIPErrorClass              = "ErrorClass"
-	fieldBACnetIPErrorCode               = "ErrorCode"
-	fieldBACnetIPErrorName               = "ErrorName"
-	fieldBACnetIPRejectReason            = "RejectReason"
-	fieldBACnetIPAbortReason             = "AbortReason"
-	fieldBACnetIPObjectType              = "ObjectType"
-	fieldBACnetIPObjectTypeName          = "ObjectTypeName"
-	fieldBACnetIPObjectInstance          = "ObjectInstance"
-	fieldBACnetIPPropertyIdentifier      = "PropertyIdentifier"
-	fieldBACnetIPPropertyName            = "PropertyName"
-	fieldBACnetIPPropertyArrayIndex      = "PropertyArrayIndex"
-	fieldBACnetIPIsSecurityRelevant      = "IsSecurityRelevant"
-	fieldBACnetIPIsCriticalOperation     = "IsCriticalOperation"
+	fieldBACnetIPInvokeID                  = "InvokeID"
+	fieldBACnetIPSequenceNumber            = "SequenceNumber"
+	fieldBACnetIPProposedWindowSize        = "ProposedWindowSize"
+	fieldBACnetIPServiceChoice             = "ServiceChoice"
+	fieldBACnetIPServiceName               = "ServiceName"
+	fieldBACnetIPIsConfirmed               = "IsConfirmed"
+	fieldBACnetIPErrorClass                = "ErrorClass"
+	fieldBACnetIPErrorCode                 = "ErrorCode"
+	fieldBACnetIPErrorName                 = "ErrorName"
+	fieldBACnetIPRejectReason              = "RejectReason"
+	fieldBACnetIPAbortReason               = "AbortReason"
+	fieldBACnetIPObjectType                = "ObjectType"
+	fieldBACnetIPObjectTypeName            = "ObjectTypeName"
+	fieldBACnetIPObjectInstance            = "ObjectInstance"
+	fieldBACnetIPPropertyIdentifier        = "PropertyIdentifier"
+	fieldBACnetIPPropertyName              = "PropertyName"
+	fieldBACnetIPPropertyArrayIndex        = "PropertyArrayIndex"
+	fieldBACnetIPIsSecurityRelevant        = "IsSecurityRelevant"
+	fieldBACnetIPIsCriticalOperation       = "IsCriticalOperation"
 )
 
 var fieldsBACnetIP = []string{
@@ -117,6 +117,7 @@ var fieldsBACnetIP = []string{
 	fieldBACnetIPPropertyArrayIndex,
 	fieldBACnetIPIsSecurityRelevant,
 	fieldBACnetIPIsCriticalOperation,
+	"ParseQualifications",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -172,6 +173,7 @@ func (b *BACnetIP) CSVRecord() []string {
 		formatInt32(b.PropertyArrayIndex),
 		strconv.FormatBool(b.IsSecurityRelevant),
 		strconv.FormatBool(b.IsCriticalOperation),
+		strings.Join(b.ParseQualifications, ";"),
 	})
 }
 
@@ -269,6 +271,7 @@ func (b *BACnetIP) Encode() []string {
 		bacnetipEncoder.Int32(fieldBACnetIPPropertyArrayIndex, b.PropertyArrayIndex),
 		bacnetipEncoder.Bool(b.IsSecurityRelevant),
 		bacnetipEncoder.Bool(b.IsCriticalOperation),
+		bacnetipEncoder.String("ParseQualifications", strings.Join(b.ParseQualifications, ";")),
 	})
 }
 
@@ -279,4 +282,3 @@ func (b *BACnetIP) Analyze() {}
 func (b *BACnetIP) NetcapType() Type {
 	return Type_NC_BACnetIP
 }
-
