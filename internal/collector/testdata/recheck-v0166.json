@@ -255,6 +255,9 @@
   "auditStatsCancellation": {
     "verification": "TestCanceledAuditStatsDoesNotPublishCounts verifies that a canceled request does not scan a plain audit or publish a partial total. Active, scoped and service statistics share the context-aware frame counter. Focused inventory and completion tests pass."
   },
+  "artifactAnalysisAdmission": {
+    "verification": "TestRejectedAnalysisStartPreservesActiveReport verifies that overlapping analysis is rejected before it can replace the active capture report. Focused admission, write-failure and queue cancellation race tests pass."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

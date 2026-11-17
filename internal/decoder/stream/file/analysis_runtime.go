@@ -97,6 +97,8 @@ var analysisGlobal struct {
 	runtime *analysisRuntime
 }
 
+var analysisLifecycle sync.Mutex
+
 func currentAnalysis() *analysisRuntime {
 	analysisGlobal.RLock()
 	defer analysisGlobal.RUnlock()
@@ -115,6 +117,11 @@ func BindAnalysisRunID(runID string) {
 
 // StartAnalysis freezes extraction policy and private analyzer snapshots for one capture.
 func StartAnalysis(directory, runID string) error {
+	analysisLifecycle.Lock()
+	defer analysisLifecycle.Unlock()
+	if currentAnalysis() != nil {
+		return fmt.Errorf("artifact analysis capture already active")
+	}
 	cfg := GetGlobalConfig()
 	if err := ValidateConfig(cfg); err != nil {
 		return err
@@ -182,11 +189,6 @@ func StartAnalysis(directory, runID string) error {
 		return fmt.Errorf("persist artifact analysis admission: %w", err)
 	}
 	analysisGlobal.Lock()
-	if analysisGlobal.runtime != nil {
-		analysisGlobal.Unlock()
-		m.cancel()
-		return fmt.Errorf("artifact analysis capture already active")
-	}
 	analysisGlobal.runtime = m
 	analysisGlobal.Unlock()
 	configMutex.Lock()
@@ -411,6 +413,8 @@ func CancelAnalysis() {
 
 // FinishAnalysis drains accepted jobs and durably reports incomplete coverage.
 func FinishAnalysis() (analysisErr, persistenceErr error) {
+	analysisLifecycle.Lock()
+	defer analysisLifecycle.Unlock()
 	m := currentAnalysis()
 	if m == nil {
 		return nil, nil

@@ -15,6 +15,28 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 )
 
+func TestRejectedAnalysisStartPreservesActiveReport(t *testing.T) {
+	old := GetGlobalConfig()
+	SetGlobalConfig(GetDefaultConfig())
+	t.Cleanup(func() { SetGlobalConfig(old) })
+	dir := t.TempDir()
+	if err := StartAnalysis(dir, "active"); err != nil {
+		t.Fatal(err)
+	}
+	defer FinishAnalysis()
+	if err := StartAnalysis(dir, "rejected"); err == nil {
+		t.Fatal("accepted overlapping artifact analysis")
+	}
+	data, err := os.ReadFile(filepath.Join(dir, AnalysisReportFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var report AnalysisReport
+	if err := json.Unmarshal(data, &report); err != nil || report.RunID != "active" || report.State != "running" {
+		t.Fatalf("rejected start replaced active report: %s (%v)", data, err)
+	}
+}
+
 func TestRepeatedArtifactWriteFailuresKeepFirstCauseAndCount(t *testing.T) {
 	old := GetGlobalConfig()
 	SetGlobalConfig(GetDefaultConfig())
