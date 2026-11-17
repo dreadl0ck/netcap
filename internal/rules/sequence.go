@@ -97,7 +97,7 @@ func (e *Engine) checkSequence(rule *Rule, record types.AuditRecord) (bool, erro
 		e.mu.Unlock()
 	}
 
-	now := recordEvalTime(record)
+	now := e.recordEvalTime(record)
 	windowNanos := seq.window().Nanoseconds()
 
 	tracker.mu.Lock()

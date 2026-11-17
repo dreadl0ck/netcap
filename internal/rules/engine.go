@@ -486,14 +486,14 @@ func (e *Engine) cleanupRecentAlerts() {
 
 // recordEvalTime returns the timestamp used for windowed threshold math. It
 // prefers the record's own timestamp (so windows behave correctly on offline
-// PCAP replay) and falls back to wall-clock time when the record has no time.
-func recordEvalTime(record types.AuditRecord) int64 {
+// PCAP replay) and falls back to the engine clock when the record has no time.
+func (e *Engine) recordEvalTime(record types.AuditRecord) int64 {
 	if record != nil {
 		if ts := record.Time(); ts > 0 {
 			return ts
 		}
 	}
-	return time.Now().UnixNano()
+	return e.now().UnixNano()
 }
 
 // checkThreshold tracks rule matches and returns true when threshold is reached.
@@ -513,7 +513,7 @@ func (e *Engine) checkThreshold(rule *Rule, record types.AuditRecord) bool {
 
 	// Use the record's own timestamp so time windows are correct on offline
 	// PCAP replay (not just live capture).
-	now := recordEvalTime(record)
+	now := e.recordEvalTime(record)
 
 	// Handle edge case: threshold <= 0 should never trigger
 	if rule.Threshold <= 0 {
@@ -585,7 +585,7 @@ func (e *Engine) checkDistinctThreshold(rule *Rule, record types.AuditRecord) bo
 		return false
 	}
 
-	now := recordEvalTime(record)
+	now := e.recordEvalTime(record)
 
 	tracker.mu.Lock()
 	defer tracker.mu.Unlock()

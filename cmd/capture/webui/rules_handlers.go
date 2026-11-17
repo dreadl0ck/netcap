@@ -1110,17 +1110,13 @@ func (s *Server) executeRuleOnCapture(rule *rules.Rule, outDir string) (alertsCo
 		}
 	}()
 
-	// Create a rules engine with just this rule
-	// Note: We can't use NewEngine as it expects a file path, so we create manually
-	engine := &rules.Engine{}
-
 	// Ensure the output directory exists
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return 0, 0, fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	// Initialize engine with our config
-	engine, err = rules.NewEngineFromConfig(tempConfig, alertWriter)
+	engine, err := rules.NewAuditReplay(tempConfig, alertWriter)
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to create rules engine: %w", err)
 	}

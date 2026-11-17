@@ -77,3 +77,41 @@ func BenchmarkSharedRuleEvaluation(b *testing.B) {
 		})
 	}
 }
+
+func TestAuditReplayUsesRecordTimeForDedupAndRateWindows(t *testing.T) {
+	config := &Config{Rules: []*Rule{{Name: "fixture", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true}}}
+	base := time.Unix(1700000000, 0)
+	var prior []*types.Alert
+	for range 2 {
+		writer := new(MockAlertWriter)
+		replay, err := NewAuditReplay(config, writer)
+		if err != nil {
+			t.Fatal(err)
+		}
+		replay.engine.SetRateLimit(1)
+		for _, step := range []struct {
+			src  string
+			ts   int64
+			want int
+		}{
+			{"192.0.2.1", base.UnixNano(), 1},
+			{"192.0.2.2", base.Add(time.Second).UnixNano(), 0},
+			{"192.0.2.3", base.Add(time.Minute).UnixNano(), 1},
+			{"192.0.2.4", base.UnixNano(), 0},
+			{"192.0.2.5", 0, 0},
+			{"192.0.2.1", base.Add(6 * time.Minute).UnixNano(), 1},
+		} {
+			got, err := replay.Evaluate(&types.HTTP{Method: "GET", Timestamp: step.ts, SrcIP: step.src})
+			if err != nil || got != step.want {
+				t.Fatalf("%+v: %d %v", step, got, err)
+			}
+		}
+		for _, alert := range writer.alerts {
+			alert.DetectedAt = 0
+		}
+		if prior != nil && !reflect.DeepEqual(writer.alerts, prior) {
+			t.Fatal("identical audit order produced different alerts")
+		}
+		prior = writer.alerts
+	}
+}

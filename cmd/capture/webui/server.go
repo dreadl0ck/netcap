@@ -1716,7 +1716,7 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) (resultErr error) {
 		}
 
 		// Create engine with these rules
-		engine, err := rules.NewEngineFromConfig(typeConfig, alertWriter)
+		engine, err := rules.NewAuditReplay(typeConfig, alertWriter)
 		if err != nil {
 			log.Printf("%s Failed to create rules engine for type %s: %v", mode, typeStr, err)
 			return err
