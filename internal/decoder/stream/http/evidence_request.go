@@ -438,15 +438,23 @@ func parseEvidenceMultipart(r *http.Request, body io.Reader, boundary string, re
 	}
 	reader := multipart.NewReader(body, boundary)
 	r.PostForm = url.Values{}
-	query, _ := evidenceQuery(r.URL.RawQuery)
+	defer func() {
+		for name, values := range r.PostForm {
+			merged := make([]string, 0, len(values)+len(r.Form[name]))
+			r.Form[name] = append(append(merged, values...), r.Form[name]...)
+		}
+	}()
 	remaining := int64(maxFieldBytes)
-	for range maxFields {
+	for parts := 0; ; parts++ {
 		part, err := reader.NextPart()
 		if err == io.EOF {
 			return nil
 		}
 		if err != nil {
 			return err
+		}
+		if parts == maxFields {
+			return fmt.Errorf("multipart form exceeds %d parts", maxFields)
 		}
 		name := part.FormName()
 		if name == "" || part.FileName() != "" {
@@ -471,7 +479,5 @@ func parseEvidenceMultipart(r *http.Request, body io.Reader, boundary string, re
 		remaining -= int64(len(value) + len(name))
 		r.PostForm.Add(name, string(value))
 		release()
-		r.Form[name] = append(append([]string(nil), r.PostForm[name]...), query[name]...)
 	}
-	return fmt.Errorf("multipart form exceeds %d parts", maxFields)
 }

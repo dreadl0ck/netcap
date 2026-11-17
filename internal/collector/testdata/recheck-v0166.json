@@ -212,6 +212,9 @@
   "officialMCPFutureSettings": {
     "verification": "scripts/check-mcp-stdio.py passed for 65 of 119 advertised tools. Toggling payload preserved the omitted TCP budget, evidence-links readback matched its toggle, and the completed child manifest recorded BPF udp and exactly the UDP and Connection decoders. Parent and child each returned 18 UDP records."
   },
+  "multipartFieldAccumulation": {
+    "verification": "TestMultipartRepeatedFieldsAtPartLimit verifies that exactly 1024 repeated parts succeed and the 1025th fails while preserving the first 1024 values in wire order before the URL query value. Multipart parsing now merges accepted fields once per key. The portable HTTP race suite passes."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

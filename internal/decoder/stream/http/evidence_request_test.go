@@ -55,3 +55,27 @@ func TestMalformedTargetAndSemicolonDoNotHideRequests(t *testing.T) {
 		t.Fatal(w.records)
 	}
 }
+
+func TestMultipartRepeatedFieldsAtPartLimit(t *testing.T) {
+	for _, n := range []int{1024, 1025} {
+		var body strings.Builder
+		for i := range n {
+			fmt.Fprintf(&body, "--fixture\r\nContent-Disposition: form-data; name=\"tag\"\r\n\r\n%d\r\n", i)
+		}
+		body.WriteString("--fixture--\r\n")
+		req := &http.Request{Method: "POST", URL: &url.URL{RawQuery: "tag=query"}, Header: http.Header{"Content-Type": {"multipart/form-data; boundary=fixture"}}}
+		err := parseEvidenceForm(req, []byte(body.String()))
+		if (err != nil) != (n > 1024) {
+			t.Fatalf("%d parts: %v", n, err)
+		}
+		values := req.Form["tag"]
+		if len(req.PostForm["tag"]) != 1024 || len(values) != 1025 || values[1024] != "query" {
+			t.Fatal("lost accepted fields or query value", n)
+		}
+		for i := range 1024 {
+			if values[i] != fmt.Sprint(i) {
+				t.Fatalf("unexpected field %d: %s", i, values[i])
+			}
+		}
+	}
+}
