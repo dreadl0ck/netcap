@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -44,6 +45,28 @@ func TestCaptureWorkerHandsOffCompletionWithoutReleasingJobOwnership(t *testing.
 	case <-firstFinished:
 		t.Fatal("capture worker released the first job before post-processing finished")
 	default:
+	}
+}
+
+func TestAnalysisCompletionRejectsTruncatedTimelineTrack(t *testing.T) {
+	s, input, dir := reanalysisFixture(t)
+	delete(s.completedFiles, input)
+	s.rulesConfig = &rules.Config{}
+	if err := os.Remove(filepath.Join(dir, "HTTP.ncap.gz")); err != nil {
+		t.Fatal(err)
+	}
+	path := writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, writeErr := f.Write([]byte{4}) // Declared record body is missing.
+	if closeErr := f.Close(); writeErr != nil || closeErr != nil {
+		t.Fatal(writeErr, closeErr)
+	}
+	err = s.completeAnalysis(&AnalysisJob{InputFile: input, OutputDir: dir}, time.Second)
+	if err == nil || !strings.Contains(err.Error(), "index HTTP: unexpected EOF") || s.completedFiles[input] {
+		t.Fatalf("damaged audit passed completion: error=%v completed=%t", err, s.completedFiles[input])
 	}
 }
 

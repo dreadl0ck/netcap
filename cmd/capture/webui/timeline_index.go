@@ -435,12 +435,12 @@ func buildTimelineIndex(entry *timelineIndexEntry, fingerprint string, files []t
 	}
 
 	var (
-		wg      sync.WaitGroup
-		mu      sync.Mutex
-		results = make([]*tlTypeIndex, 0, len(files))
-		next    int64
-		done    int64
-		failed  atomic.Bool
+		wg       sync.WaitGroup
+		mu       sync.Mutex
+		results  = make([]*tlTypeIndex, 0, len(files))
+		next     int64
+		done     int64
+		failures = make([]error, len(files))
 	)
 
 	// Divide the global budget across tracks before reading. This bounds peak
@@ -484,7 +484,7 @@ func buildTimelineIndex(entry *timelineIndexEntry, fingerprint string, files []t
 
 				if err != nil || ti == nil || len(ti.Events) == 0 {
 					if err != nil {
-						failed.Store(true)
+						failures[i] = fmt.Errorf("index %s: %w", files[i].name, err)
 					}
 					continue
 				}
@@ -498,10 +498,16 @@ func buildTimelineIndex(entry *timelineIndexEntry, fingerprint string, files []t
 
 	wg.Wait()
 
-	idx := assembleTimelineIndex(fingerprint, results)
-	if failed.Load() {
-		idx.Truncated = true
+	for _, err := range failures {
+		if err != nil {
+			entry.mu.Lock()
+			entry.state = timelineStateError
+			entry.errMsg = err.Error()
+			entry.mu.Unlock()
+			return
+		}
 	}
+	idx := assembleTimelineIndex(fingerprint, results)
 
 	entry.mu.Lock()
 	entry.index = idx
@@ -678,7 +684,7 @@ func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit
 		record, readErr := reader.NextRecord()
 		if readErr != nil {
 			if !errors.Is(readErr, io.EOF) {
-				ti.Truncated = true
+				return nil, readErr
 			}
 			break
 		}
