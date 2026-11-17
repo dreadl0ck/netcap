@@ -114,6 +114,11 @@
     "source": "9a1f449",
     "verification": "Official client 1.26.0 initialized over stdio and discovered 119 tools. list_decoders and get_audit_record_fields returned success. The completed internal/collector/testdata/voip/mdns.pcap session returned 18 UDP records consistently through paged, count-only and allow_partial queries; the sealed query returned both generation keys. This is a smoke test, not all-tool qualification."
   },
+  "multipartSourceExtraction": {
+    "source": "e56c391",
+    "implementation": "Disk-backed HTTP extraction reads multipart fields directly from the spool. File parts are streamed past, and retained fields reserve parser state credits.",
+    "verification": "A 3360000-byte file part preserves the fields after the file, full extracted request, and next HTTP transaction. Byte-backed and source-backed audit records match. Portable and native HTTP race suites and backed HTTP collector controls pass. Passive multipart, JSON and URL-encoded forms still use compatibility decoding."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
