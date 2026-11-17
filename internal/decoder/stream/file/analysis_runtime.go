@@ -76,6 +76,7 @@ type analysisRuntime struct {
 	cancel           context.CancelFunc
 	wg               sync.WaitGroup
 	jobs             chan analysisJob
+	closing          bool
 	directory        string
 	cfg              *Config
 	report           AnalysisReport
@@ -322,6 +323,10 @@ func analyzeStored(path, digest string, load func() ([]byte, func(), error)) ([]
 		return nil, nil
 	}
 	m.mu.Lock()
+	if m.closing {
+		m.mu.Unlock()
+		return nil, nil
+	}
 	entry := m.cache[digest]
 	if entry != nil {
 		m.report.CacheHits++
@@ -430,7 +435,10 @@ func FinishAnalysis() (analysisErr, persistenceErr error) {
 	if m == nil {
 		return nil, nil
 	}
+	m.mu.Lock()
+	m.closing = true
 	close(m.jobs)
+	m.mu.Unlock()
 	m.wg.Wait()
 	m.cancel()
 	m.mu.Lock()

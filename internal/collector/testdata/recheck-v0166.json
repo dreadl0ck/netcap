@@ -276,6 +276,9 @@
   "lazyArtifactAnalyzerInput": {
     "verification": "TestAnalysisCacheDoesNotReloadArtifact verifies two observations of the same content load and release analyzer bytes once. Workers materialize admitted input after dequeue; queue cancellation preserves file observations. Focused file and backed HTTP race tests pass."
   },
+  "artifactQueueShutdown": {
+    "verification": "TestAnalysisShutdownDrainsAcceptedJobsAndRejectsLateWork holds an accepted job open during shutdown and verifies late work is refused without sending on the closed queue. Focused admission, cache and queue race tests passed five repetitions."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

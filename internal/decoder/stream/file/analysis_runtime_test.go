@@ -77,6 +77,68 @@ func (fixtureAnalyzer) ScanBytesContext(context.Context, []byte) ([]string, erro
 	return []string{"fixture-match"}, nil
 }
 
+func TestAnalysisShutdownDrainsAcceptedJobsAndRejectsLateWork(t *testing.T) {
+	old := GetGlobalConfig()
+	SetGlobalConfig(GetDefaultConfig())
+	t.Cleanup(func() { SetGlobalConfig(old) })
+	dir := t.TempDir()
+	if err := StartAnalysis(dir, "shutdown-admission"); err != nil {
+		t.Fatal(err)
+	}
+	defer FinishAnalysis()
+	m := currentAnalysis()
+	m.yara = fixtureAnalyzer{}
+	body := []byte("artifact fixture")
+	path := filepath.Join(dir, "fixture.bin")
+	if err := os.WriteFile(path, body, 0600); err != nil {
+		t.Fatal(err)
+	}
+	started, release := make(chan struct{}), make(chan struct{})
+	var unblock sync.Once
+	defer unblock.Do(func() { close(release) })
+	accepted := make(chan []string, 1)
+	go func() {
+		matches, _ := analyzeStored(path, ComputeHashes(body).SHA256, func() ([]byte, func(), error) {
+			close(started)
+			<-release
+			return body, func() {}, nil
+		})
+		accepted <- matches
+	}()
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("accepted job did not start")
+	}
+	finished := make(chan error, 1)
+	go func() {
+		analysisErr, persistenceErr := FinishAnalysis()
+		finished <- errors.Join(analysisErr, persistenceErr)
+	}()
+	for deadline := time.Now().Add(5 * time.Second); ; {
+		m.mu.Lock()
+		closing := m.closing
+		m.mu.Unlock()
+		if closing {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("analysis did not close admission")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if matches, classification := analyzeStored(path, "late", nil); matches != nil || classification != nil {
+		t.Fatal("late job was accepted")
+	}
+	unblock.Do(func() { close(release) })
+	if err := <-finished; err != nil {
+		t.Fatal(err)
+	}
+	if matches := <-accepted; len(matches) != 1 || matches[0] != "fixture-match" {
+		t.Fatal("shutdown discarded accepted work", matches)
+	}
+}
+
 func TestAnalysisCacheDoesNotReloadArtifact(t *testing.T) {
 	old := GetGlobalConfig()
 	SetGlobalConfig(GetDefaultConfig())
