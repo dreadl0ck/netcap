@@ -24,6 +24,7 @@ import (
 	"compress/gzip"
 	"github.com/dreadl0ck/netcap/internal/utils"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -54,7 +55,10 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	h.Proto = req.request.Proto
 	h.Method = req.request.Method
 	h.Host = utils.PrintableBytes([]byte(req.request.Host))
-	h.ReqContentLength = int32(req.request.ContentLength)
+	h.ReqContentLength = int32(min(req.request.ContentLength, math.MaxInt32))
+	if req.request.ContentLength > math.MaxInt32 {
+		h.ParseQualifications = appendUnique(h.ParseQualifications, "request-content-length-exceeds-int32")
+	}
 	h.ReqContentEncoding = req.request.Header.Get(headerContentEncoding)
 	h.ContentType = req.request.Header.Get(headerContentType)
 	h.RequestHeader = readHeader(req.request.Header)
@@ -158,7 +162,7 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 func httpFromResponseBody(res *http.Response, body []byte, err error) *types.HTTP {
 	var (
 		detected      string
-		contentLength = int32(res.ContentLength)
+		contentLength = int32(min(res.ContentLength, math.MaxInt32))
 	)
 
 	if err == nil {
@@ -205,6 +209,9 @@ func httpFromResponseBody(res *http.Response, body []byte, err error) *types.HTT
 		HasServerTiming:          res.Header.Get("Server-Timing") != "",
 		Server:                   res.Header.Get("Server"),
 		XPoweredBy:               res.Header.Get("X-Powered-By"),
+	}
+	if res.ContentLength > math.MaxInt32 {
+		record.ParseQualifications = appendUnique(record.ParseQualifications, "response-content-length-exceeds-int32")
 	}
 	if decoderconfig.Instance != nil && decoderconfig.Instance.IncludePayloads {
 		record.ResponseBody = body

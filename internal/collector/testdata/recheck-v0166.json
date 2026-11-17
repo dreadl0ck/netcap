@@ -241,6 +241,10 @@
   "httpResponsePayloadReuse": {
     "verification": "TestHTTPRecordBorrowsRetainedResponsePayload confirms that a 524288-byte identity response uses the retained body directly and preserves the inferred content length. The full portable HTTP race suite passes."
   },
+  "publicDownloadFast": {
+    "sha256": "a9d08b46f0ffafe6671407910184aa521db200568da3e844d92636c0feab0588",
+    "verification": "TestDownloadFastOriginal passes on the 90036940-byte public capture with NETCAP_DOWNLOAD_FAST set, including under race instrumentation. All 89942 packets are admitted. GET/200 retains the raw Content-Length of 4497694720, incomplete_response_body and an explicitly saturated legacy length. Peak TCP state credits were 40017 under 262144, with zero retained at close."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
