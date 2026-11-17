@@ -58,6 +58,12 @@ func ReadBodyLimit(r io.Reader, limit int64) (body []byte, release func(), err e
 	emptyReads := 0
 	var once sync.Once
 	release = func() { once.Do(func() { releaseBuffer(reserved) }) }
+	defer func() {
+		if failure := recover(); failure != nil {
+			release()
+			panic(failure)
+		}
+	}()
 	for {
 		if int64(len(body)) == limit {
 			var extra [1]byte

@@ -10,6 +10,37 @@ import (
 	"testing"
 )
 
+type panicBodyReader struct{}
+
+func (panicBodyReader) Read([]byte) (int, error) { panic("fixture read failure") }
+
+func TestBodyReaderPanicReturnsAllocationCredits(t *testing.T) {
+	cfg, old := GetDefaultConfig(), GetGlobalConfig()
+	cfg.FileExtraction.SizeLimits.MaxFileSize = 1024
+	cfg.FileExtraction.SizeLimits.MaxInflightBytes = 2048
+	SetGlobalConfig(cfg)
+	t.Cleanup(func() { SetGlobalConfig(old) })
+	if err := StartAnalysis(t.TempDir(), "body-panic"); err != nil {
+		t.Fatal(err)
+	}
+	defer FinishAnalysis()
+	for range 5 {
+		func() {
+			defer func() {
+				if recover() != "fixture read failure" {
+					t.Error("expected original panic")
+				}
+			}()
+			_, release, _ := ReadBody(panicBodyReader{})
+			release()
+		}()
+	}
+	if err := reserveBuffer(2048); err != nil {
+		t.Fatal("panic leaked budget", err)
+	}
+	releaseBuffer(2048)
+}
+
 func TestSmallBodiesDoNotConsumeLargeAllocationReservations(t *testing.T) {
 	cfg, old := GetDefaultConfig(), GetGlobalConfig()
 	cfg.FileExtraction.SizeLimits.MaxFileSize = 1024
