@@ -84,12 +84,13 @@ func (c *Collector) finalizeCaptureEvidence() {
 	stats := c.behaviorCaptureHealth
 	c.behaviorHealthMu.Unlock()
 	c.captureEvidence.Kernel(stats.KernelReceived, stats.KernelDrops, stats.StatsError)
-	c.captureEvidence.CoverageError(c.captureCoverageError)
+	coverageErr := errors.Join(c.captureCoverageError, c.artifactAnalysisError)
+	c.captureEvidence.CoverageError(coverageErr)
 	status := "stopped"
 	if c.captureComplete {
 		status = "done"
 	}
-	if c.captureCoverageError != nil || c.captureInputStatus == "partial" || c.captureInputStatus == "unsupported" {
+	if coverageErr != nil || c.captureInputStatus == "partial" || c.captureInputStatus == "unsupported" {
 		status = "partial"
 	}
 	if err := c.captureEvidence.Close(status, c.admittedPackets, c.behaviorQueueDrops, errors.Join(c.captureRunError, c.flowExportError, c.captureEvidenceError)); err != nil {

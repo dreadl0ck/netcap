@@ -83,6 +83,15 @@ func (c *Collector) sealAuditStages() error {
 	}
 	for index := range c.auditStages {
 		stage := &c.auditStages[index]
+		if stage.Type == "File" && c.artifactAnalysisError != nil {
+			stage.Coverage = "partial"
+			if stage.Reason == "" {
+				stage.Reason = boundedStageReason(c.artifactAnalysisError)
+			}
+			if stage.Records == 0 && stage.State == "sealed" {
+				stage.State = "unavailable"
+			}
+		}
 		if !c.captureComplete || c.captureRunError != nil {
 			stage.Coverage = "partial"
 			if stage.Reason == "" {

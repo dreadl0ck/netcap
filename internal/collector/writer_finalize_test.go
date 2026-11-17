@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -11,6 +12,37 @@ import (
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+func TestArtifactCoverageDoesNotUnsealPacketAudits(t *testing.T) {
+	out := t.TempDir()
+	capture, err := evidence.NewCapture(context.Background(), out, evidence.CaptureConfig{Kind: "live"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := &Collector{captureEvidence: capture, captureComplete: true, artifactAnalysisError: errors.New("artifact analysis incomplete")}
+	c.auditStages = []evidence.AuditStage{
+		{Type: "UDP", Stage: "packet", State: "sealed", Coverage: "complete"},
+		{Type: "File", Stage: "application", State: "sealed", Coverage: "complete"},
+	}
+	c.finalizeCaptureEvidence()
+	if err := c.sealAuditStages(); err != nil {
+		t.Fatal(err)
+	}
+	manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
+	if manifest.Status != "partial" || manifest.CoverageError != "artifact analysis incomplete" || manifest.Error != "" {
+		t.Fatal(manifest)
+	}
+	if err := capture.MarkAuditOutputReady(); err == nil {
+		t.Fatal("artifact loss allowed full readiness")
+	}
+	stage, _, err := evidence.ReadAuditStage(out, manifest.RunID, "UDP", manifest.AuditStagesGeneration)
+	if err != nil || stage.Coverage != "complete" {
+		t.Fatal(stage, err)
+	}
+	if _, _, err := evidence.ReadAuditStage(out, manifest.RunID, "File", manifest.AuditStagesGeneration); err == nil {
+		t.Fatal("unavailable artifact stage was readable")
+	}
+}
 
 type captureCloseFailureWriter struct {
 	netio.AuditRecordWriter

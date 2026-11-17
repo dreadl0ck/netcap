@@ -119,7 +119,7 @@ func (c *Collector) cleanup(force bool) {
 		}
 		c.finalizeCaptureEvidence()
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, c.sealAuditStages())
-		if c.captureEvidence != nil && c.captureRunError == nil && c.captureCoverageError == nil && c.captureEvidenceError == nil && c.flowExportError == nil {
+		if c.captureEvidence != nil && c.captureRunError == nil && c.captureCoverageError == nil && c.captureEvidenceError == nil && c.flowExportError == nil && c.artifactAnalysisError == nil {
 			if err := c.captureEvidence.MarkAuditOutputReady(); err != nil {
 				c.captureEvidenceError = fmt.Errorf("finalize audit output: %w", err)
 			}
