@@ -18,9 +18,7 @@ func (s *Server) finishCaptureJob(job *AnalysisJob, duration time.Duration) {
 	complete()
 }
 
-func (s *Server) runPostCapture(job *AnalysisJob, slots chan struct{}) {
-	defer s.wg.Done()
-	defer func() { <-slots }()
+func (s *Server) runPostCapture(job *AnalysisJob) {
 	defer job.processingDone()
 	defer func() {
 		if p := recover(); p != nil {

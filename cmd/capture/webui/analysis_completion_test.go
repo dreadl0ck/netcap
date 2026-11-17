@@ -48,6 +48,44 @@ func TestCaptureWorkerHandsOffCompletionWithoutReleasingJobOwnership(t *testing.
 	}
 }
 
+func TestCaptureWorkerBuffersOnePostCaptureJob(t *testing.T) {
+	const jobs = 5
+	s := &Server{jobQueue: make(chan *AnalysisJob, jobs), shutdownChan: make(chan struct{})}
+	captured, completed := make(chan struct{}, jobs), make(chan struct{}, jobs)
+	release := make(chan struct{})
+	for range jobs {
+		s.jobQueue <- &AnalysisJob{processingDone: func() { completed <- struct{}{} }}
+	}
+	close(s.jobQueue)
+	s.wg.Add(1)
+	go s.processJobs(func(job *AnalysisJob) {
+		job.postCapture = func() { <-release }
+		captured <- struct{}{}
+	})
+	defer func() {
+		close(release)
+		s.wg.Wait()
+		if len(completed) != jobs {
+			t.Errorf("released %d of %d jobs", len(completed), jobs)
+		}
+	}()
+	deadline := time.After(5 * time.Second)
+	for range 4 {
+		select {
+		case <-captured:
+		case <-deadline:
+			t.Fatal("capture stalled before filling the post-processing backlog")
+		}
+	}
+	select {
+	case <-captured:
+		t.Fatal("capture exceeded the bounded backlog")
+	case <-completed:
+		t.Fatal("job ownership released while completion was blocked")
+	case <-time.After(20 * time.Millisecond):
+	}
+}
+
 func TestAnalysisCompletionRejectsTruncatedTimelineTrack(t *testing.T) {
 	s, input, dir := reanalysisFixture(t)
 	delete(s.completedFiles, input)

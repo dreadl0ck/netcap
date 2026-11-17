@@ -1498,7 +1498,17 @@ func (s *Server) SetDPIPreferences(userIP string, prefs *UserDPIPreferences) {
 // processJobs processes analysis jobs from the queue one at a time (service mode only)
 func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 	defer s.wg.Done()
-	postSlots := make(chan struct{}, 2)
+	postQueue := make(chan *AnalysisJob, 1)
+	defer close(postQueue)
+	for range 2 {
+		s.wg.Add(1)
+		go func() {
+			defer s.wg.Done()
+			for job := range postQueue {
+				s.runPostCapture(job)
+			}
+		}()
+	}
 
 	for {
 		select {
@@ -1556,10 +1566,8 @@ func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 				runAnalysis(job)
 				if job.postCapture != nil {
 					select {
-					case postSlots <- struct{}{}:
-						s.wg.Add(1)
+					case postQueue <- job:
 						transferred = true
-						go s.runPostCapture(job, postSlots)
 					case <-s.shutdownChan:
 						s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
 					}

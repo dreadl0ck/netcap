@@ -300,6 +300,9 @@
   "boundedStreamVerificationConcurrency": {
     "verification": "TestMCPStreamContentPagesVerifySourceAndConfinement passed three race-instrumented runs. Two occupied verification slots cause a valid page request to return 429; invalid span bounds still return 400 before admission, and valid paging resumes after the slots are released."
   },
+  "boundedPostCaptureHandoff": {
+    "verification": "TestCaptureWorkerBuffersOnePostCaptureJob verifies that two blocked post-capture workers and one queued handoff allow the fourth capture to run before backpressure stops the fifth. Job ownership persists through completion and all five jobs are released after draining. Focused capture-worker, completion and processing race tests pass three repetitions."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
