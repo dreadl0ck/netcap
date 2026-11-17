@@ -291,6 +291,9 @@
   "officialMCPPacketExportAndCharts": {
     "verification": "The official stdio harness passed 128 calls across 77 of 119 tools. Packet export selected 18 UDP packets; the paged ZIP matched its advertised digest, and its manifest matched both the source capture binding and the exported PCAPNG SHA-256. The UDP Length chart respected the five-point limit."
   },
+  "officialMCPDirectionalStreamPaging": {
+    "verification": "The official stdio harness passed 154 calls across 78 of 119 tools. Directional stream pages were at most 64 bytes with at most one span per response; concatenated bytes matched the manifest length and SHA-256. A changed manifest digest on continuation was rejected."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

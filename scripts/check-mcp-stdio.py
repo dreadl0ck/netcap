@@ -83,6 +83,35 @@ async def check(binary, capture, data_dir):
                 await asyncio.sleep(0.2)
 
         args = {"session_id": sid}
+        streams = (await call("get_stream_evidence", args))["data"]
+        stream, direction = next(
+            (row, side) for row in streams for side in ("client", "server")
+            if int(row["manifest"][side]["length"]) > 1
+        )
+        expected = stream["manifest"][direction]
+        limit = min(64, int(expected["length"]) - 1)
+        target = args | {"id": stream["id"], "direction": direction, "limit": limit, "spanLimit": 1}
+        body = bytearray()
+        manifest_hash = None
+        while True:
+            page = await call("get_stream_content", target | {"offset": len(body)} | (
+                {"manifestSHA256": manifest_hash} if manifest_hash else {}))
+            if manifest_hash is None:
+                manifest_hash = page["manifestSHA256"]
+            chunk = base64.b64decode(page["data"], validate=True)
+            if (page["manifestSHA256"] != manifest_hash or page["offset"] != len(body)
+                    or int(page["totalBytes"]) != int(expected["length"])
+                    or not 0 < len(chunk) <= limit or len(page["spans"]) > 1
+                    or len(body) + len(chunk) > int(expected["length"])):
+                raise ValueError("invalid directional evidence page")
+            body.extend(chunk)
+            if not page["hasMore"]:
+                break
+        if len(body) != int(expected["length"]) or hashlib.sha256(body).hexdigest() != expected["sha256"]:
+            raise ValueError("directional evidence differs from its manifest")
+        stale_stream = await client.call_tool("get_stream_content", target | {"offset": 1, "manifestSHA256": "0" * 64})
+        if not stale_stream.isError:
+            raise ValueError("changed stream manifest digest accepted")
         feature_states = (await call("get_features", {}))["features"]
         link_enabled = next(f["enabled"] for f in feature_states if f["name"] == "evidence-links")
         await call("set_feature", {"name": "evidence-links", "enabled": True})
