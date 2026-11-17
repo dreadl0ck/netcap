@@ -49,6 +49,14 @@ func failureReproductionRequest(s *Server, query, ip, token string) *httptest.Re
 	return w
 }
 
+func TestFailedReproductionRemainsAvailableWithFailedInputPresent(t *testing.T) {
+	s, _, _ := failedReproductionFixture(t, false)
+	w := failureReproductionRequest(s, "sessionId=owned", "127.0.0.1:1234", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("failed diagnostics blocked by record admission: %d %s", w.Code, w.Body.String())
+	}
+}
+
 func TestFailedReproductionWithoutManifestOrOutput(t *testing.T) {
 	s, job, admitted := failedReproductionFixture(t, false)
 	// A single failed upload used to resolve to the active/base directory instead.

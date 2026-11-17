@@ -44,7 +44,7 @@ func (s *Server) captureSelectionMiddleware(next http.Handler) http.Handler {
 				writeSelectionError(w, err)
 				return
 			}
-			if err == nil && explicit && r.Method == http.MethodGet && r.URL.Path != "/api/status" && r.URL.Path != "/api/files/input" && !strings.HasPrefix(r.URL.Path, "/api/error-log/") {
+			if err == nil && explicit && r.Method == http.MethodGet && r.URL.Path != "/api/status" && r.URL.Path != "/api/files/input" && r.URL.Path != "/api/investigation/reproduction" && !strings.HasPrefix(r.URL.Path, "/api/error-log/") {
 				if err := s.captureReadAdmission(selection, r.URL.Path == "/api/audit-stats"); err != nil {
 					writeSelectionError(w, err)
 					return
