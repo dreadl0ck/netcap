@@ -2,8 +2,16 @@ package collector
 
 import (
 	"bytes"
+	"compress/gzip"
+	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
+	"io"
+	"net/http"
+	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
@@ -17,6 +25,110 @@ func darwinUSBFrame(request, endpoint, transfer byte, body []byte) []byte {
 	binary.LittleEndian.PutUint64(header[16:], 0x1122334455667788)
 	binary.LittleEndian.PutUint32(header[24:], 0x1a110000)
 	return append(header, body...)
+}
+
+func TestDarwinUSBOriginalCaptures(t *testing.T) {
+	urls := strings.Fields(os.Getenv("NETCAP_USB_CAPTURE_URLS"))
+	if len(urls) == 0 {
+		t.Skip("set NETCAP_USB_CAPTURE_URLS to the two pinned original capture URLs")
+	}
+	if len(urls) != 2 {
+		t.Fatal("qualification requires both pinned captures")
+	}
+	witnesses := map[string]int{
+		"5508d9d85b10a5bf947b3986c1b5dd3555bfce6dccbb4902e5c307ffec36709d": 515,
+		"439bc8a580e4fb8a4c5880fc75d7ad156c0c229f0dedf786b4b8495b846e7b28": 458,
+	}
+	client := &http.Client{Timeout: 30 * time.Second}
+	for _, source := range urls {
+		resp, err := client.Get(source)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.StatusCode != 200 {
+			resp.Body.Close()
+			t.Fatal("capture retrieval failed", resp.Status)
+		}
+		compressed, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
+		resp.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		reader, err := gzip.NewReader(bytes.NewReader(compressed))
+		if err != nil {
+			t.Fatal(err)
+		}
+		wire, err := io.ReadAll(io.LimitReader(reader, 8<<20))
+		reader.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		digest := sha256.Sum256(wire)
+		key := hex.EncodeToString(digest[:])
+		want, ok := witnesses[key]
+		if !ok {
+			t.Fatal("capture digest is not pinned", key)
+		}
+		delete(witnesses, key)
+		var order binary.ByteOrder
+		var links []uint16
+		count := 0
+		for offset := 0; offset < len(wire); {
+			if len(wire)-offset < 12 {
+				t.Fatal("short capture block")
+			}
+			block := wire[offset:]
+			if bytes.Equal(block[:4], []byte{0x0a, 0x0d, 0x0d, 0x0a}) {
+				if len(block) < 28 {
+					t.Fatal("short section header")
+				}
+				order = binary.LittleEndian
+				if order.Uint32(block[8:12]) != 0x1a2b3c4d {
+					order = binary.BigEndian
+				}
+				if order.Uint32(block[8:12]) != 0x1a2b3c4d {
+					t.Fatal("invalid section byte order")
+				}
+				links = nil
+			}
+			if order == nil {
+				t.Fatal("capture does not start with a section")
+			}
+			size := int(order.Uint32(block[4:8]))
+			if size < 12 || size > len(block) || size%4 != 0 || order.Uint32(block[size-4:size]) != uint32(size) {
+				t.Fatal("invalid capture block length")
+			}
+			block = block[:size]
+			switch order.Uint32(block[:4]) {
+			case 1:
+				if size < 20 {
+					t.Fatal("short interface block")
+				}
+				links = append(links, order.Uint16(block[8:10]))
+			case 6:
+				if size < 32 {
+					t.Fatal("short packet block")
+				}
+				id, captured := int(order.Uint32(block[8:12])), int(order.Uint32(block[20:24]))
+				if id >= len(links) || links[id] != 266 || captured > size-32 {
+					t.Fatal("invalid USB packet block")
+				}
+				packet := decodeDarwinUSB(block[28 : 28+captured])
+				if packet.ErrorLayer() != nil {
+					t.Fatal("original packet rejected", count+1, packet.ErrorLayer().Error())
+				}
+				count++
+			}
+			offset += size
+		}
+		if count != want {
+			t.Fatal("original packet coverage changed", count, want)
+		}
+		t.Logf("capture sha256=%s decoded=%d", key, count)
+	}
+	if len(witnesses) != 0 {
+		t.Fatal("original capture qualification incomplete")
+	}
 }
 
 func decodeDarwinUSB(data []byte) gopacket.Packet {
@@ -89,6 +201,38 @@ func TestDarwinUSBISODescriptorBounds(t *testing.T) {
 	for _, wire := range [][]byte{nil, make([]byte, 31), darwinUSBFrame(0, 0, 0, []byte{1}), darwinUSBFrame(2, 0, 2, nil), darwinUSBFrame(1, 0x70, 2, nil)} {
 		if decodeDarwinUSB(wire).ErrorLayer() == nil {
 			t.Fatal("malformed Darwin USB accepted", wire)
+		}
+	}
+}
+
+func TestDarwinUSBExtendedHeaderPreservesOpaqueBytes(t *testing.T) {
+	for _, size := range []int{40, 48} {
+		wire := darwinUSBFrame(1, 0x81, 3, []byte{1, 2, 3})
+		extension := bytes.Repeat([]byte{0xa5}, size-32)
+		wire = append(append(wire[:32:32], extension...), wire[32:]...)
+		binary.LittleEndian.PutUint16(wire, 0x0101)
+		wire[2] = byte(size)
+		p := decodeDarwinUSB(wire)
+		if p.ErrorLayer() != nil {
+			t.Fatal(p.ErrorLayer().Error())
+		}
+		u := p.Layer(layers.LayerTypeUSB).(*layers.USB)
+		if !bytes.Equal(u.Contents[32:], extension) || !bytes.Equal(u.Payload, []byte{1, 2, 3}) || u.ID != 0x1122334455667788 {
+			t.Fatal("extended header changed evidence", u)
+		}
+		for _, header := range []byte{0, 31, 32, 39, byte(len(wire) + 1)} {
+			bad := bytes.Clone(wire)
+			bad[2] = header
+			if decodeDarwinUSB(bad).ErrorLayer() == nil {
+				t.Fatalf("accepted header length %d", header)
+			}
+		}
+		for _, version := range []uint16{0, 0x0102, 0x0200} {
+			bad := bytes.Clone(wire)
+			binary.LittleEndian.PutUint16(bad, version)
+			if decodeDarwinUSB(bad).ErrorLayer() == nil {
+				t.Fatalf("accepted version %04x", version)
+			}
 		}
 	}
 }

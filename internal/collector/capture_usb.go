@@ -86,11 +86,17 @@ func decodeCaptureUSB(data []byte, p gopacket.PacketBuilder, link layers.LinkTyp
 			p.SetTruncated()
 			return badLink("Darwin USB header shorter than 32 bytes")
 		}
-		if binary.LittleEndian.Uint16(data[:2]) != 0x0100 {
-			return unsupportedLink("unsupported Darwin USB header version 0x%04x", binary.LittleEndian.Uint16(data[:2]))
+		version := binary.LittleEndian.Uint16(data[:2])
+		minimum := 32
+		switch version {
+		case 0x0100:
+		case 0x0101:
+			minimum = 40
+		default:
+			return unsupportedLink("unsupported Darwin USB header version 0x%04x", version)
 		}
 		header := int(data[2])
-		if header < 32 || header > len(data) {
+		if header < minimum || header > len(data) {
 			return badLink("invalid Darwin USB header length %d", header)
 		}
 		if data[3] > 1 || data[29] > 127 || data[30]&0x70 != 0 {
