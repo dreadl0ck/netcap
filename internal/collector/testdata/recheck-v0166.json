@@ -249,6 +249,9 @@
     "http": "c3768cb and f0fb75a stop draining rejected HTTP bodies and match responses by request index instead of scanning the request list. The portable HTTP package tests passed for both changes. ea6b1c9 returns body allocation credits before propagating a reader panic; TestBodyReaderPanicReturnsAllocationCredits and focused budget controls passed.",
     "mcp": "6dd5744 requires a delimited terminal SSE event and propagates cancellation to backend HTTP; focused stream and sealed-query tests passed. 29c8add and a3af5cf fix local offline-rule session resolution and verify persisted partial evaluation through the official client. Offline handler tests passed; the stdio harness passed for 72 of 119 tools, with 18 UDP records explicitly unscoped and zero committed alerts in the partial rule evaluation."
   },
+  "boundedArtifactFailureReporting": {
+    "verification": "TestRepeatedArtifactWriteFailuresKeepFirstCauseAndCount verifies that 1001 write failures retain the first cause and exact failure count in a partial report. Focused artifact failure and queue cancellation tests pass."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

@@ -2,7 +2,11 @@ package file
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -10,6 +14,36 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 )
+
+func TestRepeatedArtifactWriteFailuresKeepFirstCauseAndCount(t *testing.T) {
+	old := GetGlobalConfig()
+	SetGlobalConfig(GetDefaultConfig())
+	t.Cleanup(func() { SetGlobalConfig(old) })
+	dir := t.TempDir()
+	if err := StartAnalysis(dir, "write-failures"); err != nil {
+		t.Fatal(err)
+	}
+	first := errors.New("first write failure")
+	RecordArtifactWriteError(first)
+	for range 1000 {
+		RecordArtifactWriteError(errors.New("later write failure"))
+	}
+	_, persistenceErr := FinishAnalysis()
+	if !errors.Is(persistenceErr, first) || persistenceErr.Error() != first.Error() {
+		t.Fatal(persistenceErr)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, AnalysisReportFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var report AnalysisReport
+	if err := json.Unmarshal(data, &report); err != nil {
+		t.Fatal(err)
+	}
+	if report.State != "partial" || report.PersistenceFailures != 1001 || report.Error != first.Error() {
+		t.Fatalf("incorrect persistence summary: state=%s count=%d error=%s", report.State, report.PersistenceFailures, report.Error)
+	}
+}
 
 type blockedAnalyzer struct{ started chan struct{} }
 

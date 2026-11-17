@@ -48,17 +48,18 @@ type ArtifactAnalysis struct {
 	Analyzers    []AnalyzerResult `json:"analyzers"`
 }
 type AnalysisReport struct {
-	ExecutedJobs     uint64                       `json:"executedJobs"`
-	CacheHits        uint64                       `json:"cacheHits"`
-	Analyzers        []AnalyzerResult             `json:"analyzers"`
-	Version          int                          `json:"version"`
-	RunID            string                       `json:"runId"`
-	State            string                       `json:"state"`
-	Error            string                       `json:"error,omitempty"`
-	ConfigDigest     string                       `json:"configDigest"`
-	Results          map[string]*ArtifactAnalysis `json:"results"`
-	Rejected         uint64                       `json:"rejected"`
-	ExtractionIssues []string                     `json:"extractionIssues,omitempty"`
+	ExecutedJobs        uint64                       `json:"executedJobs"`
+	CacheHits           uint64                       `json:"cacheHits"`
+	Analyzers           []AnalyzerResult             `json:"analyzers"`
+	Version             int                          `json:"version"`
+	RunID               string                       `json:"runId"`
+	State               string                       `json:"state"`
+	Error               string                       `json:"error,omitempty"`
+	ConfigDigest        string                       `json:"configDigest"`
+	Results             map[string]*ArtifactAnalysis `json:"results"`
+	Rejected            uint64                       `json:"rejected"`
+	ExtractionIssues    []string                     `json:"extractionIssues,omitempty"`
+	PersistenceFailures uint64                       `json:"persistenceFailures,omitempty"`
 }
 type analysisEntry struct {
 	result *ArtifactAnalysis
@@ -245,7 +246,7 @@ func (m *analysisRuntime) worker() {
 			job.entry.result.Analyzers[i].State = "running"
 		}
 		if err := m.persistLocked(); err != nil {
-			m.persistenceError = errors.Join(m.persistenceError, err)
+			m.recordPersistenceFailureLocked(err)
 		}
 		m.mu.Unlock()
 		ctx, cancel := context.WithTimeout(m.ctx, 60*time.Second)
@@ -292,7 +293,7 @@ func (m *analysisRuntime) worker() {
 		encoded, _ := json.Marshal(result)
 		m.cacheBytes += len(encoded)
 		if err := m.persistLocked(); err != nil {
-			m.persistenceError = errors.Join(m.persistenceError, err)
+			m.recordPersistenceFailureLocked(err)
 		}
 		close(job.entry.done)
 		m.mu.Unlock()
@@ -384,13 +385,20 @@ func RecordExtractionIssue(err error) {
 	}
 }
 
+func (m *analysisRuntime) recordPersistenceFailureLocked(err error) {
+	m.report.PersistenceFailures++
+	if m.persistenceError == nil {
+		m.persistenceError = err
+	}
+}
+
 func RecordArtifactWriteError(err error) {
 	if err == nil {
 		return
 	}
 	if m := currentAnalysis(); m != nil {
 		m.mu.Lock()
-		m.persistenceError = errors.Join(m.persistenceError, err)
+		m.recordPersistenceFailureLocked(err)
 		m.report.ExtractionIssues = appendIssue(m.report.ExtractionIssues, "artifact output write failed")
 		m.mu.Unlock()
 	}
