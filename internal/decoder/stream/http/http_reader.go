@@ -663,8 +663,8 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 		if h.conversation.FragmentError != nil {
 			return h.conversation.FragmentError
 		}
-	} else if spool != nil && form == "application/json" {
-		err = h.parseBackedJSONForm(req, spool)
+	} else if spool != nil && form != "" {
+		err = h.parseBackedSmallForm(req, spool)
 		if h.conversation.FragmentError != nil {
 			return h.conversation.FragmentError
 		}

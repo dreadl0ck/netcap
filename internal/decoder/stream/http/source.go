@@ -66,15 +66,17 @@ func sourceBackedForm(request *http.Request) (media, boundary string) {
 		return media, params["boundary"]
 	case media == "application/json", strings.HasSuffix(media, "+json"):
 		return "application/json", ""
+	case media == "application/x-www-form-urlencoded":
+		return media, ""
 	}
 	return "", ""
 }
 
-func (h *httpReader) parseBackedJSONForm(req *http.Request, spool *file.BodySpool) error {
+func (h *httpReader) parseBackedSmallForm(req *http.Request, spool *file.BodySpool) error {
 	size := spool.Size()
 	if size > maxJSONFormBytes {
 		req.Form, _ = evidenceQuery(req.URL.RawQuery)
-		return fmt.Errorf("JSON form exceeds 1 MiB")
+		return fmt.Errorf("backed form exceeds 1 MiB")
 	}
 	// Charge temporary decoding separately from the fields retained for pairing.
 	credit := 4096 + 64*size
@@ -218,8 +220,17 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 					return errHTTPSourceCompatibility
 				}
 				if request.ContentLength != 0 || len(request.TransferEncoding) > 0 {
-					_, release, err := readSourceRequestBody(c, request.Body)
+					var body io.Reader = request.Body
+					var formLimit *io.LimitedReader
+					if form == "application/x-www-form-urlencoded" {
+						formLimit = &io.LimitedReader{R: body, N: maxJSONFormBytes + 1}
+						body = formLimit
+					}
+					_, release, err := readSourceRequestBody(c, body)
 					release()
+					if formLimit != nil && formLimit.N == 0 {
+						return errHTTPSourceCompatibility
+					}
 					if err != nil {
 						if c.FragmentError != nil {
 							return c.FragmentError
