@@ -32,6 +32,9 @@ func ConfigureIncrementalState(b *core.StateBudget, cancel func()) {
 }
 
 func (f *connectionFactory) failIncremental(err error) {
+	if errors.Is(err, core.ErrCompletionStateBudget) {
+		return
+	}
 	f.Lock()
 	if f.payloadBudget != nil && f.payloadBudget.localLoss && errors.Is(err, ErrRetainedPayloadLimit) {
 		f.Unlock()

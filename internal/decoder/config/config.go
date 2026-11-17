@@ -346,6 +346,7 @@ type Config struct {
 	MaxRetainedReassemblyBytes int64
 	LocalReassemblyPageLoss    bool
 	LocalRetainedPayloadLoss   bool
+	LocalCompletionStateLoss   bool
 	// IncrementalHTTP opts HTTP/1 into transaction-time decoding and retirement.
 	IncrementalHTTP          bool
 	MaxRetainedTCPStateBytes int64

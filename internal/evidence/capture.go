@@ -43,6 +43,7 @@ type CaptureConfig struct {
 	MaxRetainedReassemblyBytes int64 `json:"maxRetainedReassemblyBytes,omitempty,string"`
 	LocalReassemblyPageLoss    bool  `json:"localReassemblyPageLoss,omitempty"`
 	LocalRetainedPayloadLoss   bool  `json:"localRetainedPayloadLoss,omitempty"`
+	LocalCompletionStateLoss   bool  `json:"localCompletionStateLoss,omitempty"`
 	IncrementalHTTP            bool  `json:"incrementalHTTP,omitempty"`
 	MaxRetainedTCPStateBytes   int64 `json:"maxRetainedTCPStateBytes,omitempty,string"`
 	MaxAggregateStateBytes     int64 `json:"maxAggregateStateBytes,omitempty,string"`

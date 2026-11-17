@@ -164,7 +164,11 @@ func (c *Collector) doCleanup(force bool) {
 	}
 	if c.streamStateBudget != nil {
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, c.streamStateBudget.Error())
-		data, err := json.MarshalIndent(c.streamStateBudget.Health(), "", "  ")
+		health := c.streamStateBudget.Health()
+		if health.CompletionRejectedBytes > 0 {
+			c.recordLocalReassemblyLoss(fmt.Errorf("%w: rejected %d bytes of working state", core.ErrCompletionStateBudget, health.CompletionRejectedBytes))
+		}
+		data, err := json.MarshalIndent(health, "", "  ")
 		if err == nil {
 			err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "TCPStreamStateBudget.json"), append(data, '\n'), 0600)
 		}

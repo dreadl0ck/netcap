@@ -113,6 +113,41 @@ func TestLocalRetainedPayloadLossPreservesUnrelatedHTTP(t *testing.T) {
 	}
 }
 
+func TestLocalCompletionStateLossPreservesUnrelatedHTTP(t *testing.T) {
+	wire, input := newBookCapture(t)
+	affected := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 80, false)
+	for range 128 {
+		affected(false, false, false, "GET /affected HTTP/1.1\r\nHost: fixture.test\r\nX-Label: "+strings.Repeat("x", 512)+"\r\n\r\n")
+	}
+	wire.conversation("192.0.2.2", "198.51.100.1", 45001, 80, false,
+		bookMessage{text: "GET /healthy HTTP/1.1\r\nHost: fixture.test\r\n\r\n"},
+		bookMessage{server: true, text: "HTTP/1.1 204 No Content\r\n\r\n"})
+	out := t.TempDir()
+	cfg := ultimateCaptureConfig(out, 1, 0)
+	cfg.CaptureEvidence = true
+	cfg.DecoderConfig.IncludeDecoders = "TCP,Connection,HTTP"
+	cfg.DecoderConfig.MaxAggregateStateBytes = 1 << 20
+	cfg.DecoderConfig.MaxRetainedTCPStateBytes = 128 << 10
+	cfg.DecoderConfig.LocalCompletionStateLoss = true
+	err := New(cfg).CollectPcap(input)
+	var partial *localReassemblyCoverageError
+	if !errors.As(err, &partial) || !errors.Is(err, core.ErrCompletionStateBudget) {
+		t.Fatal(err)
+	}
+	manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
+	if manifest.Status != "partial" || manifest.Error != "" || manifest.AdmittedPackets != uint64(wire.n) {
+		t.Fatal(manifest)
+	}
+	health := bookJSON[core.StateBudgetHealth](t, filepath.Join(out, "TCPStreamStateBudget.json"))
+	if health.Exceeded || health.CompletionRejectedBytes == 0 || health.RetainedBytes != 0 || health.PeakBytes > health.LimitBytes {
+		t.Fatal(health)
+	}
+	records := bookRecords(t, out, "HTTP", func() *types.HTTP { return new(types.HTTP) })
+	if len(records) != 1 || records[0].URL != "/healthy" || records[0].StatusCode != 204 {
+		t.Fatalf("unexpected HTTP records: %d", len(records))
+	}
+}
+
 func TestBackedSMTPCompletionUsesFragmentBudgets(t *testing.T) {
 	wire, input := newBookCapture(t)
 	send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 25, false)

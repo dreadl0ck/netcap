@@ -43,21 +43,26 @@ var ErrStreamStateBudget = errors.New("TCP stream state budget exceeded")
 
 var ErrIncrementalLimit = errors.New("incremental parser retained-state limit")
 
+var ErrCompletionStateBudget = fmt.Errorf("TCP completion working state: %w", ErrStreamStateBudget)
+
 type StateBudget struct {
+	parent               *StateBudget
 	limit                int64
 	used, peak, rejected atomic.Int64
 	failed               atomic.Bool
+	completionRejected   atomic.Int64
 	once                 sync.Once
 	cancel               func()
 }
 
 type StateBudgetHealth struct {
-	Scope         string `json:"scope"`
-	LimitBytes    int64  `json:"limitBytes"`
-	RetainedBytes int64  `json:"retainedBytes"`
-	PeakBytes     int64  `json:"peakBytes"`
-	RejectedBytes int64  `json:"rejectedBytes"`
-	Exceeded      bool   `json:"exceeded"`
+	Scope                   string `json:"scope"`
+	LimitBytes              int64  `json:"limitBytes"`
+	RetainedBytes           int64  `json:"retainedBytes"`
+	PeakBytes               int64  `json:"peakBytes"`
+	RejectedBytes           int64  `json:"rejectedBytes"`
+	Exceeded                bool   `json:"exceeded"`
+	CompletionRejectedBytes int64  `json:"completionRejectedBytes,omitempty"`
 }
 
 func NewStateBudget(limit int64, cancel func()) (*StateBudget, error) {
@@ -68,6 +73,20 @@ func NewStateBudget(limit int64, cancel func()) (*StateBudget, error) {
 }
 
 func (b *StateBudget) Reserve(n int64) error {
+	if b != nil && b.parent != nil {
+		return b.parent.reserve(n, true)
+	}
+	return b.reserve(n, false)
+}
+
+func (b *StateBudget) CompletionView() *StateBudget {
+	if b == nil || b.parent != nil {
+		return b
+	}
+	return &StateBudget{parent: b}
+}
+
+func (b *StateBudget) reserve(n int64, completion bool) error {
 	if n < 0 {
 		panic("negative stream reservation")
 	}
@@ -78,6 +97,10 @@ func (b *StateBudget) Reserve(n int64) error {
 		used := b.used.Load()
 		if b.failed.Load() || (b.limit > 0 && n > b.limit-used) {
 			b.rejected.Add(n)
+			if completion && !b.failed.Load() {
+				b.completionRejected.Add(n)
+				return ErrCompletionStateBudget
+			}
 			b.once.Do(func() {
 				b.failed.Store(true)
 				if b.cancel != nil {
@@ -98,12 +121,19 @@ func (b *StateBudget) Reserve(n int64) error {
 }
 
 func (b *StateBudget) Release(n int64) {
+	if b != nil && b.parent != nil {
+		b.parent.Release(n)
+		return
+	}
 	if b != nil && b.used.Add(-n) < 0 {
 		panic("stream state accounting underflow")
 	}
 }
 
 func (b *StateBudget) Error() error {
+	if b != nil && b.parent != nil {
+		return b.parent.Error()
+	}
 	if b != nil && b.failed.Load() {
 		return fmt.Errorf("%w: limit=%d", ErrStreamStateBudget, b.limit)
 	}
@@ -111,5 +141,11 @@ func (b *StateBudget) Error() error {
 }
 
 func (b *StateBudget) Health() StateBudgetHealth {
-	return StateBudgetHealth{Scope: "tcp-pool-connection-parser-and-backing-reader-credits", LimitBytes: b.limit, RetainedBytes: b.used.Load(), PeakBytes: b.peak.Load(), RejectedBytes: b.rejected.Load(), Exceeded: b.failed.Load()}
+	if b == nil {
+		return StateBudgetHealth{}
+	}
+	if b.parent != nil {
+		return b.parent.Health()
+	}
+	return StateBudgetHealth{Scope: "tcp-pool-connection-parser-and-backing-reader-credits", LimitBytes: b.limit, RetainedBytes: b.used.Load(), PeakBytes: b.peak.Load(), RejectedBytes: b.rejected.Load(), Exceeded: b.failed.Load(), CompletionRejectedBytes: b.completionRejected.Load()}
 }

@@ -668,9 +668,13 @@ func (t *tcpConnection) decode() {
 	cPort := utils.DecodePort(t.client.Transport().Src().Raw())
 	sPort := utils.DecodePort(t.client.Transport().Dst().Raw())
 
+	workingBudget := t.stateBudget
+	if decoderconfig.Instance.LocalCompletionStateLoss {
+		workingBudget = workingBudget.CompletionView()
+	}
 	conv := &core.ConversationInfo{
 		Source:               core.MergedSource{Client: clientSource, Server: serverSource},
-		StateBudget:          t.stateBudget,
+		StateBudget:          workingBudget,
 		Ident:                t.ident,
 		NetworkScope:         t.networkScope,
 		FirstClientPacket:    t.client.FirstPacket(),
@@ -739,7 +743,7 @@ func (t *tcpConnection) decode() {
 		},
 		PrefixBytes: func(limit int) ([]byte, []byte) {
 			amount := 2 * int64(limit)
-			if err := t.stateBudget.Reserve(amount); err != nil {
+			if err := workingBudget.Reserve(amount); err != nil {
 				conv.FragmentError = err
 				return nil, nil
 			}

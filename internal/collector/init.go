@@ -76,6 +76,9 @@ func (c *Collector) Init() (err error) {
 	if c.config.DecoderConfig.LocalRetainedPayloadLoss && (c.captureKind != "file" || c.config.DecoderConfig.IncrementalHTTP || c.config.DecoderConfig.MaxRetainedTCPBytes <= 0) {
 		return fmt.Errorf("local TCP payload loss requires offline capture with a positive payload budget and incremental HTTP disabled")
 	}
+	if c.config.DecoderConfig.LocalCompletionStateLoss && (c.captureKind != "file" || c.config.DecoderConfig.IncrementalHTTP || c.config.DecoderConfig.MaxRetainedTCPStateBytes <= 0) {
+		return fmt.Errorf("local TCP completion state loss requires offline capture with a positive state budget and incremental HTTP disabled")
+	}
 	c.contextLocked()
 	c.streamStateBudget, err = core.NewStateBudget(c.config.DecoderConfig.MaxRetainedTCPStateBytes, c.runCancel)
 	if err != nil {
