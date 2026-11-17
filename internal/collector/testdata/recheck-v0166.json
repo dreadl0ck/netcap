@@ -62,6 +62,16 @@
     "verification": "Final full portable collector suite passes (138.549 s); six affected package race suites and native suites, focused native large-body capture tests and vet pass. Split/role/loss/gap equivalence, scratch/sample panic cleanup, no-progress/reader-credit rejection, header-only specialization and passive wire-error controls pass",
     "remaining": "File extraction, included payloads, form-body streaming, protocol-upgrade streaming, unbounded metadata backlogs, generic fallback selection and secret-enabled decryption still require migration. Local degradation and phase-qualified publication remain open"
   },
+  "httpSourceExtraction": {
+    "source": "69fb8da",
+    "status": "implemented and verified for HTTP/1 response extraction and opaque identity-encoded uploads with payload inclusion disabled",
+    "implementation": "Private disk-backed bodies retain verified hashes and a 512-byte prefix, with shared scratch disk admission (1 GiB by default), per-file limits and explicit cleanup. Atomic publication, deduplication and independent file observations share the existing save path. Entropy, token/script, MIME, password-protection and offset-based executable checks scan bounded chunks; codec working memory is admitted separately. Immutable transport-run qualifications are cached once, avoiding a full source replay per extracted file",
+    "compatibility": "The in-flight allocation limit may be smaller than the per-file size limit; byte-backed compatibility readers still enforce allocation admission. Full-body native analyzer inputs remain checked materializations. Included payloads, forms, encoded requests and protocol upgrades still use compatibility decoding",
+    "qualification": "TestBackedHTTPExtractionLargeBodyUsesBoundedInput saves and hashes a 94371840-byte response, cleans scratch files and seals readiness with a 1048576-byte extraction allocation limit and 262144-byte TCP state limit. Final race run peaks at 71413 TCP input/state credits. Extraction scratch, codecs and analyzer inputs use their separate allocation domain; these are component limits, not process RSS measurements",
+    "controls": "Source/byte HTTP and file observations agree for plain, gzip, truncated wire bodies, truncated gzip recovery and chunked uploads. Analysis comparisons include split-boundary tokens, shebang lines, distant PE signatures and encrypted Office markers. Exact/overflow file limits, shared disk exhaustion, reader errors/no-progress, panic cleanup and repeated close pass. 1000 artifact qualification lookups perform one source walk",
+    "verification": "Final full portable collector suite passes (142.095 s); native file/HTTP race suites, focused collector large-body races and targeted vet pass",
+    "remaining": "Streaming included payloads/forms/encoded requests, generic fallback and native analyzer inputs, secret-enabled decryption, local pressure policy, fair scheduling and external release qualification remain open"
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
