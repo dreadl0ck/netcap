@@ -131,7 +131,7 @@ func (s *storedTCPReader) append(data *core.StreamData) error {
 			payloadCredit = int64(len(data.RawData))
 			if !s.payloadBudget.reserve(payloadCredit) {
 				s.budget.Release(credit)
-				return fmt.Errorf("TCP backing-reader payload materialization budget exceeded")
+				return fmt.Errorf("backing-reader payload materialization: %w", ErrRetainedPayloadLimit)
 			}
 		}
 	}
@@ -192,7 +192,7 @@ func (s *storedTCPReader) WalkRange(start, length int64, yield func(core.DataFra
 			if s.payloadBudget != nil {
 				amount := int64(len(fragment.RawData))
 				if !s.payloadBudget.reserve(amount) {
-					return false, fmt.Errorf("TCP backing-reader payload iteration budget exceeded")
+					return false, fmt.Errorf("backing-reader payload iteration: %w", ErrRetainedPayloadLimit)
 				}
 				defer s.payloadBudget.release(amount)
 			}
@@ -256,7 +256,7 @@ func (s *storedTCPReader) read() (core.DataFragments, error) {
 				if s.payloadBudget != nil {
 					n := int64(len(fragment.RawData))
 					if !s.payloadBudget.reserve(n) {
-						return fmt.Errorf("TCP backing-reader payload materialization budget exceeded")
+						return fmt.Errorf("backing-reader payload materialization: %w", ErrRetainedPayloadLimit)
 					}
 					payloadCredit += n
 				}

@@ -153,7 +153,13 @@ func (c *Collector) doCleanup(force bool) {
 		for _, assembler := range c.assemblers {
 			c.captureEvidenceError = errors.Join(c.captureEvidenceError, assembler.ReleaseChecked())
 		}
-		c.captureEvidenceError = errors.Join(c.captureEvidenceError, tcp.PayloadRetentionError())
+		if err := tcp.PayloadRetentionError(); err != nil {
+			if c.config.DecoderConfig.LocalRetainedPayloadLoss {
+				c.recordLocalReassemblyLoss(err)
+			} else {
+				c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
+			}
+		}
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, tcp.IncrementalError())
 	}
 	if c.streamStateBudget != nil {
@@ -185,8 +191,7 @@ func (c *Collector) doCleanup(force bool) {
 	if c.reassemblyPageBudget != nil {
 		if err := c.reassemblyPageBudget.Error(); err != nil {
 			if c.config.DecoderConfig.LocalReassemblyPageLoss {
-				c.reassemblyCoverageError = &localReassemblyCoverageError{cause: err}
-				c.captureCoverageError = errors.Join(c.captureCoverageError, c.reassemblyCoverageError)
+				c.recordLocalReassemblyLoss(err)
 			} else {
 				c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
 			}

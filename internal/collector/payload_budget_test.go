@@ -76,6 +76,43 @@ func TestTCPRetainedPayloadBudgetQualifiesFailureAndReadiness(t *testing.T) {
 	}
 }
 
+func TestLocalRetainedPayloadLossPreservesUnrelatedHTTP(t *testing.T) {
+	for _, backed := range []bool{false, true} {
+		t.Run(fmt.Sprint(backed), func(t *testing.T) {
+			wire, input := newBookCapture(t)
+			wire.conversation("192.0.2.1", "198.51.100.1", 45000, 80, false, bookMessage{text: "GET /affected HTTP/1.1\r\nHost: fixture.test\r\nX-Large: " + strings.Repeat("x", 1024) + "\r\n\r\n"})
+			wire.conversation("192.0.2.2", "198.51.100.1", 45001, 80, false, bookMessage{text: "GET /healthy HTTP/1.1\r\nHost: fixture.test\r\n\r\n"}, bookMessage{server: true, text: "HTTP/1.1 204 No Content\r\n\r\n"})
+			out := t.TempDir()
+			cfg := ultimateCaptureConfig(out, 1, 0)
+			cfg.CaptureEvidence = true
+			cfg.DecoderConfig.IncludeDecoders = "TCP,Connection,HTTP"
+			cfg.DecoderConfig.SaveConns = true
+			cfg.DecoderConfig.MaxRetainedTCPBytes = 192
+			cfg.DecoderConfig.LocalRetainedPayloadLoss = true
+			if backed {
+				cfg.DecoderConfig.MaxAggregateStateBytes = 1 << 20
+			}
+			err := New(cfg).CollectPcap(input)
+			var partial *localReassemblyCoverageError
+			if !errors.As(err, &partial) || !errors.Is(err, tcp.ErrRetainedPayloadLimit) {
+				t.Fatal(err)
+			}
+			manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
+			if manifest.Status != "partial" || manifest.Error != "" || manifest.AdmittedPackets != uint64(wire.n) {
+				t.Fatal(manifest.Status, manifest.Error, manifest.AdmittedPackets, wire.n)
+			}
+			records := bookRecords(t, out, "HTTP", func() *types.HTTP { return new(types.HTTP) })
+			if len(records) != 1 || records[0].URL != "/healthy" || records[0].StatusCode != 204 {
+				t.Fatal(records)
+			}
+			health := bookJSON[tcp.ReassemblyHealth](t, filepath.Join(out, "TCPReassemblyHealth.json")).RetainedPayload
+			if health == nil || !health.Exceeded || health.RetainedBytes != 0 || health.PeakBytes > health.LimitBytes {
+				t.Fatal(health)
+			}
+		})
+	}
+}
+
 func TestBackedSMTPCompletionUsesFragmentBudgets(t *testing.T) {
 	wire, input := newBookCapture(t)
 	send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 25, false)

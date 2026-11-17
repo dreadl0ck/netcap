@@ -21,6 +21,7 @@ type retainedPayloadBudget struct {
 	failure              atomic.Pointer[payloadLimitFailure]
 	failOnce             sync.Once
 	onExceeded           func()
+	localLoss            bool
 }
 
 // PayloadRetentionHealth accounts for reader-owned TCP copies, not total process memory.
@@ -86,7 +87,7 @@ func (t *tcpConnection) recordDiscard(markers *[2]*core.StreamData, reason strin
 }
 
 func (b *retainedPayloadBudget) reserve(size int64) bool {
-	if b.failure.Load() != nil {
+	if !b.localLoss && b.failure.Load() != nil {
 		b.rejected.Add(size)
 		return false
 	}
@@ -120,6 +121,10 @@ func (b *retainedPayloadBudget) release(size int64) {
 }
 
 func (f *connectionFactory) configurePayloadBudget(limit int64, cancel func()) error {
+	return f.configurePayloadBudgetPolicy(limit, cancel, false)
+}
+
+func (f *connectionFactory) configurePayloadBudgetPolicy(limit int64, cancel func(), localLoss bool) error {
 	if limit < 0 {
 		return fmt.Errorf("max-retained-tcp-bytes cannot be negative")
 	}
@@ -135,7 +140,7 @@ func (f *connectionFactory) configurePayloadBudget(limit int64, cancel func()) e
 	}
 	f.payloadBudget = nil
 	if limit > 0 {
-		f.payloadBudget = &retainedPayloadBudget{limit: limit, onExceeded: cancel}
+		f.payloadBudget = &retainedPayloadBudget{limit: limit, onExceeded: cancel, localLoss: localLoss}
 	}
 	return nil
 }
@@ -143,6 +148,10 @@ func (f *connectionFactory) configurePayloadBudget(limit int64, cancel func()) e
 // ConfigureRetainedPayloadBudget must run before this capture creates stream readers.
 func ConfigureRetainedPayloadBudget(limit int64, cancel func()) error {
 	return StreamFactory.configurePayloadBudget(limit, cancel)
+}
+
+func ConfigureLocalRetainedPayloadBudget(limit int64) error {
+	return StreamFactory.configurePayloadBudgetPolicy(limit, nil, true)
 }
 
 // PayloadRetentionError preserves an abort cause until capture finalization resets the factory.
@@ -165,6 +174,10 @@ func payloadRetentionSnapshot() *PayloadRetentionHealth {
 	if budget == nil {
 		return nil
 	}
-	return &PayloadRetentionHealth{Scope: "tcp-reader-payload", Policy: "abort-capture", LimitBytes: budget.limit,
+	policy := "abort-capture"
+	if budget.localLoss {
+		policy = "discard-or-defer-affected-flow"
+	}
+	return &PayloadRetentionHealth{Scope: "tcp-reader-payload", Policy: policy, LimitBytes: budget.limit,
 		RetainedBytes: budget.used.Load(), PeakBytes: budget.peak.Load(), RejectedBytes: budget.rejected.Load(), Exceeded: budget.failure.Load() != nil}
 }

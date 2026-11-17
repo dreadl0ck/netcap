@@ -400,6 +400,10 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 	// Populate global variables from CLI context
 	setFlagsFromContext(c)
 	localReassemblyPageLoss := c.Bool("local-reassembly-page-loss")
+	localRetainedPayloadLoss := c.Bool("local-retained-payload-loss")
+	if localRetainedPayloadLoss && (flagService || flagInput == "" || flagInterface != "" || flagIncrementalHTTP || flagMaxRetainedTCPBytes <= 0) {
+		return errors.New("local-retained-payload-loss requires offline -read, a positive TCP payload budget, and incremental HTTP disabled")
+	}
 	if localReassemblyPageLoss && (flagService || flagInput == "" || flagInterface != "" || flagIncrementalHTTP || flagMaxRetainedReassemblyBytes <= 0) {
 		return errors.New("local-reassembly-page-loss requires offline -read, a positive TCP page budget, and incremental HTTP disabled")
 	}
@@ -1021,6 +1025,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			MaxRetainedTCPBytes:            flagMaxRetainedTCPBytes,
 			MaxRetainedReassemblyBytes:     flagMaxRetainedReassemblyBytes,
 			LocalReassemblyPageLoss:        localReassemblyPageLoss,
+			LocalRetainedPayloadLoss:       localRetainedPayloadLoss,
 			IncrementalHTTP:                flagIncrementalHTTP,
 			MaxRetainedTCPStateBytes:       flagMaxRetainedTCPStateBytes,
 			MaxAggregateStateBytes:         flagMaxAggregateStateBytes,
@@ -1406,6 +1411,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 					MaxRetainedTCPBytes:            flagMaxRetainedTCPBytes,
 					MaxRetainedReassemblyBytes:     flagMaxRetainedReassemblyBytes,
 					LocalReassemblyPageLoss:        localReassemblyPageLoss,
+					LocalRetainedPayloadLoss:       localRetainedPayloadLoss,
 					IncrementalHTTP:                flagIncrementalHTTP,
 					MaxRetainedTCPStateBytes:       flagMaxRetainedTCPStateBytes,
 					MaxAggregateStateBytes:         flagMaxAggregateStateBytes,

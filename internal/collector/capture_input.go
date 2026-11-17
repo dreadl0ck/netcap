@@ -56,6 +56,12 @@ func (e *localReassemblyCoverageError) Error() string {
 func (e *localReassemblyCoverageError) Unwrap() error { return e.cause }
 func (e *localReassemblyCoverageError) ExitCode() int { return 2 }
 
+func (c *Collector) recordLocalReassemblyLoss(err error) {
+	coverage := &localReassemblyCoverageError{cause: err}
+	c.reassemblyCoverageError = errors.Join(c.reassemblyCoverageError, coverage)
+	c.captureCoverageError = errors.Join(c.captureCoverageError, coverage)
+}
+
 func (e *CaptureInputError) ExitCode() int {
 	if e.Report.Status == "unsupported" {
 		return 3

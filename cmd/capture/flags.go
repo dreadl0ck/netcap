@@ -680,6 +680,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.BoolFlag{Name: "incremental-http", Usage: "opt HTTP/1 with observed TCP handshake into bounded transaction-time decoding; other protocols remain completion-only", Sources: cli.EnvVars("NC_INCREMENTAL_HTTP")},
 		&cli.BoolFlag{Name: "local-reassembly-page-loss", Usage: "continue offline capture when the TCP page budget refuses an allocation; omit application decoding on affected flows and exit 2"},
+		&cli.BoolFlag{Name: "local-retained-payload-loss", Usage: "continue offline capture when the TCP payload budget refuses an allocation; qualify incomplete reconstruction and exit 2"},
 		&cli.BoolFlag{Name: "capture-time-idle-expiry", Usage: "expire offline TCP state at monotonic packet-time watermarks (one-second capture-time maintenance); EOF flushes remaining state", Sources: cli.EnvVars("NC_CAPTURE_TIME_IDLE_EXPIRY")},
 		&cli.Int64Flag{
 			Name: "max-retained-tcp-state-bytes", Value: defaults.MaxRetainedTCPStateBytes,

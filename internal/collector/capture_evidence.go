@@ -38,6 +38,7 @@ func (c *Collector) initCaptureEvidence() error {
 		MaxRetainedTCPBytes:        c.config.DecoderConfig.MaxRetainedTCPBytes,
 		MaxRetainedReassemblyBytes: c.config.DecoderConfig.MaxRetainedReassemblyBytes,
 		LocalReassemblyPageLoss:    c.config.DecoderConfig.LocalReassemblyPageLoss,
+		LocalRetainedPayloadLoss:   c.config.DecoderConfig.LocalRetainedPayloadLoss,
 		IncrementalHTTP:            c.config.DecoderConfig.IncrementalHTTP,
 		MaxRetainedTCPStateBytes:   c.config.DecoderConfig.MaxRetainedTCPStateBytes,
 		MaxAggregateStateBytes:     c.config.DecoderConfig.MaxAggregateStateBytes,
