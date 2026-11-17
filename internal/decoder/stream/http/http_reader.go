@@ -81,6 +81,7 @@ type httpRequest struct {
 }
 
 type httpResponse struct {
+	requestIndex        int
 	body                []byte
 	evidence            messageEvidence
 	readIssue           bool
@@ -200,7 +201,7 @@ func (h *httpReader) decodeTransportRun() {
 		ht.Timestamp, ht.Flow = res.timestamp, res.flow
 		ht.SrcIP, ht.DstIP, ht.SrcPort, ht.DstPort = res.serverIP, res.clientIP, res.serverPort, res.clientPort
 
-		matchedReq := h.findRequest(res.response)
+		matchedReq := h.findRequest(res)
 
 		atomic.AddInt64(&streamutils.Stats.NumResponses, 1)
 
@@ -474,6 +475,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	streamutils.Stats.Unlock()
 
 	h.responses = append(h.responses, &httpResponse{
+		requestIndex:        h.responseRequestIndex,
 		body:                body,
 		evidence:            evidence,
 		readIssue:           err != nil,
@@ -555,17 +557,20 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	return err
 }
 
-func (h *httpReader) findRequest(res *http.Response) *httpRequest {
-	for i, req := range h.requests {
-		if req != nil && req.request == res.Request {
-			if res.StatusCode >= 200 || res.StatusCode == http.StatusSwitchingProtocols {
-				h.requests[i] = nil
-			}
-			atomic.AddInt64(&streamutils.Stats.NumFoundRequests, 1)
-			return req
-		}
+func (h *httpReader) findRequest(res *httpResponse) *httpRequest {
+	i := res.requestIndex
+	if res.response.Request == nil || i >= len(h.requests) {
+		return nil
 	}
-	return nil
+	req := h.requests[i]
+	if req == nil || req.request != res.response.Request {
+		return nil
+	}
+	if res.response.StatusCode >= 200 || res.response.StatusCode == http.StatusSwitchingProtocols {
+		h.requests[i] = nil
+	}
+	atomic.AddInt64(&streamutils.Stats.NumFoundRequests, 1)
+	return req
 }
 
 // HTTP Request
