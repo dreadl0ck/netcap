@@ -163,6 +163,11 @@
     "implementation": "Passive HTTP/1 uses quota-controlled scratch for supported identity-encoded JSON, multipart and URL-encoded forms. Prefix and parsed fields are charged to parser state. Larger URL forms still select checked compatibility before emission.",
     "verification": "TestHTTPSourceParsesPassiveForms preserves byte-backed record output, including fields after a 3360000-byte multipart file part and the following request. It checks scratch cleanup and retained source use. Full portable HTTP race suite, focused native races, collector backed-HTTP controls and HTTP vet pass."
   },
+  "gzipHTTPUploadClassification": {
+    "source": "6e50603",
+    "implementation": "Opaque gzip requests use the bounded body spool and sample decoded content under the existing expansion ceiling. Truncation and checksum failure retain the wire content type.",
+    "verification": "TestHTTPSourceSniffsBackedGzipUpload matches byte-backed audit output for valid, truncated-footer and bad-checksum uploads exceeding 2 MiB. The next transaction remains paired. Full portable HTTP races, focused native races, backed HTTP collector controls and vet pass."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
