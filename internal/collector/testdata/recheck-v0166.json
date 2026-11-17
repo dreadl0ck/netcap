@@ -51,6 +51,17 @@
     "qualification": "A group with 10000 unique hosts and a 9-MiB sample yields a summary below 8192 bytes, preserves exact nanosecond integers and changes its generation when a hidden member changes. Member pages retrieve all 31 matching alerts without mixing the same rule's other severity; tool dispatch forwards the exact group selector and pagination. Full UI/MCP race suites and vet pass; tool reference regenerated",
     "remaining": "Backend inventory materialization and every-tool official-client variant qualification remain open; response preview bounds do not establish a backend heap bound"
   },
+  "passiveHTTPSource": {
+    "source": "c6becb6",
+    "status": "implemented and verified for passive HTTP/1 response bodies and opaque identity-encoded request bodies; extraction/payload/form/upgrade modes remain separate",
+    "implementation": "HTTP directional ranges preserve framing, timestamps, initial/internal loss and role inference without flattening whole directions. A side-effect-free preflight selects checked compatibility for form bodies, compressed requests, protocol prefaces and protocol upgrades. Opaque uploads retain only a 512-byte inspection sample while draining the complete framed body. Header queues, reader buffers, request scratch and retained samples reserve state credits; stop/panic paths release them",
+    "classification": "HTTP-to-IPP specialization uses its existing 16384-byte header window through bounded prefix access instead of materializing the conversation. General weak/off-port selection retains compatibility behavior",
+    "wireErrors": "Passive observation retains the underlying non-EOF read error independently of detection classification. Truncated response bodies remain qualified even when the body is not HTML or outside detection scope",
+    "responseQualification": "A real 94371840-byte response preserves one paired GET/200, complete length and sealed readiness with 71413 peak input/state credits under 262144 bytes. A restartable virtual replay of the same body sampled 170184 additional retained Go heap bytes. This is sampled Go heap and credited component accounting, not process RSS",
+    "uploadQualification": "A real 3145728-byte opaque upload preserves one paired POST/200 and sealed readiness with 72566 peak input/state credits. Chunked opaque upload controls preserve the following transaction; form request controls fall back before HTTP records are emitted",
+    "verification": "Final full portable collector suite passes (138.549 s); six affected package race suites and native suites, focused native large-body capture tests and vet pass. Split/role/loss/gap equivalence, scratch/sample panic cleanup, no-progress/reader-credit rejection, header-only specialization and passive wire-error controls pass",
+    "remaining": "File extraction, included payloads, form-body streaming, protocol-upgrade streaming, unbounded metadata backlogs, generic fallback selection and secret-enabled decryption still require migration. Local degradation and phase-qualified publication remain open"
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
