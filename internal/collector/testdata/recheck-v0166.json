@@ -285,6 +285,9 @@
   "spoolScanBufferReuse": {
     "verification": "The spool carries its 128-byte token overlap in the reusable read buffer, removing the per-chunk window allocation. Focused file and HTTP race tests pass, including split-token analysis parity, scratch limits, and passive multipart replay."
   },
+  "officialMCPEvidenceInventory": {
+    "verification": "The official stdio harness passed for 75 of 119 advertised tools with zero failures on a rebuilt portable CLI. It now covers certificate inventory, stream-evidence inventory and related-evidence lookup, verifying that the latter preserves the requested Connection ordinal zero."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

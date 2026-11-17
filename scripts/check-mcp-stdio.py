@@ -31,7 +31,7 @@ get_reproduction_metadata get_network_detection get_behavior_topology
 list_alerts list_alerts_grouped list_audit_records list_connections list_devices
 list_domains list_extracted_files list_fingerprints list_hosts list_http_records
 list_secrets list_services list_software list_vulnerabilities
-list_offline_evaluations
+list_offline_evaluations list_certificates get_stream_evidence
 """.split()
 
 
@@ -81,6 +81,13 @@ async def check(binary, capture, data_dir):
                 await asyncio.sleep(0.2)
 
         args = {"session_id": sid}
+        feature_states = (await call("get_features", {}))["features"]
+        link_enabled = next(f["enabled"] for f in feature_states if f["name"] == "evidence-links")
+        await call("set_feature", {"name": "evidence-links", "enabled": True})
+        related = await call("get_related_evidence", args | {"type": "Connection", "ordinal": 0})
+        if related["target"]["type"] != "Connection" or related["target"]["ordinal"] != 0:
+            raise ValueError("related evidence changed the requested target")
+        await call("set_feature", {"name": "evidence-links", "enabled": link_enabled})
         pack = """format: netcap-offline-rules/v1
 rules:
   - id: udp-fixture
