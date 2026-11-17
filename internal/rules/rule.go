@@ -109,6 +109,7 @@ type Rule struct {
 	// compiled is the compiled expression program (not serialized)
 	compiled       *vm.Program
 	compiledDigest string
+	compiledType   types.Type
 }
 
 // Sequence configures ordered, grouped correlation for a rule.
@@ -206,6 +207,8 @@ type Config struct {
 	Description string             `yaml:"description"`
 	Rules       []*Rule            `yaml:"rules"`
 }
+
+func (c *Config) Clone() (*Config, error) { return cloneRuleConfig(c) }
 
 type CaptureTimeConfig struct {
 	Scope           string `yaml:"scope"`
@@ -321,6 +324,7 @@ func CompileRules(config *Config) error {
 		}
 
 		config.Rules[i].compiled = program
+		rule.compiledType = recordType
 		wire, err := yaml.Marshal(rule)
 		if err != nil {
 			return fmt.Errorf("rule %s provenance: %w", rule.Name, err)

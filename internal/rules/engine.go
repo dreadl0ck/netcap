@@ -39,6 +39,7 @@ type Engine struct {
 	generationMu sync.RWMutex // A record finishes in one configuration/state generation.
 	generation   uint64
 	config       *Config
+	plan         map[types.Type][]*Rule
 	alertWriter  AlertWriter
 	clock        func() time.Time
 
@@ -167,6 +168,7 @@ func NewEngineFromConfig(config *Config, alertWriter AlertWriter) (*Engine, erro
 	engine := &Engine{
 		generation:        1,
 		config:            config,
+		plan:              compiledRulePlan(config),
 		alertWriter:       alertWriter,
 		clock:             time.Now,
 		recentAlerts:      make(map[string]int64),
@@ -254,6 +256,9 @@ func (e *Engine) EvaluateObserved(scope string, record types.AuditRecord) (int, 
 func (e *Engine) AppliesTo(record types.AuditRecord) bool {
 	e.generationMu.RLock()
 	defer e.generationMu.RUnlock()
+	if e.plan != nil {
+		return len(e.plan[record.NetcapType()]) != 0
+	}
 	for _, rule := range e.config.Rules {
 		if !rule.Enabled {
 			continue
@@ -284,7 +289,7 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 	alertCount := 0
 	var environment map[string]any
 
-	for _, rule := range e.config.Rules {
+	for _, rule := range e.rulesFor(recordType) {
 		if !rule.Enabled {
 			continue
 		}
@@ -299,12 +304,7 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 		}
 
 		// Check if rule applies to this record type
-		ruleType, err := parseRecordType(rule.Type)
-		if err != nil {
-			continue
-		}
-
-		if ruleType != recordType {
+		if rule.compiledType != recordType {
 			continue
 		}
 
@@ -773,6 +773,7 @@ func (e *Engine) UpdateConfig(config *Config) error {
 	defer e.generationMu.Unlock()
 	e.mu.Lock()
 	e.config = owned
+	e.plan = compiledRulePlan(owned)
 	e.generation++
 	e.thresholdTrackers = make(map[string]*thresholdTracker)
 	e.distinctTrackers = make(map[string]*distinctTracker)

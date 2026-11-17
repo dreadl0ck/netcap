@@ -186,8 +186,9 @@ func (s *Server) loadRulesConfig() (*rules.Config, error) {
 	s.rulesConfigMutex.RLock()
 	if s.rulesConfig != nil {
 		cached := s.rulesConfig.(*rules.Config)
+		owned, err := cached.Clone()
 		s.rulesConfigMutex.RUnlock()
-		return cached, nil
+		return owned, err
 	}
 	s.rulesConfigMutex.RUnlock()
 
@@ -259,7 +260,7 @@ func (s *Server) loadRulesConfig() (*rules.Config, error) {
 	s.rulesConfig = config
 	s.rulesConfigMutex.Unlock()
 
-	return config, nil
+	return config.Clone()
 }
 
 // invalidateRulesCache clears the cached rules configuration

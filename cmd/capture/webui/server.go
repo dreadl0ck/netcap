@@ -1633,7 +1633,14 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) (resultErr error) {
 	log.Printf("%s Starting rule execution for session %s", mode, job.SessionID)
 
 	// Load rules config
-	config, err := s.loadRulesConfig()
+	var config *rules.Config
+	var err error
+	if job.settings != nil {
+		config = job.settings.Rules
+	}
+	if config == nil {
+		config, err = s.loadRulesConfig()
+	}
 	if err != nil {
 		log.Printf("%s Failed to load rules config for session %s: %v", mode, job.SessionID, err)
 		return err

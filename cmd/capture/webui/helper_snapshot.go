@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/artifactio"
+	"github.com/dreadl0ck/netcap/internal/rules"
 )
 
 type jobSettings struct {
@@ -29,6 +30,7 @@ type jobSettings struct {
 	Protobuf         protobufSettings  `json:"protobuf"`
 	SchemaPaths      []string          `json:"requestedSchemaPaths"`
 	SchemaHashes     map[string]string `json:"schemaHashes,omitempty"`
+	Rules            *rules.Config     `json:"rules,omitempty"`
 	cleanupOnce      sync.Once
 	directory        string
 }
@@ -37,6 +39,11 @@ func (s *Server) snapshotJobSettings() (*jobSettings, error) {
 	s.mu.RLock()
 	snapshot := &jobSettings{Version: 1, Runtime: s.runtimeSnapshotLocked(), DPI: s.dpiConfigured, Payload: s.payloadCapture}
 	s.mu.RUnlock()
+	config, err := s.loadRulesConfig()
+	if err != nil {
+		return nil, fmt.Errorf("snapshot detection rules: %w", err)
+	}
+	snapshot.Rules = config
 	snapshot.NetworkDetection = s.featureEnabled(featureNetworkDetection)
 	snapshot.DNSContext = s.featureEnabled(featureDNSResolutionContext)
 	snapshot.Protobuf = currentProtobufSettings()
