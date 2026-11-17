@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/dpi"
 )
 
@@ -29,7 +30,9 @@ type analysisSettingsPatch struct {
 }
 
 func (s *Server) runtimeSnapshotLocked() RuntimeConfig {
-	rc := RuntimeConfig{CaptureEvidence: true, FlowExports: true, PacketSegmentBytes: 32 << 20, PacketRetentionBytes: 512 << 20, MaxRetainedTCPStateBytes: 64 << 20, MaxAggregateStateBytes: 32 << 20}
+	rc := RuntimeConfig{CaptureEvidence: true, FlowExports: true, PacketSegmentBytes: 32 << 20, PacketRetentionBytes: 512 << 20,
+		MaxRetainedTCPBytes: defaults.MaxRetainedTCPBytes, MaxRetainedReassemblyBytes: defaults.MaxRetainedReassemblyBytes,
+		MaxRetainedTCPStateBytes: defaults.MaxRetainedTCPStateBytes, MaxAggregateStateBytes: defaults.MaxAggregateStateBytes}
 	if s.runtimeConfig != nil {
 		rc = *s.runtimeConfig
 	}

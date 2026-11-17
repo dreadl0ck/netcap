@@ -3,12 +3,19 @@ package filter
 import "strings"
 
 func HeaderValue(headers map[string]string, name string) string {
-	for key, value := range headers {
-		if strings.EqualFold(key, name) {
-			return value
+	if value, ok := headers[name]; ok {
+		return value
+	}
+	selected := ""
+	for key := range headers {
+		if strings.EqualFold(key, name) && (selected == "" || key < selected) {
+			selected = key
 		}
 	}
-	return ""
+	if selected == "" {
+		return ""
+	}
+	return headers[selected]
 }
 
 func HasHeaderPrefix(headers map[string]string, prefix string) bool {

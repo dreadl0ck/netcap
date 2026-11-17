@@ -57,6 +57,21 @@ func readHostIdentity(ctx context.Context, outDir string) (hostIdentityReport, e
 			}
 		}
 	}
+	if directory := report["directory"]; directory != nil {
+		rows, ok := directory.([]any)
+		if !ok {
+			return hostIdentityReport{}, fmt.Errorf("invalid identity directory")
+		}
+		for _, raw := range rows {
+			row, ok := raw.(map[string]any)
+			if !ok {
+				return hostIdentityReport{}, fmt.Errorf("invalid identity directory observation")
+			}
+			if _, ok := row["scope"].(string); !ok {
+				return hostIdentityReport{}, fmt.Errorf("invalid identity directory scope")
+			}
+		}
+	}
 	quoteIdentityTimes(report)
 	return hostIdentityReport{State: "available", Report: report}, nil
 }

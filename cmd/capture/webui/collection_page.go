@@ -55,7 +55,11 @@ func respondCollectionPage(w http.ResponseWriter, r *http.Request, rows any, key
 	}
 	sort.SliceStable(items, func(i, j int) bool { return bytes.Compare(items[i], items[j]) < 0 })
 	hash := sha256.New()
-	hash.Write([]byte(key + "\x00"))
+	query := r.URL.Query()
+	for _, field := range []string{"pageOffset", "pageLimit", "pageGeneration"} {
+		query.Del(field)
+	}
+	hash.Write([]byte(r.URL.Path + "\x00" + key + "\x00" + query.Encode() + "\x00"))
 	for _, extra := range metadata {
 		raw, err := json.Marshal(extra)
 		if err != nil {

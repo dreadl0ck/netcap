@@ -34,7 +34,7 @@ func TestHostIdentityEvidence(t *testing.T) {
 			t.Fatalf("missing %s: %s", want, b)
 		}
 	}
-	for _, bad := range []string{`null`, `{"schema":2,"hosts":[]}`, `{"schema":1,"hosts":{}}`, data + `{}`, `{`} {
+	for _, bad := range []string{`null`, `{"schema":2,"hosts":[]}`, `{"schema":1,"hosts":{}}`, `{"schema":1,"hosts":[],"directory":{}}`, `{"schema":1,"hosts":[],"directory":[null]}`, `{"schema":1,"hosts":[],"directory":[{}]}`, data + `{}`, `{`} {
 		if err := os.WriteFile(path, []byte(bad), 0600); err != nil {
 			t.Fatal(err)
 		}
@@ -97,6 +97,9 @@ func TestHostIdentityPagesWithoutTrafficAndInvalidateOnIdentityChange(t *testing
 		}
 		var generation string
 		json.Unmarshal(page["generation"], &generation)
+		if code, _ := read("view=" + view + "&pageFields=scope&pageGeneration=" + generation); code != 409 {
+			t.Fatal("changed projection accepted a previous generation", view, code)
+		}
 		changed := strings.Replace(data, `"overflow":2`, `"overflow":3`, 1)
 		if err := os.WriteFile(path, []byte(changed), 0600); err != nil {
 			t.Fatal(err)

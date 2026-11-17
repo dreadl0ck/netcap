@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
@@ -26,6 +27,9 @@ func TestQueuedJobOwnsDetectionConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer snapshot.cleanup()
+	if snapshot.Runtime.MaxRetainedTCPBytes != defaults.MaxRetainedTCPBytes || snapshot.Runtime.MaxRetainedReassemblyBytes != defaults.MaxRetainedReassemblyBytes || snapshot.Runtime.MaxRetainedTCPStateBytes != defaults.MaxRetainedTCPStateBytes || snapshot.Runtime.MaxAggregateStateBytes != defaults.MaxAggregateStateBytes {
+		t.Fatal("fallback runtime budgets diverged", snapshot.Runtime)
+	}
 	writeTimelineAuditFile(t, dir, "HTTP", types.Type(types.Type_value["NC_HTTP"]), []proto.Message{&types.HTTP{Method: "GET", Timestamp: 1}})
 	s.rulesConfigMutex.Lock()
 	s.rulesConfig = &rules.Config{Rules: []*rules.Rule{{Name: "changed", Type: "HTTP", Expression: "false", Enabled: true}}}
