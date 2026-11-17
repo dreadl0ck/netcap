@@ -231,6 +231,9 @@
   "boundedMCPArtifactPages": {
     "verification": "TestCarvePageCopiesOnlySelectedBytes reads the last byte of an 8-MiB artifact, checks the page capacity and total size, rejects an unrelated session and verifies that mutating a page cannot alter the stored bytes. The portable MCP race suite passes."
   },
+  "mcpArtifactRetentionBudget": {
+    "verification": "CarveStore caps retained artifact bodies at 64 MiB across sessions. TestCarveByteBudgetEvictsOldest covers exact admission, FIFO byte eviction, disk copy cleanup, caller mutation isolation and oversize rejection before eviction. The full portable MCP race suite passes."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

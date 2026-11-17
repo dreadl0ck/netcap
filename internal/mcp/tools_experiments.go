@@ -174,7 +174,7 @@ func (s *Server) registerExperimentTools() error {
 			return err
 		}
 	}
-	return s.addTool(server.ServerTool{Tool: mcplib.NewTool("read_mcp_artifact", mcplib.WithDescription("Read a bounded base64 page of a retained MCP artifact/report/evidence ZIP. Use artifact_id, or the final id segment of netcap://carve/{id}. Session-derived artifacts require the original session_id. TTL 1h, store capacity 32; content type and SHA256 identify the complete artifact."), mcplib.WithString("artifact_id", mcplib.Required()), mcplib.WithString("session_id"), apiInteger("offset", "Byte offset.", 0, 16777216, false), apiInteger("limit", "Page bytes, default 16384.", 1, 65536, false), mcplib.WithReadOnlyHintAnnotation(true)), Handler: func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+	return s.addTool(server.ServerTool{Tool: mcplib.NewTool("read_mcp_artifact", mcplib.WithDescription("Read a bounded base64 page of a retained MCP artifact/report/evidence ZIP. Use artifact_id, or the final id segment of netcap://carve/{id}. Session-derived artifacts require the original session_id. Retention is limited to 1h, 32 entries and 64 MiB of artifact bodies; content type and SHA256 identify the complete artifact."), mcplib.WithString("artifact_id", mcplib.Required()), mcplib.WithString("session_id"), apiInteger("offset", "Byte offset.", 0, 16777216, false), apiInteger("limit", "Page bytes, default 16384.", 1, 65536, false), mcplib.WithReadOnlyHintAnnotation(true)), Handler: func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 		id := req.GetString("artifact_id", "")
 		if len(id) != 32 || !isHex(id) {
 			return errResult(fmt.Errorf("invalid artifact id")), nil

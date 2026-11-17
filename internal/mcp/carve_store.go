@@ -31,6 +31,7 @@ type CarveStore struct {
 	mu         sync.Mutex
 	dir        string
 	maxEntries int
+	maxBytes   int64
 	maxAge     time.Duration
 	entries    []*carveEntry
 }
@@ -63,6 +64,7 @@ func NewCarveStore(dir string, maxEntries int, maxAge time.Duration) *CarveStore
 	return &CarveStore{
 		dir:        dir,
 		maxEntries: maxEntries,
+		maxBytes:   64 << 20,
 		maxAge:     maxAge,
 	}
 }
@@ -76,6 +78,9 @@ func (c *CarveStore) Put(sessionID, kind, source string, body []byte) (*carveEnt
 func (c *CarveStore) PutTyped(sessionID, kind, source, mime string, body []byte) (*carveEntry, string, error) {
 	if len(body) == 0 {
 		return nil, "", errors.New("empty body")
+	}
+	if int64(len(body)) > c.maxBytes {
+		return nil, "", errors.New("artifact exceeds store byte budget")
 	}
 	id, err := randomHex(16)
 	if err != nil {
@@ -93,7 +98,23 @@ func (c *CarveStore) PutTyped(sessionID, kind, source, mime string, body []byte)
 	case "text/plain":
 		ext = ".txt"
 	}
-	filename := fmt.Sprintf("%s-%s%s", kind, id[:8], ext)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.gcLocked()
+	var used int64
+	for _, e := range c.entries {
+		used += e.SizeBytes
+	}
+	for len(c.entries) >= c.maxEntries || int64(len(body)) > c.maxBytes-used {
+		old := c.entries[0]
+		used -= old.SizeBytes
+		c.removeFile(old)
+		c.entries[0] = nil
+		c.entries = c.entries[1:]
+	}
+	owned := make([]byte, len(body))
+	copy(owned, body)
+	filename := fmt.Sprintf("%s-%s%s", kind, id, ext)
 	path := filepath.Join(c.dir, filename)
 	if err := os.WriteFile(path, body, 0o600); err != nil {
 		// Fall back to memory-only if disk write fails.
@@ -102,7 +123,7 @@ func (c *CarveStore) PutTyped(sessionID, kind, source, mime string, body []byte)
 	entry := &carveEntry{
 		ID:        id,
 		Path:      path,
-		Bytes:     body,
+		Bytes:     owned,
 		SizeBytes: int64(len(body)),
 		SHA256:    hex.EncodeToString(sum[:]),
 		Kind:      kind,
@@ -111,11 +132,10 @@ func (c *CarveStore) PutTyped(sessionID, kind, source, mime string, body []byte)
 		CreatedAt: time.Now(),
 		MIMEType:  mime,
 	}
-	c.mu.Lock()
 	c.entries = append(c.entries, entry)
-	c.gcLocked()
-	c.mu.Unlock()
-	return entry, "netcap://carve/" + id, nil
+	receipt := *entry
+	receipt.Bytes = nil
+	return &receipt, "netcap://carve/" + id, nil
 }
 
 // Get returns the entry for id, or nil if not found / evicted.

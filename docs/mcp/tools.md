@@ -4267,7 +4267,7 @@ Read a bounded timeline event page. Preserve exact timestamp strings and occurre
 
 ### `read_mcp_artifact`
 
-Read a bounded base64 page of a retained MCP artifact/report/evidence ZIP. Use artifact_id, or the final id segment of netcap://carve/{id}. Session-derived artifacts require the original session_id. TTL 1h, store capacity 32; content type and SHA256 identify the complete artifact.
+Read a bounded base64 page of a retained MCP artifact/report/evidence ZIP. Use artifact_id, or the final id segment of netcap://carve/{id}. Session-derived artifacts require the original session_id. Retention is limited to 1h, 32 entries and 64 MiB of artifact bodies; content type and SHA256 identify the complete artifact.
 
 **Hints:** read-only
 

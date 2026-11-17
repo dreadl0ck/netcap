@@ -47,6 +47,43 @@ func TestCarvePageCopiesOnlySelectedBytes(t *testing.T) {
 	}
 }
 
+func TestCarveByteBudgetEvictsOldest(t *testing.T) {
+	store := NewCarveStore(t.TempDir(), 8, time.Hour)
+	store.maxBytes = 8
+	body := make([]byte, 4, 1<<20)
+	first, _, err := store.Put("s", "host", "fixture", body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body[0] = 42
+	page, err := store.page(first.ID, "s", 0, 4)
+	if err != nil || page.Bytes[0] != 0 {
+		t.Fatal("artifact aliases caller input", err)
+	}
+	second, _, err := store.Put("s", "host", "fixture", make([]byte, 4))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := store.Put("s", "host", "fixture", make([]byte, 9)); err == nil {
+		t.Fatal("oversized artifact admitted")
+	}
+	if store.Get(first.ID) == nil {
+		t.Fatal("refusal evicted valid artifact")
+	}
+	if _, _, err := store.Put("s", "host", "fixture", []byte{1}); err != nil {
+		t.Fatal(err)
+	}
+	if store.Get(first.ID) != nil || store.Get(second.ID) == nil {
+		t.Fatal("incorrect FIFO eviction")
+	}
+	if _, err := os.Stat(first.Path); !os.IsNotExist(err) {
+		t.Fatal("eviction left disk file", err)
+	}
+	if count, size := store.Stats(); count != 2 || size != 5 {
+		t.Fatal(count, size)
+	}
+}
+
 func TestCarveStorePutAndGet(t *testing.T) {
 	dir := t.TempDir()
 	cs := NewCarveStore(dir, 4, time.Hour)
