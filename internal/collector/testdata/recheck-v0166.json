@@ -105,6 +105,15 @@
     "implementation": "Automatic and single-rule audit replay use a nondecreasing record clock for rate and deduplication windows. Missing timestamps do not advance the clock. DetectedAt remains wall-clock provenance.",
     "verification": "Full rules and Web UI race suites pass. Repeated file-order replay produces equivalent alert decisions across rate-window advances, missing and regressing timestamps, and deduplication expiry."
   },
+  "postCaptureScheduling": {
+    "source": "9a1f449 and c6700df",
+    "implementation": "The capture queue transfers successful jobs to up to two completion workers per server, keeping job ownership through rules and timeline finalization. A separate timeline worker admits uncompressed inputs of at most 262144 total bytes while the regular timeline worker is busy.",
+    "verification": "Full Web UI and MCP race suites pass; controlled handoff and occupied-lane tests preserve completion ownership and exact small-input record counts. Compressed timeline inputs still share the regular lane."
+  },
+  "officialMCPClientSmoke": {
+    "source": "9a1f449",
+    "verification": "Official client 1.26.0 initialized over stdio and discovered 119 tools. list_decoders and get_audit_record_fields returned success. The completed internal/collector/testdata/voip/mdns.pcap session returned 18 UDP records consistently through paged, count-only and allow_partial queries; the sealed query returned both generation keys. This is a smoke test, not all-tool qualification."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
