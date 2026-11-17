@@ -120,6 +120,32 @@ async def check(binary, capture, data_dir):
         if empty["records"] != []:
             raise ValueError("empty page did not return an array")
 
+        uploaded = (await call("ingest_pcap", {"path": str(capture)}))["session_id"]
+        if not uploaded or uploaded == sid:
+            raise ValueError("upload did not create a distinct fixture session")
+        parent = await call("wait_for_session", {"session_id": uploaded, "timeout_seconds": 20})
+        if not parent["completed"]:
+            raise ValueError("uploaded fixture did not complete")
+        child = await call("reanalyze_session", {"session_id": uploaded})
+        child_id = child["sessionId"]
+        if not child_id or child_id in {sid, uploaded}:
+            raise ValueError("reanalysis did not create a distinct child")
+        inventory = (await call("list_sessions", {}))["sessions"]
+        parent_path = next(s["input_file"] for s in inventory if s["session_id"] == uploaded)
+        if child.get("parentInputFile") != parent_path:
+            raise ValueError("reanalysis lineage does not identify the uploaded parent")
+        finished = await call("wait_for_session", {"session_id": child_id, "timeout_seconds": 20})
+        if not finished["completed"]:
+            raise ValueError("child did not complete")
+        for session_id in (uploaded, child_id):
+            counted = await call("query_audit_records", query | {"session_id": session_id, "count_only": True})
+            if counted["summary"]["total"] != 18:
+                raise ValueError("reanalysis lost fixture records")
+        await call("delete_session", {"session_id": uploaded})
+        remaining = {s["session_id"] for s in (await call("list_sessions", {}))["sessions"]}
+        if uploaded in remaining or sid not in remaining:
+            raise ValueError("upload deletion affected the wrong session")
+
         for name in ("get_network_detection", "get_behavior_health"):
             result = await client.call_tool(name, {"session_id": "unknown-contract-session"})
             if not result.isError:

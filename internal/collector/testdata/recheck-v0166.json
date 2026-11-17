@@ -193,6 +193,9 @@
     "implementation": "Audit inventory counts complete frames without decoding or allocating record bodies. Metadata exposes the framing basis and whether the count reached clean EOF.",
     "verification": "A 32-MiB frame is skipped with zero record-body buffer capacity and the following record remains readable. A truncated frame retains the valid-prefix count with recordCountComplete=false. Web UI, MCP and delimited race suites pass."
   },
+  "officialMCPLifecycle": {
+    "verification": "scripts/check-mcp-stdio.py passed 62 calls across 51 of 119 tools on the portable CLI. A distinct upload and its reanalysis child both completed and returned 18 UDP records. parentInputFile matched the uploaded parent. Deleting the upload preserved the original fixture session."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
