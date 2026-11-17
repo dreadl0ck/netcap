@@ -28,7 +28,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -187,6 +186,9 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 	// Apply filters
 	filtered := make([]AlertResponse, 0)
 	for _, alert := range alerts {
+		if groupID := query.Get("groupId"); groupID != "" && generateGroupID(alert.RuleName, alert.Severity) != groupID {
+			continue
+		}
 		// Filter by severity
 		if severityFilter != "" && !strings.EqualFold(alert.Severity, severityFilter) {
 			continue
@@ -498,7 +500,12 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 			}
 			groups, groupCount = matched, len(matched)
 		}
-		respondCollectionPage(w, r, groups, "groups", map[string]any{"totalCount": totalCount, "groupCount": groupCount})
+		rows, err := groupedAlertPageRows(groups)
+		if err != nil {
+			RespondJSON(w, 500, map[string]string{"error": err.Error()})
+			return
+		}
+		respondFilteredCollectionPage(w, r, rows, "groups", map[string]any{"totalCount": totalCount, "groupCount": groupCount})
 		return
 	}
 	start := offset
@@ -528,6 +535,7 @@ func groupAlerts(alerts []AlertResponse, severityFilter, ruleNameFilter string) 
 	}
 
 	groupMap := make(map[groupKey]*GroupedAlert)
+	unique := make(map[groupKey][4]map[string]bool)
 
 	for _, alert := range alerts {
 		// Apply filters
@@ -567,6 +575,7 @@ func groupAlerts(alerts []AlertResponse, severityFilter, ruleNameFilter string) 
 				GroupID:         generateGroupID(alert.RuleName, alert.Severity),
 			}
 			groupMap[key] = group
+			unique[key] = [4]map[string]bool{{}, {}, {}, {}}
 		}
 
 		// Update group statistics
@@ -582,24 +591,17 @@ func groupAlerts(alerts []AlertResponse, severityFilter, ruleNameFilter string) 
 		}
 
 		// Collect unique IPs and ports
-		if alert.SrcIP != "" && !contains(group.UniqueSrcIPs, alert.SrcIP) {
-			group.UniqueSrcIPs = append(group.UniqueSrcIPs, alert.SrcIP)
-		}
-		if alert.DstIP != "" && !contains(group.UniqueDstIPs, alert.DstIP) {
-			group.UniqueDstIPs = append(group.UniqueDstIPs, alert.DstIP)
-		}
+		seen := unique[key]
+		appendGroupUnique(&group.UniqueSrcIPs, seen[0], alert.SrcIP)
+		appendGroupUnique(&group.UniqueDstIPs, seen[1], alert.DstIP)
 
 		// Add source port if it exists in the matched record or is captured
 		srcPort := extractPort(alert, "SrcPort")
-		if srcPort != "" && !contains(group.UniqueSrcPorts, srcPort) {
-			group.UniqueSrcPorts = append(group.UniqueSrcPorts, srcPort)
-		}
+		appendGroupUnique(&group.UniqueSrcPorts, seen[2], srcPort)
 
 		// Add destination port if it exists
 		dstPort := extractPort(alert, "DstPort")
-		if dstPort != "" && !contains(group.UniqueDstPorts, dstPort) {
-			group.UniqueDstPorts = append(group.UniqueDstPorts, dstPort)
-		}
+		appendGroupUnique(&group.UniqueDstPorts, seen[3], dstPort)
 
 		// Keep up to 5 sample alerts for detail view
 		if len(group.SampleAlerts) < 5 {
@@ -716,11 +718,6 @@ func extractPort(alert AlertResponse, portField string) string {
 	}
 
 	return ""
-}
-
-// contains checks if a string slice contains a specific string
-func contains(slice []string, item string) bool {
-	return slices.Contains(slice, item)
 }
 
 // generateAlertID generates a unique identifier for an alert

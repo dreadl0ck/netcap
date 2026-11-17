@@ -14,6 +14,14 @@ import (
 )
 
 func respondCollectionPage(w http.ResponseWriter, r *http.Request, rows any, key string, metadata ...map[string]any) bool {
+	return respondCollectionPageFiltered(w, r, rows, key, false, metadata...)
+}
+
+func respondFilteredCollectionPage(w http.ResponseWriter, r *http.Request, rows any, key string, metadata ...map[string]any) bool {
+	return respondCollectionPageFiltered(w, r, rows, key, true, metadata...)
+}
+
+func respondCollectionPageFiltered(w http.ResponseWriter, r *http.Request, rows any, key string, searchApplied bool, metadata ...map[string]any) bool {
 	q := r.URL.Query()
 	if q.Get("mcpPage") != "true" {
 		return false
@@ -41,6 +49,9 @@ func respondCollectionPage(w http.ResponseWriter, r *http.Request, rows any, key
 	}
 	items := make([]json.RawMessage, 0, value.Len())
 	search := strings.ToLower(q.Get("pageSearch"))
+	if searchApplied {
+		search = ""
+	}
 	for i := 0; i < value.Len(); i++ {
 		if err := r.Context().Err(); err != nil {
 			return true

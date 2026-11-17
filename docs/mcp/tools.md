@@ -3283,7 +3283,7 @@ Interpret or compare retained directional TCP bytes (at most 16 MiB each) under 
 
 ### `list_alerts`
 
-Alerts raised by detection rules, YARA, and other sources in this session.
+Alerts raised in this session. Use group_id from a grouped result to page every member, with an independent alert-page generation.
 
 **Hints:** read-only, idempotent
 
@@ -3293,6 +3293,7 @@ Alerts raised by detection rules, YARA, and other sources in this session.
 | --- | --- | --- | --- |
 | `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
 | `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
+| `group_id` | string |  | Exact group identifier from list_alerts_grouped. |
 | `limit` | number |  | Maximum number of results to return. |
 | `offset` | number |  | Pagination offset. |
 | `search` | string |  | Substring filter applied server-side. |
@@ -3301,7 +3302,7 @@ Alerts raised by detection rules, YARA, and other sources in this session.
 
 ### `list_alerts_grouped`
 
-Alerts grouped by rule/source. Pagination counts groups; groupCount is the number of groups and totalCount is the number of underlying alerts.
+Bounded alert-group summaries with unique-value previews and exact totals. Retrieve full members with list_alerts(group_id). Pagination counts groups; groupCount is the number of groups and totalCount counts underlying alerts.
 
 **Hints:** read-only, idempotent
 
