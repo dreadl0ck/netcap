@@ -20,6 +20,8 @@
 package webui
 
 import (
+	"bytes"
+	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -39,6 +41,7 @@ import (
 	"github.com/RoaringBitmap/roaring"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -176,13 +179,51 @@ type timelineFileRef struct {
 func timelineBuildLane(files []timelineFileRef) (chan struct{}, int) {
 	remaining := int64(timelineSmallInputBytes)
 	for _, file := range files {
-		if file.size <= 0 || file.size > remaining || strings.HasSuffix(file.path, ".gz") {
+		if file.size <= 0 || file.size > remaining {
 			return timelineBuildSlot, 4
 		}
 		remaining -= file.size
 	}
-	// Each record consumes at least one input byte, including its framing.
 	return timelineSmallBuildSlot, 1
+}
+
+func snapshotSmallTimeline(files []timelineFileRef) ([][]byte, bool) {
+	remaining := int64(timelineSmallInputBytes)
+	snapshots := make([][]byte, 0, len(files))
+	for _, ref := range files {
+		data, err := readSmallTimelineFile(ref, remaining)
+		if err != nil || int64(len(data)) > remaining {
+			return nil, false
+		}
+		remaining -= int64(len(data))
+		snapshots = append(snapshots, data)
+	}
+	return snapshots, true
+}
+
+func readSmallTimelineFile(ref timelineFileRef, remaining int64) ([]byte, error) {
+	f, err := os.Open(ref.path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() || info.Size() != ref.size {
+		return nil, fmt.Errorf("timeline input changed")
+	}
+	var reader io.Reader = io.LimitReader(f, ref.size)
+	if strings.HasSuffix(ref.path, ".gz") {
+		gz, err := gzip.NewReader(reader)
+		if err != nil {
+			return nil, err
+		}
+		defer gz.Close()
+		reader = gz
+	}
+	return io.ReadAll(io.LimitReader(reader, remaining+1))
 }
 
 // timelineFingerprint identifies the current generation of audit records in
@@ -366,6 +407,15 @@ func buildTimelineIndex(entry *timelineIndexEntry, fingerprint string, files []t
 			entry.mu.Unlock()
 		}
 	}()
+	var snapshots [][]byte
+	if slot == timelineSmallBuildSlot {
+		var ok bool
+		if snapshots, ok = snapshotSmallTimeline(files); !ok {
+			<-slot
+			slot, maxWorkers = timelineBuildSlot, 4
+			slot <- struct{}{}
+		}
+	}
 
 	workers := runtime.NumCPU()
 	if workers > maxWorkers {
@@ -407,11 +457,15 @@ func buildTimelineIndex(entry *timelineIndexEntry, fingerprint string, files []t
 					return
 				}
 
-				limit := perTypeLimit
-				if slot == timelineSmallBuildSlot {
-					limit = min(perTypeLimit, int(files[i].size))
+				var ti *tlTypeIndex
+				var err error
+				if snapshots != nil {
+					data := snapshots[i]
+					reader := &AuditRecordReader{delimitedReader: delimited.NewReaderWithLimit(bytes.NewReader(data), uint64(max(1, len(data))))}
+					ti, err = indexTimelineRecords(reader, files[i].name, perTypeLimit)
+				} else {
+					ti, err = indexTimelineType(files[i].path, files[i].name, perTypeLimit)
 				}
-				ti, err := indexTimelineType(files[i].path, files[i].name, limit)
 
 				atomic.AddInt64(&done, 1)
 
@@ -567,8 +621,11 @@ func indexTimelineType(path, typeName string, eventLimit int) (*tlTypeIndex, err
 		return nil, err
 	}
 	defer reader.Close()
+	return indexTimelineRecords(reader, typeName, eventLimit)
+}
 
-	if _, err = reader.ReadHeader(); err != nil {
+func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit int) (*tlTypeIndex, error) {
+	if _, err := reader.ReadHeader(); err != nil {
 		return nil, err
 	}
 

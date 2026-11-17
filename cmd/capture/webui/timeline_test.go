@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -165,17 +166,45 @@ func TestTimelineIndexOrdersRecordsChronologically(t *testing.T) {
 	}
 }
 
-func TestSmallPlainTimelineCompletesWhileRegularLaneIsOccupied(t *testing.T) {
+func TestSmallTimelineCompletesWhileRegularLaneIsOccupied(t *testing.T) {
 	timelineBuildSlot <- struct{}{}
 	defer func() { <-timelineBuildSlot }()
+	for name, write := range map[string]func(*testing.T, string, string, types.Type, []proto.Message) string{
+		"plain": writeTimelineAuditFilePlain, "compressed": writeTimelineAuditFile,
+	} {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			write(t, dir, "Connection", types.Type_NC_Connection, []proto.Message{
+				connRecord(100, 200, "192.0.2.1", "192.0.2.2"),
+				connRecord(300, 400, "192.0.2.2", "192.0.2.1"),
+			})
+			started := time.Now()
+			index := waitForTimelineIndex(t, dir)
+			t.Logf("time to ready while regular lane held: %v", time.Since(started))
+			if track := index.byName["Connection"]; track == nil || len(track.Events) != 2 {
+				t.Fatal("reserved timeline lane lost records")
+			}
+		})
+	}
+}
+
+func TestTimelineOverExpansionReturnsCompleteRegularIndex(t *testing.T) {
 	dir := t.TempDir()
-	writeTimelineAuditFilePlain(t, dir, "Connection", types.Type_NC_Connection, []proto.Message{
-		connRecord(100, 200, "192.0.2.1", "192.0.2.2"),
-		connRecord(300, 400, "192.0.2.2", "192.0.2.1"),
-	})
+	records := make([]proto.Message, 4096)
+	for i := range records {
+		records[i] = connRecord(int64(i+1), int64(i+2), strings.Repeat("x", 128), "192.0.2.2")
+	}
+	writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, records)
+	_, files, err := timelineFingerprint(dir)
+	if err != nil || len(files) != 1 || files[0].size > timelineSmallInputBytes {
+		t.Fatalf("fixture must fit the compressed admission cap: %v %v", files, err)
+	}
+	if _, ok := snapshotSmallTimeline(files); ok {
+		t.Fatal("oversize expanded snapshot admitted")
+	}
 	index := waitForTimelineIndex(t, dir)
-	if track := index.byName["Connection"]; track == nil || len(track.Events) != 2 {
-		t.Fatal("reserved timeline lane lost records")
+	if track := index.byName["Connection"]; index.Truncated || track == nil || len(track.Events) != len(records) {
+		t.Fatal("regular lane did not index the entire expanded input")
 	}
 }
 

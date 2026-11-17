@@ -126,11 +126,11 @@ func TestAnalysisCompletionWaitsForTimelineGeneration(t *testing.T) {
 	s.rulesConfig = &rules.Config{}
 	delete(s.completedFiles, input)
 	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
-	timelineBuildSlot <- struct{}{}
+	timelineSmallBuildSlot <- struct{}{}
 	held := true
 	defer func() {
 		if held {
-			<-timelineBuildSlot
+			<-timelineSmallBuildSlot
 		}
 	}()
 	done := make(chan error, 1)
@@ -160,7 +160,7 @@ func TestAnalysisCompletionWaitsForTimelineGeneration(t *testing.T) {
 	if completed {
 		t.Fatal("completed while timeline generation was indexing")
 	}
-	<-timelineBuildSlot
+	<-timelineSmallBuildSlot
 	held = false
 	if err := <-done; err != nil {
 		t.Fatal(err)
