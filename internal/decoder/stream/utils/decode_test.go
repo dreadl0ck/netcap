@@ -150,3 +150,36 @@ func TestSourceConversationDoesNotRetainEveryPosition(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestSourceReaderReservesBuffersAndPositionGrowth(t *testing.T) {
+	for _, limit := range []int64{1, sourceReaderFixedBytes + 4*sourcePositionCreditBytes} {
+		budget, err := core.NewStateBudget(limit, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		fragments := core.DataFragments{}
+		for range 8 {
+			fragments = append(fragments, &core.StreamData{RawData: []byte("x")})
+		}
+		conversation := &core.ConversationInfo{Source: core.SliceSource(fragments), StateBudget: budget}
+		peek := func(reader *bufio.Reader, _ *ReadPosition) error { _, err := reader.Peek(8); return err }
+		err = DecodeSourceConversationAt(conversation, peek, peek)
+		if !errors.Is(err, core.ErrStreamStateBudget) || !errors.Is(conversation.FragmentError, core.ErrStreamStateBudget) || budget.Health().RetainedBytes != 0 {
+			t.Fatal("source working memory was not bounded", limit, err, budget.Health())
+		}
+	}
+	budget, _ := core.NewStateBudget(8192, nil)
+	conversation := &core.ConversationInfo{Source: core.SliceSource{&core.StreamData{RawData: []byte("line\n")}}, StateBudget: budget}
+	func() {
+		defer func() {
+			if recover() == nil {
+				t.Fatal("parser panic lost")
+			}
+		}()
+		panicReader := func(*bufio.Reader, *ReadPosition) error { panic("control") }
+		_ = DecodeSourceConversationAt(conversation, panicReader, panicReader)
+	}()
+	if budget.Health().RetainedBytes != 0 {
+		t.Fatal("parser panic retained source working credits", budget.Health())
+	}
+}

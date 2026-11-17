@@ -29,6 +29,7 @@ type ConversationInfo struct {
 	Data         DataFragments
 	Source       FragmentSource
 	LoadData     func() error `json:"-"`
+	StateBudget  *StateBudget `json:"-"`
 	// Owned by the decoder goroutine; source failures also fail its capture.
 	FragmentError error
 	// TCP directions in reassembly order; capture timestamps can run backwards.

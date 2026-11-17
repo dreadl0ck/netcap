@@ -11,6 +11,12 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	sourceReaderBufferBytes   = 4096
+	sourceReaderFixedBytes    = sourceReaderBufferBytes + 512
+	sourcePositionCreditBytes = 32
+)
+
 type sourceConversationCursor struct {
 	next         func() (core.DataFragment, bool)
 	pending      core.DataFragment
@@ -70,6 +76,9 @@ type sourceRunReader struct {
 	observation string
 	spans       []sourcePositionSpan
 	head, read  int
+	budget      *core.StateBudget
+	credit      int64
+	failure     error
 }
 
 func (r *sourceRunReader) timestamp(offset int) int64 {
@@ -83,7 +92,7 @@ func (r *sourceRunReader) timestamp(offset int) int64 {
 	return r.spans[index].timestamp
 }
 
-func (r *sourceRunReader) start(fragment core.DataFragment) {
+func (r *sourceRunReader) start(fragment core.DataFragment) error {
 	if r.position != nil {
 		consumed := r.position.Offset()
 		for r.head+1 < len(r.spans) && r.spans[r.head+1].offset <= consumed {
@@ -95,13 +104,35 @@ func (r *sourceRunReader) start(fragment core.DataFragment) {
 			r.head = 0
 		}
 	}
+	if len(r.spans) == cap(r.spans) {
+		capacity := max(4, 2*cap(r.spans))
+		amount := int64(capacity-cap(r.spans)) * sourcePositionCreditBytes
+		if err := r.budget.Reserve(amount); err != nil {
+			return err
+		}
+		r.credit += amount
+		spans := make([]sourcePositionSpan, len(r.spans), capacity)
+		copy(spans, r.spans)
+		r.spans = spans
+	}
 	r.spans = append(r.spans, sourcePositionSpan{r.read, core.FragmentTime(fragment)})
 	r.data = fragment.Raw()
+	return nil
+}
+
+func (r *sourceRunReader) close() {
+	r.budget.Release(r.credit)
+	r.credit = 0
+	r.spans = nil
+	r.data = nil
 }
 
 func (r *sourceRunReader) Read(target []byte) (int, error) {
 	if len(target) == 0 {
 		return 0, nil
+	}
+	if r.failure != nil {
+		return 0, r.failure
 	}
 	if len(r.data) == 0 {
 		fragment, ok := r.cursor.take()
@@ -115,7 +146,10 @@ func (r *sourceRunReader) Read(target []byte) (int, error) {
 			r.cursor.pending = fragment
 			return 0, io.EOF
 		}
-		r.start(fragment)
+		if err := r.start(fragment); err != nil {
+			r.failure = err
+			return 0, err
+		}
 	}
 	count := copy(target, r.data)
 	r.data = r.data[count:]
@@ -142,27 +176,38 @@ func DecodeSourceConversationAt(conversation *core.ConversationInfo, client, ser
 		if !ok {
 			return conversation.FragmentError
 		}
-		run := &sourceRunReader{cursor: cursor, direction: first.Direction(), observation: fragmentObservation(first)}
-		run.start(first)
-		reader := bufio.NewReaderSize(run, 4096)
-		position := &ReadPosition{rd: reader, source: run, server: core.FromServer(first), observation: run.observation}
-		run.position = position
-		handle := client
-		if position.server {
-			handle = server
-		}
-		for {
-			before := position.Offset()
-			err := handle(reader, position)
-			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-				reassemblyLog.Error("error reading stream", zap.Error(err), zap.String("ident", conversation.Ident))
-			}
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || position.Offset() == before {
-				break
-			}
-		}
-		if _, err := io.Copy(io.Discard, reader); err != nil {
+		if err := decodeSourceRun(conversation, cursor, first, client, server); err != nil {
 			return err
 		}
 	}
+}
+
+func decodeSourceRun(conversation *core.ConversationInfo, cursor *sourceConversationCursor, first core.DataFragment, client, server func(*bufio.Reader, *ReadPosition) error) error {
+	if err := conversation.StateBudget.Reserve(sourceReaderFixedBytes); err != nil {
+		return err
+	}
+	run := &sourceRunReader{cursor: cursor, direction: first.Direction(), observation: fragmentObservation(first), budget: conversation.StateBudget, credit: sourceReaderFixedBytes}
+	defer run.close()
+	if err := run.start(first); err != nil {
+		return err
+	}
+	reader := bufio.NewReaderSize(run, sourceReaderBufferBytes)
+	position := &ReadPosition{rd: reader, source: run, server: core.FromServer(first), observation: run.observation}
+	run.position = position
+	handle := client
+	if position.server {
+		handle = server
+	}
+	for {
+		before := position.Offset()
+		err := handle(reader, position)
+		if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+			reassemblyLog.Error("error reading stream", zap.Error(err), zap.String("ident", conversation.Ident))
+		}
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || position.Offset() == before {
+			break
+		}
+	}
+	_, err := io.Copy(io.Discard, reader)
+	return err
 }

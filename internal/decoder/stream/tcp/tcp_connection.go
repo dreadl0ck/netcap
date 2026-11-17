@@ -664,6 +664,7 @@ func (t *tcpConnection) decode() {
 
 	conv := &core.ConversationInfo{
 		Source:               core.MergedSource{Client: clientSource, Server: serverSource},
+		StateBudget:          t.stateBudget,
 		Ident:                t.ident,
 		NetworkScope:         t.networkScope,
 		FirstClientPacket:    t.client.FirstPacket(),
