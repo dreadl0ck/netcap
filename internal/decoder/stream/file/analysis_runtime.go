@@ -68,6 +68,7 @@ type analysisEntry struct {
 type analysisJob struct {
 	entry *analysisEntry
 	load  func() ([]byte, func(), error)
+	spool *artifactData
 	size  int64
 }
 type analysisRuntime struct {
@@ -256,7 +257,8 @@ func (m *analysisRuntime) worker() {
 		var data []byte
 		var release func()
 		loadErr := ctx.Err()
-		if loadErr == nil {
+		streamClassification := m.yara == nil && job.spool != nil
+		if loadErr == nil && !streamClassification {
 			data, release, loadErr = job.load()
 		}
 		for i := range result.Analyzers {
@@ -278,7 +280,11 @@ func (m *analysisRuntime) worker() {
 						}
 					}
 				case "magika":
-					r.Classification, err = m.magika.ClassifyBytes(ctx, data)
+					if streamClassification {
+						r.Classification, err = m.classifySpooled(ctx, job.spool, result.SHA256)
+					} else {
+						r.Classification, err = m.magika.ClassifyBytes(ctx, data)
+					}
 					if err == nil {
 						r.Outcome = "classified"
 					}
@@ -314,7 +320,20 @@ func (m *analysisRuntime) worker() {
 	}
 }
 
-func analyzeStored(path, digest string, load func() ([]byte, func(), error)) ([]string, *magika.Result) {
+func (m *analysisRuntime) classifySpooled(ctx context.Context, input *artifactData, digest string) (*magika.Result, error) {
+	const memory = 32 << 10
+	if err := reserveBuffer(memory); err != nil {
+		return nil, err
+	}
+	defer releaseBuffer(memory)
+	if err := reserveArtifactScratch(input.Size()); err != nil {
+		return nil, err
+	}
+	defer releaseArtifactScratch(input.Size())
+	return m.magika.ClassifyReader(ctx, input.Reader(), input.Size(), digest)
+}
+
+func analyzeStored(path, digest string, load func() ([]byte, func(), error), spool *artifactData) ([]string, *magika.Result) {
 	m := currentAnalysis()
 	if m == nil {
 		return nil, nil
@@ -357,7 +376,7 @@ func analyzeStored(path, digest string, load func() ([]byte, func(), error)) ([]
 		m.report.Results[digest] = result
 		m.queuedBytes += info.Size()
 		select {
-		case m.jobs <- analysisJob{entry, load, info.Size()}:
+		case m.jobs <- analysisJob{entry, load, spool, info.Size()}:
 		default:
 			delete(m.cache, digest)
 			delete(m.report.Results, digest)

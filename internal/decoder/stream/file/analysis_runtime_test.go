@@ -102,7 +102,7 @@ func TestAnalysisShutdownDrainsAcceptedJobsAndRejectsLateWork(t *testing.T) {
 			close(started)
 			<-release
 			return body, func() {}, nil
-		})
+		}, nil)
 		accepted <- matches
 	}()
 	select {
@@ -127,7 +127,7 @@ func TestAnalysisShutdownDrainsAcceptedJobsAndRejectsLateWork(t *testing.T) {
 		}
 		time.Sleep(time.Millisecond)
 	}
-	if matches, classification := analyzeStored(path, "late", nil); matches != nil || classification != nil {
+	if matches, classification := analyzeStored(path, "late", nil, nil); matches != nil || classification != nil {
 		t.Fatal("late job was accepted")
 	}
 	unblock.Do(func() { close(release) })
@@ -161,7 +161,7 @@ func TestAnalysisCacheDoesNotReloadArtifact(t *testing.T) {
 		return body, func() { released++ }, nil
 	}
 	for range 2 {
-		matches, _ := analyzeStored(path, digest, load)
+		matches, _ := analyzeStored(path, digest, load, nil)
 		if len(matches) != 1 || matches[0] != "fixture-match" {
 			t.Fatal(matches)
 		}

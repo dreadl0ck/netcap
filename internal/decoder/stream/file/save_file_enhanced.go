@@ -467,7 +467,11 @@ func savePreparedFile(conv *core.ConversationInfo, source, name string, extracti
 	// AI-based file type classification (if enabled)
 	var magikaResult *magikapkg.Result
 	if currentAnalysis() != nil {
-		analysis.YaraMatches, magikaResult = analyzeStored(target, contentInfo.Hash, content.AnalyzerBytes)
+		var spool *artifactData
+		if content.file != nil {
+			spool = content
+		}
+		analysis.YaraMatches, magikaResult = analyzeStored(target, contentInfo.Hash, content.AnalyzerBytes, spool)
 	} else if cfg.FileExtraction.Advanced.EnableYaraScanning || cfg.FileExtraction.Advanced.EnableMagika {
 		data, release, e := content.AnalyzerBytes()
 		if e != nil {

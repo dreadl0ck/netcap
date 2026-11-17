@@ -25,6 +25,7 @@ package magika
 import (
 	"context"
 	"fmt"
+	"io"
 )
 
 type Classifier struct{ Digest string }
@@ -35,6 +36,9 @@ func (c *Classifier) Classify(context.Context, string) (*Result, error) {
 }
 func (c *Classifier) ClassifyBytes(context.Context, []byte) (*Result, error) {
 	return nil, fmt.Errorf("Magika support not compiled in")
+}
+func (c *Classifier) ClassifyReader(context.Context, io.Reader, int64, string) (*Result, error) {
+	return nil, fmt.Errorf("classifier support not compiled in")
 }
 
 // Result holds the Magika classification result for a file.

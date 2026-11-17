@@ -279,6 +279,9 @@
   "artifactQueueShutdown": {
     "verification": "TestAnalysisShutdownDrainsAcceptedJobsAndRejectsLateWork holds an accepted job open during shutdown and verifies late work is refused without sending on the closed queue. Focused admission, cache and queue race tests passed five repetitions."
   },
+  "streamedArtifactClassification": {
+    "verification": "TestSpooledClassifierUsesBoundedInput verifies a 512-KiB classifier-only artifact works under a 256-KiB buffer budget. TestClassifierReaderVerifiesStagedInput checks size and SHA-256 before execution and rejects short, extra and changed input. Focused classifier, file and backed HTTP race tests pass."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

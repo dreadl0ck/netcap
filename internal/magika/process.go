@@ -117,3 +117,54 @@ func (c *Classifier) ClassifyBytes(ctx context.Context, data []byte) (*Result, e
 	}
 	return c.Classify(ctx, f.Name())
 }
+
+// ClassifyReader stages and verifies a bounded, private input for classification.
+func (c *Classifier) ClassifyReader(ctx context.Context, input io.Reader, size int64, digest string) (*Result, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if size < 0 || size > 100<<20 {
+		return nil, fmt.Errorf("classifier input exceeds size limit")
+	}
+	f, err := os.CreateTemp("", "netcap-analysis-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(f.Name())
+	h := sha256.New()
+	reader := &io.LimitedReader{R: input, N: size + 1}
+	w := io.MultiWriter(f, h)
+	buffer := make([]byte, 32<<10)
+	var copied int64
+	for {
+		if err = ctx.Err(); err != nil {
+			break
+		}
+		n, readErr := io.ReadFull(reader, buffer)
+		if int64(n) > size-copied {
+			err = fmt.Errorf("classifier input changed")
+			break
+		}
+		if n > 0 {
+			var written int
+			written, err = w.Write(buffer[:n])
+			copied += int64(written)
+			if err != nil {
+				break
+			}
+		}
+		if readErr != nil {
+			if readErr != io.EOF && readErr != io.ErrUnexpectedEOF {
+				err = readErr
+			}
+			break
+		}
+	}
+	if err := errors.Join(err, f.Close()); err != nil {
+		return nil, err
+	}
+	if copied != size || hex.EncodeToString(h.Sum(nil)) != digest {
+		return nil, fmt.Errorf("classifier input changed")
+	}
+	return c.Classify(ctx, f.Name())
+}
