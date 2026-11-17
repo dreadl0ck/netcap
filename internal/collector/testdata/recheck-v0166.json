@@ -234,6 +234,10 @@
   "mcpArtifactRetentionBudget": {
     "verification": "CarveStore caps retained artifact bodies at 64 MiB across sessions. TestCarveByteBudgetEvictsOldest covers exact admission, FIFO byte eviction, disk copy cleanup, caller mutation isolation and oversize rejection before eviction. The full portable MCP race suite passes."
   },
+  "httpSourceIncludedPayloads": {
+    "verification": "TestHTTPSourceIncludesPairedPayloads compares source-backed and byte-backed HTTP and File records for a pipelined upload and reply with 150000-byte binary bodies. Both payloads match exactly, the next transaction is paired, and conversation materialization is forbidden by the fixture. Full portable collector (141.684 s), portable HTTP races and the focused native HTTP race check pass.",
+    "scope": "Compatible HTTP/1 requests with IncludePayloads use the existing per-body allocation limits; audit payload fields still require body-sized memory."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

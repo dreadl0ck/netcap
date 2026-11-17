@@ -170,7 +170,7 @@ func readSourceRequestBody(c *core.ConversationInfo, body io.Reader) (sample []b
 
 func (h *httpReader) SupportsFragmentSource() bool {
 	c := decoderconfig.Instance
-	if c == nil || c.IncludePayloads || h.conversation.ClientSource == nil || h.conversation.ServerSource == nil {
+	if c == nil || h.conversation.ClientSource == nil || h.conversation.ServerSource == nil {
 		return false
 	}
 	if c.FileStorage != "" {

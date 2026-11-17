@@ -31,6 +31,11 @@ func (w *sourceFileWriter) Write(m proto.Message) error {
 
 func captureExtractedHTTP(t *testing.T, data core.DataFragments, source bool) ([]*types.HTTP, []*types.File) {
 	t.Helper()
+	return captureHTTPWithPayloadOption(t, data, source, false)
+}
+
+func captureHTTPWithPayloadOption(t *testing.T, data core.DataFragments, source, includePayloads bool) ([]*types.HTTP, []*types.File) {
+	t.Helper()
 	previous, oldConfig := decoderconfig.Instance, file.GetGlobalConfig()
 	writer, count, fileWriter, fileCount := Decoder.Writer, Decoder.NumRecordsWritten, file.Decoder.Writer, file.Decoder.NumRecordsWritten
 	t.Cleanup(func() {
@@ -43,7 +48,7 @@ func captureExtractedHTTP(t *testing.T, data core.DataFragments, source bool) ([
 	decoderconfig.Instance = decoderconfig.DefaultConfig.Clone()
 	decoderconfig.Instance.Out = t.TempDir()
 	decoderconfig.Instance.FileStorage = "files"
-	decoderconfig.Instance.IncludePayloads = false
+	decoderconfig.Instance.IncludePayloads = includePayloads
 	decoderconfig.Instance.WriteIncomplete = true
 	cfg := file.GetDefaultConfig()
 	cfg.FileExtraction.Advanced.UseMagicDetection = false
@@ -92,6 +97,26 @@ func captureExtractedHTTP(t *testing.T, data core.DataFragments, source bool) ([
 		t.Fatal("scratch files survived extraction", entries)
 	}
 	return w.records, fw.records
+}
+
+func TestHTTPSourceIncludesPairedPayloads(t *testing.T) {
+	body := strings.Repeat("binary fixture\x00", 10000)
+	request := fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Length: %d\r\n\r\n%sGET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n", len(body), body)
+	response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n%sHTTP/1.1 204 No Content\r\n\r\n", len(body), body)
+	var data core.DataFragments
+	for side, wire := range []string{request, response} {
+		for fragment := range slices.Chunk([]byte(wire), 8192) {
+			data = append(data, wireFragment(side, fragment, int64(side+1)))
+		}
+	}
+	want, wantFiles := captureHTTPWithPayloadOption(t, data, false, true)
+	got, files := captureHTTPWithPayloadOption(t, data, true, true)
+	if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(files, wantFiles) {
+		t.Fatal("payload source changed HTTP or file evidence")
+	}
+	if len(got) != 2 || string(got[0].RequestBody) != body || string(got[0].ResponseBody) != body || got[1].URL != "/next" {
+		t.Fatal("incomplete payloads or transaction pairing")
+	}
 }
 
 func TestBackedGzipResponseClassificationExpansionLimit(t *testing.T) {
