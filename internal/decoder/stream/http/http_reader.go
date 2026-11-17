@@ -434,7 +434,10 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 			zap.Int("length", s),
 		)
 	}
-	_ = res.Body.Close()
+	// Close drains unread wire bytes. An incomplete body already stops this run.
+	if err == nil {
+		_ = res.Body.Close()
+	}
 	res.Body = io.NopCloser(bytes.NewReader(body))
 	//if h.parent.hexdump {
 	//	logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
@@ -624,7 +627,9 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 		)
 		// continue execution
 	}
-	_ = req.Body.Close()
+	if bodyErr == nil {
+		_ = req.Body.Close()
+	}
 	req.Body = io.NopCloser(bytes.NewReader(body))
 	//if h.tcpStreamReader.hexdump {
 	//	logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
