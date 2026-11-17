@@ -228,6 +228,9 @@
   "officialMCPCarvedArtifacts": {
     "verification": "scripts/check-mcp-stdio.py passed for 69 of 119 advertised tools. Host and UDP connection exports were read in pages of at most 512 bytes. Each assembled artifact matched the advertised byte count and SHA-256, and reads using a different session ID were rejected."
   },
+  "boundedMCPArtifactPages": {
+    "verification": "TestCarvePageCopiesOnlySelectedBytes reads the last byte of an 8-MiB artifact, checks the page capacity and total size, rejects an unrelated session and verifies that mutating a page cannot alter the stored bytes. The portable MCP race suite passes."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

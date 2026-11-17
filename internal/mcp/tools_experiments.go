@@ -179,18 +179,18 @@ func (s *Server) registerExperimentTools() error {
 		if len(id) != 32 || !isHex(id) {
 			return errResult(fmt.Errorf("invalid artifact id")), nil
 		}
-		entry := s.carve.Get(id)
-		if entry == nil {
-			return errResult(fmt.Errorf("artifact unavailable or expired")), nil
+		offset, err := pageInteger(req, "offset", 0, 0, 16777216)
+		if err != nil {
+			return errResult(err), nil
 		}
-		if entry.SessionID != "" && strings.TrimSpace(req.GetString("session_id", "")) != entry.SessionID {
-			return errResult(fmt.Errorf("original session_id required")), nil
+		limit, err := pageInteger(req, "limit", 16384, 1, 65536)
+		if err != nil {
+			return errResult(err), nil
 		}
-		offset, limit := req.GetInt("offset", 0), req.GetInt("limit", 16384)
-		if offset < 0 || offset > len(entry.Bytes) || limit < 1 || limit > 65536 {
-			return errResult(fmt.Errorf("invalid artifact page bounds")), nil
+		entry, err := s.carve.page(id, strings.TrimSpace(req.GetString("session_id", "")), offset, limit)
+		if err != nil {
+			return errResult(err), nil
 		}
-		end := min(offset+limit, len(entry.Bytes))
-		return jsonResult(map[string]any{"artifact_id": id, "sha256": entry.SHA256, "content_type": entry.MIMEType, "offset": offset, "total_bytes": entry.SizeBytes, "data": base64.StdEncoding.EncodeToString(entry.Bytes[offset:end]), "encoding": "base64", "has_more": end < len(entry.Bytes)}), nil
+		return jsonResult(map[string]any{"artifact_id": id, "sha256": entry.SHA256, "content_type": entry.MIMEType, "offset": offset, "total_bytes": entry.SizeBytes, "data": base64.StdEncoding.EncodeToString(entry.Bytes), "encoding": "base64", "has_more": int64(offset+len(entry.Bytes)) < entry.SizeBytes}), nil
 	}})
 }

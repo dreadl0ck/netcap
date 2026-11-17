@@ -133,6 +133,29 @@ func (c *CarveStore) Get(id string) *carveEntry {
 	return nil
 }
 
+// page copies only the authorized range while the entry is retained.
+func (c *CarveStore) page(id, session string, offset, limit int) (*carveEntry, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.gcLocked()
+	for _, e := range c.entries {
+		if e.ID != id {
+			continue
+		}
+		if e.SessionID != "" && session != e.SessionID {
+			return nil, errors.New("original session_id required")
+		}
+		if offset < 0 || offset > len(e.Bytes) || limit < 1 || limit > 65536 {
+			return nil, errors.New("invalid artifact page bounds")
+		}
+		page := *e
+		n := min(limit, len(e.Bytes)-offset)
+		page.Bytes = append([]byte(nil), e.Bytes[offset:offset+n]...)
+		return &page, nil
+	}
+	return nil, errors.New("artifact unavailable or expired")
+}
+
 // gcLocked enforces the size and age caps. Called with c.mu held.
 func (c *CarveStore) gcLocked() {
 	cutoff := time.Now().Add(-c.maxAge)

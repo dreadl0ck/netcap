@@ -25,6 +25,28 @@ import (
 
 // TestCarveStorePutAndGet verifies on-disk + in-memory storage and that
 // the SHA-256 reported back matches the content.
+func TestCarvePageCopiesOnlySelectedBytes(t *testing.T) {
+	store := NewCarveStore(t.TempDir(), 1, time.Hour)
+	body := make([]byte, 8<<20)
+	body[len(body)-1] = 42
+	e, _, err := store.Put("owned", "host", "fixture", body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.page(e.ID, "other", 0, 1); err == nil {
+		t.Fatal("wrong session accepted")
+	}
+	p, err := store.page(e.ID, "owned", len(body)-1, 512)
+	if err != nil || len(p.Bytes) != 1 || p.Bytes[0] != 42 || cap(p.Bytes) > 512 || p.SizeBytes != int64(len(body)) {
+		t.Fatal("unexpected final page", err)
+	}
+	p.Bytes[0] = 0
+	p, err = store.page(e.ID, "owned", len(body)-1, 1)
+	if err != nil || p.Bytes[0] != 42 {
+		t.Fatal("page mutation changed retained content", err)
+	}
+}
+
 func TestCarveStorePutAndGet(t *testing.T) {
 	dir := t.TempDir()
 	cs := NewCarveStore(dir, 4, time.Hour)
