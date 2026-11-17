@@ -15,6 +15,7 @@ on:
       - 'internal/packetmeta/**/*.go'
       - 'internal/webtech/**'
       - 'internal/netio/**/*.go'
+      - 'internal/networkdetect/**/*.go'
       - 'internal/collector/**/*.go'
       - 'internal/collector/testdata/**'
       - 'internal/decoder/**/*.go'
@@ -36,6 +37,7 @@ on:
       - 'internal/packetmeta/**/*.go'
       - 'internal/webtech/**'
       - 'internal/netio/**/*.go'
+      - 'internal/networkdetect/**/*.go'
       - 'internal/collector/**/*.go'
       - 'internal/collector/testdata/**'
       - 'internal/decoder/**/*.go'
@@ -90,7 +92,7 @@ jobs:
           go test -race -tags nodpi,noyara,nomagika
           ./internal/aggregate ./internal/reassembly ./internal/decoder/core
           ./internal/evidence ./internal/packetview ./internal/packetmeta
-          ./internal/webtech ./internal/netio
+          ./internal/webtech ./internal/netio ./internal/networkdetect
           ./internal/decoder/stream/file ./internal/decoder/stream/http
           ./internal/decoder/stream ./internal/decoder/stream/utils
           ./internal/decoder/stream/tcp ./internal/decoder/stream/tls
@@ -104,7 +106,7 @@ jobs:
           go vet -tags nodpi,noyara,nomagika
           ./internal/aggregate ./internal/reassembly ./internal/decoder/core
           ./internal/evidence ./internal/packetview ./internal/packetmeta
-          ./internal/webtech ./internal/netio
+          ./internal/webtech ./internal/netio ./internal/networkdetect
           ./internal/decoder/stream/file ./internal/decoder/stream/http
           ./internal/decoder/stream ./internal/decoder/stream/utils
           ./internal/decoder/stream/tcp ./internal/decoder/stream/tls
