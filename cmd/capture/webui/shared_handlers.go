@@ -832,7 +832,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			sendError("Sealed audit record count changed")
 			return
 		}
-		if _, _, err := evidence.ReadAuditStage(filepath.Dir(filePath), sealed.RunID, sealed.Stage.Type, sealed.Generation); err != nil {
+		if _, _, err := evidence.ReadAuditStageContext(r.Context(), filepath.Dir(filePath), sealed.RunID, sealed.Stage.Type, sealed.Generation); err != nil {
 			sendError("Sealed audit output changed during query")
 			return
 		}

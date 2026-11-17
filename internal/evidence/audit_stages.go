@@ -1,6 +1,7 @@
 package evidence
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -64,31 +65,43 @@ func auditStageGeneration(stages AuditStages) (string, error) {
 	return hex.EncodeToString(hash[:]), nil
 }
 
-func auditFileSeal(root *os.Root, name string) (result SealedAuditFile, resultErr error) {
+type auditSealReader struct {
+	ctx  context.Context
+	file *os.File
+}
+
+func (r auditSealReader) Read(p []byte) (int, error) {
+	if err := r.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return r.file.Read(p)
+}
+
+func auditFileSeal(ctx context.Context, root *os.Root, name string) (result SealedAuditFile, resultErr error) {
 	if name == "" || strings.ContainsAny(name, "/\\") || name == "." || name == ".." {
 		return result, fmt.Errorf("invalid audit file name")
+	}
+	pathInfo, err := root.Lstat(name)
+	if err != nil {
+		return result, err
+	}
+	if !pathInfo.Mode().IsRegular() {
+		return result, fmt.Errorf("audit output is not a regular file")
 	}
 	file, err := root.Open(name)
 	if err != nil {
 		return result, err
 	}
 	defer func() { resultErr = errors.Join(resultErr, file.Close()) }()
-	pathInfo, err := root.Lstat(name)
-	if err != nil {
-		return result, err
-	}
-	if pathInfo.Mode()&os.ModeSymlink != 0 {
-		return result, fmt.Errorf("audit output must not be a symbolic link")
-	}
 	before, err := file.Stat()
 	if err != nil {
 		return result, err
 	}
-	if !before.Mode().IsRegular() {
-		return result, fmt.Errorf("audit output is not a regular file")
+	if !os.SameFile(pathInfo, before) {
+		return result, fmt.Errorf("audit output changed while opening")
 	}
 	hash := sha256.New()
-	n, err := io.Copy(hash, file)
+	n, err := io.Copy(hash, auditSealReader{ctx: ctx, file: file})
 	if err != nil {
 		return result, err
 	}
@@ -159,7 +172,7 @@ func (c *Capture) SealAuditStages(stages []AuditStage) (resultErr error) {
 				return fmt.Errorf("invalid or duplicate audit stage file %q for %s", stage.Files[i].Name, stage.Type)
 			}
 			seen[stage.Files[i].Name] = true
-			sealed, err := auditFileSeal(root, stage.Files[i].Name)
+			sealed, err := auditFileSeal(context.Background(), root, stage.Files[i].Name)
 			if err != nil {
 				return err
 			}
@@ -191,6 +204,13 @@ func (c *Capture) SealAuditStages(stages []AuditStage) (resultErr error) {
 }
 
 func ReadAuditStage(directory, runID, recordType, generation string) (stage AuditStage, snapshot AuditStages, resultErr error) {
+	return ReadAuditStageContext(context.Background(), directory, runID, recordType, generation)
+}
+
+func ReadAuditStageContext(ctx context.Context, directory, runID, recordType, generation string) (stage AuditStage, snapshot AuditStages, resultErr error) {
+	if err := ctx.Err(); err != nil {
+		return stage, snapshot, err
+	}
 	if !validAuditType(recordType) || runID == "" {
 		return stage, snapshot, fmt.Errorf("explicit run and canonical audit type required")
 	}
@@ -291,7 +311,7 @@ func ReadAuditStage(directory, runID, recordType, generation string) (stage Audi
 					return stage, snapshot, fmt.Errorf("invalid or duplicate sealed file")
 				}
 				seenFiles[sealed.Name] = true
-				actual, err := auditFileSeal(root, sealed.Name)
+				actual, err := auditFileSeal(ctx, root, sealed.Name)
 				if err != nil {
 					return stage, snapshot, err
 				}

@@ -34,6 +34,11 @@ func TestAuditStageSealsBindRunGenerationAndFileContent(t *testing.T) {
 	if err != nil || stage.Records != 1 || stage.Coverage != "partial" || len(stage.Files) != 1 || snapshot.Generation == "" {
 		t.Fatal("sealed stage was not readable", stage, snapshot, err)
 	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, _, err := ReadAuditStageContext(ctx, directory, capture.RunID(), "UDP", snapshot.Generation); !errors.Is(err, context.Canceled) {
+		t.Fatal("canceled stage verification continued", err)
+	}
 	for _, arguments := range [][3]string{{"wrong", "UDP", ""}, {capture.RunID(), "UDP", "wrong"}, {capture.RunID(), "TCP", snapshot.Generation}} {
 		if _, _, err := ReadAuditStage(directory, arguments[0], arguments[1], arguments[2]); err == nil {
 			t.Fatal("invalid stage selection was accepted", arguments)

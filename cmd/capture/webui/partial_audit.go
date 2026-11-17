@@ -62,7 +62,7 @@ func preparePartialAudit(r *http.Request, selection captureSelection) (*sealedAu
 		}
 		runID = manifest.RunID
 	}
-	stage, snapshot, err := evidence.ReadAuditStage(selection.OutputDir, runID, parts[0], q.Get("stageGeneration"))
+	stage, snapshot, err := evidence.ReadAuditStageContext(r.Context(), selection.OutputDir, runID, parts[0], q.Get("stageGeneration"))
 	if err != nil {
 		return nil, selectionError(422, fmt.Sprintf("Sealed audit stage unavailable: %v", err))
 	}
