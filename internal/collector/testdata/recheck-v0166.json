@@ -222,6 +222,9 @@
   "officialMCPDiagnosticReview": {
     "verification": "scripts/check-mcp-stdio.py passed for 66 of 119 advertised tools. The collector.log preview returned a bound line ordinal, hash and diagnostic classes. Approval rejected a changed projection digest and confirmed the unchanged preview as reviewed."
   },
+  "boundedGzipResponseClassification": {
+    "verification": "TestBackedGzipResponseClassificationExpansionLimit verifies a 4096-byte decoded response is classified at a 4096-byte limit; 4097 bytes yields no decoded type and both cases release all parser credits. The full portable HTTP race suite passes."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

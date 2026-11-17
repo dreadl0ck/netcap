@@ -94,6 +94,44 @@ func captureExtractedHTTP(t *testing.T, data core.DataFragments, source bool) ([
 	return w.records, fw.records
 }
 
+func TestBackedGzipResponseClassificationExpansionLimit(t *testing.T) {
+	oldDecoder, oldFile := decoderconfig.Instance, file.GetGlobalConfig()
+	t.Cleanup(func() { decoderconfig.Instance = oldDecoder; file.SetGlobalConfig(oldFile) })
+	decoderconfig.Instance = decoderconfig.DefaultConfig.Clone()
+	decoderconfig.Instance.Out = t.TempDir()
+	cfg := file.GetDefaultConfig()
+	const limit = 4096
+	cfg.FileExtraction.SizeLimits.MaxFileSize = limit
+	file.SetGlobalConfig(cfg)
+	for _, size := range []int{limit, limit + 1} {
+		var wire bytes.Buffer
+		w := gzip.NewWriter(&wire)
+		if _, err := w.Write(bytes.Repeat([]byte("x"), size)); err != nil {
+			t.Fatal(err)
+		}
+		if err := w.Close(); err != nil {
+			t.Fatal(err)
+		}
+		spool, err := file.SpoolBody(&wire)
+		if err != nil {
+			t.Fatal(err)
+		}
+		budget, _ := core.NewStateBudget(128<<10, nil)
+		c := &core.ConversationInfo{StateBudget: budget}
+		detected := sourceResponseContentType(c, spool, "gzip")
+		if err := spool.Close(); err != nil {
+			t.Fatal(err)
+		}
+		want := "text/plain; charset=utf-8"
+		if size > limit {
+			want = ""
+		}
+		if detected != want || c.FragmentError != nil || budget.Health().RetainedBytes != 0 {
+			t.Fatalf("expanded size %d: detected=%q error=%v credits=%+v", size, detected, c.FragmentError, budget.Health())
+		}
+	}
+}
+
 func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
 	for _, kind := range []string{"identity", "gzip", "gzip-truncated", "truncated", "chunked-upload", "multipart-upload", "json-upload", "urlencoded-upload"} {
 		t.Run(kind, func(t *testing.T) {

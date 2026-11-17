@@ -25,22 +25,11 @@ func sourceResponseContentType(c *core.ConversationInfo, body *file.BodySpool, e
 	if encoding != "gzip" {
 		return http.DetectContentType(body.Prefix())
 	}
-	if err := c.StateBudget.Reserve(65536); err != nil {
+	detected, err := backedGzipContentType(c, body, "")
+	if err != nil {
 		c.FragmentError = err
-		return ""
 	}
-	defer c.StateBudget.Release(65536)
-	reader, err := gzip.NewReader(body.Reader())
-	if err != nil {
-		return ""
-	}
-	defer reader.Close()
-	prefix, release, err := readSourceRequestBody(c, reader)
-	defer release()
-	if err != nil {
-		return ""
-	}
-	return http.DetectContentType(prefix)
+	return detected
 }
 
 func opaqueSourceRequest(request *http.Request) bool {
@@ -53,7 +42,10 @@ func opaqueSourceRequest(request *http.Request) bool {
 }
 
 func backedGzipRequestType(c *core.ConversationInfo, spool *file.BodySpool) (string, error) {
-	rawType := http.DetectContentType(spool.Prefix())
+	return backedGzipContentType(c, spool, http.DetectContentType(spool.Prefix()))
+}
+
+func backedGzipContentType(c *core.ConversationInfo, spool *file.BodySpool, fallback string) (string, error) {
 	const gzipCredits = 65536
 	if err := c.StateBudget.Reserve(gzipCredits); err != nil {
 		return "", err
@@ -61,7 +53,7 @@ func backedGzipRequestType(c *core.ConversationInfo, spool *file.BodySpool) (str
 	defer c.StateBudget.Release(gzipCredits)
 	r, err := gzip.NewReader(spool.Reader())
 	if err != nil {
-		return rawType, nil
+		return fallback, nil
 	}
 	defer r.Close()
 	limit := file.GetMaxFileSize()
@@ -75,7 +67,7 @@ func backedGzipRequestType(c *core.ConversationInfo, spool *file.BodySpool) (str
 		return "", c.FragmentError
 	}
 	if err != nil || bounded.N == 0 {
-		return rawType, nil
+		return fallback, nil
 	}
 	return http.DetectContentType(prefix), nil
 }
