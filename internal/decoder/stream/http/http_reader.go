@@ -648,7 +648,23 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	}
 
 	// parse form values
-	err = parseEvidenceForm(req, body)
+	if boundary, multipart := sourceMultipartBoundary(req); spool != nil && multipart {
+		var queryErr error
+		req.Form, queryErr = evidenceQuery(req.URL.RawQuery)
+		err = errors.Join(queryErr, parseEvidenceMultipart(req, spool.Reader(), boundary, func(n int64) error {
+			if err := h.conversation.StateBudget.Reserve(n); err != nil {
+				h.conversation.FragmentError = err
+				return err
+			}
+			h.sourceHeaderCredits += n
+			return nil
+		}))
+		if h.conversation.FragmentError != nil {
+			return h.conversation.FragmentError
+		}
+	} else {
+		err = parseEvidenceForm(req, body)
+	}
 	if err != nil {
 		request.evidence.issues = appendUnique(request.evidence.issues, "incomplete-request-form")
 		httpLog.Error(

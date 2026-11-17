@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -94,7 +95,7 @@ func captureExtractedHTTP(t *testing.T, data core.DataFragments, source bool) ([
 }
 
 func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
-	for _, kind := range []string{"identity", "gzip", "gzip-truncated", "truncated", "chunked-upload"} {
+	for _, kind := range []string{"identity", "gzip", "gzip-truncated", "truncated", "chunked-upload", "multipart-upload"} {
 		t.Run(kind, func(t *testing.T) {
 			body := []byte(strings.Repeat("artifact fixture\n", 5000))
 			wire := body
@@ -120,9 +121,20 @@ func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
 			if kind == "chunked-upload" {
 				request = "POST /upload.bin HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/octet-stream\r\nTransfer-Encoding: chunked\r\n\r\n3\r\none\r\n0\r\n\r\nGET /file.txt HTTP/1.1\r\nHost: fixture.test\r\n\r\n"
 			}
+			if kind == "multipart-upload" {
+				multipart := "--fixture\r\nContent-Disposition: form-data; name=\"upload\"; filename=\"fixture.bin\"\r\n\r\n" + strings.Repeat("fixture bytes\n", 240000) + "\r\n--fixture\r\nContent-Disposition: form-data; name=\"label\"\r\n\r\nafter-file\r\n--fixture--\r\n"
+				request = fmt.Sprintf("POST /upload?label=query HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: multipart/form-data; boundary=fixture\r\nContent-Length: %d\r\n\r\n%sGET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n", len(multipart), multipart)
+			}
 			response := []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n%sContent-Length: %d\r\n\r\n", encoding, length))
 			response = append(response, wire...)
-			data := core.DataFragments{wireFragment(0, []byte(request), 1), wireFragment(1, response, 2)}
+			data := core.DataFragments{}
+			if kind == "multipart-upload" {
+				response = append([]byte("HTTP/1.1 204 No Content\r\n\r\n"), response...)
+			}
+			for fragment := range slices.Chunk([]byte(request), 16<<10) {
+				data = append(data, wireFragment(0, fragment, 1))
+			}
+			data = append(data, wireFragment(1, response, 2))
 			wantHTTP, wantFiles := captureExtractedHTTP(t, data, false)
 			gotHTTP, gotFiles := captureExtractedHTTP(t, data, true)
 			if !reflect.DeepEqual(gotHTTP, wantHTTP) {
@@ -130,6 +142,9 @@ func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotFiles, wantFiles) {
 				t.Fatalf("file observations changed:\ngot %v\nwant %v", gotFiles, wantFiles)
+			}
+			if kind == "multipart-upload" && (len(gotHTTP) != 2 || len(gotFiles) != 2 || !strings.Contains(fmt.Sprint(gotHTTP[0].Parameters), "after-file")) {
+				t.Fatalf("multipart fields, file, or next message lost: %v / %d", gotHTTP, len(gotFiles))
 			}
 		})
 	}

@@ -15,6 +15,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -410,7 +411,7 @@ func parseEvidenceForm(r *http.Request, body []byte) error {
 		return queryErr
 	}
 	if (r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH") && contentType == "multipart/form-data" {
-		return errors.Join(queryErr, parseEvidenceMultipart(r, body, params["boundary"]))
+		return errors.Join(queryErr, parseEvidenceMultipart(r, bytes.NewReader(body), params["boundary"], nil))
 	}
 	if (r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH") && contentType == "application/x-www-form-urlencoded" {
 		post, err := evidenceQuery(string(body))
@@ -427,13 +428,13 @@ func parseEvidenceForm(r *http.Request, body []byte) error {
 }
 
 // Parse fields in memory; uploaded files remain in the original carved body.
-func parseEvidenceMultipart(r *http.Request, body []byte, boundary string) error {
+func parseEvidenceMultipart(r *http.Request, body io.Reader, boundary string, retain func(int64) error) error {
 	const maxFields = 1024
 	const maxFieldBytes = 1 << 20
 	if boundary == "" {
 		return fmt.Errorf("multipart form lacks boundary")
 	}
-	reader := multipart.NewReader(bytes.NewReader(body), boundary)
+	reader := multipart.NewReader(body, boundary)
 	r.PostForm = url.Values{}
 	query, _ := evidenceQuery(r.URL.RawQuery)
 	remaining := int64(maxFieldBytes)
@@ -450,16 +451,24 @@ func parseEvidenceMultipart(r *http.Request, body []byte, boundary string) error
 			_ = part.Close()
 			continue
 		}
-		value, err := io.ReadAll(io.LimitReader(part, remaining+1))
-		_ = part.Close()
+		value, release, err := file.ReadBodyLimit(part, remaining+1)
 		if err != nil {
+			release()
 			return err
 		}
 		if int64(len(value))+int64(len(name)) > remaining {
+			release()
 			return fmt.Errorf("multipart fields exceed %d bytes", maxFieldBytes)
+		}
+		if retain != nil {
+			if err := retain(256 + int64(len(name)+len(value))); err != nil {
+				release()
+				return err
+			}
 		}
 		remaining -= int64(len(value) + len(name))
 		r.PostForm.Add(name, string(value))
+		release()
 		r.Form[name] = append(append([]string(nil), r.PostForm[name]...), query[name]...)
 	}
 	return fmt.Errorf("multipart form exceeds %d parts", maxFields)

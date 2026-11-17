@@ -52,6 +52,18 @@ func opaqueSourceRequest(request *http.Request) bool {
 	return typ != "application/json" && !strings.HasSuffix(typ, "+json") && typ != "application/x-www-form-urlencoded" && typ != "multipart/form-data"
 }
 
+func sourceMultipartBoundary(request *http.Request) (string, bool) {
+	if decoderconfig.Instance.FileStorage == "" || (request.Method != "POST" && request.Method != "PUT" && request.Method != "PATCH") {
+		return "", false
+	}
+	encoding := strings.ToLower(strings.TrimSpace(request.Header.Get(headerContentEncoding)))
+	if encoding != "" && encoding != "identity" {
+		return "", false
+	}
+	media, params, _ := mime.ParseMediaType(request.Header.Get(headerContentType))
+	return params["boundary"], media == "multipart/form-data"
+}
+
 func readSourceRequestBody(c *core.ConversationInfo, body io.Reader) (sample []byte, release func(), resultErr error) {
 	const scratchSize = 32768
 	const sampleSize = 512
@@ -161,7 +173,8 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 				if err != nil || evidence.unsafe {
 					return nil
 				}
-				if validH2Upgrade(request) || (request.ContentLength != 0 || len(request.TransferEncoding) > 0) && !opaqueSourceRequest(request) {
+				_, multipart := sourceMultipartBoundary(request)
+				if validH2Upgrade(request) || (request.ContentLength != 0 || len(request.TransferEncoding) > 0) && !opaqueSourceRequest(request) && !multipart {
 					return errHTTPSourceCompatibility
 				}
 				if request.ContentLength != 0 || len(request.TransferEncoding) > 0 {
@@ -214,7 +227,11 @@ func (h *httpReader) decodeSource() bool {
 			return err
 		}
 		reader := &httpReader{conversation: oriented, transportObservation: note, sourceMode: true, unobservedResponseEnd: h.unobservedResponseEnd}
-		if decoderconfig.Instance.FileStorage!=""{if err:=file.PrepareSourceEvidence(oriented);err!=nil{return err}}
+		if decoderconfig.Instance.FileStorage != "" {
+			if err := file.PrepareSourceEvidence(oriented); err != nil {
+				return err
+			}
+		}
 		reader.decodeTransportRun()
 		if h.writeError == nil {
 			h.writeError = reader.writeError
