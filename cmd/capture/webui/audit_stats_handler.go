@@ -68,7 +68,9 @@ func (s *Server) handleAuditStats(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			return
 		}
-		RespondJSON(w, http.StatusOK, s.getAuditStatsForDirectory(selection.OutputDir))
+		stats := s.getAuditStatsForDirectory(selection.OutputDir)
+		stats.AnalysisPhase, stats.TimelineGeneration = s.selectedAnalysisPhase(selection)
+		RespondJSON(w, http.StatusOK, stats)
 		return
 	}
 	s.mu.RLock()
@@ -87,6 +89,39 @@ func (s *Server) handleAuditStats(w http.ResponseWriter, r *http.Request) {
 	s.mu.RUnlock()
 
 	HandleAuditStats(outDir)(w, r)
+}
+
+func (s *Server) selectedAnalysisPhase(selection captureSelection) (string, string) {
+	s.mu.RLock()
+	phase := s.postCapturePhases[selection.OutputDir]
+	completed := s.completedFiles[selection.InputFile]
+	manager := s.sessionManager
+	s.mu.RUnlock()
+	if selection.SessionID != "" && manager != nil {
+		session, ok := manager.GetSession(selection.SessionID)
+		completed = ok && session.Status == StatusCompleted
+	}
+	if !completed {
+		return phase, ""
+	}
+	fingerprint, _, err := timelineFingerprint(selection.OutputDir)
+	if err != nil {
+		return "completed", ""
+	}
+	if fingerprint == "empty" {
+		return "completed", fingerprint
+	}
+	timelineCache.Lock()
+	entry := timelineCache.entries[selection.OutputDir]
+	timelineCache.Unlock()
+	if entry != nil && entry.fingerprint == fingerprint {
+		entry.mu.RLock()
+		defer entry.mu.RUnlock()
+		if entry.state == timelineStateReady && entry.index != nil {
+			return "completed", entry.index.Generation
+		}
+	}
+	return "completed", ""
 }
 
 // handleServiceModeAuditStats aggregates audit statistics across all sessions in service mode

@@ -88,7 +88,11 @@ async def check(binary, capture, data_dir):
         ]
         for name, arguments in cases:
             try:
-                await call(name, arguments)
+                result = await call(name, arguments)
+                if name == "get_session_info":
+                    status = result["audit_stats"]
+                    if status.get("analysisPhase") != "completed" or not status.get("timelineGeneration"):
+                        raise ValueError("completed session lost its timeline generation")
             except Exception as exc:
                 failures.append(f"{name}: {exc}")
 

@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http/httptest"
@@ -139,7 +140,7 @@ func TestAnalysisCompletionWaitsForTimelineGeneration(t *testing.T) {
 	}()
 	deadline := time.After(2 * time.Second)
 	for {
-		if status := timelineIndexFor(dir); status.State == timelineStateIndexing {
+		if phase, _ := s.selectedAnalysisPhase(captureSelection{OutputDir: dir, InputFile: input}); phase == "timeline" && timelineIndexFor(dir).State == timelineStateIndexing {
 			break
 		}
 		select {
@@ -160,6 +161,21 @@ func TestAnalysisCompletionWaitsForTimelineGeneration(t *testing.T) {
 	if completed {
 		t.Fatal("completed while timeline generation was indexing")
 	}
+	assertPhase := func(phase, generation string) {
+		t.Helper()
+		response := httptest.NewRecorder()
+		request := httptest.NewRequest("GET", "/api/audit-stats", nil)
+		request = request.WithContext(context.WithValue(request.Context(), captureSelectionKey{}, captureSelection{InputFile: input, OutputDir: dir}))
+		query := request.URL.Query()
+		query.Set("inputFile", input)
+		request.URL.RawQuery = query.Encode()
+		s.handleAuditStats(response, request)
+		var stats AuditStatsResponse
+		if err := json.Unmarshal(response.Body.Bytes(), &stats); response.Code != 200 || err != nil || stats.AnalysisPhase != phase || stats.TimelineGeneration != generation {
+			t.Fatalf("phase %s generation %s: %d %s (%v)", phase, generation, response.Code, response.Body, err)
+		}
+	}
+	assertPhase("timeline", "")
 	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}, &types.HTTP{Method: "POST"}})
 	wantGeneration, _, err := timelineFingerprint(dir)
 	if err != nil {
@@ -178,6 +194,7 @@ func TestAnalysisCompletionWaitsForTimelineGeneration(t *testing.T) {
 	if status := timelineIndexFor(dir); status.State != timelineStateReady || status.Index.Generation != wantGeneration {
 		t.Fatal("completed with stale timeline", status.State)
 	}
+	assertPhase("completed", wantGeneration)
 }
 
 func TestAnalysisTimelineWaitStopsDuringShutdown(t *testing.T) {

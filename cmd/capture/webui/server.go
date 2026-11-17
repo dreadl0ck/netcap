@@ -206,6 +206,7 @@ type Server struct {
 	geoProvidersOverride string
 	isProcessing         bool
 	processingWork       int
+	postCapturePhases    map[string]string
 	processingStopping   bool
 	enqueueMu            sync.RWMutex
 	isLiveMode           bool                 // Whether in live capture mode

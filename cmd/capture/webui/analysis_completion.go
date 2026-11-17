@@ -36,9 +36,12 @@ func (s *Server) runPostCapture(job *AnalysisJob, slots chan struct{}) {
 }
 
 func (s *Server) completeAnalysis(job *AnalysisJob, duration time.Duration) error {
+	s.setPostCapturePhase(job.OutputDir, "rules")
+	defer s.setPostCapturePhase(job.OutputDir, "")
 	if err := s.executeRulesForJob(job); err != nil {
 		return fmt.Errorf("post-analysis rules: %w", err)
 	}
+	s.setPostCapturePhase(job.OutputDir, "timeline")
 	if err := s.waitForAnalysisTimeline(job.OutputDir); err != nil {
 		return err
 	}
@@ -67,6 +70,19 @@ func (s *Server) completeAnalysis(job *AnalysisJob, duration time.Duration) erro
 		}
 	}
 	return nil
+}
+
+func (s *Server) setPostCapturePhase(dir, phase string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if phase == "" {
+		delete(s.postCapturePhases, dir)
+		return
+	}
+	if s.postCapturePhases == nil {
+		s.postCapturePhases = make(map[string]string)
+	}
+	s.postCapturePhases[dir] = phase
 }
 
 func (s *Server) waitForAnalysisTimeline(dir string) error {

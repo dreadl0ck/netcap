@@ -78,11 +78,13 @@ type StatusResponse struct {
 
 // AuditStatsResponse represents the audit record statistics response
 type AuditStatsResponse struct {
-	TotalRecords       int64 `json:"totalRecords"`
-	ExploitCount       int64 `json:"exploitCount"`
-	VulnerabilityCount int64 `json:"vulnerabilityCount"`
-	SecretCount        int64 `json:"secretCount"`
-	SoftwareCount      int64 `json:"softwareCount"`
+	AnalysisPhase      string `json:"analysisPhase,omitempty"`
+	TimelineGeneration string `json:"timelineGeneration,omitempty"`
+	TotalRecords       int64  `json:"totalRecords"`
+	ExploitCount       int64  `json:"exploitCount"`
+	VulnerabilityCount int64  `json:"vulnerabilityCount"`
+	SecretCount        int64  `json:"secretCount"`
+	SoftwareCount      int64  `json:"softwareCount"`
 }
 
 // LayerType represents the encapsulation layer of a protocol
