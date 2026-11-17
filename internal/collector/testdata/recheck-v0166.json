@@ -3,6 +3,20 @@
   "release": "v0.16.7",
   "scope": "53 deduplicated report rows; implemented means source and synthetic regressions, not verification of unavailable evaluator captures",
   "originalCorpus": "Evaluator /workspace/hunt/repro and complete MTA/CTF/Wireshark corpus are not available locally",
+  "recheckV0169Followup": {
+    "status": "partial implementation; bounded degradation, streaming completion, fair post-processing and full release qualification remain open",
+    "source": "4584e7b, 313429f, a193932, 3e5fe7a, ce6c8ed, 2ca3456, 5d3310a, 8ecb607 and f3fd5ee",
+    "configuration": "Shared CLI/MCP defaults preserve unlimited TCP budgets as compatibility containment. Canonical byte environment values, explicit zero, MiB conversion overflow and conflicting aliases are checked. Aggregate zero retains memory-only semantics",
+    "storage": "TCP materialization reservations run outside aggregate callbacks; pressure leaves unrelated storage usable. Missing/corrupt fragments still fail storage. Capture-level failure tests retain connection output and withhold full readiness",
+    "reassembly": "Cold controls use exact-key deletes. Per-direction indexed queued-page timestamps replace refresh and flush minimum scans; page delivery/recycling removes index membership. Full reassembly race suite passes. Deadline refresh measured 5.535/5.447/5.762 ns at 1/1024/65536 pending pages on native arm64; these are diagnostic microbenchmarks, not corpus timings",
+    "contracts": "Empty audit records serialize as arrays. Whole-result sizing reaches complete artifact fallback. Query and paged success schemas reject missing/null fields and incomplete artifact references. Host views expose traffic, scoped identity and unattached directory observations; continuations bind identity and query generations. Grouped paging retains separate group and alert counts",
+    "rules": "Header presence/prefix predicates require nonempty evidence, command tokens have boundaries, and literal embedded patterns are checked for empty-input matches. Only unchanged known saved defaults migrate. Engines reuse record projections and typed immutable plans, defer alert construction until gates pass and cache compiled provenance. Queued jobs own admitted rule snapshots; clock-controlled threshold/rate/provenance checks and rule races pass",
+    "usb": "Pinned original hashes 5508d9d85b10a5bf947b3986c1b5dd3555bfce6dccbb4902e5c307ffec36709d and 439bc8a580e4fb8a4c5880fc75d7ad156c0c229f0dedf786b4b8495b846e7b28 pass decoder replay for all 515/458 packets. Header 0x0101 requires at least 40 bytes; extension bytes remain opaque",
+    "wireIdentification": "Production selection requires explicit decoder inclusion or a configured message mapping before generic wire-format traffic can win. Explicit single-field controls and the complete selection suite pass; the four pinned DNS/NBNS archive witnesses emit zero Protobuf records",
+    "replay": "NETCAP_RECHECK_ARCHIVE pins archive SHA-256 6e061856cdc2e363e2494757b4be70abe9f1671cdff5270d403f488f9ba2446f. Four false-positive controls and the supplied 15000-flow midstream capture pass with shared default budgets; all 15000 Connection records remain",
+    "verification": "Full portable collector and webui suites pass. Native decoder/reassembly/rule/filter/MCP/command suites pass. Reassembly, TCP, filter, rules, MCP and focused webui race checks pass; targeted vet passes",
+    "remaining": "Finite budgets still use strict failure, not a qualified local-loss policy. Full TCP completion can still materialize conversations. Fair rule/timeline scheduling, original stale-probe replay, source ordinals and partial exit policy, every-tool official-client qualification, oversized nested groups, full original corpus and native capture platform lanes remain open"
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
