@@ -55,7 +55,11 @@ func TestStoredTCPMaterializationBudgets(t *testing.T) {
 				s.loaded = true
 				err = s.append(&core.StreamData{RawData: []byte("oversized")})
 			} else {
+				before := state.Health().DiskReads
 				_, err = s.read()
+				if mode == "state" && state.Health().DiskReads-before != 1 {
+					t.Fatal("state refusal read ahead into later backing rows")
+				}
 			}
 			if mode == "unlimited" {
 				if err != nil || cancelled || budget.Health().RetainedBytes == 0 {

@@ -233,12 +233,30 @@ func (s *storedTCPReader) WalkRange(start, length int64, yield func(core.DataFra
 func (s *storedTCPReader) read() (core.DataFragments, error) {
 	var data core.DataFragments
 	budget := s.readBudget()
+	bounded := s.payloadBudget != nil || budget.Health().LimitBytes > 0
 	credit, payloadCredit := int64(0), int64(0)
+	retained := false
+	defer func() {
+		if !retained {
+			budget.Release(credit)
+			if s.payloadBudget != nil {
+				s.payloadBudget.release(payloadCredit)
+			}
+		}
+	}()
 	read := func() error {
 		last := ""
 		for {
 			var rows []aggregate.Row
 			err := s.state.Do(func(tx *aggregate.Tx) error {
+				if bounded {
+					// Admit each row before fetching the next one under finite budgets.
+					key, value, found, err := tx.Next(s.prefix, last)
+					if found {
+						rows = []aggregate.Row{{Key: key, Value: value}}
+					}
+					return err
+				}
 				var err error
 				rows, err = tx.NextBatch(s.prefix, last)
 				return err
@@ -283,14 +301,11 @@ func (s *storedTCPReader) read() (core.DataFragments, error) {
 	}
 	err := read()
 	if err != nil {
-		budget.Release(credit)
-		if s.payloadBudget != nil {
-			s.payloadBudget.release(payloadCredit)
-		}
 		return nil, err
 	}
 	s.credit, s.payloadCredit = credit, payloadCredit
-	return data, err
+	retained = true
+	return data, nil
 }
 
 func (s *storedTCPReader) clear() error {
