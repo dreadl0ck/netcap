@@ -158,6 +158,11 @@
     "verification": "uv run --script scripts/check-mcp-stdio.py <net-binary> validates input and successful output schemas over stdio on the mDNS capture. The portable binary advertised 119 tools; 48 distinct tools and 53 successful calls were checked, including sealed continuation, count-only and empty audit pages. Unknown session selectors fail.",
     "fix": "Behavior and network-detection routes use the shared capture resolver for local session IDs. Full Web UI and MCP race suites and the focused local-session regression pass. The script lists untested tools explicitly."
   },
+  "passiveHTTPForms": {
+    "source": "1fae58f",
+    "implementation": "Passive HTTP/1 uses quota-controlled scratch for supported identity-encoded JSON, multipart and URL-encoded forms. Prefix and parsed fields are charged to parser state. Larger URL forms still select checked compatibility before emission.",
+    "verification": "TestHTTPSourceParsesPassiveForms preserves byte-backed record output, including fields after a 3360000-byte multipart file part and the following request. It checks scratch cleanup and retained source use. Full portable HTTP race suite, focused native races, collector backed-HTTP controls and HTTP vet pass."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
