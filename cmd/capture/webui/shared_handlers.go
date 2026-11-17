@@ -20,6 +20,7 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/dreadl0ck/netcap/internal/evidence"
@@ -527,47 +528,54 @@ func ListAuditFiles(outputDir string) ([]AuditFileInfo, error) {
 	return files, nil
 }
 
-// CountRecords counts the number of records in an audit file
+// CountRecords counts complete frames in an audit file.
 func CountRecords(filePath string) int64 {
 	if total, ok := communityCachedTotal(filePath); ok {
 		return total
 	}
-	reader, err := netio.Open(filePath, defaults.BufferSize)
+	count, _ := countAuditFrames(context.Background(), filePath)
+	return count
+}
+
+func countAuditFrames(ctx context.Context, filePath string) (int64, error) {
+	reader, err := NewAuditRecordReader(filePath)
 	if err != nil {
-		return 0
+		return 0, err
 	}
 	defer reader.Close()
 
 	count := int64(0)
-	header, err := reader.ReadHeader()
-	if err != nil || header == nil {
-		return 0
+	header := new(types.Header)
+	if err := reader.delimitedReader.NextProtoWithLimit(header, 1<<20); err != nil {
+		return 0, err
 	}
-
-	record := netio.InitRecord(header.Type)
-	if record == nil {
-		return 0
+	if netio.InitRecord(header.Type) == nil {
+		return 0, fmt.Errorf("unsupported audit type %v", header.Type)
 	}
 
 	for {
-		err := reader.Next(record)
+		err := reader.delimitedReader.Skip(ctx)
+		if err == io.EOF {
+			return count, nil
+		}
 		if err != nil {
-			break
+			return count, err
 		}
 		count++
 	}
 
-	return count
 }
 
 // HandleAuditMeta returns metadata for an audit file
 func HandleAuditMeta(w http.ResponseWriter, r *http.Request, filePath, auditType string) {
-	recordCount := CountRecords(filePath)
+	recordCount, err := countAuditFrames(r.Context(), filePath)
 
 	RespondJSON(w, http.StatusOK, map[string]any{
-		"type":        auditType,
-		"recordCount": recordCount,
-		"filePath":    filePath,
+		"type":                auditType,
+		"recordCount":         recordCount,
+		"recordCountComplete": err == nil,
+		"recordCountBasis":    "framing",
+		"filePath":            filePath,
 	})
 }
 

@@ -15,9 +15,11 @@ package delimited
 
 import (
 	"bufio"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math"
 
 	"github.com/gogo/protobuf/proto"
 )
@@ -49,13 +51,20 @@ func NewReader(r io.Reader) *Reader {
 //
 // The slice returned is valid only until a subsequent call to Next.
 func (r *Reader) Next() ([]byte, error) {
+	return r.next(r.maxRecord)
+}
+
+func (r *Reader) next(limit uint64) ([]byte, error) {
 	// read size
 	size, err := binary.ReadUvarint(r.buffer)
 	if err != nil {
 		return nil, err
 	}
-	if r.maxRecord > 0 && size > r.maxRecord {
-		return nil, fmt.Errorf("record size %d exceeds limit %d", size, r.maxRecord)
+	if limit > 0 && size > limit {
+		return nil, fmt.Errorf("record size %d exceeds limit %d", size, limit)
+	}
+	if size > math.MaxInt {
+		return nil, fmt.Errorf("record size %d exceeds reader bounds", size)
 	}
 
 	// alloc memory for data
@@ -74,6 +83,46 @@ func (r *Reader) Next() ([]byte, error) {
 	}
 
 	return r.data, nil
+}
+
+// Skip consumes one frame without allocating its body.
+func (r *Reader) Skip(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	size, err := binary.ReadUvarint(r.buffer)
+	if err != nil {
+		return err
+	}
+	if r.maxRecord > 0 && size > r.maxRecord {
+		return fmt.Errorf("record size %d exceeds limit %d", size, r.maxRecord)
+	}
+	for size > 0 {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		n, err := r.buffer.Discard(int(min(size, 32<<10)))
+		size -= uint64(n)
+		if err == io.EOF {
+			return io.ErrUnexpectedEOF
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// NextProtoWithLimit applies an additional allocation limit to one frame.
+func (r *Reader) NextProtoWithLimit(pb proto.Message, limit uint64) error {
+	if r.maxRecord > 0 && (limit == 0 || r.maxRecord < limit) {
+		limit = r.maxRecord
+	}
+	record, err := r.next(limit)
+	if err != nil {
+		return err
+	}
+	return proto.Unmarshal(record, pb)
 }
 
 // NextProto consumes the next available record by calling r.Next
