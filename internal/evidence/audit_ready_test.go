@@ -11,14 +11,16 @@ import (
 
 func TestAuditOutputReadinessRequiresFinalizedCapture(t *testing.T) {
 	for _, tc := range []struct {
-		name, status string
-		captureError error
-		ready        bool
+		name, status  string
+		captureError  error
+		coverageError error
+		ready         bool
 	}{
 		{name: "successful", status: "done", ready: true},
 		{name: "stopped", status: "stopped", ready: true},
 		{name: "partial", status: "partial", ready: true},
 		{name: "failure", status: "done", captureError: errors.New("capture failed")},
+		{name: "coverage-loss", status: "partial", coverageError: errors.New("snapshot truncated")},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -32,6 +34,7 @@ func TestAuditOutputReadinessRequiresFinalizedCapture(t *testing.T) {
 			if _, err := os.Stat(filepath.Join(dir, AuditReadyFile)); !os.IsNotExist(err) {
 				t.Fatal("running capture published a marker")
 			}
+			capture.CoverageError(tc.coverageError)
 			if err := capture.Close(tc.status, 0, 0, tc.captureError); err != nil {
 				t.Fatal(err)
 			}

@@ -73,7 +73,7 @@ func TestCaptureInputSynthetic(t *testing.T) {
 				}
 				var capture evidence.CaptureManifest
 				readInputJSON(t, filepath.Join(out, "capture-manifest.json"), &capture)
-				if capture.Status != "error" || capture.Error == "" || capture.IngressPackets != uint64(tc.packets) {
+				if capture.Status != "partial" || capture.Error != "" || capture.CoverageError == "" || capture.IngressPackets != uint64(tc.packets) {
 					t.Fatalf("false complete capture: %+v", capture)
 				}
 				t.Logf("workers=%d processed=%d skipped=%d eof=%t output=%s", workers, report.ProcessedPackets, report.SkippedRecords, report.ReachedEOF, out)
@@ -128,7 +128,7 @@ func TestCaptureInputMixedInterfaces(t *testing.T) {
 		}
 		var capture evidence.CaptureManifest
 		readInputJSON(t, filepath.Join(out, "capture-manifest.json"), &capture)
-		if len(capture.Segments) != 1 || capture.Status != "error" {
+		if len(capture.Segments) != 1 || capture.Status != "partial" || capture.CoverageError == "" {
 			t.Fatalf("retention: %+v", capture)
 		}
 		f, err := os.Open(filepath.Join(out, capture.Segments[0].Name))
@@ -226,7 +226,7 @@ func TestCaptureInputDecodeQualification(t *testing.T) {
 				result := runInputRepro(t, path, out, workers)
 				var report CaptureInputReport
 				readInputJSON(t, filepath.Join(out, "capture-input.json"), &report)
-				if result.Packets != 3 || result.Error != "" || report.Status != tc.status || report.LinkErrors != tc.link || report.DecodeErrors != tc.decode || report.CountedPackets != 3 || report.ProcessedPackets != 3 || report.ReadErrors != 0 || !report.ReachedEOF {
+				if result.Packets != 3 || (result.Error != "") != (tc.status == "partial") || report.Status != tc.status || report.LinkErrors != tc.link || report.DecodeErrors != tc.decode || report.CountedPackets != 3 || report.ProcessedPackets != 3 || report.ReadErrors != 0 || !report.ReachedEOF {
 					t.Fatalf("result=%+v report=%+v", result, report)
 				}
 				udp := bookRecords(t, out, "UDP", func() *types.UDP { return &types.UDP{} })

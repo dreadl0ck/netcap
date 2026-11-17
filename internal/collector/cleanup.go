@@ -117,7 +117,7 @@ func (c *Collector) cleanup(force bool) {
 			c.artifactAnalysisStarted.Store(false)
 		}
 		c.finalizeCaptureEvidence()
-		if c.captureEvidence != nil && c.captureRunError == nil && c.captureEvidenceError == nil && c.flowExportError == nil {
+		if c.captureEvidence != nil && c.captureRunError == nil && c.captureCoverageError == nil && c.captureEvidenceError == nil && c.flowExportError == nil {
 			if err := c.captureEvidence.MarkAuditOutputReady(); err != nil {
 				c.captureEvidenceError = fmt.Errorf("finalize audit output: %w", err)
 			}

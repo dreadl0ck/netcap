@@ -69,6 +69,7 @@ type CaptureManifest struct {
 	CreatedAt           string            `json:"createdAt"`
 	Status              string            `json:"status"`
 	Error               string            `json:"error,omitempty"`
+	CoverageError       string            `json:"coverageError,omitempty"`
 	Config              CaptureConfig     `json:"config"`
 	ConfigSHA256        string            `json:"configSHA256"`
 	InputSHA256         string            `json:"inputSHA256,omitempty"`
@@ -146,6 +147,19 @@ type Capture struct {
 	storageError      error
 	closed            bool
 	sourceInfo        os.FileInfo
+}
+
+func (c *Capture) CoverageError(err error) {
+	if err == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	message := err.Error()
+	if len(message) > 4096 {
+		message = message[:4096]
+	}
+	c.manifest.CoverageError = message
 }
 
 type captureInterface struct {

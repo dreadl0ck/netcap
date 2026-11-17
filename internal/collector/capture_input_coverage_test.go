@@ -2,6 +2,7 @@ package collector
 
 import (
 	"encoding/binary"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,8 +24,38 @@ func TestCaptureInputDistinguishesProtocolEvidenceFromFramingLoss(t *testing.T) 
 		}
 	}
 	frames := CaptureInputReport{ReachedEOF: true, ProcessedPackets: 3, LinkErrors: 1}
-	if err := frames.result(); err != nil || frames.Status != "partial" {
+	var coverage *CaptureInputError
+	if err := frames.result(); !errors.As(err, &coverage) || coverage.ExitCode() != 2 || frames.Status != "partial" {
 		t.Fatalf("completed frame warning: %+v %v", frames, err)
+	}
+}
+
+func TestPartialInputDoesNotBecomeFatalFinalization(t *testing.T) {
+	frame := rawPacketFixture(t, true, 64)
+	input := append(inputPCAPHeader(binary.LittleEndian, false, 65535, 1), inputPCAPRecord(binary.LittleEndian, 1, 0, 64, 128, frame)...)
+	path := filepath.Join(t.TempDir(), "partial.pcap")
+	if err := os.WriteFile(path, input, 0600); err != nil {
+		t.Fatal(err)
+	}
+	out := t.TempDir()
+	cfg := ultimateCaptureConfig(out, 1, 0)
+	cfg.CaptureEvidence = true
+	c := New(cfg)
+	err := c.CollectPcap(path)
+	var coverage *CaptureInputError
+	if !errors.As(err, &coverage) || coverage.ExitCode() != 2 {
+		t.Fatal("partial input did not return coverage exit", err)
+	}
+	if c.captureRunError != nil || c.captureEvidenceError != nil || c.artifactAnalysisError != nil || c.captureCoverageError == nil {
+		t.Fatal("coverage loss became a fatal finalization failure", c.captureRunError, c.captureEvidenceError, c.artifactAnalysisError)
+	}
+	var manifest evidence.CaptureManifest
+	readInputJSON(t, filepath.Join(out, "capture-manifest.json"), &manifest)
+	if manifest.Status != "partial" || manifest.Error != "" {
+		t.Fatal("coverage manifest became fatal", manifest.Status, manifest.Error)
+	}
+	if _, err := os.Stat(filepath.Join(out, evidence.AuditReadyFile)); !os.IsNotExist(err) {
+		t.Fatal("partial coverage published full readiness", err)
 	}
 }
 
@@ -41,7 +72,7 @@ func TestCaptureSnapshotTruncationRemainsPartial(t *testing.T) {
 	readInputJSON(t, filepath.Join(out, "capture-input.json"), &report)
 	var manifest evidence.CaptureManifest
 	readInputJSON(t, filepath.Join(out, "capture-manifest.json"), &manifest)
-	if result.Packets != 1 || result.Error != "" || result.Complete || report.Status != "partial" || report.SnapshotTruncated != 1 || manifest.Status != "partial" || manifest.TruncatedPackets != 1 {
+	if result.Packets != 1 || result.Error == "" || result.Complete || report.Status != "partial" || report.SnapshotTruncated != 1 || manifest.Status != "partial" || manifest.TruncatedPackets != 1 {
 		t.Fatalf("snapshot truncation became complete: result=%+v report=%+v manifest=%+v", result, report, manifest)
 	}
 }
@@ -54,12 +85,12 @@ func TestCaptureInputExitCoverageMatrix(t *testing.T) {
 		code   int
 	}{
 		{"decode-warning", CaptureInputReport{ReachedEOF: true, ProcessedPackets: 1, DecodeErrors: 1}, "complete", 0},
-		{"frame-warning", CaptureInputReport{ReachedEOF: true, ProcessedPackets: 2, LinkErrors: 1}, "partial", 0},
+		{"frame-warning", CaptureInputReport{ReachedEOF: true, ProcessedPackets: 2, LinkErrors: 1}, "partial", 2},
 		{"no-readable-input", CaptureInputReport{ReachedEOF: true, LinkErrors: 1}, "error", 1},
 		{"read-loss", CaptureInputReport{ReachedEOF: true, ProcessedPackets: 2, ReadErrors: 1}, "partial", 2},
 		{"unsupported", CaptureInputReport{ReachedEOF: true, ProcessedPackets: 2, Unsupported: 1}, "unsupported", 3},
 		{"mixed-loss", CaptureInputReport{ReachedEOF: true, ProcessedPackets: 2, ReadErrors: 1, Unsupported: 1}, "partial", 2},
-		{"snapshot", CaptureInputReport{ReachedEOF: true, ProcessedPackets: 1, SnapshotTruncated: 1}, "partial", 0},
+		{"snapshot", CaptureInputReport{ReachedEOF: true, ProcessedPackets: 1, SnapshotTruncated: 1}, "partial", 2},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			code := 0

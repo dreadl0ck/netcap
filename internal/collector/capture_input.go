@@ -59,7 +59,7 @@ func (e *CaptureInputError) ExitCode() int {
 }
 
 func (e *CaptureInputError) Error() string {
-	message := fmt.Sprintf("capture input %s: processed=%d skipped=%d read-errors=%d link-errors=%d decode-errors=%d unsupported=%d", e.Report.Status, e.Report.ProcessedPackets, e.Report.SkippedRecords, e.Report.ReadErrors, e.Report.LinkErrors, e.Report.DecodeErrors, e.Report.Unsupported)
+	message := fmt.Sprintf("capture input %s: processed=%d skipped=%d read-errors=%d link-errors=%d decode-errors=%d unsupported=%d snapshot-truncated=%d", e.Report.Status, e.Report.ProcessedPackets, e.Report.SkippedRecords, e.Report.ReadErrors, e.Report.LinkErrors, e.Report.DecodeErrors, e.Report.Unsupported, e.Report.SnapshotTruncated)
 	if len(e.Report.Issues) > 0 {
 		message += fmt.Sprintf("; offset %d: %s", e.Report.Issues[0].Offset, e.Report.Issues[0].Reason)
 	}
@@ -93,10 +93,7 @@ func (r *CaptureInputReport) result() error {
 			r.Status = "error"
 		}
 	}
-	if r.ReadErrors+r.LinkErrors+r.Unsupported > 0 {
-		if r.ReachedEOF && r.ProcessedPackets > 0 && r.ReadErrors == 0 && r.Unsupported == 0 {
-			return nil // Coverage retains recoverable frame errors; the run completed.
-		}
+	if r.Status == "partial" || r.Status == "unsupported" || r.Status == "error" {
 		return &CaptureInputError{Report: *r}
 	}
 	return nil
@@ -208,7 +205,9 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 		return err
 	}
 	defer func() {
-		c.captureRunError = resultErr
+		if c.captureCoverageError == nil {
+			c.captureRunError = resultErr
+		}
 		finish()
 		c.cleanup(false)
 		resultErr = errors.Join(resultErr, c.flowExportError, c.captureEvidenceError, c.artifactAnalysisError)
@@ -286,7 +285,11 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 		report.ReadErrors++
 		report.issue(0, "read", "packet count changed between count and processing passes", false)
 	}
-	resultErr = errors.Join(report.result(), ctx.Err())
+	inputErr := report.result()
+	if inputErr != nil && report.ProcessedPackets > 0 && (report.Status == "partial" || report.Status == "unsupported") {
+		c.captureCoverageError = inputErr
+	}
+	resultErr = errors.Join(inputErr, ctx.Err())
 	if c.captureEvidence != nil {
 		c.captureEvidence.SourceRecords(report.SourcePacketRecords)
 	}
@@ -295,6 +298,9 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 	data, err := json.MarshalIndent(report, "", "  ")
 	if err == nil {
 		err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "capture-input.json"), append(data, '\n'), 0600)
+	}
+	if c.captureCoverageError != nil {
+		c.captureRunError = errors.Join(ctx.Err(), err)
 	}
 	c.printlnStdOut("capture input status:", report.Status, "processed:", report.ProcessedPackets, "skipped:", report.SkippedRecords)
 	return errors.Join(resultErr, err)

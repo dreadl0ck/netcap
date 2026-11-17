@@ -15,7 +15,7 @@ func (c *Capture) RunID() string { c.mu.Lock(); defer c.mu.Unlock(); return c.ma
 func (c *Capture) MarkAuditOutputReady() (resultErr error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if !c.closed || c.manifest.Status == "running" || c.manifest.Status == "error" || c.manifest.Error != "" || c.storageError != nil {
+	if !c.closed || c.manifest.Status == "running" || c.manifest.Status == "error" || c.manifest.Error != "" || c.manifest.CoverageError != "" || c.storageError != nil {
 		return fmt.Errorf("cannot mark unfinished or failed audit output ready")
 	}
 	root, err := os.OpenRoot(c.directory)

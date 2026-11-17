@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -54,7 +55,8 @@ func TestLegacyPCAPLengthsAndRouting(t *testing.T) {
 							if classic, err := IsPcap(path); err != nil || !classic {
 								t.Fatalf("routing classic=%t: %v", classic, err)
 							}
-							if count, err := countCaptureInput(context.Background(), path, false); err != nil || count != 2 {
+							var coverage *CaptureInputError
+							if count, err := countCaptureInput(context.Background(), path, false); !errors.As(err, &coverage) || coverage.ExitCode() != 2 || coverage.Report.SnapshotTruncated != 1 || count != 2 {
 								t.Fatalf("count=%d: %v", count, err)
 							}
 							for _, reuse := range []bool{false, true} {

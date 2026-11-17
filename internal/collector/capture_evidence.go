@@ -83,6 +83,7 @@ func (c *Collector) finalizeCaptureEvidence() {
 	stats := c.behaviorCaptureHealth
 	c.behaviorHealthMu.Unlock()
 	c.captureEvidence.Kernel(stats.KernelReceived, stats.KernelDrops, stats.StatsError)
+	c.captureEvidence.CoverageError(c.captureCoverageError)
 	status := "stopped"
 	if c.captureComplete {
 		status = "done"

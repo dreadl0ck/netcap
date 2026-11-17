@@ -78,7 +78,8 @@ func TestCapturedByteReportTruncation(t *testing.T) {
 	if err := f.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if err := c.CollectPcap(input); err != nil {
+	var coverage *CaptureInputError
+	if err := c.CollectPcap(input); !errors.As(err, &coverage) || coverage.ExitCode() != 2 {
 		t.Fatal(err)
 	}
 	if c.perfTracker.TotalPackets != 1 || c.perfTracker.TotalBytes != 60 {
