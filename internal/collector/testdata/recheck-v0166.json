@@ -98,7 +98,7 @@
     "source": "b1f257f",
     "implementation": "Offline --local-reassembly-page-loss makes a refused TCP page allocation local and allows subsequent reservations after release. Affected flows omit completion-time application decoding. Packet audits remain independently queryable; full readiness is withheld and the run returns a typed exit-code-2 outcome. Strict mode remains the default.",
     "verification": "The bounded capture fixture admits all 16 packets and retains all four target Connection records. Credit reuse, strict-mode controls, full collector (161.542 s), reassembly and TCP suites, command races and vet pass.",
-    "remaining": "Payload and parser-state pressure policies, per-consumer recovery, and wider replay qualification remain open."
+    "remaining": "Parser-state pressure policy, per-consumer recovery, and wider replay qualification remain open. Offline payload pressure is qualified separately."
   },
   "offlineRuleClock": {
     "source": "7b959bd",
@@ -118,6 +118,15 @@
     "source": "e56c391",
     "implementation": "Disk-backed HTTP extraction reads multipart fields directly from the spool. File parts are streamed past, and retained fields reserve parser state credits.",
     "verification": "A 3360000-byte file part preserves the fields after the file, full extracted request, and next HTTP transaction. Byte-backed and source-backed audit records match. Portable and native HTTP race suites and backed HTTP collector controls pass. Passive multipart, JSON and URL-encoded forms still use compatibility decoding."
+  },
+  "localRetainedPayloadLoss": {
+    "source": "fee3b49",
+    "implementation": "Offline --local-retained-payload-loss scopes resident payload refusal and backing-reader materialization refusal to the affected flow. Packet processing continues; the capture reports partial reconstruction and returns exit 2. Strict mode remains the default.",
+    "verification": "Resident and backed fixtures admit all packets and preserve the unrelated HTTP 204. Budget credits return to zero. Full collector suite (195.357 s), TCP/reassembly/command race suites, and vet pass."
+  },
+  "independentAuditCoverage": {
+    "source": "759a5ef, bb3e959, 08637ea",
+    "verification": "Request cancellation interrupts stage verification. A TCP page-pressure fixture preserves the healthy HTTP transaction while omitting the affected one. Incomplete artifact analysis blocks full readiness and leaves the independent UDP audit sealed. Targeted race tests pass."
   },
   "recheckV0169Release": {
     "release": "v0.16.9",
