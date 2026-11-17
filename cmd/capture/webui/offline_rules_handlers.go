@@ -121,7 +121,14 @@ func (s *Server) offlineDirectory(r *http.Request, input, sessionID string) (str
 		return session.OutputDir, 0, nil
 	}
 	if sessionID != "" {
-		return "", 404, fmt.Errorf("Session not found")
+		path := s.fileIDToPath[sessionID]
+		if path == "" {
+			return "", 404, fmt.Errorf("Session not found")
+		}
+		if input != "" && input != path {
+			return "", 409, fmt.Errorf("Input file and session refer to different captures")
+		}
+		input = path
 	}
 	if input == "" {
 		input = s.activeInputFile

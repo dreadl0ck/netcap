@@ -31,6 +31,7 @@ get_reproduction_metadata get_network_detection get_behavior_topology
 list_alerts list_alerts_grouped list_audit_records list_connections list_devices
 list_domains list_extracted_files list_fingerprints list_hosts list_http_records
 list_secrets list_services list_software list_vulnerabilities
+list_offline_evaluations
 """.split()
 
 
@@ -80,6 +81,23 @@ async def check(binary, capture, data_dir):
                 await asyncio.sleep(0.2)
 
         args = {"session_id": sid}
+        pack = """format: netcap-offline-rules/v1
+rules:
+  - id: udp-fixture
+    name: UDP fixture
+    type: UDP
+    expression: 'DstPort == 5353'
+    severity: low
+    enabled: true
+    threshold:
+      count: 2
+      window: 600s
+      group_by: [DstPort]
+"""
+        await call("validate_offline_rule_pack", {"yaml": pack})
+        invalid = await client.call_tool("validate_offline_rule_pack", {"yaml": pack + "---\n{}\n"})
+        if not invalid.isError:
+            raise ValueError("multiple offline rule documents accepted")
         meta = await call("get_timeline_meta", args)
         track = args | {"types": "UDP", "generation": meta["generation"]}
         page = await call("query_timeline_events", track | {"limit": 5})
