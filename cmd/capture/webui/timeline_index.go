@@ -159,14 +159,30 @@ var timelineCache = struct {
 	entries map[string]*timelineIndexEntry
 }{entries: make(map[string]*timelineIndexEntry)}
 
-// Building an index can consume the full event budget, so only one generation
-// is built at a time across all capture sessions. The cache bounds queued work.
-var timelineBuildSlot = make(chan struct{}, 1)
+const timelineSmallInputBytes = 256 << 10
+
+var (
+	timelineBuildSlot      = make(chan struct{}, 1)
+	timelineSmallBuildSlot = make(chan struct{}, 1)
+)
 
 // timelineFileRef points at one audit record file to index.
 type timelineFileRef struct {
 	path string
 	name string // audit record type name
+	size int64
+}
+
+func timelineBuildLane(files []timelineFileRef) (chan struct{}, int) {
+	remaining := int64(timelineSmallInputBytes)
+	for _, file := range files {
+		if file.size <= 0 || file.size > remaining || strings.HasSuffix(file.path, ".gz") {
+			return timelineBuildSlot, 4
+		}
+		remaining -= file.size
+	}
+	// Each record consumes at least one input byte, including its framing.
+	return timelineSmallBuildSlot, 1
 }
 
 // timelineFingerprint identifies the current generation of audit records in
@@ -210,6 +226,7 @@ func timelineFingerprint(outDir string) (string, []timelineFileRef, error) {
 		candidate := timelineFileRef{
 			path: filepath.Join(outDir, name),
 			name: typeName,
+			size: info.Size(),
 		}
 		current, exists := filesByType[typeName]
 		if !exists || (!strings.HasSuffix(current.path, ".gz") && strings.HasSuffix(candidate.path, ".gz")) {
@@ -337,8 +354,9 @@ func timelineEvictLocked() {
 
 // buildTimelineIndex indexes every audit record file of one generation.
 func buildTimelineIndex(entry *timelineIndexEntry, fingerprint string, files []timelineFileRef) {
-	timelineBuildSlot <- struct{}{}
-	defer func() { <-timelineBuildSlot }()
+	slot, maxWorkers := timelineBuildLane(files)
+	slot <- struct{}{}
+	defer func() { <-slot }()
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -350,8 +368,8 @@ func buildTimelineIndex(entry *timelineIndexEntry, fingerprint string, files []t
 	}()
 
 	workers := runtime.NumCPU()
-	if workers > 4 {
-		workers = 4
+	if workers > maxWorkers {
+		workers = maxWorkers
 	}
 	if workers > len(files) {
 		workers = len(files)
@@ -389,7 +407,11 @@ func buildTimelineIndex(entry *timelineIndexEntry, fingerprint string, files []t
 					return
 				}
 
-				ti, err := indexTimelineType(files[i].path, files[i].name, perTypeLimit)
+				limit := perTypeLimit
+				if slot == timelineSmallBuildSlot {
+					limit = min(perTypeLimit, int(files[i].size))
+				}
+				ti, err := indexTimelineType(files[i].path, files[i].name, limit)
 
 				atomic.AddInt64(&done, 1)
 

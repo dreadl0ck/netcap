@@ -165,6 +165,20 @@ func TestTimelineIndexOrdersRecordsChronologically(t *testing.T) {
 	}
 }
 
+func TestSmallPlainTimelineCompletesWhileRegularLaneIsOccupied(t *testing.T) {
+	timelineBuildSlot <- struct{}{}
+	defer func() { <-timelineBuildSlot }()
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "Connection", types.Type_NC_Connection, []proto.Message{
+		connRecord(100, 200, "192.0.2.1", "192.0.2.2"),
+		connRecord(300, 400, "192.0.2.2", "192.0.2.1"),
+	})
+	index := waitForTimelineIndex(t, dir)
+	if track := index.byName["Connection"]; track == nil || len(track.Events) != 2 {
+		t.Fatal("reserved timeline lane lost records")
+	}
+}
+
 func TestTimelineIndexNanosecondPrecision(t *testing.T) {
 	dir := t.TempDir()
 
