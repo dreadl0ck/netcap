@@ -282,6 +282,9 @@
   "streamedArtifactClassification": {
     "verification": "TestSpooledClassifierUsesBoundedInput verifies a 512-KiB classifier-only artifact works under a 256-KiB buffer budget. TestClassifierReaderVerifiesStagedInput checks size and SHA-256 before execution and rejects short, extra and changed input. Focused classifier, file and backed HTTP race tests pass."
   },
+  "spoolScanBufferReuse": {
+    "verification": "The spool carries its 128-byte token overlap in the reusable read buffer, removing the per-chunk window allocation. Focused file and HTTP race tests pass, including split-token analysis parity, scratch limits, and passive multipart replay."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

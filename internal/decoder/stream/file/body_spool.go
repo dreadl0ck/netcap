@@ -94,14 +94,17 @@ func SpoolBody(reader io.Reader) (result *BodySpool, resultErr error) {
 	md5Hash, sha1Hash, sha256Hash := md5.New(), sha1.New(), sha256.New()
 	hashes := io.MultiWriter(md5Hash, sha1Hash, sha256Hash)
 	var facts artifactFacts
-	buffer := make([]byte, 32768)
+	const chunkSize, tokenOverlap = 32768, 128
+	buffer := make([]byte, chunkSize+tokenOverlap)
+	overlap := 0
 	limit := GetMaxFileSize()
 	if limit <= 0 || limit > 100<<20 {
 		limit = 100 << 20
 	}
 	empty := 0
 	for {
-		n, readErr := reader.Read(buffer[:min(int64(len(buffer)), limit-result.content.size+1)])
+		chunk := buffer[overlap : overlap+int(min(chunkSize, limit-result.content.size+1))]
+		n, readErr := reader.Read(chunk)
 		if n > 0 {
 			empty = 0
 			if int64(n) > limit-result.content.size {
@@ -112,12 +115,14 @@ func SpoolBody(reader io.Reader) (result *BodySpool, resultErr error) {
 				resultErr = err
 				break
 			}
-			written, writeErr := file.Write(buffer[:n])
+			written, writeErr := file.Write(chunk[:n])
 			result.credit += int64(written)
 			releaseArtifactScratch(int64(n - written))
 			if written > 0 {
-				_, _ = hashes.Write(buffer[:written])
-				facts.feed(buffer[:written])
+				_, _ = hashes.Write(chunk[:written])
+				window := buffer[:overlap+written]
+				facts.feed(window, overlap)
+				overlap = copy(buffer, window[max(0, len(window)-tokenOverlap):])
 				result.content.size += int64(written)
 			}
 			if writeErr == nil && written != n {
@@ -149,7 +154,6 @@ func SpoolBody(reader io.Reader) (result *BodySpool, resultErr error) {
 	result.content.hashes = FileHashes{MD5: hex.EncodeToString(md5Hash.Sum(nil)), SHA1: hex.EncodeToString(sha1Hash.Sum(nil)), SHA256: hex.EncodeToString(sha256Hash.Sum(nil))}
 	result.content.mime, result.content.accurate = facts.mimeType()
 	result.content.prefix = facts.prefix
-	facts.tail = nil
 	result.content.facts = &facts
 	returned = true
 	return result, resultErr

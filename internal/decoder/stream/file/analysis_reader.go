@@ -14,7 +14,6 @@ type artifactFacts struct {
 	tokens    map[string]bool
 	firstLine map[string]bool
 	lineDone  bool
-	tail      []byte
 	embedded  bool
 	size      int64
 }
@@ -22,7 +21,8 @@ type artifactFacts struct {
 var artifactTokens = []string{"param(", "$PSVersionTable", "function ", "cmdlet", "function(", "var ", "const ", "let ", "Sub ", "Function ", "End Sub", "EncryptedPackage", "StrongEncryptionDataSpace", ":"}
 var firstLineTokens = []string{"python", "bash", "/sh", "perl", "ruby", "node"}
 
-func (f *artifactFacts) feed(data []byte) {
+func (f *artifactFacts) feed(window []byte, overlap int) {
+	data := window[overlap:]
 	if f.tokens == nil {
 		f.tokens = map[string]bool{}
 		f.firstLine = map[string]bool{}
@@ -32,7 +32,6 @@ func (f *artifactFacts) feed(data []byte) {
 		f.counts[b]++
 	}
 	f.size += int64(len(data))
-	window := append(append([]byte(nil), f.tail...), data...)
 	f.embedded = f.embedded || hasEmbeddedScript(window)
 	for _, token := range artifactTokens {
 		f.tokens[token] = f.tokens[token] || bytes.Contains(window, []byte(token))
@@ -47,7 +46,6 @@ func (f *artifactFacts) feed(data []byte) {
 			f.firstLine[token] = f.firstLine[token] || bytes.Contains(line, []byte(token))
 		}
 	}
-	f.tail = append(f.tail[:0], window[max(0, len(window)-128):]...)
 }
 
 func (f *artifactFacts) scriptType() string {
