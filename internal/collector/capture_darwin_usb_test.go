@@ -9,10 +9,13 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/evidence"
+	"github.com/dreadl0ck/netcap/types"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 )
@@ -72,6 +75,11 @@ func TestDarwinUSBOriginalCaptures(t *testing.T) {
 		delete(witnesses, key)
 		var order binary.ByteOrder
 		var links []uint16
+		type usbKey struct {
+			id               uint64
+			device, endpoint byte
+		}
+		wantRecords := make(map[usbKey]int)
 		count := 0
 		for offset := 0; offset < len(wire); {
 			if len(wire)-offset < 12 {
@@ -118,13 +126,45 @@ func TestDarwinUSBOriginalCaptures(t *testing.T) {
 					t.Fatal("original packet rejected", count+1, packet.ErrorLayer().Error())
 				}
 				count++
+				header := block[28 : 28+captured]
+				wantRecords[usbKey{binary.LittleEndian.Uint64(header[16:24]), header[29], header[30] & 0x7f}]++
 			}
 			offset += size
 		}
 		if count != want {
 			t.Fatal("original packet coverage changed", count, want)
 		}
-		t.Logf("capture sha256=%s decoded=%d", key, count)
+		path := filepath.Join(t.TempDir(), "original.pcapng")
+		if err := os.WriteFile(path, wire, 0600); err != nil {
+			t.Fatal(err)
+		}
+		out := t.TempDir()
+		cfg := ultimateCaptureConfig(out, 1, 0)
+		cfg.CaptureEvidence = true
+		cfg.DecoderConfig.IncludeDecoders = "USB"
+		if err := New(cfg).CollectPcapNG(path); err != nil {
+			t.Fatal(err)
+		}
+		rows := bookRecords(t, out, "USB", func() *types.USB { return new(types.USB) })
+		if len(rows) != want {
+			t.Fatal("exported USB count", len(rows), want)
+		}
+		for _, row := range rows {
+			k := usbKey{row.ID, byte(row.DeviceAddress), byte(row.EndpointNumber)}
+			if wantRecords[k] == 0 {
+				t.Fatalf("unexpected exported USB transfer: %+v", k)
+			}
+			wantRecords[k]--
+		}
+		manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
+		if manifest.InputSHA256 != key || manifest.Status != "done" || manifest.AdmittedPackets != uint64(want) {
+			t.Fatal("unexpected capture manifest", manifest.Status, manifest.AdmittedPackets)
+		}
+		stage, _, err := evidence.ReadAuditStage(out, manifest.RunID, "USB", manifest.AuditStagesGeneration)
+		if err != nil || stage.Records != int64(want) || stage.Coverage != "complete" {
+			t.Fatal(stage, err)
+		}
+		t.Logf("capture sha256=%s decoded=%d exported=%d", key, count, len(rows))
 	}
 	if len(witnesses) != 0 {
 		t.Fatal("original capture qualification incomplete")

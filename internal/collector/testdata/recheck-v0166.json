@@ -203,6 +203,9 @@
     "verification": "scripts/check-mcp-stdio.py passed for 61 of 119 advertised tools. All four UDP event pages report 18 matches; their IDs are distinct and the bucket counts sum to 18 for the same generation. Flow queries and auth activity also passed. Timeline race tests pass.",
     "fix": "Timeline event responses previously left matchCount at zero on nonempty pages. They now count the full query before pagination, using index bounds for unfiltered instant tracks."
   },
+  "originalUSBCollectorExport": {
+    "verification": "TestDarwinUSBOriginalCaptures ran on both digest-pinned public captures with NETCAP_USB_CAPTURE_URLS set. CollectPcapNG produced 515 and 458 USB audit records. Transfer ID, device and endpoint multiplicities match the original headers; both manifests report done with the original input SHA-256 and complete USB stage seals."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
