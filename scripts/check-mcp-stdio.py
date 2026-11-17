@@ -99,6 +99,20 @@ async def check(binary, capture, data_dir):
             raise ValueError("timeline buckets disagree with the paged UDP track")
         binding = await call("get_analyst_binding", {"sessionId": sid})
         source = {"sessionId": sid, "binding": binding}
+        log_selection = {"source": source, "file": "collector.log", "start": 1, "end": 1}
+        review = await call("review_diagnostic_log", log_selection)
+        line, = review["lines"]
+        if (review["binding"] != binding or review["state"] != "preview"
+                or set(line) != {"ordinal", "sha256", "classes"} or line["ordinal"] != 1
+                or len(line["sha256"]) != 64):
+            raise ValueError("diagnostic preview lost its bounded line projection")
+        stale_review = review | {"projectionSHA256": "0" * 64}
+        rejected = await client.call_tool("review_diagnostic_log", log_selection | {"approve": stale_review})
+        if not rejected.isError:
+            raise ValueError("changed diagnostic projection accepted")
+        approved = await call("review_diagnostic_log", log_selection | {"approve": review})
+        if approved.get("state") != "reviewed":
+            raise ValueError("diagnostic review was not confirmed")
         await call("inspect_bound_capture", {"source": source})
         await call("analyst_workspace", {"source": source, "expectedRevision": 0})
         refs = (await call("list_bound_occurrences", {"source": source, "type": "UDP"}))["references"]
