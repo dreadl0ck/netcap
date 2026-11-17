@@ -8,6 +8,7 @@ package mcp
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -43,12 +44,16 @@ type SSERecord struct {
 //   - err: transport or parse error (not an SSE "event: error" — that's
 //     surfaced in terminalEvent)
 func (c *NetcapClient) StreamAuditRecords(auditType string, q url.Values, maxBytes int) (records []json.RawMessage, completeJSON json.RawMessage, terminalEvent string, err error) {
+	return c.streamAuditRecords(context.Background(), auditType, q, maxBytes)
+}
+
+func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string, q url.Values, maxBytes int) (records []json.RawMessage, completeJSON json.RawMessage, terminalEvent string, err error) {
 	records = make([]json.RawMessage, 0)
 	u := c.baseURL + "/api/audit/" + url.PathEscape(auditType) + "/stream"
 	if len(q) > 0 {
 		u += "?" + q.Encode()
 	}
-	req, err := http.NewRequest(http.MethodGet, u, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, nil, "", err
 	}
@@ -105,6 +110,12 @@ func (c *NetcapClient) StreamAuditRecords(auditType string, q url.Values, maxByt
 		line := scanner.Text()
 		if line == "" {
 			flush()
+			if terminalEvent != "" {
+				if !json.Valid(completeJSON) || !strings.HasPrefix(string(completeJSON), "{") {
+					return nil, nil, "", fmt.Errorf("invalid SSE terminal payload")
+				}
+				return records, completeJSON, terminalEvent, nil
+			}
 			continue
 		}
 		switch {
@@ -119,8 +130,6 @@ func (c *NetcapClient) StreamAuditRecords(auditType string, q url.Values, maxByt
 			// SSE comment, ignored.
 		}
 	}
-	flush()
-
 	if err := scanner.Err(); err != nil {
 		return nil, nil, "", fmt.Errorf("reading SSE: %w", err)
 	}

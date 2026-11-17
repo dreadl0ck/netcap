@@ -105,7 +105,7 @@ func (s *Server) registerRecordTools() error {
 	return nil
 }
 
-func (s *Server) handleQueryAuditRecords(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+func (s *Server) handleQueryAuditRecords(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
 		return errResult(err), nil
@@ -172,7 +172,7 @@ func (s *Server) handleQueryAuditRecords(_ context.Context, req mcplib.CallToolR
 	}
 
 	client := s.newClient()
-	records, completeJSON, terminal, sErr := client.StreamAuditRecords(auditType, q, 32<<20)
+	records, completeJSON, terminal, sErr := client.streamAuditRecords(ctx, auditType, q, 32<<20)
 	if sErr != nil {
 		return errResult(fmt.Errorf("stream %s: %w", auditType, sErr)), nil
 	}

@@ -7,13 +7,50 @@
 package mcp
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 )
+
+func TestAuditStreamRequiresDelimitedTerminalEvent(t *testing.T) {
+	const body = "event: complete\ndata: {\"total\":0}\n\n"
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(w, body)
+	}))
+	defer ts.Close()
+	c := NewNetcapClient(ts.URL)
+	for _, limit := range []int{len(body) - 2, len(body) - 1, len(body)} {
+		_, _, got, err := c.StreamAuditRecords("DNS", nil, limit)
+		want := "incomplete"
+		if limit == len(body) {
+			want = "complete"
+		}
+		if err != nil || got != want {
+			t.Fatalf("limit %d: got %q, %v; want %s", limit, got, err, want)
+		}
+	}
+}
+
+func TestAuditStreamCancellationInterruptsRead(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, ": waiting\n\n")
+		w.(http.Flusher).Flush()
+		cancel()
+		<-r.Context().Done()
+	}))
+	defer ts.Close()
+	_, _, _, err := NewNetcapClient(ts.URL).streamAuditRecords(ctx, "DNS", nil, 1024)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
+}
 
 func TestEmptyAuditStreamSerializesRecordsAsArray(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
