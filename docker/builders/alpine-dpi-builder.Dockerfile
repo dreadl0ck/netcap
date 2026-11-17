@@ -1,7 +1,9 @@
 # Base Alpine builder image for netcap musl builds with DPI support
 # This image contains all build dependencies including nDPI and libprotoident
 ARG TARGETPLATFORM=linux/amd64
-FROM --platform=$TARGETPLATFORM golang:1.27-alpine3.24@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18
+FROM dreadl0ck/netcap-builder:sdk-alpine-amd64-ndpi-eb0472fc0b30-v1@sha256:a954612ca58da25765aec3280c3101d6ca57fec22574f71d43168c9cfa095748 AS ndpi_sdk
+FROM dreadl0ck/netcap-builder:sdk-alpine-amd64-lpi-eb0472fc0b30-v1@sha256:5a8ada8f8116f8156d10872c1fbd9c7fc03040f24552944a02993e2fa34f4912 AS lpi_sdk
+FROM --platform=$TARGETPLATFORM golang:1.27-alpine3.24@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS base
 RUN apk upgrade --no-cache && test "$(cat /etc/alpine-release)" = 3.24.4
 
 # Install all build dependencies
@@ -36,6 +38,8 @@ RUN apk update && \
     wget
 
 # Install wandio (required by libtrace)
+FROM base AS lpi_source
+COPY LICENSE legal/ /usr/share/licenses/netcap/
 RUN cd /tmp && \
     wget -O 4.2.3-1.tar.gz https://codeload.github.com/LibtraceTeam/wandio/tar.gz/refs/tags/4.2.3-1 && \
     echo '0b7499dd73fd167dfb35abe80b25b36fe757e51f7cbd8bf5810d24951ca41735  4.2.3-1.tar.gz' | sha256sum -c - && \
@@ -88,6 +92,8 @@ RUN cd /tmp && \
     rm -rf /tmp/2.0.15-1.tar.gz /tmp/libprotoident-2.0.15-1
 
 # Install nDPI
+FROM base AS ndpi_source
+COPY LICENSE legal/ /usr/share/licenses/netcap/
 RUN cd /tmp && \
     wget -O 4.14.tar.gz https://codeload.github.com/ntop/nDPI/tar.gz/refs/tags/4.14 && \
     echo '954135ee14ad6bd74a78a10db560b534b8f2083ad0615f5c1a2c376fff0301e0  4.14.tar.gz' | sha256sum -c - && \
@@ -101,6 +107,12 @@ RUN cd /tmp && \
     rm -rf /tmp/4.14.tar.gz /tmp/nDPI-4.14
 
 # Set CGO flags for DPI libraries
+FROM base AS dpi
+COPY --from=lpi_sdk /usr/local/ /usr/local/
+COPY --from=ndpi_sdk /usr/ /usr/
+RUN printf '%s\n' '#include <libprotoident.h>' '#include <ndpi/ndpi_api.h>' 'int main(){return !ndpi_revision() || lpi_init_library() != 0;}' | \
+    g++ -x c++ - -lprotoident -lndpi -o /tmp/sdk-check && /tmp/sdk-check && rm /tmp/sdk-check
+FROM dpi AS builder
 ENV CFLAGS="-I/usr/local/lib"
 ENV CPPFLAGS="-I/usr/local/lib"
 ENV CXXFLAGS="-I/usr/local/lib"

@@ -65,6 +65,30 @@ The header will show:
 
 ## Linux
 
+Linux/amd64 CI and local Docker builds use the qualified builder in
+`docker/builders/images.lock.json`. Docker downloads it on a cold machine;
+Netcap links its installed libraries on every build. Native macOS builds link
+the Homebrew installations above. Service builds retain Go's module and object
+caches in BuildKit; use an immutable builder reference to isolate cgo objects.
+
+Builder maintainers: `docker/builders/{alpine,ubuntu}-dpi-builder.Dockerfile`
+pins two SDK images per ABI: nDPI and libprotoident with its dependencies.
+For a Go-only change leave both pins alone. To upgrade one native component,
+update its source checksum/version or flags, then build only its source target:
+
+```sh
+variant=alpine; component=ndpi   # or ubuntu and/or lpi
+recipe=docker/builders/$variant-dpi-builder.Dockerfile
+docker buildx build --load --platform linux/amd64 --target "${component}_source" -t netcap-sdk-source -f "$recipe" .
+tag="dreadl0ck/netcap-builder:sdk-$variant-amd64-$component-$(git rev-parse --short=12 HEAD)"
+python3 zeus/scripts/builder-image.py --ensure-absent "$tag"
+docker buildx build --platform linux/amd64 --push --build-arg SUPPLIER=netcap-sdk-source --build-arg COMPONENT="$component" -t "$tag" -f docker/builders/dpi-sdk.Dockerfile docker/builders
+```
+
+Use the local Docker driver for both commands. Pin the returned digest for
+that component, build `--target dpi` to check linkage, then publish and qualify
+the complete builder before updating `images.lock.json`.
+
 ### Prerequisites
 
 Install nDPI and libprotoident from your package manager or build from source:

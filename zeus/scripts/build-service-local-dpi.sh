@@ -89,21 +89,18 @@ ARG VERSION=0.7.7
 # Add replace directive to use local go-dpi
 RUN echo "replace github.com/dreadl0ck/go-dpi => /go-dpi" >> go.mod
 
-# Download dependencies with replace directive in effect
-RUN GOWORK=off go mod download
-
-# Clear Go build cache (but not modcache) to ensure fresh build
-RUN go clean -cache -i -r
+ARG NETCAP_BUILDER_IMAGE
 
 # Remove any existing binary
 RUN rm -rf /netcap/bin
 
 # Build the binary WITH DPI support (disable workspace mode)
 # Extract library versions
-RUN GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket) && \
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build,id=go-${NETCAP_BUILDER_IMAGE} \
+    GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket) && \
     GO_DPI_VERSION=$(cd /go-dpi && git describe --tags --always 2>/dev/null || echo "local-dev") && \
     mkdir -p /netcap/bin && \
-    GOWORK=off GOOS=linux GOARCH=amd64 go build -a \
+    GOWORK=off GOOS=linux GOARCH=amd64 go build \
     -ldflags "-r /usr/local/lib -s -w \
         -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
         -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \

@@ -24,8 +24,6 @@ env:
   GOWORK: 'off'
   GOMAXPROCS: '4'
   GOFLAGS: '-p=2'
-  # Build the native recipe from this revision; a shared tag can carry an old ABI.
-  BUILDER_IMAGE: netcap-builder:ci-yara122
 
 jobs:
   native-runtime:
@@ -125,14 +123,17 @@ jobs:
           pnpm build
           test -f dist/index.html
 
-      - name: Build the matched native toolchain
-        run: docker build --platform linux/amd64 -f docker/builders/alpine-dpi-builder.Dockerfile -t "$BUILDER_IMAGE" .
+      - name: Pull the qualified DPI toolchain
+        run: |
+          image=$(python3 zeus/scripts/builder-image.py alpine-dpi)
+          docker pull --platform linux/amd64 "$image"
+          echo "BUILDER_IMAGE=$image" >> "$GITHUB_ENV"
 
       # Everything below runs inside the builder image rather than on the
       # runner.
       #
       # The Go build needs nDPI headers, libprotoident and the yara-x C API.
-      # The builder above compiles the pinned native sources from this revision.
+      # The immutable builder supplies the native headers and compiled libraries.
       #
       # It is invoked with `docker run` rather than a job-level `container:`
       # because GitHub injects its own glibc-linked Node into container jobs to

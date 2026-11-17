@@ -1,7 +1,9 @@
 # Base Ubuntu builder image for netcap glibc builds with DPI support
 # This image contains all build dependencies including nDPI and libprotoident
 ARG TARGETPLATFORM=linux/amd64
-FROM --platform=$TARGETPLATFORM ubuntu:26.04
+FROM dreadl0ck/netcap-builder:sdk-ubuntu-amd64-ndpi-80a2254dffa4-v1@sha256:18c0f821cc1cabffe1efdc3a47534516ed9a4c2a1f1f50ae429ddbdad33e01ea AS ndpi_sdk
+FROM dreadl0ck/netcap-builder:sdk-ubuntu-amd64-lpi-80a2254dffa4-v1@sha256:4a4b163c3f8a26ced62544c5bb5b7bee7f6085d16af482df831ea0489a89d39e AS lpi_sdk
+FROM --platform=$TARGETPLATFORM ubuntu:26.04 AS base
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -26,6 +28,7 @@ RUN apt-get clean && \
     libtool \
     gcc \
     libpcap-dev \
+    libjson-c-dev \
     zlib1g-dev \
     linux-headers-generic \
     git \
@@ -48,6 +51,8 @@ ENV GOPATH="/go"
 ENV PATH="${GOPATH}/bin:${PATH}"
 
 # Cloudsmith only publishes libprotoident packages for Ubuntu 20.04 and older.
+FROM base AS lpi_source
+COPY LICENSE legal/ /usr/share/licenses/netcap/
 ARG WANDIO_VERSION=4.2.7-1
 ARG LIBTRACE_VERSION=4.0.34-1
 ARG FLOWMANAGER_VERSION=3.0.0-3
@@ -102,10 +107,13 @@ RUN cd /tmp && \
     rm -rf /tmp/libprotoident*
 
 # Install nDPI from source
+FROM base AS ndpi_source
+COPY LICENSE legal/ /usr/share/licenses/netcap/
 RUN apt-get update && \
     apt-get install -y libjson-c-dev && \
     rm -rf /var/lib/apt/lists/* && \
     wget https://github.com/ntop/nDPI/archive/4.14.tar.gz && \
+    echo '954135ee14ad6bd74a78a10db560b534b8f2083ad0615f5c1a2c376fff0301e0  4.14.tar.gz' | sha256sum -c - && \
     busybox tar xfz 4.14.tar.gz && \
     cd nDPI-4.14 && \
     ./autogen.sh && \
@@ -117,6 +125,13 @@ RUN apt-get update && \
     rm -rf /nDPI-4.14 /4.14.tar.gz
 
 # Set CGO flags for DPI libraries
+FROM base AS dpi
+COPY --from=lpi_sdk /usr/local/ /usr/local/
+COPY --from=ndpi_sdk /usr/ /usr/
+RUN ldconfig
+RUN printf '%s\n' '#include <libprotoident.h>' '#include <ndpi/ndpi_api.h>' 'int main(){return !ndpi_revision() || lpi_init_library() != 0;}' | \
+    g++ -x c++ - -lprotoident -lndpi -o /tmp/sdk-check && /tmp/sdk-check && rm /tmp/sdk-check
+FROM dpi AS builder
 ENV CFLAGS="-I/usr/local/include/"
 ENV LDFLAGS="-ltrace -lndpi -lpcap -lm -pthread"
 

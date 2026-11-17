@@ -7,30 +7,7 @@ sudo apt install -y libpcap-dev software-properties-common ca-certificates liblz
 sudo update-ca-certificates
 sudo apt-get install -y apt-transport-https curl lsb-release wget autogen autoconf libtool gcc libpcap-dev linux-headers-generic git vim automake libtool make g++ bison flex cmake binutils binutils-doc gcc-doc cmake-doc extra-cmake-modules autoconf pkg-config libconfig-dev
 
-wget -qN https://github.com/wanduow/wandio/archive/4.2.2-1.tar.gz
-tar xfz 4.2.2-1.tar.gz
-cd wandio-4.2.2-1 && ./bootstrap.sh && ./configure && make && sudo make install
-cd ..
-
-wget -qN https://github.com/LibtraceTeam/libtrace/archive/4.0.11-1.tar.gz
-tar xfz 4.0.11-1.tar.gz
-cd libtrace-4.0.11-1 && ./bootstrap.sh && ./configure && make && sudo make install
-cd ..
-
-wget -qN https://github.com/wanduow/libflowmanager/archive/3.0.0.tar.gz
-tar xfz 3.0.0.tar.gz
-cd libflowmanager-3.0.0 && ./bootstrap.sh && ./configure && make && sudo make install
-cd ..
-
-wget -qN https://github.com/wanduow/libprotoident/archive/2.0.14-1.tar.gz
-tar xfz 2.0.14-1.tar.gz
-cd libprotoident-2.0.14-1 && ./bootstrap.sh && ./configure && make && sudo make install
-cd ..
-
-wget -qN https://github.com/ntop/nDPI/archive/4.14.tar.gz
-tar xfz 4.14.tar.gz
-cd nDPI-4.14 && ./autogen.sh && ./configure && make && sudo make install
-cd ..
+bash scripts/install-debian-dpi.sh
 
 sudo apt install -y liblinear-dev
 
@@ -43,14 +20,7 @@ export LDFLAGS="--verbose -v -L/usr/local/lib -llinear -ltrace -lndpi -lpcap -lm
 export LD_LIBRARY_PATH="/usr/local/lib:/usr/lib:/go"
 export LD_RUN_PATH="/usr/local/lib"
 
-sudo ldconfig /usr/local/lib/*
-sudo ldconfig /go/*
-
-# debug info
-env
-sudo find / -iname ndpi_main.h
-sudo find / -iname libprotoident.h
-sudo find / -iname libtrace.h
+sudo ldconfig
 
 # ensure the go compiler can output the binary to /usr/local/bin
 sudo chown -R "$USER" /usr/local/bin
@@ -59,4 +29,3 @@ sudo chown -R "$USER" /usr/local/bin
 GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket)
 
 go build -trimpath -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION} -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd/net
-

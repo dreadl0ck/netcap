@@ -74,18 +74,18 @@ RUN protoc --proto_path=types --gogofaster_out=types/. types/netcap.proto && tes
 ARG VERSION=0.7.7
 ARG COMMIT
 
-# Clear Go build cache to ensure fresh build
-RUN go clean -cache -modcache -i -r
+ARG NETCAP_BUILDER_IMAGE
 
 # Remove any existing binary
 RUN rm -rf /netcap/bin
 
 # Build the binary WITH DPI support (disable workspace mode)
 # Extract library versions from go.mod
-RUN GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket) && \
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build,id=go-${NETCAP_BUILDER_IMAGE} \
+    GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket) && \
     GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
     mkdir -p /netcap/bin && \
-    GOWORK=off GOOS=linux GOARCH=amd64 go build -a -trimpath \
+    GOWORK=off GOOS=linux GOARCH=amd64 go build -trimpath \
     -ldflags "-r /usr/local/lib -s -w \
         -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
         -X github.com/dreadl0ck/netcap.Commit=${COMMIT} \
