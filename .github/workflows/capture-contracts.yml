@@ -8,6 +8,7 @@ on:
       - '.github/workflows/capture-contracts.yml'
       - 'go.mod'
       - 'go.sum'
+      - 'scripts/check-mcp-stdio.py'
       - 'defaults/**/*.go'
       - 'internal/aggregate/**/*.go'
       - 'internal/evidence/**/*.go'
@@ -30,6 +31,7 @@ on:
       - '.github/workflows/capture-contracts.yml'
       - 'go.mod'
       - 'go.sum'
+      - 'scripts/check-mcp-stdio.py'
       - 'defaults/**/*.go'
       - 'internal/aggregate/**/*.go'
       - 'internal/evidence/**/*.go'
@@ -87,6 +89,12 @@ jobs:
         run: pnpm install --frozen-lockfile && pnpm build
       - name: Verify capture completion and output contracts
         run: go test -tags nodpi,noyara,nomagika ./internal/collector -count=1 -timeout=10m
+      - name: Verify official MCP stdio contracts
+        run: |
+          python3 -m venv "$RUNNER_TEMP/mcp-check"
+          "$RUNNER_TEMP/mcp-check/bin/pip" install uv==0.9.13
+          go build -tags nodpi,noyara,nomagika -o "$RUNNER_TEMP/net" ./cmd/net
+          "$RUNNER_TEMP/mcp-check/bin/uv" run --script scripts/check-mcp-stdio.py "$RUNNER_TEMP/net"
       - name: Verify resource ownership and reader races
         run: >-
           go test -race -tags nodpi,noyara,nomagika

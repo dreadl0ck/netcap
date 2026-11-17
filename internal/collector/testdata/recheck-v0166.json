@@ -215,6 +215,10 @@
   "multipartFieldAccumulation": {
     "verification": "TestMultipartRepeatedFieldsAtPartLimit verifies that exactly 1024 repeated parts succeed and the 1025th fails while preserving the first 1024 values in wire order before the URL query value. Multipart parsing now merges accepted fields once per key. The portable HTTP race suite passes."
   },
+  "officialMCPContinuousCheck": {
+    "workflow": ".github/workflows/capture-contracts.yml builds a portable CLI and runs scripts/check-mcp-stdio.py on capture contract changes and harness edits.",
+    "localVerification": "Workflow lint passed. A fresh portable binary passed 88 successful stdio calls across 65 of 119 tools, with no harness failures."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
