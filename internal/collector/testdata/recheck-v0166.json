@@ -89,6 +89,17 @@
     "verification": "Full portable collector suite passes (141.584 s); full netio races, native focused writer/collector races, vet and workflow validation pass. Capture-contract CI now includes netio, HTTP/file and command-exit races/vet with matching source triggers",
     "remaining": "Per-stage output seals and partial-result query admission, resource-pressure isolation and original/native-platform qualification remain open"
   },
+  "partialAuditStages": {
+    "source": "29f3d994",
+    "implementation": "A finalized capture binds per-type seals and file SHA-256 checks to its run and stage generation. Explicit allow_partial MCP and allowPartial HTTP queries return coverage metadata; continuation requires both generations. Default failed-analysis admission remains closed.",
+    "verification": "Full collector suite (163.435 s), full portable Web UI/MCP/evidence race suites, focused production-route race replay, and vet pass. Tests cover known-empty stages, stale continuations, changed outputs, unavailable parser stages and unqualified backend replies."
+  },
+  "localReassemblyPageLoss": {
+    "source": "b1f257f",
+    "implementation": "Offline --local-reassembly-page-loss makes a refused TCP page allocation local and allows subsequent reservations after release. Affected flows omit completion-time application decoding. Packet audits remain independently queryable; full readiness is withheld and the run returns a typed exit-code-2 outcome. Strict mode remains the default.",
+    "verification": "The bounded capture fixture admits all 16 packets and retains all four target Connection records. Credit reuse, strict-mode controls, full collector (161.542 s), reassembly and TCP suites, command races and vet pass.",
+    "remaining": "Payload and parser-state pressure policies, per-consumer recovery, and wider replay qualification remain open."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
