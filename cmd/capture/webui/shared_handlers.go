@@ -405,67 +405,10 @@ func HandleAuditStats(outputDir string) http.HandlerFunc {
 			return
 		}
 
-		response := AuditStatsResponse{
-			TotalRecords:       0,
-			ExploitCount:       0,
-			VulnerabilityCount: 0,
-			SecretCount:        0,
-			SoftwareCount:      0,
+		stats := getAuditStatsForDirectory(r.Context(), outputDir)
+		if r.Context().Err() == nil {
+			RespondJSON(w, http.StatusOK, stats)
 		}
-
-		if outputDir == "" {
-			RespondJSON(w, http.StatusOK, response)
-			return
-		}
-
-		files, err := os.ReadDir(outputDir)
-		if err != nil {
-			log.Printf("[WebUI] Failed to read directory %s for audit stats: %v", outputDir, err)
-			RespondJSON(w, http.StatusOK, response)
-			return
-		}
-
-		// Count records for specific audit types
-		for _, file := range files {
-			if file.IsDir() {
-				continue
-			}
-
-			name := file.Name()
-			// Check for audit record files (.ncap.gz)
-			if !preferredAuditFile(outputDir, name) {
-				continue
-			}
-
-			// Extract type name (remove .ncap.gz)
-			typeName := strings.TrimSuffix(name, ".gz")
-			typeName = strings.TrimSuffix(typeName, defaults.FileExtension)
-
-			fullPath := filepath.Join(outputDir, name)
-
-			// Count records for this file
-			count := CountRecords(fullPath)
-			if count == 0 {
-				continue
-			}
-
-			// Add to total
-			response.TotalRecords += count
-
-			// Check if this is one of the specific audit types we're tracking
-			switch typeName {
-			case "Exploit":
-				response.ExploitCount = count
-			case "Vulnerability":
-				response.VulnerabilityCount = count
-			case "Secret":
-				response.SecretCount = count
-			case "Software":
-				response.SoftwareCount = count
-			}
-		}
-
-		RespondJSON(w, http.StatusOK, response)
 	}
 }
 

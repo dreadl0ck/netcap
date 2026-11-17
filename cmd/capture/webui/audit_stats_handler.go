@@ -20,6 +20,7 @@
 package webui
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -52,7 +53,10 @@ func (s *Server) handleAuditStats(w http.ResponseWriter, r *http.Request) {
 		}
 		response := AuditStatsResponse{}
 		for _, dir := range dirs {
-			d := s.getAuditStatsForDirectory(dir)
+			d := getAuditStatsForDirectory(r.Context(), dir)
+			if r.Context().Err() != nil {
+				return
+			}
 			response.TotalRecords += d.TotalRecords
 			response.ExploitCount += d.ExploitCount
 			response.VulnerabilityCount += d.VulnerabilityCount
@@ -68,7 +72,10 @@ func (s *Server) handleAuditStats(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			return
 		}
-		stats := s.getAuditStatsForDirectory(selection.OutputDir)
+		stats := getAuditStatsForDirectory(r.Context(), selection.OutputDir)
+		if r.Context().Err() != nil {
+			return
+		}
 		stats.AnalysisPhase, stats.TimelineGeneration = s.selectedAnalysisPhase(selection)
 		RespondJSON(w, http.StatusOK, stats)
 		return
@@ -147,7 +154,10 @@ func (s *Server) handleServiceModeAuditStats(w http.ResponseWriter, r *http.Requ
 		}
 
 		// Aggregate stats from this session's output directory
-		sessionStats := s.getAuditStatsForDirectory(session.OutputDir)
+		sessionStats := getAuditStatsForDirectory(r.Context(), session.OutputDir)
+		if r.Context().Err() != nil {
+			return
+		}
 		response.TotalRecords += sessionStats.TotalRecords
 		response.ExploitCount += sessionStats.ExploitCount
 		response.VulnerabilityCount += sessionStats.VulnerabilityCount
@@ -159,7 +169,7 @@ func (s *Server) handleServiceModeAuditStats(w http.ResponseWriter, r *http.Requ
 }
 
 // getAuditStatsForDirectory returns audit statistics for a specific directory
-func (s *Server) getAuditStatsForDirectory(outputDir string) AuditStatsResponse {
+func getAuditStatsForDirectory(ctx context.Context, outputDir string) AuditStatsResponse {
 	stats := AuditStatsResponse{
 		TotalRecords:       0,
 		ExploitCount:       0,
@@ -168,7 +178,7 @@ func (s *Server) getAuditStatsForDirectory(outputDir string) AuditStatsResponse 
 		SoftwareCount:      0,
 	}
 
-	if outputDir == "" {
+	if outputDir == "" || ctx.Err() != nil {
 		return stats
 	}
 
@@ -179,6 +189,9 @@ func (s *Server) getAuditStatsForDirectory(outputDir string) AuditStatsResponse 
 
 	// Count records for specific audit types
 	for _, file := range files {
+		if ctx.Err() != nil {
+			break
+		}
 		if file.IsDir() {
 			continue
 		}
@@ -196,7 +209,10 @@ func (s *Server) getAuditStatsForDirectory(outputDir string) AuditStatsResponse 
 		fullPath := filepath.Join(outputDir, name)
 
 		// Count records for this file
-		count := CountRecords(fullPath)
+		count, ok := communityCachedTotal(fullPath)
+		if !ok {
+			count, _ = countAuditFrames(ctx, fullPath)
+		}
 		if count == 0 {
 			continue
 		}

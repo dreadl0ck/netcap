@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
 	"net/http/httptest"
 	"net/url"
@@ -11,6 +12,21 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
+
+func TestCanceledAuditStatsDoesNotPublishCounts(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if stats := getAuditStatsForDirectory(ctx, dir); stats.TotalRecords != 0 {
+		t.Fatal("canceled scan counted records", stats)
+	}
+	w := httptest.NewRecorder()
+	HandleAuditStats(dir)(w, httptest.NewRequest("GET", "/api/audit-stats", nil).WithContext(ctx))
+	if w.Body.Len() != 0 {
+		t.Fatal("canceled scan published an audit total", w.Body.String())
+	}
+}
 
 func TestAuditMetaReportsIncompleteFrameCount(t *testing.T) {
 	file := writeTimelineAuditFilePlain(t, t.TempDir(), "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
@@ -49,7 +65,7 @@ func TestInventoryAndRecordQueryPreferSameAuditEncoding(t *testing.T) {
 		if err != nil || len(files) != 1 || files[0].RecordCount != want {
 			t.Fatal(files, err)
 		}
-		if stats := (&Server{}).getAuditStatsForDirectory(dir); stats.TotalRecords != want {
+		if stats := getAuditStatsForDirectory(context.Background(), dir); stats.TotalRecords != want {
 			t.Fatal(stats)
 		}
 		w := httptest.NewRecorder()

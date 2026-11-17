@@ -252,6 +252,9 @@
   "boundedArtifactFailureReporting": {
     "verification": "TestRepeatedArtifactWriteFailuresKeepFirstCauseAndCount verifies that 1001 write failures retain the first cause and exact failure count in a partial report. Focused artifact failure and queue cancellation tests pass."
   },
+  "auditStatsCancellation": {
+    "verification": "TestCanceledAuditStatsDoesNotPublishCounts verifies that a canceled request does not scan a plain audit or publish a partial total. Active, scoped and service statistics share the context-aware frame counter. Focused inventory and completion tests pass."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
