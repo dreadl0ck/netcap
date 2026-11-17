@@ -410,6 +410,20 @@ func TestMCPStreamContentPagesVerifySourceAndConfinement(t *testing.T) {
 		return w
 	}
 	q := url.Values{"id": {"stream-fixture"}, "direction": {"client"}, "limit": {"4"}}
+	func() {
+		for range cap(streamVerificationSlots) {
+			streamVerificationSlots <- struct{}{}
+			defer func() { <-streamVerificationSlots }()
+		}
+		if w := request(q); w.Code != http.StatusTooManyRequests {
+			t.Fatalf("full verification lane: %d %s", w.Code, w.Body)
+		}
+		q.Set("spanLimit", "129")
+		defer q.Del("spanLimit")
+		if w := request(q); w.Code != http.StatusBadRequest {
+			t.Fatalf("invalid span limit reached verification lane: %d %s", w.Code, w.Body)
+		}
+	}()
 	first := request(q)
 	if first.Code != 200 || !strings.Contains(first.Body.String(), "missing preceding handshake") {
 		t.Fatalf("stream page: %d %s", first.Code, first.Body)

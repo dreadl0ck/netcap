@@ -14,6 +14,8 @@ import (
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 )
 
+var streamVerificationSlots = make(chan struct{}, 2)
+
 func (s *Server) handleStreamContent(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", 405)
@@ -44,6 +46,28 @@ func (s *Server) handleStreamContent(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "invalid offset", 400)
 			return
 		}
+	}
+	spanOffset, spanLimit := 0, 64
+	if q.Has("spanOffset") {
+		spanOffset, err = strconv.Atoi(q.Get("spanOffset"))
+		if err != nil || spanOffset < 0 || spanOffset > 1000000 {
+			http.Error(w, "invalid spanOffset", 400)
+			return
+		}
+	}
+	if q.Has("spanLimit") {
+		spanLimit, err = strconv.Atoi(q.Get("spanLimit"))
+		if err != nil || spanLimit < 1 || spanLimit > 128 {
+			http.Error(w, "spanLimit must be 1..128", 400)
+			return
+		}
+	}
+	select {
+	case streamVerificationSlots <- struct{}{}:
+		defer func() { <-streamVerificationSlots }()
+	default:
+		http.Error(w, "stream verification is busy", http.StatusTooManyRequests)
+		return
 	}
 	manifestPath := filepath.Join("stream-evidence", id, "manifest.json")
 	raw, err := artifactio.Read(r.Context(), selected.OutputDir, manifestPath, 16<<20)
@@ -116,21 +140,6 @@ func (s *Server) handleStreamContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	spanCount := len(manifest.Spans)
-	spanOffset, spanLimit := 0, 64
-	if q.Has("spanOffset") {
-		spanOffset, err = strconv.Atoi(q.Get("spanOffset"))
-		if err != nil || spanOffset < 0 || spanOffset > 1000000 {
-			http.Error(w, "invalid spanOffset", 400)
-			return
-		}
-	}
-	if q.Has("spanLimit") {
-		spanLimit, err = strconv.Atoi(q.Get("spanLimit"))
-		if err != nil || spanLimit < 1 || spanLimit > 128 {
-			http.Error(w, "spanLimit must be 1..128", 400)
-			return
-		}
-	}
 	spanOffset = min(spanOffset, spanCount)
 	spanEnd := min(spanOffset+spanLimit, spanCount)
 	spans := append([]streamutils.StreamEvidenceSpan{}, manifest.Spans[spanOffset:spanEnd]...)
