@@ -133,6 +133,11 @@
     "implementation": "Offline --local-completion-state-loss makes application working-state refusals recoverable against the shared credit ceiling. Connection-pool and backing-reader failures retain strict handling.",
     "verification": "A backed HTTP capture with 128 queued request headers under a 128-KiB limit admits all packets and preserves the independent HTTP 204. Credits return to zero. Focused collector and full core/TCP/command race suites plus vet pass."
   },
+  "jsonSourceExtraction": {
+    "source": "da75019",
+    "implementation": "Backed extraction accepts identity-encoded JSON and +json forms. It preserves the 1-MiB form parse ceiling and accounts for temporary decoding and retained fields separately.",
+    "verification": "The source extraction test matches byte-backed HTTP and file outputs for +json with query and body values. Full portable HTTP race suite and focused backed HTTP collector controls pass."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
