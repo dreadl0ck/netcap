@@ -64,6 +64,37 @@ func TestLocalReassemblyPageLossPreservesIndependentOutput(t *testing.T) {
 	}
 }
 
+func TestLocalReassemblyPageLossOmitsOnlyAffectedHTTPFlow(t *testing.T) {
+	wire, input := newBookCapture(t)
+	// This flow holds the one available queued page until capture finalization.
+	wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 65000, false)
+	wire.packet("192.0.2.1", "198.51.100.1", &layers.TCP{SrcPort: 45000, DstPort: 65000, Seq: 1011, Ack: 5001, ACK: true, Window: 65535}, "queue", false)
+	affected := wire.openTCP("192.0.2.2", "198.51.100.1", 45001, 80, false)
+	wire.packet("192.0.2.2", "198.51.100.1", &layers.TCP{SrcPort: 45001, DstPort: 80, Seq: 1101, Ack: 5001, ACK: true, Window: 65535}, "refused", false)
+	affected(false, false, false, "GET /affected HTTP/1.1\r\nHost: fixture.test\r\n\r\n")
+	wire.conversation("192.0.2.3", "198.51.100.1", 45002, 80, false,
+		bookMessage{text: "GET /healthy HTTP/1.1\r\nHost: fixture.test\r\n\r\n"},
+		bookMessage{server: true, text: "HTTP/1.1 204 No Content\r\n\r\n"})
+	out := t.TempDir()
+	cfg := ultimateCaptureConfig(out, 1, 0)
+	cfg.CaptureEvidence = true
+	cfg.DecoderConfig.IncludeDecoders = "TCP,Connection,HTTP"
+	cfg.DecoderConfig.SaveConns = true
+	cfg.DecoderConfig.MaxRetainedReassemblyBytes = reassembly.PageAllocationBytes
+	cfg.DecoderConfig.LocalReassemblyPageLoss = true
+	if err := New(cfg).CollectPcap(input); !errors.Is(err, reassembly.ErrPageBudget) {
+		t.Fatal(err)
+	}
+	if records := bookRecords(t, out, "HTTP", func() *types.HTTP { return new(types.HTTP) }); len(records) != 1 || records[0].URL != "/healthy" || records[0].StatusCode != 204 {
+		t.Fatalf("unexpected application audits: %v", records)
+	}
+	manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
+	stage, _, err := evidence.ReadAuditStage(out, manifest.RunID, "HTTP", manifest.AuditStagesGeneration)
+	if err != nil || stage.Coverage != "partial" || stage.Records != 1 {
+		t.Fatal(stage, err)
+	}
+}
+
 func TestReassemblyPageBudgetCaptureReadinessAndLocalLoss(t *testing.T) {
 	for _, workers := range []int{1, 2, 4, 8} {
 		for _, pages := range []int64{2, 8} {
