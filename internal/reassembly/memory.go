@@ -90,6 +90,7 @@ func (c *pageCache) next(ts time.Time, sizes ...int) (p *page) {
 
 // replace replaces a page into the pageCache.
 func (c *pageCache) replace(p *page) {
+	p.unqueueDeadline()
 	if p.owner != nil {
 		c = p.owner
 	}

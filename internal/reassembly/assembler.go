@@ -564,6 +564,9 @@ overlaps:
 		half.queuedBytes += len(bytes)
 		half.totalBytes += len(bytes)
 		half.pages += numPages
+		for queued := p; queued != nil; queued = queued.next {
+			half.queueDeadline(queued)
+		}
 
 		if cur != nil {
 			if Debug {
@@ -948,9 +951,9 @@ func (a *Assembler) sendToConnection(conn *connection, half *halfconnection) Seq
 	half.stream.ReassembledSG(&a.cacheSG, ac)
 	a.cleanSG(half, ac)
 	a.Lock()
-	clear(a.ret[:cap(a.ret)])
+	clear(a.ret)
 	a.ret = a.ret[:0]
-	clear(a.cacheSG.all[:cap(a.cacheSG.all)])
+	clear(a.cacheSG.all)
 	a.cacheSG.all = a.cacheSG.all[:0]
 	a.Unlock()
 
@@ -1020,6 +1023,7 @@ func (a *Assembler) addContiguous(half *halfconnection, lastSeq Sequence) Sequen
 	}
 
 	for firstPage != nil && lastSeq.difference(firstPage.seq) == 0 {
+		firstPage.unqueueDeadline()
 		if Debug {
 			log.Printf("addContiguous: lastSeq: %d, first.seq=%d, page.seq=%d\n", half.nextSeq, half.first.seq, firstPage.seq)
 		}
@@ -1118,6 +1122,7 @@ func (a *Assembler) addNextFromConn(conn *halfconnection) {
 	a.Lock()
 	a.ret = append(a.ret, conn.first)
 	a.Unlock()
+	conn.first.unqueueDeadline()
 	conn.first = conn.first.next
 
 	if conn.first != nil {
@@ -1185,12 +1190,11 @@ func (a *Assembler) flushClose(conn *connection, half *halfconnection, t time.Ti
 
 	flushed, closed := false, false
 
-	for p := half.last; p != nil && p.prev != nil; p = p.prev {
-		if p.seen.Before(p.prev.seen) {
-			p.prev.seen = p.seen
+	for half.first != nil {
+		deadline, pending := half.pendingDeadline()
+		if !pending || !deadline.Before(t) {
+			break
 		}
-	}
-	for half.first != nil && half.first.seen.Before(t) {
 		flushed = true
 
 		a.skipFlush(conn, half)

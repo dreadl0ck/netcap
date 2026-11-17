@@ -17,10 +17,11 @@ type halfconnection struct {
 	stream                       Stream
 	overlapPackets               int
 
-	ackSeq      Sequence
-	nextSeq     Sequence // sequence number of in-order received bytes
-	first, last *page    // Doubly-linked list of out-of-order pages (seq > nextSeq)
-	saved       *page    // Doubly-linked list of in-order pages (seq < nextSeq) already given to Stream who told us to keep
+	ackSeq        Sequence
+	nextSeq       Sequence // sequence number of in-order received bytes
+	first, last   *page    // Doubly-linked list of out-of-order pages (seq > nextSeq)
+	saved         *page    // Doubly-linked list of in-order pages (seq < nextSeq) already given to Stream who told us to keep
+	pageDeadlines *pageDeadlineHeap
 
 	overlapBytes int
 	pages        int // Number of pages used (both in first/last and saved)

@@ -258,7 +258,7 @@ func (s *coldStorage) erase(tx *aggregate.Tx, id string, c coldConnection, idle 
 		return err
 	}
 	if index != "" {
-		if err := tx.Delete(index); err != nil {
+		if err := tx.DeleteKey(index); err != nil {
 			return err
 		}
 	}
@@ -266,10 +266,10 @@ func (s *coldStorage) erase(tx *aggregate.Tx, id string, c coldConnection, idle 
 	if err != nil {
 		return err
 	}
-	if err := tx.Delete(s.prefix + "order/" + order + "/"); err != nil {
+	if err := tx.DeleteKey(s.prefix + "order/" + order + "/"); err != nil {
 		return err
 	}
-	return tx.Delete(s.row(id))
+	return tx.DeleteKey(s.row(id))
 }
 
 func (a *Assembler) closeOrderedWithCold(conns []connectionRef, progress func()) int {

@@ -29,8 +29,10 @@ type page struct {
 	start bool
 	end   bool
 
-	packetStart bool // Only the first page contributes to packet statistics.
-	owner       *pageCache
+	packetStart      bool // Only the first page contributes to packet statistics.
+	owner            *pageCache
+	deadlines        *pageDeadlineHeap
+	deadlinePosition int
 }
 
 func (p *page) getBytes() []byte {
@@ -46,6 +48,7 @@ func (p *page) assemblerContext() AssemblerContext {
 }
 
 func (p *page) convertToPages(_ *pageCache, skip int, _ AssemblerContext) (*page, *page, int) {
+	p.unqueueDeadline()
 	if skip != 0 {
 		p.bytes = p.bytes[skip:]
 		p.seq = p.seq.add(skip)
