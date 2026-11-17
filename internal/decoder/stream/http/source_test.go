@@ -3,8 +3,11 @@ package http
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -19,6 +22,7 @@ func capturePassiveHTTP(t *testing.T, data core.DataFragments, source bool) ([]*
 	defer func() { decoderconfig.Instance, Decoder.Writer, Decoder.NumRecordsWritten = previous, writer, count }()
 	decoderconfig.Instance = decoderconfig.DefaultConfig.Clone()
 	decoderconfig.Instance.FileStorage = ""
+	decoderconfig.Instance.Out = t.TempDir()
 	decoderconfig.Instance.IncludePayloads = false
 	w := &httpEvidenceWriter{}
 	Decoder.Writer = w
@@ -47,19 +51,29 @@ func capturePassiveHTTP(t *testing.T, data core.DataFragments, source bool) ([]*
 		}
 	}
 	(&httpReader{conversation: c}).Decode()
+	entries, err := os.ReadDir(filepath.Join(decoderconfig.Instance.Out, ".artifact-scratch"))
+	if len(entries) != 0 || err != nil && !os.IsNotExist(err) {
+		t.Fatalf("scratch cleanup: %v %v", entries, err)
+	}
 	return w.records, c
 }
 
-func TestHTTPSourceUsesCompatibilityBeforeBodySideEffects(t *testing.T) {
+func TestHTTPSourceParsesPassiveForms(t *testing.T) {
+	multipart := "--fixture\r\nContent-Disposition: form-data; name=\"upload\"; filename=\"fixture.bin\"\r\n\r\n" + strings.Repeat("fixture bytes\n", 240000) + "\r\n--fixture\r\nContent-Disposition: form-data; name=\"label\"\r\n\r\nafter-file\r\n--fixture--\r\n"
 	for _, request := range []string{
 		"POST /login HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 8\r\n\r\nuser=one",
 		"POST /api HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/json\r\nContent-Length: 2\r\n\r\n{}",
+		fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: multipart/form-data; boundary=fixture\r\nContent-Length: %d\r\n\r\n%s", len(multipart), multipart),
 	} {
-		data := core.DataFragments{wireFragment(0, []byte(request), 1), wireFragment(1, []byte("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"), 2)}
+		var data core.DataFragments
+		for fragment := range slices.Chunk([]byte(request+"GET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n"), 16<<10) {
+			data = append(data, wireFragment(0, fragment, 1))
+		}
+		data = append(data, wireFragment(1, []byte("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\nHTTP/1.1 204 No Content\r\n\r\n"), 2))
 		want, _ := capturePassiveHTTP(t, data, false)
 		got, c := capturePassiveHTTP(t, data, true)
-		if c.FragmentError != nil || c.Source != nil || !reflect.DeepEqual(want, got) {
-			t.Fatal("request-body compatibility changed results", c.FragmentError, want, got)
+		if c.FragmentError != nil || c.Source == nil || !reflect.DeepEqual(want, got) || len(got) != 2 || got[1].URL != "/next" {
+			t.Fatal("passive form changed results or entered compatibility", c.FragmentError, want, got)
 		}
 	}
 }

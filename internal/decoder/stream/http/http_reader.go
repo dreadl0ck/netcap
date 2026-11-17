@@ -590,12 +590,18 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	var release func()
 	var bodyErr error
 	var spool *file.BodySpool
-	if h.sourceMode && decoderconfig.Instance.FileStorage != "" {
+	form, boundary := sourceBackedForm(req)
+	if h.sourceMode && (decoderconfig.Instance.FileStorage != "" || form != "" && req.Body != http.NoBody) {
 		spool, bodyErr = file.SpoolBody(req.Body)
 		release = func() {}
 		if spool != nil {
 			defer func() { file.RecordArtifactWriteError(spool.Close()) }()
 			body = spool.Prefix()
+			if err := h.conversation.StateBudget.Reserve(int64(cap(body))); err != nil {
+				h.conversation.FragmentError = err
+				return err
+			}
+			h.sourceHeaderCredits += int64(cap(body))
 		}
 	} else if h.sourceMode && (req.ContentLength != 0 || len(req.TransferEncoding) > 0) {
 		body, release, bodyErr = readSourceRequestBody(h.conversation, req.Body)
@@ -648,7 +654,6 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	}
 
 	// parse form values
-	form, boundary := sourceBackedForm(req)
 	if spool != nil && form == "multipart/form-data" {
 		var queryErr error
 		req.Form, queryErr = evidenceQuery(req.URL.RawQuery)

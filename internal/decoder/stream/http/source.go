@@ -53,7 +53,7 @@ func opaqueSourceRequest(request *http.Request) bool {
 }
 
 func sourceBackedForm(request *http.Request) (media, boundary string) {
-	if decoderconfig.Instance.FileStorage == "" || (request.Method != "POST" && request.Method != "PUT" && request.Method != "PATCH") {
+	if request.Method != "POST" && request.Method != "PUT" && request.Method != "PATCH" {
 		return "", ""
 	}
 	encoding := strings.ToLower(strings.TrimSpace(request.Header.Get(headerContentEncoding)))
