@@ -1,0 +1,96 @@
+name: Capture contracts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/capture-contracts.yml'
+      - 'go.mod'
+      - 'go.sum'
+      - 'defaults/**/*.go'
+      - 'internal/aggregate/**/*.go'
+      - 'internal/collector/**/*.go'
+      - 'internal/collector/testdata/**'
+      - 'internal/decoder/**/*.go'
+      - 'internal/decoder/**/testdata/**'
+      - 'internal/mcp/**/*.go'
+      - 'internal/reassembly/**/*.go'
+      - 'cmd/capture/**/*.go'
+      - 'cmd/mcp/**/*.go'
+  pull_request:
+    paths:
+      - '.github/workflows/capture-contracts.yml'
+      - 'go.mod'
+      - 'go.sum'
+      - 'defaults/**/*.go'
+      - 'internal/aggregate/**/*.go'
+      - 'internal/collector/**/*.go'
+      - 'internal/collector/testdata/**'
+      - 'internal/decoder/**/*.go'
+      - 'internal/decoder/**/testdata/**'
+      - 'internal/mcp/**/*.go'
+      - 'internal/reassembly/**/*.go'
+      - 'cmd/capture/**/*.go'
+      - 'cmd/mcp/**/*.go'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GOWORK: 'off'
+  GOMAXPROCS: '4'
+  GOFLAGS: '-p=2'
+
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.0'
+          cache: true
+      - name: Verify tracked module archive
+        run: go test ./tests/modulearchive -count=1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: cmd/capture/webui/frontend/pnpm-lock.yaml
+      - name: Install capture headers
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libpcap-dev
+      - name: Build embedded interface
+        working-directory: cmd/capture/webui/frontend
+        run: pnpm install --frozen-lockfile && pnpm build
+      - name: Verify capture completion and output contracts
+        run: go test -tags nodpi,noyara,nomagika ./internal/collector -count=1 -timeout=10m
+      - name: Verify resource ownership and reader races
+        run: >-
+          go test -race -tags nodpi,noyara,nomagika
+          ./internal/aggregate ./internal/reassembly ./internal/decoder/core
+          ./internal/decoder/stream ./internal/decoder/stream/utils
+          ./internal/decoder/stream/tcp ./internal/decoder/stream/tls
+          ./internal/decoder/stream/secret ./internal/decoder/stream/ftp
+          ./internal/decoder/stream/imap ./internal/decoder/stream/irc
+          ./internal/decoder/stream/smtp ./internal/decoder/stream/pop3
+          ./internal/mcp ./cmd/capture ./cmd/capture/webui ./cmd/mcp
+          -count=1 -timeout=5m
+      - name: Check affected packages
+        run: >-
+          go vet -tags nodpi,noyara,nomagika
+          ./internal/aggregate ./internal/reassembly ./internal/decoder/core
+          ./internal/decoder/stream ./internal/decoder/stream/utils
+          ./internal/decoder/stream/tcp ./internal/decoder/stream/tls
+          ./internal/decoder/stream/secret ./internal/decoder/stream/ftp
+          ./internal/decoder/stream/imap ./internal/decoder/stream/irc
+          ./internal/decoder/stream/smtp ./internal/decoder/stream/pop3
+          ./internal/mcp ./cmd/capture ./cmd/capture/webui ./cmd/mcp
