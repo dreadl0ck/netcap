@@ -37,6 +37,7 @@ func (c *Collector) initCaptureEvidence() error {
 	manifest, err := evidence.NewCapture(c.runCtx, directory, evidence.CaptureConfig{Kind: kind, Source: source, BPF: c.Bpf, SnapLen: c.config.SnapLen, Workers: c.config.Workers,
 		MaxRetainedTCPBytes:        c.config.DecoderConfig.MaxRetainedTCPBytes,
 		MaxRetainedReassemblyBytes: c.config.DecoderConfig.MaxRetainedReassemblyBytes,
+		LocalReassemblyPageLoss:    c.config.DecoderConfig.LocalReassemblyPageLoss,
 		IncrementalHTTP:            c.config.DecoderConfig.IncrementalHTTP,
 		MaxRetainedTCPStateBytes:   c.config.DecoderConfig.MaxRetainedTCPStateBytes,
 		MaxAggregateStateBytes:     c.config.DecoderConfig.MaxAggregateStateBytes,
@@ -88,7 +89,7 @@ func (c *Collector) finalizeCaptureEvidence() {
 	if c.captureComplete {
 		status = "done"
 	}
-	if c.captureInputStatus == "partial" || c.captureInputStatus == "unsupported" {
+	if c.captureCoverageError != nil || c.captureInputStatus == "partial" || c.captureInputStatus == "unsupported" {
 		status = "partial"
 	}
 	if err := c.captureEvidence.Close(status, c.admittedPackets, c.behaviorQueueDrops, errors.Join(c.captureRunError, c.flowExportError, c.captureEvidenceError)); err != nil {

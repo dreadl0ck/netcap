@@ -48,6 +48,14 @@ type CaptureInputIssue struct {
 
 type CaptureInputError struct{ Report CaptureInputReport }
 
+type localReassemblyCoverageError struct{ cause error }
+
+func (e *localReassemblyCoverageError) Error() string {
+	return "partial TCP reassembly: " + e.cause.Error()
+}
+func (e *localReassemblyCoverageError) Unwrap() error { return e.cause }
+func (e *localReassemblyCoverageError) ExitCode() int { return 2 }
+
 func (e *CaptureInputError) ExitCode() int {
 	if e.Report.Status == "unsupported" {
 		return 3
@@ -210,7 +218,7 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 		}
 		finish()
 		c.cleanup(false)
-		resultErr = errors.Join(resultErr, c.flowExportError, c.captureEvidenceError, c.artifactAnalysisError)
+		resultErr = errors.Join(resultErr, c.reassemblyCoverageError, c.flowExportError, c.captureEvidenceError, c.artifactAnalysisError)
 	}()
 	stat, err := os.Stat(path)
 	if err != nil {

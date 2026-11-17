@@ -399,6 +399,10 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 	behaviorCommand := c
 	// Populate global variables from CLI context
 	setFlagsFromContext(c)
+	localReassemblyPageLoss := c.Bool("local-reassembly-page-loss")
+	if localReassemblyPageLoss && (flagService || flagInput == "" || flagInterface != "" || flagIncrementalHTTP || flagMaxRetainedReassemblyBytes <= 0) {
+		return errors.New("local-reassembly-page-loss requires offline -read, a positive TCP page budget, and incremental HTTP disabled")
+	}
 	if c.Bool("firewall-schema") {
 		return json.NewEncoder(c.Writer).Encode(firewallaudit.Discover())
 	}
@@ -1016,6 +1020,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			MaxBufferedPagesTotal:          flagMaxBufferedPagesTotal,
 			MaxRetainedTCPBytes:            flagMaxRetainedTCPBytes,
 			MaxRetainedReassemblyBytes:     flagMaxRetainedReassemblyBytes,
+			LocalReassemblyPageLoss:        localReassemblyPageLoss,
 			IncrementalHTTP:                flagIncrementalHTTP,
 			MaxRetainedTCPStateBytes:       flagMaxRetainedTCPStateBytes,
 			MaxAggregateStateBytes:         flagMaxAggregateStateBytes,
@@ -1400,6 +1405,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 					MaxBufferedPagesTotal:          flagMaxBufferedPagesTotal,
 					MaxRetainedTCPBytes:            flagMaxRetainedTCPBytes,
 					MaxRetainedReassemblyBytes:     flagMaxRetainedReassemblyBytes,
+					LocalReassemblyPageLoss:        localReassemblyPageLoss,
 					IncrementalHTTP:                flagIncrementalHTTP,
 					MaxRetainedTCPStateBytes:       flagMaxRetainedTCPStateBytes,
 					MaxAggregateStateBytes:         flagMaxAggregateStateBytes,

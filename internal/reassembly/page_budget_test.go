@@ -140,3 +140,20 @@ func TestClosedHalfReleasesEveryQueuedAndSavedPage(t *testing.T) {
 		}
 	}
 }
+func TestPageBudgetLocalLossReusesReleasedCapacity(t *testing.T) {
+	b, err := NewLocalPageBudget(PageAllocationBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !b.reserve(1) || b.reserve(1) {
+		t.Fatal("page limit was not enforced")
+	}
+	b.release()
+	if !b.reserve(1) {
+		t.Fatal("prior refusal permanently disabled page admission")
+	}
+	b.release()
+	if h := b.Health(); !h.Exceeded || h.RejectedBytes != PageAllocationBytes || h.RetainedBytes != 0 || h.PeakBytes != PageAllocationBytes {
+		t.Fatal(h)
+	}
+}

@@ -70,6 +70,9 @@ func (c *Collector) Init() (err error) {
 	if c.config.DecoderConfig.MaxAggregateStateBytes < 0 {
 		return fmt.Errorf("max-aggregate-state-bytes cannot be negative")
 	}
+	if c.config.DecoderConfig.LocalReassemblyPageLoss && (c.captureKind != "file" || c.config.DecoderConfig.IncrementalHTTP || c.config.DecoderConfig.MaxRetainedReassemblyBytes <= 0) {
+		return fmt.Errorf("local TCP page loss requires offline capture with a positive page budget and incremental HTTP disabled")
+	}
 	c.contextLocked()
 	c.streamStateBudget, err = core.NewStateBudget(c.config.DecoderConfig.MaxRetainedTCPStateBytes, c.runCancel)
 	if err != nil {
@@ -79,7 +82,11 @@ func (c *Collector) Init() (err error) {
 		c.streamStateBudget = nil
 	}
 	tcp.ConfigureIncrementalState(c.streamStateBudget, c.runCancel)
-	c.reassemblyPageBudget, err = reassembly.NewPageBudget(c.config.DecoderConfig.MaxRetainedReassemblyBytes, c.runCancel)
+	if c.config.DecoderConfig.LocalReassemblyPageLoss {
+		c.reassemblyPageBudget, err = reassembly.NewLocalPageBudget(c.config.DecoderConfig.MaxRetainedReassemblyBytes)
+	} else {
+		c.reassemblyPageBudget, err = reassembly.NewPageBudget(c.config.DecoderConfig.MaxRetainedReassemblyBytes, c.runCancel)
+	}
 	if err != nil {
 		return err
 	}

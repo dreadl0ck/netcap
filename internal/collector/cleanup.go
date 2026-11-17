@@ -183,7 +183,14 @@ func (c *Collector) doCleanup(force bool) {
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
 	}
 	if c.reassemblyPageBudget != nil {
-		c.captureEvidenceError = errors.Join(c.captureEvidenceError, c.reassemblyPageBudget.Error())
+		if err := c.reassemblyPageBudget.Error(); err != nil {
+			if c.config.DecoderConfig.LocalReassemblyPageLoss {
+				c.reassemblyCoverageError = &localReassemblyCoverageError{cause: err}
+				c.captureCoverageError = errors.Join(c.captureCoverageError, c.reassemblyCoverageError)
+			} else {
+				c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
+			}
+		}
 		data, err := json.MarshalIndent(c.reassemblyPageBudget.Health(), "", "  ")
 		if err == nil {
 			err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "TCPReassemblyPageBudget.json"), append(data, '\n'), 0600)

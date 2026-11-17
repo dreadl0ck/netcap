@@ -219,6 +219,7 @@ type Collector struct {
 	artifactAnalysisStarted    atomic.Bool
 	captureRunError            error
 	captureCoverageError       error
+	reassemblyCoverageError    error
 	auditStages                []evidence.AuditStage
 	captureKind, captureSource string
 	heldBeacons                []*types.Alert // c2.beacon rows awaiting cross-detector tagging (offline only)

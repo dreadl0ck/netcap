@@ -642,6 +642,9 @@ func (t *tcpConnection) decode() {
 
 	t.Lock()
 	defer t.Unlock()
+	if decoderconfig.Instance.LocalReassemblyPageLoss && (t.pageBudgetMarkers[0] != nil || t.pageBudgetMarkers[1] != nil) {
+		return
+	}
 
 	// choose the decoder to run against the data stream
 	clientSource, serverSource := readerFragments(t.client), readerFragments(t.server)

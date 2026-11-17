@@ -21,6 +21,7 @@ type PageBudget struct {
 	exceeded             atomic.Bool
 	once                 sync.Once
 	cancel               func()
+	localLoss            bool
 }
 
 type PageBudgetHealth struct {
@@ -34,13 +35,22 @@ type PageBudgetHealth struct {
 }
 
 func NewPageBudget(limit int64, cancel func()) (*PageBudget, error) {
+	return newPageBudget(limit, cancel, false)
+}
+
+// NewLocalPageBudget refuses individual allocations and allows retries after release.
+func NewLocalPageBudget(limit int64) (*PageBudget, error) {
+	return newPageBudget(limit, nil, true)
+}
+
+func newPageBudget(limit int64, cancel func(), localLoss bool) (*PageBudget, error) {
 	if limit < 0 {
 		return nil, fmt.Errorf("max-retained-reassembly-bytes cannot be negative")
 	}
 	if limit == 0 {
 		return nil, nil
 	}
-	return &PageBudget{limit: limit, cancel: cancel}, nil
+	return &PageBudget{limit: limit, cancel: cancel, localLoss: localLoss}, nil
 }
 
 func (b *PageBudget) reserve(pages int) bool {
@@ -50,8 +60,12 @@ func (b *PageBudget) reserve(pages int) bool {
 	n := int64(pages) * PageAllocationBytes
 	for {
 		used := b.used.Load()
-		if b.exceeded.Load() || n > b.limit-used {
+		if (!b.localLoss && b.exceeded.Load()) || n > b.limit-used {
 			b.rejected.Add(n)
+			if b.localLoss {
+				b.exceeded.Store(true)
+				return false
+			}
 			b.once.Do(func() {
 				b.exceeded.Store(true)
 				if b.cancel != nil {
@@ -85,7 +99,11 @@ func (b *PageBudget) Error() error {
 }
 
 func (b *PageBudget) Health() PageBudgetHealth {
-	return PageBudgetHealth{Scope: "tcp-reassembly-page-allocations", Policy: "abort-capture; no free-page cache", LimitBytes: b.limit,
+	policy := "abort-capture; no free-page cache"
+	if b.localLoss {
+		policy = "discard-rejected-pages; no free-page cache"
+	}
+	return PageBudgetHealth{Scope: "tcp-reassembly-page-allocations", Policy: policy, LimitBytes: b.limit,
 		RetainedBytes: b.used.Load(), PeakBytes: b.peak.Load(), RejectedBytes: b.rejected.Load(), Exceeded: b.exceeded.Load()}
 }
 

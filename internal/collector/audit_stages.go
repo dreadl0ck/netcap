@@ -30,6 +30,9 @@ func (c *Collector) collectAuditStages(decoders []core.DecoderAPI, closed []audi
 			case *decoder.AbstractDecoder:
 				stage.Stage = "aggregate"
 			}
+			if name == "Connection" || name == "Host" || name == "DeviceProfile" || name == "Service" || name == "Software" {
+				stage.Stage = "aggregate"
+			}
 			byType[name] = stage
 		}
 		stage.Records += d.NumRecords()
@@ -80,10 +83,19 @@ func (c *Collector) sealAuditStages() error {
 	}
 	for index := range c.auditStages {
 		stage := &c.auditStages[index]
-		if !c.captureComplete || c.captureCoverageError != nil || c.captureRunError != nil {
+		if !c.captureComplete || c.captureRunError != nil {
 			stage.Coverage = "partial"
 			if stage.Reason == "" {
 				stage.Reason = "input coverage is incomplete; consult capture-input.json and capture-manifest.json"
+			}
+		}
+		if stage.Stage != "packet" && c.reassemblyCoverageError != nil {
+			stage.Coverage = "partial"
+			if stage.Reason == "" {
+				stage.Reason = boundedStageReason(c.reassemblyCoverageError)
+			}
+			if stage.Stage == "application" && stage.Records == 0 && stage.State == "sealed" {
+				stage.State = "unavailable"
 			}
 		}
 		if stage.Stage != "packet" && c.captureEvidenceError != nil {

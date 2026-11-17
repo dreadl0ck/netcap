@@ -344,6 +344,7 @@ type Config struct {
 
 	// MaxRetainedReassemblyBytes bounds shared TCP page allocations; zero is unlimited.
 	MaxRetainedReassemblyBytes int64
+	LocalReassemblyPageLoss    bool
 	// IncrementalHTTP opts HTTP/1 into transaction-time decoding and retirement.
 	IncrementalHTTP          bool
 	MaxRetainedTCPStateBytes int64
