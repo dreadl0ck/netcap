@@ -245,6 +245,10 @@
     "sha256": "a9d08b46f0ffafe6671407910184aa521db200568da3e844d92636c0feab0588",
     "verification": "TestDownloadFastOriginal passes on the 90036940-byte public capture with NETCAP_DOWNLOAD_FAST set, including under race instrumentation. All 89942 packets are admitted. GET/200 retains the raw Content-Length of 4497694720, incomplete_response_body and an explicitly saturated legacy length. Peak TCP state credits were 40017 under 262144, with zero retained at close."
   },
+  "focusedHTTPAndMCPFollowups": {
+    "http": "c3768cb and f0fb75a stop draining rejected HTTP bodies and match responses by request index instead of scanning the request list. The portable HTTP package tests passed for both changes. ea6b1c9 returns body allocation credits before propagating a reader panic; TestBodyReaderPanicReturnsAllocationCredits and focused budget controls passed.",
+    "mcp": "6dd5744 requires a delimited terminal SSE event and propagates cancellation to backend HTTP; focused stream and sealed-query tests passed. 29c8add and a3af5cf fix local offline-rule session resolution and verify persisted partial evaluation through the official client. Offline handler tests passed; the stdio harness passed for 72 of 119 tools, with 18 UDP records explicitly unscoped and zero committed alerts in the partial rule evaluation."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
