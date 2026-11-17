@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"compress/gzip"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -75,6 +76,43 @@ func TestHTTPSourceParsesPassiveForms(t *testing.T) {
 		if c.FragmentError != nil || c.Source == nil || !reflect.DeepEqual(want, got) || len(got) != 2 || got[1].URL != "/next" {
 			t.Fatal("passive form changed results or entered compatibility", c.FragmentError, want, got)
 		}
+	}
+}
+
+func TestHTTPSourceSniffsBackedGzipUpload(t *testing.T) {
+	var encoded bytes.Buffer
+	writer, err := gzip.NewWriterLevel(&encoded, gzip.NoCompression)
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload := "<html>" + strings.Repeat("fixture upload\n", 180000)
+	if _, err := writer.Write([]byte(payload)); err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	wire := encoded.String()
+	corrupt := []byte(wire)
+	corrupt[len(corrupt)-8] ^= 1
+	for _, tc := range []struct{ name, body, detected string }{
+		{"valid", wire, "text/html; charset=utf-8"},
+		{"truncated-footer", wire[:len(wire)-1], "application/x-gzip"},
+		{"bad-checksum", string(corrupt), "application/x-gzip"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			request := fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/octet-stream\r\nContent-Encoding: gzip\r\nContent-Length: %d\r\n\r\n%sGET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n", len(tc.body), tc.body)
+			var data core.DataFragments
+			for fragment := range slices.Chunk([]byte(request), 16<<10) {
+				data = append(data, wireFragment(0, fragment, 1))
+			}
+			data = append(data, wireFragment(1, []byte("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\nHTTP/1.1 204 No Content\r\n\r\n"), 2))
+			want, _ := capturePassiveHTTP(t, data, false)
+			got, c := capturePassiveHTTP(t, data, true)
+			if c.FragmentError != nil || c.Source == nil || len(got) != 2 || got[0].ContentTypeDetected != tc.detected || !reflect.DeepEqual(want, got) {
+				t.Fatalf("gzip result changed or materialized: %v, want %v, error %v", got, want, c.FragmentError)
+			}
+		})
 	}
 }
 

@@ -45,11 +45,39 @@ func sourceResponseContentType(c *core.ConversationInfo, body *file.BodySpool, e
 
 func opaqueSourceRequest(request *http.Request) bool {
 	encoding := strings.ToLower(strings.TrimSpace(request.Header.Get(headerContentEncoding)))
-	if encoding != "" && encoding != "identity" {
+	if encoding != "" && encoding != "identity" && request.Header.Get(headerContentEncoding) != "gzip" {
 		return false
 	}
 	typ, _, _ := mime.ParseMediaType(request.Header.Get(headerContentType))
 	return typ != "application/json" && !strings.HasSuffix(typ, "+json") && typ != "application/x-www-form-urlencoded" && typ != "multipart/form-data"
+}
+
+func backedGzipRequestType(c *core.ConversationInfo, spool *file.BodySpool) (string, error) {
+	rawType := http.DetectContentType(spool.Prefix())
+	const gzipCredits = 65536
+	if err := c.StateBudget.Reserve(gzipCredits); err != nil {
+		return "", err
+	}
+	defer c.StateBudget.Release(gzipCredits)
+	r, err := gzip.NewReader(spool.Reader())
+	if err != nil {
+		return rawType, nil
+	}
+	defer r.Close()
+	limit := file.GetMaxFileSize()
+	if limit <= 0 || limit > 100<<20 {
+		limit = 100 << 20
+	}
+	bounded := &io.LimitedReader{R: r, N: limit + 1}
+	prefix, release, err := readSourceRequestBody(c, bounded)
+	defer release()
+	if c.FragmentError != nil {
+		return "", c.FragmentError
+	}
+	if err != nil || bounded.N == 0 {
+		return rawType, nil
+	}
+	return http.DetectContentType(prefix), nil
 }
 
 func sourceBackedForm(request *http.Request) (media, boundary string) {

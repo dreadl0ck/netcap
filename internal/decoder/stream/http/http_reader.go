@@ -62,21 +62,22 @@ const (
  */
 
 type httpRequest struct {
-	body         []byte
-	bodyLoaded   bool
-	pairable     bool
-	evidence     messageEvidence
-	incomplete   bool
-	request      *http.Request
-	timestamp    int64
-	clientIP     string
-	serverIP     string
-	clientPort   int32
-	serverPort   int32
-	flow         string
-	headerOrder  []string // Header names in wire order for JA4H
-	cookieFields []string // Cookie field names in order for JA4H
-	acceptLang   string   // Accept-Language value for JA4H
+	backedBodyType string
+	body           []byte
+	bodyLoaded     bool
+	pairable       bool
+	evidence       messageEvidence
+	incomplete     bool
+	request        *http.Request
+	timestamp      int64
+	clientIP       string
+	serverIP       string
+	clientPort     int32
+	serverPort     int32
+	flow           string
+	headerOrder    []string // Header names in wire order for JA4H
+	cookieFields   []string // Cookie field names in order for JA4H
+	acceptLang     string   // Accept-Language value for JA4H
 }
 
 type httpResponse struct {
@@ -591,7 +592,8 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	var bodyErr error
 	var spool *file.BodySpool
 	form, boundary := sourceBackedForm(req)
-	if h.sourceMode && (decoderconfig.Instance.FileStorage != "" || form != "" && req.Body != http.NoBody) {
+	backedGzip := h.sourceMode && req.Body != http.NoBody && req.Header.Get(headerContentEncoding) == "gzip"
+	if h.sourceMode && (decoderconfig.Instance.FileStorage != "" || (form != "" || backedGzip) && req.Body != http.NoBody) {
 		spool, bodyErr = file.SpoolBody(req.Body)
 		release = func() {}
 		if spool != nil {
@@ -651,6 +653,13 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 		headerOrder:  headerOrder,
 		cookieFields: cookieFields,
 		acceptLang:   acceptLang,
+	}
+	if spool != nil && backedGzip {
+		request.backedBodyType, err = backedGzipRequestType(h.conversation, spool)
+		if err != nil {
+			h.conversation.FragmentError = err
+			return err
+		}
 	}
 
 	// parse form values
