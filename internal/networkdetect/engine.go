@@ -56,6 +56,7 @@ type Evidence struct {
 type Stats struct {
 	ConflictingOverlaps     uint64 `json:"conflictingOverlaps,omitempty"`
 	ConflictingOverlapBytes uint64 `json:"conflictingOverlapBytes,omitempty"`
+	StaleProbeCandidates    uint64 `json:"staleProbeCandidates,omitempty"`
 	Matches                 uint64 `json:"matches"`
 	PendingAggregates       int    `json:"pendingAggregates"`
 	CapacityFlushes         uint64 `json:"capacityFlushes"`

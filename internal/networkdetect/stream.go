@@ -14,12 +14,29 @@ type direction struct {
 	finSequence   uint32
 	prefix        []byte
 	prefixSeq     uint32
+	prefixEnds    [overlapPrefixBytes / 64]uint64
 	bytes         uint64
 	gap           bool
 	ftpLine       []byte
 	prefixScanned int
 	traits        prefixTraits
 }
+
+const overlapPrefixBytes = 4096
+
+func (d *direction) rememberPrefixEnd() {
+	offset := d.next - d.prefixSeq - 1
+	if !d.gap && offset < overlapPrefixBytes {
+		d.prefixEnds[offset/64] |= 1 << (offset % 64)
+	}
+}
+
+func (d *direction) staleProbeCandidate(ev Event, delta int32) bool {
+	offset := ev.Seq - d.prefixSeq
+	return !d.gap && ev.KeepAliveEligible && delta < -1 && len(ev.Payload) == 1 && ev.Payload[0] == 0 &&
+		offset < overlapPrefixBytes && d.prefixEnds[offset/64]&(1<<(offset%64)) != 0
+}
+
 type flow struct {
 	closed        bool
 	finObserved   bool
@@ -121,7 +138,12 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 		if conflicts > 0 {
 			e.stats.ConflictingOverlaps++
 			e.stats.ConflictingOverlapBytes += conflicts
-			add("tcp.overlap-conflict", "behavioral-suspicion", "medium", "T1557", conflicts, 1, []string{"Different bytes at already observed TCP sequence positions within the retained 4096-byte prefix"}, f.first, nil, "First-arrival decoding is retained; packet evidence is needed to determine which bytes the endpoint accepted")
+			samples := []string{"Different bytes at already observed TCP sequence positions within the retained 4096-byte prefix"}
+			if !f.closed && !f.reset && d.staleProbeCandidate(ev, delta) {
+				e.stats.StaleProbeCandidates++
+				samples = append(samples, "Possible stale probe: ACK with one zero byte at an earlier observed segment end; intent and acceptance unknown")
+			}
+			add("tcp.overlap-conflict", "behavioral-suspicion", "medium", "T1557", conflicts, 1, samples, f.first, nil, "First-arrival decoding is retained; packet evidence is needed to determine which bytes the endpoint accepted")
 		}
 		skip := -int64(delta)
 		if skip >= int64(len(payload)) {
@@ -130,9 +152,12 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 		payload = payload[skip:]
 	}
 	d.next += uint32(len(payload))
+	if !f.closed {
+		d.rememberPrefixEnd()
+	}
 	d.bytes += uint64(len(payload))
-	if len(d.prefix) < 4096 {
-		n := 4096 - len(d.prefix)
+	if len(d.prefix) < overlapPrefixBytes {
+		n := overlapPrefixBytes - len(d.prefix)
 		if n > len(payload) {
 			n = len(payload)
 		}

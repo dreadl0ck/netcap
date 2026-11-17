@@ -61,6 +61,7 @@ func TestOriginalStaleProbeReplay(t *testing.T) {
 				matched := false
 				for _, ev := range PacketEvents(pkt, Scope{Sensor: "original-replay", Interface: "capture"}) {
 					before := engine.stats.ConflictingOverlapBytes
+					candidates := engine.stats.StaleProbeCandidates
 					if _, err := engine.Observe(ev); err != nil {
 						t.Fatalf("frame %d: %v", ordinal, err)
 					}
@@ -68,6 +69,9 @@ func TestOriginalStaleProbeReplay(t *testing.T) {
 						matched = true
 						if engine.stats.ConflictingOverlapBytes-before != 1 {
 							t.Errorf("frame %d did not retain its conflict byte", ordinal)
+						}
+						if engine.stats.StaleProbeCandidates-candidates != 1 {
+							t.Errorf("frame %d lacks a stale-probe qualification", ordinal)
 						}
 					}
 				}

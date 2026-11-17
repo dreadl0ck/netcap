@@ -1,6 +1,54 @@
 package networkdetect
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
+
+func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
+	for _, tc := range []struct {
+		name             string
+		seq              uint32
+		payload          []byte
+		ack, reset, want bool
+	}{
+		{"previous-end", 3, []byte{0}, true, false, true},
+		{"interior-byte", 2, []byte{0}, true, false, false},
+		{"nonzero", 3, []byte{1}, true, false, false},
+		{"no-ack", 3, []byte{0}, false, false, false},
+		{"multiple-bytes", 3, []byte{0, 0}, true, false, false},
+		{"reset", 3, []byte{0}, true, true, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e, _ := New(DefaultConfig())
+			start := ^uint32(0) - 3
+			ev := baseEvent("data", 1)
+			ev.Seq, ev.Payload = start, []byte("abcd")
+			e.Observe(ev)
+			ev.At++
+			ev.Seq, ev.Payload = start+4, []byte("efgh")
+			e.Observe(ev)
+			if tc.reset {
+				end := ev
+				end.Kind, end.Payload = "end", nil
+				e.Observe(end)
+			}
+			ev.At++
+			ev.Seq, ev.Payload, ev.KeepAliveEligible = start+tc.seq, tc.payload, tc.ack
+			alerts, err := e.Observe(ev)
+			if err != nil {
+				t.Fatal(err)
+			}
+			alerts = append(alerts, e.Flush()...)
+			if len(alerts) != 1 || alerts[0].Name != "tcp.overlap-conflict" || (e.Stats().StaleProbeCandidates == 1) != tc.want || e.Stats().ConflictingOverlapBytes != uint64(len(tc.payload)) {
+				t.Fatalf("alerts=%v stats=%+v", alerts, e.Stats())
+			}
+			if strings.Contains(strings.Join(alerts[0].Examples, " "), "Possible stale probe") != tc.want {
+				t.Fatalf("unexpected evidence: %v", alerts[0].Examples)
+			}
+		})
+	}
+}
 
 func TestKeepAliveDoesNotBecomeInjection(t *testing.T) {
 	for _, sequence := range []uint32{100, ^uint32(0) - 3} {
