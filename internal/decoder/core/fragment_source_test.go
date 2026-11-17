@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"math"
 	"reflect"
 	"testing"
 	"time"
@@ -44,6 +45,22 @@ func TestRestartableFragmentIterationAndErrors(t *testing.T) {
 	}
 	if !errors.Is(c.FragmentError, errFragmentFixture) {
 		t.Fatal("source error lost", c.FragmentError)
+	}
+}
+
+func TestFragmentRangesValidateBoundsAndNestedOffsets(t *testing.T) {
+	data := SliceSource{&StreamData{RawData: []byte("zero")}, &StreamData{RawData: []byte("one")}, &StreamData{RawData: []byte("two")}}
+	rangeSource := FragmentRange(FragmentRange(data, 1, 2), 1, 1)
+	var got []string
+	if err := rangeSource.Walk(func(fragment DataFragment) bool { got = append(got, string(fragment.Raw())); return true }); err != nil || !reflect.DeepEqual(got, []string{"two"}) {
+		t.Fatal(got, err)
+	}
+	for _, bounds := range [][2]int64{{-1, 1}, {0, -1}, {4, 0}, {2, 2}, {1, math.MaxInt64}, {math.MaxInt64, 1}} {
+		calls := 0
+		err := FragmentRange(data, bounds[0], bounds[1]).Walk(func(DataFragment) bool { calls++; return true })
+		if err == nil || calls != 0 {
+			t.Fatal("invalid source range was consumed", bounds, err, calls)
+		}
 	}
 }
 

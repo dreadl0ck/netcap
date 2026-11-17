@@ -124,6 +124,7 @@ func ObserveDataConversation(c *core.ConversationInfo) {
 	p := pendingData{conv: *c}
 	p.conv.Data = nil
 	p.conv.Source, p.conv.LoadData = nil, nil
+	p.conv.ClientSource, p.conv.ServerSource = nil, nil
 	p.conv.ClientData = nil
 	p.conv.ServerData = nil
 	p.data[0] = make([]byte, 0, sizes[0])

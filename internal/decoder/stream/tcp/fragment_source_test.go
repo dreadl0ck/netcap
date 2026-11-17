@@ -57,6 +57,20 @@ func TestStoredTCPSourceIsRestartableWithinOneFragmentBudget(t *testing.T) {
 			t.Fatal("source retained decoded payload", budget.Health())
 		}
 	}
+	reads := state.Health().DiskReads
+	seen := 0
+	if err := source.WalkRange(2047, 1, func(fragment core.DataFragment) bool {
+		seen++
+		if fragment.Raw()[0] != 255 {
+			t.Fatal("range started at wrong fragment")
+		}
+		return true
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if seen != 1 || state.Health().DiskReads-reads > 1 {
+		t.Fatal("stored range replay scanned a prefix", seen, state.Health().DiskReads-reads)
+	}
 	if budget.Health().PeakBytes > 8192 || payload.peak.Load() > 1024 {
 		t.Fatal("iteration exceeded fragment bounds")
 	}

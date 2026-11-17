@@ -40,6 +40,7 @@ import (
 
 	"go.uber.org/zap"
 
+	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	ja4 "github.com/dreadl0ck/netcap/internal/ja4plusadapter"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
@@ -66,6 +67,10 @@ func (h *tlsReader) New(conversation *core.ConversationInfo) core.StreamDecoderI
 	}
 }
 
+func (h *tlsReader) SupportsFragmentSource() bool {
+	return h.conversation.ClientSource != nil && h.conversation.ServerSource != nil && (decoderconfig.Instance == nil || decoderconfig.Instance.TLSSecrets.Empty())
+}
+
 // Decode parses the stream according to the TLS protocol
 func (h *tlsReader) Decode() {
 	tlsLog.Info("TLS Decode() called",
@@ -81,6 +86,9 @@ func (h *tlsReader) Decode() {
 		return
 	}
 	h.frameConversation()
+	if h.conversation.FragmentError != nil {
+		return
+	}
 	h.decryptApplication()
 
 	tlsLog.Info("TLS decode complete",

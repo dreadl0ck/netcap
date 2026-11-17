@@ -28,6 +28,8 @@ type ConversationInfo struct {
 	Transport    TransportProtocol
 	Data         DataFragments
 	Source       FragmentSource
+	ClientSource RangedFragmentSource
+	ServerSource RangedFragmentSource
 	LoadData     func() error `json:"-"`
 	StateBudget  *StateBudget `json:"-"`
 	// Owned by the decoder goroutine; source failures also fail its capture.

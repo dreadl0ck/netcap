@@ -60,6 +60,7 @@ type sslv2Framer struct {
 	buf                               []byte
 	ts                                int64
 	stopped, initialLossUnknown, seen bool
+	credit                            int64
 }
 
 func (f *sslv2Framer) feed(b []byte, ts int64) {
@@ -77,12 +78,20 @@ func (f *sslv2Framer) feed(b []byte, ts int64) {
 			h, n, _, ok := sslv2Header(f.buf)
 			if !ok {
 				f.stopped = true
+				f.clearBuffer()
 				return
 			}
 			want = h + n
 		}
 		n := min(want-len(f.buf), len(b))
-		f.buf = append(f.buf, b[:n]...)
+		var err error
+		f.buf, f.credit, err = appendFrameBuffer(f.buf, f.credit, f.reader.conversation.StateBudget, b[:n], 32770)
+		if err != nil {
+			f.reader.conversation.FragmentError = err
+			f.stopped = true
+			f.clearBuffer()
+			return
+		}
 		f.offset += uint64(n)
 		b = b[n:]
 		f.seen = true
@@ -90,13 +99,14 @@ func (f *sslv2Framer) feed(b []byte, ts int64) {
 		if !ok || len(f.buf) < h+length {
 			if len(f.buf) >= 3 && !ok {
 				f.stopped = true
+				f.clearBuffer()
 			}
 			continue
 		}
 		if sslv2HelloType(f.buf) == 0 {
 			// ClientMasterKey and subsequent ciphertext are not plaintext hellos.
 			f.stopped = true
-			f.buf = nil
+			f.clearBuffer()
 			return
 		}
 		f.emitHello()
@@ -104,7 +114,7 @@ func (f *sslv2Framer) feed(b []byte, ts int64) {
 			f.handoff = true
 			f.tls.offset, f.tls.plaintext, f.tls.initialLossUnknown = f.offset, true, f.initialLossUnknown
 		}
-		f.buf = nil
+		f.clearBuffer()
 	}
 }
 
@@ -117,11 +127,12 @@ func (f *sslv2Framer) gap(skipped int, ts int64) {
 		f.initialLossUnknown = true
 		return
 	}
-	f.stopped, f.buf = true, nil
+	f.stopped = true
+	f.clearBuffer()
 }
 
 func (f *sslv2Framer) eof() {
-	f.buf = nil
+	f.clearBuffer()
 	if f.handoff && f.tls != nil {
 		f.tls.eof()
 	}
@@ -131,7 +142,14 @@ func (f *sslv2Framer) discard(ts int64) {
 	if f.handoff && f.tls != nil {
 		f.tls.discard(ts)
 	}
-	f.stopped, f.buf = true, nil
+	f.stopped = true
+	f.clearBuffer()
+}
+
+func (f *sslv2Framer) clearBuffer() {
+	f.reader.conversation.StateBudget.Release(f.credit)
+	f.credit = 0
+	f.buf = nil
 }
 
 func sslv2Ciphers(b []byte) []uint32 {

@@ -199,10 +199,14 @@ func (t *tcpStreamReader) Count() int64 {
 
 // The connection owner serializes walks with mutation, role changes and retirement.
 func (t *tcpStreamReader) Walk(yield func(core.DataFragment) bool) error {
+	return t.WalkRange(0, t.Count(), yield)
+}
+
+func (t *tcpStreamReader) WalkRange(start, count int64, yield func(core.DataFragment) bool) error {
 	if t.stored != nil && !t.stored.loaded {
-		return t.stored.Walk(func(fragment core.DataFragment) bool { t.setFragmentDirection(fragment); return yield(fragment) })
+		return t.stored.WalkRange(start, count, func(fragment core.DataFragment) bool { t.setFragmentDirection(fragment); return yield(fragment) })
 	}
-	return core.SliceSource(t.data).Walk(yield)
+	return core.SliceSource(t.data).WalkRange(start, count, yield)
 }
 
 // ClientStream will return the client side of the stream.

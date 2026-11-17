@@ -678,6 +678,8 @@ func (t *tcpConnection) decode() {
 		TCPRoleSource:        t.roleSource,
 		ClientMAC:            clientMAC, ServerMAC: serverMAC,
 	}
+	conv.ClientSource, _ = clientSource.(core.RangedFragmentSource)
+	conv.ServerSource, _ = serverSource.(core.RangedFragmentSource)
 	loaded := false
 	conv.LoadData = func() error {
 		if loaded {
@@ -697,6 +699,7 @@ func (t *tcpConnection) decode() {
 		}
 		conv.Data, conv.ClientData, conv.ServerData = t.merged, client, server
 		conv.Source = nil
+		conv.ClientSource, conv.ServerSource = nil, nil
 		loaded = true
 		return nil
 	}

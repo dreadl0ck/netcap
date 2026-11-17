@@ -114,6 +114,67 @@ func TestBackedSMTPCompletionUsesFragmentBudgets(t *testing.T) {
 	t.Logf("client command bytes=%d state peak=%d limit=%d", len(chunk)*256, health.PeakBytes, health.LimitBytes)
 }
 
+func TestBackedTLSRecordsAndUpgradeStayWithinFragmentBudgets(t *testing.T) {
+	for _, upgrade := range []bool{false, true} {
+		t.Run(fmt.Sprint("upgrade=", upgrade), func(t *testing.T) {
+			wire, input := newBookCapture(t)
+			port := uint16(443)
+			if upgrade {
+				port = 25
+			}
+			send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, port, false)
+			if upgrade {
+				send(true, false, false, "220 mail.example ESMTP ready\r\n")
+				send(false, false, false, "EHLO client\r\n")
+				send(true, false, false, "250 ready\r\n")
+				send(false, false, false, "STARTTLS\r\n")
+				send(true, false, false, "220 ready\r\n")
+			}
+			body := append([]byte{3, 3}, make([]byte, 32)...)
+			body = append(body, 0, 0, 2, 0xc0, 0x2f, 1, 0, 0, 0)
+			handshake := append([]byte{1, 0, 0, byte(len(body))}, body...)
+			hello := append([]byte{22, 3, 3, 0, byte(len(handshake))}, handshake...)
+			send(false, false, false, string(hello))
+			record := append([]byte{23, 3, 3, 4, 0}, bytes.Repeat([]byte{0x80}, 1024)...)
+			for range 512 {
+				send(false, false, false, string(record))
+			}
+			out := t.TempDir()
+			configuration := ultimateCaptureConfig(out, 4, 0)
+			configuration.CaptureEvidence = true
+			configuration.DecoderConfig.IncludeDecoders = "TCP,Connection,TLSRecord,TLSClientHello,SMTP"
+			configuration.DecoderConfig.SaveConns = true
+			configuration.DecoderConfig.MaxAggregateStateBytes = 1024
+			configuration.DecoderConfig.MaxRetainedTCPStateBytes = 65536
+			configuration.DecoderConfig.MaxRetainedTCPBytes = 8192
+			if err := New(configuration).CollectPcap(input); err != nil {
+				t.Fatal(err)
+			}
+			records := bookRecords(t, out, "TLSRecord", func() *types.TLSRecord { return new(types.TLSRecord) })
+			if len(records) != 513 {
+				t.Fatal("TLS source lost records", len(records))
+			}
+			for _, record := range records {
+				if record.Status != "complete" {
+					t.Fatal("TLS source changed record framing", record)
+				}
+			}
+			hellos := bookRecords(t, out, "TLSClientHello", func() *types.TLSClientHello { return new(types.TLSClientHello) })
+			if len(hellos) != 1 {
+				t.Fatal("TLS source lost client hello", len(hellos))
+			}
+			if _, err := os.Stat(filepath.Join(out, evidence.AuditReadyFile)); err != nil {
+				t.Fatal(err)
+			}
+			health := bookJSON[core.StateBudgetHealth](t, filepath.Join(out, "TCPStreamStateBudget.json"))
+			if health.Exceeded || health.RetainedBytes != 0 || health.PeakBytes > 65536 {
+				t.Fatal("TLS source leaked state credits", health)
+			}
+			t.Logf("TLS payload bytes=%d peak state credits=%d", len(record)*512+len(hello), health.PeakBytes)
+		})
+	}
+}
+
 func TestNegativeTCPRetentionBudgetRefusesInitialization(t *testing.T) {
 	configuration := ultimateCaptureConfig(t.TempDir(), 1, 0)
 	configuration.DecoderConfig.MaxRetainedTCPBytes = -1

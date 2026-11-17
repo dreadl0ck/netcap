@@ -153,8 +153,15 @@ func (s *storedTCPReader) Count() int64 { return int64(s.count) }
 
 // A pass borrows one decoded fragment; consumers retaining it must copy its bytes.
 func (s *storedTCPReader) Walk(yield func(core.DataFragment) bool) error {
+	return s.WalkRange(0, s.Count(), yield)
+}
+
+func (s *storedTCPReader) WalkRange(start, length int64, yield func(core.DataFragment) bool) error {
+	if err := core.CheckFragmentRange(s.Count(), start, length); err != nil {
+		return err
+	}
 	count := s.count
-	for index := uint64(0); index < count; index++ {
+	for index := uint64(start); index < uint64(start+length); index++ {
 		if s.count != count {
 			return fmt.Errorf("retained TCP source changed during iteration")
 		}
@@ -197,6 +204,9 @@ func (s *storedTCPReader) Walk(yield func(core.DataFragment) bool) error {
 	}
 	if s.count != count {
 		return fmt.Errorf("retained TCP source changed during iteration")
+	}
+	if start != 0 || uint64(length) != count {
+		return nil
 	}
 	return s.state.Do(func(tx *aggregate.Tx) error {
 		last := ""

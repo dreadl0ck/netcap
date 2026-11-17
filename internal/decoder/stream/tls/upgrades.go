@@ -17,6 +17,14 @@ func ObserveUpgrade(c *core.ConversationInfo, primary string) {
 		if !helloEnabled() && RecordDecoder.Writer == nil && Decoder.Writer == nil || primary == Decoder.Name {
 			return
 		}
+		if c.ClientSource != nil && c.ServerSource != nil {
+			if err := streamutils.WalkSourceTransportRuns(c, func(run *core.ConversationInfo, note string) error {
+				return observeSourceUpgradeRun(run, primary, note)
+			}); err != nil {
+				c.FragmentError = err
+			}
+			return
+		}
 		prefixes := upgradePrefixSequence(c.Fragments())
 		hello := func(data []byte) byte { return helloPrefixType(core.DataFragments{&core.StreamData{RawData: data}}) }
 		_, negotiated := negotiatedUpgradeSource(c, primary)
