@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tcp"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/evidence"
@@ -176,6 +177,15 @@ func TestBackedTLSRecordsAndUpgradeStayWithinFragmentBudgets(t *testing.T) {
 }
 
 func TestBackedHTTPPassiveLargeBodyUsesBoundedInput(t *testing.T) {
+	testBackedHTTPLargeBody(t, false)
+}
+
+func TestBackedHTTPExtractionLargeBodyUsesBoundedInput(t *testing.T) {
+	testBackedHTTPLargeBody(t, true)
+}
+
+func testBackedHTTPLargeBody(t *testing.T, extract bool) {
+	t.Helper()
 	wire, input := newBookCapture(t)
 	send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 80, false)
 	send(false, false, false, "GET /large.bin HTTP/1.1\r\nHost: fixture.test\r\n\r\n")
@@ -189,6 +199,15 @@ func TestBackedHTTPPassiveLargeBodyUsesBoundedInput(t *testing.T) {
 	configuration := ultimateCaptureConfig(out, 1, 0)
 	configuration.CaptureEvidence = true
 	configuration.DecoderConfig.IncludeDecoders = "TCP,Connection,HTTP,IPP"
+	if extract {
+		configuration.DecoderConfig.IncludeDecoders += ",File"
+		configuration.DecoderConfig.FileStorage = "files"
+		old := file.GetGlobalConfig()
+		cfg := file.GetDefaultConfig()
+		cfg.FileExtraction.SizeLimits.MaxInflightBytes = 1 << 20
+		file.SetGlobalConfig(cfg)
+		t.Cleanup(func() { file.SetGlobalConfig(old) })
+	}
 	configuration.DecoderConfig.MaxAggregateStateBytes = 65536
 	configuration.DecoderConfig.MaxRetainedTCPStateBytes = 262144
 	configuration.DecoderConfig.MaxRetainedTCPBytes = 131072
@@ -205,6 +224,20 @@ func TestBackedHTTPPassiveLargeBodyUsesBoundedInput(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(out, evidence.AuditReadyFile)); err != nil {
 		t.Fatal(err)
+	}
+	if extract {
+		files := bookRecords(t, out, "File", func() *types.File { return new(types.File) })
+		if len(files) != 1 || files[0].Length != size || !files[0].IsComplete {
+			t.Fatal("large extracted body missing or incomplete", files)
+		}
+		hashes, err := file.ComputeFileHashes(files[0].Location)
+		if err != nil || hashes.SHA256 != files[0].Hashes.SHA256 {
+			t.Fatal("large artifact hash mismatch", err)
+		}
+		entries, err := os.ReadDir(filepath.Join(out, ".artifact-scratch"))
+		if err != nil || len(entries) != 0 {
+			t.Fatal("artifact scratch was not cleaned", entries, err)
+		}
 	}
 	t.Logf("HTTP body bytes=%d peak input/state credits=%d", size, health.PeakBytes)
 }

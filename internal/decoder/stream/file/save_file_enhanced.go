@@ -20,8 +20,6 @@
 package file
 
 import (
-	"bytes"
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -29,7 +27,6 @@ import (
 	"mime"
 	"os"
 	"path"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -153,15 +150,22 @@ func SaveFileEnhanced(
 			}
 		}
 	}
+	return savePreparedFile(conv, source, name, extractionErr, contentInfo, &artifactData{bytes: contentInfo.DecodedContent}, hashErr, host, contentType, depth, parentFileID, flowDirection, protocol)
+}
+
+func savePreparedFile(conv *core.ConversationInfo, source, name string, extractionErr error, contentInfo *ContentInfo, content *artifactData, hashErr error, host, contentType string, depth int, parentFileID, flowDirection, protocol string) error {
+	cfg := GetGlobalConfig()
+	err := extractionErr
+	if name == "" || name == "/" {
+		name = "unknown"
+	}
 	streamMissing, initialLossUnknown := conversationLoss(conv)
-	var completeness []string
-	for _, fragment := range conv.Data {
-		if d, ok := fragment.(*core.StreamData); ok && d.TCPObservation != "" {
-			qualification := "transport-" + d.TCPObservation
-			if !slices.Contains(completeness, qualification) {
-				completeness = append(completeness, qualification)
-			}
-		}
+	if conv.FragmentError != nil {
+		return conv.FragmentError
+	}
+	completeness := transportQualifications(conv)
+	if conv.FragmentError != nil {
+		return conv.FragmentError
 	}
 	if extractionErr != nil {
 		completeness = append(completeness, "extraction-error")
@@ -191,7 +195,7 @@ func SaveFileEnhanced(
 			zap.String("name", name),
 			zap.String("compressionType", contentInfo.CompressionType),
 			zap.Int64("compressedSize", contentInfo.CompressedSize),
-			zap.Int("decompressedSize", len(contentInfo.DecodedContent)),
+			zap.Int64("decompressedSize", content.Size()),
 		)
 	}
 
@@ -201,7 +205,7 @@ func SaveFileEnhanced(
 
 	if cfg.FileExtraction.Advanced.UseMagicDetection {
 		// Use decompressed content for accurate magic detection
-		cTypeDetected, accurate = DetectContentType(contentInfo.DecodedContent)
+		cTypeDetected, accurate = content.Detect()
 	} else {
 		cTypeDetected = trimEncoding(contentType)
 		if cTypeDetected == "" {
@@ -252,8 +256,11 @@ func SaveFileEnhanced(
 	// File basename
 	digest := contentInfo.Hash
 	if decoded, e := hex.DecodeString(digest); e != nil || len(decoded) != 32 {
-		sum := sha256.Sum256(contentInfo.DecodedContent)
-		digest = hex.EncodeToString(sum[:])
+		hashes, e := content.Hashes()
+		if e != nil {
+			return e
+		}
+		digest = hashes.SHA256
 	}
 	stem := digest
 	base := stem + ext
@@ -308,7 +315,7 @@ func SaveFileEnhanced(
 			if _, statErr := os.Stat(existingPath); statErr == nil {
 				// File with identical content already exists - reuse existing path
 				target = existingPath
-				length = int64(len(contentInfo.DecodedContent))
+				length = content.Size()
 				isDuplicate = true
 
 				// Update stats
@@ -361,7 +368,7 @@ func SaveFileEnhanced(
 		hashWriter := NewStreamingHashWriter(f)
 
 		// Always use the fully decoded content (gzip/deflate/base64 already decoded by ComputeContentHash)
-		r := bytes.NewBuffer(contentInfo.DecodedContent)
+		r := content.Reader()
 
 		// Copy data while computing hashes
 		w, errCopy := io.Copy(hashWriter, r)
@@ -421,7 +428,10 @@ func SaveFileEnhanced(
 		}
 	} else {
 		// For duplicates, compute hashes from the decoded content
-		allHashes := ComputeHashes(contentInfo.DecodedContent)
+		allHashes, e := content.Hashes()
+		if e != nil {
+			return e
+		}
 		hashes = FileHashes{}
 
 		if ShouldComputeHash("MD5") {
@@ -448,20 +458,41 @@ func SaveFileEnhanced(
 	publicationLock.Unlock()
 	locked = false
 	// File observations remain independent of content/analysis deduplication.
-	analysis := AnalyzeFile(contentInfo.DecodedContent, fileName)
+	analysis, analysisErr := content.Analyze(fileName)
+	if analysisErr != nil {
+		RecordExtractionIssue(analysisErr)
+		return analysisErr
+	}
 
 	// AI-based file type classification (if enabled)
 	var magikaResult *magikapkg.Result
-	if currentAnalysis() != nil {
-		analysis.YaraMatches, magikaResult = analyzeStored(target, contentInfo.Hash, contentInfo.DecodedContent)
-	} else if cfg.FileExtraction.Advanced.EnableMagika && magikapkg.IsEnabled() {
-		magikaResult, err = magikapkg.ClassifyBytes(contentInfo.DecodedContent)
+	if currentAnalysis() != nil && (currentAnalysis().yara != nil || currentAnalysis().magika != nil) || currentAnalysis() == nil && (cfg.FileExtraction.Advanced.EnableYaraScanning || cfg.FileExtraction.Advanced.EnableMagika) {
+		data, release, e := content.AnalyzerBytes()
+		if e != nil {
+			RecordExtractionIssue(e)
+			return e
+		}
+		defer release()
+		if currentAnalysis() != nil {
+			analysis.YaraMatches, magikaResult = analyzeStored(target, contentInfo.Hash, data)
+		} else {
+			if content.file != nil && cfg.FileExtraction.Advanced.EnableYaraScanning {
+				if scanner := GetGlobalYaraScanner(); scanner != nil {
+					if matches, e := scanner.ScanBytes(data); e == nil {
+						analysis.YaraMatches = matches
+					}
+				}
+			}
+			if cfg.FileExtraction.Advanced.EnableMagika && magikapkg.IsEnabled() {
+				magikaResult, err = magikapkg.ClassifyBytes(data)
+			}
+		}
 		if err != nil {
 			saveFileLog.Warn("magika classification failed",
 				zap.String("name", name),
 				zap.Error(err),
 			)
-			err = nil // don't propagate magika errors
+			err = nil
 		}
 	}
 
@@ -543,6 +574,23 @@ func safeMIMEPath(value string) string {
 }
 
 func conversationLoss(conv *core.ConversationInfo) (int64, bool) {
+	if evidence, ok := conv.Source.(*sourceFileEvidence); ok {
+		return evidence.missing, evidence.unknown
+	}
+	if conv.Source != nil {
+		var missing int64
+		var unknown bool
+		for fragment := range conv.Fragments() {
+			if data, ok := fragment.(*core.StreamData); ok {
+				if data.SkippedBytes < 0 {
+					unknown = true
+				} else {
+					missing += int64(data.SkippedBytes)
+				}
+			}
+		}
+		return missing, unknown
+	}
 	fragments := conv.Data
 	if len(conv.ClientData)+len(conv.ServerData) > 0 {
 		fragments = append(append(core.DataFragments(nil), conv.ClientData...), conv.ServerData...)

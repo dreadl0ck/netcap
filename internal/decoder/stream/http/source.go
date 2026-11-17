@@ -3,6 +3,7 @@ package http
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
@@ -13,11 +14,34 @@ import (
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"golang.org/x/net/http2"
 )
 
 var errHTTPSourceCompatibility = errors.New("HTTP mode requires checked compatibility decoding")
+
+func sourceResponseContentType(c *core.ConversationInfo, body *file.BodySpool, encoding string) string {
+	if encoding != "gzip" {
+		return http.DetectContentType(body.Prefix())
+	}
+	if err := c.StateBudget.Reserve(65536); err != nil {
+		c.FragmentError = err
+		return ""
+	}
+	defer c.StateBudget.Release(65536)
+	reader, err := gzip.NewReader(body.Reader())
+	if err != nil {
+		return ""
+	}
+	defer reader.Close()
+	prefix, release, err := readSourceRequestBody(c, reader)
+	defer release()
+	if err != nil {
+		return ""
+	}
+	return http.DetectContentType(prefix)
+}
 
 func opaqueSourceRequest(request *http.Request) bool {
 	encoding := strings.ToLower(strings.TrimSpace(request.Header.Get(headerContentEncoding)))
@@ -72,7 +96,19 @@ func readSourceRequestBody(c *core.ConversationInfo, body io.Reader) (sample []b
 
 func (h *httpReader) SupportsFragmentSource() bool {
 	c := decoderconfig.Instance
-	return c != nil && c.FileStorage == "" && !c.IncludePayloads && h.conversation.ClientSource != nil && h.conversation.ServerSource != nil
+	if c == nil || c.IncludePayloads || h.conversation.ClientSource == nil || h.conversation.ServerSource == nil {
+		return false
+	}
+	if c.FileStorage != "" {
+		extractor, ok := file.GetExtractor("HTTP")
+		if !ok {
+			return false
+		}
+		if _, ok := extractor.(*HTTPFileExtractor); !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func sourceHTTPOrientation(c *core.ConversationInfo) (*core.ConversationInfo, error) {
@@ -178,6 +214,7 @@ func (h *httpReader) decodeSource() bool {
 			return err
 		}
 		reader := &httpReader{conversation: oriented, transportObservation: note, sourceMode: true, unobservedResponseEnd: h.unobservedResponseEnd}
+		if decoderconfig.Instance.FileStorage!=""{if err:=file.PrepareSourceEvidence(oriented);err!=nil{return err}}
 		reader.decodeTransportRun()
 		if h.writeError == nil {
 			h.writeError = reader.writeError

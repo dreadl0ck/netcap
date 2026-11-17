@@ -394,6 +394,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	headerEnd := pos.Offset()
 
 	var body []byte
+	var spool *file.BodySpool
 	var passiveReport webtech.Report
 	observation := webtech.Observation{Status: res.StatusCode, ContentType: res.Header.Get(headerContentType), Generator: res.Header.Values("X-Generator")}
 	authority := ""
@@ -404,6 +405,15 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	if decoderconfig.Instance.FileStorage == "" && !decoderconfig.Instance.IncludePayloads {
 		passiveReport = software.ObserveWebtech(observation, res.Body, res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 		err = passiveReport.WireError
+	} else if h.sourceMode && !decoderconfig.Instance.IncludePayloads {
+		spool, err = file.SpoolBody(res.Body)
+		if spool != nil {
+			defer func() { file.RecordArtifactWriteError(spool.Close()) }()
+			body = spool.Prefix()
+			passiveReport = software.ObserveWebtech(observation, spool.Reader(), res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+			passiveReport.WireBytes = spool.Size()
+			passiveReport.DetectedContentType = sourceResponseContentType(h.conversation, spool, res.Header.Get(headerContentEncoding))
+		}
 	} else {
 		var release func()
 		body, release, err = file.ReadBody(res.Body)
@@ -461,7 +471,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	h.responses = append(h.responses, &httpResponse{
 		evidence:            evidence,
 		readIssue:           err != nil,
-		transient:           decoderconfig.Instance.FileStorage == "" && !decoderconfig.Instance.IncludePayloads,
+		transient:           !decoderconfig.Instance.IncludePayloads && (decoderconfig.Instance.FileStorage == "" || h.sourceMode),
 		detectedContentType: passiveReport.DetectedContentType,
 		wireBytes:           passiveReport.WireBytes,
 		response:            res,
@@ -521,6 +531,10 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 			Host:           host,
 			Encoding:       encoding,
 		}
+		if spool != nil {
+			file.RecordExtractionIssue((&HTTPFileExtractor{}).extractSpool(h.conversation, spool, metadata, err))
+			return err
+		}
 		if err != nil {
 			// The generic extractor interface cannot carry the body read error.
 			file.RecordExtractionIssue((&HTTPFileExtractor{}).extractFile(h.conversation, body, metadata, err))
@@ -575,7 +589,15 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	var body []byte
 	var release func()
 	var bodyErr error
-	if h.sourceMode && (req.ContentLength != 0 || len(req.TransferEncoding) > 0) {
+	var spool *file.BodySpool
+	if h.sourceMode && decoderconfig.Instance.FileStorage != "" {
+		spool, bodyErr = file.SpoolBody(req.Body)
+		release = func() {}
+		if spool != nil {
+			defer func() { file.RecordArtifactWriteError(spool.Close()) }()
+			body = spool.Prefix()
+		}
+	} else if h.sourceMode && (req.ContentLength != 0 || len(req.TransferEncoding) > 0) {
 		body, release, bodyErr = readSourceRequestBody(h.conversation, req.Body)
 	} else {
 		body, release, bodyErr = file.ReadBody(req.Body)
@@ -671,6 +693,10 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 				ContentType:    strings.Join(req.Header[headerContentType], " "),
 				Host:           req.Host,
 				Encoding:       req.Header[headerContentEncoding],
+			}
+			if spool != nil {
+				file.RecordExtractionIssue((&HTTPFileExtractor{}).extractSpool(h.conversation, spool, metadata, bodyErr))
+				return bodyErr
 			}
 			if bodyErr != nil {
 				file.RecordExtractionIssue((&HTTPFileExtractor{}).extractFile(h.conversation, body, metadata, bodyErr))

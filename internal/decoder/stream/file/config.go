@@ -63,6 +63,7 @@ type SizeLimitsConfig struct {
 	IncludeMissingBytes bool  `yaml:"include_missing_bytes"`
 	MaxFilesPerSession  int   `yaml:"max_files_per_session"`
 	MaxInflightBytes    int64 `yaml:"max_inflight_bytes"`
+	MaxScratchBytes     int64 `yaml:"max_scratch_bytes"`
 }
 
 // HashAlgorithmsConfig defines which hash algorithms to compute
@@ -146,8 +147,11 @@ func ValidateConfig(cfg *Config) error {
 		return fmt.Errorf("file extraction config is nil")
 	}
 	s := cfg.FileExtraction.SizeLimits
-	if s.MaxFileSize <= 0 || s.MaxFileSize > 100<<20 || s.MaxFilesPerSession < 0 || s.MaxInflightBytes < 2*s.MaxFileSize || s.MaxInflightBytes > 1<<30 {
-		return fmt.Errorf("artifact limits require 0 < max_file_size <=100 MiB, nonnegative file count and 2*max_file_size <= max_inflight_bytes <=1 GiB")
+	if s.MaxFileSize <= 0 || s.MaxFileSize > 100<<20 || s.MaxFilesPerSession < 0 || s.MaxInflightBytes <= 0 || s.MaxInflightBytes > 1<<30 {
+		return fmt.Errorf("artifact limits require 0 < max_file_size <=100 MiB, nonnegative file count and 0 < max_inflight_bytes <=1 GiB")
+	}
+	if s.MaxScratchBytes < 0 || s.MaxScratchBytes > 16<<30 {
+		return fmt.Errorf("max_scratch_bytes must be 0..16 GiB; 0 uses 1 GiB")
 	}
 	if cfg.FileExtraction.Reassembly.MaxBufferSize < 0 {
 		return fmt.Errorf("max_buffer_size cannot be negative")

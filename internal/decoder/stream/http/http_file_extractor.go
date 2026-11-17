@@ -47,6 +47,14 @@ func (h *HTTPFileExtractor) ExtractFile(conv *core.ConversationInfo, data []byte
 }
 
 func (h *HTTPFileExtractor) extractFile(conv *core.ConversationInfo, data []byte, metadata file.FileMetadata, bodyErr error) error {
+	return h.extractArtifact(conv, data, nil, metadata, bodyErr)
+}
+
+func (h *HTTPFileExtractor) extractSpool(conv *core.ConversationInfo, body *file.BodySpool, metadata file.FileMetadata, bodyErr error) error {
+	return h.extractArtifact(conv, nil, body, metadata, bodyErr)
+}
+
+func (h *HTTPFileExtractor) extractArtifact(conv *core.ConversationInfo, data []byte, body *file.BodySpool, metadata file.FileMetadata, bodyErr error) error {
 	if metadata.Timestamp != 0 {
 		copy := *conv
 		copy.FirstClientPacket = time.Unix(0, metadata.Timestamp)
@@ -77,6 +85,9 @@ func (h *HTTPFileExtractor) extractFile(conv *core.ConversationInfo, data []byte
 		filename = "http-content"
 	}
 
+	if body != nil {
+		return file.SaveSpoolEnhanced(conv, source, filename, bodyErr, body, metadata.Encoding, metadata.Host, metadata.ContentType, 0, "", metadata.FlowDirection, "HTTP")
+	}
 	return file.SaveFileEnhanced(
 		conv,
 		source,
