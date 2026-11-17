@@ -23,37 +23,8 @@ func (s *Server) activeBehavior(dir string) *behavior.Engine {
 }
 
 func (s *Server) behaviorDirectory(w http.ResponseWriter, r *http.Request) (string, bool) {
-	// Do not let an invalid explicit selector silently mutate the active session.
-	if id := r.URL.Query().Get("sessionId"); id != "" {
-		if !s.isServiceMode || s.sessionManager == nil {
-			http.Error(w, "unknown session", http.StatusNotFound)
-			return "", false
-		}
-		if _, ok := s.sessionManager.GetSession(id); !ok {
-			http.Error(w, "unknown session", http.StatusNotFound)
-			return "", false
-		}
-	}
-	if input := r.URL.Query().Get("inputFile"); input != "" {
-		s.mu.RLock()
-		known := false
-		for _, file := range s.inputFiles {
-			if file == input {
-				known = true
-				break
-			}
-		}
-		s.mu.RUnlock()
-		if !known {
-			http.Error(w, "unknown input file", http.StatusNotFound)
-			return "", false
-		}
-	}
-	dir, ok := s.resolveOutDirFromRequest(r)
-	if !ok {
-		http.Error(w, "no capture selected", http.StatusServiceUnavailable)
-	}
-	return dir, ok
+	selected, ok := s.selectedCapture(w, r)
+	return selected.OutputDir, ok
 }
 
 func (s *Server) handleBehavior(w http.ResponseWriter, r *http.Request) {

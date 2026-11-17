@@ -39,6 +39,26 @@ func behaviorServerFixture(t *testing.T) *Server {
 	return &Server{outDir: dir, baseOutDir: dir}
 }
 
+func TestBehaviorReadResolvesExplicitLocalSession(t *testing.T) {
+	s := behaviorServerFixture(t)
+	selected := s.outDir
+	s.outDir = t.TempDir()
+	s.inputFiles = []string{"fixture.pcap"}
+	s.fileIDToPath = map[string]string{"owned": "fixture.pcap"}
+	s.fileOutputDirs = map[string]string{"fixture.pcap": selected}
+	for query, want := range map[string]int{
+		"sessionId=owned":                      http.StatusOK,
+		"sessionId=missing":                    http.StatusNotFound,
+		"sessionId=owned&inputFile=other.pcap": http.StatusConflict,
+	} {
+		response := httptest.NewRecorder()
+		s.handleBehavior(response, httptest.NewRequest(http.MethodGet, "/api/behavior?"+query, nil))
+		if response.Code != want {
+			t.Fatalf("%s: got %d, want %d: %s", query, response.Code, want, response.Body)
+		}
+	}
+}
+
 func TestBehaviorAPIPersistedApprovalAndStaleVersion(t *testing.T) {
 	s := behaviorServerFixture(t)
 	get := httptest.NewRecorder()
