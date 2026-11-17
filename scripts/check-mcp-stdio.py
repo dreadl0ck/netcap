@@ -5,6 +5,8 @@
 
 import argparse
 import asyncio
+import base64
+import hashlib
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -125,8 +127,30 @@ async def check(binary, capture, data_dir):
         rejected = await client.call_tool("resolve_audit_occurrence", {"source": source, "reference": stale})
         if not rejected.isError:
             raise ValueError("changed record digest accepted")
-        connections = await call("query_audit_records", args | {"type": "Connection", "limit": 1})
+        connections = await call("query_audit_records", args | {"type": "Connection", "filter": "TransportProto == 'UDP'", "limit": 1})
         endpoint = connections["records"][0]["SrcIP"]
+        row = connections["records"][0]
+        tuple_args = {"src_ip": endpoint, "src_port": str(row["SrcPort"]),
+                      "dst_ip": row["DstIP"], "dst_port": str(row["DstPort"]), "protocol": "UDP"}
+        for name, selector in (("carve_subpcap_for_host", {"host": endpoint}),
+                               ("carve_subpcap_for_connection", tuple_args)):
+            carved = await call(name, args | selector | {"run_id": binding["runId"]})
+            artifact = carved["resource_uri"].rsplit("/", 1)[-1]
+            wire = bytearray()
+            while True:
+                page = await call("read_mcp_artifact", args | {"artifact_id": artifact, "offset": len(wire), "limit": 512})
+                chunk = base64.b64decode(page["data"], validate=True)
+                if (page["offset"] != len(wire) or page["sha256"] != carved["sha256"]
+                        or not chunk or len(chunk) > 512 or len(wire) + len(chunk) > carved["size_bytes"]):
+                    raise ValueError(f"{name}: inconsistent artifact page")
+                wire.extend(chunk)
+                if not page["has_more"]:
+                    break
+            if len(wire) != carved["size_bytes"] or len(wire) <= 24 or hashlib.sha256(wire).hexdigest() != carved["sha256"]:
+                raise ValueError(f"{name}: incomplete carved capture")
+            denied = await client.call_tool("read_mcp_artifact", {"artifact_id": artifact, "session_id": "unrelated"})
+            if not denied.isError:
+                raise ValueError("carved artifact readable under a different session")
         catalogue = await call("query_capture_catalogue", {
             "sources": [source], "query": {"kind": "endpoint", "value": endpoint, "types": ["Connection"]},
         })

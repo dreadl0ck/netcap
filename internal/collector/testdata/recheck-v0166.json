@@ -225,6 +225,9 @@
   "boundedGzipResponseClassification": {
     "verification": "TestBackedGzipResponseClassificationExpansionLimit verifies a 4096-byte decoded response is classified at a 4096-byte limit; 4097 bytes yields no decoded type and both cases release all parser credits. The full portable HTTP race suite passes."
   },
+  "officialMCPCarvedArtifacts": {
+    "verification": "scripts/check-mcp-stdio.py passed for 69 of 119 advertised tools. Host and UDP connection exports were read in pages of at most 512 bytes. Each assembled artifact matched the advertised byte count and SHA-256, and reads using a different session ID were rejected."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
