@@ -188,6 +188,11 @@
     "implementation": "Automatic and manual rule replay use the same typed audit scanner. Manual execute-all reads each audit type once and preserves per-rule results. A frame with a length but no body returns unexpected EOF instead of being treated as clean completion.",
     "verification": "Web UI, MCP and delimited race suites pass. Batch controls preserve independent results for two same-type rules, a compile error and a missing audit; truncated framing fails after the valid prefix."
   },
+  "boundedAuditInventory": {
+    "source": "4f456f5",
+    "implementation": "Audit inventory counts complete frames without decoding or allocating record bodies. Metadata exposes the framing basis and whether the count reached clean EOF.",
+    "verification": "A 32-MiB frame is skipped with zero record-body buffer capacity and the following record remains readable. A truncated frame retains the valid-prefix count with recordCountComplete=false. Web UI, MCP and delimited race suites pass."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
