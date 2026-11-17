@@ -717,6 +717,8 @@ func (t *tcpConnection) decode() {
 	)
 
 	// Probing can span deliveries, but cannot invent a signature across a gap.
+	var prefixCredit int64
+	defer func() { t.stateBudget.Release(prefixCredit) }()
 	sel, found := stream.SelectDecoder(&stream.SelectionInput{
 		Transport:  core.TCP,
 		ServerPort: serverPort,
@@ -729,8 +731,29 @@ func (t *tcpConnection) decode() {
 			}
 			return conv.ClientData.ContiguousBytes(), conv.ServerData.ContiguousBytes()
 		},
+		PrefixBytes: func(limit int) ([]byte, []byte) {
+			amount := 2 * int64(limit)
+			if err := t.stateBudget.Reserve(amount); err != nil {
+				conv.FragmentError = err
+				return nil, nil
+			}
+			prefixCredit += amount
+			client, err := core.ReadSourcePrefix(clientSource, limit)
+			if err != nil {
+				conv.FragmentError = err
+				return nil, nil
+			}
+			server, err := core.ReadSourcePrefix(serverSource, limit)
+			if err != nil {
+				conv.FragmentError = err
+				return nil, nil
+			}
+			return client, server
+		},
 		Conversation: conv,
 	})
+	t.stateBudget.Release(prefixCredit)
+	prefixCredit = 0
 	if conv.FragmentError != nil {
 		t.factory.failIncremental(conv.FragmentError)
 		return

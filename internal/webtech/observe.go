@@ -30,16 +30,21 @@ type Report struct {
 	Matches             []Result `json:"matches"`
 	DetectedContentType string   `json:"-"`
 	WireBytes           int64    `json:"-"`
+	WireError           error    `json:"-"`
 }
 
 type countingReader struct {
 	io.Reader
-	n int64
+	n   int64
+	err error
 }
 
 func (r *countingReader) Read(b []byte) (int, error) {
 	n, e := r.Reader.Read(b)
 	r.n += int64(n)
+	if e != nil && e != io.EOF && r.err == nil {
+		r.err = e
+	}
 	return n, e
 }
 
@@ -52,10 +57,11 @@ func (e *Engine) ObserveReader(o Observation, body io.Reader, encoding string) R
 	for {
 		n := reserved.Load()
 		if n+lease > MaxAggregate {
-			drained, _ := io.Copy(io.Discard, body)
+			drained, err := io.Copy(io.Discard, body)
 			o.BodyState = "budget-exhausted"
 			r := e.Observe(o)
 			r.WireBytes = drained
+			r.WireError = err
 			return r
 		}
 		if reserved.CompareAndSwap(n, n+lease) {
@@ -67,6 +73,7 @@ func (e *Engine) ObserveReader(o Observation, body io.Reader, encoding string) R
 	o.Body, o.BodyState = capture(r, encoding)
 	report := e.Observe(o)
 	report.WireBytes = r.n
+	report.WireError = r.err
 	if o.Body != nil {
 		report.DetectedContentType = http.DetectContentType(o.Body)
 	}

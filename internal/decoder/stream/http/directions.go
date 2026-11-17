@@ -15,6 +15,10 @@ import (
 )
 
 func (h *httpReader) decodeDirections() {
+	if h.sourceMode {
+		h.decodeSourceDirections()
+		return
+	}
 	var directions [2]core.DataFragments
 	if h.conversation.ClientData != nil || h.conversation.ServerData != nil {
 		directions[0], directions[1] = h.conversation.ClientData, h.conversation.ServerData

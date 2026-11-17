@@ -4,12 +4,26 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"strings"
 	"sync"
 	"testing"
 )
+
+type failedWireBody struct{}
+
+func (failedWireBody) Read([]byte) (int, error) { return 0, io.ErrUnexpectedEOF }
+
+func TestPassiveObservationRetainsWireErrorOutsideDetectionScope(t *testing.T) {
+	for _, observation := range []Observation{{Method: "GET", Status: 200, ContentType: "application/octet-stream"}, {Method: "HEAD", Status: 201}} {
+		report := Builtin().ObserveReader(observation, io.MultiReader(strings.NewReader("short"), failedWireBody{}), "")
+		if !errors.Is(report.WireError, io.ErrUnexpectedEOF) || report.WireBytes != 5 {
+			t.Fatal("wire failure was replaced by a detection classification", report)
+		}
+	}
+}
 
 type heldReader struct {
 	ready   chan<- struct{}

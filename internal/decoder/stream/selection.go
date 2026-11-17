@@ -76,7 +76,8 @@ type SelectionInput struct {
 	// ScanClient and ScanServer are the bytes offered to the fallback scan.
 	ScanClient, ScanServer []byte
 	// ScanBytes is evaluated only if the registered-port fast path misses.
-	ScanBytes func() ([]byte, []byte)
+	ScanBytes   func() ([]byte, []byte)
+	PrefixBytes func(int) ([]byte, []byte)
 	// UDP datagrams are independent messages. If the first is incomplete or
 	// unrecognized, a later complete one may still identify the conversation;
 	// their bytes must never be concatenated as though this were TCP.
@@ -127,8 +128,14 @@ func SelectDecoder(in *SelectionInput) (Selection, bool) {
 		if sel.Name == "HTTP" && in.Transport == core.TCP && configuredDecoder("IPP") &&
 			(bytes.HasPrefix(in.PortClient, []byte("POST ")) || bytes.HasPrefix(in.PortServer, []byte("POST ")) ||
 				bytes.HasPrefix(in.PortClient, []byte("HTTP/1.")) || bytes.HasPrefix(in.PortServer, []byte("HTTP/1."))) {
-			in.loadScanBytes()
-			if ipp.Decoder.CanDecodeStream(in.ScanClient, in.ScanServer) {
+			var client, server []byte
+			if in.PrefixBytes != nil {
+				client, server = in.PrefixBytes(16384)
+			} else {
+				in.loadScanBytes()
+				client, server = in.ScanClient, in.ScanServer
+			}
+			if ipp.Decoder.CanDecodeStream(client, server) {
 				return Selection{API: ipp.Decoder, Decoder: ipp.Decoder.Factory.New(in.Conversation), Name: "IPP", Port: 631, Via: ViaFallback}, true
 			}
 		}

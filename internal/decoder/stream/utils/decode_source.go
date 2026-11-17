@@ -18,11 +18,12 @@ const (
 )
 
 type sourceConversationCursor struct {
-	next         func() (core.DataFragment, bool)
-	pending      core.DataFragment
-	started      [2]bool
-	stopped      bool
-	conversation *core.ConversationInfo
+	next             func() (core.DataFragment, bool)
+	pending          core.DataFragment
+	started          [2]bool
+	stopped          bool
+	conversation     *core.ConversationInfo
+	allowInitialLoss bool
 }
 
 func (c *sourceConversationCursor) take() (core.DataFragment, bool) {
@@ -44,7 +45,7 @@ func (c *sourceConversationCursor) take() (core.DataFragment, bool) {
 		if core.FromServer(fragment) {
 			side = 1
 		}
-		if data, ok := fragment.(*core.StreamData); ok && data.HasGap(c.started[side]) {
+		if data, ok := fragment.(*core.StreamData); ok && data.HasGap(c.started[side]) && (!c.allowInitialLoss || c.started[side]) {
 			c.stopped = true
 			return nil, false
 		}

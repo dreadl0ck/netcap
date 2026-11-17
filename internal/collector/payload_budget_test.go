@@ -175,6 +175,74 @@ func TestBackedTLSRecordsAndUpgradeStayWithinFragmentBudgets(t *testing.T) {
 	}
 }
 
+func TestBackedHTTPPassiveLargeBodyUsesBoundedInput(t *testing.T) {
+	wire, input := newBookCapture(t)
+	send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 80, false)
+	send(false, false, false, "GET /large.bin HTTP/1.1\r\nHost: fixture.test\r\n\r\n")
+	const size = 90 << 20
+	send(true, false, false, fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n", size))
+	chunk := strings.Repeat("x", 32768)
+	for range size / len(chunk) {
+		send(true, false, false, chunk)
+	}
+	out := t.TempDir()
+	configuration := ultimateCaptureConfig(out, 1, 0)
+	configuration.CaptureEvidence = true
+	configuration.DecoderConfig.IncludeDecoders = "TCP,Connection,HTTP,IPP"
+	configuration.DecoderConfig.MaxAggregateStateBytes = 65536
+	configuration.DecoderConfig.MaxRetainedTCPStateBytes = 262144
+	configuration.DecoderConfig.MaxRetainedTCPBytes = 131072
+	if err := New(configuration).CollectPcap(input); err != nil {
+		t.Fatal(err)
+	}
+	records := bookRecords(t, out, "HTTP", func() *types.HTTP { return new(types.HTTP) })
+	if len(records) != 1 || records[0].Method != "GET" || records[0].StatusCode != 200 || records[0].ResContentLength != size || records[0].ReassemblyStatus != "" {
+		t.Fatal("streaming HTTP changed the visible transaction", records)
+	}
+	health := bookJSON[core.StateBudgetHealth](t, filepath.Join(out, "TCPStreamStateBudget.json"))
+	if health.Exceeded || health.RetainedBytes != 0 || health.PeakBytes > 262144 {
+		t.Fatal("large HTTP body exceeded input credits", health)
+	}
+	if _, err := os.Stat(filepath.Join(out, evidence.AuditReadyFile)); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("HTTP body bytes=%d peak input/state credits=%d", size, health.PeakBytes)
+}
+
+func TestBackedHTTPPassiveUploadUsesBoundedInput(t *testing.T) {
+	wire, input := newBookCapture(t)
+	send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 80, false)
+	const size = 3 << 20
+	send(false, false, false, fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n", size))
+	chunk := strings.Repeat("x", 16384)
+	for range size / len(chunk) {
+		send(false, false, false, chunk)
+	}
+	send(true, false, false, "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n")
+	out := t.TempDir()
+	configuration := ultimateCaptureConfig(out, 1, 0)
+	configuration.CaptureEvidence = true
+	configuration.DecoderConfig.IncludeDecoders = "TCP,Connection,HTTP,IPP"
+	configuration.DecoderConfig.MaxAggregateStateBytes = 65536
+	configuration.DecoderConfig.MaxRetainedTCPStateBytes = 262144
+	configuration.DecoderConfig.MaxRetainedTCPBytes = 131072
+	if err := New(configuration).CollectPcap(input); err != nil {
+		t.Fatal(err)
+	}
+	records := bookRecords(t, out, "HTTP", func() *types.HTTP { return new(types.HTTP) })
+	if len(records) != 1 || records[0].Method != "POST" || records[0].ReqContentLength != size || records[0].StatusCode != 200 || records[0].ReassemblyStatus != "" {
+		t.Fatal("opaque upload changed visible metadata", records)
+	}
+	health := bookJSON[core.StateBudgetHealth](t, filepath.Join(out, "TCPStreamStateBudget.json"))
+	if health.Exceeded || health.RetainedBytes != 0 || health.PeakBytes > 262144 {
+		t.Fatal("opaque upload exceeded input credits", health)
+	}
+	if _, err := os.Stat(filepath.Join(out, evidence.AuditReadyFile)); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("HTTP upload bytes=%d peak input/state credits=%d", size, health.PeakBytes)
+}
+
 func TestNegativeTCPRetentionBudgetRefusesInitialization(t *testing.T) {
 	configuration := ultimateCaptureConfig(t.TempDir(), 1, 0)
 	configuration.DecoderConfig.MaxRetainedTCPBytes = -1

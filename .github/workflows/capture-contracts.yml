@@ -13,6 +13,7 @@ on:
       - 'internal/evidence/**/*.go'
       - 'internal/packetview/**/*.go'
       - 'internal/packetmeta/**/*.go'
+      - 'internal/webtech/**'
       - 'internal/collector/**/*.go'
       - 'internal/collector/testdata/**'
       - 'internal/decoder/**/*.go'
@@ -31,6 +32,7 @@ on:
       - 'internal/evidence/**/*.go'
       - 'internal/packetview/**/*.go'
       - 'internal/packetmeta/**/*.go'
+      - 'internal/webtech/**'
       - 'internal/collector/**/*.go'
       - 'internal/collector/testdata/**'
       - 'internal/decoder/**/*.go'
@@ -84,6 +86,7 @@ jobs:
           go test -race -tags nodpi,noyara,nomagika
           ./internal/aggregate ./internal/reassembly ./internal/decoder/core
           ./internal/evidence ./internal/packetview ./internal/packetmeta
+          ./internal/webtech
           ./internal/decoder/stream ./internal/decoder/stream/utils
           ./internal/decoder/stream/tcp ./internal/decoder/stream/tls
           ./internal/decoder/stream/secret ./internal/decoder/stream/ftp
@@ -96,6 +99,7 @@ jobs:
           go vet -tags nodpi,noyara,nomagika
           ./internal/aggregate ./internal/reassembly ./internal/decoder/core
           ./internal/evidence ./internal/packetview ./internal/packetmeta
+          ./internal/webtech
           ./internal/decoder/stream ./internal/decoder/stream/utils
           ./internal/decoder/stream/tcp ./internal/decoder/stream/tls
           ./internal/decoder/stream/secret ./internal/decoder/stream/ftp

@@ -111,6 +111,8 @@ type httpReader struct {
 	transportObservation  string
 	unobservedResponseEnd bool
 	writeError            error
+	sourceMode            bool
+	sourceHeaderCredits   int64
 }
 
 // New constructs a new http stream decoder.
@@ -122,6 +124,11 @@ func (h *httpReader) New(conversation *core.ConversationInfo) core.StreamDecoder
 
 // Decode parses the stream according to the HTTP protocol.
 func (h *httpReader) Decode() {
+	if h.conversation.Source != nil && h.conversation.Transport != core.UDP {
+		if h.decodeSource() {
+			return
+		}
+	}
 	if h.conversation.Transport == core.UDP {
 		for fragment := range h.conversation.Fragments() {
 			conversation := *h.conversation
@@ -160,6 +167,8 @@ func (h *httpReader) Decode() {
 
 func (h *httpReader) decodeTransportRun() {
 	defer func() {
+		h.conversation.StateBudget.Release(h.sourceHeaderCredits)
+		h.sourceHeaderCredits = 0
 		for _, release := range h.bufferReleases {
 			release()
 		}
@@ -170,6 +179,9 @@ func (h *httpReader) decodeTransportRun() {
 	}
 
 	h.decodeDirections()
+	if h.conversation.FragmentError != nil {
+		return
+	}
 	if h.artifactRecovery {
 		return
 	}
@@ -391,6 +403,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	}
 	if decoderconfig.Instance.FileStorage == "" && !decoderconfig.Instance.IncludePayloads {
 		passiveReport = software.ObserveWebtech(observation, res.Body, res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+		err = passiveReport.WireError
 	} else {
 		var release func()
 		body, release, err = file.ReadBody(res.Body)
@@ -438,6 +451,9 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	)
 
 	// increment counter
+	if e := h.retainSourceHeaders(evidence, headerEnd-headerStart); e != nil {
+		return e
+	}
 	streamutils.Stats.Lock()
 	streamutils.Stats.Responses++
 	streamutils.Stats.Unlock()
@@ -556,7 +572,14 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	}
 
 	headerEnd := pos.Offset()
-	body, release, bodyErr := file.ReadBody(req.Body)
+	var body []byte
+	var release func()
+	var bodyErr error
+	if h.sourceMode && (req.ContentLength != 0 || len(req.TransferEncoding) > 0) {
+		body, release, bodyErr = readSourceRequestBody(h.conversation, req.Body)
+	} else {
+		body, release, bodyErr = file.ReadBody(req.Body)
+	}
 	file.RecordExtractionIssue(bodyErr)
 	h.bufferReleases = append(h.bufferReleases, release)
 	s := len(body)
@@ -615,6 +638,9 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	req.Body = io.NopCloser(bytes.NewReader(body))
 
 	// increase counter
+	if e := h.retainSourceHeaders(evidence, headerEnd-headerStart); e != nil {
+		return e
+	}
 	streamutils.Stats.Lock()
 	streamutils.Stats.Requests++
 	streamutils.Stats.Unlock()

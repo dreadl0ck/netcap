@@ -183,6 +183,37 @@ func TestSelectionRespectsTransportAndStableTies(t *testing.T) {
 	}
 }
 
+func TestHTTPSpecializationUsesOnlyItsBoundedHeaderWindow(t *testing.T) {
+	matchingEnv(t)
+	for _, printing := range []bool{false, true} {
+		client := []byte("POST /jobs HTTP/1.1\r\nHost: fixture.test\r\nContent-Length: 0\r\n\r\n")
+		contentType := "application/octet-stream"
+		want := "HTTP"
+		if printing {
+			contentType = "application/ipp"
+			want = "IPP"
+		}
+		server := []byte("HTTP/1.1 100 Continue\r\n\r\nHTTP/1.1 200 OK\r\nContent-Type: " + contentType + "\r\nContent-Length: 0\r\n\r\n")
+		prefixCalls := 0
+		selection, ok := SelectDecoder(&SelectionInput{Transport: core.TCP, ServerPort: 80, PortClient: client, PortServer: server, Conversation: &core.ConversationInfo{},
+			PrefixBytes: func(limit int) ([]byte, []byte) {
+				prefixCalls++
+				if limit != 16384 {
+					t.Fatal("specialization window changed", limit)
+				}
+				return client, server
+			},
+			ScanBytes: func() ([]byte, []byte) {
+				t.Fatal("HTTP header specialization loaded the conversation")
+				return nil, nil
+			},
+		})
+		if !ok || selection.Name != want || prefixCalls != 1 {
+			t.Fatal("bounded header specialization changed selection", selection, ok, prefixCalls)
+		}
+	}
+}
+
 func TestUDPSelectionConsidersLaterCompleteDatagrams(t *testing.T) {
 	matchingEnv(t)
 	fixture := matchingSample(t, "BACnetIP")
