@@ -40,7 +40,7 @@ func harvestNTLMIdentity(c *core.ConversationInfo, emit func(*types.Secret)) {
 	var buffers [2][]byte
 	var scan [2]int
 	seen := map[string]bool{}
-	for _, f := range c.Data {
+	for f := range c.Fragments() {
 		i := 0
 		if f.Direction() == reassembly.TCPDirServerToClient {
 			i = 1

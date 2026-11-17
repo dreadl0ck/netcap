@@ -97,7 +97,7 @@ func parseFTPAuth(c *core.ConversationInfo, emit func(*types.Secret)) {
 		}
 	}
 	defer flush()
-	for _, f := range c.Data {
+	for f := range c.Fragments() {
 		i := 0
 		if core.FromServer(f) {
 			i = 1

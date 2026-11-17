@@ -105,7 +105,7 @@ func ObserveDataConversation(c *core.ConversationInfo) {
 	}
 	size := 0
 	sizes := [2]int{}
-	for _, f := range c.Data {
+	for f := range c.Fragments() {
 		size += len(f.Raw())
 		d := 0
 		if f.Direction() == reassembly.TCPDirServerToClient {
@@ -113,23 +113,24 @@ func ObserveDataConversation(c *core.ConversationInfo) {
 		}
 		sizes[d] += len(f.Raw())
 	}
-	if size == 0 {
+	if c.FragmentError != nil || size == 0 {
 		return
 	}
-	if len(dataState.streams) >= maxPendingStreams || size > maxPendingBytes-dataState.bytes || len(c.Data) > 65536 {
+	if len(dataState.streams) >= maxPendingStreams || size > maxPendingBytes-dataState.bytes || c.FragmentCount() > 65536 {
 		dataState.health.Rejected++
 		dataState.health.Status = "partial"
 		return
 	}
 	p := pendingData{conv: *c}
 	p.conv.Data = nil
+	p.conv.Source, p.conv.LoadData = nil, nil
 	p.conv.ClientData = nil
 	p.conv.ServerData = nil
 	p.data[0] = make([]byte, 0, sizes[0])
 	p.data[1] = make([]byte, 0, sizes[1])
 	missing := [2]int{}
 	unknown := [2]bool{}
-	for _, f := range c.Data {
+	for f := range c.Fragments() {
 		d := 0
 		if f.Direction() == reassembly.TCPDirServerToClient {
 			d = 1
@@ -155,6 +156,9 @@ func ObserveDataConversation(c *core.ConversationInfo) {
 				missing[d] += s.SkippedBytes
 			}
 		}
+	}
+	if c.FragmentError != nil {
+		return
 	}
 	for d := range 2 {
 		dir := reassembly.TCPDirClientToServer

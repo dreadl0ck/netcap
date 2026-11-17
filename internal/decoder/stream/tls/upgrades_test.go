@@ -2,12 +2,54 @@ package tls
 
 import (
 	"bytes"
+	"errors"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+func TestSourceUpgradeLoadsOnlyConfirmedCandidates(t *testing.T) {
+	h, writer, _ := helloTestWriters(t)
+	for _, tc := range []struct {
+		name string
+		data core.DataFragments
+		load bool
+	}{
+		{"ordinary", core.DataFragments{fragment([]byte("EHLO client\r\nNOOP\r\n"), false, 1), fragment([]byte("250 ready\r\n"), true, 2)}, false},
+		{"rejected", core.DataFragments{fragment([]byte("STARTTLS\r\n"), false, 1), fragment([]byte("454 unavailable\r\n"), true, 2)}, false},
+		{"confirmed", core.DataFragments{fragment([]byte("STARTTLS\r\n"), false, 1), fragment([]byte("220 ready\r\n"), true, 2), fragment(upgradeHello(), false, 3)}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			writer.messages = nil
+			c := *h.conversation
+			c.Data, c.ClientData, c.ServerData = nil, nil, nil
+			c.Source = core.SliceSource(tc.data)
+			loads := 0
+			c.LoadData = func() error { loads++; c.Data = tc.data; return nil }
+			ObserveUpgrade(&c, "SMTP")
+			want := 0
+			if tc.load {
+				want = 1
+			}
+			if c.FragmentError != nil || loads != want || len(writer.messages) != loads {
+				t.Fatal("source upgrade changed qualification", loads, len(writer.messages), c.FragmentError)
+			}
+			if !tc.load {
+				return
+			}
+			cause := errors.New("materialization unavailable")
+			writer.messages = nil
+			c.Data = nil
+			c.LoadData = func() error { return cause }
+			ObserveUpgrade(&c, "SMTP")
+			if !errors.Is(c.FragmentError, cause) || len(writer.messages) != 0 {
+				t.Fatal("upgrade hid fallback failure", c.FragmentError)
+			}
+		})
+	}
+}
 
 func TestCleartextNegotiationSplitsAndRejections(t *testing.T) {
 	h, cw, _ := helloTestWriters(t)

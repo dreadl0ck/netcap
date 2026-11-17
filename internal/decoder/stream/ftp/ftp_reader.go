@@ -52,9 +52,11 @@ func (f *ftpReader) New(c *core.ConversationInfo) core.StreamDecoderInterface {
 
 func (f *ftpReader) Decode() {
 	secret.HarvestFTPConversation(f.conversation)
-	streamutils.DecodeConversationAt(f.conversation.Ident, f.conversation.Data, f.readClient, f.readServer)
+	_ = streamutils.DecodeSourceConversationAt(f.conversation, f.readClient, f.readServer)
 	f.finishTransfer()
 }
+
+func (*ftpReader) SupportsFragmentSource() bool { return true }
 
 func (f *ftpReader) finishTransfer() {
 	if f.pending != nil {

@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"math"
 	"sync/atomic"
 
 	"github.com/dreadl0ck/netcap/internal/aggregate"
@@ -113,7 +114,7 @@ func decodeTCPFragment(wire []byte) (*core.StreamData, error) {
 }
 
 func (s *storedTCPReader) append(data *core.StreamData) error {
-	if s.count == ^uint64(0) {
+	if s.count >= math.MaxInt64 {
 		return fmt.Errorf("retained TCP fragment counter exhausted")
 	}
 	wire, err := encodeTCPFragment(data)
@@ -146,6 +147,68 @@ func (s *storedTCPReader) append(data *core.StreamData) error {
 	s.payloadCredit += payloadCredit
 	s.count++
 	return nil
+}
+
+func (s *storedTCPReader) Count() int64 { return int64(s.count) }
+
+// A pass borrows one decoded fragment; consumers retaining it must copy its bytes.
+func (s *storedTCPReader) Walk(yield func(core.DataFragment) bool) error {
+	count := s.count
+	for index := uint64(0); index < count; index++ {
+		if s.count != count {
+			return fmt.Errorf("retained TCP source changed during iteration")
+		}
+		key := fmt.Sprintf("%s%016x", s.prefix, index)
+		var wire []byte
+		err := s.state.Do(func(tx *aggregate.Tx) error {
+			var exists bool
+			var err error
+			wire, exists, err = tx.Get(key)
+			if err == nil && !exists {
+				return fmt.Errorf("retained TCP fragment sequence is incomplete")
+			}
+			return err
+		})
+		if err != nil {
+			return err
+		}
+		credit := int64(len(wire)) + 256
+		if err := s.budget.Reserve(credit); err != nil {
+			return err
+		}
+		more, err := func() (bool, error) {
+			defer s.budget.Release(credit)
+			fragment, err := decodeTCPFragment(wire)
+			if err != nil {
+				return false, s.state.Do(func(*aggregate.Tx) error { return err })
+			}
+			if s.payloadBudget != nil {
+				amount := int64(len(fragment.RawData))
+				if !s.payloadBudget.reserve(amount) {
+					return false, fmt.Errorf("TCP backing-reader payload iteration budget exceeded")
+				}
+				defer s.payloadBudget.release(amount)
+			}
+			return yield(fragment), nil
+		}()
+		if err != nil || !more {
+			return err
+		}
+	}
+	if s.count != count {
+		return fmt.Errorf("retained TCP source changed during iteration")
+	}
+	return s.state.Do(func(tx *aggregate.Tx) error {
+		last := ""
+		if count > 0 {
+			last = fmt.Sprintf("%s%016x", s.prefix, count-1)
+		}
+		_, _, exists, err := tx.Next(s.prefix, last)
+		if err == nil && exists {
+			return fmt.Errorf("retained TCP fragment count mismatch")
+		}
+		return err
+	})
 }
 
 func (s *storedTCPReader) read() (core.DataFragments, error) {

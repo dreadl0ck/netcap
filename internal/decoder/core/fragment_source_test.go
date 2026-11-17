@@ -2,7 +2,11 @@ package core
 
 import (
 	"errors"
+	"reflect"
 	"testing"
+	"time"
+
+	"github.com/gopacket/gopacket"
 )
 
 type failingFragments struct{}
@@ -40,5 +44,55 @@ func TestRestartableFragmentIterationAndErrors(t *testing.T) {
 	}
 	if !errors.Is(c.FragmentError, errFragmentFixture) {
 		t.Fatal("source error lost", c.FragmentError)
+	}
+}
+
+type trackedFragmentSource struct {
+	DataFragments
+	active *int
+}
+
+func (s trackedFragmentSource) Count() int64 { return int64(len(s.DataFragments)) }
+func (s trackedFragmentSource) Walk(yield func(DataFragment) bool) error {
+	*s.active++
+	defer func() { *s.active-- }()
+	return SliceSource(s.DataFragments).Walk(yield)
+}
+
+func TestMergedSourcePreservesDirectionalOrderAndStopsBorrowers(t *testing.T) {
+	fragment := func(name string, at int64) DataFragment {
+		return &StreamData{RawData: []byte(name), CaptureInformation: gopacket.CaptureInfo{Timestamp: time.Unix(at, 0)}}
+	}
+	active := 0
+	source := MergedSource{
+		Client: trackedFragmentSource{DataFragments{fragment("c5", 5), fragment("c1", 1), fragment("c9", 9)}, &active},
+		Server: trackedFragmentSource{DataFragments{fragment("s3", 3), fragment("s5", 5), fragment("s10", 10)}, &active},
+	}
+	for range 2 {
+		var got []string
+		if err := source.Walk(func(f DataFragment) bool { got = append(got, string(f.Raw())); return true }); err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(got, []string{"s3", "c5", "c1", "s5", "c9", "s10"}) || source.Count() != 6 || active != 0 {
+			t.Fatal(got, active)
+		}
+	}
+	if err := source.Walk(func(DataFragment) bool { return false }); err != nil || active != 0 {
+		t.Fatal("stopped source retained borrowers", err, active)
+	}
+	func() {
+		defer func() {
+			if recover() == nil {
+				t.Fatal("callback panic lost")
+			}
+		}()
+		_ = source.Walk(func(DataFragment) bool { panic("control") })
+	}()
+	if active != 0 {
+		t.Fatal("panic retained source borrowers", active)
+	}
+	source.Server = failingFragments{}
+	if err := source.Walk(func(DataFragment) bool { return true }); !errors.Is(err, errFragmentFixture) || active != 0 {
+		t.Fatal("merge lost source error", err, active)
 	}
 }

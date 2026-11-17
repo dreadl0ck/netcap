@@ -7,6 +7,9 @@ import (
 	"io"
 	"reflect"
 	"testing"
+	"time"
+
+	"github.com/gopacket/gopacket"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
@@ -36,6 +39,14 @@ func TestConversationUnknownStartAndInternalLoss(t *testing.T) {
 				return err
 			}
 			DecodeConversation("test", data, read, read)
+			legacy := append([]string(nil), got...)
+			got = nil
+			if err := DecodeSourceConversation(&core.ConversationInfo{Source: core.SliceSource(data)}, read, read); err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(got, legacy) {
+				t.Fatal("source changed gap handling", got, legacy)
+			}
 			want := []string{"A1 CAPABILITY\r\n", "* OK ready\r\n"}
 			if loss == 0 {
 				want = append(want, "A2 SELECT INBOX\r\n")
@@ -62,6 +73,14 @@ func TestConversationPostCloseBoundary(t *testing.T) {
 		return err
 	}
 	DecodeConversationAt("test", data, read, read)
+	legacyLines, legacyNotes := append([]string(nil), lines...), append([]string(nil), notes...)
+	lines, notes = nil, nil
+	if err := DecodeSourceConversationAt(&core.ConversationInfo{Source: core.SliceSource(data)}, read, read); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(lines, legacyLines) || !reflect.DeepEqual(notes, legacyNotes) {
+		t.Fatal("source changed close boundaries", lines, notes)
+	}
 	if !reflect.DeepEqual(lines, []string{"ECT INBOX\r\n", "A2 CAPABILITY\r\n"}) || !reflect.DeepEqual(notes, []string{"after-rst", "after-rst"}) {
 		t.Fatalf("joined across a close or lost qualification: %q / %q", lines, notes)
 	}
@@ -81,5 +100,53 @@ func TestConversationReaderMustMakeProgress(t *testing.T) {
 		if calls != 1 {
 			t.Fatalf("reader retried without consuming bytes: %d calls", calls)
 		}
+		calls = 0
+		if err := DecodeSourceConversation(&core.ConversationInfo{Source: core.SliceSource{&core.StreamData{RawData: []byte("bad")}}}, read, read); err != nil {
+			t.Fatal(err)
+		}
+		if calls != 1 {
+			t.Fatal("source reader retried without progress", calls)
+		}
+	}
+}
+
+func TestSourceConversationPositionsAcrossReadAheadAndFragmentBoundaries(t *testing.T) {
+	data := core.DataFragments{}
+	for index, text := range []string{"first\n", "sec", "ond\nthird\n"} {
+		data = append(data, &core.StreamData{RawData: []byte(text), CaptureInformation: gopacket.CaptureInfo{Timestamp: time.Unix(1, int64(index))}})
+	}
+	var times []int64
+	var offsets []int
+	read := func(reader *bufio.Reader, pos *ReadPosition) error {
+		at := pos.Timestamp()
+		offset := pos.Offset()
+		_, err := reader.ReadString('\n')
+		if err == nil {
+			times = append(times, at)
+			offsets = append(offsets, offset)
+		}
+		return err
+	}
+	if err := DecodeSourceConversationAt(&core.ConversationInfo{Source: core.SliceSource(data)}, read, read); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(offsets, []int{0, 6, 13}) || !reflect.DeepEqual(times, []int64{1000000000, 1000000001, 1000000002}) {
+		t.Fatal("source positions changed", times, offsets)
+	}
+}
+
+func TestSourceConversationDoesNotRetainEveryPosition(t *testing.T) {
+	read := func(reader *bufio.Reader, pos *ReadPosition) error {
+		count, err := io.Copy(io.Discard, reader)
+		if err != nil {
+			return err
+		}
+		if count != 50000*1024 || len(pos.source.spans) > 16 || cap(pos.source.spans) > 32 {
+			t.Fatal("source retained run metadata", count, len(pos.source.spans), cap(pos.source.spans))
+		}
+		return io.EOF
+	}
+	if err := DecodeSourceConversationAt(&core.ConversationInfo{Source: generatedEvidence{count: 50000}}, read, read); err != nil {
+		t.Fatal(err)
 	}
 }

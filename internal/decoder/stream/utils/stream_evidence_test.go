@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -132,6 +133,12 @@ func TestLossOnlyConversationStillPublishesQualifiedStreamEvidence(t *testing.T)
 }
 
 func TestDatagramSourcePreservesLegacyBytesAndEvidence(t *testing.T) {
+	for _, protocol := range []string{"UDP", "TCP"} {
+		t.Run(protocol, func(t *testing.T) { testSourcePreservesLegacyBytesAndEvidence(t, protocol) })
+	}
+}
+
+func testSourcePreservesLegacyBytesAndEvidence(t *testing.T, protocol string) {
 	previous, enricher := decoderconfig.Instance, DeviceEnricher
 	defer func() { decoderconfig.Instance, DeviceEnricher = previous, enricher }()
 	DeviceEnricher = nil
@@ -145,14 +152,18 @@ func TestDatagramSourcePreservesLegacyBytesAndEvidence(t *testing.T) {
 		decoderconfig.Instance = cfg
 		var err error
 		if source {
-			err = SaveDatagramConversation(core.SliceSource(fragments), "fixture", time.Unix(1, 2), forward, "id")
+			if protocol == "TCP" {
+				err = SaveTCPConversation(core.SliceSource(fragments), "fixture", time.Unix(1, 2), forward, "id")
+			} else {
+				err = SaveDatagramConversation(core.SliceSource(fragments), "fixture", time.Unix(1, 2), forward, "id")
+			}
 		} else {
-			err = SaveConversation("UDP", fragments, "fixture", time.Unix(1, 2), forward, "id")
+			err = SaveConversation(protocol, fragments, "fixture", time.Unix(1, 2), forward, "id")
 		}
 		if err != nil {
 			t.Fatal(err)
 		}
-		files, err := filepath.Glob(filepath.Join(cfg.Out, "udp", "*", "*.bin"))
+		files, err := filepath.Glob(filepath.Join(cfg.Out, strings.ToLower(protocol), "*", "*.bin"))
 		if err != nil || len(files) != 1 {
 			t.Fatal(files, err)
 		}

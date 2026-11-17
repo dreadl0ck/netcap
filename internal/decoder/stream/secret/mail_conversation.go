@@ -100,7 +100,7 @@ func parseMailAuth(c *core.ConversationInfo, protocol string, emit func(*types.S
 		}
 	}
 	defer flush()
-	for _, f := range c.Data {
+	for f := range c.Fragments() {
 		i := 0
 		if f.Direction() == reassembly.TCPDirServerToClient {
 			i = 1

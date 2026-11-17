@@ -62,9 +62,8 @@ func (i *imapReader) New(conversation *core.ConversationInfo) core.StreamDecoder
 
 // Decode parses the IMAP conversation
 func (i *imapReader) Decode() {
-	streamutils.DecodeConversationAt(
-		i.conversation.Ident,
-		i.conversation.Data,
+	_ = streamutils.DecodeSourceConversationAt(
+		i.conversation,
 		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
 			return i.readClient(b, pos)
 		},
@@ -73,6 +72,8 @@ func (i *imapReader) Decode() {
 		},
 	)
 }
+
+func (*imapReader) SupportsFragmentSource() bool { return true }
 
 // readClient parses IMAP commands from client
 func (i *imapReader) readClient(b *bufio.Reader, pos *streamutils.ReadPosition) error {

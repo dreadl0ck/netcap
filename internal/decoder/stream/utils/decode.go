@@ -31,6 +31,7 @@ type ReadPosition struct {
 	written     int
 	server      bool
 	observation string
+	source      *sourceRunReader
 }
 
 // TCPObservation qualifies post-close wire evidence; it never confirms delivery.
@@ -55,6 +56,9 @@ func (p *ReadPosition) Offset() int {
 	if p == nil {
 		return 0
 	}
+	if p.source != nil {
+		return max(0, p.source.read-p.rd.Buffered())
+	}
 
 	consumed := p.written - p.buf.Len() - p.rd.Buffered()
 	if consumed < 0 {
@@ -67,6 +71,10 @@ func (p *ReadPosition) Offset() int {
 // Timestamp returns the capture time of the packet carrying the byte the reader
 // is positioned at, in Unix nanoseconds.
 func (p *ReadPosition) Timestamp() int64 {
+	if p != nil && p.source != nil {
+		_, _ = p.rd.Peek(1)
+		return p.source.timestamp(p.Offset())
+	}
 	if p == nil || p.index == nil {
 		return 0
 	}

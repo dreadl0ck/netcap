@@ -61,7 +61,7 @@ func parseSMTPAuth(c *core.ConversationInfo, emit func(*types.Secret)) {
 		}
 	}
 	reset := func() { mechanism = ""; stage = 0; user = "" }
-	for _, f := range c.Data {
+	for f := range c.Fragments() {
 		if encrypted {
 			break
 		}

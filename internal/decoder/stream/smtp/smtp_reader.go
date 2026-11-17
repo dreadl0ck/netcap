@@ -145,6 +145,8 @@ func (h *smtpReader) New(conv *core.ConversationInfo) core.StreamDecoderInterfac
 }
 
 // Decode parses the stream according to the SMTP protocol.
+func (*smtpReader) SupportsFragmentSource() bool { return true }
+
 func (h *smtpReader) Decode() {
 	defer func() {
 		for _, release := range h.bufferReleases {
@@ -156,9 +158,8 @@ func (h *smtpReader) Decode() {
 		return
 	}
 
-	streamutils.DecodeConversation(
-		h.conversation.Ident,
-		h.conversation.Data,
+	_ = streamutils.DecodeSourceConversation(
+		h.conversation,
 		func(b *bufio.Reader) error {
 			return h.readRequest(b)
 		},

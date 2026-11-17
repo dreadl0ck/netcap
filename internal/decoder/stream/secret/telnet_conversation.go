@@ -32,7 +32,7 @@ func HarvestTelnetConversation(c *core.ConversationInfo) {
 func telnetPromptEvidence(c *core.ConversationInfo) bool {
 	var prefix []byte
 collect:
-	for _, fragment := range c.Data {
+	for fragment := range c.Fragments() {
 		if !core.FromServer(fragment) {
 			continue
 		}
@@ -130,7 +130,7 @@ func parseTelnetAuth(c *core.ConversationInfo, emit func(*types.Secret)) {
 		}
 		return false
 	}
-	for _, fragment := range c.Data {
+	for fragment := range c.Fragments() {
 		side := 0
 		if core.FromServer(fragment) {
 			side = 1

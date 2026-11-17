@@ -133,6 +133,8 @@ func (h *pop3Reader) New(conv *core.ConversationInfo) core.StreamDecoderInterfac
 }
 
 // Decode parses the stream according to the POP3 protocol.
+func (*pop3Reader) SupportsFragmentSource() bool { return true }
+
 func (h *pop3Reader) Decode() {
 	defer func() {
 		for _, release := range h.bufferReleases {
@@ -144,9 +146,8 @@ func (h *pop3Reader) Decode() {
 		return
 	}
 
-	streamutils.DecodeConversation(
-		h.conversation.Ident,
-		h.conversation.Data,
+	_ = streamutils.DecodeSourceConversation(
+		h.conversation,
 		func(b *bufio.Reader) error {
 			return h.readRequest(b)
 		},

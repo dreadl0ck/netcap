@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tcp"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/evidence"
@@ -72,6 +73,45 @@ func TestTCPRetainedPayloadBudgetQualifiesFailureAndReadiness(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestBackedSMTPCompletionUsesFragmentBudgets(t *testing.T) {
+	wire, input := newBookCapture(t)
+	send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 25, false)
+	send(true, false, false, "220 mail.example ESMTP ready\r\n")
+	send(false, false, false, "EHLO client\r\n")
+	chunk := strings.Repeat("NOOP\r\n", 128)
+	for range 256 {
+		send(false, false, false, chunk)
+	}
+	send(true, false, false, "250 accepted\r\n")
+	out := t.TempDir()
+	configuration := ultimateCaptureConfig(out, 1, 0)
+	configuration.CaptureEvidence = true
+	configuration.DecoderConfig.IncludeDecoders = "TCP,Connection,SMTP,TLSRecord,Secret"
+	configuration.DecoderConfig.SaveConns = true
+	configuration.DecoderConfig.MaxAggregateStateBytes = 1024
+	configuration.DecoderConfig.MaxRetainedTCPStateBytes = 16384
+	configuration.DecoderConfig.MaxRetainedTCPBytes = 4096
+	if err := New(configuration).CollectPcap(input); err != nil {
+		t.Fatal(err)
+	}
+	manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
+	if manifest.Status != "done" {
+		t.Fatal("streaming completion was not sealed", manifest.Status)
+	}
+	if _, err := os.Stat(filepath.Join(out, evidence.AuditReadyFile)); err != nil {
+		t.Fatal(err)
+	}
+	records := bookRecords(t, out, "SMTP", func() *types.SMTP { return new(types.SMTP) })
+	if len(records) != 1 || len(records[0].Commands) != 32769 {
+		t.Fatal("streaming completion changed commands", len(records))
+	}
+	health := bookJSON[core.StateBudgetHealth](t, filepath.Join(out, "TCPStreamStateBudget.json"))
+	if health.Exceeded || health.RetainedBytes != 0 || health.PeakBytes > 16384 {
+		t.Fatal("completion exceeded fragment credits", health)
+	}
+	t.Logf("client command bytes=%d state peak=%d limit=%d", len(chunk)*256, health.PeakBytes, health.LimitBytes)
 }
 
 func TestNegativeTCPRetentionBudgetRefusesInitialization(t *testing.T) {

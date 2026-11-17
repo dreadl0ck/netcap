@@ -240,7 +240,7 @@ func harvestTeamViewerConversation(c *core.ConversationInfo, emit func(*types.Se
 		seen, stopped bool
 	}
 	var sides [2]side
-	for _, f := range c.Data {
+	for f := range c.Fragments() {
 		i := 0
 		if core.FromServer(f) {
 			i = 1

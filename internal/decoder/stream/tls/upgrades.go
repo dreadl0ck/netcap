@@ -2,6 +2,8 @@ package tls
 
 import (
 	"bytes"
+	"fmt"
+	"iter"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
@@ -11,6 +13,32 @@ import (
 
 // ObserveUpgrade shares the TLS framer with validated cleartext protocol hand-offs.
 func ObserveUpgrade(c *core.ConversationInfo, primary string) {
+	if c.Source != nil && c.Data == nil {
+		if !helloEnabled() && RecordDecoder.Writer == nil && Decoder.Writer == nil || primary == Decoder.Name {
+			return
+		}
+		prefixes := upgradePrefixSequence(c.Fragments())
+		hello := func(data []byte) byte { return helloPrefixType(core.DataFragments{&core.StreamData{RawData: data}}) }
+		_, negotiated := negotiatedUpgradeSource(c, primary)
+		if c.FragmentError != nil || hello(prefixes[0]) != 1 && hello(prefixes[1]) != 1 && !negotiated {
+			return
+		}
+		if c.LoadData == nil {
+			c.FragmentError = fmt.Errorf("TLS upgrade requires directional fragment materialization")
+			return
+		}
+		if err := c.LoadData(); err != nil {
+			c.FragmentError = err
+			return
+		}
+		copy := *c
+		copy.Source, copy.LoadData = nil, nil
+		ObserveUpgrade(&copy, primary)
+		if copy.FragmentError != nil {
+			c.FragmentError = copy.FragmentError
+		}
+		return
+	}
 	for _, run := range streamutils.TransportRuns(c) {
 		observeUpgradeRun(run.Conversation, primary)
 	}
@@ -85,12 +113,17 @@ func fragmentSide(f core.DataFragment) int {
 }
 
 func cleartextUpgrade(fragments core.DataFragments, primary string) ([2]int, bool) {
+	conversation := &core.ConversationInfo{Data: fragments}
+	return cleartextUpgradeSequence(conversation.Fragments(), primary)
+}
+
+func cleartextUpgradeSequence(fragments iter.Seq[core.DataFragment], primary string) ([2]int, bool) {
 	var lines [2][]byte
 	var consumed [2]int
 	var seen [2]int
 	pending, requestSide, requestEnd, tag := "", 0, 0, ""
 	var smtpData [2]bool
-	for _, f := range fragments {
+	for f := range fragments {
 		side := fragmentSide(f)
 		if d, ok := f.(*core.StreamData); ok && (d.DiscardedBytes > 0 || d.SkippedBytes != 0 && (d.SkippedBytes > 0 || seen[side] > 0)) {
 			return [2]int{}, false

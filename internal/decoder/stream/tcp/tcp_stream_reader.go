@@ -32,6 +32,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/aggregate"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/reassembly"
 )
 
 var reassemblyLog = zap.NewNop()
@@ -109,6 +110,7 @@ func (t *tcpStreamReader) StoreData(data *core.StreamData) {
 			t.storedMarkers[data] = t.stored.count
 		}
 		if err := t.stored.append(data); err != nil {
+			t.failRead(err)
 			return
 		}
 		if t.stored.loaded {
@@ -153,13 +155,54 @@ func (t *tcpStreamReader) Cleanup(f *connectionFactory) {
 // DataSlice will return all gathered data fragments.
 // CAUTION: underlying tcpConnection needs to be locked when calling this, and working with the result!
 func (t *tcpStreamReader) DataSlice() core.DataFragments {
+	data, err := t.DataSliceResult()
+	if err != nil {
+		t.failRead(err)
+	}
+	return data
+}
+
+func (t *tcpStreamReader) DataSliceResult() (core.DataFragments, error) {
 	if t.stored != nil && !t.stored.loaded {
 		data, err := t.stored.read()
-		if err == nil {
-			t.data, t.stored.loaded = data, true
+		if err != nil {
+			return nil, err
+		}
+		t.data, t.stored.loaded = data, true
+		for _, fragment := range data {
+			t.setFragmentDirection(fragment)
 		}
 	}
-	return t.data
+	return t.data, nil
+}
+
+func (t *tcpStreamReader) failRead(err error) {
+	if t.parent != nil && t.parent.factory != nil {
+		t.parent.factory.failIncremental(err)
+	}
+}
+
+func (t *tcpStreamReader) setFragmentDirection(fragment core.DataFragment) {
+	dir := reassembly.TCPDirServerToClient
+	if t.isClient {
+		dir = reassembly.TCPDirClientToServer
+	}
+	fragment.SetDirection(dir)
+}
+
+func (t *tcpStreamReader) Count() int64 {
+	if t.stored != nil && !t.stored.loaded {
+		return t.stored.Count()
+	}
+	return int64(len(t.data))
+}
+
+// The connection owner serializes walks with mutation, role changes and retirement.
+func (t *tcpStreamReader) Walk(yield func(core.DataFragment) bool) error {
+	if t.stored != nil && !t.stored.loaded {
+		return t.stored.Walk(func(fragment core.DataFragment) bool { t.setFragmentDirection(fragment); return yield(fragment) })
+	}
+	return core.SliceSource(t.data).Walk(yield)
 }
 
 // ClientStream will return the client side of the stream.
@@ -276,7 +319,25 @@ func (t *tcpStreamReader) ServiceBanner() []byte {
 	t.parent.Lock()
 	defer t.parent.Unlock()
 
-	return contiguousServicePrefix(t.parent.server.DataSlice(), decoderconfig.Instance.BannerSize)
+	limit := min(decoderconfig.Instance.BannerSize, 8192)
+	var prefix []byte
+	if limit <= 0 {
+		return prefix
+	}
+	err := readerFragments(t.parent.server).Walk(func(fragment core.DataFragment) bool {
+		data, ok := fragment.(*core.StreamData)
+		if !ok || data.SkippedBytes != 0 || data.DiscardedBytes > 0 {
+			return false
+		}
+		size := min(len(data.Raw()), limit-len(prefix))
+		prefix = append(prefix, data.Raw()[:size]...)
+		return len(prefix) < limit
+	})
+	if err != nil {
+		t.failRead(err)
+		return nil
+	}
+	return prefix
 }
 
 // A greeting can span deliveries, but bytes after a capture gap cannot complete it.

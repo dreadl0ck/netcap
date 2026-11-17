@@ -103,9 +103,8 @@ func (i *ircReader) New(conversation *core.ConversationInfo) core.StreamDecoderI
 
 // Decode parses the IRC conversation
 func (i *ircReader) Decode() {
-	streamutils.DecodeConversationAt(
-		i.conversation.Ident,
-		i.conversation.Data,
+	_ = streamutils.DecodeSourceConversationAt(
+		i.conversation,
 		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
 			return i.readMessage(b, pos, true)
 		},
@@ -114,6 +113,8 @@ func (i *ircReader) Decode() {
 		},
 	)
 }
+
+func (*ircReader) SupportsFragmentSource() bool { return true }
 
 // readMessage parses IRC messages (both client and server)
 func (i *ircReader) readMessage(b *bufio.Reader, pos *streamutils.ReadPosition, isClient bool) error {

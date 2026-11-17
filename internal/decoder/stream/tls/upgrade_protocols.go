@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/xml"
 	"io"
+	"iter"
 	"net/http"
 	"strings"
 
@@ -16,9 +17,14 @@ const maxUpgradeBytes = 64 * 1024
 
 // Never join across loss, nor retain a whole application stream to find an upgrade.
 func upgradePrefixes(fragments core.DataFragments) [2][]byte {
+	conversation := &core.ConversationInfo{Data: fragments}
+	return upgradePrefixSequence(conversation.Fragments())
+}
+
+func upgradePrefixSequence(fragments iter.Seq[core.DataFragment]) [2][]byte {
 	var data [2][]byte
 	var stopped [2]bool
-	for _, f := range fragments {
+	for f := range fragments {
 		side := fragmentSide(f)
 		if d, ok := f.(*core.StreamData); ok && (d.DiscardedBytes > 0 || d.SkippedBytes != 0 && (d.SkippedBytes > 0 || len(data[side]) > 0)) {
 			stopped[side] = true
@@ -42,7 +48,12 @@ func tryUpgrade(data [2][]byte, parse upgradeParser) ([2]int, bool) {
 }
 
 func negotiatedUpgrade(fragments core.DataFragments, primary string) ([2]int, bool) {
-	data := upgradePrefixes(fragments)
+	conversation := &core.ConversationInfo{Data: fragments}
+	return negotiatedUpgradeSource(conversation, primary)
+}
+
+func negotiatedUpgradeSource(conversation *core.ConversationInfo, primary string) ([2]int, bool) {
+	data := upgradePrefixSequence(conversation.Fragments())
 	// HTTP bodies are not candidates for another protocol's upgrade grammar.
 	if primary == "HTTP" {
 		return tryUpgrade(data, connectBounds)
@@ -54,7 +65,7 @@ func negotiatedUpgrade(fragments core.DataFragments, primary string) ([2]int, bo
 	}
 	switch primary {
 	case "SMTP", "POP3", "IMAP", "FTP", "":
-		return cleartextUpgrade(fragments, primary)
+		return cleartextUpgradeSequence(conversation.Fragments(), primary)
 	}
 	return [2]int{}, false
 }

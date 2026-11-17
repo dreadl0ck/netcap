@@ -507,11 +507,20 @@ func (t *tcpConnection) flipRoles() {
 	t.ident = utils.ReverseFlowIdent(t.ident)
 	t.client, t.server = t.server, t.client
 	t.transport, t.net = t.transport.Reverse(), t.net.Reverse()
-	for _, d := range t.client.DataSlice() {
-		d.SetDirection(reassembly.TCPDirClientToServer)
-	}
-	for _, d := range t.server.DataSlice() {
-		d.SetDirection(reassembly.TCPDirServerToClient)
+	for _, reader := range []streamReader{t.client, t.server} {
+		if owned, ok := reader.(*tcpStreamReader); ok {
+			for _, fragment := range owned.data {
+				owned.setFragmentDirection(fragment)
+			}
+		} else {
+			dir := reassembly.TCPDirServerToClient
+			if reader.IsClient() {
+				dir = reassembly.TCPDirClientToServer
+			}
+			for _, fragment := range reader.DataSlice() {
+				fragment.SetDirection(dir)
+			}
+		}
 	}
 }
 
@@ -556,13 +565,11 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 	if t.server != nil && !t.client.Saved() {
 		t.client.MarkSaved()
 
-		t.sortAndMergeFragments()
-
-		merged := t.mergedFragments()
+		source := t.fragmentSource()
 
 		reassemblyLog.Info("Processing client stream - will call decode()",
 			zap.String("ident", t.ident),
-			zap.Int("mergedFragments", len(merged)),
+			zap.Int64("mergedFragments", source.Count()),
 		)
 
 		// cache endpoint strings to avoid repeated conversions
@@ -579,8 +586,9 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 			uint16(clientPort),
 			uint16(serverPort),
 		)
-		err := streamutils.SaveConversation("TCP", merged, t.client.Ident(), t.client.FirstPacket(), t.client.Transport(), communityID)
+		err := streamutils.SaveTCPConversation(source, t.client.Ident(), t.client.FirstPacket(), t.client.Transport(), communityID)
 		if err != nil {
+			t.factory.failIncremental(err)
 			reassemblyLog.Error("failed to save stream", zap.Error(err), zap.String("ident", t.client.Ident()))
 		}
 		tcpStreamProcessingTime.WithLabelValues(reassembly.TCPDirClientToServer.String()).Set(float64(time.Since(ti).Nanoseconds()))
@@ -599,8 +607,6 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 
 	if t.server != nil && !t.server.Saved() {
 		t.server.MarkSaved()
-
-		t.sortAndMergeFragments()
 
 		// server
 		saveTCPServiceBanner(t.server)
@@ -638,7 +644,17 @@ func (t *tcpConnection) decode() {
 	defer t.Unlock()
 
 	// choose the decoder to run against the data stream
-	cr, sr := t.client.DataSlice().FirstNonEmpty(), t.server.DataSlice().FirstNonEmpty()
+	clientSource, serverSource := readerFragments(t.client), readerFragments(t.server)
+	cr, clientMAC, serverMAC, err := firstSourceFragment(clientSource, true)
+	if err != nil {
+		t.factory.failIncremental(err)
+		return
+	}
+	sr, _, _, err := firstSourceFragment(serverSource, false)
+	if err != nil {
+		t.factory.failIncremental(err)
+		return
+	}
 
 	// cache endpoint strings to avoid repeated conversions
 	cIP := t.client.Network().Src().String()
@@ -647,9 +663,7 @@ func (t *tcpConnection) decode() {
 	sPort := utils.DecodePort(t.client.Transport().Dst().Raw())
 
 	conv := &core.ConversationInfo{
-		Data:                 t.merged,
-		ClientData:           t.client.DataSlice(),
-		ServerData:           t.server.DataSlice(),
+		Source:               core.MergedSource{Client: clientSource, Server: serverSource},
 		Ident:                t.ident,
 		NetworkScope:         t.networkScope,
 		FirstClientPacket:    t.client.FirstPacket(),
@@ -661,16 +675,31 @@ func (t *tcpConnection) decode() {
 		CommunityID:          streamutils.CalcCommunityIDTCP(cIP, sIP, uint16(cPort), uint16(sPort)),
 		TCPHandshakeComplete: t.initStage == 3,
 		TCPRoleSource:        t.roleSource,
+		ClientMAC:            clientMAC, ServerMAC: serverMAC,
 	}
-	for _, fragment := range conv.ClientData {
-		if ac, ok := fragment.Context().(interface{ GetLinkFlow() gopacket.Flow }); ok {
-			flow := ac.GetLinkFlow()
-			if len(flow.Src().Raw()) > 0 {
-				conv.ClientMAC, conv.ServerMAC = flow.Src().String(), flow.Dst().String()
-				break
-			}
+	loaded := false
+	conv.LoadData = func() error {
+		if loaded {
+			return nil
 		}
+		client, err := readerDataResult(t.client)
+		if err != nil {
+			return err
+		}
+		server, err := readerDataResult(t.server)
+		if err != nil {
+			return err
+		}
+		if !t.wasMerged {
+			t.merged = core.MergeByTimestamp(client, server)
+			t.wasMerged = true
+		}
+		conv.Data, conv.ClientData, conv.ServerData = t.merged, client, server
+		conv.Source = nil
+		loaded = true
+		return nil
 	}
+	defer func() { conv.LoadData = nil }()
 
 	// Use the client's destination port (= server's listening port) for decoder matching
 	// NOT the server's destination port (which would be the client's ephemeral port)
@@ -683,11 +712,6 @@ func (t *tcpConnection) decode() {
 		zap.Int("mergedFragments", len(t.merged)),
 	)
 
-	stream.ObserveFTPData(conv)
-	secret.HarvestSMTPConversation(conv)
-	secret.HarvestTelnetConversation(conv)
-	secret.HarvestAdditionalConversation(conv)
-
 	// Probing can span deliveries, but cannot invent a signature across a gap.
 	sel, found := stream.SelectDecoder(&stream.SelectionInput{
 		Transport:  core.TCP,
@@ -695,10 +719,33 @@ func (t *tcpConnection) decode() {
 		PortClient: cr,
 		PortServer: sr,
 		ScanBytes: func() ([]byte, []byte) {
-			return t.client.DataSlice().ContiguousBytes(), t.server.DataSlice().ContiguousBytes()
+			if err := conv.LoadData(); err != nil {
+				conv.FragmentError = err
+				return nil, nil
+			}
+			return conv.ClientData.ContiguousBytes(), conv.ServerData.ContiguousBytes()
 		},
 		Conversation: conv,
 	})
+	if conv.FragmentError != nil {
+		t.factory.failIncremental(conv.FragmentError)
+		return
+	}
+	reader, sourceSupported := sel.Decoder.(core.FragmentSourceDecoder)
+	if !found || !sourceSupported || !reader.SupportsFragmentSource() {
+		if err := conv.LoadData(); err != nil {
+			t.factory.failIncremental(err)
+			return
+		}
+	}
+	stream.ObserveFTPData(conv)
+	secret.HarvestSMTPConversation(conv)
+	secret.HarvestTelnetConversation(conv)
+	secret.HarvestAdditionalConversation(conv)
+	if conv.FragmentError != nil {
+		t.factory.failIncremental(conv.FragmentError)
+		return
+	}
 
 	if found {
 		t.decoder = sel.Decoder
@@ -743,6 +790,9 @@ func (t *tcpConnection) decode() {
 		)
 	}
 	stream.ObserveTLSUpgrade(conv, sel.Name)
+	if conv.FragmentError != nil {
+		t.factory.failIncremental(conv.FragmentError)
+	}
 	t.factory.recordCompletionOnly(sel.Name)
 }
 
