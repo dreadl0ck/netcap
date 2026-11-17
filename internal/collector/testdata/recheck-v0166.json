@@ -128,6 +128,11 @@
     "source": "759a5ef, bb3e959, 08637ea",
     "verification": "Request cancellation interrupts stage verification. A TCP page-pressure fixture preserves the healthy HTTP transaction while omitting the affected one. Incomplete artifact analysis blocks full readiness and leaves the independent UDP audit sealed. Targeted race tests pass."
   },
+  "localCompletionStateLoss": {
+    "source": "54dd1e1",
+    "implementation": "Offline --local-completion-state-loss makes application working-state refusals recoverable against the shared credit ceiling. Connection-pool and backing-reader failures retain strict handling.",
+    "verification": "A backed HTTP capture with 128 queued request headers under a 128-KiB limit admits all packets and preserves the independent HTTP 204. Credits return to zero. Focused collector and full core/TCP/command race suites plus vet pass."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
