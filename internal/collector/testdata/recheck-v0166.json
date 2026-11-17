@@ -288,6 +288,9 @@
   "officialMCPEvidenceInventory": {
     "verification": "The official stdio harness passed for 75 of 119 advertised tools with zero failures on a rebuilt portable CLI. It now covers certificate inventory, stream-evidence inventory and related-evidence lookup, verifying that the latter preserves the requested Connection ordinal zero."
   },
+  "officialMCPPacketExportAndCharts": {
+    "verification": "The official stdio harness passed 128 calls across 77 of 119 tools. Packet export selected 18 UDP packets; the paged ZIP matched its advertised digest, and its manifest matched both the source capture binding and the exported PCAPNG SHA-256. The UDP Length chart respected the five-point limit."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

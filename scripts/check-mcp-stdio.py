@@ -7,7 +7,9 @@ import argparse
 import asyncio
 import base64
 import hashlib
+import io
 import json
+import zipfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -166,9 +168,12 @@ rules:
         row = connections["records"][0]
         tuple_args = {"src_ip": endpoint, "src_port": str(row["SrcPort"]),
                       "dst_ip": row["DstIP"], "dst_port": str(row["DstPort"]), "protocol": "UDP"}
-        for name, selector in (("carve_subpcap_for_host", {"host": endpoint}),
-                               ("carve_subpcap_for_connection", tuple_args)):
-            carved = await call(name, args | selector | {"run_id": binding["runId"]})
+        for name, selector in (
+            ("carve_subpcap_for_host", {"host": endpoint, "run_id": binding["runId"]}),
+            ("carve_subpcap_for_connection", tuple_args | {"run_id": binding["runId"]}),
+            ("export_packet_evidence", {"runId": binding["runId"], "sourceSHA256": binding["sourceSHA256"], "bpf": "udp", "maxPackets": 18}),
+        ):
+            carved = await call(name, args | selector)
             artifact = carved["resource_uri"].rsplit("/", 1)[-1]
             wire = bytearray()
             while True:
@@ -182,6 +187,13 @@ rules:
                     break
             if len(wire) != carved["size_bytes"] or len(wire) <= 24 or hashlib.sha256(wire).hexdigest() != carved["sha256"]:
                 raise ValueError(f"{name}: incomplete carved capture")
+            if name == "export_packet_evidence":
+                with zipfile.ZipFile(io.BytesIO(wire)) as bundle:
+                    manifest = json.loads(bundle.read("manifest.json"))
+                    packets = bundle.read("packets.pcapng")
+                if (manifest["sourceSHA256"] != binding["sourceSHA256"] or manifest["selectedPackets"] != 18
+                        or hashlib.sha256(packets).hexdigest() != manifest["outputSHA256"]):
+                    raise ValueError("packet export provenance did not match the fixture")
             denied = await client.call_tool("read_mcp_artifact", {"artifact_id": artifact, "session_id": "unrelated"})
             if not denied.isError:
                 raise ValueError("carved artifact readable under a different session")
@@ -194,6 +206,7 @@ rules:
         cases += [(name, args) for name in SESSION_READS if name != "get_audit_record_values"]
         cases += [
             ("get_audit_record_values", args | {"type": "UDP"}),
+            ("get_chart_data", args | {"type": "UDP", "field": "Length", "max_data_points": 5}),
             ("get_investigation_health", args | {"kind": "reassembly"}),
             ("query_flows", args | {"startNs": meta["minTime"], "endNs": meta["maxTime"], "limit": 3}),
             ("list_auth_activity", args | {"limit": 5}),
@@ -207,6 +220,9 @@ rules:
                     status = result["audit_stats"]
                     if status.get("analysisPhase") != "completed" or not status.get("timelineGeneration"):
                         raise ValueError("completed session lost its timeline generation")
+                if name == "get_chart_data":
+                    if result["type"] != "UDP" or result["field"] != "Length" or not 1 <= len(result["data"]) <= 5:
+                        raise ValueError("UDP chart lost its field or point bound")
             except Exception as exc:
                 failures.append(f"{name}: {exc}")
 
