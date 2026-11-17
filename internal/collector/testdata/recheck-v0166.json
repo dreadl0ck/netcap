@@ -294,6 +294,9 @@
   "officialMCPDirectionalStreamPaging": {
     "verification": "The official stdio harness passed 154 calls across 78 of 119 tools. Directional stream pages were at most 64 bytes with at most one span per response; concatenated bytes matched the manifest length and SHA-256. A changed manifest digest on continuation was rejected."
   },
+  "verifiedStreamPageBytes": {
+    "verification": "Directional pages now take their bytes from the same pass that verifies the full stream digest. TestMCPStreamContentPagesVerifySourceAndConfinement passes under the race detector and covers a page across the 64-KiB read boundary, same-length content changes, and beyond-EOF behavior."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

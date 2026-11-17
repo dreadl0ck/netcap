@@ -395,7 +395,7 @@ func TestMCPStreamContentPagesVerifySourceAndConfinement(t *testing.T) {
 	out := t.TempDir()
 	stream := filepath.Join(out, "stream-evidence", "stream-fixture")
 	os.MkdirAll(stream, 0700)
-	data := []byte("directional bytes")
+	data := append([]byte("directional bytes"), bytes.Repeat([]byte("0123456789"), 6600)...)
 	hash := sha256.Sum256(data)
 	manifest := streamutils.StreamEvidenceManifest{Version: 1, Protocol: "TCP", Status: "partial", Client: streamutils.StreamEvidenceFile{Name: "client.bin", Length: int64(len(data)), SHA256: hex.EncodeToString(hash[:])}, Limitations: []string{"missing preceding handshake"}}
 	encoded, _ := json.Marshal(manifest)
@@ -430,14 +430,19 @@ func TestMCPStreamContentPagesVerifySourceAndConfinement(t *testing.T) {
 	if w := request(q); w.Code != 200 {
 		t.Fatal(w.Body)
 	}
-	q.Set("offset", "100")
+	q.Set("offset", "65534")
+	across := request(q)
+	if err := json.Unmarshal(across.Body.Bytes(), &page); err != nil || across.Code != 200 || !bytes.Equal(page.Data, data[65534:65538]) {
+		t.Fatalf("page spanning verification reads: %d %q %v", across.Code, page.Data, err)
+	}
+	q.Set("offset", "70000")
 	end := request(q)
 	var empty struct {
 		Data   []byte
 		Offset int64
 		More   bool `json:"hasMore"`
 	}
-	if err := json.Unmarshal(end.Body.Bytes(), &empty); err != nil || end.Code != 200 || len(empty.Data) != 0 || empty.More || empty.Offset != 100 {
+	if err := json.Unmarshal(end.Body.Bytes(), &empty); err != nil || end.Code != 200 || len(empty.Data) != 0 || empty.More || empty.Offset != 70000 {
 		t.Fatalf("beyond-EOF page: %d %s %v", end.Code, end.Body.String(), err)
 	}
 	q.Set("manifestSHA256", strings.Repeat("0", 64))
@@ -445,7 +450,8 @@ func TestMCPStreamContentPagesVerifySourceAndConfinement(t *testing.T) {
 		t.Fatal("beyond-EOF request bypassed manifest identity")
 	}
 	q.Set("manifestSHA256", page.Manifest)
-	os.WriteFile(filepath.Join(stream, "client.bin"), []byte("modified evidence"), 0600)
+	data[0] ^= 1
+	os.WriteFile(filepath.Join(stream, "client.bin"), data, 0600)
 	if w := request(q); w.Code != 409 {
 		t.Fatal("changed stream bytes accepted")
 	}

@@ -78,6 +78,7 @@ func (s *Server) handleStreamContent(w http.ResponseWriter, r *http.Request) {
 	}
 	hash := sha256.New()
 	buffer := make([]byte, 65536)
+	chunk := make([]byte, min(int64(limit), max(0, info.Size()-offset)))
 	var scanned int64
 	for {
 		if err := r.Context().Err(); err != nil {
@@ -85,12 +86,18 @@ func (s *Server) handleStreamContent(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		n, err := f.Read(buffer)
+		start := scanned
 		scanned += int64(n)
 		if scanned > 256<<20 {
 			http.Error(w, "stream grew beyond byte budget", 409)
 			return
 		}
 		hash.Write(buffer[:n])
+		// Return bytes from the same read used for verification.
+		lo, hi := max(offset, start), min(offset+int64(len(chunk)), scanned)
+		if lo < hi {
+			copy(chunk[lo-offset:hi-offset], buffer[lo-start:hi-start])
+		}
 		if err == io.EOF {
 			break
 		}
@@ -99,14 +106,8 @@ func (s *Server) handleStreamContent(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if hex.EncodeToString(hash.Sum(nil)) != file.SHA256 {
+	if scanned != info.Size() || hex.EncodeToString(hash.Sum(nil)) != file.SHA256 {
 		http.Error(w, "stream bytes do not match manifest", 409)
-		return
-	}
-	chunk := make([]byte, limit)
-	n, err := f.ReadAt(chunk, offset)
-	if err != nil && err != io.EOF {
-		http.Error(w, "stream read failed", 500)
 		return
 	}
 	after, err := f.Stat()
@@ -134,5 +135,5 @@ func (s *Server) handleStreamContent(w http.ResponseWriter, r *http.Request) {
 	spanEnd := min(spanOffset+spanLimit, spanCount)
 	spans := append([]streamutils.StreamEvidenceSpan{}, manifest.Spans[spanOffset:spanEnd]...)
 	manifest.Spans = nil
-	RespondJSON(w, 200, map[string]any{"id": id, "direction": direction, "offset": offset, "totalBytes": strconv.FormatInt(info.Size(), 10), "data": chunk[:n], "encoding": "base64", "manifestSHA256": manifestHash, "manifest": manifest, "spanCount": spanCount, "spansOmitted": len(spans) < spanCount, "spans": spans, "spanOffset": spanOffset, "hasMoreSpans": spanEnd < spanCount, "hasMore": offset+int64(n) < info.Size()})
+	RespondJSON(w, 200, map[string]any{"id": id, "direction": direction, "offset": offset, "totalBytes": strconv.FormatInt(info.Size(), 10), "data": chunk, "encoding": "base64", "manifestSHA256": manifestHash, "manifest": manifest, "spanCount": spanCount, "spansOmitted": len(spans) < spanCount, "spans": spans, "spanOffset": spanOffset, "hasMoreSpans": spanEnd < spanCount, "hasMore": offset+int64(len(chunk)) < info.Size()})
 }
