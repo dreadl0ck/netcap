@@ -185,8 +185,19 @@ func (q *timelineQuery) count() int64 {
 
 	for _, t := range q.Tracks {
 		lo, hi := q.scanRange(t)
-		if q.Search == "" && q.Host == "" && len(q.CommunityIDs) == 0 && !t.hasDuration() {
-			total += int64(max(0, hi-lo))
+		if q.Search == "" && q.Host == "" && len(q.CommunityIDs) == 0 {
+			if !t.hasDuration() || hi <= lo {
+				total += int64(max(0, hi-lo))
+				continue
+			}
+			// Only events starting before the window need an end-time check.
+			inside := min(hi, max(lo, t.lowerBound(q.Start)))
+			total += int64(hi - inside)
+			for _, end := range t.Ends[lo:inside] {
+				if end >= q.Start {
+					total++
+				}
+			}
 			continue
 		}
 

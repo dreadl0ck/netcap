@@ -264,6 +264,9 @@
   "truncatedAuditFrameAllocation": {
     "verification": "TestTruncatedLargeFrameDoesNotAllocateDeclaredLength verifies that a frame declaring 128 MiB returns unexpected EOF with no body allocation when no bytes arrive, and at most 16 KiB of body capacity when only 9000 bytes arrive. Delimited and netio race suites and focused timeline, rule replay and metadata race tests pass."
   },
+  "timelineDurationCounts": {
+    "verification": "Timeline tests preserve inclusive duration overlaps and page-independent counts. BenchmarkTimelineDurationCount on 200000 records (Darwin arm64, three 200ms runs) measured 33.75–38.60 ns/op for indexed bounds plus overlap checks versus 585132–613977 ns/op for a full scan. These are count-only measurements."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
