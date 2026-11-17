@@ -78,6 +78,27 @@ async def check(binary, capture, data_dir):
                 await asyncio.sleep(0.2)
 
         args = {"session_id": sid}
+        binding = await call("get_analyst_binding", {"sessionId": sid})
+        source = {"sessionId": sid, "binding": binding}
+        await call("inspect_bound_capture", {"source": source})
+        await call("analyst_workspace", {"source": source, "expectedRevision": 0})
+        refs = (await call("list_bound_occurrences", {"source": source, "type": "UDP"}))["references"]
+        if len(refs) != 18 or any(ref["binding"] != binding for ref in refs):
+            raise ValueError("UDP occurrences lost capture binding or records")
+        resolved = await call("resolve_audit_occurrence", {"source": source, "reference": refs[-1]})
+        if resolved["reference"] != refs[-1] or not resolved["record"]:
+            raise ValueError("resolved record lost its occurrence reference")
+        stale = refs[-1] | {"recordSHA256": "0" * 64}
+        rejected = await client.call_tool("resolve_audit_occurrence", {"source": source, "reference": stale})
+        if not rejected.isError:
+            raise ValueError("changed record digest accepted")
+        connections = await call("query_audit_records", args | {"type": "Connection", "limit": 1})
+        endpoint = connections["records"][0]["SrcIP"]
+        catalogue = await call("query_capture_catalogue", {
+            "sources": [source], "query": {"kind": "endpoint", "value": endpoint, "types": ["Connection"]},
+        })
+        if not catalogue["occurrences"] or any(row["reference"]["binding"] != binding for row in catalogue["occurrences"]):
+            raise ValueError("catalogue lost fixture endpoint or occurrence binding")
         cases = [(name, {}) for name in GLOBAL_READS]
         cases += [(name, args) for name in SESSION_READS if name != "get_audit_record_values"]
         cases += [

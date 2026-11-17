@@ -196,6 +196,9 @@
   "officialMCPLifecycle": {
     "verification": "scripts/check-mcp-stdio.py passed 62 calls across 51 of 119 tools on the portable CLI. A distinct upload and its reanalysis child both completed and returned 18 UDP records. parentInputFile matched the uploaded parent. Deleting the upload preserved the original fixture session."
   },
+  "officialMCPAnalystBindings": {
+    "verification": "scripts/check-mcp-stdio.py passed 70 calls across 57 of 119 advertised tools. All 18 UDP occurrences retained their source binding; the last resolved to its exact reference. A changed record SHA-256 was rejected. Catalogue endpoint results also retained the selected capture binding."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
