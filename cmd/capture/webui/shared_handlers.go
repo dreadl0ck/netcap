@@ -179,7 +179,7 @@ func ListAuditFilesWithCommunityIDFilter(outputDir string, communityIDs map[stri
 		}
 
 		name := entry.Name()
-		if !strings.HasSuffix(name, defaults.FileExtension+".gz") {
+		if !preferredAuditFile(outputDir, name) {
 			continue
 		}
 
@@ -249,7 +249,7 @@ func HandleAuditRecords(outputDir string) http.HandlerFunc {
 
 		// URL-decode the audit type
 		auditType, err := url.PathUnescape(parts[0])
-		if err != nil {
+		if err != nil || auditType == "" || filepath.Base(auditType) != auditType || strings.ContainsAny(auditType, `/\\`) {
 			http.Error(w, "Invalid audit type encoding", http.StatusBadRequest)
 			return
 		}
@@ -269,17 +269,14 @@ func HandleAuditRecords(outputDir string) http.HandlerFunc {
 			return
 		}
 
-		// For values action, we need the file
+		filePath := filepath.Join(outputDir, auditType+defaults.FileExtension+".gz")
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			filePath = strings.TrimSuffix(filePath, ".gz")
+		}
 		if action == "values" {
-			fileName := auditType + defaults.FileExtension + ".gz"
-			filePath := filepath.Join(outputDir, fileName)
 			HandleAuditFieldValues(w, r, filePath, auditType)
 			return
 		}
-
-		// Build file path
-		fileName := auditType + defaults.FileExtension + ".gz"
-		filePath := filepath.Join(outputDir, fileName)
 
 		// Check if file exists
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -436,7 +433,7 @@ func HandleAuditStats(outputDir string) http.HandlerFunc {
 
 			name := file.Name()
 			// Check for audit record files (.ncap.gz)
-			if !strings.HasSuffix(name, defaults.FileExtension+".gz") {
+			if !preferredAuditFile(outputDir, name) {
 				continue
 			}
 
@@ -472,6 +469,17 @@ func HandleAuditStats(outputDir string) http.HandlerFunc {
 	}
 }
 
+func preferredAuditFile(dir, name string) bool {
+	if strings.HasSuffix(name, defaults.FileExtension+".gz") {
+		return true
+	}
+	if !strings.HasSuffix(name, defaults.FileExtension) {
+		return false
+	}
+	_, err := os.Stat(filepath.Join(dir, name+".gz"))
+	return os.IsNotExist(err)
+}
+
 // ListAuditFiles returns a list of audit files in the given directory
 func ListAuditFiles(outputDir string) ([]AuditFileInfo, error) {
 	var files []AuditFileInfo
@@ -493,7 +501,7 @@ func ListAuditFiles(outputDir string) ([]AuditFileInfo, error) {
 		}
 
 		name := entry.Name()
-		if !strings.HasSuffix(name, defaults.FileExtension+".gz") {
+		if !preferredAuditFile(outputDir, name) {
 			continue
 		}
 

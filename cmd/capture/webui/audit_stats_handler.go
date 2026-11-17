@@ -185,7 +185,7 @@ func (s *Server) getAuditStatsForDirectory(outputDir string) AuditStatsResponse 
 
 		name := file.Name()
 		// Check for audit record files (.ncap.gz)
-		if !strings.HasSuffix(name, defaults.FileExtension+".gz") {
+		if !preferredAuditFile(outputDir, name) {
 			continue
 		}
 

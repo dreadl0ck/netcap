@@ -37,6 +37,30 @@ func TestAuditMetaReportsIncompleteFrameCount(t *testing.T) {
 	}
 }
 
+func TestInventoryAndRecordQueryPreferSameAuditEncoding(t *testing.T) {
+	dir := t.TempDir()
+	rows := []proto.Message{&types.HTTP{Method: "GET"}, &types.HTTP{Method: "POST"}}
+	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, rows)
+	for _, want := range []int64{2, 1} {
+		if want == 1 {
+			writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, rows[:1])
+		}
+		files, err := ListAuditFiles(dir)
+		if err != nil || len(files) != 1 || files[0].RecordCount != want {
+			t.Fatal(files, err)
+		}
+		if stats := (&Server{}).getAuditStatsForDirectory(dir); stats.TotalRecords != want {
+			t.Fatal(stats)
+		}
+		w := httptest.NewRecorder()
+		HandleAuditRecords(dir)(w, httptest.NewRequest("GET", "/api/audit/HTTP/meta", nil))
+		var meta struct{ RecordCount int64 }
+		if err := json.Unmarshal(w.Body.Bytes(), &meta); err != nil || w.Code != 200 || meta.RecordCount != want {
+			t.Fatal(w.Code, w.Body.String(), err)
+		}
+	}
+}
+
 func TestAuditCountsAreIndependentOfPageLimits(t *testing.T) {
 	rows := make([]proto.Message, 1200)
 	for i := range rows {

@@ -206,6 +206,9 @@
   "originalUSBCollectorExport": {
     "verification": "TestDarwinUSBOriginalCaptures ran on both digest-pinned public captures with NETCAP_USB_CAPTURE_URLS set. CollectPcapNG produced 515 and 458 USB audit records. Transfer ID, device and endpoint multiplicities match the original headers; both manifests report done with the original input SHA-256 and complete USB stage seals."
   },
+  "plainAuditInventory": {
+    "verification": "TestInventoryAndRecordQueryPreferSameAuditEncoding verifies inventory, scoped statistics and record metadata report two plain HTTP records, then one compressed record when both encodings exist. Web UI and MCP race suites pass."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
