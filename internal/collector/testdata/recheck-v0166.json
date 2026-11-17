@@ -138,6 +138,11 @@
     "implementation": "Backed extraction accepts identity-encoded JSON and +json forms. It preserves the 1-MiB form parse ceiling and accounts for temporary decoding and retained fields separately.",
     "verification": "The source extraction test matches byte-backed HTTP and file outputs for +json with query and body values. Full portable HTTP race suite and focused backed HTTP collector controls pass."
   },
+  "urlEncodedSourceExtraction": {
+    "source": "a346bdc",
+    "implementation": "Identity-encoded URL forms up to 1 MiB use backed extraction. Preflight routes larger forms to checked compatibility decoding before emission.",
+    "verification": "The portable HTTP race suite passes; backed and byte-backed output match for repeated values, escapes, malformed escapes, and query fields."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
