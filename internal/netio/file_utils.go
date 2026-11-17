@@ -20,7 +20,9 @@
 package netio
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -42,7 +44,7 @@ type flushableWriter interface {
 	Flush() error
 }
 
-func flushWriters(writers ...flushableWriter) {
+func flushWriters(writers ...flushableWriter) (resultErr error) {
 	for _, w := range writers {
 		if w == nil {
 			continue
@@ -50,13 +52,15 @@ func flushWriters(writers ...flushableWriter) {
 
 		err := w.Flush()
 		if err != nil {
+			resultErr = errors.Join(resultErr, err)
 			// Log error but don't panic - writer might already be closed
 			ioLog.Error("failed to flush writer", zap.Error(err))
 		}
 	}
+	return resultErr
 }
 
-func closeGzipWriters(writers ...*pgzip.Writer) {
+func closeGzipWriters(writers ...*pgzip.Writer) (resultErr error) {
 	for _, w := range writers {
 		if w == nil {
 			continue
@@ -64,26 +68,37 @@ func closeGzipWriters(writers ...*pgzip.Writer) {
 
 		err := w.Flush()
 		if err != nil {
+			resultErr = errors.Join(resultErr, err)
 			// Log error but don't panic - writer might already be closed
 			ioLog.Error("failed to flush gzip writer", zap.Error(err))
 		}
 
 		err = w.Close()
 		if err != nil {
+			resultErr = errors.Join(resultErr, err)
+			// Close can return before stopping the compressor after a sink error.
+			w.Reset(io.Discard)
 			// Log error but don't panic - writer might already be closed
 			ioLog.Error("failed to close gzip writer", zap.Error(err))
 		}
 	}
+	return resultErr
 }
 
 // closeFile closes the netcap file handle
 // and removes files that do only contain a header but no audit records.
 func closeFile(outDir string, file *os.File, typ string, numRecords int64) (name string, size int64) {
+	name, size, err := closeFileChecked(outDir, file, typ, numRecords)
+	if err != nil {
+		ioLog.Error("audit file finalization failed", zap.Error(err), zap.String("type", typ))
+	}
+	return name, size
+}
+
+func closeFileChecked(outDir string, file *os.File, typ string, numRecords int64) (name string, size int64, resultErr error) {
 	i, err := file.Stat()
 	if err != nil {
-		ioLog.Error("failed to stat file", zap.Error(err), zap.String("type", typ))
-
-		return "", 0
+		return "", 0, errors.Join(err, file.Close())
 	}
 
 	var (
@@ -95,7 +110,14 @@ func closeFile(outDir string, file *os.File, typ string, numRecords int64) (name
 		ioLog.Error("error while closing file", zap.String("name", i.Name()), zap.NamedError("errSync", errSync), zap.NamedError("errClose", errClose))
 	}
 
-	return i.Name(), removeAuditRecordFileIfEmpty(filepath.Join(outDir, i.Name()), numRecords)
+	if numRecords == 0 {
+		return i.Name(), 0, errors.Join(errSync, errClose, os.Remove(filepath.Join(outDir, i.Name())))
+	}
+	final, statErr := os.Stat(filepath.Join(outDir, i.Name()))
+	if final != nil {
+		size = final.Size()
+	}
+	return i.Name(), size, errors.Join(errSync, errClose, statErr)
 }
 
 // removeAuditRecordFileIfEmpty removes the audit record file if it does not contain audit records.

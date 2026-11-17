@@ -56,6 +56,7 @@ var globalWriterRegistry = &writerRegistry{
 // localRecords is updated atomically because the same *sharedWriter pointer is
 // reached from multiple decoder worker goroutines (e.g. connection writers).
 type sharedWriter struct {
+	entry        *sharedWriterEntry
 	generation   uint64
 	closed       atomic.Bool
 	key          string // registry key (file path)
@@ -81,7 +82,7 @@ func (r *writerRegistry) getOrCreateWriter(key string, factory func() AuditRecor
 		ioLog.Info("reusing existing writer",
 			zap.String("key", key),
 			zap.Int("refCount", entry.refCount))
-		return &sharedWriter{key: key, generation: entry.generation}
+		return &sharedWriter{key: key, generation: entry.generation, entry: entry}
 	}
 
 	// Create new writer
@@ -97,7 +98,14 @@ func (r *writerRegistry) getOrCreateWriter(key string, factory func() AuditRecor
 	ioLog.Info("created new shared writer",
 		zap.String("key", key))
 
-	return &sharedWriter{key: key, generation: entry.generation}
+	return &sharedWriter{key: key, generation: entry.generation, entry: entry}
+}
+
+func (sw *sharedWriter) Error() error {
+	if sw.entry == nil {
+		return nil
+	}
+	return WriterError(sw.entry.writer)
 }
 
 // Write writes a record through the shared writer.

@@ -14,6 +14,7 @@ on:
       - 'internal/packetview/**/*.go'
       - 'internal/packetmeta/**/*.go'
       - 'internal/webtech/**'
+      - 'internal/netio/**/*.go'
       - 'internal/collector/**/*.go'
       - 'internal/collector/testdata/**'
       - 'internal/decoder/**/*.go'
@@ -22,6 +23,7 @@ on:
       - 'internal/reassembly/**/*.go'
       - 'cmd/capture/**/*.go'
       - 'cmd/mcp/**/*.go'
+      - 'cmd/net/**/*.go'
   pull_request:
     paths:
       - '.github/workflows/capture-contracts.yml'
@@ -33,6 +35,7 @@ on:
       - 'internal/packetview/**/*.go'
       - 'internal/packetmeta/**/*.go'
       - 'internal/webtech/**'
+      - 'internal/netio/**/*.go'
       - 'internal/collector/**/*.go'
       - 'internal/collector/testdata/**'
       - 'internal/decoder/**/*.go'
@@ -41,6 +44,7 @@ on:
       - 'internal/reassembly/**/*.go'
       - 'cmd/capture/**/*.go'
       - 'cmd/mcp/**/*.go'
+      - 'cmd/net/**/*.go'
 
 permissions:
   contents: read
@@ -86,23 +90,25 @@ jobs:
           go test -race -tags nodpi,noyara,nomagika
           ./internal/aggregate ./internal/reassembly ./internal/decoder/core
           ./internal/evidence ./internal/packetview ./internal/packetmeta
-          ./internal/webtech
+          ./internal/webtech ./internal/netio
+          ./internal/decoder/stream/file ./internal/decoder/stream/http
           ./internal/decoder/stream ./internal/decoder/stream/utils
           ./internal/decoder/stream/tcp ./internal/decoder/stream/tls
           ./internal/decoder/stream/secret ./internal/decoder/stream/ftp
           ./internal/decoder/stream/imap ./internal/decoder/stream/irc
           ./internal/decoder/stream/smtp ./internal/decoder/stream/pop3
-          ./internal/mcp ./cmd/capture ./cmd/capture/webui ./cmd/mcp
+          ./internal/mcp ./cmd/capture ./cmd/capture/webui ./cmd/mcp ./cmd/net
           -count=1 -timeout=5m
       - name: Check affected packages
         run: >-
           go vet -tags nodpi,noyara,nomagika
           ./internal/aggregate ./internal/reassembly ./internal/decoder/core
           ./internal/evidence ./internal/packetview ./internal/packetmeta
-          ./internal/webtech
+          ./internal/webtech ./internal/netio
+          ./internal/decoder/stream/file ./internal/decoder/stream/http
           ./internal/decoder/stream ./internal/decoder/stream/utils
           ./internal/decoder/stream/tcp ./internal/decoder/stream/tls
           ./internal/decoder/stream/secret ./internal/decoder/stream/ftp
           ./internal/decoder/stream/imap ./internal/decoder/stream/irc
           ./internal/decoder/stream/smtp ./internal/decoder/stream/pop3
-          ./internal/mcp ./cmd/capture ./cmd/capture/webui ./cmd/mcp
+          ./internal/mcp ./cmd/capture ./cmd/capture/webui ./cmd/mcp ./cmd/net

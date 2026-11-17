@@ -43,6 +43,7 @@ import (
 
 // jsonWriter is a structure that supports writing JSON audit records to disk.
 type jsonWriter struct {
+	writerStatus
 	mu      sync.Mutex
 	bWriter *bufio.Writer
 	gWriter *pgzip.Writer
@@ -112,9 +113,13 @@ func newJSONWriter(wc *WriterConfig) *jsonWriter {
 }
 
 // Write writes a JSON record.
-func (w *jsonWriter) Write(msg proto.Message) error {
+func (w *jsonWriter) Write(msg proto.Message) (resultErr error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	defer func() { w.record(resultErr) }()
+	if err := w.Error(); err != nil {
+		return err
+	}
 
 	if w.closed {
 		return nil
@@ -139,9 +144,13 @@ func (w *jsonWriter) Write(msg proto.Message) error {
 }
 
 // WriteHeader writes a JSON header.
-func (w *jsonWriter) WriteHeader(t types.Type) error {
+func (w *jsonWriter) WriteHeader(t types.Type) (resultErr error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	defer func() { w.record(resultErr) }()
+	if err := w.Error(); err != nil {
+		return err
+	}
 
 	if w.closed {
 		return nil
@@ -154,9 +163,13 @@ func (w *jsonWriter) WriteHeader(t types.Type) error {
 
 // Flush flushes any buffered data to disk without closing the writer.
 // This is used during live capture to make audit records visible periodically.
-func (w *jsonWriter) Flush() error {
+func (w *jsonWriter) Flush() (resultErr error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	defer func() { w.record(resultErr) }()
+	if err := w.Error(); err != nil {
+		return err
+	}
 
 	if w.closed {
 		return nil
@@ -195,20 +208,22 @@ func (w *jsonWriter) Close(numRecords int64) (name string, size int64) {
 	w.closed = true
 
 	if w.wc.Compress {
-		closeGzipWriters(w.gWriter)
+		w.record(closeGzipWriters(w.gWriter))
 	}
 	if w.wc.Buffer {
-		flushWriters(w.bWriter)
+		w.record(flushWriters(w.bWriter))
 	}
 
 	// Track file sync performance
 	if w.wc.PerfTracker != nil && w.file != nil {
 		start := time.Now()
-		_ = w.file.Sync()
+		w.record(w.file.Sync())
 		w.wc.PerfTracker.RecordDiskSync(w.wc.Name, time.Since(start))
 	}
 
-	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)
+	name, size, err := closeFileChecked(w.wc.Out, w.file, w.wc.Name, numRecords)
+	w.record(err)
+	return name, size
 }
 
 // jsonProtoWriter implements writing audit records to disk in the JSON format.

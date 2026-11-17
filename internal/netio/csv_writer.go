@@ -38,6 +38,7 @@ import (
 
 // csvWriter is a structure that supports writing CSV audit records to disk.
 type csvWriter struct {
+	writerStatus
 	mu sync.Mutex
 
 	bWriter   *bufio.Writer
@@ -108,9 +109,13 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 }
 
 // WriteCSV writes a CSV record.
-func (w *csvWriter) Write(msg proto.Message) error {
+func (w *csvWriter) Write(msg proto.Message) (resultErr error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	defer func() { w.record(resultErr) }()
+	if err := w.Error(); err != nil {
+		return err
+	}
 
 	// Track disk I/O performance
 	if w.wc.PerfTracker != nil {
@@ -131,9 +136,13 @@ func (w *csvWriter) Write(msg proto.Message) error {
 }
 
 // WriteHeader writes a CSV header.
-func (w *csvWriter) WriteHeader(t types.Type) error {
+func (w *csvWriter) WriteHeader(t types.Type) (resultErr error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	defer func() { w.record(resultErr) }()
+	if err := w.Error(); err != nil {
+		return err
+	}
 
 	_, err := w.csvWriter.writeHeader(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime), InitRecord(t))
 
@@ -142,9 +151,13 @@ func (w *csvWriter) WriteHeader(t types.Type) error {
 
 // Flush flushes any buffered data to disk without closing the writer.
 // This is used during live capture to make audit records visible periodically.
-func (w *csvWriter) Flush() error {
+func (w *csvWriter) Flush() (resultErr error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	defer func() { w.record(resultErr) }()
+	if err := w.Error(); err != nil {
+		return err
+	}
 
 	// For compressed streams, flush the gzip writer
 	if w.wc.Compress && w.gWriter != nil {
@@ -174,18 +187,20 @@ func (w *csvWriter) Close(numRecords int64) (name string, size int64) {
 	defer w.mu.Unlock()
 
 	if w.wc.Compress {
-		closeGzipWriters(w.gWriter)
+		w.record(closeGzipWriters(w.gWriter))
 	}
 	if w.wc.Buffer {
-		flushWriters(w.bWriter)
+		w.record(flushWriters(w.bWriter))
 	}
 
 	// Track file sync performance
 	if w.wc.PerfTracker != nil && w.file != nil {
 		start := time.Now()
-		_ = w.file.Sync()
+		w.record(w.file.Sync())
 		w.wc.PerfTracker.RecordDiskSync(w.wc.Name, time.Since(start))
 	}
 
-	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)
+	name, size, err := closeFileChecked(w.wc.Out, w.file, w.wc.Name, numRecords)
+	w.record(err)
+	return name, size
 }

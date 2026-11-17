@@ -41,6 +41,7 @@ import (
 
 // protoWriter is a structure that supports writing protobuf audit records to disk.
 type protoWriter struct {
+	writerStatus
 	initialized   bool
 	pendingHeader *types.Header
 	mu            sync.Mutex
@@ -141,9 +142,13 @@ func (w *protoWriter) writePendingHeader() error {
 }
 
 // WriteProto writes a protobuf message.
-func (w *protoWriter) Write(msg proto.Message) error {
+func (w *protoWriter) Write(msg proto.Message) (resultErr error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	defer func() { w.record(resultErr) }()
+	if err := w.Error(); err != nil {
+		return err
+	}
 
 	// Check if writer has been closed
 	if w.closed {
@@ -172,9 +177,13 @@ func (w *protoWriter) Write(msg proto.Message) error {
 }
 
 // WriteHeader writes a netcap file header for protobuf encoded audit record files.
-func (w *protoWriter) WriteHeader(t types.Type) error {
+func (w *protoWriter) WriteHeader(t types.Type) (resultErr error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	defer func() { w.record(resultErr) }()
+	if err := w.Error(); err != nil {
+		return err
+	}
 
 	// Check if writer has been closed
 	if w.closed {
@@ -190,9 +199,13 @@ func (w *protoWriter) WriteHeader(t types.Type) error {
 
 // Flush flushes any buffered data to disk without closing the writer.
 // This is used during live capture to make audit records visible periodically.
-func (w *protoWriter) Flush() error {
+func (w *protoWriter) Flush() (resultErr error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	defer func() { w.record(resultErr) }()
+	if err := w.Error(); err != nil {
+		return err
+	}
 
 	// Check if writer has been closed
 	if w.closed {
@@ -244,14 +257,16 @@ func (w *protoWriter) Close(numRecords int64) (name string, size int64) {
 		// Header-only files are discarded. Do not flush buffered headers or
 		// fsync an output that will immediately be unlinked.
 		if w.gWriter != nil {
-			closeGzipWriters(w.gWriter)
+			w.record(closeGzipWriters(w.gWriter))
 		}
 		if w.file != nil {
 			path := w.file.Name()
 			if err := w.file.Close(); err != nil {
+				w.record(err)
 				ioLog.Error("close empty audit file", zap.Error(err))
 			}
 			if err := os.Remove(path); err != nil {
+				w.record(err)
 				ioLog.Error("remove empty audit file", zap.Error(err))
 			}
 			return filepath.Base(path), 0
@@ -260,23 +275,26 @@ func (w *protoWriter) Close(numRecords int64) (name string, size int64) {
 	}
 	w.initialize()
 	if err := w.writePendingHeader(); err != nil {
+		w.record(err)
 		ioLog.Error("write final audit header", zap.Error(err))
 	}
 
 	if w.wc.Buffer {
-		flushWriters(w.bWriter)
+		w.record(flushWriters(w.bWriter))
 	}
 
 	if w.wc.Compress {
-		closeGzipWriters(w.gWriter)
+		w.record(closeGzipWriters(w.gWriter))
 	}
 
 	// Track file sync performance
 	if w.wc.PerfTracker != nil && w.file != nil {
 		start := time.Now()
-		_ = w.file.Sync()
+		w.record(w.file.Sync())
 		w.wc.PerfTracker.RecordDiskSync(w.wc.Name, time.Since(start))
 	}
 
-	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)
+	name, size, err := closeFileChecked(w.wc.Out, w.file, w.wc.Name, numRecords)
+	w.record(err)
+	return name, size
 }

@@ -39,6 +39,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/udp"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/internal/label/manager"
+	"github.com/dreadl0ck/netcap/internal/netio"
 
 	"github.com/dustin/go-humanize"
 	"go.uber.org/zap"
@@ -317,6 +318,11 @@ func (c *Collector) teardown() {
 		}()
 	}
 	closers.Wait()
+	for _, d := range decoders {
+		if err := netio.WriterError(d.GetWriter()); err != nil {
+			c.captureEvidenceError = errors.Join(c.captureEvidenceError, fmt.Errorf("finalize %s writer: %w", d.GetName(), err))
+		}
+	}
 	for _, r := range results {
 		if r.size != 0 {
 			c.totalBytesWritten += r.size

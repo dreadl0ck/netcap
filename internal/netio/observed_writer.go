@@ -7,6 +7,8 @@ type observedWriter struct {
 	observe func(proto.Message)
 }
 
+func (w *observedWriter) Error() error { return WriterError(w.AuditRecordWriter) }
+
 func (w *observedWriter) Write(m proto.Message) error {
 	w.observe(m)
 	return w.AuditRecordWriter.Write(m)
