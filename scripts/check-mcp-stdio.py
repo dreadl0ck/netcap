@@ -168,6 +168,21 @@ async def check(binary, capture, data_dir):
         parent = await call("wait_for_session", {"session_id": uploaded, "timeout_seconds": 20})
         if not parent["completed"]:
             raise ValueError("uploaded fixture did not complete")
+        settings = await call("get_analysis_settings", {})
+        await call("set_analysis_settings", {"payload": not settings["payload"]})
+        changed = await call("get_analysis_settings", {})
+        if changed["payload"] == settings["payload"] or changed["maxTCPBytes"] != settings["maxTCPBytes"]:
+            raise ValueError("analysis settings patch lost the new value or changed an omitted budget")
+        await call("set_analysis_settings", {"payload": settings["payload"]})
+        features = (await call("get_features", {}))["features"]
+        enabled = next(f["enabled"] for f in features if f["name"] == "evidence-links")
+        await call("set_feature", {"name": "evidence-links", "enabled": not enabled})
+        features = (await call("get_features", {}))["features"]
+        if next(f["enabled"] for f in features if f["name"] == "evidence-links") == enabled:
+            raise ValueError("feature toggle did not take effect")
+        await call("set_feature", {"name": "evidence-links", "enabled": enabled})
+        await call("set_decoder_config", {"includeDecoders": "UDP,Connection", "excludeDecoders": ""})
+        await call("set_bpf_config", {"filter": "udp"})
         child = await call("reanalyze_session", {"session_id": uploaded})
         child_id = child["sessionId"]
         if not child_id or child_id in {sid, uploaded}:
@@ -179,6 +194,9 @@ async def check(binary, capture, data_dir):
         finished = await call("wait_for_session", {"session_id": child_id, "timeout_seconds": 20})
         if not finished["completed"]:
             raise ValueError("child did not complete")
+        child_config = (await call("get_capture_evidence", {"session_id": child_id}))["config"]
+        if child_config["bpf"] != "udp" or set(child_config["includeDecoders"].split(",")) != {"UDP", "Connection"}:
+            raise ValueError("child capture manifest lost the selected BPF or decoder settings")
         for session_id in (uploaded, child_id):
             counted = await call("query_audit_records", query | {"session_id": session_id, "count_only": True})
             if counted["summary"]["total"] != 18:
