@@ -113,74 +113,92 @@ func decodeTCPFragment(wire []byte) (*core.StreamData, error) {
 }
 
 func (s *storedTCPReader) append(data *core.StreamData) error {
-	return s.state.Do(func(tx *aggregate.Tx) error {
-		if s.count == ^uint64(0) {
-			return fmt.Errorf("retained TCP fragment counter exhausted")
-		}
-		wire, err := encodeTCPFragment(data)
-		if err != nil {
+	if s.count == ^uint64(0) {
+		return fmt.Errorf("retained TCP fragment counter exhausted")
+	}
+	wire, err := encodeTCPFragment(data)
+	if err != nil {
+		return err
+	}
+	var credit, payloadCredit int64
+	if s.loaded {
+		credit = int64(len(wire)) + 256
+		if err := s.budget.Reserve(credit); err != nil {
 			return err
 		}
-		var credit, payloadCredit int64
-		if s.loaded {
-			credit = int64(len(wire)) + 256
-			if err := s.budget.Reserve(credit); err != nil {
-				return err
-			}
-			if s.payloadBudget != nil {
-				payloadCredit = int64(len(data.RawData))
-				if !s.payloadBudget.reserve(payloadCredit) {
-					s.budget.Release(credit)
-					return fmt.Errorf("TCP backing-reader payload materialization budget exceeded")
-				}
+		if s.payloadBudget != nil {
+			payloadCredit = int64(len(data.RawData))
+			if !s.payloadBudget.reserve(payloadCredit) {
+				s.budget.Release(credit)
+				return fmt.Errorf("TCP backing-reader payload materialization budget exceeded")
 			}
 		}
-		if err := tx.Put(fmt.Sprintf("%s%016x", s.prefix, s.count), wire); err != nil {
-			s.budget.Release(credit)
-			if s.payloadBudget != nil {
-				s.payloadBudget.release(payloadCredit)
-			}
-			return err
+	}
+	err = s.state.Do(func(tx *aggregate.Tx) error { return tx.Put(fmt.Sprintf("%s%016x", s.prefix, s.count), wire) })
+	if err != nil {
+		s.budget.Release(credit)
+		if s.payloadBudget != nil {
+			s.payloadBudget.release(payloadCredit)
 		}
-		s.credit += credit
-		s.payloadCredit += payloadCredit
-		s.count++
-		return nil
-	})
+		return err
+	}
+	s.credit += credit
+	s.payloadCredit += payloadCredit
+	s.count++
+	return nil
 }
 
 func (s *storedTCPReader) read() (core.DataFragments, error) {
 	var data core.DataFragments
 	credit, payloadCredit := int64(0), int64(0)
-	err := s.state.Do(func(tx *aggregate.Tx) error {
-		err := tx.Each(s.prefix, func(key string, wire []byte) error {
-			if key != fmt.Sprintf("%s%016x", s.prefix, len(data)) {
-				return fmt.Errorf("retained TCP fragment sequence is incomplete")
-			}
-			amount := int64(len(wire)) + 256
-			if err := s.budget.Reserve(amount); err != nil {
+	read := func() error {
+		last := ""
+		for {
+			var rows []aggregate.Row
+			err := s.state.Do(func(tx *aggregate.Tx) error {
+				var err error
+				rows, err = tx.NextBatch(s.prefix, last)
 				return err
-			}
-			credit += amount
-			fragment, err := decodeTCPFragment(wire)
+			})
 			if err != nil {
 				return err
 			}
-			if s.payloadBudget != nil {
-				n := int64(len(fragment.RawData))
-				if !s.payloadBudget.reserve(n) {
-					return fmt.Errorf("TCP backing-reader payload materialization budget exceeded")
-				}
-				payloadCredit += n
+			if len(rows) == 0 {
+				break
 			}
-			data = append(data, fragment)
-			return nil
-		})
-		if err == nil && uint64(len(data)) != s.count {
-			return fmt.Errorf("retained TCP fragment count mismatch: got %d, want %d", len(data), s.count)
+			for _, row := range rows {
+				key, wire := row.Key, row.Value
+				if key != fmt.Sprintf("%s%016x", s.prefix, len(data)) {
+					return s.state.Do(func(*aggregate.Tx) error { return fmt.Errorf("retained TCP fragment sequence is incomplete") })
+				}
+				amount := int64(len(wire)) + 256
+				if err := s.budget.Reserve(amount); err != nil {
+					return err
+				}
+				credit += amount
+				fragment, err := decodeTCPFragment(wire)
+				if err != nil {
+					return s.state.Do(func(*aggregate.Tx) error { return err })
+				}
+				if s.payloadBudget != nil {
+					n := int64(len(fragment.RawData))
+					if !s.payloadBudget.reserve(n) {
+						return fmt.Errorf("TCP backing-reader payload materialization budget exceeded")
+					}
+					payloadCredit += n
+				}
+				data = append(data, fragment)
+				last = key
+			}
 		}
-		return err
-	})
+		if uint64(len(data)) != s.count {
+			return s.state.Do(func(*aggregate.Tx) error {
+				return fmt.Errorf("retained TCP fragment count mismatch: got %d, want %d", len(data), s.count)
+			})
+		}
+		return nil
+	}
+	err := read()
 	if err != nil {
 		s.budget.Release(credit)
 		if s.payloadBudget != nil {

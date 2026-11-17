@@ -12,6 +12,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tcp"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/evidence"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 func TestTCPRetainedPayloadBudgetQualifiesFailureAndReadiness(t *testing.T) {
@@ -110,8 +111,12 @@ func TestBackedTCPMaterializationFailurePreventsReadiness(t *testing.T) {
 			if err == nil || manifest.Status != "error" || !os.IsNotExist(readyErr) {
 				t.Fatalf("backing materialization failure advertised success: err=%v manifest=%+v ready=%v", err, manifest, readyErr)
 			}
-			if !strings.Contains(err.Error(), "materialization") && !strings.Contains(err.Error(), "stream state budget exceeded") {
+			if !errors.Is(err, tcp.ErrRetainedPayloadLimit) && !strings.Contains(err.Error(), "materialization") && !strings.Contains(err.Error(), "stream state budget exceeded") {
 				t.Fatal("unexpected capture failure", err)
+			}
+			connections := bookRecords(t, out, "Connection", func() *types.Connection { return new(types.Connection) })
+			if len(connections) != 1 {
+				t.Fatal("materialization failure lost independent connection output", len(connections))
 			}
 		})
 	}

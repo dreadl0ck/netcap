@@ -58,8 +58,20 @@ func TestStoredTCPMaterializationBudgets(t *testing.T) {
 					t.Fatal("unlimited materialization failed", err, budget.Health())
 				}
 			} else {
-				if err == nil || !cancelled || state.Error() == nil {
+				if err == nil || !cancelled {
 					t.Fatal("materialization did not fail capture", err, cancelled, state.Health())
+				}
+				if mode == "missing-fragment" {
+					if state.Error() == nil {
+						t.Fatal("integrity failure did not fail storage")
+					}
+				} else {
+					if state.Error() != nil {
+						t.Fatal("resource pressure poisoned unrelated storage", state.Error())
+					}
+					if err := state.Do(func(tx *aggregate.Tx) error { return tx.Put("independent/output", []byte("available")) }); err != nil {
+						t.Fatal(err)
+					}
 				}
 				if mode == "state" && !errors.Is(err, core.ErrStreamStateBudget) {
 					t.Fatal("lost state budget cause", err)
