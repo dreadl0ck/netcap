@@ -98,6 +98,15 @@ rules:
         invalid = await client.call_tool("validate_offline_rule_pack", {"yaml": pack + "---\n{}\n"})
         if not invalid.isError:
             raise ValueError("multiple offline rule documents accepted")
+        report = (await call("execute_offline_rule_pack", args | {"yaml": pack}))["report"]
+        history = (await call("list_offline_evaluations", args))["evaluations"]
+        udp_stats, = report["types"]
+        if (report["status"] != "partial" or int(report["committedAlerts"]) != 0
+                or udp_stats["type"] != "UDP" or int(udp_stats["records"]) != 18
+                or int(udp_stats["unknownScopes"]) != 18):
+            raise ValueError("unscoped UDP fixture lost its partial evaluation qualification")
+        if not any(saved["id"] == report["id"] and saved["packDigest"] == report["packDigest"] for saved in history):
+            raise ValueError("offline evaluation report was not retained")
         meta = await call("get_timeline_meta", args)
         track = args | {"types": "UDP", "generation": meta["generation"]}
         page = await call("query_timeline_events", track | {"limit": 5})
