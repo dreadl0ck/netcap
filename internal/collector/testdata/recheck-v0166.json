@@ -72,6 +72,14 @@
     "verification": "Final full portable collector suite passes (142.095 s); native file/HTTP race suites, focused collector large-body races and targeted vet pass",
     "remaining": "Streaming included payloads/forms/encoded requests, generic fallback and native analyzer inputs, secret-enabled decryption, local pressure policy, fair scheduling and external release qualification remain open"
   },
+  "partialInputOutcome": {
+    "source": "80a0bae",
+    "status": "implemented and verified for input coverage exits and fatal-finalization separation; partial-result query admission remains separate",
+    "implementation": "Snapshot truncation and recoverable link/read loss return typed exit-code-2 coverage errors. Unsupported input retains code 3, fatal failures code 1 and fully captured malformed upper-layer protocol evidence code 0. Readable-prefix coverage errors no longer cancel artifact finalization. Manifests retain partial status and a bounded coverageError independently of fatal error; incomplete input cannot publish full audit readiness",
+    "qualification": "The exit/status matrix, both byte orders and legacy PCAP versions, compressed routing, mixed interfaces, valid-prefix packet audits and snapshot byte accounting pass. A fresh portable CLI replay of the recoverable PCAP fixture exits 2, retains Ethernet/IPv4/UDP/Connection audits, records coverageError with partial status and writes no full readiness marker. Finalization/storage failures retain exit-code-1 precedence",
+    "verification": "Full portable collector suite passes (146.319 s); native evidence/command race suites, focused collector coverage races and targeted vet pass",
+    "remaining": "Independent per-stage sealing and explicit partial-result query admission, reconstruction/parser pressure isolation and original-corpus qualification remain open"
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
