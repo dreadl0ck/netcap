@@ -38,7 +38,7 @@ rules:
   - name: Command Injection
     description: Detect potential command injection attempts
     type: HTTP
-    expression: MatchesPattern(URL, "(?i)(;.*ls|;.*cat|;.*wget|;.*curl|\\|.*ls|\\|.*cat)")
+    expression: MatchesPattern(URL, "(?i)[;|][\\t ]*(?:[a-z0-9_./-]*/)?(?:ls|cat|wget|curl)(?:[\\t /;&|<>]|$)")
     severity: critical
     mitre: ["T1059"]
     tags: ["command-injection"]
@@ -412,4 +412,3 @@ rules:
     severity: low
     tags: ["security-headers", "misconfiguration"]
     enabled: true
-

@@ -107,7 +107,8 @@ type Rule struct {
 	Sequence *Sequence `yaml:"sequence,omitempty"`
 
 	// compiled is the compiled expression program (not serialized)
-	compiled *vm.Program
+	compiled       *vm.Program
+	compiledDigest string
 }
 
 // Sequence configures ordered, grouped correlation for a rule.
@@ -320,6 +321,12 @@ func CompileRules(config *Config) error {
 		}
 
 		config.Rules[i].compiled = program
+		wire, err := yaml.Marshal(rule)
+		if err != nil {
+			return fmt.Errorf("rule %s provenance: %w", rule.Name, err)
+		}
+		digest := sha256.Sum256(wire)
+		rule.compiledDigest = hex.EncodeToString(digest[:])
 		if len(rule.GroupBy) > 0 {
 			if rule.Threshold < 2 || rule.DistinctField != "" {
 				return fmt.Errorf("rule %s: group_by requires an ordinary repeated-count threshold", rule.Name)
@@ -416,6 +423,10 @@ func EvaluateRule(rule *Rule, record types.AuditRecord) (*types.Alert, error) {
 	if !match {
 		return nil, nil
 	}
+	return createRuleAlert(rule, record, "")
+}
+
+func createRuleAlert(rule *Rule, record types.AuditRecord, compiledDigest string) (*types.Alert, error) {
 
 	// Ensure tags is never nil (use empty slice if nil)
 	tags := rule.Tags
@@ -423,17 +434,20 @@ func EvaluateRule(rule *Rule, record types.AuditRecord) (*types.Alert, error) {
 		tags = []string{}
 	}
 
-	configuration, err := yaml.Marshal(rule)
-	if err != nil {
-		return nil, fmt.Errorf("rule %s provenance: %w", rule.Name, err)
+	if compiledDigest == "" {
+		configuration, err := yaml.Marshal(rule)
+		if err != nil {
+			return nil, fmt.Errorf("rule %s provenance: %w", rule.Name, err)
+		}
+		digest := sha256.Sum256(configuration)
+		compiledDigest = hex.EncodeToString(digest[:])
 	}
-	digest := sha256.Sum256(configuration)
 	// Keep offline observations on their capture timeline.
 	alert := &types.Alert{
 		Timestamp:       record.Time(),
 		DetectedAt:      time.Now().UnixNano(),
 		TimestampBasis:  "record-time",
-		RuleDigest:      hex.EncodeToString(digest[:]),
+		RuleDigest:      compiledDigest,
 		Name:            rule.Name,
 		Description:     rule.Description,
 		RuleName:        rule.Name,

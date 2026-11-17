@@ -128,7 +128,7 @@ func MergeConfigs(base, override *Config) *Config {
 
 	// Override/add rules from override config
 	for _, rule := range override.Rules {
-		baseRuleMap[rule.Name] = rule
+		baseRuleMap[rule.Name] = migrateLegacyPredicate(baseRuleMap[rule.Name], rule)
 	}
 
 	// Rebuild rules slice

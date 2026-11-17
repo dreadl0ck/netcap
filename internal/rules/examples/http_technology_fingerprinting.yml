@@ -134,7 +134,7 @@ rules:
   - name: Spring Framework Detected
     description: Detect Spring Framework via headers or cookies
     type: HTTP
-    expression: MatchesPattern(ResponseHeader["X-Application-Context"], "(?i)") || MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)SPRING") || ResponseHeader["X-Application-Context"] != ""
+    expression: HeaderValue(ResponseHeader, "X-Application-Context") != "" || MatchesPattern(HeaderValue(ResponseHeader, "Set-Cookie"), "(?i)SPRING")
     severity: info
     tags: ["fingerprinting", "spring", "java", "framework"]
     enabled: true
@@ -165,7 +165,7 @@ rules:
   - name: Drupal CMS Detected
     description: Detect Drupal CMS via headers or URL patterns
     type: HTTP
-    expression: MatchesPattern(ResponseHeader["X-Generator"], "(?i)Drupal") || MatchesPattern(ResponseHeader["X-Drupal-Cache"], "(?i)") || MatchesPattern(URL, "(?i)(/sites/default/|/modules/|/themes/)") || ResponseHeader["X-Drupal-Cache"] != ""
+    expression: MatchesPattern(HeaderValue(ResponseHeader, "X-Generator"), "(?i)Drupal") || HeaderValue(ResponseHeader, "X-Drupal-Cache") != "" || MatchesPattern(URL, "(?i)(/sites/default/|/modules/|/themes/)")
     severity: info
     tags: ["fingerprinting", "drupal", "cms", "php"]
     enabled: true
@@ -183,7 +183,7 @@ rules:
   - name: Magento E-commerce Detected
     description: Detect Magento e-commerce platform
     type: HTTP
-    expression: MatchesPattern(ResponseHeader["X-Magento-*"], "(?i)") || MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)frontend=") || MatchesPattern(URL, "(?i)/magento/")
+    expression: HasHeaderPrefix(ResponseHeader, "X-Magento-") || MatchesPattern(HeaderValue(ResponseHeader, "Set-Cookie"), "(?i)frontend=") || MatchesPattern(URL, "(?i)/magento/")
     severity: info
     tags: ["fingerprinting", "magento", "ecommerce", "php"]
     enabled: true
@@ -192,7 +192,7 @@ rules:
   - name: Shopify E-commerce Detected
     description: Detect Shopify hosted e-commerce
     type: HTTP
-    expression: MatchesPattern(ResponseHeader["X-Shopify-Stage"], "(?i)") || MatchesPattern(Host, "(?i)myshopify\\.com") || ResponseHeader["X-Shopify-Stage"] != ""
+    expression: HeaderValue(ResponseHeader, "X-Shopify-Stage") != "" || MatchesPattern(Host, "(?i)myshopify\\.com")
     severity: info
     tags: ["fingerprinting", "shopify", "ecommerce", "saas"]
     enabled: true

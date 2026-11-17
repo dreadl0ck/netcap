@@ -28,6 +28,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/filter"
 	"github.com/dreadl0ck/netcap/internal/firewall"
 	"github.com/dreadl0ck/netcap/internal/performance"
 	"github.com/dreadl0ck/netcap/types"
@@ -39,6 +40,7 @@ type Engine struct {
 	generation   uint64
 	config       *Config
 	alertWriter  AlertWriter
+	clock        func() time.Time
 
 	// Deduplication tracking
 	recentAlerts map[string]int64 // map[alertKey]lastSeen
@@ -88,6 +90,13 @@ type rateCounter struct {
 	count       int
 	windowStart time.Time
 	mu          sync.Mutex
+}
+
+func (e *Engine) now() time.Time {
+	if e.clock != nil {
+		return e.clock()
+	}
+	return time.Now()
 }
 
 // thresholdTracker tracks rule matches for threshold-based alerting.
@@ -159,6 +168,7 @@ func NewEngineFromConfig(config *Config, alertWriter AlertWriter) (*Engine, erro
 		generation:        1,
 		config:            config,
 		alertWriter:       alertWriter,
+		clock:             time.Now,
 		recentAlerts:      make(map[string]int64),
 		dedupWindow:       5 * time.Minute, // Default 5 minute deduplication window
 		ruleCounters:      make(map[string]*rateCounter),
@@ -272,6 +282,7 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 	}
 	recordType := record.NetcapType()
 	alertCount := 0
+	var environment map[string]any
 
 	for _, rule := range e.config.Rules {
 		if !rule.Enabled {
@@ -301,16 +312,16 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 		ruleStart := time.Now()
 
 		// Evaluate the rule
-		alert, err := EvaluateRule(rule, record)
+		if environment == nil {
+			environment = filter.CreateEnvironment(record)
+		}
+		matched, err := filter.EvaluateEnvironment(rule.compiled, environment)
 		if err != nil {
 			return alertCount, fmt.Errorf("error evaluating rule %s: %w", rule.Name, err)
 		}
-
-		matched := alert != nil
-		if alert != nil && scope != "" {
-			// Scoped alerts expose evidence coordinates, not application payloads
-			// such as passwords in HTTP headers, URI parameters or response bodies.
-			alert.MatchedRecord = scopedProjection(record)
+		var alert *types.Alert
+		if matched {
+			alert = &types.Alert{RuleName: rule.Name, SrcIP: record.Src(), DstIP: record.Dst(), RecordType: recordType.String()}
 		}
 		alertGenerated := false
 
@@ -401,6 +412,13 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 			}
 
 			// Write the alert
+			alert, err = createRuleAlert(rule, record, rule.compiledDigest)
+			if err != nil {
+				return alertCount, err
+			}
+			if scope != "" {
+				alert.MatchedRecord = scopedProjection(record)
+			}
 			if len(contributors) > 0 {
 				alert.Notes = joinEvidence(scope, contributors)
 			}
@@ -435,7 +453,7 @@ func (e *Engine) isDuplicate(alert *types.Alert) bool {
 	// Create a key for deduplication
 	key := fmt.Sprintf("%s:%s:%s:%s", alert.RuleName, alert.SrcIP, alert.DstIP, alert.RecordType)
 
-	now := time.Now().UnixNano()
+	now := e.now().UnixNano()
 	lastSeen, exists := e.recentAlerts[key]
 
 	if exists {
@@ -458,7 +476,7 @@ func (e *Engine) isDuplicate(alert *types.Alert) bool {
 
 // cleanupRecentAlerts removes old entries from the deduplication map.
 func (e *Engine) cleanupRecentAlerts() {
-	now := time.Now().UnixNano()
+	now := e.now().UnixNano()
 	for key, lastSeen := range e.recentAlerts {
 		if time.Duration(now-lastSeen) > e.dedupWindow {
 			delete(e.recentAlerts, key)
@@ -669,7 +687,7 @@ func (e *Engine) isRateLimited(ruleName string) bool {
 	if !exists {
 		counter = &rateCounter{
 			count:       0,
-			windowStart: time.Now(),
+			windowStart: e.now(),
 		}
 		e.ruleCounters[ruleName] = counter
 	}
@@ -678,7 +696,7 @@ func (e *Engine) isRateLimited(ruleName string) bool {
 	counter.mu.Lock()
 	defer counter.mu.Unlock()
 
-	now := time.Now()
+	now := e.now()
 
 	// Reset counter if window has passed
 	if now.Sub(counter.windowStart) >= time.Minute {

@@ -161,6 +161,12 @@ func CompileExpression(expression string, recordType types.Type) (*vm.Program, e
 			},
 			new(func(string, string) bool),
 		),
+		expr.Function("HeaderValue", func(params ...any) (any, error) {
+			return HeaderValue(params[0].(map[string]string), params[1].(string)), nil
+		}, new(func(map[string]string, string) string)),
+		expr.Function("HasHeaderPrefix", func(params ...any) (any, error) {
+			return HasHeaderPrefix(params[0].(map[string]string), params[1].(string)), nil
+		}, new(func(map[string]string, string) bool)),
 		expr.Function("Contains",
 			func(params ...any) (any, error) {
 				return Contains(params[0], params[1]), nil
@@ -189,6 +195,14 @@ func EvaluateExpression(program *vm.Program, record types.AuditRecord) (bool, er
 	}
 
 	env := CreateEnvironment(record)
+	return EvaluateEnvironment(program, env)
+}
+
+// EvaluateEnvironment reuses one record projection across compiled predicates.
+func EvaluateEnvironment(program *vm.Program, env map[string]any) (bool, error) {
+	if program == nil {
+		return true, nil
+	}
 
 	// Add helper functions to the evaluation environment
 	// These are used at runtime, while type information comes from expr.Function() at compile time
