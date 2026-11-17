@@ -218,6 +218,9 @@ func matchScore(sd core.StreamDecoderAPI, in *SelectionInput, portPass bool) (in
 		clientPort = in.Conversation.ClientPort
 	}
 	explicitProtobuf := sd.GetName() == "Protobuf" && protobuf.ExplicitlyConfigured(clientPort, in.ServerPort)
+	if sd.GetName() == "Protobuf" && !explicitProtobuf {
+		return 0, false
+	}
 	if in.Transport == core.UDP && (len(in.Datagrams) > 0 || in.Conversation != nil && in.Conversation.Source != nil) {
 		in.cacheUDPClassifierBytes()
 		best, matched := 0, false

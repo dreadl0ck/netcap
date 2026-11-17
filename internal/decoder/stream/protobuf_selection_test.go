@@ -23,3 +23,23 @@ func TestExplicitProtobufSelectionPreservesSingleFieldMessages(t *testing.T) {
 		t.Fatal("explicit single-field Protobuf was rejected")
 	}
 }
+
+func TestWireFormatAloneDoesNotClaimConversation(t *testing.T) {
+	previous := decoderconfig.Instance
+	defer func() { decoderconfig.Instance = previous }()
+	decoderconfig.Instance = &decoderconfig.Config{}
+	data := []byte{0x08, 0x01, 0x12, 0x03, 'a', 'b', 'c'}
+	if !protobuf.ValidConfiguredData(data) {
+		t.Fatal("control is not valid wire data")
+	}
+	in := &SelectionInput{Transport: core.TCP, ServerPort: 45678, PortClient: data, ScanClient: data}
+	for _, portPass := range []bool{true, false} {
+		if _, ok := matchScore(protobuf.Decoder, in, portPass); ok {
+			t.Fatal("unconfigured wire data claimed a protocol")
+		}
+	}
+	decoderconfig.Instance.IncludeDecoders = "Protobuf"
+	if _, ok := matchScore(protobuf.Decoder, in, false); !ok {
+		t.Fatal("explicit wire exploration was lost")
+	}
+}

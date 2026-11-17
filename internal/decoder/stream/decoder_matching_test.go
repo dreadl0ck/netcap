@@ -49,6 +49,7 @@ func matchingEnv(t *testing.T) {
 
 	decoderconfig.Instance = &decoderconfig.Config{
 		Out: t.TempDir(), Quiet: true, NumStreamWorkers: 1, StreamBufferSize: 1,
+		IncludeDecoders: strings.Join(registeredDecoders(), ","),
 	}
 	tls.RecordDecoder.Writer = nil
 }

@@ -28,6 +28,7 @@ func (s *countedClassifierSource) Walk(yield func(core.DataFragment) bool) error
 }
 
 func TestSmallUDPClassifierSourceIsReadOnceAndDetached(t *testing.T) {
+	matchingEnv(t)
 	source := &countedClassifierSource{fragments: core.DataFragments{&core.StreamData{RawData: []byte("unrecognized first")}, &core.StreamData{RawData: []byte("unrecognized reply"), Dir: reassembly.TCPDirServerToClient}}}
 	in := &SelectionInput{Transport: core.UDP, Conversation: &core.ConversationInfo{Source: source}}
 	for range 10 {
