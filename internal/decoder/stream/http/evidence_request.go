@@ -388,12 +388,14 @@ func evidenceQuery(raw string) (url.Values, error) {
 	return values, first
 }
 
+const maxJSONFormBytes = 1 << 20
+
 func parseEvidenceForm(r *http.Request, body []byte) error {
 	var queryErr error
 	r.Form, queryErr = evidenceQuery(r.URL.RawQuery)
 	contentType, params, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if (r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH") && (contentType == "application/json" || strings.HasSuffix(contentType, "+json")) {
-		if len(body) > 1<<20 {
+		if len(body) > maxJSONFormBytes {
 			return fmt.Errorf("JSON form exceeds 1 MiB")
 		}
 		var fields map[string]json.RawMessage

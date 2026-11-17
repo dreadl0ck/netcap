@@ -52,16 +52,56 @@ func opaqueSourceRequest(request *http.Request) bool {
 	return typ != "application/json" && !strings.HasSuffix(typ, "+json") && typ != "application/x-www-form-urlencoded" && typ != "multipart/form-data"
 }
 
-func sourceMultipartBoundary(request *http.Request) (string, bool) {
+func sourceBackedForm(request *http.Request) (media, boundary string) {
 	if decoderconfig.Instance.FileStorage == "" || (request.Method != "POST" && request.Method != "PUT" && request.Method != "PATCH") {
-		return "", false
+		return "", ""
 	}
 	encoding := strings.ToLower(strings.TrimSpace(request.Header.Get(headerContentEncoding)))
 	if encoding != "" && encoding != "identity" {
-		return "", false
+		return "", ""
 	}
 	media, params, _ := mime.ParseMediaType(request.Header.Get(headerContentType))
-	return params["boundary"], media == "multipart/form-data"
+	switch {
+	case media == "multipart/form-data":
+		return media, params["boundary"]
+	case media == "application/json", strings.HasSuffix(media, "+json"):
+		return "application/json", ""
+	}
+	return "", ""
+}
+
+func (h *httpReader) parseBackedJSONForm(req *http.Request, spool *file.BodySpool) error {
+	size := spool.Size()
+	if size > maxJSONFormBytes {
+		req.Form, _ = evidenceQuery(req.URL.RawQuery)
+		return fmt.Errorf("JSON form exceeds 1 MiB")
+	}
+	// Charge temporary decoding separately from the fields retained for pairing.
+	credit := 4096 + 64*size
+	if err := h.conversation.StateBudget.Reserve(credit); err != nil {
+		h.conversation.FragmentError = err
+		return err
+	}
+	defer h.conversation.StateBudget.Release(credit)
+	body := make([]byte, int(size))
+	if _, err := io.ReadFull(spool.Reader(), body); err != nil {
+		file.RecordArtifactWriteError(err)
+		return err
+	}
+	parseErr := parseEvidenceForm(req, body)
+	var retained int64
+	for name, values := range req.PostForm {
+		retained += 256 + int64(len(name))
+		for _, value := range values {
+			retained += int64(len(value))
+		}
+	}
+	if err := h.conversation.StateBudget.Reserve(retained); err != nil {
+		h.conversation.FragmentError = err
+		return err
+	}
+	h.sourceHeaderCredits += retained
+	return parseErr
 }
 
 func readSourceRequestBody(c *core.ConversationInfo, body io.Reader) (sample []byte, release func(), resultErr error) {
@@ -173,8 +213,8 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 				if err != nil || evidence.unsafe {
 					return nil
 				}
-				_, multipart := sourceMultipartBoundary(request)
-				if validH2Upgrade(request) || (request.ContentLength != 0 || len(request.TransferEncoding) > 0) && !opaqueSourceRequest(request) && !multipart {
+				form, _ := sourceBackedForm(request)
+				if validH2Upgrade(request) || (request.ContentLength != 0 || len(request.TransferEncoding) > 0) && !opaqueSourceRequest(request) && form == "" {
 					return errHTTPSourceCompatibility
 				}
 				if request.ContentLength != 0 || len(request.TransferEncoding) > 0 {

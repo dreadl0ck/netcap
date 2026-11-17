@@ -95,7 +95,7 @@ func captureExtractedHTTP(t *testing.T, data core.DataFragments, source bool) ([
 }
 
 func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
-	for _, kind := range []string{"identity", "gzip", "gzip-truncated", "truncated", "chunked-upload", "multipart-upload"} {
+	for _, kind := range []string{"identity", "gzip", "gzip-truncated", "truncated", "chunked-upload", "multipart-upload", "json-upload"} {
 		t.Run(kind, func(t *testing.T) {
 			body := []byte(strings.Repeat("artifact fixture\n", 5000))
 			wire := body
@@ -125,6 +125,10 @@ func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
 				multipart := "--fixture\r\nContent-Disposition: form-data; name=\"upload\"; filename=\"fixture.bin\"\r\n\r\n" + strings.Repeat("fixture bytes\n", 240000) + "\r\n--fixture\r\nContent-Disposition: form-data; name=\"label\"\r\n\r\nafter-file\r\n--fixture--\r\n"
 				request = fmt.Sprintf("POST /upload?label=query HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: multipart/form-data; boundary=fixture\r\nContent-Length: %d\r\n\r\n%sGET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n", len(multipart), multipart)
 			}
+			if kind == "json-upload" {
+				const payload = `{"label":"from-body","count":1,"nested":{"label":"ignored"}}`
+				request = fmt.Sprintf("POST /upload?label=query HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/vnd.fixture+json\r\nContent-Length: %d\r\n\r\n%s", len(payload), payload)
+			}
 			response := []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n%sContent-Length: %d\r\n\r\n", encoding, length))
 			response = append(response, wire...)
 			data := core.DataFragments{}
@@ -145,6 +149,9 @@ func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
 			}
 			if kind == "multipart-upload" && (len(gotHTTP) != 2 || len(gotFiles) != 2 || !strings.Contains(fmt.Sprint(gotHTTP[0].Parameters), "after-file")) {
 				t.Fatalf("multipart fields, file, or next message lost: %v / %d", gotHTTP, len(gotFiles))
+			}
+			if kind == "json-upload" && (len(gotHTTP) != 1 || len(gotFiles) != 2 || !strings.Contains(fmt.Sprint(gotHTTP[0].Parameters), "from-body")) {
+				t.Fatalf("JSON form fields or files lost: %v / %d", gotHTTP, len(gotFiles))
 			}
 		})
 	}

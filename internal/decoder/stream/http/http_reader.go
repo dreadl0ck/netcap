@@ -648,7 +648,8 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	}
 
 	// parse form values
-	if boundary, multipart := sourceMultipartBoundary(req); spool != nil && multipart {
+	form, boundary := sourceBackedForm(req)
+	if spool != nil && form == "multipart/form-data" {
 		var queryErr error
 		req.Form, queryErr = evidenceQuery(req.URL.RawQuery)
 		err = errors.Join(queryErr, parseEvidenceMultipart(req, spool.Reader(), boundary, func(n int64) error {
@@ -659,6 +660,11 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 			h.sourceHeaderCredits += n
 			return nil
 		}))
+		if h.conversation.FragmentError != nil {
+			return h.conversation.FragmentError
+		}
+	} else if spool != nil && form == "application/json" {
+		err = h.parseBackedJSONForm(req, spool)
 		if h.conversation.FragmentError != nil {
 			return h.conversation.FragmentError
 		}
