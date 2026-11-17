@@ -22,6 +22,7 @@ package webui
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dreadl0ck/netcap/internal/evidence"
 	"io"
 	"log"
 	"net/http"
@@ -255,6 +256,10 @@ func HandleAuditRecords(outputDir string) http.HandlerFunc {
 		action := "stream"
 		if len(parts) > 1 {
 			action = parts[1]
+		}
+		if sealed := partialAuditContext(r); sealed != nil && action == "stream" {
+			HandleAuditStream(w, r, "", sealed.Stage.Type)
+			return
 		}
 
 		// For fields action, we don't need the file to exist
@@ -569,6 +574,9 @@ func HandleAuditMeta(w http.ResponseWriter, r *http.Request, filePath, auditType
 // HandleAuditStream streams audit records via Server-Sent Events
 func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditType string) {
 	startTime := time.Now()
+	if sealed := partialAuditContext(r); sealed != nil && sealed.File != "" {
+		filePath = filepath.Join(sealed.Directory, sealed.File)
+	}
 	if r.URL.Query().Has("evidence") {
 		handleBoundAuditStream(w, r, filePath, auditType)
 		return
@@ -625,6 +633,22 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	}
 
 	// Create audit record reader
+	if sealed := partialAuditContext(r); sealed != nil && sealed.Stage.Records == 0 {
+		if filterExpr != "" {
+			typ, ok := types.Type_value["NC_"+auditType]
+			if !ok {
+				sendError("Unknown sealed audit type")
+				return
+			}
+			if _, err := netfilter.CompileExpression(filterExpr, types.Type(typ)); err != nil {
+				sendError("Invalid filter expression: " + err.Error())
+				return
+			}
+		}
+		auditCompletion(w, r, 0, 0, 0, offset, time.Since(startTime).Milliseconds(), countOnly)
+		flusher.Flush()
+		return
+	}
 	auditReader, err := NewAuditRecordReader(filePath)
 	if err != nil {
 		log.Printf("[WebUI] Failed to open audit record file %s: %v", filePath, err)
@@ -803,8 +827,17 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	executionTime := time.Since(startTime)
 
 	// Send completion event with execution time
-	fmt.Fprintf(w, "event: complete\ndata: {\"total\": %d, \"scanned\": %d, \"count\": %d, \"executionTimeMs\": %d, \"nextOffset\": %d, \"hasMore\": %t}\n\n",
-		matchedCount, totalScanned, count, executionTime.Milliseconds(), offset+count, !countOnly && offset+count < matchedCount)
+	if sealed := partialAuditContext(r); sealed != nil {
+		if int64(totalScanned) != sealed.Stage.Records {
+			sendError("Sealed audit record count changed")
+			return
+		}
+		if _, _, err := evidence.ReadAuditStage(filepath.Dir(filePath), sealed.RunID, sealed.Stage.Type, sealed.Generation); err != nil {
+			sendError("Sealed audit output changed during query")
+			return
+		}
+	}
+	auditCompletion(w, r, matchedCount, totalScanned, count, offset, executionTime.Milliseconds(), countOnly)
 	flusher.Flush()
 }
 

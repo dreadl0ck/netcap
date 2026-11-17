@@ -50,6 +50,9 @@ func (s *Server) registerRecordTools() error {
 					mcplib.Description("Offset in matching records; also supported with a filter.")),
 				mcplib.WithBoolean("count_only",
 					mcplib.Description("If true, return only the scanned/matched counts without record bodies.")),
+				mcplib.WithBoolean("allow_partial", mcplib.Description("Explicitly query an independently sealed audit stage even if overall analysis failed. The summary always identifies stage coverage, runId and stageGeneration.")),
+				mcplib.WithString("run_id", mcplib.Description("Expected capture run generation; required with allow_partial on continuation pages.")),
+				mcplib.WithString("stage_generation", mcplib.Description("Stage generation returned by a partial query; required for partial continuation pages.")),
 				mcplib.WithString("fields", mcplib.Description("Optional comma-separated top-level fields or JSON Pointer paths, e.g. Method,RequestHeader or /RequestHeaders/0/Value. Full values are preserved; oversized records provide a complete JSON artifact readable with read_mcp_artifact.")),
 				mcplib.WithReadOnlyHintAnnotation(true),
 				mcplib.WithDestructiveHintAnnotation(false),
@@ -126,6 +129,29 @@ func (s *Server) handleQueryAuditRecords(_ context.Context, req mcplib.CallToolR
 	filterExpr := req.GetString("filter", "")
 
 	q := ref.sessionQueryParams()
+	allowPartial := false
+	if run := req.GetString("run_id", ""); run != "" {
+		q.Set("runId", run)
+	}
+	if value, present := req.GetArguments()["allow_partial"]; present {
+		allowed, ok := value.(bool)
+		if !ok {
+			return errResult(fmt.Errorf("allow_partial must be boolean")), nil
+		}
+		if allowed {
+			allowPartial = true
+			q.Set("allowPartial", "true")
+			if run := req.GetString("run_id", ""); run != "" {
+				q.Set("runId", run)
+			}
+			if generation := req.GetString("stage_generation", ""); generation != "" {
+				q.Set("stageGeneration", generation)
+			}
+			if offset > 0 && (q.Get("runId") == "" || q.Get("stageGeneration") == "") {
+				return errResult(fmt.Errorf("partial continuation requires run_id and stage_generation")), nil
+			}
+		}
+	}
 	q.Set("full", "true")
 	if fields := req.GetString("fields", ""); fields != "" {
 		q.Set("fields", fields)
@@ -154,6 +180,21 @@ func (s *Server) handleQueryAuditRecords(_ context.Context, req mcplib.CallToolR
 	}
 	if terminal != "complete" {
 		return errResult(fmt.Errorf("audit stream did not complete; no partial success is returned")), nil
+	}
+	if allowPartial {
+		var summary struct {
+			Coverage, Stage, RunID, StageGeneration string
+			PartialAdmission                        bool
+		}
+		if err := json.Unmarshal(completeJSON, &summary); err != nil || !summary.PartialAdmission || (summary.Coverage != "partial" && summary.Coverage != "complete") || summary.Stage == "" || summary.RunID == "" || summary.StageGeneration == "" {
+			return errResult(fmt.Errorf("partial query lacks a sealed stage coverage contract")), nil
+		}
+		if expected := q.Get("runId"); expected != "" && expected != summary.RunID {
+			return errResult(fmt.Errorf("partial query returned a different capture run")), nil
+		}
+		if expected := q.Get("stageGeneration"); expected != "" && expected != summary.StageGeneration {
+			return errResult(fmt.Errorf("partial query returned a different stage generation")), nil
+		}
 	}
 	for i, record := range records {
 		records[i], err = s.completeRecordJSON(ref, "query_audit_records:"+auditType, record)

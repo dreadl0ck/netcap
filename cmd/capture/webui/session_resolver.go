@@ -37,14 +37,31 @@ func selectionError(status int, reason string) error {
 func (s *Server) captureSelectionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/") {
+			if q := r.URL.Query(); q.Get("allowPartial") == "true" && !q.Has("sessionId") && !q.Has("inputFile") {
+				writeSelectionError(w, selectionError(400, "Partial admission requires an explicit capture"))
+				return
+			}
 			selection, err := s.resolveCaptureSelection(r)
 			q := r.URL.Query()
 			explicit := q.Has("sessionId") || q.Has("inputFile") || q.Has("runId")
-			if err != nil && explicit {
+			if err != nil && (explicit || q.Has("allowPartial")) {
 				writeSelectionError(w, err)
 				return
 			}
-			if err == nil && explicit && r.Method == http.MethodGet && r.URL.Path != "/api/status" && r.URL.Path != "/api/files/input" && r.URL.Path != "/api/investigation/reproduction" && !strings.HasPrefix(r.URL.Path, "/api/error-log/") {
+			if err == nil && q.Has("allowPartial") {
+				partial, partialErr := preparePartialAudit(r, selection)
+				if partialErr != nil {
+					writeSelectionError(w, partialErr)
+					return
+				}
+				if partial != nil {
+					r = withPartialAudit(r, partial)
+					w.Header().Set("X-Netcap-Run-ID", partial.RunID)
+					w.Header().Set("X-Netcap-Stage-Generation", partial.Generation)
+					w.Header().Set("X-Netcap-Coverage", partial.Stage.Coverage)
+				}
+			}
+			if err == nil && explicit && partialAuditContext(r) == nil && r.Method == http.MethodGet && r.URL.Path != "/api/status" && r.URL.Path != "/api/files/input" && r.URL.Path != "/api/investigation/reproduction" && !strings.HasPrefix(r.URL.Path, "/api/error-log/") {
 				if err := s.captureReadAdmission(selection, r.URL.Path == "/api/audit-stats"); err != nil {
 					writeSelectionError(w, err)
 					return

@@ -54,6 +54,10 @@ func TestPartialInputDoesNotBecomeFatalFinalization(t *testing.T) {
 	if manifest.Status != "partial" || manifest.Error != "" {
 		t.Fatal("coverage manifest became fatal", manifest.Status, manifest.Error)
 	}
+	stage, inventory, stageErr := evidence.ReadAuditStage(out, manifest.RunID, "TCP", manifest.AuditStagesGeneration)
+	if stageErr != nil || stage.State != "sealed" || stage.Coverage != "partial" || stage.Records != 1 || inventory.Generation == "" {
+		t.Fatal("valid packet output did not seal independently", stage, stageErr)
+	}
 	if _, err := os.Stat(filepath.Join(out, evidence.AuditReadyFile)); !os.IsNotExist(err) {
 		t.Fatal("partial coverage published full readiness", err)
 	}

@@ -118,6 +118,7 @@ func (c *Collector) cleanup(force bool) {
 			c.artifactAnalysisStarted.Store(false)
 		}
 		c.finalizeCaptureEvidence()
+		c.captureEvidenceError = errors.Join(c.captureEvidenceError, c.sealAuditStages())
 		if c.captureEvidence != nil && c.captureRunError == nil && c.captureCoverageError == nil && c.captureEvidenceError == nil && c.flowExportError == nil {
 			if err := c.captureEvidence.MarkAuditOutputReady(); err != nil {
 				c.captureEvidenceError = fmt.Errorf("finalize audit output: %w", err)
@@ -278,10 +279,12 @@ func (c *Collector) teardown() {
 	// Finalizers can emit dependent audit records. Keep every writer open until
 	// those ordered finalizers finish, then overlap independent flush/fsync work.
 	var native []core.DecoderAPI
+	finalizerErrors := map[string]error{}
 	for _, d := range decoders {
 		switch d.(type) {
 		case *packet.GoPacketDecoder, *packet.Decoder, *decoder.StreamDecoder, *decoder.AbstractDecoder:
 			if err := d.DeInitFunc(); err != nil {
+				finalizerErrors[d.GetName()] = err
 				c.captureEvidenceError = errors.Join(c.captureEvidenceError, fmt.Errorf("finalize %s: %w", d.GetName(), err))
 			}
 			native = append(native, d)
@@ -294,11 +297,7 @@ func (c *Collector) teardown() {
 		}
 	}
 	decoders = native
-	type closedWriter struct {
-		name string
-		size int64
-	}
-	results := make([]closedWriter, len(decoders))
+	results := make([]auditClosedWriter, len(decoders))
 	tasks := make(chan int, len(decoders))
 	for i := range decoders {
 		tasks <- i
@@ -318,6 +317,7 @@ func (c *Collector) teardown() {
 		}()
 	}
 	closers.Wait()
+	c.collectAuditStages(decoders, results, finalizerErrors)
 	for _, d := range decoders {
 		if err := netio.WriterError(d.GetWriter()); err != nil {
 			c.captureEvidenceError = errors.Join(c.captureEvidenceError, fmt.Errorf("finalize %s writer: %w", d.GetName(), err))
