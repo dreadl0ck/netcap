@@ -185,6 +185,10 @@ func (q *timelineQuery) count() int64 {
 
 	for _, t := range q.Tracks {
 		lo, hi := q.scanRange(t)
+		if q.Search == "" && q.Host == "" && len(q.CommunityIDs) == 0 && !t.hasDuration() {
+			total += int64(max(0, hi-lo))
+			continue
+		}
 
 		q.eachMatch(t, lo, hi, func(int) { total++ })
 	}

@@ -254,6 +254,7 @@ func (s *Server) handleTimelineEvents(w http.ResponseWriter, r *http.Request) {
 	resp.Generation = status.Index.Generation
 	resp.Start = strconv.FormatInt(query.Start, 10)
 	resp.End = strconv.FormatInt(query.End, 10)
+	resp.MatchCount = query.count()
 	if raw := r.URL.Query().Get("at"); raw != "" {
 		at, parseErr := strconv.ParseInt(raw, 10, 64)
 		if parseErr != nil {

@@ -199,6 +199,10 @@
   "officialMCPAnalystBindings": {
     "verification": "scripts/check-mcp-stdio.py passed 70 calls across 57 of 119 advertised tools. All 18 UDP occurrences retained their source binding; the last resolved to its exact reference. A changed record SHA-256 was rejected. Catalogue endpoint results also retained the selected capture binding."
   },
+  "officialMCPTimeline": {
+    "verification": "scripts/check-mcp-stdio.py passed for 61 of 119 advertised tools. All four UDP event pages report 18 matches; their IDs are distinct and the bucket counts sum to 18 for the same generation. Flow queries and auth activity also passed. Timeline race tests pass.",
+    "fix": "Timeline event responses previously left matchCount at zero on nonempty pages. They now count the full query before pagination, using index bounds for unfiltered instant tracks."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

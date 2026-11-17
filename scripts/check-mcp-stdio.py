@@ -78,6 +78,25 @@ async def check(binary, capture, data_dir):
                 await asyncio.sleep(0.2)
 
         args = {"session_id": sid}
+        meta = await call("get_timeline_meta", args)
+        track = args | {"types": "UDP", "generation": meta["generation"]}
+        page = await call("query_timeline_events", track | {"limit": 5})
+        seen = []
+        while True:
+            if page["generation"] != meta["generation"] or page["matchCount"] != 18:
+                raise ValueError("UDP timeline generation or match count changed")
+            seen.extend(event["id"] for event in page["events"])
+            if not page["hasMore"]:
+                break
+            if not page["events"] or len(seen) >= 18:
+                raise ValueError("UDP timeline cursor did not advance")
+            page = await call("query_timeline_events", track | {"limit": 5, "after": page["events"][-1]["cursor"]})
+        if len(seen) != 18 or len(set(seen)) != 18:
+            raise ValueError("UDP timeline lost or duplicated an event")
+        buckets = await call("get_timeline_buckets", track | {"buckets": 4})
+        series, = buckets["series"]
+        if buckets["generation"] != meta["generation"] or series["type"] != "UDP" or sum(series["counts"]) != 18:
+            raise ValueError("timeline buckets disagree with the paged UDP track")
         binding = await call("get_analyst_binding", {"sessionId": sid})
         source = {"sessionId": sid, "binding": binding}
         await call("inspect_bound_capture", {"source": source})
@@ -104,6 +123,8 @@ async def check(binary, capture, data_dir):
         cases += [
             ("get_audit_record_values", args | {"type": "UDP"}),
             ("get_investigation_health", args | {"kind": "reassembly"}),
+            ("query_flows", args | {"startNs": meta["minTime"], "endNs": meta["maxTime"], "limit": 3}),
+            ("list_auth_activity", args | {"limit": 5}),
             ("get_audit_record_fields", {"type": "UDP"}),
             ("wait_for_session", args | {"timeout_seconds": 2}),
         ]
