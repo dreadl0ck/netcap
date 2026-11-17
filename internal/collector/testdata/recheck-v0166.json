@@ -261,6 +261,9 @@
   "timelineReadFailure": {
     "verification": "TestAnalysisCompletionRejectsTruncatedTimelineTrack verifies a missing record body fails the timeline build and blocks completed status. Event-budget truncation remains qualified separately. Focused timeline and completion race tests pass."
   },
+  "truncatedAuditFrameAllocation": {
+    "verification": "TestTruncatedLargeFrameDoesNotAllocateDeclaredLength verifies that a frame declaring 128 MiB returns unexpected EOF with no body allocation when no bytes arrive, and at most 16 KiB of body capacity when only 9000 bytes arrive. Delimited and netio race suites and focused timeline, rule replay and metadata race tests pass."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

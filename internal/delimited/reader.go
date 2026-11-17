@@ -67,19 +67,29 @@ func (r *Reader) next(limit uint64) ([]byte, error) {
 		return nil, fmt.Errorf("record size %d exceeds reader bounds", size)
 	}
 
-	// alloc memory for data
-	if cap(r.data) < int(size) {
-		r.data = make([]byte, size)
-	} else {
-		r.data = r.data[:size]
-	}
-
-	// read data from buffer
-	if _, err = io.ReadFull(r.buffer, r.data); err != nil {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
+	r.data = r.data[:0]
+	for len(r.data) < int(size) {
+		if len(r.data) == cap(r.data) {
+			// Do not allocate from a declared length without seeing body bytes.
+			if _, err = r.buffer.Peek(1); err != nil {
+				if err == io.EOF {
+					err = io.ErrUnexpectedEOF
+				}
+				return nil, err
+			}
+			growth := min(int(size)-len(r.data), max(4096, cap(r.data)))
+			grown := make([]byte, len(r.data), len(r.data)+growth)
+			copy(grown, r.data)
+			r.data = grown
 		}
-		return nil, err
+		end := min(int(size), cap(r.data))
+		if _, err = io.ReadFull(r.buffer, r.data[len(r.data):end]); err != nil {
+			if err == io.EOF {
+				err = io.ErrUnexpectedEOF
+			}
+			return nil, err
+		}
+		r.data = r.data[:end]
 	}
 
 	return r.data, nil
