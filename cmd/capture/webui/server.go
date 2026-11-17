@@ -1498,6 +1498,7 @@ func (s *Server) SetDPIPreferences(userIP string, prefs *UserDPIPreferences) {
 // processJobs processes analysis jobs from the queue one at a time (service mode only)
 func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 	defer s.wg.Done()
+	postSlots := make(chan struct{}, 2)
 
 	for {
 		select {
@@ -1532,11 +1533,14 @@ func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 
 			// Wrap job processing with panic recovery to prevent crashes from killing the service
 			func() {
+				transferred := false
 				defer func() {
 					s.currentJobMutex.Lock()
 					s.currentProcessing = nil
 					s.currentJobMutex.Unlock()
-					job.processingDone()
+					if !transferred {
+						job.processingDone()
+					}
 				}()
 				defer func() {
 					if r := recover(); r != nil {
@@ -1548,7 +1552,18 @@ func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 					}
 				}()
 
+				job.deferCompletion = true
 				runAnalysis(job)
+				if job.postCapture != nil {
+					select {
+					case postSlots <- struct{}{}:
+						s.wg.Add(1)
+						transferred = true
+						go s.runPostCapture(job, postSlots)
+					case <-s.shutdownChan:
+						s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
+					}
+				}
 			}()
 
 			log.Printf("[WebUI] Job processing completed: job %d/%d, session=%s", currentPos, totalScheduled, job.SessionID)
@@ -2113,10 +2128,6 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		log.Printf("[WebUI] Extracted %d file(s) for session %s", fileCount, job.SessionID)
 	}
 
-	if err := s.completeAnalysis(job, duration); err != nil {
-		s.recordAnalysisFailure(job, err.Error(), "")
-	}
-
 	// ==================================================================================
 	// CRITICAL: Memory cleanup after each job to prevent OOM in long-running service
 	// Same cleanup logic as used in multi-file processing to release accumulated state
@@ -2185,6 +2196,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	log.Printf("[WebUI] Memory after cleanup (session %s): Heap Alloc=%s, Heap Sys=%s, Goroutines=%d",
 		job.SessionID, humanize.Bytes(m.HeapAlloc), humanize.Bytes(m.HeapSys), numGoroutines)
 	log.Printf("[WebUI] Memory cleanup completed for session %s", job.SessionID)
+	s.finishCaptureJob(job, duration)
 }
 
 // cleanupRoutine periodically cleans up expired sessions (service mode only)

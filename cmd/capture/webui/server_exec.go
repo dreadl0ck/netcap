@@ -318,9 +318,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		}
 	}
 
-	if err := s.completeAnalysis(job, duration); err != nil {
-		s.recordAnalysisFailure(job, err.Error(), "")
-	}
+	s.finishCaptureJob(job, duration)
 }
 
 // analysisErrorSummaryLimit is how many trailing bytes of the helper's output

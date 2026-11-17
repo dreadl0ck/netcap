@@ -14,6 +14,38 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
+func TestCaptureWorkerHandsOffCompletionWithoutReleasingJobOwnership(t *testing.T) {
+	s := &Server{jobQueue: make(chan *AnalysisJob, 2), shutdownChan: make(chan struct{})}
+	firstStarted := make(chan struct{})
+	secondFinished := make(chan struct{})
+	firstFinished := make(chan struct{})
+	release := make(chan struct{})
+	s.jobQueue <- &AnalysisJob{InputFile: "first", processingDone: func() { close(firstFinished) }}
+	s.jobQueue <- &AnalysisJob{InputFile: "second", processingDone: func() { close(secondFinished) }}
+	s.wg.Add(1)
+	go s.processJobs(func(job *AnalysisJob) {
+		job.postCapture = func() {
+			if job.InputFile == "first" {
+				close(firstStarted)
+				<-release
+			}
+		}
+	})
+	defer func() { close(release); close(s.shutdownChan); s.wg.Wait() }()
+	for _, event := range []<-chan struct{}{firstStarted, secondFinished} {
+		select {
+		case <-event:
+		case <-time.After(5 * time.Second):
+			t.Fatal("unrelated completion blocked behind first job")
+		}
+	}
+	select {
+	case <-firstFinished:
+		t.Fatal("capture worker released the first job before post-processing finished")
+	default:
+	}
+}
+
 func TestAnalysisCompletionWaitsForFinalAlerts(t *testing.T) {
 	for _, service := range []bool{false, true} {
 		t.Run(map[bool]string{false: "local", true: "service"}[service], func(t *testing.T) {

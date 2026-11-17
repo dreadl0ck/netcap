@@ -5,6 +5,36 @@ import (
 	"time"
 )
 
+func (s *Server) finishCaptureJob(job *AnalysisJob, duration time.Duration) {
+	complete := func() {
+		if err := s.completeAnalysis(job, duration); err != nil {
+			s.recordAnalysisFailure(job, err.Error(), "")
+		}
+	}
+	if job.deferCompletion {
+		job.postCapture = complete
+		return
+	}
+	complete()
+}
+
+func (s *Server) runPostCapture(job *AnalysisJob, slots chan struct{}) {
+	defer s.wg.Done()
+	defer func() { <-slots }()
+	defer job.processingDone()
+	defer func() {
+		if p := recover(); p != nil {
+			s.recordAnalysisFailure(job, fmt.Sprintf("Post-analysis crashed: %v", p), "")
+		}
+	}()
+	select {
+	case <-s.shutdownChan:
+		s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
+	default:
+		job.postCapture()
+	}
+}
+
 func (s *Server) completeAnalysis(job *AnalysisJob, duration time.Duration) error {
 	if err := s.executeRulesForJob(job); err != nil {
 		return fmt.Errorf("post-analysis rules: %w", err)
