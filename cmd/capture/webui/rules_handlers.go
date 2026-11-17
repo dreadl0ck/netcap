@@ -22,7 +22,6 @@ package webui
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -35,7 +34,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/dreadl0ck/netcap/internal/rules"
-	"github.com/dreadl0ck/netcap/types"
 )
 
 // ResponseActionAPI represents a response action for the API
@@ -1041,30 +1039,16 @@ func (s *Server) handleExecuteAllRules(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	totalAlerts := 0
 	totalRecords := 0
-	results := make([]RuleExecResult, 0, len(enabledRules))
-
-	for _, rule := range enabledRules {
-		ruleStartTime := time.Now()
-		alertsCount, recordsRead, err := s.executeRuleOnCapture(rule, outDir)
-		ruleExecutionTime := time.Since(ruleStartTime).Milliseconds()
-
-		result := RuleExecResult{
-			RuleName:      rule.Name,
-			AlertsCount:   alertsCount,
-			RecordsRead:   recordsRead,
-			Success:       err == nil,
-			ExecutionTime: ruleExecutionTime,
+	results, err := s.replayManualRules(outDir, enabledRules, r.Context().Done())
+	if err != nil {
+		RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	for _, result := range results {
+		if result.Success {
+			totalAlerts += result.AlertsCount
+			totalRecords += result.RecordsRead
 		}
-
-		if err != nil {
-			result.Error = err.Error()
-			log.Printf("[WebUI] Error executing rule %s: %v", rule.Name, err)
-		} else {
-			totalAlerts += alertsCount
-			totalRecords += recordsRead
-		}
-
-		results = append(results, result)
 	}
 
 	executionTime := time.Since(startTime).Milliseconds()
@@ -1121,54 +1105,5 @@ func (s *Server) executeRuleOnCapture(rule *rules.Rule, outDir string) (alertsCo
 		return 0, 0, fmt.Errorf("failed to create rules engine: %w", err)
 	}
 
-	// Find the audit record file for the rule's type
-	auditFile := filepath.Join(outDir, rule.Type+".ncap.gz")
-	if _, err := os.Stat(auditFile); os.IsNotExist(err) {
-		// File doesn't exist, no records to process
-		return 0, 0, nil
-	}
-
-	// Open and read the audit record file
-	reader, err := NewAuditRecordReader(auditFile)
-	if err != nil {
-		return 0, 0, fmt.Errorf("failed to open audit file: %w", err)
-	}
-	defer reader.Close()
-
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return 0, 0, fmt.Errorf("failed to read header: %w", err)
-	}
-
-	// Process each record
-	for {
-		record, err := reader.NextRecord()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			log.Printf("[WebUI] Error reading record: %v", err)
-			continue
-		}
-
-		recordsRead++
-
-		// Type assert to AuditRecord
-		auditRecord, ok := record.(types.AuditRecord)
-		if !ok {
-			log.Printf("[WebUI] Record is not an AuditRecord type")
-			continue
-		}
-
-		// Evaluate the record against the rule
-		alerts, err := engine.Evaluate(auditRecord)
-		if err != nil {
-			return alertsCount, recordsRead, fmt.Errorf("failed to evaluate record: %w", err)
-		}
-
-		alertsCount += alerts
-	}
-
-	return alertsCount, recordsRead, nil
+	return replayRuleAudit(outDir, rule.Type, s.shutdownChan, engine)
 }

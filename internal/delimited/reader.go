@@ -67,6 +67,9 @@ func (r *Reader) Next() ([]byte, error) {
 
 	// read data from buffer
 	if _, err = io.ReadFull(r.buffer, r.data); err != nil {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
 		return nil, err
 	}
 

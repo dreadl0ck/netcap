@@ -64,7 +64,6 @@ import (
 	"github.com/dreadl0ck/netcap/internal/protocoltest"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/internal/utils"
-	"github.com/dreadl0ck/netcap/types"
 	"github.com/dustin/go-humanize"
 )
 
@@ -1701,11 +1700,17 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) (resultErr error) {
 	// Group rules by type to minimize file reads
 	// We want to read each audit file (e.g. TCP.ncap.gz) only once
 	rulesByType := make(map[string][]*rules.Rule)
+	var typeOrder []string
 	for _, rule := range enabledRules {
-		rulesByType[rule.Type] = append(rulesByType[rule.Type], rule)
+		typ := strings.TrimPrefix(rule.Type, "NC_")
+		if len(rulesByType[typ]) == 0 {
+			typeOrder = append(typeOrder, typ)
+		}
+		rulesByType[typ] = append(rulesByType[typ], rule)
 	}
 
-	for typeStr, typeRules := range rulesByType {
+	for _, typeStr := range typeOrder {
+		typeRules := rulesByType[typeStr]
 		select {
 		case <-s.shutdownChan:
 			return errAnalysisStopping
@@ -1738,66 +1743,11 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) (resultErr error) {
 			return err
 		}
 
-		// Open audit record reader
-		reader, err := NewAuditRecordReader(auditFile)
-		if err != nil {
-			log.Printf("%s Failed to open audit file %s: %v", mode, auditFile, err)
-			return err
-		}
-
-		// Read header
-		if _, err := reader.ReadHeader(); err != nil {
-			reader.Close()
-			log.Printf("%s Failed to read header for %s: %v", mode, auditFile, err)
-			return err
-		}
-
-		// Process records
 		batchStart := time.Now()
-		batchRecords := 0
-		batchAlerts := 0
-
-		for {
-			select {
-			case <-s.shutdownChan:
-				reader.Close()
-				return errAnalysisStopping
-			default:
-			}
-			record, err := reader.NextRecord()
-			if err != nil {
-				if err == stdio.EOF {
-					break
-				}
-				log.Printf("%s Error reading record from %s: %v", mode, auditFile, err)
-				reader.Close()
-				return err
-			}
-
-			batchRecords++
-
-			// Type assert to AuditRecord
-			auditRecord, ok := record.(types.AuditRecord)
-			if !ok {
-				continue
-			}
-
-			// Evaluate
-			alerts, err := engine.Evaluate(auditRecord)
-			if err != nil {
-				reader.Close()
-				log.Printf("%s Rule execution failed for session %s: %v", mode, job.SessionID, err)
-				return err
-			}
-			batchAlerts += alerts
-		}
-
-		reader.Close()
-		finalAlerts, err := engine.Finalize()
+		batchAlerts, batchRecords, err := replayRuleAudit(job.OutputDir, typeStr, s.shutdownChan, engine)
 		if err != nil {
 			return err
 		}
-		batchAlerts += finalAlerts
 
 		totalAlerts += batchAlerts
 		totalRecords += batchRecords
