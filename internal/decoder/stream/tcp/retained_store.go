@@ -21,6 +21,7 @@ type storedTCPReader struct {
 	count                 uint64
 	loaded                bool
 	budget                *core.StateBudget
+	completionBudget      *core.StateBudget
 	payloadBudget         *retainedPayloadBudget
 	credit, payloadCredit int64
 }
@@ -151,6 +152,13 @@ func (s *storedTCPReader) append(data *core.StreamData) error {
 
 func (s *storedTCPReader) Count() int64 { return int64(s.count) }
 
+func (s *storedTCPReader) readBudget() *core.StateBudget {
+	if s.completionBudget != nil {
+		return s.completionBudget
+	}
+	return s.budget
+}
+
 // A pass borrows one decoded fragment; consumers retaining it must copy its bytes.
 func (s *storedTCPReader) Walk(yield func(core.DataFragment) bool) error {
 	return s.WalkRange(0, s.Count(), yield)
@@ -161,6 +169,7 @@ func (s *storedTCPReader) WalkRange(start, length int64, yield func(core.DataFra
 		return err
 	}
 	count := s.count
+	budget := s.readBudget()
 	for index := uint64(start); index < uint64(start+length); index++ {
 		if s.count != count {
 			return fmt.Errorf("retained TCP source changed during iteration")
@@ -180,11 +189,11 @@ func (s *storedTCPReader) WalkRange(start, length int64, yield func(core.DataFra
 			return err
 		}
 		credit := int64(len(wire)) + 256
-		if err := s.budget.Reserve(credit); err != nil {
+		if err := budget.Reserve(credit); err != nil {
 			return err
 		}
 		more, err := func() (bool, error) {
-			defer s.budget.Release(credit)
+			defer budget.Release(credit)
 			fragment, err := decodeTCPFragment(wire)
 			if err != nil {
 				return false, s.state.Do(func(*aggregate.Tx) error { return err })
@@ -223,6 +232,7 @@ func (s *storedTCPReader) WalkRange(start, length int64, yield func(core.DataFra
 
 func (s *storedTCPReader) read() (core.DataFragments, error) {
 	var data core.DataFragments
+	budget := s.readBudget()
 	credit, payloadCredit := int64(0), int64(0)
 	read := func() error {
 		last := ""
@@ -245,7 +255,7 @@ func (s *storedTCPReader) read() (core.DataFragments, error) {
 					return s.state.Do(func(*aggregate.Tx) error { return fmt.Errorf("retained TCP fragment sequence is incomplete") })
 				}
 				amount := int64(len(wire)) + 256
-				if err := s.budget.Reserve(amount); err != nil {
+				if err := budget.Reserve(amount); err != nil {
 					return err
 				}
 				credit += amount
@@ -273,7 +283,7 @@ func (s *storedTCPReader) read() (core.DataFragments, error) {
 	}
 	err := read()
 	if err != nil {
-		s.budget.Release(credit)
+		budget.Release(credit)
 		if s.payloadBudget != nil {
 			s.payloadBudget.release(payloadCredit)
 		}

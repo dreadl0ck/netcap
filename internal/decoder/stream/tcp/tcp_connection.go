@@ -537,6 +537,16 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		t.releasePayloadAdmission()
 		return decoderconfig.Instance.RemoveClosedStreams || reason == "idle-expired"
 	}
+	if decoderconfig.Instance.LocalCompletionStateLoss && t.stateBudget != nil {
+		t.Lock()
+		view := t.stateBudget.CompletionView()
+		for _, reader := range []streamReader{t.client, t.server} {
+			if owned, ok := reader.(*tcpStreamReader); ok && owned.stored != nil {
+				owned.stored.completionBudget = view
+			}
+		}
+		t.Unlock()
+	}
 	// reorder the stream fragments
 	t.reorder(ac, firstFlow)
 

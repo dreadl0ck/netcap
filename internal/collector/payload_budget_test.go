@@ -362,7 +362,7 @@ func TestNegativeTCPRetentionBudgetRefusesInitialization(t *testing.T) {
 }
 
 func TestBackedTCPMaterializationFailurePreventsReadiness(t *testing.T) {
-	for _, mode := range []string{"payload", "state"} {
+	for _, mode := range []string{"payload", "state", "local-state"} {
 		t.Run(mode, func(t *testing.T) {
 			wire, input := newBookCapture(t)
 			send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 65000, false)
@@ -378,11 +378,24 @@ func TestBackedTCPMaterializationFailurePreventsReadiness(t *testing.T) {
 				configuration.DecoderConfig.MaxRetainedTCPBytes = 16384
 			} else {
 				configuration.DecoderConfig.MaxRetainedTCPStateBytes = 16384
+				configuration.DecoderConfig.LocalCompletionStateLoss = mode == "local-state"
 			}
 			err := New(configuration).CollectPcap(input)
 			manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
 			_, readyErr := os.Stat(filepath.Join(out, evidence.AuditReadyFile))
-			if err == nil || manifest.Status != "error" || !os.IsNotExist(readyErr) {
+			wantStatus := "error"
+			if mode == "local-state" {
+				wantStatus = "partial"
+				var partial *localReassemblyCoverageError
+				if !errors.As(err, &partial) || !errors.Is(err, core.ErrCompletionStateBudget) || manifest.Error != "" || manifest.AdmittedPackets != uint64(wire.n) {
+					t.Fatalf("local failure lost coverage or admission: %v, %+v", err, manifest)
+				}
+				health := bookJSON[core.StateBudgetHealth](t, filepath.Join(out, "TCPStreamStateBudget.json"))
+				if health.Exceeded || health.CompletionRejectedBytes == 0 || health.RetainedBytes != 0 || health.PeakBytes > health.LimitBytes {
+					t.Fatal(health)
+				}
+			}
+			if err == nil || manifest.Status != wantStatus || !os.IsNotExist(readyErr) {
 				t.Fatalf("backing materialization failure advertised success: err=%v manifest=%+v ready=%v", err, manifest, readyErr)
 			}
 			if !errors.Is(err, tcp.ErrRetainedPayloadLimit) && !strings.Contains(err.Error(), "materialization") && !strings.Contains(err.Error(), "stream state budget exceeded") {

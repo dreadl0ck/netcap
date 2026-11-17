@@ -17,7 +17,7 @@ import (
 )
 
 func TestStoredTCPMaterializationBudgets(t *testing.T) {
-	for _, mode := range []string{"state", "payload", "loaded-append", "missing-fragment", "unlimited"} {
+	for _, mode := range []string{"state", "payload", "loaded-append", "missing-fragment", "completion-missing-fragment", "unlimited"} {
 		t.Run(mode, func(t *testing.T) {
 			cancelled := false
 			state, err := aggregate.Open(t.TempDir(), 1024, func() { cancelled = true })
@@ -34,6 +34,10 @@ func TestStoredTCPMaterializationBudgets(t *testing.T) {
 				t.Fatal(err)
 			}
 			s := &storedTCPReader{state: state, prefix: "test/tcp/", budget: budget}
+			missing := mode == "missing-fragment" || mode == "completion-missing-fragment"
+			if mode == "completion-missing-fragment" {
+				s.completionBudget = budget.CompletionView()
+			}
 			if mode == "payload" || mode == "loaded-append" {
 				s.payloadBudget = &retainedPayloadBudget{limit: 4, onExceeded: func() { cancelled = true }}
 			}
@@ -42,7 +46,7 @@ func TestStoredTCPMaterializationBudgets(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if mode == "missing-fragment" {
+			if missing {
 				if err := state.Do(func(tx *aggregate.Tx) error { return tx.Delete(s.prefix + "0000000000000001") }); err != nil {
 					t.Fatal(err)
 				}
@@ -61,8 +65,8 @@ func TestStoredTCPMaterializationBudgets(t *testing.T) {
 				if err == nil || !cancelled {
 					t.Fatal("materialization did not fail capture", err, cancelled, state.Health())
 				}
-				if mode == "missing-fragment" {
-					if state.Error() == nil {
+				if missing {
+					if state.Error() == nil || errors.Is(err, core.ErrCompletionStateBudget) {
 						t.Fatal("integrity failure did not fail storage")
 					}
 				} else {
