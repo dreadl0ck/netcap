@@ -80,6 +80,15 @@
     "verification": "Full portable collector suite passes (146.319 s); native evidence/command race suites, focused collector coverage races and targeted vet pass",
     "remaining": "Independent per-stage sealing and explicit partial-result query admission, reconstruction/parser pressure isolation and original-corpus qualification remain open"
   },
+  "writerFinalization": {
+    "source": "c5e87e3",
+    "status": "implemented and verified for protobuf/JSON/CSV file-writer failures, shared/observed wrappers and capture readiness",
+    "implementation": "File writers retain their first write/header/flush/finalization error. Shared writer references preserve their own generation's status after registry removal; observed wrappers forward it. Collector teardown checks every native writer after all closers finish and propagates failures to capture finalization. Buffer/compressor/file close errors are checked; failed compression releases background workers",
+    "controls": "All 12 format/buffering/compression combinations reject an externally closed output during finalization. Record-write errors remain sticky. Concurrent shared closes and a fresh writer generation preserve isolation. 32 failed compressed outputs retain at most eight additional background goroutines. A collector close-failure control writes an error manifest and no full-readiness marker",
+    "pitfalls": "CSV record failures previously retried forever, including partial writes; writes now return errors or short-write diagnostics without replaying bytes. Failed compressor Close could return without stopping its worker; discard reset joins the failed generation",
+    "verification": "Full portable collector suite passes (141.584 s); full netio races, native focused writer/collector races, vet and workflow validation pass. Capture-contract CI now includes netio, HTTP/file and command-exit races/vet with matching source triggers",
+    "remaining": "Per-stage output seals and partial-result query admission, resource-pressure isolation and original/native-platform qualification remain open"
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
