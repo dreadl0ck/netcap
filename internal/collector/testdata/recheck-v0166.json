@@ -178,6 +178,11 @@
     "implementation": "Sealed audit continuation requires the run, stage and query generations. The query generation binds audit type, filter, projection, Community ID selection and output mode; page size remains adjustable.",
     "verification": "Web UI and MCP race suites pass. Local and service tests reject changed filters, projections and audit types. The official stdio harness validates sealed continuation and rejects changed filters and fields; 48 of 119 tools pass its success checks."
   },
+  "scopedAnalysisPhase": {
+    "source": "9a429c8",
+    "implementation": "Scoped audit stats expose rules and timeline phases during post-processing. Completed sessions report the ready timeline generation when it still matches the current audit inventory. MCP exposes these fields via get_session_info.audit_stats.",
+    "verification": "Full Web UI and MCP race suites pass. The held-lane test observes the timeline phase and verifies the completed replacement generation. The live stdio check confirms a completed session reports its timeline generation; 48 of 119 tools pass its success checks."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
