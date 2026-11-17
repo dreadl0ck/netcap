@@ -22,8 +22,8 @@ func (s *Server) registerInventoryTools() error {
 	tools := []server.ServerTool{
 		simpleSessionTool(s, "list_hosts",
 			"List all hosts (IP profiles) seen in the session, with packet and byte counts. "+
-				"Sort client-side to obtain a top-talkers view.",
-			"/api/hosts", nil),
+				"Use view=identity for scoped names, accounts and evidence, or view=directory for unattached directory observations. Identity availability and generation accompany every page.",
+			"/api/hosts", []queryArg{{Name: "view", Description: "traffic (default), identity or directory; each view has independent pagination."}}),
 		simpleSessionTool(s, "list_devices",
 			"List all devices (MAC addresses) seen in the session, with vendor lookups.",
 			"/api/devices", nil),

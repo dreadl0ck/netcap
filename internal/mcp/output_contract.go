@@ -9,28 +9,51 @@ import (
 )
 
 func toolOutputSchema(name string) json.RawMessage {
+	var variants []any
 	properties := map[string]any{
 		"text": map[string]any{"type": "string"}, "data": map[string]any{},
 		"artifact_id": map[string]any{"type": "string"}, "sha256": map[string]any{"type": "string"},
 		"size_bytes": map[string]any{"type": "integer", "minimum": 0},
 	}
 	if key := pagedCollectionKeys[name]; key != "" {
+		required := []string{key, "totalCount", "returned", "offset", "next_offset", "limit", "generation", "has_more"}
 		properties[key] = map[string]any{"type": "array", "items": map[string]any{"type": "object"}}
 		for _, field := range []string{"totalCount", "returned", "offset", "next_offset", "limit"} {
 			properties[field] = map[string]any{"type": "integer", "minimum": 0}
 		}
 		properties["generation"] = map[string]any{"type": "string"}
 		properties["has_more"] = map[string]any{"type": "boolean"}
+		if name == "list_alerts_grouped" {
+			properties["groupCount"] = map[string]any{"type": "integer", "minimum": 0}
+			required = append(required, "groupCount")
+		}
+		variants = append(variants, map[string]any{"required": required})
 	}
 	if name == "query_audit_records" {
 		properties["records"] = map[string]any{"type": "array", "items": map[string]any{"type": "object"}}
 		properties["summary"] = map[string]any{"type": "object"}
 		properties["returned"] = map[string]any{"type": "integer", "minimum": 0}
+		properties["count_only"] = map[string]any{"type": "boolean"}
+		variants = append(variants, map[string]any{
+			"required": []string{"session_id", "type", "limit", "offset", "terminal", "summary", "returned", "count_only"},
+			"oneOf": []any{
+				map[string]any{"properties": map[string]any{"count_only": map[string]any{"const": false}}, "required": []string{"records"}},
+				map[string]any{"properties": map[string]any{"count_only": map[string]any{"const": true}, "returned": map[string]any{"const": 0}}, "not": map[string]any{"required": []string{"records"}}},
+			},
+		})
 	}
 	if name == "get_session_info" || name == "wait_for_session" {
 		properties["completed"] = map[string]any{"type": "boolean"}
 	}
-	raw, _ := json.Marshal(map[string]any{"type": "object", "properties": properties, "additionalProperties": true, "description": "Successful structured result. Object fields remain native; arrays/scalars use data and plain text uses text. Oversized results provide a complete session-bound JSON artifact readable with read_mcp_artifact."})
+	schema := map[string]any{"type": "object", "properties": properties, "additionalProperties": true, "description": "Successful structured result. Object fields remain native; arrays/scalars use data and plain text uses text. Oversized results provide a complete session-bound JSON artifact readable with read_mcp_artifact."}
+	if len(variants) != 0 {
+		variants = append(variants, map[string]any{
+			"required":   []string{"_oversized", "artifact_id", "resource_uri", "size_bytes", "sha256"},
+			"properties": map[string]any{"_oversized": map[string]any{"const": true}, "artifact_id": map[string]any{"type": "string", "minLength": 1}, "resource_uri": map[string]any{"type": "string", "minLength": 1}, "sha256": map[string]any{"type": "string", "pattern": "^[0-9a-f]{64}$"}},
+		})
+		schema["anyOf"] = variants
+	}
+	raw, _ := json.Marshal(schema)
 	return raw
 }
 

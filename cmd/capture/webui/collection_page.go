@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-func respondCollectionPage(w http.ResponseWriter, r *http.Request, rows any, key string) bool {
+func respondCollectionPage(w http.ResponseWriter, r *http.Request, rows any, key string, metadata ...map[string]any) bool {
 	q := r.URL.Query()
 	if q.Get("mcpPage") != "true" {
 		return false
@@ -56,6 +56,14 @@ func respondCollectionPage(w http.ResponseWriter, r *http.Request, rows any, key
 	sort.SliceStable(items, func(i, j int) bool { return bytes.Compare(items[i], items[j]) < 0 })
 	hash := sha256.New()
 	hash.Write([]byte(key + "\x00"))
+	for _, extra := range metadata {
+		raw, err := json.Marshal(extra)
+		if err != nil {
+			return fail(500, err)
+		}
+		hash.Write(raw)
+		hash.Write([]byte{0})
+	}
 	for _, item := range items {
 		hash.Write(item)
 		hash.Write([]byte{0})
@@ -81,6 +89,12 @@ func respondCollectionPage(w http.ResponseWriter, r *http.Request, rows any, key
 		used += len(raw)
 	}
 	next := offset + len(page)
-	RespondJSON(w, 200, map[string]any{key: page, "totalCount": len(items), "limit": limit, "offset": offset, "returned": len(page), "next_offset": next, "has_more": next < len(items), "generation": generation})
+	response := map[string]any{key: page, "totalCount": len(items), "limit": limit, "offset": offset, "returned": len(page), "next_offset": next, "has_more": next < len(items), "generation": generation}
+	for _, extra := range metadata {
+		for name, value := range extra {
+			response[name] = value
+		}
+	}
+	RespondJSON(w, 200, response)
 	return true
 }

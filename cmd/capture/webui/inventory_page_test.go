@@ -79,3 +79,51 @@ func TestInventoryHandlersApplySearchAndPaging(t *testing.T) {
 		})
 	}
 }
+
+func TestGroupedAlertPagesCountGroupsAndUnderlyingAlertsSeparately(t *testing.T) {
+	dir := t.TempDir()
+	var alerts []proto.Message
+	for i := range 123 {
+		for range 2 {
+			alerts = append(alerts, &types.Alert{RuleName: fmt.Sprintf("rule-%03d", i), Severity: "info", Timestamp: int64(i)})
+		}
+	}
+	writeTimelineAuditFile(t, dir, "Alert", types.Type(types.Type_value["NC_Alert"]), alerts)
+	s := &Server{outDir: dir}
+	offset, seen := 0, make(map[string]bool)
+	generation := ""
+	for {
+		w := httptest.NewRecorder()
+		s.handleGroupedAlerts(w, httptest.NewRequest("GET", fmt.Sprintf("/api/alerts/grouped?mcpPage=true&pageLimit=17&pageOffset=%d&pageGeneration=%s", offset, generation), nil))
+		if w.Code != 200 {
+			t.Fatal(w.Code, w.Body.String())
+		}
+		var page struct {
+			Groups     []GroupedAlert `json:"groups"`
+			TotalCount int            `json:"totalCount"`
+			GroupCount int            `json:"groupCount"`
+			NextOffset int            `json:"next_offset"`
+			More       bool           `json:"has_more"`
+			Generation string         `json:"generation"`
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &page); err != nil {
+			t.Fatal(err)
+		}
+		if page.TotalCount != 246 || page.GroupCount != 123 || page.NextOffset != offset+len(page.Groups) {
+			t.Fatal("ambiguous group page counts", page)
+		}
+		for _, group := range page.Groups {
+			if seen[group.RuleName] {
+				t.Fatal("duplicate group", group.RuleName)
+			}
+			seen[group.RuleName] = true
+		}
+		if !page.More {
+			break
+		}
+		offset, generation = page.NextOffset, page.Generation
+	}
+	if len(seen) != 123 {
+		t.Fatal("group pagination lost results", len(seen))
+	}
+}

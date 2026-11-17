@@ -481,6 +481,26 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 		totalCount += g.Count
 	}
 	groupCount := len(groups)
+	if query.Get("mcpPage") == "true" {
+		if search := strings.ToLower(query.Get("pageSearch")); search != "" {
+			matched := make([]GroupedAlert, 0)
+			totalCount = 0
+			for _, group := range groups {
+				raw, err := json.Marshal(group)
+				if err != nil {
+					RespondJSON(w, 500, map[string]string{"error": err.Error()})
+					return
+				}
+				if strings.Contains(strings.ToLower(string(raw)), search) {
+					matched = append(matched, group)
+					totalCount += group.Count
+				}
+			}
+			groups, groupCount = matched, len(matched)
+		}
+		respondCollectionPage(w, r, groups, "groups", map[string]any{"totalCount": totalCount, "groupCount": groupCount})
+		return
+	}
 	start := offset
 	end := offset + limit
 

@@ -168,6 +168,7 @@ func (s *Server) handleQueryAuditRecords(_ context.Context, req mcplib.CallToolR
 		"limit":      limit,
 		"offset":     offset,
 		"terminal":   terminal,
+		"count_only": countOnly,
 	}
 	if filterExpr != "" {
 		out["filter"] = filterExpr

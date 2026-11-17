@@ -20,6 +20,8 @@
 package webui
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -118,7 +120,36 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if respondCollectionPage(w, r, response.Hosts, "hosts") {
+	if r.URL.Query().Get("mcpPage") == "true" {
+		view := r.URL.Query().Get("view")
+		if view == "" {
+			view = "traffic"
+		}
+		var rows any = response.Hosts
+		switch view {
+		case "traffic":
+		case "identity", "directory":
+			field := "hosts"
+			if view == "directory" {
+				field = "directory"
+			}
+			rows = []any{}
+			if identity.Report != nil && identity.Report[field] != nil {
+				rows = identity.Report[field]
+			}
+		default:
+			RespondJSON(w, 400, map[string]string{"error": "view must be traffic, identity or directory"})
+			return
+		}
+		encoded, _ := json.Marshal(identity)
+		digest := sha256.Sum256(encoded)
+		summary := map[string]any{"state": identity.State, "generation": hex.EncodeToString(digest[:])}
+		for _, field := range []string{"schema", "overflow", "unscopedRecords", "limitations"} {
+			if value, ok := identity.Report[field]; ok {
+				summary[field] = value
+			}
+		}
+		respondCollectionPage(w, r, rows, "hosts", map[string]any{"view": view, "identity": summary})
 		return
 	}
 	json.NewEncoder(w).Encode(response)

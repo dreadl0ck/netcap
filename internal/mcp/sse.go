@@ -43,6 +43,7 @@ type SSERecord struct {
 //   - err: transport or parse error (not an SSE "event: error" — that's
 //     surfaced in terminalEvent)
 func (c *NetcapClient) StreamAuditRecords(auditType string, q url.Values, maxBytes int) (records []json.RawMessage, completeJSON json.RawMessage, terminalEvent string, err error) {
+	records = make([]json.RawMessage, 0)
 	u := c.baseURL + "/api/audit/" + url.PathEscape(auditType) + "/stream"
 	if len(q) > 0 {
 		u += "?" + q.Encode()

@@ -165,8 +165,18 @@ func TestCapabilityResponseBounds(t *testing.T) {
 		t.Fatal(err)
 	}
 	result := callCapability(t, s, "get_features", nil)
-	if !result.IsError || contentSize(result) > 1000 {
+	if result.IsError || contentSize(result) > 1000 {
 		t.Fatalf("oversized response escaped: %d", contentSize(result))
+	}
+	var artifact struct {
+		ID string `json:"artifact_id"`
+	}
+	if err := json.Unmarshal(result.RawStructuredContent, &artifact); err != nil {
+		t.Fatal(err)
+	}
+	entry := s.carve.Get(artifact.ID)
+	if entry == nil || len(entry.Bytes) <= MaxResponseBytes {
+		t.Fatal("oversized response was not retained")
 	}
 	if _, err := readAllBounded(strings.NewReader("12345"), 4); err == nil {
 		t.Fatal("transport accepted oversized response")

@@ -15,6 +15,7 @@ var pagedCollectionKeys = map[string]string{
 	"list_domains": "domains", "list_http_records": "http", "list_certificates": "certificates",
 	"list_software": "software", "list_secrets": "secrets", "list_alerts": "alerts",
 	"list_extracted_files": "files", "list_rules": "rules",
+	"list_alerts_grouped": "groups",
 }
 
 func pageInteger(req mcplib.CallToolRequest, key string, fallback, minimum, maximum int) (int, error) {

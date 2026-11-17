@@ -45,7 +45,7 @@ func (s *Server) registerActionTools() error {
 			"Alerts raised by detection rules, YARA, and other sources in this session.",
 			"/api/alerts", []queryArg{qLimit(500), qOffset(), qSearch()}),
 		simpleSessionTool(s, "list_alerts_grouped",
-			"Alerts grouped by rule/source.",
+			"Alerts grouped by rule/source. Pagination counts groups; groupCount is the number of groups and totalCount is the number of underlying alerts.",
 			"/api/alerts/grouped", nil),
 		simpleSessionTool(s, "get_alert_stats",
 			"Summary statistics for alerts in this session.",

@@ -7,12 +7,28 @@
 package mcp
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 )
+
+func TestEmptyAuditStreamSerializesRecordsAsArray(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(w, "event: complete\ndata: {\"total\":0,\"scanned\":0}\n\n")
+	}))
+	defer ts.Close()
+	records, _, terminal, err := NewNetcapClient(ts.URL).StreamAuditRecords("DNS", nil, 1<<20)
+	if err != nil || terminal != "complete" {
+		t.Fatal(terminal, err)
+	}
+	wire, err := json.Marshal(map[string]any{"records": records})
+	if err != nil || string(wire) != `{"records":[]}` {
+		t.Fatalf("empty records: %s, %v", wire, err)
+	}
+}
 
 // TestStreamAuditRecordsDecodesSSE drives the SSE parser against a
 // canned event stream: 2 record events, a progress event (ignored by

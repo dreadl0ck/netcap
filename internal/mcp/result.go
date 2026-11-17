@@ -53,20 +53,11 @@ func textResult(text string) *mcp.CallToolResult {
 	}
 }
 
-// jsonResult marshals data as pretty JSON and returns it as a single
-// TextContent. If the marshalled payload exceeds MaxResponseBytes, a
-// summary is returned instead pointing the caller at pagination.
+// jsonResult leaves whole-response sizing and artifact fallback to structuredToolResult.
 func jsonResult(data any) *mcp.CallToolResult {
 	buf, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return errResult(fmt.Errorf("marshalling response: %w", err))
-	}
-	if len(buf) > MaxResponseBytes {
-		return errResult(fmt.Errorf(
-			"response too large (%d bytes, max %d); use pagination "+
-				"(limit/offset) or a more specific filter",
-			len(buf), MaxResponseBytes,
-		))
 	}
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{mcp.NewTextContent(string(buf))},
@@ -75,15 +66,8 @@ func jsonResult(data any) *mcp.CallToolResult {
 
 // rawJSONResult wraps an already-encoded JSON payload (typically the body
 // of an HTTP response from the webui API) as a TextContent without
-// re-marshalling. Honors the same size cap as jsonResult.
+// re-marshalling. Whole-response sizing happens after structured output is attached.
 func rawJSONResult(raw json.RawMessage) *mcp.CallToolResult {
-	if len(raw) > MaxResponseBytes {
-		return errResult(fmt.Errorf(
-			"response too large (%d bytes, max %d); use pagination "+
-				"(limit/offset) or a more specific filter",
-			len(raw), MaxResponseBytes,
-		))
-	}
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{mcp.NewTextContent(string(raw))},
 	}

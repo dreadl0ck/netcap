@@ -3301,7 +3301,7 @@ Alerts raised by detection rules, YARA, and other sources in this session.
 
 ### `list_alerts_grouped`
 
-Alerts grouped by rule/source.
+Alerts grouped by rule/source. Pagination counts groups; groupCount is the number of groups and totalCount is the number of underlying alerts.
 
 **Hints:** read-only, idempotent
 
@@ -3309,6 +3309,11 @@ Alerts grouped by rule/source.
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
+| `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
+| `limit` | number |  | Maximum number of results to return. |
+| `offset` | number |  | Pagination offset. |
+| `search` | string |  | Substring filter applied server-side. |
 | `session_id` | string | yes | Session identifier. |
 
 
@@ -3537,7 +3542,7 @@ Cryptographic fingerprints (JA4/JA4S/JA4SSH) observed in the session.
 
 ### `list_hosts`
 
-List all hosts (IP profiles) seen in the session, with packet and byte counts. Sort client-side to obtain a top-talkers view.
+List all hosts (IP profiles) seen in the session, with packet and byte counts. Use view=identity for scoped names, accounts and evidence, or view=directory for unattached directory observations. Identity availability and generation accompany every page.
 
 **Hints:** read-only, idempotent
 
@@ -3551,6 +3556,7 @@ List all hosts (IP profiles) seen in the session, with packet and byte counts. S
 | `offset` | number |  | Pagination offset. |
 | `search` | string |  | Substring filter applied server-side. |
 | `session_id` | string | yes | Session identifier. |
+| `view` | string |  | traffic (default), identity or directory; each view has independent pagination. |
 
 
 ### `list_http_records`
