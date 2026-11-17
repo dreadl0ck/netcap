@@ -148,6 +148,11 @@
     "implementation": "The small timeline worker caps both stored input and decoded snapshots at 262144 bytes. Over-expansion falls back to the regular worker before indexing or publishing any partial result.",
     "verification": "Five runs of the two-record fixture took 10.7–12.3 ms to report ready through the polling helper while the regular slot was held. The 4096-record over-expansion control retains every record on fallback. The full Web UI race suite passes."
   },
+  "originalStaleProbeReplay": {
+    "source": "a0c283f",
+    "verification": "TestOriginalStaleProbeReplay passes under the race detector on both SHA-256-pinned public captures. It replays 46937 and 57430 packet records through PacketEvents and Engine.Observe. Frames 14627, 23822 and 51004 each retain one conflict byte.",
+    "remaining": "The replay establishes detector behavior on these public bytes. Evaluator identity and stale-probe classification policy are not established."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
