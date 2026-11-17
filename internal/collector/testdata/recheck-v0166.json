@@ -173,6 +173,11 @@
     "implementation": "Analysis completion waits on the timeline build notification instead of rescanning audit directories every 25 ms. On notification it resolves the current generation again, and shutdown interrupts the wait.",
     "verification": "Full Web UI race suite passes. Two focused tests pass ten repetitions under race instrumentation: replacement of a queued generation before completion, and shutdown while the timeline lane is occupied."
   },
+  "sealedAuditQueryGeneration": {
+    "source": "fb72e75",
+    "implementation": "Sealed audit continuation requires the run, stage and query generations. The query generation binds audit type, filter, projection, Community ID selection and output mode; page size remains adjustable.",
+    "verification": "Web UI and MCP race suites pass. Local and service tests reject changed filters, projections and audit types. The official stdio harness validates sealed continuation and rejects changed filters and fields; 48 of 119 tools pass its success checks."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
