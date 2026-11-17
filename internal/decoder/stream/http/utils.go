@@ -150,14 +150,17 @@ func readCookies(cookies []*http.Cookie) []*types.HTTPCookie {
 }
 
 func newHTTPFromResponse(res *http.Response) *types.HTTP {
+	body, release, err := file.ReadBody(res.Body)
+	defer release()
+	return httpFromResponseBody(res, body, err)
+}
+
+func httpFromResponseBody(res *http.Response, body []byte, err error) *types.HTTP {
 	var (
 		detected      string
 		contentLength = int32(res.ContentLength)
 	)
 
-	// read body data
-	body, release, err := file.ReadBody(res.Body)
-	defer release()
 	if err == nil {
 
 		if contentLength == -1 {

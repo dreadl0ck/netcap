@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -116,6 +117,18 @@ func TestHTTPSourceIncludesPairedPayloads(t *testing.T) {
 	}
 	if len(got) != 2 || string(got[0].RequestBody) != body || string(got[0].ResponseBody) != body || got[1].URL != "/next" {
 		t.Fatal("incomplete payloads or transaction pairing")
+	}
+}
+
+func TestHTTPRecordBorrowsRetainedResponsePayload(t *testing.T) {
+	previous := decoderconfig.Instance
+	t.Cleanup(func() { decoderconfig.Instance = previous })
+	decoderconfig.Instance = decoderconfig.DefaultConfig.Clone()
+	decoderconfig.Instance.IncludePayloads = true
+	body := bytes.Repeat([]byte("response"), 1<<16)
+	record := httpFromResponseBody(&http.Response{ContentLength: -1}, body, nil)
+	if record.ResContentLength != int32(len(body)) || len(record.ResponseBody) != len(body) || &record.ResponseBody[0] != &body[0] {
+		t.Fatal("plain response body was copied or truncated during record construction")
 	}
 }
 

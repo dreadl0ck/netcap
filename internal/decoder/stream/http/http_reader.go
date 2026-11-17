@@ -81,6 +81,7 @@ type httpRequest struct {
 }
 
 type httpResponse struct {
+	body                []byte
 	evidence            messageEvidence
 	readIssue           bool
 	transient           bool
@@ -189,7 +190,7 @@ func (h *httpReader) decodeTransportRun() {
 
 	// iterate over responses
 	for _, res := range h.responses { // populate types.HTTP with all infos from response
-		ht := newHTTPFromResponse(res.response)
+		ht := httpFromResponseBody(res.response, res.body, nil)
 		if res.transient {
 			ht.ResContentTypeDetected = res.detectedContentType
 			if res.response.ContentLength < 0 {
@@ -470,6 +471,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 	streamutils.Stats.Unlock()
 
 	h.responses = append(h.responses, &httpResponse{
+		body:                body,
 		evidence:            evidence,
 		readIssue:           err != nil,
 		transient:           !decoderconfig.Instance.IncludePayloads && (decoderconfig.Instance.FileStorage == "" || h.sourceMode),
