@@ -8,6 +8,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 )
@@ -21,6 +22,7 @@ const (
 // Offsets refer to the decompressed stream. Recoverable means the entire bounded
 // record was consumed; callers must never retry an unread or ambiguous payload.
 type captureReadError struct {
+	Ordinal     uint64
 	Offset      int64
 	Reason      string
 	Recoverable bool
@@ -31,6 +33,7 @@ func (e *captureReadError) Error() string {
 }
 
 type capturePacketInfo struct {
+	Source              evidence.SourcePacket
 	FCSKnown            bool
 	FCSBytes            int
 	TimestampNormalized bool
@@ -79,6 +82,19 @@ func (s *captureStream) fail(offset int64, reason string, recoverable bool) erro
 	return err
 }
 
+func (s *captureStream) failPacket(offset int64, reason string, recoverable bool, ordinal uint64) error {
+	err := s.fail(offset, reason, recoverable)
+	err.(*captureReadError).Ordinal = ordinal
+	return err
+}
+
+func captureByteOrder(order binary.ByteOrder) string {
+	if order == binary.BigEndian {
+		return "big"
+	}
+	return "little"
+}
+
 type boundedPCAPReader struct {
 	*captureStream
 	order    binary.ByteOrder
@@ -90,6 +106,7 @@ type boundedPCAPReader struct {
 	snaplen  uint32
 	link     layers.LinkType
 	buffer   []byte
+	ordinal  uint64
 }
 
 func newBoundedPCAPReader(input io.Reader) (*boundedPCAPReader, error) {
@@ -162,12 +179,16 @@ func (r *boundedPCAPReader) readPacket(reuse bool) ([]byte, gopacket.CaptureInfo
 		return nil, ci, r.fail(offset, fmt.Sprintf("PCAP record header: %v", err), false)
 	}
 	caplen, wire := r.order.Uint32(header[8:12]), r.order.Uint32(header[12:16])
+	if r.ordinal == ^uint64(0) {
+		return nil, ci, r.fail(offset, "PCAP packet ordinal exhausted", false)
+	}
+	r.ordinal++
 	// libpcap sf-pcap.c: pre-2.3 lengths are reversed; 2.3 exists in both orders.
 	if r.minor < 3 || r.minor == 3 && caplen > wire {
 		caplen, wire = wire, caplen
 	}
 	if caplen > maxInputPacket {
-		return nil, ci, r.fail(offset, fmt.Sprintf("PCAP caplen %d exceeds hard packet cap %d", caplen, maxInputPacket), false)
+		return nil, ci, r.failPacket(offset, fmt.Sprintf("PCAP caplen %d exceeds hard packet cap %d", caplen, maxInputPacket), false, r.ordinal)
 	}
 	data := r.buffer
 	if !reuse || cap(data) < int(caplen) {
@@ -178,10 +199,10 @@ func (r *boundedPCAPReader) readPacket(reuse bool) ([]byte, gopacket.CaptureInfo
 		r.buffer = data
 	}
 	if err := r.read(data); err != nil {
-		return nil, ci, r.fail(offset, fmt.Sprintf("truncated PCAP payload: %v", err), false)
+		return nil, ci, r.failPacket(offset, fmt.Sprintf("truncated PCAP payload: %v", err), false, r.ordinal)
 	}
 	if caplen > wire {
-		return nil, ci, r.fail(offset, fmt.Sprintf("PCAP caplen %d exceeds origlen %d", caplen, wire), true)
+		return nil, ci, r.failPacket(offset, fmt.Sprintf("PCAP caplen %d exceeds origlen %d", caplen, wire), true, r.ordinal)
 	}
 	frac, units := r.order.Uint32(header[4:8]), uint32(1_000_000)
 	if r.nanos {
@@ -189,7 +210,8 @@ func (r *boundedPCAPReader) readPacket(reuse bool) ([]byte, gopacket.CaptureInfo
 	}
 	ci.Timestamp = time.Unix(int64(r.order.Uint32(header[:4])), int64(frac)*int64(1_000_000_000/units)).UTC()
 	ci.CaptureLength, ci.Length = int(caplen), int(wire)
-	ci.AncillaryData = []any{r.link, capturePacketInfo{Order: r.order, Offset: offset, SnaplenOverride: caplen > r.snaplen, TimestampNormalized: frac >= units, FCSKnown: r.fcsKnown, FCSBytes: r.fcsBytes}}
+	source := evidence.SourcePacket{Ordinal: r.ordinal, Offset: offset, OffsetNamespace: evidence.SourceOffsetNamespace, OffsetKind: "record-header", ByteOrder: captureByteOrder(r.order), TimestampEncoding: "seconds-fraction", TimestampSeconds: uint64(r.order.Uint32(header[:4])), TimestampFraction: frac, TimestampUnits: uint64(units)}
+	ci.AncillaryData = []any{r.link, capturePacketInfo{Source: source, Order: r.order, Offset: offset, SnaplenOverride: caplen > r.snaplen, TimestampNormalized: frac >= units, FCSKnown: r.fcsKnown, FCSBytes: r.fcsBytes}}
 	return data, ci, nil
 }
 

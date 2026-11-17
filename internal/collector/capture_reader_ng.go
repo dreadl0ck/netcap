@@ -3,6 +3,7 @@ package collector
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/packetview"
 	"io"
 	"math"
@@ -31,10 +32,13 @@ type scopedNgReader struct {
 	continuity    map[int]captureNGInterface
 	keyLog        func([]byte)
 	*captureStream
-	order         binary.ByteOrder
-	interfaces    []captureNGInterface
-	interfaceBase int
-	buffer        []byte
+	order          binary.ByteOrder
+	interfaces     []captureNGInterface
+	interfaceBase  int
+	buffer         []byte
+	ordinal        uint64
+	sectionOrdinal uint64
+	hasSection     bool
 }
 
 func newBoundedNGReader(input io.Reader) (*scopedNgReader, error) {
@@ -143,6 +147,10 @@ func (r *scopedNgReader) section(body []byte, offset int64) error {
 		return r.fail(offset, err.Error(), false)
 	}
 	r.interfaceBase += len(r.interfaces)
+	if r.hasSection {
+		r.sectionOrdinal++
+	}
+	r.hasSection = true
 	r.interfaces = nil
 	return nil
 }
@@ -217,9 +225,13 @@ func (r *scopedNgReader) addInterface(body []byte, offset int64) error {
 }
 
 func (r *scopedNgReader) packet(kind uint32, body []byte, offset int64) ([]byte, gopacket.CaptureInfo, error) {
+	if r.ordinal == ^uint64(0) {
+		return nil, gopacket.CaptureInfo{}, r.fail(offset, "PCAPNG packet ordinal exhausted", false)
+	}
+	r.ordinal++
 	var ci gopacket.CaptureInfo
 	bad := func(reason string) ([]byte, gopacket.CaptureInfo, error) {
-		return nil, ci, r.fail(offset, reason, true)
+		return nil, ci, r.failPacket(offset, reason, true, r.ordinal)
 	}
 	var iface, caplen, wire uint32
 	var stamp uint64
@@ -269,7 +281,12 @@ func (r *scopedNgReader) packet(kind uint32, body []byte, offset int64) ([]byte,
 		ci.Timestamp = time.Unix(int64(secs)+intf.offset, int64(nanos)).UTC()
 	}
 	ci.CaptureLength, ci.Length, ci.InterfaceIndex = int(caplen), int(wire), r.interfaceBase+int(iface)
-	ci.AncillaryData = []any{intf.link, capturePacketInfo{Order: r.order, Offset: offset, SnaplenOverride: intf.snaplen != 0 && caplen > intf.snaplen, NoTimestamp: kind == 3, FCSKnown: intf.fcsKnown, FCSBytes: intf.fcsBytes}}
+	encoding := "ticks"
+	if kind == 3 {
+		encoding = "missing"
+	}
+	source := evidence.SourcePacket{Ordinal: r.ordinal, Offset: offset, OffsetNamespace: evidence.SourceOffsetNamespace, OffsetKind: "block-header", Section: r.sectionOrdinal, Interface: iface, ByteOrder: captureByteOrder(r.order), TimestampEncoding: encoding, TimestampTicks: stamp, TimestampUnits: intf.units, TimestampOffset: intf.offset}
+	ci.AncillaryData = []any{intf.link, capturePacketInfo{Source: source, Order: r.order, Offset: offset, SnaplenOverride: intf.snaplen != 0 && caplen > intf.snaplen, NoTimestamp: kind == 3, FCSKnown: intf.fcsKnown, FCSBytes: intf.fcsBytes}}
 	if r.mergeSections && r.continuity[int(iface)] == intf {
 		ci.AncillaryData = append(ci.AncillaryData, packetview.CaptureInterface(iface))
 	}

@@ -60,29 +60,31 @@ type CaptureSegment struct {
 }
 
 type CaptureManifest struct {
-	Producer         *ProducerIdentity `json:"producer,omitempty"`
-	CommunityScopes  *ScopeLedger      `json:"communityScopes,omitempty"`
-	Version          int               `json:"version"`
-	RunID            string            `json:"runId"`
-	CreatedAt        string            `json:"createdAt"`
-	Status           string            `json:"status"`
-	Error            string            `json:"error,omitempty"`
-	Config           CaptureConfig     `json:"config"`
-	ConfigSHA256     string            `json:"configSHA256"`
-	InputSHA256      string            `json:"inputSHA256,omitempty"`
-	IngressPackets   uint64            `json:"ingressPackets"`
-	AdmittedPackets  uint64            `json:"admittedPackets"`
-	QueueDrops       uint64            `json:"queueDrops"`
-	CapturedBytes    uint64            `json:"capturedBytes,string"`
-	WireBytes        uint64            `json:"wireBytes,string"`
-	TruncatedPackets uint64            `json:"truncatedPackets"`
-	FirstNs          *int64            `json:"firstNs,omitempty,string"`
-	LastNs           *int64            `json:"lastNs,omitempty,string"`
-	KernelReceived   *uint64           `json:"kernelReceived"`
-	KernelDrops      *uint64           `json:"kernelDrops"`
-	KernelStatsError string            `json:"kernelStatsError,omitempty"`
-	Segments         []CaptureSegment  `json:"segments"`
-	Limitations      []string          `json:"limitations"`
+	OrdinalNamespaces   map[string]string `json:"ordinalNamespaces"`
+	SourcePacketRecords uint64            `json:"sourcePacketRecords,string"`
+	Producer            *ProducerIdentity `json:"producer,omitempty"`
+	CommunityScopes     *ScopeLedger      `json:"communityScopes,omitempty"`
+	Version             int               `json:"version"`
+	RunID               string            `json:"runId"`
+	CreatedAt           string            `json:"createdAt"`
+	Status              string            `json:"status"`
+	Error               string            `json:"error,omitempty"`
+	Config              CaptureConfig     `json:"config"`
+	ConfigSHA256        string            `json:"configSHA256"`
+	InputSHA256         string            `json:"inputSHA256,omitempty"`
+	IngressPackets      uint64            `json:"ingressPackets"`
+	AdmittedPackets     uint64            `json:"admittedPackets"`
+	QueueDrops          uint64            `json:"queueDrops"`
+	CapturedBytes       uint64            `json:"capturedBytes,string"`
+	WireBytes           uint64            `json:"wireBytes,string"`
+	TruncatedPackets    uint64            `json:"truncatedPackets"`
+	FirstNs             *int64            `json:"firstNs,omitempty,string"`
+	LastNs              *int64            `json:"lastNs,omitempty,string"`
+	KernelReceived      *uint64           `json:"kernelReceived"`
+	KernelDrops         *uint64           `json:"kernelDrops"`
+	KernelStatsError    string            `json:"kernelStatsError,omitempty"`
+	Segments            []CaptureSegment  `json:"segments"`
+	Limitations         []string          `json:"limitations"`
 }
 
 type ProducerIdentity struct {
@@ -130,19 +132,20 @@ func CurrentProducerIdentity() *ProducerIdentity {
 }
 
 type Capture struct {
-	scopes        map[string]CommunityScope
-	scopeOverflow uint64
-	mu            sync.Mutex
-	directory     string
-	manifest      CaptureManifest
-	writer        *pcapgo.NgWriter
-	file          *os.File
-	interfaces    map[captureInterface]int
-	segment       *CaptureSegment
-	sequence      uint64
-	storageError  error
-	closed        bool
-	sourceInfo    os.FileInfo
+	lastSourceOrdinal uint64
+	scopes            map[string]CommunityScope
+	scopeOverflow     uint64
+	mu                sync.Mutex
+	directory         string
+	manifest          CaptureManifest
+	writer            *pcapgo.NgWriter
+	file              *os.File
+	interfaces        map[captureInterface]int
+	segment           *CaptureSegment
+	sequence          uint64
+	storageError      error
+	closed            bool
+	sourceInfo        os.FileInfo
 }
 
 type captureInterface struct {
@@ -179,6 +182,7 @@ func NewCapture(ctx context.Context, directory string, config CaptureConfig) (*C
 		"retained derivatives preserve packet bytes and timestamps but do not copy original interface options or secrets",
 	}}}
 	c.manifest.Producer = CurrentProducerIdentity()
+	c.manifest.OrdinalNamespaces = packetOrdinalNamespaces(config.Kind)
 	if config.Kind == "file" {
 		file, err := os.Open(config.Source)
 		if err != nil {
@@ -226,12 +230,30 @@ func NewCapture(ctx context.Context, directory string, config CaptureConfig) (*C
 }
 
 func (c *Capture) Observe(data []byte, ci gopacket.CaptureInfo, linkType layers.LinkType) error {
+	return c.ObserveSource(data, ci, linkType, SourcePacket{})
+}
+
+func (c *Capture) ObserveSource(data []byte, ci gopacket.CaptureInfo, linkType layers.LinkType, source SourcePacket) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed {
 		return fmt.Errorf("capture manifest closed")
 	}
 	ordinal := c.manifest.IngressPackets
+	if ordinal == ^uint64(0) {
+		return fmt.Errorf("capture ingress ordinal exhausted")
+	}
+	if source.Ordinal == 0 {
+		source.Ordinal = ordinal + 1
+	}
+	if source.Ordinal <= c.lastSourceOrdinal {
+		return fmt.Errorf("source packet ordinals must increase")
+	}
+	c.lastSourceOrdinal = source.Ordinal
+	c.manifest.SourcePacketRecords = max(c.manifest.SourcePacketRecords, source.Ordinal)
+	if c.manifest.OrdinalNamespaces == nil {
+		c.manifest.OrdinalNamespaces = packetOrdinalNamespaces(c.manifest.Config.Kind)
+	}
 	c.manifest.IngressPackets++
 	c.manifest.CapturedBytes += uint64(len(data))
 	if ci.Length > 0 {
@@ -252,7 +274,19 @@ func (c *Capture) Observe(data []byte, ci gopacket.CaptureInfo, linkType layers.
 	if !c.manifest.Config.RetainPackets {
 		return nil
 	}
-	if int64(len(data))+512 > c.manifest.Config.SegmentBytes {
+	if source.TimestampEncoding == "" {
+		source.TimestampEncoding = "capture-info"
+		source.Interface = uint32(max(0, ci.InterfaceIndex))
+	}
+	digest := sha256.Sum256(data)
+	source.SHA256 = hex.EncodeToString(digest[:])
+	metadata, err := json.Marshal(source)
+	if err != nil {
+		return err
+	}
+	const interfaceReserve = 128
+	packetBytes := int64(52 + interfaceReserve + ((len(data) + 3) &^ 3) + ((len(metadata) + 3) &^ 3))
+	if packetBytes+512 > c.manifest.Config.SegmentBytes {
 		c.storageError = fmt.Errorf("captured packet exceeds retention segment capacity")
 		return c.storageError
 	}
@@ -263,7 +297,7 @@ func (c *Capture) Observe(data []byte, ci gopacket.CaptureInfo, linkType layers.
 	if c.storageError != nil {
 		return c.storageError
 	}
-	if c.segment != nil && c.segment.Bytes+int64(len(data))+128 > c.manifest.Config.SegmentBytes {
+	if c.segment != nil && c.segment.Bytes+packetBytes > c.manifest.Config.SegmentBytes {
 		if err := c.finishSegment(); err != nil {
 			c.storageError = err
 			return err
@@ -314,15 +348,21 @@ func (c *Capture) Observe(data []byte, ci gopacket.CaptureInfo, linkType layers.
 	}
 	ci.InterfaceIndex = index
 	ci.CaptureLength = len(data)
-	if err := c.writer.WritePacket(ci, data); err != nil {
+	if err := c.writer.WritePacketWithOptions(ci, data, pcapgo.NgPacketOptions{PacketID: &source.Ordinal, Comments: []string{string(metadata)}}); err != nil {
 		c.storageError = err
 		return err
 	}
-	c.segment.Bytes += int64(len(data)) + 128
+	c.segment.Bytes += packetBytes
 	c.segment.Packets++
 	c.segment.LastOrdinal = ordinal
 	c.segment.LastNs = fmt.Sprint(ns)
 	return nil
+}
+
+func (c *Capture) SourceRecords(total uint64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.manifest.SourcePacketRecords = max(c.manifest.SourcePacketRecords, total)
 }
 
 func (c *Capture) Checkpoint(admitted, drops uint64) error {

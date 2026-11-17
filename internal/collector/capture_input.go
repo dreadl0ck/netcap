@@ -20,6 +20,7 @@ import (
 // CaptureInputReport describes input coverage independently of audit counts.
 // Issues is bounded; counters include every occurrence, even after it fills.
 type CaptureInputReport struct {
+	SourcePacketRecords  uint64              `json:"sourcePacketRecords"`
 	NormalizedTimestamps int64               `json:"normalizedTimestamps,omitempty"`
 	MissingTimestamps    int64               `json:"missingTimestamps,omitempty"`
 	Format               string              `json:"format"`
@@ -38,6 +39,7 @@ type CaptureInputReport struct {
 }
 
 type CaptureInputIssue struct {
+	Ordinal     uint64 `json:"packetOrdinal,omitempty,string"`
 	Offset      int64  `json:"offset"`
 	Kind        string `json:"kind"`
 	Reason      string `json:"reason"`
@@ -64,9 +66,13 @@ func (e *CaptureInputError) Error() string {
 	return message
 }
 
-func (r *CaptureInputReport) issue(offset int64, kind, reason string, recoverable bool) {
+func (r *CaptureInputReport) issue(offset int64, kind, reason string, recoverable bool, ordinal ...uint64) {
 	if len(r.Issues) < 16 {
-		r.Issues = append(r.Issues, CaptureInputIssue{Offset: offset, Kind: kind, Reason: reason, Recoverable: recoverable})
+		item := CaptureInputIssue{Offset: offset, Kind: kind, Reason: reason, Recoverable: recoverable}
+		if len(ordinal) > 0 {
+			item.Ordinal = ordinal[0]
+		}
+		r.Issues = append(r.Issues, item)
 	}
 }
 
@@ -140,15 +146,21 @@ func walkCaptureInput(ctx context.Context, r captureReader, report *CaptureInput
 			offset, recoverable := int64(0), false
 			if readErr != nil {
 				offset, recoverable = readErr.Offset, readErr.Recoverable
+				report.SourcePacketRecords = max(report.SourcePacketRecords, readErr.Ordinal)
 			}
 			report.ReadErrors++
-			report.issue(offset, "read", err.Error(), recoverable)
+			ordinal := uint64(0)
+			if readErr != nil {
+				ordinal = readErr.Ordinal
+			}
+			report.issue(offset, "read", err.Error(), recoverable, ordinal)
 			if !recoverable {
 				return
 			}
 			report.SkippedRecords++
 			continue
 		}
+		report.SourcePacketRecords = max(report.SourcePacketRecords, inputPacketInfo(ci).Source.Ordinal)
 		if visit != nil && !visit(data, ci) {
 			return
 		}
@@ -165,7 +177,7 @@ func walkCaptureInput(ctx context.Context, r captureReader, report *CaptureInput
 		}
 		if info.NoTimestamp {
 			report.MissingTimestamps++
-			report.issue(info.Offset, "timestamp-unavailable", "PCAPNG simple packet has no timestamp; record timestamp zero is a placeholder", true)
+			report.issue(info.Offset, "timestamp-unavailable", "PCAPNG simple packet has no timestamp; record timestamp zero is a placeholder", true, info.Source.Ordinal)
 		}
 	}
 }
@@ -265,7 +277,8 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 				// not a corrupt PCAP record. Retain its parser qualification.
 				report.DecodeErrors++
 			}
-			report.issue(inputPacketInfo(ci).Offset, kind, failure.Error().Error(), true)
+			info := inputPacketInfo(ci)
+			report.issue(info.Offset, kind, failure.Error().Error(), true, info.Source.Ordinal)
 		}
 		return c.handlePacket(p)
 	})
@@ -274,6 +287,9 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 		report.issue(0, "read", "packet count changed between count and processing passes", false)
 	}
 	resultErr = errors.Join(report.result(), ctx.Err())
+	if c.captureEvidence != nil {
+		c.captureEvidence.SourceRecords(report.SourcePacketRecords)
+	}
 	c.captureInputStatus = report.Status
 	c.captureComplete = report.ReachedEOF && report.Status == "complete" && resultErr == nil
 	data, err := json.MarshalIndent(report, "", "  ")

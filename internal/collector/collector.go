@@ -770,6 +770,10 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	capturedBytes := uint64(len(p.Data()))
 	// Observe ingress serially before pooled-packet ownership moves to a worker.
 	c.flowIngressOrdinal++
+	ordinal := c.flowIngressOrdinal
+	if source := inputPacketInfo(p.Metadata().CaptureInfo).Source.Ordinal; source != 0 {
+		ordinal = source
+	}
 	c.observeCaptureEvidence(p)
 	if c.packetPipeline == nil {
 		limits := packetview.DefaultLimits()
@@ -783,7 +787,7 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	handledLink := false
 	views := packetview.Result{}
 	if c.linkReconstruction != nil {
-		c.linkReconstruction.advance(p, c.flowIngressOrdinal)
+		c.linkReconstruction.advance(p, ordinal)
 	}
 	if p.Layer(layers.LayerTypeUSB) != nil {
 		if c.linkReconstruction == nil {
@@ -796,13 +800,13 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 				break
 			}
 		}
-		c.linkReconstruction.enrichUSB(p, link, c.flowIngressOrdinal)
+		c.linkReconstruction.enrichUSB(p, link, ordinal)
 	}
 	if frame, ok := p.Layer(linkaudit.LayerLinkFrame).(*linkaudit.LinkFrame); ok && (frame.Type == 209 || frame.Type == 300) && c.linkProfiles != nil {
 		if c.linkReconstruction == nil {
 			c.linkReconstruction = &linkReconstructor{profiles: c.linkProfiles}
 		}
-		c.linkReconstruction.enrichDeviceProfile(p, frame, c.flowIngressOrdinal)
+		c.linkReconstruction.enrichDeviceProfile(p, frame, ordinal)
 	}
 	if frame, ok := p.Layer(linkaudit.LayerLinkFrame).(*linkaudit.LinkFrame); ok && (frame.ALP != nil || frame.Type == 3 || frame.Type == 243 || frame.Type == 187 || frame.Type == 201 || frame.Type == 165 && frame.Fields["frame_type"] == "34") && p.ErrorLayer() == nil {
 		handledLink = true
@@ -810,19 +814,19 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 			c.linkReconstruction = &linkReconstructor{profiles: c.linkProfiles}
 		}
 		if frame.ALP != nil {
-			children = c.linkReconstruction.process(p, frame, c.flowIngressOrdinal)
+			children = c.linkReconstruction.process(p, frame, ordinal)
 		} else if frame.Type == 243 {
-			c.linkReconstruction.enrichMPEGTS(p, frame, c.flowIngressOrdinal)
+			c.linkReconstruction.enrichMPEGTS(p, frame, ordinal)
 		} else if frame.Type == 187 || frame.Type == 201 {
-			c.linkReconstruction.enrichHCI(p, frame, c.flowIngressOrdinal)
+			c.linkReconstruction.enrichHCI(p, frame, ordinal)
 		} else if frame.Type == 3 {
-			children = c.linkReconstruction.processAX25(p, frame, c.flowIngressOrdinal)
+			children = c.linkReconstruction.processAX25(p, frame, ordinal)
 		} else {
-			children = c.linkReconstruction.processLoBAC(p, frame, c.flowIngressOrdinal)
+			children = c.linkReconstruction.processLoBAC(p, frame, ordinal)
 		}
-		views.Evidence = []gopacket.Packet{linkEvidence(p, frame, c.flowIngressOrdinal)}
+		views.Evidence = []gopacket.Packet{linkEvidence(p, frame, ordinal)}
 	} else {
-		views = c.packetPipeline.Process(p, c.flowIngressOrdinal)
+		views = c.packetPipeline.Process(p, ordinal)
 	}
 	if c.linkReconstruction != nil {
 		for _, event := range c.linkReconstruction.drainEvents() {
@@ -850,9 +854,9 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	c.admittedBytes += capturedBytes
 	for _, child := range children {
 		if frame, ok := child.Layer(linkaudit.LayerLinkFrame).(*linkaudit.LinkFrame); ok && frame.Type == 243 {
-			c.linkReconstruction.enrichMPEGTS(child, frame, c.flowIngressOrdinal)
+			c.linkReconstruction.enrichMPEGTS(child, frame, ordinal)
 		}
-		if !c.queuePacketViews(child, c.packetPipeline.Process(child, c.flowIngressOrdinal), deadline) {
+		if !c.queuePacketViews(child, c.packetPipeline.Process(child, ordinal), deadline) {
 			c.linkReconstruction.err = fmt.Errorf("derived link packet dispatch timed out")
 			if c.runCancel != nil {
 				c.runCancel()

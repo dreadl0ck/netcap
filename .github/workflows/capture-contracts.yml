@@ -10,6 +10,9 @@ on:
       - 'go.sum'
       - 'defaults/**/*.go'
       - 'internal/aggregate/**/*.go'
+      - 'internal/evidence/**/*.go'
+      - 'internal/packetview/**/*.go'
+      - 'internal/packetmeta/**/*.go'
       - 'internal/collector/**/*.go'
       - 'internal/collector/testdata/**'
       - 'internal/decoder/**/*.go'
@@ -25,6 +28,9 @@ on:
       - 'go.sum'
       - 'defaults/**/*.go'
       - 'internal/aggregate/**/*.go'
+      - 'internal/evidence/**/*.go'
+      - 'internal/packetview/**/*.go'
+      - 'internal/packetmeta/**/*.go'
       - 'internal/collector/**/*.go'
       - 'internal/collector/testdata/**'
       - 'internal/decoder/**/*.go'
@@ -77,6 +83,7 @@ jobs:
         run: >-
           go test -race -tags nodpi,noyara,nomagika
           ./internal/aggregate ./internal/reassembly ./internal/decoder/core
+          ./internal/evidence ./internal/packetview ./internal/packetmeta
           ./internal/decoder/stream ./internal/decoder/stream/utils
           ./internal/decoder/stream/tcp ./internal/decoder/stream/tls
           ./internal/decoder/stream/secret ./internal/decoder/stream/ftp
@@ -88,6 +95,7 @@ jobs:
         run: >-
           go vet -tags nodpi,noyara,nomagika
           ./internal/aggregate ./internal/reassembly ./internal/decoder/core
+          ./internal/evidence ./internal/packetview ./internal/packetmeta
           ./internal/decoder/stream ./internal/decoder/stream/utils
           ./internal/decoder/stream/tcp ./internal/decoder/stream/tls
           ./internal/decoder/stream/secret ./internal/decoder/stream/ftp

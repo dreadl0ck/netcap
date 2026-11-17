@@ -70,7 +70,7 @@ func (c *Collector) observeCaptureEvidence(packet gopacket.Packet) {
 		}
 	}
 	c.captureEvidence.ObserveScope(decoderpacket.CalcCommunityID(packet), packet.Metadata().CaptureInfo.InterfaceIndex, vlans)
-	if err := c.captureEvidence.Observe(packet.Data(), packet.Metadata().CaptureInfo, c.captureLinkType); err != nil {
+	if err := c.captureEvidence.ObserveSource(packet.Data(), packet.Metadata().CaptureInfo, c.captureLinkType, inputPacketInfo(ci).Source); err != nil {
 		c.captureEvidenceError = err
 	}
 }
