@@ -130,8 +130,8 @@
   },
   "localCompletionStateLoss": {
     "source": "54dd1e1",
-    "implementation": "Offline --local-completion-state-loss makes application working-state refusals recoverable against the shared credit ceiling. Connection-pool and backing-reader failures retain strict handling.",
-    "verification": "A backed HTTP capture with 128 queued request headers under a 128-KiB limit admits all packets and preserves the independent HTTP 204. Credits return to zero. Focused collector and full core/TCP/command race suites plus vet pass."
+    "implementation": "Offline --local-completion-state-loss makes application working-state and backed completion read refusals recoverable against the shared credit ceiling. Connection-pool pressure, writes and backing integrity failures retain strict handling.",
+    "verification": "A backed HTTP capture with 128 queued request headers under a 128-KiB limit preserves the independent HTTP 204. At 10a62e7 a 16-KiB backed materialization refusal preserves all packet admission and the independent Connection audit, with partial status and zero retained credits. Strict mode still fails, and a missing backing row still poisons the store. Full collector (192.784 s), TCP races and targeted vet pass."
   },
   "jsonSourceExtraction": {
     "source": "da75019",
