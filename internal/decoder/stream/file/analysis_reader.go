@@ -78,26 +78,7 @@ func (f *artifactFacts) mimeType() (string, bool) {
 	return typ, accurate
 }
 
-func analyzeArtifactReader(reader io.ReaderAt, size int64, name string) (*FileAnalysis, error) {
-	if err := reserveBuffer(artifactScanMemory); err != nil {
-		return nil, err
-	}
-	defer releaseBuffer(artifactScanMemory)
-	var facts artifactFacts
-	buffer := make([]byte, 32768)
-	stream := io.NewSectionReader(reader, 0, size)
-	for {
-		n, err := stream.Read(buffer)
-		if n > 0 {
-			facts.feed(buffer[:n])
-		}
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-	}
+func (facts *artifactFacts) analyze(reader io.ReaderAt, name string) (*FileAnalysis, error) {
 	a := &FileAnalysis{}
 	if facts.size == 0 {
 		return a, nil
@@ -125,7 +106,7 @@ func analyzeArtifactReader(reader io.ReaderAt, size int64, name string) (*FileAn
 		if len(facts.prefix) >= 64 && facts.prefix[0] == 'M' && facts.prefix[1] == 'Z' {
 			p := facts.prefix
 			offset := int64(uint32(p[60]) | uint32(p[61])<<8 | uint32(p[62])<<16 | uint32(p[63])<<24)
-			if offset <= size-4 {
+			if offset <= facts.size-4 {
 				var signature [4]byte
 				if _, err := reader.ReadAt(signature[:], offset); err != nil {
 					return nil, err

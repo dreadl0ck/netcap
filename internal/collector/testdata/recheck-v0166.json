@@ -270,6 +270,9 @@
   "boundedTCPBackingReadAhead": {
     "verification": "Finite state or payload budgets admit one backing row before reading the next during compatibility materialization. TestStoredTCPMaterializationBudgets verifies that an immediate state refusal reads only one row. Focused TCP and collector race tests pass for strict failure, local completion loss and payload pressure."
   },
+  "singlePassSpooledArtifactAnalysis": {
+    "verification": "TestSpoolAnalysisMatchesBytes and TestSpoolAnalysisReusesFactsUnderBufferPressure verify that spooled artifacts reuse facts gathered during the write. Analysis still recognizes a script marker beyond the prefix when the buffer budget is fully occupied. Focused file and HTTP source extraction race tests pass."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

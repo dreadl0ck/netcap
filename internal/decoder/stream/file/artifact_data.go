@@ -16,6 +16,7 @@ type artifactData struct {
 	mime     string
 	accurate bool
 	prefix   []byte
+	facts    *artifactFacts
 }
 
 func (a *artifactData) Size() int64 {
@@ -50,7 +51,7 @@ func (a *artifactData) Analyze(name string) (*FileAnalysis, error) {
 	if a.file == nil {
 		return AnalyzeFile(a.bytes, name), nil
 	}
-	return analyzeArtifactReader(a.file, a.size, name)
+	return a.facts.analyze(a.file, name)
 }
 
 func (a *artifactData) AnalyzerBytes() ([]byte, func(), error) {

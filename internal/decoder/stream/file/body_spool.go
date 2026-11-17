@@ -149,6 +149,8 @@ func SpoolBody(reader io.Reader) (result *BodySpool, resultErr error) {
 	result.content.hashes = FileHashes{MD5: hex.EncodeToString(md5Hash.Sum(nil)), SHA1: hex.EncodeToString(sha1Hash.Sum(nil)), SHA256: hex.EncodeToString(sha256Hash.Sum(nil))}
 	result.content.mime, result.content.accurate = facts.mimeType()
 	result.content.prefix = facts.prefix
+	facts.tail = nil
+	result.content.facts = &facts
 	returned = true
 	return result, resultErr
 }

@@ -70,6 +70,28 @@ func TestSpoolAnalysisMatchesBytes(t *testing.T) {
 	}
 }
 
+func TestSpoolAnalysisReusesFactsUnderBufferPressure(t *testing.T) {
+	cfg := spoolTestConfig(t)
+	if err := StartAnalysis(decoderconfig.Instance.Out, "spool-facts"); err != nil {
+		t.Fatal(err)
+	}
+	defer FinishAnalysis()
+	spool, err := SpoolBody(strings.NewReader(strings.Repeat("fixture ", 8000) + "var value"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer spool.Close()
+	limit := cfg.FileExtraction.SizeLimits.MaxInflightBytes
+	if err := reserveBuffer(limit); err != nil {
+		t.Fatal(err)
+	}
+	defer releaseBuffer(limit)
+	got, err := spool.content.Analyze("fixture.js")
+	if err != nil || got.TrueFileType != "application/javascript" {
+		t.Fatalf("analysis lost facts beyond the prefix: %+v (%v)", got, err)
+	}
+}
+
 func TestSpoolLimitsAndCleanup(t *testing.T) {
 	cfg := spoolTestConfig(t)
 	cfg.FileExtraction.SizeLimits.MaxFileSize = 100
