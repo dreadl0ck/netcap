@@ -137,6 +137,7 @@ func (idx *timelineIndex) typeIndex(name string) *tlTypeIndex {
 // timelineIndexEntry is a cache slot for one output directory.
 type timelineIndexEntry struct {
 	fingerprint string // immutable after creation
+	finished    chan struct{}
 
 	mu     sync.RWMutex
 	state  string
@@ -150,11 +151,12 @@ type timelineIndexEntry struct {
 
 // timelineIndexStatus is the snapshot handed to request handlers.
 type timelineIndexStatus struct {
-	State string
-	Err   string
-	Done  int64
-	Total int64
-	Index *timelineIndex
+	State    string
+	Err      string
+	Done     int64
+	Total    int64
+	Index    *timelineIndex
+	finished <-chan struct{}
 }
 
 var timelineCache = struct {
@@ -338,6 +340,7 @@ func timelineIndexFor(outDir string) timelineIndexStatus {
 
 		entry = &timelineIndexEntry{
 			fingerprint: fingerprint,
+			finished:    make(chan struct{}),
 			state:       timelineStateIndexing,
 			total:       int64(len(files)),
 		}
@@ -352,13 +355,18 @@ func timelineIndexFor(outDir string) timelineIndexStatus {
 
 	entry.mu.RLock()
 	defer entry.mu.RUnlock()
+	if entry.fingerprint != fingerprint {
+		// The old build may have finished since the cache admission check.
+		return timelineIndexStatus{State: timelineStateIndexing, finished: entry.finished}
+	}
 
 	return timelineIndexStatus{
-		State: entry.state,
-		Err:   entry.errMsg,
-		Done:  entry.done,
-		Total: entry.total,
-		Index: entry.index,
+		State:    entry.state,
+		Err:      entry.errMsg,
+		Done:     entry.done,
+		Total:    entry.total,
+		Index:    entry.index,
+		finished: entry.finished,
 	}
 }
 
@@ -395,6 +403,7 @@ func timelineEvictLocked() {
 
 // buildTimelineIndex indexes every audit record file of one generation.
 func buildTimelineIndex(entry *timelineIndexEntry, fingerprint string, files []timelineFileRef) {
+	defer close(entry.finished)
 	slot, maxWorkers := timelineBuildLane(files)
 	slot <- struct{}{}
 	defer func() { <-slot }()

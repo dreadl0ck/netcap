@@ -70,9 +70,12 @@ func (s *Server) completeAnalysis(job *AnalysisJob, duration time.Duration) erro
 }
 
 func (s *Server) waitForAnalysisTimeline(dir string) error {
-	ticker := time.NewTicker(25 * time.Millisecond)
-	defer ticker.Stop()
 	for {
+		select {
+		case <-s.shutdownChan:
+			return errAnalysisStopping
+		default:
+		}
 		status := timelineIndexFor(dir)
 		switch status.State {
 		case timelineStateReady:
@@ -83,7 +86,7 @@ func (s *Server) waitForAnalysisTimeline(dir string) error {
 		select {
 		case <-s.shutdownChan:
 			return errAnalysisStopping
-		case <-ticker.C:
+		case <-status.finished:
 		}
 	}
 }

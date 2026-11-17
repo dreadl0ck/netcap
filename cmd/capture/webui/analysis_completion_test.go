@@ -160,13 +160,51 @@ func TestAnalysisCompletionWaitsForTimelineGeneration(t *testing.T) {
 	if completed {
 		t.Fatal("completed while timeline generation was indexing")
 	}
-	<-timelineSmallBuildSlot
-	held = false
-	if err := <-done; err != nil {
+	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}, &types.HTTP{Method: "POST"}})
+	wantGeneration, _, err := timelineFingerprint(dir)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if status := timelineIndexFor(dir); status.State != timelineStateReady {
-		t.Fatal(status.State)
+	<-timelineSmallBuildSlot
+	held = false
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("completion did not observe the replacement generation")
+	}
+	if status := timelineIndexFor(dir); status.State != timelineStateReady || status.Index.Generation != wantGeneration {
+		t.Fatal("completed with stale timeline", status.State)
+	}
+}
+
+func TestAnalysisTimelineWaitStopsDuringShutdown(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
+	timelineSmallBuildSlot <- struct{}{}
+	status := timelineIndexFor(dir)
+	defer func() {
+		<-timelineSmallBuildSlot
+		if status.finished != nil {
+			<-status.finished
+		}
+	}()
+	if status.State != timelineStateIndexing || status.finished == nil {
+		t.Fatal("fixture timeline did not queue")
+	}
+	s := &Server{shutdownChan: make(chan struct{})}
+	done := make(chan error, 1)
+	go func() { done <- s.waitForAnalysisTimeline(dir) }()
+	close(s.shutdownChan)
+	select {
+	case err := <-done:
+		if err != errAnalysisStopping {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("shutdown is waiting on the occupied timeline lane")
 	}
 }
 
