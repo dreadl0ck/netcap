@@ -656,7 +656,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.Int64Flag{
 			Name:    "max-retained-tcp-bytes",
-			Value:   64 << 20,
+			Value:   defaults.MaxRetainedTCPBytes,
 			Usage:   "maximum copied TCP reader payload across all workers (bytes, 0 = unlimited); exhaustion aborts capture",
 			Sources: cli.EnvVars("NC_MAX_RETAINED_TCP_BYTES"),
 			Action: func(_ context.Context, _ *cli.Command, value int64) error {
@@ -668,7 +668,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.Int64Flag{
 			Name:    "max-retained-reassembly-bytes",
-			Value:   32 << 20,
+			Value:   defaults.MaxRetainedReassemblyBytes,
 			Usage:   "maximum TCP reassembly page allocation bytes shared by all workers (0 = unlimited, excludes parser state and RSS); exhaustion aborts capture",
 			Sources: cli.EnvVars("NC_MAX_RETAINED_REASSEMBLY_BYTES"),
 			Action: func(_ context.Context, _ *cli.Command, value int64) error {
@@ -681,7 +681,7 @@ func GetFlags() []cli.Flag {
 		&cli.BoolFlag{Name: "incremental-http", Usage: "opt HTTP/1 with observed TCP handshake into bounded transaction-time decoding; other protocols remain completion-only", Sources: cli.EnvVars("NC_INCREMENTAL_HTTP")},
 		&cli.BoolFlag{Name: "capture-time-idle-expiry", Usage: "expire offline TCP state at monotonic packet-time watermarks (one-second capture-time maintenance); EOF flushes remaining state", Sources: cli.EnvVars("NC_CAPTURE_TIME_IDLE_EXPIRY")},
 		&cli.Int64Flag{
-			Name: "max-retained-tcp-state-bytes", Value: 64 << 20,
+			Name: "max-retained-tcp-state-bytes", Value: defaults.MaxRetainedTCPStateBytes,
 			Usage:   "shared TCP connection, parser and backing-reader materialization credits (0 = unlimited; excludes RSS); exhaustion aborts capture",
 			Sources: cli.EnvVars("NC_MAX_RETAINED_TCP_STATE_BYTES"),
 			Action: func(_ context.Context, _ *cli.Command, value int64) error {
@@ -693,7 +693,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.StringFlag{Name: "link-profiles", Usage: "path to explicit interface/bus/device profile JSON (maximum 64 KiB; no device model inference)", Sources: cli.EnvVars("NC_LINK_PROFILES")},
 		&cli.Int64Flag{
-			Name: "max-aggregate-state-bytes", Value: 32 << 20,
+			Name: "max-aggregate-state-bytes", Value: defaults.MaxAggregateStateBytes,
 			Usage:   "resident encoded aggregate state, datagrams and deduplication keys; excess spills to private scratch storage (0 = in-memory; excludes decoded records, SQLite cache and RSS)",
 			Sources: cli.EnvVars("NC_MAX_AGGREGATE_STATE_BYTES"),
 			Action: func(_ context.Context, _ *cli.Command, value int64) error {

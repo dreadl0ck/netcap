@@ -27,10 +27,42 @@ func TestCaptureRuntimeConfig(t *testing.T) {
 }
 
 func TestCaptureRuntimeRejectsInvalidBounds(t *testing.T) {
-	for _, args := range [][]string{{"--packet-segment-mb=0"}, {"--packet-retention-mb=16385"}, {"--packet-segment-mb=64", "--packet-retention-mb=32"}, {"--max-retained-tcp-mb=-1"}, {"--behavior", "--behavior-max-facts=0"}} {
+	for _, args := range [][]string{{"--packet-segment-mb=0"}, {"--packet-retention-mb=16385"}, {"--packet-segment-mb=64", "--packet-retention-mb=32"}, {"--max-retained-tcp-mb=-1"}, {"--max-retained-tcp-bytes=-1"}, {"--max-retained-tcp-mb=8796093022208"}, {"--max-retained-tcp-mb=1", "--max-retained-tcp-bytes=1"}, {"--behavior", "--behavior-max-facts=0"}} {
 		command := &cli.Command{Flags: GetFlags(), Action: func(_ context.Context, c *cli.Command) error { _, err := captureRuntimeConfig(c); return err }}
 		if err := command.Run(context.Background(), append([]string{"mcp"}, args...)); err == nil {
 			t.Errorf("accepted %v", args)
 		}
+	}
+}
+
+func TestCaptureBudgetPrecedenceAndZero(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		env  string
+		args []string
+		want int64
+	}{
+		{"default", "", nil, 0},
+		{"environment-bytes", "12345", nil, 12345},
+		{"unlimited-environment", "0", nil, 0},
+		{"explicit-zero", "12345", []string{"--max-retained-tcp-mb=0"}, 0},
+		{"mib-flag", "invalid", []string{"--max-retained-tcp-mb=2"}, 2 << 20},
+		{"byte-flag", "12345", []string{"--max-retained-tcp-bytes=17"}, 17},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.env != "" {
+				t.Setenv("NC_MAX_RETAINED_TCP_BYTES", tc.env)
+			}
+			command := &cli.Command{Flags: GetFlags(), Action: func(_ context.Context, c *cli.Command) error {
+				rc, err := captureRuntimeConfig(c)
+				if err == nil && rc.MaxRetainedTCPBytes != tc.want {
+					t.Fatalf("budget = %d, want %d", rc.MaxRetainedTCPBytes, tc.want)
+				}
+				return err
+			}}
+			if err := command.Run(context.Background(), append([]string{"mcp"}, tc.args...)); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }

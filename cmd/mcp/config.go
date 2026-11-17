@@ -2,6 +2,9 @@ package mcp
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dreadl0ck/netcap/cmd/capture/webui"
@@ -16,10 +19,14 @@ func captureFlags() []cli.Flag {
 		&cli.BoolFlag{Name: "retain-packets", Usage: "Retain bounded rotating PCAPNG packet evidence"},
 		&cli.Int64Flag{Name: "packet-segment-mb", Value: 32, Usage: "Packet segment target in MiB (1..1024)"},
 		&cli.Int64Flag{Name: "packet-retention-mb", Value: 512, Usage: "Packet disk budget in MiB (segment size..16384)"},
-		&cli.Int64Flag{Name: "max-retained-tcp-mb", Value: 64, Usage: "Copied TCP reader payload budget across workers in MiB (1..1024)"},
-		&cli.Int64Flag{Name: "max-retained-reassembly-mb", Value: 256, Usage: "Aggregate reassembly payload budget in MiB (1..4096)"},
-		&cli.Int64Flag{Name: "max-retained-tcp-state-mb", Value: 64, Usage: "TCP parser-state budget in MiB (1..1024)"},
-		&cli.Int64Flag{Name: "max-aggregate-state-mb", Value: 32, Usage: "Aggregate connection/flow state budget in MiB (1..1024)"},
+		&cli.Int64Flag{Name: "max-retained-tcp-mb", Usage: "Copied TCP reader payload budget across workers in MiB (0 = unlimited)"},
+		&cli.Int64Flag{Name: "max-retained-reassembly-mb", Usage: "Shared reassembly page budget in MiB (0 = unlimited)"},
+		&cli.Int64Flag{Name: "max-retained-tcp-state-mb", Usage: "TCP parser-state budget in MiB (0 = unlimited)"},
+		&cli.Int64Flag{Name: "max-aggregate-state-mb", Value: defaults.MaxAggregateStateBytes >> 20, Usage: "Aggregate state budget in MiB (0 = memory-only)"},
+		&cli.Int64Flag{Name: "max-retained-tcp-bytes", Value: defaults.MaxRetainedTCPBytes, Usage: "Copied TCP reader payload budget in bytes (0 = unlimited)"},
+		&cli.Int64Flag{Name: "max-retained-reassembly-bytes", Value: defaults.MaxRetainedReassemblyBytes, Usage: "Shared reassembly page budget in bytes (0 = unlimited)"},
+		&cli.Int64Flag{Name: "max-retained-tcp-state-bytes", Value: defaults.MaxRetainedTCPStateBytes, Usage: "TCP parser-state budget in bytes (0 = unlimited)"},
+		&cli.Int64Flag{Name: "max-aggregate-state-bytes", Value: defaults.MaxAggregateStateBytes, Usage: "Aggregate state budget in bytes (0 = memory-only)"},
 		&cli.BoolFlag{Name: "incremental-http", Usage: "Decode HTTP/1 with observed handshake incrementally within retained TCP bounds"},
 		&cli.BoolFlag{Name: "capture-time-idle-expiry", Usage: "Expire idle observations by capture timestamps"},
 		&cli.BoolFlag{Name: "flow-exports", Value: true, Usage: "Normalize observed NetFlow/IPFIX/sFlow exports"},
@@ -34,10 +41,18 @@ func captureFlags() []cli.Flag {
 
 func captureRuntimeConfig(c *cli.Command) (*webui.RuntimeConfig, error) {
 	bindingsFile, network := c.String("operator-bindings"), c.Bool("allow-fetch")
-	for name, max := range map[string]int64{"packet-segment-mb": 1024, "packet-retention-mb": 16384, "max-retained-tcp-mb": 1024, "max-retained-reassembly-mb": 4096, "max-retained-tcp-state-mb": 1024, "max-aggregate-state-mb": 1024} {
+	for name, max := range map[string]int64{"packet-segment-mb": 1024, "packet-retention-mb": 16384} {
 		if value := c.Int64(name); value < 1 || value > max {
 			return nil, fmt.Errorf("--%s must be 1..%d MiB", name, max)
 		}
+	}
+	budgets := make(map[string]int64)
+	for _, name := range []string{"max-retained-tcp", "max-retained-reassembly", "max-retained-tcp-state", "max-aggregate-state"} {
+		value, err := captureBudget(c, name)
+		if err != nil {
+			return nil, err
+		}
+		budgets[name] = value
 	}
 	if c.Int64("packet-segment-mb") > c.Int64("packet-retention-mb") {
 		return nil, fmt.Errorf("packet retention must be at least one segment")
@@ -59,11 +74,39 @@ func captureRuntimeConfig(c *cli.Command) (*webui.RuntimeConfig, error) {
 		DefragIPv4: defaults.DefragIPv4, IgnoreUnknown: true,
 		CaptureEvidence: c.Bool("capture-evidence"), RetainPackets: c.Bool("retain-packets"),
 		PacketSegmentBytes: c.Int64("packet-segment-mb") << 20, PacketRetentionBytes: c.Int64("packet-retention-mb") << 20,
-		MaxRetainedTCPBytes: c.Int64("max-retained-tcp-mb") << 20, MaxRetainedReassemblyBytes: c.Int64("max-retained-reassembly-mb") << 20,
-		MaxRetainedTCPStateBytes: c.Int64("max-retained-tcp-state-mb") << 20, MaxAggregateStateBytes: c.Int64("max-aggregate-state-mb") << 20,
+		MaxRetainedTCPBytes: budgets["max-retained-tcp"], MaxRetainedReassemblyBytes: budgets["max-retained-reassembly"],
+		MaxRetainedTCPStateBytes: budgets["max-retained-tcp-state"], MaxAggregateStateBytes: budgets["max-aggregate-state"],
 		IncrementalHTTP: c.Bool("incremental-http"), CaptureTimeIdleExpiry: c.Bool("capture-time-idle-expiry"),
 		LiveMaintenanceInterval: time.Second, LiveFlushInterval: time.Second,
 		FlowExports: c.Bool("flow-exports"), FlowExportPorts: c.String("flow-export-ports"),
 		ModbusRTUEndpoints: c.String("modbus-rtu-endpoints"), DNP3PointMap: c.String("dnp3-point-map"),
 	}, nil
+}
+
+func captureBudget(c *cli.Command, name string) (int64, error) {
+	bytesFlag, mibFlag := name+"-bytes", name+"-mb"
+	if c.IsSet(bytesFlag) && c.IsSet(mibFlag) {
+		return 0, fmt.Errorf("--%s and --%s cannot be combined", bytesFlag, mibFlag)
+	}
+	value := c.Int64(bytesFlag)
+	if c.IsSet(mibFlag) {
+		mib := c.Int64(mibFlag)
+		if mib < 0 || mib > (1<<63-1)>>20 {
+			return 0, fmt.Errorf("--%s is outside the supported byte range", mibFlag)
+		}
+		value = mib << 20
+	} else if !c.IsSet(bytesFlag) {
+		key := "NC_" + strings.ToUpper(strings.ReplaceAll(bytesFlag, "-", "_"))
+		if raw, ok := os.LookupEnv(key); ok {
+			parsed, err := strconv.ParseInt(raw, 10, 64)
+			if err != nil {
+				return 0, fmt.Errorf("%s must be a nonnegative byte count: %w", key, err)
+			}
+			value = parsed
+		}
+	}
+	if value < 0 {
+		return 0, fmt.Errorf("--%s cannot be negative", bytesFlag)
+	}
+	return value, nil
 }
