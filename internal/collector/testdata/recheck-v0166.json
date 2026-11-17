@@ -3,6 +3,20 @@
   "release": "v0.16.7",
   "scope": "53 deduplicated report rows; implemented means source and synthetic regressions, not verification of unavailable evaluator captures",
   "originalCorpus": "Evaluator /workspace/hunt/repro and complete MTA/CTF/Wireshark corpus are not available locally",
+  "recheckV0169Release": {
+    "release": "v0.16.9",
+    "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",
+    "url": "https://github.com/dreadl0ck/netcap/releases/tag/v0.16.9",
+    "assets": "13/13 downloaded GitHub digests and checksum entries verified; 7 CLI archives each include all 39 README-linked Markdown files. Downloaded binaries/libraries match qualified staging bytes",
+    "checksumsSHA256": "bf10e9ec977f272b8c91ee21291f11badd9dd8b18935a5260efec68d9ab8bb6b",
+    "qualificationSHA256": "be4c82fc3a9b6903084111be83b3b977136e489b9c24483cfad924946ae04103",
+    "linux": "4 linux/amd64 variants pass final runtime closure audits and packaged BPF/YARA controls under Docker emulation; Alpine nodpi and Ubuntu DPI bundled-loader MCP stdio controls pass",
+    "macos": "DPI/macOS 26 and nodpi/macOS 15 arm64 bundles are Developer-ID signed and have Accepted notarization receipts; signed DPI MCP stdio controls pass",
+    "windows": "CGO amd64 nodpi/noyara CLI is Authenticode/timestamp signed; exact archive passed Windows native trust verification in run 43983917096. Windows/Npcap capture runtime remains unqualified",
+    "homebrew": "Verified v0.16.9 formula published to dreadl0ck/homebrew-formulas at f83272a1afdc3f00d4d7f59e28a61756a3b3eee3",
+    "pitfalls": "The initial Linux staging directories lacked loader/dependency closures; final files were restored from exact built images and requalified before packaging. A completely empty PATH cannot launch the POSIX wrapper's dirname utility; empty/shadow helper-PATH tests use the equivalent bundled ELF-loader invocation",
+    "remaining": "V168-3 stays partial at 2.17x spill/memory time; original H-17 frames, large evaluator corpus/GeekLounge, actual tshark 4.4 replay, Windows/Npcap capture and independent real exotic-profile qualification remain unavailable"
+  },
   "recheckV0168": {
     "report": "netcap-full-recheck-v0.16.8.md; release f30370ea",
     "syntheticArchiveSHA256": "592f9c7bb78b48aeab0bc3db5011d2f0d969e31fab9e50fcee5ddea80cad4c06",
