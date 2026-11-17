@@ -69,6 +69,46 @@ func TestRepeatedArtifactWriteFailuresKeepFirstCauseAndCount(t *testing.T) {
 
 type blockedAnalyzer struct{ started chan struct{} }
 
+type fixtureAnalyzer struct{}
+
+func (fixtureAnalyzer) Digest() string { return "fixture" }
+
+func (fixtureAnalyzer) ScanBytesContext(context.Context, []byte) ([]string, error) {
+	return []string{"fixture-match"}, nil
+}
+
+func TestAnalysisCacheDoesNotReloadArtifact(t *testing.T) {
+	old := GetGlobalConfig()
+	SetGlobalConfig(GetDefaultConfig())
+	t.Cleanup(func() { SetGlobalConfig(old) })
+	dir := t.TempDir()
+	if err := StartAnalysis(dir, "cache-load"); err != nil {
+		t.Fatal(err)
+	}
+	defer FinishAnalysis()
+	currentAnalysis().yara = fixtureAnalyzer{}
+	body := []byte("artifact fixture")
+	digest := ComputeHashes(body).SHA256
+	path := filepath.Join(dir, "fixture.bin")
+	if err := os.WriteFile(path, body, 0600); err != nil {
+		t.Fatal(err)
+	}
+	loaded, released := 0, 0
+	load := func() ([]byte, func(), error) {
+		loaded++
+		return body, func() { released++ }, nil
+	}
+	for range 2 {
+		matches, _ := analyzeStored(path, digest, load)
+		if len(matches) != 1 || matches[0] != "fixture-match" {
+			t.Fatal(matches)
+		}
+	}
+	if loaded != 1 || released != 1 {
+		t.Fatalf("loads=%d releases=%d; want one each", loaded, released)
+	}
+}
+
 func (b *blockedAnalyzer) Digest() string { return "owned-blocking-analyzer" }
 func (b *blockedAnalyzer) ScanBytesContext(ctx context.Context, _ []byte) ([]string, error) {
 	select {

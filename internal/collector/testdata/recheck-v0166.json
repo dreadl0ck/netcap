@@ -273,6 +273,9 @@
   "singlePassSpooledArtifactAnalysis": {
     "verification": "TestSpoolAnalysisMatchesBytes and TestSpoolAnalysisReusesFactsUnderBufferPressure verify that spooled artifacts reuse facts gathered during the write. Analysis still recognizes a script marker beyond the prefix when the buffer budget is fully occupied. Focused file and HTTP source extraction race tests pass."
   },
+  "lazyArtifactAnalyzerInput": {
+    "verification": "TestAnalysisCacheDoesNotReloadArtifact verifies two observations of the same content load and release analyzer bytes once. Workers materialize admitted input after dequeue; queue cancellation preserves file observations. Focused file and backed HTTP race tests pass."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

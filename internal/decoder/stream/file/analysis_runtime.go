@@ -67,7 +67,7 @@ type analysisEntry struct {
 }
 type analysisJob struct {
 	entry *analysisEntry
-	data  []byte
+	load  func() ([]byte, func(), error)
 	size  int64
 }
 type analysisRuntime struct {
@@ -252,27 +252,35 @@ func (m *analysisRuntime) worker() {
 		}
 		m.mu.Unlock()
 		ctx, cancel := context.WithTimeout(m.ctx, 60*time.Second)
+		var data []byte
+		var release func()
+		loadErr := ctx.Err()
+		if loadErr == nil {
+			data, release, loadErr = job.load()
+		}
 		for i := range result.Analyzers {
 			r := &result.Analyzers[i]
-			var err error
-			switch r.Engine {
-			case "yara-x":
-				hash := sha256.Sum256(job.data)
-				if hex.EncodeToString(hash[:]) != result.SHA256 {
-					err = fmt.Errorf("artifact hash changed")
-				} else {
-					r.Matches, err = m.yara.ScanBytesContext(ctx, job.data)
-				}
-				if err == nil {
-					r.Outcome = "no-match"
-					if len(r.Matches) > 0 {
-						r.Outcome = "matched"
+			err := loadErr
+			if err == nil {
+				switch r.Engine {
+				case "yara-x":
+					hash := sha256.Sum256(data)
+					if hex.EncodeToString(hash[:]) != result.SHA256 {
+						err = fmt.Errorf("artifact hash changed")
+					} else {
+						r.Matches, err = m.yara.ScanBytesContext(ctx, data)
 					}
-				}
-			case "magika":
-				r.Classification, err = m.magika.ClassifyBytes(ctx, job.data)
-				if err == nil {
-					r.Outcome = "classified"
+					if err == nil {
+						r.Outcome = "no-match"
+						if len(r.Matches) > 0 {
+							r.Outcome = "matched"
+						}
+					}
+				case "magika":
+					r.Classification, err = m.magika.ClassifyBytes(ctx, data)
+					if err == nil {
+						r.Outcome = "classified"
+					}
 				}
 			}
 			r.State = "completed"
@@ -286,6 +294,9 @@ func (m *analysisRuntime) worker() {
 				}
 				r.Error = err.Error()
 			}
+		}
+		if release != nil {
+			release()
 		}
 		cancel()
 		m.mu.Lock()
@@ -302,7 +313,7 @@ func (m *analysisRuntime) worker() {
 	}
 }
 
-func analyzeStored(path, digest string, data []byte) ([]string, *magika.Result) {
+func analyzeStored(path, digest string, load func() ([]byte, func(), error)) ([]string, *magika.Result) {
 	m := currentAnalysis()
 	if m == nil {
 		return nil, nil
@@ -341,7 +352,7 @@ func analyzeStored(path, digest string, data []byte) ([]string, *magika.Result) 
 		m.report.Results[digest] = result
 		m.queuedBytes += info.Size()
 		select {
-		case m.jobs <- analysisJob{entry, data, info.Size()}:
+		case m.jobs <- analysisJob{entry, load, info.Size()}:
 		default:
 			delete(m.cache, digest)
 			delete(m.report.Results, digest)

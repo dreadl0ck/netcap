@@ -466,26 +466,24 @@ func savePreparedFile(conv *core.ConversationInfo, source, name string, extracti
 
 	// AI-based file type classification (if enabled)
 	var magikaResult *magikapkg.Result
-	if currentAnalysis() != nil && (currentAnalysis().yara != nil || currentAnalysis().magika != nil) || currentAnalysis() == nil && (cfg.FileExtraction.Advanced.EnableYaraScanning || cfg.FileExtraction.Advanced.EnableMagika) {
+	if currentAnalysis() != nil {
+		analysis.YaraMatches, magikaResult = analyzeStored(target, contentInfo.Hash, content.AnalyzerBytes)
+	} else if cfg.FileExtraction.Advanced.EnableYaraScanning || cfg.FileExtraction.Advanced.EnableMagika {
 		data, release, e := content.AnalyzerBytes()
 		if e != nil {
 			RecordExtractionIssue(e)
 			return e
 		}
 		defer release()
-		if currentAnalysis() != nil {
-			analysis.YaraMatches, magikaResult = analyzeStored(target, contentInfo.Hash, data)
-		} else {
-			if content.file != nil && cfg.FileExtraction.Advanced.EnableYaraScanning {
-				if scanner := GetGlobalYaraScanner(); scanner != nil {
-					if matches, e := scanner.ScanBytes(data); e == nil {
-						analysis.YaraMatches = matches
-					}
+		if content.file != nil && cfg.FileExtraction.Advanced.EnableYaraScanning {
+			if scanner := GetGlobalYaraScanner(); scanner != nil {
+				if matches, e := scanner.ScanBytes(data); e == nil {
+					analysis.YaraMatches = matches
 				}
 			}
-			if cfg.FileExtraction.Advanced.EnableMagika && magikapkg.IsEnabled() {
-				magikaResult, err = magikapkg.ClassifyBytes(data)
-			}
+		}
+		if cfg.FileExtraction.Advanced.EnableMagika && magikapkg.IsEnabled() {
+			magikaResult, err = magikapkg.ClassifyBytes(data)
 		}
 		if err != nil {
 			saveFileLog.Warn("magika classification failed",
