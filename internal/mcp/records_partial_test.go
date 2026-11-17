@@ -18,18 +18,18 @@ func TestPartialAuditQueryPreservesQualificationAndBoundContinuation(t *testing.
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests++
 		q := r.URL.Query()
-		if q.Get("allowPartial") != "true" || q.Get("runId") != "run-A" || q.Get("stageGeneration") != generation || q.Get("offset") != "1" {
+		if q.Get("allowPartial") != "true" || q.Get("runId") != "run-A" || q.Get("stageGeneration") != generation || q.Get("queryGeneration") != "query-A" || q.Get("offset") != "1" {
 			t.Errorf("partial selector not forwarded: %s", r.URL)
 		}
 		w.Header().Set("Content-Type", "text/event-stream")
-		io.WriteString(w, "event: record\ndata: {\"SrcIP\":\"192.0.2.2\"}\n\nevent: complete\ndata: {\"total\":2,\"scanned\":2,\"count\":1,\"coverage\":\"partial\",\"coverageReason\":\"input gap\",\"stage\":\"aggregate\",\"runId\":\"run-A\",\"stageGeneration\":\""+generation+"\",\"partialAdmission\":true}\n\n")
+		io.WriteString(w, "event: record\ndata: {\"SrcIP\":\"192.0.2.2\"}\n\nevent: complete\ndata: {\"total\":2,\"scanned\":2,\"count\":1,\"coverage\":\"partial\",\"coverageReason\":\"input gap\",\"stage\":\"aggregate\",\"runId\":\"run-A\",\"stageGeneration\":\""+generation+"\",\"queryGeneration\":\"query-A\",\"partialAdmission\":true}\n\n")
 	}))
 	defer ts.Close()
 	s, err := New(Options{BaseURL: ts.URL})
 	if err != nil {
 		t.Fatal(err)
 	}
-	arguments := map[string]any{"session_id": "owned", "type": "Connection", "allow_partial": true, "run_id": "run-A", "stage_generation": generation, "offset": 1}
+	arguments := map[string]any{"session_id": "owned", "type": "Connection", "allow_partial": true, "run_id": "run-A", "stage_generation": generation, "query_generation": "query-A", "offset": 1}
 	result, err := s.handleQueryAuditRecords(context.Background(), mcplib.CallToolRequest{Params: mcplib.CallToolParams{Arguments: arguments}})
 	if err != nil || result.IsError {
 		t.Fatal("qualified query failed", result, err)
@@ -47,7 +47,7 @@ func TestPartialAuditQueryPreservesQualificationAndBoundContinuation(t *testing.
 	if output.Returned != 1 || output.Summary.Coverage != "partial" || output.Summary.RunID != "run-A" || output.Summary.StageGeneration != generation || !output.Summary.PartialAdmission {
 		t.Fatal("partial metadata was lost", output)
 	}
-	delete(arguments, "stage_generation")
+	delete(arguments, "query_generation")
 	result, err = s.handleQueryAuditRecords(context.Background(), mcplib.CallToolRequest{Params: mcplib.CallToolParams{Arguments: arguments}})
 	if err != nil || !result.IsError || requests != 1 {
 		t.Fatal("unbound continuation reached backend", result, err, requests)

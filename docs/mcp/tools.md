@@ -3879,6 +3879,7 @@ Supports the netcap filter-expression language in `filter` (an `expr`-style bool
 | `filter` | string |  | Optional typed filter expression (Connection: "SrcPort == '443' && DstIP startsWith '10.'"; TCP/HTTP ports are numeric). Field names are CamelCase as in the proto schema; use get_audit_record_fields to enumerate. |
 | `limit` | number |  | Maximum records to return (default 100, max 500). |
 | `offset` | number |  | Offset in matching records; also supported with a filter. |
+| `query_generation` | string |  | Query generation returned in summary.queryGeneration; required for partial continuation pages. |
 | `run_id` | string |  | Expected capture run generation; required with allow_partial on continuation pages. |
 | `session_id` | string | yes | Session identifier. |
 | `stage_generation` | string |  | Stage generation returned by a partial query; required for partial continuation pages. |

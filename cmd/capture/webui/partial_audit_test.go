@@ -2,6 +2,7 @@ package webui
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -49,6 +50,15 @@ func TestPartialAuditAdmissionRequiresSealedExplicitQualifiedOutput(t *testing.T
 	for _, service := range []bool{false, true} {
 		t.Run(map[bool]string{false: "local", true: "service"}[service], func(t *testing.T) {
 			handler, run, generation, file := partialAuditFixture(t, service)
+			first := httptest.NewRecorder()
+			const firstPath = "/api/audit/Connection/stream?sessionId=owned&allowPartial=true&limit=1"
+			handler.ServeHTTP(first, httptest.NewRequest("GET", firstPath, nil))
+			_, completion, _ := strings.Cut(first.Body.String(), "event: complete\ndata: ")
+			var summary struct{ QueryGeneration string }
+			if err := json.Unmarshal([]byte(completion), &summary); err != nil || summary.QueryGeneration == "" {
+				t.Fatalf("missing query generation: %v, %s", err, first.Body)
+			}
+			next := "sessionId=owned&allowPartial=true&offset=1&runId=" + run + "&stageGeneration=" + generation + "&queryGeneration=" + summary.QueryGeneration
 			for _, tc := range []struct {
 				path, query string
 				status      int
@@ -60,7 +70,10 @@ func TestPartialAuditAdmissionRequiresSealedExplicitQualifiedOutput(t *testing.T
 				{"Connection", "sessionId=owned&allowPartial=true&allowPartial=false", 400, 0},
 				{"Connection", "sessionId=owned&allowPartial=true&limit=1", 200, 1},
 				{"Connection", "sessionId=owned&allowPartial=true&offset=1", 409, 0},
-				{"Connection", "sessionId=owned&allowPartial=true&offset=1&runId=" + run + "&stageGeneration=" + generation, 200, 1},
+				{"Connection", next, 200, 1},
+				{"Connection", next + "&filter=true", 409, 0},
+				{"Connection", next + "&fields=SrcIP", 409, 0},
+				{"TCP", next, 409, 0},
 				{"Connection", "sessionId=owned&allowPartial=true&stageGeneration=stale", 422, 0},
 				{"Connection", "sessionId=owned&allowPartial=true&runId=stale", 409, 0},
 				{"TCP", "sessionId=owned&allowPartial=true", 200, 0},

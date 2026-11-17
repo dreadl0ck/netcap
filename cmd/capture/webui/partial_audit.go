@@ -2,9 +2,11 @@ package webui
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -15,6 +17,7 @@ import (
 type sealedAuditQuery struct {
 	Stage                              evidence.AuditStage
 	RunID, Generation, Directory, File string
+	QueryGeneration                    string
 }
 type sealedAuditQueryKey struct{}
 
@@ -40,8 +43,10 @@ func preparePartialAudit(r *http.Request, selection captureSelection) (*sealedAu
 	if selection.OutputDir == "" || (!q.Has("sessionId") && !q.Has("inputFile")) {
 		return nil, selectionError(400, "Partial admission requires an explicit capture")
 	}
-	if values, present := q["stageGeneration"]; present && (len(values) != 1 || values[0] == "") {
-		return nil, selectionError(400, "Invalid stageGeneration")
+	for _, key := range []string{"stageGeneration", "queryGeneration", "offset", "filter", "fields", "full", "countOnly"} {
+		if values, present := q[key]; present && (len(values) != 1 || values[0] == "" && strings.HasSuffix(key, "Generation")) {
+			return nil, selectionError(400, "Invalid "+key)
+		}
 	}
 	offset := 0
 	if q.Has("offset") {
@@ -51,8 +56,8 @@ func preparePartialAudit(r *http.Request, selection captureSelection) (*sealedAu
 			return nil, selectionError(400, "Invalid partial offset")
 		}
 	}
-	if offset > 0 && (q.Get("runId") == "" || q.Get("stageGeneration") == "") {
-		return nil, selectionError(409, "Partial continuation requires runId and stageGeneration")
+	if offset > 0 && (q.Get("runId") == "" || q.Get("stageGeneration") == "" || q.Get("queryGeneration") == "") {
+		return nil, selectionError(409, "Partial continuation requires runId, stageGeneration and queryGeneration")
 	}
 	runID := selection.RunID
 	if runID == "" {
@@ -65,6 +70,10 @@ func preparePartialAudit(r *http.Request, selection captureSelection) (*sealedAu
 	stage, snapshot, err := evidence.ReadAuditStageContext(r.Context(), selection.OutputDir, runID, parts[0], q.Get("stageGeneration"))
 	if err != nil {
 		return nil, selectionError(422, fmt.Sprintf("Sealed audit stage unavailable: %v", err))
+	}
+	generation := partialQueryGeneration(snapshot.RunID, snapshot.Generation, parts[0], q)
+	if expected := q.Get("queryGeneration"); expected != "" && expected != generation {
+		return nil, selectionError(409, "Partial query or projection changed; restart at offset zero")
 	}
 	fileName := ""
 	if stage.Records > 0 {
@@ -80,7 +89,15 @@ func preparePartialAudit(r *http.Request, selection captureSelection) (*sealedAu
 			return nil, selectionError(422, "Sealed stage has no queryable protobuf output")
 		}
 	}
-	return &sealedAuditQuery{Stage: stage, RunID: snapshot.RunID, Generation: snapshot.Generation, Directory: selection.OutputDir, File: fileName}, nil
+	return &sealedAuditQuery{Stage: stage, RunID: snapshot.RunID, Generation: snapshot.Generation, QueryGeneration: generation, Directory: selection.OutputDir, File: fileName}, nil
+}
+
+func partialQueryGeneration(run, stage, auditType string, q url.Values) string {
+	bound := url.Values{"run": {run}, "stage": {stage}, "type": {auditType}}
+	for _, key := range []string{"filter", "fields", "full", "countOnly", "communityId"} {
+		bound[key] = q[key]
+	}
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(bound.Encode())))
 }
 
 func partialAuditContext(r *http.Request) *sealedAuditQuery {
@@ -105,6 +122,7 @@ func auditCompletion(w http.ResponseWriter, r *http.Request, total, scanned, cou
 	result["stage"] = sealed.Stage.Stage
 	result["runId"] = sealed.RunID
 	result["stageGeneration"] = sealed.Generation
+	result["queryGeneration"] = sealed.QueryGeneration
 	result["partialAdmission"] = true
 	data, _ := json.Marshal(result)
 	_, _ = fmt.Fprintf(w, "event: complete\ndata: %s\n\n", data)

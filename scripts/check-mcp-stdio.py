@@ -98,7 +98,16 @@ async def check(binary, capture, data_dir):
         second = await call("query_audit_records", query | {
             "allow_partial": True, "limit": 1, "offset": 1,
             "run_id": summary["runId"], "stage_generation": summary["stageGeneration"],
+            "query_generation": summary["queryGeneration"],
         })
+        for changed in ({"fields": "SrcIP"}, {"filter": "true"}):
+            rejected = await client.call_tool("query_audit_records", query | {
+                "allow_partial": True, "offset": 1, "run_id": summary["runId"],
+                "stage_generation": summary["stageGeneration"],
+                "query_generation": summary["queryGeneration"],
+            } | changed)
+            if not rejected.isError:
+                failures.append(f"sealed continuation accepted changed query: {changed}")
         count = await call("query_audit_records", query | {"count_only": True})
         if (not summary["partialAdmission"] or first["records"] == second["records"]
                 or count["summary"]["total"] != 18 or "records" in count):
