@@ -62,18 +62,30 @@ printf '%s' '[{"result":{"status":"ok","value":{"output":{"label":"text","mime_t
 	if result == nil || result.Label != "text" {
 		t.Fatalf("expected classification under a %d-byte buffer budget, got %+v", artifactScanMemory, result)
 	}
+	digest := content.hashes.SHA256
+	if !yara {
+		digest = ComputeHashes([]byte(strings.Repeat("y", 512<<10))).SHA256
+		_, result := analyzeStored(content.file.Name(), digest, func() ([]byte, func(), error) {
+			return []byte(strings.Repeat("x", 512<<10)), func() {}, nil
+		}, nil)
+		if result != nil {
+			t.Fatalf("classifier accepted different bytes for the artifact digest: %+v", result)
+		}
+	}
+	data, err := os.ReadFile(filepath.Join(dir, AnalysisReportFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var report AnalysisReport
+	if err := json.Unmarshal(data, &report); err != nil {
+		t.Fatal(err)
+	}
+	row := report.Results[digest]
 	if yara {
-		data, err := os.ReadFile(filepath.Join(dir, AnalysisReportFile))
-		if err != nil {
-			t.Fatal(err)
-		}
-		var report AnalysisReport
-		if err := json.Unmarshal(data, &report); err != nil {
-			t.Fatal(err)
-		}
-		row := report.Results[content.hashes.SHA256]
 		if row == nil || len(row.Analyzers) != 2 || row.Analyzers[0].Engine != "yara-x" || row.Analyzers[0].State != "failed" || !strings.Contains(row.Analyzers[0].Error, ErrArtifactLimit.Error()) || row.Analyzers[1].Outcome != "classified" {
 			t.Fatalf("analyzer outcomes not isolated: %+v", row)
 		}
+	} else if row == nil || len(row.Analyzers) != 1 || row.Analyzers[0].State != "failed" || row.Analyzers[0].Error != "artifact hash changed" {
+		t.Fatalf("classifier hash failure not recorded: %+v", row)
 	}
 }

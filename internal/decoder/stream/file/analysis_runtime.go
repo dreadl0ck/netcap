@@ -259,6 +259,12 @@ func (m *analysisRuntime) worker() {
 		loadErr := ctx.Err()
 		if loadErr == nil && (m.yara != nil || job.spool == nil) {
 			data, release, loadErr = job.load()
+			if loadErr == nil {
+				hash := sha256.Sum256(data)
+				if hex.EncodeToString(hash[:]) != result.SHA256 {
+					loadErr = fmt.Errorf("artifact hash changed")
+				}
+			}
 		}
 		for i := range result.Analyzers {
 			r := &result.Analyzers[i]
@@ -269,12 +275,7 @@ func (m *analysisRuntime) worker() {
 			if err == nil {
 				switch r.Engine {
 				case "yara-x":
-					hash := sha256.Sum256(data)
-					if hex.EncodeToString(hash[:]) != result.SHA256 {
-						err = fmt.Errorf("artifact hash changed")
-					} else {
-						r.Matches, err = m.yara.ScanBytesContext(ctx, data)
-					}
+					r.Matches, err = m.yara.ScanBytesContext(ctx, data)
 					if err == nil {
 						r.Outcome = "no-match"
 						if len(r.Matches) > 0 {
