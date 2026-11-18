@@ -50,6 +50,13 @@ func TestInvestigationEvidenceEndpoints(t *testing.T) {
 		t.Fatalf("raw stream altered: %d %x", response.Code, response.Body.Bytes())
 	}
 	response = httptest.NewRecorder()
+	request := httptest.NewRequest("GET", "/?id="+filepath.Base(stream)+"&direction=client", nil)
+	request.Header.Set("Range", "bytes=1-2")
+	server.handleStreamEvidence(response, request)
+	if response.Code != http.StatusPartialContent || response.Header().Get("Content-Range") != "bytes 1-2/3" || !bytes.Equal(response.Body.Bytes(), []byte{255, 27}) {
+		t.Fatalf("stream range altered: %d %v %x", response.Code, response.Header(), response.Body.Bytes())
+	}
+	response = httptest.NewRecorder()
 	server.handleStreamEvidence(response, httptest.NewRequest("GET", "/?id=../../outside&direction=client", nil))
 	if response.Code != 400 {
 		t.Fatal("accepted invalid stream identity")

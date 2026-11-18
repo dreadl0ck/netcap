@@ -2,6 +2,7 @@ package webui
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 )
@@ -177,24 +179,18 @@ func (s *Server) handleStreamEvidence(w http.ResponseWriter, r *http.Request) {
 	if direction == "manifest" {
 		filename = "manifest.json"
 	}
-	path := filepath.Join(root, id, filename)
-	resolved, err := filepath.EvalSymlinks(path)
+	f, info, err := artifactio.Open(out, filepath.Join("stream-evidence", id, filename))
+	if errors.Is(err, artifactio.ErrPath) {
+		http.Error(w, "Invalid stream path", http.StatusBadRequest)
+		return
+	}
 	if err != nil {
 		http.Error(w, "Stream bytes unavailable", http.StatusNotFound)
 		return
 	}
-	resolvedRoot, err := filepath.EvalSymlinks(root)
-	if err != nil {
-		http.Error(w, "Stream evidence unavailable", http.StatusNotFound)
-		return
-	}
-	relative, err := filepath.Rel(resolvedRoot, resolved)
-	if err != nil || !filepath.IsLocal(relative) {
-		http.Error(w, "Invalid stream path", http.StatusBadRequest)
-		return
-	}
+	defer f.Close()
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s-%s"`, id, filename))
 	w.Header().Set("Cache-Control", "no-store")
-	http.ServeFile(w, r, resolved)
+	http.ServeContent(w, r, filename, info.ModTime(), f)
 }
