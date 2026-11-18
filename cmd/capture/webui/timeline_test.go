@@ -354,6 +354,27 @@ func TestTimelineRejectsSameMetadataReplacementAfterDiscovery(t *testing.T) {
 	}
 }
 
+func TestTimelineBuildBoundsCommunityMetadata(t *testing.T) {
+	dir := t.TempDir()
+	rows := []proto.Message{
+		&types.Software{Timestamp: 100, CommunityIDs: []string{"one", "two"}},
+		&types.Software{Timestamp: 200, CommunityIDs: []string{"one", "two"}},
+	}
+	writeTimelineAuditFilePlain(t, dir, "Software", types.Type_NC_Software, rows)
+	_, files, err := timelineFingerprint(dir)
+	if err != nil || len(files) != 1 {
+		t.Fatalf("discover fixture: %v", err)
+	}
+	const exact = 2*(64+3) + 2*(64+8) // Two unique strings and two extra ID lists.
+	index, err := indexTimelineType(files[0], 10, exact, nil)
+	if err != nil || len(index.Events) != 2 || len(index.strings) != 2 || len(index.extraCIDs) != 2 {
+		t.Fatalf("exact-fit metadata lost repeated IDs: %v", err)
+	}
+	if index, err := indexTimelineType(files[0], 10, exact-1, nil); index != nil || err != errTimelineMetadataBudget {
+		t.Fatalf("metadata budget returned an index or wrong error: %v", err)
+	}
+}
+
 func TestTimelineBuildEnforcesAuditFrameLimit(t *testing.T) {
 	for _, extra := range []int{0, 1} {
 		dir := t.TempDir()

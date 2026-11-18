@@ -171,6 +171,9 @@ var timelineCache = struct {
 
 const timelineSmallInputBytes = 256 << 10
 const timelineMaxAuditFrameBytes = 16 << 20
+const timelineMetadataBudget = 64 << 20
+
+var errTimelineMetadataBudget = errors.New("timeline endpoint and Community ID metadata exceeds track budget")
 
 var (
 	timelineBuildSlot      = make(chan struct{}, 1)
@@ -540,6 +543,7 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 	// memory during parallel indexing rather than trimming only after every
 	// track has already allocated its maximum.
 	perTypeLimit := timelineMaxEventsTotal / len(files)
+	perTypeMetadata := timelineMetadataBudget / len(files)
 	if perTypeLimit > timelineMaxEventsPerType {
 		perTypeLimit = timelineMaxEventsPerType
 	}
@@ -569,9 +573,9 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 				if snapshots != nil {
 					data := snapshots[i]
 					reader := &AuditRecordReader{delimitedReader: delimited.NewReaderWithLimit(bytes.NewReader(data), uint64(max(1, len(data))))}
-					ti, err = indexTimelineRecords(reader, files[i].name, perTypeLimit, entry.cancel)
+					ti, err = indexTimelineRecords(reader, files[i].name, perTypeLimit, perTypeMetadata, entry.cancel)
 				} else {
-					ti, err = indexTimelineType(files[i], perTypeLimit, entry.cancel)
+					ti, err = indexTimelineType(files[i], perTypeLimit, perTypeMetadata, entry.cancel)
 				}
 
 				atomic.AddInt64(&done, 1)
@@ -746,7 +750,7 @@ func assembleTimelineIndex(fingerprint string, types []*tlTypeIndex) *timelineIn
 }
 
 // indexTimelineType reads one audit record file and builds its time index.
-func indexTimelineType(ref timelineFileRef, eventLimit int, stop <-chan struct{}) (*tlTypeIndex, error) {
+func indexTimelineType(ref timelineFileRef, eventLimit, metadataBudget int, stop <-chan struct{}) (*tlTypeIndex, error) {
 	reader, err := openTimelineAuditReader(ref, func(input io.Reader) io.Reader {
 		return analysisStopReader{input: input, stop: stop}
 	})
@@ -754,7 +758,7 @@ func indexTimelineType(ref timelineFileRef, eventLimit int, stop <-chan struct{}
 		return nil, err
 	}
 	defer reader.Close()
-	return indexTimelineRecords(reader, ref.name, eventLimit, stop)
+	return indexTimelineRecords(reader, ref.name, eventLimit, metadataBudget, stop)
 }
 
 func openTimelineAuditReader(ref timelineFileRef, wrap func(io.Reader) io.Reader) (*AuditRecordReader, error) {
@@ -774,7 +778,7 @@ func timelineAuditReaderFromFile(f *os.File, ref timelineFileRef, wrap func(io.R
 	return reader, nil
 }
 
-func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit int, stop <-chan struct{}) (*tlTypeIndex, error) {
+func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit, metadataBudget int, stop <-chan struct{}) (*tlTypeIndex, error) {
 	header, err := reader.ReadHeader()
 	if err != nil {
 		return nil, err
@@ -803,6 +807,7 @@ func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit
 		cidsField  []int
 	)
 
+	var metadataExceeded bool
 	add := func(s string) int32 {
 		if s == "" {
 			return -1
@@ -812,6 +817,12 @@ func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit
 			return i
 		}
 
+		charge := len(s) + 64 // String table and intern map entries.
+		if charge > metadataBudget {
+			metadataExceeded = true
+			return -1
+		}
+		metadataBudget -= charge
 		i := int32(len(ti.strings))
 		ti.strings = append(ti.strings, s)
 		intern[s] = i
@@ -878,6 +889,9 @@ func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit
 			Src:     add(auditRecord.Src()),
 			Dst:     add(auditRecord.Dst()),
 		})
+		if metadataExceeded {
+			return nil, errTimelineMetadataBudget
+		}
 		if ti.cids != nil {
 			id := ""
 			if cidField != nil {
@@ -888,16 +902,27 @@ func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit
 				if len(values) > 0 {
 					id = values[0]
 					if len(values) > 1 {
+						charge := 64 + 8*(len(values)-1) // Map entry and growing ordinal list.
+						if charge > metadataBudget {
+							return nil, errTimelineMetadataBudget
+						}
+						metadataBudget -= charge
 						if ti.extraCIDs == nil {
 							ti.extraCIDs = make(map[int32][]int32)
 						}
 						for _, extra := range values[1:] {
 							ti.extraCIDs[current] = append(ti.extraCIDs[current], add(extra))
+							if metadataExceeded {
+								return nil, errTimelineMetadataBudget
+							}
 						}
 					}
 				}
 			}
 			ti.cids = append(ti.cids, add(id))
+			if metadataExceeded {
+				return nil, errTimelineMetadataBudget
+			}
 		}
 
 		if firstIdx != nil {
