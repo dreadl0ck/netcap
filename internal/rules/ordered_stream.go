@@ -93,26 +93,35 @@ func (s *OrderedStream) pushScoped(scope string, record types.AuditRecord) error
 	if !ok {
 		return errors.New("record must be a protobuf message")
 	}
-	if proto.Size(message) > 1<<20 || len(s.pending) >= maxPendingRecords {
+	if len(s.pending) >= maxPendingRecords {
+		return ErrStateCapacity
+	}
+	size := proto.Size(message)
+	if size > 1<<20 {
+		return ErrStateCapacity
+	}
+	retained := offlineMemory(reflect.ValueOf(record)) + int64(len(scope)) + 1024
+	available := int64(maxPendingBytes - s.bytes)
+	if retained+int64(size) > available {
 		return ErrStateCapacity
 	}
 	wire, err := canonicalRuleRecord(message)
 	if err != nil {
 		return err
 	}
-	charge := int(offlineMemory(reflect.ValueOf(record))) + len(wire) + len(scope) + 1024
-	if s.bytes+charge > maxPendingBytes {
+	charge := retained + int64(len(wire))
+	if len(wire) > 1<<20 || charge > available {
 		return ErrStateCapacity
 	}
 	if ts := record.Time(); len(s.pending) == 0 || ts < s.minPending {
 		s.minPending = ts
 	}
-	pending := pendingRecord{scope: scope, record: proto.Clone(message).(types.AuditRecord), wire: wire, charge: charge}
+	pending := pendingRecord{scope: scope, record: proto.Clone(message).(types.AuditRecord), wire: wire, charge: int(charge)}
 	if n := len(s.pending); n > 0 && !s.unsorted {
 		s.unsorted = pendingBefore(pending, s.pending[n-1])
 	}
 	s.pending = append(s.pending, pending)
-	s.bytes += charge
+	s.bytes += pending.charge
 	return nil
 }
 

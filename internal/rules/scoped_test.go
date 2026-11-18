@@ -308,6 +308,32 @@ func TestOrderedHTTPRecordsWithMapsBreakTiesByScope(t *testing.T) {
 	}
 }
 
+var errOrderedAdmissionMarshal = errors.New("fixture marshal called")
+
+type orderedAdmissionRecord struct{ *types.HTTP }
+
+func (*orderedAdmissionRecord) XXX_Marshal([]byte, bool) ([]byte, error) {
+	return nil, errOrderedAdmissionMarshal
+}
+
+func TestOrderedStreamRejectsBytePressureBeforeEncoding(t *testing.T) {
+	s, err := NewOrderedStream(&Config{}, alertWriterFunc(func(*types.Alert) error { return nil }), "fixture")
+	if err != nil {
+		t.Fatal(err)
+	}
+	record := &orderedAdmissionRecord{&types.HTTP{Timestamp: 1, RequestBody: make([]byte, 32<<10)}}
+	if err := s.Push(record); !errors.Is(err, errOrderedAdmissionMarshal) {
+		t.Fatalf("fixture did not reach encoding: %v", err)
+	}
+	s.bytes = maxPendingBytes - (48 << 10)
+	if err := s.Push(record); !errors.Is(err, ErrStateCapacity) {
+		t.Fatalf("expected byte admission to reject before encoding: %v", err)
+	}
+	if len(s.pending) != 0 || s.bytes != maxPendingBytes-(48<<10) {
+		t.Fatal("rejected record changed queue state")
+	}
+}
+
 func TestOrderedStreamInterleavesPushAndAdvance(t *testing.T) {
 	var timestamps []int64
 	cfg := &Config{Rules: []*Rule{{Name: "fixture", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true}}}
