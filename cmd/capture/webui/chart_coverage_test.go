@@ -30,6 +30,26 @@ func TestChartCoverageLabelsActualSampling(t *testing.T) {
 	}
 }
 
+func TestChartDataBucketMeansPreserveRecordStatistics(t *testing.T) {
+	dir := t.TempDir()
+	rows := make([]proto.Message, 0, 4097)
+	for range 2048 {
+		rows = append(rows, &types.TCP{Timestamp: 2, SrcPort: 10}, &types.TCP{Timestamp: 3, SrcPort: 30})
+	}
+	rows = append(rows, &types.TCP{Timestamp: 1_000_000_000, SrcPort: 40})
+	writeTimelineAuditFile(t, dir, "TCP", types.Type_NC_TCP, rows)
+	result, err := (&Server{}).aggregateChartDataAcrossDirs([]string{dir}, "TCP", "SrcPort", "1s", 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Count != 2 || len(result.Data) != 2 ||
+		result.Data[0] != (ChartDataPoint{Timestamp: 0, Value: 20}) ||
+		result.Data[1] != (ChartDataPoint{Timestamp: 1_000_000_000, Value: 40}) ||
+		result.MinValue != 10 || result.MaxValue != 40 || result.AvgValue != (4096*20.+40)/4097 {
+		t.Fatalf("unexpected chart data: %+v", result)
+	}
+}
+
 func TestChartFieldDiscoveryQualifiesPrefix(t *testing.T) {
 	dir := t.TempDir()
 	rows := make([]proto.Message, 101)

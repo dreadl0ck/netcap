@@ -535,8 +535,11 @@ func (s *Server) extractChartData(filePath, auditType, fieldName, intervalStr st
 		return nil, fmt.Errorf("chart interval must be positive")
 	}
 
-	// Map to aggregate values by time bucket
-	timeBuckets := make(map[int64][]float64)
+	type bucketStats struct {
+		sum   float64
+		count int
+	}
+	timeBuckets := make(map[int64]bucketStats)
 	var minValue, maxValue, sum float64
 	minValue = -1
 	totalCount := 0
@@ -568,8 +571,10 @@ func (s *Server) extractChartData(filePath, auditType, fieldName, intervalStr st
 		// Calculate time bucket
 		bucket := (timestamp / int64(duration)) * int64(duration)
 
-		// Add value to bucket
-		timeBuckets[bucket] = append(timeBuckets[bucket], value)
+		stats := timeBuckets[bucket]
+		stats.sum += value
+		stats.count++
+		timeBuckets[bucket] = stats
 
 		// Update statistics
 		if minValue == -1 || value < minValue {
@@ -587,18 +592,11 @@ func (s *Server) extractChartData(filePath, auditType, fieldName, intervalStr st
 	}
 
 	// Aggregate buckets
-	var dataPoints []ChartDataPoint
-	for bucket, values := range timeBuckets {
-		// Calculate average for the bucket
-		var bucketSum float64
-		for _, v := range values {
-			bucketSum += v
-		}
-		avg := bucketSum / float64(len(values))
-
+	dataPoints := make([]ChartDataPoint, 0, len(timeBuckets))
+	for bucket, stats := range timeBuckets {
 		dataPoints = append(dataPoints, ChartDataPoint{
 			Timestamp: bucket,
-			Value:     avg,
+			Value:     stats.sum / float64(stats.count),
 		})
 	}
 
