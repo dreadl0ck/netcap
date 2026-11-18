@@ -100,6 +100,28 @@ func captureHTTPWithPayloadOption(t *testing.T, data core.DataFragments, source,
 	return w.records, fw.records
 }
 
+func TestHTTPSourceOrientationUnderOneDirectionBudget(t *testing.T) {
+	budget, err := core.NewStateBudget(16<<10, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := &core.ConversationInfo{
+		ClientIP: "192.0.2.2", ServerIP: "192.0.2.1", StateBudget: budget,
+		ClientSource: core.SliceSource{wireFragment(0, []byte("HTTP/1.1 204 No Content\r\n\r\n"), 1)},
+		ServerSource: core.SliceSource(nil),
+	}
+	oriented, err := sourceHTTPOrientation(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if oriented.ServerIP != c.ClientIP || oriented.ClientSource.Count() != 0 || oriented.ServerSource.Count() != 1 {
+		t.Fatal("response-only conversation was not oriented correctly")
+	}
+	if health := budget.Health(); health.RetainedBytes != 0 || health.PeakBytes != 16<<10 || health.Exceeded {
+		t.Fatalf("unexpected prefix accounting: %+v", health)
+	}
+}
+
 func TestHTTPSourcePreflightScansBodiesUnderFiniteBudget(t *testing.T) {
 	body := strings.Repeat("fixture data\n", 20000)
 	request := fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Length: %d\r\n\r\n%s", len(body), body)

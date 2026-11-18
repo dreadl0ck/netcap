@@ -189,15 +189,22 @@ func (h *httpReader) SupportsFragmentSource() bool {
 }
 
 func sourceHTTPOrientation(c *core.ConversationInfo) (*core.ConversationInfo, error) {
-	if err := c.StateBudget.Reserve(32768); err != nil {
+	const prefixSize = 16384
+	var credit int64
+	for _, source := range []core.RangedFragmentSource{c.ClientSource, c.ServerSource} {
+		if source.Count() > 0 {
+			credit += prefixSize
+		}
+	}
+	if err := c.StateBudget.Reserve(credit); err != nil {
 		return nil, err
 	}
-	defer c.StateBudget.Release(32768)
-	client, err := core.ReadSourcePrefix(c.ClientSource, 16384)
+	defer c.StateBudget.Release(credit)
+	client, err := core.ReadSourcePrefix(c.ClientSource, prefixSize)
 	if err != nil {
 		return nil, err
 	}
-	server, err := core.ReadSourcePrefix(c.ServerSource, 16384)
+	server, err := core.ReadSourcePrefix(c.ServerSource, prefixSize)
 	if err != nil {
 		return nil, err
 	}
