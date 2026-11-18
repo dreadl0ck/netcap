@@ -1244,7 +1244,7 @@ func TestTimelineEventsRejectMalformedCursor(t *testing.T) {
 		dnsRecord(100, "10.0.0.1", "1.1.1.1"),
 	})
 
-	waitForTimelineIndex(t, dir)
+	idx := waitForTimelineIndex(t, dir)
 
 	s := newTimelineTestServer(dir)
 
@@ -1253,6 +1253,12 @@ func TestTimelineEventsRejectMalformedCursor(t *testing.T) {
 
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("cursor status = %d, want 400", rec.Code)
+	}
+	oversized := tlKey{Time: 100, Type: strings.Repeat("X", 512)}.encode()
+	rec = httptest.NewRecorder()
+	s.handleTimelineEvents(rec, httptest.NewRequest(http.MethodGet, "/api/timeline/events?generation="+idx.Generation+"&after="+oversized, nil))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("oversized cursor status = %d, want 400", rec.Code)
 	}
 }
 

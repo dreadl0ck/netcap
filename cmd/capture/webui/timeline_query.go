@@ -66,9 +66,14 @@ func (k tlKey) encode() string {
 	return base64.RawURLEncoding.EncodeToString([]byte(raw))
 }
 
+const maxTimelineCursorBytes = 512
+
 func decodeTimelineCursor(s string) (*tlKey, error) {
 	if s == "" {
 		return nil, nil
+	}
+	if len(s) > maxTimelineCursorBytes {
+		return nil, errors.New("cursor exceeds 512 bytes")
 	}
 
 	raw, err := base64.RawURLEncoding.DecodeString(s)
@@ -76,7 +81,7 @@ func decodeTimelineCursor(s string) (*tlKey, error) {
 		return nil, errors.New("malformed cursor")
 	}
 
-	parts := strings.Split(string(raw), "|")
+	parts := strings.SplitN(string(raw), "|", 5)
 	if len(parts) != 4 {
 		return nil, errors.New("malformed cursor")
 	}
