@@ -248,8 +248,18 @@ func (q *timelineQuery) nearest(at int64) *timelineHit {
 
 			if direction < 0 {
 				i = q.prevMatch(t, i, lo, selected)
+				if i >= lo {
+					// The backward scan finds the timestamp; ties favor the first matching ordinal.
+					first := max(lo, t.lowerBound(t.Events[i].Time))
+					if first < i {
+						i = q.nextMatch(t, first, i+1, selected)
+					}
+				}
 			} else {
 				i = q.nextMatch(t, i, hi, selected)
+			}
+			if q.canceled() {
+				return nil
 			}
 			if i >= lo && i < hi {
 				distance := timelineDistance(t.Events[i].Time, at)

@@ -682,6 +682,27 @@ func TestTimelineNearestUsesSelectedTrackAndSearch(t *testing.T) {
 	}
 }
 
+func TestTimelineNearestBreaksEarlierTimestampTiesByOrdinal(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{
+		dnsRecord(100, "192.0.2.1", "192.0.2.3"),
+		dnsRecord(100, "192.0.2.2", "192.0.2.3"),
+		dnsRecord(100, "192.0.2.2", "192.0.2.3"),
+		dnsRecord(200, "192.0.2.2", "192.0.2.3"),
+	})
+	idx := waitForTimelineIndex(t, dir)
+	for _, tc := range []struct {
+		host string
+		want int32
+	}{{"", 0}, {"192.0.2.2", 1}} {
+		q := timelineQuery{Start: 100, End: 200, Tracks: idx.Types, Host: tc.host}
+		hit := q.nearest(150)
+		if hit == nil || hit.Track.Events[hit.Index].Ordinal != tc.want {
+			t.Fatalf("host %q: nearest=%+v, want ordinal %d", tc.host, hit, tc.want)
+		}
+	}
+}
+
 func TestTimelineBucketsSpanDurations(t *testing.T) {
 	dir := t.TempDir()
 
