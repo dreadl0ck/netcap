@@ -136,18 +136,19 @@ func (s *Server) handleStreamEvidence(w http.ResponseWriter, r *http.Request) {
 			if !entry.IsDir() || !strings.HasPrefix(entry.Name(), "stream-") {
 				continue
 			}
-			var manifest streamutils.StreamEvidenceManifest
+			var summary struct {
+				streamutils.StreamEvidenceManifest
+				Spans []struct{} `json:"spans"`
+			}
 			data, err := artifactio.Read(r.Context(), out, filepath.Join("stream-evidence", entry.Name(), "manifest.json"), 16<<20)
 			if err == nil {
-				err = json.Unmarshal(data, &manifest)
+				err = json.Unmarshal(data, &summary)
 			}
 			if err != nil {
 				http.Error(w, "Incomplete stream evidence: "+err.Error(), http.StatusUnprocessableEntity)
 				return
 			}
-			count := len(manifest.Spans)
-			manifest.Spans = nil
-			rows = append(rows, row{entry.Name(), manifest, count, true})
+			rows = append(rows, row{entry.Name(), summary.StreamEvidenceManifest, len(summary.Spans), true})
 		}
 		sort.Slice(rows, func(i, j int) bool {
 			a, b := rows[i].Manifest, rows[j].Manifest
