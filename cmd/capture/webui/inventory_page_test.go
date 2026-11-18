@@ -1,7 +1,9 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -82,6 +84,21 @@ func TestHostTopPortsKeepStableCutoff(t *testing.T) {
 		first := ports[0]
 		copy(ports, ports[1:])
 		ports[len(ports)-1] = first
+	}
+}
+
+func TestDomainInventorySharesAuditBudget(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFile(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{&types.DNS{}})
+	writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, []proto.Message{&types.Connection{Sni: "fixture.test"}})
+	budget := inventoryAuditBudget{ctx: context.Background(), stored: maxCollectionPageScanBytes, bodies: maxCollectionPageScanBytes, rows: 2}
+	rows, err := readDomainInventory(dir, &budget)
+	if err != nil || len(rows) != 1 || rows[0].Domain != "fixture.test" {
+		t.Fatalf("exact combined budget: rows=%v err=%v", rows, err)
+	}
+	short := inventoryAuditBudget{ctx: context.Background(), stored: maxCollectionPageScanBytes, bodies: maxCollectionPageScanBytes, rows: 1}
+	if rows, err := readDomainInventory(dir, &short); rows != nil || !errors.Is(err, errInventoryAuditLimit) {
+		t.Fatalf("short combined budget: rows=%v err=%v", rows, err)
 	}
 }
 

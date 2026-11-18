@@ -21,6 +21,7 @@ package webui
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -90,8 +91,16 @@ func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	domains, err := readDomains(outDir)
+	var budget *inventoryAuditBudget
+	if r.URL.Query().Get("mcpPage") == "true" {
+		budget = &inventoryAuditBudget{ctx: r.Context(), stored: maxCollectionPageScanBytes, bodies: maxCollectionPageScanBytes, rows: maxCollectionPageRows}
+	}
+	domains, err := readDomainInventory(outDir, budget)
 	if err != nil {
+		if errors.Is(err, errInventoryAuditLimit) {
+			RespondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": err.Error()})
+			return
+		}
 		log.Printf("[WebUI] Failed to read domains: %v", err)
 		http.Error(w, "Failed to read domains", http.StatusInternalServerError)
 		return
@@ -111,23 +120,29 @@ func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {
 
 // readDomains reads and aggregates domain data from DNS records and TLS SNI
 func readDomains(outDir string) ([]DomainSummary, error) {
+	return readDomainInventory(outDir, nil)
+}
+
+func readDomainInventory(outDir string, budget *inventoryAuditBudget) ([]DomainSummary, error) {
 	// Domain aggregation map
 	domainMap := make(map[string]*domainAggregator)
 
 	// Read DNS records
 	dnsFilePath := filepath.Join(outDir, "DNS.ncap.gz")
-	if _, err := os.Stat(dnsFilePath); err == nil {
-		if err := readDNSDomains(dnsFilePath, domainMap); err != nil {
-			log.Printf("[WebUI] Error reading DNS domains: %v", err)
+	if err := readDNSDomains(dnsFilePath, domainMap, budget); err != nil && !errors.Is(err, os.ErrNotExist) {
+		if budget != nil {
+			return nil, err
 		}
+		log.Printf("[WebUI] Error reading DNS domains: %v", err)
 	}
 
 	// Read SNI domains from Connection records
 	connFilePath := filepath.Join(outDir, "Connection.ncap.gz")
-	if _, err := os.Stat(connFilePath); err == nil {
-		if err := readSNIDomains(connFilePath, domainMap); err != nil {
-			log.Printf("[WebUI] Error reading SNI domains: %v", err)
+	if err := readSNIDomains(connFilePath, domainMap, budget); err != nil && !errors.Is(err, os.ErrNotExist) {
+		if budget != nil {
+			return nil, err
 		}
+		log.Printf("[WebUI] Error reading SNI domains: %v", err)
 	}
 
 	// Convert map to slice
@@ -135,30 +150,23 @@ func readDomains(outDir string) ([]DomainSummary, error) {
 }
 
 // readDNSDomains reads domains from DNS records
-func readDNSDomains(filePath string, domainMap map[string]*domainAggregator) error {
+func readDNSDomains(filePath string, domainMap map[string]*domainAggregator, budget *inventoryAuditBudget) error {
 	remainingRTT := maxDomainRTTSamples
 	// Read DNS records
-	reader, err := NewAuditRecordReader(filePath)
+	reader, err := budget.open(filePath, types.Type_NC_DNS)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
 
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return err
-	}
-
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		record, err := budget.next(reader)
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading DNS record: %v", err)
-			continue
+			return err
 		}
 
 		// Type assert to DNS
@@ -180,6 +188,9 @@ func readDNSDomains(filePath string, domainMap map[string]*domainAggregator) err
 
 			agg, exists := domainMap[domain]
 			if !exists {
+				if budget != nil && len(domainMap) >= maxCollectionPageRows {
+					return errInventoryAuditLimit
+				}
 				agg = &domainAggregator{
 					domain:        domain,
 					clients:       make(map[string]bool),
@@ -236,29 +247,22 @@ func readDNSDomains(filePath string, domainMap map[string]*domainAggregator) err
 }
 
 // readSNIDomains reads domains from TLS SNI in Connection records
-func readSNIDomains(filePath string, domainMap map[string]*domainAggregator) error {
+func readSNIDomains(filePath string, domainMap map[string]*domainAggregator, budget *inventoryAuditBudget) error {
 	// Read Connection records
-	reader, err := NewAuditRecordReader(filePath)
+	reader, err := budget.open(filePath, types.Type_NC_Connection)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
 
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return err
-	}
-
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		record, err := budget.next(reader)
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading Connection record: %v", err)
-			continue
+			return err
 		}
 
 		// Type assert to Connection
@@ -275,6 +279,9 @@ func readSNIDomains(filePath string, domainMap map[string]*domainAggregator) err
 		domain := strings.ToLower(conn.Sni)
 		agg, exists := domainMap[domain]
 		if !exists {
+			if budget != nil && len(domainMap) >= maxCollectionPageRows {
+				return errInventoryAuditLimit
+			}
 			agg = &domainAggregator{
 				domain:        domain,
 				clients:       make(map[string]bool),
