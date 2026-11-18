@@ -22,6 +22,7 @@ package webui
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	stdio "io"
@@ -98,6 +99,8 @@ type CertificatesResponse struct {
 	TotalCount   int                  `json:"totalCount"`
 }
 
+var certificateInventorySlots = make(chan struct{}, 2)
+
 // handleCertificates returns a list of all TLS certificates
 func (s *Server) handleCertificates(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -112,16 +115,44 @@ func (s *Server) handleCertificates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	snapshot, err := certificateSnapshotFor(outDir)
+	var rows []CertificateSummary
+	var err error
+	if r.URL.Query().Get("mcpPage") == "true" {
+		if r.Context().Err() != nil {
+			return
+		}
+		select {
+		case certificateInventorySlots <- struct{}{}:
+			defer func() { <-certificateInventorySlots }()
+		default:
+			RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "certificate inventory is busy"})
+			return
+		}
+		budget := &inventoryAuditBudget{ctx: r.Context(), stored: maxCollectionPageScanBytes, bodies: maxCollectionPageScanBytes, rows: maxCollectionPageRows}
+		rows, err = readCertificateInventory(outDir, budget)
+	} else {
+		var snapshot *certificateSnapshot
+		snapshot, err = certificateSnapshotFor(outDir)
+		if err == nil {
+			rows = snapshot.rows
+		}
+	}
 	if err != nil {
+		if r.Context().Err() != nil {
+			return
+		}
+		if errors.Is(err, errInventoryAuditLimit) {
+			RespondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": err.Error()})
+			return
+		}
 		log.Printf("[WebUI] Failed to read certificates: %v", err)
 		http.Error(w, "Failed to read certificates", http.StatusInternalServerError)
 		return
 	}
 
 	response := CertificatesResponse{
-		Certificates: snapshot.rows,
-		TotalCount:   len(snapshot.rows),
+		Certificates: rows,
+		TotalCount:   len(rows),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -133,26 +164,18 @@ func (s *Server) handleCertificates(w http.ResponseWriter, r *http.Request) {
 
 // readCertificates reads and aggregates TLSCertificate data from the output directory
 func readCertificates(outDir string) ([]CertificateSummary, error) {
-	filePath := filepath.Join(outDir, "TLSCertificate.ncap.gz")
+	return readCertificateInventory(outDir, nil)
+}
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] TLSCertificate file not found: %s", filePath)
+func readCertificateInventory(outDir string, budget *inventoryAuditBudget) ([]CertificateSummary, error) {
+	reader, err := budget.open(filepath.Join(outDir, "TLSCertificate.ncap.gz"), types.Type_NC_TLSCertificate)
+	if errors.Is(err, os.ErrNotExist) {
 		return []CertificateSummary{}, nil
 	}
-
-	// Read TLSCertificate records
-	reader, err := NewAuditRecordReader(filePath)
 	if err != nil {
 		return nil, err
 	}
 	defer reader.Close()
-
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return nil, err
-	}
 
 	// Use a map to deduplicate certificates by SHA256 fingerprint
 	certMap := make(map[string]*CertificateSummary)
@@ -160,12 +183,19 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		raw, err := budget.nextRaw(reader)
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading TLSCertificate record: %v", err)
+			return nil, err
+		}
+		record, err := reader.DecodeRecord(raw)
+		if err != nil {
+			if budget != nil {
+				return nil, err
+			}
+			log.Printf("[WebUI] Error decoding TLSCertificate record: %v", err)
 			continue
 		}
 
@@ -286,18 +316,25 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 
 	// Convert map to slice
 	certificates := make([]CertificateSummary, 0, len(certMap))
-	for key, cert := range certMap {
+	keys := make([]string, 0, len(certMap))
+	for key := range certMap {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		a, b := keys[i], keys[j]
+		if certMap[a].SeenCount != certMap[b].SeenCount {
+			return certMap[a].SeenCount > certMap[b].SeenCount
+		}
+		return a < b
+	})
+	for _, key := range keys {
+		cert := certMap[key]
 		for id := range communityIDs[key] {
 			cert.CommunityIDs = append(cert.CommunityIDs, id)
 		}
 		sort.Strings(cert.CommunityIDs)
 		certificates = append(certificates, *cert)
 	}
-
-	// Sort by seen count descending
-	sort.Slice(certificates, func(i, j int) bool {
-		return certificates[i].SeenCount > certificates[j].SeenCount
-	})
 
 	return certificates, nil
 }

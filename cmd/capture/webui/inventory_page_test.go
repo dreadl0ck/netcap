@@ -173,6 +173,38 @@ func TestMCPSoftwareInventoryLimitsConcurrentResponses(t *testing.T) {
 	testInventoryResponseCapacity(t, "/api/software", s.handleSoftware)
 }
 
+func TestCertificateInventoryRejectsOversizedAudit(t *testing.T) {
+	dir := t.TempDir()
+	s := newTimelineTestServer(dir)
+	request := func() *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		s.handleCertificates(w, httptest.NewRequest(http.MethodGet, "/api/certificates?mcpPage=true&pageLimit=1", nil))
+		return w
+	}
+	writeTimelineAuditFile(t, dir, "TLSCertificate", types.Type_NC_TLSCertificate, []proto.Message{
+		&types.TLSCertificate{SHA256Fingerprint: "first-certificate"},
+		&types.TLSCertificate{SubjectCommonName: strings.Repeat("x", maxCollectionPageScanBytes)},
+	})
+	w := request()
+	if w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "generation") || strings.Contains(w.Body.String(), "first-certificate") {
+		t.Fatalf("expected refusal without a partial certificate page: %d %s", w.Code, w.Body)
+	}
+	writeTimelineAuditFile(t, dir, "TLSCertificate", types.Type_NC_TLSCertificate, []proto.Message{
+		&types.TLSCertificate{SHA256Fingerprint: "z-certificate"}, &types.TLSCertificate{SHA256Fingerprint: "a-certificate"},
+	})
+	for range 8 {
+		w = request()
+		if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"sha256Fingerprint":"a-certificate"`) || strings.Contains(w.Body.String(), "z-certificate") {
+			t.Fatalf("retry did not return the first tied certificate: %d %s", w.Code, w.Body)
+		}
+	}
+}
+
+func TestMCPCertificateInventoryLimitsConcurrentResponses(t *testing.T) {
+	s := newTimelineTestServer(t.TempDir())
+	testInventoryResponseCapacity(t, "/api/certificates", s.handleCertificates)
+}
+
 func TestDomainInventorySharesAuditBudget(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFile(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{&types.DNS{}})
