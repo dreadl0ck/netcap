@@ -212,6 +212,17 @@ func (c *coldConnection) restoreKey() (key, error) {
 	return k, nil
 }
 
+func (c *coldConnection) keyForRow(id string) (key, error) {
+	k, err := c.restoreKey()
+	if err != nil {
+		return key{}, err
+	}
+	if coldID(&k) != id {
+		return key{}, fmt.Errorf("TCP cold state row ID does not match stored connection")
+	}
+	return k, nil
+}
+
 func coldOrder(c coldConnection) (string, error) {
 	k, err := c.restoreKey()
 	if err != nil {
@@ -327,12 +338,9 @@ func (a *Assembler) closeOrderedWithCold(conns []connectionRef, progress func())
 			if err != nil {
 				return err
 			}
-			stored, err := snap.restoreKey()
+			stored, err := snap.keyForRow(id)
 			if err != nil {
 				return err
-			}
-			if coldID(&stored) != id {
-				return fmt.Errorf("TCP cold order entry references a mismatched state row")
 			}
 			order := hex.EncodeToString([]byte(stored.String()))
 			if orderKey != p.cold.prefix+"order/"+order+"/" {
@@ -612,6 +620,7 @@ func (p *StreamPool) flushColdAll(retire bool) (count int) {
 	last := ""
 	for {
 		var key string
+		var id string
 		var snap coldConnection
 		var found bool
 		err := p.cold.state.Do(func(tx *aggregate.Tx) error {
@@ -622,12 +631,19 @@ func (p *StreamPool) flushColdAll(retire bool) (count int) {
 				return err
 			}
 			snap, err = decodeCold(wire)
+			if err != nil {
+				return err
+			}
+			id = strings.TrimSuffix(strings.TrimPrefix(key, p.cold.prefix+"states/"), "/")
+			if key != p.cold.row(id) {
+				return fmt.Errorf("invalid TCP cold state row path")
+			}
+			_, err = snap.keyForRow(id)
 			return err
 		})
 		if err != nil || !found {
 			return count
 		}
-		id := strings.TrimSuffix(strings.TrimPrefix(key, p.cold.prefix+"states/"), "/")
 		if err := p.finishCold(id, snap, "no bytes saved", retire); err != nil {
 			_ = p.cold.state.Do(func(*aggregate.Tx) error { return err })
 			return count
@@ -669,6 +685,9 @@ func (p *StreamPool) flushColdDue(opt FlushOptions) (closed int) {
 				}
 				snap, err = decodeCold(wire)
 				if err != nil {
+					return err
+				}
+				if _, err := snap.keyForRow(id); err != nil {
 					return err
 				}
 				want, err := p.cold.index(id, snap, p.trackIdle)

@@ -85,33 +85,46 @@ func TestColdEOFFailsOnMissingOrderEntry(t *testing.T) {
 	}
 }
 
-func TestColdEOFFailsOnMismatchedStateRow(t *testing.T) {
-	canceled := false
-	store, err := aggregate.Open(t.TempDir(), 2048, func() { canceled = true })
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = store.Close() })
-	pool := NewStreamPool(new(flushProgressFactory))
-	pool.cold = &coldStorage{state: store, prefix: "fixture/"}
-	k, wrong := snapshotKey(1), snapshotKey(2)
-	snap := coldConnection{Version: 1}
-	for i := range k {
-		snap.Key[i] = SaveFlow(k[i])
-	}
-	if err := store.Do(func(tx *aggregate.Tx) error {
-		return pool.cold.put(tx, coldID(&wrong), snap, false)
-	}); err != nil {
-		t.Fatal(err)
-	}
-	pool.cold.count.Store(1)
-	a := NewAssembler(pool)
-	defer a.Release()
-	if n := a.FlushAll(); n != 0 {
-		t.Fatalf("finalized %d connections from a mismatched state row", n)
-	}
-	if err := store.Error(); err == nil || !strings.Contains(err.Error(), "references a mismatched state row") || !canceled {
-		t.Fatalf("expected fatal storage cancellation, got %v, canceled=%t", err, canceled)
+func TestColdFinalizationRejectsMismatchedStateRow(t *testing.T) {
+	for _, path := range []string{"EOF", "expiry", "cleanup"} {
+		t.Run(path, func(t *testing.T) {
+			canceled := false
+			store, err := aggregate.Open(t.TempDir(), 2048, func() { canceled = true })
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = store.Close() })
+			pool := NewStreamPool(new(flushProgressFactory))
+			pool.cold = &coldStorage{state: store, prefix: "fixture/"}
+			k, wrong := snapshotKey(1), snapshotKey(2)
+			snap := coldConnection{Version: 1, ObserveClose: true}
+			for i := range k {
+				snap.Key[i] = SaveFlow(k[i])
+			}
+			if err := store.Do(func(tx *aggregate.Tx) error {
+				return pool.cold.put(tx, coldID(&wrong), snap, false)
+			}); err != nil {
+				t.Fatal(err)
+			}
+			pool.cold.count.Store(1)
+			var n int
+			switch path {
+			case "EOF":
+				a := NewAssembler(pool)
+				defer a.Release()
+				n = a.FlushAll()
+			case "expiry":
+				n = pool.flushColdDue(FlushOptions{TC: time.Unix(1, 0)})
+			case "cleanup":
+				n = pool.flushColdAll(true)
+			}
+			if n != 0 || pool.cold.count.Load() != 1 {
+				t.Fatalf("finalized %d connections from a mismatched state row", n)
+			}
+			if err := store.Error(); err == nil || !strings.Contains(err.Error(), "row ID does not match") || !canceled {
+				t.Fatalf("expected fatal storage cancellation, got %v, canceled=%t", err, canceled)
+			}
+		})
 	}
 }
 
