@@ -10,6 +10,31 @@ import (
 	"testing"
 )
 
+func TestExportReportRetainedIndexBudget(t *testing.T) {
+	dir := t.TempDir()
+	records := filepath.Join(dir, "FlowExports.jsonl")
+	data := []byte(`{"kind":"observation","observation":{"id":"one","format":"ipfix","domain":0,"envelope":{"exporter":"192.0.2.10:4739","receivedNs":"1"},"srcIP":"192.0.2.1","dstIP":"192.0.2.2","bytes":"8","packets":"1","counterSemantics":"exported-delta-as-reported"}}` + "\n")
+	if err := os.WriteFile(records, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	digest := sha256.Sum256(data)
+	health := `{"status":"done","recordsSHA256":"` + hex.EncodeToString(digest[:]) + `"}`
+	if err := os.WriteFile(filepath.Join(dir, "FlowExportsHealth.json"), []byte(health), 0600); err != nil {
+		t.Fatal(err)
+	}
+	domain := uint32(0)
+	q := Query{StartNs: 1, EndNs: 1, Exporter: "192.0.2.10:4739", Format: "ipfix", Domain: &domain, TimeBasis: "receive", GroupBy: "srcIP", Limit: 1}
+	const exact = 48 + len("one") + 192 + len("192.0.2.1") + 48 + len("192.0.2.2") + 32
+	report, err := readReport(t.Context(), records, q, exact)
+	if err != nil || len(report.Groups) != 1 || report.Groups[0].Bytes != 8 || report.Groups[0].Peers != 1 {
+		t.Fatalf("exact budget: %+v, %v", report, err)
+	}
+	report, err = readReport(t.Context(), records, q, exact-1)
+	if err == nil || !strings.Contains(err.Error(), "index budget exceeded") || len(report.Groups) != 0 {
+		t.Fatalf("short budget: %+v, %v", report, err)
+	}
+}
+
 func TestExportReportRejectsOversizedInputs(t *testing.T) {
 	dir := t.TempDir()
 	health := filepath.Join(dir, "FlowExportsHealth.json")

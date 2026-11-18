@@ -19,6 +19,7 @@ import (
 const (
 	maxReportHealthBytes  = 1 << 20
 	maxReportRecordsBytes = 256 << 20
+	maxReportIndexBytes   = 128 << 20
 )
 
 type Query struct {
@@ -60,6 +61,10 @@ type Report struct {
 }
 
 func ReadReport(ctx context.Context, path string, query Query) (Report, error) {
+	return readReport(ctx, path, query, maxReportIndexBytes)
+}
+
+func readReport(ctx context.Context, path string, query Query, indexBudget int) (Report, error) {
 	result := Report{Version: 1, Query: query, Groups: []Group{}, Limitations: []string{"counts are exporter-reported; no sampling scaling is inferred", "whole observations overlap the chosen window; counters are not clipped", "cumulative export counters and records lacking bytes/packets are excluded from additive rankings", "one exporter/domain scope is required; observations are not unique sessions"}}
 	if query.Exporter == "" || query.Format == "" || query.Domain == nil || query.EndNs < query.StartNs || query.Limit < 1 || query.Limit > 1000 {
 		return result, fmt.Errorf("bounded exporter/format/domain/time scope and limit 1..1000 required")
@@ -127,6 +132,14 @@ func ReadReport(ctx context.Context, path string, query Query) (Report, error) {
 	scanner.Buffer(make([]byte, 4096), 2<<20)
 	groups := map[string]*Group{}
 	seen := map[string]bool{}
+	charge := func(bytes int) bool {
+		if bytes > indexBudget {
+			return false
+		}
+		indexBudget -= bytes
+		return true
+	}
+	indexLimitErr := fmt.Errorf("export query index budget exceeded; narrow the query scope")
 	records := 0
 	collector := ""
 	samplingKey := ""
@@ -158,6 +171,9 @@ func ReadReport(ctx context.Context, path string, query Query) (Report, error) {
 		collector = o.Envelope.Collector
 		if o.ID == "" || seen[o.ID] {
 			return result, fmt.Errorf("missing or duplicate export observation identity")
+		}
+		if !charge(48 + len(o.ID)) {
+			return result, indexLimitErr
 		}
 		seen[o.ID] = true
 		if query.TimeBasis == "receive" {
@@ -203,6 +219,9 @@ func ReadReport(ctx context.Context, path string, query Query) (Report, error) {
 			if len(groups) >= 10000 {
 				return result, fmt.Errorf("export group limit exceeded")
 			}
+			if !charge(192 + len(key)) {
+				return result, indexLimitErr
+			}
 			g = &Group{Key: key, Members: []string{}, peers: map[string]bool{}}
 			groups[key] = g
 		}
@@ -212,8 +231,16 @@ func ReadReport(ctx context.Context, path string, query Query) (Report, error) {
 		g.Bytes += *o.Bytes
 		g.Packets += *o.Packets
 		g.Records++
-		g.peers[peer] = true
+		if !g.peers[peer] {
+			if !charge(48 + len(peer)) {
+				return result, indexLimitErr
+			}
+			g.peers[peer] = true
+		}
 		if len(g.Members) < 1000 {
+			if !charge(32) {
+				return result, indexLimitErr
+			}
 			g.Members = append(g.Members, o.ID)
 		} else {
 			g.MembersTruncated = true
