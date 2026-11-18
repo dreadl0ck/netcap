@@ -201,7 +201,7 @@ func TestRuleAuditRejectsLinkedPreferredTrack(t *testing.T) {
 }
 
 func TestRuleAuditRejectsGenerationChangesDuringReplay(t *testing.T) {
-	for _, change := range []string{"append", "replace"} {
+	for _, change := range []string{"append", "replace", "publish preferred gzip"} {
 		t.Run(change, func(t *testing.T) {
 			dir := t.TempDir()
 			original := &types.HTTP{Method: "GET"}
@@ -217,6 +217,10 @@ func TestRuleAuditRejectsGenerationChangesDuringReplay(t *testing.T) {
 					}
 					defer f.Close()
 					return delimited.NewWriter(f).PutProto(&types.HTTP{Method: "PUT"})
+				}
+				if change == "publish preferred gzip" {
+					writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "PUT"}})
+					return nil
 				}
 				opened, err := os.Stat(path)
 				if err != nil {

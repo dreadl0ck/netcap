@@ -95,6 +95,11 @@ func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit 
 			if err != nil || !os.SameFile(opened, current) || opened.Size() != current.Size() || !opened.ModTime().Equal(current.ModTime()) {
 				return count, fmt.Errorf("%s: %w", name, errRuleAuditChanged)
 			}
+			if !compressed {
+				if _, err := os.Lstat(filepath.Join(dir, name+".gz")); !errors.Is(err, os.ErrNotExist) {
+					return count, fmt.Errorf("%s.gz: %w", name, errRuleAuditChanged)
+				}
+			}
 			return count, nil
 		}
 		if err != nil {
