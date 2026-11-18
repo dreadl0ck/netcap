@@ -36,6 +36,11 @@ type jobSettings struct {
 }
 
 func (s *Server) snapshotJobSettings() (*jobSettings, error) {
+	select {
+	case <-s.shutdownChan:
+		return nil, errAnalysisStopping
+	default:
+	}
 	s.mu.RLock()
 	snapshot := &jobSettings{Version: 1, Runtime: s.runtimeSnapshotLocked(), DPI: s.dpiConfigured, Payload: s.payloadCapture}
 	s.mu.RUnlock()
@@ -61,10 +66,29 @@ func (s *Server) snapshotJobSettings() (*jobSettings, error) {
 		protoRuntime.alternatives = &value
 	}
 	protoRuntime.mu.Unlock()
-	return snapshotSchemaSources(snapshot)
+	if len(snapshot.SchemaPaths) == 0 || s.shutdownChan == nil {
+		return snapshotSchemaSources(snapshot)
+	}
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(nil)
+	go func() {
+		select {
+		case <-s.shutdownChan:
+			cancel(errAnalysisStopping)
+		case <-ctx.Done():
+		}
+	}()
+	return snapshotSchemaSourcesContext(ctx, snapshot)
 }
 
 func snapshotSchemaSources(snapshot *jobSettings) (*jobSettings, error) {
+	return snapshotSchemaSourcesContext(context.Background(), snapshot)
+}
+
+func snapshotSchemaSourcesContext(parent context.Context, snapshot *jobSettings) (*jobSettings, error) {
+	if err := context.Cause(parent); err != nil {
+		return nil, err
+	}
 	if len(snapshot.SchemaPaths) == 0 {
 		return snapshot, nil
 	}
@@ -85,12 +109,15 @@ func snapshotSchemaSources(snapshot *jobSettings) (*jobSettings, error) {
 	if strings.Contains(dir, ",") {
 		return nil, fmt.Errorf("Protobuf helper snapshot requires a TMPDIR without commas")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(parent, 30*time.Second)
 	defer cancel()
 	files, entries, total := 0, 0, 0
 	snapshot.SchemaHashes = map[string]string{}
 	snapshot.Protobuf.Paths = nil
 	for index, path := range snapshot.SchemaPaths {
+		if err := context.Cause(ctx); err != nil {
+			return nil, err
+		}
 		info, err := os.Lstat(path)
 		if err != nil {
 			return nil, err
@@ -115,6 +142,9 @@ func snapshotSchemaSources(snapshot *jobSettings) (*jobSettings, error) {
 			}
 			data, err := artifactio.Read(ctx, root, relative, 2<<20)
 			if err != nil {
+				if cause := context.Cause(ctx); cause != nil {
+					return cause
+				}
 				return err
 			}
 			total += len(data)
@@ -141,7 +171,7 @@ func snapshotSchemaSources(snapshot *jobSettings) (*jobSettings, error) {
 				if err != nil {
 					return err
 				}
-				if err := ctx.Err(); err != nil {
+				if err := context.Cause(ctx); err != nil {
 					return err
 				}
 				entries++
@@ -165,6 +195,9 @@ func snapshotSchemaSources(snapshot *jobSettings) (*jobSettings, error) {
 			}
 		}
 		snapshot.Protobuf.Paths = append(snapshot.Protobuf.Paths, target)
+	}
+	if err := context.Cause(ctx); err != nil {
+		return nil, err
 	}
 	if files == 0 {
 		return nil, fmt.Errorf("no schema files in configured Protobuf roots")

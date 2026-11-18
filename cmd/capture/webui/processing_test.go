@@ -26,6 +26,16 @@ func processingStatus(t *testing.T, server *Server) bool {
 	return status.IsProcessing
 }
 
+func TestCanceledSchemaSnapshotReturnsShutdownCause(t *testing.T) {
+	ctx, cancel := context.WithCancelCause(context.Background())
+	cancel(errAnalysisStopping)
+	settings := &jobSettings{SchemaPaths: []string{"missing-fixture.proto"}}
+	got, err := snapshotSchemaSourcesContext(ctx, settings)
+	if got != nil || !errors.Is(err, errAnalysisStopping) || settings.directory != "" {
+		t.Fatalf("snapshot=%v error=%v scratch=%q", got, err, settings.directory)
+	}
+}
+
 func processingServer(t *testing.T, hosted bool) *Server {
 	t.Helper()
 	t.Setenv("NC_APPROVED_WORKSTATIONS", "")
