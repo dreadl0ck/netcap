@@ -43,3 +43,30 @@ func TestLateralRecordTransportAndAuthenticationLimits(t *testing.T) {
 		t.Fatal("unbounded SMB time match")
 	}
 }
+func TestLateralRecordMatcherUsesRelatedSourcePortConstraints(t *testing.T) {
+	fact := Fact{Kind: "service", Protocol: "tcp", SrcIP: "192.0.2.1", DstIP: "192.0.2.2", Port: 445, Token: ":9"}
+	e := Evidence{Detector: "lateral.smb-fanout", Related: []Fact{fact}, WindowNS: int64(time.Minute)}
+	r := &types.Connection{TransportProto: "TCP", SrcIP: fact.SrcIP, DstIP: fact.DstIP, SrcPort: "5678", DstPort: "445", TimestampFirst: 1, TimestampLast: 1}
+	if NewLateralRecordMatcher(e, 1).Match(r, 0) != nil {
+		t.Fatal("an empty token prefix must not match an arbitrary source port")
+	}
+	e.Related[0].Token = ""
+	if got := NewLateralRecordMatcher(e, 1).Match(r, 7); got == nil || got.ScopeAvailable || got.Index != 7 {
+		t.Fatalf("tuple-only candidate: %+v", got)
+	}
+}
+
+func BenchmarkLateralRecordNonmatch(b *testing.B) {
+	e := Evidence{Detector: "lateral.smb-fanout", WindowNS: int64(time.Minute), Related: make([]Fact, 256)}
+	for i := range e.Related {
+		e.Related[i] = Fact{Kind: "service", Protocol: "tcp", SrcIP: "192.0.2.1", DstIP: "192.0.2.2", Port: 445, Token: "1234:9"}
+	}
+	r := &types.Connection{TransportProto: "TCP", SrcIP: "192.0.2.1", DstIP: "192.0.2.2", SrcPort: "5678", DstPort: "445", TimestampFirst: 1, TimestampLast: 1}
+	m := NewLateralRecordMatcher(e, 1)
+	b.ReportAllocs()
+	for b.Loop() {
+		if m.Match(r, 0) != nil {
+			b.Fatal("unexpected match")
+		}
+	}
+}

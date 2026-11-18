@@ -30,7 +30,46 @@ type RecordContext struct {
 
 // MatchLateralRecord returns a tuple/time candidate, never a scope-qualified attribution.
 func MatchLateralRecord(e Evidence, alertNS int64, record proto.Message, index int) *RecordContext {
-	if !strings.HasPrefix(e.Detector, "lateral.") || alertNS <= 0 || e.WindowNS <= 0 || e.WindowNS > int64(24*time.Hour) || index < 0 {
+	m := NewLateralRecordMatcher(e, alertNS)
+	return m.Match(record, index)
+}
+
+type lateralTuple struct {
+	src, dst, srcPort string
+	port              uint16
+	anySourcePort     bool
+}
+
+// LateralRecordMatcher indexes an alert's candidate tuples for repeated audit lookups.
+type LateralRecordMatcher struct {
+	tuples            map[lateralTuple]struct{}
+	alertNS, windowNS int64
+}
+
+func NewLateralRecordMatcher(e Evidence, alertNS int64) LateralRecordMatcher {
+	m := LateralRecordMatcher{alertNS: alertNS, windowNS: e.WindowNS}
+	if !strings.HasPrefix(e.Detector, "lateral.") || alertNS <= 0 || e.WindowNS <= 0 || e.WindowNS > int64(24*time.Hour) {
+		return m
+	}
+	add := func(f Fact) {
+		if f.Kind != "service" || f.Protocol != "tcp" {
+			return
+		}
+		if m.tuples == nil {
+			m.tuples = make(map[lateralTuple]struct{})
+		}
+		port, _, _ := strings.Cut(f.Token, ":")
+		m.tuples[lateralTuple{f.SrcIP, f.DstIP, port, f.Port, f.Token == ""}] = struct{}{}
+	}
+	add(e.Observed)
+	for _, f := range e.Related {
+		add(f)
+	}
+	return m
+}
+
+func (m LateralRecordMatcher) Match(record proto.Message, index int) *RecordContext {
+	if len(m.tuples) == 0 || index < 0 {
 		return nil
 	}
 	var src, dst, srcPort string
@@ -38,7 +77,7 @@ func MatchLateralRecord(e Evidence, alertNS int64, record proto.Message, index i
 	context := RecordContext{Index: index, Authentication: "unavailable"}
 	switch r := record.(type) {
 	case *types.Connection:
-		if r == nil || strings.ToLower(r.TransportProto) != "tcp" || r.TimestampFirst <= 0 || r.TimestampLast < r.TimestampFirst {
+		if r == nil || !strings.EqualFold(r.TransportProto, "tcp") || r.TimestampFirst <= 0 || r.TimestampLast < r.TimestampFirst {
 			return nil
 		}
 		p, err := strconv.ParseUint(r.DstPort, 10, 16)
@@ -78,24 +117,13 @@ func MatchLateralRecord(e Evidence, alertNS int64, record proto.Message, index i
 	default:
 		return nil
 	}
-	matched := false
-	// A source port narrows candidates but cannot recover omitted sensor/VLAN metadata.
-	facts := append([]Fact{e.Observed}, e.Related...)
-	for _, fact := range facts {
-		if fact.Kind != "service" || fact.Protocol != "tcp" || fact.SrcIP != src || fact.DstIP != dst || fact.Port != port {
-			continue
-		}
-		if fact.Token != "" && strings.SplitN(fact.Token, ":", 2)[0] != srcPort {
-			continue
-		}
-		// Connections may close long after the decisive SYN; SMB messages are bounded by the correlation window.
-		if context.FirstSeen < alertNS-e.WindowNS || (context.Type == "Connection" && context.FirstSeen > alertNS) || (context.Type == "SMB" && context.FirstSeen-alertNS > e.WindowNS) {
-			continue
-		}
-		matched = true
-		break
+	alertNS := m.alertNS
+	if context.FirstSeen < alertNS-m.windowNS || (context.Type == "Connection" && context.FirstSeen > alertNS) || (context.Type == "SMB" && context.FirstSeen-alertNS > m.windowNS) {
+		return nil
 	}
-	if !matched {
+	_, exact := m.tuples[lateralTuple{src, dst, srcPort, port, false}]
+	_, wildcard := m.tuples[lateralTuple{src, dst, "", port, true}]
+	if !exact && !wildcard {
 		return nil
 	}
 	data, err := proto.Marshal(record)

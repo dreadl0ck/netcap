@@ -97,8 +97,9 @@ func (s *Server) handleBehaviorRecords(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response := behaviorRecordsResponse{Schema: 1, AlertID: id, Records: []behavior.RecordContext{}, Unavailable: []string{}, Qualification: "Tuple/time candidates only: Connection and SMB audit records omit sensor/interface/VLAN. Capture lag measures record timestamps, not emission latency. Original alert evidence is unchanged."}
+	matcher := behavior.NewLateralRecordMatcher(evidence, selected.Timestamp)
 	for _, name := range []string{"Connection", "SMB"} {
-		if err := scanBehaviorRecords(r, dir, name, selected.Timestamp, evidence, &response); err != nil {
+		if err := scanBehaviorRecords(r, dir, name, matcher, &response); err != nil {
 			response.Unavailable = append(response.Unavailable, name+": "+err.Error())
 		}
 	}
@@ -108,7 +109,7 @@ func (s *Server) handleBehaviorRecords(w http.ResponseWriter, r *http.Request) {
 	RespondJSON(w, http.StatusOK, response)
 }
 
-func scanBehaviorRecords(r *http.Request, dir, name string, timestamp int64, evidence behavior.Evidence, response *behaviorRecordsResponse) error {
+func scanBehaviorRecords(r *http.Request, dir, name string, matcher behavior.LateralRecordMatcher, response *behaviorRecordsResponse) error {
 	want := types.Type_NC_Connection
 	if name == "SMB" {
 		want = types.Type_NC_SMB
@@ -139,7 +140,7 @@ func scanBehaviorRecords(r *http.Request, dir, name string, timestamp int64, evi
 			return err
 		}
 		response.Scanned++
-		if context := behavior.MatchLateralRecord(evidence, timestamp, record, index); context != nil {
+		if context := matcher.Match(record, index); context != nil {
 			if len(response.Records) >= 64 {
 				response.Truncated = true
 				return nil
