@@ -57,11 +57,14 @@ func NewAuditRecordReader(filePath string) (*AuditRecordReader, error) {
 }
 
 func auditRecordReaderFromFile(file *os.File, compressed bool) (*AuditRecordReader, error) {
-	return auditRecordReaderFromInput(file, file, compressed)
+	return auditRecordReaderFromInput(file, file, compressed, nil)
 }
 
-func auditRecordReaderFromInput(file *os.File, reader io.Reader, compressed bool) (*AuditRecordReader, error) {
+func auditRecordReaderFromInput(file *os.File, reader io.Reader, compressed bool, wrap func(io.Reader) io.Reader) (*AuditRecordReader, error) {
 	var gzReader *gzip.Reader
+	if wrap != nil {
+		reader = wrap(reader)
+	}
 
 	// Check if file is gzipped
 	if compressed {
@@ -72,6 +75,9 @@ func auditRecordReaderFromInput(file *os.File, reader io.Reader, compressed bool
 			return nil, err
 		}
 		reader = gzReader
+		if wrap != nil {
+			reader = wrap(reader)
+		}
 	}
 
 	return &AuditRecordReader{

@@ -2,6 +2,7 @@ package webui
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"io"
@@ -19,12 +20,14 @@ import (
 )
 
 type cancelingAuditInput struct {
-	*bytes.Reader
+	io.Reader
+	read   int
 	cancel func()
 }
 
 func (r *cancelingAuditInput) Read(p []byte) (int, error) {
 	n, err := r.Reader.Read(p)
+	r.read += n
 	if r.cancel != nil {
 		r.cancel()
 		r.cancel = nil
@@ -47,7 +50,9 @@ func TestRuleAuditStopsWhileReadingLargeRecord(t *testing.T) {
 	}
 	stop := make(chan struct{})
 	input := &cancelingAuditInput{Reader: bytes.NewReader(data.Bytes())}
-	r, err := auditRecordReaderFromInput(f, ruleReplayReader{input: input, stop: stop}, false)
+	r, err := auditRecordReaderFromInput(f, input, false, func(input io.Reader) io.Reader {
+		return ruleReplayReader{input: input, stop: stop}
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,8 +61,45 @@ func TestRuleAuditStopsWhileReadingLargeRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 	input.cancel = func() { close(stop) }
-	if record, err := r.NextRecord(); record != nil || !errors.Is(err, errAnalysisStopping) || input.Len() == 0 {
-		t.Fatalf("canceled record read: record=%T err=%v unread=%d", record, err, input.Len())
+	if record, err := r.NextRecord(); record != nil || !errors.Is(err, errAnalysisStopping) || input.read >= data.Len() {
+		t.Fatalf("canceled record read: record=%T err=%v read=%d", record, err, input.read)
+	}
+
+	var compressed bytes.Buffer
+	gz := gzip.NewWriter(&compressed)
+	if _, err := gz.Write(data.Bytes()); err != nil {
+		t.Fatal(err)
+	}
+	if err := gz.Close(); err != nil {
+		t.Fatal(err)
+	}
+	f, err = os.CreateTemp(t.TempDir(), "compressed-audit")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stop = make(chan struct{})
+	compressedInput := bytes.NewReader(compressed.Bytes())
+	var decoded *cancelingAuditInput
+	r, err = auditRecordReaderFromInput(f, compressedInput, true, func(input io.Reader) io.Reader {
+		if input != compressedInput {
+			decoded = &cancelingAuditInput{Reader: input}
+			input = decoded
+		}
+		return ruleReplayReader{input: input, stop: stop}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	if _, err := r.ReadHeader(); err != nil {
+		t.Fatal(err)
+	}
+	if decoded == nil || compressedInput.Len() != 0 {
+		t.Fatal("fixture must buffer all compressed bytes before canceling")
+	}
+	decoded.cancel = func() { close(stop) }
+	if record, err := r.NextRecord(); record != nil || !errors.Is(err, errAnalysisStopping) || decoded.read >= data.Len() {
+		t.Fatalf("canceled gzip record: record=%T err=%v decoded=%d", record, err, decoded.read)
 	}
 }
 

@@ -57,7 +57,9 @@ func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit 
 	if err != nil {
 		return 0, fmt.Errorf("open %s audit: %w", auditType, err)
 	}
-	reader, err := auditRecordReaderFromInput(f, ruleReplayReader{f, stop, shutdown}, compressed)
+	reader, err := auditRecordReaderFromInput(f, f, compressed, func(input io.Reader) io.Reader {
+		return ruleReplayReader{input, stop, shutdown}
+	})
 	if err != nil {
 		return 0, fmt.Errorf("open %s audit: %w", auditType, err)
 	}
