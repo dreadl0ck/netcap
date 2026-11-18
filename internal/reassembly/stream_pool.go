@@ -230,17 +230,28 @@ func (p *StreamPool) connections(dst []connectionRef) []connectionRef {
 
 // sortConnections orders a snapshot so that flushing it produces the audit
 // records in a reproducible order. The pool is a map, so the snapshot order
-// would otherwise vary between runs. Only used on teardown paths, where the
-// allocations are irrelevant, unlike connections itself.
+// would otherwise vary between runs. Format each key once per teardown.
 func sortConnections(conns []connectionRef) {
-	sort.Slice(conns, func(i, j int) bool {
-		a, b := conns[i].conn, conns[j].conn
-		if a == nil || a.key == nil || b == nil || b.key == nil {
-			return b != nil && b.key != nil
+	if len(conns) < 2 {
+		return
+	}
+	type keyedRef struct {
+		ref connectionRef
+		key string
+	}
+	keys := make([]keyedRef, len(conns))
+	for i, ref := range conns {
+		keys[i].ref = ref
+		if ref.conn != nil && ref.conn.key != nil {
+			keys[i].key = ref.conn.key.String()
 		}
-
-		return a.key.String() < b.key.String()
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i].key < keys[j].key
 	})
+	for i := range conns {
+		conns[i] = keys[i].ref
+	}
 }
 
 // newConnection is called with createMu held, but never p.mu.

@@ -1,10 +1,41 @@
 package reassembly
 
 import (
+	"sort"
 	"strconv"
 	"testing"
 	"time"
 )
+
+func BenchmarkEOFSnapshotSort(b *testing.B) {
+	const size = 10000
+	input := make([]connectionRef, size)
+	for i := range input {
+		k := snapshotKey((i * 7919) % size)
+		input[i] = connectionRef{conn: &connection{key: &k}}
+	}
+	for _, cached := range []bool{false, true} {
+		b.Run("cached="+strconv.FormatBool(cached), func(b *testing.B) {
+			refs := make([]connectionRef, size)
+			b.ReportAllocs()
+			for b.Loop() {
+				copy(refs, input)
+				if cached {
+					sortConnections(refs)
+				} else {
+					sort.Slice(refs, func(i, j int) bool {
+						return refs[i].conn.key.String() < refs[j].conn.key.String()
+					})
+				}
+			}
+			for i := 1; i < len(refs); i++ {
+				if refs[i-1].conn.key.String() >= refs[i].conn.key.String() {
+					b.Fatal("snapshot keys did not retain their order")
+				}
+			}
+		})
+	}
+}
 
 func BenchmarkFlushWithOptions(b *testing.B) {
 	for _, size := range []int{0, 100, 1000, 10000, 100000} {
