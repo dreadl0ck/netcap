@@ -43,6 +43,19 @@ const (
 // file. Bound concurrent reads so several late-record inspections cannot
 // monopolize CPU and disk.
 var timelineRecordReadSlots = make(chan struct{}, 2)
+var timelineQuerySlots = make(chan struct{}, 4)
+
+func acquireTimelineQuery(r *http.Request) bool {
+	if r.Context().Err() != nil {
+		return false
+	}
+	select {
+	case timelineQuerySlots <- struct{}{}:
+		return true
+	default:
+		return false
+	}
+}
 
 // timelineTrackJSON describes one audit record type track.
 type timelineTrackJSON struct {
@@ -251,6 +264,14 @@ func (s *Server) handleTimelineEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !acquireTimelineQuery(r) {
+		if r.Context().Err() == nil {
+			RespondJSON(w, http.StatusTooManyRequests, timelineEventsJSON{Status: timelineStateError, Error: "timeline queries busy; retry after a query finishes", Events: []timelineEventJSON{}})
+		}
+		return
+	}
+	defer func() { <-timelineQuerySlots }()
+
 	resp.Generation = status.Index.Generation
 	resp.Start = strconv.FormatInt(query.Start, 10)
 	resp.End = strconv.FormatInt(query.End, 10)
@@ -341,6 +362,14 @@ func (s *Server) handleTimelineBuckets(w http.ResponseWriter, r *http.Request) {
 	if count > timelineMaxBuckets {
 		count = timelineMaxBuckets
 	}
+
+	if !acquireTimelineQuery(r) {
+		if r.Context().Err() == nil {
+			RespondJSON(w, http.StatusTooManyRequests, timelineBucketsJSON{Status: timelineStateError, Error: "timeline queries busy; retry after a query finishes", Series: []timelineBucketSeriesJSON{}})
+		}
+		return
+	}
+	defer func() { <-timelineQuerySlots }()
 
 	series, matchCount := query.buckets(count)
 

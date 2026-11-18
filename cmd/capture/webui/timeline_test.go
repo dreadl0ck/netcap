@@ -948,6 +948,58 @@ func TestTimelineRecordRejectsReplacementAfterIndexSelection(t *testing.T) {
 	}
 }
 
+func TestTimelineEventAndBucketQueriesShareSlotsThroughWrite(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{
+		&types.HTTP{Timestamp: 100, Method: "GET"},
+		&types.HTTP{Timestamp: 200, Method: "GET"},
+	})
+	waitForTimelineIndex(t, dir)
+	s := newTimelineTestServer(dir)
+	release := make(chan struct{})
+	defer func() {
+		if release != nil {
+			close(release)
+		}
+	}()
+	done := make(chan int, cap(timelineQuerySlots))
+	for range cap(timelineQuerySlots) {
+		w := heldAlertPageResponse{httptest.NewRecorder(), make(chan struct{}, 1), release}
+		go func() {
+			s.handleTimelineEvents(w, httptest.NewRequest(http.MethodGet, "/api/timeline/events", nil))
+			done <- w.Code
+		}()
+		select {
+		case <-w.writing:
+		case <-time.After(5 * time.Second):
+			t.Fatal("event query did not begin writing")
+		}
+	}
+	buckets := func() *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		s.handleTimelineBuckets(w, httptest.NewRequest(http.MethodGet, "/api/timeline/buckets", nil))
+		return w
+	}
+	if w := buckets(); w.Code != http.StatusTooManyRequests || !strings.Contains(w.Body.String(), `"series":[]`) {
+		t.Fatalf("saturated bucket query: %d %s", w.Code, w.Body)
+	}
+	close(release)
+	release = nil
+	for range cap(timelineQuerySlots) {
+		select {
+		case code := <-done:
+			if code != http.StatusOK {
+				t.Fatalf("event query status=%d", code)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("event query did not finish")
+		}
+	}
+	if w := buckets(); w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"matchCount":2`) {
+		t.Fatalf("bucket query retry: %d %s", w.Code, w.Body)
+	}
+}
+
 func TestTimelineRecordRejectsSaturationAndRecovers(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Timestamp: 100, Method: "GET"}})
