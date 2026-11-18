@@ -63,6 +63,11 @@ func TestBehaviorRecordsRetainedSourceAndImmutableAlert(t *testing.T) {
 	if response.Code != http.StatusOK || json.Unmarshal(response.Body.Bytes(), &data) != nil || len(data.Records) != 2 || len(data.Unavailable) != 0 || data.Records[0].CaptureLagNS != int64(5*time.Minute) || data.Records[1].Authentication != "IN_PROGRESS" {
 		t.Fatalf("source context: %d %s", response.Code, response.Body)
 	}
+	t.Run("response admission", func(t *testing.T) {
+		testResponseCapacity(t, s.handleBehaviorRecords, func() *http.Request {
+			return httptest.NewRequest(http.MethodGet, target, nil)
+		})
+	})
 	after, _ := os.ReadFile(filepath.Join(s.outDir, "Alert.ncap.gz"))
 	if !bytes.Equal(before, after) {
 		t.Fatal("drill-down rewrote immutable early alert")

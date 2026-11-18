@@ -26,6 +26,8 @@ func behaviorRecordBudget(r *http.Request) inventoryAuditBudget {
 	return inventoryAuditBudget{ctx: r.Context(), stored: 64 << 20, bodies: 64 << 20, rows: 10000, frame: 1 << 20}
 }
 
+var behaviorRecordSlots = make(chan struct{}, 2)
+
 func (s *Server) handleBehaviorRecords(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -38,6 +40,16 @@ func (s *Server) handleBehaviorRecords(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("alertId")
 	if len(id) == 0 || len(id) > 512 {
 		http.Error(w, "alert ID is required", http.StatusBadRequest)
+		return
+	}
+	if r.Context().Err() != nil {
+		return
+	}
+	select {
+	case behaviorRecordSlots <- struct{}{}:
+		defer func() { <-behaviorRecordSlots }()
+	default:
+		http.Error(w, "Behavior record queries are busy; retry", http.StatusTooManyRequests)
 		return
 	}
 	budget := behaviorRecordBudget(r)
