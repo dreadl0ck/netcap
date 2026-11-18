@@ -1,9 +1,8 @@
 package webui
 
 import (
-	"crypto/sha256"
+	"context"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -132,11 +131,11 @@ func containsAnyCommunityIDBool(values []string, selected map[string]bool) bool 
 }
 
 type fingerprintCacheEntry struct {
-	fingerprint string
-	used        time.Time
-	ready       chan struct{}
-	snapshot    *fingerprintSnapshot
-	err         error
+	generation fingerprintAuditGeneration
+	used       time.Time
+	ready      chan struct{}
+	snapshot   *fingerprintSnapshot
+	err        error
 }
 
 var (
@@ -151,21 +150,31 @@ var fingerprintCache = struct {
 	bytes   uint64
 }{entries: make(map[string]*fingerprintCacheEntry)}
 
-func fingerprintGeneration(outDir string) (string, error) {
-	h := sha256.New()
-	for _, name := range fingerprintSources {
+type fingerprintAuditGeneration [len(fingerprintSources)]os.FileInfo
+
+func fingerprintGeneration(outDir string) (fingerprintAuditGeneration, error) {
+	var generation fingerprintAuditGeneration
+	for i, name := range fingerprintSources {
 		path := filepath.Join(outDir, name+".ncap.gz")
-		info, err := os.Stat(path)
+		info, err := os.Lstat(path)
 		if errors.Is(err, os.ErrNotExist) {
-			fmt.Fprintf(h, "%s:missing\n", name)
 			continue
 		}
 		if err != nil {
-			return "", err
+			return generation, err
 		}
-		fmt.Fprintf(h, "%s:%d:%d\n", name, info.Size(), info.ModTime().UnixNano())
+		generation[i] = info
 	}
-	return fmt.Sprintf("%x", h.Sum(nil)), nil
+	return generation, nil
+}
+
+func (g fingerprintAuditGeneration) same(other fingerprintAuditGeneration) bool {
+	for i, info := range g {
+		if !sameConnectionGeneration(info, other[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 func fingerprintSnapshotFor(outDir string) (*fingerprintSnapshot, error) {
@@ -176,7 +185,7 @@ func fingerprintSnapshotFor(outDir string) (*fingerprintSnapshot, error) {
 		}
 		fingerprintCache.Lock()
 		entry := fingerprintCache.entries[outDir]
-		if entry == nil || entry.fingerprint != generation {
+		if entry == nil || !entry.generation.same(generation) {
 			select {
 			case fingerprintBuildSlots <- struct{}{}:
 			default:
@@ -192,11 +201,11 @@ func fingerprintSnapshotFor(outDir string) (*fingerprintSnapshot, error) {
 				default:
 				}
 			}
-			entry = &fingerprintCacheEntry{fingerprint: generation, ready: make(chan struct{})}
+			entry = &fingerprintCacheEntry{generation: generation, ready: make(chan struct{})}
 			fingerprintCache.entries[outDir] = entry
 			fingerprintCache.Unlock()
 
-			snapshot, buildErr := buildFingerprintSnapshot(outDir)
+			snapshot, buildErr := buildFingerprintSnapshot(outDir, generation)
 			fingerprintCache.Lock()
 			entry.snapshot, entry.err = snapshot, buildErr
 			close(entry.ready)
@@ -210,35 +219,48 @@ func fingerprintSnapshotFor(outDir string) (*fingerprintSnapshot, error) {
 				}
 			}
 			fingerprintCache.Unlock()
-			if buildErr != nil {
-				return nil, buildErr
-			}
 		} else {
 			entry.used = time.Now()
 			fingerprintCache.Unlock()
 			<-entry.ready
-			if entry.err != nil {
-				return nil, entry.err
-			}
+		}
+		if errors.Is(entry.err, errFingerprintAuditChanged) {
+			continue
+		}
+		if entry.err != nil {
+			return nil, entry.err
 		}
 		after, err := fingerprintGeneration(outDir)
 		if err != nil {
 			return nil, err
 		}
-		if after == generation {
+		if generation.same(after) {
 			return entry.snapshot, nil
 		}
 	}
 	return nil, errFingerprintAuditChanged
 }
 
-func buildFingerprintSnapshot(outDir string) (*fingerprintSnapshot, error) {
+func buildFingerprintSnapshot(outDir string, generation fingerprintAuditGeneration) (*fingerprintSnapshot, error) {
 	defer func() { <-fingerprintBuildSlots }()
-	rows, err := readFingerprints(outDir)
+	rows, err := readFingerprintGeneration(outDir, generation)
 	if err != nil {
 		return nil, err
 	}
 	return newFingerprintSnapshot(rows), nil
+}
+
+func readFingerprintGeneration(outDir string, generation fingerprintAuditGeneration) ([]FingerprintSummary, error) {
+	budget := newFingerprintAuditBudget(context.Background())
+	budget.verifySource = func(path string, info os.FileInfo) error {
+		for i, name := range fingerprintSources {
+			if filepath.Base(path) == name+".ncap.gz" && sameConnectionGeneration(generation[i], info) {
+				return nil
+			}
+		}
+		return errFingerprintAuditChanged
+	}
+	return readFingerprintInventory(outDir, &budget)
 }
 
 func cachedFingerprintRows(outDir string) []FingerprintSummary {

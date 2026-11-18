@@ -22,6 +22,7 @@ type inventoryAuditBudget struct {
 	stored       int64
 	bodies, rows int
 	frame        int
+	verifySource func(string, os.FileInfo) error
 }
 
 func openInventoryAuditReader(f *os.File, size int64, ctx context.Context, want types.Type) (*AuditRecordReader, error) {
@@ -53,7 +54,18 @@ func (b *inventoryAuditBudget) open(path string, want types.Type) (*AuditRecordR
 		}
 		f, info, err := artifactio.Open(filepath.Dir(path), filepath.Base(path))
 		if err != nil {
+			if errors.Is(err, os.ErrNotExist) && b.verifySource != nil {
+				if verifyErr := b.verifySource(path, nil); verifyErr != nil {
+					return nil, verifyErr
+				}
+			}
 			return nil, err
+		}
+		if b.verifySource != nil {
+			if err := b.verifySource(path, info); err != nil {
+				f.Close()
+				return nil, err
+			}
 		}
 		if info.Size() > b.stored {
 			f.Close()

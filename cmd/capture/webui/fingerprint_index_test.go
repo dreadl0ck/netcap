@@ -21,6 +21,41 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+func TestFingerprintSnapshotRejectsSameMetadataReplacement(t *testing.T) {
+	dir, replacement := t.TempDir(), t.TempDir()
+	for path, value := range map[string]string{dir: "aaaa", replacement: "bbbb"} {
+		writeTimelineAuditFile(t, path, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Ja4H: value}})
+	}
+	old, err := fingerprintGeneration(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snapshot, err := fingerprintSnapshotFor(dir); err != nil || len(snapshot.rows) != 1 || snapshot.rows[0].Fingerprint != "aaaa" {
+		t.Fatalf("initial snapshot: %v, %v", snapshot, err)
+	}
+	path, incoming := filepath.Join(dir, "HTTP.ncap.gz"), filepath.Join(replacement, "HTTP.ncap.gz")
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(incoming, info.ModTime(), info.ModTime()); err != nil {
+		t.Fatal(err)
+	}
+	next, err := os.Stat(incoming)
+	if err != nil || next.Size() != info.Size() || !next.ModTime().Equal(info.ModTime()) {
+		t.Fatalf("replacement metadata differs: %v, %v", next, err)
+	}
+	if err := os.Rename(incoming, path); err != nil {
+		t.Fatal(err)
+	}
+	if rows, err := readFingerprintGeneration(dir, old); rows != nil || !errors.Is(err, errFingerprintAuditChanged) {
+		t.Fatalf("old generation: %v, %v", rows, err)
+	}
+	if snapshot, err := fingerprintSnapshotFor(dir); err != nil || len(snapshot.rows) != 1 || snapshot.rows[0].Fingerprint != "bbbb" {
+		t.Fatalf("replacement snapshot: %v, %v", snapshot, err)
+	}
+}
+
 func TestFingerprintSnapshotBuildAdmissionKeepsWarmInventoryAvailable(t *testing.T) {
 	warm, cold := t.TempDir(), t.TempDir()
 	writeTimelineAuditFile(t, warm, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Ja4H: "warm"}})

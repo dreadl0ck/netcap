@@ -496,8 +496,12 @@ func capFingerprintSummary(fp FingerprintSummary, communityIDFilter map[string]s
 
 // readFingerprints reads and aggregates fingerprint data from SSH, IPProfile, HTTP, TCP, TLSCertificate, and DHCP records
 func readFingerprints(outDir string) ([]FingerprintSummary, error) {
-	budget := inventoryAuditBudget{ctx: context.Background(), stored: 64 << 20, bodies: 64 << 20, rows: 200_000, frame: 1 << 20}
+	budget := newFingerprintAuditBudget(context.Background())
 	return readFingerprintInventory(outDir, &budget)
+}
+
+func newFingerprintAuditBudget(ctx context.Context) inventoryAuditBudget {
+	return inventoryAuditBudget{ctx: ctx, stored: 64 << 20, bodies: 64 << 20, rows: 200_000, frame: 1 << 20}
 }
 
 func readFingerprintInventory(outDir string, budget *inventoryAuditBudget) ([]FingerprintSummary, error) {
@@ -570,13 +574,10 @@ func readFingerprintInventory(outDir string, budget *inventoryAuditBudget) ([]Fi
 func readJA4SSHFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "SSH.ncap.gz")
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] SSH file not found: %s", filePath)
+	reader, err := budget.open(filePath, types.Type_NC_SSH)
+	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
-
-	reader, err := budget.open(filePath, types.Type_NC_SSH)
 	if err != nil {
 		return err
 	}
@@ -660,13 +661,10 @@ func readJA4Fingerprints(outDir string, fingerprintMap map[string]*fingerprintAg
 func readJA4FromTLSClientHello(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "TLSClientHello.ncap.gz")
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] TLSClientHello file not found: %s", filePath)
+	reader, err := budget.open(filePath, types.Type_NC_TLSClientHello)
+	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
-
-	reader, err := budget.open(filePath, types.Type_NC_TLSClientHello)
 	if err != nil {
 		return err
 	}
@@ -728,13 +726,10 @@ func readJA4FromTLSClientHello(outDir string, fingerprintMap map[string]*fingerp
 func readJA4SFromTLSServerHello(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "TLSServerHello.ncap.gz")
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] TLSServerHello file not found: %s", filePath)
+	reader, err := budget.open(filePath, types.Type_NC_TLSServerHello)
+	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
-
-	reader, err := budget.open(filePath, types.Type_NC_TLSServerHello)
 	if err != nil {
 		return err
 	}
@@ -796,13 +791,10 @@ func readJA4SFromTLSServerHello(outDir string, fingerprintMap map[string]*finger
 func readJA4FromHost(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "Host.ncap.gz")
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] IPProfile file not found: %s", filePath)
+	reader, err := budget.open(filePath, types.Type_NC_Host)
+	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
-
-	reader, err := budget.open(filePath, types.Type_NC_Host)
 	if err != nil {
 		return err
 	}
@@ -893,13 +885,10 @@ func readJA4FromHost(outDir string, fingerprintMap map[string]*fingerprintAggreg
 func readDHCPFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "DHCPv4.ncap.gz")
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] DHCPv4 file not found: %s", filePath)
+	reader, err := budget.open(filePath, types.Type_NC_DHCPv4)
+	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
-
-	reader, err := budget.open(filePath, types.Type_NC_DHCPv4)
 	if err != nil {
 		return err
 	}
@@ -977,13 +966,10 @@ type fingerprintAggregator struct {
 func readJA4HFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "HTTP.ncap.gz")
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] HTTP file not found: %s", filePath)
+	reader, err := budget.open(filePath, types.Type_NC_HTTP)
+	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
-
-	reader, err := budget.open(filePath, types.Type_NC_HTTP)
 	if err != nil {
 		return err
 	}
@@ -1045,13 +1031,10 @@ func readJA4HFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 func readJA4XFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "TLSCertificate.ncap.gz")
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] TLSCertificate file not found: %s", filePath)
+	reader, err := budget.open(filePath, types.Type_NC_TLSCertificate)
+	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
-
-	reader, err := budget.open(filePath, types.Type_NC_TLSCertificate)
 	if err != nil {
 		return err
 	}
@@ -1119,13 +1102,10 @@ func readJA4XFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 func readJA4TFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "TCP.ncap.gz")
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] TCP file not found: %s", filePath)
+	reader, err := budget.open(filePath, types.Type_NC_TCP)
+	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
-
-	reader, err := budget.open(filePath, types.Type_NC_TCP)
 	if err != nil {
 		return err
 	}
