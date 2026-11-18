@@ -51,7 +51,7 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer archive.Close()
-	for _, name := range []string{"dns_query_fp.pcap", "dns_response_fp.pcap", "nbns_query_fp.pcap", "nbns_refresh_fp.pcap", "v169_midstream_psh_15k.pcap"} {
+	for _, name := range []string{"dns_query_fp.pcap", "dns_response_fp.pcap", "nbns_query_fp.pcap", "nbns_refresh_fp.pcap", "v169_midstream_psh_15k.pcap", "v168_udp_uniqflows_50k.pcap"} {
 		t.Run(name, func(t *testing.T) {
 			member := "netcap-v0.16.9-synthetic-repros/repro/v169/edge/" + name
 			reader, err := archive.Open(member)
@@ -66,6 +66,10 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 			input := filepath.Join(t.TempDir(), name)
 			if err := os.WriteFile(input, data, 0600); err != nil {
 				t.Fatal(err)
+			}
+			if name == "v168_udp_uniqflows_50k.pcap" {
+				checkRecheckUDPSpill(t, input)
+				return
 			}
 			out := t.TempDir()
 			configuration := ultimateCaptureConfig(out, 1, 0)
@@ -119,8 +123,8 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 							t.Fatal(typ, stage, err)
 						}
 					}
-					checkRecheckAuditMultiset(t, "Connection", connections, bookRecords(t, finiteOut, "Connection", func() *types.Connection { return new(types.Connection) }))
-					checkRecheckAuditMultiset(t, "TCP", bookRecords(t, out, "TCP", func() *types.TCP { return new(types.TCP) }), bookRecords(t, finiteOut, "TCP", func() *types.TCP { return new(types.TCP) }))
+					checkRecheckAuditMultiset(t, "Connection", 15000, connections, bookRecords(t, finiteOut, "Connection", func() *types.Connection { return new(types.Connection) }))
+					checkRecheckAuditMultiset(t, "TCP", 15000, bookRecords(t, out, "TCP", func() *types.TCP { return new(types.TCP) }), bookRecords(t, finiteOut, "TCP", func() *types.TCP { return new(types.TCP) }))
 					pages := bookJSON[reassembly.PageBudgetHealth](t, filepath.Join(finiteOut, "TCPReassemblyPageBudget.json"))
 					state := bookJSON[core.StateBudgetHealth](t, filepath.Join(finiteOut, "TCPStreamStateBudget.json"))
 					if pages.Exceeded || state.Exceeded || pages.RetainedBytes != 0 || state.RetainedBytes != 0 || pages.PeakBytes > pages.LimitBytes || state.PeakBytes > state.LimitBytes {
@@ -202,6 +206,55 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func checkRecheckUDPSpill(t *testing.T, input string) {
+	t.Helper()
+	const rows = 50_000
+	const finite = 1 << 20
+	var baselineUDP []*types.UDP
+	var baselineConnections []*types.Connection
+	for _, limit := range []int64{0, finite} {
+		out := t.TempDir()
+		cfg := ultimateCaptureConfig(out, 4, 0)
+		cfg.CaptureEvidence = true
+		cfg.DecoderConfig.MaxRetainedReassemblyBytes = 128 << 20
+		cfg.DecoderConfig.MaxRetainedTCPStateBytes = 256 << 20
+		cfg.DecoderConfig.MaxRetainedTCPBytes = 256 << 10
+		cfg.DecoderConfig.MaxAggregateStateBytes = limit
+		if err := New(cfg).CollectPcap(input); err != nil {
+			t.Fatal(err)
+		}
+		manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
+		if manifest.Status != "done" || manifest.AdmittedPackets != rows {
+			t.Fatalf("aggregate cap %d: status=%s admitted=%d", limit, manifest.Status, manifest.AdmittedPackets)
+		}
+		for _, typ := range []string{"UDP", "Connection"} {
+			stage, _, err := evidence.ReadAuditStage(out, manifest.RunID, typ, manifest.AuditStagesGeneration)
+			if err != nil || stage.Coverage != "complete" || stage.Records != rows {
+				t.Fatal(typ, stage, err)
+			}
+		}
+		udp := bookRecords(t, out, "UDP", func() *types.UDP { return new(types.UDP) })
+		connections := bookRecords(t, out, "Connection", func() *types.Connection { return new(types.Connection) })
+		if len(udp) != rows || len(connections) != rows {
+			t.Fatalf("aggregate cap %d: UDP=%d Connection=%d", limit, len(udp), len(connections))
+		}
+		if limit == 0 {
+			baselineUDP, baselineConnections = udp, connections
+			continue
+		}
+		checkRecheckAuditMultiset(t, "UDP", rows, baselineUDP, udp)
+		checkRecheckAuditMultiset(t, "Connection", rows, baselineConnections, connections)
+		health := bookJSON[aggregate.Health](t, filepath.Join(out, "AggregateStateHealth.json"))
+		if health.LimitBytes != finite || health.PeakBytes > finite || health.Evictions == 0 || health.DiskWrites == 0 {
+			t.Fatalf("finite spill not exercised: %+v", health)
+		}
+		if scratch, err := filepath.Glob(filepath.Join(out, ".netcap-aggregate-*")); err != nil || len(scratch) != 0 {
+			t.Fatalf("aggregate scratch remained: %v, %v", scratch, err)
+		}
+		t.Logf("matched both %d-row audit multisets; aggregate peak %d bytes, %d evictions, spill size %d bytes", rows, health.PeakBytes, health.Evictions, health.DatabaseBytes)
 	}
 }
 
@@ -360,7 +413,7 @@ func checkRecheckFanoutExports(t *testing.T, input, out string) {
 	t.Logf("verified %d stream exports against input payloads and timestamps (%d payload bytes)", len(entries), payloadBytes)
 }
 
-func checkRecheckAuditMultiset[T any](t *testing.T, typ string, baseline, finite []T) {
+func checkRecheckAuditMultiset[T any](t *testing.T, typ string, expected int, baseline, finite []T) {
 	t.Helper()
 	count := func(rows []T) map[[sha256.Size]byte]int {
 		counts := make(map[[sha256.Size]byte]int, len(rows))
@@ -373,7 +426,7 @@ func checkRecheckAuditMultiset[T any](t *testing.T, typ string, baseline, finite
 		}
 		return counts
 	}
-	if len(baseline) != 15000 || !reflect.DeepEqual(count(baseline), count(finite)) {
-		t.Fatalf("%s audit multiset changed: baseline=%d finite=%d", typ, len(baseline), len(finite))
+	if len(baseline) != expected || len(finite) != expected || !reflect.DeepEqual(count(baseline), count(finite)) {
+		t.Fatalf("%s audit multiset changed: baseline=%d finite=%d expected=%d", typ, len(baseline), len(finite), expected)
 	}
 }
