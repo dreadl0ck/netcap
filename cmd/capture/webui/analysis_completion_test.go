@@ -3,10 +3,12 @@ package webui
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -325,6 +327,103 @@ func TestSmallAnalysisQueuedDuringTwoActiveRuleReplays(t *testing.T) {
 			t.Fatalf("jobs did not complete: %v", outputs)
 		}
 	}
+}
+
+func TestPostCaptureQueueRepeatedMixedArrivals(t *testing.T) {
+	s, _, _ := reanalysisFixture(t)
+	s.fileBPFFilters = make(map[string]string)
+	s.shutdownChan = make(chan struct{})
+	s.jobQueue = make(chan *AnalysisJob, 2)
+	config := &rules.Config{Rules: []*rules.Rule{{Name: "get", Type: "HTTP", Expression: "Method == 'GET'", Enabled: true}}}
+	const pairs, records = 8, 100_000
+	rows := make([]proto.Message, records)
+	rows[0] = &types.HTTP{Timestamp: 1, Method: "GET"}
+	miss := &types.HTTP{Timestamp: 2, Method: "POST", URL: "/fixture"}
+	for i := 1; i < len(rows); i++ {
+		rows[i] = miss
+	}
+	type arrival struct {
+		input, dir string
+		small      bool
+		admitted   time.Time
+	}
+	arrivals := make([]arrival, 2*pairs)
+	for i := range arrivals {
+		dir := t.TempDir()
+		body := rows
+		if i%2 != 0 {
+			body = rows[:1]
+		}
+		writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, body)
+		arrivals[i] = arrival{input: filepath.Join(dir, "input.pcap"), dir: dir, small: i%2 != 0}
+	}
+	type completion struct {
+		input string
+		at    time.Time
+		ready bool
+	}
+	finished := make(chan completion, len(arrivals))
+	s.wg.Add(1)
+	go s.processJobs(func(job *AnalysisJob) {
+		done := job.processingDone
+		job.processingDone = func() {
+			done()
+			finished <- completion{job.InputFile, time.Now(), timelineIndexFor(job.OutputDir).State == timelineStateReady}
+		}
+		s.finishCaptureJob(job, time.Second)
+	})
+	defer func() { s.stopProcessingAdmission(); s.wg.Wait() }()
+	deadline := time.After(45 * time.Second)
+	ticker := time.NewTicker(20 * time.Millisecond)
+	defer ticker.Stop()
+	var rejected int
+	for i := range arrivals {
+		a := &arrivals[i]
+		for {
+			select {
+			case <-ticker.C:
+			case <-deadline:
+				t.Fatal("mixed arrivals did not finish admission")
+			}
+			a.admitted = time.Now()
+			err := s.enqueueAnalysis(&AnalysisJob{InputFile: a.input, OutputDir: a.dir,
+				ArtifactConfig: []byte("{}"), settings: &jobSettings{Rules: config}}, false)
+			if err == nil {
+				break
+			}
+			if !errors.Is(err, errAnalysisQueueFull) {
+				t.Fatal(err)
+			}
+			rejected++
+		}
+	}
+	pending := make(map[string]arrival, len(arrivals))
+	for _, a := range arrivals {
+		pending[a.input] = a
+	}
+	var tiny []time.Duration
+	for range arrivals {
+		select {
+		case done := <-finished:
+			a, ok := pending[done.input]
+			delete(pending, done.input)
+			s.mu.RLock()
+			complete := s.completedFiles[done.input]
+			s.mu.RUnlock()
+			if !ok || !complete || !done.ready {
+				t.Fatalf("unexpected or incomplete job %q", done.input)
+			}
+			if a.small {
+				tiny = append(tiny, done.at.Sub(a.admitted))
+			}
+		case <-deadline:
+			t.Fatalf("%d admitted jobs did not complete", len(pending))
+		}
+	}
+	if s.IsProcessing() || len(tiny) != pairs {
+		t.Fatalf("queue did not drain: tiny completions=%d", len(tiny))
+	}
+	t.Logf("mixed arrivals: %d completed, %d queue-full retries, tiny latency %s–%s", len(arrivals), rejected, slices.Min(tiny), slices.Max(tiny))
 }
 
 func testCaptureWorkerCompletesSmallAnalysis(t *testing.T, ruleLoad bool) {
