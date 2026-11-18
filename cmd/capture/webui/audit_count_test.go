@@ -11,10 +11,61 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
+
+func TestAuditStreamsHoldSlotsThroughResponseWrite(t *testing.T) {
+	file := writeTimelineAuditFilePlain(t, t.TempDir(), "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
+	req := func(suffix string) *http.Request {
+		return httptest.NewRequest(http.MethodGet, "/api/audit/HTTP/stream"+suffix, nil)
+	}
+	release := make(chan struct{})
+	defer func() {
+		if release != nil {
+			close(release)
+		}
+	}()
+	done := make(chan *httptest.ResponseRecorder, 4)
+	for range 4 {
+		w := heldAlertPageResponse{httptest.NewRecorder(), make(chan struct{}, 1), release}
+		go func() {
+			HandleAuditStream(w, req("?full=true"), file, "HTTP")
+			done <- w.ResponseRecorder
+		}()
+		select {
+		case <-w.writing:
+		case <-time.After(5 * time.Second):
+			t.Fatal("admitted stream did not start writing")
+		}
+	}
+	for _, suffix := range []string{"?countOnly=true", "?evidence=true"} {
+		w := httptest.NewRecorder()
+		HandleAuditStream(w, req(suffix), file, "HTTP")
+		if w.Code != http.StatusTooManyRequests || strings.Contains(w.Body.String(), "event:") {
+			t.Fatalf("saturated %s: %d %s", suffix, w.Code, w.Body)
+		}
+	}
+	close(release)
+	release = nil
+	for range 4 {
+		select {
+		case w := <-done:
+			if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "event: complete") {
+				t.Fatalf("admitted stream: %d %s", w.Code, w.Body)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("stream did not finish")
+		}
+	}
+	w := httptest.NewRecorder()
+	HandleAuditStream(w, req("?countOnly=true"), file, "HTTP")
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "event: complete") {
+		t.Fatalf("retry: %d %s", w.Code, w.Body)
+	}
+}
 
 func TestCanceledAuditStatsDoesNotPublishCounts(t *testing.T) {
 	dir := t.TempDir()

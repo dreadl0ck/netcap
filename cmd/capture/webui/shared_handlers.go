@@ -591,8 +591,17 @@ func HandleAuditMeta(w http.ResponseWriter, r *http.Request, filePath, auditType
 	})
 }
 
-// HandleAuditStream streams audit records via Server-Sent Events
+var auditStreamSlots = make(chan struct{}, 4)
+
+// HandleAuditStream streams audit records via Server-Sent Events.
 func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditType string) {
+	select {
+	case auditStreamSlots <- struct{}{}:
+		defer func() { <-auditStreamSlots }()
+	default:
+		http.Error(w, "audit streams busy; retry after a stream finishes", http.StatusTooManyRequests)
+		return
+	}
 	startTime := time.Now()
 	if sealed := partialAuditContext(r); sealed != nil && sealed.File != "" {
 		filePath = filepath.Join(sealed.Directory, sealed.File)
