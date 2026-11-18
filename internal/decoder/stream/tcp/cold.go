@@ -33,6 +33,7 @@ type coldReaderState struct {
 	Bytes                 int
 	Client, Saved, Closed bool
 	PayloadBytes          *int64 `json:",omitempty"`
+	PrefixBeforeGap       int64  `json:",omitempty"`
 }
 
 func readerClosed(r *tcpStreamReader) bool {
@@ -63,6 +64,7 @@ func saveReader(r streamReader) *coldReaderState {
 		s.Prefix, s.Count = owned.stored.prefix, owned.stored.count
 		if !owned.stored.payloadSizeUnknown {
 			s.PayloadBytes = new(owned.stored.payloadBytes)
+			s.PrefixBeforeGap = owned.stored.prefixBeforeGap
 		}
 	}
 	return s
@@ -138,6 +140,9 @@ func (f *connectionFactory) RestoreColdState(wire []byte, reserve bool) (reassem
 		if reader != nil && reader.PayloadBytes != nil && (reader.Prefix == "" || *reader.PayloadBytes < 0 || reader.Count == 0 && *reader.PayloadBytes != 0) {
 			return nil, fmt.Errorf("invalid stored TCP payload size")
 		}
+		if reader != nil && reader.PrefixBeforeGap != 0 && (reader.PrefixBeforeGap < 0 || reader.PayloadBytes == nil || reader.PrefixBeforeGap > *reader.PayloadBytes) {
+			return nil, fmt.Errorf("invalid stored TCP pre-gap size")
+		}
 	}
 	network, err := state.Network.Restore()
 	if err != nil {
@@ -185,6 +190,7 @@ func (f *connectionFactory) RestoreColdState(wire []byte, reserve bool) (reassem
 			reader.stored = &storedTCPReader{state: decoderconfig.Instance.AggregateStore, prefix: stored.Prefix, count: stored.Count, payloadSizeUnknown: stored.PayloadBytes == nil, budget: budget, payloadBudget: payloadBudget}
 			if stored.PayloadBytes != nil {
 				reader.stored.payloadBytes = *stored.PayloadBytes
+				reader.stored.prefixBeforeGap = stored.PrefixBeforeGap
 			}
 		}
 		if stored.Closed {

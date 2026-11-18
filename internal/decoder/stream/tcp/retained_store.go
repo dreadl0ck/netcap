@@ -20,6 +20,7 @@ type storedTCPReader struct {
 	prefix                string
 	count                 uint64
 	payloadBytes          int64
+	prefixBeforeGap       int64
 	payloadSizeUnknown    bool
 	loaded                bool
 	budget                *core.StateBudget
@@ -149,6 +150,11 @@ func (s *storedTCPReader) append(data *core.StreamData) error {
 	s.credit += credit
 	s.payloadCredit += payloadCredit
 	s.count++
+	// Stored discard markers can be updated after append.
+	if !s.payloadSizeUnknown && s.prefixBeforeGap == 0 && s.payloadBytes > 0 &&
+		(data.SkippedBytes != 0 || data.DiscardReason == "" && data.DiscardedBytes > 0) {
+		s.prefixBeforeGap = s.payloadBytes
+	}
 	if n := int64(len(data.RawData)); n <= math.MaxInt64-s.payloadBytes {
 		s.payloadBytes += n
 	} else {
@@ -162,6 +168,9 @@ func (s *storedTCPReader) Count() int64 { return int64(s.count) }
 func (s *storedTCPReader) PrefixBytesUpperBound(limit int) int {
 	if s.payloadSizeUnknown {
 		return -1
+	}
+	if s.prefixBeforeGap > 0 {
+		return int(min(int64(limit), s.prefixBeforeGap))
 	}
 	return int(min(int64(limit), s.payloadBytes))
 }
@@ -332,6 +341,7 @@ func (s *storedTCPReader) clear() error {
 	if err == nil {
 		s.count, s.loaded = 0, false
 		s.payloadBytes, s.payloadSizeUnknown = 0, false
+		s.prefixBeforeGap = 0
 	}
 	return err
 }

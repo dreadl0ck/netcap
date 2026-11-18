@@ -178,6 +178,9 @@ func TestColdTCPSnapshotPreservesValidationAndReservations(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	if err := reader.stored.append(&core.StreamData{SkippedBytes: 1, RawData: bytes.Repeat([]byte("x"), 512)}); err != nil {
+		t.Fatal(err)
+	}
 	reader.CloseData()
 	c.client = reader
 	wire, err := c.SaveColdState()
