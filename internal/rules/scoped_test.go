@@ -280,6 +280,33 @@ func TestOrderedStreamBreaksEqualRecordTiesByScope(t *testing.T) {
 	}
 }
 
+func TestOrderedHTTPRecordsWithMapsBreakTiesByScope(t *testing.T) {
+	for range 20 {
+		var notes []string
+		cfg := &Config{Rules: []*Rule{{Name: "fixture", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true,
+			Sequence: &Sequence{AfterType: "Secret", After: "AuthSuccessSet", GroupBy: []string{"CommunityID"}, AfterGroupBy: []string{"CommunityID"}, Within: 60},
+		}}}
+		s, err := NewOrderedStream(cfg, alertWriterFunc(func(a *types.Alert) error {
+			notes = append(notes, a.Notes)
+			return nil
+		}), "fixture")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, scope := range []string{"fixture/z", "fixture/a"} {
+			if err := s.pushScoped(scope, &types.Secret{Timestamp: 1, CommunityID: "1:fixture", AuthSuccessSet: true}); err != nil {
+				t.Fatal(err)
+			}
+			if err := s.pushScoped(scope, &types.HTTP{Timestamp: 2, CommunityID: "1:fixture", Method: "GET", RequestHeader: map[string]string{"D": "4", "B": "2", "A": "1", "C": "3"}}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if n, err := s.Finish(); n != 2 || err != nil || len(notes) != 2 || !strings.Contains(notes[0], `"scope":"fixture/a"`) {
+			t.Fatalf("noncanonical alert order: count=%d err=%v notes=%v", n, err, notes)
+		}
+	}
+}
+
 func BenchmarkOrderedStreamEqualTime(b *testing.B) {
 	for range b.N {
 		s, err := NewOrderedStream(groupedConfig(), alertWriterFunc(func(*types.Alert) error { return nil }), "fixture")
