@@ -26,6 +26,20 @@ import (
 // plenty for the kinds of payloads where IOC hunting makes sense.
 const MaxIOCExtractBytes = 16 << 20
 
+var fileAnalysisSlots = make(chan struct{}, 2)
+
+func admitFileAnalysis(ctx context.Context) (func(), error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	select {
+	case fileAnalysisSlots <- struct{}{}:
+		return func() { <-fileAnalysisSlots }, nil
+	default:
+		return nil, errors.New("file analysis is busy; retry after another analysis completes")
+	}
+}
+
 // registerForensicsTools registers tools that operate on carved files
 // inline: IOC extraction (URLs/domains/IPs/emails) and EXIF parsing.
 // Mirrors the ToLinksFromFile / ToDomainsFromFile / ToExifDataForImage
@@ -100,6 +114,11 @@ func (s *Server) handleExtractIOCs(ctx context.Context, req mcplib.CallToolReque
 		maxPerKind = 5000
 	}
 
+	release, err := admitFileAnalysis(ctx)
+	if err != nil {
+		return errResult(err), nil
+	}
+	defer release()
 	data, err := s.fetchExtractedFile(ctx, ref, filePath)
 	if err != nil {
 		return errResult(err), nil
@@ -111,18 +130,19 @@ func (s *Server) handleExtractIOCs(ctx context.Context, req mcplib.CallToolReque
 		"size_scanned": len(data),
 		"kinds":        sortedKinds(kinds),
 	}
+	text := string(data)
 	if kinds["url"] {
-		out["urls"] = uniqueLimited(xurls.Strict().FindAllString(string(data), -1), maxPerKind)
+		out["urls"] = uniqueLimited(xurls.Strict().FindAllString(text, -1), maxPerKind)
 	}
 	if kinds["domain"] {
-		out["domains"] = uniqueLimited(domainRegex.FindAllString(string(data), -1), maxPerKind)
+		out["domains"] = uniqueLimited(domainRegex.FindAllString(text, -1), maxPerKind)
 	}
 	if kinds["ip"] {
-		ips := append(ipv4Regex.FindAllString(string(data), -1), ipv6Regex.FindAllString(string(data), -1)...)
+		ips := append(ipv4Regex.FindAllString(text, -1), ipv6Regex.FindAllString(text, -1)...)
 		out["ips"] = uniqueLimited(ips, maxPerKind)
 	}
 	if kinds["email"] {
-		out["emails"] = uniqueLimited(emailRegex.FindAllString(string(data), -1), maxPerKind)
+		out["emails"] = uniqueLimited(emailRegex.FindAllString(text, -1), maxPerKind)
 	}
 	return jsonResult(out), nil
 }
@@ -137,6 +157,11 @@ func (s *Server) handleGetImageExif(ctx context.Context, req mcplib.CallToolRequ
 		return errResult(err), nil
 	}
 
+	release, err := admitFileAnalysis(ctx)
+	if err != nil {
+		return errResult(err), nil
+	}
+	defer release()
 	data, err := s.fetchExtractedFile(ctx, ref, filePath)
 	if err != nil {
 		return errResult(err), nil

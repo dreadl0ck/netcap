@@ -11,10 +11,66 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 )
+
+func TestFileAnalysisCapacityIsShared(t *testing.T) {
+	started := make(chan struct{}, 2)
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/extracted-files/download/held.txt" {
+			started <- struct{}{}
+			<-r.Context().Done()
+			return
+		}
+		_, _ = w.Write([]byte("fixture"))
+	}))
+	defer backend.Close()
+	defer cancel()
+	s, err := New(Options{BaseURL: backend.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke := func(ctx context.Context, tool, file string) *mcplib.CallToolResult {
+		result, _ := s.mcpSrv.GetTool(tool).Handler(ctx, mcplib.CallToolRequest{Params: mcplib.CallToolParams{
+			Arguments: map[string]any{"session_id": "owned", "file_path": file},
+		}})
+		return result
+	}
+	done := make(chan *mcplib.CallToolResult, 2)
+	for _, tool := range []string{"extract_iocs_from_file", "get_image_exif"} {
+		go func() { done <- invoke(ctx, tool, "held.txt") }()
+	}
+	for range 2 {
+		select {
+		case <-started:
+		case <-ctx.Done():
+			t.Fatal("both analyses were not admitted")
+		}
+	}
+	busy := invoke(t.Context(), "get_image_exif", "fixture.txt")
+	if !busy.IsError || !strings.Contains(contentText(busy), "file analysis is busy") {
+		t.Fatalf("saturated analysis returned %s", contentText(busy))
+	}
+	cancel()
+	for range 2 {
+		select {
+		case result := <-done:
+			if !result.IsError {
+				t.Fatal("canceled analysis succeeded")
+			}
+		case <-time.After(time.Second):
+			t.Fatal("cancellation did not free the analysis slot")
+		}
+	}
+	if retry := invoke(t.Context(), "get_image_exif", "fixture.txt"); retry.IsError {
+		t.Fatalf("retry failed: %s", contentText(retry))
+	}
+}
 
 // TestExtractIOCsFindsAllKinds exercises every hand-tuned regex
 // (url, domain, ipv4, ipv6, email) against a representative payload.
