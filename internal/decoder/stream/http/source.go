@@ -255,7 +255,11 @@ func readCappedSourceRequestBody(c *core.ConversationInfo, body io.Reader) ([]by
 	bounded := &io.LimitedReader{R: body, N: limit + 1}
 	sample, release, err := scanSourceRequestBody(c, bounded, int(min(limit+1, 32768)), int(min(limit, 512)))
 	if bounded.N == 0 {
-		return sample[:min(int64(len(sample)), limit)], release, fmt.Errorf("%w: per-file %d", file.ErrArtifactLimit, limit)
+		limitErr := fmt.Errorf("%w: per-file %d", file.ErrArtifactLimit, limit)
+		if err != nil {
+			limitErr = errors.Join(limitErr, err)
+		}
+		return sample[:min(int64(len(sample)), limit)], release, limitErr
 	}
 	return sample, release, err
 }
@@ -410,13 +414,13 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 						scratch = make([]byte, int(needed))
 					}
 					_, err := scanSourceBody(body, scratch, nil)
+					if err != nil && c.FragmentError != nil {
+						return c.FragmentError
+					}
 					if bound != nil && bound.N == 0 {
 						return nil // The decoder stops this run at the same body limit.
 					}
 					if err != nil {
-						if c.FragmentError != nil {
-							return c.FragmentError
-						}
 						return nil
 					}
 				}

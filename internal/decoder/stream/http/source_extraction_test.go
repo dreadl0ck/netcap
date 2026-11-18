@@ -15,6 +15,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"testing/iotest"
 
 	"github.com/andybalholm/brotli"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
@@ -352,6 +353,19 @@ func TestCappedSourceRequestBodyStopsAtLimit(t *testing.T) {
 			t.Fatalf("size %d: sampled %d, read %d, err %v", size, len(sample), size-body.Len(), err)
 		}
 	}
+	t.Run("read failure with overrun byte", func(t *testing.T) {
+		readErr := errors.New("fixture source read failed")
+		body := iotest.DataErrReader(io.MultiReader(strings.NewReader(strings.Repeat("x", 129)), iotest.ErrReader(readErr)))
+		budget, err := core.NewStateBudget(257, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sample, release, err := readCappedSourceRequestBody(&core.ConversationInfo{StateBudget: budget}, body)
+		release()
+		if len(sample) != 128 || !errors.Is(err, file.ErrArtifactLimit) || !errors.Is(err, readErr) || budget.Health().RetainedBytes != 0 {
+			t.Fatalf("sampled %d, err %v, budget %+v", len(sample), err, budget.Health())
+		}
+	})
 }
 
 func TestHTTPSourceIncludesPairedPayloads(t *testing.T) {
