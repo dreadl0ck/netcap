@@ -87,6 +87,15 @@ func TestCaptureWorkerBuffersOnePostCaptureJob(t *testing.T) {
 }
 
 func TestCaptureWorkerCompletesSmallAnalysisWhileRegularTimelineWaits(t *testing.T) {
+	testCaptureWorkerCompletesSmallAnalysis(t, false)
+}
+
+func TestCaptureWorkerCompletesSmallAnalysisDuringLargeRuleReplay(t *testing.T) {
+	testCaptureWorkerCompletesSmallAnalysis(t, true)
+}
+
+func testCaptureWorkerCompletesSmallAnalysis(t *testing.T, ruleLoad bool) {
+	t.Helper()
 	s, smallInput, smallDir := reanalysisFixture(t)
 	delete(s.completedFiles, smallInput)
 	s.fileBPFFilters = make(map[string]string)
@@ -96,17 +105,26 @@ func TestCaptureWorkerCompletesSmallAnalysisWhileRegularTimelineWaits(t *testing
 	largeDir := t.TempDir()
 	largeInput := filepath.Join(largeDir, "large.pcap")
 	record := &types.HTTP{Timestamp: 2, Method: "POST", URL: "/" + strings.Repeat("x", 1024)}
-	rows := make([]proto.Message, 512)
+	count := 512
+	waitPhase := "timeline"
+	if ruleLoad {
+		count = 150000
+		waitPhase = "rules"
+		record.URL = "/fixture"
+	}
+	rows := make([]proto.Message, count)
 	for i := range rows {
 		rows[i] = record
 	}
 	writeTimelineAuditFilePlain(t, largeDir, "HTTP", types.Type_NC_HTTP, rows)
 	largeDone, smallDone := make(chan struct{}), make(chan struct{})
 	s.jobQueue <- &AnalysisJob{InputFile: largeInput, OutputDir: largeDir, processingDone: func() { close(largeDone) }}
-	timelineBuildSlot <- struct{}{}
+	held := !ruleLoad
+	if held {
+		timelineBuildSlot <- struct{}{}
+	}
 	s.wg.Add(1)
 	go s.processJobs(func(job *AnalysisJob) { s.finishCaptureJob(job, time.Second) })
-	held := true
 	defer func() {
 		if held {
 			<-timelineBuildSlot
@@ -114,29 +132,37 @@ func TestCaptureWorkerCompletesSmallAnalysisWhileRegularTimelineWaits(t *testing
 		s.stopProcessingAdmission()
 		s.wg.Wait()
 	}()
-	deadline := time.After(5 * time.Second)
+	deadline := time.After(15 * time.Second)
 	for {
 		phase, _ := s.selectedAnalysisPhase(captureSelection{InputFile: largeInput, OutputDir: largeDir})
-		if phase == "timeline" {
+		if phase == waitPhase {
 			break
 		}
 		select {
 		case <-largeDone:
-			t.Fatal("large job finished before reaching the timeline barrier")
+			t.Fatalf("large job finished before observing phase %s", waitPhase)
 		case <-deadline:
-			t.Fatal("large job never reached the timeline barrier")
+			t.Fatalf("large job never reached phase %s", waitPhase)
 		case <-time.After(time.Millisecond):
 		}
 	}
+	started := time.Now()
 	s.jobQueue <- &AnalysisJob{InputFile: smallInput, OutputDir: smallDir, processingDone: func() { close(smallDone) }}
 	select {
 	case <-smallDone:
 	case <-deadline:
-		t.Fatal("small job waited for regular timeline capacity")
+		t.Fatalf("small job did not complete while large job was in phase %s", waitPhase)
+	}
+	if ruleLoad {
+		phase, _ := s.selectedAnalysisPhase(captureSelection{InputFile: largeInput, OutputDir: largeDir})
+		if phase != "rules" {
+			t.Fatalf("large replay reached phase %s before small completion", phase)
+		}
+		t.Logf("small completion under %d-record rule replay: %s", count, time.Since(started))
 	}
 	select {
 	case <-largeDone:
-		t.Fatal("large job bypassed the occupied regular lane")
+		t.Fatal("large job completed before the small job")
 	default:
 	}
 	s.mu.RLock()
@@ -159,8 +185,10 @@ func TestCaptureWorkerCompletesSmallAnalysisWhileRegularTimelineWaits(t *testing
 	if _, err := reader.NextRecord(); err != io.EOF {
 		t.Fatalf("small job did not publish exactly one alert: %v", err)
 	}
-	<-timelineBuildSlot
-	held = false
+	if held {
+		<-timelineBuildSlot
+		held = false
+	}
 	select {
 	case <-largeDone:
 	case <-deadline:
