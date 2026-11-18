@@ -20,12 +20,26 @@ import (
 )
 
 func escapeTargetControls(target string) string {
-	var out strings.Builder
 	invalidUTF8 := !utf8.ValidString(target)
+	escape := func(b byte) bool { return b < 32 || b == 127 || invalidUTF8 && b >= 128 }
+	extra := 0
+	for i := 0; i < len(target); i++ {
+		if escape(target[i]) {
+			extra += 2
+		}
+	}
+	if extra == 0 {
+		return target
+	}
+	const hex = "0123456789ABCDEF"
+	var out strings.Builder
+	out.Grow(len(target) + extra)
 	for i := 0; i < len(target); i++ {
 		b := target[i]
-		if b < 32 || b == 127 || invalidUTF8 && b >= 128 {
-			fmt.Fprintf(&out, "%%%02X", b)
+		if escape(b) {
+			out.WriteByte('%')
+			out.WriteByte(hex[b>>4])
+			out.WriteByte(hex[b&15])
 		} else {
 			out.WriteByte(b)
 		}

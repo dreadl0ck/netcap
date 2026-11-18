@@ -145,6 +145,17 @@ func TestRound2GapAndDiscardNeverJoinBody(t *testing.T) {
 	}
 }
 
+func BenchmarkHTTPRequestTargetEscaping(b *testing.B) {
+	for _, target := range []string{"/fixture?q=example%20value", "/fixture/\x00\xff"} {
+		b.Run(fmt.Sprintf("%q", target), func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				_ = escapeTargetControls(target)
+			}
+		})
+	}
+}
+
 func BenchmarkHTTPHeaderEvidence(b *testing.B) {
 	wire := "GET /fixture HTTP/1.1\r\nHost: fixture.test\r\n" + strings.Repeat("X-Padded: "+strings.Repeat("x", 480)+"\r\n", 128) + "\r\n"
 	var source strings.Reader
