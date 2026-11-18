@@ -87,7 +87,7 @@ func (s *OrderedStream) pushScoped(scope string, record types.AuditRecord) error
 	if s.finished {
 		return errors.New("rule stream finalized")
 	}
-	if record == nil || reflect.ValueOf(record).Kind() == reflect.Pointer && reflect.ValueOf(record).IsNil() || record.Time() == 0 || s.hasWatermark && record.Time() <= s.watermark {
+	if isNilAuditRecord(record) || record.Time() == 0 || s.hasWatermark && record.Time() <= s.watermark {
 		return errors.New("record timestamp is missing or at/below committed watermark")
 	}
 	message, ok := record.(proto.Message)

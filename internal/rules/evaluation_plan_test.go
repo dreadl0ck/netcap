@@ -115,6 +115,25 @@ func TestAuditReplayUsesRecordTimeForDedupAndRateWindows(t *testing.T) {
 	t.Run("before-epoch", func(t *testing.T) { testAuditReplayClock(t, time.Unix(-3600, 0)) })
 }
 
+func TestAuditReplayRejectsTypedNilWithoutChangingClock(t *testing.T) {
+	config := &Config{Rules: []*Rule{{Name: "fixture", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true, Threshold: 2, ThresholdWindow: 60}}}
+	replay, err := NewAuditReplay(config, new(MockAlertWriter))
+	if err != nil {
+		t.Fatal(err)
+	}
+	const first = -120 * int64(time.Second)
+	if n, err := replay.Evaluate(&types.HTTP{Method: "GET", Timestamp: first}); err != nil || n != 0 {
+		t.Fatalf("first match: alerts=%d err=%v", n, err)
+	}
+	var missing *types.HTTP
+	if n, err := replay.Evaluate(missing); err == nil || n != 0 || replay.watermark != first {
+		t.Fatalf("missing record: alerts=%d err=%v watermark=%d", n, err, replay.watermark)
+	}
+	if n, err := replay.Evaluate(&types.HTTP{Method: "GET", Timestamp: first + int64(time.Second)}); err != nil || n != 1 {
+		t.Fatalf("second match: alerts=%d err=%v", n, err)
+	}
+}
+
 func TestAuditReplayThresholdUsesSignedRecordTime(t *testing.T) {
 	config := &Config{Rules: []*Rule{{Name: "fixture", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true, Threshold: 2, ThresholdWindow: 60}}}
 	replay, err := NewAuditReplay(config, new(MockAlertWriter))

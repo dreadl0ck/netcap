@@ -29,7 +29,7 @@ func NewAuditReplay(config *Config, writer AlertWriter) (*AuditReplay, error) {
 func (r *AuditReplay) Evaluate(record types.AuditRecord) (int, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if record != nil {
+	if !isNilAuditRecord(record) {
 		if ts := record.Time(); ts != 0 && (!r.hasTime || ts > r.watermark) {
 			r.watermark, r.hasTime = ts, true
 		}

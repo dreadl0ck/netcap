@@ -283,7 +283,7 @@ func (e *Engine) AppliesTo(record types.AuditRecord) bool {
 func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, error) {
 	e.generationMu.RLock()
 	defer e.generationMu.RUnlock()
-	if record == nil || reflect.ValueOf(record).Kind() == reflect.Pointer && reflect.ValueOf(record).IsNil() {
+	if isNilAuditRecord(record) {
 		return 0, fmt.Errorf("nil audit record")
 	}
 	recordType := record.NetcapType()
@@ -444,6 +444,11 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 	}
 
 	return alertCount, nil
+}
+
+func isNilAuditRecord(record types.AuditRecord) bool {
+	v := reflect.ValueOf(record)
+	return !v.IsValid() || v.Kind() == reflect.Pointer && v.IsNil()
 }
 
 // isDuplicate checks if an alert is a duplicate within the deduplication window.
