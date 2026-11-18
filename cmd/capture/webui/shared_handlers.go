@@ -607,7 +607,6 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	limit := 500 // Default limit (max 500)
 	countOnly := r.URL.Query().Get("countOnly") == "true"
 	fullRecords := r.URL.Query().Get("full") == "true"
-	fields := r.URL.Query().Get("fields")
 
 	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
 		if val, err := strconv.Atoi(offsetStr); err == nil && val >= 0 {
@@ -650,6 +649,16 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 		errorJSON, _ := json.Marshal(map[string]string{"error": errorMsg})
 		fmt.Fprintf(w, "event: error\ndata: %s\n\n", string(errorJSON))
 		flusher.Flush()
+	}
+
+	var projection []projectionPath
+	if fullRecords && !countOnly {
+		var err error
+		projection, err = parseRecordProjection(r.URL.Query().Get("fields"))
+		if err != nil {
+			sendError(err.Error())
+			return
+		}
 	}
 
 	// Create audit record reader
@@ -834,7 +843,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			// Truncate large records to prevent UI issues with very large record types (e.g., DeviceProfile)
 			const maxRecordSize = 2000
 			if fullRecords {
-				jsonData, err = projectRecordJSON(jsonData, fields)
+				jsonData, err = applyRecordProjection(jsonData, projection)
 				if err != nil {
 					sendError(err.Error())
 					return

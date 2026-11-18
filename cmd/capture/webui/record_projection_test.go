@@ -10,6 +10,16 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
+func TestCompleteAuditStreamRejectsMalformedProjectionOnEmptyTrack(t *testing.T) {
+	file := writeTimelineAuditFile(t, t.TempDir(), "HTTP", types.Type_NC_HTTP, nil)
+	w := httptest.NewRecorder()
+	HandleAuditStream(w, httptest.NewRequest("GET", "/?full=true&fields=Method,", nil), file, "HTTP")
+	body := w.Body.String()
+	if !strings.Contains(body, "event: error\ndata: {\"error\":\"empty field path\"}") || strings.Contains(body, "event: complete") {
+		t.Fatalf("malformed projection on empty audit: %s", body)
+	}
+}
+
 func TestCompleteAuditRecordsPreserveHeadersAndBoundPages(t *testing.T) {
 	value := strings.Repeat("header", 10000)
 	rows := []proto.Message{}
