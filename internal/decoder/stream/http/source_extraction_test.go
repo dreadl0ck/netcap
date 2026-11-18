@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"compress/gzip"
+	"compress/zlib"
 	"fmt"
 	"net/http"
 	"os"
@@ -234,7 +235,7 @@ func TestBackedGzipResponseClassificationExpansionLimit(t *testing.T) {
 }
 
 func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
-	for _, kind := range []string{"identity", "gzip", "gzip-truncated", "truncated", "chunked-upload", "multipart-upload", "json-upload", "urlencoded-upload"} {
+	for _, kind := range []string{"identity", "gzip", "gzip-truncated", "deflate", "truncated", "chunked-upload", "multipart-upload", "json-upload", "urlencoded-upload"} {
 		t.Run(kind, func(t *testing.T) {
 			body := []byte(strings.Repeat("artifact fixture\n", 5000))
 			wire := body
@@ -251,6 +252,17 @@ func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
 					wire = wire[:len(wire)-1]
 				}
 				encoding = "Content-Encoding: gzip\r\n"
+			}
+			if kind == "deflate" {
+				var output bytes.Buffer
+				writer := zlib.NewWriter(&output)
+				if _, err := writer.Write(body); err != nil {
+					t.Fatal(err)
+				}
+				if err := writer.Close(); err != nil {
+					t.Fatal(err)
+				}
+				wire, encoding = output.Bytes(), "Content-Encoding: deflate\r\n"
 			}
 			length := len(wire)
 			if kind == "truncated" {
@@ -289,6 +301,9 @@ func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotFiles, wantFiles) {
 				t.Fatalf("file observations changed:\ngot %v\nwant %v", gotFiles, wantFiles)
+			}
+			if kind == "deflate" && (len(gotFiles) != 1 || gotFiles[0].Hashes.SHA256 != file.ComputeHashes(body).SHA256) {
+				t.Fatalf("deflate artifact did not match decoded body: %v", gotFiles)
 			}
 			if kind == "multipart-upload" && (len(gotHTTP) != 2 || len(gotFiles) != 2 || !strings.Contains(fmt.Sprint(gotHTTP[0].Parameters), "after-file")) {
 				t.Fatalf("multipart fields, file, or next message lost: %v / %d", gotHTTP, len(gotFiles))

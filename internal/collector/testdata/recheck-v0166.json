@@ -318,6 +318,9 @@
   "bodylessHTTPSourceExtraction": {
     "verification": "TestHTTPSourceBodylessExchangeSkipsScratch verifies a source-decoded GET/204 produces the same HTTP audit as byte-backed decoding, emits no File record, and never creates the artifact scratch directory. Focused HTTP source and gzip tests passed under the race detector."
   },
+  "httpDeflateSourceParity": {
+    "verification": "TestHTTPSourceExtractionPreservesRecordsAndBodies/deflate compares the streamed and byte-backed HTTP and File audits for a zlib-wrapped deflate response and checks the extracted SHA-256 against the original 85000-byte body. The portable extraction parity suite passed under the race detector."
+  },
   "spooledAnalyzerPressureIsolation": {
     "inputIntegrity": "The classifier-only regression also submits a same-size byte buffer with a different admitted digest and verifies that the report records artifact hash changed instead of classification. The native file package suite passed under the race detector.",
     "verification": "TestSpooledClassifierSurvivesYaraBufferLimit verifies that a 512 KiB spooled artifact under a 256 KiB buffer budget reports the YARA input failure while the classifier still receives the complete input and reports classified. Focused native YARA and classifier tests passed under the race detector."
