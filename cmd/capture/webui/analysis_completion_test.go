@@ -86,6 +86,87 @@ func TestCaptureWorkerBuffersOnePostCaptureJob(t *testing.T) {
 	}
 }
 
+func TestCaptureWorkerShutdownCancelsBacklog(t *testing.T) {
+	s := &Server{
+		jobQueue: make(chan *AnalysisJob, 5), shutdownChan: make(chan struct{}),
+		fileErrors: make(map[string]FileError),
+	}
+	names := []string{"active-1", "active-2", "handoff", "capture", "queued"}
+	captured, started, released := make(chan string, 5), make(chan string, 5), make(chan string, 5)
+	release := make(chan struct{})
+	for _, name := range names {
+		s.jobQueue <- &AnalysisJob{InputFile: name, processingDone: func() { released <- name }}
+	}
+	s.wg.Add(1)
+	go s.processJobs(func(job *AnalysisJob) {
+		job.postCapture = func() {
+			started <- job.InputFile
+			<-release
+		}
+		captured <- job.InputFile
+	})
+	completed := make(map[string]int)
+	t.Cleanup(func() {
+		s.stopProcessingAdmission()
+		close(release)
+		done := make(chan struct{})
+		go func() { s.wg.Wait(); close(done) }()
+		select {
+		case <-done:
+		case <-time.After(5 * time.Second):
+			t.Error("workers did not stop after release")
+			return
+		}
+		close(released)
+		for name := range released {
+			completed[name]++
+		}
+		for _, name := range names {
+			if completed[name] != 1 {
+				t.Errorf("%s released %d times, want once", name, completed[name])
+			}
+		}
+		if len(started) != 0 || len(captured) != 0 {
+			t.Error("backlog started after shutdown")
+		}
+		if failure, ok := s.GetFileError("handoff"); !ok || failure.Error != "Analysis canceled during shutdown" {
+			t.Errorf("handoff cancellation missing: %+v", failure)
+		}
+	})
+	deadline := time.After(5 * time.Second)
+	for _, name := range names[:4] {
+		select {
+		case got := <-captured:
+			if got != name {
+				t.Fatalf("captured %q, want %q", got, name)
+			}
+		case <-deadline:
+			t.Fatal("capture did not reach handoff backpressure")
+		}
+	}
+	for range 2 {
+		select {
+		case <-started:
+		case <-deadline:
+			t.Fatal("completion worker never started")
+		}
+	}
+	s.stopProcessingAdmission()
+	for range 2 {
+		select {
+		case name := <-released:
+			completed[name]++
+		case <-deadline:
+			t.Fatal("shutdown did not release capture and queued jobs while workers were blocked")
+		}
+	}
+	for _, name := range names[3:] {
+		if failure, ok := s.GetFileError(name); !ok || failure.Error != "Analysis canceled during shutdown" || completed[name] != 1 {
+			t.Fatalf("%s: cancellation=%+v, releases=%d", name, failure, completed[name])
+		}
+	}
+}
+
 func TestAnalysisCompletionRejectsTruncatedTimelineTrack(t *testing.T) {
 	s, input, dir := reanalysisFixture(t)
 	delete(s.completedFiles, input)
