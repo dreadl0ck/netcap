@@ -112,24 +112,15 @@ func (s *OrderedStream) pushScoped(scope string, record types.AuditRecord) error
 }
 
 func canonicalRuleRecord(message proto.Message) ([]byte, error) {
-	httpRecord, ok := message.(*types.HTTP)
-	if !ok || len(httpRecord.RequestHeader)+len(httpRecord.ResponseHeader)+len(httpRecord.Parameters) == 0 {
-		return proto.Marshal(message)
-	}
-	buffer := proto.NewBuffer(nil)
-	buffer.SetDeterministic(true)
-	if err := buffer.Marshal((*orderedHTTPRecord)(httpRecord)); err != nil {
+	wire, err := proto.Marshal(message)
+	if err != nil {
 		return nil, err
 	}
-	return buffer.Bytes(), nil
+	if err := orderRuleRecordMaps(message, wire); err != nil {
+		return nil, err
+	}
+	return wire, nil
 }
-
-// Use the reflective encoder: HTTP's generated marshaler iterates maps in random order.
-type orderedHTTPRecord types.HTTP
-
-func (r *orderedHTTPRecord) Reset()         { *r = orderedHTTPRecord{} }
-func (r *orderedHTTPRecord) String() string { return (*types.HTTP)(r).String() }
-func (*orderedHTTPRecord) ProtoMessage()    {}
 
 func (s *OrderedStream) observe(record types.AuditRecord) (int, error) {
 	return s.observeScoped(s.scope, record)
