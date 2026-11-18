@@ -348,6 +348,53 @@ func TestBackedHTTPPassiveUploadUsesBoundedInput(t *testing.T) {
 	t.Logf("HTTP upload bytes=%d peak input/state credits=%d", size, health.PeakBytes)
 }
 
+func TestBackedHTTPFormPressurePreservesSpooledArtifact(t *testing.T) {
+	wire, input := newBookCapture(t)
+	send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 80, false)
+	body := strings.Repeat("data=fixture&", 2048) + "tail=done"
+	send(false, false, false, fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\n\r\n", len(body)))
+	for off := 0; off < len(body); off += 8192 {
+		send(false, false, false, body[off:min(off+8192, len(body))])
+	}
+	send(true, false, false, "HTTP/1.1 204 No Content\r\n\r\n")
+	for _, local := range []bool{false, true} {
+		t.Run(fmt.Sprintf("local=%t", local), func(t *testing.T) {
+			out := t.TempDir()
+			cfg := ultimateCaptureConfig(out, 1, 0)
+			cfg.CaptureEvidence = true
+			cfg.DecoderConfig.IncludeDecoders = "TCP,Connection,HTTP,File"
+			cfg.DecoderConfig.FileStorage = "files"
+			cfg.DecoderConfig.MaxRetainedTCPBytes = 128 << 10
+			cfg.DecoderConfig.MaxRetainedTCPStateBytes = 256 << 10
+			cfg.DecoderConfig.LocalCompletionStateLoss = local
+			err := New(cfg).CollectPcap(input)
+			manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
+			health := bookJSON[core.StateBudgetHealth](t, filepath.Join(out, "TCPStreamStateBudget.json"))
+			if health.Exceeded == local || health.RetainedBytes != 0 {
+				t.Fatalf("unexpected state budget: %+v", health)
+			}
+			if !local {
+				if !errors.Is(err, core.ErrStreamStateBudget) || manifest.Status != "error" {
+					t.Fatalf("strict replay: status=%s err=%v", manifest.Status, err)
+				}
+				return
+			}
+			if !errors.Is(err, core.ErrCompletionStateBudget) || manifest.Status != "partial" || health.CompletionRejectedBytes == 0 {
+				t.Fatalf("local replay: status=%s err=%v budget=%+v", manifest.Status, err, health)
+			}
+			t.Logf("completion pressure: %v; %+v", err, health)
+			files := bookRecords(t, out, "File", func() *types.File { return new(types.File) })
+			if len(files) != 1 || !files[0].IsComplete || files[0].Length != int64(len(body)) {
+				t.Fatalf("spooled request artifact lost: %v", files)
+			}
+			hashes, err := file.ComputeFileHashes(files[0].Location)
+			if err != nil || hashes.SHA256 != file.ComputeHashes([]byte(body)).SHA256 || files[0].Hashes.GetSHA256() != hashes.SHA256 {
+				t.Fatalf("spooled artifact hash mismatch: %v", err)
+			}
+		})
+	}
+}
+
 func TestNegativeTCPRetentionBudgetRefusesInitialization(t *testing.T) {
 	configuration := ultimateCaptureConfig(t.TempDir(), 1, 0)
 	configuration.DecoderConfig.MaxRetainedTCPBytes = -1

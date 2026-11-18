@@ -701,16 +701,14 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 			h.sourceHeaderCredits += n
 			return nil
 		}))
-		if h.conversation.FragmentError != nil {
-			return h.conversation.FragmentError
-		}
 	} else if spool != nil && form != "" {
 		err = h.parseBackedSmallForm(req, spool, form)
-		if h.conversation.FragmentError != nil {
-			return h.conversation.FragmentError
-		}
 	} else {
 		err = parseEvidenceForm(req, body)
+	}
+	formStateErr := h.conversation.FragmentError
+	if formStateErr != nil && formStateErr != core.ErrCompletionStateBudget {
+		return formStateErr
 	}
 	if err != nil {
 		request.evidence.issues = appendUnique(request.evidence.issues, "incomplete-request-form")
@@ -722,17 +720,18 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	}
 	req.Body = io.NopCloser(bytes.NewReader(body))
 
-	// increase counter
-	if e := h.retainSourceHeaders(evidence, headerEnd-headerStart); e != nil {
-		return e
-	}
-	streamutils.Stats.Lock()
-	streamutils.Stats.Requests++
-	streamutils.Stats.Unlock()
+	if formStateErr == nil {
+		if e := h.retainSourceHeaders(evidence, headerEnd-headerStart); e != nil {
+			return e
+		}
+		streamutils.Stats.Lock()
+		streamutils.Stats.Requests++
+		streamutils.Stats.Unlock()
 
-	h.requests = append(h.requests, request)
-	if h.transportObservation == "" {
-		secret.HarvestHTTPNTLMIdentity(req.Header.Get("Authorization"), request.clientIP, request.serverIP, request.clientPort, request.serverPort, t, h.conversation.CommunityID)
+		h.requests = append(h.requests, request)
+		if h.transportObservation == "" {
+			secret.HarvestHTTPNTLMIdentity(req.Header.Get("Authorization"), request.clientIP, request.serverIP, request.clientPort, request.serverPort, t, h.conversation.CommunityID)
+		}
 	}
 
 	if req.Method == methodPOST {
@@ -758,7 +757,17 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 				Encoding:       req.Header[headerContentEncoding],
 			}
 			if spool != nil {
-				file.RecordExtractionIssue((&HTTPFileExtractor{}).extractSpool(h.conversation, spool, metadata, bodyErr))
+				artifactConversation := h.conversation
+				if formStateErr != nil {
+					// Form parsing failed after the body was spooled; keep the original run error.
+					snapshot := *h.conversation
+					snapshot.FragmentError = nil
+					artifactConversation = &snapshot
+				}
+				file.RecordExtractionIssue((&HTTPFileExtractor{}).extractSpool(artifactConversation, spool, metadata, bodyErr))
+				if formStateErr != nil {
+					return formStateErr
+				}
 				return bodyErr
 			}
 			if bodyErr != nil {
@@ -769,6 +778,9 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 		}
 	}
 
+	if formStateErr != nil {
+		return formStateErr
+	}
 	if evidence.unsafe {
 		return evidence.framingError()
 	}
