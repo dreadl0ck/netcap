@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -608,6 +609,32 @@ func TestOfflineRejectsUnsafeExpressionsAndFieldAliases(t *testing.T) {
 	}
 	if _, err := LoadOfflinePack("offline-examples/grouped.yaml"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestOfflineHistoryFollowsLeasedDirectory(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("an open os.Root prevents directory renaming on Windows")
+	}
+	dir := offlineTestDirectory(t)
+	offlineTestRecords(t, dir, "TCP", true, offlineTestTCP(2))
+	want := offlineTestEval(t, dir, offlineTestPack(2))
+	lease, err := AcquireOfflineLease(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lease.Close()
+	if err := os.Rename(dir, filepath.Join(t.TempDir(), "moved")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if reports, err := ListOfflineEvaluations(dir); err != nil || len(reports) != 0 {
+		t.Fatalf("replacement history: %d reports, %v", len(reports), err)
+	}
+	if reports, err := listOfflineEvaluationsAtRoot(t.Context(), lease.root); err != nil || len(reports) != 1 || reports[0].ID != want.ID {
+		t.Fatalf("leased history: %v, %v", reports, err)
 	}
 }
 

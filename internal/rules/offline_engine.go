@@ -280,7 +280,7 @@ func EvaluateOffline(ctx context.Context, request OfflineRequest) (*OfflineRepor
 	}
 	defer lease.Close()
 	root := lease.root
-	history, err := ListOfflineEvaluationsContext(ctx, directory)
+	history, err := listOfflineEvaluationsAtRoot(ctx, root)
 	if err != nil {
 		return nil, err
 	}
@@ -645,6 +645,13 @@ func ListOfflineEvaluationsContext(ctx context.Context, directory string) ([]Off
 		return nil, err
 	}
 	defer r.Close()
+	return listOfflineEvaluationsAtRoot(ctx, r)
+}
+
+func listOfflineEvaluationsAtRoot(ctx context.Context, r *os.Root) ([]OfflineReport, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	info, err := r.Lstat("rule-evaluations")
 	if errors.Is(err, os.ErrNotExist) {
 		return []OfflineReport{}, nil
