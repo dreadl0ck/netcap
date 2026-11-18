@@ -32,6 +32,7 @@ type coldReaderState struct {
 	Count                 uint64
 	Bytes                 int
 	Client, Saved, Closed bool
+	PayloadBytes          *int64 `json:",omitempty"`
 }
 
 func readerClosed(r *tcpStreamReader) bool {
@@ -60,6 +61,9 @@ func saveReader(r streamReader) *coldReaderState {
 	s := &coldReaderState{Bytes: owned.numBytes, Client: owned.isClient, Saved: owned.saved, Closed: readerClosed(owned)}
 	if owned.stored != nil {
 		s.Prefix, s.Count = owned.stored.prefix, owned.stored.count
+		if !owned.stored.payloadSizeUnknown {
+			s.PayloadBytes = new(owned.stored.payloadBytes)
+		}
 	}
 	return s
 }
@@ -131,6 +135,9 @@ func (f *connectionFactory) RestoreColdState(wire []byte, reserve bool) (reassem
 		if reader != nil && (reader.Bytes < 0 || reader.Prefix == "" && reader.Count != 0 || reader.Prefix != "" && (!strings.HasPrefix(reader.Prefix, "tcp/payload/") || !strings.HasSuffix(reader.Prefix, "/") || decoderconfig.Instance.AggregateStore == nil)) {
 			return nil, fmt.Errorf("invalid stored TCP reader")
 		}
+		if reader != nil && reader.PayloadBytes != nil && (reader.Prefix == "" || *reader.PayloadBytes < 0 || reader.Count == 0 && *reader.PayloadBytes != 0) {
+			return nil, fmt.Errorf("invalid stored TCP payload size")
+		}
 	}
 	network, err := state.Network.Restore()
 	if err != nil {
@@ -175,7 +182,10 @@ func (f *connectionFactory) RestoreColdState(wire []byte, reserve bool) (reassem
 		reader := t.newTCPStreamReader(stored.Client)
 		reader.numBytes, reader.saved = stored.Bytes, stored.Saved
 		if stored.Prefix != "" {
-			reader.stored = &storedTCPReader{state: decoderconfig.Instance.AggregateStore, prefix: stored.Prefix, count: stored.Count, payloadSizeUnknown: true, budget: budget, payloadBudget: payloadBudget}
+			reader.stored = &storedTCPReader{state: decoderconfig.Instance.AggregateStore, prefix: stored.Prefix, count: stored.Count, payloadSizeUnknown: stored.PayloadBytes == nil, budget: budget, payloadBudget: payloadBudget}
+			if stored.PayloadBytes != nil {
+				reader.stored.payloadBytes = *stored.PayloadBytes
+			}
 		}
 		if stored.Closed {
 			reader.closeOnce.Do(func() { close(reader.done) })

@@ -151,6 +151,12 @@ func TestColdTCPRestoreCorruptionCancelsBackingStore(t *testing.T) {
 
 func TestColdTCPSnapshotPreservesValidationAndReservations(t *testing.T) {
 	coldTestConfig(t)
+	store, err := aggregate.Open(t.TempDir(), 4096, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	decoderconfig.Instance.AggregateStore = store
 	f := newStreamFactory()
 	budget, err := core.NewStateBudget(8192, nil)
 	if err != nil {
@@ -165,6 +171,15 @@ func TestColdTCPSnapshotPreservesValidationAndReservations(t *testing.T) {
 	if !c.Accept(syn, reassembly.TCPDirClientToServer, -1) {
 		t.Fatal("fixture SYN rejected")
 	}
+	reader := c.newTCPStreamReader(true)
+	reader.stored = &storedTCPReader{state: store, prefix: "tcp/payload/fixture/", budget: budget}
+	for _, payload := range []string{"GET ", "/x"} {
+		if err := reader.stored.append(&core.StreamData{RawData: []byte(payload)}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	reader.CloseData()
+	c.client = reader
 	wire, err := c.SaveColdState()
 	if err != nil {
 		t.Fatal(err)
@@ -181,6 +196,18 @@ func TestColdTCPSnapshotPreservesValidationAndReservations(t *testing.T) {
 	got, err := restored.SaveColdState()
 	if err != nil || !bytes.Equal(got, wire) {
 		t.Fatal("control snapshot changed", string(got), string(wire), err)
+	}
+	copyBudget, err := core.NewStateBudget(6, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prefix, err := core.ReadBudgetedSourcePrefix(readerFragments(restored.client), 16<<10, copyBudget)
+	if err != nil || string(prefix) != "GET /x" || cap(prefix) != 6 {
+		t.Fatalf("cold prefix=%q capacity=%d: %v", prefix, cap(prefix), err)
+	}
+	copyBudget.Release(int64(cap(prefix)))
+	if health := copyBudget.Health(); health.RetainedBytes != 0 || health.PeakBytes != 6 || health.Exceeded {
+		t.Fatalf("unexpected prefix credits: %+v", health)
 	}
 	synack := &layers.TCP{SYN: true, ACK: true, Seq: 500, Ack: 0, Window: 1000}
 	if !restored.Accept(synack, reassembly.TCPDirServerToClient, -1) {
