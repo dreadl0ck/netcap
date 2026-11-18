@@ -234,6 +234,26 @@ func TestStreamAuditRecordsEnforcesPageBounds(t *testing.T) {
 	}
 }
 
+func TestStreamAuditRecordsBoundsMultilineEventBytes(t *testing.T) {
+	const left, right = `{"a":"`, `"b":"`
+	const delimiters = len(left) + len(`",`) + 1 + len(right) + len(`"}`)
+	for _, extra := range []int{0, 1} {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("event: record\ndata: " + left + strings.Repeat("x", maxAuditEventBytes/2) + "\",\ndata:" + right +
+				strings.Repeat("y", maxAuditEventBytes/2-delimiters+extra) + "\"}\n\nevent: complete\ndata: {}\n\n"))
+		}))
+		rows, complete, terminal, err := NewNetcapClient(ts.URL).StreamAuditRecords("DNS", nil, 32<<20)
+		ts.Close()
+		if extra == 0 {
+			if err != nil || terminal != "complete" || len(rows) != 1 || len(rows[0]) != maxAuditEventBytes {
+				t.Fatalf("exact event: rows=%d terminal=%q error=%v", len(rows), terminal, err)
+			}
+		} else if err == nil || !strings.Contains(err.Error(), "SSE event data exceeds") || rows != nil || complete != nil || terminal != "" {
+			t.Fatalf("oversized event: rows=%d terminal=%q error=%v", len(rows), terminal, err)
+		}
+	}
+}
+
 func TestStreamAuditRecordsEnforcesDefaultPageCeiling(t *testing.T) {
 	for _, tc := range []struct {
 		rows  int

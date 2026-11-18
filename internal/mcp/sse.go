@@ -47,6 +47,8 @@ func (c *NetcapClient) StreamAuditRecords(auditType string, q url.Values, maxByt
 	return c.streamAuditRecords(context.Background(), auditType, q, maxBytes)
 }
 
+const maxAuditEventBytes = 16 << 20
+
 func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string, q url.Values, maxBytes int) (records []json.RawMessage, completeJSON json.RawMessage, terminalEvent string, err error) {
 	records = make([]json.RawMessage, 0)
 	u := c.baseURL + "/api/audit/" + url.PathEscape(auditType) + "/stream"
@@ -85,7 +87,7 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 	// SSE events are separated by blank lines; each event is one or more
 	// header lines ("event: name", "data: payload") followed by \n\n.
 	scanner := bufio.NewScanner(limited)
-	scanner.Buffer(make([]byte, 0, min(maxBytes, 64<<10)), (16<<20)+1024)
+	scanner.Buffer(make([]byte, 0, min(maxBytes, 64<<10)), maxAuditEventBytes+1024)
 	scanner.Split(scanAuditEventLine)
 
 	var (
@@ -139,7 +141,16 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 		if name, ok := bytes.CutPrefix(line, []byte("event:")); ok {
 			curEvent = string(bytes.TrimSpace(name))
 		} else if data, ok := bytes.CutPrefix(line, []byte("data:")); ok {
+			separator := 0
 			if len(curData) > 0 {
+				separator = 1
+			} else {
+				data = bytes.TrimPrefix(data, []byte(" "))
+			}
+			if len(data)+separator > maxAuditEventBytes-len(curData) {
+				return nil, nil, "", fmt.Errorf("SSE event data exceeds %d bytes", maxAuditEventBytes)
+			}
+			if separator != 0 {
 				curData = append(curData, '\n')
 			}
 			curData = append(curData, data...)
