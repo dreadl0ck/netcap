@@ -12,6 +12,43 @@ import (
 	"github.com/gopacket/gopacket/layers"
 )
 
+func TestSYNIdleClaimWorkDoesNotGrowWithFreshFlows(t *testing.T) {
+	for _, size := range []int{100, 10_000} {
+		t.Run(fmt.Sprint(size), func(t *testing.T) {
+			pool := NewStreamPoolWithAllocationBudget(&testFactoryBench{}, nil, true)
+			a := NewAssembler(pool)
+			start := time.Unix(1700000000, 0)
+			packet := layers.TCP{SrcPort: 12345, DstPort: 80, SYN: true, Seq: 1000}
+			packet.SetInternalPortsForTesting()
+			for i := range size {
+				at := start.Add(time.Second)
+				if i == 0 {
+					at = start
+				}
+				a.AssembleWithContext(snapshotKey(i)[0], &packet, &assemblerSimpleContext{Timestamp: at})
+			}
+			if len(pool.idleDue) != size || len(pool.conns) != size {
+				t.Fatalf("fixture did not index %d SYN flows", size)
+			}
+			examined := 0
+			opt := FlushOptions{TI: start}
+			if refs := pool.claimDueMeasured(nil, opt, &examined); len(refs) != 0 || examined != 1 {
+				t.Fatalf("at boundary: claims=%d examined=%d", len(refs), examined)
+			}
+			opt.TI = start.Add(time.Nanosecond)
+			examined = 0
+			refs := pool.claimDueMeasured(nil, opt, &examined)
+			if len(refs) != 1 || refs[0].conn != pool.conns[snapshotKey(0)] || examined != 3 {
+				t.Fatalf("sparse expiry: claims=%d examined=%d", len(refs), examined)
+			}
+			if flushed, closed := a.flushDue(refs[0], opt); flushed != 0 || closed != 2 {
+				t.Fatalf("expired SYN: flushed=%d closed=%d", flushed, closed)
+			}
+			t.Logf("%d SYN flows: 1 deadline check at the boundary, %d to claim one expired flow", size, examined)
+		})
+	}
+}
+
 // Scan mechanics from c695d55a, independent of candidate selection. Refresh is
 // bookkeeping only: the oracle never uses the heaps to decide what to flush.
 func dueScanOracle(a *Assembler, opt FlushOptions) (flushed, closed int) {

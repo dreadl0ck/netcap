@@ -113,8 +113,14 @@ func (p *StreamPool) refreshDueLocked(conn *connection, releaseClaim bool) {
 }
 
 // Heap order lets us prune non-due subtrees without visiting unrelated entries.
-func (h deadlineHeap) collectDue(i int, cutoff time.Time, dst []connectionRef) []connectionRef {
-	if i >= len(h) || !h[i].deadline.Before(cutoff) {
+func (h deadlineHeap) collectDue(i int, cutoff time.Time, dst []connectionRef, examined *int) []connectionRef {
+	if i >= len(h) {
+		return dst
+	}
+	if examined != nil {
+		(*examined)++
+	}
+	if !h[i].deadline.Before(cutoff) {
 		return dst
 	}
 	ref := h[i].ref
@@ -122,13 +128,17 @@ func (h deadlineHeap) collectDue(i int, cutoff time.Time, dst []connectionRef) [
 		ref.conn.dueClaimed = true
 		dst = append(dst, ref)
 	}
-	dst = h.collectDue(i*2+1, cutoff, dst)
-	return h.collectDue(i*2+2, cutoff, dst)
+	dst = h.collectDue(i*2+1, cutoff, dst, examined)
+	return h.collectDue(i*2+2, cutoff, dst, examined)
 }
 
 // claimDue selects a finite batch under the pool lock. No connection lock or
 // callback is entered here; in-flight mutations are rechecked by the borrower.
 func (p *StreamPool) claimDue(dst []connectionRef, opt FlushOptions) []connectionRef {
+	return p.claimDueMeasured(dst, opt, nil)
+}
+
+func (p *StreamPool) claimDueMeasured(dst []connectionRef, opt FlushOptions, examined *int) []connectionRef {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	dst = dst[:0]
@@ -140,7 +150,7 @@ func (p *StreamPool) claimDue(dst []connectionRef, opt FlushOptions) []connectio
 			continue
 		}
 		start := len(dst)
-		dst = queue.heap.collectDue(0, queue.cutoff, dst)
+		dst = queue.heap.collectDue(0, queue.cutoff, dst, examined)
 		count := len(dst) - start
 		if count == 0 {
 			continue
