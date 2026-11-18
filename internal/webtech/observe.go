@@ -91,13 +91,15 @@ func capture(body io.Reader, encoding string) ([]byte, string) {
 	if overflow {
 		wire = wire[:MaxPrefix]
 	}
-	// Drain to retain HTTP message framing; no body-sized allocation.
-	_, drainErr := io.Copy(io.Discard, body)
+	// Drain to retain HTTP message framing only if the prefix read succeeded.
+	if err == nil {
+		_, err = io.Copy(io.Discard, body)
+	}
 	state := "complete"
 	if overflow {
 		state = "truncated"
 	}
-	if err != nil || drainErr != nil {
+	if err != nil {
 		state = "incomplete"
 	}
 	const maxLayers = 2

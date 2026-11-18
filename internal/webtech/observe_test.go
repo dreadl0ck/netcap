@@ -144,6 +144,24 @@ func TestCaptureBoundedContentEncodingStack(t *testing.T) {
 
 func (failedWireBody) Read([]byte) (int, error) { return 0, io.ErrUnexpectedEOF }
 
+type interruptedWireBody struct{ reads int }
+
+func (r *interruptedWireBody) Read(p []byte) (int, error) {
+	r.reads++
+	if r.reads == 1 {
+		return copy(p, "partial"), io.ErrUnexpectedEOF
+	}
+	return copy(p, "unread"), io.EOF
+}
+
+func TestPassiveObservationStopsAtWireFailure(t *testing.T) {
+	body := &interruptedWireBody{}
+	report := Builtin().ObserveReader(Observation{Method: "GET", Status: 200, ContentType: "text/html"}, body, "")
+	if body.reads != 1 || report.WireBytes != 7 || !errors.Is(report.WireError, io.ErrUnexpectedEOF) || report.BodyState != "incomplete" {
+		t.Fatalf("reads=%d bytes=%d err=%v state=%q", body.reads, report.WireBytes, report.WireError, report.BodyState)
+	}
+}
+
 func TestPassiveObservationRetainsWireErrorOutsideDetectionScope(t *testing.T) {
 	for _, observation := range []Observation{{Method: "GET", Status: 200, ContentType: "application/octet-stream"}, {Method: "HEAD", Status: 201}} {
 		report := Builtin().ObserveReader(observation, io.MultiReader(strings.NewReader("short"), failedWireBody{}), "")
