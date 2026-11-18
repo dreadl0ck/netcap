@@ -107,12 +107,17 @@ func SpoolBody(reader io.Reader) (result *BodySpool, resultErr error) {
 		n, readErr := reader.Read(chunk)
 		if n > 0 {
 			empty = 0
+			sourceErr := readErr
+			if sourceErr == io.EOF {
+				sourceErr = nil
+			}
 			if int64(n) > limit-result.content.size {
 				n = int(limit - result.content.size)
-				readErr = fmt.Errorf("%w: per-file %d", ErrArtifactLimit, limit)
+				sourceErr = errors.Join(fmt.Errorf("%w: per-file %d", ErrArtifactLimit, limit), sourceErr)
+				readErr = sourceErr
 			}
 			if err := reserveArtifactScratch(int64(n)); err != nil {
-				resultErr = err
+				resultErr = errors.Join(err, sourceErr)
 				break
 			}
 			written, writeErr := file.Write(chunk[:n])
@@ -130,7 +135,7 @@ func SpoolBody(reader io.Reader) (result *BodySpool, resultErr error) {
 			}
 			if writeErr != nil {
 				RecordArtifactWriteError(writeErr)
-				resultErr = writeErr
+				resultErr = errors.Join(writeErr, sourceErr)
 				break
 			}
 		} else if readErr == nil {

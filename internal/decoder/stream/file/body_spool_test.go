@@ -196,6 +196,42 @@ func TestSpoolDecodedOutputMatchesByteOutput(t *testing.T) {
 
 type spoolErrorReader struct{ err error }
 
+type spoolDataErrorReader struct{ err error }
+
+func (r spoolDataErrorReader) Read(p []byte) (int, error) {
+	return copy(p, "extra"), r.err
+}
+
+func TestSpoolLimitsPreserveSourceError(t *testing.T) {
+	for _, tc := range []struct {
+		name             string
+		scratch, perFile int64
+		limit            error
+	}{
+		{"scratch", 4, 100, errSharedArtifactBudget},
+		{"per file", 100, 4, ErrArtifactLimit},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := spoolTestConfig(t)
+			cfg.FileExtraction.SizeLimits.MaxScratchBytes = tc.scratch
+			cfg.FileExtraction.SizeLimits.MaxFileSize = tc.perFile
+			SetGlobalConfig(cfg)
+			sourceErr := errors.New("fixture source failure")
+			spool, err := SpoolBody(io.MultiReader(strings.NewReader("keep"), spoolDataErrorReader{sourceErr}))
+			if spool == nil {
+				t.Fatalf("missing retained spool: %v", err)
+			}
+			defer spool.Close()
+			if !errors.Is(err, tc.limit) || !errors.Is(err, sourceErr) {
+				t.Fatalf("expected both limit and source errors: %v", err)
+			}
+			if data, err := io.ReadAll(spool.Reader()); err != nil || string(data) != "keep" {
+				t.Fatalf("retained prefix: %q, %v", data, err)
+			}
+		})
+	}
+}
+
 func (r spoolErrorReader) Read([]byte) (int, error) { return 0, r.err }
 
 type spoolPanicReader struct{}
