@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http/httptest"
@@ -12,6 +13,45 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
+
+func TestExtractedFileInventoryPressure(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, "files"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	s := &Server{outDir: dir}
+	request := func(ctx context.Context, status int) {
+		t.Helper()
+		w := httptest.NewRecorder()
+		s.handleExtractedFiles(w, httptest.NewRequest("GET", "/api/extracted-files", nil).WithContext(ctx))
+		if w.Code != status {
+			t.Fatalf("status=%d want=%d: %.256s", w.Code, status, w.Body.String())
+		}
+	}
+	ctx := context.Background()
+	func() {
+		for range cap(extractedFileInventorySlots) {
+			extractedFileInventorySlots <- struct{}{}
+			defer func() { <-extractedFileInventorySlots }()
+		}
+		request(ctx, 429)
+	}()
+	canceled, cancel := context.WithCancel(ctx)
+	cancel()
+	request(canceled, 408)
+	row := &types.File{Location: "files/artifact", Name: strings.Repeat("x", 1<<20)}
+	rows := make([]proto.Message, 33)
+	for i := range rows {
+		rows[i] = row
+	}
+	writeTimelineAuditFile(t, dir, "File", types.Type_NC_File, rows)
+	request(ctx, 413)
+	writeTimelineAuditFile(t, dir, "File", types.Type_NC_File, nil)
+	request(ctx, 200)
+	if len(extractedFileInventorySlots) != 0 {
+		t.Fatal("inventory leaked a scan slot")
+	}
+}
 
 func TestFileOccurrenceCompletenessAndActualCap(t *testing.T) {
 	for _, count := range []int{2, 1024, 1025} {

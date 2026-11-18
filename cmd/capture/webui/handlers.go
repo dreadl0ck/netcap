@@ -2398,6 +2398,10 @@ func (s *Server) handleLocalModeIssueReport(w http.ResponseWriter, req ReportIss
 	})
 }
 
+const extractedFileMetadataBudget = 32 << 20
+
+var extractedFileInventorySlots = make(chan struct{}, 2)
+
 // handleExtractedFiles returns list of extracted files for the current capture
 func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -2410,6 +2414,17 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	outDir := filepath.Dir(filesDir)
+	if r.Context().Err() != nil {
+		http.Error(w, "Artifact listing canceled", http.StatusRequestTimeout)
+		return
+	}
+	select {
+	case extractedFileInventorySlots <- struct{}{}:
+		defer func() { <-extractedFileInventorySlots }()
+	default:
+		http.Error(w, "Artifact listings are busy", http.StatusTooManyRequests)
+		return
+	}
 
 	// Check if files directory exists
 	if info, err := os.Lstat(filesDir); err == nil && (!info.IsDir() || info.Mode()&os.ModeSymlink != 0) {
@@ -2467,23 +2482,33 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		// File audit exists, read it to get hashes and protocols
 		reader, err := netio.Open(fileAuditPath, defaults.BufferSize)
 		if err == nil {
+			defer reader.Close()
 			header, headerErr := reader.ReadHeader()
 			if headerErr != nil || header.Type != types.Type_NC_File {
-				reader.Close()
 				RespondJSON(w, 500, map[string]any{"error": "Invalid File audit header"})
 				return
 			}
-			var file types.File
+			remaining := extractedFileMetadataBudget
 			for {
+				if r.Context().Err() != nil {
+					http.Error(w, "Artifact listing canceled", http.StatusRequestTimeout)
+					return
+				}
+				var file types.File
 				err := reader.Next(&file)
 				if err != nil {
 					if err != io.EOF {
 						log.Printf("[WebUI] Error reading File audit record: %v", err)
-						reader.Close()
 						RespondJSON(w, 500, map[string]any{"error": "Cannot read File audit evidence"})
 						return
 					}
 					break
+				}
+				// Charge the record and a fixed allowance for inventory map entries.
+				remaining -= file.Size() + 16*len(file.YaraMatches) + 1024
+				if remaining < 0 {
+					http.Error(w, "Artifact metadata budget exceeded", http.StatusRequestEntityTooLarge)
+					return
 				}
 				// Map by filename (base name of Location) for reliable matching
 				// Location paths may differ from current filesystem paths due to directory changes
@@ -2528,7 +2553,6 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
-			reader.Close()
 		} else {
 			RespondJSON(w, 500, map[string]any{"error": "Cannot open File audit evidence"})
 			return
@@ -2539,6 +2563,9 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	// Walk the files directory and collect file information
 	var extractedFiles []map[string]any
 	err := filepath.Walk(filesDir, func(path string, info os.FileInfo, err error) error {
+		if canceled := r.Context().Err(); canceled != nil {
+			return canceled
+		}
 		if err != nil {
 			return err
 		}
@@ -2635,6 +2662,10 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		return nil
 	})
 
+	if r.Context().Err() != nil {
+		http.Error(w, "Artifact listing canceled", http.StatusRequestTimeout)
+		return
+	}
 	if err != nil {
 		log.Printf("[WebUI] Failed to read extracted files: %v", err)
 		RespondJSON(w, http.StatusInternalServerError, map[string]any{
