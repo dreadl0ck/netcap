@@ -28,24 +28,69 @@ func TestSYNIdleClaimWorkDoesNotGrowWithFreshFlows(t *testing.T) {
 			if len(pool.idleDue) != size || len(pool.conns) != size {
 				t.Fatalf("fixture did not index %d SYN flows", size)
 			}
-			examined, comparisons := 0, 0
+			var work deadlineClaimWork
 			opt := FlushOptions{TI: start}
-			if refs := pool.claimDueMeasured(nil, opt, &examined, &comparisons); len(refs) != 0 || examined != 1 || comparisons != 0 {
-				t.Fatalf("at boundary: claims=%d examined=%d", len(refs), examined)
+			if refs := pool.claimDueMeasured(nil, opt, &work); len(refs) != 0 || work != (deadlineClaimWork{examined: 1}) {
+				t.Fatalf("at boundary: claims=%d work=%+v", len(refs), work)
 			}
 			opt.TI = start.Add(time.Nanosecond)
-			examined = 0
-			refs := pool.claimDueMeasured(nil, opt, &examined, &comparisons)
-			if len(refs) != 1 || refs[0].conn != pool.conns[snapshotKey(0)] || examined != 3 {
-				t.Fatalf("sparse expiry: claims=%d examined=%d", len(refs), examined)
+			work = deadlineClaimWork{}
+			refs := pool.claimDueMeasured(nil, opt, &work)
+			if len(refs) != 1 || refs[0].conn != pool.conns[snapshotKey(0)] || work.examined != 3 || work.compacted != 0 {
+				t.Fatalf("sparse expiry: claims=%d work=%+v", len(refs), work)
 			}
 			if flushed, closed := a.flushDue(refs[0], opt); flushed != 0 || closed != 2 {
 				t.Fatalf("expired SYN: flushed=%d closed=%d", flushed, closed)
 			}
-			if bound := 2 * bits.Len(uint(size)); comparisons <= 0 || comparisons > bound {
-				t.Fatalf("sparse removal compared %d entries; want 1..%d", comparisons, bound)
+			if bound := 2 * bits.Len(uint(size)); work.sparseComparisons <= 0 || work.sparseComparisons > bound {
+				t.Fatalf("sparse removal compared %d entries; want 1..%d", work.sparseComparisons, bound)
 			}
-			t.Logf("%d SYN flows: 1 deadline check at the boundary, %d to claim one expired flow, %d heap comparisons to remove it", size, examined, comparisons)
+			t.Logf("%d SYN flows: 1 deadline check at the boundary, %d to claim one expired flow, %d heap comparisons to remove it", size, work.examined, work.sparseComparisons)
+		})
+	}
+}
+
+func TestDenseSYNIdleClaimWorkScalesLinearly(t *testing.T) {
+	for _, size := range []int{100, 10_000} {
+		t.Run(fmt.Sprint(size), func(t *testing.T) {
+			pool := NewStreamPoolWithAllocationBudget(&testFactoryBench{}, nil, true)
+			a := NewAssembler(pool)
+			defer a.Release()
+			start := time.Unix(1700000000, 0)
+			packet := layers.TCP{SrcPort: 12345, DstPort: 80, SYN: true, Seq: 1000}
+			packet.SetInternalPortsForTesting()
+			for i := range size {
+				at := start.Add(time.Duration(i) * time.Second)
+				a.AssembleWithContext(snapshotKey(i)[0], &packet, &assemblerSimpleContext{Timestamp: at})
+			}
+			if len(pool.idleDue) != size {
+				t.Fatalf("indexed %d SYN flows, want %d", len(pool.idleDue), size)
+			}
+			due := size / 2
+			opt := FlushOptions{TI: start.Add(time.Duration(due) * time.Second)}
+			var work deadlineClaimWork
+			refs := pool.claimDueMeasured(nil, opt, &work)
+			if len(refs) != due || len(pool.idleDue) != size-due || work.examined > size || work.compacted != size ||
+				work.sparseComparisons != 0 || work.rebuildComparisons <= 0 || work.rebuildComparisons > 2*(size-due) {
+				t.Fatalf("size=%d claims=%d retained=%d work=%+v", size, len(refs), len(pool.idleDue), work)
+			}
+			seen := make(map[*connection]bool, due)
+			for _, ref := range refs {
+				if seen[ref.conn] || !ref.conn.lastSeen().Before(opt.TI) {
+					t.Fatal("claimed a fresh or duplicate flow")
+				}
+				seen[ref.conn] = true
+				if flushed, closed := a.flushDue(ref, opt); flushed != 0 || closed != 2 {
+					t.Fatalf("expired SYN: flushed=%d closed=%d", flushed, closed)
+				}
+			}
+			for i, entry := range pool.idleDue {
+				if entry.position != i+1 || entry.deadline.Before(opt.TI) ||
+					i > 0 && entry.deadline.Before(pool.idleDue[(i-1)/2].deadline) {
+					t.Fatalf("invalid retained idle entry at slot %d", i)
+				}
+			}
+			t.Logf("%d SYN flows: examined %d, compacted %d, rebuilt with %d comparisons", size, work.examined, work.compacted, work.rebuildComparisons)
 		})
 	}
 }

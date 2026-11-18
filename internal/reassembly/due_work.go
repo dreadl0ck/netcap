@@ -153,13 +153,22 @@ func (h deadlineHeap) collectDue(i int, cutoff time.Time, dst []connectionRef, e
 // claimDue selects a finite batch under the pool lock. No connection lock or
 // callback is entered here; in-flight mutations are rechecked by the borrower.
 func (p *StreamPool) claimDue(dst []connectionRef, opt FlushOptions) []connectionRef {
-	return p.claimDueMeasured(dst, opt, nil, nil)
+	return p.claimDueMeasured(dst, opt, nil)
 }
 
-func (p *StreamPool) claimDueMeasured(dst []connectionRef, opt FlushOptions, examined, sparseComparisons *int) []connectionRef {
+type deadlineClaimWork struct {
+	examined, sparseComparisons   int
+	compacted, rebuildComparisons int
+}
+
+func (p *StreamPool) claimDueMeasured(dst []connectionRef, opt FlushOptions, work *deadlineClaimWork) []connectionRef {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	dst = dst[:0]
+	var examined, sparseComparisons *int
+	if work != nil {
+		examined, sparseComparisons = &work.examined, &work.sparseComparisons
+	}
 	for _, queue := range []struct {
 		heap   *deadlineHeap
 		cutoff time.Time
@@ -186,6 +195,9 @@ func (p *StreamPool) claimDueMeasured(dst []connectionRef, opt FlushOptions, exa
 		h := *queue.heap
 		n := 0
 		for _, entry := range h {
+			if work != nil {
+				work.compacted++
+			}
 			if entry.ref.conn.dueClaimed {
 				*entry = deadlineEntry{}
 			} else {
@@ -196,7 +208,11 @@ func (p *StreamPool) claimDueMeasured(dst []connectionRef, opt FlushOptions, exa
 		}
 		clear(h[n:])
 		*queue.heap = h[:n]
-		heap.Init(queue.heap)
+		if work == nil {
+			heap.Init(queue.heap)
+		} else {
+			heap.Init(measuredDeadlineHeap{queue.heap, &work.rebuildComparisons})
+		}
 	}
 	return dst
 }
