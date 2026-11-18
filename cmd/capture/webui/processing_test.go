@@ -158,8 +158,12 @@ func TestProcessingCancelDoesNotHideUnwindingWork(t *testing.T) {
 	if len(server.jobQueue) != 0 || !processingStatus(t, server) {
 		t.Fatal("shutdown hid actual in-flight work or retained queued work")
 	}
-	if err := server.enqueueAnalysis(&AnalysisJob{InputFile: "late"}, false); !errors.Is(err, errAnalysisStopping) {
+	late := &AnalysisJob{InputFile: "late"}
+	if err := server.enqueueAnalysis(late, false); !errors.Is(err, errAnalysisStopping) {
 		t.Fatal("admitted work after shutdown")
+	}
+	if late.settings != nil || len(late.ArtifactConfig) != 0 {
+		t.Fatal("late submission prepared snapshots during shutdown")
 	}
 	releaseWork()
 	processingAwait(t, func() bool { return !server.IsProcessing() })

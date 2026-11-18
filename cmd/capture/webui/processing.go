@@ -41,8 +41,13 @@ func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
 		return errAnalysisUnavailable
 	}
 	s.mu.RLock()
+	stopping := s.processingStopping
 	liveBusy := s.ownedLive != nil && !s.ownedLive.Completed
 	s.mu.RUnlock()
+	if stopping {
+		job.settings.cleanup()
+		return errAnalysisStopping
+	}
 	if liveBusy {
 		return errAnalysisUnavailable
 	}
