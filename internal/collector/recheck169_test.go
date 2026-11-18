@@ -6,19 +6,25 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/aggregate"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
+	"github.com/gopacket/gopacket/pcapgo"
 )
 
 func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
@@ -75,7 +81,7 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 				if len(connections) != 15000 {
 					t.Fatal("default capture lost connections", len(connections))
 				}
-				checkStrictFinite := func(t *testing.T, workers int) {
+				checkStrictFinite := func(t *testing.T, workers int, export bool) {
 					finiteOut := t.TempDir()
 					cfg := ultimateCaptureConfig(finiteOut, workers, 0)
 					cfg.CaptureEvidence = true
@@ -83,11 +89,26 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 					cfg.DecoderConfig.MaxRetainedTCPStateBytes = 256 << 20
 					cfg.DecoderConfig.MaxRetainedTCPBytes = 256 << 10
 					cfg.DecoderConfig.MaxAggregateStateBytes = 1 << 20
+					cfg.DecoderConfig.SaveConns = export
+					start := time.Now()
 					if err := New(cfg).CollectPcap(input); err != nil {
 						t.Fatal(err)
 					}
+					if workers == 4 {
+						t.Logf("capture with export=%t completed in %s", export, time.Since(start))
+					}
 					if _, err := os.Stat(filepath.Join(finiteOut, evidence.AuditReadyFile)); err != nil {
 						t.Fatal(err)
+					}
+					manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(finiteOut, "capture-manifest.json"))
+					if manifest.Status != "done" || manifest.AdmittedPackets != 15000 {
+						t.Fatalf("unexpected capture status %q or packet count %d", manifest.Status, manifest.AdmittedPackets)
+					}
+					for _, typ := range []string{"TCP", "Connection"} {
+						stage, _, err := evidence.ReadAuditStage(finiteOut, manifest.RunID, typ, manifest.AuditStagesGeneration)
+						if err != nil || stage.Coverage != "complete" || stage.Records != 15000 {
+							t.Fatal(typ, stage, err)
+						}
 					}
 					checkRecheckAuditMultiset(t, "Connection", connections, bookRecords(t, finiteOut, "Connection", func() *types.Connection { return new(types.Connection) }))
 					checkRecheckAuditMultiset(t, "TCP", bookRecords(t, out, "TCP", func() *types.TCP { return new(types.TCP) }), bookRecords(t, finiteOut, "TCP", func() *types.TCP { return new(types.TCP) }))
@@ -105,9 +126,18 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 					}
 					t.Logf("strict finite replay peaks: page bytes %d, TCP state bytes %d", pages.PeakBytes, state.PeakBytes)
 					t.Logf("aggregate peak cache bytes %d; database bytes %d; evictions %d", cache.PeakBytes, cache.DatabaseBytes, cache.Evictions)
+					if export {
+						checkRecheckFanoutExports(t, input, finiteOut)
+					}
 				}
-				t.Run("strict-finite-budgets", func(t *testing.T) { checkStrictFinite(t, 1) })
-				t.Run("strict-finite-budgets-4-workers", func(t *testing.T) { checkStrictFinite(t, 4) })
+				t.Run("strict-finite-budgets", func(t *testing.T) { checkStrictFinite(t, 1, false) })
+				t.Run("strict-finite-budgets-4-workers", func(t *testing.T) { checkStrictFinite(t, 4, false) })
+				t.Run("strict-finite-budgets-export-4-workers", func(t *testing.T) {
+					if os.Getenv("NETCAP_RECHECK_FANOUT_EXPORT") != "1" {
+						t.Skip("set NETCAP_RECHECK_FANOUT_EXPORT=1 for conversation export")
+					}
+					checkStrictFinite(t, 4, true)
+				})
 				checkPagePressure := func(t *testing.T, workers int, saveConns bool) {
 					out := t.TempDir()
 					cfg := ultimateCaptureConfig(out, workers, 0)
@@ -164,6 +194,97 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 			}
 		})
 	}
+}
+
+func checkRecheckFanoutExports(t *testing.T, input, out string) {
+	t.Helper()
+	type packetKey struct {
+		timestamp string
+		digest    [sha256.Size]byte
+	}
+	f, err := os.Open(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	reader, err := pcapgo.NewReader(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := make(map[packetKey]int)
+	for {
+		data, ci, err := reader.ReadPacketData()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		packet := gopacket.NewPacket(data, reader.LinkType(), gopacket.NoCopy)
+		tcp, ok := packet.Layer(layers.LayerTypeTCP).(*layers.TCP)
+		if !ok || len(tcp.Payload) == 0 {
+			t.Fatal("expected one payload-bearing TCP packet per fixture flow")
+		}
+		want[packetKey{fmt.Sprint(ci.Timestamp.UnixNano()), sha256.Sum256(tcp.Payload)}]++
+	}
+	root := filepath.Join(out, "stream-evidence")
+	entries, err := os.ReadDir(root)
+	if err != nil || len(entries) != 15000 {
+		t.Fatalf("stream exports: got %d, want 15000: %v", len(entries), err)
+	}
+	got := make(map[packetKey]int)
+	var payloadBytes int64
+	for _, entry := range entries {
+		if !entry.IsDir() || !strings.HasPrefix(entry.Name(), "stream-") {
+			t.Fatalf("unexpected export entry %s", entry.Name())
+		}
+		dir := filepath.Join(root, entry.Name())
+		m := bookJSON[utils.StreamEvidenceManifest](t, filepath.Join(dir, "manifest.json"))
+		if m.Protocol != "TCP" {
+			t.Fatalf("unexpected protocol in %s: %s", dir, m.Protocol)
+		}
+		payloadSpans := 0
+		for _, direction := range []struct {
+			name string
+			file utils.StreamEvidenceFile
+		}{{"client", m.Client}, {"server", m.Server}} {
+			name := direction.name + ".bin"
+			data, err := os.ReadFile(filepath.Join(dir, name))
+			digest := sha256.Sum256(data)
+			if err != nil || direction.file.Name != name || direction.file.Length != int64(len(data)) || direction.file.SHA256 != hex.EncodeToString(digest[:]) {
+				t.Fatalf("invalid %s in %s: %v", name, dir, err)
+			}
+			offset := int64(0)
+			for _, span := range m.Spans {
+				if span.Direction != "client" && span.Direction != "server" {
+					t.Fatalf("invalid span direction in %s: %+v", dir, span)
+				}
+				if span.Direction != direction.name {
+					continue
+				}
+				if span.Offset != offset || span.Length < 0 || int64(span.Length) > int64(len(data))-offset || span.Datagram || span.DiscardedBytes != 0 {
+					t.Fatalf("invalid %s span in %s: %+v (%d bytes)", direction.name, dir, span, len(data))
+				}
+				if span.Length > 0 {
+					end := offset + int64(span.Length)
+					got[packetKey{span.TimestampNs, sha256.Sum256(data[offset:end])}]++
+					payloadSpans++
+					offset = end
+				}
+			}
+			if offset != int64(len(data)) {
+				t.Fatalf("%s spans cover %d of %d bytes in %s", name, offset, len(data), dir)
+			}
+			payloadBytes += offset
+		}
+		if payloadSpans != 1 {
+			t.Fatalf("expected one payload span in %s, got %d", dir, payloadSpans)
+		}
+	}
+	if !reflect.DeepEqual(want, got) {
+		t.Fatalf("stream payload/timestamp multiset differs: %d distinct input keys, %d distinct output keys", len(want), len(got))
+	}
+	t.Logf("verified %d stream exports against input payloads and timestamps (%d payload bytes)", len(entries), payloadBytes)
 }
 
 func checkRecheckAuditMultiset[T any](t *testing.T, typ string, baseline, finite []T) {
