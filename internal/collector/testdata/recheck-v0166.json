@@ -331,6 +331,7 @@
     "verification": "The official stdio harness passed 162 schema-validated calls across 82 of 119 advertised tools on a fresh portable CLI, with zero failures. The UDP presentation conversation for the fixture tuple returned adjacent 16-byte pages matching one 32-byte page, with stable total size and correct offsets."
   },
   "mcpAssetContextContract": {
+    "prefixWork": "Asset context parses each valid prefix and computes its sort key once per request, rather than reparsing per returned record or hashing inside comparisons. TestAssetContextScopeDirectionLabelsAndBounds and TestBehaviorAssetContextAPISelectorsAndAddressValidation passed under the race detector.",
     "verification": "The official stdio harness passed 165 schema-validated calls across 83 of 119 tools on a fresh portable build with zero failures. get_asset_context returns the UDP fixture's observed source endpoint, a nonempty record list and a total that covers the returned list."
   },
   "timelineTrackTypeIntegrity": {

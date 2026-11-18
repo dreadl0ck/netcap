@@ -35,7 +35,13 @@ func BuildAssetContext(state Snapshot, asset string) (AssetContext, error) {
 	}
 	result := AssetContext{Asset: asset, Records: []AssetRecord{}}
 	related := make(map[string]map[string]bool)
-	prefixes := make(map[string][]Fact)
+	type assetPrefix struct {
+		id         string
+		cidr       netip.Prefix
+		value      string
+		provenance string
+	}
+	prefixes := make(map[string][]assetPrefix)
 	for _, observation := range state.Observed {
 		fact := observation.Fact
 		if fact.Kind == "binding" && (fact.SrcIP == asset || fact.MAC == asset) {
@@ -54,12 +60,15 @@ func BuildAssetContext(state Snapshot, asset string) (AssetContext, error) {
 		}
 		if fact.Kind == "prefix" {
 			if _, corrected := state.Corrections[id]; !corrected {
-				prefixes[key] = append(prefixes[key], fact)
+				if cidr, err := netip.ParsePrefix(fact.Value); err == nil {
+					prefixes[key] = append(prefixes[key], assetPrefix{factID(fact), cidr, fact.Value, fact.Provenance})
+				}
 			}
 		}
 	}
 	for key := range prefixes {
-		sort.Slice(prefixes[key], func(i, j int) bool { return factID(prefixes[key][i]) < factID(prefixes[key][j]) })
+		rows := prefixes[key]
+		sort.Slice(rows, func(i, j int) bool { return rows[i].id < rows[j].id })
 	}
 	ids := make([]string, 0)
 	for id, observation := range state.Observed {
@@ -88,15 +97,12 @@ func BuildAssetContext(state Snapshot, asset string) (AssetContext, error) {
 		src, _ := netip.ParseAddr(fact.SrcIP)
 		dst, _ := netip.ParseAddr(fact.DstIP)
 		for _, prefix := range prefixes[scopeKey(fact.Scope)] {
-			cidr, err := netip.ParsePrefix(prefix.Value)
-			if err != nil {
-				continue
-			}
+			cidr := prefix.cidr
 			known = known || cidr.Addr().BitLen() == src.BitLen() || cidr.Addr().BitLen() == dst.BitLen()
 			localSource = localSource || cidr.Contains(src)
 			localTarget = localTarget || cidr.Contains(dst)
 			if len(row.Prefixes) < 8 {
-				row.Prefixes = append(row.Prefixes, prefix.Value+" ("+prefix.Provenance+")")
+				row.Prefixes = append(row.Prefixes, prefix.value+" ("+prefix.provenance+")")
 			} else {
 				row.PrefixesTruncated = true
 			}
