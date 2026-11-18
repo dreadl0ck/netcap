@@ -307,6 +307,7 @@
     "shutdown": "TestCaptureWorkerShutdownCancelsBacklog passes 10 race repetitions. Shutdown cancels the blocked capture handoff and the untouched capture-queue entry before either active completion worker is released, then cancels the buffered completion without running it. All five jobs release ownership exactly once."
   },
   "finiteBudgetFanoutReplay": {
+    "failedSourceCleanup": "TestSourceEvidenceRollsBackOnReadFailure injects a read error after three fragments and verifies the original error, no returned export path, and no pending or published evidence directories. Focused stream evidence race tests passed.",
     "bufferedSpanWrites": "Multi-span exports batch scratch writes in a 32 KiB buffer. The 50000-span single-pass fixture still preserves every span and byte within its sampled heap bound; focused stream-evidence and collector race tests passed.",
     "singlePassStreamExport": "TestSourceEvidenceDoesNotRetainEverySpan verifies a single traversal, all 50000 spans and 51200000 bytes, and less than 4 MiB of sampled retained heap while writing. Stream export enforces the existing byte and span limits before writing each fragment. Focused stream evidence and collector race suites passed.",
     "streamSpanScratch": "Stream evidence holds the first encoded span in memory and opens its scratch file only for additional spans. Focused race tests passed for stream evidence, loss-only exports, datagram boundaries and large span inventories. The fanout export sync bottleneck has not been requalified.",

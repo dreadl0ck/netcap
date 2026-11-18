@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -194,6 +195,7 @@ func testSourcePreservesLegacyBytesAndEvidence(t *testing.T, protocol string) {
 type generatedEvidence struct {
 	count  int
 	sample func()
+	err    error
 }
 
 func (s generatedEvidence) Count() int64 { return int64(s.count) }
@@ -207,7 +209,21 @@ func (s generatedEvidence) Walk(yield func(core.DataFragment) bool) error {
 			break
 		}
 	}
-	return nil
+	return s.err
+}
+
+func TestSourceEvidenceRollsBackOnReadFailure(t *testing.T) {
+	out := t.TempDir()
+	want := errors.New("source read failed")
+	source := generatedEvidence{count: 3, err: want}
+	path, err := SaveSourceEvidence(out, "TCP", source, "fixture", time.Unix(1, 0), "id")
+	if path != "" || !errors.Is(err, want) {
+		t.Fatalf("failed export returned path %q and error %v", path, err)
+	}
+	entries, err := os.ReadDir(filepath.Join(out, "stream-evidence"))
+	if err != nil || len(entries) != 0 {
+		t.Fatalf("failed export left evidence or scratch: %v, %v", entries, err)
+	}
 }
 
 func TestSourceEvidenceDoesNotRetainEverySpan(t *testing.T) {
