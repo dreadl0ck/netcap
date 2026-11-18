@@ -303,10 +303,18 @@ func (s *Server) readAlertAudit(ctx context.Context, filePath string) ([]AlertRe
 
 	// Load resolved alerts
 	outDir := filepath.Dir(filePath)
-	resolvedStore, err := s.loadResolvedAlerts(outDir)
-	if err != nil {
-		log.Printf("[WebUI] Failed to load resolved alerts: %v (continuing without resolved status)", err)
-		resolvedStore = &ResolvedAlertsStore{Alerts: make(map[string]ResolvedAlert)}
+	var resolvedStore *ResolvedAlertsStore
+	if ctx != nil {
+		resolvedStore, err = s.loadPageResolvedAlerts(ctx, outDir)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		resolvedStore, err = s.loadResolvedAlerts(outDir)
+		if err != nil {
+			log.Printf("[WebUI] Failed to load resolved alerts: %v (continuing without resolved status)", err)
+			resolvedStore = &ResolvedAlertsStore{Alerts: make(map[string]ResolvedAlert)}
+		}
 	}
 
 	alerts := make([]AlertResponse, 0)
@@ -829,7 +837,40 @@ func (s *Server) loadResolvedAlerts(outDir string) (*ResolvedAlertsStore, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read resolved alerts: %w", err)
 	}
+	return decodeResolvedAlerts(data)
+}
 
+const maxPageResolvedAlertBytes = 4 << 20
+
+func (s *Server) loadPageResolvedAlerts(ctx context.Context, outDir string) (*ResolvedAlertsStore, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	file, info, err := artifactio.Open(outDir, filepath.Base(s.getResolvedAlertsPath(outDir)))
+	if errors.Is(err, os.ErrNotExist) {
+		return &ResolvedAlertsStore{}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to open resolved alerts: %w", err)
+	}
+	defer file.Close()
+	limitErr := func() error {
+		return fmt.Errorf("%w: resolved alerts exceed %d bytes", errAlertPageSourceLimit, maxPageResolvedAlertBytes)
+	}
+	if info.Size() > maxPageResolvedAlertBytes {
+		return nil, limitErr()
+	}
+	data, err := io.ReadAll(io.LimitReader(auditContextReader{ctx: ctx, input: file}, maxPageResolvedAlertBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read resolved alerts: %w", err)
+	}
+	if len(data) > maxPageResolvedAlertBytes {
+		return nil, limitErr()
+	}
+	return decodeResolvedAlerts(data)
+}
+
+func decodeResolvedAlerts(data []byte) (*ResolvedAlertsStore, error) {
 	var store ResolvedAlertsStore
 	if err := json.Unmarshal(data, &store); err != nil {
 		return nil, fmt.Errorf("failed to parse resolved alerts: %w", err)

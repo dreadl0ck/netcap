@@ -83,6 +83,53 @@ func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
 	}
 }
 
+func TestAlertPagesRequireValidBoundedResolutionMetadata(t *testing.T) {
+	dir := t.TempDir()
+	alert := &types.Alert{RuleName: "fixture", Severity: "info", Timestamp: 1}
+	writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, []proto.Message{alert})
+	s := &Server{outDir: dir}
+	request := func(path string, handler http.HandlerFunc, generation string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		handler(w, httptest.NewRequest(http.MethodGet, path+"?mcpPage=true&pageGeneration="+generation, nil))
+		return w
+	}
+	before := request("/api/alerts", s.handleAlerts, "")
+	var page struct {
+		Generation string
+		Alerts     []AlertResponse
+	}
+	if err := json.Unmarshal(before.Body.Bytes(), &page); err != nil || before.Code != 200 || len(page.Alerts) != 1 || page.Generation == "" || page.Alerts[0].Resolved {
+		t.Fatalf("initial page: %d %s (%v)", before.Code, before.Body, err)
+	}
+	id := page.Alerts[0].AlertID
+	metadata := fmt.Sprintf(`{"alerts":{%q:{"alertId":%q,"resolvedAt":42}}}`, id, id)
+	path := s.getResolvedAlertsPath(dir)
+	if err := os.WriteFile(path, []byte(metadata+strings.Repeat(" ", maxPageResolvedAlertBytes-len(metadata))), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if w := request("/api/alerts", s.handleAlerts, page.Generation); w.Code != http.StatusConflict {
+		t.Fatalf("resolution change accepted old generation: %d %s", w.Code, w.Body)
+	}
+	after := request("/api/alerts", s.handleAlerts, "")
+	if err := json.Unmarshal(after.Body.Bytes(), &page); err != nil || after.Code != 200 || len(page.Alerts) != 1 || !page.Alerts[0].Resolved || page.Alerts[0].ResolvedAt != 42 {
+		t.Fatalf("exact-cap metadata page: %d %s (%v)", after.Code, after.Body, err)
+	}
+	for _, tc := range []struct {
+		data string
+		code int
+	}{{strings.Repeat(" ", maxPageResolvedAlertBytes+1), http.StatusRequestEntityTooLarge}, {"{", http.StatusInternalServerError}} {
+		if err := os.WriteFile(path, []byte(tc.data), 0600); err != nil {
+			t.Fatal(err)
+		}
+		for route, handler := range map[string]http.HandlerFunc{"/api/alerts": s.handleAlerts, "/api/alerts/grouped": s.handleGroupedAlerts} {
+			w := request(route, handler, "")
+			if w.Code != tc.code || strings.Contains(w.Body.String(), "generation") {
+				t.Fatalf("%s: %d %s", route, w.Code, w.Body)
+			}
+		}
+	}
+}
+
 func TestInventoryHandlersApplySearchAndPaging(t *testing.T) {
 	dir := t.TempDir()
 	s := &Server{outDir: dir}
