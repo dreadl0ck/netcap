@@ -91,19 +91,27 @@ func TestAuditInventoryRejectsOversizedDirectory(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	request := func() *httptest.ResponseRecorder {
+	request := func(filtered bool) *httptest.ResponseRecorder {
 		w := httptest.NewRecorder()
-		HandleAuditFiles(dir)(w, httptest.NewRequest(http.MethodGet, "/api/files/audit", nil))
+		if filtered {
+			HandleAuditFilesFiltered(dir)(w, httptest.NewRequest(http.MethodGet, "/api/files/audit/filtered?communityIds=fixture", nil))
+		} else {
+			HandleAuditFiles(dir)(w, httptest.NewRequest(http.MethodGet, "/api/files/audit", nil))
+		}
 		return w
 	}
-	if w := request(); w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "HTTP.ncap") {
-		t.Fatalf("oversized inventory returned %d: %s", w.Code, w.Body.String())
+	for _, filtered := range []bool{false, true} {
+		if w := request(filtered); w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "HTTP.ncap") {
+			t.Fatalf("oversized inventory (filtered=%t) returned %d: %s", filtered, w.Code, w.Body.String())
+		}
 	}
 	if err := os.Remove(filepath.Join(dir, "aux-0")); err != nil {
 		t.Fatal(err)
 	}
-	if w := request(); w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"recordCount":1`) {
-		t.Fatalf("exact-limit inventory returned %d: %s", w.Code, w.Body.String())
+	for _, filtered := range []bool{false, true} {
+		if w := request(filtered); w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"recordCount":1`) {
+			t.Fatalf("exact-limit inventory (filtered=%t) returned %d: %s", filtered, w.Code, w.Body.String())
+		}
 	}
 }
 

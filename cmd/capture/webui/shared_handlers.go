@@ -152,8 +152,12 @@ func HandleAuditFilesFiltered(outputDir string) http.HandlerFunc {
 		}
 
 		// List all audit files and count filtered records
-		files, err := ListAuditFilesWithCommunityIDFilter(outputDir, communityIDs)
+		files, err := listAuditFilesWithCommunityIDFilter(r.Context(), outputDir, communityIDs)
 		if err != nil {
+			if errors.Is(err, errAuditInventoryLimit) {
+				http.Error(w, err.Error(), http.StatusRequestEntityTooLarge)
+				return
+			}
 			log.Printf("[WebUI] Error listing filtered audit files: %v", err)
 			RespondJSON(w, http.StatusInternalServerError, map[string]string{
 				"error": fmt.Sprintf("Failed to list audit files: %v", err),
@@ -167,19 +171,20 @@ func HandleAuditFilesFiltered(outputDir string) http.HandlerFunc {
 
 // ListAuditFilesWithCommunityIDFilter returns audit files with filtered counts by community IDs
 func ListAuditFilesWithCommunityIDFilter(outputDir string, communityIDs map[string]bool) ([]FilteredAuditFileInfo, error) {
+	return listAuditFilesWithCommunityIDFilter(context.Background(), outputDir, communityIDs)
+}
+
+func listAuditFilesWithCommunityIDFilter(ctx context.Context, outputDir string, communityIDs map[string]bool) ([]FilteredAuditFileInfo, error) {
 	var files []FilteredAuditFileInfo
-
-	// Check if directory exists first
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		return files, nil
-	}
-
-	entries, err := os.ReadDir(outputDir)
+	entries, err := auditInventoryEntries(ctx, outputDir)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, entry := range entries {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if entry.IsDir() {
 			continue
 		}
@@ -199,6 +204,9 @@ func ListAuditFilesWithCommunityIDFilter(outputDir string, communityIDs map[stri
 		filePath := filepath.Join(outputDir, name)
 
 		totalCount, filteredCount, err := communityCounts(filePath, communityIDs)
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		if err != nil {
 			return nil, fmt.Errorf("count %s: %w", name, err)
 		}
@@ -438,15 +446,13 @@ const maxAuditInventoryEntries = 4096
 
 var errAuditInventoryLimit = errors.New("audit inventory exceeds 4096 directory entries")
 
-func listAuditFiles(ctx context.Context, outputDir string) ([]AuditFileInfo, error) {
+func auditInventoryEntries(ctx context.Context, outputDir string) ([]os.DirEntry, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	var files []AuditFileInfo
-
 	dir, err := os.Open(outputDir)
 	if errors.Is(err, os.ErrNotExist) {
-		return files, nil
+		return nil, nil
 	}
 	if err != nil {
 		return nil, err
@@ -460,7 +466,15 @@ func listAuditFiles(ctx context.Context, outputDir string) ([]AuditFileInfo, err
 		return nil, errAuditInventoryLimit
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+	return entries, ctx.Err()
+}
 
+func listAuditFiles(ctx context.Context, outputDir string) ([]AuditFileInfo, error) {
+	entries, err := auditInventoryEntries(ctx, outputDir)
+	if err != nil {
+		return nil, err
+	}
+	var files []AuditFileInfo
 	for _, entry := range entries {
 		if err := ctx.Err(); err != nil {
 			return nil, err
