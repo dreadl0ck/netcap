@@ -211,7 +211,7 @@ func getAuditStatsForDirectory(ctx context.Context, outputDir string) AuditStats
 		// Count records for this file
 		count, ok := communityCachedTotal(fullPath)
 		if !ok {
-			count, _ = countAuditFrames(ctx, fullPath)
+			count, _ = countAuditFrames(ctx, fullPath, typeName)
 		}
 		if count == 0 {
 			continue

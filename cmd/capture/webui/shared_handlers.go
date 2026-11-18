@@ -486,12 +486,21 @@ func CountRecords(filePath string) int64 {
 	if total, ok := communityCachedTotal(filePath); ok {
 		return total
 	}
-	count, _ := countAuditFrames(context.Background(), filePath)
+	count, _ := countAuditFrames(context.Background(), filePath, "")
 	return count
 }
 
-func countAuditFrames(ctx context.Context, filePath string) (int64, error) {
-	reader, err := NewAuditRecordReader(filePath)
+func countAuditFrames(ctx context.Context, filePath, auditType string) (int64, error) {
+	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
+	f, _, err := artifactio.Open(filepath.Dir(filePath), filepath.Base(filePath))
+	if err != nil {
+		return 0, err
+	}
+	reader, err := auditRecordReaderFromInput(f, f, strings.HasSuffix(filePath, ".gz"), func(input io.Reader) io.Reader {
+		return auditContextReader{ctx: ctx, input: input}
+	})
 	if err != nil {
 		return 0, err
 	}
@@ -504,6 +513,9 @@ func countAuditFrames(ctx context.Context, filePath string) (int64, error) {
 	}
 	if netio.InitRecord(header.Type) == nil {
 		return 0, fmt.Errorf("unsupported audit type %v", header.Type)
+	}
+	if auditType != "" && header.Type.String() != "NC_"+strings.TrimPrefix(auditType, "NC_") {
+		return 0, fmt.Errorf("unexpected audit header type %s for %s", header.Type, auditType)
 	}
 
 	for {
@@ -521,7 +533,7 @@ func countAuditFrames(ctx context.Context, filePath string) (int64, error) {
 
 // HandleAuditMeta returns metadata for an audit file
 func HandleAuditMeta(w http.ResponseWriter, r *http.Request, filePath, auditType string) {
-	recordCount, err := countAuditFrames(r.Context(), filePath)
+	recordCount, err := countAuditFrames(r.Context(), filePath, auditType)
 
 	RespondJSON(w, http.StatusOK, map[string]any{
 		"type":                auditType,

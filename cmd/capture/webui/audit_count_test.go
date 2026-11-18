@@ -53,6 +53,33 @@ func TestAuditMetaReportsIncompleteFrameCount(t *testing.T) {
 	}
 }
 
+func TestAuditMetaDoesNotCountMislabeledOrLinkedTracks(t *testing.T) {
+	dir := t.TempDir()
+	file := writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_UDP, []proto.Message{&types.UDP{SrcPort: 5353}})
+	check := func(path, auditType string) {
+		t.Helper()
+		w := httptest.NewRecorder()
+		HandleAuditMeta(w, httptest.NewRequest("GET", "/", nil), path, auditType)
+		var result struct {
+			RecordCount         int64
+			RecordCountComplete bool
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil || result.RecordCount != 0 || result.RecordCountComplete {
+			t.Fatalf("unexpected metadata: %s (%v)", w.Body.String(), err)
+		}
+	}
+	check(file, "HTTP")
+	if stats := getAuditStatsForDirectory(t.Context(), dir); stats.TotalRecords != 0 {
+		t.Fatalf("mislabeled track contributed %d records", stats.TotalRecords)
+	}
+	link := file + ".link"
+	if err := os.Symlink(file, link); err != nil {
+		t.Logf("symlink unavailable: %v", err)
+	} else {
+		check(link, "UDP")
+	}
+}
+
 func TestInventoryAndRecordQueryPreferSameAuditEncoding(t *testing.T) {
 	dir := t.TempDir()
 	rows := []proto.Message{&types.HTTP{Method: "GET"}, &types.HTTP{Method: "POST"}}
