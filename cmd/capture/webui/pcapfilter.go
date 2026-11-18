@@ -68,18 +68,26 @@ var errPacketDownloadLimit = errors.New("packet download exceeds output byte lim
 var errPacketDownloadLimitInvalid = errors.New("maxOutputBytes must be one positive integer")
 
 func filterPacketDownload(ctx context.Context, r *http.Request, inputFile, bpfExpr, outputFile string, keep func(gopacket.CaptureInfo) bool) (int, error) {
-	var limit int64
-	if values, ok := r.URL.Query()["maxOutputBytes"]; ok {
-		if len(values) != 1 {
-			return 0, errPacketDownloadLimitInvalid
-		}
-		var err error
-		limit, err = strconv.ParseInt(values[0], 10, 64)
-		if err != nil || limit <= 0 {
-			return 0, errPacketDownloadLimitInvalid
-		}
+	limit, err := packetDownloadLimit(r)
+	if err != nil {
+		return 0, err
 	}
 	return filterPCAPSelectionBounded(ctx, inputFile, bpfExpr, outputFile, keep, limit)
+}
+
+func packetDownloadLimit(r *http.Request) (int64, error) {
+	values, ok := r.URL.Query()["maxOutputBytes"]
+	if !ok {
+		return 0, nil
+	}
+	if len(values) != 1 {
+		return 0, errPacketDownloadLimitInvalid
+	}
+	limit, err := strconv.ParseInt(values[0], 10, 64)
+	if err != nil || limit <= 0 {
+		return 0, errPacketDownloadLimitInvalid
+	}
+	return limit, nil
 }
 
 func writePacketDownloadLimitError(w http.ResponseWriter, err error) bool {

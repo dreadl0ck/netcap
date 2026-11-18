@@ -171,6 +171,32 @@ func TestPacketDownloadsPreserveBinaryHTTPFraming(t *testing.T) {
 	}
 }
 
+func TestConnectionEvidenceArchiveOutputLimit(t *testing.T) {
+	input, _ := observedTuplePCAP(t)
+	s := &Server{activeInputFile: input}
+	download := func(suffix string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		s.handleConnectionDownloadPCAP(w, httptest.NewRequest(http.MethodGet,
+			"/download-pcap?format=evidence&srcIP=192.0.2.1&dstIP=198.51.100.1&srcPort=52123&dstPort=9243&protocol=TCP"+suffix, nil))
+		return w
+	}
+	baseline := download("")
+	if baseline.Code != http.StatusOK || baseline.Header().Get("Content-Type") != "application/zip" {
+		t.Fatalf("baseline status=%d body=%q", baseline.Code, baseline.Body)
+	}
+	limit := baseline.Body.Len()
+	exact := download("&maxOutputBytes=" + strconv.Itoa(limit))
+	if exact.Code != http.StatusOK || !bytes.Equal(exact.Body.Bytes(), baseline.Body.Bytes()) {
+		t.Fatalf("exact limit %d: status=%d size=%d", limit, exact.Code, exact.Body.Len())
+	}
+	for _, tc := range []struct{ limit, status int }{{limit - 1, 413}, {1, 413}, {0, 400}} {
+		w := download("&maxOutputBytes=" + strconv.Itoa(tc.limit))
+		if w.Code != tc.status || w.Header().Get("Content-Disposition") != "" {
+			t.Fatalf("limit=%d: status=%d attachment=%q", tc.limit, w.Code, w.Header().Get("Content-Disposition"))
+		}
+	}
+}
+
 func TestHTTPPacketExportUsesObservedTupleTransportAndTime(t *testing.T) {
 	path, base := observedTuplePCAP(t)
 	s := &Server{activeInputFile: path}

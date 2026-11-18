@@ -454,6 +454,7 @@ rules:
         for name, selector in (
             ("carve_subpcap_for_host", {"host": endpoint, "run_id": binding["runId"]}),
             ("carve_subpcap_for_connection", tuple_args | {"run_id": binding["runId"]}),
+            ("carve_subpcap_for_connection", tuple_args | {"run_id": binding["runId"], "format": "evidence"}),
             ("export_packet_evidence", {"runId": binding["runId"], "sourceSHA256": binding["sourceSHA256"], "bpf": "udp", "maxPackets": 18}),
         ):
             carved = await call(name, args | selector)
@@ -470,11 +471,13 @@ rules:
                     break
             if len(wire) != carved["size_bytes"] or len(wire) <= 24 or hashlib.sha256(wire).hexdigest() != carved["sha256"]:
                 raise ValueError(f"{name}: incomplete carved capture")
-            if name == "export_packet_evidence":
+            if name == "export_packet_evidence" or selector.get("format") == "evidence":
                 with zipfile.ZipFile(io.BytesIO(wire)) as bundle:
                     manifest = json.loads(bundle.read("manifest.json"))
                     packets = bundle.read("packets.pcapng")
-                if (manifest["sourceSHA256"] != binding["sourceSHA256"] or manifest["selectedPackets"] != 18
+                expected_count = 18 if name == "export_packet_evidence" else None
+                if (manifest["sourceSHA256"] != binding["sourceSHA256"] or manifest["selectedPackets"] <= 0
+                        or expected_count is not None and manifest["selectedPackets"] != expected_count
                         or hashlib.sha256(packets).hexdigest() != manifest["outputSHA256"]):
                     raise ValueError("packet export provenance did not match the fixture")
             denied = await client.call_tool("read_mcp_artifact", {"artifact_id": artifact, "session_id": "unrelated"})

@@ -13,6 +13,11 @@ import (
 )
 
 func serveConnectionEvidence(w http.ResponseWriter, r *http.Request, input string, selection connectionPacketSelection) {
+	limit, err := packetDownloadLimit(r)
+	if err != nil {
+		writePacketDownloadLimitError(w, err)
+		return
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 	archive, err := os.CreateTemp("", "netcap-evidence-*.zip")
@@ -22,8 +27,15 @@ func serveConnectionEvidence(w http.ResponseWriter, r *http.Request, input strin
 	}
 	defer os.Remove(archive.Name())
 	defer archive.Close()
-	manifest, err := writeConnectionEvidence(ctx, input, archive, selection)
+	var output io.Writer = archive
+	if limit > 0 {
+		output = &packetArchiveWriter{output: archive, remaining: limit}
+	}
+	manifest, err := writeConnectionEvidence(ctx, input, output, selection)
 	if err != nil {
+		if writePacketDownloadLimitError(w, err) {
+			return
+		}
 		status := http.StatusInternalServerError
 		if errors.Is(err, evidence.ErrNoMatchingPackets) {
 			status = http.StatusNotFound
@@ -47,6 +59,20 @@ func serveConnectionEvidence(w http.ResponseWriter, r *http.Request, input strin
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Netcap-Source-SHA256", manifest.SourceSHA256)
 	http.ServeContent(w, r, "connection-evidence.zip", time.Time{}, archive)
+}
+
+type packetArchiveWriter struct {
+	output    io.Writer
+	remaining int64
+}
+
+func (w *packetArchiveWriter) Write(p []byte) (int, error) {
+	if int64(len(p)) > w.remaining {
+		return 0, errPacketDownloadLimit
+	}
+	n, err := w.output.Write(p)
+	w.remaining -= int64(n)
+	return n, err
 }
 
 func writeConnectionEvidence(ctx context.Context, input string, output io.Writer, selection connectionPacketSelection) (evidence.PacketManifest, error) {

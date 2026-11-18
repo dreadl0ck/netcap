@@ -247,9 +247,7 @@ func (s *Server) doCarve(ctx context.Context, ref SessionRef, endpoint, label st
 		}
 	}
 	client := s.newClient()
-	if q.Get("format") != "evidence" {
-		q.Set("maxOutputBytes", strconv.Itoa(maxBackendResponseBytes))
-	}
+	q.Set("maxOutputBytes", strconv.Itoa(maxBackendResponseBytes))
 	body, ct, gErr := client.GetRawContext(ctx, endpoint, q)
 	q.Del("maxOutputBytes")
 	if gErr != nil {
