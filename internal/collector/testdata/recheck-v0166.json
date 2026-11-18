@@ -365,6 +365,7 @@
     "verification": "TestAnalysisCompletionRejectsMislabeledTimelineTrack verifies that a UDP audit stored as HTTP fails indexing and leaves the analysis incomplete. Focused timeline and analysis completion tests passed under the race detector."
   },
   "captureTimeWatermarkFastPath": {
+    "distinctDeltaOverflow": "TestAuditReplayDistinctWindowRejectsTimestampDeltaOverflow verifies that a distinct value near MinInt64 does not count toward a window near MaxInt64, while two distinct values one nanosecond apart still trigger. The full portable rules race suite passed.",
     "dedupDeltaOverflow": "TestAuditReplayDedupRejectsTimestampDeltaOverflow verifies that an old alert near MinInt64 does not suppress a new alert near MaxInt64, while the following record one nanosecond later is still deduplicated. The full portable rules race suite passed.",
     "thresholdDeltaOverflow": "TestAuditReplayThresholdRejectsTimestampDeltaOverflow verifies that a timestamp near MinInt64 cannot count in a 60-second threshold window near MaxInt64. Two records one nanosecond apart still trigger the threshold. The full portable rules race suite passed.",
     "signedThresholdTime": "TestAuditReplayThresholdUsesSignedRecordTime verifies that an out-of-order pre-epoch record does not count a future observation toward its threshold. The full portable rules race suite passed.",

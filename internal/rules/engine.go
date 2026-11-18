@@ -606,7 +606,7 @@ func (e *Engine) checkDistinctThreshold(rule *Rule, record types.AuditRecord) bo
 		if ts > now {
 			continue
 		}
-		if now-ts > windowNanos {
+		if uint64(now)-uint64(ts) > uint64(windowNanos) {
 			delete(values, v)
 			continue
 		}
@@ -640,7 +640,7 @@ const distinctSweepInterval = 1024
 func (t *distinctTracker) sweep(now, windowNanos int64) {
 	for src, values := range t.seen {
 		for v, ts := range values {
-			if now-ts > windowNanos {
+			if ts <= now && uint64(now)-uint64(ts) > uint64(windowNanos) {
 				delete(values, v)
 			}
 		}
