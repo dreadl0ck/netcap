@@ -377,6 +377,17 @@ func analyzeStored(path, digest string, load func() ([]byte, func(), error), spo
 			m.mu.Unlock()
 			return nil, nil
 		}
+		if len(m.cache) >= 1024 || m.cacheBytes >= 16<<20 || info.Size() > 256<<20-m.queuedBytes {
+			m.rejectAdmissionLocked("analysis admission budget exceeded")
+			m.mu.Unlock()
+			return nil, nil
+		}
+		// This lock serializes submissions; workers can only free queue slots.
+		if len(m.jobs) == cap(m.jobs) {
+			m.rejectAdmissionLocked("analysis queue full")
+			m.mu.Unlock()
+			return nil, nil
+		}
 		result := &ArtifactAnalysis{SHA256: digest, ConfigDigest: m.report.ConfigDigest}
 		if m.yara != nil {
 			result.Analyzers = append(result.Analyzers, AnalyzerResult{Engine: "yara-x", State: "queued", Digest: m.yara.Digest(), Version: yaraBindingVersion()})
@@ -385,28 +396,10 @@ func analyzeStored(path, digest string, load func() ([]byte, func(), error), spo
 			result.Analyzers = append(result.Analyzers, AnalyzerResult{Engine: "magika", State: "queued", Digest: m.magika.Digest, Version: "executable-sha256:" + m.magika.Digest})
 		}
 		entry = &analysisEntry{result: result, done: make(chan struct{})}
-		if len(m.cache) >= 1024 || m.cacheBytes >= 16<<20 || info.Size() > 256<<20-m.queuedBytes {
-			m.report.Rejected++
-			m.sharedBudgetLoss = true
-			m.report.ExtractionIssues = appendIssue(m.report.ExtractionIssues, "analysis admission budget exceeded")
-			m.mu.Unlock()
-			return nil, nil
-		}
 		m.cache[digest] = entry
 		m.report.Results[digest] = result
 		m.queuedBytes += info.Size()
-		select {
-		case m.jobs <- analysisJob{entry, load, spool, info.Size()}:
-		default:
-			delete(m.cache, digest)
-			delete(m.report.Results, digest)
-			m.queuedBytes -= info.Size()
-			m.report.Rejected++
-			m.sharedBudgetLoss = true
-			m.report.ExtractionIssues = appendIssue(m.report.ExtractionIssues, "analysis queue full")
-			m.mu.Unlock()
-			return nil, nil
-		}
+		m.jobs <- analysisJob{entry, load, spool, info.Size()}
 	}
 	m.mu.Unlock()
 	<-entry.done
@@ -421,6 +414,12 @@ func analyzeStored(path, digest string, load func() ([]byte, func(), error), spo
 		}
 	}
 	return matches, classification
+}
+
+func (m *analysisRuntime) rejectAdmissionLocked(issue string) {
+	m.report.Rejected++
+	m.sharedBudgetLoss = true
+	m.report.ExtractionIssues = appendIssue(m.report.ExtractionIssues, issue)
 }
 
 func appendIssue(issues []string, issue string) []string {

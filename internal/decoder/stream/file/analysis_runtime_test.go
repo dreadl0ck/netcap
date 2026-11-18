@@ -355,6 +355,9 @@ func TestAnalysisQueueCancellationAndSaveLock(t *testing.T) {
 	if len(writer.records) != 40 {
 		t.Fatalf("analysis failures lost file occurrences: %d", len(writer.records))
 	}
+	if m.queuedBytes != 0 || uint64(len(m.cache))+m.report.Rejected != 40 || m.report.ExecutedJobs != uint64(len(m.cache)) {
+		t.Fatalf("admission accounting: queued bytes=%d, cache=%d, rejected=%d, executed=%d", m.queuedBytes, len(m.cache), m.report.Rejected, m.report.ExecutedJobs)
+	}
 	for _, result := range m.report.Results {
 		for _, a := range result.Analyzers {
 			if a.State != "cancelled" {
