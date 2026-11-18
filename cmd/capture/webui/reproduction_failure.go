@@ -38,7 +38,10 @@ func priorReproductionManifest(dir string) string {
 }
 
 // Capture the admitted bytes before a helper can fail or the input can change.
-func snapshotReproductionSource(path string) reproductionSource {
+func snapshotReproductionSource(path string, shutdown <-chan struct{}) reproductionSource {
+	if ruleReplayCanceled(nil, shutdown) {
+		return reproductionSource{}
+	}
 	before, err := os.Lstat(path)
 	if err != nil || !before.Mode().IsRegular() {
 		return reproductionSource{}
@@ -52,10 +55,19 @@ func snapshotReproductionSource(path string) reproductionSource {
 	if err != nil || !os.SameFile(before, opened) || !opened.Mode().IsRegular() {
 		return reproductionSource{}
 	}
-	hash := sha256.New()
-	n, err := io.Copy(hash, io.LimitReader(f, opened.Size()+1))
+	source := hashReproductionInput(f, opened.Size(), shutdown)
 	after, statErr := f.Stat()
-	if err != nil || statErr != nil || n != opened.Size() || after.Size() != opened.Size() || after.ModTime() != opened.ModTime() {
+	if statErr != nil || after.Size() != opened.Size() || after.ModTime() != opened.ModTime() {
+		return reproductionSource{}
+	}
+	return source
+}
+
+func hashReproductionInput(input io.Reader, size int64, shutdown <-chan struct{}) reproductionSource {
+	hash := sha256.New()
+	r := analysisStopReader{input: input, shutdown: shutdown}
+	n, err := io.Copy(hash, io.LimitReader(r, size+1))
+	if err != nil || n != size || ruleReplayCanceled(nil, shutdown) {
 		return reproductionSource{}
 	}
 	return reproductionSource{SHA256: hex.EncodeToString(hash.Sum(nil)), Bytes: n}

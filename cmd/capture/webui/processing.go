@@ -77,7 +77,11 @@ func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
 		}
 		job.settings = snapshot
 	}
-	job.reproductionSource = snapshotReproductionSource(job.InputFile)
+	job.reproductionSource = snapshotReproductionSource(job.InputFile, s.shutdownChan)
+	if ruleReplayCanceled(nil, s.shutdownChan) {
+		job.settings.cleanup()
+		return errAnalysisStopping
+	}
 	job.reproductionSource.PreviousManifestSHA256 = priorReproductionManifest(job.OutputDir)
 	done := s.beginProcessingWork()
 	if done == nil {

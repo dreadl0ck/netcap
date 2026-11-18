@@ -35,6 +35,21 @@ func (r *cancelingAuditInput) Read(p []byte) (int, error) {
 	return n, err
 }
 
+func TestReproductionHashStopsDuringShutdown(t *testing.T) {
+	data := bytes.Repeat([]byte("capture"), 64<<10)
+	shutdown := make(chan struct{})
+	input := &cancelingAuditInput{Reader: bytes.NewReader(data), cancel: func() { close(shutdown) }}
+	if got := hashReproductionInput(input, int64(len(data)), shutdown); got != (reproductionSource{}) {
+		t.Fatalf("published a partial digest: %+v", got)
+	}
+	if input.read == 0 || input.read > 64<<10 {
+		t.Fatalf("read %d bytes before stopping", input.read)
+	}
+	if got := hashReproductionInput(bytes.NewReader(data), int64(len(data)), nil); got.SHA256 != digestBytes(data) || got.Bytes != int64(len(data)) {
+		t.Fatalf("uncanceled digest changed: %+v", got)
+	}
+}
+
 func TestRuleAuditStopsWhileReadingLargeRecord(t *testing.T) {
 	var data bytes.Buffer
 	w := delimited.NewWriter(&data)
@@ -51,7 +66,7 @@ func TestRuleAuditStopsWhileReadingLargeRecord(t *testing.T) {
 	stop := make(chan struct{})
 	input := &cancelingAuditInput{Reader: bytes.NewReader(data.Bytes())}
 	r, err := auditRecordReaderFromInput(f, input, false, func(input io.Reader) io.Reader {
-		return ruleReplayReader{input: input, stop: stop}
+		return analysisStopReader{input: input, stop: stop}
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -85,7 +100,7 @@ func TestRuleAuditStopsWhileReadingLargeRecord(t *testing.T) {
 			decoded = &cancelingAuditInput{Reader: input}
 			input = decoded
 		}
-		return ruleReplayReader{input: input, stop: stop}
+		return analysisStopReader{input: input, stop: stop}
 	})
 	if err != nil {
 		t.Fatal(err)
