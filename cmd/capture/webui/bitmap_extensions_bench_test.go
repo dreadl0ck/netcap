@@ -122,6 +122,17 @@ func BenchmarkTimelineHostFacetCount(b *testing.B) {
 	}
 }
 
+func BenchmarkTimelineHostFacetBuckets(b *testing.B) {
+	t := benchmarkTimelineTrack()
+	q := &timelineQuery{Start: 1, End: 100_000, Tracks: []*tlTypeIndex{t}, Host: "10.0.0.1"}
+	t.buildFacets(nil)
+	for b.Loop() {
+		if _, got := q.buckets(240); got != 50_000 {
+			b.Fatalf("count = %d", got)
+		}
+	}
+}
+
 func BenchmarkTimelineHostFacetCold(b *testing.B) {
 	b.ReportAllocs()
 	for range b.N {

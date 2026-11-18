@@ -223,11 +223,7 @@ func (q *timelineQuery) count() int64 {
 		}
 		if q.Search == "" && !t.hasDuration() {
 			if bitmap := q.candidates(t); bitmap != nil {
-				count := bitmap.Rank(uint32(hi - 1))
-				if lo > 0 {
-					count -= bitmap.Rank(uint32(lo - 1))
-				}
-				total += int64(count)
+				total += timelineRankBefore(bitmap, hi) - timelineRankBefore(bitmap, lo)
 				continue
 			}
 		}
@@ -467,8 +463,36 @@ func (q *timelineQuery) buckets(count int) (map[string][]int64, int64) {
 
 	for _, t := range q.Tracks {
 		counts := make([]int64, count)
-		delta := make([]int64, count+1)
 		lo, hi := q.scanRange(t)
+		if span > 0 && !t.hasDuration() && q.Search == "" && hi-lo > 8*count {
+			selected := q.candidates(t)
+			if selected != nil || (q.Host == "" && len(q.CommunityIDs) == 0) {
+				first := timelineRankBefore(selected, lo)
+				last := timelineRankBefore(selected, hi)
+				if last-first > int64(8*count) {
+					previous := first
+					for i := 1; i < count; i++ {
+						if q.canceled() {
+							return nil, 0
+						}
+						// The first integer timestamp in bucket i is ceil(i*span/count).
+						high, low := bits.Mul64(uint64(span), uint64(i))
+						offset, remainder := bits.Div64(high, low, uint64(count))
+						if remainder != 0 {
+							offset++
+						}
+						next := timelineRankBefore(selected, t.lowerBound(q.Start+int64(offset)))
+						counts[i-1] = next - previous
+						previous = next
+					}
+					counts[count-1] = last - previous
+					matchCount += last - first
+					out[t.Name] = counts
+					continue
+				}
+			}
+		}
+		delta := make([]int64, count+1)
 
 		q.eachMatch(t, lo, hi, func(i int) {
 			matchCount++
@@ -499,6 +523,13 @@ func (q *timelineQuery) buckets(count int) (map[string][]int64, int64) {
 	}
 
 	return out, matchCount
+}
+
+func timelineRankBefore(bitmap *roaring.Bitmap, pos int) int64 {
+	if bitmap == nil || pos == 0 {
+		return int64(pos)
+	}
+	return int64(bitmap.Rank(uint32(pos - 1)))
 }
 
 // timelineBucketOf maps a timestamp onto a bucket index, clamped to the window.

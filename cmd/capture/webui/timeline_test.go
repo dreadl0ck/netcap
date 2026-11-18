@@ -1047,6 +1047,32 @@ func TestTimelineRecordRejectsReplacementAfterIndexSelection(t *testing.T) {
 	}
 }
 
+func TestTimelineDensePointBucketsMatchManualCounts(t *testing.T) {
+	track := &tlTypeIndex{Name: "DNS", strings: []string{"192.0.2.1"}}
+	// The four buckets of [100,111] begin at 100, 103, 106 and 109.
+	for _, ts := range []int64{99, 100, 102, 103, 105, 106, 108, 109, 111, 112} {
+		for i := range 16 {
+			track.Events = append(track.Events, tlEvent{Time: ts, Src: int32(i%2) - 1, Dst: -1})
+		}
+	}
+	for _, tc := range []struct {
+		host string
+		want int64
+	}{{"", 32}, {"192.0.2.1", 16}} {
+		q := timelineQuery{Start: 100, End: 111, Tracks: []*tlTypeIndex{track}, Host: tc.host}
+		series, total := q.buckets(4)
+		counts := series[track.Name]
+		if total != 4*tc.want || len(counts) != 4 {
+			t.Fatalf("host=%q: counts=%v total=%d", tc.host, counts, total)
+		}
+		for i, got := range counts {
+			if got != tc.want {
+				t.Fatalf("host=%q: bucket %d=%d, want %d", tc.host, i, got, tc.want)
+			}
+		}
+	}
+}
+
 func TestTimelineBucketsPreserveNanosecondBoundary(t *testing.T) {
 	const start, span int64 = 100, 1 << 60
 	dir := t.TempDir()
