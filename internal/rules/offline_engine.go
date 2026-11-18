@@ -256,12 +256,12 @@ func EvaluateOffline(ctx context.Context, request OfflineRequest) (*OfflineRepor
 	}
 	ctx, cancel := context.WithTimeout(ctx, limits.Duration)
 	defer cancel()
+	if request.Pack != nil && int64(len(request.Pack.Rules)) > limits.Rules {
+		return nil, fmt.Errorf("offline rule limit exceeded")
+	}
 	compiled, err := compileOfflinePack(request.Pack)
 	if err != nil {
 		return nil, err
-	}
-	if int64(len(compiled)) > limits.Rules {
-		return nil, fmt.Errorf("offline rule limit exceeded")
 	}
 	sort.Slice(compiled, func(i, j int) bool {
 		a, b := compiled[i].rule, compiled[j].rule

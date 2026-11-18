@@ -627,8 +627,11 @@ func TestOfflineLexicalRuleOrderAndBoundedHistory(t *testing.T) {
 	if alerts[0].Name != "earlier" || alerts[1].Name != "earlier" || alerts[2].Name != "Grouped SYN" {
 		t.Fatal("rule order changed")
 	}
-	if _, err := EvaluateOffline(context.Background(), OfflineRequest{Directory: dir, Pack: p, Limits: OfflineLimits{Rules: 1}}); err == nil {
-		t.Fatal("rule cap ignored")
+	overBudget := *p
+	overBudget.Rules = append([]OfflineRule(nil), p.Rules...)
+	overBudget.Rules[0].Expression = "invalid ("
+	if report, err := EvaluateOffline(context.Background(), OfflineRequest{Directory: dir, Pack: &overBudget, Limits: OfflineLimits{Rules: 1}}); report != nil || err == nil || err.Error() != "offline rule limit exceeded" {
+		t.Fatalf("rule cap must precede expression compilation: report=%v err=%v", report, err)
 	}
 	for i := 0; i < 99; i++ {
 		name := fmt.Sprintf("%032x.json", i)
