@@ -184,19 +184,22 @@ func visitAuditRecords[T proto.Message](path, label string, visit func(T)) error
 	}
 
 	for {
-		record, err := reader.NextAs[T]()
+		raw, err := reader.NextRaw()
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
-			if errors.Is(err, ErrAuditRecordTypeMismatch) {
-				continue
-			}
-			// Preserve skip-on-error behavior; persistent I/O errors can repeat indefinitely.
-			log.Printf("[WebUI] Error reading %s record: %v", label, err)
+			return fmt.Errorf("read %s record: %w", label, err)
+		}
+		// A complete frame can be skipped without losing the next frame boundary.
+		msg, err := reader.DecodeRecord(raw)
+		if err != nil {
+			log.Printf("[WebUI] Error decoding %s record: %v", label, err)
 			continue
 		}
-		visit(record)
+		if record, ok := msg.(T); ok {
+			visit(record)
+		}
 	}
 	return nil
 }

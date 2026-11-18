@@ -20,6 +20,23 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+func TestServiceAuditScanStopsOnCorruptGzip(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFile(t, dir, "Service", types.Type_NC_Service, []proto.Message{&types.Service{Name: "fixture"}})
+	path := filepath.Join(dir, "Service.ncap.gz")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data[len(data)-8] ^= 1 // Corrupt the gzip checksum.
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if rows, err := readServices(dir); rows != nil || !errors.Is(err, gzip.ErrChecksum) {
+		t.Fatalf("expected checksum failure without partial results: rows=%v err=%v", rows, err)
+	}
+}
+
 func TestAuditFieldValuesRejectsDamagedInput(t *testing.T) {
 	body, err := proto.Marshal(&types.UDP{SrcPort: 5353})
 	if err != nil {
