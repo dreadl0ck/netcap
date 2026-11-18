@@ -420,6 +420,7 @@ func (p *StreamPool) restoreCold(k *key) (connectionRef, bool, bool, error) {
 		return connectionRef{}, false, false, nil
 	}
 	var snap coldConnection
+	var stored key
 	var found, reverse bool
 	id := coldID(k)
 	err := p.cold.state.Do(func(tx *aggregate.Tx) error {
@@ -438,20 +439,29 @@ func (p *StreamPool) restoreCold(k *key) (connectionRef, bool, bool, error) {
 			return err
 		}
 		snap, err = decodeCold(wire)
-		return err
+		if err != nil {
+			return err
+		}
+		for i := range stored {
+			stored[i], err = snap.Key[i].Restore()
+			if err != nil {
+				return err
+			}
+		}
+		want := *k
+		if reverse {
+			want = k.reverse()
+		}
+		if stored != want {
+			return fmt.Errorf("TCP cold state does not match lookup key")
+		}
+		return nil
 	})
 	if err != nil || !found {
 		return connectionRef{}, reverse, found, err
 	}
 	if err := p.makeColdRoom(); err != nil {
 		return connectionRef{}, reverse, true, err
-	}
-	var stored key
-	for i := range stored {
-		stored[i], err = snap.Key[i].Restore()
-		if err != nil {
-			return connectionRef{}, reverse, true, err
-		}
 	}
 	stream, err := p.cold.factory.RestoreColdState(snap.Stream, true)
 	if err != nil {
