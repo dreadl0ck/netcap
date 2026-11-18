@@ -458,8 +458,11 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 	)
 
 	a.dump("before checkOverlap", half)
-	if !queue && half.endsBeforeQueue(end) {
-		return
+	if half.endsBeforeQueue(end) {
+		if !queue {
+			return
+		}
+		next, cur = half.first, nil
 	}
 
 	//          [s6           :           e6]

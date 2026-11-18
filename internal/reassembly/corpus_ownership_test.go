@@ -109,6 +109,46 @@ func TestDisjointGapFillDeliversAcrossRollover(t *testing.T) {
 	}
 }
 
+func TestDisjointQueuePrependSkipsOverlapWalk(t *testing.T) {
+	const depth = 4096
+	factory := new(flushProgressFactory)
+	pool := NewStreamPool(factory)
+	a := NewAssembler(pool)
+	defer a.Release()
+	budget, err := NewPageBudget((depth+1)*PageAllocationBytes, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.SetPageBudget(budget)
+	flow := gopacket.NewFlow(layers.EndpointIPv4, []byte{192, 0, 2, 1}, []byte{192, 0, 2, 2})
+	send := func(seq uint32, syn bool, data []byte) {
+		a.assemble(flow, &layers.TCP{SrcPort: 12345, DstPort: 80, Seq: seq, SYN: syn, BaseLayer: layers.BaseLayer{Payload: data}})
+	}
+	send(100, true, nil)
+	tail := make([]byte, depth)
+	for i := range tail {
+		tail[i] = byte(i)
+		send(106+uint32(i), false, tail[i:i+1])
+	}
+	half := &pool.connections(nil)[0].conn.c2s
+	examined := 0
+	a.overlapPagesExamined = &examined
+	send(103, false, []byte("ab"))
+	a.overlapPagesExamined = nil
+	if examined != 0 || half.pages != depth+1 || half.first.seq != 103 || half.first.next.seq != 106 {
+		t.Fatalf("prepend: examined=%d queued=%d", examined, half.pages)
+	}
+	send(101, false, []byte("12"))
+	send(105, false, []byte("3"))
+	a.FlushAll()
+	if got, want := factory.streams[0].data, append([]byte("12ab3"), tail...); !bytes.Equal(got, want) {
+		t.Fatalf("reassembled payload: got %d bytes, want %d", len(got), len(want))
+	}
+	if health := budget.Health(); health.RetainedBytes != 0 || health.Exceeded || factory.streams[0].completions != 1 {
+		t.Fatalf("completions=%d budget=%+v", factory.streams[0].completions, health)
+	}
+}
+
 func TestCapturePageOwnership(t *testing.T) {
 	path := os.Getenv("NETCAP_REASSEMBLY_PCAP")
 	if path == "" {
