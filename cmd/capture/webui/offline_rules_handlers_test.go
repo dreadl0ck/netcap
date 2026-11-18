@@ -64,6 +64,19 @@ func TestOfflineValidate(t *testing.T) {
 	}
 }
 
+func TestOfflineValidateHonorsCancellationAfterBodyRead(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	data := mustOfflineJSON(t, offlinePackRequest{YAML: enabledOfflineExample()})
+	body := &cancelingAuditInput{Reader: bytes.NewReader(data), cancel: cancel}
+	w := httptest.NewRecorder()
+	s := &Server{}
+	s.handleOfflineValidate(w, httptest.NewRequest(http.MethodPost, "/api/rules/offline/validate", body).WithContext(ctx))
+	if w.Code != http.StatusRequestTimeout || body.read != len(data) {
+		t.Fatalf("canceled validation: status=%d reads=%d body=%s", w.Code, body.read, w.Body)
+	}
+}
+
 func TestOfflineRuleRequestsRejectSaturationBeforeReadingBody(t *testing.T) {
 	s := &Server{}
 	func() {

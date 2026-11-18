@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -89,10 +90,14 @@ func decodeOfflineRequest(w http.ResponseWriter, r *http.Request) (*offlinePackR
 	return &request, true
 }
 
-func parseOfflineRequest(w http.ResponseWriter, request *offlinePackRequest) (*rules.OfflinePack, bool) {
-	pack, err := rules.ParseOfflinePack([]byte(request.YAML))
+func parseOfflineRequest(ctx context.Context, w http.ResponseWriter, request *offlinePackRequest) (*rules.OfflinePack, bool) {
+	pack, err := rules.ParseOfflinePackContext(ctx, []byte(request.YAML))
 	if err != nil {
-		RespondJSON(w, http.StatusBadRequest, map[string]any{"valid": false, "errors": []any{map[string]string{"field": "yaml", "message": err.Error()}}})
+		status := http.StatusBadRequest
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			status = http.StatusRequestTimeout
+		}
+		RespondJSON(w, status, map[string]any{"valid": false, "errors": []any{map[string]string{"field": "yaml", "message": err.Error()}}})
 		return nil, false
 	}
 	return pack, true
@@ -108,7 +113,7 @@ func (s *Server) handleOfflineValidate(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	pack, ok := parseOfflineRequest(w, request)
+	pack, ok := parseOfflineRequest(r.Context(), w, request)
 	if !ok {
 		return
 	}
@@ -189,7 +194,7 @@ func (s *Server) handleOfflineExecute(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	pack, ok := parseOfflineRequest(w, request)
+	pack, ok := parseOfflineRequest(r.Context(), w, request)
 	if !ok {
 		return
 	}

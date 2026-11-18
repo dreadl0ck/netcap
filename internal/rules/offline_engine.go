@@ -259,7 +259,7 @@ func EvaluateOffline(ctx context.Context, request OfflineRequest) (*OfflineRepor
 	if request.Pack != nil && int64(len(request.Pack.Rules)) > limits.Rules {
 		return nil, fmt.Errorf("offline rule limit exceeded")
 	}
-	compiled, err := compileOfflinePack(request.Pack)
+	compiled, err := compileOfflinePackContext(ctx, request.Pack)
 	if err != nil {
 		return nil, err
 	}

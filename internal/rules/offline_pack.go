@@ -2,6 +2,7 @@ package rules
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -69,6 +70,13 @@ func LoadOfflinePack(path string) (*OfflinePack, error) {
 }
 
 func ParseOfflinePack(data []byte) (*OfflinePack, error) {
+	return ParseOfflinePackContext(context.Background(), data)
+}
+
+func ParseOfflinePackContext(ctx context.Context, data []byte) (*OfflinePack, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if len(data) > 1<<20 || !utf8.Valid(data) {
 		return nil, fmt.Errorf("offline pack exceeds 1 MiB or contains invalid UTF-8")
 	}
@@ -82,7 +90,7 @@ func ParseOfflinePack(data []byte) (*OfflinePack, error) {
 	if err := d.Decode(&extra); err != io.EOF {
 		return nil, fmt.Errorf("offline pack requires exactly one YAML document")
 	}
-	if err := ValidateOfflinePack(&pack); err != nil {
+	if _, err := compileOfflinePackContext(ctx, &pack); err != nil {
 		return nil, err
 	}
 	return &pack, nil
@@ -110,6 +118,13 @@ func offlineRecord(name string) types.AuditRecord {
 func offlineType(name string) types.Type { return types.Type(types.Type_value["NC_"+name]) }
 
 func compileOfflinePack(pack *OfflinePack) ([]offlineCompiled, error) {
+	return compileOfflinePackContext(context.Background(), pack)
+}
+
+func compileOfflinePackContext(ctx context.Context, pack *OfflinePack) ([]offlineCompiled, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if pack == nil || pack.Format != OfflineFormat {
 		return nil, fmt.Errorf("offline pack requires format %s", OfflineFormat)
 	}
@@ -120,6 +135,9 @@ func compileOfflinePack(pack *OfflinePack) ([]offlineCompiled, error) {
 	enabled := false
 	compiled := make([]offlineCompiled, 0, len(pack.Rules))
 	for _, rule := range pack.Rules {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		enabled = enabled || rule.Enabled
 		rule.Threshold.GroupBy = append([]string(nil), rule.Threshold.GroupBy...)
 		if !offlineID.MatchString(rule.ID) || seen[rule.ID] {
@@ -177,6 +195,9 @@ func compileOfflinePack(pack *OfflinePack) ([]offlineCompiled, error) {
 		b, _ := json.Marshal([]any{OfflineFormat, rule})
 		c.digest = offlineHash(b)
 		compiled = append(compiled, c)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 	if !enabled {
 		return nil, fmt.Errorf("offline pack requires at least one enabled rule")
