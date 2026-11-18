@@ -171,6 +171,30 @@ func TestPacketDownloadsPreserveBinaryHTTPFraming(t *testing.T) {
 	}
 }
 
+type packetDownloadWrites struct {
+	http.ResponseWriter
+	size, largest int
+}
+
+func (w *packetDownloadWrites) Write(p []byte) (int, error) {
+	w.size += len(p)
+	w.largest = max(w.largest, len(p))
+	return len(p), nil
+}
+
+func TestClassicPacketDownloadStreamsLargeFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "fixture.pcap")
+	const size = 1 << 20
+	if err := os.WriteFile(path, make([]byte, size), 0600); err != nil {
+		t.Fatal(err)
+	}
+	w := &packetDownloadWrites{ResponseWriter: httptest.NewRecorder()}
+	writeClassicPacketDownload(w, path, "fixture.pcap")
+	if w.size != size || w.largest > 64<<10 || w.Header().Get("Content-Length") != strconv.Itoa(size) {
+		t.Fatalf("stream framing: bytes=%d largest write=%d headers=%v", w.size, w.largest, w.Header())
+	}
+}
+
 func TestPacketDownloadsShareSlotsThroughResponseWrite(t *testing.T) {
 	input, _ := observedTuplePCAP(t)
 	s := &Server{activeInputFile: input}

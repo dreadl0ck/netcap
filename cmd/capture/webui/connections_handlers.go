@@ -656,63 +656,7 @@ func (s *Server) handleConnectionDownloadPCAP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Confirm the output file exists before reading it back.
-	fileInfo, err := os.Stat(outputFile)
-	if err != nil {
-		log.Printf("[WebUI] Output file not found: %v", err)
-		http.Error(w, "Failed to create filtered PCAP", http.StatusInternalServerError)
-		return
-	}
-
-	log.Printf("[WebUI] Filtered PCAP created: %s, %d packets, size: %d bytes", outputFile, written, fileInfo.Size())
-
-	// Open the filtered PCAP file BEFORE defer cleanup
-	file, err := os.Open(outputFile)
-	if err != nil {
-		log.Printf("[WebUI] Failed to open filtered PCAP: %v", err)
-		os.Remove(outputFile) // Clean up on error
-		http.Error(w, "Failed to read filtered PCAP", http.StatusInternalServerError)
-		return
-	}
-
-	// Read entire file into memory (files are small, typically < 1MB for single connections)
-	fileData, err := stdio.ReadAll(file)
-	file.Close()
-
-	if err != nil {
-		log.Printf("[WebUI] Failed to read PCAP file: %v", err)
-		os.Remove(outputFile)
-		http.Error(w, "Failed to read filtered PCAP", http.StatusInternalServerError)
-		return
-	}
-
-	// Clean up temp file immediately after reading
-	os.Remove(outputFile)
-
-	// Verify we read the expected amount
-	if len(fileData) != int(fileInfo.Size()) {
-		log.Printf("[WebUI] File size mismatch: expected %d, read %d", fileInfo.Size(), len(fileData))
-		http.Error(w, "File read error", http.StatusInternalServerError)
-		return
-	}
-
-	log.Printf("[WebUI] Read PCAP file successfully: %d bytes", len(fileData))
-
-	// Set headers for download
-	filename := fmt.Sprintf("connection_%s-%s_%s-%s.pcap", srcIP, srcPort, dstIP, dstPort)
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
-	w.Header().Set("Content-Type", "application/vnd.tcpdump.pcap")
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(fileData)))
-	w.Header().Set("Cache-Control", "no-cache")
-
-	// Write the entire file in one go (better for HTTP/2)
-	bytesWritten, err := w.Write(fileData)
-	if err != nil {
-		log.Printf("[WebUI] Failed to send PCAP file after %d bytes: %v", bytesWritten, err)
-		return
-	}
-
-	log.Printf("[WebUI] Successfully sent PCAP file: %d bytes written", bytesWritten)
+	writeClassicPacketDownload(w, outputFile, fmt.Sprintf("connection_%s-%s_%s-%s.pcap", srcIP, srcPort, dstIP, dstPort))
 }
 
 // NetworkConversationDataResponse contains the raw conversation data for a network-layer connection

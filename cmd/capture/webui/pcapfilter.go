@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	stdio "io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -68,6 +69,27 @@ var errPacketDownloadLimit = errors.New("packet download exceeds output byte lim
 var errPacketDownloadLimitInvalid = errors.New("maxOutputBytes must be one positive integer")
 
 var packetDownloadSlots = make(chan struct{}, 2)
+
+func writeClassicPacketDownload(w http.ResponseWriter, path, filename string) {
+	file, err := os.Open(path)
+	if err != nil {
+		http.Error(w, "Failed to open filtered PCAP", http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil {
+		http.Error(w, "Failed to stat filtered PCAP", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+	w.Header().Set("Content-Type", "application/vnd.tcpdump.pcap")
+	w.Header().Set("Content-Length", strconv.FormatInt(info.Size(), 10))
+	w.Header().Set("Cache-Control", "no-cache")
+	if n, err := stdio.CopyN(w, file, info.Size()); err != nil {
+		log.Printf("[WebUI] Failed to send PCAP file after %d bytes: %v", n, err)
+	}
+}
 
 func admitPacketDownload(w http.ResponseWriter) func() {
 	select {
