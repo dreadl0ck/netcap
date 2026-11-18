@@ -47,6 +47,7 @@ func collectionQuery(req mcplib.CallToolRequest, q url.Values) error {
 	q.Del("limit")
 	q.Del("offset")
 	q.Del("search")
+	q.Del("generation")
 	q.Set("mcpPage", "true")
 	q.Set("pageLimit", strconv.Itoa(limit))
 	q.Set("pageOffset", strconv.Itoa(offset))

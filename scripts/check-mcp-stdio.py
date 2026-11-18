@@ -351,6 +351,26 @@ rules:
         http_args = {"session_id": http_session}
         if not (await call("wait_for_session", http_args | {"timeout_seconds": 20}))["completed"]:
             raise ValueError("HTTP fixture did not complete")
+        hosts = await call("list_hosts", http_args)
+        total = hosts["totalCount"]
+        generation = hosts["generation"]
+        if not generation or not 2 <= total <= 100 or len(hosts["hosts"]) != total:
+            raise ValueError("HTTP fixture did not produce a complete, multi-host inventory")
+        paged_hosts = []
+        for offset in range(total + 1):
+            page = await call("list_hosts", http_args | {"limit": 1, "offset": offset, "generation": generation})
+            if (page["generation"] != generation or page["totalCount"] != total
+                    or page["offset"] != offset or page["limit"] != 1
+                    or page["hosts"] != hosts["hosts"][offset:offset + 1]
+                    or page["next_offset"] != min(offset + 1, total)
+                    or page["has_more"] != (offset + 1 < total)):
+                raise ValueError("host continuation does not match the inventory")
+            paged_hosts.extend(page["hosts"])
+        if paged_hosts != hosts["hosts"]:
+            raise ValueError("host continuation lost or duplicated rows")
+        stale_hosts = await client.call_tool("list_hosts", http_args | {"limit": 1, "offset": 1, "generation": "0" * 64})
+        if not stale_hosts.isError:
+            raise ValueError("host continuation accepted a stale generation")
         inventory = await call("list_extracted_files", http_args)
         row = next((row for row in inventory["files"] if 1 < row["size"] <= 16384 and row.get("sha256")), None)
         if row is None:
