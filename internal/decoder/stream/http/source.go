@@ -334,24 +334,16 @@ func (h *httpReader) SupportsFragmentSource() bool {
 
 func sourceHTTPOrientation(c *core.ConversationInfo) (*core.ConversationInfo, error) {
 	const prefixSize = 16384
-	var credit int64
-	for _, source := range []core.RangedFragmentSource{c.ClientSource, c.ServerSource} {
-		if source.Count() > 0 {
-			credit += prefixSize
-		}
-	}
-	if err := c.StateBudget.Reserve(credit); err != nil {
-		return nil, err
-	}
-	defer c.StateBudget.Release(credit)
-	client, err := core.ReadSourcePrefix(c.ClientSource, prefixSize)
+	client, err := core.ReadBudgetedSourcePrefix(c.ClientSource, prefixSize, c.StateBudget)
 	if err != nil {
 		return nil, err
 	}
-	server, err := core.ReadSourcePrefix(c.ServerSource, prefixSize)
+	defer c.StateBudget.Release(int64(cap(client)))
+	server, err := core.ReadBudgetedSourcePrefix(c.ServerSource, prefixSize, c.StateBudget)
 	if err != nil {
 		return nil, err
 	}
+	defer c.StateBudget.Release(int64(cap(server)))
 	if bytes.HasPrefix(client, []byte(http2.ClientPreface)) || bytes.HasPrefix(server, []byte(http2.ClientPreface)) {
 		return nil, errHTTPSourceCompatibility
 	}

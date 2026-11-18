@@ -116,13 +116,14 @@ func captureHTTPWithBodyLimit(t *testing.T, data core.DataFragments, source, inc
 }
 
 func TestHTTPSourceOrientationUnderOneDirectionBudget(t *testing.T) {
-	budget, err := core.NewStateBudget(16<<10, nil)
+	const response = "HTTP/1.1 204 No Content\r\n\r\n"
+	budget, err := core.NewStateBudget(int64(len(response)), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	c := &core.ConversationInfo{
 		ClientIP: "192.0.2.2", ServerIP: "192.0.2.1", StateBudget: budget,
-		ClientSource: core.SliceSource{wireFragment(0, []byte("HTTP/1.1 204 No Content\r\n\r\n"), 1)},
+		ClientSource: core.SliceSource{wireFragment(0, []byte(response), 1)},
 		ServerSource: core.SliceSource(nil),
 	}
 	oriented, err := sourceHTTPOrientation(c)
@@ -132,8 +133,16 @@ func TestHTTPSourceOrientationUnderOneDirectionBudget(t *testing.T) {
 	if oriented.ServerIP != c.ClientIP || oriented.ClientSource.Count() != 0 || oriented.ServerSource.Count() != 1 {
 		t.Fatal("response-only conversation was not oriented correctly")
 	}
-	if health := budget.Health(); health.RetainedBytes != 0 || health.PeakBytes != 16<<10 || health.Exceeded {
+	if health := budget.Health(); health.RetainedBytes != 0 || health.PeakBytes != int64(len(response)) || health.Exceeded {
 		t.Fatalf("unexpected prefix accounting: %+v", health)
+	}
+	c.ServerSource = core.SliceSource{wireFragment(1, []byte("GET / HTTP/1.1\r\n\r\n"), 2)}
+	c.StateBudget = budget.CompletionView()
+	if _, err := sourceHTTPOrientation(c); !errors.Is(err, core.ErrCompletionStateBudget) {
+		t.Fatalf("expected second-direction refusal, got %v", err)
+	}
+	if health := budget.Health(); health.RetainedBytes != 0 || health.Exceeded || health.CompletionRejectedBytes == 0 {
+		t.Fatalf("unexpected prefix accounting after refusal: %+v", health)
 	}
 }
 

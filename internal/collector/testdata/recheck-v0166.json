@@ -402,6 +402,7 @@
     "previousLimits": "The same synthetic fixture exceeded a 2 MiB page cap and then a 64 MiB TCP state cap with pages raised to 128 MiB. These caps remain insufficient for strict replay."
   },
   "boundedHTTPSourcePreflight": {
+    "orientationPrefixCredits": "TestHTTPSourceOrientationUnderOneDirectionBudget verifies response-only orientation at 27 peak credits and zero retained. Adding a second direction under the same cap returns local completion pressure and releases the first prefix. Core and focused HTTP, TCP and collector race tests passed.",
     "sampleBufferSizing": "Known-length HTTP requests size sample and scratch reservations to their body length. TestSampledRequestReleasesBodyCreditsBeforePairing now preserves a 6006-byte request's HTML classification and query metadata under an 8 KiB state cap, below the former 33280-credit sampling reservation. Focused portable HTTP and collector race tests passed.",
     "sampleOverrunReadError": "TestCappedSourceRequestBodyStopsAtLimit preserves both the size-limit error and the underlying read error when the reader delivers byte 129 and fails in the same call. The sample stays at 128 bytes and all TCP state credits release. The portable HTTP race suite passed.",
     "sampledRequestCreditLifetime": "TestSampledRequestReleasesBodyCreditsBeforePairing verifies that a sampled request retains only header credits while awaiting its response. The recorded HTML classification and query parameter survive, with no request payload emitted. Focused HTTP and collector race tests passed.",
