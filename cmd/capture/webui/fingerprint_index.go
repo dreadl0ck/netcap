@@ -178,7 +178,14 @@ func (g fingerprintAuditGeneration) same(other fingerprintAuditGeneration) bool 
 }
 
 func fingerprintSnapshotFor(outDir string) (*fingerprintSnapshot, error) {
+	return fingerprintSnapshotForContext(context.Background(), outDir)
+}
+
+func fingerprintSnapshotForContext(ctx context.Context, outDir string) (*fingerprintSnapshot, error) {
 	for attempt := 0; attempt < 2; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		generation, err := fingerprintGeneration(outDir)
 		if err != nil {
 			return nil, err
@@ -222,7 +229,14 @@ func fingerprintSnapshotFor(outDir string) (*fingerprintSnapshot, error) {
 		} else {
 			entry.used = time.Now()
 			fingerprintCache.Unlock()
-			<-entry.ready
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-entry.ready:
+			}
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
 		}
 		if errors.Is(entry.err, errFingerprintAuditChanged) {
 			continue

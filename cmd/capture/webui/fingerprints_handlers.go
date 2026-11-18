@@ -115,8 +115,11 @@ func (s *Server) handleFingerprints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	snapshot, err := fingerprintSnapshotFor(outDir)
+	snapshot, err := fingerprintSnapshotForContext(r.Context(), outDir)
 	if err != nil {
+		if r.Context().Err() != nil {
+			return
+		}
 		if errors.Is(err, errFingerprintBuildBusy) {
 			RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": err.Error()})
 			return

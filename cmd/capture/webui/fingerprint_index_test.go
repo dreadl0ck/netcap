@@ -14,12 +14,53 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+func TestFingerprintSnapshotWaitCanCancelWithoutRetiringBuild(t *testing.T) {
+	dir := t.TempDir()
+	entry := &fingerprintCacheEntry{ready: make(chan struct{})}
+	fingerprintCache.Lock()
+	fingerprintCache.entries[dir] = entry
+	fingerprintCache.Unlock()
+	t.Cleanup(func() {
+		fingerprintCache.Lock()
+		delete(fingerprintCache.entries, dir)
+		fingerprintCache.Unlock()
+	})
+	ctx, cancel := context.WithTimeout(t.Context(), 25*time.Millisecond)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() {
+		_, err := fingerprintSnapshotForContext(ctx, dir)
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("waiting request: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		close(entry.ready)
+		t.Fatal("request waited for the shared build after its deadline")
+	}
+	fingerprintCache.Lock()
+	kept := fingerprintCache.entries[dir] == entry
+	fingerprintCache.Unlock()
+	if !kept {
+		t.Fatal("canceled request retired the shared build")
+	}
+	entry.err = errors.New("fixture build failed")
+	close(entry.ready)
+	if got, err := fingerprintSnapshotFor(dir); got != nil || !errors.Is(err, entry.err) {
+		t.Fatalf("shared failure: snapshot=%v err=%v", got, err)
+	}
+}
 
 func TestFingerprintSnapshotRejectsSameMetadataReplacement(t *testing.T) {
 	dir, replacement := t.TempDir(), t.TempDir()
