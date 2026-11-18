@@ -279,6 +279,19 @@ rules:
         if empty["records"] != []:
             raise ValueError("empty page did not return an array")
 
+        schema = Path(data_dir).resolve() / "contract.proto"
+        schema.write_text('syntax = "proto3"; package contract; message Sample { string label = 1; }\n', encoding="utf-8")
+        await call("add_protobuf_search_path", {"path": str(schema)})
+        await call("recompile_protobuf_schemas", {})
+        messages = (await call("list_protobuf_messages", {}))["messages"]
+        if {message["fullName"] for message in messages} != {"contract.Sample"}:
+            raise ValueError("schema recompilation did not retain the fixture message")
+        await call("set_protobuf_mapping", {"port": 49001, "messageType": "contract.Sample"})
+        proto = await call("get_protobuf_status", {})
+        if (not proto["loaded"] or proto["errors"] or proto["fileCount"] != 1
+                or proto["portMappings"] != [{"port": 49001, "messageType": "contract.Sample"}]):
+            raise ValueError("protobuf status lost the compiled schema or explicit port mapping")
+
         uploaded = (await call("ingest_pcap", {"path": str(capture)}))["session_id"]
         if not uploaded or uploaded == sid:
             raise ValueError("upload did not create a distinct fixture session")
