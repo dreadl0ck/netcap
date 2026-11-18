@@ -25,15 +25,14 @@ func TestAuditStreamRequiresDelimitedTerminalEvent(t *testing.T) {
 	}))
 	defer ts.Close()
 	c := NewNetcapClient(ts.URL)
-	for _, limit := range []int{len(body) - 2, len(body) - 1, len(body)} {
+	for _, limit := range []int{len(body) - 2, len(body) - 1} {
 		_, _, got, err := c.StreamAuditRecords("DNS", nil, limit)
-		want := "incomplete"
-		if limit == len(body) {
-			want = "complete"
+		if err == nil || got != "" || !strings.Contains(err.Error(), "byte limit") {
+			t.Fatalf("limit %d: got %q, %v; want a budget error", limit, got, err)
 		}
-		if err != nil || got != want {
-			t.Fatalf("limit %d: got %q, %v; want %s", limit, got, err, want)
-		}
+	}
+	if _, _, terminal, err := c.StreamAuditRecords("DNS", nil, len(body)); err != nil || terminal != "complete" {
+		t.Fatalf("exact limit: terminal=%q err=%v", terminal, err)
 	}
 }
 
@@ -44,11 +43,26 @@ func TestAuditStreamRequiresFullCRLFDelimiter(t *testing.T) {
 	}))
 	defer ts.Close()
 	c := NewNetcapClient(ts.URL)
-	if _, _, terminal, err := c.StreamAuditRecords("DNS", nil, len(body)-1); err != nil || terminal != "incomplete" {
+	if _, _, terminal, err := c.StreamAuditRecords("DNS", nil, len(body)-1); err == nil || terminal != "" || !strings.Contains(err.Error(), "byte limit") {
 		t.Fatalf("truncated CRLF: terminal=%q err=%v", terminal, err)
 	}
 	if _, _, terminal, err := c.StreamAuditRecords("DNS", nil, len(body)); err != nil || terminal != "complete" {
 		t.Fatalf("complete CRLF: terminal=%q err=%v", terminal, err)
+	}
+}
+
+func TestAuditStreamBudgetDoesNotReturnPartialRecords(t *testing.T) {
+	const body = "event: record\ndata: {\"name\":\"fixture\"}\n\n"
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(w, body)
+	}))
+	defer ts.Close()
+	c := NewNetcapClient(ts.URL)
+	if records, _, terminal, err := c.StreamAuditRecords("DNS", nil, len(body)); err == nil || !strings.Contains(err.Error(), "byte limit") || records != nil || terminal != "" {
+		t.Fatalf("budget exhaustion returned records=%v terminal=%q err=%v", records, terminal, err)
+	}
+	if records, _, terminal, err := c.StreamAuditRecords("DNS", nil, len(body)+1); err != nil || len(records) != 1 || terminal != "incomplete" {
+		t.Fatalf("premature EOF returned records=%v terminal=%q err=%v", records, terminal, err)
 	}
 }
 

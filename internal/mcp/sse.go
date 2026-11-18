@@ -77,7 +77,7 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 	if maxBytes <= 0 {
 		maxBytes = 8 << 20 // 8 MiB
 	}
-	limited := io.LimitReader(resp.Body, int64(maxBytes))
+	limited := &io.LimitedReader{R: resp.Body, N: int64(maxBytes)}
 	recordLimit, _ := strconv.Atoi(q.Get("limit"))
 	if recordLimit < 1 || recordLimit > 500 {
 		recordLimit = 500
@@ -158,6 +158,9 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, nil, "", fmt.Errorf("reading SSE: %w", err)
+	}
+	if limited.N == 0 {
+		return nil, nil, "", fmt.Errorf("SSE response reached the %d-byte limit before a terminal event; narrow the page", maxBytes)
 	}
 	if terminalEvent == "" {
 		// No "complete" event arrived (truncated stream or server bug).
