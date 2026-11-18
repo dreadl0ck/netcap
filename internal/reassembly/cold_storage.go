@@ -289,6 +289,8 @@ func (a *Assembler) closeOrderedWithCold(conns []connectionRef, progress func())
 	p.createMu.Lock()
 	defer p.createMu.Unlock()
 	closed, index, last := 0, 0, ""
+	expected := p.cold.count.Load()
+	var visited int64
 	var hotOrder string
 	for {
 		var orderKey, id string
@@ -296,8 +298,14 @@ func (a *Assembler) closeOrderedWithCold(conns []connectionRef, progress func())
 		var found bool
 		err := p.cold.state.Do(func(tx *aggregate.Tx) error {
 			key, value, exists, err := tx.Next(p.cold.prefix+"order/", last)
-			if err != nil || !exists {
+			if err != nil {
 				return err
+			}
+			if !exists {
+				if visited != expected {
+					return fmt.Errorf("TCP cold order index ended after %d entries, want %d", visited, expected)
+				}
+				return nil
 			}
 			orderKey, id, found = key, string(value), true
 			wire, exists, err := tx.Get(p.cold.row(id))
@@ -317,6 +325,9 @@ func (a *Assembler) closeOrderedWithCold(conns []connectionRef, progress func())
 			}
 			if orderKey != p.cold.prefix+"order/"+order+"/" {
 				return fmt.Errorf("TCP cold order entry does not match stored connection")
+			}
+			if visited >= expected {
+				return fmt.Errorf("TCP cold order index exceeds %d entries", expected)
 			}
 			return nil
 		})
@@ -348,6 +359,7 @@ func (a *Assembler) closeOrderedWithCold(conns []connectionRef, progress func())
 				return closed
 			}
 			closed++
+			visited++
 			if progress != nil {
 				progress()
 			}
