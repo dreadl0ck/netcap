@@ -752,7 +752,12 @@ func (t *tcpConnection) decode() {
 			return conv.ClientData.ContiguousBytes(), conv.ServerData.ContiguousBytes()
 		},
 		PrefixBytes: func(limit int) ([]byte, []byte) {
-			amount := 2 * int64(limit)
+			var amount int64
+			for _, source := range []core.FragmentSource{clientSource, serverSource} {
+				if source.Count() > 0 {
+					amount += int64(limit)
+				}
+			}
 			if err := workingBudget.Reserve(amount); err != nil {
 				conv.FragmentError = err
 				return nil, nil
