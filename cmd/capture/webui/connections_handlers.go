@@ -23,6 +23,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	stdio "io"
 	"log"
@@ -140,21 +141,8 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	snapshot, err := connectionSnapshotForContext(r.Context(), outDir)
-	if err != nil {
-		if r.Context().Err() != nil {
-			return
-		}
-		switch err {
-		case errConnectionBuildBusy:
-			RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": err.Error()})
-			return
-		case errConnectionAuditChanged:
-			RespondJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
-			return
-		}
-		log.Printf("[WebUI] Failed to read connections: %v", err)
-		http.Error(w, "Failed to read connections", http.StatusInternalServerError)
+	snapshot := serveConnectionSnapshot(w, r, outDir)
+	if snapshot == nil {
 		return
 	}
 
@@ -162,6 +150,32 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func serveConnectionSnapshot(w http.ResponseWriter, r *http.Request, outDir string) *connectionSnapshot {
+	snapshot, err := connectionSnapshotForContext(r.Context(), outDir)
+	if err == nil {
+		return snapshot
+	}
+	if r.Context().Err() != nil {
+		return nil
+	}
+	status := http.StatusInternalServerError
+	switch {
+	case errors.Is(err, errConnectionBuildBusy):
+		status = http.StatusTooManyRequests
+	case errors.Is(err, errConnectionAuditChanged):
+		status = http.StatusConflict
+	case errors.Is(err, errConnectionScanLimit):
+		status = http.StatusRequestEntityTooLarge
+	}
+	if status == http.StatusInternalServerError {
+		log.Printf("[WebUI] Failed to read connections: %v", err)
+		http.Error(w, "Failed to read connections", status)
+	} else {
+		RespondJSON(w, status, map[string]string{"error": err.Error()})
+	}
+	return nil
 }
 
 // filterConnectionsByLayer filters connections based on the layer type

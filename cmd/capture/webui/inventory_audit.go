@@ -20,6 +20,7 @@ type inventoryAuditBudget struct {
 	ctx          context.Context
 	stored       int64
 	bodies, rows int
+	frame        int
 }
 
 func openInventoryAuditReader(f *os.File, size int64, ctx context.Context, want types.Type) (*AuditRecordReader, error) {
@@ -74,10 +75,24 @@ func (b *inventoryAuditBudget) next(r *AuditRecordReader) (proto.Message, error)
 	if b == nil {
 		return r.NextRecord()
 	}
+	raw, err := b.nextRaw(r)
+	if err != nil {
+		return nil, err
+	}
+	return r.DecodeRecord(raw)
+}
+
+func (b *inventoryAuditBudget) nextRaw(r *AuditRecordReader) ([]byte, error) {
+	if b == nil {
+		return r.NextRaw()
+	}
 	if err := b.ctx.Err(); err != nil {
 		return nil, err
 	}
 	limit := b.bodies
+	if b.frame > 0 {
+		limit = min(limit, b.frame)
+	}
 	if b.rows == 0 {
 		limit = 0
 	}
@@ -90,5 +105,5 @@ func (b *inventoryAuditBudget) next(r *AuditRecordReader) (proto.Message, error)
 	}
 	b.rows--
 	b.bodies -= len(raw)
-	return r.DecodeRecord(raw)
+	return raw, nil
 }

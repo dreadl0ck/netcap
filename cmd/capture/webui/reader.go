@@ -182,12 +182,12 @@ func visitAuditRecords[T proto.Message](path, label string, visit func(T)) error
 	if _, err := reader.ReadHeader(); err != nil {
 		return err
 	}
-	return visitAuditReader(reader, label, visit)
+	return visitAuditReader(reader, nil, label, visit)
 }
 
-func visitAuditReader[T proto.Message](reader *AuditRecordReader, label string, visit func(T)) error {
+func visitAuditReader[T proto.Message](reader *AuditRecordReader, budget *inventoryAuditBudget, label string, visit func(T)) error {
 	for {
-		raw, err := reader.NextRaw()
+		raw, err := budget.nextRaw(reader)
 		if err != nil {
 			if err == io.EOF {
 				break

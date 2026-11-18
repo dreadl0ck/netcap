@@ -21,6 +21,8 @@ const (
 	connectionCacheBytes = 64 << 20
 	connectionMaxRows    = 200_000
 	connectionMaxKeys    = 8192
+	connectionScanBytes  = 64 << 20
+	connectionFrameBytes = 1 << 20
 )
 
 type connectionFilter struct {
@@ -227,6 +229,7 @@ var (
 	connectionBuildSlots      = make(chan struct{}, 2)
 	errConnectionBuildBusy    = errors.New("connection inventory builds are busy")
 	errConnectionAuditChanged = errors.New("connection audit changed during inventory build; retry")
+	errConnectionScanLimit    = errors.New("connection audit exceeds snapshot scan limits")
 )
 
 func connectionGeneration(outDir string) (os.FileInfo, error) {
@@ -352,13 +355,18 @@ func readConnectionGeneration(outDir string, generation os.FileInfo) ([]Connecti
 		f.Close()
 		return nil, errConnectionAuditChanged
 	}
+	if info.Size() > connectionScanBytes {
+		f.Close()
+		return nil, errConnectionScanLimit
+	}
 	reader, err := openInventoryAuditReader(f, info.Size(), context.Background(), types.Type_NC_Connection)
 	if err != nil {
 		return nil, err
 	}
 	defer reader.Close()
+	budget := inventoryAuditBudget{ctx: context.Background(), bodies: connectionScanBytes, rows: connectionMaxRows, frame: connectionFrameBytes}
 	rows, readErr := summarizeConnections(func(visit func(*types.Connection)) error {
-		return visitAuditReader(reader, "Connection", visit)
+		return visitAuditReader(reader, &budget, "Connection", visit)
 	})
 	after, err := f.Stat()
 	if err != nil {
@@ -367,15 +375,10 @@ func readConnectionGeneration(outDir string, generation os.FileInfo) ([]Connecti
 	if !sameConnectionGeneration(info, after) {
 		return nil, errConnectionAuditChanged
 	}
-	return rows, readErr
-}
-
-func cachedConnectionRows(outDir string) []ConnectionSummary {
-	snapshot, err := connectionSnapshotFor(outDir)
-	if err != nil {
-		return nil
+	if errors.Is(readErr, errInventoryAuditLimit) {
+		return nil, errConnectionScanLimit
 	}
-	return snapshot.rows
+	return rows, readErr
 }
 
 func connectionEvictLocked() {

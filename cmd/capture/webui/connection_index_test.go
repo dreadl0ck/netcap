@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -19,6 +21,82 @@ import (
 	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+func TestConnectionSnapshotScanLimits(t *testing.T) {
+	dir := t.TempDir()
+	s := newTimelineTestServer(dir)
+	request := func(handler http.HandlerFunc) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		handler(w, httptest.NewRequest(http.MethodGet, "/?limit=1", nil))
+		return w
+	}
+	refused := func() {
+		t.Helper()
+		for _, handle := range []http.HandlerFunc{s.handleConnections, s.handleConnectionsTopByTraffic, s.handleConnectionsProtocols, s.handleConnectionsApplications, s.handleConnectionsDuration} {
+			w := request(handle)
+			var response map[string]string
+			if w.Code != http.StatusRequestEntityTooLarge || json.Unmarshal(w.Body.Bytes(), &response) != nil || len(response) != 1 || response["error"] != errConnectionScanLimit.Error() {
+				t.Fatalf("expected only the scan-limit error: %d %s", w.Code, w.Body)
+			}
+		}
+	}
+	path := filepath.Join(dir, "Connection.ncap.gz")
+	writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, nil)
+	if err := os.Truncate(path, connectionScanBytes+1); err != nil {
+		t.Fatal(err)
+	}
+	refused()
+
+	rows := make([]proto.Message, connectionMaxRows+1)
+	for i := range rows {
+		rows[i] = &types.Connection{}
+	}
+	writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, rows[:connectionMaxRows])
+	w := request(s.handleConnections)
+	var page ConnectionsResponse
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &page) != nil || page.TotalCount != connectionMaxRows || len(page.Connections) != 1 {
+		t.Fatalf("exact row budget: %d %s", w.Code, w.Body)
+	}
+	writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, rows)
+	w = request(s.handleConnections)
+	if w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "totalCount") {
+		t.Fatalf("row budget exceeded: %d %s", w.Code, w.Body)
+	}
+
+	writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, []proto.Message{
+		&types.Connection{SrcIP: strings.Repeat("a", connectionFrameBytes)},
+	})
+	refused()
+}
+
+func TestConnectionSnapshotDecodedByteLimit(t *testing.T) {
+	dir := t.TempDir()
+	record := &types.Connection{SrcIP: strings.Repeat("a", connectionFrameBytes)}
+	record.SrcIP = record.SrcIP[:connectionFrameBytes-(proto.Size(record)-connectionFrameBytes)]
+	if proto.Size(record) != connectionFrameBytes {
+		t.Fatal("fixture must fill the frame budget exactly")
+	}
+	rows := make([]proto.Message, connectionScanBytes/connectionFrameBytes+1)
+	for i := range rows {
+		rows[i] = record
+	}
+	rows[len(rows)-1] = &types.Connection{TotalSize: 1}
+	writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, rows[:len(rows)-1])
+	read := func() ([]ConnectionSummary, error) {
+		info, err := connectionGeneration(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return readConnectionGeneration(dir, info)
+	}
+	if got, err := read(); len(got) != len(rows)-1 || err != nil {
+		t.Fatalf("exact body budget: rows=%d err=%v", len(got), err)
+	}
+	writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, rows)
+	if got, err := read(); got != nil || !errors.Is(err, errConnectionScanLimit) {
+		t.Fatalf("over body budget: rows=%d err=%v", len(got), err)
+	}
+}
 
 func TestConnectionSnapshotBuildLimitKeepsCacheHitsAvailable(t *testing.T) {
 	warm, cold := t.TempDir(), t.TempDir()
@@ -294,7 +372,7 @@ func BenchmarkConnectionFilteredRequest(b *testing.B) {
 	b.Run("four-charts-cached", func(b *testing.B) {
 		for range b.N {
 			for range 4 {
-				if len(cachedConnectionRows(dir)) != 10_000 {
+				if snapshot, err := connectionSnapshotFor(dir); err != nil || len(snapshot.rows) != 10_000 {
 					b.Fatal("incomplete chart data")
 				}
 			}

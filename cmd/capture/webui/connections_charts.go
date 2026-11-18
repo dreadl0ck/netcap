@@ -53,7 +53,11 @@ func (s *Server) handleConnectionsTopByTraffic(w http.ResponseWriter, r *http.Re
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
-	chart := generateConnectionsTopByTrafficChart(outDir, showLegend)
+	snapshot := serveConnectionSnapshot(w, r, outDir)
+	if snapshot == nil {
+		return
+	}
+	chart := generateConnectionsTopByTrafficChart(snapshot.rows, showLegend)
 	html, err := injectFullHeightCSS(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -91,7 +95,11 @@ func (s *Server) handleConnectionsProtocols(w http.ResponseWriter, r *http.Reque
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr != "false"
 
-	chart := generateConnectionsProtocolsChart(outDir, showLegend)
+	snapshot := serveConnectionSnapshot(w, r, outDir)
+	if snapshot == nil {
+		return
+	}
+	chart := generateConnectionsProtocolsChart(snapshot.rows, showLegend)
 	html, err := injectFullHeightCSS(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -129,7 +137,11 @@ func (s *Server) handleConnectionsApplications(w http.ResponseWriter, r *http.Re
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
-	chart := generateConnectionsApplicationsChart(outDir, showLegend)
+	snapshot := serveConnectionSnapshot(w, r, outDir)
+	if snapshot == nil {
+		return
+	}
+	chart := generateConnectionsApplicationsChart(snapshot.rows, showLegend)
 	html, err := injectFullHeightCSS(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -167,7 +179,11 @@ func (s *Server) handleConnectionsDuration(w http.ResponseWriter, r *http.Reques
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
-	chart := generateConnectionsDurationChart(outDir, showLegend)
+	snapshot := serveConnectionSnapshot(w, r, outDir)
+	if snapshot == nil {
+		return
+	}
+	chart := generateConnectionsDurationChart(snapshot.rows, showLegend)
 	html, err := injectFullHeightCSS(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -179,8 +195,7 @@ func (s *Server) handleConnectionsDuration(w http.ResponseWriter, r *http.Reques
 }
 
 // generateConnectionsTopByTrafficChart creates a bar chart showing top connections by traffic
-func generateConnectionsTopByTrafficChart(outDir string, showLegend bool) *charts.Bar {
-	connections := cachedConnectionRows(outDir)
+func generateConnectionsTopByTrafficChart(connections []ConnectionSummary, showLegend bool) *charts.Bar {
 
 	// Take top 20 connections
 	limit := min(len(connections), 20)
@@ -252,8 +267,7 @@ func generateConnectionsTopByTrafficChart(outDir string, showLegend bool) *chart
 }
 
 // generateConnectionsProtocolsChart creates a pie chart showing protocol distribution
-func generateConnectionsProtocolsChart(outDir string, showLegend bool) *charts.Pie {
-	connections := cachedConnectionRows(outDir)
+func generateConnectionsProtocolsChart(connections []ConnectionSummary, showLegend bool) *charts.Pie {
 
 	// Aggregate protocols (use TransportProto or ApplicationProto)
 	protoCount := make(map[string]int)
@@ -350,8 +364,7 @@ func generateConnectionsProtocolsChart(outDir string, showLegend bool) *charts.P
 }
 
 // generateConnectionsApplicationsChart creates a bar chart showing top applications
-func generateConnectionsApplicationsChart(outDir string, showLegend bool) *charts.Bar {
-	connections := cachedConnectionRows(outDir)
+func generateConnectionsApplicationsChart(connections []ConnectionSummary, showLegend bool) *charts.Bar {
 
 	// Aggregate applications
 	appCount := make(map[string]int)
@@ -443,8 +456,7 @@ func generateConnectionsApplicationsChart(outDir string, showLegend bool) *chart
 }
 
 // generateConnectionsDurationChart creates a scatter chart showing connection duration vs size
-func generateConnectionsDurationChart(outDir string, showLegend bool) *charts.Scatter {
-	connections := cachedConnectionRows(outDir)
+func generateConnectionsDurationChart(connections []ConnectionSummary, showLegend bool) *charts.Scatter {
 
 	// Prepare scatter data: [duration (seconds), size (KB)]
 	// Limit to reasonable sample size for performance
