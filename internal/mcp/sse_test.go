@@ -7,16 +7,38 @@
 package mcp
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 )
+
+type fragmentedAuditInput struct{ io.Reader }
+
+func (r fragmentedAuditInput) Read(p []byte) (int, error) {
+	return r.Reader.Read(p[:min(len(p), 1024)])
+}
+
+func BenchmarkAuditStreamFragmentedLine(b *testing.B) {
+	const size = 8 << 20
+	input := strings.Repeat("x", size) + "\r\n\r\n"
+	b.SetBytes(size)
+	for b.Loop() {
+		s := bufio.NewScanner(fragmentedAuditInput{strings.NewReader(input)})
+		s.Buffer(make([]byte, 0, 64<<10), maxAuditEventBytes+1024)
+		s.Split(auditEventLineSplitter())
+		if !s.Scan() || len(s.Bytes()) != size || !s.Scan() || len(s.Bytes()) != 0 || s.Scan() || s.Err() != nil {
+			b.Fatalf("unexpected framing: %v", s.Err())
+		}
+	}
+}
 
 func TestAuditStreamRequiresDelimitedTerminalEvent(t *testing.T) {
 	const body = "event: complete\ndata: {\"total\":0}\n\n"

@@ -88,7 +88,7 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 	// header lines ("event: name", "data: payload") followed by \n\n.
 	scanner := bufio.NewScanner(limited)
 	scanner.Buffer(make([]byte, 0, min(maxBytes, 64<<10)), maxAuditEventBytes+1024)
-	scanner.Split(scanAuditEventLine)
+	scanner.Split(auditEventLineSplitter())
 
 	var (
 		curEvent string
@@ -169,12 +169,19 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 	return records, completeJSON, terminalEvent, nil
 }
 
-// A bare CR at EOF must not become the blank line that commits an event.
-func scanAuditEventLine(data []byte, _ bool) (int, []byte, error) {
-	if i := bytes.IndexByte(data, '\n'); i >= 0 {
-		return i + 1, bytes.TrimSuffix(data[:i], []byte("\r")), nil
+func auditEventLineSplitter() bufio.SplitFunc {
+	// Scanner retains the unconsumed prefix between reads.
+	scanned := 0
+	return func(data []byte, _ bool) (int, []byte, error) {
+		if i := bytes.IndexByte(data[scanned:], '\n'); i >= 0 {
+			i += scanned
+			scanned = 0
+			return i + 1, bytes.TrimSuffix(data[:i], []byte("\r")), nil
+		}
+		scanned = len(data)
+		// A bare CR at EOF must not commit an event.
+		return 0, nil, nil
 	}
-	return 0, nil, nil
 }
 
 func validateAuditCompletion(payload json.RawMessage, query url.Values, count int) error {
