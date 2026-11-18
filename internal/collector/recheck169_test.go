@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/defaults"
@@ -77,6 +78,7 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 					cfg.DecoderConfig.IncludeDecoders = "TCP,Connection"
 					cfg.DecoderConfig.MaxRetainedReassemblyBytes = 2 << 20
 					cfg.DecoderConfig.LocalReassemblyPageLoss = true
+					cfg.DecoderConfig.SaveConns = os.Getenv("NETCAP_RECHECK_FANOUT_EXPORT") == "1"
 					err := New(cfg).CollectPcap(input)
 					var partial *localReassemblyCoverageError
 					if !errors.As(err, &partial) || partial.ExitCode() != 2 || !errors.Is(err, reassembly.ErrPageBudget) {
@@ -97,6 +99,17 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 						t.Fatal(health)
 					}
 					t.Logf("retained all packet and connection rows; page peak %d bytes", health.PeakBytes)
+					if cfg.DecoderConfig.SaveConns {
+						entries, err := os.ReadDir(filepath.Join(out, "stream-evidence"))
+						if err != nil || len(entries) != 15000 {
+							t.Fatalf("stream exports: got %d, want 15000: %v", len(entries), err)
+						}
+						for _, entry := range entries {
+							if !entry.IsDir() || !strings.HasPrefix(entry.Name(), "stream-") {
+								t.Fatalf("unexpected export entry %s", entry.Name())
+							}
+						}
+					}
 				})
 			} else if _, err := os.Stat(filepath.Join(out, "Protobuf.ncap.gz")); err == nil {
 				records := bookRecords(t, out, "Protobuf", func() *types.Protobuf { return new(types.Protobuf) })
