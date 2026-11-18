@@ -1,3 +1,21 @@
+## W87 evaluator rerun
+
+`v0.16.11` is the build for the full evaluator benchmark rerun.
+
+| Area | Change |
+| --- | --- |
+| Capture and extraction | Stream disk-backed HTTP artifacts and preserve independently completed output under local reassembly, decoder, or analyzer pressure. Report incomplete coverage explicitly. |
+| Reassembly | Avoid disjoint overlap walks, preserve TCP rollover behavior, reduce EOF sort allocations, and validate disk-backed connection indexes and identity. |
+| Analysis | Snapshot admitted rules, stabilize capture-time replay, and coordinate post-capture completion, cancellation, and live admission. |
+| MCP | Validate page counts, rows, generations and continuation; bound inventory scans and concurrent work; report schema reload failures and preserve the active registry on a failed reload. |
+| Detection evidence | Preserve TCP overlap bytes and severity. Qualify possible stale probes only with complete evidence; exclude truncated segment ends and FINs from keep-alive exceptions where their sequence evidence is incomplete. |
+
+The [qualification ledger](internal/collector/testdata/recheck-v0166.json) records
+the synthetic 15,000-flow audit equivalence checks and official MCP client runs.
+The original evaluator corpus and harness, the ≥64 GB tier, and native
+Windows/Npcap live and offline capture remain unqualified. Keep capture options,
+input hashes, platform, and artifact selection with the evaluator results.
+
 ## MCP reliability and bounded capture state
 
 `v0.16.9` implements all 17 MCP findings from the v0.16.8 recheck and adds
