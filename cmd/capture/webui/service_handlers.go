@@ -453,8 +453,12 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Queue the job
-	if err := s.enqueueAnalysis(job, true); err != nil {
+	if err := s.enqueueAnalysisContext(r.Context(), job, true); err != nil {
 		s.recordAnalysisFailure(job, err.Error(), "")
+		if r.Context().Err() != nil {
+			http.Error(w, "Capture upload canceled before queue admission", http.StatusRequestTimeout)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}

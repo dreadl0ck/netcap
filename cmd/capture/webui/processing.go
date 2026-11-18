@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"sync/atomic"
@@ -39,10 +40,18 @@ func (s *Server) claimProcessingWorkLocked() func() {
 
 // Admission remains owned while a producer waits for queue capacity.
 func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
+	return s.enqueueAnalysisContext(context.Background(), job, wait)
+}
+
+func (s *Server) enqueueAnalysisContext(ctx context.Context, job *AnalysisJob, wait bool) error {
 	s.enqueueMu.RLock()
 	defer s.enqueueMu.RUnlock()
 	if job == nil || s.jobQueue == nil {
 		return errAnalysisUnavailable
+	}
+	if err := ctx.Err(); err != nil {
+		job.settings.cleanup()
+		return err
 	}
 	s.mu.Lock()
 	if s.processingStopping {
@@ -109,6 +118,9 @@ func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
 		return errAnalysisStopping
 	}
 	job.reproductionSource.PreviousManifestSHA256 = priorReproductionManifest(job.OutputDir)
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	job.processingDone = func() { job.settings.cleanup(); done() }
 	atomic.AddInt64(&s.jobsScheduled, 1)
 	defer func() {
@@ -123,6 +135,8 @@ func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
 			return nil
 		case <-s.shutdownChan:
 			return errAnalysisStopping
+		case <-ctx.Done():
+			return ctx.Err()
 		}
 	}
 	s.mu.Lock()
@@ -133,6 +147,9 @@ func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
 	}
 	if s.processingStopping {
 		return errAnalysisStopping
+	}
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	select {
 	case <-s.shutdownChan:

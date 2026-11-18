@@ -21,6 +21,12 @@ func (r *uploadReadCounter) Read([]byte) (int, error) {
 }
 
 func TestServiceUploadAdmissionThroughQueueHandoff(t *testing.T) {
+	t.Run("drain", func(t *testing.T) { testServiceUploadHandoff(t, false) })
+	t.Run("cancel", func(t *testing.T) { testServiceUploadHandoff(t, true) })
+}
+
+func testServiceUploadHandoff(t *testing.T, cancelWaiting bool) {
+	t.Helper()
 	s := &Server{
 		isServiceMode:  true,
 		serviceConfig:  &ServiceConfig{DataDir: t.TempDir(), MaxFileSize: 1024},
@@ -51,10 +57,16 @@ func TestServiceUploadAdmissionThroughQueueHandoff(t *testing.T) {
 		t.Fatal(err)
 	}
 	results := make(chan int, 2)
-	for range 2 {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	for i := range 2 {
 		go func() {
 			w := httptest.NewRecorder()
-			s.handleUploadServiceMode(w, request(bytes.NewReader(wire.Bytes())))
+			r := request(bytes.NewReader(wire.Bytes()))
+			if i == 0 {
+				r = r.WithContext(ctx)
+			}
+			s.handleUploadServiceMode(w, r)
 			results <- w.Code
 		}()
 	}
@@ -75,8 +87,22 @@ func TestServiceUploadAdmissionThroughQueueHandoff(t *testing.T) {
 		}
 	}
 	check(http.StatusServiceUnavailable, false)
+	remaining := 2
+	if cancelWaiting {
+		cancel()
+		select {
+		case code := <-results:
+			if code != http.StatusRequestTimeout || atomic.LoadInt64(&s.jobsScheduled) != 1 || len(s.jobQueue) != 1 {
+				t.Fatalf("canceled upload: status=%d scheduled=%d queued=%d", code, atomic.LoadInt64(&s.jobsScheduled), len(s.jobQueue))
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("cancel did not release blocked admission")
+		}
+		check(http.StatusBadRequest, true)
+		remaining--
+	}
 	(<-s.jobQueue).processingDone() // Release the prefilled queue slot.
-	for range 2 {
+	for range remaining {
 		select {
 		case job := <-s.jobQueue:
 			job.processingDone()
