@@ -81,6 +81,52 @@ func (fixtureAnalyzer) ScanBytesContext(context.Context, []byte) ([]string, erro
 	return []string{"fixture-match"}, nil
 }
 
+func TestAnalyzerIntegrityFailureTakesPrecedenceOverBufferPressure(t *testing.T) {
+	old := GetGlobalConfig()
+	SetGlobalConfig(GetDefaultConfig())
+	t.Cleanup(func() { SetGlobalConfig(old) })
+	dir := t.TempDir()
+	if err := StartAnalysis(dir, "mixed-analyzer-failure"); err != nil {
+		t.Fatal(err)
+	}
+	defer FinishAnalysis()
+	currentAnalysis().yara = fixtureAnalyzer{}
+	path := filepath.Join(dir, "fixture.bin")
+	if err := os.WriteFile(path, []byte("fixture"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	pressureDigest := ComputeHashes([]byte("pressure")).SHA256
+	integrityDigest := ComputeHashes([]byte("original")).SHA256
+	analyzeStored(path, pressureDigest, func() ([]byte, func(), error) {
+		return nil, nil, errSharedArtifactBudget
+	}, nil)
+	analyzeStored(path, integrityDigest, func() ([]byte, func(), error) {
+		return []byte("modified"), func() {}, nil
+	}, nil)
+	analysisErr, persistenceErr := FinishAnalysis()
+	var partial interface{ ExitCode() int }
+	if analysisErr == nil || errors.As(analysisErr, &partial) || persistenceErr != nil {
+		t.Fatalf("mixed failures: analysis=%v, persistence=%v", analysisErr, persistenceErr)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, AnalysisReportFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var report AnalysisReport
+	if err := json.Unmarshal(data, &report); err != nil {
+		t.Fatal(err)
+	}
+	if report.State != "partial" || report.ExecutedJobs != 2 {
+		t.Fatalf("unexpected outcome: state=%s jobs=%d", report.State, report.ExecutedJobs)
+	}
+	for digest, want := range map[string]string{pressureDigest: errSharedArtifactBudget.Error(), integrityDigest: "artifact hash changed"} {
+		row := report.Results[digest]
+		if row == nil || len(row.Analyzers) != 1 || row.Analyzers[0].State != "failed" || row.Analyzers[0].Error != want {
+			t.Fatalf("artifact %s: got %+v, want failure %q", digest, row, want)
+		}
+	}
+}
+
 func TestAnalysisShutdownDrainsAcceptedJobsAndRejectsLateWork(t *testing.T) {
 	old := GetGlobalConfig()
 	SetGlobalConfig(GetDefaultConfig())
