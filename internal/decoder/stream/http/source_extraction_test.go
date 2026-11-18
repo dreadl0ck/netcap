@@ -164,6 +164,24 @@ func TestHTTPSourceBodylessExchangeSkipsScratch(t *testing.T) {
 	}
 }
 
+func TestHTTPSourceOpaquePutSkipsScratch(t *testing.T) {
+	body := strings.Repeat("fixture payload\n", 8192)
+	request := fmt.Sprintf("PUT /fixture HTTP/1.1\r\nHost: fixture.test\r\nContent-Length: %d\r\n\r\n%sGET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n", len(body), body)
+	var data core.DataFragments
+	for fragment := range slices.Chunk([]byte(request), 8192) {
+		data = append(data, wireFragment(0, fragment, 1))
+	}
+	data = append(data, wireFragment(1, []byte(strings.Repeat("HTTP/1.1 204 No Content\r\n\r\n", 2)), 2))
+	want, wantFiles := captureExtractedHTTP(t, data, false)
+	got, gotFiles := captureExtractedHTTP(t, data, true)
+	if len(got) != 2 || got[1].URL != "/next" || len(gotFiles) != 0 || !reflect.DeepEqual(want, got) || !reflect.DeepEqual(wantFiles, gotFiles) {
+		t.Fatalf("PUT changed audit evidence or pairing: want %v, got %v, files %v", want, got, gotFiles)
+	}
+	if _, err := os.Stat(filepath.Join(decoderconfig.Instance.Out, ".artifact-scratch")); !os.IsNotExist(err) {
+		t.Fatalf("opaque PUT touched artifact scratch: %v", err)
+	}
+}
+
 func TestHTTPSourceIncludesPairedPayloads(t *testing.T) {
 	body := strings.Repeat("binary fixture\x00", 10000)
 	request := fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Length: %d\r\n\r\n%sGET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n", len(body), body)
