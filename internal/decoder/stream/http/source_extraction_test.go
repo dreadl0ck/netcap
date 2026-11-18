@@ -644,7 +644,7 @@ func TestBackedGzipResponseClassificationExpansionLimit(t *testing.T) {
 }
 
 func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
-	for _, kind := range []string{"identity", "gzip", "gzip-truncated", "deflate", "raw-deflate", "br", "gzip-deflate-stack", "truncated", "chunked-upload", "multipart-upload", "json-upload", "urlencoded-upload"} {
+	for _, kind := range []string{"identity", "gzip", "gzip-truncated", "deflate", "raw-deflate", "br", "gzip-deflate-stack", "truncated", "chunked-download", "chunked-upload", "multipart-upload", "json-upload", "urlencoded-upload"} {
 		t.Run(kind, func(t *testing.T) {
 			body := []byte(strings.Repeat("artifact fixture\n", 5000))
 			wire := body
@@ -728,6 +728,16 @@ func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
 			}
 			response := []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n%sContent-Length: %d\r\n\r\n", encoding, length))
 			response = append(response, wire...)
+			if kind == "chunked-download" {
+				request += "GET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n"
+				var chunked bytes.Buffer
+				chunked.WriteString("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n")
+				for chunk := range slices.Chunk(body, 8192) {
+					fmt.Fprintf(&chunked, "%x\r\n%s\r\n", len(chunk), chunk)
+				}
+				chunked.WriteString("0\r\n\r\nHTTP/1.1 204 No Content\r\n\r\n")
+				response = chunked.Bytes()
+			}
 			data := core.DataFragments{}
 			if kind == "multipart-upload" {
 				response = append([]byte("HTTP/1.1 204 No Content\r\n\r\n"), response...)
@@ -746,6 +756,11 @@ func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotFiles, wantFiles) {
 				t.Fatalf("file observations changed:\ngot %v\nwant %v", gotFiles, wantFiles)
+			}
+			if kind == "chunked-download" && (len(gotHTTP) != 2 || gotHTTP[0].ResContentLength != int32(len(body)) ||
+				gotHTTP[1].URL != "/next" || gotHTTP[1].StatusCode != 204 || len(gotFiles) != 1 ||
+				!gotFiles[0].IsComplete || gotFiles[0].Hashes.SHA256 != file.ComputeHashes(body).SHA256) {
+				t.Fatalf("chunked length, artifact, or following response lost: %v / %v", gotHTTP, gotFiles)
 			}
 			if kind == "gzip-deflate-stack" && (len(gotHTTP) != 1 || gotHTTP[0].ResContentEncoding != "gzip, DeFlAtE" ||
 				gotHTTP[0].ResContentTypeDetected != "text/plain; charset=utf-8" || len(gotFiles) != 1 || gotFiles[0].Hashes.SHA256 != file.ComputeHashes(body).SHA256) {
