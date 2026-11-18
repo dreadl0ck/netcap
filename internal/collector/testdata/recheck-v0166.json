@@ -175,6 +175,7 @@
     "verification": "Full Web UI race suite passes. Two focused tests pass ten repetitions under race instrumentation: replacement of a queued generation before completion, and shutdown while the timeline lane is occupied."
   },
   "sealedAuditQueryGeneration": {
+    "selectorLockScope": "Capture selection snapshots local ownership and output under the server read lock and releases it before reading the run manifest. Run validation uses a confined, cancelable read. Focused capture-selection, reanalysis and partial-query race tests passed.",
     "initialManifestAdmission": "Initial sealed queries acquire a verification slot before resolving a missing run ID from the capture manifest. Local and service race cases verify HTTP 429 before manifest lookup at saturation and preserve HTTP 409 for changed continuations.",
     "confinedSealInputs": "Sealed audit verification opens the inventory, capture manifest and audit files as regular files under one pinned capture root. TestAuditStageRejectsLinkedInventory rejects a linked inventory even when its target is inside the capture directory. Focused artifact, evidence and WebUI race tests passed.",
     "boundedSealReads": "TestAuditStageSealsBindRunGenerationAndFileContent verifies that size mismatches are rejected before hashing and same-length replacements still fail digest verification. Seal reads hash at most the opening size and probe one extra byte for growth. Focused evidence and partial audit race tests passed.",

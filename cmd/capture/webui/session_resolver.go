@@ -3,12 +3,14 @@ package webui
 import (
 	"context"
 	"crypto/subtle"
+	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 )
 
@@ -99,7 +101,7 @@ func (s *Server) resolveCaptureSelection(r *http.Request) (captureSelection, err
 	}
 	s.mu.RLock()
 	service, manager := s.isServiceMode, s.sessionManager
-	activeSession, activeInput, activeOutput := s.currentSession, s.activeInputFile, s.outDir
+	activeSession := s.currentSession
 	s.mu.RUnlock()
 	var selected captureSelection
 	if service {
@@ -129,35 +131,10 @@ func (s *Server) resolveCaptureSelection(r *http.Request) (captureSelection, err
 			return captureSelection{}, selectionError(409, "Input file conflicts with session")
 		}
 	} else {
-		s.mu.RLock()
-		defer s.mu.RUnlock()
-		if sid != "" {
-			path, exists := s.fileIDToPath[sid]
-			if !exists {
-				return selected, selectionError(404, "Unknown analysis ID")
-			}
-			if input != "" && input != path {
-				return selected, selectionError(409, "Input file conflicts with analysis ID")
-			}
-			input = path
-			selected.AnalysisID = sid
-		}
-		if input != "" {
-			if !slices.Contains(s.inputFiles, input) {
-				if _, exists := s.fileOutputDirs[input]; !exists {
-					return selected, selectionError(404, "Unknown capture input")
-				}
-			}
-			selected.InputFile = input
-			selected.OutputDir = s.outDirForKnownInputLocked(input)
-			if child, exists := s.childAnalyses[input]; exists {
-				selected.AnalysisID = child.AnalysisID
-			}
-			if upload, exists := s.localUploads[input]; exists {
-				selected.AnalysisID = upload.AnalysisID
-			}
-		} else {
-			selected.InputFile, selected.OutputDir = activeInput, activeOutput
+		var err error
+		selected, err = s.resolveLocalCapture(sid, input)
+		if err != nil {
+			return selected, err
 		}
 	}
 	if selected.OutputDir == "" && selected.InputFile == "" {
@@ -168,10 +145,43 @@ func (s *Server) resolveCaptureSelection(r *http.Request) (captureSelection, err
 			return captureSelection{}, selectionError(409, "Capture generation is unavailable")
 		}
 		var manifest evidence.CaptureManifest
-		if err := readEvidenceJSON(filepath.Join(selected.OutputDir, "capture-manifest.json"), &manifest); err != nil || manifest.RunID == "" || manifest.RunID != expected {
+		data, err := artifactio.Read(r.Context(), selected.OutputDir, "capture-manifest.json", 16<<20)
+		if err != nil || json.Unmarshal(data, &manifest) != nil || manifest.RunID != expected {
 			return captureSelection{}, selectionError(409, "Capture generation is unavailable or stale")
 		}
 		selected.RunID = manifest.RunID
+	}
+	return selected, nil
+}
+
+func (s *Server) resolveLocalCapture(sid, input string) (selected captureSelection, err error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if sid != "" {
+		path, exists := s.fileIDToPath[sid]
+		if !exists {
+			return selected, selectionError(404, "Unknown analysis ID")
+		}
+		if input != "" && input != path {
+			return selected, selectionError(409, "Input file conflicts with analysis ID")
+		}
+		input = path
+		selected.AnalysisID = sid
+	}
+	if input == "" {
+		selected.InputFile, selected.OutputDir = s.activeInputFile, s.outDir
+		return selected, nil
+	}
+	if _, exists := s.fileOutputDirs[input]; !exists && !slices.Contains(s.inputFiles, input) {
+		return selected, selectionError(404, "Unknown capture input")
+	}
+	selected.InputFile = input
+	selected.OutputDir = s.outDirForKnownInputLocked(input)
+	if child, exists := s.childAnalyses[input]; exists {
+		selected.AnalysisID = child.AnalysisID
+	}
+	if upload, exists := s.localUploads[input]; exists {
+		selected.AnalysisID = upload.AnalysisID
 	}
 	return selected, nil
 }
