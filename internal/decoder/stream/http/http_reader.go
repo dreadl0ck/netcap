@@ -439,7 +439,9 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		body, release, err = file.ReadBody(res.Body)
 		h.bufferReleases = append(h.bufferReleases, release)
 		if !h.artifactRecovery {
-			passiveReport = software.ObserveWebtech(observation, bytes.NewReader(body), contentEncoding(res.Header), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+			prefix := body[:min(len(body), webtech.MaxPrefix+1)]
+			passiveReport = software.ObserveWebtech(observation, bytes.NewReader(prefix), contentEncoding(res.Header), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+			passiveReport.WireBytes = int64(len(body))
 		}
 	}
 	file.RecordExtractionIssue(err)
