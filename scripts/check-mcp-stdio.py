@@ -114,9 +114,13 @@ async def check(binary, capture, data_dir):
             if (end["data"] != "" or end["hasMore"] or end["offset"] != offset
                     or int(end["totalBytes"]) != len(body) or end["manifestSHA256"] != manifest_hash):
                 raise ValueError("terminal directional page lost its empty data or verified identity")
-        unbound = await client.call_tool("get_stream_content", target | {"offset": 1})
-        if not unbound.isError:
-            raise ValueError("unbound directional continuation accepted")
+        for continuation in ({"offset": 1}, {"spanOffset": 1}):
+            unbound = await client.call_tool("get_stream_content", target | continuation)
+            if not unbound.isError:
+                raise ValueError(f"unbound directional continuation accepted: {continuation}")
+        spans = await call("get_stream_content", target | {"spanOffset": 1, "manifestSHA256": manifest_hash})
+        if spans["spanOffset"] != 1 or spans["manifestSHA256"] != manifest_hash or len(spans["spans"]) > 1:
+            raise ValueError("span continuation lost its offset, identity or bound")
         stale_stream = await client.call_tool("get_stream_content", target | {"offset": 1, "manifestSHA256": "0" * 64})
         if not stale_stream.isError:
             raise ValueError("changed stream manifest digest accepted")

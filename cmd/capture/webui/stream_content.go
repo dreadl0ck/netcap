@@ -63,7 +63,7 @@ func (s *Server) handleStreamContent(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	expected := q.Get("manifestSHA256")
-	if offset > 0 && expected == "" {
+	if (offset > 0 || spanOffset > 0) && expected == "" {
 		http.Error(w, "stream manifest changed or required for subsequent page", 409)
 		return
 	}

@@ -326,6 +326,7 @@
     "verification": "scripts/check-mcp-stdio.py on a fresh portable CLI passed 159 schema-validated calls across 81 of 119 advertised tools with zero failures. The harness added a temporary one-message schema, recompiled it, checked message discovery, set an explicit port mapping and verified the registry status."
   },
   "mcpConversationPagingContract": {
+    "spanContinuation": "The official stdio harness passed 166 schema-validated calls across 83 of 119 tools. With byte offset zero, a nonzero span offset without the manifest digest is rejected, and a bound continuation preserves the span offset, digest and page limit. The focused WebUI stream test passed under the race detector.",
     "directionalEOF": "The official stdio harness passed 164 schema-validated calls across 82 of 119 advertised tools. At and beyond EOF, verified directional pages preserve the requested offset, total size and manifest digest, with empty data and no next page. Continuation without a manifest digest is rejected.",
     "verification": "The official stdio harness passed 162 schema-validated calls across 82 of 119 advertised tools on a fresh portable CLI, with zero failures. The UDP presentation conversation for the fixture tuple returned adjacent 16-byte pages matching one 32-byte page, with stable total size and correct offsets."
   },
