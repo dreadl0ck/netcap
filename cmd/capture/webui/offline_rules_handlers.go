@@ -50,12 +50,28 @@ type offlinePackRequest struct {
 	SessionID string `json:"sessionId,omitempty"`
 }
 
-func decodeOfflineRequest(w http.ResponseWriter, r *http.Request) (*offlinePackRequest, bool) {
+var offlineRuleRequestSlots = make(chan struct{}, 2)
+
+func admitOfflineRuleRequest(w http.ResponseWriter, r *http.Request) func() {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return nil, false
+		return nil
 	}
+	if r.Context().Err() != nil {
+		http.Error(w, "Offline rule request canceled", http.StatusRequestTimeout)
+		return nil
+	}
+	select {
+	case offlineRuleRequestSlots <- struct{}{}:
+		return func() { <-offlineRuleRequestSlots }
+	default:
+		RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "Offline rule requests busy; retry after a request finishes"})
+		return nil
+	}
+}
+
+func decodeOfflineRequest(w http.ResponseWriter, r *http.Request) (*offlinePackRequest, bool) {
 	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
 	decoder.DisallowUnknownFields()
 	var request offlinePackRequest
@@ -83,6 +99,11 @@ func parseOfflineRequest(w http.ResponseWriter, request *offlinePackRequest) (*r
 }
 
 func (s *Server) handleOfflineValidate(w http.ResponseWriter, r *http.Request) {
+	release := admitOfflineRuleRequest(w, r)
+	if release == nil {
+		return
+	}
+	defer release()
 	request, ok := decodeOfflineRequest(w, r)
 	if !ok {
 		return
@@ -159,6 +180,11 @@ func (s *Server) offlineDirectory(r *http.Request, input, sessionID string) (str
 }
 
 func (s *Server) handleOfflineExecute(w http.ResponseWriter, r *http.Request) {
+	admitted := admitOfflineRuleRequest(w, r)
+	if admitted == nil {
+		return
+	}
+	defer admitted()
 	request, ok := decodeOfflineRequest(w, r)
 	if !ok {
 		return

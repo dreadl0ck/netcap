@@ -64,6 +64,29 @@ func TestOfflineValidate(t *testing.T) {
 	}
 }
 
+func TestOfflineRuleRequestsRejectSaturationBeforeReadingBody(t *testing.T) {
+	s := &Server{}
+	func() {
+		for range cap(offlineRuleRequestSlots) {
+			offlineRuleRequestSlots <- struct{}{}
+			defer func() { <-offlineRuleRequestSlots }()
+		}
+		for _, handler := range []http.HandlerFunc{s.handleOfflineValidate, s.handleOfflineExecute} {
+			body := &uploadReadCounter{}
+			w := httptest.NewRecorder()
+			handler(w, httptest.NewRequest(http.MethodPost, "/api/rules/offline", body))
+			if w.Code != http.StatusTooManyRequests || body.reads != 0 {
+				t.Fatalf("saturated request: status=%d reads=%d", w.Code, body.reads)
+			}
+		}
+	}()
+	w := httptest.NewRecorder()
+	s.handleOfflineValidate(w, offlineTestRequest(t, offlinePackRequest{YAML: enabledOfflineExample()}))
+	if w.Code != http.StatusOK {
+		t.Fatalf("retry: status=%d body=%s", w.Code, w.Body)
+	}
+}
+
 func mustOfflineJSON(t *testing.T, v any) []byte {
 	t.Helper()
 	b, err := json.Marshal(v)
@@ -325,7 +348,7 @@ func TestOfflineExecutePartialAndCancelled(t *testing.T) {
 		w := httptest.NewRecorder()
 		s.handleOfflineExecute(w, request)
 		if cancelled {
-			if w.Code != 422 || !strings.Contains(w.Body.String(), "context canceled") {
+			if w.Code != http.StatusRequestTimeout || !strings.Contains(w.Body.String(), "Offline rule request canceled") {
 				t.Fatalf("cancelled=%d %s", w.Code, w.Body.String())
 			}
 		} else {
