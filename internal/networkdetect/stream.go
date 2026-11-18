@@ -10,6 +10,7 @@ import (
 type direction struct {
 	next           uint32
 	started        bool
+	nextTruncated  bool
 	finSeen        bool
 	finSequence    uint32
 	prefix         []byte
@@ -130,7 +131,8 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 		d.prefixSeq = d.next
 	}
 	delta := int32(ev.Seq - d.next)
-	if (!f.closed || f.finObserved) && !f.reset && !ev.Truncated && ev.KeepAliveEligible && len(ev.Payload) == 1 && (delta == -1 || d.finSeen && ev.Seq == d.finSequence) {
+	if (!f.closed || f.finObserved) && !f.reset && !ev.Truncated && ev.KeepAliveEligible && len(ev.Payload) == 1 &&
+		(delta == -1 && !d.nextTruncated || d.finSeen && ev.Seq == d.finSequence) {
 		return // RFC 1122 keep-alive probes carry no new sequence-space data.
 	}
 	if delta > 0 {
@@ -170,6 +172,9 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 		payload = payload[skip:]
 	}
 	d.next += uint32(len(payload))
+	if len(payload) > 0 {
+		d.nextTruncated = ev.Truncated
+	}
 	if !f.closed && !ev.Truncated {
 		d.rememberPrefixEnd()
 	}
