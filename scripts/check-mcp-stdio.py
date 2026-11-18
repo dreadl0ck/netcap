@@ -83,6 +83,15 @@ async def check(binary, capture, data_dir):
                 await asyncio.sleep(0.2)
 
         args = {"session_id": sid}
+        dhcp_args = {"fingerprint": "1,3,6,15", "vendor": "fixture"}
+        dhcp = await call("lookup_dhcp_fingerprint", dhcp_args)
+        if (dhcp.get("disabled") is not True or not dhcp.get("note")
+                or any(dhcp.get(key) != value for key, value in dhcp_args.items())):
+            raise ValueError("DHCP lookup lost its disabled qualification or input identity")
+        service = await call("resolve", {"kind": "iana_service", "value": " 5353 ", "protocol": "udp"})
+        if ((service.get("kind"), service.get("value"), service.get("protocol"), service.get("port"))
+                != ("iana_service", "5353", "udp", 5353) or not isinstance(service.get("service"), str)):
+            raise ValueError("local service lookup lost its normalized selector or result")
         firewall = {
             "bundle": json.dumps({"version": "1", "id": "fixture", "mode": "enforce", "default": "deny",
                                   "rules": [{"id": "get", "expression": "Method == 'GET'", "action": "allow"}]}),
