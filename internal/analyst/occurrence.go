@@ -134,9 +134,7 @@ func (r *budgetReader) Read(p []byte) (int, error) {
 		}
 		return 0, e
 	}
-	if int64(len(p)) > r.remaining {
-		p = p[:r.remaining]
-	}
+	p = p[:min(int64(len(p)), r.remaining, 64<<10)]
 	n, e := r.input.Read(p)
 	r.remaining -= int64(n)
 	return n, e
@@ -184,7 +182,7 @@ func walk(ctx context.Context, dir string, binding Binding, recordType string, v
 	}
 	var input io.Reader = f
 	if strings.HasSuffix(name, ".gz") {
-		z, e := gzip.NewReader(f)
+		z, e := gzip.NewReader(&budgetReader{ctx, f, 64 << 20})
 		if e != nil {
 			return e
 		}
