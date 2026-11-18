@@ -396,6 +396,29 @@ func TestHTTPSourceStreamsLargeURLEncodedFormUnderStateCap(t *testing.T) {
 	}
 }
 
+func TestStreamedFormPressureReleasesUnpublishedFields(t *testing.T) {
+	budget, err := core.NewStateBudget(32<<10, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := &core.ConversationInfo{StateBudget: budget.CompletionView()}
+	h := &httpReader{conversation: c}
+	req, err := http.NewRequest(http.MethodPost, "http://fixture.test/form", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := strings.NewReader("first=retained&large=" + strings.Repeat("x", 1<<20))
+	if err := h.parseLargeBackedURLEncodedForm(req, body); !errors.Is(err, core.ErrCompletionStateBudget) {
+		t.Fatalf("expected local completion pressure, got %v", err)
+	}
+	if req.Form != nil || req.PostForm != nil || body.Len() == 0 {
+		t.Fatal("abandoned form was published or read in full")
+	}
+	if health := budget.Health(); health.RetainedBytes != 0 || health.Exceeded || health.CompletionRejectedBytes == 0 || h.sourceHeaderCredits != 0 {
+		t.Fatalf("abandoned form held state: %+v; header credits=%d", health, h.sourceHeaderCredits)
+	}
+}
+
 func TestHTTPRecordBorrowsRetainedResponsePayload(t *testing.T) {
 	previous := decoderconfig.Instance
 	t.Cleanup(func() { decoderconfig.Instance = previous })

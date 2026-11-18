@@ -166,8 +166,8 @@ func (h *httpReader) parseLargeBackedURLEncodedForm(req *http.Request, body io.R
 	query, queryErr := evidenceQuery(req.URL.RawQuery)
 	post := make(url.Values)
 	var token strings.Builder
-	var temporary int64
-	defer func() { budget.Release(temporary) }()
+	var temporary, fields int64
+	defer func() { budget.Release(temporary + fields) }()
 	var first error
 	for {
 		part, err := reader.ReadSlice('&')
@@ -202,7 +202,7 @@ func (h *httpReader) parseLargeBackedURLEncodedForm(req *http.Request, body io.R
 				if err := reserve(retained); err != nil {
 					return err
 				}
-				h.sourceHeaderCredits += retained
+				fields += retained
 				post.Add(key, value)
 			}
 			token.Reset()
@@ -217,6 +217,8 @@ func (h *httpReader) parseLargeBackedURLEncodedForm(req *http.Request, body io.R
 	for key, values := range post {
 		req.Form[key] = append(append([]string(nil), values...), req.Form[key]...)
 	}
+	h.sourceHeaderCredits += fields
+	fields = 0
 	if first != nil {
 		return first
 	}
