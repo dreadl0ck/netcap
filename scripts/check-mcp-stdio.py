@@ -255,6 +255,23 @@ rules:
             raise ValueError("timeline buckets disagree with the paged UDP track")
         binding = await call("get_analyst_binding", {"sessionId": sid})
         source = {"sessionId": sid, "binding": binding}
+        manifests = [p for p in Path(data_dir).rglob("capture-manifest.json")
+                     if json.loads(p.read_bytes())["runId"] == binding["runId"]]
+        manifest, = manifests
+        for kind, filename in (("ftp", "FTPDataHealth.json"), ("reassembly", "TCPReassemblyHealth.json")):
+            path = manifest.with_name(filename)
+            original = path.read_bytes()
+            health = json.loads(original)
+            arguments = args | {"kind": kind}
+            if await call("get_investigation_health", arguments) != health:
+                raise ValueError(f"{kind} health does not match the selected capture report")
+            fixture = health | {"contractCounter": 9007199254740993}
+            try:
+                path.write_text(json.dumps(fixture), encoding="utf-8")
+                if await call("get_investigation_health", arguments) != fixture:
+                    raise ValueError(f"{kind} health lost an exact counter in structured output")
+            finally:
+                path.write_bytes(original)
         log_selection = {"source": source, "file": "collector.log", "start": 1, "end": 1}
         review = await call("review_diagnostic_log", log_selection)
         line, = review["lines"]
@@ -338,7 +355,6 @@ rules:
         cases += [
             ("get_audit_record_values", args | {"type": "UDP"}),
             ("get_chart_data", args | {"type": "UDP", "field": "Length", "max_data_points": 5}),
-            ("get_investigation_health", args | {"kind": "reassembly"}),
             ("query_flows", args | {"startNs": meta["minTime"], "endNs": meta["maxTime"], "limit": 3}),
             ("list_auth_activity", args | {"limit": 5}),
             ("get_audit_record_fields", {"type": "UDP"}),
