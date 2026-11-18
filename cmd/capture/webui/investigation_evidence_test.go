@@ -17,6 +17,31 @@ import (
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 )
 
+func TestInvestigationJSONRejectsLinkedFiles(t *testing.T) {
+	dir := t.TempDir()
+	external := filepath.Join(t.TempDir(), "fixture.json")
+	if err := os.WriteFile(external, []byte(`{"status":"fixture"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	s := &Server{outDir: dir}
+	for _, tc := range []struct {
+		name, query string
+		handler http.HandlerFunc
+	}{
+		{"capture-manifest.json", "/", s.handleCaptureEvidence},
+		{"FTPDataHealth.json", "/?kind=ftp", s.handleInvestigationHealth},
+	} {
+		if err := os.Symlink(external, filepath.Join(dir, tc.name)); err != nil {
+			t.Fatal(err)
+		}
+		w := httptest.NewRecorder()
+		tc.handler(w, httptest.NewRequest(http.MethodGet, tc.query, nil))
+		if w.Code != http.StatusUnprocessableEntity || strings.Contains(w.Body.String(), `"status":"fixture"`) {
+			t.Fatalf("%s: expected linked evidence refusal, got %d %s", tc.name, w.Code, w.Body)
+		}
+	}
+}
+
 func TestInvestigationEvidenceEndpoints(t *testing.T) {
 	dir := t.TempDir()
 	server := &Server{outDir: dir}

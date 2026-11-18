@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,18 +18,10 @@ import (
 	"github.com/dreadl0ck/netcap/internal/evidence"
 )
 
-func readEvidenceJSON(path string, target any) error {
-	file, err := os.Open(path)
+func readEvidenceJSON(ctx context.Context, directory, name string, target any) error {
+	data, err := artifactio.Read(ctx, directory, name, 16<<20)
 	if err != nil {
 		return err
-	}
-	defer file.Close()
-	data, err := io.ReadAll(io.LimitReader(file, (16<<20)+1))
-	if err != nil {
-		return err
-	}
-	if len(data) > 16<<20 {
-		return fmt.Errorf("evidence manifest exceeds 16 MiB")
 	}
 	return json.Unmarshal(data, target)
 }
@@ -48,7 +41,7 @@ func (s *Server) handleCaptureEvidence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var manifest evidence.CaptureManifest
-	if err := readEvidenceJSON(filepath.Join(out, "capture-manifest.json"), &manifest); err != nil {
+	if err := readEvidenceJSON(r.Context(), out, "capture-manifest.json", &manifest); err != nil {
 		http.Error(w, "Capture provenance unavailable: "+err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -88,7 +81,7 @@ func (s *Server) handleInvestigationHealth(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	var value any
-	if err := readEvidenceJSON(filepath.Join(out, filename), &value); err != nil {
+	if err := readEvidenceJSON(r.Context(), out, filename, &value); err != nil {
 		http.Error(w, "Investigation health unavailable: "+err.Error(), http.StatusUnprocessableEntity)
 		return
 	}

@@ -214,7 +214,7 @@ func TestSubsetTimeOnlySelectionKeepsAllMatchingTransports(t *testing.T) {
 	job := <-s.jobQueue
 	defer job.processingDone()
 	var manifest evidence.PacketManifest
-	if err := readEvidenceJSON(filepath.Join(job.OutputDir, "packet-selection.json"), &manifest); err != nil {
+	if err := readEvidenceJSON(t.Context(), job.OutputDir, "packet-selection.json", &manifest); err != nil {
 		t.Fatal(err)
 	}
 	if manifest.Selected != 5 {
