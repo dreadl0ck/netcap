@@ -6,6 +6,7 @@
 import argparse
 import asyncio
 import base64
+import gzip
 import hashlib
 import io
 import json
@@ -80,6 +81,63 @@ async def check_flow_receiver(client, call):
     missing = await client.call_tool("flow_receiver", request)
     if deleted["deleted"] is not True or not missing.isError:
         raise ValueError("deleted flow receiver remained queryable")
+
+
+def fixture_varint(value):
+    out = bytearray()
+    while value >= 128:
+        out.append((value & 127) | 128)
+        value >>= 7
+    out.append(value)
+    return bytes(out)
+
+
+def fixture_message(fields):
+    parts = []
+    for tag, value in fields.items():
+        if isinstance(value, int):
+            parts.append(fixture_varint(tag << 3) + fixture_varint(value))
+        else:
+            raw = value.encode()
+            parts.append(fixture_varint(tag << 3 | 2) + fixture_varint(len(raw)) + raw)
+    return b"".join(parts)
+
+
+async def check_behavior_records(call, directory, args):
+    def audit(kind, *rows):
+        messages = [fixture_message({3: kind}), *(fixture_message(row) for row in rows)]
+        return gzip.compress(b"".join(fixture_varint(len(msg)) + msg for msg in messages))
+
+    at = 1800000000000000001
+    name = "lateral.smb-fanout"
+    fact = {"kind": "service", "protocol": "tcp", "srcIP": "192.0.2.1", "dstIP": "192.0.2.2",
+            "port": 445, "token": "43210:123"}
+    evidence = json.dumps({"detector": name, "windowNS": 60_000_000_000, "observed": fact})
+    # Field numbers and audit types are from types/netcap.proto.
+    alert = audit(103, {1: at, 2: name, 13: name, 14: "Behavior", 17: evidence})
+    conn = {1: at, 4: "TCP", 8: fact["srcIP"], 9: "43210", 10: fact["dstIP"], 11: "445", 16: at + 200, 21: 1}
+    replacement = {"Alert.ncap.gz": alert, "Connection.ncap.gz": audit(3, conn, conn | {9: "43211"})}
+    paths = {directory / name: data for name, data in replacement.items()}
+    original = {path: path.read_bytes() if path.exists() else None for path in paths}
+    try:
+        for path, data in paths.items():
+            path.write_bytes(data)
+        row, = (await call("list_alerts", args))["alerts"]
+        response = await call("get_behavior_records", args | {"alertId": row["alertId"]})
+        record, = response["records"]
+        if (response["alertId"] != row["alertId"] or response["scanned"] != 2 or response["truncated"]
+                or not any(item.startswith("SMB:") for item in response["unavailable"])
+                or "Tuple/time candidates only" not in response["qualification"]
+                or (record["type"], record["index"], record["scopeAvailable"], record["captureLagNS"], record["outcome"])
+                != ("Connection", 0, False, 200, "TCP reset observed")
+                or (directory / "Alert.ncap.gz").read_bytes() != alert):
+            raise ValueError("behavior drill-down lost its tuple-only qualification, source-port filter, or immutable alert")
+    finally:
+        for path, data in original.items():
+            if data is None:
+                path.unlink(missing_ok=True)
+            else:
+                path.write_bytes(data)
 
 
 async def check(binary, capture, http_capture, data_dir):
@@ -257,9 +315,9 @@ rules:
         source = {"sessionId": sid, "binding": binding}
         manifests = [p for p in Path(data_dir).rglob("capture-manifest.json")
                      if json.loads(p.read_bytes())["runId"] == binding["runId"]]
-        manifest, = manifests
+        manifest_path, = manifests
         for kind, filename in (("ftp", "FTPDataHealth.json"), ("reassembly", "TCPReassemblyHealth.json")):
-            path = manifest.with_name(filename)
+            path = manifest_path.with_name(filename)
             original = path.read_bytes()
             health = json.loads(original)
             arguments = args | {"kind": kind}
@@ -285,7 +343,7 @@ rules:
                   observation | {"id": "cumulative", "counterSemantics": "exported-cumulative-as-reported"}]
         wire = b"".join((json.dumps({"kind": "observation", "observation": row}) + "\n").encode() for row in events)
         digest = hashlib.sha256(wire).hexdigest()
-        paths = [manifest.with_name(name) for name in ("FlowExports.jsonl", "FlowExportsHealth.json")]
+        paths = [manifest_path.with_name(name) for name in ("FlowExports.jsonl", "FlowExportsHealth.json")]
         originals = [path.read_bytes() if path.exists() else None for path in paths]
         try:
             paths[0].write_bytes(wire)
@@ -602,6 +660,8 @@ rules:
             if not result.isError:
                 failures.append(f"{name}: unknown session unexpectedly succeeded")
 
+        # Replacing audit tracks invalidates the cached timeline generation.
+        await check_behavior_records(call, manifest_path.parent, args)
         print(json.dumps({"advertised": len(tools), "covered_count": len(covered), "covered": sorted(covered),
                           "successes": successes, "uncovered": sorted(tools.keys() - covered),
                           "failures": failures}, indent=2))
