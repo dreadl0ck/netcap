@@ -37,19 +37,21 @@ func TestFlowExpiryDiscardsOldProbeEvidence(t *testing.T) {
 
 func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 	for _, tc := range []struct {
-		name             string
-		seq              uint32
-		payload          []byte
-		ack, reset, gap, want bool
+		name           string
+		seq            uint32
+		payload        []byte
+		ack, gap, want bool
+		closeFlag      byte
 	}{
-		{"previous-end", 3, []byte{0}, true, false, false, true},
-		{"second-end", 7, []byte{0}, true, false, false, true},
-		{"interior-byte", 2, []byte{0}, true, false, false, false},
-		{"nonzero", 3, []byte{1}, true, false, false, false},
-		{"no-ack", 3, []byte{0}, false, false, false, false},
-		{"multiple-bytes", 3, []byte{0, 0}, true, false, false, false},
-		{"reset", 3, []byte{0}, true, true, false, false},
-		{"capture-gap", 3, []byte{0}, true, false, true, false},
+		{"previous-end", 3, []byte{0}, true, false, true, 0},
+		{"second-end", 7, []byte{0}, true, false, true, 0},
+		{"interior-byte", 2, []byte{0}, true, false, false, 0},
+		{"nonzero", 3, []byte{1}, true, false, false, 0},
+		{"no-ack", 3, []byte{0}, false, false, false, 0},
+		{"multiple-bytes", 3, []byte{0, 0}, true, false, false, 0},
+		{"reset", 3, []byte{0}, true, false, false, 'R'},
+		{"fin", 7, []byte{0}, true, false, false, 'F'},
+		{"capture-gap", 3, []byte{0}, true, true, false, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			e, _ := New(DefaultConfig())
@@ -74,12 +76,14 @@ func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 					t.Fatalf("capture gap not recorded: %v, %+v", err, e.Stats())
 				}
 			}
-			if tc.reset {
+			if tc.closeFlag != 0 {
 				end := ev
-				end.Kind, end.Payload = "end", nil
-				e.Observe(end)
+				end.Kind, end.Payload, end.Seq, end.FIN = "end", nil, start+12, tc.closeFlag == 'F'
+				if _, err := e.Observe(end); err != nil {
+					t.Fatal(err)
+				}
 			}
-			if (d.prefixEnds == nil) != (tc.gap || tc.reset) {
+			if (d.prefixEnds == nil) != (tc.gap || tc.closeFlag != 0) {
 				t.Fatal("unexpected bitmap retention after multiple observed ends")
 			}
 			ev.At++

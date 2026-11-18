@@ -573,7 +573,7 @@
     "verification": "capture-contracts.yml now triggers on artifactio, delimited and rules changes and includes all three packages in its race and vet steps. All three package suites passed locally with the workflow build tags; vet and actionlint v1.7.7 also passed."
   },
   "networkAlertCapacityFlush": {
-    "staleProbeBoundaryStorage": "The first segment end is stored inline; a second distinct end allocates the 512-byte bitmap. Gaps and flow closure release the bitmap while retained conflict bytes stay available. TestStaleProbeQualificationPreservesConflict covers both stored ends and the gap and reset controls. The portable network detection race suite passed.",
+    "staleProbeBoundaryStorage": "The first segment end is stored inline; a second distinct end allocates the 512-byte bitmap. Gaps and flow closure release the bitmap while retained conflict bytes stay available. TestStaleProbeQualificationPreservesConflict covers both stored ends and the gap, reset, and FIN controls. The FIN case keeps one medium-severity conflict with zero stale-probe candidates after closure. The portable network detection race suite passed.",
     "staleProbeSummary": "TestAggregationRetainsStaleProbeCountOutsideExamples verifies that two candidate observations outside the eight retained examples remain counted in the aggregate notes, while all 11 overlap observations and medium severity remain intact. The portable networkdetect race suite passed.",
     "verification": "Capacity flush selects one oldest aggregate without allocating and sorting the full key set. Five focused race runs verified timestamp ordering, equal-time key ordering, conservation of all 20 matches across 18 capacity flushes, and local stale-probe qualification controls."
   },
