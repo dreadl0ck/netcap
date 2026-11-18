@@ -274,6 +274,9 @@ func (c *NetcapClient) do(req *http.Request) (json.RawMessage, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode >= 300 && resp.ContentLength <= maxBackendResponseBytes && !needsOperatorErrorReport(req) {
+		return nil, backendDiagnostic(req, resp)
+	}
 	body, err := readBackendResponse(resp)
 	if resp.StatusCode >= 300 {
 		return nil, &BackendError{Method: req.Method, Path: req.URL.Path, StatusCode: resp.StatusCode, Body: body, readErr: err}
@@ -282,6 +285,17 @@ func (c *NetcapClient) do(req *http.Request) (json.RawMessage, error) {
 		return nil, fmt.Errorf("reading response: %w", err)
 	}
 	return body, nil
+}
+
+func needsOperatorErrorReport(req *http.Request) bool {
+	if req.Method != http.MethodPost {
+		return false
+	}
+	switch req.URL.Path {
+	case "/api/mcp/operator/sensor", "/api/mcp/operator/sensor-archive", "/api/mcp/operator/delivery":
+		return true
+	}
+	return false
 }
 
 func readBackendResponse(resp *http.Response) ([]byte, error) {

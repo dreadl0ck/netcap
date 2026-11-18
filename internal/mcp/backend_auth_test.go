@@ -88,6 +88,30 @@ func TestJSONBackendFailurePreservesStatusWhenBodyCannotBeRead(t *testing.T) {
 	}
 }
 
+func TestJSONBackendErrorReadScope(t *testing.T) {
+	for _, path := range []string{"/api/fixture", "/api/mcp/operator/delivery"} {
+		t.Run(path, func(t *testing.T) {
+			payload := `{"report":{"detail":"` + strings.Repeat("x", 4096) + `"},"code":"fixture"}`
+			body := strings.NewReader(payload)
+			c := &NetcapClient{baseURL: "http://fixture.test", hc: &http.Client{Transport: rawTestTransport(func(*http.Request) (*http.Response, error) {
+				return &http.Response{StatusCode: http.StatusConflict, ContentLength: -1, Body: io.NopCloser(body)}, nil
+			})}}
+			_, err := c.PostJSONContext(t.Context(), path, nil)
+			var backend *BackendError
+			if !errors.As(err, &backend) || backend.StatusCode != http.StatusConflict {
+				t.Fatalf("lost conflict status: %v", err)
+			}
+			if path == "/api/fixture" {
+				if read := len(payload) - body.Len(); read != 501 || !strings.Contains(err.Error(), "...[truncated]") {
+					t.Fatalf("ordinary error read %d bytes, want 501: %v", read, err)
+				}
+			} else if string(backend.Body) != payload {
+				t.Fatal("structured operator error report was truncated")
+			}
+		})
+	}
+}
+
 func TestBackendAdminAuthIsScopedAndDoesNotFollowRedirects(t *testing.T) {
 	forwarded := false
 	foreign := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { forwarded = true }))
