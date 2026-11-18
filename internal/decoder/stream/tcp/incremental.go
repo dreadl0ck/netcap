@@ -110,7 +110,7 @@ func (t *tcpConnection) tryIncremental() {
 		return
 	}
 	if !t.stateBudget.TryReserve(int64(t.incrementalProbeBytes)) {
-		t.incrementalDeclined = true
+		t.declineIncrementalSetupForPressure()
 		return
 	}
 	defer t.stateBudget.Release(int64(t.incrementalProbeBytes))
@@ -152,7 +152,7 @@ func (t *tcpConnection) tryIncremental() {
 	}
 	fragments, credit, err := incrementalHandoffFragments(t.stateBudget, t.client.DataSlice(), t.server.DataSlice())
 	if err != nil {
-		t.incrementalDeclined = true
+		t.declineIncrementalSetupForPressure()
 		return
 	}
 	defer t.stateBudget.Release(credit)
@@ -205,6 +205,13 @@ func (t *tcpConnection) tryIncremental() {
 			t.Unlock()
 		}
 	}
+}
+
+func (t *tcpConnection) declineIncrementalSetupForPressure() {
+	t.incrementalDeclined = true
+	t.factory.Lock()
+	t.factory.setupPressureDeclines++
+	t.factory.Unlock()
 }
 
 func incrementalHandoffFragments(budget *core.StateBudget, client, server core.DataFragments) (core.DataFragments, int64, error) {
@@ -276,6 +283,7 @@ func (t *tcpConnection) retainIncrementalBanner(dir reassembly.TCPFlowDirection,
 type IncrementalHealth struct {
 	Support               map[string]string `json:"support"`
 	IncrementalStreams    uint64            `json:"incrementalStreams"`
+	SetupPressureDeclines uint64            `json:"setupPressureDeclines"`
 	CompletedTransactions uint64            `json:"completedTransactions"`
 	GapResets             uint64            `json:"gapResets"`
 	DeferredTails         uint64            `json:"deferredTails"`
@@ -295,7 +303,7 @@ func IncrementalHealthSnapshot() IncrementalHealth {
 		"HTTP/2-and-upgrades":   "completion-only; an upgrade after incremental H1 retains a bounded tail for final decoding",
 		"other-protocols":       "completion-only; no IncrementalFactory registered",
 		"unqualified-TCP-roles": "completion-only; no early role guesses",
-	}, IncrementalStreams: f.incrementalStreams, CompletedTransactions: f.incrementalCompleted, GapResets: f.incrementalGapResets, DeferredTails: f.deferredTails, CompletionOnly: counts}
+	}, IncrementalStreams: f.incrementalStreams, SetupPressureDeclines: f.setupPressureDeclines, CompletedTransactions: f.incrementalCompleted, GapResets: f.incrementalGapResets, DeferredTails: f.deferredTails, CompletionOnly: counts}
 }
 
 func (f *connectionFactory) recordCompletionOnly(name string) {

@@ -126,6 +126,8 @@ type connectionFactory struct {
 	incrementalGapResets uint64
 	completionOnly       map[string]uint64
 	deferredTails        uint64
+
+	setupPressureDeclines uint64
 }
 
 // New handles a new stream received from the assembler

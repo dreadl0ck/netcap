@@ -9,8 +9,29 @@ import (
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/gopacket/gopacket"
 )
+
+func TestIncrementalHTTPProbePressureLeavesFragmentsForCompletion(t *testing.T) {
+	previous := decoderconfig.Instance
+	t.Cleanup(func() { decoderconfig.Instance = previous })
+	decoderconfig.Instance = &decoderconfig.Config{IncrementalHTTP: true}
+	budget, _ := core.NewStateBudget(16, nil)
+	factory := &connectionFactory{}
+	conn := &tcpConnection{initStage: 3, clientDirection: reassembly.TCPDirClientToServer, roleSource: "syn", stateBudget: budget, factory: factory}
+	fragment := &core.StreamData{RawData: []byte("GET / HTTP/1.1\r\nHost: fixture.test\r\n\r\n")}
+	client := &tcpStreamReader{parent: conn, data: core.DataFragments{fragment}}
+	conn.client = client
+	conn.tryIncremental()
+	conn.tryIncremental()
+	if !conn.incrementalDeclined || conn.incremental != nil || factory.setupPressureDeclines != 1 || factory.stateError != nil || budget.Error() != nil {
+		t.Fatalf("unexpected probe fallback: declined=%t parser=%T declines=%d error=%v", conn.incrementalDeclined, conn.incremental, factory.setupPressureDeclines, factory.stateError)
+	}
+	if len(client.data) != 1 || client.data[0] != fragment {
+		t.Fatal("completion lost a retained fragment")
+	}
+}
 
 func TestIncrementalHandoffFragmentBudget(t *testing.T) {
 	fragment := func(at int64) *core.StreamData {
