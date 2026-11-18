@@ -503,7 +503,10 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = reader.Skip(int(ordinal)); err != nil {
+	if err = reader.SkipContext(r.Context(), int(ordinal)); err != nil {
+		if r.Context().Err() != nil {
+			return
+		}
 		RespondJSON(w, http.StatusNotFound, timelineRecordJSON{Status: timelineStateError, Error: "record not found"})
 
 		return

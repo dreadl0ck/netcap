@@ -3,6 +3,7 @@ package webui
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -57,6 +58,30 @@ func auditReaderFixture(t *testing.T, compressed bool, header *types.Header, rec
 		}
 	})
 	return r
+}
+
+func TestAuditRecordReaderSkipContextPreservesNextRecord(t *testing.T) {
+	want := &types.UDP{Timestamp: 123, SrcPort: 5353}
+	payload, err := proto.Marshal(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := auditReaderFixture(t, true, &types.Header{Type: types.Type_NC_UDP}, make([]byte, 2<<20), payload)
+	if _, err := r.ReadHeader(); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	if err := r.SkipContext(ctx, 1); !errors.Is(err, context.Canceled) {
+		t.Fatalf("canceled skip returned %v", err)
+	}
+	if err := r.SkipContext(t.Context(), 1); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.NextRecord()
+	if err != nil || !proto.Equal(got, want) {
+		t.Fatalf("record after skip = %v, %v; want %v", got, err, want)
+	}
 }
 
 func TestAuditRecordReaderNextAs(t *testing.T) {

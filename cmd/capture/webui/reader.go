@@ -21,6 +21,7 @@ package webui
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -195,13 +196,16 @@ func (r *AuditRecordReader) NextAsJSON() (string, error) {
 
 // Skip skips n records from the current position
 func (r *AuditRecordReader) Skip(n int) error {
+	return r.SkipContext(context.Background(), n)
+}
+
+func (r *AuditRecordReader) SkipContext(ctx context.Context, n int) error {
 	for range n {
-		_, err := r.delimitedReader.Next()
-		if err != nil {
+		if err := r.delimitedReader.Skip(ctx); err != nil {
 			return err
 		}
 	}
-	return nil
+	return ctx.Err()
 }
 
 // Close closes the reader and underlying file
