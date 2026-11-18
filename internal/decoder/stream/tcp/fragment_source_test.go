@@ -36,6 +36,21 @@ func TestFirstSourceFragmentChargesCopyBeforeAdmission(t *testing.T) {
 	}
 }
 
+func TestResidentFirstFragmentFitsSmallProbeBudget(t *testing.T) {
+	raw := make([]byte, 4096)
+	copy(raw, "GET /fixture HTTP/1.1\r\n")
+	reader := &tcpStreamReader{data: core.DataFragments{&core.StreamData{RawData: raw}}}
+	budget, err := core.NewStateBudget(1, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var credit int64
+	got, _, _, err := firstSourceFragment(readerFragments(reader), false, budget, &credit)
+	if err != nil || !bytes.Equal(got, raw) || credit != 0 || budget.Health().PeakBytes != 0 {
+		t.Fatalf("resident probe bytes=%d credit=%d: %v", len(got), credit, err)
+	}
+}
+
 func TestBackedTCPPrefixFitsSmallCopyBudget(t *testing.T) {
 	state, err := aggregate.Open(t.TempDir(), 4096, nil)
 	if err != nil {

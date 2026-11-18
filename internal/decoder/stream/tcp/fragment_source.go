@@ -15,6 +15,9 @@ func readerFragments(reader streamReader) core.FragmentSource {
 }
 
 func firstSourceFragment(source core.FragmentSource, includeLink bool, budget *core.StateBudget, credit *int64) (data []byte, clientMAC, serverMAC string, err error) {
+	// The connection lock keeps resident fragments valid through decoder selection.
+	reader, resident := source.(*tcpStreamReader)
+	resident = resident && (reader.stored == nil || reader.stored.loaded)
 	var reserveErr error
 	err = source.Walk(func(fragment core.DataFragment) bool {
 		if fragment == nil {
@@ -28,13 +31,21 @@ func firstSourceFragment(source core.FragmentSource, includeLink bool, budget *c
 				}
 			}
 		}
-		if data == nil && len(fragment.Raw()) > 0 {
-			n := int64(len(fragment.Raw()))
+		if data == nil {
+			raw := fragment.Raw()
+			if len(raw) == 0 {
+				return true
+			}
+			if resident {
+				data = raw[:len(raw):len(raw)]
+				return includeLink && clientMAC == ""
+			}
+			n := int64(len(raw))
 			if reserveErr = budget.Reserve(n); reserveErr != nil {
 				return false
 			}
 			*credit += n
-			data = bytes.Clone(fragment.Raw())
+			data = bytes.Clone(raw)
 		}
 		return data == nil || includeLink && clientMAC == ""
 	})
