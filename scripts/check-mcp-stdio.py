@@ -351,14 +351,24 @@ rules:
         if not invalid.isError:
             raise ValueError("multiple offline rule documents accepted")
         report = (await call("execute_offline_rule_pack", args | {"yaml": pack}))["report"]
+        equivalent_pack = pack.replace("window: 600s", "window: 10m")
+        if equivalent_pack == pack:
+            raise ValueError("offline replay fixture did not vary the window spelling")
+        replay = (await call("execute_offline_rule_pack", args | {"yaml": equivalent_pack}))["report"]
+        invocation_fields = {"id", "startedAt", "elapsed"}
+        if replay["id"] == report["id"] or (
+                {k: v for k, v in replay.items() if k not in invocation_fields}
+                != {k: v for k, v in report.items() if k not in invocation_fields}):
+            raise ValueError("equivalent offline rules changed the evaluation evidence or reused an invocation ID")
         history = (await call("list_offline_evaluations", args))["evaluations"]
         udp_stats, = report["types"]
         if (report["status"] != "partial" or int(report["committedAlerts"]) != 0
                 or udp_stats["type"] != "UDP" or int(udp_stats["records"]) != 18
                 or int(udp_stats["unknownScopes"]) != 18):
             raise ValueError("unscoped UDP fixture lost its partial evaluation qualification")
-        if not any(saved["id"] == report["id"] and saved["packDigest"] == report["packDigest"] for saved in history):
-            raise ValueError("offline evaluation report was not retained")
+        saved = {entry["id"]: entry for entry in history}
+        if any(saved.get(result["id"]) != result for result in (report, replay)):
+            raise ValueError("retained offline evaluation reports differ from execution responses")
         manual = await call("execute_detection_rules", args)
         results = manual["ruleResults"]
         successful = [row for row in results if row["success"]]
