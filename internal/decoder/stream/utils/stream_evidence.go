@@ -70,7 +70,9 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 		return "", err
 	}
 	defer os.RemoveAll(dir)
-	var firstSpan []byte
+	// Keep short conversations out of the scratch file, including gap spans.
+	var inline [512]byte
+	spanPrefix := inline[:0]
 	var spanFile *os.File
 	var spanWriter *bufio.Writer
 	spanPath := filepath.Join(dir, ".spans")
@@ -157,8 +159,15 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 			visitErr = err
 			return false
 		}
-		if spans == 0 {
-			firstSpan = wire
+		separator := 0
+		if spans != 0 {
+			separator = 1
+		}
+		if spanWriter == nil && len(wire) <= cap(spanPrefix)-len(spanPrefix)-separator {
+			if separator != 0 {
+				spanPrefix = append(spanPrefix, ',')
+			}
+			spanPrefix = append(spanPrefix, wire...)
 		} else {
 			if spanFile == nil {
 				spanFile, err = os.OpenFile(spanPath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0600)
@@ -168,11 +177,13 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 				}
 				spanWriter = bufio.NewWriterSize(spanFile, 32<<10)
 			}
-			if err = spanWriter.WriteByte(','); err == nil {
-				_, err = spanWriter.Write(wire)
+			if separator != 0 {
+				visitErr = spanWriter.WriteByte(',')
 			}
-			if err != nil {
-				visitErr = err
+			if visitErr == nil {
+				_, visitErr = spanWriter.Write(wire)
+			}
+			if visitErr != nil {
 				return false
 			}
 		}
@@ -225,7 +236,7 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 		file.Close()
 		return "", err
 	}
-	if _, err = file.Write(firstSpan); err != nil {
+	if _, err = file.Write(spanPrefix); err != nil {
 		file.Close()
 		return "", err
 	}

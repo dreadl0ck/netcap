@@ -215,7 +215,7 @@ func (s generatedEvidence) Walk(yield func(core.DataFragment) bool) error {
 func TestSourceEvidenceRollsBackOnReadFailure(t *testing.T) {
 	out := t.TempDir()
 	want := errors.New("source read failed")
-	source := generatedEvidence{count: 3, err: want}
+	source := generatedEvidence{count: 32, err: want}
 	path, err := SaveSourceEvidence(out, "TCP", source, "fixture", time.Unix(1, 0), "id")
 	if path != "" || !errors.Is(err, want) {
 		t.Fatalf("failed export returned path %q and error %v", path, err)
@@ -223,6 +223,44 @@ func TestSourceEvidenceRollsBackOnReadFailure(t *testing.T) {
 	entries, err := os.ReadDir(filepath.Join(out, "stream-evidence"))
 	if err != nil || len(entries) != 0 {
 		t.Fatalf("failed export left evidence or scratch: %v, %v", entries, err)
+	}
+}
+
+func TestSourceEvidenceSpillsOnlyLongSpanLists(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		count int
+		spill bool
+	}{{"short", 4, false}, {"long", 32, true}} {
+		t.Run(tc.name, func(t *testing.T) {
+			out := t.TempDir()
+			source := generatedEvidence{count: tc.count, sample: func() {
+				matches, err := filepath.Glob(filepath.Join(out, "stream-evidence", ".pending-*", ".spans"))
+				if err != nil || (len(matches) == 1) != tc.spill {
+					t.Errorf("scratch during source walk: %v, %v; want spill=%v", matches, err, tc.spill)
+				}
+			}}
+			dir, err := SaveSourceEvidence(out, "TCP", source, "fixture", time.Unix(1, 0), "id")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := os.Stat(filepath.Join(dir, ".spans")); !os.IsNotExist(err) {
+				t.Fatalf("published scratch: %v", err)
+			}
+			wire, err := os.ReadFile(filepath.Join(dir, "manifest.json"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var m StreamEvidenceManifest
+			if err := json.Unmarshal(wire, &m); err != nil || len(m.Spans) != tc.count {
+				t.Fatalf("manifest spans: %d, %v", len(m.Spans), err)
+			}
+			for i, span := range m.Spans {
+				if span.Offset != int64(i)*1024 || span.Length != 1024 {
+					t.Fatalf("span %d: %+v", i, span)
+				}
+			}
+		})
 	}
 }
 
