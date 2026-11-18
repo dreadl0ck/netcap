@@ -473,7 +473,7 @@ func (q *timelineQuery) buckets(count int) (map[string][]int64, int64) {
 	var matchCount int64
 
 	span := q.End - q.Start
-	if span <= 0 || count <= 0 {
+	if span < 0 || count <= 0 {
 		return out, 0
 	}
 
@@ -515,7 +515,7 @@ func (q *timelineQuery) buckets(count int) (map[string][]int64, int64) {
 
 // timelineBucketOf maps a timestamp onto a bucket index, clamped to the window.
 func timelineBucketOf(ts, start, span int64, count int) int {
-	if ts <= start {
+	if span == 0 || ts <= start {
 		return 0
 	}
 

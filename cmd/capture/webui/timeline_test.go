@@ -948,6 +948,22 @@ func TestTimelineRecordRejectsReplacementAfterIndexSelection(t *testing.T) {
 	}
 }
 
+func TestTimelineBucketsCountSingleTimestamp(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Timestamp: 100, Method: "GET"}})
+	waitForTimelineIndex(t, dir)
+	s := newTimelineTestServer(dir)
+	w := httptest.NewRecorder()
+	s.handleTimelineBuckets(w, httptest.NewRequest(http.MethodGet, "/api/timeline/buckets?buckets=4", nil))
+	var response timelineBucketsJSON
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil || w.Code != http.StatusOK || response.MatchCount != 1 || len(response.Series) != 1 {
+		t.Fatalf("single-timestamp buckets: status=%d body=%s err=%v", w.Code, w.Body, err)
+	}
+	if counts := response.Series[0].Counts; len(counts) != 4 || counts[0] != 1 || counts[1] != 0 || counts[2] != 0 || counts[3] != 0 {
+		t.Fatalf("single-timestamp counts=%v, want [1 0 0 0]", counts)
+	}
+}
+
 func TestTimelineEventAndBucketQueriesShareSlotsThroughWrite(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{
