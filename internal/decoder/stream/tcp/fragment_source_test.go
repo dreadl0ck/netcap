@@ -2,6 +2,7 @@ package tcp
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"runtime"
 	"testing"
@@ -10,6 +11,30 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 )
+
+func TestFirstSourceFragmentChargesCopyBeforeAdmission(t *testing.T) {
+	client := core.SliceSource{&core.StreamData{RawData: []byte("client")}}
+	server := core.SliceSource{&core.StreamData{RawData: []byte("server")}}
+	budget, err := core.NewStateBudget(11, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var credit int64
+	working := budget.CompletionView()
+	if data, _, _, err := firstSourceFragment(client, false, working, &credit); err != nil || string(data) != "client" {
+		t.Fatalf("first prefix: %q, %v", data, err)
+	}
+	if data, _, _, err := firstSourceFragment(server, false, working, &credit); data != nil || !errors.Is(err, core.ErrCompletionStateBudget) {
+		t.Fatalf("second prefix exceeded budget: %q, %v", data, err)
+	}
+	if health := budget.Health(); health.Exceeded || health.RetainedBytes != 6 || health.CompletionRejectedBytes != 6 {
+		t.Fatalf("unexpected completion budget: %+v", health)
+	}
+	working.Release(credit)
+	if health := budget.Health(); health.RetainedBytes != 0 {
+		t.Fatalf("prefix reservation leaked: %+v", health)
+	}
+}
 
 func TestStoredTCPSourceIsRestartableWithinOneFragmentBudget(t *testing.T) {
 	state, err := aggregate.Open(t.TempDir(), 4096, nil)

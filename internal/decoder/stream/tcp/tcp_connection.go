@@ -661,12 +661,18 @@ func (t *tcpConnection) decode() {
 
 	// choose the decoder to run against the data stream
 	clientSource, serverSource := readerFragments(t.client), readerFragments(t.server)
-	cr, clientMAC, serverMAC, err := firstSourceFragment(clientSource, true)
+	workingBudget := t.stateBudget
+	if decoderconfig.Instance.LocalCompletionStateLoss {
+		workingBudget = workingBudget.CompletionView()
+	}
+	var firstFragmentCredit int64
+	defer func() { workingBudget.Release(firstFragmentCredit) }()
+	cr, clientMAC, serverMAC, err := firstSourceFragment(clientSource, true, workingBudget, &firstFragmentCredit)
 	if err != nil {
 		t.factory.failIncremental(err)
 		return
 	}
-	sr, _, _, err := firstSourceFragment(serverSource, false)
+	sr, _, _, err := firstSourceFragment(serverSource, false, workingBudget, &firstFragmentCredit)
 	if err != nil {
 		t.factory.failIncremental(err)
 		return
@@ -678,10 +684,6 @@ func (t *tcpConnection) decode() {
 	cPort := utils.DecodePort(t.client.Transport().Src().Raw())
 	sPort := utils.DecodePort(t.client.Transport().Dst().Raw())
 
-	workingBudget := t.stateBudget
-	if decoderconfig.Instance.LocalCompletionStateLoss {
-		workingBudget = workingBudget.CompletionView()
-	}
 	conv := &core.ConversationInfo{
 		Source:               core.MergedSource{Client: clientSource, Server: serverSource},
 		StateBudget:          workingBudget,
@@ -777,6 +779,8 @@ func (t *tcpConnection) decode() {
 		},
 		Conversation: conv,
 	})
+	workingBudget.Release(firstFragmentCredit)
+	firstFragmentCredit = 0
 	t.stateBudget.Release(prefixCredit)
 	prefixCredit = 0
 	if conv.FragmentError != nil {

@@ -2,6 +2,7 @@ package tcp
 
 import (
 	"bytes"
+
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/gopacket/gopacket"
 )
@@ -13,7 +14,8 @@ func readerFragments(reader streamReader) core.FragmentSource {
 	return core.SliceSource(reader.DataSlice())
 }
 
-func firstSourceFragment(source core.FragmentSource, includeLink bool) (data []byte, clientMAC, serverMAC string, err error) {
+func firstSourceFragment(source core.FragmentSource, includeLink bool, budget *core.StateBudget, credit *int64) (data []byte, clientMAC, serverMAC string, err error) {
+	var reserveErr error
 	err = source.Walk(func(fragment core.DataFragment) bool {
 		if fragment == nil {
 			return true
@@ -27,10 +29,18 @@ func firstSourceFragment(source core.FragmentSource, includeLink bool) (data []b
 			}
 		}
 		if data == nil && len(fragment.Raw()) > 0 {
+			n := int64(len(fragment.Raw()))
+			if reserveErr = budget.Reserve(n); reserveErr != nil {
+				return false
+			}
+			*credit += n
 			data = bytes.Clone(fragment.Raw())
 		}
 		return data == nil || includeLink && clientMAC == ""
 	})
+	if err == nil {
+		err = reserveErr
+	}
 	return
 }
 
