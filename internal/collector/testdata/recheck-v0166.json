@@ -339,6 +339,7 @@
     "verification": "TestSpooledClassifierSurvivesYaraBufferLimit verifies that a 512 KiB spooled artifact under a 256 KiB buffer budget reports the YARA input failure while the classifier still receives the complete input and reports classified. Focused native YARA and classifier tests passed under the race detector."
   },
   "mcpProtobufRegistryContract": {
+    "configurationLifecycle": "The official stdio harness passed 175 schema-validated calls across 84 of 119 tools with no failures on a fresh portable build. configure_protobuf round-trips true and false preferences without changing the mapping; unmap-port preserves the schema; remove-path clears the fixture message inventory.",
     "verification": "scripts/check-mcp-stdio.py on a fresh portable CLI passed 159 schema-validated calls across 81 of 119 advertised tools with zero failures. The harness added a temporary one-message schema, recompiled it, checked message discovery, set an explicit port mapping and verified the registry status."
   },
   "mcpConversationPagingContract": {

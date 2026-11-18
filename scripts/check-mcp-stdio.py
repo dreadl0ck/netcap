@@ -356,6 +356,21 @@ rules:
             counted = await call("query_audit_records", query | {"session_id": session_id, "count_only": True})
             if counted["summary"]["total"] != 18:
                 raise ValueError("reanalysis lost fixture records")
+
+        for show_alternatives in (True, False):
+            await call("configure_protobuf", {"operation": "preferences", "showAlternatives": show_alternatives})
+            status = await call("get_protobuf_status", {})
+            if status["showAlternatives"] is not show_alternatives or status["portMappings"] != proto["portMappings"]:
+                raise ValueError("protobuf preference did not round-trip or changed the existing mapping")
+        await call("configure_protobuf", {"operation": "unmap-port", "port": 49001})
+        status = await call("get_protobuf_status", {})
+        if status["portMappings"] != [] or status["messageCount"] != 1:
+            raise ValueError("unmapping did not clear only the port mapping")
+        await call("configure_protobuf", {"operation": "remove-path", "path": str(schema)})
+        status = await call("get_protobuf_status", {})
+        if status["searchPaths"] != [] or (await call("list_protobuf_messages", {}))["messages"] != []:
+            raise ValueError("schema removal did not clear the fixture registry")
+
         await call("delete_session", {"session_id": uploaded})
         remaining = {s["session_id"] for s in (await call("list_sessions", {}))["sessions"]}
         if uploaded in remaining or sid not in remaining:
