@@ -164,7 +164,7 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 	}
 	if !e.observed || ev.At > e.watermark {
 		e.watermark = ev.At
-		if !e.observed || ev.At-e.lastSweep >= 1e9 {
+		if !e.observed || aggregateWindowElapsed(ev.At, e.lastSweep, 1e9) {
 			e.expire(ev.At)
 			e.lastSweep = ev.At
 		}
@@ -343,7 +343,7 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 			}
 		}
 	case "refused":
-		if f := e.flows[flowKey(ev)]; f != nil && f.ftpData && ev.At-f.last <= e.config.WindowNS {
+		if f := e.flows[flowKey(ev)]; f != nil && f.ftpData && !streamWindowExpired(ev.At, f.last, e.config.WindowNS) {
 			break
 		}
 		if relay, _ := e.smtpRole(ev); relay && ev.DstPort == 25 {
@@ -430,7 +430,7 @@ func (e *Engine) expire(at int64) {
 		}
 	}
 	for k, f := range e.flows {
-		if at-f.last > e.config.WindowNS {
+		if streamWindowExpired(at, f.last, e.config.WindowNS) {
 			e.revokeFTP(k)
 			delete(e.flows, k)
 		}

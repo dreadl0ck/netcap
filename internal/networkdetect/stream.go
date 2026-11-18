@@ -67,6 +67,11 @@ type flow struct {
 }
 
 func endpoint(ip string, port uint16) string { return fmt.Sprintf("%s/%d", ip, port) }
+
+func streamWindowExpired(at, last, window int64) bool {
+	return at >= last && uint64(at)-uint64(last) > uint64(window)
+}
+
 func flowKey(ev Event) string {
 	a, b := endpoint(ev.SrcIP, ev.SrcPort), endpoint(ev.DstIP, ev.DstPort)
 	if a > b {
@@ -79,7 +84,7 @@ func flowKey(ev Event) string {
 func (e *Engine) startFlow(ev Event) *flow {
 	key := flowKey(ev)
 	if f, ok := e.flows[key]; ok {
-		if !f.closed && ev.At-f.last <= e.config.WindowNS && f.synSequence == ev.Seq && f.client == endpoint(ev.SrcIP, ev.SrcPort) {
+		if !f.closed && !streamWindowExpired(ev.At, f.last, e.config.WindowNS) && f.synSequence == ev.Seq && f.client == endpoint(ev.SrcIP, ev.SrcPort) {
 			return f
 		}
 		e.revokeFTP(key)
@@ -96,7 +101,7 @@ func (e *Engine) startFlow(ev Event) *flow {
 func (e *Engine) observeStream(ev Event, add func(string, string, string, string, uint64, uint64, []string, int64, *Indicator, ...string)) {
 	key := flowKey(ev)
 	f := e.flows[key]
-	if f != nil && ev.At-f.last > e.config.WindowNS {
+	if f != nil && streamWindowExpired(ev.At, f.last, e.config.WindowNS) {
 		e.revokeFTP(key)
 		delete(e.flows, key)
 		f = nil

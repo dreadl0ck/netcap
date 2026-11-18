@@ -1,9 +1,38 @@
 package networkdetect
 
 import (
+	"math"
 	"strings"
 	"testing"
 )
+
+func TestFlowExpiryDiscardsOldProbeEvidenceAcrossSignedRange(t *testing.T) {
+	e, err := New(DefaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ev := baseEvent("data", math.MinInt64)
+	ev.Seq, ev.Payload = 100, []byte("abcd")
+	for range 2 {
+		if _, err := e.Observe(ev); err != nil {
+			t.Fatal(err)
+		}
+		ev.At++
+		ev.Seq += 4
+	}
+	old := e.flows[flowKey(ev)]
+	if old == nil {
+		t.Fatal("initial stream missing")
+	}
+	ev.At, ev.Seq, ev.Payload, ev.KeepAliveEligible = math.MaxInt64, 103, []byte{0}, true
+	alerts, err := e.Observe(ev)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e.flows[flowKey(ev)] == old || len(append(alerts, e.Flush()...)) != 0 || e.Stats().ConflictingOverlapBytes != 0 || e.Stats().StaleProbeCandidates != 0 {
+		t.Fatalf("expired flow contributed evidence: %+v", e.Stats())
+	}
+}
 
 func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 	for _, tc := range []struct {
