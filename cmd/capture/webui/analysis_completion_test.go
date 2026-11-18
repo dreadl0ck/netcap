@@ -191,6 +191,52 @@ func TestSmallAnalysisRecoversAfterSaturatedHandoff(t *testing.T) {
 	}
 }
 
+func TestQueuedAnalysesKeepAdmittedRulesAfterEdit(t *testing.T) {
+	s, input, _ := reanalysisFixture(t)
+	s.shutdownChan = make(chan struct{})
+	rule := &rules.Rule{Name: "before-edit", Type: "HTTP", Expression: "Method == 'GET'", Enabled: true}
+	s.rulesConfig = &rules.Config{Rules: []*rules.Rule{rule}}
+	for i := range 2 {
+		job := &AnalysisJob{InputFile: input, OutputDir: t.TempDir()}
+		writeTimelineAuditFile(t, job.OutputDir, "HTTP", types.Type_NC_HTTP, []proto.Message{
+			&types.HTTP{Timestamp: 1, Method: "GET"},
+			&types.HTTP{Timestamp: 2, Method: "POST"},
+		})
+		if err := s.enqueueAnalysis(job, false); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(job.processingDone)
+		if i == 0 {
+			s.rulesConfigMutex.Lock()
+			rule.Name, rule.Expression = "after-edit", "Method == 'POST'"
+			s.rulesConfigMutex.Unlock()
+		}
+	}
+	for i, name := range []string{"before-edit", "after-edit"} {
+		job := <-s.jobQueue
+		if err := s.executeRulesForJob(job); err != nil {
+			t.Fatal(err)
+		}
+		job.processingDone()
+		r, err := NewAuditRecordReader(filepath.Join(job.OutputDir, "Alert.ncap.gz"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer r.Close()
+		if _, err := r.ReadHeader(); err != nil {
+			t.Fatal(err)
+		}
+		row, err := r.NextRecord()
+		alert, ok := row.(*types.Alert)
+		if err != nil || !ok || alert.RuleName != name || alert.Timestamp != int64(i+1) {
+			t.Fatalf("wanted %s on record %d, got %v (%v)", name, i+1, row, err)
+		}
+		if _, err := r.NextRecord(); err != io.EOF {
+			t.Fatalf("expected one alert from %s: %v", name, err)
+		}
+	}
+}
+
 func TestCaptureWorkerCompletesSmallAnalysisWhileRegularTimelineWaits(t *testing.T) {
 	testCaptureWorkerCompletesSmallAnalysis(t, false)
 }
