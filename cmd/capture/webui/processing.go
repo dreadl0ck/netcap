@@ -55,15 +55,24 @@ func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
 		job.settings.cleanup()
 		return errAnalysisUnavailable
 	}
-	if !wait && cap(s.jobQueue) > 0 && len(s.jobQueue) == cap(s.jobQueue) {
+	reserved := !wait && cap(s.jobQueue) > 0
+	if reserved && len(s.jobQueue)+s.preparingNonblocking >= cap(s.jobQueue) {
 		s.mu.Unlock()
 		job.settings.cleanup()
 		return errAnalysisQueueFull
+	}
+	if reserved {
+		s.preparingNonblocking++
 	}
 	done := s.claimProcessingWorkLocked()
 	s.mu.Unlock()
 	accepted := false
 	defer func() {
+		if reserved {
+			s.mu.Lock()
+			s.preparingNonblocking--
+			s.mu.Unlock()
+		}
 		if !accepted {
 			job.settings.cleanup()
 			done()
@@ -115,6 +124,15 @@ func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
 		case <-s.shutdownChan:
 			return errAnalysisStopping
 		}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if reserved {
+		s.preparingNonblocking--
+		reserved = false
+	}
+	if s.processingStopping {
+		return errAnalysisStopping
 	}
 	select {
 	case <-s.shutdownChan:

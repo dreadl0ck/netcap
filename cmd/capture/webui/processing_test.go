@@ -129,6 +129,45 @@ func TestProcessingFailureAndPanicReturnIdle(t *testing.T) {
 	}
 }
 
+func TestNonblockingAnalysisAdmissionCountsPreparingJobs(t *testing.T) {
+	s := processingServer(t, false)
+	s.jobQueue = make(chan *AnalysisJob, 1)
+	first := &AnalysisJob{InputFile: "preparing"}
+	second := &AnalysisJob{InputFile: "retry"}
+	s.rulesConfigMutex.Lock()
+	unlock := sync.OnceFunc(s.rulesConfigMutex.Unlock)
+	defer unlock()
+	firstDone := make(chan error, 1)
+	go func() { firstDone <- s.enqueueAnalysis(first, false) }()
+	processingAwait(t, func() bool {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+		return s.processingWork == 1 && len(s.jobQueue) == 0
+	})
+	secondDone := make(chan error, 1)
+	go func() { secondDone <- s.enqueueAnalysis(second, false) }()
+	select {
+	case err := <-secondDone:
+		if !errors.Is(err, errAnalysisQueueFull) || second.settings != nil || len(second.ArtifactConfig) != 0 {
+			t.Fatalf("second job prepared despite the occupied slot: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("second job waited to prepare instead of refusing admission")
+	}
+	unlock()
+	if err := <-firstDone; err != nil {
+		t.Fatal(err)
+	}
+	(<-s.jobQueue).processingDone()
+	if err := s.enqueueAnalysis(second, false); err != nil {
+		t.Fatalf("retry after the slot was freed: %v", err)
+	}
+	(<-s.jobQueue).processingDone()
+	if s.IsProcessing() {
+		t.Fatal("drained queue retained processing ownership")
+	}
+}
+
 func TestProcessingCancelDoesNotHideUnwindingWork(t *testing.T) {
 	server := processingServer(t, false)
 	server.jobQueue = make(chan *AnalysisJob, 1)
