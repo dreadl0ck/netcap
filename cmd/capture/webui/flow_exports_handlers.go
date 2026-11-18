@@ -59,6 +59,8 @@ func parseExportQuery(values url.Values) (flowexport.Query, error) {
 	return q, nil
 }
 
+var flowExportQuerySlots = make(chan struct{}, 2)
+
 func (s *Server) handleFlowExportQuery(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -72,6 +74,16 @@ func (s *Server) handleFlowExportQuery(w http.ResponseWriter, r *http.Request) {
 	out, _ := s.resolveEvidenceOutput(r)
 	if out == "" {
 		http.Error(w, "No selected analysis dataset", http.StatusServiceUnavailable)
+		return
+	}
+	if r.Context().Err() != nil {
+		return
+	}
+	select {
+	case flowExportQuerySlots <- struct{}{}:
+		defer func() { <-flowExportQuerySlots }()
+	default:
+		http.Error(w, "Flow export queries are busy; retry", http.StatusTooManyRequests)
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)

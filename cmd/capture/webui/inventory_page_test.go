@@ -423,13 +423,17 @@ func TestMCPDeviceInventoryLimitsConcurrentResponses(t *testing.T) {
 
 func testInventoryResponseCapacity(t *testing.T, path string, handle http.HandlerFunc) {
 	t.Helper()
+	testResponseCapacity(t, handle, func() *http.Request {
+		return httptest.NewRequest(http.MethodGet, path+"?mcpPage=true", nil)
+	})
+}
+
+func testResponseCapacity(t *testing.T, handle http.HandlerFunc, request func() *http.Request) {
+	t.Helper()
 	release := make(chan struct{})
 	var workers sync.WaitGroup
 	finish := sync.OnceFunc(func() { close(release); workers.Wait() })
 	t.Cleanup(finish)
-	request := func() *http.Request {
-		return httptest.NewRequest(http.MethodGet, path+"?mcpPage=true", nil)
-	}
 	for range 2 {
 		w := heldAlertPageResponse{ResponseRecorder: httptest.NewRecorder(), writing: make(chan struct{}, 1), release: release}
 		workers.Go(func() { handle(w, request()) })
