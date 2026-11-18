@@ -75,6 +75,17 @@ func TestIncrementalHandoffFragmentBudget(t *testing.T) {
 	}
 }
 
+func TestIncrementalHandoffBorrowsOneDirection(t *testing.T) {
+	budget, _ := core.NewStateBudget(1, nil)
+	fragments := core.DataFragments{&core.StreamData{RawData: []byte("first")}, &core.StreamData{RawData: []byte("second")}}
+	for _, directions := range [][2]core.DataFragments{{fragments, nil}, {nil, fragments}} {
+		got, credit, err := incrementalHandoffFragments(budget, directions[0], directions[1])
+		if err != nil || credit != 0 || len(got) != len(fragments) || &got[0] != &fragments[0] {
+			t.Fatalf("one-direction handoff: fragments=%v credit=%d err=%v", got, credit, err)
+		}
+	}
+}
+
 func TestTCPStreamReaderRun(t *testing.T) {
 	for _, tc := range []struct {
 		name   string

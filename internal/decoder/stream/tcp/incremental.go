@@ -237,6 +237,12 @@ func incrementalProbePrefix(budget *core.StateBudget, fragments core.DataFragmen
 }
 
 func incrementalHandoffFragments(budget *core.StateBudget, client, server core.DataFragments) (core.DataFragments, int64, error) {
+	if len(server) == 0 {
+		return client, 0, nil
+	}
+	if len(client) == 0 {
+		return server, 0, nil
+	}
 	count := len(client) + len(server)
 	credit := int64(count) * int64(unsafe.Sizeof(core.DataFragment(nil)))
 	if !budget.TryReserve(credit) {
