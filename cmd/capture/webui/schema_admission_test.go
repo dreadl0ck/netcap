@@ -49,6 +49,62 @@ func canceledSchemaRequest() context.Context {
 	return ctx
 }
 
+type schemaWaitContext struct {
+	context.Context
+	started chan struct{}
+}
+
+func (c schemaWaitContext) Deadline() (time.Time, bool) {
+	select {
+	case c.started <- struct{}{}:
+	default:
+	}
+	return c.Context.Deadline()
+}
+
+func TestProtoStatusAvailableWhileRecompileWaits(t *testing.T) {
+	for range cap(schemaSnapshotSlots) {
+		schemaSnapshotSlots <- struct{}{}
+		defer func() { <-schemaSnapshotSlots }()
+	}
+	protoRuntime.mu.RLock()
+	diagnostics, compiled := protoRuntime.errors, protoRuntime.lastCompiled
+	protoRuntime.mu.RUnlock()
+	defer func() {
+		protoRuntime.mu.Lock()
+		defer protoRuntime.mu.Unlock()
+		protoRuntime.errors, protoRuntime.lastCompiled = diagnostics, compiled
+	}()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	started := make(chan struct{}, 1)
+	result := make(chan error, 1)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		protoRuntime.editMu.Lock()
+		defer protoRuntime.editMu.Unlock()
+		result <- recompileSchemas(schemaWaitContext{ctx, started}, []string{"fixture.proto"})
+	}()
+	defer func() { cancel(); <-done }()
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("recompile did not enter snapshot preparation")
+	}
+	status := make(chan ProtoStatusResponse, 1)
+	go func() { status <- (&Server{}).getProtoStatus() }()
+	select {
+	case <-status:
+	case <-time.After(5 * time.Second):
+		t.Fatal("status read was blocked by a waiting recompile")
+	}
+	cancel()
+	if err := <-result; !errors.Is(err, context.Canceled) {
+		t.Fatalf("recompile error = %v, want context.Canceled", err)
+	}
+}
+
 func TestSchemaSnapshotWaitExpiresWithoutScratch(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "fixture.proto")
 	if err := os.WriteFile(path, []byte(`syntax = "proto3";`), 0600); err != nil {

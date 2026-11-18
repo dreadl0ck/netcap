@@ -527,12 +527,11 @@ func (s *Server) handleProtoRecompile(w http.ResponseWriter, r *http.Request) {
 }
 
 // recompileSchemas compiles all .proto files from the given search paths
-// and updates the global schema registry.
+// and updates the global schema registry. The caller holds protoRuntime.editMu.
 func recompileSchemas(ctx context.Context, paths []string) error {
-	protoRuntime.mu.Lock()
-	defer protoRuntime.mu.Unlock()
-
 	if len(paths) == 0 {
+		protoRuntime.mu.Lock()
+		defer protoRuntime.mu.Unlock()
 		protoRuntime.errors = []string{}
 		pb.SetSchemaRegistry(nil)
 		return nil
@@ -540,8 +539,7 @@ func recompileSchemas(ctx context.Context, paths []string) error {
 
 	snapshot, err := snapshotSchemaSourcesContext(ctx, &jobSettings{SchemaPaths: paths})
 	if err != nil {
-		protoRuntime.errors = []string{err.Error()}
-		protoRuntime.lastCompiled = time.Now()
+		recordProtoCompileError(err)
 		return err
 	}
 	defer snapshot.cleanup()
@@ -550,12 +548,13 @@ func recompileSchemas(ctx context.Context, paths []string) error {
 		err = context.Cause(ctx)
 	}
 	if err != nil {
-		protoRuntime.errors = []string{err.Error()}
-		protoRuntime.lastCompiled = time.Now()
+		recordProtoCompileError(err)
 		log.Printf("[Proto] Schema compilation failed: %v", err)
 		return err
 	}
 
+	protoRuntime.mu.Lock()
+	defer protoRuntime.mu.Unlock()
 	pb.SetSchemaRegistry(registry)
 	protoRuntime.errors = []string{}
 	protoRuntime.lastCompiled = time.Now()
@@ -569,6 +568,13 @@ func recompileSchemas(ctx context.Context, paths []string) error {
 
 	log.Printf("[Proto] Schema registry updated: %d files, %d messages", registry.FileCount(), registry.MessageCount())
 	return nil
+}
+
+func recordProtoCompileError(err error) {
+	protoRuntime.mu.Lock()
+	defer protoRuntime.mu.Unlock()
+	protoRuntime.errors = []string{err.Error()}
+	protoRuntime.lastCompiled = time.Now()
 }
 
 // jsonError sends a JSON error response.
