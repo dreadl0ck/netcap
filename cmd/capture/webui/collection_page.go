@@ -13,6 +13,11 @@ import (
 	"strings"
 )
 
+const (
+	maxCollectionPageRows      = 65536
+	maxCollectionPageScanBytes = 16 << 20
+)
+
 func respondCollectionPage(w http.ResponseWriter, r *http.Request, rows any, key string, metadata ...map[string]any) bool {
 	return respondCollectionPageFiltered(w, r, rows, key, false, metadata...)
 }
@@ -47,7 +52,11 @@ func respondCollectionPageFiltered(w http.ResponseWriter, r *http.Request, rows 
 	if value.Kind() != reflect.Slice {
 		return fail(500, fmt.Errorf("collection is not a slice"))
 	}
-	items := make([]json.RawMessage, 0, value.Len())
+	if value.Len() > maxCollectionPageRows {
+		return fail(http.StatusRequestEntityTooLarge, fmt.Errorf("collection exceeds %d scan rows", maxCollectionPageRows))
+	}
+	items := make([]json.RawMessage, 0, min(limit, value.Len()))
+	scannedBytes := 0
 	search := strings.ToLower(q.Get("pageSearch"))
 	if searchApplied {
 		search = ""
@@ -60,6 +69,10 @@ func respondCollectionPageFiltered(w http.ResponseWriter, r *http.Request, rows 
 		if err != nil {
 			return fail(500, err)
 		}
+		if len(raw) > maxCollectionPageScanBytes-scannedBytes {
+			return fail(http.StatusRequestEntityTooLarge, fmt.Errorf("collection exceeds %d encoded scan bytes", maxCollectionPageScanBytes))
+		}
+		scannedBytes += len(raw)
 		if search == "" || strings.Contains(strings.ToLower(string(raw)), search) {
 			items = append(items, raw)
 		}

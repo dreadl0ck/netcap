@@ -7,12 +7,50 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
+
+func TestCollectionPageRejectsIncompleteScans(t *testing.T) {
+	row := strings.Repeat("x", 2<<20-2)
+	rows := make([]string, 8)
+	for i := range rows {
+		rows[i] = row
+	}
+	for _, tc := range []struct {
+		name string
+		rows []string
+		code int
+	}{
+		{"exact byte cap", rows, http.StatusOK},
+		{"over byte cap despite no matches", append(rows, ""), http.StatusRequestEntityTooLarge},
+		{"over row cap", make([]string, maxCollectionPageRows+1), http.StatusRequestEntityTooLarge},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest(http.MethodGet, "/api/hosts?mcpPage=true&pageLimit=1&pageSearch=missing", nil)
+			respondCollectionPage(w, r, tc.rows, "hosts")
+			if w.Code != tc.code {
+				t.Fatalf("status %d, want %d: %s", w.Code, tc.code, w.Body.String())
+			}
+			var body map[string]json.RawMessage
+			if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+				t.Fatal(err)
+			}
+			if tc.code == http.StatusOK {
+				if string(body["totalCount"]) != "0" || string(body["hosts"]) != "[]" {
+					t.Fatalf("expected a complete empty page: %s", w.Body.String())
+				}
+			} else if body["error"] == nil || body["totalCount"] != nil || body["generation"] != nil || body["hosts"] != nil {
+				t.Fatalf("oversized scan returned page evidence: %s", w.Body.String())
+			}
+		})
+	}
+}
 
 func TestInventoryHandlersApplySearchAndPaging(t *testing.T) {
 	dir := t.TempDir()
