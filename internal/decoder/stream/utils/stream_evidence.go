@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
@@ -71,6 +72,7 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 	defer os.RemoveAll(dir)
 	var firstSpan []byte
 	var spanFile *os.File
+	var spanWriter *bufio.Writer
 	spanPath := filepath.Join(dir, ".spans")
 	defer func() {
 		if spanFile != nil {
@@ -164,9 +166,10 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 					visitErr = err
 					return false
 				}
+				spanWriter = bufio.NewWriterSize(spanFile, 32<<10)
 			}
-			if _, err = spanFile.WriteString(","); err == nil {
-				_, err = spanFile.Write(wire)
+			if err = spanWriter.WriteByte(','); err == nil {
+				_, err = spanWriter.Write(wire)
 			}
 			if err != nil {
 				visitErr = err
@@ -181,6 +184,11 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 	}
 	if visitErr != nil {
 		return "", visitErr
+	}
+	if spanWriter != nil {
+		if err := spanWriter.Flush(); err != nil {
+			return "", err
+		}
 	}
 	if hasDiscard {
 		manifest.Status = "locally-truncated"
