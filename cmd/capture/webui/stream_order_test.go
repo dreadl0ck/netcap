@@ -40,6 +40,42 @@ func TestStreamInventoryBoundsAggregateManifestReads(t *testing.T) {
 	}
 }
 
+func TestStreamInventorySaturationPreservesIndividualReads(t *testing.T) {
+	out := t.TempDir()
+	dir := filepath.Join(out, "stream-evidence", "stream-fixture")
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "manifest.json"), []byte(`{"version":1,"spans":[]}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	s := &Server{outDir: out}
+	request := func(query string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		s.handleStreamEvidence(w, httptest.NewRequest("GET", "/api/investigation/streams"+query, nil))
+		return w
+	}
+	func() {
+		for range 2 {
+			select {
+			case streamInventorySlots <- struct{}{}:
+				defer func() { <-streamInventorySlots }()
+			default:
+				t.Fatal("inventory did not admit two readers")
+			}
+		}
+		if w := request(""); w.Code != http.StatusTooManyRequests {
+			t.Fatalf("saturated inventory: %d %s", w.Code, w.Body.String())
+		}
+		if w := request("?id=stream-fixture&direction=manifest"); w.Code != http.StatusOK {
+			t.Fatalf("individual manifest during saturation: %d %s", w.Code, w.Body.String())
+		}
+	}()
+	if w := request(""); w.Code != http.StatusOK {
+		t.Fatalf("inventory did not recover: %d %s", w.Code, w.Body.String())
+	}
+}
+
 func TestStreamEvidenceOrdersByCaptureIdentity(t *testing.T) {
 	for _, order := range [][]string{{"stream-z", "stream-a", "stream-m"}, {"stream-m", "stream-a", "stream-z"}} {
 		out := t.TempDir()

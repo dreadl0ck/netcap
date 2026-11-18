@@ -97,6 +97,8 @@ func (s *Server) handleInvestigationHealth(w http.ResponseWriter, r *http.Reques
 	_ = json.NewEncoder(w).Encode(value)
 }
 
+var streamInventorySlots = make(chan struct{}, 2)
+
 func (s *Server) handleStreamEvidence(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -110,6 +112,13 @@ func (s *Server) handleStreamEvidence(w http.ResponseWriter, r *http.Request) {
 	root := filepath.Join(out, "stream-evidence")
 	id := r.URL.Query().Get("id")
 	if id == "" {
+		select {
+		case streamInventorySlots <- struct{}{}:
+			defer func() { <-streamInventorySlots }()
+		default:
+			http.Error(w, "stream inventory is busy", http.StatusTooManyRequests)
+			return
+		}
 		directory, err := os.Open(root)
 		if err != nil {
 			http.Error(w, "Stream evidence unavailable", http.StatusNotFound)
