@@ -485,7 +485,7 @@ func TestFinalStatisticsUseSelectedAnalysis(t *testing.T) {
 }
 
 func TestAnalysisCompletionRejectsRuleFailures(t *testing.T) {
-	for _, failure := range []string{"engine", "writer", "read", "timeline"} {
+	for _, failure := range []string{"engine", "writer", "read", "dangling-audit", "unknown-type", "timeline"} {
 		t.Run(failure, func(t *testing.T) {
 			s, input, dir := reanalysisFixture(t)
 			delete(s.completedFiles, input)
@@ -498,6 +498,8 @@ func TestAnalysisCompletionRejectsRuleFailures(t *testing.T) {
 				dir = input
 			case "engine":
 				rule.Expression = "invalid expression ("
+			case "unknown-type":
+				rule.Type = "MissingAuditType"
 			case "writer":
 				if err := os.Mkdir(filepath.Join(dir, "Alert.ncap.gz"), 0700); err != nil {
 					t.Fatal(err)
@@ -506,9 +508,24 @@ func TestAnalysisCompletionRejectsRuleFailures(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(dir, "HTTP.ncap.gz"), []byte("corrupt"), 0600); err != nil {
 					t.Fatal(err)
 				}
+			case "dangling-audit":
+				preferred := filepath.Join(dir, "HTTP.ncap.gz")
+				if err := os.Remove(preferred); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(filepath.Join(dir, "absent"), preferred); err != nil {
+					t.Skipf("symlink unavailable: %v", err)
+				}
 			}
-			if err := s.completeAnalysis(&AnalysisJob{InputFile: input, OutputDir: dir, SessionID: "failed"}, time.Second); err == nil {
+			err := s.completeAnalysis(&AnalysisJob{InputFile: input, OutputDir: dir, SessionID: "failed"}, time.Second)
+			if err == nil {
 				t.Fatal("post-analysis failure accepted")
+			}
+			if failure == "dangling-audit" && !strings.Contains(err.Error(), "post-analysis rules: open HTTP audit") {
+				t.Fatalf("dangling audit did not fail during rule replay: %v", err)
+			}
+			if failure == "unknown-type" && !strings.Contains(err.Error(), "post-analysis rules: unknown audit type") {
+				t.Fatalf("unknown audit type did not fail during rule replay: %v", err)
 			}
 			if s.completedFiles[input] {
 				t.Fatal("failed analysis published complete")

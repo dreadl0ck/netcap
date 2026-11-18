@@ -213,6 +213,7 @@
     "verification": "Full Web UI and MCP race suites pass. The held-lane test observes the timeline phase and verifies the completed replacement generation. The live stdio check confirms a completed session reports its timeline generation; 48 of 119 tools pass its success checks."
   },
   "sharedRuleAuditReplay": {
+    "automaticAuditAdmission": "TestAnalysisCompletionRejectsRuleFailures verifies that a dangling preferred audit and an unknown audit type fail during rule replay and leave the job incomplete. Focused portable WebUI race tests passed.",
     "officialMCPManualDetectionReplay": "The official MCP stdio harness validates execute_detection_rules against its advertised schema on the local fixture. It checks that batch success and aggregate alert and record counts agree with the returned per-rule outcomes. The portable run passed 179 calls across 85 of 119 tools with no failures.",
     "source": "7028f3b",
     "implementation": "Automatic and manual rule replay use the same typed audit scanner. Manual execute-all reads each audit type once and preserves per-rule results. A frame with a length but no body returns unexpected EOF instead of being treated as clean completion.",

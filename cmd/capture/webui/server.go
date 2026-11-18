@@ -64,6 +64,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/protocoltest"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/internal/utils"
+	"github.com/dreadl0ck/netcap/types"
 	"github.com/dustin/go-humanize"
 )
 
@@ -1729,12 +1730,12 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) (resultErr error) {
 			continue
 		}
 
-		// Check if audit file exists for this type
-		auditFile := filepath.Join(job.OutputDir, typeStr+".ncap.gz")
-		if _, err := os.Stat(auditFile); os.IsNotExist(err) {
-			// Try without extension just in case (though ncap usually produces .ncap.gz or .ncap)
-			auditFile = filepath.Join(job.OutputDir, typeStr+".ncap")
-			if _, err := os.Stat(auditFile); os.IsNotExist(err) {
+		if _, ok := types.Type_value["NC_"+typeStr]; !ok {
+			return fmt.Errorf("unknown audit type: %s", typeStr)
+		}
+		// Skip absent tracks but leave entry validation to the confined reader.
+		if _, err := os.Lstat(filepath.Join(job.OutputDir, typeStr+".ncap.gz")); os.IsNotExist(err) {
+			if _, err := os.Lstat(filepath.Join(job.OutputDir, typeStr+".ncap")); os.IsNotExist(err) {
 				continue
 			}
 		}
