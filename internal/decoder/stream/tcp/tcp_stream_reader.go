@@ -371,15 +371,8 @@ func (t *tcpStreamReader) Run(f *connectionFactory) {
 	}
 }
 
-// Merged returns all stream fragments
-func (t *tcpStreamReader) Merged() core.DataFragments {
-	t.parent.sortAndMergeFragments()
-
-	// via the accessor rather than reading t.parent.merged directly: the slice
-	// header is written under the connection lock, and this is called from
-	// tcp_stream_processor while the connection's reader goroutines may still
-	// be running.
-	return t.parent.mergedFragments()
+func (t *tcpStreamReader) ConversationSource() core.FragmentSource {
+	return t.parent.fragmentSource()
 }
 
 // DecodeConversation invokes decode on the parent TCP connection.

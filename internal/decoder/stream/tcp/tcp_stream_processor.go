@@ -177,7 +177,7 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 					uint16(utils.DecodePort(s.Transport().Src().Raw())),
 					uint16(utils.DecodePort(s.Transport().Dst().Raw())),
 				)
-				err := streamutils.SaveConversation("TCP", s.Merged(), s.Ident(), s.FirstPacket(), s.Transport(), communityID)
+				err := streamutils.SaveTCPConversation(s.ConversationSource(), s.Ident(), s.FirstPacket(), s.Transport(), communityID)
 				if err != nil {
 					fmt.Println("failed to save connection", err)
 				}

@@ -63,8 +63,8 @@ type streamReader interface {
 	// Ident returns the stream identifier.
 	Ident() string
 
-	// Merged returns the sorted conversation
-	Merged() core.DataFragments
+	// ConversationSource walks both directions without merging them into a slice.
+	ConversationSource() core.FragmentSource
 
 	// Network returns the network flow.
 	Network() gopacket.Flow
