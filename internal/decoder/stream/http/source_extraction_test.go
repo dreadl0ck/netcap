@@ -2,10 +2,12 @@ package http
 
 import (
 	"bytes"
+	"compress/flate"
 	"compress/gzip"
 	"compress/zlib"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -306,7 +308,7 @@ func TestBackedGzipResponseClassificationExpansionLimit(t *testing.T) {
 }
 
 func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
-	for _, kind := range []string{"identity", "gzip", "gzip-truncated", "deflate", "truncated", "chunked-upload", "multipart-upload", "json-upload", "urlencoded-upload"} {
+	for _, kind := range []string{"identity", "gzip", "gzip-truncated", "deflate", "raw-deflate", "truncated", "chunked-upload", "multipart-upload", "json-upload", "urlencoded-upload"} {
 		t.Run(kind, func(t *testing.T) {
 			body := []byte(strings.Repeat("artifact fixture\n", 5000))
 			wire := body
@@ -324,9 +326,18 @@ func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
 				}
 				encoding = "Content-Encoding: gzip\r\n"
 			}
-			if kind == "deflate" {
+			if kind == "deflate" || kind == "raw-deflate" {
 				var output bytes.Buffer
-				writer := zlib.NewWriter(&output)
+				var writer io.WriteCloser
+				if kind == "raw-deflate" {
+					var err error
+					writer, err = flate.NewWriter(&output, flate.DefaultCompression)
+					if err != nil {
+						t.Fatal(err)
+					}
+				} else {
+					writer = zlib.NewWriter(&output)
+				}
 				if _, err := writer.Write(body); err != nil {
 					t.Fatal(err)
 				}
@@ -373,7 +384,7 @@ func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
 			if !reflect.DeepEqual(gotFiles, wantFiles) {
 				t.Fatalf("file observations changed:\ngot %v\nwant %v", gotFiles, wantFiles)
 			}
-			if kind == "deflate" && (len(gotFiles) != 1 || gotFiles[0].Hashes.SHA256 != file.ComputeHashes(body).SHA256) {
+			if (kind == "deflate" || kind == "raw-deflate") && (len(gotFiles) != 1 || gotFiles[0].Hashes.SHA256 != file.ComputeHashes(body).SHA256) {
 				t.Fatalf("deflate artifact did not match decoded body: %v", gotFiles)
 			}
 			if kind == "multipart-upload" && (len(gotHTTP) != 2 || len(gotFiles) != 2 || !strings.Contains(fmt.Sprint(gotHTTP[0].Parameters), "after-file")) {
