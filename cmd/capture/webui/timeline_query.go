@@ -22,6 +22,7 @@ package webui
 import (
 	"encoding/base64"
 	"errors"
+	"math/bits"
 	"sort"
 	"strconv"
 	"strings"
@@ -519,14 +520,11 @@ func timelineBucketOf(ts, start, span int64, count int) int {
 		return 0
 	}
 
-	idx := int(float64(ts-start) / float64(span) * float64(count))
-	if idx >= count {
-		idx = count - 1
+	offset := uint64(ts) - uint64(start)
+	if offset >= uint64(span) {
+		return count - 1
 	}
-
-	if idx < 0 {
-		idx = 0
-	}
-
-	return idx
+	hi, lo := bits.Mul64(offset, uint64(count))
+	idx, _ := bits.Div64(hi, lo, uint64(span))
+	return int(idx)
 }

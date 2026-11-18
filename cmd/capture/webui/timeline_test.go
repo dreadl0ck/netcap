@@ -948,6 +948,29 @@ func TestTimelineRecordRejectsReplacementAfterIndexSelection(t *testing.T) {
 	}
 }
 
+func TestTimelineBucketsPreserveNanosecondBoundary(t *testing.T) {
+	const start, span int64 = 100, 1 << 60
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{
+		&types.HTTP{Timestamp: start},
+		&types.HTTP{Timestamp: start + span/2 - 1},
+		&types.HTTP{Timestamp: start + span/2},
+		&types.HTTP{Timestamp: start + span},
+	})
+	waitForTimelineIndex(t, dir)
+	s := newTimelineTestServer(dir)
+	w := httptest.NewRecorder()
+	s.handleTimelineBuckets(w, httptest.NewRequest(http.MethodGet, "/api/timeline/buckets?buckets=1024", nil))
+	var response timelineBucketsJSON
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil || w.Code != http.StatusOK || response.MatchCount != 4 || len(response.Series) != 1 {
+		t.Fatalf("boundary buckets: status=%d body=%s err=%v", w.Code, w.Body, err)
+	}
+	counts := response.Series[0].Counts
+	if len(counts) != 1024 || counts[0] != 1 || counts[511] != 1 || counts[512] != 1 || counts[1023] != 1 {
+		t.Fatal("timeline lost the nanosecond boundary or misclassified an endpoint")
+	}
+}
+
 func TestTimelineBucketsCountSingleTimestamp(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Timestamp: 100, Method: "GET"}})
