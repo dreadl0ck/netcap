@@ -156,7 +156,7 @@ func (s *Server) handleCarveResource(_ context.Context, req mcplib.ReadResourceR
 }
 
 func (s *Server) makeCarveHandler(endpoint, label string, mcpArgs []string) server.ToolHandlerFunc {
-	return func(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+	return func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 		ref, err := s.requireSessionID(req)
 		if err != nil {
 			return errResult(err), nil
@@ -180,19 +180,19 @@ func (s *Server) makeCarveHandler(endpoint, label string, mcpArgs []string) serv
 				q.Set(carveQueryKey(field), value)
 			}
 		}
-		return s.doCarve(ref, endpoint, label, q)
+		return s.doCarve(ctx, ref, endpoint, label, q)
 	}
 }
 
-func (s *Server) handleCarveConnection(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	return s.carveFourTuple(req, "/api/connections/download-pcap", "connection")
+func (s *Server) handleCarveConnection(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+	return s.carveFourTuple(ctx, req, "/api/connections/download-pcap", "connection")
 }
 
-func (s *Server) handleCarveCertificate(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	return s.carveFourTuple(req, "/api/certificates/download-pcap", "certificate")
+func (s *Server) handleCarveCertificate(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+	return s.carveFourTuple(ctx, req, "/api/certificates/download-pcap", "certificate")
 }
 
-func (s *Server) carveFourTuple(req mcplib.CallToolRequest, endpoint, label string) (*mcplib.CallToolResult, error) {
+func (s *Server) carveFourTuple(ctx context.Context, req mcplib.CallToolRequest, endpoint, label string) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
 		return errResult(err), nil
@@ -233,20 +233,20 @@ func (s *Server) carveFourTuple(req mcplib.CallToolRequest, endpoint, label stri
 			q.Set(carveQueryKey(field), value)
 		}
 	}
-	return s.doCarve(ref, endpoint, label, q)
+	return s.doCarve(ctx, ref, endpoint, label, q)
 }
 
 // doCarve performs the actual download + store cycle and returns a
 // response shaped for the LLM. The session is passed via ?sessionId= /
 // ?inputFile= rather than going through /api/set-directory.
-func (s *Server) doCarve(ref SessionRef, endpoint, label string, q url.Values) (*mcplib.CallToolResult, error) {
+func (s *Server) doCarve(ctx context.Context, ref SessionRef, endpoint, label string, q url.Values) (*mcplib.CallToolResult, error) {
 	for k, vs := range ref.sessionQueryParams() {
 		for _, v := range vs {
 			q.Set(k, v)
 		}
 	}
 	client := s.newClient()
-	body, ct, gErr := client.GetRaw(endpoint, q)
+	body, ct, gErr := client.GetRawContext(ctx, endpoint, q)
 	if gErr != nil {
 		return errResult(fmt.Errorf("download %s: %w", endpoint, gErr)), nil
 	}

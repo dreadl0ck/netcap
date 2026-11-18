@@ -4,11 +4,77 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 )
+
+func TestCarveCancellationStopsBackendAndDiscardsPartialData(t *testing.T) {
+	for _, name := range []string{"carve_subpcap_for_host", "carve_subpcap_for_connection", "carve_subpcap_for_http_pair", "carve_subpcap_for_certificate"} {
+		t.Run(name, func(t *testing.T) {
+			started, stopped, release := make(chan struct{}), make(chan struct{}), make(chan struct{})
+			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/vnd.tcpdump.pcap")
+				_, _ = w.Write([]byte("partial fixture"))
+				w.(http.Flusher).Flush()
+				close(started)
+				select {
+				case <-r.Context().Done():
+					close(stopped)
+				case <-release:
+				}
+			}))
+			defer backend.Close()
+			defer close(release)
+			dir := t.TempDir()
+			srv, err := New(Options{BaseURL: backend.URL, CarveDir: dir})
+			if err != nil {
+				t.Fatal(err)
+			}
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			done := make(chan *mcplib.CallToolResult, 1)
+			go func() {
+				result, err := srv.mcpSrv.GetTool(name).Handler(ctx, mcplib.CallToolRequest{Params: mcplib.CallToolParams{Name: name, Arguments: map[string]any{
+					"session_id": "/owned.pcap", "host": "192.0.2.1", "src_ip": "192.0.2.1", "dst_ip": "198.51.100.1",
+					"src_port": "52123", "dst_port": "443", "protocol": "TCP",
+				}}})
+				if err != nil {
+					t.Errorf("tool call: %v", err)
+				}
+				done <- result
+			}()
+			select {
+			case <-started:
+			case <-time.After(5 * time.Second):
+				t.Fatal("backend did not start sending data")
+			}
+			cancel()
+			select {
+			case <-stopped:
+			case <-time.After(5 * time.Second):
+				t.Error("backend did not observe cancellation")
+				return
+			}
+			select {
+			case result := <-done:
+				if result == nil || !result.IsError || !strings.Contains(contentText(result), "context canceled") {
+					t.Fatalf("expected cancellation result, got %+v", result)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("tool did not return after cancellation")
+			}
+			entries, err := os.ReadDir(dir)
+			if err != nil || len(entries) != 0 {
+				t.Fatalf("canceled carve published files: %v, %v", entries, err)
+			}
+		})
+	}
+}
 
 func TestCarveForwardsTransportAndExactCaptureTime(t *testing.T) {
 	for _, tc := range []struct{ tool, protocol, want string }{
