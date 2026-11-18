@@ -948,6 +948,32 @@ func TestTimelineRecordRejectsReplacementAfterIndexSelection(t *testing.T) {
 	}
 }
 
+func TestTimelineRecordRejectsSaturationAndRecovers(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Timestamp: 100, Method: "GET"}})
+	idx := waitForTimelineIndex(t, dir)
+	s := newTimelineTestServer(dir)
+	path := "/api/timeline/record?type=HTTP&ordinal=0&time=100&generation=" + idx.Generation
+	func() {
+		for range cap(timelineRecordReadSlots) {
+			timelineRecordReadSlots <- struct{}{}
+			defer func() { <-timelineRecordReadSlots }()
+		}
+		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		defer cancel()
+		w := httptest.NewRecorder()
+		s.handleTimelineRecord(w, httptest.NewRequest(http.MethodGet, path, nil).WithContext(ctx))
+		if w.Code != http.StatusTooManyRequests {
+			t.Fatalf("saturated read: status=%d body=%s", w.Code, w.Body)
+		}
+	}()
+	w := httptest.NewRecorder()
+	s.handleTimelineRecord(w, httptest.NewRequest(http.MethodGet, path, nil))
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"Method":"GET"`) {
+		t.Fatalf("retry: status=%d body=%s", w.Code, w.Body)
+	}
+}
+
 func TestTimelineRecordRejectsPathTraversal(t *testing.T) {
 	dir := t.TempDir()
 

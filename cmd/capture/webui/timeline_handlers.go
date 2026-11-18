@@ -472,6 +472,9 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 		defer func() { <-timelineRecordReadSlots }()
 	case <-r.Context().Done():
 		return
+	default:
+		RespondJSON(w, http.StatusTooManyRequests, timelineRecordJSON{Status: timelineStateError, Error: "timeline record reads busy; retry after a read finishes"})
+		return
 	}
 
 	f, err := track.source.open()
