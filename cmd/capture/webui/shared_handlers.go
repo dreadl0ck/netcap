@@ -696,8 +696,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			break
 		}
 		if err != nil {
-			fmt.Fprintf(w, "event: error\ndata: {\"error\": \"%v\"}\n\n", err)
-			flusher.Flush()
+			sendError(err.Error())
 			return
 		}
 
