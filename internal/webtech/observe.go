@@ -115,12 +115,7 @@ func capture(body io.Reader, encoding string) ([]byte, string) {
 		var reader io.ReadCloser
 		switch layers[i] {
 		case "gzip":
-			var r *gzip.Reader
-			r, err = gzip.NewReader(bytes.NewReader(wire))
-			if err == nil {
-				r.Multistream(false)
-				reader = r
-			}
+			reader, err = gzip.NewReader(bytes.NewReader(wire))
 		case "deflate":
 			reader, err = zlib.NewReader(bytes.NewReader(wire))
 		default:

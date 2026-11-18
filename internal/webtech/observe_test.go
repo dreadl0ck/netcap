@@ -15,6 +15,34 @@ import (
 
 type failedWireBody struct{}
 
+func TestCaptureConcatenatedGzipMembers(t *testing.T) {
+	encode := func(parts ...string) []byte {
+		t.Helper()
+		var wire bytes.Buffer
+		for _, part := range parts {
+			w := gzip.NewWriter(&wire)
+			if _, err := io.WriteString(w, part); err != nil {
+				t.Fatal(err)
+			}
+			if err := w.Close(); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return wire.Bytes()
+	}
+	wire := encode("<html>", "fixture</html>")
+	if body, state := capture(bytes.NewReader(wire), "gzip"); string(body) != "<html>fixture</html>" || state != "complete" {
+		t.Fatalf("concatenated body %q, state %s", body, state)
+	}
+	if body, state := capture(bytes.NewReader(wire[:len(wire)-1]), "gzip"); body != nil || state != "decode-failed" {
+		t.Fatalf("truncated second member: body %q, state %s", body, state)
+	}
+	wire = encode(strings.Repeat("x", MaxPrefix-1), "yz")
+	if body, state := capture(bytes.NewReader(wire), "gzip"); len(body) != MaxPrefix || body[MaxPrefix-1] != 'y' || state != "truncated" {
+		t.Fatalf("prefix across members: %d bytes, state %s", len(body), state)
+	}
+}
+
 func TestCaptureBoundedContentEncodingStack(t *testing.T) {
 	encode := func(data []byte) []byte {
 		t.Helper()
