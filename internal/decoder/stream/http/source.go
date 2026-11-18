@@ -306,11 +306,12 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 					var body io.Reader = request.Body
 					var bound *io.LimitedReader
 					mode := sourceRequestMode(decoderconfig.Instance, request, form)
-					formFallback := form == "application/x-www-form-urlencoded" && (mode != requestSpooled || sourceRequestBodyLimit() >= maxJSONFormBytes)
+					limit := sourceRequestBodyLimit()
+					formFallback := form == "application/x-www-form-urlencoded" && limit >= maxJSONFormBytes
 					if formFallback {
 						bound = &io.LimitedReader{R: body, N: maxJSONFormBytes + 1}
-					} else if mode != requestSample && decoderconfig.Instance != nil {
-						bound = &io.LimitedReader{R: body, N: sourceRequestBodyLimit() + 1}
+					} else if mode != requestSample {
+						bound = &io.LimitedReader{R: body, N: limit + 1}
 					}
 					if bound != nil {
 						body = bound
