@@ -423,9 +423,12 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		}
 		if spool != nil {
 			defer func() { file.RecordArtifactWriteError(spool.Close()) }()
-			passiveReport = software.ObserveWebtech(observation, spool.Reader(), contentEncoding(res.Header), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+			encoding := contentEncoding(res.Header)
+			passiveReport = software.ObserveWebtech(observation, spool.Reader(), encoding, authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 			passiveReport.WireBytes = spool.Size()
-			passiveReport.DetectedContentType = sourceResponseContentType(h.conversation, spool, contentEncoding(res.Header))
+			if !strings.Contains(encoding, ",") || passiveReport.DetectedContentType == "" {
+				passiveReport.DetectedContentType = sourceResponseContentType(h.conversation, spool, encoding)
+			}
 		}
 	} else {
 		var release func()

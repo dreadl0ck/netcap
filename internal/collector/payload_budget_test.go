@@ -448,6 +448,9 @@ func testBackedHTTPGzipPressurePreservesSpool(t *testing.T, upload bool, limit i
 		if len(records) != 1 || upload && records[0].ReqContentEncoding != "gzip, GZip" || !upload && records[0].ResContentEncoding != "gzip, GZip" {
 			t.Fatalf("audit did not preserve both content codings: %v", records)
 		}
+		if !upload && records[0].ResContentTypeDetected != "text/plain; charset=utf-8" {
+			t.Fatalf("detected response type: %q", records[0].ResContentTypeDetected)
+		}
 	}
 	files := bookRecords(t, out, "File", func() *types.File { return new(types.File) })
 	if len(files) != 1 || !files[0].IsComplete || files[0].Length != int64(len(body)) || files[0].FlowDirection != wantDirection || files[0].Hashes.GetSHA256() != file.ComputeHashes([]byte(body)).SHA256 {
