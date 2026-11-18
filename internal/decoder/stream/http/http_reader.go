@@ -696,12 +696,17 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 		request.backedBodyType, err = backedGzipRequestType(h.conversation, spool)
 		if err != nil {
 			h.conversation.FragmentError = err
-			return err
+			if err != core.ErrCompletionStateBudget {
+				return err
+			}
 		}
 	}
 
 	// parse form values
-	if spool != nil && form == "multipart/form-data" {
+	switch {
+	case h.conversation.FragmentError != nil:
+		// Skip form parsing after a refused content probe; the spool can still be saved.
+	case spool != nil && form == "multipart/form-data":
 		var queryErr error
 		req.Form, queryErr = evidenceQuery(req.URL.RawQuery)
 		err = errors.Join(queryErr, parseEvidenceMultipart(req, spool.Reader(), boundary, func(n int64) error {
@@ -712,16 +717,19 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 			h.sourceHeaderCredits += n
 			return nil
 		}))
-	} else if spool != nil && form != "" {
+	case spool != nil && form != "":
 		err = h.parseBackedSmallForm(req, spool, form)
-	} else {
+	default:
 		err = parseEvidenceForm(req, body)
 	}
-	formStateErr := h.conversation.FragmentError
-	if formStateErr != nil && formStateErr != core.ErrCompletionStateBudget {
-		return formStateErr
+	stateErr := h.conversation.FragmentError
+	if stateErr == nil {
+		stateErr = h.retainSourceHeaders(evidence, headerEnd-headerStart)
 	}
-	if err != nil {
+	if stateErr != nil && (stateErr != core.ErrCompletionStateBudget || spool == nil) {
+		return stateErr
+	}
+	if err != nil && stateErr == nil {
 		request.evidence.issues = appendUnique(request.evidence.issues, "incomplete-request-form")
 		httpLog.Error(
 			"failed to read HTTP form values",
@@ -731,10 +739,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	}
 	req.Body = io.NopCloser(bytes.NewReader(body))
 
-	if formStateErr == nil {
-		if e := h.retainSourceHeaders(evidence, headerEnd-headerStart); e != nil {
-			return e
-		}
+	if stateErr == nil {
 		streamutils.Stats.Lock()
 		streamutils.Stats.Requests++
 		streamutils.Stats.Unlock()
@@ -768,9 +773,9 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 				Encoding:       req.Header[headerContentEncoding],
 			}
 			if spool != nil {
-				file.RecordExtractionIssue((&HTTPFileExtractor{}).extractSpool(artifactConversation(h.conversation, formStateErr), spool, metadata, bodyErr))
-				if formStateErr != nil {
-					return formStateErr
+				file.RecordExtractionIssue((&HTTPFileExtractor{}).extractSpool(artifactConversation(h.conversation, stateErr), spool, metadata, bodyErr))
+				if stateErr != nil {
+					return stateErr
 				}
 				return bodyErr
 			}
@@ -782,8 +787,8 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 		}
 	}
 
-	if formStateErr != nil {
-		return formStateErr
+	if stateErr != nil {
+		return stateErr
 	}
 	if evidence.unsafe {
 		return evidence.framingError()

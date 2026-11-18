@@ -350,6 +350,15 @@ func TestBackedHTTPPassiveUploadUsesBoundedInput(t *testing.T) {
 }
 
 func TestBackedHTTPGzipPressurePreservesSpooledResponse(t *testing.T) {
+	testBackedHTTPGzipPressurePreservesSpool(t, false)
+}
+
+func TestBackedHTTPGzipPressurePreservesSpooledRequest(t *testing.T) {
+	testBackedHTTPGzipPressurePreservesSpool(t, true)
+}
+
+func testBackedHTTPGzipPressurePreservesSpool(t *testing.T, upload bool) {
+	t.Helper()
 	wire, input := newBookCapture(t)
 	send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 80, false)
 	body := strings.Repeat("fixture response\n", 1024)
@@ -361,8 +370,16 @@ func TestBackedHTTPGzipPressurePreservesSpooledResponse(t *testing.T) {
 	if err := w.Close(); err != nil {
 		t.Fatal(err)
 	}
-	send(false, false, false, "GET /fixture.txt HTTP/1.1\r\nHost: fixture.test\r\n\r\n")
-	send(true, false, false, fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: gzip\r\nContent-Length: %d\r\n\r\n%s", compressed.Len(), compressed.Bytes()))
+	entity := fmt.Sprintf("Content-Type: text/plain\r\nContent-Encoding: gzip\r\nContent-Length: %d\r\n\r\n%s", compressed.Len(), compressed.Bytes())
+	wantDirection := "server_to_client"
+	if upload {
+		wantDirection = "client_to_server"
+		send(false, false, false, "POST /fixture.txt HTTP/1.1\r\nHost: fixture.test\r\n"+entity)
+		send(true, false, false, "HTTP/1.1 204 No Content\r\n\r\n")
+	} else {
+		send(false, false, false, "GET /fixture.txt HTTP/1.1\r\nHost: fixture.test\r\n\r\n")
+		send(true, false, false, "HTTP/1.1 200 OK\r\n"+entity)
+	}
 	out := t.TempDir()
 	cfg := ultimateCaptureConfig(out, 1, 0)
 	cfg.CaptureEvidence = true
@@ -377,8 +394,8 @@ func TestBackedHTTPGzipPressurePreservesSpooledResponse(t *testing.T) {
 		t.Fatalf("gzip probe pressure: status=%s err=%v budget=%+v", manifest.Status, err, health)
 	}
 	files := bookRecords(t, out, "File", func() *types.File { return new(types.File) })
-	if len(files) != 1 || !files[0].IsComplete || files[0].Length != int64(len(body)) || files[0].Hashes.GetSHA256() != file.ComputeHashes([]byte(body)).SHA256 {
-		t.Fatalf("decoded response artifact lost: %v", files)
+	if len(files) != 1 || !files[0].IsComplete || files[0].Length != int64(len(body)) || files[0].FlowDirection != wantDirection || files[0].Hashes.GetSHA256() != file.ComputeHashes([]byte(body)).SHA256 {
+		t.Fatalf("decoded artifact lost: %v", files)
 	}
 	hashes, err := file.ComputeFileHashes(files[0].Location)
 	if err != nil || hashes.SHA256 != files[0].Hashes.GetSHA256() {
