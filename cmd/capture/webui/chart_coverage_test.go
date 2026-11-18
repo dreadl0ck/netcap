@@ -1,7 +1,10 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"strings"
@@ -20,7 +23,7 @@ func TestChartCoverageLabelsActualSampling(t *testing.T) {
 	})
 	s := &Server{outDir: dir}
 	for _, cap := range []int{2, 3} {
-		result, err := s.aggregateChartDataAcrossDirs([]string{dir}, "TCP", "SrcPort", "1s", cap)
+		result, err := s.aggregateChartDataAcrossDirs(t.Context(), []string{dir}, "TCP", "SrcPort", "1s", cap)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -38,7 +41,7 @@ func TestChartDataBucketMeansPreserveRecordStatistics(t *testing.T) {
 	}
 	rows = append(rows, &types.TCP{Timestamp: 1_000_000_000, SrcPort: 40})
 	writeTimelineAuditFile(t, dir, "TCP", types.Type_NC_TCP, rows)
-	result, err := (&Server{}).aggregateChartDataAcrossDirs([]string{dir}, "TCP", "SrcPort", "1s", 2)
+	result, err := (&Server{}).aggregateChartDataAcrossDirs(t.Context(), []string{dir}, "TCP", "SrcPort", "1s", 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,6 +50,39 @@ func TestChartDataBucketMeansPreserveRecordStatistics(t *testing.T) {
 		result.Data[1] != (ChartDataPoint{Timestamp: 1_000_000_000, Value: 40}) ||
 		result.MinValue != 10 || result.MaxValue != 40 || result.AvgValue != (4096*20.+40)/4097 {
 		t.Fatalf("unexpected chart data: %+v", result)
+	}
+}
+
+func TestChartJSONBucketLimitAndRetry(t *testing.T) {
+	dir := t.TempDir()
+	rows := make([]proto.Message, maxJSONChartBuckets+1)
+	for i := range rows {
+		rows[i] = &types.TCP{Timestamp: int64(i + 1), SrcPort: 10}
+	}
+	writeTimelineAuditFile(t, dir, "TCP", types.Type_NC_TCP, rows)
+	s := &Server{outDir: dir}
+	request := "/api/charts/data?format=json&type=TCP&field=SrcPort&interval="
+	w := httptest.NewRecorder()
+	s.handleChartData(w, httptest.NewRequest(http.MethodGet, request+"1ns", nil))
+	if w.Code != http.StatusUnprocessableEntity || !strings.Contains(w.Body.String(), "use a larger interval") {
+		t.Fatalf("oversized chart: %d %s", w.Code, w.Body.String())
+	}
+	w = httptest.NewRecorder()
+	s.handleChartData(w, httptest.NewRequest(http.MethodGet, request+"1s", nil))
+	var result ChartDataResponse
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &result) != nil || len(result.Data) != 1 || result.Data[0].Value != 10 {
+		t.Fatalf("coarser chart: %d %s", w.Code, w.Body.String())
+	}
+	left, right := t.TempDir(), t.TempDir()
+	writeTimelineAuditFile(t, left, "TCP", types.Type_NC_TCP, rows[:maxJSONChartBuckets])
+	writeTimelineAuditFile(t, right, "TCP", types.Type_NC_TCP, rows[maxJSONChartBuckets:])
+	if _, err := s.aggregateChartDataAcrossDirs(t.Context(), []string{left, right}, "TCP", "SrcPort", "1ns", 2); !errors.Is(err, errChartBucketLimit) {
+		t.Fatalf("merged chart exceeded bucket limit: %v", err)
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	if _, err := s.extractChartData(ctx, filepath.Join(dir, "TCP.ncap.gz"), "TCP", "SrcPort", "1ns"); !errors.Is(err, context.Canceled) {
+		t.Fatalf("canceled chart: %v", err)
 	}
 }
 
@@ -103,7 +139,7 @@ func TestRenderedChartCoverageReportsPrefixAndRejectsZeroInterval(t *testing.T) 
 		t.Fatal("zero interval accepted")
 	}
 	s := &Server{}
-	if _, err := s.extractChartData(filepath.Join(dir, "TCP.ncap.gz"), "TCP", "SrcPort", "0s"); err == nil {
+	if _, err := s.extractChartData(t.Context(), filepath.Join(dir, "TCP.ncap.gz"), "TCP", "SrcPort", "0s"); err == nil {
 		t.Fatal("zero JSON interval accepted")
 	}
 }

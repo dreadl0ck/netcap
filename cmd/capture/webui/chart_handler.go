@@ -20,6 +20,7 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -391,8 +392,15 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 		if intervalForJSON == "" {
 			intervalForJSON = "1s"
 		}
-		merged, err := s.aggregateChartDataAcrossDirs(dirs, auditType, field, intervalForJSON, maxDataPoints)
+		merged, err := s.aggregateChartDataAcrossDirs(r.Context(), dirs, auditType, field, intervalForJSON, maxDataPoints)
 		if err != nil {
+			if r.Context().Err() != nil {
+				return
+			}
+			if errors.Is(err, errChartBucketLimit) {
+				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+				return
+			}
 			log.Printf("[WebUI] chart json: aggregate failed (type=%s field=%s scope=%s): %v",
 				auditType, field, scope, err)
 			http.Error(w, fmt.Sprintf("Failed to aggregate chart data: %v", err), http.StatusInternalServerError)
@@ -438,7 +446,7 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 // When dirs is empty or no usable data is found we return an empty
 // (zero-record) response rather than an error so callers can distinguish
 // "no data" from "couldn't open file".
-func (s *Server) aggregateChartDataAcrossDirs(dirs []string, auditType, field, interval string, maxDataPoints int) (*ChartDataResponse, error) {
+func (s *Server) aggregateChartDataAcrossDirs(ctx context.Context, dirs []string, auditType, field, interval string, maxDataPoints int) (*ChartDataResponse, error) {
 	merged := &ChartDataResponse{
 		Coverage: ChartCoverage{Basis: "retained-audit-records", Limitations: []string{"Only retained records with the requested numeric field contribute; absence is not zero traffic", "Values are sums of per-capture bucket means", "Min/max are record values; average is a bucket-count-weighted mean of per-capture record averages"}},
 		Type:     auditType,
@@ -454,11 +462,14 @@ func (s *Server) aggregateChartDataAcrossDirs(dirs []string, auditType, field, i
 	first := true
 
 	for _, dir := range dirs {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		filePath := filepath.Join(dir, auditType+".ncap.gz")
 		if _, statErr := os.Stat(filePath); statErr != nil {
 			continue // tolerate missing per-type files
 		}
-		resp, err := s.extractChartData(filePath, auditType, field, interval)
+		resp, err := s.extractChartData(ctx, filePath, auditType, field, interval)
 		if errors.Is(err, errNoChartData) {
 			continue
 		}
@@ -466,6 +477,9 @@ func (s *Server) aggregateChartDataAcrossDirs(dirs []string, auditType, field, i
 			return nil, err
 		}
 		for _, p := range resp.Data {
+			if _, exists := buckets[p.Timestamp]; !exists && len(buckets) >= maxJSONChartBuckets {
+				return nil, errChartBucketLimit
+			}
 			buckets[p.Timestamp] += p.Value
 		}
 		merged.Count += resp.Count
@@ -512,8 +526,15 @@ func (s *Server) aggregateChartDataAcrossDirs(dirs []string, auditType, field, i
 	return merged, nil
 }
 
-// extractChartData reads audit records and extracts time-series data for the specified field
-func (s *Server) extractChartData(filePath, auditType, fieldName, intervalStr string) (*ChartDataResponse, error) {
+const maxJSONChartBuckets = 65536
+
+var errChartBucketLimit = fmt.Errorf("chart exceeds %d distinct time buckets; use a larger interval or select fewer captures", maxJSONChartBuckets)
+
+// extractChartData reads audit records and extracts time-series data for the specified field.
+func (s *Server) extractChartData(ctx context.Context, filePath, auditType, fieldName, intervalStr string) (*ChartDataResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	reader, err := NewAuditRecordReader(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open audit file: %w", err)
@@ -546,6 +567,9 @@ func (s *Server) extractChartData(filePath, auditType, fieldName, intervalStr st
 
 	// Read all records and extract field values
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		msg, err := reader.NextRecord()
 		if err == io.EOF {
 			break
@@ -571,7 +595,10 @@ func (s *Server) extractChartData(filePath, auditType, fieldName, intervalStr st
 		// Calculate time bucket
 		bucket := (timestamp / int64(duration)) * int64(duration)
 
-		stats := timeBuckets[bucket]
+		stats, exists := timeBuckets[bucket]
+		if !exists && len(timeBuckets) >= maxJSONChartBuckets {
+			return nil, errChartBucketLimit
+		}
 		stats.sum += value
 		stats.count++
 		timeBuckets[bucket] = stats
