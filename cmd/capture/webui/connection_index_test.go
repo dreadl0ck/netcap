@@ -47,7 +47,7 @@ func TestConnectionSnapshotBuildLimitKeepsCacheHitsAvailable(t *testing.T) {
 
 func TestConnectionSnapshotWaitCanCancelWithoutRetiringBuild(t *testing.T) {
 	dir := t.TempDir()
-	entry := &connectionCacheEntry{generation: "missing", ready: make(chan struct{})}
+	entry := &connectionCacheEntry{ready: make(chan struct{})}
 	connectionCache.Lock()
 	connectionCache.entries[dir] = entry
 	connectionCache.Unlock()
@@ -153,6 +153,36 @@ func TestConnectionIndexInvalidatesAndSharesBuild(t *testing.T) {
 	if err != nil || updated == results[0] || updated.selectRows(connectionFilter{communityIDs: map[string]bool{"old": true}}).TotalCount != 0 ||
 		updated.selectRows(connectionFilter{communityIDs: map[string]bool{"new": true}}).TotalCount != 2 {
 		t.Fatalf("stale snapshot: %+v, %v", updated, err)
+	}
+}
+
+func TestConnectionIndexInvalidatesSameSizeReplacement(t *testing.T) {
+	dir, replacement := t.TempDir(), t.TempDir()
+	const name = "Connection.ncap.gz"
+	writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, []proto.Message{&types.Connection{CommunityID: "old"}})
+	writeTimelineAuditFile(t, replacement, "Connection", types.Type_NC_Connection, []proto.Message{&types.Connection{CommunityID: "new"}})
+	path, next := filepath.Join(dir, name), filepath.Join(replacement, name)
+	before, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old, err := connectionSnapshotFor(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(next, before.ModTime(), before.ModTime()); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(next, path); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.Stat(path)
+	if err != nil || before.Size() != after.Size() || !before.ModTime().Equal(after.ModTime()) || os.SameFile(before, after) {
+		t.Fatalf("fixture did not replace the file while preserving size and mtime: %v", err)
+	}
+	got, err := connectionSnapshotFor(dir)
+	if err != nil || got == old || len(got.rows) != 1 || got.rows[0].CommunityID != "new" {
+		t.Fatalf("replacement did not invalidate cache: snapshot=%v error=%v", got, err)
 	}
 }
 

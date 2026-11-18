@@ -3,7 +3,6 @@ package webui
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -209,7 +208,7 @@ func (s *connectionSnapshot) selectRows(f connectionFilter) ConnectionsResponse 
 }
 
 type connectionCacheEntry struct {
-	generation string
+	generation os.FileInfo
 	used       time.Time
 	ready      chan struct{}
 	snapshot   *connectionSnapshot
@@ -228,15 +227,19 @@ var (
 	errConnectionAuditChanged = errors.New("connection audit changed during inventory build; retry")
 )
 
-func connectionGeneration(outDir string) (string, error) {
+func connectionGeneration(outDir string) (os.FileInfo, error) {
 	info, err := os.Stat(filepath.Join(outDir, "Connection.ncap.gz"))
 	if errors.Is(err, os.ErrNotExist) {
-		return "missing", nil
+		return nil, nil
 	}
-	if err != nil {
-		return "", err
+	return info, err
+}
+
+func sameConnectionGeneration(a, b os.FileInfo) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
 	}
-	return fmt.Sprintf("%d:%d", info.Size(), info.ModTime().UnixNano()), nil
+	return os.SameFile(a, b) && a.Size() == b.Size() && a.ModTime().Equal(b.ModTime())
 }
 
 func connectionSnapshotFor(outDir string) (*connectionSnapshot, error) {
@@ -254,7 +257,7 @@ func connectionSnapshotForContext(ctx context.Context, outDir string) (*connecti
 		}
 		connectionCache.Lock()
 		entry := connectionCache.entries[outDir]
-		if entry == nil || entry.generation != generation {
+		if entry == nil || !sameConnectionGeneration(entry.generation, generation) {
 			select {
 			case connectionBuildSlots <- struct{}{}:
 			default:
@@ -310,7 +313,7 @@ func connectionSnapshotForContext(ctx context.Context, outDir string) (*connecti
 		if err != nil {
 			return nil, err
 		}
-		if after == generation {
+		if sameConnectionGeneration(after, generation) {
 			return entry.snapshot, nil
 		}
 	}
