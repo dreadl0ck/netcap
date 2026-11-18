@@ -85,6 +85,37 @@ func TestHostTopPortsKeepStableCutoff(t *testing.T) {
 	}
 }
 
+func TestHTTPInventoryRejectsIncompleteAudit(t *testing.T) {
+	for _, oversized := range []bool{true, false} {
+		t.Run(fmt.Sprintf("oversized=%t", oversized), func(t *testing.T) {
+			dir := t.TempDir()
+			rows := []proto.Message{&types.HTTP{Method: "GET", URL: "/valid"}}
+			status := http.StatusInternalServerError
+			if oversized {
+				rows = append(rows, &types.HTTP{RequestBody: make([]byte, maxCollectionPageScanBytes)})
+				status = http.StatusRequestEntityTooLarge
+			}
+			writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, rows)
+			if !oversized {
+				path := filepath.Join(dir, "HTTP.ncap.gz")
+				data, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				data[len(data)-8] ^= 1 // Corrupt the gzip checksum after the valid row.
+				if err := os.WriteFile(path, data, 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			w := httptest.NewRecorder()
+			(&Server{outDir: dir}).handleHTTP(w, httptest.NewRequest(http.MethodGet, "/api/http?mcpPage=true&pageLimit=1", nil))
+			if w.Code != status || strings.Contains(w.Body.String(), "generation") || strings.Contains(w.Body.String(), "/valid") {
+				t.Fatalf("expected refusal without a partial page: %d %s", w.Code, w.Body)
+			}
+		})
+	}
+}
+
 func TestHostTrafficPageRejectsOversizedAudit(t *testing.T) {
 	dir := t.TempDir()
 	s := &Server{outDir: dir}

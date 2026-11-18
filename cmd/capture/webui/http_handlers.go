@@ -22,6 +22,7 @@ package webui
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	stdio "io"
@@ -32,6 +33,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/artifactio"
+	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -110,8 +113,16 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpRecords, err := readHTTP(outDir)
+	var ctx context.Context
+	if r.URL.Query().Get("mcpPage") == "true" {
+		ctx = r.Context()
+	}
+	httpRecords, err := readHTTPInventory(ctx, outDir)
 	if err != nil {
+		if errors.Is(err, errHTTPInventoryLimit) {
+			RespondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": err.Error()})
+			return
+		}
 		log.Printf("[WebUI] Failed to read HTTP records: %v", err)
 		http.Error(w, "Failed to read HTTP records", http.StatusInternalServerError)
 		return
@@ -131,38 +142,81 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 
 // readHTTP reads HTTP records from the output directory
 func readHTTP(outDir string) ([]HTTPSummary, error) {
-	filePath := filepath.Join(outDir, "HTTP.ncap.gz")
+	return readHTTPInventory(nil, outDir)
+}
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] HTTP file not found: %s", filePath)
+var errHTTPInventoryLimit = errors.New("HTTP audit exceeds page scan limits")
+
+func readHTTPInventory(ctx context.Context, outDir string) ([]HTTPSummary, error) {
+	const name = "HTTP.ncap.gz"
+	var reader *AuditRecordReader
+	var err error
+	if ctx == nil {
+		reader, err = NewAuditRecordReader(filepath.Join(outDir, name))
+	} else {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		file, info, openErr := artifactio.Open(outDir, name)
+		if openErr != nil {
+			err = openErr
+		} else if info.Size() > maxCollectionPageScanBytes {
+			file.Close()
+			return nil, errHTTPInventoryLimit
+		} else {
+			reader, err = auditRecordReaderFromInput(file, io.NewSectionReader(file, 0, info.Size()), true, func(in io.Reader) io.Reader {
+				return auditContextReader{ctx: ctx, input: in}
+			})
+		}
+	}
+	if errors.Is(err, os.ErrNotExist) {
 		return []HTTPSummary{}, nil
 	}
-
-	// Read HTTP records
-	reader, err := NewAuditRecordReader(filePath)
 	if err != nil {
 		return nil, err
 	}
 	defer reader.Close()
 
 	// Read header
-	_, err = reader.ReadHeader()
+	header, err := reader.ReadHeader()
 	if err != nil {
 		return nil, err
 	}
+	if ctx != nil && header.Type != types.Type_NC_HTTP {
+		return nil, fmt.Errorf("unexpected HTTP audit type %s", header.Type)
+	}
 
 	httpRecords := make([]HTTPSummary, 0)
+	remaining := maxCollectionPageScanBytes
 
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		var record any
+		if ctx == nil {
+			record, err = reader.NextRecord()
+		} else {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			frameLimit := remaining
+			if len(httpRecords) == maxCollectionPageRows {
+				frameLimit = 0
+			}
+			var raw []byte
+			raw, err = reader.delimitedReader.NextWithLimit(uint64(max(1, frameLimit)))
+			if errors.Is(err, delimited.ErrRecordLimit) || (err == nil && (len(raw) > frameLimit || len(httpRecords) == maxCollectionPageRows)) {
+				return nil, errHTTPInventoryLimit
+			}
+			if err == nil {
+				remaining -= len(raw)
+				record, err = reader.DecodeRecord(raw)
+			}
+		}
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading HTTP record: %v", err)
-			continue
+			return nil, err
 		}
 
 		// Type assert to HTTP
