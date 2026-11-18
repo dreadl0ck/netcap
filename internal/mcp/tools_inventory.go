@@ -101,7 +101,7 @@ func simpleSessionTool(s *Server, name, desc, endpoint string, queryArgs []query
 				return errResult(fmt.Errorf("%s: %w", endpoint, gErr)), nil
 			}
 			if paged {
-				return s.collectionResult(ref, collectionKey, body), nil
+				return s.collectionResult(ref, collectionKey, body, q), nil
 			}
 			return rawJSONResult(body), nil
 		},

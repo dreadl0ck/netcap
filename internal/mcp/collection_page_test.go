@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -57,8 +58,30 @@ func TestCollectionResultRejectsInconsistentPages(t *testing.T) {
 		{"stalled continuation", `{"groups":[],"totalCount":12,"groupCount":2,"offset":1,"next_offset":1,"limit":1,"returned":0,"has_more":true,"generation":"fixture"}`, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			result := s.collectionResult(SessionRef{}, "groups", []byte(tc.body))
+			result := s.collectionResult(SessionRef{}, "groups", []byte(tc.body), nil)
 			if result.IsError != tc.wantError {
+				t.Fatalf("IsError = %t, want %t: %+v", result.IsError, tc.wantError, result)
+			}
+		})
+	}
+}
+
+func TestCollectionResultMatchesRequestedPage(t *testing.T) {
+	const page = `{"hosts":[{}],"totalCount":2,"offset":1,"next_offset":2,"limit":1,"returned":1,"has_more":false,"generation":"fixture"}`
+	s := &Server{}
+	for _, tc := range []struct {
+		name, offset, limit, generation string
+		wantError                       bool
+	}{
+		{"match", "1", "1", "fixture", false},
+		{"unbound generation", "1", "1", "", false},
+		{"wrong offset", "0", "1", "fixture", true},
+		{"wrong limit", "1", "2", "fixture", true},
+		{"stale generation", "1", "1", "old", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			q := url.Values{"pageOffset": {tc.offset}, "pageLimit": {tc.limit}, "pageGeneration": {tc.generation}}
+			if result := s.collectionResult(SessionRef{}, "hosts", []byte(page), q); result.IsError != tc.wantError {
 				t.Fatalf("IsError = %t, want %t: %+v", result.IsError, tc.wantError, result)
 			}
 		})

@@ -56,7 +56,7 @@ func collectionQuery(req mcplib.CallToolRequest, q url.Values) error {
 	return nil
 }
 
-func (s *Server) collectionResult(ref SessionRef, key string, raw json.RawMessage) *mcplib.CallToolResult {
+func (s *Server) collectionResult(ref SessionRef, key string, raw json.RawMessage, query url.Values) *mcplib.CallToolResult {
 	var envelope map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &envelope); err != nil {
 		return errResult(err)
@@ -70,7 +70,7 @@ func (s *Server) collectionResult(ref SessionRef, key string, raw json.RawMessag
 		return errResult(err)
 	}
 	if paged {
-		if err := validateCollectionPage(envelope, key, rows); err != nil {
+		if err := validateCollectionPage(envelope, key, rows, query); err != nil {
 			return errResult(err)
 		}
 	}
@@ -89,7 +89,7 @@ func (s *Server) collectionResult(ref SessionRef, key string, raw json.RawMessag
 	return rawJSONResult(result)
 }
 
-func validateCollectionPage(envelope map[string]json.RawMessage, key string, rows []json.RawMessage) error {
+func validateCollectionPage(envelope map[string]json.RawMessage, key string, rows []json.RawMessage, query url.Values) error {
 	var offset, next, limit, returned, total int
 	for _, field := range []struct {
 		name string
@@ -115,6 +115,12 @@ func validateCollectionPage(envelope map[string]json.RawMessage, key string, row
 	if rows == nil || offset > 1000000000 || limit < 1 || limit > 500 || returned != len(rows) || returned > limit || next != offset+returned ||
 		(returned > 0 && next > total) || *more != (next < total) || (*more && returned == 0) {
 		return fmt.Errorf("inconsistent collection page counts or continuation")
+	}
+	if query != nil && (query.Get("pageOffset") != strconv.Itoa(offset) || query.Get("pageLimit") != strconv.Itoa(limit)) {
+		return fmt.Errorf("collection response does not match requested offset or limit")
+	}
+	if want := query.Get("pageGeneration"); want != "" && want != generation {
+		return fmt.Errorf("collection response generation changed; restart pagination")
 	}
 	return nil
 }
