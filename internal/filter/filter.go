@@ -22,6 +22,7 @@ package filter
 import (
 	"fmt"
 	"reflect"
+	"sync"
 
 	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/vm"
@@ -252,29 +253,7 @@ func CreateEnvironment(record types.AuditRecord) map[string]any {
 		return make(map[string]any)
 	}
 
-	// Use reflection to extract all fields from the protobuf message
-	v := reflect.ValueOf(protoMsg)
-	if v.Kind() == reflect.Pointer {
-		v = v.Elem()
-	}
-
-	t := v.Type()
-	env := make(map[string]any, v.NumField())
-	for i := 0; i < v.NumField(); i++ {
-		field := t.Field(i)
-		fieldValue := v.Field(i)
-
-		// Skip unexported fields
-		if !fieldValue.CanInterface() {
-			continue
-		}
-
-		// Add the field to the environment
-		// For nested structs, we need to expose them properly for dot notation
-		env[field.Name] = convertFieldValue(fieldValue)
-	}
-
-	return env
+	return structToMap(reflect.ValueOf(protoMsg))
 }
 
 // convertFieldValue converts a reflect.Value to a suitable interface{} for expr-lang.
@@ -317,7 +296,36 @@ func convertFieldValue(v reflect.Value) any {
 	return nil
 }
 
-// structToMap converts a struct to a map for nested field access in expressions.
+type environmentField struct {
+	name  string
+	index int
+}
+
+var auditEnvironmentFields sync.Map
+var auditRecordPackage = reflect.TypeFor[types.Header]().PkgPath()
+
+func environmentFields(t reflect.Type) []environmentField {
+	// Cache only generated audit structs; external types need no persistent entry.
+	cache := t.PkgPath() == auditRecordPackage
+	if cache {
+		if fields, ok := auditEnvironmentFields.Load(t); ok {
+			return fields.([]environmentField)
+		}
+	}
+	fields := make([]environmentField, 0, t.NumField())
+	for i := range t.NumField() {
+		if f := t.Field(i); f.IsExported() {
+			fields = append(fields, environmentField{name: f.Name, index: i})
+		}
+	}
+	if cache {
+		actual, _ := auditEnvironmentFields.LoadOrStore(t, fields)
+		return actual.([]environmentField)
+	}
+	return fields
+}
+
+// structToMap converts a struct to a map for field access in expressions.
 func structToMap(v reflect.Value) map[string]any {
 	if v.Kind() == reflect.Pointer {
 		if v.IsNil() {
@@ -330,20 +338,12 @@ func structToMap(v reflect.Value) map[string]any {
 		return nil
 	}
 
-	result := make(map[string]any)
-	t := v.Type()
-
-	for i := 0; i < v.NumField(); i++ {
-		field := t.Field(i)
-		fieldValue := v.Field(i)
-
-		// Skip unexported fields
-		if !fieldValue.CanInterface() {
-			continue
+	fields := environmentFields(v.Type())
+	result := make(map[string]any, len(fields))
+	for _, f := range fields {
+		if field := v.Field(f.index); field.CanInterface() {
+			result[f.name] = convertFieldValue(field)
 		}
-
-		// Recursively convert nested structures
-		result[field.Name] = convertFieldValue(fieldValue)
 	}
 
 	return result
