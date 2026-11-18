@@ -109,11 +109,12 @@ func (t *tcpConnection) tryIncremental() {
 	if !ready {
 		return
 	}
-	if !t.stateBudget.TryReserve(int64(t.incrementalProbeBytes)) {
+	probeCredit := int64(t.incrementalProbeBytes)
+	if !t.stateBudget.TryReserve(probeCredit) {
 		t.declineIncrementalSetupForPressure()
 		return
 	}
-	defer t.stateBudget.Release(int64(t.incrementalProbeBytes))
+	defer func() { t.stateBudget.Release(probeCredit) }()
 	client := make([]byte, 0, t.incrementalProbeBytes)
 	for _, fragment := range t.client.DataSlice() {
 		n := min(len(fragment.Raw()), t.incrementalProbeBytes-len(client))
@@ -141,6 +142,8 @@ func (t *tcpConnection) tryIncremental() {
 		}
 	}
 	sel, ok := stream.SelectDecoder(&stream.SelectionInput{Transport: core.TCP, ServerPort: sPort, PortClient: client, ScanClient: client, Conversation: c})
+	t.stateBudget.Release(probeCredit)
+	probeCredit = 0
 	if !ok || sel.Name != "HTTP" {
 		t.incrementalDeclined = true
 		return
@@ -155,7 +158,7 @@ func (t *tcpConnection) tryIncremental() {
 		t.declineIncrementalSetupForPressure()
 		return
 	}
-	defer t.stateBudget.Release(credit)
+	defer func() { t.stateBudget.Release(credit) }()
 	t.incremental = factory.NewIncremental(c, t.stateBudget)
 	if observer, ok := t.incremental.(core.IncrementalTailObserver); ok {
 		observer.SetTailObserver(func(c *core.ConversationInfo) { stream.ObserveTLSUpgrade(c, "HTTP") })
@@ -172,6 +175,8 @@ func (t *tcpConnection) tryIncremental() {
 	for _, fragment := range fragments {
 		t.pushIncremental(fragment.(*core.StreamData))
 	}
+	t.stateBudget.Release(credit)
+	credit = 0
 	if !decoderconfig.Instance.SaveConns {
 		serverPrefix := t.server.DataSlice()
 		serverBytes := t.server.NumBytes()
