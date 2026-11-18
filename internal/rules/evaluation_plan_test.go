@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"testing"
 	"time"
@@ -94,6 +95,21 @@ func TestAuditReplayThresholdUsesSignedRecordTime(t *testing.T) {
 		want := []int{0, 0, 1}[i]
 		if err != nil || got != want {
 			t.Fatalf("timestamp %d: got %d alerts, want %d: %v", seconds, got, want, err)
+		}
+	}
+}
+
+func TestAuditReplayThresholdRejectsTimestampDeltaOverflow(t *testing.T) {
+	config := &Config{Rules: []*Rule{{Name: "fixture", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true, Threshold: 2, ThresholdWindow: 60}}}
+	replay, err := NewAuditReplay(config, new(MockAlertWriter))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, ts := range []int64{math.MinInt64 + 1, math.MaxInt64 - 1, math.MaxInt64} {
+		got, err := replay.Evaluate(&types.HTTP{Method: "GET", Timestamp: ts})
+		want := [3]int{0, 0, 1}[i]
+		if err != nil || got != want {
+			t.Fatalf("timestamp %d: got %d alerts, want %d: %v", ts, got, want, err)
 		}
 	}
 }

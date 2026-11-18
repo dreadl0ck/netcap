@@ -530,7 +530,8 @@ func (e *Engine) checkThreshold(rule *Rule, record types.AuditRecord) bool {
 	// Remove matches outside the time window
 	validMatches := make([]int64, 0)
 	for _, matchTime := range tracker.matches {
-		if matchTime <= now && now-matchTime <= windowNanos {
+		// The distance between ordered signed timestamps can exceed MaxInt64.
+		if matchTime <= now && uint64(now)-uint64(matchTime) <= uint64(windowNanos) {
 			validMatches = append(validMatches, matchTime)
 		}
 	}

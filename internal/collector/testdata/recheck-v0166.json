@@ -365,6 +365,7 @@
     "verification": "TestAnalysisCompletionRejectsMislabeledTimelineTrack verifies that a UDP audit stored as HTTP fails indexing and leaves the analysis incomplete. Focused timeline and analysis completion tests passed under the race detector."
   },
   "captureTimeWatermarkFastPath": {
+    "thresholdDeltaOverflow": "TestAuditReplayThresholdRejectsTimestampDeltaOverflow verifies that a timestamp near MinInt64 cannot count in a 60-second threshold window near MaxInt64. Two records one nanosecond apart still trigger the threshold. The full portable rules race suite passed.",
     "signedThresholdTime": "TestAuditReplayThresholdUsesSignedRecordTime verifies that an out-of-order pre-epoch record does not count a future observation toward its threshold. The full portable rules race suite passed.",
     "auditReplayBeforeEpoch": "TestAuditReplayUsesRecordTimeForDedupAndRateWindows checks modern and pre-epoch clocks, including out-of-order records and missing timestamps after initialization. Repeated replays produce the same alerts apart from DetectedAt. The full portable rules race suite passed.",
     "verification": "BenchmarkOrderedStreamEqualTime admits 4096 equal-time TCP records and checks 81 alerts at EOF. Three portable Apple M5 Max runs measured 84.5–91.5 ms before and 19.7–20.3 ms after skipping redundant sorts at the committed watermark. Focused scoped, capture-time, ordered and audit replay tests passed under the race detector."
