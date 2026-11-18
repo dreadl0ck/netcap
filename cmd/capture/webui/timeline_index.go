@@ -351,7 +351,7 @@ func timelineIndexFor(outDir string) timelineIndexStatus {
 		timelineCache.entries[outDir] = entry
 		timelineEvictLocked()
 
-		go buildTimelineIndex(entry, fingerprint, files)
+		go buildTimelineIndex(entry, outDir, fingerprint, files)
 	}
 
 	entry.lastUsed = time.Now()
@@ -406,7 +406,7 @@ func timelineEvictLocked() {
 }
 
 // buildTimelineIndex indexes every audit record file of one generation.
-func buildTimelineIndex(entry *timelineIndexEntry, fingerprint string, files []timelineFileRef) {
+func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, files []timelineFileRef) {
 	defer close(entry.finished)
 	slot, maxWorkers := timelineBuildLane(files)
 	slot <- struct{}{}
@@ -519,6 +519,17 @@ func buildTimelineIndex(entry *timelineIndexEntry, fingerprint string, files []t
 		}
 	}
 	idx := assembleTimelineIndex(fingerprint, results)
+	current, _, err := timelineFingerprint(outDir)
+	if err != nil || current != fingerprint {
+		entry.mu.Lock()
+		entry.state = timelineStateError
+		entry.errMsg = "timeline input changed during indexing"
+		if err != nil {
+			entry.errMsg = fmt.Sprintf("verify timeline input: %v", err)
+		}
+		entry.mu.Unlock()
+		return
+	}
 
 	entry.mu.Lock()
 	entry.index = idx

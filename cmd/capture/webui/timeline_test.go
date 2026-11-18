@@ -206,6 +206,25 @@ func TestSmallTimelineReportsCorruptInputWhileRegularLaneIsOccupied(t *testing.T
 	}
 }
 
+func TestTimelineRejectsGenerationChangedBeforeBuild(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{dnsRecord(100, "192.0.2.1", "192.0.2.2")})
+	generation, files, err := timelineFingerprint(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeTimelineAuditFilePlain(t, dir, "UDP", types.Type_NC_UDP, []proto.Message{&types.UDP{Timestamp: 200}})
+	entry := &timelineIndexEntry{finished: make(chan struct{}), state: timelineStateIndexing}
+	buildTimelineIndex(entry, dir, generation, files)
+	if entry.state != timelineStateError || entry.index != nil || entry.errMsg != "timeline input changed during indexing" {
+		t.Fatalf("stale generation published: %s %s", entry.state, entry.errMsg)
+	}
+	index := waitForTimelineIndex(t, dir)
+	if index.Generation == generation || index.byName["DNS"] == nil || index.byName["UDP"] == nil {
+		t.Fatal("retry did not index the current generation")
+	}
+}
+
 func TestTimelineOverExpansionReturnsCompleteRegularIndex(t *testing.T) {
 	dir := t.TempDir()
 	records := make([]proto.Message, 4096)
