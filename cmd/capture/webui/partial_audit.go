@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 )
 
@@ -62,10 +62,15 @@ func preparePartialAudit(r *http.Request, selection captureSelection) (*sealedAu
 	runID := selection.RunID
 	if runID == "" {
 		var manifest evidence.CaptureManifest
-		if err := readEvidenceJSON(filepath.Join(selection.OutputDir, "capture-manifest.json"), &manifest); err != nil {
+		data, err := artifactio.Read(r.Context(), selection.OutputDir, "capture-manifest.json", 16<<20)
+		if err != nil || json.Unmarshal(data, &manifest) != nil {
 			return nil, selectionError(422, "Sealed capture generation is unavailable")
 		}
 		runID = manifest.RunID
+	}
+	if expected, stageGeneration := q.Get("queryGeneration"), q.Get("stageGeneration"); expected != "" && stageGeneration != "" &&
+		expected != partialQueryGeneration(runID, stageGeneration, parts[0], q) {
+		return nil, selectionError(409, "Partial query or projection changed; restart at offset zero")
 	}
 	stage, snapshot, err := evidence.ReadAuditStageContext(r.Context(), selection.OutputDir, runID, parts[0], q.Get("stageGeneration"))
 	if err != nil {

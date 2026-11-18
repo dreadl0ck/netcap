@@ -100,6 +100,11 @@ func TestPartialAuditAdmissionRequiresSealedExplicitQualifiedOutput(t *testing.T
 				t.Fatal(err)
 			}
 			response = httptest.NewRecorder()
+			handler.ServeHTTP(response, httptest.NewRequest("GET", "/api/audit/Connection/stream?"+next+"&fields=SrcIP", nil))
+			if response.Code != 409 {
+				t.Fatalf("changed projection should be rejected before verifying the audit file: %d %s", response.Code, response.Body.String())
+			}
+			response = httptest.NewRecorder()
 			handler.ServeHTTP(response, httptest.NewRequest("GET", "/api/audit/Connection/stream?sessionId=owned&allowPartial=true&runId="+url.QueryEscape(run), nil))
 			if response.Code != 422 {
 				t.Fatal("changed audit file was readable", response.Code, response.Body.String())
