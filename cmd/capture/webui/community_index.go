@@ -20,11 +20,12 @@ import (
 )
 
 const (
-	communityIndexCacheSize   = 64
-	communityIndexCacheBytes  = 64 << 20
-	communityIndexMaxRecords  = 1_000_000
-	communityIndexMaxIDs      = 4096
-	communityIndexMaxKeyBytes = 4 << 20
+	communityIndexCacheSize      = 64
+	communityIndexCacheBytes     = 64 << 20
+	communityIndexMaxRecords     = 1_000_000
+	communityIndexMaxIDs         = 4096
+	communityIndexMaxKeyBytes    = 4 << 20
+	communityIndexMaxMemberships = 1_000_000
 )
 
 type communityFileIndex struct {
@@ -273,6 +274,7 @@ func buildCommunityIndex(path string, expected os.FileInfo) (*communityFileIndex
 func buildCommunityIndexContext(ctx context.Context, path string, expected os.FileInfo) (*communityFileIndex, error) {
 	idx := &communityFileIndex{byID: make(map[string]*roaring.Bitmap)}
 	keyBytes := 0
+	memberships := 0
 	err := walkCommunityRecords(ctx, path, expected, func(id string, ids []string) error {
 		if idx.total >= communityIndexMaxRecords {
 			return errCommunityIndexTooLarge
@@ -282,6 +284,13 @@ func buildCommunityIndexContext(ctx context.Context, path string, expected os.Fi
 				return nil
 			}
 			bitmap := idx.byID[id]
+			ordinal := uint32(idx.total)
+			if memberships == communityIndexMaxMemberships {
+				if bitmap != nil && bitmap.Contains(ordinal) {
+					return nil
+				}
+				return errCommunityIndexTooLarge
+			}
 			if bitmap == nil {
 				if len(idx.byID) >= communityIndexMaxIDs || len(id) > communityIndexMaxKeyBytes-keyBytes {
 					return errCommunityIndexTooLarge
@@ -290,7 +299,9 @@ func buildCommunityIndexContext(ctx context.Context, path string, expected os.Fi
 				bitmap = roaring.New()
 				idx.byID[id] = bitmap
 			}
-			bitmap.Add(uint32(idx.total))
+			if bitmap.CheckedAdd(ordinal) {
+				memberships++
+			}
 			return nil
 		}
 		if err := add(id); err != nil {

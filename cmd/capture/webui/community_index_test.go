@@ -230,6 +230,30 @@ func TestCommunityIndexRepeatedIDsCountEachRecordOnce(t *testing.T) {
 	}
 }
 
+func TestCommunityIndexBoundsRecordMemberships(t *testing.T) {
+	const records, width = 1000, 1000
+	ids := make([]string, width)
+	for i := range ids {
+		ids[i] = fmt.Sprintf("id-%d", i)
+	}
+	rows := make([]proto.Message, records)
+	for i := range rows {
+		rows[i] = &types.Software{CommunityIDs: ids}
+	}
+	rows[records-1] = &types.Software{CommunityIDs: append(append([]string(nil), ids...), ids[0])}
+	path := writeTimelineAuditFilePlain(t, t.TempDir(), "Software", types.Type_NC_Software, rows)
+	if idx, err := communityIndexFor(path); err != nil || idx == nil || idx.total != records {
+		t.Fatalf("exact-limit fixture: index present=%t err=%v", idx != nil, err)
+	}
+	rows = append(rows, &types.Software{CommunityIDs: []string{ids[0]}})
+	path = writeTimelineAuditFilePlain(t, t.TempDir(), "Software", types.Type_NC_Software, rows)
+	total, matched, err := communityCounts(path, map[string]bool{ids[0]: true})
+	_, cached := communityCachedTotal(path)
+	if err != nil || total != records+1 || matched != records+1 || cached {
+		t.Fatalf("over-limit fallback: total=%d matched=%d cached=%t err=%v", total, matched, cached, err)
+	}
+}
+
 func TestCommunityIndexFallsBackWhenKeysExceedByteBudget(t *testing.T) {
 	for _, over := range []bool{false, true} {
 		dir := t.TempDir()
