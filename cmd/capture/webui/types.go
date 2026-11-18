@@ -56,9 +56,10 @@ type FileInfo struct {
 // AuditFileInfo extends FileInfo with audit record specific metadata
 type AuditFileInfo struct {
 	FileInfo
-	Type        string `json:"type"`
-	RecordCount int64  `json:"recordCount,omitempty"`
-	Layer       string `json:"layer"`
+	Type                string `json:"type"`
+	RecordCount         int64  `json:"recordCount,omitempty"`
+	RecordCountComplete *bool  `json:"recordCountComplete,omitempty"`
+	Layer               string `json:"layer"`
 }
 
 // StatusResponse represents the capture status

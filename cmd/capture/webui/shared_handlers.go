@@ -61,7 +61,7 @@ func HandleAuditFiles(outputDir string) http.HandlerFunc {
 			return
 		}
 
-		files, err := ListAuditFiles(outputDir)
+		files, err := listAuditFiles(r.Context(), outputDir)
 		if err != nil {
 			log.Printf("[WebUI] Error listing audit files: %v", err)
 			RespondJSON(w, http.StatusInternalServerError, map[string]string{
@@ -97,7 +97,7 @@ func HandleAuditFilesFiltered(outputDir string) http.HandlerFunc {
 		communityIDsParam := r.URL.Query().Get("communityIds")
 		if communityIDsParam == "" {
 			// If no filter, return regular files
-			files, err := ListAuditFiles(outputDir)
+			files, err := listAuditFiles(r.Context(), outputDir)
 			if err != nil {
 				log.Printf("[WebUI] Error listing audit files: %v", err)
 				RespondJSON(w, http.StatusInternalServerError, map[string]string{
@@ -127,7 +127,7 @@ func HandleAuditFilesFiltered(outputDir string) http.HandlerFunc {
 
 		if len(communityIDs) == 0 {
 			// Empty filter, return regular files
-			files, err := ListAuditFiles(outputDir)
+			files, err := listAuditFiles(r.Context(), outputDir)
 			if err != nil {
 				log.Printf("[WebUI] Error listing audit files: %v", err)
 				RespondJSON(w, http.StatusInternalServerError, map[string]string{
@@ -421,12 +421,19 @@ func preferredAuditFile(dir, name string) bool {
 	if !strings.HasSuffix(name, defaults.FileExtension) {
 		return false
 	}
-	_, err := os.Stat(filepath.Join(dir, name+".gz"))
+	_, err := os.Lstat(filepath.Join(dir, name+".gz"))
 	return os.IsNotExist(err)
 }
 
 // ListAuditFiles returns a list of audit files in the given directory
 func ListAuditFiles(outputDir string) ([]AuditFileInfo, error) {
+	return listAuditFiles(context.Background(), outputDir)
+}
+
+func listAuditFiles(ctx context.Context, outputDir string) ([]AuditFileInfo, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	var files []AuditFileInfo
 
 	// Check if directory exists first
@@ -458,8 +465,12 @@ func ListAuditFiles(outputDir string) ([]AuditFileInfo, error) {
 		// Extract audit type
 		auditType := strings.TrimSuffix(strings.TrimSuffix(name, ".gz"), defaults.FileExtension)
 
-		// Count records
-		recordCount := CountRecords(filepath.Join(outputDir, name))
+		path := filepath.Join(outputDir, name)
+		recordCount, countErr := countAuditFrames(ctx, path, auditType)
+		complete := countErr == nil
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 
 		files = append(files, AuditFileInfo{
 			FileInfo: FileInfo{
@@ -469,9 +480,10 @@ func ListAuditFiles(outputDir string) ([]AuditFileInfo, error) {
 				ModifiedTime: info.ModTime().Unix(),
 				IsCompleted:  true,
 			},
-			Type:        auditType,
-			RecordCount: recordCount,
-			Layer:       GetLayerName(GetLayerType(auditType)),
+			Type:                auditType,
+			RecordCount:         recordCount,
+			RecordCountComplete: &complete,
+			Layer:               GetLayerName(GetLayerType(auditType)),
 		})
 	}
 

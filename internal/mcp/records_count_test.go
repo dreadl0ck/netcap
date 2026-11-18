@@ -77,6 +77,11 @@ func TestAuditValuesCancellationReachesBackend(t *testing.T) {
 		map[string]any{"session_id": "owned", "type": "Connection"})
 }
 
+func TestAuditInventoryCancellationReachesBackend(t *testing.T) {
+	testScanCancellationReachesBackend(t, "list_audit_records", http.MethodGet, "/api/files/audit",
+		map[string]any{"session_id": "owned"})
+}
+
 func TestQueryCountOnlyRequestsBackendCounts(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/audit/Connection/stream" || r.URL.Query().Get("countOnly") != "true" || r.URL.Query().Get("filter") != "SrcPort == '443'" {

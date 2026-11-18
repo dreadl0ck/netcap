@@ -80,6 +80,22 @@ func TestAuditMetaDoesNotCountMislabeledOrLinkedTracks(t *testing.T) {
 	}
 }
 
+func TestAuditInventoryQualifiesFrameCounts(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_UDP, []proto.Message{&types.UDP{SrcPort: 5353}})
+	writeTimelineAuditFilePlain(t, dir, "UDP", types.Type_NC_UDP, []proto.Message{&types.UDP{SrcPort: 5353}})
+	files, err := listAuditFiles(t.Context(), dir)
+	if err != nil || len(files) != 2 {
+		t.Fatalf("inventory: %v, %v", files, err)
+	}
+	for _, file := range files {
+		wantValid := file.Type == "UDP"
+		if file.RecordCountComplete == nil || *file.RecordCountComplete != wantValid || (file.RecordCount == 1) != wantValid {
+			t.Fatalf("incorrect count for %s: %+v", file.Type, file)
+		}
+	}
+}
+
 func TestInventoryAndRecordQueryPreferSameAuditEncoding(t *testing.T) {
 	dir := t.TempDir()
 	rows := []proto.Message{&types.HTTP{Method: "GET"}, &types.HTTP{Method: "POST"}}

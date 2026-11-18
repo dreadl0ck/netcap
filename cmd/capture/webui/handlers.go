@@ -311,13 +311,18 @@ func (s *Server) handleAuditFiles(w http.ResponseWriter, r *http.Request) {
 		}
 		merged := map[string]*AuditFileInfo{}
 		for _, dir := range dirs {
-			files, err := ListAuditFiles(dir)
+			files, err := listAuditFiles(r.Context(), dir)
 			if err != nil {
+				if r.Context().Err() != nil {
+					return
+				}
 				continue
 			}
 			for _, f := range files {
 				if existing, ok := merged[f.Type]; ok {
 					existing.RecordCount += f.RecordCount
+					complete := existing.RecordCountComplete != nil && *existing.RecordCountComplete && f.RecordCountComplete != nil && *f.RecordCountComplete
+					existing.RecordCountComplete = &complete
 					existing.Size += f.Size
 					if f.ModifiedTime > existing.ModifiedTime {
 						existing.ModifiedTime = f.ModifiedTime

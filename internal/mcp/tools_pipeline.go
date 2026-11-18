@@ -580,13 +580,13 @@ func (s *Server) handleListDecoders(_ context.Context, _ mcplib.CallToolRequest)
 	return rawJSONResult(raw), nil
 }
 
-func (s *Server) handleListAuditRecords(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+func (s *Server) handleListAuditRecords(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
 		return errResult(err), nil
 	}
 	q := ref.sessionQueryParams()
-	raw, gErr := s.newClient().Get("/api/files/audit", q)
+	raw, gErr := s.newClient().GetContext(ctx, "/api/files/audit", q)
 	if gErr != nil {
 		return errResult(fmt.Errorf("files/audit: %w", gErr)), nil
 	}
