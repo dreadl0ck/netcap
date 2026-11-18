@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/delimited"
@@ -24,7 +25,7 @@ type inventoryAuditBudget struct {
 }
 
 func openInventoryAuditReader(f *os.File, size int64, ctx context.Context, want types.Type) (*AuditRecordReader, error) {
-	r, err := auditRecordReaderFromInput(f, io.NewSectionReader(f, 0, size), true, func(in io.Reader) io.Reader {
+	r, err := auditRecordReaderFromInput(f, io.NewSectionReader(f, 0, size), strings.HasSuffix(f.Name(), ".gz"), func(in io.Reader) io.Reader {
 		return auditContextReader{ctx: ctx, input: in}
 	})
 	if err != nil {

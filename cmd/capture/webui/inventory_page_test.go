@@ -205,6 +205,47 @@ func TestMCPCertificateInventoryLimitsConcurrentResponses(t *testing.T) {
 	testInventoryResponseCapacity(t, "/api/certificates", s.handleCertificates)
 }
 
+func TestSecretInventoryBoundsBothEncodings(t *testing.T) {
+	for _, compressed := range []bool{false, true} {
+		name := "plain"
+		if compressed {
+			name = "gzip"
+		}
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			s := newTimelineTestServer(dir)
+			request := func() *httptest.ResponseRecorder {
+				w := httptest.NewRecorder()
+				s.handleSecrets(w, httptest.NewRequest(http.MethodGet, "/api/secrets?mcpPage=true&pageLimit=1", nil))
+				return w
+			}
+			write := func(rows []proto.Message) {
+				if compressed {
+					writeTimelineAuditFile(t, dir, "Secret", types.Type_NC_Secret, rows)
+				} else {
+					writeTimelineAuditFilePlain(t, dir, "Secret", types.Type_NC_Secret, rows)
+				}
+			}
+			fixture := &types.Secret{User: "fixture-user"}
+			write([]proto.Message{fixture, &types.Secret{Value: strings.Repeat("x", maxCollectionPageScanBytes)}})
+			w := request()
+			if w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "generation") || strings.Contains(w.Body.String(), "fixture-user") {
+				t.Fatalf("expected limit error only: %d %s", w.Code, w.Body)
+			}
+			write([]proto.Message{fixture, &types.Secret{}})
+			w = request()
+			if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"user":"fixture-user"`) || !strings.Contains(w.Body.String(), `"totalCount":1`) {
+				t.Fatalf("retry did not retain exactly one row: %d %s", w.Code, w.Body)
+			}
+		})
+	}
+}
+
+func TestMCPSecretInventoryLimitsConcurrentResponses(t *testing.T) {
+	s := newTimelineTestServer(t.TempDir())
+	testInventoryResponseCapacity(t, "/api/secrets", s.handleSecrets)
+}
+
 func TestDomainInventorySharesAuditBudget(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFile(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{&types.DNS{}})

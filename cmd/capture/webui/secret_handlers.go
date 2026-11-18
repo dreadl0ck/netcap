@@ -20,6 +20,7 @@
 package webui
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -27,7 +28,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/netio"
@@ -92,6 +92,8 @@ type SecretsResponse struct {
 	TotalCount int             `json:"totalCount"`
 }
 
+var secretInventorySlots = make(chan struct{}, 2)
+
 // handleSecrets returns list of all credentials
 func (s *Server) handleSecrets(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -105,83 +107,65 @@ func (s *Server) handleSecrets(w http.ResponseWriter, r *http.Request) {
 	}
 	outDir := selection.OutputDir
 
-	// Try to find Credentials audit file - try both compressed and uncompressed
-	filePath := filepath.Join(outDir, "Secret"+defaults.FileExtension+".gz")
-	filePathUncompressed := filepath.Join(outDir, "Secret"+defaults.FileExtension)
-
-	// Check if compressed file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-
-		// Try uncompressed version
-		if _, err := os.Stat(filePathUncompressed); os.IsNotExist(err) {
-			if respondCollectionPage(w, r, []SecretSummary{}, "secrets") {
-				return
-			}
-
-			RespondJSON(w, http.StatusOK, SecretsResponse{
-				Secrets:    []SecretSummary{},
-				TotalCount: 0,
-			})
+	var budget *inventoryAuditBudget
+	if r.URL.Query().Get("mcpPage") == "true" {
+		if r.Context().Err() != nil {
 			return
 		}
-		// Use uncompressed file
-		filePath = filePathUncompressed
-		log.Printf("[Credentials] Using uncompressed file: %s", filePath)
-	} else {
-		log.Printf("[Credentials] Found compressed credentials file: %s", filePath)
+		select {
+		case secretInventorySlots <- struct{}{}:
+			defer func() { <-secretInventorySlots }()
+		default:
+			RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "secret inventory is busy"})
+			return
+		}
+		budget = &inventoryAuditBudget{ctx: r.Context(), stored: maxCollectionPageScanBytes, bodies: maxCollectionPageScanBytes, rows: maxCollectionPageRows}
 	}
-
-	// Get file size for logging
-	if fileInfo, err := os.Stat(filePath); err == nil {
-		log.Printf("[Credentials] Opening credentials file (size: %d bytes)", fileInfo.Size())
-	}
-
-	// Open the audit file
-	reader, err := netio.Open(filePath, defaults.BufferSize)
+	credentials, err := readSecretInventory(outDir, budget)
 	if err != nil {
-		log.Printf("[Credentials] ERROR: Failed to open Credentials audit file: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": fmt.Sprintf("Failed to open credentials file: %v", err),
-		})
+		if r.Context().Err() != nil {
+			return
+		}
+		if errors.Is(err, errInventoryAuditLimit) {
+			RespondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": err.Error()})
+			return
+		}
+		log.Print("[WebUI] Failed to read secret inventory")
+		RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read secret inventory"})
 		return
+	}
+	if respondCollectionPage(w, r, credentials, "secrets") {
+		return
+	}
+	RespondJSON(w, http.StatusOK, SecretsResponse{Secrets: credentials, TotalCount: len(credentials)})
+}
+
+func readSecretInventory(outDir string, budget *inventoryAuditBudget) ([]SecretSummary, error) {
+	path := filepath.Join(outDir, "Secret"+defaults.FileExtension)
+	reader, err := budget.open(path+".gz", types.Type_NC_Secret)
+	if errors.Is(err, os.ErrNotExist) {
+		reader, err = budget.open(path, types.Type_NC_Secret)
+	}
+	credentials := []SecretSummary{}
+	if errors.Is(err, os.ErrNotExist) {
+		return credentials, nil
+	}
+	if err != nil {
+		return nil, err
 	}
 	defer reader.Close()
-
-	log.Printf("[Credentials] Successfully opened credentials file")
-
-	// IMPORTANT: Read the netcap file header first!
-	header, err := reader.ReadHeader()
-	if err != nil {
-		log.Printf("[Credentials] ERROR: Failed to read file header: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": fmt.Sprintf("Failed to read file header: %v", err),
-		})
-		return
-	}
-	log.Printf("[Credentials] File header read successfully (type: %s, version: %s)", header.Type, header.Version)
-	log.Printf("[Credentials] Reading credential records...")
-
-	// Read all credentials
-	var credentials []SecretSummary
-	var cred types.Secret
-	recordCount := 0
-
 	for {
-		err := reader.Next(&cred)
-		if err != nil {
-			if err != io.EOF {
-				log.Printf("[Credentials] ERROR: Error reading Credentials audit record (after %d records): %v", recordCount, err)
-				// Check if this is a protobuf schema mismatch error
-				if strings.Contains(err.Error(), "wrong wireType") || strings.Contains(err.Error(), "proto:") {
-					log.Printf("[Credentials] This appears to be a protobuf schema version mismatch.")
-					log.Printf("[Credentials] The audit file was created with an older version of netcap.")
-					log.Printf("[Credentials] Solution: Re-analyze the PCAP file to regenerate audit records with the current schema.")
-				}
-			}
+		record, err := budget.next(reader)
+		if err == io.EOF {
 			break
 		}
-
-		recordCount++
+		if err != nil {
+			return nil, err
+		}
+		cred, ok := record.(*types.Secret)
+		if !ok {
+			return nil, fmt.Errorf("unexpected secret audit record %T", record)
+		}
 
 		// Skip credentials with empty username AND password - they provide no useful information
 		if cred.User == "" && cred.Password == "" && cred.Value == "" && cred.Hash == "" {
@@ -236,34 +220,8 @@ func (s *Server) handleSecrets(w http.ResponseWriter, r *http.Request) {
 			// Community ID for cross-tool correlation
 			CommunityID: cred.CommunityID,
 		})
-
-		// Log first few credentials for debugging
-		if recordCount <= 3 {
-			log.Printf("[Credentials] Record #%d: service=%s, user=%s, flow=%s",
-				recordCount, cred.Service, cred.User, cred.Flow)
-		}
 	}
-
-	log.Printf("[Credentials] Read %d credential records from file", len(credentials))
-	log.Printf("[Credentials] Returning response with %d credentials (totalCount: %d)",
-		len(credentials), len(credentials))
-
-	// Log summary of first few credentials for verification
-	if len(credentials) > 0 {
-		log.Printf("[Credentials] Sample credentials being returned:")
-		for i := 0; i < len(credentials) && i < 3; i++ {
-			log.Printf("[Credentials]   #%d: service=%s, user=%s, timestamp=%d",
-				i+1, credentials[i].Service, credentials[i].User, credentials[i].Timestamp)
-		}
-	}
-
-	if respondCollectionPage(w, r, credentials, "secrets") {
-		return
-	}
-	RespondJSON(w, http.StatusOK, SecretsResponse{
-		Secrets:    credentials,
-		TotalCount: len(credentials),
-	})
+	return credentials, nil
 }
 
 // AuthActivityEvent represents a unified authentication event from any protocol
