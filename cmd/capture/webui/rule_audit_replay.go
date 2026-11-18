@@ -110,6 +110,13 @@ func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-ch
 		groups[typ] = append(groups[typ], i)
 	}
 	for _, typ := range order {
+		select {
+		case <-stop:
+			return results, errAnalysisStopping
+		case <-s.shutdownChan:
+			return results, errAnalysisStopping
+		default:
+		}
 		group := groups[typ]
 		start := time.Now()
 		var active bool
@@ -154,6 +161,9 @@ func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-ch
 			}
 			result.ExecutionTime = time.Since(start).Milliseconds()
 			engines[i] = nil
+		}
+		if errors.Is(scanErr, errAnalysisStopping) {
+			return results, scanErr
 		}
 	}
 	return results, nil

@@ -1,8 +1,11 @@
 package webui
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -33,6 +36,23 @@ func TestManualRuleBatchPreservesPerRuleResults(t *testing.T) {
 	}
 	if results[1].Success || results[1].Error == "" || !results[3].Success || results[3].RecordsRead != 0 {
 		t.Fatal(results)
+	}
+}
+
+func TestExecuteAllRulesReportsPartialFailure(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
+	s := &Server{outDir: dir, rulesConfig: &rules.Config{Rules: []*rules.Rule{
+		{Name: "get", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true},
+		{Name: "invalid", Type: "HTTP", Expression: `Method ==`, Enabled: true},
+	}}}
+	w := httptest.NewRecorder()
+	s.handleExecuteAllRules(w, httptest.NewRequest(http.MethodPost, "/api/rules/execute-all", nil))
+	var result ExecuteAllRulesResponse
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &result) != nil || result.Success ||
+		result.TotalAlerts != 1 || result.TotalRecords != 1 || len(result.RuleResults) != 2 ||
+		!result.RuleResults[0].Success || result.RuleResults[1].Success || result.RuleResults[1].Error == "" {
+		t.Fatalf("partial replay response: %d %s", w.Code, w.Body.String())
 	}
 }
 

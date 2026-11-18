@@ -1049,10 +1049,13 @@ func (s *Server) handleExecuteAllRules(w http.ResponseWriter, r *http.Request) {
 		RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
+	failed := 0
 	for _, result := range results {
 		if result.Success {
 			totalAlerts += result.AlertsCount
 			totalRecords += result.RecordsRead
+		} else {
+			failed++
 		}
 	}
 
@@ -1062,8 +1065,8 @@ func (s *Server) handleExecuteAllRules(w http.ResponseWriter, r *http.Request) {
 		totalAlerts, totalRecords, executionTime)
 
 	RespondJSON(w, http.StatusOK, ExecuteAllRulesResponse{
-		Success:       true,
-		Message:       fmt.Sprintf("Executed %d rules: %d alerts generated from %d records", len(enabledRules), totalAlerts, totalRecords),
+		Success:       failed == 0,
+		Message:       fmt.Sprintf("Completed %d of %d rules: %d alerts generated from %d records", len(results)-failed, len(results), totalAlerts, totalRecords),
 		TotalAlerts:   totalAlerts,
 		TotalRecords:  totalRecords,
 		ExecutionTime: executionTime,
