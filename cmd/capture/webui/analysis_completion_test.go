@@ -593,6 +593,14 @@ func TestAnalysisCompletionWaitsForTimelineGeneration(t *testing.T) {
 		}
 	}
 	assertPhase("timeline", "")
+	// A retained completion marker must not advertise readiness during a rebuild.
+	s.mu.Lock()
+	s.completedFiles[input] = true
+	s.mu.Unlock()
+	assertPhase("timeline", "")
+	s.mu.Lock()
+	delete(s.completedFiles, input)
+	s.mu.Unlock()
 	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}, &types.HTTP{Method: "POST"}})
 	wantGeneration, _, err := timelineFingerprint(dir)
 	if err != nil {

@@ -108,7 +108,7 @@ func (s *Server) selectedAnalysisPhase(selection captureSelection) (string, stri
 		session, ok := manager.GetSession(selection.SessionID)
 		completed = ok && session.Status == StatusCompleted
 	}
-	if !completed {
+	if phase != "" || !completed {
 		return phase, ""
 	}
 	fingerprint, _, err := timelineFingerprint(selection.OutputDir)
