@@ -73,11 +73,11 @@ func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
 			writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, tc.rows)
 			s := &Server{outDir: dir}
 			for path, handler := range map[string]http.HandlerFunc{
-				"/api/alerts": s.handleAlerts, "/api/alerts/grouped": s.handleGroupedAlerts,
+				"/api/alerts": s.handleAlerts, "/api/alerts/grouped": s.handleGroupedAlerts, "/api/alerts/stats": s.handleAlertStats,
 			} {
 				w := httptest.NewRecorder()
 				handler(w, httptest.NewRequest(http.MethodGet, path+"?mcpPage=true&ruleName=missing&pageLimit=1", nil))
-				if w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "totalCount") || strings.Contains(w.Body.String(), "generation") {
+				if w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "totalCount") || strings.Contains(w.Body.String(), "totalAlerts") || strings.Contains(w.Body.String(), "generation") {
 					t.Fatalf("%s: %d %s", path, w.Code, w.Body.String())
 				}
 			}
@@ -187,8 +187,18 @@ func TestMCPAlertPagesShareCapacityThroughResponseWrite(t *testing.T) {
 			}
 		}
 	}
+	stats := httptest.NewRecorder()
+	s.handleAlertStats(stats, httptest.NewRequest(http.MethodGet, "/api/alerts/stats", nil))
+	if stats.Code != http.StatusTooManyRequests {
+		t.Fatalf("stats did not share alert capacity: %d %s", stats.Code, stats.Body)
+	}
 	for _, wait := range finish {
 		wait()
+	}
+	stats = httptest.NewRecorder()
+	s.handleAlertStats(stats, httptest.NewRequest(http.MethodGet, "/api/alerts/stats", nil))
+	if stats.Code != http.StatusOK || !strings.Contains(stats.Body.String(), `"totalAlerts":0`) {
+		t.Fatalf("stats after release: %d %s", stats.Code, stats.Body)
 	}
 	for _, route := range routes {
 		w := httptest.NewRecorder()

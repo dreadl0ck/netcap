@@ -140,7 +140,8 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	release := admitAlertPage(w, r)
+	bounded := r.URL.Query().Get("mcpPage") == "true"
+	release := admitAlertRead(w, r, bounded)
 	if release == nil {
 		return
 	}
@@ -185,7 +186,7 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 
 	// Read alerts from the alerts audit record file
 	alertsFile := filepath.Join(outDir, "Alert.ncap.gz")
-	alerts, ok := s.alertsForPage(w, r, alertsFile)
+	alerts, ok := s.alertsForResponse(w, r, alertsFile, bounded)
 	if !ok {
 		return
 	}
@@ -247,27 +248,27 @@ func (s *Server) readAlertsFromFile(filePath string) ([]AlertResponse, error) {
 
 var errAlertPageSourceLimit = errors.New("alert page source exceeds scan limits")
 
-var alertPageSlots = make(chan struct{}, 2)
+var alertReadSlots = make(chan struct{}, 2)
 
-func admitAlertPage(w http.ResponseWriter, r *http.Request) func() {
-	if r.URL.Query().Get("mcpPage") != "true" {
+func admitAlertRead(w http.ResponseWriter, r *http.Request, bounded bool) func() {
+	if !bounded {
 		return func() {}
 	}
 	if r.Context().Err() != nil {
 		return nil
 	}
 	select {
-	case alertPageSlots <- struct{}{}:
-		return func() { <-alertPageSlots }
+	case alertReadSlots <- struct{}{}:
+		return func() { <-alertReadSlots }
 	default:
-		RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "alert pages are busy"})
+		RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "alert reads are busy"})
 		return nil
 	}
 }
 
-func (s *Server) alertsForPage(w http.ResponseWriter, r *http.Request, filePath string) ([]AlertResponse, bool) {
+func (s *Server) alertsForResponse(w http.ResponseWriter, r *http.Request, filePath string, bounded bool) ([]AlertResponse, bool) {
 	var ctx context.Context
-	if r.URL.Query().Get("mcpPage") == "true" {
+	if bounded {
 		ctx = r.Context()
 	}
 	alerts, err := s.readAlertAudit(ctx, filePath)
@@ -399,6 +400,11 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	release := admitAlertRead(w, r, true)
+	if release == nil {
+		return
+	}
+	defer release()
 
 	// Determine the output directory
 	outDir, _ := s.resolveOutDirFromRequest(r)
@@ -412,10 +418,8 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 
 	// Read alerts from the alerts audit record file
 	alertsFile := filepath.Join(outDir, "Alert.ncap.gz")
-	alerts, err := s.readAlertsFromFile(alertsFile)
-	if err != nil {
-		log.Printf("[WebUI] Failed to read alerts: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]any{"error": "Failed to read alerts"})
+	alerts, ok := s.alertsForResponse(w, r, alertsFile, true)
+	if !ok {
 		return
 	}
 
@@ -507,7 +511,8 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	release := admitAlertPage(w, r)
+	bounded := r.URL.Query().Get("mcpPage") == "true"
+	release := admitAlertRead(w, r, bounded)
 	if release == nil {
 		return
 	}
@@ -557,7 +562,7 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 
 	// Read alerts from the alerts audit record file
 	alertsFile := filepath.Join(outDir, "Alert.ncap.gz")
-	alerts, ok := s.alertsForPage(w, r, alertsFile)
+	alerts, ok := s.alertsForResponse(w, r, alertsFile, bounded)
 	if !ok {
 		return
 	}
