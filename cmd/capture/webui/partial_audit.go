@@ -62,15 +62,7 @@ func preparePartialAudit(r *http.Request, selection captureSelection) (*sealedAu
 		return nil, selectionError(409, "Partial continuation requires runId, stageGeneration and queryGeneration")
 	}
 	runID := selection.RunID
-	if runID == "" {
-		var manifest evidence.CaptureManifest
-		data, err := artifactio.Read(r.Context(), selection.OutputDir, "capture-manifest.json", 16<<20)
-		if err != nil || json.Unmarshal(data, &manifest) != nil {
-			return nil, selectionError(422, "Sealed capture generation is unavailable")
-		}
-		runID = manifest.RunID
-	}
-	if expected, stageGeneration := q.Get("queryGeneration"), q.Get("stageGeneration"); expected != "" && stageGeneration != "" &&
+	if expected, stageGeneration := q.Get("queryGeneration"), q.Get("stageGeneration"); runID != "" && expected != "" && stageGeneration != "" &&
 		expected != partialQueryGeneration(runID, stageGeneration, parts[0], q) {
 		return nil, selectionError(409, "Partial query or projection changed; restart at offset zero")
 	}
@@ -79,6 +71,18 @@ func preparePartialAudit(r *http.Request, selection captureSelection) (*sealedAu
 		defer func() { <-sealedAuditVerificationSlots }()
 	default:
 		return nil, selectionError(http.StatusTooManyRequests, "Sealed audit verification is busy")
+	}
+	if runID == "" {
+		var manifest evidence.CaptureManifest
+		data, err := artifactio.Read(r.Context(), selection.OutputDir, "capture-manifest.json", 16<<20)
+		if err != nil || json.Unmarshal(data, &manifest) != nil {
+			return nil, selectionError(422, "Sealed capture generation is unavailable")
+		}
+		runID = manifest.RunID
+		if expected, stageGeneration := q.Get("queryGeneration"), q.Get("stageGeneration"); expected != "" && stageGeneration != "" &&
+			expected != partialQueryGeneration(runID, stageGeneration, parts[0], q) {
+			return nil, selectionError(409, "Partial query or projection changed; restart at offset zero")
+		}
 	}
 	stage, snapshot, err := evidence.ReadAuditStageContext(r.Context(), selection.OutputDir, runID, parts[0], q.Get("stageGeneration"))
 	if err != nil {

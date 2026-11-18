@@ -78,6 +78,14 @@ func TestPartialAuditAdmissionRequiresSealedExplicitQualifiedOutput(t *testing.T
 						t.Fatalf("saturated verification: got %d, want %d: %s", w.Code, tc.want, w.Body)
 					}
 				}
+				// An initial page with no resolved run must acquire a slot before opening its manifest.
+				r := httptest.NewRequest("GET", firstPath, nil)
+				_, err := preparePartialAudit(r, captureSelection{OutputDir: t.TempDir()})
+				w := httptest.NewRecorder()
+				writeSelectionError(w, err)
+				if w.Code != 429 {
+					t.Fatalf("initial page bypassed manifest admission: %d %s", w.Code, w.Body)
+				}
 			}()
 			for _, tc := range []struct {
 				path, query string
