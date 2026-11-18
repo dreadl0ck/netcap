@@ -4,14 +4,18 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/RoaringBitmap/roaring"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/netio"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 const (
@@ -54,6 +58,7 @@ func (idx *communityFileIndex) count(ids map[string]bool) int64 {
 }
 
 type communityIndexEntry struct {
+	info  os.FileInfo
 	size  int64
 	mtime time.Time
 	used  time.Time
@@ -70,13 +75,13 @@ var communityIndexCache = struct {
 // communityCachedTotal reuses a completed bitmap generation without building
 // one just to answer an unfiltered count.
 func communityCachedTotal(path string) (int64, bool) {
-	info, err := os.Stat(path)
-	if err != nil {
+	info, err := os.Lstat(path)
+	if err != nil || !info.Mode().IsRegular() {
 		return 0, false
 	}
 	communityIndexCache.Lock()
 	entry := communityIndexCache.files[path]
-	if entry == nil || entry.size != info.Size() || !entry.mtime.Equal(info.ModTime()) {
+	if entry == nil || !entry.matches(info) {
 		communityIndexCache.Unlock()
 		return 0, false
 	}
@@ -94,21 +99,28 @@ func communityCachedTotal(path string) (int64, bool) {
 	return 0, false
 }
 
+func (e *communityIndexEntry) matches(info os.FileInfo) bool {
+	return os.SameFile(e.info, info) && e.size == info.Size() && e.mtime.Equal(info.ModTime())
+}
+
 // communityIndexFor publishes only complete generations. Oversized or changing
 // files retain the streaming fallback without publishing a partial index.
 func communityIndexFor(path string) (*communityFileIndex, error) {
 	for attempt := 0; attempt < 2; attempt++ {
-		info, err := os.Stat(path)
+		info, err := os.Lstat(path)
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
 		}
 		if err != nil {
 			return nil, err
 		}
+		if !info.Mode().IsRegular() {
+			return nil, artifactio.ErrPath
+		}
 
 		communityIndexCache.Lock()
 		entry := communityIndexCache.files[path]
-		if entry == nil || entry.size != info.Size() || !entry.mtime.Equal(info.ModTime()) {
+		if entry == nil || !entry.matches(info) {
 			if entry != nil {
 				select {
 				case <-entry.ready:
@@ -118,7 +130,7 @@ func communityIndexFor(path string) (*communityFileIndex, error) {
 				default:
 				}
 			}
-			entry = &communityIndexEntry{size: info.Size(), mtime: info.ModTime(), ready: make(chan struct{})}
+			entry = &communityIndexEntry{info: info, size: info.Size(), mtime: info.ModTime(), ready: make(chan struct{})}
 			communityIndexCache.files[path] = entry
 			communityIndexCache.Unlock()
 
@@ -147,8 +159,8 @@ func communityIndexFor(path string) (*communityFileIndex, error) {
 			<-entry.ready
 		}
 
-		after, err := os.Stat(path)
-		if err == nil && after.Size() == info.Size() && after.ModTime().Equal(info.ModTime()) {
+		after, err := os.Lstat(path)
+		if err == nil && entry.matches(after) {
 			return entry.index, nil
 		}
 	}
@@ -295,7 +307,11 @@ func scanCommunityCounts(path string, selected map[string]bool) (int64, int64, e
 }
 
 func walkCommunityRecords(path string, visit func(string, []string) error) error {
-	reader, err := netio.Open(path, defaults.BufferSize)
+	f, _, err := artifactio.Open(filepath.Dir(path), filepath.Base(path))
+	if err != nil {
+		return err
+	}
+	reader, err := auditRecordReaderFromFile(f, strings.HasSuffix(path, ".gz"))
 	if err != nil {
 		return err
 	}
@@ -304,6 +320,10 @@ func walkCommunityRecords(path string, visit func(string, []string) error) error
 	header, err := reader.ReadHeader()
 	if err != nil {
 		return err
+	}
+	name := strings.TrimSuffix(strings.TrimSuffix(filepath.Base(path), ".gz"), defaults.FileExtension)
+	if want, ok := types.Type_value["NC_"+name]; ok && header.Type != types.Type(want) {
+		return errors.New("audit header type does not match file name")
 	}
 	record := netio.InitRecord(header.Type)
 	if record == nil {
@@ -315,7 +335,7 @@ func walkCommunityRecords(path string, visit func(string, []string) error) error
 	listField, hasIDs := reflect.TypeOf(record).Elem().FieldByName("CommunityIDs")
 	hasIDs = hasIDs && listField.Type == reflect.TypeFor[[]string]()
 	for {
-		if err := reader.Next(record); err != nil {
+		if err := reader.delimitedReader.NextProto(record); err != nil {
 			if errors.Is(err, io.EOF) {
 				return nil
 			}

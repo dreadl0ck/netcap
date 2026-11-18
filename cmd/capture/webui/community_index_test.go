@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 
@@ -74,6 +75,50 @@ func TestCommunityIndexInvalidatesOnRewrite(t *testing.T) {
 	}
 	if _, matched, err := communityCounts(path, map[string]bool{"new": true}); err != nil || matched != 2 {
 		t.Fatalf("new counts = (%d, %v)", matched, err)
+	}
+}
+
+func TestCommunityIndexInvalidatesSameSizeReplacement(t *testing.T) {
+	dir := t.TempDir()
+	path := writeTimelineAuditFilePlain(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{&types.DNS{CommunityID: "old"}})
+	stamp := time.Unix(1700000000, 0)
+	if err := os.Chtimes(path, stamp, stamp); err != nil {
+		t.Fatal(err)
+	}
+	ids := map[string]bool{"old": true}
+	if _, matched, err := communityCounts(path, ids); err != nil || matched != 1 {
+		t.Fatalf("initial counts: %d, %v", matched, err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	replacement := writeTimelineAuditFilePlain(t, t.TempDir(), "DNS", types.Type_NC_DNS, []proto.Message{&types.DNS{CommunityID: "new"}})
+	if err := os.Chtimes(replacement, info.ModTime(), info.ModTime()); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(replacement, path); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.Stat(path)
+	if err != nil || after.Size() != info.Size() || !after.ModTime().Equal(info.ModTime()) || os.SameFile(info, after) {
+		t.Fatalf("replacement fixture did not preserve size and mtime while changing identity: %v", err)
+	}
+	if _, ok := communityCachedTotal(path); ok {
+		t.Fatal("cached total survived a file replacement")
+	}
+	if total, matched, err := communityCounts(path, ids); err != nil || total != 1 || matched != 0 {
+		t.Fatalf("replacement counts: %d, %d, %v", total, matched, err)
+	}
+}
+
+func TestCommunityIndexRejectsMismatchedHeader(t *testing.T) {
+	path := writeTimelineAuditFilePlain(t, t.TempDir(), "DNS", types.Type_NC_UDP, []proto.Message{&types.UDP{SrcPort: 5353}})
+	if total, matched, err := communityCounts(path, map[string]bool{"fixture": true}); err == nil || total != 0 || matched != 0 {
+		t.Fatalf("mislabeled track: total=%d, matched=%d, err=%v", total, matched, err)
+	}
+	if _, ok := communityCachedTotal(path); ok {
+		t.Fatal("mislabeled track populated the cache")
 	}
 }
 
