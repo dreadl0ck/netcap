@@ -75,12 +75,12 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 		h.RequestBody = body
 	}
 	if err == nil && !req.evidence.unsafe {
-		h.ContentTypeDetected = http.DetectContentType(body)
-
-		// decompress if required
 		if req.backedBodyType != "" {
 			h.ContentTypeDetected = req.backedBodyType
-		} else if h.ReqContentEncoding == "gzip" {
+		} else {
+			h.ContentTypeDetected = http.DetectContentType(body)
+		}
+		if req.backedBodyType == "" && h.ReqContentEncoding == "gzip" {
 			r, errReader := gzip.NewReader(bytes.NewReader(body))
 			if errReader == nil {
 				var releaseDecoded func()

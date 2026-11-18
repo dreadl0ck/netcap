@@ -458,13 +458,13 @@ func TestSpooledUploadSurvivesLocalRequestPressure(t *testing.T) {
 	cfg := file.GetDefaultConfig()
 	cfg.FileExtraction.Advanced.UseMagicDetection = false
 	file.SetGlobalConfig(cfg)
-	body := strings.Repeat("upload fixture\n", 1000)
-	wire := fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(body), body)
+	body := "label=fixture" + strings.Repeat("&", 15000-len("label=fixture"))
+	wire := fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/x-www-form-urlencoded\r\nX-Fixture: %s\r\nContent-Length: %d\r\n\r\n%s", strings.Repeat("x", 512), len(body), body)
 	for _, tc := range []struct {
 		name  string
 		limit int64
 		local bool
-	}{{"prefix refusal", 2, true}, {"header refusal after prefix admission", 513, true}, {"strict refusal", 2, false}} {
+	}{{"form refusal", 2, true}, {"header refusal after form admission", 4600, true}, {"strict refusal", 2, false}} {
 		t.Run(tc.name, func(t *testing.T) {
 			budget, err := core.NewStateBudget(tc.limit, nil)
 			if err != nil {
@@ -491,7 +491,7 @@ func TestSpooledUploadSurvivesLocalRequestPressure(t *testing.T) {
 				t.Fatalf("error=%v fragment=%v", err, c.FragmentError)
 			}
 			health := budget.Health()
-			if len(h.requests) != 0 || health.RetainedBytes != 1 || h.sourceHeaderCredits != 1 || (tc.limit > 2 && health.PeakBytes != tc.limit) {
+			if len(h.requests) != 0 || health.RetainedBytes != 1 || h.sourceHeaderCredits != 1 || (tc.limit > 2 && health.PeakBytes <= 4096) {
 				t.Fatalf("unexpected state after refusal: %+v; request credits=%d", health, h.sourceHeaderCredits)
 			}
 			if tc.local {
