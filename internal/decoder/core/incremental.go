@@ -74,9 +74,17 @@ func NewStateBudget(limit int64, cancel func()) (*StateBudget, error) {
 
 func (b *StateBudget) Reserve(n int64) error {
 	if b != nil && b.parent != nil {
-		return b.parent.reserve(n, true)
+		return b.parent.reserve(n, true, false)
 	}
-	return b.reserve(n, false)
+	return b.reserve(n, false, false)
+}
+
+// TryReserve admits optional work whose caller can fall back without losing evidence.
+func (b *StateBudget) TryReserve(n int64) bool {
+	if b != nil && b.parent != nil {
+		b = b.parent
+	}
+	return b.reserve(n, false, true) == nil
 }
 
 func (b *StateBudget) CompletionView() *StateBudget {
@@ -86,7 +94,7 @@ func (b *StateBudget) CompletionView() *StateBudget {
 	return &StateBudget{parent: b}
 }
 
-func (b *StateBudget) reserve(n int64, completion bool) error {
+func (b *StateBudget) reserve(n int64, completion, optional bool) error {
 	if n < 0 {
 		panic("negative stream reservation")
 	}
@@ -96,6 +104,9 @@ func (b *StateBudget) reserve(n int64, completion bool) error {
 	for {
 		used := b.used.Load()
 		if b.failed.Load() || (b.limit > 0 && n > b.limit-used) {
+			if optional {
+				return ErrStreamStateBudget
+			}
 			b.rejected.Add(n)
 			if completion && !b.failed.Load() {
 				b.completionRejected.Add(n)

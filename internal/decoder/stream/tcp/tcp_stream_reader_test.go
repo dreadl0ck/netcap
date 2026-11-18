@@ -20,10 +20,18 @@ func TestIncrementalHandoffFragmentBudget(t *testing.T) {
 	client := core.DataFragments{clientTie, first}
 	server := core.DataFragments{serverTie}
 	wantCredit := 3 * int64(unsafe.Sizeof(core.DataFragment(nil)))
-	budget, _ := core.NewStateBudget(wantCredit-1, nil)
+	canceled := false
+	budget, _ := core.NewStateBudget(wantCredit-1, func() { canceled = true })
 	if got, credit, err := incrementalHandoffFragments(budget, client, server); got != nil || credit != 0 || !errors.Is(err, core.ErrStreamStateBudget) || budget.Health().RetainedBytes != 0 {
 		t.Fatalf("over-budget handoff: fragments=%v credit=%d err=%v state=%+v", got, credit, err, budget.Health())
 	}
+	if health := budget.Health(); canceled || health.Exceeded || health.RejectedBytes != 0 {
+		t.Fatalf("optional handoff refusal marked evidence loss: canceled=%t state=%+v", canceled, health)
+	}
+	if err := budget.Reserve(wantCredit - 1); err != nil {
+		t.Fatalf("completion could not reserve state after optional refusal: %v", err)
+	}
+	budget.Release(wantCredit - 1)
 	budget, _ = core.NewStateBudget(wantCredit, nil)
 	got, credit, err := incrementalHandoffFragments(budget, client, server)
 	if err != nil || len(got) != 3 || got[0] != first || got[1] != clientTie || got[2] != serverTie || client[0] != clientTie || budget.Health().RetainedBytes != wantCredit {

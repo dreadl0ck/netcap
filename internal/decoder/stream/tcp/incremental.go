@@ -109,8 +109,7 @@ func (t *tcpConnection) tryIncremental() {
 	if !ready {
 		return
 	}
-	if err := t.stateBudget.Reserve(int64(t.incrementalProbeBytes)); err != nil {
-		t.factory.failIncremental(err)
+	if !t.stateBudget.TryReserve(int64(t.incrementalProbeBytes)) {
 		t.incrementalDeclined = true
 		return
 	}
@@ -153,7 +152,6 @@ func (t *tcpConnection) tryIncremental() {
 	}
 	fragments, credit, err := incrementalHandoffFragments(t.stateBudget, t.client.DataSlice(), t.server.DataSlice())
 	if err != nil {
-		t.factory.failIncremental(err)
 		t.incrementalDeclined = true
 		return
 	}
@@ -212,8 +210,8 @@ func (t *tcpConnection) tryIncremental() {
 func incrementalHandoffFragments(budget *core.StateBudget, client, server core.DataFragments) (core.DataFragments, int64, error) {
 	count := len(client) + len(server)
 	credit := int64(count) * int64(unsafe.Sizeof(core.DataFragment(nil)))
-	if err := budget.Reserve(credit); err != nil {
-		return nil, 0, err
+	if !budget.TryReserve(credit) {
+		return nil, 0, core.ErrStreamStateBudget
 	}
 	fragments := make(core.DataFragments, 0, count)
 	fragments = append(fragments, client...)
