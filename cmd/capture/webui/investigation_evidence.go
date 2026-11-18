@@ -137,7 +137,11 @@ func (s *Server) handleStreamEvidence(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			var manifest streamutils.StreamEvidenceManifest
-			if err := readEvidenceJSON(filepath.Join(root, entry.Name(), "manifest.json"), &manifest); err != nil {
+			data, err := artifactio.Read(r.Context(), out, filepath.Join("stream-evidence", entry.Name(), "manifest.json"), 16<<20)
+			if err == nil {
+				err = json.Unmarshal(data, &manifest)
+			}
+			if err != nil {
 				http.Error(w, "Incomplete stream evidence: "+err.Error(), http.StatusUnprocessableEntity)
 				return
 			}

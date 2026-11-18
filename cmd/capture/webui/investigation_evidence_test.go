@@ -76,6 +76,19 @@ func TestInvestigationEvidenceEndpoints(t *testing.T) {
 	if response.Code != 400 {
 		t.Fatal("escaped stream root")
 	}
+	manifest := filepath.Join(stream, "manifest.json")
+	externalManifest := filepath.Join(t.TempDir(), "manifest.json")
+	if err := os.Rename(manifest, externalManifest); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(externalManifest, manifest); err != nil {
+		t.Fatal(err)
+	}
+	response = httptest.NewRecorder()
+	server.handleStreamEvidence(response, httptest.NewRequest("GET", "/", nil))
+	if response.Code != http.StatusUnprocessableEntity || !strings.Contains(response.Body.String(), "invalid artifact path") {
+		t.Fatalf("linked manifest: %d %s", response.Code, response.Body.String())
+	}
 }
 
 func TestInvestigationKnownForeignSessionSelection(t *testing.T) {

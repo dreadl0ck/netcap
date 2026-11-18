@@ -299,6 +299,7 @@
     "verification": "Directional pages now take their bytes from the same pass that verifies the full stream digest. TestMCPStreamContentPagesVerifySourceAndConfinement passes under the race detector and covers a page across the 64-KiB read boundary, same-length content changes, and beyond-EOF behavior."
   },
   "boundedStreamVerificationConcurrency": {
+    "inventoryManifest": "Stream inventory reads manifests through capture-confined, cancelable reads. TestInvestigationEvidenceEndpoints verifies that a linked manifest is rejected; focused investigation, ordering and MCP stream race tests passed.",
     "rawDownload": "Raw stream downloads use one confined file descriptor. TestInvestigationEvidenceEndpoints verifies exact binary output, HTTP 206 for a byte range, and rejection of linked inputs. Focused investigation and MCP stream tests passed under the race detector.",
     "continuationAdmission": "TestMCPStreamContentPagesVerifySourceAndConfinement passes under the race detector and verifies that an unbound continuation returns 409 even while both verification slots are occupied. Stream reads stop when they exceed the original file size.",
     "verification": "TestMCPStreamContentPagesVerifySourceAndConfinement passed three race-instrumented runs. Two occupied verification slots cause a valid page request to return 429; invalid span bounds still return 400 before admission, and valid paging resumes after the slots are released."
