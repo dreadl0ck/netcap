@@ -129,7 +129,10 @@ func (q *timelineQuery) candidates(t *tlTypeIndex) *roaring.Bitmap {
 	}
 	var ids *roaring.Bitmap
 	owned := false
-	for id := range q.CommunityIDs {
+	for id, enabled := range q.CommunityIDs {
+		if !enabled {
+			continue
+		}
 		bitmap := t.community[id]
 		if bitmap == nil {
 			continue

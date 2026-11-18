@@ -130,6 +130,27 @@ func TestTimelineFacetIndexPreservesIDsAfterTimeSort(t *testing.T) {
 	}
 }
 
+func TestTimelineFacetCountIncludesBothWindowEndpoints(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{
+		&types.DNS{Timestamp: 99, SrcIP: "192.0.2.1", CommunityID: "include"},
+		&types.DNS{Timestamp: 100, SrcIP: "192.0.2.1", CommunityID: "include"},
+		&types.DNS{Timestamp: 150, SrcIP: "192.0.2.1", CommunityID: "exclude"},
+		&types.DNS{Timestamp: 200, SrcIP: "192.0.2.2", CommunityID: "include"},
+		&types.DNS{Timestamp: 200, DstIP: "192.0.2.1", CommunityID: "include"},
+		&types.DNS{Timestamp: 201, SrcIP: "192.0.2.1", CommunityID: "include"},
+	})
+	idx := waitForTimelineIndex(t, dir)
+	q := timelineQuery{Start: 100, End: 200, Tracks: idx.Types, Host: "192.0.2.1", CommunityIDs: map[string]bool{"include": true, "exclude": false}}
+	if got := q.count(); got != 2 {
+		t.Fatalf("filtered count = %d, want one match at each endpoint", got)
+	}
+	q.Start, q.End = 150, 150
+	if got := q.count(); got != 0 {
+		t.Fatalf("disabled Community ID counted: %d", got)
+	}
+}
+
 func TestTimelineScanStopsAfterCancellation(t *testing.T) {
 	for _, host := range []string{"", "10.0.0.1"} {
 		track := benchmarkTimelineTrack()

@@ -200,9 +200,12 @@ func (q *timelineQuery) count() int64 {
 			return 0
 		}
 		lo, hi := q.scanRange(t)
+		if hi <= lo {
+			continue
+		}
 		if q.Search == "" && q.Host == "" && len(q.CommunityIDs) == 0 {
-			if !t.hasDuration() || hi <= lo {
-				total += int64(max(0, hi-lo))
+			if !t.hasDuration() {
+				total += int64(hi - lo)
 				continue
 			}
 			// Only events starting before the window need an end-time check.
@@ -217,6 +220,16 @@ func (q *timelineQuery) count() int64 {
 				}
 			}
 			continue
+		}
+		if q.Search == "" && !t.hasDuration() {
+			if bitmap := q.candidates(t); bitmap != nil {
+				count := bitmap.Rank(uint32(hi - 1))
+				if lo > 0 {
+					count -= bitmap.Rank(uint32(lo - 1))
+				}
+				total += int64(count)
+				continue
+			}
 		}
 
 		q.eachMatch(t, lo, hi, func(int) { total++ })
