@@ -162,6 +162,7 @@
   },
   "officialMCPStdioContracts": {
     "auditQueryAdmission": "TestAuditQueryAdmissionRecoversAfterCancellation holds one page query and one count-only query, verifies a third receives a retryable busy error, then cancels both and successfully retries. The full portable MCP race suite passed.",
+    "auditValuesAdmission": "Audit value lookups share the two audit query slots. TestAuditQueryAdmissionRecoversAfterCancellation verifies that a value lookup is refused while both slots are occupied. TestAuditValuesCancellationReachesBackend verifies cancellation of the backend request. The full portable MCP race suite passed.",
     "auditStreamPayloadOwnership": "MCP audit streams build record payloads directly from scanner bytes and transfer the assembled buffer to the result. TestStreamAuditRecordsDecodesSSE verifies that a multiline record remains intact after later events. The full portable MCP race suite passed.",
     "auditStreamCRLFBoundary": "TestAuditStreamRequiresFullCRLFDelimiter verifies that a wire budget ending at a bare CR yields an incomplete stream, while the complete CRLF delimiter at the exact budget commits the completion event. The full portable MCP race suite passed.",
     "auditStreamContinuation": "TestStreamAuditRecordsChecksContinuation rejects inconsistent totals, false EOF, and continuations without progress, while accepting valid final, beyond-EOF and count-only pages. The portable MCP race suite and fresh official stdio run passed (192 calls across 91 of 119 tools, zero failures).",

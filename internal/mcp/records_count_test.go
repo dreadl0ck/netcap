@@ -50,6 +50,12 @@ func TestAuditQueryAdmissionRecoversAfterCancellation(t *testing.T) {
 	if busy := query(t.Context(), "", false); !busy.IsError || !strings.Contains(contentText(busy), "audit queries are busy") {
 		t.Fatalf("saturated query returned %s", contentText(busy))
 	}
+	values, _ := s.handleGetAuditRecordValues(t.Context(), mcplib.CallToolRequest{Params: mcplib.CallToolParams{Arguments: map[string]any{
+		"session_id": "owned", "type": "Connection",
+	}}})
+	if !values.IsError || !strings.Contains(contentText(values), "audit queries are busy") {
+		t.Fatalf("saturated value lookup returned %s", contentText(values))
+	}
 	cancel()
 	for range 2 {
 		select {
@@ -64,6 +70,11 @@ func TestAuditQueryAdmissionRecoversAfterCancellation(t *testing.T) {
 	if retry := query(t.Context(), "", false); retry.IsError {
 		t.Fatalf("retry failed: %s", contentText(retry))
 	}
+}
+
+func TestAuditValuesCancellationReachesBackend(t *testing.T) {
+	testScanCancellationReachesBackend(t, "get_audit_record_values", http.MethodGet, "/api/audit/Connection/values",
+		map[string]any{"session_id": "owned", "type": "Connection"})
 }
 
 func TestQueryCountOnlyRequestsBackendCounts(t *testing.T) {

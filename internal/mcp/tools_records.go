@@ -107,6 +107,18 @@ func (s *Server) registerRecordTools() error {
 
 var auditQuerySlots = make(chan struct{}, 2)
 
+func admitAuditQuery(ctx context.Context) (func(), error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	select {
+	case auditQuerySlots <- struct{}{}:
+		return func() { <-auditQuerySlots }, nil
+	default:
+		return nil, fmt.Errorf("audit queries are busy; retry after another query completes")
+	}
+}
+
 func (s *Server) handleQueryAuditRecords(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
@@ -173,15 +185,11 @@ func (s *Server) handleQueryAuditRecords(ctx context.Context, req mcplib.CallToo
 		q.Set("filter", filterExpr)
 	}
 
-	if err := ctx.Err(); err != nil {
+	release, err := admitAuditQuery(ctx)
+	if err != nil {
 		return errResult(err), nil
 	}
-	select {
-	case auditQuerySlots <- struct{}{}:
-		defer func() { <-auditQuerySlots }()
-	default:
-		return errResult(fmt.Errorf("audit queries are busy; retry after another query completes")), nil
-	}
+	defer release()
 	client := s.newClient()
 	records, completeJSON, terminal, sErr := client.streamAuditRecords(ctx, auditType, q, 32<<20)
 	if sErr != nil {
@@ -265,7 +273,7 @@ func (s *Server) handleGetAuditRecordFields(_ context.Context, req mcplib.CallTo
 	return rawJSONResult(raw), nil
 }
 
-func (s *Server) handleGetAuditRecordValues(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+func (s *Server) handleGetAuditRecordValues(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
 		return errResult(err), nil
@@ -278,7 +286,12 @@ func (s *Server) handleGetAuditRecordValues(_ context.Context, req mcplib.CallTo
 	if err != nil {
 		return errResult(err), nil
 	}
-	raw, gErr := s.newClient().Get("/api/audit/"+url.PathEscape(auditType)+"/values", ref.sessionQueryParams())
+	release, err := admitAuditQuery(ctx)
+	if err != nil {
+		return errResult(err), nil
+	}
+	defer release()
+	raw, gErr := s.newClient().GetContext(ctx, "/api/audit/"+url.PathEscape(auditType)+"/values", ref.sessionQueryParams())
 	if gErr != nil {
 		return errResult(fmt.Errorf("values %s: %w", auditType, gErr)), nil
 	}
