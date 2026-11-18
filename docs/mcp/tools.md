@@ -927,6 +927,13 @@ Export a bounded BPF/time selection from the bound original PCAP or one explicit
       "description": "Inclusive exact capture-time nanoseconds; paired with startNs.",
       "type": "string"
     },
+    "maxOutputBytes": {
+      "description": "Maximum completed ZIP size in bytes, default 16777216. An oversized archive returns an error without an artifact.",
+      "maximum": 16777216,
+      "minimum": 1,
+      "multipleOf": 1,
+      "type": "number"
+    },
     "maxPackets": {
       "description": "Selected packet limit, default 1000000; overflow is an error.",
       "maximum": 1000000,

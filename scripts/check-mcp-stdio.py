@@ -480,6 +480,13 @@ rules:
                         or expected_count is not None and manifest["selectedPackets"] != expected_count
                         or hashlib.sha256(packets).hexdigest() != manifest["outputSHA256"]):
                     raise ValueError("packet export provenance did not match the fixture")
+            if name == "export_packet_evidence":
+                exact = await call(name, args | selector | {"maxOutputBytes": len(wire)})
+                if exact["sha256"] != carved["sha256"] or exact["size_bytes"] != len(wire):
+                    raise ValueError("exact packet export budget changed the archive")
+                over = await client.call_tool(name, args | selector | {"maxOutputBytes": len(wire) - 1})
+                if not over.isError or not any("HTTP 413" in getattr(c, "text", "") for c in over.content):
+                    raise ValueError("packet export did not refuse a budget one byte short")
             denied = await client.call_tool("read_mcp_artifact", {"artifact_id": artifact, "session_id": "unrelated"})
             if not denied.isError:
                 raise ValueError("carved artifact readable under a different session")
