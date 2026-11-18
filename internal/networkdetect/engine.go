@@ -23,6 +23,7 @@ type Scope struct {
 // Event is capture-derived; fixture scenario labels are never detector inputs.
 type Event struct {
 	KeepAliveEligible bool   `json:"keepAliveEligible,omitempty"`
+	Truncated         bool   `json:"truncated,omitempty"`
 	FIN               bool   `json:"fin,omitempty"`
 	Ack               uint32 `json:"ack,omitempty"`
 	At                int64  `json:"at"`

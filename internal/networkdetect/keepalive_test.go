@@ -4,6 +4,10 @@ import (
 	"math"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 )
 
 func TestFlowExpiryDiscardsOldProbeEvidence(t *testing.T) {
@@ -100,6 +104,45 @@ func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 				t.Fatalf("unexpected evidence: %v", alerts[0].Examples)
 			}
 		})
+	}
+}
+
+func TestTruncatedSegmentDoesNotEstablishStaleProbeBoundary(t *testing.T) {
+	for _, truncate := range []bool{false, true} {
+		e, err := New(DefaultConfig())
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, part := range []struct {
+			seq     uint32
+			payload string
+		}{{100, "abcd"}, {104, "efgh"}, {103, "\x00"}} {
+			ev := baseEvent("data", i+1)
+			ev.Seq, ev.Payload = part.seq, []byte(part.payload)
+			snaplen := truncate && i == 0
+			if snaplen {
+				ev.Payload = append(ev.Payload, 'x')
+			}
+			raw := packetForEvent(t, ev)
+			length := len(raw)
+			if snaplen {
+				raw = raw[:14+20+20+4]
+			}
+			p := gopacket.NewPacket(raw, layers.LayerTypeEthernet, gopacket.Default)
+			p.Metadata().CaptureInfo = gopacket.CaptureInfo{Timestamp: time.Unix(0, ev.At), CaptureLength: len(raw), Length: length}
+			for _, decoded := range PacketEvents(p, ev.Scope) {
+				if _, err := e.Observe(decoded); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+		want := uint64(1)
+		if truncate {
+			want = 0
+		}
+		if s := e.Stats(); s.ConflictingOverlapBytes != 1 || s.StaleProbeCandidates != want {
+			t.Fatalf("truncated predecessor=%t: %+v", truncate, s)
+		}
 	}
 }
 

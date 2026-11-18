@@ -61,7 +61,8 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 		base.DstPort = uint16(tcp.DstPort)
 		base.Seq = tcp.Seq
 		base.Ack = tcp.Ack
-		base.KeepAliveEligible = tcp.ACK && !tcp.SYN && !tcp.FIN && !tcp.RST
+		base.Truncated = packet.Metadata().Truncated || ci.CaptureLength < ci.Length
+		base.KeepAliveEligible = !base.Truncated && tcp.ACK && !tcp.SYN && !tcp.FIN && !tcp.RST
 		if tcp.SYN && tcp.ACK && !tcp.RST {
 			ev := base
 			ev.Kind = "synack"

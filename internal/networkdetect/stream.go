@@ -45,7 +45,7 @@ func (d *direction) rememberPrefixEnd() {
 
 func (d *direction) staleProbeCandidate(ev Event, delta int32) bool {
 	offset := ev.Seq - d.prefixSeq
-	return !d.gap && ev.KeepAliveEligible && delta < -1 && len(ev.Payload) == 1 && ev.Payload[0] == 0 &&
+	return !d.gap && !ev.Truncated && ev.KeepAliveEligible && delta < -1 && len(ev.Payload) == 1 && ev.Payload[0] == 0 &&
 		offset < overlapPrefixBytes && (offset+1 == uint32(d.firstPrefixEnd) || d.prefixEnds != nil && d.prefixEnds[offset/64]&(1<<(offset%64)) != 0)
 }
 
@@ -130,7 +130,7 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 		d.prefixSeq = d.next
 	}
 	delta := int32(ev.Seq - d.next)
-	if (!f.closed || f.finObserved) && !f.reset && ev.KeepAliveEligible && len(ev.Payload) == 1 && (delta == -1 || d.finSeen && ev.Seq == d.finSequence) {
+	if (!f.closed || f.finObserved) && !f.reset && !ev.Truncated && ev.KeepAliveEligible && len(ev.Payload) == 1 && (delta == -1 || d.finSeen && ev.Seq == d.finSequence) {
 		return // RFC 1122 keep-alive probes carry no new sequence-space data.
 	}
 	if delta > 0 {
@@ -170,7 +170,7 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 		payload = payload[skip:]
 	}
 	d.next += uint32(len(payload))
-	if !f.closed {
+	if !f.closed && !ev.Truncated {
 		d.rememberPrefixEnd()
 	}
 	d.bytes += uint64(len(payload))
