@@ -20,6 +20,7 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
+	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
@@ -439,6 +440,56 @@ func TestStreamedFormPressureReleasesUnpublishedFields(t *testing.T) {
 	}
 	if health := budget.Health(); health.RetainedBytes != 0 || health.Exceeded || health.CompletionRejectedBytes == 0 || h.sourceHeaderCredits != 0 {
 		t.Fatalf("abandoned form held state: %+v; header credits=%d", health, h.sourceHeaderCredits)
+	}
+}
+
+func TestSpooledUploadSurvivesLocalPrefixRefusal(t *testing.T) {
+	oldDecoder, oldFile := decoderconfig.Instance, file.GetGlobalConfig()
+	writer, count := file.Decoder.Writer, file.Decoder.NumRecordsWritten
+	t.Cleanup(func() {
+		decoderconfig.Instance = oldDecoder
+		file.SetGlobalConfig(oldFile)
+		file.Decoder.Writer, file.Decoder.NumRecordsWritten = writer, count
+		file.ResetDedupCache()
+	})
+	decoderconfig.Instance = decoderconfig.DefaultConfig.Clone()
+	decoderconfig.Instance.Out = t.TempDir()
+	decoderconfig.Instance.FileStorage = "files"
+	cfg := file.GetDefaultConfig()
+	cfg.FileExtraction.Advanced.UseMagicDetection = false
+	file.SetGlobalConfig(cfg)
+	body := strings.Repeat("upload fixture\n", 1000)
+	wire := fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(body), body)
+	for _, local := range []bool{true, false} {
+		budget, err := core.NewStateBudget(1, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c := &core.ConversationInfo{Ident: "prefix", StateBudget: budget}
+		if local {
+			c.StateBudget = budget.CompletionView()
+		}
+		fw := &sourceFileWriter{}
+		file.Decoder.Writer = fw
+		h := &httpReader{conversation: c, sourceMode: true}
+		reader, pos := streamutils.FragmentReader(core.DataFragments{wireFragment(0, []byte(wire), 1)}, false)
+		want := core.ErrStreamStateBudget
+		if local {
+			want = core.ErrCompletionStateBudget
+		}
+		if err := h.readRequest(reader, pos); !errors.Is(err, want) || !errors.Is(c.FragmentError, want) {
+			t.Fatalf("local=%t: error=%v fragment=%v", local, err, c.FragmentError)
+		}
+		if len(h.requests) != 0 || budget.Health().RetainedBytes != 0 {
+			t.Fatal("refused request retained HTTP evidence or credits")
+		}
+		if local {
+			if len(fw.records) != 1 || !fw.records[0].IsComplete || fw.records[0].Hashes.SHA256 != file.ComputeHashes([]byte(body)).SHA256 {
+				t.Fatal("completed spool did not survive local prefix pressure")
+			}
+		} else if len(fw.records) != 0 {
+			t.Fatal("strict refusal published an artifact")
+		}
 	}
 }
 

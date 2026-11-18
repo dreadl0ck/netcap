@@ -635,9 +635,13 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 			body = spool.Prefix()
 			if err := h.conversation.StateBudget.Reserve(int64(cap(body))); err != nil {
 				h.conversation.FragmentError = err
-				return err
+				if err != core.ErrCompletionStateBudget {
+					return err
+				}
+				body = nil
+			} else {
+				h.sourceHeaderCredits += int64(cap(body))
 			}
-			h.sourceHeaderCredits += int64(cap(body))
 		}
 	case requestCappedSample:
 		body, release, bodyErr = readCappedSourceRequestBody(h.conversation, req.Body)
@@ -692,7 +696,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 		cookieFields: cookieFields,
 		acceptLang:   acceptLang,
 	}
-	if spool != nil && backedGzip {
+	if spool != nil && backedGzip && h.conversation.FragmentError == nil {
 		request.backedBodyType, err = backedGzipRequestType(h.conversation, spool)
 		if err != nil {
 			h.conversation.FragmentError = err
