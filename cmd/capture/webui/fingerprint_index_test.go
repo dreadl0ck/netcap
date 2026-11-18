@@ -2,13 +2,16 @@ package webui
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 
@@ -17,6 +20,46 @@ import (
 	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+func TestFingerprintInventorySharesScanBudget(t *testing.T) {
+	dir := t.TempDir()
+	ssh := &types.SSH{Ja4Ssh: "fixture-ssh"}
+	web := &types.HTTP{Ja4H: "fixture-http"}
+	writeTimelineAuditFile(t, dir, "SSH", types.Type_NC_SSH, []proto.Message{ssh})
+	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{web})
+	var stored int64
+	for _, name := range []string{"SSH", "HTTP"} {
+		info, err := os.Stat(filepath.Join(dir, name+".ncap.gz"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		stored += info.Size()
+	}
+	exact := inventoryAuditBudget{ctx: context.Background(), stored: stored, bodies: proto.Size(ssh) + proto.Size(web), rows: 2}
+	copyBudget := exact
+	rows, err := readFingerprintInventory(dir, &copyBudget)
+	if err != nil || len(rows) != 2 {
+		t.Fatalf("exact shared budget: %v, %v", rows, err)
+	}
+	for _, short := range []func(*inventoryAuditBudget){
+		func(b *inventoryAuditBudget) { b.stored-- },
+		func(b *inventoryAuditBudget) { b.bodies-- },
+		func(b *inventoryAuditBudget) { b.rows-- },
+	} {
+		b := exact
+		short(&b)
+		if rows, err := readFingerprintInventory(dir, &b); rows != nil || !errors.Is(err, errInventoryAuditLimit) {
+			t.Fatalf("short shared budget returned %v, %v", rows, err)
+		}
+	}
+	web.Ja4H = strings.Repeat("x", 1<<20)
+	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{web})
+	w := httptest.NewRecorder()
+	newTimelineTestServer(dir).handleFingerprints(w, httptest.NewRequest(http.MethodGet, "/api/fingerprints?limit=1", nil))
+	if w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "fixture-ssh") {
+		t.Fatalf("oversized frame: %d %s", w.Code, w.Body)
+	}
+}
 
 func TestFingerprintInventoryRejectsCorruptTrackAndRecovers(t *testing.T) {
 	dir := t.TempDir()

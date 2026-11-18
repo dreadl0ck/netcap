@@ -20,7 +20,9 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -115,6 +117,10 @@ func (s *Server) handleFingerprints(w http.ResponseWriter, r *http.Request) {
 
 	snapshot, err := fingerprintSnapshotFor(outDir)
 	if err != nil {
+		if errors.Is(err, errInventoryAuditLimit) {
+			RespondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": err.Error()})
+			return
+		}
 		log.Printf("[WebUI] Failed to read fingerprints: %v", err)
 		http.Error(w, "Failed to read fingerprints", http.StatusInternalServerError)
 		return
@@ -482,35 +488,40 @@ func capFingerprintSummary(fp FingerprintSummary, communityIDFilter map[string]s
 
 // readFingerprints reads and aggregates fingerprint data from SSH, IPProfile, HTTP, TCP, TLSCertificate, and DHCP records
 func readFingerprints(outDir string) ([]FingerprintSummary, error) {
+	budget := inventoryAuditBudget{ctx: context.Background(), stored: 64 << 20, bodies: 64 << 20, rows: 200_000, frame: 1 << 20}
+	return readFingerprintInventory(outDir, &budget)
+}
+
+func readFingerprintInventory(outDir string, budget *inventoryAuditBudget) ([]FingerprintSummary, error) {
 	fingerprintMap := make(map[string]*fingerprintAggregator)
 
 	// Read JA4SSH fingerprints from SSH records
-	if err := readJA4SSHFingerprints(outDir, fingerprintMap); err != nil {
+	if err := readJA4SSHFingerprints(outDir, fingerprintMap, budget); err != nil {
 		return nil, fmt.Errorf("SSH fingerprints: %w", err)
 	}
 
 	// Read JA4 fingerprints from IPProfile records
-	if err := readJA4Fingerprints(outDir, fingerprintMap); err != nil {
+	if err := readJA4Fingerprints(outDir, fingerprintMap, budget); err != nil {
 		return nil, err
 	}
 
 	// Read JA4H fingerprints from HTTP records
-	if err := readJA4HFingerprints(outDir, fingerprintMap); err != nil {
+	if err := readJA4HFingerprints(outDir, fingerprintMap, budget); err != nil {
 		return nil, fmt.Errorf("HTTP fingerprints: %w", err)
 	}
 
 	// Read JA4X fingerprints from TLSCertificate records
-	if err := readJA4XFingerprints(outDir, fingerprintMap); err != nil {
+	if err := readJA4XFingerprints(outDir, fingerprintMap, budget); err != nil {
 		return nil, fmt.Errorf("certificate fingerprints: %w", err)
 	}
 
 	// Read JA4T/JA4TS fingerprints from TCP records
-	if err := readJA4TFingerprints(outDir, fingerprintMap); err != nil {
+	if err := readJA4TFingerprints(outDir, fingerprintMap, budget); err != nil {
 		return nil, fmt.Errorf("TCP fingerprints: %w", err)
 	}
 
 	// Read DHCP fingerprints from DHCPv4 records
-	if err := readDHCPFingerprints(outDir, fingerprintMap); err != nil {
+	if err := readDHCPFingerprints(outDir, fingerprintMap, budget); err != nil {
 		return nil, fmt.Errorf("DHCP fingerprints: %w", err)
 	}
 
@@ -548,7 +559,7 @@ func readFingerprints(outDir string) ([]FingerprintSummary, error) {
 }
 
 // readJA4SSHFingerprints reads JA4SSH fingerprints from SSH records
-func readJA4SSHFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator) error {
+func readJA4SSHFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "SSH.ncap.gz")
 
 	// Check if file exists
@@ -557,21 +568,15 @@ func readJA4SSHFingerprints(outDir string, fingerprintMap map[string]*fingerprin
 		return nil
 	}
 
-	reader, err := NewAuditRecordReader(filePath)
+	reader, err := budget.open(filePath, types.Type_NC_SSH)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
 
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return err
-	}
-
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		record, err := budget.next(reader)
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -624,19 +629,19 @@ func readJA4SSHFingerprints(outDir string, fingerprintMap map[string]*fingerprin
 
 // readJA4Fingerprints reads JA4 fingerprints from TLSClientHello records
 // and JA4S fingerprints from TLSServerHello records (with database descriptions)
-func readJA4Fingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator) error {
+func readJA4Fingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	// Read JA4 from TLSClientHello
-	if err := readJA4FromTLSClientHello(outDir, fingerprintMap); err != nil {
+	if err := readJA4FromTLSClientHello(outDir, fingerprintMap, budget); err != nil {
 		return fmt.Errorf("TLS client fingerprints: %w", err)
 	}
 
 	// Read JA4S from TLSServerHello
-	if err := readJA4SFromTLSServerHello(outDir, fingerprintMap); err != nil {
+	if err := readJA4SFromTLSServerHello(outDir, fingerprintMap, budget); err != nil {
 		return fmt.Errorf("TLS server fingerprints: %w", err)
 	}
 
 	// Also read from IPProfile for additional hosts (but don't overwrite descriptions)
-	if err := readJA4FromHost(outDir, fingerprintMap); err != nil {
+	if err := readJA4FromHost(outDir, fingerprintMap, budget); err != nil {
 		return fmt.Errorf("host fingerprints: %w", err)
 	}
 
@@ -644,7 +649,7 @@ func readJA4Fingerprints(outDir string, fingerprintMap map[string]*fingerprintAg
 }
 
 // readJA4FromTLSClientHello reads JA4 fingerprints from TLSClientHello records
-func readJA4FromTLSClientHello(outDir string, fingerprintMap map[string]*fingerprintAggregator) error {
+func readJA4FromTLSClientHello(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "TLSClientHello.ncap.gz")
 
 	// Check if file exists
@@ -653,21 +658,15 @@ func readJA4FromTLSClientHello(outDir string, fingerprintMap map[string]*fingerp
 		return nil
 	}
 
-	reader, err := NewAuditRecordReader(filePath)
+	reader, err := budget.open(filePath, types.Type_NC_TLSClientHello)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
 
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return err
-	}
-
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		record, err := budget.next(reader)
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -718,7 +717,7 @@ func readJA4FromTLSClientHello(outDir string, fingerprintMap map[string]*fingerp
 }
 
 // readJA4SFromTLSServerHello reads JA4S fingerprints from TLSServerHello records
-func readJA4SFromTLSServerHello(outDir string, fingerprintMap map[string]*fingerprintAggregator) error {
+func readJA4SFromTLSServerHello(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "TLSServerHello.ncap.gz")
 
 	// Check if file exists
@@ -727,21 +726,15 @@ func readJA4SFromTLSServerHello(outDir string, fingerprintMap map[string]*finger
 		return nil
 	}
 
-	reader, err := NewAuditRecordReader(filePath)
+	reader, err := budget.open(filePath, types.Type_NC_TLSServerHello)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
 
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return err
-	}
-
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		record, err := budget.next(reader)
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -792,7 +785,7 @@ func readJA4SFromTLSServerHello(outDir string, fingerprintMap map[string]*finger
 }
 
 // readJA4FromHost reads JA4/JA4S fingerprints from IPProfile records (for additional hosts)
-func readJA4FromHost(outDir string, fingerprintMap map[string]*fingerprintAggregator) error {
+func readJA4FromHost(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "Host.ncap.gz")
 
 	// Check if file exists
@@ -801,21 +794,15 @@ func readJA4FromHost(outDir string, fingerprintMap map[string]*fingerprintAggreg
 		return nil
 	}
 
-	reader, err := NewAuditRecordReader(filePath)
+	reader, err := budget.open(filePath, types.Type_NC_Host)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
 
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return err
-	}
-
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		record, err := budget.next(reader)
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -895,7 +882,7 @@ func readJA4FromHost(outDir string, fingerprintMap map[string]*fingerprintAggreg
 }
 
 // readDHCPFingerprints reads DHCP fingerprints from DHCPv4 records
-func readDHCPFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator) error {
+func readDHCPFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "DHCPv4.ncap.gz")
 
 	// Check if file exists
@@ -904,21 +891,15 @@ func readDHCPFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 		return nil
 	}
 
-	reader, err := NewAuditRecordReader(filePath)
+	reader, err := budget.open(filePath, types.Type_NC_DHCPv4)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
 
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return err
-	}
-
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		record, err := budget.next(reader)
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -985,7 +966,7 @@ type fingerprintAggregator struct {
 }
 
 // readJA4HFingerprints reads JA4H fingerprints from HTTP records
-func readJA4HFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator) error {
+func readJA4HFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "HTTP.ncap.gz")
 
 	// Check if file exists
@@ -994,21 +975,15 @@ func readJA4HFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 		return nil
 	}
 
-	reader, err := NewAuditRecordReader(filePath)
+	reader, err := budget.open(filePath, types.Type_NC_HTTP)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
 
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return err
-	}
-
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		record, err := budget.next(reader)
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -1059,7 +1034,7 @@ func readJA4HFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 }
 
 // readJA4XFingerprints reads JA4X fingerprints from TLSCertificate records
-func readJA4XFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator) error {
+func readJA4XFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "TLSCertificate.ncap.gz")
 
 	// Check if file exists
@@ -1068,21 +1043,15 @@ func readJA4XFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 		return nil
 	}
 
-	reader, err := NewAuditRecordReader(filePath)
+	reader, err := budget.open(filePath, types.Type_NC_TLSCertificate)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
 
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return err
-	}
-
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		record, err := budget.next(reader)
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -1139,7 +1108,7 @@ func readJA4XFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 }
 
 // readJA4TFingerprints reads JA4T and JA4TS fingerprints from TCP records
-func readJA4TFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator) error {
+func readJA4TFingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator, budget *inventoryAuditBudget) error {
 	filePath := filepath.Join(outDir, "TCP.ncap.gz")
 
 	// Check if file exists
@@ -1148,21 +1117,15 @@ func readJA4TFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 		return nil
 	}
 
-	reader, err := NewAuditRecordReader(filePath)
+	reader, err := budget.open(filePath, types.Type_NC_TCP)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
 
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return err
-	}
-
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		record, err := budget.next(reader)
 		if err != nil {
 			if err == io.EOF {
 				break
