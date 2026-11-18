@@ -12,6 +12,7 @@ on:
       - 'docs/mcp/tools.md'
       - 'defaults/**/*.go'
       - 'internal/aggregate/**/*.go'
+      - 'internal/analyst/**'
       - 'internal/artifactio/**/*.go'
       - 'internal/behavior/**'
       - 'internal/delimited/**/*.go'
@@ -41,6 +42,7 @@ on:
       - 'docs/mcp/tools.md'
       - 'defaults/**/*.go'
       - 'internal/aggregate/**/*.go'
+      - 'internal/analyst/**'
       - 'internal/artifactio/**/*.go'
       - 'internal/behavior/**'
       - 'internal/delimited/**/*.go'
@@ -111,7 +113,7 @@ jobs:
         run: >-
           go test -race -tags nodpi,noyara,nomagika
           ./internal/aggregate ./internal/reassembly ./internal/decoder/core
-          ./internal/artifactio ./internal/delimited ./internal/rules
+          ./internal/analyst/... ./internal/artifactio ./internal/delimited ./internal/rules
           ./internal/behavior/...
           ./internal/evidence ./internal/packetview ./internal/packetmeta
           ./internal/webtech ./internal/netio ./internal/networkdetect
@@ -127,7 +129,7 @@ jobs:
         run: >-
           go vet -tags nodpi,noyara,nomagika
           ./internal/aggregate ./internal/reassembly ./internal/decoder/core
-          ./internal/artifactio ./internal/delimited ./internal/rules
+          ./internal/analyst/... ./internal/artifactio ./internal/delimited ./internal/rules
           ./internal/behavior/...
           ./internal/evidence ./internal/packetview ./internal/packetmeta
           ./internal/webtech ./internal/netio ./internal/networkdetect
