@@ -3,14 +3,12 @@ package webui
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/dreadl0ck/netcap/internal/behavior"
-	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -22,6 +20,10 @@ type behaviorRecordsResponse struct {
 	Scanned       int                      `json:"scanned"`
 	Truncated     bool                     `json:"truncated"`
 	Qualification string                   `json:"qualification"`
+}
+
+func behaviorRecordBudget(r *http.Request) inventoryAuditBudget {
+	return inventoryAuditBudget{ctx: r.Context(), stored: 64 << 20, bodies: 64 << 20, rows: 10000, frame: 1 << 20}
 }
 
 func (s *Server) handleBehaviorRecords(w http.ResponseWriter, r *http.Request) {
@@ -38,38 +40,33 @@ func (s *Server) handleBehaviorRecords(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "alert ID is required", http.StatusBadRequest)
 		return
 	}
-	reader, err := NewAuditRecordReader(filepath.Join(dir, "Alert.ncap.gz"))
+	budget := behaviorRecordBudget(r)
+	reader, err := budget.open(filepath.Join(dir, "Alert.ncap.gz"), types.Type_NC_Alert)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		status := http.StatusInternalServerError
+		if errors.Is(err, os.ErrNotExist) {
+			status = http.StatusNotFound
+		} else if errors.Is(err, errInventoryAuditLimit) {
+			status = http.StatusRequestEntityTooLarge
+		}
+		http.Error(w, err.Error(), status)
 		return
 	}
 	defer reader.Close()
-	reader.delimitedReader = delimited.NewReaderWithLimit(reader.reader, 1<<20)
-	header, err := reader.ReadHeader()
-	if err != nil || header.Type != types.Type_NC_Alert {
-		http.Error(w, "invalid Alert audit header", http.StatusInternalServerError)
-		return
-	}
 	var selected *types.Alert
-	for count, bytes := 0, 0; count < 10000 && bytes < 64<<20; count++ {
-		if r.Context().Err() != nil {
-			return
-		}
-		raw, err := reader.NextRaw()
+	for {
+		record, err := budget.next(reader)
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		bytes += len(raw)
-		if bytes > 64<<20 {
-			break
-		}
-		record, err := reader.DecodeRecord(raw)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			if r.Context().Err() == nil {
+				status := http.StatusInternalServerError
+				if errors.Is(err, errInventoryAuditLimit) {
+					status = http.StatusRequestEntityTooLarge
+				}
+				http.Error(w, err.Error(), status)
+			}
 			return
 		}
 		alert := record.(*types.Alert)
@@ -93,53 +90,43 @@ func (s *Server) handleBehaviorRecords(w http.ResponseWriter, r *http.Request) {
 			response.Unavailable = append(response.Unavailable, name+": "+err.Error())
 		}
 	}
+	if r.Context().Err() != nil {
+		return
+	}
 	RespondJSON(w, http.StatusOK, response)
 }
 
 func scanBehaviorRecords(r *http.Request, dir, name string, timestamp int64, evidence behavior.Evidence, response *behaviorRecordsResponse) error {
-	path := filepath.Join(dir, name+".ncap.gz")
-	reader, err := NewAuditRecordReader(path)
-	if errors.Is(err, os.ErrNotExist) {
-		reader, err = NewAuditRecordReader(filepath.Join(dir, name+".ncap"))
-	}
-	if err != nil {
-		return err
-	}
-	defer reader.Close()
-	reader.delimitedReader = delimited.NewReaderWithLimit(reader.reader, 1<<20)
-	header, err := reader.ReadHeader()
-	if err != nil {
-		return err
-	}
 	want := types.Type_NC_Connection
 	if name == "SMB" {
 		want = types.Type_NC_SMB
 	}
-	if header.Type != want {
-		return fmt.Errorf("audit header type mismatch")
+	budget := behaviorRecordBudget(r)
+	path := filepath.Join(dir, name+".ncap")
+	reader, err := budget.open(path+".gz", want)
+	if errors.Is(err, os.ErrNotExist) {
+		reader, err = budget.open(path, want)
 	}
-	bytes := 0
-	for index := 0; index < 10000 && bytes < 64<<20; index++ {
-		if err := r.Context().Err(); err != nil {
-			return err
+	if err != nil {
+		if errors.Is(err, errInventoryAuditLimit) {
+			response.Truncated = true
 		}
-		raw, err := reader.NextRaw()
+		return err
+	}
+	defer reader.Close()
+	for index := 0; ; index++ {
+		record, err := budget.next(reader)
 		if err == io.EOF {
 			return nil
 		}
-		if err != nil {
+		if errors.Is(err, errInventoryAuditLimit) {
+			response.Truncated = true
 			return err
 		}
-		bytes += len(raw)
-		if bytes > 64<<20 {
-			response.Truncated = true
-			return nil
+		if err != nil {
+			return err
 		}
 		response.Scanned++
-		record, err := reader.DecodeRecord(raw)
-		if err != nil {
-			return err
-		}
 		if context := behavior.MatchLateralRecord(evidence, timestamp, record, index); context != nil {
 			if len(response.Records) >= 64 {
 				response.Truncated = true
@@ -148,6 +135,4 @@ func scanBehaviorRecords(r *http.Request, dir, name string, timestamp int64, evi
 			response.Records = append(response.Records, *context)
 		}
 	}
-	response.Truncated = true
-	return nil
 }

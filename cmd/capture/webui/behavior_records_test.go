@@ -98,4 +98,22 @@ func TestBehaviorRecordsRetainedSourceAndImmutableAlert(t *testing.T) {
 	if json.Unmarshal(response.Body.Bytes(), &data) != nil || len(data.Unavailable) != 1 {
 		t.Fatal("wrong audit type accepted")
 	}
+	if err := os.Truncate(filepath.Join(s.outDir, "SMB.ncap"), (64<<20)+1); err != nil {
+		t.Fatal(err)
+	}
+	response = httptest.NewRecorder()
+	s.handleBehaviorRecords(response, httptest.NewRequest(http.MethodGet, target, nil))
+	data = behaviorRecordsResponse{}
+	if response.Code != http.StatusOK || json.Unmarshal(response.Body.Bytes(), &data) != nil || !data.Truncated ||
+		len(data.Records) != 1 || len(data.Unavailable) != 1 || data.Unavailable[0] != "SMB: "+errInventoryAuditLimit.Error() {
+		t.Fatalf("oversized SMB should leave qualified Connection evidence: %d %s", response.Code, response.Body)
+	}
+	if err := os.Truncate(filepath.Join(s.outDir, "Alert.ncap.gz"), (64<<20)+1); err != nil {
+		t.Fatal(err)
+	}
+	response = httptest.NewRecorder()
+	s.handleBehaviorRecords(response, httptest.NewRequest(http.MethodGet, target, nil))
+	if response.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("oversized alert history should not look like a missing alert: %d %s", response.Code, response.Body)
+	}
 }
