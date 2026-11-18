@@ -131,11 +131,13 @@ func TestTimelineFacetIndexPreservesIDsAfterTimeSort(t *testing.T) {
 }
 
 func TestTimelineFacetBudgetFallsBackToExactScan(t *testing.T) {
-	track := benchmarkTimelineTrack()
-	idx := &timelineIndex{facetBytes: timelineFacetMaxBytes}
-	track.owner = idx
-	q := &timelineQuery{Start: 1, End: 100_000, Tracks: []*tlTypeIndex{track}, Host: "10.0.0.1", Limit: 4}
-	if got := q.count(); got != 50_000 || track.hosts != nil || len(q.page()) != 4 {
-		t.Fatalf("budget fallback = %d hits, indexed %v", got, track.hosts != nil)
+	for _, remaining := range []uint64{0, 1024} {
+		track := benchmarkTimelineTrack()
+		idx := &timelineIndex{facetBytes: timelineFacetMaxBytes - remaining}
+		track.owner = idx
+		q := &timelineQuery{Start: 1, End: 100_000, Tracks: []*tlTypeIndex{track}, Host: "10.0.0.1", Limit: 4}
+		if got := q.count(); got != 50_000 || track.hosts != nil || len(q.page()) != 4 || idx.facetBytes != timelineFacetMaxBytes-remaining {
+			t.Fatalf("budget fallback with %d bytes left = %d hits, indexed %v", remaining, got, track.hosts != nil)
+		}
 	}
 }

@@ -3,27 +3,55 @@ package webui
 import "github.com/RoaringBitmap/roaring"
 
 const (
-	timelineFacetMaxKeys  = 4096
-	timelineFacetMaxBytes = 32 << 20
+	timelineFacetMaxKeys       = 4096
+	timelineFacetMaxBytes      = 32 << 20
+	timelineFacetCheckInterval = 16_384
 )
 
 func (t *tlTypeIndex) buildFacets() {
 	t.facetsOnce.Do(func() {
+		remaining := uint64(timelineFacetMaxBytes)
+		if t.owner != nil {
+			t.owner.facetMu.Lock()
+			defer t.owner.facetMu.Unlock()
+			if t.owner.facetBytes >= remaining {
+				return
+			}
+			remaining -= t.owner.facetBytes
+		}
 		hosts := make(map[string]*roaring.Bitmap)
 		community := make(map[string]*roaring.Bitmap)
+		var keyBytes uint64
+		pending := 0
+		size := func() uint64 {
+			bytes := keyBytes
+			for _, bitmap := range hosts {
+				bytes += bitmap.GetSizeInBytes()
+			}
+			for _, bitmap := range community {
+				bytes += bitmap.GetSizeInBytes()
+			}
+			return bytes
+		}
 		add := func(postings map[string]*roaring.Bitmap, key string, position uint32) bool {
 			if key == "" {
 				return true
 			}
 			bitmap := postings[key]
 			if bitmap == nil {
-				if len(hosts)+len(community) >= timelineFacetMaxKeys {
+				keyBytes += uint64(128 + len(key))
+				if len(hosts)+len(community) >= timelineFacetMaxKeys || keyBytes > remaining {
 					return false
 				}
 				bitmap = roaring.New()
 				postings[key] = bitmap
 			}
 			bitmap.Add(position)
+			pending++
+			if pending == timelineFacetCheckInterval {
+				pending = 0
+				return size() <= remaining
+			}
 			return true
 		}
 		for i, event := range t.Events {
@@ -40,21 +68,12 @@ func (t *tlTypeIndex) buildFacets() {
 				}
 			}
 		}
-		var bytes uint64
-		for key, bitmap := range hosts {
-			bytes += uint64(128+len(key)) + bitmap.GetSizeInBytes()
-		}
-		for key, bitmap := range community {
-			bytes += uint64(128+len(key)) + bitmap.GetSizeInBytes()
+		bytes := size()
+		if bytes > remaining {
+			return
 		}
 		if t.owner != nil {
-			t.owner.facetMu.Lock()
-			if t.owner.facetBytes+bytes > timelineFacetMaxBytes {
-				t.owner.facetMu.Unlock()
-				return
-			}
 			t.owner.facetBytes += bytes
-			t.owner.facetMu.Unlock()
 		}
 		t.hosts, t.community = hosts, community
 	})
