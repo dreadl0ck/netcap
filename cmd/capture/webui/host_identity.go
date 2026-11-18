@@ -3,6 +3,7 @@ package webui
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 type hostIdentityReport struct {
 	State  string         `json:"state"`
 	Report map[string]any `json:"report,omitempty"`
+	digest [sha256.Size]byte
 }
 
 // Keep scoped identities separate from the IP-only traffic aggregation.
@@ -73,7 +75,7 @@ func readHostIdentity(ctx context.Context, outDir string) (hostIdentityReport, e
 		}
 	}
 	quoteIdentityTimes(report)
-	return hostIdentityReport{State: "available", Report: report}, nil
+	return hostIdentityReport{State: "available", Report: report, digest: sha256.Sum256(data)}, nil
 }
 
 func quoteIdentityTimes(value any) {

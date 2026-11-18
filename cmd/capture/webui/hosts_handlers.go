@@ -21,7 +21,6 @@ package webui
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -175,9 +174,7 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 				rows = identity.Report[field]
 			}
 		}
-		encoded, _ := json.Marshal(identity)
-		digest := sha256.Sum256(encoded)
-		summary := map[string]any{"state": identity.State, "generation": hex.EncodeToString(digest[:])}
+		summary := map[string]any{"state": identity.State, "generation": hex.EncodeToString(identity.digest[:])}
 		for _, field := range []string{"schema", "overflow", "unscopedRecords", "limitations"} {
 			if value, ok := identity.Report[field]; ok {
 				summary[field] = value
