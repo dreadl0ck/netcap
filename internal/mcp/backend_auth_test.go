@@ -35,6 +35,20 @@ func TestRawDownloadRejectsOversizedLengthBeforeReading(t *testing.T) {
 	}
 }
 
+func TestRawDownloadPreservesStatusWithBoundedDiagnostic(t *testing.T) {
+	diagnostic := strings.NewReader(strings.Repeat("x", 4096))
+	c := &NetcapClient{baseURL: "http://fixture.test", hc: &http.Client{Transport: rawTestTransport(func(*http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: http.StatusServiceUnavailable, Status: "503 Service Unavailable", ContentLength: 16<<20 + 1, Body: io.NopCloser(diagnostic)}, nil
+	})}}
+	data, _, err := c.GetRawContext(t.Context(), "/api/fixture", nil)
+	if data != nil || err == nil || !strings.Contains(err.Error(), "503 Service Unavailable") || !strings.HasSuffix(err.Error(), "...[truncated]") {
+		t.Fatalf("unexpected download result: bytes=%d err=%v", len(data), err)
+	}
+	if read := 4096 - diagnostic.Len(); read != 501 {
+		t.Fatalf("diagnostic read %d bytes, want 501", read)
+	}
+}
+
 func TestBackendAdminAuthIsScopedAndDoesNotFollowRedirects(t *testing.T) {
 	forwarded := false
 	foreign := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { forwarded = true }))

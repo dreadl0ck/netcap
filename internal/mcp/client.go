@@ -237,6 +237,13 @@ func (c *NetcapClient) GetRawContext(ctx context.Context, path string, query url
 		return nil, "", fmt.Errorf("GET %s: %w", path, err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		body, err := readAllLimited(resp.Body, 501)
+		if err != nil {
+			return nil, "", fmt.Errorf("GET %s: %s: reading response: %w", path, resp.Status, err)
+		}
+		return nil, "", fmt.Errorf("GET %s: %s: %s", path, resp.Status, truncate(string(body), 500))
+	}
 	const maxRawResponseBytes = 16 << 20
 	if resp.ContentLength > maxRawResponseBytes {
 		return nil, "", fmt.Errorf("backend response exceeds %d bytes", maxRawResponseBytes)
@@ -244,9 +251,6 @@ func (c *NetcapClient) GetRawContext(ctx context.Context, path string, query url
 	body, err := readAllBounded(resp.Body, maxRawResponseBytes)
 	if err != nil {
 		return nil, "", fmt.Errorf("reading response: %w", err)
-	}
-	if resp.StatusCode >= 300 {
-		return nil, "", fmt.Errorf("GET %s: %s: %s", path, resp.Status, truncate(string(body), 500))
 	}
 	return body, resp.Header.Get("Content-Type"), nil
 }
