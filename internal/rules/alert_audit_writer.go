@@ -30,9 +30,9 @@ func SharedAlertAuditWriter(output string, header *types.Header) (netio.AuditRec
 		return nil, false
 	}
 	path := filepath.Join(dir, "Alert.ncap.gz")
-	alertStores.Lock()
-	defer alertStores.Unlock()
-	store := alertStores.files[path]
+	slot, unlock := lockAlertStore(path)
+	defer unlock()
+	store := slot.store
 	if store == nil {
 		return nil, false
 	}

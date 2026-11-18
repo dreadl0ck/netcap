@@ -77,14 +77,45 @@ type alertStore struct {
 }
 
 // Rule jobs in one process share a file; separate processes must use separate output directories.
+type alertStoreSlot struct {
+	sync.Mutex
+	store *alertStore
+	users int // guarded by alertStores
+}
+
 var alertStores = struct {
 	sync.Mutex
-	files map[string]*alertStore
-}{files: make(map[string]*alertStore)}
+	paths map[string]*alertStoreSlot
+}{paths: make(map[string]*alertStoreSlot)}
+
+func lockAlertStore(path string) (*alertStoreSlot, func()) {
+	alertStores.Lock()
+	slot := alertStores.paths[path]
+	if slot == nil {
+		slot = &alertStoreSlot{}
+		alertStores.paths[path] = slot
+	}
+	slot.users++
+	alertStores.Unlock()
+	slot.Lock()
+	return slot, func() {
+		alertStores.Lock()
+		slot.users--
+		if slot.users == 0 && slot.store == nil {
+			delete(alertStores.paths, path)
+		}
+		slot.Unlock()
+		alertStores.Unlock()
+	}
+}
 
 // NewFileAlertWriter validates existing history without retaining it in memory.
 // A new file is created only on the first alert.
 func NewFileAlertWriter(outputDir string) (*FileAlertWriter, error) {
+	return newFileAlertWriter(outputDir, validateAlertFile)
+}
+
+func newFileAlertWriter(outputDir string, validate func(*os.File) error) (*FileAlertWriter, error) {
 	if outputDir == "" {
 		outputDir = "."
 	}
@@ -100,14 +131,14 @@ func NewFileAlertWriter(outputDir string) (*FileAlertWriter, error) {
 		return nil, err
 	}
 	path := filepath.Join(dir, "Alert.ncap.gz")
-	alertStores.Lock()
-	defer alertStores.Unlock()
-	store := alertStores.files[path]
+	slot, unlock := lockAlertStore(path)
+	defer unlock()
+	store := slot.store
 	if store == nil {
 		store = &alertStore{path: path}
 		file, err := os.OpenFile(path, os.O_RDWR|os.O_APPEND, 0600)
 		if err == nil {
-			if err = validateAlertFile(file); err != nil {
+			if err = validate(file); err != nil {
 				return nil, errors.Join(fmt.Errorf("invalid alert history: %w", err), file.Close())
 			}
 			info, err := file.Stat()
@@ -118,7 +149,7 @@ func NewFileAlertWriter(outputDir string) (*FileAlertWriter, error) {
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return nil, err
 		}
-		alertStores.files[path] = store
+		slot.store = store
 	}
 	store.mu.Lock()
 	defer store.mu.Unlock()
@@ -277,15 +308,15 @@ func (w *FileAlertWriter) Close() error {
 		return w.closeErr
 	}
 	w.closed = true
-	alertStores.Lock()
-	defer alertStores.Unlock()
 	s := w.store
+	slot, unlock := lockAlertStore(s.path)
+	defer unlock()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.refs--
 	w.closeErr = s.err
 	if s.refs == 0 {
-		delete(alertStores.files, s.path)
+		slot.store = nil
 		if s.file != nil {
 			w.closeErr = errors.Join(w.closeErr, s.file.Close())
 		}

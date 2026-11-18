@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 
@@ -20,6 +21,60 @@ import (
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+func TestAlertHistoryValidationDoesNotBlockAnotherDataset(t *testing.T) {
+	large, small := t.TempDir(), t.TempDir()
+	seed := openAlertWriter(t, large)
+	if err := seed.WriteAlert(&types.Alert{RuleName: "existing"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := seed.Close(); err != nil {
+		t.Fatal(err)
+	}
+	started, release := make(chan struct{}), make(chan struct{})
+	unblock := sync.OnceFunc(func() { close(release) })
+	largeDone := make(chan error, 1)
+	go func() {
+		w, err := newFileAlertWriter(large, func(f *os.File) error {
+			close(started)
+			<-release
+			return validateAlertFile(f)
+		})
+		if err == nil {
+			err = w.Close()
+		}
+		largeDone <- err
+		close(largeDone)
+	}()
+	t.Cleanup(func() { unblock(); <-largeDone })
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("existing history did not reach validation")
+	}
+	smallDone := make(chan error, 1)
+	go func() {
+		w, err := NewFileAlertWriter(small)
+		if err == nil {
+			err = errors.Join(w.WriteAlert(&types.Alert{RuleName: "independent"}), w.Close())
+		}
+		smallDone <- err
+		close(smallDone)
+	}()
+	t.Cleanup(func() { unblock(); <-smallDone })
+	select {
+	case err := <-smallDone:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("unrelated alert writer did not complete while validation was held")
+	}
+	unblock()
+	if err := <-largeDone; err != nil {
+		t.Fatal(err)
+	}
+}
 
 func openAlertWriter(t *testing.T, dir string) *FileAlertWriter {
 	t.Helper()
