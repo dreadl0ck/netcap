@@ -12,6 +12,9 @@ import (
 
 var ErrPath = errors.New("invalid artifact path")
 
+// ErrSizeLimit indicates that an artifact is too large for a bounded read.
+var ErrSizeLimit = errors.New("artifact size limit exceeded")
+
 // Open confines descriptor access to the selected root and rejects stored symlinks.
 func Open(directory, name string) (*os.File, os.FileInfo, error) {
 	rootInfo, err := os.Lstat(directory)
@@ -78,7 +81,7 @@ func Read(ctx context.Context, directory, name string, limit int64) ([]byte, err
 	}
 	defer f.Close()
 	if limit <= 0 || info.Size() > limit || info.Size() > int64(int(^uint(0)>>1)) {
-		return nil, fmt.Errorf("artifact exceeds %d byte limit", limit)
+		return nil, fmt.Errorf("artifact exceeds %d byte limit: %w", limit, ErrSizeLimit)
 	}
 	b := make([]byte, int(info.Size()))
 	r := &contextReader{ctx, f}

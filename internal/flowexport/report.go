@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -22,6 +23,9 @@ const (
 	maxReportIndexBytes   = 128 << 20
 	maxReportOutputBytes  = 16 << 20
 )
+
+// ErrReportLimit indicates that a flow export query exceeds its resource budget.
+var ErrReportLimit = errors.New("export report limit exceeded")
 
 type Query struct {
 	StartNs   int64   `json:"startNs,string"`
@@ -109,6 +113,9 @@ func readReport(ctx context.Context, path string, query Query, indexBudget int) 
 	dir := filepath.Dir(path)
 	healthData, err := artifactio.Read(ctx, dir, "FlowExportsHealth.json", maxReportHealthBytes)
 	if err != nil {
+		if errors.Is(err, artifactio.ErrSizeLimit) {
+			return result, fmt.Errorf("export collection health unavailable: %w: %w", err, ErrReportLimit)
+		}
 		return result, fmt.Errorf("export collection health unavailable: %w", err)
 	}
 	if err := json.Unmarshal(healthData, &result.Health); err != nil {
@@ -126,7 +133,7 @@ func readReport(ctx context.Context, path string, query Query, indexBudget int) 
 	}
 	defer file.Close()
 	if before.Size() > maxReportRecordsBytes {
-		return result, fmt.Errorf("export record file exceeds %d byte limit", maxReportRecordsBytes)
+		return result, fmt.Errorf("export record file exceeds %d byte limit: %w", maxReportRecordsBytes, ErrReportLimit)
 	}
 	digest := sha256.New()
 	scanner := bufio.NewScanner(io.TeeReader(io.NewSectionReader(file, 0, before.Size()), digest))
@@ -140,7 +147,7 @@ func readReport(ctx context.Context, path string, query Query, indexBudget int) 
 		indexBudget -= bytes
 		return true
 	}
-	indexLimitErr := fmt.Errorf("export query index budget exceeded; narrow the query scope")
+	indexLimitErr := fmt.Errorf("export query index budget exceeded; narrow the query scope: %w", ErrReportLimit)
 	records := 0
 	collector := ""
 	samplingKey := ""
@@ -150,7 +157,7 @@ func readReport(ctx context.Context, path string, query Query, indexBudget int) 
 		}
 		records++
 		if records > 1000000 {
-			return result, fmt.Errorf("export input event limit exceeded")
+			return result, fmt.Errorf("export input event limit exceeded: %w", ErrReportLimit)
 		}
 		var event Event
 		if err := json.Unmarshal(scanner.Bytes(), &event); err != nil {
@@ -218,7 +225,7 @@ func readReport(ctx context.Context, path string, query Query, indexBudget int) 
 		g := groups[key]
 		if g == nil {
 			if len(groups) >= 10000 {
-				return result, fmt.Errorf("export group limit exceeded")
+				return result, fmt.Errorf("export group limit exceeded: %w", ErrReportLimit)
 			}
 			if !charge(192 + len(key)) {
 				return result, indexLimitErr
@@ -297,7 +304,7 @@ func checkReportOutputSize(ctx context.Context, report Report, limit int) error 
 		return err
 	}
 	remaining := limit - len(header) - 1 // The HTTP encoder adds a newline.
-	tooLarge := fmt.Errorf("export report exceeds %d encoded bytes; narrow the query or lower the group limit", limit)
+	tooLarge := fmt.Errorf("export report exceeds %d encoded bytes; narrow the query or lower the group limit: %w", limit, ErrReportLimit)
 	if remaining < 0 {
 		return tooLarge
 	}

@@ -24,3 +24,25 @@ func TestFlowExportQueryLimitsConcurrentResponses(t *testing.T) {
 		return httptest.NewRequest(http.MethodGet, "/api/flows/exports/query?exporter=192.0.2.1%3A4739&format=ipfix&domain=0&startNs=1&endNs=2", nil)
 	})
 }
+
+func TestFlowExportQueryDistinguishesOversizedAndInvalidDatasets(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "FlowExportsHealth.json")
+	if err := os.WriteFile(path, []byte(`{"status":"invalid"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	s := newTimelineTestServer(dir)
+	check := func(want int) {
+		t.Helper()
+		w := httptest.NewRecorder()
+		s.handleFlowExportQuery(w, httptest.NewRequest(http.MethodGet, "/api/flows/exports/query?exporter=192.0.2.1%3A4739&format=ipfix&domain=0&startNs=1&endNs=2", nil))
+		if w.Code != want {
+			t.Fatalf("got HTTP %d, want %d: %s", w.Code, want, w.Body)
+		}
+	}
+	check(http.StatusUnprocessableEntity)
+	if err := os.Truncate(path, (1<<20)+1); err != nil {
+		t.Fatal(err)
+	}
+	check(http.StatusRequestEntityTooLarge)
+}

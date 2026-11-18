@@ -3,6 +3,7 @@ package webui
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -90,7 +91,11 @@ func (s *Server) handleFlowExportQuery(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	result, err := flowexport.ReadReport(ctx, filepath.Join(out, "FlowExports.jsonl"), q)
 	if err != nil {
-		http.Error(w, "Export query unavailable: "+err.Error(), http.StatusUnprocessableEntity)
+		status := http.StatusUnprocessableEntity
+		if errors.Is(err, flowexport.ErrReportLimit) {
+			status = http.StatusRequestEntityTooLarge
+		}
+		http.Error(w, "Export query unavailable: "+err.Error(), status)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
