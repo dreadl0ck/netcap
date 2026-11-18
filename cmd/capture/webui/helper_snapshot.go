@@ -86,6 +86,8 @@ func snapshotSchemaSources(snapshot *jobSettings) (*jobSettings, error) {
 	return snapshotSchemaSourcesContext(context.Background(), snapshot)
 }
 
+var schemaSnapshotSlots = make(chan struct{}, 2)
+
 func snapshotSchemaSourcesContext(parent context.Context, snapshot *jobSettings) (*jobSettings, error) {
 	if err := context.Cause(parent); err != nil {
 		return nil, err
@@ -95,6 +97,17 @@ func snapshotSchemaSourcesContext(parent context.Context, snapshot *jobSettings)
 	}
 	if len(snapshot.SchemaPaths) > 32 {
 		return nil, fmt.Errorf("at most 32 Protobuf search roots")
+	}
+	ctx, cancel := context.WithTimeout(parent, 30*time.Second)
+	defer cancel()
+	select {
+	case schemaSnapshotSlots <- struct{}{}:
+		defer func() { <-schemaSnapshotSlots }()
+	case <-ctx.Done():
+		return nil, context.Cause(ctx)
+	}
+	if err := context.Cause(ctx); err != nil {
+		return nil, err
 	}
 	dir, err := os.MkdirTemp("", "netcap-proto-job-")
 	if err != nil {
@@ -110,8 +123,6 @@ func snapshotSchemaSourcesContext(parent context.Context, snapshot *jobSettings)
 	if strings.Contains(dir, ",") {
 		return nil, fmt.Errorf("Protobuf helper snapshot requires a TMPDIR without commas")
 	}
-	ctx, cancel := context.WithTimeout(parent, 30*time.Second)
-	defer cancel()
 	files, remainingEntries, total := 0, 10000, 0
 	snapshot.SchemaHashes = map[string]string{}
 	snapshot.Protobuf.Paths = nil

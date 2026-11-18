@@ -2,13 +2,46 @@ package webui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
+
+func TestSchemaSnapshotWaitExpiresWithoutScratch(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "fixture.proto")
+	if err := os.WriteFile(path, []byte(`syntax = "proto3";`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	func() {
+		for range cap(schemaSnapshotSlots) {
+			schemaSnapshotSlots <- struct{}{}
+			defer func() { <-schemaSnapshotSlots }()
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+		defer cancel()
+		settings := &jobSettings{SchemaPaths: []string{path}}
+		got, err := snapshotSchemaSourcesContext(ctx, settings)
+		if got != nil {
+			got.cleanup()
+		}
+		if !errors.Is(err, context.DeadlineExceeded) || settings.directory != "" {
+			t.Fatalf("wait error=%v scratch=%q", err, settings.directory)
+		}
+	}()
+	snapshot, err := snapshotSchemaSources(&jobSettings{SchemaPaths: []string{path}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(snapshot.cleanup)
+	if len(snapshot.SchemaHashes) != 1 {
+		t.Fatal("retry did not snapshot the schema")
+	}
+}
 
 func TestSchemaWalkCountsIgnoredAndNestedEntries(t *testing.T) {
 	dir := t.TempDir()
