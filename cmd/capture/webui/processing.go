@@ -100,7 +100,7 @@ func (s *Server) enqueueAnalysisContext(ctx context.Context, job *AnalysisJob, w
 			job.IncludeDecoders = config.IncludeDecoders
 			job.ExcludeDecoders = config.ExcludeDecoders
 		}
-		snapshot, err := s.snapshotJobSettings()
+		snapshot, err := s.snapshotJobSettingsContext(ctx)
 		if err != nil {
 			return err
 		}

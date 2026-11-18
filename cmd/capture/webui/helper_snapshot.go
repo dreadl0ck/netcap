@@ -37,10 +37,17 @@ type jobSettings struct {
 }
 
 func (s *Server) snapshotJobSettings() (*jobSettings, error) {
+	return s.snapshotJobSettingsContext(context.Background())
+}
+
+func (s *Server) snapshotJobSettingsContext(parent context.Context) (*jobSettings, error) {
 	select {
 	case <-s.shutdownChan:
 		return nil, errAnalysisStopping
 	default:
+	}
+	if err := context.Cause(parent); err != nil {
+		return nil, err
 	}
 	s.mu.RLock()
 	snapshot := &jobSettings{Version: 1, Runtime: s.runtimeSnapshotLocked(), DPI: s.dpiConfigured, Payload: s.payloadCapture}
@@ -68,9 +75,9 @@ func (s *Server) snapshotJobSettings() (*jobSettings, error) {
 	}
 	protoRuntime.mu.Unlock()
 	if len(snapshot.SchemaPaths) == 0 || s.shutdownChan == nil {
-		return snapshotSchemaSources(snapshot)
+		return snapshotSchemaSourcesContext(parent, snapshot)
 	}
-	ctx, cancel := context.WithCancelCause(context.Background())
+	ctx, cancel := context.WithCancelCause(parent)
 	defer cancel(nil)
 	go func() {
 		select {

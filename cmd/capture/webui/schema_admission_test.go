@@ -136,6 +136,60 @@ func TestSchemaSnapshotWaitExpiresWithoutScratch(t *testing.T) {
 	}
 }
 
+func TestAnalysisAdmissionCancelsSchemaWait(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "fixture.proto")
+	if err := os.WriteFile(path, []byte(`syntax = "proto3";`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	protoRuntime.mu.Lock()
+	paths, mappings, alternatives := protoRuntime.searchPaths, protoRuntime.mappings, protoRuntime.alternatives
+	protoRuntime.searchPaths = []string{path}
+	protoRuntime.mu.Unlock()
+	t.Cleanup(func() {
+		protoRuntime.mu.Lock()
+		defer protoRuntime.mu.Unlock()
+		protoRuntime.searchPaths, protoRuntime.mappings, protoRuntime.alternatives = paths, mappings, alternatives
+	})
+	s := &Server{jobQueue: make(chan *AnalysisJob, 1), shutdownChan: make(chan struct{})}
+	defer s.stopProcessingAdmission()
+	for range cap(schemaSnapshotSlots) {
+		schemaSnapshotSlots <- struct{}{}
+		defer func() { <-schemaSnapshotSlots }()
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	result := make(chan error, 1)
+	go func() { result <- s.enqueueAnalysisContext(ctx, &AnalysisJob{}, true) }()
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		s.mu.RLock()
+		owned := s.processingWork > 0
+		s.mu.RUnlock()
+		if owned {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("submission never acquired processing ownership")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	cancel()
+	select {
+	case err := <-result:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("admission error = %v, want cancellation", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("cancellation did not interrupt saturated snapshot admission")
+	}
+	s.mu.RLock()
+	remaining := s.processingWork
+	s.mu.RUnlock()
+	if remaining != 0 || len(s.jobQueue) != 0 {
+		t.Fatalf("canceled admission retained %d work claims and %d queued jobs", remaining, len(s.jobQueue))
+	}
+}
+
 func TestSchemaWalkCountsIgnoredAndNestedEntries(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.Mkdir(filepath.Join(dir, "nested"), 0700); err != nil {
