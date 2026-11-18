@@ -37,17 +37,27 @@ func (r *cancelingAuditInput) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func TestReproductionHashStopsDuringShutdown(t *testing.T) {
+func TestReproductionHashStopsOnCancellation(t *testing.T) {
 	data := bytes.Repeat([]byte("capture"), 64<<10)
-	shutdown := make(chan struct{})
-	input := &cancelingAuditInput{Reader: bytes.NewReader(data), cancel: func() { close(shutdown) }}
-	if got := hashReproductionInput(input, int64(len(data)), shutdown); got != (reproductionSource{}) {
-		t.Fatalf("published a partial digest: %+v", got)
+	for _, name := range []string{"request", "shutdown"} {
+		t.Run(name, func(t *testing.T) {
+			canceled := make(chan struct{})
+			var stop, shutdown <-chan struct{}
+			if name == "request" {
+				stop = canceled
+			} else {
+				shutdown = canceled
+			}
+			input := &cancelingAuditInput{Reader: bytes.NewReader(data), cancel: func() { close(canceled) }}
+			if got := hashReproductionInput(input, int64(len(data)), stop, shutdown); got != (reproductionSource{}) {
+				t.Fatalf("published a partial digest: %+v", got)
+			}
+			if input.read == 0 || input.read > 64<<10 {
+				t.Fatalf("read %d bytes before stopping", input.read)
+			}
+		})
 	}
-	if input.read == 0 || input.read > 64<<10 {
-		t.Fatalf("read %d bytes before stopping", input.read)
-	}
-	if got := hashReproductionInput(bytes.NewReader(data), int64(len(data)), nil); got.SHA256 != digestBytes(data) || got.Bytes != int64(len(data)) {
+	if got := hashReproductionInput(bytes.NewReader(data), int64(len(data)), nil, nil); got.SHA256 != digestBytes(data) || got.Bytes != int64(len(data)) {
 		t.Fatalf("uncanceled digest changed: %+v", got)
 	}
 }

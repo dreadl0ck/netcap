@@ -26,11 +26,11 @@ type failedReproduction struct {
 	OutputDir   string
 }
 
-func priorReproductionManifest(dir string) string {
+func priorReproductionManifest(ctx context.Context, dir string) string {
 	if dir == "" {
 		return ""
 	}
-	data, err := artifactio.Read(context.Background(), dir, "capture-manifest.json", 4<<20)
+	data, err := artifactio.Read(ctx, dir, "capture-manifest.json", 4<<20)
 	if err != nil {
 		return ""
 	}
@@ -38,8 +38,8 @@ func priorReproductionManifest(dir string) string {
 }
 
 // Capture the admitted bytes before a helper can fail or the input can change.
-func snapshotReproductionSource(path string, shutdown <-chan struct{}) reproductionSource {
-	if ruleReplayCanceled(nil, shutdown) {
+func snapshotReproductionSource(path string, stop, shutdown <-chan struct{}) reproductionSource {
+	if ruleReplayCanceled(stop, shutdown) {
 		return reproductionSource{}
 	}
 	before, err := os.Lstat(path)
@@ -55,7 +55,7 @@ func snapshotReproductionSource(path string, shutdown <-chan struct{}) reproduct
 	if err != nil || !os.SameFile(before, opened) || !opened.Mode().IsRegular() {
 		return reproductionSource{}
 	}
-	source := hashReproductionInput(f, opened.Size(), shutdown)
+	source := hashReproductionInput(f, opened.Size(), stop, shutdown)
 	after, statErr := f.Stat()
 	if statErr != nil || after.Size() != opened.Size() || after.ModTime() != opened.ModTime() {
 		return reproductionSource{}
@@ -63,11 +63,11 @@ func snapshotReproductionSource(path string, shutdown <-chan struct{}) reproduct
 	return source
 }
 
-func hashReproductionInput(input io.Reader, size int64, shutdown <-chan struct{}) reproductionSource {
+func hashReproductionInput(input io.Reader, size int64, stop, shutdown <-chan struct{}) reproductionSource {
 	hash := sha256.New()
-	r := analysisStopReader{input: input, shutdown: shutdown}
+	r := analysisStopReader{input: input, stop: stop, shutdown: shutdown}
 	n, err := io.Copy(hash, io.LimitReader(r, size+1))
-	if err != nil || n != size || ruleReplayCanceled(nil, shutdown) {
+	if err != nil || n != size || ruleReplayCanceled(stop, shutdown) {
 		return reproductionSource{}
 	}
 	return reproductionSource{SHA256: hex.EncodeToString(hash.Sum(nil)), Bytes: n}

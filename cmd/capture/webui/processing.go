@@ -113,11 +113,11 @@ func (s *Server) enqueueAnalysisContext(ctx context.Context, job *AnalysisJob, w
 		}
 		job.settings = snapshot
 	}
-	job.reproductionSource = snapshotReproductionSource(job.InputFile, s.shutdownChan)
+	job.reproductionSource = snapshotReproductionSource(job.InputFile, ctx.Done(), s.shutdownChan)
 	if ruleReplayCanceled(nil, s.shutdownChan) {
 		return errAnalysisStopping
 	}
-	job.reproductionSource.PreviousManifestSHA256 = priorReproductionManifest(job.OutputDir)
+	job.reproductionSource.PreviousManifestSHA256 = priorReproductionManifest(ctx, job.OutputDir)
 	if err := ctx.Err(); err != nil {
 		return err
 	}
