@@ -91,12 +91,12 @@ func (s *Server) handleExecuteYaraScan(_ context.Context, req mcplib.CallToolReq
 	return rawJSONResult(raw), nil
 }
 
-func (s *Server) handleExecuteAllRules(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+func (s *Server) handleExecuteAllRules(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
 		return errResult(err), nil
 	}
-	raw, pErr := s.newClient().PostEmpty("/api/rules/execute-all", ref.sessionQueryParams())
+	raw, pErr := s.newClient().PostEmptyContext(ctx, "/api/rules/execute-all", ref.sessionQueryParams())
 	if pErr != nil {
 		return errResult(fmt.Errorf("execute rules: %w", pErr)), nil
 	}
