@@ -272,6 +272,44 @@ rules:
                     raise ValueError(f"{kind} health lost an exact counter in structured output")
             finally:
                 path.write_bytes(original)
+        exporter = "192.0.2.10:4739"
+        instant = 1800000000000000001
+        observation = {"format": "ipfix", "domain": 0, "srcIP": "192.0.2.1", "dstIP": "192.0.2.2",
+                       "envelope": {"exporter": exporter, "collector": "192.0.2.20:4739",
+                                    "receivedNs": str(instant)},
+                       "bytes": "9007199254740993", "packets": "7",
+                       "counterSemantics": "exported-delta-as-reported"}
+        events = [observation | {"id": "included"},
+                  observation | {"id": "wrong-domain", "domain": 1},
+                  observation | {"id": "early", "envelope": observation["envelope"] | {"receivedNs": str(instant - 1)}},
+                  observation | {"id": "cumulative", "counterSemantics": "exported-cumulative-as-reported"}]
+        wire = b"".join((json.dumps({"kind": "observation", "observation": row}) + "\n").encode() for row in events)
+        digest = hashlib.sha256(wire).hexdigest()
+        paths = [manifest.with_name(name) for name in ("FlowExports.jsonl", "FlowExportsHealth.json")]
+        originals = [path.read_bytes() if path.exists() else None for path in paths]
+        try:
+            paths[0].write_bytes(wire)
+            paths[1].write_text(json.dumps({"status": "partial", "recordsSHA256": digest}), encoding="utf-8")
+            query = args | {"exporter": exporter, "format": "ipfix", "domain": 0, "timeBasis": "receive",
+                            "startNs": str(instant), "endNs": str(instant), "groupBy": "srcIP", "limit": 1}
+            report = await call("query_flow_exports", query)
+            group, = report["groups"]
+            if (report["sourceSHA256"] != digest or report["health"]["status"] != "partial"
+                    or (report["matchedRecords"], report["unquantifiableRecords"], report["totalGroups"]) != (1, 1, 1)
+                    or (group["key"], group["bytes"], group["packets"], group["observationIds"])
+                    != ("192.0.2.1", "9007199254740993", "7", ["included"])):
+                raise ValueError("flow export query lost exact scope, counters or partial provenance")
+            paths[0].write_bytes(wire + b'{"kind":"issue"}\n')
+            rejected = await client.call_tool("query_flow_exports", query)
+            if not rejected.isError or not any("does not match record-file hash" in getattr(item, "text", "")
+                                               for item in rejected.content):
+                raise ValueError("flow export query accepted a report whose health digest no longer matched")
+        finally:
+            for path, original in zip(paths, originals):
+                if original is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    path.write_bytes(original)
         log_selection = {"source": source, "file": "collector.log", "start": 1, "end": 1}
         review = await call("review_diagnostic_log", log_selection)
         line, = review["lines"]
