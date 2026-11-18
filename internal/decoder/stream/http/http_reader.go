@@ -705,7 +705,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 			return h.conversation.FragmentError
 		}
 	} else if spool != nil && form != "" {
-		err = h.parseBackedSmallForm(req, spool)
+		err = h.parseBackedSmallForm(req, spool, form)
 		if h.conversation.FragmentError != nil {
 			return h.conversation.FragmentError
 		}

@@ -374,6 +374,17 @@ func TestHTTPSourceRetainsLargeURLEncodedPayload(t *testing.T) {
 	}
 }
 
+func TestHTTPSourceSpoolsSparseURLEncodedFormUnderStateCap(t *testing.T) {
+	body := "label=fixture&data=" + strings.Repeat("ab%20", 12<<10)
+	wire := fmt.Sprintf("POST /form HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\n\r\n%sGET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n", len(body), body)
+	data := core.DataFragments{wireFragment(0, []byte(wire), 1), wireFragment(1, []byte("HTTP/1.1 204 No Content\r\n\r\nHTTP/1.1 204 No Content\r\n\r\n"), 2)}
+	want, wantFiles := captureExtractedHTTP(t, data, false)
+	got, files := captureExtractedHTTP(t, data, true)
+	if len(got) != 2 || len(files) != 1 || !files[0].IsComplete || !reflect.DeepEqual(got, want) || !reflect.DeepEqual(files, wantFiles) {
+		t.Fatal("buffered and spooled form evidence differ")
+	}
+}
+
 func TestHTTPRecordBorrowsRetainedResponsePayload(t *testing.T) {
 	previous := decoderconfig.Instance
 	t.Cleanup(func() { decoderconfig.Instance = previous })

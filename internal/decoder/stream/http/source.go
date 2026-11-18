@@ -92,7 +92,7 @@ func sourceBackedForm(request *http.Request) (media, boundary string) {
 	return "", ""
 }
 
-func (h *httpReader) parseBackedSmallForm(req *http.Request, spool *file.BodySpool) error {
+func (h *httpReader) parseBackedSmallForm(req *http.Request, spool *file.BodySpool, media string) error {
 	size := spool.Size()
 	if size > maxJSONFormBytes {
 		req.Form, _ = evidenceQuery(req.URL.RawQuery)
@@ -100,20 +100,40 @@ func (h *httpReader) parseBackedSmallForm(req *http.Request, spool *file.BodySpo
 	}
 	// Charge temporary decoding separately from the fields retained for pairing.
 	credit := 4096 + 64*size
+	urlEncoded := media == "application/x-www-form-urlencoded"
+	if urlEncoded {
+		credit = 4096 + 2*size // Input plus the string passed to the form parser.
+	}
 	if err := h.conversation.StateBudget.Reserve(credit); err != nil {
 		h.conversation.FragmentError = err
 		return err
 	}
-	defer h.conversation.StateBudget.Release(credit)
+	defer func() { h.conversation.StateBudget.Release(credit) }()
 	body := make([]byte, int(size))
 	if _, err := io.ReadFull(spool.Reader(), body); err != nil {
 		file.RecordArtifactWriteError(err)
 		return err
 	}
+	if urlEncoded {
+		extra := size // Unescaped key and value storage.
+		for pair := range bytes.SplitSeq(body, []byte("&")) {
+			if len(pair) != 0 {
+				extra += 256
+			}
+		}
+		if err := h.conversation.StateBudget.Reserve(extra); err != nil {
+			h.conversation.FragmentError = err
+			return err
+		}
+		credit += extra
+	}
 	parseErr := parseEvidenceForm(req, body)
 	var retained int64
 	for name, values := range req.PostForm {
 		retained += 256 + int64(len(name))
+		if urlEncoded {
+			retained += 64 * int64(len(values)) // Value slices in both Form and PostForm.
+		}
 		for _, value := range values {
 			retained += int64(len(value))
 		}
