@@ -247,6 +247,26 @@ func BenchmarkOrderedStreamEqualTime(b *testing.B) {
 	}
 }
 
+func BenchmarkOrderedStreamFutureRecords(b *testing.B) {
+	for b.Loop() {
+		s, err := NewOrderedStream(groupedConfig(), alertWriterFunc(func(*types.Alert) error { return nil }), "fixture")
+		if err != nil {
+			b.Fatal(err)
+		}
+		for i := range maxPendingRecords {
+			if err := s.Push(scopedTCP(10000, "192.0.2.1")); err != nil {
+				b.Fatal(err)
+			}
+			if n, err := s.Advance(int64(i + 1)); err != nil || n != 0 {
+				b.Fatal(n, err)
+			}
+		}
+		if n, err := s.Finish(); err != nil || n != maxPendingRecords/50 {
+			b.Fatal(n, err)
+		}
+	}
+}
+
 func TestScopedApplicationAlertCannotLeakPayload(t *testing.T) {
 	var got *types.Alert
 	e, err := NewEngineFromConfig(&Config{Rules: []*Rule{{Name: "HTTP-observation", Type: "HTTP", Expression: "true", Enabled: true}}}, alertWriterFunc(func(a *types.Alert) error { got = a; return nil }))

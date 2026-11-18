@@ -27,16 +27,17 @@ type pendingRecord struct {
 // longer arrive (or after its configured lateness allowance). Records at/below
 // a committed watermark fail explicitly. Finish drains EOF in canonical order.
 type OrderedStream struct {
-	mu        sync.Mutex
-	engine    *Engine
-	scope     string
-	pending   []pendingRecord
-	bytes     int
-	watermark int64
-	finished  bool
-	err       error
-	lateness  int64
-	maxSeen   int64
+	mu         sync.Mutex
+	engine     *Engine
+	scope      string
+	pending    []pendingRecord
+	minPending int64
+	bytes      int
+	watermark  int64
+	finished   bool
+	err        error
+	lateness   int64
+	maxSeen    int64
 }
 
 func NewOrderedStream(config *Config, writer AlertWriter, scope string) (*OrderedStream, error) {
@@ -102,6 +103,9 @@ func (s *OrderedStream) pushScoped(scope string, record types.AuditRecord) error
 	if s.bytes+charge > maxPendingBytes {
 		return ErrStateCapacity
 	}
+	if ts := record.Time(); len(s.pending) == 0 || ts < s.minPending {
+		s.minPending = ts
+	}
 	s.pending = append(s.pending, pendingRecord{scope: scope, record: proto.Clone(message).(types.AuditRecord), wire: wire, charge: charge})
 	s.bytes += charge
 	return nil
@@ -148,8 +152,8 @@ func (s *OrderedStream) advance(watermark int64) (int, error) {
 	if watermark < s.watermark {
 		return 0, errors.New("watermarks must be monotonic")
 	}
-	// Admission rejects records at or below the committed watermark.
-	if watermark == s.watermark {
+	if len(s.pending) == 0 || watermark < s.minPending {
+		s.watermark = watermark
 		return 0, nil
 	}
 	sort.SliceStable(s.pending, func(i, j int) bool {
@@ -179,6 +183,9 @@ func (s *OrderedStream) advance(watermark int64) (int, error) {
 	copy(s.pending, s.pending[consumed:])
 	clear(s.pending[len(s.pending)-consumed:])
 	s.pending = s.pending[:len(s.pending)-consumed]
+	if len(s.pending) > 0 {
+		s.minPending = s.pending[0].record.Time()
+	}
 	s.watermark = watermark
 	return count, nil
 }

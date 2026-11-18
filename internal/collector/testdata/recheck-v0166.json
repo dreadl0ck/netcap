@@ -365,6 +365,7 @@
     "verification": "TestAnalysisCompletionRejectsMislabeledTimelineTrack verifies that a UDP audit stored as HTTP fails indexing and leaves the analysis incomplete. Focused timeline and analysis completion tests passed under the race detector."
   },
   "captureTimeWatermarkFastPath": {
+    "futureRecords": "BenchmarkOrderedStreamFutureRecords advances 4096 watermarks below the earliest pending timestamp and still emits 81 alerts at EOF. Across three local runs, skipping ineligible sorts reduced runtime from 81.7–83.6 ms to 19.9–20.9 ms. The portable rules race suite passed.",
     "sequenceTimestampRange": "TestAuditReplaySequenceUsesFullTimestampRange verifies that a valid pre-epoch sequence triggers and that an observation at the opposite end of the signed timestamp range is expired. The full portable rules race suite passed.",
     "thresholdPruningAllocation": "In-place pruning preserves the 1024-record threshold and drops the buffer when the rule rearms. Across three Darwin arm64 benchmark runs, allocations fell from 10417 to 12 per trigger cycle and allocated bytes from about 12.26 MB to 25208. The full portable rules race suite passed.",
     "distinctDeltaOverflow": "TestAuditReplayDistinctWindowRejectsTimestampDeltaOverflow verifies that a distinct value near MinInt64 does not count toward a window near MaxInt64, while two distinct values one nanosecond apart still trigger. The full portable rules race suite passed.",
