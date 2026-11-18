@@ -308,7 +308,17 @@ func (a *Assembler) closeOrderedWithCold(conns []connectionRef, progress func())
 				return fmt.Errorf("TCP cold order entry has no state")
 			}
 			snap, err = decodeCold(wire)
-			return err
+			if err != nil {
+				return err
+			}
+			order, err := coldOrder(snap)
+			if err != nil {
+				return err
+			}
+			if orderKey != p.cold.prefix+"order/"+order+"/" {
+				return fmt.Errorf("TCP cold order entry does not match stored connection")
+			}
+			return nil
 		})
 		if err != nil {
 			return closed
