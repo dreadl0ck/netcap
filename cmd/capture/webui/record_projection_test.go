@@ -47,9 +47,23 @@ func BenchmarkRecordProjectionWideRow(b *testing.B) {
 	}
 }
 
+func BenchmarkRecordProjectionNestedRow(b *testing.B) {
+	raw := []byte(`{"records":[{"Timestamp":9223372036854775807,"Method":"GET","Host":"fixture","Src":"192.0.2.1","body":"` + strings.Repeat("x", 256<<10) + `"}]}`)
+	projection, err := parseRecordProjection("/records/0/Timestamp,/records/0/Method,/records/0/Host,/records/0/Src")
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := applyRecordProjection(raw, projection); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func TestRecordProjectionPreservesExactValues(t *testing.T) {
-	raw := []byte(`{"Timestamp":9223372036854775807,"headers":[{"a/b~c":"value"}]}`)
-	out, err := projectRecordJSON(raw, "Timestamp,/headers/0/a~1b~0c")
+	raw := []byte(`{"Timestamp":9223372036854775807,"headers":[{"a/b~c":"value","n":9223372036854775807}]}`)
+	out, err := projectRecordJSON(raw, "Timestamp,/headers/0/a~1b~0c,/headers/0/n")
 	if err != nil || !strings.Contains(string(out), "9223372036854775807") {
 		t.Fatal(string(out), err)
 	}
@@ -57,7 +71,7 @@ func TestRecordProjectionPreservesExactValues(t *testing.T) {
 	if err := json.Unmarshal(out, &values); err != nil {
 		t.Fatal(err)
 	}
-	if string(values["/headers/0/a~1b~0c"]) != `"value"` {
+	if string(values["/headers/0/a~1b~0c"]) != `"value"` || string(values["/headers/0/n"]) != "9223372036854775807" {
 		t.Fatal(string(out))
 	}
 	for _, bad := range []string{"missing", "/headers/3", "/headers/-1", "Timestamp,", strings.Repeat("Timestamp,", 33) + "Timestamp", "/a/b/c/d/e/f/g/h/i"} {

@@ -59,7 +59,7 @@ func applyRecordProjection(raw []byte, projection []projectionPath) ([]byte, err
 	}
 	out := make(map[string]json.RawMessage, len(projection))
 	for _, path := range projection {
-		container := root
+		container := &root
 		for i, part := range path.parts {
 			value, err := container.selectPart(part, path.name)
 			if err != nil {
@@ -69,7 +69,7 @@ func applyRecordProjection(raw []byte, projection []projectionPath) ([]byte, err
 				out[path.name] = value
 				break
 			}
-			container, err = decodeProjectionContainer(value, path.name)
+			container, err = container.descend(part, value, path.name)
 			if err != nil {
 				return nil, err
 			}
@@ -79,8 +79,24 @@ func applyRecordProjection(raw []byte, projection []projectionPath) ([]byte, err
 }
 
 type projectionContainer struct {
-	object map[string]json.RawMessage
-	items  []json.RawMessage
+	object   map[string]json.RawMessage
+	items    []json.RawMessage
+	children map[string]*projectionContainer
+}
+
+func (c *projectionContainer) descend(part string, raw json.RawMessage, path string) (*projectionContainer, error) {
+	if child := c.children[part]; child != nil {
+		return child, nil
+	}
+	child, err := decodeProjectionContainer(raw, path)
+	if err != nil {
+		return nil, err
+	}
+	if c.children == nil {
+		c.children = make(map[string]*projectionContainer)
+	}
+	c.children[part] = &child
+	return &child, nil
 }
 
 func decodeProjectionContainer(raw []byte, path string) (c projectionContainer, err error) {
