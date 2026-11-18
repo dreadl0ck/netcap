@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/filter"
@@ -81,15 +82,11 @@ func (e *Engine) scopedThreshold(scope string, rule *Rule, record types.AuditRec
 	if now < t.last {
 		return false, errors.New("scoped thresholds require ordered capture time; use OrderedStream")
 	}
-	kept := t.matches[:0]
-	for _, at := range t.matches {
-		if now-at <= window {
-			kept = append(kept, at)
-		} else {
-			e.scopedEntries--
-		}
+	if len(t.matches) > 0 && now-t.matches[0] > window {
+		first := sort.Search(len(t.matches), func(i int) bool { return now-t.matches[i] <= window })
+		t.matches = t.matches[:copy(t.matches, t.matches[first:])]
+		e.scopedEntries -= first
 	}
-	t.matches = kept
 	if e.scopedEntries >= maxScopedEntries {
 		return false, ErrStateCapacity
 	}

@@ -62,6 +62,25 @@ func TestScopedCountsAndReorderedStream(t *testing.T) {
 	}
 }
 
+func TestScopedThresholdReclaimsExpiredEntries(t *testing.T) {
+	e := &Engine{}
+	rule := groupedConfig().Rules[0]
+	rule.Threshold, rule.ThresholdWindow = 4, 2
+	for _, step := range []struct {
+		second  int64
+		entries int
+		alert   bool
+	}{
+		{1, 1, false}, {2, 2, false}, {3, 3, false},
+		{4, 3, false}, {4, 0, true}, {4, 1, false},
+	} {
+		got, err := e.scopedThreshold("fixture", rule, scopedTCP(step.second, "192.0.2.1"))
+		if err != nil || got != step.alert || e.scopedEntries != step.entries {
+			t.Fatalf("second %d: alert=%t retained=%d err=%v; want alert=%t retained=%d", step.second, got, e.scopedEntries, err, step.alert, step.entries)
+		}
+	}
+}
+
 func TestScopedWindowBoundaryReloadAndFuture(t *testing.T) {
 	cfg := groupedConfig()
 	cfg.Rules[0].Threshold = 2
