@@ -101,6 +101,9 @@ func (t *tlTypeIndex) buildFacets(stop <-chan struct{}) bool {
 	return t.hosts != nil
 }
 
+var emptyTimelineCandidates = roaring.New()
+
+// The returned bitmap is read-only. A nil result requests an exact scan.
 func (q *timelineQuery) candidates(t *tlTypeIndex) *roaring.Bitmap {
 	if q.canceled() {
 		return nil
@@ -109,33 +112,49 @@ func (q *timelineQuery) candidates(t *tlTypeIndex) *roaring.Bitmap {
 		return nil
 	}
 	if len(q.CommunityIDs) > 0 && t.cids == nil && len(t.extraCIDs) == 0 {
-		return roaring.New()
+		return emptyTimelineCandidates
 	}
 	if !t.buildFacets(q.stop) {
 		return nil
 	}
-	var selected *roaring.Bitmap
+	var host *roaring.Bitmap
 	if q.Host != "" {
-		if bitmap := t.hosts[q.Host]; bitmap != nil {
-			selected = bitmap.Clone()
-		} else {
-			selected = roaring.New()
+		host = t.hosts[q.Host]
+		if host == nil {
+			return emptyTimelineCandidates
 		}
 	}
-	if len(q.CommunityIDs) > 0 {
-		ids := roaring.New()
-		for id := range q.CommunityIDs {
-			if bitmap := t.community[id]; bitmap != nil {
-				ids.Or(bitmap)
-			}
+	if len(q.CommunityIDs) == 0 {
+		return host
+	}
+	var ids *roaring.Bitmap
+	owned := false
+	for id := range q.CommunityIDs {
+		bitmap := t.community[id]
+		if bitmap == nil {
+			continue
 		}
-		if selected == nil {
-			selected = ids
-		} else {
-			selected.And(ids)
+		switch {
+		case ids == nil:
+			ids = bitmap
+		case owned:
+			ids.Or(bitmap)
+		default:
+			ids = roaring.Or(ids, bitmap)
+			owned = true
 		}
 	}
-	return selected
+	if ids == nil {
+		return emptyTimelineCandidates
+	}
+	if host != nil {
+		if owned {
+			ids.And(host)
+		} else {
+			ids = roaring.And(host, ids)
+		}
+	}
+	return ids
 }
 
 func (q *timelineQuery) nextMatch(t *tlTypeIndex, from, hi int, candidates *roaring.Bitmap) int {
