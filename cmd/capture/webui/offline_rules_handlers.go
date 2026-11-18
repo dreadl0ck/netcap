@@ -242,6 +242,8 @@ func (s *Server) handleOfflineExecute(w http.ResponseWriter, r *http.Request) {
 	RespondJSON(w, http.StatusOK, map[string]any{"report": report})
 }
 
+var offlineHistorySlots = make(chan struct{}, 2)
+
 func (s *Server) handleOfflineEvaluations(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", 405)
@@ -252,9 +254,24 @@ func (s *Server) handleOfflineEvaluations(w http.ResponseWriter, r *http.Request
 		RespondJSON(w, status, map[string]any{"error": err.Error()})
 		return
 	}
-	reports, err := rules.ListOfflineEvaluations(dir)
+	if r.Context().Err() != nil {
+		RespondJSON(w, http.StatusRequestTimeout, map[string]string{"error": "Offline history request canceled"})
+		return
+	}
+	select {
+	case offlineHistorySlots <- struct{}{}:
+		defer func() { <-offlineHistorySlots }()
+	default:
+		RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "Offline history requests busy; retry after a request finishes"})
+		return
+	}
+	reports, err := rules.ListOfflineEvaluationsContext(r.Context(), dir)
 	if err != nil {
-		RespondJSON(w, 500, map[string]any{"error": err.Error()})
+		status := http.StatusInternalServerError
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			status = http.StatusRequestTimeout
+		}
+		RespondJSON(w, status, map[string]any{"error": err.Error()})
 		return
 	}
 	if reports == nil {

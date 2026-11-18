@@ -280,7 +280,7 @@ func EvaluateOffline(ctx context.Context, request OfflineRequest) (*OfflineRepor
 	}
 	defer lease.Close()
 	root := lease.root
-	history, err := listOfflineEvaluations(ctx, directory)
+	history, err := ListOfflineEvaluationsContext(ctx, directory)
 	if err != nil {
 		return nil, err
 	}
@@ -632,10 +632,14 @@ func offlineWriteReport(root *os.Root, report *OfflineReport) error {
 // ListOfflineEvaluations returns at most 100 reports in lexical evaluation-ID order.
 // Malformed visible reports and an oversized history fail explicitly.
 func ListOfflineEvaluations(directory string) ([]OfflineReport, error) {
-	return listOfflineEvaluations(context.Background(), directory)
+	return ListOfflineEvaluationsContext(context.Background(), directory)
 }
 
-func listOfflineEvaluations(ctx context.Context, directory string) ([]OfflineReport, error) {
+// ListOfflineEvaluationsContext reads bounded report history without returning partial results on cancellation.
+func ListOfflineEvaluationsContext(ctx context.Context, directory string) ([]OfflineReport, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	r, err := os.OpenRoot(directory)
 	if err != nil {
 		return nil, err
@@ -710,6 +714,9 @@ func listOfflineEvaluations(ctx context.Context, directory string) ([]OfflineRep
 			return nil, fmt.Errorf("invalid offline report status")
 		}
 		reports = append(reports, report)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 	return reports, nil
 }

@@ -396,6 +396,32 @@ func TestOfflineEvaluationHistoryReadFailure(t *testing.T) {
 	}
 }
 
+func TestOfflineHistoryAdmissionAndCancellation(t *testing.T) {
+	s := &Server{outDir: t.TempDir()}
+	request := func(ctx context.Context) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		s.handleOfflineEvaluations(w, httptest.NewRequest(http.MethodGet, "/api/rules/offline/evaluations", nil).WithContext(ctx))
+		return w
+	}
+	func() {
+		for range cap(offlineHistorySlots) {
+			offlineHistorySlots <- struct{}{}
+			defer func() { <-offlineHistorySlots }()
+		}
+		if w := request(t.Context()); w.Code != http.StatusTooManyRequests {
+			t.Fatalf("saturated history: %d %s", w.Code, w.Body)
+		}
+	}()
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	if w := request(ctx); w.Code != http.StatusRequestTimeout || strings.Contains(w.Body.String(), `"evaluations"`) {
+		t.Fatalf("canceled history: %d %s", w.Code, w.Body)
+	}
+	if w := request(t.Context()); w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"evaluations":[]`) {
+		t.Fatalf("history retry: %d %s", w.Code, w.Body)
+	}
+}
+
 func TestOfflineExactInputSelectionStatus(t *testing.T) {
 	for _, test := range []struct {
 		name, input                 string
