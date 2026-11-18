@@ -13,6 +13,23 @@ import (
 
 const localUploadLimit = int64(10 << 30)
 const uploadFormOverhead = int64(64 << 10)
+const maxConcurrentCaptureUploads = 2
+
+func (s *Server) admitCaptureUpload(w http.ResponseWriter) func() {
+	s.mu.Lock()
+	if s.processingStopping || s.activeUploads >= maxConcurrentCaptureUploads {
+		s.mu.Unlock()
+		respondJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "Capture upload temporarily unavailable", "success": false})
+		return nil
+	}
+	s.activeUploads++
+	s.mu.Unlock()
+	return func() {
+		s.mu.Lock()
+		s.activeUploads--
+		s.mu.Unlock()
+	}
+}
 
 type uploadContextReader struct {
 	ctx context.Context

@@ -270,8 +270,6 @@ func (s *Server) handleViewSession(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/?session=%s", sessionID), http.StatusFound)
 }
 
-const maxConcurrentServiceUploads = 2
-
 // handleUploadServiceMode handles file uploads in service mode
 func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -292,19 +290,11 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	s.mu.Lock()
-	if s.processingStopping || s.serviceUploads >= maxConcurrentServiceUploads {
-		s.mu.Unlock()
-		respondJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Capture upload temporarily unavailable"})
+	release := s.admitCaptureUpload(w)
+	if release == nil {
 		return
 	}
-	s.serviceUploads++
-	s.mu.Unlock()
-	defer func() {
-		s.mu.Lock()
-		s.serviceUploads--
-		s.mu.Unlock()
-	}()
+	defer release()
 
 	file, header, err := receiveCaptureUpload(w, r, s.serviceConfig.MaxFileSize)
 	if err != nil {

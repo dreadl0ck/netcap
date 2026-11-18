@@ -1874,6 +1874,11 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	release := s.admitCaptureUpload(w)
+	if release == nil {
+		return
+	}
+	defer release()
 	limit := localUploadLimit
 	if s.isServiceMode {
 		limit = 200 << 20

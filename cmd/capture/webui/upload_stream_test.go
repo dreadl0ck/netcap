@@ -26,6 +26,70 @@ func TestServiceUploadAdmissionThroughQueueHandoff(t *testing.T) {
 	t.Run("cancel", func(t *testing.T) { testServiceUploadHandoff(t, true) })
 }
 
+type heldUploadBody struct {
+	started chan struct{}
+	release <-chan struct{}
+}
+
+func (b heldUploadBody) Read([]byte) (int, error) {
+	select {
+	case b.started <- struct{}{}:
+	default:
+	}
+	<-b.release
+	return 0, io.EOF
+}
+
+func TestLocalUploadsShareAdmissionWithServiceRoute(t *testing.T) {
+	s := &Server{sessionManager: NewSessionManager(10, 60, 10), serviceConfig: &ServiceConfig{}}
+	request := func(body io.Reader) *http.Request {
+		r := httptest.NewRequest(http.MethodPost, "/api/upload", body)
+		r.Header.Set("Content-Type", "multipart/form-data; boundary=fixture")
+		return r
+	}
+	release := make(chan struct{})
+	unblock := func() { close(release) }
+	defer func() { unblock() }()
+	done := make(chan int, 2)
+	for range 2 {
+		body := heldUploadBody{make(chan struct{}, 1), release}
+		go func() {
+			w := httptest.NewRecorder()
+			s.handleUpload(w, request(body))
+			done <- w.Code
+		}()
+		select {
+		case <-body.started:
+		case <-time.After(5 * time.Second):
+			t.Fatal("local upload did not start reading")
+		}
+	}
+	for _, handle := range []http.HandlerFunc{s.handleUpload, s.handleUploadServiceMode} {
+		body, w := &uploadReadCounter{}, httptest.NewRecorder()
+		handle(w, request(body))
+		if w.Code != http.StatusServiceUnavailable || body.reads != 0 {
+			t.Fatalf("saturated upload: status=%d reads=%d", w.Code, body.reads)
+		}
+	}
+	unblock()
+	unblock = func() {}
+	for range 2 {
+		select {
+		case code := <-done:
+			if code != http.StatusBadRequest {
+				t.Fatalf("invalid upload returned %d", code)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("upload did not release its slot")
+		}
+	}
+	body, w := &uploadReadCounter{}, httptest.NewRecorder()
+	s.handleUpload(w, request(body))
+	if w.Code != http.StatusBadRequest || body.reads == 0 {
+		t.Fatalf("retry did not reach validation: status=%d reads=%d", w.Code, body.reads)
+	}
+}
+
 func testServiceUploadHandoff(t *testing.T, cancelWaiting bool) {
 	t.Helper()
 	s := &Server{
