@@ -99,6 +99,8 @@ type HTTPResponse struct {
 	TotalCount int           `json:"totalCount"`
 }
 
+var httpInventorySlots = make(chan struct{}, 2)
+
 // handleHTTP returns a list of all HTTP records
 func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -116,6 +118,16 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	var ctx context.Context
 	if r.URL.Query().Get("mcpPage") == "true" {
 		ctx = r.Context()
+		if ctx.Err() != nil {
+			return
+		}
+		select {
+		case httpInventorySlots <- struct{}{}:
+			defer func() { <-httpInventorySlots }()
+		default:
+			RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "HTTP inventory is busy"})
+			return
+		}
 	}
 	httpRecords, err := readHTTPInventory(ctx, outDir)
 	if err != nil {
