@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,24 +68,31 @@ func Open(directory, name string) (*os.File, os.FileInfo, error) {
 }
 
 func Read(ctx context.Context, directory, name string, limit int64) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	f, info, err := Open(directory, name)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	if limit <= 0 || info.Size() > limit {
+	if limit <= 0 || info.Size() > limit || info.Size() > int64(int(^uint(0)>>1)) {
 		return nil, fmt.Errorf("artifact exceeds %d byte limit", limit)
 	}
-	readLimit := limit
-	if readLimit < math.MaxInt64 {
-		readLimit++
+	b := make([]byte, int(info.Size()))
+	r := &contextReader{ctx, f}
+	for offset := 0; offset < len(b); {
+		end := offset + min(64<<10, len(b)-offset)
+		if _, err := io.ReadFull(r, b[offset:end]); err != nil {
+			return nil, err
+		}
+		offset = end
 	}
-	b, err := io.ReadAll(io.LimitReader(&contextReader{ctx, f}, readLimit))
-	if err != nil {
+	var extra [1]byte
+	if n, err := io.ReadFull(r, extra[:]); n != 0 {
+		return nil, fmt.Errorf("artifact changed during read")
+	} else if err != io.EOF {
 		return nil, err
-	}
-	if int64(len(b)) > limit {
-		return nil, fmt.Errorf("artifact exceeds %d byte limit", limit)
 	}
 	after, err := f.Stat()
 	if err != nil || info.Size() != after.Size() || !info.ModTime().Equal(after.ModTime()) {

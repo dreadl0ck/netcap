@@ -1,6 +1,7 @@
 package artifactio
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"math"
@@ -62,6 +63,18 @@ func TestMaximumReadLimitDoesNotOverflow(t *testing.T) {
 	got, err := Read(context.Background(), root, "data", math.MaxInt64)
 	if err != nil || string(got) != "evidence" {
 		t.Fatalf("got %q: %v", got, err)
+	}
+}
+
+func TestReadAtLimitUsesExactBuffer(t *testing.T) {
+	root := t.TempDir()
+	want := bytes.Repeat([]byte("fixture"), 100_000)
+	if err := os.WriteFile(filepath.Join(root, "data"), want, 0600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Read(t.Context(), root, "data", int64(len(want)))
+	if err != nil || !bytes.Equal(got, want) || cap(got) != len(want) {
+		t.Fatalf("got len=%d cap=%d, want %d exact bytes: %v", len(got), cap(got), len(want), err)
 	}
 }
 
