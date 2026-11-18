@@ -188,6 +188,24 @@ func TestSmallTimelineCompletesWhileRegularLaneIsOccupied(t *testing.T) {
 	}
 }
 
+func TestSmallTimelineReportsCorruptInputWhileRegularLaneIsOccupied(t *testing.T) {
+	timelineBuildSlot <- struct{}{}
+	defer func() { <-timelineBuildSlot }()
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "Connection.ncap.gz"), []byte("invalid gzip data"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	status := timelineIndexFor(dir)
+	select {
+	case <-status.finished:
+	case <-time.After(2 * time.Second):
+		t.Fatal("small corrupt input waited for the regular lane")
+	}
+	if status := timelineIndexFor(dir); status.State != timelineStateError || !strings.Contains(status.Err, "index Connection: gzip: invalid header") {
+		t.Fatalf("unexpected timeline status: %+v", status)
+	}
+}
+
 func TestTimelineOverExpansionReturnsCompleteRegularIndex(t *testing.T) {
 	dir := t.TempDir()
 	records := make([]proto.Message, 4096)
@@ -199,8 +217,8 @@ func TestTimelineOverExpansionReturnsCompleteRegularIndex(t *testing.T) {
 	if err != nil || len(files) != 1 || files[0].size > timelineSmallInputBytes {
 		t.Fatalf("fixture must fit the compressed admission cap: %v %v", files, err)
 	}
-	if _, ok := snapshotSmallTimeline(files); ok {
-		t.Fatal("oversize expanded snapshot admitted")
+	if snapshot, err := snapshotSmallTimeline(files); snapshot != nil || err != nil {
+		t.Fatalf("oversize snapshot should use the regular lane; error=%v", err)
 	}
 	index := waitForTimelineIndex(t, dir)
 	if track := index.byName["Connection"]; index.Truncated || track == nil || len(track.Events) != len(records) {

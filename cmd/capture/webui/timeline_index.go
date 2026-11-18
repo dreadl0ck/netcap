@@ -189,18 +189,22 @@ func timelineBuildLane(files []timelineFileRef) (chan struct{}, int) {
 	return timelineSmallBuildSlot, 1
 }
 
-func snapshotSmallTimeline(files []timelineFileRef) ([][]byte, bool) {
+// A nil snapshot without an error needs the regular lane.
+func snapshotSmallTimeline(files []timelineFileRef) ([][]byte, error) {
 	remaining := int64(timelineSmallInputBytes)
 	snapshots := make([][]byte, 0, len(files))
 	for _, ref := range files {
 		data, err := readSmallTimelineFile(ref, remaining)
-		if err != nil || int64(len(data)) > remaining {
-			return nil, false
+		if err != nil {
+			return nil, fmt.Errorf("index %s: %w", ref.name, err)
+		}
+		if int64(len(data)) > remaining {
+			return nil, nil
 		}
 		remaining -= int64(len(data))
 		snapshots = append(snapshots, data)
 	}
-	return snapshots, true
+	return snapshots, nil
 }
 
 func readSmallTimelineFile(ref timelineFileRef, remaining int64) ([]byte, error) {
@@ -418,8 +422,15 @@ func buildTimelineIndex(entry *timelineIndexEntry, fingerprint string, files []t
 	}()
 	var snapshots [][]byte
 	if slot == timelineSmallBuildSlot {
-		var ok bool
-		if snapshots, ok = snapshotSmallTimeline(files); !ok {
+		var err error
+		snapshots, err = snapshotSmallTimeline(files)
+		if err != nil {
+			entry.mu.Lock()
+			entry.state, entry.errMsg = timelineStateError, err.Error()
+			entry.mu.Unlock()
+			return
+		}
+		if snapshots == nil {
 			<-slot
 			slot, maxWorkers = timelineBuildSlot, 4
 			slot <- struct{}{}
