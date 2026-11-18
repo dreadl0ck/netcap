@@ -83,6 +83,21 @@ func TestAuditReplayUsesRecordTimeForDedupAndRateWindows(t *testing.T) {
 	t.Run("before-epoch", func(t *testing.T) { testAuditReplayClock(t, time.Unix(-3600, 0)) })
 }
 
+func TestAuditReplayThresholdUsesSignedRecordTime(t *testing.T) {
+	config := &Config{Rules: []*Rule{{Name: "fixture", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true, Threshold: 2, ThresholdWindow: 60}}}
+	replay, err := NewAuditReplay(config, new(MockAlertWriter))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, seconds := range []int64{-120, -130, -125} {
+		got, err := replay.Evaluate(&types.HTTP{Method: "GET", Timestamp: time.Unix(seconds, 0).UnixNano()})
+		want := []int{0, 0, 1}[i]
+		if err != nil || got != want {
+			t.Fatalf("timestamp %d: got %d alerts, want %d: %v", seconds, got, want, err)
+		}
+	}
+}
+
 func testAuditReplayClock(t *testing.T, base time.Time) {
 	t.Helper()
 	config := &Config{Rules: []*Rule{{Name: "fixture", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true}}}

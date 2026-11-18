@@ -489,7 +489,7 @@ func (e *Engine) cleanupRecentAlerts() {
 // PCAP replay) and falls back to the engine clock when the record has no time.
 func (e *Engine) recordEvalTime(record types.AuditRecord) int64 {
 	if record != nil {
-		if ts := record.Time(); ts > 0 {
+		if ts := record.Time(); ts != 0 {
 			return ts
 		}
 	}
