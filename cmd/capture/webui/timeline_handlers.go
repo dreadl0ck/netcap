@@ -22,13 +22,11 @@ package webui
 import (
 	"encoding/json"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/analyst"
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
@@ -428,15 +426,6 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if expected := r.URL.Query().Get("generation"); expected != "" {
-		status := timelineIndexFor(outDir)
-		if status.State != timelineStateReady || status.Index == nil || status.Index.Generation != expected {
-			RespondJSON(w, http.StatusConflict, timelineRecordJSON{Status: timelineStateError, Error: "timeline generation changed"})
-
-			return
-		}
-	}
-
 	recordType := r.URL.Query().Get("type")
 	if recordType == "" || strings.ContainsAny(recordType, `/\.`) {
 		RespondJSON(w, http.StatusBadRequest, timelineRecordJSON{Status: timelineStateError, Error: "invalid record type"})
@@ -464,20 +453,14 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+	if expected := r.URL.Query().Get("generation"); expected != "" && indexStatus.Index.Generation != expected {
+		RespondJSON(w, http.StatusConflict, timelineRecordJSON{Status: timelineStateError, Error: "timeline generation changed"})
+		return
+	}
 
 	track := indexStatus.Index.typeIndex(recordType)
 	if track == nil || !track.hasEvent(eventTime, int32(ordinal)) {
 		RespondJSON(w, http.StatusBadRequest, timelineRecordJSON{Status: timelineStateError, Error: "record is not present in the timeline index"})
-
-		return
-	}
-
-	path := filepath.Join(outDir, recordType+defaults.FileExtension+".gz")
-	if _, statErr := os.Stat(path); statErr != nil {
-		path = filepath.Join(outDir, recordType+defaults.FileExtension)
-	}
-	if _, statErr := os.Stat(path); statErr != nil {
-		RespondJSON(w, http.StatusNotFound, timelineRecordJSON{Status: timelineStateError, Error: "audit record file not found"})
 
 		return
 	}
@@ -489,7 +472,12 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reader, err := NewAuditRecordReader(path)
+	f, _, err := artifactio.Open(outDir, track.sourceName)
+	if err != nil {
+		RespondJSON(w, http.StatusConflict, timelineRecordJSON{Status: timelineStateError, Error: "indexed audit file unavailable"})
+		return
+	}
+	reader, err := auditRecordReaderFromFile(f, strings.HasSuffix(track.sourceName, ".gz"))
 	if err != nil {
 		RespondJSON(w, http.StatusInternalServerError, timelineRecordJSON{Status: timelineStateError, Error: err.Error()})
 
@@ -497,9 +485,14 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 	}
 	defer reader.Close()
 
-	if _, err = reader.ReadHeader(); err != nil {
+	header, err := reader.ReadHeader()
+	if err != nil {
 		RespondJSON(w, http.StatusInternalServerError, timelineRecordJSON{Status: timelineStateError, Error: err.Error()})
 
+		return
+	}
+	if want, ok := types.Type_value["NC_"+recordType]; !ok || header.Type != types.Type(want) {
+		RespondJSON(w, http.StatusConflict, timelineRecordJSON{Status: timelineStateError, Error: "indexed audit type changed"})
 		return
 	}
 
@@ -519,6 +512,11 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	auditRecord, ok := record.(types.AuditRecord)
+	if !ok || auditRecord.Time() != eventTime {
+		RespondJSON(w, http.StatusConflict, timelineRecordJSON{Status: timelineStateError, Error: "indexed audit timestamp changed"})
+		return
+	}
 	payload, err := json.Marshal(record)
 	if err != nil {
 		RespondJSON(w, http.StatusInternalServerError, timelineRecordJSON{Status: timelineStateError, Error: err.Error()})
@@ -533,11 +531,9 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 		Record:  payload,
 	}
 
-	if auditRecord, ok := record.(types.AuditRecord); ok {
-		resp.Time = strconv.FormatInt(auditRecord.Time(), 10)
-		resp.Src = auditRecord.Src()
-		resp.Dst = auditRecord.Dst()
-	}
+	resp.Time = strconv.FormatInt(eventTime, 10)
+	resp.Src = auditRecord.Src()
+	resp.Dst = auditRecord.Dst()
 
 	RespondJSON(w, http.StatusOK, resp)
 }

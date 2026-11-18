@@ -72,9 +72,10 @@ type tlEvent struct {
 
 // tlTypeIndex holds the time index for one audit record type (one timeline track).
 type tlTypeIndex struct {
-	Name      string
-	Layer     string
-	LayerRank int
+	sourceName string
+	Name       string
+	Layer      string
+	LayerRank  int
 
 	// Events is sorted by (Time, Ordinal).
 	Events []tlEvent
@@ -496,6 +497,7 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 				}
 
 				mu.Lock()
+				ti.sourceName = filepath.Base(files[i].path)
 				results = append(results, ti)
 				mu.Unlock()
 			}

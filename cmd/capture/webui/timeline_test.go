@@ -306,6 +306,9 @@ func TestTimelineSupportsUncompressedAuditFiles(t *testing.T) {
 	writeTimelineAuditFilePlain(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{
 		dnsRecord(100, "10.0.0.1", "1.1.1.1"),
 	})
+	if err := os.WriteFile(filepath.Join(dir, "DNS.ncap.gz"), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
 
 	idx := waitForTimelineIndex(t, dir)
 	if idx.TotalEvents != 1 || idx.typeIndex("DNS") == nil {
