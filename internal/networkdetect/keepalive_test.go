@@ -73,6 +73,39 @@ func TestRetainedPrefixDoesNotAliasAfterSequenceCycle(t *testing.T) {
 	}
 }
 
+func TestOverlapRequiresUnambiguousSequenceOrder(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		distance uint32
+		want     uint64
+	}{
+		{"half cycle", 1 << 31, 0},
+		{"before half cycle", 1<<31 - 1, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e, err := New(DefaultConfig())
+			if err != nil {
+				t.Fatal(err)
+			}
+			ev := baseEvent("data", 1)
+			ev.Seq, ev.Payload = 100, []byte("abcd")
+			if _, err := e.Observe(ev); err != nil {
+				t.Fatal(err)
+			}
+			d := e.flows[flowKey(ev)].directions[endpoint(ev.SrcIP, ev.SrcPort)]
+			d.next, d.bytes = 103+tc.distance, uint64(3+tc.distance)
+			ev.At++
+			ev.Seq, ev.Payload, ev.KeepAliveEligible = 103, []byte{0}, true
+			if _, err := e.Observe(ev); err != nil {
+				t.Fatal(err)
+			}
+			if stats := e.Stats(); stats.ConflictingOverlapBytes != tc.want || stats.StaleProbeCandidates != tc.want {
+				t.Fatalf("unexpected sequence evidence: %+v", stats)
+			}
+		})
+	}
+}
+
 func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 	for _, tc := range []struct {
 		name           string

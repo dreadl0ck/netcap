@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -125,6 +126,9 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 		d.started = true
 	}
 	delta := int32(ev.Seq - d.next)
+	if delta == math.MinInt32 {
+		return // Sequence order is undefined at half the serial space.
+	}
 	if (!f.closed || f.finObserved) && !f.reset && !ev.Truncated && ev.KeepAliveEligible && len(ev.Payload) == 1 &&
 		(delta == -1 && !d.nextTruncated || d.finSeen && ev.Seq == d.finSequence) {
 		return // RFC 1122 keep-alive probes carry no new sequence-space data.
