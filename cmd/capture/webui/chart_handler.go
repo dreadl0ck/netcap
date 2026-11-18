@@ -357,6 +357,10 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing required parameters: type, field", http.StatusBadRequest)
 		return
 	}
+	if _, ok := types.Type_value["NC_"+auditType]; !ok {
+		http.Error(w, "Unknown audit type", http.StatusBadRequest)
+		return
+	}
 
 	if chartType == "" {
 		chartType = "line" // default to line chart
@@ -465,12 +469,12 @@ func (s *Server) aggregateChartDataAcrossDirs(ctx context.Context, dirs []string
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		filePath := filepath.Join(dir, auditType+".ncap.gz")
-		if _, statErr := os.Stat(filePath); statErr != nil {
-			continue // tolerate missing per-type files
+		path := filepath.Join(dir, auditType+".ncap")
+		resp, err := s.extractChartData(ctx, path+".gz", auditType, field, interval)
+		if errors.Is(err, os.ErrNotExist) {
+			resp, err = s.extractChartData(ctx, path, auditType, field, interval)
 		}
-		resp, err := s.extractChartData(ctx, filePath, auditType, field, interval)
-		if errors.Is(err, errNoChartData) {
+		if errors.Is(err, os.ErrNotExist) || errors.Is(err, errNoChartData) {
 			continue
 		}
 		if err != nil {
@@ -542,9 +546,12 @@ func (s *Server) extractChartData(ctx context.Context, filePath, auditType, fiel
 	defer reader.Close()
 
 	// Read header
-	_, err = reader.ReadHeader()
+	header, err := reader.ReadHeader()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read header: %w", err)
+	}
+	if want, ok := types.Type_value["NC_"+auditType]; !ok || header.Type != types.Type(want) {
+		return nil, fmt.Errorf("unexpected audit header type %s for %s", header.Type, auditType)
 	}
 
 	// Parse interval

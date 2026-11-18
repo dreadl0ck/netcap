@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -83,6 +84,36 @@ func TestChartJSONBucketLimitAndRetry(t *testing.T) {
 	cancel()
 	if _, err := s.extractChartData(ctx, filepath.Join(dir, "TCP.ncap.gz"), "TCP", "SrcPort", "1ns"); !errors.Is(err, context.Canceled) {
 		t.Fatalf("canceled chart: %v", err)
+	}
+}
+
+func TestChartJSONReadsPlainAuditAndRejectsBadPreferredSource(t *testing.T) {
+	dir := t.TempDir()
+	rows := []proto.Message{&types.TCP{Timestamp: 1, SrcPort: 53}}
+	writeTimelineAuditFilePlain(t, dir, "TCP", types.Type_NC_TCP, rows)
+	s := &Server{outDir: dir}
+	query := func(auditType string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		s.handleChartData(w, httptest.NewRequest(http.MethodGet, "/api/charts/data?format=json&type="+auditType+"&field=SrcPort", nil))
+		return w
+	}
+	w := query("TCP")
+	var result ChartDataResponse
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &result) != nil || len(result.Data) != 1 || result.Data[0].Value != 53 {
+		t.Fatalf("plain audit chart: %d %s", w.Code, w.Body.String())
+	}
+	if w := query("UnregisteredType"); w.Code != http.StatusBadRequest {
+		t.Fatalf("invalid audit type: %d %s", w.Code, w.Body.String())
+	}
+	compressed := writeTimelineAuditFile(t, dir, "TCP", types.Type_NC_UDP, []proto.Message{&types.UDP{Timestamp: 1, SrcPort: 99}})
+	if w := query("TCP"); w.Code != http.StatusInternalServerError || !strings.Contains(w.Body.String(), "unexpected audit header type") {
+		t.Fatalf("mismatched header: %d %s", w.Code, w.Body.String())
+	}
+	if err := os.WriteFile(compressed, []byte("not compressed"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if w := query("TCP"); w.Code != http.StatusInternalServerError {
+		t.Fatalf("corrupt compressed audit: %d %s", w.Code, w.Body.String())
 	}
 }
 
