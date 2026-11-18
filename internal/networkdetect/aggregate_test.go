@@ -68,6 +68,31 @@ func TestAggregationExpiresAcrossSignedTimestampRange(t *testing.T) {
 	}
 }
 
+func TestAggregationRetainsStaleProbeCountOutsideExamples(t *testing.T) {
+	g := newAggregator(DefaultConfig())
+	for i := range 11 {
+		evidence := Evidence{Observed: 1}
+		if i == 8 || i == 9 {
+			evidence.Samples = []string{staleProbeSample}
+		}
+		raw, err := json.Marshal(evidence)
+		if err != nil {
+			t.Fatal(err)
+		}
+		g.add("overlap", &types.Alert{Name: "tcp.overlap-conflict", Severity: "medium", Timestamp: int64(i), MatchedRecord: string(raw)})
+	}
+	rows := g.flush()
+	if len(rows) != 1 {
+		t.Fatalf("expected one aggregate, got %d", len(rows))
+	}
+	row := rows[0]
+	if row.Count != 11 || row.Severity != "medium" || len(row.Examples) != maxAggregateExamples ||
+		strings.Contains(strings.Join(row.Examples, " "), staleProbeSample) ||
+		!strings.Contains(row.Notes, "possibleStaleProbeCandidates=2 (intent and acceptance unknown)") {
+		t.Fatalf("unexpected overlap aggregate: %+v", row)
+	}
+}
+
 func TestAggregationCapacityFlushPreservesCounts(t *testing.T) {
 	c := DefaultConfig()
 	c.MaxKeys = 2

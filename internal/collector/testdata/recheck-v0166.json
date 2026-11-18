@@ -448,6 +448,7 @@
     "verification": "capture-contracts.yml now triggers on artifactio, delimited and rules changes and includes all three packages in its race and vet steps. All three package suites passed locally with the workflow build tags; vet and actionlint v1.7.7 also passed."
   },
   "networkAlertCapacityFlush": {
+    "staleProbeSummary": "TestAggregationRetainsStaleProbeCountOutsideExamples verifies that two candidate observations outside the eight retained examples remain counted in the aggregate notes, while all 11 overlap observations and medium severity remain intact. The portable networkdetect race suite passed.",
     "verification": "Capacity flush selects one oldest aggregate without allocating and sorting the full key set. Five focused race runs verified timestamp ordering, equal-time key ordering, conservation of all 20 matches across 18 capacity flushes, and local stale-probe qualification controls."
   },
   "extractedFileInventoryPressure": "TestExtractedFileInventoryPressure verifies HTTP 429 with both inventory slots occupied, HTTP 408 for a canceled request, HTTP 413 when a 33 MiB decoded fixture crosses the 32 MiB metadata accounting budget, and HTTP 200 on retry. Focused portable WebUI and MCP race tests passed; the existing 1024-occurrence contract remains covered.",

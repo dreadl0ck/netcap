@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 
@@ -15,7 +16,8 @@ import (
 const maxAggregateExamples = 8
 
 type aggregate struct {
-	alert *types.Alert
+	alert                *types.Alert
+	staleProbeCandidates uint64
 }
 
 // Windows are [first match, first match + dedupNS). Live checkpoints emit
@@ -50,7 +52,7 @@ func boundedText(s string, limit int) string {
 }
 
 // Examples retain bounded structured context, never application payloads.
-func alertExample(a *types.Alert) string {
+func alertExample(a *types.Alert) (string, bool) {
 	var evidence Evidence
 	_ = json.Unmarshal([]byte(a.MatchedRecord), &evidence)
 	samples := evidence.Samples
@@ -73,7 +75,7 @@ func alertExample(a *types.Alert) string {
 		FirstSeen   int64    `json:"firstSeen"`
 		Samples     []string `json:"samples"`
 	}{a.Timestamp, a.SrcIP, a.SrcPort, a.DstIP, a.DstPort, a.Domain, a.CommunityID, evidence.Observed, evidence.FirstSeen, bounded})
-	return string(data)
+	return string(data), a.Name == "tcp.overlap-conflict" && slices.Contains(evidence.Samples, staleProbeSample)
 }
 
 func (g *aggregator) add(key string, a *types.Alert) []*types.Alert {
@@ -100,7 +102,10 @@ func (g *aggregator) add(key string, a *types.Alert) []*types.Alert {
 			g.oldest, g.oldestKnown = a.FirstSeen, true
 		}
 	}
-	example := alertExample(a)
+	example, staleProbe := alertExample(a)
+	if staleProbe {
+		entry.staleProbeCandidates++
+	}
 	row := entry.alert
 	row.Count++
 	row.LastSeen = a.Timestamp
@@ -131,10 +136,14 @@ func (g *aggregator) orderedKeys() []string {
 }
 
 func (g *aggregator) take(key, reason string) *types.Alert {
-	a := g.pending[key].alert
+	entry := g.pending[key]
+	a := entry.alert
 	delete(g.pending, key)
 	g.oldestKnown = false
 	a.Notes = fmt.Sprintf("aggregation=capture-time; windowNS=%d; flush=%s; Count=matching detector observations; MatchedRecord=first match; Examples=first seven plus latest", g.windowNS, reason)
+	if entry.staleProbeCandidates > 0 {
+		a.Notes += fmt.Sprintf("; possibleStaleProbeCandidates=%d (intent and acceptance unknown)", entry.staleProbeCandidates)
+	}
 	return a
 }
 

@@ -23,6 +23,7 @@ type direction struct {
 }
 
 const overlapPrefixBytes = 4096
+const staleProbeSample = "Possible stale probe: ACK with one zero byte at an earlier observed segment end; intent and acceptance unknown"
 
 func (d *direction) rememberPrefixEnd() {
 	offset := d.next - d.prefixSeq - 1
@@ -141,7 +142,7 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 			samples := []string{"Different bytes at already observed TCP sequence positions within the retained 4096-byte prefix"}
 			if !f.closed && !f.reset && d.staleProbeCandidate(ev, delta) {
 				e.stats.StaleProbeCandidates++
-				samples = append(samples, "Possible stale probe: ACK with one zero byte at an earlier observed segment end; intent and acceptance unknown")
+				samples = append(samples, staleProbeSample)
 			}
 			add("tcp.overlap-conflict", "behavioral-suspicion", "medium", "T1557", conflicts, 1, samples, f.first, nil, "First-arrival decoding is retained; packet evidence is needed to determine which bytes the endpoint accepted")
 		}
