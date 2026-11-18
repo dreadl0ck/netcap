@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -17,6 +18,24 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
+
+func BenchmarkAuditRecordEventLarge(b *testing.B) {
+	payload := []byte(`{"body":"` + strings.Repeat("x", 8<<20) + `"}`)
+	b.Run("formatted", func(b *testing.B) {
+		for b.Loop() {
+			if _, err := fmt.Fprintf(io.Discard, "event: record\ndata: %s\n\n", payload); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+	b.Run("direct", func(b *testing.B) {
+		for b.Loop() {
+			if err := writeAuditRecordEvent(io.Discard, payload); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+}
 
 func TestFullAuditStreamRefusesOversizedFrameBeforeReadingBody(t *testing.T) {
 	path := writeTimelineAuditFilePlain(t, t.TempDir(), "HTTP", types.Type_NC_HTTP, nil)

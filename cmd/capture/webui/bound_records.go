@@ -126,7 +126,7 @@ func handleBoundAuditStream(w http.ResponseWriter, r *http.Request, path, typ st
 		if ctx.Err() != nil {
 			return
 		}
-		if _, err = fmt.Fprintf(w, "event: record\ndata: %s\n\n", row); err != nil {
+		if err := writeAuditRecordEvent(w, row); err != nil {
 			return
 		}
 		if err := response.Flush(); err != nil {

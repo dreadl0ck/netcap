@@ -598,6 +598,17 @@ const (
 	maxFullAuditScanBytes  = 64 << 20
 )
 
+func writeAuditRecordEvent(w io.Writer, data []byte) error {
+	if _, err := io.WriteString(w, "event: record\ndata: "); err != nil {
+		return err
+	}
+	if _, err := w.Write(data); err != nil {
+		return err
+	}
+	_, err := io.WriteString(w, "\n\n")
+	return err
+}
+
 // HandleAuditStream streams audit records via Server-Sent Events.
 func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditType string) {
 	select {
@@ -893,7 +904,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 				jsonData, _ = json.Marshal(truncatedData)
 			}
 
-			if _, err := fmt.Fprintf(w, "event: record\ndata: %s\n\n", jsonData); err != nil {
+			if err := writeAuditRecordEvent(w, jsonData); err != nil {
 				return
 			}
 			if err := response.Flush(); err != nil {
