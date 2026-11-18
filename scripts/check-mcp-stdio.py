@@ -401,12 +401,23 @@ rules:
         await call("delete_session", http_args)
 
         schema = Path(data_dir).resolve() / "contract.proto"
-        schema.write_text('syntax = "proto3"; package contract; message Sample { string label = 1; }\n', encoding="utf-8")
+        valid_schema = 'syntax = "proto3"; package contract; message Sample { string label = 1; }\n'
+        schema.write_text(valid_schema, encoding="utf-8")
         await call("add_protobuf_search_path", {"path": str(schema)})
         await call("recompile_protobuf_schemas", {})
         messages = (await call("list_protobuf_messages", {}))["messages"]
         if {message["fullName"] for message in messages} != {"contract.Sample"}:
             raise ValueError("schema recompilation did not retain the fixture message")
+        schema.write_text('syntax = "proto3"; message Incomplete {', encoding="utf-8")
+        failed = await client.call_tool("recompile_protobuf_schemas", {})
+        if not failed.isError:
+            raise ValueError("invalid schema recompilation reported success")
+        invalid_status = await call("get_protobuf_status", {})
+        retained = (await call("list_protobuf_messages", {}))["messages"]
+        if not invalid_status["loaded"] or not invalid_status["errors"] or retained != messages:
+            raise ValueError("invalid reload lost its diagnostic or replaced the active schema")
+        schema.write_text(valid_schema, encoding="utf-8")
+        await call("recompile_protobuf_schemas", {})
         await call("set_protobuf_mapping", {"port": 49001, "messageType": "contract.Sample"})
         proto = await call("get_protobuf_status", {})
         if (not proto["loaded"] or proto["errors"] or proto["fileCount"] != 1
