@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"sort"
 	"sync"
@@ -27,18 +28,20 @@ type pendingRecord struct {
 // longer arrive (or after its configured lateness allowance). Records at/below
 // a committed watermark fail explicitly. Finish drains EOF in canonical order.
 type OrderedStream struct {
-	mu         sync.Mutex
-	engine     *Engine
-	scope      string
-	pending    []pendingRecord
-	unsorted   bool
-	minPending int64
-	bytes      int
-	watermark  int64
-	finished   bool
-	err        error
-	lateness   int64
-	maxSeen    int64
+	mu           sync.Mutex
+	engine       *Engine
+	scope        string
+	pending      []pendingRecord
+	unsorted     bool
+	minPending   int64
+	bytes        int
+	watermark    int64
+	hasWatermark bool
+	finished     bool
+	err          error
+	lateness     int64
+	maxSeen      int64
+	hasSeen      bool
 }
 
 func NewOrderedStream(config *Config, writer AlertWriter, scope string) (*OrderedStream, error) {
@@ -86,7 +89,7 @@ func (s *OrderedStream) pushScoped(scope string, record types.AuditRecord) error
 	if s.finished {
 		return errors.New("rule stream finalized")
 	}
-	if record == nil || reflect.ValueOf(record).Kind() == reflect.Pointer && reflect.ValueOf(record).IsNil() || record.Time() <= s.watermark {
+	if record == nil || reflect.ValueOf(record).Kind() == reflect.Pointer && reflect.ValueOf(record).IsNil() || record.Time() == 0 || s.hasWatermark && record.Time() <= s.watermark {
 		return errors.New("record timestamp is missing or at/below committed watermark")
 	}
 	message, ok := record.(proto.Message)
@@ -147,12 +150,15 @@ func (s *OrderedStream) observeScoped(scope string, record types.AuditRecord) (i
 		s.fail(err)
 		return 0, err
 	}
-	if record.Time() > s.maxSeen {
-		s.maxSeen = record.Time()
+	if !s.hasSeen || record.Time() > s.maxSeen {
+		s.maxSeen, s.hasSeen = record.Time(), true
 	}
 	// Hold the boundary timestamp too, so equal-time records sort together.
+	if s.maxSeen <= math.MinInt64+s.lateness {
+		return 0, nil
+	}
 	watermark := s.maxSeen - s.lateness - 1
-	if watermark < s.watermark {
+	if s.hasWatermark && watermark < s.watermark {
 		watermark = s.watermark
 	}
 	return s.advance(watermark)
@@ -195,11 +201,11 @@ func (s *OrderedStream) advance(watermark int64) (int, error) {
 	if s.finished {
 		return 0, errors.New("rule stream finalized")
 	}
-	if watermark < s.watermark {
+	if s.hasWatermark && watermark < s.watermark {
 		return 0, errors.New("watermarks must be monotonic")
 	}
 	if len(s.pending) == 0 || watermark < s.minPending {
-		s.watermark = watermark
+		s.watermark, s.hasWatermark = watermark, true
 		return 0, nil
 	}
 	if s.unsorted {
@@ -227,7 +233,7 @@ func (s *OrderedStream) advance(watermark int64) (int, error) {
 		s.pending = s.pending[consumed:]
 		s.minPending = s.pending[0].record.Time()
 	}
-	s.watermark = watermark
+	s.watermark, s.hasWatermark = watermark, true
 	return count, nil
 }
 

@@ -764,8 +764,10 @@ func (e *Engine) UpdateConfig(config *Config) error {
 		if owned.CaptureTime == nil || owned.CaptureTime.Scope != e.ordered.scope || int64(owned.CaptureTime.LatenessSeconds)*int64(time.Second) != e.ordered.lateness {
 			return fmt.Errorf("capture_time scope/lateness cannot change during an engine lifetime")
 		}
-		if _, err := e.ordered.advance(e.ordered.maxSeen); err != nil {
-			return err
+		if e.ordered.hasSeen {
+			if _, err := e.ordered.advance(e.ordered.maxSeen); err != nil {
+				return err
+			}
 		}
 	} else if owned.CaptureTime != nil {
 		return fmt.Errorf("capture_time mode cannot change during an engine lifetime")

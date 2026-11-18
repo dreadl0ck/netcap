@@ -3,6 +3,7 @@ package rules
 import (
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 	"sync"
@@ -60,6 +61,67 @@ func TestScopedCountsAndReorderedStream(t *testing.T) {
 	}
 	if _, err := e.Evaluate(scopedTCP(55, "192.0.2.1")); err == nil {
 		t.Fatal("unscoped grouping admitted")
+	}
+}
+
+func TestCaptureTimeSignedWindowBoundaries(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		times []int64
+		want  int
+	}{
+		{"minimum timestamp tie", []int64{math.MinInt64, math.MinInt64}, 1},
+		{"across epoch at window edge", []int64{-1, int64(time.Second) - 1}, 1},
+		{"outside window across signed extremes", []int64{math.MinInt64, math.MaxInt64}, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := groupedConfig()
+			cfg.Rules[0].Threshold, cfg.Rules[0].ThresholdWindow = 2, 1
+			cfg.CaptureTime = &CaptureTimeConfig{Scope: "fixture"}
+			var got []int64
+			e, err := NewEngineFromConfig(cfg, alertWriterFunc(func(a *types.Alert) error {
+				got = append(got, a.Timestamp)
+				return nil
+			}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, ts := range tc.times {
+				record := scopedTCP(0, "192.0.2.1")
+				record.Timestamp = ts
+				if _, err := e.Evaluate(record); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := e.Close(); err != nil {
+				t.Fatal(err)
+			}
+			if len(got) != tc.want || len(got) > 0 && got[0] != tc.times[1] {
+				t.Fatalf("alert timestamps %v, want %d alerts at %d", got, tc.want, tc.times[1])
+			}
+		})
+	}
+}
+
+func TestScopedJoinExpiresAcrossSignedExtremes(t *testing.T) {
+	cfg := &Config{Rules: []*Rule{{Name: "join", Type: "TCP", Expression: "SYN", Enabled: true, Sequence: &Sequence{AfterType: "UDP", After: "DstPort == 443", GroupBy: []string{"DstPort"}, AfterGroupBy: []string{"DstPort"}, Within: 1}}}}
+	for _, end := range []int64{math.MinInt64 + int64(time.Second), math.MaxInt64} {
+		e, err := NewEngineFromConfig(cfg, alertWriterFunc(func(*types.Alert) error { return nil }))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := e.EvaluateScoped("fixture", &types.UDP{Timestamp: math.MinInt64, DstPort: 443}); err != nil {
+			t.Fatal(err)
+		}
+		b := scopedTCP(0, "192.0.2.1")
+		b.Timestamp = end
+		want := 0
+		if end != math.MaxInt64 {
+			want = 1
+		}
+		if n, err := e.EvaluateScoped("fixture", b); err != nil || n != want {
+			t.Fatalf("join at %d: got %d, want %d: %v", end, n, want, err)
+		}
 	}
 }
 

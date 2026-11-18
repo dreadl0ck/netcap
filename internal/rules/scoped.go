@@ -37,8 +37,8 @@ func scopedKey(scope, name, key string) string {
 }
 
 func requireScope(scope string, record types.AuditRecord) error {
-	if scope == "" || len(scope) > 256 || record.Time() <= 0 {
-		return errors.New("scoped rules require capture/source scope and positive capture timestamp")
+	if scope == "" || len(scope) > 256 || record.Time() == 0 {
+		return errors.New("scoped rules require capture/source scope and nonzero capture timestamp")
 	}
 	return nil
 }
@@ -66,7 +66,7 @@ func (e *Engine) scopedThreshold(scope string, rule *Rule, record types.AuditRec
 		e.scopedCounts = make(map[string]*scopedCount)
 	}
 	for k, t := range e.scopedCounts {
-		if t.scope == scope && now >= t.last && now-t.last > t.window {
+		if t.scope == scope && now >= t.last && uint64(now)-uint64(t.last) > uint64(t.window) {
 			e.scopedEntries -= len(t.matches)
 			delete(e.scopedCounts, k)
 		}
@@ -78,12 +78,11 @@ func (e *Engine) scopedThreshold(scope string, rule *Rule, record types.AuditRec
 		}
 		t = &scopedCount{scope: scope, window: window}
 		e.scopedCounts[key] = t
-	}
-	if now < t.last {
+	} else if now < t.last {
 		return false, errors.New("scoped thresholds require ordered capture time; use OrderedStream")
 	}
-	if len(t.matches) > 0 && now-t.matches[0] > window {
-		first := sort.Search(len(t.matches), func(i int) bool { return now-t.matches[i] <= window })
+	if len(t.matches) > 0 && uint64(now)-uint64(t.matches[0]) > uint64(window) {
+		first := sort.Search(len(t.matches), func(i int) bool { return uint64(now)-uint64(t.matches[i]) <= uint64(window) })
 		t.matches = t.matches[:copy(t.matches, t.matches[first:])]
 		e.scopedEntries -= first
 	}
@@ -147,12 +146,12 @@ func (e *Engine) crossSequence(scope string, rule *Rule, record types.AuditRecor
 	}
 	// Use each rule's own window; never expire another rule using this window.
 	for k, t := range e.scopedJoins {
-		if t.scope == scope && now >= t.at && now-t.at > t.window {
+		if t.scope == scope && now >= t.at && uint64(now)-uint64(t.at) > uint64(t.window) {
 			delete(e.scopedJoins, k)
 		}
 	}
 	previous := e.scopedJoins[key]
-	satisfied := record.NetcapType() == targetType && previous != nil && previous.at <= now && now-previous.at <= window
+	satisfied := record.NetcapType() == targetType && previous != nil && previous.at <= now && uint64(now)-uint64(previous.at) <= uint64(window)
 	var refs []string
 	if satisfied {
 		refs = []string{previous.evidence, recordEvidence(record)}
