@@ -3,6 +3,7 @@ package rules
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -21,6 +22,59 @@ import (
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+type cancelAlertHistoryInput struct {
+	input  io.Reader
+	cancel context.CancelFunc
+	reads  int
+}
+
+func (r *cancelAlertHistoryInput) Read(p []byte) (int, error) {
+	r.reads++
+	n, err := r.input.Read(p)
+	r.cancel()
+	return n, err
+}
+
+func TestAlertHistoryValidationCancellationLeavesHistoryIntact(t *testing.T) {
+	dir := t.TempDir()
+	seed := openAlertWriter(t, dir)
+	if err := seed.WriteAlert(&types.Alert{RuleName: "retained"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := seed.Close(); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "Alert.ncap.gz")
+	before, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	w, err := newFileAlertWriter(dir, func(file *os.File) error {
+		input := &cancelAlertHistoryInput{input: file, cancel: cancel}
+		err := validateAlertHistory(ctx, input)
+		if input.reads != 1 {
+			t.Errorf("validation made %d reads after cancellation on the first read", input.reads)
+		}
+		return err
+	})
+	if w != nil || !errors.Is(err, context.Canceled) {
+		t.Fatalf("canceled validation returned writer=%v, err=%v", w != nil, err)
+	}
+	retry, err := NewFileAlertWriterContext(t.Context(), dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := retry.Close(); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(path)
+	if err != nil || !bytes.Equal(before, after) {
+		t.Fatalf("alert history changed: %v", err)
+	}
+}
 
 func TestAlertHistoryValidationDoesNotBlockAnotherDataset(t *testing.T) {
 	large, small := t.TempDir(), t.TempDir()

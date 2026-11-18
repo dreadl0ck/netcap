@@ -23,6 +23,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -115,6 +116,16 @@ func NewFileAlertWriter(outputDir string) (*FileAlertWriter, error) {
 	return newFileAlertWriter(outputDir, validateAlertFile)
 }
 
+// NewFileAlertWriterContext allows cancellation of existing history validation.
+func NewFileAlertWriterContext(ctx context.Context, outputDir string) (*FileAlertWriter, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return newFileAlertWriter(outputDir, func(file *os.File) error {
+		return validateAlertHistory(ctx, file)
+	})
+}
+
 func newFileAlertWriter(outputDir string, validate func(*os.File) error) (*FileAlertWriter, error) {
 	if outputDir == "" {
 		outputDir = "."
@@ -161,17 +172,36 @@ func newFileAlertWriter(outputDir string, validate func(*os.File) error) (*FileA
 }
 
 func validateAlertFile(file *os.File) error {
-	gz, err := gzip.NewReader(file)
+	return validateAlertHistory(context.Background(), file)
+}
+
+type alertHistoryReader struct {
+	ctx   context.Context
+	input io.Reader
+}
+
+func (r alertHistoryReader) Read(p []byte) (int, error) {
+	if err := r.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return r.input.Read(p[:min(len(p), 64<<10)])
+}
+
+func validateAlertHistory(ctx context.Context, input io.Reader) error {
+	gz, err := gzip.NewReader(alertHistoryReader{ctx, input})
 	if err != nil {
 		return err
 	}
 	defer gz.Close()
-	reader := bufio.NewReader(gz)
+	reader := bufio.NewReader(alertHistoryReader{ctx, gz})
 	var buffer []byte
 	for index := 0; ; index++ {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		size, err := binary.ReadUvarint(reader)
 		if err == io.EOF && index > 0 {
-			return nil
+			return ctx.Err()
 		}
 		if err != nil {
 			return err

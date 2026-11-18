@@ -1693,7 +1693,7 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) (resultErr error) {
 	totalRulesProcessed := 0
 
 	// Share one incremental alert writer across the job's rule engines.
-	alertWriter, err := rules.NewFileAlertWriter(job.OutputDir)
+	alertWriter, err := s.openRuleAlertWriter(job.OutputDir, nil)
 	if err != nil {
 		log.Printf("%s Failed to create alert writer for session %s: %v", mode, job.SessionID, err)
 		return err

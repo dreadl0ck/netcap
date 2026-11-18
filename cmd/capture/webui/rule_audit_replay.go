@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -129,6 +130,31 @@ func replayRuleAudit(dir, auditType string, stop <-chan struct{}, replay *rules.
 var manualRuleSlots = make(chan struct{}, 2)
 var errManualRuleCapacity = errors.New("manual rule replay is busy")
 
+func (s *Server) openRuleAlertWriter(dir string, stop <-chan struct{}) (*rules.FileAlertWriter, error) {
+	if ruleReplayCanceled(stop, s.shutdownChan) {
+		return nil, errAnalysisStopping
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		select {
+		case <-stop:
+			cancel()
+		case <-s.shutdownChan:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	w, err := rules.NewFileAlertWriterContext(ctx, dir)
+	if w != nil && ruleReplayCanceled(stop, s.shutdownChan) {
+		return nil, errors.Join(errAnalysisStopping, w.Close())
+	}
+	if errors.Is(err, context.Canceled) {
+		return nil, errAnalysisStopping
+	}
+	return w, err
+}
+
 func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-chan struct{}) (results []RuleExecResult, err error) {
 	if ruleReplayCanceled(stop, s.shutdownChan) {
 		return nil, errAnalysisStopping
@@ -144,7 +170,7 @@ func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-ch
 		return nil, fmt.Errorf("capture output is busy")
 	}
 	defer release()
-	writer, err := rules.NewFileAlertWriter(dir)
+	writer, err := s.openRuleAlertWriter(dir, stop)
 	if err != nil {
 		return nil, err
 	}
