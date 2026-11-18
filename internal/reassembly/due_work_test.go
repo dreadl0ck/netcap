@@ -2,6 +2,7 @@ package reassembly
 
 import (
 	"fmt"
+	"math/bits"
 	"math/rand"
 	"reflect"
 	"sync"
@@ -21,30 +22,30 @@ func TestSYNIdleClaimWorkDoesNotGrowWithFreshFlows(t *testing.T) {
 			packet := layers.TCP{SrcPort: 12345, DstPort: 80, SYN: true, Seq: 1000}
 			packet.SetInternalPortsForTesting()
 			for i := range size {
-				at := start.Add(time.Second)
-				if i == 0 {
-					at = start
-				}
+				at := start.Add(time.Duration(i) * time.Second)
 				a.AssembleWithContext(snapshotKey(i)[0], &packet, &assemblerSimpleContext{Timestamp: at})
 			}
 			if len(pool.idleDue) != size || len(pool.conns) != size {
 				t.Fatalf("fixture did not index %d SYN flows", size)
 			}
-			examined := 0
+			examined, comparisons := 0, 0
 			opt := FlushOptions{TI: start}
-			if refs := pool.claimDueMeasured(nil, opt, &examined); len(refs) != 0 || examined != 1 {
+			if refs := pool.claimDueMeasured(nil, opt, &examined, &comparisons); len(refs) != 0 || examined != 1 || comparisons != 0 {
 				t.Fatalf("at boundary: claims=%d examined=%d", len(refs), examined)
 			}
 			opt.TI = start.Add(time.Nanosecond)
 			examined = 0
-			refs := pool.claimDueMeasured(nil, opt, &examined)
+			refs := pool.claimDueMeasured(nil, opt, &examined, &comparisons)
 			if len(refs) != 1 || refs[0].conn != pool.conns[snapshotKey(0)] || examined != 3 {
 				t.Fatalf("sparse expiry: claims=%d examined=%d", len(refs), examined)
 			}
 			if flushed, closed := a.flushDue(refs[0], opt); flushed != 0 || closed != 2 {
 				t.Fatalf("expired SYN: flushed=%d closed=%d", flushed, closed)
 			}
-			t.Logf("%d SYN flows: 1 deadline check at the boundary, %d to claim one expired flow", size, examined)
+			if bound := 2 * bits.Len(uint(size)); comparisons <= 0 || comparisons > bound {
+				t.Fatalf("sparse removal compared %d entries; want 1..%d", comparisons, bound)
+			}
+			t.Logf("%d SYN flows: 1 deadline check at the boundary, %d to claim one expired flow, %d heap comparisons to remove it", size, examined, comparisons)
 		})
 	}
 }

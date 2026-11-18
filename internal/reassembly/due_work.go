@@ -55,6 +55,24 @@ func (h *deadlineHeap) remove(e *deadlineEntry) {
 	}
 }
 
+type measuredDeadlineHeap struct {
+	*deadlineHeap
+	comparisons *int
+}
+
+func (h measuredDeadlineHeap) Less(i, j int) bool {
+	(*h.comparisons)++
+	return h.deadlineHeap.Less(i, j)
+}
+
+func (h *deadlineHeap) removeMeasured(e *deadlineEntry, comparisons *int) {
+	if comparisons == nil {
+		h.remove(e)
+	} else if e.position != 0 {
+		heap.Remove(measuredDeadlineHeap{h, comparisons}, e.position-1)
+	}
+}
+
 func (h *deadlineHeap) update(e *deadlineEntry, ref connectionRef, deadline time.Time, present bool) {
 	if !present {
 		h.remove(e)
@@ -135,10 +153,10 @@ func (h deadlineHeap) collectDue(i int, cutoff time.Time, dst []connectionRef, e
 // claimDue selects a finite batch under the pool lock. No connection lock or
 // callback is entered here; in-flight mutations are rechecked by the borrower.
 func (p *StreamPool) claimDue(dst []connectionRef, opt FlushOptions) []connectionRef {
-	return p.claimDueMeasured(dst, opt, nil)
+	return p.claimDueMeasured(dst, opt, nil, nil)
 }
 
-func (p *StreamPool) claimDueMeasured(dst []connectionRef, opt FlushOptions, examined *int) []connectionRef {
+func (p *StreamPool) claimDueMeasured(dst []connectionRef, opt FlushOptions, examined, sparseComparisons *int) []connectionRef {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	dst = dst[:0]
@@ -157,9 +175,9 @@ func (p *StreamPool) claimDueMeasured(dst []connectionRef, opt FlushOptions, exa
 		}
 		if count < len(*queue.heap)/8 {
 			for _, ref := range dst[start:] {
-				p.pendingDue.remove(&ref.conn.pendingEntry)
-				p.closedDue.remove(&ref.conn.closedEntry)
-				p.idleDue.remove(&ref.conn.idleEntry)
+				p.pendingDue.removeMeasured(&ref.conn.pendingEntry, sparseComparisons)
+				p.closedDue.removeMeasured(&ref.conn.closedEntry, sparseComparisons)
+				p.idleDue.removeMeasured(&ref.conn.idleEntry, sparseComparisons)
 			}
 			continue
 		}
