@@ -64,6 +64,13 @@ func TestIncrementalHandoffFragmentBudget(t *testing.T) {
 		t.Fatalf("completion could not reserve state after optional refusal: %v", err)
 	}
 	budget.Release(wantCredit - 1)
+	working := budget.CompletionView()
+	if got, credit, err := budgetedMergeFragments(working, client, server, false); got != nil || credit != 0 || !errors.Is(err, core.ErrCompletionStateBudget) {
+		t.Fatalf("required completion merge: fragments=%v credit=%d err=%v", got, credit, err)
+	}
+	if health := budget.Health(); health.Exceeded || health.CompletionRejectedBytes != wantCredit || health.RetainedBytes != 0 {
+		t.Fatalf("unexpected required merge pressure: %+v", health)
+	}
 	budget, _ = core.NewStateBudget(wantCredit, nil)
 	got, credit, err := incrementalHandoffFragments(budget, client, server)
 	if err != nil || len(got) != 4 || got[0] != earlyServer || got[1] != gapFiller || got[2] != queued || got[3] != serverTie || client[0] != gapFiller || budget.Health().RetainedBytes != wantCredit {

@@ -703,6 +703,8 @@ func (t *tcpConnection) decode() {
 	conv.ClientSource, _ = clientSource.(core.RangedFragmentSource)
 	conv.ServerSource, _ = serverSource.(core.RangedFragmentSource)
 	loaded := false
+	var mergeCredit int64
+	defer func() { workingBudget.Release(mergeCredit) }()
 	conv.LoadData = func() error {
 		if loaded {
 			return nil
@@ -715,11 +717,14 @@ func (t *tcpConnection) decode() {
 		if err != nil {
 			return err
 		}
+		merged := t.merged
 		if !t.wasMerged {
-			t.merged = core.MergeByTimestamp(client, server)
-			t.wasMerged = true
+			merged, mergeCredit, err = budgetedMergeFragments(workingBudget, client, server, false)
+			if err != nil {
+				return err
+			}
 		}
-		conv.Data, conv.ClientData, conv.ServerData = t.merged, client, server
+		conv.Data, conv.ClientData, conv.ServerData = merged, client, server
 		conv.Source = nil
 		conv.ClientSource, conv.ServerSource = nil, nil
 		loaded = true

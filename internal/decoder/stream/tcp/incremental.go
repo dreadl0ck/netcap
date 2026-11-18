@@ -237,6 +237,10 @@ func incrementalProbePrefix(budget *core.StateBudget, fragments core.DataFragmen
 }
 
 func incrementalHandoffFragments(budget *core.StateBudget, client, server core.DataFragments) (core.DataFragments, int64, error) {
+	return budgetedMergeFragments(budget, client, server, true)
+}
+
+func budgetedMergeFragments(budget *core.StateBudget, client, server core.DataFragments, optional bool) (core.DataFragments, int64, error) {
 	if len(server) == 0 {
 		return client, 0, nil
 	}
@@ -245,8 +249,12 @@ func incrementalHandoffFragments(budget *core.StateBudget, client, server core.D
 	}
 	count := len(client) + len(server)
 	credit := int64(count) * int64(unsafe.Sizeof(core.DataFragment(nil)))
-	if !budget.TryReserve(credit) {
-		return nil, 0, core.ErrStreamStateBudget
+	if optional {
+		if !budget.TryReserve(credit) {
+			return nil, 0, core.ErrStreamStateBudget
+		}
+	} else if err := budget.Reserve(credit); err != nil {
+		return nil, 0, err
 	}
 	return core.MergeByTimestamp(client, server), credit, nil
 }
