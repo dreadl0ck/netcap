@@ -100,6 +100,32 @@ func captureHTTPWithPayloadOption(t *testing.T, data core.DataFragments, source,
 	return w.records, fw.records
 }
 
+func TestHTTPSourcePreflightScansBodiesUnderFiniteBudget(t *testing.T) {
+	body := strings.Repeat("fixture data\n", 20000)
+	request := fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Length: %d\r\n\r\n%s", len(body), body)
+	var source core.SliceSource
+	for part := range slices.Chunk([]byte(request+request), 1024) {
+		source = append(source, wireFragment(0, part, 1))
+	}
+	budget, err := core.NewStateBudget(24<<10, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := &core.ConversationInfo{ClientSource: source, StateBudget: budget}
+	if err := preflightSourceHTTP(c); err != nil {
+		t.Fatal(err)
+	}
+	c.ClientSource = append(source, wireFragment(0, []byte("POST /encoded HTTP/1.1\r\nHost: fixture.test\r\nContent-Encoding: br\r\nContent-Length: 4\r\n\r\ndata"), 1))
+	if err := preflightSourceHTTP(c); err != errHTTPSourceCompatibility {
+		t.Fatalf("preflight missed trailing request requiring compatibility: %v", err)
+	}
+	health := budget.Health()
+	if health.RetainedBytes != 0 || health.Exceeded {
+		t.Fatalf("preflight leaked or exceeded state: %+v", health)
+	}
+	t.Logf("scanned %d body bytes across two requests; peak TCP state %d bytes", 2*len(body), health.PeakBytes)
+}
+
 func TestHTTPSourceIncludesPairedPayloads(t *testing.T) {
 	body := strings.Repeat("binary fixture\x00", 10000)
 	request := fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Length: %d\r\n\r\n%sGET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n", len(body), body)

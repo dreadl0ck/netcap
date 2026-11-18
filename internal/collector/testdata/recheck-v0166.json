@@ -308,6 +308,9 @@
     "status": "deferred",
     "verification": "Pinned synthetic v169_midstream_psh_15k.pcap: strict replay at 2 MiB reassembly pages failed with a page-budget error; raising pages to 128 MiB reached the 64 MiB TCP stream-state limit. Both trials had 256 KiB retained payload and 1 MiB aggregate limits. No finite-cap audit equivalence or default change is claimed."
   },
+  "boundedHTTPSourcePreflight": {
+    "verification": "TestHTTPSourcePreflightScansBodiesUnderFiniteBudget scans 520000 request-body bytes with one reusable 4 KiB scratch buffer, peaks at 22016 TCP state credits under a 24 KiB limit, and returns all credits. A trailing unsupported request still selects compatibility decoding. Focused source HTTP, gzip and extraction parity tests passed under the race detector."
+  },
   "recheckV0169Release": {
     "release": "v0.16.9",
     "sourceRevision": "507413519828fbac9c2e9439957985d22e33c725",

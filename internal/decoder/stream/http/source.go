@@ -144,12 +144,17 @@ func readSourceRequestBody(c *core.ConversationInfo, body io.Reader) (sample []b
 			release()
 		}
 	}()
-	buffer := make([]byte, scratchSize)
+	sample, resultErr = scanSourceBody(body, make([]byte, scratchSize), sample)
+	returned = true
+	return sample, release, resultErr
+}
+
+func scanSourceBody(body io.Reader, buffer, sample []byte) ([]byte, error) {
 	empty := 0
 	for {
 		n, err := body.Read(buffer)
 		if n > 0 {
-			sample = append(sample, buffer[:min(n, sampleSize-len(sample))]...)
+			sample = append(sample, buffer[:min(n, cap(sample)-len(sample))]...)
 			empty = 0
 		} else if err == nil {
 			empty++
@@ -158,12 +163,10 @@ func readSourceRequestBody(c *core.ConversationInfo, body io.Reader) (sample []b
 			if err == io.EOF {
 				err = nil
 			}
-			returned = true
-			return sample, release, err
+			return sample, err
 		}
 		if empty >= 100 {
-			returned = true
-			return sample, release, io.ErrNoProgress
+			return sample, io.ErrNoProgress
 		}
 	}
 }
@@ -226,6 +229,9 @@ func sourceHTTPOrientation(c *core.ConversationInfo) (*core.ConversationInfo, er
 func preflightSourceHTTP(c *core.ConversationInfo) error {
 	return streamutils.WalkSourceGapRuns(c.ClientSource, func(source core.RangedFragmentSource, _, _ bool) error {
 		return streamutils.WithSourceReader(c, source, false, 16384, func(reader *bufio.Reader, _ *streamutils.ReadPosition) error {
+			const scratchSize = 4096
+			var scratch []byte
+			defer func() { c.StateBudget.Release(int64(len(scratch))) }()
 			for {
 				_, found := seekHTTPLine(reader, false)
 				if !found {
@@ -240,14 +246,19 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 					return errHTTPSourceCompatibility
 				}
 				if request.ContentLength != 0 || len(request.TransferEncoding) > 0 {
+					if scratch == nil {
+						if err := c.StateBudget.Reserve(scratchSize); err != nil {
+							return err
+						}
+						scratch = make([]byte, scratchSize)
+					}
 					var body io.Reader = request.Body
 					var formLimit *io.LimitedReader
 					if form == "application/x-www-form-urlencoded" {
 						formLimit = &io.LimitedReader{R: body, N: maxJSONFormBytes + 1}
 						body = formLimit
 					}
-					_, release, err := readSourceRequestBody(c, body)
-					release()
+					_, err := scanSourceBody(body, scratch, nil)
 					if formLimit != nil && formLimit.N == 0 {
 						return errHTTPSourceCompatibility
 					}
