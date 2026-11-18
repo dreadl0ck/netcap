@@ -20,6 +20,7 @@ const (
 	maxReportHealthBytes  = 1 << 20
 	maxReportRecordsBytes = 256 << 20
 	maxReportIndexBytes   = 128 << 20
+	maxReportOutputBytes  = 16 << 20
 )
 
 type Query struct {
@@ -279,7 +280,64 @@ func readReport(ctx context.Context, path string, query Query, indexBudget int) 
 	if result.SourceSHA256 != result.Health.RecordsSHA256 {
 		return result, fmt.Errorf("export collection health does not match record-file hash")
 	}
+	if err := checkReportOutputSize(ctx, result, maxReportOutputBytes); err != nil {
+		result.Groups = []Group{}
+		return result, err
+	}
 	return result, ctx.Err()
+}
+
+func checkReportOutputSize(ctx context.Context, report Report, limit int) error {
+	groups := report.Groups
+	if groups != nil {
+		report.Groups = []Group{}
+	}
+	header, err := json.Marshal(report)
+	if err != nil {
+		return err
+	}
+	remaining := limit - len(header) - 1 // The HTTP encoder adds a newline.
+	tooLarge := fmt.Errorf("export report exceeds %d encoded bytes; narrow the query or lower the group limit", limit)
+	if remaining < 0 {
+		return tooLarge
+	}
+	for i, group := range groups {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		members := group.Members
+		if members != nil {
+			group.Members = []string{}
+		}
+		raw, err := json.Marshal(group)
+		if err != nil {
+			return err
+		}
+		remaining -= len(raw)
+		if i > 0 {
+			remaining--
+		}
+		if remaining < 0 {
+			return tooLarge
+		}
+		for j, member := range members {
+			if len(member)+2 > remaining {
+				return tooLarge
+			}
+			encoded, err := json.Marshal(member)
+			if err != nil {
+				return err
+			}
+			remaining -= len(encoded)
+			if j > 0 {
+				remaining--
+			}
+			if remaining < 0 {
+				return tooLarge
+			}
+		}
+	}
+	return nil
 }
 
 func exportGroup(o *Observation, group string) (string, string) {

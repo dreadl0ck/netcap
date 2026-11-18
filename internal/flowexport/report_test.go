@@ -4,11 +4,29 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func TestExportReportEncodedSizeIncludesEscapesAndDelimiters(t *testing.T) {
+	report := Report{Groups: []Group{
+		{Key: "<first>", Bytes: 42, Members: []string{"a\nb", "<&\u2028"}},
+		{Key: "second", Members: []string{"quote\""}},
+	}}
+	wire, err := json.Marshal(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := checkReportOutputSize(t.Context(), report, len(wire)+1); err != nil {
+		t.Fatalf("exact HTTP output size: %v", err)
+	}
+	if err := checkReportOutputSize(t.Context(), report, len(wire)); err == nil {
+		t.Fatal("accepted a report one byte over budget")
+	}
+}
 
 func TestExportReportRetainedIndexBudget(t *testing.T) {
 	dir := t.TempDir()
