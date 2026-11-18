@@ -8,18 +8,19 @@ import (
 )
 
 type direction struct {
-	next          uint32
-	started       bool
-	finSeen       bool
-	finSequence   uint32
-	prefix        []byte
-	prefixSeq     uint32
-	prefixEnds    [overlapPrefixBytes / 64]uint64
-	bytes         uint64
-	gap           bool
-	ftpLine       []byte
-	prefixScanned int
-	traits        prefixTraits
+	next           uint32
+	started        bool
+	finSeen        bool
+	finSequence    uint32
+	prefix         []byte
+	prefixSeq      uint32
+	prefixEnds     *[overlapPrefixBytes / 64]uint64
+	firstPrefixEnd uint16 // Offset plus one; zero means absent.
+	bytes          uint64
+	gap            bool
+	ftpLine        []byte
+	prefixScanned  int
+	traits         prefixTraits
 }
 
 const overlapPrefixBytes = 4096
@@ -27,7 +28,17 @@ const staleProbeSample = "Possible stale probe: ACK with one zero byte at an ear
 
 func (d *direction) rememberPrefixEnd() {
 	offset := d.next - d.prefixSeq - 1
-	if !d.gap && offset < overlapPrefixBytes {
+	if d.gap || offset >= overlapPrefixBytes {
+		return
+	}
+	if d.firstPrefixEnd == 0 {
+		d.firstPrefixEnd = uint16(offset + 1)
+		return
+	}
+	if offset+1 != uint32(d.firstPrefixEnd) {
+		if d.prefixEnds == nil {
+			d.prefixEnds = new([overlapPrefixBytes / 64]uint64)
+		}
 		d.prefixEnds[offset/64] |= 1 << (offset % 64)
 	}
 }
@@ -35,7 +46,7 @@ func (d *direction) rememberPrefixEnd() {
 func (d *direction) staleProbeCandidate(ev Event, delta int32) bool {
 	offset := ev.Seq - d.prefixSeq
 	return !d.gap && ev.KeepAliveEligible && delta < -1 && len(ev.Payload) == 1 && ev.Payload[0] == 0 &&
-		offset < overlapPrefixBytes && d.prefixEnds[offset/64]&(1<<(offset%64)) != 0
+		offset < overlapPrefixBytes && (offset+1 == uint32(d.firstPrefixEnd) || d.prefixEnds != nil && d.prefixEnds[offset/64]&(1<<(offset%64)) != 0)
 }
 
 type flow struct {
@@ -122,6 +133,7 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 			e.stats.StreamGaps++
 		}
 		d.gap = true
+		d.prefixEnds = nil
 		e.disableFTP(key, f)
 		return
 	}

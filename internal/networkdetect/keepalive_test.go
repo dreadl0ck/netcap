@@ -13,6 +13,7 @@ func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 		ack, reset, gap, want bool
 	}{
 		{"previous-end", 3, []byte{0}, true, false, false, true},
+		{"second-end", 7, []byte{0}, true, false, false, true},
 		{"interior-byte", 2, []byte{0}, true, false, false, false},
 		{"nonzero", 3, []byte{1}, true, false, false, false},
 		{"no-ack", 3, []byte{0}, false, false, false, false},
@@ -26,12 +27,19 @@ func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 			ev := baseEvent("data", 1)
 			ev.Seq, ev.Payload = start, []byte("abcd")
 			e.Observe(ev)
+			d := e.flows[flowKey(ev)].directions[endpoint(ev.SrcIP, ev.SrcPort)]
+			if d.prefixEnds != nil {
+				t.Fatal("one observed end allocated a bitmap")
+			}
 			ev.At++
 			ev.Seq, ev.Payload = start+4, []byte("efgh")
 			e.Observe(ev)
+			ev.At++
+			ev.Seq, ev.Payload = start+8, []byte("ijkl")
+			e.Observe(ev)
 			if tc.gap {
 				ev.At++
-				ev.Seq, ev.Payload = start+9, []byte("tail")
+				ev.Seq, ev.Payload = start+13, []byte("tail")
 				if _, err := e.Observe(ev); err != nil || e.Stats().StreamGaps != 1 {
 					t.Fatalf("capture gap not recorded: %v, %+v", err, e.Stats())
 				}
@@ -40,6 +48,9 @@ func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 				end := ev
 				end.Kind, end.Payload = "end", nil
 				e.Observe(end)
+			}
+			if (d.prefixEnds == nil) != (tc.gap || tc.reset) {
+				t.Fatal("unexpected bitmap retention after multiple observed ends")
 			}
 			ev.At++
 			ev.Seq, ev.Payload, ev.KeepAliveEligible = start+tc.seq, tc.payload, tc.ack

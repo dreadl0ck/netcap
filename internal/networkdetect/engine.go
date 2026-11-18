@@ -330,6 +330,9 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 		e.revokeFTP(key)
 		if f := e.flows[key]; f != nil {
 			f.closed, f.last, f.ftpDisabled, f.ftp = true, ev.At, true, nil
+			for _, d := range f.directions {
+				d.prefixEnds = nil
+			}
 			if ev.FIN {
 				f.finObserved = true
 				if d := f.directions[endpoint(ev.SrcIP, ev.SrcPort)]; d != nil {
