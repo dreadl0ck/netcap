@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -11,10 +12,54 @@ import (
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/artifactio"
+	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
+
+type cancelingAuditInput struct {
+	*bytes.Reader
+	cancel func()
+}
+
+func (r *cancelingAuditInput) Read(p []byte) (int, error) {
+	n, err := r.Reader.Read(p)
+	if r.cancel != nil {
+		r.cancel()
+		r.cancel = nil
+	}
+	return n, err
+}
+
+func TestRuleAuditStopsWhileReadingLargeRecord(t *testing.T) {
+	var data bytes.Buffer
+	w := delimited.NewWriter(&data)
+	if err := w.PutProto(&types.Header{Type: types.Type_NC_HTTP}); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.PutProto(&types.HTTP{RequestBody: make([]byte, 256<<10)}); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.CreateTemp(t.TempDir(), "audit")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stop := make(chan struct{})
+	input := &cancelingAuditInput{Reader: bytes.NewReader(data.Bytes())}
+	r, err := auditRecordReaderFromInput(f, ruleReplayReader{input: input, stop: stop}, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	if _, err := r.ReadHeader(); err != nil {
+		t.Fatal(err)
+	}
+	input.cancel = func() { close(stop) }
+	if record, err := r.NextRecord(); record != nil || !errors.Is(err, errAnalysisStopping) || input.Len() == 0 {
+		t.Fatalf("canceled record read: record=%T err=%v unread=%d", record, err, input.Len())
+	}
+}
 
 func TestManualRuleBatchPreservesPerRuleResults(t *testing.T) {
 	dir := t.TempDir()

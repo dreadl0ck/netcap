@@ -24,6 +24,18 @@ func ruleReplayCanceled(stop, shutdown <-chan struct{}) bool {
 	}
 }
 
+type ruleReplayReader struct {
+	input          io.Reader
+	stop, shutdown <-chan struct{}
+}
+
+func (r ruleReplayReader) Read(p []byte) (int, error) {
+	if ruleReplayCanceled(r.stop, r.shutdown) {
+		return 0, errAnalysisStopping
+	}
+	return r.input.Read(p[:min(len(p), 64<<10)])
+}
+
 func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit func(types.AuditRecord) error) (int, error) {
 	if ruleReplayCanceled(stop, shutdown) {
 		return 0, errAnalysisStopping
@@ -45,7 +57,7 @@ func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit 
 	if err != nil {
 		return 0, fmt.Errorf("open %s audit: %w", auditType, err)
 	}
-	reader, err := auditRecordReaderFromFile(f, compressed)
+	reader, err := auditRecordReaderFromInput(f, ruleReplayReader{f, stop, shutdown}, compressed)
 	if err != nil {
 		return 0, fmt.Errorf("open %s audit: %w", auditType, err)
 	}
@@ -68,6 +80,9 @@ func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit 
 		}
 		if err != nil {
 			return count, fmt.Errorf("read %s audit record %d: %w", auditType, count+1, err)
+		}
+		if ruleReplayCanceled(stop, shutdown) {
+			return count, errAnalysisStopping
 		}
 		count++
 		audit, ok := record.(types.AuditRecord)
