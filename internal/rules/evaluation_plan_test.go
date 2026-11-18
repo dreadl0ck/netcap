@@ -79,8 +79,13 @@ func BenchmarkSharedRuleEvaluation(b *testing.B) {
 }
 
 func TestAuditReplayUsesRecordTimeForDedupAndRateWindows(t *testing.T) {
+	t.Run("modern", func(t *testing.T) { testAuditReplayClock(t, time.Unix(1700000000, 0)) })
+	t.Run("before-epoch", func(t *testing.T) { testAuditReplayClock(t, time.Unix(-3600, 0)) })
+}
+
+func testAuditReplayClock(t *testing.T, base time.Time) {
+	t.Helper()
 	config := &Config{Rules: []*Rule{{Name: "fixture", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true}}}
-	base := time.Unix(1700000000, 0)
 	var prior []*types.Alert
 	for range 2 {
 		writer := new(MockAlertWriter)

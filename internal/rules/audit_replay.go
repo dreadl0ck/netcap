@@ -7,12 +7,13 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// AuditReplay evaluates records in file order using a nondecreasing record clock.
-// Missing timestamps do not advance the clock.
+// AuditReplay evaluates records in file order. Its clock starts at the first
+// nonzero timestamp and never moves backward after that.
 type AuditReplay struct {
 	mu        sync.Mutex
 	engine    *Engine
 	watermark int64
+	hasTime   bool
 }
 
 func NewAuditReplay(config *Config, writer AlertWriter) (*AuditReplay, error) {
@@ -29,7 +30,9 @@ func (r *AuditReplay) Evaluate(record types.AuditRecord) (int, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if record != nil {
-		r.watermark = max(r.watermark, record.Time())
+		if ts := record.Time(); ts != 0 && (!r.hasTime || ts > r.watermark) {
+			r.watermark, r.hasTime = ts, true
+		}
 	}
 	return r.engine.Evaluate(record)
 }
