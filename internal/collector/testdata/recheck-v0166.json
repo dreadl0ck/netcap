@@ -390,6 +390,7 @@
     "verification": "Capacity flush selects one oldest aggregate without allocating and sorting the full key set. Five focused race runs verified timestamp ordering, equal-time key ordering, conservation of all 20 matches across 18 capacity flushes, and local stale-probe qualification controls."
   },
   "chartBucketAggregation": {
+    "concurrency": "JSON chart scans have two admission slots. TestChartJSONBucketLimitAndRetry verifies HTTP 429 when both slots are held, the existing bucket cap after release, and a successful coarser retry. Focused WebUI and MCP chart race tests passed.",
     "mcpCancellation": "TestGetChartDataCancellationReachesBackend verifies that canceling an active chart tool call cancels the backend HTTP request and returns a tool error. Focused MCP chart race tests passed.",
     "signedExtrema": "TestChartJSONPreservesNegativeExtrema verifies that -1 is preserved as a minimum and that an all-negative series reports its actual maximum. Focused WebUI and MCP chart race tests passed.",
     "confinedInput": "TestChartJSONReadsPlainAuditAndRejectsBadPreferredSource verifies that JSON charts reject a symlinked preferred audit even when a valid plain audit exists. Focused WebUI and MCP chart race tests passed.",

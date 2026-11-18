@@ -80,6 +80,21 @@ func TestChartJSONBucketLimitAndRetry(t *testing.T) {
 	writeTimelineAuditFile(t, dir, "TCP", types.Type_NC_TCP, rows)
 	s := &Server{outDir: dir}
 	request := "/api/charts/data?format=json&type=TCP&field=SrcPort&interval="
+	func() {
+		for range 2 {
+			select {
+			case jsonChartSlots <- struct{}{}:
+				defer func() { <-jsonChartSlots }()
+			default:
+				t.Fatal("expected two available chart slots")
+			}
+		}
+		w := httptest.NewRecorder()
+		s.handleChartData(w, httptest.NewRequest(http.MethodGet, request+"1s", nil))
+		if w.Code != http.StatusTooManyRequests {
+			t.Fatalf("saturated chart: %d %s", w.Code, w.Body.String())
+		}
+	}()
 	w := httptest.NewRecorder()
 	s.handleChartData(w, httptest.NewRequest(http.MethodGet, request+"1ns", nil))
 	if w.Code != http.StatusUnprocessableEntity || !strings.Contains(w.Body.String(), "use a larger interval") {

@@ -338,7 +338,9 @@ func (s *Server) resolveChartScopeDirs(scope string, r *http.Request) ([]string,
 	}
 }
 
-// handleChartData generates and serves HTML charts using go-echarts
+var jsonChartSlots = make(chan struct{}, 2)
+
+// handleChartData serves rendered charts or JSON time series.
 func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -393,6 +395,13 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	// caller that wants the numbers (not the chart). Default interval is
 	// 1s when omitted, mirroring the HTML path's go-echarts default.
 	if r.URL.Query().Get("format") == "json" {
+		select {
+		case jsonChartSlots <- struct{}{}:
+			defer func() { <-jsonChartSlots }()
+		default:
+			http.Error(w, "chart analysis is busy", http.StatusTooManyRequests)
+			return
+		}
 		intervalForJSON := interval
 		if intervalForJSON == "" {
 			intervalForJSON = "1s"
