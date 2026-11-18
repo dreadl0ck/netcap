@@ -52,6 +52,37 @@ func TestCollectionPageRejectsIncompleteScans(t *testing.T) {
 	}
 }
 
+func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		rows []proto.Message
+	}{
+		{"records", func() []proto.Message {
+			rows := make([]proto.Message, maxCollectionPageRows+1)
+			for i := range rows {
+				rows[i] = &types.Alert{RuleName: "fixture"}
+			}
+			return rows
+		}()},
+		{"record bytes", []proto.Message{&types.Alert{Description: strings.Repeat("x", maxCollectionPageScanBytes)}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, tc.rows)
+			s := &Server{outDir: dir}
+			for path, handler := range map[string]http.HandlerFunc{
+				"/api/alerts": s.handleAlerts, "/api/alerts/grouped": s.handleGroupedAlerts,
+			} {
+				w := httptest.NewRecorder()
+				handler(w, httptest.NewRequest(http.MethodGet, path+"?mcpPage=true&ruleName=missing&pageLimit=1", nil))
+				if w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "totalCount") || strings.Contains(w.Body.String(), "generation") {
+					t.Fatalf("%s: %d %s", path, w.Code, w.Body.String())
+				}
+			}
+		})
+	}
+}
+
 func TestInventoryHandlersApplySearchAndPaging(t *testing.T) {
 	dir := t.TempDir()
 	s := &Server{outDir: dir}

@@ -20,8 +20,10 @@
 package webui
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -33,6 +35,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/artifactio"
+	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -176,10 +180,8 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 
 	// Read alerts from the alerts audit record file
 	alertsFile := filepath.Join(outDir, "Alert.ncap.gz")
-	alerts, err := s.readAlertsFromFile(alertsFile)
-	if err != nil {
-		log.Printf("[WebUI] Failed to read alerts: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]any{"error": "Failed to read alerts"})
+	alerts, ok := s.alertsForPage(w, r, alertsFile)
+	if !ok {
 		return
 	}
 
@@ -235,22 +237,68 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 
 // readAlertsFromFile reads alerts from the Alert.ncap.gz file
 func (s *Server) readAlertsFromFile(filePath string) ([]AlertResponse, error) {
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+	return s.readAlertAudit(nil, filePath)
+}
+
+var errAlertPageSourceLimit = errors.New("alert page source exceeds scan limits")
+
+func (s *Server) alertsForPage(w http.ResponseWriter, r *http.Request, filePath string) ([]AlertResponse, bool) {
+	var ctx context.Context
+	if r.URL.Query().Get("mcpPage") == "true" {
+		ctx = r.Context()
+	}
+	alerts, err := s.readAlertAudit(ctx, filePath)
+	if err == nil {
+		return alerts, true
+	}
+	if ctx != nil && ctx.Err() != nil {
+		return nil, false
+	}
+	if errors.Is(err, errAlertPageSourceLimit) {
+		RespondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": err.Error()})
+		return nil, false
+	}
+	log.Printf("[WebUI] Failed to read alerts: %v", err)
+	RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read alerts"})
+	return nil, false
+}
+
+func (s *Server) readAlertAudit(ctx context.Context, filePath string) ([]AlertResponse, error) {
+	var reader *AuditRecordReader
+	var err error
+	if ctx == nil {
+		reader, err = NewAuditRecordReader(filePath)
+	} else {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		file, info, openErr := artifactio.Open(filepath.Dir(filePath), filepath.Base(filePath))
+		if openErr != nil {
+			err = openErr
+		} else if info.Size() > maxCollectionPageScanBytes {
+			file.Close()
+			return nil, fmt.Errorf("%w: stored audit exceeds %d bytes", errAlertPageSourceLimit, maxCollectionPageScanBytes)
+		} else {
+			reader, err = auditRecordReaderFromInput(file, io.NewSectionReader(file, 0, info.Size()), true, func(in io.Reader) io.Reader {
+				return auditContextReader{ctx: ctx, input: in}
+			})
+		}
+	}
+	if errors.Is(err, os.ErrNotExist) {
 		return []AlertResponse{}, nil
 	}
-
-	// Open the audit record file
-	reader, err := NewAuditRecordReader(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open alerts file: %w", err)
 	}
 	defer reader.Close()
 
 	// Read header to initialize reader
-	_, err = reader.ReadHeader()
+	header, err := reader.ReadHeader()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read header: %w", err)
+	}
+	if ctx != nil && header.Type != types.Type_NC_Alert {
+		return nil, fmt.Errorf("unexpected alert audit type %s", header.Type)
 	}
 
 	// Load resolved alerts
@@ -262,10 +310,31 @@ func (s *Server) readAlertsFromFile(filePath string) ([]AlertResponse, error) {
 	}
 
 	alerts := make([]AlertResponse, 0)
+	remaining := maxCollectionPageScanBytes
 
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		var record any
+		if ctx == nil {
+			record, err = reader.NextRecord()
+		} else {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			frameLimit := remaining
+			if len(alerts) == maxCollectionPageRows {
+				frameLimit = 0
+			}
+			var raw []byte
+			raw, err = reader.delimitedReader.NextWithLimit(uint64(max(frameLimit, 1)))
+			if errors.Is(err, delimited.ErrRecordLimit) || (err == nil && (len(raw) > frameLimit || len(alerts) == maxCollectionPageRows)) {
+				return nil, fmt.Errorf("%w: %d records or %d record bytes", errAlertPageSourceLimit, maxCollectionPageRows, maxCollectionPageScanBytes)
+			}
+			if err == nil {
+				remaining -= len(raw)
+				record, err = reader.DecodeRecord(raw)
+			}
+		}
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -452,10 +521,8 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 
 	// Read alerts from the alerts audit record file
 	alertsFile := filepath.Join(outDir, "Alert.ncap.gz")
-	alerts, err := s.readAlertsFromFile(alertsFile)
-	if err != nil {
-		log.Printf("[WebUI] Failed to read alerts: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]any{"error": "Failed to read alerts"})
+	alerts, ok := s.alertsForPage(w, r, alertsFile)
+	if !ok {
 		return
 	}
 
