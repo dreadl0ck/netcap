@@ -313,6 +313,9 @@ func TestHTTPSharedScratchPressureQualifiesCaptureWithoutAnalyzers(t *testing.T)
 	wire.conversation("192.0.2.1", "198.51.100.1", 40000, 80, false,
 		bookMessage{text: "GET /fixture.bin HTTP/1.1\r\nHost: fixture.test\r\n\r\n"},
 		bookMessage{server: true, text: "HTTP/1.1 200 OK\r\nContent-Length: 64\r\n\r\n" + strings.Repeat("x", 64)})
+	wire.conversation("192.0.2.2", "198.51.100.1", 40001, 80, false,
+		bookMessage{text: "GET /healthy.bin HTTP/1.1\r\nHost: fixture.test\r\n\r\n"},
+		bookMessage{server: true, text: "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: 5\r\n\r\nclean"})
 	out := t.TempDir()
 	cfg := ultimateCaptureConfig(out, 1, 0)
 	cfg.CaptureEvidence = true
@@ -330,6 +333,14 @@ func TestHTTPSharedScratchPressureQualifiesCaptureWithoutAnalyzers(t *testing.T)
 	stage, _, err := evidence.ReadAuditStage(out, manifest.RunID, "TCP", manifest.AuditStagesGeneration)
 	if err != nil || stage.Coverage != "complete" || stage.Records == 0 {
 		t.Fatal(stage, err)
+	}
+	stage, _, err = evidence.ReadAuditStage(out, manifest.RunID, "File", manifest.AuditStagesGeneration)
+	if err != nil || stage.Coverage != "partial" || stage.Records != 1 {
+		t.Fatal(stage, err)
+	}
+	rows := bookRecords(t, out, "File", func() *types.File { return new(types.File) })
+	if len(rows) != 1 || !rows[0].IsComplete || rows[0].GetHashes().GetSHA256() != fmt.Sprintf("%x", sha256.Sum256([]byte("clean"))) {
+		t.Fatalf("unaffected extraction lost: %v", rows)
 	}
 }
 
