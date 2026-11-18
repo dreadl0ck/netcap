@@ -382,21 +382,25 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 					return errHTTPSourceCompatibility
 				}
 				if request.ContentLength != 0 || len(request.TransferEncoding) > 0 {
-					if scratch == nil {
-						if err := c.StateBudget.Reserve(scratchSize); err != nil {
-							return err
-						}
-						scratch = make([]byte, scratchSize)
-					}
 					var body io.Reader = request.Body
 					var bound *io.LimitedReader
 					mode := sourceRequestMode(decoderconfig.Instance, request, form)
-					limit := sourceRequestBodyLimit()
+					needed := int64(scratchSize)
 					if mode != requestSample {
-						bound = &io.LimitedReader{R: body, N: limit + 1}
-					}
-					if bound != nil {
+						bound = &io.LimitedReader{R: body, N: sourceRequestBodyLimit() + 1}
+						needed = min(needed, bound.N)
 						body = bound
+					}
+					if request.ContentLength > 0 {
+						needed = min(needed, request.ContentLength)
+					}
+					if int64(len(scratch)) < needed {
+						c.StateBudget.Release(int64(len(scratch)))
+						scratch = nil
+						if err := c.StateBudget.Reserve(needed); err != nil {
+							return err
+						}
+						scratch = make([]byte, int(needed))
 					}
 					_, err := scanSourceBody(body, scratch, nil)
 					if bound != nil && bound.N == 0 {

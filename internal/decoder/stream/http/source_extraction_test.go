@@ -174,13 +174,20 @@ func TestHTTPSourcePreflightStopsAtOpaqueBodyLimit(t *testing.T) {
 	for _, method := range []string{"PUT", "POST"} {
 		for _, size := range []int{128, 129} {
 			wire := fmt.Sprintf("%s /fixture HTTP/1.1\r\nHost: fixture.test\r\nContent-Length: %d\r\n\r\n%sPOST /encoded HTTP/1.1\r\nHost: fixture.test\r\nContent-Encoding: br\r\nContent-Length: 4\r\n\r\ndata", method, size, strings.Repeat("x", size))
-			c := &core.ConversationInfo{ClientSource: core.SliceSource{wireFragment(0, []byte(wire), 1)}}
+			budget, err := core.NewStateBudget(17<<10, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			c := &core.ConversationInfo{ClientSource: core.SliceSource{wireFragment(0, []byte(wire), 1)}, StateBudget: budget}
 			var want error
 			if size == 128 {
 				want = errHTTPSourceCompatibility
 			}
 			if err := preflightSourceHTTP(c); err != want {
 				t.Fatalf("%s body size %d: preflight returned %v, want %v", method, size, err, want)
+			}
+			if health := budget.Health(); health.Exceeded || health.RetainedBytes != 0 {
+				t.Fatalf("unexpected preflight state: %+v", health)
 			}
 		}
 	}

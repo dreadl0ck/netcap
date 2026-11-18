@@ -356,6 +356,7 @@
     "verification": "Pinned synthetic v169_midstream_psh_15k.pcap: strict replay at 2 MiB reassembly pages failed with a page-budget error; raising pages to 128 MiB reached the 64 MiB TCP stream-state limit. Both trials had 256 KiB retained payload and 1 MiB aggregate limits. No finite-cap audit equivalence or default change is claimed."
   },
   "boundedHTTPSourcePreflight": {
+    "smallBodyPreflightScratch": "TestHTTPSourcePreflightStopsAtOpaqueBodyLimit verifies exact-limit and oversized PUT and POST handling under a 17 KiB TCP state budget, with zero retained credits. Preflight sizes reusable scratch to the configured cap and known body length. The portable HTTP race suite passed.",
     "cappedSampleScratch": "TestCappedSourceRequestBodyStopsAtLimit verifies that a 128-byte body cap needs only 257 TCP state credits for sampling, reads at most 129 bytes to detect an overrun, and releases all credits. The portable HTTP race suite passed.",
     "unifiedSpooledURLFormParser": "All spooled URL-encoded bodies now use the streamed parser. The 61,459-byte long-field case and 171,859-byte padded case match byte-backed records under 256 KiB TCP state; the 53,257-byte dense fixture still exercises strict and local completion pressure. Focused HTTP and collector race tests passed.",
     "streamedFormPressureRelease": "TestStreamedFormPressureReleasesUnpublishedFields verifies that a 32 KiB completion cap stops a streamed form mid-field, publishes no form values, and releases all reservations before returning. The portable HTTP race suite passed.",
