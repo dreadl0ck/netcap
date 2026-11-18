@@ -140,6 +140,41 @@ async def check_behavior_records(call, directory, args):
                 path.write_bytes(data)
 
 
+def audit_frame_digests(wire):
+    offset = 0
+    while offset < len(wire):
+        length = 0
+        for shift in range(0, 35, 7):
+            if offset == len(wire):
+                raise ValueError("truncated fixture audit frame length")
+            octet = wire[offset]
+            offset += 1
+            length |= (octet & 127) << shift
+            if octet < 128:
+                break
+        else:
+            raise ValueError("oversized fixture audit frame length")
+        end = offset + length
+        if end > len(wire):
+            raise ValueError("truncated fixture audit frame")
+        yield hashlib.sha256(wire[offset:end]).hexdigest()
+        offset = end
+
+
+def verify_udp_occurrence_bytes(directory, refs):
+    path = directory / "UDP.ncap.gz"
+    if not path.is_file():
+        path = directory / "UDP.ncap"
+    stored = path.read_bytes()
+    digest = hashlib.sha256(stored).hexdigest()
+    frames = audit_frame_digests(gzip.decompress(stored) if path.suffix == ".gz" else stored)
+    next(frames)  # Audit header is not an occurrence.
+    for ordinal, (ref, frame_digest) in enumerate(zip(refs, frames, strict=True)):
+        if (ref["file"] != path.name or ref["fileSHA256"] != digest
+                or ref["ordinal"] != str(ordinal) or ref["recordSHA256"] != frame_digest):
+            raise ValueError(f"UDP occurrence {ordinal} does not match stored audit bytes")
+
+
 def ethernet_pcap_records(wire):
     # The tracked fixture and the carve both use little-endian classic PCAP.
     scale = {bytes.fromhex("d4c3b2a1"): 1000, bytes.fromhex("4d3cb2a1"): 1}.get(wire[:4])
@@ -426,6 +461,7 @@ rules:
         refs = (await call("list_bound_occurrences", {"source": source, "type": "UDP"}))["references"]
         if len(refs) != 18 or any(ref["binding"] != binding for ref in refs):
             raise ValueError("UDP occurrences lost capture binding or records")
+        verify_udp_occurrence_bytes(manifest_path.parent, refs)
         resolved = await call("resolve_audit_occurrence", {"source": source, "reference": refs[-1]})
         if resolved["reference"] != refs[-1] or not resolved["record"]:
             raise ValueError("resolved record lost its occurrence reference")
