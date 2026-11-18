@@ -16,6 +16,7 @@ import (
 const (
 	maxCollectionPageRows      = 65536
 	maxCollectionPageScanBytes = 16 << 20
+	maxCollectionMetadataBytes = 1 << 20
 )
 
 func respondCollectionPage(w http.ResponseWriter, r *http.Request, rows any, key string, metadata ...map[string]any) bool {
@@ -84,13 +85,30 @@ func respondCollectionPageFiltered(w http.ResponseWriter, r *http.Request, rows 
 		query.Del(field)
 	}
 	hash.Write([]byte(r.URL.Path + "\x00" + key + "\x00" + query.Encode() + "\x00"))
+	var extraFields map[string]json.RawMessage
+	remainingMetadata := maxCollectionMetadataBytes
 	for _, extra := range metadata {
 		raw, err := json.Marshal(extra)
 		if err != nil {
 			return fail(500, err)
 		}
+		if len(raw) > remainingMetadata {
+			return fail(http.StatusRequestEntityTooLarge, fmt.Errorf("collection metadata exceeds %d encoded bytes", maxCollectionMetadataBytes))
+		}
+		remainingMetadata -= len(raw)
 		hash.Write(raw)
 		hash.Write([]byte{0})
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &fields); err != nil {
+			return fail(500, err)
+		}
+		if extraFields == nil {
+			extraFields = fields
+		} else {
+			for name, field := range fields {
+				extraFields[name] = field
+			}
+		}
 	}
 	for _, item := range items {
 		hash.Write(item)
@@ -118,10 +136,8 @@ func respondCollectionPageFiltered(w http.ResponseWriter, r *http.Request, rows 
 	}
 	next := offset + len(page)
 	response := map[string]any{key: page, "totalCount": len(items), "limit": limit, "offset": offset, "returned": len(page), "next_offset": next, "has_more": next < len(items), "generation": generation}
-	for _, extra := range metadata {
-		for name, value := range extra {
-			response[name] = value
-		}
+	for name, field := range extraFields {
+		response[name] = field
 	}
 	RespondJSON(w, 200, response)
 	return true

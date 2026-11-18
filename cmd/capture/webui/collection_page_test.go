@@ -3,11 +3,39 @@ package webui
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 )
+
+func TestCollectionPageMetadataBudget(t *testing.T) {
+	// The two encoded objects together fill exactly one MiB.
+	metadata := []map[string]any{{"view": "hosts"}, {"label": ""}}
+	a, _ := json.Marshal(metadata[0])
+	b, _ := json.Marshal(metadata[1])
+	label := strings.Repeat("x", maxCollectionMetadataBytes-len(a)-len(b))
+	read := func(label string) *httptest.ResponseRecorder {
+		metadata[1]["label"] = label
+		w := httptest.NewRecorder()
+		respondCollectionPage(w, httptest.NewRequest(http.MethodGet, "/?mcpPage=true", nil), []map[string]any{{"name": "fixture"}}, "rows", metadata...)
+		return w
+	}
+	w := read(label)
+	var page struct {
+		View, Label, Generation string
+		Rows                    []map[string]string
+	}
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &page) != nil || page.View != "hosts" || page.Label != label || page.Generation == "" || len(page.Rows) != 1 {
+		t.Fatalf("exact metadata budget: status=%d, response bytes=%d", w.Code, w.Body.Len())
+	}
+	w = read(label + "x")
+	var failure map[string]string
+	if w.Code != http.StatusRequestEntityTooLarge || json.Unmarshal(w.Body.Bytes(), &failure) != nil || len(failure) != 1 || !strings.Contains(failure["error"], "metadata exceeds") {
+		t.Fatalf("over metadata budget: status=%d, response bytes=%d", w.Code, w.Body.Len())
+	}
+}
 
 func TestCollectionPagesAreBoundedStableAndSearchable(t *testing.T) {
 	rows := []map[string]any{}
