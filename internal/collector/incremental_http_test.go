@@ -301,6 +301,38 @@ func TestIncrementalHTTPMissingHandshakeIsExplicitlyCompletionOnly(t *testing.T)
 	}
 }
 
+func TestHTTPSharedScratchPressureQualifiesCaptureWithoutAnalyzers(t *testing.T) {
+	previous := filedecoder.GetGlobalConfig()
+	policy := filedecoder.GetDefaultConfig()
+	policy.FileExtraction.SizeLimits.MaxScratchBytes = 16
+	policy.FileExtraction.Advanced.EnableYaraScanning = false
+	policy.FileExtraction.Advanced.EnableMagika = false
+	filedecoder.SetGlobalConfig(policy)
+	t.Cleanup(func() { filedecoder.SetGlobalConfig(previous) })
+	wire, input := newBookCapture(t)
+	wire.conversation("192.0.2.1", "198.51.100.1", 40000, 80, false,
+		bookMessage{text: "GET /fixture.bin HTTP/1.1\r\nHost: fixture.test\r\n\r\n"},
+		bookMessage{server: true, text: "HTTP/1.1 200 OK\r\nContent-Length: 64\r\n\r\n" + strings.Repeat("x", 64)})
+	out := t.TempDir()
+	cfg := ultimateCaptureConfig(out, 1, 0)
+	cfg.CaptureEvidence = true
+	cfg.DecoderConfig.FileStorage = "files"
+	cfg.DecoderConfig.IncludeDecoders = "TCP,Connection,HTTP,File"
+	err := New(cfg).CollectPcap(input)
+	var partial interface{ ExitCode() int }
+	if !errors.Is(err, filedecoder.ErrArtifactLimit) || !errors.As(err, &partial) || partial.ExitCode() != 2 {
+		t.Fatalf("expected partial extraction coverage: %v", err)
+	}
+	manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
+	if manifest.Status != "partial" || manifest.Error != "" || manifest.CoverageError == "" {
+		t.Fatalf("unexpected capture status: %q, error=%q coverage=%q", manifest.Status, manifest.Error, manifest.CoverageError)
+	}
+	stage, _, err := evidence.ReadAuditStage(out, manifest.RunID, "TCP", manifest.AuditStagesGeneration)
+	if err != nil || stage.Coverage != "complete" || stage.Records == 0 {
+		t.Fatal(stage, err)
+	}
+}
+
 func TestIncrementalHTTPFileHashesAndExactStreamLoss(t *testing.T) {
 	previous := filedecoder.GetGlobalConfig()
 	filedecoder.SetGlobalConfig(filedecoder.GetDefaultConfig())

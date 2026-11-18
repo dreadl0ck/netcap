@@ -88,6 +88,7 @@ type analysisRuntime struct {
 	yara             yaraBackend
 	magika           *magika.Classifier
 	persistenceError error
+	sharedBudgetLoss bool
 }
 
 type yaraBackend interface {
@@ -431,6 +432,7 @@ func RecordExtractionIssue(err error) {
 	if m := currentAnalysis(); m != nil {
 		m.mu.Lock()
 		m.report.ExtractionIssues = appendIssue(m.report.ExtractionIssues, err.Error())
+		m.sharedBudgetLoss = m.sharedBudgetLoss || errors.Is(err, errSharedArtifactBudget)
 		m.mu.Unlock()
 	}
 }
@@ -458,6 +460,14 @@ func CancelAnalysis() {
 		m.cancel()
 	}
 }
+
+type artifactBudgetCoverageError struct{}
+
+func (artifactBudgetCoverageError) Error() string {
+	return "artifact processing incomplete; inspect " + AnalysisReportFile
+}
+func (artifactBudgetCoverageError) Unwrap() error { return errSharedArtifactBudget }
+func (artifactBudgetCoverageError) ExitCode() int { return 2 }
 
 // FinishAnalysis drains accepted jobs and durably reports incomplete coverage.
 func FinishAnalysis() (analysisErr, persistenceErr error) {
@@ -493,7 +503,9 @@ func FinishAnalysis() (analysisErr, persistenceErr error) {
 			}
 		}
 	}
-	if m.report.State == "partial" && (m.yara != nil || m.magika != nil) {
+	if m.sharedBudgetLoss {
+		analysisErr = artifactBudgetCoverageError{}
+	} else if m.report.State == "partial" && (m.yara != nil || m.magika != nil) {
 		analysisErr = fmt.Errorf("artifact processing incomplete; inspect %s", AnalysisReportFile)
 	}
 	persistenceErr = errors.Join(m.persistenceError, m.persistLocked())

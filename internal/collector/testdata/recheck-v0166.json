@@ -336,6 +336,7 @@
     "verification": "TestHTTPSourceBodylessExchangeSkipsScratch verifies a source-decoded GET/204 produces the same HTTP audit as byte-backed decoding, emits no File record, and never creates the artifact scratch directory. Focused HTTP source and gzip tests passed under the race detector."
   },
   "artifactIssueRetention": {
+    "sharedBudgetCoverage": "TestHTTPSharedScratchPressureQualifiesCaptureWithoutAnalyzers verifies that a 16-byte shared scratch cap on a 64-byte HTTP response returns partial exit 2 and preserves a complete TCP stage with analyzers disabled. Focused collector and file race tests passed.",
     "verification": "TestRepeatedArtifactWriteFailuresKeepFirstCauseAndCount verifies that 1001 persistence failures retain the first cause and exact count without crowding a later scratch-budget issue out of the report. The portable file decoder race suite passed."
   },
   "httpDeflateSourceParity": {

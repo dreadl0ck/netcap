@@ -31,7 +31,7 @@ func reserveArtifactScratch(n int64) error {
 	artifactScratch.Lock()
 	defer artifactScratch.Unlock()
 	if n > limit-artifactScratch.used {
-		return fmt.Errorf("%w: scratch storage", ErrArtifactLimit)
+		return fmt.Errorf("%w: scratch storage", errSharedArtifactBudget)
 	}
 	artifactScratch.used += n
 	return nil

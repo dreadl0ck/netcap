@@ -9,6 +9,7 @@ import (
 )
 
 var ErrArtifactLimit = errors.New("artifact byte budget exceeded")
+var errSharedArtifactBudget = fmt.Errorf("shared extraction capacity: %w", ErrArtifactLimit)
 var extractionBudget struct {
 	sync.Mutex
 	used   int64
@@ -32,7 +33,7 @@ func reserveBuffer(n int64) error {
 		return nil
 	}
 	if n > extractionBudget.limit-extractionBudget.used {
-		return ErrArtifactLimit
+		return errSharedArtifactBudget
 	}
 	extractionBudget.used += n
 	return nil
