@@ -187,7 +187,7 @@ func serveConnectionSnapshot(w http.ResponseWriter, r *http.Request, outDir stri
 		status = http.StatusTooManyRequests
 	case errors.Is(err, errConnectionAuditChanged):
 		status = http.StatusConflict
-	case errors.Is(err, errConnectionScanLimit):
+	case errors.Is(err, errConnectionScanLimit), errors.Is(err, errConnectionBackingLimit):
 		status = http.StatusRequestEntityTooLarge
 	}
 	if status == http.StatusInternalServerError {
@@ -254,19 +254,20 @@ func filterConnectionsByIPVersion(connections []ConnectionSummary, ipVersionFilt
 // readConnections reads and aggregates Connection data from the output directory
 func readConnections(outDir string) ([]ConnectionSummary, error) {
 	filePath := filepath.Join(outDir, "Connection.ncap.gz")
-	return summarizeConnections(func(visit func(*types.Connection)) error {
-		return visitAuditRecords(filePath, "Connection", visit)
-	})
+	return summarizeConnections(func(visit func(*types.Connection) error) error {
+		return visitAuditRecordsChecked(filePath, "Connection", visit)
+	}, 0)
 }
 
-func summarizeConnections(scan func(func(*types.Connection)) error) ([]ConnectionSummary, error) {
+func summarizeConnections(scan func(func(*types.Connection) error) error, backingBudget uint64) ([]ConnectionSummary, error) {
 	connections := make([]ConnectionSummary, 0)
-	err := scan(func(conn *types.Connection) {
+	remaining := backingBudget
+	err := scan(func(conn *types.Connection) error {
 		var resolvedAt string
 		if conn.DNSResolutionState != "" {
 			resolvedAt = strconv.FormatInt(conn.DNSResolvedAt, 10)
 		}
-		connections = append(connections, ConnectionSummary{
+		row := ConnectionSummary{
 			DNSResolvedName: conn.DNSResolvedName, DNSResolvedAtNs: resolvedAt, DNSResolutionState: conn.DNSResolutionState,
 			TimestampFirst:       conn.TimestampFirst,
 			TimestampLast:        conn.TimestampLast,
@@ -329,7 +330,16 @@ func summarizeConnections(scan func(func(*types.Connection)) error) ([]Connectio
 			NumPackets64:            conn.NumPackets64,
 			LegacyCountersSaturated: conn.LegacyCountersSaturated,
 			ObservationBoundary:     conn.ObservationBoundary,
-		})
+		}
+		if backingBudget > 0 {
+			charge := row.retainedDataBytes()
+			if charge > remaining {
+				return errConnectionBackingLimit
+			}
+			remaining -= charge
+		}
+		connections = append(connections, row)
+		return nil
 	})
 	if err != nil {
 		return nil, err

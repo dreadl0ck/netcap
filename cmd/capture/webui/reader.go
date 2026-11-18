@@ -169,6 +169,13 @@ func (r *AuditRecordReader) NextAs[T proto.Message]() (T, error) {
 }
 
 func visitAuditRecords[T proto.Message](path, label string, visit func(T)) error {
+	return visitAuditRecordsChecked(path, label, func(record T) error {
+		visit(record)
+		return nil
+	})
+}
+
+func visitAuditRecordsChecked[T proto.Message](path, label string, visit func(T) error) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		log.Printf("[WebUI] %s file not found: %s", label, path)
 		return nil
@@ -185,7 +192,7 @@ func visitAuditRecords[T proto.Message](path, label string, visit func(T)) error
 	return visitAuditReader(reader, nil, label, visit)
 }
 
-func visitAuditReader[T proto.Message](reader *AuditRecordReader, budget *inventoryAuditBudget, label string, visit func(T)) error {
+func visitAuditReader[T proto.Message](reader *AuditRecordReader, budget *inventoryAuditBudget, label string, visit func(T) error) error {
 	for {
 		raw, err := budget.nextRaw(reader)
 		if err != nil {
@@ -201,7 +208,9 @@ func visitAuditReader[T proto.Message](reader *AuditRecordReader, budget *invent
 			continue
 		}
 		if record, ok := msg.(T); ok {
-			visit(record)
+			if err := visit(record); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

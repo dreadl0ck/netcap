@@ -131,6 +131,36 @@ func TestConnectionSnapshotCacheChargesRetainedDNSNames(t *testing.T) {
 	}
 }
 
+func TestConnectionSnapshotRefusesExpandedBackingData(t *testing.T) {
+	dir := t.TempDir()
+	record := &types.Connection{Applications: make([]string, 200_000)}
+	rows := make([]proto.Message, 64)
+	for i := range rows {
+		rows[i] = record
+	}
+	if size := proto.Size(record); size == 0 || size > connectionFrameBytes || size*len(rows) > connectionScanBytes {
+		t.Fatalf("fixture must fit the wire scan limits: %d bytes per record", size)
+	}
+	writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, rows)
+	s := newTimelineTestServer(dir)
+	request := func() *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		s.handleConnections(w, httptest.NewRequest(http.MethodGet, "/?limit=1&host=not-present", nil))
+		return w
+	}
+	w := request()
+	var failure map[string]string
+	if w.Code != http.StatusRequestEntityTooLarge || json.Unmarshal(w.Body.Bytes(), &failure) != nil || len(failure) != 1 || failure["error"] != errConnectionBackingLimit.Error() {
+		t.Fatalf("expected only the backing-limit error: %d %s", w.Code, w.Body)
+	}
+	writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, []proto.Message{&types.Connection{SrcIP: "not-present"}})
+	w = request()
+	var page ConnectionsResponse
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &page) != nil || page.TotalCount != 1 || len(page.Connections) != 1 {
+		t.Fatalf("replacement audit did not recover: %d %s", w.Code, w.Body)
+	}
+}
+
 func TestConnectionSnapshotBuildLimitKeepsCacheHitsAvailable(t *testing.T) {
 	warm, cold := t.TempDir(), t.TempDir()
 	initial, err := connectionSnapshotFor(warm)
