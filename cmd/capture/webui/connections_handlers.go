@@ -141,6 +141,11 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	release := admitConnectionResponse(w, r)
+	if release == nil {
+		return
+	}
+	defer release()
 	snapshot := serveConnectionSnapshot(w, r, outDir)
 	if snapshot == nil {
 		return
@@ -150,6 +155,22 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// Allow all four dashboard charts to render concurrently.
+var connectionResponseSlots = make(chan struct{}, 4)
+
+func admitConnectionResponse(w http.ResponseWriter, r *http.Request) func() {
+	if r.Context().Err() != nil {
+		return nil
+	}
+	select {
+	case connectionResponseSlots <- struct{}{}:
+		return func() { <-connectionResponseSlots }
+	default:
+		RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "connection inventory responses are busy"})
+		return nil
+	}
 }
 
 func serveConnectionSnapshot(w http.ResponseWriter, r *http.Request, outDir string) *connectionSnapshot {

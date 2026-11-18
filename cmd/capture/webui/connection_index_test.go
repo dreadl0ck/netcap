@@ -156,6 +156,43 @@ func TestConnectionSnapshotBuildLimitKeepsCacheHitsAvailable(t *testing.T) {
 	}
 }
 
+func TestConnectionResponsesShareCapacityThroughWrite(t *testing.T) {
+	s := newTimelineTestServer(t.TempDir())
+	request := func() *http.Request { return httptest.NewRequest(http.MethodGet, "/?limit=1", nil) }
+	charts := []http.HandlerFunc{s.handleConnectionsTopByTraffic, s.handleConnectionsProtocols, s.handleConnectionsApplications, s.handleConnectionsDuration}
+	release := make(chan struct{})
+	var workers sync.WaitGroup
+	finish := sync.OnceFunc(func() { close(release); workers.Wait() })
+	t.Cleanup(finish)
+	var responses []*httptest.ResponseRecorder
+	for _, handle := range charts {
+		w := heldAlertPageResponse{ResponseRecorder: httptest.NewRecorder(), writing: make(chan struct{}, 1), release: release}
+		responses = append(responses, w.ResponseRecorder)
+		workers.Go(func() { handle(w, request()) })
+		select {
+		case <-w.writing:
+		case <-time.After(5 * time.Second):
+			t.Fatal("chart did not reach its response write")
+		}
+	}
+	w := httptest.NewRecorder()
+	s.handleConnections(w, request())
+	if w.Code != http.StatusTooManyRequests || !strings.Contains(w.Body.String(), "responses are busy") {
+		t.Fatalf("inventory with four chart writes in flight: %d %s", w.Code, w.Body)
+	}
+	finish()
+	for i, response := range responses {
+		if response.Code != http.StatusOK || response.Header().Get("Content-Type") != "text/html" {
+			t.Fatalf("chart %d: %d %s", i, response.Code, response.Header().Get("Content-Type"))
+		}
+	}
+	w = httptest.NewRecorder()
+	s.handleConnections(w, request())
+	if w.Code != http.StatusOK {
+		t.Fatalf("inventory retry: %d %s", w.Code, w.Body)
+	}
+}
+
 func TestConnectionSnapshotWaitCanCancelWithoutRetiringBuild(t *testing.T) {
 	dir := t.TempDir()
 	entry := &connectionCacheEntry{ready: make(chan struct{})}

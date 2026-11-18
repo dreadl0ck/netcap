@@ -53,6 +53,11 @@ func (s *Server) handleConnectionsTopByTraffic(w http.ResponseWriter, r *http.Re
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
+	release := admitConnectionResponse(w, r)
+	if release == nil {
+		return
+	}
+	defer release()
 	snapshot := serveConnectionSnapshot(w, r, outDir)
 	if snapshot == nil {
 		return
@@ -95,6 +100,11 @@ func (s *Server) handleConnectionsProtocols(w http.ResponseWriter, r *http.Reque
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr != "false"
 
+	release := admitConnectionResponse(w, r)
+	if release == nil {
+		return
+	}
+	defer release()
 	snapshot := serveConnectionSnapshot(w, r, outDir)
 	if snapshot == nil {
 		return
@@ -137,6 +147,11 @@ func (s *Server) handleConnectionsApplications(w http.ResponseWriter, r *http.Re
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
+	release := admitConnectionResponse(w, r)
+	if release == nil {
+		return
+	}
+	defer release()
 	snapshot := serveConnectionSnapshot(w, r, outDir)
 	if snapshot == nil {
 		return
@@ -179,6 +194,11 @@ func (s *Server) handleConnectionsDuration(w http.ResponseWriter, r *http.Reques
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
+	release := admitConnectionResponse(w, r)
+	if release == nil {
+		return
+	}
+	defer release()
 	snapshot := serveConnectionSnapshot(w, r, outDir)
 	if snapshot == nil {
 		return
