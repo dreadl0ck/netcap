@@ -17,6 +17,17 @@ func (failingFragments) Walk(func(DataFragment) bool) error { return errFragment
 
 var errFragmentFixture = errors.New("fixture source unavailable")
 
+func BenchmarkReadSourcePrefixSingleFragment(b *testing.B) {
+	source := SliceSource{&StreamData{RawData: make([]byte, 96)}}
+	b.ReportAllocs()
+	for b.Loop() {
+		prefix, err := ReadSourcePrefix(source, 16<<10)
+		if err != nil || len(prefix) != 96 {
+			b.Fatalf("prefix length %d: %v", len(prefix), err)
+		}
+	}
+}
+
 func TestRestartableFragmentIterationAndErrors(t *testing.T) {
 	data := DataFragments{&StreamData{RawData: []byte("first")}, &StreamData{RawData: []byte("second")}}
 	c := &ConversationInfo{Source: SliceSource(data)}
