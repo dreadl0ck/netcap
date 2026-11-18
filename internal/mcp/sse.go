@@ -68,9 +68,7 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
-		return nil, nil, "", fmt.Errorf("GET %s: %s: %s",
-			req.URL.Path, resp.Status, truncate(string(body), 500))
+		return nil, nil, "", backendDiagnostic(req, resp)
 	}
 
 	// Bound the total bytes we'll buffer so a runaway server can't OOM us.
@@ -88,13 +86,16 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 		curEvent string
 		curData  strings.Builder
 	)
-	flush := func() {
+	flush := func() error {
 		if curEvent == "" && curData.Len() == 0 {
-			return
+			return nil
 		}
 		payload := json.RawMessage(strings.TrimSpace(curData.String()))
 		switch curEvent {
 		case "record":
+			if len(payload) == 0 || payload[0] != '{' || !json.Valid(payload) {
+				return fmt.Errorf("invalid SSE record payload")
+			}
 			records = append(records, payload)
 		case "complete":
 			completeJSON = payload
@@ -105,11 +106,14 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 		}
 		curEvent = ""
 		curData.Reset()
+		return nil
 	}
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line == "" {
-			flush()
+			if err := flush(); err != nil {
+				return nil, nil, "", err
+			}
 			if terminalEvent != "" {
 				if !json.Valid(completeJSON) || !strings.HasPrefix(string(completeJSON), "{") {
 					return nil, nil, "", fmt.Errorf("invalid SSE terminal payload")

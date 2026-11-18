@@ -141,8 +141,23 @@ func TestStreamAuditRecordsHTTPError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "404") {
-		t.Errorf("error doesn't mention status: %v", err)
+	var backend *BackendError
+	if !errors.As(err, &backend) || backend.StatusCode != http.StatusNotFound {
+		t.Errorf("error doesn't preserve status: %v", err)
+	}
+}
+
+func TestStreamAuditRecordsRejectsNonObjectRecord(t *testing.T) {
+	for _, payload := range []string{`null`, `[]`, `{"incomplete":`} {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/event-stream")
+			fmt.Fprintf(w, "event: record\ndata: {}\n\nevent: record\ndata: %s\n\nevent: complete\ndata: {}\n\n", payload)
+		}))
+		records, complete, terminal, err := NewNetcapClient(ts.URL).StreamAuditRecords("DNS", nil, 1024)
+		ts.Close()
+		if err == nil || records != nil || complete != nil || terminal != "" {
+			t.Fatalf("payload %q: returned records=%v completion=%s terminal=%q error=%v", payload, records, complete, terminal, err)
+		}
 	}
 }
 

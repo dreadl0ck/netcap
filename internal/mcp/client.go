@@ -251,15 +251,19 @@ func (c *NetcapClient) GetRawContext(ctx context.Context, path string, query url
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		const diagnosticLimit = 500
-		body, err := readAllLimited(resp.Body, diagnosticLimit+1)
-		return nil, "", &BackendError{Method: req.Method, Path: req.URL.Path, StatusCode: resp.StatusCode, Body: body, diagnosticLimit: diagnosticLimit, readErr: err}
+		return nil, "", backendDiagnostic(req, resp)
 	}
 	body, err := readBackendResponse(resp)
 	if err != nil {
 		return nil, "", fmt.Errorf("reading response: %w", err)
 	}
 	return body, resp.Header.Get("Content-Type"), nil
+}
+
+func backendDiagnostic(req *http.Request, resp *http.Response) *BackendError {
+	const limit = 500
+	body, err := readAllLimited(resp.Body, limit+1)
+	return &BackendError{Method: req.Method, Path: req.URL.Path, StatusCode: resp.StatusCode, Body: body, diagnosticLimit: limit, readErr: err}
 }
 
 func (c *NetcapClient) do(req *http.Request) (json.RawMessage, error) {
