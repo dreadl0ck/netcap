@@ -186,6 +186,37 @@ func TestHTTPSourcePreflightStopsAtOpaqueBodyLimit(t *testing.T) {
 	}
 }
 
+func TestHTTPSourceGzipPreflightStopsAtSpoolLimit(t *testing.T) {
+	oldDecoder, oldFile := decoderconfig.Instance, file.GetGlobalConfig()
+	t.Cleanup(func() {
+		decoderconfig.Instance = oldDecoder
+		file.SetGlobalConfig(oldFile)
+	})
+	decoderconfig.Instance = &decoderconfig.Config{}
+	var body bytes.Buffer
+	w := gzip.NewWriter(&body)
+	if _, err := io.WriteString(w, "fixture body"); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	wire := fmt.Sprintf("POST /fixture HTTP/1.1\r\nHost: fixture.test\r\nContent-Encoding: gzip\r\nContent-Length: %d\r\n\r\n%sPOST /encoded HTTP/1.1\r\nHost: fixture.test\r\nContent-Encoding: br\r\nContent-Length: 4\r\n\r\ndata", body.Len(), body.Bytes())
+	for _, limit := range []int{body.Len(), body.Len() - 1} {
+		cfg := file.GetDefaultConfig()
+		cfg.FileExtraction.SizeLimits.MaxFileSize = int64(limit)
+		file.SetGlobalConfig(cfg)
+		c := &core.ConversationInfo{ClientSource: core.SliceSource{wireFragment(0, []byte(wire), 1)}}
+		var want error
+		if limit == body.Len() {
+			want = errHTTPSourceCompatibility
+		}
+		if err := preflightSourceHTTP(c); err != want {
+			t.Fatalf("gzip body size %d, cap %d: preflight returned %v, want %v", body.Len(), limit, err, want)
+		}
+	}
+}
+
 func TestHTTPSourceOversizedPostPreservesOnlyAllowedPrefix(t *testing.T) {
 	const limit = 128
 	for _, tc := range []struct{ name, media, body string }{
