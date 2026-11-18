@@ -644,7 +644,7 @@ func TestBackedGzipResponseClassificationExpansionLimit(t *testing.T) {
 }
 
 func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
-	for _, kind := range []string{"identity", "gzip", "gzip-truncated", "deflate", "raw-deflate", "br", "truncated", "chunked-upload", "multipart-upload", "json-upload", "urlencoded-upload"} {
+	for _, kind := range []string{"identity", "gzip", "gzip-truncated", "deflate", "raw-deflate", "br", "gzip-deflate-stack", "truncated", "chunked-upload", "multipart-upload", "json-upload", "urlencoded-upload"} {
 		t.Run(kind, func(t *testing.T) {
 			body := []byte(strings.Repeat("artifact fixture\n", 5000))
 			wire := body
@@ -686,6 +686,26 @@ func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
 				}
 				wire, encoding = output.Bytes(), "Content-Encoding: "+coding+"\r\n"
 			}
+			if kind == "gzip-deflate-stack" {
+				var inner, outer bytes.Buffer
+				for _, layer := range []struct {
+					output     *bytes.Buffer
+					makeWriter func(io.Writer) io.WriteCloser
+				}{
+					{&inner, func(w io.Writer) io.WriteCloser { return gzip.NewWriter(w) }},
+					{&outer, func(w io.Writer) io.WriteCloser { return zlib.NewWriter(w) }},
+				} {
+					writer := layer.makeWriter(layer.output)
+					if _, err := writer.Write(wire); err != nil {
+						t.Fatal(err)
+					}
+					if err := writer.Close(); err != nil {
+						t.Fatal(err)
+					}
+					wire = layer.output.Bytes()
+				}
+				encoding = "Content-Encoding: gzip\r\nContent-Encoding: DeFlAtE\r\n"
+			}
 			length := len(wire)
 			if kind == "truncated" {
 				length += 100
@@ -726,6 +746,10 @@ func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotFiles, wantFiles) {
 				t.Fatalf("file observations changed:\ngot %v\nwant %v", gotFiles, wantFiles)
+			}
+			if kind == "gzip-deflate-stack" && (len(gotHTTP) != 1 || gotHTTP[0].ResContentEncoding != "gzip, DeFlAtE" ||
+				gotHTTP[0].ResContentTypeDetected != "text/plain; charset=utf-8" || len(gotFiles) != 1 || gotFiles[0].Hashes.SHA256 != file.ComputeHashes(body).SHA256) {
+				t.Fatalf("stacked encoding order, decoded type, or artifact digest lost: %v / %v", gotHTTP, gotFiles)
 			}
 			if (kind == "deflate" || kind == "raw-deflate" || kind == "br") && (len(gotFiles) != 1 || gotFiles[0].Hashes.SHA256 != file.ComputeHashes(body).SHA256) {
 				t.Fatalf("artifact did not match decoded body: %v", gotFiles)
