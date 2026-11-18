@@ -14,6 +14,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -25,9 +26,8 @@ type SSERecord struct {
 
 // StreamAuditRecords consumes /api/audit/<auditType>/stream as Server-Sent
 // Events and returns the slice of "record" events plus the terminal
-// "complete" payload. Stops at limit + 1 record events (server-side limit
-// is also enforced) and reads up to maxBytes from the wire to bound
-// memory in case the server misbehaves.
+// "complete" payload. It rejects records beyond the requested limit and
+// reads up to maxBytes from the wire.
 //
 // Server SSE event semantics:
 //
@@ -76,6 +76,8 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 		maxBytes = 8 << 20 // 8 MiB
 	}
 	limited := io.LimitReader(resp.Body, int64(maxBytes))
+	recordLimit, _ := strconv.Atoi(q.Get("limit"))
+	countOnly := q.Get("countOnly") == "true"
 
 	// SSE events are separated by blank lines; each event is one or more
 	// header lines ("event: name", "data: payload") followed by \n\n.
@@ -93,6 +95,9 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 		payload := json.RawMessage(strings.TrimSpace(curData.String()))
 		switch curEvent {
 		case "record":
+			if countOnly || recordLimit > 0 && len(records) >= recordLimit {
+				return fmt.Errorf("SSE record count exceeds requested page bounds")
+			}
 			if len(payload) == 0 || payload[0] != '{' || !json.Valid(payload) {
 				return fmt.Errorf("invalid SSE record payload")
 			}

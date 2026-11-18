@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -144,6 +145,25 @@ func TestStreamAuditRecordsHTTPError(t *testing.T) {
 	var backend *BackendError
 	if !errors.As(err, &backend) || backend.StatusCode != http.StatusNotFound {
 		t.Errorf("error doesn't preserve status: %v", err)
+	}
+}
+
+func TestStreamAuditRecordsEnforcesPageBounds(t *testing.T) {
+	const page = "event: record\ndata: {}\n\nevent: record\ndata: {}\n\nevent: complete\ndata: {}\n\n"
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, page)
+	}))
+	defer ts.Close()
+	client := NewNetcapClient(ts.URL)
+	for _, query := range []url.Values{{"limit": {"1"}}, {"limit": {"2"}, "countOnly": {"true"}}} {
+		records, complete, terminal, err := client.StreamAuditRecords("DNS", query, 1024)
+		if err == nil || records != nil || complete != nil || terminal != "" {
+			t.Fatalf("query %v accepted out-of-bounds page: records=%v terminal=%q err=%v", query, records, terminal, err)
+		}
+	}
+	if records, _, terminal, err := client.StreamAuditRecords("DNS", url.Values{"limit": {"2"}}, 1024); err != nil || terminal != "complete" || len(records) != 2 {
+		t.Fatalf("exact-limit page: records=%v terminal=%q err=%v", records, terminal, err)
 	}
 }
 
