@@ -141,6 +141,38 @@ func TestServiceInventoryRejectsOversizedAudit(t *testing.T) {
 	}
 }
 
+func TestSoftwareInventoryRejectsOversizedAudit(t *testing.T) {
+	dir := t.TempDir()
+	s := newTimelineTestServer(dir)
+	request := func() *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		s.handleSoftware(w, httptest.NewRequest(http.MethodGet, "/api/software?mcpPage=true&pageLimit=1", nil))
+		return w
+	}
+	writeTimelineAuditFile(t, dir, "Software", types.Type_NC_Software, []proto.Message{
+		&types.Software{Product: "fixture-software"},
+		&types.Software{Product: strings.Repeat("x", maxCollectionPageScanBytes)},
+	})
+	w := request()
+	if w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "generation") || strings.Contains(w.Body.String(), "fixture-software") {
+		t.Fatalf("expected refusal without a partial software page: %d %s", w.Code, w.Body)
+	}
+	writeTimelineAuditFile(t, dir, "Software", types.Type_NC_Software, []proto.Message{
+		&types.Software{Product: "z-product"}, &types.Software{Product: "a-product"},
+	})
+	for range 8 {
+		w = request()
+		if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"product":"a-product"`) || strings.Contains(w.Body.String(), "z-product") {
+			t.Fatalf("retry did not return the first tied product: %d %s", w.Code, w.Body)
+		}
+	}
+}
+
+func TestMCPSoftwareInventoryLimitsConcurrentResponses(t *testing.T) {
+	s := newTimelineTestServer(t.TempDir())
+	testInventoryResponseCapacity(t, "/api/software", s.handleSoftware)
+}
+
 func TestDomainInventorySharesAuditBudget(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFile(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{&types.DNS{}})

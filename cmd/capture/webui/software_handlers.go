@@ -21,6 +21,7 @@ package webui
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -77,6 +78,8 @@ type SoftwareResponse struct {
 	TotalCount int               `json:"totalCount"`
 }
 
+var softwareInventorySlots = make(chan struct{}, 2)
+
 // handleSoftware returns a list of all software detected
 func (s *Server) handleSoftware(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -95,8 +98,29 @@ func (s *Server) handleSoftware(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	software, err := readSoftware(outDir)
+	var budget *inventoryAuditBudget
+	if r.URL.Query().Get("mcpPage") == "true" {
+		if r.Context().Err() != nil {
+			return
+		}
+		select {
+		case softwareInventorySlots <- struct{}{}:
+			defer func() { <-softwareInventorySlots }()
+		default:
+			RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "software inventory is busy"})
+			return
+		}
+		budget = &inventoryAuditBudget{ctx: r.Context(), stored: maxCollectionPageScanBytes, bodies: maxCollectionPageScanBytes, rows: maxCollectionPageRows}
+	}
+	software, err := readSoftwareInventory(outDir, budget)
 	if err != nil {
+		if r.Context().Err() != nil {
+			return
+		}
+		if errors.Is(err, errInventoryAuditLimit) {
+			RespondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": err.Error()})
+			return
+		}
 		log.Printf("[WebUI] Failed to read software: %v", err)
 		http.Error(w, "Failed to read software", http.StatusInternalServerError)
 		return
@@ -116,33 +140,25 @@ func (s *Server) handleSoftware(w http.ResponseWriter, r *http.Request) {
 
 // readSoftware reads and aggregates Software data from the output directory
 func readSoftware(outDir string) ([]SoftwareSummary, error) {
-	filePath := filepath.Join(outDir, "Software.ncap.gz")
+	return readSoftwareInventory(outDir, nil)
+}
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] Software file not found: %s", filePath)
+func readSoftwareInventory(outDir string, budget *inventoryAuditBudget) ([]SoftwareSummary, error) {
+	reader, err := budget.open(filepath.Join(outDir, "Software.ncap.gz"), types.Type_NC_Software)
+	if errors.Is(err, os.ErrNotExist) {
 		return []SoftwareSummary{}, nil
 	}
-
-	// Read Software records
-	reader, err := NewAuditRecordReader(filePath)
 	if err != nil {
 		return nil, err
 	}
 	defer reader.Close()
-
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return nil, err
-	}
 
 	// Software aggregation map - keyed by product+vendor+version
 	softwareMap := make(map[[3]string]*softwareAggregator)
 
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		record, err := budget.next(reader)
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -326,7 +342,17 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 
 	// Sort by count descending
 	sort.Slice(software, func(i, j int) bool {
-		return software[i].Count > software[j].Count
+		a, b := software[i], software[j]
+		if a.Count != b.Count {
+			return a.Count > b.Count
+		}
+		if a.Product != b.Product {
+			return a.Product < b.Product
+		}
+		if a.Vendor != b.Vendor {
+			return a.Vendor < b.Vendor
+		}
+		return a.Version < b.Version
 	})
 
 	return software, nil
