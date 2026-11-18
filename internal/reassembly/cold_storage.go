@@ -289,6 +289,7 @@ func (a *Assembler) closeOrderedWithCold(conns []connectionRef, progress func())
 	p.createMu.Lock()
 	defer p.createMu.Unlock()
 	closed, index, last := 0, 0, ""
+	var hotOrder string
 	for {
 		var orderKey, id string
 		var snap coldConnection
@@ -315,8 +316,12 @@ func (a *Assembler) closeOrderedWithCold(conns []connectionRef, progress func())
 		if found {
 			encoded := strings.TrimSuffix(strings.TrimPrefix(orderKey, p.cold.prefix+"order/"), "/")
 			for index < len(conns) {
-				hot := conns[index].conn
-				if hot != nil && hot.key != nil && hex.EncodeToString([]byte(hot.key.String())) > encoded {
+				if hotOrder == "" {
+					if hot := conns[index].conn; hot != nil && hot.key != nil {
+						hotOrder = hex.EncodeToString([]byte(hot.key.String()))
+					}
+				}
+				if hotOrder > encoded {
 					break
 				}
 				if a.closeConn(conns[index]) {
@@ -326,6 +331,7 @@ func (a *Assembler) closeOrderedWithCold(conns []connectionRef, progress func())
 					progress()
 				}
 				index++
+				hotOrder = ""
 			}
 			if err := p.finishCold(id, snap, "no bytes saved", false); err != nil {
 				_ = p.cold.state.Do(func(*aggregate.Tx) error { return err })
