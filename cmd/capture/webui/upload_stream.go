@@ -26,6 +26,14 @@ func (r uploadContextReader) Read(p []byte) (int, error) {
 	return r.r.Read(p)
 }
 
+func copyCaptureUpload(ctx context.Context, dst io.Writer, src io.Reader) (int64, error) {
+	n, err := io.Copy(dst, uploadContextReader{ctx, src})
+	if err == nil {
+		err = ctx.Err()
+	}
+	return n, err
+}
+
 // receiveCaptureUpload spools one bounded file without ParseMultipartForm's RAM budget.
 // The caller owns closing and removing the returned private temporary file.
 func receiveCaptureUpload(w http.ResponseWriter, r *http.Request, limit int64) (file *os.File, header *multipart.FileHeader, err error) {
@@ -68,7 +76,7 @@ func receiveCaptureUpload(w http.ResponseWriter, r *http.Request, limit int64) (
 		if err != nil {
 			return file, nil, err
 		}
-		written, copyErr := io.Copy(file, uploadContextReader{r.Context(), io.LimitReader(part, limit+1)})
+		written, copyErr := copyCaptureUpload(r.Context(), file, io.LimitReader(part, limit+1))
 		if copyErr != nil {
 			return file, nil, copyErr
 		}
@@ -80,10 +88,7 @@ func receiveCaptureUpload(w http.ResponseWriter, r *http.Request, limit int64) (
 	if file == nil {
 		return nil, nil, fmt.Errorf("no file provided")
 	}
-	if _, err = io.Copy(io.Discard, r.Body); err != nil {
-		return file, nil, err
-	}
-	if err = r.Context().Err(); err != nil {
+	if _, err = copyCaptureUpload(r.Context(), io.Discard, r.Body); err != nil {
 		return file, nil, err
 	}
 	_, err = file.Seek(0, io.SeekStart)

@@ -24,7 +24,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -401,7 +400,7 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 	}
 	defer outFile.Close()
 
-	_, err = io.Copy(outFile, file)
+	_, err = copyCaptureUpload(r.Context(), outFile, file)
 	if closeErr := outFile.Close(); err == nil {
 		err = closeErr
 	}

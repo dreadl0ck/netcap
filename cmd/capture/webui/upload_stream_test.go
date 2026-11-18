@@ -3,6 +3,7 @@ package webui
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -121,6 +122,18 @@ func testServiceUploadHandoff(t *testing.T, cancelWaiting bool) {
 	check(http.StatusBadRequest, true)
 	s.stopProcessingAdmission()
 	check(http.StatusServiceUnavailable, false)
+}
+
+func TestCaptureUploadCopyStopsOnCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	data := bytes.Repeat([]byte("capture"), 64<<10)
+	src := &cancelingAuditInput{Reader: bytes.NewReader(data), cancel: cancel}
+	var dst bytes.Buffer
+	n, err := copyCaptureUpload(ctx, &dst, src)
+	if !errors.Is(err, context.Canceled) || n <= 0 || n >= int64(len(data)) || n != int64(src.read) || !bytes.Equal(dst.Bytes(), data[:n]) {
+		t.Fatalf("canceled copy: read=%d written=%d err=%v", src.read, n, err)
+	}
 }
 
 func TestBoundedCaptureUpload(t *testing.T) {

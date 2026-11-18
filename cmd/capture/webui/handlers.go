@@ -1961,7 +1961,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer outFile.Close()
 
-	written, err := io.Copy(outFile, file)
+	written, err := copyCaptureUpload(r.Context(), outFile, file)
 	if closeErr := outFile.Close(); err == nil {
 		err = closeErr
 	}
