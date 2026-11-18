@@ -158,6 +158,34 @@ func TestAuditReplayDistinctWindowRejectsTimestampDeltaOverflow(t *testing.T) {
 	}
 }
 
+func TestAuditReplaySequenceUsesFullTimestampRange(t *testing.T) {
+	config := &Config{Rules: []*Rule{{
+		Name: "fixture", Type: "HTTP", Expression: `Method == "POST"`, Enabled: true,
+		Sequence: &Sequence{After: `Method == "GET"`, GroupBy: []string{"SrcIP"}, Within: 60},
+	}}}
+	for _, tc := range []struct {
+		name        string
+		read, write int64
+		want        int
+	}{
+		{"valid before epoch", -2, -1, 1},
+		{"expired across epoch", math.MinInt64 + 1, math.MaxInt64, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			replay, err := NewAuditReplay(config, new(MockAlertWriter))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if n, err := replay.Evaluate(&types.HTTP{Method: "GET", SrcIP: "192.0.2.1", Timestamp: tc.read}); n != 0 || err != nil {
+				t.Fatalf("sequence start: alerts=%d err=%v", n, err)
+			}
+			if n, err := replay.Evaluate(&types.HTTP{Method: "POST", SrcIP: "192.0.2.1", Timestamp: tc.write}); n != tc.want || err != nil {
+				t.Fatalf("alerts=%d, want %d: %v", n, tc.want, err)
+			}
+		})
+	}
+}
+
 func testAuditReplayClock(t *testing.T, base time.Time) {
 	t.Helper()
 	config := &Config{Rules: []*Rule{{Name: "fixture", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true}}}

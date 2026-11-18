@@ -104,18 +104,18 @@ func (e *Engine) checkSequence(rule *Rule, record types.AuditRecord) (bool, erro
 	defer tracker.mu.Unlock()
 
 	seenAt, found := tracker.seen[key]
-	satisfied := found && now >= seenAt && now-seenAt <= windowNanos
-	if found && now-seenAt > windowNanos {
+	satisfied := found && now >= seenAt && uint64(now)-uint64(seenAt) <= uint64(windowNanos)
+	if found && now >= seenAt && !satisfied {
 		// Only drop genuinely expired observations. A record arriving out of
 		// order is older than the stored one and must not evict it, or a later
 		// in-order pair would be lost.
 		delete(tracker.seen, key)
 	}
 
-	if isAfter && now >= tracker.seen[key] {
+	if isAfter && (!found || now >= seenAt) {
 		if _, exists := tracker.seen[key]; !exists && len(tracker.seen) >= maxSequenceGroups {
 			for k, at := range tracker.seen {
-				if now >= at && now-at > windowNanos {
+				if now >= at && uint64(now)-uint64(at) > uint64(windowNanos) {
 					delete(tracker.seen, k)
 				}
 			}
@@ -138,7 +138,7 @@ func (e *Engine) checkSequence(rule *Rule, record types.AuditRecord) (bool, erro
 // correlation rather than unbounded growth.
 func (t *sequenceTracker) sweep(now, windowNanos int64) {
 	for key, ts := range t.seen {
-		if now-ts > windowNanos {
+		if now >= ts && uint64(now)-uint64(ts) > uint64(windowNanos) {
 			delete(t.seen, key)
 		}
 	}
