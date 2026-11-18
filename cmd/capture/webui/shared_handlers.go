@@ -1046,11 +1046,13 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 	const maxValuesPerField = 20
 	const maxRecordsToScan = 200
 	const maxSampleBytes = 16 << 20
+	const maxSampleValueBytes = 128 << 10
 
 	// Map to collect unique values per field
 	fieldValues := make(map[string]map[string]bool)
 	recordsScanned := 0
 	remaining := maxSampleBytes
+	valueBytes := maxSampleValueBytes
 
 	// Read records and collect values
 	for recordsScanned < maxRecordsToScan {
@@ -1084,7 +1086,11 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 		remaining -= len(raw)
 
 		// Extract field values using reflection
-		extractFieldValues(record, "", fieldValues, maxValuesPerField, 0)
+		extractFieldValues(record, "", fieldValues, maxValuesPerField, 0, &valueBytes)
+		if valueBytes < 0 {
+			http.Error(w, "Audit field sample values exceed 128 KiB", http.StatusRequestEntityTooLarge)
+			return
+		}
 	}
 
 	// Convert to response format
@@ -1108,7 +1114,7 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 }
 
 // extractFieldValues recursively extracts unique field values from a struct
-func extractFieldValues(v any, prefix string, fieldValues map[string]map[string]bool, maxPerField int, depth int) {
+func extractFieldValues(v any, prefix string, fieldValues map[string]map[string]bool, maxPerField int, depth int, remaining *int) {
 	// Limit recursion depth
 	if depth > 2 {
 		return
@@ -1158,50 +1164,39 @@ func extractFieldValues(v any, prefix string, fieldValues map[string]map[string]
 		}
 
 		// Extract value based on type
+		if *remaining < 0 {
+			return
+		}
 		if !fieldValue.CanInterface() {
 			continue
 		}
 
+		var sample string
 		switch field.Type.Kind() {
 		case reflect.String:
-			strVal := fieldValue.String()
-			if strVal != "" && len(fieldValues[fieldName]) < maxPerField {
-				fieldValues[fieldName][strVal] = true
-			}
+			sample = fieldValue.String()
 
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			intVal := fieldValue.Int()
-			if len(fieldValues[fieldName]) < maxPerField {
-				fieldValues[fieldName][fmt.Sprintf("%d", intVal)] = true
-			}
+			sample = strconv.FormatInt(fieldValue.Int(), 10)
 
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			uintVal := fieldValue.Uint()
-			if len(fieldValues[fieldName]) < maxPerField {
-				fieldValues[fieldName][fmt.Sprintf("%d", uintVal)] = true
-			}
+			sample = strconv.FormatUint(fieldValue.Uint(), 10)
 
 		case reflect.Float32, reflect.Float64:
-			floatVal := fieldValue.Float()
-			if len(fieldValues[fieldName]) < maxPerField {
-				fieldValues[fieldName][fmt.Sprintf("%g", floatVal)] = true
-			}
+			sample = strconv.FormatFloat(fieldValue.Float(), 'g', -1, 64)
 
 		case reflect.Bool:
-			boolVal := fieldValue.Bool()
-			if len(fieldValues[fieldName]) < maxPerField {
-				fieldValues[fieldName][fmt.Sprintf("%t", boolVal)] = true
-			}
+			sample = strconv.FormatBool(fieldValue.Bool())
 
 		case reflect.Struct:
 			// Recurse into nested struct
 			if depth < 2 {
-				extractFieldValues(fieldValue.Interface(), fieldName, fieldValues, maxPerField, depth+1)
+				extractFieldValues(fieldValue.Interface(), fieldName, fieldValues, maxPerField, depth+1, remaining)
 			}
 
 		case reflect.Pointer:
 			if !fieldValue.IsNil() && field.Type.Elem().Kind() == reflect.Struct && depth < 2 {
-				extractFieldValues(fieldValue.Interface(), fieldName, fieldValues, maxPerField, depth+1)
+				extractFieldValues(fieldValue.Interface(), fieldName, fieldValues, maxPerField, depth+1, remaining)
 			}
 
 		case reflect.Slice:
@@ -1215,9 +1210,16 @@ func extractFieldValues(v any, prefix string, fieldValues map[string]map[string]
 				if elemType.Kind() == reflect.Struct && depth < 2 {
 					// Sample first element with array notation
 					firstElem := fieldValue.Index(0)
-					extractFieldValues(firstElem.Interface(), fieldName+"[0]", fieldValues, maxPerField, depth+1)
+					extractFieldValues(firstElem.Interface(), fieldName+"[0]", fieldValues, maxPerField, depth+1, remaining)
 				}
 			}
+		}
+		if sample != "" && !fieldValues[fieldName][sample] {
+			*remaining -= len(sample)
+			if *remaining < 0 {
+				return
+			}
+			fieldValues[fieldName][sample] = true
 		}
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
@@ -85,6 +86,23 @@ func TestAuditFieldSampleCancellationStopsDecodedFrameRead(t *testing.T) {
 	r := delimited.NewReader(auditContextReader{ctx: ctx, input: input})
 	if data, err := r.NextWithLimit(1 << 20); data != nil || !errors.Is(err, context.Canceled) || input.read >= wire.Len() {
 		t.Fatalf("sample read %d/%d bytes, returned %d bytes, error: %v", input.read, wire.Len(), len(data), err)
+	}
+}
+
+func TestAuditFieldValuesBoundsDistinctValueBytes(t *testing.T) {
+	for _, distinct := range []bool{false, true} {
+		first := strings.Repeat("x", 72<<10)
+		second := first
+		if distinct {
+			second = "/" + first
+		}
+		path := writeTimelineAuditFilePlain(t, t.TempDir(), "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{URL: first}, &types.HTTP{URL: second}})
+		w := httptest.NewRecorder()
+		HandleAuditFieldValues(w, httptest.NewRequest(http.MethodGet, "/api/audit/HTTP/values", nil), path, "HTTP")
+		if !distinct && (w.Code != http.StatusOK || bytes.Count(w.Body.Bytes(), []byte(first)) != 1) ||
+			distinct && (w.Code != http.StatusRequestEntityTooLarge || bytes.Contains(w.Body.Bytes(), []byte(first))) {
+			t.Fatalf("distinct=%t status=%d response bytes=%d", distinct, w.Code, w.Body.Len())
+		}
 	}
 }
 
