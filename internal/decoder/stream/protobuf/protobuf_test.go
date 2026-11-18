@@ -21,9 +21,22 @@ package protobuf
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 )
+
+func TestCanceledSchemaBuildPreservesCause(t *testing.T) {
+	ctx, cancel := context.WithCancelCause(context.Background())
+	cause := errors.New("schema reload canceled")
+	cancel(cause)
+	registry, err := NewSchemaRegistryContext(ctx, []string{filepath.Join(t.TempDir(), "missing.proto")})
+	if registry != nil || !errors.Is(err, cause) {
+		t.Fatalf("registry=%v error=%v, want cancellation cause", registry, err)
+	}
+}
 
 // Test data samples.
 var (

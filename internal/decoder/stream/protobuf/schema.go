@@ -62,9 +62,20 @@ type SchemaRegistry struct {
 // found in the given search paths. Import resolution follows the same semantics
 // as protoc: each search path is a root for import resolution.
 func NewSchemaRegistry(searchPaths []string) (*SchemaRegistry, error) {
+	return NewSchemaRegistryContext(context.Background(), searchPaths)
+}
+
+// NewSchemaRegistryContext builds a registry using the caller's context.
+func NewSchemaRegistryContext(ctx context.Context, searchPaths []string) (*SchemaRegistry, error) {
+	if err := context.Cause(ctx); err != nil {
+		return nil, err
+	}
 	var protoFiles []string
 
 	for _, sp := range searchPaths {
+		if err := context.Cause(ctx); err != nil {
+			return nil, err
+		}
 		info, err := os.Stat(sp)
 		if err != nil {
 			return nil, fmt.Errorf("proto search path %q: %w", sp, err)
@@ -80,6 +91,9 @@ func NewSchemaRegistry(searchPaths []string) (*SchemaRegistry, error) {
 
 		// Walk directory for .proto files
 		err = filepath.Walk(sp, func(path string, fi os.FileInfo, walkErr error) error {
+			if err := context.Cause(ctx); err != nil {
+				return err
+			}
 			if walkErr != nil {
 				return walkErr
 			}
@@ -112,7 +126,10 @@ func NewSchemaRegistry(searchPaths []string) (*SchemaRegistry, error) {
 		Reporter: reporter.NewReporter(nil, nil), // suppress warnings
 	}
 
-	compiled, err := compiler.Compile(context.Background(), protoFiles...)
+	compiled, err := compiler.Compile(ctx, protoFiles...)
+	if cause := context.Cause(ctx); cause != nil {
+		return nil, cause
+	}
 	if err != nil {
 		return nil, fmt.Errorf("compiling proto files: %w", err)
 	}
@@ -124,6 +141,9 @@ func NewSchemaRegistry(searchPaths []string) (*SchemaRegistry, error) {
 
 	// Index all message types from compiled files
 	for _, f := range compiled {
+		if err := context.Cause(ctx); err != nil {
+			return nil, err
+		}
 		reg.indexMessages(f.Messages())
 	}
 

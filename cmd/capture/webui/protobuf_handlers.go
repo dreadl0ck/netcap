@@ -543,7 +543,7 @@ func recompileSchemas(ctx context.Context, paths []string) error {
 		return err
 	}
 	defer snapshot.cleanup()
-	registry, err := pb.NewSchemaRegistry(snapshot.Protobuf.Paths)
+	registry, err := pb.NewSchemaRegistryContext(ctx, snapshot.Protobuf.Paths)
 	if err == nil {
 		err = context.Cause(ctx)
 	}
