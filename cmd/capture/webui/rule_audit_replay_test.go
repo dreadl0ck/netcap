@@ -188,6 +188,45 @@ func TestRuleAuditRejectsLinkedPreferredTrack(t *testing.T) {
 	}
 }
 
+func TestRuleAuditRejectsGenerationChangesDuringReplay(t *testing.T) {
+	for _, change := range []string{"append", "replace"} {
+		t.Run(change, func(t *testing.T) {
+			dir := t.TempDir()
+			original := &types.HTTP{Method: "GET"}
+			path := writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{original})
+			count, err := scanRuleAudit(dir, "HTTP", nil, nil, func(record types.AuditRecord) error {
+				if got := record.(*types.HTTP).Method; got != "GET" {
+					t.Fatalf("replay consumed an unselected row: %q", got)
+				}
+				if change == "append" {
+					f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0)
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer f.Close()
+					return delimited.NewWriter(f).PutProto(&types.HTTP{Method: "PUT"})
+				}
+				opened, err := os.Stat(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				replacement := writeTimelineAuditFilePlain(t, t.TempDir(), "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "PUT"}})
+				if err := os.Chtimes(replacement, opened.ModTime(), opened.ModTime()); err != nil {
+					t.Fatal(err)
+				}
+				info, err := os.Stat(replacement)
+				if err != nil || info.Size() != opened.Size() || !info.ModTime().Equal(opened.ModTime()) {
+					t.Fatalf("replacement must match source metadata: %v", err)
+				}
+				return os.Rename(replacement, path)
+			})
+			if count != 1 || !errors.Is(err, errRuleAuditChanged) {
+				t.Fatalf("scan: count=%d err=%v", count, err)
+			}
+		})
+	}
+}
+
 func TestRuleAuditRejectsMissingRecordBody(t *testing.T) {
 	dir := t.TempDir()
 	path := writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})

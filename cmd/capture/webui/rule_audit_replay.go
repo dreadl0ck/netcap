@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -12,6 +13,8 @@ import (
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+var errRuleAuditChanged = errors.New("rule audit changed during replay")
 
 func ruleReplayCanceled(stop, shutdown <-chan struct{}) bool {
 	select {
@@ -46,10 +49,12 @@ func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit 
 		return 0, fmt.Errorf("unknown audit type: %s", auditType)
 	}
 	compressed := true
-	f, _, err := artifactio.Open(dir, auditType+".ncap.gz")
+	name := auditType + ".ncap.gz"
+	f, opened, err := artifactio.Open(dir, name)
 	if errors.Is(err, os.ErrNotExist) {
 		compressed = false
-		f, _, err = artifactio.Open(dir, auditType+".ncap")
+		name = auditType + ".ncap"
+		f, opened, err = artifactio.Open(dir, name)
 	}
 	if errors.Is(err, os.ErrNotExist) {
 		return 0, nil
@@ -57,7 +62,7 @@ func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit 
 	if err != nil {
 		return 0, fmt.Errorf("open %s audit: %w", auditType, err)
 	}
-	reader, err := auditRecordReaderFromInput(f, f, compressed, func(input io.Reader) io.Reader {
+	reader, err := auditRecordReaderFromInput(f, io.NewSectionReader(f, 0, opened.Size()), compressed, func(input io.Reader) io.Reader {
 		return analysisStopReader{input, stop, shutdown}
 	})
 	if err != nil {
@@ -78,6 +83,13 @@ func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit 
 		}
 		record, err := reader.NextRecord()
 		if err == io.EOF {
+			if ruleReplayCanceled(stop, shutdown) {
+				return count, errAnalysisStopping
+			}
+			current, err := os.Lstat(filepath.Join(dir, name))
+			if err != nil || !os.SameFile(opened, current) || opened.Size() != current.Size() || !opened.ModTime().Equal(current.ModTime()) {
+				return count, fmt.Errorf("%s: %w", name, errRuleAuditChanged)
+			}
 			return count, nil
 		}
 		if err != nil {
