@@ -735,6 +735,16 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 		}
 	}
 
+	if len(communityIDs) > 0 && candidates == nil {
+		select {
+		case communityScanSlots <- struct{}{}:
+			defer func() { <-communityScanSlots }()
+		default:
+			sendError(errCommunityIndexBusy.Error())
+			return
+		}
+	}
+
 	// Stream records
 	count := 0
 	totalScanned := 0

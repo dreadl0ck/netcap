@@ -62,6 +62,15 @@ func TestAuditStreamCommunityFallbackAndRepeatedIDs(t *testing.T) {
 	if strings.Count(rec.Body.String(), "event: record\n") != 1 || !strings.Contains(rec.Body.String(), `"scanned": 4097`) {
 		t.Fatalf("oversized fallback = %s", rec.Body.String())
 	}
+	for range cap(communityScanSlots) {
+		communityScanSlots <- struct{}{}
+		defer func() { <-communityScanSlots }()
+	}
+	rec = httptest.NewRecorder()
+	HandleAuditStream(rec, httptest.NewRequest("GET", "/api/audit/Software/stream?communityId=id-4096", nil), path, "Software")
+	if body := rec.Body.String(); !strings.Contains(body, "Community ID scans are busy") || strings.Contains(body, "event: record\n") || strings.Contains(body, "event: complete\n") {
+		t.Fatalf("saturated fallback = %s", body)
+	}
 }
 
 func BenchmarkAuditStreamCommunitySelection(b *testing.B) {
