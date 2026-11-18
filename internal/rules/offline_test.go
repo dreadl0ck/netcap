@@ -611,6 +611,36 @@ func TestOfflineRejectsUnsafeExpressionsAndFieldAliases(t *testing.T) {
 	}
 }
 
+func TestOfflineHistoryChecksRemainingBudgetBeforeDecoding(t *testing.T) {
+	dir := offlineTestDirectory(t)
+	offlineTestRecords(t, dir, "TCP", true, offlineTestTCP(2))
+	report := offlineTestEval(t, dir, offlineTestPack(2))
+	history := filepath.Join(dir, "rule-evaluations")
+	if err := os.Remove(filepath.Join(history, report.ID+".json")); err != nil {
+		t.Fatal(err)
+	}
+	for i := range 16 {
+		report.ID = fmt.Sprintf("%032x", i)
+		data, err := json.Marshal(report)
+		if err != nil {
+			t.Fatal(err)
+		}
+		data = append(data, bytes.Repeat([]byte(" "), (1<<20)-len(data))...)
+		if err := os.WriteFile(filepath.Join(history, report.ID+".json"), data, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got, err := ListOfflineEvaluations(dir); err != nil || len(got) != 16 {
+		t.Fatalf("exact history budget: reports=%d err=%v", len(got), err)
+	}
+	if err := os.WriteFile(filepath.Join(history, fmt.Sprintf("%032x.json", 16)), []byte{0xff}, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := ListOfflineEvaluations(dir); got != nil || !errors.Is(err, errOfflineMetadataLimit) {
+		t.Fatalf("expected budget refusal before decoding the next report: reports=%d err=%v", len(got), err)
+	}
+}
+
 func TestOfflineLexicalRuleOrderAndBoundedHistory(t *testing.T) {
 	dir := offlineTestDirectory(t)
 	offlineTestRecords(t, dir, "TCP", true, offlineTestTCP(4))

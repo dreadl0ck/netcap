@@ -683,21 +683,14 @@ func listOfflineEvaluations(ctx context.Context, directory string) ([]OfflineRep
 			return nil, fmt.Errorf("offline report history limit exceeded: 100")
 		}
 		path := filepath.Join("rule-evaluations", name)
-		info, err := r.Lstat(path)
+		b, _, err := offlineMetadataWithLimit(ctx, r, path, min(1<<20, (16<<20)-totalBytes))
 		if err != nil {
-			return nil, err
-		}
-		if info.Size() > 1<<20 {
-			return nil, fmt.Errorf("offline report exceeds 1 MiB")
-		}
-		b, _, err := offlineMetadata(ctx, r, path)
-		if err != nil {
+			if errors.Is(err, errOfflineMetadataLimit) {
+				return nil, fmt.Errorf("offline report history byte limit exceeded: %w", err)
+			}
 			return nil, err
 		}
 		totalBytes += int64(len(b))
-		if len(b) > 1<<20 || totalBytes > 16<<20 {
-			return nil, fmt.Errorf("offline report history byte limit exceeded")
-		}
 		var report OfflineReport
 		decoder := json.NewDecoder(strings.NewReader(string(b)))
 		decoder.DisallowUnknownFields()

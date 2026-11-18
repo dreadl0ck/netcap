@@ -101,6 +101,12 @@ func offlineOpen(root *os.Root, name string) (*os.File, error) {
 }
 
 func offlineMetadata(ctx context.Context, root *os.Root, name string) ([]byte, offlineSnapshot, error) {
+	return offlineMetadataWithLimit(ctx, root, name, 16<<20)
+}
+
+var errOfflineMetadataLimit = errors.New("offline metadata byte limit exceeded")
+
+func offlineMetadataWithLimit(ctx context.Context, root *os.Root, name string, limit int64) ([]byte, offlineSnapshot, error) {
 	f, err := offlineOpen(root, name)
 	if err != nil {
 		return nil, offlineSnapshot{}, err
@@ -110,9 +116,19 @@ func offlineMetadata(ctx context.Context, root *os.Root, name string) ([]byte, o
 	if err != nil {
 		return nil, offlineSnapshot{}, err
 	}
-	b, err := io.ReadAll(&offlineBudgetReader{ctx: ctx, input: f, remaining: 16 << 20})
+	if info.Size() > limit {
+		return nil, offlineSnapshot{}, fmt.Errorf("%s: %w", name, errOfflineMetadataLimit)
+	}
+	b, err := io.ReadAll(&offlineBudgetReader{ctx: ctx, input: io.NewSectionReader(f, 0, info.Size()), remaining: info.Size()})
 	if err != nil {
 		return nil, offlineSnapshot{}, err
+	}
+	after, err := f.Stat()
+	if err != nil {
+		return nil, offlineSnapshot{}, err
+	}
+	if int64(len(b)) != info.Size() || after.Size() != info.Size() || !after.ModTime().Equal(info.ModTime()) {
+		return nil, offlineSnapshot{}, fmt.Errorf("offline metadata %s changed while reading", name)
 	}
 	if !utf8.Valid(b) {
 		return nil, offlineSnapshot{}, fmt.Errorf("invalid UTF-8 metadata: %s", name)
