@@ -37,7 +37,7 @@ list_offline_evaluations list_certificates get_stream_evidence
 """.split()
 
 
-async def check(binary, capture, data_dir):
+async def check(binary, capture, http_capture, data_dir):
     params = StdioServerParameters(command=str(binary), args=[
         "mcp", "--bind", "127.0.0.1:0", "--quiet", "--pcap", str(capture),
         "--data-dir", data_dir, "--behavior", "--behavior-prefix", "192.168.0.0/16",
@@ -345,6 +345,32 @@ rules:
         if empty["records"] != []:
             raise ValueError("empty page did not return an array")
 
+        http_session = (await call("ingest_pcap", {"path": str(http_capture)}))["session_id"]
+        if not http_session or http_session == sid:
+            raise ValueError("HTTP ingest did not create a distinct session")
+        http_args = {"session_id": http_session}
+        if not (await call("wait_for_session", http_args | {"timeout_seconds": 20}))["completed"]:
+            raise ValueError("HTTP fixture did not complete")
+        inventory = await call("list_extracted_files", http_args)
+        row = next((row for row in inventory["files"] if 1 < row["size"] <= 16384 and row.get("sha256")), None)
+        if row is None:
+            raise ValueError("HTTP fixture did not produce a bounded, hashed extracted file")
+        target = http_args | {"file_path": row["path"]}
+        contents = bytearray()
+        split = min(8, row["size"] - 1)
+        for offset, limit in ((0, split), (split, row["size"] - split), (row["size"], 8)):
+            page = await call("get_extracted_file_content", target | {"offset": offset, "limit": limit})
+            chunk = bytes.fromhex(page["data"])
+            if (page["encoding"] != "hex" or page["offset"] != offset or page["totalSize"] != row["size"]
+                    or page["session_id"] != http_session or page["file_path"] != row["path"]
+                    or len(chunk) != min(limit, row["size"] - offset)
+                    or page["hasMore"] != (offset + len(chunk) < row["size"])):
+                raise ValueError("extracted file page lost its bounds or EOF state")
+            contents.extend(chunk)
+        if hashlib.sha256(contents).hexdigest() != row["sha256"]:
+            raise ValueError("extracted file pages do not match inventory digest")
+        await call("delete_session", http_args)
+
         schema = Path(data_dir).resolve() / "contract.proto"
         schema.write_text('syntax = "proto3"; package contract; message Sample { string label = 1; }\n', encoding="utf-8")
         await call("add_protobuf_search_path", {"path": str(schema)})
@@ -429,9 +455,11 @@ rules:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Check Netcap's stdio tool contracts on the mDNS fixture.")
+    parser = argparse.ArgumentParser(description="Check Netcap's stdio tool contracts on the mDNS and HTTP fixtures.")
     parser.add_argument("binary", type=Path)
     args = parser.parse_args()
-    fixture = Path(__file__).resolve().parents[1] / "internal/collector/testdata/voip/mdns.pcap"
+    repo = Path(__file__).resolve().parents[1]
     with TemporaryDirectory(prefix="netcap-mcp-contracts-") as data_dir:
-        raise SystemExit(0 if asyncio.run(check(args.binary.resolve(), fixture, data_dir)) else 1)
+        passed = asyncio.run(check(args.binary.resolve(), repo / "internal/collector/testdata/voip/mdns.pcap",
+                                   repo / "testdata/recheck-v0168/base_http.pcap", data_dir))
+        raise SystemExit(0 if passed else 1)

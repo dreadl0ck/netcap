@@ -160,6 +160,7 @@
     "qualification": "1a4507d adds possible-stale-probe evidence for a one-byte zero ACK behind the frontier at an observed earlier segment end. Both pinned replays pass under the race detector: each witness adds one candidate and one conflict byte. Synthetic interior-byte, nonzero, non-ACK, multibyte and post-reset controls retain conflicts without the annotation. Alert class and severity remain unchanged; peer acceptance and evaluator-byte identity are unverified."
   },
   "officialMCPStdioContracts": {
+    "extractedFilePaging": "The official stdio client ingests the tracked base_http.pcap, reads a listed artifact in two hex pages plus EOF, and verifies session, path, offsets, total size and the inventory SHA-256. The portable run passed 190 calls across 89 of 119 tools with no failures.",
     "localResolvers": "The official stdio client verified the disabled DHCP lookup qualification and echoed selectors, and the normalized UDP port 5353 service lookup response. A fresh portable build passed 183 calls across 88 of 119 tools with no failures.",
     "offlineFirewallPolicy": "Two official-client calls to evaluate_firewall_policy validate the report schema, preserve the revision and ordered allow/deny verdicts, and report effects_dispatched=false on both runs. The portable harness passed 181 calls across 86 of 119 tools with no failures.",
     "source": "405b951",
