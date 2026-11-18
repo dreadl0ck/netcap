@@ -126,6 +126,21 @@ func TestHTTPSourcePreflightScansBodiesUnderFiniteBudget(t *testing.T) {
 	t.Logf("scanned %d body bytes across two requests; peak TCP state %d bytes", 2*len(body), health.PeakBytes)
 }
 
+func TestHTTPSourceBodylessExchangeSkipsScratch(t *testing.T) {
+	data := core.DataFragments{
+		wireFragment(0, []byte("GET /empty?label=fixture HTTP/1.1\r\nHost: fixture.test\r\n\r\n"), 1),
+		wireFragment(1, []byte("HTTP/1.1 204 No Content\r\n\r\n"), 2),
+	}
+	want, wantFiles := captureExtractedHTTP(t, data, false)
+	got, gotFiles := captureExtractedHTTP(t, data, true)
+	if len(got) != 1 || len(gotFiles) != 0 || !reflect.DeepEqual(want, got) || !reflect.DeepEqual(wantFiles, gotFiles) {
+		t.Fatalf("bodyless source changed audit evidence: want %v, got %v, files %v", want, got, gotFiles)
+	}
+	if _, err := os.Stat(filepath.Join(decoderconfig.Instance.Out, ".artifact-scratch")); !os.IsNotExist(err) {
+		t.Fatalf("bodyless exchange touched artifact scratch: %v", err)
+	}
+}
+
 func TestHTTPSourceIncludesPairedPayloads(t *testing.T) {
 	body := strings.Repeat("binary fixture\x00", 10000)
 	request := fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Length: %d\r\n\r\n%sGET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n", len(body), body)

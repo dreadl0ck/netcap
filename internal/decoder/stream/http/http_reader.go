@@ -409,7 +409,15 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		passiveReport = software.ObserveWebtech(observation, res.Body, res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 		err = passiveReport.WireError
 	} else if h.sourceMode && !decoderconfig.Instance.IncludePayloads {
-		spool, err = file.SpoolBody(res.Body)
+		if res.Body == http.NoBody {
+			passiveReport = software.ObserveWebtech(observation, res.Body, res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+			passiveReport.DetectedContentType = ""
+			if res.Header.Get(headerContentEncoding) != "gzip" {
+				passiveReport.DetectedContentType = http.DetectContentType(nil)
+			}
+		} else {
+			spool, err = file.SpoolBody(res.Body)
+		}
 		if spool != nil {
 			defer func() { file.RecordArtifactWriteError(spool.Close()) }()
 			body = spool.Prefix()
@@ -603,7 +611,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	var spool *file.BodySpool
 	form, boundary := sourceBackedForm(req)
 	backedGzip := h.sourceMode && req.Body != http.NoBody && req.Header.Get(headerContentEncoding) == "gzip"
-	if h.sourceMode && !decoderconfig.Instance.IncludePayloads && (decoderconfig.Instance.FileStorage != "" || (form != "" || backedGzip) && req.Body != http.NoBody) {
+	if h.sourceMode && !decoderconfig.Instance.IncludePayloads && req.Body != http.NoBody && (decoderconfig.Instance.FileStorage != "" || form != "" || backedGzip) {
 		spool, bodyErr = file.SpoolBody(req.Body)
 		release = func() {}
 		if spool != nil {

@@ -311,6 +311,9 @@
   "boundedHTTPSourcePreflight": {
     "verification": "TestHTTPSourcePreflightScansBodiesUnderFiniteBudget scans 520000 request-body bytes with one reusable 4 KiB scratch buffer, peaks at 22016 TCP state credits under a 24 KiB limit, and returns all credits. A trailing unsupported request still selects compatibility decoding. Focused source HTTP, gzip and extraction parity tests passed under the race detector."
   },
+  "bodylessHTTPSourceExtraction": {
+    "verification": "TestHTTPSourceBodylessExchangeSkipsScratch verifies a source-decoded GET/204 produces the same HTTP audit as byte-backed decoding, emits no File record, and never creates the artifact scratch directory. Focused HTTP source and gzip tests passed under the race detector."
+  },
   "mcpProtobufRegistryContract": {
     "verification": "scripts/check-mcp-stdio.py on a fresh portable CLI passed 159 schema-validated calls across 81 of 119 advertised tools with zero failures. The harness added a temporary one-message schema, recompiled it, checked message discovery, set an explicit port mapping and verified the registry status."
   },
