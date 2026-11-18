@@ -188,6 +188,26 @@ func TestSmallTimelineCompletesWhileRegularLaneIsOccupied(t *testing.T) {
 	}
 }
 
+func TestDeletingCaptureCancelsQueuedTimeline(t *testing.T) {
+	timelineSmallBuildSlot <- struct{}{}
+	defer func() { <-timelineSmallBuildSlot }()
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "Connection", types.Type_NC_Connection, []proto.Message{connRecord(1, 2, "192.0.2.1", "192.0.2.2")})
+	status := timelineIndexFor(dir)
+	if status.State != timelineStateIndexing || status.finished == nil {
+		t.Fatalf("expected a queued timeline: %+v", status)
+	}
+	clearOwnedAnalysisCaches(dir)
+	select {
+	case <-status.finished:
+	case <-time.After(2 * time.Second):
+		t.Fatal("deleted capture kept waiting for an occupied timeline slot")
+	}
+	if len(timelineSmallBuildSlot) != 1 {
+		t.Fatal("canceled build released another job's slot")
+	}
+}
+
 func TestSmallTimelineDuringLargeIndexBuild(t *testing.T) {
 	large, small := t.TempDir(), t.TempDir()
 	records := make([]proto.Message, 150_000)

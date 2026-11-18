@@ -99,6 +99,9 @@ func (s *Server) deleteLocalUpload(w http.ResponseWriter, r *http.Request) {
 
 func clearOwnedAnalysisCaches(out string) {
 	timelineCache.Lock()
+	if entry := timelineCache.entries[out]; entry != nil && entry.cancel != nil {
+		close(entry.cancel)
+	}
 	delete(timelineCache.entries, out)
 	timelineCache.Unlock()
 	connectionCache.Lock()

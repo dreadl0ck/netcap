@@ -144,6 +144,7 @@
     "verification": "The portable HTTP race suite passes; backed and byte-backed output match for repeated values, escapes, malformed escapes, and query fields."
   },
   "compressedTimelineScheduling": {
+    "deletionCancellation": "TestDeletingCaptureCancelsQueuedTimeline verifies that clearing a deleted capture's cache wakes its queued build while the small lane is still occupied, leaving the other build's slot intact. Timeline and completion race tests passed.",
     "source": "8187e95",
     "implementation": "The small timeline worker caps both stored input and decoded snapshots at 262144 bytes. Over-expansion falls back to the regular worker before indexing or publishing any partial result.",
     "verification": "Five runs of the two-record fixture took 10.7–12.3 ms to report ready through the polling helper while the regular slot was held. The 4096-record over-expansion control retains every record on fallback. The full Web UI race suite passes.",

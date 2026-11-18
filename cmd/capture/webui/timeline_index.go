@@ -138,6 +138,7 @@ func (idx *timelineIndex) typeIndex(name string) *tlTypeIndex {
 
 // timelineIndexEntry is a cache slot for one output directory.
 type timelineIndexEntry struct {
+	cancel      chan struct{}
 	fingerprint string // immutable after creation
 	finished    chan struct{}
 
@@ -339,6 +340,7 @@ func timelineIndexFor(outDir string) timelineIndexStatus {
 		}
 
 		entry = &timelineIndexEntry{
+			cancel:      make(chan struct{}),
 			fingerprint: fingerprint,
 			finished:    make(chan struct{}),
 			state:       timelineStateIndexing,
@@ -404,9 +406,23 @@ func timelineEvictLocked() {
 // buildTimelineIndex indexes every audit record file of one generation.
 func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, files []timelineFileRef) {
 	defer close(entry.finished)
+	canceled := func() {
+		entry.mu.Lock()
+		entry.state, entry.errMsg = timelineStateError, "timeline indexing canceled"
+		entry.mu.Unlock()
+	}
 	slot, maxWorkers := timelineBuildLane(files)
-	slot <- struct{}{}
-	defer func() { <-slot }()
+	select {
+	case slot <- struct{}{}:
+	case <-entry.cancel:
+		canceled()
+		return
+	}
+	defer func() {
+		if slot != nil {
+			<-slot
+		}
+	}()
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -428,8 +444,14 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 		}
 		if snapshots == nil {
 			<-slot
-			slot, maxWorkers = timelineBuildSlot, 4
-			slot <- struct{}{}
+			slot = nil
+			select {
+			case timelineBuildSlot <- struct{}{}:
+				slot, maxWorkers = timelineBuildSlot, 4
+			case <-entry.cancel:
+				canceled()
+				return
+			}
 		}
 	}
 
@@ -468,6 +490,11 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 			defer wg.Done()
 
 			for {
+				select {
+				case <-entry.cancel:
+					return
+				default:
+				}
 				i := int(atomic.AddInt64(&next, 1)) - 1
 				if i >= len(files) {
 					return
@@ -478,9 +505,9 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 				if snapshots != nil {
 					data := snapshots[i]
 					reader := &AuditRecordReader{delimitedReader: delimited.NewReaderWithLimit(bytes.NewReader(data), uint64(max(1, len(data))))}
-					ti, err = indexTimelineRecords(reader, files[i].name, perTypeLimit)
+					ti, err = indexTimelineRecords(reader, files[i].name, perTypeLimit, entry.cancel)
 				} else {
-					ti, err = indexTimelineType(files[i].path, files[i].name, perTypeLimit)
+					ti, err = indexTimelineType(files[i].path, files[i].name, perTypeLimit, entry.cancel)
 				}
 
 				atomic.AddInt64(&done, 1)
@@ -505,6 +532,12 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 	}
 
 	wg.Wait()
+	select {
+	case <-entry.cancel:
+		canceled()
+		return
+	default:
+	}
 
 	for _, err := range failures {
 		if err != nil {
@@ -649,7 +682,7 @@ func assembleTimelineIndex(fingerprint string, types []*tlTypeIndex) *timelineIn
 }
 
 // indexTimelineType reads one audit record file and builds its time index.
-func indexTimelineType(path, typeName string, eventLimit int) (*tlTypeIndex, error) {
+func indexTimelineType(path, typeName string, eventLimit int, stop <-chan struct{}) (*tlTypeIndex, error) {
 	f, _, err := artifactio.Open(filepath.Dir(path), filepath.Base(path))
 	if err != nil {
 		return nil, err
@@ -659,10 +692,10 @@ func indexTimelineType(path, typeName string, eventLimit int) (*tlTypeIndex, err
 		return nil, err
 	}
 	defer reader.Close()
-	return indexTimelineRecords(reader, typeName, eventLimit)
+	return indexTimelineRecords(reader, typeName, eventLimit, stop)
 }
 
-func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit int) (*tlTypeIndex, error) {
+func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit int, stop <-chan struct{}) (*tlTypeIndex, error) {
 	header, err := reader.ReadHeader()
 	if err != nil {
 		return nil, err
@@ -708,6 +741,11 @@ func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit
 	}
 
 	for {
+		select {
+		case <-stop:
+			return nil, errAnalysisStopping
+		default:
+		}
 		record, readErr := reader.NextRecord()
 		if readErr != nil {
 			if !errors.Is(readErr, io.EOF) {
