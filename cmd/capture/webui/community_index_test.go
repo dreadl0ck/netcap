@@ -91,9 +91,9 @@ func TestCommunityIndexBuildAdmissionKeepsCacheHitsAvailable(t *testing.T) {
 		t.Fatalf("prime index: %v, %v", idx, err)
 	}
 	func() {
-		for range cap(communityIndexBuildSlots) {
-			communityIndexBuildSlots <- struct{}{}
-			defer func() { <-communityIndexBuildSlots }()
+		for range cap(communityScanSlots) {
+			communityScanSlots <- struct{}{}
+			defer func() { <-communityScanSlots }()
 		}
 		if idx, err := communityIndexFor(cold); idx != nil || !errors.Is(err, errCommunityIndexBusy) {
 			t.Fatalf("cold index at saturation: %v, %v", idx, err)
@@ -106,9 +106,15 @@ func TestCommunityIndexBuildAdmissionKeepsCacheHitsAvailable(t *testing.T) {
 		if idx, err := communityIndexFor(warm); err != nil || idx == nil || idx.total != 1 {
 			t.Fatalf("cache hit at saturation: %v, %v", idx, err)
 		}
+		if total, matched, err := scanCommunityCounts(cold, map[string]bool{"fixture": true}); total != 0 || matched != 0 || !errors.Is(err, errCommunityIndexBusy) {
+			t.Fatalf("fallback at saturation: total=%d matched=%d err=%v", total, matched, err)
+		}
 	}()
 	if idx, err := communityIndexFor(cold); err != nil || idx == nil || idx.total != 1 {
 		t.Fatalf("cold index retry: %v, %v", idx, err)
+	}
+	if total, matched, err := scanCommunityCounts(cold, map[string]bool{"fixture": true}); total != 1 || matched != 1 || err != nil {
+		t.Fatalf("fallback retry: total=%d matched=%d err=%v", total, matched, err)
 	}
 }
 

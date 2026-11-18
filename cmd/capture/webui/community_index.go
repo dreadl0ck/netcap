@@ -73,8 +73,8 @@ var communityIndexCache = struct {
 	bytes uint64
 }{files: make(map[string]*communityIndexEntry)}
 
-var communityIndexBuildSlots = make(chan struct{}, 2)
-var errCommunityIndexBusy = errors.New("Community ID index builders are busy; retry after another build completes")
+var communityScanSlots = make(chan struct{}, 2)
+var errCommunityIndexBusy = errors.New("Community ID scans are busy; retry after another scan completes")
 
 // communityCachedTotal reuses a completed bitmap generation without building
 // one just to answer an unfiltered count.
@@ -137,7 +137,7 @@ func communityIndexForContext(ctx context.Context, path string) (*communityFileI
 		entry := communityIndexCache.files[path]
 		if entry == nil || !entry.matches(info) {
 			select {
-			case communityIndexBuildSlots <- struct{}{}:
+			case communityScanSlots <- struct{}{}:
 			default:
 				communityIndexCache.Unlock()
 				return nil, errCommunityIndexBusy
@@ -171,7 +171,7 @@ func communityIndexForContext(ctx context.Context, path string) (*communityFileI
 				communityIndexEvictLocked()
 			}
 			communityIndexCache.Unlock()
-			<-communityIndexBuildSlots
+			<-communityScanSlots
 			if buildErr != nil {
 				return nil, buildErr
 			}
@@ -342,6 +342,15 @@ func scanCommunityCounts(path string, selected map[string]bool) (int64, int64, e
 }
 
 func scanCommunityCountsContext(ctx context.Context, path string, selected map[string]bool) (int64, int64, error) {
+	if err := ctx.Err(); err != nil {
+		return 0, 0, err
+	}
+	select {
+	case communityScanSlots <- struct{}{}:
+		defer func() { <-communityScanSlots }()
+	default:
+		return 0, 0, errCommunityIndexBusy
+	}
 	var total, matched int64
 	err := walkCommunityRecords(ctx, path, nil, func(id string, ids []string) error {
 		total++
