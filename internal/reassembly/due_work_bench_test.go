@@ -106,3 +106,31 @@ func BenchmarkDueMaintenance(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkOverlapBeforeQueuedPages(b *testing.B) {
+	for _, size := range []int{1, 1024, 65536} {
+		b.Run(strconv.Itoa(size), func(b *testing.B) {
+			var a Assembler
+			payload := []byte("0123456789abcdef")
+			pages := make([]page, size)
+			for i := range pages {
+				pages[i].seq = Sequence(2048 + i*len(payload))
+				pages[i].bytes = payload
+				if i > 0 {
+					pages[i].prev = &pages[i-1]
+					pages[i-1].next = &pages[i]
+				}
+			}
+			half := halfconnection{first: &pages[0], last: &pages[size-1], pages: size}
+			a.cacheLP.bytes, a.cacheLP.seq = payload, 1024
+			b.ReportAllocs()
+			for b.Loop() {
+				a.checkOverlap(&half, false, nil)
+			}
+			if half.first != &pages[0] || half.last != &pages[size-1] || half.pages != size || half.overlapPackets != 0 ||
+				a.cacheLP.seq != 1024 || string(a.cacheLP.bytes) != string(payload) {
+				b.Fatal("disjoint input changed queued state or delivered bytes")
+			}
+		})
+	}
+}
