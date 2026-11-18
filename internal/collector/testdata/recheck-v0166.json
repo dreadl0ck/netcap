@@ -361,6 +361,7 @@
     "verification": "TestRepeatedArtifactWriteFailuresKeepFirstCauseAndCount verifies that 1001 persistence failures retain the first cause and exact count without crowding a later scratch-budget issue out of the report. The portable file decoder race suite passed."
   },
   "httpDeflateSourceParity": {
+    "brotli": "TestHTTPSourceExtractionPreservesRecordsAndBodies/br matches disk-backed and byte-backed HTTP and File audits and the decoded 85000-byte body SHA-256. The focused portable parity suite passed under the race detector.",
     "rawDeflate": "The raw-deflate case also matches streamed and byte-backed HTTP and File audits and the decoded 85000-byte body SHA-256. The focused portable parity suite passed under the race detector.",
     "verification": "TestHTTPSourceExtractionPreservesRecordsAndBodies/deflate compares the streamed and byte-backed HTTP and File audits for a zlib-wrapped deflate response and checks the extracted SHA-256 against the original 85000-byte body. The portable extraction parity suite passed under the race detector."
   },
