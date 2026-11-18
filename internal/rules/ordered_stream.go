@@ -220,10 +220,11 @@ func (s *OrderedStream) advance(watermark int64) (int, error) {
 		consumed++
 		s.bytes -= p.charge
 	}
-	copy(s.pending, s.pending[consumed:])
-	clear(s.pending[len(s.pending)-consumed:])
-	s.pending = s.pending[:len(s.pending)-consumed]
-	if len(s.pending) > 0 {
+	clear(s.pending[:consumed])
+	if consumed == len(s.pending) {
+		s.pending = s.pending[:0]
+	} else {
+		s.pending = s.pending[consumed:]
 		s.minPending = s.pending[0].record.Time()
 	}
 	s.watermark = watermark
