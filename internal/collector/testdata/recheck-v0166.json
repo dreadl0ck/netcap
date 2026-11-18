@@ -335,6 +335,9 @@
     "opaquePut": "TestHTTPSourceOpaquePutSkipsScratch verifies that fixed-length and chunked 131072-byte opaque PUTs use no artifact scratch and preserve HTTP audit parity and the following transaction. TestCappedSourceRequestBodyStopsAtLimit verifies exact-limit acceptance and that oversized bodies stop after one extra byte while retaining only the allowed prefix. Focused HTTP source and gzip race tests passed.",
     "verification": "TestHTTPSourceBodylessExchangeSkipsScratch verifies a source-decoded GET/204 produces the same HTTP audit as byte-backed decoding, emits no File record, and never creates the artifact scratch directory. Focused HTTP source and gzip tests passed under the race detector."
   },
+  "artifactIssueRetention": {
+    "verification": "TestRepeatedArtifactWriteFailuresKeepFirstCauseAndCount verifies that 1001 persistence failures retain the first cause and exact count without crowding a later scratch-budget issue out of the report. The portable file decoder race suite passed."
+  },
   "httpDeflateSourceParity": {
     "verification": "TestHTTPSourceExtractionPreservesRecordsAndBodies/deflate compares the streamed and byte-backed HTTP and File audits for a zlib-wrapped deflate response and checks the extracted SHA-256 against the original 85000-byte body. The portable extraction parity suite passed under the race detector."
   },

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"time"
 
@@ -414,7 +415,12 @@ func appendIssue(issues []string, issue string) []string {
 		issue = issue[:1024]
 	}
 	if len(issues) < 128 {
-		return append(issues, issue)
+		for _, recorded := range issues {
+			if recorded == issue {
+				return issues
+			}
+		}
+		return append(issues, strings.Clone(issue))
 	}
 	return issues
 }

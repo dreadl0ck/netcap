@@ -50,6 +50,7 @@ func TestRepeatedArtifactWriteFailuresKeepFirstCauseAndCount(t *testing.T) {
 	for range 1000 {
 		RecordArtifactWriteError(errors.New("later write failure"))
 	}
+	RecordExtractionIssue(errors.New("scratch budget exceeded"))
 	_, persistenceErr := FinishAnalysis()
 	if !errors.Is(persistenceErr, first) || persistenceErr.Error() != first.Error() {
 		t.Fatal(persistenceErr)
@@ -64,6 +65,9 @@ func TestRepeatedArtifactWriteFailuresKeepFirstCauseAndCount(t *testing.T) {
 	}
 	if report.State != "partial" || report.PersistenceFailures != 1001 || report.Error != first.Error() {
 		t.Fatalf("incorrect persistence summary: state=%s count=%d error=%s", report.State, report.PersistenceFailures, report.Error)
+	}
+	if len(report.ExtractionIssues) != 2 || report.ExtractionIssues[0] != "artifact output write failed" || report.ExtractionIssues[1] != "scratch budget exceeded" {
+		t.Fatalf("repeated write failures obscured another extraction issue: %v", report.ExtractionIssues)
 	}
 }
 
