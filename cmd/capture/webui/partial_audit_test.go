@@ -126,6 +126,29 @@ func TestPartialAuditRejectsMislabeledSealedFile(t *testing.T) {
 	}
 }
 
+func TestPartialAuditReaderHonorsCancellationAfterVerification(t *testing.T) {
+	_, run, _, file := partialAuditFixture(t, false)
+	r := httptest.NewRequest("GET", "/api/audit/Connection/stream?sessionId=owned&allowPartial=true", nil)
+	sealed, err := preparePartialAudit(r, captureSelection{RunID: run, OutputDir: filepath.Dir(file)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sealed.close()
+	f := sealed.verifiedFile
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	reader, err := sealed.openReader(ctx)
+	if reader != nil {
+		reader.Close()
+	}
+	if reader != nil || !errors.Is(err, context.Canceled) {
+		t.Fatalf("canceled sealed reader returned %v, %v", reader, err)
+	}
+	if _, err := f.Stat(); !errors.Is(err, os.ErrClosed) {
+		t.Fatalf("verified descriptor was not closed: %v", err)
+	}
+}
+
 func TestPartialAuditReaderRetainsVerifiedDescriptor(t *testing.T) {
 	for _, replacement := range []string{"link", "larger"} {
 		t.Run(replacement, func(t *testing.T) {

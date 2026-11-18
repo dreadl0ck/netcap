@@ -672,7 +672,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	var auditReader *AuditRecordReader
 	var err error
 	if sealed := partialAuditContext(r); sealed != nil {
-		auditReader, err = sealed.openReader()
+		auditReader, err = sealed.openReader(r.Context())
 	} else {
 		var f *os.File
 		f, _, err = artifactio.Open(filepath.Dir(filePath), filepath.Base(filePath))

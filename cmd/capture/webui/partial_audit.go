@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -118,7 +119,7 @@ func partialAuditContext(r *http.Request) *sealedAuditQuery {
 	return value
 }
 
-func (q *sealedAuditQuery) openReader() (*AuditRecordReader, error) {
+func (q *sealedAuditQuery) openReader(ctx context.Context) (*AuditRecordReader, error) {
 	f := q.verifiedFile
 	if f == nil {
 		return nil, fmt.Errorf("sealed audit output unavailable")
@@ -137,7 +138,9 @@ func (q *sealedAuditQuery) openReader() (*AuditRecordReader, error) {
 			f.Close()
 			return nil, fmt.Errorf("sealed audit output changed: size mismatch")
 		}
-		return auditRecordReaderFromFile(f, strings.HasSuffix(q.File, ".gz"))
+		return auditRecordReaderFromInput(f, f, strings.HasSuffix(q.File, ".gz"), func(input io.Reader) io.Reader {
+			return auditContextReader{ctx: ctx, input: input}
+		})
 	}
 	f.Close()
 	return nil, fmt.Errorf("sealed audit output unavailable")
