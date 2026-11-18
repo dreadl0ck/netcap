@@ -73,6 +73,9 @@ var communityIndexCache = struct {
 	bytes uint64
 }{files: make(map[string]*communityIndexEntry)}
 
+var communityIndexBuildSlots = make(chan struct{}, 2)
+var errCommunityIndexBusy = errors.New("Community ID index builders are busy; retry after another build completes")
+
 // communityCachedTotal reuses a completed bitmap generation without building
 // one just to answer an unfiltered count.
 func communityCachedTotal(path string) (int64, bool) {
@@ -133,6 +136,12 @@ func communityIndexForContext(ctx context.Context, path string) (*communityFileI
 		communityIndexCache.Lock()
 		entry := communityIndexCache.files[path]
 		if entry == nil || !entry.matches(info) {
+			select {
+			case communityIndexBuildSlots <- struct{}{}:
+			default:
+				communityIndexCache.Unlock()
+				return nil, errCommunityIndexBusy
+			}
 			if entry != nil {
 				select {
 				case <-entry.ready:
@@ -162,6 +171,7 @@ func communityIndexForContext(ctx context.Context, path string) (*communityFileI
 				communityIndexEvictLocked()
 			}
 			communityIndexCache.Unlock()
+			<-communityIndexBuildSlots
 			if buildErr != nil {
 				return nil, buildErr
 			}

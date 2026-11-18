@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -78,6 +80,35 @@ func TestCommunityIndexInvalidatesOnRewrite(t *testing.T) {
 	}
 	if _, matched, err := communityCounts(path, map[string]bool{"new": true}); err != nil || matched != 2 {
 		t.Fatalf("new counts = (%d, %v)", matched, err)
+	}
+}
+
+func TestCommunityIndexBuildAdmissionKeepsCacheHitsAvailable(t *testing.T) {
+	rows := []proto.Message{&types.DNS{CommunityID: "fixture"}}
+	warm := writeTimelineAuditFilePlain(t, t.TempDir(), "DNS", types.Type_NC_DNS, rows)
+	cold := writeTimelineAuditFilePlain(t, t.TempDir(), "DNS", types.Type_NC_DNS, rows)
+	if idx, err := communityIndexFor(warm); err != nil || idx == nil {
+		t.Fatalf("prime index: %v, %v", idx, err)
+	}
+	func() {
+		for range cap(communityIndexBuildSlots) {
+			communityIndexBuildSlots <- struct{}{}
+			defer func() { <-communityIndexBuildSlots }()
+		}
+		if idx, err := communityIndexFor(cold); idx != nil || !errors.Is(err, errCommunityIndexBusy) {
+			t.Fatalf("cold index at saturation: %v, %v", idx, err)
+		}
+		w := httptest.NewRecorder()
+		HandleAuditFilesFiltered(filepath.Dir(cold))(w, httptest.NewRequest(http.MethodGet, "/api/files/audit/filtered?communityIds=fixture", nil))
+		if w.Code != http.StatusTooManyRequests {
+			t.Fatalf("filtered inventory at saturation: %d, %s", w.Code, w.Body.String())
+		}
+		if idx, err := communityIndexFor(warm); err != nil || idx == nil || idx.total != 1 {
+			t.Fatalf("cache hit at saturation: %v, %v", idx, err)
+		}
+	}()
+	if idx, err := communityIndexFor(cold); err != nil || idx == nil || idx.total != 1 {
+		t.Fatalf("cold index retry: %v, %v", idx, err)
 	}
 }
 

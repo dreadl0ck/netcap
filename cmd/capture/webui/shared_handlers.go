@@ -154,6 +154,10 @@ func HandleAuditFilesFiltered(outputDir string) http.HandlerFunc {
 		// List all audit files and count filtered records
 		files, err := listAuditFilesWithCommunityIDFilter(r.Context(), outputDir, communityIDs)
 		if err != nil {
+			if errors.Is(err, errCommunityIndexBusy) {
+				http.Error(w, err.Error(), http.StatusTooManyRequests)
+				return
+			}
 			if errors.Is(err, errAuditInventoryLimit) {
 				http.Error(w, err.Error(), http.StatusRequestEntityTooLarge)
 				return
