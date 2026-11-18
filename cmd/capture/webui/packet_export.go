@@ -46,20 +46,6 @@ func snapshotBoundedArtifact(ctx context.Context, directory, name, destination s
 	return hex.EncodeToString(digest.Sum(nil)), nil
 }
 
-type packetArchiveBudget struct {
-	writer    io.Writer
-	remaining int
-}
-
-func (w *packetArchiveBudget) Write(data []byte) (int, error) {
-	if len(data) > w.remaining {
-		return 0, fmt.Errorf("packet archive exceeds 16 MiB; narrow selection")
-	}
-	n, err := w.writer.Write(data)
-	w.remaining -= n
-	return n, err
-}
-
 func (s *Server) handlePacketExport(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", 405)
@@ -97,8 +83,24 @@ func (s *Server) handlePacketExport(w http.ResponseWriter, r *http.Request) {
 		selection.StartNs = &start
 		selection.EndNs = &end
 	}
+	limit, err := packetDownloadLimit(r)
+	if err != nil {
+		writePacketDownloadLimitError(w, err)
+		return
+	}
+	const maxArchiveBytes = 16 << 20
+	if limit == 0 || limit > maxArchiveBytes {
+		limit = maxArchiveBytes
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+	release := s.admitSourceAnalysis(w, r)
+	if release == nil {
+		return
+	}
+	defer release()
 	directory, name := filepath.Dir(selected.InputFile), filepath.Base(selected.InputFile)
-	raw, err := artifactio.Read(r.Context(), selected.OutputDir, "capture-manifest.json", 16<<20)
+	raw, err := artifactio.Read(ctx, selected.OutputDir, "capture-manifest.json", 16<<20)
 	if err != nil {
 		http.Error(w, "capture manifest unavailable", 422)
 		return
@@ -125,13 +127,6 @@ func (s *Server) handlePacketExport(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "original source hash does not match capture manifest; live captures require a retained segment", 409)
 		return
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
-	defer cancel()
-	release := s.admitSourceAnalysis(w, r)
-	if release == nil {
-		return
-	}
-	defer release()
 	dir, err := os.MkdirTemp("", "netcap-bound-packets-")
 	if err != nil {
 		http.Error(w, "cannot allocate packet snapshot", 500)
@@ -150,8 +145,11 @@ func (s *Server) handlePacketExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer archive.Close()
-	_, err = evidence.WriteArchive(ctx, input, &packetArchiveBudget{archive, 16 << 20}, selection)
+	_, err = evidence.WriteArchive(ctx, input, &packetArchiveWriter{output: archive, remaining: limit}, selection)
 	if err != nil {
+		if writePacketDownloadLimitError(w, err) {
+			return
+		}
 		http.Error(w, "packet evidence export failed: "+err.Error(), 422)
 		return
 	}

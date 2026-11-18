@@ -367,6 +367,15 @@ func TestMCPPacketExportBindsRetainedSegmentAndRun(t *testing.T) {
 	if exported.SourceSHA256 != segment.SHA256 || exported.Selected != 1 || len(exported.Limitations) == 0 {
 		t.Fatalf("archive lost source qualification: %+v", exported)
 	}
+	query.Set("maxOutputBytes", fmt.Sprint(w.Body.Len()))
+	if exact := request(); exact.Code != http.StatusOK || !bytes.Equal(exact.Body.Bytes(), w.Body.Bytes()) {
+		t.Fatalf("exact output cap changed the archive: status=%d bytes=%d", exact.Code, exact.Body.Len())
+	}
+	query.Set("maxOutputBytes", fmt.Sprint(w.Body.Len()-1))
+	if over := request(); over.Code != http.StatusRequestEntityTooLarge || over.Header().Get("Content-Type") == "application/zip" {
+		t.Fatalf("over-budget export: status=%d type=%q", over.Code, over.Header().Get("Content-Type"))
+	}
+	query.Del("maxOutputBytes")
 	query.Set("runId", "stale")
 	if w := request(); w.Code != 409 {
 		t.Fatal("stale capture generation exported")
