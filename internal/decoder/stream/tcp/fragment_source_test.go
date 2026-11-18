@@ -72,7 +72,7 @@ func TestBackedTCPPrefixFitsSmallCopyBudget(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	prefix, err := core.ReadBudgetedSourcePrefix(reader, 16<<10, copyBudget)
+	prefix, err := core.ReadBudgetedSourcePrefix(core.FragmentRange(reader, 0, reader.Count()), 16<<10, copyBudget)
 	if err != nil || string(prefix) != "GET /x" || cap(prefix) != 6 || stored.loaded {
 		t.Fatalf("backed prefix=%q capacity=%d loaded=%t: %v", prefix, cap(prefix), stored.loaded, err)
 	}

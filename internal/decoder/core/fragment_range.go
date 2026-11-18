@@ -30,6 +30,23 @@ func FragmentRange(source RangedFragmentSource, start, count int64) RangedFragme
 	return fragmentRange{source, start, count}
 }
 func (s fragmentRange) Count() int64 { return s.count }
+
+func (s fragmentRange) PrefixBytesUpperBound(limit int) int {
+	if CheckFragmentRange(s.source.Count(), s.start, s.count) != nil {
+		return -1
+	}
+	if resident, ok := s.source.(SliceSource); ok {
+		return resident[s.start : s.start+s.count].PrefixBytesUpperBound(limit)
+	}
+	// A range starting after a gap can have a longer prefix than the source.
+	if s.start == 0 {
+		if bounded, ok := s.source.(prefixBoundedSource); ok {
+			return bounded.PrefixBytesUpperBound(limit)
+		}
+	}
+	return -1
+}
+
 func (s fragmentRange) Walk(yield func(DataFragment) bool) error {
 	return s.WalkRange(0, s.count, yield)
 }

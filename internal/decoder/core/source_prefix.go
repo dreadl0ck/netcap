@@ -2,6 +2,10 @@ package core
 
 import "errors"
 
+type prefixBoundedSource interface {
+	PrefixBytesUpperBound(limit int) int
+}
+
 func ReadSourcePrefix(source FragmentSource, limit int) ([]byte, error) {
 	return readSourcePrefix(source, limit, nil)
 }
@@ -41,7 +45,7 @@ func readSourcePrefix(source FragmentSource, limit int, reserve func(int64) erro
 	var prefix []byte
 	var reserveErr error
 	capacity := limit
-	if bounded, ok := source.(interface{ PrefixBytesUpperBound(int) int }); ok && count > 1 {
+	if bounded, ok := source.(prefixBoundedSource); ok && count > 1 {
 		if n := bounded.PrefixBytesUpperBound(limit); n >= 0 {
 			capacity = min(limit, n)
 		}
@@ -79,7 +83,7 @@ func readSourcePrefix(source FragmentSource, limit int, reserve func(int64) erro
 	return prefix, err
 }
 
-// PrefixBytesUpperBound returns a bound on the readable prefix, or -1 if unknown.
+// PrefixBytesUpperBound returns the readable prefix size up to limit.
 func (source SliceSource) PrefixBytesUpperBound(limit int) int {
 	size := 0
 	for _, fragment := range source {

@@ -80,6 +80,26 @@ func TestBudgetedResidentPrefixStopsAtGapWithinTightBudget(t *testing.T) {
 	}
 }
 
+func TestBudgetedResidentRangeCanProbeAfterGap(t *testing.T) {
+	source := SliceSource{
+		&StreamData{RawData: []byte("a")},
+		&StreamData{SkippedBytes: 1, RawData: []byte("GET ")},
+		&StreamData{RawData: []byte("/x")},
+	}
+	budget, err := NewStateBudget(6, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prefix, err := ReadBudgetedSourcePrefix(FragmentRange(source, 1, 2), 16<<10, budget)
+	if err != nil || string(prefix) != "GET /x" || cap(prefix) != 6 {
+		t.Fatalf("prefix=%q capacity=%d error=%v", prefix, cap(prefix), err)
+	}
+	budget.Release(int64(cap(prefix)))
+	if health := budget.Health(); health.RetainedBytes != 0 || health.Exceeded {
+		t.Fatalf("prefix credits: %+v", health)
+	}
+}
+
 func BenchmarkReadSourcePrefixSingleFragment(b *testing.B) {
 	source := SliceSource{&StreamData{RawData: make([]byte, 96)}}
 	b.ReportAllocs()
