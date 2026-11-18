@@ -2,7 +2,9 @@ package webui
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http/httptest"
 	"net/url"
@@ -10,12 +12,42 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+func TestConnectionSnapshotWaitCanCancelWithoutRetiringBuild(t *testing.T) {
+	dir := t.TempDir()
+	entry := &connectionCacheEntry{generation: "missing", ready: make(chan struct{})}
+	connectionCache.Lock()
+	connectionCache.entries[dir] = entry
+	connectionCache.Unlock()
+	t.Cleanup(func() {
+		connectionCache.Lock()
+		delete(connectionCache.entries, dir)
+		connectionCache.Unlock()
+	})
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	if snapshot, err := connectionSnapshotForContext(ctx, dir); snapshot != nil || !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("waiting request: snapshot=%v err=%v", snapshot, err)
+	}
+	connectionCache.Lock()
+	kept := connectionCache.entries[dir] == entry
+	connectionCache.Unlock()
+	if !kept {
+		t.Fatal("canceled waiter retired the shared build")
+	}
+	entry.err = errors.New("fixture snapshot build failed")
+	close(entry.ready)
+	if snapshot, err := connectionSnapshotFor(dir); snapshot != nil || !errors.Is(err, entry.err) {
+		t.Fatalf("failed build: snapshot=%v err=%v", snapshot, err)
+	}
+}
 
 func TestConnectionIndexFiltersCountsAndPagination(t *testing.T) {
 	dir := t.TempDir()

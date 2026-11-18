@@ -140,8 +140,11 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	snapshot, err := connectionSnapshotFor(outDir)
+	snapshot, err := connectionSnapshotForContext(r.Context(), outDir)
 	if err != nil {
+		if r.Context().Err() != nil {
+			return
+		}
 		log.Printf("[WebUI] Failed to read connections: %v", err)
 		http.Error(w, "Failed to read connections", http.StatusInternalServerError)
 		return

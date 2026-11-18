@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -212,6 +213,7 @@ type connectionCacheEntry struct {
 	used       time.Time
 	ready      chan struct{}
 	snapshot   *connectionSnapshot
+	err        error
 }
 
 var connectionCache = struct {
@@ -232,7 +234,14 @@ func connectionGeneration(outDir string) (string, error) {
 }
 
 func connectionSnapshotFor(outDir string) (*connectionSnapshot, error) {
+	return connectionSnapshotForContext(context.Background(), outDir)
+}
+
+func connectionSnapshotForContext(ctx context.Context, outDir string) (*connectionSnapshot, error) {
 	for attempt := 0; attempt < 2; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		generation, err := connectionGeneration(outDir)
 		if err != nil {
 			return nil, err
@@ -254,6 +263,7 @@ func connectionSnapshotFor(outDir string) (*connectionSnapshot, error) {
 			connectionCache.Unlock()
 			rows, buildErr := readConnections(outDir)
 			connectionCache.Lock()
+			entry.err = buildErr
 			if buildErr == nil {
 				entry.snapshot = newConnectionSnapshot(rows)
 			}
@@ -274,10 +284,17 @@ func connectionSnapshotFor(outDir string) (*connectionSnapshot, error) {
 		} else {
 			entry.used = time.Now()
 			connectionCache.Unlock()
-			<-entry.ready
-			if entry.snapshot == nil {
-				continue
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-entry.ready:
 			}
+			if entry.err != nil {
+				return nil, entry.err
+			}
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
 		}
 		after, err := connectionGeneration(outDir)
 		if err != nil {
