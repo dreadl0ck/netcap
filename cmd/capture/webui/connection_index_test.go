@@ -20,6 +20,31 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+func TestConnectionSnapshotBuildLimitKeepsCacheHitsAvailable(t *testing.T) {
+	warm, cold := t.TempDir(), t.TempDir()
+	initial, err := connectionSnapshotFor(warm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	func() {
+		for range cap(connectionBuildSlots) {
+			connectionBuildSlots <- struct{}{}
+			defer func() { <-connectionBuildSlots }()
+		}
+		if got, err := connectionSnapshotFor(warm); got != initial || err != nil {
+			t.Fatalf("warm snapshot at capacity: got=%p want=%p err=%v", got, initial, err)
+		}
+		w := httptest.NewRecorder()
+		newTimelineTestServer(cold).handleConnections(w, httptest.NewRequest("GET", "/api/connections?limit=1", nil))
+		if w.Code != 429 {
+			t.Fatalf("cold snapshot at capacity: %d %s", w.Code, w.Body)
+		}
+	}()
+	if got, err := connectionSnapshotFor(cold); got == nil || err != nil {
+		t.Fatalf("cold retry after release: got=%p err=%v", got, err)
+	}
+}
+
 func TestConnectionSnapshotWaitCanCancelWithoutRetiringBuild(t *testing.T) {
 	dir := t.TempDir()
 	entry := &connectionCacheEntry{generation: "missing", ready: make(chan struct{})}

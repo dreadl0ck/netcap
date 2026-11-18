@@ -145,6 +145,14 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 		if r.Context().Err() != nil {
 			return
 		}
+		switch err {
+		case errConnectionBuildBusy:
+			RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": err.Error()})
+			return
+		case errConnectionAuditChanged:
+			RespondJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			return
+		}
 		log.Printf("[WebUI] Failed to read connections: %v", err)
 		http.Error(w, "Failed to read connections", http.StatusInternalServerError)
 		return

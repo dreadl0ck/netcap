@@ -222,6 +222,12 @@ var connectionCache = struct {
 	bytes   uint64
 }{entries: make(map[string]*connectionCacheEntry)}
 
+var (
+	connectionBuildSlots      = make(chan struct{}, 2)
+	errConnectionBuildBusy    = errors.New("connection inventory builds are busy")
+	errConnectionAuditChanged = errors.New("connection audit changed during inventory build; retry")
+)
+
 func connectionGeneration(outDir string) (string, error) {
 	info, err := os.Stat(filepath.Join(outDir, "Connection.ncap.gz"))
 	if errors.Is(err, os.ErrNotExist) {
@@ -249,6 +255,12 @@ func connectionSnapshotForContext(ctx context.Context, outDir string) (*connecti
 		connectionCache.Lock()
 		entry := connectionCache.entries[outDir]
 		if entry == nil || entry.generation != generation {
+			select {
+			case connectionBuildSlots <- struct{}{}:
+			default:
+				connectionCache.Unlock()
+				return nil, errConnectionBuildBusy
+			}
 			if entry != nil {
 				select {
 				case <-entry.ready:
@@ -261,12 +273,10 @@ func connectionSnapshotForContext(ctx context.Context, outDir string) (*connecti
 			entry = &connectionCacheEntry{generation: generation, ready: make(chan struct{})}
 			connectionCache.entries[outDir] = entry
 			connectionCache.Unlock()
-			rows, buildErr := readConnections(outDir)
+			snapshot, buildErr := buildConnectionSnapshot(outDir)
 			connectionCache.Lock()
 			entry.err = buildErr
-			if buildErr == nil {
-				entry.snapshot = newConnectionSnapshot(rows)
-			}
+			entry.snapshot = snapshot
 			close(entry.ready)
 			if connectionCache.entries[outDir] == entry {
 				if buildErr != nil || entry.snapshot.bytes > connectionCacheBytes {
@@ -304,6 +314,11 @@ func connectionSnapshotForContext(ctx context.Context, outDir string) (*connecti
 			return entry.snapshot, nil
 		}
 	}
+	return nil, errConnectionAuditChanged
+}
+
+func buildConnectionSnapshot(outDir string) (*connectionSnapshot, error) {
+	defer func() { <-connectionBuildSlots }()
 	rows, err := readConnections(outDir)
 	if err != nil {
 		return nil, err
