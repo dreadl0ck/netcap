@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dreadl0ck/netcap/types"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 )
@@ -102,6 +103,42 @@ func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 			}
 			if strings.Contains(strings.Join(alerts[0].Examples, " "), "Possible stale probe") != tc.want {
 				t.Fatalf("unexpected evidence: %v", alerts[0].Examples)
+			}
+		})
+	}
+}
+
+func TestConflictingExtensionDoesNotEstablishStaleProbeBoundary(t *testing.T) {
+	for _, tc := range []struct {
+		name, extension       string
+		conflicts, candidates uint64
+	}{
+		{"matching", "defgh", 1, 1},
+		{"conflicting", "xefgh", 2, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e, err := New(DefaultConfig())
+			if err != nil {
+				t.Fatal(err)
+			}
+			var alerts []*types.Alert
+			for i, part := range []struct {
+				seq     uint32
+				payload string
+			}{{100, "abcd"}, {103, tc.extension}, {108, "ijkl"}, {107, "\x00"}} {
+				ev := baseEvent("data", i+1)
+				ev.Seq, ev.Payload, ev.KeepAliveEligible = part.seq, []byte(part.payload), i == 3
+				out, err := e.Observe(ev)
+				if err != nil {
+					t.Fatal(err)
+				}
+				alerts = append(alerts, out...)
+			}
+			alerts = append(alerts, e.Flush()...)
+			stats := e.Stats()
+			if stats.ConflictingOverlapBytes != tc.conflicts || stats.StaleProbeCandidates != tc.candidates ||
+				len(alerts) != 1 || alerts[0].Name != "tcp.overlap-conflict" || alerts[0].Severity != "medium" {
+				t.Fatalf("alerts=%v stats=%+v", alerts, stats)
 			}
 		})
 	}

@@ -145,11 +145,11 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 		return
 	}
 	payload := ev.Payload
+	var conflicts uint64
 	if delta < 0 {
 		start := int64(int32(ev.Seq - d.prefixSeq))
 		begin := max(int64(0), -start)
 		end := min(int64(len(ev.Payload)), int64(len(d.prefix))-start, -int64(delta))
-		conflicts := uint64(0)
 		for i := begin; i < end; i++ {
 			if ev.Payload[i] != d.prefix[start+i] {
 				conflicts++
@@ -175,7 +175,7 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 	if len(payload) > 0 {
 		d.nextTruncated = ev.Truncated
 	}
-	if !f.closed && !ev.Truncated {
+	if !f.closed && !ev.Truncated && len(payload) > 0 && conflicts == 0 {
 		d.rememberPrefixEnd()
 	}
 	d.bytes += uint64(len(payload))
