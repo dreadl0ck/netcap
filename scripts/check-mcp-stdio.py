@@ -301,6 +301,12 @@ rules:
             if not rejected.isError:
                 failures.append(f"sealed continuation accepted changed query: {changed}")
         count = await call("query_audit_records", query | {"count_only": True})
+        sealed_count = await call("query_audit_records", query | {"allow_partial": True, "count_only": True})
+        counted = sealed_count["summary"]
+        if ("records" in sealed_count or counted["total"] != 18 or not counted["partialAdmission"]
+                or counted["runId"] != summary["runId"] or counted["stageGeneration"] != summary["stageGeneration"]
+                or not counted["queryGeneration"] or counted["queryGeneration"] == summary["queryGeneration"]):
+            raise ValueError("sealed count-only query lost coverage or used the record query generation")
         full = await call("query_audit_records", query | {"limit": 18})
         if (not summary["partialAdmission"] or len(first["records"]) != 1 or len(second["records"]) != 17
                 or second["summary"]["queryGeneration"] != summary["queryGeneration"]
