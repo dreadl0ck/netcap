@@ -107,6 +107,9 @@ func TestCommunityIndexInvalidatesSameSizeReplacement(t *testing.T) {
 	if _, ok := communityCachedTotal(path); ok {
 		t.Fatal("cached total survived a file replacement")
 	}
+	if idx, err := buildCommunityIndex(path, info); idx != nil || err != errCommunityAuditChanged {
+		t.Fatalf("stale build snapshot accepted: index=%v, err=%v", idx, err)
+	}
 	if total, matched, err := communityCounts(path, ids); err != nil || total != 1 || matched != 0 {
 		t.Fatalf("replacement counts: %d, %d, %v", total, matched, err)
 	}
