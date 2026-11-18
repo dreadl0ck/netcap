@@ -10,9 +10,15 @@ import (
 	"io"
 	"math"
 	"net/netip"
-	"os"
 	"path/filepath"
 	"sort"
+
+	"github.com/dreadl0ck/netcap/internal/artifactio"
+)
+
+const (
+	maxReportHealthBytes  = 1 << 20
+	maxReportRecordsBytes = 256 << 20
 )
 
 type Query struct {
@@ -94,7 +100,8 @@ func ReadReport(ctx context.Context, path string, query Query) (Report, error) {
 			prefix = netip.PrefixFrom(addr, addr.BitLen())
 		}
 	}
-	healthData, err := os.ReadFile(filepath.Join(filepath.Dir(path), "FlowExportsHealth.json"))
+	dir := filepath.Dir(path)
+	healthData, err := artifactio.Read(ctx, dir, "FlowExportsHealth.json", maxReportHealthBytes)
 	if err != nil {
 		return result, fmt.Errorf("export collection health unavailable: %w", err)
 	}
@@ -107,17 +114,16 @@ func ReadReport(ctx context.Context, path string, query Query) (Report, error) {
 	if result.Health.Status == "partial" {
 		result.Limitations = append(result.Limitations, "collection is partial: inspect health and issue events before interpreting a negative search")
 	}
-	file, err := os.Open(path)
+	file, before, err := artifactio.Open(dir, filepath.Base(path))
 	if err != nil {
 		return result, err
 	}
 	defer file.Close()
-	before, err := file.Stat()
-	if err != nil {
-		return result, err
+	if before.Size() > maxReportRecordsBytes {
+		return result, fmt.Errorf("export record file exceeds %d byte limit", maxReportRecordsBytes)
 	}
 	digest := sha256.New()
-	scanner := bufio.NewScanner(io.TeeReader(file, digest))
+	scanner := bufio.NewScanner(io.TeeReader(io.NewSectionReader(file, 0, before.Size()), digest))
 	scanner.Buffer(make([]byte, 4096), 2<<20)
 	groups := map[string]*Group{}
 	seen := map[string]bool{}
@@ -215,6 +221,9 @@ func ReadReport(ctx context.Context, path string, query Query) (Report, error) {
 		result.Matched++
 	}
 	if err := scanner.Err(); err != nil {
+		return result, err
+	}
+	if err := ctx.Err(); err != nil {
 		return result, err
 	}
 	after, err := file.Stat()

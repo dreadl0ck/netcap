@@ -6,8 +6,35 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func TestExportReportRejectsOversizedInputs(t *testing.T) {
+	dir := t.TempDir()
+	health := filepath.Join(dir, "FlowExportsHealth.json")
+	records := filepath.Join(dir, "FlowExports.jsonl")
+	if err := os.WriteFile(health, []byte(`{"status":"done"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(records, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	domain := uint32(0)
+	query := Query{Exporter: "192.0.2.10:4739", Format: "ipfix", Domain: &domain, TimeBasis: "receive", GroupBy: "srcIP", Limit: 1}
+	if err := os.Truncate(records, maxReportRecordsBytes+1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ReadReport(t.Context(), records, query); err == nil || !strings.Contains(err.Error(), "export record file exceeds") {
+		t.Fatalf("oversized record file: %v", err)
+	}
+	if err := os.Truncate(health, maxReportHealthBytes+1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ReadReport(t.Context(), records, query); err == nil || !strings.Contains(err.Error(), "export collection health unavailable: artifact exceeds") {
+		t.Fatalf("oversized health file: %v", err)
+	}
+}
 
 func TestExportReportScopeCountsAndHealth(t *testing.T) {
 	dir := t.TempDir()
