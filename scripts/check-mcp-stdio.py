@@ -161,6 +161,13 @@ rules:
             raise ValueError("unscoped UDP fixture lost its partial evaluation qualification")
         if not any(saved["id"] == report["id"] and saved["packDigest"] == report["packDigest"] for saved in history):
             raise ValueError("offline evaluation report was not retained")
+        manual = await call("execute_detection_rules", args)
+        results = manual["ruleResults"]
+        successful = [row for row in results if row["success"]]
+        if (not results or manual["success"] != (len(successful) == len(results))
+                or manual["totalRecords"] != sum(row["recordsRead"] for row in successful)
+                or manual["totalAlerts"] != sum(row["alertsCount"] for row in successful)):
+            raise ValueError("manual rule replay lost per-rule outcomes or aggregate totals")
         meta = await call("get_timeline_meta", args)
         track = args | {"types": "UDP", "generation": meta["generation"]}
         page = await call("query_timeline_events", track | {"limit": 5})
