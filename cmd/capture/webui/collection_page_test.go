@@ -10,6 +10,25 @@ import (
 	"testing"
 )
 
+func TestCollectionPageValidatesSelectorsWithoutRows(t *testing.T) {
+	for _, tc := range []struct{ query, message string }{
+		{"pageSearch=a&pageSearch=b", "duplicate pageSearch"},
+		{"pageGeneration=a&pageGeneration=b", "duplicate pageGeneration"},
+		{"pageFields=a&pageFields=b", "duplicate pageFields"},
+		{"pageOffset=42&pageFields=a,", "empty field path"},
+		{"pageFields=/a/b/c/d/e/f/g/h/i", "field path exceeds 8 levels"},
+	} {
+		t.Run(tc.message, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			respondCollectionPage(w, httptest.NewRequest(http.MethodGet, "/?mcpPage=true&"+tc.query, nil), []map[string]any{}, "rows")
+			var result map[string]string
+			if w.Code != http.StatusBadRequest || json.Unmarshal(w.Body.Bytes(), &result) != nil || len(result) != 1 || result["error"] != tc.message {
+				t.Fatalf("expected selector error, got %d %s", w.Code, w.Body)
+			}
+		})
+	}
+}
+
 func TestCollectionPageMetadataBudget(t *testing.T) {
 	// The two encoded objects together fill exactly one MiB.
 	metadata := []map[string]any{{"view": "hosts"}, {"label": ""}}

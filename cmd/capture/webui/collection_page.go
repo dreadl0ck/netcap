@@ -37,17 +37,27 @@ func respondCollectionPageFiltered(w http.ResponseWriter, r *http.Request, rows 
 		return true
 	}
 	limit, offset := 100, 0
-	for name, target := range map[string]*int{"pageLimit": &limit, "pageOffset": &offset} {
+	for _, name := range []string{"mcpPage", "pageLimit", "pageOffset", "pageSearch", "pageFields", "pageGeneration"} {
+		if len(q[name]) > 1 {
+			return fail(400, fmt.Errorf("duplicate %s", name))
+		}
+	}
+	for _, option := range []struct {
+		name   string
+		target *int
+	}{{"pageLimit", &limit}, {"pageOffset", &offset}} {
+		name, target := option.name, option.target
 		if values, ok := q[name]; ok {
-			if len(values) != 1 {
-				return fail(400, fmt.Errorf("duplicate %s", name))
-			}
 			value, err := strconv.Atoi(values[0])
 			if err != nil || value < 0 || value > 1000000000 || (name == "pageLimit" && (value < 1 || value > 500)) {
 				return fail(400, fmt.Errorf("invalid %s", name))
 			}
 			*target = value
 		}
+	}
+	projection, err := parseRecordProjection(q.Get("pageFields"))
+	if err != nil {
+		return fail(400, err)
 	}
 	value := reflect.ValueOf(rows)
 	if value.Kind() != reflect.Slice {
@@ -121,7 +131,7 @@ func respondCollectionPageFiltered(w http.ResponseWriter, r *http.Request, rows 
 	page := make([]json.RawMessage, 0)
 	used := 0
 	for i := offset; i < len(items) && len(page) < limit; i++ {
-		raw, err := projectRecordJSON(items[i], q.Get("pageFields"))
+		raw, err := applyRecordProjection(items[i], projection)
 		if err != nil {
 			return fail(400, err)
 		}
