@@ -108,7 +108,7 @@ func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 }
 
 func TestTruncatedSegmentDoesNotEstablishStaleProbeBoundary(t *testing.T) {
-	for _, truncate := range []bool{false, true} {
+	for _, truncatedPacket := range []int{-1, 0, 2} {
 		e, err := New(DefaultConfig())
 		if err != nil {
 			t.Fatal(err)
@@ -119,14 +119,14 @@ func TestTruncatedSegmentDoesNotEstablishStaleProbeBoundary(t *testing.T) {
 		}{{100, "abcd"}, {104, "efgh"}, {103, "\x00"}} {
 			ev := baseEvent("data", i+1)
 			ev.Seq, ev.Payload = part.seq, []byte(part.payload)
-			snaplen := truncate && i == 0
+			snaplen := i == truncatedPacket
 			if snaplen {
 				ev.Payload = append(ev.Payload, 'x')
 			}
 			raw := packetForEvent(t, ev)
 			length := len(raw)
 			if snaplen {
-				raw = raw[:14+20+20+4]
+				raw = raw[:14+20+20+len(part.payload)]
 			}
 			p := gopacket.NewPacket(raw, layers.LayerTypeEthernet, gopacket.Default)
 			p.Metadata().CaptureInfo = gopacket.CaptureInfo{Timestamp: time.Unix(0, ev.At), CaptureLength: len(raw), Length: length}
@@ -137,11 +137,11 @@ func TestTruncatedSegmentDoesNotEstablishStaleProbeBoundary(t *testing.T) {
 			}
 		}
 		want := uint64(1)
-		if truncate {
+		if truncatedPacket >= 0 {
 			want = 0
 		}
 		if s := e.Stats(); s.ConflictingOverlapBytes != 1 || s.StaleProbeCandidates != want {
-			t.Fatalf("truncated predecessor=%t: %+v", truncate, s)
+			t.Fatalf("truncated packet index=%d: %+v", truncatedPacket, s)
 		}
 	}
 }
