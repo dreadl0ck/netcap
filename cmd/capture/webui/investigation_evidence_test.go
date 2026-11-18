@@ -17,6 +17,20 @@ import (
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 )
 
+func TestInvestigationHealthPreservesExactCounters(t *testing.T) {
+	dir := t.TempDir()
+	const counter = "9007199254740993"
+	path := filepath.Join(dir, "TCPReassemblyHealth.json")
+	if err := os.WriteFile(path, []byte(`{"bytes":`+counter+`}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	(&Server{outDir: dir}).handleInvestigationHealth(w, httptest.NewRequest(http.MethodGet, "/?kind=reassembly", nil))
+	if w.Code != http.StatusOK || strings.TrimSpace(w.Body.String()) != `{"bytes":`+counter+`}` {
+		t.Fatalf("health response: %d %s", w.Code, w.Body)
+	}
+}
+
 func TestInvestigationJSONRejectsLinkedFiles(t *testing.T) {
 	dir := t.TempDir()
 	external := filepath.Join(t.TempDir(), "fixture.json")

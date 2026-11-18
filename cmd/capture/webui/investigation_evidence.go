@@ -80,7 +80,7 @@ func (s *Server) handleInvestigationHealth(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "No selected analysis", http.StatusServiceUnavailable)
 		return
 	}
-	var value any
+	var value json.RawMessage
 	if err := readEvidenceJSON(r.Context(), out, filename, &value); err != nil {
 		http.Error(w, "Investigation health unavailable: "+err.Error(), http.StatusUnprocessableEntity)
 		return
