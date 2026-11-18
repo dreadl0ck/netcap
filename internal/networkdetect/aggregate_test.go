@@ -87,6 +87,24 @@ func TestAggregationCapacityFlushPreservesCounts(t *testing.T) {
 	}
 }
 
+func TestAggregationCapacityUsesOldestTimestampThenKey(t *testing.T) {
+	c := DefaultConfig()
+	c.MaxKeys = 3
+	g := newAggregator(c)
+	for _, row := range []struct {
+		key string
+		at  int64
+	}{{"a", 11}, {"c", 10}, {"b", 10}} {
+		g.add(row.key, &types.Alert{Timestamp: row.at})
+	}
+	for i, want := range []string{"b", "c", "a"} {
+		out := g.add(string(rune('d'+i)), &types.Alert{Timestamp: 12})
+		if len(out) != 1 || out[0].AggregateKey != want || out[0].Count != 1 {
+			t.Fatalf("capacity flush %d: got %v, want %q", i, out, want)
+		}
+	}
+}
+
 func TestAggregationKeysSeparateScanShapesServicesAndScope(t *testing.T) {
 	c := DefaultConfig()
 	c.ScanTargets = 2

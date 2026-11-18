@@ -82,8 +82,14 @@ func (g *aggregator) add(key string, a *types.Alert) []*types.Alert {
 	entry := g.pending[key]
 	if entry == nil {
 		if len(g.pending) >= g.maxKeys {
-			keys := g.orderedKeys()
-			out = append(out, g.take(keys[0], "capacity"))
+			var oldest *types.Alert
+			var oldestKey string
+			for key, entry := range g.pending {
+				if oldest == nil || entry.alert.FirstSeen < oldest.FirstSeen || entry.alert.FirstSeen == oldest.FirstSeen && key < oldestKey {
+					oldest, oldestKey = entry.alert, key
+				}
+			}
+			out = append(out, g.take(oldestKey, "capacity"))
 			g.capacity++
 		}
 		a.AggregateKey, a.FirstSeen, a.LastSeen = key, a.Timestamp, a.Timestamp
