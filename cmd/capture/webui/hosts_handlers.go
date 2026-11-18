@@ -271,39 +271,7 @@ func readHostTraffic(ctx context.Context, outDir string) ([]HostSummary, error) 
 			continue
 		}
 
-		// Extract top protocols (limited to top 5)
-		topProtocols := make([]ProtocolInfo, 0)
-		if ipProfile.Protocols != nil {
-			type protoPair struct {
-				name     string
-				packets  uint64
-				category string
-			}
-			protos := make([]protoPair, 0, len(ipProfile.Protocols))
-			for name, proto := range ipProfile.Protocols {
-				protos = append(protos, protoPair{
-					name:     name,
-					packets:  proto.Packets,
-					category: proto.Category,
-				})
-			}
-			// Sort by packet count descending
-			sort.Slice(protos, func(i, j int) bool {
-				if protos[i].packets == protos[j].packets {
-					return protos[i].name < protos[j].name
-				}
-				return protos[i].packets > protos[j].packets
-			})
-			// Take top 5
-			limit := min(len(protos), 5)
-			for i := 0; i < limit; i++ {
-				topProtocols = append(topProtocols, ProtocolInfo{
-					Name:     protos[i].name,
-					Packets:  protos[i].packets,
-					Category: protos[i].category,
-				})
-			}
-		}
+		topProtocols := extractTopProtocols(ipProfile.Protocols, 5)
 
 		// Extract top source ports (limited to top 5)
 		topSrcPorts := extractTopPorts(ipProfile.SrcPorts, 5)
@@ -346,7 +314,37 @@ func readHostTraffic(ctx context.Context, outDir string) ([]HostSummary, error) 
 	return hosts, nil
 }
 
-// extractTopPorts extracts top N ports sorted by packet count
+func extractTopProtocols(protocols map[string]*types.Protocol, limit int) []ProtocolInfo {
+	result := make([]ProtocolInfo, 0, max(0, min(limit, len(protocols))))
+	for name, protocol := range protocols {
+		if protocol != nil {
+			result = insertHostRank(result, ProtocolInfo{Name: name, Packets: protocol.Packets, Category: protocol.Category}, hostProtocolBefore)
+		}
+	}
+	return result
+}
+
+func hostProtocolBefore(a, b ProtocolInfo) bool {
+	if a.Packets != b.Packets {
+		return a.Packets > b.Packets
+	}
+	return a.Name < b.Name
+}
+
+func insertHostRank[T any](rank []T, candidate T, before func(T, T) bool) []T {
+	i := sort.Search(len(rank), func(i int) bool { return before(candidate, rank[i]) })
+	if i == cap(rank) {
+		return rank
+	}
+	if len(rank) < cap(rank) {
+		rank = rank[:len(rank)+1]
+	}
+	copy(rank[i+1:], rank[i:])
+	rank[i] = candidate
+	return rank
+}
+
+// extractTopPorts extracts top N ports sorted by packet count.
 func extractTopPorts(ports []*types.Port, limit int) []PortInfo {
 	limit = max(0, min(limit, len(ports)))
 	result := make([]PortInfo, 0, limit)
@@ -358,15 +356,7 @@ func extractTopPorts(ports []*types.Port, limit int) []PortInfo {
 			continue
 		}
 		candidate := PortInfo{Port: port.PortNumber, Protocol: port.Protocol, Packets: port.Stats.Packets, Bytes: port.Stats.Bytes}
-		i := sort.Search(len(result), func(i int) bool { return hostPortBefore(candidate, result[i]) })
-		if i == limit {
-			continue
-		}
-		if len(result) < limit {
-			result = append(result, PortInfo{})
-		}
-		copy(result[i+1:], result[i:])
-		result[i] = candidate
+		result = insertHostRank(result, candidate, hostPortBefore)
 	}
 	return result
 }

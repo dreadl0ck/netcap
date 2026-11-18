@@ -54,6 +54,18 @@ func TestCollectionPageRejectsIncompleteScans(t *testing.T) {
 	}
 }
 
+func TestHostTopProtocolsKeepStableCutoff(t *testing.T) {
+	protocols := map[string]*types.Protocol{
+		"TLS": {Packets: 8}, "HTTP": {Packets: 4}, "DNS": {Packets: 4}, "SSH": nil,
+	}
+	for range 16 {
+		got := extractTopProtocols(protocols, 2)
+		if len(got) != 2 || got[0].Name != "TLS" || got[1].Name != "DNS" {
+			t.Fatalf("unexpected protocol ranking: %+v", got)
+		}
+	}
+}
+
 func TestHostTopPortsKeepStableCutoff(t *testing.T) {
 	ports := []*types.Port{
 		{PortNumber: 443, Protocol: "tcp", Stats: &types.PortStats{Packets: 6}},
