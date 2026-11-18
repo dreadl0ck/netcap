@@ -78,6 +78,8 @@ type DomainsResponse struct {
 	TotalCount int             `json:"totalCount"`
 }
 
+var domainInventorySlots = make(chan struct{}, 2)
+
 // handleDomains returns a list of all domains extracted from DNS records
 func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -94,7 +96,18 @@ func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {
 
 	var budget *inventoryAuditBudget
 	if r.URL.Query().Get("mcpPage") == "true" {
-		budget = &inventoryAuditBudget{ctx: r.Context(), stored: maxCollectionPageScanBytes, bodies: maxCollectionPageScanBytes, rows: maxCollectionPageRows}
+		ctx := r.Context()
+		if ctx.Err() != nil {
+			return
+		}
+		select {
+		case domainInventorySlots <- struct{}{}:
+			defer func() { <-domainInventorySlots }()
+		default:
+			RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "domain inventory is busy"})
+			return
+		}
+		budget = &inventoryAuditBudget{ctx: ctx, stored: maxCollectionPageScanBytes, bodies: maxCollectionPageScanBytes, rows: maxCollectionPageRows}
 	}
 	domains, err := readDomainInventory(outDir, budget)
 	if err != nil {

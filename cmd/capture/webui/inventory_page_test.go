@@ -272,16 +272,26 @@ func (w heldAlertPageResponse) Write(p []byte) (int, error) {
 
 func TestMCPHTTPInventoryLimitsConcurrentResponses(t *testing.T) {
 	s := &Server{outDir: t.TempDir()}
+	testInventoryResponseCapacity(t, "/api/http", s.handleHTTP)
+}
+
+func TestMCPDomainInventoryLimitsConcurrentResponses(t *testing.T) {
+	s := &Server{outDir: t.TempDir()}
+	testInventoryResponseCapacity(t, "/api/domains", s.handleDomains)
+}
+
+func testInventoryResponseCapacity(t *testing.T, path string, handle http.HandlerFunc) {
+	t.Helper()
 	release := make(chan struct{})
 	var workers sync.WaitGroup
 	finish := sync.OnceFunc(func() { close(release); workers.Wait() })
 	t.Cleanup(finish)
 	request := func() *http.Request {
-		return httptest.NewRequest(http.MethodGet, "/api/http?mcpPage=true", nil)
+		return httptest.NewRequest(http.MethodGet, path+"?mcpPage=true", nil)
 	}
 	for range 2 {
 		w := heldAlertPageResponse{ResponseRecorder: httptest.NewRecorder(), writing: make(chan struct{}, 1), release: release}
-		workers.Go(func() { s.handleHTTP(w, request()) })
+		workers.Go(func() { handle(w, request()) })
 		select {
 		case <-w.writing:
 			if w.Code != http.StatusOK {
@@ -292,13 +302,13 @@ func TestMCPHTTPInventoryLimitsConcurrentResponses(t *testing.T) {
 		}
 	}
 	w := httptest.NewRecorder()
-	s.handleHTTP(w, request())
+	handle(w, request())
 	if w.Code != http.StatusTooManyRequests {
 		t.Fatalf("request at capacity: %d %s", w.Code, w.Body)
 	}
 	finish()
 	w = httptest.NewRecorder()
-	s.handleHTTP(w, request())
+	handle(w, request())
 	if w.Code != http.StatusOK {
 		t.Fatalf("request after release: %d %s", w.Code, w.Body)
 	}
