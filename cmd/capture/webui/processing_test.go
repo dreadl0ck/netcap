@@ -149,8 +149,12 @@ func TestProcessingCancelDoesNotHideUnwindingWork(t *testing.T) {
 	if err := server.enqueueAnalysis(&AnalysisJob{InputFile: "queued"}, false); err != nil {
 		t.Fatal(err)
 	}
-	if err := server.enqueueAnalysis(&AnalysisJob{InputFile: "full"}, false); !errors.Is(err, errAnalysisQueueFull) {
+	full := &AnalysisJob{InputFile: "full"}
+	if err := server.enqueueAnalysis(full, false); !errors.Is(err, errAnalysisQueueFull) {
 		t.Fatalf("full queue was accepted: %v", err)
+	}
+	if full.settings != nil || len(full.ArtifactConfig) != 0 {
+		t.Fatal("nonblocking submission prepared snapshots for a full queue")
 	}
 	blocked := make(chan error, 1)
 	go func() { blocked <- server.enqueueAnalysis(&AnalysisJob{InputFile: "waiting"}, true) }()

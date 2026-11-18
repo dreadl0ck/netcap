@@ -51,6 +51,10 @@ func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
 	if liveBusy {
 		return errAnalysisUnavailable
 	}
+	if !wait && cap(s.jobQueue) > 0 && len(s.jobQueue) == cap(s.jobQueue) {
+		job.settings.cleanup()
+		return errAnalysisQueueFull
+	}
 	if len(job.ArtifactConfig) == 0 {
 		snapshot, err := snapshotArtifactConfig()
 		if err != nil {
