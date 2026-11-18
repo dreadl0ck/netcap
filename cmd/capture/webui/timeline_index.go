@@ -22,6 +22,7 @@ package webui
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -140,6 +141,7 @@ func (idx *timelineIndex) typeIndex(name string) *tlTypeIndex {
 type timelineIndexEntry struct {
 	cancel      chan struct{}
 	fingerprint string // immutable after creation
+	files       []timelineFileRef
 	finished    chan struct{}
 
 	mu     sync.RWMutex
@@ -184,6 +186,22 @@ type timelineFileRef struct {
 
 func (ref timelineFileRef) matches(info os.FileInfo) bool {
 	return os.SameFile(ref.info, info) && ref.info.Size() == info.Size() && ref.info.ModTime().Equal(info.ModTime())
+}
+
+func sameTimelineFiles(a, b []timelineFileRef) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, ref := range a {
+		if ref.path != b[i].path || !ref.matches(b[i].info) {
+			return false
+		}
+	}
+	return true
+}
+
+func (entry *timelineIndexEntry) matches(fingerprint string, files []timelineFileRef) bool {
+	return entry != nil && entry.fingerprint == fingerprint && sameTimelineFiles(entry.files, files)
 }
 
 func timelineBuildLane(files []timelineFileRef) (chan struct{}, int) {
@@ -351,7 +369,7 @@ func timelineIndexFor(outDir string) timelineIndexStatus {
 		entry.mu.RUnlock()
 	}
 
-	if entry == nil || (entry.fingerprint != fingerprint && !entryIndexing) {
+	if entry == nil || (!entry.matches(fingerprint, files) && !entryIndexing) {
 		if entry == nil && len(timelineCache.entries) >= timelineCacheSize {
 			var oldestKey string
 			var oldest time.Time
@@ -374,6 +392,7 @@ func timelineIndexFor(outDir string) timelineIndexStatus {
 		entry = &timelineIndexEntry{
 			cancel:      make(chan struct{}),
 			fingerprint: fingerprint,
+			files:       files,
 			finished:    make(chan struct{}),
 			state:       timelineStateIndexing,
 			total:       int64(len(files)),
@@ -389,7 +408,7 @@ func timelineIndexFor(outDir string) timelineIndexStatus {
 
 	entry.mu.RLock()
 	defer entry.mu.RUnlock()
-	if entry.fingerprint != fingerprint {
+	if !entry.matches(fingerprint, files) {
 		// The old build may have finished since the cache admission check.
 		return timelineIndexStatus{State: timelineStateIndexing, finished: entry.finished}
 	}
@@ -584,18 +603,8 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 			return
 		}
 	}
-	idx := assembleTimelineIndex(fingerprint, results)
 	current, currentFiles, err := timelineFingerprint(outDir)
-	unchanged := current == fingerprint && len(files) == len(currentFiles)
-	if unchanged {
-		for i, ref := range files {
-			if ref.path != currentFiles[i].path || !ref.matches(currentFiles[i].info) {
-				unchanged = false
-				break
-			}
-		}
-	}
-	if err != nil || !unchanged {
+	if err != nil || current != fingerprint || !sameTimelineFiles(files, currentFiles) {
 		entry.mu.Lock()
 		entry.state = timelineStateError
 		entry.errMsg = "timeline input changed during indexing"
@@ -605,6 +614,7 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 		entry.mu.Unlock()
 		return
 	}
+	idx := assembleTimelineIndex(rand.Text(), results)
 
 	entry.mu.Lock()
 	entry.index = idx

@@ -111,7 +111,7 @@ func (s *Server) selectedAnalysisPhase(selection captureSelection) (string, stri
 	if phase != "" || !completed {
 		return phase, ""
 	}
-	fingerprint, _, err := timelineFingerprint(selection.OutputDir)
+	fingerprint, files, err := timelineFingerprint(selection.OutputDir)
 	if err != nil {
 		return "completed", ""
 	}
@@ -121,7 +121,7 @@ func (s *Server) selectedAnalysisPhase(selection captureSelection) (string, stri
 	timelineCache.Lock()
 	entry := timelineCache.entries[selection.OutputDir]
 	timelineCache.Unlock()
-	if entry != nil && entry.fingerprint == fingerprint {
+	if entry.matches(fingerprint, files) {
 		entry.mu.RLock()
 		defer entry.mu.RUnlock()
 		if entry.state == timelineStateReady && entry.index != nil {

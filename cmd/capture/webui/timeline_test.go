@@ -681,6 +681,38 @@ func TestTimelineBucketsSpanDurations(t *testing.T) {
 	}
 }
 
+func TestTimelineCacheRejectsReplacedAuditGeneration(t *testing.T) {
+	dir := t.TempDir()
+	path := writeTimelineAuditFilePlain(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{dnsRecord(100, "192.0.2.1", "192.0.2.2")})
+	fingerprint, files, err := timelineFingerprint(dir)
+	if err != nil || len(files) != 1 {
+		t.Fatalf("discover fixture: %v, %v", files, err)
+	}
+	first := waitForTimelineIndex(t, dir)
+	replacement := writeTimelineAuditFilePlain(t, t.TempDir(), "DNS", types.Type_NC_DNS, []proto.Message{dnsRecord(101, "192.0.2.1", "192.0.2.2")})
+	mtime := files[0].info.ModTime()
+	if err := os.Chtimes(replacement, mtime, mtime); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(replacement, path); err != nil {
+		t.Fatal(err)
+	}
+	if got, _, err := timelineFingerprint(dir); err != nil || got != fingerprint {
+		t.Fatalf("replacement changed metadata fingerprint: %q, %v", got, err)
+	}
+	s := newTimelineTestServer(dir)
+	w := httptest.NewRecorder()
+	s.handleTimelineEvents(w, httptest.NewRequest(http.MethodGet, "/api/timeline/events?generation="+first.Generation, nil))
+	if w.Code != http.StatusConflict {
+		t.Fatalf("old generation status=%d, want 409", w.Code)
+	}
+	second := waitForTimelineIndex(t, dir)
+	track := second.typeIndex("DNS")
+	if second.Generation == first.Generation || second.TotalEvents != 1 || track == nil || !track.hasEvent(101, 0) {
+		t.Fatal("replacement audit did not receive a fresh timeline generation")
+	}
+}
+
 func TestTimelineIndexInvalidatedOnNewRecords(t *testing.T) {
 	dir := t.TempDir()
 

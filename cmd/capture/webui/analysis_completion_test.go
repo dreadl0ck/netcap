@@ -823,7 +823,7 @@ func TestAnalysisCompletionWaitsForTimelineGeneration(t *testing.T) {
 	delete(s.completedFiles, input)
 	s.mu.Unlock()
 	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}, &types.HTTP{Method: "POST"}})
-	wantGeneration, _, err := timelineFingerprint(dir)
+	fingerprint, files, err := timelineFingerprint(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -837,10 +837,14 @@ func TestAnalysisCompletionWaitsForTimelineGeneration(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("completion did not observe the replacement generation")
 	}
-	if status := timelineIndexFor(dir); status.State != timelineStateReady || status.Index.Generation != wantGeneration {
+	status := timelineIndexFor(dir)
+	timelineCache.Lock()
+	matches := timelineCache.entries[dir].matches(fingerprint, files)
+	timelineCache.Unlock()
+	if status.State != timelineStateReady || !matches || status.Index.Generation == "" {
 		t.Fatal("completed with stale timeline", status.State)
 	}
-	assertPhase("completed", wantGeneration)
+	assertPhase("completed", status.Index.Generation)
 }
 
 func TestAnalysisTimelineWaitStopsDuringShutdown(t *testing.T) {
