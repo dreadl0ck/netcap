@@ -474,33 +474,38 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		zap.Strings("encoding", encoding),
 	)
 
-	// increment counter
-	if e := h.retainSourceHeaders(evidence, headerEnd-headerStart); e != nil {
-		return e
+	stateErr := h.conversation.FragmentError
+	if stateErr == nil {
+		stateErr = h.retainSourceHeaders(evidence, headerEnd-headerStart)
 	}
-	streamutils.Stats.Lock()
-	streamutils.Stats.Responses++
-	streamutils.Stats.Unlock()
-
-	h.responses = append(h.responses, &httpResponse{
-		requestIndex:        h.responseRequestIndex,
-		body:                body,
-		evidence:            evidence,
-		readIssue:           err != nil,
-		transient:           !decoderconfig.Instance.IncludePayloads && (decoderconfig.Instance.FileStorage == "" || h.sourceMode),
-		detectedContentType: passiveReport.DetectedContentType,
-		wireBytes:           passiveReport.WireBytes,
-		response:            res,
-		timestamp:           timestamp,
-		clientIP:            h.conversation.ClientIP,
-		serverIP:            h.conversation.ServerIP,
-		clientPort:          h.conversation.ClientPort,
-		serverPort:          h.conversation.ServerPort,
-		flow:                h.conversation.Ident,
-	})
+	if stateErr != nil && (stateErr != core.ErrCompletionStateBudget || spool == nil) {
+		return stateErr
+	}
 	requestIndex := h.responseRequestIndex
-	if res.StatusCode >= 200 || res.StatusCode == 101 {
-		h.responseRequestIndex++
+	if stateErr == nil {
+		streamutils.Stats.Lock()
+		streamutils.Stats.Responses++
+		streamutils.Stats.Unlock()
+
+		h.responses = append(h.responses, &httpResponse{
+			requestIndex:        requestIndex,
+			body:                body,
+			evidence:            evidence,
+			readIssue:           err != nil,
+			transient:           !decoderconfig.Instance.IncludePayloads && (decoderconfig.Instance.FileStorage == "" || h.sourceMode),
+			detectedContentType: passiveReport.DetectedContentType,
+			wireBytes:           passiveReport.WireBytes,
+			response:            res,
+			timestamp:           timestamp,
+			clientIP:            h.conversation.ClientIP,
+			serverIP:            h.conversation.ServerIP,
+			clientPort:          h.conversation.ClientPort,
+			serverPort:          h.conversation.ServerPort,
+			flow:                h.conversation.Ident,
+		})
+		if res.StatusCode >= 200 || res.StatusCode == 101 {
+			h.responseRequestIndex++
+		}
 	}
 
 	// write responses to disk if configured
@@ -548,7 +553,10 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 			Encoding:       encoding,
 		}
 		if spool != nil {
-			file.RecordExtractionIssue((&HTTPFileExtractor{}).extractSpool(h.conversation, spool, metadata, err))
+			file.RecordExtractionIssue((&HTTPFileExtractor{}).extractSpool(artifactConversation(h.conversation, stateErr), spool, metadata, err))
+			if stateErr != nil {
+				return stateErr
+			}
 			return err
 		}
 		if err != nil {
@@ -559,6 +567,9 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		file.RecordExtractionIssue(extractor.ExtractFile(h.conversation, body, metadata))
 	}
 
+	if stateErr != nil {
+		return stateErr
+	}
 	if evidence.unsafe {
 		return evidence.framingError()
 	}
@@ -757,14 +768,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 				Encoding:       req.Header[headerContentEncoding],
 			}
 			if spool != nil {
-				artifactConversation := h.conversation
-				if formStateErr != nil {
-					// Form parsing failed after the body was spooled; keep the original run error.
-					snapshot := *h.conversation
-					snapshot.FragmentError = nil
-					artifactConversation = &snapshot
-				}
-				file.RecordExtractionIssue((&HTTPFileExtractor{}).extractSpool(artifactConversation, spool, metadata, bodyErr))
+				file.RecordExtractionIssue((&HTTPFileExtractor{}).extractSpool(artifactConversation(h.conversation, formStateErr), spool, metadata, bodyErr))
 				if formStateErr != nil {
 					return formStateErr
 				}
@@ -785,4 +789,14 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 		return evidence.framingError()
 	}
 	return bodyErr
+}
+
+// Preserve the run error when publishing a spool completed before metadata pressure.
+func artifactConversation(c *core.ConversationInfo, stateErr error) *core.ConversationInfo {
+	if stateErr != core.ErrCompletionStateBudget {
+		return c
+	}
+	snapshot := *c
+	snapshot.FragmentError = nil
+	return &snapshot
 }

@@ -2,6 +2,7 @@ package collector
 
 import (
 	"bytes"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"os"
@@ -346,6 +347,43 @@ func TestBackedHTTPPassiveUploadUsesBoundedInput(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("HTTP upload bytes=%d peak input/state credits=%d", size, health.PeakBytes)
+}
+
+func TestBackedHTTPGzipPressurePreservesSpooledResponse(t *testing.T) {
+	wire, input := newBookCapture(t)
+	send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 80, false)
+	body := strings.Repeat("fixture response\n", 1024)
+	var compressed bytes.Buffer
+	w := gzip.NewWriter(&compressed)
+	if _, err := w.Write([]byte(body)); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	send(false, false, false, "GET /fixture.txt HTTP/1.1\r\nHost: fixture.test\r\n\r\n")
+	send(true, false, false, fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: gzip\r\nContent-Length: %d\r\n\r\n%s", compressed.Len(), compressed.Bytes()))
+	out := t.TempDir()
+	cfg := ultimateCaptureConfig(out, 1, 0)
+	cfg.CaptureEvidence = true
+	cfg.DecoderConfig.IncludeDecoders = "TCP,Connection,HTTP,File"
+	cfg.DecoderConfig.FileStorage = "files"
+	cfg.DecoderConfig.MaxRetainedTCPStateBytes = 64 << 10
+	cfg.DecoderConfig.LocalCompletionStateLoss = true
+	err := New(cfg).CollectPcap(input)
+	manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
+	health := bookJSON[core.StateBudgetHealth](t, filepath.Join(out, "TCPStreamStateBudget.json"))
+	if !errors.Is(err, core.ErrCompletionStateBudget) || manifest.Status != "partial" || health.Exceeded || health.RetainedBytes != 0 || health.CompletionRejectedBytes != 65536 {
+		t.Fatalf("gzip probe pressure: status=%s err=%v budget=%+v", manifest.Status, err, health)
+	}
+	files := bookRecords(t, out, "File", func() *types.File { return new(types.File) })
+	if len(files) != 1 || !files[0].IsComplete || files[0].Length != int64(len(body)) || files[0].Hashes.GetSHA256() != file.ComputeHashes([]byte(body)).SHA256 {
+		t.Fatalf("decoded response artifact lost: %v", files)
+	}
+	hashes, err := file.ComputeFileHashes(files[0].Location)
+	if err != nil || hashes.SHA256 != files[0].Hashes.GetSHA256() {
+		t.Fatalf("response artifact hash mismatch: %v", err)
+	}
 }
 
 func TestBackedHTTPFormPressurePreservesSpooledArtifact(t *testing.T) {
