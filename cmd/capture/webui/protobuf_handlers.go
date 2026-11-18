@@ -7,7 +7,9 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -226,7 +228,7 @@ func (s *Server) handleProtoSearchPaths(w http.ResponseWriter, r *http.Request) 
 	protoRuntime.mu.Unlock()
 
 	// Recompile schemas with updated paths
-	recompileSchemas(paths)
+	recompileSchemas(context.Background(), paths)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
@@ -324,7 +326,7 @@ func (s *Server) handleProtoUpload(w http.ResponseWriter, r *http.Request) {
 	protoRuntime.mu.Unlock()
 
 	// Recompile
-	recompileSchemas(paths)
+	recompileSchemas(context.Background(), paths)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
@@ -507,7 +509,14 @@ func (s *Server) handleProtoRecompile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	recompileSchemas(paths)
+	if err := recompileSchemas(r.Context(), paths); err != nil {
+		status := http.StatusUnprocessableEntity
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			status = http.StatusRequestTimeout
+		}
+		jsonError(w, err.Error(), status)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
@@ -519,29 +528,32 @@ func (s *Server) handleProtoRecompile(w http.ResponseWriter, r *http.Request) {
 
 // recompileSchemas compiles all .proto files from the given search paths
 // and updates the global schema registry.
-func recompileSchemas(paths []string) {
+func recompileSchemas(ctx context.Context, paths []string) error {
 	protoRuntime.mu.Lock()
 	defer protoRuntime.mu.Unlock()
 
 	if len(paths) == 0 {
 		protoRuntime.errors = []string{}
 		pb.SetSchemaRegistry(nil)
-		return
+		return nil
 	}
 
-	snapshot, err := snapshotSchemaSources(&jobSettings{SchemaPaths: paths})
+	snapshot, err := snapshotSchemaSourcesContext(ctx, &jobSettings{SchemaPaths: paths})
 	if err != nil {
 		protoRuntime.errors = []string{err.Error()}
 		protoRuntime.lastCompiled = time.Now()
-		return
+		return err
 	}
 	defer snapshot.cleanup()
 	registry, err := pb.NewSchemaRegistry(snapshot.Protobuf.Paths)
+	if err == nil {
+		err = context.Cause(ctx)
+	}
 	if err != nil {
 		protoRuntime.errors = []string{err.Error()}
 		protoRuntime.lastCompiled = time.Now()
 		log.Printf("[Proto] Schema compilation failed: %v", err)
-		return
+		return err
 	}
 
 	pb.SetSchemaRegistry(registry)
@@ -556,6 +568,7 @@ func recompileSchemas(paths []string) {
 	}
 
 	log.Printf("[Proto] Schema registry updated: %d files, %d messages", registry.FileCount(), registry.MessageCount())
+	return nil
 }
 
 // jsonError sends a JSON error response.

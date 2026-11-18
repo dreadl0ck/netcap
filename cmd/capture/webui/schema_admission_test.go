@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"slices"
@@ -11,6 +13,41 @@ import (
 	"testing"
 	"time"
 )
+
+func TestProtoRecompileReportsSnapshotFailure(t *testing.T) {
+	protoRuntime.mu.Lock()
+	paths, diagnostics, compiled := protoRuntime.searchPaths, protoRuntime.errors, protoRuntime.lastCompiled
+	protoRuntime.searchPaths = []string{filepath.Join(t.TempDir(), "missing.proto")}
+	protoRuntime.mu.Unlock()
+	t.Cleanup(func() {
+		protoRuntime.mu.Lock()
+		defer protoRuntime.mu.Unlock()
+		protoRuntime.searchPaths, protoRuntime.errors, protoRuntime.lastCompiled = paths, diagnostics, compiled
+	})
+	s := &Server{}
+	for _, tc := range []struct {
+		name string
+		ctx  context.Context
+		code int
+	}{
+		{"missing schema", context.Background(), http.StatusUnprocessableEntity},
+		{"canceled request", canceledSchemaRequest(), http.StatusRequestTimeout},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			s.handleProtoRecompile(w, httptest.NewRequest(http.MethodPost, "/api/proto/recompile", nil).WithContext(tc.ctx))
+			if w.Code != tc.code || !strings.Contains(w.Body.String(), `"success":false`) {
+				t.Fatalf("status=%d body=%s", w.Code, w.Body)
+			}
+		})
+	}
+}
+
+func canceledSchemaRequest() context.Context {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	return ctx
+}
 
 func TestSchemaSnapshotWaitExpiresWithoutScratch(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "fixture.proto")
