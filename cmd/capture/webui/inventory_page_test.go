@@ -163,6 +163,40 @@ func (w heldAlertPageResponse) Write(p []byte) (int, error) {
 	return w.ResponseRecorder.Write(p)
 }
 
+func TestMCPHostViewsShareCapacityThroughResponseWrite(t *testing.T) {
+	s := &Server{outDir: t.TempDir()}
+	release := make(chan struct{})
+	var workers sync.WaitGroup
+	finish := sync.OnceFunc(func() { close(release); workers.Wait() })
+	t.Cleanup(finish)
+	for _, view := range []string{"traffic", "identity"} {
+		w := heldAlertPageResponse{ResponseRecorder: httptest.NewRecorder(), writing: make(chan struct{}, 1), release: release}
+		workers.Go(func() {
+			s.handleHosts(w, httptest.NewRequest(http.MethodGet, "/api/hosts?mcpPage=true&view="+view, nil))
+		})
+		select {
+		case <-w.writing:
+			if w.Code != http.StatusOK {
+				t.Fatalf("%s was not admitted: %d", view, w.Code)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatalf("%s did not start writing", view)
+		}
+	}
+	request := func() int {
+		w := httptest.NewRecorder()
+		s.handleHosts(w, httptest.NewRequest(http.MethodGet, "/api/hosts?mcpPage=true&view=directory", nil))
+		return w.Code
+	}
+	if got := request(); got != http.StatusTooManyRequests {
+		t.Fatalf("directory request at capacity: %d", got)
+	}
+	finish()
+	if got := request(); got != http.StatusOK {
+		t.Fatalf("directory request after release: %d", got)
+	}
+}
+
 func TestMCPAlertPagesShareCapacityThroughResponseWrite(t *testing.T) {
 	s := &Server{outDir: t.TempDir()}
 	routes := []struct {

@@ -87,6 +87,8 @@ type HostsResponse struct {
 	Identity   hostIdentityReport `json:"identity"`
 }
 
+var hostPageSlots = make(chan struct{}, 2)
+
 // handleHosts returns a list of all IP profiles
 func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -107,6 +109,18 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query()
 	paged := query.Get("mcpPage") == "true"
+	if paged {
+		if r.Context().Err() != nil {
+			return
+		}
+		select {
+		case hostPageSlots <- struct{}{}:
+			defer func() { <-hostPageSlots }()
+		default:
+			RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "host pages are busy"})
+			return
+		}
+	}
 	view := "traffic"
 	if paged && query.Get("view") != "" {
 		view = query.Get("view")
