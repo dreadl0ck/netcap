@@ -721,6 +721,9 @@ func TestHTTPSourceExtractionPreservesRecordsAndBodies(t *testing.T) {
 			if !reflect.DeepEqual(gotHTTP, wantHTTP) {
 				t.Fatalf("HTTP observations changed:\ngot %v\nwant %v", gotHTTP, wantHTTP)
 			}
+			if (kind == "deflate" || kind == "raw-deflate") && (len(gotHTTP) != 1 || gotHTTP[0].ResContentTypeDetected != "text/plain; charset=utf-8") {
+				t.Fatalf("decoded response type missing: %v", gotHTTP)
+			}
 			if !reflect.DeepEqual(gotFiles, wantFiles) {
 				t.Fatalf("file observations changed:\ngot %v\nwant %v", gotFiles, wantFiles)
 			}

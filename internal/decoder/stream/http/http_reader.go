@@ -200,6 +200,9 @@ func (h *httpReader) decodeTransportRun() {
 			ht = httpResponseRecord(res.response, int32(min(length, int64(2147483647))), res.detectedContentType)
 		} else {
 			ht = httpFromResponseBody(res.response, res.body, nil)
+			if res.detectedContentType != "" && !isGzipEncoding(ht.ResContentEncoding) {
+				ht.ResContentTypeDetected = res.detectedContentType
+			}
 		}
 		ht.Timestamp, ht.Flow = res.timestamp, res.flow
 		ht.SrcIP, ht.DstIP, ht.SrcPort, ht.DstPort = res.serverIP, res.clientIP, res.serverPort, res.clientPort
@@ -435,7 +438,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		body, release, err = file.ReadBody(res.Body)
 		h.bufferReleases = append(h.bufferReleases, release)
 		if !h.artifactRecovery {
-			software.ObserveWebtech(observation, bytes.NewReader(body), contentEncoding(res.Header), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+			passiveReport = software.ObserveWebtech(observation, bytes.NewReader(body), contentEncoding(res.Header), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 		}
 	}
 	file.RecordExtractionIssue(err)
