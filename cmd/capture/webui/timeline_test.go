@@ -330,7 +330,7 @@ func TestTimelineOverExpansionReturnsCompleteRegularIndex(t *testing.T) {
 	if err != nil || len(files) != 1 || files[0].size > timelineSmallInputBytes {
 		t.Fatalf("fixture must fit the compressed admission cap: %v %v", files, err)
 	}
-	if snapshot, err := snapshotSmallTimeline(files); snapshot != nil || err != nil {
+	if snapshot, err := snapshotSmallTimeline(files, nil); snapshot != nil || err != nil {
 		t.Fatalf("oversize snapshot should use the regular lane; error=%v", err)
 	}
 	index := waitForTimelineIndex(t, dir)

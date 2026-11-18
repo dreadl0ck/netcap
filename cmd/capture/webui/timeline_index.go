@@ -193,10 +193,15 @@ func timelineBuildLane(files []timelineFileRef) (chan struct{}, int) {
 }
 
 // A nil snapshot without an error needs the regular lane.
-func snapshotSmallTimeline(files []timelineFileRef) ([][]byte, error) {
+func snapshotSmallTimeline(files []timelineFileRef, stop <-chan struct{}) ([][]byte, error) {
 	remaining := int64(timelineSmallInputBytes)
 	snapshots := make([][]byte, 0, len(files))
 	for _, ref := range files {
+		select {
+		case <-stop:
+			return nil, errAnalysisStopping
+		default:
+		}
 		data, err := readSmallTimelineFile(ref, remaining)
 		if err != nil {
 			return nil, fmt.Errorf("index %s: %w", ref.name, err)
@@ -435,7 +440,11 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 	var snapshots [][]byte
 	if slot == timelineSmallBuildSlot {
 		var err error
-		snapshots, err = snapshotSmallTimeline(files)
+		snapshots, err = snapshotSmallTimeline(files, entry.cancel)
+		if errors.Is(err, errAnalysisStopping) {
+			canceled()
+			return
+		}
 		if err != nil {
 			entry.mu.Lock()
 			entry.state, entry.errMsg = timelineStateError, err.Error()
