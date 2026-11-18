@@ -61,12 +61,18 @@ func (s *Server) collectionResult(ref SessionRef, key string, raw json.RawMessag
 	if err := json.Unmarshal(raw, &envelope); err != nil {
 		return errResult(err)
 	}
-	if _, exists := envelope[key]; !exists {
+	paged := envelope["generation"] != nil || envelope["next_offset"] != nil || envelope["has_more"] != nil || envelope["returned"] != nil
+	if _, exists := envelope[key]; !exists && !paged {
 		return rawJSONResult(raw)
 	}
 	var rows []json.RawMessage
 	if err := json.Unmarshal(envelope[key], &rows); err != nil {
 		return errResult(err)
+	}
+	if paged {
+		if err := validateCollectionPage(envelope, key, rows); err != nil {
+			return errResult(err)
+		}
 	}
 	for i, row := range rows {
 		var err error
@@ -81,4 +87,34 @@ func (s *Server) collectionResult(ref SessionRef, key string, raw json.RawMessag
 		return errResult(err)
 	}
 	return rawJSONResult(result)
+}
+
+func validateCollectionPage(envelope map[string]json.RawMessage, key string, rows []json.RawMessage) error {
+	var offset, next, limit, returned, total int
+	for _, field := range []struct {
+		name string
+		out  *int
+	}{{"offset", &offset}, {"next_offset", &next}, {"limit", &limit}, {"returned", &returned}, {"totalCount", &total}} {
+		*field.out = -1 // JSON null leaves an integer unchanged.
+		if err := json.Unmarshal(envelope[field.name], field.out); err != nil || *field.out < 0 {
+			return fmt.Errorf("invalid collection page %s", field.name)
+		}
+	}
+	if key == "groups" {
+		groupCount := -1
+		if err := json.Unmarshal(envelope["groupCount"], &groupCount); err != nil || groupCount < 0 || groupCount > total {
+			return fmt.Errorf("invalid collection page groupCount")
+		}
+		total = groupCount
+	}
+	var generation string
+	var more *bool
+	if json.Unmarshal(envelope["generation"], &generation) != nil || generation == "" || json.Unmarshal(envelope["has_more"], &more) != nil || more == nil {
+		return fmt.Errorf("invalid collection page continuation metadata")
+	}
+	if rows == nil || offset > 1000000000 || limit < 1 || limit > 500 || returned != len(rows) || returned > limit || next != offset+returned ||
+		(returned > 0 && next > total) || *more != (next < total) || (*more && returned == 0) {
+		return fmt.Errorf("inconsistent collection page counts or continuation")
+	}
+	return nil
 }

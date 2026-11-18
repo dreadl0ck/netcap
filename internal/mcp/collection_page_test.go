@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
@@ -35,5 +36,31 @@ func TestInventoryToolsForwardBackendPaging(t *testing.T) {
 		if !result.IsError {
 			t.Fatal("invalid limit accepted", value)
 		}
+	}
+}
+
+func TestCollectionResultRejectsInconsistentPages(t *testing.T) {
+	const valid = `{"groups":[{}],"totalCount":12,"groupCount":2,"offset":1,"next_offset":2,"limit":1,"returned":1,"has_more":false,"generation":"fixture"}`
+	s := &Server{}
+	for _, tc := range []struct {
+		name, body string
+		wantError  bool
+	}{
+		{"group totals", valid, false},
+		{"legacy collection", `{"groups":[],"totalCount":0}`, false},
+		{"past end", `{"groups":[],"totalCount":12,"groupCount":2,"offset":3,"next_offset":3,"limit":1,"returned":0,"has_more":false,"generation":"fixture"}`, false},
+		{"wrong row count", strings.Replace(valid, `"returned":1`, `"returned":0`, 1), true},
+		{"wrong next offset", strings.Replace(valid, `"next_offset":2`, `"next_offset":3`, 1), true},
+		{"wrong continuation", strings.Replace(valid, `"has_more":false`, `"has_more":true`, 1), true},
+		{"missing generation", strings.Replace(valid, `,"generation":"fixture"`, "", 1), true},
+		{"missing rows", strings.Replace(valid, `"groups":[{}],`, "", 1), true},
+		{"stalled continuation", `{"groups":[],"totalCount":12,"groupCount":2,"offset":1,"next_offset":1,"limit":1,"returned":0,"has_more":true,"generation":"fixture"}`, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result := s.collectionResult(SessionRef{}, "groups", []byte(tc.body))
+			if result.IsError != tc.wantError {
+				t.Fatalf("IsError = %t, want %t: %+v", result.IsError, tc.wantError, result)
+			}
+		})
 	}
 }
