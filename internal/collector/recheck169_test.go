@@ -28,6 +28,25 @@ import (
 	"github.com/gopacket/gopacket/pcapgo"
 )
 
+func TestSuccessiveCapturesIsolateConnectionAggregates(t *testing.T) {
+	for i, budget := range []int64{0, 0, 1 << 20, 0} {
+		wire, input := newBookCapture(t)
+		src := fmt.Sprintf("192.0.2.%d", i+1)
+		wire.udp(src, "198.51.100.1", 45000, 58001, []byte("fixture"))
+		out := t.TempDir()
+		cfg := ultimateCaptureConfig(out, 1, 0)
+		cfg.DecoderConfig.IncludeDecoders = "UDP,Connection"
+		cfg.DecoderConfig.MaxAggregateStateBytes = budget
+		if err := New(cfg).CollectPcap(input); err != nil {
+			t.Fatal(err)
+		}
+		rows := bookRecords(t, out, "Connection", func() *types.Connection { return new(types.Connection) })
+		if len(rows) != 1 || rows[0].SrcIP != src {
+			t.Fatalf("capture %d (budget %d) included another capture: %v", i+1, budget, rows)
+		}
+	}
+}
+
 func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 	path := os.Getenv("NETCAP_RECHECK_ARCHIVE")
 	if path == "" {

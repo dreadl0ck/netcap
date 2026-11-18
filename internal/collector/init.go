@@ -159,8 +159,15 @@ func (c *Collector) Init() (err error) {
 		}
 	}
 
-	// init deep packet inspection
+	// Reset in-memory aggregates before choosing the new capture's storage backend.
 	c.config.DecoderConfig.AggregateStore = nil
+	packet.ResetConnections()
+	packet.ResetHosts()
+	packet.ResetDeviceProfiles()
+	service.ResetStore()
+	software.ResetCaches()
+	vulnerability.ResetVulnStore()
+	exploit.ResetExploitStore()
 	if c.config.DecoderConfig.MaxAggregateStateBytes > 0 {
 		c.config.DecoderConfig.AggregateStore, err = aggregate.Open(c.config.DecoderConfig.Out, c.config.DecoderConfig.MaxAggregateStateBytes, c.runCancel)
 		if err != nil {
@@ -172,13 +179,6 @@ func (c *Collector) Init() (err error) {
 				c.config.DecoderConfig.AggregateStore = nil
 			}
 		}()
-		packet.ResetConnections()
-		packet.ResetHosts()
-		packet.ResetDeviceProfiles()
-		service.ResetStore()
-		software.ResetCaches()
-		vulnerability.ResetVulnStore()
-		exploit.ResetExploitStore()
 	}
 	if err := file.StartAnalysis(c.config.DecoderConfig.Out, ""); err != nil {
 		return fmt.Errorf("artifact analysis admission: %w", err)
