@@ -265,6 +265,11 @@ func buildFingerprintSnapshot(outDir string, generation fingerprintAuditGenerati
 }
 
 func readFingerprintGeneration(outDir string, generation fingerprintAuditGeneration) ([]FingerprintSummary, error) {
+	budget := fingerprintGenerationBudget(generation)
+	return readFingerprintInventory(outDir, &budget)
+}
+
+func fingerprintGenerationBudget(generation fingerprintAuditGeneration) inventoryAuditBudget {
 	budget := newFingerprintAuditBudget(context.Background())
 	budget.verifySource = func(path string, info os.FileInfo) error {
 		for i, name := range fingerprintSources {
@@ -274,7 +279,7 @@ func readFingerprintGeneration(outDir string, generation fingerprintAuditGenerat
 		}
 		return errFingerprintAuditChanged
 	}
-	return readFingerprintInventory(outDir, &budget)
+	return budget
 }
 
 func cachedFingerprintRows(outDir string) []FingerprintSummary {

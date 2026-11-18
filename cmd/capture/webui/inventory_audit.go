@@ -110,6 +110,15 @@ func (b *inventoryAuditBudget) nextRaw(r *AuditRecordReader) ([]byte, error) {
 		limit = 0
 	}
 	raw, err := r.delimitedReader.NextWithLimit(uint64(max(1, limit)))
+	if err == io.EOF && b.verifySource != nil {
+		info, statErr := r.file.Stat()
+		if statErr != nil {
+			return nil, statErr
+		}
+		if verifyErr := b.verifySource(r.file.Name(), info); verifyErr != nil {
+			return nil, verifyErr
+		}
+	}
 	if errors.Is(err, delimited.ErrRecordLimit) || (err == nil && (b.rows == 0 || len(raw) > limit)) {
 		return nil, errInventoryAuditLimit
 	}

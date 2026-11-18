@@ -92,6 +92,36 @@ func TestFingerprintSnapshotWaitCanCancelWithoutRetiringBuild(t *testing.T) {
 	}
 }
 
+func TestFingerprintAuditRejectsGrowthBeforeEOF(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Ja4H: "initial"}})
+	generation, err := fingerprintGeneration(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	budget := fingerprintGenerationBudget(generation)
+	path := filepath.Join(dir, "HTTP.ncap.gz")
+	r, err := budget.open(path, types.Type_NC_HTTP)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	if msg, err := budget.next(r); err != nil || msg.(*types.HTTP).Ja4H != "initial" {
+		t.Fatalf("initial record: %v, %v", msg, err)
+	}
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = f.Write([]byte{0})
+	if err := errors.Join(err, f.Close()); err != nil {
+		t.Fatal(err)
+	}
+	if msg, err := budget.next(r); msg != nil || !errors.Is(err, errFingerprintAuditChanged) {
+		t.Fatalf("changed source reached EOF: %v, %v", msg, err)
+	}
+}
+
 func TestFingerprintSnapshotRejectsSameMetadataReplacement(t *testing.T) {
 	dir, replacement := t.TempDir(), t.TempDir()
 	for path, value := range map[string]string{dir: "aaaa", replacement: "bbbb"} {
