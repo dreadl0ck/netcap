@@ -148,6 +148,10 @@ func (s *OrderedStream) advance(watermark int64) (int, error) {
 	if watermark < s.watermark {
 		return 0, errors.New("watermarks must be monotonic")
 	}
+	// Admission rejects records at or below the committed watermark.
+	if watermark == s.watermark {
+		return 0, nil
+	}
 	sort.SliceStable(s.pending, func(i, j int) bool {
 		a, b := s.pending[i], s.pending[j]
 		if a.record.Time() != b.record.Time() {

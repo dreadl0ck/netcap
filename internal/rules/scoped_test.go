@@ -229,6 +229,24 @@ func TestCaptureTimeConfigDrainsAtClose(t *testing.T) {
 	}
 }
 
+func BenchmarkOrderedStreamEqualTime(b *testing.B) {
+	for range b.N {
+		s, err := NewOrderedStream(groupedConfig(), alertWriterFunc(func(*types.Alert) error { return nil }), "fixture")
+		if err != nil {
+			b.Fatal(err)
+		}
+		record := scopedTCP(1, "192.0.2.1")
+		for range maxPendingRecords {
+			if n, err := s.observe(record); err != nil || n != 0 {
+				b.Fatal(n, err)
+			}
+		}
+		if n, err := s.Finish(); err != nil || n != maxPendingRecords/50 {
+			b.Fatal(n, err)
+		}
+	}
+}
+
 func TestScopedApplicationAlertCannotLeakPayload(t *testing.T) {
 	var got *types.Alert
 	e, err := NewEngineFromConfig(&Config{Rules: []*Rule{{Name: "HTTP-observation", Type: "HTTP", Expression: "true", Enabled: true}}}, alertWriterFunc(func(a *types.Alert) error { got = a; return nil }))
