@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 )
@@ -84,4 +85,47 @@ func TestGetChartDataHandlerEndToEnd(t *testing.T) {
 	}
 }
 
-
+func TestGetChartDataCancellationReachesBackend(t *testing.T) {
+	started, stopped := make(chan struct{}), make(chan struct{})
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(started)
+		select {
+		case <-r.Context().Done():
+			close(stopped)
+		case <-time.After(5 * time.Second):
+		}
+	}))
+	defer backend.Close()
+	s, err := New(Options{BaseURL: backend.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan *mcplib.CallToolResult, 1)
+	go func() {
+		result, _ := s.mcpSrv.GetTool("get_chart_data").Handler(ctx, mcplib.CallToolRequest{
+			Params: mcplib.CallToolParams{Arguments: map[string]any{"session_id": "fixture", "type": "UDP", "field": "Length"}},
+		})
+		done <- result
+	}()
+	select {
+	case <-started:
+	case <-ctx.Done():
+		t.Fatal("chart request did not reach backend")
+	}
+	cancel()
+	select {
+	case <-stopped:
+	case <-time.After(2 * time.Second):
+		t.Fatal("chart backend did not observe cancellation")
+	}
+	select {
+	case result := <-done:
+		if result == nil || !result.IsError {
+			t.Fatal("cancelled chart call did not return a tool error")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("cancelled chart call did not return")
+	}
+}

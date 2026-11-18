@@ -52,7 +52,7 @@ func (s *Server) registerChartTool() error {
 	})
 }
 
-func (s *Server) handleChartData(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+func (s *Server) handleChartData(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
 		return errResult(err), nil
@@ -84,7 +84,7 @@ func (s *Server) handleChartData(_ context.Context, req mcplib.CallToolRequest) 
 	q.Set("maxDataPoints", fmt.Sprintf("%d", maxPts))
 	q.Set("format", "json")
 
-	raw, gErr := s.newClient().Get("/api/chart/data", q)
+	raw, gErr := s.newClient().GetContext(ctx, "/api/chart/data", q)
 	if gErr != nil {
 		return errResult(fmt.Errorf("chart_data %s.%s: %w", auditType, field, gErr)), nil
 	}
