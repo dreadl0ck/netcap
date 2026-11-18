@@ -80,6 +80,9 @@ func (t *tlTypeIndex) buildFacets() {
 }
 
 func (q *timelineQuery) candidates(t *tlTypeIndex) *roaring.Bitmap {
+	if q.canceled() {
+		return nil
+	}
 	if q.Host == "" && len(q.CommunityIDs) == 0 {
 		return nil
 	}
@@ -118,7 +121,7 @@ func (q *timelineQuery) nextMatch(t *tlTypeIndex, from, hi int, candidates *roar
 	if candidates != nil {
 		iter := candidates.Iterator()
 		iter.AdvanceIfNeeded(uint32(from))
-		for iter.HasNext() {
+		for iter.HasNext() && !q.canceled() {
 			i := int(iter.Next())
 			if i >= hi {
 				break
@@ -130,6 +133,9 @@ func (q *timelineQuery) nextMatch(t *tlTypeIndex, from, hi int, candidates *roar
 		return hi
 	}
 	for i := from; i < hi; i++ {
+		if (i-from)%256 == 0 && q.canceled() {
+			return hi
+		}
 		if q.match(t, i) {
 			return i
 		}
@@ -143,7 +149,7 @@ func (q *timelineQuery) prevMatch(t *tlTypeIndex, from, lo int, candidates *roar
 	}
 	if candidates != nil {
 		rank := candidates.Rank(uint32(from))
-		for rank > 0 {
+		for rank > 0 && !q.canceled() {
 			i, _ := candidates.Select(uint32(rank - 1))
 			if int(i) < lo {
 				break
@@ -156,6 +162,9 @@ func (q *timelineQuery) prevMatch(t *tlTypeIndex, from, lo int, candidates *roar
 		return lo - 1
 	}
 	for i := from; i >= lo; i-- {
+		if (from-i)%256 == 0 && q.canceled() {
+			return lo - 1
+		}
 		if q.match(t, i) {
 			return i
 		}
@@ -167,7 +176,7 @@ func (q *timelineQuery) eachMatch(t *tlTypeIndex, lo, hi int, visit func(int)) {
 	if selected := q.candidates(t); selected != nil {
 		iter := selected.Iterator()
 		iter.AdvanceIfNeeded(uint32(lo))
-		for iter.HasNext() {
+		for iter.HasNext() && !q.canceled() {
 			i := int(iter.Next())
 			if i >= hi {
 				break
@@ -179,6 +188,9 @@ func (q *timelineQuery) eachMatch(t *tlTypeIndex, lo, hi int, visit func(int)) {
 		return
 	}
 	for i := lo; i < hi; i++ {
+		if (i-lo)%256 == 0 && q.canceled() {
+			return
+		}
 		if q.match(t, i) {
 			visit(i)
 		}

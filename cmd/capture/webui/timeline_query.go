@@ -99,6 +99,7 @@ func decodeTimelineCursor(s string) (*tlKey, error) {
 
 // timelineQuery is one resolved request against a built index.
 type timelineQuery struct {
+	stop         <-chan struct{}
 	Start        int64
 	End          int64
 	Tracks       []*tlTypeIndex
@@ -108,6 +109,15 @@ type timelineQuery struct {
 	Limit        int
 	After        *tlKey
 	Before       *tlKey
+}
+
+func (q *timelineQuery) canceled() bool {
+	select {
+	case <-q.stop:
+		return true
+	default:
+		return false
+	}
 }
 
 // scanRange returns the [lo, hi) window of a track that can contain matches.
@@ -184,6 +194,9 @@ func (q *timelineQuery) count() int64 {
 	var total int64
 
 	for _, t := range q.Tracks {
+		if q.canceled() {
+			return 0
+		}
 		lo, hi := q.scanRange(t)
 		if q.Search == "" && q.Host == "" && len(q.CommunityIDs) == 0 {
 			if !t.hasDuration() || hi <= lo {
@@ -193,7 +206,10 @@ func (q *timelineQuery) count() int64 {
 			// Only events starting before the window need an end-time check.
 			inside := min(hi, max(lo, t.lowerBound(q.Start)))
 			total += int64(hi - inside)
-			for _, end := range t.Ends[lo:inside] {
+			for i, end := range t.Ends[lo:inside] {
+				if i%256 == 0 && q.canceled() {
+					return 0
+				}
 				if end >= q.Start {
 					total++
 				}

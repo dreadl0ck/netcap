@@ -130,6 +130,24 @@ func TestTimelineFacetIndexPreservesIDsAfterTimeSort(t *testing.T) {
 	}
 }
 
+func TestTimelineScanStopsAfterCancellation(t *testing.T) {
+	for _, host := range []string{"", "10.0.0.1"} {
+		track := benchmarkTimelineTrack()
+		stop := make(chan struct{})
+		q := &timelineQuery{stop: stop, Start: 1, End: 100_000, Host: host}
+		visited := 0
+		q.eachMatch(track, 0, len(track.Events), func(int) {
+			visited++
+			if visited == 1 {
+				close(stop)
+			}
+		})
+		if visited == 0 || visited > 256 {
+			t.Fatalf("host=%q: visited %d matches after cancellation on the first match", host, visited)
+		}
+	}
+}
+
 func TestTimelineFacetBudgetFallsBackToExactScan(t *testing.T) {
 	for _, remaining := range []uint64{0, 1024} {
 		track := benchmarkTimelineTrack()

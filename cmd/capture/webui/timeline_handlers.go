@@ -276,6 +276,9 @@ func (s *Server) handleTimelineEvents(w http.ResponseWriter, r *http.Request) {
 	resp.Start = strconv.FormatInt(query.Start, 10)
 	resp.End = strconv.FormatInt(query.End, 10)
 	resp.MatchCount = query.count()
+	if query.canceled() {
+		return
+	}
 	if raw := r.URL.Query().Get("at"); raw != "" {
 		at, parseErr := strconv.ParseInt(raw, 10, 64)
 		if parseErr != nil {
@@ -287,16 +290,25 @@ func (s *Server) handleTimelineEvents(w http.ResponseWriter, r *http.Request) {
 		if hit := query.nearest(at); hit != nil {
 			resp.Events = append(resp.Events, timelineEventOf(*hit))
 		}
+		if query.canceled() {
+			return
+		}
 		if !attachTimelineOccurrences(w, r, outDir, resp.Events) {
 			return
 		}
 
+		if query.canceled() {
+			return
+		}
 		RespondJSON(w, http.StatusOK, resp)
 
 		return
 	}
 
 	hits := query.page()
+	if query.canceled() {
+		return
+	}
 
 	for _, hit := range hits {
 		resp.Events = append(resp.Events, timelineEventOf(hit))
@@ -321,6 +333,9 @@ func (s *Server) handleTimelineEvents(w http.ResponseWriter, r *http.Request) {
 		resp.HasPrev = len(probeBefore.page()) > 0
 	}
 
+	if query.canceled() {
+		return
+	}
 	RespondJSON(w, http.StatusOK, resp)
 }
 
@@ -372,6 +387,9 @@ func (s *Server) handleTimelineBuckets(w http.ResponseWriter, r *http.Request) {
 	defer func() { <-timelineQuerySlots }()
 
 	series, matchCount := query.buckets(count)
+	if query.canceled() {
+		return
+	}
 
 	resp.Generation = status.Index.Generation
 	resp.Start = strconv.FormatInt(query.Start, 10)
@@ -402,6 +420,9 @@ func (s *Server) handleTimelineBuckets(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	if query.canceled() {
+		return
+	}
 	RespondJSON(w, http.StatusOK, resp)
 }
 
@@ -658,6 +679,7 @@ func timelineQueryFromRequest(r *http.Request, idx *timelineIndex, defaultLimit,
 	}
 
 	query := &timelineQuery{
+		stop:   r.Context().Done(),
 		Start:  idx.MinTime,
 		End:    idx.MaxTime,
 		Search: strings.ToLower(strings.TrimSpace(q.Get("q"))),
