@@ -771,27 +771,18 @@ func (t *tcpConnection) decode() {
 			return client, server
 		},
 		PrefixBytes: func(limit int) ([]byte, []byte) {
-			var amount int64
-			for _, source := range []core.FragmentSource{clientSource, serverSource} {
-				if source.Count() > 0 {
-					amount += int64(limit)
-				}
-			}
-			if err := workingBudget.Reserve(amount); err != nil {
-				conv.FragmentError = err
-				return nil, nil
-			}
-			prefixCredit += amount
-			client, err := core.ReadSourcePrefix(clientSource, limit)
+			client, err := core.ReadBudgetedSourcePrefix(clientSource, limit, workingBudget)
 			if err != nil {
 				conv.FragmentError = err
 				return nil, nil
 			}
-			server, err := core.ReadSourcePrefix(serverSource, limit)
+			prefixCredit += int64(cap(client))
+			server, err := core.ReadBudgetedSourcePrefix(serverSource, limit, workingBudget)
 			if err != nil {
 				conv.FragmentError = err
 				return nil, nil
 			}
+			prefixCredit += int64(cap(server))
 			return client, server
 		},
 		Conversation: conv,
