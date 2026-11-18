@@ -21,12 +21,12 @@ package webui
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/internal/analyst"
-	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
@@ -472,12 +472,14 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, _, err := artifactio.Open(outDir, track.sourceName)
+	f, err := track.source.open()
 	if err != nil {
 		RespondJSON(w, http.StatusConflict, timelineRecordJSON{Status: timelineStateError, Error: "indexed audit file unavailable"})
 		return
 	}
-	reader, err := auditRecordReaderFromFile(f, strings.HasSuffix(track.sourceName, ".gz"))
+	reader, err := auditRecordReaderFromInput(f, io.NewSectionReader(f, 0, track.source.size), strings.HasSuffix(track.source.path, ".gz"), func(input io.Reader) io.Reader {
+		return auditContextReader{ctx: r.Context(), input: input}
+	})
 	if err != nil {
 		RespondJSON(w, http.StatusInternalServerError, timelineRecordJSON{Status: timelineStateError, Error: err.Error()})
 
@@ -535,6 +537,14 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 	resp.Src = auditRecord.Src()
 	resp.Dst = auditRecord.Dst()
 
+	if r.Context().Err() != nil {
+		return
+	}
+	current := timelineIndexFor(outDir)
+	if current.State != timelineStateReady || current.Index != indexStatus.Index {
+		RespondJSON(w, http.StatusConflict, timelineRecordJSON{Status: timelineStateError, Error: "timeline generation changed"})
+		return
+	}
 	RespondJSON(w, http.StatusOK, resp)
 }
 

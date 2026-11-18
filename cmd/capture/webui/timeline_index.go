@@ -73,10 +73,10 @@ type tlEvent struct {
 
 // tlTypeIndex holds the time index for one audit record type (one timeline track).
 type tlTypeIndex struct {
-	sourceName string
-	Name       string
-	Layer      string
-	LayerRank  int
+	source    timelineFileRef
+	Name      string
+	Layer     string
+	LayerRank int
 
 	// Events is sorted by (Time, Ordinal).
 	Events []tlEvent
@@ -188,6 +188,17 @@ func (ref timelineFileRef) matches(info os.FileInfo) bool {
 	return os.SameFile(ref.info, info) && ref.info.Size() == info.Size() && ref.info.ModTime().Equal(info.ModTime())
 }
 
+var errTimelineInputChanged = errors.New("timeline input changed")
+
+func (ref timelineFileRef) open() (*os.File, error) {
+	f, info, err := artifactio.Open(filepath.Dir(ref.path), filepath.Base(ref.path))
+	if err == nil && !ref.matches(info) {
+		f.Close()
+		return nil, errTimelineInputChanged
+	}
+	return f, err
+}
+
 func sameTimelineFiles(a, b []timelineFileRef) bool {
 	if len(a) != len(b) {
 		return false
@@ -239,14 +250,11 @@ func snapshotSmallTimeline(files []timelineFileRef, stop <-chan struct{}) ([][]b
 }
 
 func readSmallTimelineFile(ref timelineFileRef, remaining int64) ([]byte, error) {
-	f, info, err := artifactio.Open(filepath.Dir(ref.path), filepath.Base(ref.path))
+	f, err := ref.open()
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	if !ref.matches(info) {
-		return nil, fmt.Errorf("timeline input changed")
-	}
 	var reader io.Reader = io.LimitReader(f, ref.size)
 	if strings.HasSuffix(ref.path, ".gz") {
 		gz, err := gzip.NewReader(reader)
@@ -579,7 +587,7 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 				}
 
 				mu.Lock()
-				ti.sourceName = filepath.Base(files[i].path)
+				ti.source = files[i]
 				results = append(results, ti)
 				mu.Unlock()
 			}
@@ -738,15 +746,11 @@ func assembleTimelineIndex(fingerprint string, types []*tlTypeIndex) *timelineIn
 
 // indexTimelineType reads one audit record file and builds its time index.
 func indexTimelineType(ref timelineFileRef, eventLimit int, stop <-chan struct{}) (*tlTypeIndex, error) {
-	f, info, err := artifactio.Open(filepath.Dir(ref.path), filepath.Base(ref.path))
+	f, err := ref.open()
 	if err != nil {
 		return nil, err
 	}
-	if !ref.matches(info) {
-		f.Close()
-		return nil, fmt.Errorf("timeline input changed")
-	}
-	reader, err := auditRecordReaderFromInput(f, io.NewSectionReader(f, 0, info.Size()), strings.HasSuffix(ref.path, ".gz"), func(input io.Reader) io.Reader {
+	reader, err := auditRecordReaderFromInput(f, io.NewSectionReader(f, 0, ref.size), strings.HasSuffix(ref.path, ".gz"), func(input io.Reader) io.Reader {
 		return analysisStopReader{input: input, stop: stop}
 	})
 	if err != nil {

@@ -8,6 +8,7 @@ package webui
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -866,6 +867,38 @@ func TestTimelineHandlersServeRecords(t *testing.T) {
 
 	if len(buckets.Series) != 1 || len(buckets.Series[0].Counts) != 4 || buckets.Series[0].Total != 2 {
 		t.Fatalf("unexpected buckets: %+v", buckets.Series)
+	}
+}
+
+type timelineRecordAdmissionContext struct {
+	context.Context
+	beforeRead func()
+}
+
+func (c *timelineRecordAdmissionContext) Done() <-chan struct{} {
+	if c.beforeRead != nil {
+		c.beforeRead()
+		c.beforeRead = nil
+	}
+	return c.Context.Done()
+}
+
+func TestTimelineRecordRejectsReplacementAfterIndexSelection(t *testing.T) {
+	dir := t.TempDir()
+	path := writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Timestamp: 100, Method: "GET"}})
+	idx := waitForTimelineIndex(t, dir)
+	s := newTimelineTestServer(dir)
+	replacement := writeTimelineAuditFilePlain(t, t.TempDir(), "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Timestamp: 100, Method: "PUT"}})
+	ctx := &timelineRecordAdmissionContext{Context: t.Context(), beforeRead: func() {
+		if err := os.Rename(replacement, path); err != nil {
+			t.Fatal(err)
+		}
+	}}
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/api/timeline/record?type=HTTP&ordinal=0&time=100&generation="+idx.Generation, nil)
+	s.handleTimelineRecord(w, r.WithContext(ctx))
+	if w.Code != http.StatusConflict || !strings.Contains(w.Body.String(), "indexed audit file unavailable") {
+		t.Fatalf("replacement record: status=%d body=%s", w.Code, w.Body)
 	}
 }
 
