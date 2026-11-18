@@ -188,6 +188,43 @@ func TestSmallTimelineCompletesWhileRegularLaneIsOccupied(t *testing.T) {
 	}
 }
 
+func TestSmallTimelineDuringLargeIndexBuild(t *testing.T) {
+	large, small := t.TempDir(), t.TempDir()
+	records := make([]proto.Message, 150_000)
+	for i := range records {
+		records[i] = connRecord(int64(i+1), int64(i+2), "192.0.2.1", "192.0.2.2")
+	}
+	writeTimelineAuditFilePlain(t, large, "Connection", types.Type_NC_Connection, records)
+	writeTimelineAuditFilePlain(t, small, "Connection", types.Type_NC_Connection, records[:2])
+	started := time.Now()
+	largeStatus := timelineIndexFor(large)
+	if largeStatus.finished == nil {
+		t.Fatalf("large build not scheduled: %s", largeStatus.State)
+	}
+	smallStarted := time.Now()
+	smallStatus := timelineIndexFor(small)
+	if smallStatus.State == timelineStateIndexing {
+		select {
+		case <-smallStatus.finished:
+		case <-time.After(10 * time.Second):
+			t.Fatal("small build did not finish")
+		}
+	}
+	smallElapsed := time.Since(smallStarted)
+	smallIndex := waitForTimelineIndex(t, small)
+	largePending := true
+	select {
+	case <-largeStatus.finished:
+		largePending = false
+	default:
+	}
+	largeIndex := waitForTimelineIndex(t, large)
+	if smallIndex.TotalEvents != 2 || largeIndex.TotalEvents != int64(len(records)) || largeIndex.Truncated || smallIndex.Truncated {
+		t.Fatalf("unexpected indexes: small=%d large=%d", smallIndex.TotalEvents, largeIndex.TotalEvents)
+	}
+	t.Logf("two-event ready in %s; 150000-event build still pending at small readiness: %t; both ready in %s", smallElapsed, largePending, time.Since(started))
+}
+
 func TestSmallTimelineReportsCorruptInputWhileRegularLaneIsOccupied(t *testing.T) {
 	timelineBuildSlot <- struct{}{}
 	defer func() { <-timelineBuildSlot }()

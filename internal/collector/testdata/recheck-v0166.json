@@ -146,7 +146,8 @@
   "compressedTimelineScheduling": {
     "source": "8187e95",
     "implementation": "The small timeline worker caps both stored input and decoded snapshots at 262144 bytes. Over-expansion falls back to the regular worker before indexing or publishing any partial result.",
-    "verification": "Five runs of the two-record fixture took 10.7–12.3 ms to report ready through the polling helper while the regular slot was held. The 4096-record over-expansion control retains every record on fallback. The full Web UI race suite passes."
+    "verification": "Five runs of the two-record fixture took 10.7–12.3 ms to report ready through the polling helper while the regular slot was held. The 4096-record over-expansion control retains every record on fallback. The full Web UI race suite passes.",
+    "concurrentBuild": "TestSmallTimelineDuringLargeIndexBuild passed three Darwin arm64 race runs. The two-event index became ready in 179–460 µs while the 150000-event index was still building in every run. Both indexes completed without truncation in 215–231 ms from launch."
   },
   "originalStaleProbeReplay": {
     "captureGapControl": "TestStaleProbeQualificationPreservesConflict confirms that an observed gap suppresses the possible-stale-probe annotation while keeping the conflict byte and medium severity. Focused stale-probe and keepalive race tests passed.",
