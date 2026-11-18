@@ -257,13 +257,15 @@ func (m *analysisRuntime) worker() {
 		var data []byte
 		var release func()
 		loadErr := ctx.Err()
-		streamClassification := m.yara == nil && job.spool != nil
-		if loadErr == nil && !streamClassification {
+		if loadErr == nil && (m.yara != nil || job.spool == nil) {
 			data, release, loadErr = job.load()
 		}
 		for i := range result.Analyzers {
 			r := &result.Analyzers[i]
 			err := loadErr
+			if r.Engine == "magika" && job.spool != nil {
+				err = ctx.Err()
+			}
 			if err == nil {
 				switch r.Engine {
 				case "yara-x":
@@ -280,7 +282,7 @@ func (m *analysisRuntime) worker() {
 						}
 					}
 				case "magika":
-					if streamClassification {
+					if job.spool != nil {
 						r.Classification, err = m.classifySpooled(ctx, job.spool, result.SHA256)
 					} else {
 						r.Classification, err = m.magika.ClassifyBytes(ctx, data)
@@ -289,6 +291,10 @@ func (m *analysisRuntime) worker() {
 						r.Outcome = "classified"
 					}
 				}
+			}
+			if r.Engine == "yara-x" && job.spool != nil && release != nil {
+				release()
+				data, release = nil, nil
 			}
 			r.State = "completed"
 			if err != nil {
