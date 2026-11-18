@@ -307,6 +307,7 @@
     "shutdown": "TestCaptureWorkerShutdownCancelsBacklog passes 10 race repetitions. Shutdown cancels the blocked capture handoff and the untouched capture-queue entry before either active completion worker is released, then cancels the buffered completion without running it. All five jobs release ownership exactly once."
   },
   "finiteBudgetFanoutReplay": {
+    "localPagePressure": "The pinned 15000-flow fixture with opt-in local page loss and a 2 MiB page cap returned partial exit 2, preserved 15000 TCP and 15000 Connection audit rows, peaked at 2095632 page bytes and released all page credits. TCP sealed complete and Connection sealed partial. Both ordinary and race replay passed with conversation export disabled. An export-enabled trial timed out during per-stream sync at EOF; that path remains unqualified.",
     "status": "deferred",
     "verification": "Pinned synthetic v169_midstream_psh_15k.pcap: strict replay at 2 MiB reassembly pages failed with a page-budget error; raising pages to 128 MiB reached the 64 MiB TCP stream-state limit. Both trials had 256 KiB retained payload and 1 MiB aggregate limits. No finite-cap audit equivalence or default change is claimed."
   },
