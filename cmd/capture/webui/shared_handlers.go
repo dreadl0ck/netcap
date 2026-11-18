@@ -674,7 +674,13 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	if sealed := partialAuditContext(r); sealed != nil {
 		auditReader, err = sealed.openReader()
 	} else {
-		auditReader, err = NewAuditRecordReader(filePath)
+		var f *os.File
+		f, _, err = artifactio.Open(filepath.Dir(filePath), filepath.Base(filePath))
+		if err == nil {
+			auditReader, err = auditRecordReaderFromInput(f, f, strings.HasSuffix(filePath, ".gz"), func(input io.Reader) io.Reader {
+				return auditContextReader{ctx: r.Context(), input: input}
+			})
+		}
 	}
 	if err != nil {
 		log.Printf("[WebUI] Failed to open audit record file %s: %v", filePath, err)
@@ -705,6 +711,9 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			sendError("Audit header type does not match the sealed stage")
 			return
 		}
+	} else if header.Type.String() != "NC_"+strings.TrimPrefix(auditType, "NC_") {
+		sendError("Audit header type does not match the requested type")
+		return
 	}
 
 	// Compile filter expression if provided

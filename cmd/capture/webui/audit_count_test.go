@@ -83,6 +83,27 @@ func TestAuditMetaDoesNotCountMislabeledOrLinkedTracks(t *testing.T) {
 	}
 }
 
+func TestUnsealedAuditStreamRejectsMislabeledOrLinkedTracks(t *testing.T) {
+	file := writeTimelineAuditFilePlain(t, t.TempDir(), "UDP", types.Type_NC_UDP, []proto.Message{&types.UDP{SrcPort: 5353}})
+	check := func(path, kind string, valid bool) {
+		t.Helper()
+		w := httptest.NewRecorder()
+		HandleAuditStream(w, httptest.NewRequest(http.MethodGet, "/api/audit/"+kind+"/stream", nil), path, kind)
+		body := w.Body.String()
+		if strings.Contains(body, "event: record\n") != valid || strings.Contains(body, "event: complete\n") != valid || strings.Contains(body, "event: error\n") == valid {
+			t.Fatalf("unexpected stream for %s: %s", kind, body)
+		}
+	}
+	check(file, "UDP", true)
+	check(file, "HTTP", false)
+	link := filepath.Join(t.TempDir(), "UDP.ncap")
+	if err := os.Symlink(file, link); err == nil {
+		check(link, "UDP", false)
+	} else {
+		t.Logf("symlink unavailable: %v", err)
+	}
+}
+
 func TestAuditInventoryRejectsOversizedDirectory(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
