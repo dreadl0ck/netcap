@@ -200,14 +200,22 @@ func (s coldConnection) lastSeen() (time.Time, error) {
 
 func (s *coldStorage) row(id string) string { return s.prefix + "states/" + id + "/" }
 
-func coldOrder(c coldConnection) (string, error) {
+func (c *coldConnection) restoreKey() (key, error) {
 	var k key
 	for i := range k {
 		flow, err := c.Key[i].Restore()
 		if err != nil {
-			return "", err
+			return key{}, err
 		}
 		k[i] = flow
+	}
+	return k, nil
+}
+
+func coldOrder(c coldConnection) (string, error) {
+	k, err := c.restoreKey()
+	if err != nil {
+		return "", err
 	}
 	return hex.EncodeToString([]byte(k.String())), nil
 }
@@ -319,10 +327,14 @@ func (a *Assembler) closeOrderedWithCold(conns []connectionRef, progress func())
 			if err != nil {
 				return err
 			}
-			order, err := coldOrder(snap)
+			stored, err := snap.restoreKey()
 			if err != nil {
 				return err
 			}
+			if coldID(&stored) != id {
+				return fmt.Errorf("TCP cold order entry references a mismatched state row")
+			}
+			order := hex.EncodeToString([]byte(stored.String()))
 			if orderKey != p.cold.prefix+"order/"+order+"/" {
 				return fmt.Errorf("TCP cold order entry does not match stored connection")
 			}
@@ -454,11 +466,9 @@ func (p *StreamPool) restoreCold(k *key) (connectionRef, bool, bool, error) {
 		if err != nil {
 			return err
 		}
-		for i := range stored {
-			stored[i], err = snap.Key[i].Restore()
-			if err != nil {
-				return err
-			}
+		stored, err = snap.restoreKey()
+		if err != nil {
+			return err
 		}
 		want := *k
 		if reverse {

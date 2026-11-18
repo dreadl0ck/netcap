@@ -85,6 +85,36 @@ func TestColdEOFFailsOnMissingOrderEntry(t *testing.T) {
 	}
 }
 
+func TestColdEOFFailsOnMismatchedStateRow(t *testing.T) {
+	canceled := false
+	store, err := aggregate.Open(t.TempDir(), 2048, func() { canceled = true })
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	pool := NewStreamPool(new(flushProgressFactory))
+	pool.cold = &coldStorage{state: store, prefix: "fixture/"}
+	k, wrong := snapshotKey(1), snapshotKey(2)
+	snap := coldConnection{Version: 1}
+	for i := range k {
+		snap.Key[i] = SaveFlow(k[i])
+	}
+	if err := store.Do(func(tx *aggregate.Tx) error {
+		return pool.cold.put(tx, coldID(&wrong), snap, false)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	pool.cold.count.Store(1)
+	a := NewAssembler(pool)
+	defer a.Release()
+	if n := a.FlushAll(); n != 0 {
+		t.Fatalf("finalized %d connections from a mismatched state row", n)
+	}
+	if err := store.Error(); err == nil || !strings.Contains(err.Error(), "references a mismatched state row") || !canceled {
+		t.Fatalf("expected fatal storage cancellation, got %v, canceled=%t", err, canceled)
+	}
+}
+
 func TestColdEOFFailsOnMismatchedOrderEntry(t *testing.T) {
 	canceled := false
 	store, err := aggregate.Open(t.TempDir(), 2048, func() { canceled = true })
