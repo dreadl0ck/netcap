@@ -106,6 +106,9 @@ func ReadBodyLimit(r io.Reader, limit int64) (body []byte, release func(), err e
 				continue
 			}
 			if n > 0 {
+				if e != nil && e != io.EOF {
+					return body, release, errors.Join(fullErr, e)
+				}
 				return body, release, fullErr
 			}
 			if e == io.EOF {

@@ -174,4 +174,19 @@ func testReadBodySharedBudget(t *testing.T, budget int64, size int) {
 			t.Fatalf("extra=%t: len=%d err=%v", extra, len(body), err)
 		}
 	}
+	sourceErr := errors.New("fixture read failure")
+	for _, tc := range []struct {
+		limit int64
+		want  error
+	}{
+		{4096, errSharedArtifactBudget},
+		{int64(size), ErrArtifactLimit},
+	} {
+		reader := io.MultiReader(bytes.NewReader(want), spoolDataErrorReader{sourceErr})
+		body, release, err := ReadBodyLimit(reader, tc.limit)
+		release()
+		if !bytes.Equal(body, want) || !errors.Is(err, tc.want) || !errors.Is(err, sourceErr) {
+			t.Fatalf("limit=%d: len=%d err=%v", tc.limit, len(body), err)
+		}
+	}
 }
