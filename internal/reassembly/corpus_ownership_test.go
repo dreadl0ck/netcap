@@ -44,20 +44,22 @@ func TestPartialQueuedOverlapPreservesPrefix(t *testing.T) {
 
 func TestDisjointGapFillDeliversAcrossRollover(t *testing.T) {
 	for _, tc := range []struct {
-		name string
-		isn  uint32
-		fast bool
+		name  string
+		isn   uint32
+		fast  bool
+		pages int
 	}{
-		{"ordinary", 100, true},
-		{"input crosses rollover", ^uint32(0) - 5, true},
-		{"queue across rollover", ^uint32(0) - 8, false},
+		{"ordinary", 100, true, 64},
+		{"long queue", 100, true, 4096},
+		{"input crosses rollover", ^uint32(0) - 5, true, 64},
+		{"queue across rollover", ^uint32(0) - 8, false, 64},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			factory := new(flushProgressFactory)
 			pool := NewStreamPool(factory)
 			a := NewAssembler(pool)
 			defer a.Release()
-			budget, err := NewPageBudget(64*PageAllocationBytes, nil)
+			budget, err := NewPageBudget(int64(tc.pages)*PageAllocationBytes, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -68,7 +70,7 @@ func TestDisjointGapFillDeliversAcrossRollover(t *testing.T) {
 			}
 			send(0, true, nil)
 			send(1, false, []byte("head"))
-			tail := make([]byte, 64)
+			tail := make([]byte, tc.pages)
 			for i := range tail {
 				tail[i] = byte(i)
 				send(9+uint32(i), false, tail[i:i+1])
@@ -81,7 +83,17 @@ func TestDisjointGapFillDeliversAcrossRollover(t *testing.T) {
 			if half.pages != len(tail) || half.endsBeforeQueue(Sequence(tc.isn+7)) != tc.fast {
 				t.Fatalf("unexpected queued state: pages=%d, fast path=%t", half.pages, half.endsBeforeQueue(Sequence(tc.isn+7)))
 			}
+			examined := 0
+			a.overlapPagesExamined = &examined
 			send(5, false, []byte("ab"))
+			a.overlapPagesExamined = nil
+			wantExamined := tc.pages
+			if tc.fast {
+				wantExamined = 0
+			}
+			if examined != wantExamined {
+				t.Fatalf("overlap examined %d queued pages, want %d", examined, wantExamined)
+			}
 			if got := factory.streams[0].data; string(got) != "headab" || half.pages != len(tail) {
 				t.Fatalf("disjoint input disturbed queue: delivered=%q pages=%d", got, half.pages)
 			}

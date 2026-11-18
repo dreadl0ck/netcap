@@ -116,13 +116,14 @@ type assemblerOptions struct {
 type Assembler struct {
 	sync.Mutex
 	assemblerOptions
-	ret      []byteContainer
-	pc       *pageCache
-	connPool *StreamPool
-	dueBatch []connectionRef
-	cacheLP  livePacket
-	cacheSG  reassemblyObject
-	start    bool
+	ret                  []byteContainer
+	pc                   *pageCache
+	connPool             *StreamPool
+	dueBatch             []connectionRef
+	overlapPagesExamined *int
+	cacheLP              livePacket
+	cacheSG              reassemblyObject
+	start                bool
 }
 
 // NewAssembler creates a new assembler.  Pass in the StreamPool
@@ -466,6 +467,9 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 	//             [s <--ds-- : --de--> e]
 overlaps:
 	for cur != nil {
+		if a.overlapPagesExamined != nil {
+			(*a.overlapPagesExamined)++
+		}
 		if Debug {
 			log.Printf("cur = %p (%s)\n", cur, cur)
 		}
