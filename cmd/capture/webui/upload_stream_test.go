@@ -8,8 +8,94 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync/atomic"
 	"testing"
+	"time"
 )
+
+type uploadReadCounter struct{ reads int }
+
+func (r *uploadReadCounter) Read([]byte) (int, error) {
+	r.reads++
+	return 0, io.EOF
+}
+
+func TestServiceUploadAdmissionThroughQueueHandoff(t *testing.T) {
+	s := &Server{
+		isServiceMode:  true,
+		serviceConfig:  &ServiceConfig{DataDir: t.TempDir(), MaxFileSize: 1024},
+		sessionManager: NewSessionManager(10, 60, 10),
+		jobQueue:       make(chan *AnalysisJob, 1), shutdownChan: make(chan struct{}),
+	}
+	s.jobQueue <- &AnalysisJob{processingDone: func() {}}
+	defer s.stopProcessingAdmission()
+	const boundary = "capture-fixture"
+	request := func(body io.Reader) *http.Request {
+		r := httptest.NewRequest(http.MethodPost, "/api/upload", body)
+		r.Header.Set("Content-Type", "multipart/form-data; boundary="+boundary)
+		return r
+	}
+	var wire bytes.Buffer
+	mw := multipart.NewWriter(&wire)
+	if err := mw.SetBoundary(boundary); err != nil {
+		t.Fatal(err)
+	}
+	part, err := mw.CreateFormFile("file", "fixture.pcap")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := part.Write([]byte{0xd4, 0xc3, 0xb2, 0xa1}); err != nil {
+		t.Fatal(err)
+	}
+	if err := mw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	results := make(chan int, 2)
+	for range 2 {
+		go func() {
+			w := httptest.NewRecorder()
+			s.handleUploadServiceMode(w, request(bytes.NewReader(wire.Bytes())))
+			results <- w.Code
+		}()
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for atomic.LoadInt64(&s.jobsScheduled) < 2 && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	if atomic.LoadInt64(&s.jobsScheduled) != 2 {
+		t.Fatal("two uploads did not reach the saturated queue")
+	}
+	check := func(want int, read bool) {
+		t.Helper()
+		body := &uploadReadCounter{}
+		w := httptest.NewRecorder()
+		s.handleUploadServiceMode(w, request(body))
+		if w.Code != want || (body.reads > 0) != read {
+			t.Fatalf("status=%d reads=%d body=%q; want status=%d read=%v", w.Code, body.reads, w.Body, want, read)
+		}
+	}
+	check(http.StatusServiceUnavailable, false)
+	(<-s.jobQueue).processingDone() // Release the prefilled queue slot.
+	for range 2 {
+		select {
+		case job := <-s.jobQueue:
+			job.processingDone()
+		case <-time.After(5 * time.Second):
+			t.Fatal("upload did not hand off after queue release")
+		}
+		select {
+		case code := <-results:
+			if code != http.StatusOK {
+				t.Fatalf("admitted upload returned %d", code)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("admitted upload did not return")
+		}
+	}
+	check(http.StatusBadRequest, true)
+	s.stopProcessingAdmission()
+	check(http.StatusServiceUnavailable, false)
+}
 
 func TestBoundedCaptureUpload(t *testing.T) {
 	tmp := t.TempDir()

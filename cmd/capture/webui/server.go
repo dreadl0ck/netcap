@@ -247,6 +247,7 @@ type Server struct {
 	isServiceMode       bool              // Flag to differentiate modes
 	sessionManager      *SessionManager   // Session manager (nil in local mode)
 	serviceConfig       *ServiceConfig    // Service configuration (nil in local mode)
+	serviceUploads      int               // Protected by mu
 	jobQueue            chan *AnalysisJob // Job queue (nil in local mode)
 	shutdownChan        chan struct{}     // Shutdown channel for graceful shutdown
 	shutdownOnce        sync.Once         // Ensure shutdown channel is only closed once
