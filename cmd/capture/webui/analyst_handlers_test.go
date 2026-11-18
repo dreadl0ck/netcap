@@ -136,6 +136,16 @@ func TestBoundTableStreamAndTimelineShareReference(t *testing.T) {
 	if ref.Ordinal != "1" || ref.Binding != binding {
 		t.Fatalf("stream identity %+v", ref)
 	}
+	if body := w.Body.String(); !strings.Contains(body, `"nextOffset":2`) || !strings.Contains(body, `"hasMore":false`) {
+		t.Fatalf("incorrect bound stream cursor: %s", body)
+	}
+	q.Set("offset", "0")
+	q.Set("limit", "2")
+	disconnected := failedAuditFlush{httptest.NewRecorder()}
+	HandleAuditStream(disconnected, httptest.NewRequest("GET", "/api/audit/Connection/stream?"+q.Encode(), nil), filepath.Join(dir, "Connection.ncap.gz"), "Connection")
+	if body := disconnected.Body.String(); strings.Count(body, "event: record\n") != 1 || strings.Contains(body, "event: complete\n") {
+		t.Fatalf("bound stream continued after flush failure: %s", body)
+	}
 	events := []timelineEventJSON{{Type: "Connection", Time: ref.TimestampNs, Ordinal: 1}}
 	w = httptest.NewRecorder()
 	if !attachTimelineOccurrences(w, httptest.NewRequest("GET", "/api/timeline/events?"+q.Encode(), nil), dir, events) {

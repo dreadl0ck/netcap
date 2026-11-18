@@ -114,13 +114,14 @@ func handleBoundAuditStream(w http.ResponseWriter, r *http.Request, path, typ st
 		analystFailure(w, err)
 		return
 	}
-	flusher, ok := w.(http.Flusher)
+	_, ok = w.(http.Flusher)
 	if !ok {
 		http.Error(w, "Streaming unsupported", 500)
 		return
 	}
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
+	response := http.NewResponseController(w)
 	for _, row := range rows {
 		if ctx.Err() != nil {
 			return
@@ -128,9 +129,16 @@ func handleBoundAuditStream(w http.ResponseWriter, r *http.Request, path, typ st
 		if _, err = fmt.Fprintf(w, "event: record\ndata: %s\n\n", row); err != nil {
 			return
 		}
-		flusher.Flush()
+		if err := response.Flush(); err != nil {
+			return
+		}
 	}
-	complete, _ := json.Marshal(map[string]any{"total": matched, "count": len(rows), "scanned": scanned, "executionTimeMs": time.Since(started).Milliseconds(), "binding": source.Binding, "coverage": "retained-content-bound"})
-	_, _ = fmt.Fprintf(w, "event: complete\ndata: %s\n\n", complete)
-	flusher.Flush()
+	if ctx.Err() != nil {
+		return
+	}
+	nextOffset := offset + len(rows)
+	complete, _ := json.Marshal(map[string]any{"total": matched, "count": len(rows), "scanned": scanned, "nextOffset": nextOffset, "hasMore": nextOffset < matched, "executionTimeMs": time.Since(started).Milliseconds(), "binding": source.Binding, "coverage": "retained-content-bound"})
+	if _, err := fmt.Fprintf(w, "event: complete\ndata: %s\n\n", complete); err == nil {
+		_ = response.Flush()
+	}
 }
