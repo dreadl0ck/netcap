@@ -148,6 +148,23 @@ func TestStreamAuditRecordsHTTPError(t *testing.T) {
 	}
 }
 
+func TestStreamAuditRecordsChecksCompletionCursor(t *testing.T) {
+	for _, summary := range []string{`{"count":1,"nextOffset":6}`, `{"count":2,"nextOffset":6}`, `{"count":1,"nextOffset":7}`, `{"count":null}`} {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintf(w, "event: record\ndata: {}\n\nevent: complete\ndata: %s\n\n", summary)
+		}))
+		records, _, terminal, err := NewNetcapClient(ts.URL).StreamAuditRecords("DNS", url.Values{"offset": {"5"}}, 1024)
+		ts.Close()
+		if summary == `{"count":1,"nextOffset":6}` {
+			if err != nil || terminal != "complete" || len(records) != 1 {
+				t.Fatalf("valid completion rejected: %v", err)
+			}
+		} else if err == nil || records != nil {
+			t.Fatalf("inconsistent completion accepted: %s", summary)
+		}
+	}
+}
+
 func TestStreamAuditRecordsEnforcesPageBounds(t *testing.T) {
 	const page = "event: record\ndata: {}\n\nevent: record\ndata: {}\n\nevent: complete\ndata: {}\n\n"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

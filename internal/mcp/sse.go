@@ -123,6 +123,11 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 				if !json.Valid(completeJSON) || !strings.HasPrefix(string(completeJSON), "{") {
 					return nil, nil, "", fmt.Errorf("invalid SSE terminal payload")
 				}
+				if terminalEvent == "complete" {
+					if err := validateAuditCompletion(completeJSON, q, len(records)); err != nil {
+						return nil, nil, "", err
+					}
+				}
 				return records, completeJSON, terminalEvent, nil
 			}
 			continue
@@ -147,4 +152,31 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 		terminalEvent = "incomplete"
 	}
 	return records, completeJSON, terminalEvent, nil
+}
+
+func validateAuditCompletion(payload json.RawMessage, query url.Values, count int) error {
+	var summary struct {
+		Count      json.RawMessage `json:"count"`
+		NextOffset json.RawMessage `json:"nextOffset"`
+	}
+	if err := json.Unmarshal(payload, &summary); err != nil {
+		return fmt.Errorf("invalid SSE completion summary: %w", err)
+	}
+	if summary.Count != nil {
+		got, err := strconv.Atoi(string(summary.Count))
+		if err != nil || got != count {
+			return fmt.Errorf("SSE completion count does not match delivered records")
+		}
+	}
+	if summary.NextOffset != nil {
+		offset, err := strconv.Atoi(query.Get("offset"))
+		if query.Get("offset") == "" {
+			err = nil
+		}
+		got, parseErr := strconv.Atoi(string(summary.NextOffset))
+		if err != nil || parseErr != nil || offset < 0 || got < offset || got-offset != count {
+			return fmt.Errorf("SSE completion nextOffset does not match delivered records")
+		}
+	}
+	return nil
 }
