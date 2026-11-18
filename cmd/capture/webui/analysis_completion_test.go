@@ -86,6 +86,91 @@ func TestCaptureWorkerBuffersOnePostCaptureJob(t *testing.T) {
 	}
 }
 
+func TestCaptureWorkerCompletesSmallAnalysisWhileRegularTimelineWaits(t *testing.T) {
+	s, smallInput, smallDir := reanalysisFixture(t)
+	delete(s.completedFiles, smallInput)
+	s.fileBPFFilters = make(map[string]string)
+	s.shutdownChan = make(chan struct{})
+	s.rulesConfig = &rules.Config{Rules: []*rules.Rule{{Name: "get", Type: "HTTP", Expression: "Method == 'GET'", Enabled: true}}}
+	writeTimelineAuditFile(t, smallDir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Timestamp: 1, Method: "GET"}})
+	largeDir := t.TempDir()
+	largeInput := filepath.Join(largeDir, "large.pcap")
+	record := &types.HTTP{Timestamp: 2, Method: "POST", URL: "/" + strings.Repeat("x", 1024)}
+	rows := make([]proto.Message, 512)
+	for i := range rows {
+		rows[i] = record
+	}
+	writeTimelineAuditFilePlain(t, largeDir, "HTTP", types.Type_NC_HTTP, rows)
+	largeDone, smallDone := make(chan struct{}), make(chan struct{})
+	s.jobQueue <- &AnalysisJob{InputFile: largeInput, OutputDir: largeDir, processingDone: func() { close(largeDone) }}
+	timelineBuildSlot <- struct{}{}
+	s.wg.Add(1)
+	go s.processJobs(func(job *AnalysisJob) { s.finishCaptureJob(job, time.Second) })
+	held := true
+	defer func() {
+		if held {
+			<-timelineBuildSlot
+		}
+		s.stopProcessingAdmission()
+		s.wg.Wait()
+	}()
+	deadline := time.After(5 * time.Second)
+	for {
+		phase, _ := s.selectedAnalysisPhase(captureSelection{InputFile: largeInput, OutputDir: largeDir})
+		if phase == "timeline" {
+			break
+		}
+		select {
+		case <-largeDone:
+			t.Fatal("large job finished before reaching the timeline barrier")
+		case <-deadline:
+			t.Fatal("large job never reached the timeline barrier")
+		case <-time.After(time.Millisecond):
+		}
+	}
+	s.jobQueue <- &AnalysisJob{InputFile: smallInput, OutputDir: smallDir, processingDone: func() { close(smallDone) }}
+	select {
+	case <-smallDone:
+	case <-deadline:
+		t.Fatal("small job waited for regular timeline capacity")
+	}
+	select {
+	case <-largeDone:
+		t.Fatal("large job bypassed the occupied regular lane")
+	default:
+	}
+	s.mu.RLock()
+	smallCompleted := s.completedFiles[smallInput]
+	s.mu.RUnlock()
+	if !smallCompleted || timelineIndexFor(smallDir).State != timelineStateReady {
+		t.Fatal("small job did not publish completed analysis with a ready timeline")
+	}
+	reader, err := NewAuditRecordReader(filepath.Join(smallDir, "Alert.ncap.gz"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reader.Close()
+	if _, err := reader.ReadHeader(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := reader.NextRecord(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := reader.NextRecord(); err != io.EOF {
+		t.Fatalf("small job did not publish exactly one alert: %v", err)
+	}
+	<-timelineBuildSlot
+	held = false
+	select {
+	case <-largeDone:
+	case <-deadline:
+		t.Fatal("large job did not finish once capacity returned")
+	}
+	if !s.completedFiles[largeInput] {
+		t.Fatal("large job did not publish completion")
+	}
+}
+
 func TestCaptureWorkerShutdownCancelsBacklog(t *testing.T) {
 	s := &Server{
 		jobQueue: make(chan *AnalysisJob, 5), shutdownChan: make(chan struct{}),
