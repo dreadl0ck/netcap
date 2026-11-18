@@ -226,6 +226,7 @@ func TestHTTPSourceOversizedPostPreservesOnlyAllowedPrefix(t *testing.T) {
 		{"opaque", "application/octet-stream", strings.Repeat("x", limit) + "y", false},
 		{"opaque-with-payloads", "application/octet-stream", strings.Repeat("x", limit) + "y", true},
 		{"json", "application/json", `{"label":"fixture"}` + strings.Repeat(" ", limit), false},
+		{"multipart", "multipart/form-data; boundary=fixture", "--fixture\r\nContent-Disposition: form-data; name=\"padding\"\r\n\r\n" + strings.Repeat("x", limit) + "\r\n--fixture--\r\n", false},
 		{"urlencoded", "application/x-www-form-urlencoded", "label=fixture&padding=" + strings.Repeat("x", limit), false},
 		{"urlencoded-with-payloads", "application/x-www-form-urlencoded", "label=fixture&padding=" + strings.Repeat("x", limit), true},
 	} {
@@ -244,6 +245,35 @@ func TestHTTPSourceOversizedPostPreservesOnlyAllowedPrefix(t *testing.T) {
 				t.Fatalf("unexpected incomplete artifact: %v", artifacts)
 			}
 		})
+	}
+}
+
+func TestHTTPSourceURLEncodedPreflightAtFallbackBoundary(t *testing.T) {
+	oldDecoder, oldFile := decoderconfig.Instance, file.GetGlobalConfig()
+	t.Cleanup(func() {
+		decoderconfig.Instance = oldDecoder
+		file.SetGlobalConfig(oldFile)
+	})
+	decoderconfig.Instance = &decoderconfig.Config{FileStorage: "files"}
+	for _, tc := range []struct {
+		limit, size int
+		want        error
+	}{
+		{maxJSONFormBytes, maxJSONFormBytes, errHTTPSourceCompatibility},
+		{maxJSONFormBytes, maxJSONFormBytes + 1, nil},
+		{maxJSONFormBytes + 1, maxJSONFormBytes + 1, errHTTPSourceCompatibility},
+	} {
+		cfg := file.GetDefaultConfig()
+		cfg.FileExtraction.SizeLimits.MaxFileSize = int64(tc.limit)
+		file.SetGlobalConfig(cfg)
+		wire := fmt.Sprintf("POST /fixture HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\n\r\n%s", tc.size, "data="+strings.Repeat("x", tc.size-5))
+		if tc.size == maxJSONFormBytes {
+			wire += "POST /next HTTP/1.1\r\nHost: fixture.test\r\nContent-Encoding: br\r\nContent-Length: 4\r\n\r\ndata"
+		}
+		c := &core.ConversationInfo{ClientSource: core.SliceSource{wireFragment(0, []byte(wire), 1)}}
+		if err := preflightSourceHTTP(c); err != tc.want {
+			t.Fatalf("body size %d, cap %d: preflight returned %v, want %v", tc.size, tc.limit, err, tc.want)
+		}
 	}
 }
 
