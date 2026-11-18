@@ -62,6 +62,11 @@ func (s *Server) handleStreamContent(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	expected := q.Get("manifestSHA256")
+	if offset > 0 && expected == "" {
+		http.Error(w, "stream manifest changed or required for subsequent page", 409)
+		return
+	}
 	select {
 	case streamVerificationSlots <- struct{}{}:
 		defer func() { <-streamVerificationSlots }()
@@ -77,7 +82,7 @@ func (s *Server) handleStreamContent(w http.ResponseWriter, r *http.Request) {
 	}
 	digest := sha256.Sum256(raw)
 	manifestHash := hex.EncodeToString(digest[:])
-	if expected := q.Get("manifestSHA256"); (offset > 0 && expected == "") || (expected != "" && expected != manifestHash) {
+	if expected != "" && expected != manifestHash {
 		http.Error(w, "stream manifest changed or required for subsequent page", 409)
 		return
 	}
@@ -112,8 +117,8 @@ func (s *Server) handleStreamContent(w http.ResponseWriter, r *http.Request) {
 		n, err := f.Read(buffer)
 		start := scanned
 		scanned += int64(n)
-		if scanned > 256<<20 {
-			http.Error(w, "stream grew beyond byte budget", 409)
+		if scanned > info.Size() {
+			http.Error(w, "stream changed during read", 409)
 			return
 		}
 		hash.Write(buffer[:n])

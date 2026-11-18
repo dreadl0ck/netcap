@@ -419,9 +419,14 @@ func TestMCPStreamContentPagesVerifySourceAndConfinement(t *testing.T) {
 			t.Fatalf("full verification lane: %d %s", w.Code, w.Body)
 		}
 		q.Set("spanLimit", "129")
-		defer q.Del("spanLimit")
 		if w := request(q); w.Code != http.StatusBadRequest {
 			t.Fatalf("invalid span limit reached verification lane: %d %s", w.Code, w.Body)
+		}
+		q.Del("spanLimit")
+		q.Set("offset", "4")
+		defer q.Del("offset")
+		if w := request(q); w.Code != http.StatusConflict {
+			t.Fatalf("unbound continuation reached verification lane: %d %s", w.Code, w.Body)
 		}
 	}()
 	first := request(q)
