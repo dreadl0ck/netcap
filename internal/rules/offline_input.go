@@ -303,8 +303,8 @@ func offlineReadType(ctx context.Context, root *os.Root, typ string, limits Offl
 		if *total > limits.Records {
 			return nil, nil, stats, fmt.Errorf("offline record limit exceeded")
 		}
-		if record.Time() <= 0 {
-			return nil, nil, stats, fmt.Errorf("%s record %d: timestamp must be positive", name, len(rows))
+		if record.Time() == 0 {
+			return nil, nil, stats, fmt.Errorf("%s record %d: timestamp is missing", name, len(rows))
 		}
 		if !offlineValidValue(reflect.ValueOf(record)) {
 			return nil, nil, stats, fmt.Errorf("%s record contains invalid UTF-8 or nonfinite number", name)

@@ -244,6 +244,32 @@ func TestOfflineInclusiveWindow(t *testing.T) {
 	}
 }
 
+func TestOfflineSignedWindow(t *testing.T) {
+	const window = int64(600 * time.Second)
+	for _, tc := range []struct {
+		name        string
+		first, last int64
+		alerts      int64
+	}{
+		{"minimum tie", math.MinInt64, math.MinInt64, 1},
+		{"inclusive minimum boundary", math.MinInt64, math.MinInt64 + window, 1},
+		{"inclusive across epoch", -1, window - 1, 1},
+		{"outside across epoch", -1, window, 0},
+		{"signed extremes", math.MinInt64, math.MaxInt64, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := offlineTestDirectory(t)
+			rows := offlineTestTCP(2)
+			rows[0].(*types.TCP).Timestamp = tc.last
+			rows[1].(*types.TCP).Timestamp = tc.first
+			offlineTestRecords(t, dir, "TCP", true, rows)
+			if report := offlineTestEval(t, dir, offlineTestPack(2)); report.CommittedAlerts != tc.alerts {
+				t.Fatalf("committed %d alerts, want %d", report.CommittedAlerts, tc.alerts)
+			}
+		})
+	}
+}
+
 func TestOfflineDeterministicShuffleDuplicatesAndMaps(t *testing.T) {
 	pack := offlineTestPack(2)
 	pack.Rules[0].Type = "HTTP"

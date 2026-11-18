@@ -108,13 +108,15 @@ func (s *offlineRuleState) remove(g *offlineGroup, job *offlineJobState) {
 }
 
 func (s *offlineRuleState) expire(ctx context.Context, now int64, rows []offlineRow, job *offlineJobState) error {
-	cutoff := now - s.compiled.window
-	for len(s.expiry) > 0 && s.expiry[0].first < cutoff {
+	expired := func(at int64) bool {
+		return at <= now && uint64(now)-uint64(at) > uint64(s.compiled.window)
+	}
+	for len(s.expiry) > 0 && expired(s.expiry[0].first) {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
 		g := s.expiry[0]
-		for g.n > 0 && rows[g.queue[g.head]].timestamp < cutoff {
+		for g.n > 0 && expired(rows[g.queue[g.head]].timestamp) {
 			g.head = (g.head + 1) % len(g.queue)
 			g.n--
 			s.pending--
