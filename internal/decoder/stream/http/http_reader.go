@@ -427,7 +427,8 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		if spool != nil {
 			defer func() { file.RecordArtifactWriteError(spool.Close()) }()
 			encoding := contentEncoding(res.Header)
-			passiveReport = software.ObserveWebtech(observation, spool.Reader(), encoding, authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+			// The spool already owns the wire body. Keep the extra byte that signals truncation.
+			passiveReport = software.ObserveWebtech(observation, io.LimitReader(spool.Reader(), webtech.MaxPrefix+1), encoding, authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 			passiveReport.WireBytes = spool.Size()
 			if isGzipEncoding(encoding) || passiveReport.DetectedContentType == "" {
 				passiveReport.DetectedContentType = sourceResponseContentType(h.conversation, spool, encoding)
