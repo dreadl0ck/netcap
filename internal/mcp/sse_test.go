@@ -234,6 +234,30 @@ func TestStreamAuditRecordsEnforcesPageBounds(t *testing.T) {
 	}
 }
 
+func TestStreamAuditRecordsEnforcesDefaultPageCeiling(t *testing.T) {
+	for _, tc := range []struct {
+		rows  int
+		query url.Values
+	}{
+		{500, nil},
+		{501, nil},
+		{501, url.Values{"limit": {"501"}}},
+	} {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(strings.Repeat("event: record\ndata: {}\n\n", tc.rows) + "event: complete\ndata: {}\n\n"))
+		}))
+		rows, _, terminal, err := NewNetcapClient(ts.URL).StreamAuditRecords("DNS", tc.query, 1<<20)
+		ts.Close()
+		if tc.rows == 500 {
+			if err != nil || len(rows) != 500 || terminal != "complete" {
+				t.Fatalf("default page: rows=%d terminal=%q error=%v", len(rows), terminal, err)
+			}
+		} else if err == nil || !strings.Contains(err.Error(), "page bounds") || rows != nil {
+			t.Fatalf("overlong page: rows=%d terminal=%q error=%v", len(rows), terminal, err)
+		}
+	}
+}
+
 func TestStreamAuditRecordsRejectsNonObjectRecord(t *testing.T) {
 	for _, payload := range []string{`null`, `[]`, `{"incomplete":`} {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

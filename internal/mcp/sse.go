@@ -77,6 +77,9 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 	}
 	limited := io.LimitReader(resp.Body, int64(maxBytes))
 	recordLimit, _ := strconv.Atoi(q.Get("limit"))
+	if recordLimit < 1 || recordLimit > 500 {
+		recordLimit = 500
+	}
 	countOnly := q.Get("countOnly") == "true"
 
 	// SSE events are separated by blank lines; each event is one or more
@@ -96,7 +99,7 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 		payload := json.RawMessage(bytes.TrimSpace(curData))
 		switch curEvent {
 		case "record":
-			if countOnly || recordLimit > 0 && len(records) >= recordLimit {
+			if countOnly || len(records) >= recordLimit {
 				return fmt.Errorf("SSE record count exceeds requested page bounds")
 			}
 			if len(payload) == 0 || payload[0] != '{' || !json.Valid(payload) {
