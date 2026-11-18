@@ -957,7 +957,7 @@ func (s *Server) handleExecuteRule(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Printf("[WebUI] Failed to execute rule: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]any{
+		RespondJSON(w, manualRuleErrorStatus(err), map[string]any{
 			"error": fmt.Sprintf("Failed to execute rule: %v", err),
 		})
 		return
@@ -1046,7 +1046,7 @@ func (s *Server) handleExecuteAllRules(w http.ResponseWriter, r *http.Request) {
 	totalRecords := 0
 	results, err := s.replayManualRules(outDir, enabledRules, r.Context().Done())
 	if err != nil {
-		RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		RespondJSON(w, manualRuleErrorStatus(err), map[string]string{"error": err.Error()})
 		return
 	}
 	failed := 0
@@ -1072,4 +1072,11 @@ func (s *Server) handleExecuteAllRules(w http.ResponseWriter, r *http.Request) {
 		ExecutionTime: executionTime,
 		RuleResults:   results,
 	})
+}
+
+func manualRuleErrorStatus(err error) int {
+	if errors.Is(err, errManualRuleCapacity) {
+		return http.StatusTooManyRequests
+	}
+	return http.StatusInternalServerError
 }

@@ -48,6 +48,17 @@ func TestExecuteAllRulesReportsPartialFailure(t *testing.T) {
 		{Name: "get", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true},
 		{Name: "invalid", Type: "HTTP", Expression: `Method ==`, Enabled: true},
 	}}}
+	func() {
+		for range cap(manualRuleSlots) {
+			manualRuleSlots <- struct{}{}
+			defer func() { <-manualRuleSlots }()
+		}
+		w := httptest.NewRecorder()
+		s.handleExecuteAllRules(w, httptest.NewRequest(http.MethodPost, "/api/rules/execute-all", nil))
+		if w.Code != http.StatusTooManyRequests {
+			t.Fatalf("saturated replay: %d %s", w.Code, w.Body.String())
+		}
+	}()
 	w := httptest.NewRecorder()
 	s.handleExecuteAllRules(w, httptest.NewRequest(http.MethodPost, "/api/rules/execute-all", nil))
 	var result ExecuteAllRulesResponse

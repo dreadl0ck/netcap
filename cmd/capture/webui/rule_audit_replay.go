@@ -84,6 +84,9 @@ func replayRuleAudit(dir, auditType string, stop <-chan struct{}, replay *rules.
 	return alerts, count, err
 }
 
+var manualRuleSlots = make(chan struct{}, 2)
+var errManualRuleCapacity = errors.New("manual rule replay is busy")
+
 func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-chan struct{}) (results []RuleExecResult, err error) {
 	select {
 	case <-stop:
@@ -91,6 +94,12 @@ func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-ch
 	case <-s.shutdownChan:
 		return nil, errAnalysisStopping
 	default:
+	}
+	select {
+	case manualRuleSlots <- struct{}{}:
+		defer func() { <-manualRuleSlots }()
+	default:
+		return nil, errManualRuleCapacity
 	}
 	release, available := leaseOfflineMutation(dir)
 	if !available {
