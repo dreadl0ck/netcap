@@ -219,9 +219,14 @@ func filterConnectionsByIPVersion(connections []ConnectionSummary, ipVersionFilt
 // readConnections reads and aggregates Connection data from the output directory
 func readConnections(outDir string) ([]ConnectionSummary, error) {
 	filePath := filepath.Join(outDir, "Connection.ncap.gz")
+	return summarizeConnections(func(visit func(*types.Connection)) error {
+		return visitAuditRecords(filePath, "Connection", visit)
+	})
+}
 
+func summarizeConnections(scan func(func(*types.Connection)) error) ([]ConnectionSummary, error) {
 	connections := make([]ConnectionSummary, 0)
-	err := visitAuditRecords(filePath, "Connection", func(conn *types.Connection) {
+	err := scan(func(conn *types.Connection) {
 		var resolvedAt string
 		if conn.DNSResolutionState != "" {
 			resolvedAt = strconv.FormatInt(conn.DNSResolvedAt, 10)

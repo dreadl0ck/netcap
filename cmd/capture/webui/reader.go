@@ -182,7 +182,10 @@ func visitAuditRecords[T proto.Message](path, label string, visit func(T)) error
 	if _, err := reader.ReadHeader(); err != nil {
 		return err
 	}
+	return visitAuditReader(reader, label, visit)
+}
 
+func visitAuditReader[T proto.Message](reader *AuditRecordReader, label string, visit func(T)) error {
 	for {
 		raw, err := reader.NextRaw()
 		if err != nil {

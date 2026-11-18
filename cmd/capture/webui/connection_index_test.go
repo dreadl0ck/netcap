@@ -180,6 +180,9 @@ func TestConnectionIndexInvalidatesSameSizeReplacement(t *testing.T) {
 	if err != nil || before.Size() != after.Size() || !before.ModTime().Equal(after.ModTime()) || os.SameFile(before, after) {
 		t.Fatalf("fixture did not replace the file while preserving size and mtime: %v", err)
 	}
+	if rows, err := readConnectionGeneration(dir, before); rows != nil || !errors.Is(err, errConnectionAuditChanged) {
+		t.Fatalf("build opened the replacement for the old generation: rows=%v err=%v", rows, err)
+	}
 	got, err := connectionSnapshotFor(dir)
 	if err != nil || got == old || len(got.rows) != 1 || got.rows[0].CommunityID != "new" {
 		t.Fatalf("replacement did not invalidate cache: snapshot=%v error=%v", got, err)

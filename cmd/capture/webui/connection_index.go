@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/RoaringBitmap/roaring"
+	"github.com/dreadl0ck/netcap/internal/artifactio"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 const (
@@ -228,7 +230,7 @@ var (
 )
 
 func connectionGeneration(outDir string) (os.FileInfo, error) {
-	info, err := os.Stat(filepath.Join(outDir, "Connection.ncap.gz"))
+	info, err := os.Lstat(filepath.Join(outDir, "Connection.ncap.gz"))
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil
 	}
@@ -276,7 +278,7 @@ func connectionSnapshotForContext(ctx context.Context, outDir string) (*connecti
 			entry = &connectionCacheEntry{generation: generation, ready: make(chan struct{})}
 			connectionCache.entries[outDir] = entry
 			connectionCache.Unlock()
-			snapshot, buildErr := buildConnectionSnapshot(outDir)
+			snapshot, buildErr := buildConnectionSnapshot(outDir, generation)
 			connectionCache.Lock()
 			entry.err = buildErr
 			entry.snapshot = snapshot
@@ -291,6 +293,9 @@ func connectionSnapshotForContext(ctx context.Context, outDir string) (*connecti
 				}
 			}
 			connectionCache.Unlock()
+			if errors.Is(buildErr, errConnectionAuditChanged) {
+				continue
+			}
 			if buildErr != nil {
 				return nil, buildErr
 			}
@@ -301,6 +306,9 @@ func connectionSnapshotForContext(ctx context.Context, outDir string) (*connecti
 			case <-ctx.Done():
 				return nil, ctx.Err()
 			case <-entry.ready:
+			}
+			if errors.Is(entry.err, errConnectionAuditChanged) {
+				continue
 			}
 			if entry.err != nil {
 				return nil, entry.err
@@ -320,13 +328,46 @@ func connectionSnapshotForContext(ctx context.Context, outDir string) (*connecti
 	return nil, errConnectionAuditChanged
 }
 
-func buildConnectionSnapshot(outDir string) (*connectionSnapshot, error) {
+func buildConnectionSnapshot(outDir string, generation os.FileInfo) (*connectionSnapshot, error) {
 	defer func() { <-connectionBuildSlots }()
-	rows, err := readConnections(outDir)
+	rows, err := readConnectionGeneration(outDir, generation)
 	if err != nil {
 		return nil, err
 	}
 	return newConnectionSnapshot(rows), nil
+}
+
+func readConnectionGeneration(outDir string, generation os.FileInfo) ([]ConnectionSummary, error) {
+	if generation == nil {
+		return []ConnectionSummary{}, nil
+	}
+	f, info, err := artifactio.Open(outDir, "Connection.ncap.gz")
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, errConnectionAuditChanged
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !sameConnectionGeneration(info, generation) {
+		f.Close()
+		return nil, errConnectionAuditChanged
+	}
+	reader, err := openInventoryAuditReader(f, info.Size(), context.Background(), types.Type_NC_Connection)
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+	rows, readErr := summarizeConnections(func(visit func(*types.Connection)) error {
+		return visitAuditReader(reader, "Connection", visit)
+	})
+	after, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if !sameConnectionGeneration(info, after) {
+		return nil, errConnectionAuditChanged
+	}
+	return rows, readErr
 }
 
 func cachedConnectionRows(outDir string) []ConnectionSummary {
