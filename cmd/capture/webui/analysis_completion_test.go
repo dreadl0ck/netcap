@@ -335,6 +335,15 @@ func assertSingleReplayAlert(t *testing.T, dir, rule string, timestamp int64) {
 }
 
 func TestPostCaptureQueueRepeatedMixedArrivals(t *testing.T) {
+	testPostCaptureMixedArrivals(t, false)
+}
+
+func TestPostCaptureQueueFixedRateMixedArrivals(t *testing.T) {
+	testPostCaptureMixedArrivals(t, true)
+}
+
+func testPostCaptureMixedArrivals(t *testing.T, fixedRate bool) {
+	t.Helper()
 	s, _, _ := reanalysisFixture(t)
 	s.fileBPFFilters = make(map[string]string)
 	s.shutdownChan = make(chan struct{})
@@ -383,27 +392,46 @@ func TestPostCaptureQueueRepeatedMixedArrivals(t *testing.T) {
 	ticker := time.NewTicker(20 * time.Millisecond)
 	defer ticker.Stop()
 	var rejected int
+	attempt := func(a *arrival) bool {
+		select {
+		case <-ticker.C:
+		case <-deadline:
+			t.Fatal("mixed arrivals did not finish admission")
+		}
+		a.admitted = time.Now()
+		if a.firstTry.IsZero() {
+			a.firstTry = a.admitted
+		}
+		err := s.enqueueAnalysis(&AnalysisJob{InputFile: a.input, OutputDir: a.dir,
+			ArtifactConfig: []byte("{}"), settings: &jobSettings{Rules: config}}, false)
+		if err == nil {
+			return true
+		}
+		if !errors.Is(err, errAnalysisQueueFull) {
+			t.Fatal(err)
+		}
+		rejected++
+		return false
+	}
+	var backlog []*arrival
+	firstRejected, smallRejected := 0, 0
 	for i := range arrivals {
 		a := &arrivals[i]
-		for {
-			select {
-			case <-ticker.C:
-			case <-deadline:
-				t.Fatal("mixed arrivals did not finish admission")
+		if !attempt(a) {
+			firstRejected++
+			if a.small {
+				smallRejected++
 			}
-			a.admitted = time.Now()
-			if a.firstTry.IsZero() {
-				a.firstTry = a.admitted
+			if fixedRate {
+				backlog = append(backlog, a)
+				continue
 			}
-			err := s.enqueueAnalysis(&AnalysisJob{InputFile: a.input, OutputDir: a.dir,
-				ArtifactConfig: []byte("{}"), settings: &jobSettings{Rules: config}}, false)
-			if err == nil {
-				break
+			for !attempt(a) {
 			}
-			if !errors.Is(err, errAnalysisQueueFull) {
-				t.Fatal(err)
-			}
-			rejected++
+		}
+	}
+	for _, a := range backlog {
+		for !attempt(a) {
 		}
 	}
 	pending := make(map[string]arrival, len(arrivals))
@@ -434,8 +462,8 @@ func TestPostCaptureQueueRepeatedMixedArrivals(t *testing.T) {
 	if s.IsProcessing() || len(tiny) != pairs {
 		t.Fatalf("queue did not drain: tiny completions=%d", len(tiny))
 	}
-	t.Logf("mixed arrivals: %d completed, %d queue-full retries, tiny latency %s–%s after acceptance, %s–%s from first attempt",
-		len(arrivals), rejected, slices.Min(tiny), slices.Max(tiny), slices.Min(tinyWithRetries), slices.Max(tinyWithRetries))
+	t.Logf("mixed arrivals: %d completed, %d first attempts rejected (%d small), %d queue-full responses, tiny latency %s–%s after acceptance, %s–%s from first attempt",
+		len(arrivals), firstRejected, smallRejected, rejected, slices.Min(tiny), slices.Max(tiny), slices.Min(tinyWithRetries), slices.Max(tinyWithRetries))
 }
 
 func testCaptureWorkerCompletesSmallAnalysis(t *testing.T, ruleLoad bool) {
