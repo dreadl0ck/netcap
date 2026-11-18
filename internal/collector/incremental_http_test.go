@@ -205,6 +205,34 @@ func TestIncrementalHTTPSharedStateBudgetsAndReadiness(t *testing.T) {
 	}
 }
 
+func TestIncrementalHTTPHandoffAfterTCPGapFill(t *testing.T) {
+	wire, input := newBookCapture(t)
+	const client, server = "192.0.2.1", "198.51.100.1"
+	send := wire.openTCP(client, server, 40000, 80, false)
+	const prefix = "GET /gap-fill HTTP/1.1\r\n"
+	const suffix = "Host: fixture.test\r\n\r\n"
+	wire.packet(client, server, &layers.TCP{
+		SrcPort: 40000, DstPort: 80, Seq: uint32(1001 + len(prefix)), Ack: 5001, ACK: true, PSH: true, Window: 65535,
+	}, suffix, false)
+	send(false, false, false, prefix)
+	send(true, false, false, "HTTP/1.1 204 No Content\r\n\r\n")
+	out := t.TempDir()
+	cfg := ultimateCaptureConfig(out, 1, 0)
+	cfg.DecoderConfig.IncludeDecoders = "TCP,Connection,HTTP"
+	cfg.DecoderConfig.IncrementalHTTP = true
+	cfg.DecoderConfig.MaxRetainedTCPStateBytes = 1 << 20
+	if err := New(cfg).CollectPcap(input); err != nil {
+		t.Fatal(err)
+	}
+	if rows := readIncrementalHTTP(t, out); len(rows) != 1 || rows[0].URL != "/gap-fill" || rows[0].StatusCode != 204 {
+		t.Fatalf("gap-filling handoff lost HTTP transaction: %v", rows)
+	}
+	health := bookJSON[tcp.IncrementalHealth](t, filepath.Join(out, "TCPIncrementalHealth.json"))
+	if health.IncrementalStreams != 1 || health.CompletedTransactions != 1 {
+		t.Fatalf("fixture did not exercise incremental handoff: %+v", health)
+	}
+}
+
 func TestIncrementalHTTPConversationPersistenceDoesNotReplayTransactions(t *testing.T) {
 	wire, input := newBookCapture(t)
 	send := wire.openTCP("192.0.2.1", "198.51.100.1", 40000, 80, false)
