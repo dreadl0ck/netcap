@@ -365,6 +365,7 @@
     "verification": "TestAnalysisCompletionRejectsMislabeledTimelineTrack verifies that a UDP audit stored as HTTP fails indexing and leaves the analysis incomplete. Focused timeline and analysis completion tests passed under the race detector."
   },
   "captureTimeWatermarkFastPath": {
+    "thresholdPruningAllocation": "In-place pruning preserves the 1024-record threshold and drops the buffer when the rule rearms. Across three Darwin arm64 benchmark runs, allocations fell from 10417 to 12 per trigger cycle and allocated bytes from about 12.26 MB to 25208. The full portable rules race suite passed.",
     "distinctDeltaOverflow": "TestAuditReplayDistinctWindowRejectsTimestampDeltaOverflow verifies that a distinct value near MinInt64 does not count toward a window near MaxInt64, while two distinct values one nanosecond apart still trigger. The full portable rules race suite passed.",
     "dedupDeltaOverflow": "TestAuditReplayDedupRejectsTimestampDeltaOverflow verifies that an old alert near MinInt64 does not suppress a new alert near MaxInt64, while the following record one nanosecond later is still deduplicated. The full portable rules race suite passed.",
     "thresholdDeltaOverflow": "TestAuditReplayThresholdRejectsTimestampDeltaOverflow verifies that a timestamp near MinInt64 cannot count in a 60-second threshold window near MaxInt64. Two records one nanosecond apart still trigger the threshold. The full portable rules race suite passed.",

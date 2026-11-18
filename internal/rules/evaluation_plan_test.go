@@ -79,6 +79,20 @@ func BenchmarkSharedRuleEvaluation(b *testing.B) {
 	}
 }
 
+func BenchmarkThresholdWindowPruning(b *testing.B) {
+	engine := &Engine{thresholdTrackers: make(map[string]*thresholdTracker)}
+	rule := &Rule{Name: "fixture", Threshold: 1024, ThresholdWindow: 60}
+	record := &types.HTTP{Timestamp: time.Second.Nanoseconds()}
+	b.ReportAllocs()
+	for b.Loop() {
+		for i := range rule.Threshold {
+			if engine.checkThreshold(rule, record) != (i == rule.Threshold-1) {
+				b.Fatal("threshold did not trigger and rearm at the expected count")
+			}
+		}
+	}
+}
+
 func TestAuditReplayUsesRecordTimeForDedupAndRateWindows(t *testing.T) {
 	t.Run("modern", func(t *testing.T) { testAuditReplayClock(t, time.Unix(1700000000, 0)) })
 	t.Run("before-epoch", func(t *testing.T) { testAuditReplayClock(t, time.Unix(-3600, 0)) })
