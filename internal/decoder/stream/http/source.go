@@ -9,6 +9,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 
@@ -93,6 +94,9 @@ func sourceBackedForm(request *http.Request) (media, boundary string) {
 func (h *httpReader) parseBackedSmallForm(req *http.Request, spool *file.BodySpool, media string) error {
 	size := spool.Size()
 	if size > maxJSONFormBytes {
+		if media == "application/x-www-form-urlencoded" {
+			return h.parseLargeBackedURLEncodedForm(req, spool.Reader())
+		}
 		req.Form, _ = evidenceQuery(req.URL.RawQuery)
 		return fmt.Errorf("backed form exceeds 1 MiB")
 	}
@@ -142,6 +146,81 @@ func (h *httpReader) parseBackedSmallForm(req *http.Request, spool *file.BodySpo
 	}
 	h.sourceHeaderCredits += retained
 	return parseErr
+}
+
+func (h *httpReader) parseLargeBackedURLEncodedForm(req *http.Request, body io.Reader) error {
+	const scratch = 4096
+	budget := h.conversation.StateBudget
+	reserve := func(n int64) error {
+		err := budget.Reserve(n)
+		if err != nil {
+			h.conversation.FragmentError = err
+		}
+		return err
+	}
+	if err := reserve(scratch); err != nil {
+		return err
+	}
+	defer budget.Release(scratch)
+	reader := bufio.NewReaderSize(body, scratch)
+	query, queryErr := evidenceQuery(req.URL.RawQuery)
+	post := make(url.Values)
+	var token strings.Builder
+	var temporary int64
+	defer func() { budget.Release(temporary) }()
+	var first error
+	for {
+		part, err := reader.ReadSlice('&')
+		if err != nil && err != bufio.ErrBufferFull && err != io.EOF {
+			file.RecordArtifactWriteError(err)
+			return err
+		}
+		part = bytes.TrimSuffix(part, []byte("&"))
+		if len(part) != 0 {
+			// Cover token capacity, growth copies, and decoded strings while they overlap.
+			charge := 4 * int64(len(part))
+			if err := reserve(charge); err != nil {
+				return err
+			}
+			temporary += charge
+			token.Write(part)
+		}
+		if err == bufio.ErrBufferFull {
+			continue
+		}
+		if token.Len() != 0 {
+			key, value, ok := decodeEvidencePair(token.String(), true)
+			if !ok {
+				if first == nil {
+					first = fmt.Errorf("invalid query escape")
+				}
+			} else {
+				retained := int64(64 + len(value))
+				if _, exists := post[key]; !exists {
+					retained += int64(256 + len(key))
+				}
+				if err := reserve(retained); err != nil {
+					return err
+				}
+				h.sourceHeaderCredits += retained
+				post.Add(key, value)
+			}
+			token.Reset()
+			budget.Release(temporary)
+			temporary = 0
+		}
+		if err == io.EOF {
+			break
+		}
+	}
+	req.Form, req.PostForm = query, post
+	for key, values := range post {
+		req.Form[key] = append(append([]string(nil), values...), req.Form[key]...)
+	}
+	if first != nil {
+		return first
+	}
+	return queryErr
 }
 
 func sourceRequestBodyLimit() int64 {
@@ -325,10 +404,7 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 					var bound *io.LimitedReader
 					mode := sourceRequestMode(decoderconfig.Instance, request, form)
 					limit := sourceRequestBodyLimit()
-					formFallback := mode == requestSpooled && form == "application/x-www-form-urlencoded" && limit > maxJSONFormBytes
-					if formFallback {
-						bound = &io.LimitedReader{R: body, N: maxJSONFormBytes + 1}
-					} else if mode != requestSample {
+					if mode != requestSample {
 						bound = &io.LimitedReader{R: body, N: limit + 1}
 					}
 					if bound != nil {
@@ -336,9 +412,6 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 					}
 					_, err := scanSourceBody(body, scratch, nil)
 					if bound != nil && bound.N == 0 {
-						if formFallback {
-							return errHTTPSourceCompatibility
-						}
 						return nil // The decoder stops this run at the same body limit.
 					}
 					if err != nil {

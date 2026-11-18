@@ -378,26 +378,34 @@ func decodeEvidenceQuery(raw string, detach bool) (url.Values, error) {
 		if pair == "" {
 			continue
 		}
-		key, value, _ := strings.Cut(pair, "=")
-		k, e1 := url.QueryUnescape(key)
-		v, e2 := url.QueryUnescape(value)
-		if e1 != nil || e2 != nil {
+		k, v, ok := decodeEvidencePair(pair, detach)
+		if !ok {
 			if first == nil {
 				first = fmt.Errorf("invalid query escape")
 			}
 			continue
 		}
-		if detach {
-			if k == key {
-				k = strings.Clone(k)
-			}
-			if v == value {
-				v = strings.Clone(v)
-			}
-		}
 		values.Add(k, v)
 	}
 	return values, first
+}
+
+func decodeEvidencePair(pair string, detach bool) (string, string, bool) {
+	key, value, _ := strings.Cut(pair, "=")
+	k, e1 := url.QueryUnescape(key)
+	v, e2 := url.QueryUnescape(value)
+	if e1 != nil || e2 != nil {
+		return "", "", false
+	}
+	if detach {
+		if k == key {
+			k = strings.Clone(k)
+		}
+		if v == value {
+			v = strings.Clone(v)
+		}
+	}
+	return k, v, true
 }
 
 const maxJSONFormBytes = 1 << 20

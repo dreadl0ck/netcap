@@ -248,7 +248,7 @@ func TestHTTPSourceOversizedPostPreservesOnlyAllowedPrefix(t *testing.T) {
 	}
 }
 
-func TestHTTPSourceURLEncodedPreflightAtFallbackBoundary(t *testing.T) {
+func TestHTTPSourceURLEncodedPreflightAtBodyLimit(t *testing.T) {
 	oldDecoder, oldFile := decoderconfig.Instance, file.GetGlobalConfig()
 	t.Cleanup(func() {
 		decoderconfig.Instance = oldDecoder
@@ -261,7 +261,7 @@ func TestHTTPSourceURLEncodedPreflightAtFallbackBoundary(t *testing.T) {
 	}{
 		{maxJSONFormBytes, maxJSONFormBytes, errHTTPSourceCompatibility},
 		{maxJSONFormBytes, maxJSONFormBytes + 1, nil},
-		{maxJSONFormBytes + 1, maxJSONFormBytes + 1, errHTTPSourceCompatibility},
+		{maxJSONFormBytes + 1, maxJSONFormBytes + 1, nil},
 	} {
 		cfg := file.GetDefaultConfig()
 		cfg.FileExtraction.SizeLimits.MaxFileSize = int64(tc.limit)
@@ -382,6 +382,17 @@ func TestHTTPSourceSpoolsSparseURLEncodedFormUnderStateCap(t *testing.T) {
 	got, files := captureExtractedHTTP(t, data, true)
 	if len(got) != 2 || len(files) != 1 || !files[0].IsComplete || !reflect.DeepEqual(got, want) || !reflect.DeepEqual(files, wantFiles) {
 		t.Fatal("buffered and spooled form evidence differ")
+	}
+}
+
+func TestHTTPSourceStreamsLargeURLEncodedFormUnderStateCap(t *testing.T) {
+	body := "tag=first&" + strings.Repeat("&", 2<<20) + "bad=%ZZ&tag=" + strings.Repeat("ab%20", 2000) + "&tail=last"
+	wire := fmt.Sprintf("POST /form?tag=query HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\n\r\n%sGET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n", len(body), body)
+	data := core.DataFragments{wireFragment(0, []byte(wire), 1), wireFragment(1, []byte("HTTP/1.1 204 No Content\r\n\r\nHTTP/1.1 204 No Content\r\n\r\n"), 2)}
+	want, wantFiles := captureExtractedHTTP(t, data, false)
+	got, files := captureExtractedHTTP(t, data, true)
+	if len(got) != 2 || got[0].Parameters["tail"] != "last" || len(files) != 1 || !files[0].IsComplete || !reflect.DeepEqual(got, want) || !reflect.DeepEqual(files, wantFiles) {
+		t.Fatal("large streamed form changed HTTP or File evidence")
 	}
 }
 
