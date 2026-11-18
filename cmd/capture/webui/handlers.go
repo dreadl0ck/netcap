@@ -25,6 +25,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -2562,34 +2563,11 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 	// Walk the files directory and collect file information
 	var extractedFiles []map[string]any
-	err := filepath.Walk(filesDir, func(path string, info os.FileInfo, err error) error {
-		if canceled := r.Context().Err(); canceled != nil {
-			return canceled
-		}
-		if err != nil {
-			return err
-		}
-
-		// Skip directories
-		if info.IsDir() {
-			return nil
-		}
-		if !info.Mode().IsRegular() {
-			return artifactio.ErrPath
-		}
-		if strings.HasPrefix(info.Name(), ".netcap-artifact-") {
-			return nil
-		}
+	err := walkArtifactListing(r.Context(), filesDir, 16384, func(relPath string, info os.FileInfo) error {
 		if len(extractedFiles) >= 4096 {
-			return fmt.Errorf("artifact listing limit exceeded")
+			return errArtifactListingLimit
 		}
-
-		// Get relative path from files directory
-		relPath, err := filepath.Rel(filesDir, path)
-		if err != nil {
-			log.Printf("[WebUI] Warning: filepath.Rel failed for path=%s, filesDir=%s, error=%v. Using filename only.", path, filesDir, err)
-			relPath = info.Name()
-		}
+		path := filepath.Join(filesDir, relPath)
 
 		// Determine MIME type from directory structure
 		mimeType := ""
@@ -2664,6 +2642,10 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 	if r.Context().Err() != nil {
 		http.Error(w, "Artifact listing canceled", http.StatusRequestTimeout)
+		return
+	}
+	if errors.Is(err, errArtifactListingLimit) {
+		http.Error(w, err.Error(), http.StatusRequestEntityTooLarge)
 		return
 	}
 	if err != nil {

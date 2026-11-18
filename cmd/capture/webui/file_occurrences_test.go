@@ -3,16 +3,38 @@ package webui
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
+
+func TestArtifactListingCountsAllEntriesAndPreservesOrder(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, "b"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"z", filepath.Join("b", "a"), ".netcap-artifact-pending"} {
+		if err := os.WriteFile(filepath.Join(dir, name), nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var paths []string
+	visit := func(path string, _ os.FileInfo) error { paths = append(paths, path); return nil }
+	if err := walkArtifactListing(context.Background(), dir, 4, visit); err != nil || !slices.Equal(paths, []string{filepath.Join("b", "a"), "z"}) {
+		t.Fatalf("paths=%v, err=%v", paths, err)
+	}
+	if err := walkArtifactListing(context.Background(), dir, 3, visit); !errors.Is(err, errArtifactListingLimit) {
+		t.Fatalf("expected entry-limit error, got %v", err)
+	}
+}
 
 func TestExtractedFileInventoryPressure(t *testing.T) {
 	dir := t.TempDir()
@@ -48,6 +70,11 @@ func TestExtractedFileInventoryPressure(t *testing.T) {
 	request(ctx, 413)
 	writeTimelineAuditFile(t, dir, "File", types.Type_NC_File, nil)
 	request(ctx, 200)
+	deep := filepath.Join(dir, "files", filepath.FromSlash(strings.Repeat("d/", 33)))
+	if err := os.MkdirAll(deep, 0700); err != nil {
+		t.Fatal(err)
+	}
+	request(ctx, 413)
 	if len(extractedFileInventorySlots) != 0 {
 		t.Fatal("inventory leaked a scan slot")
 	}
