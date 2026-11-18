@@ -179,6 +179,11 @@ type timelineFileRef struct {
 	path string
 	name string // audit record type name
 	size int64
+	info os.FileInfo
+}
+
+func (ref timelineFileRef) matches(info os.FileInfo) bool {
+	return os.SameFile(ref.info, info) && ref.info.Size() == info.Size() && ref.info.ModTime().Equal(info.ModTime())
 }
 
 func timelineBuildLane(files []timelineFileRef) (chan struct{}, int) {
@@ -221,7 +226,7 @@ func readSmallTimelineFile(ref timelineFileRef, remaining int64) ([]byte, error)
 		return nil, err
 	}
 	defer f.Close()
-	if info.Size() != ref.size {
+	if !ref.matches(info) {
 		return nil, fmt.Errorf("timeline input changed")
 	}
 	var reader io.Reader = io.LimitReader(f, ref.size)
@@ -297,6 +302,7 @@ func timelineFingerprint(outDir string) (string, []timelineFileRef, error) {
 			path: filepath.Join(outDir, name),
 			name: typeName,
 			size: info.Size(),
+			info: info,
 		}
 		current, exists := filesByType[typeName]
 		if !exists || (!strings.HasSuffix(current.path, ".gz") && strings.HasSuffix(candidate.path, ".gz")) {
@@ -537,7 +543,7 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 					reader := &AuditRecordReader{delimitedReader: delimited.NewReaderWithLimit(bytes.NewReader(data), uint64(max(1, len(data))))}
 					ti, err = indexTimelineRecords(reader, files[i].name, perTypeLimit, entry.cancel)
 				} else {
-					ti, err = indexTimelineType(files[i].path, files[i].name, perTypeLimit, entry.cancel)
+					ti, err = indexTimelineType(files[i], perTypeLimit, entry.cancel)
 				}
 
 				atomic.AddInt64(&done, 1)
@@ -579,8 +585,17 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 		}
 	}
 	idx := assembleTimelineIndex(fingerprint, results)
-	current, _, err := timelineFingerprint(outDir)
-	if err != nil || current != fingerprint {
+	current, currentFiles, err := timelineFingerprint(outDir)
+	unchanged := current == fingerprint && len(files) == len(currentFiles)
+	if unchanged {
+		for i, ref := range files {
+			if ref.path != currentFiles[i].path || !ref.matches(currentFiles[i].info) {
+				unchanged = false
+				break
+			}
+		}
+	}
+	if err != nil || !unchanged {
 		entry.mu.Lock()
 		entry.state = timelineStateError
 		entry.errMsg = "timeline input changed during indexing"
@@ -712,17 +727,23 @@ func assembleTimelineIndex(fingerprint string, types []*tlTypeIndex) *timelineIn
 }
 
 // indexTimelineType reads one audit record file and builds its time index.
-func indexTimelineType(path, typeName string, eventLimit int, stop <-chan struct{}) (*tlTypeIndex, error) {
-	f, _, err := artifactio.Open(filepath.Dir(path), filepath.Base(path))
+func indexTimelineType(ref timelineFileRef, eventLimit int, stop <-chan struct{}) (*tlTypeIndex, error) {
+	f, info, err := artifactio.Open(filepath.Dir(ref.path), filepath.Base(ref.path))
 	if err != nil {
 		return nil, err
 	}
-	reader, err := auditRecordReaderFromFile(f, strings.HasSuffix(path, ".gz"))
+	if !ref.matches(info) {
+		f.Close()
+		return nil, fmt.Errorf("timeline input changed")
+	}
+	reader, err := auditRecordReaderFromInput(f, io.NewSectionReader(f, 0, info.Size()), strings.HasSuffix(ref.path, ".gz"), func(input io.Reader) io.Reader {
+		return analysisStopReader{input: input, stop: stop}
+	})
 	if err != nil {
 		return nil, err
 	}
 	defer reader.Close()
-	return indexTimelineRecords(reader, typeName, eventLimit, stop)
+	return indexTimelineRecords(reader, ref.name, eventLimit, stop)
 }
 
 func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit int, stop <-chan struct{}) (*tlTypeIndex, error) {

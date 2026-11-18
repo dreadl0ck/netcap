@@ -323,6 +323,36 @@ func TestTimelineRejectsLinkedReplacementAfterDiscovery(t *testing.T) {
 	}
 }
 
+func TestTimelineRejectsSameMetadataReplacementAfterDiscovery(t *testing.T) {
+	for _, regular := range []bool{false, true} {
+		dir := t.TempDir()
+		path := writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Timestamp: 100, Method: "GET"}})
+		generation, files, err := timelineFingerprint(dir)
+		if err != nil || len(files) != 1 {
+			t.Fatalf("discover fixture: %v, %v", files, err)
+		}
+		if regular {
+			files[0].size = timelineSmallInputBytes + 1
+		}
+		replacement := writeTimelineAuditFilePlain(t, t.TempDir(), "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Timestamp: 101, Method: "PUT"}})
+		mtime := files[0].info.ModTime()
+		if err := os.Chtimes(replacement, mtime, mtime); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Rename(replacement, path); err != nil {
+			t.Fatal(err)
+		}
+		if current, _, err := timelineFingerprint(dir); err != nil || current != generation {
+			t.Fatalf("replacement must preserve the metadata fingerprint: %q %v", current, err)
+		}
+		entry := &timelineIndexEntry{finished: make(chan struct{}), state: timelineStateIndexing}
+		buildTimelineIndex(entry, dir, generation, files)
+		if entry.state != timelineStateError || entry.index != nil || entry.errMsg != "index HTTP: timeline input changed" {
+			t.Fatalf("regular lane=%t: %s %s", regular, entry.state, entry.errMsg)
+		}
+	}
+}
+
 func TestTimelineRejectsGenerationChangedBeforeBuild(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFilePlain(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{dnsRecord(100, "192.0.2.1", "192.0.2.2")})
