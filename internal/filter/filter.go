@@ -242,8 +242,6 @@ func EvaluateEnvironment(program *vm.Program, env map[string]any) (bool, error) 
 // This makes all fields of the record accessible in expressions.
 // Note: Helper functions are declared via expr.Function() in CompileExpression() with explicit type signatures.
 func CreateEnvironment(record types.AuditRecord) map[string]any {
-	env := make(map[string]any)
-
 	// Helper functions are now declared in CompileExpression() using expr.Function()
 	// with explicit type signatures to ensure proper type inference for array literals.
 	// They are NOT added to the environment here to avoid type conflicts.
@@ -251,7 +249,7 @@ func CreateEnvironment(record types.AuditRecord) map[string]any {
 	// Convert the record to a map for field access
 	protoMsg, ok := record.(proto.Message)
 	if !ok {
-		return env
+		return make(map[string]any)
 	}
 
 	// Use reflection to extract all fields from the protobuf message
@@ -261,6 +259,7 @@ func CreateEnvironment(record types.AuditRecord) map[string]any {
 	}
 
 	t := v.Type()
+	env := make(map[string]any, v.NumField())
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
 		fieldValue := v.Field(i)
