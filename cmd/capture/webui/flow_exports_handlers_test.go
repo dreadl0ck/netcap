@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -42,6 +43,16 @@ func TestFlowExportQueryDistinguishesOversizedAndInvalidDatasets(t *testing.T) {
 	}
 	check(http.StatusUnprocessableEntity)
 	if err := os.Truncate(path, (1<<20)+1); err != nil {
+		t.Fatal(err)
+	}
+	check(http.StatusRequestEntityTooLarge)
+	// An otherwise valid event exceeds the per-event budget, not the file budget.
+	data := []byte(`{"kind":"issue","issue":{"message":"` + strings.Repeat("x", 2<<20) + `"}}` + "\n")
+	if err := os.WriteFile(filepath.Join(dir, "FlowExports.jsonl"), data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	health := fmt.Appendf(nil, `{"status":"done","recordsSHA256":"%x"}`, sha256.Sum256(data))
+	if err := os.WriteFile(path, health, 0600); err != nil {
 		t.Fatal(err)
 	}
 	check(http.StatusRequestEntityTooLarge)

@@ -20,6 +20,7 @@ import (
 const (
 	maxReportHealthBytes  = 1 << 20
 	maxReportRecordsBytes = 256 << 20
+	maxReportEventBytes   = 2 << 20
 	maxReportIndexBytes   = 128 << 20
 	maxReportOutputBytes  = 16 << 20
 )
@@ -137,7 +138,7 @@ func readReport(ctx context.Context, path string, query Query, indexBudget int) 
 	}
 	digest := sha256.New()
 	scanner := bufio.NewScanner(io.TeeReader(io.NewSectionReader(file, 0, before.Size()), digest))
-	scanner.Buffer(make([]byte, 4096), 2<<20)
+	scanner.Buffer(make([]byte, 4096), maxReportEventBytes)
 	groups := map[string]*Group{}
 	seen := map[string]bool{}
 	charge := func(bytes int) bool {
@@ -256,6 +257,9 @@ func readReport(ctx context.Context, path string, query Query, indexBudget int) 
 		result.Matched++
 	}
 	if err := scanner.Err(); err != nil {
+		if errors.Is(err, bufio.ErrTooLong) {
+			return result, fmt.Errorf("export event exceeds the %d-byte scan budget: %w", maxReportEventBytes, ErrReportLimit)
+		}
 		return result, err
 	}
 	if err := ctx.Err(); err != nil {
