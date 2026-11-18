@@ -406,10 +406,22 @@ func (s *Server) handleHostDownloadPCAP(w http.ResponseWriter, r *http.Request) 
 	// Format: host <IP>
 	bpf := fmt.Sprintf("host %s", hostIP)
 
-	// Create temporary output file
-	tempDir := os.TempDir()
-	outputFile := filepath.Join(tempDir, fmt.Sprintf("host_%s.pcap",
-		strings.ReplaceAll(strings.ReplaceAll(hostIP, ".", "_"), ":", "_")))
+	release := admitPacketDownload(w)
+	if release == nil {
+		return
+	}
+	defer release()
+	temp, err := os.CreateTemp("", "netcap-host-*.pcap")
+	if err != nil {
+		http.Error(w, "Failed to create packet export", http.StatusInternalServerError)
+		return
+	}
+	outputFile := temp.Name()
+	defer os.Remove(outputFile)
+	if err := temp.Close(); err != nil {
+		http.Error(w, "Failed to close packet export", http.StatusInternalServerError)
+		return
+	}
 
 	// Filter the PCAP entirely in-process (no external tcpdump).
 	log.Printf("[WebUI] Filtering PCAP for host in-process: %s -> %s (bpf: %s)", activeInputFile, outputFile, bpf)
@@ -458,38 +470,16 @@ func (s *Server) handleHostDownloadPCAP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Read entire file into memory
-	fileData, err := stdio.ReadAll(file)
-	file.Close()
-
-	if err != nil {
-		log.Printf("[WebUI] Failed to read PCAP file: %v", err)
-		os.Remove(outputFile)
-		http.Error(w, "Failed to read filtered PCAP", http.StatusInternalServerError)
-		return
-	}
-
-	// Clean up temp file immediately after reading
-	os.Remove(outputFile)
-
-	// Verify we read the expected amount
-	if len(fileData) != int(fileInfo.Size()) {
-		log.Printf("[WebUI] File size mismatch: expected %d, read %d", fileInfo.Size(), len(fileData))
-		http.Error(w, "File read error", http.StatusInternalServerError)
-		return
-	}
-
-	log.Printf("[WebUI] Read PCAP file successfully: %d bytes", len(fileData))
+	defer file.Close()
 
 	// Set headers for download
 	filename := fmt.Sprintf("host_%s.pcap", strings.ReplaceAll(strings.ReplaceAll(hostIP, ".", "_"), ":", "_"))
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 	w.Header().Set("Content-Type", "application/vnd.tcpdump.pcap")
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(fileData)))
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
 	w.Header().Set("Cache-Control", "no-cache")
 
-	// Write the entire file in one go (better for HTTP/2)
-	bytesWritten, err := w.Write(fileData)
+	bytesWritten, err := stdio.Copy(w, file)
 	if err != nil {
 		log.Printf("[WebUI] Failed to send PCAP file after %d bytes: %v", bytesWritten, err)
 		return

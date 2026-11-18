@@ -171,6 +171,62 @@ func TestPacketDownloadsPreserveBinaryHTTPFraming(t *testing.T) {
 	}
 }
 
+func TestPacketDownloadsShareSlotsThroughResponseWrite(t *testing.T) {
+	input, _ := observedTuplePCAP(t)
+	s := &Server{activeInputFile: input}
+	request := func() *http.Request {
+		return httptest.NewRequest(http.MethodGet, "/download-pcap?host=192.0.2.1&srcIP=192.0.2.1&dstIP=198.51.100.1&srcPort=52123&dstPort=9243&protocol=TCP", nil)
+	}
+	baseline := httptest.NewRecorder()
+	s.handleHostDownloadPCAP(baseline, request())
+	if baseline.Code != http.StatusOK {
+		t.Fatalf("baseline status=%d", baseline.Code)
+	}
+	release := make(chan struct{})
+	done := make(chan *httptest.ResponseRecorder, 2)
+	t.Cleanup(func() {
+		if release != nil {
+			close(release)
+		}
+	})
+	for range 2 {
+		held := heldAlertPageResponse{httptest.NewRecorder(), make(chan struct{}, 1), release}
+		go func() {
+			s.handleHostDownloadPCAP(held, request())
+			done <- held.ResponseRecorder
+		}()
+		select {
+		case <-held.writing:
+		case <-time.After(5 * time.Second):
+			t.Fatal("host download did not reach response writing")
+		}
+	}
+	for _, handler := range []http.HandlerFunc{s.handleHTTPDownloadPCAP, s.handleCertificateDownloadPCAP, s.handleConnectionDownloadPCAP} {
+		w := httptest.NewRecorder()
+		handler(w, request())
+		if w.Code != http.StatusTooManyRequests || w.Header().Get("Content-Disposition") != "" {
+			t.Fatalf("saturated download: status=%d body=%q", w.Code, w.Body)
+		}
+	}
+	close(release)
+	release = nil
+	for range 2 {
+		select {
+		case w := <-done:
+			if w.Code != http.StatusOK || !bytes.Equal(baseline.Body.Bytes(), w.Body.Bytes()) {
+				t.Fatalf("concurrent host download changed: status=%d bytes=%d", w.Code, w.Body.Len())
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("host download did not finish")
+		}
+	}
+	retry := httptest.NewRecorder()
+	s.handleHTTPDownloadPCAP(retry, request())
+	if retry.Code != http.StatusOK {
+		t.Fatalf("retry status=%d body=%q", retry.Code, retry.Body)
+	}
+}
+
 func TestConnectionEvidenceArchiveOutputLimit(t *testing.T) {
 	input, _ := observedTuplePCAP(t)
 	s := &Server{activeInputFile: input}

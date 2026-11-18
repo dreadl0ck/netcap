@@ -368,6 +368,11 @@ func (s *Server) handleCertificateDownloadPCAP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	release := admitPacketDownload(w)
+	if release == nil {
+		return
+	}
+	defer release()
 	temp, err := os.CreateTemp("", "netcap-certificate-*.pcap")
 	if err != nil {
 		http.Error(w, "Failed to create certificate packet export", http.StatusInternalServerError)

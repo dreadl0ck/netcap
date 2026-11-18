@@ -603,6 +603,11 @@ func (s *Server) handleConnectionDownloadPCAP(w http.ResponseWriter, r *http.Req
 		http.Error(w, "Input file not found", http.StatusNotFound)
 		return
 	}
+	release := admitPacketDownload(w)
+	if release == nil {
+		return
+	}
+	defer release()
 	if format := r.URL.Query().Get("format"); format == "evidence" {
 		serveConnectionEvidence(w, r, activeInputFile, selection)
 		return

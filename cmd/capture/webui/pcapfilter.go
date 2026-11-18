@@ -67,6 +67,18 @@ func filterPCAPSelectionContext(ctx context.Context, inputFile, bpfExpr, outputF
 var errPacketDownloadLimit = errors.New("packet download exceeds output byte limit; narrow the selection")
 var errPacketDownloadLimitInvalid = errors.New("maxOutputBytes must be one positive integer")
 
+var packetDownloadSlots = make(chan struct{}, 2)
+
+func admitPacketDownload(w http.ResponseWriter) func() {
+	select {
+	case packetDownloadSlots <- struct{}{}:
+		return func() { <-packetDownloadSlots }
+	default:
+		http.Error(w, "packet downloads busy; retry after an export finishes", http.StatusTooManyRequests)
+		return nil
+	}
+}
+
 func filterPacketDownload(ctx context.Context, r *http.Request, inputFile, bpfExpr, outputFile string, keep func(gopacket.CaptureInfo) bool) (int, error) {
 	limit, err := packetDownloadLimit(r)
 	if err != nil {

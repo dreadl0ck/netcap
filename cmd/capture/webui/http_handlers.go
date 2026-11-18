@@ -332,6 +332,11 @@ func (s *Server) handleHTTPDownloadPCAP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	release := admitPacketDownload(w)
+	if release == nil {
+		return
+	}
+	defer release()
 	temp, err := os.CreateTemp("", "netcap-http-*.pcap")
 	if err != nil {
 		http.Error(w, "Failed to create HTTP packet export", http.StatusInternalServerError)
