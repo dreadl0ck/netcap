@@ -60,6 +60,18 @@ func auditRecordReaderFromFile(file *os.File, compressed bool) (*AuditRecordRead
 	return auditRecordReaderFromInput(file, file, compressed, nil)
 }
 
+type auditContextReader struct {
+	ctx   context.Context
+	input io.Reader
+}
+
+func (r auditContextReader) Read(p []byte) (int, error) {
+	if err := r.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return r.input.Read(p[:min(len(p), 64<<10)])
+}
+
 func auditRecordReaderFromInput(file *os.File, reader io.Reader, compressed bool, wrap func(io.Reader) io.Reader) (*AuditRecordReader, error) {
 	var gzReader *gzip.Reader
 	if wrap != nil {

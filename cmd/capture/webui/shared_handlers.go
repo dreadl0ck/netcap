@@ -1010,8 +1010,15 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 		return
 	}
 
-	reader, err := auditRecordReaderFromFile(f, strings.HasSuffix(filePath, ".gz"))
+	ctx := r.Context()
+	reader, err := auditRecordReaderFromInput(f, f, strings.HasSuffix(filePath, ".gz"), func(input io.Reader) io.Reader {
+		return auditContextReader{ctx: ctx, input: input}
+	})
 	if err != nil {
+		if ctx.Err() != nil {
+			http.Error(w, "Audit field lookup canceled", http.StatusRequestTimeout)
+			return
+		}
 		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to open audit record file: %v", err),
 		})
@@ -1022,6 +1029,10 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 	// Read header
 	header, err := reader.ReadHeader()
 	if err != nil {
+		if ctx.Err() != nil {
+			http.Error(w, "Audit field lookup canceled", http.StatusRequestTimeout)
+			return
+		}
 		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to read header: %v", err),
 		})
@@ -1048,6 +1059,10 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 			return
 		}
 		raw, err := reader.delimitedReader.NextWithLimit(uint64(max(1, remaining)))
+		if ctx.Err() != nil {
+			http.Error(w, "Audit field lookup canceled", http.StatusRequestTimeout)
+			return
+		}
 		if err == io.EOF {
 			break
 		}

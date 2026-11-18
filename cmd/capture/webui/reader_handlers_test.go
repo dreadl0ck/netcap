@@ -74,6 +74,20 @@ func TestAuditFieldValuesAdmissionAndConfinement(t *testing.T) {
 	request(reader.file.Name(), http.StatusOK)
 }
 
+func TestAuditFieldSampleCancellationStopsDecodedFrameRead(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	var wire bytes.Buffer
+	if err := delimited.NewWriter(&wire).PutProto(&types.HTTP{RequestBody: make([]byte, 256<<10)}); err != nil {
+		t.Fatal(err)
+	}
+	input := &cancelingAuditInput{Reader: bytes.NewReader(wire.Bytes()), cancel: cancel}
+	r := delimited.NewReader(auditContextReader{ctx: ctx, input: input})
+	if data, err := r.NextWithLimit(1 << 20); data != nil || !errors.Is(err, context.Canceled) || input.read >= wire.Len() {
+		t.Fatalf("sample read %d/%d bytes, returned %d bytes, error: %v", input.read, wire.Len(), len(data), err)
+	}
+}
+
 func TestAuditFieldValuesBoundsCumulativeSampleBytes(t *testing.T) {
 	body, err := proto.Marshal(&types.HTTP{Method: "GET", RequestBody: make([]byte, 9<<20)})
 	if err != nil {
