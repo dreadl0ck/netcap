@@ -14,6 +14,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
+	"github.com/gopacket/gopacket"
 )
 
 type StreamEvidenceSpan struct {
@@ -59,25 +60,6 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 	if source.Count() > 1000000 {
 		return "", fmt.Errorf("stream evidence span limit exceeded")
 	}
-	var size int64
-	var firstFragment core.DataFragment
-	var scanErr error
-	if err := source.Walk(func(fragment core.DataFragment) bool {
-		if firstFragment == nil {
-			firstFragment = fragment
-		}
-		size += int64(len(fragment.Raw()))
-		if size > 256<<20 {
-			scanErr = fmt.Errorf("stream evidence byte limit exceeded")
-			return false
-		}
-		return true
-	}); err != nil {
-		return "", err
-	}
-	if scanErr != nil {
-		return "", scanErr
-	}
 	root := filepath.Join(out, "stream-evidence")
 	if err := os.MkdirAll(root, 0700); err != nil {
 		return "", err
@@ -114,13 +96,27 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 	hasGap, hasDiscard := false, false
 	var visitErr error
 	var spans int64
+	var firstTransport gopacket.Flow
 	err = source.Walk(func(fragment core.DataFragment) bool {
+		if spans >= 1000000 {
+			visitErr = fmt.Errorf("stream evidence span limit exceeded")
+			return false
+		}
+		raw := fragment.Raw()
+		if int64(len(raw)) > 256<<20-offsets[0]-offsets[1] {
+			visitErr = fmt.Errorf("stream evidence byte limit exceeded")
+			return false
+		}
 		direction := 0
 		if fragment.Direction() == reassembly.TCPDirServerToClient {
 			direction = 1
 		}
-		if protocol == "UDP" && firstFragment != nil {
-			if fragment.Transport() == firstFragment.Transport() {
+		if protocol == "UDP" {
+			transport := fragment.Transport()
+			if spans == 0 {
+				firstTransport = transport
+			}
+			if transport == firstTransport {
 				direction = 0
 			} else {
 				direction = 1
@@ -147,9 +143,9 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 		if discarded > 0 {
 			hasDiscard = true
 		}
-		span := StreamEvidenceSpan{Direction: name, Offset: offsets[direction], Length: len(fragment.Raw()), TimestampNs: fmt.Sprint(capture.Timestamp.UnixNano()), MissingBytes: missing, Datagram: protocol == "UDP"}
+		span := StreamEvidenceSpan{Direction: name, Offset: offsets[direction], Length: len(raw), TimestampNs: fmt.Sprint(capture.Timestamp.UnixNano()), MissingBytes: missing, Datagram: protocol == "UDP"}
 		span.DiscardedBytes, span.DiscardReason = discarded, discardReason
-		if _, err := writers[direction].Write(fragment.Raw()); err != nil {
+		if _, err := writers[direction].Write(raw); err != nil {
 			visitErr = err
 			return false
 		}
@@ -178,10 +174,6 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 			}
 		}
 		spans++
-		if spans > 1000000 {
-			visitErr = fmt.Errorf("stream evidence span limit exceeded")
-			return false
-		}
 		return true
 	})
 	if err != nil {

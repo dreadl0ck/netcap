@@ -215,7 +215,9 @@ func TestSourceEvidenceDoesNotRetainEverySpan(t *testing.T) {
 	var before runtime.MemStats
 	runtime.ReadMemStats(&before)
 	var peak int64
+	var passes int
 	source := generatedEvidence{count: 50000, sample: func() {
+		passes++
 		runtime.GC()
 		var now runtime.MemStats
 		runtime.ReadMemStats(&now)
@@ -236,8 +238,8 @@ func TestSourceEvidenceDoesNotRetainEverySpan(t *testing.T) {
 	if err = json.Unmarshal(wire, &manifest); err != nil {
 		t.Fatal(err)
 	}
-	if len(manifest.Spans) != 50000 || manifest.Client.Length != 50000*1024 {
-		t.Fatal("streaming evidence lost spans or bytes")
+	if len(manifest.Spans) != 50000 || manifest.Client.Length != 50000*1024 || passes != 1 {
+		t.Fatalf("streaming evidence: spans=%d bytes=%d passes=%d", len(manifest.Spans), manifest.Client.Length, passes)
 	}
 	t.Logf("retained Go heap while writing 50000 evidence spans: %d bytes", peak)
 }

@@ -307,6 +307,7 @@
     "shutdown": "TestCaptureWorkerShutdownCancelsBacklog passes 10 race repetitions. Shutdown cancels the blocked capture handoff and the untouched capture-queue entry before either active completion worker is released, then cancels the buffered completion without running it. All five jobs release ownership exactly once."
   },
   "finiteBudgetFanoutReplay": {
+    "singlePassStreamExport": "TestSourceEvidenceDoesNotRetainEverySpan verifies a single traversal, all 50000 spans and 51200000 bytes, and less than 4 MiB of sampled retained heap while writing. Stream export enforces the existing byte and span limits before writing each fragment. Focused stream evidence and collector race suites passed.",
     "streamSpanScratch": "Stream evidence holds the first encoded span in memory and opens its scratch file only for additional spans. Focused race tests passed for stream evidence, loss-only exports, datagram boundaries and large span inventories. The fanout export sync bottleneck has not been requalified.",
     "localPagePressure": "The pinned 15000-flow fixture with opt-in local page loss and a 2 MiB page cap returned partial exit 2, preserved 15000 TCP and 15000 Connection audit rows, peaked at 2095632 page bytes and released all page credits. TCP sealed complete and Connection sealed partial. Both ordinary and race replay passed with conversation export disabled. An export-enabled trial timed out during per-stream sync at EOF; that path remains unqualified.",
     "status": "deferred",
