@@ -140,6 +140,45 @@ async def check_behavior_records(call, directory, args):
                 path.write_bytes(data)
 
 
+def ethernet_pcap_records(wire):
+    # The tracked fixture and the carve both use little-endian classic PCAP.
+    scale = {bytes.fromhex("d4c3b2a1"): 1000, bytes.fromhex("4d3cb2a1"): 1}.get(wire[:4])
+    if len(wire) < 24 or scale is None or struct.unpack_from("<I", wire, 20)[0] != 1:
+        raise ValueError("expected little-endian Ethernet PCAP")
+    records = []
+    offset = 24
+    while offset < len(wire):
+        seconds, fraction, captured, original = struct.unpack_from("<IIII", wire, offset)
+        offset += 16
+        if offset + captured > len(wire):
+            raise ValueError("truncated PCAP record")
+        records.append((seconds * 10**9 + fraction * scale, original, wire[offset:offset + captured]))
+        offset += captured
+    return records
+
+
+async def check_http_pair_carve(client, call, session, capture):
+    binding = await call("get_analyst_binding", {"sessionId": session})
+    args = {"session_id": session, "run_id": binding["runId"], "src_ip": "10.0.0.1",
+            "src_port": "40000", "dst_ip": "10.0.0.2", "dst_port": "80"}
+    start, end = 1600000000030000000, 1600000000040000000
+    window = {"start_ns": str(start), "end_ns": str(end)}
+    name = "carve_subpcap_for_http_pair"
+    for invalid in (args | {"start_ns": str(start)}, args | window | {"run_id": "stale"}):
+        if not (await client.call_tool(name, invalid)).isError:
+            raise ValueError("HTTP pair carve accepted incomplete bounds or stale generation")
+    carved = await call(name, args | window)
+    artifact = carved["resource_uri"].rsplit("/", 1)[-1]
+    page = await call("read_mcp_artifact", {"session_id": session, "artifact_id": artifact, "limit": 512})
+    wire = base64.b64decode(page["data"], validate=True)
+    if (page["offset"] != 0 or page["has_more"] or len(wire) != carved["size_bytes"]
+            or page["sha256"] != carved["sha256"] or hashlib.sha256(wire).hexdigest() != carved["sha256"]):
+        raise ValueError("HTTP pair carve artifact metadata disagrees with returned bytes")
+    expected = [row for row in ethernet_pcap_records(capture.read_bytes()) if start <= row[0] <= end]
+    if [row[0] for row in expected] != [start, end] or ethernet_pcap_records(wire) != expected:
+        raise ValueError("HTTP pair carve lost original frame bytes or inclusive window bounds")
+
+
 async def check(binary, capture, http_capture, data_dir):
     params = StdioServerParameters(command=str(binary), args=[
         "mcp", "--bind", "127.0.0.1:0", "--quiet", "--pcap", str(capture),
@@ -508,6 +547,7 @@ rules:
         http_args = {"session_id": http_session}
         if not (await call("wait_for_session", http_args | {"timeout_seconds": 20}))["completed"]:
             raise ValueError("HTTP fixture did not complete")
+        await check_http_pair_carve(client, call, http_session, http_capture)
         hosts = await call("list_hosts", http_args)
         total = hosts["totalCount"]
         generation = hosts["generation"]
