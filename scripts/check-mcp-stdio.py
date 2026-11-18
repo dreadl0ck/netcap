@@ -202,6 +202,9 @@ rules:
             raise ValueError("changed record digest accepted")
         connections = await call("query_audit_records", args | {"type": "Connection", "filter": "TransportProto == 'UDP'", "limit": 1})
         endpoint = connections["records"][0]["SrcIP"]
+        asset = await call("get_asset_context", args | {"asset": endpoint})
+        if asset["asset"] != endpoint or not asset["records"] or asset["totalRecords"] < len(asset["records"]):
+            raise ValueError("asset context lost the observed endpoint or its records")
         row = connections["records"][0]
         tuple_args = {"src_ip": endpoint, "src_port": str(row["SrcPort"]),
                       "dst_ip": row["DstIP"], "dst_port": str(row["DstPort"]), "protocol": "UDP"}

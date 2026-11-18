@@ -329,6 +329,9 @@
     "directionalEOF": "The official stdio harness passed 164 schema-validated calls across 82 of 119 advertised tools. At and beyond EOF, verified directional pages preserve the requested offset, total size and manifest digest, with empty data and no next page. Continuation without a manifest digest is rejected.",
     "verification": "The official stdio harness passed 162 schema-validated calls across 82 of 119 advertised tools on a fresh portable CLI, with zero failures. The UDP presentation conversation for the fixture tuple returned adjacent 16-byte pages matching one 32-byte page, with stable total size and correct offsets."
   },
+  "mcpAssetContextContract": {
+    "verification": "The official stdio harness passed 165 schema-validated calls across 83 of 119 tools on a fresh portable build with zero failures. get_asset_context returns the UDP fixture's observed source endpoint, a nonempty record list and a total that covers the returned list."
+  },
   "timelineTrackTypeIntegrity": {
     "recordSource": "Timeline record lookup reopens the exact file selected by the index and checks the audit type and timestamp. TestTimelineSupportsUncompressedAuditFiles verifies that an empty compressed sibling does not override the indexed plain file. Focused timeline and completion race tests passed.",
     "recordLookupSkip": "Timeline record lookup skips intervening frames with the request context and without allocating their bodies. TestAuditRecordReaderSkipContextPreservesNextRecord verifies canceled admission and exact lookup after a 2 MiB gzip frame; focused reader, timeline and delimited race tests passed.",
