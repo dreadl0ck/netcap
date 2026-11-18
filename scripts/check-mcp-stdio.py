@@ -197,6 +197,16 @@ rules:
         row = connections["records"][0]
         tuple_args = {"src_ip": endpoint, "src_port": str(row["SrcPort"]),
                       "dst_ip": row["DstIP"], "dst_port": str(row["DstPort"]), "protocol": "UDP"}
+        conversation = args | tuple_args
+        first = await call("get_conversation", conversation | {"limit": 16})
+        second = await call("get_conversation", conversation | {"limit": 16, "offset": 16})
+        combined = await call("get_conversation", conversation | {"limit": 32})
+        chunks = [base64.b64decode(p["conversationData"], validate=True) for p in (first, second, combined)]
+        if (not all(p["exists"] and p["protocol"] == "UDP" for p in (first, second, combined))
+                or first["offset"] != 0 or second["offset"] != 16 or not first["hasMore"]
+                or first["totalSize"] != second["totalSize"] or [len(c) for c in chunks] != [16, 16, 32]
+                or chunks[0] + chunks[1] != chunks[2]):
+            raise ValueError("UDP conversation pages lost byte bounds or continuity")
         for name, selector in (
             ("carve_subpcap_for_host", {"host": endpoint, "run_id": binding["runId"]}),
             ("carve_subpcap_for_connection", tuple_args | {"run_id": binding["runId"]}),
