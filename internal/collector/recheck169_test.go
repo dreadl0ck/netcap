@@ -100,6 +100,9 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 						t.Fatal(err)
 					}
 					t.Logf("output tree: sampled peak %d logical bytes; final %d logical bytes (%d samples)", footprint.peak, footprint.final, footprint.samples)
+					if footprint.hasAllocation {
+						t.Logf("output tree: sampled peak %d allocated bytes; final %d allocated bytes", footprint.peakAllocated, footprint.finalAllocated)
+					}
 					if workers == 4 {
 						t.Logf("capture with export=%t completed in %s", export, duration)
 					}
@@ -203,9 +206,11 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 }
 
 type recheckFootprint struct {
-	peak, final int64
-	samples     int
-	err         error
+	peak, final                   int64
+	peakAllocated, finalAllocated int64
+	hasAllocation                 bool
+	samples                       int
+	err                           error
 }
 
 func sampleRecheckFootprint(root string) func() recheckFootprint {
@@ -214,9 +219,9 @@ func sampleRecheckFootprint(root string) func() recheckFootprint {
 	go func() {
 		ticker := time.NewTicker(500 * time.Millisecond)
 		defer ticker.Stop()
-		var result recheckFootprint
+		result := recheckFootprint{hasAllocation: recheckAllocationAvailable}
 		sample := func() {
-			var size int64
+			var size, allocated int64
 			err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 				if errors.Is(err, fs.ErrNotExist) && path != root {
 					return nil // Scratch files can disappear during the walk.
@@ -230,6 +235,11 @@ func sampleRecheckFootprint(root string) func() recheckFootprint {
 				}
 				if err == nil {
 					size += info.Size()
+					if result.hasAllocation {
+						bytes, ok := recheckAllocatedBytes(info)
+						result.hasAllocation = ok
+						allocated += bytes
+					}
 				}
 				return err
 			})
@@ -239,6 +249,7 @@ func sampleRecheckFootprint(root string) func() recheckFootprint {
 			}
 			result.samples++
 			result.final, result.peak = size, max(result.peak, size)
+			result.finalAllocated, result.peakAllocated = allocated, max(result.peakAllocated, allocated)
 		}
 		for result.err == nil {
 			select {
