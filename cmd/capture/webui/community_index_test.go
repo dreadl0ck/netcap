@@ -2,6 +2,8 @@ package webui
 
 import (
 	"compress/gzip"
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -75,6 +77,42 @@ func TestCommunityIndexInvalidatesOnRewrite(t *testing.T) {
 	}
 	if _, matched, err := communityCounts(path, map[string]bool{"new": true}); err != nil || matched != 2 {
 		t.Fatalf("new counts = (%d, %v)", matched, err)
+	}
+}
+
+func TestCommunityIndexWaitHonorsRequestDeadline(t *testing.T) {
+	path := writeTimelineAuditFilePlain(t, t.TempDir(), "DNS", types.Type_NC_DNS, []proto.Message{&types.DNS{CommunityID: "fixture"}})
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entry := &communityIndexEntry{info: info, ready: make(chan struct{})}
+	communityIndexCache.Lock()
+	communityIndexCache.files[path] = entry
+	communityIndexCache.Unlock()
+	t.Cleanup(func() {
+		communityIndexCache.Lock()
+		delete(communityIndexCache.files, path)
+		close(entry.ready)
+		communityIndexCache.Unlock()
+	})
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+	result := make(chan error, 1)
+	go func() {
+		_, _, err := communityCountsContext(ctx, path, map[string]bool{"fixture": true})
+		result <- err
+	}()
+	select {
+	case err := <-result:
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("waiting query returned %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("waiting query did not honor the deadline")
+	}
+	if total, matched, err := scanCommunityCountsContext(ctx, path, map[string]bool{"fixture": true}); total != 0 || matched != 0 || !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("canceled fallback scan: total=%d matched=%d err=%v", total, matched, err)
 	}
 }
 

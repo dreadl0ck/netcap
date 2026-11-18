@@ -203,7 +203,7 @@ func listAuditFilesWithCommunityIDFilter(ctx context.Context, outputDir string, 
 		auditType := strings.TrimSuffix(strings.TrimSuffix(name, ".gz"), defaults.FileExtension)
 		filePath := filepath.Join(outputDir, name)
 
-		totalCount, filteredCount, err := communityCounts(filePath, communityIDs)
+		totalCount, filteredCount, err := communityCountsContext(ctx, filePath, communityIDs)
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
@@ -717,7 +717,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	var indexedTotal int64
 	// The path-based index is not bound to the verified descriptor.
 	if len(communityIDs) > 0 && partialAuditContext(r) == nil {
-		candidates, indexedTotal, err = communitySelectedBitmap(filePath, communityIDs)
+		candidates, indexedTotal, err = communitySelectedBitmap(r.Context(), filePath, communityIDs)
 		if err != nil {
 			sendError(fmt.Sprintf("Failed to index Community IDs: %v", err))
 			return

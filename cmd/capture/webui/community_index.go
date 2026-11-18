@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"context"
 	"errors"
 	"io"
 	"os"
@@ -108,7 +109,14 @@ func sameCommunityAudit(a, b os.FileInfo) bool {
 // communityIndexFor publishes only complete generations. Oversized or changing
 // files retain the streaming fallback without publishing a partial index.
 func communityIndexFor(path string) (*communityFileIndex, error) {
+	return communityIndexForContext(context.Background(), path)
+}
+
+func communityIndexForContext(ctx context.Context, path string) (*communityFileIndex, error) {
 	for attempt := 0; attempt < 2; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		info, err := os.Lstat(path)
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
@@ -136,7 +144,7 @@ func communityIndexFor(path string) (*communityFileIndex, error) {
 			communityIndexCache.files[path] = entry
 			communityIndexCache.Unlock()
 
-			idx, buildErr := buildCommunityIndex(path, info)
+			idx, buildErr := buildCommunityIndexContext(ctx, path, info)
 			communityIndexCache.Lock()
 			entry.index = idx
 			close(entry.ready)
@@ -158,7 +166,14 @@ func communityIndexFor(path string) (*communityFileIndex, error) {
 		} else {
 			entry.used = time.Now()
 			communityIndexCache.Unlock()
-			<-entry.ready
+			select {
+			case <-entry.ready:
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
 		}
 
 		after, err := os.Lstat(path)
@@ -170,22 +185,26 @@ func communityIndexFor(path string) (*communityFileIndex, error) {
 }
 
 func communityCounts(path string, ids map[string]bool) (int64, int64, error) {
-	idx, err := communityIndexFor(path)
+	return communityCountsContext(context.Background(), path, ids)
+}
+
+func communityCountsContext(ctx context.Context, path string, ids map[string]bool) (int64, int64, error) {
+	idx, err := communityIndexForContext(ctx, path)
 	if err != nil {
 		return 0, 0, err
 	}
 	if idx != nil {
 		return idx.total, idx.count(ids), nil
 	}
-	total, matched, err := scanCommunityCounts(path, ids)
+	total, matched, err := scanCommunityCountsContext(ctx, path, ids)
 	if errors.Is(err, os.ErrNotExist) {
 		return 0, 0, nil
 	}
 	return total, matched, err
 }
 
-func communitySelectedBitmap(path string, ids map[string]bool) (*roaring.Bitmap, int64, error) {
-	idx, err := communityIndexFor(path)
+func communitySelectedBitmap(ctx context.Context, path string, ids map[string]bool) (*roaring.Bitmap, int64, error) {
+	idx, err := communityIndexForContext(ctx, path)
 	if err != nil || idx == nil {
 		return nil, 0, err
 	}
@@ -247,8 +266,12 @@ func communityIndexEvictLocked() {
 var errCommunityIndexTooLarge = errors.New("community index size limit exceeded")
 
 func buildCommunityIndex(path string, expected os.FileInfo) (*communityFileIndex, error) {
+	return buildCommunityIndexContext(context.Background(), path, expected)
+}
+
+func buildCommunityIndexContext(ctx context.Context, path string, expected os.FileInfo) (*communityFileIndex, error) {
 	idx := &communityFileIndex{byID: make(map[string]*roaring.Bitmap)}
-	err := walkCommunityRecords(path, expected, func(id string, ids []string) error {
+	err := walkCommunityRecords(ctx, path, expected, func(id string, ids []string) error {
 		if idx.total >= communityIndexMaxRecords {
 			return errCommunityIndexTooLarge
 		}
@@ -291,8 +314,12 @@ func buildCommunityIndex(path string, expected os.FileInfo) (*communityFileIndex
 }
 
 func scanCommunityCounts(path string, selected map[string]bool) (int64, int64, error) {
+	return scanCommunityCountsContext(context.Background(), path, selected)
+}
+
+func scanCommunityCountsContext(ctx context.Context, path string, selected map[string]bool) (int64, int64, error) {
 	var total, matched int64
-	err := walkCommunityRecords(path, nil, func(id string, ids []string) error {
+	err := walkCommunityRecords(ctx, path, nil, func(id string, ids []string) error {
 		total++
 		if id != "" && selected[id] {
 			matched++
@@ -311,7 +338,10 @@ func scanCommunityCounts(path string, selected map[string]bool) (int64, int64, e
 
 var errCommunityAuditChanged = errors.New("audit file changed during Community ID scan")
 
-func walkCommunityRecords(path string, expected os.FileInfo, visit func(string, []string) error) error {
+func walkCommunityRecords(ctx context.Context, path string, expected os.FileInfo, visit func(string, []string) error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	f, opened, err := artifactio.Open(filepath.Dir(path), filepath.Base(path))
 	if err != nil {
 		return err
@@ -320,7 +350,9 @@ func walkCommunityRecords(path string, expected os.FileInfo, visit func(string, 
 		f.Close()
 		return errCommunityAuditChanged
 	}
-	reader, err := auditRecordReaderFromFile(f, strings.HasSuffix(path, ".gz"))
+	reader, err := auditRecordReaderFromInput(f, f, strings.HasSuffix(path, ".gz"), func(input io.Reader) io.Reader {
+		return auditContextReader{ctx: ctx, input: input}
+	})
 	if err != nil {
 		return err
 	}
@@ -344,6 +376,9 @@ func walkCommunityRecords(path string, expected os.FileInfo, visit func(string, 
 	listField, hasIDs := reflect.TypeOf(record).Elem().FieldByName("CommunityIDs")
 	hasIDs = hasIDs && listField.Type == reflect.TypeFor[[]string]()
 	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if err := reader.delimitedReader.NextProto(record); err != nil {
 			if errors.Is(err, io.EOF) {
 				after, err := f.Stat()
