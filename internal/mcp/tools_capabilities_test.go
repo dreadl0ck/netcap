@@ -155,10 +155,20 @@ func TestCapabilityCancellationAndTypedBackendErrors(t *testing.T) {
 	}
 }
 
-func TestDetectionRulesCancellationReachesBackend(t *testing.T) {
+func TestScanCancellationReachesBackend(t *testing.T) {
+	t.Run("detection rules", func(t *testing.T) {
+		testScanCancellationReachesBackend(t, "execute_detection_rules", "/api/rules/execute-all")
+	})
+	t.Run("YARA", func(t *testing.T) {
+		testScanCancellationReachesBackend(t, "execute_yara_scan", "/api/yara/scan")
+	})
+}
+
+func testScanCancellationReachesBackend(t *testing.T, tool, path string) {
+	t.Helper()
 	started, stopped, release := make(chan struct{}), make(chan struct{}), make(chan struct{})
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost || r.URL.Path != "/api/rules/execute-all" {
+		if r.Method != http.MethodPost || r.URL.Path != path {
 			http.NotFound(w, r)
 			return
 		}
@@ -179,19 +189,19 @@ func TestDetectionRulesCancellationReachesBackend(t *testing.T) {
 	defer cancel()
 	done := make(chan *mcplib.CallToolResult, 1)
 	go func() {
-		result, _ := s.mcpSrv.GetTool("execute_detection_rules").Handler(ctx, mcplib.CallToolRequest{Params: mcplib.CallToolParams{Arguments: map[string]any{"session_id": "owned"}}})
+		result, _ := s.mcpSrv.GetTool(tool).Handler(ctx, mcplib.CallToolRequest{Params: mcplib.CallToolParams{Arguments: map[string]any{"session_id": "owned"}}})
 		done <- result
 	}()
 	select {
 	case <-started:
 	case <-time.After(time.Second):
-		t.Fatal("rule replay did not reach backend")
+		t.Fatal("scan did not reach backend")
 	}
 	cancel()
 	select {
 	case <-stopped:
 	case <-time.After(time.Second):
-		t.Fatal("backend rule replay ignored cancellation")
+		t.Fatal("backend scan ignored cancellation")
 	}
 	select {
 	case result := <-done:
