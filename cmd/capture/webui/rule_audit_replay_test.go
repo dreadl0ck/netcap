@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
@@ -53,6 +55,23 @@ func TestExecuteAllRulesReportsPartialFailure(t *testing.T) {
 		result.TotalAlerts != 1 || result.TotalRecords != 1 || len(result.RuleResults) != 2 ||
 		!result.RuleResults[0].Success || result.RuleResults[1].Success || result.RuleResults[1].Error == "" {
 		t.Fatalf("partial replay response: %d %s", w.Code, w.Body.String())
+	}
+}
+
+func TestRuleAuditRejectsLinkedPreferredTrack(t *testing.T) {
+	dir := t.TempDir()
+	rows := []proto.Message{&types.HTTP{Method: "GET"}}
+	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, rows)
+	linked := writeTimelineAuditFile(t, t.TempDir(), "HTTP", types.Type_NC_HTTP, rows)
+	if err := os.Symlink(linked, filepath.Join(dir, "HTTP.ncap.gz")); err != nil {
+		t.Fatal(err)
+	}
+	count, err := scanRuleAudit(dir, "HTTP", nil, nil, func(types.AuditRecord) error {
+		t.Fatal("rule replay visited a record despite the rejected preferred input")
+		return nil
+	})
+	if count != 0 || !errors.Is(err, artifactio.ErrPath) {
+		t.Fatalf("linked preferred input: records=%d, err=%v", count, err)
 	}
 }
 

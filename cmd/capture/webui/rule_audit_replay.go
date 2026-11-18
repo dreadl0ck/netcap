@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -19,14 +19,19 @@ func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit 
 	if !ok {
 		return 0, fmt.Errorf("unknown audit type: %s", auditType)
 	}
-	path := filepath.Join(dir, auditType+".ncap.gz")
-	reader, err := NewAuditRecordReader(path)
+	compressed := true
+	f, _, err := artifactio.Open(dir, auditType+".ncap.gz")
 	if errors.Is(err, os.ErrNotExist) {
-		reader, err = NewAuditRecordReader(filepath.Join(dir, auditType+".ncap"))
+		compressed = false
+		f, _, err = artifactio.Open(dir, auditType+".ncap")
 	}
 	if errors.Is(err, os.ErrNotExist) {
 		return 0, nil
 	}
+	if err != nil {
+		return 0, fmt.Errorf("open %s audit: %w", auditType, err)
+	}
+	reader, err := auditRecordReaderFromFile(f, compressed)
 	if err != nil {
 		return 0, fmt.Errorf("open %s audit: %w", auditType, err)
 	}
