@@ -147,6 +147,9 @@ func (s *Server) resolveCaptureSelection(r *http.Request) (captureSelection, err
 		}
 		var manifest evidence.CaptureManifest
 		data, err := artifactio.Read(r.Context(), selected.OutputDir, "capture-manifest.json", 16<<20)
+		if r.Context().Err() != nil {
+			return captureSelection{}, selectionError(http.StatusRequestTimeout, "Capture selection canceled")
+		}
 		if err != nil || json.Unmarshal(data, &manifest) != nil || manifest.RunID != expected {
 			return captureSelection{}, selectionError(409, "Capture generation is unavailable or stale")
 		}
