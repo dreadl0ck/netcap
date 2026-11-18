@@ -426,7 +426,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 			encoding := contentEncoding(res.Header)
 			passiveReport = software.ObserveWebtech(observation, spool.Reader(), encoding, authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 			passiveReport.WireBytes = spool.Size()
-			if !strings.Contains(encoding, ",") || passiveReport.DetectedContentType == "" {
+			if isGzipEncoding(encoding) || passiveReport.DetectedContentType == "" {
 				passiveReport.DetectedContentType = sourceResponseContentType(h.conversation, spool, encoding)
 			}
 		}
