@@ -612,16 +612,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	form, boundary := sourceBackedForm(req)
 	backedGzip := h.sourceMode && req.Body != http.NoBody && req.Header.Get(headerContentEncoding) == "gzip"
 	useStorage := decoderconfig.Instance.FileStorage != ""
-	if h.sourceMode && useStorage && req.Method != methodPOST && form == "" && !backedGzip && len(req.TransferEncoding) == 0 {
-		limit := file.GetMaxFileSize()
-		if limit <= 0 || limit > 100<<20 {
-			limit = 100 << 20
-		}
-		if req.ContentLength >= 0 && req.ContentLength <= limit {
-			useStorage = false
-		}
-	}
-	if h.sourceMode && !decoderconfig.Instance.IncludePayloads && req.Body != http.NoBody && (useStorage || form != "" || backedGzip) {
+	if h.sourceMode && !decoderconfig.Instance.IncludePayloads && req.Body != http.NoBody && (useStorage && req.Method == methodPOST || form != "" || backedGzip) {
 		spool, bodyErr = file.SpoolBody(req.Body)
 		release = func() {}
 		if spool != nil {
@@ -634,7 +625,11 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 			h.sourceHeaderCredits += int64(cap(body))
 		}
 	} else if h.sourceMode && !decoderconfig.Instance.IncludePayloads && (req.ContentLength != 0 || len(req.TransferEncoding) > 0) {
-		body, release, bodyErr = readSourceRequestBody(h.conversation, req.Body)
+		if useStorage {
+			body, release, bodyErr = readCappedSourceRequestBody(h.conversation, req.Body)
+		} else {
+			body, release, bodyErr = readSourceRequestBody(h.conversation, req.Body)
+		}
 	} else {
 		body, release, bodyErr = file.ReadBody(req.Body)
 	}

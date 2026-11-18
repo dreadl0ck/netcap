@@ -126,6 +126,19 @@ func (h *httpReader) parseBackedSmallForm(req *http.Request, spool *file.BodySpo
 	return parseErr
 }
 
+func readCappedSourceRequestBody(c *core.ConversationInfo, body io.Reader) ([]byte, func(), error) {
+	limit := file.GetMaxFileSize()
+	if limit <= 0 || limit > 100<<20 {
+		limit = 100 << 20
+	}
+	bounded := &io.LimitedReader{R: body, N: limit + 1}
+	sample, release, err := readSourceRequestBody(c, bounded)
+	if bounded.N == 0 {
+		return sample[:min(int64(len(sample)), limit)], release, fmt.Errorf("%w: per-file %d", file.ErrArtifactLimit, limit)
+	}
+	return sample, release, err
+}
+
 func readSourceRequestBody(c *core.ConversationInfo, body io.Reader) (sample []byte, release func(), resultErr error) {
 	const scratchSize = 32768
 	const sampleSize = 512

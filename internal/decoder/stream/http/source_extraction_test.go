@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -165,8 +166,21 @@ func TestHTTPSourceBodylessExchangeSkipsScratch(t *testing.T) {
 }
 
 func TestHTTPSourceOpaquePutSkipsScratch(t *testing.T) {
+	for _, chunked := range []bool{false, true} {
+		t.Run(fmt.Sprintf("chunked=%t", chunked), func(t *testing.T) {
+			testHTTPSourceOpaquePutSkipsScratch(t, chunked)
+		})
+	}
+}
+
+func testHTTPSourceOpaquePutSkipsScratch(t *testing.T, chunked bool) {
+	t.Helper()
 	body := strings.Repeat("fixture payload\n", 8192)
-	request := fmt.Sprintf("PUT /fixture HTTP/1.1\r\nHost: fixture.test\r\nContent-Length: %d\r\n\r\n%sGET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n", len(body), body)
+	framed := fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len(body), body)
+	if chunked {
+		framed = fmt.Sprintf("Transfer-Encoding: chunked\r\n\r\n%x\r\n%s\r\n0\r\n\r\n", len(body), body)
+	}
+	request := "PUT /fixture HTTP/1.1\r\nHost: fixture.test\r\n" + framed + "GET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n"
 	var data core.DataFragments
 	for fragment := range slices.Chunk([]byte(request), 8192) {
 		data = append(data, wireFragment(0, fragment, 1))
@@ -179,6 +193,22 @@ func TestHTTPSourceOpaquePutSkipsScratch(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(decoderconfig.Instance.Out, ".artifact-scratch")); !os.IsNotExist(err) {
 		t.Fatalf("opaque PUT touched artifact scratch: %v", err)
+	}
+}
+
+func TestCappedSourceRequestBodyStopsAtLimit(t *testing.T) {
+	previous := file.GetGlobalConfig()
+	t.Cleanup(func() { file.SetGlobalConfig(previous) })
+	cfg := file.GetDefaultConfig()
+	cfg.FileExtraction.SizeLimits.MaxFileSize = 128
+	file.SetGlobalConfig(cfg)
+	for _, size := range []int{128, 1024} {
+		body := strings.NewReader(strings.Repeat("x", size))
+		sample, release, err := readCappedSourceRequestBody(&core.ConversationInfo{}, body)
+		release()
+		if len(sample) != 128 || size-body.Len() != min(size, 129) || (size == 128 && err != nil) || (size > 128 && !errors.Is(err, file.ErrArtifactLimit)) {
+			t.Fatalf("size %d: sampled %d, read %d, err %v", size, len(sample), size-body.Len(), err)
+		}
 	}
 }
 
