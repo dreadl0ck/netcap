@@ -58,6 +58,14 @@ func (r *Reader) Next() ([]byte, error) {
 	return r.next(r.maxRecord)
 }
 
+// NextWithLimit applies an additional allocation limit to one frame.
+func (r *Reader) NextWithLimit(limit uint64) ([]byte, error) {
+	if r.maxRecord > 0 && (limit == 0 || r.maxRecord < limit) {
+		limit = r.maxRecord
+	}
+	return r.next(limit)
+}
+
 func (r *Reader) next(limit uint64) ([]byte, error) {
 	// read size
 	size, err := binary.ReadUvarint(r.buffer)
@@ -129,10 +137,7 @@ func (r *Reader) Skip(ctx context.Context) error {
 
 // NextProtoWithLimit applies an additional allocation limit to one frame.
 func (r *Reader) NextProtoWithLimit(pb proto.Message, limit uint64) error {
-	if r.maxRecord > 0 && (limit == 0 || r.maxRecord < limit) {
-		limit = r.maxRecord
-	}
-	record, err := r.next(limit)
+	record, err := r.NextWithLimit(limit)
 	if err != nil {
 		return err
 	}

@@ -22,6 +22,7 @@ package webui
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -40,6 +41,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/delimited"
 	netfilter "github.com/dreadl0ck/netcap/internal/filter"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
@@ -1019,10 +1021,12 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 
 	const maxValuesPerField = 20
 	const maxRecordsToScan = 200
+	const maxSampleBytes = 16 << 20
 
 	// Map to collect unique values per field
 	fieldValues := make(map[string]map[string]bool)
 	recordsScanned := 0
+	remaining := maxSampleBytes
 
 	// Read records and collect values
 	for recordsScanned < maxRecordsToScan {
@@ -1030,9 +1034,17 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 			http.Error(w, "Audit field lookup canceled", http.StatusRequestTimeout)
 			return
 		}
-		record, err := reader.NextRecord()
+		raw, err := reader.delimitedReader.NextWithLimit(uint64(max(1, remaining)))
 		if err == io.EOF {
 			break
+		}
+		if errors.Is(err, delimited.ErrRecordLimit) || len(raw) > remaining {
+			http.Error(w, "Audit field sample exceeds 16 MiB", http.StatusRequestEntityTooLarge)
+			return
+		}
+		var record proto.Message
+		if err == nil {
+			record, err = reader.DecodeRecord(raw)
 		}
 		if err != nil {
 			log.Printf("[WebUI] Error reading record: %v", err)
@@ -1041,6 +1053,7 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 		}
 
 		recordsScanned++
+		remaining -= len(raw)
 
 		// Extract field values using reflection
 		extractFieldValues(record, "", fieldValues, maxValuesPerField, 0)

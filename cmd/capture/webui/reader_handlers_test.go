@@ -48,6 +48,26 @@ func TestAuditFieldValuesRejectsDamagedInput(t *testing.T) {
 	}
 }
 
+func TestAuditFieldValuesBoundsCumulativeSampleBytes(t *testing.T) {
+	body, err := proto.Marshal(&types.HTTP{Method: "GET", RequestBody: make([]byte, 9<<20)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, count := range []int{1, 2} {
+		rows := [][]byte{body, body}
+		reader := auditReaderFixture(t, true, &types.Header{Type: types.Type_NC_HTTP}, rows[:count]...)
+		w := httptest.NewRecorder()
+		HandleAuditFieldValues(w, httptest.NewRequest(http.MethodGet, "/api/audit/HTTP/values", nil), reader.file.Name(), "HTTP")
+		want := http.StatusOK
+		if count == 2 {
+			want = http.StatusRequestEntityTooLarge
+		}
+		if w.Code != want || bytes.Contains(w.Body.Bytes(), []byte(`"GET"`)) != (count == 1) {
+			t.Fatalf("records=%d status=%d body=%s", count, w.Code, w.Body.String())
+		}
+	}
+}
+
 func TestAuditRecordHandlerReaders(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
