@@ -308,24 +308,29 @@ func TestSmallAnalysisQueuedDuringTwoActiveRuleReplays(t *testing.T) {
 			if !ok || !complete || timelineIndexFor(dir).State != timelineStateReady {
 				t.Fatalf("%s did not publish exactly one successful completion with a ready timeline", input)
 			}
-			r, err := NewAuditRecordReader(filepath.Join(dir, "Alert.ncap.gz"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer r.Close()
-			if _, err := r.ReadHeader(); err != nil {
-				t.Fatal(err)
-			}
-			alert, err := r.NextAs[*types.Alert]()
-			if err != nil || alert.RuleName != "get" || alert.Timestamp != match.Timestamp {
-				t.Fatalf("%s: wrong alert %v, %v", input, alert, err)
-			}
-			if _, err := r.NextRecord(); err != io.EOF {
-				t.Fatalf("%s: expected exactly one alert: %v", input, err)
-			}
+			assertSingleReplayAlert(t, dir, "get", match.Timestamp)
 		case <-deadline:
 			t.Fatalf("jobs did not complete: %v", outputs)
 		}
+	}
+}
+
+func assertSingleReplayAlert(t *testing.T, dir, rule string, timestamp int64) {
+	t.Helper()
+	r, err := NewAuditRecordReader(filepath.Join(dir, "Alert.ncap.gz"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	if _, err := r.ReadHeader(); err != nil {
+		t.Fatal(err)
+	}
+	alert, err := r.NextAs[*types.Alert]()
+	if err != nil || alert.RuleName != rule || alert.Timestamp != timestamp {
+		t.Fatalf("%s: wrong alert %v, %v", dir, alert, err)
+	}
+	if _, err := r.NextRecord(); err != io.EOF {
+		t.Fatalf("%s: expected exactly one alert: %v", dir, err)
 	}
 }
 
@@ -346,6 +351,7 @@ func TestPostCaptureQueueRepeatedMixedArrivals(t *testing.T) {
 		input, dir string
 		small      bool
 		admitted   time.Time
+		firstTry   time.Time
 	}
 	arrivals := make([]arrival, 2*pairs)
 	for i := range arrivals {
@@ -386,6 +392,9 @@ func TestPostCaptureQueueRepeatedMixedArrivals(t *testing.T) {
 				t.Fatal("mixed arrivals did not finish admission")
 			}
 			a.admitted = time.Now()
+			if a.firstTry.IsZero() {
+				a.firstTry = a.admitted
+			}
 			err := s.enqueueAnalysis(&AnalysisJob{InputFile: a.input, OutputDir: a.dir,
 				ArtifactConfig: []byte("{}"), settings: &jobSettings{Rules: config}}, false)
 			if err == nil {
@@ -401,7 +410,7 @@ func TestPostCaptureQueueRepeatedMixedArrivals(t *testing.T) {
 	for _, a := range arrivals {
 		pending[a.input] = a
 	}
-	var tiny []time.Duration
+	var tiny, tinyWithRetries []time.Duration
 	for range arrivals {
 		select {
 		case done := <-finished:
@@ -413,8 +422,10 @@ func TestPostCaptureQueueRepeatedMixedArrivals(t *testing.T) {
 			if !ok || !complete || !done.ready {
 				t.Fatalf("unexpected or incomplete job %q", done.input)
 			}
+			assertSingleReplayAlert(t, a.dir, "get", 1)
 			if a.small {
 				tiny = append(tiny, done.at.Sub(a.admitted))
+				tinyWithRetries = append(tinyWithRetries, done.at.Sub(a.firstTry))
 			}
 		case <-deadline:
 			t.Fatalf("%d admitted jobs did not complete", len(pending))
@@ -423,7 +434,8 @@ func TestPostCaptureQueueRepeatedMixedArrivals(t *testing.T) {
 	if s.IsProcessing() || len(tiny) != pairs {
 		t.Fatalf("queue did not drain: tiny completions=%d", len(tiny))
 	}
-	t.Logf("mixed arrivals: %d completed, %d queue-full retries, tiny latency %s–%s", len(arrivals), rejected, slices.Min(tiny), slices.Max(tiny))
+	t.Logf("mixed arrivals: %d completed, %d queue-full retries, tiny latency %s–%s after acceptance, %s–%s from first attempt",
+		len(arrivals), rejected, slices.Min(tiny), slices.Max(tiny), slices.Min(tinyWithRetries), slices.Max(tinyWithRetries))
 }
 
 func testCaptureWorkerCompletesSmallAnalysis(t *testing.T, ruleLoad bool) {
