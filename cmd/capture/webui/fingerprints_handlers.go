@@ -137,6 +137,16 @@ func (s *Server) handleFingerprints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Context().Err() != nil {
+		return
+	}
+	select {
+	case fingerprintResponseSlots <- struct{}{}:
+		defer func() { <-fingerprintResponseSlots }()
+	default:
+		RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "fingerprint inventory responses are busy"})
+		return
+	}
 	q := r.URL.Query()
 	opts := parseFingerprintListOptions(q)
 
@@ -177,6 +187,8 @@ func (s *Server) handleFingerprints(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+var fingerprintResponseSlots = make(chan struct{}, 2)
 
 // fingerprintListOptions holds the parsed query parameters for the
 // /api/fingerprints handler.

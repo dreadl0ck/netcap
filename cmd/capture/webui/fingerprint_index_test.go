@@ -22,6 +22,15 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+func TestFingerprintInventoryLimitsConcurrentWarmResponses(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Ja4H: "fixture"}})
+	if _, err := fingerprintSnapshotFor(dir); err != nil {
+		t.Fatal(err)
+	}
+	testInventoryResponseCapacity(t, "/api/fingerprints", newTimelineTestServer(dir).handleFingerprints)
+}
+
 func TestFingerprintPagesKeepTiedTypesInOrderAcrossRebuilds(t *testing.T) {
 	dir := t.TempDir()
 	s := newTimelineTestServer(dir)
