@@ -6,9 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/fs"
+	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -111,7 +112,7 @@ func snapshotSchemaSourcesContext(parent context.Context, snapshot *jobSettings)
 	}
 	ctx, cancel := context.WithTimeout(parent, 30*time.Second)
 	defer cancel()
-	files, entries, total := 0, 0, 0
+	files, remainingEntries, total := 0, 10000, 0
 	snapshot.SchemaHashes = map[string]string{}
 	snapshot.Protobuf.Paths = nil
 	for index, path := range snapshot.SchemaPaths {
@@ -167,29 +168,7 @@ func snapshotSchemaSourcesContext(parent context.Context, snapshot *jobSettings)
 				return nil, err
 			}
 		} else {
-			err := filepath.WalkDir(root, func(name string, entry fs.DirEntry, err error) error {
-				if err != nil {
-					return err
-				}
-				if err := context.Cause(ctx); err != nil {
-					return err
-				}
-				entries++
-				if entries > 10000 {
-					return fmt.Errorf("Protobuf snapshot exceeds 10000 directory entries")
-				}
-				relative, err := filepath.Rel(root, name)
-				if err != nil {
-					return err
-				}
-				if len(strings.Split(filepath.ToSlash(relative), "/")) > 16 {
-					return fmt.Errorf("Protobuf snapshot nesting exceeds 16")
-				}
-				if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".proto") {
-					return nil
-				}
-				return copyFile(relative)
-			})
+			err := walkSchemaRoot(ctx, root, &remainingEntries, copyFile)
 			if err != nil {
 				return nil, err
 			}
@@ -204,6 +183,72 @@ func snapshotSchemaSourcesContext(parent context.Context, snapshot *jobSettings)
 	}
 	success = true
 	return snapshot, nil
+}
+
+func walkSchemaRoot(ctx context.Context, path string, remaining *int, copyFile func(string) error) error {
+	(*remaining)-- // Count the root as well as its children.
+	if *remaining < 0 {
+		return fmt.Errorf("Protobuf snapshot exceeds 10000 directory entries")
+	}
+	root, err := os.OpenRoot(path)
+	if err != nil {
+		return err
+	}
+	defer root.Close()
+	var walk func(string, int) error
+	walk = func(dir string, depth int) error {
+		entries, err := readSchemaDirectory(ctx, root, dir, remaining)
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			if err := context.Cause(ctx); err != nil {
+				return err
+			}
+			if depth == 16 {
+				return fmt.Errorf("Protobuf snapshot nesting exceeds 16")
+			}
+			name := filepath.Join(dir, entry.Name())
+			if entry.IsDir() {
+				if err := walk(name, depth+1); err != nil {
+					return err
+				}
+			} else if strings.HasSuffix(entry.Name(), ".proto") {
+				if err := copyFile(name); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+	return walk(".", 0)
+}
+
+func readSchemaDirectory(ctx context.Context, root *os.Root, dir string, remaining *int) ([]os.DirEntry, error) {
+	f, err := root.Open(dir)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	var entries []os.DirEntry
+	for {
+		if err := context.Cause(ctx); err != nil {
+			return nil, err
+		}
+		batch, err := f.ReadDir(min(256, *remaining+1))
+		*remaining -= len(batch)
+		if *remaining < 0 {
+			return nil, fmt.Errorf("Protobuf snapshot exceeds 10000 directory entries")
+		}
+		entries = append(entries, batch...)
+		if err == io.EOF {
+			slices.SortFunc(entries, func(a, b os.DirEntry) int { return strings.Compare(a.Name(), b.Name()) })
+			return entries, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
 }
 
 func (snapshot *jobSettings) cleanup() {
