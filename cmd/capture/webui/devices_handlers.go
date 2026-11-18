@@ -21,8 +21,11 @@ package webui
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sort"
 
@@ -54,6 +57,8 @@ type DevicesResponse struct {
 	TotalCount int                    `json:"totalCount"`
 }
 
+var deviceInventorySlots = make(chan struct{}, 2)
+
 // handleDevices returns a list of all device profiles
 func (s *Server) handleDevices(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -67,8 +72,27 @@ func (s *Server) handleDevices(w http.ResponseWriter, r *http.Request) {
 	}
 	outDir := selection.OutputDir
 
-	devices, err := readDeviceProfiles(outDir)
+	var budget *inventoryAuditBudget
+	if r.URL.Query().Get("mcpPage") == "true" {
+		ctx := r.Context()
+		if ctx.Err() != nil {
+			return
+		}
+		select {
+		case deviceInventorySlots <- struct{}{}:
+			defer func() { <-deviceInventorySlots }()
+		default:
+			RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "device inventory is busy"})
+			return
+		}
+		budget = &inventoryAuditBudget{ctx: ctx, stored: maxCollectionPageScanBytes, bodies: maxCollectionPageScanBytes, rows: maxCollectionPageRows}
+	}
+	devices, err := readDeviceInventory(outDir, budget)
 	if err != nil {
+		if errors.Is(err, errInventoryAuditLimit) {
+			RespondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": err.Error()})
+			return
+		}
 		log.Printf("[WebUI] Failed to read device profiles: %v", err)
 		http.Error(w, "Failed to read device profiles", http.StatusInternalServerError)
 		return
@@ -88,10 +112,14 @@ func (s *Server) handleDevices(w http.ResponseWriter, r *http.Request) {
 
 // readDeviceProfiles reads and aggregates DeviceProfile data from the output directory
 func readDeviceProfiles(outDir string) ([]DeviceProfileSummary, error) {
+	return readDeviceInventory(outDir, nil)
+}
+
+func readDeviceInventory(outDir string, budget *inventoryAuditBudget) ([]DeviceProfileSummary, error) {
 	filePath := filepath.Join(outDir, "DeviceProfile.ncap.gz")
 
 	devices := make([]DeviceProfileSummary, 0)
-	err := visitAuditRecords(filePath, "DeviceProfile", func(deviceProfile *types.DeviceProfile) {
+	visit := func(deviceProfile *types.DeviceProfile) {
 		devices = append(devices, DeviceProfileSummary{
 			MacAddr:            deviceProfile.MacAddr,
 			DeviceManufacturer: deviceProfile.DeviceManufacturer,
@@ -109,9 +137,30 @@ func readDeviceProfiles(outDir string) ([]DeviceProfileSummary, error) {
 			OS:                 deviceProfile.OS,
 			Roles:              deviceProfile.Roles,
 		})
-	})
-	if err != nil {
-		return nil, err
+	}
+	if budget == nil {
+		if err := visitAuditRecords(filePath, "DeviceProfile", visit); err != nil {
+			return nil, err
+		}
+	} else {
+		reader, err := budget.open(filePath, types.Type_NC_DeviceProfile)
+		if errors.Is(err, os.ErrNotExist) {
+			return devices, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		defer reader.Close()
+		for {
+			record, err := budget.next(reader)
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return nil, err
+			}
+			visit(record.(*types.DeviceProfile))
+		}
 	}
 
 	// Sort by packet count descending
