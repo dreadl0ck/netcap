@@ -1,6 +1,29 @@
 package core
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
+
+func TestContiguousCopyReservesOnlyObservedRun(t *testing.T) {
+	fragments := DataFragments{nil, &StreamData{SkippedBytes: -1}, &StreamData{RawData: []byte("SSH-")}, &StreamData{DiscardedBytes: 2, RawData: []byte("2.0")}}
+	budget, err := NewStateBudget(4, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	working := budget.CompletionView()
+	data, credit, err := fragments.CopyContiguousBytes(working)
+	if err != nil || string(data) != "SSH-" || credit != 4 || budget.Health().RetainedBytes != 4 {
+		t.Fatalf("prefix=%q, credit=%d, err=%v, budget=%+v", data, credit, err, budget.Health())
+	}
+	if data, credit, err := fragments.CopyContiguousBytes(working); data != nil || credit != 0 || !errors.Is(err, ErrCompletionStateBudget) {
+		t.Fatalf("over-budget copy: prefix=%q, credit=%d, err=%v", data, credit, err)
+	}
+	working.Release(credit)
+	if health := budget.Health(); health.Exceeded || health.RetainedBytes != 0 || health.CompletionRejectedBytes != 4 {
+		t.Fatalf("unexpected budget after release: %+v", health)
+	}
+}
 
 func TestContiguousProbeCannotBridgeKnownOrUnknownLoss(t *testing.T) {
 	for _, skip := range []int{0, 5, -1} {

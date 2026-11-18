@@ -389,6 +389,7 @@
     "verification": "Pinned synthetic v169_midstream_psh_15k.pcap: strict replay at 2 MiB reassembly pages failed with a page-budget error; raising pages to 128 MiB reached the 64 MiB TCP stream-state limit. Both trials had 256 KiB retained payload and 1 MiB aggregate limits. No finite-cap audit equivalence or default change is claimed."
   },
   "boundedHTTPSourcePreflight": {
+    "tcpFallbackScanCredits": "TestContiguousCopyReservesOnlyObservedRun verifies that fallback decoder selection reserves the contiguous prefix before copying it, stops at retention loss, and releases credits without poisoning the shared budget on completion refusal. Focused core, TCP, and collector race tests passed.",
     "tcpFirstFragmentCredits": "TestFirstSourceFragmentChargesCopyBeforeAdmission verifies that TCP decoder selection charges each copied first fragment before allocation. An 11-byte completion budget admits a six-byte client prefix and refuses the six-byte server prefix without poisoning shared state. Focused TCP and collector race tests passed.",
     "tcpBannerMergeAvoidance": "The TCP completion worker no longer merges both directions before reading a directional service banner. Focused TCP and collector race tests passed for merge ordering, banners, incremental HTTP, and backed TCP.",
     "incrementalOneDirectionHandoff": "TestIncrementalHandoffBorrowsOneDirection verifies that client-only and server-only replay reuse the retained fragment slice with zero temporary reference credits. Focused TCP and incremental HTTP collector race tests passed.",

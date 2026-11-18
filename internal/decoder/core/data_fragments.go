@@ -128,6 +128,36 @@ func (d DataFragments) ContiguousBytes() []byte {
 	return b.Bytes()
 }
 
+// CopyContiguousBytes reserves the first observed run before copying it. The caller releases the returned credit.
+func (d DataFragments) CopyContiguousBytes(budget *StateBudget) ([]byte, int64, error) {
+	var size int
+	run := d
+	for i, fragment := range d {
+		if fragment == nil {
+			continue
+		}
+		if stream, ok := fragment.(*StreamData); ok && (stream.SkippedBytes != 0 || stream.DiscardedBytes > 0) && size > 0 {
+			run = d[:i]
+			break
+		}
+		size += len(fragment.Raw())
+	}
+	if size == 0 {
+		return nil, 0, nil
+	}
+	credit := int64(size)
+	if err := budget.Reserve(credit); err != nil {
+		return nil, 0, err
+	}
+	data := make([]byte, 0, size)
+	for _, fragment := range run {
+		if fragment != nil {
+			data = append(data, fragment.Raw()...)
+		}
+	}
+	return data, credit, nil
+}
+
 // reader returns a reader that iterates over the fragments without copying data.
 func (d DataFragments) reader() io.Reader {
 	readers := make([]io.Reader, len(d))

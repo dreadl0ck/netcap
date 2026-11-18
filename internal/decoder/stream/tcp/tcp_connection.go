@@ -751,7 +751,19 @@ func (t *tcpConnection) decode() {
 				conv.FragmentError = err
 				return nil, nil
 			}
-			return conv.ClientData.ContiguousBytes(), conv.ServerData.ContiguousBytes()
+			client, credit, err := conv.ClientData.CopyContiguousBytes(workingBudget)
+			if err != nil {
+				conv.FragmentError = err
+				return nil, nil
+			}
+			prefixCredit += credit
+			server, credit, err := conv.ServerData.CopyContiguousBytes(workingBudget)
+			if err != nil {
+				conv.FragmentError = err
+				return nil, nil
+			}
+			prefixCredit += credit
+			return client, server
 		},
 		PrefixBytes: func(limit int) ([]byte, []byte) {
 			var amount int64
