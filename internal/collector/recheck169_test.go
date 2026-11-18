@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -90,12 +91,17 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 					cfg.DecoderConfig.MaxRetainedTCPBytes = 256 << 10
 					cfg.DecoderConfig.MaxAggregateStateBytes = 1 << 20
 					cfg.DecoderConfig.SaveConns = export
+					stopSampling := sampleRecheckFootprint(finiteOut)
 					start := time.Now()
-					if err := New(cfg).CollectPcap(input); err != nil {
+					captureErr := New(cfg).CollectPcap(input)
+					duration := time.Since(start)
+					footprint := stopSampling()
+					if err := errors.Join(captureErr, footprint.err); err != nil {
 						t.Fatal(err)
 					}
+					t.Logf("output tree: sampled peak %d logical bytes; final %d logical bytes (%d samples)", footprint.peak, footprint.final, footprint.samples)
 					if workers == 4 {
-						t.Logf("capture with export=%t completed in %s", export, time.Since(start))
+						t.Logf("capture with export=%t completed in %s", export, duration)
 					}
 					if _, err := os.Stat(filepath.Join(finiteOut, evidence.AuditReadyFile)); err != nil {
 						t.Fatal(err)
@@ -193,6 +199,62 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+type recheckFootprint struct {
+	peak, final int64
+	samples     int
+	err         error
+}
+
+func sampleRecheckFootprint(root string) func() recheckFootprint {
+	stop := make(chan struct{})
+	done := make(chan recheckFootprint, 1)
+	go func() {
+		ticker := time.NewTicker(500 * time.Millisecond)
+		defer ticker.Stop()
+		var result recheckFootprint
+		sample := func() {
+			var size int64
+			err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+				if errors.Is(err, fs.ErrNotExist) && path != root {
+					return nil // Scratch files can disappear during the walk.
+				}
+				if err != nil || !entry.Type().IsRegular() {
+					return err
+				}
+				info, err := entry.Info()
+				if errors.Is(err, fs.ErrNotExist) {
+					return nil
+				}
+				if err == nil {
+					size += info.Size()
+				}
+				return err
+			})
+			if err != nil {
+				result.err = err
+				return
+			}
+			result.samples++
+			result.final, result.peak = size, max(result.peak, size)
+		}
+		for result.err == nil {
+			select {
+			case <-ticker.C:
+				sample()
+			case <-stop:
+				sample()
+				done <- result
+				return
+			}
+		}
+		done <- result
+	}()
+	return func() recheckFootprint {
+		close(stop)
+		return <-done
 	}
 }
 
