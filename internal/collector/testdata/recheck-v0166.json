@@ -107,6 +107,7 @@
     "verification": "Full rules and Web UI race suites pass. Repeated file-order replay produces equivalent alert decisions across rate-window advances, missing and regressing timestamps, and deduplication expiry."
   },
   "postCaptureScheduling": {
+    "saturatedHandoffRecovery": "TestSmallAnalysisRecoversAfterSaturatedHandoff holds both completion workers and fills the single handoff slot. A one-record job waits behind the buffered job and publishes one finalized alert and a ready timeline 12.5–15.0 ms after the buffered job is released, with the second worker still held. Five Darwin arm64 race repetitions verify FIFO recovery; latency while both workers remain occupied is unbounded by this test.",
     "largeRuleReplay": "TestCaptureWorkerCompletesSmallAnalysisDuringLargeRuleReplay verified three Darwin arm64 race runs: the one-record job published one finalized alert and a ready timeline 9.8–12.8 ms after queueing while a 150,000-record rule replay was still active. The larger replay processed all 150,000 records in 3.25–3.26 s and the job completed.",
     "smallAnalysisCompletion": "TestCaptureWorkerCompletesSmallAnalysisWhileRegularTimelineWaits passed three portable race runs. With the regular timeline slot occupied, the 512-record job remains pending while the capture worker hands off a one-record job that publishes exactly one alert and a ready timeline. The larger job completes after the slot is released.",
     "source": "9a1f449 and c6700df",

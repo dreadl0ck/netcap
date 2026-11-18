@@ -86,6 +86,111 @@ func TestCaptureWorkerBuffersOnePostCaptureJob(t *testing.T) {
 	}
 }
 
+func TestSmallAnalysisRecoversAfterSaturatedHandoff(t *testing.T) {
+	s, smallInput, smallDir := reanalysisFixture(t)
+	delete(s.completedFiles, smallInput)
+	s.fileBPFFilters = make(map[string]string)
+	s.shutdownChan = make(chan struct{})
+	s.jobQueue = make(chan *AnalysisJob, 4)
+	s.rulesConfig = &rules.Config{Rules: []*rules.Rule{{Name: "get", Type: "HTTP", Expression: "Method == 'GET'", Enabled: true}}}
+	writeTimelineAuditFile(t, smallDir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Timestamp: 1, Method: "GET"}})
+
+	started := make(chan string, 3)
+	finished := make(chan string, 4)
+	smallCaptured := make(chan struct{})
+	cleanup := make(chan struct{})
+	gates := map[string]chan struct{}{"first": make(chan struct{}), "second": make(chan struct{}), "buffered": make(chan struct{})}
+	for _, name := range []string{"first", "second", "buffered", smallInput} {
+		job := &AnalysisJob{InputFile: name, processingDone: func() { finished <- name }}
+		if name == smallInput {
+			job.OutputDir = smallDir
+		}
+		s.jobQueue <- job
+	}
+	close(s.jobQueue)
+	s.wg.Add(1)
+	go s.processJobs(func(job *AnalysisJob) {
+		if job.InputFile == smallInput {
+			s.finishCaptureJob(job, time.Second)
+			close(smallCaptured)
+			return
+		}
+		job.postCapture = func() {
+			started <- job.InputFile
+			select {
+			case <-gates[job.InputFile]:
+			case <-cleanup:
+			}
+		}
+	})
+	t.Cleanup(func() { close(cleanup); s.wg.Wait() })
+	deadline := time.After(5 * time.Second)
+	active := make(map[string]bool)
+	for range 2 {
+		select {
+		case name := <-started:
+			active[name] = true
+		case <-deadline:
+			t.Fatal("completion workers did not fill")
+		}
+	}
+	if !active["first"] || !active["second"] {
+		t.Fatalf("incorrect jobs running at saturation: %v", active)
+	}
+	select {
+	case <-smallCaptured:
+	case <-deadline:
+		t.Fatal("small capture did not reach the full handoff")
+	}
+	select {
+	case name := <-finished:
+		t.Fatalf("job %q finished while both workers were held", name)
+	default:
+	}
+	close(gates["first"])
+	select {
+	case name := <-started:
+		if name != "buffered" {
+			t.Fatalf("buffered job was overtaken by %q", name)
+		}
+	case <-deadline:
+		t.Fatal("buffered job did not resume when a worker opened")
+	}
+	resumed := time.Now()
+	close(gates["buffered"])
+	for _, expected := range []string{"first", "buffered", smallInput} {
+		select {
+		case name := <-finished:
+			if name != expected {
+				t.Fatalf("completed %q, want %q", name, expected)
+			}
+		case <-deadline:
+			t.Fatalf("%q did not complete with the second worker still occupied", expected)
+		}
+	}
+	t.Logf("small completion after releasing buffered work: %s", time.Since(resumed))
+	s.mu.RLock()
+	done := s.completedFiles[smallInput]
+	s.mu.RUnlock()
+	if !done || timelineIndexFor(smallDir).State != timelineStateReady {
+		t.Fatal("small analysis did not publish a ready timeline")
+	}
+	reader, err := NewAuditRecordReader(filepath.Join(smallDir, "Alert.ncap.gz"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reader.Close()
+	if _, err := reader.ReadHeader(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := reader.NextRecord(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := reader.NextRecord(); err != io.EOF {
+		t.Fatalf("small analysis did not publish exactly one alert: %v", err)
+	}
+}
+
 func TestCaptureWorkerCompletesSmallAnalysisWhileRegularTimelineWaits(t *testing.T) {
 	testCaptureWorkerCompletesSmallAnalysis(t, false)
 }
