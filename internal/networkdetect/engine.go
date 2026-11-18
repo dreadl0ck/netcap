@@ -334,12 +334,12 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 			for _, d := range f.directions {
 				d.prefixEnds = nil
 			}
-			if ev.FIN {
+			if ev.FIN && !ev.Truncated {
 				f.finObserved = true
 				if d := f.directions[endpoint(ev.SrcIP, ev.SrcPort)]; d != nil {
 					d.finSeen, d.finSequence = true, ev.Seq
 				}
-			} else {
+			} else if !ev.FIN {
 				f.reset = true
 			}
 		}

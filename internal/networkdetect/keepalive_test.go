@@ -196,6 +196,34 @@ func TestKeepAliveDoesNotBecomeInjection(t *testing.T) {
 	}
 }
 
+func TestTruncatedFINPreservesLaterOverlap(t *testing.T) {
+	for _, truncated := range []bool{false, true} {
+		e, err := New(DefaultConfig())
+		if err != nil {
+			t.Fatal(err)
+		}
+		ev := baseEvent("data", 1)
+		ev.Seq, ev.Payload = 100, []byte("abcdefgh")
+		end := ev
+		end.At, end.Kind, end.Payload, end.Seq = ev.At+1, "end", nil, 108
+		end.FIN, end.Truncated = true, truncated
+		probe := ev
+		probe.At, probe.Seq, probe.Payload, probe.KeepAliveEligible = ev.At+2, 107, []byte{0}, true
+		for _, event := range []Event{ev, end, probe} {
+			if _, err := e.Observe(event); err != nil {
+				t.Fatal(err)
+			}
+		}
+		want := uint64(0)
+		if truncated {
+			want = 1
+		}
+		if stats := e.Stats(); stats.ConflictingOverlapBytes != want || stats.StaleProbeCandidates != 0 {
+			t.Fatalf("truncated FIN=%t: %+v, want %d conflict bytes and no stale-probe candidates", truncated, stats, want)
+		}
+	}
+}
+
 func TestKeepAliveAfterFINConsumesSequenceSpace(t *testing.T) {
 	for _, sequence := range []uint32{100, ^uint32(0) - 3} {
 		for _, peerFIN := range []bool{false, true} {
