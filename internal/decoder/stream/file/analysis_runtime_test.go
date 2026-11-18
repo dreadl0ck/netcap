@@ -81,6 +81,57 @@ func (fixtureAnalyzer) ScanBytesContext(context.Context, []byte) ([]string, erro
 	return []string{"fixture-match"}, nil
 }
 
+func TestAnalyzerAdmissionDistinguishesCapacityFromMissingInput(t *testing.T) {
+	old := GetGlobalConfig()
+	SetGlobalConfig(GetDefaultConfig())
+	t.Cleanup(func() { SetGlobalConfig(old) })
+	for _, missing := range []bool{false, true} {
+		t.Run(fmt.Sprintf("missing=%t", missing), func(t *testing.T) {
+			dir := t.TempDir()
+			if err := StartAnalysis(dir, "admission-pressure"); err != nil {
+				t.Fatal(err)
+			}
+			defer FinishAnalysis()
+			currentAnalysis().yara = fixtureAnalyzer{}
+			path := filepath.Join(dir, "oversized.bin")
+			if err := os.WriteFile(path, nil, 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Truncate(path, (256<<20)+1); err != nil {
+				t.Fatal(err)
+			}
+			load := func() ([]byte, func(), error) {
+				return nil, nil, errors.New("rejected artifact was loaded")
+			}
+			analyzeStored(path, "oversized", load, nil)
+			wantRejected := uint64(1)
+			if missing {
+				analyzeStored(filepath.Join(dir, "missing.bin"), "missing", load, nil)
+				wantRejected++
+			}
+			analysisErr, persistenceErr := FinishAnalysis()
+			if analysisErr == nil || persistenceErr != nil {
+				t.Fatalf("analysis=%v persistence=%v", analysisErr, persistenceErr)
+			}
+			var partial interface{ ExitCode() int }
+			if coded, wantPartial := errors.As(analysisErr, &partial), !missing; coded != wantPartial || (coded && partial.ExitCode() != 2) {
+				t.Fatalf("unexpected admission result: %T %v", analysisErr, analysisErr)
+			}
+			data, err := os.ReadFile(filepath.Join(dir, AnalysisReportFile))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var report AnalysisReport
+			if err := json.Unmarshal(data, &report); err != nil {
+				t.Fatal(err)
+			}
+			if report.State != "partial" || report.Rejected != wantRejected || report.ExecutedJobs != 0 {
+				t.Fatalf("unexpected admission report: %+v", report)
+			}
+		})
+	}
+}
+
 func TestAnalyzerIntegrityFailureTakesPrecedenceOverBufferPressure(t *testing.T) {
 	old := GetGlobalConfig()
 	SetGlobalConfig(GetDefaultConfig())

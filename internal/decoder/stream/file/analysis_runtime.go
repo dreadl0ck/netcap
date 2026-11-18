@@ -372,6 +372,7 @@ func analyzeStored(path, digest string, load func() ([]byte, func(), error), spo
 		info, err := os.Stat(path)
 		if err != nil {
 			m.report.Rejected++
+			m.analyzerError = true
 			m.report.ExtractionIssues = appendIssue(m.report.ExtractionIssues, "analysis artifact unavailable")
 			m.mu.Unlock()
 			return nil, nil
@@ -386,6 +387,7 @@ func analyzeStored(path, digest string, load func() ([]byte, func(), error), spo
 		entry = &analysisEntry{result: result, done: make(chan struct{})}
 		if len(m.cache) >= 1024 || m.cacheBytes >= 16<<20 || info.Size() > 256<<20-m.queuedBytes {
 			m.report.Rejected++
+			m.sharedBudgetLoss = true
 			m.report.ExtractionIssues = appendIssue(m.report.ExtractionIssues, "analysis admission budget exceeded")
 			m.mu.Unlock()
 			return nil, nil
@@ -400,6 +402,7 @@ func analyzeStored(path, digest string, load func() ([]byte, func(), error), spo
 			delete(m.report.Results, digest)
 			m.queuedBytes -= info.Size()
 			m.report.Rejected++
+			m.sharedBudgetLoss = true
 			m.report.ExtractionIssues = appendIssue(m.report.ExtractionIssues, "analysis queue full")
 			m.mu.Unlock()
 			return nil, nil
