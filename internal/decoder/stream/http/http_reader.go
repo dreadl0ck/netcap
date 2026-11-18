@@ -597,6 +597,7 @@ func (h *httpReader) findRequest(res *httpResponse) *httpRequest {
 // HTTP Request
 
 func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+	priorCredits := h.sourceHeaderCredits
 	// Taken before the request is consumed; see readResponse.
 	requestTimestamp := pos.Timestamp()
 	headerStart := pos.Offset()
@@ -736,6 +737,12 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	}
 	if stateErr != nil && (stateErr != core.ErrCompletionStateBudget || spool == nil) {
 		return stateErr
+	}
+	if stateErr != nil {
+		body, request.body = nil, nil
+		req.Form, req.PostForm, req.Body = nil, nil, http.NoBody
+		h.conversation.StateBudget.Release(h.sourceHeaderCredits - priorCredits)
+		h.sourceHeaderCredits = priorCredits
 	}
 	if err != nil && stateErr == nil {
 		request.evidence.issues = appendUnique(request.evidence.issues, "incomplete-request-form")
