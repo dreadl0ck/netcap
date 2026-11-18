@@ -25,8 +25,9 @@ import (
 	"errors"
 	"fmt"
 	stdio "io"
+	"net/http"
 	"os"
-	"time"
+	"strconv"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
@@ -55,18 +56,49 @@ func filterPCAPToFile(inputFile, bpfExpr, outputFile string) (int, error) {
 	return filterPCAPToFileContext(context.Background(), inputFile, bpfExpr, outputFile)
 }
 
-func filterPCAPToFileWithTimeout(parent context.Context, inputFile, bpfExpr, outputFile string, timeout time.Duration) (int, error) {
-	ctx, cancel := context.WithTimeout(parent, timeout)
-	defer cancel()
-
-	return filterPCAPToFileContext(ctx, inputFile, bpfExpr, outputFile)
-}
-
 func filterPCAPToFileContext(ctx context.Context, inputFile, bpfExpr, outputFile string) (int, error) {
 	return filterPCAPSelectionContext(ctx, inputFile, bpfExpr, outputFile, nil)
 }
 
 func filterPCAPSelectionContext(ctx context.Context, inputFile, bpfExpr, outputFile string, keep func(gopacket.CaptureInfo) bool) (int, error) {
+	return filterPCAPSelectionBounded(ctx, inputFile, bpfExpr, outputFile, keep, 0)
+}
+
+var errPacketDownloadLimit = errors.New("packet download exceeds output byte limit; narrow the selection")
+var errPacketDownloadLimitInvalid = errors.New("maxOutputBytes must be one positive integer")
+
+func filterPacketDownload(ctx context.Context, r *http.Request, inputFile, bpfExpr, outputFile string, keep func(gopacket.CaptureInfo) bool) (int, error) {
+	var limit int64
+	if values, ok := r.URL.Query()["maxOutputBytes"]; ok {
+		if len(values) != 1 {
+			return 0, errPacketDownloadLimitInvalid
+		}
+		var err error
+		limit, err = strconv.ParseInt(values[0], 10, 64)
+		if err != nil || limit <= 0 {
+			return 0, errPacketDownloadLimitInvalid
+		}
+	}
+	return filterPCAPSelectionBounded(ctx, inputFile, bpfExpr, outputFile, keep, limit)
+}
+
+func writePacketDownloadLimitError(w http.ResponseWriter, err error) bool {
+	switch {
+	case errors.Is(err, errPacketDownloadLimitInvalid):
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	case errors.Is(err, errPacketDownloadLimit):
+		http.Error(w, err.Error(), http.StatusRequestEntityTooLarge)
+	default:
+		return false
+	}
+	return true
+}
+
+func filterPCAPSelectionBounded(ctx context.Context, inputFile, bpfExpr, outputFile string, keep func(gopacket.CaptureInfo) bool, limit int64) (int, error) {
+	const fileHeaderBytes, packetHeaderBytes = 24, 16
+	if limit > 0 && limit < fileHeaderBytes {
+		return 0, errPacketDownloadLimit
+	}
 	in, err := os.Open(inputFile)
 	if err != nil {
 		return 0, fmt.Errorf("open input: %w", err)
@@ -99,6 +131,7 @@ func filterPCAPSelectionContext(ctx context.Context, inputFile, bpfExpr, outputF
 	}
 
 	written := 0
+	remaining := limit - fileHeaderBytes
 	for {
 		if err := ctx.Err(); err != nil {
 			out.Close()
@@ -117,6 +150,15 @@ func filterPCAPSelectionContext(ctx context.Context, inputFile, bpfExpr, outputF
 		}
 		if (keep != nil && !keep(ci)) || !bpf.Matches(ci, data) {
 			continue
+		}
+		if limit > 0 {
+			size := packetHeaderBytes + int64(len(data))
+			if size > remaining {
+				out.Close()
+				os.Remove(outputFile)
+				return 0, errPacketDownloadLimit
+			}
+			remaining -= size
 		}
 		if werr := writer.WritePacket(ci, data); werr != nil {
 			out.Close()

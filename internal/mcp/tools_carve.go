@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
@@ -246,7 +247,11 @@ func (s *Server) doCarve(ctx context.Context, ref SessionRef, endpoint, label st
 		}
 	}
 	client := s.newClient()
+	if q.Get("format") != "evidence" {
+		q.Set("maxOutputBytes", strconv.Itoa(maxBackendResponseBytes))
+	}
 	body, ct, gErr := client.GetRawContext(ctx, endpoint, q)
+	q.Del("maxOutputBytes")
 	if gErr != nil {
 		return errResult(fmt.Errorf("download %s: %w", endpoint, gErr)), nil
 	}

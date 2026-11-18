@@ -349,10 +349,13 @@ func (s *Server) handleHTTPDownloadPCAP(w http.ResponseWriter, r *http.Request) 
 
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
-	written, err := filterPCAPSelectionContext(ctx, activeInputFile, selection.bpf, outputFile, selection.contains)
+	written, err := filterPacketDownload(ctx, r, activeInputFile, selection.bpf, outputFile, selection.contains)
 	if err != nil {
 		log.Printf("[WebUI] PCAP filter error: %v", err)
 		os.Remove(outputFile)
+		if writePacketDownloadLimitError(w, err) {
+			return
+		}
 		if isPCAPFilterTimeout(err) {
 			http.Error(w, "PCAP filtering timed out. The file may be too large or the filter too complex.", http.StatusRequestTimeout)
 			return

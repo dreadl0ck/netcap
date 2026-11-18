@@ -414,10 +414,15 @@ func (s *Server) handleHostDownloadPCAP(w http.ResponseWriter, r *http.Request) 
 	// Filter the PCAP entirely in-process (no external tcpdump).
 	log.Printf("[WebUI] Filtering PCAP for host in-process: %s -> %s (bpf: %s)", activeInputFile, outputFile, bpf)
 
-	written, err := filterPCAPToFileWithTimeout(r.Context(), activeInputFile, bpf, outputFile, 60*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+	defer cancel()
+	written, err := filterPacketDownload(ctx, r, activeInputFile, bpf, outputFile, nil)
 	if err != nil {
 		log.Printf("[WebUI] PCAP filter error: %v", err)
 		os.Remove(outputFile)
+		if writePacketDownloadLimitError(w, err) {
+			return
+		}
 		if isPCAPFilterTimeout(err) {
 			http.Error(w, "PCAP filtering timed out. The file may be too large or the filter too complex.", http.StatusRequestTimeout)
 			return

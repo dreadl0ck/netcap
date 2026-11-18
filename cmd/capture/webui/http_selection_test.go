@@ -141,6 +141,32 @@ func TestPacketDownloadsPreserveBinaryHTTPFraming(t *testing.T) {
 					t.Fatal("empty binary download control")
 				}
 			}
+			for _, tc := range []struct {
+				limit  string
+				status int
+			}{
+				{strconv.Itoa(len(expected)), http.StatusOK},
+				{strconv.Itoa(len(expected) - 1), http.StatusRequestEntityTooLarge},
+				{"0", http.StatusBadRequest},
+			} {
+				req, err := http.NewRequest(http.MethodGet, ts.URL+path+"?"+query.Encode()+"&maxOutputBytes="+tc.limit, nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+				req.Header.Set("Authorization", "Bearer "+s.localAccessToken)
+				resp, err := ts.Client().Do(req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				data, err := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				if err != nil || resp.StatusCode != tc.status {
+					t.Fatalf("limit=%s: status=%d want=%d err=%v", tc.limit, resp.StatusCode, tc.status, err)
+				}
+				if tc.status == http.StatusOK && !bytes.Equal(data, expected) || tc.status != http.StatusOK && resp.Header.Get("Content-Disposition") != "" {
+					t.Fatalf("unexpected artifact for limit=%s status=%d", tc.limit, tc.status)
+				}
+			}
 		})
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -90,6 +91,9 @@ func TestCarveForwardsTransportAndExactCaptureTime(t *testing.T) {
 			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				calls.Add(1)
 				q := r.URL.Query()
+				if q.Get("maxOutputBytes") != strconv.Itoa(maxBackendResponseBytes) {
+					t.Errorf("missing backend output limit: %s", q.Encode())
+				}
 				if q.Get("protocol") != tc.want || q.Get("srcPort") != "52123" || q.Get("dstPort") != "443" || q.Get("startNs") != "1700000000000000001" || q.Get("endNs") != "1700000000000000003" || q.Get("inputFile") != "/owned.pcap" {
 					t.Errorf("incorrect upstream selection: %s", q.Encode())
 				}
