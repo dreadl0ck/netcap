@@ -59,6 +59,26 @@ func TestPartialAuditAdmissionRequiresSealedExplicitQualifiedOutput(t *testing.T
 				t.Fatalf("missing query generation: %v, %s", err, first.Body)
 			}
 			next := "sessionId=owned&allowPartial=true&offset=1&runId=" + run + "&stageGeneration=" + generation + "&queryGeneration=" + summary.QueryGeneration
+			func() {
+				for range 2 {
+					select {
+					case sealedAuditVerificationSlots <- struct{}{}:
+						defer func() { <-sealedAuditVerificationSlots }()
+					default:
+						t.Fatal("expected two available verification slots")
+					}
+				}
+				for _, tc := range []struct {
+					query string
+					want  int
+				}{{next, 429}, {next + "&fields=SrcIP", 409}} {
+					w := httptest.NewRecorder()
+					handler.ServeHTTP(w, httptest.NewRequest("GET", "/api/audit/Connection/stream?"+tc.query, nil))
+					if w.Code != tc.want {
+						t.Fatalf("saturated verification: got %d, want %d: %s", w.Code, tc.want, w.Body)
+					}
+				}
+			}()
 			for _, tc := range []struct {
 				path, query string
 				status      int

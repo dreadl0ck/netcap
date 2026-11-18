@@ -21,6 +21,8 @@ type sealedAuditQuery struct {
 }
 type sealedAuditQueryKey struct{}
 
+var sealedAuditVerificationSlots = make(chan struct{}, 2)
+
 func preparePartialAudit(r *http.Request, selection captureSelection) (*sealedAuditQuery, error) {
 	q := r.URL.Query()
 	values, present := q["allowPartial"]
@@ -71,6 +73,12 @@ func preparePartialAudit(r *http.Request, selection captureSelection) (*sealedAu
 	if expected, stageGeneration := q.Get("queryGeneration"), q.Get("stageGeneration"); expected != "" && stageGeneration != "" &&
 		expected != partialQueryGeneration(runID, stageGeneration, parts[0], q) {
 		return nil, selectionError(409, "Partial query or projection changed; restart at offset zero")
+	}
+	select {
+	case sealedAuditVerificationSlots <- struct{}{}:
+		defer func() { <-sealedAuditVerificationSlots }()
+	default:
+		return nil, selectionError(http.StatusTooManyRequests, "Sealed audit verification is busy")
 	}
 	stage, snapshot, err := evidence.ReadAuditStageContext(r.Context(), selection.OutputDir, runID, parts[0], q.Get("stageGeneration"))
 	if err != nil {

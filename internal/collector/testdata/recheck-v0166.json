@@ -175,6 +175,7 @@
     "verification": "Full Web UI race suite passes. Two focused tests pass ten repetitions under race instrumentation: replacement of a queued generation before completion, and shutdown while the timeline lane is occupied."
   },
   "sealedAuditQueryGeneration": {
+    "verificationConcurrency": "With both sealed audit verification slots occupied, a valid continuation returns HTTP 429 and a changed projection still returns HTTP 409. Local and service race cases verify successful continuation after release.",
     "continuationPreflight": "TestPartialAuditAdmissionRequiresSealedExplicitQualifiedOutput verifies that a changed projection returns HTTP 409 before a modified audit file is verified, while an otherwise valid sealed query still rejects the changed file with HTTP 422. Local and service race tests passed.",
     "source": "fb72e75",
     "implementation": "Sealed audit continuation requires the run, stage and query generations. The query generation binds audit type, filter, projection, Community ID selection and output mode; page size remains adjustable.",
