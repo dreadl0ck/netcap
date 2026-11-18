@@ -147,6 +147,8 @@ func SaveFileEnhanced(
 				prefixErr := SaveFileEnhanced(conv, source+" decoded-prefix", "decoded-"+name, errors.Join(extractionErr, decodeErr), decoded, nil, host, contentType, depth+1, contentInfo.Hash, flowDirection, protocol)
 				release()
 				RecordExtractionIssue(prefixErr)
+			} else if errors.Is(decodeErr, errSharedArtifactBudget) {
+				RecordExtractionIssue(decodeErr)
 			}
 		}
 	}

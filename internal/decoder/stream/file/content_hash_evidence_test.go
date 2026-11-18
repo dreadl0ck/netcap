@@ -115,6 +115,17 @@ func TestByteBackedDecodeRespectsSharedCodecBudget(t *testing.T) {
 			if (tc.wantError && !errors.Is(err, errSharedArtifactBudget)) || (!tc.wantError && err != nil) || !bytes.Equal(info.DecodedContent, tc.want) {
 				t.Fatalf("unexpected decoding result: bytes=%d err=%v", len(info.DecodedContent), err)
 			}
+			prefix, release, err := recoverGzipPrefix(wire[:len(wire)-1], 4096)
+			if release != nil {
+				release()
+			}
+			if tc.wantError {
+				if prefix != nil || !errors.Is(err, errSharedArtifactBudget) {
+					t.Fatalf("recovery used unadmitted workspace: bytes=%d err=%v", len(prefix), err)
+				}
+			} else if !bytes.Equal(prefix, body) || !errors.Is(err, io.ErrUnexpectedEOF) {
+				t.Fatalf("recovery lost decoded evidence or trailer error: bytes=%d err=%v", len(prefix), err)
+			}
 			if err := reserveBuffer(tc.budget); err != nil {
 				t.Fatalf("decode retained shared credits: %v", err)
 			}
