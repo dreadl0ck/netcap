@@ -288,7 +288,7 @@ rules:
         first = await call("query_audit_records", query | {"allow_partial": True, "limit": 1})
         summary = first["summary"]
         second = await call("query_audit_records", query | {
-            "allow_partial": True, "limit": 1, "offset": 1,
+            "allow_partial": True, "limit": 17, "offset": 1,
             "run_id": summary["runId"], "stage_generation": summary["stageGeneration"],
             "query_generation": summary["queryGeneration"],
         })
@@ -301,7 +301,10 @@ rules:
             if not rejected.isError:
                 failures.append(f"sealed continuation accepted changed query: {changed}")
         count = await call("query_audit_records", query | {"count_only": True})
-        if (not summary["partialAdmission"] or first["records"] == second["records"]
+        full = await call("query_audit_records", query | {"limit": 18})
+        if (not summary["partialAdmission"] or len(first["records"]) != 1 or len(second["records"]) != 17
+                or second["summary"]["queryGeneration"] != summary["queryGeneration"]
+                or first["records"] + second["records"] != full["records"]
                 or count["summary"]["total"] != 18 or "records" in count):
             raise ValueError("fixture query count or sealed continuation differs")
         empty = await call("query_audit_records", query | {"offset": 18})
