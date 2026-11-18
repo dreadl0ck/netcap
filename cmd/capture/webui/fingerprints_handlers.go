@@ -21,6 +21,7 @@ package webui
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -485,32 +486,32 @@ func readFingerprints(outDir string) ([]FingerprintSummary, error) {
 
 	// Read JA4SSH fingerprints from SSH records
 	if err := readJA4SSHFingerprints(outDir, fingerprintMap); err != nil {
-		log.Printf("[WebUI] Warning: Failed to read JA4SSH fingerprints: %v", err)
+		return nil, fmt.Errorf("SSH fingerprints: %w", err)
 	}
 
 	// Read JA4 fingerprints from IPProfile records
 	if err := readJA4Fingerprints(outDir, fingerprintMap); err != nil {
-		log.Printf("[WebUI] Warning: Failed to read JA4 fingerprints: %v", err)
+		return nil, err
 	}
 
 	// Read JA4H fingerprints from HTTP records
 	if err := readJA4HFingerprints(outDir, fingerprintMap); err != nil {
-		log.Printf("[WebUI] Warning: Failed to read JA4H fingerprints: %v", err)
+		return nil, fmt.Errorf("HTTP fingerprints: %w", err)
 	}
 
 	// Read JA4X fingerprints from TLSCertificate records
 	if err := readJA4XFingerprints(outDir, fingerprintMap); err != nil {
-		log.Printf("[WebUI] Warning: Failed to read JA4X fingerprints: %v", err)
+		return nil, fmt.Errorf("certificate fingerprints: %w", err)
 	}
 
 	// Read JA4T/JA4TS fingerprints from TCP records
 	if err := readJA4TFingerprints(outDir, fingerprintMap); err != nil {
-		log.Printf("[WebUI] Warning: Failed to read JA4T fingerprints: %v", err)
+		return nil, fmt.Errorf("TCP fingerprints: %w", err)
 	}
 
 	// Read DHCP fingerprints from DHCPv4 records
 	if err := readDHCPFingerprints(outDir, fingerprintMap); err != nil {
-		log.Printf("[WebUI] Warning: Failed to read DHCP fingerprints: %v", err)
+		return nil, fmt.Errorf("DHCP fingerprints: %w", err)
 	}
 
 	// Convert map to slice
@@ -575,8 +576,7 @@ func readJA4SSHFingerprints(outDir string, fingerprintMap map[string]*fingerprin
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading SSH record: %v", err)
-			continue
+			return err
 		}
 
 		ssh, ok := record.(*types.SSH)
@@ -627,17 +627,17 @@ func readJA4SSHFingerprints(outDir string, fingerprintMap map[string]*fingerprin
 func readJA4Fingerprints(outDir string, fingerprintMap map[string]*fingerprintAggregator) error {
 	// Read JA4 from TLSClientHello
 	if err := readJA4FromTLSClientHello(outDir, fingerprintMap); err != nil {
-		log.Printf("[WebUI] Warning: Failed to read JA4 from TLSClientHello: %v", err)
+		return fmt.Errorf("TLS client fingerprints: %w", err)
 	}
 
 	// Read JA4S from TLSServerHello
 	if err := readJA4SFromTLSServerHello(outDir, fingerprintMap); err != nil {
-		log.Printf("[WebUI] Warning: Failed to read JA4S from TLSServerHello: %v", err)
+		return fmt.Errorf("TLS server fingerprints: %w", err)
 	}
 
 	// Also read from IPProfile for additional hosts (but don't overwrite descriptions)
 	if err := readJA4FromHost(outDir, fingerprintMap); err != nil {
-		log.Printf("[WebUI] Warning: Failed to read JA4 from IPProfile: %v", err)
+		return fmt.Errorf("host fingerprints: %w", err)
 	}
 
 	return nil
@@ -672,8 +672,7 @@ func readJA4FromTLSClientHello(outDir string, fingerprintMap map[string]*fingerp
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading TLSClientHello record: %v", err)
-			continue
+			return err
 		}
 
 		hello, ok := record.(*types.TLSClientHello)
@@ -747,8 +746,7 @@ func readJA4SFromTLSServerHello(outDir string, fingerprintMap map[string]*finger
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading TLSServerHello record: %v", err)
-			continue
+			return err
 		}
 
 		hello, ok := record.(*types.TLSServerHello)
@@ -822,8 +820,7 @@ func readJA4FromHost(outDir string, fingerprintMap map[string]*fingerprintAggreg
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading IPProfile record: %v", err)
-			continue
+			return err
 		}
 
 		ipProfile, ok := record.(*types.Host)
@@ -926,8 +923,7 @@ func readDHCPFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading DHCPv4 record: %v", err)
-			continue
+			return err
 		}
 
 		dhcp, ok := record.(*types.DHCPv4)
@@ -1017,8 +1013,7 @@ func readJA4HFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading HTTP record: %v", err)
-			continue
+			return err
 		}
 
 		http, ok := record.(*types.HTTP)
@@ -1092,8 +1087,7 @@ func readJA4XFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading TLSCertificate record: %v", err)
-			continue
+			return err
 		}
 
 		cert, ok := record.(*types.TLSCertificate)
@@ -1173,8 +1167,7 @@ func readJA4TFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading TCP record: %v", err)
-			continue
+			return err
 		}
 
 		tcp, ok := record.(*types.TCP)

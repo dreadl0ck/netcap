@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -16,6 +17,38 @@ import (
 	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+func TestFingerprintInventoryRejectsCorruptTrackAndRecovers(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFile(t, dir, "SSH", types.Type_NC_SSH, []proto.Message{&types.SSH{Ja4Ssh: "valid-ssh"}})
+	rows := []proto.Message{&types.HTTP{Ja4H: "valid-http"}}
+	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, rows)
+	path := filepath.Join(dir, "HTTP.ncap.gz")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data[len(data)-8] ^= 1
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	s := newTimelineTestServer(dir)
+	request := func() *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		s.handleFingerprints(w, httptest.NewRequest(http.MethodGet, "/api/fingerprints?limit=1", nil))
+		return w
+	}
+	w := request()
+	if w.Code != http.StatusInternalServerError || w.Body.String() != "Failed to read fingerprints\n" {
+		t.Fatalf("damaged track produced an unexpected response: %d %s", w.Code, w.Body)
+	}
+	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, rows)
+	w = request()
+	var page FingerprintsResponse
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &page) != nil || page.TotalCount != 2 || len(page.Fingerprints) != 1 {
+		t.Fatalf("retry did not recover the full inventory: %d %s", w.Code, w.Body)
+	}
+}
 
 func TestFingerprintSnapshotFiltersAndMenuCounts(t *testing.T) {
 	dir := t.TempDir()
