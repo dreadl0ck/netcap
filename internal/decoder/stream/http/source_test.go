@@ -152,7 +152,7 @@ func TestSourceRequestBodyCreditsReleaseOnPanic(t *testing.T) {
 				t.Fatal("request body panic was suppressed")
 			}
 		}()
-		_, _, _ = readSourceRequestBody(c, panickingRequestBody{})
+		_, _, _ = readSourceRequestBody(c, panickingRequestBody{}, -1)
 	}()
 	if budget.Health().RetainedBytes != 0 {
 		t.Fatal("request body panic retained scratch/sample credits", budget.Health())

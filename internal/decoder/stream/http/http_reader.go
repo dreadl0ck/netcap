@@ -636,9 +636,9 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 			defer func() { file.RecordArtifactWriteError(spool.Close()) }()
 		}
 	case requestCappedSample:
-		body, release, bodyErr = readCappedSourceRequestBody(h.conversation, req.Body)
+		body, release, bodyErr = readCappedSourceRequestBody(h.conversation, req.Body, req.ContentLength)
 	case requestSample:
-		body, release, bodyErr = readSourceRequestBody(h.conversation, req.Body)
+		body, release, bodyErr = readSourceRequestBody(h.conversation, req.Body, req.ContentLength)
 	default:
 		body, release, bodyErr = file.ReadBody(req.Body)
 	}

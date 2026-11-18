@@ -344,7 +344,7 @@ func TestCappedSourceRequestBodyStopsAtLimit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		sample, release, err := readCappedSourceRequestBody(&core.ConversationInfo{StateBudget: budget}, body)
+		sample, release, err := readCappedSourceRequestBody(&core.ConversationInfo{StateBudget: budget}, body, int64(size))
 		release()
 		if health := budget.Health(); health.Exceeded || health.RetainedBytes != 0 {
 			t.Fatalf("unexpected sample state: %+v", health)
@@ -360,7 +360,7 @@ func TestCappedSourceRequestBodyStopsAtLimit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		sample, release, err := readCappedSourceRequestBody(&core.ConversationInfo{StateBudget: budget}, body)
+		sample, release, err := readCappedSourceRequestBody(&core.ConversationInfo{StateBudget: budget}, body, -1)
 		release()
 		if len(sample) != 128 || !errors.Is(err, file.ErrArtifactLimit) || !errors.Is(err, readErr) || budget.Health().RetainedBytes != 0 {
 			t.Fatalf("sampled %d, err %v, budget %+v", len(sample), err, budget.Health())
@@ -525,7 +525,7 @@ func TestSampledRequestReleasesBodyCreditsBeforePairing(t *testing.T) {
 	decoderconfig.Instance = decoderconfig.DefaultConfig.Clone()
 	decoderconfig.Instance.FileStorage = ""
 	decoderconfig.Instance.IncludePayloads = false
-	budget, err := core.NewStateBudget(64<<10, nil)
+	budget, err := core.NewStateBudget(8<<10, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

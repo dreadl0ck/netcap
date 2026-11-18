@@ -250,10 +250,10 @@ func sourceRequestMode(cfg *decoderconfig.Config, req *http.Request, form string
 	return requestSample
 }
 
-func readCappedSourceRequestBody(c *core.ConversationInfo, body io.Reader) ([]byte, func(), error) {
+func readCappedSourceRequestBody(c *core.ConversationInfo, body io.Reader, contentLength int64) ([]byte, func(), error) {
 	limit := sourceRequestBodyLimit()
 	bounded := &io.LimitedReader{R: body, N: limit + 1}
-	sample, release, err := scanSourceRequestBody(c, bounded, int(min(limit+1, 32768)), int(min(limit, 512)))
+	sample, release, err := scanSourceRequestBody(c, bounded, contentLength, int(min(limit+1, 32768)), int(min(limit, 512)))
 	if bounded.N == 0 {
 		limitErr := fmt.Errorf("%w: per-file %d", file.ErrArtifactLimit, limit)
 		if err != nil {
@@ -264,11 +264,15 @@ func readCappedSourceRequestBody(c *core.ConversationInfo, body io.Reader) ([]by
 	return sample, release, err
 }
 
-func readSourceRequestBody(c *core.ConversationInfo, body io.Reader) ([]byte, func(), error) {
-	return scanSourceRequestBody(c, body, 32768, 512)
+func readSourceRequestBody(c *core.ConversationInfo, body io.Reader, contentLength int64) ([]byte, func(), error) {
+	return scanSourceRequestBody(c, body, contentLength, 32768, 512)
 }
 
-func scanSourceRequestBody(c *core.ConversationInfo, body io.Reader, scratchSize, sampleSize int) (sample []byte, release func(), resultErr error) {
+func scanSourceRequestBody(c *core.ConversationInfo, body io.Reader, contentLength int64, scratchSize, sampleSize int) (sample []byte, release func(), resultErr error) {
+	if contentLength > 0 {
+		scratchSize = int(min(int64(scratchSize), contentLength))
+		sampleSize = int(min(int64(sampleSize), contentLength))
+	}
 	release = func() {}
 	if err := c.StateBudget.Reserve(int64(scratchSize + sampleSize)); err != nil {
 		c.FragmentError = err
