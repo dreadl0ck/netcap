@@ -369,6 +369,15 @@ rules:
             contents.extend(chunk)
         if hashlib.sha256(contents).hexdigest() != row["sha256"]:
             raise ValueError("extracted file pages do not match inventory digest")
+        iocs = await call("extract_iocs_from_file", target | {"kinds": "domain", "max_per_kind": 1})
+        exif = await call("get_image_exif", target)
+        if any(result["session_id"] != http_session or result["file_path"] != row["path"]
+               for result in (iocs, exif)):
+            raise ValueError("file analysis lost artifact identity")
+        if iocs["size_scanned"] != len(contents) or iocs["kinds"] != ["domain"] or len(iocs["domains"]) > 1:
+            raise ValueError("IOC extraction lost its scan size or requested bounds")
+        if exif["entries"] != [] or not exif.get("note"):
+            raise ValueError("file without EXIF did not return a qualified empty result")
         await call("delete_session", http_args)
 
         schema = Path(data_dir).resolve() / "contract.proto"

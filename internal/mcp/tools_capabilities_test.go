@@ -157,18 +157,27 @@ func TestCapabilityCancellationAndTypedBackendErrors(t *testing.T) {
 
 func TestScanCancellationReachesBackend(t *testing.T) {
 	t.Run("detection rules", func(t *testing.T) {
-		testScanCancellationReachesBackend(t, "execute_detection_rules", "/api/rules/execute-all")
+		testScanCancellationReachesBackend(t, "execute_detection_rules", http.MethodPost, "/api/rules/execute-all", map[string]any{"session_id": "owned"})
 	})
 	t.Run("YARA", func(t *testing.T) {
-		testScanCancellationReachesBackend(t, "execute_yara_scan", "/api/yara/scan")
+		testScanCancellationReachesBackend(t, "execute_yara_scan", http.MethodPost, "/api/yara/scan", map[string]any{"session_id": "owned"})
 	})
 }
 
-func testScanCancellationReachesBackend(t *testing.T, tool, path string) {
+func TestFileAnalysisCancellationReachesBackend(t *testing.T) {
+	for _, name := range []string{"extract_iocs_from_file", "get_image_exif"} {
+		t.Run(name, func(t *testing.T) {
+			testScanCancellationReachesBackend(t, name, http.MethodGet, "/api/extracted-files/download/fixture.txt",
+				map[string]any{"session_id": "owned", "file_path": "fixture.txt"})
+		})
+	}
+}
+
+func testScanCancellationReachesBackend(t *testing.T, tool, method, path string, args map[string]any) {
 	t.Helper()
 	started, stopped, release := make(chan struct{}), make(chan struct{}), make(chan struct{})
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost || r.URL.Path != path {
+		if r.Method != method || r.URL.Path != path {
 			http.NotFound(w, r)
 			return
 		}
@@ -189,7 +198,7 @@ func testScanCancellationReachesBackend(t *testing.T, tool, path string) {
 	defer cancel()
 	done := make(chan *mcplib.CallToolResult, 1)
 	go func() {
-		result, _ := s.mcpSrv.GetTool(tool).Handler(ctx, mcplib.CallToolRequest{Params: mcplib.CallToolParams{Arguments: map[string]any{"session_id": "owned"}}})
+		result, _ := s.mcpSrv.GetTool(tool).Handler(ctx, mcplib.CallToolRequest{Params: mcplib.CallToolParams{Arguments: args}})
 		done <- result
 	}()
 	select {

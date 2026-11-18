@@ -81,7 +81,7 @@ func (s *Server) registerForensicsTools() error {
 	return nil
 }
 
-func (s *Server) handleExtractIOCs(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+func (s *Server) handleExtractIOCs(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
 		return errResult(err), nil
@@ -100,7 +100,7 @@ func (s *Server) handleExtractIOCs(_ context.Context, req mcplib.CallToolRequest
 		maxPerKind = 5000
 	}
 
-	data, err := s.fetchExtractedFile(ref, filePath)
+	data, err := s.fetchExtractedFile(ctx, ref, filePath)
 	if err != nil {
 		return errResult(err), nil
 	}
@@ -127,7 +127,7 @@ func (s *Server) handleExtractIOCs(_ context.Context, req mcplib.CallToolRequest
 	return jsonResult(out), nil
 }
 
-func (s *Server) handleGetImageExif(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+func (s *Server) handleGetImageExif(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
 		return errResult(err), nil
@@ -137,7 +137,7 @@ func (s *Server) handleGetImageExif(_ context.Context, req mcplib.CallToolReques
 		return errResult(err), nil
 	}
 
-	data, err := s.fetchExtractedFile(ref, filePath)
+	data, err := s.fetchExtractedFile(ctx, ref, filePath)
 	if err != nil {
 		return errResult(err), nil
 	}
@@ -161,12 +161,12 @@ func (s *Server) handleGetImageExif(_ context.Context, req mcplib.CallToolReques
 	out := make([]map[string]any, 0, len(entries))
 	for _, e := range entries {
 		out = append(out, map[string]any{
-			"ifd_path":   e.IfdPath,
-			"tag_id":     fmt.Sprintf("0x%04x", e.TagId),
-			"tag_name":   e.TagName,
-			"count":      e.UnitCount,
-			"type_name":  e.TagTypeName,
-			"value":      e.Formatted,
+			"ifd_path":  e.IfdPath,
+			"tag_id":    fmt.Sprintf("0x%04x", e.TagId),
+			"tag_name":  e.TagName,
+			"count":     e.UnitCount,
+			"type_name": e.TagTypeName,
+			"value":     e.Formatted,
 		})
 	}
 	return jsonResult(map[string]any{
@@ -179,9 +179,9 @@ func (s *Server) handleGetImageExif(_ context.Context, req mcplib.CallToolReques
 // fetchExtractedFile pulls one carved file's bytes via the webui's
 // /api/extracted-files/download/<path> endpoint (binary), under the
 // caller's session.
-func (s *Server) fetchExtractedFile(ref SessionRef, filePath string) ([]byte, error) {
+func (s *Server) fetchExtractedFile(ctx context.Context, ref SessionRef, filePath string) ([]byte, error) {
 	endpoint := "/api/extracted-files/download/" + url.PathEscape(filePath)
-	body, _, err := s.newClient().GetRaw(endpoint, ref.sessionQueryParams())
+	body, _, err := s.newClient().GetRawContext(ctx, endpoint, ref.sessionQueryParams())
 	if err != nil {
 		return nil, fmt.Errorf("download %s: %w", filePath, err)
 	}
