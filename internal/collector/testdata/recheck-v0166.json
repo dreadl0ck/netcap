@@ -369,6 +369,7 @@
     "verification": "Capacity flush selects one oldest aggregate without allocating and sorting the full key set. Five focused race runs verified timestamp ordering, equal-time key ordering, conservation of all 20 matches across 18 capacity flushes, and local stale-probe qualification controls."
   },
   "chartBucketAggregation": {
+    "confinedInput": "TestChartJSONReadsPlainAuditAndRejectsBadPreferredSource verifies that JSON charts reject a symlinked preferred audit even when a valid plain audit exists. Focused WebUI and MCP chart race tests passed.",
     "sourceIntegrity": "TestChartJSONReadsPlainAuditAndRejectsBadPreferredSource verifies a numeric chart from plain audit output, HTTP 400 for an unknown type, and explicit failures for corrupt or wrong-type compressed audits even when plain output exists.",
     "verification": "JSON chart extraction retains a sum and count per time bucket instead of one value per record. TestChartDataBucketMeansPreserveRecordStatistics checks 4097 records across two buckets, with means of 20 and 40 and unchanged min, max and average. TestChartJSONBucketLimitAndRetry verifies HTTP 422 at 65537 distinct buckets, rejection across merged captures, success at a coarser interval, and canceled scan admission. Focused WebUI and MCP chart tests passed under the race detector."
   },

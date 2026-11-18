@@ -115,6 +115,16 @@ func TestChartJSONReadsPlainAuditAndRejectsBadPreferredSource(t *testing.T) {
 	if w := query("TCP"); w.Code != http.StatusInternalServerError {
 		t.Fatalf("corrupt compressed audit: %d %s", w.Code, w.Body.String())
 	}
+	if err := os.Remove(compressed); err != nil {
+		t.Fatal(err)
+	}
+	linked := writeTimelineAuditFile(t, t.TempDir(), "TCP", types.Type_NC_TCP, rows)
+	if err := os.Symlink(linked, compressed); err != nil {
+		t.Fatal(err)
+	}
+	if w := query("TCP"); w.Code != http.StatusInternalServerError || !strings.Contains(w.Body.String(), "invalid artifact path") {
+		t.Fatalf("linked compressed audit: %d %s", w.Code, w.Body.String())
+	}
 }
 
 func TestChartFieldDiscoveryQualifiesPrefix(t *testing.T) {

@@ -36,6 +36,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -539,7 +540,11 @@ func (s *Server) extractChartData(ctx context.Context, filePath, auditType, fiel
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	reader, err := NewAuditRecordReader(filePath)
+	f, _, err := artifactio.Open(filepath.Dir(filePath), filepath.Base(filePath))
+	if err != nil {
+		return nil, fmt.Errorf("failed to open audit file: %w", err)
+	}
+	reader, err := auditRecordReaderFromFile(f, strings.HasSuffix(filePath, ".gz"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to open audit file: %w", err)
 	}
