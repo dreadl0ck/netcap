@@ -94,39 +94,56 @@ func capture(body io.Reader, encoding string) ([]byte, string) {
 	if err != nil || drainErr != nil {
 		state = "incomplete"
 	}
-	var reader io.Reader = bytes.NewReader(wire)
-	var closer io.Closer
-	switch strings.ToLower(strings.TrimSpace(encoding)) {
-	case "", "identity":
-	case "gzip":
-		r, e := gzip.NewReader(reader)
-		if e != nil {
-			return nil, "decode-failed"
-		}
-		r.Multistream(false)
-		reader = r
-		closer = r
-	case "deflate":
-		r, e := zlib.NewReader(reader)
-		if e != nil {
-			return nil, "decode-failed"
-		}
-		reader = r
-		closer = r
-	default:
+	const maxLayers = 2
+	layers := strings.SplitN(encoding, ",", maxLayers+1)
+	if len(layers) > maxLayers {
 		return nil, "unsupported-encoding"
 	}
-	if closer != nil {
-		defer closer.Close()
+	for i, layer := range layers {
+		layers[i] = strings.ToLower(strings.TrimSpace(layer))
+		switch layers[i] {
+		case "identity", "gzip", "deflate":
+		case "":
+			if len(layers) != 1 {
+				return nil, "unsupported-encoding"
+			}
+		default:
+			return nil, "unsupported-encoding"
+		}
 	}
-	out, e := io.ReadAll(io.LimitReader(reader, MaxPrefix+1))
-	if len(out) > MaxPrefix {
-		out = out[:MaxPrefix]
-		state = "truncated"
-	} else if e != nil {
-		return nil, "decode-failed"
+	for i := len(layers) - 1; i >= 0; i-- {
+		var reader io.ReadCloser
+		switch layers[i] {
+		case "gzip":
+			var r *gzip.Reader
+			r, err = gzip.NewReader(bytes.NewReader(wire))
+			if err == nil {
+				r.Multistream(false)
+				reader = r
+			}
+		case "deflate":
+			reader, err = zlib.NewReader(bytes.NewReader(wire))
+		default:
+			continue
+		}
+		if err != nil {
+			return nil, "decode-failed"
+		}
+		wire, err = io.ReadAll(io.LimitReader(reader, MaxPrefix+1))
+		reader.Close()
+		if len(wire) > MaxPrefix {
+			for _, inner := range layers[:i] {
+				if inner != "identity" {
+					return nil, "truncated"
+				}
+			}
+			return wire[:MaxPrefix], "truncated"
+		}
+		if err != nil {
+			return nil, "decode-failed"
+		}
 	}
-	return out, state
+	return wire, state
 }
 
 func (e *Engine) Observe(o Observation) Report {

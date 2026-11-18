@@ -3,6 +3,7 @@ package webtech
 import (
 	"bytes"
 	"compress/gzip"
+	"compress/zlib"
 	"encoding/json"
 	"errors"
 	"io"
@@ -13,6 +14,40 @@ import (
 )
 
 type failedWireBody struct{}
+
+func TestCaptureBoundedContentEncodingStack(t *testing.T) {
+	encode := func(data []byte) []byte {
+		t.Helper()
+		var inner, outer bytes.Buffer
+		gz := gzip.NewWriter(&inner)
+		if _, err := gz.Write(data); err != nil {
+			t.Fatal(err)
+		}
+		if err := gz.Close(); err != nil {
+			t.Fatal(err)
+		}
+		z := zlib.NewWriter(&outer)
+		if _, err := z.Write(inner.Bytes()); err != nil {
+			t.Fatal(err)
+		}
+		if err := z.Close(); err != nil {
+			t.Fatal(err)
+		}
+		return outer.Bytes()
+	}
+	plain := []byte("<html>fixture</html>")
+	wire := encode(plain)
+	body, state := capture(bytes.NewReader(wire), "GZip, Deflate")
+	if !bytes.Equal(body, plain) || state != "complete" {
+		t.Fatalf("decoded %q, state %s", body, state)
+	}
+	if body, state := capture(bytes.NewReader(wire), "gzip, deflate, identity"); body != nil || state != "unsupported-encoding" {
+		t.Fatalf("over-depth body: %d bytes, state %s", len(body), state)
+	}
+	if body, state := capture(bytes.NewReader(encode(bytes.Repeat([]byte("x"), MaxPrefix+1))), "gzip, deflate"); len(body) != MaxPrefix || state != "truncated" {
+		t.Fatalf("oversized decoded body: %d bytes, state %s", len(body), state)
+	}
+}
 
 func (failedWireBody) Read([]byte) (int, error) { return 0, io.ErrUnexpectedEOF }
 
