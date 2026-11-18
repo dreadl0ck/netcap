@@ -60,6 +60,26 @@ func TestBudgetedPrefixReleasesOnInterruptedSource(t *testing.T) {
 	budget.Release(int64(cap(prefix)))
 }
 
+func TestBudgetedResidentPrefixStopsAtGapWithinTightBudget(t *testing.T) {
+	source := SliceSource{
+		&StreamData{RawData: []byte("GET ")},
+		&StreamData{RawData: []byte("/x")},
+		&StreamData{SkippedBytes: 1, RawData: []byte("other")},
+	}
+	budget, err := NewStateBudget(6, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prefix, err := ReadBudgetedSourcePrefix(source, 16<<10, budget)
+	if err != nil || string(prefix) != "GET /x" || cap(prefix) != 6 {
+		t.Fatalf("prefix=%q capacity=%d error=%v", prefix, cap(prefix), err)
+	}
+	budget.Release(int64(cap(prefix)))
+	if h := budget.Health(); h.Exceeded || h.PeakBytes != 6 || h.RetainedBytes != 0 {
+		t.Fatalf("prefix credits: %+v", h)
+	}
+}
+
 func BenchmarkReadSourcePrefixSingleFragment(b *testing.B) {
 	source := SliceSource{&StreamData{RawData: make([]byte, 96)}}
 	b.ReportAllocs()

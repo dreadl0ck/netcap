@@ -1,5 +1,7 @@
 package core
 
+import "errors"
+
 func ReadSourcePrefix(source FragmentSource, limit int) ([]byte, error) {
 	return readSourcePrefix(source, limit, nil)
 }
@@ -38,16 +40,19 @@ func readSourcePrefix(source FragmentSource, limit int, reserve func(int64) erro
 	}
 	var prefix []byte
 	var reserveErr error
+	capacity := limit
+	if resident, ok := source.(SliceSource); ok && count > 1 {
+		capacity = residentPrefixSize(resident, limit)
+	}
 	err := source.Walk(func(fragment DataFragment) bool {
 		if fragment == nil {
 			return true
 		}
-		if data, ok := fragment.(*StreamData); ok && len(prefix) > 0 && (data.SkippedBytes != 0 || data.DiscardedBytes > 0) {
+		if len(prefix) > 0 && breaksSourcePrefix(fragment) {
 			return false
 		}
 		raw := fragment.Raw()
 		if len(raw) > 0 && prefix == nil {
-			capacity := limit
 			if count == 1 {
 				capacity = min(limit, len(raw))
 			}
@@ -58,11 +63,38 @@ func readSourcePrefix(source FragmentSource, limit int, reserve func(int64) erro
 			}
 			prefix = make([]byte, 0, capacity)
 		}
-		prefix = append(prefix, raw[:min(len(raw), limit-len(prefix))]...)
+		n := min(len(raw), limit-len(prefix))
+		if n > cap(prefix)-len(prefix) {
+			reserveErr = errors.New("fragment source changed during prefix read")
+			return false
+		}
+		prefix = append(prefix, raw[:n]...)
 		return len(prefix) < limit
 	})
 	if err == nil {
 		err = reserveErr
 	}
 	return prefix, err
+}
+
+func residentPrefixSize(source SliceSource, limit int) int {
+	size := 0
+	for _, fragment := range source {
+		if fragment == nil {
+			continue
+		}
+		if size > 0 && breaksSourcePrefix(fragment) {
+			break
+		}
+		size += min(len(fragment.Raw()), limit-size)
+		if size == limit {
+			break
+		}
+	}
+	return size
+}
+
+func breaksSourcePrefix(fragment DataFragment) bool {
+	data, ok := fragment.(*StreamData)
+	return ok && (data.SkippedBytes != 0 || data.DiscardedBytes > 0)
 }
