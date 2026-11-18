@@ -140,3 +140,32 @@ func TestArtifactBudgetReservations(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestReadBodyExactFitAtSharedBudget(t *testing.T) {
+	cfg := GetDefaultConfig()
+	cfg.FileExtraction.SizeLimits.MaxFileSize = 4096
+	cfg.FileExtraction.SizeLimits.MaxInflightBytes = 512
+	old := GetGlobalConfig()
+	SetGlobalConfig(cfg)
+	defer SetGlobalConfig(old)
+	if err := StartAnalysis(t.TempDir(), "fixture"); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if _, err := FinishAnalysis(); err != nil {
+			t.Error(err)
+		}
+	}()
+	want := bytes.Repeat([]byte("x"), 512)
+	for _, extra := range []bool{false, true} {
+		input := bytes.Clone(want)
+		if extra {
+			input = append(input, 'y')
+		}
+		body, release, err := ReadBody(bytes.NewReader(input))
+		release()
+		if !bytes.Equal(body, want) || (!extra && err != nil) || (extra && !errors.Is(err, errSharedArtifactBudget)) {
+			t.Fatalf("extra=%t: len=%d err=%v", extra, len(body), err)
+		}
+	}
+}

@@ -66,7 +66,26 @@ func ReadBodyLimit(r io.Reader, limit int64) (body []byte, release func(), err e
 		}
 	}()
 	for {
+		var fullErr error
 		if int64(len(body)) == limit {
+			fullErr = fmt.Errorf("%w: per-file %d", ErrArtifactLimit, limit)
+		} else if len(body) == cap(body) {
+			next := min(limit, max(int64(512), int64(cap(body))*2))
+			if e := reserveBuffer(next); e != nil {
+				if len(body) == 0 {
+					return body, release, e
+				}
+				fullErr = e
+			} else {
+				grown := make([]byte, len(body), int(next))
+				copy(grown, body)
+				releaseBuffer(reserved)
+				reserved = next
+				body = grown
+			}
+		}
+		if fullErr != nil {
+			// Readers may report EOF on the next read after filling the buffer.
 			var extra [1]byte
 			n, e := r.Read(extra[:])
 			if n == 0 && e == nil {
@@ -77,23 +96,12 @@ func ReadBodyLimit(r io.Reader, limit int64) (body []byte, release func(), err e
 				continue
 			}
 			if n > 0 {
-				return body, release, fmt.Errorf("%w: per-file %d", ErrArtifactLimit, limit)
+				return body, release, fullErr
 			}
 			if e == io.EOF {
 				e = nil
 			}
 			return body, release, e
-		}
-		if len(body) == cap(body) {
-			next := min(limit, max(int64(512), int64(cap(body))*2))
-			if e := reserveBuffer(next); e != nil {
-				return body, release, e
-			}
-			grown := make([]byte, len(body), int(next))
-			copy(grown, body)
-			releaseBuffer(reserved)
-			reserved = next
-			body = grown
 		}
 		n, e := r.Read(body[len(body):cap(body)])
 		body = body[:len(body)+n]
