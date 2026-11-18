@@ -116,13 +116,11 @@ func decodeSpoolLayer(body *BodySpool, kind string) (*BodySpool, error) {
 		}
 		reader, closer = r, r
 	case "deflate":
-		r, err := zlib.NewReader(body.Reader())
-		if err == nil {
-			reader, closer = r, r
-		} else {
-			raw := flate.NewReader(body.Reader())
-			reader, closer = raw, raw
+		r, err := openDeflateReader(body.Reader)
+		if err != nil {
+			return nil, err
 		}
+		reader, closer = r, r
 	case "base64":
 		reader = base64.NewDecoder(base64.StdEncoding, body.Reader())
 	case "br":
@@ -132,4 +130,12 @@ func decodeSpoolLayer(body *BodySpool, kind string) (*BodySpool, error) {
 		defer closer.Close()
 	}
 	return SpoolBody(reader)
+}
+
+func openDeflateReader(open func() io.Reader) (io.ReadCloser, error) {
+	r, err := zlib.NewReader(open())
+	if errors.Is(err, zlib.ErrHeader) {
+		return flate.NewReader(open()), nil
+	}
+	return r, err
 }

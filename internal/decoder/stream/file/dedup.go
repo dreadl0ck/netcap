@@ -21,8 +21,6 @@ package file
 
 import (
 	"bytes"
-	"compress/flate"
-	"compress/zlib"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -217,13 +215,11 @@ func decodeByteLayer(body []byte, kind string, limit int64) (decoded []byte, rel
 		}
 		reader, closer = r, r
 	case "deflate":
-		r, err := zlib.NewReader(bytes.NewReader(body))
-		if err == nil {
-			reader, closer = r, r
-		} else {
-			raw := flate.NewReader(bytes.NewReader(body))
-			reader, closer = raw, raw
+		r, err := openDeflateReader(func() io.Reader { return bytes.NewReader(body) })
+		if err != nil {
+			return nil, nil, err
 		}
+		reader, closer = r, r
 	case "base64":
 		reader = base64.NewDecoder(base64.StdEncoding, bytes.NewReader(body))
 	case "br":

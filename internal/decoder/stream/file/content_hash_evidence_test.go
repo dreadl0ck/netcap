@@ -134,6 +134,41 @@ func TestByteBackedDecodeRespectsSharedCodecBudget(t *testing.T) {
 	}
 }
 
+func TestDeflateDictionaryRequirementPreservesWireEvidence(t *testing.T) {
+	spoolTestConfig(t)
+	var encoded bytes.Buffer
+	w, err := zlib.NewWriterLevelDict(&encoded, zlib.DefaultCompression, []byte("shared fixture dictionary"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.WriteString(w, "shared fixture dictionary payload"); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	wire := encoded.Bytes()
+	info, err := ComputeContentHashWithLimit(wire, []string{"deflate"}, 1024)
+	if info.release != nil {
+		defer info.release()
+	}
+	if !errors.Is(err, zlib.ErrDictionary) || !bytes.Equal(info.DecodedContent, wire) || info.Hash != ComputeHashes(wire).SHA256 {
+		t.Fatalf("byte-backed dictionary handling: %v", err)
+	}
+	spool, err := SpoolBody(bytes.NewReader(wire))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer spool.Close()
+	decoded, err := decodeSpoolLayer(spool, "deflate")
+	if decoded != nil {
+		defer decoded.Close()
+	}
+	if decoded != nil || !errors.Is(err, zlib.ErrDictionary) {
+		t.Fatalf("spooled dictionary handling: decoded=%t err=%v", decoded != nil, err)
+	}
+}
+
 func TestContentHashFailuresRetainWireEvidence(t *testing.T) {
 	body := []byte(strings.Repeat("fixture", 100))
 	gz := encodedFixture(t, body, "gzip")
