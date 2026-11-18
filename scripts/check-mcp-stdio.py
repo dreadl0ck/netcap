@@ -109,6 +109,14 @@ async def check(binary, capture, data_dir):
                 break
         if len(body) != int(expected["length"]) or hashlib.sha256(body).hexdigest() != expected["sha256"]:
             raise ValueError("directional evidence differs from its manifest")
+        for offset in (len(body), len(body) + 1):
+            end = await call("get_stream_content", target | {"offset": offset, "manifestSHA256": manifest_hash})
+            if (end["data"] != "" or end["hasMore"] or end["offset"] != offset
+                    or int(end["totalBytes"]) != len(body) or end["manifestSHA256"] != manifest_hash):
+                raise ValueError("terminal directional page lost its empty data or verified identity")
+        unbound = await client.call_tool("get_stream_content", target | {"offset": 1})
+        if not unbound.isError:
+            raise ValueError("unbound directional continuation accepted")
         stale_stream = await client.call_tool("get_stream_content", target | {"offset": 1, "manifestSHA256": "0" * 64})
         if not stale_stream.isError:
             raise ValueError("changed stream manifest digest accepted")
