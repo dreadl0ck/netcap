@@ -31,6 +31,7 @@ type OrderedStream struct {
 	engine     *Engine
 	scope      string
 	pending    []pendingRecord
+	unsorted   bool
 	minPending int64
 	bytes      int
 	watermark  int64
@@ -106,7 +107,11 @@ func (s *OrderedStream) pushScoped(scope string, record types.AuditRecord) error
 	if ts := record.Time(); len(s.pending) == 0 || ts < s.minPending {
 		s.minPending = ts
 	}
-	s.pending = append(s.pending, pendingRecord{scope: scope, record: proto.Clone(message).(types.AuditRecord), wire: wire, charge: charge})
+	pending := pendingRecord{scope: scope, record: proto.Clone(message).(types.AuditRecord), wire: wire, charge: charge}
+	if n := len(s.pending); n > 0 && !s.unsorted {
+		s.unsorted = pendingBefore(pending, s.pending[n-1])
+	}
+	s.pending = append(s.pending, pending)
 	s.bytes += charge
 	return nil
 }
@@ -147,6 +152,7 @@ func (s *OrderedStream) observeScoped(scope string, record types.AuditRecord) (i
 func (s *OrderedStream) fail(err error) {
 	s.err = err
 	s.pending = nil
+	s.unsorted = false
 	s.bytes = 0
 	s.minPending = 0
 }
@@ -158,6 +164,19 @@ func (s *OrderedStream) Advance(watermark int64) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.advance(watermark)
+}
+
+func pendingBefore(a, b pendingRecord) bool {
+	if a.record.Time() != b.record.Time() {
+		return a.record.Time() < b.record.Time()
+	}
+	if a.record.NetcapType() != b.record.NetcapType() {
+		return a.record.NetcapType() < b.record.NetcapType()
+	}
+	if order := bytes.Compare(a.wire, b.wire); order != 0 {
+		return order < 0
+	}
+	return a.scope < b.scope
 }
 
 func (s *OrderedStream) advance(watermark int64) (int, error) {
@@ -174,19 +193,10 @@ func (s *OrderedStream) advance(watermark int64) (int, error) {
 		s.watermark = watermark
 		return 0, nil
 	}
-	sort.SliceStable(s.pending, func(i, j int) bool {
-		a, b := s.pending[i], s.pending[j]
-		if a.record.Time() != b.record.Time() {
-			return a.record.Time() < b.record.Time()
-		}
-		if a.record.NetcapType() != b.record.NetcapType() {
-			return a.record.NetcapType() < b.record.NetcapType()
-		}
-		if order := bytes.Compare(a.wire, b.wire); order != 0 {
-			return order < 0
-		}
-		return a.scope < b.scope
-	})
+	if s.unsorted {
+		sort.SliceStable(s.pending, func(i, j int) bool { return pendingBefore(s.pending[i], s.pending[j]) })
+		s.unsorted = false
+	}
 	count, consumed := 0, 0
 	for _, p := range s.pending {
 		if p.record.Time() > watermark {

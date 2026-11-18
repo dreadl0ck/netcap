@@ -2,6 +2,7 @@ package rules
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -303,6 +304,66 @@ func TestOrderedHTTPRecordsWithMapsBreakTiesByScope(t *testing.T) {
 		}
 		if n, err := s.Finish(); n != 2 || err != nil || len(notes) != 2 || !strings.Contains(notes[0], `"scope":"fixture/a"`) {
 			t.Fatalf("noncanonical alert order: count=%d err=%v notes=%v", n, err, notes)
+		}
+	}
+}
+
+func TestOrderedStreamInterleavesPushAndAdvance(t *testing.T) {
+	var timestamps []int64
+	cfg := &Config{Rules: []*Rule{{Name: "fixture", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true}}}
+	s, err := NewOrderedStream(cfg, alertWriterFunc(func(a *types.Alert) error {
+		timestamps = append(timestamps, a.Timestamp)
+		return nil
+	}), "fixture")
+	if err != nil {
+		t.Fatal(err)
+	}
+	push := func(times ...int64) {
+		for _, ts := range times {
+			if err := s.Push(&types.HTTP{Timestamp: ts, Method: "GET", URL: fmt.Sprint("/", ts)}); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	advance := func(ts int64) {
+		if _, err := s.Advance(ts); err != nil {
+			t.Fatal(err)
+		}
+	}
+	push(1, 3, 5)
+	advance(1)
+	push(4, 7)
+	advance(4)
+	push(6, 8)
+	advance(8)
+	if want := []int64{1, 3, 4, 5, 6, 7, 8}; !reflect.DeepEqual(timestamps, want) {
+		t.Fatalf("alert order %v, want %v", timestamps, want)
+	}
+}
+
+func BenchmarkOrderedStreamIncrementalDrain(b *testing.B) {
+	for b.Loop() {
+		s, err := NewOrderedStream(groupedConfig(), alertWriterFunc(func(*types.Alert) error { return nil }), "fixture")
+		if err != nil {
+			b.Fatal(err)
+		}
+		for i := range maxPendingRecords {
+			record := scopedTCP(0, "192.0.2.1")
+			record.Timestamp = int64(i + 1)
+			if err := s.Push(record); err != nil {
+				b.Fatal(err)
+			}
+		}
+		alerts := 0
+		for i := range maxPendingRecords {
+			n, err := s.Advance(int64(i + 1))
+			if err != nil {
+				b.Fatal(err)
+			}
+			alerts += n
+		}
+		if alerts != maxPendingRecords/50 {
+			b.Fatalf("unexpected alert count: %d", alerts)
 		}
 	}
 }
