@@ -1,14 +1,44 @@
 package webui
 
 import (
+	"bytes"
 	"encoding/json"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 )
+
+func TestStreamInventoryBoundsAggregateManifestReads(t *testing.T) {
+	out := t.TempDir()
+	padded := append(bytes.Repeat([]byte{' '}, 12<<20), []byte(`{"version":1,"spans":[]}`)...)
+	for _, id := range []string{"stream-a", "stream-b", "stream-c"} {
+		dir := filepath.Join(out, "stream-evidence", id)
+		if err := os.MkdirAll(dir, 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "manifest.json"), padded, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	s := &Server{outDir: out}
+	w := httptest.NewRecorder()
+	s.handleStreamEvidence(w, httptest.NewRequest("GET", "/api/investigation/streams", nil))
+	if w.Code != http.StatusUnprocessableEntity || !strings.Contains(w.Body.String(), "request an individual stream by ID") {
+		t.Fatalf("over-budget inventory: %d %s", w.Code, w.Body.String())
+	}
+	w = httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/api/investigation/streams?id=stream-c&direction=manifest", nil)
+	r.Header.Set("Range", "bytes=0-0")
+	s.handleStreamEvidence(w, r)
+	if w.Code != http.StatusPartialContent || w.Body.String() != " " {
+		t.Fatalf("individual stream read: %d %q", w.Code, w.Body.String())
+	}
+}
 
 func TestStreamEvidenceOrdersByCaptureIdentity(t *testing.T) {
 	for _, order := range [][]string{{"stream-z", "stream-a", "stream-m"}, {"stream-m", "stream-a", "stream-z"}} {

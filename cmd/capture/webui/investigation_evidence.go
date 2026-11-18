@@ -132,6 +132,8 @@ func (s *Server) handleStreamEvidence(w http.ResponseWriter, r *http.Request) {
 			SpansOmitted bool                               `json:"spansOmitted"`
 		}
 		rows := []row{}
+		const manifestLimit = 16 << 20
+		remaining := int64(32 << 20)
 		for _, entry := range entries {
 			if !entry.IsDir() || !strings.HasPrefix(entry.Name(), "stream-") {
 				continue
@@ -140,12 +142,13 @@ func (s *Server) handleStreamEvidence(w http.ResponseWriter, r *http.Request) {
 				streamutils.StreamEvidenceManifest
 				Spans []struct{} `json:"spans"`
 			}
-			data, err := artifactio.Read(r.Context(), out, filepath.Join("stream-evidence", entry.Name(), "manifest.json"), 16<<20)
+			data, err := artifactio.Read(r.Context(), out, filepath.Join("stream-evidence", entry.Name(), "manifest.json"), min(manifestLimit, remaining))
 			if err == nil {
+				remaining -= int64(len(data))
 				err = json.Unmarshal(data, &summary)
 			}
 			if err != nil {
-				http.Error(w, "Incomplete stream evidence: "+err.Error(), http.StatusUnprocessableEntity)
+				http.Error(w, "Incomplete stream evidence: "+err.Error()+"; request an individual stream by ID", http.StatusUnprocessableEntity)
 				return
 			}
 			rows = append(rows, row{entry.Name(), summary.StreamEvidenceManifest, len(summary.Spans), true})
