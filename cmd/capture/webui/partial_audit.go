@@ -122,6 +122,24 @@ func partialAuditContext(r *http.Request) *sealedAuditQuery {
 	return value
 }
 
+func (q *sealedAuditQuery) openReader() (*AuditRecordReader, error) {
+	for _, sealed := range q.Stage.Files {
+		if sealed.Name != q.File {
+			continue
+		}
+		f, info, err := artifactio.Open(q.Directory, q.File)
+		if err != nil {
+			return nil, err
+		}
+		if info.Size() != sealed.Size {
+			f.Close()
+			return nil, fmt.Errorf("sealed audit output changed: size mismatch")
+		}
+		return auditRecordReaderFromFile(f, strings.HasSuffix(q.File, ".gz"))
+	}
+	return nil, fmt.Errorf("sealed audit output unavailable")
+}
+
 func withPartialAudit(r *http.Request, query *sealedAuditQuery) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), sealedAuditQueryKey{}, query))
 }

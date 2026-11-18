@@ -46,6 +46,34 @@ func partialAuditFixture(t *testing.T, service bool) (http.Handler, string, stri
 	return handler, capture.RunID(), snapshot.Generation, file
 }
 
+func TestPartialAuditReaderRejectsReplacementAfterAdmission(t *testing.T) {
+	for _, replacement := range []string{"link", "larger"} {
+		t.Run(replacement, func(t *testing.T) {
+			_, run, _, file := partialAuditFixture(t, false)
+			r := httptest.NewRequest("GET", "/api/audit/Connection/stream?sessionId=owned&allowPartial=true", nil)
+			sealed, err := preparePartialAudit(r, captureSelection{RunID: run, OutputDir: filepath.Dir(file)})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if replacement == "link" {
+				if err := os.Rename(file, file+".other"); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(filepath.Base(file)+".other", file); err != nil {
+					t.Fatal(err)
+				}
+			} else if err := os.Truncate(file, sealed.Stage.Files[0].Size+1); err != nil {
+				t.Fatal(err)
+			}
+			w := httptest.NewRecorder()
+			HandleAuditStream(w, withPartialAudit(r, sealed), file, "Connection")
+			if body := w.Body.String(); !strings.Contains(body, "event: error\n") || strings.Contains(body, "event: record\n") || strings.Contains(body, "event: complete\n") {
+				t.Fatalf("replacement admitted into audit stream: %s", body)
+			}
+		})
+	}
+}
+
 func TestPartialAuditAdmissionRequiresSealedExplicitQualifiedOutput(t *testing.T) {
 	for _, service := range []bool{false, true} {
 		t.Run(map[bool]string{false: "local", true: "service"}[service], func(t *testing.T) {

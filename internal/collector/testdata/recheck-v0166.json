@@ -175,6 +175,7 @@
     "verification": "Full Web UI race suite passes. Two focused tests pass ten repetitions under race instrumentation: replacement of a queued generation before completion, and shutdown while the timeline lane is occupied."
   },
   "sealedAuditQueryGeneration": {
+    "streamReopenChecks": "TestPartialAuditReaderRejectsReplacementAfterAdmission verifies that a symlink or a size change introduced after verification yields an SSE error without records or a completion event. The focused WebUI partial-audit race tests passed.",
     "variablePageSize": "The official portable MCP harness passed 177 calls across 84 of 119 tools with no failures. A sealed UDP continuation changes the page size from 1 to 17 without changing the query generation; the concatenated records match a single 18-record query exactly.",
     "selectorLockScope": "Capture selection snapshots local ownership and output under the server read lock and releases it before reading the run manifest. Run validation uses a confined, cancelable read. Focused capture-selection, reanalysis and partial-query race tests passed.",
     "initialManifestAdmission": "Initial sealed queries acquire a verification slot before resolving a missing run ID from the capture manifest. Local and service race cases verify HTTP 429 before manifest lookup at saturation and preserve HTTP 409 for changed continuations.",

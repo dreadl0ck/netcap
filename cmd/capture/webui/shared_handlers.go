@@ -608,7 +608,13 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 		flusher.Flush()
 		return
 	}
-	auditReader, err := NewAuditRecordReader(filePath)
+	var auditReader *AuditRecordReader
+	var err error
+	if sealed := partialAuditContext(r); sealed != nil {
+		auditReader, err = sealed.openReader()
+	} else {
+		auditReader, err = NewAuditRecordReader(filePath)
+	}
 	if err != nil {
 		log.Printf("[WebUI] Failed to open audit record file %s: %v", filePath, err)
 		if err == io.EOF {
