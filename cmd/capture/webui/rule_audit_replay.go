@@ -13,7 +13,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func scanRuleAudit(dir, auditType string, stop <-chan struct{}, visit func(types.AuditRecord) error) (int, error) {
+func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit func(types.AuditRecord) error) (int, error) {
 	auditType = strings.TrimPrefix(auditType, "NC_")
 	want, ok := types.Type_value["NC_"+auditType]
 	if !ok {
@@ -43,6 +43,8 @@ func scanRuleAudit(dir, auditType string, stop <-chan struct{}, visit func(types
 		select {
 		case <-stop:
 			return count, errAnalysisStopping
+		case <-shutdown:
+			return count, errAnalysisStopping
 		default:
 		}
 		record, err := reader.NextRecord()
@@ -64,7 +66,7 @@ func scanRuleAudit(dir, auditType string, stop <-chan struct{}, visit func(types
 }
 
 func replayRuleAudit(dir, auditType string, stop <-chan struct{}, replay *rules.AuditReplay) (alerts, count int, err error) {
-	count, err = scanRuleAudit(dir, auditType, stop, func(record types.AuditRecord) error {
+	count, err = scanRuleAudit(dir, auditType, stop, nil, func(record types.AuditRecord) error {
 		n, err := replay.Evaluate(record)
 		alerts += n
 		return err
@@ -78,6 +80,13 @@ func replayRuleAudit(dir, auditType string, stop <-chan struct{}, replay *rules.
 }
 
 func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-chan struct{}) (results []RuleExecResult, err error) {
+	select {
+	case <-stop:
+		return nil, errAnalysisStopping
+	case <-s.shutdownChan:
+		return nil, errAnalysisStopping
+	default:
+	}
 	release, available := leaseOfflineMutation(dir)
 	if !available {
 		return nil, fmt.Errorf("capture output is busy")
@@ -115,7 +124,7 @@ func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-ch
 		if !active {
 			continue
 		}
-		_, scanErr := scanRuleAudit(dir, typ, stop, func(record types.AuditRecord) error {
+		_, scanErr := scanRuleAudit(dir, typ, stop, s.shutdownChan, func(record types.AuditRecord) error {
 			for _, i := range group {
 				if results[i].Error != "" {
 					continue

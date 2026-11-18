@@ -21,6 +21,7 @@ package webui
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -948,8 +949,11 @@ func (s *Server) handleExecuteRule(w http.ResponseWriter, r *http.Request) {
 
 	// Execute the rule
 	startTime := time.Now()
-	alertsCount, recordsRead, err := s.executeRuleOnCapture(targetRule, outDir)
+	results, err := s.replayManualRules(outDir, []*rules.Rule{targetRule}, r.Context().Done())
 	executionTime := time.Since(startTime).Milliseconds()
+	if err == nil && !results[0].Success {
+		err = errors.New(results[0].Error)
+	}
 
 	if err != nil {
 		log.Printf("[WebUI] Failed to execute rule: %v", err)
@@ -958,6 +962,7 @@ func (s *Server) handleExecuteRule(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	alertsCount, recordsRead := results[0].AlertsCount, results[0].RecordsRead
 
 	log.Printf("[WebUI] Executed rule %s: %d alerts from %d records in %dms",
 		req.RuleID, alertsCount, recordsRead, executionTime)
@@ -1064,46 +1069,4 @@ func (s *Server) handleExecuteAllRules(w http.ResponseWriter, r *http.Request) {
 		ExecutionTime: executionTime,
 		RuleResults:   results,
 	})
-}
-
-// executeRuleOnCapture executes a single rule against all relevant audit records in the output directory
-func (s *Server) executeRuleOnCapture(rule *rules.Rule, outDir string) (alertsCount int, recordsRead int, err error) {
-	release, available := leaseOfflineMutation(outDir)
-	if !available {
-		return 0, 0, fmt.Errorf("capture output is busy")
-	}
-	defer release()
-	// Create a temporary config with just this rule
-	tempConfig := &rules.Config{
-		Rules: []*rules.Rule{rule},
-	}
-
-	// Compile the rule if not already compiled
-	if err := rules.CompileRules(tempConfig); err != nil {
-		return 0, 0, fmt.Errorf("failed to compile rule: %w", err)
-	}
-
-	// Create alert writer for the output directory
-	alertWriter, err := rules.NewFileAlertWriter(outDir)
-	if err != nil {
-		return 0, 0, fmt.Errorf("failed to create alert writer: %w", err)
-	}
-	defer func() {
-		if closeErr := alertWriter.Close(); closeErr != nil && err == nil {
-			err = fmt.Errorf("failed to close alert writer: %w", closeErr)
-		}
-	}()
-
-	// Ensure the output directory exists
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		return 0, 0, fmt.Errorf("failed to create output directory: %w", err)
-	}
-
-	// Initialize engine with our config
-	engine, err := rules.NewAuditReplay(tempConfig, alertWriter)
-	if err != nil {
-		return 0, 0, fmt.Errorf("failed to create rules engine: %w", err)
-	}
-
-	return replayRuleAudit(outDir, rule.Type, s.shutdownChan, engine)
 }

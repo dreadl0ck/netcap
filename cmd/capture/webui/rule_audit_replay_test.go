@@ -47,8 +47,31 @@ func TestRuleAuditRejectsMissingRecordBody(t *testing.T) {
 	if err := errors.Join(err, f.Close()); err != nil {
 		t.Fatal(err)
 	}
-	count, err := scanRuleAudit(dir, "HTTP", nil, func(types.AuditRecord) error { return nil })
+	count, err := scanRuleAudit(dir, "HTTP", nil, nil, func(types.AuditRecord) error { return nil })
 	if count != 1 || !errors.Is(err, io.ErrUnexpectedEOF) {
 		t.Fatal(count, err)
+	}
+}
+
+func TestManualRuleReplayStopsOnRequestOrShutdown(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}, &types.HTTP{Method: "GET"}})
+	for _, shutdown := range []bool{false, true} {
+		done := make(chan struct{})
+		s, request := &Server{}, done
+		if shutdown {
+			s.shutdownChan, request = done, nil
+		}
+		count, err := scanRuleAudit(dir, "HTTP", request, s.shutdownChan, func(types.AuditRecord) error {
+			close(done)
+			return nil
+		})
+		if count != 1 || !errors.Is(err, errAnalysisStopping) {
+			t.Fatalf("shutdown=%t: count=%d, err=%v", shutdown, count, err)
+		}
+		selected := []*rules.Rule{{Name: "get", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true}}
+		if results, err := s.replayManualRules(dir, selected, request); len(results) != 0 || !errors.Is(err, errAnalysisStopping) {
+			t.Fatalf("shutdown=%t: canceled replay admitted: %v, %v", shutdown, results, err)
+		}
 	}
 }

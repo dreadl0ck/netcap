@@ -317,6 +317,9 @@
   "captureTimeWatermarkFastPath": {
     "verification": "BenchmarkOrderedStreamEqualTime admits 4096 equal-time TCP records and checks 81 alerts at EOF. Three portable Apple M5 Max runs measured 84.5–91.5 ms before and 19.7–20.3 ms after skipping redundant sorts at the committed watermark. Focused scoped, capture-time, ordered and audit replay tests passed under the race detector."
   },
+  "manualRuleReplayCancellation": {
+    "verification": "Single-rule and batch handlers share one typed replay runner. TestManualRuleReplayStopsOnRequestOrShutdown verifies both signals prevent admission and stop the scan after the first record of a two-record fixture. Focused replay, corrupt alert history and analysis completion tests passed under the race detector."
+  },
   "networkAlertCapacityFlush": {
     "verification": "Capacity flush selects one oldest aggregate without allocating and sorting the full key set. Five focused race runs verified timestamp ordering, equal-time key ordering, conservation of all 20 matches across 18 capacity flushes, and local stale-probe qualification controls."
   },

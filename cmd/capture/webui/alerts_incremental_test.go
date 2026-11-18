@@ -52,10 +52,10 @@ func TestExecuteRuleRejectsCorruptAlertHistory(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := &Server{}
-	count, _, err := s.executeRuleOnCapture(&rules.Rule{
+	results, err := s.replayManualRules(dir, []*rules.Rule{{
 		Name: "ssh", Type: "TCP", Expression: "DstPort == 22", Enabled: true,
-	}, dir)
-	if err == nil || count != 0 {
-		t.Fatalf("corrupt history returned success: count=%d, error=%v", count, err)
+	}}, nil)
+	if err == nil || len(results) != 0 {
+		t.Fatalf("corrupt history admitted replay: results=%v, error=%v", results, err)
 	}
 }
