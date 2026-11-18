@@ -47,6 +47,19 @@ func partialAuditFixture(t *testing.T, service bool) (http.Handler, string, stri
 	return handler, capture.RunID(), snapshot.Generation, file
 }
 
+type failedAuditFlush struct{ *httptest.ResponseRecorder }
+
+func (failedAuditFlush) FlushError() error { return errors.New("fixture: client disconnected") }
+
+func TestPartialAuditStopsAfterFailedFlush(t *testing.T) {
+	handler, _, _, _ := partialAuditFixture(t, false)
+	w := failedAuditFlush{httptest.NewRecorder()}
+	handler.ServeHTTP(w, httptest.NewRequest("GET", "/api/audit/Connection/stream?sessionId=owned&allowPartial=true", nil))
+	if body := w.Body.String(); strings.Count(body, "event: record\n") != 1 || strings.Contains(body, "event: complete\n") {
+		t.Fatalf("stream continued after flush failure: %s", body)
+	}
+}
+
 func TestPartialAuditCommunityFilterUsesVerifiedStream(t *testing.T) {
 	handler, _, _, file := partialAuditFixture(t, false)
 	w := httptest.NewRecorder()

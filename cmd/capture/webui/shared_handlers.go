@@ -680,6 +680,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	matchedCount := 0
 	pageBytes := 0
 	pageFull := false
+	response := http.NewResponseController(w)
 
 	for {
 		if r.Context().Err() != nil {
@@ -780,14 +781,20 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			if _, err := fmt.Fprintf(w, "event: record\ndata: %s\n\n", jsonData); err != nil {
 				return
 			}
-			flusher.Flush()
+			if err := response.Flush(); err != nil {
+				return
+			}
 
 			count++
 
 			// Send progress update every 100 records returned
 			if count%100 == 0 {
-				fmt.Fprintf(w, "event: progress\ndata: {\"count\": %d, \"scanned\": %d}\n\n", count, totalScanned)
-				flusher.Flush()
+				if _, err := fmt.Fprintf(w, "event: progress\ndata: {\"count\": %d, \"scanned\": %d}\n\n", count, totalScanned); err != nil {
+					return
+				}
+				if err := response.Flush(); err != nil {
+					return
+				}
 			}
 		}
 
