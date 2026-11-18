@@ -304,6 +304,34 @@ func TestCatalogueFieldContractMatchesSupportedSchemas(t *testing.T) {
 	}
 }
 
+func TestAnalystAuditHeaderBudget(t *testing.T) {
+	source, _ := fixture(t, "header-limit")
+	for _, over := range []bool{false, true} {
+		header := &types.Header{Type: types.Type_NC_Connection, InputSource: strings.Repeat("x", maxAuditHeaderBytes)}
+		header.InputSource = header.InputSource[:len(header.InputSource)-(header.Size()-maxAuditHeaderBytes)]
+		if over {
+			header.InputSource += "x"
+		}
+		f, err := os.Create(filepath.Join(source.Directory, "Connection.ncap.gz"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		z := gzip.NewWriter(f)
+		w := delimited.NewWriter(z)
+		if err := errors.Join(w.PutProto(header), w.PutProto(&types.Connection{}), z.Close(), f.Close()); err != nil {
+			t.Fatal(err)
+		}
+		seen := 0
+		err = Walk(t.Context(), source.Directory, source.Binding, "Connection", func(Reference, proto.Message) error {
+			seen++
+			return nil
+		})
+		if over && (!errors.Is(err, delimited.ErrRecordLimit) || seen != 0) || !over && (err != nil || seen != 1) {
+			t.Fatalf("header=%d bytes: visited %d records, error %v", header.Size(), seen, err)
+		}
+	}
+}
+
 func TestAnalystRecordAndJSONBounds(t *testing.T) {
 	source, _ := fixture(t, "record-limit")
 	f, err := os.Create(filepath.Join(source.Directory, "Connection.ncap.gz"))

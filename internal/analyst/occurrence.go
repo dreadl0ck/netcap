@@ -25,6 +25,7 @@ import (
 
 const MaxRecords = 100000
 const MaxDecodedBytes int64 = 128 << 20
+const maxAuditHeaderBytes = 1 << 20
 
 var ErrStale = errors.New("analyst evidence binding is stale")
 
@@ -191,7 +192,7 @@ func walk(ctx context.Context, dir string, binding Binding, recordType string, v
 	}
 	r := delimited.NewReaderWithLimit(&budgetReader{ctx, input, MaxDecodedBytes}, 4<<20)
 	var header types.Header
-	if err = r.NextProto(&header); err != nil {
+	if err = r.NextProtoWithLimit(&header, maxAuditHeaderBytes); err != nil {
 		return err
 	}
 	if header.Type != types.Type(typeID) {
