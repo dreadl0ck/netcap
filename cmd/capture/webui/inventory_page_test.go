@@ -54,6 +54,22 @@ func TestCollectionPageRejectsIncompleteScans(t *testing.T) {
 	}
 }
 
+func TestHostTrafficPageRejectsOversizedAudit(t *testing.T) {
+	dir := t.TempDir()
+	s := &Server{outDir: dir}
+	writeTimelineAuditFile(t, dir, "Host", types.Type_NC_Host, []proto.Message{
+		&types.Host{Addr: "192.0.2.1"},
+		&types.Host{Addr: strings.Repeat("x", maxCollectionPageScanBytes)},
+	})
+	w := httptest.NewRecorder()
+	s.handleHosts(w, httptest.NewRequest(http.MethodGet, "/api/hosts?mcpPage=true&pageLimit=1", nil))
+	var body map[string]json.RawMessage
+	err := json.Unmarshal(w.Body.Bytes(), &body)
+	if w.Code != http.StatusRequestEntityTooLarge || err != nil || body["error"] == nil || body["hosts"] != nil || body["generation"] != nil {
+		t.Fatalf("expected a scan refusal without page metadata: %d %s", w.Code, w.Body)
+	}
+}
+
 func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
 	for _, tc := range []struct {
 		name string
@@ -151,7 +167,7 @@ func TestMCPAlertPagesShareCapacityThroughResponseWrite(t *testing.T) {
 	s := &Server{outDir: t.TempDir()}
 	routes := []struct {
 		path string
-		get http.HandlerFunc
+		get  http.HandlerFunc
 	}{{"/api/alerts", s.handleAlerts}, {"/api/alerts/grouped", s.handleGroupedAlerts}}
 	var finish []func()
 	for _, route := range routes {
@@ -177,7 +193,7 @@ func TestMCPAlertPagesShareCapacityThroughResponseWrite(t *testing.T) {
 	}
 	for _, route := range routes {
 		for _, tc := range []struct {
-			query string
+			query  string
 			status int
 		}{{"?mcpPage=true", http.StatusTooManyRequests}, {"", http.StatusOK}} {
 			w := httptest.NewRecorder()

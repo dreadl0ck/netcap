@@ -20,9 +20,11 @@
 package webui
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	stdio "io"
@@ -34,6 +36,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/artifactio"
+	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -111,8 +115,16 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 	switch view {
 	case "traffic":
 		var err error
-		hosts, err = readHosts(outDir)
+		if paged {
+			hosts, err = readHostTraffic(r.Context(), outDir)
+		} else {
+			hosts, err = readHosts(outDir)
+		}
 		if err != nil {
+			if errors.Is(err, errHostTrafficLimit) {
+				RespondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": err.Error()})
+				return
+			}
 			log.Printf("[WebUI] Failed to read IP profiles: %v", err)
 			http.Error(w, "Failed to read IP profiles", http.StatusInternalServerError)
 			return
@@ -165,32 +177,76 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 
 // readHosts reads and aggregates IPProfile data from the output directory
 func readHosts(outDir string) ([]HostSummary, error) {
-	filePath := filepath.Join(outDir, "Host.ncap.gz")
+	return readHostTraffic(nil, outDir)
+}
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] IPProfile file not found: %s", filePath)
+var errHostTrafficLimit = errors.New("host traffic audit exceeds page scan limits")
+
+func readHostTraffic(ctx context.Context, outDir string) ([]HostSummary, error) {
+	const name = "Host.ncap.gz"
+	var reader *AuditRecordReader
+	var err error
+	if ctx == nil {
+		reader, err = NewAuditRecordReader(filepath.Join(outDir, name))
+	} else {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		file, info, openErr := artifactio.Open(outDir, name)
+		if openErr != nil {
+			err = openErr
+		} else if info.Size() > maxCollectionPageScanBytes {
+			file.Close()
+			return nil, errHostTrafficLimit
+		} else {
+			reader, err = auditRecordReaderFromInput(file, io.NewSectionReader(file, 0, info.Size()), true, func(in io.Reader) io.Reader {
+				return auditContextReader{ctx: ctx, input: in}
+			})
+		}
+	}
+	if errors.Is(err, os.ErrNotExist) {
 		return []HostSummary{}, nil
 	}
-
-	// Read IPProfile records
-	reader, err := NewAuditRecordReader(filePath)
 	if err != nil {
 		return nil, err
 	}
 	defer reader.Close()
 
 	// Read header
-	_, err = reader.ReadHeader()
+	header, err := reader.ReadHeader()
 	if err != nil {
 		return nil, err
 	}
+	if ctx != nil && header.Type != types.Type_NC_Host {
+		return nil, fmt.Errorf("unexpected host traffic audit type %s", header.Type)
+	}
 
 	hosts := make([]HostSummary, 0)
+	remaining := maxCollectionPageScanBytes
 
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		var record any
+		if ctx == nil {
+			record, err = reader.NextRecord()
+		} else {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			frameLimit := remaining
+			if len(hosts) == maxCollectionPageRows {
+				frameLimit = 0
+			}
+			var raw []byte
+			raw, err = reader.delimitedReader.NextWithLimit(uint64(max(1, frameLimit)))
+			if errors.Is(err, delimited.ErrRecordLimit) || (err == nil && (len(raw) > frameLimit || len(hosts) == maxCollectionPageRows)) {
+				return nil, errHostTrafficLimit
+			}
+			if err == nil {
+				remaining -= len(raw)
+				record, err = reader.DecodeRecord(raw)
+			}
+		}
 		if err != nil {
 			if err == io.EOF {
 				break
