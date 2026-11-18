@@ -79,7 +79,7 @@ type alertStore struct {
 
 // Rule jobs in one process share a file; separate processes must use separate output directories.
 type alertStoreSlot struct {
-	sync.Mutex
+	gate  chan struct{}
 	store *alertStore
 	users int // guarded by alertStores
 }
@@ -90,43 +90,62 @@ var alertStores = struct {
 }{paths: make(map[string]*alertStoreSlot)}
 
 func lockAlertStore(path string) (*alertStoreSlot, func()) {
+	slot, unlock, _ := lockAlertStoreContext(context.Background(), path)
+	return slot, unlock
+}
+
+func lockAlertStoreContext(ctx context.Context, path string) (*alertStoreSlot, func(), error) {
+	if err := ctx.Err(); err != nil {
+		return nil, nil, err
+	}
 	alertStores.Lock()
 	slot := alertStores.paths[path]
 	if slot == nil {
-		slot = &alertStoreSlot{}
+		slot = &alertStoreSlot{gate: make(chan struct{}, 1)}
 		alertStores.paths[path] = slot
 	}
 	slot.users++
 	alertStores.Unlock()
-	slot.Lock()
-	return slot, func() {
+	release := func() {
 		alertStores.Lock()
 		slot.users--
+		// A holder and every waiter count as users, so zero permits reading store.
 		if slot.users == 0 && slot.store == nil {
 			delete(alertStores.paths, path)
 		}
-		slot.Unlock()
 		alertStores.Unlock()
 	}
+	select {
+	case slot.gate <- struct{}{}:
+	case <-ctx.Done():
+		release()
+		return nil, nil, ctx.Err()
+	}
+	unlock := func() { <-slot.gate; release() }
+	if err := ctx.Err(); err != nil {
+		unlock()
+		return nil, nil, err
+	}
+	return slot, unlock, nil
 }
 
 // NewFileAlertWriter validates existing history without retaining it in memory.
 // A new file is created only on the first alert.
 func NewFileAlertWriter(outputDir string) (*FileAlertWriter, error) {
-	return newFileAlertWriter(outputDir, validateAlertFile)
+	return NewFileAlertWriterContext(context.Background(), outputDir)
 }
 
-// NewFileAlertWriterContext allows cancellation of existing history validation.
+// NewFileAlertWriterContext allows cancellation of the setup wait and history validation.
 func NewFileAlertWriterContext(ctx context.Context, outputDir string) (*FileAlertWriter, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	return newFileAlertWriter(outputDir, func(file *os.File) error {
+	return newFileAlertWriter(ctx, outputDir, func(file *os.File) error {
 		return validateAlertHistory(ctx, file)
 	})
 }
 
-func newFileAlertWriter(outputDir string, validate func(*os.File) error) (*FileAlertWriter, error) {
+func newFileAlertWriter(ctx context.Context, outputDir string, validate func(*os.File) error) (*FileAlertWriter, error) {
 	if outputDir == "" {
 		outputDir = "."
 	}
@@ -142,7 +161,10 @@ func newFileAlertWriter(outputDir string, validate func(*os.File) error) (*FileA
 		return nil, err
 	}
 	path := filepath.Join(dir, "Alert.ncap.gz")
-	slot, unlock := lockAlertStore(path)
+	slot, unlock, err := lockAlertStoreContext(ctx, path)
+	if err != nil {
+		return nil, err
+	}
 	defer unlock()
 	store := slot.store
 	if store == nil {
@@ -164,6 +186,15 @@ func newFileAlertWriter(outputDir string, validate func(*os.File) error) (*FileA
 	}
 	store.mu.Lock()
 	defer store.mu.Unlock()
+	if err := ctx.Err(); err != nil {
+		if store.refs == 0 {
+			slot.store = nil
+			if store.file != nil {
+				err = errors.Join(err, store.file.Close())
+			}
+		}
+		return nil, err
+	}
 	if store.err != nil {
 		return nil, store.err
 	}

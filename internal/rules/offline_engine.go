@@ -543,7 +543,10 @@ func offlinePublish(ctx context.Context, directory string, root *os.Root, report
 // through the pinned root. A live legacy writer is an admission conflict.
 func newOfflineAlertWriter(ctx context.Context, root *os.Root, directory string) (*FileAlertWriter, error) {
 	path := filepath.Join(directory, "Alert.ncap.gz")
-	slot, unlock := lockAlertStore(path)
+	slot, unlock, err := lockAlertStoreContext(ctx, path)
+	if err != nil {
+		return nil, err
+	}
 	defer unlock()
 	if slot.store != nil {
 		return nil, fmt.Errorf("alert history has an active writer")

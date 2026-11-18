@@ -52,7 +52,7 @@ func TestAlertHistoryValidationCancellationLeavesHistoryIntact(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	w, err := newFileAlertWriter(dir, func(file *os.File) error {
+	w, err := newFileAlertWriter(ctx, dir, func(file *os.File) error {
 		input := &cancelAlertHistoryInput{input: file, cancel: cancel}
 		err := validateAlertHistory(ctx, input)
 		if input.reads != 1 {
@@ -89,7 +89,7 @@ func TestAlertHistoryValidationDoesNotBlockAnotherDataset(t *testing.T) {
 	unblock := sync.OnceFunc(func() { close(release) })
 	largeDone := make(chan error, 1)
 	go func() {
-		w, err := newFileAlertWriter(large, func(f *os.File) error {
+		w, err := newFileAlertWriter(t.Context(), large, func(f *os.File) error {
 			close(started)
 			<-release
 			return validateAlertFile(f)
@@ -127,6 +127,48 @@ func TestAlertHistoryValidationDoesNotBlockAnotherDataset(t *testing.T) {
 	unblock()
 	if err := <-largeDone; err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestAlertWriterSetupWaitCanCancel(t *testing.T) {
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "Alert.ncap.gz")
+	_, release := lockAlertStore(path)
+	unlock := sync.OnceFunc(release)
+	defer unlock()
+	ctx, cancel := context.WithTimeout(t.Context(), 25*time.Millisecond)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() {
+		w, err := NewFileAlertWriterContext(ctx, dir)
+		if w != nil {
+			err = errors.Join(err, errors.New("unexpected writer"), w.Close())
+		}
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("waiting writer: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("waiting writer did not cancel while the path was held")
+	}
+	unlock()
+	writer := openAlertWriter(t, dir)
+	if err := writer.WriteAlert(&types.Alert{RuleName: "retry"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	alertStores.Lock()
+	defer alertStores.Unlock()
+	if alertStores.paths[path] != nil {
+		t.Fatal("canceled waiter left a path reservation")
 	}
 }
 
