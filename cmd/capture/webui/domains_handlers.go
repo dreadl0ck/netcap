@@ -70,6 +70,7 @@ type DNSTransactionSummary struct {
 // maxRTTSamples bounds retained RTTs per domain; later samples are dropped.
 const maxRTTSamples = 10000
 const maxDomainRTTSamples = 250000
+const maxDomainAnswerAssociations = 1 << 20
 
 // DomainsResponse contains the list of domains
 type DomainsResponse struct {
@@ -152,6 +153,7 @@ func readDomainInventory(outDir string, budget *inventoryAuditBudget) ([]DomainS
 // readDNSDomains reads domains from DNS records
 func readDNSDomains(filePath string, domainMap map[string]*domainAggregator, budget *inventoryAuditBudget) error {
 	remainingRTT := maxDomainRTTSamples
+	remainingAssociations := maxDomainAnswerAssociations
 	// Read DNS records
 	reader, err := budget.open(filePath, types.Type_NC_DNS)
 	if err != nil {
@@ -232,6 +234,15 @@ func readDNSDomains(filePath string, domainMap map[string]*domainAggregator, bud
 		// Extract resolved IPs from answers
 		for _, answer := range dns.Answers {
 			if answer.IP != "" {
+				if budget != nil {
+					if err := budget.ctx.Err(); err != nil {
+						return err
+					}
+					if len(dns.Questions) > remainingAssociations {
+						return errInventoryAuditLimit
+					}
+					remainingAssociations -= len(dns.Questions)
+				}
 				// Find the domain this answer belongs to
 				for _, question := range dns.Questions {
 					domain := strings.ToLower(strings.TrimSuffix(question.Name, "."))

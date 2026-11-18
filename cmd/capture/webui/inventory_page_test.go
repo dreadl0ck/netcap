@@ -87,6 +87,34 @@ func TestHostTopPortsKeepStableCutoff(t *testing.T) {
 	}
 }
 
+func TestDomainInventoryBoundsAnswerAssociations(t *testing.T) {
+	dir := t.TempDir()
+	questions := make([]*types.DNSQuestion, 1024)
+	for i := range questions {
+		questions[i] = &types.DNSQuestion{Name: "fixture.test"}
+	}
+	answers := make([]*types.DNSResourceRecord, 1025)
+	for i := range answers {
+		answers[i] = &types.DNSResourceRecord{IP: "192.0.2.1"}
+	}
+	s := &Server{outDir: dir}
+	for _, tc := range []struct{ count, status int }{{1024, 200}, {1025, 413}} {
+		writeTimelineAuditFile(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{&types.DNS{Questions: questions, Answers: answers[:tc.count]}})
+		w := httptest.NewRecorder()
+		s.handleDomains(w, httptest.NewRequest(http.MethodGet, "/api/domains?mcpPage=true&pageLimit=1", nil))
+		var result map[string]json.RawMessage
+		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil || w.Code != tc.status {
+			t.Fatalf("%d answers: status=%d body=%s err=%v", tc.count, w.Code, w.Body, err)
+		}
+		if tc.status == 200 && (!strings.Contains(string(result["domains"]), "192.0.2.1") || string(result["totalCount"]) != "1") {
+			t.Fatalf("exact budget lost the resolved address: %s", w.Body)
+		}
+		if tc.status == 413 && (result["domains"] != nil || result["generation"] != nil) {
+			t.Fatalf("overrun published a partial page: %s", w.Body)
+		}
+	}
+}
+
 func TestDomainInventorySharesAuditBudget(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFile(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{&types.DNS{}})
