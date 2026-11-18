@@ -105,6 +105,8 @@ func (s *Server) registerRecordTools() error {
 	return nil
 }
 
+var auditQuerySlots = make(chan struct{}, 2)
+
 func (s *Server) handleQueryAuditRecords(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
@@ -171,6 +173,15 @@ func (s *Server) handleQueryAuditRecords(ctx context.Context, req mcplib.CallToo
 		q.Set("filter", filterExpr)
 	}
 
+	if err := ctx.Err(); err != nil {
+		return errResult(err), nil
+	}
+	select {
+	case auditQuerySlots <- struct{}{}:
+		defer func() { <-auditQuerySlots }()
+	default:
+		return errResult(fmt.Errorf("audit queries are busy; retry after another query completes")), nil
+	}
 	client := s.newClient()
 	records, completeJSON, terminal, sErr := client.streamAuditRecords(ctx, auditType, q, 32<<20)
 	if sErr != nil {
