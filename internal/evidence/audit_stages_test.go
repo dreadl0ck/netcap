@@ -59,6 +59,23 @@ func TestAuditStageSealsBindRunGenerationAndFileContent(t *testing.T) {
 	}
 }
 
+func TestAuditStageRejectsLinkedInventory(t *testing.T) {
+	capture, directory := stageFixture(t)
+	if err := capture.SealAuditStages([]AuditStage{{Type: "UDP", Stage: "packet", State: "sealed", Coverage: "complete"}}); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(directory, AuditStagesFile)
+	if err := os.Rename(path, filepath.Join(directory, "original.json")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("original.json", path); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := ReadAuditStage(directory, capture.RunID(), "UDP", ""); err == nil {
+		t.Fatal("linked audit inventory was admitted")
+	}
+}
+
 func TestAuditStagesDoNotTurnUnavailableOrNewFilesIntoEmptySuccess(t *testing.T) {
 	capture, directory := stageFixture(t)
 	if err := capture.SealAuditStages([]AuditStage{{Type: "UDP", Stage: "packet", State: "sealed", Coverage: "partial", Files: []SealedAuditFile{}}, {Type: "HTTP", Stage: "application", State: "failed", Coverage: "partial", Reason: "parser pressure"}}); err != nil {

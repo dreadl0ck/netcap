@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -81,25 +82,11 @@ func auditFileSeal(ctx context.Context, root *os.Root, name string, expected *Se
 	if name == "" || strings.ContainsAny(name, "/\\") || name == "." || name == ".." {
 		return result, fmt.Errorf("invalid audit file name")
 	}
-	pathInfo, err := root.Lstat(name)
-	if err != nil {
-		return result, err
-	}
-	if !pathInfo.Mode().IsRegular() {
-		return result, fmt.Errorf("audit output is not a regular file")
-	}
-	file, err := root.Open(name)
+	file, before, err := artifactio.OpenInRoot(root, name)
 	if err != nil {
 		return result, err
 	}
 	defer func() { resultErr = errors.Join(resultErr, file.Close()) }()
-	before, err := file.Stat()
-	if err != nil {
-		return result, err
-	}
-	if !os.SameFile(pathInfo, before) {
-		return result, fmt.Errorf("audit output changed while opening")
-	}
 	if expected != nil && before.Size() != expected.Size {
 		return result, fmt.Errorf("sealed audit output changed: size mismatch")
 	}
@@ -229,16 +216,15 @@ func ReadAuditStageContext(ctx context.Context, directory, runID, recordType, ge
 		return stage, snapshot, err
 	}
 	defer func() { resultErr = errors.Join(resultErr, root.Close()) }()
-	file, err := root.Open(AuditStagesFile)
+	file, info, err := artifactio.OpenInRoot(root, AuditStagesFile)
 	if err != nil {
 		return stage, snapshot, err
 	}
-	info, err := file.Stat()
-	if err != nil || info.Size() > 1<<20 {
+	if info.Size() > 1<<20 {
 		_ = file.Close()
 		return stage, snapshot, fmt.Errorf("audit stage inventory exceeds readable limits")
 	}
-	decoder := json.NewDecoder(io.LimitReader(file, 1<<20))
+	decoder := json.NewDecoder(io.LimitReader(auditSealReader{ctx: ctx, file: file}, 1<<20))
 	decoder.DisallowUnknownFields()
 	err = decoder.Decode(&snapshot)
 	if err == nil {
@@ -268,12 +254,16 @@ func ReadAuditStageContext(ctx context.Context, directory, runID, recordType, ge
 		}
 		seenTypes[candidate.Type] = true
 	}
-	manifestFile, err := root.Open("capture-manifest.json")
+	manifestFile, manifestInfo, err := artifactio.OpenInRoot(root, "capture-manifest.json")
 	if err != nil {
 		return stage, snapshot, err
 	}
+	if manifestInfo.Size() > 4<<20 {
+		_ = manifestFile.Close()
+		return stage, snapshot, fmt.Errorf("capture manifest exceeds readable limits")
+	}
 	var manifest CaptureManifest
-	err = json.NewDecoder(io.LimitReader(manifestFile, 4<<20)).Decode(&manifest)
+	err = json.NewDecoder(io.LimitReader(auditSealReader{ctx: ctx, file: manifestFile}, 4<<20)).Decode(&manifest)
 	err = errors.Join(err, manifestFile.Close())
 	if err != nil {
 		return stage, snapshot, err

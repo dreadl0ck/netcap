@@ -14,18 +14,6 @@ var ErrPath = errors.New("invalid artifact path")
 
 // Open confines descriptor access to the selected root and rejects stored symlinks.
 func Open(directory, name string) (*os.File, os.FileInfo, error) {
-	if strings.HasPrefix(filepath.Base(name), ".netcap-artifact-") {
-		return nil, nil, ErrPath
-	}
-	if name == "" || !filepath.IsLocal(name) || strings.ContainsAny(name, "\\\x00") {
-		return nil, nil, ErrPath
-	}
-	parts := strings.Split(filepath.ToSlash(name), "/")
-	for _, p := range parts {
-		if p == ".." || p == "." || p == "" {
-			return nil, nil, ErrPath
-		}
-	}
 	rootInfo, err := os.Lstat(directory)
 	if err != nil {
 		return nil, nil, err
@@ -42,8 +30,21 @@ func Open(directory, name string) (*os.File, os.FileInfo, error) {
 	if err != nil || !os.SameFile(rootInfo, pinned) {
 		return nil, nil, ErrPath
 	}
+	return OpenInRoot(root, name)
+}
+
+// OpenInRoot opens a regular artifact relative to an already pinned root.
+func OpenInRoot(root *os.Root, name string) (*os.File, os.FileInfo, error) {
+	if name == "" || !filepath.IsLocal(name) || strings.ContainsAny(name, "\\\x00") || strings.HasPrefix(filepath.Base(name), ".netcap-artifact-") {
+		return nil, nil, ErrPath
+	}
+	parts := strings.Split(filepath.ToSlash(name), "/")
 	var before os.FileInfo
 	for i := range parts {
+		if parts[i] == ".." || parts[i] == "." || parts[i] == "" {
+			return nil, nil, ErrPath
+		}
+		var err error
 		before, err = root.Lstat(filepath.Join(parts[:i+1]...))
 		if err != nil {
 			return nil, nil, err
