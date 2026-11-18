@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -44,11 +45,17 @@ func TestAuditStageSealsBindRunGenerationAndFileContent(t *testing.T) {
 			t.Fatal("invalid stage selection was accepted", arguments)
 		}
 	}
-	if err := os.WriteFile(name, []byte("changed fixture"), 0600); err != nil {
+	if err := os.WriteFile(name, []byte("forged fixture"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := ReadAuditStage(directory, capture.RunID(), "UDP", snapshot.Generation); err == nil {
-		t.Fatal("changed sealed file remained readable")
+	if _, _, err := ReadAuditStage(directory, capture.RunID(), "UDP", snapshot.Generation); err == nil || !strings.Contains(err.Error(), "sealed audit output changed") || strings.Contains(err.Error(), "size mismatch") {
+		t.Fatalf("same-size replacement was not rejected by digest: %v", err)
+	}
+	if err := os.Truncate(name, stage.Files[0].Size+1); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := ReadAuditStage(directory, capture.RunID(), "UDP", snapshot.Generation); err == nil || !strings.Contains(err.Error(), "size mismatch") {
+		t.Fatalf("grown sealed output was not rejected at admission: %v", err)
 	}
 }
 

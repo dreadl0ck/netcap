@@ -77,7 +77,7 @@ func (r auditSealReader) Read(p []byte) (int, error) {
 	return r.file.Read(p)
 }
 
-func auditFileSeal(ctx context.Context, root *os.Root, name string) (result SealedAuditFile, resultErr error) {
+func auditFileSeal(ctx context.Context, root *os.Root, name string, expected *SealedAuditFile) (result SealedAuditFile, resultErr error) {
 	if name == "" || strings.ContainsAny(name, "/\\") || name == "." || name == ".." {
 		return result, fmt.Errorf("invalid audit file name")
 	}
@@ -100,9 +100,19 @@ func auditFileSeal(ctx context.Context, root *os.Root, name string) (result Seal
 	if !os.SameFile(pathInfo, before) {
 		return result, fmt.Errorf("audit output changed while opening")
 	}
+	if expected != nil && before.Size() != expected.Size {
+		return result, fmt.Errorf("sealed audit output changed: size mismatch")
+	}
 	hash := sha256.New()
-	n, err := io.Copy(hash, auditSealReader{ctx: ctx, file: file})
+	reader := auditSealReader{ctx: ctx, file: file}
+	n, err := io.CopyN(hash, reader, before.Size())
 	if err != nil {
+		return result, err
+	}
+	var extra [1]byte
+	if n, err := io.ReadFull(reader, extra[:]); n != 0 {
+		return result, fmt.Errorf("audit output grew during sealing")
+	} else if err != io.EOF {
 		return result, err
 	}
 	after, err := file.Stat()
@@ -172,7 +182,7 @@ func (c *Capture) SealAuditStages(stages []AuditStage) (resultErr error) {
 				return fmt.Errorf("invalid or duplicate audit stage file %q for %s", stage.Files[i].Name, stage.Type)
 			}
 			seen[stage.Files[i].Name] = true
-			sealed, err := auditFileSeal(context.Background(), root, stage.Files[i].Name)
+			sealed, err := auditFileSeal(context.Background(), root, stage.Files[i].Name, nil)
 			if err != nil {
 				return err
 			}
@@ -311,7 +321,7 @@ func ReadAuditStageContext(ctx context.Context, directory, runID, recordType, ge
 					return stage, snapshot, fmt.Errorf("invalid or duplicate sealed file")
 				}
 				seenFiles[sealed.Name] = true
-				actual, err := auditFileSeal(ctx, root, sealed.Name)
+				actual, err := auditFileSeal(ctx, root, sealed.Name, &sealed)
 				if err != nil {
 					return stage, snapshot, err
 				}
