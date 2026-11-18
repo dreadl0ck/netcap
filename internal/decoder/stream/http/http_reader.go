@@ -415,7 +415,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		if res.Body == http.NoBody {
 			passiveReport = software.ObserveWebtech(observation, res.Body, res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 			passiveReport.DetectedContentType = ""
-			if res.Header.Get(headerContentEncoding) != "gzip" {
+			if !isGzipEncoding(res.Header.Get(headerContentEncoding)) {
 				passiveReport.DetectedContentType = http.DetectContentType(nil)
 			}
 		} else {
@@ -624,7 +624,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	var bodyErr error
 	var spool *file.BodySpool
 	form, boundary := sourceBackedForm(req)
-	backedGzip := h.sourceMode && req.Body != http.NoBody && req.Header.Get(headerContentEncoding) == "gzip"
+	backedGzip := h.sourceMode && req.Body != http.NoBody && isGzipEncoding(req.Header.Get(headerContentEncoding))
 	mode := requestBuffered
 	if h.sourceMode {
 		mode = sourceRequestMode(decoderconfig.Instance, req, form)

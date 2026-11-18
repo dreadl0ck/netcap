@@ -350,22 +350,30 @@ func TestBackedHTTPPassiveUploadUsesBoundedInput(t *testing.T) {
 }
 
 func TestBackedHTTPGzipPressurePreservesSpooledResponse(t *testing.T) {
-	testBackedHTTPGzipPressurePreservesSpool(t, false, 64<<10)
+	testBackedHTTPGzipPressurePreservesSpool(t, false, 64<<10, "gzip")
 }
 
 func TestBackedHTTPGzipPressurePreservesSpooledRequest(t *testing.T) {
-	testBackedHTTPGzipPressurePreservesSpool(t, true, 64<<10)
+	testBackedHTTPGzipPressurePreservesSpool(t, true, 64<<10, "gzip")
 }
 
 func TestBackedHTTPGzipFitsSmallerStateBudget(t *testing.T) {
 	for _, upload := range []bool{false, true} {
 		t.Run(fmt.Sprintf("upload=%t", upload), func(t *testing.T) {
-			testBackedHTTPGzipPressurePreservesSpool(t, upload, 104<<10)
+			testBackedHTTPGzipPressurePreservesSpool(t, upload, 104<<10, "gzip")
 		})
 	}
 }
 
-func testBackedHTTPGzipPressurePreservesSpool(t *testing.T, upload bool, limit int64) {
+func TestBackedHTTPMixedCaseGzipPressurePreservesSpool(t *testing.T) {
+	for _, upload := range []bool{false, true} {
+		t.Run(fmt.Sprintf("upload=%t", upload), func(t *testing.T) {
+			testBackedHTTPGzipPressurePreservesSpool(t, upload, 64<<10, "GZip")
+		})
+	}
+}
+
+func testBackedHTTPGzipPressurePreservesSpool(t *testing.T, upload bool, limit int64, encoding string) {
 	t.Helper()
 	wire, input := newBookCapture(t)
 	send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 80, false)
@@ -378,7 +386,7 @@ func testBackedHTTPGzipPressurePreservesSpool(t *testing.T, upload bool, limit i
 	if err := w.Close(); err != nil {
 		t.Fatal(err)
 	}
-	entity := fmt.Sprintf("Content-Type: text/plain\r\nContent-Encoding: gzip\r\nContent-Length: %d\r\n\r\n%s", compressed.Len(), compressed.Bytes())
+	entity := fmt.Sprintf("Content-Type: text/plain\r\nContent-Encoding: %s\r\nContent-Length: %d\r\n\r\n%s", encoding, compressed.Len(), compressed.Bytes())
 	wantDirection := "server_to_client"
 	if upload {
 		wantDirection = "client_to_server"
