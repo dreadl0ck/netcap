@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand/v2"
 	"reflect"
 	"strings"
 	"sync"
@@ -431,6 +432,65 @@ func TestOrderedStreamInterleavesPushAndAdvance(t *testing.T) {
 	advance(10)
 	if want := []int64{1, 3, 4, 5, 6, 7, 8, 9, 10}; !reflect.DeepEqual(timestamps, want) {
 		t.Fatalf("alert order %v, want %v", timestamps, want)
+	}
+}
+
+func TestOrderedStreamShuffledWatermarksPreserveAlertEvidence(t *testing.T) {
+	const batches = 48
+	run := func(seed uint64) []types.Alert {
+		t.Helper()
+		cfg := groupedConfig()
+		cfg.Rules[0].Threshold = 2
+		cfg.Rules = append(cfg.Rules, &Rule{Name: "get", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true})
+		var alerts []types.Alert
+		s, err := NewOrderedStream(cfg, alertWriterFunc(func(a *types.Alert) error {
+			copy := *a
+			copy.DetectedAt = 0
+			alerts = append(alerts, copy)
+			return nil
+		}), "fixture")
+		if err != nil {
+			t.Fatal(err)
+		}
+		rng := rand.New(rand.NewPCG(seed, 87))
+		for i := range batches {
+			ts := scopedTCP(int64(i), "").Timestamp
+			a, b := scopedTCP(int64(i), "192.0.2.1"), scopedTCP(int64(i), "192.0.2.3")
+			records := []types.AuditRecord{a, a, b, b, &types.HTTP{Timestamp: ts, URL: fmt.Sprint("/fixture/", i), Method: "GET"}}
+			if seed != 0 {
+				rng.Shuffle(len(records), func(i, j int) { records[i], records[j] = records[j], records[i] })
+			}
+			for _, record := range records {
+				if err := s.Push(record); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if seed != 0 && i > 0 && i%3 == 0 {
+				if _, err := s.Advance(scopedTCP(int64(i-1), "").Timestamp); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+		if _, err := s.Finish(); err != nil {
+			t.Fatal(err)
+		}
+		if len(alerts) != batches*3 {
+			t.Fatalf("seed %d: got %d alerts, want %d", seed, len(alerts), batches*3)
+		}
+		for i, alert := range alerts {
+			if alert.Timestamp != scopedTCP(int64(i/3), "").Timestamp || alert.RuleDigest == "" || alert.MatchedRecordSHA256 == "" {
+				t.Fatalf("seed %d: alert %d lost capture time or evidence digests: %+v", seed, i, alert)
+			}
+		}
+		return alerts
+	}
+	want := run(0)
+	for seed := uint64(1); seed <= 12; seed++ {
+		for i, alert := range run(seed) {
+			if !reflect.DeepEqual(alert, want[i]) {
+				t.Fatalf("seed %d: alert %d differs from EOF replay: got %+v, want %+v", seed, i, alert, want[i])
+			}
+		}
 	}
 }
 
