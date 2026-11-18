@@ -27,16 +27,22 @@ func resetExtractionBudget(active bool) {
 	extractionBudget.limit = GetGlobalConfig().FileExtraction.SizeLimits.MaxInflightBytes
 }
 func reserveBuffer(n int64) error {
+	_, err := reserveBufferRange(n, n)
+	return err
+}
+
+func reserveBufferRange(minimum, preferred int64) (int64, error) {
 	extractionBudget.Lock()
 	defer extractionBudget.Unlock()
 	if !extractionBudget.active {
-		return nil
+		return preferred, nil
 	}
-	if n > extractionBudget.limit-extractionBudget.used {
-		return errSharedArtifactBudget
+	n := min(preferred, extractionBudget.limit-extractionBudget.used)
+	if n < minimum {
+		return 0, errSharedArtifactBudget
 	}
 	extractionBudget.used += n
-	return nil
+	return n, nil
 }
 func releaseBuffer(n int64) {
 	extractionBudget.Lock()
@@ -70,8 +76,12 @@ func ReadBodyLimit(r io.Reader, limit int64) (body []byte, release func(), err e
 		if int64(len(body)) == limit {
 			fullErr = fmt.Errorf("%w: per-file %d", ErrArtifactLimit, limit)
 		} else if len(body) == cap(body) {
-			next := min(limit, max(int64(512), int64(cap(body))*2))
-			if e := reserveBuffer(next); e != nil {
+			preferred := min(limit, max(int64(512), int64(cap(body))*2))
+			minimum := preferred
+			if len(body) > 0 {
+				minimum = int64(len(body)) + 1
+			}
+			if next, e := reserveBufferRange(minimum, preferred); e != nil {
 				if len(body) == 0 {
 					return body, release, e
 				}

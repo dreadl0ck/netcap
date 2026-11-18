@@ -142,9 +142,15 @@ func TestArtifactBudgetReservations(t *testing.T) {
 }
 
 func TestReadBodyExactFitAtSharedBudget(t *testing.T) {
+	t.Run("initial buffer", func(t *testing.T) { testReadBodySharedBudget(t, 512, 512) })
+	t.Run("constrained growth", func(t *testing.T) { testReadBodySharedBudget(t, 1400, 888) })
+}
+
+func testReadBodySharedBudget(t *testing.T, budget int64, size int) {
+	t.Helper()
 	cfg := GetDefaultConfig()
 	cfg.FileExtraction.SizeLimits.MaxFileSize = 4096
-	cfg.FileExtraction.SizeLimits.MaxInflightBytes = 512
+	cfg.FileExtraction.SizeLimits.MaxInflightBytes = budget
 	old := GetGlobalConfig()
 	SetGlobalConfig(cfg)
 	defer SetGlobalConfig(old)
@@ -156,7 +162,7 @@ func TestReadBodyExactFitAtSharedBudget(t *testing.T) {
 			t.Error(err)
 		}
 	}()
-	want := bytes.Repeat([]byte("x"), 512)
+	want := bytes.Repeat([]byte("x"), size)
 	for _, extra := range []bool{false, true} {
 		input := bytes.Clone(want)
 		if extra {
