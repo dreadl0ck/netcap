@@ -2,6 +2,7 @@ package networkdetect
 
 import (
 	"encoding/json"
+	"math"
 	"reflect"
 	"strings"
 	"testing"
@@ -50,6 +51,20 @@ func TestAggregationWindowsEpochZeroAndEOFFlush(t *testing.T) {
 	}
 	if len(e.Flush()) != 0 || e.Stats().PendingAggregates != 0 || e.Stats().Alerts != 2 {
 		t.Fatal("non-idempotent finalization", e.Stats())
+	}
+}
+
+func TestAggregationExpiresAcrossSignedTimestampRange(t *testing.T) {
+	g := newAggregator(DefaultConfig())
+	g.advance(math.MinInt64)
+	g.add("overlap", &types.Alert{Name: "tcp.overlap-conflict", Timestamp: math.MinInt64})
+	g.add("beacon", &types.Alert{Name: "c2.beacon", Timestamp: math.MinInt64})
+	rows := g.advance(math.MaxInt64)
+	if len(rows) != 2 || rows[0].AggregateKey != "beacon" || rows[1].AggregateKey != "overlap" || len(g.pending) != 0 {
+		t.Fatalf("capture-time jump did not expire both windows in order: %v", rows)
+	}
+	if !strings.Contains(rows[0].Notes, "flush=beacon-idle") || !strings.Contains(rows[1].Notes, "flush=window") {
+		t.Fatalf("incorrect expiry reasons: %s; %s", rows[0].Notes, rows[1].Notes)
 	}
 }
 

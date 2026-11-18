@@ -138,13 +138,17 @@ func (g *aggregator) take(key, reason string) *types.Alert {
 	return a
 }
 
+func aggregateWindowElapsed(at, start, window int64) bool {
+	return at >= start && uint64(at)-uint64(start) >= uint64(window)
+}
+
 func (g *aggregator) advance(at int64) []*types.Alert {
 	var out []*types.Alert
-	if g.beaconSweep == 0 || at-g.beaconSweep >= 1e9 {
+	if g.beaconSweep == 0 || aggregateWindowElapsed(at, g.beaconSweep, 1e9) {
 		g.beaconSweep = at
 		var expired []string
 		for key, entry := range g.pending {
-			if entry.alert.Name == "c2.beacon" && at-entry.alert.LastSeen >= g.beaconIdleNS {
+			if entry.alert.Name == "c2.beacon" && aggregateWindowElapsed(at, entry.alert.LastSeen, g.beaconIdleNS) {
 				expired = append(expired, key)
 			}
 		}
@@ -164,14 +168,14 @@ func (g *aggregator) advance(at int64) []*types.Alert {
 			}
 		}
 	}
-	if !g.oldestKnown || at-g.oldest < g.windowNS {
+	if !g.oldestKnown || !aggregateWindowElapsed(at, g.oldest, g.windowNS) {
 		return out
 	}
 	for _, k := range g.orderedKeys() {
 		if g.pending[k].alert.Name == "c2.beacon" {
 			continue
 		}
-		if at-g.pending[k].alert.FirstSeen >= g.windowNS {
+		if aggregateWindowElapsed(at, g.pending[k].alert.FirstSeen, g.windowNS) {
 			out = append(out, g.take(k, "window"))
 		}
 	}

@@ -100,6 +100,7 @@
     "verification": "The bounded capture fixture admits all 16 packets and retains all four target Connection records. Credit reuse, strict-mode controls, full collector (161.542 s), reassembly and TCP suites, command races and vet pass.",
     "remaining": "Parser-state pressure policy, per-consumer recovery, and wider replay qualification remain open. Offline payload pressure is qualified separately."
   },
+  "networkAlertWindowOverflow": "TestAggregationExpiresAcrossSignedTimestampRange verifies that advancing from minimum to maximum signed nanoseconds expires both the idle beacon and overlap evidence windows in order with the correct flush reasons. The portable networkdetect race suite passed.",
   "offlineRuleClock": {
     "source": "7b959bd",
     "implementation": "Automatic and single-rule audit replay use a nondecreasing record clock for rate and deduplication windows. Missing timestamps do not advance the clock. DetectedAt remains wall-clock provenance.",
