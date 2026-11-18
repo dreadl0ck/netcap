@@ -141,17 +141,19 @@ func snapshotSchemaSourcesContext(parent context.Context, snapshot *jobSettings)
 			if files > 256 {
 				return fmt.Errorf("Protobuf snapshot exceeds 256 files")
 			}
-			data, err := artifactio.Read(ctx, root, relative, 2<<20)
+			remaining := (16 << 20) - total
+			// Read requires a positive limit, even for an empty file.
+			data, err := artifactio.Read(ctx, root, relative, int64(max(1, min(2<<20, remaining))))
 			if err != nil {
 				if cause := context.Cause(ctx); cause != nil {
 					return cause
 				}
 				return err
 			}
-			total += len(data)
-			if total > 16<<20 {
+			if len(data) > remaining {
 				return fmt.Errorf("Protobuf snapshot exceeds 16 MiB")
 			}
+			total += len(data)
 			out := filepath.Join(target, relative)
 			if err := os.MkdirAll(filepath.Dir(out), 0700); err != nil {
 				return err

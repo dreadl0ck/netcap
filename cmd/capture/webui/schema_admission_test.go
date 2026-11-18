@@ -34,6 +34,42 @@ func TestSchemaWalkCountsIgnoredAndNestedEntries(t *testing.T) {
 	}
 }
 
+func TestSchemaSnapshotHonorsRemainingByteBudget(t *testing.T) {
+	dir := t.TempDir()
+	for i := range 9 {
+		name := filepath.Join(dir, fmt.Sprintf("%02d.proto", i))
+		if err := os.WriteFile(name, nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+		if i < 8 {
+			if err := os.Truncate(name, 2<<20); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	snapshot, err := snapshotSchemaSources(&jobSettings{SchemaPaths: []string{dir}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(snapshot.cleanup)
+	if len(snapshot.SchemaHashes) != 9 {
+		t.Fatal("exact-budget snapshot omitted an empty schema")
+	}
+	if err := os.Truncate(filepath.Join(dir, "07.proto"), (2<<20)-2); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Truncate(filepath.Join(dir, "08.proto"), 3); err != nil {
+		t.Fatal(err)
+	}
+	overrun := &jobSettings{SchemaPaths: []string{dir}}
+	if _, err := snapshotSchemaSources(overrun); err == nil || !strings.Contains(err.Error(), "exceeds 2 byte limit") {
+		t.Fatalf("expected refusal at the remaining two-byte read limit, got %v", err)
+	}
+	if _, err := os.Stat(overrun.directory); !os.IsNotExist(err) {
+		t.Fatalf("failed snapshot left scratch: %v", err)
+	}
+}
+
 func TestSchemaAdmissionRejectsBroadSourcesBeforeTraversal(t *testing.T) {
 	for _, path := range []string{"/etc", "/", "/dev", ".", "/does-not-exist/private-sentinel"} {
 		if _, err := admitSchemaSearchPath(path); err == nil || strings.Contains(err.Error(), "private-sentinel") || strings.Contains(err.Error(), "permission denied") {
