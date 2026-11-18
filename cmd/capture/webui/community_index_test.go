@@ -189,6 +189,13 @@ func TestCommunityIndexInvalidatesSameSizeReplacement(t *testing.T) {
 	if total, matched, err := communityCounts(path, ids); err != nil || total != 1 || matched != 0 {
 		t.Fatalf("replacement counts: %d, %d, %v", total, matched, err)
 	}
+	selection := map[string]bool{"new": true}
+	if bitmap, total, err := communitySelectedBitmap(t.Context(), path, info, selection); bitmap != nil || total != 0 || err != nil {
+		t.Fatalf("replacement index applied to original snapshot: bitmap=%v total=%d err=%v", bitmap, total, err)
+	}
+	if bitmap, total, err := communitySelectedBitmap(t.Context(), path, after, selection); err != nil || bitmap == nil || !bitmap.Contains(0) || total != 1 {
+		t.Fatalf("replacement index unavailable for matching snapshot: bitmap=%v total=%d err=%v", bitmap, total, err)
+	}
 }
 
 func TestCommunityIndexRejectsMismatchedHeader(t *testing.T) {

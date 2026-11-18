@@ -29,6 +29,7 @@ const (
 )
 
 type communityFileIndex struct {
+	info  os.FileInfo
 	total int64
 	byID  map[string]*roaring.Bitmap
 	bytes uint64
@@ -215,10 +216,13 @@ func communityCountsContext(ctx context.Context, path string, ids map[string]boo
 	return total, matched, err
 }
 
-func communitySelectedBitmap(ctx context.Context, path string, ids map[string]bool) (*roaring.Bitmap, int64, error) {
+func communitySelectedBitmap(ctx context.Context, path string, opened os.FileInfo, ids map[string]bool) (*roaring.Bitmap, int64, error) {
 	idx, err := communityIndexForContext(ctx, path)
 	if err != nil || idx == nil {
 		return nil, 0, err
+	}
+	if idx.info == nil || !sameCommunityAudit(idx.info, opened) {
+		return nil, 0, nil
 	}
 	var selected *roaring.Bitmap
 	for id := range ids {
@@ -282,7 +286,7 @@ func buildCommunityIndex(path string, expected os.FileInfo) (*communityFileIndex
 }
 
 func buildCommunityIndexContext(ctx context.Context, path string, expected os.FileInfo) (*communityFileIndex, error) {
-	idx := &communityFileIndex{byID: make(map[string]*roaring.Bitmap)}
+	idx := &communityFileIndex{info: expected, byID: make(map[string]*roaring.Bitmap)}
 	keyBytes := 0
 	memberships := 0
 	err := walkCommunityRecords(ctx, path, expected, func(id string, ids []string) error {

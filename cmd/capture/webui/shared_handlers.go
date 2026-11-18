@@ -721,17 +721,16 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	var indexedTotal int64
 	// The path-based index is not bound to the verified descriptor.
 	if len(communityIDs) > 0 && partialAuditContext(r) == nil {
-		candidates, indexedTotal, err = communitySelectedBitmap(r.Context(), filePath, communityIDs)
-		if err != nil {
-			sendError(fmt.Sprintf("Failed to index Community IDs: %v", err))
-			return
-		}
-		if candidates != nil {
-			opened, openedErr := auditReader.file.Stat()
-			current, currentErr := os.Stat(filePath)
-			if openedErr != nil || currentErr != nil || !os.SameFile(opened, current) ||
-				opened.Size() != current.Size() || !opened.ModTime().Equal(current.ModTime()) {
-				candidates = nil
+		if opened, statErr := auditReader.file.Stat(); statErr == nil {
+			candidates, indexedTotal, err = communitySelectedBitmap(r.Context(), filePath, opened, communityIDs)
+			if err != nil {
+				sendError(fmt.Sprintf("Failed to index Community IDs: %v", err))
+				return
+			}
+			if candidates != nil {
+				if after, err := auditReader.file.Stat(); err != nil || !sameCommunityAudit(opened, after) {
+					candidates = nil
+				}
 			}
 		}
 	}
