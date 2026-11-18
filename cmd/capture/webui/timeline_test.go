@@ -354,6 +354,31 @@ func TestTimelineRejectsSameMetadataReplacementAfterDiscovery(t *testing.T) {
 	}
 }
 
+func TestTimelineBuildEnforcesAuditFrameLimit(t *testing.T) {
+	for _, extra := range []int{0, 1} {
+		dir := t.TempDir()
+		frame := &types.HTTP{Timestamp: 100, RequestBody: make([]byte, timelineMaxAuditFrameBytes)}
+		frame.RequestBody = frame.RequestBody[:timelineMaxAuditFrameBytes+extra-(proto.Size(frame)-len(frame.RequestBody))]
+		if proto.Size(frame) != timelineMaxAuditFrameBytes+extra {
+			t.Fatal("unexpected fixture frame size")
+		}
+		writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{frame})
+		fingerprint, files, err := timelineFingerprint(dir)
+		if err != nil || len(files) != 1 {
+			t.Fatalf("discover fixture: %v", err)
+		}
+		entry := &timelineIndexEntry{finished: make(chan struct{}), state: timelineStateIndexing}
+		buildTimelineIndex(entry, dir, fingerprint, files)
+		if extra == 0 {
+			if entry.state != timelineStateReady || entry.index == nil || entry.index.TotalEvents != 1 {
+				t.Fatalf("exact-limit frame: %s %s", entry.state, entry.errMsg)
+			}
+		} else if entry.state != timelineStateError || entry.index != nil || !strings.Contains(entry.errMsg, "record size exceeds read limit") {
+			t.Fatalf("oversized frame: %s %s", entry.state, entry.errMsg)
+		}
+	}
+}
+
 func TestTimelineRejectsGenerationChangedBeforeBuild(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFilePlain(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{dnsRecord(100, "192.0.2.1", "192.0.2.2")})

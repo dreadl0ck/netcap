@@ -170,6 +170,7 @@ var timelineCache = struct {
 }{entries: make(map[string]*timelineIndexEntry)}
 
 const timelineSmallInputBytes = 256 << 10
+const timelineMaxAuditFrameBytes = 16 << 20
 
 var (
 	timelineBuildSlot      = make(chan struct{}, 1)
@@ -746,11 +747,7 @@ func assembleTimelineIndex(fingerprint string, types []*tlTypeIndex) *timelineIn
 
 // indexTimelineType reads one audit record file and builds its time index.
 func indexTimelineType(ref timelineFileRef, eventLimit int, stop <-chan struct{}) (*tlTypeIndex, error) {
-	f, err := ref.open()
-	if err != nil {
-		return nil, err
-	}
-	reader, err := auditRecordReaderFromInput(f, io.NewSectionReader(f, 0, ref.size), strings.HasSuffix(ref.path, ".gz"), func(input io.Reader) io.Reader {
+	reader, err := openTimelineAuditReader(ref, func(input io.Reader) io.Reader {
 		return analysisStopReader{input: input, stop: stop}
 	})
 	if err != nil {
@@ -758,6 +755,23 @@ func indexTimelineType(ref timelineFileRef, eventLimit int, stop <-chan struct{}
 	}
 	defer reader.Close()
 	return indexTimelineRecords(reader, ref.name, eventLimit, stop)
+}
+
+func openTimelineAuditReader(ref timelineFileRef, wrap func(io.Reader) io.Reader) (*AuditRecordReader, error) {
+	f, err := ref.open()
+	if err != nil {
+		return nil, err
+	}
+	return timelineAuditReaderFromFile(f, ref, wrap)
+}
+
+func timelineAuditReaderFromFile(f *os.File, ref timelineFileRef, wrap func(io.Reader) io.Reader) (*AuditRecordReader, error) {
+	reader, err := auditRecordReaderFromInput(f, io.NewSectionReader(f, 0, ref.size), strings.HasSuffix(ref.path, ".gz"), wrap)
+	if err != nil {
+		return nil, err
+	}
+	reader.delimitedReader = delimited.NewReaderWithLimit(reader.reader, timelineMaxAuditFrameBytes)
+	return reader, nil
 }
 
 func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit int, stop <-chan struct{}) (*tlTypeIndex, error) {

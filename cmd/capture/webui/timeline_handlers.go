@@ -21,12 +21,14 @@ package webui
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/internal/analyst"
+	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
@@ -477,7 +479,7 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 		RespondJSON(w, http.StatusConflict, timelineRecordJSON{Status: timelineStateError, Error: "indexed audit file unavailable"})
 		return
 	}
-	reader, err := auditRecordReaderFromInput(f, io.NewSectionReader(f, 0, track.source.size), strings.HasSuffix(track.source.path, ".gz"), func(input io.Reader) io.Reader {
+	reader, err := timelineAuditReaderFromFile(f, track.source, func(input io.Reader) io.Reader {
 		return auditContextReader{ctx: r.Context(), input: input}
 	})
 	if err != nil {
@@ -502,6 +504,10 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 		if r.Context().Err() != nil {
 			return
 		}
+		if errors.Is(err, delimited.ErrRecordLimit) {
+			RespondJSON(w, http.StatusRequestEntityTooLarge, timelineRecordJSON{Status: timelineStateError, Error: err.Error()})
+			return
+		}
 		RespondJSON(w, http.StatusNotFound, timelineRecordJSON{Status: timelineStateError, Error: "record not found"})
 
 		return
@@ -509,6 +515,13 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 
 	record, err := reader.NextRecord()
 	if err != nil {
+		if r.Context().Err() != nil {
+			return
+		}
+		if errors.Is(err, delimited.ErrRecordLimit) {
+			RespondJSON(w, http.StatusRequestEntityTooLarge, timelineRecordJSON{Status: timelineStateError, Error: err.Error()})
+			return
+		}
 		RespondJSON(w, http.StatusNotFound, timelineRecordJSON{Status: timelineStateError, Error: "record not found"})
 
 		return
