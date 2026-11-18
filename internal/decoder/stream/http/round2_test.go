@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"strings"
@@ -140,6 +141,21 @@ func TestRound2GapAndDiscardNeverJoinBody(t *testing.T) {
 		}
 		if !bytes.Equal(records[1].RequestBody, []byte("a")) || !strings.Contains(records[1].ReassemblyStatus, "incomplete_request_body") {
 			t.Fatal(records)
+		}
+	}
+}
+
+func BenchmarkHTTPHeaderEvidence(b *testing.B) {
+	wire := "GET /fixture HTTP/1.1\r\nHost: fixture.test\r\n" + strings.Repeat("X-Padded: "+strings.Repeat("x", 480)+"\r\n", 128) + "\r\n"
+	var source strings.Reader
+	reader := bufio.NewReader(&source)
+	b.ReportAllocs()
+	for b.Loop() {
+		source.Reset(wire)
+		reader.Reset(&source)
+		evidence, _, err := readEvidenceHead(reader)
+		if err != nil || evidence.unsafe || len(evidence.headers) != 129 {
+			b.Fatalf("header read: fields=%d unsafe=%t err=%v", len(evidence.headers), evidence.unsafe, err)
 		}
 	}
 }

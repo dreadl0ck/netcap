@@ -173,7 +173,7 @@ func readEvidenceHead(b *bufio.Reader) (messageEvidence, http.Header, error) {
 	e := messageEvidence{}
 	header := make(http.Header)
 	line, err := readHTTPLine(b, maxHTTPHeaders)
-	e.line = bytes.Clone(line)
+	e.line = line
 	if err != nil {
 		return e, header, err
 	}
@@ -198,7 +198,7 @@ func readEvidenceHead(b *bufio.Reader) (messageEvidence, http.Header, error) {
 			e.unsafe = true
 			return e, header, nil
 		}
-		raw := bytes.Clone(line)
+		raw := line
 		text := bytes.TrimSuffix(bytes.TrimSuffix(raw, []byte("\n")), []byte("\r"))
 		name, value, valid := bytes.Cut(text, []byte(":"))
 		item := &types.HTTPHeaderEvidence{Raw: raw, Name: bytes.Clone(name), Value: bytes.Clone(value)}
@@ -229,6 +229,7 @@ func recoverableMetadataHeader(name []byte) bool {
 }
 
 func readHTTPLine(b *bufio.Reader, limit int) ([]byte, error) {
+	// The caller retains the line after the reader reuses its buffer.
 	var line []byte
 	for {
 		part, err := b.ReadSlice('\n')
