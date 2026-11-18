@@ -2,6 +2,7 @@
 package analyst
 
 import (
+	"bufio"
 	"compress/gzip"
 	"context"
 	"crypto/sha256"
@@ -181,9 +182,10 @@ func walk(ctx context.Context, dir string, binding Binding, recordType string, v
 	if _, err = f.Seek(0, io.SeekStart); err != nil {
 		return err
 	}
-	var input io.Reader = f
+	decodedSourceHash := sha256.New()
+	var input io.Reader = io.TeeReader(&budgetReader{ctx, f, 64 << 20}, decodedSourceHash)
 	if strings.HasSuffix(name, ".gz") {
-		z, e := gzip.NewReader(&budgetReader{ctx, f, 64 << 20})
+		z, e := gzip.NewReader(bufio.NewReader(input))
 		if e != nil {
 			return e
 		}
@@ -222,6 +224,19 @@ func walk(ctx context.Context, dir string, binding Binding, recordType string, v
 			return e
 		}
 	}
+	if hex.EncodeToString(decodedSourceHash.Sum(nil)) != fileHash {
+		return ErrStale
+	}
+	if _, err = f.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+	h.Reset()
+	if _, err = io.Copy(h, &budgetReader{ctx, f, 64 << 20}); err != nil {
+		return err
+	}
+	if hex.EncodeToString(h.Sum(nil)) != fileHash {
+		return ErrStale
+	}
 	after, err := f.Stat()
 	if err != nil {
 		return err
@@ -239,16 +254,6 @@ func walk(ctx context.Context, dir string, binding Binding, recordType string, v
 		return err
 	}
 	if !os.SameFile(info, ci) {
-		return ErrStale
-	}
-	if _, err = f.Seek(0, io.SeekStart); err != nil {
-		return err
-	}
-	h.Reset()
-	if _, err = io.Copy(h, &budgetReader{ctx, f, 64 << 20}); err != nil {
-		return err
-	}
-	if hex.EncodeToString(h.Sum(nil)) != fileHash {
 		return ErrStale
 	}
 	if err := Check(ctx, dir, binding); err != nil {

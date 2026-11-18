@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -67,6 +68,45 @@ func audit(t *testing.T, dir, name string, typ types.Type, records ...proto.Mess
 	}
 	if err = f.Close(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestOccurrenceDigestMatchesStoredAuditEncoding(t *testing.T) {
+	source, refs := fixture(t, "encoding")
+	dir := source.Directory
+	compressed, err := os.ReadFile(filepath.Join(dir, "Connection.ncap.gz"))
+	if err != nil || refs[0].FileSHA256 != Digest(compressed) {
+		t.Fatalf("gzip occurrence did not bind the stored bytes: %v", err)
+	}
+	f, err := os.Open(filepath.Join(dir, "Connection.ncap.gz"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	z, err := gzip.NewReader(f)
+	if err != nil {
+		f.Close()
+		t.Fatal(err)
+	}
+	plain, err := io.ReadAll(z)
+	z.Close()
+	f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(dir, "Connection.ncap.gz")); err != nil {
+		t.Fatal(err)
+	}
+	write(t, dir, "Connection.ncap", plain)
+	n := 0
+	digest, err := Scan(t.Context(), dir, source.Binding, "Connection", func(ref Reference, _ proto.Message) error {
+		if n >= len(refs) || ref.FileSHA256 != Digest(plain) || ref.RecordSHA256 != refs[n].RecordSHA256 || ref.Ordinal != refs[n].Ordinal {
+			t.Fatalf("plain occurrence lost stored or record identity: %+v", ref)
+		}
+		n++
+		return nil
+	})
+	if err != nil || n != len(refs) || digest != Digest(plain) {
+		t.Fatalf("plain scan: records=%d digest=%q err=%v", n, digest, err)
 	}
 }
 
