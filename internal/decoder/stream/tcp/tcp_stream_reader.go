@@ -197,6 +197,13 @@ func (t *tcpStreamReader) Count() int64 {
 	return int64(len(t.data))
 }
 
+func (t *tcpStreamReader) PrefixBytesUpperBound(limit int) int {
+	if t.stored != nil && !t.stored.loaded {
+		return t.stored.PrefixBytesUpperBound(limit)
+	}
+	return core.SliceSource(t.data).PrefixBytesUpperBound(limit)
+}
+
 // The connection owner serializes walks with mutation, role changes and retirement.
 func (t *tcpStreamReader) Walk(yield func(core.DataFragment) bool) error {
 	return t.WalkRange(0, t.Count(), yield)

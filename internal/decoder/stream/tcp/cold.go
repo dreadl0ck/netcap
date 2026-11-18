@@ -175,7 +175,7 @@ func (f *connectionFactory) RestoreColdState(wire []byte, reserve bool) (reassem
 		reader := t.newTCPStreamReader(stored.Client)
 		reader.numBytes, reader.saved = stored.Bytes, stored.Saved
 		if stored.Prefix != "" {
-			reader.stored = &storedTCPReader{state: decoderconfig.Instance.AggregateStore, prefix: stored.Prefix, count: stored.Count, budget: budget, payloadBudget: payloadBudget}
+			reader.stored = &storedTCPReader{state: decoderconfig.Instance.AggregateStore, prefix: stored.Prefix, count: stored.Count, payloadSizeUnknown: true, budget: budget, payloadBudget: payloadBudget}
 		}
 		if stored.Closed {
 			reader.closeOnce.Do(func() { close(reader.done) })

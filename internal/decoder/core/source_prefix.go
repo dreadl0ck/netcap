@@ -41,8 +41,10 @@ func readSourcePrefix(source FragmentSource, limit int, reserve func(int64) erro
 	var prefix []byte
 	var reserveErr error
 	capacity := limit
-	if resident, ok := source.(SliceSource); ok && count > 1 {
-		capacity = residentPrefixSize(resident, limit)
+	if bounded, ok := source.(interface{ PrefixBytesUpperBound(int) int }); ok && count > 1 {
+		if n := bounded.PrefixBytesUpperBound(limit); n >= 0 {
+			capacity = min(limit, n)
+		}
 	}
 	err := source.Walk(func(fragment DataFragment) bool {
 		if fragment == nil {
@@ -77,7 +79,8 @@ func readSourcePrefix(source FragmentSource, limit int, reserve func(int64) erro
 	return prefix, err
 }
 
-func residentPrefixSize(source SliceSource, limit int) int {
+// PrefixBytesUpperBound returns a bound on the readable prefix, or -1 if unknown.
+func (source SliceSource) PrefixBytesUpperBound(limit int) int {
 	size := 0
 	for _, fragment := range source {
 		if fragment == nil {

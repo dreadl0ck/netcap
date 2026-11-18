@@ -19,6 +19,8 @@ type storedTCPReader struct {
 	state                 *aggregate.Store
 	prefix                string
 	count                 uint64
+	payloadBytes          int64
+	payloadSizeUnknown    bool
 	loaded                bool
 	budget                *core.StateBudget
 	completionBudget      *core.StateBudget
@@ -147,10 +149,22 @@ func (s *storedTCPReader) append(data *core.StreamData) error {
 	s.credit += credit
 	s.payloadCredit += payloadCredit
 	s.count++
+	if n := int64(len(data.RawData)); n <= math.MaxInt64-s.payloadBytes {
+		s.payloadBytes += n
+	} else {
+		s.payloadBytes = math.MaxInt64
+	}
 	return nil
 }
 
 func (s *storedTCPReader) Count() int64 { return int64(s.count) }
+
+func (s *storedTCPReader) PrefixBytesUpperBound(limit int) int {
+	if s.payloadSizeUnknown {
+		return -1
+	}
+	return int(min(int64(limit), s.payloadBytes))
+}
 
 func (s *storedTCPReader) readBudget() *core.StateBudget {
 	if s.completionBudget != nil {
@@ -317,6 +331,7 @@ func (s *storedTCPReader) clear() error {
 	err := s.state.Do(func(tx *aggregate.Tx) error { return tx.Delete(s.prefix) })
 	if err == nil {
 		s.count, s.loaded = 0, false
+		s.payloadBytes, s.payloadSizeUnknown = 0, false
 	}
 	return err
 }

@@ -36,6 +36,37 @@ func TestFirstSourceFragmentChargesCopyBeforeAdmission(t *testing.T) {
 	}
 }
 
+func TestBackedTCPPrefixFitsSmallCopyBudget(t *testing.T) {
+	state, err := aggregate.Open(t.TempDir(), 4096, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer state.Close()
+	readBudget, err := core.NewStateBudget(8192, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stored := &storedTCPReader{state: state, prefix: "tcp/prefix/", budget: readBudget}
+	for _, payload := range []string{"GET ", "/x"} {
+		if err := stored.append(&core.StreamData{RawData: []byte(payload)}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	reader := &tcpStreamReader{stored: stored, isClient: true}
+	copyBudget, err := core.NewStateBudget(6, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prefix, err := core.ReadBudgetedSourcePrefix(reader, 16<<10, copyBudget)
+	if err != nil || string(prefix) != "GET /x" || cap(prefix) != 6 || stored.loaded {
+		t.Fatalf("backed prefix=%q capacity=%d loaded=%t: %v", prefix, cap(prefix), stored.loaded, err)
+	}
+	copyBudget.Release(int64(cap(prefix)))
+	if copyHealth, readHealth := copyBudget.Health(), readBudget.Health(); copyHealth.RetainedBytes != 0 || copyHealth.Exceeded || readHealth.RetainedBytes != 0 {
+		t.Fatalf("copy credits=%+v read credits=%+v", copyHealth, readHealth)
+	}
+}
+
 func TestStoredTCPSourceIsRestartableWithinOneFragmentBudget(t *testing.T) {
 	state, err := aggregate.Open(t.TempDir(), 4096, nil)
 	if err != nil {
