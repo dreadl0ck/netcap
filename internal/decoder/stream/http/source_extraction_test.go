@@ -331,8 +331,15 @@ func TestCappedSourceRequestBodyStopsAtLimit(t *testing.T) {
 	file.SetGlobalConfig(cfg)
 	for _, size := range []int{128, 1024} {
 		body := strings.NewReader(strings.Repeat("x", size))
-		sample, release, err := readCappedSourceRequestBody(&core.ConversationInfo{}, body)
+		budget, err := core.NewStateBudget(257, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sample, release, err := readCappedSourceRequestBody(&core.ConversationInfo{StateBudget: budget}, body)
 		release()
+		if health := budget.Health(); health.Exceeded || health.RetainedBytes != 0 {
+			t.Fatalf("unexpected sample state: %+v", health)
+		}
 		if len(sample) != 128 || size-body.Len() != min(size, 129) || (size == 128 && err != nil) || (size > 128 && !errors.Is(err, file.ErrArtifactLimit)) {
 			t.Fatalf("size %d: sampled %d, read %d, err %v", size, len(sample), size-body.Len(), err)
 		}

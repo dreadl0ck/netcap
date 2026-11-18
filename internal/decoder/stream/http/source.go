@@ -246,25 +246,27 @@ func sourceRequestMode(cfg *decoderconfig.Config, req *http.Request, form string
 func readCappedSourceRequestBody(c *core.ConversationInfo, body io.Reader) ([]byte, func(), error) {
 	limit := sourceRequestBodyLimit()
 	bounded := &io.LimitedReader{R: body, N: limit + 1}
-	sample, release, err := readSourceRequestBody(c, bounded)
+	sample, release, err := scanSourceRequestBody(c, bounded, int(min(limit+1, 32768)), int(min(limit, 512)))
 	if bounded.N == 0 {
 		return sample[:min(int64(len(sample)), limit)], release, fmt.Errorf("%w: per-file %d", file.ErrArtifactLimit, limit)
 	}
 	return sample, release, err
 }
 
-func readSourceRequestBody(c *core.ConversationInfo, body io.Reader) (sample []byte, release func(), resultErr error) {
-	const scratchSize = 32768
-	const sampleSize = 512
+func readSourceRequestBody(c *core.ConversationInfo, body io.Reader) ([]byte, func(), error) {
+	return scanSourceRequestBody(c, body, 32768, 512)
+}
+
+func scanSourceRequestBody(c *core.ConversationInfo, body io.Reader, scratchSize, sampleSize int) (sample []byte, release func(), resultErr error) {
 	release = func() {}
-	if err := c.StateBudget.Reserve(scratchSize + sampleSize); err != nil {
+	if err := c.StateBudget.Reserve(int64(scratchSize + sampleSize)); err != nil {
 		c.FragmentError = err
 		return nil, release, err
 	}
-	defer c.StateBudget.Release(scratchSize)
+	defer c.StateBudget.Release(int64(scratchSize))
 	sample = make([]byte, 0, sampleSize)
 	var once sync.Once
-	release = func() { once.Do(func() { c.StateBudget.Release(sampleSize) }) }
+	release = func() { once.Do(func() { c.StateBudget.Release(int64(sampleSize)) }) }
 	returned := false
 	defer func() {
 		if !returned {
