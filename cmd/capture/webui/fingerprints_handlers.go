@@ -117,6 +117,14 @@ func (s *Server) handleFingerprints(w http.ResponseWriter, r *http.Request) {
 
 	snapshot, err := fingerprintSnapshotFor(outDir)
 	if err != nil {
+		if errors.Is(err, errFingerprintBuildBusy) {
+			RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": err.Error()})
+			return
+		}
+		if errors.Is(err, errFingerprintAuditChanged) {
+			RespondJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			return
+		}
 		if errors.Is(err, errInventoryAuditLimit) {
 			RespondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": err.Error()})
 			return

@@ -136,7 +136,14 @@ type fingerprintCacheEntry struct {
 	used        time.Time
 	ready       chan struct{}
 	snapshot    *fingerprintSnapshot
+	err         error
 }
+
+var (
+	fingerprintBuildSlots      = make(chan struct{}, 2)
+	errFingerprintBuildBusy    = errors.New("fingerprint inventory builds are busy")
+	errFingerprintAuditChanged = errors.New("fingerprint audits changed during inventory build; retry")
+)
 
 var fingerprintCache = struct {
 	sync.Mutex
@@ -170,6 +177,12 @@ func fingerprintSnapshotFor(outDir string) (*fingerprintSnapshot, error) {
 		fingerprintCache.Lock()
 		entry := fingerprintCache.entries[outDir]
 		if entry == nil || entry.fingerprint != generation {
+			select {
+			case fingerprintBuildSlots <- struct{}{}:
+			default:
+				fingerprintCache.Unlock()
+				return nil, errFingerprintBuildBusy
+			}
 			if entry != nil {
 				select {
 				case <-entry.ready:
@@ -183,11 +196,9 @@ func fingerprintSnapshotFor(outDir string) (*fingerprintSnapshot, error) {
 			fingerprintCache.entries[outDir] = entry
 			fingerprintCache.Unlock()
 
-			rows, buildErr := readFingerprints(outDir)
+			snapshot, buildErr := buildFingerprintSnapshot(outDir)
 			fingerprintCache.Lock()
-			if buildErr == nil {
-				entry.snapshot = newFingerprintSnapshot(rows)
-			}
+			entry.snapshot, entry.err = snapshot, buildErr
 			close(entry.ready)
 			if fingerprintCache.entries[outDir] == entry {
 				if buildErr != nil || entry.snapshot.bytes > fingerprintCacheBytes {
@@ -206,8 +217,8 @@ func fingerprintSnapshotFor(outDir string) (*fingerprintSnapshot, error) {
 			entry.used = time.Now()
 			fingerprintCache.Unlock()
 			<-entry.ready
-			if entry.snapshot == nil {
-				continue
+			if entry.err != nil {
+				return nil, entry.err
 			}
 		}
 		after, err := fingerprintGeneration(outDir)
@@ -218,6 +229,11 @@ func fingerprintSnapshotFor(outDir string) (*fingerprintSnapshot, error) {
 			return entry.snapshot, nil
 		}
 	}
+	return nil, errFingerprintAuditChanged
+}
+
+func buildFingerprintSnapshot(outDir string) (*fingerprintSnapshot, error) {
+	defer func() { <-fingerprintBuildSlots }()
 	rows, err := readFingerprints(outDir)
 	if err != nil {
 		return nil, err

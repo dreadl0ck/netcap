@@ -21,6 +21,34 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+func TestFingerprintSnapshotBuildAdmissionKeepsWarmInventoryAvailable(t *testing.T) {
+	warm, cold := t.TempDir(), t.TempDir()
+	writeTimelineAuditFile(t, warm, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Ja4H: "warm"}})
+	request := func(dir string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		newTimelineTestServer(dir).handleFingerprints(w, httptest.NewRequest(http.MethodGet, "/api/fingerprints?limit=1", nil))
+		return w
+	}
+	if w := request(warm); w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "warm") {
+		t.Fatalf("could not prime snapshot: %d %s", w.Code, w.Body)
+	}
+	func() {
+		for range cap(fingerprintBuildSlots) {
+			fingerprintBuildSlots <- struct{}{}
+			defer func() { <-fingerprintBuildSlots }()
+		}
+		if w := request(cold); w.Code != http.StatusTooManyRequests {
+			t.Fatalf("cold inventory at capacity: %d %s", w.Code, w.Body)
+		}
+		if w := request(warm); w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "warm") {
+			t.Fatalf("warm inventory at capacity: %d %s", w.Code, w.Body)
+		}
+	}()
+	if w := request(cold); w.Code != http.StatusOK {
+		t.Fatalf("cold retry: %d %s", w.Code, w.Body)
+	}
+}
+
 func TestFingerprintInventorySharesScanBudget(t *testing.T) {
 	dir := t.TempDir()
 	ssh := &types.SSH{Ja4Ssh: "fixture-ssh"}
