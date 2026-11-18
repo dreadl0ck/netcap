@@ -313,6 +313,10 @@ func (s *Server) handleAuditFiles(w http.ResponseWriter, r *http.Request) {
 		for _, dir := range dirs {
 			files, err := listAuditFiles(r.Context(), dir)
 			if err != nil {
+				if errors.Is(err, errAuditInventoryLimit) {
+					http.Error(w, err.Error(), http.StatusRequestEntityTooLarge)
+					return
+				}
 				if r.Context().Err() != nil {
 					return
 				}

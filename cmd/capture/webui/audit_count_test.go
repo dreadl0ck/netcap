@@ -3,9 +3,12 @@ package webui
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -77,6 +80,30 @@ func TestAuditMetaDoesNotCountMislabeledOrLinkedTracks(t *testing.T) {
 		t.Logf("symlink unavailable: %v", err)
 	} else {
 		check(link, "UDP")
+	}
+}
+
+func TestAuditInventoryRejectsOversizedDirectory(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
+	for i := range maxAuditInventoryEntries {
+		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("aux-%d", i)), nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	request := func() *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		HandleAuditFiles(dir)(w, httptest.NewRequest(http.MethodGet, "/api/files/audit", nil))
+		return w
+	}
+	if w := request(); w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "HTTP.ncap") {
+		t.Fatalf("oversized inventory returned %d: %s", w.Code, w.Body.String())
+	}
+	if err := os.Remove(filepath.Join(dir, "aux-0")); err != nil {
+		t.Fatal(err)
+	}
+	if w := request(); w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"recordCount":1`) {
+		t.Fatalf("exact-limit inventory returned %d: %s", w.Code, w.Body.String())
 	}
 }
 

@@ -63,6 +63,10 @@ func HandleAuditFiles(outputDir string) http.HandlerFunc {
 
 		files, err := listAuditFiles(r.Context(), outputDir)
 		if err != nil {
+			if errors.Is(err, errAuditInventoryLimit) {
+				http.Error(w, err.Error(), http.StatusRequestEntityTooLarge)
+				return
+			}
 			log.Printf("[WebUI] Error listing audit files: %v", err)
 			RespondJSON(w, http.StatusInternalServerError, map[string]string{
 				"error": fmt.Sprintf("Failed to list audit files: %v", err),
@@ -430,24 +434,37 @@ func ListAuditFiles(outputDir string) ([]AuditFileInfo, error) {
 	return listAuditFiles(context.Background(), outputDir)
 }
 
+const maxAuditInventoryEntries = 4096
+
+var errAuditInventoryLimit = errors.New("audit inventory exceeds 4096 directory entries")
+
 func listAuditFiles(ctx context.Context, outputDir string) ([]AuditFileInfo, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	var files []AuditFileInfo
 
-	// Check if directory exists first
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		// Directory doesn't exist yet, return empty list instead of error
+	dir, err := os.Open(outputDir)
+	if errors.Is(err, os.ErrNotExist) {
 		return files, nil
 	}
-
-	entries, err := os.ReadDir(outputDir)
 	if err != nil {
 		return nil, err
 	}
+	defer dir.Close()
+	entries, err := dir.ReadDir(maxAuditInventoryEntries + 1)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return nil, err
+	}
+	if len(entries) > maxAuditInventoryEntries {
+		return nil, errAuditInventoryLimit
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
 
 	for _, entry := range entries {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if entry.IsDir() {
 			continue
 		}
