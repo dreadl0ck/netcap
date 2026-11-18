@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/aggregate"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
@@ -95,7 +96,15 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 					if pages.Exceeded || state.Exceeded || pages.RetainedBytes != 0 || state.RetainedBytes != 0 || pages.PeakBytes > pages.LimitBytes || state.PeakBytes > state.LimitBytes {
 						t.Fatalf("unexpected budget state: pages=%+v state=%+v", pages, state)
 					}
+					cache := bookJSON[aggregate.Health](t, filepath.Join(finiteOut, "AggregateStateHealth.json"))
+					if cache.LimitBytes != cfg.DecoderConfig.MaxAggregateStateBytes || cache.PeakBytes > cache.LimitBytes || cache.Evictions == 0 || cache.DiskWrites == 0 {
+						t.Fatalf("aggregate spill was not exercised within the cap: %+v", cache)
+					}
+					if scratch, err := filepath.Glob(filepath.Join(finiteOut, ".netcap-aggregate-*")); err != nil || len(scratch) != 0 {
+						t.Fatalf("aggregate scratch remained: %v, %v", scratch, err)
+					}
 					t.Logf("strict finite replay peaks: page bytes %d, TCP state bytes %d", pages.PeakBytes, state.PeakBytes)
+					t.Logf("aggregate peak cache bytes %d; database bytes %d; evictions %d", cache.PeakBytes, cache.DatabaseBytes, cache.Evictions)
 				}
 				t.Run("strict-finite-budgets", func(t *testing.T) { checkStrictFinite(t, 1) })
 				t.Run("strict-finite-budgets-4-workers", func(t *testing.T) { checkStrictFinite(t, 4) })
