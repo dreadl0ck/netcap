@@ -2515,7 +2515,7 @@ Return metadata for one analysis session: completion status, error message if an
 
 ### `get_stream_content`
 
-Read a verified directional stream page as base64, retaining manifest hash, status, loss limitations and a bounded span page (timestamps, gaps, datagram boundaries). Subsequent byte offsets require manifestSHA256 from the first response. No execution or complete-coverage claim is inferred.
+Read a verified directional stream page as base64, retaining manifest hash, status, loss limitations and a bounded span page (timestamps, gaps, datagram boundaries). Nonzero byte or span offsets require manifestSHA256 from the first response. No execution or complete-coverage claim is inferred.
 
 **Hints:** read-only
 

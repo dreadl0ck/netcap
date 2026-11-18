@@ -360,6 +360,7 @@
     "verification": "Manual YARA scans cap directory enumeration at the remaining inventory allowance plus one entry, across the entire tree. TestYaraArtifactWalkBoundsNestedInventory verifies early rejection of an over-budget nested directory and lexically ordered traversal at the exact budget. Focused WebUI artifact race tests passed."
   },
   "captureContractPackageCoverage": {
+    "mcpDocsParity": "Hosted run 44213908273 failed TestToolDocsUpToDate because the span continuation contract had changed without regenerating docs/mcp/tools.md. The generated reference now matches the tool registry, reference changes trigger Capture Contracts, and the full portable internal/mcp race suite passed locally.",
     "behavior": "The workflow now triggers on internal/behavior changes and checks the package and its command subpackage. Both passed the portable race suite and vet; the updated workflow passed actionlint.",
     "hostedBaseline": "GitHub Actions run 44212750188 passed all Capture Contracts steps at b68bb8c3, including collector, official MCP stdio, race tests and vet. The run finished despite newer pushes. At 1b45e427, the local Darwin native YARA file and HTTP package race suites also passed; hosted qualification for this newer revision was still running.",
     "scheduling": "Capture Contracts preserves running master checks through subsequent pushes and cancels superseded pull-request runs. GitHub run history showed repeated canceled master runs before this change. actionlint v1.7.7 passed; hosted completion under the new policy is pending.",
