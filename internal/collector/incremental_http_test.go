@@ -302,9 +302,22 @@ func TestIncrementalHTTPMissingHandshakeIsExplicitlyCompletionOnly(t *testing.T)
 }
 
 func TestHTTPSharedScratchPressureQualifiesCaptureWithoutAnalyzers(t *testing.T) {
+	testHTTPSharedExtractionPressure(t, true)
+}
+
+func TestHTTPSharedBufferPressureQualifiesCaptureWithoutAnalyzers(t *testing.T) {
+	testHTTPSharedExtractionPressure(t, false)
+}
+
+func testHTTPSharedExtractionPressure(t *testing.T, scratch bool) {
+	t.Helper()
 	previous := filedecoder.GetGlobalConfig()
 	policy := filedecoder.GetDefaultConfig()
-	policy.FileExtraction.SizeLimits.MaxScratchBytes = 16
+	if scratch {
+		policy.FileExtraction.SizeLimits.MaxScratchBytes = 16
+	} else {
+		policy.FileExtraction.SizeLimits.MaxInflightBytes = 16
+	}
 	policy.FileExtraction.Advanced.EnableYaraScanning = false
 	policy.FileExtraction.Advanced.EnableMagika = false
 	filedecoder.SetGlobalConfig(policy)
@@ -333,6 +346,16 @@ func TestHTTPSharedScratchPressureQualifiesCaptureWithoutAnalyzers(t *testing.T)
 	stage, _, err := evidence.ReadAuditStage(out, manifest.RunID, "TCP", manifest.AuditStagesGeneration)
 	if err != nil || stage.Coverage != "complete" || stage.Records == 0 {
 		t.Fatal(stage, err)
+	}
+	if !scratch {
+		report := bookJSON[filedecoder.AnalysisReport](t, filepath.Join(out, filedecoder.AnalysisReportFile))
+		if report.State != "partial" || !strings.Contains(strings.Join(report.ExtractionIssues, "\n"), "shared extraction capacity") {
+			t.Fatalf("buffer pressure missing from artifact report: %+v", report)
+		}
+		if _, err := os.Stat(filepath.Join(out, ".artifact-scratch")); !os.IsNotExist(err) {
+			t.Fatalf("buffer refusal should occur before opening scratch: %v", err)
+		}
+		return
 	}
 	stage, _, err = evidence.ReadAuditStage(out, manifest.RunID, "File", manifest.AuditStagesGeneration)
 	if err != nil || stage.Coverage != "partial" || stage.Records != 1 {
