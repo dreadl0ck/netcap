@@ -263,6 +263,29 @@ func TestSmallTimelineReportsCorruptInputWhileRegularLaneIsOccupied(t *testing.T
 	}
 }
 
+func TestTimelineDiscoveryCountsNonAuditEntries(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Timestamp: 1}})
+	baseline, _, err := timelineFingerprint(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < maxTimelineDirectoryEntries-1; i++ {
+		if err := os.WriteFile(filepath.Join(dir, "ignored-"+strconv.Itoa(i)), nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got, files, err := timelineFingerprint(dir); err != nil || got != baseline || len(files) != 1 {
+		t.Fatalf("at limit: generation=%q files=%d err=%v", got, len(files), err)
+	}
+	if err := os.Mkdir(filepath.Join(dir, "one-more"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if got, files, err := timelineFingerprint(dir); err == nil || got != "" || len(files) != 0 {
+		t.Fatalf("over limit: generation=%q files=%d err=%v", got, len(files), err)
+	}
+}
+
 func TestTimelineRejectsLinkedTrackBeforeIndexing(t *testing.T) {
 	path := writeTimelineAuditFilePlain(t, t.TempDir(), "DNS", types.Type_NC_DNS, []proto.Message{dnsRecord(100, "192.0.2.1", "192.0.2.2")})
 	dir := t.TempDir()

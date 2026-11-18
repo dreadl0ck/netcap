@@ -236,11 +236,13 @@ func readSmallTimelineFile(ref timelineFileRef, remaining int64) ([]byte, error)
 	return io.ReadAll(io.LimitReader(reader, remaining+1))
 }
 
+const maxTimelineDirectoryEntries = 16_384
+
 // timelineFingerprint identifies the current generation of audit records in
 // outDir. Any change in the set of files, their size or mtime invalidates the
 // cached index.
 func timelineFingerprint(outDir string) (string, []timelineFileRef, error) {
-	entries, err := os.ReadDir(outDir)
+	dir, err := os.Open(outDir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "empty", nil, nil
@@ -248,16 +250,35 @@ func timelineFingerprint(outDir string) (string, []timelineFileRef, error) {
 
 		return "", nil, err
 	}
+	defer dir.Close()
 
 	compressedSuffix := defaults.FileExtension + ".gz"
+	var entries []os.DirEntry
+	remaining := maxTimelineDirectoryEntries
+	for {
+		batch, err := dir.ReadDir(min(256, remaining+1))
+		remaining -= len(batch)
+		if remaining < 0 {
+			return "", nil, fmt.Errorf("timeline directory exceeds %d entries", maxTimelineDirectoryEntries)
+		}
+		for _, e := range batch {
+			if name := e.Name(); !e.IsDir() && (strings.HasSuffix(name, compressedSuffix) || strings.HasSuffix(name, defaults.FileExtension)) {
+				entries = append(entries, e)
+			}
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return "", nil, err
+		}
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
 	filesByType := make(map[string]timelineFileRef, len(entries))
 	h := sha256.New()
 
 	for _, e := range entries {
 		name := e.Name()
-		if e.IsDir() || (!strings.HasSuffix(name, compressedSuffix) && !strings.HasSuffix(name, defaults.FileExtension)) {
-			continue
-		}
 		info, err := e.Info()
 		if err != nil {
 			return "", nil, fmt.Errorf("inspect timeline input %s: %w", name, err)
