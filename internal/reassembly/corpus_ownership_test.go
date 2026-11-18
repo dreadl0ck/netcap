@@ -110,12 +110,12 @@ func TestDisjointGapFillDeliversAcrossRollover(t *testing.T) {
 }
 
 func TestDisjointQueuePrependSkipsOverlapWalk(t *testing.T) {
-	const depth = 4096
+	const depth, prepends = 4096, 1024
 	factory := new(flushProgressFactory)
 	pool := NewStreamPool(factory)
 	a := NewAssembler(pool)
 	defer a.Release()
-	budget, err := NewPageBudget((depth+1)*PageAllocationBytes, nil)
+	budget, err := NewPageBudget((depth+prepends)*PageAllocationBytes, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,23 +125,28 @@ func TestDisjointQueuePrependSkipsOverlapWalk(t *testing.T) {
 		a.assemble(flow, &layers.TCP{SrcPort: 12345, DstPort: 80, Seq: seq, SYN: syn, BaseLayer: layers.BaseLayer{Payload: data}})
 	}
 	send(100, true, nil)
+	prefix := bytes.Repeat([]byte("ab"), prepends)
+	prefix = append(prefix, 'a')
+	tailStart := uint32(101 + len(prefix))
 	tail := make([]byte, depth)
 	for i := range tail {
 		tail[i] = byte(i)
-		send(106+uint32(i), false, tail[i:i+1])
+		send(tailStart+uint32(i), false, tail[i:i+1])
 	}
 	half := &pool.connections(nil)[0].conn.c2s
 	examined := 0
 	a.overlapPagesExamined = &examined
-	send(103, false, []byte("ab"))
+	for i := prepends - 1; i >= 0; i-- {
+		offset := 2*i + 1
+		send(101+uint32(offset), false, prefix[offset:offset+1])
+	}
 	a.overlapPagesExamined = nil
-	if examined != 0 || half.pages != depth+1 || half.first.seq != 103 || half.first.next.seq != 106 {
+	if examined != 0 || half.pages != depth+prepends || half.first.seq != 102 || half.first.next.seq != 104 {
 		t.Fatalf("prepend: examined=%d queued=%d", examined, half.pages)
 	}
-	send(101, false, []byte("12"))
-	send(105, false, []byte("3"))
+	send(101, false, prefix)
 	a.FlushAll()
-	if got, want := factory.streams[0].data, append([]byte("12ab3"), tail...); !bytes.Equal(got, want) {
+	if got, want := factory.streams[0].data, append(prefix, tail...); !bytes.Equal(got, want) {
 		t.Fatalf("reassembled payload: got %d bytes, want %d", len(got), len(want))
 	}
 	if health := budget.Health(); health.RetainedBytes != 0 || health.Exceeded || factory.streams[0].completions != 1 {
