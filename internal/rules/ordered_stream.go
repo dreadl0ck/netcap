@@ -164,7 +164,10 @@ func (s *OrderedStream) advance(watermark int64) (int, error) {
 		if a.record.NetcapType() != b.record.NetcapType() {
 			return a.record.NetcapType() < b.record.NetcapType()
 		}
-		return bytes.Compare(a.wire, b.wire) < 0
+		if order := bytes.Compare(a.wire, b.wire); order != 0 {
+			return order < 0
+		}
+		return a.scope < b.scope
 	})
 	count, consumed := 0, 0
 	for _, p := range s.pending {

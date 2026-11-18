@@ -229,6 +229,38 @@ func TestCaptureTimeConfigDrainsAtClose(t *testing.T) {
 	}
 }
 
+func TestOrderedStreamBreaksEqualRecordTiesByScope(t *testing.T) {
+	for _, order := range [][2]string{{"fixture/z", "fixture/a"}, {"fixture/a", "fixture/z"}} {
+		var notes []string
+		cfg := &Config{Rules: []*Rule{{Name: "fixture", Type: "TCP", Expression: "SYN", Enabled: true,
+			Sequence: &Sequence{AfterType: "Secret", After: "AuthSuccessSet", GroupBy: []string{"CommunityID"}, AfterGroupBy: []string{"CommunityID"}, Within: 60},
+		}}}
+		s, err := NewOrderedStream(cfg, alertWriterFunc(func(a *types.Alert) error {
+			notes = append(notes, a.Notes)
+			return nil
+		}), "fixture")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, scope := range order {
+			tcp := scopedTCP(2, "192.0.2.1")
+			tcp.CommunityID = "1:fixture"
+			if err := s.pushScoped(scope, &types.Secret{Timestamp: tcp.Timestamp - 1, CommunityID: tcp.CommunityID, AuthSuccessSet: true}); err != nil {
+				t.Fatal(err)
+			}
+			if err := s.pushScoped(scope, tcp); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if n, err := s.Finish(); n != 2 || err != nil {
+			t.Fatalf("finish: alerts=%d err=%v", n, err)
+		}
+		if len(notes) != 2 || !strings.Contains(notes[0], `"scope":"fixture/a"`) || !strings.Contains(notes[1], `"scope":"fixture/z"`) {
+			t.Fatalf("input order %v: unexpected alert evidence order %v", order, notes)
+		}
+	}
+}
+
 func BenchmarkOrderedStreamEqualTime(b *testing.B) {
 	for range b.N {
 		s, err := NewOrderedStream(groupedConfig(), alertWriterFunc(func(*types.Alert) error { return nil }), "fixture")
