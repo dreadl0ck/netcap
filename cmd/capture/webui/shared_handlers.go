@@ -981,6 +981,10 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	if r.Context().Err() != nil {
+		http.Error(w, "Audit field lookup canceled", http.StatusRequestTimeout)
+		return
+	}
 
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -1001,11 +1005,15 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 	defer reader.Close()
 
 	// Read header
-	_, err = reader.ReadHeader()
+	header, err := reader.ReadHeader()
 	if err != nil {
 		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to read header: %v", err),
 		})
+		return
+	}
+	if header.Type.String() != "NC_"+strings.TrimPrefix(recordTypeName, "NC_") {
+		http.Error(w, "Unexpected audit header type", http.StatusInternalServerError)
 		return
 	}
 
@@ -1018,13 +1026,18 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 
 	// Read records and collect values
 	for recordsScanned < maxRecordsToScan {
+		if r.Context().Err() != nil {
+			http.Error(w, "Audit field lookup canceled", http.StatusRequestTimeout)
+			return
+		}
 		record, err := reader.NextRecord()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
 			log.Printf("[WebUI] Error reading record: %v", err)
-			continue
+			http.Error(w, "Cannot read audit field values", http.StatusInternalServerError)
+			return
 		}
 
 		recordsScanned++

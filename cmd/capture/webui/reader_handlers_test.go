@@ -3,8 +3,11 @@ package webui
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"errors"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -15,6 +18,35 @@ import (
 	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+func TestAuditFieldValuesRejectsDamagedInput(t *testing.T) {
+	body, err := proto.Marshal(&types.UDP{SrcPort: 5353})
+	if err != nil {
+		t.Fatal(err)
+	}
+	valid := auditReaderFixture(t, false, &types.Header{Type: types.Type_NC_UDP}, body)
+	damaged := auditReaderFixture(t, true, &types.Header{Type: types.Type_NC_UDP}, body, []byte{0x80})
+	canceled, cancel := context.WithCancel(t.Context())
+	cancel()
+	for _, tc := range []struct {
+		name, path, kind string
+		ctx              context.Context
+		status           int
+	}{
+		{"valid", valid.file.Name(), "UDP", t.Context(), http.StatusOK},
+		{"wrong type", valid.file.Name(), "HTTP", t.Context(), http.StatusInternalServerError},
+		{"damaged record", damaged.file.Name(), "UDP", t.Context(), http.StatusInternalServerError},
+		{"canceled", valid.file.Name(), "UDP", canceled, http.StatusRequestTimeout},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			HandleAuditFieldValues(w, httptest.NewRequestWithContext(tc.ctx, http.MethodGet, "/api/audit/UDP/values", nil), tc.path, tc.kind)
+			if w.Code != tc.status || bytes.Contains(w.Body.Bytes(), []byte(`"5353"`)) != (tc.status == http.StatusOK) {
+				t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
+			}
+		})
+	}
+}
 
 func TestAuditRecordHandlerReaders(t *testing.T) {
 	for _, tc := range []struct {
