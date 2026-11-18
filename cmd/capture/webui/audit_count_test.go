@@ -2,6 +2,7 @@ package webui
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,6 +17,26 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
+
+func TestFullAuditStreamRefusesOversizedFrameBeforeReadingBody(t *testing.T) {
+	path := writeTimelineAuditFilePlain(t, t.TempDir(), "HTTP", types.Type_NC_HTTP, nil)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, writeErr := f.Write(binary.AppendUvarint(nil, maxFullAuditFrameBytes+1))
+	if err := f.Close(); err != nil || writeErr != nil {
+		t.Fatalf("write fixture: %v, %v", writeErr, err)
+	}
+	for _, query := range []string{"?full=true", "?full=true&countOnly=true"} {
+		w := httptest.NewRecorder()
+		HandleAuditStream(w, httptest.NewRequest(http.MethodGet, "/stream"+query, nil), path, "HTTP")
+		body := w.Body.String()
+		if !strings.Contains(body, "event: error") || !strings.Contains(body, "record size exceeds read limit") || strings.Contains(body, "event: complete") {
+			t.Fatalf("%s: unexpected stream %q", query, body)
+		}
+	}
+}
 
 func TestAuditStreamsHoldSlotsThroughResponseWrite(t *testing.T) {
 	file := writeTimelineAuditFilePlain(t, t.TempDir(), "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})

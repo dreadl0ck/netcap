@@ -593,6 +593,8 @@ func HandleAuditMeta(w http.ResponseWriter, r *http.Request, filePath, auditType
 
 var auditStreamSlots = make(chan struct{}, 4)
 
+const maxFullAuditFrameBytes = 16 << 20
+
 // HandleAuditStream streams audit records via Server-Sent Events.
 func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditType string) {
 	select {
@@ -786,7 +788,9 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 		}
 		var record proto.Message
 		var raw []byte
-		if candidates != nil {
+		if fullRecords {
+			raw, err = auditReader.delimitedReader.NextWithLimit(maxFullAuditFrameBytes)
+		} else if candidates != nil {
 			raw, err = auditReader.NextRaw()
 		} else {
 			record, err = auditReader.NextRecord()
@@ -803,7 +807,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 		if candidates != nil && int64(totalScanned) <= indexedTotal && !candidates.Contains(uint32(totalScanned-1)) {
 			continue
 		}
-		if candidates != nil {
+		if fullRecords || candidates != nil {
 			record, err = auditReader.DecodeRecord(raw)
 			if err != nil {
 				sendError(fmt.Sprintf("Failed to decode audit record: %v", err))
