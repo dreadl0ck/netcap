@@ -48,10 +48,10 @@ func TestIncrementalHandoffFragmentBudget(t *testing.T) {
 	fragment := func(at int64) *core.StreamData {
 		return &core.StreamData{CaptureInformation: gopacket.CaptureInfo{Timestamp: time.Unix(0, at)}}
 	}
-	first, clientTie, serverTie := fragment(1), fragment(2), fragment(2)
-	client := core.DataFragments{clientTie, first}
-	server := core.DataFragments{serverTie}
-	wantCredit := 3 * int64(unsafe.Sizeof(core.DataFragment(nil)))
+	gapFiller, queued, earlyServer, serverTie := fragment(3), fragment(1), fragment(2), fragment(3)
+	client := core.DataFragments{gapFiller, queued}
+	server := core.DataFragments{earlyServer, serverTie}
+	wantCredit := 4 * int64(unsafe.Sizeof(core.DataFragment(nil)))
 	canceled := false
 	budget, _ := core.NewStateBudget(wantCredit-1, func() { canceled = true })
 	if got, credit, err := incrementalHandoffFragments(budget, client, server); got != nil || credit != 0 || !errors.Is(err, core.ErrStreamStateBudget) || budget.Health().RetainedBytes != 0 {
@@ -66,7 +66,7 @@ func TestIncrementalHandoffFragmentBudget(t *testing.T) {
 	budget.Release(wantCredit - 1)
 	budget, _ = core.NewStateBudget(wantCredit, nil)
 	got, credit, err := incrementalHandoffFragments(budget, client, server)
-	if err != nil || len(got) != 3 || got[0] != first || got[1] != clientTie || got[2] != serverTie || client[0] != clientTie || budget.Health().RetainedBytes != wantCredit {
+	if err != nil || len(got) != 4 || got[0] != earlyServer || got[1] != gapFiller || got[2] != queued || got[3] != serverTie || client[0] != gapFiller || budget.Health().RetainedBytes != wantCredit {
 		t.Fatalf("handoff lost ordering or accounting: fragments=%v credit=%d err=%v state=%+v", got, credit, err, budget.Health())
 	}
 	budget.Release(credit)

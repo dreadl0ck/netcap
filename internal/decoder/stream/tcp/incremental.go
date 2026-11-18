@@ -3,7 +3,6 @@ package tcp
 import (
 	"bytes"
 	"errors"
-	"sort"
 	"unsafe"
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
@@ -243,13 +242,7 @@ func incrementalHandoffFragments(budget *core.StateBudget, client, server core.D
 	if !budget.TryReserve(credit) {
 		return nil, 0, core.ErrStreamStateBudget
 	}
-	fragments := make(core.DataFragments, 0, count)
-	fragments = append(fragments, client...)
-	fragments = append(fragments, server...)
-	sort.SliceStable(fragments, func(i, j int) bool {
-		return fragments[i].CaptureInfo().Timestamp.Before(fragments[j].CaptureInfo().Timestamp)
-	})
-	return fragments, credit, nil
+	return core.MergeByTimestamp(client, server), credit, nil
 }
 
 func (t *tcpConnection) retainIncrementalBanner(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) bool {
