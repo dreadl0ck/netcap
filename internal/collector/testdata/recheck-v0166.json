@@ -175,6 +175,7 @@
     "verification": "Full Web UI race suite passes. Two focused tests pass ten repetitions under race instrumentation: replacement of a queued generation before completion, and shutdown while the timeline lane is occupied."
   },
   "sealedAuditQueryGeneration": {
+    "communityFilterDescriptor": "TestPartialAuditCommunityFilterUsesVerifiedStream verifies that sealed Community ID filtering returns the expected record and completion without building a separate path-based index. Focused WebUI partial-audit and Community ID stream race tests passed.",
     "completionVerificationCapacity": "Final seal verification shares the two-slot admission limit. TestPartialAuditCompletionHonorsVerificationCapacity verifies that a final check waits when both slots are held, stops on its request deadline, and succeeds after release. Focused partial-audit race tests passed.",
     "verifiedDescriptor": "TestPartialAuditReaderRetainsVerifiedDescriptor confirms that streaming uses the same descriptor that passed digest verification. Path replacement cannot substitute records; final verification rejects the changed path, and growth of the open file before streaming yields no records. Focused evidence and WebUI race tests passed.",
     "streamHeaderType": "TestPartialAuditRejectsMislabeledSealedFile verifies that a digest-valid UDP file listed as Connection returns an SSE error without records or completion. Focused partial audit race tests passed.",

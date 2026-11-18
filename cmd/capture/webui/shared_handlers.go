@@ -657,7 +657,8 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	}
 	var candidates *roaring.Bitmap
 	var indexedTotal int64
-	if len(communityIDs) > 0 {
+	// The path-based index is not bound to the verified descriptor.
+	if len(communityIDs) > 0 && partialAuditContext(r) == nil {
 		candidates, indexedTotal, err = communitySelectedBitmap(filePath, communityIDs)
 		if err != nil {
 			sendError(fmt.Sprintf("Failed to index Community IDs: %v", err))

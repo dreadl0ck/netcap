@@ -21,7 +21,7 @@ import (
 func partialAuditFixture(t *testing.T, service bool) (http.Handler, string, string, string) {
 	t.Helper()
 	directory := t.TempDir()
-	file := writeTimelineAuditFile(t, directory, "Connection", types.Type_NC_Connection, []proto.Message{&types.Connection{SrcIP: "192.0.2.1"}, &types.Connection{SrcIP: "192.0.2.2"}})
+	file := writeTimelineAuditFile(t, directory, "Connection", types.Type_NC_Connection, []proto.Message{&types.Connection{SrcIP: "192.0.2.1", CommunityID: "1:fixture-a"}, &types.Connection{SrcIP: "192.0.2.2", CommunityID: "1:fixture-b"}})
 	capture, err := evidence.NewCapture(context.Background(), directory, evidence.CaptureConfig{Kind: "live", Source: "fixture"})
 	if err != nil {
 		t.Fatal(err)
@@ -45,6 +45,23 @@ func partialAuditFixture(t *testing.T, service bool) (http.Handler, string, stri
 	}
 	handler := s.captureSelectionMiddleware(http.HandlerFunc(s.handleAuditRecords))
 	return handler, capture.RunID(), snapshot.Generation, file
+}
+
+func TestPartialAuditCommunityFilterUsesVerifiedStream(t *testing.T) {
+	handler, _, _, file := partialAuditFixture(t, false)
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/api/audit/Connection/stream?sessionId=owned&allowPartial=true&communityId=1:fixture-b", nil)
+	handler.ServeHTTP(w, r)
+	body := w.Body.String()
+	if w.Code != 200 || strings.Count(body, "event: record\n") != 1 || !strings.Contains(body, "192.0.2.2") || !strings.Contains(body, "event: complete\n") {
+		t.Fatalf("unexpected filtered sealed stream: %d %s", w.Code, body)
+	}
+	communityIndexCache.Lock()
+	_, cached := communityIndexCache.files[file]
+	communityIndexCache.Unlock()
+	if cached {
+		t.Fatal("sealed filtering built a path-based index")
+	}
 }
 
 func TestPartialAuditCompletionHonorsVerificationCapacity(t *testing.T) {
