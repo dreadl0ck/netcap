@@ -47,6 +47,39 @@ func TestCaptureRawDeflate(t *testing.T) {
 	}
 }
 
+func TestCaptureRetainsDecodedPrefixAtWireBudget(t *testing.T) {
+	plain := bytes.Repeat([]byte("fixture text\n"), MaxPrefix/13+100)
+	for _, kind := range []string{"gzip", "deflate"} {
+		t.Run(kind, func(t *testing.T) {
+			var wire bytes.Buffer
+			var w io.WriteCloser
+			var err error
+			if kind == "gzip" {
+				w, err = gzip.NewWriterLevel(&wire, gzip.NoCompression)
+			} else {
+				w, err = zlib.NewWriterLevel(&wire, zlib.NoCompression)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := w.Write(plain); err != nil {
+				t.Fatal(err)
+			}
+			if err := w.Close(); err != nil {
+				t.Fatal(err)
+			}
+			body, state := capture(bytes.NewReader(wire.Bytes()), kind)
+			if state != "truncated" || len(body) < MaxPrefix/2 || len(body) >= MaxPrefix || !bytes.HasPrefix(plain, body) {
+				t.Fatalf("wire budget: decoded %d bytes, state=%s", len(body), state)
+			}
+			body, state = capture(bytes.NewReader(wire.Bytes()[:MaxPrefix]), kind)
+			if state != "decode-failed" || body != nil {
+				t.Fatalf("genuinely incomplete encoding: decoded %d bytes, state=%s", len(body), state)
+			}
+		})
+	}
+}
+
 func TestCaptureConcatenatedGzipMembers(t *testing.T) {
 	encode := func(parts ...string) []byte {
 		t.Helper()

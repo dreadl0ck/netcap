@@ -112,6 +112,7 @@ func capture(body io.Reader, encoding string) ([]byte, string) {
 			return nil, "unsupported-encoding"
 		}
 	}
+	clipped := overflow
 	for i := len(layers) - 1; i >= 0; i-- {
 		var reader io.ReadCloser
 		switch layers[i] {
@@ -126,6 +127,9 @@ func capture(body io.Reader, encoding string) ([]byte, string) {
 			continue
 		}
 		if err != nil {
+			if clipped && err == io.ErrUnexpectedEOF {
+				return nil, state
+			}
 			return nil, "decode-failed"
 		}
 		wire, err = io.ReadAll(io.LimitReader(reader, MaxPrefix+1))
@@ -139,8 +143,17 @@ func capture(body io.Reader, encoding string) ([]byte, string) {
 			return wire[:MaxPrefix], "truncated"
 		}
 		if err != nil {
+			if clipped && err == io.ErrUnexpectedEOF {
+				for _, inner := range layers[:i] {
+					if inner != "identity" {
+						return nil, state
+					}
+				}
+				return wire, state
+			}
 			return nil, "decode-failed"
 		}
+		clipped = false
 	}
 	return wire, state
 }
