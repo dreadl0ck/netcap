@@ -56,16 +56,14 @@ func backedGzipContentType(c *core.ConversationInfo, spool *file.BodySpool, fall
 		return fallback, nil
 	}
 	defer r.Close()
-	limit := file.GetMaxFileSize()
-	if limit <= 0 || limit > 100<<20 {
-		limit = 100 << 20
+	const scratchSize, prefixSize = 4096, 512
+	if err := c.StateBudget.Reserve(scratchSize + prefixSize); err != nil {
+		return "", err
 	}
-	bounded := &io.LimitedReader{R: r, N: limit + 1}
-	prefix, release, err := readSourceRequestBody(c, bounded)
-	defer release()
-	if c.FragmentError != nil {
-		return "", c.FragmentError
-	}
+	defer c.StateBudget.Release(scratchSize + prefixSize)
+	bounded := &io.LimitedReader{R: r, N: sourceRequestBodyLimit() + 1}
+	var sample [prefixSize]byte
+	prefix, err := scanSourceBody(bounded, make([]byte, scratchSize), sample[:0])
 	if err != nil || bounded.N == 0 {
 		return fallback, nil
 	}

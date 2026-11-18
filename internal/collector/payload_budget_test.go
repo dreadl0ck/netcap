@@ -350,14 +350,22 @@ func TestBackedHTTPPassiveUploadUsesBoundedInput(t *testing.T) {
 }
 
 func TestBackedHTTPGzipPressurePreservesSpooledResponse(t *testing.T) {
-	testBackedHTTPGzipPressurePreservesSpool(t, false)
+	testBackedHTTPGzipPressurePreservesSpool(t, false, 64<<10)
 }
 
 func TestBackedHTTPGzipPressurePreservesSpooledRequest(t *testing.T) {
-	testBackedHTTPGzipPressurePreservesSpool(t, true)
+	testBackedHTTPGzipPressurePreservesSpool(t, true, 64<<10)
 }
 
-func testBackedHTTPGzipPressurePreservesSpool(t *testing.T, upload bool) {
+func TestBackedHTTPGzipFitsSmallerStateBudget(t *testing.T) {
+	for _, upload := range []bool{false, true} {
+		t.Run(fmt.Sprintf("upload=%t", upload), func(t *testing.T) {
+			testBackedHTTPGzipPressurePreservesSpool(t, upload, 104<<10)
+		})
+	}
+}
+
+func testBackedHTTPGzipPressurePreservesSpool(t *testing.T, upload bool, limit int64) {
 	t.Helper()
 	wire, input := newBookCapture(t)
 	send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 80, false)
@@ -385,12 +393,20 @@ func testBackedHTTPGzipPressurePreservesSpool(t *testing.T, upload bool) {
 	cfg.CaptureEvidence = true
 	cfg.DecoderConfig.IncludeDecoders = "TCP,Connection,HTTP,File"
 	cfg.DecoderConfig.FileStorage = "files"
-	cfg.DecoderConfig.MaxRetainedTCPStateBytes = 64 << 10
+	cfg.DecoderConfig.MaxRetainedTCPStateBytes = limit
 	cfg.DecoderConfig.LocalCompletionStateLoss = true
 	err := New(cfg).CollectPcap(input)
 	manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
 	health := bookJSON[core.StateBudgetHealth](t, filepath.Join(out, "TCPStreamStateBudget.json"))
-	if !errors.Is(err, core.ErrCompletionStateBudget) || manifest.Status != "partial" || health.Exceeded || health.RetainedBytes != 0 || health.CompletionRejectedBytes != 65536 {
+	if health.Exceeded || health.RetainedBytes != 0 || health.PeakBytes > limit {
+		t.Fatalf("invalid gzip state accounting: %+v", health)
+	}
+	if limit > 64<<10 {
+		if err != nil || manifest.Status != "done" || health.CompletionRejectedBytes != 0 {
+			t.Fatalf("gzip did not fit: status=%s err=%v budget=%+v", manifest.Status, err, health)
+		}
+		t.Logf("peak TCP state: %d bytes", health.PeakBytes)
+	} else if !errors.Is(err, core.ErrCompletionStateBudget) || manifest.Status != "partial" || health.CompletionRejectedBytes != 65536 {
 		t.Fatalf("gzip probe pressure: status=%s err=%v budget=%+v", manifest.Status, err, health)
 	}
 	files := bookRecords(t, out, "File", func() *types.File { return new(types.File) })
