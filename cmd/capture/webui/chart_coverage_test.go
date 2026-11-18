@@ -54,6 +54,23 @@ func TestChartDataBucketMeansPreserveRecordStatistics(t *testing.T) {
 	}
 }
 
+func TestChartJSONPreservesNegativeExtrema(t *testing.T) {
+	for _, values := range [][2]int32{{-1, 5}, {-9, -2}} {
+		dir := t.TempDir()
+		writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{
+			&types.HTTP{Timestamp: 1, ResContentLength: values[0]},
+			&types.HTTP{Timestamp: 2, ResContentLength: values[1]},
+		})
+		result, err := (&Server{}).aggregateChartDataAcrossDirs(t.Context(), []string{dir}, "HTTP", "ResContentLength", "1s", 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if result.MinValue != float64(values[0]) || result.MaxValue != float64(values[1]) {
+			t.Fatalf("values %v: min=%v max=%v", values, result.MinValue, result.MaxValue)
+		}
+	}
+}
+
 func TestChartJSONBucketLimitAndRetry(t *testing.T) {
 	dir := t.TempDir()
 	rows := make([]proto.Message, maxJSONChartBuckets+1)

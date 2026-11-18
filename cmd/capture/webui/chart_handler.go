@@ -574,7 +574,6 @@ func (s *Server) extractChartData(ctx context.Context, filePath, auditType, fiel
 	}
 	timeBuckets := make(map[int64]bucketStats)
 	var minValue, maxValue, sum float64
-	minValue = -1
 	totalCount := 0
 
 	// Read all records and extract field values
@@ -616,10 +615,10 @@ func (s *Server) extractChartData(ctx context.Context, filePath, auditType, fiel
 		timeBuckets[bucket] = stats
 
 		// Update statistics
-		if minValue == -1 || value < minValue {
+		if totalCount == 0 || value < minValue {
 			minValue = value
 		}
-		if value > maxValue {
+		if totalCount == 0 || value > maxValue {
 			maxValue = value
 		}
 		sum += value
