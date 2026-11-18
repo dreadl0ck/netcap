@@ -206,6 +206,17 @@ func TestSmallTimelineReportsCorruptInputWhileRegularLaneIsOccupied(t *testing.T
 	}
 }
 
+func TestTimelineRejectsLinkedTrackBeforeIndexing(t *testing.T) {
+	path := writeTimelineAuditFilePlain(t, t.TempDir(), "DNS", types.Type_NC_DNS, []proto.Message{dnsRecord(100, "192.0.2.1", "192.0.2.2")})
+	dir := t.TempDir()
+	if err := os.Symlink(path, filepath.Join(dir, "DNS.ncap")); err != nil {
+		t.Fatal(err)
+	}
+	if status := timelineIndexFor(dir); status.State != timelineStateError || status.Index != nil || !strings.Contains(status.Err, "DNS.ncap is not a regular file") {
+		t.Fatalf("linked track admitted: %+v", status)
+	}
+}
+
 func TestTimelineRejectsGenerationChangedBeforeBuild(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFilePlain(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{dnsRecord(100, "192.0.2.1", "192.0.2.2")})

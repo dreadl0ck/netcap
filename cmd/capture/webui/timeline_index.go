@@ -249,19 +249,17 @@ func timelineFingerprint(outDir string) (string, []timelineFileRef, error) {
 	filesByType := make(map[string]timelineFileRef, len(entries))
 	h := sha256.New()
 
-	names := make([]string, 0, len(entries))
 	for _, e := range entries {
-		if e.IsDir() || (!strings.HasSuffix(e.Name(), compressedSuffix) && !strings.HasSuffix(e.Name(), defaults.FileExtension)) {
+		name := e.Name()
+		if e.IsDir() || (!strings.HasSuffix(name, compressedSuffix) && !strings.HasSuffix(name, defaults.FileExtension)) {
 			continue
 		}
-		names = append(names, e.Name())
-	}
-	sort.Strings(names)
-
-	for _, name := range names {
-		info, statErr := os.Stat(filepath.Join(outDir, name))
-		if statErr != nil {
-			continue
+		info, err := e.Info()
+		if err != nil {
+			return "", nil, fmt.Errorf("inspect timeline input %s: %w", name, err)
+		}
+		if !info.Mode().IsRegular() {
+			return "", nil, fmt.Errorf("timeline input %s is not a regular file", name)
 		}
 		if info.Size() == 0 {
 			continue
