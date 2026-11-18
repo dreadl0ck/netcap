@@ -87,7 +87,7 @@ func TestEmptyAuditStreamSerializesRecordsAsArray(t *testing.T) {
 // canned event stream: 2 record events, a progress event (ignored by
 // the parser since we don't surface it), and a terminal complete event.
 func TestStreamAuditRecordsDecodesSSE(t *testing.T) {
-	const body = "event: record\ndata: {\"x\":1}\n\n" +
+	const body = "event: record\ndata: {\ndata: \"x\":1}\n\n" +
 		"event: record\ndata: {\"x\":2}\n\n" +
 		"event: progress\ndata: {\"count\":2,\"scanned\":2}\n\n" +
 		"event: complete\ndata: {\"total\":2,\"scanned\":2,\"executionTimeMs\":3}\n\n"
@@ -111,7 +111,7 @@ func TestStreamAuditRecordsDecodesSSE(t *testing.T) {
 	if len(recs) != 2 {
 		t.Fatalf("records = %d, want 2", len(recs))
 	}
-	if string(recs[0]) != `{"x":1}` || string(recs[1]) != `{"x":2}` {
+	if string(recs[0]) != "{\n \"x\":1}" || string(recs[1]) != `{"x":2}` {
 		t.Errorf("record payloads: %q %q", recs[0], recs[1])
 	}
 	if !strings.Contains(string(comp), `"total":2`) {

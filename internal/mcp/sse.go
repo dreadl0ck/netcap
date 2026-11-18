@@ -16,7 +16,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 )
 
 // SSERecord is one decoded event from the audit-record stream endpoint.
@@ -88,13 +87,13 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 
 	var (
 		curEvent string
-		curData  strings.Builder
+		curData  []byte
 	)
 	flush := func() error {
-		if curEvent == "" && curData.Len() == 0 {
+		if curEvent == "" && len(curData) == 0 {
 			return nil
 		}
-		payload := json.RawMessage(strings.TrimSpace(curData.String()))
+		payload := json.RawMessage(bytes.TrimSpace(curData))
 		switch curEvent {
 		case "record":
 			if countOnly || recordLimit > 0 && len(records) >= recordLimit {
@@ -112,17 +111,17 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 			terminalEvent = "error"
 		}
 		curEvent = ""
-		curData.Reset()
+		curData = nil
 		return nil
 	}
 	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "" {
+		line := scanner.Bytes()
+		if len(line) == 0 {
 			if err := flush(); err != nil {
 				return nil, nil, "", err
 			}
 			if terminalEvent != "" {
-				if !json.Valid(completeJSON) || !strings.HasPrefix(string(completeJSON), "{") {
+				if len(completeJSON) == 0 || completeJSON[0] != '{' || !json.Valid(completeJSON) {
 					return nil, nil, "", fmt.Errorf("invalid SSE terminal payload")
 				}
 				if terminalEvent == "complete" {
@@ -134,16 +133,13 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 			}
 			continue
 		}
-		switch {
-		case strings.HasPrefix(line, "event:"):
-			curEvent = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
-		case strings.HasPrefix(line, "data:"):
-			if curData.Len() > 0 {
-				curData.WriteByte('\n')
+		if name, ok := bytes.CutPrefix(line, []byte("event:")); ok {
+			curEvent = string(bytes.TrimSpace(name))
+		} else if data, ok := bytes.CutPrefix(line, []byte("data:")); ok {
+			if len(curData) > 0 {
+				curData = append(curData, '\n')
 			}
-			curData.WriteString(strings.TrimPrefix(line, "data:"))
-		case strings.HasPrefix(line, ":"):
-			// SSE comment, ignored.
+			curData = append(curData, data...)
 		}
 	}
 	if err := scanner.Err(); err != nil {
