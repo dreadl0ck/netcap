@@ -375,7 +375,16 @@ func TestHTTPSourceRetainsLargeURLEncodedPayload(t *testing.T) {
 }
 
 func TestHTTPSourceSpoolsSparseURLEncodedFormUnderStateCap(t *testing.T) {
-	body := "label=fixture&data=" + strings.Repeat("ab%20", 12<<10)
+	t.Run("long-field", func(t *testing.T) {
+		testHTTPSourceSpooledFormParity(t, "label=fixture&data="+strings.Repeat("ab%20", 12<<10))
+	})
+	t.Run("padding", func(t *testing.T) {
+		testHTTPSourceSpooledFormParity(t, "label=fixture&"+strings.Repeat("&", 160<<10)+"data="+strings.Repeat("ab%20", 1600))
+	})
+}
+
+func testHTTPSourceSpooledFormParity(t *testing.T, body string) {
+	t.Helper()
 	wire := fmt.Sprintf("POST /form HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\n\r\n%sGET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n", len(body), body)
 	data := core.DataFragments{wireFragment(0, []byte(wire), 1), wireFragment(1, []byte("HTTP/1.1 204 No Content\r\n\r\nHTTP/1.1 204 No Content\r\n\r\n"), 2)}
 	want, wantFiles := captureExtractedHTTP(t, data, false)
@@ -408,7 +417,7 @@ func TestStreamedFormPressureReleasesUnpublishedFields(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := strings.NewReader("first=retained&large=" + strings.Repeat("x", 1<<20))
-	if err := h.parseLargeBackedURLEncodedForm(req, body); !errors.Is(err, core.ErrCompletionStateBudget) {
+	if err := h.parseBackedURLEncodedForm(req, body); !errors.Is(err, core.ErrCompletionStateBudget) {
 		t.Fatalf("expected local completion pressure, got %v", err)
 	}
 	if req.Form != nil || req.PostForm != nil || body.Len() == 0 {

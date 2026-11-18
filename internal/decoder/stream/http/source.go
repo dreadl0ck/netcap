@@ -91,51 +91,28 @@ func sourceBackedForm(request *http.Request) (media, boundary string) {
 	return "", ""
 }
 
-func (h *httpReader) parseBackedSmallForm(req *http.Request, spool *file.BodySpool, media string) error {
+func (h *httpReader) parseBackedJSONForm(req *http.Request, spool *file.BodySpool) error {
 	size := spool.Size()
 	if size > maxJSONFormBytes {
-		if media == "application/x-www-form-urlencoded" {
-			return h.parseLargeBackedURLEncodedForm(req, spool.Reader())
-		}
 		req.Form, _ = evidenceQuery(req.URL.RawQuery)
 		return fmt.Errorf("backed form exceeds 1 MiB")
 	}
 	// Charge temporary decoding separately from the fields retained for pairing.
 	credit := 4096 + 64*size
-	urlEncoded := media == "application/x-www-form-urlencoded"
-	if urlEncoded {
-		credit = 4096 + 2*size // Input plus the string passed to the form parser.
-	}
 	if err := h.conversation.StateBudget.Reserve(credit); err != nil {
 		h.conversation.FragmentError = err
 		return err
 	}
-	defer func() { h.conversation.StateBudget.Release(credit) }()
+	defer h.conversation.StateBudget.Release(credit)
 	body := make([]byte, int(size))
 	if _, err := io.ReadFull(spool.Reader(), body); err != nil {
 		file.RecordArtifactWriteError(err)
 		return err
 	}
-	if urlEncoded {
-		extra := size // Decoded keys and values no longer alias the input string.
-		for pair := range bytes.SplitSeq(body, []byte("&")) {
-			if len(pair) != 0 {
-				extra += 256
-			}
-		}
-		if err := h.conversation.StateBudget.Reserve(extra); err != nil {
-			h.conversation.FragmentError = err
-			return err
-		}
-		credit += extra
-	}
-	parseErr := decodeEvidenceForm(req, body, urlEncoded)
+	parseErr := parseEvidenceForm(req, body)
 	var retained int64
 	for name, values := range req.PostForm {
 		retained += 256 + int64(len(name))
-		if urlEncoded {
-			retained += 64 * int64(len(values)) // Value slices in both Form and PostForm.
-		}
 		for _, value := range values {
 			retained += int64(len(value))
 		}
@@ -148,7 +125,7 @@ func (h *httpReader) parseBackedSmallForm(req *http.Request, spool *file.BodySpo
 	return parseErr
 }
 
-func (h *httpReader) parseLargeBackedURLEncodedForm(req *http.Request, body io.Reader) error {
+func (h *httpReader) parseBackedURLEncodedForm(req *http.Request, body io.Reader) error {
 	const scratch = 4096
 	budget := h.conversation.StateBudget
 	reserve := func(n int64) error {
@@ -165,9 +142,9 @@ func (h *httpReader) parseLargeBackedURLEncodedForm(req *http.Request, body io.R
 	reader := bufio.NewReaderSize(body, scratch)
 	query, queryErr := evidenceQuery(req.URL.RawQuery)
 	post := make(url.Values)
-	var token strings.Builder
-	var temporary, fields int64
-	defer func() { budget.Release(temporary + fields) }()
+	var token []byte
+	var fields, decoding int64
+	defer func() { budget.Release(int64(cap(token)) + fields + decoding) }()
 	var first error
 	for {
 		part, err := reader.ReadSlice('&')
@@ -176,20 +153,27 @@ func (h *httpReader) parseLargeBackedURLEncodedForm(req *http.Request, body io.R
 			return err
 		}
 		part = bytes.TrimSuffix(part, []byte("&"))
-		if len(part) != 0 {
-			// Cover token capacity, growth copies, and decoded strings while they overlap.
-			charge := 4 * int64(len(part))
-			if err := reserve(charge); err != nil {
+		if needed := len(token) + len(part); needed > cap(token) {
+			capacity := max(needed, 2*cap(token))
+			if err := reserve(int64(capacity)); err != nil {
 				return err
 			}
-			temporary += charge
-			token.Write(part)
+			grown := make([]byte, len(token), capacity)
+			copy(grown, token)
+			budget.Release(int64(cap(token)))
+			token = grown
 		}
+		token = append(token, part...)
 		if err == bufio.ErrBufferFull {
 			continue
 		}
-		if token.Len() != 0 {
-			key, value, ok := decodeEvidencePair(token.String(), true)
+		if len(token) != 0 {
+			charge := 2 * int64(len(token)) // Input string plus decoded key and value.
+			if err := reserve(charge); err != nil {
+				return err
+			}
+			decoding = charge
+			key, value, ok := decodeEvidencePair(string(token), true)
 			if !ok {
 				if first == nil {
 					first = fmt.Errorf("invalid query escape")
@@ -205,9 +189,9 @@ func (h *httpReader) parseLargeBackedURLEncodedForm(req *http.Request, body io.R
 				fields += retained
 				post.Add(key, value)
 			}
-			token.Reset()
-			budget.Release(temporary)
-			temporary = 0
+			token = token[:0]
+			budget.Release(decoding)
+			decoding = 0
 		}
 		if err == io.EOF {
 			break

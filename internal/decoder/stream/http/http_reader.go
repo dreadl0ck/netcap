@@ -717,8 +717,10 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 			h.sourceHeaderCredits += n
 			return nil
 		}))
-	case spool != nil && form != "":
-		err = h.parseBackedSmallForm(req, spool, form)
+	case spool != nil && form == "application/x-www-form-urlencoded":
+		err = h.parseBackedURLEncodedForm(req, spool.Reader())
+	case spool != nil && form == "application/json":
+		err = h.parseBackedJSONForm(req, spool)
 	default:
 		err = parseEvidenceForm(req, body)
 	}

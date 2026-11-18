@@ -422,7 +422,7 @@ func testBackedHTTPGzipPressurePreservesSpool(t *testing.T, upload bool, limit i
 func TestBackedHTTPFormPressurePreservesSpooledArtifact(t *testing.T) {
 	wire, input := newBookCapture(t)
 	send := wire.openTCP("192.0.2.1", "198.51.100.1", 45000, 80, false)
-	body := strings.Repeat("data=fixture&", 2048) + "tail=done"
+	body := strings.Repeat("data=fixture&", 4096) + "tail=done"
 	send(false, false, false, fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\n\r\n", len(body)))
 	for off := 0; off < len(body); off += 8192 {
 		send(false, false, false, body[off:min(off+8192, len(body))])
