@@ -20,9 +20,13 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sort"
 
@@ -58,6 +62,8 @@ type ServicesResponse struct {
 	TotalCount int              `json:"totalCount"`
 }
 
+var serviceInventorySlots = make(chan struct{}, 2)
+
 // handleServices returns a list of all services
 func (s *Server) handleServices(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -72,8 +78,30 @@ func (s *Server) handleServices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	services, err := readServices(outDir)
+	var budget *inventoryAuditBudget
+	if r.URL.Query().Get("mcpPage") == "true" {
+		ctx := r.Context()
+		if ctx.Err() != nil {
+			return
+		}
+		select {
+		case serviceInventorySlots <- struct{}{}:
+			defer func() { <-serviceInventorySlots }()
+		default:
+			RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "service inventory is busy"})
+			return
+		}
+		budget = &inventoryAuditBudget{ctx: ctx, stored: maxCollectionPageScanBytes, bodies: maxCollectionPageScanBytes, rows: maxCollectionPageRows}
+	}
+	services, err := readServiceInventory(outDir, budget)
 	if err != nil {
+		if errors.Is(err, errInventoryAuditLimit) {
+			RespondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": err.Error()})
+			return
+		}
+		if errors.Is(err, context.Canceled) {
+			return
+		}
 		log.Printf("[WebUI] Failed to read services: %v", err)
 		http.Error(w, "Failed to read services", http.StatusInternalServerError)
 		return
@@ -93,10 +121,14 @@ func (s *Server) handleServices(w http.ResponseWriter, r *http.Request) {
 
 // readServices reads and aggregates Service data from the output directory
 func readServices(outDir string) ([]ServiceSummary, error) {
+	return readServiceInventory(outDir, nil)
+}
+
+func readServiceInventory(outDir string, budget *inventoryAuditBudget) ([]ServiceSummary, error) {
 	filePath := filepath.Join(outDir, "Service.ncap.gz")
 
 	services := make([]ServiceSummary, 0)
-	err := visitAuditRecords(filePath, "Service", func(svc *types.Service) {
+	visit := func(svc *types.Service) {
 		services = append(services, ServiceSummary{
 			Timestamp:            svc.Timestamp,
 			IP:                   svc.IP,
@@ -118,9 +150,30 @@ func readServices(outDir string) ([]ServiceSummary, error) {
 			DetectedProtocolName: svc.DetectedProtocolName,
 			MatchedProbeID:       svc.MatchedProbeID,
 		})
-	})
-	if err != nil {
-		return nil, err
+	}
+	if budget == nil {
+		if err := visitAuditRecords(filePath, "Service", visit); err != nil {
+			return nil, err
+		}
+	} else {
+		reader, err := budget.open(filePath, types.Type_NC_Service)
+		if errors.Is(err, os.ErrNotExist) {
+			return services, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		defer reader.Close()
+		for {
+			record, err := budget.next(reader)
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return nil, err
+			}
+			visit(record.(*types.Service))
+		}
 	}
 
 	// Sort by bytes (server + client) descending

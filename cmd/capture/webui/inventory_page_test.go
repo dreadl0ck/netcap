@@ -115,6 +115,19 @@ func TestDomainInventoryBoundsAnswerAssociations(t *testing.T) {
 	}
 }
 
+func TestServiceInventoryRejectsOversizedAudit(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFile(t, dir, "Service", types.Type_NC_Service, []proto.Message{
+		&types.Service{Name: "fixture-service"},
+		&types.Service{Banner: strings.Repeat("x", maxCollectionPageScanBytes)},
+	})
+	w := httptest.NewRecorder()
+	(&Server{outDir: dir}).handleServices(w, httptest.NewRequest(http.MethodGet, "/api/services?mcpPage=true&pageLimit=1", nil))
+	if w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "generation") || strings.Contains(w.Body.String(), "fixture-service") {
+		t.Fatalf("expected refusal without a partial service page: %d %s", w.Code, w.Body)
+	}
+}
+
 func TestDomainInventorySharesAuditBudget(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFile(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{&types.DNS{}})
@@ -278,6 +291,11 @@ func TestMCPHTTPInventoryLimitsConcurrentResponses(t *testing.T) {
 func TestMCPDomainInventoryLimitsConcurrentResponses(t *testing.T) {
 	s := &Server{outDir: t.TempDir()}
 	testInventoryResponseCapacity(t, "/api/domains", s.handleDomains)
+}
+
+func TestMCPServiceInventoryLimitsConcurrentResponses(t *testing.T) {
+	s := &Server{outDir: t.TempDir()}
+	testInventoryResponseCapacity(t, "/api/services", s.handleServices)
 }
 
 func testInventoryResponseCapacity(t *testing.T, path string, handle http.HandlerFunc) {
