@@ -88,4 +88,12 @@ printf '%s' '[{"result":{"status":"ok","value":{"output":{"label":"text","mime_t
 	} else if row == nil || len(row.Analyzers) != 1 || row.Analyzers[0].State != "failed" || row.Analyzers[0].Error != "artifact hash changed" {
 		t.Fatalf("classifier hash failure not recorded: %+v", row)
 	}
+	analysisErr, persistenceErr := FinishAnalysis()
+	if persistenceErr != nil || analysisErr == nil {
+		t.Fatalf("analysis=%v persistence=%v", analysisErr, persistenceErr)
+	}
+	partial, coded := analysisErr.(interface{ ExitCode() int })
+	if yara && (!coded || partial.ExitCode() != 2) || !yara && coded {
+		t.Fatalf("unexpected analysis outcome: %T %v", analysisErr, analysisErr)
+	}
 }

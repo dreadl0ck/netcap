@@ -89,6 +89,7 @@ type analysisRuntime struct {
 	magika           *magika.Classifier
 	persistenceError error
 	sharedBudgetLoss bool
+	analyzerError    bool
 }
 
 type yaraBackend interface {
@@ -268,6 +269,7 @@ func (m *analysisRuntime) worker() {
 				}
 			}
 		}
+		var sharedBudgetLoss, analyzerError bool
 		for i := range result.Analyzers {
 			r := &result.Analyzers[i]
 			err := loadErr
@@ -301,6 +303,11 @@ func (m *analysisRuntime) worker() {
 			}
 			r.State = "completed"
 			if err != nil {
+				if errors.Is(err, errSharedArtifactBudget) {
+					sharedBudgetLoss = true
+				} else {
+					analyzerError = true
+				}
 				r.State = "failed"
 				if errors.Is(err, context.Canceled) {
 					r.State = "cancelled"
@@ -316,6 +323,8 @@ func (m *analysisRuntime) worker() {
 		}
 		cancel()
 		m.mu.Lock()
+		m.sharedBudgetLoss = m.sharedBudgetLoss || sharedBudgetLoss
+		m.analyzerError = m.analyzerError || analyzerError
 		m.queuedBytes -= job.size
 		job.entry.result = &result
 		m.report.Results[result.SHA256] = &result
@@ -503,7 +512,7 @@ func FinishAnalysis() (analysisErr, persistenceErr error) {
 			}
 		}
 	}
-	if m.sharedBudgetLoss {
+	if m.sharedBudgetLoss && !m.analyzerError {
 		analysisErr = artifactBudgetCoverageError{}
 	} else if m.report.State == "partial" && (m.yara != nil || m.magika != nil) {
 		analysisErr = fmt.Errorf("artifact processing incomplete; inspect %s", AnalysisReportFile)
