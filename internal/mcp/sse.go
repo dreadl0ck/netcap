@@ -189,6 +189,7 @@ func validateAuditCompletion(payload json.RawMessage, query url.Values, count in
 		Count      json.RawMessage `json:"count"`
 		NextOffset json.RawMessage `json:"nextOffset"`
 		Total      json.RawMessage `json:"total"`
+		Scanned    json.RawMessage `json:"scanned"`
 		HasMore    json.RawMessage `json:"hasMore"`
 	}
 	if err := json.Unmarshal(payload, &summary); err != nil {
@@ -221,6 +222,12 @@ func validateAuditCompletion(payload json.RawMessage, query url.Values, count in
 		total, err = strconv.Atoi(string(summary.Total))
 		if err != nil || total < 0 || count > 0 && (offset > total || count > total-offset) {
 			return fmt.Errorf("SSE completion total conflicts with delivered records")
+		}
+	}
+	if summary.Scanned != nil {
+		scanned, err := strconv.Atoi(string(summary.Scanned))
+		if err != nil || scanned < total || count > 0 && (offset > scanned || count > scanned-offset) {
+			return fmt.Errorf("SSE completion scanned count conflicts with the page or total")
 		}
 	}
 	if summary.HasMore != nil {
