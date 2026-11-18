@@ -38,6 +38,38 @@ func TestFullAuditStreamRefusesOversizedFrameBeforeReadingBody(t *testing.T) {
 	}
 }
 
+func TestFullAuditStreamEnforcesCumulativeScanBudget(t *testing.T) {
+	frame := &types.HTTP{RequestBody: make([]byte, maxFullAuditFrameBytes)}
+	frame.RequestBody = frame.RequestBody[:len(frame.RequestBody)-(proto.Size(frame)-maxFullAuditFrameBytes)]
+	if proto.Size(frame) != maxFullAuditFrameBytes {
+		t.Fatal("fixture does not fill the frame budget")
+	}
+	rows := []proto.Message{frame, frame, frame, frame}
+	path := writeTimelineAuditFilePlain(t, t.TempDir(), "HTTP", types.Type_NC_HTTP, rows)
+	count := func() string {
+		w := httptest.NewRecorder()
+		HandleAuditStream(w, httptest.NewRequest(http.MethodGet, "/stream?full=true&countOnly=true", nil), path, "HTTP")
+		return w.Body.String()
+	}
+	body := count()
+	payload, ok := strings.CutPrefix(body, "event: complete\ndata: ")
+	var summary struct{ Total int }
+	if !ok || json.Unmarshal([]byte(payload), &summary) != nil || summary.Total != 4 {
+		t.Fatalf("exact budget: %s", body)
+	}
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, writeErr := f.Write([]byte{0}) // A valid empty protobuf frame still costs scan work.
+	if err := f.Close(); err != nil || writeErr != nil {
+		t.Fatalf("append fixture: %v, %v", writeErr, err)
+	}
+	if body := count(); !strings.Contains(body, "decoded audit scan exceeds 64 MiB") || strings.Contains(body, "event: complete") {
+		t.Fatalf("over budget: %s", body)
+	}
+}
+
 func TestAuditStreamsHoldSlotsThroughResponseWrite(t *testing.T) {
 	file := writeTimelineAuditFilePlain(t, t.TempDir(), "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
 	req := func(suffix string) *http.Request {

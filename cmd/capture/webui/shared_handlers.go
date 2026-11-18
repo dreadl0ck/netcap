@@ -593,7 +593,10 @@ func HandleAuditMeta(w http.ResponseWriter, r *http.Request, filePath, auditType
 
 var auditStreamSlots = make(chan struct{}, 4)
 
-const maxFullAuditFrameBytes = 16 << 20
+const (
+	maxFullAuditFrameBytes = 16 << 20
+	maxFullAuditScanBytes  = 64 << 20
+)
 
 // HandleAuditStream streams audit records via Server-Sent Events.
 func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditType string) {
@@ -780,6 +783,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	matchedCount := 0
 	pageBytes := 0
 	pageFull := false
+	remainingScanBytes := maxFullAuditScanBytes
 	response := http.NewResponseController(w)
 
 	for {
@@ -789,7 +793,16 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 		var record proto.Message
 		var raw []byte
 		if fullRecords {
-			raw, err = auditReader.delimitedReader.NextWithLimit(maxFullAuditFrameBytes)
+			limit := min(maxFullAuditFrameBytes, remainingScanBytes)
+			raw, err = auditReader.delimitedReader.NextWithLimit(uint64(max(1, limit)))
+			charge := max(1, len(raw))
+			if (err == nil && charge > remainingScanBytes) || (limit < maxFullAuditFrameBytes && errors.Is(err, delimited.ErrRecordLimit)) {
+				sendError("decoded audit scan exceeds 64 MiB")
+				return
+			}
+			if err == nil {
+				remainingScanBytes -= charge
+			}
 		} else if candidates != nil {
 			raw, err = auditReader.NextRaw()
 		} else {
