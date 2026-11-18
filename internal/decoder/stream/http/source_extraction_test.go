@@ -359,6 +359,21 @@ func TestHTTPSourceIncludesPairedPayloads(t *testing.T) {
 	}
 }
 
+func TestHTTPSourceRetainsLargeURLEncodedPayload(t *testing.T) {
+	body := "label=fixture&data=" + strings.Repeat("x", maxJSONFormBytes)
+	request := fmt.Sprintf("POST /upload HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\n\r\n%sGET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n", len(body), body)
+	response := "HTTP/1.1 204 No Content\r\n\r\nHTTP/1.1 204 No Content\r\n\r\n"
+	data := core.DataFragments{wireFragment(0, []byte(request), 1), wireFragment(1, []byte(response), 2)}
+	want, wantFiles := captureHTTPWithPayloadOption(t, data, false, true)
+	got, files := captureHTTPWithPayloadOption(t, data, true, true)
+	if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(files, wantFiles) {
+		t.Fatal("buffered source form changed HTTP or File evidence")
+	}
+	if len(got) != 2 || string(got[0].RequestBody) != body || got[1].URL != "/next" || len(files) != 1 || !files[0].IsComplete {
+		t.Fatal("large form payload, extracted artifact or following transaction missing")
+	}
+}
+
 func TestHTTPRecordBorrowsRetainedResponsePayload(t *testing.T) {
 	previous := decoderconfig.Instance
 	t.Cleanup(func() { decoderconfig.Instance = previous })

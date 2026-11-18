@@ -370,7 +370,7 @@ func readEvidenceResponse(b *bufio.Reader, request *http.Request) (*http.Respons
 func evidenceQuery(raw string) (url.Values, error) {
 	values := url.Values{}
 	var first error
-	for _, pair := range strings.Split(raw, "&") {
+	for pair := range strings.SplitSeq(raw, "&") {
 		if pair == "" {
 			continue
 		}
