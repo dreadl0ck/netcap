@@ -368,6 +368,10 @@ func readEvidenceResponse(b *bufio.Reader, request *http.Request) (*http.Respons
 }
 
 func evidenceQuery(raw string) (url.Values, error) {
+	return decodeEvidenceQuery(raw, false)
+}
+
+func decodeEvidenceQuery(raw string, detach bool) (url.Values, error) {
 	values := url.Values{}
 	var first error
 	for pair := range strings.SplitSeq(raw, "&") {
@@ -383,6 +387,14 @@ func evidenceQuery(raw string) (url.Values, error) {
 			}
 			continue
 		}
+		if detach {
+			if k == key {
+				k = strings.Clone(k)
+			}
+			if v == value {
+				v = strings.Clone(v)
+			}
+		}
 		values.Add(k, v)
 	}
 	return values, first
@@ -391,6 +403,10 @@ func evidenceQuery(raw string) (url.Values, error) {
 const maxJSONFormBytes = 1 << 20
 
 func parseEvidenceForm(r *http.Request, body []byte) error {
+	return decodeEvidenceForm(r, body, false)
+}
+
+func decodeEvidenceForm(r *http.Request, body []byte, detach bool) error {
 	var queryErr error
 	r.Form, queryErr = evidenceQuery(r.URL.RawQuery)
 	contentType, params, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
@@ -416,7 +432,7 @@ func parseEvidenceForm(r *http.Request, body []byte) error {
 		return errors.Join(queryErr, parseEvidenceMultipart(r, bytes.NewReader(body), params["boundary"], nil))
 	}
 	if (r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH") && contentType == "application/x-www-form-urlencoded" {
-		post, err := evidenceQuery(string(body))
+		post, err := decodeEvidenceQuery(string(body), detach)
 		r.PostForm = post
 		for key, values := range post {
 			r.Form[key] = append(append([]string(nil), values...), r.Form[key]...)

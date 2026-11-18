@@ -8,7 +8,21 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"unsafe"
 )
+
+func TestDetachedEvidenceQueryDoesNotRetainInput(t *testing.T) {
+	raw := "label=fixture" + strings.Repeat("&", 64<<10)
+	values, err := decodeEvidenceQuery(raw, true)
+	if err != nil || len(values) != 1 || values.Get("label") != "fixture" {
+		t.Fatalf("unexpected decoded fields: %v, %v", values, err)
+	}
+	for name, field := range values {
+		if unsafe.StringData(name) == unsafe.StringData(raw) || unsafe.StringData(field[0]) == unsafe.StringData(raw[len("label="):]) {
+			t.Fatal("a retained field aliases the form input")
+		}
+	}
+}
 
 func TestMultipartFieldsAreExportedWithoutTemporaryFiles(t *testing.T) {
 	old, cfg, count := Decoder.Writer, config.Instance, Decoder.NumRecordsWritten

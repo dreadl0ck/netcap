@@ -115,7 +115,7 @@ func (h *httpReader) parseBackedSmallForm(req *http.Request, spool *file.BodySpo
 		return err
 	}
 	if urlEncoded {
-		extra := size // Unescaped key and value storage.
+		extra := size // Decoded keys and values no longer alias the input string.
 		for pair := range bytes.SplitSeq(body, []byte("&")) {
 			if len(pair) != 0 {
 				extra += 256
@@ -127,7 +127,7 @@ func (h *httpReader) parseBackedSmallForm(req *http.Request, spool *file.BodySpo
 		}
 		credit += extra
 	}
-	parseErr := parseEvidenceForm(req, body)
+	parseErr := decodeEvidenceForm(req, body, urlEncoded)
 	var retained int64
 	for name, values := range req.PostForm {
 		retained += 256 + int64(len(name))
