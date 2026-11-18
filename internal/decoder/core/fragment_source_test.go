@@ -17,6 +17,49 @@ func (failingFragments) Walk(func(DataFragment) bool) error { return errFragment
 
 var errFragmentFixture = errors.New("fixture source unavailable")
 
+type interruptedPrefixSource struct{ panicOnRead bool }
+
+func (interruptedPrefixSource) Count() int64 { return 2 }
+
+func (s interruptedPrefixSource) Walk(yield func(DataFragment) bool) error {
+	if yield(&StreamData{RawData: []byte("header")}) {
+		if s.panicOnRead {
+			panic(errFragmentFixture)
+		}
+		return errFragmentFixture
+	}
+	return nil
+}
+
+func TestBudgetedPrefixReleasesOnInterruptedSource(t *testing.T) {
+	budget, err := NewStateBudget(16, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if prefix, err := ReadBudgetedSourcePrefix(interruptedPrefixSource{}, 16, budget); prefix != nil || !errors.Is(err, errFragmentFixture) {
+		t.Fatalf("prefix=%q error=%v", prefix, err)
+	}
+	if h := budget.Health(); h.PeakBytes != 16 || h.RetainedBytes != 0 {
+		t.Fatalf("failed read credits: %+v", h)
+	}
+	func() {
+		defer func() {
+			if got := recover(); got != errFragmentFixture {
+				t.Fatalf("panic=%v", got)
+			}
+		}()
+		_, _ = ReadBudgetedSourcePrefix(interruptedPrefixSource{panicOnRead: true}, 16, budget)
+	}()
+	if h := budget.Health(); h.RetainedBytes != 0 || h.Exceeded {
+		t.Fatalf("interrupted source left a poisoned budget: %+v", h)
+	}
+	prefix, err := ReadBudgetedSourcePrefix(SliceSource{&StreamData{RawData: []byte("retry")}}, 16, budget)
+	if err != nil || string(prefix) != "retry" {
+		t.Fatalf("retry: prefix=%q error=%v", prefix, err)
+	}
+	budget.Release(int64(cap(prefix)))
+}
+
 func BenchmarkReadSourcePrefixSingleFragment(b *testing.B) {
 	source := SliceSource{&StreamData{RawData: make([]byte, 96)}}
 	b.ReportAllocs()
