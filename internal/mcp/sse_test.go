@@ -165,6 +165,41 @@ func TestStreamAuditRecordsChecksCompletionCursor(t *testing.T) {
 	}
 }
 
+func TestStreamAuditRecordsChecksContinuation(t *testing.T) {
+	for _, tc := range []struct {
+		name, summary string
+		count         int
+		countOnly     bool
+		valid         bool
+	}{
+		{"more", `{"total":8,"hasMore":true}`, 1, false, true},
+		{"last", `{"total":6,"hasMore":false}`, 1, false, true},
+		{"beyond EOF", `{"total":4,"hasMore":false}`, 0, false, true},
+		{"count only", `{"total":8,"hasMore":false}`, 0, true, true},
+		{"no progress", `{"total":8,"hasMore":true}`, 0, false, false},
+		{"false EOF", `{"total":8,"hasMore":false}`, 1, false, false},
+		{"past total", `{"total":5}`, 1, false, false},
+		{"false continuation", `{"total":6,"hasMore":true}`, 1, false, false},
+		{"null continuation", `{"hasMore":null}`, 1, false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, strings.Repeat("event: record\ndata: {}\n\n", tc.count))
+				fmt.Fprintf(w, "event: complete\ndata: %s\n\n", tc.summary)
+			}))
+			defer ts.Close()
+			query := url.Values{"offset": {"5"}}
+			if tc.countOnly {
+				query.Set("countOnly", "true")
+			}
+			records, _, terminal, err := NewNetcapClient(ts.URL).StreamAuditRecords("DNS", query, 1024)
+			if tc.valid && (err != nil || terminal != "complete" || len(records) != tc.count) || !tc.valid && (err == nil || records != nil) {
+				t.Fatalf("records=%v terminal=%q err=%v", records, terminal, err)
+			}
+		})
+	}
+}
+
 func TestStreamAuditRecordsEnforcesPageBounds(t *testing.T) {
 	const page = "event: record\ndata: {}\n\nevent: record\ndata: {}\n\nevent: complete\ndata: {}\n\n"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

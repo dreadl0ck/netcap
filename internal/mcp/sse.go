@@ -158,6 +158,8 @@ func validateAuditCompletion(payload json.RawMessage, query url.Values, count in
 	var summary struct {
 		Count      json.RawMessage `json:"count"`
 		NextOffset json.RawMessage `json:"nextOffset"`
+		Total      json.RawMessage `json:"total"`
+		HasMore    json.RawMessage `json:"hasMore"`
 	}
 	if err := json.Unmarshal(payload, &summary); err != nil {
 		return fmt.Errorf("invalid SSE completion summary: %w", err)
@@ -168,14 +170,41 @@ func validateAuditCompletion(payload json.RawMessage, query url.Values, count in
 			return fmt.Errorf("SSE completion count does not match delivered records")
 		}
 	}
-	if summary.NextOffset != nil {
-		offset, err := strconv.Atoi(query.Get("offset"))
-		if query.Get("offset") == "" {
-			err = nil
+	offset := 0
+	if raw := query.Get("offset"); raw != "" {
+		var err error
+		offset, err = strconv.Atoi(raw)
+		if err != nil || offset < 0 {
+			return fmt.Errorf("invalid requested SSE offset")
 		}
+	}
+	if summary.NextOffset != nil {
 		got, parseErr := strconv.Atoi(string(summary.NextOffset))
-		if err != nil || parseErr != nil || offset < 0 || got < offset || got-offset != count {
+		if parseErr != nil || got < offset || got-offset != count {
 			return fmt.Errorf("SSE completion nextOffset does not match delivered records")
+		}
+	}
+	countOnly := query.Get("countOnly") == "true"
+	total := 0
+	if summary.Total != nil {
+		var err error
+		total, err = strconv.Atoi(string(summary.Total))
+		if err != nil || total < 0 || count > 0 && (offset > total || count > total-offset) {
+			return fmt.Errorf("SSE completion total conflicts with delivered records")
+		}
+	}
+	if summary.HasMore != nil {
+		switch string(summary.HasMore) {
+		case "true":
+			if countOnly || count == 0 || summary.Total != nil && count >= total-offset {
+				return fmt.Errorf("SSE completion hasMore has no valid continuation")
+			}
+		case "false":
+			if !countOnly && summary.Total != nil && offset < total && count < total-offset {
+				return fmt.Errorf("SSE completion hides remaining records")
+			}
+		default:
+			return fmt.Errorf("invalid SSE completion hasMore")
 		}
 	}
 	return nil
