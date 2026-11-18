@@ -181,7 +181,7 @@ func readEvidenceHead(b *bufio.Reader) (messageEvidence, http.Header, error) {
 	for {
 		line, err = readHTTPLine(b, maxHTTPHeaders-total)
 		total += len(line)
-		if total > maxHTTPHeaders || len(e.headers) >= maxHTTPHeaderCount || err == bufio.ErrBufferFull {
+		if total > maxHTTPHeaders || err == bufio.ErrBufferFull {
 			e.issue("http-header-limit")
 			e.unsafe = true
 			return e, header, nil
@@ -191,6 +191,11 @@ func readEvidenceHead(b *bufio.Reader) (messageEvidence, http.Header, error) {
 				e.issue("incomplete-http-headers")
 				e.unsafe = true
 			}
+			return e, header, nil
+		}
+		if len(e.headers) >= maxHTTPHeaderCount {
+			e.issue("http-header-limit")
+			e.unsafe = true
 			return e, header, nil
 		}
 		raw := bytes.Clone(line)

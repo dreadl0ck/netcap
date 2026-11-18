@@ -144,6 +144,16 @@ func TestRound2GapAndDiscardNeverJoinBody(t *testing.T) {
 	}
 }
 
+func TestRound2ExactHeaderCountPreservesNextRequest(t *testing.T) {
+	wire := "GET /bounded HTTP/1.1\r\nHost: fixture.test\r\n" + strings.Repeat("X-Small: x\r\n", maxHTTPHeaderCount-1) +
+		"\r\nGET /next HTTP/1.1\r\nHost: fixture.test\r\n\r\n"
+	records := captureHTTP(t, core.DataFragments{wireFragment(0, []byte(wire), 10)})
+	if len(records) != 2 || records[0].URL != "/bounded" || records[1].URL != "/next" ||
+		len(records[0].RequestHeaders) != maxHTTPHeaderCount || strings.Contains(records[0].ReassemblyStatus, "http-header-limit") {
+		t.Fatalf("exact-count stream: got %d records; expected both requests", len(records))
+	}
+}
+
 func TestRound2HeaderBudgetsStopBeforeUntrustedBody(t *testing.T) {
 	for name, headers := range map[string]string{
 		"count": strings.Repeat("X-Small: x\r\n", maxHTTPHeaderCount+1),
