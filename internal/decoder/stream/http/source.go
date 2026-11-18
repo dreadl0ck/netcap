@@ -309,7 +309,7 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 					formFallback := form == "application/x-www-form-urlencoded" && (mode != requestSpooled || sourceRequestBodyLimit() >= maxJSONFormBytes)
 					if formFallback {
 						bound = &io.LimitedReader{R: body, N: maxJSONFormBytes + 1}
-					} else if mode == requestSpooled || mode == requestCappedSample {
+					} else if mode != requestSample && decoderconfig.Instance != nil {
 						bound = &io.LimitedReader{R: body, N: sourceRequestBodyLimit() + 1}
 					}
 					if bound != nil {

@@ -219,17 +219,24 @@ func TestHTTPSourceGzipPreflightStopsAtSpoolLimit(t *testing.T) {
 
 func TestHTTPSourceOversizedPostPreservesOnlyAllowedPrefix(t *testing.T) {
 	const limit = 128
-	for _, tc := range []struct{ name, media, body string }{
-		{"opaque", "application/octet-stream", strings.Repeat("x", limit) + "y"},
-		{"json", "application/json", `{"label":"fixture"}` + strings.Repeat(" ", limit)},
-		{"urlencoded", "application/x-www-form-urlencoded", "label=fixture&padding=" + strings.Repeat("x", limit)},
+	for _, tc := range []struct {
+		name, media, body string
+		includePayloads   bool
+	}{
+		{"opaque", "application/octet-stream", strings.Repeat("x", limit) + "y", false},
+		{"opaque-with-payloads", "application/octet-stream", strings.Repeat("x", limit) + "y", true},
+		{"json", "application/json", `{"label":"fixture"}` + strings.Repeat(" ", limit), false},
+		{"urlencoded", "application/x-www-form-urlencoded", "label=fixture&padding=" + strings.Repeat("x", limit), false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			wire := fmt.Sprintf("POST /fixture.bin HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n%sPOST /encoded HTTP/1.1\r\nHost: fixture.test\r\nContent-Encoding: br\r\nContent-Length: 4\r\n\r\ndata", tc.media, len(tc.body), tc.body)
 			data := core.DataFragments{wireFragment(0, []byte(wire), 1)}
-			rows, artifacts := captureHTTPWithBodyLimit(t, data, true, false, limit)
+			rows, artifacts := captureHTTPWithBodyLimit(t, data, true, tc.includePayloads, limit)
 			if len(rows) != 1 || rows[0].URL != "/fixture.bin" {
 				t.Fatalf("oversized request emitted unexpected observations: %v", rows)
+			}
+			if tc.includePayloads && string(rows[0].RequestBody) != tc.body[:limit] {
+				t.Fatalf("unexpected retained request payload: %q", rows[0].RequestBody)
 			}
 			want := file.ComputeHashes([]byte(tc.body[:limit])).SHA256
 			if len(artifacts) != 1 || artifacts[0].IsComplete || artifacts[0].Length != limit || artifacts[0].GetHashes().GetSHA256() != want {
