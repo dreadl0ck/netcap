@@ -330,6 +330,7 @@
     "verification": "The official stdio harness passed 162 schema-validated calls across 82 of 119 advertised tools on a fresh portable CLI, with zero failures. The UDP presentation conversation for the fixture tuple returned adjacent 16-byte pages matching one 32-byte page, with stable total size and correct offsets."
   },
   "timelineTrackTypeIntegrity": {
+    "confinedOpen": "TestTimelineRejectsLinkedReplacementAfterDiscovery verifies that both timeline lanes reject a track replaced by a symlink after discovery. Focused timeline, completion and artifact confinement tests passed under the race detector.",
     "regularInputs": "TestTimelineRejectsLinkedTrackBeforeIndexing verifies that a linked audit track fails during discovery and does not produce a ready index. Focused timeline and completion race tests passed.",
     "generationIntegrity": "TestTimelineRejectsGenerationChangedBeforeBuild verifies that adding an audit file after generation discovery prevents the stale index from becoming ready; retry indexes both tracks under a new generation. Focused timeline and completion tests passed under the race detector.",
     "laneFailure": "TestSmallTimelineReportsCorruptInputWhileRegularLaneIsOccupied verifies that invalid gzip fails in the small lane while the regular lane is held. The over-expansion control still indexes all 4096 records in the regular lane. Focused timeline and completion race tests passed.",

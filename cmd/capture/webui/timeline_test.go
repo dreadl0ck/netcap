@@ -217,6 +217,32 @@ func TestTimelineRejectsLinkedTrackBeforeIndexing(t *testing.T) {
 	}
 }
 
+func TestTimelineRejectsLinkedReplacementAfterDiscovery(t *testing.T) {
+	for _, regular := range []bool{false, true} {
+		dir := t.TempDir()
+		path := writeTimelineAuditFilePlain(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{dnsRecord(100, "192.0.2.1", "192.0.2.2")})
+		generation, files, err := timelineFingerprint(dir)
+		if err != nil || len(files) != 1 {
+			t.Fatalf("discover fixture: %v, %v", files, err)
+		}
+		if regular {
+			files[0].size = timelineSmallInputBytes + 1
+		}
+		moved := filepath.Join(t.TempDir(), "DNS.ncap")
+		if err := os.Rename(path, moved); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink(moved, path); err != nil {
+			t.Fatal(err)
+		}
+		entry := &timelineIndexEntry{finished: make(chan struct{}), state: timelineStateIndexing}
+		buildTimelineIndex(entry, dir, generation, files)
+		if entry.state != timelineStateError || entry.index != nil || entry.errMsg != "index DNS: invalid artifact path" {
+			t.Fatalf("regular lane=%t: replacement not rejected on open: %s %s", regular, entry.state, entry.errMsg)
+		}
+	}
+}
+
 func TestTimelineRejectsGenerationChangedBeforeBuild(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFilePlain(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{dnsRecord(100, "192.0.2.1", "192.0.2.2")})

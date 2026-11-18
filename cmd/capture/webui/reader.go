@@ -52,12 +52,16 @@ func NewAuditRecordReader(filePath string) (*AuditRecordReader, error) {
 	if err != nil {
 		return nil, err
 	}
+	return auditRecordReaderFromFile(file, strings.HasSuffix(filePath, ".gz"))
+}
 
+func auditRecordReaderFromFile(file *os.File, compressed bool) (*AuditRecordReader, error) {
 	var reader io.Reader = file
 	var gzReader *gzip.Reader
 
 	// Check if file is gzipped
-	if strings.HasSuffix(filePath, ".gz") {
+	if compressed {
+		var err error
 		gzReader, err = gzip.NewReader(file)
 		if err != nil {
 			file.Close()

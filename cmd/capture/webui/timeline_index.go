@@ -41,6 +41,7 @@ import (
 	"github.com/RoaringBitmap/roaring"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -208,16 +209,12 @@ func snapshotSmallTimeline(files []timelineFileRef) ([][]byte, error) {
 }
 
 func readSmallTimelineFile(ref timelineFileRef, remaining int64) ([]byte, error) {
-	f, err := os.Open(ref.path)
+	f, info, err := artifactio.Open(filepath.Dir(ref.path), filepath.Base(ref.path))
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	info, err := f.Stat()
-	if err != nil {
-		return nil, err
-	}
-	if !info.Mode().IsRegular() || info.Size() != ref.size {
+	if info.Size() != ref.size {
 		return nil, fmt.Errorf("timeline input changed")
 	}
 	var reader io.Reader = io.LimitReader(f, ref.size)
@@ -651,7 +648,11 @@ func assembleTimelineIndex(fingerprint string, types []*tlTypeIndex) *timelineIn
 
 // indexTimelineType reads one audit record file and builds its time index.
 func indexTimelineType(path, typeName string, eventLimit int) (*tlTypeIndex, error) {
-	reader, err := NewAuditRecordReader(path)
+	f, _, err := artifactio.Open(filepath.Dir(path), filepath.Base(path))
+	if err != nil {
+		return nil, err
+	}
+	reader, err := auditRecordReaderFromFile(f, strings.HasSuffix(path, ".gz"))
 	if err != nil {
 		return nil, err
 	}
