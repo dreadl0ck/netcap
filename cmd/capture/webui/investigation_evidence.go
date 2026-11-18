@@ -139,6 +139,9 @@ func (s *Server) handleStreamEvidence(w http.ResponseWriter, r *http.Request) {
 			Manifest     streamutils.StreamEvidenceManifest `json:"manifest"`
 			SpanCount    int                                `json:"spanCount"`
 			SpansOmitted bool                               `json:"spansOmitted"`
+			timestamp    int64
+			validTime    bool
+			identity     string
 		}
 		rows := []row{}
 		const manifestLimit = 16 << 20
@@ -160,24 +163,26 @@ func (s *Server) handleStreamEvidence(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Incomplete stream evidence: "+err.Error()+"; request an individual stream by ID", http.StatusUnprocessableEntity)
 				return
 			}
-			rows = append(rows, row{entry.Name(), summary.StreamEvidenceManifest, len(summary.Spans), true})
+			m := summary.StreamEvidenceManifest
+			timestamp, timeErr := strconv.ParseInt(m.FirstPacketNs, 10, 64)
+			rows = append(rows, row{
+				ID: entry.Name(), Manifest: m, SpanCount: len(summary.Spans), SpansOmitted: true,
+				timestamp: timestamp, validTime: timeErr == nil,
+				identity: strings.Join([]string{m.FirstPacketNs, m.Protocol, m.ConnectionKey, m.CommunityID, m.Client.SHA256, m.Server.SHA256}, "\x00"),
+			})
 		}
 		sort.Slice(rows, func(i, j int) bool {
-			a, b := rows[i].Manifest, rows[j].Manifest
-			ta, ea := strconv.ParseInt(a.FirstPacketNs, 10, 64)
-			tb, eb := strconv.ParseInt(b.FirstPacketNs, 10, 64)
-			if ea == nil && eb == nil && ta != tb {
-				return ta < tb
+			a, b := &rows[i], &rows[j]
+			if a.validTime && b.validTime && a.timestamp != b.timestamp {
+				return a.timestamp < b.timestamp
 			}
-			if (ea == nil) != (eb == nil) {
-				return ea == nil
+			if a.validTime != b.validTime {
+				return a.validTime
 			}
-			ka := strings.Join([]string{a.FirstPacketNs, a.Protocol, a.ConnectionKey, a.CommunityID, a.Client.SHA256, a.Server.SHA256}, "\x00")
-			kb := strings.Join([]string{b.FirstPacketNs, b.Protocol, b.ConnectionKey, b.CommunityID, b.Client.SHA256, b.Server.SHA256}, "\x00")
-			if ka != kb {
-				return ka < kb
+			if a.identity != b.identity {
+				return a.identity < b.identity
 			}
-			return rows[i].ID < rows[j].ID
+			return a.ID < b.ID
 		})
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(rows)

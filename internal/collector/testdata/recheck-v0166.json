@@ -299,6 +299,7 @@
     "verification": "Directional pages now take their bytes from the same pass that verifies the full stream digest. TestMCPStreamContentPagesVerifySourceAndConfinement passes under the race detector and covers a page across the 64-KiB read boundary, same-length content changes, and beyond-EOF behavior."
   },
   "boundedStreamVerificationConcurrency": {
+    "inventoryOrderingWork": "Stream inventory computes numeric time and identity sort keys once per row. Focused race tests passed, including stable capture order under different directory insertion orders.",
     "inventoryConcurrency": "TestStreamInventorySaturationPreservesIndividualReads verifies that two occupied inventory slots cause a third listing to return HTTP 429 without blocking an individual manifest read. Listing resumes after the slots are released. Focused WebUI stream race tests passed.",
     "inventoryWorkLimit": "Stream inventory limits cumulative manifest reads to 32 MiB per request. TestStreamInventoryBoundsAggregateManifestReads verifies that three individually valid 12 MiB manifests exceed the listing budget and return HTTP 422, while a range request for an individual manifest still returns HTTP 206. Focused inventory and stream race tests passed.",
     "inventorySpanCount": "Stream inventory counts spans without materializing their fields. TestStreamEvidenceOrdersByCaptureIdentity verifies the exact count of 50000 omitted spans while preserving connection metadata and capture ordering. Focused inventory, investigation and MCP stream race tests passed.",
