@@ -596,6 +596,7 @@ var auditStreamSlots = make(chan struct{}, 4)
 const (
 	maxFullAuditFrameBytes = 16 << 20
 	maxFullAuditScanBytes  = 64 << 20
+	fullAuditStreamTimeout = 30 * time.Second
 )
 
 func writeAuditRecordEvent(w io.Writer, data []byte) error {
@@ -619,10 +620,23 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 		return
 	}
 	startTime := time.Now()
+	query := r.URL.Query()
+	if query.Get("full") == "true" || query.Has("evidence") {
+		ctx, cancel := context.WithDeadline(r.Context(), startTime.Add(fullAuditStreamTimeout))
+		defer cancel()
+		if ctx.Err() != nil {
+			return
+		}
+		deadline, _ := ctx.Deadline()
+		if err := http.NewResponseController(w).SetWriteDeadline(deadline); err != nil && !errors.Is(err, http.ErrNotSupported) {
+			return
+		}
+		r = r.WithContext(ctx)
+	}
 	if sealed := partialAuditContext(r); sealed != nil && sealed.File != "" {
 		filePath = filepath.Join(sealed.Directory, sealed.File)
 	}
-	if r.URL.Query().Has("evidence") {
+	if query.Has("evidence") {
 		handleBoundAuditStream(w, r, filePath, auditType)
 		return
 	}
@@ -943,6 +957,9 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			sendError("Sealed audit output changed during query")
 			return
 		}
+	}
+	if r.Context().Err() != nil {
+		return
 	}
 	auditCompletion(w, r, matchedCount, totalScanned, count, offset, executionTime.Milliseconds(), countOnly)
 	flusher.Flush()

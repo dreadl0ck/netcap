@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -18,6 +20,41 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
+
+type stalledAuditResponse struct {
+	*httptest.ResponseRecorder
+	net.Conn
+	writeErr error
+}
+
+func (w *stalledAuditResponse) Write(p []byte) (int, error) {
+	n, err := w.Conn.Write(p)
+	w.writeErr = err
+	return n, err
+}
+
+func TestFullAuditStreamDeadlineReleasesStalledWrite(t *testing.T) {
+	file := writeTimelineAuditFilePlain(t, t.TempDir(), "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
+	server, client := net.Pipe()
+	defer server.Close()
+	defer client.Close()
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+	defer cancel()
+	w := &stalledAuditResponse{ResponseRecorder: httptest.NewRecorder(), Conn: server}
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		HandleAuditStream(w, httptest.NewRequest(http.MethodGet, "/stream?full=true", nil).WithContext(ctx), file, "HTTP")
+	}()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("stalled response did not release its stream slot")
+	}
+	if !errors.Is(w.writeErr, os.ErrDeadlineExceeded) {
+		t.Fatalf("stalled write returned %v, want deadline exceeded", w.writeErr)
+	}
+}
 
 func BenchmarkAuditRecordEventLarge(b *testing.B) {
 	payload := []byte(`{"body":"` + strings.Repeat("x", 8<<20) + `"}`)
