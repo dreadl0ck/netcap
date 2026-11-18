@@ -638,6 +638,14 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 		return
 	}
 
+	if sealed := partialAuditContext(r); sealed != nil {
+		want, ok := types.Type_value["NC_"+sealed.Stage.Type]
+		if !ok || header.Type != types.Type(want) {
+			sendError("Audit header type does not match the sealed stage")
+			return
+		}
+	}
+
 	// Compile filter expression if provided
 	var filterProgram *vm.Program
 	if filterExpr != "" {

@@ -46,6 +46,31 @@ func partialAuditFixture(t *testing.T, service bool) (http.Handler, string, stri
 	return handler, capture.RunID(), snapshot.Generation, file
 }
 
+func TestPartialAuditRejectsMislabeledSealedFile(t *testing.T) {
+	directory := t.TempDir()
+	file := writeTimelineAuditFile(t, directory, "Connection", types.Type_NC_UDP, []proto.Message{&types.UDP{SrcPort: 5353}})
+	capture, err := evidence.NewCapture(t.Context(), directory, evidence.CaptureConfig{Kind: "live", Source: "fixture"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := capture.Close("partial", 1, 0, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := capture.SealAuditStages([]evidence.AuditStage{{Type: "Connection", Stage: "aggregate", State: "sealed", Coverage: "partial", Records: 1, Files: []evidence.SealedAuditFile{{Name: filepath.Base(file)}}}}); err != nil {
+		t.Fatal(err)
+	}
+	r := httptest.NewRequest("GET", "/api/audit/Connection/stream?sessionId=owned&allowPartial=true", nil)
+	sealed, err := preparePartialAudit(r, captureSelection{RunID: capture.RunID(), OutputDir: directory})
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	HandleAuditStream(w, withPartialAudit(r, sealed), file, "Connection")
+	if body := w.Body.String(); !strings.Contains(body, "Audit header type does not match the sealed stage") || strings.Contains(body, "event: record\n") || strings.Contains(body, "event: complete\n") {
+		t.Fatalf("mislabeled audit was served: %s", body)
+	}
+}
+
 func TestPartialAuditReaderRejectsReplacementAfterAdmission(t *testing.T) {
 	for _, replacement := range []string{"link", "larger"} {
 		t.Run(replacement, func(t *testing.T) {
