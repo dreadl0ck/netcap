@@ -373,6 +373,20 @@ func TestBackedHTTPMixedCaseGzipPressurePreservesSpool(t *testing.T) {
 	}
 }
 
+func TestBackedHTTPStackedContentEncoding(t *testing.T) {
+	for _, tc := range []struct {
+		name, encoding string
+		upload         bool
+	}{
+		{"combined download", "gzip, GZip", false},
+		{"repeated upload", "gzip\r\nContent-Encoding: GZip", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testBackedHTTPGzipPressurePreservesSpool(t, tc.upload, 256<<10, tc.encoding)
+		})
+	}
+}
+
 func testBackedHTTPGzipPressurePreservesSpool(t *testing.T, upload bool, limit int64, encoding string) {
 	t.Helper()
 	wire, input := newBookCapture(t)
@@ -385,6 +399,18 @@ func testBackedHTTPGzipPressurePreservesSpool(t *testing.T, upload bool, limit i
 	}
 	if err := w.Close(); err != nil {
 		t.Fatal(err)
+	}
+	stacked := strings.ContainsAny(encoding, ",\r")
+	if stacked {
+		inner := bytes.Clone(compressed.Bytes())
+		compressed.Reset()
+		w.Reset(&compressed)
+		if _, err := w.Write(inner); err != nil {
+			t.Fatal(err)
+		}
+		if err := w.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}
 	entity := fmt.Sprintf("Content-Type: text/plain\r\nContent-Encoding: %s\r\nContent-Length: %d\r\n\r\n%s", encoding, compressed.Len(), compressed.Bytes())
 	wantDirection := "server_to_client"
@@ -416,6 +442,12 @@ func testBackedHTTPGzipPressurePreservesSpool(t *testing.T, upload bool, limit i
 		t.Logf("peak TCP state: %d bytes", health.PeakBytes)
 	} else if !errors.Is(err, core.ErrCompletionStateBudget) || manifest.Status != "partial" || health.CompletionRejectedBytes != 65536 {
 		t.Fatalf("gzip probe pressure: status=%s err=%v budget=%+v", manifest.Status, err, health)
+	}
+	if stacked {
+		records := bookRecords(t, out, "HTTP", func() *types.HTTP { return new(types.HTTP) })
+		if len(records) != 1 || upload && records[0].ReqContentEncoding != "gzip, GZip" || !upload && records[0].ResContentEncoding != "gzip, GZip" {
+			t.Fatalf("audit did not preserve both content codings: %v", records)
+		}
 	}
 	files := bookRecords(t, out, "File", func() *types.File { return new(types.File) })
 	if len(files) != 1 || !files[0].IsComplete || files[0].Length != int64(len(body)) || files[0].FlowDirection != wantDirection || files[0].Hashes.GetSHA256() != file.ComputeHashes([]byte(body)).SHA256 {

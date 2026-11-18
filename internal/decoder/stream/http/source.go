@@ -26,6 +26,17 @@ func isGzipEncoding(encoding string) bool {
 	return strings.EqualFold(strings.TrimSpace(encoding), "gzip")
 }
 
+func contentEncoding(header http.Header) string {
+	return strings.Join(header.Values(headerContentEncoding), ", ")
+}
+
+func contentEncodingLayers(header http.Header) []string {
+	if encoding := contentEncoding(header); encoding != "" {
+		return strings.Split(encoding, ",")
+	}
+	return nil
+}
+
 func sourceResponseContentType(c *core.ConversationInfo, body *file.BodySpool, encoding string) string {
 	if !isGzipEncoding(encoding) {
 		return http.DetectContentType(body.Prefix())
@@ -38,7 +49,7 @@ func sourceResponseContentType(c *core.ConversationInfo, body *file.BodySpool, e
 }
 
 func opaqueSourceRequest(request *http.Request) bool {
-	encoding := strings.ToLower(strings.TrimSpace(request.Header.Get(headerContentEncoding)))
+	encoding := strings.ToLower(strings.TrimSpace(contentEncoding(request.Header)))
 	if encoding != "" && encoding != "identity" && encoding != "gzip" {
 		return false
 	}
@@ -79,7 +90,7 @@ func sourceBackedForm(request *http.Request) (media, boundary string) {
 	if request.Method != "POST" && request.Method != "PUT" && request.Method != "PATCH" {
 		return "", ""
 	}
-	encoding := strings.ToLower(strings.TrimSpace(request.Header.Get(headerContentEncoding)))
+	encoding := strings.ToLower(strings.TrimSpace(contentEncoding(request.Header)))
 	if encoding != "" && encoding != "identity" {
 		return "", ""
 	}
@@ -242,7 +253,7 @@ func sourceRequestMode(cfg *decoderconfig.Config, req *http.Request, form string
 		return requestBuffered
 	}
 	storage := cfg.FileStorage != ""
-	if (storage && req.Method == methodPOST) || form != "" || isGzipEncoding(req.Header.Get(headerContentEncoding)) {
+	if (storage && req.Method == methodPOST) || form != "" || isGzipEncoding(contentEncoding(req.Header)) {
 		return requestSpooled
 	}
 	if req.ContentLength == 0 && len(req.TransferEncoding) == 0 {

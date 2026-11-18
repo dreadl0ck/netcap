@@ -59,7 +59,7 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	if req.request.ContentLength > math.MaxInt32 {
 		h.ParseQualifications = appendUnique(h.ParseQualifications, "request-content-length-exceeds-int32")
 	}
-	h.ReqContentEncoding = req.request.Header.Get(headerContentEncoding)
+	h.ReqContentEncoding = contentEncoding(req.request.Header)
 	h.ContentType = req.request.Header.Get(headerContentType)
 	h.RequestHeader = readHeader(req.request.Header)
 
@@ -173,7 +173,7 @@ func httpFromResponseBody(res *http.Response, body []byte, err error) *types.HTT
 		}
 
 		// decompress payload if required
-		if isGzipEncoding(res.Header.Get(headerContentEncoding)) {
+		if isGzipEncoding(contentEncoding(res.Header)) {
 			r, errReader := gzip.NewReader(bytes.NewReader(body))
 			if errReader == nil {
 				var releaseDecoded func()
@@ -202,7 +202,7 @@ func httpResponseRecord(res *http.Response, contentLength int32, detected string
 		ResContentType:         res.Header.Get(headerContentType),
 		StatusCode:             int32(res.StatusCode),
 		ServerName:             res.Header.Get("Server"),
-		ResContentEncoding:     res.Header.Get(headerContentEncoding),
+		ResContentEncoding:     contentEncoding(res.Header),
 		ResContentTypeDetected: detected,
 		ResCookies:             readCookies(res.Cookies()),
 		ResponseHeader:         readHeader(res.Header),

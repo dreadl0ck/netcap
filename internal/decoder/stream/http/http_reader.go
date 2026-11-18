@@ -409,13 +409,13 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		authority = request.Host
 	}
 	if decoderconfig.Instance.FileStorage == "" && !decoderconfig.Instance.IncludePayloads {
-		passiveReport = software.ObserveWebtech(observation, res.Body, res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+		passiveReport = software.ObserveWebtech(observation, res.Body, contentEncoding(res.Header), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 		err = passiveReport.WireError
 	} else if h.sourceMode && !decoderconfig.Instance.IncludePayloads {
 		if res.Body == http.NoBody {
-			passiveReport = software.ObserveWebtech(observation, res.Body, res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+			passiveReport = software.ObserveWebtech(observation, res.Body, contentEncoding(res.Header), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 			passiveReport.DetectedContentType = ""
-			if !isGzipEncoding(res.Header.Get(headerContentEncoding)) {
+			if !isGzipEncoding(contentEncoding(res.Header)) {
 				passiveReport.DetectedContentType = http.DetectContentType(nil)
 			}
 		} else {
@@ -423,16 +423,16 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		}
 		if spool != nil {
 			defer func() { file.RecordArtifactWriteError(spool.Close()) }()
-			passiveReport = software.ObserveWebtech(observation, spool.Reader(), res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+			passiveReport = software.ObserveWebtech(observation, spool.Reader(), contentEncoding(res.Header), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 			passiveReport.WireBytes = spool.Size()
-			passiveReport.DetectedContentType = sourceResponseContentType(h.conversation, spool, res.Header.Get(headerContentEncoding))
+			passiveReport.DetectedContentType = sourceResponseContentType(h.conversation, spool, contentEncoding(res.Header))
 		}
 	} else {
 		var release func()
 		body, release, err = file.ReadBody(res.Body)
 		h.bufferReleases = append(h.bufferReleases, release)
 		if !h.artifactRecovery {
-			software.ObserveWebtech(observation, bytes.NewReader(body), res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
+			software.ObserveWebtech(observation, bytes.NewReader(body), contentEncoding(res.Header), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 		}
 	}
 	file.RecordExtractionIssue(err)
@@ -465,7 +465,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		contentType = []string{http.DetectContentType(body)}
 	}
 
-	encoding := res.Header[headerContentEncoding]
+	encoding := contentEncodingLayers(res.Header)
 	httpLog.Debug("HTTP response",
 		zap.String("ident", h.conversation.Ident),
 		zap.String("Status", res.Status),
@@ -624,7 +624,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	var bodyErr error
 	var spool *file.BodySpool
 	form, boundary := sourceBackedForm(req)
-	backedGzip := h.sourceMode && req.Body != http.NoBody && isGzipEncoding(req.Header.Get(headerContentEncoding))
+	backedGzip := h.sourceMode && req.Body != http.NoBody && isGzipEncoding(contentEncoding(req.Header))
 	mode := requestBuffered
 	if h.sourceMode {
 		mode = sourceRequestMode(decoderconfig.Instance, req, form)
@@ -793,7 +793,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 				Filename:       path.Base(req.URL.Path),
 				ContentType:    strings.Join(req.Header[headerContentType], " "),
 				Host:           req.Host,
-				Encoding:       req.Header[headerContentEncoding],
+				Encoding:       contentEncodingLayers(req.Header),
 			}
 			if spool != nil {
 				file.RecordExtractionIssue((&HTTPFileExtractor{}).extractSpool(artifactConversation(h.conversation, stateErr), spool, metadata, bodyErr))
