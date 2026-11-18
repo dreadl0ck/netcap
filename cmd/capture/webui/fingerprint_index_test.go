@@ -22,6 +22,27 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+func TestFingerprintPagesKeepTiedTypesInOrderAcrossRebuilds(t *testing.T) {
+	dir := t.TempDir()
+	s := newTimelineTestServer(dir)
+	for stamp := int64(1); stamp <= 4; stamp++ {
+		writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Ja4H: "shared", Timestamp: stamp}})
+		writeTimelineAuditFile(t, dir, "SSH", types.Type_NC_SSH, []proto.Message{&types.SSH{Ja4Ssh: "shared", Timestamp: stamp}})
+		for _, field := range []string{"count", "fingerprint", "hosts"} {
+			for offset, want := range []string{"JA4H", "JA4SSH"} {
+				w := httptest.NewRecorder()
+				path := fmt.Sprintf("/api/fingerprints?limit=1&offset=%d&sortField=%s", offset, field)
+				s.handleFingerprints(w, httptest.NewRequest(http.MethodGet, path, nil))
+				var page FingerprintsResponse
+				if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &page) != nil || page.TotalCount != 2 ||
+					len(page.Fingerprints) != 1 || page.Fingerprints[0].Type != want || page.Fingerprints[0].FirstSeen != stamp {
+					t.Fatalf("rebuild %d, %s: expected %s, got %d %s", stamp, path, want, w.Code, w.Body)
+				}
+			}
+		}
+	}
+}
+
 func TestFingerprintSnapshotWaitCanCancelWithoutRetiringBuild(t *testing.T) {
 	dir := t.TempDir()
 	entry := &fingerprintCacheEntry{ready: make(chan struct{})}

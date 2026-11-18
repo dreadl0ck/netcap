@@ -382,8 +382,7 @@ func fingerprintMatchesSearch(fp FingerprintSummary, terms []searchTerm) bool {
 }
 
 // sortFingerprints sorts the slice in place according to field and order.
-// A stable secondary sort by fingerprint string keeps results deterministic
-// across requests.
+// Break ties by fingerprint and type so rebuilding a snapshot preserves page order.
 func sortFingerprints(in []FingerprintSummary, field, order string) {
 	asc := order == "asc"
 	sort.SliceStable(in, func(i, j int) bool {
@@ -407,8 +406,10 @@ func sortFingerprints(in []FingerprintSummary, field, order string) {
 			equal = a.Count == b.Count
 		}
 		if equal {
-			// Stable secondary sort by fingerprint.
-			return a.Fingerprint < b.Fingerprint
+			if a.Fingerprint != b.Fingerprint {
+				return a.Fingerprint < b.Fingerprint
+			}
+			return a.Type < b.Type
 		}
 		if asc {
 			return less
@@ -565,10 +566,7 @@ func readFingerprintInventory(outDir string, budget *inventoryAuditBudget) ([]Fi
 		})
 	}
 
-	// Sort by count descending
-	sort.Slice(fingerprints, func(i, j int) bool {
-		return fingerprints[i].Count > fingerprints[j].Count
-	})
+	sortFingerprints(fingerprints, "count", "desc")
 
 	return fingerprints, nil
 }
