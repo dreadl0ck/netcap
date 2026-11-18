@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 	"reflect"
-	"sort"
 	"sync"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -32,8 +31,7 @@ type OrderedStream struct {
 	engine       *Engine
 	scope        string
 	pending      []pendingRecord
-	unsorted     bool
-	minPending   int64
+	heaped       bool
 	bytes        int
 	watermark    int64
 	hasWatermark bool
@@ -116,14 +114,25 @@ func (s *OrderedStream) pushScoped(scope string, record types.AuditRecord) error
 	if len(wire) > 1<<20 || charge > available {
 		return ErrStateCapacity
 	}
-	if ts := record.Time(); len(s.pending) == 0 || ts < s.minPending {
-		s.minPending = ts
-	}
 	pending := pendingRecord{scope: scope, record: proto.Clone(message).(types.AuditRecord), wire: wire, charge: int(charge)}
-	if n := len(s.pending); n > 0 && !s.unsorted {
-		s.unsorted = pendingBefore(pending, s.pending[n-1])
+	n := len(s.pending)
+	if n > 0 && !s.heaped {
+		// A sorted prefix already satisfies the min-heap invariant.
+		s.heaped = pendingBefore(pending, s.pending[n-1])
 	}
 	s.pending = append(s.pending, pending)
+	if s.heaped {
+		i := n
+		for i > 0 {
+			parent := (i - 1) / 2
+			if !pendingBefore(pending, s.pending[parent]) {
+				break
+			}
+			s.pending[i] = s.pending[parent]
+			i = parent
+		}
+		s.pending[i] = pending
+	}
 	s.bytes += pending.charge
 	return nil
 }
@@ -167,9 +176,8 @@ func (s *OrderedStream) observeScoped(scope string, record types.AuditRecord) (i
 func (s *OrderedStream) fail(err error) {
 	s.err = err
 	s.pending = nil
-	s.unsorted = false
+	s.heaped = false
 	s.bytes = 0
-	s.minPending = 0
 }
 
 // Advance evaluates all admitted records at/below watermark. A write/evaluation
@@ -194,6 +202,29 @@ func pendingBefore(a, b pendingRecord) bool {
 	return a.scope < b.scope
 }
 
+func (s *OrderedStream) removeHeapHead() {
+	last := len(s.pending) - 1
+	tail := s.pending[last]
+	s.pending[last] = pendingRecord{}
+	s.pending = s.pending[:last]
+	if last == 0 {
+		s.heaped = false
+		return
+	}
+	i := 0
+	for child := 1; child < last; child = 2*i + 1 {
+		if right := child + 1; right < last && pendingBefore(s.pending[right], s.pending[child]) {
+			child = right
+		}
+		if !pendingBefore(s.pending[child], tail) {
+			break
+		}
+		s.pending[i] = s.pending[child]
+		i = child
+	}
+	s.pending[i] = tail
+}
+
 func (s *OrderedStream) advance(watermark int64) (int, error) {
 	if s.err != nil {
 		return 0, s.err
@@ -204,16 +235,13 @@ func (s *OrderedStream) advance(watermark int64) (int, error) {
 	if s.hasWatermark && watermark < s.watermark {
 		return 0, errors.New("watermarks must be monotonic")
 	}
-	if len(s.pending) == 0 || watermark < s.minPending {
+	if len(s.pending) == 0 || watermark < s.pending[0].record.Time() {
 		s.watermark, s.hasWatermark = watermark, true
 		return 0, nil
 	}
-	if s.unsorted {
-		sort.SliceStable(s.pending, func(i, j int) bool { return pendingBefore(s.pending[i], s.pending[j]) })
-		s.unsorted = false
-	}
 	count, consumed := 0, 0
-	for _, p := range s.pending {
+	for consumed < len(s.pending) {
+		p := s.pending[consumed]
 		if p.record.Time() > watermark {
 			break
 		}
@@ -223,7 +251,11 @@ func (s *OrderedStream) advance(watermark int64) (int, error) {
 			s.fail(fmt.Errorf("ordered rule stream incomplete: %w", err))
 			return count, s.err
 		}
-		consumed++
+		if s.heaped {
+			s.removeHeapHead()
+		} else {
+			consumed++
+		}
 		s.bytes -= p.charge
 	}
 	clear(s.pending[:consumed])
@@ -231,7 +263,6 @@ func (s *OrderedStream) advance(watermark int64) (int, error) {
 		s.pending = s.pending[:0]
 	} else {
 		s.pending = s.pending[consumed:]
-		s.minPending = s.pending[0].record.Time()
 	}
 	s.watermark, s.hasWatermark = watermark, true
 	return count, nil

@@ -424,7 +424,12 @@ func TestOrderedStreamInterleavesPushAndAdvance(t *testing.T) {
 	advance(4)
 	push(6, 8)
 	advance(8)
-	if want := []int64{1, 3, 4, 5, 6, 7, 8}; !reflect.DeepEqual(timestamps, want) {
+	if len(s.pending) != 0 || s.bytes != 0 {
+		t.Fatalf("reorder buffer retained records or credits after drain: %d records, %d bytes", len(s.pending), s.bytes)
+	}
+	push(10, 9)
+	advance(10)
+	if want := []int64{1, 3, 4, 5, 6, 7, 8, 9, 10}; !reflect.DeepEqual(timestamps, want) {
 		t.Fatalf("alert order %v, want %v", timestamps, want)
 	}
 }
@@ -490,6 +495,36 @@ func BenchmarkOrderedStreamFutureRecords(b *testing.B) {
 		}
 		if n, err := s.Finish(); err != nil || n != maxPendingRecords/50 {
 			b.Fatal(n, err)
+		}
+	}
+}
+
+func BenchmarkOrderedStreamInterleavedBacklog(b *testing.B) {
+	for b.Loop() {
+		s, err := NewOrderedStream(groupedConfig(), alertWriterFunc(func(*types.Alert) error { return nil }), "fixture")
+		if err != nil {
+			b.Fatal(err)
+		}
+		for i := range maxPendingRecords - 1 {
+			record := scopedTCP(0, "192.0.2.1")
+			record.Timestamp = int64(10000 + i)
+			if err := s.Push(record); err != nil {
+				b.Fatal(err)
+			}
+		}
+		for i := range maxPendingRecords {
+			ts := int64(i + 1)
+			record := scopedTCP(0, "192.0.2.1")
+			record.Timestamp = ts
+			if err := s.Push(record); err != nil {
+				b.Fatal(err)
+			}
+			if _, err := s.Advance(ts); err != nil {
+				b.Fatal(err)
+			}
+		}
+		if _, err := s.Finish(); err != nil {
+			b.Fatal(err)
 		}
 	}
 }
