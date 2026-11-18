@@ -22,6 +22,10 @@ func (s *Server) beginProcessingWork() func() {
 	if s.processingStopping {
 		return nil
 	}
+	return s.claimProcessingWorkLocked()
+}
+
+func (s *Server) claimProcessingWorkLocked() func() {
 	s.processingWork++
 	var once sync.Once
 	return func() {
@@ -40,21 +44,31 @@ func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
 	if job == nil || s.jobQueue == nil {
 		return errAnalysisUnavailable
 	}
-	s.mu.RLock()
-	stopping := s.processingStopping
-	liveBusy := s.ownedLive != nil && !s.ownedLive.Completed
-	s.mu.RUnlock()
-	if stopping {
+	s.mu.Lock()
+	if s.processingStopping {
+		s.mu.Unlock()
 		job.settings.cleanup()
 		return errAnalysisStopping
 	}
-	if liveBusy {
+	if s.ownedLiveStarting || s.ownedLive != nil && !s.ownedLive.Completed {
+		s.mu.Unlock()
+		job.settings.cleanup()
 		return errAnalysisUnavailable
 	}
 	if !wait && cap(s.jobQueue) > 0 && len(s.jobQueue) == cap(s.jobQueue) {
+		s.mu.Unlock()
 		job.settings.cleanup()
 		return errAnalysisQueueFull
 	}
+	done := s.claimProcessingWorkLocked()
+	s.mu.Unlock()
+	accepted := false
+	defer func() {
+		if !accepted {
+			job.settings.cleanup()
+			done()
+		}
+	}()
 	if len(job.ArtifactConfig) == 0 {
 		snapshot, err := snapshotArtifactConfig()
 		if err != nil {
@@ -83,22 +97,14 @@ func (s *Server) enqueueAnalysis(job *AnalysisJob, wait bool) error {
 	}
 	job.reproductionSource = snapshotReproductionSource(job.InputFile, s.shutdownChan)
 	if ruleReplayCanceled(nil, s.shutdownChan) {
-		job.settings.cleanup()
 		return errAnalysisStopping
 	}
 	job.reproductionSource.PreviousManifestSHA256 = priorReproductionManifest(job.OutputDir)
-	done := s.beginProcessingWork()
-	if done == nil {
-		job.settings.cleanup()
-		return errAnalysisStopping
-	}
 	job.processingDone = func() { job.settings.cleanup(); done() }
 	atomic.AddInt64(&s.jobsScheduled, 1)
-	accepted := false
 	defer func() {
 		if !accepted {
 			atomic.AddInt64(&s.jobsScheduled, -1)
-			job.processingDone()
 		}
 	}()
 	if wait {

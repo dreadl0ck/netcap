@@ -121,6 +121,7 @@ func (s *Server) handleOwnedLiveCapture(w http.ResponseWriter, r *http.Request) 
 	}
 	s.processingWork++
 	s.isLiveMode = true
+	s.ownedLiveStarting = true
 	base := s.baseOutDir
 	s.mu.Unlock()
 	accepted := false
@@ -129,6 +130,7 @@ func (s *Server) handleOwnedLiveCapture(w http.ResponseWriter, r *http.Request) 
 			s.mu.Lock()
 			s.processingWork--
 			s.isLiveMode = false
+			s.ownedLiveStarting = false
 			s.mu.Unlock()
 		}
 	}()
@@ -203,6 +205,7 @@ func (s *Server) handleOwnedLiveCapture(w http.ResponseWriter, r *http.Request) 
 	s.completedFiles[input] = false
 	s.fileBPFFilters[input] = request.BPF
 	s.ownedLive = state
+	s.ownedLiveStarting = false
 	if s.liveInputs == nil {
 		s.liveInputs = map[string]*ownedLiveCapture{}
 	}

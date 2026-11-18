@@ -259,6 +259,7 @@ type Server struct {
 	currentCmdMutex     sync.RWMutex      // Mutex for currentProc
 	alertStreams        int               // protected by mu
 	ownedLive           *ownedLiveCapture
+	ownedLiveStarting   bool
 	liveInputs          map[string]*ownedLiveCapture
 	liveRunner          func(context.Context, []string, string) (func() error, error)
 	tlsAnalyzer         func(context.Context, string, string, int) (protocoltest.TLSCaptureResult, error)

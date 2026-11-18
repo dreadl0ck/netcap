@@ -204,8 +204,10 @@ func TestMCPOwnedLiveCaptureFakeRunnerLifecycle(t *testing.T) {
 	t.Setenv("NC_LIVE_INTERFACES", nic)
 	s := NewServer("127.0.0.1:0", t.TempDir(), nil, "", false, false, false, nil, nil, false)
 	var arguments []string
+	var startupAdmissionError error
 	s.liveRunner = func(ctx context.Context, args []string, out string) (func() error, error) {
 		arguments = append([]string{}, args...)
+		startupAdmissionError = s.enqueueAnalysis(&AnalysisJob{InputFile: "offline-during-live-startup"}, false)
 		return func() error { <-ctx.Done(); return nil }, nil
 	}
 	body := fmt.Sprintf(`{"interface":%q,"durationSeconds":30,"retentionMB":2}`, nic)
@@ -213,6 +215,9 @@ func TestMCPOwnedLiveCaptureFakeRunnerLifecycle(t *testing.T) {
 	s.handleOwnedLiveCapture(w, httptest.NewRequest(http.MethodPost, "/api/live-capture", strings.NewReader(body)))
 	if w.Code != 202 {
 		t.Fatalf("live admission: %d %s", w.Code, w.Body)
+	}
+	if startupAdmissionError != errAnalysisUnavailable || len(s.jobQueue) != 0 {
+		t.Fatalf("offline analysis was admitted during live startup: %v", startupAdmissionError)
 	}
 	var result struct {
 		ID string `json:"session_id"`
