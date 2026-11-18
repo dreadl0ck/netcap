@@ -29,6 +29,8 @@ type NetcapClient struct {
 	adminToken string
 }
 
+const maxBackendResponseBytes = 16 << 20
+
 // BackendError preserves the HTTP status and bounded backend diagnostic body.
 type BackendError struct {
 	Method, Path    string
@@ -253,11 +255,7 @@ func (c *NetcapClient) GetRawContext(ctx context.Context, path string, query url
 		body, err := readAllLimited(resp.Body, diagnosticLimit+1)
 		return nil, "", &BackendError{Method: req.Method, Path: req.URL.Path, StatusCode: resp.StatusCode, Body: body, diagnosticLimit: diagnosticLimit, readErr: err}
 	}
-	const maxRawResponseBytes = 16 << 20
-	if resp.ContentLength > maxRawResponseBytes {
-		return nil, "", fmt.Errorf("backend response exceeds %d bytes", maxRawResponseBytes)
-	}
-	body, err := readAllBounded(resp.Body, maxRawResponseBytes)
+	body, err := readBackendResponse(resp)
 	if err != nil {
 		return nil, "", fmt.Errorf("reading response: %w", err)
 	}
@@ -272,15 +270,21 @@ func (c *NetcapClient) do(req *http.Request) (json.RawMessage, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := readAllBounded(resp.Body, 16<<20)
+	body, err := readBackendResponse(resp)
+	if resp.StatusCode >= 300 {
+		return nil, &BackendError{Method: req.Method, Path: req.URL.Path, StatusCode: resp.StatusCode, Body: body, readErr: err}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("reading response: %w", err)
 	}
-
-	if resp.StatusCode >= 300 {
-		return nil, &BackendError{Method: req.Method, Path: req.URL.Path, StatusCode: resp.StatusCode, Body: body}
-	}
 	return body, nil
+}
+
+func readBackendResponse(resp *http.Response) ([]byte, error) {
+	if resp.ContentLength > maxBackendResponseBytes {
+		return nil, fmt.Errorf("backend response exceeds %d bytes", maxBackendResponseBytes)
+	}
+	return readAllBounded(resp.Body, maxBackendResponseBytes)
 }
 
 func readAllBounded(r io.Reader, max int) ([]byte, error) {

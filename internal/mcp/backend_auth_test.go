@@ -63,6 +63,31 @@ func TestRawDownloadPreservesStatusWhenDiagnosticReadFails(t *testing.T) {
 	}
 }
 
+func TestJSONBackendFailurePreservesStatusWhenBodyCannotBeRead(t *testing.T) {
+	for _, oversized := range []bool{false, true} {
+		var length int64 = -1
+		unread := &unreadRawBody{t: t}
+		body := io.NopCloser(iotest.ErrReader(io.ErrUnexpectedEOF))
+		if oversized {
+			length, body = maxBackendResponseBytes+1, unread
+		}
+		c := &NetcapClient{baseURL: "http://fixture.test", hc: &http.Client{Transport: rawTestTransport(func(*http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: http.StatusBadGateway, ContentLength: length, Body: body}, nil
+		})}}
+		data, err := c.Get("/api/fixture", nil)
+		var backend *BackendError
+		if data != nil || !errors.As(err, &backend) || backend.StatusCode != http.StatusBadGateway || len(backend.Body) != 0 {
+			t.Fatalf("oversized=%t: unexpected response: %s, %v", oversized, data, err)
+		}
+		if oversized && (!unread.closed || !strings.Contains(err.Error(), "backend response exceeds")) {
+			t.Fatalf("oversized body was not rejected and closed: %v", err)
+		}
+		if !oversized && !errors.Is(err, io.ErrUnexpectedEOF) {
+			t.Fatalf("read error lost: %v", err)
+		}
+	}
+}
+
 func TestBackendAdminAuthIsScopedAndDoesNotFollowRedirects(t *testing.T) {
 	forwarded := false
 	foreign := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { forwarded = true }))
