@@ -495,8 +495,8 @@ func countAuditFrames(ctx context.Context, filePath string) (int64, error) {
 	defer reader.Close()
 
 	count := int64(0)
-	header := new(types.Header)
-	if err := reader.delimitedReader.NextProtoWithLimit(header, 1<<20); err != nil {
+	header, err := reader.ReadHeader()
+	if err != nil {
 		return 0, err
 	}
 	if netio.InitRecord(header.Type) == nil {

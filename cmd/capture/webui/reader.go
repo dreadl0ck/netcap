@@ -79,10 +79,12 @@ func auditRecordReaderFromFile(file *os.File, compressed bool) (*AuditRecordRead
 	}, nil
 }
 
-// ReadHeader reads the audit record file header
+const maxAuditHeaderBytes = 1 << 20
+
+// ReadHeader reads the audit record file header.
 func (r *AuditRecordReader) ReadHeader() (*types.Header, error) {
 	header := &types.Header{}
-	err := r.delimitedReader.NextProto(header)
+	err := r.delimitedReader.NextProtoWithLimit(header, maxAuditHeaderBytes)
 	if err != nil {
 		return nil, err
 	}

@@ -60,6 +60,32 @@ func auditReaderFixture(t *testing.T, compressed bool, header *types.Header, rec
 	return r
 }
 
+func TestAuditRecordReaderBoundsHeaderIndependentlyOfRecords(t *testing.T) {
+	for _, compressed := range []bool{false, true} {
+		t.Run(fmt.Sprintf("gzip=%t", compressed), func(t *testing.T) {
+			h := &types.Header{Type: types.Type_NC_HTTP, InputSource: strings.Repeat("x", maxAuditHeaderBytes)}
+			h.InputSource = h.InputSource[:len(h.InputSource)-(h.Size()-maxAuditHeaderBytes)]
+			record := &types.HTTP{RequestBody: bytes.Repeat([]byte("x"), maxAuditHeaderBytes+1)}
+			body, err := proto.Marshal(record)
+			if err != nil {
+				t.Fatal(err)
+			}
+			r := auditReaderFixture(t, compressed, h, body)
+			if got, err := r.ReadHeader(); err != nil || got.Size() != maxAuditHeaderBytes {
+				t.Fatalf("exact-limit header was not read: %v", err)
+			}
+			if got, err := r.NextRecord(); err != nil || !proto.Equal(got, record) {
+				t.Fatalf("header limit affected record body: %v", err)
+			}
+			h.InputSource += "x"
+			r = auditReaderFixture(t, compressed, h)
+			if _, err := r.ReadHeader(); !errors.Is(err, delimited.ErrRecordLimit) {
+				t.Fatalf("oversized header: %v", err)
+			}
+		})
+	}
+}
+
 func TestAuditRecordReaderSkipContextPreservesNextRecord(t *testing.T) {
 	want := &types.UDP{Timestamp: 123, SrcPort: 5353}
 	payload, err := proto.Marshal(want)
