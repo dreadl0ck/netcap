@@ -20,16 +20,27 @@ func TestIncrementalHTTPProbePressureLeavesFragmentsForCompletion(t *testing.T) 
 	budget, _ := core.NewStateBudget(16, nil)
 	factory := &connectionFactory{}
 	conn := &tcpConnection{initStage: 3, clientDirection: reassembly.TCPDirClientToServer, roleSource: "syn", stateBudget: budget, factory: factory}
-	fragment := &core.StreamData{RawData: []byte("GET / HTTP/1.1\r\nHost: fixture.test\r\n\r\n")}
-	client := &tcpStreamReader{parent: conn, data: core.DataFragments{fragment}}
+	first := &core.StreamData{RawData: []byte("GET / HTTP/1.1\r\n")}
+	second := &core.StreamData{RawData: []byte("Host: fixture.test\r\n\r\n")}
+	client := &tcpStreamReader{parent: conn, data: core.DataFragments{first, second}}
 	conn.client = client
 	conn.tryIncremental()
 	conn.tryIncremental()
 	if !conn.incrementalDeclined || conn.incremental != nil || factory.setupPressureDeclines != 1 || factory.stateError != nil || budget.Error() != nil {
 		t.Fatalf("unexpected probe fallback: declined=%t parser=%T declines=%d error=%v", conn.incrementalDeclined, conn.incremental, factory.setupPressureDeclines, factory.stateError)
 	}
-	if len(client.data) != 1 || client.data[0] != fragment {
+	if len(client.data) != 2 || client.data[0] != first || client.data[1] != second {
 		t.Fatal("completion lost a retained fragment")
+	}
+}
+
+func TestIncrementalHTTPProbeBorrowsSingleFragmentUnderPressure(t *testing.T) {
+	raw := []byte("GET / HTTP/1.1\r\nHost: fixture.test\r\n\r\nfollowing bytes")
+	size := bytes.Index(raw, []byte("\r\n\r\n")) + 4
+	budget, _ := core.NewStateBudget(1, nil)
+	prefix, credit, ok := incrementalProbePrefix(budget, core.DataFragments{&core.StreamData{RawData: raw}}, size)
+	if !ok || credit != 0 || !bytes.Equal(prefix, raw[:size]) || &prefix[0] != &raw[0] || cap(prefix) != size || budget.Health().PeakBytes != 0 {
+		t.Fatalf("single-fragment probe: prefix=%q credit=%d ok=%t", prefix, credit, ok)
 	}
 }
 

@@ -109,20 +109,12 @@ func (t *tcpConnection) tryIncremental() {
 	if !ready {
 		return
 	}
-	probeCredit := int64(t.incrementalProbeBytes)
-	if !t.stateBudget.TryReserve(probeCredit) {
+	client, probeCredit, ok := incrementalProbePrefix(t.stateBudget, t.client.DataSlice(), t.incrementalProbeBytes)
+	if !ok {
 		t.declineIncrementalSetupForPressure()
 		return
 	}
 	defer func() { t.stateBudget.Release(probeCredit) }()
-	client := make([]byte, 0, t.incrementalProbeBytes)
-	for _, fragment := range t.client.DataSlice() {
-		n := min(len(fragment.Raw()), t.incrementalProbeBytes-len(client))
-		client = append(client, fragment.Raw()[:n]...)
-		if len(client) == t.incrementalProbeBytes {
-			break
-		}
-	}
 	// Selection remains authoritative (including IPP specialization). H2 prefaces
 	// and protocol upgrades retain the completion path unless already claimed H1.
 	if bytes.HasPrefix(client, []byte("PRI * HTTP/2.0")) {
@@ -217,6 +209,32 @@ func (t *tcpConnection) declineIncrementalSetupForPressure() {
 	t.factory.Lock()
 	t.factory.setupPressureDeclines++
 	t.factory.Unlock()
+}
+
+func incrementalProbePrefix(budget *core.StateBudget, fragments core.DataFragments, size int) ([]byte, int64, bool) {
+	for _, fragment := range fragments {
+		raw := fragment.Raw()
+		if len(raw) == 0 {
+			continue
+		}
+		if len(raw) >= size {
+			return raw[:size:size], 0, true
+		}
+		break
+	}
+	credit := int64(size)
+	if !budget.TryReserve(credit) {
+		return nil, 0, false
+	}
+	prefix := make([]byte, 0, size)
+	for _, fragment := range fragments {
+		raw := fragment.Raw()
+		prefix = append(prefix, raw[:min(len(raw), size-len(prefix))]...)
+		if len(prefix) == size {
+			break
+		}
+	}
+	return prefix, credit, true
 }
 
 func incrementalHandoffFragments(budget *core.StateBudget, client, server core.DataFragments) (core.DataFragments, int64, error) {
