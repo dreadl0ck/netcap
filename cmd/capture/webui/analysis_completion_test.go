@@ -335,21 +335,28 @@ func assertSingleReplayAlert(t *testing.T, dir, rule string, timestamp int64) {
 }
 
 func TestPostCaptureQueueRepeatedMixedArrivals(t *testing.T) {
-	testPostCaptureMixedArrivals(t, false)
+	testPostCaptureMixedArrivals(t, false, 8, 20*time.Millisecond)
 }
 
 func TestPostCaptureQueueFixedRateMixedArrivals(t *testing.T) {
-	testPostCaptureMixedArrivals(t, true)
+	testPostCaptureMixedArrivals(t, true, 8, 20*time.Millisecond)
 }
 
-func testPostCaptureMixedArrivals(t *testing.T, fixedRate bool) {
+func TestPostCaptureQueueSustainedMixedArrivals(t *testing.T) {
+	if os.Getenv("NETCAP_SUSTAINED_COMPLETION") != "1" {
+		t.Skip("set NETCAP_SUSTAINED_COMPLETION=1 to run the sustained load test")
+	}
+	testPostCaptureMixedArrivals(t, true, 50, 200*time.Millisecond)
+}
+
+func testPostCaptureMixedArrivals(t *testing.T, fixedRate bool, pairs int, interval time.Duration) {
 	t.Helper()
 	s, _, _ := reanalysisFixture(t)
 	s.fileBPFFilters = make(map[string]string)
 	s.shutdownChan = make(chan struct{})
 	s.jobQueue = make(chan *AnalysisJob, 2)
 	config := &rules.Config{Rules: []*rules.Rule{{Name: "get", Type: "HTTP", Expression: "Method == 'GET'", Enabled: true}}}
-	const pairs, records = 8, 100_000
+	const records = 100_000
 	rows := make([]proto.Message, records)
 	rows[0] = &types.HTTP{Timestamp: 1, Method: "GET"}
 	miss := &types.HTTP{Timestamp: 2, Method: "POST", URL: "/fixture"}
@@ -388,8 +395,8 @@ func testPostCaptureMixedArrivals(t *testing.T, fixedRate bool) {
 		s.finishCaptureJob(job, time.Second)
 	})
 	defer func() { s.stopProcessingAdmission(); s.wg.Wait() }()
-	deadline := time.After(45 * time.Second)
-	ticker := time.NewTicker(20 * time.Millisecond)
+	deadline := time.After(time.Duration(len(arrivals))*interval + 45*time.Second)
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	var rejected int
 	attempt := func(a *arrival) bool {
@@ -439,6 +446,8 @@ func testPostCaptureMixedArrivals(t *testing.T, fixedRate bool) {
 		pending[a.input] = a
 	}
 	var tiny, tinyWithRetries []time.Duration
+	lastFirstTry := arrivals[len(arrivals)-1].firstTry
+	completedDuringArrivals := 0
 	for range arrivals {
 		select {
 		case done := <-finished:
@@ -451,6 +460,9 @@ func testPostCaptureMixedArrivals(t *testing.T, fixedRate bool) {
 				t.Fatalf("unexpected or incomplete job %q", done.input)
 			}
 			assertSingleReplayAlert(t, a.dir, "get", 1)
+			if done.at.Before(lastFirstTry) {
+				completedDuringArrivals++
+			}
 			if a.small {
 				tiny = append(tiny, done.at.Sub(a.admitted))
 				tinyWithRetries = append(tinyWithRetries, done.at.Sub(a.firstTry))
@@ -462,8 +474,8 @@ func testPostCaptureMixedArrivals(t *testing.T, fixedRate bool) {
 	if s.IsProcessing() || len(tiny) != pairs {
 		t.Fatalf("queue did not drain: tiny completions=%d", len(tiny))
 	}
-	t.Logf("mixed arrivals: %d completed, %d first attempts rejected (%d small), %d queue-full responses, tiny latency %s–%s after acceptance, %s–%s from first attempt",
-		len(arrivals), firstRejected, smallRejected, rejected, slices.Min(tiny), slices.Max(tiny), slices.Min(tinyWithRetries), slices.Max(tinyWithRetries))
+	t.Logf("mixed arrivals: %d completed (%d during the %s first-attempt window), %d first attempts rejected (%d small), %d queue-full responses, tiny latency %s–%s after acceptance, %s–%s from first attempt",
+		len(arrivals), completedDuringArrivals, lastFirstTry.Sub(arrivals[0].firstTry), firstRejected, smallRejected, rejected, slices.Min(tiny), slices.Max(tiny), slices.Min(tinyWithRetries), slices.Max(tinyWithRetries))
 }
 
 func testCaptureWorkerCompletesSmallAnalysis(t *testing.T, ruleLoad bool) {
