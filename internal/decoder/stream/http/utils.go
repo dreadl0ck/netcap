@@ -189,6 +189,14 @@ func httpFromResponseBody(res *http.Response, body []byte, err error) *types.HTT
 		}
 	}
 
+	record := httpResponseRecord(res, contentLength, detected)
+	if decoderconfig.Instance != nil && decoderconfig.Instance.IncludePayloads {
+		record.ResponseBody = body
+	}
+	return record
+}
+
+func httpResponseRecord(res *http.Response, contentLength int32, detected string) *types.HTTP {
 	record := &types.HTTP{
 		ResContentLength:       contentLength,
 		ResContentType:         res.Header.Get(headerContentType),
@@ -212,9 +220,6 @@ func httpFromResponseBody(res *http.Response, body []byte, err error) *types.HTT
 	}
 	if res.ContentLength > math.MaxInt32 {
 		record.ParseQualifications = appendUnique(record.ParseQualifications, "response-content-length-exceeds-int32")
-	}
-	if decoderconfig.Instance != nil && decoderconfig.Instance.IncludePayloads {
-		record.ResponseBody = body
 	}
 	return record
 }

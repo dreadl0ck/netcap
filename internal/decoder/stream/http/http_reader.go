@@ -191,12 +191,15 @@ func (h *httpReader) decodeTransportRun() {
 
 	// iterate over responses
 	for _, res := range h.responses { // populate types.HTTP with all infos from response
-		ht := httpFromResponseBody(res.response, res.body, nil)
+		var ht *types.HTTP
 		if res.transient {
-			ht.ResContentTypeDetected = res.detectedContentType
-			if res.response.ContentLength < 0 {
-				ht.ResContentLength = int32(min(res.wireBytes, int64(2147483647)))
+			length := res.response.ContentLength
+			if length < 0 {
+				length = res.wireBytes
 			}
+			ht = httpResponseRecord(res.response, int32(min(length, int64(2147483647))), res.detectedContentType)
+		} else {
+			ht = httpFromResponseBody(res.response, res.body, nil)
 		}
 		ht.Timestamp, ht.Flow = res.timestamp, res.flow
 		ht.SrcIP, ht.DstIP, ht.SrcPort, ht.DstPort = res.serverIP, res.clientIP, res.serverPort, res.clientPort
@@ -420,7 +423,6 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		}
 		if spool != nil {
 			defer func() { file.RecordArtifactWriteError(spool.Close()) }()
-			body = spool.Prefix()
 			passiveReport = software.ObserveWebtech(observation, spool.Reader(), res.Header.Get(headerContentEncoding), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 			passiveReport.WireBytes = spool.Size()
 			passiveReport.DetectedContentType = sourceResponseContentType(h.conversation, spool, res.Header.Get(headerContentEncoding))
