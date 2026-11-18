@@ -109,6 +109,10 @@ async def check(binary, capture, data_dir):
                 break
         if len(body) != int(expected["length"]) or hashlib.sha256(body).hexdigest() != expected["sha256"]:
             raise ValueError("directional evidence differs from its manifest")
+        exact = await call("get_stream_evidence", args | {"id": stream["id"], "direction": "manifest"})
+        if (exact[direction] != expected or len(exact["spans"]) != stream["spanCount"]
+                or exact["connectionKey"] != stream["manifest"]["connectionKey"]):
+            raise ValueError("exact manifest disagrees with the inventory or directional read")
         for offset in (len(body), len(body) + 1):
             end = await call("get_stream_content", target | {"offset": offset, "manifestSHA256": manifest_hash})
             if (end["data"] != "" or end["hasMore"] or end["offset"] != offset
