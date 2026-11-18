@@ -74,9 +74,9 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 				if len(connections) != 15000 {
 					t.Fatal("default capture lost connections", len(connections))
 				}
-				t.Run("strict-finite-budgets", func(t *testing.T) {
+				checkStrictFinite := func(t *testing.T, workers int) {
 					finiteOut := t.TempDir()
-					cfg := ultimateCaptureConfig(finiteOut, 1, 0)
+					cfg := ultimateCaptureConfig(finiteOut, workers, 0)
 					cfg.CaptureEvidence = true
 					cfg.DecoderConfig.MaxRetainedReassemblyBytes = 128 << 20
 					cfg.DecoderConfig.MaxRetainedTCPStateBytes = 256 << 20
@@ -96,7 +96,9 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 						t.Fatalf("unexpected budget state: pages=%+v state=%+v", pages, state)
 					}
 					t.Logf("strict finite replay peaks: page bytes %d, TCP state bytes %d", pages.PeakBytes, state.PeakBytes)
-				})
+				}
+				t.Run("strict-finite-budgets", func(t *testing.T) { checkStrictFinite(t, 1) })
+				t.Run("strict-finite-budgets-4-workers", func(t *testing.T) { checkStrictFinite(t, 4) })
 				checkPagePressure := func(t *testing.T, workers int, saveConns bool) {
 					out := t.TempDir()
 					cfg := ultimateCaptureConfig(out, workers, 0)
