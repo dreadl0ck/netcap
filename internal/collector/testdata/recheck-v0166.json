@@ -175,6 +175,7 @@
     "verification": "Full Web UI race suite passes. Two focused tests pass ten repetitions under race instrumentation: replacement of a queued generation before completion, and shutdown while the timeline lane is occupied."
   },
   "sealedAuditQueryGeneration": {
+    "recordWriteHandling": "Audit SSE writes JSON bytes without converting full records to strings and stops scanning when a record write fails. Focused portable WebUI and MCP audit-stream race tests passed.",
     "selectorCancellationStatus": "Hosted run 44230161211 found analyst and subset-reanalysis cancellation returning HTTP 409 after manifest reads became cancelable. Run selection now returns HTTP 408 for canceled requests. The full portable WebUI race suite passed locally.",
     "streamErrorFraming": "Audit record read errors use the JSON encoder for terminal SSE error events. Focused WebUI audit-stream and MCP SSE race tests passed.",
     "communityFilterDescriptor": "TestPartialAuditCommunityFilterUsesVerifiedStream verifies that sealed Community ID filtering returns the expected record and completion without building a separate path-based index. Focused WebUI partial-audit and Community ID stream race tests passed.",

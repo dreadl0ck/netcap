@@ -752,7 +752,6 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 
 			// Truncate large records to prevent UI issues with very large record types (e.g., DeviceProfile)
 			const maxRecordSize = 2000
-			jsonStr := string(jsonData)
 			if fullRecords {
 				jsonData, err = projectRecordJSON(jsonData, fields)
 				if err != nil {
@@ -768,19 +767,19 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 					continue
 				}
 				pageBytes += len(jsonData)
-				jsonStr = string(jsonData)
-			} else if len(jsonStr) > maxRecordSize {
+			} else if len(jsonData) > maxRecordSize {
 				// Create a truncated response with valid JSON structure
 				truncatedData := map[string]any{
 					"_truncated":     true,
-					"_originalSize":  len(jsonStr),
-					"_truncatedData": jsonStr[:maxRecordSize] + "...",
+					"_originalSize":  len(jsonData),
+					"_truncatedData": string(jsonData[:maxRecordSize]) + "...",
 				}
 				jsonData, _ = json.Marshal(truncatedData)
-				jsonStr = string(jsonData)
 			}
 
-			fmt.Fprintf(w, "event: record\ndata: %s\n\n", jsonStr)
+			if _, err := fmt.Fprintf(w, "event: record\ndata: %s\n\n", jsonData); err != nil {
+				return
+			}
 			flusher.Flush()
 
 			count++
