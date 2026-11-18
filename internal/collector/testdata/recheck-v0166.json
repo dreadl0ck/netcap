@@ -149,6 +149,7 @@
     "verification": "Five runs of the two-record fixture took 10.7–12.3 ms to report ready through the polling helper while the regular slot was held. The 4096-record over-expansion control retains every record on fallback. The full Web UI race suite passes."
   },
   "originalStaleProbeReplay": {
+    "captureGapControl": "TestStaleProbeQualificationPreservesConflict confirms that an observed gap suppresses the possible-stale-probe annotation while keeping the conflict byte and medium severity. Focused stale-probe and keepalive race tests passed.",
     "source": "a0c283f",
     "verification": "TestOriginalStaleProbeReplay passes under the race detector on both SHA-256-pinned public captures. It replays 46937 and 57430 packet records through PacketEvents and Engine.Observe. Frames 14627, 23822 and 51004 each retain one conflict byte.",
     "qualification": "1a4507d adds possible-stale-probe evidence for a one-byte zero ACK behind the frontier at an observed earlier segment end. Both pinned replays pass under the race detector: each witness adds one candidate and one conflict byte. Synthetic interior-byte, nonzero, non-ACK, multibyte and post-reset controls retain conflicts without the annotation. Alert class and severity remain unchanged; peer acceptance and evaluator-byte identity are unverified."

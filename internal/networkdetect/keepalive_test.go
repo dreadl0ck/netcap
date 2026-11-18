@@ -10,14 +10,15 @@ func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 		name             string
 		seq              uint32
 		payload          []byte
-		ack, reset, want bool
+		ack, reset, gap, want bool
 	}{
-		{"previous-end", 3, []byte{0}, true, false, true},
-		{"interior-byte", 2, []byte{0}, true, false, false},
-		{"nonzero", 3, []byte{1}, true, false, false},
-		{"no-ack", 3, []byte{0}, false, false, false},
-		{"multiple-bytes", 3, []byte{0, 0}, true, false, false},
-		{"reset", 3, []byte{0}, true, true, false},
+		{"previous-end", 3, []byte{0}, true, false, false, true},
+		{"interior-byte", 2, []byte{0}, true, false, false, false},
+		{"nonzero", 3, []byte{1}, true, false, false, false},
+		{"no-ack", 3, []byte{0}, false, false, false, false},
+		{"multiple-bytes", 3, []byte{0, 0}, true, false, false, false},
+		{"reset", 3, []byte{0}, true, true, false, false},
+		{"capture-gap", 3, []byte{0}, true, false, true, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			e, _ := New(DefaultConfig())
@@ -28,6 +29,13 @@ func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 			ev.At++
 			ev.Seq, ev.Payload = start+4, []byte("efgh")
 			e.Observe(ev)
+			if tc.gap {
+				ev.At++
+				ev.Seq, ev.Payload = start+9, []byte("tail")
+				if _, err := e.Observe(ev); err != nil || e.Stats().StreamGaps != 1 {
+					t.Fatalf("capture gap not recorded: %v, %+v", err, e.Stats())
+				}
+			}
 			if tc.reset {
 				end := ev
 				end.Kind, end.Payload = "end", nil
@@ -40,7 +48,7 @@ func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 				t.Fatal(err)
 			}
 			alerts = append(alerts, e.Flush()...)
-			if len(alerts) != 1 || alerts[0].Name != "tcp.overlap-conflict" || (e.Stats().StaleProbeCandidates == 1) != tc.want || e.Stats().ConflictingOverlapBytes != uint64(len(tc.payload)) {
+			if len(alerts) != 1 || alerts[0].Name != "tcp.overlap-conflict" || alerts[0].Severity != "medium" || (e.Stats().StaleProbeCandidates == 1) != tc.want || e.Stats().ConflictingOverlapBytes != uint64(len(tc.payload)) {
 				t.Fatalf("alerts=%v stats=%+v", alerts, e.Stats())
 			}
 			if strings.Contains(strings.Join(alerts[0].Examples, " "), "Possible stale probe") != tc.want {
