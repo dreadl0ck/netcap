@@ -70,24 +70,38 @@ func BuildAssetContext(state Snapshot, asset string) (AssetContext, error) {
 		rows := prefixes[key]
 		sort.Slice(rows, func(i, j int) bool { return rows[i].id < rows[j].id })
 	}
-	ids := make([]string, 0)
+	const maxAssetRecords = 64
+	type candidate struct {
+		id      string
+		labeled bool
+	}
+	candidates := make([]candidate, 0, maxAssetRecords)
 	for id, observation := range state.Observed {
 		fact := observation.Fact
 		links := related[scopeKey(fact.Scope)]
 		if fact.SrcIP == asset || fact.DstIP == asset || fact.MAC == asset || links[fact.SrcIP] || links[fact.DstIP] || links[fact.MAC] {
-			ids = append(ids, id)
+			result.TotalRecords++
+			labeled := state.Labels[id].Name != ""
+			i := sort.Search(len(candidates), func(i int) bool {
+				other := candidates[i]
+				if other.labeled != labeled {
+					return labeled
+				}
+				return other.id >= id
+			})
+			if i == maxAssetRecords {
+				continue
+			}
+			if len(candidates) < maxAssetRecords {
+				candidates = append(candidates, candidate{})
+			}
+			copy(candidates[i+1:], candidates[i:])
+			candidates[i] = candidate{id, labeled}
 		}
 	}
-	sort.Slice(ids, func(i, j int) bool {
-		a, b := state.Labels[ids[i]].Name != "", state.Labels[ids[j]].Name != ""
-		if a != b {
-			return a
-		}
-		return ids[i] < ids[j]
-	})
-	result.TotalRecords = len(ids)
 	bytes := 0
-	for _, id := range ids {
+	for _, candidate := range candidates {
+		id := candidate.id
 		row := AssetRecord{ID: id, Observation: state.Observed[id], Direction: "unknown"}
 		if label, ok := state.Labels[id]; ok {
 			row.Label = &label
@@ -123,12 +137,12 @@ func BuildAssetContext(state Snapshot, asset string) (AssetContext, error) {
 		if err != nil {
 			return AssetContext{}, err
 		}
-		if len(result.Records) == 64 || bytes+len(encoded) > 240<<10 {
-			result.Truncated = true
+		if bytes+len(encoded) > 240<<10 {
 			break
 		}
 		bytes += len(encoded)
 		result.Records = append(result.Records, row)
 	}
+	result.Truncated = len(result.Records) < result.TotalRecords
 	return result, nil
 }

@@ -3,6 +3,7 @@ package behavior
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -64,6 +65,21 @@ func TestAssetContextScopeDirectionLabelsAndBounds(t *testing.T) {
 	bounded, err := BuildAssetContext(state, "192.0.2.1")
 	if err != nil || len(bounded.Records) != 64 || !bounded.Truncated || bounded.TotalRecords != 103 {
 		t.Fatalf("context bound: %+v, %v", bounded, err)
+	}
+	var unlabeled []string
+	for id, obs := range state.Observed {
+		if id != labelID && obs.Fact.SrcIP == "192.0.2.1" {
+			unlabeled = append(unlabeled, id)
+		}
+	}
+	sort.Strings(unlabeled)
+	if bounded.Records[0].ID != labelID {
+		t.Fatal("labeled observation missing from first position")
+	}
+	for i, row := range bounded.Records[1:] {
+		if row.ID != unlabeled[i] {
+			t.Fatalf("row %d: got %s, want %s", i+1, row.ID, unlabeled[i])
+		}
 	}
 	if _, err := BuildAssetContext(state, "not an address"); err == nil {
 		t.Fatal("invalid asset accepted")
