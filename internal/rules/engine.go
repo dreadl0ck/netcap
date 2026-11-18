@@ -458,7 +458,7 @@ func (e *Engine) isDuplicate(alert *types.Alert) bool {
 
 	if exists {
 		// Check if within deduplication window
-		if time.Duration(now-lastSeen) < e.dedupWindow {
+		if now < lastSeen || (e.dedupWindow > 0 && uint64(now)-uint64(lastSeen) < uint64(e.dedupWindow)) {
 			return true
 		}
 	}
@@ -478,7 +478,7 @@ func (e *Engine) isDuplicate(alert *types.Alert) bool {
 func (e *Engine) cleanupRecentAlerts() {
 	now := e.now().UnixNano()
 	for key, lastSeen := range e.recentAlerts {
-		if time.Duration(now-lastSeen) > e.dedupWindow {
+		if now >= lastSeen && (e.dedupWindow < 0 || uint64(now)-uint64(lastSeen) > uint64(e.dedupWindow)) {
 			delete(e.recentAlerts, key)
 		}
 	}
