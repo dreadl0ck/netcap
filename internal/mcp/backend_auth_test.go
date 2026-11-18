@@ -1,11 +1,13 @@
 package mcp
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"testing/iotest"
 )
 
 type rawTestTransport func(*http.Request) (*http.Response, error)
@@ -41,11 +43,23 @@ func TestRawDownloadPreservesStatusWithBoundedDiagnostic(t *testing.T) {
 		return &http.Response{StatusCode: http.StatusServiceUnavailable, Status: "503 Service Unavailable", ContentLength: 16<<20 + 1, Body: io.NopCloser(diagnostic)}, nil
 	})}}
 	data, _, err := c.GetRawContext(t.Context(), "/api/fixture", nil)
-	if data != nil || err == nil || !strings.Contains(err.Error(), "503 Service Unavailable") || !strings.HasSuffix(err.Error(), "...[truncated]") {
+	var backend *BackendError
+	if data != nil || !errors.As(err, &backend) || backend.StatusCode != 503 || !strings.HasSuffix(err.Error(), "...[truncated]") {
 		t.Fatalf("unexpected download result: bytes=%d err=%v", len(data), err)
 	}
 	if read := 4096 - diagnostic.Len(); read != 501 {
 		t.Fatalf("diagnostic read %d bytes, want 501", read)
+	}
+}
+
+func TestRawDownloadPreservesStatusWhenDiagnosticReadFails(t *testing.T) {
+	c := &NetcapClient{baseURL: "http://fixture.test", hc: &http.Client{Transport: rawTestTransport(func(*http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: http.StatusBadGateway, Body: io.NopCloser(iotest.ErrReader(io.ErrUnexpectedEOF))}, nil
+	})}}
+	_, _, err := c.GetRawContext(t.Context(), "/api/fixture", nil)
+	var backend *BackendError
+	if !errors.As(err, &backend) || backend.StatusCode != 502 || !errors.Is(err, io.ErrUnexpectedEOF) {
+		t.Fatalf("status or read error lost: %v", err)
 	}
 }
 

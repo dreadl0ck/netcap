@@ -31,14 +31,25 @@ type NetcapClient struct {
 
 // BackendError preserves the HTTP status and bounded backend diagnostic body.
 type BackendError struct {
-	Method, Path string
-	StatusCode   int
-	Body         json.RawMessage
+	Method, Path    string
+	StatusCode      int
+	Body            json.RawMessage
+	diagnosticLimit int
+	readErr         error
 }
 
 func (e *BackendError) Error() string {
-	return fmt.Sprintf("%s %s: HTTP %d: %s", e.Method, e.Path, e.StatusCode, truncate(string(e.Body), 4000))
+	if e.readErr != nil {
+		return fmt.Sprintf("%s %s: HTTP %d: reading response: %v", e.Method, e.Path, e.StatusCode, e.readErr)
+	}
+	limit := e.diagnosticLimit
+	if limit == 0 {
+		limit = 4000
+	}
+	return fmt.Sprintf("%s %s: HTTP %d: %s", e.Method, e.Path, e.StatusCode, truncate(string(e.Body), limit))
 }
+
+func (e *BackendError) Unwrap() error { return e.readErr }
 
 // NewNetcapClient constructs a client targeting baseURL (e.g.
 // "http://127.0.0.1:54321"). The default timeout is generous (5 minutes)
@@ -238,11 +249,9 @@ func (c *NetcapClient) GetRawContext(ctx context.Context, path string, query url
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		body, err := readAllLimited(resp.Body, 501)
-		if err != nil {
-			return nil, "", fmt.Errorf("GET %s: %s: reading response: %w", path, resp.Status, err)
-		}
-		return nil, "", fmt.Errorf("GET %s: %s: %s", path, resp.Status, truncate(string(body), 500))
+		const diagnosticLimit = 500
+		body, err := readAllLimited(resp.Body, diagnosticLimit+1)
+		return nil, "", &BackendError{Method: req.Method, Path: req.URL.Path, StatusCode: resp.StatusCode, Body: body, diagnosticLimit: diagnosticLimit, readErr: err}
 	}
 	const maxRawResponseBytes = 16 << 20
 	if resp.ContentLength > maxRawResponseBytes {
