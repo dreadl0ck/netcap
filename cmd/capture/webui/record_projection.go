@@ -53,33 +53,55 @@ func applyRecordProjection(raw []byte, projection []projectionPath) ([]byte, err
 	if len(projection) == 0 {
 		return raw, nil
 	}
+	root, err := decodeProjectionContainer(raw, projection[0].name)
+	if err != nil {
+		return nil, err
+	}
 	out := make(map[string]json.RawMessage, len(projection))
 	for _, path := range projection {
-		value := json.RawMessage(raw)
-		for _, part := range path.parts {
-			if len(value) > 0 && value[0] == '[' {
-				var items []json.RawMessage
-				if err := json.Unmarshal(value, &items); err != nil {
-					return nil, err
-				}
-				index, err := strconv.Atoi(part)
-				if err != nil || index < 0 || index >= len(items) {
-					return nil, fmt.Errorf("array field path %q is out of range", path.name)
-				}
-				value = items[index]
-			} else {
-				var object map[string]json.RawMessage
-				if err := json.Unmarshal(value, &object); err != nil {
-					return nil, fmt.Errorf("field path %q does not select an object", path.name)
-				}
-				var ok bool
-				value, ok = object[part]
-				if !ok {
-					return nil, fmt.Errorf("field path %q is absent; inspect get_audit_record_fields or omit fields", path.name)
-				}
+		container := root
+		for i, part := range path.parts {
+			value, err := container.selectPart(part, path.name)
+			if err != nil {
+				return nil, err
+			}
+			if i == len(path.parts)-1 {
+				out[path.name] = value
+				break
+			}
+			container, err = decodeProjectionContainer(value, path.name)
+			if err != nil {
+				return nil, err
 			}
 		}
-		out[path.name] = value
 	}
 	return json.Marshal(out)
+}
+
+type projectionContainer struct {
+	object map[string]json.RawMessage
+	items  []json.RawMessage
+}
+
+func decodeProjectionContainer(raw []byte, path string) (c projectionContainer, err error) {
+	if len(raw) > 0 && raw[0] == '[' {
+		err = json.Unmarshal(raw, &c.items)
+	} else if json.Unmarshal(raw, &c.object) != nil {
+		err = fmt.Errorf("field path %q does not select an object", path)
+	}
+	return c, err
+}
+
+func (c projectionContainer) selectPart(part, path string) (json.RawMessage, error) {
+	if c.items != nil {
+		index, err := strconv.Atoi(part)
+		if err != nil || index < 0 || index >= len(c.items) {
+			return nil, fmt.Errorf("array field path %q is out of range", path)
+		}
+		return c.items[index], nil
+	}
+	if value, ok := c.object[part]; ok {
+		return value, nil
+	}
+	return nil, fmt.Errorf("field path %q is absent; inspect get_audit_record_fields or omit fields", path)
 }

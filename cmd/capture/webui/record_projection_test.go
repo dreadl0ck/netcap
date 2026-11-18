@@ -33,6 +33,20 @@ func TestCompleteAuditRecordsPreserveHeadersAndBoundPages(t *testing.T) {
 	}
 }
 
+func BenchmarkRecordProjectionWideRow(b *testing.B) {
+	raw := []byte(`{"Timestamp":9223372036854775807,"Method":"GET","Host":"fixture","Src":"192.0.2.1","headers":[{"key":"value"}],"body":"` + strings.Repeat("x", 256<<10) + `"}`)
+	projection, err := parseRecordProjection("Timestamp,Method,Host,Src,/headers/0/key")
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := applyRecordProjection(raw, projection); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func TestRecordProjectionPreservesExactValues(t *testing.T) {
 	raw := []byte(`{"Timestamp":9223372036854775807,"headers":[{"a/b~c":"value"}]}`)
 	out, err := projectRecordJSON(raw, "Timestamp,/headers/0/a~1b~0c")
