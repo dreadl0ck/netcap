@@ -381,6 +381,21 @@ rules:
             page = await call("query_timeline_events", track | {"limit": 5, "after": page["events"][-1]["cursor"]})
         if len(seen) != 18 or len(set(seen)) != 18:
             raise ValueError("UDP timeline lost or duplicated an event")
+        cursor = page["events"][-1]["cursor"]
+        end = len(seen) - 1  # The before cursor excludes the last event.
+        while end:
+            page = await call("query_timeline_events", track | {"limit": 5, "before": cursor})
+            start = max(0, end - 5)
+            if (page["generation"] != meta["generation"] or page["matchCount"] != 18
+                    or [event["id"] for event in page["events"]] != seen[start:end]
+                    or page["hasPrev"] != (start > 0)):
+                raise ValueError("backward timeline page disagrees with forward ordering or cursor bounds")
+            cursor = page["events"][0]["cursor"]
+            end = start
+        for options, status in (({"before": cursor, "generation": "stale"}, 409), ({"before": "A" * 513}, 400)):
+            rejected = await client.call_tool("query_timeline_events", track | options)
+            if not rejected.isError or not any(f"HTTP {status}" in getattr(c, "text", "") for c in rejected.content):
+                raise ValueError(f"timeline cursor rejection lost HTTP {status}")
         buckets = await call("get_timeline_buckets", track | {"buckets": 4})
         series, = buckets["series"]
         if buckets["generation"] != meta["generation"] or series["type"] != "UDP" or sum(series["counts"]) != 18:
