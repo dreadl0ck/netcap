@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"sort"
+	"unsafe"
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
@@ -150,6 +151,13 @@ func (t *tcpConnection) tryIncremental() {
 		t.incrementalDeclined = true
 		return
 	}
+	fragments, credit, err := incrementalHandoffFragments(t.stateBudget, t.client.DataSlice(), t.server.DataSlice())
+	if err != nil {
+		t.factory.failIncremental(err)
+		t.incrementalDeclined = true
+		return
+	}
+	defer t.stateBudget.Release(credit)
 	t.incremental = factory.NewIncremental(c, t.stateBudget)
 	if observer, ok := t.incremental.(core.IncrementalTailObserver); ok {
 		observer.SetTailObserver(func(c *core.ConversationInfo) { stream.ObserveTLSUpgrade(c, "HTTP") })
@@ -163,11 +171,6 @@ func (t *tcpConnection) tryIncremental() {
 			<-owned.done
 		}
 	}
-	fragments := append(core.DataFragments(nil), t.client.DataSlice()...)
-	fragments = append(fragments, t.server.DataSlice()...)
-	sort.SliceStable(fragments, func(i, j int) bool {
-		return fragments[i].CaptureInfo().Timestamp.Before(fragments[j].CaptureInfo().Timestamp)
-	})
 	for _, fragment := range fragments {
 		t.pushIncremental(fragment.(*core.StreamData))
 	}
@@ -204,6 +207,21 @@ func (t *tcpConnection) tryIncremental() {
 			t.Unlock()
 		}
 	}
+}
+
+func incrementalHandoffFragments(budget *core.StateBudget, client, server core.DataFragments) (core.DataFragments, int64, error) {
+	count := len(client) + len(server)
+	credit := int64(count) * int64(unsafe.Sizeof(core.DataFragment(nil)))
+	if err := budget.Reserve(credit); err != nil {
+		return nil, 0, err
+	}
+	fragments := make(core.DataFragments, 0, count)
+	fragments = append(fragments, client...)
+	fragments = append(fragments, server...)
+	sort.SliceStable(fragments, func(i, j int) bool {
+		return fragments[i].CaptureInfo().Timestamp.Before(fragments[j].CaptureInfo().Timestamp)
+	})
+	return fragments, credit, nil
 }
 
 func (t *tcpConnection) retainIncrementalBanner(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) bool {

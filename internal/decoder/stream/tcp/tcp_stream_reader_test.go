@@ -2,12 +2,38 @@ package tcp
 
 import (
 	"bytes"
+	"errors"
 	"testing"
 	"time"
+	"unsafe"
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/gopacket/gopacket"
 )
+
+func TestIncrementalHandoffFragmentBudget(t *testing.T) {
+	fragment := func(at int64) *core.StreamData {
+		return &core.StreamData{CaptureInformation: gopacket.CaptureInfo{Timestamp: time.Unix(0, at)}}
+	}
+	first, clientTie, serverTie := fragment(1), fragment(2), fragment(2)
+	client := core.DataFragments{clientTie, first}
+	server := core.DataFragments{serverTie}
+	wantCredit := 3 * int64(unsafe.Sizeof(core.DataFragment(nil)))
+	budget, _ := core.NewStateBudget(wantCredit-1, nil)
+	if got, credit, err := incrementalHandoffFragments(budget, client, server); got != nil || credit != 0 || !errors.Is(err, core.ErrStreamStateBudget) || budget.Health().RetainedBytes != 0 {
+		t.Fatalf("over-budget handoff: fragments=%v credit=%d err=%v state=%+v", got, credit, err, budget.Health())
+	}
+	budget, _ = core.NewStateBudget(wantCredit, nil)
+	got, credit, err := incrementalHandoffFragments(budget, client, server)
+	if err != nil || len(got) != 3 || got[0] != first || got[1] != clientTie || got[2] != serverTie || client[0] != clientTie || budget.Health().RetainedBytes != wantCredit {
+		t.Fatalf("handoff lost ordering or accounting: fragments=%v credit=%d err=%v state=%+v", got, credit, err, budget.Health())
+	}
+	budget.Release(credit)
+	if budget.Health().RetainedBytes != 0 {
+		t.Fatal("handoff credit was not released")
+	}
+}
 
 func TestTCPStreamReaderRun(t *testing.T) {
 	for _, tc := range []struct {
