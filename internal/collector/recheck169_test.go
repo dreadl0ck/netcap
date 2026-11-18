@@ -4,14 +4,17 @@ import (
 	"archive/zip"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
@@ -71,6 +74,29 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 				if len(connections) != 15000 {
 					t.Fatal("default capture lost connections", len(connections))
 				}
+				t.Run("strict-finite-budgets", func(t *testing.T) {
+					finiteOut := t.TempDir()
+					cfg := ultimateCaptureConfig(finiteOut, 1, 0)
+					cfg.CaptureEvidence = true
+					cfg.DecoderConfig.MaxRetainedReassemblyBytes = 128 << 20
+					cfg.DecoderConfig.MaxRetainedTCPStateBytes = 256 << 20
+					cfg.DecoderConfig.MaxRetainedTCPBytes = 256 << 10
+					cfg.DecoderConfig.MaxAggregateStateBytes = 1 << 20
+					if err := New(cfg).CollectPcap(input); err != nil {
+						t.Fatal(err)
+					}
+					if _, err := os.Stat(filepath.Join(finiteOut, evidence.AuditReadyFile)); err != nil {
+						t.Fatal(err)
+					}
+					checkRecheckAuditMultiset(t, "Connection", connections, bookRecords(t, finiteOut, "Connection", func() *types.Connection { return new(types.Connection) }))
+					checkRecheckAuditMultiset(t, "TCP", bookRecords(t, out, "TCP", func() *types.TCP { return new(types.TCP) }), bookRecords(t, finiteOut, "TCP", func() *types.TCP { return new(types.TCP) }))
+					pages := bookJSON[reassembly.PageBudgetHealth](t, filepath.Join(finiteOut, "TCPReassemblyPageBudget.json"))
+					state := bookJSON[core.StateBudgetHealth](t, filepath.Join(finiteOut, "TCPStreamStateBudget.json"))
+					if pages.Exceeded || state.Exceeded || pages.RetainedBytes != 0 || state.RetainedBytes != 0 || pages.PeakBytes > pages.LimitBytes || state.PeakBytes > state.LimitBytes {
+						t.Fatalf("unexpected budget state: pages=%+v state=%+v", pages, state)
+					}
+					t.Logf("strict finite replay peaks: page bytes %d, TCP state bytes %d", pages.PeakBytes, state.PeakBytes)
+				})
 				checkPagePressure := func(t *testing.T, workers int, saveConns bool) {
 					out := t.TempDir()
 					cfg := ultimateCaptureConfig(out, workers, 0)
@@ -126,5 +152,23 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func checkRecheckAuditMultiset[T any](t *testing.T, typ string, baseline, finite []T) {
+	t.Helper()
+	count := func(rows []T) map[[sha256.Size]byte]int {
+		counts := make(map[[sha256.Size]byte]int, len(rows))
+		for _, row := range rows {
+			data, err := json.Marshal(row)
+			if err != nil {
+				t.Fatal(err)
+			}
+			counts[sha256.Sum256(data)]++
+		}
+		return counts
+	}
+	if len(baseline) != 15000 || !reflect.DeepEqual(count(baseline), count(finite)) {
+		t.Fatalf("%s audit multiset changed: baseline=%d finite=%d", typ, len(baseline), len(finite))
 	}
 }
