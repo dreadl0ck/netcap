@@ -245,6 +245,88 @@ func TestCaptureWorkerCompletesSmallAnalysisDuringLargeRuleReplay(t *testing.T) 
 	testCaptureWorkerCompletesSmallAnalysis(t, true)
 }
 
+func TestSmallAnalysisQueuedDuringTwoActiveRuleReplays(t *testing.T) {
+	s, smallInput, smallDir := reanalysisFixture(t)
+	delete(s.completedFiles, smallInput)
+	s.fileBPFFilters = make(map[string]string)
+	s.shutdownChan = make(chan struct{})
+	s.jobQueue = make(chan *AnalysisJob, 3)
+	s.rulesConfig = &rules.Config{Rules: []*rules.Rule{{Name: "get", Type: "HTTP", Expression: "Method == 'GET'", Enabled: true}}}
+	match := &types.HTTP{Timestamp: 1, Method: "GET"}
+	miss := &types.HTTP{Timestamp: 2, Method: "POST", URL: "/fixture"}
+	const records = 150_000
+	rows := make([]proto.Message, records)
+	rows[0] = match
+	for i := 1; i < len(rows); i++ {
+		rows[i] = miss
+	}
+	finished := make(chan string, 3)
+	large := make([]captureSelection, 2)
+	for i := range large {
+		dir := t.TempDir()
+		input := filepath.Join(dir, "large.pcap")
+		writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, rows)
+		large[i] = captureSelection{InputFile: input, OutputDir: dir}
+		s.jobQueue <- &AnalysisJob{InputFile: input, OutputDir: dir, processingDone: func() { finished <- input }}
+	}
+	writeTimelineAuditFile(t, smallDir, "HTTP", types.Type_NC_HTTP, []proto.Message{match})
+	s.wg.Add(1)
+	go s.processJobs(func(job *AnalysisJob) { s.finishCaptureJob(job, time.Second) })
+	defer func() { s.stopProcessingAdmission(); s.wg.Wait() }()
+	deadline := time.After(30 * time.Second)
+	for {
+		s.mu.RLock()
+		both := s.postCapturePhases[large[0].OutputDir] == "rules" && s.postCapturePhases[large[1].OutputDir] == "rules"
+		s.mu.RUnlock()
+		if both {
+			break
+		}
+		select {
+		case input := <-finished:
+			t.Fatalf("%s completed before both workers entered rule replay", input)
+		case <-deadline:
+			t.Fatal("both workers did not enter rule replay")
+		case <-time.After(time.Millisecond):
+		}
+	}
+	started := time.Now()
+	s.jobQueue <- &AnalysisJob{InputFile: smallInput, OutputDir: smallDir, processingDone: func() { finished <- smallInput }}
+	outputs := map[string]string{smallInput: smallDir, large[0].InputFile: large[0].OutputDir, large[1].InputFile: large[1].OutputDir}
+	for range 3 {
+		select {
+		case input := <-finished:
+			if input == smallInput {
+				t.Logf("tiny completion after queueing during two %d-record replays: %s", records, time.Since(started))
+			}
+			dir, ok := outputs[input]
+			delete(outputs, input)
+			s.mu.RLock()
+			complete := s.completedFiles[input]
+			s.mu.RUnlock()
+			if !ok || !complete || timelineIndexFor(dir).State != timelineStateReady {
+				t.Fatalf("%s did not publish exactly one successful completion with a ready timeline", input)
+			}
+			r, err := NewAuditRecordReader(filepath.Join(dir, "Alert.ncap.gz"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer r.Close()
+			if _, err := r.ReadHeader(); err != nil {
+				t.Fatal(err)
+			}
+			alert, err := r.NextAs[*types.Alert]()
+			if err != nil || alert.RuleName != "get" || alert.Timestamp != match.Timestamp {
+				t.Fatalf("%s: wrong alert %v, %v", input, alert, err)
+			}
+			if _, err := r.NextRecord(); err != io.EOF {
+				t.Fatalf("%s: expected exactly one alert: %v", input, err)
+			}
+		case <-deadline:
+			t.Fatalf("jobs did not complete: %v", outputs)
+		}
+	}
+}
+
 func testCaptureWorkerCompletesSmallAnalysis(t *testing.T, ruleLoad bool) {
 	t.Helper()
 	s, smallInput, smallDir := reanalysisFixture(t)
