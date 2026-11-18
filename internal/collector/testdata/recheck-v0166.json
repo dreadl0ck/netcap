@@ -345,6 +345,7 @@
     "verification": "Pinned synthetic v169_midstream_psh_15k.pcap: strict replay at 2 MiB reassembly pages failed with a page-budget error; raising pages to 128 MiB reached the 64 MiB TCP stream-state limit. Both trials had 256 KiB retained payload and 1 MiB aggregate limits. No finite-cap audit equivalence or default change is claimed."
   },
   "boundedHTTPSourcePreflight": {
+    "sharedRequestMode": "HTTP source preflight and request decoding now share sourceRequestMode for buffered, spooled and sampled bodies. The full portable HTTP race suite passed, including gzip, opaque POST and backed form cap boundaries.",
     "gzipSpoolLimit": "TestHTTPSourceGzipPreflightStopsAtSpoolLimit verifies that gzip request preflight honors the spool byte cap even when file export is disabled. An exact-limit body allows inspection of the following request; a body one byte over the limit stops the run before fallback. The full portable HTTP race suite passed.",
     "backedFormLimit": "Preflight applies the backing-store body cap to JSON and multipart requests. The oversized JSON POST regression verifies one incomplete 128-byte artifact with the expected prefix hash and no full-conversation fallback. Focused HTTP race tests passed.",
     "oversizedPostExtraction": "TestHTTPSourceOversizedPostPreservesOnlyAllowedPrefix verifies that a 129-byte opaque POST at a 128-byte cap produces one incomplete 128-byte artifact with the expected prefix SHA-256, without emitting the trailing request or materializing the conversation. Focused race tests passed.",

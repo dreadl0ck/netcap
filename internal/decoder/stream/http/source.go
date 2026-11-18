@@ -134,6 +134,32 @@ func sourceRequestBodyLimit() int64 {
 	return limit
 }
 
+type sourceRequestBodyMode uint8
+
+const (
+	requestBuffered sourceRequestBodyMode = iota
+	requestSpooled
+	requestCappedSample
+	requestSample
+)
+
+func sourceRequestMode(cfg *decoderconfig.Config, req *http.Request, form string) sourceRequestBodyMode {
+	if cfg == nil || cfg.IncludePayloads || req.Body == http.NoBody {
+		return requestBuffered
+	}
+	storage := cfg.FileStorage != ""
+	if (storage && req.Method == methodPOST) || form != "" || req.Header.Get(headerContentEncoding) == "gzip" {
+		return requestSpooled
+	}
+	if req.ContentLength == 0 && len(req.TransferEncoding) == 0 {
+		return requestBuffered
+	}
+	if storage {
+		return requestCappedSample
+	}
+	return requestSample
+}
+
 func readCappedSourceRequestBody(c *core.ConversationInfo, body io.Reader) ([]byte, func(), error) {
 	limit := sourceRequestBodyLimit()
 	bounded := &io.LimitedReader{R: body, N: limit + 1}
@@ -279,10 +305,10 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 					}
 					var body io.Reader = request.Body
 					var bound *io.LimitedReader
-					cfg := decoderconfig.Instance
+					mode := sourceRequestMode(decoderconfig.Instance, request, form)
 					if form == "application/x-www-form-urlencoded" {
 						bound = &io.LimitedReader{R: body, N: maxJSONFormBytes + 1}
-					} else if cfg != nil && !cfg.IncludePayloads && (cfg.FileStorage != "" || form != "" || request.Header.Get(headerContentEncoding) == "gzip") {
+					} else if mode == requestSpooled || mode == requestCappedSample {
 						bound = &io.LimitedReader{R: body, N: sourceRequestBodyLimit() + 1}
 					}
 					if bound != nil {
