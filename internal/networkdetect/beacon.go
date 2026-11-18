@@ -93,7 +93,7 @@ func (e *Engine) observeBeacon(ev Event, add addFunc) {
 		}
 		b = &beacon{}
 		e.beacons[key] = b
-	} else if ev.Seq == b.seq && ev.SrcPort == b.port {
+	} else if len(b.times) > 0 && !streamWindowExpired(ev.At, b.times[len(b.times)-1], c.BeaconWindowNS) && ev.Seq == b.seq && ev.SrcPort == b.port {
 		// A retransmitted SYN is the same connection attempt.
 		return
 	}
@@ -101,7 +101,7 @@ func (e *Engine) observeBeacon(ev Event, add addFunc) {
 	b.port = ev.SrcPort
 
 	drop := 0
-	for drop < len(b.times) && ev.At-b.times[drop] > c.BeaconWindowNS {
+	for drop < len(b.times) && streamWindowExpired(ev.At, b.times[drop], c.BeaconWindowNS) {
 		drop++
 	}
 	if len(b.times)-drop >= maxBeaconTimes {
@@ -129,7 +129,7 @@ func (e *Engine) observeBeacon(ev Event, add addFunc) {
 
 func (e *Engine) expireBeacons(at int64) {
 	for k, b := range e.beacons {
-		if len(b.times) == 0 || at-b.times[len(b.times)-1] > e.config.BeaconWindowNS {
+		if len(b.times) == 0 || streamWindowExpired(at, b.times[len(b.times)-1], e.config.BeaconWindowNS) {
 			delete(e.beacons, k)
 		}
 	}

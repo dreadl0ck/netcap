@@ -74,6 +74,36 @@ func TestBeaconDisabledAndWindowed(t *testing.T) {
 	}
 }
 
+func TestBeaconCountsNewStartAfterHistoryExpiresBetweenSweeps(t *testing.T) {
+	e, err := New(DefaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := beaconSYN(0, 1)
+	edge := beaconSYN(e.config.BeaconWindowNS, first.Seq)
+	last := beaconSYN(edge.At+1, first.Seq)
+	for _, ev := range []Event{first, edge, last} {
+		if _, err := e.Observe(ev); err != nil {
+			t.Fatal(err)
+		}
+		if ev.At == edge.At {
+			for _, b := range e.beacons {
+				if len(b.times) != 1 || b.times[0] != first.At {
+					t.Fatalf("inclusive edge did not preserve retransmission suppression: %v", b.times)
+				}
+			}
+		}
+	}
+	if len(e.beacons) != 1 || e.lastSweep != edge.At {
+		t.Fatalf("expected one history without another sweep: histories=%d last sweep=%d", len(e.beacons), e.lastSweep)
+	}
+	for _, b := range e.beacons {
+		if len(b.times) != 1 || b.times[0] != last.At {
+			t.Fatalf("expected only the new start: %v", b.times)
+		}
+	}
+}
+
 func TestBeaconConfigValidation(t *testing.T) {
 	for _, mutate := range []func(*Config){
 		func(c *Config) { c.BeaconSamples = 3 },

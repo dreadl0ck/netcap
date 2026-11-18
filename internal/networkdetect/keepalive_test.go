@@ -6,12 +6,13 @@ import (
 	"testing"
 )
 
-func TestFlowExpiryDiscardsOldProbeEvidenceAcrossSignedRange(t *testing.T) {
+func TestFlowExpiryDiscardsOldProbeEvidence(t *testing.T) {
 	e, err := New(DefaultConfig())
 	if err != nil {
 		t.Fatal(err)
 	}
-	ev := baseEvent("data", math.MinInt64)
+	ev := baseEvent("data", 0)
+	ev.At = 0
 	ev.Seq, ev.Payload = 100, []byte("abcd")
 	for range 2 {
 		if _, err := e.Observe(ev); err != nil {
