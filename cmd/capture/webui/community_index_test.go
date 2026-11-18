@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -225,6 +226,27 @@ func TestCommunityIndexRepeatedIDsCountEachRecordOnce(t *testing.T) {
 			if err != nil || scanErr != nil || total != int64(len(file.rows)) || matched != want || scanMatched != want {
 				t.Fatalf("%s %v: indexed (%d, %d, %v), scan (%d, %v), want %d", file.name, ids, total, matched, err, scanMatched, scanErr, want)
 			}
+		}
+	}
+}
+
+func TestCommunityIndexFallsBackWhenKeysExceedByteBudget(t *testing.T) {
+	for _, over := range []bool{false, true} {
+		dir := t.TempDir()
+		key := strings.Repeat("x", 1<<20)
+		rows := []proto.Message{
+			&types.DNS{CommunityID: key}, &types.DNS{CommunityID: "a" + key[1:]},
+			&types.DNS{CommunityID: "b" + key[1:]}, &types.DNS{CommunityID: "c" + key[1:]},
+			&types.DNS{CommunityID: key},
+		}
+		if over {
+			rows = append(rows, &types.DNS{CommunityID: "extra"})
+		}
+		path := writeTimelineAuditFilePlain(t, dir, "DNS", types.Type_NC_DNS, rows)
+		total, matched, err := communityCounts(path, map[string]bool{key: true})
+		_, cached := communityCachedTotal(path)
+		if err != nil || total != int64(len(rows)) || matched != 2 || cached == over {
+			t.Fatalf("over=%t: total=%d matched=%d cached=%t err=%v", over, total, matched, cached, err)
 		}
 	}
 }

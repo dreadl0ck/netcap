@@ -20,10 +20,11 @@ import (
 )
 
 const (
-	communityIndexCacheSize  = 64
-	communityIndexCacheBytes = 64 << 20
-	communityIndexMaxRecords = 1_000_000
-	communityIndexMaxIDs     = 4096
+	communityIndexCacheSize   = 64
+	communityIndexCacheBytes  = 64 << 20
+	communityIndexMaxRecords  = 1_000_000
+	communityIndexMaxIDs      = 4096
+	communityIndexMaxKeyBytes = 4 << 20
 )
 
 type communityFileIndex struct {
@@ -271,6 +272,7 @@ func buildCommunityIndex(path string, expected os.FileInfo) (*communityFileIndex
 
 func buildCommunityIndexContext(ctx context.Context, path string, expected os.FileInfo) (*communityFileIndex, error) {
 	idx := &communityFileIndex{byID: make(map[string]*roaring.Bitmap)}
+	keyBytes := 0
 	err := walkCommunityRecords(ctx, path, expected, func(id string, ids []string) error {
 		if idx.total >= communityIndexMaxRecords {
 			return errCommunityIndexTooLarge
@@ -281,9 +283,10 @@ func buildCommunityIndexContext(ctx context.Context, path string, expected os.Fi
 			}
 			bitmap := idx.byID[id]
 			if bitmap == nil {
-				if len(idx.byID) >= communityIndexMaxIDs {
+				if len(idx.byID) >= communityIndexMaxIDs || len(id) > communityIndexMaxKeyBytes-keyBytes {
 					return errCommunityIndexTooLarge
 				}
+				keyBytes += len(id)
 				bitmap = roaring.New()
 				idx.byID[id] = bitmap
 			}
