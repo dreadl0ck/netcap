@@ -8,12 +8,26 @@ const (
 	timelineFacetCheckInterval = 16_384
 )
 
-func (t *tlTypeIndex) buildFacets() {
-	t.facetsOnce.Do(func() {
+func (t *tlTypeIndex) buildFacets(stop <-chan struct{}) bool {
+	if t.facetsDone.Load() {
+		return t.hosts != nil
+	}
+	if ruleReplayCanceled(stop, nil) || !t.facetsMu.TryLock() {
+		return false
+	}
+	defer t.facetsMu.Unlock()
+	if t.facetsDone.Load() {
+		return t.hosts != nil
+	}
+	if t.owner != nil {
+		if !t.owner.facetMu.TryLock() {
+			return false
+		}
+		defer t.owner.facetMu.Unlock()
+	}
+	build := func() {
 		remaining := uint64(timelineFacetMaxBytes)
 		if t.owner != nil {
-			t.owner.facetMu.Lock()
-			defer t.owner.facetMu.Unlock()
 			if t.owner.facetBytes >= remaining {
 				return
 			}
@@ -50,11 +64,14 @@ func (t *tlTypeIndex) buildFacets() {
 			pending++
 			if pending == timelineFacetCheckInterval {
 				pending = 0
-				return size() <= remaining
+				return !ruleReplayCanceled(stop, nil) && size() <= remaining
 			}
 			return true
 		}
 		for i, event := range t.Events {
+			if i%256 == 0 && ruleReplayCanceled(stop, nil) {
+				return
+			}
 			pos := uint32(i)
 			if !add(hosts, t.str(event.Src), pos) || !add(hosts, t.str(event.Dst), pos) {
 				return
@@ -69,14 +86,19 @@ func (t *tlTypeIndex) buildFacets() {
 			}
 		}
 		bytes := size()
-		if bytes > remaining {
+		if bytes > remaining || ruleReplayCanceled(stop, nil) {
 			return
 		}
 		if t.owner != nil {
 			t.owner.facetBytes += bytes
 		}
 		t.hosts, t.community = hosts, community
-	})
+	}
+	build()
+	if t.hosts != nil || !ruleReplayCanceled(stop, nil) {
+		t.facetsDone.Store(true)
+	}
+	return t.hosts != nil
 }
 
 func (q *timelineQuery) candidates(t *tlTypeIndex) *roaring.Bitmap {
@@ -89,8 +111,7 @@ func (q *timelineQuery) candidates(t *tlTypeIndex) *roaring.Bitmap {
 	if len(q.CommunityIDs) > 0 && t.cids == nil && len(t.extraCIDs) == 0 {
 		return roaring.New()
 	}
-	t.buildFacets()
-	if t.hosts == nil {
+	if !t.buildFacets(q.stop) {
 		return nil
 	}
 	var selected *roaring.Bitmap

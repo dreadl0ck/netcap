@@ -86,7 +86,8 @@ type tlTypeIndex struct {
 	MaxDuration int64
 	cids        []int32
 	extraCIDs   map[int32][]int32
-	facetsOnce  sync.Once
+	facetsMu    sync.Mutex
+	facetsDone  atomic.Bool
 	hosts       map[string]*roaring.Bitmap
 	community   map[string]*roaring.Bitmap
 	owner       *timelineIndex

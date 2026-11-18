@@ -148,6 +148,26 @@ func TestTimelineScanStopsAfterCancellation(t *testing.T) {
 	}
 }
 
+func TestTimelineFacetBusyAndCanceledBuildsCanRetry(t *testing.T) {
+	track := benchmarkTimelineTrack()
+	track.owner = &timelineIndex{}
+	stop := make(chan struct{})
+	close(stop)
+	if track.buildFacets(stop) || track.facetsDone.Load() {
+		t.Fatal("canceled build published or disabled facets")
+	}
+	track.owner.facetMu.Lock()
+	q := &timelineQuery{Start: 1, End: 100_000, Tracks: []*tlTypeIndex{track}, Host: "10.0.0.1"}
+	got := q.count()
+	track.owner.facetMu.Unlock()
+	if got != 50_000 || track.facetsDone.Load() {
+		t.Fatalf("busy build: exact count=%d, finalized=%t", got, track.facetsDone.Load())
+	}
+	if got := q.count(); got != 50_000 || !track.facetsDone.Load() || track.hosts == nil {
+		t.Fatalf("retry did not publish facets: count=%d", got)
+	}
+}
+
 func TestTimelineFacetBudgetFallsBackToExactScan(t *testing.T) {
 	for _, remaining := range []uint64{0, 1024} {
 		track := benchmarkTimelineTrack()

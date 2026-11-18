@@ -95,7 +95,7 @@ func BenchmarkTimelineSubstringHostCount(b *testing.B) {
 func BenchmarkTimelineHostFacetCount(b *testing.B) {
 	t := benchmarkTimelineTrack()
 	q := &timelineQuery{Start: 1, End: 100_000, Tracks: []*tlTypeIndex{t}, Host: "10.0.0.1"}
-	t.buildFacets()
+	t.buildFacets(nil)
 	b.ResetTimer()
 	for range b.N {
 		if got := q.count(); got != 50_000 {
@@ -128,7 +128,7 @@ func BenchmarkTimelineCommunityFacetCount(b *testing.B) {
 		}
 	}
 	q := &timelineQuery{Start: 1, End: 100_000, Tracks: []*tlTypeIndex{t}, CommunityIDs: map[string]bool{"cid-one": true}}
-	t.buildFacets()
+	t.buildFacets(nil)
 	b.ResetTimer()
 	for range b.N {
 		if got := q.count(); got != 100 {
