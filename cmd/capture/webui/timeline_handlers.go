@@ -293,7 +293,7 @@ func (s *Server) handleTimelineEvents(w http.ResponseWriter, r *http.Request) {
 		if query.canceled() {
 			return
 		}
-		if !attachTimelineOccurrences(w, r, outDir, resp.Events) {
+		if !attachTimelineOccurrences(w, r, outDir, status.Index, resp.Events) {
 			return
 		}
 
@@ -313,7 +313,7 @@ func (s *Server) handleTimelineEvents(w http.ResponseWriter, r *http.Request) {
 	for _, hit := range hits {
 		resp.Events = append(resp.Events, timelineEventOf(hit))
 	}
-	if !attachTimelineOccurrences(w, r, outDir, resp.Events) {
+	if !attachTimelineOccurrences(w, r, outDir, status.Index, resp.Events) {
 		return
 	}
 
@@ -614,7 +614,7 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 	RespondJSON(w, http.StatusOK, resp)
 }
 
-func attachTimelineOccurrences(w http.ResponseWriter, r *http.Request, dir string, events []timelineEventJSON) bool {
+func attachTimelineOccurrences(w http.ResponseWriter, r *http.Request, dir string, index *timelineIndex, events []timelineEventJSON) bool {
 	if r.URL.Query().Get("evidence") != "1" {
 		return true
 	}
@@ -665,6 +665,10 @@ func attachTimelineOccurrences(w http.ResponseWriter, r *http.Request, dir strin
 			analystFailure(w, analyst.ErrStale)
 			return false
 		}
+	}
+	if current := timelineIndexFor(dir); current.State != timelineStateReady || current.Index == nil || current.Index.Generation != index.Generation {
+		analystFailure(w, analyst.ErrStale)
+		return false
 	}
 	return true
 }

@@ -148,7 +148,7 @@ func TestBoundTableStreamAndTimelineShareReference(t *testing.T) {
 	}
 	events := []timelineEventJSON{{Type: "Connection", Time: ref.TimestampNs, Ordinal: 1}}
 	w = httptest.NewRecorder()
-	if !attachTimelineOccurrences(w, httptest.NewRequest("GET", "/api/timeline/events?"+q.Encode(), nil), dir, events) {
+	if !attachTimelineOccurrences(w, httptest.NewRequest("GET", "/api/timeline/events?"+q.Encode(), nil), dir, waitForTimelineIndex(t, dir), events) {
 		t.Fatalf("timeline %d %s", w.Code, w.Body.String())
 	}
 	if events[0].Occurrence == nil || *events[0].Occurrence != ref {
@@ -167,6 +167,20 @@ func TestBoundTableStreamAndTimelineShareReference(t *testing.T) {
 	HandleAuditStream(w, httptest.NewRequest("GET", "/api/audit/Connection/stream?"+q.Encode(), nil), filepath.Join(dir, "Connection.ncap.gz"), "Connection")
 	if w.Code != 409 {
 		t.Fatal("stale stream binding accepted")
+	}
+}
+
+func TestBoundTimelineRejectsReplacementWithMatchingTimestamp(t *testing.T) {
+	dir, binding := boundFixture(t, "timeline-replaced")
+	index := waitForTimelineIndex(t, dir)
+	writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, []proto.Message{
+		&types.Connection{TimestampFirst: 1700000000000000001, SrcIP: "198.51.100.1"},
+	})
+	q := url.Values{"inputFile": {"/a.pcap"}, "evidence": {"1"}, "runId": {binding.RunID}, "sourceSHA256": {binding.SourceSHA256}, "manifestSHA256": {binding.ManifestSHA256}}
+	w := httptest.NewRecorder()
+	events := []timelineEventJSON{{Type: "Connection", Time: "1700000000000000001", Ordinal: 0}}
+	if attachTimelineOccurrences(w, httptest.NewRequest("GET", "/api/timeline/events?"+q.Encode(), nil), dir, index, events) || w.Code != http.StatusConflict {
+		t.Fatalf("replacement accepted: status=%d body=%s", w.Code, w.Body)
 	}
 }
 
