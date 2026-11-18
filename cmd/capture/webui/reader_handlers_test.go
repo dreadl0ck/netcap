@@ -48,6 +48,32 @@ func TestAuditFieldValuesRejectsDamagedInput(t *testing.T) {
 	}
 }
 
+func TestAuditFieldValuesAdmissionAndConfinement(t *testing.T) {
+	reader := auditReaderFixture(t, false, &types.Header{Type: types.Type_NC_UDP})
+	request := func(path string, want int) {
+		t.Helper()
+		w := httptest.NewRecorder()
+		HandleAuditFieldValues(w, httptest.NewRequest(http.MethodGet, "/api/audit/UDP/values", nil), path, "UDP")
+		if w.Code != want {
+			t.Fatalf("status=%d want=%d: %s", w.Code, want, w.Body.String())
+		}
+	}
+	func() {
+		for range 2 {
+			auditFieldSampleSlots <- struct{}{}
+			defer func() { <-auditFieldSampleSlots }()
+		}
+		request(reader.file.Name(), http.StatusTooManyRequests)
+	}()
+	linked := filepath.Join(t.TempDir(), "linked.ncap")
+	if err := os.Symlink(reader.file.Name(), linked); err == nil {
+		request(linked, http.StatusForbidden)
+	} else {
+		t.Logf("symlink unavailable: %v", err)
+	}
+	request(reader.file.Name(), http.StatusOK)
+}
+
 func TestAuditFieldValuesBoundsCumulativeSampleBytes(t *testing.T) {
 	body, err := proto.Marshal(&types.HTTP{Method: "GET", RequestBody: make([]byte, 9<<20)})
 	if err != nil {

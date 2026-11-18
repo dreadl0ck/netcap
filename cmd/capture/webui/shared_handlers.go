@@ -41,6 +41,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/delimited"
 	netfilter "github.com/dreadl0ck/netcap/internal/filter"
 	"github.com/dreadl0ck/netcap/internal/netio"
@@ -977,7 +978,9 @@ type FieldValuesResponse struct {
 	RecordScanned int                 `json:"recordsScanned"`
 }
 
-// HandleAuditFieldValues returns sample values for fields in a specific audit record type
+var auditFieldSampleSlots = make(chan struct{}, 2)
+
+// HandleAuditFieldValues returns sample values for fields in a specific audit record type.
 func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, recordTypeName string) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -988,16 +991,26 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 		return
 	}
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+	select {
+	case auditFieldSampleSlots <- struct{}{}:
+		defer func() { <-auditFieldSampleSlots }()
+	default:
+		http.Error(w, "Audit field lookups are busy", http.StatusTooManyRequests)
+		return
+	}
+	f, _, err := artifactio.Open(filepath.Dir(filePath), filepath.Base(filePath))
+	if errors.Is(err, os.ErrNotExist) {
 		RespondJSON(w, http.StatusNotFound, map[string]any{
 			"error": fmt.Sprintf("Audit file not found: %s", recordTypeName),
 		})
 		return
 	}
+	if err != nil {
+		artifactAccessError(w, err)
+		return
+	}
 
-	// Open the audit record file
-	reader, err := NewAuditRecordReader(filePath)
+	reader, err := auditRecordReaderFromFile(f, strings.HasSuffix(filePath, ".gz"))
 	if err != nil {
 		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to open audit record file: %v", err),
