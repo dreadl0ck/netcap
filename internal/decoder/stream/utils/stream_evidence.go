@@ -87,11 +87,14 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 		return "", err
 	}
 	defer os.RemoveAll(dir)
-	spanFile, err := os.OpenFile(filepath.Join(dir, ".spans"), os.O_CREATE|os.O_EXCL|os.O_RDWR, 0600)
-	if err != nil {
-		return "", err
-	}
-	defer spanFile.Close()
+	var firstSpan []byte
+	var spanFile *os.File
+	spanPath := filepath.Join(dir, ".spans")
+	defer func() {
+		if spanFile != nil {
+			spanFile.Close()
+		}
+	}()
 	client, err := os.OpenFile(filepath.Join(dir, "client.bin"), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if err != nil {
 		return "", err
@@ -151,20 +154,28 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 			return false
 		}
 		offsets[direction] += int64(span.Length)
-		if spans > 0 {
-			if _, err := spanFile.WriteString(","); err != nil {
-				visitErr = err
-				return false
-			}
-		}
 		wire, err := json.Marshal(span)
 		if err != nil {
 			visitErr = err
 			return false
 		}
-		if _, err = spanFile.Write(wire); err != nil {
-			visitErr = err
-			return false
+		if spans == 0 {
+			firstSpan = wire
+		} else {
+			if spanFile == nil {
+				spanFile, err = os.OpenFile(spanPath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0600)
+				if err != nil {
+					visitErr = err
+					return false
+				}
+			}
+			if _, err = spanFile.WriteString(","); err == nil {
+				_, err = spanFile.Write(wire)
+			}
+			if err != nil {
+				visitErr = err
+				return false
+			}
 		}
 		spans++
 		if spans > 1000000 {
@@ -214,13 +225,18 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 		file.Close()
 		return "", err
 	}
-	if _, err = spanFile.Seek(0, io.SeekStart); err != nil {
+	if _, err = file.Write(firstSpan); err != nil {
 		file.Close()
 		return "", err
 	}
-	if _, err = io.Copy(file, spanFile); err != nil {
-		file.Close()
-		return "", err
+	if spanFile != nil {
+		if _, err = spanFile.Seek(0, io.SeekStart); err == nil {
+			_, err = io.Copy(file, spanFile)
+		}
+		if err != nil {
+			file.Close()
+			return "", err
+		}
 	}
 	if _, err = file.Write(append([]byte("]"), data[position+len(marker):]...)); err != nil {
 		file.Close()
@@ -233,11 +249,14 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 	if err := file.Close(); err != nil {
 		return "", err
 	}
-	if err = spanFile.Close(); err != nil {
-		return "", err
-	}
-	if err = os.Remove(filepath.Join(dir, ".spans")); err != nil {
-		return "", err
+	if spanFile != nil {
+		if err = spanFile.Close(); err != nil {
+			return "", err
+		}
+		spanFile = nil
+		if err = os.Remove(spanPath); err != nil {
+			return "", err
+		}
 	}
 	target := filepath.Join(root, "stream-"+strings.TrimPrefix(filepath.Base(dir), ".pending-"))
 	if err := os.Rename(dir, target); err != nil {
