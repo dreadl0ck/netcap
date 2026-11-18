@@ -11,11 +11,14 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/artifactio"
+	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 var errRuleAuditChanged = errors.New("rule audit changed during replay")
+
+const maxRuleAuditFrameBytes = 16 << 20
 
 func ruleReplayCanceled(stop, shutdown <-chan struct{}) bool {
 	select {
@@ -70,6 +73,7 @@ func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit 
 		return 0, fmt.Errorf("open %s audit: %w", auditType, err)
 	}
 	defer reader.Close()
+	reader.delimitedReader = delimited.NewReaderWithLimit(reader.reader, maxRuleAuditFrameBytes)
 	header, err := reader.ReadHeader()
 	if err != nil {
 		return 0, fmt.Errorf("read %s audit header: %w", auditType, err)

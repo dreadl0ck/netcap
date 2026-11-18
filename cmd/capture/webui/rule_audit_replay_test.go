@@ -3,6 +3,7 @@ package webui
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/artifactio"
@@ -242,6 +244,46 @@ func TestRuleAuditRejectsMissingRecordBody(t *testing.T) {
 	if count != 1 || !errors.Is(err, io.ErrUnexpectedEOF) {
 		t.Fatal(count, err)
 	}
+}
+
+func TestRuleAuditFrameLimit(t *testing.T) {
+	t.Run("exact_gzip", func(t *testing.T) {
+		dir := t.TempDir()
+		row := &types.HTTP{URL: strings.Repeat("a", maxRuleAuditFrameBytes)}
+		row.URL = row.URL[:2*maxRuleAuditFrameBytes-proto.Size(row)]
+		if proto.Size(row) != maxRuleAuditFrameBytes {
+			t.Fatal("fixture must fill the frame budget exactly")
+		}
+		writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{row})
+		count, err := scanRuleAudit(dir, "HTTP", nil, nil, func(record types.AuditRecord) error {
+			if record.(*types.HTTP).URL != row.URL {
+				t.Fatal("replay changed the exact-limit record")
+			}
+			return nil
+		})
+		if count != 1 || err != nil {
+			t.Fatalf("exact limit: count=%d err=%v", count, err)
+		}
+	})
+	t.Run("over_plain", func(t *testing.T) {
+		dir := t.TempDir()
+		path := writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, nil)
+		f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = f.Write(binary.AppendUvarint(nil, maxRuleAuditFrameBytes+1))
+		if err := errors.Join(err, f.Close()); err != nil {
+			t.Fatal(err)
+		}
+		count, err := scanRuleAudit(dir, "HTTP", nil, nil, func(types.AuditRecord) error {
+			t.Fatal("oversized frame reached replay")
+			return nil
+		})
+		if count != 0 || !errors.Is(err, delimited.ErrRecordLimit) {
+			t.Fatalf("over limit: count=%d err=%v", count, err)
+		}
+	})
 }
 
 func TestManualRuleReplayStopsOnRequestOrShutdown(t *testing.T) {
