@@ -168,41 +168,14 @@ func ComputeContentHashWithLimit(body []byte, encoding []string, limit int64) (*
 	// Content-Encoding lists application order; decoding reverses it.
 	for i := len(encoding) - 1; i >= 0; i-- {
 		enc := strings.ToLower(strings.TrimSpace(encoding[i]))
-		var reader io.Reader
-		var closer io.Closer
-		switch enc {
-		case "", "identity":
+		if enc == "" || enc == "identity" {
 			continue
-		case "gzip":
-			r, err := gzip.NewReader(bytes.NewReader(current))
-			if err != nil {
-				return fallback(fmt.Errorf("decode gzip: %w", err))
-			}
-			reader, closer = r, r
-		case "deflate":
-			r, err := zlib.NewReader(bytes.NewReader(current))
-			if err == nil {
-				reader, closer = r, r
-			} else {
-				raw := flate.NewReader(bytes.NewReader(current))
-				reader, closer = raw, raw
-			}
-		case "base64":
-			reader = base64.NewDecoder(base64.StdEncoding, bytes.NewReader(current))
-		case "br":
-			reader = brotli.NewReader(bytes.NewReader(current))
-		default:
-			return fallback(fmt.Errorf("unsupported content encoding %q", enc))
 		}
-		decoded, releaseDecoded, err := ReadBodyLimit(reader, limit)
-		if closer != nil {
-			closeErr := closer.Close()
-			if err == nil {
-				err = closeErr
-			}
-		}
+		decoded, releaseDecoded, err := decodeByteLayer(current, enc, limit)
 		if err != nil {
-			releaseDecoded()
+			if releaseDecoded != nil {
+				releaseDecoded()
+			}
 			return fallback(fmt.Errorf("decode %s: %w", enc, err))
 		}
 		if int64(len(decoded)) > limit {
@@ -226,6 +199,44 @@ func ComputeContentHashWithLimit(body []byte, encoding []string, limit int64) (*
 	info.Hash = hex.EncodeToString(hash[:])
 	info.release = release
 	return info, nil
+}
+
+func decodeByteLayer(body []byte, kind string, limit int64) (decoded []byte, release func(), err error) {
+	releaseWorkspace, err := reserveCodecWorkspace(kind)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer releaseWorkspace()
+	var reader io.Reader
+	var closer io.Closer
+	switch kind {
+	case "gzip":
+		r, err := gzip.NewReader(bytes.NewReader(body))
+		if err != nil {
+			return nil, nil, err
+		}
+		reader, closer = r, r
+	case "deflate":
+		r, err := zlib.NewReader(bytes.NewReader(body))
+		if err == nil {
+			reader, closer = r, r
+		} else {
+			raw := flate.NewReader(bytes.NewReader(body))
+			reader, closer = raw, raw
+		}
+	case "base64":
+		reader = base64.NewDecoder(base64.StdEncoding, bytes.NewReader(body))
+	case "br":
+		reader = brotli.NewReader(bytes.NewReader(body))
+	}
+	if closer != nil {
+		defer func() {
+			if closeErr := closer.Close(); err == nil {
+				err = closeErr
+			}
+		}()
+	}
+	return ReadBodyLimit(reader, limit)
 }
 
 // LogDedupStats logs the current deduplication statistics

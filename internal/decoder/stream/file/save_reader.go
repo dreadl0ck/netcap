@@ -82,7 +82,7 @@ func SaveSpoolEnhanced(conv *core.ConversationInfo, source, name string, bodyErr
 	return savePreparedFile(conv, source, name, bodyErr, info, current.content, hashErr, host, contentType, depth, parentID, direction, protocol)
 }
 
-func decodeSpoolLayer(body *BodySpool, kind string) (*BodySpool, error) {
+func reserveCodecWorkspace(kind string) (func(), error) {
 	var lease int64
 	switch kind {
 	case "gzip", "deflate":
@@ -97,7 +97,15 @@ func decodeSpoolLayer(body *BodySpool, kind string) (*BodySpool, error) {
 	if err := reserveBuffer(lease); err != nil {
 		return nil, err
 	}
-	defer releaseBuffer(lease)
+	return func() { releaseBuffer(lease) }, nil
+}
+
+func decodeSpoolLayer(body *BodySpool, kind string) (*BodySpool, error) {
+	release, err := reserveCodecWorkspace(kind)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
 	var reader io.Reader
 	var closer io.Closer
 	switch kind {

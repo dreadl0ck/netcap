@@ -82,6 +82,47 @@ func TestContentHashQualifiedDecoding(t *testing.T) {
 	}
 }
 
+func TestByteBackedDecodeRespectsSharedCodecBudget(t *testing.T) {
+	body := []byte("artifact fixture")
+	wire := encodedFixture(t, body, "gzip")
+	for _, tc := range []struct {
+		name      string
+		budget    int64
+		want      []byte
+		wantError bool
+	}{
+		{"workspace refused", (1 << 20) - 1, wire, true},
+		{"workspace and output fit", (1 << 20) + 512, body, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := GetDefaultConfig()
+			cfg.FileExtraction.SizeLimits.MaxInflightBytes = tc.budget
+			old := GetGlobalConfig()
+			SetGlobalConfig(cfg)
+			defer SetGlobalConfig(old)
+			if err := StartAnalysis(t.TempDir(), "fixture"); err != nil {
+				t.Fatal(err)
+			}
+			defer func() {
+				if _, err := FinishAnalysis(); err != nil {
+					t.Error(err)
+				}
+			}()
+			info, err := ComputeContentHashWithLimit(wire, []string{"gzip"}, 4096)
+			if info.release != nil {
+				info.release()
+			}
+			if (tc.wantError && !errors.Is(err, errSharedArtifactBudget)) || (!tc.wantError && err != nil) || !bytes.Equal(info.DecodedContent, tc.want) {
+				t.Fatalf("unexpected decoding result: bytes=%d err=%v", len(info.DecodedContent), err)
+			}
+			if err := reserveBuffer(tc.budget); err != nil {
+				t.Fatalf("decode retained shared credits: %v", err)
+			}
+			releaseBuffer(tc.budget)
+		})
+	}
+}
+
 func TestContentHashFailuresRetainWireEvidence(t *testing.T) {
 	body := []byte(strings.Repeat("fixture", 100))
 	gz := encodedFixture(t, body, "gzip")
