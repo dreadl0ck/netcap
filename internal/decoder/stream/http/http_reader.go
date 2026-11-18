@@ -426,6 +426,9 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		}
 		if spool != nil {
 			defer func() { file.RecordArtifactWriteError(spool.Close()) }()
+			if err != nil {
+				observation.BodyState = "incomplete"
+			}
 			encoding := contentEncoding(res.Header)
 			// The spool already owns the wire body. Keep the extra byte that signals truncation.
 			passiveReport = software.ObserveWebtech(observation, io.LimitReader(spool.Reader(), webtech.MaxPrefix+1), encoding, authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
@@ -439,6 +442,9 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 		body, release, err = file.ReadBody(res.Body)
 		h.bufferReleases = append(h.bufferReleases, release)
 		if !h.artifactRecovery {
+			if err != nil {
+				observation.BodyState = "incomplete"
+			}
 			prefix := body[:min(len(body), webtech.MaxPrefix+1)]
 			passiveReport = software.ObserveWebtech(observation, bytes.NewReader(prefix), contentEncoding(res.Header), authority, h.conversation.Ident, h.conversation.CommunityID, timestamp)
 			passiveReport.WireBytes = int64(len(body))

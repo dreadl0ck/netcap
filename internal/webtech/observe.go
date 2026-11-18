@@ -24,7 +24,8 @@ type Observation struct {
 	ContentType string
 	Generator   []string
 	Body        []byte
-	BodyState   string
+	// BodyState may carry an upstream "incomplete" status into ObserveReader.
+	BodyState string
 }
 type Report struct {
 	BodyState           string   `json:"body_state"`
@@ -71,7 +72,11 @@ func (e *Engine) ObserveReader(o Observation, body io.Reader, encoding string) R
 	}
 	defer reserved.Add(-lease)
 	r := &countingReader{Reader: body}
+	incomplete := o.BodyState == "incomplete"
 	o.Body, o.BodyState = capture(r, encoding)
+	if incomplete && (o.BodyState == "complete" || o.BodyState == "truncated") {
+		o.BodyState = "incomplete"
+	}
 	report := e.Observe(o)
 	report.WireBytes = r.n
 	report.WireError = r.err

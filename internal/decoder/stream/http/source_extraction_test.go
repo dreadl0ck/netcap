@@ -21,6 +21,7 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/software"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
@@ -640,6 +641,26 @@ func TestBackedGzipResponseClassificationExpansionLimit(t *testing.T) {
 		if detected != want || c.FragmentError != nil || budget.Health().RetainedBytes != 0 {
 			t.Fatalf("expanded size %d: detected=%q error=%v credits=%+v", size, detected, c.FragmentError, budget.Health())
 		}
+	}
+}
+
+func TestHTTPPassiveInspectionReportsIncompleteExtraction(t *testing.T) {
+	for _, source := range []bool{false, true} {
+		t.Run(fmt.Sprintf("disk-backed=%t", source), func(t *testing.T) {
+			data := core.DataFragments{
+				wireFragment(0, []byte("GET /fixture HTTP/1.1\r\nHost: fixture.test\r\n\r\n"), 1),
+				wireFragment(1, []byte("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 20\r\n\r\npartial"), 2),
+			}
+			_, before := software.WebtechDiagnostics()
+			records, files := captureExtractedHTTP(t, data, source)
+			_, after := software.WebtechDiagnostics()
+			if after["incomplete"] != before["incomplete"]+1 || after["complete"] != before["complete"] {
+				t.Fatalf("passive inspection misclassified the partial body: before=%v after=%v", before, after)
+			}
+			if len(records) != 1 || len(files) != 1 || files[0].IsComplete || files[0].Length != 7 {
+				t.Fatalf("partial extraction evidence changed: %v / %v", records, files)
+			}
+		})
 	}
 }
 
