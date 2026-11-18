@@ -442,6 +442,43 @@ func TestStreamedFormPressureReleasesUnpublishedFields(t *testing.T) {
 	}
 }
 
+func TestBackedJSONFormFitsDecodeReservation(t *testing.T) {
+	previous := decoderconfig.Instance
+	t.Cleanup(func() { decoderconfig.Instance = previous })
+	decoderconfig.Instance = decoderconfig.DefaultConfig.Clone()
+	decoderconfig.Instance.Out = t.TempDir()
+	const body = `{"label":"fixture","number":42}`
+	spool, err := file.SpoolBody(strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = spool.Close() })
+	budget, err := core.NewStateBudget(4096+64*int64(len(body)), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := &httpReader{conversation: &core.ConversationInfo{StateBudget: budget.CompletionView()}}
+	req, err := http.NewRequest(http.MethodPost, "http://fixture.test/?label=query", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if err := h.parseBackedJSONForm(req, spool); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(req.Form["label"], []string{"fixture", "query"}) || len(req.PostForm) != 1 {
+		t.Fatalf("unexpected JSON fields: form=%v post=%v", req.Form, req.PostForm)
+	}
+	health := budget.Health()
+	if health.RetainedBytes == 0 || health.RetainedBytes != h.sourceHeaderCredits || health.CompletionRejectedBytes != 0 {
+		t.Fatalf("unexpected form credits: %+v", health)
+	}
+	h.conversation.StateBudget.Release(h.sourceHeaderCredits)
+	if budget.Health().RetainedBytes != 0 {
+		t.Fatal("form credits did not release")
+	}
+}
+
 func TestHTTPRecordBorrowsRetainedResponsePayload(t *testing.T) {
 	previous := decoderconfig.Instance
 	t.Cleanup(func() { decoderconfig.Instance = previous })

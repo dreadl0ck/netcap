@@ -97,31 +97,38 @@ func (h *httpReader) parseBackedJSONForm(req *http.Request, spool *file.BodySpoo
 		req.Form, _ = evidenceQuery(req.URL.RawQuery)
 		return fmt.Errorf("backed form exceeds 1 MiB")
 	}
-	// Charge temporary decoding separately from the fields retained for pairing.
+	// The decoding estimate includes the form built before it is published.
 	credit := 4096 + 64*size
 	if err := h.conversation.StateBudget.Reserve(credit); err != nil {
 		h.conversation.FragmentError = err
 		return err
 	}
-	defer h.conversation.StateBudget.Release(credit)
+	defer func() { h.conversation.StateBudget.Release(credit) }()
 	body := make([]byte, int(size))
 	if _, err := io.ReadFull(spool.Reader(), body); err != nil {
 		file.RecordArtifactWriteError(err)
 		return err
 	}
-	parseErr := parseEvidenceForm(req, body)
+	parsed := *req
+	parsed.Form, parsed.PostForm = nil, nil
+	parseErr := parseEvidenceForm(&parsed, body)
 	var retained int64
-	for name, values := range req.PostForm {
+	for name, values := range parsed.PostForm {
 		retained += 256 + int64(len(name))
 		for _, value := range values {
 			retained += int64(len(value))
 		}
 	}
-	if err := h.conversation.StateBudget.Reserve(retained); err != nil {
-		h.conversation.FragmentError = err
-		return err
+	if retained > credit {
+		if err := h.conversation.StateBudget.Reserve(retained - credit); err != nil {
+			h.conversation.FragmentError = err
+			return err
+		}
+		credit = retained
 	}
+	credit -= retained
 	h.sourceHeaderCredits += retained
+	req.Form, req.PostForm = parsed.Form, parsed.PostForm
 	return parseErr
 }
 
