@@ -633,7 +633,7 @@ func (p *StreamPool) flushColdDue(opt FlushOptions) (closed int) {
 			var snap coldConnection
 			var found bool
 			err := p.cold.state.Do(func(tx *aggregate.Tx) error {
-				_, value, exists, err := tx.Next(p.cold.prefix+"due/"+queue.name, "")
+				deadlineKey, value, exists, err := tx.Next(p.cold.prefix+"due/"+queue.name, "")
 				if err != nil || !exists {
 					return err
 				}
@@ -649,6 +649,13 @@ func (p *StreamPool) flushColdDue(opt FlushOptions) (closed int) {
 				if err != nil {
 					return err
 				}
+				want, err := p.cold.index(id, snap, p.trackIdle)
+				if err != nil {
+					return err
+				}
+				if deadlineKey != want {
+					return fmt.Errorf("TCP cold deadline entry does not match stored connection")
+				}
 				stamp, err := snap.lastSeen()
 				if err != nil {
 					return err
@@ -656,7 +663,10 @@ func (p *StreamPool) flushColdDue(opt FlushOptions) (closed int) {
 				found = stamp.Before(queue.cutoff)
 				return nil
 			})
-			if err != nil || !found {
+			if err != nil {
+				return closed
+			}
+			if !found {
 				break
 			}
 			retire := snap.Halves[0].Closed && snap.Halves[1].Closed

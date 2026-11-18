@@ -4,9 +4,49 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/aggregate"
 )
+
+func TestColdDeadlineRejectsInconsistentIndex(t *testing.T) {
+	canceled := false
+	store, err := aggregate.Open(t.TempDir(), 2048, func() { canceled = true })
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	pool := NewStreamPool(new(flushProgressFactory))
+	pool.cold = &coldStorage{state: store, prefix: "fixture/"}
+	key := snapshotKey(1)
+	snap := coldConnection{Version: 1, ObserveClose: true}
+	seen := time.Unix(2, 0)
+	for i := range snap.Halves {
+		snap.Halves[i].LastSeen = SaveTime(seen)
+	}
+	for i := range snap.Key {
+		snap.Key[i] = SaveFlow(key[i])
+	}
+	wire, err := json.Marshal(snap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := coldID(&key)
+	if err := store.Do(func(tx *aggregate.Tx) error {
+		if err := tx.Put(pool.cold.row(id), wire); err != nil {
+			return err
+		}
+		return tx.Put("fixture/due/closed/8000000000000001/00000000/"+id+"/", []byte(id))
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if got := pool.flushColdDue(FlushOptions{TC: seen.Add(-time.Nanosecond)}); got != 0 {
+		t.Fatalf("closed %d connections from an inconsistent deadline", got)
+	}
+	if err := store.Error(); err == nil || !strings.Contains(err.Error(), "cold deadline entry does not match") || !canceled {
+		t.Fatalf("expected fatal storage error before the cutoff check: %v, canceled=%t", err, canceled)
+	}
+}
 
 func TestColdEOFFailsOnMismatchedOrderEntry(t *testing.T) {
 	canceled := false
