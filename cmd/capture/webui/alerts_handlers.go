@@ -140,6 +140,11 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	release := admitAlertPage(w, r)
+	if release == nil {
+		return
+	}
+	defer release()
 
 	// Parse query parameters
 	query := r.URL.Query()
@@ -241,6 +246,24 @@ func (s *Server) readAlertsFromFile(filePath string) ([]AlertResponse, error) {
 }
 
 var errAlertPageSourceLimit = errors.New("alert page source exceeds scan limits")
+
+var alertPageSlots = make(chan struct{}, 2)
+
+func admitAlertPage(w http.ResponseWriter, r *http.Request) func() {
+	if r.URL.Query().Get("mcpPage") != "true" {
+		return func() {}
+	}
+	if r.Context().Err() != nil {
+		return nil
+	}
+	select {
+	case alertPageSlots <- struct{}{}:
+		return func() { <-alertPageSlots }
+	default:
+		RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "alert pages are busy"})
+		return nil
+	}
+}
 
 func (s *Server) alertsForPage(w http.ResponseWriter, r *http.Request, filePath string) ([]AlertResponse, bool) {
 	var ctx context.Context
@@ -484,6 +507,11 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	release := admitAlertPage(w, r)
+	if release == nil {
+		return
+	}
+	defer release()
 
 	// Parse query parameters
 	query := r.URL.Query()

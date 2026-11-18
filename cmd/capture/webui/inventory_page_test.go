@@ -8,7 +8,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
@@ -126,6 +128,73 @@ func TestAlertPagesRequireValidBoundedResolutionMetadata(t *testing.T) {
 			if w.Code != tc.code || strings.Contains(w.Body.String(), "generation") {
 				t.Fatalf("%s: %d %s", route, w.Code, w.Body)
 			}
+		}
+	}
+}
+
+type heldAlertPageResponse struct {
+	*httptest.ResponseRecorder
+	writing chan struct{}
+	release <-chan struct{}
+}
+
+func (w heldAlertPageResponse) Write(p []byte) (int, error) {
+	select {
+	case w.writing <- struct{}{}:
+	default:
+	}
+	<-w.release
+	return w.ResponseRecorder.Write(p)
+}
+
+func TestMCPAlertPagesShareCapacityThroughResponseWrite(t *testing.T) {
+	s := &Server{outDir: t.TempDir()}
+	routes := []struct {
+		path string
+		get http.HandlerFunc
+	}{{"/api/alerts", s.handleAlerts}, {"/api/alerts/grouped", s.handleGroupedAlerts}}
+	var finish []func()
+	for _, route := range routes {
+		w := heldAlertPageResponse{ResponseRecorder: httptest.NewRecorder(), writing: make(chan struct{}, 1)}
+		release, done := make(chan struct{}), make(chan struct{})
+		w.release = release
+		unblock := sync.OnceFunc(func() { close(release) })
+		wait := func() { unblock(); <-done }
+		t.Cleanup(wait)
+		finish = append(finish, wait)
+		go func() {
+			defer close(done)
+			route.get(w, httptest.NewRequest(http.MethodGet, route.path+"?mcpPage=true", nil))
+		}()
+		select {
+		case <-w.writing:
+			if w.Code != http.StatusOK {
+				t.Fatalf("first two pages must be admitted: %s returned %d", route.path, w.Code)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("admitted page did not start writing")
+		}
+	}
+	for _, route := range routes {
+		for _, tc := range []struct {
+			query string
+			status int
+		}{{"?mcpPage=true", http.StatusTooManyRequests}, {"", http.StatusOK}} {
+			w := httptest.NewRecorder()
+			route.get(w, httptest.NewRequest(http.MethodGet, route.path+tc.query, nil))
+			if w.Code != tc.status {
+				t.Fatalf("%s%s: got %d, want %d", route.path, tc.query, w.Code, tc.status)
+			}
+		}
+	}
+	for _, wait := range finish {
+		wait()
+	}
+	for _, route := range routes {
+		w := httptest.NewRecorder()
+		route.get(w, httptest.NewRequest(http.MethodGet, route.path+"?mcpPage=true", nil))
+		if w.Code != http.StatusOK {
+			t.Fatalf("%s did not recover capacity: %d", route.path, w.Code)
 		}
 	}
 }
