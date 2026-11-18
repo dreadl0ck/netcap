@@ -150,6 +150,17 @@ func (q *sealedAuditQuery) close() {
 	}
 }
 
+func (q *sealedAuditQuery) verifyCompletion(ctx context.Context) error {
+	select {
+	case sealedAuditVerificationSlots <- struct{}{}:
+		defer func() { <-sealedAuditVerificationSlots }()
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+	_, _, err := evidence.ReadAuditStageContext(ctx, q.Directory, q.RunID, q.Stage.Type, q.Generation)
+	return err
+}
+
 func withPartialAudit(r *http.Request, query *sealedAuditQuery) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), sealedAuditQueryKey{}, query))
 }

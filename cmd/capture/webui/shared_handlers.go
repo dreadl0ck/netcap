@@ -23,7 +23,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/dreadl0ck/netcap/internal/evidence"
 	"io"
 	"log"
 	"net/http"
@@ -805,7 +804,10 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			sendError("Sealed audit record count changed")
 			return
 		}
-		if _, _, err := evidence.ReadAuditStageContext(r.Context(), filepath.Dir(filePath), sealed.RunID, sealed.Stage.Type, sealed.Generation); err != nil {
+		if err := sealed.verifyCompletion(r.Context()); err != nil {
+			if r.Context().Err() != nil {
+				return
+			}
 			sendError("Sealed audit output changed during query")
 			return
 		}

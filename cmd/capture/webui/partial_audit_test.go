@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/types"
@@ -44,6 +45,29 @@ func partialAuditFixture(t *testing.T, service bool) (http.Handler, string, stri
 	}
 	handler := s.captureSelectionMiddleware(http.HandlerFunc(s.handleAuditRecords))
 	return handler, capture.RunID(), snapshot.Generation, file
+}
+
+func TestPartialAuditCompletionHonorsVerificationCapacity(t *testing.T) {
+	_, run, generation, file := partialAuditFixture(t, false)
+	q := &sealedAuditQuery{Directory: filepath.Dir(file), RunID: run, Generation: generation, Stage: evidence.AuditStage{Type: "Connection"}}
+	func() {
+		for range 2 {
+			select {
+			case sealedAuditVerificationSlots <- struct{}{}:
+				defer func() { <-sealedAuditVerificationSlots }()
+			default:
+				t.Fatal("expected two available verification slots")
+			}
+		}
+		ctx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
+		defer cancel()
+		if err := q.verifyCompletion(ctx); !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("final verification bypassed saturated admission: %v", err)
+		}
+	}()
+	if err := q.verifyCompletion(t.Context()); err != nil {
+		t.Fatalf("final verification did not recover: %v", err)
+	}
 }
 
 func TestPartialAuditRejectsMislabeledSealedFile(t *testing.T) {
