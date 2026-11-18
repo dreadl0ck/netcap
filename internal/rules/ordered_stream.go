@@ -119,7 +119,7 @@ func (s *OrderedStream) observeScoped(scope string, record types.AuditRecord) (i
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := s.pushScoped(scope, record); err != nil {
-		s.err = err
+		s.fail(err)
 		return 0, err
 	}
 	if record.Time() > s.maxSeen {
@@ -131,6 +131,13 @@ func (s *OrderedStream) observeScoped(scope string, record types.AuditRecord) (i
 		watermark = s.watermark
 	}
 	return s.advance(watermark)
+}
+
+func (s *OrderedStream) fail(err error) {
+	s.err = err
+	s.pending = nil
+	s.bytes = 0
+	s.minPending = 0
 }
 
 // Advance evaluates all admitted records at/below watermark. A write/evaluation
@@ -177,7 +184,7 @@ func (s *OrderedStream) advance(watermark int64) (int, error) {
 		n, err := s.engine.EvaluateScoped(p.scope, p.record)
 		count += n
 		if err != nil {
-			s.err = fmt.Errorf("ordered rule stream incomplete: %w", err)
+			s.fail(fmt.Errorf("ordered rule stream incomplete: %w", err))
 			return count, s.err
 		}
 		consumed++

@@ -356,7 +356,7 @@ func TestOrderedWriteFailureIsTerminal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for i := 1; i <= 2; i++ {
+	for i := 1; i <= 3; i++ {
 		if err := s.Push(scopedTCP(int64(i), "192.0.2.1")); err != nil {
 			t.Fatal(err)
 		}
@@ -364,6 +364,9 @@ func TestOrderedWriteFailureIsTerminal(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		if _, err := s.Finish(); !errors.Is(err, want) {
 			t.Fatal(err)
+		}
+		if s.pending != nil || s.bytes != 0 {
+			t.Fatalf("terminal stream retained %d records and %d bytes", len(s.pending), s.bytes)
 		}
 	}
 	if attempts != 1 {
