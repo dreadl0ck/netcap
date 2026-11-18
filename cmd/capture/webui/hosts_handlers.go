@@ -101,10 +101,25 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hosts, err := readHosts(outDir)
-	if err != nil {
-		log.Printf("[WebUI] Failed to read IP profiles: %v", err)
-		http.Error(w, "Failed to read IP profiles", http.StatusInternalServerError)
+	query := r.URL.Query()
+	paged := query.Get("mcpPage") == "true"
+	view := "traffic"
+	if paged && query.Get("view") != "" {
+		view = query.Get("view")
+	}
+	var hosts []HostSummary
+	switch view {
+	case "traffic":
+		var err error
+		hosts, err = readHosts(outDir)
+		if err != nil {
+			log.Printf("[WebUI] Failed to read IP profiles: %v", err)
+			http.Error(w, "Failed to read IP profiles", http.StatusInternalServerError)
+			return
+		}
+	case "identity", "directory":
+	default:
+		RespondJSON(w, 400, map[string]string{"error": "view must be traffic, identity or directory"})
 		return
 	}
 
@@ -120,11 +135,7 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if r.URL.Query().Get("mcpPage") == "true" {
-		view := r.URL.Query().Get("view")
-		if view == "" {
-			view = "traffic"
-		}
+	if paged {
 		var rows any = response.Hosts
 		switch view {
 		case "traffic":
@@ -137,9 +148,6 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 			if identity.Report != nil && identity.Report[field] != nil {
 				rows = identity.Report[field]
 			}
-		default:
-			RespondJSON(w, 400, map[string]string{"error": "view must be traffic, identity or directory"})
-			return
 		}
 		encoded, _ := json.Marshal(identity)
 		digest := sha256.Sum256(encoded)

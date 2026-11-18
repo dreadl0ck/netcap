@@ -111,4 +111,19 @@ func TestHostIdentityPagesWithoutTrafficAndInvalidateOnIdentityChange(t *testing
 			t.Fatal(err)
 		}
 	}
+	if err := os.WriteFile(filepath.Join(dir, "Host.ncap.gz"), []byte("not a gzip audit"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, view := range []string{"identity", "directory"} {
+		code, page := read("view=" + view)
+		var rows []json.RawMessage
+		if err := json.Unmarshal(page["hosts"], &rows); code != 200 || err != nil || len(rows) != 1 {
+			t.Fatalf("%s view lost its evidence with a corrupt traffic audit: %d %v %v", view, code, page, err)
+		}
+	}
+	w := httptest.NewRecorder()
+	s.handleHosts(w, httptest.NewRequest("GET", "/api/hosts?mcpPage=true&view=traffic", nil))
+	if w.Code != 500 {
+		t.Fatalf("traffic view accepted the corrupt audit: %d", w.Code)
+	}
 }
