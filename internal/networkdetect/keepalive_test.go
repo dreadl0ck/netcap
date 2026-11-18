@@ -40,6 +40,39 @@ func TestFlowExpiryDiscardsOldProbeEvidence(t *testing.T) {
 	}
 }
 
+func TestRetainedPrefixDoesNotAliasAfterSequenceCycle(t *testing.T) {
+	e, err := New(DefaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ev := baseEvent("data", 1)
+	ev.Seq, ev.Payload = 100, []byte("abcd")
+	if _, err := e.Observe(ev); err != nil {
+		t.Fatal(err)
+	}
+	d := e.flows[flowKey(ev)].directions[endpoint(ev.SrcIP, ev.SrcPort)]
+	// Fast-forward a full cycle of contiguous payload without allocating 4 GiB.
+	d.bytes += 1 << 32
+	ev.At++
+	ev.Seq, ev.Payload = 104, []byte("efgh")
+	if _, err := e.Observe(ev); err != nil {
+		t.Fatal(err)
+	}
+	if d.prefixEnds != nil {
+		t.Fatal("later cycle added an earlier prefix boundary")
+	}
+	ev.At++
+	ev.Seq, ev.Payload, ev.KeepAliveEligible = 103, []byte{0}, true
+	alerts, err := e.Observe(ev)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stats := e.Stats()
+	if len(append(alerts, e.Flush()...)) != 0 || stats.ConflictingOverlapBytes != 0 || stats.StaleProbeCandidates != 0 {
+		t.Fatalf("reused sequence produced prefix evidence: %+v", stats)
+	}
+}
+
 func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 	for _, tc := range []struct {
 		name           string

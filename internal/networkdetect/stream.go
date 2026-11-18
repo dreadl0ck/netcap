@@ -14,7 +14,6 @@ type direction struct {
 	finSeen        bool
 	finSequence    uint32
 	prefix         []byte
-	prefixSeq      uint32
 	prefixEnds     *[overlapPrefixBytes / 64]uint64
 	firstPrefixEnd uint16 // Offset plus one; zero means absent.
 	bytes          uint64
@@ -28,15 +27,15 @@ const overlapPrefixBytes = 4096
 const staleProbeSample = "Possible stale probe: ACK with one zero byte at an earlier observed segment end; intent and acceptance unknown"
 
 func (d *direction) rememberPrefixEnd() {
-	offset := d.next - d.prefixSeq - 1
-	if d.gap || offset >= overlapPrefixBytes {
+	if d.gap || d.bytes == 0 || d.bytes > overlapPrefixBytes {
 		return
 	}
+	offset := d.bytes - 1
 	if d.firstPrefixEnd == 0 {
 		d.firstPrefixEnd = uint16(offset + 1)
 		return
 	}
-	if offset+1 != uint32(d.firstPrefixEnd) {
+	if offset+1 != uint64(d.firstPrefixEnd) {
 		if d.prefixEnds == nil {
 			d.prefixEnds = new([overlapPrefixBytes / 64]uint64)
 		}
@@ -44,10 +43,9 @@ func (d *direction) rememberPrefixEnd() {
 	}
 }
 
-func (d *direction) staleProbeCandidate(ev Event, delta int32) bool {
-	offset := ev.Seq - d.prefixSeq
+func (d *direction) staleProbeCandidate(ev Event, delta int32, offset int64) bool {
 	return !d.gap && !ev.Truncated && ev.KeepAliveEligible && delta < -1 && len(ev.Payload) == 1 && ev.Payload[0] == 0 &&
-		offset < overlapPrefixBytes && (offset+1 == uint32(d.firstPrefixEnd) || d.prefixEnds != nil && d.prefixEnds[offset/64]&(1<<(offset%64)) != 0)
+		offset >= 0 && offset < overlapPrefixBytes && (offset+1 == int64(d.firstPrefixEnd) || d.prefixEnds != nil && d.prefixEnds[offset/64]&(1<<(offset%64)) != 0)
 }
 
 type flow struct {
@@ -124,11 +122,7 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 	}
 	if !d.started {
 		d.next = ev.Seq
-		d.prefixSeq = ev.Seq
 		d.started = true
-	}
-	if len(d.prefix) == 0 {
-		d.prefixSeq = d.next
 	}
 	delta := int32(ev.Seq - d.next)
 	if (!f.closed || f.finObserved) && !f.reset && !ev.Truncated && ev.KeepAliveEligible && len(ev.Payload) == 1 &&
@@ -147,23 +141,27 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 	payload := ev.Payload
 	var conflicts uint64
 	if delta < 0 {
-		start := int64(int32(ev.Seq - d.prefixSeq))
-		begin := max(int64(0), -start)
-		end := min(int64(len(ev.Payload)), int64(len(d.prefix))-start, -int64(delta))
-		for i := begin; i < end; i++ {
-			if ev.Payload[i] != d.prefix[start+i] {
-				conflicts++
+		back := uint64(-int64(delta))
+		// Anchor overlap to the observed byte frontier, not a reused wire sequence number.
+		if d.bytes < back+uint64(len(d.prefix)) {
+			start := int64(d.bytes) - int64(back)
+			begin := max(int64(0), -start)
+			end := min(int64(len(ev.Payload)), int64(len(d.prefix))-start, int64(back))
+			for i := begin; i < end; i++ {
+				if ev.Payload[i] != d.prefix[start+i] {
+					conflicts++
+				}
 			}
-		}
-		if conflicts > 0 {
-			e.stats.ConflictingOverlaps++
-			e.stats.ConflictingOverlapBytes += conflicts
-			samples := []string{"Different bytes at already observed TCP sequence positions within the retained 4096-byte prefix"}
-			if !f.closed && !f.reset && d.staleProbeCandidate(ev, delta) {
-				e.stats.StaleProbeCandidates++
-				samples = append(samples, staleProbeSample)
+			if conflicts > 0 {
+				e.stats.ConflictingOverlaps++
+				e.stats.ConflictingOverlapBytes += conflicts
+				samples := []string{"Different bytes at already observed TCP sequence positions within the retained 4096-byte prefix"}
+				if !f.closed && !f.reset && d.staleProbeCandidate(ev, delta, start) {
+					e.stats.StaleProbeCandidates++
+					samples = append(samples, staleProbeSample)
+				}
+				add("tcp.overlap-conflict", "behavioral-suspicion", "medium", "T1557", conflicts, 1, samples, f.first, nil, "First-arrival decoding is retained; packet evidence is needed to determine which bytes the endpoint accepted")
 			}
-			add("tcp.overlap-conflict", "behavioral-suspicion", "medium", "T1557", conflicts, 1, samples, f.first, nil, "First-arrival decoding is retained; packet evidence is needed to determine which bytes the endpoint accepted")
 		}
 		skip := -int64(delta)
 		if skip >= int64(len(payload)) {
@@ -172,13 +170,13 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 		payload = payload[skip:]
 	}
 	d.next += uint32(len(payload))
+	d.bytes += uint64(len(payload))
 	if len(payload) > 0 {
 		d.nextTruncated = ev.Truncated
 	}
 	if !f.closed && !ev.Truncated && len(payload) > 0 && conflicts == 0 {
 		d.rememberPrefixEnd()
 	}
-	d.bytes += uint64(len(payload))
 	if len(d.prefix) < overlapPrefixBytes {
 		n := overlapPrefixBytes - len(d.prefix)
 		if n > len(payload) {
