@@ -640,8 +640,12 @@ func indexTimelineType(path, typeName string, eventLimit int) (*tlTypeIndex, err
 }
 
 func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit int) (*tlTypeIndex, error) {
-	if _, err := reader.ReadHeader(); err != nil {
+	header, err := reader.ReadHeader()
+	if err != nil {
 		return nil, err
+	}
+	if want, ok := types.Type_value["NC_"+typeName]; !ok || header.Type != types.Type(want) {
+		return nil, fmt.Errorf("unexpected audit header type %s for %s", header.Type, typeName)
 	}
 
 	layer := GetLayerType(typeName)

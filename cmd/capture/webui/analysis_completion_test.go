@@ -189,6 +189,17 @@ func TestAnalysisCompletionRejectsTruncatedTimelineTrack(t *testing.T) {
 	}
 }
 
+func TestAnalysisCompletionRejectsMislabeledTimelineTrack(t *testing.T) {
+	s, input, dir := reanalysisFixture(t)
+	delete(s.completedFiles, input)
+	s.rulesConfig = &rules.Config{}
+	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_UDP, []proto.Message{&types.UDP{Timestamp: 1}})
+	err := s.completeAnalysis(&AnalysisJob{InputFile: input, OutputDir: dir}, time.Second)
+	if err == nil || !strings.Contains(err.Error(), "index HTTP: unexpected audit header type NC_UDP for HTTP") || s.completedFiles[input] {
+		t.Fatalf("mislabeled audit passed completion: error=%v completed=%t", err, s.completedFiles[input])
+	}
+}
+
 func TestAnalysisCompletionWaitsForFinalAlerts(t *testing.T) {
 	for _, service := range []bool{false, true} {
 		t.Run(map[bool]string{false: "local", true: "service"}[service], func(t *testing.T) {

@@ -317,6 +317,9 @@
   "mcpConversationPagingContract": {
     "verification": "The official stdio harness passed 162 schema-validated calls across 82 of 119 advertised tools on a fresh portable CLI, with zero failures. The UDP presentation conversation for the fixture tuple returned adjacent 16-byte pages matching one 32-byte page, with stable total size and correct offsets."
   },
+  "timelineTrackTypeIntegrity": {
+    "verification": "TestAnalysisCompletionRejectsMislabeledTimelineTrack verifies that a UDP audit stored as HTTP fails indexing and leaves the analysis incomplete. Focused timeline and analysis completion tests passed under the race detector."
+  },
   "captureTimeWatermarkFastPath": {
     "verification": "BenchmarkOrderedStreamEqualTime admits 4096 equal-time TCP records and checks 81 alerts at EOF. Three portable Apple M5 Max runs measured 84.5–91.5 ms before and 19.7–20.3 ms after skipping redundant sorts at the committed watermark. Focused scoped, capture-time, ordered and audit replay tests passed under the race detector."
   },
