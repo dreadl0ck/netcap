@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -77,6 +78,16 @@ func (s *Server) collectionResult(ref SessionRef, key string, raw json.RawMessag
 		if err := validateCollectionPage(envelope, key, rows, query); err != nil {
 			return errResult(err)
 		}
+	}
+	needsArtifact := false
+	for _, row := range rows {
+		if paged && !bytes.HasPrefix(bytes.TrimSpace(row), []byte("{")) {
+			return errResult(fmt.Errorf("collection page row must be an object"))
+		}
+		needsArtifact = needsArtifact || len(row) > inlineRecordBytes
+	}
+	if !needsArtifact {
+		return rawJSONResult(raw)
 	}
 	for i, row := range rows {
 		var err error

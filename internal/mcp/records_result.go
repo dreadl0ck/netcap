@@ -5,8 +5,10 @@ import (
 	"sort"
 )
 
+const inlineRecordBytes = 80 << 10
+
 func (s *Server) completeRecordJSON(ref SessionRef, kind string, record json.RawMessage) (json.RawMessage, error) {
-	if len(record) <= 80<<10 {
+	if len(record) <= inlineRecordBytes {
 		return record, nil
 	}
 	entry, uri, err := s.carve.PutTyped(ref.ID, "audit-record", kind, "application/json", record)

@@ -55,6 +55,8 @@ func TestCollectionResultRejectsInconsistentPages(t *testing.T) {
 		{"wrong continuation", strings.Replace(valid, `"has_more":false`, `"has_more":true`, 1), true},
 		{"missing generation", strings.Replace(valid, `,"generation":"fixture"`, "", 1), true},
 		{"missing rows", strings.Replace(valid, `"groups":[{}],`, "", 1), true},
+		{"null row", strings.Replace(valid, `[{}]`, `[null]`, 1), true},
+		{"scalar row", strings.Replace(valid, `[{}]`, `["group"]`, 1), true},
 		{"stalled continuation", `{"groups":[],"totalCount":12,"groupCount":2,"offset":1,"next_offset":1,"limit":1,"returned":0,"has_more":true,"generation":"fixture"}`, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
