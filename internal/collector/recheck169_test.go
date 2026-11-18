@@ -71,14 +71,14 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 				if len(connections) != 15000 {
 					t.Fatal("default capture lost connections", len(connections))
 				}
-				t.Run("local-page-pressure", func(t *testing.T) {
+				checkPagePressure := func(t *testing.T, workers int, saveConns bool) {
 					out := t.TempDir()
-					cfg := ultimateCaptureConfig(out, 1, 0)
+					cfg := ultimateCaptureConfig(out, workers, 0)
 					cfg.CaptureEvidence = true
 					cfg.DecoderConfig.IncludeDecoders = "TCP,Connection"
 					cfg.DecoderConfig.MaxRetainedReassemblyBytes = 2 << 20
 					cfg.DecoderConfig.LocalReassemblyPageLoss = true
-					cfg.DecoderConfig.SaveConns = os.Getenv("NETCAP_RECHECK_FANOUT_EXPORT") == "1"
+					cfg.DecoderConfig.SaveConns = saveConns
 					err := New(cfg).CollectPcap(input)
 					var partial *localReassemblyCoverageError
 					if !errors.As(err, &partial) || partial.ExitCode() != 2 || !errors.Is(err, reassembly.ErrPageBudget) {
@@ -110,6 +110,12 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 							}
 						}
 					}
+				}
+				t.Run("local-page-pressure", func(t *testing.T) {
+					checkPagePressure(t, 1, os.Getenv("NETCAP_RECHECK_FANOUT_EXPORT") == "1")
+				})
+				t.Run("local-page-pressure-4-workers", func(t *testing.T) {
+					checkPagePressure(t, 4, false)
 				})
 			} else if _, err := os.Stat(filepath.Join(out, "Protobuf.ncap.gz")); err == nil {
 				records := bookRecords(t, out, "Protobuf", func() *types.Protobuf { return new(types.Protobuf) })
