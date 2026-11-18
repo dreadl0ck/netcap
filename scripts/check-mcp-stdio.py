@@ -9,6 +9,9 @@ import base64
 import hashlib
 import io
 import json
+import socket
+import struct
+import time
 import zipfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -37,6 +40,48 @@ list_offline_evaluations list_certificates get_stream_evidence
 """.split()
 
 
+async def check_flow_receiver(client, call):
+    receiver = (await call("flow_receiver", {"operation": "start", "listen": "127.0.0.1:0",
+                                            "duration_seconds": 3, "max_output_mb": 1}))["report"]
+    host, port = receiver["address"].rsplit(":", 1)
+    if host != "127.0.0.1" or not 0 < int(port) <= 65535:
+        raise ValueError("flow receiver did not bind an ephemeral loopback port")
+    target = {"receiver_id": receiver["receiver_id"]}
+    datagram = bytearray(72)
+    struct.pack_into("!HH", datagram, 0, 5, 1)
+    struct.pack_into("!I", datagram, 8, 1700000000)
+    datagram[24:32] = socket.inet_aton("192.0.2.1") + socket.inet_aton("192.0.2.2")
+    struct.pack_into("!II", datagram, 40, 7, 900)
+    start_ns = time.time_ns()
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sender:
+        sender.bind(("127.0.0.1", 0))
+        exporter = f"127.0.0.1:{sender.getsockname()[1]}"
+        sender.sendto(datagram, (host, int(port)))
+    async with asyncio.timeout(10):
+        while True:
+            status = (await call("flow_receiver", target | {"operation": "status"}))["report"]
+            if status["completed"]:
+                break
+            await asyncio.sleep(0.5)
+    query = {"startNs": str(start_ns), "endNs": str(time.time_ns()), "timeBasis": "receive",
+             "exporter": exporter, "format": "netflow-v5", "domain": 0, "groupBy": "srcIP", "limit": 1}
+    request = target | {"operation": "query", "query": query}
+    report = (await call("flow_receiver", request))["report"]
+    groups = report["groups"]
+    if (report["query"] != query or (report["matchedRecords"], report["totalGroups"], len(groups)) != (1, 1, 1)
+            or (groups[0]["key"], groups[0]["bytes"], groups[0]["packets"]) != ("192.0.2.1", "900", "7")
+            or len(groups[0]["observationIds"]) != 1 or len(report["sourceSHA256"]) != 64
+            or report["health"]["status"] != "done" or not report["limitations"]):
+        raise ValueError("flow receiver lost scope, reported counters, provenance or collection qualification")
+    empty = (await call("flow_receiver", request | {"query": query | {"domain": 1}}))["report"]
+    if empty["groups"] != [] or empty["matchedRecords"] != 0 or empty["sourceSHA256"] != report["sourceSHA256"]:
+        raise ValueError("flow query crossed observation domains or lost the source identity")
+    deleted = (await call("flow_receiver", target | {"operation": "delete"}))["report"]
+    missing = await client.call_tool("flow_receiver", request)
+    if deleted["deleted"] is not True or not missing.isError:
+        raise ValueError("deleted flow receiver remained queryable")
+
+
 async def check(binary, capture, http_capture, data_dir):
     params = StdioServerParameters(command=str(binary), args=[
         "mcp", "--bind", "127.0.0.1:0", "--quiet", "--pcap", str(capture),
@@ -58,12 +103,12 @@ async def check(binary, capture, http_capture, data_dir):
         covered, failures = set(), []
         successes = 0
 
-        async def call(name, arguments):
+        async def call(name, arguments, session=client):
             nonlocal successes
             tool = tools[name]
             validate(arguments, tool.inputSchema)
             async with asyncio.timeout(30):
-                result = await client.call_tool(name, arguments)
+                result = await session.call_tool(name, arguments)
             if result.isError:
                 raise ValueError(result.content[0].text if result.content else "tool returned an error")
             if tool.outputSchema is None or not isinstance(result.structuredContent, dict):
@@ -483,6 +528,21 @@ rules:
         if uploaded in remaining or sid not in remaining:
             raise ValueError("upload deletion affected the wrong session")
 
+        denied = await client.call_tool("flow_receiver", {"operation": "start", "listen": "127.0.0.1:0",
+                                                         "duration_seconds": 3, "max_output_mb": 1})
+        if not denied.isError or not any("--allow-fetch" in getattr(item, "text", "") for item in denied.content):
+            raise ValueError("flow receiver did not enforce the default network policy")
+        receiver_params = StdioServerParameters(command=str(binary), args=[
+            "mcp", "--bind", "127.0.0.1:0", "--quiet", "--allow-fetch",
+            "--data-dir", str(Path(data_dir) / "flow-receiver"),
+        ], env=params.env)
+        async with stdio_client(receiver_params) as (rx_reader, rx_writer), ClientSession(rx_reader, rx_writer) as receiver_client:
+            await receiver_client.initialize()
+
+            async def receiver_call(name, arguments):
+                return await call(name, arguments, session=receiver_client)
+
+            await check_flow_receiver(receiver_client, receiver_call)
         for name in ("get_network_detection", "get_behavior_health"):
             result = await client.call_tool(name, {"session_id": "unknown-contract-session"})
             if not result.isError:
