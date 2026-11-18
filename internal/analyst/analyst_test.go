@@ -110,6 +110,37 @@ func TestOccurrenceDigestMatchesStoredAuditEncoding(t *testing.T) {
 	}
 }
 
+func TestOccurrenceScanRejectsNewPreferredAudit(t *testing.T) {
+	source, _ := fixture(t, "preferred-audit")
+	dir := source.Directory
+	compressedPath := filepath.Join(dir, "Connection.ncap.gz")
+	if err := os.Remove(compressedPath); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Create(filepath.Join(dir, "Connection.ncap"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := delimited.NewWriter(f)
+	record := &types.Connection{SrcIP: "192.0.2.1"}
+	writeErr := errors.Join(w.PutProto(&types.Header{Type: types.Type_NC_Connection}), w.PutProto(record), f.Close())
+	if writeErr != nil {
+		t.Fatal(writeErr)
+	}
+	visited := 0
+	digest, err := Scan(t.Context(), dir, source.Binding, "Connection", func(ref Reference, _ proto.Message) error {
+		visited++
+		if ref.File != "Connection.ncap" {
+			t.Fatalf("scan switched files mid-read: %s", ref.File)
+		}
+		audit(t, dir, "Connection", types.Type_NC_Connection, record)
+		return nil
+	})
+	if visited != 1 || digest != "" || !errors.Is(err, ErrStale) {
+		t.Fatalf("changed preferred audit: visited=%d digest=%q err=%v", visited, digest, err)
+	}
+}
+
 func TestOccurrenceIdentityRejectsRebindingAndRetainsDuplicates(t *testing.T) {
 	source, refs := fixture(t, "one")
 	if len(refs) != 2 || refs[0].RecordSHA256 != refs[1].RecordSHA256 || refs[0].Ordinal == refs[1].Ordinal {

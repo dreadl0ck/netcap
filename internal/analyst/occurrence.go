@@ -152,6 +152,17 @@ func Scan(ctx context.Context, dir string, binding Binding, recordType string, v
 	err := walk(ctx, dir, binding, recordType, visit, &digest)
 	return digest, err
 }
+
+func openPreferredAudit(dir, recordType string) (string, *os.File, os.FileInfo, error) {
+	name := recordType + ".ncap.gz"
+	f, info, err := artifactio.Open(dir, name)
+	if errors.Is(err, os.ErrNotExist) {
+		name = recordType + ".ncap"
+		f, info, err = artifactio.Open(dir, name)
+	}
+	return name, f, info, err
+}
+
 func walk(ctx context.Context, dir string, binding Binding, recordType string, visit func(Reference, proto.Message) error, fileDigest *string) error {
 	if err := Check(ctx, dir, binding); err != nil {
 		return err
@@ -160,12 +171,7 @@ func walk(ctx context.Context, dir string, binding Binding, recordType string, v
 	if !ok || netio.InitRecord(types.Type(typeID)) == nil {
 		return fmt.Errorf("unsupported audit type")
 	}
-	name := recordType + ".ncap.gz"
-	f, info, err := artifactio.Open(dir, name)
-	if errors.Is(err, os.ErrNotExist) {
-		name = recordType + ".ncap"
-		f, info, err = artifactio.Open(dir, name)
-	}
+	name, f, info, err := openPreferredAudit(dir, recordType)
 	if err != nil {
 		return err
 	}
@@ -244,16 +250,12 @@ func walk(ctx context.Context, dir string, binding Binding, recordType string, v
 	if info.Size() != after.Size() || !info.ModTime().Equal(after.ModTime()) {
 		return ErrStale
 	}
-	current, _, err := artifactio.Open(dir, name)
+	currentName, current, ci, err := openPreferredAudit(dir, recordType)
 	if err != nil {
 		return err
 	}
 	defer current.Close()
-	ci, err := current.Stat()
-	if err != nil {
-		return err
-	}
-	if !os.SameFile(info, ci) {
+	if currentName != name || !os.SameFile(info, ci) || info.Size() != ci.Size() || !info.ModTime().Equal(ci.ModTime()) {
 		return ErrStale
 	}
 	if err := Check(ctx, dir, binding); err != nil {
