@@ -63,6 +63,9 @@ func (s *Server) collectionResult(ref SessionRef, key string, raw json.RawMessag
 		return errResult(err)
 	}
 	paged := envelope["generation"] != nil || envelope["next_offset"] != nil || envelope["has_more"] != nil || envelope["returned"] != nil
+	if !paged && query.Get("pageGeneration") != "" {
+		return errResult(fmt.Errorf("collection response lacks a generation; restart pagination"))
+	}
 	if _, exists := envelope[key]; !exists && !paged {
 		return rawJSONResult(raw)
 	}

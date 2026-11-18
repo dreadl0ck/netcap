@@ -28,7 +28,7 @@ func TestInventoryToolsForwardBackendPaging(t *testing.T) {
 	}
 	for name := range pagedCollectionKeys {
 		result, err := s.mcpSrv.GetTool(name).Handler(context.Background(), mcplib.CallToolRequest{Params: mcplib.CallToolParams{Arguments: map[string]any{"session_id": "owned", "limit": 3, "offset": 2, "search": "needle", "generation": "generation"}}})
-		if err != nil || result.IsError {
+		if err != nil || !result.IsError {
 			t.Fatal(name, result, err)
 		}
 	}
@@ -85,5 +85,18 @@ func TestCollectionResultMatchesRequestedPage(t *testing.T) {
 				t.Fatalf("IsError = %t, want %t: %+v", result.IsError, tc.wantError, result)
 			}
 		})
+	}
+}
+
+func TestBoundCollectionRejectsLegacyResponse(t *testing.T) {
+	s := &Server{}
+	for _, body := range []string{`{}`, `{"hosts":[],"totalCount":0}`} {
+		if s.collectionResult(SessionRef{}, "hosts", []byte(body), nil).IsError {
+			t.Fatalf("unbound legacy response failed: %s", body)
+		}
+		query := url.Values{"pageGeneration": {"fixture"}}
+		if !s.collectionResult(SessionRef{}, "hosts", []byte(body), query).IsError {
+			t.Fatalf("unpaged response accepted for bound continuation: %s", body)
+		}
 	}
 }
