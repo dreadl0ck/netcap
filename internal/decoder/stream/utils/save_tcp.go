@@ -66,7 +66,7 @@ func SaveTCPConversation(source core.FragmentSource, ident string, first time.Ti
 		return err
 	}
 	base := filepath.Join(root, filepath.Clean(path.Base(utils.CleanIdent(ident)))+binaryFileExtension)
-	file, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaults.FilePermission)
+	file, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND, defaults.FilePermission)
 	if err != nil {
 		return err
 	}
