@@ -2,6 +2,7 @@ package webtech
 
 import (
 	"bytes"
+	"compress/flate"
 	"compress/gzip"
 	"compress/zlib"
 	"encoding/json"
@@ -14,6 +15,37 @@ import (
 )
 
 type failedWireBody struct{}
+
+func TestCaptureRawDeflate(t *testing.T) {
+	const plain = "<html>fixture</html>"
+	encode := func(newWriter func(io.Writer) io.WriteCloser) []byte {
+		t.Helper()
+		var wire bytes.Buffer
+		w := newWriter(&wire)
+		if _, err := io.WriteString(w, plain); err != nil {
+			t.Fatal(err)
+		}
+		if err := w.Close(); err != nil {
+			t.Fatal(err)
+		}
+		return wire.Bytes()
+	}
+	raw := encode(func(out io.Writer) io.WriteCloser {
+		w, err := flate.NewWriter(out, flate.DefaultCompression)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return w
+	})
+	if body, state := capture(bytes.NewReader(raw), "deflate"); string(body) != plain || state != "complete" {
+		t.Fatalf("raw deflate: body=%q state=%s", body, state)
+	}
+	wrapped := encode(func(out io.Writer) io.WriteCloser { return zlib.NewWriter(out) })
+	wrapped[len(wrapped)-1] ^= 1
+	if body, state := capture(bytes.NewReader(wrapped), "deflate"); body != nil || state != "decode-failed" {
+		t.Fatalf("bad zlib checksum: body=%q state=%s", body, state)
+	}
+}
 
 func TestCaptureConcatenatedGzipMembers(t *testing.T) {
 	encode := func(parts ...string) []byte {

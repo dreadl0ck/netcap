@@ -2,6 +2,7 @@ package webtech
 
 import (
 	"bytes"
+	"compress/flate"
 	"compress/gzip"
 	"compress/zlib"
 	"io"
@@ -118,6 +119,9 @@ func capture(body io.Reader, encoding string) ([]byte, string) {
 			reader, err = gzip.NewReader(bytes.NewReader(wire))
 		case "deflate":
 			reader, err = zlib.NewReader(bytes.NewReader(wire))
+			if err == zlib.ErrHeader {
+				reader, err = flate.NewReader(bytes.NewReader(wire)), nil
+			}
 		default:
 			continue
 		}
