@@ -154,6 +154,48 @@ func (r *interruptedWireBody) Read(p []byte) (int, error) {
 	return copy(p, "unread"), io.EOF
 }
 
+type stalledWireBody struct {
+	io.Reader
+	empty int
+}
+
+func (r *stalledWireBody) Read(p []byte) (int, error) {
+	n, err := r.Reader.Read(p)
+	if err == io.EOF {
+		r.empty++
+		if r.empty <= 105 {
+			return n, nil
+		}
+	}
+	return n, err
+}
+
+func TestPassiveObservationStopsOnNoProgress(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		size int
+		busy bool
+	}{
+		{"prefix", 7, false},
+		{"drain", MaxPrefix + 1, false},
+		{"budget-exhausted drain", 7, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			wantState := "incomplete"
+			if tc.busy {
+				previous := reserved.Swap(MaxAggregate)
+				defer reserved.Store(previous)
+				wantState = "budget-exhausted"
+			}
+			body := &stalledWireBody{Reader: strings.NewReader(strings.Repeat("x", tc.size))}
+			report := Builtin().ObserveReader(Observation{Method: "GET", Status: 200, ContentType: "text/html"}, body, "")
+			if body.empty != 100 || report.WireBytes != int64(tc.size) || !errors.Is(report.WireError, io.ErrNoProgress) || report.BodyState != wantState {
+				t.Fatalf("empty reads=%d bytes=%d err=%v state=%q", body.empty, report.WireBytes, report.WireError, report.BodyState)
+			}
+		})
+	}
+}
+
 func TestPassiveObservationStopsAtWireFailure(t *testing.T) {
 	body := &interruptedWireBody{}
 	report := Builtin().ObserveReader(Observation{Method: "GET", Status: 200, ContentType: "text/html"}, body, "")

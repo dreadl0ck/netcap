@@ -37,13 +37,22 @@ type Report struct {
 
 type countingReader struct {
 	io.Reader
-	n   int64
-	err error
+	n     int64
+	err   error
+	empty int
 }
 
 func (r *countingReader) Read(b []byte) (int, error) {
 	n, e := r.Reader.Read(b)
 	r.n += int64(n)
+	if n == 0 && e == nil && len(b) > 0 {
+		r.empty++
+		if r.empty >= 100 {
+			e = io.ErrNoProgress
+		}
+	} else {
+		r.empty = 0
+	}
 	if e != nil && e != io.EOF && r.err == nil {
 		r.err = e
 	}
@@ -56,22 +65,22 @@ var reserved atomic.Int64
 // output and a codec reservation; concurrent capture fails visibly at 16 MiB.
 func (e *Engine) ObserveReader(o Observation, body io.Reader, encoding string) Report {
 	const lease = 1 << 20
+	r := &countingReader{Reader: body}
 	for {
 		n := reserved.Load()
 		if n+lease > MaxAggregate {
-			drained, err := io.Copy(io.Discard, body)
+			drained, err := io.Copy(io.Discard, r)
 			o.BodyState = "budget-exhausted"
-			r := e.Observe(o)
-			r.WireBytes = drained
-			r.WireError = err
-			return r
+			report := e.Observe(o)
+			report.WireBytes = drained
+			report.WireError = err
+			return report
 		}
 		if reserved.CompareAndSwap(n, n+lease) {
 			break
 		}
 	}
 	defer reserved.Add(-lease)
-	r := &countingReader{Reader: body}
 	incomplete := o.BodyState == "incomplete"
 	o.Body, o.BodyState = capture(r, encoding)
 	if incomplete && (o.BodyState == "complete" || o.BodyState == "truncated") {
