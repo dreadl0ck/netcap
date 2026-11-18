@@ -54,6 +54,25 @@ func TestCollectionPageRejectsIncompleteScans(t *testing.T) {
 	}
 }
 
+func TestHostTopPortsKeepStableCutoff(t *testing.T) {
+	ports := []*types.Port{
+		{PortNumber: 443, Protocol: "tcp", Stats: &types.PortStats{Packets: 6}},
+		{PortNumber: 53, Protocol: "udp", Stats: &types.PortStats{Packets: 6}},
+		{PortNumber: 443, Protocol: "udp", Stats: &types.PortStats{Packets: 7}},
+		{PortNumber: 53, Protocol: "tcp", Stats: &types.PortStats{Packets: 6}},
+		nil, {PortNumber: 25},
+	}
+	for range len(ports) {
+		got := extractTopPorts(ports, 2)
+		if len(got) != 2 || got[0].Port != 443 || got[0].Protocol != "udp" || got[1].Port != 53 || got[1].Protocol != "tcp" {
+			t.Fatalf("unstable top two: %+v", got)
+		}
+		first := ports[0]
+		copy(ports, ports[1:])
+		ports[len(ports)-1] = first
+	}
+}
+
 func TestHostTrafficPageRejectsOversizedAudit(t *testing.T) {
 	dir := t.TempDir()
 	s := &Server{outDir: dir}

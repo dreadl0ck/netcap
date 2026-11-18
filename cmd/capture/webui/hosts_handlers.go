@@ -348,47 +348,40 @@ func readHostTraffic(ctx context.Context, outDir string) ([]HostSummary, error) 
 
 // extractTopPorts extracts top N ports sorted by packet count
 func extractTopPorts(ports []*types.Port, limit int) []PortInfo {
-	result := make([]PortInfo, 0)
-	if ports == nil {
+	limit = max(0, min(limit, len(ports)))
+	result := make([]PortInfo, 0, limit)
+	if limit == 0 {
 		return result
 	}
-
-	// Convert to sortable slice
-	type portPair struct {
-		port     int32
-		protocol string
-		packets  uint64
-		bytes    uint64
-	}
-	pairs := make([]portPair, 0, len(ports))
 	for _, port := range ports {
-		pairs = append(pairs, portPair{
-			port:     port.PortNumber,
-			protocol: port.Protocol,
-			packets:  port.Stats.Packets,
-			bytes:    port.Stats.Bytes,
-		})
+		if port == nil || port.Stats == nil {
+			continue
+		}
+		candidate := PortInfo{Port: port.PortNumber, Protocol: port.Protocol, Packets: port.Stats.Packets, Bytes: port.Stats.Bytes}
+		i := sort.Search(len(result), func(i int) bool { return hostPortBefore(candidate, result[i]) })
+		if i == limit {
+			continue
+		}
+		if len(result) < limit {
+			result = append(result, PortInfo{})
+		}
+		copy(result[i+1:], result[i:])
+		result[i] = candidate
 	}
-
-	// Sort by packet count descending
-	sort.Slice(pairs, func(i, j int) bool {
-		return pairs[i].packets > pairs[j].packets
-	})
-
-	// Take top N
-	if len(pairs) < limit {
-		limit = len(pairs)
-	}
-	for i := 0; i < limit; i++ {
-		result = append(result, PortInfo{
-			Port:     pairs[i].port,
-			Protocol: pairs[i].protocol,
-			Packets:  pairs[i].packets,
-			Bytes:    pairs[i].bytes,
-		})
-	}
-
 	return result
+}
+
+func hostPortBefore(a, b PortInfo) bool {
+	if a.Packets != b.Packets {
+		return a.Packets > b.Packets
+	}
+	if a.Port != b.Port {
+		return a.Port < b.Port
+	}
+	if a.Protocol != b.Protocol {
+		return a.Protocol < b.Protocol
+	}
+	return a.Bytes > b.Bytes
 }
 
 // handleHostDownloadPCAP filters and downloads PCAP for a specific host
