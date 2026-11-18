@@ -576,6 +576,70 @@ func TestTimelinePaginationCoversEveryRecordOnce(t *testing.T) {
 	}
 }
 
+func TestTimelineHeapPagesMatchTiedTrackOrder(t *testing.T) {
+	ordered := []*tlTypeIndex{
+		{Name: "Z", LayerRank: 0}, {Name: "A", LayerRank: 1},
+		{Name: "B", LayerRank: 1}, {Name: "C", LayerRank: 2},
+	}
+	for _, track := range ordered {
+		track.strings = []string{"192.0.2.1"}
+		for _, ts := range []int64{10, 20, 30, 40} {
+			ordinal := int32(len(track.Events))
+			track.Events = append(track.Events, tlEvent{Time: ts, Ordinal: ordinal, Src: -1, Dst: -1},
+				tlEvent{Time: ts, Ordinal: ordinal + 1, Src: 0, Dst: -1})
+		}
+	}
+	for _, host := range []string{"", "192.0.2.1"} {
+		var want []timelineHit
+		for _, i := range []int{2, 4} { // The window contains timestamps 20 and 30.
+			for _, track := range ordered {
+				if host == "" {
+					want = append(want, timelineHit{Track: track, Index: i})
+				}
+				want = append(want, timelineHit{Track: track, Index: i + 1})
+			}
+		}
+		for _, limit := range []int{1, 3, 5} {
+			for _, backward := range []bool{false, true} {
+				q := timelineQuery{Start: 20, End: 30, Host: host, Limit: limit,
+					Tracks: []*tlTypeIndex{ordered[2], ordered[3], ordered[0], ordered[1]}}
+				lo, hi := 0, len(want)
+				if backward {
+					afterWindow := tlKey{Time: 40}
+					q.Before = &afterWindow
+				}
+				for lo < hi {
+					page := q.page()
+					n := min(limit, hi-lo)
+					start := lo
+					if backward {
+						start = hi - n
+					}
+					if len(page) != n {
+						t.Fatalf("host=%q backward=%t limit=%d: got %d hits, want %d", host, backward, limit, len(page), n)
+					}
+					for i, hit := range page {
+						if hit != want[start+i] {
+							t.Fatalf("host=%q backward=%t limit=%d: wrong hit at position %d", host, backward, limit, start+i)
+						}
+					}
+					if backward {
+						key := q.key(page[0].Track, page[0].Index)
+						q.Before, hi = &key, start
+					} else {
+						last := page[n-1]
+						key := q.key(last.Track, last.Index)
+						q.After, lo = &key, lo+n
+					}
+				}
+				if extra := q.page(); len(extra) != 0 {
+					t.Fatalf("host=%q backward=%t limit=%d: extra hits after exhausting window", host, backward, limit)
+				}
+			}
+		}
+	}
+}
+
 func TestTimelinePageClampsCursorToChangedWindow(t *testing.T) {
 	track := &tlTypeIndex{Name: "DNS", Events: []tlEvent{{Time: 10}, {Time: 20, Ordinal: 1}, {Time: 30, Ordinal: 2}}}
 	q := timelineQuery{Start: 20, End: 20, Tracks: []*tlTypeIndex{track}, Limit: 10}
