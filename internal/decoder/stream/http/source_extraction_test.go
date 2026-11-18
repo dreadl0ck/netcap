@@ -505,6 +505,34 @@ func TestSpooledUploadSurvivesLocalRequestPressure(t *testing.T) {
 	}
 }
 
+func TestSampledRequestReleasesBodyCreditsBeforePairing(t *testing.T) {
+	previous := decoderconfig.Instance
+	t.Cleanup(func() { decoderconfig.Instance = previous })
+	decoderconfig.Instance = decoderconfig.DefaultConfig.Clone()
+	decoderconfig.Instance.FileStorage = ""
+	decoderconfig.Instance.IncludePayloads = false
+	budget, err := core.NewStateBudget(64<<10, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := &httpReader{conversation: &core.ConversationInfo{StateBudget: budget}, sourceMode: true}
+	body := "<html>" + strings.Repeat("sample", 1000)
+	wire := fmt.Sprintf("POST /sample?tag=query HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(body), body)
+	reader, pos := streamutils.FragmentReader(core.DataFragments{wireFragment(0, []byte(wire), 1)}, false)
+	if err := h.readRequest(reader, pos); err != nil {
+		t.Fatal(err)
+	}
+	defer budget.Release(h.sourceHeaderCredits)
+	if len(h.requests) != 1 || budget.Health().RetainedBytes != h.sourceHeaderCredits {
+		t.Fatalf("request sample outlived classification: %+v", budget.Health())
+	}
+	var record types.HTTP
+	setRequest(&record, h.requests[0])
+	if record.ContentTypeDetected != "text/html; charset=utf-8" || record.Parameters["tag"] != "query" || len(record.RequestBody) != 0 {
+		t.Fatalf("unexpected sampled request evidence: type=%q params=%v body=%d", record.ContentTypeDetected, record.Parameters, len(record.RequestBody))
+	}
+}
+
 func TestBackedJSONFormFitsDecodeReservation(t *testing.T) {
 	previous := decoderconfig.Instance
 	t.Cleanup(func() { decoderconfig.Instance = previous })

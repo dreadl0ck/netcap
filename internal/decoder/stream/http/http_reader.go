@@ -632,7 +632,6 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 	switch mode {
 	case requestSpooled:
 		spool, bodyErr = file.SpoolBody(req.Body)
-		release = func() {}
 		if spool != nil {
 			defer func() { file.RecordArtifactWriteError(spool.Close()) }()
 		}
@@ -644,7 +643,16 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 		body, release, bodyErr = file.ReadBody(req.Body)
 	}
 	file.RecordExtractionIssue(bodyErr)
-	h.bufferReleases = append(h.bufferReleases, release)
+	sampled := mode == requestSample || mode == requestCappedSample
+	if sampled {
+		defer func() {
+			if release != nil {
+				release()
+			}
+		}()
+	} else if release != nil {
+		h.bufferReleases = append(h.bufferReleases, release)
+	}
 	s := len(body)
 	if bodyErr != nil {
 		httpLog.Error(
@@ -724,6 +732,12 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 		err = h.parseBackedJSONForm(req, spool)
 	default:
 		err = parseEvidenceForm(req, body)
+	}
+	if sampled {
+		request.backedBodyType = http.DetectContentType(body)
+		body, request.body, req.Body = nil, nil, http.NoBody
+		release()
+		release = nil
 	}
 	stateErr := h.conversation.FragmentError
 	if stateErr == nil {
