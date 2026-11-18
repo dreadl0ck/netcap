@@ -189,8 +189,6 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 				// DecodeConversation should be called either when processing the client or the server stream
 				s.DecodeConversation()
 			} else {
-				s.SortAndMergeFragments()
-
 				// save the service banner
 				saveTCPServiceBanner(s)
 

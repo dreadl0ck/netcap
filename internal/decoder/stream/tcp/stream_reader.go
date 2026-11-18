@@ -93,10 +93,6 @@ type streamReader interface {
 	// ServiceIdent will return the identifier of the service (serverIP:serverPort).
 	ServiceIdent() string
 
-	// SortAndMergeFragments sorts all stream fragments based on their timestamp
-	// and generate the conversation buffers.
-	SortAndMergeFragments()
-
 	// DecodeConversation is used to invoke the protocol decoding
 	DecodeConversation()
 }

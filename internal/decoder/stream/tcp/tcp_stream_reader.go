@@ -249,12 +249,6 @@ func (t *tcpStreamReader) IsClient() bool {
 	return t.isClient
 }
 
-// SortAndMergeFragments sorts all stream fragments based on their timestamp
-// and generate the conversation buffers.
-func (t *tcpStreamReader) SortAndMergeFragments() {
-	t.parent.sortAndMergeFragments()
-}
-
 // Ident returns the stream identifier.
 func (t *tcpStreamReader) Ident() string {
 	return t.parent.ident
