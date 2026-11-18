@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -546,28 +547,15 @@ func (s *Server) handleYaraScan(w http.ResponseWriter, r *http.Request) {
 	totalMatches := 0
 	failed := 0
 	successful := 0
-	entries := 0
-
-	err := filepath.Walk(filesDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		entries++
-		if entries > 4096 {
-			return fmt.Errorf("artifact traversal limit exceeded")
-		}
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		if info.IsDir() {
+	err := walkYaraArtifacts(ctx, filesDir, 4095, func(rel string) error {
+		if strings.HasPrefix(filepath.Base(rel), ".netcap-artifact-") {
 			return nil
 		}
-		if strings.HasPrefix(info.Name(), ".netcap-artifact-") {
-			return nil
+		if totalFiles >= 1024 {
+			return fmt.Errorf("artifact scan file limit reached")
 		}
 
 		totalFiles++
-		rel, _ := filepath.Rel(filesDir, path)
 		result := scanArtifact(ctx, filesDir, rel, scanner)
 		results = append(results, result)
 		totalMatches += len(result.Matches)
@@ -576,10 +564,6 @@ func (s *Server) handleYaraScan(w http.ResponseWriter, r *http.Request) {
 		} else {
 			successful++
 		}
-		if totalFiles >= 1024 {
-			return fmt.Errorf("artifact scan file limit reached")
-		}
-
 		return nil
 	})
 
@@ -609,6 +593,53 @@ func (s *Server) handleYaraScan(w http.ResponseWriter, r *http.Request) {
 		TotalMatches: totalMatches,
 		ScanTimeMs:   totalScanMs,
 	})
+}
+
+func walkYaraArtifacts(ctx context.Context, directory string, remaining int, visit func(string) error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	root, err := os.OpenRoot(directory)
+	if err != nil {
+		return err
+	}
+	defer root.Close()
+	var walk func(string) error
+	walk = func(dir string) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		f, err := root.Open(dir)
+		if err != nil {
+			return err
+		}
+		entries, err := f.ReadDir(remaining + 1)
+		f.Close()
+		if err != nil && !errors.Is(err, io.EOF) {
+			return err
+		}
+		if len(entries) > remaining {
+			return fmt.Errorf("artifact traversal limit exceeded")
+		}
+		remaining -= len(entries)
+		sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+		for _, entry := range entries {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			path := filepath.Join(dir, entry.Name())
+			if entry.IsDir() {
+				err = walk(path)
+			} else {
+				err = visit(path)
+			}
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	return walk(".")
 }
 
 // handleYaraScanFile scans a single file against YARA rules.

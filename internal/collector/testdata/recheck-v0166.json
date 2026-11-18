@@ -341,6 +341,9 @@
   "artifactReadAllocation": {
     "verification": "TestReadAtLimitUsesExactBuffer reads all 700000 fixture bytes at the caller cap with a slice capacity of exactly 700000. Confined reads check cancellation in 64 KiB chunks and reject length changes. The artifactio suite and focused WebUI artifact tests passed under the race detector."
   },
+  "manualYaraInventoryBound": {
+    "verification": "Manual YARA scans cap directory enumeration at the remaining inventory allowance plus one entry, across the entire tree. TestYaraArtifactWalkBoundsNestedInventory verifies early rejection of an over-budget nested directory and lexically ordered traversal at the exact budget. Focused WebUI artifact race tests passed."
+  },
   "networkAlertCapacityFlush": {
     "verification": "Capacity flush selects one oldest aggregate without allocating and sorting the full key set. Five focused race runs verified timestamp ordering, equal-time key ordering, conservation of all 20 matches across 18 capacity flushes, and local stale-probe qualification controls."
   },
