@@ -187,16 +187,23 @@ func TestHTTPSourcePreflightStopsAtOpaqueBodyLimit(t *testing.T) {
 }
 
 func TestHTTPSourceOversizedPostPreservesOnlyAllowedPrefix(t *testing.T) {
-	body := strings.Repeat("x", 128) + "y"
-	wire := fmt.Sprintf("POST /fixture.bin HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%sPOST /encoded HTTP/1.1\r\nHost: fixture.test\r\nContent-Encoding: br\r\nContent-Length: 4\r\n\r\ndata", len(body), body)
-	data := core.DataFragments{wireFragment(0, []byte(wire), 1)}
-	rows, artifacts := captureHTTPWithBodyLimit(t, data, true, false, 128)
-	if len(rows) != 1 || rows[0].URL != "/fixture.bin" {
-		t.Fatalf("oversized request emitted unexpected observations: %v", rows)
-	}
-	want := file.ComputeHashes([]byte(body[:128])).SHA256
-	if len(artifacts) != 1 || artifacts[0].IsComplete || artifacts[0].Length != 128 || artifacts[0].GetHashes().GetSHA256() != want {
-		t.Fatalf("unexpected incomplete artifact: %v", artifacts)
+	const limit = 128
+	for _, tc := range []struct{ name, media, body string }{
+		{"opaque", "application/octet-stream", strings.Repeat("x", limit) + "y"},
+		{"json", "application/json", `{"label":"fixture"}` + strings.Repeat(" ", limit)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			wire := fmt.Sprintf("POST /fixture.bin HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n%sPOST /encoded HTTP/1.1\r\nHost: fixture.test\r\nContent-Encoding: br\r\nContent-Length: 4\r\n\r\ndata", tc.media, len(tc.body), tc.body)
+			data := core.DataFragments{wireFragment(0, []byte(wire), 1)}
+			rows, artifacts := captureHTTPWithBodyLimit(t, data, true, false, limit)
+			if len(rows) != 1 || rows[0].URL != "/fixture.bin" {
+				t.Fatalf("oversized request emitted unexpected observations: %v", rows)
+			}
+			want := file.ComputeHashes([]byte(tc.body[:limit])).SHA256
+			if len(artifacts) != 1 || artifacts[0].IsComplete || artifacts[0].Length != limit || artifacts[0].GetHashes().GetSHA256() != want {
+				t.Fatalf("unexpected incomplete artifact: %v", artifacts)
+			}
+		})
 	}
 }
 

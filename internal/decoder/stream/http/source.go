@@ -282,7 +282,7 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 					cfg := decoderconfig.Instance
 					if form == "application/x-www-form-urlencoded" {
 						bound = &io.LimitedReader{R: body, N: maxJSONFormBytes + 1}
-					} else if cfg != nil && cfg.FileStorage != "" && !cfg.IncludePayloads && form == "" && request.Header.Get(headerContentEncoding) != "gzip" {
+					} else if cfg != nil && !cfg.IncludePayloads && (cfg.FileStorage != "" || form != "") && request.Header.Get(headerContentEncoding) != "gzip" {
 						bound = &io.LimitedReader{R: body, N: sourceRequestBodyLimit() + 1}
 					}
 					if bound != nil {
