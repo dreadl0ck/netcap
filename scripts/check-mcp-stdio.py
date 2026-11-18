@@ -83,6 +83,18 @@ async def check(binary, capture, data_dir):
                 await asyncio.sleep(0.2)
 
         args = {"session_id": sid}
+        firewall = {
+            "bundle": json.dumps({"version": "1", "id": "fixture", "mode": "enforce", "default": "deny",
+                                  "rules": [{"id": "get", "expression": "Method == 'GET'", "action": "allow"}]}),
+            "events": [{"method": method, "protocol": "http"} for method in ("GET", "POST")],
+        }
+        policy = (await call("evaluate_firewall_policy", firewall))["report"]
+        repeated = (await call("evaluate_firewall_policy", firewall))["report"]
+        if (policy["effects_dispatched"] is not False or repeated["effects_dispatched"] is not False
+                or not policy["revision"] or policy["revision"] != repeated["revision"]
+                or any([d["verdict"] for d in result["decisions"]] != ["allow", "deny"]
+                       for result in (policy, repeated))):
+            raise ValueError("offline firewall replay lost stable policy identity, ordered verdicts or effect isolation")
         streams = (await call("get_stream_evidence", args))["data"]
         stream, direction = next(
             (row, side) for row in streams for side in ("client", "server")

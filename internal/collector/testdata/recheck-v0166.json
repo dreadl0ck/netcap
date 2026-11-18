@@ -158,6 +158,7 @@
     "qualification": "1a4507d adds possible-stale-probe evidence for a one-byte zero ACK behind the frontier at an observed earlier segment end. Both pinned replays pass under the race detector: each witness adds one candidate and one conflict byte. Synthetic interior-byte, nonzero, non-ACK, multibyte and post-reset controls retain conflicts without the annotation. Alert class and severity remain unchanged; peer acceptance and evaluator-byte identity are unverified."
   },
   "officialMCPStdioContracts": {
+    "offlineFirewallPolicy": "Two official-client calls to evaluate_firewall_policy validate the report schema, preserve the revision and ordered allow/deny verdicts, and report effects_dispatched=false on both runs. The portable harness passed 181 calls across 86 of 119 tools with no failures.",
     "source": "405b951",
     "verification": "uv run --script scripts/check-mcp-stdio.py <net-binary> validates input and successful output schemas over stdio on the mDNS capture. The portable binary advertised 119 tools; 48 distinct tools and 53 successful calls were checked, including sealed continuation, count-only and empty audit pages. Unknown session selectors fail.",
     "fix": "Behavior and network-detection routes use the shared capture resolver for local session IDs. Full Web UI and MCP race suites and the focused local-session regression pass. The script lists untested tools explicitly."
