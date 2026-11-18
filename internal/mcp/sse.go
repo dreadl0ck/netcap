@@ -8,6 +8,7 @@ package mcp
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -82,7 +83,8 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 	// SSE events are separated by blank lines; each event is one or more
 	// header lines ("event: name", "data: payload") followed by \n\n.
 	scanner := bufio.NewScanner(limited)
-	scanner.Buffer(make([]byte, 0, 64*1024), (16<<20)+1024)
+	scanner.Buffer(make([]byte, 0, min(maxBytes, 64<<10)), (16<<20)+1024)
+	scanner.Split(scanAuditEventLine)
 
 	var (
 		curEvent string
@@ -152,6 +154,14 @@ func (c *NetcapClient) streamAuditRecords(ctx context.Context, auditType string,
 		terminalEvent = "incomplete"
 	}
 	return records, completeJSON, terminalEvent, nil
+}
+
+// A bare CR at EOF must not become the blank line that commits an event.
+func scanAuditEventLine(data []byte, _ bool) (int, []byte, error) {
+	if i := bytes.IndexByte(data, '\n'); i >= 0 {
+		return i + 1, bytes.TrimSuffix(data[:i], []byte("\r")), nil
+	}
+	return 0, nil, nil
 }
 
 func validateAuditCompletion(payload json.RawMessage, query url.Values, count int) error {

@@ -37,6 +37,21 @@ func TestAuditStreamRequiresDelimitedTerminalEvent(t *testing.T) {
 	}
 }
 
+func TestAuditStreamRequiresFullCRLFDelimiter(t *testing.T) {
+	const body = "event: complete\r\ndata: {\"total\":0}\r\n\r\n"
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(w, body)
+	}))
+	defer ts.Close()
+	c := NewNetcapClient(ts.URL)
+	if _, _, terminal, err := c.StreamAuditRecords("DNS", nil, len(body)-1); err != nil || terminal != "incomplete" {
+		t.Fatalf("truncated CRLF: terminal=%q err=%v", terminal, err)
+	}
+	if _, _, terminal, err := c.StreamAuditRecords("DNS", nil, len(body)); err != nil || terminal != "complete" {
+		t.Fatalf("complete CRLF: terminal=%q err=%v", terminal, err)
+	}
+}
+
 func TestAuditStreamCancellationInterruptsRead(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
