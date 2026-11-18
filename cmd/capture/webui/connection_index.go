@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/dreadl0ck/netcap/internal/artifactio"
@@ -113,8 +114,23 @@ type connectionSnapshot struct {
 	bytes        uint64
 }
 
+// retainedDataBytes estimates backing storage outside the inline row.
+func (row *ConnectionSummary) retainedDataBytes() uint64 {
+	n := len(row.DNSResolvedName) + len(row.DNSResolvedAtNs) + len(row.DNSResolutionState) +
+		len(row.TimestampFirstNs) + len(row.TimestampLastNs) + len(row.LinkProto) + len(row.NetworkProto) +
+		len(row.TransportProto) + len(row.ApplicationProto) + len(row.SrcMAC) + len(row.DstMAC) +
+		len(row.SrcIP) + len(row.SrcPort) + len(row.DstIP) + len(row.DstPort) +
+		len(row.ServerPortName) + len(row.DetectedProtocolName) + len(row.Ja4lClient) + len(row.Ja4lServer) +
+		len(row.Sni) + len(row.CommunityID) + len(row.ObservationID) + len(row.CounterSemantics) + len(row.ObservationBoundary)
+	bytes := uint64(n) + uint64(cap(row.Applications))*uint64(unsafe.Sizeof(""))
+	for _, app := range row.Applications {
+		bytes += uint64(len(app))
+	}
+	return bytes
+}
+
 func newConnectionSnapshot(rows []ConnectionSummary) *connectionSnapshot {
-	s := &connectionSnapshot{rows: rows}
+	s := &connectionSnapshot{rows: rows, bytes: uint64(cap(rows)) * uint64(unsafe.Sizeof(ConnectionSummary{}))}
 	if len(rows) <= connectionMaxRows {
 		s.byID = make(map[string]*roaring.Bitmap)
 		s.byHost = make(map[string]*roaring.Bitmap)
@@ -135,11 +151,9 @@ func newConnectionSnapshot(rows []ConnectionSummary) *connectionSnapshot {
 		bitmap.Add(uint32(i))
 		return true
 	}
-	for i, row := range rows {
-		s.bytes += uint64(320 + len(row.SrcIP) + len(row.DstIP) + len(row.CommunityID) + len(row.Sni))
-		for _, app := range row.Applications {
-			s.bytes += uint64(16 + len(app))
-		}
+	for i := range rows {
+		row := &rows[i]
+		s.bytes += row.retainedDataBytes()
 		if s.byID != nil && (!add(s.byID, row.CommunityID, i) || !add(s.byHost, row.SrcIP, i) ||
 			!add(s.byHost, row.DstIP, i) || !add(s.byProtocol, row.TransportProto, i) || !add(s.byProtocol, row.ApplicationProto, i)) {
 			s.byID, s.byHost, s.byProtocol = nil, nil, nil

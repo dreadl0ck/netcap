@@ -98,6 +98,39 @@ func TestConnectionSnapshotDecodedByteLimit(t *testing.T) {
 	}
 }
 
+func TestConnectionSnapshotCacheChargesRetainedDNSNames(t *testing.T) {
+	first, second := t.TempDir(), t.TempDir()
+	t.Cleanup(func() {
+		connectionCache.Lock()
+		defer connectionCache.Unlock()
+		for _, dir := range []string{first, second} {
+			if entry := connectionCache.entries[dir]; entry != nil {
+				connectionCache.bytes -= entry.snapshot.bytes
+				delete(connectionCache.entries, dir)
+			}
+		}
+	})
+	record := &types.Connection{DNSResolvedName: strings.Repeat("a", 512<<10)}
+	rows := make([]proto.Message, 66)
+	for i := range rows {
+		rows[i] = record
+	}
+	writeTimelineAuditFile(t, first, "Connection", types.Type_NC_Connection, rows)
+	writeTimelineAuditFile(t, second, "Connection", types.Type_NC_Connection, rows)
+	for _, dir := range []string{first, second} {
+		snapshot, err := connectionSnapshotFor(dir)
+		if err != nil || len(snapshot.rows) != len(rows) || snapshot.rows[0].DNSResolvedName != record.DNSResolvedName {
+			t.Fatalf("snapshot failed for %s: %v", dir, err)
+		}
+	}
+	connectionCache.Lock()
+	defer connectionCache.Unlock()
+	if connectionCache.entries[first] != nil || connectionCache.entries[second] == nil || connectionCache.bytes > connectionCacheBytes {
+		t.Fatalf("expected only the newer 33 MiB snapshot to survive: first=%t second=%t bytes=%d",
+			connectionCache.entries[first] != nil, connectionCache.entries[second] != nil, connectionCache.bytes)
+	}
+}
+
 func TestConnectionSnapshotBuildLimitKeepsCacheHitsAvailable(t *testing.T) {
 	warm, cold := t.TempDir(), t.TempDir()
 	initial, err := connectionSnapshotFor(warm)
