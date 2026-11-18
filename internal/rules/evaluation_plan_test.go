@@ -93,6 +93,23 @@ func BenchmarkThresholdWindowPruning(b *testing.B) {
 	}
 }
 
+func TestThresholdWindowKeepsOnlyEligibleMatches(t *testing.T) {
+	engine := &Engine{thresholdTrackers: make(map[string]*thresholdTracker)}
+	rule := &Rule{Name: "fixture", Threshold: 4, ThresholdWindow: 2}
+	for _, step := range []struct {
+		seconds int64
+		trigger bool
+	}{
+		{1, false}, {2, false}, {3, false}, {4, false}, // 1 expired; 2 is on the boundary.
+		{3, false}, {4, true}, // The earlier 4 was discarded when time went backward.
+		{4, false}, // Rearmed.
+	} {
+		if got := engine.checkThreshold(rule, &types.HTTP{Timestamp: step.seconds * int64(time.Second)}); got != step.trigger {
+			t.Fatalf("timestamp %d: trigger=%t, want %t", step.seconds, got, step.trigger)
+		}
+	}
+}
+
 func TestAuditReplayUsesRecordTimeForDedupAndRateWindows(t *testing.T) {
 	t.Run("modern", func(t *testing.T) { testAuditReplayClock(t, time.Unix(1700000000, 0)) })
 	t.Run("before-epoch", func(t *testing.T) { testAuditReplayClock(t, time.Unix(-3600, 0)) })

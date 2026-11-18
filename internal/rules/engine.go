@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"sort"
 	"sync"
 	"time"
 
@@ -527,18 +528,18 @@ func (e *Engine) checkThreshold(rule *Rule, record types.AuditRecord) bool {
 	}
 	windowNanos := int64(windowSeconds) * int64(time.Second)
 
-	// Remove matches outside the time window
-	validMatches := tracker.matches[:0]
-	for _, matchTime := range tracker.matches {
-		// The distance between ordered signed timestamps can exceed MaxInt64.
-		if matchTime <= now && uint64(now)-uint64(matchTime) <= uint64(windowNanos) {
-			validMatches = append(validMatches, matchTime)
-		}
+	// Removing future matches before appending keeps the window sorted.
+	matches := tracker.matches
+	if n := len(matches); n > 0 && matches[n-1] > now {
+		matches = matches[:sort.Search(n, func(i int) bool { return matches[i] > now })]
 	}
-
-	// Add current match
-	validMatches = append(validMatches, now)
-	tracker.matches = validMatches
+	if len(matches) > 0 && uint64(now)-uint64(matches[0]) > uint64(windowNanos) {
+		first := sort.Search(len(matches), func(i int) bool {
+			return uint64(now)-uint64(matches[i]) <= uint64(windowNanos)
+		})
+		matches = matches[:copy(matches, matches[first:])]
+	}
+	tracker.matches = append(matches, now)
 
 	// Check if threshold is reached
 	if len(tracker.matches) >= rule.Threshold {
