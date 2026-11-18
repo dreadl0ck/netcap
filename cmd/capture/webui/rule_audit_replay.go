@@ -13,7 +13,21 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+func ruleReplayCanceled(stop, shutdown <-chan struct{}) bool {
+	select {
+	case <-stop:
+		return true
+	case <-shutdown:
+		return true
+	default:
+		return false
+	}
+}
+
 func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit func(types.AuditRecord) error) (int, error) {
+	if ruleReplayCanceled(stop, shutdown) {
+		return 0, errAnalysisStopping
+	}
 	auditType = strings.TrimPrefix(auditType, "NC_")
 	want, ok := types.Type_value["NC_"+auditType]
 	if !ok {
@@ -45,12 +59,8 @@ func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit 
 	}
 	var count int
 	for {
-		select {
-		case <-stop:
+		if ruleReplayCanceled(stop, shutdown) {
 			return count, errAnalysisStopping
-		case <-shutdown:
-			return count, errAnalysisStopping
-		default:
 		}
 		record, err := reader.NextRecord()
 		if err == io.EOF {
@@ -77,6 +87,9 @@ func replayRuleAudit(dir, auditType string, stop <-chan struct{}, replay *rules.
 		return err
 	})
 	if err == nil {
+		if ruleReplayCanceled(stop, nil) {
+			return alerts, count, errAnalysisStopping
+		}
 		var final int
 		final, err = replay.Finalize()
 		alerts += final
@@ -88,12 +101,8 @@ var manualRuleSlots = make(chan struct{}, 2)
 var errManualRuleCapacity = errors.New("manual rule replay is busy")
 
 func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-chan struct{}) (results []RuleExecResult, err error) {
-	select {
-	case <-stop:
+	if ruleReplayCanceled(stop, s.shutdownChan) {
 		return nil, errAnalysisStopping
-	case <-s.shutdownChan:
-		return nil, errAnalysisStopping
-	default:
 	}
 	select {
 	case manualRuleSlots <- struct{}{}:
@@ -124,17 +133,13 @@ func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-ch
 		groups[typ] = append(groups[typ], i)
 	}
 	for _, typ := range order {
-		select {
-		case <-stop:
-			return results, errAnalysisStopping
-		case <-s.shutdownChan:
-			return results, errAnalysisStopping
-		default:
-		}
 		group := groups[typ]
 		start := time.Now()
 		var active bool
 		for _, i := range group {
+			if ruleReplayCanceled(stop, s.shutdownChan) {
+				return results, errAnalysisStopping
+			}
 			engine, err := rules.NewAuditReplay(&rules.Config{Rules: []*rules.Rule{selected[i]}}, writer)
 			if err != nil {
 				results[i].Error = err.Error()
@@ -147,6 +152,9 @@ func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-ch
 		}
 		_, scanErr := scanRuleAudit(dir, typ, stop, s.shutdownChan, func(record types.AuditRecord) error {
 			for _, i := range group {
+				if ruleReplayCanceled(stop, s.shutdownChan) {
+					return errAnalysisStopping
+				}
 				if results[i].Error != "" {
 					continue
 				}
@@ -162,6 +170,9 @@ func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-ch
 		for _, i := range group {
 			result := &results[i]
 			if result.Error == "" {
+				if scanErr == nil && ruleReplayCanceled(stop, s.shutdownChan) {
+					scanErr = errAnalysisStopping
+				}
 				finalErr := scanErr
 				if finalErr == nil {
 					var count int

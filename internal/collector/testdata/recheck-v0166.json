@@ -423,6 +423,7 @@
     "verification": "BenchmarkOrderedStreamEqualTime admits 4096 equal-time TCP records and checks 81 alerts at EOF. Three portable Apple M5 Max runs measured 84.5–91.5 ms before and 19.7–20.3 ms after skipping redundant sorts at the committed watermark. Focused scoped, capture-time, ordered and audit replay tests passed under the race detector."
   },
   "manualRuleReplayCancellation": {
+    "cancellationBoundaries": "A canceled replay now stops before audit lookup, between manual rule compilations and evaluations, and before finalization. TestManualRuleReplayStopsOnRequestOrShutdown verifies request cancellation and shutdown both return zero records and cancellation on an absent track. Focused WebUI race tests passed.",
     "concurrency": "Manual rule replay admits two concurrent requests. TestExecuteAllRulesReportsPartialFailure verifies HTTP 429 while both slots are occupied and normal per-rule results after release. Focused WebUI and MCP race tests passed.",
     "confinedInput": "TestRuleAuditRejectsLinkedPreferredTrack verifies zero records evaluated when the preferred compressed track is a symlink, even with a valid plain sibling. Focused replay and analysis completion tests passed under the race detector.",
     "mcpCancellation": "TestScanCancellationReachesBackend passed three race runs: canceling either MCP execute_detection_rules or execute_yara_scan cancels the backend HTTP request and returns a tool error.",

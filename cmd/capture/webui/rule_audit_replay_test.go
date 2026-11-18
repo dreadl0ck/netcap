@@ -119,6 +119,14 @@ func TestManualRuleReplayStopsOnRequestOrShutdown(t *testing.T) {
 		if count != 1 || !errors.Is(err, errAnalysisStopping) {
 			t.Fatalf("shutdown=%t: count=%d, err=%v", shutdown, count, err)
 		}
+		// An absent track normally succeeds without reading any records.
+		count, err = scanRuleAudit(dir, "UDP", request, s.shutdownChan, func(types.AuditRecord) error {
+			t.Fatal("canceled scan visited a record")
+			return nil
+		})
+		if count != 0 || !errors.Is(err, errAnalysisStopping) {
+			t.Fatalf("shutdown=%t: canceled scan of absent track: count=%d, err=%v", shutdown, count, err)
+		}
 		selected := []*rules.Rule{{Name: "get", Type: "HTTP", Expression: `Method == "GET"`, Enabled: true}}
 		if results, err := s.replayManualRules(dir, selected, request); len(results) != 0 || !errors.Is(err, errAnalysisStopping) {
 			t.Fatalf("shutdown=%t: canceled replay admitted: %v, %v", shutdown, results, err)
