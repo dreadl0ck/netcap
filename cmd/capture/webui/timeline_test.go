@@ -576,6 +576,20 @@ func TestTimelinePaginationCoversEveryRecordOnce(t *testing.T) {
 	}
 }
 
+func TestTimelinePageClampsCursorToChangedWindow(t *testing.T) {
+	track := &tlTypeIndex{Name: "DNS", Events: []tlEvent{{Time: 10}, {Time: 20, Ordinal: 1}, {Time: 30, Ordinal: 2}}}
+	q := timelineQuery{Start: 20, End: 20, Tracks: []*tlTypeIndex{track}, Limit: 10}
+	first, last := q.key(track, 0), q.key(track, 2)
+	q.After = &first
+	if hits := q.page(); len(hits) != 1 || hits[0].Index != 1 {
+		t.Fatalf("forward page: %v", hits)
+	}
+	q.After, q.Before = nil, &last
+	if hits := q.page(); len(hits) != 1 || hits[0].Index != 1 {
+		t.Fatalf("backward page: %v", hits)
+	}
+}
+
 func TestTimelineBackwardPaginationMirrorsForward(t *testing.T) {
 	dir := t.TempDir()
 

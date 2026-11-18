@@ -11,6 +11,24 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+func BenchmarkTimelinePageManyTracks(b *testing.B) {
+	const tracks, events = 128, 40
+	q := timelineQuery{Start: 1, End: tracks * events, Limit: 2000}
+	for i := range tracks {
+		track := &tlTypeIndex{Name: fmt.Sprint(i)}
+		for j := range events {
+			track.Events = append(track.Events, tlEvent{Time: int64(j*tracks + i + 1), Ordinal: int32(j)})
+		}
+		q.Tracks = append(q.Tracks, track)
+	}
+	for b.Loop() {
+		hits := q.page()
+		if len(hits) != q.Limit || hits[len(hits)-1].Track.Events[hits[len(hits)-1].Index].Time != int64(q.Limit) {
+			b.Fatal("unexpected page")
+		}
+	}
+}
+
 func benchmarkCertificatesFile(b *testing.B) string {
 	b.Helper()
 	path := filepath.Join(b.TempDir(), "TLSCertificate.ncap.gz")

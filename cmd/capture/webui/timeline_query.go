@@ -23,6 +23,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"math/bits"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -316,9 +317,10 @@ func (q *timelineQuery) forwardStart(t *tlTypeIndex, lo int, after *tlKey) int {
 		}
 	case 0:
 		hiT := t.upperBound(after.Time)
-		block := t.Events[pos:hiT]
-		skip := sort.Search(len(block), func(i int) bool { return block[i].Ordinal > after.Ordinal })
-		pos += skip
+		if pos < hiT {
+			block := t.Events[pos:hiT]
+			pos += sort.Search(len(block), func(i int) bool { return block[i].Ordinal > after.Ordinal })
+		}
 	}
 
 	return pos
@@ -343,9 +345,10 @@ func (q *timelineQuery) backwardEnd(t *tlTypeIndex, hi int, before *tlKey) int {
 		}
 	case 0:
 		loT := t.lowerBound(before.Time)
-		block := t.Events[loT:pos]
-		keep := sort.Search(len(block), func(i int) bool { return block[i].Ordinal >= before.Ordinal })
-		pos = loT + keep
+		if loT < pos {
+			block := t.Events[loT:pos]
+			pos = loT + sort.Search(len(block), func(i int) bool { return block[i].Ordinal >= before.Ordinal })
+		}
 	}
 
 	return pos
@@ -361,119 +364,80 @@ type timelineHit struct {
 // With Before set it walks backwards and returns the page preceding the cursor,
 // still in ascending order.
 func (q *timelineQuery) page() []timelineHit {
-	if q.Before != nil {
-		return q.pageBackward()
-	}
-
-	return q.pageForward()
-}
-
-func (q *timelineQuery) pageForward() []timelineHit {
 	type cursor struct {
 		track    *tlTypeIndex
 		pos      int
-		hi       int
+		bound    int
+		key      tlKey
 		selected *roaring.Bitmap
 	}
-
+	backward := q.Before != nil
 	cursors := make([]cursor, 0, len(q.Tracks))
-
 	for _, t := range q.Tracks {
+		if q.canceled() {
+			return nil
+		}
 		lo, hi := q.scanRange(t)
-		pos := q.forwardStart(t, lo, q.After)
 		selected := q.candidates(t)
-		pos = q.nextMatch(t, pos, hi, selected)
-
-		if pos < hi {
-			cursors = append(cursors, cursor{track: t, pos: pos, hi: hi, selected: selected})
+		var pos, bound int
+		if backward {
+			pos, bound = q.prevMatch(t, q.backwardEnd(t, hi, q.Before)-1, lo, selected), lo-1
+		} else {
+			pos, bound = q.nextMatch(t, q.forwardStart(t, lo, q.After), hi, selected), hi
+		}
+		if pos != bound {
+			cursors = append(cursors, cursor{t, pos, bound, q.key(t, pos), selected})
 		}
 	}
-
-	hits := make([]timelineHit, 0, q.Limit)
-
-	for len(hits) < q.Limit {
-		best := -1
-
-		for i := range cursors {
-			if best == -1 || q.key(cursors[i].track, cursors[i].pos).less(q.key(cursors[best].track, cursors[best].pos)) {
-				best = i
-			}
+	less := func(i, j int) bool {
+		if backward {
+			i, j = j, i
 		}
-
-		if best == -1 {
+		return cursors[i].key.less(cursors[j].key)
+	}
+	siftDown := func(i int) {
+		for child := 2*i + 1; child < len(cursors); child = 2*i + 1 {
+			if right := child + 1; right < len(cursors) && less(right, child) {
+				child = right
+			}
+			if !less(child, i) {
+				break
+			}
+			cursors[i], cursors[child] = cursors[child], cursors[i]
+			i = child
+		}
+	}
+	for i := len(cursors)/2 - 1; i >= 0; i-- {
+		siftDown(i)
+	}
+	hits := make([]timelineHit, 0, q.Limit)
+	for len(hits) < q.Limit && len(cursors) > 0 {
+		if q.canceled() {
+			return nil
+		}
+		c := cursors[0]
+		hits = append(hits, timelineHit{Track: c.track, Index: c.pos})
+		if len(hits) == q.Limit {
 			break
 		}
-
-		hits = append(hits, timelineHit{Track: cursors[best].track, Index: cursors[best].pos})
-
-		pos := q.nextMatch(cursors[best].track, cursors[best].pos+1, cursors[best].hi, cursors[best].selected)
-
-		if pos >= cursors[best].hi {
-			cursors = append(cursors[:best], cursors[best+1:]...)
-
-			continue
+		if backward {
+			c.pos = q.prevMatch(c.track, c.pos-1, c.bound+1, c.selected)
+		} else {
+			c.pos = q.nextMatch(c.track, c.pos+1, c.bound, c.selected)
 		}
-
-		cursors[best].pos = pos
-	}
-
-	return hits
-}
-
-func (q *timelineQuery) pageBackward() []timelineHit {
-	type cursor struct {
-		track    *tlTypeIndex
-		pos      int
-		lo       int
-		selected *roaring.Bitmap
-	}
-
-	cursors := make([]cursor, 0, len(q.Tracks))
-
-	for _, t := range q.Tracks {
-		lo, hi := q.scanRange(t)
-		pos := q.backwardEnd(t, hi, q.Before) - 1
-		selected := q.candidates(t)
-		pos = q.prevMatch(t, pos, lo, selected)
-
-		if pos >= lo {
-			cursors = append(cursors, cursor{track: t, pos: pos, lo: lo, selected: selected})
+		if c.pos == c.bound {
+			last := len(cursors) - 1
+			cursors[0] = cursors[last]
+			cursors = cursors[:last]
+		} else {
+			c.key = q.key(c.track, c.pos)
+			cursors[0] = c
 		}
+		siftDown(0)
 	}
-
-	hits := make([]timelineHit, 0, q.Limit)
-
-	for len(hits) < q.Limit {
-		best := -1
-
-		for i := range cursors {
-			if best == -1 || q.key(cursors[best].track, cursors[best].pos).less(q.key(cursors[i].track, cursors[i].pos)) {
-				best = i
-			}
-		}
-
-		if best == -1 {
-			break
-		}
-
-		hits = append(hits, timelineHit{Track: cursors[best].track, Index: cursors[best].pos})
-
-		pos := q.prevMatch(cursors[best].track, cursors[best].pos-1, cursors[best].lo, cursors[best].selected)
-
-		if pos < cursors[best].lo {
-			cursors = append(cursors[:best], cursors[best+1:]...)
-
-			continue
-		}
-
-		cursors[best].pos = pos
+	if backward {
+		slices.Reverse(hits)
 	}
-
-	// Collected newest first; callers expect ascending order.
-	for i, j := 0, len(hits)-1; i < j; i, j = i+1, j-1 {
-		hits[i], hits[j] = hits[j], hits[i]
-	}
-
 	return hits
 }
 
