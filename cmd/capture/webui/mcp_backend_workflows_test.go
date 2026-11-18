@@ -195,6 +195,41 @@ func TestMCPSourceGrammarAndTLSUseBoundSnapshots(t *testing.T) {
 	}
 }
 
+func TestMCPLiveCaptureRejectsOfflinePreparation(t *testing.T) {
+	interfaces, err := net.Interfaces()
+	if err != nil || len(interfaces) == 0 {
+		t.Skip("no interface discovery available")
+	}
+	nic := interfaces[0].Name
+	t.Setenv("NC_LIVE_INTERFACES", nic)
+	s := NewServer("127.0.0.1:0", t.TempDir(), nil, "", false, false, false, nil, nil, false)
+	s.liveRunner = func(context.Context, []string, string) (func() error, error) {
+		t.Fatal("live helper started while offline preparation was active")
+		return nil, nil
+	}
+	s.rulesConfigMutex.Lock()
+	release := sync.OnceFunc(s.rulesConfigMutex.Unlock)
+	done := make(chan error, 1)
+	go func() { done <- s.enqueueAnalysis(&AnalysisJob{InputFile: "offline"}, false) }()
+	defer func() {
+		release()
+		if err := <-done; err != nil {
+			t.Errorf("offline admission: %v", err)
+		}
+		s.stopProcessingAdmission()
+	}()
+	processingAwait(t, s.IsProcessing)
+	if len(s.jobQueue) != 0 {
+		t.Fatal("fixture queued the offline job before the rules lock was released")
+	}
+	w := httptest.NewRecorder()
+	body := fmt.Sprintf(`{"interface":%q,"durationSeconds":30,"retentionMB":2}`, nic)
+	s.handleOwnedLiveCapture(w, httptest.NewRequest(http.MethodPost, "/api/live-capture", strings.NewReader(body)))
+	if w.Code != http.StatusConflict {
+		t.Fatalf("live admission during offline preparation: %d %s", w.Code, w.Body)
+	}
+}
+
 func TestMCPOwnedLiveCaptureFakeRunnerLifecycle(t *testing.T) {
 	interfaces, err := net.Interfaces()
 	if err != nil || len(interfaces) == 0 {
