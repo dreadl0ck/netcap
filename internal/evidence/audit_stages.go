@@ -78,7 +78,7 @@ func (r auditSealReader) Read(p []byte) (int, error) {
 	return r.file.Read(p)
 }
 
-func auditFileSeal(ctx context.Context, root *os.Root, name string, expected *SealedAuditFile) (result SealedAuditFile, resultErr error) {
+func auditFileSeal(ctx context.Context, root *os.Root, name string, expected *SealedAuditFile, keep **os.File) (result SealedAuditFile, resultErr error) {
 	if name == "" || strings.ContainsAny(name, "/\\") || name == "." || name == ".." {
 		return result, fmt.Errorf("invalid audit file name")
 	}
@@ -86,7 +86,11 @@ func auditFileSeal(ctx context.Context, root *os.Root, name string, expected *Se
 	if err != nil {
 		return result, err
 	}
-	defer func() { resultErr = errors.Join(resultErr, file.Close()) }()
+	defer func() {
+		if keep == nil || *keep != file {
+			resultErr = errors.Join(resultErr, file.Close())
+		}
+	}()
 	if expected != nil && before.Size() != expected.Size {
 		return result, fmt.Errorf("sealed audit output changed: size mismatch")
 	}
@@ -109,7 +113,17 @@ func auditFileSeal(ctx context.Context, root *os.Root, name string, expected *Se
 	if n != before.Size() || after.Size() != before.Size() || !after.ModTime().Equal(before.ModTime()) {
 		return result, fmt.Errorf("audit output changed during sealing")
 	}
-	return SealedAuditFile{Name: name, Size: n, SHA256: hex.EncodeToString(hash.Sum(nil))}, nil
+	result = SealedAuditFile{Name: name, Size: n, SHA256: hex.EncodeToString(hash.Sum(nil))}
+	if expected != nil && result != *expected {
+		return result, fmt.Errorf("sealed audit output changed")
+	}
+	if keep != nil {
+		if _, err := file.Seek(0, io.SeekStart); err != nil {
+			return result, err
+		}
+		*keep = file
+	}
+	return result, nil
 }
 
 // SealAuditStages publishes immutable per-type writer results after every producer stops.
@@ -169,7 +183,7 @@ func (c *Capture) SealAuditStages(stages []AuditStage) (resultErr error) {
 				return fmt.Errorf("invalid or duplicate audit stage file %q for %s", stage.Files[i].Name, stage.Type)
 			}
 			seen[stage.Files[i].Name] = true
-			sealed, err := auditFileSeal(context.Background(), root, stage.Files[i].Name, nil)
+			sealed, err := auditFileSeal(context.Background(), root, stage.Files[i].Name, nil, nil)
 			if err != nil {
 				return err
 			}
@@ -205,6 +219,22 @@ func ReadAuditStage(directory, runID, recordType, generation string) (stage Audi
 }
 
 func ReadAuditStageContext(ctx context.Context, directory, runID, recordType, generation string) (stage AuditStage, snapshot AuditStages, resultErr error) {
+	return readAuditStageContext(ctx, directory, runID, recordType, generation, nil)
+}
+
+// OpenAuditStageContext verifies a stage and returns its rewound protobuf file.
+// The caller closes the file. A sealed empty stage returns no file.
+func OpenAuditStageContext(ctx context.Context, directory, runID, recordType, generation string) (AuditStage, AuditStages, *os.File, error) {
+	var file *os.File
+	stage, snapshot, err := readAuditStageContext(ctx, directory, runID, recordType, generation, &file)
+	if err != nil && file != nil {
+		err = errors.Join(err, file.Close())
+		file = nil
+	}
+	return stage, snapshot, file, err
+}
+
+func readAuditStageContext(ctx context.Context, directory, runID, recordType, generation string, output **os.File) (stage AuditStage, snapshot AuditStages, resultErr error) {
 	if err := ctx.Err(); err != nil {
 		return stage, snapshot, err
 	}
@@ -311,13 +341,19 @@ func ReadAuditStageContext(ctx context.Context, directory, runID, recordType, ge
 					return stage, snapshot, fmt.Errorf("invalid or duplicate sealed file")
 				}
 				seenFiles[sealed.Name] = true
-				actual, err := auditFileSeal(ctx, root, sealed.Name, &sealed)
-				if err != nil {
+				var keep **os.File
+				if output != nil && candidate.Records > 0 && (strings.HasSuffix(sealed.Name, ".ncap") || strings.HasSuffix(sealed.Name, ".ncap.gz")) {
+					if *output != nil {
+						return stage, snapshot, fmt.Errorf("sealed stage has ambiguous protobuf outputs")
+					}
+					keep = output
+				}
+				if _, err := auditFileSeal(ctx, root, sealed.Name, &sealed, keep); err != nil {
 					return stage, snapshot, err
 				}
-				if actual != sealed {
-					return stage, snapshot, fmt.Errorf("sealed audit output changed")
-				}
+			}
+			if output != nil && candidate.Records > 0 && *output == nil {
+				return stage, snapshot, fmt.Errorf("sealed stage has no queryable protobuf output")
 			}
 			return candidate, snapshot, nil
 		}

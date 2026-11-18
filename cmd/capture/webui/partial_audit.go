@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -18,6 +20,7 @@ type sealedAuditQuery struct {
 	Stage                              evidence.AuditStage
 	RunID, Generation, Directory, File string
 	QueryGeneration                    string
+	verifiedFile                       *os.File
 }
 type sealedAuditQueryKey struct{}
 
@@ -84,29 +87,22 @@ func preparePartialAudit(r *http.Request, selection captureSelection) (*sealedAu
 			return nil, selectionError(409, "Partial query or projection changed; restart at offset zero")
 		}
 	}
-	stage, snapshot, err := evidence.ReadAuditStageContext(r.Context(), selection.OutputDir, runID, parts[0], q.Get("stageGeneration"))
+	stage, snapshot, file, err := evidence.OpenAuditStageContext(r.Context(), selection.OutputDir, runID, parts[0], q.Get("stageGeneration"))
 	if err != nil {
 		return nil, selectionError(422, fmt.Sprintf("Sealed audit stage unavailable: %v", err))
 	}
 	generation := partialQueryGeneration(snapshot.RunID, snapshot.Generation, parts[0], q)
 	if expected := q.Get("queryGeneration"); expected != "" && expected != generation {
+		if file != nil {
+			file.Close()
+		}
 		return nil, selectionError(409, "Partial query or projection changed; restart at offset zero")
 	}
 	fileName := ""
-	if stage.Records > 0 {
-		for _, file := range stage.Files {
-			if strings.HasSuffix(file.Name, ".ncap") || strings.HasSuffix(file.Name, ".ncap.gz") {
-				if fileName != "" {
-					return nil, selectionError(422, "Sealed stage has ambiguous protobuf outputs")
-				}
-				fileName = file.Name
-			}
-		}
-		if fileName == "" {
-			return nil, selectionError(422, "Sealed stage has no queryable protobuf output")
-		}
+	if file != nil {
+		fileName = filepath.Base(file.Name())
 	}
-	return &sealedAuditQuery{Stage: stage, RunID: snapshot.RunID, Generation: snapshot.Generation, QueryGeneration: generation, Directory: selection.OutputDir, File: fileName}, nil
+	return &sealedAuditQuery{Stage: stage, RunID: snapshot.RunID, Generation: snapshot.Generation, QueryGeneration: generation, Directory: selection.OutputDir, File: fileName, verifiedFile: file}, nil
 }
 
 func partialQueryGeneration(run, stage, auditType string, q url.Values) string {
@@ -123,12 +119,18 @@ func partialAuditContext(r *http.Request) *sealedAuditQuery {
 }
 
 func (q *sealedAuditQuery) openReader() (*AuditRecordReader, error) {
+	f := q.verifiedFile
+	if f == nil {
+		return nil, fmt.Errorf("sealed audit output unavailable")
+	}
+	q.verifiedFile = nil
 	for _, sealed := range q.Stage.Files {
 		if sealed.Name != q.File {
 			continue
 		}
-		f, info, err := artifactio.Open(q.Directory, q.File)
+		info, err := f.Stat()
 		if err != nil {
+			f.Close()
 			return nil, err
 		}
 		if info.Size() != sealed.Size {
@@ -137,7 +139,15 @@ func (q *sealedAuditQuery) openReader() (*AuditRecordReader, error) {
 		}
 		return auditRecordReaderFromFile(f, strings.HasSuffix(q.File, ".gz"))
 	}
+	f.Close()
 	return nil, fmt.Errorf("sealed audit output unavailable")
+}
+
+func (q *sealedAuditQuery) close() {
+	if q.verifiedFile != nil {
+		q.verifiedFile.Close()
+		q.verifiedFile = nil
+	}
 }
 
 func withPartialAudit(r *http.Request, query *sealedAuditQuery) *http.Request {

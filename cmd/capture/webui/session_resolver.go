@@ -57,6 +57,7 @@ func (s *Server) captureSelectionMiddleware(next http.Handler) http.Handler {
 					return
 				}
 				if partial != nil {
+					defer partial.close()
 					r = withPartialAudit(r, partial)
 					w.Header().Set("X-Netcap-Run-ID", partial.RunID)
 					w.Header().Set("X-Netcap-Stage-Generation", partial.Generation)

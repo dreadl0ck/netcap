@@ -64,6 +64,7 @@ func TestPartialAuditRejectsMislabeledSealedFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer sealed.close()
 	w := httptest.NewRecorder()
 	HandleAuditStream(w, withPartialAudit(r, sealed), file, "Connection")
 	if body := w.Body.String(); !strings.Contains(body, "Audit header type does not match the sealed stage") || strings.Contains(body, "event: record\n") || strings.Contains(body, "event: complete\n") {
@@ -71,7 +72,7 @@ func TestPartialAuditRejectsMislabeledSealedFile(t *testing.T) {
 	}
 }
 
-func TestPartialAuditReaderRejectsReplacementAfterAdmission(t *testing.T) {
+func TestPartialAuditReaderRetainsVerifiedDescriptor(t *testing.T) {
 	for _, replacement := range []string{"link", "larger"} {
 		t.Run(replacement, func(t *testing.T) {
 			_, run, _, file := partialAuditFixture(t, false)
@@ -80,11 +81,13 @@ func TestPartialAuditReaderRejectsReplacementAfterAdmission(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer sealed.close()
 			if replacement == "link" {
 				if err := os.Rename(file, file+".other"); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.Symlink(filepath.Base(file)+".other", file); err != nil {
+				other := writeTimelineAuditFile(t, t.TempDir(), "Connection", types.Type_NC_Connection, []proto.Message{&types.Connection{SrcIP: "192.0.2.99"}})
+				if err := os.Symlink(other, file); err != nil {
 					t.Fatal(err)
 				}
 			} else if err := os.Truncate(file, sealed.Stage.Files[0].Size+1); err != nil {
@@ -92,7 +95,12 @@ func TestPartialAuditReaderRejectsReplacementAfterAdmission(t *testing.T) {
 			}
 			w := httptest.NewRecorder()
 			HandleAuditStream(w, withPartialAudit(r, sealed), file, "Connection")
-			if body := w.Body.String(); !strings.Contains(body, "event: error\n") || strings.Contains(body, "event: record\n") || strings.Contains(body, "event: complete\n") {
+			body := w.Body.String()
+			if replacement == "link" {
+				if strings.Count(body, "event: record\n") != 2 || !strings.Contains(body, "Sealed audit output changed during query") || strings.Contains(body, "event: complete\n") || strings.Contains(body, "192.0.2.99") {
+					t.Fatalf("stream did not use the verified descriptor: %s", body)
+				}
+			} else if !strings.Contains(body, "event: error\n") || strings.Contains(body, "event: record\n") || strings.Contains(body, "event: complete\n") {
 				t.Fatalf("replacement admitted into audit stream: %s", body)
 			}
 		})
