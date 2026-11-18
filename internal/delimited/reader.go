@@ -17,6 +17,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -30,6 +31,9 @@ type Reader struct {
 	buffer    *bufio.Reader
 	maxRecord uint64
 }
+
+// ErrRecordLimit indicates a frame exceeded a configured read limit.
+var ErrRecordLimit = errors.New("record size exceeds read limit")
 
 // NewReaderWithLimit rejects oversized frames before allocating their payload.
 func NewReaderWithLimit(r io.Reader, maxRecord uint64) *Reader {
@@ -61,7 +65,7 @@ func (r *Reader) next(limit uint64) ([]byte, error) {
 		return nil, err
 	}
 	if limit > 0 && size > limit {
-		return nil, fmt.Errorf("record size %d exceeds limit %d", size, limit)
+		return nil, fmt.Errorf("record size %d exceeds limit %d: %w", size, limit, ErrRecordLimit)
 	}
 	if size > math.MaxInt {
 		return nil, fmt.Errorf("record size %d exceeds reader bounds", size)

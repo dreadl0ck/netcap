@@ -80,6 +80,24 @@ func TestExtractedFileInventoryPressure(t *testing.T) {
 	}
 }
 
+func TestExtractedFileInventoryRejectsLinkedPreferredAudit(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, "files"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	writeTimelineAuditFilePlain(t, dir, "File", types.Type_NC_File, nil)
+	other := writeTimelineAuditFile(t, t.TempDir(), "File", types.Type_NC_File, nil)
+	if err := os.Symlink(other, filepath.Join(dir, "File.ncap.gz")); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	s := &Server{outDir: dir}
+	w := httptest.NewRecorder()
+	s.handleExtractedFiles(w, httptest.NewRequest("GET", "/api/extracted-files", nil))
+	if w.Code != 403 {
+		t.Fatalf("linked preferred audit: status=%d, body=%s", w.Code, w.Body.String())
+	}
+}
+
 func TestFileOccurrenceCompletenessAndActualCap(t *testing.T) {
 	for _, count := range []int{2, 1024, 1025} {
 		t.Run(fmt.Sprint(count), func(t *testing.T) {

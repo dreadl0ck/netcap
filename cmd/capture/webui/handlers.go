@@ -44,8 +44,8 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/artifactio"
+	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/internal/dpi"
-	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -2475,16 +2475,23 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		MagikaIsText      bool
 	}
 	fileInfoMap := make(map[string]fileAuditInfo) // filename -> {name, hash, protocol}
-	fileAuditPath := filepath.Join(outDir, "File.ncap.gz")
-	if _, err := os.Stat(fileAuditPath); os.IsNotExist(err) {
-		fileAuditPath = filepath.Join(outDir, "File.ncap")
+	compressed := true
+	audit, _, auditErr := artifactio.Open(outDir, "File.ncap.gz")
+	if errors.Is(auditErr, os.ErrNotExist) {
+		compressed = false
+		audit, _, auditErr = artifactio.Open(outDir, "File.ncap")
 	}
-	if _, err := os.Stat(fileAuditPath); err == nil {
+	if auditErr != nil && !errors.Is(auditErr, os.ErrNotExist) {
+		artifactAccessError(w, auditErr)
+		return
+	}
+	if auditErr == nil {
 		// File audit exists, read it to get hashes and protocols
-		reader, err := netio.Open(fileAuditPath, defaults.BufferSize)
+		reader, err := auditRecordReaderFromFile(audit, compressed)
 		if err == nil {
 			defer reader.Close()
-			header, headerErr := reader.ReadHeader()
+			var header types.Header
+			headerErr := reader.delimitedReader.NextProtoWithLimit(&header, 64<<10)
 			if headerErr != nil || header.Type != types.Type_NC_File {
 				RespondJSON(w, 500, map[string]any{"error": "Invalid File audit header"})
 				return
@@ -2496,7 +2503,11 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				var file types.File
-				err := reader.Next(&file)
+				err := reader.delimitedReader.NextProtoWithLimit(&file, uint64(max(1, remaining-1024)))
+				if errors.Is(err, delimited.ErrRecordLimit) {
+					http.Error(w, "Artifact metadata budget exceeded", http.StatusRequestEntityTooLarge)
+					return
+				}
 				if err != nil {
 					if err != io.EOF {
 						log.Printf("[WebUI] Error reading File audit record: %v", err)
