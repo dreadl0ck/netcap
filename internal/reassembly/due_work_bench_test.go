@@ -122,6 +122,9 @@ func BenchmarkOverlapBeforeQueuedPages(b *testing.B) {
 				}
 			}
 			half := halfconnection{first: &pages[0], last: &pages[size-1], pages: size}
+			for i := range pages {
+				half.queueDeadline(&pages[i])
+			}
 			a.cacheLP.bytes, a.cacheLP.seq = payload, 1024
 			b.ReportAllocs()
 			for b.Loop() {

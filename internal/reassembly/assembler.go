@@ -457,6 +457,9 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 	)
 
 	a.dump("before checkOverlap", half)
+	if !queue && half.endsBeforeQueue(end) {
+		return
+	}
 
 	//          [s6           :           e6]
 	//   [s1:e1][s2:e2] -- [s3:e3] -- [s4:e4][s5:e5]
@@ -534,6 +537,7 @@ overlaps:
 			}
 			cur.bytes = cur.bytes[-end.difference(cur.seq):]
 			cur.seq = cur.seq.add(-end.difference(cur.seq))
+			half.noteQueuedSequence(cur.seq)
 			next = cur
 		case diffEnd > 0 && diffStart < 0:
 			if Debug {

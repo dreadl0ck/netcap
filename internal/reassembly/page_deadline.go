@@ -39,6 +39,11 @@ func (h *halfconnection) queueDeadline(p *page) {
 	if h.pageDeadlines == nil {
 		h.pageDeadlines = new(pageDeadlineHeap)
 	}
+	if len(*h.pageDeadlines) == 0 {
+		h.queuedMin, h.queuedMax = uint32(p.seq), uint32(p.seq)
+	} else {
+		h.noteQueuedSequence(p.seq)
+	}
 	heap.Push(h.pageDeadlines, p)
 }
 func (h *halfconnection) pendingDeadline() (time.Time, bool) {

@@ -53,6 +53,29 @@ func TestQueuedPageLeavesIndexOnDeliveryAndReuse(t *testing.T) {
 	pc.replace(reused)
 }
 
+func TestDisjointQueueBoundsPreserveWraparound(t *testing.T) {
+	const base = uint32Max/4 - 8
+	var half halfconnection
+	first := &page{seq: base + 1}
+	half.first = first
+	half.queueDeadline(first)
+	if !half.endsBeforeQueue(base) || half.endsBeforeQueue(first.seq) {
+		t.Fatal("short gap or touching boundary misclassified")
+	}
+	wrapped := &page{seq: uint32Max - 16}
+	half.queueDeadline(wrapped)
+	if half.endsBeforeQueue(base) {
+		t.Fatal("wraparound comparison incorrectly bypassed")
+	}
+	first.unqueueDeadline()
+	wrapped.unqueueDeadline()
+	half.first = &page{seq: base + 2}
+	half.queueDeadline(half.first)
+	if !half.endsBeforeQueue(base) {
+		t.Fatal("new queue retained drained bounds")
+	}
+}
+
 func BenchmarkQueuedDeadlineRefresh(b *testing.B) {
 	for _, n := range []int{1, 1024, 65536} {
 		b.Run(strconv.Itoa(n), func(b *testing.B) {

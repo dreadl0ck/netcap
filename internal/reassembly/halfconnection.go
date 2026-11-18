@@ -23,6 +23,8 @@ type halfconnection struct {
 	saved         *page    // Doubly-linked list of in-order pages (seq < nextSeq) already given to Stream who told us to keep
 	pageDeadlines *pageDeadlineHeap
 
+	queuedMin, queuedMax uint32
+
 	overlapBytes int
 	pages        int // Number of pages used (both in first/last and saved)
 
@@ -40,6 +42,19 @@ type halfconnection struct {
 	totalBytes int
 
 	dir TCPFlowDirection
+}
+
+func (h *halfconnection) noteQueuedSequence(seq Sequence) {
+	n := uint32(seq)
+	h.queuedMin = min(h.queuedMin, n)
+	h.queuedMax = max(h.queuedMax, n)
+}
+
+// The bounds can be stale after removals, so they only prove disjointness.
+func (h *halfconnection) endsBeforeQueue(end Sequence) bool {
+	return h.first != nil && end < Sequence(h.queuedMin) &&
+		Sequence(h.queuedMax)-end <= uint32Max/2 &&
+		(end >= uint32Max/4 || h.queuedMax <= uint32Max-uint32Max/4)
 }
 
 func (half *halfconnection) String() string {
