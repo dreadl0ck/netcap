@@ -150,6 +150,29 @@ func TestHTTPSourcePreflightScansBodiesUnderFiniteBudget(t *testing.T) {
 	t.Logf("scanned %d body bytes across two requests; peak TCP state %d bytes", 2*len(body), health.PeakBytes)
 }
 
+func TestHTTPSourcePreflightStopsAtOpaqueBodyLimit(t *testing.T) {
+	oldDecoder, oldFile := decoderconfig.Instance, file.GetGlobalConfig()
+	t.Cleanup(func() {
+		decoderconfig.Instance = oldDecoder
+		file.SetGlobalConfig(oldFile)
+	})
+	decoderconfig.Instance = &decoderconfig.Config{FileStorage: "files"}
+	cfg := file.GetDefaultConfig()
+	cfg.FileExtraction.SizeLimits.MaxFileSize = 128
+	file.SetGlobalConfig(cfg)
+	for _, size := range []int{128, 129} {
+		wire := fmt.Sprintf("PUT /fixture HTTP/1.1\r\nHost: fixture.test\r\nContent-Length: %d\r\n\r\n%sPOST /encoded HTTP/1.1\r\nHost: fixture.test\r\nContent-Encoding: br\r\nContent-Length: 4\r\n\r\ndata", size, strings.Repeat("x", size))
+		c := &core.ConversationInfo{ClientSource: core.SliceSource{wireFragment(0, []byte(wire), 1)}}
+		var want error
+		if size == 128 {
+			want = errHTTPSourceCompatibility
+		}
+		if err := preflightSourceHTTP(c); err != want {
+			t.Fatalf("body size %d: preflight returned %v, want %v", size, err, want)
+		}
+	}
+}
+
 func TestHTTPSourceBodylessExchangeSkipsScratch(t *testing.T) {
 	data := core.DataFragments{
 		wireFragment(0, []byte("GET /empty?label=fixture HTTP/1.1\r\nHost: fixture.test\r\n\r\n"), 1),

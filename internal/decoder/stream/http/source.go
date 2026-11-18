@@ -126,11 +126,16 @@ func (h *httpReader) parseBackedSmallForm(req *http.Request, spool *file.BodySpo
 	return parseErr
 }
 
-func readCappedSourceRequestBody(c *core.ConversationInfo, body io.Reader) ([]byte, func(), error) {
+func sourceRequestBodyLimit() int64 {
 	limit := file.GetMaxFileSize()
 	if limit <= 0 || limit > 100<<20 {
-		limit = 100 << 20
+		return 100 << 20
 	}
+	return limit
+}
+
+func readCappedSourceRequestBody(c *core.ConversationInfo, body io.Reader) ([]byte, func(), error) {
+	limit := sourceRequestBodyLimit()
 	bounded := &io.LimitedReader{R: body, N: limit + 1}
 	sample, release, err := readSourceRequestBody(c, bounded)
 	if bounded.N == 0 {
@@ -273,14 +278,22 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 						scratch = make([]byte, scratchSize)
 					}
 					var body io.Reader = request.Body
-					var formLimit *io.LimitedReader
+					var bound *io.LimitedReader
+					cfg := decoderconfig.Instance
 					if form == "application/x-www-form-urlencoded" {
-						formLimit = &io.LimitedReader{R: body, N: maxJSONFormBytes + 1}
-						body = formLimit
+						bound = &io.LimitedReader{R: body, N: maxJSONFormBytes + 1}
+					} else if cfg != nil && cfg.FileStorage != "" && !cfg.IncludePayloads && request.Method != methodPOST && form == "" && request.Header.Get(headerContentEncoding) != "gzip" {
+						bound = &io.LimitedReader{R: body, N: sourceRequestBodyLimit() + 1}
+					}
+					if bound != nil {
+						body = bound
 					}
 					_, err := scanSourceBody(body, scratch, nil)
-					if formLimit != nil && formLimit.N == 0 {
-						return errHTTPSourceCompatibility
+					if bound != nil && bound.N == 0 {
+						if form == "application/x-www-form-urlencoded" {
+							return errHTTPSourceCompatibility
+						}
+						return nil // The decoder stops this run at the same body limit.
 					}
 					if err != nil {
 						if c.FragmentError != nil {
