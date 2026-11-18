@@ -344,6 +344,9 @@
   "manualYaraInventoryBound": {
     "verification": "Manual YARA scans cap directory enumeration at the remaining inventory allowance plus one entry, across the entire tree. TestYaraArtifactWalkBoundsNestedInventory verifies early rejection of an over-budget nested directory and lexically ordered traversal at the exact budget. Focused WebUI artifact race tests passed."
   },
+  "captureContractPackageCoverage": {
+    "verification": "capture-contracts.yml now triggers on artifactio, delimited and rules changes and includes all three packages in its race and vet steps. All three package suites passed locally with the workflow build tags; vet and actionlint v1.7.7 also passed."
+  },
   "networkAlertCapacityFlush": {
     "verification": "Capacity flush selects one oldest aggregate without allocating and sorting the full key set. Five focused race runs verified timestamp ordering, equal-time key ordering, conservation of all 20 matches across 18 capacity flushes, and local stale-probe qualification controls."
   },

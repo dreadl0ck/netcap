@@ -11,6 +11,9 @@ on:
       - 'scripts/check-mcp-stdio.py'
       - 'defaults/**/*.go'
       - 'internal/aggregate/**/*.go'
+      - 'internal/artifactio/**/*.go'
+      - 'internal/delimited/**/*.go'
+      - 'internal/rules/**'
       - 'internal/evidence/**/*.go'
       - 'internal/packetview/**/*.go'
       - 'internal/packetmeta/**/*.go'
@@ -34,6 +37,9 @@ on:
       - 'scripts/check-mcp-stdio.py'
       - 'defaults/**/*.go'
       - 'internal/aggregate/**/*.go'
+      - 'internal/artifactio/**/*.go'
+      - 'internal/delimited/**/*.go'
+      - 'internal/rules/**'
       - 'internal/evidence/**/*.go'
       - 'internal/packetview/**/*.go'
       - 'internal/packetmeta/**/*.go'
@@ -99,6 +105,7 @@ jobs:
         run: >-
           go test -race -tags nodpi,noyara,nomagika
           ./internal/aggregate ./internal/reassembly ./internal/decoder/core
+          ./internal/artifactio ./internal/delimited ./internal/rules
           ./internal/evidence ./internal/packetview ./internal/packetmeta
           ./internal/webtech ./internal/netio ./internal/networkdetect
           ./internal/decoder/stream/file ./internal/decoder/stream/http
@@ -113,6 +120,7 @@ jobs:
         run: >-
           go vet -tags nodpi,noyara,nomagika
           ./internal/aggregate ./internal/reassembly ./internal/decoder/core
+          ./internal/artifactio ./internal/delimited ./internal/rules
           ./internal/evidence ./internal/packetview ./internal/packetmeta
           ./internal/webtech ./internal/netio ./internal/networkdetect
           ./internal/decoder/stream/file ./internal/decoder/stream/http
