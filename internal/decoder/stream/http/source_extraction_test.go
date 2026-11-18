@@ -222,6 +222,7 @@ func TestHTTPSourceOversizedPostPreservesOnlyAllowedPrefix(t *testing.T) {
 	for _, tc := range []struct{ name, media, body string }{
 		{"opaque", "application/octet-stream", strings.Repeat("x", limit) + "y"},
 		{"json", "application/json", `{"label":"fixture"}` + strings.Repeat(" ", limit)},
+		{"urlencoded", "application/x-www-form-urlencoded", "label=fixture&padding=" + strings.Repeat("x", limit)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			wire := fmt.Sprintf("POST /fixture.bin HTTP/1.1\r\nHost: fixture.test\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n%sPOST /encoded HTTP/1.1\r\nHost: fixture.test\r\nContent-Encoding: br\r\nContent-Length: 4\r\n\r\ndata", tc.media, len(tc.body), tc.body)

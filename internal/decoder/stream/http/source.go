@@ -306,7 +306,8 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 					var body io.Reader = request.Body
 					var bound *io.LimitedReader
 					mode := sourceRequestMode(decoderconfig.Instance, request, form)
-					if form == "application/x-www-form-urlencoded" {
+					formFallback := form == "application/x-www-form-urlencoded" && (mode != requestSpooled || sourceRequestBodyLimit() >= maxJSONFormBytes)
+					if formFallback {
 						bound = &io.LimitedReader{R: body, N: maxJSONFormBytes + 1}
 					} else if mode == requestSpooled || mode == requestCappedSample {
 						bound = &io.LimitedReader{R: body, N: sourceRequestBodyLimit() + 1}
@@ -316,7 +317,7 @@ func preflightSourceHTTP(c *core.ConversationInfo) error {
 					}
 					_, err := scanSourceBody(body, scratch, nil)
 					if bound != nil && bound.N == 0 {
-						if form == "application/x-www-form-urlencoded" {
+						if formFallback {
 							return errHTTPSourceCompatibility
 						}
 						return nil // The decoder stops this run at the same body limit.
