@@ -37,8 +37,9 @@ async def replay(binary, capture, workers, compare_http):
             args = {"session_id": uploaded["session_id"]}
             if not (await call("wait_for_session", args | {"timeout_seconds": 180}))["completed"]:
                 raise ValueError("fixture did not finish")
-            capture_evidence = await call("get_capture_evidence", args | {"fields": "config,status"})
-            if capture_evidence["config"]["workers"] != workers or capture_evidence["status"] not in {"done", "complete"}:
+            capture_evidence = await call("get_capture_evidence", args | {"fields": "config,status,queueDrops"})
+            if (capture_evidence["config"]["workers"] != workers or capture_evidence["status"] not in {"done", "complete"}
+                    or capture_evidence["queueDrops"] != 0):
                 raise ValueError(f"unexpected capture evidence for {workers} workers: {capture_evidence}")
             http, http_total = [], None
             for _ in range(128 if compare_http else 0):
@@ -55,7 +56,7 @@ async def replay(binary, capture, workers, compare_http):
                     raise ValueError("incomplete HTTP audit pagination")
             if compare_http and (not http or len(http) != http_total):
                 raise ValueError("missing HTTP audit or page budget exhausted")
-            alerts, generation = [], None
+            alerts, generation, alert_total = [], None, None
             for _ in range(128):
                 options = args | {"offset": len(alerts), "limit": 200}
                 if generation:
@@ -64,6 +65,9 @@ async def replay(binary, capture, workers, compare_http):
                 if not page["generation"] or (generation and generation != page["generation"]):
                     raise ValueError("alert generation changed during replay")
                 generation = page["generation"]
+                if alert_total is not None and alert_total != page["totalCount"]:
+                    raise ValueError("alert total changed during replay")
+                alert_total = page["totalCount"]
                 alerts.extend(page["alerts"])
                 if not page["has_more"]:
                     if not alerts or len(alerts) != page["totalCount"]:
@@ -79,6 +83,9 @@ async def replay(binary, capture, workers, compare_http):
 
 async def check(binary, capture, compare_http=True):
     baseline_http, baseline = await replay(binary, capture, 1, compare_http)
+    # The synthetic oracle detects identical losses in all four runs.
+    if compare_http and (len(baseline_http) != 300 or baseline.total() != 91):
+        raise ValueError(f"synthetic fixture expected 300 HTTP rows and 91 alerts; got {len(baseline_http)} and {baseline.total()}")
     print(json.dumps({"run": 1, "workers": 1, "alerts": baseline.total(), "http_rows": len(baseline_http) if compare_http else None}), flush=True)
     differs = False
     for run, workers in enumerate((4, 1, 4), 2):
