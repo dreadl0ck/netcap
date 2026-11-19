@@ -388,6 +388,17 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout, 
         started_early = [i for i, row in enumerate(rows[1:], 1) if row[5] < large_ready]
         if early != expected or started_early != expected:
             raise ValueError(f"expected early jobs {expected}, started {started_early}, completed {early}; {jobs}")
+        for audit_type in ("Connection", "DNS", "UDP"):
+            expected_records = None
+            for row in rows[1:]:
+                result = await call("query_audit_records", {"session_id": row[0], "type": audit_type, "limit": 100})
+                records = result["records"]
+                if result["terminal"] != "complete" or not records or result["summary"]["total"] != len(records):
+                    raise ValueError(f"{audit_type} query did not return every small-capture record")
+                canonical = sorted(json.dumps(record, sort_keys=True) for record in records)
+                if expected_records is not None and canonical != expected_records:
+                    raise ValueError(f"{audit_type} audit records differ between small captures")
+                expected_records = canonical
     return {
         "jobs": jobs,
         "completed": len(rows), "first_attempt_window_s": round(rows[-1][1] - rows[0][1], 3),
