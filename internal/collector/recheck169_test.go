@@ -105,6 +105,24 @@ func TestRecheckArchiveDefaultCompatibility(t *testing.T) {
 				if len(connections) != 15000 {
 					t.Fatal("default capture lost connections", len(connections))
 				}
+				t.Run("local-completion-loss-keeps-connection-state-limit-strict", func(t *testing.T) {
+					out := t.TempDir()
+					cfg := ultimateCaptureConfig(out, 1, 0)
+					cfg.CaptureEvidence = true
+					cfg.DecoderConfig.MaxRetainedTCPStateBytes = 64 << 20
+					cfg.DecoderConfig.LocalCompletionStateLoss = true
+					err := New(cfg).CollectPcap(input)
+					if !errors.Is(err, core.ErrStreamStateBudget) || errors.Is(err, core.ErrCompletionStateBudget) {
+						t.Fatalf("expected strict TCP connection-state refusal, got %v", err)
+					}
+					manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
+					if manifest.Status != "error" {
+						t.Fatalf("expected failed capture, got %q", manifest.Status)
+					}
+					if _, err := os.Stat(filepath.Join(out, evidence.AuditReadyFile)); !errors.Is(err, os.ErrNotExist) {
+						t.Fatalf("failed capture published readiness or readiness could not be checked: %v", err)
+					}
+				})
 				checkStrictFinite := func(t *testing.T, workers int, export bool) {
 					finiteOut := t.TempDir()
 					cfg := ultimateCaptureConfig(finiteOut, workers, 0)
