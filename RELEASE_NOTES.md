@@ -9,6 +9,8 @@
 | Analysis | Snapshot admitted rules, stabilize capture-time replay, and coordinate post-capture completion, cancellation, and live admission. |
 | MCP | Validate page counts, rows, generations and continuation; bound inventory scans and concurrent work; report schema reload failures and preserve the active registry on a failed reload. |
 | Detection evidence | Preserve TCP overlap bytes and severity. Qualify possible stale probes only with complete evidence; exclude truncated segment ends and FINs from keep-alive exceptions where their sequence evidence is incomplete. |
+| Capture exit status | Exit `2` reports partial coverage. Automation can retain independently sealed output and inspect its coverage before use. `--local-completion-state-loss` applies to application completion working-state refusals; TCP connection-state exhaustion remains fatal. |
+| Protobuf | Generic wire decoding is opt-in with explicit `Protobuf` decoder selection. Loading schemas alone does not enable decoding; use `--proto-message-types` to bind a port to a message type. |
 
 The [qualification ledger](internal/collector/testdata/recheck-v0166.json) records
 the synthetic 15,000-flow audit equivalence checks and official MCP client runs.
