@@ -281,7 +281,8 @@ func EvaluateOffline(ctx context.Context, request OfflineRequest) (*OfflineRepor
 	}
 	defer lease.Close()
 	root := lease.root
-	history, err := listOfflineEvaluationsAtRoot(ctx, root)
+	// Keep room for the report even if its final status and error grow after alerts are committed.
+	history, err := listOfflineEvaluationsAtRoot(ctx, root, offlineHistoryBytes-offlineReportBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -600,10 +601,18 @@ func newOfflineAlertWriter(ctx context.Context, root *os.Root, directory string)
 	return &FileAlertWriter{store: store}, nil
 }
 
+const (
+	offlineReportBytes  = 1 << 20
+	offlineHistoryBytes = 16 << 20
+)
+
 func offlineWriteReport(root *os.Root, report *OfflineReport) error {
 	b, err := json.Marshal(report)
 	if err != nil {
 		return err
+	}
+	if len(b) > offlineReportBytes {
+		return fmt.Errorf("offline report byte limit exceeded: %w", errOfflineMetadataLimit)
 	}
 	var random [8]byte
 	if _, err := rand.Read(random[:]); err != nil {
@@ -646,10 +655,10 @@ func ListOfflineEvaluationsContext(ctx context.Context, directory string) ([]Off
 		return nil, err
 	}
 	defer r.Close()
-	return listOfflineEvaluationsAtRoot(ctx, r)
+	return listOfflineEvaluationsAtRoot(ctx, r, offlineHistoryBytes)
 }
 
-func listOfflineEvaluationsAtRoot(ctx context.Context, r *os.Root) ([]OfflineReport, error) {
+func listOfflineEvaluationsAtRoot(ctx context.Context, r *os.Root, byteLimit int64) ([]OfflineReport, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -675,10 +684,10 @@ func listOfflineEvaluationsAtRoot(ctx context.Context, r *os.Root) ([]OfflineRep
 	if !os.SameFile(info, opened) {
 		return nil, fmt.Errorf("offline evaluation directory changed while opening")
 	}
-	return readOfflineHistory(ctx, history)
+	return readOfflineHistory(ctx, history, byteLimit)
 }
 
-func readOfflineHistory(ctx context.Context, history *os.Root) ([]OfflineReport, error) {
+func readOfflineHistory(ctx context.Context, history *os.Root, byteLimit int64) ([]OfflineReport, error) {
 	d, err := history.Open(".")
 	if err != nil {
 		return nil, err
@@ -710,7 +719,7 @@ func readOfflineHistory(ctx context.Context, history *os.Root) ([]OfflineReport,
 		if len(reports) >= 100 {
 			return nil, fmt.Errorf("offline report history limit exceeded: 100")
 		}
-		b, _, err := offlineMetadataWithLimit(ctx, history, name, min(1<<20, (16<<20)-totalBytes))
+		b, _, err := offlineMetadataWithLimit(ctx, history, name, min(offlineReportBytes, byteLimit-totalBytes))
 		if err != nil {
 			if errors.Is(err, errOfflineMetadataLimit) {
 				return nil, fmt.Errorf("offline report history byte limit exceeded: %w", err)

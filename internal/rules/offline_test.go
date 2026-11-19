@@ -633,7 +633,7 @@ func TestOfflineHistoryFollowsLeasedDirectory(t *testing.T) {
 	if reports, err := ListOfflineEvaluations(dir); err != nil || len(reports) != 0 {
 		t.Fatalf("replacement history: %d reports, %v", len(reports), err)
 	}
-	if reports, err := listOfflineEvaluationsAtRoot(t.Context(), lease.root); err != nil || len(reports) != 1 || reports[0].ID != want.ID {
+	if reports, err := listOfflineEvaluationsAtRoot(t.Context(), lease.root, offlineHistoryBytes); err != nil || len(reports) != 1 || reports[0].ID != want.ID {
 		t.Fatalf("leased history: %v, %v", reports, err)
 	}
 }
@@ -660,7 +660,7 @@ func TestOfflineHistoryReadsOpenedReportDirectory(t *testing.T) {
 	if reports, err := ListOfflineEvaluations(dir); err != nil || len(reports) != 0 {
 		t.Fatalf("replacement history: %d reports, %v", len(reports), err)
 	}
-	if reports, err := readOfflineHistory(t.Context(), history); err != nil || len(reports) != 1 || reports[0].ID != want.ID {
+	if reports, err := readOfflineHistory(t.Context(), history, offlineHistoryBytes); err != nil || len(reports) != 1 || reports[0].ID != want.ID {
 		t.Fatalf("opened history: %v, %v", reports, err)
 	}
 }
@@ -687,12 +687,39 @@ func TestOfflineHistoryChecksRemainingBudgetBeforeDecoding(t *testing.T) {
 	if got, err := ListOfflineEvaluations(dir); err != nil || len(got) != 16 {
 		t.Fatalf("exact history budget: reports=%d err=%v", len(got), err)
 	}
+	alertPath := filepath.Join(dir, "Alert.ncap.gz")
+	before, err := os.ReadFile(alertPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, err := EvaluateOffline(t.Context(), OfflineRequest{Directory: dir, Pack: offlineTestPack(2)}); got != nil || !errors.Is(err, errOfflineMetadataLimit) {
+		t.Fatalf("expected evaluation refusal with a full readable history: report=%v err=%v", got, err)
+	}
+	if after, err := os.ReadFile(alertPath); err != nil || !bytes.Equal(before, after) {
+		t.Fatalf("refused evaluation changed the alert audit: %v", err)
+	}
 	if err := os.WriteFile(filepath.Join(history, fmt.Sprintf("%032x.json", 16)), []byte{0xff}, 0600); err != nil {
 		t.Fatal(err)
 	}
 	if got, err := ListOfflineEvaluations(dir); got != nil || !errors.Is(err, errOfflineMetadataLimit) {
 		t.Fatalf("expected budget refusal before decoding the next report: reports=%d err=%v", len(got), err)
 	}
+	for _, i := range []int{15, 16} {
+		if err := os.Remove(filepath.Join(history, fmt.Sprintf("%032x.json", i))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	published := offlineTestEval(t, dir, offlineTestPack(2))
+	got, err := ListOfflineEvaluations(dir)
+	if err != nil || len(got) != 16 {
+		t.Fatalf("publication with 15 MiB of previous reports: reports=%d err=%v", len(got), err)
+	}
+	for _, report := range got {
+		if report.ID == published.ID {
+			return
+		}
+	}
+	t.Fatal("newly published report missing from history")
 }
 
 func TestOfflineLexicalRuleOrderAndBoundedHistory(t *testing.T) {
