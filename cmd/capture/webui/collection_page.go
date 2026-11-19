@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"iter"
 	"net/http"
 	"reflect"
 	"sort"
@@ -36,26 +37,7 @@ func respondCollectionPageFiltered(w http.ResponseWriter, r *http.Request, rows 
 		RespondJSON(w, status, map[string]string{"error": err.Error()})
 		return true
 	}
-	limit, offset := 100, 0
-	for _, name := range []string{"mcpPage", "pageLimit", "pageOffset", "pageSearch", "pageFields", "pageGeneration"} {
-		if len(q[name]) > 1 {
-			return fail(400, fmt.Errorf("duplicate %s", name))
-		}
-	}
-	for _, option := range []struct {
-		name   string
-		target *int
-	}{{"pageLimit", &limit}, {"pageOffset", &offset}} {
-		name, target := option.name, option.target
-		if values, ok := q[name]; ok {
-			value, err := strconv.Atoi(values[0])
-			if err != nil || value < 0 || value > 1000000000 || (name == "pageLimit" && (value < 1 || value > 500)) {
-				return fail(400, fmt.Errorf("invalid %s", name))
-			}
-			*target = value
-		}
-	}
-	projection, err := parseRecordProjection(q.Get("pageFields"))
+	options, err := parseCollectionPage(r)
 	if err != nil {
 		return fail(400, err)
 	}
@@ -66,7 +48,7 @@ func respondCollectionPageFiltered(w http.ResponseWriter, r *http.Request, rows 
 	if value.Len() > maxCollectionPageRows {
 		return fail(http.StatusRequestEntityTooLarge, fmt.Errorf("collection exceeds %d scan rows", maxCollectionPageRows))
 	}
-	items := make([]json.RawMessage, 0, min(limit, value.Len()))
+	items := make([]json.RawMessage, 0, min(options.limit, value.Len()))
 	scannedBytes := 0
 	search := strings.ToLower(q.Get("pageSearch"))
 	if searchApplied {
@@ -89,6 +71,55 @@ func respondCollectionPageFiltered(w http.ResponseWriter, r *http.Request, rows 
 		}
 	}
 	sort.SliceStable(items, func(i, j int) bool { return bytes.Compare(items[i], items[j]) < 0 })
+	return respondSortedCollectionPage(w, r, key, options, func(yield func(json.RawMessage, error) bool) {
+		for _, item := range items {
+			if !yield(item, nil) {
+				return
+			}
+		}
+	}, metadata...)
+}
+
+type collectionPageOptions struct {
+	limit, offset int
+}
+
+func parseCollectionPage(r *http.Request) (collectionPageOptions, error) {
+	q := r.URL.Query()
+	options := collectionPageOptions{limit: 100}
+	for _, name := range []string{"mcpPage", "pageLimit", "pageOffset", "pageSearch", "pageFields", "pageGeneration"} {
+		if len(q[name]) > 1 {
+			return options, fmt.Errorf("duplicate %s", name)
+		}
+	}
+	for _, option := range []struct {
+		name   string
+		target *int
+	}{{"pageLimit", &options.limit}, {"pageOffset", &options.offset}} {
+		name, target := option.name, option.target
+		if values, ok := q[name]; ok {
+			value, err := strconv.Atoi(values[0])
+			if err != nil || value < 0 || value > 1000000000 || (name == "pageLimit" && (value < 1 || value > 500)) {
+				return options, fmt.Errorf("invalid %s", name)
+			}
+			*target = value
+		}
+	}
+	_, err := parseRecordProjection(q.Get("pageFields"))
+	return options, err
+}
+
+func respondSortedCollectionPage(w http.ResponseWriter, r *http.Request, key string, options collectionPageOptions, items iter.Seq2[json.RawMessage, error], metadata ...map[string]any) bool {
+	fail := func(status int, err error) bool {
+		RespondJSON(w, status, map[string]string{"error": err.Error()})
+		return true
+	}
+	q := r.URL.Query()
+	limit, offset := options.limit, options.offset
+	projection, err := parseRecordProjection(q.Get("pageFields"))
+	if err != nil {
+		return fail(400, err)
+	}
 	hash := sha256.New()
 	query := r.URL.Query()
 	for _, field := range []string{"pageOffset", "pageLimit", "pageGeneration"} {
@@ -120,32 +151,49 @@ func respondCollectionPageFiltered(w http.ResponseWriter, r *http.Request, rows 
 			}
 		}
 	}
-	for _, item := range items {
+	page := make([]json.RawMessage, 0)
+	used, total := 0, 0
+	pageFull := false
+	var pageErr error
+	pageStatus := 400
+	for item, err := range items {
+		if r.Context().Err() != nil {
+			return true
+		}
+		if err != nil {
+			return fail(500, err)
+		}
 		hash.Write(item)
 		hash.Write([]byte{0})
+		total++
+		if total <= offset || len(page) == limit || pageFull {
+			continue
+		}
+		raw, err := applyRecordProjection(item, projection)
+		if err != nil {
+			pageErr, pageFull = err, true
+			continue
+		}
+		if len(raw) > 8<<20 {
+			pageErr, pageStatus, pageFull = fmt.Errorf("row exceeds 8 MiB; select smaller fields"), 413, true
+			continue
+		}
+		if len(page) > 0 && used+len(raw) > 80<<10 {
+			pageFull = true
+			continue
+		}
+		page = append(page, raw)
+		used += len(raw)
 	}
 	generation := hex.EncodeToString(hash.Sum(nil))
 	if expected := q.Get("pageGeneration"); expected != "" && expected != generation {
 		return fail(409, fmt.Errorf("collection generation changed; restart pagination"))
 	}
-	page := make([]json.RawMessage, 0)
-	used := 0
-	for i := offset; i < len(items) && len(page) < limit; i++ {
-		raw, err := applyRecordProjection(items[i], projection)
-		if err != nil {
-			return fail(400, err)
-		}
-		if len(raw) > 8<<20 {
-			return fail(413, fmt.Errorf("row exceeds 8 MiB; select smaller fields"))
-		}
-		if len(page) > 0 && used+len(raw) > 80<<10 {
-			break
-		}
-		page = append(page, raw)
-		used += len(raw)
+	if pageErr != nil {
+		return fail(pageStatus, pageErr)
 	}
 	next := offset + len(page)
-	response := map[string]any{key: page, "totalCount": len(items), "limit": limit, "offset": offset, "returned": len(page), "next_offset": next, "has_more": next < len(items), "generation": generation}
+	response := map[string]any{key: page, "totalCount": total, "limit": limit, "offset": offset, "returned": len(page), "next_offset": next, "has_more": next < total, "generation": generation}
 	for name, field := range extraFields {
 		response[name] = field
 	}

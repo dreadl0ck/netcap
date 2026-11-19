@@ -186,6 +186,10 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 
 	// Read alerts from the alerts audit record file
 	alertsFile := filepath.Join(outDir, "Alert.ncap.gz")
+	if bounded {
+		s.serveRawAlertPage(w, r, alertsFile)
+		return
+	}
 	alerts, ok := s.alertsForResponse(w, r, alertsFile, bounded)
 	if !ok {
 		return
@@ -219,9 +223,6 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Apply pagination
-	if respondCollectionPage(w, r, filtered, "alerts") {
-		return
-	}
 	totalCount := len(filtered)
 	start := offset
 	end := offset + limit

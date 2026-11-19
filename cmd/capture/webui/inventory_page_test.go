@@ -10,6 +10,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -331,6 +333,9 @@ func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
 			for path, handler := range map[string]http.HandlerFunc{
 				"/api/alerts": s.handleAlerts, "/api/alerts/grouped": s.handleGroupedAlerts,
 			} {
+				if path == "/api/alerts" && tc.name == "records" {
+					continue // Raw pages have their own larger row budget.
+				}
 				w := httptest.NewRecorder()
 				handler(w, httptest.NewRequest(http.MethodGet, path+"?mcpPage=true&ruleName=missing&pageLimit=1", nil))
 				if w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "totalCount") || strings.Contains(w.Body.String(), "totalAlerts") || strings.Contains(w.Body.String(), "generation") {
@@ -390,6 +395,33 @@ func TestAlertStatsAbovePageScanBudget(t *testing.T) {
 	for i, alert := range stats.RecentAlerts {
 		if alert.Timestamp != int64(count-i) {
 			t.Fatalf("recent alert %d: timestamp=%d", i, alert.Timestamp)
+		}
+	}
+	// Timestamp is the first varying field in the fixture's serialized alerts.
+	ordered := make([]string, count)
+	for i := range ordered {
+		ordered[i] = strconv.Itoa(i+1) + ","
+	}
+	sort.Strings(ordered)
+	var generation string
+	for _, offset := range []int{0, 25_000, count - 2, count} {
+		response := httptest.NewRecorder()
+		url := fmt.Sprintf("/api/alerts?mcpPage=true&pageLimit=2&pageOffset=%d&pageFields=timestamp&pageGeneration=%s", offset, generation)
+		s.handleAlerts(response, httptest.NewRequest(http.MethodGet, url, nil))
+		var page struct {
+			Alerts     []AlertResponse
+			TotalCount int
+			Generation string
+			HasMore    bool `json:"has_more"`
+		}
+		if err := json.Unmarshal(response.Body.Bytes(), &page); err != nil || response.Code != http.StatusOK || page.TotalCount != count || page.Alerts == nil || len(page.Alerts) != min(2, count-offset) || page.HasMore != (offset+2 < count) || page.Generation == "" || (generation != "" && generation != page.Generation) {
+			t.Fatalf("offset %d: status=%d body=%s err=%v", offset, response.Code, response.Body, err)
+		}
+		generation = page.Generation
+		for i, alert := range page.Alerts {
+			if strconv.FormatInt(alert.Timestamp, 10)+"," != ordered[offset+i] {
+				t.Fatalf("offset %d row %d: timestamp=%d, want %s", offset, i, alert.Timestamp, ordered[offset+i])
+			}
 		}
 	}
 }
