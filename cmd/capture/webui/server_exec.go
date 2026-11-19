@@ -22,6 +22,8 @@
 package webui
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -38,6 +40,7 @@ import (
 // edition. See the appstore build's copy in server_inprocess.go for why the
 // name differs there.
 const analysisErrorLogName = "analysis_error.log"
+const auxiliaryCaptureTimeout = time.Minute
 
 func auxiliaryCaptureEnabled() bool { return os.Getenv("NETCAP_AUXILIARY_CAPTURE") == "1" }
 
@@ -212,20 +215,8 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	if job.captureLane == captureAuxiliary {
 		args = append(args, "-workers=1", "-stream-workers=1")
 	}
-	cmd := exec.Command(executable, args...)
-	cmd.Env = helperEnvironment()
-	if job.captureLane == captureAuxiliary {
-		cmd.Env = append(cmd.Env, "GOMAXPROCS=2")
-	}
-
-	// If we have an error log file, capture output there; otherwise use standard output
 	if errorLogFile != nil {
-		cmd.Stdout = errorLogFile
-		cmd.Stderr = errorLogFile
 		defer errorLogFile.Close()
-	} else {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
 	}
 
 	// Start the command
@@ -238,6 +229,22 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		return
 	}
 	startTime := time.Now()
+	ctx := context.Background()
+	if job.captureLane == captureAuxiliary {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, auxiliaryCaptureTimeout)
+		defer cancel()
+	}
+	cmd := exec.CommandContext(ctx, executable, args...)
+	cmd.Env = helperEnvironment()
+	if job.captureLane == captureAuxiliary {
+		cmd.Env = append(cmd.Env, "GOMAXPROCS=2")
+	}
+	if errorLogFile != nil {
+		cmd.Stdout, cmd.Stderr = errorLogFile, errorLogFile
+	} else {
+		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	}
 	if err = s.startCaptureProcess(cmd, job.captureLane); err != nil {
 		if err == errAnalysisStopping {
 			s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
@@ -277,7 +284,11 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		// Put the helper's own last words in the summary line. "Analysis
 		// failed: exit status 1" is true and tells nobody anything, and it
 		// was all the UI ever showed.
-		s.recordAnalysisFailure(job, summariseAnalysisFailure(err, errorLogPath), errorLogPath)
+		message := summariseAnalysisFailure(err, errorLogPath)
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			message = fmt.Sprintf("Auxiliary capture exceeded its %s execution limit", auxiliaryCaptureTimeout)
+		}
+		s.recordAnalysisFailure(job, message, errorLogPath)
 
 		return
 	}
