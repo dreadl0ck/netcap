@@ -99,6 +99,46 @@ func TestAuxiliaryDispatchOverlapsOnlyTwoOwnedSmallCaptures(t *testing.T) {
 	}
 }
 
+func TestAuxiliaryShutdownReleasesPrefetchedCaptureBeforeActiveJoins(t *testing.T) {
+	s := &Server{jobQueue: make(chan *AnalysisJob, 1), shutdownChan: make(chan struct{}), fileErrors: make(map[string]FileError)}
+	s.jobQueue <- &AnalysisJob{InputFile: "active"}
+	started, unblock, done := make(chan struct{}), make(chan struct{}), make(chan struct{})
+	finish := sync.OnceFunc(func() { close(unblock) })
+	t.Cleanup(func() {
+		finish()
+		s.stopProcessingAdmission()
+		<-done
+	})
+	go func() {
+		defer close(done)
+		s.dispatchWithAuxiliary(&captureDispatch{depth: &s.captureDispatchDepth}, func(job *AnalysisJob) {
+			if job.InputFile != "active" {
+				t.Error("prefetched capture started during shutdown")
+				return
+			}
+			close(started)
+			<-unblock
+		})
+	}()
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("active capture did not start")
+	}
+	released := make(chan struct{})
+	s.jobQueue <- &AnalysisJob{InputFile: "pending", processingDone: func() { close(released) }}
+	processingAwait(t, func() bool { return s.captureDispatchDepth.Load() == 1 })
+	s.stopProcessingAdmission()
+	select {
+	case <-released:
+	case <-time.After(5 * time.Second):
+		t.Fatal("prefetched capture retained ownership while active capture was unwinding")
+	}
+	if failure, ok := s.GetFileError("pending"); !ok || failure.Error != "Analysis canceled during shutdown" || s.captureQueueLength() != 0 {
+		t.Fatalf("prefetched cancellation not published: %+v; queue depth=%d", failure, s.captureQueueLength())
+	}
+}
+
 func processingStatus(t *testing.T, server *Server) bool {
 	t.Helper()
 	response := httptest.NewRecorder()

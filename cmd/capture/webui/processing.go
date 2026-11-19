@@ -103,6 +103,14 @@ func (d *captureDispatch) take(index int) *AnalysisJob {
 	return job
 }
 
+func (s *Server) cancelPendingCaptures(d *captureDispatch) {
+	for len(d.pending) > 0 {
+		job := d.take(0)
+		s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
+		job.processingDone()
+	}
+}
+
 func (s *Server) dispatchWithAuxiliary(d *captureDispatch, run func(*AnalysisJob)) {
 	queue := s.jobQueue
 	var primary, auxiliary *AnalysisJob
@@ -116,6 +124,7 @@ func (s *Server) dispatchWithAuxiliary(d *captureDispatch, run func(*AnalysisJob
 		return done
 	}
 	defer func() {
+		s.cancelPendingCaptures(d)
 		if primaryDone != nil {
 			<-primaryDone
 		}

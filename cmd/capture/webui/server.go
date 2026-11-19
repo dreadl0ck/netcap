@@ -1518,13 +1518,6 @@ func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 	}
 
 	dispatch := captureDispatch{depth: &s.captureDispatchDepth}
-	defer func() {
-		s.captureDispatchDepth.Store(0)
-		for _, job := range dispatch.pending {
-			s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
-			job.processingDone()
-		}
-	}()
 	run := func(job *AnalysisJob) {
 		s.mu.RLock()
 		stopping := s.processingStopping
@@ -1589,6 +1582,7 @@ func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 		s.dispatchWithAuxiliary(&dispatch, run)
 		return
 	}
+	defer s.cancelPendingCaptures(&dispatch)
 	for job := dispatch.next(s.jobQueue, s.shutdownChan); job != nil; job = dispatch.next(s.jobQueue, s.shutdownChan) {
 		run(job)
 	}
