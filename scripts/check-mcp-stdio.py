@@ -335,7 +335,7 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout, 
                 break
             await asyncio.sleep(0.5)
         completed = time.monotonic()
-        manifest = await call("get_capture_evidence", args | {"fields": "status,admittedPackets,createdAt,runId"})
+        manifest = await call("get_capture_evidence", args | {"fields": "status,admittedPackets,queueDrops,createdAt,runId,config"})
         # A finished session can be evicted from the bounded timeline cache.
         # A subsequent metadata read starts an asynchronous rebuild.
         while True:
@@ -349,7 +349,8 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout, 
         with Path(owned["input_file"]).open("rb") as retained:
             retained_digest = hashlib.file_digest(retained, "sha256").hexdigest()
         if (retained_digest != digest or manifest["status"] not in {"done", "complete"}
-                 or int(manifest["admittedPackets"]) != packet_counts[order[i]]
+                or int(manifest["admittedPackets"]) != packet_counts[order[i]]
+                or int(manifest["queueDrops"]) != 0
                 or timeline["status"] != "ready" or not timeline.get("generation")):
             raise ValueError(f"capture evidence mismatch: {manifest}, expected packets={packet_counts[order[i]]}, "
                              f"retained hash matches={retained_digest == digest}, timeline={timeline}")
@@ -361,7 +362,8 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout, 
         audit_ready = marker.stat().st_mtime - wall_offset
         if not first <= capture_start <= audit_ready <= completed:
             raise ValueError(f"capture timestamps are outside the observed job lifetime: {capture_start}, {audit_ready}")
-        return (reply["session_id"], first, admitted, completed, rejected, capture_start, audit_ready)
+        return (reply["session_id"], first, admitted, completed, rejected, capture_start, audit_ready,
+                manifest["config"]["workers"])
 
     try:
         async with asyncio.timeout(timeout):
@@ -379,9 +381,9 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout, 
         {"upload": i, "input_bytes": len(fixtures[order[i]]), "packets": packet_counts[order[i]],
          "first_attempt_s": round(first - start, 3), "ingest_reply_s": round(admitted - start, 3),
          "manifest_created_s": round(created - start, 3), "completion_observed_s": round(completed - start, 3),
-         "audit_ready_marker_mtime_s": round(ready - start, 3),
+         "audit_ready_marker_mtime_s": round(ready - start, 3), "workers": workers,
          "http_503": rejected}
-        for i, (_, first, admitted, completed, rejected, created, ready) in enumerate(rows)
+        for i, (_, first, admitted, completed, rejected, created, ready, workers) in enumerate(rows)
     ]
     if full_fanout:
         large_ready = rows[0][6]
@@ -390,6 +392,8 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout, 
         started_early = [i for i, row in enumerate(rows[1:], 1) if row[5] < large_ready]
         if early != expected or started_early != expected:
             raise ValueError(f"expected early jobs {expected}, started {started_early}, completed {early}; {jobs}")
+        if any(jobs[i]["workers"] != 1 for i in expected):
+            raise ValueError(f"auxiliary captures did not honor the one-worker limit: {jobs}")
         for audit_type in ("Connection", "DNS", "UDP"):
             expected_records = None
             for row in rows[1:]:
