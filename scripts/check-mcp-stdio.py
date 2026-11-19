@@ -124,6 +124,8 @@ async def check_large_alert_views(client, call, directory, args):
             raise ValueError("large alert fixture did not exceed the old scan limit")
         stats = await call("get_alert_stats", args)
         if (stats["totalAlerts"] != count or stats["criticalAlerts"] != count // 2
+                or stats["groupCount"] != 2 or stats["byRule"] != {"large-alert-fixture": count}
+                or stats["bySeverity"] != {"critical": count // 2, "info": count // 2}
                 or [a["timestamp"] for a in stats["recentAlerts"]] != list(range(start_ms + count - 1, start_ms + count - 11, -1))):
             raise ValueError("large alert statistics lost records or recent alert order")
         generation = None
