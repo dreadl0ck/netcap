@@ -286,19 +286,22 @@ async def check_http_pair_carve(client, call, session, capture):
         raise ValueError("HTTP pair carve lost original frame bytes or inclusive window bounds")
 
 
-async def check_mixed_uploads(call, capture, archive, working_dir):
+async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout):
     with archive.open("rb") as source:
         if hashlib.file_digest(source, "sha256").hexdigest() != "6e061856cdc2e363e2494757b4be70abe9f1671cdff5270d403f488f9ba2446f":
             raise ValueError("mixed upload archive digest changed")
         with zipfile.ZipFile(source) as fixtures:
             large = fixtures.read("netcap-v0.16.9-synthetic-repros/repro/v169/edge/v169_midstream_psh_15k.pcap")
-    # The service exports conversations. Keep this load probe to a fixed prefix.
-    large = large[:24 + sum(16 + len(frame) for _, _, frame in ethernet_pcap_records(large)[:1500])]
+    if not full_fanout:
+        large = large[:24 + sum(16 + len(frame) for _, _, frame in ethernet_pcap_records(large)[:1500])]
     small = capture.read_bytes()
-    packet_counts = [len(ethernet_pcap_records(wire)) for wire in (large, small)]
+    fixtures = (large, small)
+    packet_counts = [len(ethernet_pcap_records(wire)) for wire in fixtures]
+    order = (0, 1, 1, 1) if full_fanout else (0, 1) * 4
+    timeout = 300 if full_fanout else 90
     paths = []
-    for i in range(8):
-        wire = large if i % 2 == 0 else small
+    for i, kind in enumerate(order):
+        wire = fixtures[kind]
         path = working_dir / f"mixed-upload-{i:02d}.pcap"
         path.write_bytes(wire)
         paths.append((path, hashlib.sha256(wire).hexdigest()))
@@ -344,9 +347,9 @@ async def check_mixed_uploads(call, capture, archive, working_dir):
         with Path(owned["input_file"]).open("rb") as retained:
             retained_digest = hashlib.file_digest(retained, "sha256").hexdigest()
         if (retained_digest != digest or manifest["status"] not in {"done", "complete"}
-                or int(manifest["admittedPackets"]) != packet_counts[i % 2]
+                 or int(manifest["admittedPackets"]) != packet_counts[order[i]]
                 or timeline["status"] != "ready" or not timeline.get("generation")):
-            raise ValueError(f"capture evidence mismatch: {manifest}, expected packets={packet_counts[i % 2]}, "
+            raise ValueError(f"capture evidence mismatch: {manifest}, expected packets={packet_counts[order[i]]}, "
                              f"retained hash matches={retained_digest == digest}, timeline={timeline}")
         capture_start = datetime.fromisoformat(manifest["createdAt"]).timestamp() - wall_offset
         if not first <= capture_start <= completed:
@@ -354,19 +357,19 @@ async def check_mixed_uploads(call, capture, archive, working_dir):
         return (reply["session_id"], first, admitted, completed, rejected, capture_start)
 
     try:
-        async with asyncio.timeout(90):
+        async with asyncio.timeout(timeout):
             rows = await asyncio.gather(*(upload(i, *fixture) for i, fixture in enumerate(paths)), return_exceptions=True)
     except TimeoutError as exc:
-        raise ValueError(f"paced uploads did not finish within 90 s: {states}") from exc
+        raise ValueError(f"paced uploads did not finish within {timeout} s: {states}") from exc
     for i, row in enumerate(rows):
         if isinstance(row, Exception):
             raise ValueError(f"mixed upload {i}: {row}") from row
     if len({row[0] for row in rows}) != len(paths):
         raise ValueError("mixed uploads did not create distinct sessions")
-    observed_small = rows[1::2]
+    observed_small = [row for row, kind in zip(rows, order, strict=True) if kind == 1]
     # Capture can start before the ingest reply reaches the client.
     jobs = [
-        {"upload": i, "input_bytes": len((large, small)[i % 2]), "packets": packet_counts[i % 2],
+        {"upload": i, "input_bytes": len(fixtures[order[i]]), "packets": packet_counts[order[i]],
          "first_attempt_s": round(first - start, 3), "ingest_reply_s": round(admitted - start, 3),
          "manifest_created_s": round(created - start, 3), "completion_observed_s": round(completed - start, 3),
          "http_503": rejected}
@@ -384,7 +387,7 @@ async def check_mixed_uploads(call, capture, archive, working_dir):
     }
 
 
-async def check(binary, capture, http_capture, data_dir, mixed_upload_archive=None):
+async def check(binary, capture, http_capture, data_dir, mixed_upload_archive=None, full_fanout=False):
     params = StdioServerParameters(command=str(binary), args=[
         "mcp", "--bind", "127.0.0.1:0", "--quiet", "--pcap", str(capture),
         "--data-dir", data_dir, "--behavior", "--behavior-prefix", "192.168.0.0/16",
@@ -1001,7 +1004,7 @@ rules:
                         return await call(name, arguments, session=load)
 
                     try:
-                        mixed["mixed_uploads"] = await check_mixed_uploads(load_call, capture, mixed_upload_archive, Path(load_dir))
+                        mixed["mixed_uploads"] = await check_mixed_uploads(load_call, capture, mixed_upload_archive, Path(load_dir), full_fanout)
                     except (ValueError, TimeoutError) as exc:
                         failures.append(f"mixed uploads: {exc}")
         print(json.dumps({"advertised": len(tools), "covered_count": len(covered), "covered": sorted(covered),
@@ -1014,9 +1017,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Check Netcap's stdio tool contracts on the mDNS and HTTP fixtures.")
     parser.add_argument("binary", type=Path)
     parser.add_argument("--mixed-upload-archive", type=Path, help="Run the paced mixed-upload test using the pinned synthetic archive.")
+    parser.add_argument("--full-fanout", action="store_true", help="Use one full 15,000-packet upload followed by three small uploads.")
     args = parser.parse_args()
+    if args.full_fanout and args.mixed_upload_archive is None:
+        parser.error("--full-fanout requires --mixed-upload-archive")
     repo = Path(__file__).resolve().parents[1]
     with TemporaryDirectory(prefix="netcap-mcp-contracts-") as data_dir:
         passed = asyncio.run(check(args.binary.resolve(), repo / "internal/collector/testdata/voip/mdns.pcap",
-                                   repo / "testdata/recheck-v0168/base_http.pcap", data_dir, args.mixed_upload_archive))
+                                   repo / "testdata/recheck-v0168/base_http.pcap", data_dir, args.mixed_upload_archive, args.full_fanout))
         raise SystemExit(0 if passed else 1)
