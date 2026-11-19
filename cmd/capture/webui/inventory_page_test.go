@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -14,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
@@ -327,7 +329,7 @@ func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
 			writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, tc.rows)
 			s := &Server{outDir: dir}
 			for path, handler := range map[string]http.HandlerFunc{
-				"/api/alerts": s.handleAlerts, "/api/alerts/grouped": s.handleGroupedAlerts, "/api/alerts/stats": s.handleAlertStats,
+				"/api/alerts": s.handleAlerts, "/api/alerts/grouped": s.handleGroupedAlerts,
 			} {
 				w := httptest.NewRecorder()
 				handler(w, httptest.NewRequest(http.MethodGet, path+"?mcpPage=true&ruleName=missing&pageLimit=1", nil))
@@ -336,6 +338,59 @@ func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestAlertStatsAbovePageScanBudget(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "Alert.ncap.gz")
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	gz, err := gzip.NewWriterLevel(f, gzip.NoCompression)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := delimited.NewWriter(gz)
+	if err := w.PutProto(&types.Header{Type: types.Type_NC_Alert}); err != nil {
+		t.Fatal(err)
+	}
+	const count = 27152
+	for i := range count {
+		severity := "info"
+		if i%2 == 0 {
+			severity = "critical"
+		}
+		if err := w.PutProto(&types.Alert{RuleName: "fixture", Severity: severity, Timestamp: int64(i+1) * int64(time.Millisecond), Description: strings.Repeat("x", 640)}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := gz.Close(); err != nil {
+		t.Fatal(err)
+	}
+	info, err := f.Stat()
+	if err != nil || info.Size() <= maxCollectionPageScanBytes {
+		t.Fatalf("fixture did not exceed the old stored-size cap: %v, %v", info, err)
+	}
+	s := &Server{outDir: dir}
+	response := httptest.NewRecorder()
+	s.handleAlertStats(response, httptest.NewRequest(http.MethodGet, "/api/alerts/stats", nil))
+	var stats struct {
+		TotalAlerts    int
+		GroupCount     int
+		CriticalAlerts int
+		ByRule         map[string]int
+		RecentAlerts   []AlertResponse
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &stats); err != nil || response.Code != http.StatusOK || stats.TotalAlerts != count || stats.CriticalAlerts != count/2 || stats.GroupCount != 2 || stats.ByRule["fixture"] != count || len(stats.RecentAlerts) != 10 {
+		t.Fatalf("unexpected alert statistics: status=%d total=%d recent=%d error=%v", response.Code, stats.TotalAlerts, len(stats.RecentAlerts), err)
+	}
+	for i, alert := range stats.RecentAlerts {
+		if alert.Timestamp != int64(count-i) {
+			t.Fatalf("recent alert %d: timestamp=%d", i, alert.Timestamp)
+		}
 	}
 }
 

@@ -275,19 +275,27 @@ func (s *Server) alertsForResponse(w http.ResponseWriter, r *http.Request, fileP
 	if err == nil {
 		return alerts, true
 	}
-	if ctx != nil && ctx.Err() != nil {
-		return nil, false
-	}
-	if errors.Is(err, errAlertPageSourceLimit) {
-		RespondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": err.Error()})
-		return nil, false
-	}
-	log.Printf("[WebUI] Failed to read alerts: %v", err)
-	RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read alerts"})
+	s.respondAlertReadError(w, ctx, err)
 	return nil, false
 }
 
+func (s *Server) respondAlertReadError(w http.ResponseWriter, ctx context.Context, err error) {
+	if ctx != nil && ctx.Err() != nil {
+		return
+	}
+	if errors.Is(err, errAlertPageSourceLimit) {
+		RespondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": err.Error()})
+		return
+	}
+	log.Printf("[WebUI] Failed to read alerts: %v", err)
+	RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read alerts"})
+}
+
 func (s *Server) readAlertAudit(ctx context.Context, filePath string) ([]AlertResponse, error) {
+	return s.scanAlertAudit(ctx, filePath, maxCollectionPageScanBytes, maxCollectionPageRows, maxCollectionPageScanBytes, nil)
+}
+
+func (s *Server) scanAlertAudit(ctx context.Context, filePath string, byteLimit, rowLimit, frameCap int, visit func(AlertResponse) error) ([]AlertResponse, error) {
 	var reader *AuditRecordReader
 	var err error
 	if ctx == nil {
@@ -299,9 +307,9 @@ func (s *Server) readAlertAudit(ctx context.Context, filePath string) ([]AlertRe
 		file, info, openErr := artifactio.Open(filepath.Dir(filePath), filepath.Base(filePath))
 		if openErr != nil {
 			err = openErr
-		} else if info.Size() > maxCollectionPageScanBytes {
+		} else if info.Size() > int64(byteLimit) {
 			file.Close()
-			return nil, fmt.Errorf("%w: stored audit exceeds %d bytes", errAlertPageSourceLimit, maxCollectionPageScanBytes)
+			return nil, fmt.Errorf("%w: stored audit exceeds %d bytes", errAlertPageSourceLimit, byteLimit)
 		} else {
 			reader, err = auditRecordReaderFromInput(file, io.NewSectionReader(file, 0, info.Size()), true, func(in io.Reader) io.Reader {
 				return auditContextReader{ctx: ctx, input: in}
@@ -342,7 +350,8 @@ func (s *Server) readAlertAudit(ctx context.Context, filePath string) ([]AlertRe
 	}
 
 	alerts := make([]AlertResponse, 0)
-	remaining := maxCollectionPageScanBytes
+	remaining := byteLimit
+	rows := 0
 
 	// Read all records
 	for {
@@ -353,16 +362,17 @@ func (s *Server) readAlertAudit(ctx context.Context, filePath string) ([]AlertRe
 			if err := ctx.Err(); err != nil {
 				return nil, err
 			}
-			frameLimit := remaining
-			if len(alerts) == maxCollectionPageRows {
+			frameLimit := min(remaining, frameCap)
+			if rows == rowLimit {
 				frameLimit = 0
 			}
 			var raw []byte
 			raw, err = reader.delimitedReader.NextWithLimit(uint64(max(frameLimit, 1)))
-			if errors.Is(err, delimited.ErrRecordLimit) || (err == nil && (len(raw) > frameLimit || len(alerts) == maxCollectionPageRows)) {
-				return nil, fmt.Errorf("%w: %d records or %d record bytes", errAlertPageSourceLimit, maxCollectionPageRows, maxCollectionPageScanBytes)
+			if errors.Is(err, delimited.ErrRecordLimit) || (err == nil && (len(raw) > frameLimit || rows == rowLimit)) {
+				return nil, fmt.Errorf("%w: %d records, %d decoded bytes or %d bytes per frame", errAlertPageSourceLimit, rowLimit, byteLimit, frameCap)
 			}
 			if err == nil {
+				rows++
 				remaining -= len(raw)
 				record, err = reader.DecodeRecord(raw)
 			}
@@ -388,11 +398,25 @@ func (s *Server) readAlertAudit(ctx context.Context, filePath string) ([]AlertRe
 		alertResp.Resolved = resolved
 		alertResp.ResolvedAt = resolvedAt
 
-		alerts = append(alerts, alertResp)
+		if visit != nil {
+			if err := visit(alertResp); err != nil {
+				return nil, err
+			}
+		} else {
+			alerts = append(alerts, alertResp)
+		}
 	}
 
 	return alerts, nil
 }
+
+const (
+	alertStatsScanBytes      = 256 << 20
+	alertStatsScanRows       = 1 << 20
+	alertStatsFrameBytes     = 1 << 20
+	alertStatsDimensionBytes = 512 << 10
+	alertStatsResponseBytes  = 8 << 20
+)
 
 // handleAlertStats returns statistics about alerts
 func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
@@ -418,43 +442,44 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 
 	// Read alerts from the alerts audit record file
 	alertsFile := filepath.Join(outDir, "Alert.ncap.gz")
-	alerts, ok := s.alertsForResponse(w, r, alertsFile, true)
-	if !ok {
-		return
-	}
-
-	// Calculate statistics
 	bySeverity := make(map[string]int)
 	byRule := make(map[string]int)
-	criticalCount := 0
-	// Track unique alert groups (rule + severity combinations)
-	alertGroups := make(map[string]struct{})
-
-	for _, alert := range alerts {
+	criticalCount, total, dimensions := 0, 0, 0
+	type groupKey struct{ rule, severity string }
+	alertGroups := make(map[groupKey]struct{})
+	recentAlerts := make([]AlertResponse, 0, 10)
+	_, err := s.scanAlertAudit(r.Context(), alertsFile, alertStatsScanBytes, alertStatsScanRows, alertStatsFrameBytes, func(alert AlertResponse) error {
+		key := groupKey{alert.RuleName, alert.Severity}
+		if _, ok := alertGroups[key]; !ok {
+			dimensions += len(key.rule) + len(key.severity) + 128
+			if dimensions > alertStatsDimensionBytes {
+				return fmt.Errorf("%w: summary dimension budget exceeded", errAlertPageSourceLimit)
+			}
+			alertGroups[key] = struct{}{}
+		}
+		total++
 		bySeverity[alert.Severity]++
 		byRule[alert.RuleName]++
 		if strings.EqualFold(alert.Severity, "critical") {
 			criticalCount++
 		}
-		// Create a unique key for each rule + severity combination
-		groupKey := alert.RuleName + "|" + alert.Severity
-		alertGroups[groupKey] = struct{}{}
+		if len(recentAlerts) < cap(recentAlerts) || alert.Timestamp > recentAlerts[len(recentAlerts)-1].Timestamp {
+			if len(recentAlerts) < cap(recentAlerts) {
+				recentAlerts = append(recentAlerts, alert)
+			} else {
+				recentAlerts[len(recentAlerts)-1] = alert
+			}
+			sort.SliceStable(recentAlerts, func(i, j int) bool { return recentAlerts[i].Timestamp > recentAlerts[j].Timestamp })
+		}
+		return nil
+	})
+	if err != nil {
+		s.respondAlertReadError(w, r.Context(), err)
+		return
 	}
 
-	// Get recent alerts (last 10)
-	recentAlerts := make([]AlertResponse, 0)
-	if len(alerts) > 0 {
-		// Sort by timestamp descending
-		sort.Slice(alerts, func(i, j int) bool {
-			return alerts[i].Timestamp > alerts[j].Timestamp
-		})
-
-		count := min(len(alerts), 10)
-		recentAlerts = alerts[:count]
-	}
-
-	RespondJSON(w, http.StatusOK, map[string]any{
-		"totalAlerts":    len(alerts),
+	payload, err := json.Marshal(map[string]any{
+		"totalAlerts":    total,
 		"groupCount":     len(alertGroups),
 		"bySeverity":     bySeverity,
 		"byRule":         byRule,
@@ -462,6 +487,16 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 		"criticalAlerts": criticalCount,
 		"lastUpdate":     time.Now().Unix(),
 	})
+	if err != nil {
+		s.respondAlertReadError(w, r.Context(), err)
+		return
+	}
+	if len(payload) > alertStatsResponseBytes {
+		s.respondAlertReadError(w, r.Context(), fmt.Errorf("%w: statistics response exceeds %d bytes", errAlertPageSourceLimit, alertStatsResponseBytes))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(payload)
 }
 
 // handleClearAlerts handles requests to clear all alerts
