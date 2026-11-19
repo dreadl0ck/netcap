@@ -808,7 +808,7 @@ func GetFlags() []cli.Flag {
 		// Protobuf schema-aware decoding flags
 		&cli.StringSliceFlag{
 			Name:    "proto-paths",
-			Usage:   "search paths for .proto schema files (can be specified multiple times)",
+			Usage:   "load .proto schemas (repeatable); use --proto-message-types for schema decoding or include Protobuf explicitly for generic wire fields",
 			Sources: cli.EnvVars("NC_PROTO_PATHS"),
 		},
 		&cli.BoolFlag{
