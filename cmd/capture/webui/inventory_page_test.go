@@ -324,11 +324,12 @@ func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
 			writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, tc.rows)
 			s := &Server{outDir: dir}
 			for path, handler := range map[string]http.HandlerFunc{
-				"/api/alerts": s.handleAlerts, "/api/alerts/grouped": s.handleGroupedAlerts,
+				"/api/alerts": s.handleAlerts, "/api/alerts/grouped": s.handleGroupedAlerts, "/api/alerts/stats": s.handleAlertStats,
 			} {
 				w := httptest.NewRecorder()
 				handler(w, httptest.NewRequest(http.MethodGet, path+"?mcpPage=true&ruleName=missing&pageLimit=1", nil))
-				if w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "totalCount") || strings.Contains(w.Body.String(), "totalAlerts") || strings.Contains(w.Body.String(), "generation") {
+				var body map[string]string
+				if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil || w.Code != http.StatusRequestEntityTooLarge || len(body) != 1 || body["error"] == "" {
 					t.Fatalf("%s: %d %s", path, w.Code, w.Body.String())
 				}
 			}
