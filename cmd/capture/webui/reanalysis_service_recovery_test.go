@@ -2,6 +2,7 @@ package webui
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http/httptest"
 	"os"
@@ -11,7 +12,34 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 )
+
+func TestChildRecoveryMetadataReadBounds(t *testing.T) {
+	dir := t.TempDir()
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+	const name = "session.json"
+	if _, err := readRootMetadata(root, name); !os.IsNotExist(err) {
+		t.Fatalf("missing metadata: %v", err)
+	}
+	if err := root.WriteFile(name, []byte(`{"status":"completed"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := readRootMetadata(root, name); err != nil || string(got) != `{"status":"completed"}` {
+		t.Fatalf("regular metadata: %q, %v", got, err)
+	}
+	if err := os.Truncate(filepath.Join(dir, name), (16<<20)+1); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := readRootMetadata(root, name); got != nil || !errors.Is(err, artifactio.ErrSizeLimit) {
+		t.Fatalf("oversized metadata: %d bytes, %v", len(got), err)
+	}
+}
 
 func TestChildRecoveryScanIgnoresUnrelatedEntriesAcrossBatches(t *testing.T) {
 	dir := t.TempDir()

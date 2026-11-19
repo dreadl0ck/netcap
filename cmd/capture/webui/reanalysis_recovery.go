@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/rules"
 )
@@ -81,19 +83,7 @@ func readRootJSON(root *os.Root, name string, target any) error {
 }
 
 func readRootMetadata(root *os.Root, name string) ([]byte, error) {
-	f, err := root.Open(name)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	data, err := io.ReadAll(io.LimitReader(f, (16<<20)+1))
-	if err != nil {
-		return nil, err
-	}
-	if len(data) > 16<<20 {
-		return nil, fmt.Errorf("child metadata exceeds 16 MiB")
-	}
-	return data, nil
+	return artifactio.ReadInRoot(context.Background(), root, name, 16<<20)
 }
 
 func childRecoveredState(root *os.Root, child childAnalysis, source string) localChildState {

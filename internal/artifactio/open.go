@@ -76,6 +76,19 @@ func Read(ctx context.Context, directory, name string, limit int64) ([]byte, err
 		return nil, err
 	}
 	f, info, err := Open(directory, name)
+	return readOpened(ctx, f, info, err, limit)
+}
+
+// ReadInRoot reads a bounded regular artifact relative to an already pinned root.
+func ReadInRoot(ctx context.Context, root *os.Root, name string, limit int64) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	f, info, err := OpenInRoot(root, name)
+	return readOpened(ctx, f, info, err, limit)
+}
+
+func readOpened(ctx context.Context, f *os.File, info os.FileInfo, err error, limit int64) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
