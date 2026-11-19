@@ -150,7 +150,7 @@ func TestAnalysisAdmissionCancelsSchemaWait(t *testing.T) {
 		defer protoRuntime.mu.Unlock()
 		protoRuntime.searchPaths, protoRuntime.mappings, protoRuntime.alternatives = paths, mappings, alternatives
 	})
-	s := &Server{jobQueue: make(chan *AnalysisJob, 1), shutdownChan: make(chan struct{})}
+	s := &Server{jobQueue: make(chan *AnalysisJob, 1), captureQueueSlots: make(chan struct{}, 1), shutdownChan: make(chan struct{})}
 	defer s.stopProcessingAdmission()
 	for range cap(schemaSnapshotSlots) {
 		schemaSnapshotSlots <- struct{}{}
@@ -165,11 +165,11 @@ func TestAnalysisAdmissionCancelsSchemaWait(t *testing.T) {
 		s.mu.RLock()
 		owned := s.processingWork > 0
 		s.mu.RUnlock()
-		if owned {
+		if owned && len(s.captureQueueSlots) == 1 {
 			break
 		}
 		if time.Now().After(deadline) {
-			t.Fatal("submission never acquired processing ownership")
+			t.Fatal("submission never acquired processing ownership and a queue slot")
 		}
 		time.Sleep(time.Millisecond)
 	}
@@ -185,8 +185,8 @@ func TestAnalysisAdmissionCancelsSchemaWait(t *testing.T) {
 	s.mu.RLock()
 	remaining := s.processingWork
 	s.mu.RUnlock()
-	if remaining != 0 || len(s.jobQueue) != 0 {
-		t.Fatalf("canceled admission retained %d work claims and %d queued jobs", remaining, len(s.jobQueue))
+	if remaining != 0 || len(s.jobQueue) != 0 || len(s.captureQueueSlots) != 0 {
+		t.Fatalf("canceled admission retained %d work claims, %d queued jobs and %d queue slots", remaining, len(s.jobQueue), len(s.captureQueueSlots))
 	}
 }
 
