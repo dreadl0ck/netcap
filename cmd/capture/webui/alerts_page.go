@@ -82,6 +82,10 @@ func (s *alertPageSpill) open(ctx context.Context) error {
 }
 
 func (s *Server) serveRawAlertPage(w http.ResponseWriter, r *http.Request, auditPath string) {
+	s.serveRawAlertPageWithBudget(w, r, auditPath, alertPageMemoryBytes)
+}
+
+func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Request, auditPath string, bufferBudget int) {
 	options, err := parseCollectionPage(r)
 	if err != nil {
 		RespondJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
@@ -92,7 +96,6 @@ func (s *Server) serveRawAlertPage(w http.ResponseWriter, r *http.Request, audit
 	var spill alertPageSpill
 	defer spill.close()
 	var buffered []json.RawMessage
-	bufferBudget := alertPageMemoryBytes
 	q := r.URL.Query()
 	severity, rule, group := q.Get("severity"), q.Get("ruleName"), q.Get("groupId")
 	search := strings.ToLower(q.Get("pageSearch"))

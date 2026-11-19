@@ -357,6 +357,36 @@ func TestAlertAuditGrowthRejectsSnapshot(t *testing.T) {
 	}
 }
 
+func TestRawAlertPageSpillPreservesDuplicateContinuation(t *testing.T) {
+	dir := t.TempDir()
+	duplicate := &types.Alert{RuleName: "fixture", Timestamp: 2_000_000}
+	path := writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, []proto.Message{
+		duplicate, &types.Alert{RuleName: "fixture", Timestamp: 1_000_000}, duplicate,
+	})
+	s := &Server{outDir: dir}
+	first := httptest.NewRecorder()
+	s.handleAlerts(first, httptest.NewRequest(http.MethodGet, "/api/alerts?mcpPage=true&pageLimit=2", nil))
+	var page struct {
+		Alerts     []AlertResponse
+		TotalCount int
+		Generation string
+	}
+	if err := json.Unmarshal(first.Body.Bytes(), &page); err != nil || first.Code != http.StatusOK || page.TotalCount != 3 || len(page.Alerts) != 2 || page.Alerts[0].Timestamp != 1 || page.Alerts[1].Timestamp != 2 || page.Generation == "" {
+		t.Fatalf("unexpected initial page: %d %s (%v)", first.Code, first.Body, err)
+	}
+	url := "/api/alerts?mcpPage=true&pageLimit=2&pageOffset=2&pageGeneration=" + page.Generation
+	memory, spilled := httptest.NewRecorder(), httptest.NewRecorder()
+	s.handleAlerts(memory, httptest.NewRequest(http.MethodGet, url, nil))
+	s.serveRawAlertPageWithBudget(spilled, httptest.NewRequest(http.MethodGet, url, nil), path, 0)
+	if memory.Code != http.StatusOK || spilled.Code != http.StatusOK || memory.Body.String() != spilled.Body.String() {
+		t.Fatalf("continuation differs: memory=%d %s; spill=%d %s", memory.Code, memory.Body, spilled.Code, spilled.Body)
+	}
+	page.Alerts = nil
+	if err := json.Unmarshal(spilled.Body.Bytes(), &page); err != nil || page.TotalCount != 3 || len(page.Alerts) != 1 || page.Alerts[0].Timestamp != 2 {
+		t.Fatalf("duplicate lost at page boundary: %s (%v)", spilled.Body, err)
+	}
+}
+
 func TestAlertViewsAbovePageScanBudget(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "Alert.ncap.gz")
