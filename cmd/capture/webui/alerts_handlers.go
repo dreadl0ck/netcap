@@ -598,13 +598,28 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 
 	// Read alerts from the alerts audit record file
 	alertsFile := filepath.Join(outDir, "Alert.ncap.gz")
-	alerts, ok := s.alertsForResponse(w, r, alertsFile, bounded)
-	if !ok {
-		return
+	var groups []GroupedAlert
+	if bounded {
+		if _, err := parseCollectionPage(r); err != nil {
+			RespondJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return
+		}
+		acc := newAlertGroups(maxCollectionPageScanBytes)
+		_, err := s.scanAlertAudit(r.Context(), alertsFile, alertStatsScanBytes, alertStatsScanRows, alertStatsFrameBytes, func(alert AlertResponse) error {
+			return acc.add(alert, severityFilter, ruleNameFilter)
+		})
+		if err != nil {
+			s.respondAlertReadError(w, r.Context(), err)
+			return
+		}
+		groups = acc.finish()
+	} else {
+		alerts, ok := s.alertsForResponse(w, r, alertsFile, false)
+		if !ok {
+			return
+		}
+		groups = groupAlerts(alerts, severityFilter, ruleNameFilter)
 	}
-
-	// Group alerts
-	groups := groupAlerts(alerts, severityFilter, ruleNameFilter)
 	if classification := query.Get("classification"); classification != "" {
 		filtered := make([]GroupedAlert, 0, len(groups))
 		for _, group := range groups {
@@ -673,89 +688,118 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 
 // groupAlerts groups alerts by rule name and severity, collecting unique values
 func groupAlerts(alerts []AlertResponse, severityFilter, ruleNameFilter string) []GroupedAlert {
-	type groupKey struct {
-		ruleName string
-		severity string
-	}
-
-	groupMap := make(map[groupKey]*GroupedAlert)
-	unique := make(map[groupKey][4]map[string]bool)
-
+	acc := newAlertGroups(-1)
 	for _, alert := range alerts {
-		// Apply filters
-		if severityFilter != "" && !strings.EqualFold(alert.Severity, severityFilter) {
-			continue
-		}
-		if ruleNameFilter != "" && !strings.EqualFold(alert.RuleName, ruleNameFilter) {
-			continue
-		}
+		_ = acc.add(alert, severityFilter, ruleNameFilter)
+	}
+	return acc.finish()
+}
 
-		key := groupKey{
-			ruleName: alert.RuleName,
-			severity: alert.Severity,
-		}
+type alertGroupKey struct{ ruleName, severity string }
 
-		group, exists := groupMap[key]
-		if !exists {
-			group = &GroupedAlert{
-				RuleName:        alert.RuleName,
-				Description:     alert.Description,
-				Severity:        alert.Severity,
-				RecordType:      alert.RecordType,
-				Tags:            append([]string{}, alert.Tags...),
-				MITRE:           alert.MITRE,
-				RuleExpression:  alert.RuleExpression,
-				Threshold:       alert.Threshold,
-				ThresholdWindow: alert.ThresholdWindow,
-				Count:           0,
-				FirstSeen:       alert.Timestamp,
-				LastSeen:        alert.Timestamp,
-				UniqueSrcIPs:    []string{},
-				UniqueDstIPs:    []string{},
-				UniqueSrcPorts:  []string{},
-				UniqueDstPorts:  []string{},
-				SampleAlerts:    []AlertResponse{},
-				ResolvedCount:   0,
-				GroupID:         generateGroupID(alert.RuleName, alert.Severity),
-			}
-			groupMap[key] = group
-			unique[key] = [4]map[string]bool{{}, {}, {}, {}}
-		}
+type alertGroups struct {
+	groups    map[alertGroupKey]*GroupedAlert
+	unique    map[alertGroupKey][4]map[string]bool
+	remaining int
+}
 
-		// Update group statistics
-		group.Count++
-		if alert.Resolved {
-			group.ResolvedCount++
-		}
-		if alert.Timestamp < group.FirstSeen {
-			group.FirstSeen = alert.Timestamp
-		}
-		if alert.Timestamp > group.LastSeen {
-			group.LastSeen = alert.Timestamp
-		}
+func newAlertGroups(budget int) *alertGroups {
+	return &alertGroups{groups: make(map[alertGroupKey]*GroupedAlert), unique: make(map[alertGroupKey][4]map[string]bool), remaining: budget}
+}
 
-		// Collect unique IPs and ports
-		seen := unique[key]
-		appendGroupUnique(&group.UniqueSrcIPs, seen[0], alert.SrcIP)
-		appendGroupUnique(&group.UniqueDstIPs, seen[1], alert.DstIP)
-
-		// Add source port if it exists in the matched record or is captured
-		srcPort := extractPort(alert, "SrcPort")
-		appendGroupUnique(&group.UniqueSrcPorts, seen[2], srcPort)
-
-		// Add destination port if it exists
-		dstPort := extractPort(alert, "DstPort")
-		appendGroupUnique(&group.UniqueDstPorts, seen[3], dstPort)
-
-		// Keep up to 5 sample alerts for detail view
-		if len(group.SampleAlerts) < 5 {
-			group.SampleAlerts = append(group.SampleAlerts, alert)
-		}
+func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter string) error {
+	if severityFilter != "" && !strings.EqualFold(alert.Severity, severityFilter) {
+		return nil
+	}
+	if ruleNameFilter != "" && !strings.EqualFold(alert.RuleName, ruleNameFilter) {
+		return nil
 	}
 
-	// Convert map to slice
-	result := make([]GroupedAlert, 0, len(groupMap))
-	for _, group := range groupMap {
+	key := alertGroupKey{
+		ruleName: alert.RuleName,
+		severity: alert.Severity,
+	}
+
+	group, exists := a.groups[key]
+	values := [4]string{alert.SrcIP, alert.DstIP, extractPort(alert, "SrcPort"), extractPort(alert, "DstPort")}
+	seen := a.unique[key]
+	if a.remaining >= 0 {
+		charge := 0
+		if !exists || len(group.SampleAlerts) < 5 {
+			raw, err := json.Marshal(alert)
+			if err != nil {
+				return err
+			}
+			charge += len(raw) + 512
+			if !exists {
+				charge += len(raw) + 1024
+			}
+		}
+		for i, value := range values {
+			if value != "" && !seen[i][value] {
+				charge += len(value) + 64
+			}
+		}
+		if charge > a.remaining {
+			return fmt.Errorf("%w: grouped alert state budget exceeded", errAlertPageSourceLimit)
+		}
+		a.remaining -= charge
+	}
+	if !exists {
+		group = &GroupedAlert{
+			RuleName:        alert.RuleName,
+			Description:     alert.Description,
+			Severity:        alert.Severity,
+			RecordType:      alert.RecordType,
+			Tags:            append([]string{}, alert.Tags...),
+			MITRE:           alert.MITRE,
+			RuleExpression:  alert.RuleExpression,
+			Threshold:       alert.Threshold,
+			ThresholdWindow: alert.ThresholdWindow,
+			Count:           0,
+			FirstSeen:       alert.Timestamp,
+			LastSeen:        alert.Timestamp,
+			UniqueSrcIPs:    []string{},
+			UniqueDstIPs:    []string{},
+			UniqueSrcPorts:  []string{},
+			UniqueDstPorts:  []string{},
+			SampleAlerts:    []AlertResponse{},
+			ResolvedCount:   0,
+			GroupID:         generateGroupID(alert.RuleName, alert.Severity),
+		}
+		a.groups[key] = group
+		seen = [4]map[string]bool{{}, {}, {}, {}}
+		a.unique[key] = seen
+	}
+
+	// Update group statistics
+	group.Count++
+	if alert.Resolved {
+		group.ResolvedCount++
+	}
+	if alert.Timestamp < group.FirstSeen {
+		group.FirstSeen = alert.Timestamp
+	}
+	if alert.Timestamp > group.LastSeen {
+		group.LastSeen = alert.Timestamp
+	}
+
+	// Collect unique IPs and ports
+	appendGroupUnique(&group.UniqueSrcIPs, seen[0], values[0])
+	appendGroupUnique(&group.UniqueDstIPs, seen[1], values[1])
+	appendGroupUnique(&group.UniqueSrcPorts, seen[2], values[2])
+	appendGroupUnique(&group.UniqueDstPorts, seen[3], values[3])
+
+	// Keep up to 5 sample alerts for detail view
+	if len(group.SampleAlerts) < 5 {
+		group.SampleAlerts = append(group.SampleAlerts, alert)
+	}
+	return nil
+}
+
+func (a *alertGroups) finish() []GroupedAlert {
+	result := make([]GroupedAlert, 0, len(a.groups))
+	for _, group := range a.groups {
 		// Sort the unique values for consistent display
 		sort.Strings(group.UniqueSrcIPs)
 		sort.Strings(group.UniqueDstIPs)

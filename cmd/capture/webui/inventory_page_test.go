@@ -317,13 +317,6 @@ func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
 		name string
 		rows []proto.Message
 	}{
-		{"records", func() []proto.Message {
-			rows := make([]proto.Message, maxCollectionPageRows+1)
-			for i := range rows {
-				rows[i] = &types.Alert{RuleName: "fixture"}
-			}
-			return rows
-		}()},
 		{"record bytes", []proto.Message{&types.Alert{Description: strings.Repeat("x", maxCollectionPageScanBytes)}}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -333,9 +326,6 @@ func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
 			for path, handler := range map[string]http.HandlerFunc{
 				"/api/alerts": s.handleAlerts, "/api/alerts/grouped": s.handleGroupedAlerts,
 			} {
-				if path == "/api/alerts" && tc.name == "records" {
-					continue // Raw pages have their own larger row budget.
-				}
 				w := httptest.NewRecorder()
 				handler(w, httptest.NewRequest(http.MethodGet, path+"?mcpPage=true&ruleName=missing&pageLimit=1", nil))
 				if w.Code != http.StatusRequestEntityTooLarge || strings.Contains(w.Body.String(), "totalCount") || strings.Contains(w.Body.String(), "totalAlerts") || strings.Contains(w.Body.String(), "generation") {
@@ -346,7 +336,7 @@ func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
 	}
 }
 
-func TestAlertStatsAbovePageScanBudget(t *testing.T) {
+func TestAlertViewsAbovePageScanBudget(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "Alert.ncap.gz")
 	f, err := os.Create(path)
@@ -423,6 +413,40 @@ func TestAlertStatsAbovePageScanBudget(t *testing.T) {
 				t.Fatalf("offset %d row %d: timestamp=%d, want %s", offset, i, alert.Timestamp, ordered[offset+i])
 			}
 		}
+	}
+	generation = ""
+	for _, offset := range []int{0, 1, 2} {
+		response := httptest.NewRecorder()
+		url := fmt.Sprintf("/api/alerts/grouped?mcpPage=true&pageLimit=1&pageOffset=%d&pageGeneration=%s", offset, generation)
+		s.handleGroupedAlerts(response, httptest.NewRequest(http.MethodGet, url, nil))
+		var page struct {
+			Groups                 []GroupedAlert
+			TotalCount, GroupCount int
+			Generation             string
+			HasMore                bool `json:"has_more"`
+		}
+		if err := json.Unmarshal(response.Body.Bytes(), &page); err != nil || response.Code != http.StatusOK || page.TotalCount != count || page.GroupCount != 2 || page.Groups == nil || len(page.Groups) != min(1, 2-offset) || page.HasMore != (offset == 0) || page.Generation == "" || (generation != "" && generation != page.Generation) {
+			t.Fatalf("group offset %d: status=%d body=%s err=%v", offset, response.Code, response.Body, err)
+		}
+		generation = page.Generation
+		if offset < 2 && page.Groups[0].Count != count/2 {
+			t.Fatalf("group offset %d: count=%d", offset, page.Groups[0].Count)
+		}
+	}
+}
+
+func TestGroupedAlertPagesRejectExcessSummaryState(t *testing.T) {
+	dir := t.TempDir()
+	rows := make([]proto.Message, 10_000)
+	for i := range rows {
+		rows[i] = &types.Alert{RuleName: fmt.Sprintf("rule-%05d", i), Severity: "info"}
+	}
+	writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, rows)
+	s := &Server{outDir: dir}
+	w := httptest.NewRecorder()
+	s.handleGroupedAlerts(w, httptest.NewRequest(http.MethodGet, "/api/alerts/grouped?mcpPage=true&pageLimit=1", nil))
+	if w.Code != http.StatusRequestEntityTooLarge || !strings.Contains(w.Body.String(), "grouped alert state budget") || strings.Contains(w.Body.String(), "totalCount") {
+		t.Fatalf("unexpected grouped budget response: %d %s", w.Code, w.Body.String())
 	}
 }
 
