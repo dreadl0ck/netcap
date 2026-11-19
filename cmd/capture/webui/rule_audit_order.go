@@ -85,6 +85,16 @@ func scanOrderedRuleAuditWithScratch(dir, auditType string, stop, shutdown <-cha
 		if int64(len(wire)) > ruleOrderMaxBytes-size {
 			return fmt.Errorf("rule replay ordering budget exceeded")
 		}
+		orderWire := wire
+		if fileRecord, ok := message.(*types.File); ok && fileRecord.Location != "" {
+			// Keep the original wire bytes for rule evaluation.
+			projected := *fileRecord
+			projected.Location = ""
+			orderWire, err = rules.MarshalReplayRecord(&projected)
+			if err != nil {
+				return err
+			}
+		}
 		if file != nil || size+int64(len(wire)) > ruleOrderMemoryBytes {
 			charge := int64(len(wire))
 			if file == nil {
@@ -112,7 +122,7 @@ func scanOrderedRuleAuditWithScratch(dir, auditType string, stop, shutdown <-cha
 		} else {
 			memory = append(memory, wire...)
 		}
-		rows = append(rows, ruleOrderRow{record.Time(), size, len(wire), sha256.Sum256(wire)})
+		rows = append(rows, ruleOrderRow{record.Time(), size, len(wire), sha256.Sum256(orderWire)})
 		size += int64(len(wire))
 		return nil
 	})

@@ -11,6 +11,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -197,6 +199,36 @@ func TestRuleAuditRejectsLinkedPreferredTrack(t *testing.T) {
 	})
 	if count != 0 || !errors.Is(err, artifactio.ErrPath) {
 		t.Fatalf("linked preferred input: records=%d, err=%v", count, err)
+	}
+}
+
+func TestOrderedFileAuditIgnoresExtractionPathsInTies(t *testing.T) {
+	var baseline []string
+	for run := range 2 {
+		dir := t.TempDir()
+		rows := make([]proto.Message, 16)
+		for i := range rows {
+			name := strconv.Itoa((i + run) % len(rows))
+			rows[i] = &types.File{Timestamp: 42, Name: name, Location: filepath.Join(dir, name)}
+		}
+		writeTimelineAuditFile(t, dir, "File", types.Type_NC_File, rows)
+		var names []string
+		count, err := scanOrderedRuleAudit(dir, "File", nil, nil, func(record types.AuditRecord) error {
+			file := record.(*types.File)
+			if file.Location != filepath.Join(dir, file.Name) {
+				t.Fatalf("replay changed Location for %q", file.Name)
+			}
+			names = append(names, file.Name)
+			return nil
+		})
+		if err != nil || count != len(rows) {
+			t.Fatalf("replayed %d records: %v", count, err)
+		}
+		if run == 0 {
+			baseline = names
+		} else if !slices.Equal(baseline, names) {
+			t.Fatalf("File replay order changed: %v != %v", baseline, names)
+		}
 	}
 }
 
