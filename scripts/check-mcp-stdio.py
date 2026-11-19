@@ -335,7 +335,9 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout, 
                 break
             await asyncio.sleep(0.5)
         completed = time.monotonic()
-        manifest = await call("get_capture_evidence", args | {"fields": "status,admittedPackets,queueDrops,createdAt,runId,config"})
+        manifest = await call("get_capture_evidence", args | {
+            "fields": "status,admittedPackets,queueDrops,createdAt,runId,config,inputSHA256",
+        })
         # A finished session can be evicted from the bounded timeline cache.
         # A subsequent metadata read starts an asynchronous rebuild.
         while True:
@@ -348,7 +350,8 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout, 
         owned, = (row for row in sessions if row["session_id"] == reply["session_id"])
         with Path(owned["input_file"]).open("rb") as retained:
             retained_digest = hashlib.file_digest(retained, "sha256").hexdigest()
-        if (retained_digest != digest or manifest["status"] not in {"done", "complete"}
+        if (retained_digest != digest or manifest.get("inputSHA256") != digest
+                or manifest["status"] not in {"done", "complete"}
                 or int(manifest["admittedPackets"]) != packet_counts[order[i]]
                 or int(manifest["queueDrops"]) != 0
                 or timeline["status"] != "ready" or not timeline.get("generation")):
