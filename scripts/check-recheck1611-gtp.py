@@ -47,12 +47,16 @@ async def check(binary, root, fixtures):
             status = await call("wait_for_session", args | {"timeout_seconds": 15})
             if not status["completed"]:
                 raise ValueError(f"{path.name}: capture did not complete: {status}")
-            result = await call("query_audit_records", args | {"type": "GTP", "allow_partial": True, "limit": len(message_types) + 1})
-            records = result["records"]
-            summary = result["summary"]
+            query = args | {"type": "GTP", "limit": len(message_types) + 1}
+            ordinary = await call("query_audit_records", query)
+            sealed = await call("query_audit_records", query | {"allow_partial": True})
+            records = sealed["records"]
+            summary = sealed["summary"]
             if (sorted(row["MessageType"] for row in records) != message_types
-                    or summary["total"] != len(message_types) or summary.get("coverage") != "complete"):
-                raise ValueError(f"{path.name}: unexpected sealed GTP result: {result}")
+                    or summary["total"] != len(message_types) or summary.get("coverage") != "complete"
+                    or ordinary["records"] != records or ordinary["summary"]["total"] != len(message_types)
+                    or ordinary["terminal"] != "complete"):
+                raise ValueError(f"{path.name}: ordinary and sealed GTP results disagree with fixture: {ordinary}, {sealed}")
             print(json.dumps({"fixture": path.name, "messageTypes": message_types, "coverage": summary["coverage"]}))
 
 
@@ -69,7 +73,14 @@ def main():
         root = Path(directory)
         fixtures = []
         with zipfile.ZipFile(archive) as bundle:
-            for name, message_type in (("gtpu_type_01.pcap", 1), ("gtpu_tpdu_then_endmarker.pcap", 254)):
+            for name, message_type in (
+                ("gtpu_type_01.pcap", 1),
+                ("gtpu_type_02.pcap", 2),
+                ("gtpu_type_1a.pcap", 26),
+                ("gtpu_type_1f.pcap", 31),
+                ("gtpu_endmarker_only.pcap", 254),
+                ("gtpu_tpdu_then_endmarker.pcap", 254),
+            ):
                 path = root / name
                 path.write_bytes(bundle.read("netcap-v0.16.11-synthetic-repros/repro/v1611/gtp/" + name))
                 fixtures.append((path, [message_type]))
