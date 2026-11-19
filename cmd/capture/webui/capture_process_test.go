@@ -7,9 +7,35 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
+
+func TestAuxiliaryHelperDeadlineRecordsFailure(t *testing.T) {
+	t.Setenv("NETCAP_TEST_CAPTURE_PROCESS_CHILD", "1")
+	executable, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	input := filepath.Join(dir, "capture.pcap")
+	if err := os.WriteFile(input, []byte("fixture"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	s := &Server{fileErrors: make(map[string]FileError)}
+	job := &AnalysisJob{InputFile: input, OutputDir: dir, captureLane: captureAuxiliary,
+		deferCompletion: true, reproductionSource: snapshotReproductionSource(input, nil, nil)}
+	s.runOfflineCaptureHelper(job, executable, []string{"-test.run=^TestCaptureProcessShutdownOwnsRunningHelper$"}, 250*time.Millisecond)
+	failure, ok := s.GetFileError(input)
+	if !ok || !strings.Contains(failure.Error, "exceeded its 250ms execution limit") || job.postCapture != nil {
+		t.Fatalf("deadline did not fail the job before completion: failure=%+v", failure)
+	}
+	if s.captureProcesses[captureAuxiliary] != nil {
+		t.Fatal("timed-out process retained its slot")
+	}
+}
 
 func TestCaptureProcessShutdownOwnsRunningHelper(t *testing.T) {
 	if os.Getenv("NETCAP_TEST_CAPTURE_PROCESS_CHILD") == "1" {

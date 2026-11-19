@@ -198,6 +198,10 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		log.Printf("[Service] Using capture helper: %s", executable)
 	}
 
+	s.runOfflineCaptureHelper(job, executable, append(helperPrefix, args...), auxiliaryCaptureTimeout)
+}
+
+func (s *Server) runOfflineCaptureHelper(job *AnalysisJob, executable string, args []string, auxiliaryTimeout time.Duration) {
 	// Create error log file for capturing stdout/stderr
 	errorLogPath := filepath.Join(job.OutputDir, analysisErrorLogName)
 	errorLogFile, err := os.Create(errorLogPath)
@@ -211,7 +215,6 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	log.Printf("[Service] Executing command: %s %s", executable, strings.Join(args, " "))
 
 	// Run the capture command
-	args = append(helperPrefix, args...)
 	if job.captureLane == captureAuxiliary {
 		args = append(args, "-workers=1", "-stream-workers=1")
 	}
@@ -232,7 +235,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	ctx := context.Background()
 	if job.captureLane == captureAuxiliary {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, auxiliaryCaptureTimeout)
+		ctx, cancel = context.WithTimeout(ctx, auxiliaryTimeout)
 		defer cancel()
 	}
 	cmd := exec.CommandContext(ctx, executable, args...)
@@ -286,7 +289,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		// was all the UI ever showed.
 		message := summariseAnalysisFailure(err, errorLogPath)
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			message = fmt.Sprintf("Auxiliary capture exceeded its %s execution limit", auxiliaryCaptureTimeout)
+			message = fmt.Sprintf("Auxiliary capture exceeded its %s execution limit", auxiliaryTimeout)
 		}
 		s.recordAnalysisFailure(job, message, errorLogPath)
 
