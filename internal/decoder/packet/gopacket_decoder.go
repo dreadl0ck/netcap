@@ -140,6 +140,8 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 				filename = "OSPFv3"
 			case types.Type_NC_ENIP:
 				filename = "ENIP"
+			case types.Type_NC_GTP:
+				filename = "GTP"
 			}
 
 			// hookup writer - use shared writer to handle the case where
