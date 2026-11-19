@@ -32,6 +32,73 @@ func TestCaptureDispatchBoundsSmallJobBypasses(t *testing.T) {
 	}
 }
 
+func TestAuxiliaryDispatchOverlapsOnlyTwoOwnedSmallCaptures(t *testing.T) {
+	job := func(id string, size int64) *AnalysisJob {
+		return &AnalysisJob{SessionID: id, InputFile: id + ".pcap", OutputDir: id,
+			reproductionSource: reproductionSource{SHA256: "snapshot", Bytes: size}}
+	}
+	large := job("large", smallCaptureBytes+1)
+	unowned := job("unowned", 24)
+	small := []*AnalysisJob{job("one", 24), job("two", smallCaptureBytes), job("three", 24)}
+	s := &Server{jobQueue: make(chan *AnalysisJob, 5), shutdownChan: make(chan struct{}),
+		localUploads: make(map[string]localUpload), fileOutputDirs: make(map[string]string)}
+	for _, entry := range small {
+		s.localUploads[entry.InputFile] = localUpload{AnalysisID: entry.SessionID}
+		s.fileOutputDirs[entry.InputFile] = entry.OutputDir
+	}
+	started := make(chan *AnalysisJob, 5)
+	release := make(chan struct{})
+	finishLarge := sync.OnceFunc(func() { close(release) })
+	done := make(chan struct{})
+	var dispatch captureDispatch
+	s.jobQueue <- large
+	go func() {
+		defer close(done)
+		s.dispatchWithAuxiliary(&dispatch, func(entry *AnalysisJob) {
+			started <- entry
+			if entry == large {
+				<-release
+			}
+		})
+	}()
+	t.Cleanup(func() {
+		close(s.shutdownChan)
+		finishLarge()
+		select {
+		case <-done:
+		case <-time.After(5 * time.Second):
+			t.Error("dispatcher did not stop")
+		}
+	})
+	next := func(want *AnalysisJob, lane captureProcessLane) {
+		t.Helper()
+		select {
+		case got := <-started:
+			if got != want || got.captureLane != lane {
+				t.Fatalf("started %s in lane %d, want %s in lane %d", got.SessionID, got.captureLane, want.SessionID, lane)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatalf("did not start %s", want.SessionID)
+		}
+	}
+	next(large, captureOffline)
+	s.jobQueue <- unowned
+	for _, entry := range small {
+		s.jobQueue <- entry
+	}
+	close(s.jobQueue)
+	next(small[0], captureAuxiliary)
+	next(small[1], captureAuxiliary)
+	finishLarge()
+	next(unowned, captureOffline)
+	next(small[2], captureOffline)
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("closed queue did not drain")
+	}
+}
+
 func processingStatus(t *testing.T, server *Server) bool {
 	t.Helper()
 	response := httptest.NewRecorder()
