@@ -96,7 +96,9 @@ func Open(directory string, limit int64, cancel func()) (*Store, error) {
 	return s, nil
 }
 
-func charge(e *entry) int64 { return int64(len(e.key) + len(e.value) + 256) }
+func charge(e *entry) int64 { return entryCharge(e.key, e.value) }
+
+func entryCharge(key string, value []byte) int64 { return int64(len(key) + len(value) + 256) }
 
 func (s *Store) fail(err error) error {
 	if err != nil && s.err == nil {
@@ -204,6 +206,10 @@ func (t *Tx) Get(key string) ([]byte, bool, error) {
 		return nil, false, err
 	}
 	s.health.DiskReads++
+	if len(value) != 0 && entryCharge(key, value) > s.health.LimitBytes {
+		// Scan into []byte already gives the caller an owned copy.
+		return value, true, nil
+	}
 	if err = s.remember(key, value, false); err != nil {
 		return nil, false, err
 	}
