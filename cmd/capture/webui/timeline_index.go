@@ -167,7 +167,8 @@ type timelineIndexStatus struct {
 
 var timelineCache = struct {
 	sync.Mutex
-	entries map[string]*timelineIndexEntry
+	entries         map[string]*timelineIndexEntry
+	capacityChanged chan struct{}
 }{entries: make(map[string]*timelineIndexEntry)}
 
 const timelineSmallInputBytes = 256 << 10
@@ -357,6 +358,10 @@ func timelineFingerprint(outDir string) (string, []timelineFileRef, error) {
 // timelineIndexFor returns the index for outDir, kicking off a background build
 // when no current index exists.
 func timelineIndexFor(outDir string) timelineIndexStatus {
+	return timelineIndexWithAdmission(outDir, false)
+}
+
+func timelineIndexWithAdmission(outDir string, waitForCapacity bool) timelineIndexStatus {
 	fingerprint, files, err := timelineFingerprint(outDir)
 	if err != nil {
 		return timelineIndexStatus{State: timelineStateError, Err: err.Error()}
@@ -395,6 +400,14 @@ func timelineIndexFor(outDir string) timelineIndexStatus {
 				}
 			}
 			if oldestKey == "" {
+				if waitForCapacity {
+					if timelineCache.capacityChanged == nil {
+						timelineCache.capacityChanged = make(chan struct{})
+					}
+					pending := timelineCache.capacityChanged
+					timelineCache.Unlock()
+					return timelineIndexStatus{State: timelineStateIndexing, finished: pending}
+				}
 				timelineCache.Unlock()
 
 				return timelineIndexStatus{State: timelineStateError, Err: "timeline indexer is busy"}
@@ -469,7 +482,15 @@ func timelineEvictLocked() {
 
 // buildTimelineIndex indexes every audit record file of one generation.
 func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, files []timelineFileRef) {
-	defer close(entry.finished)
+	defer func() {
+		close(entry.finished)
+		timelineCache.Lock()
+		if timelineCache.capacityChanged != nil {
+			close(timelineCache.capacityChanged)
+			timelineCache.capacityChanged = nil
+		}
+		timelineCache.Unlock()
+	}()
 	canceled := func() {
 		entry.mu.Lock()
 		entry.state, entry.errMsg = timelineStateError, "timeline indexing canceled"

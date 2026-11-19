@@ -92,7 +92,7 @@ func (s *Server) waitForAnalysisTimeline(dir string) error {
 			return errAnalysisStopping
 		default:
 		}
-		status := timelineIndexFor(dir)
+		status := timelineIndexWithAdmission(dir, true)
 		switch status.State {
 		case timelineStateReady:
 			return nil

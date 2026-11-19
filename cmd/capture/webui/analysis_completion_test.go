@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -913,6 +914,52 @@ func TestAnalysisCompletionWaitsForTimelineGeneration(t *testing.T) {
 		t.Fatal("completed with stale timeline", status.State)
 	}
 	assertPhase("completed", status.Index.Generation)
+}
+
+func TestAnalysisTimelineWaitsForCacheCapacity(t *testing.T) {
+	fixture := func() string {
+		dir := t.TempDir()
+		writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
+		return dir
+	}
+	timelineSmallBuildSlot <- struct{}{}
+	release := sync.OnceFunc(func() { <-timelineSmallBuildSlot })
+	var builds []<-chan struct{}
+	defer func() {
+		release()
+		for _, build := range builds {
+			<-build
+		}
+	}()
+	for range timelineCacheSize {
+		status := timelineIndexFor(fixture())
+		if status.State != timelineStateIndexing || status.finished == nil {
+			t.Fatalf("could not fill timeline cache: %+v", status)
+		}
+		builds = append(builds, status.finished)
+	}
+	dir := fixture()
+	if status := timelineIndexFor(dir); status.State != timelineStateError {
+		t.Fatalf("interactive request did not report a busy cache: %+v", status)
+	}
+	s := &Server{shutdownChan: make(chan struct{})}
+	done := make(chan error, 1)
+	go func() { done <- s.waitForAnalysisTimeline(dir) }()
+	processingAwait(t, func() bool {
+		timelineCache.Lock()
+		defer timelineCache.Unlock()
+		return timelineCache.capacityChanged != nil
+	})
+	release()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		close(s.shutdownChan)
+		t.Fatal("analysis did not resume when cache capacity returned")
+	}
 }
 
 func TestAnalysisTimelineWaitStopsDuringShutdown(t *testing.T) {
