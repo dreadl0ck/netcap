@@ -505,9 +505,23 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	recentAlerts := make([]AlertResponse, 0, len(recent))
+	recentAlerts := make([]json.RawMessage, 0, len(recent))
+	remaining := alertStatsResponseBytes
+	tooLarge := func() {
+		s.respondAlertReadError(w, r.Context(), fmt.Errorf("%w: statistics response exceeds %d bytes", errAlertPageSourceLimit, alertStatsResponseBytes))
+	}
 	for _, alert := range recent {
-		recentAlerts = append(recentAlerts, resolvedAlertResponse(alert, resolved))
+		row, err := json.Marshal(resolvedAlertResponse(alert, resolved))
+		if err != nil {
+			s.respondAlertReadError(w, r.Context(), err)
+			return
+		}
+		if len(row) > remaining {
+			tooLarge()
+			return
+		}
+		remaining -= len(row)
+		recentAlerts = append(recentAlerts, row)
 	}
 	payload, err := json.Marshal(map[string]any{
 		"totalAlerts":    total,
@@ -523,7 +537,7 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(payload) > alertStatsResponseBytes {
-		s.respondAlertReadError(w, r.Context(), fmt.Errorf("%w: statistics response exceeds %d bytes", errAlertPageSourceLimit, alertStatsResponseBytes))
+		tooLarge()
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

@@ -38,6 +38,24 @@ func TestGroupedSummaryBoundsSamplesAndPreservesExactTimes(t *testing.T) {
 	}
 }
 
+func TestAlertStatsRefusesOversizedEncodedRecentRows(t *testing.T) {
+	dir := t.TempDir()
+	// Each protobuf frame fits; JSON escapes each control byte as six bytes.
+	description := strings.Repeat("\x01", 768<<10)
+	writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, []proto.Message{
+		&types.Alert{Description: description, Timestamp: 1_000_000},
+		&types.Alert{Description: description, Timestamp: 2_000_000},
+	})
+	s := &Server{outDir: dir}
+	w := httptest.NewRecorder()
+	s.handleAlertStats(w, httptest.NewRequest("GET", "/api/alerts/stats", nil))
+	var response map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil || w.Code != 413 || len(response) != 1 ||
+		!strings.Contains(response["error"], "statistics response exceeds") {
+		t.Fatalf("expected error-only encoded response refusal: status=%d bytes=%d err=%v", w.Code, w.Body.Len(), err)
+	}
+}
+
 func TestAlertStatsRecentRowsPreserveResolutionAndMillisecondTies(t *testing.T) {
 	dir := t.TempDir()
 	rows := make([]proto.Message, 0, 12)
