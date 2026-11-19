@@ -134,21 +134,45 @@ func (s *Server) handleWaitForSession(ctx context.Context, req mcplib.CallToolRe
 		pollMs = 5000
 	}
 
-	deadline := time.Now().Add(time.Duration(timeoutSec) * time.Second)
+	waitCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSec)*time.Second)
+	defer cancel()
+	waitResult := func() *mcplib.CallToolResult {
+		if err := ctx.Err(); err != nil {
+			return errResult(err)
+		}
+		if waitCtx.Err() == nil {
+			return nil
+		}
+		return jsonResult(map[string]any{
+			"session_id": ref.ID,
+			"completed":  false,
+			"timed_out":  true,
+			"note":       fmt.Sprintf("session did not complete within %ds; poll get_session_info or extend the timeout", timeoutSec),
+		})
+	}
 	client := s.newClient()
 	q := ref.sessionQueryParams()
 
 	for {
-		statusBody, statusErr := client.GetContext(ctx, "/api/status", q)
+		statusBody, statusErr := client.GetContext(waitCtx, "/api/status", q)
 		if statusErr != nil {
+			if result := waitResult(); result != nil {
+				return result, nil
+			}
 			return errResult(fmt.Errorf("session status: %w", statusErr)), nil
 		}
-		filesBody, _ := client.GetContext(ctx, "/api/files/input", nil)
+		filesBody, _ := client.GetContext(waitCtx, "/api/files/input", nil)
+		if result := waitResult(); result != nil {
+			return result, nil
+		}
 
 		completed := deriveCompleted(ref, filesBody, statusBody)
 		if completed {
-			statsBody, sErr := client.GetContext(ctx, "/api/audit-stats", q)
+			statsBody, sErr := client.GetContext(waitCtx, "/api/audit-stats", q)
 			if sErr != nil {
+				if result := waitResult(); result != nil {
+					return result, nil
+				}
 				return errResult(fmt.Errorf("audit-stats: %w", sErr)), nil
 			}
 			out := map[string]any{
@@ -185,20 +209,12 @@ func (s *Server) handleWaitForSession(ctx context.Context, req mcplib.CallToolRe
 			return result, nil
 		}
 
-		if time.Now().After(deadline) {
-			out := map[string]any{
-				"session_id": ref.ID,
-				"completed":  false,
-				"timed_out":  true,
-				"note":       fmt.Sprintf("session did not complete within %ds; poll get_session_info or extend the timeout", timeoutSec),
-			}
-			return jsonResult(out), nil
-		}
-
+		timer := time.NewTimer(time.Duration(pollMs) * time.Millisecond)
 		select {
-		case <-ctx.Done():
-			return errResult(ctx.Err()), nil
-		case <-time.After(time.Duration(pollMs) * time.Millisecond):
+		case <-waitCtx.Done():
+			timer.Stop()
+			return waitResult(), nil
+		case <-timer.C:
 		}
 	}
 }

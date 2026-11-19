@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 )
@@ -178,8 +179,37 @@ func TestWaitForSessionTimesOut(t *testing.T) {
 	}
 }
 
-// TestWaitForSessionSurfacesError returns immediately with the error
-// message when the session has failed (no point polling further).
+func TestWaitForSessionTimeoutCancelsBackendRequest(t *testing.T) {
+	canceled := make(chan struct{})
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/status" {
+			http.NotFound(w, r)
+			return
+		}
+		<-r.Context().Done()
+		close(canceled)
+	}))
+	defer ts.Close()
+	srv, _ := New(Options{BaseURL: ts.URL})
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	res, err := srv.mcpSrv.GetTool("wait_for_session").Handler(ctx, mcplib.CallToolRequest{
+		Params: mcplib.CallToolParams{Arguments: map[string]any{"session_id": "/data/x.pcap", "timeout_seconds": 1}},
+	})
+	if err != nil || res == nil || res.IsError {
+		t.Fatalf("expected structured timeout: %v %v", res, err)
+	}
+	var out map[string]any
+	if err := json.Unmarshal([]byte(contentText(res)), &out); err != nil || out["timed_out"] != true || out["completed"] != false {
+		t.Fatalf("unexpected timeout response: %v (%v)", out, err)
+	}
+	select {
+	case <-canceled:
+	case <-ctx.Done():
+		t.Fatal("backend did not observe cancellation")
+	}
+}
+
 func TestWaitForSessionSurfacesError(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/audit-stats", func(w http.ResponseWriter, r *http.Request) {
