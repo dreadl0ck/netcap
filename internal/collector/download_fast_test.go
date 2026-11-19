@@ -11,11 +11,21 @@ import (
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func TestDownloadFastOriginal(t *testing.T) {
+	testDownloadFast(t, false)
+}
+
+func TestDownloadFastPartialArtifact(t *testing.T) {
+	testDownloadFast(t, true)
+}
+
+func testDownloadFast(t *testing.T, extract bool) {
+	t.Helper()
 	const inputSHA256 = "a9d08b46f0ffafe6671407910184aa521db200568da3e844d92636c0feab0588"
 	path := os.Getenv("NETCAP_DOWNLOAD_FAST")
 	if path == "" {
@@ -35,6 +45,11 @@ func TestDownloadFastOriginal(t *testing.T) {
 	cfg := ultimateCaptureConfig(out, 1, 0)
 	cfg.CaptureEvidence = true
 	cfg.DecoderConfig.IncludeDecoders = "TCP,Connection,HTTP,IPP"
+	if extract {
+		cfg.DecoderConfig.IncludeDecoders += ",File"
+		cfg.DecoderConfig.FileStorage = "files"
+		cfg.DecoderConfig.WriteIncomplete = true
+	}
 	cfg.DecoderConfig.MaxAggregateStateBytes = 1 << 20
 	cfg.DecoderConfig.MaxRetainedTCPStateBytes = 256 << 10
 	cfg.DecoderConfig.MaxRetainedTCPBytes = 128 << 10
@@ -69,6 +84,24 @@ func TestDownloadFastOriginal(t *testing.T) {
 	health := bookJSON[core.StateBudgetHealth](t, filepath.Join(out, "TCPStreamStateBudget.json"))
 	if health.Exceeded || health.RetainedBytes != 0 || health.PeakBytes > health.LimitBytes {
 		t.Fatal(health)
+	}
+	if extract {
+		const partialSHA256 = "575fc4241d479487be3b477d54b1d9de2e5b07ec5d355575f07cc345bb5ad279"
+		files := bookRecords(t, out, "File", func() *types.File { return new(types.File) })
+		if len(files) != 1 || files[0].IsComplete || files[0].Length != 82_095_922 || files[0].Hashes.SHA256 != partialSHA256 {
+			t.Fatalf("unexpected partial File audit: %v", files)
+		}
+		actual, err := file.ComputeFileHashes(files[0].Location)
+		if err != nil || actual.SHA256 != partialSHA256 {
+			t.Fatalf("saved artifact SHA-256=%s, want %s (err=%v)", actual.SHA256, partialSHA256, err)
+		}
+		report := bookJSON[struct {
+			State            string
+			ExtractionIssues []string
+		}](t, filepath.Join(out, "artifact-analysis.json"))
+		if report.State != "partial" || !slices.Contains(report.ExtractionIssues, "unexpected EOF") {
+			t.Fatalf("missing partial extraction coverage: %+v", report)
+		}
 	}
 	t.Logf("admitted=%d length=%d qualification=%q credits=%d", m.AdmittedPackets, rows[0].ResContentLength, rows[0].ReassemblyStatus, health.PeakBytes)
 }
