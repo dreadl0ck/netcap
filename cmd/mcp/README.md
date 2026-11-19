@@ -38,6 +38,17 @@ per-tool-call audit lines like:
 [MCP] 2026/05/21 06:41:23.926481 tool=list_hosts duration=630.916µs status=error_result content=160 bytes
 ```
 
+### Auxiliary capture scheduling
+
+Set `NETCAP_AUXILIARY_CAPTURE=1` in the MCP server's environment to let
+owned uploads up to 64 KiB run alongside a large offline capture. One
+auxiliary helper runs at a time, with at most two starts per active large
+capture. Each auxiliary helper uses one capture worker and one stream worker
+and has a 60-second deadline. A timeout marks the analysis as failed.
+
+The default is serial capture dispatch. The App Store build uses its
+in-process capture path and does not enable the auxiliary helper.
+
 ## Claude Desktop / Claude Code configuration
 
 Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`
