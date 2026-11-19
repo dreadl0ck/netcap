@@ -771,6 +771,25 @@ rules:
             if not result.isError:
                 failures.append(f"{name}: unknown session unexpectedly succeeded")
 
+        baseline = await call("get_behavior", args)
+        change = args | {"reason": "stdio contract test"}
+        reset = await call("change_behavior", change | {"action": "reset", "version": baseline["version"]})
+        if reset["mode"] != "learning" or reset["version"] <= baseline["version"]:
+            raise ValueError("resetting the behavioral baseline did not advance its version")
+        paused = await call("change_behavior", change | {"action": "pause", "version": reset["version"]})
+        if paused["mode"] != "paused" or paused["version"] != reset["version"]:
+            raise ValueError("pause did not preserve the baseline version")
+        stale = await client.call_tool("change_behavior", change | {"action": "resume", "version": baseline["version"]})
+        if not stale.isError or not any("HTTP 409" in getattr(c, "text", "") and "version changed" in c.text
+                                        for c in stale.content):
+            raise ValueError("stale baseline edit did not return a version conflict")
+        persisted = await call("get_behavior", args)
+        if (persisted["mode"], persisted["version"]) != (paused["mode"], paused["version"]):
+            raise ValueError("stale baseline edit changed the persisted pause")
+        resumed = await call("change_behavior", change | {"action": "resume", "version": paused["version"]})
+        if resumed["mode"] != reset["mode"] or resumed["version"] != paused["version"]:
+            raise ValueError("resuming the behavioral baseline did not restore its previous mode")
+
         # Replacing audit tracks invalidates the cached timeline generation.
         await check_behavior_records(call, manifest_path.parent, args)
         print(json.dumps({"advertised": len(tools), "covered_count": len(covered), "covered": sorted(covered),
