@@ -206,6 +206,64 @@ func TestSpoolDecodedOutputMatchesByteOutput(t *testing.T) {
 	}
 }
 
+func TestStackedSpoolScratchBoundary(t *testing.T) {
+	body := []byte(strings.Repeat("stacked artifact fixture\n", 4000))
+	inner := encodedFixture(t, body, "gzip")
+	wire := encodedFixture(t, inner, "zlib")
+	for _, tc := range []struct {
+		name     string
+		short    int
+		want     []byte
+		complete bool
+	}{
+		{"exact", 0, body, true},
+		{"one-byte-short", 1, wire, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := spoolTestConfig(t)
+			cfg.FileExtraction.SizeLimits.MaxScratchBytes = int64(len(wire) + len(inner) + len(body) - tc.short)
+			SetGlobalConfig(cfg)
+			oldWriter, oldCount := Decoder.Writer, Decoder.NumRecordsWritten
+			t.Cleanup(func() { Decoder.Writer, Decoder.NumRecordsWritten = oldWriter, oldCount })
+			w := &savedFileWriter{}
+			Decoder.Writer = w
+			spool, err := SpoolBody(bytes.NewReader(wire))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { spool.Close() })
+			conv := &core.ConversationInfo{Ident: "stacked-scratch", FirstClientPacket: time.Unix(10, 0)}
+			if err := SaveSpoolEnhanced(conv, "HTTP", "fixture.txt", nil, spool, []string{"gzip", "deflate"}, "fixture.test", "text/plain", 0, "", "server_to_client", "HTTP"); err != nil {
+				t.Fatal(err)
+			}
+			if len(w.records) != 1 {
+				t.Fatalf("expected one file observation, got %d", len(w.records))
+			}
+			record := w.records[0]
+			got, err := os.ReadFile(record.Location)
+			if err != nil || !bytes.Equal(got, tc.want) || record.GetHashes().GetSHA256() != ComputeHashes(tc.want).SHA256 {
+				t.Fatalf("published bytes or digest differ: %v", err)
+			}
+			if record.IsComplete != tc.complete || (!tc.complete && !strings.Contains(record.CompletenessReason, "content-decoding-error")) {
+				t.Fatalf("unexpected completeness: %t (%s)", record.IsComplete, record.CompletenessReason)
+			}
+			if err := spool.Close(); err != nil {
+				t.Fatal(err)
+			}
+			entries, err := os.ReadDir(filepath.Join(decoderconfig.Instance.Out, ".artifact-scratch"))
+			if err != nil || len(entries) != 0 {
+				t.Fatalf("scratch retained: %v, %v", entries, err)
+			}
+			artifactScratch.Lock()
+			used := artifactScratch.used
+			artifactScratch.Unlock()
+			if used != 0 {
+				t.Fatalf("scratch credits retained: %d", used)
+			}
+		})
+	}
+}
+
 type spoolErrorReader struct{ err error }
 
 type spoolDataErrorReader struct{ err error }
