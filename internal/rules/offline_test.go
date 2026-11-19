@@ -638,6 +638,33 @@ func TestOfflineHistoryFollowsLeasedDirectory(t *testing.T) {
 	}
 }
 
+func TestOfflineHistoryReadsOpenedReportDirectory(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("an open os.Root prevents directory renaming on Windows")
+	}
+	dir := offlineTestDirectory(t)
+	offlineTestRecords(t, dir, "TCP", true, offlineTestTCP(2))
+	want := offlineTestEval(t, dir, offlineTestPack(2))
+	path := filepath.Join(dir, "rule-evaluations")
+	history, err := os.OpenRoot(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer history.Close()
+	if err := os.Rename(path, filepath.Join(dir, "archived-evaluations")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(path, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if reports, err := ListOfflineEvaluations(dir); err != nil || len(reports) != 0 {
+		t.Fatalf("replacement history: %d reports, %v", len(reports), err)
+	}
+	if reports, err := readOfflineHistory(t.Context(), history); err != nil || len(reports) != 1 || reports[0].ID != want.ID {
+		t.Fatalf("opened history: %v, %v", reports, err)
+	}
+}
+
 func TestOfflineHistoryChecksRemainingBudgetBeforeDecoding(t *testing.T) {
 	dir := offlineTestDirectory(t)
 	offlineTestRecords(t, dir, "TCP", true, offlineTestTCP(2))

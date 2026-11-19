@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"bytes"
 	"container/heap"
 	"context"
 	"crypto/rand"
@@ -662,7 +663,23 @@ func listOfflineEvaluationsAtRoot(ctx context.Context, r *os.Root) ([]OfflineRep
 	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 		return nil, fmt.Errorf("invalid evaluation directory")
 	}
-	d, err := r.Open("rule-evaluations")
+	history, err := r.OpenRoot("rule-evaluations")
+	if err != nil {
+		return nil, err
+	}
+	defer history.Close()
+	opened, err := history.Stat(".")
+	if err != nil {
+		return nil, err
+	}
+	if !os.SameFile(info, opened) {
+		return nil, fmt.Errorf("offline evaluation directory changed while opening")
+	}
+	return readOfflineHistory(ctx, history)
+}
+
+func readOfflineHistory(ctx context.Context, history *os.Root) ([]OfflineReport, error) {
+	d, err := history.Open(".")
 	if err != nil {
 		return nil, err
 	}
@@ -693,8 +710,7 @@ func listOfflineEvaluationsAtRoot(ctx context.Context, r *os.Root) ([]OfflineRep
 		if len(reports) >= 100 {
 			return nil, fmt.Errorf("offline report history limit exceeded: 100")
 		}
-		path := filepath.Join("rule-evaluations", name)
-		b, _, err := offlineMetadataWithLimit(ctx, r, path, min(1<<20, (16<<20)-totalBytes))
+		b, _, err := offlineMetadataWithLimit(ctx, history, name, min(1<<20, (16<<20)-totalBytes))
 		if err != nil {
 			if errors.Is(err, errOfflineMetadataLimit) {
 				return nil, fmt.Errorf("offline report history byte limit exceeded: %w", err)
@@ -703,7 +719,7 @@ func listOfflineEvaluationsAtRoot(ctx context.Context, r *os.Root) ([]OfflineRep
 		}
 		totalBytes += int64(len(b))
 		var report OfflineReport
-		decoder := json.NewDecoder(strings.NewReader(string(b)))
+		decoder := json.NewDecoder(bytes.NewReader(b))
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(&report); err != nil {
 			return nil, err
