@@ -1,4 +1,5 @@
 {
+  "recheckV01611Intake": {"sourceRevision":"10249a9f8b73db86ab8357d72c6e3a3af43d5de6","reportSHA256":"23685cb71cf98ab835d94c1e5d86709709e8e691b4a7c390fdb1016a4403c129","syntheticArchiveSHA256":"6d5c914a95b343096f86e454ee67a122a1da47b1172dcc82d8dc39f70312133e","priority":["MCP-23 and V1611-1","MCP-22 and MCP-20","V1611-3 and V1611-2"],"status":"Evaluator report and synthetic archive received; fixes and current-branch retests pending. Exact full corpus/harness replay and native Windows/Npcap runtime remain blocked."},
   "report": "netcap-v0.16.6-combined-issues.md",
   "release": "v0.16.7",
   "scope": "53 deduplicated report rows; implemented means source and synthetic regressions, not verification of unavailable evaluator captures",
