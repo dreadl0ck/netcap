@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -82,8 +83,39 @@ func readRootJSON(root *os.Root, name string, target any) error {
 	return json.Unmarshal(data, target)
 }
 
+const (
+	maxChildMetadataBytes  = 16 << 20
+	maxChildDiscoveryBytes = 64 << 20
+	childCandidateOverhead = 512
+)
+
+var errChildDiscoveryBudget = errors.New("child discovery exceeds 64 MiB accounted metadata")
+
 func readRootMetadata(root *os.Root, name string) ([]byte, error) {
-	return artifactio.ReadInRoot(context.Background(), root, name, 16<<20)
+	return artifactio.ReadInRoot(context.Background(), root, name, maxChildMetadataBytes)
+}
+
+type childDiscoveryBudget int64
+
+func (b *childDiscoveryBudget) admitCandidate() error {
+	if *b < childCandidateOverhead {
+		return errChildDiscoveryBudget
+	}
+	*b -= childCandidateOverhead
+	return nil
+}
+
+func (b *childDiscoveryBudget) read(root *os.Root, name string) ([]byte, error) {
+	limit := min(int64(*b), maxChildMetadataBytes)
+	data, err := artifactio.ReadInRoot(context.Background(), root, name, limit)
+	if err != nil {
+		if limit < maxChildMetadataBytes && errors.Is(err, artifactio.ErrSizeLimit) {
+			return nil, errChildDiscoveryBudget
+		}
+		return nil, err
+	}
+	*b -= childDiscoveryBudget(len(data))
+	return data, nil
 }
 
 func childRecoveredState(root *os.Root, child childAnalysis, source string) localChildState {
@@ -179,7 +211,7 @@ func (s *Server) discoverLocalChildren() error {
 		}
 	}
 	candidates := make(map[string]childAnalysis)
-	metadataBytes := 0
+	budget := childDiscoveryBudget(maxChildDiscoveryBytes)
 	candidateCount := 0
 	for _, scan := range []string{base, filepath.Dir(base)} {
 		names, err := scanChildRecoveryNames(scan, maxChildRecoveryCandidates-candidateCount)
@@ -191,17 +223,23 @@ func (s *Server) discoverLocalChildren() error {
 		}
 		candidateCount += len(names)
 		for _, name := range names {
+			if err := budget.admitCandidate(); err != nil {
+				return err
+			}
 			dir := filepath.Join(scan, name)
 			root, err := os.OpenRoot(dir)
 			if err != nil {
 				continue
 			}
 			var child childAnalysis
-			data, err := readRootMetadata(root, "analysis-parent.json")
+			data, err := budget.read(root, "analysis-parent.json")
 			if err == nil {
 				err = json.Unmarshal(data, &child)
 			}
 			root.Close()
+			if errors.Is(err, errChildDiscoveryBudget) {
+				return err
+			}
 			if err != nil || child.Version != 1 || child.AnalysisID != name || len(child.InputSHA256) != 64 || child.CreatedAt.IsZero() {
 				log.Printf("[WebUI] Ignoring invalid child metadata in %s", dir)
 				continue
@@ -211,10 +249,6 @@ func (s *Server) discoverLocalChildren() error {
 			}
 			if child.Selector == "packet-subset" && (child.PacketSelection == nil || child.PacketSelection.validate(child.ParentRunID) != nil || len(child.PacketManifestSHA256) != 64) {
 				continue
-			}
-			metadataBytes += len(data) + 512
-			if metadataBytes > 64<<20 {
-				return fmt.Errorf("child discovery exceeds 4096 candidates or 64 MiB accounted metadata")
 			}
 			candidates[dir] = child
 		}

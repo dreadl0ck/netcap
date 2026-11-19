@@ -2,7 +2,7 @@ package webui
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
 	"os"
 	"path/filepath"
@@ -18,19 +18,25 @@ func (s *Server) discoverServiceChildren(results string) error {
 	if err != nil {
 		return err
 	}
-	metadataBytes := 0
+	budget := childDiscoveryBudget(maxChildDiscoveryBytes)
 	for _, candidate := range names {
+		if err := budget.admitCandidate(); err != nil {
+			return err
+		}
 		dir := filepath.Join(base, candidate)
 		root, err := os.OpenRoot(dir)
 		if err != nil {
 			continue
 		}
-		data, readErr := readRootMetadata(root, "analysis-parent.json")
-		sessionData, sessionErr := readRootMetadata(root, "session.json")
-		metadataBytes += len(data) + len(sessionData) + 512
-		if metadataBytes > 64<<20 {
+		data, readErr := budget.read(root, "analysis-parent.json")
+		if errors.Is(readErr, errChildDiscoveryBudget) {
 			root.Close()
-			return fmt.Errorf("service child discovery exceeds 64 MiB accounted metadata")
+			return readErr
+		}
+		sessionData, sessionErr := budget.read(root, "session.json")
+		if errors.Is(sessionErr, errChildDiscoveryBudget) {
+			root.Close()
+			return sessionErr
 		}
 		var child childAnalysis
 		var session SessionInfo

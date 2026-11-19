@@ -41,6 +41,35 @@ func TestChildRecoveryMetadataReadBounds(t *testing.T) {
 	}
 }
 
+func TestChildDiscoverySharesRemainingBudgetAcrossMetadataFiles(t *testing.T) {
+	root, err := os.OpenRoot(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+	for _, name := range []string{"analysis-parent.json", "session.json"} {
+		if err := root.WriteFile(name, []byte("{}"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, available := range []int{3, 4} {
+		budget := childDiscoveryBudget(childCandidateOverhead + available)
+		if err := budget.admitCandidate(); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := budget.read(root, "analysis-parent.json"); err != nil {
+			t.Fatal(err)
+		}
+		data, err := budget.read(root, "session.json")
+		if available == 3 && (data != nil || !errors.Is(err, errChildDiscoveryBudget)) {
+			t.Fatalf("one byte short: %q, %v", data, err)
+		}
+		if available == 4 && (string(data) != "{}" || err != nil) {
+			t.Fatalf("exact fit: %q, %v", data, err)
+		}
+	}
+}
+
 func TestChildRecoveryScanIgnoresUnrelatedEntriesAcrossBatches(t *testing.T) {
 	dir := t.TempDir()
 	for i := range 300 {
