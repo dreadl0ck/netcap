@@ -94,10 +94,54 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// handleInputFiles returns list of input PCAP files
+func (s *Server) handleInputReadiness(w http.ResponseWriter, r *http.Request) {
+	selected, err := s.resolveCaptureSelection(r)
+	if err != nil {
+		writeSelectionError(w, err)
+		return
+	}
+	row := map[string]any{"id": selected.AnalysisID, "path": selected.InputFile}
+	if selected.SessionID != "" && s.sessionManager != nil {
+		session, ok := s.sessionManager.GetSession(selected.SessionID)
+		if !ok || (!session.IsPreloaded && session.IP != s.getUserIP(r) && !captureAdminAuthorized(r)) {
+			http.Error(w, "Analysis unavailable", http.StatusNotFound)
+			return
+		}
+		row["sessionId"] = session.SessionID
+		row["isCompleted"] = session.Status == StatusCompleted
+		row["status"] = session.Status
+		if session.Status == StatusFailed {
+			row["error"] = session.ErrorMessage
+			row["errorLogPath"] = session.ErrorLogPath
+		}
+	} else {
+		s.mu.RLock()
+		complete := s.completedFiles[selected.InputFile]
+		failure, failed := s.fileErrors[selected.InputFile]
+		_, child := s.childAnalyses[selected.InputFile]
+		_, live := s.liveInputs[selected.InputFile]
+		s.mu.RUnlock()
+		if _, err := os.Stat(selected.InputFile); err != nil && !child && !live {
+			RespondJSON(w, http.StatusOK, []any{})
+			return
+		}
+		row["isCompleted"] = complete
+		if failed {
+			row["error"] = failure.Error
+			row["errorLogPath"] = failure.ErrorLogPath
+		}
+	}
+	RespondJSON(w, http.StatusOK, []any{row})
+}
+
+// handleInputFiles returns the list of input PCAP files.
 func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if q := r.URL.Query(); q.Get("view") == "readiness" && (q.Has("sessionId") || q.Has("inputFile")) {
+		s.handleInputReadiness(w, r)
 		return
 	}
 

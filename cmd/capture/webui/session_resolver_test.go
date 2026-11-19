@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -8,6 +9,28 @@ import (
 	"path/filepath"
 	"testing"
 )
+
+func TestScopedInputReadinessReturnsSelectedSession(t *testing.T) {
+	s := &Server{isServiceMode: true, sessionManager: NewSessionManager(10, 60, 10)}
+	for _, session := range []*SessionInfo{
+		{SessionID: "queued", InputFile: "queued.pcap", IsPreloaded: true, Status: StatusQueued},
+		{SessionID: "failed", InputFile: "failed.pcap", IsPreloaded: true, Status: StatusFailed, ErrorMessage: "analysis failed"},
+	} {
+		s.sessionManager.AddSession(session)
+	}
+	w := httptest.NewRecorder()
+	s.handleInputFiles(w, httptest.NewRequest(http.MethodGet, "/api/files/input?view=readiness&sessionId=failed", nil))
+	var rows []struct {
+		SessionID   string
+		Status      SessionStatus
+		Error       string
+		IsCompleted bool
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &rows); err != nil || w.Code != http.StatusOK || len(rows) != 1 ||
+		rows[0].SessionID != "failed" || rows[0].Status != StatusFailed || rows[0].Error != "analysis failed" || rows[0].IsCompleted {
+		t.Fatalf("unexpected readiness response: %d %s (%v)", w.Code, w.Body, err)
+	}
+}
 
 func TestStrictCaptureSelection(t *testing.T) {
 	a, b := t.TempDir(), t.TempDir()

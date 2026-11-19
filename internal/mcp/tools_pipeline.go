@@ -418,7 +418,9 @@ func (s *Server) handleGetSessionInfo(ctx context.Context, req mcplib.CallToolRe
 	}
 	client := s.newClient()
 	statsQ := ref.sessionQueryParams()
-	files, filesErr := client.GetContext(ctx, "/api/files/input", nil)
+	readiness := ref.sessionQueryParams()
+	readiness.Set("view", "readiness")
+	files, filesErr := client.GetContext(ctx, "/api/files/input", readiness)
 	if filesErr != nil {
 		return errResult(filesErr), nil
 	}

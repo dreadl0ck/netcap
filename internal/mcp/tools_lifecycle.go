@@ -152,9 +152,11 @@ func (s *Server) handleWaitForSession(ctx context.Context, req mcplib.CallToolRe
 	}
 	client := s.newClient()
 	q := ref.sessionQueryParams()
+	readiness := ref.sessionQueryParams()
+	readiness.Set("view", "readiness")
 
 	for {
-		filesBody, filesErr := client.GetContext(waitCtx, "/api/files/input", nil)
+		filesBody, filesErr := client.GetContext(waitCtx, "/api/files/input", readiness)
 		if result := waitResult(); result != nil {
 			return result, nil
 		}
