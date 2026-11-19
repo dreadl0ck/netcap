@@ -286,7 +286,7 @@ async def check_http_pair_carve(client, call, session, capture):
         raise ValueError("HTTP pair carve lost original frame bytes or inclusive window bounds")
 
 
-async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout):
+async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout, auxiliary=False):
     with archive.open("rb") as source:
         if hashlib.file_digest(source, "sha256").hexdigest() != "6e061856cdc2e363e2494757b4be70abe9f1671cdff5270d403f488f9ba2446f":
             raise ValueError("mixed upload archive digest changed")
@@ -381,6 +381,13 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout):
          "http_503": rejected}
         for i, (_, first, admitted, completed, rejected, created, ready) in enumerate(rows)
     ]
+    if full_fanout:
+        large_ready = rows[0][6]
+        early = [i for i, row in enumerate(rows[1:], 1) if row[3] < large_ready]
+        expected = [1, 2] if auxiliary else []
+        started_early = [i for i, row in enumerate(rows[1:], 1) if row[5] < large_ready]
+        if early != expected or started_early != expected:
+            raise ValueError(f"expected early jobs {expected}, started {started_early}, completed {early}; {jobs}")
     return {
         "jobs": jobs,
         "completed": len(rows), "first_attempt_window_s": round(rows[-1][1] - rows[0][1], 3),
@@ -1012,7 +1019,8 @@ rules:
                         return await call(name, arguments, session=load)
 
                     try:
-                        mixed["mixed_uploads"] = await check_mixed_uploads(load_call, capture, mixed_upload_archive, Path(load_dir), full_fanout)
+                        mixed["mixed_uploads"] = await check_mixed_uploads(
+                            load_call, capture, mixed_upload_archive, Path(load_dir), full_fanout, auxiliary)
                     except (ValueError, TimeoutError) as exc:
                         failures.append(f"mixed uploads: {exc}")
         print(json.dumps({"advertised": len(tools), "covered_count": len(covered), "covered": sorted(covered),
