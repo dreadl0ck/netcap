@@ -118,6 +118,16 @@ func (b *childDiscoveryBudget) read(root *os.Root, name string) ([]byte, error) 
 	return data, nil
 }
 
+func matchesRecoveredInput(f *os.File, opened os.FileInfo, digest string) bool {
+	hash := sha256.New()
+	if _, err := io.CopyN(hash, f, opened.Size()); err != nil {
+		return false
+	}
+	after, err := f.Stat()
+	return err == nil && after.Size() == opened.Size() && after.ModTime().Equal(opened.ModTime()) &&
+		hex.EncodeToString(hash.Sum(nil)) == digest
+}
+
 func childRecoveredState(root *os.Root, child childAnalysis, source string) localChildState {
 	state := localChildState{Version: 1, Status: StatusFailed, Error: "Analysis interrupted before durable completion; retry creates a new child"}
 	var saved localChildState
@@ -131,15 +141,14 @@ func childRecoveredState(root *os.Root, child childAnalysis, source string) loca
 		state.Error = "Child state is corrupt or unavailable"
 		return state
 	}
-	f, err := root.Open(source)
+	f, opened, err := artifactio.OpenInRoot(root, source)
 	if err != nil {
 		state.Error = "Retained child input is missing or inaccessible"
 		return state
 	}
-	hash := sha256.New()
-	_, err = io.Copy(hash, f)
+	matches := matchesRecoveredInput(f, opened, child.InputSHA256)
 	f.Close()
-	if err != nil || hex.EncodeToString(hash.Sum(nil)) != child.InputSHA256 {
+	if !matches {
 		state.Error = "Retained child input does not match its SHA256"
 		return state
 	}

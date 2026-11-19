@@ -1,7 +1,10 @@
 package webui
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -9,6 +12,39 @@ import (
 	"strings"
 	"testing"
 )
+
+func TestChildRecoveryDoesNotHashPastOpenedSize(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "retained.pcap")
+	body := []byte("retained capture fixture")
+	if err := os.WriteFile(path, body, 0600); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	opened, err := f.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest := fmt.Sprintf("%x", sha256.Sum256(body))
+	if !matchesRecoveredInput(f, opened, digest) {
+		t.Fatal("unchanged capture did not match")
+	}
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Truncate(path, opened.Size()+1); err != nil {
+		t.Fatal(err)
+	}
+	if matchesRecoveredInput(f, opened, digest) {
+		t.Fatal("grown capture matched the original prefix digest")
+	}
+	if offset, err := f.Seek(0, io.SeekCurrent); err != nil || offset != opened.Size() {
+		t.Fatalf("read beyond opened size: offset=%d err=%v", offset, err)
+	}
+}
 
 func restartLocalAnalysis(s *Server, input string) *Server {
 	return NewServer("127.0.0.1:0", s.baseOutDir, []string{input}, "", false, false, false, nil, nil, false)
