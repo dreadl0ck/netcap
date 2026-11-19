@@ -113,6 +113,7 @@ type AnalysisJob struct {
 	requireCaptureEvidence bool
 	ArtifactConfig         []byte
 	processingDone         func()
+	releaseCaptureSlot     func()
 	deferCompletion        bool
 	postCapture            func()
 	reproductionSource     reproductionSource

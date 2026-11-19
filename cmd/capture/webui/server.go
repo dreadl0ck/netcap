@@ -255,6 +255,7 @@ type Server struct {
 	currentSession       string            // Currently active session for webUI viewing (service mode only)
 	jobsScheduled        int64             // Total number of jobs scheduled (atomic counter)
 	captureDispatchDepth atomic.Int64
+	captureQueueSlots    chan struct{}
 	jobsProcessed        int64        // Total number of jobs processed (atomic counter)
 	currentJobMutex      sync.RWMutex // Mutex for currentProcessingJob
 	currentProcessing    *AnalysisJob // Currently processing job (service mode only)
@@ -347,6 +348,7 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 			serviceConfig.MaxIssueReportsPerDay,
 		)
 		s.jobQueue = make(chan *AnalysisJob, 1000)
+		s.captureQueueSlots = make(chan struct{}, cap(s.jobQueue))
 		s.shutdownChan = make(chan struct{})
 
 		// In service mode, ensure data directory exists
@@ -379,6 +381,7 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 	} else {
 		// Initialize job queue for local mode as well (for upload processing)
 		s.jobQueue = make(chan *AnalysisJob, 100)
+		s.captureQueueSlots = make(chan struct{}, cap(s.jobQueue))
 		s.shutdownChan = make(chan struct{})
 		log.Printf("[WebUI] Local mode: job queue initialized for upload processing")
 		if err := s.discoverLocalChildren(); err != nil {

@@ -83,6 +83,9 @@ func (d *captureDispatch) next(queue <-chan *AnalysisJob, stop <-chan struct{}) 
 	if d.depth != nil {
 		d.depth.Add(-1)
 	}
+	if job.releaseCaptureSlot != nil {
+		job.releaseCaptureSlot()
+	}
 	return job
 }
 
@@ -141,7 +144,8 @@ func (s *Server) enqueueAnalysisContext(ctx context.Context, job *AnalysisJob, w
 		job.settings.cleanup()
 		return errAnalysisUnavailable
 	}
-	reserved := !wait && cap(s.jobQueue) > 0
+	slots := s.captureQueueSlots
+	reserved := slots == nil && !wait && cap(s.jobQueue) > 0
 	if reserved && s.captureQueueLength()+s.preparingNonblocking >= cap(s.jobQueue) {
 		s.mu.Unlock()
 		job.settings.cleanup()
@@ -153,6 +157,7 @@ func (s *Server) enqueueAnalysisContext(ctx context.Context, job *AnalysisJob, w
 	done := s.claimProcessingWorkLocked()
 	s.mu.Unlock()
 	accepted := false
+	var releaseSlot func()
 	defer func() {
 		if reserved {
 			s.mu.Lock()
@@ -160,10 +165,37 @@ func (s *Server) enqueueAnalysisContext(ctx context.Context, job *AnalysisJob, w
 			s.mu.Unlock()
 		}
 		if !accepted {
+			if releaseSlot != nil {
+				releaseSlot()
+			}
 			job.settings.cleanup()
 			done()
 		}
 	}()
+	if slots != nil {
+		if wait {
+			select {
+			case slots <- struct{}{}:
+			case <-s.shutdownChan:
+				return errAnalysisStopping
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		} else {
+			select {
+			case slots <- struct{}{}:
+			default:
+				return errAnalysisQueueFull
+			}
+		}
+		releaseSlot = sync.OnceFunc(func() { <-slots })
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if ruleReplayCanceled(s.shutdownChan, nil) {
+			return errAnalysisStopping
+		}
+	}
 	if len(job.ArtifactConfig) == 0 {
 		snapshot, err := snapshotArtifactConfig()
 		if err != nil {
@@ -198,7 +230,14 @@ func (s *Server) enqueueAnalysisContext(ctx context.Context, job *AnalysisJob, w
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	job.processingDone = func() { job.settings.cleanup(); done() }
+	job.releaseCaptureSlot = releaseSlot
+	job.processingDone = func() {
+		if releaseSlot != nil {
+			releaseSlot()
+		}
+		job.settings.cleanup()
+		done()
+	}
 	atomic.AddInt64(&s.jobsScheduled, 1)
 	defer func() {
 		if !accepted {
@@ -228,7 +267,7 @@ func (s *Server) enqueueAnalysisContext(ctx context.Context, job *AnalysisJob, w
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if cap(s.jobQueue) > 0 && s.captureQueueLength()+s.preparingNonblocking >= cap(s.jobQueue) {
+	if slots == nil && cap(s.jobQueue) > 0 && s.captureQueueLength()+s.preparingNonblocking >= cap(s.jobQueue) {
 		return errAnalysisQueueFull
 	}
 	select {

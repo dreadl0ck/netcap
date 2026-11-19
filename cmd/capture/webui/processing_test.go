@@ -152,22 +152,64 @@ func TestProcessingFailureAndPanicReturnIdle(t *testing.T) {
 func TestNonblockingAnalysisAdmissionCountsPrefetchedJobs(t *testing.T) {
 	s := processingServer(t, false)
 	s.jobQueue = make(chan *AnalysisJob, 1)
+	s.captureQueueSlots = make(chan struct{}, 1)
 	var dispatch = captureDispatch{depth: &s.captureDispatchDepth}
-	dispatch.add(&AnalysisJob{})
+	if err := s.enqueueAnalysis(&AnalysisJob{InputFile: "first"}, false); err != nil {
+		t.Fatal(err)
+	}
+	dispatch.add(<-s.jobQueue)
 	job := &AnalysisJob{InputFile: "retry"}
 	if err := s.enqueueAnalysis(job, false); !errors.Is(err, errAnalysisQueueFull) || len(job.ArtifactConfig) != 0 {
 		t.Fatalf("prefetched job did not occupy the slot: %v", err)
 	}
-	dispatch.next(s.jobQueue, nil)
+	dispatch.next(s.jobQueue, nil).processingDone()
 	if err := s.enqueueAnalysis(job, false); err != nil {
 		t.Fatalf("retry after dispatch: %v", err)
 	}
 	(<-s.jobQueue).processingDone()
 }
 
+func TestCaptureSlotHeldUntilPrefetchedJobDispatch(t *testing.T) {
+	s := processingServer(t, false)
+	s.jobQueue = make(chan *AnalysisJob, 1)
+	s.captureQueueSlots = make(chan struct{}, 1)
+	first := &AnalysisJob{InputFile: "first"}
+	if err := s.enqueueAnalysis(first, false); err != nil {
+		t.Fatal(err)
+	}
+	dispatch := captureDispatch{depth: &s.captureDispatchDepth}
+	dispatch.add(<-s.jobQueue)
+	second := &AnalysisJob{InputFile: "second"}
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	waiting := make(chan error, 1)
+	go func() { waiting <- s.enqueueAnalysisContext(ctx, second, true) }()
+	processingAwait(t, func() bool {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+		return s.processingWork == 2
+	})
+	cancel()
+	if err := <-waiting; !errors.Is(err, context.Canceled) || len(second.ArtifactConfig) != 0 {
+		t.Fatalf("waiter prepared despite a full queue: %v", err)
+	}
+	if got := dispatch.next(s.jobQueue, nil); got != first {
+		t.Fatal("first job was not dispatched")
+	}
+	if err := s.enqueueAnalysis(second, true); err != nil {
+		t.Fatalf("retry after dispatch: %v", err)
+	}
+	first.processingDone()
+	s.stopProcessingAdmission()
+	if len(s.captureQueueSlots) != 0 || s.IsProcessing() {
+		t.Fatal("shutdown retained queue slots or processing ownership")
+	}
+}
+
 func TestNonblockingAnalysisAdmissionCountsPreparingJobs(t *testing.T) {
 	s := processingServer(t, false)
 	s.jobQueue = make(chan *AnalysisJob, 1)
+	s.captureQueueSlots = make(chan struct{}, 1)
 	first := &AnalysisJob{InputFile: "preparing"}
 	second := &AnalysisJob{InputFile: "retry"}
 	s.rulesConfigMutex.Lock()
@@ -207,6 +249,7 @@ func TestNonblockingAnalysisAdmissionCountsPreparingJobs(t *testing.T) {
 func TestProcessingCancelDoesNotHideUnwindingWork(t *testing.T) {
 	server := processingServer(t, false)
 	server.jobQueue = make(chan *AnalysisJob, 1)
+	server.captureQueueSlots = make(chan struct{}, 1)
 	started, release := make(chan struct{}), make(chan struct{})
 	releaseWork := sync.OnceFunc(func() { close(release) })
 	var calls atomic.Int64
