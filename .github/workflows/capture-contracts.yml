@@ -26,6 +26,7 @@ on:
       - 'internal/collector/**/*.go'
       - 'internal/collector/testdata/**'
       - 'testdata/recheck-v0168/base_http.pcap'
+      - 'tests/integration/**'
       - 'internal/decoder/**/*.go'
       - 'internal/decoder/**/testdata/**'
       - 'internal/mcp/**/*.go'
@@ -56,6 +57,7 @@ on:
       - 'internal/collector/**/*.go'
       - 'internal/collector/testdata/**'
       - 'testdata/recheck-v0168/base_http.pcap'
+      - 'tests/integration/**'
       - 'internal/decoder/**/*.go'
       - 'internal/decoder/**/testdata/**'
       - 'internal/mcp/**/*.go'
@@ -103,6 +105,10 @@ jobs:
         run: pnpm install --frozen-lockfile && pnpm build
       - name: Verify capture completion and output contracts
         run: go test -tags nodpi,noyara,nomagika ./internal/collector -count=1 -timeout=10m
+      - name: Verify Protobuf capture selection
+        env:
+          NETCAP_REQUIRE_FIXTURES: '1'
+        run: go test -tags integration,nodpi,noyara,nomagika ./tests/integration -run '^TestProtobufPCAPExtraction$' -count=1 -timeout=2m
       - name: Verify official MCP stdio contracts
         run: |
           python3 -m venv "$RUNNER_TEMP/mcp-check"
