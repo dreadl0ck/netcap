@@ -34,15 +34,18 @@ type alertPageSpill struct {
 func (s *alertPageSpill) close() {
 	if s.insert != nil {
 		s.insert.Close()
+		s.insert = nil
 	}
 	if s.tx != nil {
 		s.tx.Rollback()
+		s.tx = nil
 	}
 	if s.db != nil {
 		s.db.Close()
+		s.db = nil
 	}
-	if s.dir != "" {
-		os.RemoveAll(s.dir)
+	if s.dir != "" && os.RemoveAll(s.dir) == nil {
+		s.dir = ""
 	}
 }
 
@@ -176,6 +179,9 @@ func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Requ
 	}
 	defer rows.Close()
 	respondSortedCollectionPage(w, r, "alerts", options, func(yield func(json.RawMessage, error) bool) {
+		// Release scratch before writing to the client.
+		defer spill.close()
+		defer rows.Close()
 		for rows.Next() {
 			var body []byte
 			var copies int

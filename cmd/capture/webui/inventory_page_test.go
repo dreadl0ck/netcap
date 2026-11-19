@@ -438,6 +438,16 @@ func TestAlertAuditGrowthRejectsSnapshot(t *testing.T) {
 	}
 }
 
+type alertScratchCheckingRecorder struct {
+	*httptest.ResponseRecorder
+	beforeWrite func()
+}
+
+func (w alertScratchCheckingRecorder) WriteHeader(status int) {
+	w.beforeWrite()
+	w.ResponseRecorder.WriteHeader(status)
+}
+
 func TestRawAlertPageSpillPreservesDuplicateContinuation(t *testing.T) {
 	dir := t.TempDir()
 	duplicate := &types.Alert{RuleName: "fixture", Timestamp: 2_000_000}
@@ -456,7 +466,17 @@ func TestRawAlertPageSpillPreservesDuplicateContinuation(t *testing.T) {
 		t.Fatalf("unexpected initial page: %d %s (%v)", first.Code, first.Body, err)
 	}
 	url := "/api/alerts?mcpPage=true&pageLimit=2&pageOffset=2&pageGeneration=" + page.Generation
-	memory, spilled := httptest.NewRecorder(), httptest.NewRecorder()
+	scratch := t.TempDir()
+	t.Setenv("TMPDIR", scratch)
+	t.Setenv("TEMP", scratch)
+	t.Setenv("TMP", scratch)
+	memory := httptest.NewRecorder()
+	spilled := alertScratchCheckingRecorder{httptest.NewRecorder(), func() {
+		entries, err := os.ReadDir(scratch)
+		if err != nil || len(entries) != 0 {
+			t.Errorf("scratch retained while publishing page: %v (%v)", entries, err)
+		}
+	}}
 	s.handleAlerts(memory, httptest.NewRequest(http.MethodGet, url, nil))
 	s.serveRawAlertPageWithBudget(spilled, httptest.NewRequest(http.MethodGet, url, nil), path, 0, alertPageDiskPages)
 	if memory.Code != http.StatusOK || spilled.Code != http.StatusOK || memory.Body.String() != spilled.Body.String() {
