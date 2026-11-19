@@ -20,6 +20,7 @@
 package webui
 
 import (
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -835,75 +836,27 @@ func (a *alertGroups) finish() []GroupedAlert {
 	return result
 }
 
-// sortGroupedAlerts sorts grouped alerts based on the specified field and order
-// Uses multi-level sorting to ensure deterministic ordering:
-// 1. Primary: user-selected field
-// 2. Secondary: lastSeen (if not already primary)
-// 3. Tertiary: ruleName (for complete determinism)
 func sortGroupedAlerts(groups []GroupedAlert, sortBy, sortOrder string) {
+	severityRank := map[string]int{"critical": 4, "high": 3, "medium": 2, "low": 1}
 	sort.Slice(groups, func(i, j int) bool {
-		var less bool
-
-		// Primary sort by the selected field
+		if sortOrder == "desc" {
+			i, j = j, i
+		}
+		a, b := &groups[i], &groups[j]
+		var order int
 		switch sortBy {
 		case "count":
-			if groups[i].Count != groups[j].Count {
-				less = groups[i].Count < groups[j].Count
-			} else {
-				// Secondary: sort by lastSeen when counts are equal
-				if groups[i].LastSeen != groups[j].LastSeen {
-					less = groups[i].LastSeen < groups[j].LastSeen
-				} else {
-					// Tertiary: sort by ruleName for complete determinism
-					less = groups[i].RuleName < groups[j].RuleName
-				}
-			}
+			order = cmp.Compare(a.Count, b.Count)
 		case "firstSeen":
-			if groups[i].FirstSeen != groups[j].FirstSeen {
-				less = groups[i].FirstSeen < groups[j].FirstSeen
-			} else {
-				// Secondary: sort by lastSeen when firstSeen are equal
-				if groups[i].LastSeen != groups[j].LastSeen {
-					less = groups[i].LastSeen < groups[j].LastSeen
-				} else {
-					// Tertiary: sort by ruleName for complete determinism
-					less = groups[i].RuleName < groups[j].RuleName
-				}
-			}
+			order = cmp.Compare(a.FirstSeen, b.FirstSeen)
 		case "severity":
-			// Sort by severity level: critical > high > medium > low
-			severityOrder := map[string]int{"critical": 4, "high": 3, "medium": 2, "low": 1}
-			iVal := severityOrder[strings.ToLower(groups[i].Severity)]
-			jVal := severityOrder[strings.ToLower(groups[j].Severity)]
-			if iVal != jVal {
-				less = iVal < jVal
-			} else {
-				// Secondary: sort by lastSeen when severity is equal
-				if groups[i].LastSeen != groups[j].LastSeen {
-					less = groups[i].LastSeen < groups[j].LastSeen
-				} else {
-					// Tertiary: sort by ruleName for complete determinism
-					less = groups[i].RuleName < groups[j].RuleName
-				}
-			}
+			order = cmp.Compare(severityRank[strings.ToLower(a.Severity)], severityRank[strings.ToLower(b.Severity)])
 		default: // lastSeen
-			if groups[i].LastSeen != groups[j].LastSeen {
-				less = groups[i].LastSeen < groups[j].LastSeen
-			} else {
-				// Secondary: sort by count when lastSeen are equal
-				if groups[i].Count != groups[j].Count {
-					less = groups[i].Count < groups[j].Count
-				} else {
-					// Tertiary: sort by ruleName for complete determinism
-					less = groups[i].RuleName < groups[j].RuleName
-				}
-			}
+			return cmp.Or(cmp.Compare(a.LastSeen, b.LastSeen), cmp.Compare(a.Count, b.Count),
+				cmp.Compare(a.RuleName, b.RuleName), cmp.Compare(a.Severity, b.Severity)) < 0
 		}
-
-		if sortOrder == "desc" {
-			return !less
-		}
-		return less
+		return cmp.Or(order, cmp.Compare(a.LastSeen, b.LastSeen),
+			cmp.Compare(a.RuleName, b.RuleName), cmp.Compare(a.Severity, b.Severity)) < 0
 	})
 }
 

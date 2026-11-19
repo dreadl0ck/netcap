@@ -38,6 +38,31 @@ func TestGroupedSummaryBoundsSamplesAndPreservesExactTimes(t *testing.T) {
 	}
 }
 
+func TestGroupedAlertPagesBreakSortTiesBySeverity(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, []proto.Message{
+		&types.Alert{RuleName: "same", Severity: "info", Timestamp: 1000000},
+		&types.Alert{RuleName: "same", Severity: "notice", Timestamp: 1000000},
+	})
+	s := &Server{outDir: dir}
+	for _, field := range []string{"count", "firstSeen", "lastSeen", "severity"} {
+		for _, direction := range []string{"asc", "desc"} {
+			for offset, severity := range []string{"info", "notice"} {
+				if direction == "desc" {
+					offset = 1 - offset
+				}
+				url := fmt.Sprintf("/api/alerts/grouped?sortBy=%s&sort=%s&limit=1&offset=%d", field, direction, offset)
+				w := httptest.NewRecorder()
+				s.handleGroupedAlerts(w, httptest.NewRequest("GET", url, nil))
+				var page GroupedAlertsResponse
+				if err := json.Unmarshal(w.Body.Bytes(), &page); err != nil || w.Code != 200 || len(page.Groups) != 1 || page.Groups[0].Severity != severity {
+					t.Fatalf("%s: expected %s, got %d %s (%v)", url, severity, w.Code, w.Body, err)
+				}
+			}
+		}
+	}
+}
+
 func TestGroupedSearchFindsHiddenMembersAndMemberPagesAreComplete(t *testing.T) {
 	dir := t.TempDir()
 	var alerts []proto.Message
