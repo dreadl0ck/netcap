@@ -336,6 +336,51 @@ func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
 	}
 }
 
+func TestMCPAlertReadAdmissionSharedAcrossViews(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, []proto.Message{
+		&types.Alert{RuleName: "fixture", Severity: "info", Timestamp: 1_000_000},
+	})
+	s := &Server{outDir: dir}
+	request := func(path string) *http.Request {
+		return httptest.NewRequest(http.MethodGet, path, nil)
+	}
+	hold := func() func() {
+		t.Helper()
+		release := admitAlertRead(httptest.NewRecorder(), request("/api/alerts"), true)
+		if release == nil {
+			t.Fatal("could not reserve alert read capacity")
+		}
+		return sync.OnceFunc(release)
+	}
+	first := hold()
+	defer first()
+	second := hold()
+	defer second()
+	views := map[string]http.HandlerFunc{
+		"/api/alerts?mcpPage=true&pageLimit=1":         s.handleAlerts,
+		"/api/alerts/grouped?mcpPage=true&pageLimit=1": s.handleGroupedAlerts,
+		"/api/alerts/stats":                            s.handleAlertStats,
+	}
+	for path, handler := range views {
+		w := httptest.NewRecorder()
+		handler(w, request(path))
+		var body map[string]string
+		if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil || w.Code != http.StatusTooManyRequests ||
+			len(body) != 1 || body["error"] != "alert reads are busy" {
+			t.Fatalf("%s: unexpected saturation response: %d %s (%v)", path, w.Code, w.Body, err)
+		}
+	}
+	second()
+	for path, handler := range views {
+		w := httptest.NewRecorder()
+		handler(w, request(path))
+		if w.Code != http.StatusOK {
+			t.Fatalf("%s: retry failed: %d %s", path, w.Code, w.Body)
+		}
+	}
+}
+
 func TestAlertAuditGrowthRejectsSnapshot(t *testing.T) {
 	dir := t.TempDir()
 	path := writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, []proto.Message{&types.Alert{RuleName: "fixture"}})
