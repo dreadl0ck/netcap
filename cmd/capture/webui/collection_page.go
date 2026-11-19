@@ -155,13 +155,15 @@ func respondSortedCollectionPage(w http.ResponseWriter, r *http.Request, key str
 	used, total := 0, 0
 	pageFull := false
 	var pageErr error
+	var scanErr error
 	pageStatus := 400
 	for item, err := range items {
 		if r.Context().Err() != nil {
 			return true
 		}
 		if err != nil {
-			return fail(500, err)
+			scanErr = err
+			break
 		}
 		hash.Write(item)
 		hash.Write([]byte{0})
@@ -184,6 +186,9 @@ func respondSortedCollectionPage(w http.ResponseWriter, r *http.Request, key str
 		}
 		page = append(page, raw)
 		used += len(raw)
+	}
+	if scanErr != nil {
+		return fail(500, scanErr)
 	}
 	generation := hex.EncodeToString(hash.Sum(nil))
 	if expected := q.Get("pageGeneration"); expected != "" && expected != generation {

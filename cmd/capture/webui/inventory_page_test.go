@@ -448,6 +448,27 @@ func (w alertScratchCheckingRecorder) WriteHeader(status int) {
 	w.ResponseRecorder.WriteHeader(status)
 }
 
+func TestSortedCollectionClosesScanBeforeErrorResponse(t *testing.T) {
+	closed := false
+	w := alertScratchCheckingRecorder{httptest.NewRecorder(), func() {
+		if !closed {
+			t.Error("scan remained open while publishing error")
+		}
+	}}
+	r := httptest.NewRequest(http.MethodGet, "/api/alerts", nil)
+	respondSortedCollectionPage(w, r, "alerts", collectionPageOptions{limit: 1}, func(yield func(json.RawMessage, error) bool) {
+		defer func() { closed = true }()
+		if yield(json.RawMessage(`{"timestamp":1}`), nil) {
+			yield(nil, errors.New("scan failed"))
+		}
+	})
+	var response map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil || w.Code != http.StatusInternalServerError ||
+		len(response) != 1 || response["error"] != "scan failed" {
+		t.Fatalf("expected an error without partial results: %d %s (%v)", w.Code, w.Body, err)
+	}
+}
+
 func TestRawAlertPageSpillPreservesDuplicateContinuation(t *testing.T) {
 	dir := t.TempDir()
 	duplicate := &types.Alert{RuleName: "fixture", Timestamp: 2_000_000}
