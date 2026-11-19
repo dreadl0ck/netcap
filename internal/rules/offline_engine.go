@@ -281,8 +281,8 @@ func EvaluateOffline(ctx context.Context, request OfflineRequest) (*OfflineRepor
 	}
 	defer lease.Close()
 	root := lease.root
-	// Keep room for the report even if its final status and error grow after alerts are committed.
-	history, err := listOfflineEvaluationsAtRoot(ctx, root, offlineHistoryBytes-offlineReportBytes)
+	// The final rewrite temporarily holds both the published report and its replacement.
+	history, err := listOfflineEvaluationsAtRoot(ctx, root, offlineHistoryBytes-offlineReportBytes, offlineHistoryEntries-2)
 	if err != nil {
 		return nil, err
 	}
@@ -602,8 +602,9 @@ func newOfflineAlertWriter(ctx context.Context, root *os.Root, directory string)
 }
 
 const (
-	offlineReportBytes  = 1 << 20
-	offlineHistoryBytes = 16 << 20
+	offlineReportBytes    = 1 << 20
+	offlineHistoryBytes   = 16 << 20
+	offlineHistoryEntries = 200
 )
 
 func offlineWriteReport(root *os.Root, report *OfflineReport) error {
@@ -655,10 +656,10 @@ func ListOfflineEvaluationsContext(ctx context.Context, directory string) ([]Off
 		return nil, err
 	}
 	defer r.Close()
-	return listOfflineEvaluationsAtRoot(ctx, r, offlineHistoryBytes)
+	return listOfflineEvaluationsAtRoot(ctx, r, offlineHistoryBytes, offlineHistoryEntries)
 }
 
-func listOfflineEvaluationsAtRoot(ctx context.Context, r *os.Root, byteLimit int64) ([]OfflineReport, error) {
+func listOfflineEvaluationsAtRoot(ctx context.Context, r *os.Root, byteLimit int64, entryLimit int) ([]OfflineReport, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -684,21 +685,21 @@ func listOfflineEvaluationsAtRoot(ctx context.Context, r *os.Root, byteLimit int
 	if !os.SameFile(info, opened) {
 		return nil, fmt.Errorf("offline evaluation directory changed while opening")
 	}
-	return readOfflineHistory(ctx, history, byteLimit)
+	return readOfflineHistory(ctx, history, byteLimit, entryLimit)
 }
 
-func readOfflineHistory(ctx context.Context, history *os.Root, byteLimit int64) ([]OfflineReport, error) {
+func readOfflineHistory(ctx context.Context, history *os.Root, byteLimit int64, entryLimit int) ([]OfflineReport, error) {
 	d, err := history.Open(".")
 	if err != nil {
 		return nil, err
 	}
 	defer d.Close()
-	names, err := d.Readdirnames(201)
+	names, err := d.Readdirnames(entryLimit + 1)
 	if err != nil && err != io.EOF {
 		return nil, err
 	}
-	if len(names) > 200 {
-		return nil, fmt.Errorf("offline report directory entry limit exceeded")
+	if len(names) > entryLimit {
+		return nil, fmt.Errorf("offline report directory entry limit exceeded: %d", entryLimit)
 	}
 	sort.Strings(names)
 	reports := []OfflineReport{}

@@ -633,7 +633,7 @@ func TestOfflineHistoryFollowsLeasedDirectory(t *testing.T) {
 	if reports, err := ListOfflineEvaluations(dir); err != nil || len(reports) != 0 {
 		t.Fatalf("replacement history: %d reports, %v", len(reports), err)
 	}
-	if reports, err := listOfflineEvaluationsAtRoot(t.Context(), lease.root, offlineHistoryBytes); err != nil || len(reports) != 1 || reports[0].ID != want.ID {
+	if reports, err := listOfflineEvaluationsAtRoot(t.Context(), lease.root, offlineHistoryBytes, offlineHistoryEntries); err != nil || len(reports) != 1 || reports[0].ID != want.ID {
 		t.Fatalf("leased history: %v, %v", reports, err)
 	}
 }
@@ -660,7 +660,7 @@ func TestOfflineHistoryReadsOpenedReportDirectory(t *testing.T) {
 	if reports, err := ListOfflineEvaluations(dir); err != nil || len(reports) != 0 {
 		t.Fatalf("replacement history: %d reports, %v", len(reports), err)
 	}
-	if reports, err := readOfflineHistory(t.Context(), history, offlineHistoryBytes); err != nil || len(reports) != 1 || reports[0].ID != want.ID {
+	if reports, err := readOfflineHistory(t.Context(), history, offlineHistoryBytes, offlineHistoryEntries); err != nil || len(reports) != 1 || reports[0].ID != want.ID {
 		t.Fatalf("opened history: %v, %v", reports, err)
 	}
 }
@@ -720,6 +720,35 @@ func TestOfflineHistoryChecksRemainingBudgetBeforeDecoding(t *testing.T) {
 		}
 	}
 	t.Fatal("newly published report missing from history")
+}
+
+func TestOfflineHistoryReservesPublicationEntries(t *testing.T) {
+	dir := offlineTestDirectory(t)
+	offlineTestRecords(t, dir, "TCP", true, offlineTestTCP(2))
+	offlineTestEval(t, dir, offlineTestPack(2))
+	history := filepath.Join(dir, "rule-evaluations")
+	for i := range 198 {
+		if err := os.WriteFile(filepath.Join(history, fmt.Sprintf(".fixture-%d", i)), nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if report, err := EvaluateOffline(t.Context(), OfflineRequest{Directory: dir, Pack: offlineTestPack(2)}); report != nil || err == nil || !strings.Contains(err.Error(), "directory entry limit") {
+		t.Fatalf("199 entries: expected refusal before publication, got %v, %v", report, err)
+	}
+	if reports, err := ListOfflineEvaluations(dir); err != nil || len(reports) != 1 {
+		t.Fatalf("199 entries: expected original history, got %d reports, %v", len(reports), err)
+	}
+	last := filepath.Join(history, ".fixture-197")
+	if err := os.Remove(last); err != nil {
+		t.Fatal(err)
+	}
+	offlineTestEval(t, dir, offlineTestPack(2))
+	if err := os.WriteFile(last, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if reports, err := ListOfflineEvaluations(dir); err != nil || len(reports) != 2 {
+		t.Fatalf("200 entries: expected both reports, got %d reports, %v", len(reports), err)
+	}
 }
 
 func TestOfflineLexicalRuleOrderAndBoundedHistory(t *testing.T) {
