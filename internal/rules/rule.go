@@ -427,10 +427,10 @@ func EvaluateRule(rule *Rule, record types.AuditRecord) (*types.Alert, error) {
 	if !match {
 		return nil, nil
 	}
-	return createRuleAlert(rule, record, "")
+	return createRuleAlert(rule, record, "", false)
 }
 
-func createRuleAlert(rule *Rule, record types.AuditRecord, compiledDigest string) (*types.Alert, error) {
+func createRuleAlert(rule *Rule, record types.AuditRecord, compiledDigest string, projectReplayEvidence bool) (*types.Alert, error) {
 
 	// Ensure tags is never nil (use empty slice if nil)
 	tags := rule.Tags
@@ -474,7 +474,7 @@ func createRuleAlert(rule *Rule, record types.AuditRecord, compiledDigest string
 
 	// Extraction paths belong to the capture output, not its alert evidence.
 	evidenceRecord := record
-	if file, ok := record.(*types.File); ok {
+	if file, ok := record.(*types.File); ok && projectReplayEvidence {
 		projected := *file
 		projected.Location = ""
 		evidenceRecord = &projected

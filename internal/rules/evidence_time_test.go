@@ -18,10 +18,15 @@ func TestFileAlertEvidenceIndependentOfOutputDirectory(t *testing.T) {
 	var previous *types.Alert
 	for _, location := range []string{"/run-one/files/sample", "/run-two/files/sample"} {
 		record := &types.File{Timestamp: 42, Location: location}
-		alert, err := EvaluateRule(rule, record)
-		if err != nil || alert == nil {
-			t.Fatalf("evaluate File: %v", err)
+		writer := new(MockAlertWriter)
+		replay, err := NewAuditReplay(&Config{Rules: []*Rule{rule}}, writer)
+		if err != nil {
+			t.Fatal(err)
 		}
+		if _, err := replay.Evaluate(record); err != nil || len(writer.alerts) != 1 {
+			t.Fatalf("replay File: %v", err)
+		}
+		alert := writer.alerts[0]
 		var evidence types.File
 		if err := json.Unmarshal([]byte(alert.MatchedRecord), &evidence); err != nil || evidence.Location != "" || evidence.Timestamp != record.Timestamp || record.Location != location {
 			t.Fatalf("unexpected File evidence: %+v, %v", evidence, err)

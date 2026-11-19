@@ -37,12 +37,13 @@ import (
 
 // Engine manages rules and evaluates them against audit records.
 type Engine struct {
-	generationMu sync.RWMutex // A record finishes in one configuration/state generation.
-	generation   uint64
-	config       *Config
-	plan         map[types.Type][]*Rule
-	alertWriter  AlertWriter
-	clock        func() time.Time
+	generationMu          sync.RWMutex // A record finishes in one configuration/state generation.
+	generation            uint64
+	config                *Config
+	plan                  map[types.Type][]*Rule
+	alertWriter           AlertWriter
+	clock                 func() time.Time
+	projectReplayEvidence bool
 
 	// Deduplication tracking
 	recentAlerts map[string]int64 // map[alertKey]lastSeen
@@ -413,7 +414,7 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 			}
 
 			// Write the alert
-			alert, err = createRuleAlert(rule, record, rule.compiledDigest)
+			alert, err = createRuleAlert(rule, record, rule.compiledDigest, e.projectReplayEvidence)
 			if err != nil {
 				return alertCount, err
 			}

@@ -22,6 +22,7 @@ func NewAuditReplay(config *Config, writer AlertWriter) (*AuditReplay, error) {
 		return nil, err
 	}
 	replay := &AuditReplay{engine: engine}
+	engine.projectReplayEvidence = true
 	engine.clock = func() time.Time { return time.Unix(0, replay.watermark).UTC() }
 	return replay, nil
 }
