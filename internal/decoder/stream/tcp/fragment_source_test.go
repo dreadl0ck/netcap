@@ -151,6 +151,23 @@ func TestStoredTCPSourceIsRestartableWithinOneFragmentBudget(t *testing.T) {
 	t.Logf("payload bytes=4194304 retained heap delta=%d state credit peak=%d", retained, budget.Health().PeakBytes)
 }
 
+func TestStoredTCPFragmentMetadata(t *testing.T) {
+	data := &core.StreamData{Dir: reassembly.TCPDirServerToClient, SkippedBytes: -1, DiscardedBytes: 42, DiscardReason: "fixture gap", TCPObservation: "fixture observation"}
+	wire, err := encodeTCPFragment(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := decodeTCPFragment(wire)
+	if err != nil || got.Dir != data.Dir || got.SkippedBytes != -1 || got.DiscardedBytes != 42 || got.DiscardReason != data.DiscardReason || got.TCPObservation != data.TCPObservation || got.RawData != nil {
+		t.Fatalf("fragment metadata changed: %+v, %v", got, err)
+	}
+	for i := range wire {
+		if _, err := decodeTCPFragment(wire[:i]); err == nil {
+			t.Fatalf("accepted truncated metadata at %d bytes", i)
+		}
+	}
+}
+
 func TestStoredTCPBatchRangeAndEarlyStop(t *testing.T) {
 	state, err := aggregate.Open(t.TempDir(), 4096, nil)
 	if err != nil {

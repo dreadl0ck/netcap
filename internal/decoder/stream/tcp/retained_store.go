@@ -2,7 +2,6 @@ package tcp
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"math"
 	"sync/atomic"
@@ -41,6 +40,95 @@ type storedTCPFragment struct {
 
 var tcpReaderSequence atomic.Uint64
 
+const (
+	fragmentServer = 1 << iota
+	fragmentContext
+	fragmentNilPayload
+)
+
+func appendFragmentBytes(dst, value []byte) []byte {
+	return append(binary.AppendUvarint(dst, uint64(len(value))), value...)
+}
+
+func (s storedTCPFragment) marshal() []byte {
+	var flags byte
+	if s.Direction == reassembly.TCPDirServerToClient {
+		flags |= fragmentServer
+	}
+	if s.HasContext {
+		flags |= fragmentContext
+	}
+	if s.NilPayload {
+		flags |= fragmentNilPayload
+	}
+	meta := []byte{flags}
+	meta = binary.AppendVarint(meta, int64(s.Skipped))
+	meta = binary.AppendVarint(meta, s.Discarded)
+	meta = appendFragmentBytes(meta, s.Capture)
+	meta = appendFragmentBytes(meta, []byte(s.DiscardReason))
+	meta = appendFragmentBytes(meta, []byte(s.Observation))
+	for _, flow := range [...]reassembly.FlowState{s.Network, s.Transport, s.Link} {
+		meta = binary.AppendVarint(meta, flow.Type)
+		meta = appendFragmentBytes(meta, flow.Src)
+		meta = appendFragmentBytes(meta, flow.Dst)
+	}
+	if s.HasContext {
+		meta = appendFragmentBytes(meta, s.Context)
+	}
+	return meta
+}
+
+func (s *storedTCPFragment) unmarshal(meta []byte) error {
+	invalid := fmt.Errorf("invalid retained TCP fragment metadata")
+	if len(meta) == 0 || meta[0]&^(fragmentServer|fragmentContext|fragmentNilPayload) != 0 {
+		return invalid
+	}
+	flags := meta[0]
+	meta = meta[1:]
+	s.Direction = reassembly.TCPDirClientToServer
+	if flags&fragmentServer != 0 {
+		s.Direction = reassembly.TCPDirServerToClient
+	}
+	s.HasContext = flags&fragmentContext != 0
+	s.NilPayload = flags&fragmentNilPayload != 0
+	valid := true
+	readInt := func() int64 {
+		value, n := binary.Varint(meta)
+		if n <= 0 {
+			valid = false
+			return 0
+		}
+		meta = meta[n:]
+		return value
+	}
+	readBytes := func() []byte {
+		size, n := binary.Uvarint(meta)
+		if n <= 0 || size > uint64(len(meta)-n) {
+			valid = false
+			return nil
+		}
+		value := meta[n : n+int(size)]
+		meta = meta[n+int(size):]
+		return value
+	}
+	skipped := readInt()
+	s.Skipped = int(skipped)
+	s.Discarded = readInt()
+	s.Capture = readBytes()
+	s.DiscardReason = string(readBytes())
+	s.Observation = string(readBytes())
+	for _, flow := range [...]*reassembly.FlowState{&s.Network, &s.Transport, &s.Link} {
+		flow.Type, flow.Src, flow.Dst = readInt(), readBytes(), readBytes()
+	}
+	if s.HasContext {
+		s.Context = readBytes()
+	}
+	if !valid || len(meta) != 0 || int64(s.Skipped) != skipped {
+		return invalid
+	}
+	return nil
+}
+
 func encodeTCPFragment(data *core.StreamData) ([]byte, error) {
 	s := storedTCPFragment{Direction: data.Dir, Skipped: data.SkippedBytes, Discarded: data.DiscardedBytes,
 		DiscardReason: data.DiscardReason, Observation: data.TCPObservation, NilPayload: data.RawData == nil,
@@ -60,10 +148,7 @@ func encodeTCPFragment(data *core.StreamData) ([]byte, error) {
 			s.Link = reassembly.SaveFlow(linked.GetLinkFlow())
 		}
 	}
-	meta, err := json.Marshal(s)
-	if err != nil {
-		return nil, err
-	}
+	meta := s.marshal()
 	wire := binary.AppendUvarint(nil, uint64(len(meta)))
 	wire = append(wire, meta...)
 	return append(wire, data.RawData...), nil
@@ -75,7 +160,7 @@ func decodeTCPFragment(wire []byte) (*core.StreamData, error) {
 		return nil, fmt.Errorf("invalid retained TCP fragment framing")
 	}
 	var s storedTCPFragment
-	if err := json.Unmarshal(wire[n:n+int(size)], &s); err != nil {
+	if err := s.unmarshal(wire[n : n+int(size)]); err != nil {
 		return nil, err
 	}
 	ci, err := packetmeta.Unmarshal(s.Capture)
