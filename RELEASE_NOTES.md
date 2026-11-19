@@ -1,3 +1,20 @@
+## v0.16.12 — evaluator follow-up
+
+| Area | Change |
+| --- | --- |
+| MCP alerts | Read large alert audits with bounded statistics and raw/grouped pagination. Stdio and Streamable HTTP tests cover the same 27,152-alert fixture. |
+| GTP | Seal control-message output under the canonical GTP audit name. A T-PDU-only capture still does not create a control audit. |
+| Rule replay | Order finalized offline rule inputs deterministically across capture worker counts. |
+| Capture scheduling | Bound post-capture work and offer an opt-in small-upload helper via `NETCAP_AUXILIARY_CAPTURE=1`; default capture dispatch remains serial. |
+| HTTP extraction | Reduce retained-fragment read costs for large transfers and preserve the distinction between a complete File audit and an incomplete extracted body. |
+| Protobuf | Generic wire decoding remains opt-in. Loading schemas alone does not enable it. |
+
+The [qualification ledger](internal/collector/testdata/recheck-v0166.json)
+records the synthetic and public replays. The exact evaluator corpus and harness,
+the original large-alert session, and native Windows/Npcap capture remain unverified.
+
+Full changes: https://github.com/dreadl0ck/netcap/compare/v0.16.11...v0.16.12
+
 ## W87 evaluator rerun
 
 `v0.16.11` is the build for the full evaluator benchmark rerun.
@@ -345,19 +362,3 @@ channel above.
 | Source bundle | Include the qualified libtrace 4.0.23, wandio 4.2.6 and libwandder 2.0.8 sources; correct the prior runtime-version notices |
 | Geolocation | Missing optional GeoLite2 fallback data logs at debug level; explicitly selected or corrupt providers retain actionable errors |
 | Windows | On-demand qualification runs the actual client, signed download/update and structured CVE lookup on a Windows runner |
-## v0.16.12 — evaluator follow-up
-
-| Area | Change |
-| --- | --- |
-| MCP alerts | Read large alert audits with bounded statistics and raw/grouped pagination. Stdio and Streamable HTTP tests cover the same 27,152-alert fixture. |
-| GTP | Seal control-message output under the canonical GTP audit name. A T-PDU-only capture still does not create a control audit. |
-| Rule replay | Order finalized offline rule inputs deterministically across capture worker counts. |
-| Capture scheduling | Bound post-capture work and offer an opt-in small-upload helper via `NETCAP_AUXILIARY_CAPTURE=1`; default capture dispatch remains serial. |
-| HTTP extraction | Reduce retained-fragment read costs for large transfers and preserve the distinction between a complete File audit and an incomplete extracted body. |
-| Protobuf | Generic wire decoding remains opt-in. Loading schemas alone does not enable it. |
-
-The [qualification ledger](internal/collector/testdata/recheck-v0166.json)
-records the synthetic and public replays. The exact evaluator corpus and harness,
-the original large-alert session, and native Windows/Npcap capture remain unverified.
-
-Full changes: https://github.com/dreadl0ck/netcap/compare/v0.16.11...v0.16.12
