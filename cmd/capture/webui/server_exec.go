@@ -220,13 +220,6 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		cmd.Stderr = os.Stderr
 	}
 
-	// Ensure process reference is cleared when done
-	defer func() {
-		s.currentCmdMutex.Lock()
-		s.currentProc = nil
-		s.currentCmdMutex.Unlock()
-	}()
-
 	// Start the command
 	startTime := time.Now()
 	s.currentCmdMutex.Lock()
@@ -250,6 +243,13 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	// Store the running process for potential cleanup during shutdown
 	s.currentProc = cmd.Process
 	s.currentCmdMutex.Unlock()
+	defer func() {
+		s.currentCmdMutex.Lock()
+		if s.currentProc == cmd.Process {
+			s.currentProc = nil
+		}
+		s.currentCmdMutex.Unlock()
+	}()
 
 	// Wait for command to complete
 	err = cmd.Wait()
