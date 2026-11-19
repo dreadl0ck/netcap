@@ -63,6 +63,32 @@ func TestGroupedAlertPagesBreakSortTiesBySeverity(t *testing.T) {
 	}
 }
 
+func TestGroupedAlertPagesPreserveObservedPorts(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, []proto.Message{
+		&types.Alert{RuleName: "ports", Severity: "info", SrcPort: "1234", DstPort: "443"},
+		&types.Alert{RuleName: "ports", Severity: "info", SrcPort: "1234", MatchedRecord: `{"SrcPort":99,"DstPort":"80"}`},
+		&types.Alert{RuleName: "ports", Severity: "info", MatchedRecord: `{"SrcPort":5678,"DstPort":443}`},
+	})
+	s := &Server{outDir: dir}
+	w := httptest.NewRecorder()
+	s.handleGroupedAlerts(w, httptest.NewRequest("GET", "/api/alerts/grouped?mcpPage=true", nil))
+	var page struct {
+		Groups []struct {
+			UniqueSrcPorts, UniqueDstPorts           []string
+			UniqueSrcPortsTotal, UniqueDstPortsTotal int
+		}
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &page); err != nil || w.Code != 200 || len(page.Groups) != 1 {
+		t.Fatalf("expected one group: %d %s (%v)", w.Code, w.Body, err)
+	}
+	g := page.Groups[0]
+	if g.UniqueSrcPortsTotal != 2 || g.UniqueDstPortsTotal != 2 ||
+		strings.Join(g.UniqueSrcPorts, ",") != "1234,5678" || strings.Join(g.UniqueDstPorts, ",") != "443,80" {
+		t.Fatalf("unexpected grouped ports: %+v", g)
+	}
+}
+
 func TestGroupedSearchFindsHiddenMembersAndMemberPagesAreComplete(t *testing.T) {
 	dir := t.TempDir()
 	var alerts []proto.Message

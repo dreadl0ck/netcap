@@ -757,7 +757,8 @@ func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter st
 	}
 
 	group, exists := a.groups[key]
-	values := [4]string{alert.SrcIP, alert.DstIP, extractPort(alert, "SrcPort"), extractPort(alert, "DstPort")}
+	srcPort, dstPort := groupedAlertPorts(alert)
+	values := [4]string{alert.SrcIP, alert.DstIP, srcPort, dstPort}
 	seen := a.unique[key]
 	if a.remaining >= 0 {
 		charge := 0
@@ -875,25 +876,20 @@ func sortGroupedAlerts(groups []GroupedAlert, sortBy, sortOrder string) {
 	})
 }
 
-// extractPort attempts to extract port information from the alert
-func extractPort(alert AlertResponse, portField string) string {
-	// Try to parse the matched record JSON to extract port information
-	if alert.MatchedRecord == "" {
-		return ""
+func groupedAlertPorts(alert AlertResponse) (src, dst string) {
+	src, dst = alert.SrcPort, alert.DstPort
+	if (src == "" || dst == "") && alert.MatchedRecord != "" {
+		var record struct{ SrcPort, DstPort any }
+		if json.Unmarshal([]byte(alert.MatchedRecord), &record) == nil {
+			if src == "" && record.SrcPort != nil {
+				src = fmt.Sprint(record.SrcPort)
+			}
+			if dst == "" && record.DstPort != nil {
+				dst = fmt.Sprint(record.DstPort)
+			}
+		}
 	}
-
-	// Simple string search for port values in the JSON
-	// This is a basic implementation - could be enhanced with proper JSON parsing if needed
-	var data map[string]any
-	if err := json.Unmarshal([]byte(alert.MatchedRecord), &data); err != nil {
-		return ""
-	}
-
-	if val, ok := data[portField]; ok {
-		return fmt.Sprintf("%v", val)
-	}
-
-	return ""
+	return src, dst
 }
 
 // generateAlertID generates a unique identifier for an alert
