@@ -154,6 +154,13 @@ async def check_large_alert_views(client, call, directory, args):
                     or [(row["timestamp"], row["srcIP"]) for row in members["alerts"]]
                     != [(start_ms + i, sources[i]) for i in expected]):
                 raise ValueError("deep alert member page lost group scope or order")
+        by_severity = {p["groups"][0]["severity"]: p["groups"][0]["groupId"] for p in (first, last)}
+        search = {"search": sources[25_000].upper(), "limit": 2}
+        for severity, expected in (("critical", [start_ms + 25_000]), ("info", [])):
+            matches = await call("list_alerts", args | search | {"group_id": by_severity[severity]})
+            if (matches["totalCount"] != len(expected) or matches["has_more"] or not matches["generation"]
+                    or [row["timestamp"] for row in matches["alerts"]] != expected):
+                raise ValueError(f"large audit search did not intersect the {severity} group")
         sources[25_000] = "2001:db8::1:ffff"
         write_audit()
         for name, stale in (("list_alerts", generation), ("list_alerts_grouped", first["generation"])):
