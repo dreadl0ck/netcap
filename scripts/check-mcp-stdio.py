@@ -104,6 +104,48 @@ def fixture_message(fields):
     return b"".join(parts)
 
 
+async def check_large_alert_views(call, directory, args):
+    path = directory / "Alert.ncap.gz"
+    original = path.read_bytes() if path.exists() else None
+    count, start_ms = 27_152, 1_800_000_000_000
+    try:
+        with gzip.open(path, "wb", compresslevel=0) as audit:
+            header = fixture_message({3: 103})
+            audit.write(fixture_varint(len(header)) + header)
+            for i in range(count):
+                row = fixture_message({1: (start_ms + i) * 1_000_000, 3: "x" * 640,
+                                       13: "large-alert-fixture", 15: "critical" if i % 2 == 0 else "info"})
+                audit.write(fixture_varint(len(row)) + row)
+        if path.stat().st_size <= 16 << 20:
+            raise ValueError("large alert fixture did not exceed the old scan limit")
+        stats = await call("get_alert_stats", args)
+        if (stats["totalAlerts"] != count or stats["criticalAlerts"] != count // 2
+                or [a["timestamp"] for a in stats["recentAlerts"]] != list(range(start_ms + count - 1, start_ms + count - 11, -1))):
+            raise ValueError("large alert statistics lost records or recent alert order")
+        generation = None
+        for offset in (0, 25_000, count):
+            page = await call("list_alerts", args | {"limit": 2, "offset": offset}
+                              | ({"generation": generation} if generation else {}))
+            expected = list(range(start_ms + offset, min(start_ms + offset + 2, start_ms + count)))
+            if (page["totalCount"] != count or [a["timestamp"] for a in page["alerts"]] != expected
+                    or page["has_more"] != (offset + 2 < count) or not page["generation"]
+                    or (generation and page["generation"] != generation)):
+                raise ValueError(f"large alert page changed ordering, totals or generation at offset {offset}")
+            generation = page["generation"]
+        first = await call("list_alerts_grouped", args | {"limit": 1})
+        last = await call("list_alerts_grouped", args | {"limit": 1, "offset": 1, "generation": first["generation"]})
+        if (any(p["totalCount"] != count or p["groupCount"] != 2 or len(p["groups"]) != 1
+                or p["groups"][0]["count"] != count // 2 or p["generation"] != first["generation"] for p in (first, last))
+                or not first["has_more"] or last["has_more"]
+                or {p["groups"][0]["severity"] for p in (first, last)} != {"critical", "info"}):
+            raise ValueError("large grouped pages lost underlying totals or continuation")
+    finally:
+        if original is None:
+            path.unlink(missing_ok=True)
+        else:
+            path.write_bytes(original)
+
+
 async def check_behavior_records(call, directory, args):
     def audit(kind, *rows):
         messages = [fixture_message({3: kind}), *(fixture_message(row) for row in rows)]
@@ -899,6 +941,7 @@ rules:
 
         # Replacing audit tracks invalidates the cached timeline generation.
         await check_behavior_records(call, manifest_path.parent, args)
+        await check_large_alert_views(call, manifest_path.parent, args)
         mixed = {}
         if mixed_upload_archive is not None:
             with TemporaryDirectory(prefix="netcap-mixed-uploads-") as load_dir:
