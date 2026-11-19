@@ -154,16 +154,12 @@ func (s *Server) handleWaitForSession(ctx context.Context, req mcplib.CallToolRe
 	q := ref.sessionQueryParams()
 
 	for {
-		statusBody, statusErr := client.GetContext(waitCtx, "/api/status", q)
-		if statusErr != nil {
-			if result := waitResult(); result != nil {
-				return result, nil
-			}
-			return errResult(fmt.Errorf("session status: %w", statusErr)), nil
-		}
-		filesBody, _ := client.GetContext(waitCtx, "/api/files/input", nil)
+		filesBody, filesErr := client.GetContext(waitCtx, "/api/files/input", nil)
 		if result := waitResult(); result != nil {
 			return result, nil
+		}
+		if filesErr != nil {
+			return errResult(fmt.Errorf("session files: %w", filesErr)), nil
 		}
 
 		row := findSessionRow(ref, filesBody)
@@ -171,6 +167,13 @@ func (s *Server) handleWaitForSession(ctx context.Context, req mcplib.CallToolRe
 		completed, _ := row["isCompleted"].(bool)
 		completed = completed && errMsg == ""
 		if completed {
+			statusBody, statusErr := client.GetContext(waitCtx, "/api/status", q)
+			if statusErr != nil {
+				if result := waitResult(); result != nil {
+					return result, nil
+				}
+				return errResult(fmt.Errorf("session status: %w", statusErr)), nil
+			}
 			statsBody, sErr := client.GetContext(waitCtx, "/api/audit-stats", q)
 			if sErr != nil {
 				if result := waitResult(); result != nil {

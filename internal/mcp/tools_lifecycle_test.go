@@ -95,9 +95,10 @@ func TestWaitForSessionPollsUntilCompleted(t *testing.T) {
 		fmt.Fprint(w, `{"totalRecords":42}`)
 	})
 	mux.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
-		// Stay "processing" until the per-file row also flips, so
-		// deriveCompleted can't short-circuit via isProcessing=false.
-		fmt.Fprint(w, `{"isProcessing":true}`)
+		if atomic.LoadInt32(&poll) < 3 {
+			t.Error("capture status read before completion barrier")
+		}
+		fmt.Fprint(w, `{"isProcessing":false}`)
 	})
 	mux.HandleFunc("/api/files/input", func(w http.ResponseWriter, r *http.Request) {
 		n := atomic.AddInt32(&poll, 1)
@@ -182,7 +183,7 @@ func TestWaitForSessionTimesOut(t *testing.T) {
 func TestWaitForSessionTimeoutCancelsBackendRequest(t *testing.T) {
 	canceled := make(chan struct{})
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/status" {
+		if r.URL.Path != "/api/files/input" {
 			http.NotFound(w, r)
 			return
 		}
