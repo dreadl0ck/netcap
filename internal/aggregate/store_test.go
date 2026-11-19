@@ -75,6 +75,31 @@ func TestBoundedStoreEvictionAndOrderedUpdates(t *testing.T) {
 	}
 }
 
+func BenchmarkOversizedDiskGet(b *testing.B) {
+	s, err := Open(b.TempDir(), 1024, nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer s.Close()
+	payload := bytes.Repeat([]byte{'x'}, 64<<10)
+	if err := s.Do(func(tx *Tx) error { return tx.Put("oversized", payload) }); err != nil {
+		b.Fatal(err)
+	}
+	b.SetBytes(int64(len(payload)))
+	for b.Loop() {
+		if err := s.Do(func(tx *Tx) error {
+			value, ok, err := tx.Get("oversized")
+			if err != nil || !ok || len(value) != len(payload) || value[0] != 'x' {
+				return fmt.Errorf("oversized value changed: %v", err)
+			}
+			value[0] = 'y'
+			return nil
+		}); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func TestStoreRangeFindMergesDirtyAndPersistedRows(t *testing.T) {
 	s, err := Open(t.TempDir(), 600, nil)
 	if err != nil {
