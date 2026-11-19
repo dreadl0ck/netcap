@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -265,8 +266,14 @@ func testBackedHTTPLargeBody(t *testing.T, extract bool) {
 	send(false, false, false, "GET /large.bin HTTP/1.1\r\nHost: fixture.test\r\n\r\n")
 	const size = 90 << 20
 	send(true, false, false, fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n", size))
-	chunk := strings.Repeat("x", 32768)
-	for range size / len(chunk) {
+	const chunkSize = 32768
+	padding := strings.Repeat("x", chunkSize-8)
+	inputHash := sha256.New()
+	for i := range size / chunkSize {
+		chunk := fmt.Sprintf("%08x", i) + padding
+		if extract {
+			_, _ = inputHash.Write([]byte(chunk))
+		}
 		send(true, false, false, chunk)
 	}
 	out := t.TempDir()
@@ -305,8 +312,9 @@ func testBackedHTTPLargeBody(t *testing.T, extract bool) {
 			t.Fatal("large extracted body missing or incomplete", files)
 		}
 		hashes, err := file.ComputeFileHashes(files[0].Location)
-		if err != nil || hashes.SHA256 != files[0].Hashes.SHA256 {
-			t.Fatal("large artifact hash mismatch", err)
+		want := fmt.Sprintf("%x", inputHash.Sum(nil))
+		if err != nil || hashes.SHA256 != want || files[0].Hashes.SHA256 != want {
+			t.Fatalf("large artifact SHA-256: file=%s audit=%s want=%s err=%v", hashes.SHA256, files[0].Hashes.SHA256, want, err)
 		}
 		entries, err := os.ReadDir(filepath.Join(out, ".artifact-scratch"))
 		if err != nil || len(entries) != 0 {
