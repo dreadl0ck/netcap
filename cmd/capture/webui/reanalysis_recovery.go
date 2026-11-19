@@ -147,6 +147,36 @@ func withinAnalysisRoot(base, path string) bool {
 }
 
 // Inspect immediate owned run directories only; never recursively crawl user inputs.
+const maxChildRecoveryCandidates = 4096
+
+func scanChildRecoveryNames(dir string, remaining int) ([]string, error) {
+	f, err := os.Open(dir)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	var names []string
+	for {
+		entries, err := f.ReadDir(256)
+		if err != nil && err != io.EOF {
+			return nil, err
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() || !strings.HasPrefix(entry.Name(), "analysis-") {
+				continue
+			}
+			if len(names) == remaining {
+				return nil, fmt.Errorf("child discovery exceeds %d candidates", maxChildRecoveryCandidates)
+			}
+			names = append(names, entry.Name())
+		}
+		if err == io.EOF {
+			slices.Sort(names)
+			return names, nil
+		}
+	}
+}
+
 func (s *Server) discoverLocalChildren() error {
 	base, err := filepath.Abs(s.baseOutDir)
 	if err != nil || s.baseOutDir == "" {
@@ -162,22 +192,16 @@ func (s *Server) discoverLocalChildren() error {
 	metadataBytes := 0
 	candidateCount := 0
 	for _, scan := range []string{base, filepath.Dir(base)} {
-		entries, err := os.ReadDir(scan)
+		names, err := scanChildRecoveryNames(scan, maxChildRecoveryCandidates-candidateCount)
 		if os.IsNotExist(err) {
 			continue
 		}
 		if err != nil {
 			return err
 		}
-		for _, entry := range entries {
-			if !entry.IsDir() || !strings.HasPrefix(entry.Name(), "analysis-") {
-				continue
-			}
-			candidateCount++
-			if candidateCount > 4096 {
-				return fmt.Errorf("child discovery exceeds 4096 candidates")
-			}
-			dir := filepath.Join(scan, entry.Name())
+		candidateCount += len(names)
+		for _, name := range names {
+			dir := filepath.Join(scan, name)
 			root, err := os.OpenRoot(dir)
 			if err != nil {
 				continue
@@ -188,7 +212,7 @@ func (s *Server) discoverLocalChildren() error {
 				err = json.Unmarshal(data, &child)
 			}
 			root.Close()
-			if err != nil || child.Version != 1 || child.AnalysisID != entry.Name() || len(child.InputSHA256) != 64 || child.CreatedAt.IsZero() {
+			if err != nil || child.Version != 1 || child.AnalysisID != name || len(child.InputSHA256) != 64 || child.CreatedAt.IsZero() {
 				log.Printf("[WebUI] Ignoring invalid child metadata in %s", dir)
 				continue
 			}

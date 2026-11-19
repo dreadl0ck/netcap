@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -15,20 +14,13 @@ func (s *Server) discoverServiceChildren(results string) error {
 	if err != nil {
 		return err
 	}
-	entries, err := os.ReadDir(base)
+	names, err := scanChildRecoveryNames(base, maxChildRecoveryCandidates)
 	if err != nil {
 		return err
 	}
-	count, metadataBytes := 0, 0
-	for _, entry := range entries {
-		if !entry.IsDir() || !strings.HasPrefix(entry.Name(), "analysis-") {
-			continue
-		}
-		count++
-		if count > 4096 {
-			return fmt.Errorf("service child discovery exceeds 4096 candidates")
-		}
-		dir := filepath.Join(base, entry.Name())
+	metadataBytes := 0
+	for _, candidate := range names {
+		dir := filepath.Join(base, candidate)
 		root, err := os.OpenRoot(dir)
 		if err != nil {
 			continue
@@ -43,7 +35,7 @@ func (s *Server) discoverServiceChildren(results string) error {
 		var child childAnalysis
 		var session SessionInfo
 		if readErr != nil || sessionErr != nil || json.Unmarshal(data, &child) != nil || json.Unmarshal(sessionData, &session) != nil ||
-			child.Version != 1 || child.AnalysisID != entry.Name() || session.SessionID != child.AnalysisID || session.IsPreloaded || session.IP == "" ||
+			child.Version != 1 || child.AnalysisID != candidate || session.SessionID != child.AnalysisID || session.IsPreloaded || session.IP == "" ||
 			child.ParentSessionID == "" || session.ParentSessionID != child.ParentSessionID || child.CreatedAt.IsZero() || !session.UploadTimestamp.Equal(child.CreatedAt) {
 			root.Close()
 			log.Printf("[WebUI] Ignoring invalid service child metadata in %s", dir)

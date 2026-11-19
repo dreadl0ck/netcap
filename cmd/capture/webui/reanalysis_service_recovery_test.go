@@ -2,14 +2,36 @@ package webui
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 )
+
+func TestChildRecoveryScanIgnoresUnrelatedEntriesAcrossBatches(t *testing.T) {
+	dir := t.TempDir()
+	for i := range 300 {
+		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("analysis-file-%03d", i)), nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, name := range []string{"analysis-z", "unrelated-dir", "analysis-a"} {
+		if err := os.Mkdir(filepath.Join(dir, name), 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if names, err := scanChildRecoveryNames(dir, 2); err != nil || !slices.Equal(names, []string{"analysis-a", "analysis-z"}) {
+		t.Fatalf("exact candidate budget: %v, %v", names, err)
+	}
+	if names, err := scanChildRecoveryNames(dir, 1); err == nil || names != nil {
+		t.Fatalf("expected over-budget refusal without partial results: %v, %v", names, err)
+	}
+}
 
 func serviceChildFixture(t *testing.T) (*Server, *ServiceConfig, *AnalysisJob) {
 	t.Helper()
