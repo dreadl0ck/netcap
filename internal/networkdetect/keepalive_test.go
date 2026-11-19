@@ -174,6 +174,36 @@ func TestStaleProbeQualificationPreservesConflict(t *testing.T) {
 	}
 }
 
+func TestStaleProbeBoundaryIsDirectionLocal(t *testing.T) {
+	e, err := New(DefaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	forward := baseEvent("data", 1)
+	forward.Seq, forward.Payload = 100, []byte("abcd")
+	advance := forward
+	advance.At, advance.Seq, advance.Payload = baseEvent("data", 2).At, 104, []byte("efgh")
+	reverse := baseEvent("data", 3)
+	reverse.SrcIP, reverse.DstIP = forward.DstIP, forward.SrcIP
+	reverse.SrcPort, reverse.DstPort = forward.DstPort, forward.SrcPort
+	reverse.Seq, reverse.Payload = 100, []byte("abcdefgh")
+	for _, ev := range []Event{forward, advance, reverse} {
+		if _, err := e.Observe(ev); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i, ev := range []Event{reverse, forward} {
+		ev.At, ev.Seq, ev.Payload, ev.KeepAliveEligible = baseEvent("data", 4+i).At, 103, []byte{0}, true
+		if _, err := e.Observe(ev); err != nil {
+			t.Fatal(err)
+		}
+		stats := e.Stats()
+		if stats.ConflictingOverlapBytes != uint64(i+1) || stats.StaleProbeCandidates != uint64(i) {
+			t.Fatalf("direction %d: %+v", i, stats)
+		}
+	}
+}
+
 func TestConflictingExtensionDoesNotEstablishStaleProbeBoundary(t *testing.T) {
 	for _, tc := range []struct {
 		name, extension       string
