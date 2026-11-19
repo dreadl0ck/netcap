@@ -307,6 +307,31 @@ func (s *Server) scanAlertAudit(ctx context.Context, filePath string, byteLimit,
 }
 
 func (s *Server) scanFilteredAlertAudit(ctx context.Context, filePath string, byteLimit, rowLimit, frameCap int, match func(*types.Alert) bool, visit func(AlertResponse) error) ([]AlertResponse, error) {
+	alerts := make([]AlertResponse, 0)
+	err := s.walkAlertAudit(ctx, filePath, byteLimit, rowLimit, frameCap, func(alert *types.Alert, resolved *ResolvedAlertsStore) error {
+		if match != nil && !match(alert) {
+			return nil
+		}
+		response := resolvedAlertResponse(alert, resolved)
+		if visit != nil {
+			return visit(response)
+		}
+		alerts = append(alerts, response)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return alerts, nil
+}
+
+func resolvedAlertResponse(alert *types.Alert, store *ResolvedAlertsStore) AlertResponse {
+	response := alertResponse(alert)
+	response.Resolved, response.ResolvedAt = isAlertResolved(response.AlertID, store)
+	return response
+}
+
+func (s *Server) walkAlertAudit(ctx context.Context, filePath string, byteLimit, rowLimit, frameCap int, visit func(*types.Alert, *ResolvedAlertsStore) error) error {
 	var reader *AuditRecordReader
 	var opened os.FileInfo
 	var err error
@@ -314,14 +339,14 @@ func (s *Server) scanFilteredAlertAudit(ctx context.Context, filePath string, by
 		reader, err = NewAuditRecordReader(filePath)
 	} else {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return err
 		}
 		file, info, openErr := artifactio.Open(filepath.Dir(filePath), filepath.Base(filePath))
 		if openErr != nil {
 			err = openErr
 		} else if info.Size() > int64(byteLimit) {
 			file.Close()
-			return nil, fmt.Errorf("%w: stored audit exceeds %d bytes", errAlertPageSourceLimit, byteLimit)
+			return fmt.Errorf("%w: stored audit exceeds %d bytes", errAlertPageSourceLimit, byteLimit)
 		} else {
 			opened = info
 			reader, err = auditRecordReaderFromInput(file, io.NewSectionReader(file, 0, info.Size()), true, func(in io.Reader) io.Reader {
@@ -330,20 +355,20 @@ func (s *Server) scanFilteredAlertAudit(ctx context.Context, filePath string, by
 		}
 	}
 	if errors.Is(err, os.ErrNotExist) {
-		return []AlertResponse{}, nil
+		return nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to open alerts file: %w", err)
+		return fmt.Errorf("failed to open alerts file: %w", err)
 	}
 	defer reader.Close()
 
 	// Read header to initialize reader
 	header, err := reader.ReadHeader()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read header: %w", err)
+		return fmt.Errorf("failed to read header: %w", err)
 	}
 	if ctx != nil && header.Type != types.Type_NC_Alert {
-		return nil, fmt.Errorf("unexpected alert audit type %s", header.Type)
+		return fmt.Errorf("unexpected alert audit type %s", header.Type)
 	}
 
 	// Load resolved alerts
@@ -352,7 +377,7 @@ func (s *Server) scanFilteredAlertAudit(ctx context.Context, filePath string, by
 	if ctx != nil {
 		resolvedStore, err = s.loadPageResolvedAlerts(ctx, outDir)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	} else {
 		resolvedStore, err = s.loadResolvedAlerts(outDir)
@@ -362,7 +387,6 @@ func (s *Server) scanFilteredAlertAudit(ctx context.Context, filePath string, by
 		}
 	}
 
-	alerts := make([]AlertResponse, 0)
 	remaining := byteLimit
 	rows := 0
 
@@ -373,7 +397,7 @@ func (s *Server) scanFilteredAlertAudit(ctx context.Context, filePath string, by
 			record, err = reader.NextRecord()
 		} else {
 			if err := ctx.Err(); err != nil {
-				return nil, err
+				return err
 			}
 			frameLimit := min(remaining, frameCap)
 			if rows == rowLimit {
@@ -382,7 +406,7 @@ func (s *Server) scanFilteredAlertAudit(ctx context.Context, filePath string, by
 			var raw []byte
 			raw, err = reader.delimitedReader.NextWithLimit(uint64(max(frameLimit, 1)))
 			if errors.Is(err, delimited.ErrRecordLimit) || (err == nil && (len(raw) > frameLimit || rows == rowLimit)) {
-				return nil, fmt.Errorf("%w: %d records, %d decoded bytes or %d bytes per frame", errAlertPageSourceLimit, rowLimit, byteLimit, frameCap)
+				return fmt.Errorf("%w: %d records, %d decoded bytes or %d bytes per frame", errAlertPageSourceLimit, rowLimit, byteLimit, frameCap)
 			}
 			if err == nil {
 				rows++
@@ -394,7 +418,7 @@ func (s *Server) scanFilteredAlertAudit(ctx context.Context, filePath string, by
 			if err == io.EOF {
 				break
 			}
-			return nil, fmt.Errorf("failed to read alert record: %w", err)
+			return fmt.Errorf("failed to read alert record: %w", err)
 		}
 
 		// Type assert to Alert
@@ -403,33 +427,18 @@ func (s *Server) scanFilteredAlertAudit(ctx context.Context, filePath string, by
 			log.Printf("[WebUI] Record is not an Alert type")
 			continue
 		}
-		if match != nil && !match(alert) {
-			continue
-		}
-
-		alertResp := alertResponse(alert)
-
-		// Check if resolved
-		resolved, resolvedAt := isAlertResolved(alertResp.AlertID, resolvedStore)
-		alertResp.Resolved = resolved
-		alertResp.ResolvedAt = resolvedAt
-
-		if visit != nil {
-			if err := visit(alertResp); err != nil {
-				return nil, err
-			}
-		} else {
-			alerts = append(alerts, alertResp)
+		if err := visit(alert, resolvedStore); err != nil {
+			return err
 		}
 	}
 
 	if opened != nil {
 		current, err := os.Lstat(filePath)
 		if err != nil || !os.SameFile(opened, current) || opened.Size() != current.Size() || !opened.ModTime().Equal(current.ModTime()) {
-			return nil, errAlertAuditChanged
+			return errAlertAuditChanged
 		}
 	}
-	return alerts, nil
+	return nil
 }
 
 const (
@@ -469,8 +478,10 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 	criticalCount, total, dimensions := 0, 0, 0
 	type groupKey struct{ rule, severity string }
 	alertGroups := make(map[groupKey]struct{})
-	recentAlerts := make([]AlertResponse, 0, 10)
-	_, err := s.scanAlertAudit(r.Context(), alertsFile, alertStatsScanBytes, alertStatsScanRows, alertStatsFrameBytes, func(alert AlertResponse) error {
+	recent := make([]*types.Alert, 0, 10)
+	var resolved *ResolvedAlertsStore
+	err := s.walkAlertAudit(r.Context(), alertsFile, alertStatsScanBytes, alertStatsScanRows, alertStatsFrameBytes, func(alert *types.Alert, store *ResolvedAlertsStore) error {
+		resolved = store
 		key := groupKey{alert.RuleName, alert.Severity}
 		if _, ok := alertGroups[key]; !ok {
 			dimensions += len(key.rule) + len(key.severity) + 128
@@ -485,13 +496,13 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 		if strings.EqualFold(alert.Severity, "critical") {
 			criticalCount++
 		}
-		if len(recentAlerts) < cap(recentAlerts) || alert.Timestamp > recentAlerts[len(recentAlerts)-1].Timestamp {
-			if len(recentAlerts) < cap(recentAlerts) {
-				recentAlerts = append(recentAlerts, alert)
+		if len(recent) < cap(recent) || alert.Timestamp/1_000_000 > recent[len(recent)-1].Timestamp/1_000_000 {
+			if len(recent) < cap(recent) {
+				recent = append(recent, alert)
 			} else {
-				recentAlerts[len(recentAlerts)-1] = alert
+				recent[len(recent)-1] = alert
 			}
-			sort.SliceStable(recentAlerts, func(i, j int) bool { return recentAlerts[i].Timestamp > recentAlerts[j].Timestamp })
+			sort.SliceStable(recent, func(i, j int) bool { return recent[i].Timestamp/1_000_000 > recent[j].Timestamp/1_000_000 })
 		}
 		return nil
 	})
@@ -500,6 +511,10 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	recentAlerts := make([]AlertResponse, 0, len(recent))
+	for _, alert := range recent {
+		recentAlerts = append(recentAlerts, resolvedAlertResponse(alert, resolved))
+	}
 	payload, err := json.Marshal(map[string]any{
 		"totalAlerts":    total,
 		"groupCount":     len(alertGroups),
