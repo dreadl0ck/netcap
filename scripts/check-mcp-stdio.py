@@ -420,7 +420,31 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout, 
     }
 
 
-async def check(binary, capture, http_capture, data_dir, mixed_upload_archive=None, full_fanout=False, auxiliary=False):
+async def check_partial_download(call, capture):
+    with capture.open("rb") as source:
+        if hashlib.file_digest(source, "sha256").hexdigest() != "a9d08b46f0ffafe6671407910184aa521db200568da3e844d92636c0feab0588":
+            raise ValueError("unexpected download-fast fixture digest")
+    upload = await call("ingest_pcap", {"path": str(capture.resolve())})
+    target = {"session_id": upload["session_id"]}
+    async with asyncio.timeout(120):
+        while not (await call("wait_for_session", target | {"timeout_seconds": 10}))["completed"]:
+            pass
+    result = await call("query_audit_records", target | {"type": "File", "allow_partial": True, "limit": 2})
+    report = await call("get_artifact_analysis", target)
+    summary, records = result["summary"], result["records"]
+    if summary.get("coverage") != "complete" or summary["total"] != 1 or len(records) != 1:
+        raise ValueError(f"expected one record in a complete File audit: {summary}")
+    record = records[0]
+    digest = "575fc4241d479487be3b477d54b1d9de2e5b07ec5d355575f07cc345bb5ad279"
+    if record["Length"] != 82_095_922 or record.get("IsComplete") or record["Hashes"]["SHA256"] != digest:
+        raise ValueError("File audit did not preserve the pinned incomplete artifact")
+    if report["state"] != "partial" or "unexpected EOF" not in report["extractionIssues"]:
+        raise ValueError("artifact report lost incomplete extraction coverage")
+    return {"bytes": record["Length"], "sha256": digest, "audit_coverage": summary["coverage"],
+            "extraction_state": report["state"]}
+
+
+async def check(binary, capture, http_capture, data_dir, mixed_upload_archive=None, full_fanout=False, auxiliary=False, partial_download=None):
     params = StdioServerParameters(command=str(binary), args=[
         "mcp", "--bind", "127.0.0.1:0", "--quiet", "--pcap", str(capture),
         "--data-dir", data_dir, "--behavior", "--behavior-prefix", "192.168.0.0/16",
@@ -1025,7 +1049,7 @@ rules:
         await check_behavior_records(call, manifest_path.parent, args)
         await check_large_alert_views(client, call, manifest_path.parent, args)
         mixed = {}
-        if mixed_upload_archive is not None:
+        if mixed_upload_archive is not None or partial_download is not None:
             with TemporaryDirectory(prefix="netcap-mixed-uploads-") as load_dir:
                 load_params = StdioServerParameters(command=str(binary), args=[
                     "mcp", "--bind", "127.0.0.1:0", "--quiet", "--data-dir", load_dir,
@@ -1038,11 +1062,17 @@ rules:
                     async def load_call(name, arguments):
                         return await call(name, arguments, session=load)
 
-                    try:
-                        mixed["mixed_uploads"] = await check_mixed_uploads(
-                            load_call, capture, mixed_upload_archive, Path(load_dir), full_fanout, auxiliary)
-                    except (ValueError, TimeoutError) as exc:
-                        failures.append(f"mixed uploads: {exc}")
+                    if mixed_upload_archive is not None:
+                        try:
+                            mixed["mixed_uploads"] = await check_mixed_uploads(
+                                load_call, capture, mixed_upload_archive, Path(load_dir), full_fanout, auxiliary)
+                        except (ValueError, TimeoutError) as exc:
+                            failures.append(f"mixed uploads: {exc}")
+                    if partial_download is not None:
+                        try:
+                            mixed["partial_download"] = await check_partial_download(load_call, partial_download)
+                        except (ValueError, TimeoutError) as exc:
+                            failures.append(f"partial download: {exc}")
         print(json.dumps({"advertised": len(tools), "covered_count": len(covered), "covered": sorted(covered),
                           "successes": successes, "uncovered": sorted(tools.keys() - covered),
                           "failures": failures, **mixed}, indent=2))
@@ -1055,6 +1085,7 @@ if __name__ == "__main__":
     parser.add_argument("--mixed-upload-archive", type=Path, help="Run the paced mixed-upload test using the pinned synthetic archive.")
     parser.add_argument("--full-fanout", action="store_true", help="Use one full 15,000-packet upload followed by three small uploads.")
     parser.add_argument("--auxiliary-capture", action="store_true", help="Enable the auxiliary helper in the mixed-upload probe.")
+    parser.add_argument("--partial-download", type=Path, help="Verify the pinned download-fast capture through MCP.")
     args = parser.parse_args()
     if (args.full_fanout or args.auxiliary_capture) and args.mixed_upload_archive is None:
         parser.error("mixed-upload options require --mixed-upload-archive")
@@ -1062,5 +1093,5 @@ if __name__ == "__main__":
     with TemporaryDirectory(prefix="netcap-mcp-contracts-") as data_dir:
         passed = asyncio.run(check(args.binary.resolve(), repo / "internal/collector/testdata/voip/mdns.pcap",
                                    repo / "testdata/recheck-v0168/base_http.pcap", data_dir, args.mixed_upload_archive,
-                                   args.full_fanout, args.auxiliary_capture))
+                                   args.full_fanout, args.auxiliary_capture, args.partial_download))
         raise SystemExit(0 if passed else 1)
