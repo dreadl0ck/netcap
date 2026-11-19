@@ -142,7 +142,7 @@ func (s *Server) enqueueAnalysisContext(ctx context.Context, job *AnalysisJob, w
 		return errAnalysisUnavailable
 	}
 	reserved := !wait && cap(s.jobQueue) > 0
-	if reserved && len(s.jobQueue)+s.preparingNonblocking >= cap(s.jobQueue) {
+	if reserved && s.captureQueueLength()+s.preparingNonblocking >= cap(s.jobQueue) {
 		s.mu.Unlock()
 		job.settings.cleanup()
 		return errAnalysisQueueFull
@@ -227,6 +227,9 @@ func (s *Server) enqueueAnalysisContext(ctx context.Context, job *AnalysisJob, w
 	}
 	if err := ctx.Err(); err != nil {
 		return err
+	}
+	if cap(s.jobQueue) > 0 && s.captureQueueLength()+s.preparingNonblocking >= cap(s.jobQueue) {
+		return errAnalysisQueueFull
 	}
 	select {
 	case <-s.shutdownChan:

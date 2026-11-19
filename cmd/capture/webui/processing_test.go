@@ -149,6 +149,22 @@ func TestProcessingFailureAndPanicReturnIdle(t *testing.T) {
 	}
 }
 
+func TestNonblockingAnalysisAdmissionCountsPrefetchedJobs(t *testing.T) {
+	s := processingServer(t, false)
+	s.jobQueue = make(chan *AnalysisJob, 1)
+	var dispatch = captureDispatch{depth: &s.captureDispatchDepth}
+	dispatch.add(&AnalysisJob{})
+	job := &AnalysisJob{InputFile: "retry"}
+	if err := s.enqueueAnalysis(job, false); !errors.Is(err, errAnalysisQueueFull) || len(job.ArtifactConfig) != 0 {
+		t.Fatalf("prefetched job did not occupy the slot: %v", err)
+	}
+	dispatch.next(s.jobQueue, nil)
+	if err := s.enqueueAnalysis(job, false); err != nil {
+		t.Fatalf("retry after dispatch: %v", err)
+	}
+	(<-s.jobQueue).processingDone()
+}
+
 func TestNonblockingAnalysisAdmissionCountsPreparingJobs(t *testing.T) {
 	s := processingServer(t, false)
 	s.jobQueue = make(chan *AnalysisJob, 1)
