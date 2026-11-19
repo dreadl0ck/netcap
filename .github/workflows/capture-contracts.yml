@@ -99,7 +99,19 @@ jobs:
           cache: pnpm
           cache-dependency-path: cmd/capture/webui/frontend/pnpm-lock.yaml
       - name: Install capture headers
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libpcap-dev
+        timeout-minutes: 4
+        run: |
+          apt_options=(-o Acquire::http::Timeout=10 -o Acquire::https::Timeout=10)
+          for attempt in 1 2 3; do
+            if sudo apt-get "${apt_options[@]}" update &&
+               sudo apt-get "${apt_options[@]}" install -y --no-install-recommends libpcap-dev; then
+              exit 0
+            fi
+            if [[ "$attempt" != 3 ]]; then
+              sleep "$((attempt * 5))"
+            fi
+          done
+          exit 1
       - name: Build embedded interface
         working-directory: cmd/capture/webui/frontend
         run: pnpm install --frozen-lockfile && pnpm build
