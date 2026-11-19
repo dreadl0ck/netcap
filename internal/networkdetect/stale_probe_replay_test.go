@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
+	"github.com/dreadl0ck/netcap/types"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcapgo"
 )
@@ -47,6 +49,20 @@ func TestOriginalStaleProbeReplay(t *testing.T) {
 				t.Fatal(err)
 			}
 			ordinal := 0
+			var reportedCandidates uint64
+			checkAlerts := func(alerts []*types.Alert) {
+				for _, alert := range alerts {
+					_, note, qualified := strings.Cut(alert.Notes, "; possibleStaleProbeCandidates=")
+					if !qualified {
+						continue
+					}
+					var count uint64
+					if _, err := fmt.Sscanf(note, "%d (intent and acceptance unknown)", &count); err != nil || count == 0 || alert.Name != "tcp.overlap-conflict" || alert.Severity != "medium" || count > alert.Count {
+						t.Fatalf("invalid published stale-probe evidence: %v", alert)
+					}
+					reportedCandidates += count
+				}
+			}
 			for {
 				raw, ci, err := reader.ZeroCopyReadPacketData()
 				if err == io.EOF {
@@ -62,9 +78,11 @@ func TestOriginalStaleProbeReplay(t *testing.T) {
 				for _, ev := range PacketEvents(pkt, Scope{Sensor: "original-replay", Interface: "capture"}) {
 					before := engine.stats.ConflictingOverlapBytes
 					candidates := engine.stats.StaleProbeCandidates
-					if _, err := engine.Observe(ev); err != nil {
+					alerts, err := engine.Observe(ev)
+					if err != nil {
 						t.Fatalf("frame %d: %v", ordinal, err)
 					}
+					checkAlerts(alerts)
 					if seq, ok := tc.frames[ordinal]; ok && ev.Kind == "data" && ev.Seq == seq && ev.KeepAliveEligible && len(ev.Payload) == 1 && ev.Payload[0] == 0 {
 						matched = true
 						if engine.stats.ConflictingOverlapBytes-before != 1 {
@@ -82,6 +100,11 @@ func TestOriginalStaleProbeReplay(t *testing.T) {
 			if ordinal != tc.count {
 				t.Fatalf("processed %d packets, want %d", ordinal, tc.count)
 			}
+			checkAlerts(engine.Flush())
+			if want := engine.Stats().StaleProbeCandidates; reportedCandidates != want {
+				t.Fatalf("published %d stale-probe candidates, engine observed %d", reportedCandidates, want)
+			}
+			t.Logf("published %d stale-probe candidates in %d frames", reportedCandidates, ordinal)
 		})
 	}
 }
