@@ -14,6 +14,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/types"
 	"modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 )
@@ -112,12 +113,12 @@ func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Requ
 	severity, rule, group := q.Get("severity"), q.Get("ruleName"), q.Get("groupId")
 	search := strings.ToLower(q.Get("pageSearch"))
 	remaining := alertStatsScanBytes
-	_, err = s.scanAlertAudit(ctx, auditPath, alertStatsScanBytes, alertStatsScanRows, alertStatsFrameBytes, func(alert AlertResponse) error {
-		if (severity != "" && !strings.EqualFold(alert.Severity, severity)) ||
-			(rule != "" && !strings.EqualFold(alert.RuleName, rule)) ||
-			(group != "" && generateGroupID(alert.RuleName, alert.Severity) != group) {
-			return nil
-		}
+	match := func(alert *types.Alert) bool {
+		return (severity == "" || strings.EqualFold(alert.Severity, severity)) &&
+			(rule == "" || strings.EqualFold(alert.RuleName, rule)) &&
+			(group == "" || generateGroupID(alert.RuleName, alert.Severity) == group)
+	}
+	_, err = s.scanFilteredAlertAudit(ctx, auditPath, alertStatsScanBytes, alertStatsScanRows, alertStatsFrameBytes, match, func(alert AlertResponse) error {
 		raw, err := json.Marshal(alert)
 		if err != nil {
 			return err

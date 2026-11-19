@@ -302,6 +302,10 @@ func (s *Server) readAlertAudit(ctx context.Context, filePath string) ([]AlertRe
 }
 
 func (s *Server) scanAlertAudit(ctx context.Context, filePath string, byteLimit, rowLimit, frameCap int, visit func(AlertResponse) error) ([]AlertResponse, error) {
+	return s.scanFilteredAlertAudit(ctx, filePath, byteLimit, rowLimit, frameCap, nil, visit)
+}
+
+func (s *Server) scanFilteredAlertAudit(ctx context.Context, filePath string, byteLimit, rowLimit, frameCap int, match func(*types.Alert) bool, visit func(AlertResponse) error) ([]AlertResponse, error) {
 	var reader *AuditRecordReader
 	var opened os.FileInfo
 	var err error
@@ -396,6 +400,9 @@ func (s *Server) scanAlertAudit(ctx context.Context, filePath string, byteLimit,
 		alert, ok := record.(*types.Alert)
 		if !ok {
 			log.Printf("[WebUI] Record is not an Alert type")
+			continue
+		}
+		if match != nil && !match(alert) {
 			continue
 		}
 
