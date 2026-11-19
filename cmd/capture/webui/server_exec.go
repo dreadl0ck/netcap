@@ -23,6 +23,7 @@ package webui
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -32,7 +33,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/dbs"
+	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 )
 
@@ -216,7 +219,7 @@ func (s *Server) runOfflineCaptureHelper(job *AnalysisJob, executable string, ar
 
 	// Run the capture command
 	if job.captureLane == captureAuxiliary {
-		args = append(args, "-workers=1", "-stream-workers=1")
+		args = append(args, "-workers=1", "-stream-workers=1", "-capture-evidence=true")
 	}
 	if errorLogFile != nil {
 		defer errorLogFile.Close()
@@ -296,6 +299,13 @@ func (s *Server) runOfflineCaptureHelper(job *AnalysisJob, executable string, ar
 		return
 	}
 
+	if job.captureLane == captureAuxiliary {
+		if err := verifyAuxiliaryCaptureOutput(ctx, job); err != nil {
+			s.recordAnalysisFailure(job, fmt.Sprintf("Auxiliary capture output verification: %v", err), errorLogPath)
+			return
+		}
+	}
+
 	// Close and remove error log file if analysis succeeded (it would be empty or just normal output)
 	if errorLogFile != nil {
 		errorLogFile.Close()
@@ -309,6 +319,21 @@ func (s *Server) runOfflineCaptureHelper(job *AnalysisJob, executable string, ar
 	}
 
 	s.finishCaptureJob(job, duration)
+}
+
+func verifyAuxiliaryCaptureOutput(ctx context.Context, job *AnalysisJob) error {
+	data, err := artifactio.Read(ctx, job.OutputDir, "capture-manifest.json", 16<<20)
+	if err != nil {
+		return err
+	}
+	var manifest evidence.CaptureManifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return err
+	}
+	if manifest.InputSHA256 == "" || manifest.InputSHA256 != job.reproductionSource.SHA256 {
+		return errors.New("capture manifest input digest does not match the admitted input")
+	}
+	return nil
 }
 
 // analysisErrorSummaryLimit is how many trailing bytes of the helper's output

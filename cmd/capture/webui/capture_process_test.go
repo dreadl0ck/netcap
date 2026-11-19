@@ -13,6 +13,28 @@ import (
 	"time"
 )
 
+func TestAuxiliaryCaptureOutputRequiresAdmittedDigest(t *testing.T) {
+	job := &AnalysisJob{OutputDir: t.TempDir(), reproductionSource: reproductionSource{SHA256: strings.Repeat("a", 64)}}
+	for _, tc := range []struct {
+		name, digest string
+		valid        bool
+	}{
+		{"absent digest", "", false},
+		{"different input", strings.Repeat("b", 64), false},
+		{"admitted input", job.reproductionSource.SHA256, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			data := []byte(`{"inputSHA256":"` + tc.digest + `"}`)
+			if err := os.WriteFile(filepath.Join(job.OutputDir, "capture-manifest.json"), data, 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := verifyAuxiliaryCaptureOutput(t.Context(), job); (err == nil) != tc.valid {
+				t.Fatalf("verification error = %v, want success = %t", err, tc.valid)
+			}
+		})
+	}
+}
+
 func TestAuxiliaryHelperDeadlineRecordsFailure(t *testing.T) {
 	t.Setenv("NETCAP_TEST_CAPTURE_PROCESS_CHILD", "1")
 	executable, err := os.Executable()
