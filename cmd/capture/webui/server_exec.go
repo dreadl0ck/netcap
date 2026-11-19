@@ -39,6 +39,8 @@ import (
 // name differs there.
 const analysisErrorLogName = "analysis_error.log"
 
+func auxiliaryCaptureEnabled() bool { return os.Getenv("NETCAP_AUXILIARY_CAPTURE") == "1" }
+
 func inProcessResolverConfig() resolvers.Config {
 	return resolvers.Config{
 		ReverseDNS: false, LocalDNS: false, MACDB: true, DHCPDB: true,
@@ -207,8 +209,14 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 
 	// Run the capture command
 	args = append(helperPrefix, args...)
+	if job.captureLane == captureAuxiliary {
+		args = append(args, "-workers=1", "-stream-workers=1")
+	}
 	cmd := exec.Command(executable, args...)
 	cmd.Env = helperEnvironment()
+	if job.captureLane == captureAuxiliary {
+		cmd.Env = append(cmd.Env, "GOMAXPROCS=2")
+	}
 
 	// If we have an error log file, capture output there; otherwise use standard output
 	if errorLogFile != nil {
@@ -222,7 +230,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 
 	// Start the command
 	startTime := time.Now()
-	if err = s.startCaptureProcess(cmd, captureOffline); err != nil {
+	if err = s.startCaptureProcess(cmd, job.captureLane); err != nil {
 		if err == errAnalysisStopping {
 			s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
 			return
@@ -231,7 +239,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		s.recordAnalysisFailure(job, fmt.Sprintf("Failed to start analysis: %v", err), "")
 		return
 	}
-	defer s.releaseCaptureProcess(cmd.Process, captureOffline)
+	defer s.releaseCaptureProcess(cmd.Process, job.captureLane)
 
 	// Wait for command to complete
 	err = cmd.Wait()

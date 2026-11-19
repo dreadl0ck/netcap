@@ -41,6 +41,10 @@ func (d *captureDispatch) add(job *AnalysisJob) {
 	}
 }
 
+func smallCapture(job *AnalysisJob) bool {
+	return job.reproductionSource.SHA256 != "" && job.reproductionSource.Bytes > 0 && job.reproductionSource.Bytes <= smallCaptureBytes
+}
+
 func (d *captureDispatch) next(queue <-chan *AnalysisJob, stop <-chan struct{}) *AnalysisJob {
 	if ruleReplayCanceled(stop, nil) {
 		return nil
@@ -57,10 +61,7 @@ func (d *captureDispatch) next(queue <-chan *AnalysisJob, stop <-chan struct{}) 
 		}
 	}
 	index := 0
-	isSmall := func(job *AnalysisJob) bool {
-		return job.reproductionSource.SHA256 != "" && job.reproductionSource.Bytes > 0 && job.reproductionSource.Bytes <= smallCaptureBytes
-	}
-	if d.bypasses < maxCaptureBypasses && !isSmall(d.pending[0]) {
+	if d.bypasses < maxCaptureBypasses && !smallCapture(d.pending[0]) {
 	fill:
 		for len(d.pending) < captureLookahead {
 			select {
@@ -74,7 +75,7 @@ func (d *captureDispatch) next(queue <-chan *AnalysisJob, stop <-chan struct{}) 
 			}
 		}
 		for i := 1; i < len(d.pending); i++ {
-			if isSmall(d.pending[i]) {
+			if smallCapture(d.pending[i]) {
 				index = i
 				break
 			}
@@ -85,6 +86,10 @@ func (d *captureDispatch) next(queue <-chan *AnalysisJob, stop <-chan struct{}) 
 	} else {
 		d.bypasses++
 	}
+	return d.take(index)
+}
+
+func (d *captureDispatch) take(index int) *AnalysisJob {
 	job := d.pending[index]
 	copy(d.pending[index:], d.pending[index+1:])
 	d.pending[len(d.pending)-1] = nil
@@ -96,6 +101,90 @@ func (d *captureDispatch) next(queue <-chan *AnalysisJob, stop <-chan struct{}) 
 		job.releaseCaptureSlot()
 	}
 	return job
+}
+
+func (s *Server) dispatchWithAuxiliary(d *captureDispatch, run func(*AnalysisJob)) {
+	queue := s.jobQueue
+	var primary, auxiliary *AnalysisJob
+	var primaryDone, auxiliaryDone <-chan struct{}
+	launch := func(job *AnalysisJob) <-chan struct{} {
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			run(job)
+		}()
+		return done
+	}
+	defer func() {
+		if primaryDone != nil {
+			<-primaryDone
+		}
+		if auxiliaryDone != nil {
+			<-auxiliaryDone
+		}
+	}()
+	for !ruleReplayCanceled(s.shutdownChan, nil) {
+		// Give the primary slot first pick whenever it becomes available.
+		select {
+		case <-primaryDone:
+			primary, primaryDone = nil, nil
+		default:
+		}
+		if len(d.pending) > 0 {
+			head := d.pending[0]
+			if primary == nil && (auxiliary == nil || head.OutputDir != auxiliary.OutputDir) {
+				d.bypasses = 0
+				primary = d.take(0)
+				primaryDone = launch(primary)
+				continue
+			}
+			if primary != nil && !smallCapture(primary) && auxiliary == nil && d.bypasses < maxCaptureBypasses {
+				for i, job := range d.pending {
+					if job.OutputDir != "" && job.OutputDir != primary.OutputDir && smallCapture(job) && s.ownsAuxiliaryInput(job) {
+						d.bypasses++
+						auxiliary = d.take(i)
+						auxiliary.captureLane = captureAuxiliary
+						auxiliaryDone = launch(auxiliary)
+						break
+					}
+				}
+			}
+		}
+		if queue == nil && primaryDone == nil && auxiliaryDone == nil && len(d.pending) == 0 {
+			return
+		}
+		intake := queue
+		if len(d.pending) >= captureLookahead {
+			intake = nil
+		}
+		select {
+		case <-s.shutdownChan:
+			return
+		case <-primaryDone:
+			primary, primaryDone = nil, nil
+		case <-auxiliaryDone:
+			auxiliary, auxiliaryDone = nil, nil
+		case job, ok := <-intake:
+			if ok {
+				d.add(job)
+			} else {
+				queue = nil
+			}
+		}
+	}
+}
+
+func (s *Server) ownsAuxiliaryInput(job *AnalysisJob) bool {
+	if job.SessionID == "" {
+		return false
+	}
+	if s.isServiceMode {
+		return true
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	upload, ok := s.localUploads[job.InputFile]
+	return ok && upload.AnalysisID == job.SessionID && s.fileOutputDirs[job.InputFile] == job.OutputDir
 }
 
 func (s *Server) captureQueueLength() int {

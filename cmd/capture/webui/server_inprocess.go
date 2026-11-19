@@ -43,3 +43,5 @@ func inProcessRequiredExcludes() string { return "Exploit,Service,Software" }
 func (s *Server) runAnalysis(job *AnalysisJob) {
 	s.runAnalysisInProcess(job)
 }
+
+func auxiliaryCaptureEnabled() bool { return false }

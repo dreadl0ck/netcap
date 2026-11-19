@@ -31,7 +31,8 @@ func (s *Server) deleteLocalUpload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not an owned uploaded analysis", 403)
 		return
 	}
-	if s.currentProcessing != nil && s.currentProcessing.InputFile == input {
+	if (s.currentProcessing != nil && s.currentProcessing.InputFile == input) ||
+		(s.auxiliaryProcessing != nil && s.auxiliaryProcessing.InputFile == input) {
 		http.Error(w, "Analysis is still running", 409)
 		return
 	}

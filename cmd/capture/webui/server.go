@@ -260,6 +260,7 @@ type Server struct {
 	jobsProcessed        int64        // Total number of jobs processed (atomic counter)
 	currentJobMutex      sync.RWMutex // Mutex for currentProcessingJob
 	currentProcessing    *AnalysisJob // Currently processing job (service mode only)
+	auxiliaryProcessing  *AnalysisJob // protected by currentJobMutex
 	captureProcesses     [captureProcessKinds]*os.Process
 	currentCmdMutex      sync.Mutex
 	alertStreams         int // protected by mu
@@ -1524,11 +1525,7 @@ func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 			job.processingDone()
 		}
 	}()
-	for {
-		job := dispatch.next(s.jobQueue, s.shutdownChan)
-		if job == nil {
-			return
-		}
+	run := func(job *AnalysisJob) {
 		s.mu.RLock()
 		stopping := s.processingStopping
 		s.mu.RUnlock()
@@ -1539,7 +1536,11 @@ func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 		}
 		// Set current processing job
 		s.currentJobMutex.Lock()
-		s.currentProcessing = job
+		active := &s.currentProcessing
+		if job.captureLane == captureAuxiliary {
+			active = &s.auxiliaryProcessing
+		}
+		*active = job
 		s.currentJobMutex.Unlock()
 
 		// Increment processed counter and calculate position
@@ -1554,7 +1555,7 @@ func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 			transferred := false
 			defer func() {
 				s.currentJobMutex.Lock()
-				s.currentProcessing = nil
+				*active = nil
 				s.currentJobMutex.Unlock()
 				if !transferred {
 					job.processingDone()
@@ -1583,6 +1584,13 @@ func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 		}()
 
 		log.Printf("[WebUI] Job processing completed: job %d/%d, session=%s", currentPos, totalScheduled, job.SessionID)
+	}
+	if auxiliaryCaptureEnabled() {
+		s.dispatchWithAuxiliary(&dispatch, run)
+		return
+	}
+	for job := dispatch.next(s.jobQueue, s.shutdownChan); job != nil; job = dispatch.next(s.jobQueue, s.shutdownChan) {
+		run(job)
 	}
 }
 

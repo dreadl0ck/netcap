@@ -115,6 +115,7 @@ type AnalysisJob struct {
 	processingDone         func()
 	releaseCaptureSlot     func()
 	deferCompletion        bool
+	captureLane            captureProcessLane
 	postCapture            func()
 	reproductionSource     reproductionSource
 	SessionID              string

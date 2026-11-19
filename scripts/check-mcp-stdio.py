@@ -393,7 +393,7 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout):
     }
 
 
-async def check(binary, capture, http_capture, data_dir, mixed_upload_archive=None, full_fanout=False):
+async def check(binary, capture, http_capture, data_dir, mixed_upload_archive=None, full_fanout=False, auxiliary=False):
     params = StdioServerParameters(command=str(binary), args=[
         "mcp", "--bind", "127.0.0.1:0", "--quiet", "--pcap", str(capture),
         "--data-dir", data_dir, "--behavior", "--behavior-prefix", "192.168.0.0/16",
@@ -1002,7 +1002,9 @@ rules:
             with TemporaryDirectory(prefix="netcap-mixed-uploads-") as load_dir:
                 load_params = StdioServerParameters(command=str(binary), args=[
                     "mcp", "--bind", "127.0.0.1:0", "--quiet", "--data-dir", load_dir,
-                ], env={name: load_dir for name in ("HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME")})
+                ], env={name: load_dir for name in ("HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME")} | {
+                    "NETCAP_AUXILIARY_CAPTURE": "1" if auxiliary else "0",
+                })
                 async with stdio_client(load_params) as (load_reader, load_writer), ClientSession(load_reader, load_writer) as load:
                     await load.initialize()
 
@@ -1024,11 +1026,13 @@ if __name__ == "__main__":
     parser.add_argument("binary", type=Path)
     parser.add_argument("--mixed-upload-archive", type=Path, help="Run the paced mixed-upload test using the pinned synthetic archive.")
     parser.add_argument("--full-fanout", action="store_true", help="Use one full 15,000-packet upload followed by three small uploads.")
+    parser.add_argument("--auxiliary-capture", action="store_true", help="Enable the auxiliary helper in the mixed-upload probe.")
     args = parser.parse_args()
-    if args.full_fanout and args.mixed_upload_archive is None:
-        parser.error("--full-fanout requires --mixed-upload-archive")
+    if (args.full_fanout or args.auxiliary_capture) and args.mixed_upload_archive is None:
+        parser.error("mixed-upload options require --mixed-upload-archive")
     repo = Path(__file__).resolve().parents[1]
     with TemporaryDirectory(prefix="netcap-mcp-contracts-") as data_dir:
         passed = asyncio.run(check(args.binary.resolve(), repo / "internal/collector/testdata/voip/mdns.pcap",
-                                   repo / "testdata/recheck-v0168/base_http.pcap", data_dir, args.mixed_upload_archive, args.full_fanout))
+                                   repo / "testdata/recheck-v0168/base_http.pcap", data_dir, args.mixed_upload_archive,
+                                   args.full_fanout, args.auxiliary_capture))
         raise SystemExit(0 if passed else 1)
