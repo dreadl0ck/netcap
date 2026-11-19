@@ -248,6 +248,7 @@ func (s *Server) readAlertsFromFile(filePath string) ([]AlertResponse, error) {
 }
 
 var errAlertPageSourceLimit = errors.New("alert page source exceeds scan limits")
+var errAlertAuditChanged = errors.New("alert audit changed during scan; retry the request")
 
 var alertReadSlots = make(chan struct{}, 2)
 
@@ -288,6 +289,10 @@ func (s *Server) respondAlertReadError(w http.ResponseWriter, ctx context.Contex
 		RespondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": err.Error()})
 		return
 	}
+	if errors.Is(err, errAlertAuditChanged) {
+		RespondJSON(w, http.StatusConflict, map[string]string{"error": errAlertAuditChanged.Error()})
+		return
+	}
 	log.Printf("[WebUI] Failed to read alerts: %v", err)
 	RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read alerts"})
 }
@@ -298,6 +303,7 @@ func (s *Server) readAlertAudit(ctx context.Context, filePath string) ([]AlertRe
 
 func (s *Server) scanAlertAudit(ctx context.Context, filePath string, byteLimit, rowLimit, frameCap int, visit func(AlertResponse) error) ([]AlertResponse, error) {
 	var reader *AuditRecordReader
+	var opened os.FileInfo
 	var err error
 	if ctx == nil {
 		reader, err = NewAuditRecordReader(filePath)
@@ -312,6 +318,7 @@ func (s *Server) scanAlertAudit(ctx context.Context, filePath string, byteLimit,
 			file.Close()
 			return nil, fmt.Errorf("%w: stored audit exceeds %d bytes", errAlertPageSourceLimit, byteLimit)
 		} else {
+			opened = info
 			reader, err = auditRecordReaderFromInput(file, io.NewSectionReader(file, 0, info.Size()), true, func(in io.Reader) io.Reader {
 				return auditContextReader{ctx: ctx, input: in}
 			})
@@ -408,6 +415,12 @@ func (s *Server) scanAlertAudit(ctx context.Context, filePath string, byteLimit,
 		}
 	}
 
+	if opened != nil {
+		current, err := os.Lstat(filePath)
+		if err != nil || !os.SameFile(opened, current) || opened.Size() != current.Size() || !opened.ModTime().Equal(current.ModTime()) {
+			return nil, errAlertAuditChanged
+		}
+	}
 	return alerts, nil
 }
 

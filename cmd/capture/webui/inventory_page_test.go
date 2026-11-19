@@ -336,6 +336,27 @@ func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
 	}
 }
 
+func TestAlertAuditGrowthRejectsSnapshot(t *testing.T) {
+	dir := t.TempDir()
+	path := writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, []proto.Message{&types.Alert{RuleName: "fixture"}})
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := &Server{outDir: dir}
+	_, err = s.scanAlertAudit(t.Context(), path, alertStatsScanBytes, alertStatsScanRows, alertStatsFrameBytes, func(AlertResponse) error {
+		return os.Truncate(path, info.Size()+1)
+	})
+	if !errors.Is(err, errAlertAuditChanged) {
+		t.Fatalf("expected changing audit to be rejected, got %v", err)
+	}
+	w := httptest.NewRecorder()
+	s.respondAlertReadError(w, t.Context(), err)
+	if w.Code != http.StatusConflict || strings.Contains(w.Body.String(), "totalAlerts") {
+		t.Fatalf("unexpected response: %d %s", w.Code, w.Body.String())
+	}
+}
+
 func TestAlertViewsAbovePageScanBudget(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "Alert.ncap.gz")
