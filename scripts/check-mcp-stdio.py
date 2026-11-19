@@ -104,12 +104,12 @@ def fixture_message(fields):
     return b"".join(parts)
 
 
-async def check_large_alert_views(call, directory, args):
+async def check_large_alert_views(client, call, directory, args):
     path = directory / "Alert.ncap.gz"
     original = path.read_bytes() if path.exists() else None
     count, start_ms = 27_152, 1_800_000_000_000
     sources = [f"2001:db8::1:{i:x}" for i in range(count)]
-    try:
+    def write_audit():
         with gzip.open(path, "wb", compresslevel=0) as audit:
             header = fixture_message({3: 103})
             audit.write(fixture_varint(len(header)) + header)
@@ -117,6 +117,9 @@ async def check_large_alert_views(call, directory, args):
                 row = fixture_message({1: (start_ms + i) * 1_000_000, 3: "x" * 640, 4: sources[i],
                                        13: "large-alert-fixture", 15: "critical" if i % 2 == 0 else "info"})
                 audit.write(fixture_varint(len(row)) + row)
+
+    try:
+        write_audit()
         if path.stat().st_size <= 16 << 20:
             raise ValueError("large alert fixture did not exceed the old scan limit")
         stats = await call("get_alert_stats", args)
@@ -151,6 +154,13 @@ async def check_large_alert_views(call, directory, args):
                     or [(row["timestamp"], row["srcIP"]) for row in members["alerts"]]
                     != [(start_ms + i, sources[i]) for i in expected]):
                 raise ValueError("deep alert member page lost group scope or order")
+        sources[25_000] = "2001:db8::1:ffff"
+        write_audit()
+        for name, stale in (("list_alerts", generation), ("list_alerts_grouped", first["generation"])):
+            async with asyncio.timeout(30):
+                result = await client.call_tool(name, args | {"offset": 1, "limit": 1, "generation": stale})
+            if not result.isError or not any("HTTP 409" in getattr(item, "text", "") for item in result.content):
+                raise ValueError(f"{name} accepted a stale token after a non-preview member changed")
     finally:
         if original is None:
             path.unlink(missing_ok=True)
@@ -953,7 +963,7 @@ rules:
 
         # Replacing audit tracks invalidates the cached timeline generation.
         await check_behavior_records(call, manifest_path.parent, args)
-        await check_large_alert_views(call, manifest_path.parent, args)
+        await check_large_alert_views(client, call, manifest_path.parent, args)
         mixed = {}
         if mixed_upload_archive is not None:
             with TemporaryDirectory(prefix="netcap-mixed-uploads-") as load_dir:
