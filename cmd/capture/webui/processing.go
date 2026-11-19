@@ -13,6 +13,68 @@ var (
 	errAnalysisUnavailable = errors.New("analysis queue is not available")
 )
 
+const (
+	captureLookahead   = 8
+	smallCaptureBytes  = 64 << 10
+	maxCaptureBypasses = 2
+)
+
+type captureDispatch struct {
+	pending  []*AnalysisJob
+	bypasses int
+}
+
+func (d *captureDispatch) next(queue <-chan *AnalysisJob, stop <-chan struct{}) *AnalysisJob {
+	if ruleReplayCanceled(stop, nil) {
+		return nil
+	}
+	if len(d.pending) == 0 {
+		select {
+		case job, ok := <-queue:
+			if !ok {
+				return nil
+			}
+			d.pending = append(d.pending, job)
+		case <-stop:
+			return nil
+		}
+	}
+	index := 0
+	isSmall := func(job *AnalysisJob) bool {
+		return job.reproductionSource.SHA256 != "" && job.reproductionSource.Bytes > 0 && job.reproductionSource.Bytes <= smallCaptureBytes
+	}
+	if d.bypasses < maxCaptureBypasses && !isSmall(d.pending[0]) {
+	fill:
+		for len(d.pending) < captureLookahead {
+			select {
+			case job, ok := <-queue:
+				if !ok {
+					break fill
+				}
+				d.pending = append(d.pending, job)
+			default:
+				break fill
+			}
+		}
+		for i := 1; i < len(d.pending); i++ {
+			if isSmall(d.pending[i]) {
+				index = i
+				break
+			}
+		}
+	}
+	if index == 0 {
+		d.bypasses = 0
+	} else {
+		d.bypasses++
+	}
+	job := d.pending[index]
+	copy(d.pending[index:], d.pending[index+1:])
+	d.pending[len(d.pending)-1] = nil
+	d.pending = d.pending[:len(d.pending)-1]
+	return job
+}
+
 func (s *Server) processingLocked() bool {
 	return s.isProcessing || s.processingWork > 0
 }

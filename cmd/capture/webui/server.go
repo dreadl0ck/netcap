@@ -1499,7 +1499,7 @@ func (s *Server) SetDPIPreferences(userIP string, prefs *UserDPIPreferences) {
 	log.Printf("[WebUI] Updated DPI preferences for %s: %v", userIP, prefs.EnabledModules)
 }
 
-// processJobs processes analysis jobs from the queue one at a time (service mode only)
+// processJobs runs one capture at a time and hands completed captures to the post-processing workers.
 func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 	defer s.wg.Done()
 	postQueue := make(chan *AnalysisJob, 1)
@@ -1514,75 +1514,72 @@ func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 		}()
 	}
 
-	for {
-		select {
-		case <-s.shutdownChan:
-			return
-		default:
+	var dispatch captureDispatch
+	defer func() {
+		for _, job := range dispatch.pending {
+			s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
+			job.processingDone()
 		}
-		select {
-		case job, ok := <-s.jobQueue:
-			if !ok {
-				return
-			}
-			s.mu.RLock()
-			stopping := s.processingStopping
-			s.mu.RUnlock()
-			if stopping {
-				s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
-				job.processingDone()
-				return
-			}
-			// Set current processing job
-			s.currentJobMutex.Lock()
-			s.currentProcessing = job
-			s.currentJobMutex.Unlock()
+	}()
+	for {
+		job := dispatch.next(s.jobQueue, s.shutdownChan)
+		if job == nil {
+			return
+		}
+		s.mu.RLock()
+		stopping := s.processingStopping
+		s.mu.RUnlock()
+		if stopping {
+			s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
+			job.processingDone()
+			return
+		}
+		// Set current processing job
+		s.currentJobMutex.Lock()
+		s.currentProcessing = job
+		s.currentJobMutex.Unlock()
 
-			// Increment processed counter and calculate position
-			currentPos := atomic.AddInt64(&s.jobsProcessed, 1)
-			totalScheduled := atomic.LoadInt64(&s.jobsScheduled)
+		// Increment processed counter and calculate position
+		currentPos := atomic.AddInt64(&s.jobsProcessed, 1)
+		totalScheduled := atomic.LoadInt64(&s.jobsScheduled)
 
-			log.Printf("[WebUI] Job received from queue: processing job %d/%d, session=%s, file=%s",
-				currentPos, totalScheduled, job.SessionID, job.InputFile)
+		log.Printf("[WebUI] Job received from queue: processing job %d/%d, session=%s, file=%s",
+			currentPos, totalScheduled, job.SessionID, job.InputFile)
 
-			// Wrap job processing with panic recovery to prevent crashes from killing the service
-			func() {
-				transferred := false
-				defer func() {
-					s.currentJobMutex.Lock()
-					s.currentProcessing = nil
-					s.currentJobMutex.Unlock()
-					if !transferred {
-						job.processingDone()
-					}
-				}()
-				defer func() {
-					if r := recover(); r != nil {
-						log.Printf("[WebUI] PANIC recovered in job processor for session %s: %v", job.SessionID, r)
-						log.Printf("[WebUI] Stack trace:\n%s", debug.Stack())
+		// Wrap job processing with panic recovery to prevent crashes from killing the service
+		func() {
+			transferred := false
+			defer func() {
+				s.currentJobMutex.Lock()
+				s.currentProcessing = nil
+				s.currentJobMutex.Unlock()
+				if !transferred {
+					job.processingDone()
+				}
+			}()
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("[WebUI] PANIC recovered in job processor for session %s: %v", job.SessionID, r)
+					log.Printf("[WebUI] Stack trace:\n%s", debug.Stack())
 
-						// Mark session as failed
-						s.recordAnalysisFailure(job, fmt.Sprintf("Analysis crashed: %v", r), "")
-					}
-				}()
-
-				job.deferCompletion = true
-				runAnalysis(job)
-				if job.postCapture != nil {
-					select {
-					case postQueue <- job:
-						transferred = true
-					case <-s.shutdownChan:
-						s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
-					}
+					// Mark session as failed
+					s.recordAnalysisFailure(job, fmt.Sprintf("Analysis crashed: %v", r), "")
 				}
 			}()
 
-			log.Printf("[WebUI] Job processing completed: job %d/%d, session=%s", currentPos, totalScheduled, job.SessionID)
-		case <-s.shutdownChan:
-			log.Println("[WebUI] Job processor shutting down")
-			return
-		}
+			job.deferCompletion = true
+			runAnalysis(job)
+			if job.postCapture != nil {
+				select {
+				case postQueue <- job:
+					transferred = true
+				case <-s.shutdownChan:
+					s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
+				}
+			}
+		}()
+
+		log.Printf("[WebUI] Job processing completed: job %d/%d, session=%s", currentPos, totalScheduled, job.SessionID)
 	}
 }
 

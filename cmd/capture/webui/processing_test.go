@@ -12,6 +12,26 @@ import (
 	"time"
 )
 
+func TestCaptureDispatchBoundsSmallJobBypasses(t *testing.T) {
+	job := func(id string, size int64) *AnalysisJob {
+		return &AnalysisJob{SessionID: id, reproductionSource: reproductionSource{SHA256: "snapshot", Bytes: size}}
+	}
+	queue := make(chan *AnalysisJob, 6)
+	for _, entry := range []*AnalysisJob{job("large-1", 1<<20), job("large-2", 1<<20), job("small-1", 10), job("small-2", 10), job("small-3", 10)} {
+		queue <- entry
+	}
+	close(queue)
+	var dispatch captureDispatch
+	for _, want := range []string{"small-1", "small-2", "large-1", "small-3", "large-2"} {
+		if got := dispatch.next(queue, nil); got == nil || got.SessionID != want {
+			t.Fatalf("next job = %v, want %q", got, want)
+		}
+	}
+	if got := dispatch.next(queue, nil); got != nil {
+		t.Fatalf("closed queue dispatched %v", got)
+	}
+}
+
 func processingStatus(t *testing.T, server *Server) bool {
 	t.Helper()
 	response := httptest.NewRecorder()
