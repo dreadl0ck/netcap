@@ -487,13 +487,16 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 		if strings.EqualFold(alert.Severity, "critical") {
 			criticalCount++
 		}
-		if len(recent) < cap(recent) || alert.Timestamp/1_000_000 > recent[len(recent)-1].Timestamp/1_000_000 {
+		millis := alert.Timestamp / 1_000_000
+		if len(recent) < cap(recent) || millis > recent[len(recent)-1].Timestamp/1_000_000 {
+			insert := sort.Search(len(recent), func(i int) bool {
+				return recent[i].Timestamp/1_000_000 < millis
+			})
 			if len(recent) < cap(recent) {
-				recent = append(recent, alert)
-			} else {
-				recent[len(recent)-1] = alert
+				recent = append(recent, nil)
 			}
-			sort.SliceStable(recent, func(i, j int) bool { return recent[i].Timestamp/1_000_000 > recent[j].Timestamp/1_000_000 })
+			copy(recent[insert+1:], recent[insert:])
+			recent[insert] = alert
 		}
 		return nil
 	})
