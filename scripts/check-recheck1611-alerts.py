@@ -63,7 +63,8 @@ async def replay(binary, capture):
                 if not page["has_more"]:
                     if not alerts or len(alerts) != page["totalCount"]:
                         raise ValueError("missing alerts or inconsistent total")
-                    return http, Counter(json.dumps({k: v for k, v in alert.items() if k != "detectedAtNs"}, sort_keys=True)
+                    # The UI identity includes detection time and is per execution.
+                    return http, Counter(json.dumps({k: v for k, v in alert.items() if k not in {"detectedAtNs", "alertId"}}, sort_keys=True)
                                          for alert in alerts)
                 if not page["alerts"] or page["next_offset"] != len(alerts):
                     raise ValueError("alert continuation did not advance")

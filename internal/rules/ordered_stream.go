@@ -148,6 +148,11 @@ func canonicalRuleRecord(message proto.Message) ([]byte, error) {
 	return wire, nil
 }
 
+// MarshalReplayRecord returns the canonical wire bytes used for record ordering.
+func MarshalReplayRecord(record proto.Message) ([]byte, error) {
+	return canonicalRuleRecord(record)
+}
+
 func (s *OrderedStream) observe(record types.AuditRecord) (int, error) {
 	return s.observeScoped(s.scope, record)
 }

@@ -120,7 +120,7 @@ func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit 
 }
 
 func replayRuleAudit(dir, auditType string, stop <-chan struct{}, replay *rules.AuditReplay) (alerts, count int, err error) {
-	count, err = scanRuleAudit(dir, auditType, stop, nil, func(record types.AuditRecord) error {
+	count, err = scanOrderedRuleAudit(dir, auditType, stop, nil, func(record types.AuditRecord) error {
 		n, err := replay.Evaluate(record)
 		alerts += n
 		return err
@@ -214,7 +214,7 @@ func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-ch
 		if !active {
 			continue
 		}
-		_, scanErr := scanRuleAudit(dir, typ, stop, s.shutdownChan, func(record types.AuditRecord) error {
+		_, scanErr := scanOrderedRuleAudit(dir, typ, stop, s.shutdownChan, func(record types.AuditRecord) error {
 			for _, i := range group {
 				if ruleReplayCanceled(stop, s.shutdownChan) {
 					return errAnalysisStopping

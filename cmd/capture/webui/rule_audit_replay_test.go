@@ -200,6 +200,30 @@ func TestRuleAuditRejectsLinkedPreferredTrack(t *testing.T) {
 	}
 }
 
+func TestOrderedRuleAuditPreservesRecordsAcrossSpill(t *testing.T) {
+	dir := t.TempDir()
+	payload := strings.Repeat("x", 1<<20)
+	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{
+		&types.HTTP{Timestamp: 3, URL: payload},
+		&types.HTTP{Timestamp: 1, URL: payload},
+		&types.HTTP{Timestamp: 2, URL: payload},
+		&types.HTTP{Timestamp: 1, URL: payload},
+		&types.HTTP{Timestamp: -1, URL: payload},
+	})
+	want := []int64{-1, 1, 1, 2, 3}
+	i := 0
+	count, err := scanOrderedRuleAudit(dir, "HTTP", nil, nil, func(row types.AuditRecord) error {
+		if i >= len(want) || row.Time() != want[i] || row.(*types.HTTP).URL != payload {
+			t.Fatalf("unexpected replay record at %d: timestamp=%d", i, row.Time())
+		}
+		i++
+		return nil
+	})
+	if err != nil || count != len(want) || i != count {
+		t.Fatalf("replayed %d records, visited %d, error: %v", count, i, err)
+	}
+}
+
 func TestRuleAuditRejectsGenerationChangesDuringReplay(t *testing.T) {
 	for _, change := range []string{"append", "replace", "publish preferred gzip"} {
 		t.Run(change, func(t *testing.T) {
