@@ -268,7 +268,13 @@ rules:
 			t.Fatal(err)
 		}
 		client := &http.Client{Timeout: 30 * time.Second}
-		response, err := client.Post("http://"+addr+"/api/rules/offline/execute", "application/json", bytes.NewReader(body))
+		request, err := http.NewRequest(http.MethodPost, "http://"+addr+"/api/rules/offline/execute", bytes.NewReader(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("Authorization", "Bearer "+server.LocalAccessToken())
+		response, err := client.Do(request)
 		if err != nil {
 			t.Fatal(err)
 		}
