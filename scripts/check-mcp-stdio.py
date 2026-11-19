@@ -415,6 +415,31 @@ rules:
         manifests = [p for p in Path(data_dir).rglob("capture-manifest.json")
                      if json.loads(p.read_bytes())["runId"] == binding["runId"]]
         manifest_path, = manifests
+        history_dir = manifest_path.parent / "rule-evaluations"
+        markers = []
+        try:
+            for i in range(197):
+                marker = history_dir / f".stdio-contract-{i}"
+                marker.touch(exist_ok=False)
+                markers.append(marker)
+            if (await call("list_offline_evaluations", args))["evaluations"] != history:
+                raise ValueError("history at the evaluation admission boundary is not readable")
+            async with asyncio.timeout(30):
+                refused = await client.call_tool("execute_offline_rule_pack", args | {"yaml": pack})
+            if not refused.isError or not any(
+                    "HTTP 422" in getattr(c, "text", "") and "directory entry limit" in c.text
+                    for c in refused.content):
+                raise ValueError("offline evaluation did not report its history admission limit")
+            if (await call("list_offline_evaluations", args))["evaluations"] != history:
+                raise ValueError("refused evaluation changed retained history")
+        finally:
+            for marker in markers:
+                marker.unlink()
+        retried = (await call("execute_offline_rule_pack", args | {"yaml": pack}))["report"]
+        retained = (await call("list_offline_evaluations", args))["evaluations"]
+        if len(retained) != len(history) + 1 or retried not in retained or any(row not in retained for row in history):
+            raise ValueError("offline evaluation retry did not add exactly one report")
+
         for kind, filename in (("ftp", "FTPDataHealth.json"), ("reassembly", "TCPReassemblyHealth.json")):
             path = manifest_path.with_name(filename)
             original = path.read_bytes()
