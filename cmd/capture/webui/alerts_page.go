@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -13,7 +14,8 @@ import (
 	"slices"
 	"strings"
 
-	_ "modernc.org/sqlite"
+	"modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
 )
 
 const alertPageMemoryBytes = 1 << 20
@@ -92,7 +94,14 @@ func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	ctx := r.Context()
-	fail := func(err error) { s.respondAlertReadError(w, ctx, err) }
+	fail := func(err error) {
+		var sqliteErr *sqlite.Error
+		if ctx.Err() == nil && errors.As(err, &sqliteErr) && sqliteErr.Code() == sqlite3.SQLITE_FULL {
+			RespondJSON(w, http.StatusInsufficientStorage, map[string]string{"error": "temporary alert page storage is full"})
+			return
+		}
+		s.respondAlertReadError(w, ctx, err)
+	}
 	var spill alertPageSpill
 	defer spill.close()
 	var buffered []json.RawMessage
