@@ -411,22 +411,14 @@ func isCompletedAny(status, resultsReady any) bool {
 // session's record in /api/files/input. If the session has errored, the
 // upstream error message is surfaced verbatim in the response so the LLM
 // can react rather than spin forever on completed=false.
-func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+func (s *Server) handleGetSessionInfo(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
 		return errResult(err), nil
 	}
 	client := s.newClient()
-	// audit-stats accepts ?scope=<session id> to scope per-session
-	// without mutating the global currentSession. /api/status and
-	// /api/files/input are global; /api/files/input is filtered locally
-	// by findSessionRow below.
 	statsQ := ref.sessionQueryParams()
-	stats, sErr := client.Get("/api/audit-stats", statsQ)
-	if sErr != nil {
-		return errResult(fmt.Errorf("audit-stats: %w", sErr)), nil
-	}
-	files, filesErr := client.Get("/api/files/input", nil)
+	files, filesErr := client.GetContext(ctx, "/api/files/input", nil)
 	if filesErr != nil {
 		return errResult(filesErr), nil
 	}
@@ -435,11 +427,9 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 	errMsg, errLog, fStatus, found := sessionRowError(row)
 	completed, _ := row["isCompleted"].(bool)
 	completed = completed && errMsg == ""
-	if completed {
-		stats, sErr = client.Get("/api/audit-stats", statsQ)
-		if sErr != nil {
-			return errResult(fmt.Errorf("audit-stats: %w", sErr)), nil
-		}
+	stats, sErr := client.GetContext(ctx, "/api/audit-stats", statsQ)
+	if sErr != nil {
+		return errResult(fmt.Errorf("audit-stats: %w", sErr)), nil
 	}
 	out := map[string]any{
 		"session_id":   ref.ID,
@@ -448,7 +438,10 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 		"audit_stats":  json.RawMessage(stats),
 		"capture_stat": map[string]any{"sessionId": ref.ID, "isProcessing": !completed},
 	}
-	provenance, provenanceErr := client.Get("/api/investigation/capture", ref.sessionQueryParams())
+	provenance, provenanceErr := client.GetContext(ctx, "/api/investigation/capture", statsQ)
+	if err := ctx.Err(); err != nil {
+		return errResult(err), nil
+	}
 	if provenanceErr != nil {
 		out["capture_provenance_error"] = provenanceErr.Error()
 	} else if !json.Valid(provenance) || string(provenance) == "null" {
