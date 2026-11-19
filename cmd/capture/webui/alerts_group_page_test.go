@@ -38,6 +38,40 @@ func TestGroupedSummaryBoundsSamplesAndPreservesExactTimes(t *testing.T) {
 	}
 }
 
+func TestAlertStatsRecentRowsPreserveResolutionAndMillisecondTies(t *testing.T) {
+	dir := t.TempDir()
+	rows := make([]proto.Message, 0, 12)
+	for i := range 11 {
+		rows = append(rows, &types.Alert{Timestamp: 1_000_000 + int64(i), RuleName: fmt.Sprintf("tie-%02d", i)})
+	}
+	rows = append(rows, &types.Alert{Timestamp: 2_000_000, RuleName: "newest"})
+	writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, rows)
+	s := &Server{outDir: dir}
+	id := alertResponse(rows[0].(*types.Alert)).AlertID
+	if err := s.saveResolvedAlerts(dir, &ResolvedAlertsStore{Alerts: map[string]ResolvedAlert{
+		id: {AlertID: id, ResolvedAt: 42},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	s.handleAlertStats(w, httptest.NewRequest("GET", "/api/alerts/stats", nil))
+	var stats struct {
+		TotalAlerts  int
+		RecentAlerts []AlertResponse
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &stats); err != nil || w.Code != 200 || stats.TotalAlerts != 12 || len(stats.RecentAlerts) != 10 {
+		t.Fatalf("unexpected statistics: %d %s (%v)", w.Code, w.Body, err)
+	}
+	if stats.RecentAlerts[0].RuleName != "newest" || !stats.RecentAlerts[1].Resolved || stats.RecentAlerts[1].ResolvedAt != 42 {
+		t.Fatalf("newest or resolved alert was lost: %+v", stats.RecentAlerts[:2])
+	}
+	for i, alert := range stats.RecentAlerts[1:] {
+		if alert.RuleName != fmt.Sprintf("tie-%02d", i) {
+			t.Fatalf("unexpected tie order at %d: %s", i, alert.RuleName)
+		}
+	}
+}
+
 func TestGroupedAlertPagesBreakSortTiesBySeverity(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, []proto.Message{
