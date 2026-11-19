@@ -41,25 +41,27 @@ async def check(binary, root, fixtures):
             validate(result.structuredContent, tools[name].outputSchema)
             return result.structuredContent
 
-        for path, message_type in fixtures:
+        for path, message_types in fixtures:
             upload = await call("ingest_pcap", {"path": str(path)})
             args = {"session_id": upload["session_id"]}
             status = await call("wait_for_session", args | {"timeout_seconds": 15})
             if not status["completed"]:
                 raise ValueError(f"{path.name}: capture did not complete: {status}")
-            result = await call("query_audit_records", args | {"type": "GTP", "allow_partial": True, "limit": 2})
+            result = await call("query_audit_records", args | {"type": "GTP", "allow_partial": True, "limit": len(message_types) + 1})
             records = result["records"]
             summary = result["summary"]
-            if (len(records) != 1 or records[0]["MessageType"] != message_type
-                    or summary["total"] != 1 or summary.get("coverage") != "complete"):
+            if (sorted(row["MessageType"] for row in records) != message_types
+                    or summary["total"] != len(message_types) or summary.get("coverage") != "complete"):
                 raise ValueError(f"{path.name}: unexpected sealed GTP result: {result}")
-            print(json.dumps({"fixture": path.name, "messageType": message_type, "coverage": summary["coverage"]}))
+            print(json.dumps({"fixture": path.name, "messageTypes": message_types, "coverage": summary["coverage"]}))
 
 
 def main():
     parser = argparse.ArgumentParser(description="Check sealed GTP control audits through MCP stdio.")
     parser.add_argument("binary", type=Path)
     parser.add_argument("archive", type=Path)
+    parser.add_argument("--public-coverage", type=Path, help="Path to the pinned gtp_coverage.pcap")
+    parser.add_argument("--public-control", type=Path, help="Path to the pinned gtp10_not_0xff.pcap")
     args = parser.parse_args()
     with TemporaryDirectory(prefix="netcap-gtp-mcp-") as directory, args.archive.open("rb") as archive:
         if hashlib.file_digest(archive, "sha256").hexdigest() != "6d5c914a95b343096f86e454ee67a122a1da47b1172dcc82d8dc39f70312133e":
@@ -70,7 +72,17 @@ def main():
             for name, message_type in (("gtpu_type_01.pcap", 1), ("gtpu_tpdu_then_endmarker.pcap", 254)):
                 path = root / name
                 path.write_bytes(bundle.read("netcap-v0.16.11-synthetic-repros/repro/v1611/gtp/" + name))
-                fixtures.append((path, message_type))
+                fixtures.append((path, [message_type]))
+        for path, digest, message_types in (
+            (args.public_coverage, "f5fb49c12aa9c99f6492c46ee354f57999ee47388d5414f8e5c2bf2c214ee742", [1, 2, 26, 31, 254]),
+            (args.public_control, "34c99bc77f398902eb74b4745f3be00ce961b57474f8352aaf54c05531be0790", [1, 2, 26]),
+        ):
+            if path is None:
+                continue
+            with path.open("rb") as source:
+                if hashlib.file_digest(source, "sha256").hexdigest() != digest:
+                    raise ValueError(f"{path.name}: unexpected public capture digest")
+            fixtures.append((path.resolve(), message_types))
         asyncio.run(check(args.binary.resolve(), root, fixtures))
 
 
