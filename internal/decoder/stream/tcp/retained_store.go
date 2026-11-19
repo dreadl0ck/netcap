@@ -193,13 +193,36 @@ func (s *storedTCPReader) WalkRange(start, length int64, yield func(core.DataFra
 	}
 	count := s.count
 	budget := s.readBudget()
-	for index := uint64(start); index < uint64(start+length); index++ {
+	batchAllowed := length >= aggregate.BatchRows && budget.Health().LimitBytes == 0 && (s.payloadBudget == nil || s.payloadBudget.limit == 0)
+	var batch []aggregate.Row
+	end := uint64(start + length)
+	for index := uint64(start); index < end; index++ {
 		if s.count != count {
 			return fmt.Errorf("retained TCP source changed during iteration")
 		}
 		key := fmt.Sprintf("%s%016x", s.prefix, index)
 		var wire []byte
-		err := s.state.Do(func(tx *aggregate.Tx) error {
+		if len(batch) == 0 && batchAllowed && end-index >= aggregate.BatchRows {
+			after := ""
+			if index > 0 {
+				after = fmt.Sprintf("%s%016x", s.prefix, index-1)
+			}
+			if err := s.state.Do(func(tx *aggregate.Tx) error {
+				var err error
+				batch, err = tx.NextBatch(s.prefix, after)
+				return err
+			}); err != nil {
+				return err
+			}
+		}
+		if len(batch) > 0 {
+			if batch[0].Key != key {
+				return s.state.Do(func(*aggregate.Tx) error { return fmt.Errorf("retained TCP fragment sequence is incomplete") })
+			}
+			wire = batch[0].Value
+			batch[0] = aggregate.Row{}
+			batch = batch[1:]
+		} else if err := s.state.Do(func(tx *aggregate.Tx) error {
 			var exists bool
 			var err error
 			wire, exists, err = tx.Get(key)
@@ -207,8 +230,7 @@ func (s *storedTCPReader) WalkRange(start, length int64, yield func(core.DataFra
 				return fmt.Errorf("retained TCP fragment sequence is incomplete")
 			}
 			return err
-		})
-		if err != nil {
+		}); err != nil {
 			return err
 		}
 		credit := int64(len(wire)) + 256

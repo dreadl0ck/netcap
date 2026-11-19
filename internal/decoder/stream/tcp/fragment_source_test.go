@@ -151,6 +151,37 @@ func TestStoredTCPSourceIsRestartableWithinOneFragmentBudget(t *testing.T) {
 	t.Logf("payload bytes=4194304 retained heap delta=%d state credit peak=%d", retained, budget.Health().PeakBytes)
 }
 
+func TestStoredTCPBatchRangeAndEarlyStop(t *testing.T) {
+	state, err := aggregate.Open(t.TempDir(), 4096, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer state.Close()
+	budget, err := core.NewStateBudget(0, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := &storedTCPReader{state: state, prefix: "tcp/batch/", budget: budget}
+	for i := range 2 * aggregate.BatchRows {
+		if err := source.append(&core.StreamData{RawData: []byte{byte(i)}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, stopAfter := range []int{3, aggregate.BatchRows + 1} {
+		seen := 0
+		err := source.WalkRange(7, aggregate.BatchRows+1, func(fragment core.DataFragment) bool {
+			if !bytes.Equal(fragment.Raw(), []byte{byte(7 + seen)}) {
+				t.Fatalf("wrong fragment at index %d", 7+seen)
+			}
+			seen++
+			return seen < stopAfter
+		})
+		if err != nil || seen != stopAfter || budget.Health().RetainedBytes != 0 {
+			t.Fatalf("range retained state or stopped incorrectly: seen=%d err=%v", seen, err)
+		}
+	}
+}
+
 func TestBackedRoleCorrectionDoesNotLoadConversation(t *testing.T) {
 	state, err := aggregate.Open(t.TempDir(), 1024, nil)
 	if err != nil {
