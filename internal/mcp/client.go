@@ -41,14 +41,18 @@ type BackendError struct {
 }
 
 func (e *BackendError) Error() string {
+	return fmt.Sprintf("%s %s: %s", e.Method, e.Path, e.diagnostic())
+}
+
+func (e *BackendError) diagnostic() string {
 	if e.readErr != nil {
-		return fmt.Sprintf("%s %s: HTTP %d: reading response: %v", e.Method, e.Path, e.StatusCode, e.readErr)
+		return fmt.Sprintf("HTTP %d: reading response: %v", e.StatusCode, e.readErr)
 	}
 	limit := e.diagnosticLimit
 	if limit == 0 {
 		limit = 4000
 	}
-	return fmt.Sprintf("%s %s: HTTP %d: %s", e.Method, e.Path, e.StatusCode, truncate(string(e.Body), limit))
+	return fmt.Sprintf("HTTP %d: %s", e.StatusCode, truncate(string(e.Body), limit))
 }
 
 func (e *BackendError) Unwrap() error { return e.readErr }

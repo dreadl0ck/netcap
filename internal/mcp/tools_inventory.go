@@ -8,6 +8,7 @@ package mcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
@@ -98,7 +99,11 @@ func simpleSessionTool(s *Server, name, desc, endpoint string, queryArgs []query
 			}
 			body, gErr := s.newClient().GetContext(ctx, endpoint, q)
 			if gErr != nil {
-				return errResult(fmt.Errorf("%s: %w", endpoint, gErr)), nil
+				var backend *BackendError
+				if errors.As(gErr, &backend) {
+					return errResult(fmt.Errorf("%s: %s", name, backend.diagnostic())), nil
+				}
+				return errResult(fmt.Errorf("%s: %w", name, gErr)), nil
 			}
 			if paged {
 				return s.collectionResult(ref, collectionKey, body, q), nil
