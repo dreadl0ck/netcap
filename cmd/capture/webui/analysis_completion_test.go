@@ -697,6 +697,26 @@ func TestAnalysisCompletionRejectsMislabeledTimelineTrack(t *testing.T) {
 	}
 }
 
+func TestServiceAnalysisCompletionRequiresPersistedStatus(t *testing.T) {
+	s, input, dir := reanalysisFixture(t)
+	s.isServiceMode = true
+	s.sessionManager = NewSessionManager(10, 60, 10)
+	s.rulesConfig = &rules.Config{}
+	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Timestamp: 1}})
+	job := &AnalysisJob{InputFile: input, OutputDir: dir, SessionID: "analysis"}
+	s.sessionManager.AddSession(&SessionInfo{SessionID: job.SessionID, InputFile: input, OutputDir: dir, Status: StatusProcessing})
+	if err := os.Mkdir(filepath.Join(dir, "session.json"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.completeAnalysis(job, time.Second); err == nil || !strings.Contains(err.Error(), "persist analysis completion") {
+		t.Fatalf("expected metadata write failure, got %v", err)
+	}
+	session, ok := s.sessionManager.GetSession(job.SessionID)
+	if !ok || session.Status != StatusFailed || session.ResultsReady {
+		t.Fatalf("failed metadata write left a ready session: %+v", session)
+	}
+}
+
 func TestAnalysisCompletionWaitsForFinalAlerts(t *testing.T) {
 	for _, service := range []bool{false, true} {
 		t.Run(map[bool]string{false: "local", true: "service"}[service], func(t *testing.T) {

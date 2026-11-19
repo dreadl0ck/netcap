@@ -190,7 +190,7 @@ func cloneSession(session *SessionInfo) *SessionInfo {
 }
 
 // UpdateSessionStatus updates the status of a session
-func (sm *SessionManager) UpdateSessionStatus(sessionID string, status SessionStatus, errorMsg string, errorLogPath string) {
+func (sm *SessionManager) UpdateSessionStatus(sessionID string, status SessionStatus, errorMsg string, errorLogPath string) error {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
@@ -213,25 +213,24 @@ func (sm *SessionManager) UpdateSessionStatus(sessionID string, status SessionSt
 				session.ResultsReady = true
 				log.Printf("[SessionManager] Session %s marked as completed and ready", sessionID)
 			} else if status == StatusFailed {
+				session.ResultsReady = false
 				log.Printf("[SessionManager] Session %s marked as failed (errorMsg: %s, errorLogPath: %s)",
 					sessionID, errorMsg, session.ErrorLogPath)
 			}
 		}
 
-		if session.ParentSessionID != "" {
-			if err := saveSessionMetadata(filepath.Join(session.OutputDir, "session.json"), session); err != nil {
-				session.Status, session.ResultsReady = StatusFailed, false
-				session.ErrorMessage = "Failed to persist child status: " + err.Error()
-				log.Printf("[SessionManager] %s", session.ErrorMessage)
-			}
-			return
-		}
 		if err := saveSessionMetadata(filepath.Join(session.OutputDir, "session.json"), session); err != nil {
+			if status == StatusCompleted || session.ParentSessionID != "" {
+				session.Status, session.ResultsReady = StatusFailed, false
+				session.ErrorMessage = "Failed to persist session status: " + err.Error()
+			}
 			log.Printf("[SessionManager] Warning: Failed to save session metadata for %s: %v", sessionID, err)
+			return err
 		}
-	} else {
-		log.Printf("[SessionManager] WARNING: Attempted to update non-existent session %s to status %s", sessionID, status)
+		return nil
 	}
+	log.Printf("[SessionManager] WARNING: Attempted to update non-existent session %s to status %s", sessionID, status)
+	return fmt.Errorf("session %q not found", sessionID)
 }
 
 // UpdateSessionPacketCount updates the packet count for a session
