@@ -232,8 +232,6 @@ func hasEmbeddedScript(data []byte) bool {
 		return false
 	}
 
-	dataStr := string(data)
-
 	// VBA/Office macros indicators
 	vbaIndicators := []string{
 		"Sub Auto", // AutoOpen, AutoExec, etc.
@@ -269,20 +267,19 @@ func hasEmbeddedScript(data []byte) bool {
 		"[System.Text.Encoding]::",
 	}
 
-	dataLower := strings.ToLower(dataStr)
-
 	for _, indicator := range vbaIndicators {
-		if strings.Contains(dataStr, indicator) {
+		if bytes.Contains(data, []byte(indicator)) {
 			return true
 		}
 	}
 
 	for _, indicator := range jsIndicators {
-		if strings.Contains(dataStr, indicator) {
+		if bytes.Contains(data, []byte(indicator)) {
 			return true
 		}
 	}
 
+	dataLower := strings.ToLower(string(data))
 	for _, indicator := range psIndicators {
 		if strings.Contains(dataLower, strings.ToLower(indicator)) {
 			return true
