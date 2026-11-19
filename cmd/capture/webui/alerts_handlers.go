@@ -225,17 +225,8 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 
 	// Apply pagination
 	totalCount := len(filtered)
-	start := offset
-	end := offset + limit
-
-	if start >= totalCount {
-		filtered = []AlertResponse{}
-	} else {
-		if end > totalCount {
-			end = totalCount
-		}
-		filtered = filtered[start:end]
-	}
+	start := min(offset, totalCount)
+	filtered = filtered[start : start+min(limit, totalCount-start)]
 
 	RespondJSON(w, http.StatusOK, AlertsResponse{
 		Alerts:     filtered,
@@ -703,17 +694,8 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 		respondFilteredCollectionPage(w, r, rows, "groups", map[string]any{"totalCount": totalCount, "groupCount": groupCount})
 		return
 	}
-	start := offset
-	end := offset + limit
-
-	if start >= groupCount {
-		groups = []GroupedAlert{}
-	} else {
-		if end > groupCount {
-			end = groupCount
-		}
-		groups = groups[start:end]
-	}
+	start := min(offset, groupCount)
+	groups = groups[start : start+min(limit, groupCount-start)]
 
 	RespondJSON(w, http.StatusOK, GroupedAlertsResponse{
 		Groups:     groups,
