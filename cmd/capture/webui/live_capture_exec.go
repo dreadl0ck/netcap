@@ -30,14 +30,14 @@ func (s *Server) startLiveHelper(ctx context.Context, args []string, out string)
 	cmd.Stderr = log
 	cmd.Cancel = func() error { return cmd.Process.Signal(os.Interrupt) }
 	cmd.WaitDelay = 5 * time.Second
-	if err := s.startCaptureProcess(cmd); err != nil {
+	if err := s.startCaptureProcess(cmd, captureLive); err != nil {
 		log.Close()
 		return nil, err
 	}
 	return func() error {
 		defer log.Close()
 		err := cmd.Wait()
-		s.releaseCaptureProcess(cmd.Process)
+		s.releaseCaptureProcess(cmd.Process, captureLive)
 		if ctx.Err() != nil && cmd.ProcessState != nil && cmd.ProcessState.Success() {
 			return nil
 		}
@@ -45,7 +45,7 @@ func (s *Server) startLiveHelper(ctx context.Context, args []string, out string)
 	}, nil
 }
 
-func (s *Server) startCaptureProcess(cmd *exec.Cmd) error {
+func (s *Server) startCaptureProcess(cmd *exec.Cmd, lane captureProcessLane) error {
 	s.currentCmdMutex.Lock()
 	defer s.currentCmdMutex.Unlock()
 	s.mu.RLock()
@@ -54,20 +54,21 @@ func (s *Server) startCaptureProcess(cmd *exec.Cmd) error {
 	if stopping {
 		return errAnalysisStopping
 	}
-	if s.currentProc != nil {
+	if s.captureProcesses[lane] != nil || s.captureProcesses[captureLive] != nil ||
+		(lane == captureLive && (s.captureProcesses[captureOffline] != nil || s.captureProcesses[captureAuxiliary] != nil)) {
 		return fmt.Errorf("capture helper is already running")
 	}
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	s.currentProc = cmd.Process
+	s.captureProcesses[lane] = cmd.Process
 	return nil
 }
 
-func (s *Server) releaseCaptureProcess(process *os.Process) {
+func (s *Server) releaseCaptureProcess(process *os.Process, lane captureProcessLane) {
 	s.currentCmdMutex.Lock()
 	defer s.currentCmdMutex.Unlock()
-	if s.currentProc == process {
-		s.currentProc = nil
+	if s.captureProcesses[lane] == process {
+		s.captureProcesses[lane] = nil
 	}
 }

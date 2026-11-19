@@ -222,7 +222,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 
 	// Start the command
 	startTime := time.Now()
-	if err = s.startCaptureProcess(cmd); err != nil {
+	if err = s.startCaptureProcess(cmd, captureOffline); err != nil {
 		if err == errAnalysisStopping {
 			s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
 			return
@@ -231,7 +231,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		s.recordAnalysisFailure(job, fmt.Sprintf("Failed to start analysis: %v", err), "")
 		return
 	}
-	defer s.releaseCaptureProcess(cmd.Process)
+	defer s.releaseCaptureProcess(cmd.Process, captureOffline)
 
 	// Wait for command to complete
 	err = cmd.Wait()

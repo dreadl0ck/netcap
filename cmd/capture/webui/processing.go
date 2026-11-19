@@ -19,6 +19,15 @@ const (
 	maxCaptureBypasses = 2
 )
 
+type captureProcessLane uint8
+
+const (
+	captureOffline captureProcessLane = iota
+	captureAuxiliary
+	captureLive
+	captureProcessKinds
+)
+
 type captureDispatch struct {
 	pending  []*AnalysisJob
 	bypasses int

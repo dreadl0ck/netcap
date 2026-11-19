@@ -23,6 +23,7 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	stdio "io"
 	"log"
@@ -259,9 +260,9 @@ type Server struct {
 	jobsProcessed        int64        // Total number of jobs processed (atomic counter)
 	currentJobMutex      sync.RWMutex // Mutex for currentProcessingJob
 	currentProcessing    *AnalysisJob // Currently processing job (service mode only)
-	currentProc          *os.Process  // Currently running out-of-process net capture (for cleanup; nil in the in-process/appstore build)
-	currentCmdMutex      sync.RWMutex // Mutex for currentProc
-	alertStreams         int          // protected by mu
+	captureProcesses     [captureProcessKinds]*os.Process
+	currentCmdMutex      sync.Mutex
+	alertStreams         int // protected by mu
 	ownedLive            *ownedLiveCapture
 	ownedLiveStarting    bool
 	liveInputs           map[string]*ownedLiveCapture
@@ -917,17 +918,14 @@ func (s *Server) Stop(ctx context.Context) error {
 	}
 	s.mu.RUnlock()
 
-	// Kill any running out-of-process net capture (non-appstore builds only;
-	// the in-process analysis path never sets currentProc).
 	s.currentCmdMutex.Lock()
-	if s.currentProc != nil {
-		log.Printf("[WebUI] Killing running net capture process (PID: %d)", s.currentProc.Pid)
-		if err := s.currentProc.Kill(); err != nil {
-			log.Printf("[WebUI] Error killing process: %v", err)
-		} else {
-			log.Println("[WebUI] Net capture process killed successfully")
+	for lane, process := range s.captureProcesses {
+		if process != nil {
+			if err := process.Kill(); err != nil && !errors.Is(err, os.ErrProcessDone) {
+				log.Printf("[WebUI] Error killing capture process %d: %v", process.Pid, err)
+			}
+			s.captureProcesses[lane] = nil
 		}
-		s.currentProc = nil
 	}
 	s.currentCmdMutex.Unlock()
 

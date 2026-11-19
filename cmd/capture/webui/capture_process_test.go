@@ -28,35 +28,43 @@ func TestCaptureProcessShutdownOwnsRunningHelper(t *testing.T) {
 		return cmd
 	}
 	s := &Server{shutdownChan: make(chan struct{})}
-	first := child()
-	if err := s.startCaptureProcess(first); err != nil {
-		t.Fatal(err)
+	start := func(lane captureProcessLane) <-chan error {
+		cmd := child()
+		if err := s.startCaptureProcess(cmd, lane); err != nil {
+			t.Fatal(err)
+		}
+		done := make(chan error, 1)
+		go func() {
+			err := cmd.Wait()
+			s.releaseCaptureProcess(cmd.Process, lane)
+			done <- err
+		}()
+		t.Cleanup(func() { _ = cmd.Process.Kill() })
+		return done
 	}
-	done := make(chan error, 1)
-	go func() {
-		err := first.Wait()
-		s.releaseCaptureProcess(first.Process)
-		done <- err
-	}()
-	defer first.Process.Kill()
-	second := child()
-	if err := s.startCaptureProcess(second); err == nil {
-		_ = second.Process.Kill()
-		_ = second.Wait()
-		t.Fatal("started a second capture helper while the first owned the slot")
+	regular, auxiliary := start(captureOffline), start(captureAuxiliary)
+	for _, lane := range []captureProcessLane{captureOffline, captureAuxiliary, captureLive} {
+		cmd := child()
+		if err := s.startCaptureProcess(cmd, lane); err == nil {
+			_ = cmd.Process.Kill()
+			_ = cmd.Wait()
+			t.Fatalf("admitted competing helper in lane %d", lane)
+		}
 	}
 	if err := s.Stop(ctx); err != nil {
 		t.Fatal(err)
 	}
-	select {
-	case err := <-done:
-		if err == nil || ctx.Err() != nil {
-			t.Fatalf("shutdown did not terminate the helper: wait=%v context=%v", err, ctx.Err())
+	for _, done := range []<-chan error{regular, auxiliary} {
+		select {
+		case err := <-done:
+			if err == nil || ctx.Err() != nil {
+				t.Fatalf("shutdown did not terminate the helper: wait=%v context=%v", err, ctx.Err())
+			}
+		case <-ctx.Done():
+			t.Fatal("helper remained running after shutdown")
 		}
-	case <-ctx.Done():
-		t.Fatal("helper remained running after shutdown")
 	}
-	if err := s.startCaptureProcess(child()); !errors.Is(err, errAnalysisStopping) {
+	if err := s.startCaptureProcess(child(), captureAuxiliary); !errors.Is(err, errAnalysisStopping) {
 		t.Fatalf("unexpected post-shutdown admission: %v", err)
 	}
 }
