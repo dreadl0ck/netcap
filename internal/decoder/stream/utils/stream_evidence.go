@@ -231,12 +231,16 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 		file.Close()
 		return "", fmt.Errorf("stream evidence span placeholder missing")
 	}
-	prefix := append(append([]byte(nil), data[:position]...), []byte(`"spans":[`)...)
-	if _, err := file.Write(prefix); err != nil {
-		file.Close()
-		return "", err
+	prefix := make([]byte, 0, len(data)+len(spanPrefix))
+	prefix = append(prefix, data[:position]...)
+	prefix = append(prefix, `"spans":[`...)
+	prefix = append(prefix, spanPrefix...)
+	suffix := data[position+len(marker):]
+	if spanFile == nil {
+		prefix = append(prefix, ']')
+		prefix = append(prefix, suffix...)
 	}
-	if _, err = file.Write(spanPrefix); err != nil {
+	if _, err := file.Write(prefix); err != nil {
 		file.Close()
 		return "", err
 	}
@@ -248,10 +252,10 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 			file.Close()
 			return "", err
 		}
-	}
-	if _, err = file.Write(append([]byte("]"), data[position+len(marker):]...)); err != nil {
-		file.Close()
-		return "", err
+		if _, err = file.Write(append([]byte("]"), suffix...)); err != nil {
+			file.Close()
+			return "", err
+		}
 	}
 	if err := file.Sync(); err != nil {
 		file.Close()
