@@ -75,6 +75,36 @@ func TestBoundedStoreEvictionAndOrderedUpdates(t *testing.T) {
 	}
 }
 
+func TestOversizedPutReplacesCachedValue(t *testing.T) {
+	s, err := Open(t.TempDir(), 1024, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	payload := bytes.Repeat([]byte{'x'}, 64<<10)
+	if err := s.Do(func(tx *Tx) error {
+		if err := tx.Put("key", []byte("cached")); err != nil {
+			return err
+		}
+		return tx.Put("key", payload)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	payload[0] = 'y'
+	if err := s.Do(func(tx *Tx) error {
+		value, ok, err := tx.Get("key")
+		if err != nil || !ok || len(value) != len(payload) || value[0] != 'x' {
+			return fmt.Errorf("did not persist the oversized replacement: found=%t size=%d err=%v", ok, len(value), err)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if health := s.Health(); health.ResidentBytes != 0 || health.DiskWrites != 1 || health.DiskReads != 1 {
+		t.Fatal(health)
+	}
+}
+
 func BenchmarkOversizedDiskGet(b *testing.B) {
 	s, err := Open(b.TempDir(), 1024, nil)
 	if err != nil {

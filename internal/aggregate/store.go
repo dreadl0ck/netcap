@@ -217,6 +217,10 @@ func (t *Tx) Get(key string) ([]byte, bool, error) {
 }
 
 func (t *Tx) Put(key string, value []byte) error {
+	if len(value) != 0 && entryCharge(key, value) > t.store.health.LimitBytes {
+		// Oversized values are written synchronously and never enter the cache.
+		return t.store.remember(key, value, true)
+	}
 	return t.store.remember(key, append([]byte(nil), value...), true)
 }
 
