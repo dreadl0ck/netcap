@@ -224,7 +224,7 @@ func (s *storedTCPReader) append(data *core.StreamData) error {
 			}
 		}
 	}
-	err = s.state.Do(func(tx *aggregate.Tx) error { return tx.Put(fmt.Sprintf("%s%016x", s.prefix, s.count), wire) })
+	err = s.state.Do(func(tx *aggregate.Tx) error { return tx.Put(retainedTCPKey(s.prefix, s.count), wire) })
 	if err != nil {
 		s.budget.Release(credit)
 		if s.payloadBudget != nil {
@@ -272,6 +272,16 @@ func (s *storedTCPReader) Walk(yield func(core.DataFragment) bool) error {
 	return s.WalkRange(0, s.Count(), yield)
 }
 
+func retainedTCPKey(prefix string, index uint64) string {
+	const digits = "0123456789abcdef"
+	var suffix [16]byte
+	for i := len(suffix) - 1; i >= 0; i-- {
+		suffix[i] = digits[index&15]
+		index >>= 4
+	}
+	return prefix + string(suffix[:])
+}
+
 func (s *storedTCPReader) WalkRange(start, length int64, yield func(core.DataFragment) bool) error {
 	if err := core.CheckFragmentRange(s.Count(), start, length); err != nil {
 		return err
@@ -285,12 +295,12 @@ func (s *storedTCPReader) WalkRange(start, length int64, yield func(core.DataFra
 		if s.count != count {
 			return fmt.Errorf("retained TCP source changed during iteration")
 		}
-		key := fmt.Sprintf("%s%016x", s.prefix, index)
+		key := retainedTCPKey(s.prefix, index)
 		var wire []byte
 		if len(batch) == 0 && batchAllowed && end-index >= aggregate.BatchRows {
 			after := ""
 			if index > 0 {
-				after = fmt.Sprintf("%s%016x", s.prefix, index-1)
+				after = retainedTCPKey(s.prefix, index-1)
 			}
 			if err := s.state.Do(func(tx *aggregate.Tx) error {
 				var err error
@@ -350,7 +360,7 @@ func (s *storedTCPReader) WalkRange(start, length int64, yield func(core.DataFra
 	return s.state.Do(func(tx *aggregate.Tx) error {
 		last := ""
 		if count > 0 {
-			last = fmt.Sprintf("%s%016x", s.prefix, count-1)
+			last = retainedTCPKey(s.prefix, count-1)
 		}
 		_, _, exists, err := tx.Next(s.prefix, last)
 		if err == nil && exists {
@@ -399,7 +409,7 @@ func (s *storedTCPReader) read() (core.DataFragments, error) {
 			}
 			for _, row := range rows {
 				key, wire := row.Key, row.Value
-				if key != fmt.Sprintf("%s%016x", s.prefix, len(data)) {
+				if key != retainedTCPKey(s.prefix, uint64(len(data))) {
 					return s.state.Do(func(*aggregate.Tx) error { return fmt.Errorf("retained TCP fragment sequence is incomplete") })
 				}
 				amount := int64(len(wire)) + 256
