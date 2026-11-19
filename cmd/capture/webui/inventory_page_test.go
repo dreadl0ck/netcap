@@ -337,6 +337,41 @@ func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
 	}
 }
 
+func TestAlertScanChargesDecodedBytesAcrossCompressedFrames(t *testing.T) {
+	dir := t.TempDir()
+	row := &types.Alert{Description: strings.Repeat("x", 4096)}
+	path := writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, []proto.Message{row, row})
+	frameBytes := proto.Size(row)
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Size() >= int64(2*frameBytes-1) {
+		t.Fatal("stored audit must fit both scan budgets")
+	}
+	s := &Server{outDir: dir}
+	for _, tc := range []struct {
+		name       string
+		budget     int
+		wantVisits int
+		wantErr    error
+	}{
+		{"exact fit", 2 * frameBytes, 2, nil},
+		{"one byte short", 2*frameBytes - 1, 1, errAlertPageSourceLimit},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			visits := 0
+			_, err := s.scanAlertAudit(t.Context(), path, tc.budget, 2, frameBytes, func(AlertResponse) error {
+				visits++
+				return nil
+			})
+			if !errors.Is(err, tc.wantErr) || visits != tc.wantVisits {
+				t.Fatalf("visited %d frames, err=%v; want %d, %v", visits, err, tc.wantVisits, tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestMCPAlertReadAdmissionSharedAcrossViews(t *testing.T) {
 	dir := t.TempDir()
 	writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, []proto.Message{
