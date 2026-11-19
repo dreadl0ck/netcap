@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from firewall_download import verified_read
 
 CILIUM = '1.17.2'
-FIXTURE = 'nginx:1.28.0-alpine@sha256:30f1c0d78e0ad60901648be663a710bdadf19e4c10ac6782c235200619158284'
+FIXTURE = 'nginx:1.31.9-alpine3.24@sha256:90b6bd2aec278b16b98221d64deb1d6d35d164567f507ab0716e6053878315aa'
 METRICS_VERSION = '3.12.2'
 METRICS_URL = f'https://github.com/kubernetes-sigs/metrics-server/releases/download/metrics-server-helm-chart-{METRICS_VERSION}/metrics-server-{METRICS_VERSION}.tgz'
 # Official https://kubernetes-sigs.github.io/metrics-server/index.yaml, version 3.12.2.
