@@ -2,7 +2,9 @@ package file
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"io"
 	"math"
@@ -120,12 +122,22 @@ func TestSpoolLimitsAndCleanup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := SpoolBody(strings.NewReader(strings.Repeat("b", 100)))
-	if !errors.Is(err, ErrArtifactLimit) {
-		t.Fatal("shared scratch cap ignored", err)
-	}
-	if err := second.Close(); err != nil {
-		t.Fatal(err)
+	for _, size := range []int{50, 100} {
+		second, err := SpoolBody(strings.NewReader(strings.Repeat("b", size)))
+		if second == nil || (size > 50 && !errors.Is(err, errArtifactScratchBudget)) || (size == 50 && err != nil) {
+			t.Fatalf("length %d: shared scratch boundary: %v", size, err)
+		}
+		data, readErr := io.ReadAll(second.Reader())
+		wantHash := sha256.Sum256([]byte(strings.Repeat("b", 50)))
+		if second.Size() != 50 || second.content.hashes.SHA256 != hex.EncodeToString(wantHash[:]) {
+			t.Errorf("length %d: size or digest does not describe the retained prefix", size)
+		}
+		if closeErr := second.Close(); closeErr != nil {
+			t.Fatal(closeErr)
+		}
+		if readErr != nil || string(data) != strings.Repeat("b", 50) {
+			t.Fatalf("length %d: shared scratch prefix: %q, %v", size, data, readErr)
+		}
 	}
 	if err := first.Close(); err != nil {
 		t.Fatal(err)
@@ -207,9 +219,11 @@ func TestSpoolLimitsPreserveSourceError(t *testing.T) {
 		name             string
 		scratch, perFile int64
 		limit            error
+		prefix           string
 	}{
-		{"scratch", 4, 100, errSharedArtifactBudget},
-		{"per file", 100, 4, ErrArtifactLimit},
+		{"scratch", 4, 100, errArtifactScratchBudget, "keep"},
+		{"scratch with room", 6, 100, errArtifactScratchBudget, "keepex"},
+		{"per file", 100, 4, ErrArtifactLimit, "keep"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := spoolTestConfig(t)
@@ -225,7 +239,7 @@ func TestSpoolLimitsPreserveSourceError(t *testing.T) {
 			if !errors.Is(err, tc.limit) || !errors.Is(err, sourceErr) {
 				t.Fatalf("expected both limit and source errors: %v", err)
 			}
-			if data, err := io.ReadAll(spool.Reader()); err != nil || string(data) != "keep" {
+			if data, err := io.ReadAll(spool.Reader()); err != nil || string(data) != tc.prefix {
 				t.Fatalf("retained prefix: %q, %v", data, err)
 			}
 		})

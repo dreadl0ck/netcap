@@ -330,14 +330,18 @@ func TestIncrementalHTTPMissingHandshakeIsExplicitlyCompletionOnly(t *testing.T)
 }
 
 func TestHTTPSharedScratchPressureQualifiesCaptureWithoutAnalyzers(t *testing.T) {
-	testHTTPSharedExtractionPressure(t, true)
+	testHTTPSharedExtractionPressure(t, true, false)
+}
+
+func TestHTTPSharedScratchPressureRetainsAllowedPrefix(t *testing.T) {
+	testHTTPSharedExtractionPressure(t, true, true)
 }
 
 func TestHTTPSharedBufferPressureQualifiesCaptureWithoutAnalyzers(t *testing.T) {
-	testHTTPSharedExtractionPressure(t, false)
+	testHTTPSharedExtractionPressure(t, false, false)
 }
 
-func testHTTPSharedExtractionPressure(t *testing.T, scratch bool) {
+func testHTTPSharedExtractionPressure(t *testing.T, scratch, writeIncomplete bool) {
 	t.Helper()
 	previous := filedecoder.GetGlobalConfig()
 	policy := filedecoder.GetDefaultConfig()
@@ -361,6 +365,7 @@ func testHTTPSharedExtractionPressure(t *testing.T, scratch bool) {
 	cfg := ultimateCaptureConfig(out, 1, 0)
 	cfg.CaptureEvidence = true
 	cfg.DecoderConfig.FileStorage = "files"
+	cfg.DecoderConfig.WriteIncomplete = writeIncomplete
 	cfg.DecoderConfig.IncludeDecoders = "TCP,Connection,HTTP,File"
 	err := New(cfg).CollectPcap(input)
 	var partial interface{ ExitCode() int }
@@ -386,11 +391,24 @@ func testHTTPSharedExtractionPressure(t *testing.T, scratch bool) {
 		return
 	}
 	stage, _, err = evidence.ReadAuditStage(out, manifest.RunID, "File", manifest.AuditStagesGeneration)
-	if err != nil || stage.Coverage != "partial" || stage.Records != 1 {
+	wantRecords := 1
+	if writeIncomplete {
+		wantRecords++
+	}
+	if err != nil || stage.Coverage != "partial" || int(stage.Records) != wantRecords {
 		t.Fatal(stage, err)
 	}
 	rows := bookRecords(t, out, "File", func() *types.File { return new(types.File) })
-	if len(rows) != 1 || !rows[0].IsComplete || rows[0].GetHashes().GetSHA256() != fmt.Sprintf("%x", sha256.Sum256([]byte("clean"))) {
+	var clean, prefix bool
+	for _, row := range rows {
+		switch row.GetHashes().GetSHA256() {
+		case fmt.Sprintf("%x", sha256.Sum256([]byte("clean"))):
+			clean = row.IsComplete && row.Length == 5
+		case fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Repeat("x", 16)))):
+			prefix = !row.IsComplete && row.Length == 16
+		}
+	}
+	if len(rows) != wantRecords || !clean || prefix != writeIncomplete {
 		t.Fatalf("unaffected extraction lost: %v", rows)
 	}
 }

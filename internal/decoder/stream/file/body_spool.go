@@ -23,18 +23,28 @@ var artifactScratch struct {
 // Includes the read buffer, token overlap, and bounded text-analysis copies.
 const artifactScanMemory int64 = 256 << 10
 
+var errArtifactScratchBudget = fmt.Errorf("%w: scratch storage", errSharedArtifactBudget)
+
 func reserveArtifactScratch(n int64) error {
+	if reserveArtifactScratchRange(n, n) != n {
+		return errArtifactScratchBudget
+	}
+	return nil
+}
+
+func reserveArtifactScratchRange(minimum, preferred int64) int64 {
 	limit := GetGlobalConfig().FileExtraction.SizeLimits.MaxScratchBytes
 	if limit == 0 {
 		limit = 1 << 30
 	}
 	artifactScratch.Lock()
 	defer artifactScratch.Unlock()
-	if n > limit-artifactScratch.used {
-		return fmt.Errorf("%w: scratch storage", errSharedArtifactBudget)
+	n := min(preferred, max(0, limit-artifactScratch.used))
+	if n < minimum {
+		return 0
 	}
 	artifactScratch.used += n
-	return nil
+	return n
 }
 func releaseArtifactScratch(n int64) {
 	artifactScratch.Lock()
@@ -116,9 +126,10 @@ func SpoolBody(reader io.Reader) (result *BodySpool, resultErr error) {
 				sourceErr = errors.Join(fmt.Errorf("%w: per-file %d", ErrArtifactLimit, limit), sourceErr)
 				readErr = sourceErr
 			}
-			if err := reserveArtifactScratch(int64(n)); err != nil {
-				resultErr = errors.Join(err, sourceErr)
-				break
+			if admitted := int(reserveArtifactScratchRange(0, int64(n))); admitted < n {
+				n = admitted
+				sourceErr = errors.Join(errArtifactScratchBudget, sourceErr)
+				readErr = sourceErr
 			}
 			written, writeErr := file.Write(chunk[:n])
 			result.credit += int64(written)
