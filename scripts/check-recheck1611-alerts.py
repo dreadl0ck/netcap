@@ -35,6 +35,21 @@ async def replay(binary, capture):
             args = {"session_id": uploaded["session_id"]}
             if not (await call("wait_for_session", args | {"timeout_seconds": 45}))["completed"]:
                 raise ValueError("fixture did not finish")
+            http, http_total = [], None
+            for _ in range(128):
+                response = await call("query_audit_records", args | {"type": "HTTP", "limit": 100, "offset": len(http)})
+                records = response["records"]
+                total = response["summary"]["total"]
+                if http_total is not None and total != http_total:
+                    raise ValueError("HTTP audit total changed during replay")
+                http_total = total
+                http.extend(json.dumps(row, sort_keys=True) for row in records)
+                if len(http) == total:
+                    break
+                if not records or len(http) > total:
+                    raise ValueError("incomplete HTTP audit pagination")
+            if not http or len(http) != http_total:
+                raise ValueError("missing HTTP audit or page budget exhausted")
             alerts, generation = [], None
             for _ in range(128):
                 options = args | {"offset": len(alerts), "limit": 200}
@@ -48,19 +63,19 @@ async def replay(binary, capture):
                 if not page["has_more"]:
                     if not alerts or len(alerts) != page["totalCount"]:
                         raise ValueError("missing alerts or inconsistent total")
-                    return Counter(json.dumps({k: v for k, v in alert.items() if k != "detectedAtNs"}, sort_keys=True)
-                                   for alert in alerts)
+                    return http, Counter(json.dumps({k: v for k, v in alert.items() if k != "detectedAtNs"}, sort_keys=True)
+                                         for alert in alerts)
                 if not page["alerts"] or page["next_offset"] != len(alerts):
                     raise ValueError("alert continuation did not advance")
             raise ValueError("alert page budget exhausted")
 
 
 async def check(binary, capture):
-    baseline = await replay(binary, capture)
-    print(json.dumps({"run": 1, "alerts": baseline.total()}), flush=True)
+    baseline_http, baseline = await replay(binary, capture)
+    print(json.dumps({"run": 1, "alerts": baseline.total(), "http_rows": len(baseline_http)}), flush=True)
     differs = False
     for run in range(2, 5):
-        current = await replay(binary, capture)
+        current_http, current = await replay(binary, capture)
         removed, added = (baseline - current).total(), (current - baseline).total()
         differs |= bool(removed or added)
         old, new = ([json.loads(row) for row in values.elements()] for values in (baseline, current))
@@ -68,7 +83,9 @@ async def check(binary, capture):
         fields = [key for key in keys if Counter(json.dumps(row.get(key), sort_keys=True) for row in old)
                   != Counter(json.dumps(row.get(key), sort_keys=True) for row in new)]
         print(json.dumps({"run": run, "alerts": current.total(), "removed": removed, "added": added,
-                          "changed_field_multisets": fields}), flush=True)
+                          "changed_field_multisets": fields, "http_rows": len(current_http),
+                          "http_same_multiset": Counter(baseline_http) == Counter(current_http),
+                          "http_same_order": baseline_http == current_http}), flush=True)
     return not differs
 
 
