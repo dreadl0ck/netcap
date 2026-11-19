@@ -108,12 +108,13 @@ async def check_large_alert_views(call, directory, args):
     path = directory / "Alert.ncap.gz"
     original = path.read_bytes() if path.exists() else None
     count, start_ms = 27_152, 1_800_000_000_000
+    sources = [f"2001:db8::1:{i:x}" for i in range(count)]
     try:
         with gzip.open(path, "wb", compresslevel=0) as audit:
             header = fixture_message({3: 103})
             audit.write(fixture_varint(len(header)) + header)
             for i in range(count):
-                row = fixture_message({1: (start_ms + i) * 1_000_000, 3: "x" * 640,
+                row = fixture_message({1: (start_ms + i) * 1_000_000, 3: "x" * 640, 4: sources[i],
                                        13: "large-alert-fixture", 15: "critical" if i % 2 == 0 else "info"})
                 audit.write(fixture_varint(len(row)) + row)
         if path.stat().st_size <= 16 << 20:
@@ -139,6 +140,17 @@ async def check_large_alert_views(call, directory, args):
                 or not first["has_more"] or last["has_more"]
                 or {p["groups"][0]["severity"] for p in (first, last)} != {"critical", "info"}):
             raise ValueError("large grouped pages lost underlying totals or continuation")
+        for page in (first, last):
+            group, = page["groups"]
+            parity = 0 if group["severity"] == "critical" else 1
+            if group["uniqueSrcIPsTotal"] != count // 2 or group["uniqueSrcIPs"] != sorted(sources[parity::2])[:10]:
+                raise ValueError("large group lost exact unique-address count or preview order")
+            members = await call("list_alerts", args | {"group_id": group["groupId"], "limit": 2, "offset": 12_500})
+            expected = [25_000 + parity, 25_002 + parity]
+            if (members["totalCount"] != count // 2 or not members["has_more"]
+                    or [(row["timestamp"], row["srcIP"]) for row in members["alerts"]]
+                    != [(start_ms + i, sources[i]) for i in expected]):
+                raise ValueError("deep alert member page lost group scope or order")
     finally:
         if original is None:
             path.unlink(missing_ok=True)
