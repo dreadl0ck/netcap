@@ -78,6 +78,7 @@ def main():
                 ("gtpu_type_02.pcap", 2),
                 ("gtpu_type_1a.pcap", 26),
                 ("gtpu_type_1f.pcap", 31),
+                ("gtpu_type_fe.pcap", 254),
                 ("gtpu_endmarker_only.pcap", 254),
                 ("gtpu_tpdu_then_endmarker.pcap", 254),
             ):

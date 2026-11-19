@@ -54,14 +54,17 @@ func TestRecheck1611GTPAuditSealing(t *testing.T) {
 	}
 	for _, tc := range []struct {
 		name     string
+		packets  uint64
 		messages []int32
 	}{
-		{"gtpu_type_01.pcap", []int32{1}},
-		{"gtpu_type_02.pcap", []int32{2}},
-		{"gtpu_type_1a.pcap", []int32{26}},
-		{"gtpu_type_1f.pcap", []int32{31}},
-		{"gtpu_endmarker_only.pcap", []int32{254}},
-		{"gtpu_tpdu_then_endmarker.pcap", []int32{254}},
+		{"gtpu_type_01.pcap", 1, []int32{1}},
+		{"gtpu_type_02.pcap", 1, []int32{2}},
+		{"gtpu_type_1a.pcap", 1, []int32{26}},
+		{"gtpu_type_1f.pcap", 1, []int32{31}},
+		{"gtpu_type_fe.pcap", 1, []int32{254}},
+		{"gtpu_endmarker_only.pcap", 1, []int32{254}},
+		{"gtpu_tpdu_then_endmarker.pcap", 2, []int32{254}},
+		{"syn_gtpu_only.pcap", 3, nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			wire, err := z.Open("netcap-v0.16.11-synthetic-repros/repro/v1611/gtp/" + tc.name)
@@ -73,11 +76,7 @@ func TestRecheck1611GTPAuditSealing(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			wantPackets := uint64(1)
-			if tc.name == "gtpu_tpdu_then_endmarker.pcap" {
-				wantPackets = 2
-			}
-			checkGTPAuditSealing(t, data, wantPackets, tc.messages)
+			checkGTPAuditSealing(t, data, tc.packets, tc.messages)
 		})
 	}
 }
@@ -100,6 +99,12 @@ func checkGTPAuditSealing(t *testing.T, data []byte, wantPackets uint64, wantMes
 	manifest := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
 	if manifest.Status != "done" || manifest.AdmittedPackets != wantPackets {
 		t.Fatalf("capture status %s, admitted %d, want %d", manifest.Status, manifest.AdmittedPackets, wantPackets)
+	}
+	if len(wantMessages) == 0 {
+		if _, err := os.Stat(filepath.Join(out, "GTP.ncap.gz")); !os.IsNotExist(err) {
+			t.Fatalf("T-PDU-only control unexpectedly produced a GTP audit: %v", err)
+		}
+		return
 	}
 	stage, _, err := evidence.ReadAuditStage(out, manifest.RunID, "GTP", manifest.AuditStagesGeneration)
 	if err != nil || stage.State != "sealed" || stage.Coverage != "complete" || stage.Records != int64(len(wantMessages)) || len(stage.Files) != 1 || stage.Files[0].Name != "GTP.ncap.gz" {
