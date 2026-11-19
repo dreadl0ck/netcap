@@ -90,7 +90,21 @@ async def check(binary, capture, compare_http=True):
         keys = sorted({key for row in old + new for key in row})
         fields = [key for key in keys if Counter(json.dumps(row.get(key), sort_keys=True) for row in old)
                   != Counter(json.dumps(row.get(key), sort_keys=True) for row in new)]
+        def evidence_fields(delta):
+            result = {}
+            for row in delta.elements():
+                alert = json.loads(row)
+                record = json.loads(alert.get("matchedRecord") or "{}")
+                for field, value in record.items():
+                    key = (alert.get("recordType", ""), field)
+                    result.setdefault(key, Counter())[json.dumps(value, sort_keys=True)] += 1
+            return result
+
+        old_fields, new_fields = evidence_fields(baseline - current), evidence_fields(current - baseline)
+        changed_evidence = [f"{record}.{field}" for record, field in sorted(old_fields.keys() | new_fields.keys())
+                            if old_fields.get((record, field)) != new_fields.get((record, field))]
         print(json.dumps({"run": run, "workers": workers, "alerts": current.total(), "removed": removed, "added": added,
+                          "changed_evidence_fields": changed_evidence,
                           "changed_field_multisets": fields, "http_rows": len(current_http) if compare_http else None,
                           "http_same_multiset": same_http,
                           "http_same_order": baseline_http == current_http if compare_http else None}), flush=True)

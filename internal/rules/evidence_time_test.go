@@ -3,11 +3,36 @@ package rules
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/dreadl0ck/netcap/types"
 )
+
+func TestFileAlertEvidenceIndependentOfOutputDirectory(t *testing.T) {
+	rule := &Rule{Name: "fixture", Type: "File", Expression: "true", Enabled: true}
+	if err := CompileRules(&Config{Rules: []*Rule{rule}}); err != nil {
+		t.Fatal(err)
+	}
+	var previous *types.Alert
+	for _, location := range []string{"/run-one/files/sample", "/run-two/files/sample"} {
+		record := &types.File{Timestamp: 42, Location: location}
+		alert, err := EvaluateRule(rule, record)
+		if err != nil || alert == nil {
+			t.Fatalf("evaluate File: %v", err)
+		}
+		var evidence types.File
+		if err := json.Unmarshal([]byte(alert.MatchedRecord), &evidence); err != nil || evidence.Location != "" || evidence.Timestamp != record.Timestamp || record.Location != location {
+			t.Fatalf("unexpected File evidence: %+v, %v", evidence, err)
+		}
+		digest := sha256.Sum256([]byte(alert.MatchedRecord))
+		if alert.MatchedRecordSHA256 != hex.EncodeToString(digest[:]) || previous != nil && previous.MatchedRecord != alert.MatchedRecord {
+			t.Fatal("File evidence or digest changed with output directory")
+		}
+		previous = alert
+	}
+}
 
 func TestRuleAlertPreservesObservationTimeAndProvenance(t *testing.T) {
 	rule := &Rule{Name: "fixture", Type: "TCP", Expression: "DstPort == 443", Severity: "low", Enabled: true}

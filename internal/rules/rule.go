@@ -472,8 +472,14 @@ func createRuleAlert(rule *Rule, record types.AuditRecord, compiledDigest string
 	alert.SrcIP = record.Src()
 	alert.DstIP = record.Dst()
 
-	// Try to marshal the record as JSON for context
-	recordJSON, err := json.Marshal(record)
+	// Extraction paths belong to the capture output, not its alert evidence.
+	evidenceRecord := record
+	if file, ok := record.(*types.File); ok {
+		projected := *file
+		projected.Location = ""
+		evidenceRecord = &projected
+	}
+	recordJSON, err := json.Marshal(evidenceRecord)
 	if err == nil {
 		digest := sha256.Sum256(recordJSON)
 		alert.MatchedRecordSHA256 = hex.EncodeToString(digest[:])
