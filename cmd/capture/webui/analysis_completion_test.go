@@ -627,6 +627,9 @@ func TestCaptureWorkerShutdownCancelsBacklog(t *testing.T) {
 		if len(started) != 0 || len(captured) != 0 {
 			t.Error("backlog started after shutdown")
 		}
+		if depth := s.captureQueueLength(); depth != 0 {
+			t.Errorf("shutdown left %d captures in the queue", depth)
+		}
 		if failure, ok := s.GetFileError("handoff"); !ok || failure.Error != "Analysis canceled during shutdown" {
 			t.Errorf("handoff cancellation missing: %+v", failure)
 		}
@@ -648,6 +651,9 @@ func TestCaptureWorkerShutdownCancelsBacklog(t *testing.T) {
 		case <-deadline:
 			t.Fatal("completion worker never started")
 		}
+	}
+	if depth := s.captureQueueLength(); depth != 1 {
+		t.Fatalf("queue depth behind blocked handoff = %d, want 1 prefetched capture", depth)
 	}
 	s.stopProcessingAdmission()
 	for range 2 {

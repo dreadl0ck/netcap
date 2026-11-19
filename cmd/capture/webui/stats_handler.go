@@ -50,7 +50,7 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 
 	// Populate service mode specific fields
 	if isServiceMode && s.jobQueue != nil {
-		stats.QueueLength = len(s.jobQueue)
+		stats.QueueLength = s.captureQueueLength()
 		stats.JobsScheduled = atomic.LoadInt64(&s.jobsScheduled)
 		stats.JobsProcessed = atomic.LoadInt64(&s.jobsProcessed)
 

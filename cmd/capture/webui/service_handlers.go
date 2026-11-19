@@ -44,7 +44,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 	queueSize := 0
 	if s.jobQueue != nil {
-		queueSize = len(s.jobQueue)
+		queueSize = s.captureQueueLength()
 	}
 
 	sessions := 0

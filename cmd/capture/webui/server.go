@@ -244,30 +244,31 @@ type Server struct {
 	dashboardsFolderOverride string
 
 	// Service mode fields (nil in local mode)
-	isServiceMode       bool              // Flag to differentiate modes
-	sessionManager      *SessionManager   // Session manager (nil in local mode)
-	serviceConfig       *ServiceConfig    // Service configuration (nil in local mode)
-	activeUploads       int               // Protected by mu
-	jobQueue            chan *AnalysisJob // Job queue (nil in local mode)
-	shutdownChan        chan struct{}     // Shutdown channel for graceful shutdown
-	shutdownOnce        sync.Once         // Ensure shutdown channel is only closed once
-	wg                  sync.WaitGroup    // Track background workers
-	currentSession      string            // Currently active session for webUI viewing (service mode only)
-	jobsScheduled       int64             // Total number of jobs scheduled (atomic counter)
-	jobsProcessed       int64             // Total number of jobs processed (atomic counter)
-	currentJobMutex     sync.RWMutex      // Mutex for currentProcessingJob
-	currentProcessing   *AnalysisJob      // Currently processing job (service mode only)
-	currentProc         *os.Process       // Currently running out-of-process net capture (for cleanup; nil in the in-process/appstore build)
-	currentCmdMutex     sync.RWMutex      // Mutex for currentProc
-	alertStreams        int               // protected by mu
-	ownedLive           *ownedLiveCapture
-	ownedLiveStarting   bool
-	liveInputs          map[string]*ownedLiveCapture
-	liveRunner          func(context.Context, []string, string) (func() error, error)
-	tlsAnalyzer         func(context.Context, string, string, int) (protocoltest.TLSCaptureResult, error)
-	mcpCleanup          func()
-	sourceAnalysisSlots chan struct{}
-	operatorBindings    *bindings.Manager
+	isServiceMode        bool              // Flag to differentiate modes
+	sessionManager       *SessionManager   // Session manager (nil in local mode)
+	serviceConfig        *ServiceConfig    // Service configuration (nil in local mode)
+	activeUploads        int               // Protected by mu
+	jobQueue             chan *AnalysisJob // Job queue (nil in local mode)
+	shutdownChan         chan struct{}     // Shutdown channel for graceful shutdown
+	shutdownOnce         sync.Once         // Ensure shutdown channel is only closed once
+	wg                   sync.WaitGroup    // Track background workers
+	currentSession       string            // Currently active session for webUI viewing (service mode only)
+	jobsScheduled        int64             // Total number of jobs scheduled (atomic counter)
+	captureDispatchDepth atomic.Int64
+	jobsProcessed        int64        // Total number of jobs processed (atomic counter)
+	currentJobMutex      sync.RWMutex // Mutex for currentProcessingJob
+	currentProcessing    *AnalysisJob // Currently processing job (service mode only)
+	currentProc          *os.Process  // Currently running out-of-process net capture (for cleanup; nil in the in-process/appstore build)
+	currentCmdMutex      sync.RWMutex // Mutex for currentProc
+	alertStreams         int          // protected by mu
+	ownedLive            *ownedLiveCapture
+	ownedLiveStarting    bool
+	liveInputs           map[string]*ownedLiveCapture
+	liveRunner           func(context.Context, []string, string) (func() error, error)
+	tlsAnalyzer          func(context.Context, string, string, int) (protocoltest.TLSCaptureResult, error)
+	mcpCleanup           func()
+	sourceAnalysisSlots  chan struct{}
+	operatorBindings     *bindings.Manager
 }
 
 // UploadCallbackFunc is called when files are uploaded via the web UI
@@ -1514,8 +1515,9 @@ func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 		}()
 	}
 
-	var dispatch captureDispatch
+	dispatch := captureDispatch{depth: &s.captureDispatchDepth}
 	defer func() {
+		s.captureDispatchDepth.Store(0)
 		for _, job := range dispatch.pending {
 			s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
 			job.processingDone()

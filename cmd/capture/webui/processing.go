@@ -22,6 +22,14 @@ const (
 type captureDispatch struct {
 	pending  []*AnalysisJob
 	bypasses int
+	depth    *atomic.Int64
+}
+
+func (d *captureDispatch) add(job *AnalysisJob) {
+	d.pending = append(d.pending, job)
+	if d.depth != nil {
+		d.depth.Add(1)
+	}
 }
 
 func (d *captureDispatch) next(queue <-chan *AnalysisJob, stop <-chan struct{}) *AnalysisJob {
@@ -34,7 +42,7 @@ func (d *captureDispatch) next(queue <-chan *AnalysisJob, stop <-chan struct{}) 
 			if !ok {
 				return nil
 			}
-			d.pending = append(d.pending, job)
+			d.add(job)
 		case <-stop:
 			return nil
 		}
@@ -51,7 +59,7 @@ func (d *captureDispatch) next(queue <-chan *AnalysisJob, stop <-chan struct{}) 
 				if !ok {
 					break fill
 				}
-				d.pending = append(d.pending, job)
+				d.add(job)
 			default:
 				break fill
 			}
@@ -72,7 +80,14 @@ func (d *captureDispatch) next(queue <-chan *AnalysisJob, stop <-chan struct{}) 
 	copy(d.pending[index:], d.pending[index+1:])
 	d.pending[len(d.pending)-1] = nil
 	d.pending = d.pending[:len(d.pending)-1]
+	if d.depth != nil {
+		d.depth.Add(-1)
+	}
 	return job
+}
+
+func (s *Server) captureQueueLength() int {
+	return len(s.jobQueue) + int(s.captureDispatchDepth.Load())
 }
 
 func (s *Server) processingLocked() bool {
