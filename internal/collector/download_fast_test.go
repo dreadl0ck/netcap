@@ -87,6 +87,10 @@ func testDownloadFast(t *testing.T, extract bool) {
 	}
 	if extract {
 		const partialSHA256 = "575fc4241d479487be3b477d54b1d9de2e5b07ec5d355575f07cc345bb5ad279"
+		stage, _, err := evidence.ReadAuditStage(out, m.RunID, "File", m.AuditStagesGeneration)
+		if err != nil || stage.State != "sealed" || stage.Coverage != "complete" || stage.Records != 1 {
+			t.Fatalf("unexpected File audit stage: %+v (%v)", stage, err)
+		}
 		files := bookRecords(t, out, "File", func() *types.File { return new(types.File) })
 		if len(files) != 1 || files[0].IsComplete || files[0].Length != 82_095_922 || files[0].Hashes.SHA256 != partialSHA256 {
 			t.Fatalf("unexpected partial File audit: %v", files)
