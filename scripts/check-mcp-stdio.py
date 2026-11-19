@@ -333,7 +333,7 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout):
                 break
             await asyncio.sleep(0.5)
         completed = time.monotonic()
-        manifest = await call("get_capture_evidence", args | {"fields": "status,admittedPackets,createdAt"})
+        manifest = await call("get_capture_evidence", args | {"fields": "status,admittedPackets,createdAt,runId"})
         # A finished session can be evicted from the bounded timeline cache.
         # A subsequent metadata read starts an asynchronous rebuild.
         while True:
@@ -352,9 +352,14 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout):
             raise ValueError(f"capture evidence mismatch: {manifest}, expected packets={packet_counts[order[i]]}, "
                              f"retained hash matches={retained_digest == digest}, timeline={timeline}")
         capture_start = datetime.fromisoformat(manifest["createdAt"]).timestamp() - wall_offset
-        if not first <= capture_start <= completed:
-            raise ValueError(f"capture timestamp is outside the observed job lifetime: {manifest['createdAt']}")
-        return (reply["session_id"], first, admitted, completed, rejected, capture_start)
+        marker = Path(timeline["outputDir"]) / "audit-output-ready.json"
+        if json.loads(marker.read_bytes())["runId"] != manifest["runId"]:
+            raise ValueError("audit readiness marker refers to a different capture run")
+        # The marker is written after stream finalization and before post-capture work.
+        audit_ready = marker.stat().st_mtime - wall_offset
+        if not first <= capture_start <= audit_ready <= completed:
+            raise ValueError(f"capture timestamps are outside the observed job lifetime: {capture_start}, {audit_ready}")
+        return (reply["session_id"], first, admitted, completed, rejected, capture_start, audit_ready)
 
     try:
         async with asyncio.timeout(timeout):
@@ -372,8 +377,9 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout):
         {"upload": i, "input_bytes": len(fixtures[order[i]]), "packets": packet_counts[order[i]],
          "first_attempt_s": round(first - start, 3), "ingest_reply_s": round(admitted - start, 3),
          "manifest_created_s": round(created - start, 3), "completion_observed_s": round(completed - start, 3),
+         "audit_ready_marker_mtime_s": round(ready - start, 3),
          "http_503": rejected}
-        for i, (_, first, admitted, completed, rejected, created) in enumerate(rows)
+        for i, (_, first, admitted, completed, rejected, created, ready) in enumerate(rows)
     ]
     return {
         "jobs": jobs,
