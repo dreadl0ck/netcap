@@ -16,6 +16,7 @@ import (
 )
 
 func TestDownloadFastOriginal(t *testing.T) {
+	const inputSHA256 = "a9d08b46f0ffafe6671407910184aa521db200568da3e844d92636c0feab0588"
 	path := os.Getenv("NETCAP_DOWNLOAD_FAST")
 	if path == "" {
 		t.Skip("set NETCAP_DOWNLOAD_FAST to the pinned public capture")
@@ -27,7 +28,7 @@ func TestDownloadFastOriginal(t *testing.T) {
 	h := sha256.New()
 	n, err := io.Copy(h, io.LimitReader(f, 90036941))
 	f.Close()
-	if err != nil || n != 90036940 || fmt.Sprintf("%x", h.Sum(nil)) != "a9d08b46f0ffafe6671407910184aa521db200568da3e844d92636c0feab0588" {
+	if err != nil || n != 90036940 || fmt.Sprintf("%x", h.Sum(nil)) != inputSHA256 {
 		t.Fatal("original capture mismatch", n, err)
 	}
 	out := t.TempDir()
@@ -41,9 +42,16 @@ func TestDownloadFastOriginal(t *testing.T) {
 		t.Fatal(err)
 	}
 	m := bookJSON[evidence.CaptureManifest](t, filepath.Join(out, "capture-manifest.json"))
+	if m.Status != "done" || m.InputSHA256 != inputSHA256 || m.AdmittedPackets != 89942 || m.QueueDrops != 0 {
+		t.Fatalf("unexpected manifest: status=%s input=%s admitted=%d drops=%d", m.Status, m.InputSHA256, m.AdmittedPackets, m.QueueDrops)
+	}
+	stage, _, err := evidence.ReadAuditStage(out, m.RunID, "HTTP", m.AuditStagesGeneration)
+	if err != nil || stage.State != "sealed" || stage.Coverage != "complete" || stage.Records != 1 {
+		t.Fatalf("unexpected HTTP audit stage: %+v, %v", stage, err)
+	}
 	rows := bookRecords(t, out, "HTTP", func() *types.HTTP { return new(types.HTTP) })
-	if len(rows) != 1 || rows[0].Method != "GET" || rows[0].StatusCode != 200 || m.AdmittedPackets != 89942 {
-		t.Fatal("unexpected replay", len(rows), m.AdmittedPackets)
+	if len(rows) != 1 || rows[0].Method != "GET" || rows[0].StatusCode != 200 {
+		t.Fatal("unexpected HTTP replay", rows)
 	}
 	row := rows[0]
 	if row.ResContentLength != math.MaxInt32 || !slices.Contains(row.ParseQualifications, "response-content-length-exceeds-int32") || row.ReassemblyStatus != "incomplete_response_body" {
