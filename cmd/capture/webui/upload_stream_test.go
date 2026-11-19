@@ -98,7 +98,9 @@ func testServiceUploadHandoff(t *testing.T, cancelWaiting bool) {
 		sessionManager: NewSessionManager(10, 60, 10),
 		jobQueue:       make(chan *AnalysisJob, 1), shutdownChan: make(chan struct{}),
 	}
-	s.jobQueue <- &AnalysisJob{processingDone: func() {}}
+	s.captureQueueSlots = make(chan struct{}, cap(s.jobQueue))
+	s.captureQueueSlots <- struct{}{}
+	s.jobQueue <- &AnalysisJob{processingDone: func() { <-s.captureQueueSlots }}
 	defer s.stopProcessingAdmission()
 	const boundary = "capture-fixture"
 	request := func(body io.Reader) *http.Request {
@@ -135,12 +137,13 @@ func testServiceUploadHandoff(t *testing.T, cancelWaiting bool) {
 			results <- w.Code
 		}()
 	}
-	deadline := time.Now().Add(5 * time.Second)
-	for atomic.LoadInt64(&s.jobsScheduled) < 2 && time.Now().Before(deadline) {
-		time.Sleep(time.Millisecond)
-	}
-	if atomic.LoadInt64(&s.jobsScheduled) != 2 {
-		t.Fatal("two uploads did not reach the saturated queue")
+	processingAwait(t, func() bool {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+		return s.processingWork == 2
+	})
+	if atomic.LoadInt64(&s.jobsScheduled) != 0 || len(s.jobQueue) != 1 {
+		t.Fatal("uploads reached scheduling before a queue slot was released")
 	}
 	check := func(want int, read bool) {
 		t.Helper()
@@ -157,7 +160,7 @@ func testServiceUploadHandoff(t *testing.T, cancelWaiting bool) {
 		cancel()
 		select {
 		case code := <-results:
-			if code != http.StatusRequestTimeout || atomic.LoadInt64(&s.jobsScheduled) != 1 || len(s.jobQueue) != 1 {
+			if code != http.StatusRequestTimeout || atomic.LoadInt64(&s.jobsScheduled) != 0 || len(s.jobQueue) != 1 {
 				t.Fatalf("canceled upload: status=%d scheduled=%d queued=%d", code, atomic.LoadInt64(&s.jobsScheduled), len(s.jobQueue))
 			}
 		case <-time.After(5 * time.Second):
@@ -182,6 +185,9 @@ func testServiceUploadHandoff(t *testing.T, cancelWaiting bool) {
 		case <-time.After(5 * time.Second):
 			t.Fatal("admitted upload did not return")
 		}
+	}
+	if len(s.captureQueueSlots) != 0 || s.IsProcessing() {
+		t.Fatal("drained uploads retained queue slots or processing ownership")
 	}
 	check(http.StatusBadRequest, true)
 	s.stopProcessingAdmission()
