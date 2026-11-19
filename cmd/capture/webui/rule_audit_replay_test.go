@@ -200,6 +200,34 @@ func TestRuleAuditRejectsLinkedPreferredTrack(t *testing.T) {
 	}
 }
 
+func TestOrderedRuleAuditsShareScratch(t *testing.T) {
+	dir := t.TempDir()
+	payload := strings.Repeat("x", 1<<20)
+	rows := make([]proto.Message, 5)
+	for i := range rows {
+		rows[i] = &types.HTTP{Timestamp: int64(i + 1), URL: payload}
+	}
+	writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, rows)
+	scratch := &ruleOrderScratch{limit: 6 << 20}
+	checked := false
+	visit := func(types.AuditRecord) error { t.Fatal("refused replay reached evaluation"); return nil }
+	count, err := scanOrderedRuleAuditWithScratch(dir, "HTTP", nil, nil, func(types.AuditRecord) error {
+		if !checked {
+			checked = true
+			if n, err := scanOrderedRuleAuditWithScratch(dir, "HTTP", nil, nil, visit, scratch); n != 0 || !errors.Is(err, errRuleOrderScratchFull) {
+				t.Fatalf("competing replay returned %d, %v", n, err)
+			}
+		}
+		return nil
+	}, scratch)
+	if err != nil || count != len(rows) || !checked || scratch.used.Load() != 0 {
+		t.Fatalf("replayed %d rows, checked=%t, scratch=%d, err=%v", count, checked, scratch.used.Load(), err)
+	}
+	if n, err := scanOrderedRuleAuditWithScratch(dir, "HTTP", nil, nil, func(types.AuditRecord) error { return nil }, scratch); n != len(rows) || err != nil {
+		t.Fatalf("replay after cleanup returned %d, %v", n, err)
+	}
+}
+
 func TestOrderedRuleAuditPreservesRecordsAcrossSpill(t *testing.T) {
 	dir := t.TempDir()
 	payload := strings.Repeat("x", 1<<20)

@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"cmp"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"slices"
 	"strings"
+	"sync/atomic"
 
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/rules"
@@ -28,16 +30,45 @@ type ruleOrderRow struct {
 	digest       [sha256.Size]byte
 }
 
+var errRuleOrderScratchFull = errors.New("shared rule replay scratch budget exhausted")
+
+type ruleOrderScratch struct {
+	limit int64
+	used  atomic.Int64
+}
+
+func (b *ruleOrderScratch) reserve(n int64) bool {
+	for {
+		used := b.used.Load()
+		if n > b.limit-used {
+			return false
+		}
+		if b.used.CompareAndSwap(used, used+n) {
+			return true
+		}
+	}
+}
+
+var sharedRuleOrderScratch = ruleOrderScratch{limit: ruleOrderMaxBytes}
+
 func scanOrderedRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit func(types.AuditRecord) error) (int, error) {
+	return scanOrderedRuleAuditWithScratch(dir, auditType, stop, shutdown, visit, &sharedRuleOrderScratch)
+}
+
+func scanOrderedRuleAuditWithScratch(dir, auditType string, stop, shutdown <-chan struct{}, visit func(types.AuditRecord) error, scratch *ruleOrderScratch) (_ int, resultErr error) {
 	var rows []ruleOrderRow
 	var memory []byte
 	var file *os.File
-	var size int64
+	var size, reserved int64
 	defer func() {
 		if file != nil {
-			file.Close()
-			os.Remove(file.Name())
+			resultErr = errors.Join(resultErr, file.Close())
+			if err := os.Remove(file.Name()); err != nil && !errors.Is(err, os.ErrNotExist) {
+				resultErr = errors.Join(resultErr, fmt.Errorf("remove rule replay scratch: %w", err))
+				return
+			}
 		}
+		scratch.used.Add(-reserved)
 	}()
 	_, err := scanRuleAudit(dir, auditType, stop, shutdown, func(record types.AuditRecord) error {
 		message, ok := record.(proto.Message)
@@ -54,7 +85,17 @@ func scanOrderedRuleAudit(dir, auditType string, stop, shutdown <-chan struct{},
 		if int64(len(wire)) > ruleOrderMaxBytes-size {
 			return fmt.Errorf("rule replay ordering budget exceeded")
 		}
-		if file == nil && size+int64(len(wire)) > ruleOrderMemoryBytes {
+		if file != nil || size+int64(len(wire)) > ruleOrderMemoryBytes {
+			charge := int64(len(wire))
+			if file == nil {
+				charge += size
+			}
+			if !scratch.reserve(charge) {
+				return errRuleOrderScratchFull
+			}
+			reserved += charge
+		}
+		if file == nil && reserved > 0 {
 			file, err = os.CreateTemp("", "netcap-rule-order-*")
 			if err != nil {
 				return err
