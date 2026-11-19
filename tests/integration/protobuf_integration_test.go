@@ -476,9 +476,16 @@ func TestProtobufPCAPExtraction(t *testing.T) {
 
 			requireFixture(t, pcapPath)
 
-			outDir := t.TempDir()
+			defaultOut := t.TempDir()
+			if err := processWithCollector(pcapPath, defaultOut); err != nil {
+				t.Fatalf("default capture: %v", err)
+			}
+			if _, err := os.Stat(filepath.Join(defaultOut, "Protobuf.ncap.gz")); !os.IsNotExist(err) {
+				t.Fatalf("default capture produced a Protobuf audit or stat failed: %v", err)
+			}
 
-			if err := processWithCollector(pcapPath, outDir); err != nil {
+			outDir := t.TempDir()
+			if err := processWithCollectorInclude(pcapPath, outDir, "Protobuf"); err != nil {
 				t.Fatalf("Failed to process pcap: %v", err)
 			}
 
@@ -544,6 +551,10 @@ func TestProtobufPCAPExtraction(t *testing.T) {
 
 // processWithCollector runs the netcap collector on a PCAP file.
 func processWithCollector(pcapPath, outDir string) error {
+	return processWithCollectorInclude(pcapPath, outDir, "")
+}
+
+func processWithCollectorInclude(pcapPath, outDir, include string) error {
 	// Reset shared writer registry to ensure test isolation
 	netio.ResetWriterRegistry()
 
@@ -553,6 +564,7 @@ func processWithCollector(pcapPath, outDir string) error {
 	decoderCfg := decoderconfig.DefaultConfig.Clone()
 	decoderCfg.Out = outDir
 	decoderCfg.Source = pcapPath
+	decoderCfg.IncludeDecoders = include
 	cfg.DecoderConfig = decoderCfg
 	cfg.ReassembleConnections = true
 
