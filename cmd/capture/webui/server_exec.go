@@ -296,28 +296,6 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		log.Printf("[WebUI] Analysis completed for uploaded file %s (duration: %v)", job.InputFile, duration)
 	}
 
-	// List audit record files created
-	files, err := os.ReadDir(job.OutputDir)
-	if err == nil {
-		log.Printf("[Service] Files created in %s:", job.OutputDir)
-		for _, file := range files {
-			if strings.HasSuffix(file.Name(), ".ncap") || strings.HasSuffix(file.Name(), ".ncap.gz") {
-				info, _ := file.Info()
-				log.Printf("[Service]   - %s (size: %d bytes)", file.Name(), info.Size())
-			}
-		}
-	}
-
-	// Count and log extracted files
-	fileCount := s.countExtractedFiles(filesDir)
-	if fileCount > 0 {
-		if s.isServiceMode {
-			log.Printf("[Service] Extracted %d file(s) for session %s", fileCount, job.SessionID)
-		} else {
-			log.Printf("[WebUI] Extracted %d file(s) from %s", fileCount, job.InputFile)
-		}
-	}
-
 	s.finishCaptureJob(job, duration)
 }
 

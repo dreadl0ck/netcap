@@ -331,15 +331,23 @@ async def check_mixed_uploads(call, capture, archive, working_dir):
             await asyncio.sleep(0.5)
         completed = time.monotonic()
         manifest = await call("get_capture_evidence", args | {"fields": "status,admittedPackets,createdAt"})
-        timeline = await call("get_timeline_meta", args)
+        # A finished session can be evicted from the bounded timeline cache.
+        # A subsequent metadata read starts an asynchronous rebuild.
+        while True:
+            timeline = await call("get_timeline_meta", args)
+            if timeline["status"] != "indexing":
+                break
+            states[i] = "timeline indexing"
+            await asyncio.sleep(0.25)
         sessions = (await call("list_sessions", {"search": path.name}))["sessions"]
         owned, = (row for row in sessions if row["session_id"] == reply["session_id"])
         with Path(owned["input_file"]).open("rb") as retained:
             retained_digest = hashlib.file_digest(retained, "sha256").hexdigest()
         if (retained_digest != digest or manifest["status"] not in {"done", "complete"}
-                or int(manifest["admittedPackets"]) != packet_counts[i % 2] or not timeline["generation"]):
+                or int(manifest["admittedPackets"]) != packet_counts[i % 2]
+                or timeline["status"] != "ready" or not timeline.get("generation")):
             raise ValueError(f"capture evidence mismatch: {manifest}, expected packets={packet_counts[i % 2]}, "
-                             f"retained hash matches={retained_digest == digest}, generation={bool(timeline['generation'])}")
+                             f"retained hash matches={retained_digest == digest}, timeline={timeline}")
         capture_start = datetime.fromisoformat(manifest["createdAt"]).timestamp() - wall_offset
         if not first <= capture_start <= completed:
             raise ValueError(f"capture timestamp is outside the observed job lifetime: {manifest['createdAt']}")

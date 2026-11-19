@@ -1627,32 +1627,6 @@ func filterRegisteredDecoders(csv string) string {
 	return strings.Join(kept, ",")
 }
 
-// countExtractedFiles counts the number of files in the files directory
-func (s *Server) countExtractedFiles(filesDir string) int {
-	if filesDir == "" {
-		return 0
-	}
-
-	// Check if directory exists
-	if _, err := os.Stat(filesDir); os.IsNotExist(err) {
-		return 0
-	}
-
-	count := 0
-	filepath.Walk(filesDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil // Continue walking
-		}
-		// Count only files, not directories
-		if !info.IsDir() {
-			count++
-		}
-		return nil
-	})
-
-	return count
-}
-
 // executeRulesForJob executes all enabled rules for a completed analysis job
 func (s *Server) executeRulesForJob(job *AnalysisJob) (resultErr error) {
 	mode := "[Service]"
@@ -2086,12 +2060,6 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	}
 
 	log.Printf("[WebUI] Analysis completed for session %s (duration: %v)", job.SessionID, duration)
-
-	// Count and log extracted files
-	fileCount := s.countExtractedFiles(filesDir)
-	if fileCount > 0 {
-		log.Printf("[WebUI] Extracted %d file(s) for session %s", fileCount, job.SessionID)
-	}
 
 	// ==================================================================================
 	// CRITICAL: Memory cleanup after each job to prevent OOM in long-running service
