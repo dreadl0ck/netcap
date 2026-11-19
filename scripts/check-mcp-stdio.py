@@ -14,6 +14,7 @@ import socket
 import struct
 import time
 import zipfile
+from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -232,6 +233,7 @@ async def check_mixed_uploads(call, capture, archive, working_dir):
         paths.append((path, hashlib.sha256(wire).hexdigest()))
 
     start = time.monotonic()
+    wall_offset = time.time() - start
     states = {}
 
     async def upload(i, path, digest):
@@ -257,7 +259,7 @@ async def check_mixed_uploads(call, capture, archive, working_dir):
                 break
             await asyncio.sleep(0.5)
         completed = time.monotonic()
-        manifest = await call("get_capture_evidence", args | {"fields": "status,admittedPackets"})
+        manifest = await call("get_capture_evidence", args | {"fields": "status,admittedPackets,createdAt"})
         timeline = await call("get_timeline_meta", args)
         sessions = (await call("list_sessions", {"search": path.name}))["sessions"]
         owned, = (row for row in sessions if row["session_id"] == reply["session_id"])
@@ -267,7 +269,10 @@ async def check_mixed_uploads(call, capture, archive, working_dir):
                 or int(manifest["admittedPackets"]) != packet_counts[i % 2] or not timeline["generation"]):
             raise ValueError(f"capture evidence mismatch: {manifest}, expected packets={packet_counts[i % 2]}, "
                              f"retained hash matches={retained_digest == digest}, generation={bool(timeline['generation'])}")
-        return (reply["session_id"], first, admitted, completed, rejected)
+        capture_start = datetime.fromisoformat(manifest["createdAt"]).timestamp() - wall_offset
+        if not first <= capture_start <= completed:
+            raise ValueError(f"capture timestamp is outside the observed job lifetime: {manifest['createdAt']}")
+        return (reply["session_id"], first, admitted, completed, rejected, capture_start)
 
     try:
         async with asyncio.timeout(90):
@@ -286,6 +291,8 @@ async def check_mixed_uploads(call, capture, archive, working_dir):
         "http_503": sum(row[4] for row in rows),
         "small_first_to_complete_s": [round(bound(row[3] - row[1] for row in observed_small), 3) for bound in (min, max)],
         "small_accept_to_complete_s": [round(bound(row[3] - row[2] for row in observed_small), 3) for bound in (min, max)],
+        "small_first_to_capture_start_s": [round(bound(row[5] - row[1] for row in observed_small), 3) for bound in (min, max)],
+        "small_capture_start_to_complete_s": [round(bound(row[3] - row[5] for row in observed_small), 3) for bound in (min, max)],
     }
 
 
