@@ -349,7 +349,16 @@ async def check_mixed_uploads(call, capture, archive, working_dir):
     if len({row[0] for row in rows}) != len(paths):
         raise ValueError("mixed uploads did not create distinct sessions")
     observed_small = rows[1::2]
+    # Capture can start before the ingest reply reaches the client.
+    jobs = [
+        {"upload": i, "input_bytes": len((large, small)[i % 2]), "packets": packet_counts[i % 2],
+         "first_attempt_s": round(first - start, 3), "ingest_reply_s": round(admitted - start, 3),
+         "manifest_created_s": round(created - start, 3), "completion_observed_s": round(completed - start, 3),
+         "http_503": rejected}
+        for i, (_, first, admitted, completed, rejected, created) in enumerate(rows)
+    ]
     return {
+        "jobs": jobs,
         "completed": len(rows), "first_attempt_window_s": round(rows[-1][1] - rows[0][1], 3),
         "completed_during_arrivals": sum(row[3] < rows[-1][1] for row in rows),
         "http_503": sum(row[4] for row in rows),
