@@ -917,6 +917,12 @@ func TestAnalysisCompletionWaitsForTimelineGeneration(t *testing.T) {
 }
 
 func TestAnalysisTimelineWaitsForCacheCapacity(t *testing.T) {
+	t.Run("resume", func(t *testing.T) { testAnalysisTimelineCacheCapacity(t, false) })
+	t.Run("shutdown", func(t *testing.T) { testAnalysisTimelineCacheCapacity(t, true) })
+}
+
+func testAnalysisTimelineCacheCapacity(t *testing.T, shutdown bool) {
+	t.Helper()
 	fixture := func() string {
 		dir := t.TempDir()
 		writeTimelineAuditFile(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{&types.HTTP{Method: "GET"}})
@@ -950,15 +956,20 @@ func TestAnalysisTimelineWaitsForCacheCapacity(t *testing.T) {
 		defer timelineCache.Unlock()
 		return timelineCache.capacityChanged != nil
 	})
-	release()
+	var want error
+	if shutdown {
+		close(s.shutdownChan)
+		want = errAnalysisStopping
+	} else {
+		release()
+	}
 	select {
 	case err := <-done:
-		if err != nil {
-			t.Fatal(err)
+		if err != want {
+			t.Fatalf("timeline admission: got %v, want %v", err, want)
 		}
 	case <-time.After(5 * time.Second):
-		close(s.shutdownChan)
-		t.Fatal("analysis did not resume when cache capacity returned")
+		t.Fatal("timeline admission did not finish")
 	}
 }
 
