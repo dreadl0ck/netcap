@@ -6,10 +6,15 @@ import (
 	"fmt"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/aggregate"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 )
 
 func TestFirstSourceFragmentChargesCopyBeforeAdmission(t *testing.T) {
@@ -164,6 +169,42 @@ func TestStoredTCPFragmentMetadata(t *testing.T) {
 	for i := range wire {
 		if _, err := decodeTCPFragment(wire[:i]); err == nil {
 			t.Fatalf("accepted truncated metadata at %d bytes", i)
+		}
+	}
+}
+
+func TestStoredTCPFragmentPreservesCaptureContext(t *testing.T) {
+	stamp := time.Unix(1700000000, 123)
+	link := gopacket.NewFlow(layers.EndpointMAC, []byte{2, 0, 0, 0, 0, 1}, []byte{2, 0, 0, 0, 0, 2})
+	network := gopacket.NewFlow(layers.EndpointIPv4, []byte{192, 0, 2, 1}, []byte{198, 51, 100, 1})
+	transport := gopacket.NewFlow(layers.EndpointTCPPort, []byte{0xa4, 0x10}, []byte{0, 80})
+	const scope = "if:7/vlan:42"
+	capture := gopacket.CaptureInfo{Timestamp: stamp, InterfaceIndex: 3, AncillaryData: []any{
+		packetview.CaptureInterface(7),
+		&packetview.Context{Scope: scope, Packets: []*types.CapturePacketRef{{Ordinal: 19, Timestamp: stamp.UnixNano(), InterfaceIndex: 3}}},
+	}}
+	data := &core.StreamData{RawData: []byte("fixture"), CaptureInformation: capture, Net: network, Trans: transport,
+		AssemblerContext: &context{CaptureInfo: capture, link: link, scope: scope}}
+	wire, err := encodeTCPFragment(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := decodeTCPFragment(wire)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Net != network || got.Trans != transport || !bytes.Equal(got.Raw(), data.Raw()) {
+		t.Fatal("retained fragment changed endpoints or payload")
+	}
+	ctx, ok := got.Context().(*context)
+	if !ok || ctx.GetLinkFlow() != link || ctx.scope != scope {
+		t.Fatal("retained fragment lost link flow or scope")
+	}
+	for _, ci := range []gopacket.CaptureInfo{got.CaptureInfo(), ctx.GetCaptureInfo()} {
+		view := packetview.FromCapture(ci)
+		if !ci.Timestamp.Equal(stamp) || ci.InterfaceIndex != 3 || packetview.LogicalInterface(ci) != 7 || view == nil ||
+			view.Scope != scope || len(view.Packets) != 1 || view.Packets[0].Ordinal != 19 || view.Packets[0].Timestamp != stamp.UnixNano() {
+			t.Fatalf("retained fragment lost capture provenance: %+v", ci)
 		}
 	}
 }
