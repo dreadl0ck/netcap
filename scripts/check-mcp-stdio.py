@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["mcp==1.26.0", "jsonschema==4.26.0"]
+# dependencies = ["mcp==1.26.0", "jsonschema==4.26.0", "httpx==0.28.1"]
 # ///
 
 import argparse
@@ -10,6 +10,7 @@ import gzip
 import hashlib
 import io
 import json
+import secrets
 import socket
 import struct
 import time
@@ -18,9 +19,11 @@ from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import httpx
 from jsonschema import validate
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from mcp.client.streamable_http import streamable_http_client
 
 
 GLOBAL_READS = """
@@ -444,6 +447,82 @@ async def check_partial_download(call, capture):
             "extraction_state": report["state"]}
 
 
+async def check_http_alerts(binary, capture, data_dir):
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+    token = secrets.token_hex(32)
+    env = dict.fromkeys(("HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME"), data_dir)
+    process = await asyncio.create_subprocess_exec(
+        str(binary), "capture", "--service", "--service-data-dir", data_dir,
+        "--http", f"127.0.0.1:{port}", "--quiet", cwd=data_dir,
+        env=env | {"NETCAP_MCP_ADMIN_TOKEN": token}, stdout=asyncio.subprocess.DEVNULL,
+    )
+    try:
+        async with asyncio.timeout(30):
+            while True:
+                if process.returncode is not None:
+                    raise ValueError(f"capture server exited: {process.returncode}")
+                try:
+                    _, writer = await asyncio.open_connection("127.0.0.1", port)
+                except ConnectionRefusedError:
+                    await asyncio.sleep(0.1)
+                else:
+                    writer.close()
+                    await writer.wait_closed()
+                    break
+        async with httpx.AsyncClient(headers={"Authorization": f"Bearer {token}"}, trust_env=False) as http:
+            async with streamable_http_client(f"http://127.0.0.1:{port}/mcp", http_client=http) as (reader, writer, _):
+                async with ClientSession(reader, writer) as client:
+                    await client.initialize()
+                    page = await client.list_tools()
+                    tools = {tool.name: tool for tool in page.tools}
+                    while page.nextCursor:
+                        page = await client.list_tools(cursor=page.nextCursor)
+                        tools.update((tool.name, tool) for tool in page.tools)
+                    successes = 0
+
+                    async def call(name, arguments):
+                        nonlocal successes
+                        response = await checked_call(client, tools[name], arguments)
+                        successes += 1
+                        return response
+
+                    sid = (await call("ingest_pcap", {"path": str(capture)}))["session_id"]
+                    args = {"session_id": sid}
+                    ready = await call("wait_for_session", args | {"timeout_seconds": 20})
+                    if not ready["completed"]:
+                        raise ValueError(f"HTTP fixture session did not complete: {ready}")
+                    root = Path(data_dir).resolve() / "results"
+                    directory = (root / sid).resolve()
+                    if (directory.parent != root or directory != Path(ready["capture_stat"]["outputDir"]).resolve()
+                            or not directory.is_dir()):
+                        raise ValueError("HTTP fixture did not use its isolated session directory")
+                    await check_large_alert_views(client, call, directory, args)
+                    print(json.dumps({"transport": "streamable-http", "successes": successes,
+                                      "synthetic_alert_rows": 27_152, "stale_generation_errors": 2}))
+    finally:
+        if process.returncode is None:
+            process.terminate()
+            try:
+                await asyncio.wait_for(process.wait(), 10)
+            except TimeoutError:
+                process.kill()
+                await process.wait()
+
+
+async def checked_call(client, tool, arguments):
+    validate(arguments, tool.inputSchema)
+    async with asyncio.timeout(30):
+        result = await client.call_tool(tool.name, arguments)
+    if result.isError:
+        raise ValueError(result.content[0].text if result.content else "tool returned an error")
+    if tool.outputSchema is None or not isinstance(result.structuredContent, dict):
+        raise ValueError("success lacks an advertised structured object contract")
+    validate(result.structuredContent, tool.outputSchema)
+    return result.structuredContent
+
+
 async def check(binary, capture, http_capture, data_dir, mixed_upload_archive=None, full_fanout=False, auxiliary=False, partial_download=None):
     params = StdioServerParameters(command=str(binary), args=[
         "mcp", "--bind", "127.0.0.1:0", "--quiet", "--pcap", str(capture),
@@ -467,18 +546,10 @@ async def check(binary, capture, http_capture, data_dir, mixed_upload_archive=No
 
         async def call(name, arguments, session=client):
             nonlocal successes
-            tool = tools[name]
-            validate(arguments, tool.inputSchema)
-            async with asyncio.timeout(30):
-                result = await session.call_tool(name, arguments)
-            if result.isError:
-                raise ValueError(result.content[0].text if result.content else "tool returned an error")
-            if tool.outputSchema is None or not isinstance(result.structuredContent, dict):
-                raise ValueError("success lacks an advertised structured object contract")
-            validate(result.structuredContent, tool.outputSchema)
+            result = await checked_call(session, tools[name], arguments)
             covered.add(name)
             successes += 1
-            return result.structuredContent
+            return result
 
         async with asyncio.timeout(30):
             while True:
@@ -1080,18 +1151,25 @@ rules:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Check Netcap's stdio tool contracts on the mDNS and HTTP fixtures.")
+    parser = argparse.ArgumentParser(description="Check Netcap's MCP tool contracts on the mDNS and HTTP fixtures.")
     parser.add_argument("binary", type=Path)
     parser.add_argument("--mixed-upload-archive", type=Path, help="Run the paced mixed-upload test using the pinned synthetic archive.")
     parser.add_argument("--full-fanout", action="store_true", help="Use one full 15,000-packet upload followed by three small uploads.")
     parser.add_argument("--auxiliary-capture", action="store_true", help="Enable the auxiliary helper in the mixed-upload probe.")
     parser.add_argument("--partial-download", type=Path, help="Verify the pinned download-fast capture through MCP.")
+    parser.add_argument("--http-alerts", action="store_true", help="Run only the large-alert check through the mounted Streamable HTTP endpoint.")
     args = parser.parse_args()
     if (args.full_fanout or args.auxiliary_capture) and args.mixed_upload_archive is None:
         parser.error("mixed-upload options require --mixed-upload-archive")
     repo = Path(__file__).resolve().parents[1]
+    mdns = repo / "internal/collector/testdata/voip/mdns.pcap"
     with TemporaryDirectory(prefix="netcap-mcp-contracts-") as data_dir:
-        passed = asyncio.run(check(args.binary.resolve(), repo / "internal/collector/testdata/voip/mdns.pcap",
+        if args.http_alerts:
+            if args.mixed_upload_archive or args.partial_download:
+                parser.error("--http-alerts cannot be combined with stdio probes")
+            asyncio.run(check_http_alerts(args.binary.resolve(), mdns, data_dir))
+            raise SystemExit(0)
+        passed = asyncio.run(check(args.binary.resolve(), mdns,
                                    repo / "testdata/recheck-v0168/base_http.pcap", data_dir, args.mixed_upload_archive,
                                    args.full_fanout, args.auxiliary_capture, args.partial_download))
         raise SystemExit(0 if passed else 1)

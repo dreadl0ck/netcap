@@ -127,6 +127,8 @@ jobs:
           "$RUNNER_TEMP/mcp-check/bin/pip" install uv==0.9.13
           go build -tags nodpi,noyara,nomagika -o "$RUNNER_TEMP/net" ./cmd/net
           "$RUNNER_TEMP/mcp-check/bin/uv" run --script scripts/check-mcp-stdio.py "$RUNNER_TEMP/net"
+      - name: Verify large-alert contracts over MCP Streamable HTTP
+        run: '"$RUNNER_TEMP/mcp-check/bin/uv" run --script scripts/check-mcp-stdio.py "$RUNNER_TEMP/net" --http-alerts'
       - name: Verify resource ownership and reader races
         run: >-
           go test -race -tags nodpi,noyara,nomagika
