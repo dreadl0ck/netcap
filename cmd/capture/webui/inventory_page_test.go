@@ -377,13 +377,34 @@ func TestRawAlertPageSpillPreservesDuplicateContinuation(t *testing.T) {
 	url := "/api/alerts?mcpPage=true&pageLimit=2&pageOffset=2&pageGeneration=" + page.Generation
 	memory, spilled := httptest.NewRecorder(), httptest.NewRecorder()
 	s.handleAlerts(memory, httptest.NewRequest(http.MethodGet, url, nil))
-	s.serveRawAlertPageWithBudget(spilled, httptest.NewRequest(http.MethodGet, url, nil), path, 0)
+	s.serveRawAlertPageWithBudget(spilled, httptest.NewRequest(http.MethodGet, url, nil), path, 0, alertPageDiskPages)
 	if memory.Code != http.StatusOK || spilled.Code != http.StatusOK || memory.Body.String() != spilled.Body.String() {
 		t.Fatalf("continuation differs: memory=%d %s; spill=%d %s", memory.Code, memory.Body, spilled.Code, spilled.Body)
 	}
 	page.Alerts = nil
 	if err := json.Unmarshal(spilled.Body.Bytes(), &page); err != nil || page.TotalCount != 3 || len(page.Alerts) != 1 || page.Alerts[0].Timestamp != 2 {
 		t.Fatalf("duplicate lost at page boundary: %s (%v)", spilled.Body, err)
+	}
+}
+
+func TestRawAlertPageRejectsFullScratchWithoutPartialResults(t *testing.T) {
+	path := writeTimelineAuditFile(t, t.TempDir(), "Alert", types.Type_NC_Alert, []proto.Message{
+		&types.Alert{RuleName: "first", Timestamp: 1_000_000},
+		&types.Alert{RuleName: "second", Timestamp: 2_000_000, Description: strings.Repeat("x", 64<<10)},
+	})
+	s := &Server{}
+	const query = "/api/alerts?mcpPage=true&pageLimit=1"
+	w := httptest.NewRecorder()
+	s.serveRawAlertPageWithBudget(w, httptest.NewRequest(http.MethodGet, query, nil), path, 0, 8)
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil || w.Code != http.StatusInsufficientStorage ||
+		len(body) != 1 || string(body["error"]) != `"temporary alert page storage is full"` {
+		t.Fatalf("unexpected scratch exhaustion response: %d %s (%v)", w.Code, w.Body, err)
+	}
+	retry := httptest.NewRecorder()
+	s.serveRawAlertPageWithBudget(retry, httptest.NewRequest(http.MethodGet, query, nil), path, 0, alertPageDiskPages)
+	if retry.Code != http.StatusOK || !strings.Contains(retry.Body.String(), `"totalCount":2`) {
+		t.Fatalf("retry failed: %d %s", retry.Code, retry.Body)
 	}
 }
 

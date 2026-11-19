@@ -18,7 +18,10 @@ import (
 	sqlite3 "modernc.org/sqlite/lib"
 )
 
-const alertPageMemoryBytes = 1 << 20
+const (
+	alertPageMemoryBytes = 1 << 20
+	alertPageDiskPages   = 131072
+)
 
 type alertPageSpill struct {
 	dir    string
@@ -42,7 +45,7 @@ func (s *alertPageSpill) close() {
 	}
 }
 
-func (s *alertPageSpill) open(ctx context.Context) error {
+func (s *alertPageSpill) open(ctx context.Context, diskPages int) error {
 	dir, err := os.MkdirTemp("", "netcap-alert-page-")
 	if err != nil {
 		return err
@@ -64,7 +67,7 @@ func (s *alertPageSpill) open(ctx context.Context) error {
 	db.SetMaxOpenConns(1)
 	for _, query := range []string{
 		"PRAGMA page_size=4096",
-		"PRAGMA max_page_count=131072",
+		fmt.Sprintf("PRAGMA max_page_count=%d", diskPages),
 		"PRAGMA cache_size=-2048",
 		"PRAGMA mmap_size=0",
 		"PRAGMA journal_mode=OFF",
@@ -84,10 +87,10 @@ func (s *alertPageSpill) open(ctx context.Context) error {
 }
 
 func (s *Server) serveRawAlertPage(w http.ResponseWriter, r *http.Request, auditPath string) {
-	s.serveRawAlertPageWithBudget(w, r, auditPath, alertPageMemoryBytes)
+	s.serveRawAlertPageWithBudget(w, r, auditPath, alertPageMemoryBytes, alertPageDiskPages)
 }
 
-func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Request, auditPath string, bufferBudget int) {
+func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Request, auditPath string, bufferBudget, diskPages int) {
 	options, err := parseCollectionPage(r)
 	if err != nil {
 		RespondJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
@@ -133,7 +136,7 @@ func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Requ
 				bufferBudget -= charge
 				return nil
 			}
-			if err := spill.open(ctx); err != nil {
+			if err := spill.open(ctx, diskPages); err != nil {
 				return err
 			}
 			for _, body := range buffered {
