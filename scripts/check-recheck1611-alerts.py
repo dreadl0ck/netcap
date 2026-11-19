@@ -16,11 +16,13 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 
-async def replay(binary, capture):
+async def replay(binary, capture, workers):
     with TemporaryDirectory(prefix="netcap-alert-replay-") as data:
         params = StdioServerParameters(command=str(binary), args=[
             "mcp", "--bind", "127.0.0.1:0", "--quiet", "--data-dir", data,
-        ], env={key: data for key in ("HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME")})
+        ], env={key: data for key in ("HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME")} | {
+            "NC_WORKERS": str(workers), "NC_STREAM_WORKERS": str(workers),
+        })
         async with stdio_client(params) as (reader, writer), ClientSession(reader, writer) as client:
             await client.initialize()
 
@@ -35,6 +37,9 @@ async def replay(binary, capture):
             args = {"session_id": uploaded["session_id"]}
             if not (await call("wait_for_session", args | {"timeout_seconds": 45}))["completed"]:
                 raise ValueError("fixture did not finish")
+            capture_evidence = await call("get_capture_evidence", args | {"fields": "config,status"})
+            if capture_evidence["config"]["workers"] != workers or capture_evidence["status"] not in {"done", "complete"}:
+                raise ValueError(f"unexpected capture evidence for {workers} workers: {capture_evidence}")
             http, http_total = [], None
             for _ in range(128):
                 response = await call("query_audit_records", args | {"type": "HTTP", "limit": 100, "offset": len(http)})
@@ -72,20 +77,21 @@ async def replay(binary, capture):
 
 
 async def check(binary, capture):
-    baseline_http, baseline = await replay(binary, capture)
-    print(json.dumps({"run": 1, "alerts": baseline.total(), "http_rows": len(baseline_http)}), flush=True)
+    baseline_http, baseline = await replay(binary, capture, 1)
+    print(json.dumps({"run": 1, "workers": 1, "alerts": baseline.total(), "http_rows": len(baseline_http)}), flush=True)
     differs = False
-    for run in range(2, 5):
-        current_http, current = await replay(binary, capture)
+    for run, workers in enumerate((4, 1, 4), 2):
+        current_http, current = await replay(binary, capture, workers)
         removed, added = (baseline - current).total(), (current - baseline).total()
-        differs |= bool(removed or added)
+        same_http = Counter(baseline_http) == Counter(current_http)
+        differs |= bool(removed or added or not same_http)
         old, new = ([json.loads(row) for row in values.elements()] for values in (baseline, current))
         keys = sorted({key for row in old + new for key in row})
         fields = [key for key in keys if Counter(json.dumps(row.get(key), sort_keys=True) for row in old)
                   != Counter(json.dumps(row.get(key), sort_keys=True) for row in new)]
-        print(json.dumps({"run": run, "alerts": current.total(), "removed": removed, "added": added,
+        print(json.dumps({"run": run, "workers": workers, "alerts": current.total(), "removed": removed, "added": added,
                           "changed_field_multisets": fields, "http_rows": len(current_http),
-                          "http_same_multiset": Counter(baseline_http) == Counter(current_http),
+                          "http_same_multiset": same_http,
                           "http_same_order": baseline_http == current_http}), flush=True)
     return not differs
 
