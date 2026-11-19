@@ -219,7 +219,7 @@ func TestWaitForSessionSurfacesError(t *testing.T) {
 		fmt.Fprint(w, `{"isProcessing":true}`)
 	})
 	mux.HandleFunc("/api/files/input", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `[{"path":"/data/x.pcap","isCompleted":false,"error":"corrupt pcap","errorLogPath":"/var/log/x.err"}]`)
+		fmt.Fprint(w, `[{"path":"/data/x.pcap","isCompleted":false,"errorMessage":"corrupt pcap","errorLogPath":"/var/log/x.err"}]`)
 	})
 	ts := httptest.NewServer(mux)
 	defer ts.Close()

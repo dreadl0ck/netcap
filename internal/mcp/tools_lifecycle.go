@@ -166,7 +166,10 @@ func (s *Server) handleWaitForSession(ctx context.Context, req mcplib.CallToolRe
 			return result, nil
 		}
 
-		completed := deriveCompleted(ref, filesBody, statusBody)
+		row := findSessionRow(ref, filesBody)
+		errMsg, logPath, fStatus, _ := sessionRowError(row)
+		completed, _ := row["isCompleted"].(bool)
+		completed = completed && errMsg == ""
 		if completed {
 			statsBody, sErr := client.GetContext(waitCtx, "/api/audit-stats", q)
 			if sErr != nil {
@@ -181,22 +184,17 @@ func (s *Server) handleWaitForSession(ctx context.Context, req mcplib.CallToolRe
 				"audit_stats":  json.RawMessage(statsBody),
 				"capture_stat": json.RawMessage(statusBody),
 			}
-			if errMsg, logPath, fStatus, found := extractSessionError(ref, filesBody); found {
-				if errMsg != "" {
-					out["error"] = errMsg
-				}
-				if logPath != "" {
-					out["error_log_path"] = logPath
-				}
-				if fStatus != "" {
-					out["status"] = fStatus
-				}
+			if logPath != "" {
+				out["error_log_path"] = logPath
+			}
+			if fStatus != "" {
+				out["status"] = fStatus
 			}
 			return jsonResult(out), nil
 		}
 
 		// Surface a failed status quickly without waiting for the deadline.
-		if errMsg, logPath, fStatus, found := extractSessionError(ref, filesBody); found && errMsg != "" {
+		if errMsg != "" {
 			out := map[string]any{
 				"session_id":     ref.ID,
 				"completed":      false,

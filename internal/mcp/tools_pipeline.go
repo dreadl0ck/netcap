@@ -420,7 +420,7 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 	// audit-stats accepts ?scope=<session id> to scope per-session
 	// without mutating the global currentSession. /api/status and
 	// /api/files/input are global; /api/files/input is filtered locally
-	// by deriveCompleted / extractSessionError below.
+	// by findSessionRow below.
 	statsQ := ref.sessionQueryParams()
 	stats, sErr := client.Get("/api/audit-stats", statsQ)
 	if sErr != nil {
@@ -431,7 +431,10 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 		return errResult(filesErr), nil
 	}
 
-	completed := deriveCompleted(ref, files, nil)
+	row := findSessionRow(ref, files)
+	errMsg, errLog, fStatus, found := sessionRowError(row)
+	completed, _ := row["isCompleted"].(bool)
+	completed = completed && errMsg == ""
 	if completed {
 		stats, sErr = client.Get("/api/audit-stats", statsQ)
 		if sErr != nil {
@@ -469,7 +472,7 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 	// (service mode). The upstream FileInfo JSON has an optional `error`
 	// (string pointer) plus `errorLogPath`; in service mode the session
 	// envelope also has `errorMessage` and `status`.
-	if errMsg, errLog, fStatus, found := extractSessionError(ref, files); found {
+	if found {
 		if errMsg != "" {
 			out["error"] = errMsg
 		}
@@ -493,12 +496,16 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 // it carried an error). For local mode we match by `path`; for service
 // mode by `sessionId`.
 func extractSessionError(ref SessionRef, files json.RawMessage) (msg, logPath, status string, found bool) {
+	return sessionRowError(findSessionRow(ref, files))
+}
+
+func findSessionRow(ref SessionRef, files json.RawMessage) map[string]any {
 	if len(files) == 0 {
-		return "", "", "", false
+		return nil
 	}
 	var rows []map[string]any
 	if err := json.Unmarshal(files, &rows); err != nil {
-		return "", "", "", false
+		return nil
 	}
 	for _, row := range rows {
 		var key string
@@ -510,66 +517,31 @@ func extractSessionError(ref SessionRef, files json.RawMessage) (msg, logPath, s
 				key, _ = row["id"].(string)
 			}
 		}
-		if key != ref.ID {
-			continue
+		if key == ref.ID {
+			return row
 		}
-		found = true
-		// `error` may be a string (service envelope) or a pointer-to-
-		// string after JSON round-trip; both come through as string here.
-		if v, ok := row["error"].(string); ok {
-			msg = v
-		}
-		if v, ok := row["errorLogPath"].(string); ok {
-			logPath = v
-		}
-		if v, ok := row["status"].(string); ok {
-			status = v
-		}
-		if strings.EqualFold(status, "failed") && msg == "" {
-			msg = "Analysis failed"
-		}
-		break
 	}
-	return msg, logPath, status, found
+	return nil
+}
+
+func sessionRowError(row map[string]any) (msg, logPath, status string, found bool) {
+	msg = firstString(row, "error", "errorMessage")
+	logPath, _ = row["errorLogPath"].(string)
+	status, _ = row["status"].(string)
+	if strings.EqualFold(status, "failed") && msg == "" {
+		msg = "Analysis failed"
+	}
+	return msg, logPath, status, row != nil
 }
 
 // deriveCompleted reads /api/files/input + /api/status to figure out
 // whether the session is ready for analytical queries. Best-effort:
 // returns false when uncertain.
 func deriveCompleted(ref SessionRef, files, _ json.RawMessage) bool {
-	if len(files) > 0 {
-		var fl []map[string]any
-		if err := json.Unmarshal(files, &fl); err == nil {
-			for _, f := range fl {
-				if ref.isPath {
-					if p, _ := f["path"].(string); p == ref.ID {
-						if firstString(f, "error", "errorMessage") != "" || strings.EqualFold(firstString(f, "status"), "failed") {
-							return false
-						}
-						b, _ := f["isCompleted"].(bool)
-						return b
-					}
-				} else {
-					sid, _ := f["sessionId"].(string)
-					if sid == "" {
-						sid, _ = f["id"].(string)
-					}
-					if sid == ref.ID {
-						if firstString(f, "error", "errorMessage") != "" || strings.EqualFold(firstString(f, "status"), "failed") {
-							return false
-						}
-						b, _ := f["isCompleted"].(bool)
-						return b
-					}
-				}
-			}
-			// Idle does not imply success for failed, unknown, or unqueued files.
-			if len(fl) > 0 {
-				return false
-			}
-		}
-	}
-	return false
+	row := findSessionRow(ref, files)
+	msg, _, _, _ := sessionRowError(row)
+	completed, _ := row["isCompleted"].(bool)
+	return completed && msg == ""
 }
 
 func (s *Server) handleListDecoders(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
