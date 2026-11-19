@@ -12,6 +12,29 @@ import (
 	"github.com/dreadl0ck/netcap/internal/evidence"
 )
 
+func TestAuxiliaryInputMatchesAdmittedCapture(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "capture.pcap")
+	write := func(contents string) {
+		t.Helper()
+		if err := os.WriteFile(path, []byte(contents), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write(strings.Repeat("a", smallCaptureBytes))
+	job := &AnalysisJob{InputFile: path, reproductionSource: snapshotReproductionSource(path, nil, nil)}
+	if !auxiliaryInputMatchesSnapshot(job, nil) {
+		t.Fatal("unchanged input at the auxiliary limit was refused")
+	}
+	write(strings.Repeat("b", smallCaptureBytes))
+	if auxiliaryInputMatchesSnapshot(job, nil) {
+		t.Fatal("accepted a different capture of the same size")
+	}
+	write(strings.Repeat("a", smallCaptureBytes+1))
+	if auxiliaryInputMatchesSnapshot(job, nil) {
+		t.Fatal("accepted an input above the auxiliary limit")
+	}
+}
+
 func TestReproductionMetadataOmitsRawSecretsAndRecordsAttachmentOutcomes(t *testing.T) {
 	dir := t.TempDir()
 	secret := "RAW_SECRET_SENTINEL"

@@ -229,6 +229,14 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	}
 
 	// Start the command
+	if job.captureLane == captureAuxiliary && !auxiliaryInputMatchesSnapshot(job, s.shutdownChan) {
+		message := "Auxiliary capture input no longer matches its admitted size and digest"
+		if ruleReplayCanceled(s.shutdownChan, nil) {
+			message = "Analysis canceled during shutdown"
+		}
+		s.recordAnalysisFailure(job, message, "")
+		return
+	}
 	startTime := time.Now()
 	if err = s.startCaptureProcess(cmd, job.captureLane); err != nil {
 		if err == errAnalysisStopping {

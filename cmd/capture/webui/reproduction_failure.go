@@ -39,11 +39,15 @@ func priorReproductionManifest(ctx context.Context, dir string) string {
 
 // Capture the admitted bytes before a helper can fail or the input can change.
 func snapshotReproductionSource(path string, stop, shutdown <-chan struct{}) reproductionSource {
+	return snapshotBoundedReproductionSource(path, -1, stop, shutdown)
+}
+
+func snapshotBoundedReproductionSource(path string, limit int64, stop, shutdown <-chan struct{}) reproductionSource {
 	if ruleReplayCanceled(stop, shutdown) {
 		return reproductionSource{}
 	}
 	before, err := os.Lstat(path)
-	if err != nil || !before.Mode().IsRegular() {
+	if err != nil || !before.Mode().IsRegular() || (limit >= 0 && before.Size() > limit) {
 		return reproductionSource{}
 	}
 	f, err := os.Open(path)
@@ -52,7 +56,7 @@ func snapshotReproductionSource(path string, stop, shutdown <-chan struct{}) rep
 	}
 	defer f.Close()
 	opened, err := f.Stat()
-	if err != nil || !os.SameFile(before, opened) || !opened.Mode().IsRegular() {
+	if err != nil || !os.SameFile(before, opened) || !opened.Mode().IsRegular() || (limit >= 0 && opened.Size() > limit) {
 		return reproductionSource{}
 	}
 	source := hashReproductionInput(f, opened.Size(), stop, shutdown)
@@ -61,6 +65,14 @@ func snapshotReproductionSource(path string, stop, shutdown <-chan struct{}) rep
 		return reproductionSource{}
 	}
 	return source
+}
+
+func auxiliaryInputMatchesSnapshot(job *AnalysisJob, shutdown <-chan struct{}) bool {
+	if !smallCapture(job) {
+		return false
+	}
+	source := snapshotBoundedReproductionSource(job.InputFile, smallCaptureBytes, nil, shutdown)
+	return source.Bytes == job.reproductionSource.Bytes && source.SHA256 == job.reproductionSource.SHA256
 }
 
 func hashReproductionInput(input io.Reader, size int64, stop, shutdown <-chan struct{}) reproductionSource {
