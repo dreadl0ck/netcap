@@ -222,34 +222,16 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 
 	// Start the command
 	startTime := time.Now()
-	s.currentCmdMutex.Lock()
-	s.mu.RLock()
-	stopping := s.processingStopping
-	s.mu.RUnlock()
-	if stopping {
-		s.currentCmdMutex.Unlock()
-		s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
-		return
-	}
-	err = cmd.Start()
-	if err != nil {
-		s.currentCmdMutex.Unlock()
+	if err = s.startCaptureProcess(cmd); err != nil {
+		if err == errAnalysisStopping {
+			s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
+			return
+		}
 		log.Printf("[Service] Failed to start command for session %s: %v", job.SessionID, err)
 		s.recordAnalysisFailure(job, fmt.Sprintf("Failed to start analysis: %v", err), "")
-
 		return
 	}
-
-	// Store the running process for potential cleanup during shutdown
-	s.currentProc = cmd.Process
-	s.currentCmdMutex.Unlock()
-	defer func() {
-		s.currentCmdMutex.Lock()
-		if s.currentProc == cmd.Process {
-			s.currentProc = nil
-		}
-		s.currentCmdMutex.Unlock()
-	}()
+	defer s.releaseCaptureProcess(cmd.Process)
 
 	// Wait for command to complete
 	err = cmd.Wait()

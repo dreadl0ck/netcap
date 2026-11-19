@@ -30,33 +30,44 @@ func (s *Server) startLiveHelper(ctx context.Context, args []string, out string)
 	cmd.Stderr = log
 	cmd.Cancel = func() error { return cmd.Process.Signal(os.Interrupt) }
 	cmd.WaitDelay = 5 * time.Second
-	s.currentCmdMutex.Lock()
-	s.mu.RLock()
-	stopping := s.processingStopping
-	s.mu.RUnlock()
-	if stopping {
-		s.currentCmdMutex.Unlock()
-		log.Close()
-		return nil, fmt.Errorf("capture server is stopping")
-	}
-	if err := cmd.Start(); err != nil {
-		s.currentCmdMutex.Unlock()
+	if err := s.startCaptureProcess(cmd); err != nil {
 		log.Close()
 		return nil, err
 	}
-	s.currentProc = cmd.Process
-	s.currentCmdMutex.Unlock()
 	return func() error {
 		defer log.Close()
 		err := cmd.Wait()
-		s.currentCmdMutex.Lock()
-		if s.currentProc == cmd.Process {
-			s.currentProc = nil
-		}
-		s.currentCmdMutex.Unlock()
+		s.releaseCaptureProcess(cmd.Process)
 		if ctx.Err() != nil && cmd.ProcessState != nil && cmd.ProcessState.Success() {
 			return nil
 		}
 		return err
 	}, nil
+}
+
+func (s *Server) startCaptureProcess(cmd *exec.Cmd) error {
+	s.currentCmdMutex.Lock()
+	defer s.currentCmdMutex.Unlock()
+	s.mu.RLock()
+	stopping := s.processingStopping
+	s.mu.RUnlock()
+	if stopping {
+		return errAnalysisStopping
+	}
+	if s.currentProc != nil {
+		return fmt.Errorf("capture helper is already running")
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	s.currentProc = cmd.Process
+	return nil
+}
+
+func (s *Server) releaseCaptureProcess(process *os.Process) {
+	s.currentCmdMutex.Lock()
+	defer s.currentCmdMutex.Unlock()
+	if s.currentProc == process {
+		s.currentProc = nil
+	}
 }
