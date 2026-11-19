@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -694,6 +695,35 @@ func TestAnalysisCompletionRejectsMislabeledTimelineTrack(t *testing.T) {
 	err := s.completeAnalysis(&AnalysisJob{InputFile: input, OutputDir: dir}, time.Second)
 	if err == nil || !strings.Contains(err.Error(), "index HTTP: unexpected audit header type NC_UDP for HTTP") || s.completedFiles[input] {
 		t.Fatalf("mislabeled audit passed completion: error=%v completed=%t", err, s.completedFiles[input])
+	}
+}
+
+func TestServiceSessionMetadataPublishesNewSnapshot(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("an open reader may prevent replacement on Windows")
+	}
+	dir := t.TempDir()
+	path := filepath.Join(dir, "session.json")
+	s := NewSessionManager(10, 60, 10)
+	s.AddSession(&SessionInfo{SessionID: "capture", OutputDir: dir, Status: StatusProcessing})
+	if err := s.SaveSessionMetadata("capture"); err != nil {
+		t.Fatal(err)
+	}
+	previous, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer previous.Close()
+	if err := s.UpdateSessionStatus("capture", StatusCompleted, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	var old SessionInfo
+	if err := json.NewDecoder(previous).Decode(&old); err != nil || old.Status != StatusProcessing || old.ResultsReady {
+		t.Fatalf("opened snapshot changed: status=%s ready=%t err=%v", old.Status, old.ResultsReady, err)
+	}
+	current, err := loadSessionMetadata(path)
+	if err != nil || current.Status != StatusCompleted || !current.ResultsReady {
+		t.Fatalf("new snapshot was not published: %+v, %v", current, err)
 	}
 }
 

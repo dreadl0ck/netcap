@@ -660,15 +660,7 @@ func loadSessionMetadata(path string) (*SessionInfo, error) {
 
 // saveSessionMetadata saves session metadata to JSON file
 func saveSessionMetadata(path string, session *SessionInfo) error {
-	if session.ParentSessionID != "" {
-		return writeAnalysisJSON(filepath.Dir(path), filepath.Base(path), session)
-	}
-	data, err := json.MarshalIndent(session, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(path, data, 0644)
+	return writeAnalysisJSON(filepath.Dir(path), filepath.Base(path), session)
 }
 
 // SaveSessionMetadata is a public method to save session metadata
