@@ -6,11 +6,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
@@ -207,14 +209,6 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 	} else if hasGap {
 		manifest.Status = "gapped"
 	}
-	for _, file := range []*os.File{client, server} {
-		if err := file.Sync(); err != nil {
-			return "", err
-		}
-		if err := file.Close(); err != nil {
-			return "", err
-		}
-	}
 	manifest.Client.Length, manifest.Server.Length = offsets[0], offsets[1]
 	manifest.Client.SHA256, manifest.Server.SHA256 = hex.EncodeToString(clientHash.Sum(nil)), hex.EncodeToString(serverHash.Sum(nil))
 	data, err := json.Marshal(manifest)
@@ -257,11 +251,13 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 			return "", err
 		}
 	}
-	if err := file.Sync(); err != nil {
-		file.Close()
-		return "", err
-	}
-	if err := file.Close(); err != nil {
+	var clientErr, serverErr error
+	var syncs sync.WaitGroup
+	syncs.Go(func() { clientErr = errors.Join(client.Sync(), client.Close()) })
+	syncs.Go(func() { serverErr = errors.Join(server.Sync(), server.Close()) })
+	manifestErr := errors.Join(file.Sync(), file.Close())
+	syncs.Wait()
+	if err := errors.Join(clientErr, serverErr, manifestErr); err != nil {
 		return "", err
 	}
 	if spanFile != nil {
