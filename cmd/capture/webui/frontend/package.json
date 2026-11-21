@@ -32,20 +32,20 @@
     "swr": "^2.5.1"
   },
   "devDependencies": {
-    "@playwright/test": "1.64.1",
+    "@playwright/test": "1.65.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
-    "@testing-library/user-event": "^14.6.8",
+    "@testing-library/user-event": "^14.6.10",
     "@types/node": "^25.9.9",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react": "^4.7.0",
-    "baseline-browser-mapping": "^2.11.35",
+    "baseline-browser-mapping": "^2.11.37",
     "concurrently": "^9.2.5",
     "jsdom": "^26.1.0",
     "typescript": "^5.9.3",
-    "vite": "^6.4.5",
+    "vite": "^6.4.6",
     "vitest": "^4.1.12"
   },
   "pnpm": {
