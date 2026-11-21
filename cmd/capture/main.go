@@ -1149,6 +1149,13 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		// Create a cancellable context for live capture
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
+		if os.Getenv("NC_OWNED_LIVE_STDIN") == "1" {
+			go func() {
+				var b [1]byte
+				_, _ = os.Stdin.Read(b[:])
+				cancel()
+			}()
+		}
 
 		// If web UI is enabled, give it the cancel function
 		if webUIServer != nil {

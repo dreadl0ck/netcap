@@ -231,7 +231,7 @@ func TestMCPLiveCaptureRejectsOfflinePreparation(t *testing.T) {
 }
 
 func TestMCPOwnedLiveCaptureFakeRunnerLifecycle(t *testing.T) {
-	interfaces, err := net.Interfaces()
+	interfaces, err := liveInterfaces()
 	if err != nil || len(interfaces) == 0 {
 		t.Skip("no interface discovery available")
 	}

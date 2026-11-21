@@ -25,12 +25,19 @@ func (s *Server) startLiveHelper(ctx context.Context, args []string, out string)
 		return nil, err
 	}
 	cmd := exec.CommandContext(ctx, path, append(prefix, args...)...)
-	cmd.Env = helperEnvironment()
+	cmd.Env = append(helperEnvironment(), "NC_OWNED_LIVE_STDIN=1")
 	cmd.Stdout = log
 	cmd.Stderr = log
-	cmd.Cancel = func() error { return cmd.Process.Signal(os.Interrupt) }
-	cmd.WaitDelay = 5 * time.Second
+	// EOF also stops the helper if the desktop app exits unexpectedly.
+	control, err := cmd.StdinPipe()
+	if err != nil {
+		log.Close()
+		return nil, err
+	}
+	cmd.Cancel = control.Close
+	cmd.WaitDelay = 30 * time.Second
 	if err := s.startCaptureProcess(cmd, captureLive); err != nil {
+		control.Close()
 		log.Close()
 		return nil, err
 	}

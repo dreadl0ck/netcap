@@ -32,5 +32,6 @@ func registerEditionRoutes(mux *http.ServeMux, s *Server) {
 	mux.HandleFunc("/api/injection-stats", s.handleInjectionStats)
 	mux.HandleFunc("/api/injection-actions", s.handleInjectionActions)
 	mux.HandleFunc("/api/network-interfaces", s.handleNetworkInterfaces)
+	mux.HandleFunc("GET /api/live-capture/interfaces", s.handleLiveInterfaces)
 	mux.HandleFunc("/api/stop-capture", s.handleStopCapture)
 }

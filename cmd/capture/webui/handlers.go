@@ -941,6 +941,7 @@ func calculateDirectorySize(path string) (int64, error) {
 type NetworkInterfaceInfo struct {
 	Index        int      `json:"index"`
 	Name         string   `json:"name"`
+	Description  string   `json:"description,omitempty"`
 	Flags        string   `json:"flags"`
 	HardwareAddr string   `json:"hardwareAddr"`
 	MTU          int      `json:"mtu"`
@@ -954,12 +955,20 @@ func (s *Server) handleNetworkInterfaces(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	interfaces, err := net.Interfaces()
+	result, err := systemNetworkInterfaces()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to get network interfaces: %v", err), http.StatusInternalServerError)
 		return
 	}
 
+	RespondJSON(w, http.StatusOK, result)
+}
+
+func systemNetworkInterfaces() ([]NetworkInterfaceInfo, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
 	result := make([]NetworkInterfaceInfo, 0, len(interfaces))
 	for _, nic := range interfaces {
 		// Get IP addresses for this interface
@@ -981,10 +990,7 @@ func (s *Server) handleNetworkInterfaces(w http.ResponseWriter, r *http.Request)
 		})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(result); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-	}
+	return result, nil
 }
 
 // DPIInfo represents DPI configuration and version information
@@ -1864,22 +1870,21 @@ func (s *Server) handlePayloadToggle(w http.ResponseWriter, r *http.Request) {
 // handleStopCapture handles requests to stop the live capture
 func (s *Server) handleStopCapture(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
+		var requestedOutput string
 		if r.URL.Query().Has("sessionId") || r.URL.Query().Has("inputFile") {
 			selected, err := s.resolveCaptureSelection(r)
 			if err != nil {
 				writeSelectionError(w, err)
 				return
 			}
-			s.mu.RLock()
-			owned := s.ownedLive
-			matches := owned != nil && owned.Output == selected.OutputDir
-			s.mu.RUnlock()
-			if !matches {
-				http.Error(w, "selector is not the owned live capture", 409)
-				return
-			}
+			requestedOutput = selected.OutputDir
 		}
 		s.mu.Lock()
+		if requestedOutput != "" && (s.ownedLive == nil || s.ownedLive.Completed || s.ownedLive.Output != requestedOutput) {
+			s.mu.Unlock()
+			http.Error(w, "selector is not the running live capture", 409)
+			return
+		}
 
 		// Check if we're in live mode
 		if !s.isLiveMode {
@@ -1897,6 +1902,9 @@ func (s *Server) handleStopCapture(w http.ResponseWriter, r *http.Request) {
 
 		// Call the cancel function to stop the live capture
 		log.Println("[WebUI] Stop capture requested via web UI")
+		if s.ownedLive != nil && !s.ownedLive.Completed {
+			s.ownedLive.Stopping = true
+		}
 		s.stopCapture()
 		s.mu.Unlock()
 

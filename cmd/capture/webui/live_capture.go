@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -30,6 +29,9 @@ type ownedLiveCapture struct {
 	Error     string             `json:"error,omitempty"`
 	Deadline  time.Time          `json:"deadline"`
 	StartedAt time.Time          `json:"started_at"`
+	InputFile string             `json:"inputFile"`
+	Stopping  bool               `json:"stopping"`
+	Packets   *uint64            `json:"packets,omitempty"`
 	Cancel    context.CancelFunc `json:"-"`
 }
 
@@ -59,10 +61,18 @@ func (s *Server) handleOwnedLiveCapture(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		processing := s.processingLocked()
-		if state != nil {
+		if selectedInput != "" && state != nil {
 			processing = !state.Completed
 		}
-		RespondJSON(w, 200, map[string]any{"capture": state, "is_live_mode": s.isLiveMode && state == s.ownedLive, "is_processing": processing})
+		var captures []*ownedLiveCapture
+		if selectedInput == "" {
+			for _, input := range s.inputFiles {
+				if live := s.liveInputs[input]; live != nil {
+					captures = append(captures, live)
+				}
+			}
+		}
+		RespondJSON(w, 200, map[string]any{"capture": state, "captures": captures, "is_live_mode": s.isLiveMode && state == s.ownedLive, "is_processing": processing})
 		return
 	}
 	if r.Method == http.MethodDelete {
@@ -80,7 +90,19 @@ func (s *Server) handleOwnedLiveCapture(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "require interface, durationSeconds 1..300 and retentionMB 1..512", 400)
 		return
 	}
-	if _, err := net.InterfaceByName(request.Interface); err != nil {
+	devices, err := liveInterfaces()
+	if err != nil {
+		http.Error(w, err.Error(), 503)
+		return
+	}
+	known := false
+	for _, device := range devices {
+		if device.Name == request.Interface {
+			known = true
+			break
+		}
+	}
+	if !known {
 		http.Error(w, "unknown network interface", 400)
 		return
 	}
@@ -197,7 +219,7 @@ func (s *Server) handleOwnedLiveCapture(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "cannot start capture helper: "+err.Error(), 503)
 		return
 	}
-	state := &ownedLiveCapture{SessionID: id, Interface: request.Interface, Output: out, StartedAt: time.Now(), Deadline: time.Now().Add(time.Duration(request.DurationSeconds) * time.Second), Cancel: cancel}
+	state := &ownedLiveCapture{SessionID: id, Interface: request.Interface, Output: out, InputFile: input, StartedAt: time.Now(), Deadline: time.Now().Add(time.Duration(request.DurationSeconds) * time.Second), Cancel: cancel}
 	s.mu.Lock()
 	s.inputFiles = append(s.inputFiles, input)
 	s.fileIDToPath[id] = input
@@ -225,9 +247,17 @@ func (s *Server) handleOwnedLiveCapture(w http.ResponseWriter, r *http.Request) 
 		if err != nil {
 			message = liveCaptureFailure(err, out)
 		}
+		var manifest struct {
+			Packets *uint64 `json:"ingressPackets"`
+		}
+		if f, openErr := os.Open(filepath.Join(out, "capture-manifest.json")); openErr == nil {
+			_ = json.NewDecoder(io.LimitReader(f, 8<<20)).Decode(&manifest)
+			f.Close()
+		}
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		state.Completed = true
+		state.Packets = manifest.Packets
 		if err != nil {
 			state.Error = message
 		}
