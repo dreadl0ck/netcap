@@ -9,7 +9,7 @@
     "repository": {"url": "git@github.com:dreadl0ck/netcap.git", "revision": "4b0b2d84fac481717897dd7022b998304954af20", "link_mode": "local-only"}
   },
   "lanes": [{"id": "capture", "label": "Capture with configured rules"}, {"id": "replay", "label": "Explicit offline hunt"}, {"id": "history", "label": "Durable alert history"}, {"id": "delivery", "label": "Opt-in webhook delivery"}],
-  "mainPath": ["records", "rules", "alerts", "outbox", "post", "receipt"],
+  "mainPath": ["records", "rules", "alerts"],
   "nodes": [
     {"id": "records", "lane": "capture", "col": 0, "type": "backend", "label": "Decoded records", "sublabel": "Typed protocol observations", "sources": [{"path": "internal/decoder/packet/gopacket_decoder.go", "line": 217, "end_line": 271}]},
     {"id": "rules", "lane": "capture", "col": 1, "type": "security", "label": "Configured rules", "sublabel": "Match / correlate / threshold", "sources": [{"path": "internal/collector/filtering_writer.go", "line": 51, "end_line": 81}, {"path": "internal/collector/rules_scope.go", "line": 14, "end_line": 30}, {"path": "docs/RULES_ENGINE.md", "line": 45, "end_line": 77}]},
@@ -28,9 +28,9 @@
     {"id": "capture-alert", "from": "rules", "to": "alerts", "label": "rule alerts", "variant": "emphasis"},
     {"id": "offline-run", "from": "audit", "to": "offline", "label": "ready + explicit run"},
     {"id": "offline-alert", "from": "offline", "to": "alerts", "label": "group crossings"},
-    {"id": "enqueue", "from": "alerts", "to": "outbox", "label": "deliver-alerts command", "variant": "emphasis"},
-    {"id": "send", "from": "outbox", "to": "post", "label": "due notices", "variant": "emphasis"},
-    {"id": "outcome", "from": "post", "to": "receipt", "label": "persist outcome", "variant": "emphasis"},
+    {"id": "enqueue", "from": "alerts", "to": "outbox", "label": "deliver-alerts command", "role": "branch"},
+    {"id": "send", "from": "outbox", "to": "post", "label": "due notices"},
+    {"id": "outcome", "from": "post", "to": "receipt", "label": "persist outcome"},
     {"id": "retry", "from": "receipt", "to": "outbox", "label": "pending: rerun when due", "role": "return"}
   ],
   "cards": [

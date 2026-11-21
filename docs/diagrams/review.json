@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "reviewer": "OpenCode image-capable agent",
+  "date": "2026-11-21",
+  "method": "Source-backed semantic review and image inspection of each diagram's 1440x900 light and dark first-screen captures. The rule walkthrough was also inspected in full at 2048x1320.",
+  "automatedCaptureViewports": ["1440x900 light", "1440x900 dark", "2048x1320 light", "2048x1320 dark"],
+  "diagrams": [
+    {"artifact": "docs/diagrams/overview.html", "artifactSHA256": "01b0ab07d67f6cf451bca0ed3d528272d1f62fbbccc00aa90886a2c1db8e1468", "light": "pass", "dark": "pass", "note": "Original overview preserved byte-for-byte; the main path and optional rule branch remain clear."},
+    {"artifact": "docs/diagrams/decoding.html", "artifactSHA256": "427aa3c7153433736bff105af107beb6c1729a261b17d0f124664d74284bc808", "light": "pass", "dark": "pass", "note": "Packet, conversation and host-profile branches remain distinct; enrichment inputs reach their owning producer."},
+    {"artifact": "docs/diagrams/files.html", "artifactSHA256": "d03809c151f230b7193e3b5e5733b8e1aa4d2226a611d0ec12096428fa75ec88", "light": "pass", "dark": "pass", "note": "Recovered content and optional File audit output are separate; analyzer failures withhold readiness."},
+    {"artifact": "docs/diagrams/detection.html", "artifactSHA256": "5835b89de14b02423e4c6ccca1856178df91c2bb2c8343160943a705b43ca81a", "light": "pass", "dark": "pass", "note": "Saved alert history is the highlighted outcome; explicit webhook delivery is a secondary branch."},
+    {"artifact": "docs/diagrams/behavior.html", "artifactSHA256": "1adb026bf08667229ae4d76217296eb024bb0d6b34b73d0357d34fa1a0761bd5", "light": "pass", "dark": "pass", "note": "Three actual runtime modes; explicit approval and prior-mode resume remain qualified by source-backed notes."},
+    {"artifact": "docs/diagrams/investigation.html", "artifactSHA256": "d43d81f8346e9c6b067f9317bd21ecb826abcd93ae824898ebe57d14198d27de", "light": "pass", "dark": "pass", "note": "Bind, search, resolve and review phases separate the long sequence; readable vertical scrolling is intentional."},
+    {"artifact": "docs/diagrams/distributed.html", "artifactSHA256": "5c09e7e593606f9af22d6dcedb81e8a58e2362e18477de816abdf3dab9a89b54", "light": "pass", "dark": "pass", "note": "ACK after gzip flush and fsync at close are visible in the drawing; enrollment and record transport are distinct."},
+    {"artifact": "docs/diagrams/dpi.html", "artifactSHA256": "0a15e97f0ae35578fffd27f363e67cd56e132ca5e4836343f93e3559371b454e", "light": "pass", "dark": "pass", "note": "Four parallel identification methods; DPI classification does not imply plaintext or parser output."},
+    {"artifact": "docs/diagrams/software.html", "artifactSHA256": "98e825e03ff41b07977c0cfa1e276a3b984e4037dc2b1c949d4781acf9a01be9", "light": "pass", "dark": "pass", "note": "Client and server claims are attributed separately; Passive WebTech does not feed host CVE enrichment."},
+    {"artifact": "docs/diagrams/vulnerabilities.html", "artifactSHA256": "a4f5199e314324b7d789234c145821d0e1c04af9fa0fbe09c2b129d06c29f16e", "light": "pass", "dark": "pass", "note": "Unresolved identity, unavailable enrichment and no confirmed applicability are distinct outcomes; writer selection is visible."},
+    {"artifact": "docs/diagrams/exploits.html", "artifactSHA256": "2f25c0723acaee22a7c71849262bc3f3c27df92bea094125d7c08b2af2e2b9a4", "light": "pass", "dark": "pass", "note": "Reference metadata, optional catalogue association and observed activity remain separate; community catalogue emptiness is visible."},
+    {"artifact": "docs/diagrams/rule-evaluation.html", "artifactSHA256": "ed34ca8121514abf7374d592de2d3d564c565e47b363f5db468389cc4ab8ec65", "light": "pass", "dark": "pass", "note": "Synthetic records and times are explicit; group isolation, nonmatches, threshold reset and alert output are legible. Phase frames clear the notes."},
+    {"artifact": "docs/diagrams/firewall.html", "artifactSHA256": "d8c241e0091cea573b36b083c62382ce656b9c047b6d628df603316aafbf79d0", "light": "pass", "dark": "pass", "note": "Audit, inline admission, rejection and retrospective capture are separate lanes; monitor/enforce conditions remain explicit."},
+    {"artifact": "docs/diagrams/alert-origins.html", "artifactSHA256": "df9ed7ae0ff5ddf081eeae278516dd08e1129c3f9da226071d83fd933b6d9241", "light": "pass", "dark": "pass", "note": "Three detector inputs, evidence families and coverage checks can be compared row-by-row."}
+  ],
+  "pitfalls": [
+    "Put behavior-changing conditions in visible labels or sublabels; optional tag metadata is not shown in every reader mode.",
+    "Reserve note clearance inside sequence phase frames, not only between message arrows.",
+    "Separate connected workflow outcomes before adding fixed route pins; fixed pins can defeat automatic placement."
+  ]
+}

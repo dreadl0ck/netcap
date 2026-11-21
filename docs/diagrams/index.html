@@ -3,11 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Explore Netcap through seven source-backed interactive diagrams: the main overview, decoding, files, detections, behavioral baselines, investigation and distributed sensors.">
+  <meta name="description" content="Explore Netcap through fourteen source-backed diagrams: capture, DPI, software identification, CVE and exploit applicability, rules, firewall, evidence and distributed sensors.">
   <title>Netcap | Interactive system atlas</title>
   <style>
     :root { color-scheme: dark; --bg: #0c111b; --surface: #141d2d; --selected: #1c3045; --text: #edf3fc; --muted: #afbdd0; --accent: #7de0ce; --line: #647992; }
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
     body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     a { color: var(--accent); text-underline-offset: 4px; }
     a:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
@@ -19,7 +20,14 @@
     .intro { color: var(--muted); max-width: 78ch; margin: 0 0 24px; }
     .intro strong { color: var(--text); }
     .workspace { display: grid; grid-template-columns: 268px minmax(0, 1fr); gap: 24px; align-items: start; }
-    nav { display: grid; gap: 8px; }
+    nav { display: grid; gap: 20px; position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; padding: 4px; }
+    .nav-group { display: grid; gap: 8px; }
+    #chart-groups { display: grid; gap: 24px; }
+    nav h3 { margin: 0; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+    .search label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+    .search input { width: 100%; min-height: 44px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; padding: 8px 12px; }
+    .search input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .search p { color: var(--muted); margin: 8px 0 0; font-size: 12px; }
     nav a { display: block; padding: 13px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; text-decoration: none; color: var(--text); min-height: 72px; }
     nav a:hover { background: var(--selected); }
     nav a[aria-current="page"] { background: var(--selected); border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
@@ -30,6 +38,10 @@
     .viewer-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--line); }
     h2 { margin: 0; font-size: 16px; }
     .viewer-bar a { min-height: 44px; display: inline-flex; align-items: center; font-size: 14px; }
+    .context-bar { padding: 10px 20px; border-bottom: 1px solid var(--line); }
+    .context-bar p { margin: 0; color: var(--muted); font-size: 12px; }
+    #related { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; margin-top: 4px; font-size: 13px; }
+    #related a { display: inline-flex; min-height: 36px; align-items: center; }
     iframe { display: block; width: 100%; height: 82vh; min-height: 640px; border: 0; background: #0b1018; }
     .narrow-help { display: none; padding: 24px 20px; margin: 0; color: var(--muted); }
     .help { padding: 12px 20px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); margin: 0; }
@@ -43,10 +55,12 @@
     @media (max-width: 1000px) {
       .page { padding: 24px 16px; }
       .workspace { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-      nav { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+      nav { position: static; max-height: none; overflow: visible; }
+      .nav-group { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+      nav h3 { grid-column: 1 / -1; }
       iframe { min-height: 600px; height: 78vh; }
     }
-    @media (max-width: 480px) { nav { grid-template-columns: minmax(0, 1fr); } .viewer-bar { padding: 12px; } }
+    @media (max-width: 480px) { .nav-group { grid-template-columns: minmax(0, 1fr); } .viewer-bar { padding: 12px; } }
     @media (max-width: 700px) { iframe { display: none; } .narrow-help { display: block; } }
   </style>
 </head>
@@ -56,37 +70,70 @@
     <header>
       <div class="eyebrow">Netcap / system atlas</div>
       <h1>Follow the traffic.<br>Understand the evidence.</h1>
-      <p class="intro"><strong>Start with the main overview.</strong> Then explore six focused views of how Netcap decodes traffic, preserves files, detects changes and supports investigations. Each diagram includes source references pinned to <code>4b0b2d8</code>.</p>
+      <p class="intro"><strong>Start with the main overview.</strong> Explore 14 source-backed views, from packet decoding and DPI to software attribution, vulnerability applicability, detection and response. Choose the question you want the evidence to answer.</p>
     </header>
     <div class="workspace">
       <nav aria-label="Choose a Netcap diagram">
-        <a href="overview.html" target="diagram" aria-current="page" data-title="Main overview" data-spec="overview">
+        <div class="search"><label for="chart-search">Find a topic</label><input id="chart-search" type="search" autocomplete="off" aria-controls="chart-groups"><p id="search-status" role="status" aria-live="polite">14 charts</p></div>
+        <div id="chart-groups">
+        <section class="nav-group" aria-labelledby="group-capture"><h3 id="group-capture">Start and decode</h3>
+        <a href="overview.html" target="diagram" aria-current="page" data-title="Main overview" data-spec="overview" data-related="decoding alert-origins distributed">
           <span class="kind">01 / ARCHITECTURE / START HERE</span><span class="name">Main overview</span><span class="question">How does traffic become investigation evidence?</span>
         </a>
-        <a href="decoding.html" target="diagram" data-title="Decoding and enrichment" data-spec="decoding">
+        <a href="decoding.html" target="diagram" data-title="Decoding and enrichment" data-spec="decoding" data-related="dpi software files">
           <span class="kind">02 / DATA FLOW</span><span class="name">Decoding and enrichment</span><span class="question">What do packets, streams and host profiles contribute?</span>
         </a>
-        <a href="files.html" target="diagram" data-title="File extraction and analysis" data-spec="files">
-          <span class="kind">03 / WORKFLOW</span><span class="name">File extraction and analysis</span><span class="question">What bytes were recovered, and were they analyzed?</span>
+        <a href="dpi.html" target="diagram" data-title="DPI and service identification" data-spec="dpi" data-revision="0e64128f" data-related="software decoding">
+          <span class="kind">03 / DATA FLOW</span><span class="name">DPI and service identification</span><span class="question">What do port names, greetings, classifiers and parsers establish?</span>
         </a>
-        <a href="detection.html" target="diagram" data-title="Rules and alert delivery" data-spec="detection">
-          <span class="kind">04 / WORKFLOW</span><span class="name">Rules and alert delivery</span><span class="question">How do matches become saved alerts and webhook notices?</span>
+        <a href="software.html" target="diagram" data-title="Software and host attribution" data-spec="software" data-revision="0e64128f" data-related="vulnerabilities exploits dpi">
+          <span class="kind">04 / DATA FLOW</span><span class="name">Software and host attribution</span><span class="question">Which endpoint advertised this product and version?</span>
         </a>
-        <a href="behavior.html" target="diagram" data-title="Behavioral baseline lifecycle" data-spec="behavior">
-          <span class="kind">05 / LIFECYCLE</span><span class="name">Behavioral baseline lifecycle</span><span class="question">When does an observation become trusted?</span>
+        </section>
+        <section class="nav-group" aria-labelledby="group-exposure"><h3 id="group-exposure">Assess exposure</h3>
+        <a href="vulnerabilities.html" target="diagram" data-title="CVE applicability" data-spec="vulnerabilities" data-revision="0e64128f" data-related="software exploits investigation">
+          <span class="kind">05 / WORKFLOW</span><span class="name">CVE applicability</span><span class="question">Does a CVE apply, or is enrichment unavailable?</span>
         </a>
-        <a href="investigation.html" target="diagram" data-title="Source-bound investigation" data-spec="investigation">
-          <span class="kind">06 / SEQUENCE</span><span class="name">Source-bound investigation</span><span class="question">How do findings stay attached to the exact capture?</span>
+        <a href="exploits.html" target="diagram" data-title="What exploit evidence means" data-spec="exploits" data-revision="0e64128f" data-related="vulnerabilities alert-origins investigation">
+          <span class="kind">06 / DATA FLOW</span><span class="name">What exploit evidence means</span><span class="question">Is this a reference, a catalogue association or observed activity?</span>
         </a>
-        <a href="distributed.html" target="diagram" data-title="Distributed sensors and collection" data-spec="distributed">
-          <span class="kind">07 / ARCHITECTURE</span><span class="name">Distributed sensors and collection</span><span class="question">What crosses the network, and what does an ACK mean?</span>
+        <a href="files.html" target="diagram" data-title="File extraction and analysis" data-spec="files" data-related="decoding investigation">
+          <span class="kind">07 / WORKFLOW</span><span class="name">File extraction and analysis</span><span class="question">What bytes were recovered, and were they analyzed?</span>
         </a>
+        </section>
+        <section class="nav-group" aria-labelledby="group-detection"><h3 id="group-detection">Detect and respond</h3>
+        <a href="alert-origins.html" target="diagram" data-title="Where an alert came from" data-spec="alert-origins" data-revision="0e64128f" data-related="rule-evaluation behavior detection">
+          <span class="kind">08 / DATA FLOW</span><span class="name">Where an alert came from</span><span class="question">Was it a built-in detector, a YAML rule or a baseline deviation?</span>
+        </a>
+        <a href="rule-evaluation.html" target="diagram" data-title="How a scoped rule fires" data-spec="rule-evaluation" data-revision="0e64128f" data-related="detection alert-origins firewall">
+          <span class="kind">09 / SEQUENCE</span><span class="name">How a scoped rule fires</span><span class="question">Which records count toward a grouped threshold, and when does it fire?</span>
+        </a>
+        <a href="detection.html" target="diagram" data-title="Rules and alert delivery" data-spec="detection" data-related="rule-evaluation alert-origins firewall">
+          <span class="kind">10 / WORKFLOW</span><span class="name">Rules and alert delivery</span><span class="question">How do matches become saved alerts and optional webhook notices?</span>
+        </a>
+        <a href="behavior.html" target="diagram" data-title="Behavioral baseline lifecycle" data-spec="behavior" data-related="alert-origins investigation">
+          <span class="kind">11 / LIFECYCLE</span><span class="name">Behavioral baseline lifecycle</span><span class="question">When does an observation become trusted?</span>
+        </a>
+        <a href="firewall.html" target="diagram" data-title="Firewall decisions and capture policy" data-spec="firewall" data-revision="0e64128f" data-related="rule-evaluation detection overview">
+          <span class="kind">12 / WORKFLOW</span><span class="name">Firewall decisions and capture policy</span><span class="question">When does traffic reach the origin, and when is it blocked?</span>
+        </a>
+        </section>
+        <section class="nav-group" aria-labelledby="group-investigation"><h3 id="group-investigation">Investigate and operate</h3>
+        <a href="investigation.html" target="diagram" data-title="Source-bound investigation" data-spec="investigation" data-related="files vulnerabilities alert-origins">
+          <span class="kind">13 / SEQUENCE</span><span class="name">Source-bound investigation</span><span class="question">How do findings stay attached to the exact capture?</span>
+        </a>
+        <a href="distributed.html" target="diagram" data-title="Distributed sensors and collection" data-spec="distributed" data-related="overview decoding behavior">
+          <span class="kind">14 / ARCHITECTURE</span><span class="name">Distributed sensors and collection</span><span class="question">What crosses the network, and what does an ACK mean?</span>
+        </a>
+        </section>
+        </div>
       </nav>
       <section class="viewer" id="diagram-panel" aria-label="Interactive diagram viewer" tabindex="-1">
         <div class="viewer-bar">
           <h2 id="diagram-title">Main overview</h2>
           <div><a id="open-diagram" href="overview.html" target="_blank" rel="noopener">Open full-size ↗</a> &nbsp; <a id="diagram-spec" href="specs/overview.json">Source JSON</a></div>
         </div>
+        <div class="context-bar"><p id="source-snapshot">Source snapshot: 4b0b2d8 · Main overview</p><div id="related" aria-label="Related diagrams"></div></div>
         <iframe name="diagram" src="overview.html" title="Netcap: main overview" allow="clipboard-write; fullscreen" allowfullscreen></iframe>
         <p class="narrow-help">Use “Open full-size” above to explore the selected diagram in its own tab, with more room for zooming and source details.</p>
         <p class="help">Click diagram nodes for details and source excerpts. Each view has its own theme, path exploration and export controls.</p>
@@ -94,8 +141,9 @@
     </div>
     <details>
       <summary>Source snapshot and regeneration</summary>
-      <p>All seven diagrams describe <a href="https://github.com/dreadl0ck/netcap/tree/4b0b2d84fac481717897dd7022b998304954af20">Netcap at commit 4b0b2d8</a>. The main overview retains the original capture-to-investigation layout. Arrow order in the sequence is illustrative; it is not a latency measurement.</p>
-      <p>Open <code>index.html</code> locally, or open any standalone diagram HTML directly. Generated diagrams embed their viewer assets, source excerpts and software notices. The editable specifications are under <code>specs/</code>; automation receipts and content hashes are summarized in <a href="verification.json">verification.json</a>.</p>
+      <p>The original seven views cite <a href="https://github.com/dreadl0ck/netcap/tree/4b0b2d84fac481717897dd7022b998304954af20">4b0b2d8</a>; the seven deeper views cite <a href="https://github.com/dreadl0ck/netcap/tree/0e64128f514cf7938a60f4a13ab05146442c6f7f">0e64128f</a>. Those snapshots have identical runtime source. Every node's evidence is checked against its declared commit. The main overview remains byte-for-byte identical to the original.</p>
+      <p>The rule example uses synthetic records and relative times. Sequence spacing represents call order, not measured latency. Exploit catalogue associations and NVD links are separate from activity observed in traffic.</p>
+      <p>Open <code>index.html</code> locally, or open any standalone diagram HTML directly. Generated diagrams embed their viewer assets, source excerpts and software notices. The editable specifications are under <code>specs/</code>; automated receipts and content hashes are summarized in <a href="verification.json">verification.json</a>. The separate <a href="review.json">visual review record</a> identifies the artifact bytes inspected in light and dark mode.</p>
       <p>With Archify installed globally, run these commands from the repository root. Set <code>ARCHIFY_CLI</code> to a custom <code>bin/archify.mjs</code> path when needed. Rendering uses Node.js 18+ and Archify's browser-check runtime.</p>
       <pre><code>node docs/diagrams/render.mjs
 node docs/diagrams/render.mjs --check</code></pre>
@@ -104,19 +152,48 @@ node docs/diagrams/render.mjs --check</code></pre>
     <footer><a href="../../README.md">Repository README</a> &nbsp; / &nbsp; <a href="../internals.md">Architecture reference</a> &nbsp; / &nbsp; <a href="https://github.com/tt-a1i/archify">Rendered with Archify</a></footer>
   </main>
   <script>
-    const choices = document.querySelectorAll('nav a[data-spec]');
-    for (const choice of choices) {
-      choice.addEventListener('click', event => {
-        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-        for (const item of choices) item.removeAttribute('aria-current');
-        choice.setAttribute('aria-current', 'page');
-        document.getElementById('diagram-title').textContent = choice.dataset.title;
-        document.querySelector('iframe').title = `Netcap: ${choice.dataset.title}`;
-        document.getElementById('open-diagram').href = choice.getAttribute('href');
-        document.getElementById('diagram-spec').href = `specs/${choice.dataset.spec}.json`;
-        if (window.matchMedia('(max-width: 700px)').matches) document.getElementById('diagram-panel').scrollIntoView({ block: 'start' });
-      });
+    const choices = [...document.querySelectorAll('nav a[data-spec]')];
+    const byName = new Map(choices.map(choice => [choice.dataset.spec, choice]));
+    function select(choice, updateHistory = true, scroll = true) {
+      for (const item of choices) item.removeAttribute('aria-current');
+      choice.setAttribute('aria-current', 'page');
+      const frame = document.querySelector('iframe');
+      const file = choice.getAttribute('href');
+      if (frame.getAttribute('src') !== file) frame.src = file;
+      document.getElementById('diagram-title').textContent = choice.dataset.title;
+      frame.title = `Netcap: ${choice.dataset.title}`;
+      document.getElementById('open-diagram').href = file;
+      document.getElementById('diagram-spec').href = `specs/${choice.dataset.spec}.json`;
+      document.getElementById('source-snapshot').textContent = `Source snapshot: ${choice.dataset.revision || '4b0b2d8'} · ${choice.querySelector('.kind').textContent.split(' / ').slice(1).join(' / ')}`;
+      const related = document.getElementById('related');
+      related.replaceChildren(document.createTextNode('Continue:'));
+      for (const name of choice.dataset.related.split(' ')) {
+        const target = byName.get(name);
+        const link = document.createElement('a');
+        link.href = target.getAttribute('href');
+        link.target = 'diagram';
+        link.dataset.spec = name;
+        link.textContent = target.dataset.title;
+        related.append(link);
+      }
+      if (updateHistory) history.replaceState(null, '', `#${choice.dataset.spec}`);
+      if (scroll && window.matchMedia('(max-width: 700px)').matches) document.getElementById('diagram-panel').scrollIntoView({ block: 'start' });
     }
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[data-spec]');
+      if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      select(byName.get(link.dataset.spec));
+    });
+    document.getElementById('chart-search').addEventListener('input', event => {
+      const query = event.target.value.trim().toLowerCase();
+      for (const choice of choices) choice.hidden = !`${choice.textContent} ${choice.dataset.spec}`.toLowerCase().includes(query);
+      for (const group of document.querySelectorAll('.nav-group')) group.hidden = ![...group.querySelectorAll('a')].some(choice => !choice.hidden);
+      const count = choices.filter(choice => !choice.hidden).length;
+      document.getElementById('search-status').textContent = `${count} of ${choices.length} charts${count ? '' : ' · Try another topic'}`;
+    });
+    window.addEventListener('hashchange', () => select(byName.get(location.hash.slice(1)) || choices[0], false, false));
+    select(byName.get(location.hash.slice(1)) || choices[0], false, false);
   </script>
 </body>
 </html>

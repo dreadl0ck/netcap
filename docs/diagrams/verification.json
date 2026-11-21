@@ -2,6 +2,22 @@
   "version": 1,
   "diagrams": [
     {
+      "specification": "docs/diagrams/specs/alert-origins.json",
+      "artifact": "docs/diagrams/alert-origins.html",
+      "type": "dataflow",
+      "revision": "0e64128f514cf7938a60f4a13ab05146442c6f7f",
+      "specificationSHA256": "060eee9e663b8b14b9ffae25dd058bb9afd2ed15b74d7b7fe26a992e8dd06c04",
+      "artifactSHA256": "df9ed7ae0ff5ddf081eeae278516dd08e1129c3f9da226071d83fd933b6d9241",
+      "archifyVersion": "3.2.0",
+      "gates": {
+        "validate": "pass",
+        "deliver": "pass",
+        "check": "pass",
+        "browser-check": "pass"
+      },
+      "visualReview": "not-requested"
+    },
+    {
       "specification": "docs/diagrams/specs/behavior.json",
       "artifact": "docs/diagrams/behavior.html",
       "type": "lifecycle",
@@ -38,8 +54,8 @@
       "artifact": "docs/diagrams/detection.html",
       "type": "workflow",
       "revision": "4b0b2d84fac481717897dd7022b998304954af20",
-      "specificationSHA256": "779418cf03b72e74bdc4a22e9040cf64489adaaa3a5c47cc1a028e77fd2f47d9",
-      "artifactSHA256": "d271868363383ecfb39e5d7e656e1f8eb452e58aca17f88829a53b12a837c62e",
+      "specificationSHA256": "5fde9cc4260e17a5e82008ff55ad75e882435e296a47ec2065421eb86e21b1dc",
+      "artifactSHA256": "5835b89de14b02423e4c6ccca1856178df91c2bb2c8343160943a705b43ca81a",
       "archifyVersion": "3.2.0",
       "gates": {
         "validate": "pass",
@@ -54,8 +70,40 @@
       "artifact": "docs/diagrams/distributed.html",
       "type": "architecture",
       "revision": "4b0b2d84fac481717897dd7022b998304954af20",
-      "specificationSHA256": "120a0275f3f98327d62afc2fea52351174f93e63a78e89bd08b87d4f90dbead8",
-      "artifactSHA256": "9f6c76f4362a493710e4c4deeafd8cc33958996ade4a08eaa1f9aee1644443d9",
+      "specificationSHA256": "796072650bc41a2c7b21425ebcb66550034618e7676c27653c7c2407f09bffd5",
+      "artifactSHA256": "5c09e7e593606f9af22d6dcedb81e8a58e2362e18477de816abdf3dab9a89b54",
+      "archifyVersion": "3.2.0",
+      "gates": {
+        "validate": "pass",
+        "deliver": "pass",
+        "check": "pass",
+        "browser-check": "pass"
+      },
+      "visualReview": "not-requested"
+    },
+    {
+      "specification": "docs/diagrams/specs/dpi.json",
+      "artifact": "docs/diagrams/dpi.html",
+      "type": "dataflow",
+      "revision": "0e64128f514cf7938a60f4a13ab05146442c6f7f",
+      "specificationSHA256": "19ba4fc097fa9b715fefc6669bb464750f59d1c2c04778d2ff93984401107eb2",
+      "artifactSHA256": "0a15e97f0ae35578fffd27f363e67cd56e132ca5e4836343f93e3559371b454e",
+      "archifyVersion": "3.2.0",
+      "gates": {
+        "validate": "pass",
+        "deliver": "pass",
+        "check": "pass",
+        "browser-check": "pass"
+      },
+      "visualReview": "not-requested"
+    },
+    {
+      "specification": "docs/diagrams/specs/exploits.json",
+      "artifact": "docs/diagrams/exploits.html",
+      "type": "dataflow",
+      "revision": "0e64128f514cf7938a60f4a13ab05146442c6f7f",
+      "specificationSHA256": "54775449764231bf05ade23e8371ac555174ad44c7efd60eb42ec3932a9f8ee7",
+      "artifactSHA256": "2f25c0723acaee22a7c71849262bc3f3c27df92bea094125d7c08b2af2e2b9a4",
       "archifyVersion": "3.2.0",
       "gates": {
         "validate": "pass",
@@ -70,8 +118,24 @@
       "artifact": "docs/diagrams/files.html",
       "type": "workflow",
       "revision": "4b0b2d84fac481717897dd7022b998304954af20",
-      "specificationSHA256": "805bce17cc3e2efc1bcbd071d2743bf3e4e33ee2bb9966ab4e1cb08d8155f3c9",
-      "artifactSHA256": "a599e0df1c2dba1d8ce10cacf3fae4b989bcecf50a2adda67b4af9bd29f2f2a9",
+      "specificationSHA256": "6b38feebf6715ea8a96e6943ff2a1155de2beb415edec5d7065cda68de9deff1",
+      "artifactSHA256": "d03809c151f230b7193e3b5e5733b8e1aa4d2226a611d0ec12096428fa75ec88",
+      "archifyVersion": "3.2.0",
+      "gates": {
+        "validate": "pass",
+        "deliver": "pass",
+        "check": "pass",
+        "browser-check": "pass"
+      },
+      "visualReview": "not-requested"
+    },
+    {
+      "specification": "docs/diagrams/specs/firewall.json",
+      "artifact": "docs/diagrams/firewall.html",
+      "type": "workflow",
+      "revision": "0e64128f514cf7938a60f4a13ab05146442c6f7f",
+      "specificationSHA256": "ce259e1e06b70f0aa5b989e8ba6e4e0a5b65bd31ab0cff78426de34ee8dc11e7",
+      "artifactSHA256": "d8c241e0091cea573b36b083c62382ce656b9c047b6d628df603316aafbf79d0",
       "archifyVersion": "3.2.0",
       "gates": {
         "validate": "pass",
@@ -86,8 +150,8 @@
       "artifact": "docs/diagrams/investigation.html",
       "type": "sequence",
       "revision": "4b0b2d84fac481717897dd7022b998304954af20",
-      "specificationSHA256": "24681e0d94288b82baa558da539204c5ab580f1d7eff5716a5beaa532fa13f2e",
-      "artifactSHA256": "85d573f04921cbb706699d114de533bfc4051e0a8434602d84617b9a7b7e0da0",
+      "specificationSHA256": "b8efd2ce30ccab9ba1d6808eb3dbb349dc41cf1a926663295cd98fa00dcf6429",
+      "artifactSHA256": "d43d81f8346e9c6b067f9317bd21ecb826abcd93ae824898ebe57d14198d27de",
       "archifyVersion": "3.2.0",
       "gates": {
         "validate": "pass",
@@ -104,6 +168,54 @@
       "revision": "4b0b2d84fac481717897dd7022b998304954af20",
       "specificationSHA256": "5f56cc1b610d01d25e6f48f909d4696aac6c8e1a13747726c8e9ad2b6aef3272",
       "artifactSHA256": "01b0ab07d67f6cf451bca0ed3d528272d1f62fbbccc00aa90886a2c1db8e1468",
+      "archifyVersion": "3.2.0",
+      "gates": {
+        "validate": "pass",
+        "deliver": "pass",
+        "check": "pass",
+        "browser-check": "pass"
+      },
+      "visualReview": "not-requested"
+    },
+    {
+      "specification": "docs/diagrams/specs/rule-evaluation.json",
+      "artifact": "docs/diagrams/rule-evaluation.html",
+      "type": "sequence",
+      "revision": "0e64128f514cf7938a60f4a13ab05146442c6f7f",
+      "specificationSHA256": "8c16dfc8d94d049d26f4b733af83f4b482216fa780b1e1dd5ebe8de19e077dd4",
+      "artifactSHA256": "ed34ca8121514abf7374d592de2d3d564c565e47b363f5db468389cc4ab8ec65",
+      "archifyVersion": "3.2.0",
+      "gates": {
+        "validate": "pass",
+        "deliver": "pass",
+        "check": "pass",
+        "browser-check": "pass"
+      },
+      "visualReview": "not-requested"
+    },
+    {
+      "specification": "docs/diagrams/specs/software.json",
+      "artifact": "docs/diagrams/software.html",
+      "type": "dataflow",
+      "revision": "0e64128f514cf7938a60f4a13ab05146442c6f7f",
+      "specificationSHA256": "47cf6330fae00468b6595430754c2be1226f6d83cfd56182bd59d71189734c11",
+      "artifactSHA256": "98e825e03ff41b07977c0cfa1e276a3b984e4037dc2b1c949d4781acf9a01be9",
+      "archifyVersion": "3.2.0",
+      "gates": {
+        "validate": "pass",
+        "deliver": "pass",
+        "check": "pass",
+        "browser-check": "pass"
+      },
+      "visualReview": "not-requested"
+    },
+    {
+      "specification": "docs/diagrams/specs/vulnerabilities.json",
+      "artifact": "docs/diagrams/vulnerabilities.html",
+      "type": "workflow",
+      "revision": "0e64128f514cf7938a60f4a13ab05146442c6f7f",
+      "specificationSHA256": "b51a9b898bc16cbee76cf02a08b53eb045d5ab0ac4ccaecd0f69f473fddd10db",
+      "artifactSHA256": "a4f5199e314324b7d789234c145821d0e1c04af9fa0fbe09c2b129d06c29f16e",
       "archifyVersion": "3.2.0",
       "gates": {
         "validate": "pass",

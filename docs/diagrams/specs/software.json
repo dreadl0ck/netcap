@@ -1,0 +1,32 @@
+{
+  "schema_version": 1, "diagram_type": "dataflow",
+  "meta": {"title": "Software detection: attribute each claim to the right endpoint", "locale": "en", "output": "docs/diagrams/software.html", "quality_profile": "showcase", "repository": {"url": "git@github.com:dreadl0ck/netcap.git", "revision": "0e64128f514cf7938a60f4a13ab05146442c6f7f", "link_mode": "local-only"}},
+  "stages": [{"label": "Observed evidence"}, {"label": "Extract identity"}, {"label": "Attribute the claim"}, {"label": "Use the evidence"}],
+  "nodes": [
+    {"id": "http", "type": "backend", "label": "HTTP exchange", "sublabel": "User-Agent / Server", "stage": 0, "row": 0, "sources": [{"path": "internal/decoder/stream/software/software.go", "line": 364, "end_line": 436}]},
+    {"id": "greeting", "type": "backend", "label": "Service greeting", "sublabel": "Example: SSH banner", "stage": 0, "row": 2, "sources": [{"path": "internal/decoder/stream/service/service_probe.go", "line": 72, "end_line": 94}]},
+    {"id": "web", "type": "backend", "label": "Paired response", "sublabel": "Passive webtech inputs", "stage": 0, "row": 4, "sources": [{"path": "internal/decoder/stream/software/webtech.go", "line": 117, "end_line": 149}]},
+    {"id": "ua", "type": "backend", "label": "UA parser", "sublabel": "Product / version / OS", "stage": 1, "row": 0, "sources": [{"path": "internal/decoder/stream/software/software.go", "line": 383, "end_line": 411}]},
+    {"id": "server", "type": "backend", "label": "Header parser", "sublabel": "Server-side identity", "stage": 1, "row": 1, "sources": [{"path": "internal/decoder/stream/software/software.go", "line": 414, "end_line": 436}]},
+    {"id": "signature", "type": "backend", "label": "Service signature", "sublabel": "Greeting-derived fields", "stage": 1, "row": 2, "sources": [{"path": "internal/decoder/stream/service/service_probe.go", "line": 72, "end_line": 94}]},
+    {"id": "webtech", "type": "backend", "label": "Webtech matcher", "sublabel": "Advertisement evidence", "stage": 1, "row": 4, "sources": [{"path": "internal/decoder/stream/software/webtech.go", "line": 117, "end_line": 149}]},
+    {"id": "client", "type": "backend", "label": "Client software", "sublabel": "ObservedHost: client IP", "stage": 2, "row": 0, "sources": [{"path": "internal/decoder/stream/software/software.go", "line": 364, "end_line": 407}]},
+    {"id": "host", "type": "backend", "label": "Server software", "sublabel": "ObservedHost: server IP", "stage": 2, "row": 2, "sources": [{"path": "internal/decoder/stream/software/software.go", "line": 364, "end_line": 379}, {"path": "internal/decoder/stream/service/service_probe.go", "line": 88, "end_line": 94}]},
+    {"id": "origin", "type": "backend", "label": "Origin claim", "sublabel": "Low confidence; no host", "stage": 2, "row": 4, "sources": [{"path": "internal/decoder/stream/software/webtech.go", "line": 142, "end_line": 149}]},
+    {"id": "enrich", "type": "backend", "label": "CVE / exploit lookup", "sublabel": "Host + identity required", "stage": 3, "row": 1, "width": 144, "sources": [{"path": "internal/decoder/stream/software/software.go", "line": 721, "end_line": 743}, {"path": "internal/decoder/stream/vulnerability/lookup.go", "line": 30, "end_line": 50}]},
+    {"id": "claim-record", "type": "database", "label": "Software record", "sublabel": "advertised-origin-only", "stage": 3, "row": 4, "sources": [{"path": "internal/decoder/stream/software/webtech.go", "line": 136, "end_line": 149}, {"path": "internal/decoder/stream/software/software.go", "line": 109, "end_line": 157}]}
+  ],
+  "flows": [
+    {"id": "ua-field", "from": "http", "to": "ua", "label": "User-Agent", "variant": "emphasis", "route": "straight"}, {"id": "header-field", "from": "http", "to": "server", "label": "Server header"},
+    {"id": "banner-field", "from": "greeting", "to": "signature", "label": "greeting", "variant": "emphasis"}, {"id": "webtech-input", "from": "web", "to": "webtech", "label": "response data"},
+    {"id": "client-role", "from": "ua", "to": "client", "label": "client role", "variant": "emphasis"}, {"id": "server-role", "from": "server", "to": "host", "label": "server role", "fromSide": "bottom", "toSide": "top", "via": [[315, 328], [530, 328]]},
+    {"id": "banner-role", "from": "signature", "to": "host", "label": "service IP", "variant": "emphasis", "route": "straight"}, {"id": "origin-role", "from": "webtech", "to": "origin", "label": "origin role"},
+    {"id": "client-lookup", "from": "client", "to": "enrich", "label": "new identity"}, {"id": "server-lookup", "from": "host", "to": "enrich", "label": "new identity"},
+    {"id": "claim-only", "from": "origin", "to": "claim-record", "label": "record claim"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "One conversation can advertise two products", "items": ["HTTP UserAgent claims belong to the client IP. Server-derived claims use the server endpoint; a response-only HTTP record uses its source IP as the server (software.go:364-379).", "A service-signature product belongs to the observed service IP, with ObservationRole=server (service_probe.go:88-94).", "Ordinary client/server observations are also persisted as Software records. The right column highlights their optional enrichment, not a separate destination replacing audit output (software.go:109-157,721-743)."]},
+    {"dot": "amber", "title": "Webtech is a deliberately weaker claim", "items": ["Passive WebTech emits webtech_advertisement, low confidence and origin role, without asserting an ObservedHost (webtech.go:142-149).", "The Software path explicitly skips CVE and exploit enrichment for Passive WebTech. That claim cannot silently become a vulnerable-host finding (software.go:725-734).", "Banners, User-Agents and web advertisements can be misleading. Verify the installed package and configuration before concluding exposure (docs/deep-packet-inspection.md:50; docs/vulnerability-analysis.md:36-46)."]},
+    {"dot": "emerald", "title": "Continue the investigation", "items": ["vulnerabilities.html separates missing enrichment from a structured match. exploits.html separates catalogue links from observed activity.", "An absent database disables CVE enrichment without disabling Software detection (software.go:100-104)."]}
+  ]
+}

@@ -14,6 +14,12 @@
     {"id": "evidence", "type": "database", "label": "Capture evidence", "sublabel": "Manifest + audit files", "sources": [{"path": "internal/analyst/occurrence.go", "line": 31, "end_line": 118}, {"path": "internal/analyst/occurrence.go", "line": 145, "end_line": 160}, {"path": "internal/analyst/catalogue.go", "line": 18, "end_line": 101}]},
     {"id": "workspace", "type": "database", "label": "Private workspace", "sublabel": "Drafts + revisions", "sources": [{"path": "internal/analyst/workspace.go", "line": 69, "end_line": 194}]}
   ],
+  "segments": [
+    {"from": 150, "to": 315, "label": "01 Bind capture"},
+    {"from": 330, "to": 505, "label": "02 Search"},
+    {"from": 520, "to": 695, "label": "03 Resolve"},
+    {"from": 710, "to": 1075, "label": "04 Save + review"}
+  ],
   "messages": [
     {"id": "choose", "from": "reader", "to": "api", "y": 160, "label": "GET binding for capture", "variant": "emphasis"},
     {"id": "bind", "from": "api", "to": "evidence", "y": 204, "label": "read manifest + ready"},

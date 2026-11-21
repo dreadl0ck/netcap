@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "What is this service? Port names, greetings, DPI and parsers",
+    "locale": "en", "output": "docs/diagrams/dpi.html", "quality_profile": "showcase",
+    "repository": {"url": "git@github.com:dreadl0ck/netcap.git", "revision": "0e64128f514cf7938a60f4a13ab05146442c6f7f", "link_mode": "local-only"}
+  },
+  "stages": [{"label": "Captured evidence"}, {"label": "Identification method"}, {"label": "What it establishes"}],
+  "nodes": [
+    {"id": "port", "type": "backend", "label": "Port + transport", "sublabel": "Illustration: TCP 2222", "stage": 0, "row": 0, "sources": [{"path": "docs/deep-packet-inspection.md", "line": 5, "end_line": 23}]},
+    {"id": "greeting", "type": "backend", "label": "Server greeting", "sublabel": "Illustration: SSH-2.0-…", "stage": 0, "row": 1, "sources": [{"path": "internal/decoder/stream/tcp/banner.go", "line": 11, "end_line": 28}]},
+    {"id": "packets", "type": "backend", "label": "Flow packets", "sublabel": "Scoped, bidirectional", "stage": 0, "row": 2, "sources": [{"path": "internal/dpi/incremental.go", "line": 28, "end_line": 67}]},
+    {"id": "conversation", "type": "backend", "label": "Conversation", "sublabel": "Reassembled / tracked", "stage": 0, "row": 3, "sources": [{"path": "internal/decoder/stream/tcp/tcp_connection.go", "line": 735, "end_line": 842}]},
+    {"id": "iana", "type": "backend", "label": "IANA lookup", "sublabel": "Registered port name", "stage": 1, "row": 0, "sources": [{"path": "docs/deep-packet-inspection.md", "line": 5, "end_line": 23}]},
+    {"id": "signatures", "type": "backend", "label": "Greeting parser", "sublabel": "Built-in service rules", "stage": 1, "row": 1, "sources": [{"path": "internal/decoder/stream/service/service_probe.go", "line": 72, "end_line": 94}, {"path": "internal/servicesignatures/engine.go", "line": 131, "end_line": 151}]},
+    {"id": "classifier", "type": "backend", "label": "Flow classifier", "sublabel": "nDPI / libprotoident / Go", "tag": "Build + runtime enabled", "stage": 1, "row": 2, "sources": [{"path": "internal/dpi/dpi.go", "line": 65, "end_line": 127}, {"path": "internal/dpi/dpi.go", "line": 156, "end_line": 172}, {"path": "internal/dpi/incremental.go", "line": 240, "end_line": 303}]},
+    {"id": "parser", "type": "backend", "label": "Protocol parser", "sublabel": "Port + byte signatures", "tag": "Decoder selected", "stage": 1, "row": 3, "sources": [{"path": "internal/decoder/stream/tcp/tcp_connection.go", "line": 735, "end_line": 842}]},
+    {"id": "port-result", "type": "backend", "label": "PortName", "sublabel": "Not proof of SSH", "stage": 2, "row": 0, "sources": [{"path": "docs/deep-packet-inspection.md", "line": 14, "end_line": 23}]},
+    {"id": "banner-result", "type": "backend", "label": "Service identity", "sublabel": "Name, product, version", "stage": 2, "row": 1, "sources": [{"path": "internal/decoder/stream/service/service_probe.go", "line": 72, "end_line": 94}]},
+    {"id": "dpi-result", "type": "backend", "label": "Application label", "sublabel": "Protocol / category", "stage": 2, "row": 2, "sources": [{"path": "internal/dpi/incremental.go", "line": 306, "end_line": 321}, {"path": "docs/deep-packet-inspection.md", "line": 25, "end_line": 34}]},
+    {"id": "parsed-fields", "type": "backend", "label": "Decoded fields", "sublabel": "Only readable content", "stage": 2, "row": 3, "sources": [{"path": "docs/deep-packet-inspection.md", "line": 12, "end_line": 34}, {"path": "internal/decoder/stream/tcp/tcp_connection.go", "line": 831, "end_line": 842}]}
+  ],
+  "flows": [
+    {"id": "port-map", "from": "port", "to": "iana", "label": "port number"}, {"id": "registered", "from": "iana", "to": "port-result", "label": "registry name"},
+    {"id": "banner-match", "from": "greeting", "to": "signatures", "label": "server bytes", "variant": "emphasis"}, {"id": "identity", "from": "signatures", "to": "banner-result", "label": "clear match", "variant": "emphasis"},
+    {"id": "classify", "from": "packets", "to": "classifier", "label": "if enabled"}, {"id": "class-result", "from": "classifier", "to": "dpi-result", "label": "if classified"},
+    {"id": "decode", "from": "conversation", "to": "parser", "label": "framing"}, {"id": "field-result", "from": "parser", "to": "parsed-fields", "label": "if decoded"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "SSH on TCP 2222 is an illustration", "items": ["A registered port name does not establish the actual protocol. A clear SSH identification string supports service identification even on a nonstandard port (docs/deep-packet-inspection.md:14-23).", "These are cooperating identification methods, not four required serial stages. Greeting parsers and stream decoders remain useful with -dpi=false (docs/deep-packet-inspection.md:19-34)."]},
+    {"dot": "emerald", "title": "DPI has explicit runtime limits", "items": ["Native classification requires a DPI build and initialization. GetProtocols returns nil while disabled (internal/dpi/dpi.go:156-172).", "The incremental pool uses scoped flow keys, bounded inspection, idle expiry and capacity eviction. Defaults are up to 8 workers, 65,536 flows and a 5-minute idle timeout (incremental.go:28-67,149-170,234-303).", "A TLS or QUIC application label does not expose the HTTP plaintext inside it (docs/deep-packet-inspection.md:34)."]},
+    {"dot": "amber", "title": "A banner is an advertised identity", "items": ["Ambiguous greetings, missing bytes and encryption can withhold identification. A server can advertise software it does not run (docs/deep-packet-inspection.md:44-50).", "Next: software.html follows endpoint attribution; vulnerabilities.html follows version applicability. Both start from the evidence actually observed."]}
+  ]
+}

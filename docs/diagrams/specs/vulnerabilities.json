@@ -1,0 +1,27 @@
+{
+  "schema_version": 2, "diagram_type": "workflow",
+  "meta": {"title": "CVE applicability: distinguish a match from unavailable evidence", "locale": "en", "output": "docs/diagrams/vulnerabilities.html", "quality_profile": "showcase", "repository": {"url": "git@github.com:dreadl0ck/netcap.git", "revision": "0e64128f514cf7938a60f4a13ab05146442c6f7f", "link_mode": "local-only"}},
+  "lanes": [{"id": "matching", "label": "Observed software to structured applicability"}, {"id": "qualification", "label": "Withheld or unavailable result"}],
+  "mainPath": ["software", "identity", "database", "conditions", "finding"],
+  "nodes": [
+    {"id": "software", "lane": "matching", "col": 0, "type": "backend", "label": "Software observation", "sublabel": "Host, product and version", "sources": [{"path": "internal/decoder/stream/software/software.go", "line": 721, "end_line": 743}]},
+    {"id": "identity", "lane": "matching", "col": 1, "type": "backend", "label": "Qualify identity", "sublabel": "ObservedHost + version", "sources": [{"path": "internal/decoder/stream/vulnerability/lookup.go", "line": 30, "end_line": 41}]},
+    {"id": "database", "lane": "matching", "col": 2, "type": "backend", "label": "Local SQLite query", "sublabel": "netcap.sqlite / schema 2", "sources": [{"path": "internal/decoder/stream/vulnerability/lookup.go", "line": 38, "end_line": 50}, {"path": "internal/vulndb/applicability.go", "line": 298, "end_line": 338}]},
+    {"id": "conditions", "lane": "matching", "col": 3, "type": "security", "label": "Evaluate CPE tree", "sublabel": "Identity, bounds, prerequisites", "sources": [{"path": "internal/vulndb/applicability.go", "line": 77, "end_line": 180}, {"path": "internal/vulndb/SCHEMA.md", "line": 27, "end_line": 42}]},
+    {"id": "finding", "lane": "matching", "col": 4, "type": "database", "label": "Applicable CVE record", "sublabel": "cpe-product-version", "tag": "Writer selected; new finding", "sources": [{"path": "internal/decoder/stream/vulnerability/lookup.go", "line": 59, "end_line": 71}, {"path": "internal/vulndb/applicability.go", "line": 318, "end_line": 338}, {"path": "internal/decoder/stream/vulnerability/utils.go", "line": 152, "end_line": 197}]},
+    {"id": "unresolved", "lane": "qualification", "col": 1, "type": "backend", "label": "Identity unresolved", "sublabel": "No usable host or version", "sources": [{"path": "internal/decoder/stream/vulnerability/lookup.go", "line": 30, "end_line": 36}]},
+    {"id": "unavailable", "lane": "qualification", "col": 2, "type": "backend", "label": "Enrichment unavailable", "sublabel": "DB absent or lookup error", "sources": [{"path": "internal/decoder/stream/vulnerability/lookup.go", "line": 38, "end_line": 48}]},
+    {"id": "no-confirmed", "lane": "qualification", "col": 3, "type": "backend", "label": "No confirmed CVE", "sublabel": "Includes unknown prerequisites", "sources": [{"path": "internal/decoder/stream/vulnerability/lookup.go", "line": 50, "end_line": 70}, {"path": "internal/vulndb/SCHEMA.md", "line": 35, "end_line": 42}]}
+  ],
+  "edges": [
+    {"id": "input", "from": "software", "to": "identity", "variant": "emphasis"}, {"id": "identity-ok", "from": "identity", "to": "database", "label": "host + version", "variant": "emphasis"},
+    {"id": "identity-missing", "from": "identity", "to": "unresolved", "label": "missing fields", "role": "branch"},
+    {"id": "query-ok", "from": "database", "to": "conditions", "label": "DB available", "variant": "emphasis"}, {"id": "query-failed", "from": "database", "to": "unavailable", "label": "absent / error", "role": "error"},
+    {"id": "match", "from": "conditions", "to": "finding", "label": "match + writer", "variant": "emphasis"}, {"id": "withhold", "from": "conditions", "to": "no-confirmed", "label": "no positive match", "role": "branch"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "Preserve the assessment string", "items": ["The Software record distinguishes identity-or-host-unresolved, database-unavailable, lookup-error, no-confirmed-applicability and cpe-product-version (vulnerability/lookup.go:30-71).", "The matcher uses explicit CPE product aliases and the stored AND/OR/negation tree. Unknown OS, edition or target prerequisites remain unknown; suffix version ordering is not guessed (internal/vulndb/SCHEMA.md:35-42).", "A positive result remains a candidate about installed exposure: backported fixes and real host configuration require verification (docs/vulnerability-analysis.md:30-46)."]},
+    {"dot": "amber", "title": "Empty output is not a clean bill of health", "items": ["A missing row may mean that software was not identified, enrichment was disabled, no database was installed, or no match could be established (docs/vulnerability-analysis.md:46).", "Retain the capture identity and database release/hash. Updating the database does not re-enrich an existing capture; run the analysis again (docs/vulnerability-analysis.md:8-12).", "Software and Vulnerability record writers must be selected to persist their respective observations. The capture-driven lookup does not guarantee a saved row (vulnerability/utils.go:166-197)."]},
+    {"dot": "emerald", "title": "References are a separate evidence layer", "items": ["Browser/API reference metadata comes from the database installed at browsing time, which can differ from the capture-time snapshot (docs/vulnerability-analysis.md:48-52).", "Next: exploits.html explains references-applicable-cve and why neither an exploit link nor a CVSS score establishes compromise."]}
+  ]
+}

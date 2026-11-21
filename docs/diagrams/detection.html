@@ -5270,15 +5270,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
         <!-- Edge paths -->
         <path data-edge-from="rules" data-edge-to="alerts" data-edge-label="rule alerts" data-edge-key="0" data-edge-id="capture-alert" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="347.2,145;347.2,341" d="M 347.2 145 L 347.2 341" class="a-emphasis" data-animate="edge" style="--step:1" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="alerts" data-edge-to="outbox" data-edge-label="deliver-alerts command" data-edge-key="1" data-edge-id="enqueue" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="409.2,367;532.8,367" d="M 409.2 367 L 532.8 367" class="a-emphasis" data-animate="edge" style="--step:2" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="alerts" data-edge-to="outbox" data-edge-label="deliver-alerts command" data-edge-key="1" data-edge-id="enqueue" data-composition-routing="workflow-v2-auto" data-edge-role="branch" data-composition-points="409.2,367;532.8,367" d="M 409.2 367 L 532.8 367" class="a-default" data-animate="edge" style="--step:4" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <path data-edge-from="records" data-edge-to="rules" data-edge-label="-rules enabled" data-edge-key="2" data-edge-id="evaluate" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="188,119;273.2,119" d="M 188 119 L 273.2 119" class="a-emphasis" data-animate="edge" style="--step:0" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="rules" data-edge-to="filter" data-edge-label="always after rules" data-edge-key="3" data-edge-id="filter-after" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="421.2,119;548.8,119" d="M 421.2 119 L 548.8 119" class="a-default" data-animate="edge" style="--step:9" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="offline" data-edge-to="alerts" data-edge-label="group crossings" data-edge-key="4" data-edge-id="offline-alert" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="820.8,269;820.8,290;371.2,290;371.2,341" d="M 820.8 269 L 820.8 282 Q 820.8 290 812.8 290 L 379.2 290 Q 371.2 290 371.2 298 L 371.2 341" class="a-default" data-animate="edge" style="--step:10" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="audit" data-edge-to="offline" data-edge-label="ready + explicit run" data-edge-key="5" data-edge-id="offline-run" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="820.8,145;820.8,217" d="M 820.8 145 L 820.8 217" class="a-default" data-animate="edge" style="--step:11" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="post" data-edge-to="receipt" data-edge-label="persist outcome" data-edge-key="6" data-edge-id="outcome" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="654.8,491;744.8,491" d="M 654.8 491 L 744.8 491" class="a-emphasis" data-animate="edge" style="--step:4" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="filter" data-edge-to="audit" data-edge-label="filter passes" data-edge-key="7" data-edge-id="retained" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="652.8,119;768.8,119" d="M 652.8 119 L 768.8 119" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="receipt" data-edge-to="outbox" data-edge-label="pending: rerun when due" data-edge-key="8" data-edge-id="retry" data-composition-routing="workflow-v2-auto" data-edge-role="return" data-composition-points="820.8,465;820.8,367;668.8,367" d="M 820.8 465 L 820.8 375 Q 820.8 367 812.8 367 L 668.8 367" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="outbox" data-edge-to="post" data-edge-label="due notices" data-edge-key="9" data-edge-id="send" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="600.8,393;600.8,465" d="M 600.8 393 L 600.8 465" class="a-emphasis" data-animate="edge" style="--step:3" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="rules" data-edge-to="filter" data-edge-label="always after rules" data-edge-key="3" data-edge-id="filter-after" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="421.2,119;548.8,119" d="M 421.2 119 L 548.8 119" class="a-default" data-animate="edge" style="--step:6" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="offline" data-edge-to="alerts" data-edge-label="group crossings" data-edge-key="4" data-edge-id="offline-alert" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="820.8,269;820.8,290;371.2,290;371.2,341" d="M 820.8 269 L 820.8 282 Q 820.8 290 812.8 290 L 379.2 290 Q 371.2 290 371.2 298 L 371.2 341" class="a-default" data-animate="edge" style="--step:7" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="audit" data-edge-to="offline" data-edge-label="ready + explicit run" data-edge-key="5" data-edge-id="offline-run" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="820.8,145;820.8,217" d="M 820.8 145 L 820.8 217" class="a-default" data-animate="edge" style="--step:8" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="post" data-edge-to="receipt" data-edge-label="persist outcome" data-edge-key="6" data-edge-id="outcome" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="654.8,491;744.8,491" d="M 654.8 491 L 744.8 491" class="a-default" data-animate="edge" style="--step:9" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="filter" data-edge-to="audit" data-edge-label="filter passes" data-edge-key="7" data-edge-id="retained" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="652.8,119;768.8,119" d="M 652.8 119 L 768.8 119" class="a-default" data-animate="edge" style="--step:10" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="receipt" data-edge-to="outbox" data-edge-label="pending: rerun when due" data-edge-key="8" data-edge-id="retry" data-composition-routing="workflow-v2-auto" data-edge-role="return" data-composition-points="820.8,465;820.8,367;668.8,367" d="M 820.8 465 L 820.8 375 Q 820.8 367 812.8 367 L 668.8 367" class="a-default" data-animate="edge" style="--step:11" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="outbox" data-edge-to="post" data-edge-label="due notices" data-edge-key="9" data-edge-id="send" data-composition-routing="workflow-v2-auto" data-edge-role="" data-composition-points="600.8,393;600.8,465" d="M 600.8 393 L 600.8 465" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead)"/>
 
         <!-- Nodes -->
         <g id="node-records" data-node-id="records" data-node-label="Decoded records" tabindex="0" role="button" aria-label="Focus Decoded records, Typed protocol observations, Capture with configured rules" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Typed protocol observations" data-node-context="Capture with configured rules">
@@ -5307,7 +5307,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <g id="node-filter" data-node-id="filter" data-node-label="Output filter" tabindex="0" role="button" aria-label="Focus Output filter, After rule evaluation, Capture with configured rules" aria-pressed="false" data-node-kind="backend" data-node-sublabel="After rule evaluation" data-node-context="Capture with configured rules">
           <title>Output filter · After rule evaluation · Capture with configured rules</title>
           <rect x="548.8" y="93" width="104" height="52" rx="8" class="c-mask"/>
-          <rect x="548.8" y="93" width="104" height="52" rx="8" class="c-backend" data-animate="node" style="--step:8" stroke-width="1.5"/>
+          <rect x="548.8" y="93" width="104" height="52" rx="8" class="c-backend" data-animate="node" style="--step:5" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(554.8 99) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
@@ -5318,7 +5318,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <g id="node-audit" data-node-id="audit" data-node-label="Retained records" tabindex="0" role="button" aria-label="Focus Retained records, Only accepted output, Capture with configured rules" aria-pressed="false" data-node-kind="database" data-node-sublabel="Only accepted output" data-node-context="Capture with configured rules">
           <title>Retained records · Only accepted output · Capture with configured rules</title>
           <rect x="768.8" y="93" width="104" height="52" rx="8" class="c-mask"/>
-          <rect x="768.8" y="93" width="104" height="52" rx="8" class="c-database" data-animate="node" style="--step:9" stroke-width="1.5"/>
+          <rect x="768.8" y="93" width="104" height="52" rx="8" class="c-database" data-animate="node" style="--step:6" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(774.8 99) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
@@ -5330,7 +5330,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <g id="node-offline" data-node-id="offline" data-node-label="Offline rule pack" tabindex="0" role="button" aria-label="Focus Offline rule pack, Finalized capture required, Explicit offline hunt" aria-pressed="false" data-node-kind="security" data-node-sublabel="Finalized capture required" data-node-context="Explicit offline hunt">
           <title>Offline rule pack · Finalized capture required · Explicit offline hunt</title>
           <rect x="758.8" y="217" width="124" height="52" rx="8" class="c-mask"/>
-          <rect x="758.8" y="217" width="124" height="52" rx="8" class="c-security" data-animate="node" style="--step:10" stroke-width="1.5"/>
+          <rect x="758.8" y="217" width="124" height="52" rx="8" class="c-security" data-animate="node" style="--step:7" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(764.8 223) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
@@ -5354,7 +5354,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <g id="node-outbox" data-node-id="outbox" data-node-label="Private outbox" tabindex="0" role="button" aria-label="Focus Private outbox, Redacted notices in SQLite, Durable alert history" aria-pressed="false" data-node-kind="database" data-node-sublabel="Redacted notices in SQLite" data-node-context="Durable alert history">
           <title>Private outbox · Redacted notices in SQLite · Durable alert history</title>
           <rect x="532.8" y="341" width="136" height="52" rx="8" class="c-mask"/>
-          <rect x="532.8" y="341" width="136" height="52" rx="8" class="c-database" data-animate="node" style="--step:3" stroke-width="1.5"/>
+          <rect x="532.8" y="341" width="136" height="52" rx="8" class="c-database" data-animate="node" style="--step:9" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(538.8 347) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
@@ -5366,7 +5366,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <g id="node-post" data-node-id="post" data-node-label="Webhook POST" tabindex="0" role="button" aria-label="Focus Webhook POST, Stable Idempotency-Key, Opt-in webhook delivery" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="Stable Idempotency-Key" data-node-context="Opt-in webhook delivery">
           <title>Webhook POST · Stable Idempotency-Key · Opt-in webhook delivery</title>
           <rect x="546.8" y="465" width="108" height="52" rx="8" class="c-mask"/>
-          <rect x="546.8" y="465" width="108" height="52" rx="8" class="c-cloud" data-animate="node" style="--step:4" stroke-width="1.5"/>
+          <rect x="546.8" y="465" width="108" height="52" rx="8" class="c-cloud" data-animate="node" style="--step:10" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(552.8 471) scale(0.6875)">
             <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
           </g>
@@ -5377,7 +5377,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <g id="node-receipt" data-node-id="receipt" data-node-label="Delivery receipt" tabindex="0" role="button" aria-label="Focus Delivery receipt, Delivered / pending / rejected, Opt-in webhook delivery" aria-pressed="false" data-node-kind="database" data-node-sublabel="Delivered / pending / rejected" data-node-context="Opt-in webhook delivery">
           <title>Delivery receipt · Delivered / pending / rejected · Opt-in webhook delivery</title>
           <rect x="744.8" y="465" width="152" height="52" rx="8" class="c-mask"/>
-          <rect x="744.8" y="465" width="152" height="52" rx="8" class="c-database" data-animate="node" style="--step:5" stroke-width="1.5"/>
+          <rect x="744.8" y="465" width="152" height="52" rx="8" class="c-database" data-animate="node" style="--step:11" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(750.8 471) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
@@ -5393,7 +5393,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         </g>
         <g data-detail="context" data-edge-from="alerts" data-edge-to="outbox" data-edge-label="deliver-alerts command" data-edge-key="1" data-edge-id="enqueue">
           <rect x="413.2" y="347" width="115.6" height="14" rx="3" class="c-mask"/>
-          <text x="471" y="357" class="t-edge-emphasis" font-size="8" text-anchor="middle">deliver-alerts command</text>
+          <text x="471" y="357" class="t-muted" font-size="8" text-anchor="middle">deliver-alerts command</text>
         </g>
         <g data-detail="context" data-edge-from="records" data-edge-to="rules" data-edge-label="-rules enabled" data-edge-key="2" data-edge-id="evaluate">
           <rect x="192" y="99" width="77.2" height="14" rx="3" class="c-mask"/>
@@ -5413,7 +5413,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         </g>
         <g data-detail="context" data-edge-from="post" data-edge-to="receipt" data-edge-label="persist outcome" data-edge-key="6" data-edge-id="outcome">
           <rect x="658.8" y="471" width="82" height="14" rx="3" class="c-mask"/>
-          <text x="699.8" y="481" class="t-edge-emphasis" font-size="8" text-anchor="middle">persist outcome</text>
+          <text x="699.8" y="481" class="t-muted" font-size="8" text-anchor="middle">persist outcome</text>
         </g>
         <g data-detail="context" data-edge-from="filter" data-edge-to="audit" data-edge-label="filter passes" data-edge-key="7" data-edge-id="retained">
           <rect x="674.5999999999999" y="99" width="72.4" height="14" rx="3" class="c-mask"/>
@@ -5425,7 +5425,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         </g>
         <g data-detail="context" data-edge-from="outbox" data-edge-to="post" data-edge-label="due notices" data-edge-key="9" data-edge-id="send">
           <rect x="569.4" y="419" width="62.8" height="14" rx="3" class="c-mask"/>
-          <text x="600.8" y="429" class="t-edge-emphasis" font-size="8" text-anchor="middle">due notices</text>
+          <text x="600.8" y="429" class="t-muted" font-size="8" text-anchor="middle">due notices</text>
         </g>
 
         <!-- Legend -->

@@ -32,10 +32,38 @@ function checkVerification(verification) {
       throw new Error(`${name}: stale or incomplete verification; render again`);
     }
   }
+  const gallery = readFileSync(join(directory, 'index.html'), 'utf8');
+  const links = [...gallery.matchAll(/data-spec="([a-z-]+)"/g)].map(match => match[1]);
+  if (links.length !== specs.length || new Set(links).size !== specs.length ||
+      specs.some(name => !links.includes(name.slice(0, -5)))) {
+    throw new Error('Gallery navigation and specification inventory differ');
+  }
+  for (const match of gallery.matchAll(/data-related="([a-z -]+)"/g)) {
+    if (match[1].split(' ').some(name => !links.includes(name))) throw new Error('Unknown related diagram');
+  }
+}
+
+function entryFromReceipt(receipt, specification, spec) {
+  return { specification, artifact: spec.meta.output, type: spec.diagram_type,
+    revision: spec.meta.repository.revision, specificationSHA256: receipt.specification.sha256,
+    artifactSHA256: receipt.artifact.sha256, archifyVersion: receipt.update.installedVersion,
+    gates: receipt.gates, visualReview: receipt.visualReview };
 }
 
 if (args.includes('--check')) {
   checkVerification(JSON.parse(readFileSync(verificationPath, 'utf8')));
+  const reviewPath = join(directory, 'review.json');
+  if (existsSync(reviewPath)) {
+    const review = JSON.parse(readFileSync(reviewPath, 'utf8'));
+    if (review.diagrams.length !== specs.length) throw new Error('Visual review inventory changed');
+    for (const name of specs) {
+      const artifact = JSON.parse(readFileSync(join(directory, 'specs', name), 'utf8')).meta.output;
+      const entry = review.diagrams.find(item => item.artifact === artifact);
+      if (!entry || entry.artifactSHA256 !== hash(join(root, artifact)) || entry.light !== 'pass' || entry.dark !== 'pass') {
+        throw new Error(`${name}: visual review is missing or stale`);
+      }
+    }
+  }
   console.log(`Verified ${specs.length} specifications and HTML artifacts against their passing receipts.`);
 } else {
   if (!existsSync(cli)) throw new Error('Install Archify globally or set ARCHIFY_CLI to bin/archify.mjs');
@@ -43,6 +71,23 @@ if (args.includes('--check')) {
   mkdirSync(run, { recursive: true });
   const previous = existsSync(verificationPath) ? JSON.parse(readFileSync(verificationPath, 'utf8')).diagrams : [];
   const updated = new Map(previous.map(entry => [entry.specification, entry]));
+  // Recover passing work from an interrupted multi-diagram run by exact byte identity.
+  for (const folder of readdirSync(join(directory, '.validation'), { withFileTypes: true })) {
+    if (!folder.isDirectory()) continue;
+    for (const name of specs) {
+      const stem = name.slice(0, -5);
+      const summary = join(directory, '.validation', folder.name, stem, `${stem}.finalize-summary.json`);
+      if (!existsSync(summary)) continue;
+      const receipt = JSON.parse(readFileSync(summary, 'utf8'));
+      const specification = `docs/diagrams/specs/${name}`;
+      const spec = JSON.parse(readFileSync(join(root, specification), 'utf8'));
+      const artifact = join(root, spec.meta.output);
+      if (receipt.ok && gates.every(gate => receipt.gates[gate] === 'pass') && existsSync(artifact) &&
+          receipt.specification.sha256 === hash(join(root, specification)) && receipt.artifact.sha256 === hash(artifact)) {
+        updated.set(specification, entryFromReceipt(receipt, specification, spec));
+      }
+    }
+  }
   for (const name of selected) {
     const specification = `docs/diagrams/specs/${name}`;
     const spec = JSON.parse(readFileSync(join(root, specification), 'utf8'));
@@ -58,10 +103,7 @@ if (args.includes('--check')) {
     if (!receipt.ok || gates.some(gate => receipt.gates[gate] !== 'pass')) {
       throw new Error(`${name}: finalize did not pass all gates`);
     }
-    updated.set(specification, { specification, artifact: spec.meta.output, type: spec.diagram_type,
-      revision: spec.meta.repository.revision, specificationSHA256: receipt.specification.sha256,
-      artifactSHA256: receipt.artifact.sha256, archifyVersion: receipt.update.installedVersion,
-      gates: receipt.gates, visualReview: receipt.visualReview });
+    updated.set(specification, entryFromReceipt(receipt, specification, spec));
   }
   const diagrams = specs.map(name => updated.get(`docs/diagrams/specs/${name}`));
   const verification = { version: 1, diagrams };

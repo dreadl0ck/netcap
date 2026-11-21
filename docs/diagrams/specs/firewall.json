@@ -1,0 +1,32 @@
+{
+  "schema_version": 2, "diagram_type": "workflow",
+  "meta": {"title": "Firewall decisions: inline enforcement versus retrospective capture policy", "locale": "en", "output": "docs/diagrams/firewall.html", "quality_profile": "showcase", "repository": {"url": "git@github.com:dreadl0ck/netcap.git", "revision": "0e64128f514cf7938a60f4a13ab05146442c6f7f", "link_mode": "local-only"}},
+  "lanes": [{"id": "audit-lane", "label": "Policy decision audit"}, {"id": "inline", "label": "Inline HTTP reverse-proxy WAF"}, {"id": "outcomes", "label": "Rejected before forwarding"}, {"id": "retrospective", "label": "Separate capture policy bridge"}],
+  "mainPath": ["request", "validation", "native", "coraza", "origin"],
+  "nodes": [
+    {"id": "request", "lane": "inline", "col": 0, "type": "external", "label": "HTTP request", "sublabel": "Sent through the proxy", "sources": [{"path": "docs/APPLICATION_FIREWALL.md", "line": 3, "end_line": 9}]},
+    {"id": "validation", "lane": "inline", "col": 1, "type": "security", "label": "Validate + admit", "sublabel": "Framing, quotas, body bounds", "width": 150, "sources": [{"path": "internal/waf/firewall.go", "line": 481, "end_line": 490}, {"path": "docs/APPLICATION_FIREWALL.md", "line": 118, "end_line": 128}]},
+    {"id": "native", "lane": "inline", "col": 2, "type": "security", "label": "Native policy", "sublabel": "netcap-policy/v1", "sources": [{"path": "internal/waf/firewall.go", "line": 492, "end_line": 505}, {"path": "internal/waf/firewall.go", "line": 644, "end_line": 692}]},
+    {"id": "coraza", "lane": "inline", "col": 3, "type": "security", "label": "Coraza / CRS", "sublabel": "If enabled in build + config", "width": 150, "sources": [{"path": "internal/waf/firewall.go", "line": 506, "end_line": 518}, {"path": "internal/waf/inspection.go", "line": 18, "end_line": 41}]},
+    {"id": "origin", "lane": "inline", "col": 4, "type": "backend", "label": "Origin server", "sublabel": "Only admitted requests", "sources": [{"path": "internal/waf/firewall.go", "line": 520, "end_line": 530}]},
+    {"id": "rejected", "lane": "outcomes", "col": 2, "type": "security", "label": "Reject request", "sublabel": "No request forwarded", "sources": [{"path": "internal/waf/firewall.go", "line": 481, "end_line": 518}, {"path": "internal/waf/inspection.go", "line": 18, "end_line": 41}]},
+    {"id": "audit", "lane": "audit-lane", "col": 2, "type": "database", "label": "Decision audit", "sublabel": "Mode, rule and revision", "sources": [{"path": "internal/waf/firewall.go", "line": 662, "end_line": 686}]},
+    {"id": "captured", "lane": "retrospective", "col": 0, "type": "backend", "label": "Decoded capture", "sublabel": "Traffic already observed", "width": 150, "sources": [{"path": "cmd/capture/flags.go", "line": 47, "end_line": 47}, {"path": "docs/APPLICATION_FIREWALL.md", "line": 92, "end_line": 103}]},
+    {"id": "bridge", "lane": "retrospective", "col": 1, "type": "security", "label": "Decoder policy bridge", "sublabel": "Explicit -firewall-policy", "width": 160, "sources": [{"path": "cmd/capture/flags.go", "line": 47, "end_line": 47}, {"path": "docs/APPLICATION_FIREWALL.md", "line": 92, "end_line": 103}]}
+  ],
+  "edges": [
+    {"id": "receive", "from": "request", "to": "validation", "variant": "emphasis"}, {"id": "valid", "from": "validation", "to": "native", "label": "valid + admitted", "variant": "emphasis"},
+    {"id": "invalid", "from": "validation", "to": "rejected", "label": "validation failure", "role": "error", "variant": "security"},
+    {"id": "crs-enabled", "from": "native", "to": "coraza", "label": "continue; CRS on", "variant": "emphasis"}, {"id": "crs-off", "from": "native", "to": "origin", "label": "continue; CRS off", "role": "branch"},
+    {"id": "native-block", "from": "native", "to": "rejected", "label": "enforce deny / error", "role": "error", "variant": "security"},
+    {"id": "crs-pass", "from": "coraza", "to": "origin", "label": "allow / monitor", "variant": "emphasis"},
+    {"id": "crs-block", "from": "coraza", "to": "rejected", "label": "enforce / parse error", "role": "error", "variant": "security"},
+    {"id": "record-policy", "from": "native", "to": "audit", "label": "record verdict"},
+    {"id": "record-bridge", "from": "captured", "to": "bridge", "label": "after observation"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "What continue means in each mode", "items": ["An allow continues. In enforce mode a policy deny returns its status without forwarding. In monitor mode native denies become would-deny and continue; configured CRS matches also continue (firewall.go:662-692; inspection.go:31-41).", "Monitor mode still rejects malformed input, structural validation failures, resource limits and evaluation errors (docs/APPLICATION_FIREWALL.md:72-77).", "CRS is an optional build/config branch. The request must pass both the native policy and enabled inspection before reaching the origin (firewall.go:502-525)."]},
+    {"dot": "amber", "title": "The capture bridge cannot intercept a past transaction", "items": ["The lower lane is a separate retrospective entry point. -firewall-policy evaluates decoded records after observation and does not intercept completed transactions (cmd/capture/flags.go:47).", "Rootless HTTP mode installs no host packet rules. Optional NFQUEUE verdicts and nftables leases belong to separate Linux commands in an explicitly named namespace (docs/APPLICATION_FIREWALL.md:85-103).", "Origin access must be restricted to the proxy; traffic sent directly to the origin bypasses this WAF path (docs/APPLICATION_FIREWALL.md:5)."]},
+    {"dot": "emerald", "title": "Request path scope", "items": ["This chart focuses on request admission. Response headers are inspected separately; response bodies need inspectResponse=true. WebSocket, gRPC and HTTP/3 have explicit listener/inspection contracts (docs/APPLICATION_FIREWALL.md:122-129).", "File, managed and fleet policy ownership are distinct operating modes; managed and fleet ownership cannot overlap (docs/APPLICATION_FIREWALL.md:85-102).", "Next: rule-evaluation.html explains audit-record rules; those are distinct from netcap-policy/v1 WAF policy."]}
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1, "diagram_type": "sequence",
+  "meta": {"title": "How a scoped rule fires: an illustrative 3-in-10-second threshold", "locale": "en", "output": "docs/diagrams/rule-evaluation.html", "quality_profile": "showcase", "repository": {"url": "git@github.com:dreadl0ck/netcap.git", "revision": "0e64128f514cf7938a60f4a13ab05146442c6f7f", "link_mode": "local-only"}},
+  "participants": [
+    {"id": "observations", "type": "backend", "label": "Captured records", "sublabel": "Illustrative TCP events", "sources": [{"path": "internal/collector/filtering_writer.go", "line": 51, "end_line": 81}]},
+    {"id": "ordered", "type": "messagebus", "label": "Ordered stream", "sublabel": "Capture-time mode", "sources": [{"path": "internal/rules/engine.go", "line": 238, "end_line": 255}, {"path": "docs/RULES_ENGINE.md", "line": 63, "end_line": 71}]},
+    {"id": "rule", "type": "security", "label": "Rule evaluator", "sublabel": "SYN; group by SrcIP", "sources": [{"path": "internal/rules/engine.go", "line": 294, "end_line": 388}, {"path": "internal/rules/scoped.go", "line": 46, "end_line": 100}]},
+    {"id": "history", "type": "database", "label": "Alert history", "sublabel": "Alert.ncap.gz", "sources": [{"path": "internal/rules/engine.go", "line": 416, "end_line": 429}, {"path": "internal/rules/alert_writer.go", "line": 132, "end_line": 164}]}
+  ],
+  "segments": [{"from": 150, "to": 365, "label": "Separate groups"}, {"from": 385, "to": 610, "label": "Only matches count"}, {"from": 630, "to": 850, "label": "Crossing + durable alert"}],
+  "messages": [
+    {"id": "a1", "from": "observations", "to": "ordered", "y": 170, "label": "t=1s: A, SYN"},
+    {"id": "evaluate-a1", "from": "ordered", "to": "rule", "y": 210, "label": "A: first match", "note": "A = 1 / 3; no alert"},
+    {"id": "b1", "from": "observations", "to": "ordered", "y": 280, "label": "t=2s: B, SYN"},
+    {"id": "evaluate-b1", "from": "ordered", "to": "rule", "y": 320, "label": "B: first match", "note": "B = 1 / 3; A unchanged"},
+    {"id": "ack", "from": "observations", "to": "ordered", "y": 410, "label": "t=3s: A, ACK only"},
+    {"id": "ignore-ack", "from": "ordered", "to": "rule", "y": 450, "label": "SYN expression false", "note": "A remains 1 / 3"},
+    {"id": "a2", "from": "observations", "to": "ordered", "y": 520, "label": "t=4s: A, SYN"},
+    {"id": "evaluate-a2", "from": "ordered", "to": "rule", "y": 560, "label": "A: second match", "note": "A = 2 / 3; no alert"},
+    {"id": "a3", "from": "observations", "to": "ordered", "y": 650, "label": "t=6s: A, SYN", "variant": "emphasis"},
+    {"id": "evaluate-a3", "from": "ordered", "to": "rule", "y": 690, "label": "A reaches 3 within 10s", "note": "Reset A's threshold group", "variant": "emphasis"},
+    {"id": "write", "from": "rule", "to": "history", "y": 770, "label": "append one scoped alert", "variant": "emphasis"},
+    {"id": "written", "from": "history", "to": "rule", "y": 815, "label": "write result", "variant": "return"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "Illustrative records, not a measured trace", "items": ["Assume one qualified capture/source scope, capture_time mode, type TCP, expression SYN, threshold 3, threshold_window 10 and group_by [SrcIP]. A and B are two distinct source IPs; the relative times are synthetic.", "Messages show the order in which records are released for evaluation. Actual capture-time mode buffers up to configured lateness; finalization drains pending records before readiness (docs/RULES_ENGINE.md:63-71)."]},
+    {"dot": "emerald", "title": "Why exactly one alert appears", "items": ["Only expression matches reach threshold counting. Group keys include scope, rule name and configured fields (engine.go:320-388; scoped.go:34-36,46-100).", "At t=6, A's matching observations are at 1, 4 and 6 seconds. B's match and A's ACK-only record do not contribute to A's threshold.", "The window boundary is inclusive. A crossing deletes that group's count state; it does not consume another group's history (scoped.go:68-98)."]},
+    {"dot": "amber", "title": "Conditions outside this example", "items": ["An optional sequence precondition runs before threshold counting. Wall-clock deduplication and rate limiting are not the scoped counting model shown here (engine.go:330-427).", "Missing grouping fields, ambiguous scope, excessive lateness or state capacity can withhold or fail evaluation. A threshold configuration alone does not prove capture coverage (docs/RULES_ENGINE.md:63-77).", "Next: detection.html follows the saved alert into optional delivery; firewall.html distinguishes a match from inline enforcement."]}
+  ]
+}
