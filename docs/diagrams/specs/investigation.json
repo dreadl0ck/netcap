@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Netcap investigation: bind, search, resolve and review",
+    "locale": "en",
+    "output": "docs/diagrams/investigation.html",
+    "quality_profile": "showcase",
+    "repository": {"url": "git@github.com:dreadl0ck/netcap.git", "revision": "4b0b2d84fac481717897dd7022b998304954af20", "link_mode": "local-only"}
+  },
+  "participants": [
+    {"id": "reader", "type": "frontend", "label": "Investigator", "sublabel": "Web UI / MCP", "sources": [{"path": "docs/evidence.md", "line": 174, "end_line": 197}]},
+    {"id": "api", "type": "backend", "label": "Analyst API", "sublabel": "Explicit capture scope", "sources": [{"path": "cmd/capture/webui/analyst_handlers.go", "line": 56, "end_line": 145}, {"path": "cmd/capture/webui/analyst_handlers.go", "line": 147, "end_line": 183}, {"path": "internal/analyst/workspace.go", "line": 69, "end_line": 194}]},
+    {"id": "evidence", "type": "database", "label": "Capture evidence", "sublabel": "Manifest + audit files", "sources": [{"path": "internal/analyst/occurrence.go", "line": 31, "end_line": 118}, {"path": "internal/analyst/occurrence.go", "line": 145, "end_line": 160}, {"path": "internal/analyst/catalogue.go", "line": 18, "end_line": 101}]},
+    {"id": "workspace", "type": "database", "label": "Private workspace", "sublabel": "Drafts + revisions", "sources": [{"path": "internal/analyst/workspace.go", "line": 69, "end_line": 194}]}
+  ],
+  "messages": [
+    {"id": "choose", "from": "reader", "to": "api", "y": 160, "label": "GET binding for capture", "variant": "emphasis"},
+    {"id": "bind", "from": "api", "to": "evidence", "y": 204, "label": "read manifest + ready"},
+    {"id": "bound", "from": "evidence", "to": "api", "y": 248, "label": "RunID + source hashes", "variant": "return"},
+    {"id": "binding", "from": "api", "to": "reader", "y": 292, "label": "capture binding", "variant": "return"},
+    {"id": "query", "from": "reader", "to": "api", "y": 348, "label": "POST catalogue + bindings", "variant": "emphasis"},
+    {"id": "scan", "from": "api", "to": "evidence", "y": 392, "label": "scan included captures"},
+    {"id": "matches", "from": "evidence", "to": "api", "y": 436, "label": "matches + coverage", "variant": "return"},
+    {"id": "catalogue", "from": "api", "to": "reader", "y": 480, "label": "snapshot + references", "variant": "return"},
+    {"id": "open", "from": "reader", "to": "api", "y": 536, "label": "POST resolve(reference)", "variant": "emphasis"},
+    {"id": "verify", "from": "api", "to": "evidence", "y": 580, "label": "verify file + frame"},
+    {"id": "resolved", "from": "evidence", "to": "api", "y": 624, "label": "record / stale binding", "variant": "return"},
+    {"id": "show", "from": "api", "to": "reader", "y": 668, "label": "record or HTTP 409", "variant": "return"},
+    {"id": "draft", "from": "reader", "to": "api", "y": 724, "label": "save draft + expected rev", "variant": "emphasis"},
+    {"id": "persist", "from": "api", "to": "workspace", "y": 768, "label": "verify refs; atomic save"},
+    {"id": "saved", "from": "workspace", "to": "api", "y": 812, "label": "saved revision", "variant": "return"},
+    {"id": "saved-reply", "from": "api", "to": "reader", "y": 856, "label": "draft revision", "variant": "return"},
+    {"id": "review", "from": "reader", "to": "api", "y": 912, "label": "review unchanged draft", "variant": "security"},
+    {"id": "review-save", "from": "api", "to": "workspace", "y": 956, "label": "CAS + named reviewer", "variant": "security"},
+    {"id": "reviewed", "from": "workspace", "to": "api", "y": 1000, "label": "reviewed revision", "variant": "return"},
+    {"id": "review-reply", "from": "api", "to": "reader", "y": 1044, "label": "reviewed report", "variant": "return"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "Identity precedes analysis", "items": ["Bindings contain RunID, source SHA-256 and manifest SHA-256. A finished capture must have a matching audit-ready marker (internal/analyst/occurrence.go:33-90).", "Catalogue searches include 1-8 authorized captures and explicit record types. The first capture is the novelty target; later captures form its baseline (docs/evidence.md:178-195).", "Source selection never silently changes to a different capture (analyst_handlers.go:56-67)."]},
+    {"dot": "amber", "title": "A match stays attached to exact bytes", "items": ["Occurrence references bind file/frame hashes, type, ordinal, timestamp and capture identity (internal/analyst/occurrence.go:39-48).", "Changed evidence fails resolution with HTTP 409. Later catalogue pages require the first page's snapshot hash (analyst_handlers.go:30-34,140; docs/evidence.md:193).", "The arrows show call order, not measured latency. Coverage limits and missing fields qualify novelty; they do not prove global absence (docs/evidence.md:189-193)."]},
+    {"dot": "emerald", "title": "Review is an explicit state change", "items": ["Documents are saved with revision CAS, a private lock and atomic replacement (internal/analyst/workspace.go:69-194).", "A reviewer is required. Changed content must be saved as a draft before it can be reviewed again (workspace.go:118,151-176).", "Packet carving, child reanalysis and reviewed diagnostics are adjacent workflows; they preserve the same capture identity contracts (docs/evidence.md:49-172)."]}
+  ]
+}

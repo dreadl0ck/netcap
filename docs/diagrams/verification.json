@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "diagrams": [
+    {
+      "specification": "docs/diagrams/specs/behavior.json",
+      "artifact": "docs/diagrams/behavior.html",
+      "type": "lifecycle",
+      "revision": "4b0b2d84fac481717897dd7022b998304954af20",
+      "specificationSHA256": "37327a9cb810b3828cb783d9696b62c4fafa1205f20c78f17f23121b9210b90d",
+      "artifactSHA256": "1adb026bf08667229ae4d76217296eb024bb0d6b34b73d0357d34fa1a0761bd5",
+      "archifyVersion": "3.2.0",
+      "gates": {
+        "validate": "pass",
+        "deliver": "pass",
+        "check": "pass",
+        "browser-check": "pass"
+      },
+      "visualReview": "not-requested"
+    },
+    {
+      "specification": "docs/diagrams/specs/decoding.json",
+      "artifact": "docs/diagrams/decoding.html",
+      "type": "dataflow",
+      "revision": "4b0b2d84fac481717897dd7022b998304954af20",
+      "specificationSHA256": "8b7ad5ffdee0a4cf28702ae2dce2742dc4b11f434980db4cdb3479eee14fd459",
+      "artifactSHA256": "427aa3c7153433736bff105af107beb6c1729a261b17d0f124664d74284bc808",
+      "archifyVersion": "3.2.0",
+      "gates": {
+        "validate": "pass",
+        "deliver": "pass",
+        "check": "pass",
+        "browser-check": "pass"
+      },
+      "visualReview": "not-requested"
+    },
+    {
+      "specification": "docs/diagrams/specs/detection.json",
+      "artifact": "docs/diagrams/detection.html",
+      "type": "workflow",
+      "revision": "4b0b2d84fac481717897dd7022b998304954af20",
+      "specificationSHA256": "779418cf03b72e74bdc4a22e9040cf64489adaaa3a5c47cc1a028e77fd2f47d9",
+      "artifactSHA256": "d271868363383ecfb39e5d7e656e1f8eb452e58aca17f88829a53b12a837c62e",
+      "archifyVersion": "3.2.0",
+      "gates": {
+        "validate": "pass",
+        "deliver": "pass",
+        "check": "pass",
+        "browser-check": "pass"
+      },
+      "visualReview": "not-requested"
+    },
+    {
+      "specification": "docs/diagrams/specs/distributed.json",
+      "artifact": "docs/diagrams/distributed.html",
+      "type": "architecture",
+      "revision": "4b0b2d84fac481717897dd7022b998304954af20",
+      "specificationSHA256": "120a0275f3f98327d62afc2fea52351174f93e63a78e89bd08b87d4f90dbead8",
+      "artifactSHA256": "9f6c76f4362a493710e4c4deeafd8cc33958996ade4a08eaa1f9aee1644443d9",
+      "archifyVersion": "3.2.0",
+      "gates": {
+        "validate": "pass",
+        "deliver": "pass",
+        "check": "pass",
+        "browser-check": "pass"
+      },
+      "visualReview": "not-requested"
+    },
+    {
+      "specification": "docs/diagrams/specs/files.json",
+      "artifact": "docs/diagrams/files.html",
+      "type": "workflow",
+      "revision": "4b0b2d84fac481717897dd7022b998304954af20",
+      "specificationSHA256": "805bce17cc3e2efc1bcbd071d2743bf3e4e33ee2bb9966ab4e1cb08d8155f3c9",
+      "artifactSHA256": "a599e0df1c2dba1d8ce10cacf3fae4b989bcecf50a2adda67b4af9bd29f2f2a9",
+      "archifyVersion": "3.2.0",
+      "gates": {
+        "validate": "pass",
+        "deliver": "pass",
+        "check": "pass",
+        "browser-check": "pass"
+      },
+      "visualReview": "not-requested"
+    },
+    {
+      "specification": "docs/diagrams/specs/investigation.json",
+      "artifact": "docs/diagrams/investigation.html",
+      "type": "sequence",
+      "revision": "4b0b2d84fac481717897dd7022b998304954af20",
+      "specificationSHA256": "24681e0d94288b82baa558da539204c5ab580f1d7eff5716a5beaa532fa13f2e",
+      "artifactSHA256": "85d573f04921cbb706699d114de533bfc4051e0a8434602d84617b9a7b7e0da0",
+      "archifyVersion": "3.2.0",
+      "gates": {
+        "validate": "pass",
+        "deliver": "pass",
+        "check": "pass",
+        "browser-check": "pass"
+      },
+      "visualReview": "not-requested"
+    },
+    {
+      "specification": "docs/diagrams/specs/overview.json",
+      "artifact": "docs/diagrams/overview.html",
+      "type": "architecture",
+      "revision": "4b0b2d84fac481717897dd7022b998304954af20",
+      "specificationSHA256": "5f56cc1b610d01d25e6f48f909d4696aac6c8e1a13747726c8e9ad2b6aef3272",
+      "artifactSHA256": "01b0ab07d67f6cf451bca0ed3d528272d1f62fbbccc00aa90886a2c1db8e1468",
+      "archifyVersion": "3.2.0",
+      "gates": {
+        "validate": "pass",
+        "deliver": "pass",
+        "check": "pass",
+        "browser-check": "pass"
+      },
+      "visualReview": "not-requested"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Netcap detections: capture rules, offline hunts and alert delivery",
+    "locale": "en",
+    "output": "docs/diagrams/detection.html",
+    "quality_profile": "showcase",
+    "repository": {"url": "git@github.com:dreadl0ck/netcap.git", "revision": "4b0b2d84fac481717897dd7022b998304954af20", "link_mode": "local-only"}
+  },
+  "lanes": [{"id": "capture", "label": "Capture with configured rules"}, {"id": "replay", "label": "Explicit offline hunt"}, {"id": "history", "label": "Durable alert history"}, {"id": "delivery", "label": "Opt-in webhook delivery"}],
+  "mainPath": ["records", "rules", "alerts", "outbox", "post", "receipt"],
+  "nodes": [
+    {"id": "records", "lane": "capture", "col": 0, "type": "backend", "label": "Decoded records", "sublabel": "Typed protocol observations", "sources": [{"path": "internal/decoder/packet/gopacket_decoder.go", "line": 217, "end_line": 271}]},
+    {"id": "rules", "lane": "capture", "col": 1, "type": "security", "label": "Configured rules", "sublabel": "Match / correlate / threshold", "sources": [{"path": "internal/collector/filtering_writer.go", "line": 51, "end_line": 81}, {"path": "internal/collector/rules_scope.go", "line": 14, "end_line": 30}, {"path": "docs/RULES_ENGINE.md", "line": 45, "end_line": 77}]},
+    {"id": "filter", "lane": "capture", "col": 2, "type": "backend", "label": "Output filter", "sublabel": "After rule evaluation", "sources": [{"path": "internal/collector/filtering_writer.go", "line": 60, "end_line": 81}]},
+    {"id": "audit", "lane": "capture", "col": 3, "type": "database", "label": "Retained records", "sublabel": "Only accepted output", "sources": [{"path": "internal/collector/filtering_writer.go", "line": 68, "end_line": 81}, {"path": "internal/netio/protobuf.go", "line": 144, "end_line": 176}]},
+    {"id": "offline", "lane": "replay", "col": 3, "type": "security", "label": "Offline rule pack", "sublabel": "Finalized capture required", "sources": [{"path": "docs/RULES_ENGINE.md", "line": 98, "end_line": 156}]},
+    {"id": "alerts", "lane": "history", "col": 1, "type": "database", "label": "Alert.ncap.gz", "sublabel": "Evidence + rule identity", "sources": [{"path": "internal/rules/alert_writer.go", "line": 132, "end_line": 164}, {"path": "docs/RULES_ENGINE.md", "line": 129, "end_line": 154}]},
+    {"id": "outbox", "lane": "history", "col": 2, "type": "database", "label": "Private outbox", "sublabel": "Redacted notices in SQLite", "sources": [{"path": "internal/delivery/outbox.go", "line": 30, "end_line": 108}, {"path": "internal/delivery/outbox.go", "line": 111, "end_line": 159}, {"path": "docs/RULES_ENGINE.md", "line": 79, "end_line": 96}]},
+    {"id": "post", "lane": "delivery", "col": 2, "type": "cloud", "label": "Webhook POST", "sublabel": "Stable Idempotency-Key", "sources": [{"path": "internal/delivery/outbox.go", "line": 193, "end_line": 246}]},
+    {"id": "receipt", "lane": "delivery", "col": 3, "type": "database", "label": "Delivery receipt", "sublabel": "Delivered / pending / rejected", "sources": [{"path": "internal/delivery/outbox.go", "line": 229, "end_line": 263}]}
+  ],
+  "edges": [
+    {"id": "evaluate", "from": "records", "to": "rules", "label": "-rules enabled", "variant": "emphasis"},
+    {"id": "filter-after", "from": "rules", "to": "filter", "label": "always after rules"},
+    {"id": "retained", "from": "filter", "to": "audit", "label": "filter passes"},
+    {"id": "capture-alert", "from": "rules", "to": "alerts", "label": "rule alerts", "variant": "emphasis"},
+    {"id": "offline-run", "from": "audit", "to": "offline", "label": "ready + explicit run"},
+    {"id": "offline-alert", "from": "offline", "to": "alerts", "label": "group crossings"},
+    {"id": "enqueue", "from": "alerts", "to": "outbox", "label": "deliver-alerts command", "variant": "emphasis"},
+    {"id": "send", "from": "outbox", "to": "post", "label": "due notices", "variant": "emphasis"},
+    {"id": "outcome", "from": "post", "to": "receipt", "label": "persist outcome", "variant": "emphasis"},
+    {"id": "retry", "from": "receipt", "to": "outbox", "label": "pending: rerun when due", "role": "return"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "Three detection contexts", "items": ["Configured capture rules run before filtering; a record omitted from output can still trigger a capture alert (internal/collector/filtering_writer.go:60-81).", "Capture-time mode adds observed scope, ordering and bounded lateness. Default rules retain their separate semantics (docs/RULES_ENGINE.md:45-77).", "Offline packs operate on retained, finalized records using their own strict format, grouped thresholds and coverage report. They cannot recover discarded observations (docs/RULES_ENGINE.md:98-154)."]},
+    {"dot": "emerald", "title": "Saved alerts and external delivery are separate", "items": ["deliver-alerts explicitly queues redacted notices; opening the outbox starts no background sender (internal/delivery/outbox.go:52-54; docs/RULES_ENGINE.md:91).", "The SQLite outbox commits notices and retains idempotency receipts. It is pinned to one destination and refuses capacity overflow (outbox.go:77-108,111-159).", "2xx delivers; 408/425/429/5xx and transport errors remain pending; other non-2xx responses are rejected. Reinvoke delivery after the persisted backoff (outbox.go:229-246)."]},
+    {"dot": "amber", "title": "What an alert does and does not establish", "items": ["Webhook delivery is at least once: receiver deduplication must use Idempotency-Key (internal/delivery/outbox.go:1-2,224-225).", "An alert is a detection result, not proof of compromise or an inline block. The separate firewall owns enforcement (README.md:45-47,87-89).", "Packet-time network detectors and approved-baseline deviations are other alert sources; the baseline lifecycle has its own diagram (collector.go:896; docs/behavioral-monitoring.md:71-88)."]}
+  ]
+}

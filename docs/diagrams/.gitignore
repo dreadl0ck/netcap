@@ -1,0 +1,5 @@
+/.validation/
+/*.delivery.json
+/*.finalize.json
+/*.finalize-summary.json
+/*.browser-check.json

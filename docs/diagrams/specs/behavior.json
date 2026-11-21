@@ -1,0 +1,30 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "Netcap behavioral baseline: learning does not grant trust",
+    "locale": "en",
+    "output": "docs/diagrams/behavior.html",
+    "quality_profile": "showcase",
+    "repository": {"url": "git@github.com:dreadl0ck/netcap.git", "revision": "4b0b2d84fac481717897dd7022b998304954af20", "link_mode": "local-only"}
+  },
+  "mainPath": ["learning", "monitoring"],
+  "states": [
+    {"id": "learning", "type": "start", "label": "Learning", "sublabel": "Collect candidate observations", "tag": "Mode: learning", "sources": [{"path": "internal/behavior/engine.go", "line": 37, "end_line": 97}, {"path": "internal/behavior/engine.go", "line": 117, "end_line": 183}, {"path": "internal/behavior/engine.go", "line": 342, "end_line": 357}]},
+    {"id": "monitoring", "type": "active", "label": "Monitoring", "sublabel": "Compare to approved baseline", "tag": "Mode: monitoring", "sources": [{"path": "internal/behavior/engine.go", "line": 184, "end_line": 234}, {"path": "internal/behavior/engine.go", "line": 368, "end_line": 428}]},
+    {"id": "paused", "type": "waiting", "label": "Paused", "sublabel": "Remember the previous mode", "tag": "Mode: paused", "sources": [{"path": "internal/behavior/engine.go", "line": 139, "end_line": 141}, {"path": "internal/behavior/engine.go", "line": 358, "end_line": 390}]}
+  ],
+  "transitions": [
+    {"id": "approve-baseline", "from": "learning", "to": "monitoring", "label": "approve", "note": "Explicit; coverage OK", "variant": "security"},
+    {"id": "pause-learning", "from": "learning", "to": "paused", "label": "pause", "variant": "dashed"},
+    {"id": "pause-monitoring", "from": "monitoring", "to": "paused", "label": "pause", "variant": "dashed"},
+    {"id": "resume-learning", "from": "paused", "to": "learning", "label": "resume / maintenance", "note": "Resume: prior learning"},
+    {"id": "resume-monitoring", "from": "paused", "to": "monitoring", "label": "resume", "note": "Prior mode: monitoring"},
+    {"id": "relearn", "from": "monitoring", "to": "learning", "label": "relearn / reset"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "Only three runtime modes", "items": ["The diagram shows the actual learning, monitoring and paused modes (internal/behavior/engine.go:93,350,362).", "Defaults require 7 days of capture-time coverage and 100 observations. Sleeping after a short replay adds no coverage (engine.go:41-45,343; docs/behavioral-monitoring.md:10).", "Initial approval requires observed facts, enough samples/time and no fact or window overflow (engine.go:342-357)."]},
+    {"dot": "emerald", "title": "Review actions that remain in Monitoring", "items": ["acknowledge records a review and changes no approved fact. approve-changes adds selected observed facts and creates a new baseline version (engine.go:392-422).", "suppress records an exception reason; unsuppress removes it. Neither action approves the fact (engine.go:409-412).", "Unapproved and unsuppressed deviations can emit alerts while the approved baseline stays frozen (engine.go:206-234)."]},
+    {"dot": "amber", "title": "Scope and persistence", "items": ["On the Paused-to-Learning arrow, maintenance means explicit relearn or reset, regardless of the prior mode. Both clear observations; reset also clears approved facts and models. The Monitoring-to-Learning arrow has the same maintenance semantics (engine.go:368-391).", "Observations are scoped by sensor, interface and VLAN; approval cannot be learned automatically (docs/behavioral-monitoring.md:3,71-82).", "Changes require a reason and, through ChangeAtVersion, the expected baseline version. State is copied, validated and persisted before becoming live (engine.go:309-340,418-428).", "A baseline has a single-writer lock. Paused mode returns before observing new facts (engine.go:68-74,139-141)."]}
+  ]
+}

@@ -8,6 +8,7 @@
   <a href="https://docs.netcap.io">Documentation</a> ·
   <a href="https://github.com/dreadl0ck/netcap/releases">Releases</a> ·
   <a href="docs/quickstart.md">First capture</a>
+  · <a href="docs/diagrams/index.html">Interactive diagrams</a>
 </p>
 
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)

@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "How Netcap turns traffic into investigation evidence",
+    "locale": "en",
+    "output": "docs/diagrams/overview.html",
+    "quality_profile": "showcase",
+    "repository": {"url": "git@github.com:dreadl0ck/netcap.git", "revision": "4b0b2d84fac481717897dd7022b998304954af20", "link_mode": "local-only"}
+  },
+  "components": [
+    {"id": "traffic-input", "type": "external", "label": "Traffic input", "sublabel": "Live interface or PCAP / PCAPNG", "pos": [40, 40], "size": [210, 76], "sources": [{"path": "internal/collector/live.go", "line": 35, "end_line": 95}, {"path": "internal/collector/capture_input.go", "line": 116, "end_line": 178}]},
+    {"id": "capture-workers", "type": "backend", "label": "Collector + workers", "sublabel": "Normalize; shard by symmetric flow", "tag": "BPF optional at input", "pos": [430, 40], "size": [220, 76], "sources": [{"path": "internal/collector/collector.go", "line": 830, "end_line": 913}, {"path": "internal/collector/worker.go", "line": 330, "end_line": 375}, {"path": "internal/collector/worker.go", "line": 127, "end_line": 168}]},
+    {"id": "packet-decoders", "type": "backend", "label": "Packet + profile decoders", "sublabel": "Layers, hosts and connections", "pos": [830, 40], "size": [220, 76], "sources": [{"path": "internal/collector/worker.go", "line": 170, "end_line": 237}, {"path": "internal/decoder/packet/gopacket_decoder.go", "line": 217, "end_line": 271}, {"path": "internal/decoder/packet/host.go", "line": 185, "end_line": 279}]},
+    {"id": "conversation-decoders", "type": "backend", "label": "Conversation decoders", "sublabel": "TCP reassembly / UDP tracking", "tag": "When reassembly enabled", "pos": [430, 270], "size": [220, 76], "sources": [{"path": "internal/collector/worker.go", "line": 134, "end_line": 141}, {"path": "internal/decoder/stream/tcp/tcp_connection.go", "line": 735, "end_line": 842}, {"path": "internal/decoder/stream/tcp/tcp_connection.go", "line": 863, "end_line": 898}]},
+    {"id": "record-output", "type": "backend", "label": "Record output pipeline", "sublabel": "Rules first; filter; selected writer", "pos": [830, 270], "size": [220, 76], "sources": [{"path": "internal/collector/filtering_writer.go", "line": 32, "end_line": 81}, {"path": "internal/netio/writer.go", "line": 28, "end_line": 67}, {"path": "internal/netio/protobuf.go", "line": 59, "end_line": 119}]},
+    {"id": "yaml-detection", "type": "security", "label": "Configured YAML rules", "sublabel": "Evaluate before record filtering", "tag": "Optional: -rules", "pos": [430, 500], "size": [220, 76], "sources": [{"path": "cmd/capture/main.go", "line": 1090, "end_line": 1110}, {"path": "internal/collector/filtering_writer.go", "line": 51, "end_line": 81}, {"path": "internal/collector/rules_scope.go", "line": 14, "end_line": 30}]},
+    {"id": "audit-files", "type": "database", "label": "Per-type audit files", "sublabel": "Protobuf .ncap; optional gzip", "tag": "Default output", "pos": [830, 500], "size": [220, 76], "sources": [{"path": "internal/netio/protobuf.go", "line": 59, "end_line": 119}, {"path": "internal/netio/protobuf.go", "line": 133, "end_line": 176}, {"path": "internal/decoder/packet/gopacket_decoder.go", "line": 131, "end_line": 185}]},
+    {"id": "alert-files", "type": "database", "label": "Alert history", "sublabel": "Alert.ncap.gz", "tag": "Created on first alert", "pos": [430, 730], "size": [220, 76], "sources": [{"path": "internal/rules/alert_writer.go", "line": 132, "end_line": 164}, {"path": "cmd/capture/main.go", "line": 1094, "end_line": 1101}]},
+    {"id": "investigation", "type": "frontend", "label": "Analyst investigation", "sublabel": "Web UI + HTTP API; CLI / MCP", "pos": [830, 730], "size": [220, 76], "sources": [{"path": "cmd/capture/webui/reader.go", "line": 41, "end_line": 130}, {"path": "README.md", "line": 63, "end_line": 75}, {"path": "docs/mcp.md", "line": 3, "end_line": 54}]}
+  ],
+  "connections": [
+    {"id": "read-traffic", "from": "traffic-input", "to": "capture-workers", "label": "read packets", "variant": "emphasis"},
+    {"id": "decode-layers", "from": "capture-workers", "to": "packet-decoders", "label": "packet layers", "variant": "emphasis"},
+    {"id": "reassemble", "from": "capture-workers", "to": "conversation-decoders", "label": "if enabled"},
+    {"id": "packet-records", "from": "packet-decoders", "to": "record-output", "label": "typed records", "variant": "emphasis"},
+    {"id": "stream-records", "from": "conversation-decoders", "to": "record-output", "label": "typed records"},
+    {"id": "evaluate-rules", "from": "record-output", "to": "yaml-detection", "label": "if rules set"},
+    {"id": "persist-records", "from": "record-output", "to": "audit-files", "label": "if filter passes", "variant": "emphasis"},
+    {"id": "persist-alerts", "from": "yaml-detection", "to": "alert-files", "label": "on rule match"},
+    {"id": "read-records", "from": "audit-files", "to": "investigation", "label": "read + query", "variant": "emphasis"},
+    {"id": "read-alerts", "from": "alert-files", "to": "investigation", "label": "read alerts"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "One input, two decoding paths", "items": ["The collector preserves flow affinity across buffered worker queues. Each worker owns its assembler (internal/collector/worker.go:330-375).", "Packet layers emit individual records; enabled reassembly reconstructs conversations for protocol selection and stream decoding (worker.go:134-141; tcp_connection.go:735-842).", "Decoder selection uses -include / -exclude; protocols are not inferred from port numbers alone (gopacket_decoder.go:105-115; tcp_connection.go:749-789)."]},
+    {"dot": "emerald", "title": "From bytes to useful context", "items": ["Host profiles add DNS names, geolocation and TLS JA4 observations; native DPI is conditional (internal/decoder/packet/host.go:185-279).", "Conversation analysis can harvest credentials; the inspected completion path invokes SMTP, Telnet and additional harvesters (tcp_connection.go:805-808).", "Records may instead go to CSV, JSON, Elasticsearch, channels or Unix sockets: these are selected sinks, not required services (internal/netio/writer.go:45-67)."]},
+    {"dot": "amber", "title": "How to read the evidence", "items": ["This is the capture-to-investigation overview at commit 4b0b2d8. Nodes group in-process Go subsystems; filesystem outputs persist separately.", "YAML rules evaluate before output filtering, so filtered records can still raise alerts (internal/collector/filtering_writer.go:60-81).", "Web UI, CLI triage and MCP expose the analysis. Capture completeness and undecoded or encrypted traffic qualify conclusions (README.md:55,63-75; docs/mcp.md:49-54).", "Distributed collection, the separate firewall and opt-in baseline monitoring are secondary paths outside this capture overview (README.md:42,59,87-89)."]}
+  ]
+}

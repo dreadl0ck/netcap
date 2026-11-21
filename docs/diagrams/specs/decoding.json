@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Netcap decoding: from packets to protocol and host records",
+    "locale": "en",
+    "output": "docs/diagrams/decoding.html",
+    "quality_profile": "showcase",
+    "repository": {"url": "git@github.com:dreadl0ck/netcap.git", "revision": "4b0b2d84fac481717897dd7022b998304954af20", "link_mode": "local-only"}
+  },
+  "stages": [{"label": "Traffic"}, {"label": "Prepare + context"}, {"label": "Decode"}, {"label": "Audit output"}],
+  "nodes": [
+    {"id": "input", "type": "external", "label": "Capture bytes", "sublabel": "Live / PCAP / PCAPNG", "stage": 0, "row": 2, "sources": [{"path": "internal/collector/capture_input.go", "line": 116, "end_line": 178}, {"path": "internal/collector/live.go", "line": 124, "end_line": 163}]},
+    {"id": "prepare", "type": "backend", "label": "Packet views", "sublabel": "Normalize + flow shard", "stage": 1, "row": 2, "sources": [{"path": "internal/collector/collector.go", "line": 830, "end_line": 913}, {"path": "internal/collector/worker.go", "line": 143, "end_line": 168}]},
+    {"id": "lookups", "type": "database", "label": "Resolver data", "sublabel": "DNS / GeoIP / DHCP", "stage": 1, "row": 4, "sources": [{"path": "internal/decoder/packet/host.go", "line": 185, "end_line": 279}]},
+    {"id": "layers", "type": "backend", "label": "Packet layers", "sublabel": "Ethernet / IP / DNS", "stage": 2, "row": 0, "sources": [{"path": "internal/collector/worker.go", "line": 170, "end_line": 237}, {"path": "internal/decoder/packet/gopacket_decoder.go", "line": 217, "end_line": 271}]},
+    {"id": "streams", "type": "backend", "label": "Conversations", "sublabel": "TCP / UDP protocols", "stage": 2, "row": 2, "tag": "Reassembly enabled", "sources": [{"path": "internal/collector/worker.go", "line": 134, "end_line": 141}, {"path": "internal/decoder/stream/tcp/tcp_connection.go", "line": 735, "end_line": 842}, {"path": "internal/decoder/stream/tcp/tcp_connection.go", "line": 863, "end_line": 898}]},
+    {"id": "profiles", "type": "backend", "label": "Host profiles", "sublabel": "Peers, ports, TLS JA4", "stage": 2, "row": 4, "sources": [{"path": "internal/decoder/packet/host.go", "line": 108, "end_line": 180}, {"path": "internal/decoder/packet/host.go", "line": 185, "end_line": 279}]},
+    {"id": "layer-records", "type": "database", "label": "Layer records", "sublabel": "Typed protocol fields", "stage": 3, "row": 0, "sources": [{"path": "internal/decoder/packet/gopacket_decoder.go", "line": 263, "end_line": 271}, {"path": "internal/netio/protobuf.go", "line": 59, "end_line": 119}]},
+    {"id": "app-records", "type": "database", "label": "App records", "sublabel": "HTTP / TLS / SMB etc.", "stage": 3, "row": 2, "sources": [{"path": "internal/decoder/stream_decoder.go", "line": 33, "end_line": 84}, {"path": "internal/netio/writer.go", "line": 45, "end_line": 67}]},
+    {"id": "host-records", "type": "database", "label": "Host records", "sublabel": "Observed IP profiles", "stage": 3, "row": 4, "sources": [{"path": "internal/decoder/packet/host.go", "line": 282, "end_line": 300}, {"path": "internal/decoder/packet/host.go", "line": 658, "end_line": 678}]}
+  ],
+  "flows": [
+    {"id": "ingress", "from": "input", "to": "prepare", "label": "packets", "variant": "emphasis"},
+    {"id": "layer-input", "from": "prepare", "to": "layers", "label": "layers", "variant": "emphasis"},
+    {"id": "stream-input", "from": "prepare", "to": "streams", "label": "if enabled", "variant": "emphasis"},
+    {"id": "profile-input", "from": "prepare", "to": "profiles", "label": "host facts"},
+    {"id": "context", "from": "lookups", "to": "profiles", "label": "lookups"},
+    {"id": "layer-output", "from": "layers", "to": "layer-records", "label": "records", "variant": "emphasis"},
+    {"id": "stream-output", "from": "streams", "to": "app-records", "label": "records", "variant": "emphasis"},
+    {"id": "profile-output", "from": "profiles", "to": "host-records", "label": "profiles"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "Packets and conversations answer different questions", "items": ["Packet decoders inspect individual layers. TCP DNS/SIP framing belongs to the stream producer to avoid duplicate messages (gopacket_decoder.go:220-223).", "Conversation decoding uses server-port and byte evidence to select a protocol; UDP tracking is reached through the same enabled reassembly entry (tcp_connection.go:735-898).", "The normalizer preserves original evidence alongside logical packet views. Workers preserve symmetric-flow affinity (collector.go:830-913)."]},
+    {"dot": "emerald", "title": "Context makes records useful", "items": ["Packet context carries Community ID for cross-tool correlation (internal/collector/worker.go:143-168).", "Host profiles combine observed peer/port activity with DNS, geolocation, DHCP and TLS JA4; native DPI work runs only when enabled (host.go:108-279).", "The output boxes are logical record families. The default sink is per-type Protobuf, with selectable CSV, JSON, Elasticsearch, channel and socket alternatives (internal/netio/writer.go:45-67)."]},
+    {"dot": "amber", "title": "Coverage is conditional", "items": ["-include / -exclude select active decoders (gopacket_decoder.go:105-115). A configured feature is not proof that this capture supplied decodable content.", "No plaintext application claim follows from encrypted traffic alone. File extraction and explicit TLS-decryption workflows have their own conditions (docs/file-extraction.md:3; docs/mcp.md:84).", "This view expands decoding, not distributed transport or inline firewall enforcement. Start with overview.html for the complete capture-to-investigation journey."]}
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Netcap distributed capture: decode at the sensor, collect centrally",
+    "locale": "en",
+    "output": "docs/diagrams/distributed.html",
+    "quality_profile": "showcase",
+    "repository": {"url": "git@github.com:dreadl0ck/netcap.git", "revision": "4b0b2d84fac481717897dd7022b998304954af20", "link_mode": "local-only"}
+  },
+  "components": [
+    {"id": "network", "type": "external", "label": "Sensor interface", "sublabel": "Traffic observed at each site", "pos": [40, 270], "size": [210, 76], "sources": [{"path": "cmd/agent/main.go", "line": 156, "end_line": 184}, {"path": "cmd/agent/main.go", "line": 215, "end_line": 224}]},
+    {"id": "agent", "type": "backend", "label": "net agent", "sublabel": "Decode; batch; memory resend queue", "pos": [430, 270], "size": [220, 88], "tag": "Pin collector SPKI key", "sources": [{"path": "cmd/agent/main.go", "line": 97, "end_line": 153}, {"path": "internal/distributed/client.go", "line": 40, "end_line": 162}, {"path": "internal/distributed/identity.go", "line": 270, "end_line": 294}]},
+    {"id": "collector", "type": "backend", "label": "net collect", "sublabel": "Authenticate; parse; write batches", "pos": [830, 270], "size": [220, 88], "tag": "Allowlisted sensor keys", "sources": [{"path": "cmd/collect/main.go", "line": 74, "end_line": 105}, {"path": "internal/distributed/server.go", "line": 236, "end_line": 320}, {"path": "internal/distributed/identity.go", "line": 245, "end_line": 267}]},
+    {"id": "operator", "type": "external", "label": "Capture operator", "sublabel": "Enroll sensor key + unique name", "pos": [430, 40], "size": [210, 76], "sources": [{"path": "docs/distributed-collection.md", "line": 15, "end_line": 56}]},
+    {"id": "allowlist", "type": "security", "label": "clients.txt", "sublabel": "SPKI fingerprint to sensor name", "pos": [830, 40], "size": [220, 76], "sources": [{"path": "internal/distributed/identity.go", "line": 175, "end_line": 223}, {"path": "internal/distributed/identity.go", "line": 297, "end_line": 309}]},
+    {"id": "storage", "type": "database", "label": "Collected audit files", "sublabel": "<out>/<agent>/<Type>.ncap.gz", "pos": [830, 520], "size": [220, 76], "sources": [{"path": "internal/distributed/sink.go", "line": 47, "end_line": 55}, {"path": "internal/distributed/sink.go", "line": 104, "end_line": 175}, {"path": "internal/distributed/sink.go", "line": 178, "end_line": 198}]},
+    {"id": "analysis", "type": "frontend", "label": "Read collected results", "sublabel": "net dump after finalization", "pos": [430, 520], "size": [220, 76], "sources": [{"path": "docs/distributed-collection.md", "line": 48, "end_line": 54}, {"path": "docs/distributed-collection.md", "line": 101, "end_line": 106}]}
+  ],
+  "connections": [
+    {"id": "capture", "from": "network", "to": "agent", "label": "live packets", "variant": "emphasis"},
+    {"id": "batches", "from": "agent", "to": "collector", "label": "TLS 1.3 batches", "variant": "emphasis"},
+    {"id": "ack", "from": "collector", "to": "agent", "label": "ACK after write"},
+    {"id": "enrollment", "from": "operator", "to": "allowlist", "label": "enroll key", "variant": "security"},
+    {"id": "client-auth", "from": "allowlist", "to": "collector", "label": "peer key to name", "variant": "security"},
+    {"id": "write-files", "from": "collector", "to": "storage", "label": "gzip flush", "variant": "emphasis"},
+    {"id": "query", "from": "storage", "to": "analysis", "label": "read records", "variant": "emphasis"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "Decode once, close to the traffic", "items": ["net agent uses the capture collector with channel writers, then batches its serialized audit records (cmd/agent/main.go:121-184,215-224).", "The diagram shows one sensor path; multiple separately enrolled sensors use the same server. The collector assigns output identity from its allowlist, not from the agent's chosen name (identity.go:297-309).", "Extracted content, logs and enabled behavioral state can still remain on the sensor (docs/distributed-collection.md:11)."]},
+    {"dot": "rose", "title": "Authentication is symmetric key pinning", "items": ["Both peers present certificates. TLS is 1.3 minimum, and SHA-256 SPKI pins replace CA-chain trust (internal/distributed/identity.go:245-294).", "Malformed or duplicate enrollment entries prevent startup. Revoke an agent by removing its entry and restarting the collector (identity.go:175-223; docs/distributed-collection.md:56).", "The collector validates incoming frames and records before writing a batch; invalid input is rejected, while a local write failure leaves it eligible for resend (server.go:282-320; docs/distributed-collection.md:77)."]},
+    {"dot": "amber", "title": "ACK is a delivery checkpoint", "items": ["Unacknowledged batches are held in memory and resent after reconnects. The default pending budget is 64 MiB; excess backlog can be dropped and counted (client.go:40-66,129-158).", "ACK follows gzip flush to the OS, before fsync. Agent process loss can lose queued data; collector host failure can lose acknowledged data (sink.go:120-125; docs/distributed-collection.md:103-105).", "Files still being written are unfinished gzip streams. Finalization closes and syncs them; read after shutdown for complete input (sink.go:209-228; docs/distributed-collection.md:106)."]}
+  ]
+}
