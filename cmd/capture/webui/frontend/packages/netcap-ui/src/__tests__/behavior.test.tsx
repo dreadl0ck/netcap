@@ -208,7 +208,7 @@ describe('behavioral monitoring', () => {
     for (const locale of supportedLocales) {
       act(() => setLocale(locale));
       expect(screen.getByText(behaviorActionLabel('acknowledge'))).toBeInTheDocument();
-      expect(current.decisions[0].action).toBe('acknowledge');
+      expect(current.decisions?.[0]?.action).toBe('acknowledge');
     }
     expect(screen.getByText('Investigating new device')).toBeInTheDocument();
     expect(screen.getByText('00:11:22:33:44:55')).toBeInTheDocument();

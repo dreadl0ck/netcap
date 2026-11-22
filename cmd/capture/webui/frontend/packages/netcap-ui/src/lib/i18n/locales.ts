@@ -26,5 +26,5 @@ export function resolveLocale(preferences: string | readonly string[] | undefine
 }
 
 // JetBrains Mono and Space Grotesk do not contain Han glyphs. Keep CJK faces
-// local/offline; the host applies this stack to prose, retaining mono for data.
-export const chineseFontFallback = '"PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif';
+// bundled/offline; the host applies this stack to prose, retaining mono for data.
+export const chineseFontFallback = '"Noto Sans SC Variable", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif';

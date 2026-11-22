@@ -488,7 +488,7 @@ export default function ConversationModal({
                     disabled={!currentChunk?.hasMore || loading}><NavigateNextIcon /></IconButton></Box>
               )}</Box>{/* ASCII-only view (default) */}{viewMode === 'ascii' && (
               <Box sx={{
-                  fontFamily: 'Courier New, monospace',
+                  fontFamily: '"Courier New", var(--netcap-mono, monospace)',
                   fontSize: { xs: '11px', sm: '13px' },
                   lineHeight: 1.6,
                   p: 2,
@@ -517,7 +517,7 @@ export default function ConversationModal({
                 )}</Box>
             )}{/* Hex dump display */}{viewMode === 'hex' && (
               <Box sx={{
-                  fontFamily: 'Courier New, monospace',
+                  fontFamily: '"Courier New", var(--netcap-mono, monospace)',
                   fontSize: { xs: '11px', sm: '13px' },
                   lineHeight: 1.4,
                   p: 2,

@@ -25,8 +25,8 @@ it('repaints chart, legend, labels and tooltip without reinitializing or resubmi
   expect(chart.dispose).not.toHaveBeenCalled();
   expect(chart.setOption).toHaveBeenCalledTimes(1);
   expect(chart.setOption).toHaveBeenCalledWith(expect.objectContaining({
-    backgroundColor: c.canvas, legend: expect.objectContaining({ textStyle: { color: c.muted } }),
-    tooltip: expect.objectContaining({ backgroundColor: c.surface, textStyle: { color: c.text } }),
+    backgroundColor: c.canvas, legend: expect.objectContaining({ textStyle: expect.objectContaining({ color: c.muted, fontFamily: expect.stringContaining('Noto Sans SC Variable') }) }),
+    tooltip: expect.objectContaining({ backgroundColor: c.surface, textStyle: expect.objectContaining({ color: c.text, fontFamily: expect.stringContaining('Noto Sans SC Variable') }) }),
   }));
   expect(chart.setOption.mock.calls[0][0].legend.selected).toBeUndefined();
   expect(chart.setOption.mock.calls[0][0].series[0].data).toBeUndefined();

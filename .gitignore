@@ -146,6 +146,7 @@ internal/collector/errors.pcap
 
 cmd/capture/webui/frontend/packages/netcap-ui/tsup.config.bundled*
 cmd/capture/webui/frontend/public/legal/
+cmd/capture/webui/frontend/public/static/fonts/noto-sans-sc/
 cmd/capture/webui/frontend/packages/netcap-ui/LICENSE
 cmd/capture/webui/frontend/packages/netcap-ui/licenses/
 cmd/capture/webui/frontend/packages/netcap-ui/THIRD_PARTY_LICENSES.txt

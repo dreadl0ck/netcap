@@ -45,6 +45,10 @@ func (s *Server) localSecurityMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "untrusted Host", http.StatusForbidden)
 			return
 		}
+		if isPublicFontRequest(r) {
+			next.ServeHTTP(w, r)
+			return
+		}
 		if origin := r.Header.Get("Origin"); origin != "" {
 			u, err := url.Parse(origin)
 			scheme := "http"

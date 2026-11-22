@@ -1037,7 +1037,7 @@ export default function AuditRecords() {
                             <InputAdornment position="end"><Tooltip title={i18nText("ui:m_b727dea40e180cc79e3e")}><IconButton size="small" onClick={handleClearFilter} edge="end"><ClearIcon /></IconButton></Tooltip></InputAdornment>
                           )}</>
                       ),
-                      style: { fontFamily: 'monospace', fontSize: '0.9rem' }
+                      style: { fontFamily: 'var(--netcap-mono, monospace)', fontSize: '0.9rem' }
                     }}
                     helperText={activeFilter ? i18nText("ui:m_0daa26447ccf767fdc9e", { arg0: activeFilter }) : valuesSampleInfo ? i18nText("ui:m_5cbfa96e5d7bc8ea8fc8", { arg0: valuesSampleInfo.recordsScanned, arg1: valuesSampleInfo.maxPerField }) : i18nText("ui:m_75cb4fbf2ce87be02677")} />
                 )}

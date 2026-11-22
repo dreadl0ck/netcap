@@ -49,6 +49,7 @@ import '@fontsource/space-grotesk/600.css';
 import '@fontsource/space-grotesk/700.css';
 import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/600.css';
+import './fontStylesheet';
 
 const initialLocale = resolveLocale(navigator.languages);
 initializeI18n({ locale: initialLocale, bundles: [directCatalogBundle, removedCatalogBundle] });
@@ -385,7 +386,7 @@ function App() {
   const locale = useLocale();
   const navigationItems = useServiceNavigationItems();
   const theme = React.useMemo(() => createTheme(netcapTheme, getMuiLocale(locale), {
-    typography: { fontFamily: `"Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", ${chineseFontFallback}` },
+    typography: { ...{ monospace: 'var(--netcap-mono, monospace)' }, fontFamily: `"Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", ${chineseFontFallback}` },
     components: {
       MuiTablePagination: { defaultProps: { labelDisplayedRows: paginationLabel } },
       MuiCssBaseline: { styleOverrides: { ':root': { '--netcap-mono': `"JetBrains Mono", "SFMono-Regular", Consolas, ${chineseFontFallback}` } } },

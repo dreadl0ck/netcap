@@ -29,6 +29,7 @@ import {
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useLocale as useUILocale } from "../lib/i18n";
+import { chineseFontFallback } from '../lib/i18n/locales';
 
 
 // Register only the components we need
@@ -55,6 +56,7 @@ interface OptimizedPieChartProps {
 export default function OptimizedPieChart({ option, style, onItemClick }: OptimizedPieChartProps) {
   const __uiLocale = useUILocale();
   const colors = appearanceTokens(useTheme().palette.mode);
+  const fontFamily = `Arial, ${chineseFontFallback}`;
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<echarts.ECharts | null>(null);
   const onItemClickRef = useRef(onItemClick);
@@ -103,17 +105,17 @@ export default function OptimizedPieChart({ option, style, onItemClick }: Optimi
     chart.setOption({
       color: [...colors.series],
       backgroundColor: colors.canvas,
-      textStyle: { color: colors.text },
-      title: { textStyle: { color: colors.text }, subtextStyle: { color: colors.muted } },
-      legend: { textStyle: { color: colors.muted }, inactiveColor: colors.muted, pageTextStyle: { color: colors.text }, pageIconColor: colors.muted, pageIconInactiveColor: colors.border },
-      tooltip: { backgroundColor: colors.surface, borderColor: colors.border, textStyle: { color: colors.text } },
+      textStyle: { color: colors.text, fontFamily },
+      title: { textStyle: { color: colors.text, fontFamily }, subtextStyle: { color: colors.muted, fontFamily } },
+      legend: { textStyle: { color: colors.muted, fontFamily }, inactiveColor: colors.muted, pageTextStyle: { color: colors.text, fontFamily }, pageIconColor: colors.muted, pageIconInactiveColor: colors.border },
+      tooltip: { backgroundColor: colors.surface, borderColor: colors.border, textStyle: { color: colors.text, fontFamily } },
       series: (Array.isArray(option.series) ? option.series : option.series ? [option.series] : []).map(() => ({
-        label: { color: colors.text }, labelLine: { lineStyle: { color: colors.muted } },
+        label: { color: colors.text, fontFamily }, labelLine: { lineStyle: { color: colors.muted } },
         itemStyle: { borderColor: colors.canvas, borderWidth: 2 },
-        emphasis: { label: { color: colors.text } },
+        emphasis: { label: { color: colors.text, fontFamily } },
       })),
     });
-  }, [option, colors]);
+  }, [option, colors, fontFamily]);
 
   // Handle resize
   useEffect(() => {

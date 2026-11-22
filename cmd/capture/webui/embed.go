@@ -53,6 +53,9 @@ func (w *responseWriterWrapper) WriteHeader(statusCode int) {
 func cacheControlMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
+		if isPublicFontRequest(r) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
 
 		// Wrap the response writer to ensure correct Content-Type
 		wrappedWriter := &responseWriterWrapper{

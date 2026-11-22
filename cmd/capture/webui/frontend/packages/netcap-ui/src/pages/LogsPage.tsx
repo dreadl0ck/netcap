@@ -255,7 +255,7 @@ export default function Logs() {
                 overflow: 'auto',
               }}><pre style={{
                   margin: 0,
-                  fontFamily: 'monospace',
+                  fontFamily: 'var(--netcap-mono, monospace)',
                   fontSize: '0.85rem',
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word',

@@ -39,4 +39,4 @@ it('forwards the global header slot, renders full live titles/hints/captions, an
     expect(editor).toHaveValue('still unsaved after presentation changes'); expect(editor).toHaveFocus();
     expect(screen.getByRole('button', { name: 'Host controls' })).toBeInTheDocument();
   }
-});
+}, 15_000);

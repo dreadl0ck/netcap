@@ -1508,7 +1508,7 @@ export default function ExtractedFilesPage() {
                               maxHeight: 'calc(90vh - 200px)'
                             }}><pre style={{
                                 margin: 0,
-                                fontFamily: 'monospace',
+                                fontFamily: 'var(--netcap-mono, monospace)',
                                 fontSize: '0.875rem',
                                 whiteSpace: 'pre-wrap',
                                 wordBreak: 'break-word',
@@ -1546,7 +1546,7 @@ export default function ExtractedFilesPage() {
                             maxHeight: 'calc(90vh - 250px)'
                           }}><pre style={{
                               margin: 0,
-                              fontFamily: 'monospace',
+                              fontFamily: 'var(--netcap-mono, monospace)',
                               fontSize: '0.875rem',
                               whiteSpace: 'pre-wrap',
                               wordBreak: 'break-word',
@@ -1607,7 +1607,7 @@ export default function ExtractedFilesPage() {
                               disabled={!binaryHasMore || binaryLoading}><NavigateNextIcon /></IconButton></Box>
                         )}</Box>{/* ASCII view */}{hexViewMode === 'ascii' && (
                         <Box sx={{
-                            fontFamily: 'Courier New, monospace',
+                            fontFamily: '"Courier New", var(--netcap-mono, monospace)',
                             fontSize: '13px',
                             lineHeight: 1.6,
                             p: 2,
@@ -1625,7 +1625,7 @@ export default function ExtractedFilesPage() {
                           )}</Box>
                       )}{/* Hex dump view */}{hexViewMode === 'hex' && (
                         <Box sx={{
-                            fontFamily: 'Courier New, monospace',
+                            fontFamily: '"Courier New", var(--netcap-mono, monospace)',
                             fontSize: '13px',
                             lineHeight: 1.4,
                             p: 2,
