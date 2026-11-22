@@ -523,7 +523,7 @@ export default function RulesPage() {
                 )}</Box>
             )}{(selectedTags.length > 0 || searchQuery) && (
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                {i18nRichText("ui:m_0deabc2da7f12ff2a1ac", { arg0: filteredRules.length, arg1: rules.length, arg2: selectedTags.length > 0 && i18nText("ui:m_4aa8099fdde1ce04365d", { arg0: selectedTags.length, arg1: selectedTags.length > 1 ? 's' : '' }), arg3: searchQuery && i18nText("ui:m_47bcfd5611a30782ba97", { arg0: searchQuery }) })}
+                {i18nRichText("ui:m_0deabc2da7f12ff2a1ac", { arg0: filteredRules.length, arg1: rules.length, arg2: selectedTags.length > 0 && i18nText("ui:m_4aa8099fdde1ce04365d", { arg0: selectedTags.length }), arg3: searchQuery && i18nText("ui:m_47bcfd5611a30782ba97", { arg0: searchQuery }) })}
               </Typography>
             )}</Box>
         )}{error && (

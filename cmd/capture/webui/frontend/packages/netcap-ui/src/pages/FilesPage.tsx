@@ -1338,7 +1338,7 @@ export default function ExtractedFilesPage() {
                   onRowsPerPageChange={handleGalleryChangeRowsPerPage}
                   rowsPerPageOptions={[25, 50, 100, 200]}
                   labelDisplayedRows={({ from, to, count }) => 
-                    translate("ui:m_0b10012421a6a364360a", { arg0: from, arg1: to, arg2: count, arg3: count !== 1 ? 's' : '' })} /></>
+                    translate("ui:m_0b10012421a6a364360a", { arg0: from, arg1: to, arg2: count })} /></>
             )}</>
         ) : (
           <ResponsiveDataView data={paginatedFiles}

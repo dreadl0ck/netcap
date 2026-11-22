@@ -8,6 +8,24 @@ import { formatEvidenceJSON } from '../evidenceJSON';
 
 afterEach(() => { cleanup(); setLocale('en'); });
 
+test('counted messages use ICU plurals, never an appended English suffix', async () => {
+  const { removedCatalogBundle } = await import('./removed');
+  initializeI18n({ locale: 'en', bundles: [removedCatalogBundle] });
+  const cases: [string, Record<string, number>, Record<string, [string, string]>][] = [
+    ['removed:m_f4af7674264e898af4a6', {}, { en: ['1 transform', '2 transforms'], de: ['1 Transformation', '2 Transformationen'], 'zh-Hans': ['1 个转换', '2 个转换'] }],
+    ['removed:m_4d0b7c0d2c43a14f3f98', {}, { en: ['1 pinned node', '2 pinned nodes'], de: ['1 fixierter Knoten', '2 fixierte Knoten'] }],
+    ['ui:m_a2cada26e72c70a006a9', {}, { en: ['(1 attempt)', '(2 attempts)'], fr: ['(1 tentative)', '(2 tentatives)'] }],
+    ['ui:m_4aa8099fdde1ce04365d', {}, { en: [' (filtered by 1 tag)', ' (filtered by 2 tags)'], es: [' (filtrado por 1 etiqueta)', ' (filtrado por 2 etiquetas)'] }],
+  ];
+  for (const [key, , locales] of cases) for (const [locale, [one, other]] of Object.entries(locales)) {
+    setLocale(locale as typeof supportedLocales[number]);
+    expect(translate(key, { arg0: 1 })).toBe(one);
+    expect(translate(key, { arg0: 2 })).toBe(other);
+  }
+  setLocale('de');
+  expect(translate('ui:m_0b10012421a6a364360a', { arg0: 1, arg1: 10, arg2: 25 })).toBe('1-10 von 25 Bildern');
+});
+
 test('plain sources never resolve to rich-text aliases that would render raw <tagN> markup', async () => {
   const english: Record<string, string> = (await import('./catalogs/ui/en.json')).default;
   // Sources that also exist as a plain message; rich-only messages render via richText.

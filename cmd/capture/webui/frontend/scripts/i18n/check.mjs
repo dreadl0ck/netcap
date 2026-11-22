@@ -25,6 +25,13 @@ export function completionFindings(snapshot, decisions, knownMessages) {
     }
     const htmlReview = decisions.html?.[`${file.repo}/${file.file}`];
     if (file.html && (!htmlReview?.reason?.trim() || htmlReview.sha256 !== file.sha256)) findings.push({ repo: file.repo, file: file.file, kind: 'html' });
+    const sourcePath = sourceFilePath(file.repo, file.file);
+    if (!file.html && !file.file.endsWith('.json') && fs.existsSync(sourcePath)) {
+      // English plural suffixes passed as message arguments produce "2 Transformations"; use ICU plural instead.
+      fs.readFileSync(sourcePath, 'utf8').split('\n').forEach((line, index) => {
+        if (/\?\s*(['"])(?:s|es)\1\s*:\s*(['"])\2/.test(line)) findings.push({ repo: file.repo, file: file.file, line: index + 1, kind: 'plural-suffix' });
+      });
+    }
   }
   return findings;
 }

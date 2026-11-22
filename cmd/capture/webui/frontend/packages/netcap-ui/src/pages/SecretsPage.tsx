@@ -703,7 +703,7 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
                                           color={cred.authSuccess ? 'success' : 'error'}
                                           sx={{ fontWeight: 'bold' }} />{cred.authAttempts > 0 && (
                                           <Typography variant="body2" color="text.secondary">
-                                            {i18nRichText("ui:m_a2cada26e72c70a006a9", { arg0: cred.authAttempts, arg1: cred.authAttempts > 1 ? 's' : '' })}
+                                            {i18nRichText("ui:m_a2cada26e72c70a006a9", { arg0: cred.authAttempts })}
                                           </Typography>
                                         )}</Box></Grid>
                                   )}{/* Hash Information */}{(cred.hash || cred.hashType || cred.hashcatFormat) && (
