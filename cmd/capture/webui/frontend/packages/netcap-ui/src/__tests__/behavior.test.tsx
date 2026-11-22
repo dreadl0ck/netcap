@@ -11,6 +11,7 @@ import { useLiveAlerts } from '../hooks/useLiveAlerts';
 import { assetObservations, behaviorSelection, factLabel, learningReady } from '../lib/behavior';
 import type { BehaviorHealth, BehaviorSnapshot } from '../lib/behavior';
 import type { Alert, StatusResponse } from '../lib/api';
+import { behaviorActionLabel, setLocale, supportedLocales } from '../lib/i18n';
 
 vi.mock('../components/Layout', () => ({ default: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
 
@@ -33,7 +34,7 @@ class MockSource extends EventTarget {
   emit(type: string, data: unknown) { this.dispatchEvent(new MessageEvent(type, { data: JSON.stringify(data) })); }
 }
 
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); MockSource.sources = []; });
+afterEach(() => { cleanup(); setLocale('en'); vi.unstubAllGlobals(); MockSource.sources = []; });
 
 describe('behavioral monitoring', () => {
   it('qualifies later transport evidence without inventing authentication or network scope', async () => {
@@ -203,7 +204,12 @@ describe('behavioral monitoring', () => {
     const request = fetcher.mock.calls.find(([, init]) => init?.method === 'POST');
     expect(JSON.parse(request?.[1]?.body as string)).toEqual({ action: 'acknowledge', ids: ['device'], reason: 'Investigating new device', version: 1 });
     await user.click(await screen.findByRole('tab', { name: 'Decision history' }));
-    expect(await screen.findByText('acknowledge')).toBeInTheDocument();
+    expect(await screen.findByText('Acknowledge')).toBeInTheDocument();
+    for (const locale of supportedLocales) {
+      act(() => setLocale(locale));
+      expect(screen.getByText(behaviorActionLabel('acknowledge'))).toBeInTheDocument();
+      expect(current.decisions[0].action).toBe('acknowledge');
+    }
     expect(screen.getByText('Investigating new device')).toBeInTheDocument();
     expect(screen.getByText('00:11:22:33:44:55')).toBeInTheDocument();
     expect(current.approved).toEqual({});

@@ -20,43 +20,38 @@
 import { IconButton, Tooltip, Box } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
 import { useLearnMode } from '../contexts/LearnModeContext';
+import { translate as i18nText, useLocale as useUILocale } from "../lib/i18n";
+
 
 interface LearnModeToggleProps {
   size?: 'small' | 'medium' | 'large';
 }
 
 export function LearnModeToggle({ size }: LearnModeToggleProps) {
+  const __uiLocale = useUILocale();
   const { isLearnModeActive, toggleLearnMode } = useLearnMode();
   const fontSize = size === 'small' ? 'small' : undefined;
 
   return (
-    <Tooltip title={isLearnModeActive ? 'Exit Learn Mode' : 'Enter Learn Mode'}>
-      <Box sx={{ position: 'relative' }}>
-        <IconButton
-          color="inherit"
+    <Tooltip title={isLearnModeActive ? i18nText("ui:m_92d5f31f234400b63738") : i18nText("ui:m_3e9322966d7eae69357f")}><Box sx={{ position: 'relative' }}><IconButton color="inherit"
           size={size}
           onClick={toggleLearnMode}
           sx={{
-            color: isLearnModeActive ? '#00bcd4' : 'inherit',
-            backgroundColor: isLearnModeActive ? 'rgba(0, 188, 212, 0.1)' : 'transparent',
+            color: isLearnModeActive ? 'info.main' : 'inherit',
+            backgroundColor: isLearnModeActive ? 'action.selected' : 'transparent',
             '&:hover': {
-              backgroundColor: isLearnModeActive ? 'rgba(0, 188, 212, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'action.hover',
             },
             transition: 'all 0.3s',
-          }}
-        >
-          <SchoolIcon fontSize={fontSize} />
-        </IconButton>
-        {isLearnModeActive && (
-          <Box
-            sx={{
+          }}><SchoolIcon fontSize={fontSize} /></IconButton>{isLearnModeActive && (
+          <Box sx={{
               position: 'absolute',
               top: 0,
               right: 0,
               width: 8,
               height: 8,
               borderRadius: '50%',
-              backgroundColor: '#00bcd4',
+              backgroundColor: 'info.main',
               animation: 'pulse 2s infinite',
               '@keyframes pulse': {
                 '0%, 100%': {
@@ -66,14 +61,10 @@ export function LearnModeToggle({ size }: LearnModeToggleProps) {
                   opacity: 0.5,
                 },
               },
-            }}
-          />
-        )}
-      </Box>
-    </Tooltip>
+            }} />
+        )}</Box></Tooltip>
   );
 }
 
 export default LearnModeToggle;
-
 

@@ -1,0 +1,15 @@
+{
+  "context": "Netcap network traffic analysis and digital forensics. Translate app-authored explanations and display labels. Never translate captured packets, server banners, user notes, file paths, filter syntax, canonical API IDs, enums, JSON field names, protocol names or technical units.",
+  "terms": [
+    { "en": "packet", "de": "Paket", "nl": "pakket", "fr": "paquet", "es": "paquete", "zh-Hans": "数据包" },
+    { "en": "capture", "de": "Aufzeichnung", "nl": "opname", "fr": "capture", "es": "captura", "zh-Hans": "捕获", "note": "Recorded network traffic; capturing live traffic is a verb, not a screenshot." },
+    { "en": "flow", "de": "Datenfluss", "nl": "gegevensstroom", "fr": "flux", "es": "flujo", "zh-Hans": "流", "note": "A network flow, not a UI workflow." },
+    { "en": "audit record", "de": "Audit-Datensatz", "nl": "auditrecord", "fr": "enregistrement d’audit", "es": "registro de auditoría", "zh-Hans": "审计记录" },
+    { "en": "evidence", "de": "Belege", "nl": "bewijsmateriaal", "fr": "éléments de preuve", "es": "evidencias", "zh-Hans": "证据" },
+    { "en": "payload", "de": "Nutzdaten", "nl": "payload", "fr": "charge utile", "es": "carga útil", "zh-Hans": "有效载荷" },
+    { "en": "fingerprint", "de": "Fingerabdruck", "nl": "vingerafdruk", "fr": "empreinte", "es": "huella", "zh-Hans": "指纹" },
+    { "en": "baseline", "de": "Referenzprofil", "nl": "basisprofiel", "fr": "profil de référence", "es": "perfil de referencia", "zh-Hans": "基线" },
+    { "en": "occurrence", "de": "Vorkommen", "nl": "voorkomen", "fr": "occurrence", "es": "aparición", "zh-Hans": "出现记录", "note": "Observed instance in a capture; preserve exact timestamps and units." },
+    { "en": "filter expression", "de": "Filterausdruck", "nl": "filterexpressie", "fr": "expression de filtre", "es": "expresión de filtro", "zh-Hans": "筛选表达式" }
+  ]
+}

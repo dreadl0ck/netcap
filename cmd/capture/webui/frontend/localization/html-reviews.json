@@ -1,0 +1,12 @@
+{
+  "netcap/cmd/capture/webui/frontend/index.html": {
+    "sha256": "510fa37ffa308976a6381314b874f549f76cbf06fbe1298796ddba240e162f98",
+    "reason": "Empty React root with the base Netcap Web UI brand title and English fallback description; no authored controls. src/main.tsx:53-64 initializes the service catalogs and synchronously replaces lang, dir, title and description before mounting; its locale effect repeats this on changes. The fixed dark #121212 prepaint stylesheet matches the service's dark-only startup and prevents a white flash.",
+    "evidence": ["netcap/cmd/capture/webui/frontend/index.html:2-37", "netcap/cmd/capture/webui/frontend/src/main.tsx:53-64", "netcap/cmd/capture/webui/frontend/src/main.tsx:384-409"]
+  },
+  "netcap-pro/frontend/index.html": {
+    "sha256": "52739dbebc1c6bea3336910cd39332b556652c2c97415381c99323cbbea68ad2",
+    "reason": "Empty React root with the base Netcap Pro brand title and English fallback description; no authored controls. The inline bootstrap selects native/browser preferences or OS locale, sets lang/dir/theme/colorScheme before paint, and selects dark/light CSS variables with offline CJK fallback. PresentationProvider.tsx:40-58 initializes the edition catalogs and replaces title/description with localized copy before mounting; its layout effect maintains them after changes.",
+    "evidence": ["netcap-pro/frontend/index.html:2-59", "netcap-pro/frontend/src/preferences/PresentationProvider.tsx:40-58", "netcap-pro/frontend/src/preferences/PresentationProvider.tsx:77-91"]
+  }
+}

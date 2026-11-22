@@ -1,3 +1,5 @@
+//go:build !appstore
+
 package protocoltest
 
 import (

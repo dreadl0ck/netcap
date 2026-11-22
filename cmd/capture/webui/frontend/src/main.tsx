@@ -21,7 +21,7 @@ import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, useNavigate } from 'react-router';
-import { ThemeProvider } from '@mui/material/styles';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -38,6 +38,10 @@ import { ConnectionOverlay, DatabaseBootstrap } from '@dreadl0ck/netcap-ui/compo
 import { mutate as globalMutate } from 'swr';
 import { AppRoutes } from './routes';
 import { netcapTheme } from './theme';
+import { chineseFontFallback, initializeI18n, message, renderText, resolveLocale, translate, useLocale, useTranslate, type Locale, type MessageText } from '@dreadl0ck/netcap-ui/i18n';
+import { directCatalogBundle } from '@dreadl0ck/netcap-ui/i18n/direct';
+import { removedCatalogBundle } from '@dreadl0ck/netcap-ui/i18n/removed';
+import { getMuiLocale, paginationLabel } from '@dreadl0ck/netcap-ui/i18n/mui';
 
 import '@fontsource/space-grotesk/400.css';
 import '@fontsource/space-grotesk/500.css';
@@ -46,50 +50,66 @@ import '@fontsource/space-grotesk/700.css';
 import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/600.css';
 
-const DIRECT_NAVIGATION_ITEMS = [
+const initialLocale = resolveLocale(navigator.languages);
+initializeI18n({ locale: initialLocale, bundles: [directCatalogBundle, removedCatalogBundle] });
+
+function applyServiceDocument(locale: Locale) {
+  document.documentElement.lang = locale;
+  document.documentElement.dir = 'ltr';
+  document.documentElement.dataset.theme = 'dark';
+  document.documentElement.style.colorScheme = 'dark';
+  document.title = `${translate('Network traffic intelligence')} — Netcap`;
+  document.querySelector('meta[name="description"]')?.setAttribute('content', translate('Network traffic intelligence'));
+}
+applyServiceDocument(initialLocale);
+
+function useServiceNavigationItems() {
+  const t = useTranslate();
+  return React.useMemo(() => [
   {
     path: '/interfaces',
-    label: 'Interfaces',
+    label: t('Interfaces'),
     icon: <NetworkCheckIcon />,
     placement: 'workspace-before-pcaps' as const,
-    description: 'View available network interfaces for live packet capture and monitoring.',
+    description: t('View available network interfaces for live packet capture and monitoring.'),
   },
   {
     path: '/yara',
-    label: 'YARA Rules',
+    label: t('YARA Rules'),
     icon: <ShieldIcon />,
     placement: 'data-before-logs' as const,
-    description: 'YARA Rules: Upload and manage YARA rules, scan extracted files for malware signatures.',
+    description: t('YARA Rules: Upload and manage YARA rules, scan extracted files for malware signatures.'),
   },
   {
     path: '/inject',
-    label: 'Inject',
+    label: t('Inject'),
     icon: <BoltIcon />,
     placement: 'detection-end' as const,
-    description: 'Configure packet injection and manipulation rules.',
+    description: t('Configure packet injection and manipulation rules.'),
   },
   {
     path: '/dbs',
-    label: 'Databases',
+    label: t('Databases'),
     icon: <DataObjectIcon />,
     placement: 'system-start' as const,
-    description: 'Manage GeoIP, vulnerability, and MAC vendor databases.',
+    description: t('Manage GeoIP, vulnerability, and MAC vendor databases.'),
   },
   {
     path: '/dpi',
-    label: 'DPI',
+    label: t('DPI'),
     icon: <ManageSearchIcon />,
     placement: 'system-start' as const,
-    description: 'Configure Deep Packet Inspection modules.',
+    description: t('Configure Deep Packet Inspection modules.'),
   },
   {
     path: '/service-signatures',
-    label: 'Service Signatures',
+    label: t('Service Signatures'),
     icon: <SearchIcon />,
     placement: 'system-before-bpf' as const,
-    description: 'Inspect read-only protocol signatures, source evidence and capture coverage.',
+    description: t('Inspect read-only protocol signatures, source evidence and capture coverage.'),
   },
-];
+  ], [t]);
+}
 
 // Valid PCAP file extensions
 const VALID_PCAP_EXTENSIONS = ['.pcap', '.pcapng', '.cap'];
@@ -114,9 +134,10 @@ function hasFiles(dataTransfer: DataTransfer): boolean {
 
 // Connection status hook - tracks backend connectivity
 function useConnectionStatus() {
+  useLocale();
   const [isConnected, setIsConnected] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [connectionMessage, setConnectionMessage] = useState('Connecting to NETCAP...');
+  const [connectionMessage, setConnectionMessage] = useState<MessageText>(() => message('Connecting to NETCAP...'));
 
   useEffect(() => {
     let mounted = true;
@@ -131,7 +152,7 @@ function useConnectionStatus() {
         }
       } catch {
         if (mounted) {
-          setConnectionMessage('Connecting to backend...');
+          setConnectionMessage(message('Connecting to backend...'));
           retryTimeout = setTimeout(checkConnection, 1000);
         }
       }
@@ -144,7 +165,7 @@ function useConnectionStatus() {
         api.getStatus().catch(() => {
           if (mounted) {
             setIsConnected(false);
-            setConnectionMessage('Connection lost. Reconnecting...');
+            setConnectionMessage(message('Connection lost. Reconnecting...'));
             checkConnection();
           }
         });
@@ -162,7 +183,7 @@ function useConnectionStatus() {
     isConnected,
     isInitializing,
     showOverlay: !isConnected || isInitializing,
-    message: connectionMessage,
+    message: renderText(connectionMessage),
     subMessage: !isConnected && !isInitializing
       ? ``
       : undefined,
@@ -171,10 +192,11 @@ function useConnectionStatus() {
 
 // Global drop zone component that wraps the entire app
 function GlobalDropZone({ children }: { children: React.ReactNode }) {
+  const t = useTranslate();
   const navigate = useNavigate();
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadMessage, setUploadMessage] = useState('');
+  const [uploadMessage, setUploadMessage] = useState<MessageText>('');
   const dragCounter = React.useRef(0);
 
   const handleDragEnter = useCallback((e: DragEvent) => {
@@ -218,20 +240,20 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
     const pcapFiles = Array.from(e.dataTransfer.files).filter(file => isPcapFile(file.name));
 
     if (pcapFiles.length === 0) {
-      setUploadMessage('No valid PCAP files found. Supported formats: .pcap, .pcapng, .cap');
+      setUploadMessage(message('No valid PCAP files found. Supported formats: .pcap, .pcapng, .cap'));
       setTimeout(() => setUploadMessage(''), 3000);
       return;
     }
 
     setIsUploading(true);
-    setUploadMessage(`Uploading ${pcapFiles.length} file(s)...`);
+    setUploadMessage(message('Uploading...'));
 
     try {
       const uploadedIds: string[] = [];
 
       for (let i = 0; i < pcapFiles.length; i++) {
         const file = pcapFiles[i];
-        setUploadMessage(`Uploading ${i + 1}/${pcapFiles.length}: ${file.name}...`);
+        setUploadMessage(message('Uploading {index}/{count}: {name}', { index: i + 1, count: pcapFiles.length, name: file.name }));
 
         const response = await api.uploadFile(file);
 
@@ -242,7 +264,7 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
         }
       }
 
-      setUploadMessage(`Successfully uploaded ${pcapFiles.length} file(s)`);
+      setUploadMessage(message('ui:m_de27846aa9d2f6d9d1d0', { count: pcapFiles.length }));
 
       globalMutate('inputFiles');
 
@@ -253,8 +275,8 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
       }, 1500);
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-      setUploadMessage(`Error: ${errorMessage}`);
+      const detail = error instanceof Error ? error.message : message('Upload failed');
+      setUploadMessage(message('ui:m_d47fa33706b87799ca0e', { arg0: detail }));
       setTimeout(() => {
         setIsUploading(false);
         setUploadMessage('');
@@ -294,10 +316,9 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: isDraggingOver ? 'rgba(0, 188, 212, 0.25)' : 'transparent',
+            backgroundColor: isDraggingOver ? 'action.hover' : 'transparent',
             border: isDraggingOver ? '6px dashed' : 'none',
             borderColor: 'primary.main',
-            boxShadow: isDraggingOver ? 'inset 0 0 100px rgba(0, 188, 212, 0.3)' : 'none',
             transition: 'all 0.2s ease-in-out',
           }}
         >
@@ -328,14 +349,10 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
               }}
             />
             <Typography variant="h6" color="primary">
-              {isUploading
-                ? uploadMessage
-                : uploadMessage
-                  ? uploadMessage
-                  : 'Drop PCAP files anywhere to upload'}
+              {uploadMessage ? renderText(uploadMessage) : t('Drop PCAP files anywhere to upload')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Supported formats: .pcap, .pcapng, .cap
+              {t('Supported formats: .pcap, .pcapng, .cap')}
             </Typography>
           </Box>
         </Box>
@@ -365,11 +382,21 @@ function AppContent() {
 }
 
 function App() {
+  const locale = useLocale();
+  const navigationItems = useServiceNavigationItems();
+  const theme = React.useMemo(() => createTheme(netcapTheme, getMuiLocale(locale), {
+    typography: { fontFamily: `"Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", ${chineseFontFallback}` },
+    components: {
+      MuiTablePagination: { defaultProps: { labelDisplayedRows: paginationLabel } },
+      MuiCssBaseline: { styleOverrides: { ':root': { '--netcap-mono': `"JetBrains Mono", "SFMono-Regular", Consolas, ${chineseFontFallback}` } } },
+    },
+  }), [locale]);
+  React.useLayoutEffect(() => applyServiceDocument(locale), [locale]);
   return (
     <BrowserRouter>
-      <ThemeProvider theme={netcapTheme}>
+      <ThemeProvider theme={theme}>
         <CssBaseline />
-        <ReactRouterNetcapProvider backendUrl={getBackendUrl()} navigationItems={DIRECT_NAVIGATION_ITEMS}>
+        <ReactRouterNetcapProvider backendUrl={getBackendUrl()} navigationItems={navigationItems}>
           <AppContent />
         </ReactRouterNetcapProvider>
       </ThemeProvider>

@@ -26,6 +26,8 @@ import DevicesIcon from '@mui/icons-material/Devices';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { useNetcapRouter } from '../hooks/useNetcapRouter';
+import { translate as i18nText, useLocale as useUILocale } from "../lib/i18n";
+
 
 interface MobileBottomNavProps {
   onMoreClick: () => void;
@@ -39,6 +41,7 @@ const NAV_ITEMS = [
 ] as const;
 
 export default function MobileBottomNav({ onMoreClick }: MobileBottomNavProps) {
+  const __uiLocale = useUILocale();
   const router = useNetcapRouter();
 
   const activeIndex = NAV_ITEMS.findIndex(item => router.isActive(item.path));
@@ -46,8 +49,7 @@ export default function MobileBottomNav({ onMoreClick }: MobileBottomNavProps) {
   const value = activeIndex >= 0 ? activeIndex : -1;
 
   return (
-    <Paper
-      sx={{
+    <Paper sx={{
         position: 'fixed',
         bottom: 0,
         left: 0,
@@ -58,10 +60,7 @@ export default function MobileBottomNav({ onMoreClick }: MobileBottomNavProps) {
         borderRadius: 0,
         backgroundColor: 'transparent',
       }}
-      elevation={0}
-    >
-      <BottomNavigation
-        value={value}
+      elevation={0}><BottomNavigation value={value}
         onChange={(_event, newValue: number) => {
           // Only navigate for the 4 main tabs; "More" (index 4) opens the drawer via its onClick
           if (newValue < NAV_ITEMS.length) {
@@ -89,24 +88,15 @@ export default function MobileBottomNav({ onMoreClick }: MobileBottomNavProps) {
               fontSize: '0.7rem',
             },
           },
-        }}
-      >
-        {NAV_ITEMS.map(item => (
-          <BottomNavigationAction
-            key={item.path}
-            label={item.label}
-            icon={item.icon}
-          />
-        ))}
-        <BottomNavigationAction
-          label="More"
+        }}>{NAV_ITEMS.map(item => (
+          <BottomNavigationAction key={item.path}
+            label={i18nText(item.label)}
+            icon={item.icon} />
+        ))}<BottomNavigationAction label={i18nText("ui:m_008d9c2c77fcb139a455")}
           icon={<MoreHorizIcon />}
           onClick={(e) => {
             e.preventDefault();
             onMoreClick();
-          }}
-        />
-      </BottomNavigation>
-    </Paper>
+          }} /></BottomNavigation></Paper>
   );
 }

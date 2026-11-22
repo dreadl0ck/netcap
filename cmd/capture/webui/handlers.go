@@ -1099,8 +1099,9 @@ func (s *Server) handleDPIPreferences(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
-			"success": true,
-			"message": "DPI preferences updated successfully",
+			"success":     true,
+			"message":     "DPI preferences updated successfully",
+			"messageI18n": requestUIMessage(r, "config.dpi.saved", "DPI preferences updated successfully", nil),
 		})
 
 	default:
@@ -1110,17 +1111,22 @@ func (s *Server) handleDPIPreferences(w http.ResponseWriter, r *http.Request) {
 
 // ConfigOption represents a configuration option
 type ConfigOption struct {
-	Name        string `json:"name"`
-	Value       any    `json:"value"`
-	Default     any    `json:"default"`
-	Type        string `json:"type"`
-	Description string `json:"description"`
-	Category    string `json:"category"`
-	IsEditable  bool   `json:"isEditable"`
+	Name            string    `json:"name"`
+	Value           any       `json:"value"`
+	Default         any       `json:"default"`
+	Type            string    `json:"type"`
+	Description     string    `json:"description"`
+	Category        string    `json:"category"`
+	IsEditable      bool      `json:"isEditable"`
+	LabelI18n       UIMessage `json:"labelI18n"`
+	DescriptionI18n UIMessage `json:"descriptionI18n"`
+	CategoryI18n    UIMessage `json:"categoryI18n"`
 }
 
 // handleConfig returns the current configuration
 func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
+	p := PresentationFromRequest(r)
+	presentationHeaders(w, p)
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -1191,6 +1197,12 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 		response["sessionId"] = sessionID
 		response["sessionSpecific"] = true
 	}
+	presentConfigOptions(config, p)
+	originID := "config.origin.runtime"
+	if _, ok := response["admittedSettings"]; ok {
+		originID = "config.origin.admission"
+	}
+	response["configurationOriginI18n"] = p.message(originID, response["configurationOrigin"].(string), nil)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -1743,6 +1755,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 	}
 
+	presentConfigOptions(options, Presentation{})
 	return options
 }
 
@@ -1786,6 +1799,7 @@ func (s *Server) getExcludeDecodersValue(sessionConfig *SessionInfo) string {
 
 // handleDebugToggle handles runtime debug logging toggle requests
 func (s *Server) handleDebugToggle(w http.ResponseWriter, r *http.Request) {
+	presentationHeaders(w, PresentationFromRequest(r))
 	if r.Method == http.MethodGet {
 		// Return current debug state
 		w.Header().Set("Content-Type", "application/json")
@@ -1821,8 +1835,10 @@ func (s *Server) handleDebugToggle(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
-			"enabled": req.Enabled,
-			"message": fmt.Sprintf("Debug logging %s", map[bool]string{true: "enabled", false: "disabled"}[req.Enabled]),
+			"enabled":     req.Enabled,
+			"message":     fmt.Sprintf("Debug logging %s", map[bool]string{true: "enabled", false: "disabled"}[req.Enabled]),
+			"code":        map[bool]string{true: "debug_enabled", false: "debug_disabled"}[req.Enabled],
+			"messageI18n": PresentationFromRequest(r).message(map[bool]string{true: "config.debug.enabled", false: "config.debug.disabled"}[req.Enabled], map[bool]string{true: "Debug logging enabled", false: "Debug logging disabled"}[req.Enabled], nil),
 		})
 		return
 	}
@@ -1832,6 +1848,7 @@ func (s *Server) handleDebugToggle(w http.ResponseWriter, r *http.Request) {
 
 // handlePayloadToggle handles runtime payload capture toggle requests
 func (s *Server) handlePayloadToggle(w http.ResponseWriter, r *http.Request) {
+	presentationHeaders(w, PresentationFromRequest(r))
 	if r.Method == http.MethodGet {
 		// Return current payload capture state
 		w.Header().Set("Content-Type", "application/json")
@@ -1858,8 +1875,10 @@ func (s *Server) handlePayloadToggle(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
-			"enabled": req.Enabled,
-			"message": fmt.Sprintf("Payload capture %s (will apply to future analysis)", map[bool]string{true: "enabled", false: "disabled"}[req.Enabled]),
+			"enabled":     req.Enabled,
+			"message":     fmt.Sprintf("Payload capture %s (will apply to future analysis)", map[bool]string{true: "enabled", false: "disabled"}[req.Enabled]),
+			"code":        map[bool]string{true: "payload_enabled", false: "payload_disabled"}[req.Enabled],
+			"messageI18n": PresentationFromRequest(r).message(map[bool]string{true: "config.payload.enabled", false: "config.payload.disabled"}[req.Enabled], map[bool]string{true: "Payload capture enabled (will apply to future analysis)", false: "Payload capture disabled (will apply to future analysis)"}[req.Enabled], nil),
 		})
 		return
 	}
@@ -1910,8 +1929,9 @@ func (s *Server) handleStopCapture(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
-			"success": true,
-			"message": "Live capture stop requested",
+			"success":     true,
+			"message":     "Live capture stop requested",
+			"messageI18n": requestUIMessage(r, "capture.stop_requested", "Live capture stop requested", nil),
 		})
 		return
 	}
@@ -2132,13 +2152,14 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success":   true,
-		"message":   "File uploaded successfully and queued for analysis",
-		"filename":  filename,
-		"sessionId": analysisID,
-		"path":      inputPath,
-		"size":      written,
-		"id":        fileID, // Include file ID in response
+		"success":     true,
+		"message":     "File uploaded successfully and queued for analysis",
+		"messageI18n": requestUIMessage(r, "capture.upload_queued", "File uploaded successfully and queued for analysis", nil),
+		"filename":    filename,
+		"sessionId":   analysisID,
+		"path":        inputPath,
+		"size":        written,
+		"id":          fileID, // Include file ID in response
 	})
 }
 
@@ -2168,9 +2189,10 @@ type ReportIssueRequest struct {
 
 // ReportIssueResponse represents the response for reporting an issue
 type ReportIssueResponse struct {
-	Success bool   `json:"success"`
-	IssueID string `json:"issueId"`
-	Message string `json:"message"`
+	Success     bool      `json:"success"`
+	IssueID     string    `json:"issueId"`
+	Message     string    `json:"message"`
+	MessageI18n UIMessage `json:"messageI18n"`
 }
 
 // handleReportIssue handles issue reports for PCAP files
@@ -2187,10 +2209,11 @@ func (s *Server) handleReportIssue(w http.ResponseWriter, r *http.Request) {
 		allowed, remaining := s.sessionManager.CheckIssueReportLimit(clientIP)
 		if !allowed {
 			RespondJSON(w, http.StatusTooManyRequests, map[string]any{
-				"error":     "Issue report rate limit exceeded",
-				"message":   "You have reached the maximum number of issue reports per hour (3 per hour)",
-				"remaining": remaining,
-				"success":   false,
+				"error":       "Issue report rate limit exceeded",
+				"message":     "You have reached the maximum number of issue reports per hour (3 per hour)",
+				"messageI18n": requestUIMessage(r, "issue.hourly_limit", "You have reached the maximum number of issue reports per hour ({limit} per hour)", map[string]any{"limit": 3}),
+				"remaining":   remaining,
+				"success":     false,
 			})
 			return
 		}
@@ -2218,14 +2241,14 @@ func (s *Server) handleReportIssue(w http.ResponseWriter, r *http.Request) {
 
 	// Handle based on mode
 	if s.isServiceMode && s.sessionManager != nil {
-		s.handleServiceModeIssueReport(w, req, clientIP)
+		s.handleServiceModeIssueReport(w, req, clientIP, r)
 	} else {
-		s.handleLocalModeIssueReport(w, req)
+		s.handleLocalModeIssueReport(w, req, r)
 	}
 }
 
 // handleServiceModeIssueReport handles issue reports in service mode with full session data
-func (s *Server) handleServiceModeIssueReport(w http.ResponseWriter, req ReportIssueRequest, clientIP string) {
+func (s *Server) handleServiceModeIssueReport(w http.ResponseWriter, req ReportIssueRequest, clientIP string, r *http.Request) {
 	// Get session info
 	session, exists := s.sessionManager.GetSession(req.SessionID)
 	if !exists {
@@ -2362,14 +2385,15 @@ func (s *Server) handleServiceModeIssueReport(w http.ResponseWriter, req ReportI
 
 	// Return success response
 	RespondJSON(w, http.StatusOK, ReportIssueResponse{
-		Success: true,
-		IssueID: issueID,
-		Message: "Issue report submitted successfully. Thank you for helping improve netcap!",
+		Success:     true,
+		IssueID:     issueID,
+		Message:     "Issue report submitted successfully. Thank you for helping improve netcap!",
+		MessageI18n: requestUIMessage(r, "issue.submitted", "Issue report submitted successfully. Thank you for helping improve netcap!", nil),
 	})
 }
 
 // handleLocalModeIssueReport handles issue reports in local mode (simpler, no session data)
-func (s *Server) handleLocalModeIssueReport(w http.ResponseWriter, req ReportIssueRequest) {
+func (s *Server) handleLocalModeIssueReport(w http.ResponseWriter, req ReportIssueRequest, r *http.Request) {
 	// Find the file by sessionId (which is file path or basename in local mode)
 	s.mu.RLock()
 	inputFiles := s.inputFiles
@@ -2459,9 +2483,10 @@ func (s *Server) handleLocalModeIssueReport(w http.ResponseWriter, req ReportIss
 
 	// Return success response
 	RespondJSON(w, http.StatusOK, ReportIssueResponse{
-		Success: true,
-		IssueID: issueID,
-		Message: "Issue report submitted successfully. Thank you for helping improve netcap!",
+		Success:     true,
+		IssueID:     issueID,
+		Message:     "Issue report submitted successfully. Thank you for helping improve netcap!",
+		MessageI18n: requestUIMessage(r, "issue.submitted", "Issue report submitted successfully. Thank you for helping improve netcap!", nil),
 	})
 }
 

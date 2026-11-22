@@ -63,32 +63,34 @@ import { analystRequest, type AnalystSource, type CaptureBinding } from '../lib/
 import OccurrenceAction from '../components/OccurrenceAction';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatBytes, getBackendUrl, FilteredAuditFileInfo } from '../lib/api';
-import useSWR, { mutate as globalMutate } from 'swr';
+
 import { useNetcapRouter, useNetcapApi, useIsMobile } from '../hooks';
 import FilterExpressionHighlight, { FilterExpressionBlock } from '../components/FilterExpressionHighlight';
 import { highlightFilterExpression } from '../lib/filterSyntaxHighlight';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 import { syntaxHighlightJSON } from '../lib/html';
+import { useTheme } from '@mui/material/styles';
+import { appearanceTokens, categoryAppearance, type AppearanceMode } from '../lib/appearance';
+import { getLocale as getUILocale, message as i18nMessage, translate as i18nText, richText as i18nRichText, renderText as i18nRenderText, messageSource, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR, mutatePresentation as globalMutate } from "../lib/i18n";
+import { message, displayError, translate } from "../lib/i18n";
+import { getLocale } from "../lib/i18n";
+import { errorText, recordTypeLabel } from "../lib/i18n";
+import { type MessageText } from "../lib/i18n";
+import { rawCode } from "../lib/i18n";
+import { message as finalCopyMessage } from "../lib/i18n";
+
+
+
+
+
+
+
+
 interface LayerGroup {
   layerName: string;
   files: any[];
-}
-
-// Helper function to generate consistent colors for field names
-function getFieldColor(fieldName: string): string {
-  // Simple hash function to generate consistent colors
-  let hash = 0;
-  for (let i = 0; i < fieldName.length; i++) {
-    hash = fieldName.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  
-  // Generate HSL color with good saturation and darker lightness for better contrast
-  const hue = Math.abs(hash % 360);
-  const saturation = 65 + (Math.abs(hash) % 20); // 65-85%
-  const lightness = 35 + (Math.abs(hash >> 8) % 15); // 35-50% - darker for better contrast
-  
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
 // Component to render record as UI elements
@@ -100,34 +102,30 @@ interface RecordUIProps {
 }
 
 function RecordUI({ data, level = 0, recordType, evidence }: RecordUIProps) {
+  const __uiLocale = useUILocale();
+  const mode = useTheme().palette.mode;
   if (data === null || data === undefined) {
     return <Typography variant="body2" color="text.secondary">—</Typography>;
   }
   
   if (typeof data === 'boolean') {
     return (
-      <Chip 
-        label={String(data)} 
+      <Chip label={String(data)} 
         size="small" 
         color={data ? "success" : "default"}
-        sx={{ fontFamily: 'monospace', height: 22 }}
-      />
+        sx={{ fontFamily: 'monospace', height: 22 }} />
     );
   }
   
   if (typeof data === 'number') {
     return (
-      <Typography 
-        component="span" 
+      <Typography component="span" 
         sx={{ 
           fontFamily: 'monospace', 
           color: 'primary.main',
           fontWeight: 500,
           fontSize: '0.9rem'
-        }}
-      >
-        {data.toLocaleString()}
-      </Typography>
+        }}>{data.toLocaleString(getUILocale())}</Typography>
     );
   }
   
@@ -139,45 +137,35 @@ function RecordUI({ data, level = 0, recordType, evidence }: RecordUIProps) {
     
     if (isIP) {
       return (
-        <Chip 
-          label={data} 
+        <Chip label={data} 
           size="small"
           sx={{ 
             fontFamily: 'monospace',
-            bgcolor: 'info.light',
+            bgcolor: 'info.main',
             color: 'info.contrastText',
             height: 22,
             fontSize: '0.8rem'
-          }}
-        />
+          }} />
       );
     }
     
     if (isTimestamp) {
       return (
-        <Typography 
-          component="span"
+        <Typography component="span"
           sx={{ 
             fontFamily: 'monospace',
             color: 'text.secondary',
             fontSize: '0.85rem'
-          }}
-        >
-          {data}
-        </Typography>
+          }}>{data}</Typography>
       );
     }
     
     return (
-      <Typography 
-        component="span"
+      <Typography component="span"
         sx={{ 
           fontFamily: 'monospace',
           fontSize: '0.9rem'
-        }}
-      >
-        {data}
-      </Typography>
+        }}>{data}</Typography>
     );
   }
   
@@ -189,23 +177,17 @@ function RecordUI({ data, level = 0, recordType, evidence }: RecordUIProps) {
     // For simple arrays (primitives), show inline
     if (data.every(item => typeof item !== 'object' || item === null)) {
       return (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-          {data.map((item, idx) => (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>{data.map((item, idx) => (
             <RecordUI key={`${String(item)}-${idx}`} data={item} level={level + 1} />
-          ))}
-        </Box>
+          ))}</Box>
       );
     }
     
     // For complex arrays, show as list
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 0.5 }}>
-        {data.map((item, idx) => (
-          <Paper key={`item-${idx}-${JSON.stringify(item).substring(0, 50)}`} sx={{ p: 1, bgcolor: 'background.default' }}>
-            <RecordUI data={item} level={level + 1} />
-          </Paper>
-        ))}
-      </Box>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 0.5 }}>{data.map((item, idx) => (
+          <Paper key={`item-${idx}-${JSON.stringify(item).substring(0, 50)}`} sx={{ p: 1, bgcolor: 'background.default' }}><RecordUI data={item} level={level + 1} /></Paper>
+        ))}</Box>
     );
   }
   
@@ -216,15 +198,11 @@ function RecordUI({ data, level = 0, recordType, evidence }: RecordUIProps) {
     }
     
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: level === 0 ? 0.75 : 0.5 }}>
-        {level === 0 && <RecordSemantics data={evidence || data} recordType={recordType} />}
-        {level === 0 && <OccurrenceAction data={evidence || data} />}
-        {entries.map(([key, value]) => {
-          const fieldColor = getFieldColor(key);
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: level === 0 ? 0.75 : 0.5 }}>{level === 0 && <RecordSemantics data={evidence || data} recordType={recordType} />}{level === 0 && <OccurrenceAction data={evidence || data} />}{entries.map(([key, value]) => {
+          const fieldColor = categoryAppearance(key, mode);
           
           return (
-            <Box 
-              key={key}
+            <Box key={key}
               sx={{ 
                 display: 'flex',
                 flexDirection: 'row',
@@ -233,21 +211,16 @@ function RecordUI({ data, level = 0, recordType, evidence }: RecordUIProps) {
                 borderLeft: level > 0 ? 2 : 0,
                 borderColor: 'divider',
                 pl: level > 0 ? 1.5 : 0
-              }}
-            >
-              <Box 
-                sx={{ 
+              }}><Box sx={{ 
                   minWidth: level === 0 ? { xs: 100, sm: 180 } : { xs: 80, sm: 140 },
                   maxWidth: level === 0 ? { xs: 120, sm: 180 } : { xs: 100, sm: 140 },
                   pt: 0.2
-                }}
-              >
-                <Chip
-                  label={key}
+                }}><Chip label={key}
                   size="small"
                   sx={{
-                    bgcolor: fieldColor,
-                    color: 'white',
+                    bgcolor: fieldColor.background,
+                    color: fieldColor.foreground,
+                    border: '1px solid', borderColor: fieldColor.border,
                     fontWeight: 600,
                     fontFamily: 'monospace',
                     fontSize: '0.8rem',
@@ -256,29 +229,22 @@ function RecordUI({ data, level = 0, recordType, evidence }: RecordUIProps) {
                     '& .MuiChip-label': {
                       px: 1.2
                     }
-                  }}
-                />
-              </Box>
-              <Box sx={{ flex: 1, minWidth: 0, pt: 0.2 }}>
-                <RecordUI data={value} level={level + 1} />
-              </Box>
-            </Box>
+                  }} /></Box><Box sx={{ flex: 1, minWidth: 0, pt: 0.2 }}><RecordUI data={value} level={level + 1} /></Box></Box>
           );
-        })}
-      </Box>
+        })}</Box>
     );
   }
   
   return (
-    <Typography component="span" sx={{ fontFamily: 'monospace' }}>
-      {String(data)}
-    </Typography>
+    <Typography component="span" sx={{ fontFamily: 'monospace' }}>{String(data)}</Typography>
   );
 }
 
 // Syntax highlighting for JSON
 
 export default function AuditRecords() {
+  const __uiLocale = useUILocale();
+  const colors = appearanceTokens(useTheme().palette.mode);
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const config = useNetcapConfig();
@@ -375,7 +341,7 @@ export default function AuditRecords() {
   const [total, setTotal] = useState(0);
   const [scanned, setScanned] = useState(0);
   const [executionTime, setExecutionTime] = useState(0);
-  const [streamError, setStreamError] = useState<string | null>(null);
+  const [streamError, setStreamError] = useState<UIMessageText | null>(null);
   const [filterExpression, setFilterExpression] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
   const [showFilterHelp, setShowFilterHelp] = useState(false);
@@ -487,16 +453,16 @@ export default function AuditRecords() {
     let evidenceSource: AnalystSource | undefined;
     if (bindEvidence) {
       try {
-        if (filter?.trim()) throw new Error('Bound actions support unfiltered or exact Community ID views. Use the analyst catalogue for indicator queries.');
+        if (filter?.trim()) throw displayError(message("ui:m_9ab178131fd6279ad0b3"));
         const caps = await analystRequest<{ version: number; occurrenceVersion: number; boundStreamVersion: number }>(config.fetch ?? fetch, config.apiBaseUrl, 'capabilities', undefined, controller.signal);
-        if (caps.version !== 1 || caps.occurrenceVersion !== 1 || caps.boundStreamVersion !== 1) throw new Error('Content-bound stream contract version 1 required.');
+        if (caps.version !== 1 || caps.occurrenceVersion !== 1 || caps.boundStreamVersion !== 1) throw displayError(message("ui:m_9ae32d0c242ee8e795b3"));
         const file = inputFiles?.find(file => file.path === status?.activeInputFile);
         const selector = status?.isServiceMode ? { sessionId: status.sessionId || file?.sessionId || file?.id } : { inputFile: status?.activeInputFile };
         const params = new URLSearchParams(); Object.entries(selector).forEach(([key, val]) => { if (val) params.set(key, val); });
-        if (!params.size) throw new Error('An explicit registered capture is required.');
+        if (!params.size) throw displayError(message("ui:m_a439f274874c6f7c5f5a"));
         const binding = await analystRequest<CaptureBinding>(config.fetch ?? fetch, config.apiBaseUrl, `binding?${params}`, undefined, controller.signal);
         evidenceSource = { ...selector, binding };
-      } catch (error) { if (!controller.signal.aborted) { setStreamError(error instanceof Error ? error.message : 'Occurrence binding unavailable'); setLoading(false); } return; }
+      } catch (error) { if (!controller.signal.aborted) { setStreamError(error instanceof Error ? errorText(error) : i18nMessage("ui:m_9d3d39743d26cccb161b")); setLoading(false); } return; }
     }
     if (controller.signal.aborted) return;
     const eventSource = api.streamAuditRecords(
@@ -505,7 +471,7 @@ export default function AuditRecords() {
       100, // Return up to 100 records (backend scans all records to get accurate count)
       (record) => {
         if (controller.signal.aborted) return;
-        if (bindEvidence && (!record._netcapOccurrence || !record._netcapSource)) { setStreamError('Backend did not supply content-bound occurrence references.'); setLoading(false); return; }
+        if (bindEvidence && (!record._netcapOccurrence || !record._netcapSource)) { setStreamError(i18nMessage("ui:m_23c582e64bba76f4d711")); setLoading(false); return; }
         setRecords((prev) => [...prev, record]);
       },
       (count, scanned) => {
@@ -520,10 +486,10 @@ export default function AuditRecords() {
         if (executionTimeMs !== undefined) setExecutionTime(executionTimeMs);
         setLoading(false);
       },
-      (error) => {
+      (error, presentation?: MessageText) => {
         if (controller.signal.aborted) return;
         console.error('Stream error:', error);
-        setStreamError(error);
+        setStreamError(presentation ?? error);
         setLoading(false);
       },
       filter || undefined,
@@ -728,7 +694,7 @@ export default function AuditRecords() {
       await mutateStatus();
     } catch (error) {
       console.error('Failed to switch session:', error);
-      alert('Failed to switch to selected session');
+      alert(i18nText("ui:m_c621cba9a2fca09e49af"));
     } finally {
       setSwitchingSession(false);
     }
@@ -764,11 +730,11 @@ export default function AuditRecords() {
       window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
     } catch (err) {
       console.error('Failed to switch file:', err);
-      alert('Failed to switch to this file');
+      alert(i18nText("ui:m_03a2ad41452d2a456747"));
     } finally {
       setSwitchingFile(false);
     }
-  }, [api, mutateStatus, mutate]);
+  }, [api, mutateStatus, mutate, __uiLocale]);
 
   const handleDownloadAll = () => {
     console.log('[Audit] Download All clicked');
@@ -782,7 +748,7 @@ export default function AuditRecords() {
     if (!identifier) {
       console.error('[Audit] No identifier available for download (sessionId or activeInputFile)');
       console.error('[Audit] Status object:', JSON.stringify(status, null, 2));
-      alert('Unable to download: no session or file information available');
+      alert(i18nText("ui:m_85ac94fb0f2259d34cf7"));
       return;
     }
 
@@ -796,13 +762,11 @@ export default function AuditRecords() {
 
   // Use shared FileSelectorHeader component
   const fileSelector = (
-    <FileSelectorHeader
-      inputFiles={inputFiles || []}
+    <FileSelectorHeader inputFiles={inputFiles || []}
       status={status}
       switchingFile={switchingFile}
       onFileChange={handleFileChange}
-      learnHint="Capture Selector: Switch between different analyzed PCAP files to view their audit records and extracted protocol data."
-    />
+      learnHint={finalCopyMessage("ui:m_275fdcca8e700b8b3b2c")} />
   );
 
   // Group files by layer, filtering out empty files
@@ -855,131 +819,73 @@ export default function AuditRecords() {
 
   if (!files && !error) {
     return (
-      <Layout title="Records" headerAction={fileSelector}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-          <CircularProgress />
-        </Box>
-      </Layout>
+      <Layout title={i18nText("ui:m_414eb95bad5754049d47")} headerAction={fileSelector}><Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh"><CircularProgress /></Box></Layout>
     );
   }
 
   if (error) {
     return (
-      <Layout title="Records" headerAction={fileSelector}>
-        <Box>
-          <Typography color="error">Error loading audit records</Typography>
-        </Box>
-      </Layout>
+      <Layout title={i18nText("ui:m_414eb95bad5754049d47")} headerAction={fileSelector}><Box><Typography color="error">{i18nText("ui:m_5e92b00915d41fb64012")}</Typography></Box></Layout>
     );
   }
 
   return (
-    <Layout title="Audit Records" headerAction={fileSelector}>
-      <Box sx={{ minWidth: 0 }}>
-        {/* Session Selector for Try Service */}
-        {status?.isServiceMode && sessions && sessions.length > 1 && (
-          <Box mb={3}>
-            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 300 } }}>
-              <Select
-                value={status?.sessionId || ''}
+    <Layout title={i18nText("ui:m_b4278c403d07ec43e879")} headerAction={fileSelector}><Box sx={{ minWidth: 0 }}>{/* Session Selector for Try Service */}{status?.isServiceMode && sessions && sessions.length > 1 && (
+          <Box mb={3}><FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 300 } }}><Select value={status?.sessionId || ''}
                 onChange={handleSessionChange}
                 disabled={switchingSession}
                 displayEmpty
                 renderValue={(value) => {
                   const session = sessions.find(s => s.sessionId === value);
-                  return session ? `Session: ${session.inputFilename}` : 'Select Session';
-                }}
-              >
-                {sessions
+                  return session ? i18nText("ui:m_98ea5107ce31d865f187", { arg0: session.inputFilename }) : translate("ui:m_6a62a54b5077b61e7565");
+                }}>{sessions
                   .filter(s => s.resultsReady)
                   .map((session) => (
-                    <MenuItem key={session.sessionId} value={session.sessionId}>
-                      <Box>
-                        <Typography variant="body2">{session.inputFilename}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {new Date(session.uploadTimestamp).toLocaleString()}
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-              </Select>
-            </FormControl>
-          </Box>
-        )}
-
-        <Box mb={3}>
-          <Box 
-            display="flex" 
+                    <MenuItem key={session.sessionId} value={session.sessionId}><Box><Typography variant="body2">{session.inputFilename}</Typography><Typography variant="caption" color="text.secondary">{new Date(session.uploadTimestamp).toLocaleString(getUILocale())}</Typography></Box></MenuItem>
+                  ))}</Select></FormControl></Box>
+        )}<Box mb={3}><Box display="flex" 
             flexDirection={{ xs: 'column', sm: 'row' }}
             justifyContent="space-between" 
             alignItems={{ xs: 'stretch', sm: 'flex-start' }} 
-            gap={2}
-          >
-            <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
-              {layerGroups.reduce((sum, group) => sum + group.files.length, 0)} protocol type(s) {isCommunityIDFilterActive ? 'with matching records' : 'found'} • Hierarchical by encapsulation layer
-              {isCommunityIDFilterActive && (
-                <Chip 
-                  label={`Community ID filter (${communityIDsArray.length})`} 
+            gap={2}><Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+              {i18nRichText("ui:m_06ce1c9e56a08485fb83", { arg0: layerGroups.reduce((sum, group) => sum + group.files.length, 0), arg1: isCommunityIDFilterActive ? i18nText("ui:m_d6b979f6b2605b747e45") : i18nText("ui:m_49478855d9a6cd6a7950"), arg2: isCommunityIDFilterActive && (
+                <Chip label={i18nText("ui:m_1210a148072dc4a2e989", { arg0: communityIDsArray.length })} 
                   size="small" 
                   color="primary" 
-                  sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
-                />
-              )}
-            </Typography>
-            
-            {/* Download All Button */}
-            <Button
-              data-learn="Download All Records: Download all record files as a compressed archive for offline analysis."
+                  sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} />
+              ) })}
+            </Typography>{/* Download All Button */}<Button data-learn={i18nText("ui:m_971a39e633e226dfe24d")}
               variant="contained"
               color="success"
               startIcon={<DownloadIcon />}
               onClick={handleDownloadAll}
-              disabled={
-                // Require either sessionId (service mode) or activeInputFile (local mode)
-                (!status?.sessionId && !status?.activeInputFile) || 
+              disabled={(!status?.sessionId && !status?.activeInputFile) || 
                 // Also require at least one audit file available
-                layerGroups.reduce((sum, group) => sum + group.files.length, 0) === 0
-              }
+                layerGroups.reduce((sum, group) => sum + group.files.length, 0) === 0}
               size="small"
               sx={{ minWidth: { xs: 'auto', sm: 180 } }}
-              fullWidth={false}
-            >
-              Download All
-            </Button>
-          </Box>
-        </Box>
-
-        {layerGroups.length > 0 ? (
-          <Paper sx={{ p: 2, position: 'relative' }}>
-            {/* Loading overlay when switching files */}
-            {switchingFile && (
-              <Box
-                sx={{
+              fullWidth={false}>
+              {i18nText("ui:m_733fd6c3bfd4d9f84cee")}
+            </Button></Box></Box>{layerGroups.length > 0 ? (
+          <Paper sx={{ p: 2, position: 'relative' }}>{/* Loading overlay when switching files */}{switchingFile && (
+              <Box sx={{
                   position: 'absolute',
                   top: 0,
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  bgcolor: 'rgba(0, 0, 0, 0.5)',
+                  bgcolor: colors.overlay,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
                   zIndex: 10,
                   borderRadius: 1,
-                }}
-              >
-                <CircularProgress size={48} />
-                <Typography variant="body2" color="white" sx={{ mt: 2 }}>
-                  Loading records...
-                </Typography>
-              </Box>
-            )}
-            {layerGroups.map((group, groupIdx) => (
-              <Box key={group.layerName} sx={{ mb: groupIdx < layerGroups.length - 1 ? 2 : 0 }}>
-                {/* Layer Header */}
-                <Box
-                  sx={{
+                }}><CircularProgress size={48} /><Typography variant="body2" color="text.primary" sx={{ mt: 2 }}>
+                  {i18nText("ui:m_8f2af68583ba21a39441")}
+                </Typography></Box>
+            )}{layerGroups.map((group, groupIdx) => (
+              <Box key={group.layerName} sx={{ mb: groupIdx < layerGroups.length - 1 ? 2 : 0 }}>{/* Layer Header */}<Box sx={{
                     display: 'flex',
                     alignItems: 'center',
                     cursor: 'pointer',
@@ -987,36 +893,16 @@ export default function AuditRecords() {
                     borderRadius: 1,
                     '&:hover': { bgcolor: 'action.hover' },
                   }}
-                  onClick={() => toggleLayer(group.layerName)}
-                >
-                  <IconButton size="small" sx={{ mr: 1 }}>
-                    {expandedLayers.has(group.layerName) ? <ExpandMoreIcon /> : <ChevronRightIcon />}
-                  </IconButton>
-                  <Box
-                    sx={{
+                  onClick={() => toggleLayer(group.layerName)}><IconButton size="small" sx={{ mr: 1 }}>{expandedLayers.has(group.layerName) ? <ExpandMoreIcon /> : <ChevronRightIcon />}</IconButton><Box sx={{
                       width: 3,
                       height: 24,
-                      bgcolor: getLayerColor(group.layerName),
+                      bgcolor: getLayerColor(group.layerName, colors.mode),
                       mr: 2,
                       borderRadius: 1,
-                    }}
-                  />
-                  <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
-                    {group.layerName}
-                  </Typography>
-                  <Chip
-                    label={`${group.files.length} type${group.files.length !== 1 ? 's' : ''}`}
+                    }} /><Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>{group.layerName}</Typography><Chip label={i18nText("ui:m_be7ad8c575b1b0c9e195", { arg0: group.files.length })}
                     size="small"
-                    variant="outlined"
-                  />
-                </Box>
-
-                {/* Layer Content */}
-                <Collapse in={expandedLayers.has(group.layerName)}>
-                  <Box sx={{ ml: 6, mt: 1 }}>
-                    {group.files.map((file, fileIdx) => (
-                      <Box
-                        key={file.path}
+                    variant="outlined" /></Box>{/* Layer Content */}<Collapse in={expandedLayers.has(group.layerName)}><Box sx={{ ml: 6, mt: 1 }}>{group.files.map((file, fileIdx) => (
+                      <Box key={file.path}
                         onClick={() => handleViewRecords(file.type)}
                         sx={{
                           display: 'flex',
@@ -1031,36 +917,20 @@ export default function AuditRecords() {
                           cursor: 'pointer',
                           '&:hover': { bgcolor: 'action.hover' },
                           gap: { xs: 1.5, md: 0 },
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
-                          {/* Tree connector visualization */}
-                          <Box
-                            sx={{
+                        }}><Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>{/* Tree connector visualization */}<Box sx={{
                               width: 20,
                               height: 2,
                               bgcolor: 'divider',
                               mr: 1,
                               display: { xs: 'none', md: 'block' },
-                            }}
-                          />
-                          <FileIcon sx={{ mr: 2, color: 'text.secondary', fontSize: 20, flexShrink: 0 }} />
-                          
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography
-                              sx={{
+                            }} /><FileIcon sx={{ mr: 2, color: 'text.secondary', fontSize: 20, flexShrink: 0 }} /><Box sx={{ flex: 1, minWidth: 0 }}><Typography sx={{
                                 fontFamily: 'monospace',
                                 fontWeight: 600,
                                 fontSize: '0.95rem',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
-                              }}
-                            >
-                              {file.type}
-                            </Typography>
-                            <Typography 
-                              variant="caption" 
+                              }}>{recordTypeLabel(file.type)}</Typography><Typography variant="caption" 
                               color="text.secondary" 
                               sx={{ 
                                 fontFamily: 'monospace',
@@ -1068,56 +938,25 @@ export default function AuditRecords() {
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
                                 display: 'block'
-                              }}
-                            >
-                              {file.name}
-                            </Typography>
-                          </Box>
-                        </Box>
-
-                        <Box sx={{ 
+                              }}>{file.name}</Typography></Box></Box><Box sx={{ 
                           display: 'flex', 
                           flexDirection: { xs: 'row', md: 'row' },
                           alignItems: 'center', 
                           gap: { xs: 1, md: 2 }, 
                           justifyContent: { xs: 'space-between', md: 'flex-end' },
                           mr: { xs: 0, md: 2 }
-                        }}>
-                          <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
-                            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', md: 'inherit' } }}>
-                              {isCommunityIDFilterActive && (file as FilteredAuditFileInfo).filteredCount !== undefined
-                                ? `${(file as FilteredAuditFileInfo).filteredCount.toLocaleString()} / ${file.recordCount?.toLocaleString() || 'N/A'}`
-                                : (file.recordCount ? file.recordCount.toLocaleString() : 'N/A')}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: 'inherit' } }}>
-                              {isCommunityIDFilterActive ? 'filtered / total' : 'records'}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ textAlign: { xs: 'left', md: 'right' }, minWidth: { xs: 50, md: 60 } }}>
-                            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', md: 'inherit' } }}>
-                              {formatBytes(file.size)}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: 'inherit' } }}>
-                              size
-                            </Typography>
-                          </Box>
-                        </Box>
-
-                        <Box sx={{ display: 'flex', gap: 1, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
-                          <Button
-                            data-learn="View Records: Open a detailed view of all records for this protocol type with filtering capabilities."
+                        }}><Box sx={{ textAlign: { xs: 'left', md: 'right' } }}><Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', md: 'inherit' } }}>{isCommunityIDFilterActive && (file as FilteredAuditFileInfo).filteredCount !== undefined ? `${(file as FilteredAuditFileInfo).filteredCount.toLocaleString(getLocale())} / ${file.recordCount?.toLocaleString(getLocale()) || i18nText("ui:m_8dc598ebf1e055830140")}` : (file.recordCount ? file.recordCount.toLocaleString(getUILocale()) : i18nText("ui:m_8dc598ebf1e055830140"))}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: 'inherit' } }}>{isCommunityIDFilterActive ? i18nText("ui:m_9fd292b8287b148cb57d") : i18nText("ui:m_0980f77190e168c4b086")}</Typography></Box><Box sx={{ textAlign: { xs: 'left', md: 'right' }, minWidth: { xs: 50, md: 60 } }}><Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', md: 'inherit' } }}>{formatBytes(file.size)}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: 'inherit' } }}>
+                              {i18nText("ui:m_6d4a28882311f19a72d3")}
+                            </Typography></Box></Box><Box sx={{ display: 'flex', gap: 1, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}><Button data-learn={i18nText("ui:m_d988e8ea5c69394edf59")}
                             variant="outlined"
                             size="small"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleViewRecords(file.type);
                             }}
-                            sx={{ minWidth: { xs: 'auto', md: 100 }, flex: { xs: 1, sm: 'none' } }}
-                          >
-                            View Records
-                          </Button>
-                          <Button
-                            data-learn="Explore in Charts: Create interactive visualizations and charts for this protocol's data fields."
+                            sx={{ minWidth: { xs: 'auto', md: 100 }, flex: { xs: 1, sm: 'none' } }}>
+                            {i18nText("ui:m_d38aa5e68d2692031355")}
+                          </Button><Button data-learn={i18nText("ui:m_1adc5d39207960e169b0")}
                             variant="contained"
                             size="small"
                             startIcon={<BarChartIcon />}
@@ -1125,96 +964,37 @@ export default function AuditRecords() {
                               e.stopPropagation();
                               router.push(`/explore?type=${encodeURIComponent(file.type)}`);
                             }}
-                            sx={{ minWidth: { xs: 'auto', md: 100 }, flex: { xs: 1, sm: 'none' } }}
-                          >
-                            Explore
-                          </Button>
-                        </Box>
-                      </Box>
-                    ))}
-                  </Box>
-                </Collapse>
-              </Box>
-            ))}
-          </Paper>
+                            sx={{ minWidth: { xs: 'auto', md: 100 }, flex: { xs: 1, sm: 'none' } }}>
+                            {i18nText("ui:m_29a8a9d5e1d2154e8a3f")}
+                          </Button></Box></Box>
+                    ))}</Box></Collapse></Box>
+            ))}</Paper>
         ) : (
-          <Box mt={3} sx={{ position: 'relative', minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {switchingFile ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                <CircularProgress />
-                <Typography color="text.secondary">Loading records...</Typography>
-              </Box>
+          <Box mt={3} sx={{ position: 'relative', minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{switchingFile ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}><CircularProgress /><Typography color="text.secondary">{i18nText("ui:m_8f2af68583ba21a39441")}</Typography></Box>
             ) : (
-              <Typography color="text.secondary">No audit record files found</Typography>
-            )}
-          </Box>
-        )}
-      </Box>
-
-      {/* Record Viewer Dialog */}
-      <Dialog open={selectedType !== null} onClose={handleClose} maxWidth="lg" fullWidth fullScreen={isMobile}>
-        <style>{`
-          .json-key { color: #9cdcfe; }
-          .json-string { color: #ce9178; }
-          .json-number { color: #b5cea8; }
-          .json-boolean { color: #569cd6; }
-          .json-null { color: #569cd6; }
-        `}</style>
-        <DialogTitle>
-          <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Box display="flex" alignItems="center" gap={2}>
-              <Typography variant="h6">{selectedType} Records</Typography>
-              <Button onClick={() => handleViewRecords(selectedType!, activeFilter, true)}>Reload current capture with exact occurrence actions</Button>
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                <Button
-                  data-learn="JSON View: Display records as raw JSON format for technical analysis and debugging."
+              <Typography color="text.secondary">{i18nText("ui:m_532efa9969cf66450d88")}</Typography>
+            )}</Box>
+        )}</Box>{/* Record Viewer Dialog */}<Dialog open={selectedType !== null} onClose={handleClose} maxWidth="lg" fullWidth fullScreen={isMobile}><style>{rawCode("\n          .json-key '{' color: {arg0}; '}'\n          .json-string '{' color: {arg1}; '}'\n          .json-number '{' color: {arg2}; '}'\n          .json-boolean, .json-null '{' color: {arg3}; '}'\n        ", { arg0: colors.syntax.key, arg1: colors.syntax.string, arg2: colors.syntax.number, arg3: colors.syntax.keyword })}</style><DialogTitle><Box display="flex" alignItems="center" justifyContent="space-between"><Box display="flex" alignItems="center" gap={2}><Typography variant="h6">{i18nRichText("ui:m_bdedd0ee231db7004d55", { arg0: selectedType })}</Typography><Button onClick={() => handleViewRecords(selectedType!, activeFilter, true)}>{i18nText("ui:m_121766d354c4896debdc")}</Button><Box sx={{ display: 'flex', gap: 0.5 }}><Button data-learn={i18nText("ui:m_d852769d923c7e55894b")}
                   size="small"
                   variant={viewMode === 'json' ? 'contained' : 'outlined'}
                   onClick={() => setViewMode('json')}
-                  sx={{ minWidth: 60 }}
-                >
-                  JSON
-                </Button>
-                <Button
-                  data-learn="UI View: Display records in a structured, user-friendly format with visual elements."
+                  sx={{ minWidth: 60 }}>JSON
+                </Button><Button data-learn={i18nText("ui:m_e68c5d60122a3462629f")}
                   size="small"
                   variant={viewMode === 'ui' ? 'contained' : 'outlined'}
                   onClick={() => setViewMode('ui')}
-                  sx={{ minWidth: 60 }}
-                >
-                  UI
-                </Button>
-              </Box>
-            </Box>
-            <Box display="flex" alignItems="center" gap={1}>
-              {executionTime > 0 && (
-                <Tooltip title="Execution time">
-                  <Chip
-                    label={`${executionTime}ms`}
+                  sx={{ minWidth: 60 }}>
+                  {i18nText("ui:m_c38c2ff44b00e57d6eb4")}
+                </Button></Box></Box><Box display="flex" alignItems="center" gap={1}>{executionTime > 0 && (
+                <Tooltip title={i18nText("ui:m_c32a702c1f15f7edf49c")}><Chip label={`${executionTime}ms`}
                     size="small"
                     color="info"
-                    icon={<FilterAltIcon />}
-                  />
-                </Tooltip>
-              )}
-              {isMobile && (
-                <IconButton onClick={handleClose} edge="end">
-                  <CloseIcon />
-                </IconButton>
-              )}
-            </Box>
-          </Box>
-          {loading && <LinearProgress sx={{ mt: 1 }} />}
-        </DialogTitle>
-        <DialogContent>
-          {/* Filter Input */}
-          <Box sx={{ mb: 2, pt: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-              <Box sx={{ position: 'relative', width: '100%' }}>
-                {/* Syntax-highlighted overlay - only show when NOT focused */}
-                {!filterInputFocused && filterExpression && highlightFilterExpression(filterExpression).length > 0 && (
-                  <Box
-                    sx={{
+                    icon={<FilterAltIcon />} /></Tooltip>
+              )}{isMobile && (
+                <IconButton onClick={handleClose} edge="end"><CloseIcon /></IconButton>
+              )}</Box></Box>{loading && <LinearProgress sx={{ mt: 1 }} />}</DialogTitle><DialogContent>{/* Filter Input */}<Box sx={{ mb: 2, pt: 1 }}><Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}><Box sx={{ position: 'relative', width: '100%' }}>{/* Syntax-highlighted overlay - only show when NOT focused */}{!filterInputFocused && filterExpression && highlightFilterExpression(filterExpression, colors.mode).length > 0 && (
+                  <Box sx={{
                       position: 'absolute',
                       top: '8.5px',
                       left: '52px', // Account for filter icon (14px padding + 24px icon + 14px spacing)
@@ -1228,24 +1008,15 @@ export default function AuditRecords() {
                       whiteSpace: 'nowrap',
                       color: 'transparent',
                       userSelect: 'none',
-                    }}
-                  >
-                    {highlightFilterExpression(filterExpression).map((token, i) => {
+                    }}>{highlightFilterExpression(filterExpression, colors.mode).map((token, i) => {
                       if (token.type === 'text' && token.color === 'inherit') {
                         return <span key={i}>{token.value}</span>;
                       }
                       return (
-                        <span key={i} style={{ color: token.color }}>
-                          {token.value}
-                        </span>
+                        <span key={i} style={{ color: token.color }}>{token.value}</span>
                       );
-                    })}
-                  </Box>
-                )}
-
-                {/* Original Autocomplete */}
-                <Autocomplete
-                  data-learn="Filter Expression: Enter conditions to filter records (e.g., DstPort == 443). Press TAB or CTRL+SPACE for autocomplete suggestions, ENTER to apply."
+                    })}</Box>
+                )}{/* Original Autocomplete */}<Autocomplete data-learn={i18nText("ui:m_9f313249696461bde1cb")}
                   freeSolo
                   fullWidth
                   open={autocompleteOpen}
@@ -1297,12 +1068,11 @@ export default function AuditRecords() {
                   disableClearable={true}
                   filterOptions={(options) => options} // Don't filter, we handle it in getContextualSuggestions
                   renderInput={(params) => (
-                    <TextField
-                      {...params}
+                    <TextField {...params}
                       inputRef={filterInputRef}
                       size="small"
-                      label="Filter Expression"
-                      placeholder="e.g., DstPort == 443 or SrcIP == '192.168.1.1'"
+                      label={i18nText("ui:m_5162adf432ea067f13f3")}
+                      placeholder={i18nText("ui:m_1e160cafaff1d99a7e9a")}
                       onFocus={() => setFilterInputFocused(true)}
                       onBlur={() => setFilterInputFocused(false)}
                       onKeyDown={(e) => {
@@ -1372,26 +1142,12 @@ export default function AuditRecords() {
                       InputProps={{
                         ...params.InputProps,
                         startAdornment: (
-                          <>
-                            <InputAdornment position="start">
-                              <FilterAltIcon color="action" />
-                            </InputAdornment>
-                            {params.InputProps.startAdornment}
-                          </>
+                          <><InputAdornment position="start"><FilterAltIcon color="action" /></InputAdornment>{params.InputProps.startAdornment}</>
                         ),
                         endAdornment: (
-                          <>
-                            {params.InputProps.endAdornment}
-                            {activeFilter && (
-                              <InputAdornment position="end">
-                                <Tooltip title="Clear filter">
-                                  <IconButton size="small" onClick={handleClearFilter} edge="end">
-                                    <ClearIcon />
-                                  </IconButton>
-                                </Tooltip>
-                              </InputAdornment>
-                            )}
-                          </>
+                          <>{params.InputProps.endAdornment}{activeFilter && (
+                              <InputAdornment position="end"><Tooltip title={i18nText("ui:m_b727dea40e180cc79e3e")}><IconButton size="small" onClick={handleClearFilter} edge="end"><ClearIcon /></IconButton></Tooltip></InputAdornment>
+                            )}</>
                         ),
                         style: { 
                           fontFamily: 'monospace', 
@@ -1403,7 +1159,7 @@ export default function AuditRecords() {
                             color: (!filterInputFocused && filterExpression) ? 'transparent' : 'text.primary',
                             caretColor: 'text.primary !important',
                             '&::selection': {
-                              backgroundColor: 'rgba(100, 150, 255, 0.3)',
+                              backgroundColor: 'action.selected',
                             },
                             '&:focus': {
                               caretColor: 'text.primary !important',
@@ -1412,14 +1168,7 @@ export default function AuditRecords() {
                           },
                         },
                       }}
-                      helperText={
-                        activeFilter 
-                          ? `Active filter: ${activeFilter}` 
-                          : valuesSampleInfo
-                          ? `Press TAB or CTRL+SPACE to show suggestions, ENTER to apply filter. CMD+ENTER to execute immediately. Values sampled from ${valuesSampleInfo.recordsScanned} records (max ${valuesSampleInfo.maxPerField} per field).`
-                          : "Press TAB or CTRL+SPACE to show autocomplete suggestions, ENTER to apply filter, CMD+ENTER to execute immediately."
-                      }
-                    />
+                      helperText={activeFilter ? i18nText("ui:m_0daa26447ccf767fdc9e", { arg0: activeFilter }) : valuesSampleInfo ? i18nText("ui:m_5cbfa96e5d7bc8ea8fc8", { arg0: valuesSampleInfo.recordsScanned, arg1: valuesSampleInfo.maxPerField }) : i18nText("ui:m_75cb4fbf2ce87be02677")} />
                   )}
                   slotProps={{
                     popper: {
@@ -1435,54 +1184,30 @@ export default function AuditRecords() {
                         },
                       },
                     },
-                  }}
-                />
-              </Box>
-              <Tooltip title="Show filter examples">
-                <IconButton 
-                  data-learn="Filter Help: Toggle display of example filter expressions and syntax documentation."
+                  }} /></Box><Tooltip title={i18nText("ui:m_0be7b7b33eb1d95c2198")}><IconButton data-learn={i18nText("ui:m_71e2b47e8dfd39ece284")}
                   size="small" 
                   onClick={() => {
                     setShowFilterHelp(!showFilterHelp);
                     setAutocompleteOpen(false); // Close autocomplete dropdown
                   }}
                   color={showFilterHelp ? "primary" : "default"}
-                  sx={{ mt: 0.5 }}
-                >
-                  <HelpOutlineIcon />
-                </IconButton>
-              </Tooltip>
-            </Box>
-            
-            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-              <Button
-                data-learn="Apply Filter: Execute the filter expression to show only matching records."
+                  sx={{ mt: 0.5 }}><HelpOutlineIcon /></IconButton></Tooltip></Box><Box sx={{ display: 'flex', gap: 1, mt: 1 }}><Button data-learn={i18nText("ui:m_ef194d924de4abb17126")}
                 variant="contained"
                 size="small"
                 startIcon={<SearchIcon />}
                 onClick={handleApplyFilter}
-                disabled={loading || !filterExpression}
-              >
-                Apply Filter
-              </Button>
-              {activeFilter && (
-                <Button
-                  data-learn="Clear Filter: Remove the active filter and show all records."
+                disabled={loading || !filterExpression}>
+                {i18nText("ui:m_7b2c4962d82fb230a818")}
+              </Button>{activeFilter && (
+                <Button data-learn={i18nText("ui:m_0b9306d02a3e810535b9")}
                   variant="outlined"
                   size="small"
                   startIcon={<ClearIcon />}
                   onClick={handleClearFilter}
-                  disabled={loading}
-                >
-                  Clear Filter
+                  disabled={loading}>
+                  {i18nText("ui:m_cfdaafce54dddd3e0005")}
                 </Button>
-              )}
-            </Box>
-
-            {/* Filter Help/Examples */}
-            <Collapse in={showFilterHelp}>
-              <Paper 
-                sx={{ 
+              )}</Box>{/* Filter Help/Examples */}<Collapse in={showFilterHelp}><Paper sx={{ 
                   mt: 2, 
                   p: 2, 
                   bgcolor: 'background.default',
@@ -1490,82 +1215,70 @@ export default function AuditRecords() {
                   borderColor: 'divider',
                   maxHeight: '70vh',
                   overflowY: 'auto'
-                }}
-              >
-                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                  Filter Expression Examples
-                </Typography>
-                
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {/* Helper to render examples with insert button */}
-                  {[
+                }}><Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                  {i18nText("ui:m_2391238e82e02056d299")}
+                </Typography><Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{/* Helper to render examples with insert button */}{[
                     {
                       category: 'Basic Comparisons',
                       examples: [
-                        { expr: 'DstPort == 443', desc: 'Exact match' },
-                        { expr: 'SrcPort > 1024', desc: 'Numeric comparison' },
-                        { expr: 'Protocol == "TCP"', desc: 'String match' },
+                        { expr: rawCode("DstPort == 443"), desc: translate("ui:m_6759505d4ed37d923f7e") },
+                        { expr: rawCode("SrcPort > 1024"), desc: translate("ui:m_b2d83801b53acc2898bc") },
+                        { expr: rawCode("Protocol == \"TCP\""), desc: translate("ui:m_79ded4e53c441865e577") },
                       ]
                     },
                     {
                       category: 'Logical Operators',
                       examples: [
-                        { expr: 'SrcPort == 80 && DstPort == 443', desc: 'AND operator' },
-                        { expr: 'DstPort == 80 || DstPort == 443', desc: 'OR operator' },
-                        { expr: 'SYN && !ACK', desc: 'NOT operator (TCP flags)' },
+                        { expr: rawCode("SrcPort == 80 && DstPort == 443"), desc: translate("ui:m_4a8eca31cfbaea4fdbe8") },
+                        { expr: rawCode("DstPort == 80 || DstPort == 443"), desc: translate("ui:m_ed3433c09e02e4c34545") },
+                        { expr: translate("ui:m_a5996a4c80100a7e392c"), desc: translate("ui:m_dc7e743f58318c740080") },
                       ]
                     },
                     {
                       category: 'Nested Fields (Arrays & Structs)',
                       examples: [
-                        { expr: 'SrcPorts[0].PortNumber == 80', desc: 'Array element field' },
-                        { expr: 'DstPorts[0].Protocol == "TCP"', desc: 'Nested string field' },
-                        { expr: 'SrcPorts[0].PortNumber < DstPorts[0].PortNumber', desc: 'Compare nested fields' },
+                        { expr: rawCode("SrcPorts[0].PortNumber == 80"), desc: translate("ui:m_3431b83af4796badc495") },
+                        { expr: rawCode("DstPorts[0].Protocol == \"TCP\""), desc: translate("ui:m_ee50f0bf9298c5077e6b") },
+                        { expr: rawCode("SrcPorts[0].PortNumber '<' DstPorts[0].PortNumber"), desc: translate("ui:m_6f65648f16cfc06fd341") },
                       ]
                     },
                     {
                       category: 'Network Helper Functions',
                       examples: [
-                        { expr: 'IsPrivateIP(SrcIP)', desc: 'Check if IP is private (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, etc.)' },
-                        { expr: 'IsPublicIP(DstIP)', desc: 'Check if IP is public (non-private)' },
-                        { expr: 'InSubnet(SrcIP, "192.168.0.0/16")', desc: 'Check if IP is in a CIDR subnet' },
-                        { expr: 'ParsePort("8080")', desc: 'Convert port string to integer' },
-                        { expr: 'PortInRange(DstPort, 8000, 9000)', desc: 'Check if port is in range (inclusive)' },
+                        { expr: 'IsPrivateIP(SrcIP)', desc: translate("ui:m_7d18840997e49a497f0f") },
+                        { expr: 'IsPublicIP(DstIP)', desc: translate("ui:m_1532f48dad00425d3f59") },
+                        { expr: rawCode("InSubnet(SrcIP, \"192.168.0.0/16\")"), desc: translate("ui:m_fa26ce1fa037b3528a11") },
+                        { expr: 'ParsePort("8080")', desc: translate("ui:m_e2c5ec0fbbc4b0abf873") },
+                        { expr: rawCode("PortInRange(DstPort, 8000, 9000)"), desc: translate("ui:m_fab8dbd7f9da36152130") },
                       ]
                     },
                     {
                       category: 'Time Helper Functions',
                       examples: [
-                        { expr: 'TimeInRange(Timestamp, 1234567890, 1234567999)', desc: 'Check if timestamp is in range (nanoseconds)' },
-                        { expr: 'DurationSince(Timestamp) > 3600000000000', desc: 'Check if more than 1 hour has passed (nanoseconds)' },
-                        { expr: 'FormatTime(Timestamp, "2006-01-02 15:04:05")', desc: 'Format timestamp to string (Go time format)' },
+                        { expr: rawCode("TimeInRange(Timestamp, 1234567890, 1234567999)"), desc: translate("ui:m_0e24dbd5538800051d9d") },
+                        { expr: rawCode("DurationSince(Timestamp) > 3600000000000"), desc: translate("ui:m_45e74e5c8e47fc5f60bd") },
+                        { expr: rawCode("FormatTime(Timestamp, \"2006-01-02 15:04:05\")"), desc: translate("ui:m_1f2be265f83df9815b2a") },
                       ]
                     },
                     {
                       category: 'String Helper Functions',
                       examples: [
-                        { expr: 'ContainsAny(Payload, ["password", "secret"])', desc: 'Check if string contains any substring from array' },
-                        { expr: 'MatchesPattern(Payload, ".*password.*")', desc: 'Check if string matches regex pattern' },
+                        { expr: rawCode("ContainsAny(Payload, [\"password\", \"secret\"])"), desc: translate("ui:m_4be557839212a68c4765") },
+                        { expr: rawCode("MatchesPattern(Payload, \".*password.*\")"), desc: translate("ui:m_6b5961b7171dc74bc447") },
                       ]
                     },
                     {
                       category: 'Complex Examples',
                       examples: [
-                        { expr: 'IsPrivateIP(SrcIP) && IsPublicIP(DstIP) && DstPort == 443', desc: 'Private to public HTTPS traffic' },
-                        { expr: '(DstPort == 80 || DstPort == 443) && Length > 1000', desc: 'HTTP/HTTPS with large packets' },
-                        { expr: 'SYN && !ACK && DstPort < 1024', desc: 'SYN scan to privileged ports' },
-                        { expr: 'InSubnet(SrcIP, "10.0.0.0/8") && PortInRange(DstPort, 20, 21)', desc: 'Internal FTP traffic' },
+                        { expr: rawCode("IsPrivateIP(SrcIP) && IsPublicIP(DstIP) && DstPort == 443"), desc: translate("ui:m_e2a421325dbff9dd7190") },
+                        { expr: rawCode("(DstPort == 80 || DstPort == 443) && Length > 1000"), desc: translate("ui:m_2f35b59db2b3b2394363") },
+                        { expr: rawCode("SYN && !ACK && DstPort '<' 1024"), desc: translate("ui:m_a371df81c722dacb4da9") },
+                        { expr: rawCode("InSubnet(SrcIP, \"10.0.0.0/8\") && PortInRange(DstPort, 20, 21)"), desc: translate("ui:m_dd64f90fb0de776b5e1e") },
                       ]
                     },
                   ].map((section) => (
-                    <Box key={section.category}>
-                      <Typography variant="caption" color="primary" sx={{ fontWeight: 600 }}>
-                        {section.category}
-                      </Typography>
-                      <Box sx={{ ml: 2, mt: 0.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        {section.examples.map((example, idx) => (
-                          <Box key={example.expr} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Box sx={{ 
+                    <Box key={section.category}><Typography variant="caption" color="primary" sx={{ fontWeight: 600 }}>{i18nText(section.category)}</Typography><Box sx={{ ml: 2, mt: 0.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>{section.examples.map((example, idx) => (
+                          <Box key={example.expr} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ 
                               bgcolor: 'action.hover', 
                               px: 0.75, 
                               py: 0.25, 
@@ -1573,98 +1286,48 @@ export default function AuditRecords() {
                               border: 1,
                               borderColor: 'divider',
                               flex: 1,
-                            }}>
-                              <FilterExpressionHighlight 
-                                expression={example.expr} 
+                            }}><FilterExpressionHighlight expression={example.expr} 
                                 fontSize="0.85rem"
-                                wrap={true}
-                              />
-                            </Box>
-                            <Tooltip title="Insert into filter">
-                              <IconButton
-                                data-learn="Insert Example: Copy this example filter expression into the filter input field."
+                                wrap={true} /></Box><Tooltip title={i18nText("ui:m_2735936eb7e4043ab1c6")}><IconButton data-learn={i18nText("ui:m_bd978a103fddeba95e1f")}
                                 size="small"
                                 onClick={() => handleInsertExample(example.expr)}
-                                sx={{ p: 0.25 }}
-                              >
-                                <ContentCopyIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Typography variant="caption" color="text.secondary" sx={{ flex: 2 }}>
-                              {example.desc}
-                            </Typography>
-                          </Box>
-                        ))}
-                      </Box>
-                    </Box>
-                  ))}
-
-                  <Box sx={{ mt: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}>
-                    <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                      💡 <strong>Tip:</strong> Field names are case-sensitive. Use TAB or CTRL+SPACE for autocompletion or check the record structure for available fields.
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      📚 <strong>All Helper Functions:</strong> InSubnet, IsPrivateIP, IsPublicIP, ParsePort, PortInRange, TimeInRange, DurationSince, FormatTime, ContainsAny, MatchesPattern
-                    </Typography>
-                  </Box>
-                </Box>
-              </Paper>
-            </Collapse>
-          </Box>
-
-          {streamError ? (
-            <Box p={3}>
-              <Typography color="error" variant="h6" gutterBottom>
-                Unable to load records
-              </Typography>
-              <Typography color="text.secondary" paragraph>
-                {streamError}
-              </Typography>
-              {streamError.includes('incomplete') && (
-                <Box mt={2}>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    This file is currently being written. Please wait for processing to complete and try again.
-                  </Typography>
-                  <Button 
-                    variant="outlined" 
+                                sx={{ p: 0.25 }}><ContentCopyIcon fontSize="small" /></IconButton></Tooltip><Typography variant="caption" color="text.secondary" sx={{ flex: 2 }}>{example.desc}</Typography></Box>
+                        ))}</Box></Box>
+                  ))}<Box sx={{ mt: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}><Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                      {i18nRichText("ui:m_c7bfd06638a8584c5ecb", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}
+                    </Typography><Typography variant="caption" color="text.secondary" display="block">
+                      {i18nRichText("ui:m_7e7b6fb74fd485652d05", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}
+                    </Typography></Box></Box></Paper></Collapse></Box>{streamError ? (
+            <Box p={3}><Typography color="error" variant="h6" gutterBottom>
+                {i18nText("ui:m_7230ad509765abc55b6d")}
+              </Typography><Typography color="text.secondary" paragraph>{i18nRenderText(streamError)}</Typography>{messageSource(streamError).includes('incomplete') && (
+                <Box mt={2}><Typography variant="body2" color="text.secondary" paragraph>
+                    {i18nText("ui:m_00b19e66f19f1d252fb6")}
+                  </Typography><Button variant="outlined" 
                     onClick={() => handleViewRecords(selectedType!, activeFilter)}
-                    sx={{ mt: 1 }}
-                  >
-                    Retry
-                  </Button>
-                </Box>
-              )}
-            </Box>
+                    sx={{ mt: 1 }}>
+                    {i18nText("ui:m_3c4b66117cf7e2a0bf82")}
+                  </Button></Box>
+              )}</Box>
           ) : loading && records.length === 0 && total === 0 ? (
-            <Box display="flex" justifyContent="center" p={3}>
-              <CircularProgress />
-            </Box>
+            <Box display="flex" justifyContent="center" p={3}><CircularProgress /></Box>
           ) : records.length > 0 ? (
-            <Box>
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1 }}>
-                <Typography variant="body2">
-                  Showing {records.length} of {total > 0 ? total : records.length} records
-                </Typography>
-                {scanned > 0 && (
+            <Box><Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1 }}><Typography variant="body2">
+                  {i18nRichText("ui:m_f105bcac5bfc1ec8ed80", { arg0: records.length, arg1: total > 0 ? total : records.length })}
+                </Typography>{scanned > 0 && (
                   <Typography variant="body2" color="text.secondary">
-                    (Scanned: {scanned.toLocaleString()} total records)
+                    {i18nRichText("ui:m_5d1e441a11dd15b00047", { arg0: scanned })}
                   </Typography>
-                )}
-              </Box>
-              <Box
-                sx={{
+                )}</Box><Box sx={{
                   maxHeight: '60vh',
                   overflow: 'auto',
-                }}
-              >
-                {records.map((record, idx) => (
-                  <Paper 
-                    key={`record-${idx}-${JSON.stringify(record).substring(0, 100)}`} 
+                }}>{records.map((record, idx) => (
+                  <Paper key={`record-${idx}-${JSON.stringify(record).substring(0, 100)}`} 
                     elevation={2}
                     sx={{ 
                       p: 2, 
                       mb: 1.5, 
-                      bgcolor: viewMode === 'json' ? '#1e1e1e' : 'action.hover',
+                      bgcolor: viewMode === 'json' ? 'background.default' : 'action.hover',
                       borderRadius: 2,
                       border: 1,
                       borderColor: 'divider',
@@ -1672,11 +1335,8 @@ export default function AuditRecords() {
                         boxShadow: 4,
                         borderColor: 'primary.main'
                       }
-                    }}
-                  >
-                    {viewMode === 'json' ? (
-                      <pre
-                        style={{
+                    }}>{viewMode === 'json' ? (
+                      <pre style={{
                           margin: 0,
                           fontFamily: 'monospace',
                           fontSize: '0.85rem',
@@ -1685,68 +1345,46 @@ export default function AuditRecords() {
                         }}
                         dangerouslySetInnerHTML={{
                           __html: syntaxHighlightJSON(JSON.stringify(convertTimestamps(record), null, 2))
-                        }}
-                      />
+                        }} />
                     ) : (
                       <RecordUI data={convertTimestamps(record)} recordType={selectedType || undefined} evidence={record} />
-                    )}
-                  </Paper>
-                ))}
-              </Box>
-            </Box>
+                    )}</Paper>
+                ))}</Box></Box>
           ) : !loading && total === 0 && activeFilter ? (
-            <Box p={3} textAlign="center">
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No records match the filter
-              </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                The filter expression didn't match any records. Try adjusting your filter or clearing it to see all records.
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', mt: 2 }}>
-                <Button
-                  data-learn="Clear Filter: Remove the current filter to show all available records."
+            <Box p={3} textAlign="center"><Typography variant="h6" color="text.secondary" gutterBottom>
+                {i18nText("ui:m_59e6eb72ba3595691ace")}
+              </Typography><Typography variant="body2" color="text.secondary" paragraph>
+                {i18nText("ui:m_35cf8faba86eec0db80d")}
+              </Typography><Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', mt: 2 }}><Button data-learn={i18nText("ui:m_a308e786a57a55f5588e")}
                   variant="outlined"
                   onClick={handleClearFilter}
-                  startIcon={<ClearIcon />}
-                >
-                  Clear Filter
-                </Button>
-                <Button
-                  data-learn="Show Examples: Display filter expression examples and syntax help."
+                  startIcon={<ClearIcon />}>
+                  {i18nText("ui:m_cfdaafce54dddd3e0005")}
+                </Button><Button data-learn={i18nText("ui:m_a3f28c753e28a4075760")}
                   variant="text"
                   onClick={() => setShowFilterHelp(true)}
-                  startIcon={<HelpOutlineIcon />}
-                >
-                  Show Examples
-                </Button>
-              </Box>
-            </Box>
+                  startIcon={<HelpOutlineIcon />}>
+                  {i18nText("ui:m_a7828b58a07c43cf46bb")}
+                </Button></Box></Box>
           ) : (
-            <Box p={3} textAlign="center">
-              <Typography variant="body2" color="text.secondary">
-                No records available
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button data-learn="Close Dialog: Close the record viewer and return to the audit records list." onClick={handleClose}>Close</Button>
-        </DialogActions>
-      </Dialog>
-    </Layout>
+            <Box p={3} textAlign="center"><Typography variant="body2" color="text.secondary">
+                {i18nText("ui:m_fe0c3f514943e70a52ce")}
+              </Typography></Box>
+          )}</DialogContent><DialogActions><Button data-learn={i18nText("ui:m_c1416f6fbf52c9dc91a9")} onClick={handleClose}>{i18nText("ui:m_a695258f28d817037ea8")}</Button></DialogActions></Dialog></Layout>
   );
 }
 
 // Helper function to assign colors to layers
-function getLayerColor(layerName: string): string {
+function getLayerColor(layerName: string, mode: AppearanceMode): string {
+  const c = appearanceTokens(mode);
   const colorMap: Record<string, string> = {
-    'Link Layer': '#3b82f6',
-    'Network Layer': '#8b5cf6',
-    'Transport Layer': '#38bdf8',
-    'Application Layer': '#a78bfa',
-    'Stream Decoders': '#34d399',
-    'Abstract Decoders': '#fbbf24',
-    'Other': '#9199ad',
+    'Link Layer': c.primary,
+    'Network Layer': c.secondary,
+    'Transport Layer': c.info,
+    'Application Layer': c.secondary,
+    'Stream Decoders': c.success,
+    'Abstract Decoders': c.warning,
+    'Other': c.muted,
   };
-  return colorMap[layerName] || '#9199ad';
+  return colorMap[layerName] || c.muted;
 }

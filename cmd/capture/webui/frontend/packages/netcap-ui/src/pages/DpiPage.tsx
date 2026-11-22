@@ -51,17 +51,26 @@ import Layout from '../components/Layout';
 import ResponsiveDataView from '../components/ResponsiveDataView';
 import { useNetcapApi } from '../hooks';
 import { parseSearchQuery, matchesSingleValue } from '../lib/tableSearch';
-import useSWR from 'swr';
+
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import InfoIcon from '@mui/icons-material/Info';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import SecurityIcon from '@mui/icons-material/Security';
 import SearchInput from '../components/SearchInput';
+import { translate as i18nText, richText as i18nRichText, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR } from "../lib/i18n";
+import { translate } from "../lib/i18n";
+import { rawCode } from "../lib/i18n";
+
+
+
+
 
 const LOCAL_STORAGE_KEY = 'netcap_dpi_enabled_modules';
 
 export default function DPIPage() {
+  const __uiLocale = useUILocale();
   const api = useNetcapApi();
   const { data: dpiInfo, error, isLoading } = useSWR('dpi', () => api.getDPIInfo(), {
     refreshInterval: 0, // Only fetch once
@@ -150,157 +159,66 @@ export default function DPIPage() {
 
   if (isLoading) {
     return (
-      <Layout title="Deep Packet Inspection">
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-          <CircularProgress />
-        </Box>
-      </Layout>
+      <Layout title={i18nText("removed:m_8f86b33449b0b497cfbd")}><Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh"><CircularProgress /></Box></Layout>
     );
   }
 
   if (error) {
     return (
-      <Layout title="Deep Packet Inspection">
-        <Box>
-          <Alert severity="error">
-            <AlertTitle>Error loading DPI information</AlertTitle>
-            <Typography variant="body2">
-              Make sure the backend server is running and accessible.
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1, fontFamily: 'monospace' }}>
-              {error.toString()}
-            </Typography>
-          </Alert>
-        </Box>
-      </Layout>
+      <Layout title={i18nText("removed:m_8f86b33449b0b497cfbd")}><Box><Alert severity="error"><AlertTitle>{i18nText("removed:m_1d3e2693cceb5b59e2bb")}</AlertTitle><Typography variant="body2">
+              {i18nText("removed:m_735f2b59675107cdd613")}
+            </Typography><Typography variant="body2" sx={{ mt: 1, fontFamily: 'monospace' }}>{error.toString()}</Typography></Alert></Box></Layout>
     );
   }
 
   if (!dpiInfo) {
     return (
-      <Layout title="Deep Packet Inspection">
-        <Box>
-          <Alert severity="warning">
-            <AlertTitle>No DPI information available</AlertTitle>
-          </Alert>
-        </Box>
-      </Layout>
+      <Layout title={i18nText("removed:m_8f86b33449b0b497cfbd")}><Box><Alert severity="warning"><AlertTitle>{i18nText("removed:m_0ebcb5611b91830da53d")}</AlertTitle></Alert></Box></Layout>
     );
   }
 
   return (
-    <Layout title="Deep Packet Inspection">
-      <Box sx={{ minWidth: 0 }}>
-        {/* DPI Support Status */}
-        <Grid container spacing={3} mb={4}>
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                  {dpiInfo.hasSupport ? (
+    <Layout title={i18nText("removed:m_8f86b33449b0b497cfbd")}><Box sx={{ minWidth: 0 }}>{/* DPI Support Status */}<Grid container spacing={3} mb={4}><Grid item xs={12} md={6}><Card sx={{ height: '100%' }}><CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}><Box display="flex" alignItems="center" gap={2} mb={2}>{dpiInfo.hasSupport ? (
                     <CheckCircleIcon color="success" fontSize="large" />
                   ) : (
                     <CancelIcon color="error" fontSize="large" />
-                  )}
-                  <Box>
-                    <Typography variant="h6">DPI Support</Typography>
-                    <Chip
-                      label={dpiInfo.hasSupport ? 'Compiled In' : 'Not Available'}
+                  )}<Box><Typography variant="h6">{i18nText("removed:m_fbfa4ecea3349220457f")}</Typography><Chip label={dpiInfo.hasSupport ? i18nText("removed:m_0a86bacb5725a0c1f0b2") : i18nText("removed:m_7a36b8bba38afa4d0f3d")}
                       color={dpiInfo.hasSupport ? 'success' : 'error'}
-                      size="small"
-                    />
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                  {dpiInfo.enabled ? (
+                      size="small" /></Box></Box></CardContent></Card></Grid><Grid item xs={12} md={6}><Card sx={{ height: '100%' }}><CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}><Box display="flex" alignItems="center" gap={2} mb={2}>{dpiInfo.enabled ? (
                     <CheckCircleIcon color="success" fontSize="large" />
                   ) : (
                     <InfoIcon color="warning" fontSize="large" />
-                  )}
-                  <Box>
-                    <Typography variant="h6">DPI Status</Typography>
-                    <Chip
-                      label={dpiInfo.enabled ? 'Enabled' : 'Disabled'}
+                  )}<Box><Typography variant="h6">{i18nText("removed:m_fb0d9bfe51b50bd8cc66")}</Typography><Chip label={dpiInfo.enabled ? i18nText("removed:m_23052c4fec9eb3ac70e9") : i18nText("removed:m_5e51003ed903b62900ec")}
                       color={dpiInfo.enabled ? 'success' : 'default'}
-                      size="small"
-                    />
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* User DPI Preferences Summary */}
-        {!status?.isServiceMode && (
-          <Card sx={{ mb: 4 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Your DPI Configuration
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              <Box>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Enabled Modules for Future Analysis:
-                </Typography>
-                <Box display="flex" flexWrap="wrap" gap={1} mt={1} alignItems="center">
-                  {enabledModules.size > 0 ? (
-                    <>
-                      {Array.from(enabledModules).map((module) => (
-                        <Chip
-                          key={module}
+                      size="small" /></Box></Box></CardContent></Card></Grid></Grid>{/* User DPI Preferences Summary */}{!status?.isServiceMode && (
+          <Card sx={{ mb: 4 }}><CardContent><Typography variant="h6" gutterBottom>
+                {i18nText("removed:m_f715477701eb7e61b801")}
+              </Typography><Divider sx={{ mb: 2 }} /><Box><Typography variant="body2" color="text.secondary" gutterBottom>
+                  {i18nText("removed:m_a2870cfd9250c7da6eb7")}
+                </Typography><Box display="flex" flexWrap="wrap" gap={1} mt={1} alignItems="center">{enabledModules.size > 0 ? (
+                    <>{Array.from(enabledModules).map((module) => (
+                        <Chip key={module}
                           label={module}
                           color="primary"
                           variant="filled"
                           size="medium"
-                          onDelete={() => handleModuleToggle(module)}
-                        />
-                      ))}
-                      {isSaving && (
-                        <Chip
-                          label="Saving..."
+                          onDelete={() => handleModuleToggle(module)} />
+                      ))}{isSaving && (
+                        <Chip label={i18nText("removed:m_84d67cc7cab845a90ab6")}
                           size="small"
                           variant="outlined"
-                          sx={{ ml: 1 }}
-                        />
-                      )}
-                    </>
+                          sx={{ ml: 1 }} />
+                      )}</>
                   ) : (
-                    <Alert severity="warning" sx={{ width: '100%' }}>
-                      <Typography variant="body2">
-                        No modules are currently enabled. Enable modules below to use DPI features in your analysis uploads.
-                      </Typography>
-                    </Alert>
-                  )}
-                </Box>
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  <Typography variant="body2">
-                    These settings are saved automatically and will be applied to all your future file uploads and analysis sessions.
-                  </Typography>
-                </Alert>
-              </Box>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Library Versions */}
-        <Card sx={{ mb: 4 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Library Versions
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={4}>
-                <Paper 
-                  data-learn="nDPI Library: View the nDPI (Network Deep Packet Inspection) repository on GitHub - an advanced library that identifies 244+ network protocols and applications for traffic analysis."
+                    <Alert severity="warning" sx={{ width: '100%' }}><Typography variant="body2">
+                        {i18nText("removed:m_18c5a7fcf891c86bab10")}
+                      </Typography></Alert>
+                  )}</Box><Alert severity="info" sx={{ mt: 2 }}><Typography variant="body2">
+                    {i18nText("removed:m_d42d8ce4d90a82b8f2fd")}
+                  </Typography></Alert></Box></CardContent></Card>
+        )}{/* Library Versions */}<Card sx={{ mb: 4 }}><CardContent><Typography variant="h6" gutterBottom>
+              {i18nText("removed:m_96574762d51772a76e31")}
+            </Typography><Divider sx={{ mb: 2 }} /><Grid container spacing={3}><Grid item xs={12} md={4}><Paper data-learn={i18nText("removed:m_07c6c81f7ea59e4f154e")}
                   elevation={0} 
                   sx={{ 
                     p: 2, 
@@ -313,27 +231,11 @@ export default function DPIPage() {
                       boxShadow: 1,
                     }
                   }}
-                  onClick={() => window.open('https://github.com/ntop/nDPI', '_blank', 'noopener,noreferrer')}
-                >
-                  <Box display="flex" justifyContent="space-between" alignItems="start">
-                    <Box flex={1}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        nDPI Version
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontFamily: 'monospace' }}>
-                        {dpiInfo.ndpiVersion || 'N/A'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Network Deep Packet Inspection library
-                      </Typography>
-                    </Box>
-                    <OpenInNewIcon fontSize="small" sx={{ color: 'text.secondary', ml: 1 }} />
-                  </Box>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Paper 
-                  data-learn="Libprotoident Library: View the libprotoident repository on GitHub - a lightweight library that identifies 500+ applications and 45 protocol categories using efficient pattern matching."
+                  onClick={() => window.open('https://github.com/ntop/nDPI', '_blank', 'noopener,noreferrer')}><Box display="flex" justifyContent="space-between" alignItems="start"><Box flex={1}><Typography variant="body2" color="text.secondary" gutterBottom>
+                        {i18nText("removed:m_494157c42e8d51ff6c1c")}
+                      </Typography><Typography variant="h6" sx={{ fontFamily: 'monospace' }}>{dpiInfo.ndpiVersion || i18nText("removed:m_8dc598ebf1e055830140")}</Typography><Typography variant="caption" color="text.secondary">
+                        {i18nText("removed:m_f7d1c7b7a6edaa1778dd")}
+                      </Typography></Box><OpenInNewIcon fontSize="small" sx={{ color: 'text.secondary', ml: 1 }} /></Box></Paper></Grid><Grid item xs={12} md={4}><Paper data-learn={i18nText("removed:m_31e14393722ebdacd3f8")}
                   elevation={0} 
                   sx={{ 
                     p: 2, 
@@ -346,27 +248,11 @@ export default function DPIPage() {
                       boxShadow: 1,
                     }
                   }}
-                  onClick={() => window.open('https://github.com/wanduow/libprotoident', '_blank', 'noopener,noreferrer')}
-                >
-                  <Box display="flex" justifyContent="space-between" alignItems="start">
-                    <Box flex={1}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Libprotoident Version
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontFamily: 'monospace' }}>
-                        {dpiInfo.libprotoidentVersion || 'N/A'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Lightweight protocol identification library
-                      </Typography>
-                    </Box>
-                    <OpenInNewIcon fontSize="small" sx={{ color: 'text.secondary', ml: 1 }} />
-                  </Box>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Paper 
-                  data-learn="go-dpi Library: View the go-dpi repository on GitHub - the Go wrapper that integrates nDPI and libprotoident for deep packet inspection and application protocol detection."
+                  onClick={() => window.open('https://github.com/wanduow/libprotoident', '_blank', 'noopener,noreferrer')}><Box display="flex" justifyContent="space-between" alignItems="start"><Box flex={1}><Typography variant="body2" color="text.secondary" gutterBottom>
+                        {i18nText("removed:m_c6e32fad4229f9e9bdea")}
+                      </Typography><Typography variant="h6" sx={{ fontFamily: 'monospace' }}>{dpiInfo.libprotoidentVersion || i18nText("removed:m_8dc598ebf1e055830140")}</Typography><Typography variant="caption" color="text.secondary">
+                        {i18nText("removed:m_bfe005ea50b7bac43eb2")}
+                      </Typography></Box><OpenInNewIcon fontSize="small" sx={{ color: 'text.secondary', ml: 1 }} /></Box></Paper></Grid><Grid item xs={12} md={4}><Paper data-learn={i18nText("removed:m_506c7d3bd491dcc8aa87")}
                   elevation={0} 
                   sx={{ 
                     p: 2, 
@@ -379,48 +265,21 @@ export default function DPIPage() {
                       boxShadow: 1,
                     }
                   }}
-                  onClick={() => window.open('https://github.com/dreadl0ck/go-dpi', '_blank', 'noopener,noreferrer')}
-                >
-                  <Box display="flex" justifyContent="space-between" alignItems="start">
-                    <Box flex={1}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        go-dpi Version
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontFamily: 'monospace' }}>
-                        {dpiInfo.goDpiVersion || 'N/A'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Go wrapper for DPI libraries
-                      </Typography>
-                    </Box>
-                    <OpenInNewIcon fontSize="small" sx={{ color: 'text.secondary', ml: 1 }} />
-                  </Box>
-                </Paper>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-
-        {/* Active Modules */}
-        <Card sx={{ mb: 4 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              DPI Modules
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" gutterBottom sx={{ mb: 2 }}>
-                  Available Modules
-                </Typography>
-                {dpiInfo.availableModules.map((module) => {
+                  onClick={() => window.open('https://github.com/dreadl0ck/go-dpi', '_blank', 'noopener,noreferrer')}><Box display="flex" justifyContent="space-between" alignItems="start"><Box flex={1}><Typography variant="body2" color="text.secondary" gutterBottom>
+                        {i18nText("removed:m_1a5bd81199b50e59425a")}
+                      </Typography><Typography variant="h6" sx={{ fontFamily: 'monospace' }}>{dpiInfo.goDpiVersion || i18nText("removed:m_8dc598ebf1e055830140")}</Typography><Typography variant="caption" color="text.secondary">
+                        {i18nText("removed:m_2baea7a2685de392d91f")}
+                      </Typography></Box><OpenInNewIcon fontSize="small" sx={{ color: 'text.secondary', ml: 1 }} /></Box></Paper></Grid></Grid></CardContent></Card>{/* Active Modules */}<Card sx={{ mb: 4 }}><CardContent><Typography variant="h6" gutterBottom>
+              {i18nText("removed:m_a3e055f44fee93535499")}
+            </Typography><Divider sx={{ mb: 2 }} /><Grid container spacing={3}><Grid item xs={12}><Typography variant="subtitle2" gutterBottom sx={{ mb: 2 }}>
+                  {i18nText("removed:m_36dfaa4777627fc334ea")}
+                </Typography>{dpiInfo.availableModules.map((module) => {
                   const isActive = dpiInfo.activeModules.includes(module);
                   const isEnabledInSession = enabledModules.has(module);
                   const protocols = dpiInfo.moduleProtocols?.[module] || [];
                   
                   return (
-                    <Accordion 
-                      key={module}
+                    <Accordion key={module}
                       expanded={expandedModule === module}
                       onChange={() => {
                         setExpandedModule(expandedModule === module ? null : module);
@@ -430,76 +289,35 @@ export default function DPIPage() {
                         mb: 1,
                         opacity: isEnabledInSession ? 1 : 0.6,
                         transition: 'opacity 0.3s',
-                      }}
-                    >
-                      <AccordionSummary
-                        expandIcon={<ExpandMoreIcon />}
+                      }}><AccordionSummary expandIcon={<ExpandMoreIcon />}
                         sx={{
                           bgcolor: isEnabledInSession ? 'action.selected' : 'background.default',
                           '&:hover': { bgcolor: 'action.hover' },
-                        }}
-                      >
-                        <Box display="flex" alignItems="center" gap={2} width="100%">
-                          <Typography variant="h6" sx={{ fontFamily: 'monospace', flex: 1 }}>
-                            {module}
-                          </Typography>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <Chip
-                              label={isActive ? 'Available' : 'Unavailable'}
+                        }}><Box display="flex" alignItems="center" gap={2} width="100%"><Typography variant="h6" sx={{ fontFamily: 'monospace', flex: 1 }}>{module}</Typography><Box display="flex" alignItems="center" gap={1}><Chip label={isActive ? i18nText("removed:m_dfbe2b428afc27e67adf") : i18nText("removed:m_b6f62be183440dfdc4c4")}
                               color={isActive ? 'success' : 'default'}
                               size="small"
-                              variant="outlined"
-                            />
-                            <Chip
-                              label={isEnabledInSession ? 'Enabled' : 'Disabled'}
+                              variant="outlined" /><Chip label={isEnabledInSession ? i18nText("removed:m_23052c4fec9eb3ac70e9") : i18nText("removed:m_5e51003ed903b62900ec")}
                               color={isEnabledInSession ? 'success' : 'default'}
-                              size="small"
-                            />
-                            {protocols.length > 0 && (
-                              <Chip
-                                label={`${protocols.length} protocols`}
+                              size="small" />{protocols.length > 0 && (
+                              <Chip label={i18nText("removed:m_febbab2932bfc6ed2abe", { arg0: protocols.length })}
                                 size="small"
-                                variant="outlined"
-                              />
-                            )}
-                            <Tooltip title={isEnabledInSession ? `Disable ${module} for future analysis` : `Enable ${module} for future analysis`}>
-                              <FormControlLabel
-                                data-learn="Module Enable Toggle: Enable or disable this DPI module for your future analysis sessions and uploads."
-                                control={
-                                  <Switch
-                                    checked={isEnabledInSession}
+                                variant="outlined" />
+                            )}<Tooltip title={isEnabledInSession ? i18nText("removed:m_c22665957b5c5ddbabc6", { arg0: module }) : i18nText("removed:m_71425c1fcfc3f949524c", { arg0: module })}><FormControlLabel data-learn={i18nText("removed:m_ad810656438ca0534cee")}
+                                control={<Switch checked={isEnabledInSession}
                                     onChange={(e) => {
                                       e.stopPropagation();
                                       handleModuleToggle(module);
                                     }}
                                     onClick={(e) => e.stopPropagation()}
                                     color="primary"
-                                    disabled={status?.isServiceMode}
-                                  />
-                                }
-                                label=""
-                                sx={{ m: 0 }}
-                              />
-                            </Tooltip>
-                          </Box>
-                        </Box>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        <Typography variant="body2" color="text.secondary" paragraph>
-                          {getModuleDescription(module)}
-                        </Typography>
-                        {protocols.length > 0 ? (
-                          <Box>
-                            <Box sx={{ mb: 2 }}>
-                              <SearchInput
-                                value={searchQueries[module] || ''}
+                                    disabled={status?.isServiceMode} />}
+                                label={""}
+                                sx={{ m: 0 }} /></Tooltip></Box></Box></AccordionSummary><AccordionDetails><Typography variant="body2" color="text.secondary" paragraph>{getModuleDescription(module)}</Typography>{protocols.length > 0 ? (
+                          <Box><Box sx={{ mb: 2 }}><SearchInput value={searchQueries[module] || ''}
                                 onChange={(value) => setSearchQueries({ ...searchQueries, [module]: value })}
-                                placeholder="Search protocols..."
-                                learnHint="Search Protocols: Filter the list of supported protocols by name. Use !term to exclude protocols."
-                                sx={{ width: '100%' }}
-                              />
-                            </Box>
-                            {(() => {
+                                placeholder={i18nText("removed:m_80a54da632e66d1e7c87")}
+                                learnHint={translate("removed:m_fa8508127760d7930c99")}
+                                sx={{ width: '100%' }} /></Box>{(() => {
                               const searchQuery = searchQueries[module] || '';
                               const searchTerms = parseSearchQuery(searchQuery);
                               const filteredProtocols = protocols.filter(protocol =>
@@ -511,13 +329,10 @@ export default function DPIPage() {
                               );
 
                               return (
-                                <>
-                                  <Typography variant="subtitle2" gutterBottom sx={{ mb: 1 }}>
-                                    Supported Protocols ({filteredProtocols.length}{searchQuery && ` of ${protocols.length}`})
-                                  </Typography>
-                                  {filteredProtocols.length > 0 ? (
-                                    <ResponsiveDataView<string>
-                                      data={paginatedProtocols}
+                                <><Typography variant="subtitle2" gutterBottom sx={{ mb: 1 }}>
+                                    {i18nRichText("removed:m_9bcfa1f9913d7222cbea", { arg0: filteredProtocols.length, arg1: searchQuery && i18nText("removed:m_b800076b72d4cbbd7d38", { arg0: protocols.length }) })}
+                                  </Typography>{filteredProtocols.length > 0 ? (
+                                    <ResponsiveDataView data={paginatedProtocols}
                                       totalCount={filteredProtocols.length}
                                       page={protocolPage}
                                       rowsPerPage={protocolRowsPerPage}
@@ -528,15 +343,7 @@ export default function DPIPage() {
                                       }}
                                       rowsPerPageOptions={[25, 50, 100]}
                                       renderCard={(protocol) => (
-                                        <Card variant="outlined">
-                                          <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-                                            <Typography variant="subtitle2" sx={{ fontFamily: 'monospace' }}>
-                                              {protocol}
-                                            </Typography>
-                                            <Box display="flex" gap={1} mt={0.5} alignItems="center">
-                                              <Chip label={module} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
-                                              <MuiLink
-                                                href={getProtocolSourceUrl(module, protocol)}
+                                        <Card variant="outlined"><CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}><Typography variant="subtitle2" sx={{ fontFamily: 'monospace' }}>{protocol}</Typography><Box display="flex" gap={1} mt={0.5} alignItems="center"><Chip label={module} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} /><MuiLink href={getProtocolSourceUrl(module, protocol)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 onClick={(e) => e.stopPropagation()}
@@ -547,40 +354,13 @@ export default function DPIPage() {
                                                   fontSize: '0.75rem',
                                                   textDecoration: 'none',
                                                   '&:hover': { textDecoration: 'underline' }
-                                                }}
-                                              >
-                                                Source
-                                                <OpenInNewIcon sx={{ fontSize: 14 }} />
-                                              </MuiLink>
-                                            </Box>
-                                          </CardContent>
-                                        </Card>
+                                                }}>
+                                                {i18nText("removed:m_4113167561ccea5b6c6b")}
+                                                <OpenInNewIcon sx={{ fontSize: 14 }} /></MuiLink></Box></CardContent></Card>
                                       )}
-                                      desktopTable={
-                                    <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 400 }}>
-                                      <Table size="small" stickyHeader>
-                                        <TableHead>
-                                          <TableRow>
-                                            <TableCell sx={{ fontWeight: 600, width: 80 }}>#</TableCell>
-                                            <TableCell sx={{ fontWeight: 600 }}>Protocol Name</TableCell>
-                                            <TableCell sx={{ fontWeight: 600, width: 100, textAlign: 'center' }}>Source</TableCell>
-                                          </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                          {paginatedProtocols.map((protocol) => (
-                                            <TableRow
-                                              key={protocol}
-                                              sx={{ '&:last-child td': { border: 0 } }}
-                                            >
-                                              <TableCell sx={{ color: 'text.secondary' }}>
-                                                {protocols.indexOf(protocol) + 1}
-                                              </TableCell>
-                                              <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.9rem' }}>
-                                                {protocol}
-                                              </TableCell>
-                                              <TableCell sx={{ textAlign: 'center' }}>
-                                                <MuiLink
-                                                  href={getProtocolSourceUrl(module, protocol)}
+                                      desktopTable={<TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 400 }}><Table size="small" stickyHeader><TableHead><TableRow><TableCell sx={{ fontWeight: 600, width: 80 }}>#</TableCell><TableCell sx={{ fontWeight: 600 }}>{i18nText("removed:m_cd1fc0e505d8ef57579a")}</TableCell><TableCell sx={{ fontWeight: 600, width: 100, textAlign: 'center' }}>{i18nText("removed:m_4113167561ccea5b6c6b")}</TableCell></TableRow></TableHead><TableBody>{paginatedProtocols.map((protocol) => (
+                                            <TableRow key={protocol}
+                                              sx={{ '&:last-child td': { border: 0 } }}><TableCell sx={{ color: 'text.secondary' }}>{protocols.indexOf(protocol) + 1}</TableCell><TableCell sx={{ fontFamily: 'monospace', fontSize: '0.9rem' }}>{protocol}</TableCell><TableCell sx={{ textAlign: 'center' }}><MuiLink href={getProtocolSourceUrl(module, protocol)}
                                                   target="_blank"
                                                   rel="noopener noreferrer"
                                                   onClick={(e) => e.stopPropagation()}
@@ -590,124 +370,57 @@ export default function DPIPage() {
                                                     gap: 0.5,
                                                     textDecoration: 'none',
                                                     '&:hover': { textDecoration: 'underline' }
-                                                  }}
-                                                >
-                                                  View
-                                                  <OpenInNewIcon fontSize="small" />
-                                                </MuiLink>
-                                              </TableCell>
-                                            </TableRow>
-                                          ))}
-                                        </TableBody>
-                                      </Table>
-                                    </TableContainer>
-                                      }
-                                    />
+                                                  }}>
+                                                  {i18nText("removed:m_0184294accd8324999a3")}
+                                                  <OpenInNewIcon fontSize="small" /></MuiLink></TableCell></TableRow>
+                                          ))}</TableBody></Table></TableContainer>} />
                                   ) : (
-                                    <Alert severity="info">
-                                      <Typography variant="body2">
-                                        No protocols found matching &quot;{searchQueries[module]}&quot;
-                                      </Typography>
-                                    </Alert>
-                                  )}
-                                </>
+                                    <Alert severity="info"><Typography variant="body2">
+                                        {i18nRichText("removed:m_8f6bf90e289e00b79bbc", { arg0: searchQueries[module] })}
+                                      </Typography></Alert>
+                                  )}</>
                               );
-                            })()}
-                          </Box>
+                            })()}</Box>
                         ) : (
-                          <Alert severity="info" sx={{ mt: 2 }}>
-                            <Typography variant="body2">
-                              No protocol information available for this module.
-                              {!isActive && ' This module is not currently active.'}
-                            </Typography>
-                          </Alert>
-                        )}
-                      </AccordionDetails>
-                    </Accordion>
+                          <Alert severity="info" sx={{ mt: 2 }}><Typography variant="body2">
+                              {i18nRichText("removed:m_c82f5272b34aba19b72e", { arg0: !isActive && i18nText("removed:m_7f879f32044f1c3b98be") })}
+                            </Typography></Alert>
+                        )}</AccordionDetails></Accordion>
                   );
-                })}
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-
-        {/* Supported Protocols */}
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Supported Protocols & Applications
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <Paper elevation={0} sx={{ p: 3, bgcolor: 'background.default' }}>
-                  <Box display="flex" alignItems="center" gap={2} mb={2}>
-                    <SecurityIcon color="primary" />
-                    <Typography variant="h6">nDPI</Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    nDPI (Network Deep Packet Inspection) identifies 244+ applications and protocols.
-                  </Typography>
-                  <MuiLink
-                    data-learn="nDPI Protocols: View the complete list of 244+ applications and protocols that nDPI can identify in network traffic."
+                })}</Grid></Grid></CardContent></Card>{/* Supported Protocols */}<Card><CardContent><Typography variant="h6" gutterBottom>
+              {i18nText("removed:m_7efcafbd42440b54f742")}
+            </Typography><Divider sx={{ mb: 2 }} /><Grid container spacing={3}><Grid item xs={12} md={6}><Paper elevation={0} sx={{ p: 3, bgcolor: 'background.default' }}><Box display="flex" alignItems="center" gap={2} mb={2}><SecurityIcon color="primary" /><Typography variant="h6">nDPI</Typography></Box><Typography variant="body2" color="text.secondary" paragraph>
+                    {i18nText("removed:m_18069bb0552abe1484bd")}
+                  </Typography><MuiLink data-learn={i18nText("removed:m_69246c35e5f81193bf3b")}
                     href={dpiInfo.ndpiProtocolsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-                  >
-                    View Supported Protocols
-                    <OpenInNewIcon fontSize="small" />
-                  </MuiLink>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Paper elevation={0} sx={{ p: 3, bgcolor: 'background.default' }}>
-                  <Box display="flex" alignItems="center" gap={2} mb={2}>
-                    <SecurityIcon color="primary" />
-                    <Typography variant="h6">Libprotoident</Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    Libprotoident (LPI) identifies 500+ applications and 45 protocol categories using lightweight pattern matching.
-                  </Typography>
-                  <MuiLink
-                    data-learn="Libprotoident Protocols: View the complete list of 500+ applications and 45 protocol categories that libprotoident can identify."
+                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {i18nText("removed:m_279cf062602af182b58f")}
+                    <OpenInNewIcon fontSize="small" /></MuiLink></Paper></Grid><Grid item xs={12} md={6}><Paper elevation={0} sx={{ p: 3, bgcolor: 'background.default' }}><Box display="flex" alignItems="center" gap={2} mb={2}><SecurityIcon color="primary" /><Typography variant="h6">{i18nText("removed:m_9a5d58cd4ac8be7a256f")}</Typography></Box><Typography variant="body2" color="text.secondary" paragraph>
+                    {i18nText("removed:m_cdbcb2c11927401b6720")}
+                  </Typography><MuiLink data-learn={i18nText("removed:m_394c5778ace2348ea7b3")}
                     href={dpiInfo.libprotoidentProtocolsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-                  >
-                    View Supported Protocols
-                    <OpenInNewIcon fontSize="small" />
-                  </MuiLink>
-                </Paper>
-              </Grid>
-              <Grid item xs={12}>
-                <Alert severity="info">
-                  <Typography variant="body2">
-                    DPI results are available in the <strong>Connection</strong>, <strong>Service</strong>, 
-                    <strong> DeviceProfile</strong>, and <strong>Host</strong> audit records in the{' '}
-                    <code>Applications</code> field.
-                  </Typography>
-                </Alert>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-      </Box>
-    </Layout>
+                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {i18nText("removed:m_279cf062602af182b58f")}
+                    <OpenInNewIcon fontSize="small" /></MuiLink></Paper></Grid><Grid item xs={12}><Alert severity="info"><Typography variant="body2">
+                    {((__codeValues: Record<string, unknown>) => i18nRichText("removed:m_f0313859baa87752a78d", { ...__codeValues, code0: rawCode("Applications", __codeValues) }))({ tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong>, tag1: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong>, tag2: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong>, tag3: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong>, tag4: (chunks: import('react').ReactNode[]) => <code>{chunks}</code> })}
+                  </Typography></Alert></Grid></Grid></CardContent></Card></Box></Layout>
   );
 }
 
 function getModuleDescription(module: string): string {
   switch (module) {
     case 'ndpi':
-      return 'nDPI library for deep packet inspection and protocol identification';
+      return translate("removed:m_f1a29c9b0860909e0655");
     case 'lpi':
-      return 'Libprotoident for lightweight protocol identification';
+      return translate("removed:m_fab159ae980e89ee717c");
     case 'go':
-      return 'Go-based heuristic classifiers';
+      return translate("removed:m_5382a7c4645b83e1e1ca");
     default:
-      return 'Unknown module';
+      return translate("removed:m_a2e6429e413f55e38cc8");
   }
 }
 

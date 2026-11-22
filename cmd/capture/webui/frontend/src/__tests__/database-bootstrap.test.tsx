@@ -14,6 +14,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NetcapProvider } from '@dreadl0ck/netcap-ui/providers';
 import { DatabaseBootstrap } from '@dreadl0ck/netcap-ui/components';
 import type { DatabaseStatus } from '@dreadl0ck/netcap-ui';
+import { initializeI18n } from '@dreadl0ck/netcap-ui/i18n';
+import { directCatalogBundle } from '@dreadl0ck/netcap-ui/i18n/direct';
+import { removedCatalogBundle } from '@dreadl0ck/netcap-ui/i18n/removed';
 
 const IDLE = { state: 'idle' as const, downloaded: 0, total: 0, percent: 0 };
 
@@ -52,6 +55,7 @@ function renderBootstrap(api: Record<string, unknown>) {
 }
 
 beforeEach(() => {
+  initializeI18n({ locale: 'en', bundles: [directCatalogBundle, removedCatalogBundle] });
   sessionStorage.clear();
 });
 

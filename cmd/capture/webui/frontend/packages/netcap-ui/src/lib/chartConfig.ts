@@ -8,6 +8,8 @@
 // Kept as data-only (no JSX) so it can be imported into any module without
 // pulling in MUI icons.
 
+
+import { translate } from "./i18n";
 export interface ChartTypeDef {
   value: string;
   label: string;
@@ -29,6 +31,4 @@ export const CHART_TYPES: ChartTypeDef[] = [
   { value: 'graph', label: 'Network Graph', description: 'Network relationships', forCategorical: true },
 ];
 
-export function getChartTypeLabel(value: string): string {
-  return CHART_TYPES.find((c) => c.value === value)?.label || value;
-}
+export function getChartTypeLabel(value: string): string { const item = CHART_TYPES.find(c => c.value === value); return item ? translate(item.label) : value; }

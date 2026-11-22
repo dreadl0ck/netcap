@@ -46,11 +46,25 @@ import { useState } from 'react';
 import Layout from '../components/Layout';
 import { formatBytes, formatTimestamp, type DBFileInfo } from '../lib/api';
 import { useNetcapApi } from '../hooks';
-import useSWR from 'swr';
+
 import StorageIcon from '@mui/icons-material/Storage';
 import FolderIcon from '@mui/icons-material/Folder';
 import InfoIcon from '@mui/icons-material/Info';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { message as i18nMessage, translate as i18nText, richText as i18nRichText, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR } from "../lib/i18n";
+import { renderError, translate, errorText } from "../lib/i18n";
+import { metadataText } from "../lib/i18n";
+import { metadataMessage } from "../lib/i18n";
+import { rawCode } from "../lib/i18n";
+import { translate as finalCopyText } from "../lib/i18n";
+
+
+
+
+
+
+
 
 // Map database types to friendly names and colors
 const DB_TYPE_INFO: Record<string, { label: string; color: 'primary' | 'secondary' | 'success' | 'warning' | 'info' | 'error' | 'default' }> = {
@@ -82,6 +96,7 @@ const DB_DESCRIPTIONS: Record<string, string> = {
 };
 
 export default function DatabasesPage() {
+  const __uiLocale = useUILocale();
   const api = useNetcapApi();
   const { data: dbInfo, error, isLoading, mutate } = useSWR('dbs', () => api.getDatabaseInfo(), {
     refreshInterval: 0, // No need to refresh automatically
@@ -92,14 +107,14 @@ export default function DatabasesPage() {
   
   const [updating, setUpdating] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarMessage, setSnackbarMessage] = useState<UIMessageText>('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
   const handleUpdateDatabases = async () => {
     setUpdating(true);
     try {
       const result = await api.updateDatabases();
-      setSnackbarMessage(result.message || 'Database update started successfully');
+      setSnackbarMessage(metadataMessage(result, 'message') || i18nMessage("removed:m_fbba79352ce27a317c97"));
       setSnackbarSeverity('success');
       setSnackbarOpen(true);
       // Refresh database info after a short delay to allow background process to start
@@ -107,7 +122,7 @@ export default function DatabasesPage() {
         mutate();
       }, 2000);
     } catch (error) {
-      setSnackbarMessage((error as Error).message || 'Failed to update databases');
+      setSnackbarMessage(errorText(error) || i18nMessage("removed:m_7be105a1147b6c5fdeac"));
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     } finally {
@@ -124,10 +139,10 @@ export default function DatabasesPage() {
     try {
       const result = await api.setGeoProviders(providers);
       await refreshGeoStatus(result, false);
-      setSnackbarMessage('Provider order saved. Applies to the next capture.');
+      setSnackbarMessage(i18nMessage("removed:m_f5b64f925defed29909c"));
       setSnackbarSeverity('success');
     } catch (error) {
-      setSnackbarMessage((error as Error).message);
+      setSnackbarMessage(errorText(error));
       setSnackbarSeverity('error');
     } finally {
       setSnackbarOpen(true);
@@ -137,30 +152,19 @@ export default function DatabasesPage() {
 
   if (isLoading) {
     return (
-      <Layout title="Databases">
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-          <CircularProgress />
-        </Box>
-      </Layout>
+      <Layout title={i18nText("removed:m_b9ca438f78bcafc385f9")}><Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh"><CircularProgress /></Box></Layout>
     );
   }
 
   if (error) {
     return (
-      <Layout title="Databases">
-        <Alert severity="error">
-          <AlertTitle>Error Loading Database Information</AlertTitle>
-          <Typography variant="body2">
-            Failed to fetch database information: {error.message}
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 1 }}>
-            Make sure the databases are installed. You can download them using:
-          </Typography>
-          <Typography variant="body2" component="pre" sx={{ mt: 1, fontFamily: 'monospace', fontSize: '0.875rem' }}>
-            net util -download-dbs
-          </Typography>
-        </Alert>
-      </Layout>
+      <Layout title={i18nText("removed:m_b9ca438f78bcafc385f9")}><Alert severity="error"><AlertTitle>{i18nText("removed:m_039dde90c868832712c4")}</AlertTitle><Typography variant="body2">
+            {i18nRichText("removed:m_3b6cc770fee9e4f86e1b", { arg0: renderError(error) })}
+          </Typography><Typography variant="body2" sx={{ mt: 1 }}>
+            {i18nText("removed:m_c85a0e0bf2235b10066e")}
+          </Typography><Typography variant="body2" component="pre" sx={{ mt: 1, fontFamily: 'monospace', fontSize: '0.875rem' }}>
+            {rawCode("net util -download-dbs")}
+          </Typography></Alert></Layout>
     );
   }
 
@@ -174,215 +178,54 @@ export default function DatabasesPage() {
   });
 
   return (
-    <Layout 
-      title="Databases"
-      headerAction={
-        <Button
-          variant="contained"
+    <Layout title={i18nText("removed:m_b9ca438f78bcafc385f9")}
+      headerAction={<Button variant="contained"
           color="primary"
           startIcon={updating ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
           onClick={handleUpdateDatabases}
-          disabled={updating || status?.isServiceMode}
-        >
-          {updating ? 'Updating...' : 'Update Databases'}
-        </Button>
-      }
-    >
-      <Box>
-        {geoStatus && (
-          <Card variant="outlined" sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>Geolocation providers</Typography>
-              <FormControl fullWidth disabled={savingGeo}>
-                <InputLabel id="geo-provider-label">Provider order</InputLabel>
-                <Select labelId="geo-provider-label" label="Provider order" value={geoStatus.geoProviders || 'dbip,geolite2'} onChange={(event) => setProviders(event.target.value)}>
-                  <MenuItem value="dbip,geolite2">DB-IP, then GeoLite2</MenuItem>
-                  <MenuItem value="geolite2,dbip">GeoLite2, then DB-IP</MenuItem>
-                  <MenuItem value="dbip">DB-IP only</MenuItem>
-                  <MenuItem value="geolite2">GeoLite2 only</MenuItem>
-                </Select>
-              </FormControl>
-              <Typography variant="body2" sx={{ mt: 2 }}>Only selected providers load. Location and ASN each fall back in this order. Changes apply to new captures; existing records are unchanged.</Typography>
-              {geoStatus.geoStatus?.map((provider) => (
-                <Box key={provider.name} sx={{ mt: 2 }}>
-                  <Typography variant="subtitle2">{provider.name === 'dbip' ? 'DB-IP Lite' : 'MaxMind GeoLite2'}: {provider.selected ? 'selected' : 'not selected'}, {provider.available ? 'available' : 'unavailable'}{provider.loaded ? ', loaded in this process' : ''}</Typography>
-                  {provider.available && <Typography variant="caption">City build: {provider.cityBuild}; ASN build: {provider.asnBuild}</Typography>}
-                  {!provider.available && <Typography variant="body2" color="text.secondary">{provider.error}</Typography>}
-                </Box>
-              ))}
-              <Typography variant="body2" sx={{ mt: 2 }}>DB-IP Lite is bundled with v2 community databases. GeoLite2 is user-installed: set NETCAP_GEOLITE_API_KEY and run <code>net util -download-geolite</code>. City names are approximate, including for anycast and mobile networks.</Typography>
-              {geoStatus.geoError && <Alert severity="error" sx={{ mt: 2 }}>{geoStatus.geoError}</Alert>}
-            </CardContent>
-          </Card>
-        )}
-        {/* Summary Cards */}
-        <Grid container spacing={3} mb={4}>
-          <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-            <Card sx={{ width: '100%' }}>
-              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <InfoIcon color="primary" sx={{ mr: 1 }} />
-                  <Typography variant="h6">Version</Typography>
-                </Box>
-                <Typography variant="h4" color="primary">
-                  {dbInfo?.version || 'unknown'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  Database release version
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-            <Card sx={{ width: '100%' }}>
-              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <StorageIcon color="secondary" sx={{ mr: 1 }} />
-                  <Typography variant="h6">Total Size</Typography>
-                </Box>
-                <Typography variant="h4" color="secondary">
-                  {formatBytes(dbInfo?.totalSize || 0)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  {dbInfo?.fileCount || 0} database files
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-            <Card sx={{ width: '100%' }}>
-              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <FolderIcon color="success" sx={{ mr: 1 }} />
-                  <Typography variant="h6">Location</Typography>
-                </Box>
-                <Typography variant="body2" sx={{ mt: 1, wordBreak: 'break-all', fontFamily: 'monospace' }}>
-                  {dbInfo?.dbPath || 'N/A'}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                  Config root: {dbInfo?.configRootPath || 'N/A'}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Database Type Summary */}
-        <Box mt={4}>
-              <Grid container spacing={2}>
-                {Object.entries(filesByType).map(([type, files]) => {
+          disabled={updating || status?.isServiceMode}>{updating ? i18nText("removed:m_db2820e49ddc833ebe2b") : i18nText("removed:m_c21804e9d22c9f8e66e0")}</Button>}><Box>{geoStatus && (
+          <Card variant="outlined" sx={{ mb: 3 }}><CardContent><Typography variant="h6" sx={{ mb: 2 }}>{i18nText("removed:m_366574f25e159d6e1f43")}</Typography><FormControl fullWidth disabled={savingGeo}><InputLabel id="geo-provider-label">{i18nText("removed:m_379d0528add7f2ab9ee9")}</InputLabel><Select labelId="geo-provider-label" label={i18nText("removed:m_379d0528add7f2ab9ee9")} value={geoStatus.geoProviders || 'dbip,geolite2'} onChange={(event) => setProviders(event.target.value)}><MenuItem value="dbip,geolite2">{i18nText("removed:m_804891ab31ef46353eb2")}</MenuItem><MenuItem value="geolite2,dbip">{i18nText("removed:m_5207506704877f0290dc")}</MenuItem><MenuItem value="dbip">{i18nText("removed:m_aa1eab5d579ed9559a13")}</MenuItem><MenuItem value="geolite2">{i18nText("removed:m_6f361516861f8c6afe27")}</MenuItem></Select></FormControl><Typography variant="body2" sx={{ mt: 2 }}>{i18nText("removed:m_57c6bbe92206ecb70d60")}</Typography>{geoStatus.geoStatus?.map((provider) => (
+                <Box key={provider.name} sx={{ mt: 2 }}><Typography variant="subtitle2">{provider.name === 'dbip' ? i18nText("removed:m_1ce972ebad31e5ee1acd") : i18nText("removed:m_134306d49032c6d84c07")}: {provider.selected ? i18nText("removed:m_d0824a4f5cbcded71d39") : i18nText("removed:m_17628e441518c6802c1e")}, {provider.available ? i18nText("removed:m_560b680c17314344f9dc") : i18nText("removed:m_ddddc9fec2c62ce5d4b3")}{provider.loaded ? i18nText("removed:m_a5de519dc164ffd7dd4e") : ''}</Typography>{provider.available && <Typography variant="caption">{i18nRichText("removed:m_1951ea4a8fd319d9692c", { arg0: provider.cityBuild, arg1: provider.asnBuild })}</Typography>}{!provider.available && <Typography variant="body2" color="text.secondary">{provider.error}</Typography>}</Box>
+              ))}<Typography variant="body2" sx={{ mt: 2 }}>{((__codeValues: Record<string, unknown>) => i18nRichText("removed:m_a19688b32638a1d72a92", { ...__codeValues, code0: rawCode("net util -download-geolite", __codeValues) }))({ tag0: (chunks: import('react').ReactNode[]) => <code>{chunks}</code> })}</Typography>{geoStatus.geoError && <Alert severity="error" sx={{ mt: 2 }}>{geoStatus.geoError}</Alert>}</CardContent></Card>
+        )}{/* Summary Cards */}<Grid container spacing={3} mb={4}><Grid item xs={12} md={4} sx={{ display: 'flex' }}><Card sx={{ width: '100%' }}><CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}><Box display="flex" alignItems="center" mb={1}><InfoIcon color="primary" sx={{ mr: 1 }} /><Typography variant="h6">{i18nText("removed:m_37b931c3ef2914c51753")}</Typography></Box><Typography variant="h4" color="primary">{dbInfo?.version || i18nText("removed:m_b1b6b391498fb13c454c")}</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  {i18nText("removed:m_17e99997cb560c1ab485")}
+                </Typography></CardContent></Card></Grid><Grid item xs={12} md={4} sx={{ display: 'flex' }}><Card sx={{ width: '100%' }}><CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}><Box display="flex" alignItems="center" mb={1}><StorageIcon color="secondary" sx={{ mr: 1 }} /><Typography variant="h6">{i18nText("removed:m_163a1f5490a50d7d1c6d")}</Typography></Box><Typography variant="h4" color="secondary">{formatBytes(dbInfo?.totalSize || 0)}</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  {i18nRichText("removed:m_6cfc2db7b4501ed137a8", { arg0: dbInfo?.fileCount || 0 })}
+                </Typography></CardContent></Card></Grid><Grid item xs={12} md={4} sx={{ display: 'flex' }}><Card sx={{ width: '100%' }}><CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}><Box display="flex" alignItems="center" mb={1}><FolderIcon color="success" sx={{ mr: 1 }} /><Typography variant="h6">{i18nText("removed:m_6f262c78e6f3816c4c5a")}</Typography></Box><Typography variant="body2" sx={{ mt: 1, wordBreak: 'break-all', fontFamily: 'monospace' }}>{dbInfo?.dbPath || i18nText("removed:m_8dc598ebf1e055830140")}</Typography><Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  {i18nRichText("removed:m_151fdcc3b0f7262a21b1", { arg0: dbInfo?.configRootPath || i18nText("removed:m_8dc598ebf1e055830140") })}
+                </Typography></CardContent></Card></Grid></Grid>{/* Database Type Summary */}<Box mt={4}><Grid container spacing={2}>{Object.entries(filesByType).map(([type, files]) => {
                   const typeInfo = DB_TYPE_INFO[type] || DB_TYPE_INFO.other;
                   const totalSize = files.reduce((sum, f) => sum + f.size, 0);
                   
                   return (
-                    <Grid item xs={12} sm={6} md={4} key={type}>
-                      <Card variant="outlined">
-                        <CardContent>
-                          <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                            <Chip label={typeInfo.label} color={typeInfo.color} size="small" />
-                            <Typography variant="body2" color="text.secondary">
-                              {files.length} file{files.length !== 1 ? 's' : ''}
-                            </Typography>
-                          </Box>
-                          <Typography variant="h6" color="primary">
-                            {formatBytes(totalSize)}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
+                    <Grid item xs={12} sm={6} md={4} key={type}><Card variant="outlined"><CardContent><Box display="flex" alignItems="center" justifyContent="space-between" mb={1}><Chip label={metadataText(typeInfo, "label")} color={typeInfo.color} size="small" /><Typography variant="body2" color="text.secondary">
+                              {i18nRichText("removed:m_4507816c2ef62e991dd9", { arg0: files.length })}
+                            </Typography></Box><Typography variant="h6" color="primary">{formatBytes(totalSize)}</Typography></CardContent></Card></Grid>
                   );
-                })}
-              </Grid>
-            </Box>
-
-        {/* Database Files Table */}
-        {dbInfo && dbInfo.files.length > 0 ? (
-          <>
-            <Typography variant="h5" gutterBottom sx={{ mt: 4, mb: 2 }}>
-              Database Files
-            </Typography>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell><strong>Name</strong></TableCell>
-                    <TableCell><strong>Type</strong></TableCell>
-                    <TableCell><strong>Size</strong></TableCell>
-                    <TableCell><strong>Modified</strong></TableCell>
-                    <TableCell><strong>Description</strong></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {dbInfo.files.map((file) => {
+                })}</Grid></Box>{/* Database Files Table */}{dbInfo && dbInfo.files.length > 0 ? (
+          <><Typography variant="h5" gutterBottom sx={{ mt: 4, mb: 2 }}>
+              {i18nText("removed:m_45c62a0d8a3de70d93af")}
+            </Typography><TableContainer component={Paper}><Table><TableHead><TableRow><TableCell>{i18nRichText("removed:m_59199fd72f93edc668a9", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}</TableCell><TableCell>{i18nRichText("removed:m_38ccd876bc0ea0d76303", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}</TableCell><TableCell>{i18nRichText("removed:m_f8bcb675bdb0fb02957a", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}</TableCell><TableCell>{i18nRichText("removed:m_3bbafe2c2d010ec8fed7", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}</TableCell><TableCell>{i18nRichText("removed:m_055b4c5cb3abb7dceac0", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}</TableCell></TableRow></TableHead><TableBody>{dbInfo.files.map((file) => {
                     const typeInfo = DB_TYPE_INFO[file.type] || DB_TYPE_INFO.other;
-                    const description = DB_DESCRIPTIONS[file.name] || 'Database file';
+                    const description = finalCopyText(DB_DESCRIPTIONS[file.name]) || translate("removed:m_4112d810e465c87bde04");
                     
                     return (
-                      <TableRow key={file.path} hover>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
-                            {file.name}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={typeInfo.label}
+                      <TableRow key={file.path} hover><TableCell><Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>{file.name}</Typography></TableCell><TableCell><Chip label={metadataText(typeInfo, "label")}
                             color={typeInfo.color}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {formatBytes(file.size)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {formatTimestamp(file.modifiedTime)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {description}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
+                            size="small" /></TableCell><TableCell><Typography variant="body2">{formatBytes(file.size)}</Typography></TableCell><TableCell><Typography variant="body2" color="text.secondary">{formatTimestamp(file.modifiedTime, 'seconds')}</Typography></TableCell><TableCell><Typography variant="body2" color="text.secondary">{description}</Typography></TableCell></TableRow>
                     );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </>
+                  })}</TableBody></Table></TableContainer></>
         ) : (
-          <Alert severity="warning" sx={{ mt: 4 }}>
-            <AlertTitle>No Databases Found</AlertTitle>
-            <Typography variant="body2">
-              No database files found in {dbInfo?.dbPath || 'the database directory'}.
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 2 }}>
-              To download the latest databases, run:
-            </Typography>
-            <Typography variant="body2" component="pre" sx={{ mt: 1, fontFamily: 'monospace', fontSize: '0.875rem' }}>
-              net util -download-dbs
-            </Typography>
-          </Alert>
-        )}
-
-      </Box>
-
-      {/* Snackbar for update notifications */}
-      <Snackbar
-        open={snackbarOpen}
+          <Alert severity="warning" sx={{ mt: 4 }}><AlertTitle>{i18nText("removed:m_1003323b27d060f313e2")}</AlertTitle><Typography variant="body2">
+              {i18nRichText("removed:m_e36bbd5c15efa946738f", { arg0: dbInfo?.dbPath || i18nText("removed:m_a638aaf6671badb143fe") })}
+            </Typography><Typography variant="body2" sx={{ mt: 2 }}>
+              {i18nText("removed:m_71bdb160ed830f8ccec6")}
+            </Typography><Typography variant="body2" component="pre" sx={{ mt: 1, fontFamily: 'monospace', fontSize: '0.875rem' }}>
+              {rawCode("net util -download-dbs")}
+            </Typography></Alert>
+        )}</Box>{/* Snackbar for update notifications */}<Snackbar open={snackbarOpen}
         autoHideDuration={6000}
         onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
-    </Layout>
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>{i18nRenderText(snackbarMessage)}</Alert></Snackbar></Layout>
   );
 }

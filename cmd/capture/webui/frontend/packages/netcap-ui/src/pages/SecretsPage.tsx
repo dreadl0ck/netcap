@@ -65,11 +65,21 @@ import SearchInput from '../components/SearchInput';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
-import useSWR, { mutate as globalMutate } from 'swr';
+
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 import { ChartFrame } from '../components/ChartFrame';
+import { translate as i18nText, renderText as i18nRenderText, richText as i18nRichText, message as i18nMessage, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR, mutatePresentation as globalMutate } from "../lib/i18n";
+import { renderError, translate } from "../lib/i18n";
+import { errorText } from "../lib/i18n";
+import { message as finalCopyMessage } from "../lib/i18n";
+
+
+
+
+
 export interface SecretSummary {
   timestamp: number;
   service: string;
@@ -169,12 +179,13 @@ const serviceCategories: Record<string, { category: 'auth' | 'discovery' | 'remo
 
 // Helper function to get service info with defaults
 const getServiceInfo = (service: string) => {
-  return serviceCategories[service] || { 
+  const info = serviceCategories[service] || { 
     category: 'auth' as const, 
     color: 'primary' as const, 
     userLabel: 'Username', 
     passLabel: 'Password' 
   };
+  return { ...info, userLabel: i18nText(info.userLabel), passLabel: info.passLabel ? i18nText(info.passLabel) : '' };
 };
 
 // Helper function to truncate string with ellipsis
@@ -207,9 +218,7 @@ const renderColorizedFlow = (flow: string) => {
   const arrowIdx = flow.indexOf('->');
   if (arrowIdx === -1) {
     return (
-      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-        {flow}
-      </Typography>
+      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{flow}</Typography>
     );
   }
 
@@ -229,9 +238,7 @@ const renderColorizedFlow = (flow: string) => {
 
   if (!src || !dst) {
     return (
-      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-        {flow}
-      </Typography>
+      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{flow}</Typography>
     );
   }
 
@@ -239,25 +246,14 @@ const renderColorizedFlow = (flow: string) => {
   const [dstIP, dstPort] = dst;
 
   return (
-    <Box
-      sx={{
+    <Box sx={{
         fontFamily: 'monospace',
         fontSize: '0.8rem',
         display: 'flex',
         alignItems: 'center',
-      }}
-    >
-      {proto && (
+      }}>{proto && (
         <Box component="span" sx={{ color: 'text.secondary' }}>{proto}:</Box>
-      )}
-      <Box component="span" sx={{ color: '#f44336', fontWeight: 'bold' }}>{srcIP}</Box>
-      <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
-      <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>{srcPort}</Box>
-      <Box component="span" sx={{ color: 'text.secondary', mx: 0.5 }}>→</Box>
-      <Box component="span" sx={{ color: '#2196f3', fontWeight: 'bold' }}>{dstIP}</Box>
-      <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
-      <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>{dstPort}</Box>
-    </Box>
+      )}<Box component="span" sx={{ color: 'error.main', fontWeight: 'bold' }}>{srcIP}</Box><Box component="span" sx={{ color: 'text.secondary' }}>:</Box><Box component="span" sx={{ color: 'warning.main', fontWeight: 'medium' }}>{srcPort}</Box><Box component="span" sx={{ color: 'text.secondary', mx: 0.5 }}>→</Box><Box component="span" sx={{ color: 'primary.main', fontWeight: 'bold' }}>{dstIP}</Box><Box component="span" sx={{ color: 'text.secondary' }}>:</Box><Box component="span" sx={{ color: 'warning.main', fontWeight: 'medium' }}>{dstPort}</Box></Box>
   );
 };
 
@@ -267,6 +263,7 @@ export interface SecretsPageProps {
 }
 
 export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
+  const __uiLocale = useUILocale();
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
@@ -449,11 +446,11 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
       setChartRefreshKey(prev => prev + 1);
     } catch (err) {
       console.error('Failed to switch file:', err);
-      alert('Failed to switch to this capture');
+      alert(i18nText("ui:m_7ab800e4d59917b1d34c"));
     } finally {
       setSwitchingFile(false);
     }
-  }, [api, mutateStatus, mutate]);
+  }, [api, mutateStatus, mutate, __uiLocale]);
 
   const handleRowClick = useCallback((key: string) => {
     setExpandedRow(prev => prev === key ? null : key);
@@ -461,13 +458,11 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
 
   // Use shared FileSelectorHeader component
   const fileSelector = (
-    <FileSelectorHeader
-      inputFiles={inputFiles || []}
+    <FileSelectorHeader inputFiles={inputFiles || []}
       status={status}
       switchingFile={switchingFile}
       onFileChange={handleFileChange}
-      learnHint="Capture Selector: Switch between different analyzed PCAP files to view captured credentials from network traffic."
-    />
+      learnHint={finalCopyMessage("ui:m_597e81cf106eb3efe528")} />
   );
 
   // Memoize summary statistics to avoid recalculation on every render
@@ -485,19 +480,12 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
 
   if (error) {
     return (
-      <Layout title="Secrets" headerAction={fileSelector}>
-        <Alert severity="error">Error loading credentials: {error.message}</Alert>
-      </Layout>
+      <Layout title={i18nText("ui:m_e07371b6b8d7ea089087")} headerAction={fileSelector}><Alert severity="error">{i18nRichText("ui:m_ae1eefbf9346a1d00616", { arg0: i18nRenderText(renderError(error)) })}</Alert></Layout>
     );
   }
 
   return (
-    <Layout title="Secrets" headerAction={fileSelector}>
-      <Box sx={{ minWidth: 0 }}>
-        {/* View Mode Toggle */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-          <ToggleButtonGroup
-            value={viewMode}
+    <Layout title={i18nText("ui:m_e07371b6b8d7ea089087")} headerAction={fileSelector}><Box sx={{ minWidth: 0 }}>{/* View Mode Toggle */}<Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}><ToggleButtonGroup value={viewMode}
             exclusive
             onChange={(_e, newValue: string | null) => {
               if (newValue !== null) {
@@ -505,103 +493,51 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
               }
             }}
             size="small"
-            data-learn="View Mode Toggle: Switch between Table mode, Chart mode, and Auth Activity mode."
-          >
-            <ToggleButton value="table">
-              <TableChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                Table
-              </Box>
-            </ToggleButton>
-            <ToggleButton value="chart">
-              <BarChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                Chart
-              </Box>
-            </ToggleButton>
-            <ToggleButton value="auth">
-              <SyncAltIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                Auth Activity
-              </Box>
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-
-        {/* Summary Cards - Row 1: Filters - Only show in table mode */}
-        {viewMode === 'table' && (
-        <StatBoxGrid>
-          <StatBox
-            icon={<VpnKeyIcon color="primary" />}
-            label="Total Secrets"
+            data-learn={i18nText("ui:m_89886482976cfe48af47")}><ToggleButton value="table"><TableChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              {i18nRichText("ui:m_b65e2110701259d5e7dc", { tag0: (chunks: import('react').ReactNode[]) => <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{chunks}</Box> })}
+            </ToggleButton><ToggleButton value="chart"><BarChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              {i18nRichText("ui:m_da105eec6af81877e667", { tag0: (chunks: import('react').ReactNode[]) => <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{chunks}</Box> })}
+            </ToggleButton><ToggleButton value="auth"><SyncAltIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              {i18nRichText("ui:m_349e840204ecfe088a51", { tag0: (chunks: import('react').ReactNode[]) => <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{chunks}</Box> })}
+            </ToggleButton></ToggleButtonGroup></Box>{/* Summary Cards - Row 1: Filters - Only show in table mode */}{viewMode === 'table' && (
+        <StatBoxGrid><StatBox icon={<VpnKeyIcon color="primary" />}
+            label={i18nText("ui:m_d10e657e170429a9a6a4")}
             value={totalCount}
             onClick={() => { setFilterType('all'); setPage(0); }}
             isActive={filterType === 'all'}
             activeColor="primary"
-            learnHint="Total Credentials: Click to show all credentials."
-          />
-          <StatBox
-            icon={<ErrorIcon color="error" />}
-            label="Failed Auth"
+            learnHint={translate("ui:m_af10a983a77375c21ba0")} /><StatBox icon={<ErrorIcon color="error" />}
+            label={i18nText("ui:m_e5ae94910dcfe8f8696c")}
             value={stats.failedCount}
             onClick={() => { setFilterType('failed'); setPage(0); }}
             isActive={filterType === 'failed'}
             activeColor="error"
-            learnHint="Failed Authentications: Click to filter table to only failed authentication attempts."
-          />
-          <StatBox
-            icon={<CheckCircleIcon color="success" />}
-            label="Successful Auth"
+            learnHint={translate("ui:m_55398ea8ead7a7354ca8")} /><StatBox icon={<CheckCircleIcon color="success" />}
+            label={i18nText("ui:m_85050d6e930921186c12")}
             value={stats.successfulCount}
             onClick={() => { setFilterType('successful'); setPage(0); }}
             isActive={filterType === 'successful'}
             activeColor="success"
-            learnHint="Successful Authentications: Click to filter table to only successful authentication attempts."
-          />
-          <StatBox
-            icon={<TagIcon color="warning" />}
-            label="Hashed Secrets"
+            learnHint={translate("ui:m_575bb947238c2b1ef99c")} /><StatBox icon={<TagIcon color="warning" />}
+            label={i18nText("ui:m_a3fcf9b29352e0ce77dd")}
             value={stats.hashedCount}
             onClick={() => { setFilterType('hashed'); setPage(0); }}
             isActive={filterType === 'hashed'}
             activeColor="warning"
-            learnHint="Hashed Credentials: Click to filter table to only credentials with password hashes (NTLM, Kerberos, etc.)."
-          />
-        </StatBoxGrid>
-        )}
-
-        {/* Summary Cards - Row 2: Statistics - Only show in table mode */}
-        {viewMode === 'table' && (
-        <StatBoxGrid>
-          <StatBox
-            icon={<SecurityIcon color="success" />}
-            label="Unique Services"
+            learnHint={translate("ui:m_942a1f80db9198581e5c")} /></StatBoxGrid>
+        )}{/* Summary Cards - Row 2: Statistics - Only show in table mode */}{viewMode === 'table' && (
+        <StatBoxGrid><StatBox icon={<SecurityIcon color="success" />}
+            label={i18nText("ui:m_40cc75471da545d83df8")}
             value={stats.uniqueServices}
-            learnHint="Unique Services: Number of different services/protocols that had credentials captured."
-          />
-          <StatBox
-            icon={<PersonIcon color="warning" />}
-            label="Unique Users"
+            learnHint={translate("ui:m_c729979894051206df70")} /><StatBox icon={<PersonIcon color="warning" />}
+            label={i18nText("ui:m_d86cbb9f9c140eb56b24")}
             value={stats.uniqueUsers}
-            learnHint="Unique Users: Number of different usernames found in captured credentials."
-          />
-          <StatBox
-            icon={<LockIcon color="info" />}
-            label="Unique Passwords"
+            learnHint={translate("ui:m_9276bd31f8df61cc41ed")} /><StatBox icon={<LockIcon color="info" />}
+            label={i18nText("ui:m_9eb0cf3b8ebb344f0db7")}
             value={stats.uniquePasswords}
-            learnHint="Unique Passwords: Number of different passwords found in captured credentials."
-          />
-        </StatBoxGrid>
-        )}
-
-        {/* Visualization Charts - Only show in chart mode */}
-        {viewMode === 'chart' && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
-              <CardContent sx={{ height: '100%', p: 1 }}>
-                <ChartFrame
-                  data-learn="Credentials by Service: Bar chart showing which services/protocols had the most credentials captured."
+            learnHint={translate("ui:m_74f7049b7ed8d0fb8fde")} /></StatBoxGrid>
+        )}{/* Visualization Charts - Only show in chart mode */}{viewMode === 'chart' && (
+        <Grid container spacing={2} sx={{ mb: 3 }}><Grid item xs={12} md={6}><Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}><CardContent sx={{ height: '100%', p: 1 }}><ChartFrame data-learn={i18nText("ui:m_81ef54fdba4a85009b2b")}
                   key={`by-service-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/secrets/by-service`}
                   style={{
@@ -609,17 +545,7 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
                     height: '100%',
                     border: 'none',
                   }}
-                  title="Secrets by Service"
-                />
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
-              <CardContent sx={{ height: '100%', p: 1 }}>
-                <ChartFrame
-                  data-learn="Credentials Timeline: Line chart showing when credentials were captured over time."
+                  title={i18nText("ui:m_03c73e04165bbe093af2")} /></CardContent></Card></Grid><Grid item xs={12} md={6}><Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}><CardContent sx={{ height: '100%', p: 1 }}><ChartFrame data-learn={i18nText("ui:m_caf08ae461e5de298ebe")}
                   key={`timeline-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/secrets/timeline`}
                   style={{
@@ -627,17 +553,7 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
                     height: '100%',
                     border: 'none',
                   }}
-                  title="Secrets Timeline"
-                />
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
-              <CardContent sx={{ height: '100%', p: 1 }}>
-                <ChartFrame
-                  data-learn="Top Usernames: Bar chart showing the most common usernames in captured credentials."
+                  title={i18nText("ui:m_b393ac6dbc3103aa6ea5")} /></CardContent></Card></Grid><Grid item xs={12} md={6}><Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}><CardContent sx={{ height: '100%', p: 1 }}><ChartFrame data-learn={i18nText("ui:m_66a2e1c70cb6992473d8")}
                   key={`usernames-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/secrets/usernames`}
                   style={{
@@ -645,17 +561,7 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
                     height: '100%',
                     border: 'none',
                   }}
-                  title="Top Usernames"
-                />
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
-              <CardContent sx={{ height: '100%', p: 1 }}>
-                <ChartFrame
-                  data-learn="Credentials by Flow: Pie chart showing the distribution of credentials across network flows."
+                  title={i18nText("ui:m_f2f37656215e54f573f4")} /></CardContent></Card></Grid><Grid item xs={12} md={6}><Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}><CardContent sx={{ height: '100%', p: 1 }}><ChartFrame data-learn={i18nText("ui:m_e6ea340e453ac398e328")}
                   key={`flows-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/secrets/flows?showLegend=false`}
                   style={{
@@ -663,63 +569,34 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
                     height: '100%',
                     border: 'none',
                   }}
-                  title="Secrets by Flow"
-                />
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-        )}
-
-        {/* Filters and Actions - Only show in table mode */}
-        {viewMode === 'table' && (
-        <>
-        <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <SearchInput
-            value={searchQuery}
+                  title={i18nText("ui:m_02acf1cbb307aef0d96d")} /></CardContent></Card></Grid></Grid>
+        )}{/* Filters and Actions - Only show in table mode */}{viewMode === 'table' && (
+        <><Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}><SearchInput value={searchQuery}
             onChange={(value) => {
               setSearchQuery(value);
               setPage(0);
             }}
-            placeholder="Search credentials..."
-            learnHint="Credential Search: Filter credentials by service, username, password, flow, or notes. Use !term to exclude matches (e.g., !FTP excludes FTP)."
-          />
-          
-          <Button
-            data-learn="Refresh Button: Reload credential data and charts from the server."
+            placeholder={i18nText("ui:m_a61d07cd2ca1d28f77c7")}
+            learnHint={translate("ui:m_2ca9a56128b5c0ab76b0")} /><Button data-learn={i18nText("ui:m_eed2d0c969ee5ca700c9")}
             variant="outlined" 
             startIcon={<RefreshIcon />} 
             onClick={handleRefresh}
-            size="small"
-          >
-            Refresh
-          </Button>
-          
-          {(searchQuery || filterType !== 'all') ? (
-            <Typography variant="body2" color="text.secondary" data-learn="Filter Count: Shows how many credentials match the current filter and search out of the total.">
-              Showing {filteredCredentials.length} of {totalCount} credentials
+            size="small">
+            {i18nText("ui:m_230fc1b63eb3ef4e6a34")}
+          </Button>{(searchQuery || filterType !== 'all') ? (
+            <Typography variant="body2" color="text.secondary" data-learn={i18nText("ui:m_749195289cc91c23beaf")}>
+              {i18nRichText("ui:m_28f72b2932d2788365ba", { arg0: filteredCredentials.length, arg1: totalCount })}
             </Typography>
-          ) : null}
-        </Box>
-
-        {/* Credentials Table */}
-        {!credentialsData && !error ? (
-          <Box display="flex" justifyContent="center" py={4}>
-            <CircularProgress />
-          </Box>
+          ) : null}</Box>{/* Credentials Table */}{!credentialsData && !error ? (
+          <Box display="flex" justifyContent="center" py={4}><CircularProgress /></Box>
         ) : totalCount === 0 ? (
-          <Paper sx={{ p: 4, textAlign: 'center' }} data-learn="No Credentials: No credentials were found in this capture. This could mean secure protocols were used or harvesters weren't configured for the traffic.">
-            <VpnKeyIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary" gutterBottom>
-              No Secrets Found
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              No credentials have been captured from network traffic yet.
-            </Typography>
-          </Paper>
+          <Paper sx={{ p: 4, textAlign: 'center' }} data-learn={i18nText("ui:m_2b168d47785850a6eca5")}><VpnKeyIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} /><Typography variant="h6" color="text.secondary" gutterBottom>
+              {i18nText("ui:m_e379ab149e8e0d38178a")}
+            </Typography><Typography variant="body2" color="text.secondary">
+              {i18nText("ui:m_c4779a3daca179f82694")}
+            </Typography></Paper>
         ) : (
-          <ResponsiveDataView<SecretSummary>
-            data={paginatedCredentials}
+          <ResponsiveDataView data={paginatedCredentials}
             totalCount={filteredCredentials.length}
             page={page}
             rowsPerPage={rowsPerPage}
@@ -727,468 +604,212 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
             onRowsPerPageChange={handleChangeRowsPerPage}
             rowsPerPageOptions={[10, 25, 50, 100]}
             renderCard={(cred) => (
-              <Card variant="outlined">
-                <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Chip
-                      label={cred.service || 'Unknown'}
+              <Card variant="outlined"><CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}><Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}><Chip label={cred.service || i18nText("ui:m_2f1ac5f44673922d2bf2")}
                       size="small"
                       color={getServiceInfo(cred.service).color}
-                      sx={{ fontSize: '0.7rem' }}
-                    />
-                    <Typography variant="caption" color="text.secondary">
-                      {formatTimestamp(cred.timestamp)}
-                    </Typography>
-                  </Box>
-                  {cred.flow && (
-                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', mb: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {cred.flow}
-                    </Typography>
-                  )}
-                  <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                    {getServiceInfo(cred.service).userLabel}: {truncateString(cred.user, 30)}
-                  </Typography>
-                  {getServiceInfo(cred.service).passLabel && cred.password && (
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'error.main' }}>
-                      {getServiceInfo(cred.service).passLabel}: {truncateString(cred.password, 30)}
-                    </Typography>
-                  )}
-                  {cred.value && (
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace', overflowWrap: 'anywhere' }}>
-                      {cred.kind ?? 'token'} ({cred.parameter}): {cred.value}
-                    </Typography>
-                  )}
-                </CardContent>
-              </Card>
+                      sx={{ fontSize: '0.7rem' }} /><Typography variant="caption" color="text.secondary">{formatTimestamp(cred.timestamp, 'nanoseconds')}</Typography></Box>{cred.flow && (
+                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', mb: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cred.flow}</Typography>
+                  )}<Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{getServiceInfo(cred.service).userLabel}: {truncateString(cred.user, 30)}</Typography>{getServiceInfo(cred.service).passLabel && cred.password && (
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'error.main' }}>{getServiceInfo(cred.service).passLabel}: {truncateString(cred.password, 30)}</Typography>
+                  )}{cred.value && (
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', overflowWrap: 'anywhere' }}>{cred.kind ?? i18nText("ui:m_eecbe8b9f8021c232dd0")}({cred.parameter}): {cred.value}</Typography>
+                  )}</CardContent></Card>
             )}
-            desktopTable={
-            <TableContainer component={Paper}>
-              <Table size="small" data-learn="Credentials Table: Detailed list of all captured credentials with sorting capabilities.">
-                <TableHead>
-                  <TableRow>
-                    <TableCell width={40}></TableCell>
-                    <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                      <TableSortLabel
-                        data-learn="Sort by Timestamp: Click to sort credentials by capture time."
+            desktopTable={<TableContainer component={Paper}><Table size="small" data-learn={i18nText("ui:m_a1ef693aa0958064fe56")}><TableHead><TableRow><TableCell width={40}></TableCell><TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}><TableSortLabel data-learn={i18nText("ui:m_1617938c89a86027d744")}
                         active={sortField === 'timestamp'}
                         direction={sortField === 'timestamp' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('timestamp')}
-                      >
-                        Time
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell>
-                      <TableSortLabel
-                        data-learn="Sort by Service: Click to sort credentials by service/protocol."
+                        onClick={() => handleSort('timestamp')}>
+                        {i18nText("ui:m_b62418ba3d29bf760ea0")}
+                      </TableSortLabel></TableCell><TableCell><TableSortLabel data-learn={i18nText("ui:m_1614ee8ca950b01f97ea")}
                         active={sortField === 'service'}
                         direction={sortField === 'service' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('service')}
-                      >
-                        Service
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell>
-                      <TableSortLabel
-                        data-learn="Sort by Username: Click to sort credentials by username."
+                        onClick={() => handleSort('service')}>
+                        {i18nText("ui:m_e1d47e59dd85d4abaa0f")}
+                      </TableSortLabel></TableCell><TableCell><TableSortLabel data-learn={i18nText("ui:m_baf7f8cc8527f334cbb3")}
                         active={sortField === 'user'}
                         direction={sortField === 'user' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('user')}
-                      >
-                        Username
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell>
-                      <TableSortLabel
-                        data-learn="Sort by Password: Click to sort credentials by password."
+                        onClick={() => handleSort('user')}>
+                        {i18nText("ui:m_4bae04cf82819470ec10")}
+                      </TableSortLabel></TableCell><TableCell><TableSortLabel data-learn={i18nText("ui:m_d96a3e828fd9a6becbfb")}
                         active={sortField === 'password'}
                         direction={sortField === 'password' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('password')}
-                      >
-                        Password / token
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell data-learn="Flow Identifier: Network flow where this credential was captured.">
-                      Flow
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedCredentials.map((cred, idx) => {
+                        onClick={() => handleSort('password')}>
+                        {i18nText("ui:m_a74fa671e45574b2cd22")}
+                      </TableSortLabel></TableCell><TableCell data-learn={i18nText("ui:m_2a9262a483933e6ec9b8")}>
+                      {i18nText("ui:m_445f5c7623fff323a4b0")}
+                    </TableCell></TableRow></TableHead><TableBody>{paginatedCredentials.map((cred, idx) => {
                     const rowKey = `${cred.timestamp}-${cred.service}-${cred.user}-${idx}`;
                     return (
-                      <>
-                        <TableRow
-                          key={rowKey}
+                      <><TableRow key={rowKey}
                           data-row-key={rowKey}
                           hover
                           onClick={() => handleRowClick(rowKey)}
                           sx={{ cursor: 'pointer', '& > *': { borderBottom: 'unset !important' } }}
-                          data-learn="Credential Row: Click to expand and view detailed information about this captured credential. Use ↑↓ arrows to navigate between rows when expanded."
-                        >
-                          <TableCell>
-                            <IconButton size="small" data-learn="Expand Button: Click to show/hide detailed credential information.">
-                              <ExpandMoreIcon
-                                sx={{
+                          data-learn={i18nText("ui:m_ff33aaefe886296124ae")}><TableCell><IconButton size="small" data-learn={i18nText("ui:m_e00c7c7d37c5e04842aa")}><ExpandMoreIcon sx={{
                                   transform: expandedRow === rowKey ? 'rotate(180deg)' : 'rotate(0deg)',
                                   transition: 'transform 0.3s'
-                                }}
-                              />
-                            </IconButton>
-                          </TableCell>
-                          <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }} data-learn="Capture Time: Exact timestamp when this credential was captured from network traffic.">
-                              {formatTimestamp(cred.timestamp)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              data-learn="Service Tag: Protocol or service where this credential was captured. Colors indicate type: blue=auth, teal=database, orange=remote, green=discovery, purple=network."
-                              label={cred.service || 'Unknown'}
+                                }} /></IconButton></TableCell><TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }} data-learn={i18nText("ui:m_3ddf5cc392aeb839e026")}>{formatTimestamp(cred.timestamp, 'nanoseconds')}</Typography></TableCell><TableCell><Chip data-learn={i18nText("ui:m_b1b3451c60cac852e7de")}
+                              label={cred.service || i18nText("ui:m_2f1ac5f44673922d2bf2")}
                               size="small"
                               color={getServiceInfo(cred.service).color}
-                              sx={{ fontSize: '0.7rem' }}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Typography
-                              variant="body2"
+                              sx={{ fontSize: '0.7rem' }} /></TableCell><TableCell><Typography variant="body2"
                               sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
-                              data-learn="Username: The captured username from the authentication attempt."
-                              title={cred.user.length > 25 ? cred.user : undefined}
-                            >
-                              {truncateString(cred.user, 25)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography
-                              variant="body2"
+                              data-learn={i18nText("ui:m_debfc7068dac655469dd")}
+                              title={cred.user.length > 25 ? cred.user : undefined}>{truncateString(cred.user, 25)}</Typography></TableCell><TableCell><Typography variant="body2"
                               sx={{
                                 fontFamily: 'monospace',
                                 fontSize: '0.875rem',
                               }}
-                              data-learn="Password: The captured password from the authentication attempt."
-                              title={cred.value || (cred.password.length > 25 ? cred.password : undefined)}
-                            >
-                              {cred.value ? `${cred.kind ?? 'token'} (${cred.parameter ?? ''}): ${truncateString(cred.value, 25)}` : truncateString(cred.password, 25)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            {cred.flow ? renderColorizedFlow(cred.flow) : (
-                              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                                -
+                              data-learn={i18nText("ui:m_75c8c868fffd728d18f5")}
+                              title={cred.value || (cred.password.length > 25 ? cred.password : undefined)}>{cred.value ? `${cred.kind ?? 'token'} (${cred.parameter ?? ''}): ${truncateString(cred.value, 25)}` : truncateString(cred.password, 25)}</Typography></TableCell><TableCell>{cred.flow ? renderColorizedFlow(cred.flow) : (
+                              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>-
                               </Typography>
-                            )}
-                          </TableCell>
-                        </TableRow>
-
-                        {/* Expandable Row Details */}
-                        <TableRow>
-                          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
-                            <Collapse in={expandedRow === rowKey} timeout="auto" unmountOnExit>
-                              <Box sx={{ py: 2 }} data-learn="Credential Details: Extended information about this captured credential including full flow information and notes.">
-                                <Grid container spacing={2}>
-                                  {/* Timestamp */}
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom data-learn="Capture Time Field: Full timestamp showing when this credential was captured from the network.">
-                                      Capture Time
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      {formatTimestamp(cred.timestamp)}
-                                    </Typography>
-                                  </Grid>
-
-                                  {/* Service */}
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom data-learn="Service/Protocol Field: The application-layer protocol where this credential was harvested (e.g., HTTP Basic Auth, FTP, POP3).">
-                                      Service/Protocol
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      {cred.service || 'Unknown'}
-                                    </Typography>
-                                  </Grid>
-
-                                  {/* Username/Primary Data */}
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom data-learn={`${getServiceInfo(cred.service).userLabel} Field: Primary data captured for this service type.`}>
-                                      {getServiceInfo(cred.service).userLabel}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                                      {cred.user}
-                                    </Typography>
-                                  </Grid>
-
-                                  {/* Password/Secondary Data - only show if service has password field */}
-                                  {getServiceInfo(cred.service).passLabel && (
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom data-learn={`${getServiceInfo(cred.service).passLabel} Field: Secondary data or credential captured for this service type.`}>
-                                      {getServiceInfo(cred.service).passLabel}
-                                    </Typography>
-                                    <Typography
-                                      variant="body2"
+                            )}</TableCell></TableRow>{/* Expandable Row Details */}<TableRow><TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}><Collapse in={expandedRow === rowKey} timeout="auto" unmountOnExit><Box sx={{ py: 2 }} data-learn={i18nText("ui:m_1c488bb6fd0b3e83a8ac")}><Grid container spacing={2}>{/* Timestamp */}<Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_3a1ee9e50b08fc369dd6")}>
+                                      {i18nText("ui:m_b21c719bd4af49bbafd2")}
+                                    </Typography><Typography variant="body2" color="text.secondary">{formatTimestamp(cred.timestamp, 'nanoseconds')}</Typography></Grid>{/* Service */}<Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_3af4c04a2e940a058d54")}>
+                                      {i18nText("ui:m_e001a12fcde245530a15")}
+                                    </Typography><Typography variant="body2" color="text.secondary">{cred.service || i18nText("ui:m_2f1ac5f44673922d2bf2")}</Typography></Grid>{/* Username/Primary Data */}<Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_44e19fc32c852df7f305", { arg0: getServiceInfo(cred.service).userLabel })}>{getServiceInfo(cred.service).userLabel}</Typography><Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{cred.user}</Typography></Grid>{/* Password/Secondary Data - only show if service has password field */}{getServiceInfo(cred.service).passLabel && (
+                                  <Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_036a95f44ca22834aec6", { arg0: getServiceInfo(cred.service).passLabel })}>{getServiceInfo(cred.service).passLabel}</Typography><Typography variant="body2"
                                       sx={{
                                         fontFamily: 'monospace',
                                         color: getServiceInfo(cred.service).category === 'discovery' ? 'text.secondary' : 'error.main',
                                         fontWeight: getServiceInfo(cred.service).category === 'discovery' ? 'normal' : 'bold',
                                         wordBreak: 'break-all',
-                                      }}
-                                    >
-                                      {cred.password}
-                                    </Typography>
-                                  </Grid>
-                                  )}
-
-                                  {/* Flow */}
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom data-learn="Network Flow Field: Complete 5-tuple flow identifier (protocol, src IP:port, dst IP:port) showing the network connection where credential was captured.">
-                                      Network Flow
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all', mb: 2 }}>
-                                      {cred.flow || 'N/A'}
-                                    </Typography>
-                                    {cred.flow && (
-                                      <Button
-                                        data-learn="View Connection: Navigate to the Connections page to see detailed information about this network flow."
+                                      }}>{cred.password}</Typography></Grid>
+                                  )}{/* Flow */}<Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_367dadc27b609d546678")}>
+                                      {i18nText("ui:m_e6732e1d9743a2d694d2")}
+                                    </Typography><Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all', mb: 2 }}>{cred.flow || i18nText("ui:m_8dc598ebf1e055830140")}</Typography>{cred.flow && (
+                                      <Button data-learn={i18nText("ui:m_b5b7a0c7dae96cb0b5e0")}
                                         variant="outlined"
                                         size="small"
                                         startIcon={<SyncAltIcon />}
                                         onClick={() => router.push(`/connections?search=${encodeURIComponent(cred.flow)}`)}
-                                        sx={{ mt: 1 }}
-                                      >
-                                        View Connection Details
+                                        sx={{ mt: 1 }}>
+                                        {i18nText("ui:m_6c5d61871b4aa112fc63")}
                                       </Button>
-                                    )}
-                                  </Grid>
-
-                                  {/* Community ID for Cross-Tool Correlation */}
-                                  {cred.communityId && (
-                                    <Grid item xs={12} md={6}>
-                                      <Typography variant="subtitle2" gutterBottom data-learn="Community ID: Corelight Community ID v1 for cross-tool correlation with Zeek, Suricata, and other network security tools. Click to filter all pages by this ID.">
-                                        Community ID
-                                      </Typography>
-                                      <CommunityIDChip communityId={cred.communityId} mode="text" />
-                                    </Grid>
-                                  )}
-
-                                  {/* Notes */}
-                                  {cred.notes && (
-                                    <Grid item xs={12}>
-                                      <Typography variant="subtitle2" gutterBottom data-learn="Notes Field: Additional context about the credential capture including authentication method, encoding, or protocol-specific details.">
-                                        Notes
-                                      </Typography>
-                                      <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                                        {cred.notes}
-                                      </Typography>
-                                    </Grid>
-                                  )}
-
-                                  {/* Authentication Result */}
-                                  {cred.authSuccessSet && (
-                                    <Grid item xs={12} md={6}>
-                                      <Typography variant="subtitle2" gutterBottom data-learn="Authentication Result: Shows whether the authentication attempt succeeded or failed.">
-                                        Authentication Result
-                                      </Typography>
-                                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                                        <Chip
-                                          label={cred.authSuccess ? '✓ Success' : '✗ Failed'}
+                                    )}</Grid>{/* Community ID for Cross-Tool Correlation */}{cred.communityId && (
+                                    <Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_6520556565357b546291")}>
+                                        {i18nText("ui:m_05fb20693d84c7cd3199")}
+                                      </Typography><CommunityIDChip communityId={cred.communityId} mode="text" /></Grid>
+                                  )}{/* Notes */}{cred.notes && (
+                                    <Grid item xs={12}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_1ed60c0b1a70719998b0")}>
+                                        {i18nText("ui:m_906235396e574e3ca4d8")}
+                                      </Typography><Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{cred.notes}</Typography></Grid>
+                                  )}{/* Authentication Result */}{cred.authSuccessSet && (
+                                    <Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_4a1019b0f0d211fa4b11")}>
+                                        {i18nText("ui:m_d3b8b569a892d62ba379")}
+                                      </Typography><Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}><Chip label={cred.authSuccess ? i18nText("ui:m_2779356e27ca2f9e69a1") : i18nText("ui:m_9ec2da2237bac370177f")}
                                           size="small"
                                           color={cred.authSuccess ? 'success' : 'error'}
-                                          sx={{ fontWeight: 'bold' }}
-                                        />
-                                        {cred.authAttempts > 0 && (
+                                          sx={{ fontWeight: 'bold' }} />{cred.authAttempts > 0 && (
                                           <Typography variant="body2" color="text.secondary">
-                                            ({cred.authAttempts} attempt{cred.authAttempts > 1 ? 's' : ''})
+                                            {i18nRichText("ui:m_a2cada26e72c70a006a9", { arg0: cred.authAttempts, arg1: cred.authAttempts > 1 ? 's' : '' })}
                                           </Typography>
-                                        )}
-                                      </Box>
-                                    </Grid>
-                                  )}
-
-                                  {/* Hash Information */}
-                                  {(cred.hash || cred.hashType || cred.hashcatFormat) && (
-                                    <Grid item xs={12}>
-                                      <Typography variant="subtitle2" gutterBottom data-learn="Hash Information: Details about captured password hash for offline cracking.">
-                                        Hash Information
-                                      </Typography>
-                                      {cred.hashType && (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                          <Typography variant="body2" color="text.secondary">Type:</Typography>
-                                          <Chip label={cred.hashType} size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
-                                        </Box>
-                                      )}
-                                      {cred.hash && (
+                                        )}</Box></Grid>
+                                  )}{/* Hash Information */}{(cred.hash || cred.hashType || cred.hashcatFormat) && (
+                                    <Grid item xs={12}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_91fbfbcd69b407f25364")}>
+                                        {i18nText("ui:m_661dad40bb98964a21c7")}
+                                      </Typography>{cred.hashType && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}><Typography variant="body2" color="text.secondary">{i18nText("ui:m_b493e7f4865edb6a6c13")}</Typography><Chip label={cred.hashType} size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} /></Box>
+                                      )}{cred.hash && (
                                         <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all', mb: 0.5 }}>
-                                          Hash: {cred.hash}
+                                          {i18nRichText("ui:m_8a6acefe65674fac6b5c", { arg0: cred.hash })}
                                         </Typography>
-                                      )}
-                                      {cred.hashcatFormat && (
-                                        <Box sx={{ mt: 1 }}>
-                                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                            Hashcat Format (ready for cracking):
-                                          </Typography>
-                                          <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', wordBreak: 'break-all', bgcolor: 'background.paper', p: 1, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
-                                            {cred.hashcatFormat}
-                                          </Typography>
-                                        </Box>
-                                      )}
-                                    </Grid>
-                                  )}
-
-                                  {/* Domain/NTLM Information */}
-                                  {(cred.domain || cred.realm || cred.workstation || cred.ntHash || cred.lmHash) && (
-                                    <Grid item xs={12} md={6}>
-                                      <Typography variant="subtitle2" gutterBottom data-learn="Windows/Kerberos Info: Domain, realm, and workstation details for enterprise authentication.">
-                                        Domain/Enterprise Info
-                                      </Typography>
-                                      {cred.domain && (
-                                        <Typography variant="body2" color="text.secondary">Domain: {cred.domain}</Typography>
-                                      )}
-                                      {cred.realm && (
-                                        <Typography variant="body2" color="text.secondary">Realm: {cred.realm}</Typography>
-                                      )}
-                                      {cred.workstation && (
-                                        <Typography variant="body2" color="text.secondary">Workstation: {cred.workstation}</Typography>
-                                      )}
-                                      {cred.serviceName && (
-                                        <Typography variant="body2" color="text.secondary">SPN: {cred.serviceName}</Typography>
-                                      )}
-                                      {cred.ntHash && (
+                                      )}{cred.hashcatFormat && (
+                                        <Box sx={{ mt: 1 }}><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                            {i18nText("ui:m_3b245c11d499f1de1acf")}
+                                          </Typography><Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', wordBreak: 'break-all', bgcolor: 'background.paper', p: 1, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>{cred.hashcatFormat}</Typography></Box>
+                                      )}</Grid>
+                                  )}{/* Domain/NTLM Information */}{(cred.domain || cred.realm || cred.workstation || cred.ntHash || cred.lmHash) && (
+                                    <Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_11a4b4e2f445a45f94e5")}>
+                                        {i18nText("ui:m_24ef5af30d376e8b621b")}
+                                      </Typography>{cred.domain && (
+                                        <Typography variant="body2" color="text.secondary">{i18nRichText("ui:m_67b5f6fe46c371e1af31", { arg0: cred.domain })}</Typography>
+                                      )}{cred.realm && (
+                                        <Typography variant="body2" color="text.secondary">{i18nRichText("ui:m_dc68344cbe3ffb432d55", { arg0: cred.realm })}</Typography>
+                                      )}{cred.workstation && (
+                                        <Typography variant="body2" color="text.secondary">{i18nRichText("ui:m_41046d70f74c6ffa2241", { arg0: cred.workstation })}</Typography>
+                                      )}{cred.serviceName && (
+                                        <Typography variant="body2" color="text.secondary">{i18nRichText("ui:m_797d2b96360d4e6175be", { arg0: cred.serviceName })}</Typography>
+                                      )}{cred.ntHash && (
                                         <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all' }}>
-                                          NT Hash: {cred.ntHash}
+                                          {i18nRichText("ui:m_f88302939e0e61ff1ff7", { arg0: cred.ntHash })}
                                         </Typography>
-                                      )}
-                                      {cred.lmHash && (
+                                      )}{cred.lmHash && (
                                         <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all' }}>
-                                          LM Hash: {cred.lmHash}
+                                          {i18nRichText("ui:m_c12914f6d9446947ee66", { arg0: cred.lmHash })}
                                         </Typography>
-                                      )}
-                                    </Grid>
-                                  )}
-
-                                  {/* HTTP Digest Info */}
-                                  {(cred.nonce || cred.uri || cred.qop) && (
-                                    <Grid item xs={12} md={6}>
-                                      <Typography variant="subtitle2" gutterBottom data-learn="HTTP Digest Info: Challenge-response details for HTTP Digest authentication.">
-                                        HTTP Digest Details
-                                      </Typography>
-                                      {cred.method && (
-                                        <Typography variant="body2" color="text.secondary">Method: {cred.method}</Typography>
-                                      )}
-                                      {cred.uri && (
-                                        <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-all' }}>URI: {cred.uri}</Typography>
-                                      )}
-                                      {cred.qop && (
-                                        <Typography variant="body2" color="text.secondary">QoP: {cred.qop}</Typography>
-                                      )}
-                                      {cred.nonce && (
+                                      )}</Grid>
+                                  )}{/* HTTP Digest Info */}{(cred.nonce || cred.uri || cred.qop) && (
+                                    <Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_1e8b6d56ab22cd70e553")}>
+                                        {i18nText("ui:m_61904dc9d162d0270e09")}
+                                      </Typography>{cred.method && (
+                                        <Typography variant="body2" color="text.secondary">{i18nRichText("ui:m_403dc33196d2e4799a40", { arg0: cred.method })}</Typography>
+                                      )}{cred.uri && (
+                                        <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-all' }}>{i18nRichText("ui:m_bff0ab7e779ad555a233", { arg0: cred.uri })}</Typography>
+                                      )}{cred.qop && (
+                                        <Typography variant="body2" color="text.secondary">{i18nRichText("ui:m_d6b16c317df8a40893cd", { arg0: cred.qop })}</Typography>
+                                      )}{cred.nonce && (
                                         <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all' }}>
-                                          Nonce: {cred.nonce}
+                                          {i18nRichText("ui:m_5ea2c7020b1bc0b8b288", { arg0: cred.nonce })}
                                         </Typography>
-                                      )}
-                                    </Grid>
-                                  )}
-
-                                  {/* RADIUS Info */}
-                                  {(cred.macAddress || cred.framedAddress || cred.connectInfo || cred.replyMessage) && (
-                                    <Grid item xs={12} md={6}>
-                                      <Typography variant="subtitle2" gutterBottom data-learn="RADIUS Info: Network access details from RADIUS authentication.">
-                                        RADIUS Details
-                                      </Typography>
-                                      {cred.macAddress && (
+                                      )}</Grid>
+                                  )}{/* RADIUS Info */}{(cred.macAddress || cred.framedAddress || cred.connectInfo || cred.replyMessage) && (
+                                    <Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_6df3327b63aac6deda19")}>
+                                        {i18nText("ui:m_caceb1c6a814ec0ba215")}
+                                      </Typography>{cred.macAddress && (
                                         <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
-                                          MAC: {cred.macAddress}
+                                          {i18nRichText("ui:m_62362885b52e69792802", { arg0: cred.macAddress })}
                                         </Typography>
-                                      )}
-                                      {cred.framedAddress && (
+                                      )}{cred.framedAddress && (
                                         <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
-                                          Assigned IP: {cred.framedAddress}
+                                          {i18nRichText("ui:m_18f2c0191da836a8d476", { arg0: cred.framedAddress })}
                                         </Typography>
-                                      )}
-                                      {cred.connectInfo && (
-                                        <Typography variant="body2" color="text.secondary">Connection: {cred.connectInfo}</Typography>
-                                      )}
-                                      {cred.replyMessage && (
-                                        <Typography variant="body2" color="text.secondary">Reply: {cred.replyMessage}</Typography>
-                                      )}
-                                    </Grid>
-                                  )}
-
-                                  {/* SIP Info */}
-                                  {(cred.sipMethod || cred.sipCallId || cred.sipFrom || cred.sipTo) && (
-                                    <Grid item xs={12} md={6}>
-                                      <Typography variant="subtitle2" gutterBottom data-learn="SIP Info: VoIP session details from SIP authentication.">
-                                        SIP Details
-                                      </Typography>
-                                      {cred.sipMethod && (
+                                      )}{cred.connectInfo && (
+                                        <Typography variant="body2" color="text.secondary">{i18nRichText("ui:m_5ab9ac54bf3893063b08", { arg0: cred.connectInfo })}</Typography>
+                                      )}{cred.replyMessage && (
+                                        <Typography variant="body2" color="text.secondary">{i18nRichText("ui:m_98252fc2039fc6a545a9", { arg0: cred.replyMessage })}</Typography>
+                                      )}</Grid>
+                                  )}{/* SIP Info */}{(cred.sipMethod || cred.sipCallId || cred.sipFrom || cred.sipTo) && (
+                                    <Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_d22f2023fed199d71c78")}>
+                                        {i18nText("ui:m_1caabd9801be18a58e12")}
+                                      </Typography>{cred.sipMethod && (
                                         <Chip label={cred.sipMethod} size="small" color="info" variant="outlined" sx={{ mb: 0.5, fontSize: '0.7rem' }} />
-                                      )}
-                                      {cred.sipFrom && (
-                                        <Typography variant="body2" color="text.secondary">From: {cred.sipFrom}</Typography>
-                                      )}
-                                      {cred.sipTo && (
-                                        <Typography variant="body2" color="text.secondary">To: {cred.sipTo}</Typography>
-                                      )}
-                                      {cred.sipCallId && (
+                                      )}{cred.sipFrom && (
+                                        <Typography variant="body2" color="text.secondary">{i18nRichText("ui:m_382a878431a83760389e", { arg0: cred.sipFrom })}</Typography>
+                                      )}{cred.sipTo && (
+                                        <Typography variant="body2" color="text.secondary">{i18nRichText("ui:m_f66f4a86a9c290aeed59", { arg0: cred.sipTo })}</Typography>
+                                      )}{cred.sipCallId && (
                                         <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all' }}>
-                                          Call-ID: {cred.sipCallId}
+                                          {i18nRichText("ui:m_68d7e26ce4584d820090", { arg0: cred.sipCallId })}
                                         </Typography>
-                                      )}
-                                    </Grid>
-                                  )}
-
-                                  {/* SOCKS Info */}
-                                  {(cred.socksVersion > 0 || cred.socksStatus) && (
-                                    <Grid item xs={12} md={6}>
-                                      <Typography variant="subtitle2" gutterBottom data-learn="SOCKS Info: SOCKS proxy authentication details.">
-                                        SOCKS Details
-                                      </Typography>
-                                      {cred.socksVersion > 0 && (
-                                        <Typography variant="body2" color="text.secondary">Version: SOCKS{cred.socksVersion}</Typography>
-                                      )}
-                                      {cred.socksStatus && (
-                                        <Typography variant="body2" color="text.secondary">Status: {cred.socksStatus}</Typography>
-                                      )}
-                                    </Grid>
-                                  )}
-
-                                  {/* Custom row actions from parent */}
-                                  {rowActions && (
-                                    <Grid item xs={12}>
-                                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                        {rowActions(cred)}
-                                      </Box>
-                                    </Grid>
-                                  )}
-                                </Grid>
-                              </Box>
-                            </Collapse>
-                          </TableCell>
-                        </TableRow>
-                      </>
+                                      )}</Grid>
+                                  )}{/* SOCKS Info */}{(cred.socksVersion > 0 || cred.socksStatus) && (
+                                    <Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_da91b35dc6c06c65e8d0")}>
+                                        {i18nText("ui:m_380566a2118d6bfd4f4d")}
+                                      </Typography>{cred.socksVersion > 0 && (
+                                        <Typography variant="body2" color="text.secondary">{i18nRichText("ui:m_243f110a3f1a816c749c", { arg0: cred.socksVersion })}</Typography>
+                                      )}{cred.socksStatus && (
+                                        <Typography variant="body2" color="text.secondary">{i18nRichText("ui:m_670fb8226810d80e9af7", { arg0: cred.socksStatus })}</Typography>
+                                      )}</Grid>
+                                  )}{/* Custom row actions from parent */}{rowActions && (
+                                    <Grid item xs={12}><Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>{rowActions(cred)}</Box></Grid>
+                                  )}</Grid></Box></Collapse></TableCell></TableRow></>
                     );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            }
-          />
-        )}
-        </>
-        )}
-
-        {/* Auth Activity View */}
-        {viewMode === 'auth' && (
+                  })}</TableBody></Table></TableContainer>} />
+        )}</>
+        )}{/* Auth Activity View */}{viewMode === 'auth' && (
           <AuthActivityView />
-        )}
-      </Box>
-    </Layout>
+        )}</Box></Layout>
   );
 }
 
 // AuthActivityView shows unified authentication events from Credentials, TACACS+, and Kerberos
 function AuthActivityView() {
+  const __uiLocale = useUILocale();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UIMessageText | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -1202,7 +823,7 @@ function AuthActivityView() {
         setEvents(Array.isArray(data?.events) ? data.events : []);
       })
       .catch((err) => {
-        setError(err?.message || 'Failed to load auth activity');
+        setError(errorText(err) || i18nMessage("ui:m_c5dace89ab5c667d3db3"));
         setEvents([]);
       })
       .finally(() => setLoading(false));
@@ -1210,20 +831,18 @@ function AuthActivityView() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress />
-      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
     );
   }
 
   if (error) {
-    return <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>;
+    return <Alert severity="error" sx={{ mb: 2 }}>{i18nRenderText(error)}</Alert>;
   }
 
   if (events.length === 0) {
     return (
       <Alert severity="info" sx={{ mb: 2 }}>
-        No authentication activity found. Process a PCAP with TACACS+ or Kerberos traffic to see events here.
+        {i18nText("ui:m_fe61b3f8fb589ad4ac1f")}
       </Alert>
     );
   }
@@ -1248,74 +867,22 @@ function AuthActivityView() {
   };
 
   return (
-    <>
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Authentication Activity Timeline ({events.length} events)
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Unified view of authentication events from Credentials, TACACS+, and Kerberos decoders
-      </Typography>
-      <TableContainer component={Paper}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Time</TableCell>
-              <TableCell>Protocol</TableCell>
-              <TableCell>User</TableCell>
-              <TableCell>Service</TableCell>
-              <TableCell>Action</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Source</TableCell>
-              <TableCell>Destination</TableCell>
-              <TableCell>Details</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {sortedEvents.slice(0, 500).map((event, idx) => (
-              <TableRow key={idx} hover>
-                <TableCell>
-                  <Typography variant="body2" noWrap>
-                    {event?.timestamp ? formatTimestamp(event.timestamp) : '-'}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={event?.protocol || 'unknown'}
+    <><Typography variant="h6" sx={{ mb: 2 }}>
+        {i18nRichText("ui:m_bfa36be828f3b1fcb450", { arg0: events.length })}
+      </Typography><Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        {i18nText("ui:m_0d1db9c7a4ed141d04e4")}
+      </Typography><TableContainer component={Paper}><Table size="small"><TableHead><TableRow><TableCell>{i18nText("ui:m_b62418ba3d29bf760ea0")}</TableCell><TableCell>{i18nText("ui:m_2d5b0d13af7edb332cfd")}</TableCell><TableCell>{i18nText("ui:m_b8a7a17f8bccb97b1b0e")}</TableCell><TableCell>{i18nText("ui:m_e1d47e59dd85d4abaa0f")}</TableCell><TableCell>{i18nText("ui:m_1a3caa8a333177645dfb")}</TableCell><TableCell>{i18nText("ui:m_cf025c2b66b1d8e97700")}</TableCell><TableCell>{i18nText("ui:m_4113167561ccea5b6c6b")}</TableCell><TableCell>{i18nText("ui:m_4b35e0eccce697e20a4d")}</TableCell><TableCell>{i18nText("ui:m_0e07624e3854b301c0e2")}</TableCell></TableRow></TableHead><TableBody>{sortedEvents.slice(0, 500).map((event, idx) => (
+              <TableRow key={idx} hover><TableCell><Typography variant="body2" noWrap>{event?.timestamp ? formatTimestamp(event.timestamp, 'nanoseconds') : '-'}</Typography></TableCell><TableCell><Chip label={event?.protocol || i18nText("ui:m_b1b6b391498fb13c454c")}
                     size="small"
                     color={protocolColors[event?.protocol] || 'default'}
-                    variant="outlined"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontWeight="bold">{event?.user || '-'}</Typography>
-                </TableCell>
-                <TableCell>{event?.service || '-'}</TableCell>
-                <TableCell>{event?.action || '-'}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={String(event?.status || 'unknown')}
+                    variant="outlined" /></TableCell><TableCell><Typography variant="body2" fontWeight="bold">{event?.user || '-'}</Typography></TableCell><TableCell>{event?.service || '-'}</TableCell><TableCell>{event?.action || '-'}</TableCell><TableCell><Chip label={String(event?.status || translate("ui:m_b1b6b391498fb13c454c"))}
                     size="small"
                     color={getStatusColor(event?.status)}
-                    variant="outlined"
-                  />
-                </TableCell>
-                <TableCell><Typography variant="body2" noWrap>{event?.srcIP || '-'}</Typography></TableCell>
-                <TableCell><Typography variant="body2" noWrap>{event?.dstIP || '-'}</Typography></TableCell>
-                <TableCell>
-                  <Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>
-                    {event?.details || '-'}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      {sortedEvents.length > 500 && (
+                    variant="outlined" /></TableCell><TableCell><Typography variant="body2" noWrap>{event?.srcIP || '-'}</Typography></TableCell><TableCell><Typography variant="body2" noWrap>{event?.dstIP || '-'}</Typography></TableCell><TableCell><Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>{event?.details || '-'}</Typography></TableCell></TableRow>
+            ))}</TableBody></Table></TableContainer>{sortedEvents.length > 500 && (
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Showing first 500 of {sortedEvents.length} events
+          {i18nRichText("ui:m_30e7b3a2076c4fbe5d3b", { arg0: sortedEvents.length })}
         </Typography>
-      )}
-    </>
+      )}</>
   );
 }

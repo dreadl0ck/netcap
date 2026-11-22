@@ -58,6 +58,7 @@ export interface ReactRouterNetcapProviderProps {
   includeLearnMode?: boolean;
   /** Application-specific sidebar entries */
   navigationItems?: NavigationItem[];
+  headerActions?: ReactNode;
   /** Native window fullscreen (desktop shells) */
   fullscreen?: FullscreenAdapter;
   saveJSON?: NetcapConfig['saveJSON'];
@@ -88,6 +89,7 @@ export function ReactRouterNetcapProvider({
   debug = false,
   includeLearnMode = true,
   navigationItems,
+  headerActions,
   fullscreen,
   saveJSON,
 }: ReactRouterNetcapProviderProps) {
@@ -99,6 +101,7 @@ export function ReactRouterNetcapProvider({
     backendUrl,
     debug,
     navigationItems,
+    headerActions,
     fullscreen,
     saveJSON,
     router: {
@@ -109,7 +112,7 @@ export function ReactRouterNetcapProvider({
       replace: (path: string) => { navigate(path, { replace: true }); },
     },
     Link: ReactRouterLinkAdapter,
-  }), [backendUrl, debug, navigationItems, fullscreen, saveJSON, location.pathname, searchParams, navigate]);
+  }), [backendUrl, debug, navigationItems, headerActions, fullscreen, saveJSON, location.pathname, searchParams, navigate]);
 
   const content = includeLearnMode ? (
     <LearnModeProvider>

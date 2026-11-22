@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useId } from 'react';
 import { Box, InputLabel, FormHelperText, useTheme } from '@mui/material';
 import { highlightFilterExpression } from '../lib/filterSyntaxHighlight';
 import { highlightBPFExpression } from '../lib/bpfSyntaxHighlight';
@@ -26,6 +26,9 @@ import type { RegexToken } from '../lib/regexSyntaxHighlight';
 import type { BPFToken } from '../lib/bpfSyntaxHighlight';
 import type { FilterToken } from '../lib/filterSyntaxHighlight';
 import { escapeHTMLPreservingLineBreaks, safeCSSColor } from '../lib/html';
+import { useLocale as useUILocale } from "../lib/i18n";
+
+
 
 type SyntaxType = 'filter' | 'bpf' | 'regex';
 type Token = RegexToken | BPFToken | FilterToken;
@@ -75,6 +78,12 @@ export default function SyntaxHighlightedInput({
   size = 'medium',
   ...otherProps
 }: SyntaxHighlightedInputProps) {
+  const __uiLocale = useUILocale();
+  const generatedId = useId();
+  const inputId = otherProps.id ?? `syntax-${generatedId}`;
+  const labelId = `${inputId}-label`;
+  const helperId = `${inputId}-help`;
+  const accessibleProps = Object.fromEntries(Object.entries(otherProps).filter(([name]) => name.startsWith('aria-') || name.startsWith('data-')));
   const theme = useTheme();
   const editableRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -93,13 +102,13 @@ export default function SyntaxHighlightedInput({
     try {
       switch (syntaxType) {
         case 'filter':
-          newTokens = highlightFilterExpression(value);
+          newTokens = highlightFilterExpression(value, theme.palette.mode);
           break;
         case 'bpf':
-          newTokens = highlightBPFExpression(value);
+          newTokens = highlightBPFExpression(value, theme.palette.mode);
           break;
         case 'regex':
-          newTokens = highlightRegexPattern(value);
+          newTokens = highlightRegexPattern(value, theme.palette.mode);
           break;
       }
     } catch (error) {
@@ -108,7 +117,7 @@ export default function SyntaxHighlightedInput({
       return [];
     }
     return newTokens;
-  }, [value, syntaxType, enableHighlighting]);
+  }, [value, syntaxType, enableHighlighting, theme.palette.mode]);
 
   const inputPadding = size === 'small' ? '8.5px 14px' : '16.5px 14px';
   const lineHeight = '1.4375em';
@@ -147,15 +156,15 @@ export default function SyntaxHighlightedInput({
       const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
       const cursorOffset = range ? getCursorOffset(editableRef.current, range) : 0;
 
-      updateContent();
+      const replaced = updateContent();
 
-      if (cursorOffset !== null && isFocused) {
+      if (replaced && cursorOffset !== null && isFocused) {
         requestAnimationFrame(() => {
           setCursorOffset(editableRef.current!, cursorOffset);
         });
       }
     }
-  }, [showHighlighting, isTyping]);
+  }, [showHighlighting, isTyping, tokens]);
 
   // Update when value changes externally (from prop)
   useEffect(() => {
@@ -170,9 +179,9 @@ export default function SyntaxHighlightedInput({
       const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
       const cursorOffset = range ? getCursorOffset(editableRef.current, range) : 0;
 
-      updateContent();
+      const replaced = updateContent();
 
-      if (cursorOffset !== null && isFocused) {
+      if (replaced && cursorOffset !== null && isFocused) {
         requestAnimationFrame(() => {
           setCursorOffset(editableRef.current!, cursorOffset);
         });
@@ -225,9 +234,16 @@ export default function SyntaxHighlightedInput({
 
   // Update the contentEditable div with highlighted content
   function updateContent() {
-    if (!editableRef.current) return;
+    if (!editableRef.current) return false;
 
     if (showHighlighting) {
+      const spans = Array.from(editableRef.current.children) as HTMLElement[];
+      const spanText = (span: HTMLElement) => Array.from(span.childNodes).map(node => node.nodeName === 'BR' ? '\n' : node.textContent).join('');
+      if (spans.length === tokens.length && spans.every((span, i) => span.tagName === 'SPAN' && spanText(span) === tokens[i].value)) {
+        // Theme-only changes keep DOM ranges, focus and scroll position intact.
+        spans.forEach((span, i) => { span.style.color = safeCSSColor(tokens[i].color); });
+        return false;
+      }
       // Render with syntax highlighting
       editableRef.current.innerHTML = tokens
         .map((token) => {
@@ -250,6 +266,7 @@ export default function SyntaxHighlightedInput({
     } else {
       editableRef.current.removeAttribute('data-placeholder');
     }
+    return true;
   }
 
   // Handle input changes
@@ -319,23 +336,22 @@ export default function SyntaxHighlightedInput({
   };
 
   return (
-    <Box sx={{ width: fullWidth ? '100%' : 'auto' }}>
-      {label && (
-        <InputLabel 
-          shrink 
+    <Box sx={{ width: fullWidth ? '100%' : 'auto' }}>{label && (
+        <InputLabel id={labelId} shrink 
           sx={{ 
             mb: 0.5, 
             fontSize: '0.875rem',
             color: isFocused ? 'primary.main' : 'text.secondary',
             fontWeight: 500,
-          }}
-        >
-          {label}
-        </InputLabel>
-      )}
-      
-      <Box
-        ref={editableRef}
+          }}>{label}</InputLabel>
+      )}<Box {...accessibleProps} ref={editableRef}
+        id={inputId}
+        role="textbox"
+        aria-multiline={multiline}
+        aria-labelledby={otherProps['aria-labelledby'] ?? (label && !otherProps['aria-label'] ? labelId : undefined)}
+        aria-describedby={[otherProps['aria-describedby'], helperText ? helperId : undefined].filter(Boolean).join(' ') || undefined}
+        aria-placeholder={placeholder}
+        data-placeholder={!value ? placeholder : undefined}
         contentEditable
         onInput={handleInput}
         onFocus={handleFocus}
@@ -348,7 +364,7 @@ export default function SyntaxHighlightedInput({
               fontSize: fontSize,
               lineHeight: lineHeight,
           padding: inputPadding,
-          border: `1px solid ${isFocused ? theme.palette.primary.main : theme.palette.divider}`,
+          border: `1px solid ${isFocused ? theme.palette.primary.main : theme.palette.text.secondary}`,
           borderRadius: '4px',
           backgroundColor: bgColor,
           color: textColor,
@@ -371,18 +387,12 @@ export default function SyntaxHighlightedInput({
           },
           '&[data-placeholder]:empty::before': {
             content: 'attr(data-placeholder)',
-            color: theme.palette.text.disabled,
+            color: theme.palette.text.secondary,
             fontStyle: 'italic',
             },
-          }}
-        />
-
-      {helperText && (
-        <FormHelperText sx={{ mx: 1.75, mt: 0.5 }}>
-          {helperText}
-        </FormHelperText>
-      )}
-    </Box>
+          }} />{helperText && (
+        <FormHelperText id={helperId} sx={{ mx: 1.75, mt: 0.5 }}>{helperText}</FormHelperText>
+      )}</Box>
   );
 }
 
@@ -397,15 +407,14 @@ export function SyntaxHighlightedTextArea({
   rows = 4,
   ...otherProps
 }: SyntaxHighlightedInputProps) {
+  const __uiLocale = useUILocale();
   return (
-    <SyntaxHighlightedInput
-      syntaxType={syntaxType}
+    <SyntaxHighlightedInput syntaxType={syntaxType}
       value={value}
       onChange={onChange}
       enableHighlighting={enableHighlighting}
       multiline={true}
       rows={rows}
-      {...otherProps}
-    />
+      {...otherProps} />
   );
 }

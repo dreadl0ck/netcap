@@ -49,7 +49,7 @@ func (s *Server) handleVulnerabilitiesSeverity(w http.ResponseWriter, r *http.Re
 
 	showLegend := r.URL.Query().Get("showLegend") != "false"
 	chart := generateVulnerabilitiesSeverityChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -81,7 +81,7 @@ func (s *Server) handleVulnerabilitiesTopVulnerableSoftware(w http.ResponseWrite
 
 	showLegend := r.URL.Query().Get("showLegend") == "true"
 	chart := generateTopVulnerableSoftwareChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -113,7 +113,7 @@ func (s *Server) handleVulnerabilitiesAccessVectors(w http.ResponseWriter, r *ht
 
 	showLegend := r.URL.Query().Get("showLegend") != "false"
 	chart := generateAccessVectorsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -145,7 +145,7 @@ func (s *Server) handleVulnerabilitiesExploitTypes(w http.ResponseWriter, r *htt
 
 	showLegend := r.URL.Query().Get("showLegend") != "false"
 	chart := generateExploitTypesChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -177,7 +177,7 @@ func (s *Server) handleVulnerabilitiesTopAffectedHosts(w http.ResponseWriter, r 
 
 	showLegend := r.URL.Query().Get("showLegend") == "true"
 	chart := generateTopAffectedHostsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -191,17 +191,15 @@ func generateAccessVectorsChart(outDir string, showLegend bool) *charts.Pie {
 	data := cachedVulnerabilityResponse(outDir)
 
 	accessVectorCount := make(map[string]int)
+	labels := newChartLabelSet()
 	for _, v := range data.Vulnerabilities {
-		av := v.AccessVector
-		if av == "" {
-			av = "Unknown"
-		}
+		av := labels.name(v.AccessVector, "Unknown")
 		accessVectorCount[av]++
 	}
 
 	pieData := make([]opts.PieData, 0)
 	for k, v := range accessVectorCount {
-		pieData = append(pieData, opts.PieData{Name: k, Value: v})
+		pieData = append(pieData, opts.PieData{Name: k, Value: v, Label: labels.label(k)})
 	}
 
 	pie := charts.NewPie()
@@ -225,17 +223,15 @@ func generateExploitTypesChart(outDir string, showLegend bool) *charts.Pie {
 	data := cachedVulnerabilityResponse(outDir)
 
 	typeCount := make(map[string]int)
+	labels := newChartLabelSet()
 	for _, e := range data.Exploits {
-		t := e.Type
-		if t == "" {
-			t = "Unknown"
-		}
+		t := labels.name(e.Type, "Unknown")
 		typeCount[t]++
 	}
 
 	pieData := make([]opts.PieData, 0)
 	for k, v := range typeCount {
-		pieData = append(pieData, opts.PieData{Name: k, Value: v})
+		pieData = append(pieData, opts.PieData{Name: k, Value: v, Label: labels.label(k)})
 	}
 
 	pie := charts.NewPie()
@@ -316,17 +312,15 @@ func generateVulnerabilitiesSeverityChart(outDir string, showLegend bool) *chart
 	data := cachedVulnerabilityResponse(outDir)
 
 	severityCount := make(map[string]int)
+	labels := newChartLabelSet()
 	for _, v := range data.Vulnerabilities {
-		severity := v.Severity
-		if severity == "" {
-			severity = "Unknown"
-		}
+		severity := labels.name(v.Severity, "Unknown")
 		severityCount[severity]++
 	}
 
 	pieData := make([]opts.PieData, 0)
 	for k, v := range severityCount {
-		pieData = append(pieData, opts.PieData{Name: k, Value: v})
+		pieData = append(pieData, opts.PieData{Name: k, Value: v, Label: labels.label(k)})
 	}
 
 	pie := charts.NewPie()

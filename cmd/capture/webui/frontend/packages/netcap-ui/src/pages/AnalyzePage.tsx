@@ -47,6 +47,14 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import { NetcapLink } from '../components/NetcapLink';
 import { useNetcapRouter, useNetcapApi } from '../hooks';
+import { message as i18nMessage, translate as i18nText, renderText as i18nRenderText, richText as i18nRichText, formatNumber as i18nNumber, getLocale as getUILocale, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { translate } from "../lib/i18n";
+import { getLocale } from "../lib/i18n";
+import { formatTimestamp as displayTimestamp, formatBytes as formatDisplayBytes } from '../lib/api';
+
+
+
+
 
 interface QuotaInfo {
   limit: number;
@@ -62,6 +70,7 @@ interface QuotaInfo {
 }
 
 export default function AnalyzePage() {
+  const __uiLocale = useUILocale();
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
@@ -72,7 +81,7 @@ export default function AnalyzePage() {
   const [inputFiles, setInputFiles] = useState<any[]>([]);
   const [activeInputFile, setActiveInputFile] = useState<string>('');
   const [bpfData, setBpfData] = useState<BPFInfoResponse | null>(null);
-  const [quotaError, setQuotaError] = useState<string | null>(null);
+  const [quotaError, setQuotaError] = useState<UIMessageText | null>(null);
 
   const loadQuota = useCallback(async () => {
     try {
@@ -81,9 +90,9 @@ export default function AnalyzePage() {
       setQuotaError(null);
     } catch (error) {
       console.error('Failed to load quota:', error);
-      setQuotaError('Failed to load quota information');
+      setQuotaError(i18nMessage("ui:m_10bc27140f27b18a5a3e"));
     }
-  }, []);
+  }, [__uiLocale]);
 
   const loadConfig = useCallback(async () => {
     try {
@@ -166,7 +175,7 @@ export default function AnalyzePage() {
       router.push('/records');
     } catch (error) {
       console.error('Failed to select session:', error);
-      alert('Failed to load session');
+      alert(i18nText("ui:m_aa00ed96ae5520f69e35"));
     }
   };
 
@@ -176,7 +185,7 @@ export default function AnalyzePage() {
       router.push('/logs');
     } catch (error) {
       console.error('Failed to select session:', error);
-      alert('Failed to load session logs');
+      alert(i18nText("ui:m_3a7fc30874bc49ac499e"));
     }
   };
 
@@ -188,7 +197,7 @@ export default function AnalyzePage() {
       router.push('/records');
     } catch (error) {
       console.error('Failed to select file:', error);
-      alert('Failed to load file');
+      alert(i18nText("ui:m_03033b68c0bd841b2740"));
     }
   };
 
@@ -200,7 +209,7 @@ export default function AnalyzePage() {
       router.push('/logs');
     } catch (error) {
       console.error('Failed to select file:', error);
-      alert('Failed to load file logs');
+      alert(i18nText("ui:m_1f150a17f200b50af81b"));
     }
   };
 
@@ -219,350 +228,129 @@ export default function AnalyzePage() {
     }
   };
 
-  const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  const formatBytes = (bytes: number): string => formatDisplayBytes(bytes);
 
-  const formatTimestamp = (timestamp: number): string => {
-    return new Date(timestamp * 1000).toLocaleString();
-  };
+  const formatTimestamp = (timestamp: number, unit: 'seconds' | 'milliseconds' | 'nanoseconds') => displayTimestamp(timestamp, unit);
 
   return (
-    <Layout title="Analyze PCAP Files">
-      <Box sx={{ minWidth: 0 }}>
-        {/* Quota Error (service mode only) */}
-        {isServiceMode && quotaError && (
+    <Layout title={i18nText("ui:m_4d7a87e770a7f678291a")}><Box sx={{ minWidth: 0 }}>{/* Quota Error (service mode only) */}{isServiceMode && i18nRenderText(quotaError) && (
           <Alert severity="warning" sx={{ mb: 3 }}>
-            {quotaError}. Some features may not work correctly.
+            {i18nRichText("ui:m_e0125e6551a8061ed94d", { arg0: i18nRenderText(quotaError) })}
           </Alert>
-        )}
-
-        {/* Quota Information (service mode only) */}
-        {isServiceMode && quota && (
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Remaining Analyses
-                  </Typography>
-                  <Typography variant="h5">
-                    {quota.remaining} / {quota.limit} this hour
-                  </Typography>
-                </Box>
-                
-                <Box flex={1} minWidth={{ xs: 0, sm: 300 }}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Storage Usage
-                  </Typography>
-                  {quota.storage.unlimited ? (
+        )}{/* Quota Information (service mode only) */}{isServiceMode && quota && (
+          <Card sx={{ mb: 3 }}><CardContent><Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}><Box><Typography variant="body2" color="text.secondary">
+                    {i18nText("ui:m_47dca1652a96eb961eb1")}
+                  </Typography><Typography variant="h5">
+                    {i18nRichText("ui:m_546061cf79d5389e2c1b", { arg0: quota.remaining, arg1: quota.limit })}
+                  </Typography></Box><Box flex={1} minWidth={{ xs: 0, sm: 300 }}><Typography variant="body2" color="text.secondary" gutterBottom>
+                    {i18nText("ui:m_35146e9f54daa728d8a4")}
+                  </Typography>{quota.storage.unlimited ? (
                     <Typography variant="body1" color="text.primary">
-                      Unlimited
+                      {i18nText("ui:m_5cdb93f484806224abe6")}
                     </Typography>
                   ) : (
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <Box flex={1}>
-                        <LinearProgress 
-                          variant="determinate" 
+                    <Box display="flex" alignItems="center" gap={2}><Box flex={1}><LinearProgress variant="determinate" 
                           value={quota.storage.percentUsed}
                           color={quota.storage.percentUsed >= 90 ? 'error' : quota.storage.percentUsed >= 75 ? 'warning' : 'primary'}
-                          sx={{ height: 8, borderRadius: 1 }}
-                        />
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {formatBytes(quota.storage.current)} / {formatBytes(quota.storage.max)}
-                        ({quota.storage.percentUsed.toFixed(1)}%)
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              </Box>
-
-              {quota.remaining === 0 && (
+                          sx={{ height: 8, borderRadius: 1 }} /></Box><Typography variant="body2" color="text.secondary">{formatBytes(quota.storage.current)}/ {formatBytes(quota.storage.max)}({i18nNumber(quota.storage.percentUsed, { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false })}%)
+                      </Typography></Box>
+                  )}</Box></Box>{quota.remaining === 0 && (
                 <Alert severity="error" sx={{ mt: 2 }}>
-                  You have reached the maximum number of analyses per hour. Please try again later.
+                  {i18nText("ui:m_50d64f2d3c7b9cfa134b")}
                 </Alert>
-              )}
-
-              {!quota.storage.unlimited && quota.storage.percentUsed >= 95 && (
+              )}{!quota.storage.unlimited && quota.storage.percentUsed >= 95 && (
                 <Alert severity="error" sx={{ mt: 2 }}>
-                  Storage limit reached. Uploads are disabled until cleanup frees up space.
+                  {i18nText("ui:m_8acf9051f7c075e443d6")}
                 </Alert>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* BPF Filter Display */}
-        {bpfData && bpfData.currentFilter && (
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <FilterAltIcon color="primary" />
-                <Typography variant="h6">
-                  Active BPF Filter
-                </Typography>
-              </Box>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                The following Berkeley Packet Filter will be applied to your analysis:
-              </Alert>
-              <BPFExpressionBlock expression={bpfData.currentFilter} />
-              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                <NetcapLink href="/bpf" style={{ color: 'inherit', textDecoration: 'none' }}>
-                  <Button 
-                    data-learn="Edit BPF Filter: Modify the Berkeley Packet Filter to include or exclude specific network traffic."
+              )}</CardContent></Card>
+        )}{/* BPF Filter Display */}{bpfData && bpfData.currentFilter && (
+          <Card sx={{ mb: 3 }}><CardContent><Box display="flex" alignItems="center" gap={1} mb={1}><FilterAltIcon color="primary" /><Typography variant="h6">
+                  {i18nText("ui:m_f0b8356b25ff613b547e")}
+                </Typography></Box><Alert severity="info" sx={{ mb: 2 }}>
+                {i18nText("ui:m_98a5b0cb97c3a667fa8b")}
+              </Alert><BPFExpressionBlock expression={bpfData.currentFilter} /><Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}><NetcapLink href="/bpf" style={{ color: 'inherit', textDecoration: 'none' }}><Button data-learn={i18nText("ui:m_0f5d15eaec93903dd183")}
                     variant="outlined" 
-                    size="small"
-                  >
-                    Edit Filter
-                  </Button>
-                </NetcapLink>
-              </Box>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Drag and Drop Note */}
-        <Card>
-          <CardContent>
-            <Box
-              sx={{
+                    size="small">
+                    {i18nText("ui:m_29f2bacbcd9d1d769779")}
+                  </Button></NetcapLink></Box></CardContent></Card>
+        )}{/* Drag and Drop Note */}<Card><CardContent><Box sx={{
                 p: 4,
                 textAlign: 'center',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: 2,
-              }}
-            >
-              <CloudUploadIcon sx={{ fontSize: 64, color: 'primary.main' }} />
-              <Typography variant="h5" color="primary">
-                Drag &amp; Drop PCAP Files Anywhere
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                You can drag and drop your .pcap or .pcapng files anywhere on the screen to upload and analyze them.
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Supported formats: .pcap, .pcapng, .cap
-              </Typography>
-              {isServiceMode && (
+              }}><CloudUploadIcon sx={{ fontSize: 64, color: 'primary.main' }} /><Typography variant="h5" color="primary">
+                {i18nText("ui:m_bd7fd4846d31a3ef7a8f")}
+              </Typography><Typography variant="body1" color="text.secondary">
+                {i18nText("ui:m_2a2d3393eeef6bb9003a")}
+              </Typography><Typography variant="body2" color="text.secondary">
+                {i18nText("ui:m_15977a91b38842e08835")}
+              </Typography>{isServiceMode && (
                 <Alert severity="info" sx={{ mt: 2, maxWidth: 600 }}>
-                  You can also browse results from pre-analyzed files on the <NetcapLink href="/pcaps" style={{ color: 'inherit', fontWeight: 'bold' }}>PCAPs page</NetcapLink>.
+                  {i18nText("ui:m_f212c0b5c11e071fecc1")}<NetcapLink href="/pcaps" style={{ color: 'inherit', fontWeight: 'bold' }}>{i18nText("ui:m_7593e4da0e719d7db646")}</NetcapLink>.
                 </Alert>
-              )}
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* Service Limits (service mode only) */}
-        {isServiceMode && (
-          <Card sx={{ mt: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom color="primary">
-                Service Limits
-              </Typography>
-              <Box component="ul" sx={{ m: 0, pl: 2 }}>
-                <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Maximum file size: {config ? (() => {
+              )}</Box></CardContent></Card>{/* Service Limits (service mode only) */}{isServiceMode && (
+          <Card sx={{ mt: 3 }}><CardContent><Typography variant="h6" gutterBottom color="primary">
+                {i18nText("ui:m_772a5d3289942bfd39ef")}
+              </Typography><Box component="ul" sx={{ m: 0, pl: 2 }}><Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                  {i18nRichText("ui:m_367e3793e79785205cc3", { arg0: config ? (() => {
                     const maxFileSizeOption = config.options.find(opt => opt.name === 'max-file-size');
                     if (maxFileSizeOption && typeof maxFileSizeOption.value === 'number') {
                       return Math.round(maxFileSizeOption.value / (1024 * 1024)) + 'MB';
                     }
                     return '100MB';
-                  })() : '100MB'}
-                </Typography>
-                <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Supported formats: PCAP, PCAPNG
-                </Typography>
-                <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Rate limit: {quota?.limit ?? 10} analyses per hour
-                </Typography>
-                <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Results expire after 1 hour
-                </Typography>
-                <Typography component="li" variant="body2" color="text.secondary">
-                  DPI analysis enabled
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Local Mode Info */}
-        {!isServiceMode && (
-          <Card sx={{ mt: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom color="primary">
-                Upload Information
-              </Typography>
-              <Box component="ul" sx={{ m: 0, pl: 2 }}>
-                <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Maximum file size: No limit (local mode)
-                </Typography>
-                <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Supported formats: PCAP, PCAPNG
-                </Typography>
-                <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Files are saved to the uploads directory
-                </Typography>
-                <Typography component="li" variant="body2" color="text.secondary">
-                  Analysis starts automatically after upload
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Previous Analyses (service mode) or Available Files (local mode) */}
-        {((isServiceMode && sessions.length > 0) || (!isServiceMode && inputFiles.filter(f => f.isCompleted).length > 0)) && (
-          <Card sx={{ mt: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                {isServiceMode ? 'Your Recent Analyses' : 'Available Analysis Files'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {isServiceMode ? 'View and share your analysis results' : 'View results and logs for processed files'}
-              </Typography>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>File</TableCell>
-                      <TableCell>{isServiceMode ? 'Uploaded' : 'Modified'}</TableCell>
-                      <TableCell>Size</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell align="right">Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {isServiceMode ? sessions.map((session) => (
-                      <TableRow key={session.sessionId}>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                            {session.inputFilename}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {new Date(session.uploadTimestamp).toLocaleString()}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {formatBytes(session.inputFileSize)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={session.status}
+                  })() : i18nText("ui:m_52f5819c261ed9c3f06f") })}
+                </Typography><Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                  {i18nText("ui:m_ed9788e696f913e308d1")}
+                </Typography><Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                  {i18nRichText("ui:m_bc8b0f6cfeb8f84b6b89", { arg0: quota?.limit ?? 10 })}
+                </Typography><Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                  {i18nText("ui:m_ac6ad85e43fda0a52a03")}
+                </Typography><Typography component="li" variant="body2" color="text.secondary">
+                  {i18nText("ui:m_bfe90d7997939f1623e6")}
+                </Typography></Box></CardContent></Card>
+        )}{/* Local Mode Info */}{!isServiceMode && (
+          <Card sx={{ mt: 3 }}><CardContent><Typography variant="h6" gutterBottom color="primary">
+                {i18nText("ui:m_d33ff75f822a29fd4d54")}
+              </Typography><Box component="ul" sx={{ m: 0, pl: 2 }}><Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                  {i18nText("ui:m_f90d35c8d3cd251d2835")}
+                </Typography><Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                  {i18nText("ui:m_ed9788e696f913e308d1")}
+                </Typography><Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                  {i18nText("ui:m_4a53e0acdaaf9a774353")}
+                </Typography><Typography component="li" variant="body2" color="text.secondary">
+                  {i18nText("ui:m_2b2b7f08fa46b8cbfc4f")}
+                </Typography></Box></CardContent></Card>
+        )}{/* Previous Analyses (service mode) or Available Files (local mode) */}{((isServiceMode && sessions.length > 0) || (!isServiceMode && inputFiles.filter(f => f.isCompleted).length > 0)) && (
+          <Card sx={{ mt: 3 }}><CardContent><Typography variant="h6" gutterBottom>{isServiceMode ? i18nText("ui:m_cf228446d8a5aae85bcd") : i18nText("ui:m_bf633a8009d15bd302a5")}</Typography><Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{isServiceMode ? i18nText("ui:m_617b839d7f0e24085665") : i18nText("ui:m_c6fe6d1245f1136275ba")}</Typography><TableContainer><Table><TableHead><TableRow><TableCell>{i18nText("ui:m_de894275a403ef797d92")}</TableCell><TableCell>{isServiceMode ? i18nText("ui:m_89c8f46532e0e41f4371") : i18nText("ui:m_b335bad6aaf88c35cb6c")}</TableCell><TableCell>{i18nText("ui:m_9f40c21a49494ff4c88e")}</TableCell><TableCell>{i18nText("ui:m_cf025c2b66b1d8e97700")}</TableCell><TableCell align="right">{i18nText("ui:m_8b59af6a47204b74041c")}</TableCell></TableRow></TableHead><TableBody>{isServiceMode ? sessions.map((session) => (
+                      <TableRow key={session.sessionId}><TableCell><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{session.inputFilename}</Typography></TableCell><TableCell><Typography variant="body2" color="text.secondary">{new Date(session.uploadTimestamp).toLocaleString(getUILocale())}</Typography></TableCell><TableCell><Typography variant="body2">{formatBytes(session.inputFileSize)}</Typography></TableCell><TableCell><Chip label={session.status}
                             color={getStatusColor(session.status)}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <Box display="flex" justifyContent="flex-end" gap={1}>
-                            {session.resultsReady && (
-                              <>
-                                <Tooltip title="View Results">
-                                  <IconButton
-                                    data-learn="View Analysis Results: Open the audit records page to explore the analyzed network traffic data."
+                            size="small" /></TableCell><TableCell align="right"><Box display="flex" justifyContent="flex-end" gap={1}>{session.resultsReady && (
+                              <><Tooltip title={i18nText("ui:m_a1fc31c82b49b57f045e")}><IconButton data-learn={i18nText("ui:m_9c0257bfed90a02fcaeb")}
                                     size="small"
                                     color="primary"
-                                    onClick={() => handleViewSession(session.sessionId)}
-                                  >
-                                    <VisibilityIcon />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="View Logs">
-                                  <IconButton
-                                    data-learn="View Processing Logs: Check logs for details about the analysis process and any errors encountered."
+                                    onClick={() => handleViewSession(session.sessionId)}><VisibilityIcon /></IconButton></Tooltip><Tooltip title={i18nText("ui:m_a338251f0ba68c52c8ea")}><IconButton data-learn={i18nText("ui:m_fa851e28a3d34d45b07d")}
                                     size="small"
                                     color="default"
-                                    onClick={() => handleViewLogs(session.sessionId)}
-                                  >
-                                    <DescriptionIcon />
-                                  </IconButton>
-                                </Tooltip>
-                              </>
-                            )}
-                            <Tooltip title={copiedSessionId === session.sessionId ? "Copied!" : "Copy Share Link"}>
-                              <IconButton
-                                data-learn="Copy Share Link: Copy the shareable URL for this analysis session to share with others."
+                                    onClick={() => handleViewLogs(session.sessionId)}><DescriptionIcon /></IconButton></Tooltip></>
+                            )}<Tooltip title={copiedSessionId === session.sessionId ? i18nText("ui:m_b37111d1a8bc99f7c4d4") : i18nText("ui:m_0f4d7665ea73a8d4649a")}><IconButton data-learn={i18nText("ui:m_4bad5bc9cee8c44fe743")}
                                 size="small"
                                 color={copiedSessionId === session.sessionId ? "success" : "default"}
-                                onClick={() => handleCopySessionLink(session.shareUrl, session.sessionId)}
-                              >
-                                {copiedSessionId === session.sessionId ? <CheckCircleIcon /> : <ShareIcon />}
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
+                                onClick={() => handleCopySessionLink(session.shareUrl, session.sessionId)}>{copiedSessionId === session.sessionId ? <CheckCircleIcon /> : <ShareIcon />}</IconButton></Tooltip></Box></TableCell></TableRow>
                     )) : inputFiles.filter(f => f.isCompleted).map((file) => (
-                      <TableRow key={file.path} sx={{ backgroundColor: activeInputFile === file.path ? 'action.selected' : 'inherit' }}>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                            {file.name}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {formatTimestamp(file.modifiedTime)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {formatBytes(file.size)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={activeInputFile === file.path ? 'Active' : 'Ready'}
+                      <TableRow key={file.path} sx={{ backgroundColor: activeInputFile === file.path ? 'action.selected' : 'inherit' }}><TableCell><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{file.name}</Typography></TableCell><TableCell><Typography variant="body2" color="text.secondary">{formatTimestamp(file.modifiedTime, 'seconds')}</Typography></TableCell><TableCell><Typography variant="body2">{formatBytes(file.size)}</Typography></TableCell><TableCell><Chip label={activeInputFile === file.path ? i18nText("ui:m_32854ec0180ee3fbf4f7") : i18nText("ui:m_9ebf1338819dd094cfb2")}
                             color={activeInputFile === file.path ? 'success' : 'default'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <Box display="flex" justifyContent="flex-end" gap={1}>
-                            {file.isCompleted && (
-                              <>
-                                <Tooltip title="View Results">
-                                  <IconButton
-                                    data-learn="View File Results: Open the audit records page for this specific PCAP file."
+                            size="small" /></TableCell><TableCell align="right"><Box display="flex" justifyContent="flex-end" gap={1}>{file.isCompleted && (
+                              <><Tooltip title={i18nText("ui:m_a1fc31c82b49b57f045e")}><IconButton data-learn={i18nText("ui:m_3258a12eb37b66945924")}
                                     size="small"
                                     color="primary"
-                                    onClick={() => handleViewFile(file.path)}
-                                  >
-                                    <VisibilityIcon />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="View Logs">
-                                  <IconButton
-                                    data-learn="View File Logs: Check processing logs for this specific PCAP file."
+                                    onClick={() => handleViewFile(file.path)}><VisibilityIcon /></IconButton></Tooltip><Tooltip title={i18nText("ui:m_a338251f0ba68c52c8ea")}><IconButton data-learn={i18nText("ui:m_431cef26a676aea1b0c6")}
                                     size="small"
                                     color="default"
-                                    onClick={() => handleViewFileLogs(file.path)}
-                                  >
-                                    <DescriptionIcon />
-                                  </IconButton>
-                                </Tooltip>
-                              </>
-                            )}
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        )}
-      </Box>
-    </Layout>
+                                    onClick={() => handleViewFileLogs(file.path)}><DescriptionIcon /></IconButton></Tooltip></>
+                            )}</Box></TableCell></TableRow>
+                    ))}</TableBody></Table></TableContainer></CardContent></Card>
+        )}</Box></Layout>
   );
 }

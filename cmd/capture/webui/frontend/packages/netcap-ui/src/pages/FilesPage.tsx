@@ -76,13 +76,26 @@ import FileSelectorHeader from '../components/FileSelectorHeader';
 import ResponsiveDataView from '../components/ResponsiveDataView';
 import { formatBytes, formatTimestamp, type ExtractedFileInfo } from '../lib/api';
 import { useNetcapApi, useTableKeyboardNavigation, useIsMobile } from '../hooks';
-import useSWR, { mutate as globalMutate } from 'swr';
+
 import ArtifactAnalysisPanel from '../components/ArtifactAnalysisPanel';
 import OptimizedPieChart from '../components/OptimizedPieChart';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useTheme } from '@mui/material/styles';
+import { prismAppearance } from '../lib/appearance';
+import { message as i18nMessage, translate as i18nText, richText as i18nRichText, formatNumber as i18nNumber, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR, mutatePresentation as globalMutate } from "../lib/i18n";
+import { message, displayError, renderError, translate } from "../lib/i18n";
+import { errorText } from "../lib/i18n";
+import { message as finalCopyMessage } from "../lib/i18n";
+
+
+
+
+
 
 export default function ExtractedFilesPage() {
+  const __uiLocale = useUILocale();
+  const syntaxStyle = prismAppearance(useTheme().palette.mode);
   const api = useNetcapApi();
   const isMobile = useIsMobile();
   const [page, setPage] = useState(0);
@@ -94,7 +107,7 @@ export default function ExtractedFilesPage() {
   const [previewFile, setPreviewFile] = useState<ExtractedFileInfo | null>(null);
   const [previewContent, setPreviewContent] = useState<string>('');
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewError, setPreviewError] = useState<string>('');
+  const [previewError, setPreviewError] = useState<UIMessageText>('');
   const [previewTab, setPreviewTab] = useState<'rendered' | 'source' | 'raw'>('rendered');
   const [viewMode, setViewMode] = useState<'table' | 'gallery'>('table');
   const [galleryPage, setGalleryPage] = useState(0);
@@ -234,11 +247,11 @@ export default function ExtractedFilesPage() {
       setBinaryHasMore(data.hasMore);
     } catch (err) {
       console.error('Failed to load binary content:', err);
-      setPreviewError(err instanceof Error ? err.message : 'Failed to load binary content');
+      setPreviewError(err instanceof Error ? errorText(err) : i18nMessage("ui:m_ee3715dfdcc6ca473260"));
     } finally {
       setBinaryLoading(false);
     }
-  }, [api]);
+  }, [api, __uiLocale]);
 
   // Binary pagination handlers
   const handleBinaryNext = useCallback(() => {
@@ -363,7 +376,6 @@ export default function ExtractedFilesPage() {
         avoidLabelOverlap: true,
         itemStyle: {
           borderRadius: 8,
-          borderColor: '#050508',
           borderWidth: 2
         },
         label: {
@@ -408,7 +420,6 @@ export default function ExtractedFilesPage() {
         avoidLabelOverlap: true,
         itemStyle: {
           borderRadius: 8,
-          borderColor: '#050508',
           borderWidth: 2
         },
         label: {
@@ -466,7 +477,6 @@ export default function ExtractedFilesPage() {
         avoidLabelOverlap: true,
         itemStyle: {
           borderRadius: 8,
-          borderColor: '#050508',
           borderWidth: 2
         },
         label: {
@@ -898,7 +908,7 @@ export default function ExtractedFilesPage() {
       // For text-based files, fetch content as text
       if (isTextFile(file.mimeType)) {
         const response = await fetch(downloadUrl);
-        if (!response.ok) throw new Error('Failed to fetch file content');
+        if (!response.ok) throw displayError(message("ui:m_41f2c1cdb5f645f47637"));
         const text = await response.text();
         setPreviewContent(text);
       }
@@ -909,11 +919,11 @@ export default function ExtractedFilesPage() {
       // For media files (image, video, audio, pdf), we'll display them via iframe/embed
     } catch (err) {
       console.error('Failed to load file preview:', err);
-      setPreviewError(err instanceof Error ? err.message : 'Failed to load file preview');
+      setPreviewError(err instanceof Error ? errorText(err) : i18nMessage("ui:m_9d986004299f8de665d6"));
     } finally {
       setPreviewLoading(false);
     }
-  }, [api, isTextFile, isBinaryFile, loadBinaryContent]);
+  }, [api, isTextFile, isBinaryFile, loadBinaryContent, __uiLocale]);
 
   // Spacebar to toggle preview for selected file
   useEffect(() => {
@@ -999,11 +1009,11 @@ export default function ExtractedFilesPage() {
       window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
     } catch (err) {
       console.error('Failed to switch file:', err);
-      alert('Failed to switch to this capture');
+      alert(i18nText("ui:m_7ab800e4d59917b1d34c"));
     } finally {
       setSwitchingFile(false);
     }
-  }, [api, mutateStatus, mutate]);
+  }, [api, mutateStatus, mutate, __uiLocale]);
 
   const handleDownloadFile = (relativePath: string) => {
     const downloadUrl = api.downloadExtractedFile(relativePath);
@@ -1026,7 +1036,7 @@ export default function ExtractedFilesPage() {
     setBinaryOffset(0);
     setBinaryTotalSize(0);
     setBinaryHasMore(false);
-  }, []);
+  }, [__uiLocale]);
 
   // Get the current file list based on view mode and filter
   const getCurrentFileList = useCallback(() => {
@@ -1095,63 +1105,45 @@ export default function ExtractedFilesPage() {
   // Get only completed files for the selector, sorted alphabetically for consistency
   // Use shared FileSelectorHeader component
   const fileSelector = (
-    <FileSelectorHeader
-      inputFiles={inputFiles || []}
+    <FileSelectorHeader inputFiles={inputFiles || []}
       status={status}
       switchingFile={switchingFile}
       onFileChange={handleFileChange}
-      learnHint="Capture Selector: Switch between different analyzed PCAP files to view their extracted files."
-    />
+      learnHint={finalCopyMessage("ui:m_64c84d626db2c4e291e2")} />
   );
 
   if (error) {
     return (
-      <Layout title="Files" headerAction={fileSelector}>
-        <Box>
-          <Typography color="error">Error loading extracted files: {error.message}</Typography>
-        </Box>
-      </Layout>
+      <Layout title={i18nText("ui:m_9398bbdae27b6b92fc35")} headerAction={fileSelector}><Box><Typography color="error">{i18nRichText("ui:m_58170637c4bb6684df25", { arg0: renderError(error) })}</Typography></Box></Layout>
     );
   }
 
   return (
-    <Layout title="Files" headerAction={fileSelector}>
-      <Box sx={{ minWidth: 0 }}>
-        <ArtifactAnalysisPanel selection={status?.sessionId ? { sessionId: status.sessionId } : { inputFile: status?.activeInputFile }} />
-        <Box sx={{ 
+    <Layout title={i18nText("ui:m_9398bbdae27b6b92fc35")} headerAction={fileSelector}><Box sx={{ minWidth: 0 }}><ArtifactAnalysisPanel selection={status?.sessionId ? { sessionId: status.sessionId } : { inputFile: status?.activeInputFile }} /><Box sx={{ 
           display: 'flex', 
           flexDirection: { xs: 'column', md: 'row' },
           justifyContent: 'space-between', 
           alignItems: { xs: 'stretch', md: 'flex-start' }, 
           gap: 2,
           mb: 3 
-        }}>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            {selectedFile && (
+        }}><Box sx={{ minWidth: 0, flex: 1 }}>{selectedFile && (
               <Box sx={{ 
                 display: 'flex', 
                 gap: { xs: 1, sm: 1.5 }, 
                 alignItems: 'center', 
                 mt: 1,
                 flexWrap: 'wrap'
-              }}>
-                <Typography variant="body1" fontWeight="medium">
-                  {files.length.toLocaleString()} unique file{files.length !== 1 ? 's' : ''}
-                </Typography>
-                {totalCount !== files.length && (
-                  <Chip
-                    label={`${totalCount - files.length} duplicate${totalCount - files.length !== 1 ? 's' : ''} hidden`}
+              }}><Typography variant="body1" fontWeight="medium">
+                  {i18nRichText("ui:m_8a3252b5cce48740812c", { arg0: files.length })}
+                </Typography>{totalCount !== files.length && (
+                  <Chip label={i18nText("ui:m_381aedd89921f82a8bd0", { arg0: totalCount - files.length })}
                     size="small"
                     color="info"
                     variant="outlined"
-                    sx={{ fontSize: '0.75rem' }}
-                  />
-                )}
-                <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
-                  for capture:
-                </Typography>
-                <Chip
-                  label={selectedFile.name}
+                    sx={{ fontSize: '0.75rem' }} />
+                )}<Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  {i18nText("ui:m_500d5a66ed6c66e71b80")}
+                </Typography><Chip label={selectedFile.name}
                   size="small"
                   sx={{ 
                     fontFamily: 'monospace', 
@@ -1161,258 +1153,131 @@ export default function ExtractedFilesPage() {
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                     }
-                  }}
-                />
-                <Chip
-                  label={formatBytes(selectedFile.size)}
+                  }} /><Chip label={formatBytes(selectedFile.size)}
                   size="small"
                   variant="outlined"
-                  sx={{ fontSize: '0.75rem' }}
-                />
-              </Box>
-            )}
-          </Box>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <ToggleButtonGroup
-              data-learn="View Mode: Switch between table view (all files with details) and gallery view (images only with thumbnails)."
+                  sx={{ fontSize: '0.75rem' }} /></Box>
+            )}</Box><Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}><ToggleButtonGroup data-learn={i18nText("ui:m_4212613ef7939c5540c7")}
               value={viewMode}
               exclusive
               onChange={handleViewModeChange}
               size="small"
-              aria-label="view mode"
-            >
-              <ToggleButton value="table" aria-label="table view">
-                <Tooltip title="Table View">
-                  <ViewListIcon />
-                </Tooltip>
-              </ToggleButton>
-              <ToggleButton value="gallery" aria-label="gallery view">
-                <Tooltip title="Image Gallery">
-                  <ViewModuleIcon />
-                </Tooltip>
-              </ToggleButton>
-            </ToggleButtonGroup>
-            <Button 
-              data-learn="Refresh Files: Reload the list of extracted files to see newly discovered files from the capture."
+              aria-label={i18nText("ui:m_fef0e21a6be3955a3e5a")}><ToggleButton value="table" aria-label={i18nText("ui:m_abe49aa45f29e32637b8")}><Tooltip title={i18nText("ui:m_d3a98a319416bbeb7f84")}><ViewListIcon /></Tooltip></ToggleButton><ToggleButton value="gallery" aria-label={i18nText("ui:m_2ac5a0df1f224eef6776")}><Tooltip title={i18nText("ui:m_4e3ff07afe32f49bfe99")}><ViewModuleIcon /></Tooltip></ToggleButton></ToggleButtonGroup><Button data-learn={i18nText("ui:m_d5894b7db60d093e022d")}
               variant="outlined" 
               startIcon={<RefreshIcon />} 
               onClick={handleRefresh}
               size="small"
-              sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}
-            >
-              Refresh
-            </Button>
-            <Button 
-              data-learn="Download All: Download all extracted files as a single archive (ZIP) for offline analysis."
+              sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}>
+              {i18nText("ui:m_230fc1b63eb3ef4e6a34")}
+            </Button><Button data-learn={i18nText("ui:m_d68abc8a909a3a88f609")}
               variant="contained" 
               startIcon={<DownloadForOfflineIcon />} 
               onClick={handleDownloadAll}
               size="small"
               disabled={totalCount === 0}
-              sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}
-            >
-              Download All
-            </Button>
-          </Box>
-        </Box>
-
-        {/* Distribution Pie Charts - only show if there's more than one category */}
-        {totalCount > 0 && (mimeTypeDistribution.length > 1 || protocolDistribution.length > 1) && (
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 2, mb: 3 }}>
-            {/* MIME Type Distribution - only show if more than one MIME type */}
-            {mimeTypeDistribution.length > 1 && (
-              <Paper 
-                data-learn="MIME Type Distribution: Visual breakdown of extracted file types. Click on a slice to filter the table by that MIME type."
-                sx={{ flex: 1, p: 2 }}
-              >
-                <Typography variant="h6" gutterBottom>
-                  MIME Type Distribution
-                  {mimeTypeFilter && (
-                    <Chip 
-                      label={`Filtered: ${mimeTypeFilter}`} 
+              sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}>
+              {i18nText("ui:m_733fd6c3bfd4d9f84cee")}
+            </Button></Box></Box>{/* Distribution Pie Charts - only show if there's more than one category */}{totalCount > 0 && (mimeTypeDistribution.length > 1 || protocolDistribution.length > 1) && (
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 2, mb: 3 }}>{/* MIME Type Distribution - only show if more than one MIME type */}{mimeTypeDistribution.length > 1 && (
+              <Paper data-learn={i18nText("ui:m_3f792b6754be57399297")}
+                sx={{ flex: 1, p: 2 }}><Typography variant="h6" gutterBottom>
+                  {i18nRichText("ui:m_3231e088ff3964cc137e", { arg0: mimeTypeFilter && (
+                    <Chip label={i18nText("ui:m_e97641d80d31f3b57270", { arg0: mimeTypeFilter })} 
                       size="small" 
                       color="primary"
                       onDelete={() => { setMimeTypeFilter(''); setPage(0); }}
-                      sx={{ ml: 1 }}
-                    />
-                  )}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                  Click a slice to filter
-                </Typography>
-                <OptimizedPieChart 
-                  option={mimeTypePieChartOption} 
+                      sx={{ ml: 1 }} />
+                  ) })}
+                </Typography><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  {i18nText("ui:m_930ea418aa26e04c5c67")}
+                </Typography><OptimizedPieChart option={mimeTypePieChartOption} 
                   style={{ height: '250px', width: '100%' }}
-                  onItemClick={handleMimeTypeChartClick}
-                />
-              </Paper>
-            )}
-
-            {/* Protocol Distribution - only show if more than one protocol */}
-            {protocolDistribution.length > 1 && (
-              <Paper
-                data-learn="Protocol Distribution: Visual breakdown of network protocols used to transfer extracted files. Click on a slice to filter the table by that protocol."
-                sx={{ flex: 1, p: 2 }}
-              >
-                <Typography variant="h6" gutterBottom>
-                  Protocol Distribution
-                  {protocolFilter && (
-                    <Chip
-                      label={`Filtered: ${protocolFilter}`}
+                  onItemClick={handleMimeTypeChartClick} /></Paper>
+            )}{/* Protocol Distribution - only show if more than one protocol */}{protocolDistribution.length > 1 && (
+              <Paper data-learn={i18nText("ui:m_3653a00357277f300824")}
+                sx={{ flex: 1, p: 2 }}><Typography variant="h6" gutterBottom>
+                  {i18nRichText("ui:m_2f819e8890fb673336aa", { arg0: protocolFilter && (
+                    <Chip label={i18nText("ui:m_e97641d80d31f3b57270", { arg0: protocolFilter })}
                       size="small"
                       color="primary"
                       onDelete={() => { setProtocolFilter(''); setPage(0); }}
-                      sx={{ ml: 1 }}
-                    />
-                  )}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                  Click a slice to filter
-                </Typography>
-                <OptimizedPieChart
-                  option={protocolPieChartOption}
+                      sx={{ ml: 1 }} />
+                  ) })}
+                </Typography><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  {i18nText("ui:m_930ea418aa26e04c5c67")}
+                </Typography><OptimizedPieChart option={protocolPieChartOption}
                   style={{ height: '250px', width: '100%' }}
-                  onItemClick={handleProtocolChartClick}
-                />
-              </Paper>
-            )}
-            {/* AI Type Group Distribution - only show if Magika data exists */}
-            {magikaGroupDistribution.length > 1 && (
-              <Paper
-                data-learn="AI Type Distribution: Visual breakdown of AI-detected file type groups (Google Magika). Click on a slice to filter the table by that group."
-                sx={{ flex: 1, p: 2 }}
-              >
-                <Typography variant="h6" gutterBottom>
-                  AI Type Distribution
-                  {magikaGroupFilter && (
-                    <Chip
-                      label={`Filtered: ${magikaGroupFilter}`}
+                  onItemClick={handleProtocolChartClick} /></Paper>
+            )}{/* AI Type Group Distribution - only show if Magika data exists */}{magikaGroupDistribution.length > 1 && (
+              <Paper data-learn={i18nText("ui:m_faf7528afa1dc98e2e14")}
+                sx={{ flex: 1, p: 2 }}><Typography variant="h6" gutterBottom>
+                  {i18nRichText("ui:m_59b224370af838511a11", { arg0: magikaGroupFilter && (
+                    <Chip label={i18nText("ui:m_e97641d80d31f3b57270", { arg0: magikaGroupFilter })}
                       size="small"
                       color="secondary"
                       onDelete={() => { setMagikaGroupFilter(''); setPage(0); }}
-                      sx={{ ml: 1 }}
-                    />
-                  )}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                  Click a slice to filter
-                </Typography>
-                <OptimizedPieChart
-                  option={magikaGroupPieChartOption}
+                      sx={{ ml: 1 }} />
+                  ) })}
+                </Typography><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  {i18nText("ui:m_930ea418aa26e04c5c67")}
+                </Typography><OptimizedPieChart option={magikaGroupPieChartOption}
                   style={{ height: '250px', width: '100%' }}
-                  onItemClick={handleMagikaGroupChartClick}
-                />
-              </Paper>
-            )}
-          </Box>
-        )}
-
-        {/* Filters */}
-        <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <Select
-              data-learn="MIME Type Filter: Filter extracted files by their file type (e.g., images, documents, text files) to quickly find specific content."
+                  onItemClick={handleMagikaGroupChartClick} /></Paper>
+            )}</Box>
+        )}{/* Filters */}<Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}><FormControl size="small" sx={{ minWidth: 200 }}><Select data-learn={i18nText("ui:m_4a078241b0a40a46096e")}
               value={mimeTypeFilter}
               onChange={(e) => {
                 setMimeTypeFilter(e.target.value);
                 setPage(0);
               }}
-              displayEmpty
-            >
-              <MenuItem value="">
-                <em>All MIME Types</em>
-              </MenuItem>
-              {mimeTypes.sort().map((mimeType) => (
-                <MenuItem key={mimeType} value={mimeType}>
-                  {mimeType}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <Select
-              data-learn="Protocol Filter: Filter extracted files by the network protocol they were transferred over (HTTP, FTP, SMB, SMTP, IRC)."
+              displayEmpty><MenuItem value="">
+                {i18nRichText("ui:m_a08ded9082aef8a12c3e", { tag0: (chunks: import('react').ReactNode[]) => <em>{chunks}</em> })}
+              </MenuItem>{mimeTypes.sort().map((mimeType) => (
+                <MenuItem key={mimeType} value={mimeType}>{mimeType}</MenuItem>
+              ))}</Select></FormControl><FormControl size="small" sx={{ minWidth: 150 }}><Select data-learn={i18nText("ui:m_59a0d76bf2e8205bf8f9")}
               value={protocolFilter}
               onChange={(e) => {
                 setProtocolFilter(e.target.value);
                 setPage(0);
               }}
-              displayEmpty
-            >
-              <MenuItem value="">
-                <em>All Protocols</em>
-              </MenuItem>
-              {protocols.sort().map((protocol) => (
-                <MenuItem key={protocol} value={protocol}>
-                  {protocol}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          {hasMagikaData && (
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <Select
-                data-learn="AI Type Filter: Filter extracted files by their AI-detected content group (Google Magika classification)."
+              displayEmpty><MenuItem value="">
+                {i18nRichText("ui:m_0ff54ce34ede52ccc110", { tag0: (chunks: import('react').ReactNode[]) => <em>{chunks}</em> })}
+              </MenuItem>{protocols.sort().map((protocol) => (
+                <MenuItem key={protocol} value={protocol}>{protocol}</MenuItem>
+              ))}</Select></FormControl>{hasMagikaData && (
+            <FormControl size="small" sx={{ minWidth: 150 }}><Select data-learn={i18nText("ui:m_08561c334b9dacc313d9")}
                 value={magikaGroupFilter}
                 onChange={(e) => {
                   setMagikaGroupFilter(e.target.value);
                   setPage(0);
                 }}
-                displayEmpty
-              >
-                <MenuItem value="">
-                  <em>All AI Types</em>
-                </MenuItem>
-                {magikaGroups.sort().map((group) => (
-                  <MenuItem key={group} value={group}>
-                    {group}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
-          {(mimeTypeFilter || protocolFilter || magikaGroupFilter) && (
+                displayEmpty><MenuItem value="">
+                  {i18nRichText("ui:m_bb6b9ee9c8ba26349ab6", { tag0: (chunks: import('react').ReactNode[]) => <em>{chunks}</em> })}
+                </MenuItem>{magikaGroups.sort().map((group) => (
+                  <MenuItem key={group} value={group}>{group}</MenuItem>
+                ))}</Select></FormControl>
+          )}{(mimeTypeFilter || protocolFilter || magikaGroupFilter) && (
             <Typography variant="body2" color="text.secondary">
-              {filteredFiles.length} of {files.length} files
+              {i18nRichText("ui:m_ef2cc7fa3b1585184400", { arg0: filteredFiles.length, arg1: files.length })}
             </Typography>
-          )}
-        </Box>
-
-        {/* Files Table or Gallery */}
-        {!extractedFilesData && !error ? (
-          <Box display="flex" justifyContent="center" py={4}>
-            <CircularProgress />
-          </Box>
+          )}</Box>{/* Files Table or Gallery */}{!extractedFilesData && !error ? (
+          <Box display="flex" justifyContent="center" py={4}><CircularProgress /></Box>
         ) : totalCount === 0 ? (
-          <Paper sx={{ p: 4, textAlign: 'center' }}>
-            <InsertDriveFileIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary" gutterBottom>
-              No Files
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              No files have been extracted from this capture yet.
-            </Typography>
-          </Paper>
+          <Paper sx={{ p: 4, textAlign: 'center' }}><InsertDriveFileIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} /><Typography variant="h6" color="text.secondary" gutterBottom>
+              {i18nText("ui:m_513ad0c63df451f1b9ba")}
+            </Typography><Typography variant="body2" color="text.secondary">
+              {i18nText("ui:m_96fa07e507782d8ddd13")}
+            </Typography></Paper>
         ) : viewMode === 'gallery' ? (
-          <>
-            {/* Gallery View */}
-            {imageFiles.length === 0 ? (
-              <Paper sx={{ p: 4, textAlign: 'center' }}>
-                <ImageIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  No Images Found
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  No image files have been extracted from this capture.
-                </Typography>
-              </Paper>
+          <>{/* Gallery View */}{imageFiles.length === 0 ? (
+              <Paper sx={{ p: 4, textAlign: 'center' }}><ImageIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} /><Typography variant="h6" color="text.secondary" gutterBottom>
+                  {i18nText("ui:m_82a92eec1c9fde4cdfac")}
+                </Typography><Typography variant="body2" color="text.secondary">
+                  {i18nText("ui:m_c924148fbeba49f9163f")}
+                </Typography></Paper>
             ) : (
-              <>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
-                  {paginatedImageFiles.map((file) => (
-                    <Grid item xs={12} sm={6} md={4} lg={3} xl={2} key={file.path}>
-                      <Card 
-                        data-row-key={file.path}
+              <><Grid container spacing={2} sx={{ mb: 2 }}>{paginatedImageFiles.map((file) => (
+                    <Grid item xs={12} sm={6} md={4} lg={3} xl={2} key={file.path}><Card data-row-key={file.path}
                         sx={{ 
                           height: '100%', 
                           display: 'flex', 
@@ -1426,23 +1291,15 @@ export default function ExtractedFilesPage() {
                             transition: 'all 0.2s ease-in-out',
                           },
                         }}
-                        onClick={() => handlePreviewFile(file)}
-                      >
-                        <CardMedia
-                          component="img"
+                        onClick={() => handlePreviewFile(file)}><CardMedia component="img"
                           height="200"
                           image={api.downloadExtractedFile(file.path)}
                           alt={file.originalName || file.name}
                           sx={{ 
                             objectFit: 'contain', 
-                            bgcolor: 'grey.100',
+                            bgcolor: 'action.hover',
                             p: 1,
-                          }}
-                        />
-                        <CardContent sx={{ flexGrow: 1, pb: 1 }}>
-                          <Tooltip title={(file.originalName || file.name).length > 50 ? (file.originalName || file.name) : ''}>
-                            <Typography 
-                              variant="body2" 
+                          }} /><CardContent sx={{ flexGrow: 1, pb: 1 }}><Tooltip title={(file.originalName || file.name).length > 50 ? (file.originalName || file.name) : ''}><Typography variant="body2" 
                               sx={{ 
                                 fontFamily: 'monospace',
                                 fontSize: '0.75rem',
@@ -1450,68 +1307,30 @@ export default function ExtractedFilesPage() {
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
                                 mb: 0.5,
-                              }}
-                            >
-                              {truncateFileName(file.originalName || file.name)}
-                            </Typography>
-                          </Tooltip>
-                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            <Chip
-                              label={file.mimeType || 'unknown'}
+                              }}>{truncateFileName(file.originalName || file.name)}</Typography></Tooltip><Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}><Chip label={file.mimeType || i18nText("ui:m_b1b6b391498fb13c454c")}
                               size="small"
                               variant="outlined"
-                              sx={{ fontSize: '0.65rem', height: 20 }}
-                            />
-                            {file.protocol && (
-                              <Chip
-                                label={file.protocol}
+                              sx={{ fontSize: '0.65rem', height: 20 }} />{file.protocol && (
+                              <Chip label={file.protocol}
                                 size="small"
                                 color="primary"
                                 variant="outlined"
-                                sx={{ fontSize: '0.65rem', height: 20 }}
-                              />
-                            )}
-                            <Chip
-                              label={formatBytes(file.size)}
+                                sx={{ fontSize: '0.65rem', height: 20 }} />
+                            )}<Chip label={formatBytes(file.size)}
                               size="small"
                               variant="outlined"
-                              sx={{ fontSize: '0.65rem', height: 20 }}
-                            />
-                          </Box>
-                        </CardContent>
-                        <CardActions sx={{ pt: 0, px: 2, pb: 1, gap: 0.5 }}>
-                          <Tooltip title="Preview">
-                            <IconButton
-                              size="small"
+                              sx={{ fontSize: '0.65rem', height: 20 }} /></Box></CardContent><CardActions sx={{ pt: 0, px: 2, pb: 1, gap: 0.5 }}><Tooltip title={i18nText("ui:m_db78e01518423e984dba")}><IconButton size="small"
                               color="secondary"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handlePreviewFile(file);
-                              }}
-                            >
-                              <VisibilityIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Download">
-                            <IconButton
-                              size="small"
+                              }}><VisibilityIcon fontSize="small" /></IconButton></Tooltip><Tooltip title={i18nText("ui:m_5f1c36a45f9be850c2ff")}><IconButton size="small"
                               color="primary"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDownloadFile(file.path);
-                              }}
-                            >
-                              <DownloadIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </CardActions>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-
-                <TablePagination
-                  component="div"
+                              }}><DownloadIcon fontSize="small" /></IconButton></Tooltip></CardActions></Card></Grid>
+                  ))}</Grid><TablePagination component="div"
                   count={sortedGalleryImages.length}
                   page={galleryPage}
                   onPageChange={handleGalleryChangePage}
@@ -1519,15 +1338,10 @@ export default function ExtractedFilesPage() {
                   onRowsPerPageChange={handleGalleryChangeRowsPerPage}
                   rowsPerPageOptions={[25, 50, 100, 200]}
                   labelDisplayedRows={({ from, to, count }) => 
-                    `${from}-${to} of ${count} image${count !== 1 ? 's' : ''}`
-                  }
-                />
-              </>
-            )}
-          </>
+                    translate("ui:m_0b10012421a6a364360a", { arg0: from, arg1: to, arg2: count, arg3: count !== 1 ? 's' : '' })} /></>
+            )}</>
         ) : (
-          <ResponsiveDataView<ExtractedFileInfo>
-            data={paginatedFiles}
+          <ResponsiveDataView data={paginatedFiles}
             totalCount={filteredFiles.length}
             page={page}
             rowsPerPage={rowsPerPage}
@@ -1535,118 +1349,55 @@ export default function ExtractedFilesPage() {
             onRowsPerPageChange={handleChangeRowsPerPage}
             rowsPerPageOptions={[10, 25, 50, 100]}
             onCardClick={(file) => handlePreviewFile(file)}
-            desktopTable={
-              <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
-                <Table size="small" sx={{ minWidth: { xs: 700, md: 'auto' } }}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>File Name</TableCell>
-                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>MIME Type</TableCell>
-                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Protocol</TableCell>
-                      {hasMagikaData && (
-                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>AI Type</TableCell>
-                      )}
-                      <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Risk</TableCell>
-                      <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Path</TableCell>
-                      <TableCell align="right">Size</TableCell>
-                      <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Modified</TableCell>
-                      <TableCell align="right">Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {paginatedFiles.map((file) => (
-                      <TableRow
-                        key={file.path}
+            desktopTable={<TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}><Table size="small" sx={{ minWidth: { xs: 700, md: 'auto' } }}><TableHead><TableRow><TableCell>{i18nText("ui:m_5d34ee7e08288ec90fcd")}</TableCell><TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{i18nText("ui:m_556c65741b2aed6a7212")}</TableCell><TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{i18nText("ui:m_2d5b0d13af7edb332cfd")}</TableCell>{hasMagikaData && (
+                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>{i18nText("ui:m_430987501760eef87ee6")}</TableCell>
+                      )}<TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>{i18nText("ui:m_6f363cfa683bf9206042")}</TableCell><TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>{i18nText("ui:m_a9eeecf9878ff9d6165d")}</TableCell><TableCell align="right">{i18nText("ui:m_9f40c21a49494ff4c88e")}</TableCell><TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>{i18nText("ui:m_b335bad6aaf88c35cb6c")}</TableCell><TableCell align="right">{i18nText("ui:m_8b59af6a47204b74041c")}</TableCell></TableRow></TableHead><TableBody>{paginatedFiles.map((file) => (
+                      <TableRow key={file.path}
                         data-row-key={file.path}
                         hover
                         onClick={() => handlePreviewFile(file)}
                         selected={selectedFileKey === file.path}
-                        sx={{ cursor: 'pointer' }}
-                      >
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            {getFileTypeIcon(file.mimeType)}
-                            <Tooltip title={(file.originalName || file.name).length > 50 ? (file.originalName || file.name) : ''}>
-                              <Typography
-                                sx={{
+                        sx={{ cursor: 'pointer' }}><TableCell><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>{getFileTypeIcon(file.mimeType)}<Tooltip title={(file.originalName || file.name).length > 50 ? (file.originalName || file.name) : ''}><Typography sx={{
                                   fontFamily: 'monospace',
                                   fontSize: '0.85rem',
                                   maxWidth: 300,
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
                                   whiteSpace: 'nowrap'
-                                }}
-                              >
-                                {truncateFileName(file.originalName || file.name)}
-                              </Typography>
-                            </Tooltip>
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                          <Chip
-                            label={file.mimeType || 'unknown'}
+                                }}>{truncateFileName(file.originalName || file.name)}</Typography></Tooltip></Box></TableCell><TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}><Chip label={file.mimeType || i18nText("ui:m_b1b6b391498fb13c454c")}
                             size="small"
                             variant="outlined"
-                            sx={{ fontSize: '0.75rem' }}
-                          />
-                        </TableCell>
-                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                          {file.protocol && (
-                            <Chip
-                              label={file.protocol}
+                            sx={{ fontSize: '0.75rem' }} /></TableCell><TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{file.protocol && (
+                            <Chip label={file.protocol}
                               size="small"
                               color="primary"
                               variant="outlined"
-                              sx={{ fontSize: '0.75rem' }}
-                            />
-                          )}
-                        </TableCell>
-                        {hasMagikaData && (
-                          <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                            {file.magikaLabel && (
-                              <Tooltip title={`${file.magikaDescription || ''} (${file.magikaMimeType || ''})`}>
-                                <Chip
-                                  label={file.magikaLabel}
+                              sx={{ fontSize: '0.75rem' }} />
+                          )}</TableCell>{hasMagikaData && (
+                          <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>{file.magikaLabel && (
+                              <Tooltip title={`${file.magikaDescription || ''} (${file.magikaMimeType || ''})`}><Chip label={file.magikaLabel}
                                   size="small"
                                   color={file.magikaIsText ? 'default' : 'secondary'}
                                   variant="outlined"
-                                  sx={{ fontSize: '0.75rem' }}
-                                />
-                              </Tooltip>
-                            )}
-                          </TableCell>
-                        )}
-                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            {file.isKnownMalware && (
-                              <Chip label={file.threatName || 'Malware'} size="small" color="error" sx={{ fontSize: '0.7rem' }} />
-                            )}
-                            {file.yaraMatches && file.yaraMatches.length > 0 && file.yaraMatches.map((match: string) => (
-                              <Chip key={match} label={`YARA: ${match}`} size="small" color="error" variant="outlined" sx={{ fontSize: '0.7rem' }} />
-                            ))}
-                            {file.typeMismatch && (
-                              <Chip label="Type Mismatch" size="small" color="warning" sx={{ fontSize: '0.7rem' }} />
-                            )}
-                            {file.magikaMimeType && file.mimeType && file.magikaMimeType !== file.mimeType && (
-                              <Chip label="AI Type Mismatch" size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
-                            )}
-                            {file.hasEmbeddedScript && (
-                              <Chip label="Script" size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
-                            )}
-                            {file.isPasswordProtected && (
-                              <Chip label="Encrypted" size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
-                            )}
-                            {(file.isPEExecutable || file.isELFExecutable || file.isMachO) && (
-                              <Chip label="Executable" size="small" color="info" variant="outlined" sx={{ fontSize: '0.7rem' }} />
-                            )}
-                            {(file.entropy ?? 0) > 7.0 && (
-                              <Chip label={`Entropy ${(file.entropy ?? 0).toFixed(1)}`} size="small" color="default" variant="outlined" sx={{ fontSize: '0.7rem' }} />
-                            )}
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                          <Typography
-                            variant="body2"
+                                  sx={{ fontSize: '0.75rem' }} /></Tooltip>
+                            )}</TableCell>
+                        )}<TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}><Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>{file.isKnownMalware && (
+                              <Chip label={file.threatName || i18nText("ui:m_a93ac4e74ca26db7a52a")} size="small" color="error" sx={{ fontSize: '0.7rem' }} />
+                            )}{file.yaraMatches && file.yaraMatches.length > 0 && file.yaraMatches.map((match: string) => (
+                              <Chip key={match} label={i18nText("ui:m_64856a88e1c1f7faa1f6", { arg0: match })} size="small" color="error" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            ))}{file.typeMismatch && (
+                              <Chip label={i18nText("ui:m_c523b653e7d83786d41a")} size="small" color="warning" sx={{ fontSize: '0.7rem' }} />
+                            )}{file.magikaMimeType && file.mimeType && file.magikaMimeType !== file.mimeType && (
+                              <Chip label={i18nText("ui:m_9a11e14994191b43964a")} size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            )}{file.hasEmbeddedScript && (
+                              <Chip label={i18nText("ui:m_78cb4f41f928ba52fd20")} size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            )}{file.isPasswordProtected && (
+                              <Chip label={i18nText("ui:m_a77c88def9b21af1ea02")} size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            )}{(file.isPEExecutable || file.isELFExecutable || file.isMachO) && (
+                              <Chip label={i18nText("ui:m_7e011e7efe704cfcbc42")} size="small" color="info" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            )}{(file.entropy ?? 0) > 7.0 && (
+                              <Chip label={i18nText("ui:m_42efe0e086d81eb3ebf7", { arg0: i18nNumber((file.entropy ?? 0), { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false }) })} size="small" color="default" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            )}</Box></TableCell><TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Typography variant="body2"
                             sx={{
                               fontFamily: 'monospace',
                               fontSize: '0.75rem',
@@ -1655,202 +1406,69 @@ export default function ExtractedFilesPage() {
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap'
-                            }}
-                          >
-                            {file.path}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography variant="body2">
-                            {formatBytes(file.size)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                          <Typography variant="body2">
-                            {formatTimestamp(file.modifiedTime)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                            <Tooltip title="Preview file">
-                              <IconButton
-                                size="small"
+                            }}>{file.path}</Typography></TableCell><TableCell align="right"><Typography variant="body2">{formatBytes(file.size)}</Typography></TableCell><TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Typography variant="body2">{formatTimestamp(file.modifiedTime, 'seconds')}</Typography></TableCell><TableCell align="right" onClick={(e) => e.stopPropagation()}><Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}><Tooltip title={i18nText("ui:m_51d5f7104286c4e9f9fd")}><IconButton size="small"
                                 color="secondary"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handlePreviewFile(file);
-                                }}
-                              >
-                                <VisibilityIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Download file">
-                              <IconButton
-                                size="small"
+                                }}><VisibilityIcon fontSize="small" /></IconButton></Tooltip><Tooltip title={i18nText("ui:m_c25666eccc4b67b314d7")}><IconButton size="small"
                                 color="primary"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleDownloadFile(file.path);
-                                }}
-                              >
-                                <DownloadIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            }
+                                }}><DownloadIcon fontSize="small" /></IconButton></Tooltip></Box></TableCell></TableRow>
+                    ))}</TableBody></Table></TableContainer>}
             renderCard={(file) => (
-              <Card variant="outlined">
-                <CardContent sx={{ pb: 1, '&:last-child': { pb: 1 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                    {getFileTypeIcon(file.mimeType)}
-                    <Typography variant="subtitle2" noWrap sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                      {truncateFileName(file.originalName || file.name, 40)}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <Chip label={file.mimeType || 'unknown'} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
-                    {file.protocol && (
+              <Card variant="outlined"><CardContent sx={{ pb: 1, '&:last-child': { pb: 1 } }}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>{getFileTypeIcon(file.mimeType)}<Typography variant="subtitle2" noWrap sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{truncateFileName(file.originalName || file.name, 40)}</Typography></Box><Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}><Chip label={file.mimeType || i18nText("ui:m_b1b6b391498fb13c454c")} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />{file.protocol && (
                       <Chip label={file.protocol} size="small" color="primary" variant="outlined" sx={{ fontSize: '0.7rem' }} />
-                    )}
-                    <Typography variant="caption" color="text.secondary">
-                      {formatBytes(file.size)}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            )}
-          />
-        )}
-
-        {/* File Preview Dialog */}
-        <Dialog
-          open={previewFile !== null}
+                    )}<Typography variant="caption" color="text.secondary">{formatBytes(file.size)}</Typography></Box></CardContent></Card>
+            )} />
+        )}{/* File Preview Dialog */}<Dialog open={previewFile !== null}
           onClose={handleClosePreview}
           fullScreen={isMobile}
           maxWidth="lg"
           fullWidth
           PaperProps={{
             sx: { height: '90vh' }
-          }}
-        >
-          <DialogTitle>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1 }}>
-                {previewFile && getFileTypeIcon(previewFile.mimeType)}
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Tooltip title={(previewFile?.originalName || previewFile?.name || '').length > 50 ? (previewFile?.originalName || previewFile?.name) : ''}>
-                    <Typography variant="h6" sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {truncateFileName(previewFile?.originalName || previewFile?.name || '')}
-                    </Typography>
-                  </Tooltip>
-                  <Box sx={{ display: 'flex', gap: 1.5, mt: 0.5, flexWrap: 'wrap' }}>
-                    <Chip label={previewFile?.mimeType || 'unknown'} size="small" variant="outlined" />
-                    {previewFile?.protocol && (
+          }}><DialogTitle><Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1 }}>{previewFile && getFileTypeIcon(previewFile.mimeType)}<Box sx={{ flex: 1, minWidth: 0 }}><Tooltip title={(previewFile?.originalName || previewFile?.name || '').length > 50 ? (previewFile?.originalName || previewFile?.name) : ''}><Typography variant="h6" sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{truncateFileName(previewFile?.originalName || previewFile?.name || '')}</Typography></Tooltip><Box sx={{ display: 'flex', gap: 1.5, mt: 0.5, flexWrap: 'wrap' }}><Chip label={previewFile?.mimeType || i18nText("ui:m_b1b6b391498fb13c454c")} size="small" variant="outlined" />{previewFile?.protocol && (
                       <Chip label={previewFile.protocol} size="small" color="primary" variant="outlined" />
-                    )}
-                    <Chip label={formatBytes(previewFile?.size || 0)} size="small" variant="outlined" />
-                    {(() => {
+                    )}<Chip label={formatBytes(previewFile?.size || 0)} size="small" variant="outlined" />{(() => {
                       const currentList = getCurrentFileList();
                       const currentIndex = previewFile ? currentList.findIndex(f => f.path === previewFile.path) : -1;
                       if (currentIndex >= 0) {
                         return (
-                          <Chip 
-                            label={`${currentIndex + 1} / ${currentList.length}`} 
+                          <Chip label={`${currentIndex + 1} / ${currentList.length}`} 
                             size="small" 
                             color="primary"
-                            variant="outlined"
-                          />
+                            variant="outlined" />
                         );
                       }
                       return null;
-                    })()}
-                  </Box>
-                </Box>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                <Tooltip title="Previous file (↑)">
-                  <span>
-                    <IconButton 
-                      onClick={handlePreviousFile} 
+                    })()}</Box></Box></Box><Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}><Tooltip title={i18nText("ui:m_3ef0a59fda6bed2f4590")}><span><IconButton onClick={handlePreviousFile} 
                       size="small"
                       disabled={(() => {
                         const currentList = getCurrentFileList();
                         const currentIndex = previewFile ? currentList.findIndex(f => f.path === previewFile.path) : -1;
                         return currentIndex <= 0;
-                      })()}
-                    >
-                      <KeyboardArrowUpIcon />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-                <Tooltip title="Next file (↓)">
-                  <span>
-                    <IconButton 
-                      onClick={handleNextFile} 
+                      })()}><KeyboardArrowUpIcon /></IconButton></span></Tooltip><Tooltip title={i18nText("ui:m_61d943ad1a8434e4f645")}><span><IconButton onClick={handleNextFile} 
                       size="small"
                       disabled={(() => {
                         const currentList = getCurrentFileList();
                         const currentIndex = previewFile ? currentList.findIndex(f => f.path === previewFile.path) : -1;
                         return currentIndex < 0 || currentIndex >= currentList.length - 1;
-                      })()}
-                    >
-                      <KeyboardArrowDownIcon />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-                <IconButton onClick={handleClosePreview} size="small">
-                  <CloseIcon />
-                </IconButton>
-              </Box>
-            </Box>
-          </DialogTitle>
-          <DialogContent dividers sx={{ p: 0, display: 'flex', flexDirection: 'column' }}>
-            {previewFile && <Box sx={{ p: 2 }}>
-              <ArtifactAnalysisPanel selection={status?.sessionId ? { sessionId: status.sessionId } : { inputFile: status?.activeInputFile }} sha256={previewFile.sha256} />
-              <Typography sx={{ overflowWrap: 'anywhere', fontFamily: 'monospace' }}>SHA-256: {previewFile.sha256 || 'unavailable'}</Typography>
-              <Alert severity={previewFile.isComplete === false ? 'warning' : 'info'}>Artifact completeness: {previewFile.isComplete === undefined ? 'unavailable' : previewFile.isComplete ? 'complete' : 'incomplete'}{previewFile.completenessReason ? ` — ${previewFile.completenessReason}` : ''}</Alert>
-              {previewFile.occurrences && <details><summary>Transfer occurrences ({previewFile.occurrences.length}{previewFile.occurrencesCapped ? '+, capped' : ''})</summary><Box component="pre" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify(previewFile.occurrences, null, 2)}</Box></details>}
-            </Box>}
-            {previewLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                <CircularProgress />
-              </Box>
+                      })()}><KeyboardArrowDownIcon /></IconButton></span></Tooltip><IconButton onClick={handleClosePreview} size="small"><CloseIcon /></IconButton></Box></Box></DialogTitle><DialogContent dividers sx={{ p: 0, display: 'flex', flexDirection: 'column' }}>{previewFile && <Box sx={{ p: 2 }}><ArtifactAnalysisPanel selection={status?.sessionId ? { sessionId: status.sessionId } : { inputFile: status?.activeInputFile }} sha256={previewFile.sha256} /><Typography sx={{ overflowWrap: 'anywhere', fontFamily: 'monospace' }}>{i18nRichText("ui:m_2ba4d6dcbf0f69f5cbc2", { arg0: previewFile.sha256 || i18nText("ui:m_ddddc9fec2c62ce5d4b3") })}</Typography><Alert severity={previewFile.isComplete === false ? 'warning' : 'info'}>{i18nRichText("ui:m_acc8386c765ce98598c9", { arg0: previewFile.isComplete === undefined ? i18nText("ui:m_ddddc9fec2c62ce5d4b3") : previewFile.isComplete ? i18nText("ui:m_5a4b12b35bf2a22c227d") : i18nText("ui:m_c76ca91e5bb3bc6b0f46"), arg1: previewFile.completenessReason ? ` — ${previewFile.completenessReason}` : '' })}</Alert>{previewFile.occurrences && <details><summary>{i18nRichText("ui:m_8b4c5f86149c7096a905", { arg0: previewFile.occurrences.length, arg1: previewFile.occurrencesCapped ? i18nText("ui:m_010f532eef2582a23872") : '' })}</summary><Box component="pre" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify(previewFile.occurrences, null, 2)}</Box></details>}</Box>}{previewLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>
             ) : previewError ? (
-              <Box sx={{ p: 3 }}>
-                <Alert severity="error">{previewError}</Alert>
-              </Box>
+              <Box sx={{ p: 3 }}><Alert severity="error">{i18nRenderText(previewError)}</Alert></Box>
             ) : previewFile ? (
-              <>
-                {/* Tabs for text files to switch between rendered, source (formatted + highlighted), and raw view */}
-                {isTextFile(previewFile.mimeType) && previewContent && (
-                  <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <Tabs value={previewTab} onChange={(_, v) => setPreviewTab(v)}>
-                      <Tab label="Rendered" value="rendered" />
-                      <Tab label="Source" value="source" />
-                      <Tab label="Raw" value="raw" />
-                    </Tabs>
-                  </Box>
-                )}
-
-                <Box sx={{ flex: 1, overflow: 'auto', p: isTextFile(previewFile.mimeType) && previewTab === 'raw' ? 0 : 2 }}>
-                  {/* Text Files */}
-                  {isTextFile(previewFile.mimeType) && previewContent && (
-                    <>
-                      {previewTab === 'rendered' ? (
+              <>{/* Tabs for text files to switch between rendered, source (formatted + highlighted), and raw view */}{isTextFile(previewFile.mimeType) && previewContent && (
+                  <Box sx={{ borderBottom: 1, borderColor: 'divider' }}><Tabs value={previewTab} onChange={(_, v) => setPreviewTab(v)}><Tab label={i18nText("ui:m_b258be0b644e2219027f")} value="rendered" /><Tab label={i18nText("ui:m_4113167561ccea5b6c6b")} value="source" /><Tab label={i18nText("ui:m_e3098307b69bb416dcf4")} value="raw" /></Tabs></Box>
+                )}<Box sx={{ flex: 1, overflow: 'auto', p: isTextFile(previewFile.mimeType) && previewTab === 'raw' ? 0 : 2 }}>{/* Text Files */}{isTextFile(previewFile.mimeType) && previewContent && (
+                    <>{previewTab === 'rendered' ? (
                         // Rendered view - HTML gets iframe, code files get syntax highlighting with formatted content
-                        (previewFile.mimeType === 'text/html' ? (<>
-                          <Alert severity="warning" sx={{ m: 2, mb: 1 }}>
-                            <strong>Security Warning:</strong> Viewing untrusted HTML in rendered mode. 
-                            JavaScript execution is disabled, but CSS and images will be loaded.
-                          </Alert>
-                          <iframe
-                            srcDoc={previewContent}
+                        (previewFile.mimeType === 'text/html' ? (<><Alert severity="warning" sx={{ m: 2, mb: 1 }}>
+                            {i18nRichText("ui:m_733b87f5331c717c698c", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}
+                          </Alert><iframe srcDoc={previewContent}
                             style={{
                               width: '100%',
                               height: '100%',
@@ -1859,12 +1477,9 @@ export default function ExtractedFilesPage() {
                               backgroundColor: 'white'
                             }}
                             sandbox=""
-                            title={previewFile.originalName || previewFile.name}
-                          />
-                        </>) : // Code view with syntax highlighting for supported languages
+                            title={previewFile.originalName || previewFile.name} /></>) : // Code view with syntax highlighting for supported languages
                         shouldUseSyntaxHighlighting(previewFile.mimeType, previewFile.originalName || previewFile.name) ? (
-                          <Box
-                            sx={{
+                          <Box sx={{
                               overflow: 'auto',
                               maxHeight: 'calc(90vh - 200px)',
                               '& pre': {
@@ -1874,11 +1489,8 @@ export default function ExtractedFilesPage() {
                               '& code': {
                                 fontSize: '0.875rem !important',
                               }
-                            }}
-                          >
-                            <SyntaxHighlighter
-                              language={getSyntaxLanguage(previewFile.mimeType, previewFile.originalName || previewFile.name) || 'text'}
-                              style={tomorrow}
+                            }}><SyntaxHighlighter language={getSyntaxLanguage(previewFile.mimeType, previewFile.originalName || previewFile.name) || 'text'}
+                              style={syntaxStyle}
                               showLineNumbers
                               wrapLines
                               wrapLongLines
@@ -1886,39 +1498,26 @@ export default function ExtractedFilesPage() {
                                 margin: 0,
                                 borderRadius: '8px',
                                 fontSize: '0.875rem',
-                              }}
-                            >
-                              {formatContent(previewContent, previewFile.mimeType, previewFile.originalName || previewFile.name)}
-                            </SyntaxHighlighter>
-                          </Box>
+                              }}>{formatContent(previewContent, previewFile.mimeType, previewFile.originalName || previewFile.name)}</SyntaxHighlighter></Box>
                         ) : (
                           // Plain text view for other text files
-                          <Paper
-                            sx={{
-                              bgcolor: 'grey.900',
+                          <Paper sx={{
+                              bgcolor: 'background.default',
                               p: 2,
                               overflow: 'auto',
                               maxHeight: 'calc(90vh - 200px)'
-                            }}
-                          >
-                            <pre
-                              style={{
+                            }}><pre style={{
                                 margin: 0,
                                 fontFamily: 'monospace',
                                 fontSize: '0.875rem',
                                 whiteSpace: 'pre-wrap',
                                 wordBreak: 'break-word',
-                                color: '#e0e0e0',
-                              }}
-                            >
-                              {previewContent}
-                            </pre>
-                          </Paper>
+                                color: 'inherit',
+                              }}>{previewContent}</pre></Paper>
                         ))
                       ) : previewTab === 'source' ? (
                         // Source view - pretty printed and syntax highlighted
-                        <Box
-                          sx={{
+                        <Box sx={{
                             overflow: 'auto',
                             maxHeight: 'calc(90vh - 200px)',
                             '& pre': {
@@ -1928,11 +1527,8 @@ export default function ExtractedFilesPage() {
                             '& code': {
                               fontSize: '0.875rem !important',
                             }
-                          }}
-                        >
-                          <SyntaxHighlighter
-                            language={getSyntaxLanguage(previewFile.mimeType, previewFile.originalName || previewFile.name) || 'text'}
-                            style={tomorrow}
+                          }}><SyntaxHighlighter language={getSyntaxLanguage(previewFile.mimeType, previewFile.originalName || previewFile.name) || 'text'}
+                            style={syntaxStyle}
                             showLineNumbers
                             wrapLines
                             wrapLongLines
@@ -1940,104 +1536,54 @@ export default function ExtractedFilesPage() {
                               margin: 0,
                               borderRadius: '8px',
                               fontSize: '0.875rem',
-                            }}
-                          >
-                            {formatContent(previewContent, previewFile.mimeType, previewFile.originalName || previewFile.name)}
-                          </SyntaxHighlighter>
-                        </Box>
+                            }}>{formatContent(previewContent, previewFile.mimeType, previewFile.originalName || previewFile.name)}</SyntaxHighlighter></Box>
                       ) : (
                         // Raw view - shows original content without any formatting or highlighting
-                        (<Paper
-                          sx={{
-                            bgcolor: 'grey.900',
+                        (<Paper sx={{
+                            bgcolor: 'background.default',
                             p: 2,
                             overflow: 'auto',
                             maxHeight: 'calc(90vh - 250px)'
-                          }}
-                        >
-                          <pre
-                            style={{
+                          }}><pre style={{
                               margin: 0,
                               fontFamily: 'monospace',
                               fontSize: '0.875rem',
                               whiteSpace: 'pre-wrap',
                               wordBreak: 'break-word',
-                              color: '#e0e0e0',
-                            }}
-                          >
-                            {previewContent}
-                          </pre>
-                        </Paper>)
-                      )}
-                    </>
-                  )}
-
-                  {/* Images */}
-                  {isImageFile(previewFile.mimeType) && (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-                      <img
-                        src={api.downloadExtractedFile(previewFile.path)}
+                              color: 'inherit',
+                            }}>{previewContent}</pre></Paper>)
+                      )}</>
+                  )}{/* Images */}{isImageFile(previewFile.mimeType) && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}><img src={api.downloadExtractedFile(previewFile.path)}
                         alt={previewFile.originalName || previewFile.name}
                         style={{
                           maxWidth: '100%',
                           maxHeight: 'calc(90vh - 250px)',
                           objectFit: 'contain'
-                        }}
-                      />
-                    </Box>
-                  )}
-
-                  {/* PDFs */}
-                  {isPDFFile(previewFile.mimeType) && (
-                    <iframe
-                      src={api.downloadExtractedFile(previewFile.path)}
+                        }} /></Box>
+                  )}{/* PDFs */}{isPDFFile(previewFile.mimeType) && (
+                    <iframe src={api.downloadExtractedFile(previewFile.path)}
                       style={{
                         width: '100%',
                         height: 'calc(90vh - 200px)',
                         border: 'none'
                       }}
-                      title={previewFile.originalName || previewFile.name}
-                    />
-                  )}
-
-                  {/* Videos */}
-                  {isVideoFile(previewFile.mimeType) && (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-                      <video
-                        controls
+                      title={previewFile.originalName || previewFile.name} />
+                  )}{/* Videos */}{isVideoFile(previewFile.mimeType) && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}><video controls
                         style={{
                           maxWidth: '100%',
                           maxHeight: 'calc(90vh - 250px)',
-                        }}
-                      >
-                        <source src={api.downloadExtractedFile(previewFile.path)} type={previewFile.mimeType} />
-                        Your browser does not support the video tag.
-                      </video>
-                    </Box>
-                  )}
-
-                  {/* Audio */}
-                  {isAudioFile(previewFile.mimeType) && (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200, flexDirection: 'column', gap: 2 }}>
-                      <AudiotrackIcon sx={{ fontSize: 80, color: 'primary.main' }} />
-                      <audio
-                        controls
-                        style={{ width: '100%', maxWidth: 500 }}
-                      >
-                        <source src={api.downloadExtractedFile(previewFile.path)} type={previewFile.mimeType} />
-                        Your browser does not support the audio tag.
-                      </audio>
-                    </Box>
-                  )}
-
-                  {/* Binary file hex dump view */}
-                  {isBinaryFile(previewFile.mimeType) && (
-                    <Box sx={{ height: '100%', overflow: 'auto' }}>
-                      {binaryLoading && <LinearProgress />}
-                      
-                      {/* Legend and controls */}
-                      <Box
-                        sx={{
+                        }}><source src={api.downloadExtractedFile(previewFile.path)} type={previewFile.mimeType} />
+                        {i18nText("ui:m_afe677ced438aa6f437c")}
+                      </video></Box>
+                  )}{/* Audio */}{isAudioFile(previewFile.mimeType) && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200, flexDirection: 'column', gap: 2 }}><AudiotrackIcon sx={{ fontSize: 80, color: 'primary.main' }} /><audio controls
+                        style={{ width: '100%', maxWidth: 500 }}><source src={api.downloadExtractedFile(previewFile.path)} type={previewFile.mimeType} />
+                        {i18nText("ui:m_cffabe40f3dc46d3e5a2")}
+                      </audio></Box>
+                  )}{/* Binary file hex dump view */}{isBinaryFile(previewFile.mimeType) && (
+                    <Box sx={{ height: '100%', overflow: 'auto' }}>{binaryLoading && <LinearProgress />}{/* Legend and controls */}<Box sx={{
                           position: 'sticky',
                           top: 0,
                           bgcolor: 'background.paper',
@@ -2049,174 +1595,79 @@ export default function ExtractedFilesPage() {
                           justifyContent: 'space-between',
                           alignItems: 'center',
                           zIndex: 1,
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                          <Typography variant="caption" color="text.secondary">
-                            Binary File • {formatBytes(binaryTotalSize)}
-                          </Typography>
-                          
-                          {/* View Mode Toggle */}
-                          <IconButton
-                            size="small"
+                        }}><Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}><Typography variant="caption" color="text.secondary">
+                            {i18nRichText("ui:m_48627b06dab4a85ee382", { arg0: formatBytes(binaryTotalSize) })}
+                          </Typography>{/* View Mode Toggle */}<IconButton size="small"
                             onClick={() => setHexViewMode(hexViewMode === 'ascii' ? 'hex' : 'ascii')}
-                            title={hexViewMode === 'ascii' ? 'Switch to Hex View' : 'Switch to ASCII View'}
-                          >
-                            {hexViewMode === 'ascii' ? <GridOnIcon fontSize="small" /> : <ViewHeadlineIcon fontSize="small" />}
-                          </IconButton>
-                        </Box>
-                        
-                        {/* Pagination Controls */}
-                        {binaryTotalPages > 1 && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <IconButton
-                              size="small"
+                            title={hexViewMode === 'ascii' ? i18nText("ui:m_fea011c8c4dac0157167") : i18nText("ui:m_84341353e300b9fdf4a8")}>{hexViewMode === 'ascii' ? <GridOnIcon fontSize="small" /> : <ViewHeadlineIcon fontSize="small" />}</IconButton></Box>{/* Pagination Controls */}{binaryTotalPages > 1 && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><IconButton size="small"
                               onClick={handleBinaryPrevious}
-                              disabled={binaryOffset === 0 || binaryLoading}
-                            >
-                              <NavigateBeforeIcon />
-                            </IconButton>
-                            <Typography variant="caption">
-                              {binaryCurrentPage} / {binaryTotalPages}
-                            </Typography>
-                            <IconButton
-                              size="small"
+                              disabled={binaryOffset === 0 || binaryLoading}><NavigateBeforeIcon /></IconButton><Typography variant="caption">{binaryCurrentPage}/ {binaryTotalPages}</Typography><IconButton size="small"
                               onClick={handleBinaryNext}
-                              disabled={!binaryHasMore || binaryLoading}
-                            >
-                              <NavigateNextIcon />
-                            </IconButton>
-                          </Box>
-                        )}
-                      </Box>
-
-                      {/* ASCII view */}
-                      {hexViewMode === 'ascii' && (
-                        <Box
-                          sx={{
+                              disabled={!binaryHasMore || binaryLoading}><NavigateNextIcon /></IconButton></Box>
+                        )}</Box>{/* ASCII view */}{hexViewMode === 'ascii' && (
+                        <Box sx={{
                             fontFamily: 'Courier New, monospace',
                             fontSize: '13px',
                             lineHeight: 1.6,
                             p: 2,
-                            bgcolor: '#1e1e1e',
-                            color: '#d4d4d4',
+                            bgcolor: 'background.default',
+                            color: 'text.primary',
                             whiteSpace: 'pre',
                             overflowX: 'auto',
                             minHeight: 400,
-                          }}
-                        >
-                          {hexRows.map((row) => (
-                            <Box key={row.offset} component="span">
-                              {row.asciiChars.join('')}
-                            </Box>
-                          ))}
-
-                          {hexRows.length === 0 && !binaryLoading && (
+                          }}>{hexRows.map((row) => (
+                            <Box key={row.offset} component="span">{row.asciiChars.join('')}</Box>
+                          ))}{hexRows.length === 0 && !binaryLoading && (
                             <Typography variant="body2" color="text.secondary" align="center">
-                              No data available
+                              {i18nText("ui:m_14e77953b29470bab443")}
                             </Typography>
-                          )}
-                        </Box>
-                      )}
-
-                      {/* Hex dump view */}
-                      {hexViewMode === 'hex' && (
-                        <Box
-                          sx={{
+                          )}</Box>
+                      )}{/* Hex dump view */}{hexViewMode === 'hex' && (
+                        <Box sx={{
                             fontFamily: 'Courier New, monospace',
                             fontSize: '13px',
                             lineHeight: 1.4,
                             p: 2,
-                            bgcolor: '#1e1e1e',
-                            color: '#d4d4d4',
+                            bgcolor: 'background.default',
+                            color: 'text.primary',
                             minHeight: 400,
-                          }}
-                        >
-                          {hexRows.map((row) => (
-                            <Box
-                              key={row.offset}
+                          }}>{hexRows.map((row) => (
+                            <Box key={row.offset}
                               sx={{
                                 display: 'flex',
                                 gap: 2,
                                 py: 0.25,
                                 px: 1,
                                 '&:hover': {
-                                  bgcolor: 'rgba(255, 255, 255, 0.05)',
+                                  bgcolor: 'action.hover',
                                 },
-                              }}
-                            >
-                              {/* Offset */}
-                              <Box sx={{ color: '#858585', minWidth: '60px' }}>
-                                {row.offset.toString(16).padStart(8, '0')}
-                              </Box>
-
-                              {/* Hex bytes (split into two groups of 8) */}
-                              <Box sx={{ display: 'flex', gap: 2, minWidth: '400px' }}>
-                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                  {row.hexBytes.slice(0, 8).map((hex, i) => (
-                                    <Box key={i} sx={{ minWidth: '20px' }}>
-                                      {hex}
-                                    </Box>
-                                  ))}
-                                </Box>
-                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                  {row.hexBytes.slice(8, 16).map((hex, i) => (
-                                    <Box key={i} sx={{ minWidth: '20px' }}>
-                                      {hex}
-                                    </Box>
-                                  ))}
-                                </Box>
-                              </Box>
-
-                              {/* ASCII representation */}
-                              <Box sx={{ color: '#82b1ff' }}>
-                                {row.asciiChars.join('')}
-                              </Box>
-                            </Box>
-                          ))}
-
-                          {hexRows.length === 0 && !binaryLoading && (
+                              }}>{/* Offset */}<Box sx={{ color: 'text.secondary', minWidth: '60px' }}>{row.offset.toString(16).padStart(8, '0')}</Box>{/* Hex bytes (split into two groups of 8) */}<Box sx={{ display: 'flex', gap: 2, minWidth: '400px' }}><Box sx={{ display: 'flex', gap: 0.5 }}>{row.hexBytes.slice(0, 8).map((hex, i) => (
+                                    <Box key={i} sx={{ minWidth: '20px' }}>{hex}</Box>
+                                  ))}</Box><Box sx={{ display: 'flex', gap: 0.5 }}>{row.hexBytes.slice(8, 16).map((hex, i) => (
+                                    <Box key={i} sx={{ minWidth: '20px' }}>{hex}</Box>
+                                  ))}</Box></Box>{/* ASCII representation */}<Box sx={{ color: 'primary.main' }}>{row.asciiChars.join('')}</Box></Box>
+                          ))}{hexRows.length === 0 && !binaryLoading && (
                             <Typography variant="body2" color="text.secondary" align="center">
-                              No data available
+                              {i18nText("ui:m_14e77953b29470bab443")}
                             </Typography>
-                          )}
-                        </Box>
-                      )}
-
-                      {/* Page selector at bottom */}
-                      {binaryTotalPages > 1 && (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, borderTop: 1, borderColor: 'divider' }}>
-                          <Pagination
-                            count={binaryTotalPages}
+                          )}</Box>
+                      )}{/* Page selector at bottom */}{binaryTotalPages > 1 && (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, borderTop: 1, borderColor: 'divider' }}><Pagination count={binaryTotalPages}
                             page={binaryCurrentPage}
                             onChange={handleBinaryPageChange}
                             disabled={binaryLoading}
                             size="small"
                             showFirstButton
-                            showLastButton
-                          />
-                        </Box>
-                      )}
-                    </Box>
-                  )}
-                </Box>
-              </>
-            ) : null}
-          </DialogContent>
-          <DialogActions>
-            <Button data-learn="Close Dialog: Close the file preview viewer." onClick={handleClosePreview}>Close</Button>
-            {previewFile && (
-              <Button
-                variant="contained"
+                            showLastButton /></Box>
+                      )}</Box>
+                  )}</Box></>
+            ) : null}</DialogContent><DialogActions><Button data-learn={i18nText("ui:m_7891b836223018d2ec2d")} onClick={handleClosePreview}>{i18nText("ui:m_a695258f28d817037ea8")}</Button>{previewFile && (
+              <Button variant="contained"
                 startIcon={<DownloadIcon />}
-                onClick={() => handleDownloadFile(previewFile.path)}
-              >
-                Download
+                onClick={() => handleDownloadFile(previewFile.path)}>
+                {i18nText("ui:m_5f1c36a45f9be850c2ff")}
               </Button>
-            )}
-          </DialogActions>
-        </Dialog>
-      </Box>
-    </Layout>
+            )}</DialogActions></Dialog></Box></Layout>
   );
 }

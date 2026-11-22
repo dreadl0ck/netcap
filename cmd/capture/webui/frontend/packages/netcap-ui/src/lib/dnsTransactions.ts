@@ -4,6 +4,8 @@
  * License: GNU General Public License v3.0
  */
 
+import { formatNumber, translate } from './i18n';
+
 /** Capture-time DNS query/response pairing for one domain (backend DNSTransactionSummary). */
 export interface DNSTransactionSummary {
   queries: number;
@@ -23,9 +25,10 @@ export interface DNSTransactionSummary {
 /** Formats a nanosecond duration as µs, ms or s with three significant digits. */
 export function formatDurationNs(ns: number): string {
   if (!Number.isFinite(ns) || ns < 0) return '—';
-  if (ns < 1e6) return `${(ns / 1e3).toPrecision(3)} µs`;
-  if (ns < 1e9) return `${(ns / 1e6).toPrecision(3)} ms`;
-  return `${(ns / 1e9).toPrecision(3)} s`;
+  const options = { minimumSignificantDigits: 3, maximumSignificantDigits: 3 };
+  if (ns < 1e6) return `${formatNumber(ns / 1e3, options)} µs`;
+  if (ns < 1e9) return `${formatNumber(ns / 1e6, options)} ms`;
+  return `${formatNumber(ns / 1e9, options)} s`;
 }
 
 /** Median RTT text, or a dash when no response was paired. */
@@ -47,11 +50,11 @@ export function rttSortKey(summary?: DNSTransactionSummary): number {
 export function transactionFlags(summary?: DNSTransactionSummary): string[] {
   if (!summary) return [];
   const flags: string[] = [];
-  if (summary.unanswered > 0) flags.push(`${summary.unanswered} unanswered`);
-  if (summary.unsolicited > 0) flags.push(`${summary.unsolicited} unsolicited`);
-  if (summary.retransmissions > 0) flags.push(`${summary.retransmissions} retransmitted`);
-  if (summary.late > 0) flags.push(`${summary.late} late`);
-  if ((summary.reordered ?? 0) > 0) flags.push(`${summary.reordered} clock-order unknown`);
-  if (summary.rttTruncated) flags.push('RTT sample limit reached');
+  if (summary.unanswered > 0) flags.push(translate('ui:dns.transactions.unanswered', { count: summary.unanswered }));
+  if (summary.unsolicited > 0) flags.push(translate('ui:dns.transactions.unsolicited', { count: summary.unsolicited }));
+  if (summary.retransmissions > 0) flags.push(translate('ui:dns.transactions.retransmitted', { count: summary.retransmissions }));
+  if (summary.late > 0) flags.push(translate('ui:dns.transactions.late', { count: summary.late }));
+  if ((summary.reordered ?? 0) > 0) flags.push(translate('ui:dns.transactions.reordered', { count: summary.reordered }));
+  if (summary.rttTruncated) flags.push(translate('ui:dns.transactions.truncated'));
   return flags;
 }

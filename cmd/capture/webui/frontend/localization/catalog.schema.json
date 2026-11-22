@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Netcap bundled ICU catalog",
+  "type": "object",
+  "propertyNames": { "pattern": "^[a-z][a-zA-Z0-9_.-]*$", "not": { "enum": ["constructor", "prototype", "__proto__"] } },
+  "additionalProperties": { "type": "string", "minLength": 1 }
+}

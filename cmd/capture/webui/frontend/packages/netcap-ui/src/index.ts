@@ -116,3 +116,5 @@ export {
 
 // Re-export all types from lib (simplified using export type *)
 export type * from './lib';
+export { appearanceTokens, appearanceCssVariables, appearanceColor, categoryAppearance } from './lib/appearance';
+export type { AppearanceMode, AppearanceTokens } from './lib/appearance';

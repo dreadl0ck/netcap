@@ -82,6 +82,7 @@ func topCategories(counts map[string]int, limit int) []kvPair {
 // ChartGenerator handles chart generation from audit records
 type ChartGenerator struct {
 	Coverage      RenderedChartCoverage
+	Presentation  Presentation
 	auditType     string
 	field         string
 	chartType     string
@@ -91,12 +92,17 @@ type ChartGenerator struct {
 }
 
 // NewChartGenerator creates a new chart generator
-func NewChartGenerator(auditType, field, chartType, interval string, showLegend bool, maxDataPoints int) *ChartGenerator {
+func NewChartGenerator(auditType, field, chartType, interval string, showLegend bool, maxDataPoints int, presentation ...Presentation) *ChartGenerator {
 	// Default to 1000 if not specified or invalid
 	if maxDataPoints <= 0 {
 		maxDataPoints = 1000
 	}
+	p := Presentation{}
+	if len(presentation) > 0 {
+		p = presentation[0]
+	}
 	return &ChartGenerator{
+		Presentation:  p.normalized(),
 		auditType:     auditType,
 		field:         field,
 		chartType:     chartType,
@@ -694,7 +700,7 @@ func (cg *ChartGenerator) generateLineChart(dataPoints []dataPoint) io.Reader {
 		}),
 	)
 
-	return renderChartWithFullHeight(line.Render)
+	return cg.renderChart(line.Render)
 }
 
 // generateBarChart generates a bar chart
@@ -772,7 +778,7 @@ func (cg *ChartGenerator) generateBarChart(dataPoints []dataPoint) io.Reader {
 		}),
 	)
 
-	return renderChartWithFullHeight(bar.Render)
+	return cg.renderChart(bar.Render)
 }
 
 // generateAreaChart generates an area chart
@@ -848,7 +854,7 @@ func (cg *ChartGenerator) generateAreaChart(dataPoints []dataPoint) io.Reader {
 		}),
 	)
 
-	return renderChartWithFullHeight(line.Render)
+	return cg.renderChart(line.Render)
 }
 
 // generateScatterChart generates a scatter chart
@@ -922,7 +928,7 @@ func (cg *ChartGenerator) generateScatterChart(dataPoints []dataPoint) io.Reader
 		}),
 	)
 
-	return renderChartWithFullHeight(scatter.Render)
+	return cg.renderChart(scatter.Render)
 }
 
 // generatePieChart generates a pie chart for categorical data
@@ -978,7 +984,7 @@ func (cg *ChartGenerator) generatePieChart(data []kvPair) io.Reader {
 			FontWeight: "normal",
 		}))
 
-	return renderChartWithFullHeight(pie.Render)
+	return cg.renderChart(pie.Render, map[string]string{"distribution": "Distribution"})
 }
 
 // generateCategoryBarChart generates a bar chart for categorical data
@@ -1050,7 +1056,7 @@ func (cg *ChartGenerator) generateCategoryBarChart(data []kvPair) io.Reader {
 		}),
 	)
 
-	return renderChartWithFullHeight(bar.Render)
+	return cg.renderChart(bar.Render)
 }
 
 // generateFunnelChart generates a funnel chart for numeric time-series data
@@ -1117,7 +1123,7 @@ func (cg *ChartGenerator) generateFunnelChart(dataPoints []dataPoint) io.Reader 
 			}),
 		)
 
-	return renderChartWithFullHeight(funnel.Render)
+	return cg.renderChart(funnel.Render)
 }
 
 // generateRadarChart generates a radar chart for multi-dimensional comparison
@@ -1192,7 +1198,7 @@ func (cg *ChartGenerator) generateRadarChart(dataPoints []dataPoint) io.Reader {
 			}),
 		)
 
-	return renderChartWithFullHeight(radar.Render)
+	return cg.renderChart(radar.Render)
 }
 
 // generateWordCloudChart generates a word cloud for categorical data
@@ -1241,7 +1247,7 @@ func (cg *ChartGenerator) generateWordCloudChart(data []kvPair) io.Reader {
 		)
 	wc.MultiSeries[0].TextStyle.Normal.Color = string(opts.FuncOpts(netcapWordCloudColor))
 
-	return renderChartWithFullHeight(wc.Render)
+	return cg.renderChart(wc.Render, map[string]string{"wordcloud": "Word Cloud"})
 }
 
 // generateCategoryFunnelChart generates a funnel chart for categorical data
@@ -1302,7 +1308,7 @@ func (cg *ChartGenerator) generateCategoryFunnelChart(data []kvPair) io.Reader {
 			}),
 		)
 
-	return renderChartWithFullHeight(funnel.Render)
+	return cg.renderChart(funnel.Render)
 }
 
 // generateSankeyChart generates a sankey diagram for flow visualization
@@ -1419,7 +1425,7 @@ func (cg *ChartGenerator) generateSankeyChart(reader *AuditRecordReader) (io.Rea
 			charts.WithLineStyleOpts(opts.LineStyle{Opacity: opts.Float(0.5)}),
 		)
 
-	return renderChartWithFullHeight(sankey.Render), nil
+	return cg.renderChart(sankey.Render, map[string]string{"flows": "Flows"}), nil
 }
 
 // generateGraphChart generates a graph/network chart for relationships
@@ -1508,12 +1514,25 @@ func (cg *ChartGenerator) generateGraphChart(data []kvPair) io.Reader {
 			}),
 		)
 
-	return renderChartWithFullHeight(graph.Render)
+	return cg.renderChart(graph.Render, map[string]string{"graph": "Network Graph"})
+}
+
+func (cg *ChartGenerator) renderChart(render func(io.Writer) error, seriesLabels ...map[string]string) io.Reader {
+	schematic := cg.chartType == "sankey" || cg.chartType == "graph"
+	field := &chartFieldPresentation{AuditType: cg.auditType, Field: cg.field, Groups: cg.chartType == "graph"}
+	if len(seriesLabels) > 0 {
+		field.SeriesLabels = seriesLabels[0]
+	}
+	return renderChartWithPresentation(render, chartPresentation{Presentation: cg.Presentation, Field: field, Coverage: chartCoverageTexts(&cg.Coverage, schematic)})
 }
 
 // renderChartWithFullHeight renders a go-echarts chart and injects CSS so it fills the iframe
 func renderChartWithFullHeight(render func(io.Writer) error) io.Reader {
-	html, err := injectFullHeightCSS(render)
+	return renderChartWithPresentation(render, chartPresentation{})
+}
+
+func renderChartWithPresentation(render func(io.Writer) error, presentation chartPresentation) io.Reader {
+	html, err := injectFullHeightCSSWithPresentation(render, presentation)
 	if err == nil {
 		return bytes.NewReader(html)
 	}
@@ -1523,17 +1542,19 @@ func renderChartWithFullHeight(render func(io.Writer) error) io.Reader {
 	// inline <script>, so skipping the escaping here would leave a hole behind
 	// nothing more than a CSS-injection failure.
 	if raw, rawErr := renderChartSafe(render); rawErr == nil {
-		return bytes.NewReader(finalizeChartHTML(raw))
+		return bytes.NewReader(finalizeChartHTML(presentChartHTML(raw, presentation)))
 	}
 
 	// err is the injectFullHeightCSS failure. Escape it: it originates in
 	// template execution and can carry fragments of the data being rendered.
 	fallback := fmt.Sprintf(
-		"<html><body><pre>Failed to render chart: %s</pre></body></html>",
+		`<html><head></head><body><p role="alert" data-netcap-error="chart_render_failed">%s</p><pre>Failed to render chart: %s</pre></body></html>`,
+		stdhtml.EscapeString(presentation.text("Failed to generate chart")),
 		stdhtml.EscapeString(err.Error()),
 	)
 
-	return bytes.NewReader([]byte(fallback))
+	presentation.Error = "Failed to generate chart"
+	return bytes.NewReader(finalizeChartHTML(presentChartHTML([]byte(fallback), presentation)))
 }
 
 // extractStringField extracts a string field value from a message

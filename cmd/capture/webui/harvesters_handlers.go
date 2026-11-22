@@ -58,13 +58,15 @@ func (s *Server) saveHarvestersConfig(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success": true,
-		"message": "Harvester configuration saved successfully. Restart capture to apply changes.",
+		"success":     true,
+		"message":     "Harvester configuration saved successfully. Restart capture to apply changes.",
+		"messageI18n": requestUIMessage(r, "harvester.config.saved", "Harvester configuration saved successfully. Restart capture to apply changes.", nil),
 	})
 }
 
 // handleHarvestersPresets lists all saved harvester configuration presets
 func (s *Server) handleHarvestersPresets(w http.ResponseWriter, r *http.Request) {
+	presentationHeaders(w, PresentationFromRequest(r))
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -104,11 +106,12 @@ func (s *Server) handleHarvestersPresets(w http.ResponseWriter, r *http.Request)
 		name := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
 
 		presets = append(presets, HarvesterPresetInfo{
-			Name:           name,
-			Description:    fmt.Sprintf("%d harvesters configured", len(config.Harvesters)),
-			CreatedAt:      info.ModTime(),
-			ModifiedAt:     info.ModTime(),
-			HarvesterCount: len(config.Harvesters),
+			Name:            name,
+			Description:     fmt.Sprintf("%d harvesters configured", len(config.Harvesters)),
+			DescriptionI18n: requestUIMessage(r, "harvester.preset.count", "{count} harvesters configured", map[string]any{"count": len(config.Harvesters)}),
+			CreatedAt:       info.ModTime(),
+			ModifiedAt:      info.ModTime(),
+			HarvesterCount:  len(config.Harvesters),
 		})
 	}
 
@@ -130,7 +133,7 @@ func (s *Server) handleSaveHarvesterPreset(w http.ResponseWriter, r *http.Reques
 	}
 
 	var request struct {
-		Name   string                           `json:"name"`
+		Name   string                      `json:"name"`
 		Config secret.HarvestersConfigFile `json:"config"`
 	}
 
@@ -163,8 +166,9 @@ func (s *Server) handleSaveHarvesterPreset(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success": true,
-		"message": fmt.Sprintf("Preset '%s' saved successfully", request.Name),
+		"success":     true,
+		"message":     fmt.Sprintf("Preset '%s' saved successfully", request.Name),
+		"messageI18n": requestUIMessage(r, "harvester.preset.saved", "Preset '{name}' saved successfully", map[string]any{"name": request.Name}),
 	})
 }
 
@@ -209,9 +213,10 @@ func (s *Server) handleLoadHarvesterPreset(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success": true,
-		"message": fmt.Sprintf("Preset '%s' loaded successfully. Restart capture to apply changes.", request.Name),
-		"config":  config,
+		"success":     true,
+		"message":     fmt.Sprintf("Preset '%s' loaded successfully. Restart capture to apply changes.", request.Name),
+		"messageI18n": requestUIMessage(r, "harvester.preset.loaded", "Preset '{name}' loaded successfully. Restart capture to apply changes.", map[string]any{"name": request.Name}),
+		"config":      config,
 	})
 }
 
@@ -247,8 +252,9 @@ func (s *Server) handleDeleteHarvesterPreset(w http.ResponseWriter, r *http.Requ
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success": true,
-		"message": fmt.Sprintf("Preset '%s' deleted successfully", request.Name),
+		"success":     true,
+		"message":     fmt.Sprintf("Preset '%s' deleted successfully", request.Name),
+		"messageI18n": requestUIMessage(r, "harvester.preset.deleted", "Preset '{name}' deleted successfully", map[string]any{"name": request.Name}),
 	})
 }
 
@@ -326,9 +332,10 @@ func (s *Server) handleUploadHarvesterPreset(w http.ResponseWriter, r *http.Requ
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success": true,
-		"message": fmt.Sprintf("Preset '%s' uploaded successfully", configName),
-		"name":    configName,
+		"success":     true,
+		"message":     fmt.Sprintf("Preset '%s' uploaded successfully", configName),
+		"messageI18n": requestUIMessage(r, "harvester.preset.uploaded", "Preset '{name}' uploaded successfully", map[string]any{"name": configName}),
+		"name":        configName,
 	})
 }
 

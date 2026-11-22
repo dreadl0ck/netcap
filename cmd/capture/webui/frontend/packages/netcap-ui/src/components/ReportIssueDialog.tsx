@@ -34,6 +34,10 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { api } from '../lib/api';
 import { useIsMobile } from '../hooks';
+import { message as i18nMessage, richText as i18nRichText, renderText as i18nRenderText, translate as i18nText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { errorText } from "../lib/i18n";
+
+
 
 interface ReportIssueDialogProps {
   open: boolean;
@@ -43,15 +47,16 @@ interface ReportIssueDialogProps {
 }
 
 export default function ReportIssueDialog({ open, onClose, sessionId, filename }: ReportIssueDialogProps) {
+  const __uiLocale = useUILocale();
   const isMobile = useIsMobile();
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UIMessageText | null>(null);
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async () => {
     if (!description.trim()) {
-      setError('Please provide a description of the issue');
+      setError(i18nMessage("ui:m_f2c4fec837dc16e59b06"));
       return;
     }
 
@@ -69,7 +74,7 @@ export default function ReportIssueDialog({ open, onClose, sessionId, filename }
         window.dispatchEvent(new CustomEvent('refresh-input-files'));
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit issue report');
+      setError(err instanceof Error ? errorText(err) : i18nMessage("ui:m_f0d2d8c9fbbdff8ed2f6"));
     } finally {
       setSubmitting(false);
     }
@@ -84,79 +89,42 @@ export default function ReportIssueDialog({ open, onClose, sessionId, filename }
   };
 
   return (
-    <Dialog open={open} onClose={submitting ? undefined : handleClose} maxWidth="md" fullWidth fullScreen={isMobile}>
-      <DialogTitle>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          Report Issue with PCAP
-          {isMobile && (
-            <IconButton onClick={submitting ? undefined : handleClose} edge="end" disabled={submitting}>
-              <CloseIcon />
-            </IconButton>
-          )}
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        <Box mb={2}>
-          <Typography variant="body2" color="text.secondary">
-            File: <strong>{filename}</strong>
-          </Typography>
-        </Box>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {success && (
+    <Dialog open={open} onClose={submitting ? undefined : handleClose} maxWidth="md" fullWidth fullScreen={isMobile}><DialogTitle><Box display="flex" justifyContent="space-between" alignItems="center">
+          {i18nRichText("ui:m_9eed832eb5b7037384cf", { arg0: isMobile && (
+            <IconButton onClick={submitting ? undefined : handleClose} edge="end" disabled={submitting}><CloseIcon /></IconButton>
+          ) })}
+        </Box></DialogTitle><DialogContent><Box mb={2}><Typography variant="body2" color="text.secondary">
+            {i18nRichText("ui:m_d92f6901e5e22d410b51", { arg0: filename, tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}
+          </Typography></Box>{i18nRenderText(error) && (
+          <Alert severity="error" sx={{ mb: 2 }}>{i18nRenderText(error)}</Alert>
+        )}{success && (
           <Alert severity="success" sx={{ mb: 2 }}>
-            Issue report submitted successfully! Thank you for your feedback.
+            {i18nText("ui:m_f246f34105c11c3c8686")}
           </Alert>
-        )}
-
-        {!success && (
-          <>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Please describe the issue you encountered with this PCAP file. You can use Markdown formatting.
-            </Typography>
-
-            <TextField
-              data-learn="Issue Description: Provide a detailed description of the issue you encountered with this PCAP file using Markdown formatting."
+        )}{!success && (
+          <><Typography variant="body2" color="text.secondary" paragraph>
+              {i18nText("ui:m_ad15e60f68592bd9109f")}
+            </Typography><TextField data-learn={i18nText("ui:m_a6781bf8c1bdc9be3a6b")}
               multiline
               rows={10}
               fullWidth
               variant="outlined"
-              placeholder={`## Issue Description\n\nDescribe the issue here...\n\n## Steps to Reproduce\n\n1. Step one\n2. Step two\n\n## Expected Behavior\n\nWhat you expected to happen...\n\n## Actual Behavior\n\nWhat actually happened...`}
+              placeholder={i18nText("ui:m_6307193d673cd019eccc")}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              disabled={submitting}
-            />
-
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              This report will include the PCAP file and all generated netcap data for analysis.
-              You can submit up to 5 issue reports per day.
-            </Typography>
-          </>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button data-learn="Cancel: Close the issue report dialog without submitting." onClick={handleClose} disabled={submitting}>
-          Cancel
-        </Button>
-        {!success && (
-          <Button
-            data-learn="Submit Issue Report: Send the issue report with the PCAP file and generated data for analysis."
+              disabled={submitting} /><Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              {i18nText("ui:m_5aac9274e1bc0334c669")}
+            </Typography></>
+        )}</DialogContent><DialogActions><Button data-learn={i18nText("ui:m_7b4dc7dfd370661ba2cf")} onClick={handleClose} disabled={submitting}>
+          {i18nText("ui:m_0095547326bed510a824")}
+        </Button>{!success && (
+          <Button data-learn={i18nText("ui:m_4296af22a0db42c7e0d0")}
             onClick={handleSubmit}
             variant="contained"
             color="error"
             disabled={submitting || !description.trim()}
-            startIcon={submitting ? <CircularProgress size={20} /> : null}
-          >
-            {submitting ? 'Submitting...' : 'Submit Issue Report'}
-          </Button>
-        )}
-      </DialogActions>
-    </Dialog>
+            startIcon={submitting ? <CircularProgress size={20} /> : null}>{submitting ? i18nText("ui:m_2c6514b80ad85a7117cf") : i18nText("ui:m_f127623825b4d277542d")}</Button>
+        )}</DialogActions></Dialog>
   );
 }
 

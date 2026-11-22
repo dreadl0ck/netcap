@@ -24,6 +24,8 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { translate as i18nText, richText as i18nRichText, useLocale as useUILocale } from "../lib/i18n";
+
 
 /**
  * CommunityIDFilterBar - A bar component that displays the currently selected Community IDs
@@ -32,6 +34,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
  * This component is designed to be placed in the Layout to show active filters across all pages.
  */
 export function CommunityIDFilterBar() {
+  const __uiLocale = useUILocale();
   const { 
     selectedCommunityIDs, 
     removeCommunityID, 
@@ -57,9 +60,7 @@ export function CommunityIDFilterBar() {
   const hiddenCount = communityIDArray.length - maxVisibleChips;
 
   return (
-    <Collapse in={hasSelectedIDs}>
-      <Paper
-        elevation={2}
+    <Collapse in={hasSelectedIDs}><Paper elevation={2}
         sx={{
           p: 1.5,
           mb: 2,
@@ -70,48 +71,21 @@ export function CommunityIDFilterBar() {
           opacity: isFilterEnabled ? 1 : 0.8,
           transition: 'all 0.2s ease-in-out',
         }}
-        data-learn="Community ID Filter Bar: Shows currently selected Community IDs. Use the toggle to enable/disable filtering without removing IDs. Click X on individual IDs to remove them, or Clear All to remove all filters."
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-          {/* Toggle and Label */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mr: 1 }}>
-            <Tooltip title={isFilterEnabled ? 'Click to disable filter (keep IDs)' : 'Click to enable filter'}>
-              <FormControlLabel
-                control={
-                  <Switch 
-                    size="small" 
+        data-learn={i18nText("ui:m_0434328930d7c05b6485")}><Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>{/* Toggle and Label */}<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mr: 1 }}><Tooltip title={isFilterEnabled ? i18nText("ui:m_5145fe29da45514aafc1") : i18nText("ui:m_3063f452c50e9a7241af")}><FormControlLabel control={<Switch size="small" 
                     checked={isFilterEnabled} 
                     onChange={toggleFilterEnabled}
-                    color="primary"
-                  />
-                }
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    {isFilterEnabled ? (
+                    color="primary" />}
+                label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>{isFilterEnabled ? (
                       <FilterListIcon color="primary" fontSize="small" />
                     ) : (
                       <FilterListOffIcon color="disabled" fontSize="small" />
-                    )}
-                    <Typography 
-                      variant="body2" 
+                    )}<Typography variant="body2" 
                       color={isFilterEnabled ? 'primary' : 'text.disabled'} 
-                      fontWeight="medium"
-                    >
-                      Community ID Filter ({communityIDArray.length})
-                      {!isFilterEnabled && ' (disabled)'}
-                    </Typography>
-                  </Box>
-                }
-                sx={{ m: 0 }}
-              />
-            </Tooltip>
-          </Box>
-          
-          {/* ID Chips */}
-          {visibleChips.map((id) => (
-            <Tooltip key={id} title={`Remove "${id}" from filter`}>
-              <Chip
-                label={id.length > 25 ? `${id.substring(0, 25)}...` : id}
+                      fontWeight="medium">
+                      {i18nRichText("ui:m_219e340d1e77e370b827", { arg0: communityIDArray.length, arg1: !isFilterEnabled && i18nText("ui:m_4505558acd8f0c46a810") })}
+                    </Typography></Box>}
+                sx={{ m: 0 }} /></Tooltip></Box>{/* ID Chips */}{visibleChips.map((id) => (
+            <Tooltip key={id} title={i18nText("ui:m_deeac3d6d7f0cd3b7623", { arg0: id })}><Chip label={id.length > 25 ? `${id.substring(0, 25)}...` : id}
                 size="small"
                 color={isFilterEnabled ? 'primary' : 'default'}
                 variant={isFilterEnabled ? 'filled' : 'outlined'}
@@ -126,44 +100,22 @@ export function CommunityIDFilterBar() {
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                   },
-                }}
-              />
-            </Tooltip>
-          ))}
-          {hiddenCount > 0 && (
-            <Chip
-              label={`+${hiddenCount} more`}
+                }} /></Tooltip>
+          ))}{hiddenCount > 0 && (
+            <Chip label={i18nText("ui:m_5000f686d6d8f94a73f9", { arg0: hiddenCount })}
               size="small"
               variant="outlined"
-              onClick={() => setShowAllChips(true)}
-            />
-          )}
-          
-          {/* Clear All Button */}
-          {communityIDArray.length > 1 && (
-            <Tooltip title="Clear all Community ID filters">
-              <Chip
-                label="Clear All"
+              onClick={() => setShowAllChips(true)} />
+          )}{/* Clear All Button */}{communityIDArray.length > 1 && (
+            <Tooltip title={i18nText("ui:m_10e58ce86328963d6cd1")}><Chip label={i18nText("ui:m_0cb3d73ec88de1474e7b")}
                 size="small"
                 variant="outlined"
                 color="error"
                 onClick={clearCommunityIDs}
                 deleteIcon={<ClearIcon fontSize="small" />}
                 onDelete={clearCommunityIDs}
-                sx={{ ml: 1 }}
-              />
-            </Tooltip>
-          )}
-        </Box>
-        
-        <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' }, mt: 1 }}>
-          {isFilterEnabled 
-            ? 'Filtering data by Community ID for cross-tool correlation (Zeek, Suricata, etc.)'
-            : 'Filter disabled - toggle on to apply Community ID filtering'
-          }
-        </Typography>
-      </Paper>
-    </Collapse>
+                sx={{ ml: 1 }} /></Tooltip>
+          )}</Box><Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' }, mt: 1 }}>{isFilterEnabled ? i18nText("ui:m_90f623e5b2cffc8f5535") : i18nText("ui:m_9e9f335be8386ba826f6")}</Typography></Paper></Collapse>
   );
 }
 

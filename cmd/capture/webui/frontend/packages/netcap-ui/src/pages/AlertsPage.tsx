@@ -67,80 +67,38 @@ import FileSelectorHeader from '../components/FileSelectorHeader';
 import ResponsiveDataView from '../components/ResponsiveDataView';
 import { Alert, GroupedAlert, AlertStatsResponse, formatBytes } from '../lib/api';
 import { useNetcapApi, useIsMobile } from '../hooks';
-import useSWR, { mutate, mutate as globalMutate } from 'swr';
+
 import { FilterExpressionBlock } from '../components/FilterExpressionHighlight';
 
 import { syntaxHighlightJSON } from '../lib/html';
+import { useTheme } from '@mui/material/styles';
+import { appearanceTokens } from '../lib/appearance';
 import NetworkDetectionEvidence, { NetworkDetectionCoverage } from '../components/NetworkDetectionEvidence';
 import RelatedEvidence from '../components/RelatedEvidence';
 import { selectorForAlert } from '../lib/evidenceLinks';
-// Helper function to convert unix timestamps to human-readable format
-// fieldName parameter helps identify if we should convert this number
-function convertTimestamps(obj: any, fieldName?: string): any {
-  if (obj === null || obj === undefined) return obj;
-  
-  // Only convert numbers if they're in a timestamp field
-  if (typeof obj === 'number' && obj > 1000000000 && fieldName) {
-    const lowerFieldName = fieldName.toLowerCase();
-    const isTimestampField = lowerFieldName === 'timestamp' || 
-                             lowerFieldName === 'time' ||
-                             lowerFieldName.endsWith('timestamp') ||
-                             lowerFieldName.endsWith('time');
-    
-    if (!isTimestampField) {
-      return obj; // Not a timestamp field, return as-is
-    }
-    
-    // Determine if timestamp is in nanoseconds (19 digits), microseconds (16 digits), milliseconds (13 digits), or seconds (10 digits)
-    let timestampMs: number;
-    if (obj > 1e15) {
-      // Nanoseconds (19 digits) or microseconds (16 digits)
-      if (obj > 1e17) {
-        // Nanoseconds - divide by 1,000,000
-        timestampMs = obj / 1000000;
-      } else {
-        // Microseconds - divide by 1,000
-        timestampMs = obj / 1000;
-      }
-    } else if (obj > 1e12) {
-      // Already in milliseconds (13 digits)
-      timestampMs = obj;
-    } else {
-      // Seconds (10 digits) - multiply by 1000
-      timestampMs = obj * 1000;
-    }
-    
-    try {
-      const date = new Date(timestampMs);
-      if (isNaN(date.getTime())) {
-        return obj; // Return original if invalid
-      }
-      return date.toISOString();
-    } catch (e) {
-      return obj; // Return original on error
-    }
-  }
-  
-  if (typeof obj !== 'object') return obj;
-  
-  if (Array.isArray(obj)) {
-    return obj.map(item => convertTimestamps(item));
-  }
-  
-  const result: any = {};
-  for (const [key, value] of Object.entries(obj)) {
-    result[key] = convertTimestamps(value, key);
-  }
-  return result;
-}
+import { message as i18nMessage, translate as i18nText, richText as i18nRichText, getLocale as getUILocale, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR, mutatePresentation as mutate, mutatePresentation as globalMutate } from "../lib/i18n";
+import { renderError, translate } from "../lib/i18n";
+import { getLocale } from "../lib/i18n";
+import { recordTypeLabel } from "../lib/i18n";
+import { formatTimestamp as displayTimestamp } from '../lib/api';
+import { errorText } from "../lib/i18n";
+import { rawCode } from "../lib/i18n";
+import { message as finalCopyMessage } from "../lib/i18n";
 
-// Syntax highlighting for JSON
-function formatMatchedRecord(raw: string): string {
-  try { return JSON.stringify(convertTimestamps(JSON.parse(raw)), null, 2); }
-  catch { return raw; }
-}
+
+
+
+
+
+
+
+
+import { formatEvidenceJSON as formatMatchedRecord } from '../lib/evidenceJSON';
 
 export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceActions?: (alert: Alert) => React.ReactNode } = {}) {
+  const __uiLocale = useUILocale();
+  const colors = appearanceTokens(useTheme().palette.mode);
   const api = useNetcapApi();
   const isMobile = useIsMobile();
   const [page, setPage] = useState(0);
@@ -156,7 +114,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [showResolved, setShowResolved] = useState(true);
   const [resolvingGroups, setResolvingGroups] = useState<Set<string>>(new Set());
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: UIMessageText; severity: 'success' | 'error' }>({
     open: false,
     message: '',
     severity: 'success',
@@ -261,29 +219,21 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
       window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
     } catch (err) {
       console.error('Failed to switch file:', err);
-      setSnackbar({
-        open: true,
-        message: 'Failed to switch to this capture',
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: i18nMessage("ui:m_7ab800e4d59917b1d34c"), severity: 'error' });
     } finally {
       setSwitchingFile(false);
     }
-  }, [mutateStatus, mutate, page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter]);
+  }, [mutateStatus, mutate, page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter, __uiLocale]);
 
   const handleClearAlerts = async () => {
-    if (!confirm('Are you sure you want to clear all alerts? This action cannot be undone.')) return;
+    if (!confirm(i18nText("ui:m_a42e250b515343cd36cf"))) return;
 
     try {
       await api.clearAlerts();
-      setSnackbar({ open: true, message: 'All alerts cleared successfully', severity: 'success' });
+      setSnackbar({ open: true, message: i18nMessage("ui:m_e5eebd11d0be4d493491"), severity: 'success' });
       handleRefresh();
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message: err instanceof Error ? err.message : 'Failed to clear alerts',
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: err instanceof Error ? errorText(err) : i18nMessage("ui:m_83302aaa9554beb6daa9"), severity: 'error' });
     }
   };
 
@@ -296,14 +246,10 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
     setResolvingGroups(prev => new Set(prev).add(groupId));
     try {
       await api.resolveAlert(undefined, groupId);
-      setSnackbar({ open: true, message: 'Alert group resolved successfully', severity: 'success' });
+      setSnackbar({ open: true, message: i18nMessage("ui:m_f0408e12c492dc1f1d34"), severity: 'success' });
       handleRefresh();
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message: err instanceof Error ? err.message : 'Failed to resolve alert group',
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: err instanceof Error ? errorText(err) : i18nMessage("ui:m_59a736b3ef70f037614b"), severity: 'error' });
     } finally {
       setResolvingGroups(prev => {
         const next = new Set(prev);
@@ -317,14 +263,10 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
     setResolvingGroups(prev => new Set(prev).add(groupId));
     try {
       await api.unresolveAlert(undefined, groupId);
-      setSnackbar({ open: true, message: 'Alert group unresolved successfully', severity: 'success' });
+      setSnackbar({ open: true, message: i18nMessage("ui:m_baef1de56e99528cfa74"), severity: 'success' });
       handleRefresh();
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message: err instanceof Error ? err.message : 'Failed to unresolve alert group',
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: err instanceof Error ? errorText(err) : i18nMessage("ui:m_b506ee0cfe37d866683e"), severity: 'error' });
     } finally {
       setResolvingGroups(prev => {
         const next = new Set(prev);
@@ -368,9 +310,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
     }
   };
 
-  const formatTimestamp = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString();
-  };
+  const formatTimestamp = (timestamp: number, unit: 'seconds' | 'milliseconds' | 'nanoseconds') => displayTimestamp(timestamp, unit);
 
   // Get unique rule names for filter
   const uniqueRules = Array.from(new Set(stats?.byRule ? Object.keys(stats.byRule) : []));
@@ -378,45 +318,33 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
   // Get only completed files for the selector
   // Use shared FileSelectorHeader component
   const fileSelector = (
-    <FileSelectorHeader
-      inputFiles={inputFiles || []}
+    <FileSelectorHeader inputFiles={inputFiles || []}
       status={status}
       switchingFile={switchingFile}
       onFileChange={handleFileChange}
-      learnHint="Capture Selector: Switch between different analyzed PCAP files to view their security alerts and threats."
-    />
+      learnHint={finalCopyMessage("ui:m_d413445dc7844e3a4ec6")} />
   );
 
   return (
-    <Layout title="Alerts" headerAction={fileSelector}>
-      <Box sx={{ minWidth: 0 }}>
-        {offlineHistory?.evaluations.some(report => report.status !== 'complete') && <MuiAlert severity="warning" sx={{ mb: 2 }}>Offline evaluation history includes incomplete coverage. Review execution reports on the Detection Rules page.</MuiAlert>}
-        {offlineHistoryError && offlineHistoryError.status !== 404 && offlineHistoryError.status !== 409 && <MuiAlert severity="error" sx={{ mb: 2 }}>Offline evaluation history could not be read: {offlineHistoryError.message}</MuiAlert>}
-        <Box sx={{ 
+    <Layout title={i18nText("ui:m_451e6181764a06e7c139")} headerAction={fileSelector}><Box sx={{ minWidth: 0 }}>{offlineHistory?.evaluations.some(report => report.status !== 'complete') && <MuiAlert severity="warning" sx={{ mb: 2 }}>{i18nText("ui:m_49618d0c10d77081350b")}</MuiAlert>}{offlineHistoryError && offlineHistoryError.status !== 404 && offlineHistoryError.status !== 409 && <MuiAlert severity="error" sx={{ mb: 2 }}>{i18nRichText("ui:m_1a51b1fa92b0c5f873fa", { arg0: renderError(offlineHistoryError) })}</MuiAlert>}<Box sx={{ 
           display: 'flex', 
           flexDirection: { xs: 'column', md: 'row' },
           justifyContent: 'space-between', 
           alignItems: { xs: 'stretch', md: 'flex-start' }, 
           gap: 2,
           mb: 3 
-        }}>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            {selectedFile && (
+        }}><Box sx={{ minWidth: 0, flex: 1 }}>{selectedFile && (
               <Box sx={{ 
                 display: 'flex', 
                 gap: { xs: 1, sm: 1.5 }, 
                 alignItems: 'center', 
                 mt: 1,
                 flexWrap: 'wrap'
-              }}>
-                <Typography variant="body1" fontWeight="medium">
-                  {totalCount.toLocaleString()} alert{totalCount !== 1 ? 's' : ''}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
-                  for capture:
-                </Typography>
-                <Chip
-                  label={selectedFile.name}
+              }}><Typography variant="body1" fontWeight="medium">
+                  {i18nRichText("ui:m_108b30ec5d9fba5e66b8", { arg0: totalCount })}
+                </Typography><Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  {i18nText("ui:m_500d5a66ed6c66e71b80")}
+                </Typography><Chip label={selectedFile.name}
                   size="small"
                   sx={{ 
                     fontFamily: 'monospace', 
@@ -426,207 +354,76 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                     }
-                  }}
-                />
-                <Chip
-                  label={formatBytes(selectedFile.size)}
+                  }} /><Chip label={formatBytes(selectedFile.size)}
                   size="small"
                   variant="outlined"
-                  sx={{ fontSize: '0.75rem' }}
-                />
-              </Box>
-            )}
-          </Box>
-          <Box sx={{ 
+                  sx={{ fontSize: '0.75rem' }} /></Box>
+            )}</Box><Box sx={{ 
             display: 'flex', 
             gap: 1,
             flexWrap: 'wrap',
             justifyContent: { xs: 'stretch', md: 'flex-end' }
-          }}>
-            <Button 
-              data-learn="Toggle Resolved Alerts: Show or hide alerts that have been marked as resolved to focus on active security issues."
+          }}><Button data-learn={i18nText("ui:m_94d69d96ded302a37efd")}
               variant={showResolved ? "contained" : "outlined"}
               startIcon={<FilterAltIcon />} 
               onClick={() => setShowResolved(!showResolved)}
               size="small"
-              sx={{ flex: { xs: 1, sm: 'none' } }}
-            >
-              {showResolved ? 'Hide Resolved' : 'Show Resolved'}
-            </Button>
-            <Button 
-              data-learn="Refresh Alerts: Reload the alerts list to check for new security alerts and updates from the analysis."
+              sx={{ flex: { xs: 1, sm: 'none' } }}>{showResolved ? i18nText("ui:m_9ae02100760198ff9fd0") : i18nText("ui:m_bbdbb9a6cb91944ace7b")}</Button><Button data-learn={i18nText("ui:m_a3d69e25d47882759349")}
               variant="outlined" 
               startIcon={<RefreshIcon />} 
               onClick={handleRefresh}
               size="small"
-              sx={{ flex: { xs: 1, sm: 'none' } }}
-            >
-              Refresh
-            </Button>
-            <Button 
-              data-learn="Clear All Alerts: Permanently delete all alerts from the current analysis. This action cannot be undone."
+              sx={{ flex: { xs: 1, sm: 'none' } }}>
+              {i18nText("ui:m_230fc1b63eb3ef4e6a34")}
+            </Button><Button data-learn={i18nText("ui:m_1ece4019ce6aa19d7799")}
               variant="outlined" 
               color="error" 
               startIcon={<DeleteIcon />} 
               onClick={handleClearAlerts}
               disabled={totalCount === 0}
               size="small"
-              sx={{ flex: { xs: 1, sm: 'none' } }}
-            >
-              Clear All
-            </Button>
-          </Box>
-        </Box>
-
-        {error && (
+              sx={{ flex: { xs: 1, sm: 'none' } }}>
+              {i18nText("ui:m_0cb3d73ec88de1474e7b")}
+            </Button></Box></Box>{error && (
           <MuiAlert severity="error" sx={{ mb: 2 }}>
-            Failed to load alerts: {error.message}
+            {i18nRichText("ui:m_d1fec055a51de9318b59", { arg0: renderError(error) })}
           </MuiAlert>
-        )}
-
-        <Box sx={{ mb: 2 }}><NetworkDetectionCoverage stats={detectionCoverage ?? undefined} unavailable={Boolean(detectionCoverageError) || detectionCoverage === null} /></Box>
-        <FormControl size="small" sx={{ mb: 2, minWidth: 240 }}><InputLabel id="finding-class-label">Finding classification</InputLabel><Select labelId="finding-class-label" label="Finding classification" value={classificationFilter} onChange={event => { setClassificationFilter(event.target.value); setPage(0); }}>
-          <MenuItem value="">All classifications</MenuItem><MenuItem value="indicator-match">Indicator matches</MenuItem><MenuItem value="behavioral-suspicion">Behavioral suspicions</MenuItem><MenuItem value="policy-observation">Policy observations</MenuItem>
-        </Select></FormControl>
-
-        {/* Statistics Cards */}
-        {stats && (
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography color="text.secondary" gutterBottom>
-                    Total Alerts
-                  </Typography>
-                  <Typography variant="h4">{stats.totalAlerts}</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography color="text.secondary" gutterBottom>
-                    Critical Alerts
-                  </Typography>
-                  <Typography variant="h4" color="error">
-                    {stats.criticalAlerts}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography color="text.secondary" gutterBottom>
-                    By Severity
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-                    {Object.entries(stats.bySeverity).map(([severity, count]) => (
-                      <Chip
-                        key={severity}
+        )}<Box sx={{ mb: 2 }}><NetworkDetectionCoverage stats={detectionCoverage ?? undefined} unavailable={Boolean(detectionCoverageError) || detectionCoverage === null} /></Box><FormControl size="small" sx={{ mb: 2, minWidth: 240 }}><InputLabel id="finding-class-label">{i18nText("ui:m_ce0227fef732712341e3")}</InputLabel><Select labelId="finding-class-label" label={i18nText("ui:m_ce0227fef732712341e3")} value={classificationFilter} onChange={event => { setClassificationFilter(event.target.value); setPage(0); }}><MenuItem value="">{i18nText("ui:m_7543b75b9150514fd1a1")}</MenuItem><MenuItem value="indicator-match">{i18nText("ui:m_4927de4ce6e603ca7260")}</MenuItem><MenuItem value="behavioral-suspicion">{i18nText("ui:m_252e1f238d91fa786162")}</MenuItem><MenuItem value="policy-observation">{i18nText("ui:m_6d9badd743a5785976f6")}</MenuItem></Select></FormControl>{/* Statistics Cards */}{stats && (
+          <Grid container spacing={2} sx={{ mb: 3 }}><Grid item xs={12} sm={6} md={3}><Card sx={{ height: '100%' }}><CardContent><Typography color="text.secondary" gutterBottom>
+                    {i18nText("ui:m_bd3b66813b0e0d1b31ac")}
+                  </Typography><Typography variant="h4">{stats.totalAlerts}</Typography></CardContent></Card></Grid><Grid item xs={12} sm={6} md={3}><Card sx={{ height: '100%' }}><CardContent><Typography color="text.secondary" gutterBottom>
+                    {i18nText("ui:m_0b6c65025445659a60b3")}
+                  </Typography><Typography variant="h4" color="error">{stats.criticalAlerts}</Typography></CardContent></Card></Grid><Grid item xs={12} sm={6} md={3}><Card sx={{ height: '100%' }}><CardContent><Typography color="text.secondary" gutterBottom>
+                    {i18nText("ui:m_6b642f61f2505b500f84")}
+                  </Typography><Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>{Object.entries(stats.bySeverity).map(([severity, count]) => (
+                      <Chip key={severity}
                         label={`${severity}: ${count}`}
                         size="small"
-                        color={getSeverityColor(severity) as any}
-                      />
-                    ))}
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography color="text.secondary" gutterBottom>
-                    Active Rules
-                  </Typography>
-                  <Typography variant="h4">{Object.keys(stats.byRule).length}</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        )}
-
-        {/* Filters */}
-        <Paper sx={{ p: 2, mb: 2 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Severity Filter</InputLabel>
-                <Select
-                  data-learn="Severity Filter: Show only alerts of a specific severity level (Info, Low, Medium, High, or Critical)."
+                        color={getSeverityColor(severity) as any} />
+                    ))}</Box></CardContent></Card></Grid><Grid item xs={12} sm={6} md={3}><Card sx={{ height: '100%' }}><CardContent><Typography color="text.secondary" gutterBottom>
+                    {i18nText("ui:m_410c86407a7428204db4")}
+                  </Typography><Typography variant="h4">{Object.keys(stats.byRule).length}</Typography></CardContent></Card></Grid></Grid>
+        )}{/* Filters */}<Paper sx={{ p: 2, mb: 2 }}><Grid container spacing={2} alignItems="center"><Grid item xs={12} sm={3}><FormControl fullWidth size="small"><InputLabel>{i18nText("ui:m_2c83187c8d6ef78ec584")}</InputLabel><Select data-learn={i18nText("ui:m_56caae8fe9d03f61f020")}
                   value={severityFilter}
-                  label="Severity Filter"
+                  label={i18nText("ui:m_2c83187c8d6ef78ec584")}
                   onChange={(e) => {
                     setSeverityFilter(e.target.value);
                     setPage(0);
-                  }}
-                >
-                  <MenuItem value="">All Severities</MenuItem>
-                  <MenuItem value="info">Info</MenuItem>
-                  <MenuItem value="low">Low</MenuItem>
-                  <MenuItem value="medium">Medium</MenuItem>
-                  <MenuItem value="high">High</MenuItem>
-                  <MenuItem value="critical">Critical</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Rule Filter</InputLabel>
-                <Select
-                  data-learn="Rule Filter: Show only alerts generated by a specific detection rule."
+                  }}><MenuItem value="">{i18nText("ui:m_348cb66057ba9fd3babc")}</MenuItem><MenuItem value="info">{i18nText("ui:m_e23ead341eca901e52be")}</MenuItem><MenuItem value="low">{i18nText("ui:m_f421fc8ad1242ca9d49f")}</MenuItem><MenuItem value="medium">{i18nText("ui:m_793aaa27ac92c4e93090")}</MenuItem><MenuItem value="high">{i18nText("ui:m_222fd33d915d779d6af3")}</MenuItem><MenuItem value="critical">{i18nText("ui:m_fa8cf458bd646a3d049e")}</MenuItem></Select></FormControl></Grid><Grid item xs={12} sm={3}><FormControl fullWidth size="small"><InputLabel>{i18nText("ui:m_2cbe86c7c53f33f1b4c8")}</InputLabel><Select data-learn={i18nText("ui:m_2cee6ae9f14d25e958ff")}
                   value={ruleFilter}
-                  label="Rule Filter"
+                  label={i18nText("ui:m_2cbe86c7c53f33f1b4c8")}
                   onChange={(e) => {
                     setRuleFilter(e.target.value);
                     setPage(0);
-                  }}
-                >
-                  <MenuItem value="">All Rules</MenuItem>
-                  {uniqueRules.map((rule) => (
-                    <MenuItem key={rule} value={rule}>
-                      {rule}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Sort By</InputLabel>
-                <Select
-                  data-learn="Sort By: Change the sorting order of alert groups (by count, time, or severity)."
+                  }}><MenuItem value="">{i18nText("ui:m_cd3ecfc631ecc41922b4")}</MenuItem>{uniqueRules.map((rule) => (
+                    <MenuItem key={rule} value={rule}>{rule}</MenuItem>
+                  ))}</Select></FormControl></Grid><Grid item xs={12} sm={3}><FormControl fullWidth size="small"><InputLabel>{i18nText("ui:m_b662f864c87d05763b4d")}</InputLabel><Select data-learn={i18nText("ui:m_2d2efcf5c8f01db39e49")}
                   value={sortBy}
-                  label="Sort By"
-                  onChange={(e) => setSortBy(e.target.value as 'count' | 'lastSeen' | 'firstSeen' | 'severity')}
-                >
-                  <MenuItem value="lastSeen">Last Seen</MenuItem>
-                  <MenuItem value="firstSeen">First Seen</MenuItem>
-                  <MenuItem value="count">Count</MenuItem>
-                  <MenuItem value="severity">Severity</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Sort Order</InputLabel>
-                <Select
-                  data-learn="Sort Order: Choose ascending (lowest to highest) or descending (highest to lowest) order for the selected sort criteria."
+                  label={i18nText("ui:m_b662f864c87d05763b4d")}
+                  onChange={(e) => setSortBy(e.target.value as 'count' | 'lastSeen' | 'firstSeen' | 'severity')}><MenuItem value="lastSeen">{i18nText("ui:m_b5d1cbf759286ef6d5c9")}</MenuItem><MenuItem value="firstSeen">{i18nText("ui:m_e7368473dd089d37c0a2")}</MenuItem><MenuItem value="count">{i18nText("ui:m_9cc2c6f927f2cbb0421c")}</MenuItem><MenuItem value="severity">{i18nText("ui:m_d1de98cbf475009ee57d")}</MenuItem></Select></FormControl></Grid><Grid item xs={12} sm={3}><FormControl fullWidth size="small"><InputLabel>{i18nText("ui:m_e47f31c8ff75b06da2d6")}</InputLabel><Select data-learn={i18nText("ui:m_a10eb80a064c233508e4")}
                   value={sortOrder}
-                  label="Sort Order"
-                  onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                >
-                  <MenuItem value="desc">Descending</MenuItem>
-                  <MenuItem value="asc">Ascending</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </Paper>
-
-        {/* Grouped Alerts Table */}
-        <ResponsiveDataView<GroupedAlert>
-          data={groups}
+                  label={i18nText("ui:m_e47f31c8ff75b06da2d6")}
+                  onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}><MenuItem value="desc">{i18nText("ui:m_81b9877e1ef78776e7fb")}</MenuItem><MenuItem value="asc">{i18nText("ui:m_078698fd3381a74bad23")}</MenuItem></Select></FormControl></Grid></Grid></Paper>{/* Grouped Alerts Table */}<ResponsiveDataView data={groups}
           totalCount={groupCount}
           page={page}
           rowsPerPage={rowsPerPage}
@@ -634,606 +431,258 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
           onRowsPerPageChange={handleChangeRowsPerPage}
           rowsPerPageOptions={[10, 25, 50, 100]}
           labelDisplayedRows={({ from, to, count }) =>
-            `${from}-${to} of ${count} groups (${totalCount.toLocaleString()} total alerts)`
-          }
+            translate("ui:m_b05d201872a5873dd2ba", { arg0: from, arg1: to, arg2: count, arg3: totalCount })}
           onCardClick={(group) => {
             const groupKey = `${group.ruleName}-${group.severity}`;
             setExpandedGroup(expandedGroup === groupKey ? null : groupKey);
           }}
           renderCard={(group) => (
-            <Card variant="outlined">
-              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-                  <Chip label={group.severity.toUpperCase()} size="small" color={getSeverityColor(group.severity) as any} />
-                  <Chip
-                    label={`x${group.count.toLocaleString()}`}
+            <Card variant="outlined"><CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}><Box display="flex" alignItems="center" gap={1} mb={0.5}><Chip label={group.severity.toUpperCase()} size="small" color={getSeverityColor(group.severity) as any} /><Chip label={i18nText("ui:m_c81c321b7df174588572", { arg0: group.count.toLocaleString(getUILocale()) })}
                     size="small"
                     color="primary"
-                    sx={{ fontWeight: 'bold' }}
-                  />
-                  {group.resolved && (
-                    <Chip label="Resolved" size="small" variant="outlined" color="success" />
-                  )}
-                </Box>
-                <Typography variant="body2" noWrap fontWeight="medium">{group.ruleName}</Typography>
-                <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
-                  {group.description}
-                </Typography>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatTimestamp(group.firstSeen)}
-                  </Typography>
-                  {group.resolved ? (
-                    <IconButton
-                      size="small"
+                    sx={{ fontWeight: 'bold' }} />{group.resolved && (
+                    <Chip label={i18nText("ui:m_6409fda6c1b6bad4d325")} size="small" variant="outlined" color="success" />
+                  )}</Box><Typography variant="body2" noWrap fontWeight="medium">{group.ruleName}</Typography><Typography variant="caption" color="text.secondary" display="block" mt={0.5}>{group.description}</Typography><Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}><Typography variant="caption" color="text.secondary">{formatTimestamp(group.firstSeen, 'nanoseconds')}</Typography>{group.resolved ? (
+                    <IconButton size="small"
                       color="default"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleUnresolveGroup(group.groupId);
                       }}
-                      disabled={resolvingGroups.has(group.groupId)}
-                    >
-                      <UndoIcon fontSize="small" />
-                    </IconButton>
+                      disabled={resolvingGroups.has(group.groupId)}><UndoIcon fontSize="small" /></IconButton>
                   ) : (
-                    <IconButton
-                      size="small"
+                    <IconButton size="small"
                       color="success"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleResolveGroup(group.groupId);
                       }}
-                      disabled={resolvingGroups.has(group.groupId)}
-                    >
-                      <CheckIcon fontSize="small" />
-                    </IconButton>
-                  )}
-                </Box>
-              </CardContent>
-            </Card>
+                      disabled={resolvingGroups.has(group.groupId)}><CheckIcon fontSize="small" /></IconButton>
+                  )}</Box></CardContent></Card>
           )}
-          desktopTable={
-            <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
-              <Table sx={{ minWidth: { xs: 800, md: 'auto' } }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell width="40px"></TableCell>
-                    <TableCell>
-                      <TableSortLabel
-                        active={sortBy === 'severity'}
+          desktopTable={<TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}><Table sx={{ minWidth: { xs: 800, md: 'auto' } }}><TableHead><TableRow><TableCell width="40px"></TableCell><TableCell><TableSortLabel active={sortBy === 'severity'}
                         direction={sortBy === 'severity' ? sortOrder : 'desc'}
-                        onClick={() => handleSort('severity')}
-                      >
-                        Severity
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell>Rule Name</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Type</TableCell>
-                    <TableCell>
-                      <TableSortLabel
-                        active={sortBy === 'count'}
+                        onClick={() => handleSort('severity')}>
+                        {i18nText("ui:m_d1de98cbf475009ee57d")}
+                      </TableSortLabel></TableCell><TableCell>{i18nText("ui:m_752576a3b0b2dca4ab6a")}</TableCell><TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>{i18nText("ui:m_3da346bd3b7d84ce65d6")}</TableCell><TableCell><TableSortLabel active={sortBy === 'count'}
                         direction={sortBy === 'count' ? sortOrder : 'desc'}
-                        onClick={() => handleSort('count')}
-                      >
-                        Count
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell>
-                      <TableSortLabel
-                        active={sortBy === 'firstSeen'}
+                        onClick={() => handleSort('count')}>
+                        {i18nText("ui:m_9cc2c6f927f2cbb0421c")}
+                      </TableSortLabel></TableCell><TableCell><TableSortLabel active={sortBy === 'firstSeen'}
                         direction={sortBy === 'firstSeen' ? sortOrder : 'desc'}
-                        onClick={() => handleSort('firstSeen')}
-                      >
-                        First Seen
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                      <TableSortLabel
-                        active={sortBy === 'lastSeen'}
+                        onClick={() => handleSort('firstSeen')}>
+                        {i18nText("ui:m_e7368473dd089d37c0a2")}
+                      </TableSortLabel></TableCell><TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}><TableSortLabel active={sortBy === 'lastSeen'}
                         direction={sortBy === 'lastSeen' ? sortOrder : 'desc'}
-                        onClick={() => handleSort('lastSeen')}
-                      >
-                        Last Seen
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Unique IPs</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Tags</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {groups.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={10} align="center">
-                        <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                          No alerts found. Alerts will appear here when detection rules match network traffic.
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
+                        onClick={() => handleSort('lastSeen')}>
+                        {i18nText("ui:m_b5d1cbf759286ef6d5c9")}
+                      </TableSortLabel></TableCell><TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>{i18nText("ui:m_619b4801dd549151fd61")}</TableCell><TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>{i18nText("ui:m_47846a266ab7374ce1aa")}</TableCell><TableCell>{i18nText("ui:m_8b59af6a47204b74041c")}</TableCell></TableRow></TableHead><TableBody>{groups.length === 0 ? (
+                    <TableRow><TableCell colSpan={10} align="center"><Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
+                          {i18nText("ui:m_93a3d921adb7f9e44c8d")}
+                        </Typography></TableCell></TableRow>
                   ) : (
                     groups.map((group, index) => {
                       const groupKey = `${group.ruleName}-${group.severity}`;
                       const isExpanded = expandedGroup === groupKey;
 
                       return (
-                        <>
-                          <TableRow
-                            key={groupKey}
+                        <><TableRow key={groupKey}
                             hover
                             sx={{
                               cursor: 'pointer',
                               opacity: group.resolved ? 0.6 : 1,
                               backgroundColor: group.resolved ? 'action.selected' : 'inherit',
-                            }}
-                          >
-                            <TableCell>
-                              <IconButton
-                                size="small"
-                                onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}
-                              >
-                                {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                              </IconButton>
-                            </TableCell>
-                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                {getSeverityIcon(group.severity)}
-                                <Chip
-                                  label={group.severity.toUpperCase()}
+                            }}><TableCell><IconButton size="small"
+                                onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>{isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}</IconButton></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>{getSeverityIcon(group.severity)}<Chip label={group.severity.toUpperCase()}
                                   size="small"
-                                  color={getSeverityColor(group.severity) as any}
-                                />
-                              </Box>
-                            </TableCell>
-                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
-                              <Tooltip title={group.description}>
-                                <Typography
-                                  variant="body2"
+                                  color={getSeverityColor(group.severity) as any} /></Box></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}><Tooltip title={group.description}><Typography variant="body2"
                                   fontWeight="medium"
                                   sx={{
                                     maxWidth: 300,
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
                                     whiteSpace: 'nowrap'
-                                  }}
-                                >
-                                  {group.ruleName}
-                                </Typography>
-                              </Tooltip>
-                            </TableCell>
-                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                              <Chip label={group.recordType} size="small" variant="outlined" />
-                            </TableCell>
-                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
-                              <Chip
-                                label={group.count.toLocaleString()}
+                                  }}>{group.ruleName}</Typography></Tooltip></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Chip label={recordTypeLabel(group.recordType)} size="small" variant="outlined" /></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}><Chip label={group.count.toLocaleString(getUILocale())}
                                 size="small"
                                 color="primary"
-                                sx={{ fontWeight: 'bold' }}
-                              />
-                            </TableCell>
-                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
-                              <Typography variant="body2">
-                                {formatTimestamp(group.firstSeen)}
-                              </Typography>
-                            </TableCell>
-                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                              <Typography variant="body2">
-                                {formatTimestamp(group.lastSeen)}
-                              </Typography>
-                            </TableCell>
-                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                                <Typography variant="caption" color="text.secondary">
-                                  Src: {group.uniqueSrcIPs.length} | Dst: {group.uniqueDstIPs.length}
-                                </Typography>
-                                {group.uniqueSrcPorts.length > 0 && (
+                                sx={{ fontWeight: 'bold' }} /></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}><Typography variant="body2">{formatTimestamp(group.firstSeen, 'nanoseconds')}</Typography></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Typography variant="body2">{formatTimestamp(group.lastSeen, 'nanoseconds')}</Typography></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}><Typography variant="caption" color="text.secondary">
+                                  {i18nRichText("ui:m_98ad4aa030dde6b61875", { arg0: group.uniqueSrcIPs.length, arg1: group.uniqueDstIPs.length })}
+                                </Typography>{group.uniqueSrcPorts.length > 0 && (
                                   <Typography variant="caption" color="text.secondary">
-                                    Ports: {group.uniqueSrcPorts.length + group.uniqueDstPorts.length}
+                                    {i18nRichText("ui:m_44f1db4fe5b60203be56", { arg0: group.uniqueSrcPorts.length + group.uniqueDstPorts.length })}
                                   </Typography>
-                                )}
-                              </Box>
-                            </TableCell>
-                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                {group.tags.slice(0, 2).map((tag) => (
+                                )}</Box></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', lg: 'table-cell' } }}><Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>{group.tags.slice(0, 2).map((tag) => (
                                   <Chip key={tag} label={tag} size="small" />
-                                ))}
-                                {group.tags.length > 2 && (
+                                ))}{group.tags.length > 2 && (
                                   <Chip label={`+${group.tags.length - 2}`} size="small" variant="outlined" />
-                                )}
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                {group.resolved ? (
-                                  <Tooltip title="Mark as unresolved">
-                                    <IconButton
-                                      data-learn="Mark as Unresolved: Reopen this alert group for investigation."
+                                )}</Box></TableCell><TableCell><Box sx={{ display: 'flex', gap: 0.5 }}>{group.resolved ? (
+                                  <Tooltip title={i18nText("ui:m_9b3c382b6c1a611357d6")}><IconButton data-learn={i18nText("ui:m_33bf7480c073e5d22831")}
                                       size="small"
                                       color="default"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleUnresolveGroup(group.groupId);
                                       }}
-                                      disabled={resolvingGroups.has(group.groupId)}
-                                    >
-                                      <UndoIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
+                                      disabled={resolvingGroups.has(group.groupId)}><UndoIcon fontSize="small" /></IconButton></Tooltip>
                                 ) : (
-                                  <Tooltip title="Mark as resolved">
-                                    <IconButton
-                                      data-learn="Mark as Resolved: Mark this alert group as investigated and resolved."
+                                  <Tooltip title={i18nText("ui:m_3a6ca6a59b03b40a01b4")}><IconButton data-learn={i18nText("ui:m_d1637304822bf48b6b3d")}
                                       size="small"
                                       color="success"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleResolveGroup(group.groupId);
                                       }}
-                                      disabled={resolvingGroups.has(group.groupId)}
-                                    >
-                                      <CheckIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                )}
-                              </Box>
-                            </TableCell>
-                          </TableRow>
-
-                          {/* Expanded Details */}
-                          {isExpanded && (
-                            <TableRow>
-                              <TableCell colSpan={10} sx={{ backgroundColor: 'action.hover', py: 2 }}>
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, px: 2 }}>
-                                  <Typography variant="subtitle2" fontWeight="bold">
-                                    Alert Details
-                                  </Typography>
-
-                                  <Grid container spacing={2}>
-                                    <Grid item xs={12} md={6}>
-                                      <Typography variant="caption" color="text.secondary" display="block">
-                                        Description
-                                      </Typography>
-                                      <Typography variant="body2">{group.description}</Typography>
-                                    </Grid>
-
-                                    {group.mitre && (
-                                      <Grid item xs={12} md={6}>
-                                        <Typography variant="caption" color="text.secondary" display="block">
-                                          MITRE ATT&CK
-                                        </Typography>
-                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                                          {group.mitre.split(',').map((mitre) => (
+                                      disabled={resolvingGroups.has(group.groupId)}><CheckIcon fontSize="small" /></IconButton></Tooltip>
+                                )}</Box></TableCell></TableRow>{/* Expanded Details */}{isExpanded && (
+                            <TableRow><TableCell colSpan={10} sx={{ backgroundColor: 'action.hover', py: 2 }}><Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, px: 2 }}><Typography variant="subtitle2" fontWeight="bold">
+                                    {i18nText("ui:m_be2ebd0da19653315021")}
+                                  </Typography><Grid container spacing={2}><Grid item xs={12} md={6}><Typography variant="caption" color="text.secondary" display="block">
+                                        {i18nText("ui:m_a02602e322c10d1a5449")}
+                                      </Typography><Typography variant="body2">{group.description}</Typography></Grid>{group.mitre && (
+                                      <Grid item xs={12} md={6}><Typography variant="caption" color="text.secondary" display="block">MITRE ATT&CK
+                                        </Typography><Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>{group.mitre.split(',').map((mitre) => (
                                             <Chip key={mitre.trim()} label={mitre.trim()} size="small" color="warning" />
-                                          ))}
-                                        </Box>
-                                      </Grid>
-                                    )}
-
-                                    {group.threshold > 0 && (
-                                      <Grid item xs={12} md={6}>
-                                        <Typography variant="caption" color="text.secondary" display="block">
-                                          Threshold Configuration
-                                        </Typography>
-                                        <Paper
-                                          sx={{
+                                          ))}</Box></Grid>
+                                    )}{group.threshold > 0 && (
+                                      <Grid item xs={12} md={6}><Typography variant="caption" color="text.secondary" display="block">
+                                          {i18nText("ui:m_f18493203543b86d8aea")}
+                                        </Typography><Paper sx={{
                                             p: 1,
                                             mt: 0.5,
                                             backgroundColor: 'background.paper',
                                             border: 1,
                                             borderColor: 'primary.main',
-                                          }}
-                                        >
-                                          <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                                            <strong>{group.threshold}</strong> matches within <strong>{group.thresholdWindow}s</strong>
-                                          </Typography>
-                                        </Paper>
-                                      </Grid>
-                                    )}
-
-                                    {group.uniqueSrcIPs.length > 0 && (
-                                      <Grid item xs={12} md={6}>
-                                        <Typography variant="caption" color="text.secondary" display="block">
-                                          Unique Source IPs ({group.uniqueSrcIPs.length})
-                                        </Typography>
-                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                                          {group.uniqueSrcIPs.slice(0, 10).map((ip) => (
-                                            <Chip
-                                              key={ip}
+                                          }}><Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                            {i18nRichText("ui:m_bbe66995f187c4d85bff", { arg0: group.threshold, arg1: group.thresholdWindow, tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong>, tag1: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}
+                                          </Typography></Paper></Grid>
+                                    )}{group.uniqueSrcIPs.length > 0 && (
+                                      <Grid item xs={12} md={6}><Typography variant="caption" color="text.secondary" display="block">
+                                          {i18nRichText("ui:m_799713ee073e034bfddf", { arg0: group.uniqueSrcIPs.length })}
+                                        </Typography><Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>{group.uniqueSrcIPs.slice(0, 10).map((ip) => (
+                                            <Chip key={ip}
                                               label={ip}
                                               size="small"
                                               variant="outlined"
-                                              sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
-                                            />
-                                          ))}
-                                          {group.uniqueSrcIPs.length > 10 && (
-                                            <Chip
-                                              label={`+${group.uniqueSrcIPs.length - 10} more`}
+                                              sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }} />
+                                          ))}{group.uniqueSrcIPs.length > 10 && (
+                                            <Chip label={i18nText("ui:m_5000f686d6d8f94a73f9", { arg0: group.uniqueSrcIPs.length - 10 })}
                                               size="small"
-                                              variant="outlined"
-                                            />
-                                          )}
-                                        </Box>
-                                      </Grid>
-                                    )}
-
-                                    {group.uniqueDstIPs.length > 0 && (
-                                      <Grid item xs={12} md={6}>
-                                        <Typography variant="caption" color="text.secondary" display="block">
-                                          Unique Destination IPs ({group.uniqueDstIPs.length})
-                                        </Typography>
-                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                                          {group.uniqueDstIPs.slice(0, 10).map((ip) => (
-                                            <Chip
-                                              key={ip}
+                                              variant="outlined" />
+                                          )}</Box></Grid>
+                                    )}{group.uniqueDstIPs.length > 0 && (
+                                      <Grid item xs={12} md={6}><Typography variant="caption" color="text.secondary" display="block">
+                                          {i18nRichText("ui:m_409eb164227b2121213d", { arg0: group.uniqueDstIPs.length })}
+                                        </Typography><Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>{group.uniqueDstIPs.slice(0, 10).map((ip) => (
+                                            <Chip key={ip}
                                               label={ip}
                                               size="small"
                                               variant="outlined"
-                                              sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
-                                            />
-                                          ))}
-                                          {group.uniqueDstIPs.length > 10 && (
-                                            <Chip
-                                              label={`+${group.uniqueDstIPs.length - 10} more`}
+                                              sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }} />
+                                          ))}{group.uniqueDstIPs.length > 10 && (
+                                            <Chip label={i18nText("ui:m_5000f686d6d8f94a73f9", { arg0: group.uniqueDstIPs.length - 10 })}
                                               size="small"
-                                              variant="outlined"
-                                            />
-                                          )}
-                                        </Box>
-                                      </Grid>
-                                    )}
-
-                                    {(group.uniqueSrcPorts.length > 0 || group.uniqueDstPorts.length > 0) && (
-                                      <Grid item xs={12}>
-                                        <Typography variant="caption" color="text.secondary" display="block">
-                                          Ports (Src: {group.uniqueSrcPorts.length}, Dst: {group.uniqueDstPorts.length})
-                                        </Typography>
-                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                                          {[...group.uniqueSrcPorts, ...group.uniqueDstPorts].slice(0, 20).map((port, idx) => (
-                                            <Chip
-                                              key={`${port}-${idx}`}
+                                              variant="outlined" />
+                                          )}</Box></Grid>
+                                    )}{(group.uniqueSrcPorts.length > 0 || group.uniqueDstPorts.length > 0) && (
+                                      <Grid item xs={12}><Typography variant="caption" color="text.secondary" display="block">
+                                          {i18nRichText("ui:m_4790572cc2081c3b5516", { arg0: group.uniqueSrcPorts.length, arg1: group.uniqueDstPorts.length })}
+                                        </Typography><Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>{[...group.uniqueSrcPorts, ...group.uniqueDstPorts].slice(0, 20).map((port, idx) => (
+                                            <Chip key={`${port}-${idx}`}
                                               label={port}
                                               size="small"
                                               variant="outlined"
-                                              sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
-                                            />
-                                          ))}
-                                        </Box>
-                                      </Grid>
-                                    )}
-
-                                    {group.ruleExpression && (
-                                      <Grid item xs={12}>
-                                        <Typography variant="caption" color="text.secondary" display="block">
-                                          Rule Expression
-                                        </Typography>
-                                        <FilterExpressionBlock
-                                          expression={group.ruleExpression}
+                                              sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }} />
+                                          ))}</Box></Grid>
+                                    )}{group.ruleExpression && (
+                                      <Grid item xs={12}><Typography variant="caption" color="text.secondary" display="block">
+                                          {i18nText("ui:m_edcc62c2a8de54c01945")}
+                                        </Typography><FilterExpressionBlock expression={group.ruleExpression}
                                           sx={{
                                             mt: 0.5,
                                             p: 1.5,
-                                          }}
-                                        />
-                                      </Grid>
-                                    )}
-                                  </Grid>
-
-                                  {/* Sample Alerts */}
-                                  {group.sampleAlerts.length > 0 && (
-                                    <Box sx={{ mt: 2 }}>
-                                      <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                                        Sample Alerts ({group.sampleAlerts.length} of {group.count})
-                                      </Typography>
-                                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                        {group.sampleAlerts.map((alert, idx) => (
-                                          <Button
-                                            key={`${alert.timestamp}-${idx}`}
+                                          }} /></Grid>
+                                    )}</Grid>{/* Sample Alerts */}{group.sampleAlerts.length > 0 && (
+                                    <Box sx={{ mt: 2 }}><Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                                        {i18nRichText("ui:m_94cbd1f4c3548a2e8e8a", { arg0: group.sampleAlerts.length, arg1: group.count })}
+                                      </Typography><Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>{group.sampleAlerts.map((alert, idx) => (
+                                          <Button key={`${alert.timestamp}-${idx}`}
                                             size="small"
                                             variant="outlined"
                                             startIcon={<VisibilityIcon />}
-                                            onClick={() => handleViewDetails(alert)}
-                                          >
-                                            View Sample {idx + 1}
+                                            onClick={() => handleViewDetails(alert)}>
+                                            {i18nRichText("ui:m_86b5d9d3f99513e8ec62", { arg0: idx + 1 })}
                                           </Button>
-                                        ))}
-                                      </Box>
-                                    </Box>
-                                  )}
-                                </Box>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </>
+                                        ))}</Box></Box>
+                                  )}</Box></TableCell></TableRow>
+                          )}</>
                       );
                     })
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          }
-        />
-
-        {/* Alert Details Dialog */}
-        <Dialog
-          open={detailsDialogOpen}
+                  )}</TableBody></Table></TableContainer>} />{/* Alert Details Dialog */}<Dialog open={detailsDialogOpen}
           onClose={() => setDetailsDialogOpen(false)}
           maxWidth="md"
           fullWidth
-          fullScreen={isMobile}
-        >
-          <style>{`
-            .json-key { color: #9cdcfe; }
-            .json-string { color: #ce9178; }
-            .json-number { color: #b5cea8; }
-            .json-boolean { color: #569cd6; }
-            .json-null { color: #569cd6; }
-          `}</style>
-          <DialogTitle>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              Alert Details
-              {isMobile && (
-                <IconButton onClick={() => setDetailsDialogOpen(false)} edge="end">
-                  <CloseIcon />
-                </IconButton>
-              )}
-            </Box>
-          </DialogTitle>
-          <DialogContent>
-            {selectedAlert && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <NetworkDetectionEvidence alert={selectedAlert} />
-                {selectedAlert.recordType === 'NetworkDetection' && renderEvidenceActions?.(selectedAlert)}
-                {selectorForAlert(selectedAlert.recordType, selectedAlert.matchedRecord) &&
-                  <RelatedEvidence selector={selectorForAlert(selectedAlert.recordType, selectedAlert.matchedRecord)} />}
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Timestamp
-                  </Typography>
-                  <Typography variant="body1">{formatTimestamp(selectedAlert.timestamp)}</Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Rule Name
-                  </Typography>
-                  <Typography variant="body1" fontWeight="medium">
-                    {selectedAlert.ruleName}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Description
-                  </Typography>
-                  <Typography variant="body1">{selectedAlert.description}</Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Severity
-                  </Typography>
-                  <Chip
-                    label={selectedAlert.severity.toUpperCase()}
-                    color={getSeverityColor(selectedAlert.severity) as any}
-                  />
-                </Box>
-
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Record Type
-                  </Typography>
-                  <Typography variant="body1">{selectedAlert.recordType}</Typography>
-                </Box>
-
-                {selectedAlert.ruleExpression && (
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Rule Expression
-                    </Typography>
-                    <FilterExpressionBlock 
-                      expression={selectedAlert.ruleExpression}
-                      sx={{ backgroundColor: 'grey.900' }}
-                    />
-                  </Box>
-                )}
-
-                {selectedAlert.threshold > 0 && (
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Threshold Configuration
-                    </Typography>
-                    <Paper
-                      sx={{
+          fullScreen={isMobile}><style>{rawCode("\n            .json-key '{' color: {arg0}; '}'\n            .json-string '{' color: {arg1}; '}'\n            .json-number '{' color: {arg2}; '}'\n            .json-boolean, .json-null '{' color: {arg3}; '}'\n          ", { arg0: colors.syntax.key, arg1: colors.syntax.string, arg2: colors.syntax.number, arg3: colors.syntax.keyword })}</style><DialogTitle><Box display="flex" justifyContent="space-between" alignItems="center">
+              {i18nRichText("ui:m_eb67d170e54ff2cff928", { arg0: isMobile && (
+                <IconButton onClick={() => setDetailsDialogOpen(false)} edge="end"><CloseIcon /></IconButton>
+              ) })}
+            </Box></DialogTitle><DialogContent>{selectedAlert && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}><NetworkDetectionEvidence alert={selectedAlert} />{selectedAlert.recordType === 'NetworkDetection' && renderEvidenceActions?.(selectedAlert)}{selectorForAlert(selectedAlert.recordType, selectedAlert.matchedRecord) && <RelatedEvidence selector={selectorForAlert(selectedAlert.recordType, selectedAlert.matchedRecord)} />}<Box><Typography variant="subtitle2" color="text.secondary">
+                    {i18nText("ui:m_f68524a5a2e8c875738d")}
+                  </Typography><Typography variant="body1">{formatTimestamp(selectedAlert.timestamp, 'nanoseconds')}</Typography></Box><Box><Typography variant="subtitle2" color="text.secondary">
+                    {i18nText("ui:m_752576a3b0b2dca4ab6a")}
+                  </Typography><Typography variant="body1" fontWeight="medium">{selectedAlert.ruleName}</Typography></Box><Box><Typography variant="subtitle2" color="text.secondary">
+                    {i18nText("ui:m_a02602e322c10d1a5449")}
+                  </Typography><Typography variant="body1">{selectedAlert.description}</Typography></Box><Box><Typography variant="subtitle2" color="text.secondary">
+                    {i18nText("ui:m_d1de98cbf475009ee57d")}
+                  </Typography><Chip label={selectedAlert.severity.toUpperCase()}
+                    color={getSeverityColor(selectedAlert.severity) as any} /></Box><Box><Typography variant="subtitle2" color="text.secondary">
+                    {i18nText("ui:m_21e984a0c1b0479051bc")}
+                  </Typography><Typography variant="body1">{recordTypeLabel(selectedAlert.recordType)}</Typography></Box>{selectedAlert.ruleExpression && (
+                  <Box><Typography variant="subtitle2" color="text.secondary">
+                      {i18nText("ui:m_edcc62c2a8de54c01945")}
+                    </Typography><FilterExpressionBlock expression={selectedAlert.ruleExpression}
+                      sx={{ backgroundColor: 'background.default' }} /></Box>
+                )}{selectedAlert.threshold > 0 && (
+                  <Box><Typography variant="subtitle2" color="text.secondary">
+                      {i18nText("ui:m_f18493203543b86d8aea")}
+                    </Typography><Paper sx={{
                         p: 1.5,
                         backgroundColor: 'action.hover',
                         border: 1,
                         borderColor: 'primary.main',
-                      }}
-                    >
-                      <Typography variant="body2" sx={{ mb: 0.5 }}>
-                        <strong>Threshold:</strong> {selectedAlert.threshold} matches
-                      </Typography>
-                      <Typography variant="body2">
-                        <strong>Time Window:</strong> {selectedAlert.thresholdWindow} seconds
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                        This alert was triggered after {selectedAlert.threshold} matching events occurred within a {selectedAlert.thresholdWindow}-second window.
-                      </Typography>
-                    </Paper>
-                  </Box>
-                )}
-
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Source IP
-                    </Typography>
-                    <Typography
-                      variant="body1"
-                      sx={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
-                    >
-                      {selectedAlert.srcIP || '-'}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Destination IP
-                    </Typography>
-                    <Typography
-                      variant="body1"
-                      sx={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
-                    >
-                      {selectedAlert.dstIP || '-'}
-                    </Typography>
-                  </Grid>
-                </Grid>
-
-                {selectedAlert.mitre && (
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      MITRE ATT&CK
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                      {selectedAlert.mitre.split(',').map((mitre) => (
+                      }}><Typography variant="body2" sx={{ mb: 0.5 }}>
+                        {i18nRichText("ui:m_34c77a44b73fb194fd79", { arg0: selectedAlert.threshold, tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}
+                      </Typography><Typography variant="body2">
+                        {i18nRichText("ui:m_74f881b9b70d1adeb8f7", { arg0: selectedAlert.thresholdWindow, tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}
+                      </Typography><Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                        {i18nRichText("ui:m_6960f89f241719ebeb3c", { arg0: selectedAlert.threshold, arg1: selectedAlert.thresholdWindow })}
+                      </Typography></Paper></Box>
+                )}<Grid container spacing={2}><Grid item xs={6}><Typography variant="subtitle2" color="text.secondary">
+                      {i18nText("ui:m_e540837f52427c6b32ef")}
+                    </Typography><Typography variant="body1"
+                      sx={{ fontFamily: 'monospace', fontSize: '0.9rem' }}>{selectedAlert.srcIP || '-'}</Typography></Grid><Grid item xs={6}><Typography variant="subtitle2" color="text.secondary">
+                      {i18nText("ui:m_c687f3a957a05117cce7")}
+                    </Typography><Typography variant="body1"
+                      sx={{ fontFamily: 'monospace', fontSize: '0.9rem' }}>{selectedAlert.dstIP || '-'}</Typography></Grid></Grid>{selectedAlert.mitre && (
+                  <Box><Typography variant="subtitle2" color="text.secondary">MITRE ATT&CK
+                    </Typography><Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>{selectedAlert.mitre.split(',').map((mitre) => (
                         <Chip key={mitre.trim()} label={mitre.trim()} size="small" color="warning" />
-                      ))}
-                    </Box>
-                  </Box>
-                )}
-
-                {(selectedAlert.tags || []).length > 0 && (
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Tags
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                      {(selectedAlert.tags || []).map((tag) => (
+                      ))}</Box></Box>
+                )}{(selectedAlert.tags || []).length > 0 && (
+                  <Box><Typography variant="subtitle2" color="text.secondary">
+                      {i18nText("ui:m_47846a266ab7374ce1aa")}
+                    </Typography><Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>{(selectedAlert.tags || []).map((tag) => (
                         <Chip key={tag} label={tag} size="small" />
-                      ))}
-                    </Box>
-                  </Box>
-                )}
-
-                {selectedAlert.groupedEvaluation && <Box>
-                  <Typography variant="subtitle2">Offline group evaluation</Typography>
-                  <Typography variant="body2">{selectedAlert.groupedEvaluation.count} matching records · rule {selectedAlert.groupedEvaluation.ruleId}</Typography>
-                  <Box component="pre" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12 }}>{JSON.stringify(selectedAlert.groupedEvaluation, null, 2)}</Box>
-                </Box>}
-                {selectedAlert.matchedRecord && (
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Matched Record
-                    </Typography>
-                    <Paper
-                      sx={{
+                      ))}</Box></Box>
+                )}{selectedAlert.groupedEvaluation && <Box><Typography variant="subtitle2">{i18nText("ui:m_d607679de2b23948c496")}</Typography><Typography variant="body2">{i18nRichText("ui:m_79f12a5a00887e8b8f2d", { arg0: selectedAlert.groupedEvaluation.count, arg1: selectedAlert.groupedEvaluation.ruleId })}</Typography><Box component="pre" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12 }}>{JSON.stringify(selectedAlert.groupedEvaluation, null, 2)}</Box></Box>}{selectedAlert.matchedRecord && (
+                  <Box><Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      {i18nText("ui:m_8771965c4afc3da2f3e2")}
+                    </Typography><Paper sx={{
                         p: 2,
-                        backgroundColor: '#1e1e1e',
+                        backgroundColor: 'background.default',
                         overflow: 'auto',
                         maxHeight: 300,
-                      }}
-                    >
-                      <pre
-                        style={{
+                      }}><pre style={{
                           margin: 0,
                           fontFamily: 'monospace',
                           fontSize: '0.85rem',
@@ -1242,34 +691,12 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                         }}
                         dangerouslySetInnerHTML={{
                           __html: syntaxHighlightJSON(formatMatchedRecord(selectedAlert.matchedRecord))
-                        }}
-                      />
-                    </Paper>
-                  </Box>
-                )}
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button data-learn="Close Dialog: Close the alert details viewer." onClick={() => setDetailsDialogOpen(false)}>Close</Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Snackbar for notifications */}
-        <Snackbar
-          open={snackbar.open}
+                        }} /></Paper></Box>
+                )}</Box>
+            )}</DialogContent><DialogActions><Button data-learn={i18nText("ui:m_2622a207dff4b5c4caf5")} onClick={() => setDetailsDialogOpen(false)}>{i18nText("ui:m_a695258f28d817037ea8")}</Button></DialogActions></Dialog>{/* Snackbar for notifications */}<Snackbar open={snackbar.open}
           autoHideDuration={6000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-        >
-          <MuiAlert
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}><MuiAlert onClose={() => setSnackbar({ ...snackbar, open: false })}
             severity={snackbar.severity}
-            sx={{ width: '100%' }}
-          >
-            {snackbar.message}
-          </MuiAlert>
-        </Snackbar>
-      </Box>
-    </Layout>
+            sx={{ width: '100%' }}>{i18nRenderText(snackbar.message)}</MuiAlert></Snackbar></Box></Layout>
   );
 }

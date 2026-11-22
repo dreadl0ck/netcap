@@ -1,12 +1,17 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SWRConfig } from 'swr';
 import { NetcapProvider } from '../../packages/netcap-ui/src/providers/NetcapProvider';
 import SignaturesPage from '../../packages/netcap-ui/src/pages/ProbesPage';
 import { api } from '../../packages/netcap-ui/src/lib/api';
+import { initializeI18n } from '../../packages/netcap-ui/src/lib/i18n';
+import { directCatalogBundle } from '../../packages/netcap-ui/src/lib/i18n/direct';
+import { removedCatalogBundle } from '../../packages/netcap-ui/src/lib/i18n/removed';
 
 vi.mock('../../packages/netcap-ui/src/components/Layout', () => ({ default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
+
+beforeEach(() => initializeI18n({ locale: 'en', bundles: [directCatalogBundle, removedCatalogBundle] }));
 
 const rules = [
   { id: 'netcap.ssh.ident.v1', protocol: 'ssh', transport: 'tcp', direction: 'server-to-client', kind: 'ssh-ident', provenance: [{ url: 'https://www.rfc-editor.org/rfc/rfc4253', section: '4.2 Protocol Version Exchange' }] },
@@ -15,8 +20,8 @@ const rules = [
 const inventory = { state: 'loaded', source: 'builtin', source_sha256: 'a'.repeat(64), checked_at: '2026-10-24T00:00:00Z', degraded: true, warning: 'Catalogue absent; built-in fallback active', rule_count: 2, protocols: ['http', 'ssh'], limitations: ['TCP server-to-client greetings only'] };
 const catalogue = { catalogue: { format: 'netcap-service-signatures', schema_version: 1, rules }, inventory, source: 'builtin', degraded: true };
 
-function renderPage(search = '', response = Promise.resolve(catalogue)) {
-  const getServiceSignatures = vi.fn().mockReturnValue(response);
+function renderPage(search = '', response = () => Promise.resolve(catalogue)) {
+  const getServiceSignatures = vi.fn().mockImplementation(response);
   const getServiceSignatureStatus = vi.fn().mockResolvedValue({ ...inventory, source: 'external', source_sha256: 'b'.repeat(64), degraded: false, warning: undefined });
   render(<SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
     <NetcapProvider config={{
@@ -45,7 +50,7 @@ describe('service signatures', () => {
   });
 
   it('shows a real error instead of inventing a ready empty catalogue', async () => {
-    renderPage('', Promise.reject(new Error('Backend unavailable')));
+    renderPage('', () => Promise.reject(new Error('Backend unavailable')));
     expect(await screen.findByText(/Catalogue unavailable: Backend unavailable/)).toBeInTheDocument();
     expect(screen.queryByText(/0 of 0 signatures/)).not.toBeInTheDocument();
   });
@@ -55,8 +60,13 @@ describe('service signatures', () => {
     try {
       await api.getServiceSignatures();
       await api.getServiceSignatureStatus('?sessionId=fixture');
-      expect(fetcher.mock.calls.map(([url]) => { const parsed = new URL(String(url), 'http://localhost'); return parsed.pathname + parsed.search; })).toEqual(['/api/service-signatures', '/api/service-signatures/status?sessionId=fixture']);
-      expect(fetcher.mock.calls.every(([, init]) => init?.method === undefined || init.method === 'GET')).toBe(true);
+      expect(fetcher.mock.calls.map(([url, init]) => {
+        const parsed = new URL(String(url), 'http://localhost');
+        return { method: init?.method ?? 'GET', path: parsed.pathname, query: [...parsed.searchParams].sort(([a], [b]) => a.localeCompare(b)) };
+      })).toEqual([
+        { method: 'GET', path: '/api/service-signatures', query: [['locale', 'en']] },
+        { method: 'GET', path: '/api/service-signatures/status', query: [['locale', 'en'], ['sessionId', 'fixture']] },
+      ]);
     } finally { fetcher.mockRestore(); }
   });
 });

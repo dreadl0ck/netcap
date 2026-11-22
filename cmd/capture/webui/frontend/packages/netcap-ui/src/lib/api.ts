@@ -40,6 +40,18 @@
 //     backend (see vite.config.ts)
 //   - embedded elsewhere: set window.__BACKEND_URL__ or VITE_BACKEND_URL
 import { parseRelatedEvidence, type EvidenceSelector, type RelatedEvidence } from './evidenceLinks';
+import { translate as i18nText } from "./i18n";
+import { localeURL } from "./i18n";
+import { message, displayError, translate } from "./i18n";
+import { formatNumber, formatBytes as formatExactBytes, formatTimestampNs, formatDateTime, formatQuantity } from "./i18n";
+import { type MessageText, type UIMessage, messageSource, message as streamMessage, presentationValue } from "./i18n";
+import { message as finalCopyMessage } from "./i18n";
+
+
+
+
+
+
 
 export function getBackendUrl(): string {
   // No origin during SSR/static generation. Returning empty makes createApi()
@@ -85,7 +97,7 @@ export function createApi(backendUrl: string) {
  * All methods return empty/default values to prevent errors during static generation.
  */
 function createNoOpApi(): NetcapApiClient {
-  const noOp = () => Promise.reject(new Error('API not available during SSR'));
+  const noOp = () => Promise.reject(displayError(message("ui:m_ba6a4fd269de0156928a")));
   const noOpReturn = <T>(value: T) => () => Promise.resolve(value);
   
   return {
@@ -136,8 +148,8 @@ function createNoOpApi(): NetcapApiClient {
     uploadHarvesterPreset: noOpReturn({ success: false, message: '', name: '' }),
     downloadHarvesterPreset: noOp as any,
     getFingerprints: noOpReturn({ fingerprints: [], totalCount: 0, offset: 0, limit: 0, stats: { totalFingerprints: 0, totalOccurrences: 0, countsByType: {} } }),
-    getServiceSignatures: async () => { throw new Error('Service signature catalogue is unavailable in this backend'); },
-    getServiceSignatureStatus: async () => { throw new Error('Capture signature diagnostics are unavailable in this backend'); },
+    getServiceSignatures: async () => { throw displayError(message("ui:m_8e81fb4f839184e34b9e")); },
+    getServiceSignatureStatus: async () => { throw displayError(message("ui:m_254f9b980d383dcbbfab")); },
     getDecoderConfig: noOpReturn({ includeDecoders: '', excludeDecoders: '', enabledDecoders: [] }),
     saveDecoderConfig: noOpReturn({ success: false, message: '' }),
     listDecoderConfigs: noOpReturn([]),
@@ -190,7 +202,7 @@ function createNoOpApi(): NetcapApiClient {
     getNetworkDetectionStats: noOpReturn(null),
     getFeatures: noOpReturn({ features: [] }),
     setFeature: noOpReturn({ features: [] }),
-    getRelatedEvidence: noOpReturn({ status: 'unavailable', error: 'not connected' }),
+    getRelatedEvidence: noOpReturn({ status: 'unavailable', error: translate("ui:m_a3a5fe1e0ac0d4ca4d6f") }),
     getGroupedAlerts: noOpReturn({ groups: [], totalCount: 0, groupCount: 0 }),
     getAlertStats: noOpReturn({ totalAlerts: 0, groupCount: 0, bySeverity: {}, byRule: {}, recentAlerts: [], criticalAlerts: 0, lastUpdate: 0 }),
     clearAlerts: noOpReturn({ success: false, message: '' }),
@@ -333,11 +345,11 @@ export interface OfflineAlertMetadata {
 }
 export interface OfflineExecution { report?: OfflineReport | null; error?: string }
 export class OfflineApiError extends Error {
-  constructor(message: string, public status: number) { super(message); }
+  constructor(public presentation: MessageText, public status: number) { super(messageSource(presentation)); }
 }
 
 async function offlineResponse<T>(res: Response): Promise<T> {
-  if (!res.ok) throw new OfflineApiError(await describeFailure(res, 'Offline rules request failed'), res.status);
+  if (!res.ok) throw new OfflineApiError(await describeFailure(res, finalCopyMessage("ui:m_a7411f68baf00963c14a")), res.status);
   return res.json();
 }
 
@@ -436,7 +448,7 @@ export interface DatabaseUpdateResult {
  * http.Error, which emits text/plain — and that replaces the real status with
  * "Unexpected token E in JSON".
  */
-async function describeFailure(res: Response, fallback: string): Promise<string> {
+async function describeFailure(res: Response, fallback: MessageText): Promise<MessageText> {
   let body = '';
   try {
     body = (await res.text()).trim();
@@ -447,14 +459,16 @@ async function describeFailure(res: Response, fallback: string): Promise<string>
   if (body) {
     try {
       const parsed = JSON.parse(body);
+      const localized = presentationValue(parsed, 'message');
+      if (localized) return localized;
       const detail = parsed?.error || parsed?.message;
-      if (detail) return `${fallback}: ${detail}`;
+      if (detail) return message('ui:errors.withDetail', { message: fallback, detail: String(detail) });
     } catch {
-      return `${fallback}: ${body.slice(0, 300)}`;
+      return message('ui:errors.withDetail', { message: fallback, detail: body.slice(0, 300) });
     }
   }
 
-  return `${fallback} (HTTP ${res.status})`;
+  return message("ui:m_674aa55da6193756b47c", { arg0: fallback, arg1: String(res.status) });
 }
 
 export interface TrySession {
@@ -721,11 +735,14 @@ export interface UserDPIPreferences {
 
 export interface ConfigOption {
   name: string;
+  labelI18n?: UIMessage;
   value: unknown;
   default: unknown;
   type: string;
   description: string;
   category: string;
+  descriptionI18n?: UIMessage;
+  categoryI18n?: UIMessage;
   isEditable: boolean;
 }
 
@@ -948,6 +965,8 @@ export interface ChartFieldInfo {
   name: string;
   type: string;
   description: string;
+  typeI18n?: UIMessage;
+  descriptionI18n?: UIMessage;
 }
 
 export interface ChartFieldsResponse {
@@ -1136,7 +1155,7 @@ export interface AlertsResponse {
   alerts: Alert[];
   totalCount: number;
 }
-export interface FeatureState { name: string; title: string; description: string; scope: 'query' | 'capture'; flag: string; env: string; enabled: boolean }
+export interface FeatureState { name: string; title: string; titleI18n?: UIMessage; description: string; descriptionI18n?: UIMessage; scope: 'query' | 'capture'; scopeI18n?: UIMessage; flag: string; env: string; enabled: boolean }
 export interface FeaturesResponse { features: FeatureState[] }
 export type RelatedEvidenceResponse =
   | { status: 'ok'; result: RelatedEvidence }
@@ -1349,47 +1368,49 @@ async function dashboardError(res: Response, fallback: string): Promise<Dashboar
     // ignore — body may be empty
   }
   if (res.status === 503) {
-    return new DashboardApiError(res.status, body || 'No output directory selected — please select or set an output directory first.');
+    return new DashboardApiError(res.status, body || i18nText("ui:m_7cc17cecd8c8ee5b8ee0"));
   }
   if (res.status === 404) {
-    return new DashboardApiError(res.status, body || 'Dashboard not found.');
+    return new DashboardApiError(res.status, body || i18nText("ui:m_2bef791f2badac4496ef"));
   }
-  return new DashboardApiError(res.status, body || `${fallback} (HTTP ${res.status})`);
+  return new DashboardApiError(res.status, body || i18nText("ui:m_674aa55da6193756b47c", { arg0: fallback, arg1: res.status }));
 }
 
 // Internal function to create API client with a specific base URL
 // Note: Return type is inferred to avoid circular reference
 function createApiWithBase(apiBase: string) {
+  const fetch: typeof globalThis.fetch = (input, init) => globalThis.fetch(typeof input === 'string' && input.startsWith(apiBase) ? localeURL(input) : input, init);
+
   return {
   async getStatus(): Promise<StatusResponse> {
     const res = await fetch(`${apiBase}/status`);
-    if (!res.ok) throw new Error('Failed to fetch status');
+    if (!res.ok) throw displayError(message("ui:m_c456fcff5e850117bcca"));
     return res.json();
   },
 
   async getStats(): Promise<StatsResponse> {
     const res = await fetch(`${apiBase}/stats`);
-    if (!res.ok) throw new Error('Failed to fetch stats');
+    if (!res.ok) throw displayError(message("ui:m_9583324527855bbad88e"));
     return res.json();
   },
 
   async getAuditStats(scope?: string): Promise<AuditStatsResponse> {
     const url = scope ? `${apiBase}/audit-stats?scope=${encodeURIComponent(scope)}` : `${apiBase}/audit-stats`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch audit stats');
+    if (!res.ok) throw displayError(message("ui:m_4ca55a4cae5b09edf9fe"));
     return res.json();
   },
 
   async getInputFiles(): Promise<FileInfo[]> {
     const res = await fetch(`${apiBase}/files/input`);
-    if (!res.ok) throw new Error('Failed to fetch input files');
+    if (!res.ok) throw displayError(message("ui:m_5a46c6d5b79735ad2235"));
     return res.json();
   },
 
   async getAuditFiles(scope?: string): Promise<AuditFileInfo[]> {
     const url = scope ? `${apiBase}/files/audit?scope=${encodeURIComponent(scope)}` : `${apiBase}/files/audit`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch audit files');
+    if (!res.ok) throw displayError(message("ui:m_4d4f6b72a9a5ca5ac0b8"));
     return res.json();
   },
 
@@ -1399,32 +1420,32 @@ function createApiWithBase(apiBase: string) {
       params.set('communityIds', communityIds.join(','));
     }
     const res = await fetch(`${apiBase}/files/audit/filtered?${params.toString()}`);
-    if (!res.ok) throw new Error('Failed to fetch filtered audit files');
+    if (!res.ok) throw displayError(message("ui:m_7a8c9a8dce457404963e"));
     return res.json();
   },
 
   async getLogFiles(): Promise<FileInfo[]> {
     const res = await fetch(`${apiBase}/files/logs`);
-    if (!res.ok) throw new Error('Failed to fetch log files');
+    if (!res.ok) throw displayError(message("ui:m_b75ea1f689a7dfa5a503"));
     return res.json();
   },
 
   async getAuditMetadata(type: string): Promise<AuditMetadata> {
     const res = await fetch(`${apiBase}/audit/${type}/meta`);
-    if (!res.ok) throw new Error('Failed to fetch audit metadata');
+    if (!res.ok) throw displayError(message("ui:m_f8c75f9e34c66736fdb6"));
     return res.json();
   },
 
   async getLogContent(name: string): Promise<string> {
     const res = await fetch(`${apiBase}/logs/${name}`);
-    if (!res.ok) throw new Error('Failed to fetch log content');
+    if (!res.ok) throw displayError(message("ui:m_9cef4f32963e7bc81912"));
     return res.text();
   },
 
   async getErrorLogContent(sessionId: string): Promise<string> {
     // Fetch error log content for a specific session by its session ID
     const res = await fetch(`${apiBase}/error-log/${sessionId}`);
-    if (!res.ok) throw new Error('Failed to fetch error log content');
+    if (!res.ok) throw displayError(message("ui:m_b95ababfddea3ee87ad4"));
     return res.text();
   },
 
@@ -1434,7 +1455,7 @@ function createApiWithBase(apiBase: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ inputFile }),
     });
-    if (!res.ok) throw new Error('Failed to set active directory');
+    if (!res.ok) throw displayError(message("ui:m_88e6c716a086cdc4ff44"));
     return res.json();
   },
 
@@ -1449,7 +1470,7 @@ function createApiWithBase(apiBase: string) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || error.message || 'Upload failed');
+      throw displayError(error.error || error.message || message("ui:m_f8e877c74c2b6062c4cd"));
     }
 
     return res.json();
@@ -1457,25 +1478,25 @@ function createApiWithBase(apiBase: string) {
 
   async getQuota(): Promise<QuotaResponse> {
     const res = await fetch(`${apiBase}/quota`);
-    if (!res.ok) throw new Error('Failed to fetch quota');
+    if (!res.ok) throw displayError(message("ui:m_81de0bbc0580ef1ca18d"));
     return res.json();
   },
 
   async getSessionStatus(sessionId: string): Promise<SessionStatus> {
     const res = await fetch(`${apiBase}/status/${sessionId}`);
-    if (!res.ok) throw new Error('Failed to fetch session status');
+    if (!res.ok) throw displayError(message("ui:m_f0c5f6d2688ba6e0933a"));
     return res.json();
   },
 
   async getProgress(sessionId: string): Promise<ProgressInfo> {
     const res = await fetch(`${apiBase}/progress/${sessionId}`);
-    if (!res.ok) throw new Error('Failed to fetch progress');
+    if (!res.ok) throw displayError(message("ui:m_a1f9563b9c5ddb2c9439"));
     return res.json();
   },
 
   async getAllSessions(): Promise<TrySession[]> {
     const res = await fetch(`${apiBase}/try/sessions`);
-    if (!res.ok) throw new Error('Failed to fetch sessions');
+    if (!res.ok) throw displayError(message("ui:m_659829180dc12a85ba1c"));
     const data = await res.json();
     // Backend returns {sessions: [...]} so we need to extract the array
     return data.sessions || [];
@@ -1485,12 +1506,12 @@ function createApiWithBase(apiBase: string) {
     const res = await fetch(`${apiBase}/try/session/${sessionId}`, {
       method: 'GET',
     });
-    if (!res.ok) throw new Error('Failed to select session');
+    if (!res.ok) throw displayError(message("ui:m_6c643fdce05e526b754d"));
   },
 
   async getDatabaseInfo(): Promise<DatabaseInfo> {
     const res = await fetch(`${apiBase}/dbs`);
-    if (!res.ok) throw new Error('Failed to fetch database info');
+    if (!res.ok) throw displayError(message("removed:m_ce77243d86e32a09c2eb"));
     return res.json();
   },
 
@@ -1499,7 +1520,7 @@ function createApiWithBase(apiBase: string) {
       method: 'POST',
     });
     if (!res.ok) {
-      throw new Error(await describeFailure(res, 'Failed to start database download'));
+      throw displayError(await describeFailure(res, message("removed:m_1403a68b046a74d00dd3")));
     }
     return res.json();
   },
@@ -1514,7 +1535,7 @@ function createApiWithBase(apiBase: string) {
     const res = await fetch(`${apiBase}/dbs/status`);
     if (res.status === 404) return null;
     if (!res.ok) {
-      throw new Error(await describeFailure(res, 'Failed to fetch database status'));
+      throw displayError(await describeFailure(res, message("removed:m_2bbb75b76f42258c228f")));
     }
     return res.json();
   },
@@ -1524,7 +1545,7 @@ function createApiWithBase(apiBase: string) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ providers }),
     });
-    if (!res.ok) throw new Error(await describeFailure(res, 'Failed to save geolocation providers'));
+    if (!res.ok) throw displayError(await describeFailure(res, message("removed:m_eefd195dde00c0ee71c8")));
     return res.json();
   },
 
@@ -1532,26 +1553,26 @@ function createApiWithBase(apiBase: string) {
     const res = await fetch(`${apiBase}/dbs/update/progress`);
     if (res.status === 404) return null;
     if (!res.ok) {
-      throw new Error(await describeFailure(res, 'Failed to fetch download progress'));
+      throw displayError(await describeFailure(res, message("removed:m_52f46214e954cf2eedd4")));
     }
     return res.json();
   },
 
   async getVersion(): Promise<VersionInfo> {
     const res = await fetch(`${apiBase}/version`);
-    if (!res.ok) throw new Error('Failed to fetch version info');
+    if (!res.ok) throw displayError(message("ui:m_de31dc7a573fee081734"));
     return res.json();
   },
 
   async getDPIInfo(): Promise<DPIInfo> {
     const res = await fetch(`${apiBase}/dpi`);
-    if (!res.ok) throw new Error('Failed to fetch DPI info');
+    if (!res.ok) throw displayError(message("removed:m_b05a727d36bea4d9bffa"));
     return res.json();
   },
 
   async getDPIPreferences(): Promise<UserDPIPreferences> {
     const res = await fetch(`${apiBase}/dpi/preferences`);
-    if (!res.ok) throw new Error('Failed to fetch DPI preferences');
+    if (!res.ok) throw displayError(message("removed:m_249cbeafc7a2bcc2870b"));
     return res.json();
   },
 
@@ -1565,20 +1586,20 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || 'Failed to save DPI preferences');
+      throw displayError(error.message || message("removed:m_887804dcc3fd62540759"));
     }
     return res.json();
   },
 
   async getConfig(): Promise<ConfigResponse> {
     const res = await fetch(`${apiBase}/config`);
-    if (!res.ok) throw new Error('Failed to fetch config');
+    if (!res.ok) throw displayError(message("ui:m_ba91b5606ff9ccea1d18"));
     return res.json();
   },
 
   async getDebugState(): Promise<{enabled: boolean}> {
     const res = await fetch(`${apiBase}/config/debug`);
-    if (!res.ok) throw new Error('Failed to fetch debug state');
+    if (!res.ok) throw displayError(message("ui:m_f91e72dd5ac32a649af1"));
     return res.json();
   },
 
@@ -1588,13 +1609,13 @@ function createApiWithBase(apiBase: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled }),
     });
-    if (!res.ok) throw new Error('Failed to update debug state');
+    if (!res.ok) throw displayError(message("ui:m_528ea2b91ebefc877c4c"));
     return res.json();
   },
 
   async getPayloadState(): Promise<{enabled: boolean}> {
     const res = await fetch(`${apiBase}/config/payload`);
-    if (!res.ok) throw new Error('Failed to fetch payload state');
+    if (!res.ok) throw displayError(message("ui:m_0f92af69c1255b0c0d68"));
     return res.json();
   },
 
@@ -1604,25 +1625,25 @@ function createApiWithBase(apiBase: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled }),
     });
-    if (!res.ok) throw new Error('Failed to update payload state');
+    if (!res.ok) throw displayError(message("ui:m_fb5e930adc05cdea7013"));
     return res.json();
   },
 
   async getDecoders(): Promise<DecodersResponse> {
     const res = await fetch(`${apiBase}/decoders`);
-    if (!res.ok) throw new Error('Failed to fetch decoders');
+    if (!res.ok) throw displayError(message("ui:m_8c1c760765542e33f39a"));
     return res.json();
   },
 
   async getHarvesters(): Promise<HarvestersResponse> {
     const res = await fetch(`${apiBase}/harvesters`);
-    if (!res.ok) throw new Error('Failed to fetch harvesters');
+    if (!res.ok) throw displayError(message("ui:m_062b46a778fd43b779b9"));
     return res.json();
   },
 
   async getHarvestersConfig(): Promise<HarvestersConfig> {
     const res = await fetch(`${apiBase}/harvesters/config`);
-    if (!res.ok) throw new Error('Failed to fetch harvesters config');
+    if (!res.ok) throw displayError(message("ui:m_877da7f0c2d312ff8182"));
     return res.json();
   },
 
@@ -1632,13 +1653,13 @@ function createApiWithBase(apiBase: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config),
     });
-    if (!res.ok) throw new Error('Failed to save harvesters config');
+    if (!res.ok) throw displayError(message("ui:m_77bf0ddd1b39499bb19d"));
     return res.json();
   },
 
   async getHarvesterPresets(): Promise<HarvesterPresetListResponse> {
     const res = await fetch(`${apiBase}/harvesters/presets`);
-    if (!res.ok) throw new Error('Failed to fetch harvester presets');
+    if (!res.ok) throw displayError(message("ui:m_d1a22c5972b5d8987d48"));
     return res.json();
   },
 
@@ -1648,7 +1669,7 @@ function createApiWithBase(apiBase: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, config }),
     });
-    if (!res.ok) throw new Error('Failed to save harvester preset');
+    if (!res.ok) throw displayError(message("ui:m_86cb1da00e2028a79f9f"));
     return res.json();
   },
 
@@ -1658,7 +1679,7 @@ function createApiWithBase(apiBase: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
     });
-    if (!res.ok) throw new Error('Failed to load harvester preset');
+    if (!res.ok) throw displayError(message("ui:m_5b1d7e2c8b928ae6eb7c"));
     return res.json();
   },
 
@@ -1668,7 +1689,7 @@ function createApiWithBase(apiBase: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
     });
-    if (!res.ok) throw new Error('Failed to delete harvester preset');
+    if (!res.ok) throw displayError(message("ui:m_390fccbc4f95cb0465c9"));
     return res.json();
   },
 
@@ -1683,13 +1704,13 @@ function createApiWithBase(apiBase: string) {
       method: 'POST',
       body: formData,
     });
-    if (!res.ok) throw new Error('Failed to upload harvester preset');
+    if (!res.ok) throw displayError(message("ui:m_8408d8c818528e270e0c"));
     return res.json();
   },
 
   async downloadHarvesterPreset(name: string): Promise<Blob> {
     const res = await fetch(`${apiBase}/harvesters/presets/download?name=${encodeURIComponent(name)}`);
-    if (!res.ok) throw new Error('Failed to download harvester preset');
+    if (!res.ok) throw displayError(message("ui:m_f70ea0e62f746529fdcd"));
     return res.blob();
   },
 
@@ -1718,25 +1739,25 @@ function createApiWithBase(apiBase: string) {
     const qs = queryParams.toString();
     const url = qs ? `${apiBase}/fingerprints?${qs}` : `${apiBase}/fingerprints`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch fingerprints');
+    if (!res.ok) throw displayError(message("ui:m_d28e5aa192b3d7bccca2"));
     return res.json();
   },
 
   async getServiceSignatures(): Promise<ServiceSignaturesResponse> {
     const res = await fetch(`${apiBase}/service-signatures`);
-    if (!res.ok) throw new Error('Failed to load service signature catalogue');
+    if (!res.ok) throw displayError(message("removed:m_2afaa350596ee4f67b65"));
     return res.json();
   },
 
   async getServiceSignatureStatus(selection = ''): Promise<ServiceSignatureInventory> {
     const res = await fetch(`${apiBase}/service-signatures/status${selection}`);
-    if (!res.ok) throw new Error(`Capture signature diagnostics unavailable: ${await res.text()}`);
+    if (!res.ok) throw displayError(message("removed:m_a93de149ab4a85490b22", { arg0: await res.text() }));
     return res.json();
   },
 
   async getDecoderConfig(): Promise<DecoderConfig> {
     const res = await fetch(`${apiBase}/decoders/config`);
-    if (!res.ok) throw new Error('Failed to fetch decoder config');
+    if (!res.ok) throw displayError(message("ui:m_e981cbd75cde52ec62b0"));
     return res.json();
   },
 
@@ -1746,13 +1767,13 @@ function createApiWithBase(apiBase: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config),
     });
-    if (!res.ok) throw new Error('Failed to save decoder config');
+    if (!res.ok) throw displayError(message("ui:m_ef4bbf8256294152bb4b"));
     return res.json();
   },
 
   async listDecoderConfigs(): Promise<DecoderConfigFile[]> {
     const res = await fetch(`${apiBase}/decoders/config/list`);
-    if (!res.ok) throw new Error('Failed to list decoder configs');
+    if (!res.ok) throw displayError(message("ui:m_8003049f673edc84f8da"));
     return res.json();
   },
 
@@ -1762,7 +1783,7 @@ function createApiWithBase(apiBase: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
     });
-    if (!res.ok) throw new Error('Failed to load decoder config');
+    if (!res.ok) throw displayError(message("ui:m_680b86f4c7f7f1e283a5"));
     return res.json();
   },
 
@@ -1779,7 +1800,7 @@ function createApiWithBase(apiBase: string) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || error.message || 'Upload failed');
+      throw displayError(error.error || error.message || message("ui:m_f8e877c74c2b6062c4cd"));
     }
 
     return res.json();
@@ -1791,7 +1812,7 @@ function createApiWithBase(apiBase: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
     });
-    if (!res.ok) throw new Error('Failed to delete decoder config');
+    if (!res.ok) throw displayError(message("ui:m_92e2be095339bb0a0219"));
     return res.json();
   },
 
@@ -1801,31 +1822,31 @@ function createApiWithBase(apiBase: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, config }),
     });
-    if (!res.ok) throw new Error('Failed to save decoder config as');
+    if (!res.ok) throw displayError(message("ui:m_67beed4c7bbe87c2a06a"));
     return res.json();
   },
 
   async getDecoderFields(decoderName: string): Promise<DecoderFieldsResponse> {
     const res = await fetch(`${apiBase}/decoders/${encodeURIComponent(decoderName)}/fields`);
-    if (!res.ok) throw new Error('Failed to fetch decoder fields');
+    if (!res.ok) throw displayError(message("ui:m_c47f74bcd0257a51f890"));
     return res.json();
   },
 
   async getAllDecoderFields(): Promise<AllDecoderFieldsResponse> {
     const res = await fetch(`${apiBase}/decoders/fields`);
-    if (!res.ok) throw new Error('Failed to fetch all decoder fields');
+    if (!res.ok) throw displayError(message("ui:m_01ce52513239518145bc"));
     return res.json();
   },
 
   async getSystemInfo(): Promise<SystemInfo> {
     const res = await fetch(`${apiBase}/system-info`);
-    if (!res.ok) throw new Error('Failed to fetch system info');
+    if (!res.ok) throw displayError(message("ui:m_4f10c0343acc5848ee8f"));
     return res.json();
   },
 
   async getBPFInfo(): Promise<BPFInfoResponse> {
     const res = await fetch(`${apiBase}/config/bpf`);
-    if (!res.ok) throw new Error('Failed to fetch BPF info');
+    if (!res.ok) throw displayError(message("ui:m_62d44f43292654ac92b9"));
     return res.json();
   },
 
@@ -1835,7 +1856,7 @@ function createApiWithBase(apiBase: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config),
     });
-    if (!res.ok) throw new Error('Failed to save BPF configuration');
+    if (!res.ok) throw displayError(message("ui:m_f99718907d0e296256a2"));
     return res.json();
   },
 
@@ -1847,7 +1868,7 @@ function createApiWithBase(apiBase: string) {
     onRecord: (record: Record<string, unknown>) => void,
     onProgress?: (count: number, scanned?: number) => void,
     onComplete?: (total: number, scanned?: number, executionTimeMs?: number) => void,
-    onError?: (error: string) => void,
+    onError?: (error: string, presentation?: MessageText) => void,
     filter?: string,
     communityIds?: readonly string[],
     evidenceSource?: import('./analyst').AnalystSource
@@ -1867,7 +1888,7 @@ function createApiWithBase(apiBase: string) {
     });
     
     console.log('[API] Creating EventSource for:', url);
-    const eventSource = new EventSource(url);
+    const eventSource = new EventSource(localeURL(url));
     
     let hasReceivedData = false;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -1878,7 +1899,7 @@ function createApiWithBase(apiBase: string) {
       timeoutId = setTimeout(() => {
         console.error('[API] Stream timeout - no data received for 30 seconds');
         if (!hasReceivedData && onError) {
-          onError('Connection timeout - no response from server');
+          onError(messageSource(streamMessage("ui:m_c99b25bf258b87808ab4")), streamMessage("ui:m_c99b25bf258b87808ab4"));
         }
         eventSource.close();
       }, 30000);
@@ -1940,11 +1961,11 @@ function createApiWithBase(apiBase: string) {
         try {
           const error = JSON.parse(messageEvent.data);
           console.error('[API] Custom error from server:', error);
-          if (onError) onError(error.error);
+          if (onError) onError(error.error, presentationValue(error, 'message'));
           eventSource.close();
         } catch (err) {
           console.error('[API] Failed to parse error data:', err);
-          if (onError) onError('Stream error occurred');
+          if (onError) onError(messageSource(streamMessage("ui:m_4fd8ae2d335528630f5b")), streamMessage("ui:m_4fd8ae2d335528630f5b"));
           eventSource.close();
         }
       }
@@ -1958,7 +1979,7 @@ function createApiWithBase(apiBase: string) {
       // Only report error if we haven't received any data yet or if truly closed
       if (!hasReceivedData) {
         if (onError) {
-          onError('Failed to connect to audit record stream. The file may not exist or be incomplete.');
+          onError(messageSource(streamMessage("ui:m_549b25bc014efc371346")), streamMessage("ui:m_549b25bc014efc371346"));
         }
         eventSource.close();
       } else if (eventSource.readyState === EventSource.CLOSED) {
@@ -1972,7 +1993,7 @@ function createApiWithBase(apiBase: string) {
 
   async getNetworkInterfaces(): Promise<NetworkInterfaceInfo[]> {
     const res = await fetch(`${apiBase}/network-interfaces`);
-    if (!res.ok) throw new Error('Failed to fetch network interfaces');
+    if (!res.ok) throw displayError(message("ui:m_431e3b8398731b8a5303"));
     return res.json();
   },
 
@@ -1980,13 +2001,13 @@ function createApiWithBase(apiBase: string) {
     const res = await fetch(`${apiBase}/stop-capture`, {
       method: 'POST',
     });
-    if (!res.ok) throw new Error('Failed to stop capture');
+    if (!res.ok) throw displayError(message("ui:m_fcfb361562d5e7558310"));
     return res.json();
   },
 
   async getChartData(type: string, field: string, interval: string): Promise<ChartDataResponse> {
     const res = await fetch(`${apiBase}/chart/data?type=${encodeURIComponent(type)}&field=${encodeURIComponent(field)}&interval=${encodeURIComponent(interval)}`);
-    if (!res.ok) throw new Error('Failed to fetch chart data');
+    if (!res.ok) throw displayError(message("ui:m_030e4fb02a8e0318de27"));
     return res.json();
   },
 
@@ -1996,26 +2017,26 @@ function createApiWithBase(apiBase: string) {
     const res = await fetch(`${apiBase}/chart/fields?${params.toString()}`);
     if (!res.ok) {
       if (res.status === 404) {
-        throw new Error('Chart API not found');
+        throw displayError(message("ui:m_35176bcbf8b5f7d52670"));
       }
       if (res.status === 503) {
-        throw new Error('No output directory selected - please select or set an output directory first');
+        throw displayError(message("ui:m_f0aaa0259343f13f2341"));
       }
       const text = await res.text();
-      throw new Error(text || 'Failed to fetch chart fields');
+      throw displayError(text || message("ui:m_294ee886b2a4a96ff1f1"));
     }
     return res.json();
   },
 
   async listDashboards(): Promise<Dashboard[]> {
     const res = await fetch(`${apiBase}/dashboards`);
-    if (!res.ok) throw await dashboardError(res, 'Failed to list dashboards');
+    if (!res.ok) throw await dashboardError(res, translate("ui:m_825f6120220786cad43b"));
     return res.json();
   },
 
   async getDashboard(id: string): Promise<Dashboard> {
     const res = await fetch(`${apiBase}/dashboards/${encodeURIComponent(id)}`);
-    if (!res.ok) throw await dashboardError(res, 'Failed to load dashboard');
+    if (!res.ok) throw await dashboardError(res, translate("ui:m_652020877c91a282a3d6"));
     return res.json();
   },
 
@@ -2025,7 +2046,7 @@ function createApiWithBase(apiBase: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
     });
-    if (!res.ok) throw await dashboardError(res, 'Failed to create dashboard');
+    if (!res.ok) throw await dashboardError(res, translate("ui:m_f2a56215a76c72ce7f68"));
     return res.json();
   },
 
@@ -2035,7 +2056,7 @@ function createApiWithBase(apiBase: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(dashboard),
     });
-    if (!res.ok) throw await dashboardError(res, 'Failed to update dashboard');
+    if (!res.ok) throw await dashboardError(res, translate("ui:m_719440362554d401351d"));
     return res.json();
   },
 
@@ -2044,7 +2065,7 @@ function createApiWithBase(apiBase: string) {
       method: 'DELETE',
     });
     if (!res.ok && res.status !== 204) {
-      throw await dashboardError(res, 'Failed to delete dashboard');
+      throw await dashboardError(res, translate("ui:m_e421db2cfe18cc19eea0"));
     }
   },
 
@@ -2052,10 +2073,10 @@ function createApiWithBase(apiBase: string) {
     const res = await fetch(`${apiBase}/visualize/protocol-hierarchy`);
     if (!res.ok) {
       if (res.status === 503) {
-        throw new Error('No output directory selected - please select or set an output directory first');
+        throw displayError(message("ui:m_f0aaa0259343f13f2341"));
       }
       const text = await res.text();
-      throw new Error(text || 'Failed to fetch protocol hierarchy');
+      throw displayError(text || message("ui:m_be5cf7d586cf98c11f56"));
     }
     return res.json();
   },
@@ -2071,7 +2092,7 @@ function createApiWithBase(apiBase: string) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || error.message || 'Failed to report issue');
+      throw displayError(error.error || error.message || message("ui:m_06549e3a423361c92df9"));
     }
 
     return res.json();
@@ -2110,13 +2131,13 @@ function createApiWithBase(apiBase: string) {
   },
   async getRules(): Promise<RulesResponse> {
     const res = await fetch(`${apiBase}/rules`);
-    if (!res.ok) throw new Error('Failed to fetch rules');
+    if (!res.ok) throw displayError(message("ui:m_7a24a433c57085cd9675"));
     return res.json();
   },
 
   async getRule(id: string): Promise<Rule> {
     const res = await fetch(`${apiBase}/rules/${encodeURIComponent(id)}`);
-    if (!res.ok) throw new Error('Failed to fetch rule');
+    if (!res.ok) throw displayError(message("ui:m_847431da6558b0aa39b6"));
     return res.json();
   },
 
@@ -2128,7 +2149,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || 'Failed to create rule');
+      throw displayError(error.error || message("ui:m_0329ab203cc914aa6305"));
     }
     return res.json();
   },
@@ -2141,7 +2162,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || 'Failed to update rule');
+      throw displayError(error.error || message("ui:m_22c14445e6a364088568"));
     }
     return res.json();
   },
@@ -2152,7 +2173,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || 'Failed to delete rule');
+      throw displayError(error.error || message("ui:m_f5401b1701c733b124c4"));
     }
     return res.json();
   },
@@ -2165,7 +2186,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || 'Failed to execute rule');
+      throw displayError(error.error || message("ui:m_7b41bfb23e0b222578aa"));
     }
     return res.json();
   },
@@ -2191,7 +2212,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || 'Failed to execute all rules');
+      throw displayError(error.error || message("ui:m_f5671b434db8d6900157"));
     }
     return res.json();
   },
@@ -2199,7 +2220,7 @@ function createApiWithBase(apiBase: string) {
   // Rule Sets API
   async getRuleSets(): Promise<RuleSetsResponse> {
     const res = await fetch(`${apiBase}/rule-sets`);
-    if (!res.ok) throw new Error('Failed to fetch rule sets');
+    if (!res.ok) throw displayError(message("ui:m_4eabace7030202f668cc"));
     return res.json();
   },
 
@@ -2211,7 +2232,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || 'Failed to update rule set');
+      throw displayError(error.error || message("ui:m_6dce3a0e087b070a80f0"));
     }
     return res.json();
   },
@@ -2219,13 +2240,13 @@ function createApiWithBase(apiBase: string) {
   // Injection Rules API
   async getInjectionRules(): Promise<InjectionRulesResponse> {
     const res = await fetch(`${apiBase}/injection-rules`);
-    if (!res.ok) throw new Error('Failed to fetch injection rules');
+    if (!res.ok) throw displayError(message("removed:m_d477a2c503c5a2d8a564"));
     return res.json();
   },
 
   async getInjectionRule(id: string): Promise<InjectionRule> {
     const res = await fetch(`${apiBase}/injection-rules/${encodeURIComponent(id)}`);
-    if (!res.ok) throw new Error('Failed to fetch injection rule');
+    if (!res.ok) throw displayError(message("removed:m_23b7fd95c33fb0439b53"));
     return res.json();
   },
 
@@ -2237,7 +2258,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || 'Failed to create injection rule');
+      throw displayError(error.error || message("removed:m_03e02d2b588fddde91d7"));
     }
     return res.json();
   },
@@ -2250,7 +2271,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || 'Failed to update injection rule');
+      throw displayError(error.error || message("removed:m_773388bb9d5800200cb7"));
     }
     return res.json();
   },
@@ -2263,7 +2284,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || 'Failed to toggle injection rule');
+      throw displayError(error.error || message("removed:m_18d0f0dbf7ca925fe9fc"));
     }
     return res.json();
   },
@@ -2274,7 +2295,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || 'Failed to delete injection rule');
+      throw displayError(error.error || message("removed:m_4d7dd5623ec0c208812f"));
     }
     return res.json();
   },
@@ -2286,7 +2307,7 @@ function createApiWithBase(apiBase: string) {
     if (filters?.action) params.set('action', filters.action);
     const queryString = params.toString();
     const res = await fetch(`${apiBase}/injection-events${queryString ? `?${queryString}` : ''}`);
-    if (!res.ok) throw new Error('Failed to fetch injection events');
+    if (!res.ok) throw displayError(message("removed:m_719098238025e686e9bb"));
     return res.json();
   },
 
@@ -2294,19 +2315,19 @@ function createApiWithBase(apiBase: string) {
     const res = await fetch(`${apiBase}/injection-events/clear`, {
       method: 'DELETE',
     });
-    if (!res.ok) throw new Error('Failed to clear injection events');
+    if (!res.ok) throw displayError(message("removed:m_87d4c0a44050d58a0a27"));
     return res.json();
   },
 
   async getInjectionStats(): Promise<InjectionStatsResponse> {
     const res = await fetch(`${apiBase}/injection-stats`);
-    if (!res.ok) throw new Error('Failed to fetch injection stats');
+    if (!res.ok) throw displayError(message("removed:m_89062d7519a0280094fb"));
     return res.json();
   },
 
   async getInjectionActions(): Promise<{actions: InjectionAction[]}> {
     const res = await fetch(`${apiBase}/injection-actions`);
-    if (!res.ok) throw new Error('Failed to fetch injection actions');
+    if (!res.ok) throw displayError(message("removed:m_edc5654a779070d1999a"));
     return res.json();
   },
 
@@ -2314,12 +2335,12 @@ function createApiWithBase(apiBase: string) {
   async getFeatures(): Promise<FeaturesResponse> {
     const res = await fetch(`${apiBase}/features`, { cache: 'no-store' });
     if (res.status === 404) return { features: [] };
-    if (!res.ok) throw new Error('Failed to read features');
+    if (!res.ok) throw displayError(message("ui:m_f653fd5a5652e1b175f8"));
     return res.json();
   },
   async setFeature(name: string, enabled: boolean): Promise<FeaturesResponse> {
     const res = await fetch(`${apiBase}/features`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, enabled }) });
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed to update feature');
+    if (!res.ok) throw displayError((await res.json().catch(() => ({}))).error || message("ui:m_c8fd5691afc2d5e00f52"));
     return res.json();
   },
   async getRelatedEvidence(selector: EvidenceSelector, inputFile?: string): Promise<RelatedEvidenceResponse> {
@@ -2327,17 +2348,17 @@ function createApiWithBase(apiBase: string) {
     if (inputFile) params.set('inputFile', inputFile);
     const res = await fetch(`${apiBase}/evidence/related?${params}`, { cache: 'no-store' });
     const body = await res.json().catch(() => ({}));
-    if (res.status === 409) return { status: 'disabled', error: body.error || 'evidence linking is disabled' };
-    if (res.status === 404) return { status: 'not-found', error: body.error || 'record is not indexed' };
+    if (res.status === 409) return { status: 'disabled', error: body.error || translate("ui:m_21240daff241942088c4") };
+    if (res.status === 404) return { status: 'not-found', error: body.error || translate("ui:m_813d32d9faf0cb43391a") };
     if (!res.ok) return { status: 'unavailable', error: body.error || `HTTP ${res.status}` };
     const result = parseRelatedEvidence(body);
-    return result ? { status: 'ok', result } : { status: 'unavailable', error: 'unexpected response' };
+    return result ? { status: 'ok', result } : { status: 'unavailable', error: translate("ui:m_8f05e38771f0cca87023") };
   },
   async getNetworkDetectionStats(inputFile?: string): Promise<NetworkDetectionStats | null> {
     const query = inputFile ? `?inputFile=${encodeURIComponent(inputFile)}` : '';
     const res = await fetch(`${apiBase}/network-detection${query}`);
     if (res.status === 404) return null;
-    if (!res.ok) throw new Error('Failed to read network detection coverage');
+    if (!res.ok) throw displayError(message("ui:m_785e45407cc8184d13c6"));
     return res.json();
   },
   async getAlerts(params?: {
@@ -2355,7 +2376,7 @@ function createApiWithBase(apiBase: string) {
     if (params?.sort) queryParams.set('sort', params.sort);
 
     const res = await fetch(`${apiBase}/alerts?${queryParams}`);
-    if (!res.ok) throw new Error('Failed to fetch alerts');
+    if (!res.ok) throw displayError(message("ui:m_05bf5540ee83ba46c33c"));
     return res.json();
   },
 
@@ -2378,13 +2399,13 @@ function createApiWithBase(apiBase: string) {
     if (params?.classification) queryParams.set('classification', params.classification);
 
     const res = await fetch(`${apiBase}/alerts/grouped?${queryParams}`);
-    if (!res.ok) throw new Error('Failed to fetch grouped alerts');
+    if (!res.ok) throw displayError(message("ui:m_9cc39bcf55e7ebb45802"));
     return res.json();
   },
 
   async getAlertStats(): Promise<AlertStatsResponse> {
     const res = await fetch(`${apiBase}/alerts/stats`);
-    if (!res.ok) throw new Error('Failed to fetch alert statistics');
+    if (!res.ok) throw displayError(message("ui:m_5f87753fdf991c057a54"));
     return res.json();
   },
 
@@ -2392,7 +2413,7 @@ function createApiWithBase(apiBase: string) {
     const res = await fetch(`${apiBase}/alerts/clear`, {
       method: 'POST',
     });
-    if (!res.ok) throw new Error('Failed to clear alerts');
+    if (!res.ok) throw displayError(message("ui:m_83302aaa9554beb6daa9"));
     return res.json();
   },
 
@@ -2404,7 +2425,7 @@ function createApiWithBase(apiBase: string) {
       },
       body: JSON.stringify({ alertId, groupId }),
     });
-    if (!res.ok) throw new Error('Failed to resolve alert');
+    if (!res.ok) throw displayError(message("ui:m_167b8f7948d9aaeae1d6"));
     return res.json();
   },
 
@@ -2416,14 +2437,14 @@ function createApiWithBase(apiBase: string) {
       },
       body: JSON.stringify({ alertId, groupId }),
     });
-    if (!res.ok) throw new Error('Failed to unresolve alert');
+    if (!res.ok) throw displayError(message("ui:m_b7225331f84d37b3fb97"));
     return res.json();
   },
 
   // Files API
   async getExtractedFiles(): Promise<ExtractedFilesResponse> {
     const res = await fetch(`${apiBase}/extracted-files`);
-    if (!res.ok) throw new Error('Failed to fetch extracted files');
+    if (!res.ok) throw displayError(message("ui:m_5e3a99b418e3682fb1c4"));
     return res.json();
   },
 
@@ -2439,7 +2460,7 @@ function createApiWithBase(apiBase: string) {
 
   async getExtractedFileContent(relativePath: string, offset: number = 0, limit: number = 16384): Promise<ExtractedFileContentResponse> {
     const res = await fetch(`${apiBase}/extracted-files/content/${encodeURIComponent(relativePath)}?offset=${offset}&limit=${limit}`);
-    if (!res.ok) throw new Error('Failed to fetch file content');
+    if (!res.ok) throw displayError(message("ui:m_41f2c1cdb5f645f47637"));
     return res.json();
   },
 
@@ -2452,27 +2473,27 @@ function createApiWithBase(apiBase: string) {
   // Get field information for autocomplete
   async getAuditRecordFields(type: string): Promise<FieldsResponse> {
     const res = await fetch(`${apiBase}/audit/${encodeURIComponent(type)}/fields`);
-    if (!res.ok) throw new Error('Failed to fetch field information');
+    if (!res.ok) throw displayError(message("ui:m_bc3986afb9c063056e19"));
     return res.json();
   },
 
   // Get sample field values for autocomplete
   async getAuditRecordFieldValues(type: string): Promise<FieldValuesResponse> {
     const res = await fetch(`${apiBase}/audit/${encodeURIComponent(type)}/values`);
-    if (!res.ok) throw new Error('Failed to fetch field values');
+    if (!res.ok) throw displayError(message("ui:m_40a9554e309a9bbd3be1"));
     return res.json();
   },
 
   // Error Logs API
   async getErrorLogs(): Promise<ErrorLogInfo[]> {
     const res = await fetch(`${apiBase}/error-logs`);
-    if (!res.ok) throw new Error('Failed to fetch error logs');
+    if (!res.ok) throw displayError(message("ui:m_7690fd3afe4a4f3ce4b1"));
     return res.json();
   },
 
   async getAggregatedErrors(): Promise<AggregatedError[]> {
     const res = await fetch(`${apiBase}/error-logs/aggregated`);
-    if (!res.ok) throw new Error('Failed to fetch aggregated errors');
+    if (!res.ok) throw displayError(message("ui:m_e8794a9d80507f3e349f"));
     return res.json();
   },
 
@@ -2500,7 +2521,7 @@ function createApiWithBase(apiBase: string) {
       params.set('limit', limit.toString());
     }
     const res = await fetch(`${apiBase}/connections/conversation?${params}`);
-    if (!res.ok) throw new Error('Failed to fetch conversation data');
+    if (!res.ok) throw displayError(message("ui:m_157ee915d908d143ebdf"));
     return res.json();
   },
 
@@ -2524,7 +2545,7 @@ function createApiWithBase(apiBase: string) {
       params.set('limit', limit.toString());
     }
     const res = await fetch(`${apiBase}/connections/network-conversation?${params}`);
-    if (!res.ok) throw new Error('Failed to fetch network conversation data');
+    if (!res.ok) throw displayError(message("ui:m_cc860b52cbdda0dffc49"));
     return res.json();
   },
 
@@ -2658,7 +2679,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const errorText = await res.text();
-      throw new Error(errorText || 'Failed to reanalyze file');
+      throw displayError(errorText || message("ui:m_6a752cf03eb74e2f4fa0"));
     }
     return res.json();
   },
@@ -2666,13 +2687,13 @@ function createApiWithBase(apiBase: string) {
   // YARA Rules API
   async getYaraStatus(): Promise<YaraStatusResponse> {
     const res = await fetch(`${apiBase}/yara/status`);
-    if (!res.ok) throw new Error('Failed to fetch YARA status');
+    if (!res.ok) throw displayError(message("removed:m_eb02a71aad916d7b78d7"));
     return res.json();
   },
 
   async getYaraRules(): Promise<{ rules: YaraRuleInfo[] }> {
     const res = await fetch(`${apiBase}/yara/rules`);
-    if (!res.ok) throw new Error('Failed to fetch YARA rules');
+    if (!res.ok) throw displayError(message("removed:m_18918565b7bf9cb4866a"));
     return res.json();
   },
 
@@ -2685,14 +2706,14 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.details || err.error || 'Failed to upload YARA rule');
+      throw displayError(err.details || err.error || message("removed:m_1740685ccc632dabe02e"));
     }
     return res.json();
   },
 
   async getYaraRuleContent(name: string): Promise<{ name: string; filename: string; content: string }> {
     const res = await fetch(`${apiBase}/yara/rules/${encodeURIComponent(name)}`);
-    if (!res.ok) throw new Error('Failed to fetch YARA rule content');
+    if (!res.ok) throw displayError(message("removed:m_0db3fcc67faabda8ae9a"));
     return res.json();
   },
 
@@ -2704,7 +2725,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.details || err.error || 'Failed to update YARA rule');
+      throw displayError(err.details || err.error || message("removed:m_7ab4a9e7082cbf9e34a1"));
     }
     return res.json();
   },
@@ -2713,7 +2734,7 @@ function createApiWithBase(apiBase: string) {
     const res = await fetch(`${apiBase}/yara/rules/${encodeURIComponent(name)}`, {
       method: 'DELETE',
     });
-    if (!res.ok) throw new Error('Failed to delete YARA rule');
+    if (!res.ok) throw displayError(message("removed:m_128aa8de64cca3aa96da"));
     return res.json();
   },
 
@@ -2721,7 +2742,7 @@ function createApiWithBase(apiBase: string) {
     const res = await fetch(`${apiBase}/yara/scan`, { method: 'POST' });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || 'YARA scan failed');
+      throw displayError(err.error || message("removed:m_c43297d2e74c9f6328c7"));
     }
     return res.json();
   },
@@ -2734,7 +2755,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || 'YARA scan failed');
+      throw displayError(err.error || message("removed:m_c43297d2e74c9f6328c7"));
     }
     return res.json();
   },
@@ -2742,13 +2763,13 @@ function createApiWithBase(apiBase: string) {
   // Protobuf Schema API
   async getProtoStatus(): Promise<ProtoStatusResponse> {
     const res = await fetch(`${apiBase}/proto/status`);
-    if (!res.ok) throw new Error('Failed to fetch proto status');
+    if (!res.ok) throw displayError(message("ui:m_f91c1c91291c21b87984"));
     return res.json();
   },
 
   async getProtoMessages(): Promise<ProtoMessagesResponse> {
     const res = await fetch(`${apiBase}/proto/messages`);
-    if (!res.ok) throw new Error('Failed to fetch proto messages');
+    if (!res.ok) throw displayError(message("ui:m_a796906cd7755f5684b2"));
     return res.json();
   },
 
@@ -2760,7 +2781,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || 'Failed to add search path');
+      throw displayError(err.error || message("ui:m_0aa194158f5fad1632a2"));
     }
     return res.json();
   },
@@ -2773,7 +2794,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || 'Failed to remove search path');
+      throw displayError(err.error || message("ui:m_443e761a7486c9127840"));
     }
     return res.json();
   },
@@ -2789,7 +2810,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || 'Upload failed');
+      throw displayError(err.error || message("ui:m_f8e877c74c2b6062c4cd"));
     }
     return res.json();
   },
@@ -2802,7 +2823,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || 'Failed to add mapping');
+      throw displayError(err.error || message("ui:m_fc86d3dd2074eefd4f7e"));
     }
     return res.json();
   },
@@ -2815,7 +2836,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || 'Failed to remove mapping');
+      throw displayError(err.error || message("ui:m_02e55475da09fc526799"));
     }
     return res.json();
   },
@@ -2828,7 +2849,7 @@ function createApiWithBase(apiBase: string) {
     });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || 'Failed to update preferences');
+      throw displayError(err.error || message("ui:m_7344ad3abb88eea8efc7"));
     }
     return res.json();
   },
@@ -2837,7 +2858,7 @@ function createApiWithBase(apiBase: string) {
     const res = await fetch(`${apiBase}/proto/recompile`, { method: 'POST' });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || 'Recompilation failed');
+      throw displayError(err.error || message("ui:m_b9fbb1956ae0312c72e7"));
     }
     return res.json();
   },
@@ -2865,66 +2886,27 @@ export const api: NetcapApiClient = createApiWithBase(DEFAULT_API_BASE);
 
 // Format bytes to human readable string
 export function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  if (!Number.isFinite(bytes)) return '—';
+  if (Number.isSafeInteger(bytes)) return formatExactBytes(BigInt(bytes));
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB'];
+  const exponent = bytes === 0 ? 0 : Math.min(units.length - 1, Math.max(0, Math.floor(Math.log(Math.abs(bytes)) / Math.log(1024))));
+  return formatNumber(bytes / 1024 ** exponent, { maximumFractionDigits: 2 }) + ' ' + units[exponent];
 }
 
 // Format timestamp to human readable string
-export function formatTimestamp(timestamp: number): string {
-  // Handle invalid timestamps
-  if (!timestamp || timestamp === 0 || Number.isNaN(timestamp)) {
-    return 'N/A';
-  }
-  
-  // Detect timestamp format based on magnitude
-  // Timestamps > 10^15 are likely nanoseconds (e.g., 1700000000000000000)
-  // Timestamps < 10^12 are likely seconds (e.g., 1700000000)
-  // Timestamps between 10^12 and 10^15 are likely milliseconds
-  let dateMs: number;
-  
-  if (timestamp > 1e15) {
-    // Nanoseconds - divide by 1,000,000 to get milliseconds
-    dateMs = timestamp / 1e6;
-  } else if (timestamp > 1e12) {
-    // Already in milliseconds
-    dateMs = timestamp;
-  } else {
-    // Seconds - multiply by 1000 to get milliseconds
-    dateMs = timestamp * 1000;
-  }
-  
-  const date = new Date(dateMs);
-  
-  // Check if the date is valid
-  if (Number.isNaN(date.getTime())) {
-    return 'Invalid Date';
-  }
-  
-  // Additional validation: check if date is reasonable (between 1970 and 2100)
-  const year = date.getFullYear();
-  if (year < 1970 || year > 2100) {
-    return 'Invalid Date';
-  }
-  
-  return date.toLocaleString();
+export function formatTimestamp(timestamp: number | string | bigint, unit: 'seconds' | 'milliseconds' | 'nanoseconds'): string {
+  if (timestamp === 0 || timestamp === 0n || timestamp === '0' || timestamp === '') return '—';
+  try {
+    if (unit === 'nanoseconds' && typeof timestamp !== 'number') return formatTimestampNs(timestamp);
+    if (unit === 'nanoseconds' && Number.isSafeInteger(timestamp)) return formatTimestampNs(BigInt(timestamp));
+    // Legacy JSON numbers may already be rounded; do not invent a nine-digit fraction.
+    const value = Number(timestamp);
+    return formatDateTime(unit === 'nanoseconds' ? value / 1e6 : value, unit === 'seconds' ? 'seconds' : 'milliseconds');
+  } catch { return '—'; }
 }
 
 export function formatDuration(seconds: number): string {
-  if (seconds < 1) {
-    return `${Math.round(seconds * 1000)}ms`;
-  }
-  if (seconds < 60) {
-    return `${seconds.toFixed(1)}s`;
-  }
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-  if (minutes < 60) {
-    return `${minutes}m ${remainingSeconds}s`;
-  }
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-  return `${hours}h ${remainingMinutes}m`;
+  if (!Number.isFinite(seconds)) return '—';
+  const value = Math.abs(seconds);
+  return value < 1 ? formatQuantity(seconds * 1000, 'ms') : value < 60 ? formatQuantity(seconds, 's') : value < 3600 ? formatQuantity(seconds / 60, 'min') : value < 86400 ? formatQuantity(seconds / 3600, 'h') : formatQuantity(seconds / 86400, 'd');
 }

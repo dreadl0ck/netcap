@@ -20,6 +20,8 @@
 import React from 'react';
 import { Box, useTheme } from '@mui/material';
 import { highlightRegexPattern } from '../lib/regexSyntaxHighlight';
+import { useLocale as useUILocale } from "../lib/i18n";
+
 
 interface RegexHighlightProps {
   pattern: string;
@@ -44,10 +46,11 @@ export default function RegexHighlight({
   fontSize = '0.95rem',
   wrap = false,
 }: RegexHighlightProps) {
+  const __uiLocale = useUILocale();
   const theme = useTheme();
 
   // Tokenize and highlight the pattern
-  const tokens = highlightRegexPattern(pattern);
+  const tokens = highlightRegexPattern(pattern, theme.palette.mode);
 
   // If empty pattern, show nothing
   if (!pattern || tokens.length === 0) {
@@ -55,8 +58,7 @@ export default function RegexHighlight({
   }
 
   return (
-    <Box
-      component="span"
+    <Box component="span"
       sx={{
         fontFamily: monospace ? 'monospace' : 'inherit',
         fontSize: fontSize,
@@ -64,19 +66,14 @@ export default function RegexHighlight({
         wordBreak: wrap ? 'break-word' : 'normal',
         display: 'inline-block',
         ...sx,
-      }}
-    >
-      {tokens.map((token, i) => {
+      }}>{tokens.map((token, i) => {
         if (token.type === 'text' && token.color === 'inherit') {
           return <span key={i}>{token.value}</span>;
         }
         return (
-          <span key={i} style={{ color: token.color }}>
-            {token.value}
-          </span>
+          <span key={i} style={{ color: token.color }}>{token.value}</span>
         );
-      })}
-    </Box>
+      })}</Box>
   );
 }
 
@@ -91,23 +88,17 @@ export function RegexBlock({
   pattern: string;
   sx?: any;
 }) {
+  const __uiLocale = useUILocale();
   return (
-    <Box
-      sx={{
+    <Box sx={{
         p: 2,
         bgcolor: 'action.hover',
         borderRadius: 1,
         overflow: 'auto',
         ...sx,
-      }}
-    >
-      <RegexHighlight
-        pattern={pattern}
+      }}><RegexHighlight pattern={pattern}
         wrap={true}
         monospace={true}
-        fontSize="0.95rem"
-      />
-    </Box>
+        fontSize="0.95rem" /></Box>
   );
 }
-

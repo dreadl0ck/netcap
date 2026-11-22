@@ -20,6 +20,8 @@
 import React from 'react';
 import { Box, useTheme } from '@mui/material';
 import { highlightBPFExpression } from '../lib/bpfSyntaxHighlight';
+import { useLocale as useUILocale } from "../lib/i18n";
+
 
 interface BPFExpressionHighlightProps {
   expression: string;
@@ -44,10 +46,11 @@ export default function BPFExpressionHighlight({
   fontSize = '0.95rem',
   wrap = false,
 }: BPFExpressionHighlightProps) {
+  const __uiLocale = useUILocale();
   const theme = useTheme();
 
   // Tokenize and highlight the expression
-  const tokens = highlightBPFExpression(expression);
+  const tokens = highlightBPFExpression(expression, theme.palette.mode);
 
   // If empty expression, show nothing
   if (!expression || tokens.length === 0) {
@@ -55,8 +58,7 @@ export default function BPFExpressionHighlight({
   }
 
   return (
-    <Box
-      component="span"
+    <Box component="span"
       sx={{
         fontFamily: monospace ? 'monospace' : 'inherit',
         fontSize: fontSize,
@@ -64,19 +66,14 @@ export default function BPFExpressionHighlight({
         wordBreak: wrap ? 'break-word' : 'normal',
         display: 'inline-block',
         ...sx,
-      }}
-    >
-      {tokens.map((token, i) => {
+      }}>{tokens.map((token, i) => {
         if (token.type === 'text' && token.color === 'inherit') {
           return <span key={i}>{token.value}</span>;
         }
         return (
-          <span key={i} style={{ color: token.color }}>
-            {token.value}
-          </span>
+          <span key={i} style={{ color: token.color }}>{token.value}</span>
         );
-      })}
-    </Box>
+      })}</Box>
   );
 }
 
@@ -91,23 +88,17 @@ export function BPFExpressionBlock({
   expression: string;
   sx?: any;
 }) {
+  const __uiLocale = useUILocale();
   return (
-    <Box
-      sx={{
+    <Box sx={{
         p: 2,
         bgcolor: 'action.hover',
         borderRadius: 1,
         overflow: 'auto',
         ...sx,
-      }}
-    >
-      <BPFExpressionHighlight
-        expression={expression}
+      }}><BPFExpressionHighlight expression={expression}
         wrap={true}
         monospace={true}
-        fontSize="0.95rem"
-      />
-    </Box>
+        fontSize="0.95rem" /></Box>
   );
 }
-

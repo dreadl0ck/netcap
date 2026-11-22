@@ -1,3 +1,5 @@
+
+import { message, displayError } from "./i18n";
 export interface CaptureBinding { runId: string; sourceSHA256: string; manifestSHA256: string }
 export function sameBinding(a: CaptureBinding, b: CaptureBinding) { return a.runId === b.runId && a.sourceSHA256 === b.sourceSHA256 && a.manifestSHA256 === b.manifestSHA256; }
 export interface AnalystSource { sessionId?: string; inputFile?: string; binding: CaptureBinding }
@@ -9,7 +11,7 @@ export interface AnalystDocument { id: string; revision: number; kind: string; t
 export async function analystRequest<T>(fetcher: typeof fetch, base: string, endpoint: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   if (signal?.aborted) throw new DOMException('Analyst request aborted', 'AbortError');
   const response = await fetcher(`${base}/analyst/${endpoint}`, body === undefined ? { signal } : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal });
-  if (!response.ok) throw new Error(`Analyst request failed (HTTP ${response.status}): ${await response.text()}`);
+  if (!response.ok) throw displayError(message("ui:m_e535d0859639cbfd26d4", { arg0: response.status, arg1: await response.text() }));
   const payload = await response.json();
   if (signal?.aborted) throw new DOMException('Analyst request aborted', 'AbortError');
   const name = endpoint.split('?')[0];
@@ -19,12 +21,12 @@ export async function analystRequest<T>(fetcher: typeof fetch, base: string, end
   if (name === 'binding') valid = valid && typeof payload.runId === 'string' && typeof payload.sourceSHA256 === 'string' && typeof payload.manifestSHA256 === 'string';
   if (name === 'catalogue') valid = valid && /^[a-f0-9]{64}$/.test(payload.snapshotSHA256) && Number.isSafeInteger(payload.totalOccurrences) && Array.isArray(payload.sources) && Array.isArray(payload.coverage) && Array.isArray(payload.limitations) && Array.isArray(payload.occurrences) && payload.totalOccurrences >= payload.occurrences.length && payload.occurrences.every((item: AnalystOccurrence) => item?.reference?.version === 1 && /^-?\d{1,19}$/.test(item.reference.timestampNs));
   if (name === 'workspace') valid = valid && (Array.isArray(payload.documents) ? payload.version === 1 : typeof payload.id === 'string' && Number.isSafeInteger(payload.revision) && payload.revision > 0);
-  if (!valid) throw new Error('Unsupported or malformed analyst response.');
+  if (!valid) throw displayError(message("ui:m_0b8dfaae58b809b87937"));
   return payload as T;
 }
 
 export async function resolveOccurrence(fetcher: typeof fetch, base: string, source: AnalystSource, reference: OccurrenceReference, signal?: AbortSignal) {
-  if (!source.sessionId && !source.inputFile) throw new Error('Explicit occurrence source is required.');
-  if (reference.version !== 1 || !sameBinding(source.binding, reference.binding)) throw new Error('Occurrence/source binding conflict.');
+  if (!source.sessionId && !source.inputFile) throw displayError(message("ui:m_75651bedc5d3cdec02e7"));
+  if (reference.version !== 1 || !sameBinding(source.binding, reference.binding)) throw displayError(message("ui:m_bc0c5b85021a0c6ab801"));
   return analystRequest<{ version: number; reference: OccurrenceReference; record: Record<string, unknown> }>(fetcher, base, 'resolve', { source, reference }, signal);
 }

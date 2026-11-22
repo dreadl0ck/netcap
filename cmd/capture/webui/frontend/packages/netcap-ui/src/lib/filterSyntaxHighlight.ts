@@ -18,6 +18,7 @@
  */
 
 import { escapeHTML } from './html';
+import { appearanceTokens, type AppearanceMode } from './appearance';
 
 /**
  * Syntax highlighting for Filter Expression (expr-lang) syntax
@@ -68,7 +69,8 @@ const OPERATORS = new Set([
 /**
  * Tokenize and highlight a filter expression
  */
-export function highlightFilterExpression(expression: string): FilterToken[] {
+export function highlightFilterExpression(expression: string, mode: AppearanceMode = 'dark'): FilterToken[] {
+  const colors = appearanceTokens(mode).syntax;
   if (!expression) {
     return [];
   }
@@ -113,7 +115,7 @@ export function highlightFilterExpression(expression: string): FilterToken[] {
       tokens.push({ 
         type: 'string', 
         value: expression.substring(i, j), 
-        color: '#ce9178' // Orange
+        color: colors.string
       });
       i = j;
       matched = true;
@@ -126,7 +128,7 @@ export function highlightFilterExpression(expression: string): FilterToken[] {
         tokens.push({ 
           type: 'number', 
           value: numMatch[0], 
-          color: '#b5cea8' // Light green
+          color: colors.number
         });
         i += numMatch[0].length;
         matched = true;
@@ -140,7 +142,7 @@ export function highlightFilterExpression(expression: string): FilterToken[] {
         tokens.push({ 
           type: 'operator', 
           value: twoCharOp, 
-          color: '#d4d4d4' // Gray
+          color: colors.text
         });
         i += 2;
         matched = true;
@@ -153,13 +155,13 @@ export function highlightFilterExpression(expression: string): FilterToken[] {
         tokens.push({ 
           type: 'paren', 
           value: expression[i], 
-          color: '#ffd700' // Gold
+          color: colors.operator
         });
       } else {
         tokens.push({ 
           type: 'operator', 
           value: expression[i], 
-          color: '#d4d4d4' // Gray
+          color: colors.text
         });
       }
       i++;
@@ -177,7 +179,7 @@ export function highlightFilterExpression(expression: string): FilterToken[] {
           tokens.push({ 
             type: 'boolean', 
             value: ident, 
-            color: '#569cd6' // Blue
+            color: colors.keyword
           });
         }
         // Check if it's an operator keyword
@@ -185,7 +187,7 @@ export function highlightFilterExpression(expression: string): FilterToken[] {
           tokens.push({ 
             type: 'operator', 
             value: ident, 
-            color: '#d4d4d4' // Gray
+            color: colors.text
           });
         }
         // Check if it's followed by '(' - it's a function call
@@ -193,7 +195,7 @@ export function highlightFilterExpression(expression: string): FilterToken[] {
           tokens.push({ 
             type: 'function', 
             value: ident, 
-            color: '#dcdcaa' // Yellow
+            color: colors.function
           });
         }
         // Check if it's a known helper function
@@ -201,7 +203,7 @@ export function highlightFilterExpression(expression: string): FilterToken[] {
           tokens.push({ 
             type: 'function', 
             value: ident, 
-            color: '#dcdcaa' // Yellow
+            color: colors.function
           });
         }
         // Check if it's a known field
@@ -209,7 +211,7 @@ export function highlightFilterExpression(expression: string): FilterToken[] {
           tokens.push({ 
             type: 'field', 
             value: ident, 
-            color: '#9cdcfe' // Light blue
+            color: colors.key
           });
         }
         // Default: treat as field (could be a custom field)
@@ -217,7 +219,7 @@ export function highlightFilterExpression(expression: string): FilterToken[] {
           tokens.push({ 
             type: 'field', 
             value: ident, 
-            color: '#9cdcfe' // Light blue
+            color: colors.key
           });
         }
         
@@ -231,7 +233,7 @@ export function highlightFilterExpression(expression: string): FilterToken[] {
       tokens.push({ 
         type: 'text', 
         value: expression[i], 
-        color: '#d4d4d4' // Light gray
+        color: colors.text
       });
       i++;
     }
@@ -253,5 +255,4 @@ export function filterTokensToHTML(tokens: FilterToken[]): string {
     })
     .join('');
 }
-
 

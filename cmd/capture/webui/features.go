@@ -23,13 +23,16 @@ const (
 
 // FeatureState is one optional capability as shown in Settings.
 type FeatureState struct {
-	Name        string `json:"name"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Scope       string `json:"scope"`
-	Flag        string `json:"flag"`
-	Env         string `json:"env"`
-	Enabled     bool   `json:"enabled"`
+	Name            string    `json:"name"`
+	Title           string    `json:"title"`
+	Description     string    `json:"description"`
+	Scope           string    `json:"scope"`
+	Flag            string    `json:"flag"`
+	Env             string    `json:"env"`
+	Enabled         bool      `json:"enabled"`
+	TitleI18n       UIMessage `json:"titleI18n"`
+	DescriptionI18n UIMessage `json:"descriptionI18n"`
+	ScopeI18n       UIMessage `json:"scopeI18n"`
 }
 
 var featureCatalog = []FeatureState{
@@ -94,10 +97,11 @@ func (s *Server) featureEnabled(name string) bool {
 // {"name","enabled"}). Toggles last until the process exits; startup state
 // comes from the capture flags.
 func (s *Server) handleFeatures(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control", "no-store")
+	p := PresentationFromRequest(r)
+	presentationHeaders(w, p)
 	switch r.Method {
 	case http.MethodGet:
-		RespondJSON(w, http.StatusOK, map[string]any{"features": s.features.List()})
+		RespondJSON(w, http.StatusOK, map[string]any{"features": presentFeatures(s.features.List(), p)})
 	case http.MethodPost:
 		var request struct {
 			Name    string `json:"name"`
@@ -106,15 +110,15 @@ func (s *Server) handleFeatures(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096))
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(&request); err != nil || request.Enabled == nil {
-			RespondJSON(w, http.StatusBadRequest, map[string]string{"error": "expected {\"name\": string, \"enabled\": bool}"})
+			RespondJSON(w, http.StatusBadRequest, map[string]any{"error": "expected {\"name\": string, \"enabled\": bool}", "code": "feature_invalid_request", "messageI18n": p.message("feature.invalid_request", "Expected a feature name and enabled state", nil)})
 			return
 		}
 		if !s.features.Set(request.Name, *request.Enabled) {
-			RespondJSON(w, http.StatusNotFound, map[string]string{"error": "unknown feature"})
+			RespondJSON(w, http.StatusNotFound, map[string]any{"error": "unknown feature", "code": "feature_unknown", "messageI18n": p.message("feature.unknown", "Unknown feature", nil)})
 			return
 		}
-		RespondJSON(w, http.StatusOK, map[string]any{"features": s.features.List()})
+		RespondJSON(w, http.StatusOK, map[string]any{"features": presentFeatures(s.features.List(), p)})
 	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		uiHTTPError(w, r, "Method not allowed", http.StatusMethodNotAllowed, "method_not_allowed", "Method not allowed")
 	}
 }

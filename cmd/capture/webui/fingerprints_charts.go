@@ -54,7 +54,7 @@ func (s *Server) handleFingerprintsTypeDistribution(w http.ResponseWriter, r *ht
 	showLegend := showLegendStr != "false"
 
 	chart := generateFingerprintsTypeDistributionChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -92,7 +92,7 @@ func (s *Server) handleFingerprintsTopJA4(w http.ResponseWriter, r *http.Request
 	showLegend := showLegendStr == "true"
 
 	chart := generateFingerprintsTopJA4Chart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -130,7 +130,7 @@ func (s *Server) handleFingerprintsTopJA4SSH(w http.ResponseWriter, r *http.Requ
 	showLegend := showLegendStr == "true"
 
 	chart := generateFingerprintsTopJA4SSHChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -168,7 +168,7 @@ func (s *Server) handleFingerprintsHostsPerFingerprint(w http.ResponseWriter, r 
 	showLegend := showLegendStr == "true"
 
 	chart := generateFingerprintsHostsPerFingerprintChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return

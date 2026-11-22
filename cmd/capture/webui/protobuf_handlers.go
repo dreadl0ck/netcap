@@ -232,9 +232,10 @@ func (s *Server) handleProtoSearchPaths(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success": true,
-		"message": "Search paths updated",
-		"status":  s.getProtoStatus(),
+		"success":     true,
+		"message":     "Search paths updated",
+		"messageI18n": requestUIMessage(r, "protobuf.paths.updated", "Search paths updated", nil),
+		"status":      s.getProtoStatus(),
 	})
 }
 
@@ -332,6 +333,7 @@ func (s *Server) handleProtoUpload(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{
 		"success":       true,
 		"message":       fmt.Sprintf("Uploaded %d file(s)", len(uploadedFiles)),
+		"messageI18n":   requestUIMessage(r, "protobuf.files.uploaded", "Uploaded {count} file(s)", map[string]any{"count": len(uploadedFiles)}),
 		"uploadedFiles": uploadedFiles,
 		"status":        s.getProtoStatus(),
 	})
@@ -409,8 +411,9 @@ func (s *Server) handleProtoMappings(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
-			"success": true,
-			"message": fmt.Sprintf("Mapping added: port %d -> %s", req.Port, req.MessageType),
+			"success":     true,
+			"message":     fmt.Sprintf("Mapping added: port %d -> %s", req.Port, req.MessageType),
+			"messageI18n": requestUIMessage(r, "protobuf.mapping.added", "Mapping added: port {port} -> {type}", map[string]any{"port": req.Port, "type": req.MessageType}),
 		})
 
 	case http.MethodDelete:
@@ -450,8 +453,9 @@ func (s *Server) handleProtoMappings(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
-			"success": true,
-			"message": fmt.Sprintf("Mapping removed for port %d", req.Port),
+			"success":     true,
+			"message":     fmt.Sprintf("Mapping removed for port %d", req.Port),
+			"messageI18n": requestUIMessage(r, "protobuf.mapping.removed", "Mapping removed for port {port}", map[string]any{"port": req.Port}),
 		})
 
 	default:
@@ -488,8 +492,9 @@ func (s *Server) handleProtoPreferences(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success": true,
-		"message": fmt.Sprintf("Show alternatives: %v", req.ShowAlternatives),
+		"success":     true,
+		"message":     fmt.Sprintf("Show alternatives: %v", req.ShowAlternatives),
+		"messageI18n": requestUIMessage(r, "protobuf.alternatives", map[bool]string{true: "Show alternatives enabled", false: "Show alternatives disabled"}[req.ShowAlternatives], map[string]any{"enabled": req.ShowAlternatives}),
 	})
 }
 
@@ -520,9 +525,10 @@ func (s *Server) handleProtoRecompile(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success": true,
-		"message": "Recompilation complete",
-		"status":  s.getProtoStatus(),
+		"success":     true,
+		"message":     "Recompilation complete",
+		"messageI18n": requestUIMessage(r, "protobuf.recompiled", "Recompilation complete", nil),
+		"status":      s.getProtoStatus(),
 	})
 }
 

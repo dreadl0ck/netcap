@@ -21,10 +21,15 @@ import { useEffect, useRef } from 'react';
 import { Box, Paper, Typography, Fade, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useLearnMode } from '../contexts/LearnModeContext';
+import { useTheme } from '@mui/material/styles';
+import { translate as i18nText, useLocale as useUILocale } from "../lib/i18n";
+import { translate } from "../lib/i18n";
+
+
 
 // Helper function to parse data-learn attribute into title and description
 function parseLearnHint(hint: string): { title: string | null; description: string } {
-  const colonIndex = hint.indexOf(':');
+  const colonIndex = hint.search(/[:：]/u);
   
   if (colonIndex > 0 && colonIndex < hint.length - 1) {
     const potentialTitle = hint.substring(0, colonIndex).trim();
@@ -69,10 +74,12 @@ function getElementName(element: HTMLElement): string {
   }
   
   const words = textContent.split(/\s+/).filter(w => w.length > 0);
-  return words.slice(0, 3).join(' ') || 'UI Element';
+  return words.slice(0, 3).join(' ') || translate("ui:m_ca2bc633ba8e5dc55526");
 }
 
 export function LearnModeOverlay() {
+  const __uiLocale = useUILocale();
+  const theme = useTheme();
   const { 
     isLearnModeActive, 
     currentHint, 
@@ -85,6 +92,17 @@ export function LearnModeOverlay() {
 
   const lastTouchTimeRef = useRef(0);
   const shouldBlockNextClickRef = useRef(false);
+  const hintedElementRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const element = hintedElementRef.current;
+    const hint = element?.isConnected ? element.getAttribute('data-learn') : null;
+    if (isLearnModeActive && hint) {
+      const { title, description } = parseLearnHint(hint);
+      setCurrentHint(description);
+      setCurrentElementTitle(title || getElementName(element!));
+    }
+  }, [__uiLocale, isLearnModeActive, setCurrentHint, setCurrentElementTitle]);
 
   useEffect(() => {
     if (!isLearnModeActive) {
@@ -95,7 +113,7 @@ export function LearnModeOverlay() {
     const TOUCH_CLICK_DELAY = 500;
 
     const addHighlight = (element: HTMLElement) => {
-      element.style.boxShadow = '0 0 0 2px #00bcd4, 0 0 8px rgba(0, 188, 212, 0.5)';
+      element.style.boxShadow = `0 0 0 2px ${theme.palette.info.main}`;
       element.style.position = element.style.position || 'relative';
       element.style.zIndex = '1';
     };
@@ -121,6 +139,7 @@ export function LearnModeOverlay() {
         
         const hint = learnElement.getAttribute('data-learn');
         if (hint) {
+          hintedElementRef.current = learnElement;
           const { title, description } = parseLearnHint(hint);
           setCurrentHint(description);
           setCurrentElementTitle(title || getElementName(learnElement));
@@ -153,6 +172,7 @@ export function LearnModeOverlay() {
             setCurrentHint(null);
             setCurrentElementTitle(null);
             setLastInteractedElement(null);
+            hintedElementRef.current = null;
             if (currentHighlightedElement === learnElement) {
               removeHighlight(learnElement);
               currentHighlightedElement = null;
@@ -172,6 +192,7 @@ export function LearnModeOverlay() {
             shouldBlockNextClickRef.current = true;
             
             const { title, description } = parseLearnHint(hint);
+            hintedElementRef.current = learnElement;
             setCurrentHint(description);
             setCurrentElementTitle(title || getElementName(learnElement));
             setLastInteractedElement(learnElement);
@@ -231,16 +252,14 @@ export function LearnModeOverlay() {
       document.removeEventListener('touchstart', handleTouch, true);
       document.removeEventListener('click', handleClick, true);
     };
-  }, [isLearnModeActive, setCurrentHint, setCurrentElementTitle, lastInteractedElement, setLastInteractedElement]);
+  }, [isLearnModeActive, setCurrentHint, setCurrentElementTitle, lastInteractedElement, setLastInteractedElement, theme.palette.info.main]);
 
   if (!isLearnModeActive || !currentHint) {
     return null;
   }
 
   return (
-    <Fade in={!!currentHint} timeout={150}>
-      <Paper
-        elevation={8}
+    <Fade in={!!currentHint} timeout={150}><Paper elevation={8}
         sx={{
           position: 'fixed',
           bottom: { xs: 80, sm: 24 },
@@ -250,57 +269,35 @@ export function LearnModeOverlay() {
           minWidth: { xs: 'calc(100vw - 48px)', sm: 384 },
           p: { xs: 2, sm: 3 },
           zIndex: 9999,
-          backgroundColor: 'rgba(0, 188, 212, 0.95)',
-          color: 'white',
+          backgroundColor: 'background.paper',
+          color: 'text.primary',
+          border: '2px solid', borderColor: 'info.main',
           borderRadius: 2,
           backdropFilter: 'blur(10px)',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography 
-              variant="h6" 
+        }}><Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}><Box sx={{ flexGrow: 1 }}><Typography variant="h6" 
               sx={{ 
                 fontWeight: 'bold',
                 mb: 1,
                 fontSize: { xs: '1rem', sm: '1.32rem' },
-              }}
-            >
-              {currentElementTitle || 'UI Element'}
-            </Typography>
-            <Typography 
-              variant="body1" 
+              }}>{currentElementTitle || i18nText("ui:m_ca2bc633ba8e5dc55526")}</Typography><Typography variant="body1" 
               sx={{ 
                 lineHeight: 1.6,
                 fontSize: { xs: '0.9rem', sm: '1.2rem' },
-              }}
-            >
-              {currentHint}
-            </Typography>
-          </Box>
-          <IconButton
-            size="small"
+              }}>{currentHint}</Typography></Box><IconButton size="small"
             onClick={() => {
               setCurrentHint(null);
               setCurrentElementTitle(null);
               setLastInteractedElement(null);
+              hintedElementRef.current = null;
             }}
             sx={{
-              color: 'white',
+              color: 'text.primary',
               padding: 0.5,
               '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                backgroundColor: 'action.hover',
               },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      </Paper>
-    </Fade>
+            }}><CloseIcon fontSize="small" /></IconButton></Box></Paper></Fade>
   );
 }
 
 export default LearnModeOverlay;
-
-

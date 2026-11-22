@@ -19,6 +19,12 @@
 
 import { TextField, InputAdornment, IconButton, Tooltip } from '@mui/material';
 import { Clear as ClearIcon, Search as SearchIcon } from '@mui/icons-material';
+import { translate as i18nText, useLocale as useUILocale } from "../lib/i18n";
+import { translate } from "../lib/i18n";
+import { renderText } from "../lib/i18n";
+
+
+
 
 interface SearchInputProps {
   /** Current search query value */
@@ -57,12 +63,13 @@ export default function SearchInput({
   value,
   onChange,
   onClear,
-  placeholder = 'Search... (use !term to exclude)',
+  placeholder = translate("ui:m_18163a3ce5b61959f8e6"),
   minWidth = 300,
-  learnHint = 'Search: Filter the table. Use !term to exclude matches (e.g., !FTP excludes FTP). Multiple space-separated terms are OR\'d together.',
+  learnHint = translate("ui:m_4b47cd1ef2918ef9f8e0"),
   showSearchIcon = true,
   sx = {},
 }: SearchInputProps) {
+  const __uiLocale = useUILocale();
   const handleClear = () => {
     onChange('');
     if (onClear) {
@@ -75,8 +82,7 @@ export default function SearchInput({
   };
 
   return (
-    <TextField
-      data-learn={learnHint}
+    <TextField data-learn={renderText(learnHint)}
       size="small"
       placeholder={placeholder}
       value={value}
@@ -84,33 +90,22 @@ export default function SearchInput({
       sx={{ minWidth: { xs: 0, sm: minWidth }, width: { xs: '100%', sm: 'auto' }, ...sx }}
       InputProps={{
         startAdornment: showSearchIcon ? (
-          <InputAdornment position="start">
-            <SearchIcon fontSize="small" color="action" />
-          </InputAdornment>
+          <InputAdornment position="start"><SearchIcon fontSize="small" color="action" /></InputAdornment>
         ) : undefined,
         endAdornment: value ? (
-          <InputAdornment position="end">
-            <Tooltip title="Clear search and show all data">
-              <IconButton
-                size="small"
+          <InputAdornment position="end"><Tooltip title={i18nText("ui:m_dc74d457280d840734ea")}><IconButton size="small"
                 onClick={handleClear}
                 edge="end"
-                aria-label="clear search"
+                aria-label={i18nText("ui:m_628b8747374731394e2d")}
                 sx={{
                   color: 'text.secondary',
                   '&:hover': {
                     color: 'text.primary',
                     backgroundColor: 'action.hover',
                   },
-                }}
-              >
-                <ClearIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </InputAdornment>
+                }}><ClearIcon fontSize="small" /></IconButton></Tooltip></InputAdornment>
         ) : undefined,
-      }}
-    />
+      }} />
   );
 }
 

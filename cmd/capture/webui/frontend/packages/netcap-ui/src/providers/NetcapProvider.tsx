@@ -111,6 +111,9 @@ export interface NetcapConfig {
   /** Optional: Application-specific sidebar entries */
   navigationItems?: NavigationItem[];
 
+  /** Host-owned global controls displayed in every page's header. */
+  headerActions?: ReactNode;
+
   /** Optional: native window fullscreen; defaults to the browser Fullscreen API */
   fullscreen?: FullscreenAdapter;
   /** Native JSON save dialog; browser hosts use an ordinary download. */

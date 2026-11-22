@@ -63,11 +63,19 @@ import SearchInput from '../components/SearchInput';
 import CommunityIDChip from '../components/CommunityIDChip';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
-import useSWR, { mutate as globalMutate } from 'swr';
+
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 import { ChartFrame } from '../components/ChartFrame';
+import { translate as i18nText, richText as i18nRichText, getLocale as getUILocale, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR, mutatePresentation as globalMutate } from "../lib/i18n";
+import { renderError, translate } from "../lib/i18n";
+import { message as finalCopyMessage } from "../lib/i18n";
+
+
+
+
 export interface CertificateSummary {
   assessmentBasis?: string; assessmentTimeNs?: string; validityState?: string;
   selfSignatureState?: string; certificateSender?: string;
@@ -135,6 +143,7 @@ export interface CertificatesPageProps {
 }
 
 export default function CertificatesPage({ rowActions }: CertificatesPageProps = {}) {
+  const __uiLocale = useUILocale();
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
@@ -308,11 +317,11 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
       setChartRefreshKey(prev => prev + 1);
     } catch (err) {
       console.error('Failed to switch file:', err);
-      alert('Failed to switch to this capture');
+      alert(i18nText("ui:m_7ab800e4d59917b1d34c"));
     } finally {
       setSwitchingFile(false);
     }
-  }, [api, mutateStatus, mutate]);
+  }, [api, mutateStatus, mutate, __uiLocale]);
 
   const handleRowClick = useCallback((key: string) => {
     setExpandedRow(prev => prev === key ? null : key);
@@ -340,7 +349,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
       
       if (!response.ok) {
         const errorText = await response.text();
-        alert(`Failed to download PCAP: ${errorText}`);
+        alert(i18nText("ui:m_c63b36b2fde6b1f5d69c", { arg0: errorText }));
         return;
       }
       
@@ -357,18 +366,16 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
       document.body.removeChild(a);
     } catch (error) {
       console.error('Download failed:', error);
-      alert(`Failed to download PCAP: ${error}`);
+      alert(i18nText("ui:m_c63b36b2fde6b1f5d69c", { arg0: error }));
     }
-  }, []);
+  }, [__uiLocale]);
 
   const fileSelector = (
-    <FileSelectorHeader
-      inputFiles={inputFiles || []}
+    <FileSelectorHeader inputFiles={inputFiles || []}
       status={status}
       switchingFile={switchingFile}
       onFileChange={handleFileChange}
-      learnHint="Capture Selector: Switch between different analyzed PCAP files to view their TLS certificates."
-    />
+      learnHint={finalCopyMessage("ui:m_5e7ecc72534d4936e134")} />
   );
 
   // Calculate statistics
@@ -399,19 +406,12 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
 
   if (error) {
     return (
-      <Layout title="Certificates" headerAction={fileSelector}>
-        <Alert severity="error">Error loading certificates: {error.message}</Alert>
-      </Layout>
+      <Layout title={i18nText("ui:m_d600f8703e15ddbf7363")} headerAction={fileSelector}><Alert severity="error">{i18nRichText("ui:m_9ee913c1e3b2079aed4b", { arg0: renderError(error) })}</Alert></Layout>
     );
   }
 
   return (
-    <Layout title="Certificates" headerAction={fileSelector}>
-      <Box sx={{ minWidth: 0 }}>
-        {/* View Mode Toggle */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-          <ToggleButtonGroup
-            value={viewMode}
+    <Layout title={i18nText("ui:m_d600f8703e15ddbf7363")} headerAction={fileSelector}><Box sx={{ minWidth: 0 }}>{/* View Mode Toggle */}<Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}><ToggleButtonGroup value={viewMode}
             exclusive
             onChange={(_e, newValue) => {
               if (newValue !== null) {
@@ -419,73 +419,38 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
               }
             }}
             size="small"
-            data-learn="View Mode Toggle: Switch between Table mode (showing data in a table) and Chart mode (showing only visualization charts)."
-          >
-            <ToggleButton value="table">
-              <TableChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                Table
-              </Box>
-            </ToggleButton>
-            <ToggleButton value="chart">
-              <BarChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                Chart
-              </Box>
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-
-        {/* Summary Cards - Only show in table mode */}
-        {viewMode === 'table' && (
-        <StatBoxGrid>
-          <StatBox
-            icon={<SecurityIcon color="primary" />}
-            label="Total Certificates"
+            data-learn={i18nText("ui:m_4f46daf2537ea500313b")}><ToggleButton value="table"><TableChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              {i18nRichText("ui:m_b65e2110701259d5e7dc", { tag0: (chunks: import('react').ReactNode[]) => <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{chunks}</Box> })}
+            </ToggleButton><ToggleButton value="chart"><BarChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              {i18nRichText("ui:m_da105eec6af81877e667", { tag0: (chunks: import('react').ReactNode[]) => <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{chunks}</Box> })}
+            </ToggleButton></ToggleButtonGroup></Box>{/* Summary Cards - Only show in table mode */}{viewMode === 'table' && (
+        <StatBoxGrid><StatBox icon={<SecurityIcon color="primary" />}
+            label={i18nText("ui:m_ba979be5018d353c7042")}
             value={totalCount}
             onClick={() => { setFilterType('all'); setPage(0); }}
             isActive={filterType === 'all'}
             activeColor="primary"
-            learnHint="Total Certificates: Click to show all certificates."
-          />
-          <StatBox
-            icon={<ErrorIcon color="error" />}
-            label="Expired"
+            learnHint={translate("ui:m_34f618eff79a430d0e7f")} /><StatBox icon={<ErrorIcon color="error" />}
+            label={i18nText("ui:m_d17c1c03e8e4aa170197")}
             value={stats.expiredCount}
             onClick={() => { setFilterType('expired'); setPage(0); }}
             isActive={filterType === 'expired'}
             activeColor="error"
-            learnHint="Expired Certificates: Click to filter table to only expired certificates."
-          />
-          <StatBox
-            icon={<WarningIcon color="warning" />}
-            label="Self-Signed"
+            learnHint={translate("ui:m_a95f351df6622e59371d")} /><StatBox icon={<WarningIcon color="warning" />}
+            label={i18nText("ui:m_08c9cbb8269401eac8a3")}
             value={stats.selfSignedCount}
             onClick={() => { setFilterType('selfSigned'); setPage(0); }}
             isActive={filterType === 'selfSigned'}
             activeColor="warning"
-            learnHint="Self-Signed Certificates: Click to filter table to only self-signed certificates."
-          />
-          <StatBox
-            icon={<WarningIcon color="warning" />}
-            label="Weak Security"
+            learnHint={translate("ui:m_220c5c30c057d806d841")} /><StatBox icon={<WarningIcon color="warning" />}
+            label={i18nText("ui:m_5faa63383d9260d63698")}
             value={stats.weakCount}
             onClick={() => { setFilterType('weakSecurity'); setPage(0); }}
             isActive={filterType === 'weakSecurity'}
             activeColor="warning"
-            learnHint="Weak Certificates: Click to filter table to only certificates with weak signatures or short key sizes."
-          />
-        </StatBoxGrid>
-        )}
-
-        {/* Visualization Charts - Only show in chart mode */}
-        {viewMode === 'chart' && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
-              <CardContent sx={{ height: '100%', p: 1 }}>
-                <ChartFrame
-                  data-learn="Top Issuers Chart: Bar chart showing the most common certificate issuers."
+            learnHint={translate("ui:m_a14a0090718b21c8af30")} /></StatBoxGrid>
+        )}{/* Visualization Charts - Only show in chart mode */}{viewMode === 'chart' && (
+        <Grid container spacing={2} sx={{ mb: 3 }}><Grid item xs={12} md={6}><Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}><CardContent sx={{ height: '100%', p: 1 }}><ChartFrame data-learn={i18nText("ui:m_8de7c334e144bc1075d9")}
                   key={`top-issuers-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/certificates/top-issuers`}
                   style={{
@@ -493,17 +458,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                     height: '100%',
                     border: 'none',
                   }}
-                  title="Top Certificate Issuers"
-                />
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
-              <CardContent sx={{ height: '100%', p: 1 }}>
-                <ChartFrame
-                  data-learn="Certificate Status: Pie chart showing the distribution of certificate statuses (valid, expired, self-signed, weak)."
+                  title={i18nText("ui:m_4fe93828507e88828fea")} /></CardContent></Card></Grid><Grid item xs={12} md={6}><Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}><CardContent sx={{ height: '100%', p: 1 }}><ChartFrame data-learn={i18nText("ui:m_efbdd80b35c46968ce6c")}
                   key={`status-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/certificates/status-distribution?showLegend=false`}
                   style={{
@@ -511,17 +466,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                     height: '100%',
                     border: 'none',
                   }}
-                  title="Certificate Status Distribution"
-                />
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
-              <CardContent sx={{ height: '100%', p: 1 }}>
-                <ChartFrame
-                  data-learn="Key Algorithms: Bar chart showing the distribution of public key algorithms used."
+                  title={i18nText("ui:m_6140b0292b9cfea11af4")} /></CardContent></Card></Grid><Grid item xs={12} md={6}><Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}><CardContent sx={{ height: '100%', p: 1 }}><ChartFrame data-learn={i18nText("ui:m_43d9f6ec4649c6a65423")}
                   key={`algorithms-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/certificates/key-algorithms`}
                   style={{
@@ -529,17 +474,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                     height: '100%',
                     border: 'none',
                   }}
-                  title="Public Key Algorithms"
-                />
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
-              <CardContent sx={{ height: '100%', p: 1 }}>
-                <ChartFrame
-                  data-learn="Expiration Timeline: Timeline showing when certificates will expire."
+                  title={i18nText("ui:m_7b0d881228116ff40d13")} /></CardContent></Card></Grid><Grid item xs={12} md={6}><Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}><CardContent sx={{ height: '100%', p: 1 }}><ChartFrame data-learn={i18nText("ui:m_9380df1c1f1a546db705")}
                   key={`expiration-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/certificates/expiration-timeline`}
                   style={{
@@ -547,63 +482,34 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                     height: '100%',
                     border: 'none',
                   }}
-                  title="Certificate Expiration Timeline"
-                />
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-        )}
-
-        {/* Filters and Actions - Only show in table mode */}
-        {viewMode === 'table' && (
-        <>
-        <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <SearchInput
-            value={searchQuery}
+                  title={i18nText("ui:m_d2c7b04d90dad92b8acf")} /></CardContent></Card></Grid></Grid>
+        )}{/* Filters and Actions - Only show in table mode */}{viewMode === 'table' && (
+        <><Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}><SearchInput value={searchQuery}
             onChange={(value) => {
               setSearchQuery(value);
               setPage(0);
             }}
-            placeholder="Search certificates (comma or space separated)..."
-            learnHint="Certificate Search: Filter certificates by subject, issuer, organization, IP addresses, fingerprint, or serial number. Multiple search terms can be separated by commas or spaces. Use !term to exclude matches."
-          />
-          
-          <Button
-            data-learn="Refresh Button: Reload certificate data and charts from the server."
+            placeholder={i18nText("ui:m_fe58c45b25124e034e9f")}
+            learnHint={translate("ui:m_0c4e45dd1fd7e3244704")} /><Button data-learn={i18nText("ui:m_cff86de2b9512e54b83b")}
             variant="outlined" 
             startIcon={<RefreshIcon />} 
             onClick={handleRefresh}
-            size="small"
-          >
-            Refresh
-          </Button>
-          
-          {(searchQuery || filterType !== 'all') ? (
+            size="small">
+            {i18nText("ui:m_230fc1b63eb3ef4e6a34")}
+          </Button>{(searchQuery || filterType !== 'all') ? (
             <Typography variant="body2" color="text.secondary">
-              Showing {filteredCertificates.length} of {totalCount} certificates
+              {i18nRichText("ui:m_4c1b99a1b00c2b34b41b", { arg0: filteredCertificates.length, arg1: totalCount })}
             </Typography>
-          ) : null}
-        </Box>
-
-        {/* Certificates Table */}
-        {!certificatesData && !error ? (
-          <Box display="flex" justifyContent="center" py={4}>
-            <CircularProgress />
-          </Box>
+          ) : null}</Box>{/* Certificates Table */}{!certificatesData && !error ? (
+          <Box display="flex" justifyContent="center" py={4}><CircularProgress /></Box>
         ) : totalCount === 0 ? (
-          <Paper sx={{ p: 4, textAlign: 'center' }}>
-            <SecurityIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary" gutterBottom>
-              No Certificates Found
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              No TLS certificate records have been captured yet.
-            </Typography>
-          </Paper>
+          <Paper sx={{ p: 4, textAlign: 'center' }}><SecurityIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} /><Typography variant="h6" color="text.secondary" gutterBottom>
+              {i18nText("ui:m_ead64113672af8975ff5")}
+            </Typography><Typography variant="body2" color="text.secondary">
+              {i18nText("ui:m_e8af4f3742960582fa21")}
+            </Typography></Paper>
         ) : (
-          <ResponsiveDataView<CertificateSummary>
-            data={paginatedCertificates}
+          <ResponsiveDataView data={paginatedCertificates}
             totalCount={filteredCertificates.length}
             page={page}
             rowsPerPage={rowsPerPage}
@@ -611,425 +517,193 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
             onRowsPerPageChange={handleChangeRowsPerPage}
             rowsPerPageOptions={[10, 25, 50, 100]}
             renderCard={(cert) => (
-              <Card variant="outlined">
-                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                  <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-                    {getStatusIcon(cert)}
-                    <Typography variant="body2" fontWeight="medium" noWrap sx={{ fontFamily: 'monospace', flex: 1 }}>
-                      {cert.subjectCommonName || '-'}
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Issuer: {cert.issuerCommonName || '-'}
-                     {cert.selfSignatureState === 'verified' && ' (Self-Signed)'}
-                  </Typography>
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
-                    <Typography
-                      variant="caption"
-                      color={
-                        cert.isExpired ? 'error' :
+              <Card variant="outlined"><CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}><Box display="flex" alignItems="center" gap={1} mb={0.5}>{getStatusIcon(cert)}<Typography variant="body2" fontWeight="medium" noWrap sx={{ fontFamily: 'monospace', flex: 1 }}>{cert.subjectCommonName || '-'}</Typography></Box><Typography variant="caption" color="text.secondary" display="block">
+                    {i18nRichText("ui:m_8fc0de9e5d574a97264a", { arg0: cert.issuerCommonName || '-', arg1: cert.selfSignatureState === 'verified' && i18nText("ui:m_54cfe89196ecc8f6395b") })}
+                  </Typography><Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}><Typography variant="caption"
+                      color={cert.isExpired ? 'error' :
                         cert.daysUntilExpiration < 30 ? 'warning.main' :
-                        'text.secondary'
-                      }
-                    >
-                       {certificateValidityLabel(cert)}
-                    </Typography>
-                    <Box display="flex" gap={0.5} alignItems="center">
-                      <Chip
-                        label={`${cert.publicKeySize} bits`}
+                        'text.secondary'}>{certificateValidityLabel(cert)}</Typography><Box display="flex" gap={0.5} alignItems="center"><Chip label={i18nText("ui:m_f53154b71d828b0099a0", { arg0: cert.publicKeySize })}
                         size="small"
                         color={cert.hasShortKeySize ? 'error' : 'default'}
-                        sx={{ fontSize: '0.65rem', height: 18 }}
-                      />
-                      <Typography variant="caption" color="text.secondary">
-                        Seen {cert.seenCount.toLocaleString()}x
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
-                    Valid: {formatTimestamp(cert.notBefore)} &ndash; {formatTimestamp(cert.notAfter)}
-                  </Typography>
-                </CardContent>
-              </Card>
+                        sx={{ fontSize: '0.65rem', height: 18 }} /><Typography variant="caption" color="text.secondary">
+                        {i18nRichText("ui:m_9cfda7900642216a5659", { arg0: cert.seenCount.toLocaleString(getUILocale()) })}
+                      </Typography></Box></Box><Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                    {i18nRichText("ui:m_6db829352b0c8a42e5b2", { arg0: formatTimestamp(cert.notBefore, 'nanoseconds'), arg1: formatTimestamp(cert.notAfter, 'nanoseconds') })}
+                  </Typography></CardContent></Card>
             )}
-            desktopTable={
-            <TableContainer component={Paper}>
-              <Table size="small" data-learn="Certificates Table: Detailed list of all captured TLS certificates with sorting capabilities.">
-                <TableHead>
-                  <TableRow>
-                    <TableCell width={40}></TableCell>
-                    <TableCell width={40}>Status</TableCell>
-                    <TableCell>
-                      <TableSortLabel
-                        data-learn="Sort by Subject: Click to sort certificates by subject common name."
+            desktopTable={<TableContainer component={Paper}><Table size="small" data-learn={i18nText("ui:m_7b36a950062e7b3f041c")}><TableHead><TableRow><TableCell width={40}></TableCell><TableCell width={40}>{i18nText("ui:m_cf025c2b66b1d8e97700")}</TableCell><TableCell><TableSortLabel data-learn={i18nText("ui:m_d6ebd6950be4934b6249")}
                         active={sortField === 'subject'}
                         direction={sortField === 'subject' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('subject')}
-                      >
-                        Subject
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell>
-                      <TableSortLabel
-                        data-learn="Sort by Issuer: Click to sort certificates by issuer."
+                        onClick={() => handleSort('subject')}>
+                        {i18nText("ui:m_1561e8461e059158615d")}
+                      </TableSortLabel></TableCell><TableCell><TableSortLabel data-learn={i18nText("ui:m_6ce8e447d7f2ce6c2ffa")}
                         active={sortField === 'issuer'}
                         direction={sortField === 'issuer' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('issuer')}
-                      >
-                        Issuer
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell align="right">
-                      <TableSortLabel
-                        data-learn="Sort by Expiration: Click to sort certificates by days until expiration."
+                        onClick={() => handleSort('issuer')}>
+                        {i18nText("ui:m_e7e7c4777f1b0ad2f847")}
+                      </TableSortLabel></TableCell><TableCell align="right"><TableSortLabel data-learn={i18nText("ui:m_0adc1a479d4ae5ae5e58")}
                         active={sortField === 'expiration'}
                         direction={sortField === 'expiration' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('expiration')}
-                      >
-                        Expires In
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell align="right">
-                      <TableSortLabel
-                        data-learn="Sort by Key Size: Click to sort certificates by public key size."
+                        onClick={() => handleSort('expiration')}>
+                        {i18nText("ui:m_c3e27e95c567f5b07fd6")}
+                      </TableSortLabel></TableCell><TableCell align="right"><TableSortLabel data-learn={i18nText("ui:m_d87517ff315a069f2a0a")}
                         active={sortField === 'keySize'}
                         direction={sortField === 'keySize' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('keySize')}
-                      >
-                        Key Size
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell align="right">
-                      <TableSortLabel
-                        data-learn="Sort by Seen Count: Click to sort certificates by how many times they were observed."
+                        onClick={() => handleSort('keySize')}>
+                        {i18nText("ui:m_706c6828e2d71df3fca8")}
+                      </TableSortLabel></TableCell><TableCell align="right"><TableSortLabel data-learn={i18nText("ui:m_c37c255f48a02609f581")}
                         active={sortField === 'seenCount'}
                         direction={sortField === 'seenCount' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('seenCount')}
-                      >
-                        Seen
-                      </TableSortLabel>
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedCertificates.map((cert, idx) => {
+                        onClick={() => handleSort('seenCount')}>
+                        {i18nText("ui:m_7172f6e66222f3ec6754")}
+                      </TableSortLabel></TableCell></TableRow></TableHead><TableBody>{paginatedCertificates.map((cert, idx) => {
                     const rowKey = `${cert.sha256Fingerprint}-${idx}`;
                     return (
-                      <>
-                        <TableRow 
-                          key={rowKey}
+                      <><TableRow key={rowKey}
                           data-row-key={rowKey}
                           hover
                           onClick={() => handleRowClick(rowKey)}
                           sx={{ cursor: 'pointer', '& > *': { borderBottom: 'unset !important' } }}
-                          data-learn="Certificate Row: Click to expand and view detailed information about this certificate. Use ↑↓ arrows to navigate between rows when expanded."
-                        >
-                          <TableCell>
-                            <IconButton size="small" data-learn="Expand Button: Click to show/hide detailed certificate information.">
-                              <ExpandMoreIcon 
-                                sx={{ 
+                          data-learn={i18nText("ui:m_aa3be3383741f7e699db")}><TableCell><IconButton size="small" data-learn={i18nText("ui:m_2160d4664ac65f3b215e")}><ExpandMoreIcon sx={{ 
                                   transform: expandedRow === rowKey ? 'rotate(180deg)' : 'rotate(0deg)',
                                   transition: 'transform 0.3s'
-                                }} 
-                              />
-                            </IconButton>
-                          </TableCell>
-                          <TableCell>
-                            {getStatusIcon(cert)}
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
-                              {cert.subjectCommonName || '-'}
-                            </Box>
-                            {cert.subjectOrganization && (
-                              <Typography variant="caption" color="text.secondary" display="block">
-                                {cert.subjectOrganization}
-                              </Typography>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2">
-                              {cert.issuerCommonName || '-'}
-                            </Typography>
-                             {cert.selfSignatureState === 'verified' && (
-                              <Chip label="Self-Signed" size="small" color="warning" sx={{ fontSize: '0.65rem', height: 18, mt: 0.5 }} />
-                            )}
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography 
-                              variant="body2"
-                              color={
-                                cert.isExpired ? 'error' : 
+                                }} /></IconButton></TableCell><TableCell>{getStatusIcon(cert)}</TableCell><TableCell><Box sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>{cert.subjectCommonName || '-'}</Box>{cert.subjectOrganization && (
+                              <Typography variant="caption" color="text.secondary" display="block">{cert.subjectOrganization}</Typography>
+                            )}</TableCell><TableCell><Typography variant="body2">{cert.issuerCommonName || '-'}</Typography>{cert.selfSignatureState === 'verified' && (
+                              <Chip label={i18nText("ui:m_08c9cbb8269401eac8a3")} size="small" color="warning" sx={{ fontSize: '0.65rem', height: 18, mt: 0.5 }} />
+                            )}</TableCell><TableCell align="right"><Typography variant="body2"
+                              color={cert.isExpired ? 'error' : 
                                 cert.daysUntilExpiration < 30 ? 'warning.main' : 
-                                'text.primary'
-                              }
-                            >
-                               {certificateValidityLabel(cert)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography 
-                              variant="body2"
-                              color={cert.hasShortKeySize ? 'error' : 'text.primary'}
-                            >
-                              {cert.publicKeySize} bits
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography variant="body2">
-                              {cert.seenCount.toLocaleString()}
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                        
-                        {/* Expandable Row Details */}
-                        <TableRow>
-                          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
-                            <Collapse in={expandedRow === rowKey} timeout="auto" unmountOnExit>
-                              <Box sx={{ py: 2 }} data-learn="Certificate Details: Extended information about this TLS certificate including validity, algorithms, fingerprints, and connection details.">
-                                <CertificateAssessmentNotice cert={cert} />
-                                <Grid container spacing={2}>
-                                  {/* Certificate Status Summary */}
-                                  <Grid item xs={12}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      Certificate Status
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
-                                      <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                                        Observed: {cert.seenCount} time{cert.seenCount !== 1 ? 's' : ''}
-                                      </Typography>
-                                      {cert.assessmentBasis === 'capture-time' && cert.validityState === 'expired' && (
-                                        <Chip label="EXPIRED" size="small" color="error" sx={{ fontSize: '0.75rem' }} />
-                                      )}
-                                      {cert.assessmentBasis === 'capture-time' && cert.validityState === 'not-yet-valid' && (
-                                        <Chip label="Not Yet Valid" size="small" color="error" sx={{ fontSize: '0.75rem' }} />
-                                      )}
-                                      {cert.selfSignatureState === 'verified' && (
-                                        <Chip label="Self-Signed" size="small" color="warning" sx={{ fontSize: '0.75rem' }} />
-                                      )}
-                                      {cert.assessmentBasis === 'capture-time' && cert.validityState === 'valid' && cert.daysUntilExpiration < 30 && (
-                                        <Chip label={`Expires in ${cert.daysUntilExpiration} days`} size="small" color="warning" sx={{ fontSize: '0.75rem' }} />
-                                      )}
-                                      {cert.assessmentBasis === 'capture-time' && cert.validityState === 'valid' && cert.daysUntilExpiration >= 30 && (
-                                        <Chip label={`Valid for ${cert.daysUntilExpiration} days`} size="small" color="success" sx={{ fontSize: '0.75rem' }} />
-                                      )}
-                                    </Box>
-                                  </Grid>
-
-                                  {/* Connection Information */}
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      Connection
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
-                                      IP: {cert.srcIP}:{cert.srcPort} → {cert.dstIP}:{cert.dstPort}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
-                                      MAC: {cert.srcMAC || 'N/A'} → {cert.dstMAC || 'N/A'}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Captured: {formatTimestamp(cert.timestamp)}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      First Seen: {formatTimestamp(cert.firstSeen)}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Last Seen: {formatTimestamp(cert.lastSeen)}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Chain Position: {cert.chainIndex}
-                                    </Typography>
-                                  </Grid>
-                                  
-                                  {/* Validity Period */}
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      Validity Period
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Not Before: {cert.notBeforeRFC3339 || (cert.notBefore ? formatTimestamp(cert.notBefore) : 'Unavailable')}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Not After: {cert.notAfterRFC3339 || (cert.notAfter ? formatTimestamp(cert.notAfter) : 'Unavailable')}
-                                    </Typography>
-                                    <Typography variant="body2" color={cert.assessmentBasis !== 'capture-time' || cert.validityState === 'unavailable' ? 'text.secondary' : cert.isExpired ? 'error.main' : cert.daysUntilExpiration < 30 ? 'warning.main' : 'success.main'}>
-                                      {certificateValidityLabel(cert)}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                                      Certificate Version: X.509 v{cert.version}
-                                    </Typography>
-                                  </Grid>
-                                  
-                                  {/* Subject Details */}
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      Subject (Certificate Owner)
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'medium' }}>
-                                      Common Name: {cert.subjectCommonName || 'N/A'}
-                                    </Typography>
-                                    {cert.subjectOrganization && (
+                                'text.primary'}>{certificateValidityLabel(cert)}</Typography></TableCell><TableCell align="right"><Typography variant="body2"
+                              color={cert.hasShortKeySize ? 'error' : 'text.primary'}>
+                              {i18nRichText("ui:m_e6a86451dc6bdfeabe39", { arg0: cert.publicKeySize })}
+                            </Typography></TableCell><TableCell align="right"><Typography variant="body2">{cert.seenCount.toLocaleString(getUILocale())}</Typography></TableCell></TableRow>{/* Expandable Row Details */}<TableRow><TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}><Collapse in={expandedRow === rowKey} timeout="auto" unmountOnExit><Box sx={{ py: 2 }} data-learn={i18nText("ui:m_2aa752e6650c756f71fd")}><CertificateAssessmentNotice cert={cert} /><Grid container spacing={2}>{/* Certificate Status Summary */}<Grid item xs={12}><Typography variant="subtitle2" gutterBottom>
+                                      {i18nText("ui:m_e2c1dcaa4192628576e1")}
+                                    </Typography><Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}><Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                                        {i18nRichText("ui:m_551551028a9e33195b74", { arg0: cert.seenCount })}
+                                      </Typography>{cert.assessmentBasis === 'capture-time' && cert.validityState === 'expired' && (
+                                        <Chip label={i18nText("ui:m_749b044d0c450a227ebc")} size="small" color="error" sx={{ fontSize: '0.75rem' }} />
+                                      )}{cert.assessmentBasis === 'capture-time' && cert.validityState === 'not-yet-valid' && (
+                                        <Chip label={i18nText("ui:m_248bb7e390aff5e4cad0")} size="small" color="error" sx={{ fontSize: '0.75rem' }} />
+                                      )}{cert.selfSignatureState === 'verified' && (
+                                        <Chip label={i18nText("ui:m_08c9cbb8269401eac8a3")} size="small" color="warning" sx={{ fontSize: '0.75rem' }} />
+                                      )}{cert.assessmentBasis === 'capture-time' && cert.validityState === 'valid' && cert.daysUntilExpiration < 30 && (
+                                        <Chip label={i18nText("ui:m_cfbbd8b38a18afd68495", { arg0: cert.daysUntilExpiration })} size="small" color="warning" sx={{ fontSize: '0.75rem' }} />
+                                      )}{cert.assessmentBasis === 'capture-time' && cert.validityState === 'valid' && cert.daysUntilExpiration >= 30 && (
+                                        <Chip label={i18nText("ui:m_65928c1182ba09fcfdf6", { arg0: cert.daysUntilExpiration })} size="small" color="success" sx={{ fontSize: '0.75rem' }} />
+                                      )}</Box></Grid>{/* Connection Information */}<Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom>
+                                      {i18nText("ui:m_6e3eaaf519e2d29c1f65")}
+                                    </Typography><Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                                      {i18nRichText("ui:m_1a90a00c310ba72dcdae", { arg0: cert.srcIP, arg1: String(cert.srcPort), arg2: cert.dstIP, arg3: String(cert.dstPort) })}
+                                    </Typography><Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                                      {i18nRichText("ui:m_cb41860a6bf9e194fdb2", { arg0: cert.srcMAC || i18nText("ui:m_8dc598ebf1e055830140"), arg1: cert.dstMAC || i18nText("ui:m_8dc598ebf1e055830140") })}
+                                    </Typography><Typography variant="body2" color="text.secondary">
+                                      {i18nRichText("ui:m_b51187a1af8edb545759", { arg0: formatTimestamp(cert.timestamp, 'nanoseconds') })}
+                                    </Typography><Typography variant="body2" color="text.secondary">
+                                      {i18nRichText("ui:m_c2f3901b4530d9bcca6c", { arg0: formatTimestamp(cert.firstSeen, 'nanoseconds') })}
+                                    </Typography><Typography variant="body2" color="text.secondary">
+                                      {i18nRichText("ui:m_6ac7e146e6fe1424812b", { arg0: formatTimestamp(cert.lastSeen, 'nanoseconds') })}
+                                    </Typography><Typography variant="body2" color="text.secondary">
+                                      {i18nRichText("ui:m_e0da41b8b82119f97fd9", { arg0: cert.chainIndex })}
+                                    </Typography></Grid>{/* Validity Period */}<Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom>
+                                      {i18nText("ui:m_81ef6bd2740e47b8dbe5")}
+                                    </Typography><Typography variant="body2" color="text.secondary">
+                                      {i18nRichText("ui:m_9d0164a9cfd3af7587cd", { arg0: cert.notBeforeRFC3339 || (cert.notBefore ? formatTimestamp(cert.notBefore, 'nanoseconds') : i18nText('ui:m_b6f62be183440dfdc4c4')) })}
+                                    </Typography><Typography variant="body2" color="text.secondary">
+                                      {i18nRichText("ui:m_fe8efc42daa89725ef3d", { arg0: cert.notAfterRFC3339 || (cert.notAfter ? formatTimestamp(cert.notAfter, 'nanoseconds') : i18nText('ui:m_b6f62be183440dfdc4c4')) })}
+                                    </Typography><Typography variant="body2" color={cert.assessmentBasis !== 'capture-time' || cert.validityState === 'unavailable' ? 'text.secondary' : cert.isExpired ? 'error.main' : cert.daysUntilExpiration < 30 ? 'warning.main' : 'success.main'}>{certificateValidityLabel(cert)}</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                      {i18nRichText("ui:m_41beba29048404202377", { arg0: String(cert.version) })}
+                                    </Typography></Grid>{/* Subject Details */}<Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom>
+                                      {i18nText("ui:m_d59bbdd1968c166f1373")}
+                                    </Typography><Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'medium' }}>
+                                      {i18nRichText("ui:m_8aca4632ecfb5562cc7f", { arg0: cert.subjectCommonName || i18nText("ui:m_8dc598ebf1e055830140") })}
+                                    </Typography>{cert.subjectOrganization && (
                                       <Typography variant="body2" color="text.secondary">
-                                        Organization: {cert.subjectOrganization}
+                                        {i18nRichText("ui:m_454aa4c4a40559ca4e42", { arg0: cert.subjectOrganization })}
                                       </Typography>
-                                    )}
-                                    {cert.subjectCountry && (
+                                    )}{cert.subjectCountry && (
                                       <Typography variant="body2" color="text.secondary">
-                                        Country: {cert.subjectCountry}
+                                        {i18nRichText("ui:m_8a39b41595d646f6fa22", { arg0: cert.subjectCountry })}
                                       </Typography>
-                                    )}
-                                    {cert.subjectProvince && (
+                                    )}{cert.subjectProvince && (
                                       <Typography variant="body2" color="text.secondary">
-                                        State/Province: {cert.subjectProvince}
+                                        {i18nRichText("ui:m_58662e021b30b8650789", { arg0: cert.subjectProvince })}
                                       </Typography>
-                                    )}
-                                    {cert.subjectLocality && (
+                                    )}{cert.subjectLocality && (
                                       <Typography variant="body2" color="text.secondary">
-                                        Locality: {cert.subjectLocality}
+                                        {i18nRichText("ui:m_e17df9fecfe5f80fa57c", { arg0: cert.subjectLocality })}
                                       </Typography>
-                                    )}
-                                    {!cert.subjectOrganization && !cert.subjectCountry && !cert.subjectProvince && !cert.subjectLocality && (
+                                    )}{!cert.subjectOrganization && !cert.subjectCountry && !cert.subjectProvince && !cert.subjectLocality && (
                                       <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                        No additional subject information
+                                        {i18nText("ui:m_048d992f32f0e4bc90e5")}
                                       </Typography>
-                                    )}
-                                  </Grid>
-                                  
-                                  {/* Issuer Details */}
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      Issuer (Certificate Authority)
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'medium' }}>
-                                      Common Name: {cert.issuerCommonName || 'N/A'}
-                                    </Typography>
-                                    {cert.issuerOrganization && (
+                                    )}</Grid>{/* Issuer Details */}<Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom>
+                                      {i18nText("ui:m_a9553de40d044a4e12db")}
+                                    </Typography><Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'medium' }}>
+                                      {i18nRichText("ui:m_8aca4632ecfb5562cc7f", { arg0: cert.issuerCommonName || i18nText("ui:m_8dc598ebf1e055830140") })}
+                                    </Typography>{cert.issuerOrganization && (
                                       <Typography variant="body2" color="text.secondary">
-                                        Organization: {cert.issuerOrganization}
+                                        {i18nRichText("ui:m_454aa4c4a40559ca4e42", { arg0: cert.issuerOrganization })}
                                       </Typography>
-                                    )}
-                                    {cert.issuerCountry && (
+                                    )}{cert.issuerCountry && (
                                       <Typography variant="body2" color="text.secondary">
-                                        Country: {cert.issuerCountry}
+                                        {i18nRichText("ui:m_8a39b41595d646f6fa22", { arg0: cert.issuerCountry })}
                                       </Typography>
-                                    )}
-                                    {cert.selfSignatureState === 'verified' && (
-                                      <Box sx={{ mt: 0.5 }}>
-                                        <Chip 
-                                          label="Self-Signed Certificate" 
+                                    )}{cert.selfSignatureState === 'verified' && (
+                                      <Box sx={{ mt: 0.5 }}><Chip label={i18nText("ui:m_063e8d16231cd10cfc6a")} 
                                           size="small" 
                                           color="warning" 
                                           sx={{ fontSize: '0.7rem' }}
-                                          icon={<WarningIcon sx={{ fontSize: '0.9rem' }} />}
-                                        />
-                                      </Box>
-                                    )}
-                                    {!cert.issuerOrganization && !cert.issuerCountry && cert.selfSignatureState !== 'verified' && (
+                                          icon={<WarningIcon sx={{ fontSize: '0.9rem' }} />} /></Box>
+                                    )}{!cert.issuerOrganization && !cert.issuerCountry && cert.selfSignatureState !== 'verified' && (
                                       <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                        No additional issuer information
+                                        {i18nText("ui:m_38772ce1f1ac7efb8482")}
                                       </Typography>
-                                    )}
-                                  </Grid>
-                                  
-                                  {/* Cryptography & Security */}
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      Cryptography & Security
-                                    </Typography>
-                                    <Typography 
-                                      variant="body2" 
+                                    )}</Grid>{/* Cryptography & Security */}<Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom>
+                                      {i18nText("ui:m_617cadfc1555c144958d")}
+                                    </Typography><Typography variant="body2" 
                                       color={cert.hasWeakSignature ? 'error' : 'text.secondary'}
-                                      sx={{ fontWeight: cert.hasWeakSignature ? 'medium' : 'normal' }}
-                                    >
-                                      Signature Algorithm: {cert.signatureAlgorithm || 'Unknown'}
-                                      {cert.hasWeakSignature && ' ⚠️'}
-                                    </Typography>
-                                    <Typography 
-                                      variant="body2" 
-                                      color="text.secondary"
-                                    >
-                                      Public Key Algorithm: {cert.publicKeyAlgorithm || 'Unknown'}
-                                    </Typography>
-                                    <Typography 
-                                      variant="body2" 
+                                      sx={{ fontWeight: cert.hasWeakSignature ? 'medium' : 'normal' }}>
+                                      {i18nRichText("ui:m_f419a16077669d26d935", { arg0: cert.signatureAlgorithm || i18nText("ui:m_2f1ac5f44673922d2bf2"), arg1: cert.hasWeakSignature && ' ⚠️' })}
+                                    </Typography><Typography variant="body2" 
+                                      color="text.secondary">
+                                      {i18nRichText("ui:m_e93dcf9f788b928ae803", { arg0: cert.publicKeyAlgorithm || i18nText("ui:m_2f1ac5f44673922d2bf2") })}
+                                    </Typography><Typography variant="body2" 
                                       color={cert.hasShortKeySize ? 'error' : 'text.secondary'}
-                                      sx={{ fontWeight: cert.hasShortKeySize ? 'medium' : 'normal' }}
-                                    >
-                                      Public Key Size: {cert.publicKeySize} bits
-                                      {cert.hasShortKeySize && ' ⚠️ (Too Short)'}
-                                    </Typography>
-                                    <Box sx={{ mt: 1, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {cert.hasWeakSignature && (
-                                        <Chip 
-                                          label="⚠️ Weak Signature Algorithm" 
+                                      sx={{ fontWeight: cert.hasShortKeySize ? 'medium' : 'normal' }}>
+                                      {i18nRichText("ui:m_6e505de182f86e659706", { arg0: cert.publicKeySize, arg1: cert.hasShortKeySize && i18nText("ui:m_2ee87560a549d8c37c2c") })}
+                                    </Typography><Box sx={{ mt: 1, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>{cert.hasWeakSignature && (
+                                        <Chip label={i18nText("ui:m_ac71dde884c1b3551d0d")} 
                                           size="small" 
                                           color="error" 
-                                          sx={{ fontSize: '0.7rem' }}
-                                        />
-                                      )}
-                                      {cert.hasShortKeySize && (
-                                        <Chip 
-                                          label="⚠️ Insufficient Key Size" 
+                                          sx={{ fontSize: '0.7rem' }} />
+                                      )}{cert.hasShortKeySize && (
+                                        <Chip label={i18nText("ui:m_e67ae9741f7d9174c608")} 
                                           size="small" 
                                           color="error" 
-                                          sx={{ fontSize: '0.7rem' }}
-                                        />
-                                      )}
-                                      {!cert.hasWeakSignature && !cert.hasShortKeySize && (
-                                        <Chip 
-                                          label="✓ Strong Cryptography" 
+                                          sx={{ fontSize: '0.7rem' }} />
+                                      )}{!cert.hasWeakSignature && !cert.hasShortKeySize && (
+                                        <Chip label={i18nText("ui:m_7de56ecaea2cce659d00")} 
                                           size="small" 
                                           color="success" 
-                                          sx={{ fontSize: '0.7rem' }}
-                                        />
-                                      )}
-                                    </Box>
-                                  </Grid>
-                                  
-                                  {/* Fingerprints & Serial */}
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      Certificate Identifiers
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                                      SHA-256 Fingerprint:
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', wordBreak: 'break-all', mb: 1 }}>
-                                      {cert.sha256Fingerprint || 'N/A'}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                                      SHA-1 Fingerprint:
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', wordBreak: 'break-all', mb: 1 }}>
-                                      {cert.sha1Fingerprint || 'N/A'}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                                      Serial Number:
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', wordBreak: 'break-all' }}>
-                                      {cert.serialNumber || 'N/A'}
-                                    </Typography>
-                                    {(cert.communityIds || []).length > 0 && (
-                                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                        {cert.communityIds.map(id => <CommunityIDChip key={id} communityId={id} mode="chip" />)}
-                                      </Box>
-                                    )}
-                                  </Grid>
-                                  
-                                  {/* Subject Alternative Names */}
-                                  <Grid item xs={12}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      Subject Alternative Names (SAN)
-                                    </Typography>
-                                    {(cert.subjectAltNames || []).length > 0 ? (
-                                      <>
-                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                          Additional domain names and identities this certificate is valid for ({(cert.subjectAltNames || []).length} total):
-                                        </Typography>
-                                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                          {(cert.subjectAltNames || []).map((san, i) => (
-                                            <Chip
-                                              key={`${rowKey}-san-${i}`}
+                                          sx={{ fontSize: '0.7rem' }} />
+                                      )}</Box></Grid>{/* Fingerprints & Serial */}<Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom>
+                                      {i18nText("ui:m_45fd98e2c1d40861d1f5")}
+                                    </Typography><Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                      {i18nText("ui:m_072bd517bca94c681689")}
+                                    </Typography><Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', wordBreak: 'break-all', mb: 1 }}>{cert.sha256Fingerprint || i18nText("ui:m_8dc598ebf1e055830140")}</Typography><Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                      {i18nText("ui:m_c28dd6e9594133c7b116")}
+                                    </Typography><Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', wordBreak: 'break-all', mb: 1 }}>{cert.sha1Fingerprint || i18nText("ui:m_8dc598ebf1e055830140")}</Typography><Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                      {i18nText("ui:m_bb478a415237c8bea711")}
+                                    </Typography><Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', wordBreak: 'break-all' }}>{cert.serialNumber || i18nText("ui:m_8dc598ebf1e055830140")}</Typography>{(cert.communityIds || []).length > 0 && (
+                                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>{cert.communityIds.map(id => <CommunityIDChip key={id} communityId={id} mode="chip" />)}</Box>
+                                    )}</Grid>{/* Subject Alternative Names */}<Grid item xs={12}><Typography variant="subtitle2" gutterBottom>
+                                      {i18nText("ui:m_f72f2eb7ef31104ecf40")}
+                                    </Typography>{(cert.subjectAltNames || []).length > 0 ? (
+                                      <><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                          {i18nRichText("ui:m_2878f6badc52ddb64e89", { arg0: (cert.subjectAltNames || []).length })}
+                                        </Typography><Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>{(cert.subjectAltNames || []).map((san, i) => (
+                                            <Chip key={`${rowKey}-san-${i}`}
                                               label={san}
                                               size="small"
                                               variant="outlined"
@@ -1037,173 +711,86 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                                               sx={{ 
                                                 fontSize: '0.7rem',
                                                 fontFamily: 'monospace'
-                                              }}
-                                            />
-                                          ))}
-                                        </Box>
-                                      </>
+                                              }} />
+                                          ))}</Box></>
                                     ) : (
                                       <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                        No Subject Alternative Names present (certificate only valid for CN: {cert.subjectCommonName || 'N/A'})
+                                        {i18nRichText("ui:m_b2386a2ccc976a4da5a0", { arg0: cert.subjectCommonName || i18nText("ui:m_8dc598ebf1e055830140") })}
                                       </Typography>
-                                    )}
-                                  </Grid>
-                                  
-                                  {/* Certificate Authority Info */}
-                                  {cert.isCA && (
-                                    <Grid item xs={12}>
-                                      <Typography variant="subtitle2" gutterBottom>
-                                        Certificate Authority
-                                      </Typography>
-                                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
-                                        <Chip 
-                                          label="✓ This is a Certificate Authority" 
+                                    )}</Grid>{/* Certificate Authority Info */}{cert.isCA && (
+                                    <Grid item xs={12}><Typography variant="subtitle2" gutterBottom>
+                                        {i18nText("ui:m_c454ee75b4bfcffecc93")}
+                                      </Typography><Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}><Chip label={i18nText("ui:m_88dc4dc485045d75196c")} 
                                           size="small" 
                                           color="info" 
-                                          sx={{ fontSize: '0.75rem', fontWeight: 'medium' }}
-                                        />
-                                        <Chip 
-                                          label={cert.maxPathLen === -1 ? 'Unlimited Path Length' : `Max Path Length: ${cert.maxPathLen}`}
+                                          sx={{ fontSize: '0.75rem', fontWeight: 'medium' }} /><Chip label={cert.maxPathLen === -1 ? i18nText("ui:m_139e67e8bd335ec1f34d") : i18nText("ui:m_ec6e4f5eb18d11e321a6", { arg0: cert.maxPathLen })}
                                           size="small" 
                                           variant="outlined"
                                           color="info"
-                                          sx={{ fontSize: '0.7rem' }}
-                                        />
-                                      </Box>
-                                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                                        This certificate can sign other certificates {cert.maxPathLen === -1 ? 'with no depth restrictions' : `up to ${cert.maxPathLen} level(s) deep`}
-                                      </Typography>
-                                    </Grid>
-                                  )}
-
-                                  {/* Key Usage */}
-                                  {((cert.keyUsage || []).length > 0 || (cert.extKeyUsage || []).length > 0) && (
-                                    <Grid item xs={12}>
-                                      <Typography variant="subtitle2" gutterBottom>
-                                        Key Usage & Extensions
-                                      </Typography>
-                                      {(cert.keyUsage || []).length > 0 && (
-                                        <>
-                                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                            Key Usage (what the key can be used for):
-                                          </Typography>
-                                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1 }}>
-                                            {(cert.keyUsage || []).map((usage, i) => (
-                                              <Chip
-                                                key={`${rowKey}-ku-${i}`}
+                                          sx={{ fontSize: '0.7rem' }} /></Box><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                        {i18nRichText("ui:m_bdf83045e9d0119e3551", { arg0: cert.maxPathLen === -1 ? i18nText("ui:m_7dd701202402e27b5af1") : i18nText("ui:m_694384e016ed5590df0e", { arg0: cert.maxPathLen }) })}
+                                      </Typography></Grid>
+                                  )}{/* Key Usage */}{((cert.keyUsage || []).length > 0 || (cert.extKeyUsage || []).length > 0) && (
+                                    <Grid item xs={12}><Typography variant="subtitle2" gutterBottom>
+                                        {i18nText("ui:m_3b0a4acf644ce490eff7")}
+                                      </Typography>{(cert.keyUsage || []).length > 0 && (
+                                        <><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                            {i18nText("ui:m_a6eda42183ba83e41693")}
+                                          </Typography><Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1 }}>{(cert.keyUsage || []).map((usage, i) => (
+                                              <Chip key={`${rowKey}-ku-${i}`}
                                                 label={usage}
                                                 size="small"
                                                 color="primary"
                                                 variant="outlined"
-                                                sx={{ fontSize: '0.7rem' }}
-                                              />
-                                            ))}
-                                          </Box>
-                                        </>
-                                      )}
-                                      {(cert.extKeyUsage || []).length > 0 && (
-                                        <>
-                                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                            Extended Key Usage (specific purposes):
-                                          </Typography>
-                                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                            {(cert.extKeyUsage || []).map((usage, i) => (
-                                              <Chip
-                                                key={`${rowKey}-eku-${i}`}
+                                                sx={{ fontSize: '0.7rem' }} />
+                                            ))}</Box></>
+                                      )}{(cert.extKeyUsage || []).length > 0 && (
+                                        <><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                            {i18nText("ui:m_8d972eb7a1e211f747c1")}
+                                          </Typography><Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>{(cert.extKeyUsage || []).map((usage, i) => (
+                                              <Chip key={`${rowKey}-eku-${i}`}
                                                 label={usage}
                                                 size="small"
                                                 color="secondary"
                                                 variant="outlined"
-                                                sx={{ fontSize: '0.7rem' }}
-                                              />
-                                            ))}
-                                          </Box>
-                                        </>
-                                      )}
-                                    </Grid>
-                                  )}
-
-                                  {/* JA4X Certificate Fingerprinting */}
-                                  {cert.ja4x && (
-                                    <Grid item xs={12} md={6}>
-                                      <Typography variant="subtitle2" gutterBottom data-learn="JA4X: Certificate fingerprint based on issuer/subject RDN ordering, extensions, and signature algorithm.">
-                                        JA4X Certificate Fingerprint
-                                      </Typography>
-                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                        <Chip 
-                                          label={cert.ja4x} 
+                                                sx={{ fontSize: '0.7rem' }} />
+                                            ))}</Box></>
+                                      )}</Grid>
+                                  )}{/* JA4X Certificate Fingerprinting */}{cert.ja4x && (
+                                    <Grid item xs={12} md={6}><Typography variant="subtitle2" gutterBottom data-learn={i18nText("ui:m_31ef80c4ec3bcda10b75")}>
+                                        {i18nText("ui:m_11e3fb86a188a27254f0")}
+                                      </Typography><Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}><Chip label={cert.ja4x} 
                                           size="small" 
                                           color="secondary"
-                                          sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}
-                                        />
-                                      </Box>
-                                      {cert.ja4xDescription && (
-                                        <Typography variant="body2" color="text.secondary">
-                                          {cert.ja4xDescription}
-                                        </Typography>
-                                      )}
-                                      {cert.ja4xRaw && (
-                                        <Box sx={{ mt: 1 }}>
-                                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                            Raw (unhashed):
-                                          </Typography>
-                                          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.65rem', wordBreak: 'break-all' }}>
-                                            {cert.ja4xRaw}
-                                          </Typography>
-                                        </Box>
-                                      )}
-                                    </Grid>
-                                  )}
-                                  
-                                  {/* Action Buttons */}
-                                  <Grid item xs={12}>
-                                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                      <Button
-                                        data-learn="Show Connection: Navigate to the Connections page to view the connection that used this certificate."
+                                          sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }} /></Box>{cert.ja4xDescription && (
+                                        <Typography variant="body2" color="text.secondary">{cert.ja4xDescription}</Typography>
+                                      )}{cert.ja4xRaw && (
+                                        <Box sx={{ mt: 1 }}><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                            {i18nText("ui:m_512ee594b932fdb9ea46")}
+                                          </Typography><Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.65rem', wordBreak: 'break-all' }}>{cert.ja4xRaw}</Typography></Box>
+                                      )}</Grid>
+                                  )}{/* Action Buttons */}<Grid item xs={12}><Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}><Button data-learn={i18nText("ui:m_a8c4c5e3e20dff31d8d2")}
                                         variant="outlined"
                                         startIcon={<CableIcon />}
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleShowConnection(cert);
                                         }}
-                                        size="small"
-                                      >
-                                        Show Connection
-                                      </Button>
-                                      <Button
-                                        data-learn="Download PCAP: Download a filtered PCAP file containing only the packets from this connection."
+                                        size="small">
+                                        {i18nText("ui:m_6e4460fb915c45550838")}
+                                      </Button><Button data-learn={i18nText("ui:m_307516b08401bcb7ac91")}
                                         variant="outlined"
                                         startIcon={<DownloadIcon />}
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleDownloadPCAP(cert);
                                         }}
-                                        size="small"
-                                      >
-                                        Download PCAP
-                                      </Button>
-                                      
-                                      {/* Custom row actions from parent */}
-                                      {rowActions && rowActions(cert)}
-                                    </Box>
-                                  </Grid>
-                                </Grid>
-                              </Box>
-                            </Collapse>
-                          </TableCell>
-                        </TableRow>
-                      </>
+                                        size="small">
+                                        {i18nText("ui:m_866ab5d39a9b8045fa5c")}
+                                      </Button>{/* Custom row actions from parent */}{rowActions && rowActions(cert)}</Box></Grid></Grid></Box></Collapse></TableCell></TableRow></>
                     );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            }
-          />
-        )}
-        </>
-        )}
-      </Box>
-    </Layout>
+                  })}</TableBody></Table></TableContainer>} />
+        )}</>
+        )}</Box></Layout>
   );
 }

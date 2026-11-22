@@ -135,7 +135,7 @@ func (s *Server) handleHTTPTopHosts(w http.ResponseWriter, r *http.Request) {
 
 	bar.SetXAxis(xAxis).AddSeries("Requests", yAxis)
 
-	html, err := injectFullHeightCSS(bar.Render)
+	html, err := injectFullHeightCSSForRequest(bar.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -221,6 +221,7 @@ func (s *Server) handleHTTPStatusCodes(w http.ResponseWriter, r *http.Request) {
 	for status, count := range statusGroups {
 		pieData = append(pieData, opts.PieData{
 			Name:  status,
+			Label: chartOwnedLabel(status),
 			Value: count,
 		})
 	}
@@ -234,7 +235,7 @@ func (s *Server) handleHTTPStatusCodes(w http.ResponseWriter, r *http.Request) {
 			}),
 		)
 
-	html, err := injectFullHeightCSS(pie.Render)
+	html, err := injectFullHeightCSSForRequest(pie.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -346,7 +347,7 @@ func (s *Server) handleHTTPMethods(w http.ResponseWriter, r *http.Request) {
 
 	bar.SetXAxis(xAxis).AddSeries("Requests", yAxis)
 
-	html, err := injectFullHeightCSS(bar.Render)
+	html, err := injectFullHeightCSSForRequest(bar.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -381,6 +382,7 @@ func (s *Server) handleHTTPContentTypes(w http.ResponseWriter, r *http.Request) 
 
 	// Count content types (simplified)
 	contentTypeCounts := make(map[string]int)
+	labels := newChartLabelSet()
 	for _, h := range httpRecords {
 		if h.ContentType != "" {
 			// Simplify content type to just the main type
@@ -396,9 +398,11 @@ func (s *Server) handleHTTPContentTypes(w http.ResponseWriter, r *http.Request) 
 					}
 				}
 				contentTypeCounts[ct]++
+				labels.name(ct, "")
 			}
 		} else {
 			contentTypeCounts["unknown"]++
+			labels.name("", "unknown")
 		}
 	}
 
@@ -456,6 +460,7 @@ func (s *Server) handleHTTPContentTypes(w http.ResponseWriter, r *http.Request) 
 	for i, ct := range ctList {
 		pieData[i] = opts.PieData{
 			Name:  ct.contentType,
+			Label: labels.label(ct.contentType),
 			Value: ct.count,
 		}
 	}
@@ -469,7 +474,7 @@ func (s *Server) handleHTTPContentTypes(w http.ResponseWriter, r *http.Request) 
 			}),
 		)
 
-	html, err := injectFullHeightCSS(pie.Render)
+	html, err := injectFullHeightCSSForRequest(pie.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return

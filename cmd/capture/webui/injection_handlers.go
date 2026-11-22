@@ -486,8 +486,9 @@ func (s *Server) handleCreateInjectionRule(w http.ResponseWriter, r *http.Reques
 	log.Printf("[WebUI] Created new injection rule: %s", req.Name)
 
 	RespondJSON(w, http.StatusCreated, map[string]any{
-		"success": true,
-		"message": "Injection rule created successfully",
+		"success":     true,
+		"message":     "Injection rule created successfully",
+		"messageI18n": requestUIMessage(r, "injection.rule.created", "Injection rule created successfully", nil),
 		"rule": InjectionRuleResponse{
 			ID:           newRule.Name,
 			Name:         newRule.Name,
@@ -687,8 +688,9 @@ func (s *Server) handleUpdateInjectionRule(w http.ResponseWriter, r *http.Reques
 	log.Printf("[WebUI] Updated injection rule: %s -> %s", ruleID, req.Name)
 
 	RespondJSON(w, http.StatusOK, map[string]any{
-		"success": true,
-		"message": "Injection rule updated successfully",
+		"success":     true,
+		"message":     "Injection rule updated successfully",
+		"messageI18n": requestUIMessage(r, "injection.rule.updated", "Injection rule updated successfully", nil),
 	})
 }
 
@@ -736,8 +738,9 @@ func (s *Server) handleDeleteInjectionRule(w http.ResponseWriter, r *http.Reques
 	log.Printf("[WebUI] Deleted injection rule: %s", ruleID)
 
 	RespondJSON(w, http.StatusOK, map[string]any{
-		"success": true,
-		"message": "Injection rule deleted successfully",
+		"success":     true,
+		"message":     "Injection rule deleted successfully",
+		"messageI18n": requestUIMessage(r, "injection.rule.deleted", "Injection rule deleted successfully", nil),
 	})
 }
 
@@ -794,9 +797,10 @@ func (s *Server) handleToggleInjectionRule(w http.ResponseWriter, r *http.Reques
 	log.Printf("[WebUI] Toggled injection rule %s: %s", ruleID, status)
 
 	RespondJSON(w, http.StatusOK, map[string]any{
-		"success": true,
-		"message": fmt.Sprintf("Injection rule %s", status),
-		"enabled": req.Enabled,
+		"success":     true,
+		"message":     fmt.Sprintf("Injection rule %s", status),
+		"messageI18n": requestUIMessage(r, "injection.rule."+status, "Injection rule "+status, nil),
+		"enabled":     req.Enabled,
 	})
 }
 
@@ -856,8 +860,9 @@ func (s *Server) handleInjectionEventsManage(w http.ResponseWriter, r *http.Requ
 	log.Printf("[WebUI] Cleared %d injection events", clearedCount)
 
 	RespondJSON(w, http.StatusOK, map[string]any{
-		"success": true,
-		"message": fmt.Sprintf("Cleared %d injection events", clearedCount),
+		"success":     true,
+		"message":     fmt.Sprintf("Cleared %d injection events", clearedCount),
+		"messageI18n": requestUIMessage(r, "injection.events.cleared", "Cleared {count} injection events", map[string]any{"count": clearedCount}),
 	})
 }
 

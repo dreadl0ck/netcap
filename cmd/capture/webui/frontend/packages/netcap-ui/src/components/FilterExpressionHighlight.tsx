@@ -20,6 +20,8 @@
 import React from 'react';
 import { Box, useTheme } from '@mui/material';
 import { highlightFilterExpression } from '../lib/filterSyntaxHighlight';
+import { useLocale as useUILocale } from "../lib/i18n";
+
 
 interface FilterExpressionHighlightProps {
   expression: string;
@@ -47,11 +49,11 @@ export default function FilterExpressionHighlight({
   wrap = false,
   maxWidth,
 }: FilterExpressionHighlightProps) {
+  const __uiLocale = useUILocale();
   const theme = useTheme();
-  const isDarkMode = theme.palette.mode === 'dark';
 
   // Tokenize and highlight the expression
-  const tokens = highlightFilterExpression(expression);
+  const tokens = highlightFilterExpression(expression, theme.palette.mode);
 
   // If empty expression, show nothing
   if (!expression || tokens.length === 0) {
@@ -59,8 +61,7 @@ export default function FilterExpressionHighlight({
   }
 
   return (
-    <Box
-      component="span"
+    <Box component="span"
       sx={{
         fontFamily: monospace ? 'monospace' : 'inherit',
         fontSize: fontSize,
@@ -71,19 +72,14 @@ export default function FilterExpressionHighlight({
         maxWidth: maxWidth,
         display: 'inline-block',
         ...sx,
-      }}
-    >
-      {tokens.map((token, i) => {
+      }}>{tokens.map((token, i) => {
         if (token.type === 'text' && token.color === 'inherit') {
           return <span key={i}>{token.value}</span>;
         }
         return (
-          <span key={i} style={{ color: token.color }}>
-            {token.value}
-          </span>
+          <span key={i} style={{ color: token.color }}>{token.value}</span>
         );
-      })}
-    </Box>
+      })}</Box>
   );
 }
 
@@ -98,14 +94,13 @@ export function FilterExpressionInline({
   expression: string;
   maxWidth?: string | number;
 }) {
+  const __uiLocale = useUILocale();
   return (
-    <FilterExpressionHighlight
-      expression={expression}
+    <FilterExpressionHighlight expression={expression}
       maxWidth={maxWidth}
       wrap={false}
       monospace={true}
-      fontSize="0.85rem"
-    />
+      fontSize="0.85rem" />
   );
 }
 
@@ -120,23 +115,17 @@ export function FilterExpressionBlock({
   expression: string;
   sx?: any;
 }) {
+  const __uiLocale = useUILocale();
   return (
-    <Box
-      sx={{
+    <Box sx={{
         p: 2,
         bgcolor: 'action.hover',
         borderRadius: 1,
         overflow: 'auto',
         ...sx,
-      }}
-    >
-      <FilterExpressionHighlight
-        expression={expression}
+      }}><FilterExpressionHighlight expression={expression}
         wrap={true}
         monospace={true}
-        fontSize="0.95rem"
-      />
-    </Box>
+        fontSize="0.95rem" /></Box>
   );
 }
-

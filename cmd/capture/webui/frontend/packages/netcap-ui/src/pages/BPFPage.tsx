@@ -42,19 +42,32 @@ import SaveIcon from '@mui/icons-material/Save';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import useSWR from 'swr';
+
 import Layout from '../components/Layout';
 import { useNetcapApi } from '../hooks';
 import BPFExpressionHighlight, { BPFExpressionBlock } from '../components/BPFExpressionHighlight';
 import { SyntaxHighlightedTextArea } from '../components/SyntaxHighlightedInput';
+import { translate as i18nText, richText as i18nRichText, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR } from "../lib/i18n";
+import { renderError, errorText, message } from "../lib/i18n";
+import { metadataText } from "../lib/i18n";
+import { metadataMessage } from "../lib/i18n";
+import { suppliedMetadataText } from "../lib/i18n";
+
+
+
+
+
+
 
 export default function BPF() {
+  const __uiLocale = useUILocale();
   const api = useNetcapApi();
   const { data: bpfData, error: bpfError, mutate: mutateBPF } = useSWR('bpfInfo', () => api.getBPFInfo());
   const [bpfFilter, setBpfFilter] = useState('');
   const [bpfSaving, setBpfSaving] = useState(false);
-  const [bpfErrorMsg, setBpfErrorMsg] = useState<string | null>(null);
-  const [bpfSuccess, setBpfSuccess] = useState<string | null>(null);
+  const [bpfErrorMsg, setBpfErrorMsg] = useState<UIMessageText | null>(null);
+  const [bpfSuccess, setBpfSuccess] = useState<UIMessageText | null>(null);
 
   // Initialize BPF filter from loaded data
   useEffect(() => {
@@ -70,12 +83,12 @@ export default function BPF() {
 
     try {
       const result = await api.saveBPFConfig({ filter: bpfFilter });
-      setBpfSuccess(result.message);
+      setBpfSuccess(metadataMessage(result, 'message'));
       mutateBPF();
       // Clear success message after 3 seconds
       setTimeout(() => setBpfSuccess(null), 3000);
     } catch (err) {
-      setBpfErrorMsg(err instanceof Error ? err.message : 'Failed to save BPF filter');
+      setBpfErrorMsg(err instanceof Error ? errorText(err) : message('ui:bpf.saveFailed'));
     } finally {
       setBpfSaving(false);
     }
@@ -88,101 +101,51 @@ export default function BPF() {
 
   if (bpfError) {
     return (
-      <Layout title="BPF Filter Configuration">
-        <Alert severity="error">
-          Failed to load BPF configuration: {bpfError.message}
-        </Alert>
-      </Layout>
+      <Layout title={i18nText("ui:m_5a7fa520d675449adbdd")}><Alert severity="error">
+          {i18nRichText("ui:m_813377d27363ea7c1174", { arg0: renderError(bpfError) })}
+        </Alert></Layout>
     );
   }
 
   if (!bpfData) {
     return (
-      <Layout title="BPF Filter Configuration">
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <CircularProgress />
-        </Box>
-      </Layout>
+      <Layout title={i18nText("ui:m_5a7fa520d675449adbdd")}><Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box></Layout>
     );
   }
 
   return (
-    <Layout title="BPF Filter Configuration">
-      <Box sx={{ minWidth: 0 }}>
-      {bpfSuccess && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          {bpfSuccess}
-        </Alert>
-      )}
-      {bpfErrorMsg && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setBpfErrorMsg(null)}>
-          {bpfErrorMsg}
-        </Alert>
-      )}
-
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Box sx={{ mb: 3 }}>
-            <SyntaxHighlightedTextArea
-              syntaxType="bpf"
+    <Layout title={i18nText("ui:m_5a7fa520d675449adbdd")}><Box sx={{ minWidth: 0 }}>{i18nRenderText(bpfSuccess) && (
+        <Alert severity="success" sx={{ mb: 2 }}>{i18nRenderText(bpfSuccess)}</Alert>
+      )}{bpfErrorMsg && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setBpfErrorMsg(null)}>{i18nRenderText(bpfErrorMsg)}</Alert>
+      )}<Card sx={{ mb: 3 }}><CardContent><Box sx={{ mb: 3 }}><SyntaxHighlightedTextArea syntaxType="bpf"
               value={bpfFilter}
               onChange={setBpfFilter}
-              label="Current Filter"
-              placeholder="Enter BPF filter expression (e.g., tcp port 80 or udp port 53)"
+              label={i18nText("ui:m_3057da6e637180a241fd")}
+              placeholder={i18nText("ui:m_e01302b584d0febb083b")}
               rows={4}
               fullWidth
-              data-learn="BPF Filter Expression: Enter a Berkeley Packet Filter expression to capture only specific network traffic (e.g., tcp port 80, host 192.168.1.1, or complex combinations)."
-            />
-            <Box sx={{ mt: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
-              <Button
-                data-learn="Save Filter: Apply this BPF filter to future packet captures, limiting captured traffic to only packets matching the filter expression."
+              data-learn={i18nText("ui:m_e4a5dbd178398b78b7b1")} /><Box sx={{ mt: 2, display: 'flex', gap: 2, alignItems: 'center' }}><Button data-learn={i18nText("ui:m_a42d319351727a94fa44")}
                 variant="contained"
                 startIcon={<SaveIcon />}
                 onClick={handleBPFSave}
-                disabled={bpfSaving}
-              >
-                {bpfSaving ? 'Saving...' : 'Save Filter'}
-              </Button>
-              <Button
-                data-learn="Clear Filter: Remove the current BPF filter to capture all network traffic without filtering."
+                disabled={bpfSaving}>{bpfSaving ? i18nText("ui:m_84d67cc7cab845a90ab6") : i18nText("ui:m_cceb1f9ea725d00261ba")}</Button><Button data-learn={i18nText("ui:m_51671e4bde916e52b6d7")}
                 variant="outlined"
                 onClick={() => setBpfFilter('')}
-                disabled={!bpfFilter}
-              >
-                Clear Filter
-              </Button>
-              <Box sx={{ flex: 1 }} />
-              <Link
-                data-learn="BPF Documentation: Open the official Berkeley Packet Filter syntax documentation to learn about filter expressions, operators, and advanced filtering techniques."
+                disabled={!bpfFilter}>
+                {i18nText("ui:m_cfdaafce54dddd3e0005")}
+              </Button><Box sx={{ flex: 1 }} />
+              {i18nRichText("ui:m_7fff1662193e616079a6", { arg0: <OpenInNewIcon fontSize="small" />, tag0: (chunks: import('react').ReactNode[]) => <Link data-learn={i18nText("ui:m_d03c732c8925fb91f54b")}
                 href={bpfData.docsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-              >
-                <OpenInNewIcon fontSize="small" />
-                BPF Syntax Documentation
-              </Link>
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent>
-          <Accordion defaultExpanded>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Common BPF Filter Examples
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                Click on an example to copy it to the filter field:
-              </Typography>
-              <List>
-                {bpfData.examples.map((example) => (
-                  <ListItem
-                    data-learn="Filter Example: Click to copy this pre-configured BPF filter expression to the editor for quick use or modification."
+                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>{chunks}</Link> })}
+            </Box></Box></CardContent></Card><Card><CardContent><Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6" sx={{ fontWeight: 600 }}>
+                {i18nText("ui:m_8a7e596223c5ad17cad8")}
+              </Typography></AccordionSummary><AccordionDetails><Typography variant="body2" color="text.secondary" paragraph>
+                {i18nText("ui:m_2e358ee6e0563a96f066")}
+              </Typography><List>{bpfData.examples.map((example) => (
+                  <ListItem data-learn={i18nText("ui:m_4a5cf5934e3491903009")}
                     key={`${example.name}-${example.filter}`}
                     sx={{
                       border: 1,
@@ -194,112 +157,40 @@ export default function BPF() {
                         cursor: 'pointer',
                       },
                     }}
-                    onClick={() => handleCopyExample(example.filter)}
-                  >
-                    <ListItemText
-                      primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                            {example.name}
-                          </Typography>
-                          <IconButton
-                            size="small"
+                    onClick={() => handleCopyExample(example.filter)}><ListItemText primary={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{suppliedMetadataText(example, "name")}</Typography><IconButton size="small"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleCopyExample(example.filter);
-                            }}
-                          >
-                            <ContentCopyIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
-                      }
-                      secondary={
-                        <>
-                          <Box
-                            sx={{
+                            }}><ContentCopyIcon fontSize="small" /></IconButton></Box>}
+                      secondary={<><Box sx={{
                               display: 'block',
                               bgcolor: 'action.hover',
                               p: 1,
                               borderRadius: 1,
                               my: 1,
-                            }}
-                          >
-                            <BPFExpressionHighlight 
-                              expression={example.filter}
+                            }}><BPFExpressionHighlight expression={example.filter}
                               fontSize="0.9rem"
-                              wrap={true}
-                            />
-                          </Box>
-                          <Typography variant="body2" color="text.secondary">
-                            {example.description}
-                          </Typography>
-                        </>
-                      }
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            </AccordionDetails>
-          </Accordion>
-        </CardContent>
-      </Card>
-
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            About BPF Filters
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            BPF (Berkeley Packet Filter) is a powerful packet filtering technology that enables efficient packet capture
-            at the kernel level. By applying filters before packets are copied to user space, BPF can significantly
-            reduce CPU usage and improve capture performance.
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            BPF filters use a simple expression syntax that can match on various packet attributes including:
-          </Typography>
-          <List sx={{ pl: 2 }}>
-            <ListItem sx={{ py: 0.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                • Protocol types (tcp, udp, icmp, ip, ip6, arp, etc.)
-              </Typography>
-            </ListItem>
-            <ListItem sx={{ py: 0.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                • Ports (port 80, portrange 8000-9000)
-              </Typography>
-            </ListItem>
-            <ListItem sx={{ py: 0.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                • IP addresses (host 192.168.1.1, net 10.0.0.0/8)
-              </Typography>
-            </ListItem>
-            <ListItem sx={{ py: 0.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                • Packet size (greater 1000, less 100)
-              </Typography>
-            </ListItem>
-            <ListItem sx={{ py: 0.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                • Direction (src, dst)
-              </Typography>
-            </ListItem>
-            <ListItem sx={{ py: 0.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                • Logical operators (and, or, not)
-              </Typography>
-            </ListItem>
-          </List>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            For more information, see the{' '}
-            <Link href={bpfData.docsUrl} target="_blank" rel="noopener noreferrer">
-              official BPF documentation
-            </Link>
-            .
-          </Typography>
-        </CardContent>
-      </Card>
-      </Box>
-    </Layout>
+                              wrap={true} /></Box><Typography variant="body2" color="text.secondary">{metadataText(example, "description")}</Typography></>} /></ListItem>
+                ))}</List></AccordionDetails></Accordion></CardContent></Card><Card sx={{ mt: 3 }}><CardContent><Typography variant="h6" gutterBottom>
+            {i18nText("ui:m_eacf0211f9346f3ec5d3")}
+          </Typography><Typography variant="body2" color="text.secondary" paragraph>
+            {i18nText("ui:m_433a4f5a0d5ff619e59b")}
+          </Typography><Typography variant="body2" color="text.secondary" paragraph>
+            {i18nText("ui:m_1193e8f26b65e56b2c66")}
+          </Typography><List sx={{ pl: 2 }}><ListItem sx={{ py: 0.5 }}><Typography variant="body2" color="text.secondary">
+                {i18nText("ui:m_527ec0c583d2e0e409ff")}
+              </Typography></ListItem><ListItem sx={{ py: 0.5 }}><Typography variant="body2" color="text.secondary">
+                {i18nText("ui:m_ed58f57c38f01949eddc")}
+              </Typography></ListItem><ListItem sx={{ py: 0.5 }}><Typography variant="body2" color="text.secondary">
+                {i18nText("ui:m_9ae110a8a4e148f2bed4")}
+              </Typography></ListItem><ListItem sx={{ py: 0.5 }}><Typography variant="body2" color="text.secondary">
+                {i18nText("ui:m_61ef41a8cc8383247a9c")}
+              </Typography></ListItem><ListItem sx={{ py: 0.5 }}><Typography variant="body2" color="text.secondary">
+                {i18nText("ui:m_8b05ff27c9f506a3063f")}
+              </Typography></ListItem><ListItem sx={{ py: 0.5 }}><Typography variant="body2" color="text.secondary">
+                {i18nText("ui:m_e040ecfb7e8cee100068")}
+              </Typography></ListItem></List><Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            {i18nRichText("ui:m_3bf711488cbe36e437fd", { tag0: (chunks: import('react').ReactNode[]) => <Link href={bpfData.docsUrl} target="_blank" rel="noopener noreferrer">{chunks}</Link> })}
+          </Typography></CardContent></Card></Box></Layout>
   );
 }
-

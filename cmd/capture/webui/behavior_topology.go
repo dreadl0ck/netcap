@@ -61,7 +61,7 @@ func (s *Server) handleBehaviorTopology(w http.ResponseWriter, r *http.Request) 
 		links = append(links, opts.GraphLink{Source: index[link.Source], Target: index[link.Target]})
 	}
 	graph.AddSeries("observed", nodes, links, charts.WithGraphChartOpts(opts.GraphChart{Layout: "force", Roam: opts.Bool(true), Force: &opts.GraphForce{Repulsion: 500, EdgeLength: 100}}), charts.WithLabelOpts(opts.Label{Show: opts.Bool(true), Color: "#ffffff"}))
-	html, err := injectFullHeightCSS(graph.Render)
+	html, err := injectFullHeightCSSForRequest(graph.Render, r)
 	if err != nil {
 		http.Error(w, "topology render failed", http.StatusInternalServerError)
 		return

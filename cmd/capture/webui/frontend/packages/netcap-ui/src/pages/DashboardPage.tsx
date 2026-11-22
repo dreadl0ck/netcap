@@ -36,8 +36,12 @@ import CustomDashboardView from '../components/CustomDashboardView';
 import DashboardViewTabs, { OVERVIEW_VIEW_ID } from '../components/DashboardViewTabs';
 import DashboardPcapScopeSelector, { ALL_PCAPS_SCOPE } from '../components/DashboardPcapScopeSelector';
 import { useNetcapApi } from '../hooks';
-import useSWR from 'swr';
+
 import { DashboardApiError, type Dashboard } from '../lib/api';
+import { translate as i18nText, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR } from "../lib/i18n";
+
+
 
 const SCOPE_STORAGE_KEY = 'dashboard-pcap-scope';
 const VIEW_STORAGE_KEY = 'dashboard-active-view';
@@ -49,6 +53,7 @@ function describeError(err: unknown): string {
 }
 
 export default function DashboardPage() {
+  const __uiLocale = useUILocale();
   const api = useNetcapApi();
 
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
@@ -91,7 +96,7 @@ export default function DashboardPage() {
   const [draftName, setDraftName] = useState('');
   const [draftDesc, setDraftDesc] = useState('');
   const [pending, setPending] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<UIMessageText | null>(null);
 
   const openCreate = () => {
     setDialogTarget(null);
@@ -164,7 +169,7 @@ export default function DashboardPage() {
   };
 
   const handleDelete = async (d: Dashboard) => {
-    if (!confirm(`Delete dashboard "${d.name}"? This cannot be undone.`)) return;
+    if (!confirm(i18nText("ui:m_558985f2bd4d42d27727", { arg0: d.name }))) return;
     setActionError(null);
     try {
       await api.deleteDashboard(d.id);
@@ -182,91 +187,43 @@ export default function DashboardPage() {
   const userDashboards: Dashboard[] = useMemo(() => dashboards || [], [dashboards]);
 
   return (
-    <Layout title="Dashboard">
-      <Stack spacing={2}>
-        <Box sx={{
+    <Layout title={i18nText("ui:m_4030128748ac546a3cc2")}><Stack spacing={2}><Box sx={{
           display: 'flex',
           alignItems: { xs: 'stretch', md: 'center' },
           justifyContent: 'space-between',
           flexDirection: { xs: 'column', md: 'row' },
           gap: 2.5,
           py: { xs: 1, md: 2 },
-        }}>
-          <Box>
-            <Chip label="LIVE TELEMETRY" color="primary" variant="outlined" size="small" sx={{ mb: 1.5, height: 24 }} />
-            <Typography component="h2" variant="h2">Traffic overview</Typography>
-            <Typography color="text.secondary" sx={{ mt: 0.75, maxWidth: 620 }}>
-              Inspect captures, extracted intelligence, and host activity from one workspace.
-            </Typography>
-          </Box>
-          <Box sx={{ minWidth: { md: 300 } }}>
-            <DashboardPcapScopeSelector value={scope} onChange={setScope} inputFiles={inputFiles} />
-          </Box>
-        </Box>
-
-        <DashboardViewTabs
-          dashboards={userDashboards}
+        }}><Box><Chip label={i18nText("ui:m_36b211425443465c14c7")} color="primary" variant="outlined" size="small" sx={{ mb: 1.5, height: 24 }} /><Typography component="h2" variant="h2">{i18nText("ui:m_b2507e16ae0cc36bfb5e")}</Typography><Typography color="text.secondary" sx={{ mt: 0.75, maxWidth: 620 }}>
+              {i18nText("ui:m_2cc7656d50b861f3c12f")}
+            </Typography></Box><Box sx={{ minWidth: { md: 300 } }}><DashboardPcapScopeSelector value={scope} onChange={setScope} inputFiles={inputFiles} /></Box></Box><DashboardViewTabs dashboards={userDashboards}
           activeId={activeView}
           onSelect={setActiveView}
           onCreate={openCreate}
           onRename={openRename}
           onDuplicate={handleDuplicate}
-          onDelete={handleDelete}
-        />
-
-        {dashboardsError && (
-          <Alert
-            severity={noOutDir ? 'info' : 'error'}
-            action={<Button color="inherit" size="small" onClick={() => mutateDashboards()}>Retry</Button>}
-          >
-            {noOutDir
-              ? 'Dashboards storage is unavailable. Check service configuration.'
-              : `Failed to load dashboards: ${describeError(dashboardsError)}`}
-          </Alert>
-        )}
-        {actionError && (
-          <Alert severity="error" onClose={() => setActionError(null)}>{actionError}</Alert>
-        )}
-
-        {activeView === OVERVIEW_VIEW_ID ? (
+          onDelete={handleDelete} />{dashboardsError && (
+          <Alert severity={noOutDir ? 'info' : 'error'}
+            action={<Button color="inherit" size="small" onClick={() => mutateDashboards()}>{i18nText("ui:m_3c4b66117cf7e2a0bf82")}</Button>}>{noOutDir ? i18nText("ui:m_3753827162223ed0ea2b") : i18nText("ui:m_07c32a8c753fc494832c", { arg0: describeError(dashboardsError) })}</Alert>
+        )}{i18nRenderText(actionError) && (
+          <Alert severity="error" onClose={() => setActionError(null)}>{i18nRenderText(actionError)}</Alert>
+        )}{activeView === OVERVIEW_VIEW_ID ? (
           <OverviewView scope={scope} />
         ) : (
-          <CustomDashboardView
-            dashboardId={activeView}
+          <CustomDashboardView dashboardId={activeView}
             scope={scope}
-            onForkComplete={(newId) => setActiveView(newId)}
-          />
-        )}
-      </Stack>
-
-      <Dialog open={dialogMode !== null} onClose={closeDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{dialogMode === 'rename' ? 'Rename Dashboard' : 'New Dashboard'}</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Name"
+            onForkComplete={(newId) => setActiveView(newId)} />
+        )}</Stack><Dialog open={dialogMode !== null} onClose={closeDialog} maxWidth="sm" fullWidth><DialogTitle>{dialogMode === 'rename' ? i18nText("ui:m_3743eb9e935e9a5b11b3") : i18nText("ui:m_f39f7bc29a249c5ab8cb")}</DialogTitle><DialogContent><TextField label={i18nText("ui:m_e707e3dfaa88e6753600")}
             value={draftName}
             onChange={(e) => setDraftName(e.target.value)}
             fullWidth
             autoFocus
             sx={{ mt: 1, mb: 2 }}
-            required
-          />
-          <TextField
-            label="Description (optional)"
+            required /><TextField label={i18nText("ui:m_c4d163cb8523809177be")}
             value={draftDesc}
             onChange={(e) => setDraftDesc(e.target.value)}
             fullWidth
             multiline
-            rows={2}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDialog} disabled={pending}>Cancel</Button>
-          <Button onClick={handleDialogSubmit} variant="contained" disabled={!draftName.trim() || pending}>
-            {dialogMode === 'rename' ? 'Save' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Layout>
+            rows={2} /></DialogContent><DialogActions><Button onClick={closeDialog} disabled={pending}>{i18nText("ui:m_0095547326bed510a824")}</Button><Button onClick={handleDialogSubmit} variant="contained" disabled={!draftName.trim() || pending}>{dialogMode === 'rename' ? i18nText("ui:m_72bba814ee286eb80909") : i18nText("ui:m_a09c62c4acf8363f90e2")}</Button></DialogActions></Dialog></Layout>
   );
 }

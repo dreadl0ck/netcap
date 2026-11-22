@@ -23,8 +23,13 @@ import 'react-grid-layout/css/styles.css';
 import DashboardChartTile from './DashboardChartTile';
 import ChartConfigDialog from './ChartConfigDialog';
 import { useNetcapApi } from '../hooks';
-import useSWR, { mutate as globalMutate } from 'swr';
+
 import { DashboardApiError, type Dashboard, type DashboardChart } from '../lib/api';
+import { translate as i18nText, renderText as i18nRenderText, richText as i18nRichText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR, mutatePresentation as globalMutate } from "../lib/i18n";
+import { errorText } from "../lib/i18n";
+
+
 
 
 type Breakpoint = 'lg' | 'md' | 'sm' | 'xs' | 'xxs';
@@ -73,11 +78,7 @@ function useWidth() {
   return [ref, width] as const;
 }
 
-function describeError(err: unknown): string {
-  if (err instanceof DashboardApiError) return err.message;
-  if (err instanceof Error) return err.message;
-  return String(err);
-}
+function describeError(err: unknown): UIMessageText { return errorText(err); }
 
 function placeNewChart(charts: DashboardChart[], cols: number) {
   const maxY = charts.reduce((m, c) => Math.max(m, c.layout.y + c.layout.h), 0);
@@ -95,6 +96,7 @@ interface Props {
 }
 
 export default function CustomDashboardView({ dashboardId, scope, onForkComplete }: Props) {
+  const __uiLocale = useUILocale();
   const api = useNetcapApi();
 
   const { data: loaded, error, isLoading, mutate } = useSWR(
@@ -107,7 +109,7 @@ export default function CustomDashboardView({ dashboardId, scope, onForkComplete
   const [editing, setEditing] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<UIMessageText | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingChart, setEditingChart] = useState<DashboardChart | null>(null);
   const [breakpoint, setBreakpoint] = useState<Breakpoint>('lg');
@@ -184,7 +186,7 @@ export default function CustomDashboardView({ dashboardId, scope, onForkComplete
 
   const handleDeleteChart = (chartId: string) => {
     if (!dashboard) return;
-    if (!confirm('Remove this chart from the dashboard?')) return;
+    if (!confirm(i18nText("ui:m_1321d041b1b7b4836958"))) return;
     setDashboard({ ...dashboard, charts: dashboard.charts.filter((c) => c.id !== chartId) });
     setDirty(true);
   };
@@ -224,24 +226,12 @@ export default function CustomDashboardView({ dashboardId, scope, onForkComplete
     if (error) {
       const apiErr = error instanceof DashboardApiError ? error : null;
       return (
-        <Stack spacing={2}>
-          <Alert
-            severity={apiErr?.noOutputDir ? 'info' : apiErr?.notFound ? 'warning' : 'error'}
-            action={<Button color="inherit" size="small" onClick={() => mutate()}>Retry</Button>}
-          >
-            {apiErr?.noOutputDir
-              ? 'No output directory selected. Select a session or PCAP first.'
-              : apiErr?.notFound
-                ? 'Dashboard not found. It may have been deleted.'
-                : `Failed to load dashboard: ${describeError(error)}`}
-          </Alert>
-        </Stack>
+        <Stack spacing={2}><Alert severity={apiErr?.noOutputDir ? 'info' : apiErr?.notFound ? 'warning' : 'error'}
+            action={<Button color="inherit" size="small" onClick={() => mutate()}>{i18nText("ui:m_3c4b66117cf7e2a0bf82")}</Button>}>{apiErr?.noOutputDir ? i18nText("ui:m_15fb820ba18bb18c1d63") : apiErr?.notFound ? i18nText("ui:m_aa69f8540834cd2c14bd") : i18nText("ui:m_adf7c2735224e4c213b4", { arg0: describeError(error) })}</Alert></Stack>
       );
     }
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-        <CircularProgress />
-      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
     );
   }
 
@@ -250,52 +240,29 @@ export default function CustomDashboardView({ dashboardId, scope, onForkComplete
   const allEmpty = !editing && dashboard.charts.length > 0 && visibleCharts.length === 0;
 
   return (
-    <Stack spacing={2}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-        {dashboard.builtin && <Chip label="Built-in (read-only — Save to fork)" size="small" color="secondary" />}
-        <Box sx={{ flex: 1 }} />
-        {editing ? (
-          <>
-            <Button startIcon={<AddIcon />} onClick={openAddChart} variant="outlined">Add Chart</Button>
-            <Button
-              startIcon={<SaveIcon />}
+    <Stack spacing={2}><Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>{dashboard.builtin && <Chip label={i18nText("ui:m_222856f4a1d3d163962b")} size="small" color="secondary" />}<Box sx={{ flex: 1 }} />{editing ? (
+          <><Button startIcon={<AddIcon />} onClick={openAddChart} variant="outlined">{i18nText("ui:m_9194f7c4d9b324362224")}</Button><Button startIcon={<SaveIcon />}
               onClick={handleSave}
               variant="contained"
-              disabled={saving || (!dirty && !dashboard.builtin)}
-            >
-              {saving ? 'Saving…' : dashboard.builtin ? 'Save as Copy' : 'Save'}
-            </Button>
-            <Tooltip title={dirty ? 'Save or discard your changes first' : ''}>
-              <span>
-                <Button startIcon={<VisibilityIcon />} onClick={() => setEditing(false)} disabled={dirty}>
-                  View
-                </Button>
-              </span>
-            </Tooltip>
-          </>
+              disabled={saving || (!dirty && !dashboard.builtin)}>{saving ? i18nText("ui:m_87b1c2440a2f1c75d5d8") : dashboard.builtin ? i18nText("ui:m_e3314e555a0e220b5ef1") : i18nText("ui:m_72bba814ee286eb80909")}</Button><Tooltip title={dirty ? i18nText("ui:m_f52dc6ae119219fa1110") : ''}><span><Button startIcon={<VisibilityIcon />} onClick={() => setEditing(false)} disabled={dirty}>
+                  {i18nText("ui:m_0184294accd8324999a3")}
+                </Button></span></Tooltip></>
         ) : (
-          <Button startIcon={<EditIcon />} onClick={() => setEditing(true)} variant="outlined">Edit</Button>
-        )}
-      </Box>
-
-      {actionError && (
-        <Alert severity="error" onClose={() => setActionError(null)}>{actionError}</Alert>
-      )}
-
-      {dashboard.charts.length === 0 ? (
+          <Button startIcon={<EditIcon />} onClick={() => setEditing(true)} variant="outlined">{i18nText("ui:m_5ecc9e41cd95e17be85f")}</Button>
+        )}</Box>{i18nRenderText(actionError) && (
+        <Alert severity="error" onClose={() => setActionError(null)}>{i18nRenderText(actionError)}</Alert>
+      )}{dashboard.charts.length === 0 ? (
         <Alert severity="info">
-          This dashboard has no charts. {editing ? 'Click "Add Chart" to add one.' : 'Click "Edit" then "Add Chart".'}
+          {i18nRichText("ui:m_ea6e08062ad503943c79", { arg0: editing ? i18nText("ui:m_dc06c30fa326e402500a") : i18nText("ui:m_361fb95fd5e1a437c3cb") })}
         </Alert>
       ) : allEmpty ? (
-        <Alert severity="info">No data for these charts in the current scope.</Alert>
+        <Alert severity="info">{i18nText("ui:m_f90e7cf78f6ea0e0a43a")}</Alert>
       ) : (
         <Box ref={gridRef} sx={{
           minWidth: 0,
           '& .react-grid-placeholder': { background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', opacity: 0.2, borderRadius: 2 },
           '& .react-resizable-handle::after': { borderColor: 'primary.main' },
-        }}>
-          {gridWidth > 0 && <Responsive
-            className="layout"
+        }}>{gridWidth > 0 && <Responsive className="layout"
             width={gridWidth}
             layouts={layouts}
             breakpoints={BREAKPOINTS}
@@ -307,33 +274,20 @@ export default function CustomDashboardView({ dashboardId, scope, onForkComplete
             draggableHandle=".dashboard-tile-header"
             onBreakpointChange={(bp: string) => setBreakpoint(bp as Breakpoint)}
             onLayoutChange={(l: Layout) => handleLayoutChange(l)}
-            compactType="vertical"
-          >
-            {visibleCharts.map((c) => (
-              <div key={c.id}>
-                <DashboardChartTile
-                  chart={c}
+            compactType="vertical">{visibleCharts.map((c) => (
+              <div key={c.id}><DashboardChartTile chart={c}
                   editing={editing}
                   scope={scope}
                   available={availableTypes.length === 0 ? true : availableTypes.includes(c.auditType)}
                   onEdit={openEditChart}
                   onDelete={handleDeleteChart}
-                  onEmptyChange={handleEmptyChange}
-                />
-              </div>
-            ))}
-          </Responsive>}
-        </Box>
-      )}
-
-      <ChartConfigDialog
-        open={dialogOpen}
+                  onEmptyChange={handleEmptyChange} /></div>
+            ))}</Responsive>}</Box>
+      )}<ChartConfigDialog open={dialogOpen}
         initial={editingChart || undefined}
         availableAuditTypes={availableTypes}
         scope={scope}
         onClose={() => { setDialogOpen(false); setEditingChart(null); }}
-        onSubmit={handleChartSubmit}
-      />
-    </Stack>
+        onSubmit={handleChartSubmit} /></Stack>
   );
 }

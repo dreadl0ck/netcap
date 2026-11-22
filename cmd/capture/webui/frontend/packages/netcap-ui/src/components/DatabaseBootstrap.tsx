@@ -33,6 +33,14 @@ import {
 } from '@mui/icons-material';
 import { useNetcapApi } from '../hooks';
 import type { DatabaseDownloadStatus, DatabaseStatus } from '../lib/api';
+import { translate as i18nText, richText as i18nRichText, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { translate } from "../lib/i18n";
+import { formatNumber } from "../lib/i18n";
+import { translate as finalCopyText } from "../lib/i18n";
+
+
+
+
 
 /** Poll interval while a download is running. */
 const PROGRESS_POLL_MS = 1000;
@@ -41,7 +49,7 @@ const PROGRESS_POLL_MS = 1000;
 const DISMISS_KEY = 'netcap.dbBootstrap.dismissed';
 
 function formatBytes(bytes: number): string {
-  if (!bytes || bytes < 0) return '0 B';
+  if (!bytes || bytes < 0) return translate("removed:m_5ae3dd1f8c5e69491688");
   const units = ['B', 'KB', 'MB', 'GB'];
   let value = bytes;
   let unit = 0;
@@ -49,22 +57,22 @@ function formatBytes(bytes: number): string {
     value /= 1024;
     unit += 1;
   }
-  return `${value.toFixed(value >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
+  return `${formatNumber(value, { minimumFractionDigits: value >= 10 || unit === 0 ? 0 : 1, maximumFractionDigits: value >= 10 || unit === 0 ? 0 : 1, useGrouping: false })} ${units[unit]}`;
 }
 
 function describeDownload(download: DatabaseDownloadStatus): string {
   if (download.message) return download.message;
   switch (download.stage) {
     case 'metadata':
-      return 'Checking for the latest database version';
+      return translate("removed:m_7472f81dda5a8261d02a");
     case 'download':
       return download.total > 0
-        ? `Downloading ${formatBytes(download.downloaded)} of ${formatBytes(download.total)}`
-        : `Downloading ${formatBytes(download.downloaded)}`;
+        ? translate("removed:m_c98b54e1e1959d31802c", { arg0: formatBytes(download.downloaded), arg1: formatBytes(download.total) })
+        : finalCopyText("removed:m_70c77fe49207dd136319", { arg0: formatBytes(download.downloaded) });
     case 'extract':
-      return 'Extracting databases';
+      return translate("removed:m_b8f806d72693b7b794d6");
     default:
-      return 'Working';
+      return i18nText("removed:m_3d9ba3c43d5f1e6091de");
   }
 }
 
@@ -86,12 +94,13 @@ export interface DatabaseBootstrapProps {
  * is also what makes the progress bar meaningful rather than a surprise.
  */
 export default function DatabaseBootstrap({ startupDelayMs = 1500 }: DatabaseBootstrapProps) {
+  const __uiLocale = useUILocale();
   const api = useNetcapApi();
 
   const [status, setStatus] = useState<DatabaseStatus | null>(null);
   const [download, setDownload] = useState<DatabaseDownloadStatus | null>(null);
   const [dismissed, setDismissed] = useState(false);
-  const [startError, setStartError] = useState<string | null>(null);
+  const [startError, setStartError] = useState<UIMessageText | null>(null);
 
   // Guards the download-finished refresh so a completed run cannot re-arm the
   // prompt on every poll.
@@ -177,7 +186,7 @@ export default function DatabaseBootstrap({ startupDelayMs = 1500 }: DatabaseBoo
         error: message,
       });
     }
-  }, [api]);
+  }, [api, __uiLocale]);
 
   const handleDismiss = useCallback(() => {
     setDismissed(true);
@@ -201,68 +210,30 @@ export default function DatabaseBootstrap({ startupDelayMs = 1500 }: DatabaseBoo
   const severity = failed ? 'error' : running ? 'info' : completed ? 'success' : 'warning';
 
   return (
-    <Snackbar
-      open={open}
+    <Snackbar open={open}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      sx={{ maxWidth: 520 }}
-    >
-      <Alert
-        severity={severity}
+      sx={{ maxWidth: 520 }}><Alert severity={severity}
         icon={running ? <DownloadIcon /> : <StorageIcon />}
         variant="filled"
         sx={{ width: '100%' }}
-        onClose={running ? undefined : handleDismiss}
-      >
-        <AlertTitle>
-          {failed
-            ? 'Database download failed'
-            : running
-              ? 'Downloading analysis databases'
-              : 'Analysis databases are missing'}
-        </AlertTitle>
-
-        {!running && !failed && (
+        onClose={running ? undefined : handleDismiss}><AlertTitle>{failed ? i18nText("removed:m_5b9cc20959559c244abf") : running ? i18nText("removed:m_a475a335d10f35d79651") : i18nText("removed:m_bfabbc7c43cd4eca5314")}</AlertTitle>{!running && !failed && (
           <Typography variant="body2" sx={{ mb: 1 }}>
-            Captures will still be analysed. Install the databases to enable{' '}
-            {Array.from(new Set(status.missing.map(m => m.feature))).join(', ') || 'some enrichment'}.
-            {' '}This is a one-time download of about 150 MB.
+            {i18nRichText("removed:m_be16447b5975cc72e554", { arg0: Array.from(new Set(status.missing.map(m => m.feature))).join(', ') || i18nText("removed:m_425bb0cd9a3b435d67e5") })}
           </Typography>
-        )}
-
-        {failed && (
-          <Typography variant="body2" sx={{ mb: 1, wordBreak: 'break-word' }}>
-            {startError || download?.error || 'The download did not complete.'}
-          </Typography>
-        )}
-
-        {running && download && (
-          <Box sx={{ mb: 1 }}>
-            <LinearProgress
-              variant={download.stage === 'download' && download.total > 0 ? 'determinate' : 'indeterminate'}
+        )}{failed && (
+          <Typography variant="body2" sx={{ mb: 1, wordBreak: 'break-word' }}>{i18nRenderText(startError) || download?.error || i18nText("removed:m_820ed6ee2cddc167d4b0")}</Typography>
+        )}{running && download && (
+          <Box sx={{ mb: 1 }}><LinearProgress variant={download.stage === 'download' && download.total > 0 ? 'determinate' : 'indeterminate'}
               value={download.percent}
-              sx={{ height: 6, borderRadius: 1, mb: 0.5 }}
-            />
-            <Typography variant="caption">{describeDownload(download)}</Typography>
-          </Box>
-        )}
-
-        {!running && (
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              size="small"
+              sx={{ height: 6, borderRadius: 1, mb: 0.5 }} /><Typography variant="caption">{describeDownload(download)}</Typography></Box>
+        )}{!running && (
+          <Box sx={{ display: 'flex', gap: 1 }}><Button size="small"
               variant="outlined"
               color="inherit"
               startIcon={<DownloadIcon />}
-              onClick={handleDownload}
-            >
-              {failed ? 'Try again' : 'Download databases'}
-            </Button>
-            <Button size="small" color="inherit" onClick={handleDismiss}>
-              Not now
-            </Button>
-          </Box>
-        )}
-      </Alert>
-    </Snackbar>
+              onClick={handleDownload}>{failed ? i18nText("removed:m_be6179132a72beeb7c68") : i18nText("removed:m_6d0eec93454a78b48647")}</Button><Button size="small" color="inherit" onClick={handleDismiss}>
+              {i18nText("removed:m_9d266034865ee62f7942")}
+            </Button></Box>
+        )}</Alert></Snackbar>
   );
 }

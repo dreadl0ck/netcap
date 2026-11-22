@@ -22,6 +22,10 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import { keyframes } from '@mui/material/styles';
+import { translate as i18nText, useLocale as useUILocale } from "../lib/i18n";
+import { translate } from "../lib/i18n";
+
+
 
 // Keyframe animations
 const pulseGlow = keyframes`
@@ -93,17 +97,17 @@ export interface ConnectionOverlayProps {
  */
 export function ConnectionOverlay({ 
   visible, 
-  message = 'Connecting to NETCAP...', 
+  message = translate("ui:m_bc198c1636df61076c18"), 
   subMessage,
   logoSrc = '/logo.png',
 }: ConnectionOverlayProps) {
+  const __uiLocale = useUILocale();
   if (!visible) {
     return null;
   }
 
   return (
-    <Box
-      sx={{
+    <Box sx={{
         position: 'fixed',
         top: 0,
         left: 0,
@@ -114,14 +118,12 @@ export function ConnectionOverlay({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#0a0a0f',
+        backgroundColor: 'background.default',
+        color: 'text.primary',
+        '@media (prefers-reduced-motion: reduce)': { '&, & *': { animation: 'none !important' } },
         animation: `${fadeIn} 0.3s ease-out`,
         overflow: 'hidden',
-      }}
-    >
-      {/* Animated background pattern */}
-      <Box
-        sx={{
+      }}>{/* Animated background pattern */}<Box sx={{
           position: 'absolute',
           top: 0,
           left: 0,
@@ -136,12 +138,7 @@ export function ConnectionOverlay({
           backgroundSize: '100% 100%, 100% 100%, 80px 80px, 80px 80px',
           animation: `${circuitPulse} 4s ease-in-out infinite`,
           pointerEvents: 'none',
-        }}
-      />
-
-      {/* Scan line effect */}
-      <Box
-        sx={{
+        }} />{/* Scan line effect */}<Box sx={{
           position: 'absolute',
           top: 0,
           left: 0,
@@ -150,12 +147,7 @@ export function ConnectionOverlay({
           background: 'linear-gradient(90deg, transparent, rgba(0, 188, 212, 0.5), transparent)',
           animation: `${scanLine} 3s linear infinite`,
           pointerEvents: 'none',
-        }}
-      />
-
-      {/* Content container */}
-      <Box
-        sx={{
+        }} />{/* Content container */}<Box sx={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -163,108 +155,60 @@ export function ConnectionOverlay({
           gap: 4,
           animation: `${slideUp} 0.5s ease-out`,
           zIndex: 1,
-        }}
-      >
-        {/* Logo with glow effect */}
-        <Box
-          component="img"
+        }}>{/* Logo with glow effect */}<Box component="img"
           src={logoSrc}
-          alt="NETCAP"
+          alt={i18nText("ui:m_ea2e676ada9c9f5a76bf")}
           sx={{
             width: { xs: '280px', sm: '400px', md: '500px' },
             height: 'auto',
             animation: `${pulseGlow} 3s ease-in-out infinite`,
             userSelect: 'none',
             pointerEvents: 'none',
-          }}
-        />
-
-        {/* Spinner and message container */}
-        <Box
-          sx={{
+          }} />{/* Spinner and message container */}<Box sx={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             gap: 2,
             mt: 2,
-          }}
-        >
-          {/* Custom styled spinner */}
-          <Box
-            sx={{
+          }}>{/* Custom styled spinner */}<Box sx={{
               position: 'relative',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-            }}
-          >
-            {/* Outer ring */}
-            <CircularProgress
-              size={60}
+            }}>{/* Outer ring */}<CircularProgress size={60}
               thickness={2}
               sx={{
                 color: 'rgba(0, 188, 212, 0.2)',
               }}
               variant="determinate"
-              value={100}
-            />
-            {/* Animated inner spinner */}
-            <CircularProgress
-              size={60}
+              value={100} />{/* Animated inner spinner */}<CircularProgress size={60}
               thickness={2}
               sx={{
                 position: 'absolute',
-                color: '#00bcd4',
+                 color: 'info.main',
                 animationDuration: '1.2s',
-              }}
-            />
-            {/* Center dot */}
-            <Box
-              sx={{
+              }} />{/* Center dot */}<Box sx={{
                 position: 'absolute',
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                backgroundColor: '#00bcd4',
+                backgroundColor: 'info.main',
                 boxShadow: '0 0 10px rgba(0, 188, 212, 0.8), 0 0 20px rgba(0, 188, 212, 0.4)',
-              }}
-            />
-          </Box>
-
-          {/* Loading message */}
-          <Typography
-            variant="body1"
+              }} /></Box>{/* Loading message */}<Typography variant="body1"
             sx={{
-              color: '#00bcd4',
+              color: 'info.main',
               fontWeight: 500,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
               textAlign: 'center',
-              textShadow: '0 0 10px rgba(0, 188, 212, 0.5)',
-            }}
-          >
-            {message}
-          </Typography>
-
-          {/* Sub-message */}
-          {subMessage && (
-            <Typography
-              variant="body2"
+            }}>{message}</Typography>{/* Sub-message */}{subMessage && (
+            <Typography variant="body2"
               sx={{
-                color: 'rgba(255, 255, 255, 0.5)',
+                color: 'text.secondary',
                 textAlign: 'center',
                 maxWidth: '400px',
-              }}
-            >
-              {subMessage}
-            </Typography>
-          )}
-        </Box>
-      </Box>
-
-      {/* Bottom gradient fade */}
-      <Box
-        sx={{
+              }}>{subMessage}</Typography>
+          )}</Box></Box>{/* Bottom gradient fade */}<Box sx={{
           position: 'absolute',
           bottom: 0,
           left: 0,
@@ -272,11 +216,8 @@ export function ConnectionOverlay({
           height: '100px',
           background: 'linear-gradient(to top, rgba(0, 188, 212, 0.05), transparent)',
           pointerEvents: 'none',
-        }}
-      />
-    </Box>
+        }} /></Box>
   );
 }
 
 export default ConnectionOverlay;
-

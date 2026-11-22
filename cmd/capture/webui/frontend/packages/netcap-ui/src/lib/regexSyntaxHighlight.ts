@@ -18,6 +18,7 @@
  */
 
 import { escapeHTML } from './html';
+import { appearanceTokens, type AppearanceMode } from './appearance';
 
 /**
  * Syntax highlighting for Regular Expression patterns
@@ -43,7 +44,8 @@ export interface RegexToken {
 /**
  * Tokenize and highlight a regex pattern
  */
-export function highlightRegexPattern(pattern: string): RegexToken[] {
+export function highlightRegexPattern(pattern: string, mode: AppearanceMode = 'dark'): RegexToken[] {
+  const colors = appearanceTokens(mode).syntax;
   if (!pattern) {
     return [];
   }
@@ -58,7 +60,7 @@ export function highlightRegexPattern(pattern: string): RegexToken[] {
     if (pattern.substr(i, 2) === '(?') {
       const flagMatch = pattern.substr(i).match(/^\(\?[imsxUXJ]+\)/);
       if (flagMatch) {
-        tokens.push({ type: 'flag', value: flagMatch[0], color: '#c586c0' }); // Purple
+        tokens.push({ type: 'flag', value: flagMatch[0], color: colors.keyword });
         i += flagMatch[0].length;
         matched = true;
       }
@@ -85,7 +87,7 @@ export function highlightRegexPattern(pattern: string): RegexToken[] {
         }
         j++;
       }
-      tokens.push({ type: 'charclass', value: pattern.substring(i, j), color: '#4ec9b0' }); // Teal
+      tokens.push({ type: 'charclass', value: pattern.substring(i, j), color: colors.number });
       i = j;
       matched = true;
     }
@@ -94,7 +96,7 @@ export function highlightRegexPattern(pattern: string): RegexToken[] {
     if (!matched && pattern[i] === '\\' && i + 3 < pattern.length && pattern[i + 1] === 'x') {
       const hexMatch = pattern.substr(i).match(/^\\x[0-9A-Fa-f]{2}/);
       if (hexMatch) {
-        tokens.push({ type: 'hex', value: hexMatch[0], color: '#ce9178' }); // Orange
+        tokens.push({ type: 'hex', value: hexMatch[0], color: colors.string });
         i += hexMatch[0].length;
         matched = true;
       }
@@ -104,7 +106,7 @@ export function highlightRegexPattern(pattern: string): RegexToken[] {
     if (!matched && pattern[i] === '\\' && i + 3 < pattern.length) {
       const octalMatch = pattern.substr(i).match(/^\\[0-7]{3}/);
       if (octalMatch) {
-        tokens.push({ type: 'octal', value: octalMatch[0], color: '#ce9178' }); // Orange
+        tokens.push({ type: 'octal', value: octalMatch[0], color: colors.string });
         i += octalMatch[0].length;
         matched = true;
       }
@@ -114,7 +116,7 @@ export function highlightRegexPattern(pattern: string): RegexToken[] {
     if (!matched && pattern[i] === '\\' && i + 1 < pattern.length) {
       const escapeMatch = pattern.substr(i).match(/^\\[wWdDsSnrtbBAfvP]/);
       if (escapeMatch) {
-        tokens.push({ type: 'escape', value: escapeMatch[0], color: '#b5cea8' }); // Light green
+        tokens.push({ type: 'escape', value: escapeMatch[0], color: colors.number });
         i += escapeMatch[0].length;
         matched = true;
       }
@@ -122,14 +124,14 @@ export function highlightRegexPattern(pattern: string): RegexToken[] {
 
     // Escaped backslash \\
     if (!matched && pattern.substr(i, 2) === '\\\\') {
-      tokens.push({ type: 'escape', value: '\\\\', color: '#b5cea8' }); // Light green
+      tokens.push({ type: 'escape', value: '\\\\', color: colors.number });
       i += 2;
       matched = true;
     }
 
     // Other escape sequences (generic)
     if (!matched && pattern[i] === '\\' && i + 1 < pattern.length) {
-      tokens.push({ type: 'escape', value: pattern.substr(i, 2), color: '#b5cea8' }); // Light green
+      tokens.push({ type: 'escape', value: pattern.substr(i, 2), color: colors.number });
       i += 2;
       matched = true;
     }
@@ -138,7 +140,7 @@ export function highlightRegexPattern(pattern: string): RegexToken[] {
     if (!matched && pattern[i] === '$' && i + 1 < pattern.length && /\d/.test(pattern[i + 1])) {
       const backrefMatch = pattern.substr(i).match(/^\$\d+/);
       if (backrefMatch) {
-        tokens.push({ type: 'backref', value: backrefMatch[0], color: '#dcdcaa' }); // Yellow
+        tokens.push({ type: 'backref', value: backrefMatch[0], color: colors.function });
         i += backrefMatch[0].length;
         matched = true;
       }
@@ -146,7 +148,7 @@ export function highlightRegexPattern(pattern: string): RegexToken[] {
 
     // Anchors ^ and $ (only $ if not followed by digit - that's a backref)
     if (!matched && (pattern[i] === '^' || (pattern[i] === '$' && (i + 1 >= pattern.length || !/\d/.test(pattern[i + 1]))))) {
-      tokens.push({ type: 'anchor', value: pattern[i], color: '#569cd6' }); // Blue
+      tokens.push({ type: 'anchor', value: pattern[i], color: colors.key });
       i += 1;
       matched = true;
     }
@@ -157,16 +159,16 @@ export function highlightRegexPattern(pattern: string): RegexToken[] {
       if (pattern[i] === '{') {
         const quantMatch = pattern.substr(i).match(/^\{[0-9,]*\}/);
         if (quantMatch) {
-          tokens.push({ type: 'quantifier', value: quantMatch[0], color: '#f44336' }); // Red
+          tokens.push({ type: 'quantifier', value: quantMatch[0], color: colors.error });
           i += quantMatch[0].length;
           matched = true;
         } else {
-          tokens.push({ type: 'quantifier', value: pattern[i], color: '#f44336' }); // Red
+          tokens.push({ type: 'quantifier', value: pattern[i], color: colors.error });
           i += 1;
           matched = true;
         }
       } else {
-        tokens.push({ type: 'quantifier', value: pattern[i], color: '#f44336' }); // Red
+        tokens.push({ type: 'quantifier', value: pattern[i], color: colors.error });
         i += 1;
         matched = true;
       }
@@ -174,21 +176,21 @@ export function highlightRegexPattern(pattern: string): RegexToken[] {
 
     // Groups (
     if (!matched && pattern[i] === '(' && !(i + 1 < pattern.length && pattern[i + 1] === '?')) {
-      tokens.push({ type: 'group', value: '(', color: '#ffd700' }); // Gold
+      tokens.push({ type: 'group', value: '(', color: colors.operator });
       i += 1;
       matched = true;
     }
 
     // Groups )
     if (!matched && pattern[i] === ')') {
-      tokens.push({ type: 'group', value: ')', color: '#ffd700' }); // Gold
+      tokens.push({ type: 'group', value: ')', color: colors.operator });
       i += 1;
       matched = true;
     }
 
     // Default: plain text
     if (!matched) {
-      tokens.push({ type: 'text', value: pattern[i], color: '#d4d4d4' }); // Light gray
+      tokens.push({ type: 'text', value: pattern[i], color: colors.text });
       i += 1;
     }
   }
@@ -209,5 +211,4 @@ export function regexTokensToHTML(tokens: RegexToken[]): string {
     })
     .join('');
 }
-
 

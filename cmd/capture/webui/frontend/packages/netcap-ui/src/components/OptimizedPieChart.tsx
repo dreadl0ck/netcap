@@ -18,6 +18,8 @@
  */
 
 import { useEffect, useRef } from 'react';
+import { useTheme } from '@mui/material/styles';
+import { appearanceTokens } from '../lib/appearance';
 import * as echarts from 'echarts/core';
 import { PieChart } from 'echarts/charts';
 import {
@@ -26,6 +28,8 @@ import {
   LegendComponent,
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
+import { useLocale as useUILocale } from "../lib/i18n";
+
 
 // Register only the components we need
 echarts.use([
@@ -48,9 +52,9 @@ interface OptimizedPieChartProps {
   onItemClick?: (params: PieChartClickParams) => void;
 }
 
-const netcapChartColors = ['#3b82f6', '#8b5cf6', '#38bdf8', '#a78bfa', '#34d399', '#fbbf24'];
-
 export default function OptimizedPieChart({ option, style, onItemClick }: OptimizedPieChartProps) {
+  const __uiLocale = useUILocale();
+  const colors = appearanceTokens(useTheme().palette.mode);
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<echarts.ECharts | null>(null);
   const onItemClickRef = useRef(onItemClick);
@@ -65,16 +69,8 @@ export default function OptimizedPieChart({ option, style, onItemClick }: Optimi
 
     // Initialize chart if not exists
     if (!chartInstanceRef.current) {
-      chartInstanceRef.current = echarts.init(chartRef.current, 'dark');
+      chartInstanceRef.current = echarts.init(chartRef.current);
     }
-
-    chartInstanceRef.current.setOption({
-      color: netcapChartColors,
-      backgroundColor: '#050508',
-      textStyle: { color: '#f4f7fb' },
-      legend: { textStyle: { color: '#9199ad' } },
-    });
-    chartInstanceRef.current.setOption(option);
 
     // Add click handler
     const handleClick = (params: echarts.ECElementEvent) => {
@@ -95,7 +91,29 @@ export default function OptimizedPieChart({ option, style, onItemClick }: Optimi
       chartInstanceRef.current?.dispose();
       chartInstanceRef.current = null;
     };
+  }, []);
+
+  useEffect(() => {
+    chartInstanceRef.current?.setOption(option);
   }, [option]);
+
+  useEffect(() => {
+    const chart = chartInstanceRef.current;
+    if (!chart) return;
+    chart.setOption({
+      color: [...colors.series],
+      backgroundColor: colors.canvas,
+      textStyle: { color: colors.text },
+      title: { textStyle: { color: colors.text }, subtextStyle: { color: colors.muted } },
+      legend: { textStyle: { color: colors.muted }, inactiveColor: colors.muted, pageTextStyle: { color: colors.text }, pageIconColor: colors.muted, pageIconInactiveColor: colors.border },
+      tooltip: { backgroundColor: colors.surface, borderColor: colors.border, textStyle: { color: colors.text } },
+      series: (Array.isArray(option.series) ? option.series : option.series ? [option.series] : []).map(() => ({
+        label: { color: colors.text }, labelLine: { lineStyle: { color: colors.muted } },
+        itemStyle: { borderColor: colors.canvas, borderWidth: 2 },
+        emphasis: { label: { color: colors.text } },
+      })),
+    });
+  }, [option, colors]);
 
   // Handle resize
   useEffect(() => {
@@ -103,9 +121,11 @@ export default function OptimizedPieChart({ option, style, onItemClick }: Optimi
       chartInstanceRef.current?.resize();
     };
 
+    const observer = new ResizeObserver(handleResize);
+    if (chartRef.current) observer.observe(chartRef.current);
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => { observer.disconnect(); window.removeEventListener('resize', handleResize); };
   }, []);
 
-  return <div ref={chartRef} style={{ backgroundColor: '#050508', cursor: onItemClick ? 'pointer' : 'default', ...style }} />;
+  return <div ref={chartRef} style={{ backgroundColor: colors.canvas, cursor: onItemClick ? 'pointer' : 'default', ...style }} />;
 }

@@ -1,0 +1,738 @@
+[
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/src/main.tsx",
+    "line": 52,
+    "key": "ui:m_fcbfa48630bb9da9dd67",
+    "source": "Interfaces",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/src/main.tsx",
+    "line": 55,
+    "key": "removed:m_a79d0e183822603ed937",
+    "source": "View available network interfaces for live packet capture and monitoring.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/src/main.tsx",
+    "line": 59,
+    "key": "removed:m_cf9dce7499c811b57829",
+    "source": "YARA Rules",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/src/main.tsx",
+    "line": 62,
+    "key": "removed:m_adc094ed9b798984d1a5",
+    "source": "YARA Rules: Upload and manage YARA rules, scan extracted files for malware signatures.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/src/main.tsx",
+    "line": 66,
+    "key": "ui:m_b4739643390a95034a2b",
+    "source": "Inject",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/src/main.tsx",
+    "line": 69,
+    "key": "removed:m_98c67498be4fbf75e9c6",
+    "source": "Configure packet injection and manipulation rules.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/src/main.tsx",
+    "line": 73,
+    "key": "ui:m_b9ca438f78bcafc385f9",
+    "source": "Databases",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/src/main.tsx",
+    "line": 76,
+    "key": "removed:m_0e205576af237aac017c",
+    "source": "Manage GeoIP, vulnerability, and MAC vendor databases.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/src/main.tsx",
+    "line": 80,
+    "key": "ui:m_3311da97420973490c35",
+    "source": "DPI",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/src/main.tsx",
+    "line": 83,
+    "key": "removed:m_feb89cb279b66f6b3237",
+    "source": "Configure Deep Packet Inspection modules.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/src/main.tsx",
+    "line": 87,
+    "key": "ui:m_3d53ce1688d1bda2d5f7",
+    "source": "Service Signatures",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/src/main.tsx",
+    "line": 90,
+    "key": "removed:m_d3b4cb02d877962af33e",
+    "source": "Inspect read-only protocol signatures, source evidence and capture coverage.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/src/main.tsx",
+    "line": 335,
+    "key": "ui:m_fa0a485a28afedba904d",
+    "source": "Drop PCAP files anywhere to upload",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/src/main.tsx",
+    "line": 338,
+    "key": "ui:m_15977a91b38842e08835",
+    "source": "Supported formats: .pcap, .pcapng, .cap",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 416,
+    "key": "ui:m_c13cc7f2f491b5861178",
+    "source": "Workspace",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 420,
+    "key": "ui:m_bbe1be8fc7cedc15745d",
+    "source": "Dashboard: Overview of system status, processing statistics, and quick access to key metrics.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 426,
+    "key": "ui:m_4030128748ac546a3cc2",
+    "source": "Dashboard",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 432,
+    "key": "ui:m_85869192e469ae951a21",
+    "source": "Analyze: Upload and process PCAP files to extract network traffic information and generate audit records.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 438,
+    "key": "ui:m_f8a423e7979b57fdccd3",
+    "source": "Analyze",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 445,
+    "key": "ui:m_b7b2320b5d011db35f6f",
+    "source": "Manage uploaded packet capture files, view processing status, and download results.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 458,
+    "key": "ui:m_67752cb01f4d1ab7b7ca",
+    "source": "PCAPs",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 461,
+    "key": "ui:m_d8be942f823267b25965",
+    "source": "main",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 462,
+    "key": "ui:m_b18fb4d194192fdc9014",
+    "source": "Investigation",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 465,
+    "key": "ui:m_63b286b156c5313051a6",
+    "source": "Data: Access network traffic data including audit records, visualizations, hosts, devices, connections, and more.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 471,
+    "key": "ui:m_6bf01490b88c2c37ecfe",
+    "source": "Data",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 479,
+    "key": "ui:m_e6c0f07c71dc3bc4eb37",
+    "source": "Records: Explore detailed network traffic records organized by protocol type with advanced filtering.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 487,
+    "key": "ui:m_414eb95bad5754049d47",
+    "source": "Records",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 493,
+    "key": "ui:m_25b7d184812a67baaa29",
+    "source": "Explore: Create custom charts and time-series visualizations of audit record fields.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 499,
+    "key": "ui:m_29a8a9d5e1d2154e8a3f",
+    "source": "Explore",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 505,
+    "key": "ui:m_9adc733d87567c1fc2fe",
+    "source": "Visualize: Interactive protocol hierarchy flow diagram showing network traffic relationships.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 511,
+    "key": "ui:m_35fc9c3d21026f579145",
+    "source": "Visualize",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 518,
+    "key": "ui:m_c59fe74dfc6a3a5a7ebe",
+    "source": "Hosts: Browse discovered network hosts with geolocation, device profiles, and communication patterns.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 526,
+    "key": "ui:m_74ae2e341e215c830a8f",
+    "source": "Hosts",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 532,
+    "key": "ui:m_cf65cdef64945b4b165a",
+    "source": "Devices: View hardware devices identified by MAC addresses, vendors, and network layer information.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 540,
+    "key": "ui:m_96f53788dbcf443fbaab",
+    "source": "Devices",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 546,
+    "key": "ui:m_2b83b03cf5654dff90f7",
+    "source": "Connections: View network connections with protocol analysis, traffic statistics, and flow information.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 554,
+    "key": "ui:m_e2895a1bb90a495f91fe",
+    "source": "Connections",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 559,
+    "key": "ui:m_f37ff098317017d02ecd",
+    "source": "Investigation evidence",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 565,
+    "key": "ui:m_f449ee1d1ed0bc11ef46",
+    "source": "HTTP: View HTTP requests and responses with headers, status codes, URLs, and content information.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 579,
+    "key": "ui:m_d6f1571a3ea63c126db8",
+    "source": "Certificates: View TLS/SSL certificates with subject, issuer, expiration status, and security information.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 587,
+    "key": "ui:m_d600f8703e15ddbf7363",
+    "source": "Certificates",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 593,
+    "key": "ui:m_12ca1f0cae26cb1954cb",
+    "source": "Secrets: View captured secrets from network traffic.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 601,
+    "key": "ui:m_e07371b6b8d7ea089087",
+    "source": "Secrets",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 607,
+    "key": "ui:m_10efcac54baaa996a2e1",
+    "source": "Services: View discovered network services with protocol detection and version information.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 615,
+    "key": "ui:m_c38f6f95f9a323ed3103",
+    "source": "Services",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 621,
+    "key": "ui:m_20522a2690b268e70d0a",
+    "source": "Domains: View DNS domains discovered in traffic with query statistics.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 629,
+    "key": "ui:m_ef349205fde9161a7005",
+    "source": "Domains",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 635,
+    "key": "ui:m_c35bb18ad5afe0384c79",
+    "source": "Fingerprints: View device and application fingerprints including JA3, HASSH, and DHCP.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 643,
+    "key": "ui:m_919292d9354daf5b36fd",
+    "source": "Fingerprints",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 649,
+    "key": "ui:m_c93753830c5868190125",
+    "source": "Software: Browse detected software products, versions, and operating systems.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 657,
+    "key": "ui:m_99c431556bb898cfc4c6",
+    "source": "Software",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 663,
+    "key": "ui:m_9d5f0586ccdeb18526d3",
+    "source": "Vulnerabilities: Review discovered vulnerabilities with severity ratings.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 671,
+    "key": "ui:m_dcd77622dbed6480723d",
+    "source": "Vulnerabilities",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 676,
+    "key": "ui:m_70e3a8497c65f113d83e",
+    "source": "Behavior",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 682,
+    "key": "ui:m_a100a236b48f4cd4f1bf",
+    "source": "Alerts: Review security alerts triggered by detection rules.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 690,
+    "key": "ui:m_451e6181764a06e7c139",
+    "source": "Alerts",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 696,
+    "key": "ui:m_4edcb49a9e014f53b74e",
+    "source": "Files: Access files extracted from network streams.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 704,
+    "key": "ui:m_9398bbdae27b6b92fc35",
+    "source": "Files",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 711,
+    "key": "ui:m_c698f89c15cbe754d326",
+    "source": "Logs: View system logs and processing information.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 719,
+    "key": "ui:m_7ac9f812f77b5c758026",
+    "source": "Logs",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 724,
+    "key": "ui:m_39e52180d3238574df12",
+    "source": "Detection",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 728,
+    "key": "ui:m_3a6755e0c141ac27e3e7",
+    "source": "Create and manage detection rules using expression-based filtering.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 734,
+    "key": "ui:m_0669d31220e647cb9221",
+    "source": "Rules",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 740,
+    "key": "ui:m_d66751d0f3f67b3806b4",
+    "source": "Organize detection rules into collections for different security scenarios.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 746,
+    "key": "ui:m_8946156de4df831b89d7",
+    "source": "Rule Sets",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 750,
+    "key": "ui:m_954bcd2e896b0f9c8a6e",
+    "source": "System",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 755,
+    "key": "ui:m_0385e547a6f1be78b27b",
+    "source": "Enable or disable packet and stream decoders.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 761,
+    "key": "ui:m_307fc00184a143bc2caf",
+    "source": "Decoders",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 767,
+    "key": "ui:m_e2a5fd542cf9dbd6dd5b",
+    "source": "Protobuf Schemas: Manage .proto schema files for decoding Protocol Buffer traffic.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 773,
+    "key": "ui:m_da874ae5c84c3206a7c3",
+    "source": "Protobuf Schemas",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 779,
+    "key": "ui:m_4b6aac18b0a555c77786",
+    "source": "View credential harvesters that extract authentication data.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 785,
+    "key": "ui:m_2f80516d3bda9272bf5b",
+    "source": "Harvesters",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 792,
+    "key": "ui:m_1115ed273719cb46a1eb",
+    "source": "Apply Berkeley Packet Filter expressions to capture specific traffic.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 798,
+    "key": "ui:m_8f3130ed6e47222d67ae",
+    "source": "BPF Filters",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 804,
+    "key": "ui:m_2edb784808b2a8519d04",
+    "source": "Review processing errors and troubleshooting information.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 810,
+    "key": "ui:m_d9848a7771a0b909a46e",
+    "source": "Errors",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 816,
+    "key": "ui:m_46759a40d16dae643ecb",
+    "source": "Adjust system configuration settings.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 822,
+    "key": "ui:m_0114c9faec2c72b9f502",
+    "source": "Config",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 825,
+    "key": "ui:m_94bf3c3a2631f97fee02",
+    "source": "settings",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 850,
+    "key": "ui:m_32aaa1508b5cb6cf50cf",
+    "source": "Documentation: Open the official Netcap documentation.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 856,
+    "key": "ui:m_c89ba1325ff2fd81112d",
+    "source": "Documentation",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 861,
+    "key": "ui:m_b6f2aa96ed1b7f41038a",
+    "source": "GitHub Repository: View the Netcap source code.",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 867,
+    "key": "ui:m_f40bbb8a54a9a01da6b4",
+    "source": "GitHub Repository",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 899,
+    "key": "ui:m_4b83ffaf5ad82d0a95c3",
+    "source": "open drawer",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 911,
+    "key": "ui:m_84f302e4b8334def65bd",
+    "source": "Network traffic intelligence",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 933,
+    "key": "ui:m_aad259ea51acd2ceaa33",
+    "source": "Exit fullscreen",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 933,
+    "key": "ui:m_a46018d99bfca0fd487a",
+    "source": "Enter fullscreen",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 934,
+    "key": "ui:m_aad259ea51acd2ceaa33",
+    "source": "Exit fullscreen",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 934,
+    "key": "ui:m_a46018d99bfca0fd487a",
+    "source": "Enter fullscreen",
+    "params": []
+  },
+  {
+    "repo": "netcap",
+    "file": "cmd/capture/webui/frontend/packages/netcap-ui/src/components/Layout.tsx",
+    "line": 957,
+    "key": "ui:m_f4ab66c1cc6b8f197855",
+    "source": "navigation",
+    "params": []
+  },
+  {
+    "repo": "netcap-pro",
+    "file": "frontend/src/main.tsx",
+    "line": 232,
+    "key": "ui:m_fa0a485a28afedba904d",
+    "source": "Drop PCAP files anywhere to upload",
+    "params": []
+  },
+  {
+    "repo": "netcap-pro",
+    "file": "frontend/src/main.tsx",
+    "line": 235,
+    "key": "ui:m_15977a91b38842e08835",
+    "source": "Supported formats: .pcap, .pcapng, .cap",
+    "params": []
+  }
+]

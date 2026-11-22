@@ -53,12 +53,27 @@ import Layout from '../components/Layout';
 import ResponsiveDataView from '../components/ResponsiveDataView';
 import { ErrorLogInfo, AggregatedError, formatBytes } from '../lib/api';
 import { useNetcapApi, useIsMobile } from '../hooks';
-import useSWR from 'swr';
+
+import { translate as i18nText, richText as i18nRichText, getLocale as getUILocale, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR } from "../lib/i18n";
+import { renderError } from "../lib/i18n";
+import { type MessageText, message } from "../lib/i18n";
+import { renderText } from "../lib/i18n";
+import { rawCode } from "../lib/i18n";
+import { message as i18nParameterMessage } from "../lib/i18n";
+
+
+
+
+
+
+
 
 type SortField = 'errorCount' | 'inputFilename' | 'inputFileSize';
 type SortOrder = 'asc' | 'desc';
 
 export default function ErrorsPage() {
+  const __uiLocale = useUILocale();
   const api = useNetcapApi();
   const isMobile = useIsMobile();
   const [page, setPage] = useState(0);
@@ -67,7 +82,7 @@ export default function ErrorsPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [selectedError, setSelectedError] = useState<ErrorLogInfo | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [errorLogContent, setErrorLogContent] = useState<string>('');
+  const [errorLogContent, setErrorLogContent] = useState<MessageText>('');
   const [loadingContent, setLoadingContent] = useState(false);
   const [aggregatedDialogOpen, setAggregatedDialogOpen] = useState(false);
   const [aggregatedErrors, setAggregatedErrors] = useState<AggregatedError[]>([]);
@@ -155,7 +170,7 @@ export default function ErrorsPage() {
       const content = await api.getErrorLogContent(identifier);
       setErrorLogContent(content);
     } catch (err) {
-      setErrorLogContent(`Failed to load error log: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setErrorLogContent(message("ui:m_c0073d3f519362353d3f", { arg0: err instanceof Error ? err.message : i18nParameterMessage("ui:m_3f0f714149c18490a32b") }));
     } finally {
       setLoadingContent(false);
     }
@@ -188,88 +203,50 @@ export default function ErrorsPage() {
   };
 
   return (
-    <Layout title="Capture Errors">
-      <Box sx={{ minWidth: 0 }}>
-        <Box sx={{ 
+    <Layout title={i18nText("ui:m_bf5fde1e287cc132b8e5")}><Box sx={{ minWidth: 0 }}><Box sx={{ 
           display: 'flex', 
           flexDirection: { xs: 'column', sm: 'row' },
           justifyContent: 'space-between', 
           alignItems: { xs: 'stretch', sm: 'center' }, 
           gap: 2,
           mb: 3 
-        }}>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="body1" fontWeight="medium">
-              {sortedErrorLogs.length} capture file{sortedErrorLogs.length !== 1 ? 's' : ''} with errors
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              Showing capture files that have errors recorded in their errors.log files
-            </Typography>
-          </Box>
-          <Button 
-            data-learn="Refresh Error Logs: Reload the list of captures with errors to check for new error logs."
+        }}><Box sx={{ flex: 1 }}><Typography variant="body1" fontWeight="medium">
+              {i18nRichText("ui:m_0465bb176cb25c88ae4b", { arg0: sortedErrorLogs.length })}
+            </Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {i18nText("ui:m_26aa67d3f6638911f565")}
+            </Typography></Box><Button data-learn={i18nText("ui:m_359ef4fc88dc2363b96f")}
             variant="outlined" 
             startIcon={<RefreshIcon />} 
             onClick={handleRefresh}
             size="small"
-            sx={{ alignSelf: { xs: 'stretch', sm: 'center' } }}
-          >
-            Refresh
-          </Button>
-        </Box>
-
-        {error && (
+            sx={{ alignSelf: { xs: 'stretch', sm: 'center' } }}>
+            {i18nText("ui:m_230fc1b63eb3ef4e6a34")}
+          </Button></Box>{error && (
           <MuiAlert severity="error" sx={{ mb: 2 }}>
-            Failed to load error logs: {error.message}
+            {i18nRichText("ui:m_8877debfa475cbdddcd5", { arg0: renderError(error) })}
           </MuiAlert>
-        )}
-
-        {!errorLogs && !error && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
-        )}
-
-        {errorLogs && (
-          <>
-            {/* Summary Card */}
-            {sortedErrorLogs.length > 0 && (
-              <Card sx={{ mb: 3 }}>
-                <CardContent>
-                  <Box sx={{ 
+        )}{!errorLogs && !error && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
+        )}{errorLogs && (
+          <>{/* Summary Card */}{sortedErrorLogs.length > 0 && (
+              <Card sx={{ mb: 3 }}><CardContent><Box sx={{ 
                     display: 'flex', 
                     flexDirection: { xs: 'column', sm: 'row' },
                     justifyContent: 'space-between', 
                     alignItems: { xs: 'stretch', sm: 'center' },
                     gap: 2
-                  }}>
-                    <Box>
-                      <Typography color="text.secondary" gutterBottom>
-                        Total Errors Across All Captures
-                      </Typography>
-                      <Typography variant="h4" color="error">
-                        {sortedErrorLogs.reduce((sum, log) => sum + log.errorCount, 0).toLocaleString()}
-                      </Typography>
-                    </Box>
-                    <Button
-                      data-learn="Show All Errors: View a consolidated list of all unique errors across all captures, sorted by frequency."
+                  }}><Box><Typography color="text.secondary" gutterBottom>
+                        {i18nText("ui:m_5f38ca429e0800db468b")}
+                      </Typography><Typography variant="h4" color="error">{sortedErrorLogs.reduce((sum, log) => sum + log.errorCount, 0).toLocaleString(getUILocale())}</Typography></Box><Button data-learn={i18nText("ui:m_357df286c9305b3832c2")}
                       variant="contained"
                       startIcon={<AssessmentIcon />}
                       onClick={handleShowAggregated}
                       size="small"
                       sx={{ height: 'fit-content' }}
-                      fullWidth={false}
-                    >
-                      Show All Errors
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Errors Table */}
-            <ResponsiveDataView
-              data={paginatedErrorLogs}
+                      fullWidth={false}>
+                      {i18nText("ui:m_acce15e9fe572e2c8190")}
+                    </Button></Box></CardContent></Card>
+            )}{/* Errors Table */}<ResponsiveDataView data={paginatedErrorLogs}
               totalCount={sortedErrorLogs.length}
               page={page}
               rowsPerPage={rowsPerPage}
@@ -278,12 +255,7 @@ export default function ErrorsPage() {
               rowsPerPageOptions={[10, 25, 50, 100]}
               onCardClick={(errorLog: ErrorLogInfo) => handleViewErrors(errorLog)}
               renderCard={(errorLog: ErrorLogInfo) => (
-                <Card variant="outlined">
-                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <ErrorIcon color="error" fontSize="small" sx={{ flexShrink: 0 }} />
-                      <Typography
-                        variant="subtitle2"
+                <Card variant="outlined"><CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}><ErrorIcon color="error" fontSize="small" sx={{ flexShrink: 0 }} /><Typography variant="subtitle2"
                         sx={{
                           fontFamily: 'monospace',
                           fontSize: '0.8rem',
@@ -291,82 +263,35 @@ export default function ErrorsPage() {
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                           flex: 1,
-                        }}
-                      >
-                        {errorLog.inputFilename}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Size: {formatBytes(errorLog.inputFileSize)}
-                      </Typography>
-                      <Chip
-                        label={`${errorLog.errorCount.toLocaleString()} errors`}
+                        }}>{errorLog.inputFilename}</Typography></Box><Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}><Typography variant="caption" color="text.secondary">
+                        {i18nRichText("ui:m_17039e3355ec467a7598", { arg0: formatBytes(errorLog.inputFileSize) })}
+                      </Typography><Chip label={i18nText("ui:m_6c98ad8b9a74389a1795", { arg0: errorLog.errorCount })}
                         size="small"
                         color="error"
-                        sx={{ fontWeight: 'bold' }}
-                      />
-                    </Box>
-                  </CardContent>
-                </Card>
+                        sx={{ fontWeight: 'bold' }} /></Box></CardContent></Card>
               )}
-              desktopTable={
-            <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
-              <Table sx={{ minWidth: { xs: 600, md: 'auto' } }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>
-                      <TableSortLabel
-                        active={sortField === 'inputFilename'}
+              desktopTable={<TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}><Table sx={{ minWidth: { xs: 600, md: 'auto' } }}><TableHead><TableRow><TableCell><TableSortLabel active={sortField === 'inputFilename'}
                         direction={sortField === 'inputFilename' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('inputFilename')}
-                      >
-                        Capture File
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
-                      <TableSortLabel
-                        active={sortField === 'inputFileSize'}
+                        onClick={() => handleSort('inputFilename')}>
+                        {i18nText("ui:m_14abb320dab59e7a0668")}
+                      </TableSortLabel></TableCell><TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}><TableSortLabel active={sortField === 'inputFileSize'}
                         direction={sortField === 'inputFileSize' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('inputFileSize')}
-                      >
-                        File Size
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell>
-                      <TableSortLabel
-                        active={sortField === 'errorCount'}
+                        onClick={() => handleSort('inputFileSize')}>
+                        {i18nText("ui:m_9f6d1222a5b4e2fbbf4d")}
+                      </TableSortLabel></TableCell><TableCell><TableSortLabel active={sortField === 'errorCount'}
                         direction={sortField === 'errorCount' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('errorCount')}
-                      >
-                        Error Count
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedErrorLogs.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} align="center">
-                        <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                          No capture files with errors found. Errors will appear here when packet decoding issues occur.
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
+                        onClick={() => handleSort('errorCount')}>
+                        {i18nText("ui:m_01f10ea0c23b439df3f0")}
+                      </TableSortLabel></TableCell><TableCell>{i18nText("ui:m_8b59af6a47204b74041c")}</TableCell></TableRow></TableHead><TableBody>{paginatedErrorLogs.length === 0 ? (
+                    <TableRow><TableCell colSpan={4} align="center"><Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
+                          {i18nText("ui:m_28448b4e5bc137e2a661")}
+                        </Typography></TableCell></TableRow>
                   ) : (
                     paginatedErrorLogs.map((errorLog) => (
-                      <TableRow 
-                        key={errorLog.inputFilename} 
+                      <TableRow key={errorLog.inputFilename} 
                         hover 
                         onClick={() => handleViewErrors(errorLog)}
-                        sx={{ cursor: 'pointer' }}
-                      >
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-                            <ErrorIcon color="error" fontSize="small" sx={{ flexShrink: 0 }} />
-                            <Typography
-                              variant="body2"
+                        sx={{ cursor: 'pointer' }}><TableCell><Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}><ErrorIcon color="error" fontSize="small" sx={{ flexShrink: 0 }} /><Typography variant="body2"
                               sx={{
                                 fontFamily: 'monospace',
                                 fontSize: '0.85rem',
@@ -374,213 +299,91 @@ export default function ErrorsPage() {
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
-                              }}
-                            >
-                              {errorLog.inputFilename}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
-                          <Typography variant="body2">
-                            {formatBytes(errorLog.inputFileSize)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={errorLog.errorCount.toLocaleString()}
+                              }}>{errorLog.inputFilename}</Typography></Box></TableCell><TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}><Typography variant="body2">{formatBytes(errorLog.inputFileSize)}</Typography></TableCell><TableCell><Chip label={errorLog.errorCount.toLocaleString(getUILocale())}
                             size="small"
                             color="error"
-                            sx={{ fontWeight: 'bold' }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            data-learn="View Errors: Open a detailed view of all errors from this capture's error log file."
+                            sx={{ fontWeight: 'bold' }} /></TableCell><TableCell><Button data-learn={i18nText("ui:m_536b1718b48e4433cc38")}
                             size="small"
                             variant="outlined"
                             startIcon={<VisibilityIcon />}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleViewErrors(errorLog);
-                            }}
-                          >
-                            View Errors
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                            }}>
+                            {i18nText("ui:m_6f8350825a150a1e4bf0")}
+                          </Button></TableCell></TableRow>
                     ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-              }
-            />
-          </>
-        )}
-
-        {/* Error Details Dialog */}
-        <Dialog
-          open={detailsDialogOpen}
+                  )}</TableBody></Table></TableContainer>} /></>
+        )}{/* Error Details Dialog */}<Dialog open={detailsDialogOpen}
           onClose={handleCloseDialog}
           maxWidth="lg"
           fullWidth
-          fullScreen={isMobile}
-        >
-          <DialogTitle>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
-                Error Log: {selectedError?.inputFilename}
-              </Box>
-              {isMobile && (
-                <IconButton onClick={handleCloseDialog} edge="end">
-                  <CloseIcon />
-                </IconButton>
-              )}
-            </Box>
-          </DialogTitle>
-          <DialogContent>
-            {selectedError && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                  <Chip
-                    label={`${selectedError.errorCount} errors`}
+          fullScreen={isMobile}><DialogTitle><Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><Box>
+                {i18nRichText("ui:m_c77b05ed1cb35ee6aa2b", { arg0: selectedError?.inputFilename })}
+              </Box>{isMobile && (
+                <IconButton onClick={handleCloseDialog} edge="end"><CloseIcon /></IconButton>
+              )}</Box></DialogTitle><DialogContent>{selectedError && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}><Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}><Chip label={i18nText("ui:m_6c98ad8b9a74389a1795", { arg0: selectedError.errorCount })}
                     size="small"
-                    color="error"
-                  />
-                  <Typography variant="body2" color="text.secondary">
-                    File size: {formatBytes(selectedError.inputFileSize)}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Error Log Content
-                  </Typography>
-                  {loadingContent ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                      <CircularProgress />
-                    </Box>
+                    color="error" /><Typography variant="body2" color="text.secondary">
+                    {i18nRichText("ui:m_35b24eed84e1a87ac262", { arg0: formatBytes(selectedError.inputFileSize) })}
+                  </Typography></Box><Box><Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    {i18nText("ui:m_34cdab9d0b1f20c850ae")}
+                  </Typography>{loadingContent ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
                   ) : (
-                    <Paper
-                      sx={{
+                    <Paper sx={{
                         p: 2,
-                        backgroundColor: '#1e1e1e',
+                        backgroundColor: 'background.default',
                         overflow: 'auto',
                         maxHeight: 500,
-                      }}
-                    >
-                      <pre
-                        style={{
+                      }}><pre style={{
                           margin: 0,
                           fontFamily: 'monospace',
                           fontSize: '0.85rem',
                           whiteSpace: 'pre-wrap',
                           wordBreak: 'break-word',
-                          color: '#f0f0f0',
-                        }}
-                      >
-                        {errorLogContent || 'No content available'}
-                      </pre>
-                    </Paper>
-                  )}
-                </Box>
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button data-learn="Close Dialog: Close the error details viewer." onClick={handleCloseDialog}>Close</Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Aggregated Errors Dialog */}
-        <Dialog
-          open={aggregatedDialogOpen}
+                          color: 'inherit',
+                        }}>{renderText(errorLogContent) || rawCode("No content available")}</pre></Paper>
+                  )}</Box></Box>
+            )}</DialogContent><DialogActions><Button data-learn={i18nText("ui:m_79a14bda74135029047d")} onClick={handleCloseDialog}>{i18nText("ui:m_a695258f28d817037ea8")}</Button></DialogActions></Dialog>{/* Aggregated Errors Dialog */}<Dialog open={aggregatedDialogOpen}
           onClose={handleCloseAggregated}
           maxWidth="lg"
           fullWidth
-          fullScreen={isMobile}
-        >
-          <DialogTitle>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
-                Aggregated Errors Across All Captures
-              </Box>
-              {isMobile && (
-                <IconButton onClick={handleCloseAggregated} edge="end">
-                  <CloseIcon />
-                </IconButton>
-              )}
-            </Box>
-          </DialogTitle>
-          <DialogContent>
-            {loadingAggregated ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress />
-              </Box>
+          fullScreen={isMobile}><DialogTitle><Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><Box>
+                {i18nText("ui:m_f85bd1817ef8b4f4f1ad")}
+              </Box>{isMobile && (
+                <IconButton onClick={handleCloseAggregated} edge="end"><CloseIcon /></IconButton>
+              )}</Box></DialogTitle><DialogContent>{loadingAggregated ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
             ) : aggregatedErrors.length === 0 ? (
-              <Box sx={{ p: 4, textAlign: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  No errors found across all captures
-                </Typography>
-              </Box>
+              <Box sx={{ p: 4, textAlign: 'center' }}><Typography variant="body2" color="text.secondary">
+                  {i18nText("ui:m_03422f0f20b5dac0795f")}
+                </Typography></Box>
             ) : (
-              <Box>
-                <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 2 }}>
-                  Showing {aggregatedErrors.length} unique error types aggregated from all error logs
-                </Typography>
-                <Paper sx={{ maxHeight: 600, overflow: 'auto' }}>
-                  <List>
-                    {aggregatedErrors.map((error, index) => (
-                      <ListItem
-                        key={error.errorMessage}
+              <Box><Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 2 }}>
+                  {i18nRichText("ui:m_d107eb1c37de27971829", { arg0: aggregatedErrors.length })}
+                </Typography><Paper sx={{ maxHeight: 600, overflow: 'auto' }}><List>{aggregatedErrors.map((error, index) => (
+                      <ListItem key={error.errorMessage}
                         sx={{
-                          borderBottom: index < aggregatedErrors.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none',
-                          '&:hover': { backgroundColor: 'rgba(0,0,0,0.02)' },
-                        }}
-                      >
-                        <ListItemText
-                          primary={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                              <Chip
-                                label={`[${error.count}]`}
+                          borderBottom: index < aggregatedErrors.length - 1 ? '1px solid' : 'none', borderColor: 'divider',
+                          '&:hover': { backgroundColor: 'action.hover' },
+                        }}><ListItemText primary={<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}><Chip label={`[${error.count}]`}
                                 size="small"
                                 color="error"
-                                sx={{ fontWeight: 'bold', minWidth: 60 }}
-                              />
-                              <Typography
-                                variant="body2"
+                                sx={{ fontWeight: 'bold', minWidth: 60 }} /><Typography variant="body2"
                                 sx={{
                                   fontFamily: 'monospace',
                                   fontSize: '0.9rem',
                                   flex: 1,
                                   wordBreak: 'break-word',
-                                }}
-                              >
-                                {error.errorMessage}
-                              </Typography>
-                            </Box>
-                          }
-                          secondary={
-                            error.firstSeen && (
+                                }}>{error.errorMessage}</Typography></Box>}
+                          secondary={error.firstSeen && (
                               <Typography variant="caption" color="text.secondary">
-                                First seen: {error.firstSeen}
+                                {i18nRichText("ui:m_05f3830fc17fa6324c6d", { arg0: error.firstSeen })}
                               </Typography>
-                            )
-                          }
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                </Paper>
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button data-learn="Close Dialog: Close the aggregated errors viewer." onClick={handleCloseAggregated}>Close</Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
-    </Layout>
+                            )} /></ListItem>
+                    ))}</List></Paper></Box>
+            )}</DialogContent><DialogActions><Button data-learn={i18nText("ui:m_d386f3f19fb468865e3f")} onClick={handleCloseAggregated}>{i18nText("ui:m_a695258f28d817037ea8")}</Button></DialogActions></Dialog></Box></Layout>
   );
 }
-

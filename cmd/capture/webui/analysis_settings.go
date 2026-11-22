@@ -42,36 +42,38 @@ func (s *Server) runtimeSnapshotLocked() RuntimeConfig {
 func (s *Server) configuredDPI() bool { s.mu.RLock(); defer s.mu.RUnlock(); return s.dpiConfigured }
 
 func (s *Server) handleAnalysisSettings(w http.ResponseWriter, r *http.Request) {
+	p := PresentationFromRequest(r)
+	presentationHeaders(w, p)
 	if s.isServiceMode && !captureAdminAuthorized(r) {
-		http.Error(w, "analysis settings require service administrator identity", 403)
+		uiHTTPError(w, r, "analysis settings require service administrator identity", 403, "analysis_settings_unauthorized", "Analysis settings require administrator access")
 		return
 	}
 	if r.Method != http.MethodGet && r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", 405)
+		uiHTTPError(w, r, "method not allowed", 405, "method_not_allowed", "Method not allowed")
 		return
 	}
 	var patch analysisSettingsPatch
 	if r.Method == http.MethodPost {
 		raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 16384))
 		if err != nil {
-			http.Error(w, "settings request exceeds bounds", 400)
+			uiHTTPError(w, r, "settings request exceeds bounds", 400, "analysis_settings_too_large", "Invalid analysis settings")
 			return
 		}
 		var fields map[string]json.RawMessage
 		if json.Unmarshal(raw, &fields) != nil || len(fields) == 0 {
-			http.Error(w, "nonempty settings patch required", 400)
+			uiHTTPError(w, r, "nonempty settings patch required", 400, "analysis_settings_empty", "Invalid analysis settings")
 			return
 		}
 		for _, value := range fields {
 			if string(value) == "null" {
-				http.Error(w, "null settings are not applied; omit unchanged fields", 400)
+				uiHTTPError(w, r, "null settings are not applied; omit unchanged fields", 400, "analysis_settings_null", "Invalid analysis settings")
 				return
 			}
 		}
 		d := json.NewDecoder(strings.NewReader(string(raw)))
 		d.DisallowUnknownFields()
 		if err := d.Decode(&patch); err != nil {
-			http.Error(w, err.Error(), 400)
+			uiHTTPError(w, r, err.Error(), 400, "analysis_settings_invalid", "Invalid analysis settings")
 			return
 		}
 	}
@@ -82,7 +84,7 @@ func (s *Server) handleAnalysisSettings(w http.ResponseWriter, r *http.Request) 
 	if r.Method == http.MethodPost {
 		if patch.DPI != nil {
 			if *patch.DPI && !dpi.HasDPISupport() {
-				http.Error(w, "DPI unavailable in this build", 422)
+				uiHTTPError(w, r, "DPI unavailable in this build", 422, "dpi_unavailable", "DPI unavailable in this build")
 				return
 			}
 			enabled = *patch.DPI
@@ -90,7 +92,7 @@ func (s *Server) handleAnalysisSettings(w http.ResponseWriter, r *http.Request) 
 		if patch.DPIModules != nil {
 			for _, module := range strings.Split(*patch.DPIModules, ",") {
 				if module != "" && module != "go" && module != "ndpi" && module != "lpi" {
-					http.Error(w, "DPI modules must be go,ndpi,lpi CSV or empty", 400)
+					uiHTTPError(w, r, "DPI modules must be go,ndpi,lpi CSV or empty", 400, "analysis_settings_dpi_modules", "Invalid analysis settings")
 					return
 				}
 			}
@@ -115,14 +117,14 @@ func (s *Server) handleAnalysisSettings(w http.ResponseWriter, r *http.Request) 
 		} {
 			if item.value != nil {
 				if *item.value < 1 || *item.value > item.max {
-					http.Error(w, fmt.Sprintf("%s must be 1..%d", name, item.max), 400)
+					uiHTTPError(w, r, fmt.Sprintf("%s must be 1..%d", name, item.max), 400, "analysis_settings_range", "Analysis setting is outside the allowed range", map[string]any{"field": name, "min": 1, "max": item.max})
 					return
 				}
 				*item.target = *item.value << item.shift
 			}
 		}
 		if rc.PacketSegmentBytes > rc.PacketRetentionBytes {
-			http.Error(w, "packet retention must hold at least one segment", 400)
+			uiHTTPError(w, r, "packet retention must hold at least one segment", 400, "analysis_settings_retention", "Invalid analysis settings")
 			return
 		}
 		if patch.IncrementalHTTP != nil {
@@ -139,7 +141,7 @@ func (s *Server) handleAnalysisSettings(w http.ResponseWriter, r *http.Request) 
 				for _, port := range strings.Split(*patch.FlowExportPorts, ",") {
 					n, err := strconv.ParseUint(strings.TrimSpace(port), 10, 16)
 					if err != nil || n == 0 {
-						http.Error(w, "invalid flow export port CSV", 400)
+						uiHTTPError(w, r, "invalid flow export port CSV", 400, "analysis_settings_flow_ports", "Invalid analysis settings")
 						return
 					}
 				}
@@ -150,5 +152,5 @@ func (s *Server) handleAnalysisSettings(w http.ResponseWriter, r *http.Request) 
 		s.dpiConfigured = enabled
 		s.payloadCapture = payload
 	}
-	RespondJSON(w, 200, map[string]any{"dpi": enabled, "dpiSupported": dpi.HasDPISupport(), "dpiModules": rc.DPIModules, "payload": payload, "retainPackets": rc.RetainPackets, "segmentMB": rc.PacketSegmentBytes >> 20, "retentionMB": rc.PacketRetentionBytes >> 20, "maxTCPBytes": rc.MaxRetainedTCPBytes, "maxReassemblyBytes": rc.MaxRetainedReassemblyBytes, "maxTCPStateBytes": rc.MaxRetainedTCPStateBytes, "maxAggregateStateBytes": rc.MaxAggregateStateBytes, "incrementalHTTP": rc.IncrementalHTTP, "captureTimeIdleExpiry": rc.CaptureTimeIdleExpiry, "flowExports": rc.FlowExports, "flowExportPorts": rc.FlowExportPorts, "scope": "subsequent analyses; active and retained results are unchanged; component budgets exclude RSS"})
+	RespondJSON(w, 200, map[string]any{"dpi": enabled, "dpiSupported": dpi.HasDPISupport(), "dpiModules": rc.DPIModules, "payload": payload, "retainPackets": rc.RetainPackets, "segmentMB": rc.PacketSegmentBytes >> 20, "retentionMB": rc.PacketRetentionBytes >> 20, "maxTCPBytes": rc.MaxRetainedTCPBytes, "maxReassemblyBytes": rc.MaxRetainedReassemblyBytes, "maxTCPStateBytes": rc.MaxRetainedTCPStateBytes, "maxAggregateStateBytes": rc.MaxAggregateStateBytes, "incrementalHTTP": rc.IncrementalHTTP, "captureTimeIdleExpiry": rc.CaptureTimeIdleExpiry, "flowExports": rc.FlowExports, "flowExportPorts": rc.FlowExportPorts, "scope": "subsequent analyses; active and retained results are unchanged; component budgets exclude RSS", "scopeI18n": p.message("config.analysis.scope", "subsequent analyses; active and retained results are unchanged; component budgets exclude RSS", nil)})
 }

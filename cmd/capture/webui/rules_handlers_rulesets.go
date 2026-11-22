@@ -267,6 +267,7 @@ func (s *Server) handleRuleSet(w http.ResponseWriter, r *http.Request) {
 	RespondJSON(w, http.StatusOK, map[string]any{
 		"success":       true,
 		"message":       fmt.Sprintf("Rule set %s %s (%d rules affected)", ruleSetName, status, updatedCount),
+		"messageI18n":   requestUIMessage(r, "ruleset."+status, "Rule set {name} "+status+" ({count} rules affected)", map[string]any{"name": ruleSetName, "count": updatedCount}),
 		"rulesAffected": updatedCount,
 	})
 }

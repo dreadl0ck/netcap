@@ -31,9 +31,10 @@ import (
 
 // HarvesterInfo represents information about a credential harvester
 type HarvesterInfo struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Ports       []int  `json:"ports"`
+	Name            string    `json:"name"`
+	Description     string    `json:"description"`
+	DescriptionI18n UIMessage `json:"descriptionI18n"`
+	Ports           []int     `json:"ports"`
 }
 
 // HarvestersResponse represents the response with all harvester information
@@ -43,11 +44,12 @@ type HarvestersResponse struct {
 
 // HarvesterPresetInfo represents metadata about a saved harvester configuration preset
 type HarvesterPresetInfo struct {
-	Name           string    `json:"name"`
-	Description    string    `json:"description"`
-	CreatedAt      time.Time `json:"created_at"`
-	ModifiedAt     time.Time `json:"modified_at"`
-	HarvesterCount int       `json:"harvester_count"`
+	Name            string    `json:"name"`
+	Description     string    `json:"description"`
+	DescriptionI18n UIMessage `json:"descriptionI18n"`
+	CreatedAt       time.Time `json:"created_at"`
+	ModifiedAt      time.Time `json:"modified_at"`
+	HarvesterCount  int       `json:"harvester_count"`
 }
 
 // HarvesterPresetListResponse represents the response with all saved presets
@@ -71,9 +73,10 @@ func (s *Server) handleHarvesters(w http.ResponseWriter, r *http.Request) {
 		// Sort ports for consistent display
 		sort.Ints(h.Ports)
 		harvesters[i] = HarvesterInfo{
-			Name:        h.Name,
-			Description: h.Description,
-			Ports:       h.Ports,
+			Name:            h.Name,
+			Description:     h.Description,
+			DescriptionI18n: UIMessage{ID: "harvester.description", Params: map[string]any{"name": h.Name}, Text: h.Description},
+			Ports:           h.Ports,
 		}
 	}
 

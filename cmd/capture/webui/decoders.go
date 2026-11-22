@@ -37,12 +37,14 @@ import (
 
 // DecoderInfo represents information about a decoder
 type DecoderInfo struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Type        string `json:"type"`
-	Layer       string `json:"layer,omitempty"`
-	Port        int32  `json:"port,omitempty"`
-	Enabled     bool   `json:"enabled"`
+	Name            string    `json:"name"`
+	Description     string    `json:"description"`
+	Type            string    `json:"type"`
+	Layer           string    `json:"layer,omitempty"`
+	Port            int32     `json:"port,omitempty"`
+	Enabled         bool      `json:"enabled"`
+	DescriptionI18n UIMessage `json:"descriptionI18n"`
+	TypeI18n        UIMessage `json:"typeI18n"`
 }
 
 // DecodersResponse represents the response with all decoder information
@@ -124,6 +126,15 @@ func (s *Server) handleDecoders(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	p := PresentationFromRequest(r)
+	for _, group := range [][]DecoderInfo{response.Packet, response.GoPacket, response.Stream, response.Abstract} {
+		for i := range group {
+			d := &group[i]
+			d.DescriptionI18n = UIMessage{ID: "decoder.description", Params: map[string]any{"name": d.Name, "type": d.Type, "port": d.Port}, Text: d.Description}
+			d.TypeI18n = p.message("decoder.type."+d.Type, map[string]string{"packet": "Packet decoder", "gopacket": "Packet decoder (gopacket)", "stream": "Stream decoder", "abstract": "Abstract decoder"}[d.Type], nil)
+		}
+	}
+	presentationHeaders(w, p)
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
@@ -153,8 +164,9 @@ func (s *Server) handleDecoderConfig(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
-			"success": true,
-			"message": "Decoder configuration saved successfully",
+			"success":     true,
+			"message":     "Decoder configuration saved successfully",
+			"messageI18n": requestUIMessage(r, "decoder.config.saved", "Decoder configuration saved successfully", nil),
 		})
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -834,9 +846,10 @@ func (s *Server) handleLoadDecoderConfig(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success": true,
-		"message": fmt.Sprintf("Configuration '%s' loaded successfully", request.Name),
-		"config":  config,
+		"success":     true,
+		"message":     fmt.Sprintf("Configuration '%s' loaded successfully", request.Name),
+		"messageI18n": requestUIMessage(r, "decoder.config.loaded", "Configuration '{name}' loaded successfully", map[string]any{"name": request.Name}),
+		"config":      config,
 	})
 }
 
@@ -916,10 +929,11 @@ func (s *Server) handleUploadDecoderConfig(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success": true,
-		"message": fmt.Sprintf("Configuration '%s' uploaded successfully", configName),
-		"name":    configName,
-		"applied": applyNow,
+		"success":     true,
+		"message":     fmt.Sprintf("Configuration '%s' uploaded successfully", configName),
+		"messageI18n": requestUIMessage(r, "decoder.config.uploaded", "Configuration '{name}' uploaded successfully", map[string]any{"name": configName}),
+		"name":        configName,
+		"applied":     applyNow,
 	})
 }
 
@@ -960,8 +974,9 @@ func (s *Server) handleDeleteDecoderConfig(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success": true,
-		"message": fmt.Sprintf("Configuration '%s' deleted successfully", request.Name),
+		"success":     true,
+		"message":     fmt.Sprintf("Configuration '%s' deleted successfully", request.Name),
+		"messageI18n": requestUIMessage(r, "decoder.config.deleted", "Configuration '{name}' deleted successfully", map[string]any{"name": request.Name}),
 	})
 }
 
@@ -1014,8 +1029,9 @@ func (s *Server) handleSaveDecoderConfigAs(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success": true,
-		"message": fmt.Sprintf("Configuration saved as '%s'", configName),
-		"name":    configName,
+		"success":     true,
+		"message":     fmt.Sprintf("Configuration saved as '%s'", configName),
+		"messageI18n": requestUIMessage(r, "decoder.config.saved_as", "Configuration saved as '{name}'", map[string]any{"name": configName}),
+		"name":        configName,
 	})
 }

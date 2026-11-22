@@ -20,10 +20,17 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
+import Typography from '@mui/material/Typography';
 
 import { CHART_TYPES } from '../lib/chartConfig';
 import { useNetcapApi } from '../hooks';
 import type { DashboardChart } from '../lib/api';
+import { message as i18nMessage, translate as i18nText, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { errorText, fieldLabel, recordTypeLabel } from "../lib/i18n";
+import { metadataText, translate } from "../lib/i18n";
+
+
+
 
 interface Props {
   open: boolean;
@@ -36,6 +43,7 @@ interface Props {
 }
 
 export default function ChartConfigDialog({ open, initial, availableAuditTypes, scope, onClose, onSubmit }: Props) {
+  const __uiLocale = useUILocale();
   const api = useNetcapApi();
   const [title, setTitle] = useState(initial?.title || '');
   const [description, setDescription] = useState(initial?.description || '');
@@ -47,7 +55,7 @@ export default function ChartConfigDialog({ open, initial, availableAuditTypes, 
   const [maxDataPoints, setMaxDataPoints] = useState<number>(initial?.maxDataPoints || 1000);
   const [fields, setFields] = useState<{ name: string; type: string }[]>([]);
   const [fieldsLoading, setFieldsLoading] = useState(false);
-  const [fieldsError, setFieldsError] = useState<string | null>(null);
+  const [fieldsError, setFieldsError] = useState<UIMessageText | null>(null);
 
   // Reset state when dialog opens with new initial values
   useEffect(() => {
@@ -78,7 +86,7 @@ export default function ChartConfigDialog({ open, initial, availableAuditTypes, 
         if (cancelled) return;
         setFields(res.fields);
         if (res.fields.length === 0) {
-          setFieldsError(`No chartable fields available for ${auditType}.`);
+          setFieldsError(i18nMessage("ui:m_d47c5225ba937a36fdd2", { arg0: auditType }));
         } else if (!res.fields.some((f) => f.name === field)) {
           setField(res.fields[0].name);
         }
@@ -86,7 +94,7 @@ export default function ChartConfigDialog({ open, initial, availableAuditTypes, 
       .catch((err: Error) => {
         if (cancelled) return;
         console.error('[ChartConfigDialog] getChartFields failed', err);
-        setFieldsError(err.message || `Failed to load fields for ${auditType}`);
+        setFieldsError(errorText(err) || i18nMessage("ui:m_fa2da71362a5e043ae67", { arg0: auditType }));
         setFields([]);
       })
       .finally(() => {
@@ -115,102 +123,42 @@ export default function ChartConfigDialog({ open, initial, availableAuditTypes, 
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{initial?.id ? 'Edit Chart' : 'Add Chart'}</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ mt: 1 }}>
-          <TextField
-            label="Title"
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth><DialogTitle>{initial?.id ? i18nText("ui:m_1a9f13f5ce418d79057a") : i18nText("ui:m_9194f7c4d9b324362224")}</DialogTitle><DialogContent><Stack spacing={2} sx={{ mt: 1 }}><TextField label={i18nText("ui:m_629474760b8835c24f58")}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             fullWidth
-            required
-          />
-          <TextField
-            label="Description (optional)"
+            required /><TextField label={i18nText("ui:m_c4d163cb8523809177be")}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Explain what this chart shows and why it matters"
+            placeholder={i18nText("ui:m_558522d2f2ef42500af9")}
             fullWidth
             multiline
             minRows={2}
-            maxRows={4}
-          />
-          <FormControl fullWidth required>
-            <InputLabel>Audit Record Type</InputLabel>
-            <Select
-              value={auditType}
-              label="Audit Record Type"
-              onChange={(e: SelectChangeEvent) => setAuditType(e.target.value)}
-            >
-              {sortedAuditTypes.length === 0 && (
+            maxRows={4} /><FormControl fullWidth required><InputLabel>{i18nText("ui:m_8967f6bff900534033ae")}</InputLabel><Select value={auditType}
+              label={i18nText("ui:m_8967f6bff900534033ae")}
+              onChange={(e: SelectChangeEvent) => setAuditType(e.target.value)}>{sortedAuditTypes.length === 0 && (
                 <MenuItem value="" disabled>
-                  No audit records available
+                  {i18nText("ui:m_a6b64afbfd016bdbdc6a")}
                 </MenuItem>
-              )}
-              {sortedAuditTypes.map((t) => (
+              )}{sortedAuditTypes.map((t) => (
                 <MenuItem key={t} value={t}>{t}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl fullWidth required disabled={!auditType || fieldsLoading}>
-            <InputLabel>Field</InputLabel>
-            <Select
-              value={field}
-              label="Field"
+              ))}</Select></FormControl><FormControl fullWidth required disabled={!auditType || fieldsLoading}><InputLabel>{i18nText("ui:m_3f7b74092bb8729b554f")}</InputLabel><Select value={field}
+              label={i18nText("ui:m_3f7b74092bb8729b554f")}
               onChange={(e: SelectChangeEvent) => setField(e.target.value)}
-              endAdornment={fieldsLoading ? <CircularProgress size={18} sx={{ mr: 4 }} /> : undefined}
-            >
-              {fields.map((f) => (
-                <MenuItem key={f.name} value={f.name}>
-                  {f.name} <span style={{ marginLeft: 8, opacity: 0.6 }}>({f.type})</span>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          {fieldsError && <Alert severity="warning">{fieldsError}</Alert>}
-
-          <FormControl fullWidth required>
-            <InputLabel>Chart Type</InputLabel>
-            <Select
-              value={chartType}
-              label="Chart Type"
-              onChange={(e: SelectChangeEvent) => setChartType(e.target.value)}
-            >
-              {CHART_TYPES.map((c) => (
-                <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <TextField
-            label="Interval (optional, e.g. 1s, 1m, 1h)"
+              endAdornment={fieldsLoading ? <CircularProgress size={18} sx={{ mr: 4 }} /> : undefined}>{fields.map((f) => (
+                <MenuItem key={f.name} value={f.name}>{fieldLabel(f.name, auditType)}<Typography component="span" sx={{ ml: 1, color: 'text.secondary' }}>({metadataText(f, 'type')})</Typography></MenuItem>
+              ))}</Select></FormControl>{i18nRenderText(fieldsError) && <Alert severity="warning">{i18nRenderText(fieldsError)}</Alert>}<FormControl fullWidth required><InputLabel>{i18nText("ui:m_79c0705a0b89e49733cb")}</InputLabel><Select value={chartType}
+              label={i18nText("ui:m_79c0705a0b89e49733cb")}
+              onChange={(e: SelectChangeEvent) => setChartType(e.target.value)}>{CHART_TYPES.map((c) => (
+                <MenuItem key={c.value} value={c.value}>{translate(c.label)}</MenuItem>
+              ))}</Select></FormControl><TextField label={i18nText("ui:m_2258d011a9eca19fd546")}
             value={interval}
             onChange={(e) => setIntervalStr(e.target.value)}
-            fullWidth
-          />
-
-          <TextField
-            label="Max Data Points"
+            fullWidth /><TextField label={i18nText("ui:m_eaccbfb766ad1bd6626e")}
             type="number"
             value={maxDataPoints}
             onChange={(e) => setMaxDataPoints(Math.max(1, parseInt(e.target.value || '1000', 10)))}
-            fullWidth
-          />
-
-          <FormControlLabel
-            control={<Switch checked={showLegend} onChange={(e) => setShowLegend(e.target.checked)} />}
-            label="Show legend"
-          />
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={!canSubmit}>
-          {initial?.id ? 'Save' : 'Add'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+            fullWidth /><FormControlLabel control={<Switch checked={showLegend} onChange={(e) => setShowLegend(e.target.checked)} />}
+            label={i18nText("ui:m_4d0acc5f5600d5cd889c")} /></Stack></DialogContent><DialogActions><Button onClick={onClose}>{i18nText("ui:m_0095547326bed510a824")}</Button><Button onClick={handleSubmit} variant="contained" disabled={!canSubmit}>{initial?.id ? i18nText("ui:m_72bba814ee286eb80909") : i18nText("ui:m_44184266e152017ac805")}</Button></DialogActions></Dialog>
   );
 }

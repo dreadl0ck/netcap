@@ -1,12 +1,17 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SWRConfig } from 'swr';
 import { NetcapProvider } from '../../packages/netcap-ui/src/providers/NetcapProvider';
 import DatabasesPage from '../../packages/netcap-ui/src/pages/DbsPage';
 import GeoIPAttribution from '../../packages/netcap-ui/src/components/GeoIPAttribution';
+import { initializeI18n } from '../../packages/netcap-ui/src/lib/i18n';
+import { directCatalogBundle } from '../../packages/netcap-ui/src/lib/i18n/direct';
+import { removedCatalogBundle } from '../../packages/netcap-ui/src/lib/i18n/removed';
 
 vi.mock('../../packages/netcap-ui/src/components/Layout', () => ({ default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
+
+beforeEach(() => initializeI18n({ locale: 'en', bundles: [directCatalogBundle, removedCatalogBundle] }));
 
 const status = {
   geoProviders: 'dbip,geolite2',

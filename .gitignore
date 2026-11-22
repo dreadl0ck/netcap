@@ -112,6 +112,26 @@ evals/
 
 # Test outputs
 test-output/
+cmd/capture/webui/frontend/.vitest/
+cmd/capture/webui/frontend/test-results/
+cmd/capture/webui/frontend/playwright-report/
+cmd/capture/webui/frontend/localization/*
+!cmd/capture/webui/frontend/localization/backend-translations.json
+!cmd/capture/webui/frontend/localization/catalog-policy.json
+!cmd/capture/webui/frontend/localization/catalog.schema.json
+!cmd/capture/webui/frontend/localization/edition-classification.json
+!cmd/capture/webui/frontend/localization/full-staging.json
+!cmd/capture/webui/frontend/localization/glossary.json
+!cmd/capture/webui/frontend/localization/html-reviews.json
+!cmd/capture/webui/frontend/localization/integration.json
+!cmd/capture/webui/frontend/localization/parent-messages.json
+!cmd/capture/webui/frontend/localization/pro-backend-translations.json
+!cmd/capture/webui/frontend/localization/reviewed-translations.json
+!cmd/capture/webui/frontend/localization/translation.de.json
+!cmd/capture/webui/frontend/localization/translation.es.json
+!cmd/capture/webui/frontend/localization/translation.fr.json
+!cmd/capture/webui/frontend/localization/translation.nl.json
+!cmd/capture/webui/frontend/localization/translation.zh-Hans.json
 links.txt
 
 # IDE

@@ -36,6 +36,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 func TestAppStoreDoesNotRegisterDirectOnlyRoutes(t *testing.T) {
@@ -168,6 +170,10 @@ func importPath(spec *ast.ImportSpec) string {
 //
 // It only compiles under the appstore tag, so runAnalysis == runAnalysisInProcess.
 func TestInProcessAnalysisProducesAuditRecords(t *testing.T) {
+	t.Setenv("NC_CONFIG_ROOT", t.TempDir())
+	oldProto := protoRuntime
+	protoRuntime = &protoState{searchPaths: []string{}, mappings: []string{}}
+	t.Cleanup(func() { protoRuntime = oldProto })
 	input := filepath.Join("..", "..", "..", "internal", "decoder", "stream", "protobuf", "testdata", "protobuf_tcp_addressbook.pcapng")
 	if _, err := os.Stat(input); err != nil {
 		t.Fatalf("tracked analysis fixture is missing: %v", err)
@@ -227,6 +233,9 @@ func TestInProcessAnalysisProducesAuditRecords(t *testing.T) {
 	}
 	assertProgressStatus(t, s, job.SessionID, "completed")
 	t.Logf("in-process analysis produced %d audit record file(s) from %s", audit, input)
+	if _, err := os.Stat(filepath.Join(outDir, "Protobuf.ncap.gz")); !os.IsNotExist(err) {
+		t.Fatalf("default analysis must not opt into Protobuf detection: %v", err)
+	}
 
 	parentManifest, err := os.ReadFile(filepath.Join(outDir, "capture-manifest.json"))
 	if err != nil {
@@ -260,16 +269,37 @@ func TestInProcessAnalysisProducesAuditRecords(t *testing.T) {
 	if err := json.Unmarshal(parentManifest, &binding); err != nil {
 		t.Fatal(err)
 	}
+	// A packet-selection BPF does not opt into heuristic Protobuf detection.
+	if err := s.saveDecoderConfig(DecoderConfig{IncludeDecoders: "Protobuf"}); err != nil {
+		t.Fatal(err)
+	}
 	w = requestReanalysis(s, subsetRequestBody(t, input, binding.RunID, &childPacketSelection{Version: 1, SourceSHA256: binding.InputSHA256, BPF: "tcp port 18127"}))
 	if w.Code != 200 {
 		t.Fatalf("native subset admission: %d %s", w.Code, w.Body.String())
 	}
 	subset := <-s.jobQueue
 	defer subset.processingDone()
+	if subset.settings == nil || subset.settings.IncludeDecoders != "Protobuf" {
+		t.Fatal("subset did not snapshot the explicitly selected Protobuf decoder")
+	}
 	s.runAnalysis(subset)
 	assertProgressStatus(t, s, subset.SessionID, "completed")
-	if _, err := os.Stat(filepath.Join(subset.OutputDir, "Protobuf.ncap.gz")); err != nil {
-		t.Fatalf("subset produced no Protobuf audit records: %v", err)
+	reader, err := NewAuditRecordReader(filepath.Join(subset.OutputDir, "Protobuf.ncap.gz"))
+	if err != nil {
+		t.Fatalf("opted-in subset produced no Protobuf audit records: %v", err)
+	}
+	defer reader.Close()
+	if _, err := reader.ReadHeader(); err != nil {
+		t.Fatal(err)
+	}
+	message, err := reader.NextRecord()
+	if err != nil {
+		t.Fatalf("opted-in subset produced no readable Protobuf record: %v", err)
+	}
+	record, ok := message.(*types.Protobuf)
+	if !ok || !record.IsValid || record.MessageCount < 1 || record.PayloadSize <= 0 || len(record.Fields) == 0 ||
+		(record.SrcPort != 18127 && record.DstPort != 18127) {
+		t.Fatalf("subset Protobuf record is invalid or outside the selected flow: %+v", message)
 	}
 }
 

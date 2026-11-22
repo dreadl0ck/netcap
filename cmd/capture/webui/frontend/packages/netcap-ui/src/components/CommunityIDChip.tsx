@@ -21,6 +21,10 @@ import { Chip, Tooltip, Box, Typography } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import CheckIcon from '@mui/icons-material/Check';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
+import { translate as i18nText, useLocale as useUILocale } from "../lib/i18n";
+import { translate } from "../lib/i18n";
+
+
 
 interface CommunityIDChipProps {
   /** The Community ID value */
@@ -40,6 +44,7 @@ interface CommunityIDChipProps {
  * to filter all data pages by one or more Community IDs for cross-tool correlation.
  */
 export function CommunityIDChip({ communityId, mode = 'chip', label, truncate = false }: CommunityIDChipProps) {
+  const __uiLocale = useUILocale();
   const { toggleCommunityID, isCommunityIDSelected } = useCommunityIDFilter();
   
   const isSelected = isCommunityIDSelected(communityId);
@@ -51,14 +56,12 @@ export function CommunityIDChip({ communityId, mode = 'chip', label, truncate = 
   };
 
   const tooltipTitle = isSelected 
-    ? `Click to remove "${communityId}" from filter` 
-    : `Click to filter all pages by Community ID "${communityId}"`;
+    ? translate("ui:m_1c5747cbebcc98ddab31", { arg0: communityId }) 
+    : translate("ui:m_fc9f39b23fc4781b3d7f", { arg0: communityId });
 
   if (mode === 'text') {
     return (
-      <Tooltip title={tooltipTitle}>
-        <Typography
-          component="span"
+      <Tooltip title={tooltipTitle}><Typography component="span"
           onClick={handleClick}
           sx={{
             fontFamily: 'monospace',
@@ -76,26 +79,12 @@ export function CommunityIDChip({ communityId, mode = 'chip', label, truncate = 
               textDecoration: 'underline',
             },
           }}
-          data-learn="Community ID: Click to filter all data pages by this Community ID for cross-tool correlation with Zeek, Suricata, etc."
-        >
-          {isSelected && <CheckIcon sx={{ fontSize: '0.9rem' }} />}
-          {displayLabel}
-          {!isSelected && <FilterListIcon sx={{ fontSize: '0.9rem', ml: 0.5, opacity: 0.7 }} />}
-        </Typography>
-      </Tooltip>
+          data-learn={i18nText("ui:m_026134c409446b1d1116")}>{isSelected && <CheckIcon sx={{ fontSize: '0.9rem' }} />}{displayLabel}{!isSelected && <FilterListIcon sx={{ fontSize: '0.9rem', ml: 0.5, opacity: 0.7 }} />}</Typography></Tooltip>
     );
   }
 
   return (
-    <Tooltip title={tooltipTitle}>
-      <Chip
-        label={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            {isSelected && <CheckIcon sx={{ fontSize: '0.8rem' }} />}
-            <span>{displayLabel}</span>
-            {!isSelected && <FilterListIcon sx={{ fontSize: '0.8rem', opacity: 0.7 }} />}
-          </Box>
-        }
+    <Tooltip title={tooltipTitle}><Chip label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>{isSelected && <CheckIcon sx={{ fontSize: '0.8rem' }} />}<span>{displayLabel}</span>{!isSelected && <FilterListIcon sx={{ fontSize: '0.8rem', opacity: 0.7 }} />}</Box>}
         size="small"
         color={isSelected ? 'primary' : 'info'}
         variant={isSelected ? 'filled' : 'outlined'}
@@ -105,14 +94,11 @@ export function CommunityIDChip({ communityId, mode = 'chip', label, truncate = 
           fontSize: '0.75rem',
           cursor: 'pointer',
           '&:hover': {
-            backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
+            backgroundColor: isSelected ? 'primary.main' : 'action.hover',
           },
         }}
-        data-learn="Community ID: Click to filter all data pages by this Community ID for cross-tool correlation with Zeek, Suricata, etc."
-      />
-    </Tooltip>
+        data-learn={i18nText("ui:m_026134c409446b1d1116")} /></Tooltip>
   );
 }
 
 export default CommunityIDChip;
-

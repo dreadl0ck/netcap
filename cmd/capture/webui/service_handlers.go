@@ -283,9 +283,10 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 	allowed, remaining := s.sessionManager.CheckRateLimit(clientIP)
 	if !allowed {
 		respondJSON(w, http.StatusTooManyRequests, map[string]any{
-			"error":     "Rate limit exceeded",
-			"message":   "You have reached the maximum number of analyses per hour",
-			"remaining": 0,
+			"error":       "Rate limit exceeded",
+			"message":     "You have reached the maximum number of analyses per hour",
+			"messageI18n": requestUIMessage(r, "capture.hourly_limit", "You have reached the maximum number of analyses per hour", nil),
+			"remaining":   0,
 		})
 		return
 	}
@@ -456,11 +457,12 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 
 	// Return response
 	respondJSON(w, http.StatusOK, map[string]any{
-		"success":   true,
-		"sessionId": sessionID,
-		"shareUrl":  shareURL,
-		"message":   "File uploaded successfully and queued for analysis",
-		"remaining": remaining - 1,
+		"success":     true,
+		"sessionId":   sessionID,
+		"shareUrl":    shareURL,
+		"message":     "File uploaded successfully and queued for analysis",
+		"messageI18n": requestUIMessage(r, "capture.upload_queued", "File uploaded successfully and queued for analysis", nil),
+		"remaining":   remaining - 1,
 	})
 }
 

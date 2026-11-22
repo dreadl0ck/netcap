@@ -459,7 +459,7 @@ func (s *Server) handleSecretsByService(w http.ResponseWriter, r *http.Request) 
 	showLegend := showLegendStr == "true"
 
 	chart := generateSecretsByServiceChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -489,7 +489,7 @@ func (s *Server) handleSecretsTimeline(w http.ResponseWriter, r *http.Request) {
 	showLegend := showLegendStr == "true"
 
 	chart := generateSecretsTimelineChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -519,7 +519,7 @@ func (s *Server) handleSecretsUsernames(w http.ResponseWriter, r *http.Request) 
 	showLegend := showLegendStr == "true"
 
 	chart := generateSecretsUsernamesChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -549,7 +549,7 @@ func (s *Server) handleSecretsFlows(w http.ResponseWriter, r *http.Request) {
 	showLegend := showLegendStr != "false"
 
 	chart := generateSecretsFlowsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return

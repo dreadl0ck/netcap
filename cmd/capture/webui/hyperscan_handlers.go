@@ -59,12 +59,15 @@ type HyperscanInfo struct {
 	// "cms", "rules"). Each value is the JSON snapshot the subsystem
 	// chooses to expose.
 	Subsystems map[string]any `json:"subsystems"`
+	StatusI18n UIMessage      `json:"statusI18n"`
 }
 
 // handleHyperscanInfo returns the integration status as JSON.
 //
 // GET /api/hyperscan
 func (s *Server) handleHyperscanInfo(w http.ResponseWriter, r *http.Request) {
+	p := PresentationFromRequest(r)
+	presentationHeaders(w, p)
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -76,6 +79,10 @@ func (s *Server) handleHyperscanInfo(w http.ResponseWriter, r *http.Request) {
 		BuildTag:   "hyperscan",
 		DocsURL:    "https://github.com/dreadl0ck/netcap/blob/master/docs/hyperscan.md",
 		Subsystems: hsmatch.SnapshotMap(),
+	}
+	info.StatusI18n = p.message("hyperscan.disabled", "Hyperscan is disabled in this build", nil)
+	if info.Enabled {
+		info.StatusI18n = p.message("hyperscan.enabled", "Hyperscan is enabled", nil)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

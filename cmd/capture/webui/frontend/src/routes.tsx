@@ -6,6 +6,8 @@
 
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router';
+import { useLocale as useUILocale } from "../packages/netcap-ui/src/lib/i18n";
+
 
 const DashboardPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.DashboardPage })));
 const AlertsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.AlertsPage })));
@@ -46,48 +48,8 @@ const VisualizePage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => 
 const VulnerabilitiesPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.VulnerabilitiesPage })));
 
 export function AppRoutes() {
+  const __uiLocale = useUILocale();
   return (
-    <Suspense fallback={null}>
-      <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/alerts" element={<AlertsPage />} />
-        <Route path="/behavior" element={<BehaviorPage />} />
-        <Route path="/analyze" element={<AnalyzePage />} />
-        <Route path="/audit" element={<AuditPage />} />
-        <Route path="/bpf" element={<BPFPage />} />
-        <Route path="/certificates" element={<CertificatesPage />} />
-        <Route path="/config" element={<ConfigPage />} />
-        <Route path="/connections" element={<ConnectionsPage />} />
-        <Route path="/investigation-evidence" element={<InvestigationPage />} />
-        <Route path="/secrets" element={<SecretsPage />} />
-        <Route path="/dbs" element={<DbsPage />} />
-        <Route path="/decoders" element={<DecodersPage />} />
-        <Route path="/devices" element={<DevicesPage />} />
-        <Route path="/domains" element={<DomainsPage />} />
-        <Route path="/dpi" element={<DpiPage />} />
-        <Route path="/errors" element={<ErrorsPage />} />
-        <Route path="/explore" element={<ExplorePage />} />
-        <Route path="/files" element={<FilesPage />} />
-        <Route path="/yara" element={<YaraPage />} />
-        <Route path="/fingerprints" element={<FingerprintsPage />} />
-        <Route path="/harvesters" element={<HarvestersPage />} />
-        <Route path="/hosts" element={<HostsPage />} />
-        <Route path="/http" element={<HttpPage />} />
-        <Route path="/inject" element={<InjectPage />} />
-        <Route path="/interfaces" element={<InterfacesPage />} />
-        <Route path="/logs" element={<LogsPage />} />
-        <Route path="/pcaps" element={<PcapsPage />} />
-        <Route path="/probes" element={<ProbesPage />} />
-        <Route path="/service-signatures" element={<ProbesPage />} />
-        <Route path="/protobuf" element={<ProtobufPage />} />
-        <Route path="/records" element={<RecordsPage />} />
-        <Route path="/rules" element={<RulesPage />} />
-        <Route path="/rulesets" element={<RulesetsPage />} />
-        <Route path="/services" element={<ServicesPage />} />
-        <Route path="/software" element={<SoftwarePage />} />
-        <Route path="/visualize" element={<VisualizePage />} />
-        <Route path="/vulnerabilities" element={<VulnerabilitiesPage />} />
-      </Routes>
-    </Suspense>
+    <Suspense fallback={null}><Routes><Route path="/" element={<DashboardPage />} /><Route path="/alerts" element={<AlertsPage />} /><Route path="/behavior" element={<BehaviorPage />} /><Route path="/analyze" element={<AnalyzePage />} /><Route path="/audit" element={<AuditPage />} /><Route path="/bpf" element={<BPFPage />} /><Route path="/certificates" element={<CertificatesPage />} /><Route path="/config" element={<ConfigPage />} /><Route path="/connections" element={<ConnectionsPage />} /><Route path="/investigation-evidence" element={<InvestigationPage />} /><Route path="/secrets" element={<SecretsPage />} /><Route path="/dbs" element={<DbsPage />} /><Route path="/decoders" element={<DecodersPage />} /><Route path="/devices" element={<DevicesPage />} /><Route path="/domains" element={<DomainsPage />} /><Route path="/dpi" element={<DpiPage />} /><Route path="/errors" element={<ErrorsPage />} /><Route path="/explore" element={<ExplorePage />} /><Route path="/files" element={<FilesPage />} /><Route path="/yara" element={<YaraPage />} /><Route path="/fingerprints" element={<FingerprintsPage />} /><Route path="/harvesters" element={<HarvestersPage />} /><Route path="/hosts" element={<HostsPage />} /><Route path="/http" element={<HttpPage />} /><Route path="/inject" element={<InjectPage />} /><Route path="/interfaces" element={<InterfacesPage />} /><Route path="/logs" element={<LogsPage />} /><Route path="/pcaps" element={<PcapsPage />} /><Route path="/probes" element={<ProbesPage />} /><Route path="/service-signatures" element={<ProbesPage />} /><Route path="/protobuf" element={<ProtobufPage />} /><Route path="/records" element={<RecordsPage />} /><Route path="/rules" element={<RulesPage />} /><Route path="/rulesets" element={<RulesetsPage />} /><Route path="/services" element={<ServicesPage />} /><Route path="/software" element={<SoftwarePage />} /><Route path="/visualize" element={<VisualizePage />} /><Route path="/vulnerabilities" element={<VulnerabilitiesPage />} /></Routes></Suspense>
   );
 }

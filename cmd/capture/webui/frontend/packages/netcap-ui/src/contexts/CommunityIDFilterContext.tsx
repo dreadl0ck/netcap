@@ -18,6 +18,8 @@
  */
 
 import { createContext, useContext, useState, useMemo, useCallback, ReactNode } from 'react';
+import { useLocale as useUILocale } from "../lib/i18n";
+
 
 /**
  * Check if we're running on the server (SSR)
@@ -69,6 +71,7 @@ const ssrFallbackValue: CommunityIDFilterContextType = {
 const CommunityIDFilterContext = createContext<CommunityIDFilterContextType | undefined>(undefined);
 
 export function CommunityIDFilterProvider({ children }: { children: ReactNode }) {
+  const __uiLocale = useUILocale();
   const [selectedCommunityIDs, setSelectedCommunityIDs] = useState<Set<string>>(new Set());
   const [isFilterEnabled, setIsFilterEnabled] = useState<boolean>(true);
 
@@ -154,9 +157,7 @@ export function CommunityIDFilterProvider({ children }: { children: ReactNode })
   );
 
   return (
-    <CommunityIDFilterContext.Provider value={value}>
-      {children}
-    </CommunityIDFilterContext.Provider>
+    <CommunityIDFilterContext.Provider value={value}>{children}</CommunityIDFilterContext.Provider>
   );
 }
 

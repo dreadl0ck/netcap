@@ -22,6 +22,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline';
 
 import type { Dashboard } from '../lib/api';
+import { translate as i18nText, useLocale as useUILocale } from "../lib/i18n";
+
 
 export const OVERVIEW_VIEW_ID = 'overview';
 
@@ -44,6 +46,7 @@ export default function DashboardViewTabs({
   onDuplicate,
   onDelete,
 }: Props) {
+  const __uiLocale = useUILocale();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [menuTarget, setMenuTarget] = useState<Dashboard | null>(null);
 
@@ -72,84 +75,38 @@ export default function DashboardViewTabs({
       borderRadius: 2.5,
       mb: 3,
       px: 1,
-      backgroundColor: 'rgba(11, 12, 20, .72)',
+      backgroundColor: 'background.paper',
       overflow: 'hidden',
-    }}>
-      <Tabs
-        value={activeId}
+    }}><Tabs value={activeId}
         onChange={handleTabChange}
         variant="scrollable"
         scrollButtons="auto"
-        allowScrollButtonsMobile
-      >
-        <Tab
-          value={OVERVIEW_VIEW_ID}
-          label="Overview"
+        allowScrollButtonsMobile><Tab value={OVERVIEW_VIEW_ID}
+          label={i18nText("ui:m_c8c10677c3bba11b7d62")}
           icon={<DashboardIcon fontSize="small" />}
           iconPosition="start"
-          sx={{ minHeight: 46 }}
-        />
-        {dashboards.map((d) => (
-          <Tab
-            key={d.id}
+          sx={{ minHeight: 46 }} />{dashboards.map((d) => (
+          <Tab key={d.id}
             value={d.id}
-            label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <span>{d.name}</span>
-                {!d.builtin && (
-                  <Tooltip title="View options">
-                    <IconButton
-                      size="small"
+            label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><span>{d.name}</span>{!d.builtin && (
+                  <Tooltip title={i18nText("ui:m_88a047a986d7dd5ca1f4")}><IconButton size="small"
                       onClick={(e) => openMenu(e, d)}
-                      sx={{ ml: 0.5, p: 0.25 }}
-                    >
-                      <MoreVertIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                )}
-              </Box>
-            }
-            sx={{ minHeight: 46, textTransform: 'none' }}
-          />
-        ))}
-        <Tab
-          value="__new__"
-          label="New"
+                      sx={{ ml: 0.5, p: 0.25 }}><MoreVertIcon fontSize="small" /></IconButton></Tooltip>
+                )}</Box>}
+            sx={{ minHeight: 46, textTransform: 'none' }} />
+        ))}<Tab value="__new__"
+          label={i18nText("ui:m_c628cf9872d1786fb935")}
           icon={<AddIcon fontSize="small" />}
           iconPosition="start"
-          sx={{ minHeight: 46, textTransform: 'none', opacity: 0.85 }}
-        />
-      </Tabs>
-
-      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu}>
-        <MenuItem
-          onClick={() => {
+          sx={{ minHeight: 46, textTransform: 'none', opacity: 0.85 }} /></Tabs><Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu}><MenuItem onClick={() => {
             if (menuTarget) onRename(menuTarget);
             closeMenu();
-          }}
-        >
-          <ListItemIcon><DriveFileRenameOutlineIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>Rename</ListItemText>
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
+          }}><ListItemIcon><DriveFileRenameOutlineIcon fontSize="small" /></ListItemIcon><ListItemText>{i18nText("ui:m_503b45a62328f738d3aa")}</ListItemText></MenuItem><MenuItem onClick={() => {
             if (menuTarget) onDuplicate(menuTarget);
             closeMenu();
-          }}
-        >
-          <ListItemIcon><ContentCopyIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>Duplicate</ListItemText>
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
+          }}><ListItemIcon><ContentCopyIcon fontSize="small" /></ListItemIcon><ListItemText>{i18nText("ui:m_234043da016bd5cc8db4")}</ListItemText></MenuItem><MenuItem onClick={() => {
             if (menuTarget) onDelete(menuTarget);
             closeMenu();
-          }}
-        >
-          <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
-          <ListItemText sx={{ color: 'error.main' }}>Delete</ListItemText>
-        </MenuItem>
-      </Menu>
-    </Box>
+          }}><ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon><ListItemText sx={{ color: 'error.main' }}>{i18nText("ui:m_c1be408539d8c22dfb4a")}</ListItemText></MenuItem></Menu></Box>
   );
 }

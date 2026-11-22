@@ -15,7 +15,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap/internal/dbs"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/enrichment"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
@@ -57,11 +56,7 @@ func webtechEngine() *webtech.Engine {
 
 // InitializeWebtech snapshots optional data before capture workers start.
 func InitializeWebtech() webtech.Status {
-	trust, err := dbs.CommunitySigningRoot()
-	if err != nil {
-		softwareLog.Warn("webtech signing root unavailable", zap.Error(err))
-	}
-	return InitializeWebtechWith(enrichment.Root(resolvers.ConfigRootPath), trust, time.Now())
+	return InitializeWebtechWith(enrichment.Root(resolvers.ConfigRootPath), enrichment.SigningRoot(), time.Now())
 }
 
 func InitializeWebtechWith(root string, trust ed25519.PublicKey, now time.Time) webtech.Status {

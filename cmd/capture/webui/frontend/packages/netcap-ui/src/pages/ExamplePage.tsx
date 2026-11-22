@@ -38,19 +38,28 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import useSWR, { mutate as globalMutate } from 'swr';
+
 
 import { useNetcapRouter } from '../hooks/useNetcapRouter';
 import { useNetcapApi } from '../hooks/useNetcapApi';
 import { Layout } from '../components/Layout';
 import { FileSelectorHeader } from '../components/FileSelectorHeader';
+import { translate as i18nText, richText as i18nRichText, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR, mutatePresentation as globalMutate } from "../lib/i18n";
+import { translate } from "../lib/i18n";
+import { message as finalCopyMessage } from "../lib/i18n";
+
+
+
+
 
 export interface ExamplePageProps {
   /** Optional title override */
   title?: string;
 }
 
-export function ExamplePage({ title = 'Example Page' }: ExamplePageProps) {
+export function ExamplePage({ title = translate("ui:m_4c62ec2ba821269f1494") }: ExamplePageProps) {
+  const __uiLocale = useUILocale();
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const [switchingFile, setSwitchingFile] = useState(false);
@@ -73,74 +82,48 @@ export function ExamplePage({ title = 'Example Page' }: ExamplePageProps) {
       window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
     } catch (err) {
       console.error('Failed to switch file:', err);
-      alert('Failed to switch to this capture');
+      alert(i18nText("ui:m_7ab800e4d59917b1d34c"));
     } finally {
       setSwitchingFile(false);
     }
-  }, [api, mutateStatus]);
+  }, [api, mutateStatus, __uiLocale]);
 
   // File selector for header
   const fileSelector = (
-    <FileSelectorHeader
-      inputFiles={inputFiles || []}
+    <FileSelectorHeader inputFiles={inputFiles || []}
       status={status}
       switchingFile={switchingFile}
       onFileChange={handleFileChange}
-      learnHint="Capture Selector: Switch between different analyzed PCAP files."
-    />
+      learnHint={finalCopyMessage("ui:m_451bce0dfff5c0d68499")} />
   );
 
   return (
-    <Layout title={title} headerAction={fileSelector}>
-      <Box sx={{ minWidth: 0 }}>
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Welcome to Netcap UI Library
-          </Typography>
-          <Typography variant="body1" paragraph>
-            This is an example page demonstrating how to create pages using the
-            @dreadl0ck/netcap-ui library. These pages can be used in any React framework,
-            not just Next.js.
-          </Typography>
-          
-          {version ? (
+    <Layout title={title} headerAction={fileSelector}><Box sx={{ minWidth: 0 }}><Paper sx={{ p: 3, mb: 3 }}><Typography variant="h6" gutterBottom>
+            {i18nText("ui:m_6f5e94b0704b8b7531de")}
+          </Typography><Typography variant="body1" paragraph>
+            {i18nText("ui:m_0214498ae48231b64678")}
+          </Typography>{version ? (
             <Alert severity="info" sx={{ mt: 2 }}>
-              Connected to Netcap backend v{version.version} (commit: {version.commit})
+              {i18nRichText("ui:m_88f0da486ba38cd33022", { arg0: String(version.version), arg1: version.commit })}
             </Alert>
           ) : (
-            <Box display="flex" alignItems="center" gap={1} sx={{ mt: 2 }}>
-              <CircularProgress size={20} />
-              <Typography variant="body2" color="text.secondary">
-                Loading version info...
-              </Typography>
-            </Box>
-          )}
-        </Paper>
-
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Current Route Information
-          </Typography>
-          <Box component="pre" sx={{ 
+            <Box display="flex" alignItems="center" gap={1} sx={{ mt: 2 }}><CircularProgress size={20} /><Typography variant="body2" color="text.secondary">
+                {i18nText("ui:m_5e9feae412f97ce48c63")}
+              </Typography></Box>
+          )}</Paper><Paper sx={{ p: 3 }}><Typography variant="h6" gutterBottom>
+            {i18nText("ui:m_e61d88bd9622d6fab6b1")}
+          </Typography><Box component="pre" sx={{ 
             p: 2, 
-            backgroundColor: 'grey.900', 
+            backgroundColor: 'background.default',
             borderRadius: 1,
             overflow: 'auto',
-          }}>
-            <code>
-              {JSON.stringify({
+          }}><code>{JSON.stringify({
                 pathname: router.pathname,
                 query: router.query,
                 isReady: router.isReady,
-              }, null, 2)}
-            </code>
-          </Box>
-        </Paper>
-      </Box>
-    </Layout>
+              }, null, 2)}</code></Box></Paper></Box></Layout>
   );
 }
 
 export default ExamplePage;
-
 

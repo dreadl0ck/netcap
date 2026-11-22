@@ -21,6 +21,10 @@ import { getBackendUrl } from '../lib/api';
 import type { DashboardChart } from '../lib/api';
 
 import { ChartFrame } from './ChartFrame';
+import { message as i18nMessage, translate as i18nText, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { recordTypeLabel, suppliedMetadataText, errorText } from "../lib/i18n";
+
+
 interface Props {
   chart: DashboardChart;
   editing: boolean;
@@ -44,8 +48,9 @@ const DashboardChartTile = forwardRef<HTMLDivElement, Props>(function DashboardC
   { chart, editing, available, scope, onEdit, onDelete, onEmptyChange, className, style, children, onMouseDown, onMouseUp, onTouchEnd },
   ref,
 ) {
+  const __uiLocale = useUILocale();
   const [refreshKey, setRefreshKey] = useState(0);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<UIMessageText | null>(null);
   const [empty, setEmpty] = useState(false);
 
   const iframeSrc = useMemo(() => {
@@ -83,17 +88,17 @@ const DashboardChartTile = forwardRef<HTMLDivElement, Props>(function DashboardC
         onEmptyChange?.(chart.id, noData);
         if (!res.ok) {
           const body = (await res.text()).trim();
-          setLoadError(body || `Chart endpoint returned HTTP ${res.status}`);
+          setLoadError(body || i18nMessage("ui:m_b9d4156d6812609b290c", { arg0: res.status }));
         }
       })
       .catch((err) => {
         if (cancelled) return;
         if (err && err.name === 'AbortError') {
-          setLoadError('Chart request timed out');
+          setLoadError(i18nMessage("ui:m_c8da3774e7ac2729c228"));
           return;
         }
         console.error('[DashboardChartTile] chart probe failed', err);
-        setLoadError((err as Error).message || 'Failed to load chart');
+        setLoadError(errorText(err) || i18nMessage("ui:m_6fe1f773940b7c09de12"));
       })
       .finally(() => {
         window.clearTimeout(timeout);
@@ -106,22 +111,15 @@ const DashboardChartTile = forwardRef<HTMLDivElement, Props>(function DashboardC
   }, [iframeSrc, available, refreshKey, chart.id, onEmptyChange]);
 
   return (
-    <Box
-      ref={ref}
+    <Box ref={ref}
       className={className}
       // Tile must fill its react-grid-layout cell entirely; Box defaults
       // collapse to content height otherwise.
       style={{ width: '100%', height: '100%', ...style }}
       onMouseDown={onMouseDown}
       onMouseUp={onMouseUp}
-      onTouchEnd={onTouchEnd}
-    >
-      <Card
-        data-learn={chart.description || undefined}
-        sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-      >
-        <Box
-          className="dashboard-tile-header"
+      onTouchEnd={onTouchEnd}><Card data-learn={suppliedMetadataText(chart, 'description') || undefined}
+        sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}><Box className="dashboard-tile-header"
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -132,81 +130,26 @@ const DashboardChartTile = forwardRef<HTMLDivElement, Props>(function DashboardC
             borderColor: 'divider',
             cursor: editing ? 'move' : 'default',
             background: 'linear-gradient(90deg, rgba(59,130,246,.07), rgba(139,92,246,.025))',
-          }}
-        >
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="subtitle2" noWrap title={chart.title}>
-              {chart.title}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" noWrap sx={{ fontFamily: 'var(--netcap-mono)', fontSize: '.65rem' }}>
-              {chart.auditType} · {chart.field} · {chart.chartType}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 0.5, ml: 1 }} onMouseDown={(e) => e.stopPropagation()}>
-            {chart.description && (
-              <Tooltip
-                title={
-                  <Typography variant="caption" sx={{ whiteSpace: 'pre-wrap' }}>
-                    {chart.description}
-                  </Typography>
-                }
+          }}><Box sx={{ minWidth: 0, flex: 1 }}><Typography variant="subtitle2" noWrap title={suppliedMetadataText(chart, 'title')}>{suppliedMetadataText(chart, 'title')}</Typography><Typography variant="caption" color="text.secondary" noWrap sx={{ fontFamily: 'var(--netcap-mono)', fontSize: '.65rem' }}>{recordTypeLabel(chart.auditType)}· {chart.field}· {chart.chartType}</Typography></Box><Box sx={{ display: 'flex', gap: 0.5, ml: 1 }} onMouseDown={(e) => e.stopPropagation()}>{chart.description && (
+              <Tooltip title={<Typography variant="caption" sx={{ whiteSpace: 'pre-wrap' }}>{suppliedMetadataText(chart, 'description')}</Typography>}
                 arrow
-                placement="top"
-              >
-                <IconButton size="small" aria-label="About this chart">
-                  <InfoOutlinedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-            <Tooltip title="Refresh">
-              <IconButton size="small" onClick={() => setRefreshKey((k) => k + 1)}>
-                <RefreshIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            {editing && (
-              <>
-                <Tooltip title="Edit chart">
-                  <IconButton size="small" onClick={() => onEdit?.(chart)}>
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Delete chart">
-                  <IconButton size="small" color="error" onClick={() => onDelete?.(chart.id)}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </>
-            )}
-          </Box>
-        </Box>
-        <CardContent sx={{ flex: 1, p: 0, '&:last-child': { p: 0 }, position: 'relative', minHeight: 0 }}>
-          {!available || empty ? (
-            <Box sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Typography variant="body2" color="text.secondary" align="center">
-                No data in the current scope.
-              </Typography>
-            </Box>
+                placement="top"><IconButton size="small" aria-label={i18nText("ui:m_1cc48346b3e932af8879")}><InfoOutlinedIcon fontSize="small" /></IconButton></Tooltip>
+            )}<Tooltip title={i18nText("ui:m_230fc1b63eb3ef4e6a34")}><IconButton size="small" onClick={() => setRefreshKey((k) => k + 1)}><RefreshIcon fontSize="small" /></IconButton></Tooltip>{editing && (
+              <><Tooltip title={i18nText("ui:m_91ec71a4ce56c8d61d29")}><IconButton size="small" onClick={() => onEdit?.(chart)}><EditIcon fontSize="small" /></IconButton></Tooltip><Tooltip title={i18nText("ui:m_7d088d9465c7e460a1df")}><IconButton size="small" color="error" onClick={() => onDelete?.(chart.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></>
+            )}</Box></Box><CardContent sx={{ flex: 1, p: 0, '&:last-child': { p: 0 }, position: 'relative', minHeight: 0 }}>{!available || empty ? (
+            <Box sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Typography variant="body2" color="text.secondary" align="center">
+                {i18nText("ui:m_b7d6ef18736c5a923259")}
+              </Typography></Box>
           ) : loadError ? (
-            <Box sx={{ p: 2, height: '100%', overflow: 'auto' }}>
-              <Alert severity="error" sx={{ mb: 1 }}>
-                Failed to render chart
-              </Alert>
-              <Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--netcap-mono)', m: 0 }}>
-                {loadError}
-              </Typography>
-            </Box>
+            <Box sx={{ p: 2, height: '100%', overflow: 'auto' }}><Alert severity="error" sx={{ mb: 1 }}>
+                {i18nText("ui:m_81d5222e8d9541adb4f7")}
+              </Alert><Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--netcap-mono)', m: 0 }}>{i18nRenderText(loadError)}</Typography></Box>
           ) : (
-            <ChartFrame
-              key={refreshKey}
+            <ChartFrame key={refreshKey}
               src={iframeSrc}
-              title={chart.title}
-              style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-            />
-          )}
-        </CardContent>
-      </Card>
-      {children}
-    </Box>
+              title={suppliedMetadataText(chart, 'title')}
+              style={{ width: '100%', height: '100%', border: 'none', display: 'block' }} />
+          )}</CardContent></Card>{children}</Box>
   );
 });
 

@@ -41,6 +41,14 @@ import (
 
 // injectFullHeightCSS intercepts the chart HTML and injects CSS to make it fill 100% height
 func injectFullHeightCSS(renderFunc func(w io.Writer) error) ([]byte, error) {
+	return injectFullHeightCSSWithPresentation(renderFunc, chartPresentation{})
+}
+
+func injectFullHeightCSSForRequest(renderFunc func(io.Writer) error, r *http.Request) ([]byte, error) {
+	return injectFullHeightCSSWithPresentation(renderFunc, chartPresentationFromRequest(r))
+}
+
+func injectFullHeightCSSWithPresentation(renderFunc func(io.Writer) error, presentation chartPresentation) ([]byte, error) {
 	rendered, err := renderChartSafe(renderFunc)
 	if err != nil {
 		return nil, err
@@ -91,10 +99,8 @@ function netcapAdapt(chart, w, h) {
 			type: 'scroll', orient: narrow ? 'horizontal' : 'vertical',
 			left: narrow ? 'center' : 'auto', right: narrow ? 'auto' : 12,
 			top: narrow ? 'auto' : 44, bottom: narrow ? 6 : 16,
-			textStyle: { color: '#e2e8f0', width: narrow ? 110 : Math.max(120, Math.floor(w * 0.32)), overflow: 'truncate' },
-			pageTextStyle: { color: '#cbd5e1' }
+			textStyle: { width: narrow ? 110 : Math.max(120, Math.floor(w * 0.32)), overflow: 'truncate' }
 		}];
-		patch.tooltip = [{ trigger: 'item', formatter: '{b}: {c} ({d}%)' }];
 		patch.series = series.map(function(s) {
 			if (s.type !== 'pie') return {};
 			return {
@@ -109,11 +115,11 @@ function netcapAdapt(chart, w, h) {
 		patch.legend = [{ show: false }];
 	} else if ((o.dataZoom || []).length) {
 		// Time series: keep labels horizontal so they clear the zoom slider.
-		patch.xAxis = (o.xAxis || []).map(function() { return { axisLabel: { hideOverlap: true, rotate: 0, color: '#cbd5e1' } }; });
+		patch.xAxis = (o.xAxis || []).map(function() { return { axisLabel: { hideOverlap: true, rotate: 0 } }; });
 	} else if ((o.xAxis || []).some(function(x) { return x.type === 'category'; })) {
 		patch.grid = [{ left: narrow ? 56 : 72, right: 24, top: 56, bottom: 16, containLabel: true }];
 		patch.xAxis = (o.xAxis || []).map(function() {
-			return { axisLabel: { hideOverlap: true, rotate: narrow ? 40 : 25, width: narrow ? 72 : 100, overflow: 'truncate', color: '#cbd5e1' } };
+			return { axisLabel: { hideOverlap: true, rotate: narrow ? 40 : 25, width: narrow ? 72 : 100, overflow: 'truncate' } };
 		});
 	}
 	chart.setOption(patch);
@@ -137,11 +143,19 @@ window.addEventListener('resize', netcapResize);
 	html = strings.Replace(html, "<head>", cssInjection, 1)
 
 	// Must be last: the injection above adds a <script> that needs the nonce.
-	return finalizeChartHTML([]byte(html)), nil
+	return finalizeChartHTML(presentChartHTML([]byte(html), presentation)), nil
 }
 
 // inject3DChartControls intercepts the chart HTML and injects CSS, rotation toggle button for 3D charts
 func inject3DChartControls(renderFunc func(w io.Writer) error) ([]byte, error) {
+	return inject3DChartControlsWithPresentation(renderFunc, chartPresentation{})
+}
+
+func inject3DChartControlsForRequest(renderFunc func(io.Writer) error, r *http.Request) ([]byte, error) {
+	return inject3DChartControlsWithPresentation(renderFunc, chartPresentationFromRequest(r))
+}
+
+func inject3DChartControlsWithPresentation(renderFunc func(io.Writer) error, presentation chartPresentation) ([]byte, error) {
 	rendered, err := renderChartSafe(renderFunc)
 	if err != nil {
 		return nil, err
@@ -235,7 +249,7 @@ window.addEventListener('load', function() {
 	// Add rotation toggle button
 	var button = document.createElement('button');
 	button.id = 'rotationToggle';
-	button.textContent = '⏸ Pause Rotation';
+	button.textContent = window.netcapChartText('⏸ Pause Rotation');
 	button.onclick = toggleRotation;
 	document.body.appendChild(button);
 });
@@ -276,10 +290,10 @@ function toggleRotation() {
 					chart.setOption(option);
 					
 					if (rotationEnabled) {
-						button.textContent = '⏸ Pause Rotation';
+						button.textContent = window.netcapChartText('⏸ Pause Rotation');
 						button.classList.remove('paused');
 					} else {
-						button.textContent = '▶ Resume Rotation';
+						button.textContent = window.netcapChartText('▶ Resume Rotation');
 						button.classList.add('paused');
 					}
 				}
@@ -292,7 +306,7 @@ function toggleRotation() {
 	html = strings.Replace(html, "<head>", cssInjection, 1)
 
 	// Must be last: the injection above adds a <script> that needs the nonce.
-	return finalizeChartHTML([]byte(html)), nil
+	return finalizeChartHTML(presentChartHTML([]byte(html), presentation)), nil
 }
 
 // handleVisualizeTreemap returns HTML for treemap chart of audit record types
@@ -323,7 +337,7 @@ func (s *Server) handleVisualizeTreemap(w http.ResponseWriter, r *http.Request) 
 	showLegend := showLegendStr == "true"
 
 	chart := generateTreemapChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -336,6 +350,8 @@ func (s *Server) handleVisualizeTreemap(w http.ResponseWriter, r *http.Request) 
 // HandleVisualizeTreemap is an exported handler factory for service mode
 func HandleVisualizeTreemap(outDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w, finish := chartPresentationResponse(w, r)
+		defer finish()
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -351,7 +367,7 @@ func HandleVisualizeTreemap(outDir string) http.HandlerFunc {
 		showLegend := showLegendStr == "true"
 
 		chart := generateTreemapChart(outDir, showLegend)
-		html, err := injectFullHeightCSS(chart.Render)
+		html, err := injectFullHeightCSSForRequest(chart.Render, r)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 			return
@@ -390,7 +406,7 @@ func (s *Server) handleVisualizeBar3D(w http.ResponseWriter, r *http.Request) {
 	showLegend := showLegendStr == "true"
 
 	chart := generateBar3DChart(outDir, showLegend)
-	html, err := inject3DChartControls(chart.Render)
+	html, err := inject3DChartControlsForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -403,6 +419,8 @@ func (s *Server) handleVisualizeBar3D(w http.ResponseWriter, r *http.Request) {
 // HandleVisualizeBar3D is an exported handler factory for service mode
 func HandleVisualizeBar3D(outDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w, finish := chartPresentationResponse(w, r)
+		defer finish()
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -418,7 +436,7 @@ func HandleVisualizeBar3D(outDir string) http.HandlerFunc {
 		showLegend := showLegendStr == "true"
 
 		chart := generateBar3DChart(outDir, showLegend)
-		html, err := inject3DChartControls(chart.Render)
+		html, err := inject3DChartControlsForRequest(chart.Render, r)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 			return
@@ -460,7 +478,7 @@ func (s *Server) handleVisualizeGraph(w http.ResponseWriter, r *http.Request) {
 	layout := sanitizeGraphLayout(r.URL.Query().Get("layout"))
 
 	chart := generateGraphChart(outDir, showLegend, layout)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -473,6 +491,8 @@ func (s *Server) handleVisualizeGraph(w http.ResponseWriter, r *http.Request) {
 // HandleVisualizeGraph is an exported handler factory for service mode
 func HandleVisualizeGraph(outDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w, finish := chartPresentationResponse(w, r)
+		defer finish()
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -491,7 +511,7 @@ func HandleVisualizeGraph(outDir string) http.HandlerFunc {
 		layout := sanitizeGraphLayout(r.URL.Query().Get("layout"))
 
 		chart := generateGraphChart(outDir, showLegend, layout)
-		html, err := injectFullHeightCSS(chart.Render)
+		html, err := injectFullHeightCSSForRequest(chart.Render, r)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 			return
@@ -530,7 +550,7 @@ func (s *Server) handleVisualizeGeo(w http.ResponseWriter, r *http.Request) {
 	showLegend := showLegendStr == "true"
 
 	chart := generateGeoChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -543,6 +563,8 @@ func (s *Server) handleVisualizeGeo(w http.ResponseWriter, r *http.Request) {
 // HandleVisualizeGeo is an exported handler factory for service mode
 func HandleVisualizeGeo(outDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w, finish := chartPresentationResponse(w, r)
+		defer finish()
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -558,7 +580,7 @@ func HandleVisualizeGeo(outDir string) http.HandlerFunc {
 		showLegend := showLegendStr == "true"
 
 		chart := generateGeoChart(outDir, showLegend)
-		html, err := injectFullHeightCSS(chart.Render)
+		html, err := injectFullHeightCSSForRequest(chart.Render, r)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 			return
@@ -605,7 +627,7 @@ func (s *Server) handleVisualizeScatter3D(w http.ResponseWriter, r *http.Request
 	}
 
 	chart := generateScatter3DChart(outDir, showLegend, maxConnections)
-	html, err := inject3DChartControls(chart.Render)
+	html, err := inject3DChartControlsForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -618,6 +640,8 @@ func (s *Server) handleVisualizeScatter3D(w http.ResponseWriter, r *http.Request
 // HandleVisualizeScatter3D is an exported handler factory for service mode
 func HandleVisualizeScatter3D(outDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w, finish := chartPresentationResponse(w, r)
+		defer finish()
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -641,7 +665,7 @@ func HandleVisualizeScatter3D(outDir string) http.HandlerFunc {
 		}
 
 		chart := generateScatter3DChart(outDir, showLegend, maxConnections)
-		html, err := inject3DChartControls(chart.Render)
+		html, err := inject3DChartControlsForRequest(chart.Render, r)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 			return
@@ -692,7 +716,7 @@ func (s *Server) handleVisualizeHostsGraph(w http.ResponseWriter, r *http.Reques
 	layout := sanitizeGraphLayout(r.URL.Query().Get("layout"))
 
 	chart := generateHostsGraph(outDir, showLegend, maxNodes, layout)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -705,6 +729,8 @@ func (s *Server) handleVisualizeHostsGraph(w http.ResponseWriter, r *http.Reques
 // HandleVisualizeHostsGraph is an exported handler factory for service mode
 func HandleVisualizeHostsGraph(outDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w, finish := chartPresentationResponse(w, r)
+		defer finish()
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -732,7 +758,7 @@ func HandleVisualizeHostsGraph(outDir string) http.HandlerFunc {
 		layout := sanitizeGraphLayout(r.URL.Query().Get("layout"))
 
 		chart := generateHostsGraph(outDir, showLegend, maxNodes, layout)
-		html, err := injectFullHeightCSS(chart.Render)
+		html, err := injectFullHeightCSSForRequest(chart.Render, r)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 			return
@@ -811,7 +837,7 @@ func generateTreemapChart(outDir string, showLegend bool) *charts.TreeMap {
 			charts.WithTreeMapOpts(opts.TreeMapChart{
 				Animation:  opts.Bool(true),
 				Roam:       opts.Bool(true),
-				UpperLabel: &opts.UpperLabel{Show: opts.Bool(true)},
+				UpperLabel: &opts.UpperLabel{Show: opts.Bool(true), Formatter: string(opts.FuncOpts("window.netcapLayerLabel"))},
 				Levels: &[]opts.TreeMapLevel{
 					{
 						ItemStyle: &opts.ItemStyle{
@@ -839,10 +865,11 @@ func generateTreemapChart(outDir string, showLegend bool) *charts.TreeMap {
 				},
 			}),
 			charts.WithLabelOpts(opts.Label{
-				Show:     opts.Bool(true),
-				Position: "inside",
-				Color:    "#ffffff",
-				FontSize: 12,
+				Show:      opts.Bool(true),
+				Formatter: opts.FuncOpts("window.netcapLayerLabel"),
+				Position:  "inside",
+				Color:     "#ffffff",
+				FontSize:  12,
 			}),
 		)
 
@@ -938,11 +965,12 @@ func generateBar3DChart(outDir string, showLegend bool) *charts.Bar3D {
 			},
 		}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(showLegend),
-			Data:   layers,
-			Right:  "10",
-			Top:    "10",
-			Orient: "vertical",
+			Show:      opts.Bool(showLegend),
+			Data:      layers,
+			Formatter: opts.FuncOpts("window.netcapLegendLabel"),
+			Right:     "10",
+			Top:       "10",
+			Orient:    "vertical",
 			TextStyle: &opts.TextStyle{
 				Color: "#ffffff",
 			},
@@ -1093,10 +1121,11 @@ func generateGraphChart(outDir string, showLegend bool, layout string) *charts.G
 			Trigger: "item",
 		}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(showLegend),
-			Data:   categories,
-			Bottom: "0",
-			Left:   "center",
+			Show:      opts.Bool(showLegend),
+			Data:      categories,
+			Formatter: opts.FuncOpts("window.netcapLegendLabel"),
+			Bottom:    "0",
+			Left:      "center",
 			TextStyle: &opts.TextStyle{
 				Color: "#ffffff",
 			},
@@ -1472,7 +1501,7 @@ func (s *Server) handleVisualizeGeoAll(w http.ResponseWriter, r *http.Request) {
 	showLegend := showLegendStr == "true"
 
 	chart := s.generateGeoChartAll(showLegend, s.getUserIP(r))
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -2029,11 +2058,12 @@ func generateHostsGraph(outDir string, showLegend bool, maxNodes int, layout str
 			Trigger: "item",
 		}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(true),
-			Data:   []string{"Internal Network", "External Network"},
-			Top:    "30px",
-			Right:  "20px",
-			Orient: "vertical",
+			Show:      opts.Bool(true),
+			Data:      []string{"Internal Network", "External Network"},
+			Formatter: opts.FuncOpts("window.netcapLegendLabel"),
+			Top:       "30px",
+			Right:     "20px",
+			Orient:    "vertical",
 			TextStyle: &opts.TextStyle{
 				Color:    "#ffffff",
 				FontSize: 14,
@@ -2382,7 +2412,7 @@ func (s *Server) handleVisualizeSankey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	chart := generateSankeyChart(outDir)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -2395,6 +2425,8 @@ func (s *Server) handleVisualizeSankey(w http.ResponseWriter, r *http.Request) {
 // HandleVisualizeSankey is an exported handler factory for service mode
 func HandleVisualizeSankey(outDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w, finish := chartPresentationResponse(w, r)
+		defer finish()
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -2406,7 +2438,7 @@ func HandleVisualizeSankey(outDir string) http.HandlerFunc {
 		}
 
 		chart := generateSankeyChart(outDir)
-		html, err := injectFullHeightCSS(chart.Render)
+		html, err := injectFullHeightCSSForRequest(chart.Render, r)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 			return

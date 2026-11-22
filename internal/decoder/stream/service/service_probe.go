@@ -9,7 +9,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dreadl0ck/netcap/internal/dbs"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/software"
 	"github.com/dreadl0ck/netcap/internal/enrichment"
@@ -37,11 +36,7 @@ func init() {
 func ResetProbeEnums() {}
 
 func initServiceProbes() error {
-	trust, err := dbs.CommunitySigningRoot()
-	var e *servicesignatures.Engine
-	if err == nil {
-		e, err = loadOptionalSignatures(enrichment.Root(resolvers.ConfigRootPath), trust, time.Now())
-	}
+	e, err := loadOptionalSignatures(enrichment.Root(resolvers.ConfigRootPath), enrichment.SigningRoot(), time.Now())
 	if e == nil {
 		e = servicesignatures.Builtin()
 	}

@@ -63,7 +63,7 @@ func (s *Server) handleConnectionsTopByTraffic(w http.ResponseWriter, r *http.Re
 		return
 	}
 	chart := generateConnectionsTopByTrafficChart(snapshot.rows, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -110,7 +110,7 @@ func (s *Server) handleConnectionsProtocols(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	chart := generateConnectionsProtocolsChart(snapshot.rows, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -157,7 +157,7 @@ func (s *Server) handleConnectionsApplications(w http.ResponseWriter, r *http.Re
 		return
 	}
 	chart := generateConnectionsApplicationsChart(snapshot.rows, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -204,7 +204,7 @@ func (s *Server) handleConnectionsDuration(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	chart := generateConnectionsDurationChart(snapshot.rows, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -291,14 +291,13 @@ func generateConnectionsProtocolsChart(connections []ConnectionSummary, showLege
 
 	// Aggregate protocols (use TransportProto or ApplicationProto)
 	protoCount := make(map[string]int)
+	labels := newChartLabelSet()
 	for _, conn := range connections {
 		proto := conn.TransportProto
 		if conn.ApplicationProto != "" {
 			proto = conn.ApplicationProto
 		}
-		if proto == "" {
-			proto = "Unknown"
-		}
+		proto = labels.name(proto, "Unknown")
 		protoCount[proto]++
 	}
 
@@ -329,6 +328,7 @@ func generateConnectionsProtocolsChart(connections []ConnectionSummary, showLege
 		if i < limit {
 			pieData = append(pieData, opts.PieData{
 				Name:  proto.name,
+				Label: labels.label(proto.name),
 				Value: proto.count,
 			})
 		} else {
@@ -338,6 +338,7 @@ func generateConnectionsProtocolsChart(connections []ConnectionSummary, showLege
 	if otherCount > 0 {
 		pieData = append(pieData, opts.PieData{
 			Name:  "Other",
+			Label: chartOwnedLabel("Other"),
 			Value: otherCount,
 		})
 	}

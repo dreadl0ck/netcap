@@ -257,6 +257,7 @@ func (s *Server) queueChildAnalysis(w http.ResponseWriter, r *http.Request, inpu
 		return
 	}
 	respondJSON(w, http.StatusOK, map[string]any{"success": true, "message": "Child analysis queued successfully",
-		"sessionId": job.SessionID, "id": job.SessionID, "path": childInput, "filename": filepath.Base(input),
+		"messageI18n": requestUIMessage(r, "capture.child_queued", "Child analysis queued successfully", nil),
+		"sessionId":   job.SessionID, "id": job.SessionID, "path": childInput, "filename": filepath.Base(input),
 		"parentSessionId": parentSession, "parentInputFile": input})
 }

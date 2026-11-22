@@ -55,7 +55,7 @@ func (s *Server) handleDevicesMACVendors(w http.ResponseWriter, r *http.Request)
 	showLegend := showLegendStr == "true"
 
 	chart := generateDevicesMACVendorsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -93,7 +93,7 @@ func (s *Server) handleDevicesHardware(w http.ResponseWriter, r *http.Request) {
 	showLegend := showLegendStr == "true"
 
 	chart := generateDevicesHardwareChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -131,7 +131,7 @@ func (s *Server) handleDevicesOperatingSystems(w http.ResponseWriter, r *http.Re
 	showLegend := showLegendStr != "false"
 
 	chart := generateDevicesOperatingSystemsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -169,7 +169,7 @@ func (s *Server) handleDevicesApplications(w http.ResponseWriter, r *http.Reques
 	showLegend := showLegendStr == "true"
 
 	chart := generateDevicesApplicationsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -207,7 +207,7 @@ func (s *Server) handleDevicesTrafficDistribution(w http.ResponseWriter, r *http
 	showLegend := showLegendStr != "false"
 
 	chart := generateDevicesTrafficDistributionChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -226,11 +226,9 @@ func generateDevicesMACVendorsChart(outDir string, showLegend bool) *charts.Bar 
 
 	// Aggregate MAC vendors
 	vendorCount := make(map[string]int)
+	labels := newChartLabelSet()
 	for _, device := range devices {
-		vendor := device.DeviceManufacturer
-		if vendor == "" {
-			vendor = "Unknown"
-		}
+		vendor := labels.name(device.DeviceManufacturer, "Unknown")
 		vendorCount[vendor]++
 	}
 
@@ -292,8 +290,9 @@ func generateDevicesMACVendorsChart(outDir string, showLegend bool) *charts.Bar 
 		}),
 		charts.WithXAxisOpts(opts.XAxis{
 			AxisLabel: &opts.AxisLabel{
-				Rotate: 45,
-				Color:  "#ffffff",
+				Formatter: labels.axisFormatter(),
+				Rotate:    45,
+				Color:     "#ffffff",
 			},
 		}),
 		charts.WithYAxisOpts(opts.YAxis{
@@ -330,9 +329,10 @@ func generateDevicesHardwareChart(outDir string, showLegend bool) *charts.Bar {
 		}
 	}
 
+	labels := newChartLabelSet()
 	// If no device types found, show a message
 	if len(deviceTypeCount) == 0 {
-		deviceTypeCount["No device types detected"] = 1
+		deviceTypeCount[labels.name("", "No device types detected")] = 1
 	}
 
 	// Convert to sortable slice
@@ -393,8 +393,9 @@ func generateDevicesHardwareChart(outDir string, showLegend bool) *charts.Bar {
 		}),
 		charts.WithXAxisOpts(opts.XAxis{
 			AxisLabel: &opts.AxisLabel{
-				Rotate: 45,
-				Color:  "#ffffff",
+				Formatter: labels.axisFormatter(),
+				Rotate:    45,
+				Color:     "#ffffff",
 			},
 		}),
 		charts.WithYAxisOpts(opts.YAxis{
@@ -433,9 +434,10 @@ func generateDevicesOperatingSystemsChart(outDir string, showLegend bool) *chart
 		}
 	}
 
+	labels := newChartLabelSet()
 	// If no OS data, show a placeholder
 	if len(osCount) == 0 {
-		osCount["Unknown OS"] = 1
+		osCount[labels.name("", "Unknown OS")] = 1
 	}
 
 	// Convert to sortable slice
@@ -462,6 +464,7 @@ func generateDevicesOperatingSystemsChart(outDir string, showLegend bool) *chart
 	for _, os := range operatingSystems {
 		pieData = append(pieData, opts.PieData{
 			Name:  os.name,
+			Label: labels.label(os.name),
 			Value: os.count,
 		})
 	}
@@ -524,9 +527,10 @@ func generateDevicesApplicationsChart(outDir string, showLegend bool) *charts.Ba
 		}
 	}
 
+	labels := newChartLabelSet()
 	// If no applications found, show a message
 	if len(appCount) == 0 {
-		appCount["No applications detected"] = 1
+		appCount[labels.name("", "No applications detected")] = 1
 	}
 
 	// Convert to sortable slice
@@ -587,8 +591,9 @@ func generateDevicesApplicationsChart(outDir string, showLegend bool) *charts.Ba
 		}),
 		charts.WithXAxisOpts(opts.XAxis{
 			AxisLabel: &opts.AxisLabel{
-				Rotate: 45,
-				Color:  "#ffffff",
+				Formatter: labels.axisFormatter(),
+				Rotate:    45,
+				Color:     "#ffffff",
 			},
 		}),
 		charts.WithYAxisOpts(opts.YAxis{
@@ -636,6 +641,7 @@ func generateDevicesTrafficDistributionChart(outDir string, showLegend bool) *ch
 	if len(pieData) == 0 {
 		pieData = append(pieData, opts.PieData{
 			Name:  "No devices",
+			Label: chartOwnedLabel("No devices"),
 			Value: 0,
 		})
 	}

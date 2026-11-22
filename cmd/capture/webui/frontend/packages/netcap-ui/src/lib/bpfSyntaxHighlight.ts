@@ -18,6 +18,7 @@
  */
 
 import { escapeHTML } from './html';
+import { appearanceTokens, type AppearanceMode } from './appearance';
 
 /**
  * Syntax highlighting for BPF (Berkeley Packet Filter) expressions
@@ -64,7 +65,8 @@ const OPERATORS = new Set(['and', 'or', 'not', '!', '&&', '||']);
 /**
  * Tokenize and highlight a BPF filter expression
  */
-export function highlightBPFExpression(expression: string): BPFToken[] {
+export function highlightBPFExpression(expression: string, mode: AppearanceMode = 'dark'): BPFToken[] {
+  const colors = appearanceTokens(mode).syntax;
   if (!expression) {
     return [];
   }
@@ -83,12 +85,12 @@ export function highlightBPFExpression(expression: string): BPFToken[] {
 
     // Parentheses and logical operators (symbols)
     if (word === '(' || word === ')') {
-      tokens.push({ type: 'operator', value: word, color: '#ffd700' });
+      tokens.push({ type: 'operator', value: word, color: colors.operator });
       continue;
     }
 
     if (word === '&&' || word === '||' || word === '!') {
-      tokens.push({ type: 'operator', value: word, color: '#d4d4d4' });
+      tokens.push({ type: 'operator', value: word, color: colors.text });
       continue;
     }
 
@@ -96,54 +98,54 @@ export function highlightBPFExpression(expression: string): BPFToken[] {
 
     // Protocols
     if (PROTOCOLS.has(lowerWord)) {
-      tokens.push({ type: 'protocol', value: word, color: '#569cd6' }); // Blue
+      tokens.push({ type: 'protocol', value: word, color: colors.key });
       continue;
     }
 
     // Operators (and, or, not)
     if (OPERATORS.has(lowerWord)) {
-      tokens.push({ type: 'operator', value: word, color: '#d4d4d4' }); // Gray
+      tokens.push({ type: 'operator', value: word, color: colors.text });
       continue;
     }
 
     // Keywords
     if (KEYWORDS.has(lowerWord)) {
-      tokens.push({ type: 'keyword', value: word, color: '#c586c0' }); // Purple
+      tokens.push({ type: 'keyword', value: word, color: colors.keyword });
       continue;
     }
 
     // Numbers (ports, VLAN IDs, etc.)
     if (/^\d+$/.test(word)) {
-      tokens.push({ type: 'number', value: word, color: '#b5cea8' }); // Light green
+      tokens.push({ type: 'number', value: word, color: colors.number });
       continue;
     }
 
     // IP addresses (simple pattern)
     if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d+)?$/.test(word)) {
-      tokens.push({ type: 'ip', value: word, color: '#4ec9b0' }); // Teal
+      tokens.push({ type: 'ip', value: word, color: colors.number });
       continue;
     }
 
     // IPv6 addresses (simple pattern)
     if (/^[0-9a-fA-F:]+$/.test(word) && word.includes(':')) {
-      tokens.push({ type: 'ip', value: word, color: '#4ec9b0' }); // Teal
+      tokens.push({ type: 'ip', value: word, color: colors.number });
       continue;
     }
 
     // MAC addresses
     if (/^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$/.test(word)) {
-      tokens.push({ type: 'string', value: word, color: '#ce9178' }); // Orange
+      tokens.push({ type: 'string', value: word, color: colors.string });
       continue;
     }
 
     // CIDR notation or ranges
     if (word.includes('/') || word.includes('-')) {
-      tokens.push({ type: 'string', value: word, color: '#ce9178' }); // Orange
+      tokens.push({ type: 'string', value: word, color: colors.string });
       continue;
     }
 
     // Default: treat as text/identifier
-    tokens.push({ type: 'text', value: word, color: '#9cdcfe' }); // Light blue
+    tokens.push({ type: 'text', value: word, color: colors.key });
   }
 
   return tokens;
@@ -162,5 +164,4 @@ export function bpfTokensToHTML(tokens: BPFToken[]): string {
     })
     .join('');
 }
-
 

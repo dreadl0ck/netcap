@@ -43,6 +43,13 @@ import {
   KeyboardArrowDown as KeyboardArrowDownIcon,
 } from '@mui/icons-material';
 import { api, ConversationData } from '../lib/api';
+import { alpha, useTheme } from '@mui/material/styles';
+import { message as i18nMessage, translate as i18nText, richText as i18nRichText, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { translate } from "../lib/i18n";
+import { errorText, metadataMessage } from "../lib/i18n";
+
+
+
 
 interface ConversationModalProps {
   open: boolean;
@@ -189,7 +196,7 @@ function generateHexRows(segments: ParsedSegment[], baseOffset: number): HexRow[
 }
 
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) return translate("ui:m_5ae3dd1f8c5e69491688");
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -209,9 +216,11 @@ export default function ConversationModal({
   hasPrevious = false,
   hasNext = false,
 }: ConversationModalProps) {
+  const __uiLocale = useUILocale();
+  const theme = useTheme();
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UIMessageText | null>(null);
   const [currentChunk, setCurrentChunk] = useState<ConversationData | null>(null);
   const [currentOffset, setCurrentOffset] = useState(0);
   const [totalSize, setTotalSize] = useState(0);
@@ -283,20 +292,20 @@ export default function ConversationModal({
         }
 
         if (!data.exists) {
-          setError(data.errorMessage || 'Conversation data not found');
+          setError(metadataMessage(data, 'errorMessage') || i18nMessage("ui:m_2d9e5613a1b646b95cef"));
           setCurrentChunk(null);
         } else {
           setCurrentChunk(data);
           setTotalSize(data.totalSize);
         }
       } catch (err: any) {
-        setError(err.message || 'Failed to load conversation data');
+        setError(errorText(err) || i18nMessage("ui:m_1f0df3dbf3accba2201b"));
         setCurrentChunk(null);
       } finally {
         setLoading(false);
       }
     },
-    [srcIP, srcPort, dstIP, dstPort, protocol, isNetworkLayer]
+    [srcIP, srcPort, dstIP, dstPort, protocol, isNetworkLayer, __uiLocale]
   );
 
   // Load initial chunk when modal opens
@@ -408,8 +417,7 @@ export default function ConversationModal({
   }, [currentChunk, currentOffset]);
 
   return (
-    <Dialog
-      open={open}
+    <Dialog open={open}
       onClose={onClose}
       maxWidth="lg"
       fullWidth
@@ -419,91 +427,30 @@ export default function ConversationModal({
           height: '85vh',
           maxHeight: '900px',
         },
-      }}
-    >
-      <DialogTitle>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          {isMobile && (
-            <IconButton onClick={onClose} edge="start" sx={{ mr: 1 }}>
-              <CloseIcon />
-            </IconButton>
-          )}
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h6">Raw Conversation Data</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
-              <Box component="span" sx={{ color: '#f44336', fontWeight: 'bold' }}>
-                {srcIP}
-              </Box>
-              {srcPort && (
-                <>
-                  <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
-                  <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>
-                    {srcPort}
-                  </Box>
-                </>
-              )}
-              {' → '}
-              <Box component="span" sx={{ color: '#2196f3', fontWeight: 'bold' }}>
-                {dstIP}
-              </Box>
-              {dstPort && (
-                <>
-                  <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
-                  <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>
-                    {dstPort}
-                  </Box>
-                </>
-              )}
-              {' '}
-              ({protocol || 'Network Layer'})
-            </Typography>
-            {totalSize > 0 && (
+      }}><DialogTitle><Box display="flex" justifyContent="space-between" alignItems="center">{isMobile && (
+            <IconButton onClick={onClose} edge="start" sx={{ mr: 1 }}><CloseIcon /></IconButton>
+          )}<Box sx={{ flex: 1 }}><Typography variant="h6">{i18nText("ui:m_9aca2f885bb3e4154ff9")}</Typography><Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}><Box component="span" sx={{ color: 'error.main', fontWeight: 'bold' }}>{srcIP}</Box>{srcPort && (
+                <><Box component="span" sx={{ color: 'text.secondary' }}>:</Box><Box component="span" sx={{ color: 'warning.main', fontWeight: 'medium' }}>{srcPort}</Box></>
+              )}{' → '}<Box component="span" sx={{ color: 'primary.main', fontWeight: 'bold' }}>{dstIP}</Box>{dstPort && (
+                <><Box component="span" sx={{ color: 'text.secondary' }}>:</Box><Box component="span" sx={{ color: 'warning.main', fontWeight: 'medium' }}>{dstPort}</Box></>
+              )}{' '}({protocol || i18nText("ui:m_ac4d476332d142d0aaea")})
+            </Typography>{totalSize > 0 && (
               <Typography variant="caption" color="text.secondary">
-                Total size: {formatBytes(totalSize)} • Page {currentPage} of {totalPages}
+                {i18nRichText("ui:m_14c7d602c33df75324ce", { arg0: formatBytes(totalSize), arg1: currentPage, arg2: totalPages })}
               </Typography>
-            )}
-          </Box>
-          {/* Connection navigation buttons */}
-          {(onNavigatePrevious || onNavigateNext) && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', ml: 2 }}>
-              <IconButton
-                size="small"
+            )}</Box>{/* Connection navigation buttons */}{(onNavigatePrevious || onNavigateNext) && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', ml: 2 }}><IconButton size="small"
                 onClick={onNavigatePrevious}
                 disabled={!hasPrevious}
-                title="Previous connection (↑)"
-              >
-                <KeyboardArrowUpIcon />
-              </IconButton>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                ↑↓
-              </Typography>
-              <IconButton
-                size="small"
+                title={i18nText("ui:m_21720efef02aec92ccdb")}><KeyboardArrowUpIcon /></IconButton><Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>↑↓
+              </Typography><IconButton size="small"
                 onClick={onNavigateNext}
                 disabled={!hasNext}
-                title="Next connection (↓)"
-              >
-                <KeyboardArrowDownIcon />
-              </IconButton>
-            </Box>
-          )}
-        </Box>
-      </DialogTitle>
-
-      {loading && <LinearProgress />}
-
-      <DialogContent dividers sx={{ p: 0 }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-        {error && (
-          <Box p={3}>
-            <Alert severity="warning">{error}</Alert>
-          </Box>
-        )}
-
-        {!error && currentChunk && currentChunk.exists && (
-          <Box sx={{ height: '100%', overflow: 'auto' }}>
-            {/* Legend */}
-            <Box
-              sx={{
+                title={i18nText("ui:m_aaa7420a9ac0b125ed58")}><KeyboardArrowDownIcon /></IconButton></Box>
+          )}</Box></DialogTitle>{loading && <LinearProgress />}<DialogContent dividers sx={{ p: 0 }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>{i18nRenderText(error) && (
+          <Box p={3}><Alert severity="warning">{i18nRenderText(error)}</Alert></Box>
+        )}{!error && currentChunk && currentChunk.exists && (
+          <Box sx={{ height: '100%', overflow: 'auto' }}>{/* Legend */}<Box sx={{
                 position: 'sticky',
                 top: 0,
                 bgcolor: 'background.paper',
@@ -516,195 +463,99 @@ export default function ConversationModal({
                 justifyContent: 'space-between',
                 alignItems: { xs: 'stretch', sm: 'center' },
                 zIndex: 1,
-              }}
-            >
-              <Box sx={{ display: 'flex', gap: { xs: 1.5, sm: 3 }, alignItems: 'center', flexWrap: 'wrap' }}>
-                <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box
-                    sx={{
+              }}><Box sx={{ display: 'flex', gap: { xs: 1.5, sm: 3 }, alignItems: 'center', flexWrap: 'wrap' }}><Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{
                       width: 12,
                       height: 12,
-                      bgcolor: 'rgba(244, 67, 54, 0.2)',
-                      border: '1px solid #f44336',
-                    }}
-                  />
-                  Client → Server
-                </Typography>
-                <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box
-                    sx={{
+                      bgcolor: alpha(theme.palette.error.main, 0.08),
+                      border: '1px solid', borderColor: 'error.main',
+                    }} />
+                  {i18nText("ui:m_3ef016cb00567258ba22")}
+                </Typography><Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{
                       width: 12,
                       height: 12,
-                      bgcolor: 'rgba(33, 150, 243, 0.2)',
-                      border: '1px solid #2196f3',
-                    }}
-                  />
-                  Server → Client
-                </Typography>
-                
-                {/* View Mode Toggle */}
-                <IconButton
-                  size="small"
+                      bgcolor: alpha(theme.palette.primary.main, 0.08),
+                      border: '1px solid', borderColor: 'primary.main',
+                    }} />
+                  {i18nText("ui:m_5c679d5f4ef56da5ae74")}
+                </Typography>{/* View Mode Toggle */}<IconButton size="small"
                   onClick={() => setViewMode(viewMode === 'ascii' ? 'hex' : 'ascii')}
-                  title={viewMode === 'ascii' ? 'Switch to Hex View' : 'Switch to ASCII View'}
-                  sx={{ ml: 2 }}
-                >
-                  {viewMode === 'ascii' ? <GridOnIcon fontSize="small" /> : <ViewHeadlineIcon fontSize="small" />}
-                </IconButton>
-              </Box>
-              
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <IconButton
-                    size="small"
+                  title={viewMode === 'ascii' ? i18nText("ui:m_fea011c8c4dac0157167") : i18nText("ui:m_84341353e300b9fdf4a8")}
+                  sx={{ ml: 2 }}>{viewMode === 'ascii' ? <GridOnIcon fontSize="small" /> : <ViewHeadlineIcon fontSize="small" />}</IconButton></Box>{/* Pagination Controls */}{totalPages > 1 && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><IconButton size="small"
                     onClick={handlePrevious}
-                    disabled={currentOffset === 0 || loading}
-                  >
-                    <NavigateBeforeIcon />
-                  </IconButton>
-                  <Typography variant="caption">
-                    {currentPage} / {totalPages}
-                  </Typography>
-                  <IconButton
-                    size="small"
+                    disabled={currentOffset === 0 || loading}><NavigateBeforeIcon /></IconButton><Typography variant="caption">{currentPage}/ {totalPages}</Typography><IconButton size="small"
                     onClick={handleNext}
-                    disabled={!currentChunk?.hasMore || loading}
-                  >
-                    <NavigateNextIcon />
-                  </IconButton>
-                </Box>
-              )}
-            </Box>
-
-            {/* ASCII-only view (default) */}
-            {viewMode === 'ascii' && (
-              <Box
-                sx={{
+                    disabled={!currentChunk?.hasMore || loading}><NavigateNextIcon /></IconButton></Box>
+              )}</Box>{/* ASCII-only view (default) */}{viewMode === 'ascii' && (
+              <Box sx={{
                   fontFamily: 'Courier New, monospace',
                   fontSize: { xs: '11px', sm: '13px' },
                   lineHeight: 1.6,
                   p: 2,
-                  bgcolor: '#1e1e1e',
-                  color: '#d4d4d4',
+                  bgcolor: 'background.default',
+                  color: 'text.primary',
                   whiteSpace: 'pre',
                   overflowX: 'auto',
-                }}
-              >
-                {hexRows.map((row) => {
+                }}>{hexRows.map((row) => {
                   const text = row.asciiChars.join('');
                   
                   return (
-                    <Box
-                      key={row.offset}
+                    <Box key={row.offset}
                       component="span"
                       sx={{
                         bgcolor: row.isClient
-                          ? 'rgba(244, 67, 54, 0.2)'
-                          : 'rgba(33, 150, 243, 0.2)',
-                        color: row.isClient ? '#ff8a80' : '#82b1ff',
+                          ? alpha(theme.palette.error.main, 0.08)
+                          : alpha(theme.palette.primary.main, 0.08),
+                        color: row.isClient ? 'error.main' : 'primary.main',
                         display: 'inline',
-                      }}
-                    >
-                      {text}
-                    </Box>
+                      }}>{text}</Box>
                   );
-                })}
-
-                {hexRows.length === 0 && !loading && (
+                })}{hexRows.length === 0 && !loading && (
                   <Typography variant="body2" color="text.secondary" align="center">
-                    No conversation data available
+                    {i18nText("ui:m_70fd721fb86eba26e4dd")}
                   </Typography>
-                )}
-              </Box>
-            )}
-
-            {/* Hex dump display */}
-            {viewMode === 'hex' && (
-              <Box
-                sx={{
+                )}</Box>
+            )}{/* Hex dump display */}{viewMode === 'hex' && (
+              <Box sx={{
                   fontFamily: 'Courier New, monospace',
                   fontSize: { xs: '11px', sm: '13px' },
                   lineHeight: 1.4,
                   p: 2,
-                  bgcolor: '#1e1e1e',
-                  color: '#d4d4d4',
-                }}
-              >
-              {hexRows.map((row) => (
-                <Box
-                  key={row.offset}
+                  bgcolor: 'background.default',
+                  color: 'text.primary',
+                }}>{hexRows.map((row) => (
+                <Box key={row.offset}
                     sx={{
                       display: 'flex',
                       gap: 2,
                       py: 0.25,
                       px: 1,
                       bgcolor: row.isClient
-                        ? 'rgba(244, 67, 54, 0.15)'
-                        : 'rgba(33, 150, 243, 0.15)',
-                      borderLeft: row.isClient ? '3px solid #f44336' : '3px solid #2196f3',
-                    }}
-                  >
-                    {/* Offset - hidden on mobile */}
-                    <Box sx={{ color: '#858585', minWidth: '60px', display: { xs: 'none', sm: 'block' } }}>
-                      {row.offset.toString(16).padStart(8, '0')}
-                    </Box>
-
-                    {/* Hex bytes (split into two groups of 8) */}
-                    <Box sx={{ display: 'flex', gap: { xs: 1, sm: 2 }, minWidth: { xs: 'auto', sm: '400px' }, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
-                      <Box sx={{ display: 'flex', gap: 0.5 }}>
-                        {row.hexBytes.slice(0, 8).map((hex, i) => (
-                          <Box key={i} sx={{ minWidth: '20px' }}>
-                            {hex}
-                          </Box>
-                        ))}
-                      </Box>
-                      <Box sx={{ display: 'flex', gap: 0.5 }}>
-                        {row.hexBytes.slice(8, 16).map((hex, i) => (
-                          <Box key={i} sx={{ minWidth: '20px' }}>
-                            {hex}
-                          </Box>
-                        ))}
-                      </Box>
-                    </Box>
-
-                    {/* ASCII representation */}
-                    <Box sx={{ color: row.isClient ? '#ff8a80' : '#82b1ff' }}>
-                      {row.asciiChars.join('')}
-                    </Box>
-                  </Box>
-                ))}
-
-                {hexRows.length === 0 && !loading && (
+                        ? alpha(theme.palette.error.main, 0.08)
+                        : alpha(theme.palette.primary.main, 0.08),
+                      borderLeft: '3px solid', borderColor: row.isClient ? 'error.main' : 'primary.main',
+                    }}>{/* Offset - hidden on mobile */}<Box sx={{ color: 'text.secondary', minWidth: '60px', display: { xs: 'none', sm: 'block' } }}>{row.offset.toString(16).padStart(8, '0')}</Box>{/* Hex bytes (split into two groups of 8) */}<Box sx={{ display: 'flex', gap: { xs: 1, sm: 2 }, minWidth: { xs: 'auto', sm: '400px' }, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}><Box sx={{ display: 'flex', gap: 0.5 }}>{row.hexBytes.slice(0, 8).map((hex, i) => (
+                          <Box key={i} sx={{ minWidth: '20px' }}>{hex}</Box>
+                        ))}</Box><Box sx={{ display: 'flex', gap: 0.5 }}>{row.hexBytes.slice(8, 16).map((hex, i) => (
+                          <Box key={i} sx={{ minWidth: '20px' }}>{hex}</Box>
+                        ))}</Box></Box>{/* ASCII representation */}<Box sx={{ color: row.isClient ? 'error.main' : 'primary.main' }}>{row.asciiChars.join('')}</Box></Box>
+                ))}{hexRows.length === 0 && !loading && (
                   <Typography variant="body2" color="text.secondary" align="center">
-                    No conversation data available
+                    {i18nText("ui:m_70fd721fb86eba26e4dd")}
                   </Typography>
-                )}
-              </Box>
-            )}
-          </Box>
-        )}
-      </DialogContent>
-
-      <DialogActions sx={{ justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
-        {/* Page Selector */}
-        {totalPages > 1 && (
-          <Pagination
-            count={totalPages}
+                )}</Box>
+            )}</Box>
+        )}</DialogContent><DialogActions sx={{ justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>{/* Page Selector */}{totalPages > 1 && (
+          <Pagination count={totalPages}
             page={currentPage}
             onChange={handlePageChange}
             disabled={loading}
             size="small"
             showFirstButton
             showLastButton
-            siblingCount={isMobile ? 0 : 1}
-          />
-        )}
-        <Box sx={{ flex: 1, display: { xs: 'none', sm: 'block' } }} />
-        <Button onClick={onClose} startIcon={<CloseIcon />}>
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
+            siblingCount={isMobile ? 0 : 1} />
+        )}<Box sx={{ flex: 1, display: { xs: 'none', sm: 'block' } }} /><Button onClick={onClose} startIcon={<CloseIcon />}>
+          {i18nText("ui:m_a695258f28d817037ea8")}
+        </Button></DialogActions></Dialog>
   );
 }

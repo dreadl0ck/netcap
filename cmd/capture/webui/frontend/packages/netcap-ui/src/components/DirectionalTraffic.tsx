@@ -1,21 +1,11 @@
 import { Box, Stack, Typography } from '@mui/material';
 import { formatBytes } from '../lib/api';
+import { richText as i18nRichText, getLocale as getUILocale, translate as i18nText, formatNumber as i18nNumber, useLocale as useUILocale } from "../lib/i18n";
+
 
 export default function DirectionalTraffic({ client, server, flows }: { client: number; server: number; flows?: number }) {
+  const __uiLocale = useUILocale();
   const total = client + server;
   const clientPercent = total > 0 ? client / total * 100 : 0;
-  return <Stack spacing={1}>
-    <Stack direction="row" justifyContent="space-between" alignItems="baseline">
-      <Typography variant="h6" sx={{ fontVariantNumeric: 'tabular-nums' }}>{formatBytes(total)} <Typography component="span" variant="caption" color="text.secondary">total</Typography></Typography>
-      {flows !== undefined && <Typography variant="body2" color="text.secondary">{flows.toLocaleString()} {flows === 1 ? 'flow' : 'flows'}</Typography>}
-    </Stack>
-    <Box role="img" aria-label={`Client to server ${formatBytes(client)}, server to client ${formatBytes(server)}`} sx={{ display: 'flex', height: 8, borderRadius: 1, overflow: 'hidden', bgcolor: 'action.hover' }}>
-      <Box sx={{ width: `${clientPercent}%`, bgcolor: 'primary.main' }} />
-      <Box sx={{ width: `${total > 0 ? 100 - clientPercent : 0}%`, bgcolor: 'secondary.main' }} />
-    </Box>
-    <Stack direction="row" justifyContent="space-between" gap={2}>
-      <Box><Typography variant="caption" color="text.secondary">Client → Server</Typography><Typography variant="body2" sx={{ fontVariantNumeric: 'tabular-nums' }}>{formatBytes(client)} <Typography component="span" variant="caption" color="text.secondary">({clientPercent.toFixed(1)}%)</Typography></Typography></Box>
-      <Box sx={{ textAlign: 'right' }}><Typography variant="caption" color="text.secondary">Server → Client</Typography><Typography variant="body2" sx={{ fontVariantNumeric: 'tabular-nums' }}>{formatBytes(server)} <Typography component="span" variant="caption" color="text.secondary">({total > 0 ? (100 - clientPercent).toFixed(1) : '0.0'}%)</Typography></Typography></Box>
-    </Stack>
-  </Stack>;
+  return <Stack spacing={1}><Stack direction="row" justifyContent="space-between" alignItems="baseline"><Typography variant="h6" sx={{ fontVariantNumeric: 'tabular-nums' }}>{i18nRichText("ui:m_a606b8b1982a19f03f68", { arg0: formatBytes(total), tag0: (chunks: import('react').ReactNode[]) => <Typography component="span" variant="caption" color="text.secondary">{chunks}</Typography> })}</Typography>{flows !== undefined && <Typography variant="body2" color="text.secondary">{flows.toLocaleString(getUILocale())}{flows === 1 ? i18nText("ui:m_995a2b0c23871d4849d8") : i18nText("ui:m_dda4d2acba2a00a54d3d")}</Typography>}</Stack><Box role="img" aria-label={i18nText("ui:m_69fba70fda1a56c65823", { arg0: formatBytes(client), arg1: formatBytes(server) })} sx={{ display: 'flex', height: 8, borderRadius: 1, overflow: 'hidden', bgcolor: 'action.hover' }}><Box sx={{ width: `${clientPercent}%`, bgcolor: 'primary.main' }} /><Box sx={{ width: `${total > 0 ? 100 - clientPercent : 0}%`, bgcolor: 'secondary.main' }} /></Box><Stack direction="row" justifyContent="space-between" gap={2}><Box><Typography variant="caption" color="text.secondary">{i18nText("ui:m_3ef016cb00567258ba22")}</Typography><Typography variant="body2" sx={{ fontVariantNumeric: 'tabular-nums' }}>{formatBytes(client)}<Typography component="span" variant="caption" color="text.secondary">({i18nNumber(clientPercent, { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false })}%)</Typography></Typography></Box><Box sx={{ textAlign: 'right' }}><Typography variant="caption" color="text.secondary">{i18nText("ui:m_5c679d5f4ef56da5ae74")}</Typography><Typography variant="body2" sx={{ fontVariantNumeric: 'tabular-nums' }}>{formatBytes(server)}<Typography component="span" variant="caption" color="text.secondary">({total > 0 ? i18nNumber((100 - clientPercent), { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false }) : '0.0'}%)</Typography></Typography></Box></Stack></Stack>;
 }

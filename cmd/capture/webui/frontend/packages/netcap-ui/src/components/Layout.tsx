@@ -66,7 +66,7 @@ import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import CodeIcon from '@mui/icons-material/Code';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
-import { keyframes } from '@mui/material/styles';
+import { alpha, keyframes } from '@mui/material/styles';
 import useSWR from 'swr';
 
 import { useNetcapRouter } from '../hooks/useNetcapRouter';
@@ -77,6 +77,7 @@ import LearnModeOverlay from './LearnModeOverlay';
 import CommunityIDFilterBar from './CommunityIDFilterBar';
 import MobileBottomNav from './MobileBottomNav';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
+import { useTranslate } from '../lib/i18n';
 
 const drawerWidth = 264;
 
@@ -100,15 +101,15 @@ const SELECTED_MENU_ITEM_SX = {
   },
   '& .MuiSvgIcon-root': { fontSize: 19 },
   '&:hover': {
-    backgroundColor: 'rgba(59, 130, 246, 0.07)',
+    backgroundColor: 'action.hover',
     color: 'text.primary',
   },
   '&.Mui-selected': {
-    backgroundColor: 'rgba(59, 130, 246, 0.13)',
-    color: 'primary.light',
-    boxShadow: 'inset 2px 0 #3b82f6',
+    backgroundColor: 'action.selected',
+    color: 'primary.main',
+    boxShadow: 'inset 2px 0 currentColor',
     '&:hover': {
-      backgroundColor: 'rgba(59, 130, 246, 0.18)',
+      backgroundColor: 'action.hover',
     },
     '& .MuiListItemIcon-root': {
       color: 'primary.main',
@@ -168,7 +169,7 @@ const SECTION_LABEL_SX = {
   px: 2.5,
   pt: 2,
   pb: 0.75,
-  color: 'text.disabled',
+  color: 'text.secondary',
   fontFamily: 'var(--netcap-mono)',
   fontSize: '0.61rem',
   fontWeight: 600,
@@ -185,13 +186,14 @@ export interface LayoutProps {
 }
 
 export function Layout({ children, title, headerAction, topPadding }: LayoutProps) {
+  const t = useTranslate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const isMobile = useIsMobile();
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const Link = useNetcapLink();
-  const { navigationItems = [], fullscreen } = useNetcapConfig();
+  const { navigationItems = [], headerActions, fullscreen } = useNetcapConfig();
   const appBarRef = useRef<HTMLElement | null>(null);
   const [appBarHeight, setAppBarHeight] = useState(72);
   const fullscreenSupported = !!fullscreen || (typeof document !== 'undefined' && !!document.fullscreenEnabled);
@@ -343,11 +345,11 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
       <Link key={item.path} href={item.path} passHref style={LINK_STYLE}>
         <ListItemButton
           selected={router.isActive(item.path)}
-          data-learn={item.description}
+          data-learn={item.description ? t(item.description) : undefined}
           sx={nested ? { ...SELECTED_MENU_ITEM_SX, pl: 4 } : SELECTED_MENU_ITEM_SX}
         >
           <ListItemIcon>{item.icon}</ListItemIcon>
-          <ListItemText primary={item.label} />
+          <ListItemText primary={t(item.label)} />
         </ListItemButton>
       </Link>
     ));
@@ -363,7 +365,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
           overflow: 'hidden',
           borderBottom: '1px solid',
           borderColor: 'divider',
-          backgroundImage: 'radial-gradient(circle at 50% 120%, rgba(59,130,246,.22), transparent 52%), linear-gradient(rgba(59,130,246,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,.04) 1px, transparent 1px)',
+          backgroundImage: theme => `radial-gradient(circle at 50% 120%, ${alpha(theme.palette.primary.main, 0.22)}, transparent 52%), linear-gradient(${alpha(theme.palette.primary.main, 0.045)} 1px, transparent 1px), linear-gradient(90deg, ${alpha(theme.palette.secondary.main, 0.04)} 1px, transparent 1px)`,
           backgroundSize: 'auto, 20px 20px, 20px 20px',
         }}
       >
@@ -383,7 +385,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                 position: 'absolute',
                 zIndex: 0,
                 inset: '-24px 16px',
-                background: 'radial-gradient(ellipse at center, rgba(59, 130, 246, 0.42) 0%, rgba(59, 130, 246, 0.14) 42%, transparent 72%)',
+                background: theme => `radial-gradient(ellipse at center, ${alpha(theme.palette.primary.main, 0.42)} 0%, ${alpha(theme.palette.primary.main, 0.14)} 42%, transparent 72%)`,
                 filter: 'blur(7px)',
                 animation: `${logoGlowPulse} 6s ease-in-out infinite`,
               },
@@ -393,13 +395,13 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                 zIndex: 1,
                 inset: 0,
                 opacity: 0,
-                background: 'radial-gradient(circle at 50% 55%, rgba(96,165,250,.24), rgba(139,92,246,.09) 34%, transparent 66%)',
+                background: theme => `radial-gradient(circle at 50% 55%, ${alpha(theme.palette.primary.main, 0.24)}, ${alpha(theme.palette.secondary.main, 0.09)} 34%, transparent 66%)`,
                 transition: 'opacity 220ms ease',
               },
               '&:hover::after': { opacity: 1 },
               '&:hover img': {
                 transform: 'scale(1.08)',
-                filter: 'drop-shadow(0 0 10px rgba(59,130,246,.58)) drop-shadow(0 0 22px rgba(139,92,246,.28))',
+                filter: theme => `drop-shadow(0 0 10px ${alpha(theme.palette.primary.main, 0.58)}) drop-shadow(0 0 22px ${alpha(theme.palette.secondary.main, 0.28)})`,
               },
               '@media (prefers-reduced-motion: reduce)': {
                 '&::before': { animation: 'none', opacity: 0.58 },
@@ -413,36 +415,36 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
         </Link>
       </Toolbar>
       <List sx={{ flexGrow: 1, pt: 0, pb: 2, overflowY: 'auto', overflowX: 'hidden' }}>
-        <Typography component="li" sx={SECTION_LABEL_SX}>Workspace</Typography>
+        <Typography component="li" sx={SECTION_LABEL_SX}>{t('Workspace')}</Typography>
         <Link href="/" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/')}
-            data-learn="Dashboard: Overview of system status, processing statistics, and quick access to key metrics."
+            data-learn={t('Dashboard: Overview of system status, processing statistics, and quick access to key metrics.')}
             sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <DashboardIcon />
             </ListItemIcon>
-            <ListItemText primary="Dashboard" />
+            <ListItemText primary={t('Dashboard')} />
           </ListItemButton>
         </Link>
         <Link href="/analyze" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/analyze')}
-            data-learn="Analyze: Upload and process PCAP files to extract network traffic information and generate audit records."
+            data-learn={t('Analyze: Upload and process PCAP files to extract network traffic information and generate audit records.')}
             sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <CloudUploadIcon />
             </ListItemIcon>
-            <ListItemText primary="Analyze" />
+            <ListItemText primary={t('Analyze')} />
           </ListItemButton>
         </Link>
         {renderNavigationItems('workspace-before-pcaps')}
         <Link href="/pcaps" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/pcaps')}
-            data-learn="Manage uploaded packet capture files, view processing status, and download results."
+            data-learn={t('Manage uploaded packet capture files, view processing status, and download results.')}
             sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
@@ -455,20 +457,21 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                 <InsertDriveFileIcon />
               </Badge>
             </ListItemIcon>
-            <ListItemText primary="PCAPs" />
+            <ListItemText primary={t('PCAPs')} />
           </ListItemButton>
         </Link>
         {renderNavigationItems('main')}
-        <Typography component="li" sx={SECTION_LABEL_SX}>Investigation</Typography>
+        <Typography component="li" sx={SECTION_LABEL_SX}>{t('Investigation')}</Typography>
         <ListItemButton
           onClick={() => setDataMenuOpen(!dataMenuOpen)}
-          data-learn="Data: Access network traffic data including audit records, visualizations, hosts, devices, connections, and more."
+          data-learn={t('Data: Access network traffic data including audit records, visualizations, hosts, devices, connections, and more.')}
+          aria-expanded={dataMenuOpen}
           sx={SELECTED_MENU_ITEM_SX}
         >
           <ListItemIcon>
             <FolderIcon />
           </ListItemIcon>
-          <ListItemText primary="Data" />
+          <ListItemText primary={t('Data')} />
           {dataMenuOpen ? <ExpandLess /> : <ExpandMore />}
         </ListItemButton>
         <Collapse in={dataMenuOpen} timeout="auto" unmountOnExit>
@@ -476,7 +479,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             <Link href="/records" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/records')}
-                data-learn="Records: Explore detailed network traffic records organized by protocol type with advanced filtering."
+                data-learn={t('Records: Explore detailed network traffic records organized by protocol type with advanced filtering.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -484,38 +487,38 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <StorageIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Records" />
+                <ListItemText primary={t('Records')} />
               </ListItemButton>
             </Link>
             <Link href="/explore" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/explore')}
-                data-learn="Explore: Create custom charts and time-series visualizations of audit record fields."
+                data-learn={t('Explore: Create custom charts and time-series visualizations of audit record fields.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <BarChartIcon />
                 </ListItemIcon>
-                <ListItemText primary="Explore" />
+                <ListItemText primary={t('Explore')} />
               </ListItemButton>
             </Link>
             <Link href="/visualize" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/visualize')}
-                data-learn="Visualize: Interactive protocol hierarchy flow diagram showing network traffic relationships."
+                data-learn={t('Visualize: Interactive protocol hierarchy flow diagram showing network traffic relationships.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <BubbleChartIcon />
                 </ListItemIcon>
-                <ListItemText primary="Visualize" />
+                <ListItemText primary={t('Visualize')} />
               </ListItemButton>
             </Link>
 
             <Link href="/hosts" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/hosts')}
-                data-learn="Hosts: Browse discovered network hosts with geolocation, device profiles, and communication patterns."
+                data-learn={t('Hosts: Browse discovered network hosts with geolocation, device profiles, and communication patterns.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -523,13 +526,13 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <RouterIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Hosts" />
+                <ListItemText primary={t('Hosts')} />
               </ListItemButton>
             </Link>
             <Link href="/devices" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/devices')}
-                data-learn="Devices: View hardware devices identified by MAC addresses, vendors, and network layer information."
+                data-learn={t('Devices: View hardware devices identified by MAC addresses, vendors, and network layer information.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -537,13 +540,13 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <DevicesIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Devices" />
+                <ListItemText primary={t('Devices')} />
               </ListItemButton>
             </Link>
             <Link href="/connections" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/connections')}
-                data-learn="Connections: View network connections with protocol analysis, traffic statistics, and flow information."
+                data-learn={t('Connections: View network connections with protocol analysis, traffic statistics, and flow information.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -551,18 +554,18 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <SyncAltIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Connections" />
+                <ListItemText primary={t('Connections')} />
               </ListItemButton>
             </Link>
             <Link href="/investigation-evidence" passHref style={LINK_STYLE}>
               <ListItemButton selected={router.isActive('/investigation-evidence')} sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}>
-                <ListItemIcon><SyncAltIcon /></ListItemIcon><ListItemText primary="Investigation evidence" />
+                <ListItemIcon><SyncAltIcon /></ListItemIcon><ListItemText primary={t('Investigation evidence')} />
               </ListItemButton>
             </Link>
             <Link href="/http" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/http')}
-                data-learn="HTTP: View HTTP requests and responses with headers, status codes, URLs, and content information."
+                data-learn={t('HTTP: View HTTP requests and responses with headers, status codes, URLs, and content information.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -570,13 +573,13 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <HttpIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="HTTP" />
+                <ListItemText primary={t('HTTP')} />
               </ListItemButton>
             </Link>
             <Link href="/certificates" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/certificates')}
-                data-learn="Certificates: View TLS/SSL certificates with subject, issuer, expiration status, and security information."
+                data-learn={t('Certificates: View TLS/SSL certificates with subject, issuer, expiration status, and security information.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -584,13 +587,13 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <BadgeIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Certificates" />
+                <ListItemText primary={t('Certificates')} />
               </ListItemButton>
             </Link>
             <Link href="/secrets" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/secrets')}
-                data-learn="Secrets: View captured secrets from network traffic."
+                data-learn={t('Secrets: View captured secrets from network traffic.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -598,13 +601,13 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <VpnKeyIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Secrets" />
+                <ListItemText primary={t('Secrets')} />
               </ListItemButton>
             </Link>
             <Link href="/services" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/services')}
-                data-learn="Services: View discovered network services with protocol detection and version information."
+                data-learn={t('Services: View discovered network services with protocol detection and version information.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -612,13 +615,13 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <DnsIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Services" />
+                <ListItemText primary={t('Services')} />
               </ListItemButton>
             </Link>
             <Link href="/domains" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/domains')}
-                data-learn="Domains: View DNS domains discovered in traffic with query statistics."
+                data-learn={t('Domains: View DNS domains discovered in traffic with query statistics.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -626,13 +629,13 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <LanguageIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Domains" />
+                <ListItemText primary={t('Domains')} />
               </ListItemButton>
             </Link>
             <Link href="/fingerprints" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/fingerprints')}
-                data-learn="Fingerprints: View device and application fingerprints including JA3, HASSH, and DHCP."
+                data-learn={t('Fingerprints: View device and application fingerprints including JA3, HASSH, and DHCP.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -640,13 +643,13 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <FingerprintIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Fingerprints" />
+                <ListItemText primary={t('Fingerprints')} />
               </ListItemButton>
             </Link>
             <Link href="/software" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/software')}
-                data-learn="Software: Browse detected software products, versions, and operating systems."
+                data-learn={t('Software: Browse detected software products, versions, and operating systems.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -654,13 +657,13 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <AppsIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Software" />
+                <ListItemText primary={t('Software')} />
               </ListItemButton>
             </Link>
             <Link href="/vulnerabilities" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/vulnerabilities')}
-                data-learn="Vulnerabilities: Review discovered vulnerabilities with severity ratings."
+                data-learn={t('Vulnerabilities: Review discovered vulnerabilities with severity ratings.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -668,18 +671,18 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <BugReportIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Vulnerabilities" />
+                <ListItemText primary={t('Vulnerabilities')} />
               </ListItemButton>
             </Link>
             <Link href="/behavior" passHref style={LINK_STYLE}>
               <ListItemButton selected={router.isActive('/behavior')} sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}>
-                <ListItemIcon><NotificationsActiveIcon /></ListItemIcon><ListItemText primary="Behavior" />
+                <ListItemIcon><NotificationsActiveIcon /></ListItemIcon><ListItemText primary={t('Behavior')} />
               </ListItemButton>
             </Link>
             <Link href="/alerts" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/alerts')}
-                data-learn="Alerts: Review security alerts triggered by detection rules."
+                data-learn={t('Alerts: Review security alerts triggered by detection rules.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -687,13 +690,13 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <NotificationsActiveIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Alerts" />
+                <ListItemText primary={t('Alerts')} />
               </ListItemButton>
             </Link>
             <Link href="/files" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/files')}
-                data-learn="Files: Access files extracted from network streams."
+                data-learn={t('Files: Access files extracted from network streams.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -701,14 +704,14 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <InsertDriveFileIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Files" />
+                <ListItemText primary={t('Files')} />
               </ListItemButton>
             </Link>
             {renderNavigationItems('data-before-logs', true)}
             <Link href="/logs" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/logs')}
-                data-learn="Logs: View system logs and processing information."
+                data-learn={t('Logs: View system logs and processing information.')}
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -716,110 +719,110 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                     <DescriptionIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Logs" />
+                <ListItemText primary={t('Logs')} />
               </ListItemButton>
             </Link>
           </List>
         </Collapse>
-        <Typography component="li" sx={SECTION_LABEL_SX}>Detection</Typography>
+        <Typography component="li" sx={SECTION_LABEL_SX}>{t('Detection')}</Typography>
         <Link href="/rules" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/rules')}
-            data-learn="Create and manage detection rules using expression-based filtering."
+            data-learn={t('Create and manage detection rules using expression-based filtering.')}
             sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <RuleIcon />
             </ListItemIcon>
-            <ListItemText primary="Rules" />
+            <ListItemText primary={t('Rules')} />
           </ListItemButton>
         </Link>
         <Link href="/rulesets" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/rulesets')}
-            data-learn="Organize detection rules into collections for different security scenarios."
+            data-learn={t('Organize detection rules into collections for different security scenarios.')}
             sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <LibraryBooksIcon />
             </ListItemIcon>
-            <ListItemText primary="Rule Sets" />
+            <ListItemText primary={t('Rule Sets')} />
           </ListItemButton>
         </Link>
         {renderNavigationItems('detection-end')}
-        <Typography component="li" sx={SECTION_LABEL_SX}>System</Typography>
+        <Typography component="li" sx={SECTION_LABEL_SX}>{t('System')}</Typography>
         {renderNavigationItems('system-start')}
         <Link href="/decoders" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/decoders')}
-            data-learn="Enable or disable packet and stream decoders."
+            data-learn={t('Enable or disable packet and stream decoders.')}
             sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <AccountTreeIcon />
             </ListItemIcon>
-            <ListItemText primary="Decoders" />
+            <ListItemText primary={t('Decoders')} />
           </ListItemButton>
         </Link>
         <Link href="/protobuf" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/protobuf')}
-            data-learn="Protobuf Schemas: Manage .proto schema files for decoding Protocol Buffer traffic."
+            data-learn={t('Protobuf Schemas: Manage .proto schema files for decoding Protocol Buffer traffic.')}
             sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <CodeIcon />
             </ListItemIcon>
-            <ListItemText primary="Protobuf Schemas" />
+            <ListItemText primary={t('Protobuf Schemas')} />
           </ListItemButton>
         </Link>
         <Link href="/harvesters" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/harvesters')}
-            data-learn="View credential harvesters that extract authentication data."
+            data-learn={t('View credential harvesters that extract authentication data.')}
             sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <VpnKeyIcon />
             </ListItemIcon>
-            <ListItemText primary="Harvesters" />
+            <ListItemText primary={t('Harvesters')} />
           </ListItemButton>
         </Link>
         {renderNavigationItems('system-before-bpf')}
         <Link href="/bpf" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/bpf')}
-            data-learn="Apply Berkeley Packet Filter expressions to capture specific traffic."
+            data-learn={t('Apply Berkeley Packet Filter expressions to capture specific traffic.')}
             sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <FilterAltIcon />
             </ListItemIcon>
-            <ListItemText primary="BPF Filters" />
+            <ListItemText primary={t('BPF Filters')} />
           </ListItemButton>
         </Link>
         <Link href="/errors" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/errors')}
-            data-learn="Review processing errors and troubleshooting information."
+            data-learn={t('Review processing errors and troubleshooting information.')}
             sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <ErrorOutlineIcon />
             </ListItemIcon>
-            <ListItemText primary="Errors" />
+            <ListItemText primary={t('Errors')} />
           </ListItemButton>
         </Link>
         <Link href="/config" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/config')}
-            data-learn="Adjust system configuration settings."
+            data-learn={t('Adjust system configuration settings.')}
             sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <SettingsIcon />
             </ListItemIcon>
-            <ListItemText primary="Config" />
+            <ListItemText primary={t('Config')} />
           </ListItemButton>
         </Link>
         {renderNavigationItems('settings')}
@@ -847,24 +850,26 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             <Box sx={{ display: 'flex', gap: 0.5 }}>
               <LearnModeToggle size="small" />
               <IconButton
-                data-learn="Documentation: Open the official Netcap documentation."
+                data-learn={t('Documentation: Open the official Netcap documentation.')}
                 size="small"
                 href="https://docs.netcap.io"
                 target="_blank"
                 rel="noopener noreferrer"
                 sx={ICON_BUTTON_SX}
-                title="Documentation"
+                title={t('Documentation')}
+                aria-label={t('Documentation')}
               >
                 <MenuBookIcon fontSize="small" />
               </IconButton>
               <IconButton
-                data-learn="GitHub Repository: View the Netcap source code."
+                data-learn={t('GitHub Repository: View the Netcap source code.')}
                 size="small"
                 href="https://github.com/dreadl0ck/netcap"
                 target="_blank"
                 rel="noopener noreferrer"
                 sx={ICON_BUTTON_SX}
-                title="GitHub Repository"
+                title={t('GitHub Repository')}
+                aria-label={t('GitHub Repository')}
               >
                 <GitHubIcon fontSize="small" />
               </IconButton>
@@ -891,24 +896,25 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             py: { xs: 0.5, sm: 1 },
             display: 'flex',
             alignItems: 'center',
+            flexWrap: 'wrap',
             gap: { xs: 1, sm: 2 },
           }}
         >
           <IconButton
             color="inherit"
-            aria-label="open drawer"
+            aria-label={t('open drawer')}
             edge="start"
             onClick={handleDrawerToggle}
             sx={{ flexShrink: 0, display: { lg: 'none' } }}
           >
             <MenuIcon />
           </IconButton>
-          <Box sx={{ flex: '1 1 auto', minWidth: 120 }}>
-            <Typography variant="h5" noWrap component="h1" sx={{ fontSize: { xs: '1rem', sm: '1.05rem' } }}>
-              {title}
+          <Box sx={{ flex: '1 1 160px', minWidth: 0 }}>
+            <Typography variant="h5" component="h1" sx={{ fontSize: { xs: '1rem', sm: '1.05rem' }, overflowWrap: 'anywhere' }}>
+              {t(title)}
             </Typography>
             <Typography variant="caption" noWrap color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' }, fontFamily: 'var(--netcap-mono)' }}>
-              Network traffic intelligence
+              {t('Network traffic intelligence')}
             </Typography>
           </Box>
           {headerAction && !isMobile && (
@@ -927,11 +933,14 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
               {headerAction}
             </Box>
           )}
+          {headerActions && <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 1, ml: 'auto', maxWidth: '100%' }}>
+            {headerActions}
+          </Box>}
           {fullscreenSupported && (
             <IconButton
               onClick={() => { void toggleFullscreen(); }}
-              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-              title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              aria-label={isFullscreen ? t('Exit fullscreen') : t('Enter fullscreen')}
+              title={isFullscreen ? t('Exit fullscreen') : t('Enter fullscreen')}
               sx={{ color: 'text.secondary', flexShrink: 0 }}
             >
               {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
@@ -954,7 +963,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
       <Box
         component="nav"
         sx={{ width: { lg: drawerWidth }, flexShrink: { lg: 0 } }}
-        aria-label="navigation"
+        aria-label={t('navigation')}
       >
         <Drawer
           variant="temporary"

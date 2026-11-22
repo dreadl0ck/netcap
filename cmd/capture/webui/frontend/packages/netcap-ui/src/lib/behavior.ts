@@ -1,4 +1,8 @@
 import type { FileInfo, StatusResponse } from './api';
+import { translate as i18nText } from "./i18n";
+import { message, displayError } from "./i18n";
+
+
 
 export interface BehaviorScope {
   sensor: string;
@@ -98,15 +102,15 @@ export function scopeLabel(scope: BehaviorScope): string {
 }
 
 export function factLabel(fact: BehaviorFact): string {
-  if (fact.kind === 'device') return fact.mac ?? 'Unknown MAC';
+  if (fact.kind === 'device') return fact.mac ?? i18nText("ui:m_39901ca059146d197396");
   if (fact.kind === 'binding') return `${fact.srcIP} ↔ ${fact.mac}`;
   if (fact.kind === 'edge') return `${fact.srcIP} ↔ ${fact.dstIP}`;
   if (fact.kind === 'service' || fact.kind === 'resolver') return `${fact.srcIP} → ${fact.dstIP}:${fact.port}/${fact.protocol}`;
   if (fact.kind === 'dns') return `${fact.srcIP} → ${fact.value}`;
-  if (fact.kind === 'traffic') return `${fact.srcIP} packet/byte volume`;
+  if (fact.kind === 'traffic') return i18nText("ui:m_595ce6ab8ca4ec4463b4", { arg0: fact.srcIP });
   if (fact.kind === 'geo') {
     const [country, asn] = (fact.value ?? '').split('|');
-    return `${fact.srcIP} → ${fact.dstIP}: country ${country || 'unknown/private'}, ASN ${asn || 'unknown/private'}`;
+    return i18nText("ui:m_9b2e03943ff88e5ba586", { arg0: fact.srcIP, arg1: fact.dstIP, arg2: country || i18nText("ui:m_9b7bb38057c42223c034"), arg3: asn || i18nText("ui:m_9b7bb38057c42223c034") });
   }
   return fact.value ?? `${fact.srcIP ?? ''} → ${fact.dstIP ?? ''}`;
 }
@@ -136,7 +140,7 @@ export async function behaviorRequest<T>(fetcher: typeof fetch, url: string, ini
   const response = await fetcher(url, init);
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(response.status === 404 ? 'No baseline for this capture. Enable capture or agent with -behavior.' : detail || `Request failed (${response.status})`);
+    throw displayError(response.status === 404 ? message("ui:m_391b607f11ef33f3b557") : detail || message("ui:m_05c33ceea29a3acaa577", { arg0: response.status }));
   }
   return response.json() as Promise<T>;
 }

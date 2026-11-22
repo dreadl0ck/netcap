@@ -19,6 +19,8 @@
 
 import React from 'react';
 import { useNetcapLink, LinkProps } from '../providers/NetcapProvider';
+import { useLocale as useUILocale } from "../lib/i18n";
+
 
 /**
  * NetcapLink - A wrapper component that uses the Link component from the provider
@@ -38,12 +40,11 @@ import { useNetcapLink, LinkProps } from '../providers/NetcapProvider';
  * ```
  */
 export function NetcapLink({ href, children, ...props }: LinkProps) {
+  const __uiLocale = useUILocale();
   const Link = useNetcapLink();
   
   return (
-    <Link href={href} {...props}>
-      {children}
-    </Link>
+    <Link href={href} {...props}>{children}</Link>
   );
 }
 

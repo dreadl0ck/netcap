@@ -322,6 +322,7 @@ func (s *Server) handleUploadYaraRule(w http.ResponseWriter, r *http.Request) {
 	desc, ruleCount := parseYaraFileInfo(string(content))
 	RespondJSON(w, http.StatusOK, map[string]any{
 		"message":     "Rule uploaded successfully",
+		"messageI18n": requestUIMessage(r, "yara.rule.uploaded", "Rule uploaded successfully", nil),
 		"filename":    safeName,
 		"ruleCount":   ruleCount,
 		"description": desc,
@@ -443,7 +444,7 @@ func (s *Server) handleUpdateYaraRule(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	RespondJSON(w, http.StatusOK, map[string]any{"message": "Rule updated"})
+	RespondJSON(w, http.StatusOK, map[string]any{"message": "Rule updated", "messageI18n": requestUIMessage(r, "yara.rule.updated", "Rule updated successfully", nil)})
 }
 
 // handleDeleteYaraRule handles DELETE for a YARA rule file.
@@ -495,7 +496,7 @@ func (s *Server) handleDeleteYaraRule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("[YARA] Deleted rule file: %s", name)
-	RespondJSON(w, http.StatusOK, map[string]any{"message": "Rule deleted"})
+	RespondJSON(w, http.StatusOK, map[string]any{"message": "Rule deleted", "messageI18n": requestUIMessage(r, "yara.rule.deleted", "Rule deleted successfully", nil)})
 }
 
 // handleYaraScan scans all extracted files against enabled YARA rules.

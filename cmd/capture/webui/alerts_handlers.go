@@ -129,10 +129,11 @@ type ResolveAlertRequest struct {
 
 // ResolveAlertResponse represents the response to a resolve request
 type ResolveAlertResponse struct {
-	Success     bool     `json:"success"`
-	Message     string   `json:"message"`
-	ResolvedAt  int64    `json:"resolvedAt"`
-	ResolvedIDs []string `json:"resolvedIds,omitempty"` // IDs that were resolved
+	Success     bool      `json:"success"`
+	Message     string    `json:"message"`
+	MessageI18n UIMessage `json:"messageI18n"`
+	ResolvedAt  int64     `json:"resolvedAt"`
+	ResolvedIDs []string  `json:"resolvedIds,omitempty"` // IDs that were resolved
 }
 
 // handleAlerts handles GET requests for alerts
@@ -580,8 +581,9 @@ func (s *Server) handleClearAlerts(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[WebUI] Cleared all alerts")
 
 	RespondJSON(w, http.StatusOK, map[string]any{
-		"success": true,
-		"message": "All alerts cleared successfully",
+		"success":     true,
+		"message":     "All alerts cleared successfully",
+		"messageI18n": requestUIMessage(r, "alerts.cleared", "All alerts cleared successfully", nil),
 	})
 }
 
@@ -1104,6 +1106,7 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 	RespondJSON(w, http.StatusOK, ResolveAlertResponse{
 		Success:     true,
 		Message:     fmt.Sprintf("Resolved %d alert(s)", len(resolvedIDs)),
+		MessageI18n: requestUIMessage(r, "alerts.resolved", "Resolved {count} alert(s)", map[string]any{"count": len(resolvedIDs)}),
 		ResolvedAt:  resolvedAt,
 		ResolvedIDs: resolvedIDs,
 	})
@@ -1203,6 +1206,7 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 	RespondJSON(w, http.StatusOK, map[string]any{
 		"success":       true,
 		"message":       fmt.Sprintf("Unresolved %d alert(s)", len(unresolvedIDs)),
+		"messageI18n":   requestUIMessage(r, "alerts.unresolved", "Unresolved {count} alert(s)", map[string]any{"count": len(unresolvedIDs)}),
 		"unresolvedIds": unresolvedIDs,
 	})
 }

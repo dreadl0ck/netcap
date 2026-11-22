@@ -31,18 +31,22 @@ import {
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import { formatBytes } from '../lib/api';
 import type { FileInfo, StatusResponse } from '../lib/api';
+import { translate as i18nText, useLocale as useUILocale } from "../lib/i18n";
+import { translate, renderText, type MessageText } from "../lib/i18n";
+
+
 
 // Extract sx styles to constants for performance optimization
 const SELECT_SX = {
   color: 'inherit',
   '.MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(255, 255, 255, 0.23)',
+    borderColor: 'text.secondary',
   },
   '&:hover .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: 'primary.main',
   },
   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'primary.light',
+    borderColor: 'primary.main',
   },
   '.MuiSelect-icon': {
     color: 'inherit',
@@ -82,7 +86,7 @@ export interface FileSelectorHeaderProps {
   status: StatusResponse | undefined;
   switchingFile: boolean;
   onFileChange: (path: string) => Promise<void>;
-  learnHint?: string;
+  learnHint?: MessageText;
 }
 
 /**
@@ -94,8 +98,9 @@ export function FileSelectorHeader({
   status,
   switchingFile,
   onFileChange,
-  learnHint = "Capture Selector: Switch between different analyzed PCAP files."
+  learnHint = translate("ui:m_451bce0dfff5c0d68499")
 }: FileSelectorHeaderProps) {
+  const __uiLocale = useUILocale();
   // Memoize completed files computation
   const completedFiles = useMemo(() =>
     (inputFiles?.filter((f) => f.isCompleted) || [])
@@ -123,12 +128,8 @@ export function FileSelectorHeader({
 
   // Memoize renderValue
   const renderValue = useCallback(() => (
-    <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
-      <Typography sx={FILE_NAME_SX}>
-        {selectedFile?.name}
-      </Typography>
-    </Box>
-  ), [selectedFile]);
+    <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}><Typography sx={FILE_NAME_SX}>{selectedFile?.name}</Typography></Box>
+  ), [selectedFile, __uiLocale]);
 
   // Don't render if only one file or no file selected
   if (completedFiles.length <= 1 || !selectedFile) {
@@ -136,47 +137,25 @@ export function FileSelectorHeader({
   }
 
   return (
-    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: { xs: 200, sm: 300 }, maxWidth: { xs: '100%', sm: 400 } }}>
-      <Select
-        data-learn={learnHint}
+    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: { xs: 200, sm: 300 }, maxWidth: { xs: '100%', sm: 400 } }}><Select data-learn={renderText(learnHint)}
         value={selectedValue}
         onChange={handleChange}
-        startAdornment={
-          switchingFile ? (
+        startAdornment={switchingFile ? (
             <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
           ) : (
             <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
-          )
-        }
+          )}
         renderValue={renderValue}
-        sx={SELECT_SX}
-      >
-        {completedFiles.map((file) => (
-          <MenuItem key={file.path} value={file.path}>
-            <Box display="flex" alignItems="center" gap={1} width="100%">
-              {selectedValue === file.path && (
-                <Chip
-                  data-learn="Active File Indicator: Shows which PCAP file is currently being analyzed."
-                  label="Active"
+        sx={SELECT_SX}>{completedFiles.map((file) => (
+          <MenuItem key={file.path} value={file.path}><Box display="flex" alignItems="center" gap={1} width="100%">{selectedValue === file.path && (
+                <Chip data-learn={i18nText("ui:m_cc391ae1fcfc3b8713a0")}
+                  label={i18nText("ui:m_32854ec0180ee3fbf4f7")}
                   size="small"
                   color="success"
-                  sx={CHIP_SX}
-                />
-              )}
-              <Typography sx={MENU_ITEM_FILE_NAME_SX}>
-                {file.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatBytes(file.size)}
-              </Typography>
-            </Box>
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+                  sx={CHIP_SX} />
+              )}<Typography sx={MENU_ITEM_FILE_NAME_SX}>{file.name}</Typography><Typography variant="caption" color="text.secondary">{formatBytes(file.size)}</Typography></Box></MenuItem>
+        ))}</Select></FormControl>
   );
 }
 
 export default FileSelectorHeader;
-
-

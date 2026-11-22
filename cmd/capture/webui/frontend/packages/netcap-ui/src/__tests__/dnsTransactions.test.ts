@@ -4,9 +4,12 @@
  * License: GNU General Public License v3.0
  */
 
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
 
 import { formatDurationNs, medianRTT, rttSortKey, transactionFlags, type DNSTransactionSummary } from '../lib/dnsTransactions';
+import { setLocale } from '../lib/i18n';
+
+afterEach(() => setLocale('en'));
 
 const summary = (over: Partial<DNSTransactionSummary> = {}): DNSTransactionSummary => ({
   queries: 3, retransmissions: 0, answered: 3, late: 0, unsolicited: 0, unanswered: 0,
@@ -24,6 +27,15 @@ describe('dnsTransactions', () => {
     expect(formatDurationNs(31e9)).toBe('31.0 s');
     expect(formatDurationNs(-1)).toBe('—');
     expect(formatDurationNs(Number.NaN)).toBe('—');
+  });
+
+  it('retains three significant digits and local decimal separators without changing measured RTT sorting', () => {
+    setLocale('de');
+    expect(formatDurationNs(850)).toBe('0,850 µs');
+    expect(formatDurationNs(12_345_678)).toBe('12,3 ms');
+    expect(formatDurationNs(31e9)).toBe('31,0 s');
+    expect(medianRTT(summary({ rttMedianNs: 12_350_000, rttTruncated: true }))).toBe('~12,4 ms');
+    expect(rttSortKey(summary())).toBe(12_345_678);
   });
 
   it('shows no RTT without paired responses', () => {

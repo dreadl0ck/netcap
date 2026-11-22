@@ -55,7 +55,7 @@ func (s *Server) handleSoftwareTopProducts(w http.ResponseWriter, r *http.Reques
 	showLegend := showLegendStr == "true"
 
 	chart := generateSoftwareTopProductsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -93,7 +93,7 @@ func (s *Server) handleSoftwareVendors(w http.ResponseWriter, r *http.Request) {
 	showLegend := showLegendStr != "false"
 
 	chart := generateSoftwareVendorsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -131,7 +131,7 @@ func (s *Server) handleSoftwareOperatingSystems(w http.ResponseWriter, r *http.R
 	showLegend := showLegendStr == "true"
 
 	chart := generateSoftwareOperatingSystemsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -169,7 +169,7 @@ func (s *Server) handleSoftwareVersions(w http.ResponseWriter, r *http.Request) 
 	showLegend := showLegendStr == "true"
 
 	chart := generateSoftwareVersionsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -266,11 +266,9 @@ func generateSoftwareVendorsChart(outDir string, showLegend bool) *charts.Pie {
 
 	// Aggregate by vendor
 	vendorCount := make(map[string]int)
+	labels := newChartLabelSet()
 	for _, sw := range software {
-		vendor := sw.Vendor
-		if vendor == "" {
-			vendor = "Unknown"
-		}
+		vendor := labels.name(sw.Vendor, "Unknown")
 		vendorCount[vendor] += sw.Count
 	}
 
@@ -301,6 +299,7 @@ func generateSoftwareVendorsChart(outDir string, showLegend bool) *charts.Pie {
 		if i < limit {
 			pieData = append(pieData, opts.PieData{
 				Name:  vendor.name,
+				Label: labels.label(vendor.name),
 				Value: vendor.count,
 			})
 		} else {
@@ -310,6 +309,7 @@ func generateSoftwareVendorsChart(outDir string, showLegend bool) *charts.Pie {
 	if otherCount > 0 {
 		pieData = append(pieData, opts.PieData{
 			Name:  "Other",
+			Label: chartOwnedLabel("Other"),
 			Value: otherCount,
 		})
 	}
@@ -364,11 +364,9 @@ func generateSoftwareOperatingSystemsChart(outDir string, showLegend bool) *char
 
 	// Aggregate by OS
 	osCount := make(map[string]int)
+	labels := newChartLabelSet()
 	for _, sw := range software {
-		os := sw.OS
-		if os == "" {
-			os = "Unknown"
-		}
+		os := labels.name(sw.OS, "Unknown")
 		osCount[os] += sw.Count
 	}
 
@@ -430,8 +428,9 @@ func generateSoftwareOperatingSystemsChart(outDir string, showLegend bool) *char
 		}),
 		charts.WithXAxisOpts(opts.XAxis{
 			AxisLabel: &opts.AxisLabel{
-				Rotate: 45,
-				Color:  "#ffffff",
+				Formatter: labels.axisFormatter(),
+				Rotate:    45,
+				Color:     "#ffffff",
 			},
 		}),
 		charts.WithYAxisOpts(opts.YAxis{
@@ -460,15 +459,10 @@ func generateSoftwareVersionsChart(outDir string, showLegend bool) *charts.Sunbu
 
 	// Group by product, then by version
 	productVersions := make(map[string]map[string]int)
+	products, versionsLabels := newChartLabelSet(), newChartLabelSet()
 	for _, sw := range software {
-		product := sw.Product
-		if product == "" {
-			product = "Unknown"
-		}
-		version := sw.Version
-		if version == "" {
-			version = "Unknown Version"
-		}
+		product := products.name(sw.Product, "Unknown")
+		version := versionsLabels.name(sw.Version, "Unknown Version")
 
 		if productVersions[product] == nil {
 			productVersions[product] = make(map[string]int)
@@ -511,12 +505,14 @@ func generateSoftwareVersionsChart(outDir string, showLegend bool) *charts.Sunbu
 		for version, count := range versions {
 			children = append(children, &opts.SunBurstData{
 				Name:  version,
+				Label: versionsLabels.label(version),
 				Value: float64(count),
 			})
 		}
 
 		sunburstData = append(sunburstData, opts.SunBurstData{
 			Name:     product,
+			Label:    products.label(product),
 			Value:    float64(productTotals[i].total),
 			Children: children,
 		})

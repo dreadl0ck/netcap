@@ -56,11 +56,21 @@ import {
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { type ChartFieldsResponse, getBackendUrl } from '../lib/api';
-import useSWR, { mutate as globalMutate } from 'swr';
+
 import { useNetcapRouter, useNetcapApi } from '../hooks';
 
 import { ChartFrame } from '../components/ChartFrame';
 import { pickRandomView, viewsForFields, viewsForTypes, type SecurityView } from '../lib/securityViews';
+import { translate as i18nText, richText as i18nRichText, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR, mutatePresentation as globalMutate } from "../lib/i18n";
+import { errorText, translate } from "../lib/i18n";
+import { fieldLabel } from "../lib/i18n";
+import { message as finalCopyMessage } from "../lib/i18n";
+
+
+
+
+
 
 const CHART_TYPES = [
   // Numeric field charts
@@ -194,6 +204,7 @@ const DEFAULT_FIELD_MAP: Record<string, { field: string; chartType: string }> = 
 };
 
 export default function Explore() {
+  const __uiLocale = useUILocale();
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const { type: urlType, field: urlField } = router.query;
@@ -209,7 +220,7 @@ export default function Explore() {
   const [chartUrl, setChartUrl] = useState<string | null>(null);
   const [fields, setFields] = useState<ChartFieldsResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UIMessageText | null>(null);
   const [exampleRecord, setExampleRecord] = useState<Record<string, unknown> | null>(null);
   const [loadingExample, setLoadingExample] = useState(false);
   const [showExample, setShowExample] = useState(false);
@@ -378,7 +389,7 @@ export default function Explore() {
           }
         })
         .catch((err) => {
-          setError(err.message);
+          setError(errorText(err));
         })
         .finally(() => {
           setLoading(false);
@@ -438,11 +449,11 @@ export default function Explore() {
       }
     } catch (err) {
       console.error('Failed to switch file:', err);
-      alert('Failed to switch to this capture');
+      alert(i18nText("ui:m_7ab800e4d59917b1d34c"));
     } finally {
       setSwitchingFile(false);
     }
-  }, [mutateAuditFiles, mutateStatus, selectedAuditType, selectedField, selectedChartType, showLegend, maxDataPoints, loadExampleRecord]);
+  }, [mutateAuditFiles, mutateStatus, selectedAuditType, selectedField, selectedChartType, showLegend, maxDataPoints, loadExampleRecord, __uiLocale]);
 
   // Auto-generate chart when configuration changes
   useEffect(() => {
@@ -517,115 +528,73 @@ export default function Explore() {
 
   // Use shared FileSelectorHeader component
   const fileSelector = (
-    <FileSelectorHeader
-      inputFiles={inputFiles || []}
+    <FileSelectorHeader inputFiles={inputFiles || []}
       status={status}
       switchingFile={switchingFile}
       onFileChange={handleFileSelectorChange}
-      learnHint="Capture Selector: Switch between different analyzed PCAP files to explore their data and generate custom visualizations."
-    />
+      learnHint={finalCopyMessage("ui:m_58ec5998ffad73aefd52")} />
   );
 
   // Header action with audit type, field selects, and file selector
   const headerAction = (
-    <Box 
-      sx={{ 
+    <Box sx={{ 
         display: 'flex', 
         flexDirection: { xs: 'column', sm: 'column', md: 'row' },
         alignItems: { xs: 'stretch', md: 'center' }, 
         gap: { xs: 0.75, sm: 1, md: 2 }, 
         width: '100%'
-      }}
-    >
-      {/* Container for Audit Type and Field selects - show first on mobile */}
-      <Box 
-        sx={{ 
+      }}>{/* Container for Audit Type and Field selects - show first on mobile */}<Box sx={{ 
           display: 'flex', 
           flexDirection: { xs: 'column', sm: 'row' },
           gap: { xs: 0.75, sm: 1, md: 2 },
           flex: 1,
           order: { xs: 1, md: 0 }
-        }}
-      >
-        {/* Audit Type Selection */}
-        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150, md: 200 } }}>
-          <InputLabel sx={{ color: 'inherit' }}>Audit Record Type</InputLabel>
-          <Select
-            data-learn="Audit Type Selector: Choose which protocol or record type to visualize (e.g., HTTP, TCP, DNS)."
+        }}>{/* Audit Type Selection */}<FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150, md: 200 } }}><InputLabel sx={{ color: 'inherit' }}>{i18nText("ui:m_8967f6bff900534033ae")}</InputLabel><Select data-learn={i18nText("ui:m_2edb23681b758e61c44f")}
             value={selectedAuditType}
             onChange={handleAuditTypeChange}
-            label="Audit Record Type"
+            label={i18nText("ui:m_8967f6bff900534033ae")}
             sx={{
               color: 'inherit',
               '.MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.23)',
+                borderColor: 'text.secondary',
               },
               '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.4)',
+                borderColor: 'primary.main',
               },
               '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'primary.light',
+                borderColor: 'primary.main',
               },
               '.MuiSelect-icon': {
                 color: 'inherit',
               },
-            }}
-          >
-            {auditTypes.map((type) => (
-              <MenuItem key={type} value={type}>
-                {type}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        {/* Field Selection */}
-        <FormControl size="small" disabled={!selectedAuditType || loading} sx={{ minWidth: { xs: '100%', sm: 150, md: 200 } }}>
-          <InputLabel sx={{ color: 'inherit' }}>Field</InputLabel>
-          <Select
-            data-learn="Field Selector: Choose which data field from the audit records to visualize in the chart."
+            }}>{auditTypes.map((type) => (
+              <MenuItem key={type} value={type}>{type}</MenuItem>
+            ))}</Select></FormControl>{/* Field Selection */}<FormControl size="small" disabled={!selectedAuditType || loading} sx={{ minWidth: { xs: '100%', sm: 150, md: 200 } }}><InputLabel sx={{ color: 'inherit' }}>{i18nText("ui:m_3f7b74092bb8729b554f")}</InputLabel><Select data-learn={i18nText("ui:m_5e34ea13214fc9977499")}
             value={selectedField}
             onChange={handleFieldChange}
-            label="Field"
+            label={i18nText("ui:m_3f7b74092bb8729b554f")}
             sx={{
               color: 'inherit',
               '.MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.23)',
+                borderColor: 'text.secondary',
               },
               '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.4)',
+                borderColor: 'primary.main',
               },
               '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'primary.light',
+                borderColor: 'primary.main',
               },
               '.MuiSelect-icon': {
                 color: 'inherit',
               },
-            }}
-          >
-            {fields?.fields.map((field) => (
-              <MenuItem key={field.name} value={field.name}>
-                {field.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
-
-      {/* File selector for multi-file mode - show last on mobile */}
-      <Box sx={{ order: { xs: 2, md: 2 } }}>
-        {fileSelector}
-      </Box>
-    </Box>
+            }}>{fields?.fields.map((field) => (
+              <MenuItem key={field.name} value={field.name}>{fieldLabel(field.name)}</MenuItem>
+            ))}</Select></FormControl></Box>{/* File selector for multi-file mode - show last on mobile */}<Box sx={{ order: { xs: 2, md: 2 } }}>{fileSelector}</Box></Box>
   );
 
   return (
-    <Layout 
-      title="Explore" 
-      headerAction={headerAction}
-    >
-      {/* Chart type selection buttons and controls - above chart box */}
-      {chartUrl && !loading && (
+    <Layout title={i18nText("ui:m_29a8a9d5e1d2154e8a3f")} 
+      headerAction={headerAction}>{/* Chart type selection buttons and controls - above chart box */}{chartUrl && !loading && (
         <Box sx={{ 
           mb: 2,
           display: 'flex', 
@@ -633,10 +602,7 @@ export default function Explore() {
           justifyContent: 'space-between', 
           alignItems: { xs: 'stretch', sm: 'center' }, 
           gap: { xs: 1, sm: 2 },
-        }}>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-            <ToggleButtonGroup
-              data-learn="Chart Type Selector: Choose the visualization style (line, bar, pie, scatter, etc.) based on your data type."
+        }}><Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}><ToggleButtonGroup data-learn={i18nText("ui:m_b075512967dfdd272048")}
               value={selectedChartType}
               exclusive
               onChange={handleChartTypeChange}
@@ -659,34 +625,16 @@ export default function Explore() {
                     borderRightColor: 'divider',
                   },
                 },
-              }}
-            >
-              {availableChartTypes.map((type) => (
-                <ToggleButton 
-                  key={type.value} 
+              }}>{availableChartTypes.map((type) => (
+                <ToggleButton key={type.value} 
                   value={type.value}
                   sx={{ 
                     textTransform: 'none',
                     minWidth: { xs: 48, xl: 'auto' },
                     width: { xs: 48, xl: 'auto' },
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    {type.icon}
-                    <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
-                      {type.label}
-                    </Box>
-                  </Box>
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          </Box>
-
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {/* Legend toggle - only show when viewing chart */}
-            {!showExample && (
-              <ToggleButtonGroup
-                data-learn="Legend Toggle: Show or hide the chart legend to save space or improve readability."
+                  }}><Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>{type.icon}<Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>{translate(type.label)}</Box></Box></ToggleButton>
+              ))}</ToggleButtonGroup></Box><Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>{/* Legend toggle - only show when viewing chart */}{!showExample && (
+              <ToggleButtonGroup data-learn={i18nText("ui:m_f1c7f42cc4310365524b")}
                 value={showLegend ? 'on' : 'off'}
                 exclusive
                 onChange={(_e, newValue) => {
@@ -701,24 +649,12 @@ export default function Explore() {
                     minWidth: { xs: 48, xl: 'auto' },
                     width: { xs: 48, xl: 'auto' },
                   }
-                }}
-              >
-                <ToggleButton value="on">
-                  <LabelIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 18 }} />
-                  <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
-                    Legend
-                  </Box>
-                </ToggleButton>
-                <ToggleButton value="off">
-                  <LabelOffIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 18 }} />
-                  <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
-                    No Legend
-                  </Box>
-                </ToggleButton>
-              </ToggleButtonGroup>
-            )}
-            <ToggleButtonGroup
-              data-learn="View Toggle: Switch between viewing the chart visualization or an example data record to understand the data structure."
+                }}><ToggleButton value="on"><LabelIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 18 }} />
+                  {i18nRichText("ui:m_e8832ac22613411826e9", { tag0: (chunks: import('react').ReactNode[]) => <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>{chunks}</Box> })}
+                </ToggleButton><ToggleButton value="off"><LabelOffIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 18 }} />
+                  {i18nRichText("ui:m_a5fa0f095fe10fbcfa19", { tag0: (chunks: import('react').ReactNode[]) => <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>{chunks}</Box> })}
+                </ToggleButton></ToggleButtonGroup>
+            )}<ToggleButtonGroup data-learn={i18nText("ui:m_812f56242584cd58bf4f")}
               value={showExample ? 'example' : 'chart'}
               exclusive
               onChange={(_e, newValue) => {
@@ -733,170 +669,85 @@ export default function Explore() {
                   minWidth: { xs: 48, xl: 'auto' },
                   width: { xs: 48, xl: 'auto' },
                 }
-              }}
-            >
-              <ToggleButton value="chart">
-                <BarChartIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 20 }} />
-                <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
-                  Chart
-                </Box>
-              </ToggleButton>
-              <ToggleButton value="example">
-                <DataObjectIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 20 }} />
-                <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
-                  Example Data
-                </Box>
-              </ToggleButton>
-            </ToggleButtonGroup>
-          </Box>
-        </Box>
-      )}
-
-      <Paper sx={{ 
+              }}><ToggleButton value="chart"><BarChartIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 20 }} />
+                {i18nRichText("ui:m_da105eec6af81877e667", { tag0: (chunks: import('react').ReactNode[]) => <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>{chunks}</Box> })}
+              </ToggleButton><ToggleButton value="example"><DataObjectIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 20 }} />
+                {i18nRichText("ui:m_8f061208a35af1fa6268", { tag0: (chunks: import('react').ReactNode[]) => <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>{chunks}</Box> })}
+              </ToggleButton></ToggleButtonGroup></Box></Box>
+      )}<Paper sx={{ 
         p: { xs: 2, sm: 2, md: 3 }, 
         height: { xs: 'calc(100vh - 280px)', sm: 'calc(100vh - 240px)', md: 'calc(100vh - 200px)' },
         display: 'flex', 
         flexDirection: 'column',
         overflow: 'hidden'
-      }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {!chartUrl && !loading && !switchingFile && (
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            {/* Show example record if available */}
-            {exampleRecord && selectedAuditType && (
-              <Box sx={{ mb: 3 }}>
-                <Accordion defaultExpanded>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CodeIcon />
-                      <Typography variant="h6">
-                        Example {selectedAuditType} Record
-                      </Typography>
-                    </Box>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      This is the first record from the audit file to help you understand the data structure:
-                    </Typography>
-                    <Paper 
-                      sx={{ 
+      }}>{i18nRenderText(error) && (
+          <Alert severity="error" sx={{ mb: 2 }}>{i18nRenderText(error)}</Alert>
+        )}{!chartUrl && !loading && !switchingFile && (
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>{/* Show example record if available */}{exampleRecord && selectedAuditType && (
+              <Box sx={{ mb: 3 }}><Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CodeIcon /><Typography variant="h6">
+                        {i18nRichText("ui:m_3bebb17adbc334081208", { arg0: selectedAuditType })}
+                      </Typography></Box></AccordionSummary><AccordionDetails><Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {i18nText("ui:m_664b2081922192e6f01d")}
+                    </Typography><Paper sx={{ 
                         p: 2, 
-                        bgcolor: 'grey.900', 
+                        bgcolor: 'background.default',
                         overflow: 'auto',
                         maxHeight: 400,
-                      }}
-                    >
-                      <pre style={{ margin: 0, fontSize: '0.85rem', color: '#e0e0e0' }}>
-                        {JSON.stringify(exampleRecord, null, 2)}
-                      </pre>
-                    </Paper>
-                  </AccordionDetails>
-                </Accordion>
-              </Box>
-            )}
-
-            {loadingExample && !exampleRecord && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-                <CircularProgress size={24} />
-                <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-                  Loading example record...
-                </Typography>
-              </Box>
-            )}
-
-            <Box
-              sx={{
+                      }}><pre style={{ margin: 0, fontSize: '0.85rem', color: 'inherit' }}>{JSON.stringify(exampleRecord, null, 2)}</pre></Paper></AccordionDetails></Accordion></Box>
+            )}{loadingExample && !exampleRecord && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}><CircularProgress size={24} /><Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+                  {i18nText("ui:m_5c3abac72f2086844bf1")}
+                </Typography></Box>
+            )}<Box sx={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 minHeight: 300,
                 mt: exampleRecord ? 0 : 8,
-              }}
-            >
-              <BarChartIcon sx={{ fontSize: 80, color: 'text.disabled', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary">
-                Select configuration to view chart
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Choose an audit record type and field to automatically generate a chart
-              </Typography>
-              <Typography variant="caption" color="text.secondary" align="center" sx={{ maxWidth: 500 }}>
-                Charts use retained audit records with usable field values. Field discovery inspects at most the first 100 records of the first available capture; later fields may be absent from the picker. Chart point limits may uniformly sample buckets. Missing or filtered records are not evidence of zero traffic.
-                Numeric fields support line, bar, area, scatter, funnel, and radar charts. 
-                Categorical fields support pie, bar, wordcloud, funnel, sankey, and graph visualizations.
-              </Typography>
-            </Box>
-          </Box>
-        )}
-
-        {switchingFile && (
-          <Box
-            sx={{
+              }}><BarChartIcon sx={{ fontSize: 80, color: 'text.disabled', mb: 2 }} /><Typography variant="h6" color="text.secondary">
+                {i18nText("ui:m_ab405deafd811f845511")}
+              </Typography><Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {i18nText("ui:m_17f68d5ac919553d31c8")}
+              </Typography><Typography variant="caption" color="text.secondary" align="center" sx={{ maxWidth: 500 }}>
+                {i18nText("ui:m_70270fa1d0f38f4c9365")}
+              </Typography></Box></Box>
+        )}{switchingFile && (
+          <Box sx={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               minHeight: 300,
               flex: 1,
-            }}
-          >
-            <CircularProgress size={60} sx={{ mb: 2 }} />
-            <Typography variant="h6" color="text.secondary">
-              Switching data source...
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Loading chart for new capture file
-            </Typography>
-          </Box>
-        )}
-
-        {chartUrl && !loading && (
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-            {showExample ? (
-              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                {loadingExample && !exampleRecord ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-                    <CircularProgress size={40} />
-                    <Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
-                      Loading example record...
-                    </Typography>
-                  </Box>
+            }}><CircularProgress size={60} sx={{ mb: 2 }} /><Typography variant="h6" color="text.secondary">
+              {i18nText("ui:m_39775fb5825920a85274")}
+            </Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              {i18nText("ui:m_32430305f3857e6a4a1b")}
+            </Typography></Box>
+        )}{chartUrl && !loading && (
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>{showExample ? (
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>{loadingExample && !exampleRecord ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}><CircularProgress size={40} /><Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
+                      {i18nText("ui:m_5c3abac72f2086844bf1")}
+                    </Typography></Box>
                 ) : exampleRecord ? (
-                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                    <Alert severity="info" sx={{ mb: 2, flexShrink: 0 }}>
-                      This is the first record from the {selectedAuditType} audit file to help you understand the data structure and available fields.
-                    </Alert>
-                    <Paper 
-                      sx={{ 
+                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}><Alert severity="info" sx={{ mb: 2, flexShrink: 0 }}>
+                      {i18nRichText("ui:m_d886fa0e6c9ab38e3952", { arg0: selectedAuditType })}
+                    </Alert><Paper sx={{ 
                         p: 2, 
-                        bgcolor: 'grey.900', 
+                        bgcolor: 'background.default',
                         overflow: 'auto',
                         flex: 1,
                         minHeight: 0
-                      }}
-                    >
-                      <pre style={{ margin: 0, fontSize: '0.85rem', color: '#e0e0e0', lineHeight: 1.5 }}>
-                        {JSON.stringify(exampleRecord, null, 2)}
-                      </pre>
-                    </Paper>
-                  </Box>
+                      }}><pre style={{ margin: 0, fontSize: '0.85rem', color: 'inherit', lineHeight: 1.5 }}>{JSON.stringify(exampleRecord, null, 2)}</pre></Paper></Box>
                 ) : (
                   <Alert severity="warning">
-                    No example record available
+                    {i18nText("ui:m_9309f7124089377e430a")}
                   </Alert>
-                )}
-              </Box>
+                )}</Box>
             ) : (
-              <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <Box sx={{ flex: 1, position: 'relative', pb: 2 }}>
-                  <ChartFrame
-                    key={chartUrl}
+              <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}><Box sx={{ flex: 1, position: 'relative', pb: 2 }}><ChartFrame key={chartUrl}
                     src={chartUrl}
                     style={{
                       position: 'absolute',
@@ -907,12 +758,7 @@ export default function Explore() {
                       border: 'none',
                       borderRadius: '4px',
                     }}
-                    title="Chart Visualization"
-                  />
-                </Box>
-                {/* Max Data Points control - positioned below chart */}
-                <Box
-                  sx={{
+                    title={i18nText("ui:m_9cf74d243f9d4db47e89")} /></Box>{/* Max Data Points control - positioned below chart */}<Box sx={{
                     display: 'flex',
                     justifyContent: 'flex-end',
                     alignItems: 'center',
@@ -921,13 +767,10 @@ export default function Explore() {
                     borderTop: '1px solid',
                     borderColor: 'divider',
                     flexShrink: 0,
-                  }}
-                >
-                  <TextField
-                    data-learn="Max Data Points: Limit the number of data points displayed in the chart for better performance (default 1,000)."
+                  }}><TextField data-learn={i18nText("ui:m_3705c31c132cfdb70c60")}
                     size="small"
                     type="number"
-                    label="Max Data Points"
+                    label={i18nText("ui:m_eaccbfb766ad1bd6626e")}
                     value={maxDataPoints}
                     onChange={(e) => {
                       const value = parseInt(e.target.value, 10);
@@ -938,14 +781,8 @@ export default function Explore() {
                     inputProps={{ min: 100, max: 100000, step: 1000 }}
                     sx={{
                       width: { xs: 110, sm: 130 },
-                    }}
-                  />
-                </Box>
-              </Box>
-            )}
-          </Box>
-        )}
-      </Paper>
-    </Layout>
+                    }} /></Box></Box>
+            )}</Box>
+        )}</Paper></Layout>
   );
 }

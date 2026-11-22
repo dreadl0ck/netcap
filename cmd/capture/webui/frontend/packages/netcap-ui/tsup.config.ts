@@ -21,6 +21,10 @@ import { defineConfig } from 'tsup';
 
 // All entry points - lib is included to ensure types are generated correctly
 const entries = {
+  'i18n': 'src/lib/i18n.ts',
+  'i18n/direct': 'src/lib/i18n/direct.ts',
+  'i18n/removed': 'src/lib/i18n/removed.ts',
+  'i18n/mui': 'src/lib/i18n/mui.ts',
   'index': 'src/index.ts',
   'providers/index': 'src/providers/index.ts',
   'components/index': 'src/components/index.ts',
@@ -34,6 +38,10 @@ const entries = {
 // Shared external dependencies - these should never be bundled
 // Using regex patterns to catch all subpaths (e.g., next/router, next/link, etc.)
 const sharedExternals = [
+  'i18next',
+  'react-i18next',
+  'i18next-icu',
+  'intl-messageformat',
   // React ecosystem - must be external to prevent context duplication
   'react',
   'react-dom',
@@ -64,6 +72,7 @@ export default defineConfig({
   // The lib/index entry is pure utilities but including here ensures types are generated
   entry: entries,
   format: ['esm'],
+  target: 'es2022',
   dts: true,
   splitting: true,  // Enable code splitting to share context instances
   sourcemap: true,

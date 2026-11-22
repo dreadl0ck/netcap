@@ -22,6 +22,8 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
+import { useLocale as useUILocale } from "../lib/i18n";
+
 
 interface MobileFilterSheetProps {
   open: boolean;
@@ -38,9 +40,9 @@ export default function MobileFilterSheet({
   title = 'Filters',
   children,
 }: MobileFilterSheetProps) {
+  const __uiLocale = useUILocale();
   return (
-    <SwipeableDrawer
-      anchor="bottom"
+    <SwipeableDrawer anchor="bottom"
       open={open}
       onOpen={onOpen}
       onClose={onClose}
@@ -54,18 +56,6 @@ export default function MobileFilterSheet({
           pb: 3,
           pt: 1,
         },
-      }}
-    >
-      <Box sx={{ width: 40, height: 4, bgcolor: 'action.disabled', borderRadius: 2, mx: 'auto', mb: 2 }} />
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h6">{title}</Typography>
-        <IconButton onClick={onClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </Box>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {children}
-      </Box>
-    </SwipeableDrawer>
+      }}><Box sx={{ width: 40, height: 4, bgcolor: 'action.disabled', borderRadius: 2, mx: 'auto', mb: 2 }} /><Box display="flex" justifyContent="space-between" alignItems="center" mb={2}><Typography variant="h6">{title}</Typography><IconButton onClick={onClose} size="small"><CloseIcon /></IconButton></Box><Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{children}</Box></SwipeableDrawer>
   );
 }

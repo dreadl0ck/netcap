@@ -55,7 +55,7 @@ func (s *Server) handleCertificatesTopIssuers(w http.ResponseWriter, r *http.Req
 	showLegend := showLegendStr == "true"
 
 	chart := generateCertificatesTopIssuersChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -93,7 +93,7 @@ func (s *Server) handleCertificatesStatusDistribution(w http.ResponseWriter, r *
 	showLegend := showLegendStr != "false"
 
 	chart := generateCertificatesStatusDistributionChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -131,7 +131,7 @@ func (s *Server) handleCertificatesKeyAlgorithms(w http.ResponseWriter, r *http.
 	showLegend := showLegendStr == "true"
 
 	chart := generateCertificatesKeyAlgorithmsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -169,7 +169,7 @@ func (s *Server) handleCertificatesExpirationTimeline(w http.ResponseWriter, r *
 	showLegend := showLegendStr == "true"
 
 	chart := generateCertificatesExpirationTimelineChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -185,11 +185,9 @@ func generateCertificatesTopIssuersChart(outDir string, showLegend bool) *charts
 
 	// Aggregate issuers
 	issuerCount := make(map[string]int)
+	labels := newChartLabelSet()
 	for _, cert := range certificates {
-		issuer := cert.IssuerCommonName
-		if issuer == "" {
-			issuer = "Unknown"
-		}
+		issuer := labels.name(cert.IssuerCommonName, "Unknown")
 		issuerCount[issuer]++
 	}
 
@@ -255,8 +253,9 @@ func generateCertificatesTopIssuersChart(outDir string, showLegend bool) *charts
 		}),
 		charts.WithXAxisOpts(opts.XAxis{
 			AxisLabel: &opts.AxisLabel{
-				Rotate: 45,
-				Color:  "#ffffff",
+				Formatter: labels.axisFormatter(),
+				Rotate:    45,
+				Color:     "#ffffff",
 			},
 		}),
 		charts.WithYAxisOpts(opts.YAxis{
@@ -305,6 +304,7 @@ func generateCertificatesStatusDistributionChart(outDir string, showLegend bool)
 	for status, count := range statusCount {
 		pieData = append(pieData, opts.PieData{
 			Name:  status,
+			Label: chartOwnedLabel(status),
 			Value: count,
 		})
 	}
@@ -356,17 +356,28 @@ func generateCertificatesKeyAlgorithmsChart(outDir string, showLegend bool) *cha
 
 	// Aggregate algorithms with key size
 	algoCount := make(map[string]int)
+	labels := newChartLabelSet()
+	literalAlgorithms := make(map[string]string)
 	for _, cert := range certificates {
-		algo := cert.PublicKeyAlgorithm
-		if algo == "" {
-			algo = "Unknown"
-		}
+		algo := labels.name(cert.PublicKeyAlgorithm, "Unknown")
 		// Include key size in the label
 		label := algo
 		if cert.PublicKeySize > 0 {
 			label = fmt.Sprintf("%s (%d bits)", algo, cert.PublicKeySize)
+			var algorithm any = algo
+			if cert.PublicKeyAlgorithm == "" {
+				algorithm = chartTextTemplate{Text: "Unknown"}
+			}
+			labels.fallbacks[label] = chartTextTemplate{Text: "{algorithm} ({bits} bits)", Params: map[string]any{"algorithm": algorithm, "bits": cert.PublicKeySize}}
+			if cert.PublicKeyAlgorithm != "" {
+				literalAlgorithms[label] = cert.PublicKeyAlgorithm
+			}
 		}
 		algoCount[label]++
+	}
+	for label, algorithm := range literalAlgorithms {
+		template := labels.fallbacks[label].(chartTextTemplate)
+		template.Params["algorithm"] = algorithm
 	}
 
 	// Convert to sortable slice
@@ -427,8 +438,9 @@ func generateCertificatesKeyAlgorithmsChart(outDir string, showLegend bool) *cha
 		}),
 		charts.WithXAxisOpts(opts.XAxis{
 			AxisLabel: &opts.AxisLabel{
-				Rotate: 45,
-				Color:  "#ffffff",
+				Formatter: labels.axisFormatter(),
+				Rotate:    45,
+				Color:     "#ffffff",
 			},
 		}),
 		charts.WithYAxisOpts(opts.YAxis{

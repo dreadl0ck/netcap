@@ -43,8 +43,11 @@ import (
 // HandleChartData returns a handler that generates charts for a specific output directory (for service mode)
 func HandleChartData(outDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w, finish := chartPresentationResponse(w, r)
+		defer finish()
+		presentationHeaders(w, PresentationFromRequest(r))
 		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			chartHTTPError(w, r, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
@@ -57,7 +60,7 @@ func HandleChartData(outDir string) http.HandlerFunc {
 		maxDataPointsStr := r.URL.Query().Get("maxDataPoints")
 
 		if auditType == "" || field == "" {
-			http.Error(w, "Missing required parameters: type, field", http.StatusBadRequest)
+			chartHTTPError(w, r, "Missing required parameters: type, field", http.StatusBadRequest)
 			return
 		}
 
@@ -82,15 +85,15 @@ func HandleChartData(outDir string) http.HandlerFunc {
 		// No default interval - empty means use all records with actual timestamps
 
 		// Generate chart using go-echarts
-		generator := NewChartGenerator(auditType, field, chartType, interval, showLegend, maxDataPoints)
+		generator := NewChartGenerator(auditType, field, chartType, interval, showLegend, maxDataPoints, PresentationFromRequest(r))
 		chartHTML, err := generator.GenerateChart(outDir)
 		if errors.Is(err, errNoChartData) {
-			w.WriteHeader(http.StatusNoContent)
+			chartNoData(w, r)
 			return
 		}
 		if err != nil {
 			log.Printf("[WebUI] Failed to generate chart: %v", err)
-			http.Error(w, fmt.Sprintf("Failed to generate chart: %v", err), http.StatusInternalServerError)
+			chartHTTPError(w, r, fmt.Sprintf("Failed to generate chart: %v", err), http.StatusInternalServerError)
 			return
 		}
 
@@ -106,14 +109,15 @@ func HandleChartData(outDir string) http.HandlerFunc {
 // HandleChartFields returns a handler that returns available fields for a specific output directory (for service mode)
 func HandleChartFields(outDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		presentationHeaders(w, PresentationFromRequest(r))
 		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			chartHTTPError(w, r, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
 		auditType := r.URL.Query().Get("type")
 		if auditType == "" {
-			http.Error(w, "Missing required parameter: type", http.StatusBadRequest)
+			chartHTTPError(w, r, "Missing required parameter: type", http.StatusBadRequest)
 			return
 		}
 
@@ -123,7 +127,7 @@ func HandleChartFields(outDir string) http.HandlerFunc {
 		// Read up to 100 records to get field information
 		reader, err := NewAuditRecordReader(filePath)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to open audit file: %v", err), http.StatusInternalServerError)
+			chartHTTPError(w, r, fmt.Sprintf("Failed to open audit file: %v", err), http.StatusInternalServerError)
 			return
 		}
 		defer reader.Close()
@@ -131,14 +135,14 @@ func HandleChartFields(outDir string) http.HandlerFunc {
 		// Read header
 		_, err = reader.ReadHeader()
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to read header: %v", err), http.StatusInternalServerError)
+			chartHTTPError(w, r, fmt.Sprintf("Failed to read header: %v", err), http.StatusInternalServerError)
 			return
 		}
 
 		// Read up to 100 records to inspect fields across multiple records
 		fields, totalFields, err := extractAllFieldsAcrossRecords(reader, 100)
 		if err != nil {
-			http.Error(w, "Cannot read chart field sample", http.StatusInternalServerError)
+			chartHTTPError(w, r, "Cannot read chart field sample", http.StatusInternalServerError)
 			return
 		}
 
@@ -150,11 +154,12 @@ func HandleChartFields(outDir string) http.HandlerFunc {
 			TotalFields:   totalFields,
 			FilteredCount: totalFields - len(fields),
 		}
+		presentChartFields(&response, PresentationFromRequest(r))
 
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			log.Printf("[WebUI] Failed to encode chart fields response: %v", err)
-			http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+			chartHTTPError(w, r, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
 		}
 	}
 }
@@ -179,16 +184,18 @@ type ChartDataResponse struct {
 }
 
 type ChartCoverage struct {
-	Basis            string   `json:"basis"`
-	SourceBuckets    int      `json:"sourceBuckets"`
-	DisplayedBuckets int      `json:"displayedBuckets"`
-	Sampled          bool     `json:"sampled"`
-	Limitations      []string `json:"limitations"`
+	Basis            string      `json:"basis"`
+	SourceBuckets    int         `json:"sourceBuckets"`
+	DisplayedBuckets int         `json:"displayedBuckets"`
+	Sampled          bool        `json:"sampled"`
+	Limitations      []string    `json:"limitations"`
+	LimitationsI18n  []UIMessage `json:"limitationsI18n"`
 }
 
 // ChartFieldsResponse lists available numeric fields for charting
 type ChartFieldsResponse struct {
 	Discovery     string           `json:"discovery"`
+	DiscoveryI18n UIMessage        `json:"discoveryI18n"`
 	SampleLimit   int              `json:"sampleLimit"`
 	Type          string           `json:"type"`
 	Fields        []ChartFieldInfo `json:"fields"`
@@ -198,9 +205,11 @@ type ChartFieldsResponse struct {
 
 // ChartFieldInfo represents metadata about a field for charting
 type ChartFieldInfo struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Description string `json:"description"`
+	Name            string    `json:"name"`
+	Type            string    `json:"type"`
+	Description     string    `json:"description"`
+	TypeI18n        UIMessage `json:"typeI18n"`
+	DescriptionI18n UIMessage `json:"descriptionI18n"`
 }
 
 // resolveChartScopeDirs returns one or more output directories matching the
@@ -342,8 +351,9 @@ var jsonChartSlots = make(chan struct{}, 2)
 
 // handleChartData serves rendered charts or JSON time series.
 func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
+	presentationHeaders(w, PresentationFromRequest(r))
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		chartHTTPError(w, r, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -357,11 +367,11 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	scope := r.URL.Query().Get("scope") // "all", "current" (default), or pcap id/path
 
 	if auditType == "" || field == "" {
-		http.Error(w, "Missing required parameters: type, field", http.StatusBadRequest)
+		chartHTTPError(w, r, "Missing required parameters: type, field", http.StatusBadRequest)
 		return
 	}
 	if _, ok := types.Type_value["NC_"+auditType]; !ok {
-		http.Error(w, "Unknown audit type", http.StatusBadRequest)
+		chartHTTPError(w, r, "Unknown audit type", http.StatusBadRequest)
 		return
 	}
 
@@ -386,7 +396,7 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	dirs, status, err := s.resolveChartScopeDirs(scope, r)
 	if err != nil {
 		log.Printf("[WebUI] chart: scope %q resolution failed: %v", scope, err)
-		http.Error(w, err.Error(), status)
+		chartHTTPError(w, r, err.Error(), status)
 		return
 	}
 
@@ -399,7 +409,7 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 		case jsonChartSlots <- struct{}{}:
 			defer func() { <-jsonChartSlots }()
 		default:
-			http.Error(w, "chart analysis is busy", http.StatusTooManyRequests)
+			chartHTTPError(w, r, "chart analysis is busy", http.StatusTooManyRequests)
 			return
 		}
 		intervalForJSON := interval
@@ -412,14 +422,15 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if errors.Is(err, errChartBucketLimit) {
-				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+				uiHTTPError(w, r, err.Error(), http.StatusUnprocessableEntity, "chart_bucket_limit", "Chart exceeds the time-bucket limit", map[string]any{"limit": maxJSONChartBuckets})
 				return
 			}
 			log.Printf("[WebUI] chart json: aggregate failed (type=%s field=%s scope=%s): %v",
 				auditType, field, scope, err)
-			http.Error(w, fmt.Sprintf("Failed to aggregate chart data: %v", err), http.StatusInternalServerError)
+			chartHTTPError(w, r, fmt.Sprintf("Failed to aggregate chart data: %v", err), http.StatusInternalServerError)
 			return
 		}
+		presentChartCoverage(&merged.Coverage, PresentationFromRequest(r))
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(merged); err != nil {
 			log.Printf("[WebUI] chart json: encode failed: %v", err)
@@ -429,15 +440,15 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 
 	// Generate chart using go-echarts
 	start := time.Now()
-	generator := NewChartGenerator(auditType, field, chartType, interval, showLegend, maxDataPoints)
+	generator := NewChartGenerator(auditType, field, chartType, interval, showLegend, maxDataPoints, PresentationFromRequest(r))
 	chartHTML, err := generator.GenerateChartFromDirs(dirs)
 	if errors.Is(err, errNoChartData) {
-		w.WriteHeader(http.StatusNoContent)
+		chartNoData(w, r)
 		return
 	}
 	if err != nil {
 		log.Printf("[WebUI] Failed to generate chart (type=%s field=%s scope=%s dirs=%d): %v", auditType, field, scope, len(dirs), err)
-		http.Error(w, fmt.Sprintf("Failed to generate chart: %v", err), http.StatusInternalServerError)
+		chartHTTPError(w, r, fmt.Sprintf("Failed to generate chart: %v", err), http.StatusInternalServerError)
 		return
 	}
 	if elapsed := time.Since(start); elapsed > time.Second {
@@ -780,14 +791,15 @@ func navigateToField(v reflect.Value, fieldPath string) (reflect.Value, error) {
 
 // handleChartFields returns available numeric fields for a given audit record type
 func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
+	presentationHeaders(w, PresentationFromRequest(r))
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		chartHTTPError(w, r, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	auditType := r.URL.Query().Get("type")
 	if auditType == "" {
-		http.Error(w, "Missing required parameter: type", http.StatusBadRequest)
+		chartHTTPError(w, r, "Missing required parameter: type", http.StatusBadRequest)
 		return
 	}
 	scope := r.URL.Query().Get("scope")
@@ -795,7 +807,7 @@ func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
 	dirs, status, err := s.resolveChartScopeDirs(scope, r)
 	if err != nil {
 		log.Printf("[WebUI] chart fields: scope %q resolution failed: %v", scope, err)
-		http.Error(w, err.Error(), status)
+		chartHTTPError(w, r, err.Error(), status)
 		return
 	}
 
@@ -814,7 +826,7 @@ func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
 		break
 	}
 	if reader == nil {
-		http.Error(w, fmt.Sprintf("Failed to open audit file in any scope dir: %v", lastErr), http.StatusInternalServerError)
+		chartHTTPError(w, r, fmt.Sprintf("Failed to open audit file in any scope dir: %v", lastErr), http.StatusInternalServerError)
 		return
 	}
 	defer reader.Close()
@@ -822,14 +834,14 @@ func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
 	// Read header
 	_, err = reader.ReadHeader()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to read header: %v", err), http.StatusInternalServerError)
+		chartHTTPError(w, r, fmt.Sprintf("Failed to read header: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	// Read up to 100 records to inspect fields across multiple records
 	fields, totalFields, err := extractAllFieldsAcrossRecords(reader, 100)
 	if err != nil {
-		http.Error(w, "Cannot read chart field sample", http.StatusInternalServerError)
+		chartHTTPError(w, r, "Cannot read chart field sample", http.StatusInternalServerError)
 		return
 	}
 
@@ -841,11 +853,12 @@ func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
 		TotalFields:   totalFields,
 		FilteredCount: totalFields - len(fields),
 	}
+	presentChartFields(&response, PresentationFromRequest(r))
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("[WebUI] Failed to encode chart fields response: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+		chartHTTPError(w, r, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
 	}
 }
 
@@ -1109,36 +1122,36 @@ func extractFieldsRecursive(v reflect.Value, prefix string, fields *[]ChartField
 	}
 }
 
-// getFieldDescription returns a human-readable description for common field names
-func getFieldDescription(fieldName string) string {
-	descriptions := map[string]string{
-		"Timestamp":      "Record timestamp in nanoseconds",
-		"Size":           "Size in bytes",
-		"Length":         "Length in bytes",
-		"BytesClient":    "Bytes sent by client",
-		"BytesServer":    "Bytes sent by server",
-		"NumPackets":     "Number of packets",
-		"TotalSize":      "Total size in bytes",
-		"AppPayloadSize": "Application payload size in bytes",
-		"Duration":       "Duration in nanoseconds",
-		"Port":           "Port number",
-		"SrcPort":        "Source port number",
-		"DstPort":        "Destination port number",
-		"StatusCode":     "HTTP status code",
-		"ContentLength":  "Content length in bytes",
-		"TTL":            "Time to live",
-		"Checksum":       "Checksum value",
-		"Window":         "TCP window size",
-		"Seq":            "Sequence number",
-		"Ack":            "Acknowledgment number",
-		"IHL":            "IP header length",
-		"TOS":            "Type of service",
-		"ID":             "Identifier",
-		"FragOffset":     "Fragment offset",
-		"Protocol":       "Protocol number",
-	}
+var chartFieldDescriptions = map[string]string{
+	"Timestamp":      "Record timestamp in nanoseconds",
+	"Size":           "Size in bytes",
+	"Length":         "Length in bytes",
+	"BytesClient":    "Bytes sent by client",
+	"BytesServer":    "Bytes sent by server",
+	"NumPackets":     "Number of packets",
+	"TotalSize":      "Total size in bytes",
+	"AppPayloadSize": "Application payload size in bytes",
+	"Duration":       "Duration in nanoseconds",
+	"Port":           "Port number",
+	"SrcPort":        "Source port number",
+	"DstPort":        "Destination port number",
+	"StatusCode":     "HTTP status code",
+	"ContentLength":  "Content length in bytes",
+	"TTL":            "Time to live",
+	"Checksum":       "Checksum value",
+	"Window":         "TCP window size",
+	"Seq":            "Sequence number",
+	"Ack":            "Acknowledgment number",
+	"IHL":            "IP header length",
+	"TOS":            "Type of service",
+	"ID":             "Identifier",
+	"FragOffset":     "Fragment offset",
+	"Protocol":       "Protocol number",
+}
 
-	if desc, ok := descriptions[fieldName]; ok {
+// getFieldDescription returns a human-readable description for common field names.
+func getFieldDescription(fieldName string) string {
+	if desc, ok := chartFieldDescriptions[fieldName]; ok {
 		return desc
 	}
 

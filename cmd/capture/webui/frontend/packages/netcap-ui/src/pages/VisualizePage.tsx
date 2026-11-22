@@ -51,10 +51,18 @@ import HubIcon from '@mui/icons-material/Hub';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { getBackendUrl, type ProtocolHierarchyResponse } from '../lib/api';
-import useSWR, { mutate as globalMutate } from 'swr';
+
 import { useNetcapRouter, useNetcapApi } from '../hooks';
 
 import { ChartFrame } from '../components/ChartFrame';
+import { translate as i18nText, message as i18nMessage, richText as i18nRichText, getLocale as getUILocale, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR, mutatePresentation as globalMutate } from "../lib/i18n";
+import { errorText } from "../lib/i18n";
+import { message as finalCopyMessage } from "../lib/i18n";
+
+
+
+
 const CHART_TYPES = [
   { value: 'sankey', label: 'Sankey Diagram', icon: <AccountTreeIcon /> },
   { value: 'treemap', label: 'Treemap', icon: <GridViewIcon /> },
@@ -66,6 +74,7 @@ const CHART_TYPES = [
 ];
 
 export default function Visualize() {
+  const __uiLocale = useUILocale();
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const { file: urlFile } = router.query;
@@ -75,7 +84,7 @@ export default function Visualize() {
 
   const [switchingFile, setSwitchingFile] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UIMessageText | null>(null);
   const [hierarchyData, setHierarchyData] = useState<ProtocolHierarchyResponse | null>(null);
   const [selectedChartType, setSelectedChartType] = useState<string>('sankey');
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
@@ -202,11 +211,11 @@ export default function Visualize() {
       // For other chart types (treemap, bar3d, graph), the iframe will reload automatically due to key change
     } catch (err) {
       console.error('Failed to switch file:', err);
-      alert('Failed to switch to this capture');
+      alert(i18nText("ui:m_7ab800e4d59917b1d34c"));
     } finally {
       setSwitchingFile(false);
     }
-  }, [mutateStatus, selectedChartType]);
+  }, [mutateStatus, selectedChartType, __uiLocale]);
 
   // Set initial file from URL parameter
   useEffect(() => {
@@ -222,7 +231,7 @@ export default function Visualize() {
       const data = await api.getProtocolHierarchy();
       setHierarchyData(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load protocol hierarchy');
+      setError(errorText(err) || i18nMessage("ui:m_0932da415d977f182f12"));
     } finally {
       setLoading(false);
     }
@@ -237,13 +246,11 @@ export default function Visualize() {
 
   // Use shared FileSelectorHeader component
   const fileSelector = (
-    <FileSelectorHeader
-      inputFiles={inputFiles || []}
+    <FileSelectorHeader inputFiles={inputFiles || []}
       status={status}
       switchingFile={switchingFile}
       onFileChange={handleFileSelectorChange}
-      learnHint="Capture Selector: Switch between different analyzed PCAP files to visualize their protocol hierarchy and statistics."
-    />
+      learnHint={finalCopyMessage("ui:m_200f09f82d65a4d2e8d3")} />
   );
 
 
@@ -314,20 +321,14 @@ export default function Visualize() {
   }, [showLegend, maxNodes, maxConnections, graphLayout]);
 
   return (
-    <Layout title="Visualize" headerAction={fileSelector}>
-      {/* Chart type selector and legend toggle - wraps on mobile */}
-      <Box 
-        sx={{ 
+    <Layout title={i18nText("ui:m_35fc9c3d21026f579145")} headerAction={fileSelector}>{/* Chart type selector and legend toggle - wraps on mobile */}<Box sx={{ 
           mb: selectedChartType === 'sankey' ? 3 : 1,
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           alignItems: { xs: 'stretch', md: 'center' },
           justifyContent: 'space-between',
           gap: 2
-        }}
-      >
-        {/* Chart Type Buttons - scrollable on mobile */}
-        <Box sx={{ 
+        }}>{/* Chart Type Buttons - scrollable on mobile */}<Box sx={{ 
           overflowX: { xs: 'auto', md: 'visible' },
           overflowY: 'visible',
           width: { xs: '100%', md: 'auto' },
@@ -335,9 +336,7 @@ export default function Visualize() {
           '&::-webkit-scrollbar': { display: 'none' },
           msOverflowStyle: 'none',
           scrollbarWidth: 'none',
-        }}>
-          <ToggleButtonGroup
-            data-learn="Visualization Type: Choose between Sankey diagram, Treemap, 3D Bar Chart, Network Graph, Geo Map, 3D Scatter plot, or Hosts Graph to visualize protocol data in different ways."
+        }}><ToggleButtonGroup data-learn={i18nText("ui:m_48d85c22225a3f0e2f76")}
             value={selectedChartType}
             exclusive
             onChange={(_e, newValue) => {
@@ -356,60 +355,31 @@ export default function Visualize() {
             sx={{
               display: 'flex',
               flexWrap: { xs: 'nowrap', md: 'wrap' },
-            }}
-          >
-            {CHART_TYPES.map((type) => (
-              <ToggleButton 
-                key={type.value} 
+            }}>{CHART_TYPES.map((type) => (
+              <ToggleButton key={type.value} 
                 value={type.value}
                 sx={{
                   px: { xs: 1, xl: 2 },
                   minWidth: { xs: 48, xl: 'auto' },
                   width: { xs: 48, xl: 'auto' },
                   flexShrink: { xs: 0, md: 1 },
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0, xl: 1 } }}>
-                  {type.icon}
-                  <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
-                    {type.label}
-                  </Box>
-                </Box>
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </Box>
-
-        {/* Legend Toggle and Layout Selector - Always shown on the right */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Graph Layout Selector - Only for graph-based charts */}
-          {(selectedChartType === 'graph' || selectedChartType === 'hosts-graph') && (
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <Select
-                data-learn="Graph Layout: Choose the layout algorithm for the graph visualization. Force uses physics simulation, Circular arranges nodes in a circle, and None uses fixed positions."
+                }}><Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0, xl: 1 } }}>{type.icon}<Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>{i18nText(type.label)}</Box></Box></ToggleButton>
+            ))}</ToggleButtonGroup></Box>{/* Legend Toggle and Layout Selector - Always shown on the right */}<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>{/* Graph Layout Selector - Only for graph-based charts */}{(selectedChartType === 'graph' || selectedChartType === 'hosts-graph') && (
+            <FormControl size="small" sx={{ minWidth: 120 }}><Select data-learn={i18nText("ui:m_c0a86c0e30894663d365")}
                 value={graphLayout}
                 onChange={(e) => setGraphLayout(e.target.value)}
                 sx={{
                   '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(255, 255, 255, 0.23)',
+                    borderColor: 'text.secondary',
                   },
                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(255, 255, 255, 0.4)',
+                    borderColor: 'primary.main',
                   },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'primary.light',
+                    borderColor: 'primary.main',
                   },
-                }}
-              >
-                <MenuItem value="force">Force Layout</MenuItem>
-                <MenuItem value="circular">Circular Layout</MenuItem>
-                <MenuItem value="none">Fixed Layout</MenuItem>
-              </Select>
-            </FormControl>
-          )}
-          
-          <ToggleButtonGroup
-            data-learn="Legend Toggle: Show or hide the chart legend that explains the visualization's color coding and labels."
+                }}><MenuItem value="force">{i18nText("ui:m_afb9936bc96460a7211f")}</MenuItem><MenuItem value="circular">{i18nText("ui:m_49c6c4c2766b9016ce06")}</MenuItem><MenuItem value="none">{i18nText("ui:m_75cf97c38d25fceb63f5")}</MenuItem></Select></FormControl>
+          )}<ToggleButtonGroup data-learn={i18nText("ui:m_20f16e71111c7679ad82")}
             value={showLegend ? 'on' : 'off'}
             exclusive
             onChange={(_e, newValue) => {
@@ -424,188 +394,74 @@ export default function Visualize() {
                 minWidth: { xs: 48, xl: 'auto' },
                 width: { xs: 48, xl: 'auto' },
               }
-            }}
-          >
-            <ToggleButton value="on">
-              <LabelIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 18 }} />
-              <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
-                On
-              </Box>
-            </ToggleButton>
-            <ToggleButton value="off">
-              <LabelOffIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 18 }} />
-              <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
-                Off
-              </Box>
-            </ToggleButton>
-          </ToggleButtonGroup>
-          
-          {/* Max Nodes Slider - Only for hosts-graph */}
-          {selectedChartType === 'hosts-graph' && (
-            <Box 
-              data-learn="Max Nodes Limit: Control the maximum number of host nodes displayed in the network graph to optimize performance and readability."
+            }}><ToggleButton value="on"><LabelIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 18 }} />
+              {i18nRichText("ui:m_b0e4960ba959dc582309", { tag0: (chunks: import('react').ReactNode[]) => <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>{chunks}</Box> })}
+            </ToggleButton><ToggleButton value="off"><LabelOffIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 18 }} />
+              {i18nRichText("ui:m_c428c00c734071bde940", { tag0: (chunks: import('react').ReactNode[]) => <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>{chunks}</Box> })}
+            </ToggleButton></ToggleButtonGroup>{/* Max Nodes Slider - Only for hosts-graph */}{selectedChartType === 'hosts-graph' && (
+            <Box data-learn={i18nText("ui:m_c1a8361c0b2ac3b2bae3")}
               sx={{ 
                 display: { xs: 'none', sm: 'flex' }, 
                 alignItems: 'center', 
                 gap: 2, 
                 minWidth: 250 
-              }}
-            >
-              <Typography variant="body2" sx={{ whiteSpace: 'nowrap', minWidth: 85 }}>
-                Max Nodes:
-              </Typography>
-              <Slider
-                value={maxNodes}
+              }}><Typography variant="body2" sx={{ whiteSpace: 'nowrap', minWidth: 85 }}>
+                {i18nText("ui:m_c8b1b5bb23764b6aaa92")}
+              </Typography><Slider value={maxNodes}
                 onChange={(_e, newValue) => setMaxNodes(newValue as number)}
                 min={100}
                 max={5000}
                 step={100}
                 valueLabelDisplay="auto"
-                sx={{ width: 150 }}
-              />
-              <Typography variant="body2" sx={{ minWidth: 40, textAlign: 'right' }}>
-                {maxNodes}
-              </Typography>
-            </Box>
-          )}
-          
-          {/* Max Connections Slider - Only for scatter3d */}
-          {selectedChartType === 'scatter3d' && (
-            <Box 
-              data-learn="Max Connections Limit: Control the maximum number of network connections displayed in the 3D scatter plot to optimize rendering performance."
+                sx={{ width: 150 }} /><Typography variant="body2" sx={{ minWidth: 40, textAlign: 'right' }}>{maxNodes}</Typography></Box>
+          )}{/* Max Connections Slider - Only for scatter3d */}{selectedChartType === 'scatter3d' && (
+            <Box data-learn={i18nText("ui:m_65f8498dfb602a66770c")}
               sx={{ 
                 display: { xs: 'none', sm: 'flex' }, 
                 alignItems: 'center', 
                 gap: 2, 
                 minWidth: 280 
-              }}
-            >
-              <Typography variant="body2" sx={{ whiteSpace: 'nowrap', minWidth: 120 }}>
-                Max Connections:
-              </Typography>
-              <Slider
-                value={maxConnections}
+              }}><Typography variant="body2" sx={{ whiteSpace: 'nowrap', minWidth: 120 }}>
+                {i18nText("ui:m_ce65223ee867bf27b57a")}
+              </Typography><Slider value={maxConnections}
                 onChange={(_e, newValue) => setMaxConnections(newValue as number)}
                 min={1000}
                 max={500000}
                 step={1000}
                 valueLabelDisplay="auto"
-                sx={{ width: 150 }}
-              />
-              <Typography variant="body2" sx={{ minWidth: 60, textAlign: 'right' }}>
-                {maxConnections.toLocaleString()}
-              </Typography>
-            </Box>
-          )}
-        </Box>
-      </Box>
-
-      <Grid container spacing={3}>
-        {/* Protocol Statistics Panel - Only show for Sankey */}
-        {selectedChartType === 'sankey' && (
-          <Grid item xs={12} lg={4} sx={{ order: { xs: 2, lg: 1 } }}>
-            <Card 
-              data-learn="Protocol Statistics: Detailed breakdown of network protocols found in the capture, organized by OSI layer (Link, Network, Transport, Application) with packet counts."
-              sx={{ height: 'calc(100vh - 300px)', display: 'flex', flexDirection: 'column' }}
-            >
-              <CardContent sx={{ flex: 1, overflow: 'auto' }}>
-                <Typography variant="h6" gutterBottom>
-                  Protocol Statistics
-                </Typography>
-
-                {loading && (
-                  <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
-                    <CircularProgress />
-                  </Box>
-                )}
-
-                {error && (
-                  <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
-                  </Alert>
-                )}
-
-                <Alert severity="info">Schematic protocol relationships: links are synthesized from typical encapsulation and retained audit counts. They are not measured packet-level relationships or wire-volume estimates.</Alert>
-                {hierarchyData && hierarchyData.stats && (
-                  <TableContainer>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Protocol</TableCell>
-                          <TableCell align="right">Count</TableCell>
-                          <TableCell>Layer</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {Object.entries(hierarchyData.stats)
+                sx={{ width: 150 }} /><Typography variant="body2" sx={{ minWidth: 60, textAlign: 'right' }}>{maxConnections.toLocaleString(getUILocale())}</Typography></Box>
+          )}</Box></Box><Grid container spacing={3}>{/* Protocol Statistics Panel - Only show for Sankey */}{selectedChartType === 'sankey' && (
+          <Grid item xs={12} lg={4} sx={{ order: { xs: 2, lg: 1 } }}><Card data-learn={i18nText("ui:m_dfe3e34fca35b83fda7e")}
+              sx={{ height: 'calc(100vh - 300px)', display: 'flex', flexDirection: 'column' }}><CardContent sx={{ flex: 1, overflow: 'auto' }}><Typography variant="h6" gutterBottom>
+                  {i18nText("ui:m_3e70dae42adf19ef6e4d")}
+                </Typography>{loading && (
+                  <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}><CircularProgress /></Box>
+                )}{i18nRenderText(error) && (
+                  <Alert severity="error" sx={{ mb: 2 }}>{i18nRenderText(error)}</Alert>
+                )}<Alert severity="info">{i18nText("ui:m_df8fb327fdd89d81108d")}</Alert>{hierarchyData && hierarchyData.stats && (
+                  <TableContainer><Table size="small"><TableHead><TableRow><TableCell>{i18nText("ui:m_2d5b0d13af7edb332cfd")}</TableCell><TableCell align="right">{i18nText("ui:m_9cc2c6f927f2cbb0421c")}</TableCell><TableCell>{i18nText("ui:m_3d205e167c6af3fe582d")}</TableCell></TableRow></TableHead><TableBody>{Object.entries(hierarchyData.stats)
                           .sort((a, b) => b[1].count - a[1].count)
                           .map(([protocol, stats]) => (
-                            <TableRow key={protocol} hover>
-                              <TableCell>
-                                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                                  {protocol}
-                                </Typography>
-                              </TableCell>
-                              <TableCell align="right">
-                                <Typography variant="body2">
-                                  {stats.count.toLocaleString()}
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                <Chip
-                                  label={stats.layer}
+                            <TableRow key={protocol} hover><TableCell><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{protocol}</Typography></TableCell><TableCell align="right"><Typography variant="body2">{stats.count.toLocaleString(getUILocale())}</Typography></TableCell><TableCell><Chip label={stats.layer}
                                   size="small"
                                   color={getLayerColor(stats.layer) as any}
-                                  sx={{ fontSize: '0.7rem' }}
-                                />
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
-
-                {!hierarchyData && !loading && !error && (
-                  <Box
-                    sx={{
+                                  sx={{ fontSize: '0.7rem' }} /></TableCell></TableRow>
+                          ))}</TableBody></Table></TableContainer>
+                )}{!hierarchyData && !loading && !error && (
+                  <Box sx={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
                       minHeight: 200,
-                    }}
-                  >
-                    <AccountTreeIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
-                    <Typography variant="body2" color="text.secondary">
-                      No protocol data available
-                    </Typography>
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        )}
-
-        {/* Chart Display */}
-        <Grid item xs={12} lg={selectedChartType === 'sankey' ? 8 : 12} sx={{ order: { xs: 1, lg: 2 } }}>
-          <Paper sx={{ p: selectedChartType === 'sankey' ? 3 : 2, height: selectedChartType === 'sankey' ? 'calc(100vh - 300px)' : 'calc(100vh - 180px)', display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="h6" gutterBottom sx={{ mb: selectedChartType === 'sankey' ? 2 : 1 }}>
-              {CHART_TYPES.find(ct => ct.value === selectedChartType)?.label || 'Visualization'}
-            </Typography>
-            
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-
-            {/* ECharts-based visualizations (Sankey, Treemap, Bar3D, Graph, Geo, Scatter3D, Hosts Graph) */}
-            {chartUrl && (
-              <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <Box sx={{ flex: 1, position: 'relative', minHeight: 400 }}>
-                  <ChartFrame
-                    key={chartRefreshKey}
+                    }}><AccountTreeIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} /><Typography variant="body2" color="text.secondary">
+                      {i18nText("ui:m_e84e4fb05a682114621d")}
+                    </Typography></Box>
+                )}</CardContent></Card></Grid>
+        )}{/* Chart Display */}<Grid item xs={12} lg={selectedChartType === 'sankey' ? 8 : 12} sx={{ order: { xs: 1, lg: 2 } }}><Paper sx={{ p: selectedChartType === 'sankey' ? 3 : 2, height: selectedChartType === 'sankey' ? 'calc(100vh - 300px)' : 'calc(100vh - 180px)', display: 'flex', flexDirection: 'column' }}><Typography variant="h6" gutterBottom sx={{ mb: selectedChartType === 'sankey' ? 2 : 1 }}>{i18nText(CHART_TYPES.find(ct => ct.value === selectedChartType)?.label) || i18nText("ui:m_46a724cb27ec45224ed4")}</Typography>{i18nRenderText(error) && (
+              <Alert severity="error" sx={{ mb: 2 }}>{i18nRenderText(error)}</Alert>
+            )}{/* ECharts-based visualizations (Sankey, Treemap, Bar3D, Graph, Geo, Scatter3D, Hosts Graph) */}{chartUrl && (
+              <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}><Box sx={{ flex: 1, position: 'relative', minHeight: 400 }}><ChartFrame key={chartRefreshKey}
                     src={chartUrl}
                     style={{
                       position: 'absolute',
@@ -616,14 +472,7 @@ export default function Visualize() {
                       border: 'none',
                       borderRadius: '4px',
                     }}
-                    title={`${selectedChartType} Visualization`}
-                  />
-                </Box>
-              </Box>
-            )}
-          </Paper>
-        </Grid>
-      </Grid>
-    </Layout>
+                    title={i18nText("ui:m_5b0c0b1841f100a4be96", { arg0: selectedChartType })} /></Box></Box>
+            )}</Paper></Grid></Grid></Layout>
   );
 }

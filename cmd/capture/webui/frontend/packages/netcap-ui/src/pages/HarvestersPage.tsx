@@ -65,10 +65,16 @@ import {
   Code as CodeIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
-import useSWR from 'swr';
+
 import Layout from '../components/Layout';
 import type { HarvestersConfig, HarvesterConfigItem, HarvesterPresetInfo } from '../lib/api';
 import { useNetcapApi, useIsMobile } from '../hooks';
+import { message as i18nMessage, translate as i18nText, richText as i18nRichText, getLocale as getUILocale, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR, metadataText } from "../lib/i18n";
+import { metadataMessage, suppliedMetadataText } from "../lib/i18n";
+
+
+
 
 // Helper function to convert harvester name to snake_case filename
 const toSnakeCase = (str: string): string => {
@@ -121,6 +127,7 @@ const getHarvesterGitHubUrl = (harvesterName: string): string => {
 
 
 export default function Harvesters() {
+  const __uiLocale = useUILocale();
   const isMobile = useIsMobile();
   const api = useNetcapApi();
   const { data: configData, mutate: mutateConfig } = useSWR('harvesters-config', () => api.getHarvestersConfig());
@@ -129,7 +136,7 @@ export default function Harvesters() {
   const [tabValue, setTabValue] = useState(0);
   const [expandedHarvester, setExpandedHarvester] = useState<string | null>(null);
   const [config, setConfig] = useState<HarvestersConfig | null>(null);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: UIMessageText; severity: 'success' | 'error' }>({
     open: false,
     message: '',
     severity: 'success',
@@ -206,55 +213,55 @@ export default function Harvesters() {
     
     try {
       const result = await api.saveHarvestersConfig(config);
-      setSnackbar({ open: true, message: result.message, severity: 'success' });
+      setSnackbar({ open: true, message: metadataMessage(result, 'message'), severity: 'success' });
       mutateConfig();
     } catch (error) {
-      setSnackbar({ open: true, message: `Failed to save config: ${error}`, severity: 'error' });
+      setSnackbar({ open: true, message: i18nMessage("ui:m_bbe38aefd68b2e4fd9fc", { arg0: error }), severity: 'error' });
     }
   };
 
   const handleSavePreset = async () => {
     if (!config || !presetName.trim()) {
-      setSnackbar({ open: true, message: 'Please enter a preset name', severity: 'error' });
+      setSnackbar({ open: true, message: i18nMessage("ui:m_087aa9d83505b465a2b4"), severity: 'error' });
       return;
     }
     
     try {
       const result = await api.saveHarvesterPreset(presetName, config);
-      setSnackbar({ open: true, message: result.message, severity: 'success' });
+      setSnackbar({ open: true, message: metadataMessage(result, 'message'), severity: 'success' });
       setSavePresetDialogOpen(false);
       setPresetName('');
       mutatePresets();
     } catch (error) {
-      setSnackbar({ open: true, message: `Failed to save preset: ${error}`, severity: 'error' });
+      setSnackbar({ open: true, message: i18nMessage("ui:m_3e6809bba96f4735a732", { arg0: error }), severity: 'error' });
     }
   };
 
   const handleLoadPreset = async () => {
     if (!selectedPreset) {
-      setSnackbar({ open: true, message: 'Please select a preset', severity: 'error' });
+      setSnackbar({ open: true, message: i18nMessage("ui:m_b65da8d4585e15726659"), severity: 'error' });
       return;
     }
     
     try {
       const result = await api.loadHarvesterPreset(selectedPreset);
-      setSnackbar({ open: true, message: result.message, severity: 'success' });
+      setSnackbar({ open: true, message: metadataMessage(result, 'message'), severity: 'success' });
       setConfig(result.config);
       mutateConfig();
     } catch (error) {
-      setSnackbar({ open: true, message: `Failed to load preset: ${error}`, severity: 'error' });
+      setSnackbar({ open: true, message: i18nMessage("ui:m_c67c0437ce3e7c06ebdd", { arg0: error }), severity: 'error' });
     }
   };
 
   const handleDeletePreset = async (name: string) => {
-    if (!confirm(`Are you sure you want to delete the preset "${name}"?`)) return;
+    if (!confirm(i18nText("ui:m_921cfc36b766ba3fedea", { arg0: name }))) return;
     
     try {
       const result = await api.deleteHarvesterPreset(name);
-      setSnackbar({ open: true, message: result.message, severity: 'success' });
+      setSnackbar({ open: true, message: metadataMessage(result, 'message'), severity: 'success' });
       mutatePresets();
     } catch (error) {
-      setSnackbar({ open: true, message: `Failed to delete preset: ${error}`, severity: 'error' });
+      setSnackbar({ open: true, message: i18nMessage("ui:m_79fb9cda1aaf6e76a843", { arg0: error }), severity: 'error' });
     }
   };
 
@@ -269,43 +276,38 @@ export default function Harvesters() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      setSnackbar({ open: true, message: 'Preset downloaded successfully', severity: 'success' });
+      setSnackbar({ open: true, message: i18nMessage("ui:m_3548b15f089bc5679e6f"), severity: 'success' });
     } catch (error) {
-      setSnackbar({ open: true, message: `Failed to download preset: ${error}`, severity: 'error' });
+      setSnackbar({ open: true, message: i18nMessage("ui:m_c8c5177f336de7b4da90", { arg0: error }), severity: 'error' });
     }
   };
 
   const handleUploadPreset = async () => {
     if (!uploadFile) {
-      setSnackbar({ open: true, message: 'Please select a file', severity: 'error' });
+      setSnackbar({ open: true, message: i18nMessage("ui:m_0b9eca19d4b2918f07b5"), severity: 'error' });
       return;
     }
     
     try {
       const result = await api.uploadHarvesterPreset(uploadFile);
-      setSnackbar({ open: true, message: result.message, severity: 'success' });
+      setSnackbar({ open: true, message: metadataMessage(result, 'message'), severity: 'success' });
       setUploadDialogOpen(false);
       setUploadFile(null);
       mutatePresets();
     } catch (error) {
-      setSnackbar({ open: true, message: `Failed to upload preset: ${error}`, severity: 'error' });
+      setSnackbar({ open: true, message: i18nMessage("ui:m_3438c186f4a09b771d49", { arg0: error }), severity: 'error' });
     }
   };
 
   if (!config) {
     return (
-      <Layout title="Credential Harvesters">
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-          <CircularProgress />
-        </Box>
-      </Layout>
+      <Layout title={i18nText("ui:m_e2442b5dd37ddc7b11e6")}><Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}><CircularProgress /></Box></Layout>
     );
   }
 
   // Tab selector for header
   const tabSelector = (
-    <Tabs 
-      value={tabValue} 
+    <Tabs value={tabValue} 
       onChange={handleTabChange}
       sx={{ 
         minHeight: 40,
@@ -314,44 +316,23 @@ export default function Harvesters() {
           py: 1,
         }
       }}
-      data-learn="Tab Selector: Switch between Configure (edit harvester settings) and Presets (manage saved configurations)."
-    >
-      <Tab label="Configure" data-learn="Configure Tab: Manage individual harvester settings including enabling/disabling, configuring ports, and setting parameters." />
-      <Tab label="Presets" data-learn="Presets Tab: Save, load, and manage harvester configuration presets for different security scenarios." />
-    </Tabs>
+      data-learn={i18nText("ui:m_1856b8efc027bc074149")}><Tab label={i18nText("ui:m_06a7293de01a97a595f2")} data-learn={i18nText("ui:m_6715955d96aa02931b17")} /><Tab label={i18nText("ui:m_62cc21c9361cc5522c75")} data-learn={i18nText("ui:m_8128793b4e3436919dc5")} /></Tabs>
   );
 
   return (
-    <Layout title="Credential Harvesters" headerAction={tabSelector}>
-      <Box sx={{ p: 3 }}>
-        {/* Configure Tab */}
-        {tabValue === 0 && (
-          <Box>
-            <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
-              <Button
-                variant="contained"
+    <Layout title={i18nText("ui:m_e2442b5dd37ddc7b11e6")} headerAction={tabSelector}><Box sx={{ p: 3 }}>{/* Configure Tab */}{tabValue === 0 && (
+          <Box><Box sx={{ mb: 3, display: 'flex', gap: 2 }}><Button variant="contained"
                 startIcon={<SaveIcon />}
                 onClick={handleSaveConfig}
-                data-learn="Save Configuration: Apply and save the current harvester settings to disk. Changes take effect after restarting capture."
-              >
-                Save Configuration
-              </Button>
-              <Button
-                variant="outlined"
+                data-learn={i18nText("ui:m_c81c5a838b875cd07cdf")}>
+                {i18nText("ui:m_b617272e2b94c43ecd5c")}
+              </Button><Button variant="outlined"
                 startIcon={<RefreshIcon />}
                 onClick={() => mutateConfig()}
-                data-learn="Reload Configuration: Discard unsaved changes and reload the harvester configuration from disk."
-              >
-                Reload
-              </Button>
-            </Box>
-
-            <Grid container spacing={2}>
-              {config.harvesters.map((harvester) => (
-                <Grid item xs={12} key={harvester.name}>
-                  <Card>
-                    <CardContent 
-                      sx={{ 
+                data-learn={i18nText("ui:m_785179cbe7f2be4602dc")}>
+                {i18nText("ui:m_968e965258fb0c0320c3")}
+              </Button></Box><Grid container spacing={2}>{config.harvesters.map((harvester) => (
+                <Grid item xs={12} key={harvester.name}><Card><CardContent sx={{ 
                         cursor: harvester.parameters && Object.keys(harvester.parameters).length > 0 ? 'pointer' : 'default',
                         '&:hover': {
                           bgcolor: harvester.parameters && Object.keys(harvester.parameters).length > 0 ? 'action.hover' : 'transparent',
@@ -361,82 +342,40 @@ export default function Harvesters() {
                         if (harvester.parameters && Object.keys(harvester.parameters).length > 0) {
                           setExpandedHarvester(expandedHarvester === harvester.name ? null : harvester.name);
                         }
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={harvester.enabled}
+                      }}><Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}><Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}><FormControlLabel control={<Switch checked={harvester.enabled}
                                 onChange={(e) => {
                                   e.stopPropagation();
                                   handleToggleHarvester(harvester.name);
                                 }}
                                 onClick={(e) => e.stopPropagation()}
-                                data-learn="Toggle Harvester: Enable or disable this credential harvester. When enabled, it will extract authentication data from matching network traffic."
-                              />
-                            }
+                                data-learn={i18nText("ui:m_153cd8a880e5249a8fc2")} />}
                             label={<Typography variant="h6">{harvester.name}</Typography>}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <Typography variant="body2" color="text.secondary">
-                            {harvester.description}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <IconButton
-                            data-learn="View Source Code: Open the harvester's implementation on GitHub to see how it extracts credentials from network traffic."
+                            onClick={(e) => e.stopPropagation()} /><Typography variant="body2" color="text.secondary">{metadataText(harvester, "description")}</Typography></Box><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><IconButton data-learn={i18nText("ui:m_2a638f54fa2f3c708730")}
                             size="small"
                             onClick={(e) => {
                               e.stopPropagation();
                               window.open(getHarvesterGitHubUrl(harvester.name), '_blank', 'noopener,noreferrer');
                             }}
                             sx={{ color: 'text.secondary' }}
-                            title="View source code on GitHub"
-                          >
-                            <CodeIcon />
-                          </IconButton>
-                          {harvester.parameters && Object.keys(harvester.parameters).length > 0 && (
-                            <Chip 
-                              label={expandedHarvester === harvester.name ? 'Hide Parameters' : 'Show Parameters'}
+                            title={i18nText("ui:m_737c7db97490030e51b8")}><CodeIcon /></IconButton>{harvester.parameters && Object.keys(harvester.parameters).length > 0 && (
+                            <Chip label={expandedHarvester === harvester.name ? i18nText("ui:m_018818ff509419cdc48f") : i18nText("ui:m_98baf5dad281a649b811")}
                               size="small"
                               variant="outlined"
                               icon={expandedHarvester === harvester.name ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                              data-learn="Show Parameters: Expand to view and configure advanced parameters for this harvester such as authentication schemes, encoding, and protocol-specific settings."
-                            />
-                          )}
-                        </Box>
-                      </Box>
-
-                      <Box 
-                        sx={{ display: 'flex', gap: 2, mb: 2 }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <TextField
-                          label="Ports (comma-separated)"
+                              data-learn={i18nText("ui:m_218c43b671a631ca9fdd")} />
+                          )}</Box></Box><Box sx={{ display: 'flex', gap: 2, mb: 2 }}
+                        onClick={(e) => e.stopPropagation()}><TextField label={i18nText("ui:m_b3e29ec6818ddd1de87d")}
                           value={harvester.ports.join(', ')}
                           onChange={(e) => handlePortsChange(harvester.name, e.target.value)}
                           fullWidth
                           size="small"
                           disabled={!harvester.enabled}
-                          data-learn="Harvester Ports: Comma-separated list of TCP/UDP ports where this harvester will monitor for credentials. Add custom ports if services run on non-standard ports."
-                        />
-                      </Box>
-
-                      <Collapse in={expandedHarvester === harvester.name}>
-                        <Box 
-                          sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Typography variant="subtitle2" gutterBottom>
-                            Parameters
-                          </Typography>
-                          
-                          {harvester.parameters && Object.keys(harvester.parameters).length > 0 ? (
+                          data-learn={i18nText("ui:m_b5b5807c3e3eaabcf173")} /></Box><Collapse in={expandedHarvester === harvester.name}><Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}
+                          onClick={(e) => e.stopPropagation()}><Typography variant="subtitle2" gutterBottom>
+                            {i18nText("ui:m_d9c69a067ca68ac70522")}
+                          </Typography>{harvester.parameters && Object.keys(harvester.parameters).length > 0 ? (
                             Object.entries(harvester.parameters).map(([key, value]) => (
-                              <TextField
-                                key={key}
+                              <TextField key={key}
                                 label={key}
                                 value={Array.isArray(value) ? value.join(', ') : String(value)}
                                 onChange={(e) => handleParameterChange(harvester.name, key, e.target.value)}
@@ -444,196 +383,71 @@ export default function Harvesters() {
                                 size="small"
                                 sx={{ mb: 2 }}
                                 disabled={!harvester.enabled}
-                                helperText={Array.isArray(value) ? 'Comma-separated list' : ''}
-                              />
+                                helperText={Array.isArray(value) ? i18nText("ui:m_51a72a4c933bf8272859") : ''} />
                             ))
                           ) : (
                             <Typography variant="body2" color="text.secondary">
-                              No configurable parameters for this harvester
+                              {i18nText("ui:m_88abec48c819b7f3e5e9")}
                             </Typography>
-                          )}
-                        </Box>
-                      </Collapse>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-        )}
-
-        {/* Presets Tab */}
-        {tabValue === 1 && (
-          <Box>
-            <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <Button
-                variant="contained"
+                          )}</Box></Collapse></CardContent></Card></Grid>
+              ))}</Grid></Box>
+        )}{/* Presets Tab */}{tabValue === 1 && (
+          <Box><Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}><Button variant="contained"
                 startIcon={<SaveIcon />}
                 onClick={() => setSavePresetDialogOpen(true)}
-                data-learn="Save as Preset: Save the current harvester configuration as a named preset for reuse in different scenarios (e.g., 'Web Only', 'Full Monitoring', 'Database Servers')."
-              >
-                Save as Preset
-              </Button>
-              <Button
-                variant="outlined"
+                data-learn={i18nText("ui:m_cc8fb5fd1e07e191fbc3")}>
+                {i18nText("ui:m_458a67b5665a3f05b4f2")}
+              </Button><Button variant="outlined"
                 startIcon={<FileUploadIcon />}
                 onClick={() => setUploadDialogOpen(true)}
-                data-learn="Upload Preset: Import a harvester configuration preset file (YAML format) from disk to add it to available presets."
-              >
-                Upload Preset
-              </Button>
-              <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
-                <InputLabel>Load Preset</InputLabel>
-                <Select
-                  value={selectedPreset}
+                data-learn={i18nText("ui:m_62a4e468604cd2dfb1cb")}>
+                {i18nText("ui:m_38162fad63316cde8945")}
+              </Button><FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}><InputLabel>{i18nText("ui:m_3f437c17f859ea9e5f59")}</InputLabel><Select value={selectedPreset}
                   onChange={(e) => setSelectedPreset(e.target.value)}
-                  label="Load Preset"
-                  data-learn="Select Preset: Choose a saved harvester configuration preset to load its settings."
-                >
-                  <MenuItem value="">
-                    <em>Select a preset</em>
-                  </MenuItem>
-                  {presetsData?.presets.map((preset) => (
-                    <MenuItem key={preset.name} value={preset.name}>
-                      {preset.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <Button
-                variant="contained"
+                  label={i18nText("ui:m_3f437c17f859ea9e5f59")}
+                  data-learn={i18nText("ui:m_63a185172100875b8160")}><MenuItem value="">
+                    {i18nRichText("ui:m_cd4faa72a1e95a4f6646", { tag0: (chunks: import('react').ReactNode[]) => <em>{chunks}</em> })}
+                  </MenuItem>{presetsData?.presets.map((preset) => (
+                    <MenuItem key={preset.name} value={preset.name}>{preset.name}</MenuItem>
+                  ))}</Select></FormControl><Button variant="contained"
                 onClick={handleLoadPreset}
                 disabled={!selectedPreset}
-                data-learn="Load Preset: Apply the selected preset's harvester configuration, replacing the current settings."
-              >
-                Load
-              </Button>
-            </Box>
-
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell><strong>Name</strong></TableCell>
-                    <TableCell><strong>Description</strong></TableCell>
-                    <TableCell><strong>Harvesters</strong></TableCell>
-                    <TableCell><strong>Modified</strong></TableCell>
-                    <TableCell align="right"><strong>Actions</strong></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {presetsData?.presets && presetsData.presets.length > 0 ? (
+                data-learn={i18nText("ui:m_9ea7a3532a015efad13a")}>
+                {i18nText("ui:m_1b14081bb43e75a26c36")}
+              </Button></Box><TableContainer component={Paper}><Table><TableHead><TableRow><TableCell>{i18nRichText("ui:m_59199fd72f93edc668a9", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}</TableCell><TableCell>{i18nRichText("ui:m_055b4c5cb3abb7dceac0", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}</TableCell><TableCell>{i18nRichText("ui:m_1b4640b3609487eb9907", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}</TableCell><TableCell>{i18nRichText("ui:m_3bbafe2c2d010ec8fed7", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}</TableCell><TableCell align="right">{i18nRichText("ui:m_1df8def1c6510bcea102", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}</TableCell></TableRow></TableHead><TableBody>{presetsData?.presets && presetsData.presets.length > 0 ? (
                     presetsData.presets.map((preset) => (
-                      <TableRow key={preset.name} hover>
-                        <TableCell>{preset.name}</TableCell>
-                        <TableCell>{preset.description}</TableCell>
-                        <TableCell>{preset.harvester_count}</TableCell>
-                        <TableCell>{new Date(preset.modified_at).toLocaleDateString()}</TableCell>
-                        <TableCell align="right">
-                          <Tooltip title="Download">
-                            <IconButton
-                              size="small"
+                      <TableRow key={preset.name} hover><TableCell>{preset.name}</TableCell><TableCell>{suppliedMetadataText(preset, "description")}</TableCell><TableCell>{preset.harvester_count}</TableCell><TableCell>{new Date(preset.modified_at).toLocaleDateString(getUILocale())}</TableCell><TableCell align="right"><Tooltip title={i18nText("ui:m_5f1c36a45f9be850c2ff")}><IconButton size="small"
                               onClick={() => handleDownloadPreset(preset.name)}
-                              data-learn="Download Preset: Export this harvester preset as a YAML file for backup, sharing, or version control."
-                            >
-                              <FileDownloadIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete">
-                            <IconButton
-                              size="small"
+                              data-learn={i18nText("ui:m_072bdbc647eb8bca5d52")}><FileDownloadIcon /></IconButton></Tooltip><Tooltip title={i18nText("ui:m_c1be408539d8c22dfb4a")}><IconButton size="small"
                               color="error"
                               onClick={() => handleDeletePreset(preset.name)}
-                              data-learn="Delete Preset: Permanently remove this harvester preset from the system."
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
+                              data-learn={i18nText("ui:m_4905d2cc8524531d235b")}><DeleteIcon /></IconButton></Tooltip></TableCell></TableRow>
                     ))
                   ) : (
-                    <TableRow>
-                      <TableCell colSpan={5} align="center">
-                        <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                          No saved presets
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
-        )}
-
-        {/* Save Preset Dialog */}
-        <Dialog open={savePresetDialogOpen} onClose={() => setSavePresetDialogOpen(false)} fullScreen={isMobile}>
-          <DialogTitle>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              Save Configuration as Preset
-              {isMobile && (
-                <IconButton onClick={() => setSavePresetDialogOpen(false)} edge="end">
-                  <CloseIcon />
-                </IconButton>
-              )}
-            </Box>
-          </DialogTitle>
-          <DialogContent>
-            <TextField
-              autoFocus
+                    <TableRow><TableCell colSpan={5} align="center"><Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
+                          {i18nText("ui:m_f9f38c912294be90a06a")}
+                        </Typography></TableCell></TableRow>
+                  )}</TableBody></Table></TableContainer></Box>
+        )}{/* Save Preset Dialog */}<Dialog open={savePresetDialogOpen} onClose={() => setSavePresetDialogOpen(false)} fullScreen={isMobile}><DialogTitle><Box display="flex" justifyContent="space-between" alignItems="center">
+              {i18nRichText("ui:m_592ef1fb4089f2d4dc92", { arg0: isMobile && (
+                <IconButton onClick={() => setSavePresetDialogOpen(false)} edge="end"><CloseIcon /></IconButton>
+              ) })}
+            </Box></DialogTitle><DialogContent><TextField autoFocus
               margin="dense"
-              label="Preset Name"
+              label={i18nText("ui:m_64dcc8702411c9b0e675")}
               fullWidth
               value={presetName}
-              onChange={(e) => setPresetName(e.target.value)}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setSavePresetDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSavePreset} variant="contained">Save</Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Upload Preset Dialog */}
-        <Dialog open={uploadDialogOpen} onClose={() => setUploadDialogOpen(false)} fullScreen={isMobile}>
-          <DialogTitle>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              Upload Preset File
-              {isMobile && (
-                <IconButton onClick={() => setUploadDialogOpen(false)} edge="end">
-                  <CloseIcon />
-                </IconButton>
-              )}
-            </Box>
-          </DialogTitle>
-          <DialogContent>
-            <input
-              type="file"
+              onChange={(e) => setPresetName(e.target.value)} /></DialogContent><DialogActions><Button onClick={() => setSavePresetDialogOpen(false)}>{i18nText("ui:m_0095547326bed510a824")}</Button><Button onClick={handleSavePreset} variant="contained">{i18nText("ui:m_72bba814ee286eb80909")}</Button></DialogActions></Dialog>{/* Upload Preset Dialog */}<Dialog open={uploadDialogOpen} onClose={() => setUploadDialogOpen(false)} fullScreen={isMobile}><DialogTitle><Box display="flex" justifyContent="space-between" alignItems="center">
+              {i18nRichText("ui:m_21f638a349e2d25fd231", { arg0: isMobile && (
+                <IconButton onClick={() => setUploadDialogOpen(false)} edge="end"><CloseIcon /></IconButton>
+              ) })}
+            </Box></DialogTitle><DialogContent><input type="file"
               accept=".yml,.yaml"
               onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-              style={{ marginTop: 16 }}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setUploadDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleUploadPreset} variant="contained" disabled={!uploadFile}>
-              Upload
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Snackbar */}
-        <Snackbar
-          open={snackbar.open}
+              style={{ marginTop: 16 }} /></DialogContent><DialogActions><Button onClick={() => setUploadDialogOpen(false)}>{i18nText("ui:m_0095547326bed510a824")}</Button><Button onClick={handleUploadPreset} variant="contained" disabled={!uploadFile}>
+              {i18nText("ui:m_7f177ccee7151e5c9275")}
+            </Button></DialogActions></Dialog>{/* Snackbar */}<Snackbar open={snackbar.open}
           autoHideDuration={6000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-        >
-          <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-      </Box>
-    </Layout>
+          onClose={() => setSnackbar({ ...snackbar, open: false })}><Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>{i18nRenderText(snackbar.message)}</Alert></Snackbar></Box></Layout>
   );
 }

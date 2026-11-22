@@ -55,7 +55,7 @@ func (s *Server) handleServicesTopByTraffic(w http.ResponseWriter, r *http.Reque
 	showLegend := showLegendStr == "true"
 
 	chart := generateServicesTopByTrafficChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -93,7 +93,7 @@ func (s *Server) handleServicesProtocols(w http.ResponseWriter, r *http.Request)
 	showLegend := showLegendStr != "false"
 
 	chart := generateServicesProtocolsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -131,7 +131,7 @@ func (s *Server) handleServicesTopPorts(w http.ResponseWriter, r *http.Request) 
 	showLegend := showLegendStr == "true"
 
 	chart := generateServicesTopPortsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -169,7 +169,7 @@ func (s *Server) handleServicesTopProducts(w http.ResponseWriter, r *http.Reques
 	showLegend := showLegendStr == "true"
 
 	chart := generateServicesTopProductsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -268,11 +268,10 @@ func generateServicesProtocolsChart(outDir string, showLegend bool) *charts.Pie 
 
 	// Aggregate protocols
 	protoCount := make(map[string]int)
+	labels := newChartLabelSet()
 	for _, svc := range services {
 		proto := svc.Protocol
-		if proto == "" {
-			proto = "Unknown"
-		}
+		proto = labels.name(proto, "Unknown")
 		protoCount[proto]++
 	}
 
@@ -303,6 +302,7 @@ func generateServicesProtocolsChart(outDir string, showLegend bool) *charts.Pie 
 		if i < limit {
 			pieData = append(pieData, opts.PieData{
 				Name:  proto.name,
+				Label: labels.label(proto.name),
 				Value: proto.count,
 			})
 		} else {
@@ -312,6 +312,7 @@ func generateServicesProtocolsChart(outDir string, showLegend bool) *charts.Pie 
 	if otherCount > 0 {
 		pieData = append(pieData, opts.PieData{
 			Name:  "Other",
+			Label: chartOwnedLabel("Other"),
 			Value: otherCount,
 		})
 	}

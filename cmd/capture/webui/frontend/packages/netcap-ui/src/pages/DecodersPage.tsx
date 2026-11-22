@@ -66,11 +66,23 @@ import {
   Code as CodeIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
-import useSWR from 'swr';
+
 import Layout from '../components/Layout';
 import type { DecoderInfo, DecoderConfig, FieldInfo, DecoderConfigFile } from '../lib/api';
 import { formatTimestamp } from '../lib/api';
 import { useNetcapApi, useIsMobile } from '../hooks';
+import { useTheme } from '@mui/material/styles';
+import { appearanceTokens, type AppearanceMode } from '../lib/appearance';
+import { message as i18nMessage, translate as i18nText, richText as i18nRichText, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
+import { usePresentationSWR as useSWR, metadataText } from "../lib/i18n";
+import { renderError } from "../lib/i18n";
+import { errorText, fieldLabel, recordTypeLabel } from "../lib/i18n";
+import { metadataMessage, joinMessages } from "../lib/i18n";
+
+
+
+
+
 
 interface DecoderCategory {
   name: string;
@@ -79,14 +91,15 @@ interface DecoderCategory {
   color: string;
 }
 
-const getCategoryColor = (categoryKey: string): string => {
+const getCategoryColor = (categoryKey: string, mode: AppearanceMode): string => {
+  const c = appearanceTokens(mode);
   const colors: Record<string, string> = {
-    packet: '#2196f3',    // Blue
-    gopacket: '#9c27b0',  // Purple
-    stream: '#ff9800',    // Orange
-    abstract: '#4caf50',  // Green
+    packet: c.primary,
+    gopacket: c.secondary,
+    stream: c.warning,
+    abstract: c.success,
   };
-  return colors[categoryKey] || '#757575';
+  return colors[categoryKey] || c.muted;
 };
 
 // Convert PascalCase/camelCase to snake_case
@@ -167,6 +180,8 @@ const getDecoderGitHubUrl = (categoryKey: string, decoderName: string): string =
 };
 
 export default function Decoders() {
+  const __uiLocale = useUILocale();
+  const mode = useTheme().palette.mode;
   const isMobile = useIsMobile();
   const api = useNetcapApi();
   const { data: decodersData, error: decodersError } = useSWR('decoders', () => api.getDecoders());
@@ -176,8 +191,8 @@ export default function Decoders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [enabledDecoders, setEnabledDecoders] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<UIMessageText | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<UIMessageText | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(['packet', 'gopacket', 'stream', 'abstract'])
   );
@@ -314,13 +329,13 @@ export default function Decoders() {
       }
 
       const result = await api.saveDecoderConfig(config);
-      setSaveSuccess(result.message);
+      setSaveSuccess(metadataMessage(result, 'message'));
       mutateConfig();
 
       // Clear success message after 3 seconds
       setTimeout(() => setSaveSuccess(null), 3000);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save configuration');
+      setSaveError(err instanceof Error ? errorText(err) : i18nMessage("ui:m_0475bdfeacbe6871348c"));
     } finally {
       setSaving(false);
     }
@@ -333,10 +348,7 @@ export default function Decoders() {
 
     try {
       const result = await api.loadDecoderConfig(name);
-      setSaveSuccess(result.message);
-      if (result.warning) {
-        setSaveSuccess(result.message + ' - ' + result.warning);
-      }
+      setSaveSuccess(joinMessages([metadataMessage(result, 'message'), ...(result.warning ? [metadataMessage(result, 'warning')] : [])], ' - '));
       
       // Update enabled decoders from loaded config
       if (result.config) {
@@ -370,7 +382,7 @@ export default function Decoders() {
       // Clear success message after 3 seconds
       setTimeout(() => setSaveSuccess(null), 3000);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to load configuration');
+      setSaveError(err instanceof Error ? errorText(err) : i18nMessage("ui:m_9f40c76e71eaa1248bb5"));
     } finally {
       setSaving(false);
     }
@@ -378,7 +390,7 @@ export default function Decoders() {
 
   const handleSaveAs = async () => {
     if (!configName.trim()) {
-      setSaveError('Configuration name is required');
+      setSaveError(i18nMessage("ui:m_ce6b1f0cdcd1c6bf9d1d"));
       return;
     }
 
@@ -415,7 +427,7 @@ export default function Decoders() {
       }
 
       const result = await api.saveDecoderConfigAs(configName, config);
-      setSaveSuccess(result.message);
+      setSaveSuccess(metadataMessage(result, 'message'));
       mutateSavedConfigs();
       setSaveAsDialogOpen(false);
       setConfigName('');
@@ -423,7 +435,7 @@ export default function Decoders() {
       // Clear success message after 3 seconds
       setTimeout(() => setSaveSuccess(null), 3000);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save configuration');
+      setSaveError(err instanceof Error ? errorText(err) : i18nMessage("ui:m_0475bdfeacbe6871348c"));
     } finally {
       setSaving(false);
     }
@@ -431,7 +443,7 @@ export default function Decoders() {
 
   const handleUpload = async () => {
     if (!uploadFile) {
-      setSaveError('Please select a file to upload');
+      setSaveError(i18nMessage("ui:m_555eae656d88a606361c"));
       return;
     }
 
@@ -441,7 +453,7 @@ export default function Decoders() {
 
     try {
       const result = await api.uploadDecoderConfig(uploadFile, configName || undefined, applyOnUpload);
-      setSaveSuccess(result.message);
+      setSaveSuccess(metadataMessage(result, 'message'));
       mutateSavedConfigs();
       
       if (result.applied) {
@@ -457,14 +469,14 @@ export default function Decoders() {
       // Clear success message after 3 seconds
       setTimeout(() => setSaveSuccess(null), 3000);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to upload configuration');
+      setSaveError(err instanceof Error ? errorText(err) : i18nMessage("ui:m_32ad5dd4aba918be58b0"));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteConfig = async (name: string) => {
-    if (!confirm(`Are you sure you want to delete the configuration "${name}"?`)) {
+    if (!confirm(i18nText("ui:m_2f73b9e7e76f77d51ed1", { arg0: name }))) {
       return;
     }
 
@@ -474,13 +486,13 @@ export default function Decoders() {
 
     try {
       const result = await api.deleteDecoderConfig(name);
-      setSaveSuccess(result.message);
+      setSaveSuccess(metadataMessage(result, 'message'));
       mutateSavedConfigs();
 
       // Clear success message after 3 seconds
       setTimeout(() => setSaveSuccess(null), 3000);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to delete configuration');
+      setSaveError(err instanceof Error ? errorText(err) : i18nMessage("ui:m_b1f44a6b6dff579bc041"));
     } finally {
       setSaving(false);
     }
@@ -495,21 +507,15 @@ export default function Decoders() {
 
   if (decodersError) {
     return (
-      <Layout title="Decoders">
-        <Alert severity="error">
-          Failed to load decoders: {decodersError.message}
-        </Alert>
-      </Layout>
+      <Layout title={i18nText("ui:m_307fc00184a143bc2caf")}><Alert severity="error">
+          {i18nRichText("ui:m_6edb0988698f5e4e1b2c", { arg0: renderError(decodersError) })}
+        </Alert></Layout>
     );
   }
 
   if (!decodersData || !configData) {
     return (
-      <Layout title="Decoders">
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <CircularProgress />
-        </Box>
-      </Layout>
+      <Layout title={i18nText("ui:m_307fc00184a143bc2caf")}><Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box></Layout>
     );
   }
 
@@ -530,25 +536,25 @@ export default function Decoders() {
       name: 'Packet Decoders',
       key: 'packet',
       decoders: filterDecoders(decodersData.packet),
-      color: getCategoryColor('packet'),
+      color: getCategoryColor('packet', mode),
     },
     {
       name: 'GoPacket Layer Decoders',
       key: 'gopacket',
       decoders: filterDecoders(decodersData.gopacket),
-      color: getCategoryColor('gopacket'),
+      color: getCategoryColor('gopacket', mode),
     },
     {
       name: 'Stream Decoders',
       key: 'stream',
       decoders: filterDecoders(decodersData.stream),
-      color: getCategoryColor('stream'),
+      color: getCategoryColor('stream', mode),
     },
     {
       name: 'Abstract Decoders',
       key: 'abstract',
       decoders: filterDecoders(decodersData.abstract),
-      color: getCategoryColor('abstract'),
+      color: getCategoryColor('abstract', mode),
     },
   ].filter(cat => cat.decoders.length > 0) : [];
 
@@ -556,71 +562,38 @@ export default function Decoders() {
   const enabledCount = Object.values(enabledDecoders).filter(Boolean).length;
 
   return (
-    <Layout title="Decoders">
-      {saveSuccess && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          {saveSuccess}
-        </Alert>
-      )}
-      {saveError && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setSaveError(null)}>
-          {saveError}
-        </Alert>
-      )}
-
-      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3} gap={2}>
-        <Typography variant="body2" color="text.secondary">
-          {totalDecoders} decoder(s) available • {enabledCount} enabled • Hierarchical by type
-        </Typography>
-        <Box display="flex" gap={1}>
-          <Button
-            data-learn="Load Configuration: Load a previously saved decoder configuration to quickly switch between different decoder setups."
+    <Layout title={i18nText("ui:m_307fc00184a143bc2caf")}>{i18nRenderText(saveSuccess) && (
+        <Alert severity="success" sx={{ mb: 2 }}>{i18nRenderText(saveSuccess)}</Alert>
+      )}{i18nRenderText(saveError) && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setSaveError(null)}>{i18nRenderText(saveError)}</Alert>
+      )}<Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3} gap={2}><Typography variant="body2" color="text.secondary">
+          {i18nRichText("ui:m_328a60fd7a316c848623", { arg0: totalDecoders, arg1: enabledCount })}
+        </Typography><Box display="flex" gap={1}><Button data-learn={i18nText("ui:m_095864f179d5d4c56fad")}
             variant="outlined"
             startIcon={<FolderOpenIcon />}
             onClick={() => setLoadDialogOpen(true)}
-            disabled={saving}
-          >
-            Load
-          </Button>
-          <Button
-            data-learn="Upload Configuration: Upload a decoder configuration JSON file from your computer to import custom decoder settings."
+            disabled={saving}>
+            {i18nText("ui:m_1b14081bb43e75a26c36")}
+          </Button><Button data-learn={i18nText("ui:m_303953937a3ce9047517")}
             variant="outlined"
             startIcon={<UploadIcon />}
             onClick={() => setUploadDialogOpen(true)}
-            disabled={saving}
-          >
-            Upload
-          </Button>
-          <Button
-            data-learn="Save As: Save the current decoder configuration with a custom name for later reuse without overwriting the active configuration."
+            disabled={saving}>
+            {i18nText("ui:m_7f177ccee7151e5c9275")}
+          </Button><Button data-learn={i18nText("ui:m_436ca25503e1113004af")}
             variant="outlined"
             startIcon={<SaveAsIcon />}
             onClick={() => setSaveAsDialogOpen(true)}
-            disabled={saving}
-          >
-            Save As
-          </Button>
-          <Button
-            data-learn="Save Configuration: Apply and save the current decoder settings to make them active for packet analysis."
+            disabled={saving}>
+            {i18nText("ui:m_6efb24337c3d7f4b7914")}
+          </Button><Button data-learn={i18nText("ui:m_ad41d631905dc649e00b")}
             variant="contained"
             startIcon={<SaveIcon />}
             onClick={handleSave}
             disabled={saving}
-            sx={{ minWidth: '140px' }}
-          >
-            {saving ? 'Saving...' : 'Save'}
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Library Version Section */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            Library Version
-          </Typography>
-          <Paper 
-            data-learn="GoPacket Library: View the gopacket library repository on GitHub - the high-performance packet decoding library that powers Netcap's decoder infrastructure."
+            sx={{ minWidth: '140px' }}>{saving ? i18nText("ui:m_84d67cc7cab845a90ab6") : i18nText("ui:m_72bba814ee286eb80909")}</Button></Box></Box>{/* Library Version Section */}<Card sx={{ mb: 3 }}><CardContent><Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {i18nText("ui:m_8a57d8b6a81b7461f02a")}
+          </Typography><Paper data-learn={i18nText("ui:m_41807e8f17fe32c9dfa0")}
             elevation={0} 
             sx={{ 
               p: 2, 
@@ -633,50 +606,24 @@ export default function Decoders() {
                 boxShadow: 1,
               }
             }}
-            onClick={() => window.open('https://github.com/gopacket/gopacket', '_blank', 'noopener,noreferrer')}
-          >
-            <Box display="flex" justifyContent="space-between" alignItems="start">
-              <Box flex={1}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  gopacket Version
-                </Typography>
-                <Typography variant="h6" sx={{ fontFamily: 'monospace' }}>
-                  {versionInfo?.gopacketVersion || 'Loading...'}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  High-performance packet decoding library for Go
-                </Typography>
-              </Box>
-              <OpenInNewIcon fontSize="small" sx={{ color: 'text.secondary', ml: 1 }} />
-            </Box>
-          </Paper>
-        </CardContent>
-      </Card>
-
-      <Box sx={{ mb: 3 }}>
-        <TextField
-          data-learn="Search Decoders: Filter the decoder list by name or description to quickly find specific protocol decoders."
+            onClick={() => window.open('https://github.com/gopacket/gopacket', '_blank', 'noopener,noreferrer')}><Box display="flex" justifyContent="space-between" alignItems="start"><Box flex={1}><Typography variant="body2" color="text.secondary" gutterBottom>
+                  {i18nText("ui:m_1285a9935ce275aaeb2e")}
+                </Typography><Typography variant="h6" sx={{ fontFamily: 'monospace' }}>{versionInfo?.gopacketVersion || i18nText("ui:m_2d645f98b7feb0dbe272")}</Typography><Typography variant="caption" color="text.secondary">
+                  {i18nText("ui:m_9cbc2f6c0a72a75a86c6")}
+                </Typography></Box><OpenInNewIcon fontSize="small" sx={{ color: 'text.secondary', ml: 1 }} /></Box></Paper></CardContent></Card><Box sx={{ mb: 3 }}><TextField data-learn={i18nText("ui:m_6af94f437dcc298c1965")}
           fullWidth
-          placeholder="Search decoders by name or description..."
+          placeholder={i18nText("ui:m_13d6670e20a18464cbf5")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          size="small"
-        />
-      </Box>
-
-      {categories.length > 0 ? (
-        <Paper sx={{ p: 2 }}>
-          {categories.map((category, catIdx) => {
+          size="small" /></Box>{categories.length > 0 ? (
+        <Paper sx={{ p: 2 }}>{categories.map((category, catIdx) => {
             const enabledInCategory = category.decoders.filter((d) => enabledDecoders[d.name]).length;
             const totalInCategory = category.decoders.length;
             const allEnabled = enabledInCategory === totalInCategory;
             const noneEnabled = enabledInCategory === 0;
 
             return (
-              <Box key={category.key} sx={{ mb: catIdx < categories.length - 1 ? 2 : 0 }}>
-                {/* Category Header */}
-                <Box
-                  sx={{
+              <Box key={category.key} sx={{ mb: catIdx < categories.length - 1 ? 2 : 0 }}>{/* Category Header */}<Box sx={{
                     display: 'flex',
                     alignItems: 'center',
                     cursor: 'pointer',
@@ -684,66 +631,39 @@ export default function Decoders() {
                     borderRadius: 1,
                     '&:hover': { bgcolor: 'action.hover' },
                   }}
-                  onClick={() => toggleCategory(category.key)}
-                >
-                  <IconButton size="small" sx={{ mr: 1 }}>
-                    {expandedCategories.has(category.key) ? <ExpandMoreIcon /> : <ChevronRightIcon />}
-                  </IconButton>
-                  <Box
-                    sx={{
+                  onClick={() => toggleCategory(category.key)}><IconButton size="small" sx={{ mr: 1 }}>{expandedCategories.has(category.key) ? <ExpandMoreIcon /> : <ChevronRightIcon />}</IconButton><Box sx={{
                       width: 3,
                       height: 24,
                       bgcolor: category.color,
                       mr: 2,
                       borderRadius: 1,
-                    }}
-                  />
-                  <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
-                    {category.name}
-                  </Typography>
-                  <Chip
-                    label={`${enabledInCategory}/${totalInCategory} enabled`}
+                    }} /><Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>{category.name}</Typography><Chip label={i18nText("ui:m_716c85f2bc88cffce5db", { arg0: enabledInCategory, arg1: totalInCategory })}
                     size="small"
                     color={allEnabled ? 'success' : noneEnabled ? 'default' : 'warning'}
-                    sx={{ mr: 2 }}
-                  />
-                  <Button
-                    data-learn="Enable All Decoders: Enable all decoders in this category to capture comprehensive data for all protocols in this group."
+                    sx={{ mr: 2 }} /><Button data-learn={i18nText("ui:m_adc48e0927b90034a4eb")}
                     size="small"
                     variant="outlined"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleToggleAll(category.key, true);
                     }}
-                    sx={{ mr: 1 }}
-                  >
-                    Enable All
-                  </Button>
-                  <Button
-                    data-learn="Disable All Decoders: Disable all decoders in this category to skip processing these protocol types and improve performance."
+                    sx={{ mr: 1 }}>
+                    {i18nText("ui:m_594e264e620a748e7fb1")}
+                  </Button><Button data-learn={i18nText("ui:m_65235d94f93025474f60")}
                     size="small"
                     variant="outlined"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleToggleAll(category.key, false);
-                    }}
-                  >
-                    Disable All
-                  </Button>
-                </Box>
-
-                {/* Category Content */}
-                <Collapse in={expandedCategories.has(category.key)}>
-                  <Box sx={{ ml: 6, mt: 1 }}>
-                    {category.decoders.map((decoder, decoderIdx) => {
+                    }}>
+                    {i18nText("ui:m_29eb7b2544bc7d22f6d3")}
+                  </Button></Box>{/* Category Content */}<Collapse in={expandedCategories.has(category.key)}><Box sx={{ ml: 6, mt: 1 }}>{category.decoders.map((decoder, decoderIdx) => {
                       const isEnabled = enabledDecoders[decoder.name] || false;
                       const isExpanded = expandedDecoder === decoder.name;
                       const fields = decoderFields[decoder.name] || [];
                       
                       return (
-                        <Box key={decoder.name} sx={{ mb: decoderIdx < category.decoders.length - 1 ? 1 : 0 }}>
-                          <Box
-                            data-learn="Decoder Row: Click to expand and view the data fields that this decoder extracts from network packets (e.g., source/destination addresses, ports, protocol-specific data)."
+                        <Box key={decoder.name} sx={{ mb: decoderIdx < category.decoders.length - 1 ? 1 : 0 }}><Box data-learn={i18nText("ui:m_7ca18772ca7d7354a850")}
                             sx={{
                               display: 'flex',
                               alignItems: 'center',
@@ -759,307 +679,129 @@ export default function Decoders() {
                                 borderLeftColor: category.color,
                               },
                             }}
-                            onClick={() => handleDecoderClick(decoder.name)}
-                          >
-                            <Box sx={{ mr: 2 }}>
-                              {isEnabled ? (
+                            onClick={() => handleDecoderClick(decoder.name)}><Box sx={{ mr: 2 }}>{isEnabled ? (
                                 <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
                               ) : (
                                 <CancelIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
-                              )}
-                            </Box>
-                            <Box sx={{ flex: 1 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                <Typography
-                                  component="code"
+                              )}</Box><Box sx={{ flex: 1 }}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}><Typography component="code"
                                   sx={{
                                     fontFamily: 'monospace',
                                     fontSize: '0.9rem',
                                     fontWeight: 600,
                                     color: isEnabled ? 'text.primary' : 'text.disabled',
-                                  }}
-                                >
-                                  {decoder.name}
-                                </Typography>
-                                {decoder.port && (
-                                  <Chip
-                                    label={`Port ${decoder.port}`}
+                                  }}>{decoder.name}</Typography>{decoder.port && (
+                                  <Chip label={i18nText("ui:m_63d9080de503779cf1ba", { arg0: String(decoder.port) })}
                                     size="small"
                                     sx={{
                                       height: 20,
                                       fontSize: '0.7rem',
                                       bgcolor: category.color + '20',
                                       color: category.color,
-                                    }}
-                                  />
-                                )}
-                              </Box>
-                              <Typography
-                                variant="body2"
+                                    }} />
+                                )}</Box><Typography variant="body2"
                                 color="text.secondary"
-                                sx={{ fontSize: '0.85rem' }}
-                              >
-                                {decoder.description}
-                              </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <IconButton
-                                data-learn="View Source Code: Open the decoder's implementation on GitHub to see how it parses and extracts data from network packets."
+                                sx={{ fontSize: '0.85rem' }}>{metadataText(decoder, "description")}</Typography></Box><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><IconButton data-learn={i18nText("ui:m_edf5b1e2ab694637f6e6")}
                                 size="small"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   window.open(getDecoderGitHubUrl(category.key, decoder.name), '_blank', 'noopener,noreferrer');
                                 }}
                                 sx={{ color: 'text.secondary' }}
-                                title="View source code on GitHub"
-                              >
-                                <CodeIcon />
-                              </IconButton>
-                              <IconButton
-                                size="small"
+                                title={i18nText("ui:m_737c7db97490030e51b8")}><CodeIcon /></IconButton><IconButton size="small"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleDecoderClick(decoder.name);
                                 }}
-                                sx={{ color: 'text.secondary' }}
-                              >
-                                {isExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                              </IconButton>
-                              <FormControlLabel
-                                data-learn="Decoder Toggle: Enable or disable this decoder to control whether this protocol type is analyzed and logged during packet capture."
-                                control={
-                                  <Switch
-                                    checked={isEnabled}
+                                sx={{ color: 'text.secondary' }}>{isExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}</IconButton><FormControlLabel data-learn={i18nText("ui:m_f64eef350f55d917f27d")}
+                                control={<Switch checked={isEnabled}
                                     onChange={(e) => {
                                       e.stopPropagation();
                                       handleToggle(decoder.name);
                                     }}
-                                    color="primary"
-                                  />
-                                }
-                                label=""
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            </Box>
-                          </Box>
-                          
-                          <Collapse in={isExpanded}>
-                            <Box sx={{ pl: 8, pr: 2, pb: 2, pt: 1 }}>
-                              {loadingAllFields ? (
-                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                                  <CircularProgress size={24} />
-                                  <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-                                    Loading field information...
-                                  </Typography>
-                                </Box>
+                                    color="primary" />}
+                                label={""}
+                                onClick={(e) => e.stopPropagation()} /></Box></Box><Collapse in={isExpanded}><Box sx={{ pl: 8, pr: 2, pb: 2, pt: 1 }}>{loadingAllFields ? (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}><CircularProgress size={24} /><Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+                                    {i18nText("ui:m_ca881ff6d4d87d362257")}
+                                  </Typography></Box>
                               ) : fields.length > 0 ? (
-                                <TableContainer component={Paper} variant="outlined">
-                                  <Table size="small">
-                                    <TableHead>
-                                      <TableRow>
-                                        <TableCell sx={{ fontWeight: 600 }}>Field Name</TableCell>
-                                        <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
-                                      </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                      {fields.map((field) => (
-                                        <TableRow key={field.name} sx={{ '&:last-child td': { border: 0 } }}>
-                                          <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                                            {field.name}
-                                          </TableCell>
-                                          <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'text.secondary' }}>
-                                            {field.type}
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
-                                </TableContainer>
+                                <TableContainer component={Paper} variant="outlined"><Table size="small"><TableHead><TableRow><TableCell sx={{ fontWeight: 600 }}>{i18nText("ui:m_2dabd790bfcb9bb01fba")}</TableCell><TableCell sx={{ fontWeight: 600 }}>{i18nText("ui:m_3da346bd3b7d84ce65d6")}</TableCell></TableRow></TableHead><TableBody>{fields.map((field) => (
+                                        <TableRow key={field.name} sx={{ '&:last-child td': { border: 0 } }}><TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{fieldLabel(field.name)}</TableCell><TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'text.secondary' }}>{recordTypeLabel(field.type)}</TableCell></TableRow>
+                                      ))}</TableBody></Table></TableContainer>
                               ) : (
                                 <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
-                                  No field information available for this decoder.
+                                  {i18nText("ui:m_3e587b569fa83f8c36e1")}
                                 </Typography>
-                              )}
-                            </Box>
-                          </Collapse>
-                        </Box>
+                              )}</Box></Collapse></Box>
                       );
-                    })}
-                  </Box>
-                </Collapse>
-              </Box>
+                    })}</Box></Collapse></Box>
             );
-          })}
-        </Paper>
+          })}</Paper>
       ) : (
-        <Paper sx={{ p: 4, textAlign: 'center' }}>
-          <Typography color="text.secondary">
-            {searchTerm ? 'No decoders match your search.' : 'No decoders available.'}
-          </Typography>
-        </Paper>
-      )}
-
-      {/* Load Configuration Dialog */}
-      <Dialog open={loadDialogOpen} onClose={() => setLoadDialogOpen(false)} maxWidth="sm" fullWidth fullScreen={isMobile}>
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            Load Decoder Configuration
-            {isMobile && (
-              <IconButton onClick={() => setLoadDialogOpen(false)} edge="end">
-                <CloseIcon />
-              </IconButton>
-            )}
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Select a saved configuration to load:
-          </Typography>
-          {!savedConfigs || savedConfigs.length === 0 ? (
+        <Paper sx={{ p: 4, textAlign: 'center' }}><Typography color="text.secondary">{searchTerm ? i18nText("ui:m_9d9831dc113de7188a35") : i18nText("ui:m_2b8428d7c08316aaf3e0")}</Typography></Paper>
+      )}{/* Load Configuration Dialog */}<Dialog open={loadDialogOpen} onClose={() => setLoadDialogOpen(false)} maxWidth="sm" fullWidth fullScreen={isMobile}><DialogTitle><Box display="flex" justifyContent="space-between" alignItems="center">
+            {i18nRichText("ui:m_1b34fd8f902c0facfe4e", { arg0: isMobile && (
+              <IconButton onClick={() => setLoadDialogOpen(false)} edge="end"><CloseIcon /></IconButton>
+            ) })}
+          </Box></DialogTitle><DialogContent><Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {i18nText("ui:m_85a3e134d6e822413957")}
+          </Typography>{!savedConfigs || savedConfigs.length === 0 ? (
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-              No saved configurations found.
+              {i18nText("ui:m_d27813c421e58b0b82f3")}
             </Typography>
           ) : (
-            <List>
-              {savedConfigs.map((config) => (
-                <ListItem
-                  key={config.name}
+            <List>{savedConfigs.map((config) => (
+                <ListItem key={config.name}
                   sx={{
                     border: 1,
                     borderColor: 'divider',
                     borderRadius: 1,
                     mb: 1,
                     '&:hover': { bgcolor: 'action.hover' },
-                  }}
-                >
-                  <ListItemText
-                    primary={config.name}
-                    secondary={`Modified: ${formatTimestamp(config.modifiedTime)}`}
-                  />
-                  <ListItemSecondaryAction>
-                    <IconButton
-                      edge="end"
-                      aria-label="load"
+                  }}><ListItemText primary={config.name}
+                    secondary={i18nText("ui:m_334433e3d88e0a01c10c", { arg0: formatTimestamp(config.modifiedTime, 'seconds') })} /><ListItemSecondaryAction><IconButton edge="end"
+                      aria-label={i18nText("ui:m_edf4fc6d7b5f54a5c144")}
                       onClick={() => handleLoadConfig(config.name)}
                       disabled={saving}
-                      sx={{ mr: 1 }}
-                    >
-                      <GetAppIcon />
-                    </IconButton>
-                    <IconButton
-                      edge="end"
-                      aria-label="delete"
+                      sx={{ mr: 1 }}><GetAppIcon /></IconButton><IconButton edge="end"
+                      aria-label={i18nText("ui:m_800d457ec03b4d702058")}
                       onClick={() => handleDeleteConfig(config.name)}
-                      disabled={saving}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </ListItemSecondaryAction>
-                </ListItem>
-              ))}
-            </List>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button data-learn="Cancel: Close the load configuration dialog without loading." onClick={() => setLoadDialogOpen(false)}>Cancel</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Save As Dialog */}
-      <Dialog open={saveAsDialogOpen} onClose={() => setSaveAsDialogOpen(false)} maxWidth="sm" fullWidth fullScreen={isMobile}>
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            Save Configuration As
-            {isMobile && (
-              <IconButton onClick={() => setSaveAsDialogOpen(false)} edge="end">
-                <CloseIcon />
-              </IconButton>
-            )}
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Enter a name for this configuration:
-          </Typography>
-          <TextField
-            autoFocus
+                      disabled={saving}><DeleteIcon /></IconButton></ListItemSecondaryAction></ListItem>
+              ))}</List>
+          )}</DialogContent><DialogActions><Button data-learn={i18nText("ui:m_89f801ad2e2a00a917ed")} onClick={() => setLoadDialogOpen(false)}>{i18nText("ui:m_0095547326bed510a824")}</Button></DialogActions></Dialog>{/* Save As Dialog */}<Dialog open={saveAsDialogOpen} onClose={() => setSaveAsDialogOpen(false)} maxWidth="sm" fullWidth fullScreen={isMobile}><DialogTitle><Box display="flex" justifyContent="space-between" alignItems="center">
+            {i18nRichText("ui:m_5962bad8997b121bcff1", { arg0: isMobile && (
+              <IconButton onClick={() => setSaveAsDialogOpen(false)} edge="end"><CloseIcon /></IconButton>
+            ) })}
+          </Box></DialogTitle><DialogContent><Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {i18nText("ui:m_ed1be4c9a20e3c5358b0")}
+          </Typography><TextField autoFocus
             fullWidth
-            label="Configuration Name"
+            label={i18nText("ui:m_644b24a0ac6e41056f71")}
             value={configName}
             onChange={(e) => setConfigName(e.target.value)}
-            placeholder="e.g., http-only, minimal-decoders"
-            sx={{ mt: 1 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button data-learn="Cancel: Close the save dialog without saving." onClick={() => { setSaveAsDialogOpen(false); setConfigName(''); }}>Cancel</Button>
-          <Button data-learn="Save Configuration: Save the current decoder configuration with the specified name." onClick={handleSaveAs} variant="contained" disabled={saving || !configName.trim()}>
-            {saving ? 'Saving...' : 'Save'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Upload Configuration Dialog */}
-      <Dialog open={uploadDialogOpen} onClose={() => setUploadDialogOpen(false)} maxWidth="sm" fullWidth fullScreen={isMobile}>
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            Upload Decoder Configuration
-            {isMobile && (
-              <IconButton onClick={() => setUploadDialogOpen(false)} edge="end">
-                <CloseIcon />
-              </IconButton>
-            )}
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Upload a decoder configuration JSON file:
-          </Typography>
-          <input
-            ref={fileInputRef}
+            placeholder={i18nText("ui:m_191bcc7d1924a018f41d")}
+            sx={{ mt: 1 }} /></DialogContent><DialogActions><Button data-learn={i18nText("ui:m_30b500389cb6f6b0f70c")} onClick={() => { setSaveAsDialogOpen(false); setConfigName(''); }}>{i18nText("ui:m_0095547326bed510a824")}</Button><Button data-learn={i18nText("ui:m_c040f30b8e64174a1fa0")} onClick={handleSaveAs} variant="contained" disabled={saving || !configName.trim()}>{saving ? i18nText("ui:m_84d67cc7cab845a90ab6") : i18nText("ui:m_72bba814ee286eb80909")}</Button></DialogActions></Dialog>{/* Upload Configuration Dialog */}<Dialog open={uploadDialogOpen} onClose={() => setUploadDialogOpen(false)} maxWidth="sm" fullWidth fullScreen={isMobile}><DialogTitle><Box display="flex" justifyContent="space-between" alignItems="center">
+            {i18nRichText("ui:m_1c4456febeef5343862e", { arg0: isMobile && (
+              <IconButton onClick={() => setUploadDialogOpen(false)} edge="end"><CloseIcon /></IconButton>
+            ) })}
+          </Box></DialogTitle><DialogContent><Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {i18nText("ui:m_29b80fa006117b43ac69")}
+          </Typography><input ref={fileInputRef}
             type="file"
             accept=".json"
             style={{ display: 'none' }}
-            onChange={handleFileSelect}
-          />
-          <Box sx={{ mb: 2 }}>
-            <Button
-              variant="outlined"
+            onChange={handleFileSelect} /><Box sx={{ mb: 2 }}><Button variant="outlined"
               startIcon={<UploadIcon />}
               onClick={() => fileInputRef.current?.click()}
-              fullWidth
-            >
-              {uploadFile ? uploadFile.name : 'Select File'}
-            </Button>
-          </Box>
-          <TextField
-            fullWidth
-            label="Configuration Name (Optional)"
+              fullWidth>{uploadFile ? uploadFile.name : i18nText("ui:m_9ac57c26cadaa5202d1b")}</Button></Box><TextField fullWidth
+            label={i18nText("ui:m_a262bf51ad10b00b4a79")}
             value={configName}
             onChange={(e) => setConfigName(e.target.value)}
-            placeholder="Leave empty to use filename"
-            sx={{ mb: 2 }}
-          />
-          <FormControlLabel
-            control={
-              <Switch
-                checked={applyOnUpload}
-                onChange={(e) => setApplyOnUpload(e.target.checked)}
-              />
-            }
-            label="Apply this configuration immediately"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button data-learn="Cancel: Close the upload dialog without uploading." onClick={() => { setUploadDialogOpen(false); setUploadFile(null); setConfigName(''); }}>
-            Cancel
-          </Button>
-          <Button data-learn="Upload Configuration File: Upload the selected configuration file to import decoder settings." onClick={handleUpload} variant="contained" disabled={saving || !uploadFile}>
-            {saving ? 'Uploading...' : 'Upload'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Layout>
+            placeholder={i18nText("ui:m_469007e71ebc99694de5")}
+            sx={{ mb: 2 }} /><FormControlLabel control={<Switch checked={applyOnUpload}
+                onChange={(e) => setApplyOnUpload(e.target.checked)} />}
+            label={i18nText("ui:m_1a0b1241db323d277dc6")} /></DialogContent><DialogActions><Button data-learn={i18nText("ui:m_de72e79baaa1cf5feaa8")} onClick={() => { setUploadDialogOpen(false); setUploadFile(null); setConfigName(''); }}>
+            {i18nText("ui:m_0095547326bed510a824")}
+          </Button><Button data-learn={i18nText("ui:m_3931a1780dc6ed72d7d0")} onClick={handleUpload} variant="contained" disabled={saving || !uploadFile}>{saving ? i18nText("ui:m_16b31c4d7a139eb0417b") : i18nText("ui:m_7f177ccee7151e5c9275")}</Button></DialogActions></Dialog></Layout>
   );
 }
-

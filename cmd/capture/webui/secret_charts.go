@@ -114,11 +114,9 @@ func generateSecretsByServiceChart(outDir string, showLegend bool) *charts.Bar {
 
 	// Count credentials by service
 	serviceCount := make(map[string]int)
+	labels := newChartLabelSet()
 	for _, cred := range credentials {
-		service := cred.Service
-		if service == "" {
-			service = "Unknown"
-		}
+		service := labels.name(cred.Service, "Unknown")
 		serviceCount[service]++
 	}
 
@@ -153,7 +151,8 @@ func generateSecretsByServiceChart(outDir string, showLegend bool) *charts.Bar {
 			Type: "value",
 		}),
 		charts.WithXAxisOpts(opts.XAxis{
-			Name: "Service",
+			Name:      "Service",
+			AxisLabel: &opts.AxisLabel{Formatter: labels.axisFormatter()},
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
 			Show:    opts.Bool(true),
@@ -276,11 +275,9 @@ func generateSecretsUsernamesChart(outDir string, showLegend bool) *charts.Bar {
 
 	// Count usernames
 	usernameCount := make(map[string]int)
+	labels := newChartLabelSet()
 	for _, cred := range credentials {
-		username := cred.User
-		if username == "" {
-			username = "(empty)"
-		}
+		username := labels.name(cred.User, "(empty)")
 		usernameCount[username]++
 	}
 
@@ -315,7 +312,8 @@ func generateSecretsUsernamesChart(outDir string, showLegend bool) *charts.Bar {
 			Type: "value",
 		}),
 		charts.WithXAxisOpts(opts.XAxis{
-			Name: "Username",
+			Name:      "Username",
+			AxisLabel: &opts.AxisLabel{Formatter: labels.axisFormatter()},
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
 			Show:    opts.Bool(true),
@@ -353,15 +351,20 @@ func generateSecretsFlowsChart(outDir string, showLegend bool) *charts.Pie {
 
 	// Count credentials by flow
 	flowCount := make(map[string]int)
+	labels := newChartLabelSet()
 	for _, cred := range credentials {
 		flow := cred.Flow
 		if flow == "" {
 			flow = "Unknown"
+			labels.name("", "Unknown")
 		}
 		// Simplify flow for display (extract just IPs if possible)
 		parts := strings.Split(flow, " ")
 		if len(parts) > 0 {
 			flow = parts[0] // Just use first part (usually the connection tuple)
+		}
+		if cred.Flow != "" {
+			labels.literals[flow] = true
 		}
 		flowCount[flow]++
 	}
@@ -412,7 +415,7 @@ func generateSecretsFlowsChart(outDir string, showLegend bool) *charts.Pie {
 		if len(displayName) > 40 {
 			displayName = displayName[:37] + "..."
 		}
-		items[i] = opts.PieData{Name: displayName, Value: f.Count}
+		items[i] = opts.PieData{Name: displayName, Value: f.Count, Label: labels.label(f.Flow)}
 	}
 
 	pie.AddSeries("Flow", items).SetSeriesOptions(

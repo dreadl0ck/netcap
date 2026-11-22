@@ -54,7 +54,7 @@ func (s *Server) handleHostsTopTalkers(w http.ResponseWriter, r *http.Request) {
 	showLegend := showLegendStr == "true"
 
 	chart := generateHostsTopTalkersChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -92,7 +92,7 @@ func (s *Server) handleHostsTrafficDistribution(w http.ResponseWriter, r *http.R
 	showLegend := showLegendStr != "false"
 
 	chart := generateHostsTrafficDistributionChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -130,7 +130,7 @@ func (s *Server) handleHostsApplications(w http.ResponseWriter, r *http.Request)
 	showLegend := showLegendStr == "true"
 
 	chart := generateHostsApplicationsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -168,7 +168,7 @@ func (s *Server) handleHostsProtocols(w http.ResponseWriter, r *http.Request) {
 	showLegend := showLegendStr != "false"
 
 	chart := generateHostsProtocolsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -274,18 +274,22 @@ func generateHostsTrafficDistributionChart(outDir string, showLegend bool) *char
 	pieData := make([]opts.PieData, 0, 4)
 	pieData = append(pieData, opts.PieData{
 		Name:  "Internal Packets",
+		Label: chartOwnedLabel("Internal Packets"),
 		Value: internalPackets,
 	})
 	pieData = append(pieData, opts.PieData{
 		Name:  "External Packets",
+		Label: chartOwnedLabel("External Packets"),
 		Value: externalPackets,
 	})
 	pieData = append(pieData, opts.PieData{
 		Name:  "Internal Bytes",
+		Label: chartOwnedLabel("Internal Bytes"),
 		Value: internalBytes / 1024, // Convert to KB
 	})
 	pieData = append(pieData, opts.PieData{
 		Name:  "External Bytes",
+		Label: chartOwnedLabel("External Bytes"),
 		Value: externalBytes / 1024, // Convert to KB
 	})
 
@@ -435,13 +439,11 @@ func generateHostsProtocolsChart(outDir string, showLegend bool) *charts.Sunburs
 
 	// Aggregate protocols by category
 	categoryProtos := make(map[string]map[string]uint64)
+	labels := newChartLabelSet()
 
 	for _, host := range hosts {
 		for _, proto := range host.TopProtocols {
-			category := proto.Category
-			if category == "" {
-				category = "Uncategorized"
-			}
+			category := labels.name(proto.Category, "Uncategorized")
 
 			if categoryProtos[category] == nil {
 				categoryProtos[category] = make(map[string]uint64)
@@ -470,6 +472,7 @@ func generateHostsProtocolsChart(outDir string, showLegend bool) *charts.Sunburs
 
 		sunburstData = append(sunburstData, opts.SunBurstData{
 			Name:     category,
+			Label:    labels.label(category),
 			Value:    float64(categoryTotal),
 			Children: children,
 		})

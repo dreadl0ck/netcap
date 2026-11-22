@@ -55,7 +55,7 @@ func (s *Server) handleDomainsTopByQueries(w http.ResponseWriter, r *http.Reques
 	showLegend := showLegendStr == "true"
 
 	chart := generateDomainsTopByQueriesChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -93,7 +93,7 @@ func (s *Server) handleDomainsTLDs(w http.ResponseWriter, r *http.Request) {
 	showLegend := showLegendStr != "false"
 
 	chart := generateDomainsTLDsChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -131,7 +131,7 @@ func (s *Server) handleDomainsRecordTypes(w http.ResponseWriter, r *http.Request
 	showLegend := showLegendStr == "true"
 
 	chart := generateDomainsRecordTypesChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -169,7 +169,7 @@ func (s *Server) handleDomainsSubdomainDistribution(w http.ResponseWriter, r *ht
 	showLegend := showLegendStr == "true"
 
 	chart := generateDomainsSubdomainDistributionChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -308,6 +308,7 @@ func generateDomainsTLDsChart(outDir string, showLegend bool) *charts.Pie {
 	if otherCount > 0 {
 		pieData = append(pieData, opts.PieData{
 			Name:  "Other",
+			Label: chartOwnedLabel("Other"),
 			Value: otherCount,
 		})
 	}
@@ -468,8 +469,8 @@ func generateDomainsSubdomainDistributionChart(outDir string, showLegend bool) *
 
 	// Prepare data
 	pieData := []opts.PieData{
-		{Name: "Root Domains", Value: rootDomainQueries},
-		{Name: "Subdomains", Value: subdomainQueries},
+		{Name: "Root Domains", Value: rootDomainQueries, Label: chartOwnedLabel("Root Domains")},
+		{Name: "Subdomains", Value: subdomainQueries, Label: chartOwnedLabel("Subdomains")},
 	}
 
 	pie := charts.NewPie()

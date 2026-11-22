@@ -40,23 +40,23 @@ const netcapWordCloudColor = `function () {
 
 // getDefaultChartInit returns default initialization options for all charts
 // with local assets host configuration to avoid loading from external CDN
-func getDefaultChartInit() opts.Initialization {
+func getDefaultChartInit(presentation ...Presentation) opts.Initialization {
+	p := Presentation{}
+	if len(presentation) > 0 {
+		p = presentation[0]
+	}
 	return opts.Initialization{
 		Width:           "100%",
 		Height:          "100%",
 		Theme:           echartstypes.ThemeWesteros,
-		BackgroundColor: "#050508",
+		BackgroundColor: chartPalettes[p.normalized().Theme].Background,
 		AssetsHost:      "/static/echarts/", // Serve from local backend
 	}
 }
 
 // getDefaultChartInitWithTheme returns initialization options with custom theme
-func getDefaultChartInitWithTheme(theme string) opts.Initialization {
-	return opts.Initialization{
-		Width:           "100%",
-		Height:          "100%",
-		Theme:           theme,
-		BackgroundColor: "#050508",
-		AssetsHost:      "/static/echarts/", // Serve from local backend
-	}
+func getDefaultChartInitWithTheme(theme string, presentation ...Presentation) opts.Initialization {
+	initialization := getDefaultChartInit(presentation...)
+	initialization.Theme = theme
+	return initialization
 }

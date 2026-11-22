@@ -18,6 +18,8 @@
  */
 
 import { createContext, useContext, useState, useMemo, ReactNode } from 'react';
+import { useLocale as useUILocale } from "../lib/i18n";
+
 
 /**
  * Check if we're running on the server (SSR)
@@ -52,6 +54,7 @@ const ssrFallbackValue: LearnModeContextType = {
 const LearnModeContext = createContext<LearnModeContextType | undefined>(undefined);
 
 export function LearnModeProvider({ children }: { children: ReactNode }) {
+  const __uiLocale = useUILocale();
   const [isLearnModeActive, setIsLearnModeActive] = useState(false);
   const [currentHint, setCurrentHint] = useState<string | null>(null);
   const [currentElementTitle, setCurrentElementTitle] = useState<string | null>(null);
@@ -86,9 +89,7 @@ export function LearnModeProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <LearnModeContext.Provider value={value}>
-      {children}
-    </LearnModeContext.Provider>
+    <LearnModeContext.Provider value={value}>{children}</LearnModeContext.Provider>
   );
 }
 

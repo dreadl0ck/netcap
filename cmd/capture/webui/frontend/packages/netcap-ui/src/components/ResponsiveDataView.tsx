@@ -26,6 +26,8 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { mobileTablePaginationSx } from '../lib/mobileMixins';
+import { translate as i18nText, getLocale as getUILocale, richText as i18nRichText, useLocale as useUILocale } from "../lib/i18n";
+
 
 export interface ResponsiveDataViewProps<T> {
   /** Data items for the current page */
@@ -71,6 +73,7 @@ export default function ResponsiveDataView<T>({
   rowsPerPageOptions = [10, 25, 50, 100],
   labelDisplayedRows,
 }: ResponsiveDataViewProps<T>) {
+  const __uiLocale = useUILocale();
   const isMobile = useIsMobile();
 
   const totalPages = Math.ceil(totalCount / rowsPerPage);
@@ -79,58 +82,36 @@ export default function ResponsiveDataView<T>({
 
   if (isMobile) {
     return (
-      <Box>
-        <Stack spacing={1.5}>
-          {data.map((item, index) => (
-            <Box
-              key={index}
+      <Box><Stack spacing={1.5}>{data.map((item, index) => (
+            <Box key={index}
               onClick={onCardClick ? () => onCardClick(item) : undefined}
-              sx={onCardClick ? { cursor: 'pointer' } : undefined}
-            >
-              {renderCard(item, index)}
-            </Box>
-          ))}
-        </Stack>
-        {totalCount > 0 && (
-          <Box
-            sx={{
+              sx={onCardClick ? { cursor: 'pointer' } : undefined}>{renderCard(item, index)}</Box>
+          ))}</Stack>{totalCount > 0 && (
+          <Box sx={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 1,
               py: 2,
-            }}
-          >
-            <Button
-              size="small"
+            }}><Button size="small"
               disabled={page === 0}
               onClick={(e) => onPageChange(e, page - 1)}
-              startIcon={<NavigateBeforeIcon />}
-            >
-              Prev
-            </Button>
-            <Typography variant="body2" color="text.secondary">
-              {from}-{to} of {totalCount.toLocaleString()}
-            </Typography>
-            <Button
-              size="small"
+              startIcon={<NavigateBeforeIcon />}>
+              {i18nText("ui:m_da23bc1fc7bb710ef96c")}
+            </Button><Typography variant="body2" color="text.secondary">
+              {i18nRichText("ui:m_6fa96ac45775b8cea8af", { arg0: from, arg1: to, arg2: totalCount.toLocaleString(getUILocale()) })}
+            </Typography><Button size="small"
               disabled={page >= totalPages - 1}
               onClick={(e) => onPageChange(e, page + 1)}
-              endIcon={<NavigateNextIcon />}
-            >
-              Next
-            </Button>
-          </Box>
-        )}
-      </Box>
+              endIcon={<NavigateNextIcon />}>
+              {i18nText("ui:m_d169a90acabd9d48bf7b")}
+            </Button></Box>
+        )}</Box>
     );
   }
 
   return (
-    <Box>
-      {desktopTable}
-      <TablePagination
-        component="div"
+    <Box>{desktopTable}<TablePagination component="div"
         count={totalCount}
         page={page}
         onPageChange={onPageChange}
@@ -138,8 +119,6 @@ export default function ResponsiveDataView<T>({
         onRowsPerPageChange={onRowsPerPageChange}
         rowsPerPageOptions={rowsPerPageOptions}
         sx={mobileTablePaginationSx}
-        {...(labelDisplayedRows ? { labelDisplayedRows } : {})}
-      />
-    </Box>
+        {...(labelDisplayedRows ? { labelDisplayedRows } : {})} /></Box>
   );
 }

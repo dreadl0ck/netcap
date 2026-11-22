@@ -32,9 +32,10 @@ func (s *Server) handleUpdateDatabases(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondDatabaseJSON(w, map[string]any{
-		"success":  true,
-		"started":  started,
-		"message":  message,
-		"download": databaseDownloadStatus(),
+		"success":     true,
+		"started":     started,
+		"message":     message,
+		"messageI18n": requestUIMessage(r, "database.download.requested", message, map[string]any{"started": started}),
+		"download":    databaseDownloadStatus(),
 	})
 }

@@ -611,8 +611,9 @@ func (s *Server) handleCreateRule(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[WebUI] Created new rule: %s", req.Name)
 
 	RespondJSON(w, http.StatusCreated, map[string]any{
-		"success": true,
-		"message": "Rule created successfully",
+		"success":     true,
+		"message":     "Rule created successfully",
+		"messageI18n": requestUIMessage(r, "rule.created", "Rule created successfully", nil),
 		"rule": RuleResponse{
 			ID:                newRule.Name,
 			Name:              newRule.Name,
@@ -821,8 +822,9 @@ func (s *Server) handleUpdateRule(w http.ResponseWriter, r *http.Request, ruleID
 	log.Printf("[WebUI] Updated rule: %s -> %s", ruleID, req.Name)
 
 	RespondJSON(w, http.StatusOK, map[string]any{
-		"success": true,
-		"message": "Rule updated successfully",
+		"success":     true,
+		"message":     "Rule updated successfully",
+		"messageI18n": requestUIMessage(r, "rule.updated", "Rule updated successfully", nil),
 	})
 }
 
@@ -870,8 +872,9 @@ func (s *Server) handleDeleteRule(w http.ResponseWriter, r *http.Request, ruleID
 	log.Printf("[WebUI] Deleted rule: %s", ruleID)
 
 	RespondJSON(w, http.StatusOK, map[string]any{
-		"success": true,
-		"message": "Rule deleted successfully",
+		"success":     true,
+		"message":     "Rule deleted successfully",
+		"messageI18n": requestUIMessage(r, "rule.deleted", "Rule deleted successfully", nil),
 	})
 }
 
@@ -882,11 +885,12 @@ type ExecuteRuleRequest struct {
 
 // ExecuteRuleResponse represents the response from executing a rule
 type ExecuteRuleResponse struct {
-	Success       bool   `json:"success"`
-	Message       string `json:"message"`
-	AlertsCount   int    `json:"alertsCount"`
-	RecordsRead   int    `json:"recordsRead"`
-	ExecutionTime int64  `json:"executionTimeMs"`
+	Success       bool      `json:"success"`
+	Message       string    `json:"message"`
+	MessageI18n   UIMessage `json:"messageI18n"`
+	AlertsCount   int       `json:"alertsCount"`
+	RecordsRead   int       `json:"recordsRead"`
+	ExecutionTime int64     `json:"executionTimeMs"`
 }
 
 // handleExecuteRule executes a specific rule on demand against the current capture's audit records
@@ -970,6 +974,7 @@ func (s *Server) handleExecuteRule(w http.ResponseWriter, r *http.Request) {
 	RespondJSON(w, http.StatusOK, ExecuteRuleResponse{
 		Success:       true,
 		Message:       fmt.Sprintf("Rule executed successfully: %d alerts generated from %d records", alertsCount, recordsRead),
+		MessageI18n:   requestUIMessage(r, "rule.executed", "Rule executed successfully: {alerts} alerts generated from {records} records", map[string]any{"alerts": alertsCount, "records": recordsRead}),
 		AlertsCount:   alertsCount,
 		RecordsRead:   recordsRead,
 		ExecutionTime: executionTime,
@@ -980,6 +985,7 @@ func (s *Server) handleExecuteRule(w http.ResponseWriter, r *http.Request) {
 type ExecuteAllRulesResponse struct {
 	Success       bool             `json:"success"`
 	Message       string           `json:"message"`
+	MessageI18n   UIMessage        `json:"messageI18n"`
 	TotalAlerts   int              `json:"totalAlerts"`
 	TotalRecords  int              `json:"totalRecords"`
 	ExecutionTime int64            `json:"executionTimeMs"`
@@ -1067,6 +1073,7 @@ func (s *Server) handleExecuteAllRules(w http.ResponseWriter, r *http.Request) {
 	RespondJSON(w, http.StatusOK, ExecuteAllRulesResponse{
 		Success:       failed == 0,
 		Message:       fmt.Sprintf("Completed %d of %d rules: %d alerts generated from %d records", len(results)-failed, len(results), totalAlerts, totalRecords),
+		MessageI18n:   requestUIMessage(r, "rule.batch_completed", "Completed {done} of {total} rules: {alerts} alerts generated from {records} records", map[string]any{"done": len(results) - failed, "total": len(results), "alerts": totalAlerts, "records": totalRecords}),
 		TotalAlerts:   totalAlerts,
 		TotalRecords:  totalRecords,
 		ExecutionTime: executionTime,
