@@ -241,10 +241,11 @@ rules:
     tags: ["rmm", "remote-access", "netsupport"]
     enabled: true
 
-  - name: NetSupport Gateway RAT Server User Agent Detected
-    description: Used by NetSupport RAT server
+  # The gateway identifies itself in the response Server header, not in a User-Agent.
+  - name: NetSupport Gateway Server Header Detected
+    description: HTTP response from a NetSupport Gateway, the relay NetSupport RAT clients poll
     type: HTTP
-    expression: MatchesPattern(UserAgent, "(?i)^netsupport gateway")
+    expression: MatchesPattern(ServerName, "(?i)^netsupport gateway")
     severity: low
     mitre: ["T1219"]
     tags: ["rmm", "remote-access", "netsupport", "c2"]
