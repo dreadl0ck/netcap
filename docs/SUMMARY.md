@@ -7,6 +7,7 @@
 * [Installation](installation.md)
 * [First capture](quickstart.md)
 * [Investigate a file transfer](investigation-walkthrough.md)
+* [Worked example: a NetSupport RAT infection](walkthrough-netsupport-rat.md)
 * [Commands](commands.md)
 * [Configuration](configuration.md)
 * [Troubleshooting](troubleshooting.md)
