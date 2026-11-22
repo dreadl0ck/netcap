@@ -8,6 +8,20 @@ import { formatEvidenceJSON } from '../evidenceJSON';
 
 afterEach(() => { cleanup(); setLocale('en'); });
 
+test('plain sources never resolve to rich-text aliases that would render raw <tagN> markup', async () => {
+  const english: Record<string, string> = (await import('./catalogs/ui/en.json')).default;
+  // Sources that also exist as a plain message; rich-only messages render via richText.
+  const plain = new Set(Object.values(english).filter(text => !/<\/?tag\d+>|[{}]/.test(text)));
+  initializeI18n({ locale: 'en' });
+  for (const locale of supportedLocales) {
+    setLocale(locale);
+    expect(translate('Harvesters')).not.toMatch(/<\/?tag\d+>/);
+    for (const source of plain) expect(translate(source), `${locale}: ${source}`).not.toMatch(/<\/?tag\d+>/);
+  }
+  setLocale('en');
+  expect(translate('Harvesters')).toBe('Harvesters');
+});
+
 test('synchronous offline initialization supports all locales, ICU plurals and exact source lookup', () => {
   expect(i18n.hasResourceBundle('en', 'direct')).toBe(false);
   for (const locale of supportedLocales) {

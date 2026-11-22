@@ -18,6 +18,7 @@ export interface UIMessage { readonly id: string; readonly params?: MessageParam
 
 export const i18n: I18nInstance = createInstance();
 const sourceKeys = new Map<string, string>();
+const sourceExact = new Set<string>();
 const keys = new Set<string>();
 function explicitKey(key: string): string | undefined {
   const alias = (backendIDs as Record<string, string>)[key];
@@ -71,7 +72,12 @@ export function registerCatalogs({ namespace, catalogs, sources = {} }: CatalogB
     keys.add(qualified);
     // Shared messages win over an optional edition bundle's duplicate wording.
     for (const source of new Set([english, sources[key] ?? english])) {
-      if (!sourceKeys.has(source) || namespace === 'ui') sourceKeys.set(source, qualified);
+      const current = sourceKeys.get(source);
+      const exact = source === english;
+      // A plain source must not resolve to a rich-text alias such as <tag0>Harvesters</tag0>.
+      const currentExact = current !== undefined && sourceExact.has(`${current}\0${source}`);
+      if (exact) sourceExact.add(`${qualified}\0${source}`);
+      if (current === undefined || (exact && !currentExact) || (exact === currentExact && namespace === 'ui' && !current.startsWith('ui:'))) sourceKeys.set(source, qualified);
     }
   }
   changed();
