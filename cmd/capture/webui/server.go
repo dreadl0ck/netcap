@@ -210,31 +210,34 @@ type Server struct {
 	processingWork       int
 	preparingNonblocking int
 	postCapturePhases    map[string]string
-	processingStopping   bool
-	enqueueMu            sync.RWMutex
-	isLiveMode           bool                 // Whether in live capture mode
-	stopCapture          context.CancelFunc   // Function to stop live capture
-	activeInputFile      string               // Currently selected input file for viewing
-	completedFiles       map[string]bool      // Tracks which files have completed processing
-	processingStats      ProcessingStats      // Live processing statistics
-	fileErrors           map[string]FileError // Tracks errors for each file
-	failedReproductions  map[string]failedReproduction
-	debugLogging         bool                           // Runtime debug logging state
-	payloadCapture       bool                           // Runtime payload capture state (default false)
-	features             *featureSet                    // Optional feature toggles shown in Settings
-	dpiConfigured        bool                           // Whether DPI was configured at startup (via -dpi flag)
-	runtimeConfig        *RuntimeConfig                 // Actual runtime configuration values from flags
-	collector            CollectorInterface             // Reference to collector for runtime config changes
-	uploadCallback       UploadCallbackFunc             // Function to call when files are uploaded
-	fileBPFFilters       map[string]string              // Tracks BPF filter used for each file
-	fileOutputDirs       map[string]string              // Tracks actual output directory for each file
-	fileProcessingTime   map[string]float64             // Tracks processing time in seconds for each file
-	dpiPreferences       map[string]*UserDPIPreferences // DPI preferences per user IP
-	reportedIssues       map[string]bool                // Tracks which file hashes have had issues reported
-	fileIDToPath         map[string]string              // Maps file IDs to file paths (local mode)
-	childAnalyses        map[string]childAnalysis
-	localUploads         map[string]localUpload
-	devMode              bool // Development mode: use current binary instead of "net"
+	// timelineMetadataBudget overrides the per-build timeline metadata budget
+	// for post-analysis indexing; zero selects the default.
+	timelineMetadataBudget int64
+	processingStopping     bool
+	enqueueMu              sync.RWMutex
+	isLiveMode             bool                 // Whether in live capture mode
+	stopCapture            context.CancelFunc   // Function to stop live capture
+	activeInputFile        string               // Currently selected input file for viewing
+	completedFiles         map[string]bool      // Tracks which files have completed processing
+	processingStats        ProcessingStats      // Live processing statistics
+	fileErrors             map[string]FileError // Tracks errors for each file
+	failedReproductions    map[string]failedReproduction
+	debugLogging           bool                           // Runtime debug logging state
+	payloadCapture         bool                           // Runtime payload capture state (default false)
+	features               *featureSet                    // Optional feature toggles shown in Settings
+	dpiConfigured          bool                           // Whether DPI was configured at startup (via -dpi flag)
+	runtimeConfig          *RuntimeConfig                 // Actual runtime configuration values from flags
+	collector              CollectorInterface             // Reference to collector for runtime config changes
+	uploadCallback         UploadCallbackFunc             // Function to call when files are uploaded
+	fileBPFFilters         map[string]string              // Tracks BPF filter used for each file
+	fileOutputDirs         map[string]string              // Tracks actual output directory for each file
+	fileProcessingTime     map[string]float64             // Tracks processing time in seconds for each file
+	dpiPreferences         map[string]*UserDPIPreferences // DPI preferences per user IP
+	reportedIssues         map[string]bool                // Tracks which file hashes have had issues reported
+	fileIDToPath           map[string]string              // Maps file IDs to file paths (local mode)
+	childAnalyses          map[string]childAnalysis
+	localUploads           map[string]localUpload
+	devMode                bool // Development mode: use current binary instead of "net"
 
 	// Rules cache
 	rulesConfig      any // Cached rules config (uses rules.Config type to avoid circular import)

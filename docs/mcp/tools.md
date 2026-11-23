@@ -2627,7 +2627,7 @@ List retained stream manifests (up to 1000 streams, span bodies omitted), or get
 
 ### `get_timeline_buckets`
 
-Read bounded per-track timeline density buckets with generation and coverage qualifications.
+Read bounded per-track timeline density buckets with generation. Filtered results listing limitations may undercount.
 
 **Hints:** read-only
 
@@ -2686,7 +2686,7 @@ Read bounded per-track timeline density buckets with generation and coverage qua
 
 ### `get_timeline_meta`
 
-Discover timeline tracks, capture time bounds and generation for stable event pagination.
+Discover timeline tracks, capture time bounds and generation for stable event pagination. truncated means records are not indexed (event cap or skippedRecords); metadataTruncated means host, communityId and q filters undercount eventsMissingMetadata events.
 
 **Hints:** read-only
 
@@ -4207,7 +4207,7 @@ Reconcile cumulative Connection snapshots before aggregation and ranking; return
 
 ### `query_timeline_events`
 
-Read a bounded timeline event page. Preserve exact timestamp strings and occurrence references; pass generation plus returned after/before cursor to continue.
+Read a bounded timeline event page. Preserve exact timestamp strings and occurrence references; pass generation plus returned after/before cursor to continue. Filtered results listing limitations may omit events.
 
 **Hints:** read-only
 

@@ -10,11 +10,13 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -367,14 +369,58 @@ func TestTimelineBuildBoundsCommunityMetadata(t *testing.T) {
 	}
 	const exact = 2*(64+3) + 2*(64+8) // Two unique strings and two extra ID lists.
 	index, err := indexTimelineType(files[0], 10, exact, nil)
-	if err != nil || len(index.Events) != 2 || len(index.strings) != 2 || len(index.extraCIDs) != 2 {
+	if err != nil || len(index.Events) != 2 || len(index.strings) != 2 || len(index.extraCIDs) != 2 || index.MetadataTruncated {
 		t.Fatalf("exact-fit metadata lost repeated IDs: %v", err)
 	}
-	if index, err := indexTimelineType(files[0], 10, exact-1, nil); index != nil || err != errTimelineMetadataBudget {
-		t.Fatalf("metadata budget returned an index or wrong error: %v", err)
+	// One byte short degrades the second record's metadata instead of failing.
+	index, err = indexTimelineType(files[0], 10, exact-1, nil)
+	if err != nil || index == nil || len(index.Events) != 2 || !index.MetadataTruncated || index.MissingMetadata != 1 || index.Truncated {
+		t.Fatalf("metadata exhaustion must degrade, not fail: index=%+v err=%v", index, err)
 	}
 }
 
+func TestTimelineMetadataShares(t *testing.T) {
+	files := []timelineFileRef{{size: 0}, {size: 300}, {size: 100}}
+	shares := timelineMetadataShares(files, 1000)
+	var sum int64
+	for _, share := range shares {
+		sum += share
+	}
+	// 83 each equally, the remaining 751 split 0:3:1.
+	if shares[0] != 83 || shares[1] != 83+563 || shares[2] != 83+187 || sum > 1000 {
+		t.Fatalf("shares %v sum %d", shares, sum)
+	}
+	huge := []timelineFileRef{{size: 1 << 40}, {size: 1 << 40}}
+	if got := timelineMetadataShares(huge, timelineMetadataBudget); got[0] != got[1] || got[0]+got[1] > timelineMetadataBudget || got[0] < timelineMetadataBudget/2-1 {
+		t.Fatalf("large inputs: %v", got)
+	}
+	if got := timelineMetadataShares(files, 0); got[1] != 0 {
+		t.Fatalf("zero budget: %v", got)
+	}
+}
+
+// Once a track's share is exhausted no later string is interned, even a short
+// one, so the indexed metadata does not depend on what fits afterwards.
+func TestTimelineMetadataTruncationIsMonotonic(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFilePlain(t, dir, "Connection", types.Type_NC_Connection, []proto.Message{
+		&types.Connection{TimestampFirst: 1, SrcIP: "198.51.100.200", DstIP: "xxxxxxxxxx"},
+		&types.Connection{TimestampFirst: 2, SrcIP: "y", DstIP: "z"},
+	})
+	_, files, err := timelineFingerprint(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 78 for the first string leaves 70: the 74-byte string fails, and the
+	// 65-byte "y" that would still fit must not be interned.
+	index, err := indexTimelineType(files[0], 10, 78+70, nil)
+	if err != nil || len(index.strings) != 1 || index.strings[0] != "198.51.100.200" || index.MissingMetadata != 2 {
+		t.Fatalf("strings %q missing %d err %v", index.strings, index.MissingMetadata, err)
+	}
+}
+
+// A frame above the limit is skipped and reported; it no longer fails the
+// index, so one large HTTP body cannot fail every session tool.
 func TestTimelineBuildEnforcesAuditFrameLimit(t *testing.T) {
 	for _, extra := range []int{0, 1} {
 		dir := t.TempDir()
@@ -383,19 +429,23 @@ func TestTimelineBuildEnforcesAuditFrameLimit(t *testing.T) {
 		if proto.Size(frame) != timelineMaxAuditFrameBytes+extra {
 			t.Fatal("unexpected fixture frame size")
 		}
-		writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{frame})
+		writeTimelineAuditFilePlain(t, dir, "HTTP", types.Type_NC_HTTP, []proto.Message{frame, &types.HTTP{Timestamp: 200, Method: "GET"}})
 		fingerprint, files, err := timelineFingerprint(dir)
 		if err != nil || len(files) != 1 {
 			t.Fatalf("discover fixture: %v", err)
 		}
 		entry := &timelineIndexEntry{finished: make(chan struct{}), state: timelineStateIndexing}
 		buildTimelineIndex(entry, dir, fingerprint, files)
+		if entry.state != timelineStateReady || entry.index == nil {
+			t.Fatalf("extra=%d: %s %s", extra, entry.state, entry.errMsg)
+		}
+		track := entry.index.typeIndex("HTTP")
 		if extra == 0 {
-			if entry.state != timelineStateReady || entry.index == nil || entry.index.TotalEvents != 1 {
-				t.Fatalf("exact-limit frame: %s %s", entry.state, entry.errMsg)
+			if entry.index.TotalEvents != 2 || entry.index.Truncated || entry.index.Skipped != 0 {
+				t.Fatalf("exact-limit frame: %+v", entry.index)
 			}
-		} else if entry.state != timelineStateError || entry.index != nil || !strings.Contains(entry.errMsg, "record size exceeds read limit") {
-			t.Fatalf("oversized frame: %s %s", entry.state, entry.errMsg)
+		} else if entry.index.TotalEvents != 1 || !entry.index.Truncated || entry.index.Skipped != 1 || track.Total != 2 || track.Events[0].Ordinal != 1 {
+			t.Fatalf("oversized frame: events=%d truncated=%t skipped=%d", entry.index.TotalEvents, entry.index.Truncated, entry.index.Skipped)
 		}
 	}
 }
@@ -1382,5 +1432,79 @@ func TestTimelineHandlersScopeRequestsByInputFile(t *testing.T) {
 	}
 	if metaA.Generation == metaB.Generation {
 		t.Fatal("different PCAP outputs received the same timeline generation")
+	}
+}
+
+// Regular-lane builds run up to four workers. Per-track shares keep the
+// indexed metadata identical across builds of the same files.
+func TestTimelineMetadataTruncationIsDeterministic(t *testing.T) {
+	dir := t.TempDir()
+	for _, track := range []struct {
+		name string
+		typ  types.Type
+		row  func(i int) proto.Message
+	}{
+		{"Connection", types.Type_NC_Connection, func(i int) proto.Message {
+			return &types.Connection{TimestampFirst: int64(i + 1), SrcIP: fmt.Sprintf("10.%d.%d.1", i/250, i%250), DstIP: fmt.Sprintf("10.%d.%d.2", i/250, i%250), CommunityID: fmt.Sprintf("1:%028d", i)}
+		}},
+		{"UDP", types.Type_NC_UDP, func(i int) proto.Message {
+			return &types.UDP{Timestamp: int64(i + 1), SrcIP: fmt.Sprintf("172.16.%d.%d", i/250, i%250), DstIP: "192.0.2.53"}
+		}},
+		{"TCP", types.Type_NC_TCP, func(i int) proto.Message {
+			return &types.TCP{Timestamp: int64(i + 1), SrcIP: fmt.Sprintf("192.168.%d.%d", i/250, i%250), DstIP: "192.0.2.80", CommunityID: fmt.Sprintf("1:%028d", i)}
+		}},
+	} {
+		rows := make([]proto.Message, 4000)
+		for i := range rows {
+			rows[i] = track.row(i)
+		}
+		writeTimelineAuditFilePlain(t, dir, track.name, track.typ, rows)
+	}
+	fingerprint, files, err := timelineFingerprint(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if slot, _ := timelineBuildLane(files); slot != timelineBuildSlot {
+		t.Fatal("fixture must use the parallel regular lane")
+	}
+	type coverage struct {
+		missing int64
+		strings []string
+	}
+	build := func() map[string]coverage {
+		entry := &timelineIndexEntry{finished: make(chan struct{}), state: timelineStateIndexing, metadataBudget: 300 << 10}
+		buildTimelineIndex(entry, dir, fingerprint, files)
+		if entry.state != timelineStateReady || !entry.index.MetadataTruncated || entry.index.TotalEvents != 12000 {
+			t.Fatalf("build: %s %s", entry.state, entry.errMsg)
+		}
+		out := map[string]coverage{}
+		for _, track := range entry.index.Types {
+			out[track.Name] = coverage{track.MissingMetadata, track.strings}
+		}
+		return out
+	}
+	first := build()
+	for range 3 {
+		if again := build(); !reflect.DeepEqual(first, again) {
+			t.Fatal("metadata coverage differs between builds")
+		}
+	}
+}
+
+func TestTimelineFilteredQueriesReportLimitations(t *testing.T) {
+	truncated := &tlTypeIndex{Name: "Connection", MetadataTruncated: true, MissingMetadata: 3}
+	complete := &tlTypeIndex{Name: "UDP"}
+	q := &timelineQuery{Tracks: []*tlTypeIndex{truncated, complete}}
+	if got := q.limitations(); got != nil {
+		t.Fatalf("unfiltered query reported %v", got)
+	}
+	for _, filtered := range []*timelineQuery{
+		{Tracks: q.Tracks, Host: "192.0.2.1"},
+		{Tracks: q.Tracks, Search: "x"},
+		{Tracks: q.Tracks, CommunityIDs: map[string]bool{"1:x": true}},
+	} {
+		if got := filtered.limitations(); len(got) != 1 || !strings.HasPrefix(got[0], "Connection: 3 events") {
+			t.Fatalf("filtered query limitations %v", got)
+		}
 	}
 }

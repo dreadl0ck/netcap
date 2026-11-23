@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/bits"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -95,7 +96,14 @@ type tlTypeIndex struct {
 
 	Total     int64 // records present in the file
 	Invalid   int64 // records without a usable timestamp
-	Truncated bool  // index does not cover every record of this type
+	Truncated bool  // some records are not indexed: event cap or skipped oversized frames
+	Skipped   int64 // frames above timelineMaxAuditFrameBytes, counted in Total
+
+	// MetadataTruncated means this track's metadata share ran out: later
+	// endpoints and Community IDs were not interned, so host, Community ID and
+	// search filters undercount MissingMetadata events.
+	MetadataTruncated bool
+	MissingMetadata   int64
 
 	MinTime int64
 	MaxTime int64
@@ -127,8 +135,11 @@ type timelineIndex struct {
 	TotalRecords int64
 	TotalEvents  int64
 	Truncated    bool
-	facetMu      sync.Mutex
-	facetBytes   uint64
+	Skipped      int64
+	// MetadataTruncated is set when any track has MetadataTruncated.
+	MetadataTruncated bool
+	facetMu           sync.Mutex
+	facetBytes        uint64
 }
 
 func (idx *timelineIndex) typeIndex(name string) *tlTypeIndex {
@@ -141,10 +152,11 @@ func (idx *timelineIndex) typeIndex(name string) *tlTypeIndex {
 
 // timelineIndexEntry is a cache slot for one output directory.
 type timelineIndexEntry struct {
-	cancel      chan struct{}
-	fingerprint string // immutable after creation
-	files       []timelineFileRef
-	finished    chan struct{}
+	cancel         chan struct{}
+	fingerprint    string // immutable after creation
+	files          []timelineFileRef
+	finished       chan struct{}
+	metadataBudget int64 // immutable; zero selects timelineMetadataBudget
 
 	mu     sync.RWMutex
 	state  string
@@ -174,9 +186,41 @@ var timelineCache = struct {
 
 const timelineSmallInputBytes = 256 << 10
 const timelineMaxAuditFrameBytes = 16 << 20
-const timelineMetadataBudget = 64 << 20
 
-var errTimelineMetadataBudget = errors.New("timeline endpoint and Community ID metadata exceeds track budget")
+// timelineMetadataBudget bounds interned endpoint and Community ID strings per
+// index build. Exhaustion degrades filtering; it never fails the index.
+const timelineMetadataBudget int64 = 64 << 20
+
+// timelineMetadataShares splits budget across files without depending on
+// worker scheduling: a quarter equally, the rest by stored size.
+func timelineMetadataShares(files []timelineFileRef, budget int64) []int64 {
+	shares := make([]int64, len(files))
+	if len(files) == 0 || budget <= 0 {
+		return shares
+	}
+	n := int64(len(files))
+	floor := budget / (4 * n)
+	rest := uint64(budget - floor*n)
+	var total uint64
+	for _, file := range files {
+		total += uint64(max(file.size, 0))
+	}
+	for i, file := range files {
+		shares[i] = floor
+		if total == 0 {
+			shares[i] += int64(rest / uint64(n))
+			continue
+		}
+		hi, lo := bits.Mul64(rest, uint64(max(file.size, 0)))
+		if hi >= total {
+			shares[i] += int64(rest)
+			continue
+		}
+		part, _ := bits.Div64(hi, lo, total)
+		shares[i] += int64(part)
+	}
+	return shares
+}
 
 var (
 	timelineBuildSlot      = make(chan struct{}, 1)
@@ -379,6 +423,12 @@ func timelineIndexFor(outDir string) timelineIndexStatus {
 }
 
 func timelineIndexWithAdmission(outDir string, waitForCapacity bool) timelineIndexStatus {
+	return timelineIndexWithBudget(outDir, waitForCapacity, 0)
+}
+
+// timelineIndexWithBudget admits a build with an explicit metadata budget.
+// A cached generation keeps the budget it was built with.
+func timelineIndexWithBudget(outDir string, waitForCapacity bool, metadataBudget int64) timelineIndexStatus {
 	fingerprint, files, err := timelineFingerprint(outDir)
 	if err != nil {
 		return timelineIndexStatus{State: timelineStateError, Err: err.Error()}
@@ -433,12 +483,13 @@ func timelineIndexWithAdmission(outDir string, waitForCapacity bool) timelineInd
 		}
 
 		entry = &timelineIndexEntry{
-			cancel:      make(chan struct{}),
-			fingerprint: fingerprint,
-			files:       files,
-			finished:    make(chan struct{}),
-			state:       timelineStateIndexing,
-			total:       int64(len(files)),
+			cancel:         make(chan struct{}),
+			fingerprint:    fingerprint,
+			files:          files,
+			finished:       make(chan struct{}),
+			metadataBudget: metadataBudget,
+			state:          timelineStateIndexing,
+			total:          int64(len(files)),
 		}
 		timelineCache.entries[outDir] = entry
 		timelineEvictLocked()
@@ -578,11 +629,15 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 		failures = make([]error, len(files))
 	)
 
-	// Divide the global budget across tracks before reading. This bounds peak
+	// Divide the global budgets across tracks before reading. This bounds peak
 	// memory during parallel indexing rather than trimming only after every
 	// track has already allocated its maximum.
 	perTypeLimit := timelineMaxEventsTotal / len(files)
-	perTypeMetadata := timelineMetadataBudget / len(files)
+	metadataBudget := entry.metadataBudget
+	if metadataBudget <= 0 {
+		metadataBudget = timelineMetadataBudget
+	}
+	metadataShares := timelineMetadataShares(files, metadataBudget)
 	if perTypeLimit > timelineMaxEventsPerType {
 		perTypeLimit = timelineMaxEventsPerType
 	}
@@ -612,9 +667,9 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 				if snapshots != nil {
 					data := snapshots[i]
 					reader := &AuditRecordReader{delimitedReader: delimited.NewReaderWithLimit(bytes.NewReader(data), uint64(max(1, len(data))))}
-					ti, err = indexTimelineRecords(reader, files[i].name, perTypeLimit, perTypeMetadata, entry.cancel)
+					ti, err = indexTimelineRecords(reader, files[i].name, perTypeLimit, metadataShares[i], entry.cancel)
 				} else {
-					ti, err = indexTimelineType(files[i], perTypeLimit, perTypeMetadata, entry.cancel)
+					ti, err = indexTimelineType(files[i], perTypeLimit, metadataShares[i], entry.cancel)
 				}
 
 				atomic.AddInt64(&done, 1)
@@ -623,7 +678,7 @@ func buildTimelineIndex(entry *timelineIndexEntry, outDir, fingerprint string, f
 				entry.done = atomic.LoadInt64(&done)
 				entry.mu.Unlock()
 
-				if err != nil || ti == nil || len(ti.Events) == 0 {
+				if err != nil || ti == nil || len(ti.Events) == 0 && ti.Skipped == 0 {
 					if err != nil {
 						failures[i] = fmt.Errorf("index %s: %w", files[i].name, err)
 					}
@@ -735,6 +790,9 @@ func assembleTimelineIndex(fingerprint string, types []*tlTypeIndex) *timelineIn
 	}
 
 	for _, t := range types {
+		idx.Skipped += t.Skipped
+		idx.MetadataTruncated = idx.MetadataTruncated || t.MetadataTruncated
+		idx.Truncated = idx.Truncated || t.Truncated
 		if len(t.Events) == 0 {
 			continue
 		}
@@ -772,9 +830,6 @@ func assembleTimelineIndex(fingerprint string, types []*tlTypeIndex) *timelineIn
 			}
 		}
 
-		if t.Truncated {
-			idx.Truncated = true
-		}
 	}
 
 	if idx.MinTime == math.MaxInt64 {
@@ -789,7 +844,7 @@ func assembleTimelineIndex(fingerprint string, types []*tlTypeIndex) *timelineIn
 }
 
 // indexTimelineType reads one audit record file and builds its time index.
-func indexTimelineType(ref timelineFileRef, eventLimit, metadataBudget int, stop <-chan struct{}) (*tlTypeIndex, error) {
+func indexTimelineType(ref timelineFileRef, eventLimit int, metadataBudget int64, stop <-chan struct{}) (*tlTypeIndex, error) {
 	reader, err := openTimelineAuditReader(ref, func(input io.Reader) io.Reader {
 		return analysisStopReader{input: input, stop: stop}
 	})
@@ -817,7 +872,7 @@ func timelineAuditReaderFromFile(f *os.File, ref timelineFileRef, wrap func(io.R
 	return reader, nil
 }
 
-func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit, metadataBudget int, stop <-chan struct{}) (*tlTypeIndex, error) {
+func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit int, metadataBudget int64, stop <-chan struct{}) (*tlTypeIndex, error) {
 	header, err := reader.ReadHeader()
 	if err != nil {
 		return nil, err
@@ -846,7 +901,18 @@ func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit
 		cidsField  []int
 	)
 
-	var metadataExceeded bool
+	// Once the share runs out no further string is interned for this track,
+	// so the indexed metadata is a stable function of the file.
+	var missing bool
+	charge := func(n int64) bool {
+		if ti.MetadataTruncated || n > metadataBudget {
+			ti.MetadataTruncated = true
+			missing = true
+			return false
+		}
+		metadataBudget -= n
+		return true
+	}
 	add := func(s string) int32 {
 		if s == "" {
 			return -1
@@ -856,12 +922,9 @@ func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit
 			return i
 		}
 
-		charge := len(s) + 64 // String table and intern map entries.
-		if charge > metadataBudget {
-			metadataExceeded = true
+		if !charge(int64(len(s)) + 64) { // String table and intern map entries.
 			return -1
 		}
-		metadataBudget -= charge
 		i := int32(len(ti.strings))
 		ti.strings = append(ti.strings, s)
 		intern[s] = i
@@ -876,6 +939,19 @@ func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit
 		default:
 		}
 		record, readErr := reader.NextRecord()
+		var oversized *delimited.RecordLimitError
+		if errors.As(readErr, &oversized) {
+			// One large record (for example an HTTP body with payload capture)
+			// must not fail the session. Keep ordinals aligned with the file.
+			if err := reader.delimitedReader.Discard(oversized.Size); err != nil {
+				return nil, err
+			}
+			ordinal++
+			ti.Total++
+			ti.Skipped++
+			ti.Truncated = true
+			continue
+		}
 		if readErr != nil {
 			if !errors.Is(readErr, io.EOF) {
 				return nil, readErr
@@ -886,6 +962,7 @@ func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit
 		current := ordinal
 		ordinal++
 		ti.Total++
+		missing = false
 
 		auditRecord, ok := record.(types.AuditRecord)
 		if !ok {
@@ -928,9 +1005,6 @@ func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit
 			Src:     add(auditRecord.Src()),
 			Dst:     add(auditRecord.Dst()),
 		})
-		if metadataExceeded {
-			return nil, errTimelineMetadataBudget
-		}
 		if ti.cids != nil {
 			id := ""
 			if cidField != nil {
@@ -940,28 +1014,22 @@ func indexTimelineRecords(reader *AuditRecordReader, typeName string, eventLimit
 				values := reflect.ValueOf(record).Elem().FieldByIndex(cidsField).Interface().([]string)
 				if len(values) > 0 {
 					id = values[0]
-					if len(values) > 1 {
-						charge := 64 + 8*(len(values)-1) // Map entry and growing ordinal list.
-						if charge > metadataBudget {
-							return nil, errTimelineMetadataBudget
-						}
-						metadataBudget -= charge
+					if len(values) > 1 && charge(64+8*int64(len(values)-1)) { // Map entry and growing ordinal list.
 						if ti.extraCIDs == nil {
 							ti.extraCIDs = make(map[int32][]int32)
 						}
 						for _, extra := range values[1:] {
-							ti.extraCIDs[current] = append(ti.extraCIDs[current], add(extra))
-							if metadataExceeded {
-								return nil, errTimelineMetadataBudget
+							if id := add(extra); id >= 0 {
+								ti.extraCIDs[current] = append(ti.extraCIDs[current], id)
 							}
 						}
 					}
 				}
 			}
 			ti.cids = append(ti.cids, add(id))
-			if metadataExceeded {
-				return nil, errTimelineMetadataBudget
-			}
+		}
+		if missing {
+			ti.MissingMetadata++
 		}
 
 		if firstIdx != nil {

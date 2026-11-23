@@ -35,6 +35,31 @@ type Reader struct {
 // ErrRecordLimit indicates a frame exceeded a configured read limit.
 var ErrRecordLimit = errors.New("record size exceeds read limit")
 
+// RecordLimitError reports an oversized frame. Its length prefix has been
+// consumed; Discard(Size) skips the body so reading can continue.
+type RecordLimitError struct{ Size, Limit uint64 }
+
+func (e *RecordLimitError) Error() string {
+	return fmt.Sprintf("record size %d exceeds limit %d: %v", e.Size, e.Limit, ErrRecordLimit)
+}
+
+func (e *RecordLimitError) Unwrap() error { return ErrRecordLimit }
+
+// Discard drops n bytes, the body of a frame refused with RecordLimitError.
+func (r *Reader) Discard(n uint64) error {
+	for n > 0 {
+		discarded, err := r.buffer.Discard(int(min(n, 32<<10)))
+		n -= uint64(discarded)
+		if err == io.EOF {
+			return io.ErrUnexpectedEOF
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // NewReaderWithLimit rejects oversized frames before allocating their payload.
 func NewReaderWithLimit(r io.Reader, maxRecord uint64) *Reader {
 	return &Reader{buffer: bufio.NewReader(r), maxRecord: maxRecord}
@@ -73,7 +98,7 @@ func (r *Reader) next(limit uint64) ([]byte, error) {
 		return nil, err
 	}
 	if limit > 0 && size > limit {
-		return nil, fmt.Errorf("record size %d exceeds limit %d: %w", size, limit, ErrRecordLimit)
+		return nil, &RecordLimitError{Size: size, Limit: limit}
 	}
 	if size > math.MaxInt {
 		return nil, fmt.Errorf("record size %d exceeds reader bounds", size)

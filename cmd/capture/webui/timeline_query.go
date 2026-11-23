@@ -22,6 +22,7 @@ package webui
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"math/bits"
 	"slices"
 	"sort"
@@ -116,6 +117,21 @@ type timelineQuery struct {
 	Limit        int
 	After        *tlKey
 	Before       *tlKey
+}
+
+// limitations reports tracks whose filtered results may be incomplete because
+// their metadata was truncated during indexing.
+func (q *timelineQuery) limitations() []string {
+	if q.Host == "" && q.Search == "" && len(q.CommunityIDs) == 0 {
+		return nil
+	}
+	var out []string
+	for _, t := range q.Tracks {
+		if t.MetadataTruncated {
+			out = append(out, fmt.Sprintf("%s: %d events lack endpoint or Community ID metadata; host, Community ID and search filters may omit them", t.Name, t.MissingMetadata))
+		}
+	}
+	return out
 }
 
 func (q *timelineQuery) canceled() bool {

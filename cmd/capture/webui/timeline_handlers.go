@@ -69,24 +69,33 @@ type timelineTrackJSON struct {
 	HasDuration bool   `json:"hasDuration"`
 	Truncated   bool   `json:"truncated"`
 	Invalid     int64  `json:"invalid"`
+	// SkippedRecords are frames too large to index; they count as truncation.
+	SkippedRecords int64 `json:"skippedRecords,omitempty"`
+	// MetadataTruncated tracks undercount host, Community ID and search
+	// filters by EventsMissingMetadata; unfiltered counts stay exact.
+	MetadataTruncated     bool  `json:"metadataTruncated,omitempty"`
+	EventsMissingMetadata int64 `json:"eventsMissingMetadata,omitempty"`
 }
 
 // timelineMetaJSON is the response of /api/timeline/meta.
 type timelineMetaJSON struct {
-	Status      string              `json:"status"`
-	Error       string              `json:"error,omitempty"`
-	Done        int64               `json:"done"`
-	Total       int64               `json:"total"`
-	Generation  string              `json:"generation,omitempty"`
-	MinTime     string              `json:"minTime,omitempty"`
-	MaxTime     string              `json:"maxTime,omitempty"`
-	CaptureMin  string              `json:"captureMinTime,omitempty"`
-	CaptureMax  string              `json:"captureMaxTime,omitempty"`
-	TotalEvents int64               `json:"totalEvents"`
-	Records     int64               `json:"records"`
-	Truncated   bool                `json:"truncated"`
-	Tracks      []timelineTrackJSON `json:"tracks"`
-	OutputDir   string              `json:"outputDir,omitempty"`
+	Status      string `json:"status"`
+	Error       string `json:"error,omitempty"`
+	Done        int64  `json:"done"`
+	Total       int64  `json:"total"`
+	Generation  string `json:"generation,omitempty"`
+	MinTime     string `json:"minTime,omitempty"`
+	MaxTime     string `json:"maxTime,omitempty"`
+	CaptureMin  string `json:"captureMinTime,omitempty"`
+	CaptureMax  string `json:"captureMaxTime,omitempty"`
+	TotalEvents int64  `json:"totalEvents"`
+	Records     int64  `json:"records"`
+	Truncated   bool   `json:"truncated"`
+	// MetadataTruncated is set when any track has metadataTruncated.
+	MetadataTruncated bool                `json:"metadataTruncated,omitempty"`
+	SkippedRecords    int64               `json:"skippedRecords,omitempty"`
+	Tracks            []timelineTrackJSON `json:"tracks"`
+	OutputDir         string              `json:"outputDir,omitempty"`
 }
 
 // timelineEventJSON is one record occurrence on the timeline.
@@ -117,6 +126,8 @@ type timelineEventsJSON struct {
 	MatchCount int64               `json:"matchCount"`
 	HasMore    bool                `json:"hasMore"`
 	HasPrev    bool                `json:"hasPrev"`
+	// Limitations name filtered tracks whose results may be incomplete.
+	Limitations []string `json:"limitations,omitempty"`
 }
 
 // timelineBucketSeriesJSON is the density of one track across the window.
@@ -141,6 +152,8 @@ type timelineBucketsJSON struct {
 	BucketNs   string                     `json:"bucketNs,omitempty"`
 	MatchCount int64                      `json:"matchCount"`
 	Series     []timelineBucketSeriesJSON `json:"series"`
+	// Limitations name filtered tracks whose results may be incomplete.
+	Limitations []string `json:"limitations,omitempty"`
 }
 
 // timelineRecordJSON is the response of /api/timeline/record.
@@ -213,9 +226,11 @@ func (s *Server) handleTimelineMeta(w http.ResponseWriter, r *http.Request) {
 	resp.TotalEvents = idx.TotalEvents
 	resp.Records = idx.TotalRecords
 	resp.Truncated = idx.Truncated
+	resp.MetadataTruncated = idx.MetadataTruncated
+	resp.SkippedRecords = idx.Skipped
 
 	for _, t := range idx.Types {
-		if len(t.Events) == 0 {
+		if len(t.Events) == 0 && t.Skipped == 0 {
 			continue
 		}
 
@@ -230,6 +245,10 @@ func (s *Server) handleTimelineMeta(w http.ResponseWriter, r *http.Request) {
 			HasDuration: t.hasDuration(),
 			Truncated:   t.Truncated,
 			Invalid:     t.Invalid,
+
+			SkippedRecords:        t.Skipped,
+			MetadataTruncated:     t.MetadataTruncated,
+			EventsMissingMetadata: t.MissingMetadata,
 		})
 	}
 
@@ -276,6 +295,7 @@ func (s *Server) handleTimelineEvents(w http.ResponseWriter, r *http.Request) {
 	resp.Start = strconv.FormatInt(query.Start, 10)
 	resp.End = strconv.FormatInt(query.End, 10)
 	resp.MatchCount = query.count()
+	resp.Limitations = query.limitations()
 	if query.canceled() {
 		return
 	}
@@ -396,6 +416,7 @@ func (s *Server) handleTimelineBuckets(w http.ResponseWriter, r *http.Request) {
 	resp.End = strconv.FormatInt(query.End, 10)
 	resp.BucketNs = strconv.FormatInt((query.End-query.Start)/int64(count), 10)
 	resp.MatchCount = matchCount
+	resp.Limitations = query.limitations()
 
 	for _, t := range query.Tracks {
 		counts := series[t.Name]

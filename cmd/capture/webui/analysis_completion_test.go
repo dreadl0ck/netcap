@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http/httptest"
 	"os"
@@ -1069,5 +1070,33 @@ func TestAnalysisCompletionRejectsRuleFailures(t *testing.T) {
 				t.Fatal("failed analysis published complete")
 			}
 		})
+	}
+}
+
+// MCP-24: exhausting the timeline metadata budget degrades filtering and keeps
+// the session; it used to fail completion and every session tool with 422.
+func TestAnalysisCompletesWhenTimelineMetadataIsTruncated(t *testing.T) {
+	s, input, dir := reanalysisFixture(t)
+	delete(s.completedFiles, input)
+	s.fileBPFFilters = map[string]string{}
+	s.rulesConfig = &rules.Config{}
+	s.timelineMetadataBudget = 256
+	if err := os.Remove(filepath.Join(dir, "HTTP.ncap.gz")); err != nil {
+		t.Fatal(err)
+	}
+	rows := make([]proto.Message, 0, 80)
+	for i := range 80 {
+		rows = append(rows, &types.Connection{TimestampFirst: int64(1_000 + i), SrcIP: fmt.Sprintf("198.51.100.%d", i+1), DstIP: fmt.Sprintf("203.0.113.%d", i+1)})
+	}
+	writeTimelineAuditFilePlain(t, dir, "Connection", types.Type_NC_Connection, rows)
+	if err := s.completeAnalysis(&AnalysisJob{InputFile: input, OutputDir: dir}, 5*time.Second); err != nil {
+		t.Fatalf("metadata truncation failed analysis: %v", err)
+	}
+	if !s.completedFiles[input] {
+		t.Fatal("session not marked complete")
+	}
+	status := timelineIndexFor(dir)
+	if status.State != timelineStateReady || !status.Index.MetadataTruncated || status.Index.Truncated || status.Index.TotalEvents != 80 {
+		t.Fatalf("expected a ready index with truncated metadata: %s %s", status.State, status.Err)
 	}
 }
