@@ -8,7 +8,7 @@
 .PHONY: test-coverage test-coverage-html test-coverage-check test-race test-determinism test-wireshark
 .PHONY: test-golden-update test-regression-verify
 .PHONY: test-hyperscan test-msan test-pkg test-verbose test-clean test-help
-.PHONY: docs-check docs-source-check recheck-v01612
+.PHONY: docs-check docs-source-check recheck-v01612 demo-pcaps
 
 NETCAP_BIN ?= ./net
 DOCS_TEST_TAGS ?= nodpi,noyara
@@ -186,6 +186,15 @@ recheck-v01612:
 		uv run --script scripts/check-mcp-stdio.py $(TMPDIR)net-recheck --mixed-upload-archive "$(MIXED_UPLOAD_ARCHIVE)" --full-fanout; \
 	fi
 
+# Analyze captures through the MCP/WebUI pipeline the try demo uses; every
+# input must complete. Defaults to the captures that regressed in v0.16.12.
+DEMO_PCAPS ?= pcaps/arp-dns-eth-icmp-ip-udp-goodhttp-gooddns.pcapng \
+	pcaps/malware-traffic-analysis.net/2017-10-13-Blank-Slate-campaign-pushes-Sage-2.2-ransomware.pcap \
+	pcaps/testfiles/ultimate-PCAP-v20250325.pcapng pcaps/testfiles/merged.pcapng
+demo-pcaps:
+	GOWORK=off go build -tags $(RECHECK_TAGS) -o $(TMPDIR)net-demo ./cmd/net
+	uv run --script scripts/check-demo-pcaps.py $(TMPDIR)net-demo $(DEMO_PCAPS)
+
 test-help:
 	@echo "Netcap Test Targets:"
 	@echo ""
@@ -204,6 +213,7 @@ test-help:
 	@echo "  test-determinism  - Compare Ultimate PCAP output across runs and worker counts"
 	@echo "  test-wireshark    - Fetch verified Wireshark samples and run the full corpus (needs editcap)"
 	@echo "  recheck-v01612    - v0.16.12 evaluator follow-up gate (MIXED_UPLOAD_ARCHIVE= adds scheduling)"
+	@echo "  demo-pcaps        - Analyze DEMO_PCAPS through the try-demo MCP/WebUI pipeline"
 	@echo ""
 	@echo "  test-golden-update    - Retired; fails explicitly (no registered suite)"
 	@echo "  test-regression-verify - Verify against golden files"
