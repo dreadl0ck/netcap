@@ -395,7 +395,7 @@ async def check_mixed_uploads(call, capture, archive, working_dir, full_fanout, 
     if full_fanout:
         large_ready = rows[0][6]
         early = [i for i, row in enumerate(rows[1:], 1) if row[3] < large_ready]
-        expected = [1, 2] if auxiliary else []
+        expected = list(range(1, len(rows))) if auxiliary else []
         started_early = [i for i, row in enumerate(rows[1:], 1) if row[5] < large_ready]
         if early != expected or started_early != expected:
             raise ValueError(f"expected early jobs {expected}, started {started_early}, completed {early}; {jobs}")
@@ -1164,11 +1164,11 @@ if __name__ == "__main__":
     parser.add_argument("binary", type=Path)
     parser.add_argument("--mixed-upload-archive", type=Path, help="Run the paced mixed-upload test using the pinned synthetic archive.")
     parser.add_argument("--full-fanout", action="store_true", help="Use one full 15,000-packet upload followed by three small uploads.")
-    parser.add_argument("--auxiliary-capture", action="store_true", help="Enable the auxiliary helper in the mixed-upload probe.")
+    parser.add_argument("--serial-capture", action="store_true", help="Disable the auxiliary helper (NETCAP_AUXILIARY_CAPTURE=0) in the mixed-upload probe.")
     parser.add_argument("--partial-download", type=Path, help="Verify the pinned download-fast capture through MCP.")
     parser.add_argument("--http-alerts", action="store_true", help="Run only the large-alert check through the mounted Streamable HTTP endpoint.")
     args = parser.parse_args()
-    if (args.full_fanout or args.auxiliary_capture) and args.mixed_upload_archive is None:
+    if (args.full_fanout or args.serial_capture) and args.mixed_upload_archive is None:
         parser.error("mixed-upload options require --mixed-upload-archive")
     repo = Path(__file__).resolve().parents[1]
     mdns = repo / "internal/collector/testdata/voip/mdns.pcap"
@@ -1180,5 +1180,5 @@ if __name__ == "__main__":
             raise SystemExit(0)
         passed = asyncio.run(check(args.binary.resolve(), mdns,
                                    repo / "testdata/recheck-v0168/base_http.pcap", data_dir, args.mixed_upload_archive,
-                                   args.full_fanout, args.auxiliary_capture, args.partial_download))
+                                   args.full_fanout, not args.serial_capture, args.partial_download))
         raise SystemExit(0 if passed else 1)

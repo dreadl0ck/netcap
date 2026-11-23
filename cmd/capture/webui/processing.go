@@ -17,6 +17,9 @@ const (
 	captureLookahead   = 8
 	smallCaptureBytes  = 64 << 10
 	maxCaptureBypasses = 2
+	// The helper runs beside the large job instead of ahead of it, so it
+	// cannot starve it; the bound only caps work per large capture.
+	maxAuxiliaryBypasses = captureLookahead
 )
 
 type captureProcessLane uint8
@@ -147,7 +150,7 @@ func (s *Server) dispatchWithAuxiliary(d *captureDispatch, run func(*AnalysisJob
 				primaryDone = launch(primary)
 				continue
 			}
-			if primary != nil && !smallCapture(primary) && auxiliary == nil && d.bypasses < maxCaptureBypasses {
+			if primary != nil && !smallCapture(primary) && auxiliary == nil && d.bypasses < maxAuxiliaryBypasses {
 				for i, job := range d.pending {
 					if job.OutputDir != "" && job.OutputDir != primary.OutputDir && smallCapture(job) && s.ownsAuxiliaryInput(job) {
 						d.bypasses++

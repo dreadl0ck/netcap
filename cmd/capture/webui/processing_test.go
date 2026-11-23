@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http/httptest"
 	"runtime"
 	"sync"
@@ -32,7 +33,9 @@ func TestCaptureDispatchBoundsSmallJobBypasses(t *testing.T) {
 	}
 }
 
-func TestAuxiliaryDispatchOverlapsOnlyTwoOwnedSmallCaptures(t *testing.T) {
+// MCP-20: owned small uploads run beside a large capture, up to
+// maxAuxiliaryBypasses per large capture; unowned ones wait for the lane.
+func TestAuxiliaryDispatchOverlapsOwnedSmallCaptures(t *testing.T) {
 	job := func(id string, size int64) *AnalysisJob {
 		return &AnalysisJob{SessionID: id, InputFile: id + ".pcap", OutputDir: id,
 			reproductionSource: reproductionSource{SHA256: "snapshot", Bytes: size}}
@@ -40,13 +43,16 @@ func TestAuxiliaryDispatchOverlapsOnlyTwoOwnedSmallCaptures(t *testing.T) {
 	large := job("large", smallCaptureBytes+1)
 	unowned := job("unowned", 24)
 	small := []*AnalysisJob{job("one", 24), job("two", smallCaptureBytes), job("three", 24)}
-	s := &Server{jobQueue: make(chan *AnalysisJob, 5), shutdownChan: make(chan struct{}),
+	for i := range maxAuxiliaryBypasses {
+		small = append(small, job(fmt.Sprintf("extra-%d", i), 24))
+	}
+	s := &Server{jobQueue: make(chan *AnalysisJob, len(small)+2), shutdownChan: make(chan struct{}),
 		localUploads: make(map[string]localUpload), fileOutputDirs: make(map[string]string)}
 	for _, entry := range small {
 		s.localUploads[entry.InputFile] = localUpload{AnalysisID: entry.SessionID}
 		s.fileOutputDirs[entry.InputFile] = entry.OutputDir
 	}
-	started := make(chan *AnalysisJob, 5)
+	started := make(chan *AnalysisJob, len(small)+2)
 	release := make(chan struct{})
 	finishLarge := sync.OnceFunc(func() { close(release) })
 	done := make(chan struct{})
@@ -87,11 +93,16 @@ func TestAuxiliaryDispatchOverlapsOnlyTwoOwnedSmallCaptures(t *testing.T) {
 		s.jobQueue <- entry
 	}
 	close(s.jobQueue)
-	next(small[0], captureAuxiliary)
-	next(small[1], captureAuxiliary)
+	// The lookahead holds eight queued jobs; the helper drains the owned
+	// small ones until the per-capture bound is reached.
+	for _, entry := range small[:maxAuxiliaryBypasses] {
+		next(entry, captureAuxiliary)
+	}
 	finishLarge()
 	next(unowned, captureOffline)
-	next(small[2], captureOffline)
+	for _, entry := range small[maxAuxiliaryBypasses:] {
+		next(entry, captureOffline)
+	}
 	select {
 	case <-done:
 	case <-time.After(5 * time.Second):
@@ -491,6 +502,15 @@ func TestFreshServerProcessingIdle(t *testing.T) {
 		server := NewServer("127.0.0.1:0", config.DataDir, nil, "", false, false, hosted, config, nil, false)
 		if processingStatus(t, server) {
 			t.Fatalf("fresh hosted=%v server reports processing without admitted work", hosted)
+		}
+	}
+}
+
+func TestAuxiliaryCaptureIsOnUnlessDisabled(t *testing.T) {
+	for value, want := range map[string]bool{"": true, "1": true, "true": true, "0": false} {
+		t.Setenv("NETCAP_AUXILIARY_CAPTURE", value)
+		if got := auxiliaryCaptureEnabled(); got != want {
+			t.Errorf("NETCAP_AUXILIARY_CAPTURE=%q: %v, want %v", value, got, want)
 		}
 	}
 }

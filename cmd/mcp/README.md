@@ -40,14 +40,16 @@ per-tool-call audit lines like:
 
 ### Auxiliary capture scheduling
 
-Set `NETCAP_AUXILIARY_CAPTURE=1` in the MCP server's environment to let
-owned uploads up to 64 KiB run alongside a large offline capture. One
-auxiliary helper runs at a time, with at most two starts per active large
-capture. Each auxiliary helper uses one capture worker and one stream worker
-and has a 60-second deadline. A timeout marks the analysis as failed.
+Owned uploads up to 64 KiB run in an auxiliary helper alongside a large
+offline capture, so a small upload does not wait for it. One auxiliary
+helper runs at a time, with at most eight starts per active large capture.
+Each auxiliary helper uses one capture worker and one stream worker and has a
+60-second deadline. A timeout marks the analysis as failed.
 
-The default is serial capture dispatch. The App Store build uses its
-in-process capture path and does not enable the auxiliary helper.
+Set `NETCAP_AUXILIARY_CAPTURE=0` for serial capture dispatch, for example on
+hosts without memory for a second capture process. Until v0.16.12 serial
+dispatch was the default. The App Store build uses its in-process capture path
+and does not run the auxiliary helper.
 
 ## Claude Desktop / Claude Code configuration
 

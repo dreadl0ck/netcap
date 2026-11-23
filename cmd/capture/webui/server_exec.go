@@ -45,7 +45,9 @@ import (
 const analysisErrorLogName = "analysis_error.log"
 const auxiliaryCaptureTimeout = time.Minute
 
-func auxiliaryCaptureEnabled() bool { return os.Getenv("NETCAP_AUXILIARY_CAPTURE") == "1" }
+// auxiliaryCaptureEnabled lets small owned uploads run in a helper beside a
+// large capture (MCP-20). It is on unless NETCAP_AUXILIARY_CAPTURE=0.
+func auxiliaryCaptureEnabled() bool { return os.Getenv("NETCAP_AUXILIARY_CAPTURE") != "0" }
 
 func inProcessResolverConfig() resolvers.Config {
 	return resolvers.Config{
