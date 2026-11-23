@@ -101,7 +101,7 @@ func simpleSessionTool(s *Server, name, desc, endpoint string, queryArgs []query
 			if gErr != nil {
 				var backend *BackendError
 				if errors.As(gErr, &backend) {
-					return errResult(fmt.Errorf("%s: %s", name, backend.diagnostic())), nil
+					return errResult(toolBackendError{tool: name, backend: backend}), nil
 				}
 				return errResult(fmt.Errorf("%s: %w", name, gErr)), nil
 			}

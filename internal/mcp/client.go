@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -33,9 +34,11 @@ const maxBackendResponseBytes = 16 << 20
 
 // BackendError preserves the HTTP status and bounded backend diagnostic body.
 type BackendError struct {
-	Method, Path    string
-	StatusCode      int
-	Body            json.RawMessage
+	Method, Path string
+	StatusCode   int
+	Body         json.RawMessage
+	// RetryAfter is the backend's Retry-After for 429 and 503 responses.
+	RetryAfter      time.Duration
 	diagnosticLimit int
 	readErr         error
 }
@@ -267,7 +270,19 @@ func (c *NetcapClient) GetRawContext(ctx context.Context, path string, query url
 func backendDiagnostic(req *http.Request, resp *http.Response) *BackendError {
 	const limit = 500
 	body, err := readAllLimited(resp.Body, limit+1)
-	return &BackendError{Method: req.Method, Path: req.URL.Path, StatusCode: resp.StatusCode, Body: body, diagnosticLimit: limit, readErr: err}
+	return &BackendError{Method: req.Method, Path: req.URL.Path, StatusCode: resp.StatusCode, Body: body, RetryAfter: backendRetryAfter(resp), diagnosticLimit: limit, readErr: err}
+}
+
+// backendRetryAfter reads Retry-After seconds from a busy response. Busy
+// responses without the header get one second.
+func backendRetryAfter(resp *http.Response) time.Duration {
+	if resp.StatusCode != http.StatusTooManyRequests && resp.StatusCode != http.StatusServiceUnavailable {
+		return 0
+	}
+	if seconds, err := strconv.Atoi(strings.TrimSpace(resp.Header.Get("Retry-After"))); err == nil && seconds > 0 && seconds <= 3600 {
+		return time.Duration(seconds) * time.Second
+	}
+	return time.Second
 }
 
 func (c *NetcapClient) do(req *http.Request) (json.RawMessage, error) {
@@ -283,7 +298,7 @@ func (c *NetcapClient) do(req *http.Request) (json.RawMessage, error) {
 	}
 	body, err := readBackendResponse(resp)
 	if resp.StatusCode >= 300 {
-		return nil, &BackendError{Method: req.Method, Path: req.URL.Path, StatusCode: resp.StatusCode, Body: body, readErr: err}
+		return nil, &BackendError{Method: req.Method, Path: req.URL.Path, StatusCode: resp.StatusCode, Body: body, RetryAfter: backendRetryAfter(resp), readErr: err}
 	}
 	if err != nil {
 		return nil, fmt.Errorf("reading response: %w", err)

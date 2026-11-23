@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/auditname"
 	"github.com/dreadl0ck/netcap/types"
@@ -116,7 +117,7 @@ func admitAuditQuery(ctx context.Context) (func(), error) {
 	case auditQuerySlots <- struct{}{}:
 		return func() { <-auditQuerySlots }, nil
 	default:
-		return nil, fmt.Errorf("audit queries are busy; retry after another query completes")
+		return nil, busyError{msg: "audit queries are busy; retry after another query completes", after: time.Second}
 	}
 }
 

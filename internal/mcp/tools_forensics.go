@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/dsoprea/go-exif/v2"
 	mcplib "github.com/mark3labs/mcp-go/mcp"
@@ -36,7 +37,7 @@ func admitFileAnalysis(ctx context.Context) (func(), error) {
 	case fileAnalysisSlots <- struct{}{}:
 		return func() { <-fileAnalysisSlots }, nil
 	default:
-		return nil, errors.New("file analysis is busy; retry after another analysis completes")
+		return nil, busyError{msg: "file analysis is busy; retry after another analysis completes", after: time.Second}
 	}
 }
 

@@ -47,7 +47,7 @@ func TestAuditQueryAdmissionRecoversAfterCancellation(t *testing.T) {
 			t.Fatal("both audit requests did not reach the backend")
 		}
 	}
-	if busy := query(t.Context(), "", false); !busy.IsError || !strings.Contains(contentText(busy), "audit queries are busy") {
+	if busy := query(t.Context(), "", false); !busy.IsError || !strings.Contains(contentText(busy), "audit queries are busy") || !strings.HasSuffix(contentText(busy), "; retry_after_ms=1000") {
 		t.Fatalf("saturated query returned %s", contentText(busy))
 	}
 	values, _ := s.handleGetAuditRecordValues(t.Context(), mcplib.CallToolRequest{Params: mcplib.CallToolParams{Arguments: map[string]any{

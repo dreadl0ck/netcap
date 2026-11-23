@@ -10,6 +10,7 @@ import gzip
 import hashlib
 import io
 import json
+import re
 import secrets
 import socket
 import struct
@@ -511,10 +512,18 @@ async def check_http_alerts(binary, capture, data_dir):
                 await process.wait()
 
 
+RETRY_HINT = re.compile(r"; retry_after_ms=(\d+)$")
+
+
 async def checked_call(client, tool, arguments):
     validate(arguments, tool.inputSchema)
-    async with asyncio.timeout(30):
-        result = await client.call_tool(tool.name, arguments)
+    for attempt in range(3):
+        async with asyncio.timeout(30):
+            result = await client.call_tool(tool.name, arguments)
+        hint = RETRY_HINT.search(result.content[0].text) if result.isError and result.content else None
+        if hint is None or attempt == 2:
+            break
+        await asyncio.sleep(min(int(hint.group(1)), 5000) / 1000)
     if result.isError:
         raise ValueError(result.content[0].text if result.content else "tool returned an error")
     if tool.outputSchema is None or not isinstance(result.structuredContent, dict):

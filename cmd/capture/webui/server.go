@@ -839,7 +839,7 @@ func (s *Server) Start() error {
 
 	s.httpServer = &http.Server{
 		Addr:         s.addr,
-		Handler:      s.localSecurityMiddleware(gzipMiddleware(s.corsMiddleware(chartCoverageMiddleware(s.captureSelectionMiddleware(mux))))),
+		Handler:      s.localSecurityMiddleware(gzipMiddleware(s.corsMiddleware(chartCoverageMiddleware(retryAfterMiddleware(s.captureSelectionMiddleware(mux)))))),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 5 * time.Minute,
 		IdleTimeout:  120 * time.Second,
