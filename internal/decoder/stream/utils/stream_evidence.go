@@ -3,12 +3,14 @@ package utils
 import (
 	"bufio"
 	"bytes"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -57,6 +59,10 @@ func SaveStreamEvidence(out, protocol string, conversation core.DataFragments, i
 }
 
 func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident string, first time.Time, communityID string) (string, error) {
+	return saveSourceEvidence(out, protocol, source, ident, first, communityID, randomStreamEvidenceName)
+}
+
+func saveSourceEvidence(out, protocol string, source core.FragmentSource, ident string, first time.Time, communityID string, name func() (string, error)) (string, error) {
 	if protocol != "TCP" && protocol != "UDP" {
 		return "", fmt.Errorf("unsupported stream evidence protocol")
 	}
@@ -71,7 +77,14 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 	if err != nil {
 		return "", err
 	}
-	defer os.RemoveAll(dir)
+	// After publishing, another writer may already own a new pending
+	// directory with the same name; only clean up our own.
+	published := false
+	defer func() {
+		if !published {
+			os.RemoveAll(dir)
+		}
+	}()
 	// Keep short conversations out of the scratch file, including gap spans.
 	var inline [512]byte
 	spanPrefix := inline[:0]
@@ -269,9 +282,49 @@ func SaveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 			return "", err
 		}
 	}
-	target := filepath.Join(root, "stream-"+strings.TrimPrefix(filepath.Base(dir), ".pending-"))
-	if err := os.Rename(dir, target); err != nil {
+	target, err := publishStreamEvidence(root, dir, name)
+	if err != nil {
 		return "", err
 	}
+	published = true
 	return target, nil
+}
+
+// randomStreamEvidenceName returns a 128-bit name. The MkdirTemp suffix it
+// replaces is 32-bit and unique only among live pending directories, so
+// published names collided in large captures (25% at 50k streams) and the
+// failed rename aborted the capture.
+func randomStreamEvidenceName() (string, error) {
+	var id [16]byte
+	if _, err := rand.Read(id[:]); err != nil {
+		return "", err
+	}
+	return "stream-" + hex.EncodeToString(id[:]), nil
+}
+
+// publishStreamEvidence renames a completed pending directory to a fresh
+// final name, drawing again if the name is taken.
+func publishStreamEvidence(root, pending string, name func() (string, error)) (string, error) {
+	const attempts = 16
+	for range attempts {
+		candidate, err := name()
+		if err != nil {
+			return "", err
+		}
+		if !strings.HasPrefix(candidate, "stream-") || len(candidate) == len("stream-") || filepath.Base(candidate) != candidate {
+			return "", fmt.Errorf("invalid stream evidence name %q", candidate)
+		}
+		target := filepath.Join(root, candidate)
+		err = os.Rename(pending, target)
+		if err == nil {
+			return target, nil
+		}
+		// Unix reports EEXIST or ENOTEMPTY; Windows reports access denied,
+		// so an existing target is the portable signal.
+		if _, statErr := os.Lstat(target); errors.Is(err, fs.ErrExist) || statErr == nil {
+			continue
+		}
+		return "", err
+	}
+	return "", fmt.Errorf("stream evidence name collided %d times", attempts)
 }
