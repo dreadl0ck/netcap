@@ -19,10 +19,15 @@ import (
 	sqlite3 "modernc.org/sqlite/lib"
 )
 
+// Rows up to about 16 KiB stay on a 64 KiB SQLite page; with 4 KiB pages any
+// row above 1,002 bytes, a typical alert, used a whole extra overflow page.
 const (
-	alertPageMemoryBytes = 1 << 20
-	alertPageDiskPages   = 131072
+	alertPageMemoryBytes   = 1 << 20
+	alertPageDiskPageBytes = 64 << 10
+	alertPageDiskBytes     = 512 << 20
 )
+
+const errAlertPageScratchFull = "temporary alert page storage is full; narrow the page with groupId or pageSearch"
 
 type alertPageSpill struct {
 	dir    string
@@ -49,7 +54,7 @@ func (s *alertPageSpill) close() {
 	}
 }
 
-func (s *alertPageSpill) open(ctx context.Context, diskPages int) error {
+func (s *alertPageSpill) open(ctx context.Context, diskBytes int) error {
 	dir, err := os.MkdirTemp("", "netcap-alert-page-")
 	if err != nil {
 		return err
@@ -70,8 +75,8 @@ func (s *alertPageSpill) open(ctx context.Context, diskPages int) error {
 	s.db = db
 	db.SetMaxOpenConns(1)
 	for _, query := range []string{
-		"PRAGMA page_size=4096",
-		fmt.Sprintf("PRAGMA max_page_count=%d", diskPages),
+		fmt.Sprintf("PRAGMA page_size=%d", alertPageDiskPageBytes),
+		fmt.Sprintf("PRAGMA max_page_count=%d", max(1, diskBytes/alertPageDiskPageBytes)),
 		"PRAGMA cache_size=-2048",
 		"PRAGMA mmap_size=0",
 		"PRAGMA journal_mode=OFF",
@@ -91,10 +96,10 @@ func (s *alertPageSpill) open(ctx context.Context, diskPages int) error {
 }
 
 func (s *Server) serveRawAlertPage(w http.ResponseWriter, r *http.Request, auditPath string) {
-	s.serveRawAlertPageWithBudget(w, r, auditPath, alertPageMemoryBytes, alertPageDiskPages)
+	s.serveRawAlertPageWithBudget(w, r, auditPath, alertPageMemoryBytes, alertPageDiskBytes)
 }
 
-func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Request, auditPath string, bufferBudget, diskPages int) {
+func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Request, auditPath string, bufferBudget, diskBytes int) {
 	options, err := parseCollectionPage(r)
 	if err != nil {
 		RespondJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
@@ -104,7 +109,7 @@ func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Requ
 	fail := func(err error) {
 		var sqliteErr *sqlite.Error
 		if ctx.Err() == nil && errors.As(err, &sqliteErr) && sqliteErr.Code() == sqlite3.SQLITE_FULL {
-			RespondJSON(w, http.StatusInsufficientStorage, map[string]string{"error": "temporary alert page storage is full"})
+			RespondJSON(w, http.StatusInsufficientStorage, map[string]string{"error": errAlertPageScratchFull})
 			return
 		}
 		s.respondAlertReadError(w, ctx, err)
@@ -115,21 +120,16 @@ func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Requ
 	q := r.URL.Query()
 	severity, rule, group := q.Get("severity"), q.Get("ruleName"), q.Get("groupId")
 	search := strings.ToLower(q.Get("pageSearch"))
-	remaining := alertStatsScanBytes
 	match := func(alert *types.Alert) bool {
 		return (severity == "" || strings.EqualFold(alert.Severity, severity)) &&
 			(rule == "" || strings.EqualFold(alert.RuleName, rule)) &&
 			(group == "" || generateGroupID(alert.RuleName, alert.Severity) == group)
 	}
-	_, err = s.scanFilteredAlertAudit(ctx, auditPath, alertStatsScanBytes, alertStatsScanRows, alertStatsFrameBytes, match, func(alert AlertResponse) error {
+	_, err = s.scanFilteredAlertAudit(ctx, auditPath, 0, alertStatsScanRows, alertStatsFrameBytes, match, func(alert AlertResponse) error {
 		raw, err := json.Marshal(alert)
 		if err != nil {
 			return err
 		}
-		if len(raw) > remaining {
-			return fmt.Errorf("%w: encoded alert scan exceeds %d bytes", errAlertPageSourceLimit, alertStatsScanBytes)
-		}
-		remaining -= len(raw)
 		if search != "" && !strings.Contains(strings.ToLower(string(raw)), search) {
 			return nil
 		}
@@ -140,7 +140,7 @@ func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Requ
 				bufferBudget -= charge
 				return nil
 			}
-			if err := spill.open(ctx, diskPages); err != nil {
+			if err := spill.open(ctx, diskBytes); err != nil {
 				return err
 			}
 			for _, body := range buffered {

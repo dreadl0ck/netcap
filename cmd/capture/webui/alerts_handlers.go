@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -336,9 +337,9 @@ func (s *Server) walkAlertAudit(ctx context.Context, filePath string, byteLimit,
 		file, info, openErr := artifactio.Open(filepath.Dir(filePath), filepath.Base(filePath))
 		if openErr != nil {
 			err = openErr
-		} else if info.Size() > int64(byteLimit) {
+		} else if byteLimit > 0 && info.Size() > int64(byteLimit) {
 			file.Close()
-			return fmt.Errorf("%w: stored audit exceeds %d bytes", errAlertPageSourceLimit, byteLimit)
+			return fmt.Errorf("%w: stored alert audit exceeds %d bytes", errAlertPageSourceLimit, byteLimit)
 		} else {
 			opened = info
 			reader, err = auditRecordReaderFromInput(file, io.NewSectionReader(file, 0, info.Size()), true, func(in io.Reader) io.Reader {
@@ -379,7 +380,12 @@ func (s *Server) walkAlertAudit(ctx context.Context, filePath string, byteLimit,
 		}
 	}
 
+	// byteLimit <= 0 lifts the decoded total; paged views stream every row and
+	// only the row count and per-alert frame size bound the scan.
 	remaining := byteLimit
+	if byteLimit <= 0 {
+		remaining = math.MaxInt
+	}
 	rows := 0
 
 	// Read all records
@@ -397,8 +403,14 @@ func (s *Server) walkAlertAudit(ctx context.Context, filePath string, byteLimit,
 			}
 			var raw []byte
 			raw, err = reader.delimitedReader.NextWithLimit(uint64(max(frameLimit, 1)))
-			if errors.Is(err, delimited.ErrRecordLimit) || (err == nil && (len(raw) > frameLimit || rows == rowLimit)) {
-				return fmt.Errorf("%w: %d records, %d decoded bytes or %d bytes per frame", errAlertPageSourceLimit, rowLimit, byteLimit, frameCap)
+			var tooLarge *delimited.RecordLimitError
+			switch {
+			case rows == rowLimit && (err == nil || errors.As(err, &tooLarge)):
+				return fmt.Errorf("%w: alert audit exceeds %d records", errAlertPageSourceLimit, rowLimit)
+			case errors.As(err, &tooLarge) && tooLarge.Size > uint64(frameCap) || err == nil && len(raw) > frameCap:
+				return fmt.Errorf("%w: an alert record exceeds %d bytes", errAlertPageSourceLimit, frameCap)
+			case errors.As(err, &tooLarge) || err == nil && len(raw) > frameLimit:
+				return fmt.Errorf("%w: decoded alert audit exceeds %d bytes", errAlertPageSourceLimit, byteLimit)
 			}
 			if err == nil {
 				rows++
@@ -434,7 +446,6 @@ func (s *Server) walkAlertAudit(ctx context.Context, filePath string, byteLimit,
 }
 
 const (
-	alertStatsScanBytes      = 256 << 20
 	alertStatsScanRows       = 1 << 20
 	alertStatsFrameBytes     = 1 << 20
 	alertStatsDimensionBytes = 512 << 10
@@ -472,7 +483,7 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 	alertGroups := make(map[groupKey]struct{})
 	recent := make([]*types.Alert, 0, 10)
 	var resolved *ResolvedAlertsStore
-	err := s.walkAlertAudit(r.Context(), alertsFile, alertStatsScanBytes, alertStatsScanRows, alertStatsFrameBytes, func(alert *types.Alert, store *ResolvedAlertsStore) error {
+	err := s.walkAlertAudit(r.Context(), alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, func(alert *types.Alert, store *ResolvedAlertsStore) error {
 		resolved = store
 		key := groupKey{alert.RuleName, alert.Severity}
 		if _, ok := alertGroups[key]; !ok {
@@ -651,7 +662,7 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		acc := newAlertGroups(maxCollectionPageScanBytes)
-		_, err := s.scanAlertAudit(r.Context(), alertsFile, alertStatsScanBytes, alertStatsScanRows, alertStatsFrameBytes, func(alert AlertResponse) error {
+		_, err := s.scanAlertAudit(r.Context(), alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, func(alert AlertResponse) error {
 			return acc.add(alert, severityFilter, ruleNameFilter)
 		})
 		if err != nil {

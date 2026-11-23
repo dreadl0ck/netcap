@@ -425,7 +425,7 @@ func TestAlertAuditGrowthRejectsSnapshot(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := &Server{outDir: dir}
-	_, err = s.scanAlertAudit(t.Context(), path, alertStatsScanBytes, alertStatsScanRows, alertStatsFrameBytes, func(AlertResponse) error {
+	_, err = s.scanAlertAudit(t.Context(), path, 0, alertStatsScanRows, alertStatsFrameBytes, func(AlertResponse) error {
 		return os.Truncate(path, info.Size()+1)
 	})
 	if !errors.Is(err, errAlertAuditChanged) {
@@ -499,7 +499,7 @@ func TestRawAlertPageSpillPreservesDuplicateContinuation(t *testing.T) {
 		}
 	}}
 	s.handleAlerts(memory, httptest.NewRequest(http.MethodGet, url, nil))
-	s.serveRawAlertPageWithBudget(spilled, httptest.NewRequest(http.MethodGet, url, nil), path, 0, alertPageDiskPages)
+	s.serveRawAlertPageWithBudget(spilled, httptest.NewRequest(http.MethodGet, url, nil), path, 0, alertPageDiskBytes)
 	if memory.Code != http.StatusOK || spilled.Code != http.StatusOK || memory.Body.String() != spilled.Body.String() {
 		t.Fatalf("continuation differs: memory=%d %s; spill=%d %s", memory.Code, memory.Body, spilled.Code, spilled.Body)
 	}
@@ -517,14 +517,14 @@ func TestRawAlertPageRejectsFullScratchWithoutPartialResults(t *testing.T) {
 	s := &Server{}
 	const query = "/api/alerts?mcpPage=true&pageLimit=1"
 	w := httptest.NewRecorder()
-	s.serveRawAlertPageWithBudget(w, httptest.NewRequest(http.MethodGet, query, nil), path, 0, 8)
+	s.serveRawAlertPageWithBudget(w, httptest.NewRequest(http.MethodGet, query, nil), path, 0, 2*alertPageDiskPageBytes)
 	var body map[string]json.RawMessage
 	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil || w.Code != http.StatusInsufficientStorage ||
-		len(body) != 1 || string(body["error"]) != `"temporary alert page storage is full"` {
+		len(body) != 1 || string(body["error"]) != `"`+errAlertPageScratchFull+`"` {
 		t.Fatalf("unexpected scratch exhaustion response: %d %s (%v)", w.Code, w.Body, err)
 	}
 	retry := httptest.NewRecorder()
-	s.serveRawAlertPageWithBudget(retry, httptest.NewRequest(http.MethodGet, query, nil), path, 0, alertPageDiskPages)
+	s.serveRawAlertPageWithBudget(retry, httptest.NewRequest(http.MethodGet, query, nil), path, 0, alertPageDiskBytes)
 	if retry.Code != http.StatusOK || !strings.Contains(retry.Body.String(), `"totalCount":2`) {
 		t.Fatalf("retry failed: %d %s", retry.Code, retry.Body)
 	}
