@@ -4772,5 +4772,9 @@
   "m_4c987261587fb800fc56": "Six interface languages",
   "m_0fbb0874febf9f12c749": "Use NETCAP in English, German, Dutch, French, Spanish or Simplified Chinese. Change language without losing your current analysis or unsaved edits.",
   "m_bf253dbc102c273574e1": "Reliable capture file opening",
-  "m_b9d24c36ce20639e0845": "Open capture files with the native macOS file chooser, with clear feedback for accepted and rejected files."
+  "m_b9d24c36ce20639e0845": "Open capture files with the native macOS file chooser, with clear feedback for accepted and rejected files.",
+  "m_2f276e4068f0375699dd": "Welcome to the Netcap demo",
+  "m_21c4f89ee68f43187561": "This is a live demo of the open-source Netcap Web UI. Some interesting example PCAPs are already loaded and ready to explore.",
+  "m_09938338a7467d920a86": "Imprint",
+  "m_8516a09d344c78e76f0a": "Privacy"
 }

@@ -31,6 +31,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
+import MuiLink from '@mui/material/Link';
 import GeoIPAttribution from './GeoIPAttribution';
 import MenuIcon from '@mui/icons-material/Menu';
 import ExpandLess from '@mui/icons-material/ExpandLess';
@@ -875,6 +876,26 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
               </IconButton>
             </Box>
           </Box>
+          {status?.isServiceMode && (
+            <Box sx={{ display: 'flex', gap: 1.5, mt: 0.5 }}>
+              {[
+                { href: 'https://amsterdam-technologies.com/imprint', label: t('ui:m_09938338a7467d920a86') },
+                { href: 'https://amsterdam-technologies.com/privacy', label: t('ui:m_8516a09d344c78e76f0a') },
+              ].map(link => (
+                <MuiLink
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="caption"
+                  underline="hover"
+                  sx={ICON_BUTTON_SX}
+                >
+                  {link.label}
+                </MuiLink>
+              ))}
+            </Box>
+          )}
         </Box>
       )}
     </Box>

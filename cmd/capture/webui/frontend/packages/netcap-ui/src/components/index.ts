@@ -67,3 +67,6 @@ export type { StatBoxProps, StatBoxGridProps } from './StatBox';
 // One-time database download prompt
 export { default as DatabaseBootstrap } from './DatabaseBootstrap';
 export type { DatabaseBootstrapProps } from './DatabaseBootstrap';
+
+// First-visit notice for the hosted service-mode demo
+export { default as DemoNotice, DEMO_NOTICE_STORAGE_KEY } from './DemoNotice';

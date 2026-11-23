@@ -34,8 +34,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import ShieldIcon from '@mui/icons-material/Shield';
 import { ReactRouterNetcapProvider } from '@dreadl0ck/netcap-ui/adapters/react-router';
 import { api, getBackendUrl } from '@dreadl0ck/netcap-ui/lib';
-import { ConnectionOverlay, DatabaseBootstrap } from '@dreadl0ck/netcap-ui/components';
-import { mutate as globalMutate } from 'swr';
+import { ConnectionOverlay, DatabaseBootstrap, DemoNotice } from '@dreadl0ck/netcap-ui/components';
+import useSWR, { mutate as globalMutate } from 'swr';
 import { AppRoutes } from './routes';
 import { netcapTheme } from './theme';
 import { chineseFontFallback, initializeI18n, message, renderText, resolveLocale, translate, useLocale, useTranslate, type Locale, type MessageText } from '@dreadl0ck/netcap-ui/i18n';
@@ -64,8 +64,13 @@ function applyServiceDocument(locale: Locale) {
 }
 applyServiceDocument(initialLocale);
 
+// Host interfaces and packet injection are local-mode only; the backend answers 403 in service mode.
+const LOCAL_ONLY_PATHS = new Set(['/interfaces', '/inject']);
+
 function useServiceNavigationItems() {
   const t = useTranslate();
+  const { data: status } = useSWR('status', () => api.getStatus());
+  const isServiceMode = status?.isServiceMode === true;
   return React.useMemo(() => [
   {
     path: '/interfaces',
@@ -109,7 +114,7 @@ function useServiceNavigationItems() {
     placement: 'system-before-bpf' as const,
     description: t('Inspect read-only protocol signatures, source evidence and capture coverage.'),
   },
-  ], [t]);
+  ].filter(item => !isServiceMode || !LOCAL_ONLY_PATHS.has(item.path)), [t, isServiceMode]);
 }
 
 // Valid PCAP file extensions
@@ -378,6 +383,7 @@ function AppContent() {
       />
       {/* Offers the one-time database download when a required DB is absent. */}
       <DatabaseBootstrap />
+      <DemoNotice />
     </>
   );
 }

@@ -337,8 +337,21 @@ func (s *Server) saveInjectionRulesConfig(config *injection.Config) error {
 	return nil
 }
 
+// rejectInjectionWriteInServiceMode keeps the shared, unauthenticated service
+// instance read-only for packet injection.
+func (s *Server) rejectInjectionWriteInServiceMode(w http.ResponseWriter) bool {
+	if !s.isServiceMode {
+		return false
+	}
+	http.Error(w, "packet injection changes are local-mode only", http.StatusForbidden)
+	return true
+}
+
 // handleInjectionRules handles GET (list all rules) and POST (create new rule) requests
 func (s *Server) handleInjectionRules(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && s.rejectInjectionWriteInServiceMode(w) {
+		return
+	}
 	switch r.Method {
 	case http.MethodGet:
 		s.handleGetInjectionRules(w, r)
@@ -526,6 +539,9 @@ func (s *Server) handleInjectionRule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Method != http.MethodGet && s.rejectInjectionWriteInServiceMode(w) {
+		return
+	}
 	switch r.Method {
 	case http.MethodGet:
 		s.handleGetInjectionRule(w, r, ruleID)
@@ -849,6 +865,9 @@ func (s *Server) handleInjectionEvents(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleInjectionEventsManage(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if s.rejectInjectionWriteInServiceMode(w) {
 		return
 	}
 

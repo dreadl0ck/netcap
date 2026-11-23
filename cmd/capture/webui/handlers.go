@@ -958,6 +958,11 @@ func (s *Server) handleNetworkInterfaces(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	// Interface names, MACs and addresses describe the host, not the uploaded captures.
+	if s.isServiceMode {
+		http.Error(w, "host interfaces are local-mode only", http.StatusForbidden)
+		return
+	}
 
 	result, err := systemNetworkInterfaces()
 	if err != nil {
