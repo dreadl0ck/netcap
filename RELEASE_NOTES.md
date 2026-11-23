@@ -12,10 +12,12 @@
 | V1612-2 evidence | Stream evidence directories get 128-bit names; a name collision no longer aborts large captures. |
 | Audit names | VRRP captures no longer fail analysis. Readers accept `VRRP.ncap.gz`, `ApplePktap.ncap.gz` and the v0.16.11 `GTPv1U.ncap.gz`; writers emit `GTP.ncap.gz`. `-y` re-runs into an existing output directory work again. |
 | MCP retries | Busy responses carry `Retry-After`; MCP tool errors end in `; retry_after_ms=N`. |
+| Partial captures | WebUI and MCP analyses complete again when the capture input is partial (exit 2) or only some packets use an unsupported link type (exit 3); the session reports the reason as `coverage`. v0.16.11 and v0.16.12 failed them. |
+| macOS performance | Per-stream evidence uses `fsync` instead of `F_FULLFSYNC`: an 18,000-stream capture drops from 835 s to under a minute. |
 
 The [qualification ledger](internal/collector/testdata/recheck-v0166.json)
 (`recheckV01612`) records the tests and replays. `make recheck-v01612` is the
-regression gate. The original evaluator sessions, the 200,000-stream capture and
+regression gate; `make demo-pcaps` checks captures through the try-demo pipeline. The original evaluator sessions, the 200,000-stream capture and
 the `download-fast` performance work (V1611-3) remain open.
 
 Full changes: https://github.com/dreadl0ck/netcap/compare/v0.16.12...v0.16.13
