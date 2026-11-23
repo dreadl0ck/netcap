@@ -122,6 +122,12 @@ class RecoveryTests(unittest.TestCase):
         with self.assertRaises(Exception):
             self.recover()
 
+    def test_sqlite_cap_matches_client_release_limit(self):
+        go = (Path(__file__).parent.parent / "internal/dbs/v3_archive.go").read_text()
+        self.assertIn("const maxReleaseBytes int64 = 4 << 30", go)
+        self.assertEqual(previous.MAX_SQLITE_BYTES, 4 << 30)
+        self.assertGreater(previous.MAX_SQLITE_BYTES, 1_075_396_608)  # published 2026-11-21
+
     def test_root_matches_released_go_pin(self):
         source = Path(__file__).resolve().parents[1] / "internal/dbs/signing_root.go"
         self.assertIn('"' + previous.ROOT + '"', source.read_text())

@@ -19,6 +19,9 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 ROOT = "8a6d1aaec22ae69f41430d4109b3293b10f98113df87a0989fa609ffb623d7db"
 
 
+# Matches maxReleaseBytes in internal/dbs/v3_archive.go; NVD passed 1 GiB on 2026-11-21.
+MAX_SQLITE_BYTES = 4 << 30
+
 def unique(pairs):
     result = {}
     for key, value in pairs:
@@ -98,7 +101,7 @@ def recover(root, bootstrap=None, public_root=ROOT):
                 for member in tar:
                     if member.name != "netcap.sqlite":
                         continue
-                    if found or not member.isfile() or member.size != expected["size"] or member.size > 1 << 30:
+                    if found or not member.isfile() or member.size != expected["size"] or member.size > MAX_SQLITE_BYTES:
                         raise ValueError("invalid SQLite archive member")
                     found = True
                     h = hashlib.sha256()
