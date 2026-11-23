@@ -196,3 +196,50 @@ func fullyPopulatedRule(t *testing.T) *Rule {
 	}
 	return rule
 }
+
+// Capture workers deliver records out of timestamp order. A window anchored
+// at the current record ignored newer values, so a CLI port scan never fired.
+func TestDistinctAndGroupedCountsTolerateReordering(t *testing.T) {
+	var alerts []*types.Alert
+	config := &Config{Rules: []*Rule{
+		{Name: "scan", Type: "TCP", Expression: "SYN", Severity: "info", Enabled: true, DistinctField: "DstPort", DistinctThreshold: 100, ThresholdWindow: 60},
+		{Name: "beacon", Type: "DNS", Expression: "true", Severity: "low", Enabled: true, Threshold: 50, ThresholdWindow: 600, GroupBy: []string{"SrcIP", "Questions.Name"}},
+	}}
+	e, err := NewEngineFromConfig(config, alertWriterFunc(func(a *types.Alert) error { alerts = append(alerts, a); return nil }))
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := int64(1_700_000_000) * int64(time.Second)
+	// Newest first: every later record is older than everything seen so far.
+	for i := int32(99); i >= 0; i-- {
+		if _, err := e.Evaluate(&types.TCP{Timestamp: base + int64(i)*int64(time.Millisecond), SrcIP: "10.0.0.5", DstPort: i + 1, SYN: true}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 49; i >= 0; i-- {
+		if _, err := e.Evaluate(dnsQueryRecord(int64(i), "10.0.0.5", "c2.example.org")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	names := map[string]int{}
+	for _, a := range alerts {
+		names[a.RuleName]++
+	}
+	if names["scan"] != 1 || names["beacon"] != 1 {
+		t.Fatalf("alerts %v", names)
+	}
+	// A record older than the window behind the newest one is not counted.
+	e2, _ := NewEngineFromConfig(&Config{Rules: config.Rules[1:]}, alertWriterFunc(func(a *types.Alert) error { alerts = append(alerts, a); return nil }))
+	before := len(alerts)
+	if _, err := e2.Evaluate(dnsQueryRecord(10_000, "10.0.0.5", "c2.example.org")); err != nil {
+		t.Fatal(err)
+	}
+	for i := range 60 {
+		if _, err := e2.Evaluate(dnsQueryRecord(int64(i), "10.0.0.5", "c2.example.org")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(alerts) != before {
+		t.Fatal("matches outside the window counted")
+	}
+}

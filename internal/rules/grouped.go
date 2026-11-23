@@ -2,6 +2,7 @@ package rules
 
 import (
 	"container/list"
+	"slices"
 	"sort"
 	"time"
 
@@ -76,17 +77,13 @@ func (e *Engine) groupedThreshold(rule *Rule, record types.AuditRecord) bool {
 		g.lru.MoveToBack(count.elem)
 	}
 
-	// Drop matches after now (out-of-order input) and outside the window.
-	matches := count.matches
-	before := len(matches)
-	if n := len(matches); n > 0 && matches[n-1] > now {
-		matches = matches[:sort.Search(n, func(i int) bool { return matches[i] > now })]
-	}
-	if len(matches) > 0 && uint64(now)-uint64(matches[0]) > uint64(window) {
-		first := sort.Search(len(matches), func(i int) bool { return uint64(now)-uint64(matches[i]) <= uint64(window) })
-		matches = matches[:copy(matches, matches[first:])]
-	}
-	count.matches = append(matches, now)
+	// Insert in time order; the window ends at the newest match because
+	// capture workers deliver records out of timestamp order.
+	before := len(count.matches)
+	matches := slices.Insert(count.matches, sort.Search(before, func(i int) bool { return count.matches[i] > now }), now)
+	latest := matches[len(matches)-1]
+	first := sort.Search(len(matches), func(i int) bool { return uint64(latest)-uint64(matches[i]) <= uint64(window) })
+	count.matches = matches[:copy(matches, matches[first:])]
 	g.entries += len(count.matches) - before
 
 	if len(count.matches) >= rule.Threshold {

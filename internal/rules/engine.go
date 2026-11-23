@@ -643,15 +643,19 @@ func (e *Engine) checkDistinctThreshold(rule *Rule, record types.AuditRecord) bo
 	tracker.touch(src)
 
 	// Record/refresh this distinct value's last-seen time.
-	values[value] = now
+	if ts, ok := values[value]; !ok || now > ts {
+		values[value] = now
+	}
 
-	// Prune values outside the window and count what remains.
+	// The window ends at the newest observation, not at this record: capture
+	// workers deliver records out of timestamp order.
+	latest := now
+	for _, ts := range values {
+		latest = max(latest, ts)
+	}
 	count := 0
 	for v, ts := range values {
-		if ts > now {
-			continue
-		}
-		if uint64(now)-uint64(ts) > uint64(windowNanos) {
+		if uint64(latest)-uint64(ts) > uint64(windowNanos) {
 			delete(values, v)
 			continue
 		}
