@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/internal/auditname"
 	"github.com/dreadl0ck/netcap/types"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
@@ -320,6 +321,9 @@ func validAuditTypeName(s string) bool {
 
 func canonicalAuditTypeName(name string) (string, error) {
 	name = strings.TrimSpace(name)
+	if typ, ok := auditname.Alias(name); ok {
+		name = typ
+	}
 	if validAuditTypeName(name) {
 		for fullName := range types.Type_value {
 			canonical := strings.TrimPrefix(fullName, "NC_")

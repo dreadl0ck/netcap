@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/artifactio"
+	"github.com/dreadl0ck/netcap/internal/auditname"
 	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
@@ -52,14 +53,18 @@ func scanRuleAudit(dir, auditType string, stop, shutdown <-chan struct{}, visit 
 	if !ok {
 		return 0, fmt.Errorf("unknown audit type: %s", auditType)
 	}
-	compressed := true
-	name := auditType + ".ncap.gz"
-	f, opened, err := artifactio.Open(dir, name)
-	if errors.Is(err, os.ErrNotExist) {
-		compressed = false
-		name = auditType + ".ncap"
-		f, opened, err = artifactio.Open(dir, name)
+	var (
+		name   string
+		f      *os.File
+		opened os.FileInfo
+		err    = error(os.ErrNotExist)
+	)
+	for _, name = range auditname.Candidates(auditType) {
+		if f, opened, err = artifactio.Open(dir, name); !errors.Is(err, os.ErrNotExist) {
+			break
+		}
 	}
+	compressed := strings.HasSuffix(name, ".gz")
 	if errors.Is(err, os.ErrNotExist) {
 		return 0, nil
 	}

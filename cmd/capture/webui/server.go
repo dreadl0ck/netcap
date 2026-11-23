@@ -42,6 +42,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/auditname"
 	behaviorcommand "github.com/dreadl0ck/netcap/internal/behavior/command"
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
@@ -1713,10 +1714,8 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) (resultErr error) {
 			return fmt.Errorf("unknown audit type: %s", typeStr)
 		}
 		// Skip absent tracks but leave entry validation to the confined reader.
-		if _, err := os.Lstat(filepath.Join(job.OutputDir, typeStr+".ncap.gz")); os.IsNotExist(err) {
-			if _, err := os.Lstat(filepath.Join(job.OutputDir, typeStr+".ncap")); os.IsNotExist(err) {
-				continue
-			}
+		if _, err := auditname.Resolve(job.OutputDir, typeStr); errors.Is(err, os.ErrNotExist) {
+			continue
 		}
 
 		// Create a temporary config with rules for this type

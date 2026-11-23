@@ -129,20 +129,7 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 		wg.Add(1)
 
 		go func(dec *GoPacketDecoder) {
-			filename := dec.Layer.String()
-
-			// handle inconsistencies in gopacket naming convention
-			// TODO: fix in gopacket and refactor the packet decoders to map to a single decoder instead of an array again
-			switch dec.Type {
-			case types.Type_NC_OSPFv2:
-				filename = "OSPFv2"
-			case types.Type_NC_OSPFv3:
-				filename = "OSPFv3"
-			case types.Type_NC_ENIP:
-				filename = "ENIP"
-			case types.Type_NC_GTP:
-				filename = "GTP"
-			}
+			filename := dec.AuditFileBase()
 
 			// hookup writer - use shared writer to handle the case where
 			// the same decoder type is also registered as a stream decoder
@@ -200,6 +187,22 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 	decoderLog.Info("initialized gopacket decoders", zap.Int("total", len(decoders)))
 
 	return decoders, nil
+}
+
+// AuditFileBase is the audit file name, without suffix, this decoder writes.
+// Names that differ from the record type must be listed in internal/auditname.
+func (dec *GoPacketDecoder) AuditFileBase() string {
+	switch dec.Type {
+	case types.Type_NC_OSPFv2:
+		return "OSPFv2"
+	case types.Type_NC_OSPFv3:
+		return "OSPFv3"
+	case types.Type_NC_ENIP:
+		return "ENIP"
+	case types.Type_NC_GTP:
+		return "GTP"
+	}
+	return dec.Layer.String()
 }
 
 // newGoPacketDecoder returns a new GoPacketDecoder instance and registers it.

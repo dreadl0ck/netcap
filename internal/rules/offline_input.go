@@ -21,6 +21,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/netcap/internal/auditname"
 	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/types"
@@ -255,7 +256,7 @@ func offlineValidValue(v reflect.Value) bool {
 func offlineReadType(ctx context.Context, root *os.Root, typ string, limits OfflineLimits, remaining *int64, total *int64) ([]offlineRow, *offlineSnapshot, OfflineTypeStats, error) {
 	stats := OfflineTypeStats{Type: typ}
 	var name string
-	for _, candidate := range []string{typ + ".ncap", typ + ".ncap.gz"} {
+	for _, candidate := range auditname.Candidates(typ) {
 		_, err := root.Lstat(candidate)
 		if err == nil {
 			if name != "" {

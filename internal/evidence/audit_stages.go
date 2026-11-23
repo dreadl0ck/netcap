@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/netcap/internal/artifactio"
+	"github.com/dreadl0ck/netcap/internal/auditname"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -45,15 +46,8 @@ type AuditStages struct {
 func validAuditType(name string) bool { _, ok := types.Type_value["NC_"+name]; return ok && name != "" }
 
 func validAuditFile(name, recordType string) bool {
-	if recordType == "VRRPv2" && strings.HasPrefix(name, "VRRP.") {
-		recordType = "VRRP"
-	}
-	for _, suffix := range []string{".ncap", ".ncap.gz", ".json", ".json.gz", ".csv", ".csv.gz"} {
-		if name == recordType+suffix {
-			return true
-		}
-	}
-	return false
+	_, typ, ok := auditname.Parse(name)
+	return ok && typ == recordType
 }
 
 func auditStageGeneration(stages AuditStages) (string, error) {
@@ -309,28 +303,16 @@ func readAuditStageContext(ctx context.Context, directory, runID, recordType, ge
 			if candidate.Records > 0 && len(candidate.Files) == 0 {
 				return stage, snapshot, fmt.Errorf("sealed stage lacks output files")
 			}
-			for _, suffix := range []string{".ncap", ".ncap.gz", ".json", ".json.gz", ".csv", ".csv.gz"} {
-				name := recordType + suffix
-				found := false
-				for _, file := range candidate.Files {
-					found = found || file.Name == name
-				}
-				if !found {
-					if _, err := root.Lstat(name); !os.IsNotExist(err) {
-						return stage, snapshot, fmt.Errorf("unsealed audit file exists for requested type")
-					}
-				}
-			}
-			if recordType == "VRRPv2" {
-				for _, suffix := range []string{".ncap", ".ncap.gz"} {
-					name := "VRRP" + suffix
+			for _, base := range auditname.FileBases(recordType) {
+				for _, suffix := range []string{".ncap", ".ncap.gz", ".json", ".json.gz", ".csv", ".csv.gz"} {
+					name := base + suffix
 					found := false
 					for _, file := range candidate.Files {
 						found = found || file.Name == name
 					}
 					if !found {
 						if _, err := root.Lstat(name); !os.IsNotExist(err) {
-							return stage, snapshot, fmt.Errorf("unsealed audit alias exists")
+							return stage, snapshot, fmt.Errorf("unsealed audit file exists for requested type")
 						}
 					}
 				}

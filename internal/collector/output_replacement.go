@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/auditname"
 	"github.com/dreadl0ck/netcap/internal/utils"
-	"github.com/dreadl0ck/netcap/types"
 )
 
 type outputReplacement struct {
@@ -24,10 +24,12 @@ func (tx *outputReplacement) owns(name string) bool {
 }
 
 func managedCaptureOutput(name string) bool {
+	if _, _, known := auditname.Parse(name); known && !strings.HasSuffix(name, ".json") {
+		return true
+	}
 	for _, suffix := range []string{".ncap", ".ncap.gz", ".csv", ".csv.gz", ".json.gz"} {
 		if strings.HasSuffix(name, suffix) {
-			_, known := types.Type_value["NC_"+strings.TrimSuffix(name, suffix)]
-			return known
+			return false
 		}
 	}
 	switch name {

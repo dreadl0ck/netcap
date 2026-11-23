@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/netcap/internal/artifactio"
+	"github.com/dreadl0ck/netcap/internal/auditname"
 	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/netio"
@@ -153,12 +154,12 @@ func Scan(ctx context.Context, dir string, binding Binding, recordType string, v
 	return digest, err
 }
 
-func openPreferredAudit(dir, recordType string) (string, *os.File, os.FileInfo, error) {
-	name := recordType + ".ncap.gz"
-	f, info, err := artifactio.Open(dir, name)
-	if errors.Is(err, os.ErrNotExist) {
-		name = recordType + ".ncap"
-		f, info, err = artifactio.Open(dir, name)
+func openPreferredAudit(dir, recordType string) (name string, f *os.File, info os.FileInfo, err error) {
+	err = os.ErrNotExist
+	for _, name = range auditname.Candidates(recordType) {
+		if f, info, err = artifactio.Open(dir, name); !errors.Is(err, os.ErrNotExist) {
+			break
+		}
 	}
 	return name, f, info, err
 }

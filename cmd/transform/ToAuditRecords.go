@@ -27,6 +27,7 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
+	"github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/utils"
@@ -157,12 +158,23 @@ func toAuditRecords() {
 	writeAuditRecords(trx, outDir)
 }
 
+// goPacketEntityNames maps audit file bases to the Maltego entity names, which
+// follow gopacket layer names (GTP.ncap.gz holds netcap.GTPv1U entities).
+func goPacketEntityNames() map[string]string {
+	names := map[string]string{}
+	packet.ApplyActionToGoPacketDecoders(func(e *packet.GoPacketDecoder) {
+		names[e.AuditFileBase()] = strings.ReplaceAll(e.Layer.String(), "/", "")
+	})
+	return names
+}
+
 func writeAuditRecords(trx *maltego.Transform, outDir string) {
 	files, err := ioutil.ReadDir(outDir)
 	if err != nil {
 		maltego.Die(err.Error(), "failed to read directory")
 	}
 
+	entities := goPacketEntityNames()
 	for _, f := range files {
 		if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) {
 			continue
@@ -170,6 +182,9 @@ func writeAuditRecords(trx *maltego.Transform, outDir string) {
 
 		path := filepath.Join(outDir, f.Name())
 		name := strings.TrimSuffix(f.Name(), defaults.FileExtensionCompressed)
+		if entity, ok := entities[name]; ok {
+			name = entity
+		}
 
 		if f.IsDir() {
 			log.Println("not a file: ", err)
@@ -187,7 +202,7 @@ func writeAuditRecords(trx *maltego.Transform, outDir string) {
 
 		ent := addEntityWithPath(trx, "netcap."+name+"AuditRecords", utils.Pluralize(name), path)
 
-		ent.AddProperty("description", "Description", maltego.Strict, name+defaults.FileExtensionCompressed)
+		ent.AddProperty("description", "Description", maltego.Strict, f.Name())
 		ent.SetLinkLabel(strconv.Itoa(int(numRecords)))
 
 		// add notes for specific audit records here

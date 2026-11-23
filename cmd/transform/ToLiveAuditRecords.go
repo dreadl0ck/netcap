@@ -54,30 +54,33 @@ func toLiveAuditRecords() {
 }
 
 func writeLiveAuditRecords(outDir string) {
-	var allDecoders []string
+	// Entity names follow the decoder name; file names follow the writer.
+	type liveDecoder struct{ name, file string }
+	var allDecoders []liveDecoder
 
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
 	packet.ApplyActionToPacketDecoders(func(d packet.DecoderAPI) {
-		allDecoders = append(allDecoders, d.GetName())
+		allDecoders = append(allDecoders, liveDecoder{d.GetName(), d.GetName()})
 	})
 
 	packet.ApplyActionToGoPacketDecoders(func(e *packet.GoPacketDecoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
-		allDecoders = append(allDecoders, name)
+		allDecoders = append(allDecoders, liveDecoder{name, e.AuditFileBase()})
 	})
 
 	// generate maltego transform
 	trx := &maltego.Transform{}
-	for _, name := range allDecoders {
-		path := filepath.Join(outDir, name+defaults.FileExtension)
+	for _, dec := range allDecoders {
+		name := dec.name
+		path := filepath.Join(outDir, dec.file+defaults.FileExtension)
 
 		// stat generated profiles
 		stat, err := os.Stat(path)
 		if err != nil {
 			log.Println("invalid path:", err, "trying", defaults.FileExtensionCompressed, "extension")
 
-			path = filepath.Join(outDir, name+defaults.FileExtensionCompressed)
+			path = filepath.Join(outDir, dec.file+defaults.FileExtensionCompressed)
 			stat, err = os.Stat(path)
 			if err != nil {
 				log.Println("invalid path:", err)
@@ -106,7 +109,7 @@ func writeLiveAuditRecords(outDir string) {
 		}
 
 		ent := addEntityWithPath(trx, "netcap."+name+"AuditRecords", utils.Pluralize(name), path)
-		ent.AddProperty("description", "Description", maltego.Loose, name+defaults.FileExtension)
+		ent.AddProperty("description", "Description", maltego.Loose, filepath.Base(path))
 		ent.SetLinkLabel(strconv.Itoa(int(numRecords)))
 
 		// add notes for specific audit records here

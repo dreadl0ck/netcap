@@ -23,6 +23,7 @@ import (
 
 	"github.com/expr-lang/expr"
 
+	"github.com/dreadl0ck/netcap/internal/auditname"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -449,7 +450,7 @@ func EvaluateOffline(ctx context.Context, request OfflineRequest) (*OfflineRepor
 	}
 	// A previously absent type appearing during evaluation changes the input set.
 	for _, t := range report.Types {
-		for _, name := range []string{t.Type + ".ncap", t.Type + ".ncap.gz"} {
+		for _, name := range auditname.Candidates(t.Type) {
 			exists := false
 			for _, s := range snapshots {
 				if s.Name == name {

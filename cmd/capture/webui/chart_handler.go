@@ -35,7 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -52,7 +51,7 @@ func HandleChartData(outDir string) http.HandlerFunc {
 		}
 
 		// Parse query parameters
-		auditType := r.URL.Query().Get("type")
+		auditType := canonicalAuditType(r.URL.Query().Get("type"))
 		field := r.URL.Query().Get("field")
 		chartType := r.URL.Query().Get("chartType")
 		interval := r.URL.Query().Get("interval")
@@ -115,14 +114,14 @@ func HandleChartFields(outDir string) http.HandlerFunc {
 			return
 		}
 
-		auditType := r.URL.Query().Get("type")
+		auditType := canonicalAuditType(r.URL.Query().Get("type"))
 		if auditType == "" {
 			chartHTTPError(w, r, "Missing required parameter: type", http.StatusBadRequest)
 			return
 		}
 
 		// Construct file path
-		filePath := filepath.Join(outDir, auditType+defaults.FileExtension+".gz")
+		filePath := auditFilePath(outDir, auditType)
 
 		// Read up to 100 records to get field information
 		reader, err := NewAuditRecordReader(filePath)
@@ -358,7 +357,7 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse query parameters
-	auditType := r.URL.Query().Get("type")
+	auditType := canonicalAuditType(r.URL.Query().Get("type"))
 	field := r.URL.Query().Get("field")
 	chartType := r.URL.Query().Get("chartType") // line, bar, area, scatter, pie
 	interval := r.URL.Query().Get("interval")   // e.g., "1s", "1m", "1h"
@@ -490,11 +489,7 @@ func (s *Server) aggregateChartDataAcrossDirs(ctx context.Context, dirs []string
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		path := filepath.Join(dir, auditType+".ncap")
-		resp, err := s.extractChartData(ctx, path+".gz", auditType, field, interval)
-		if errors.Is(err, os.ErrNotExist) {
-			resp, err = s.extractChartData(ctx, path, auditType, field, interval)
-		}
+		resp, err := s.extractChartData(ctx, auditFilePath(dir, auditType), auditType, field, interval)
 		if errors.Is(err, os.ErrNotExist) || errors.Is(err, errNoChartData) {
 			continue
 		}
@@ -797,7 +792,7 @@ func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	auditType := r.URL.Query().Get("type")
+	auditType := canonicalAuditType(r.URL.Query().Get("type"))
 	if auditType == "" {
 		chartHTTPError(w, r, "Missing required parameter: type", http.StatusBadRequest)
 		return
@@ -816,7 +811,7 @@ func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
 	var reader *AuditRecordReader
 	var lastErr error
 	for _, dir := range dirs {
-		filePath := filepath.Join(dir, auditType+defaults.FileExtension+".gz")
+		filePath := auditFilePath(dir, auditType)
 		r2, err := NewAuditRecordReader(filePath)
 		if err != nil {
 			lastErr = err

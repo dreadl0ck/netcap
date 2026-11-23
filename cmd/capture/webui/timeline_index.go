@@ -43,6 +43,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/artifactio"
+	"github.com/dreadl0ck/netcap/internal/auditname"
 	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -329,7 +330,11 @@ func timelineFingerprint(outDir string) (string, []timelineFileRef, error) {
 
 		fmt.Fprintf(h, "%s:%d:%d\n", name, info.Size(), info.ModTime().UnixNano())
 
-		typeName := strings.TrimSuffix(strings.TrimSuffix(name, ".gz"), defaults.FileExtension)
+		base := strings.TrimSuffix(strings.TrimSuffix(name, ".gz"), defaults.FileExtension)
+		typeName := auditname.TypeForFile(base)
+		if typeName == "" {
+			typeName = base // The header check reports it.
+		}
 		candidate := timelineFileRef{
 			path: filepath.Join(outDir, name),
 			name: typeName,
@@ -337,7 +342,7 @@ func timelineFingerprint(outDir string) (string, []timelineFileRef, error) {
 			info: info,
 		}
 		current, exists := filesByType[typeName]
-		if !exists || (!strings.HasSuffix(current.path, ".gz") && strings.HasSuffix(candidate.path, ".gz")) {
+		if !exists || timelineFilePreferred(candidate.path, current.path, typeName) {
 			filesByType[typeName] = candidate
 		}
 	}
@@ -353,6 +358,18 @@ func timelineFingerprint(outDir string) (string, []timelineFileRef, error) {
 	}
 
 	return hex.EncodeToString(h.Sum(nil))[:16], files, nil
+}
+
+// timelineFilePreferred orders files holding the same type: the canonical
+// name before an alias, then compressed before plain.
+func timelineFilePreferred(candidate, current, typeName string) bool {
+	canonical := func(path string) bool {
+		return strings.HasPrefix(filepath.Base(path), typeName+".")
+	}
+	if canonical(candidate) != canonical(current) {
+		return canonical(candidate)
+	}
+	return !strings.HasSuffix(current, ".gz") && strings.HasSuffix(candidate, ".gz")
 }
 
 // timelineIndexFor returns the index for outDir, kicking off a background build

@@ -204,7 +204,11 @@ func listAuditFilesWithCommunityIDFilter(ctx context.Context, outputDir string, 
 		}
 
 		// Extract audit type
-		auditType := strings.TrimSuffix(strings.TrimSuffix(name, ".gz"), defaults.FileExtension)
+		base := strings.TrimSuffix(strings.TrimSuffix(name, ".gz"), defaults.FileExtension)
+		auditType := canonicalAuditType(base)
+		if base != auditType && auditFilePath(outputDir, auditType) != filepath.Join(outputDir, name) {
+			continue // A canonical or preferred file holds this type.
+		}
 		filePath := filepath.Join(outputDir, name)
 
 		totalCount, filteredCount, err := communityCountsContext(ctx, filePath, communityIDs)
@@ -281,13 +285,15 @@ func HandleAuditRecords(outputDir string) http.HandlerFunc {
 			return
 		}
 
+		auditType = canonicalAuditType(auditType)
+
 		// For fields action, we don't need the file to exist
 		if action == "fields" {
 			HandleAuditFields(w, r, auditType)
 			return
 		}
 
-		filePath := filepath.Join(outputDir, auditType+defaults.FileExtension+".gz")
+		filePath := auditFilePath(outputDir, auditType)
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			filePath = strings.TrimSuffix(filePath, ".gz")
 		}
@@ -498,7 +504,11 @@ func listAuditFiles(ctx context.Context, outputDir string) ([]AuditFileInfo, err
 		}
 
 		// Extract audit type
-		auditType := strings.TrimSuffix(strings.TrimSuffix(name, ".gz"), defaults.FileExtension)
+		base := strings.TrimSuffix(strings.TrimSuffix(name, ".gz"), defaults.FileExtension)
+		auditType := canonicalAuditType(base)
+		if base != auditType && auditFilePath(outputDir, auditType) != filepath.Join(outputDir, name) {
+			continue // A canonical or preferred file holds this type.
+		}
 
 		path := filepath.Join(outputDir, name)
 		recordCount, countErr := countAuditFrames(ctx, path, auditType)

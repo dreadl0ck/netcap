@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/auditname"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
@@ -125,17 +126,17 @@ type Session struct {
 
 // Result is the API and CLI response.
 type Result struct {
-	ManifestSHA256 string `json:"captureManifestSha256,omitempty"`
-	CaptureID   string   `json:"captureId,omitempty"`
-	ScopeStatus string   `json:"scopeStatus"`
-	Schema      int      `json:"schema"`
-	Target      Record   `json:"target"`
-	Session     *Session `json:"session"`
-	Links       []Link   `json:"links"`
-	Truncated   bool     `json:"truncated"`
-	Indexed     int64    `json:"indexed"`
-	Limits      Config   `json:"limits"`
-	Notes       []string `json:"notes"`
+	ManifestSHA256 string   `json:"captureManifestSha256,omitempty"`
+	CaptureID      string   `json:"captureId,omitempty"`
+	ScopeStatus    string   `json:"scopeStatus"`
+	Schema         int      `json:"schema"`
+	Target         Record   `json:"target"`
+	Session        *Session `json:"session"`
+	Links          []Link   `json:"links"`
+	Truncated      bool     `json:"truncated"`
+	Indexed        int64    `json:"indexed"`
+	Limits         Config   `json:"limits"`
+	Notes          []string `json:"notes"`
 }
 
 type dnsAnswer struct {
@@ -234,6 +235,9 @@ func auditFiles(dir string) []auditFile {
 			typ = strings.TrimSuffix(name, defaults.FileExtension+".gz")
 		case strings.HasSuffix(name, defaults.FileExtension):
 			typ = strings.TrimSuffix(name, defaults.FileExtension)
+		}
+		if canonical := auditname.TypeForFile(typ); canonical != "" {
+			typ = canonical
 		}
 		if typ == "" || seen[typ] || PacketTypes[typ] || strings.ContainsAny(typ, `/\.`) {
 			continue

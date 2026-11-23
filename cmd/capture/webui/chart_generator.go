@@ -26,7 +26,6 @@ import (
 	stdhtml "html"
 	"io"
 	"os"
-	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -36,7 +35,6 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/go-echarts/go-echarts/v2/types"
 
-	"github.com/dreadl0ck/netcap/defaults"
 	netcaptypes "github.com/dreadl0ck/netcap/types"
 )
 
@@ -103,7 +101,7 @@ func NewChartGenerator(auditType, field, chartType, interval string, showLegend 
 	}
 	return &ChartGenerator{
 		Presentation:  p.normalized(),
-		auditType:     auditType,
+		auditType:     canonicalAuditType(auditType),
 		field:         field,
 		chartType:     chartType,
 		interval:      interval,
@@ -133,7 +131,7 @@ func (cg *ChartGenerator) GenerateChartFromDirs(outDirs []string) (io.Reader, er
 	var probeReader *AuditRecordReader
 	var probePath string
 	for _, dir := range outDirs {
-		path := filepath.Join(dir, cg.auditType+defaults.FileExtension+".gz")
+		path := auditFilePath(dir, cg.auditType)
 		r, err := NewAuditRecordReader(path)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -268,7 +266,7 @@ func (cg *ChartGenerator) collectNumericDataMulti(outDirs []string) ([]dataPoint
 		if len(all) >= cg.maxDataPoints && !bucketing {
 			break
 		}
-		filePath := filepath.Join(dir, cg.auditType+defaults.FileExtension+".gz")
+		filePath := auditFilePath(dir, cg.auditType)
 		reader, err := NewAuditRecordReader(filePath)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -349,7 +347,7 @@ func (cg *ChartGenerator) collectCategoricalDataMulti(outDirs []string) (map[str
 		if totalRecords >= cg.maxDataPoints {
 			break
 		}
-		filePath := filepath.Join(dir, cg.auditType+defaults.FileExtension+".gz")
+		filePath := auditFilePath(dir, cg.auditType)
 		reader, err := NewAuditRecordReader(filePath)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -598,7 +596,7 @@ func (cg *ChartGenerator) generateCategoricalChart(reader *AuditRecordReader, ou
 		return cg.generateCategoryFunnelChart(sorted), nil
 	case "sankey":
 		// Sankey needs to read audit records, so reopen the file
-		filePath := filepath.Join(outDir, cg.auditType+defaults.FileExtension+".gz")
+		filePath := auditFilePath(outDir, cg.auditType)
 		sankeyReader, err := NewAuditRecordReader(filePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to reopen audit file for sankey: %w", err)
