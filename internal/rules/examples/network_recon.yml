@@ -5,15 +5,18 @@ description: "Detection rules for network scanning and reconnaissance activities
 
 rules:
   # SYN Scan Detection
+  # Counts distinct destination ports per source, not SYN packets: a burst
+  # of HTTPS connections opens many SYNs to one port and is not a scan.
   - name: SYN Scan Detection
-    description: Detect TCP SYN scan attempts (SYN without ACK)
+    description: One source sends SYNs (without ACK or RST) to 100+ distinct destination ports within 60 seconds
     type: TCP
     expression: SYN && !ACK && !RST
     severity: info
     mitre: ["T1046"]
     tags: ["port-scan"]
     enabled: true
-    threshold: 100
+    distinct_field: DstPort
+    distinct_threshold: 100
     threshold_window: 60
 
   # ICMP Ping Sweep

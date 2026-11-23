@@ -1,0 +1,53 @@
+# Embedded defaults as shipped in v0.16.12 and earlier, before the v0.16.13
+# false-positive fixes. A saved rules-folder copy that still equals one of
+# these (ignoring enabled and ruleset tags) loads as the current default.
+# Never edit an entry; add the previous definition when a default changes.
+rules:
+  - name: SYN Scan Detection
+    description: Detect TCP SYN scan attempts (SYN without ACK)
+    type: TCP
+    expression: SYN && !ACK && !RST
+    severity: info
+    mitre: ["T1046"]
+    tags: ["port-scan"]
+    enabled: true
+    threshold: 100
+    threshold_window: 60
+  - name: Cleartext Password Captured
+    description: Plaintext password observed on an unencrypted protocol (FTP, Telnet, HTTP Basic, POP3, IMAP)
+    type: Secret
+    expression: 'Password != "" && !MatchesPattern(Password, "^<(encrypted|CHAP|NTLM)") && !MatchesPattern(Service, "(?i)(RADIUS|Kerberos|NTLMSSP)")'
+    severity: high
+    mitre: ["T1552.001", "T1040"]
+    tags: ["cleartext", "credential-exposure"]
+    enabled: true
+  - name: DNS Tunneling Volume
+    description: Alert when 200+ DNS queries to external hosts within 60 seconds
+    type: DNS
+    expression: len(Questions) > 0 && IsPublicIP(DstIP)
+    severity: medium
+    mitre: ["T1071.004"]
+    tags: ["tunneling"]
+    enabled: true
+    threshold: 200
+    threshold_window: 60
+  - name: DNS Beaconing Pattern
+    description: Alert when 100+ DNS queries to same domain within 600 seconds
+    type: DNS
+    expression: len(Questions) > 0 && IsPublicIP(DstIP)
+    severity: low
+    mitre: ["T1071.004"]
+    tags: ["beaconing"]
+    enabled: true
+    threshold: 100
+    threshold_window: 600
+  - name: Multiple External Connections
+    description: Alert when 100+ connections to external IPs within 60 seconds
+    type: TCP
+    expression: IsPublicIP(DstIP) && SYN && !ACK
+    severity: info
+    mitre: ["T1071"]
+    tags: ["anomaly"]
+    enabled: true
+    threshold: 100
+    threshold_window: 60

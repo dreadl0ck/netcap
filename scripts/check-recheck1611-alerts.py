@@ -81,11 +81,16 @@ async def replay(binary, capture, workers, compare_http):
             raise ValueError("alert page budget exhausted")
 
 
+# 91 until v0.16.12: three were SYN Scan Detection firing on 300 port-80 SYNs
+# from three clients, which v0.16.13 counts as one port per client.
+EXPECTED_ALERTS = 88
+
+
 async def check(binary, capture, compare_http=True):
     baseline_http, baseline = await replay(binary, capture, 1, compare_http)
     # The synthetic oracle detects identical losses in all four runs.
-    if compare_http and (len(baseline_http) != 300 or baseline.total() != 91):
-        raise ValueError(f"synthetic fixture expected 300 HTTP rows and 91 alerts; got {len(baseline_http)} and {baseline.total()}")
+    if compare_http and (len(baseline_http) != 300 or baseline.total() != EXPECTED_ALERTS):
+        raise ValueError(f"synthetic fixture expected 300 HTTP rows and {EXPECTED_ALERTS} alerts; got {len(baseline_http)} and {baseline.total()}")
     print(json.dumps({"run": 1, "workers": 1, "alerts": baseline.total(), "http_rows": len(baseline_http) if compare_http else None}), flush=True)
     differs = False
     for run, workers in enumerate((4, 1, 4), 2):

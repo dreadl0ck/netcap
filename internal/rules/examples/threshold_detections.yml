@@ -50,15 +50,18 @@ rules:
   # ========================================
   
   # High Volume External DNS Queries - potential DNS tunneling
+  # Tunnels encode data in long query names; ordinary lookups rarely reach
+  # 50 characters, so a browsing burst of short names does not count.
   - name: DNS Tunneling Volume
-    description: Alert when 200+ DNS queries to external hosts within 60 seconds
+    description: One host sends 100+ DNS queries with names of 50+ characters to external resolvers within 60 seconds
     type: DNS
-    expression: len(Questions) > 0 && IsPublicIP(DstIP)
+    expression: '!QR && len(Questions) > 0 && len(Questions[0].Name) >= 50 && IsPublicIP(DstIP)'
     severity: medium
     mitre: ["T1071.004"]
     tags: ["tunneling"]
     enabled: true
-    threshold: 200
+    group_by: ["SrcIP"]
+    threshold: 100
     threshold_window: 60
 
   # Large File Upload Pattern - multiple large POST requests
@@ -120,13 +123,14 @@ rules:
 
   # Suspicious DNS Beaconing - frequent queries to same domain
   - name: DNS Beaconing Pattern
-    description: Alert when 100+ DNS queries to same domain within 600 seconds
+    description: One host sends 100+ DNS queries for the same name to external resolvers within 600 seconds
     type: DNS
-    expression: len(Questions) > 0 && IsPublicIP(DstIP)
+    expression: '!QR && len(Questions) > 0 && IsPublicIP(DstIP)'
     severity: low
     mitre: ["T1071.004"]
     tags: ["beaconing"]
     enabled: true
+    group_by: ["SrcIP", "Questions.Name"]
     threshold: 100
     threshold_window: 600
 
@@ -215,14 +219,17 @@ rules:
     threshold_window: 60
 
   # Connection to Multiple External IPs
+  # Web ports are excluded: browsing a modern site opens dozens of HTTPS
+  # connections to distinct CDN addresses.
   - name: Multiple External Connections
-    description: Alert when 100+ connections to external IPs within 60 seconds
+    description: One host opens connections to 50+ distinct public IPs on non-web ports within 60 seconds
     type: TCP
-    expression: IsPublicIP(DstIP) && SYN && !ACK
+    expression: IsPublicIP(DstIP) && SYN && !ACK && DstPort != 80 && DstPort != 443 && DstPort != 8080 && DstPort != 8443
     severity: info
     mitre: ["T1071"]
     tags: ["anomaly"]
     enabled: true
-    threshold: 100
+    distinct_field: DstIP
+    distinct_threshold: 50
     threshold_window: 60
 
