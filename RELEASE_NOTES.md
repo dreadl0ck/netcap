@@ -1,3 +1,25 @@
+## v0.16.13 — evaluator follow-up
+
+| Area | Change |
+| --- | --- |
+| MCP-24 timeline | Large captures no longer fail every session tool with HTTP 422. Exhausted timeline metadata is reported as `metadataTruncated` / `eventsMissingMetadata`, filtered timeline responses list `limitations`, and audit records over 16 MiB are skipped and counted. |
+| MCP-23 alerts | Paged alert views stream stores of any size; only the 1,048,576-row and 1 MiB-per-alert limits return 413, and each 413 names its limit. |
+| MCP-20 scheduling | Small uploads run beside a large capture by default, up to eight per large capture. Set `NETCAP_AUXILIARY_CAPTURE=0` for serial dispatch. |
+| V1612-3 rules | SYN Scan Detection counts distinct destination ports, Multiple External Connections distinct non-web destinations, DNS Beaconing queries per host and name, and DNS Tunneling long query names per host. Expect fewer alerts: the MCP-22 synthetic fixture drops from 91 to 88. Saved copies of the old defaults load as the new ones. |
+| Rules engine | `group_by` thresholds work without `capture_time`, in bounded state, and accept dotted paths such as `Questions.Name`. Distinct and grouped windows tolerate out-of-order records. WebUI rule saves keep `group_by`. |
+| Secrets | SNMP communities no longer raise Cleartext Password Captured; non-default ones raise SNMP Community String Observed. |
+| V1612-4 software | Service-signature Software comes from the preferred banner at service flush, so flow order no longer changes it. In live CLI captures, vulnerability and exploit records derived from it appear when the capture stops. |
+| V1612-2 evidence | Stream evidence directories get 128-bit names; a name collision no longer aborts large captures. |
+| Audit names | VRRP captures no longer fail analysis. Readers accept `VRRP.ncap.gz`, `ApplePktap.ncap.gz` and the v0.16.11 `GTPv1U.ncap.gz`; writers emit `GTP.ncap.gz`. `-y` re-runs into an existing output directory work again. |
+| MCP retries | Busy responses carry `Retry-After`; MCP tool errors end in `; retry_after_ms=N`. |
+
+The [qualification ledger](internal/collector/testdata/recheck-v0166.json)
+(`recheckV01612`) records the tests and replays. `make recheck-v01612` is the
+regression gate. The original evaluator sessions, the 200,000-stream capture and
+the `download-fast` performance work (V1611-3) remain open.
+
+Full changes: https://github.com/dreadl0ck/netcap/compare/v0.16.12...v0.16.13
+
 ## v0.16.12 — evaluator follow-up
 
 | Area | Change |
