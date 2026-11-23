@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -34,6 +35,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/dreadl0ck/netcap/internal/filter"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -331,6 +333,11 @@ func CompileRules(config *Config) error {
 		}
 		digest := sha256.Sum256(wire)
 		rule.compiledDigest = hex.EncodeToString(digest[:])
+		if rule.DistinctField != "" {
+			if _, err := fieldPathType(reflect.TypeOf(netio.InitRecord(recordType)), rule.DistinctField); err != nil {
+				return fmt.Errorf("rule %s: distinct_field: %w", rule.Name, err)
+			}
+		}
 		if len(rule.GroupBy) > 0 {
 			if rule.Threshold < 2 || rule.DistinctField != "" {
 				return fmt.Errorf("rule %s: group_by requires an ordinary repeated-count threshold", rule.Name)
@@ -391,6 +398,15 @@ func validateRuleNames(config *Config) error {
 		names[rule.Name] = struct{}{}
 	}
 	return nil
+}
+
+// SavedCopy returns the rule's configured fields without compiled state.
+// Writers that persist rules must start from it so a field the UI does not
+// edit, such as group_by, survives a save.
+func (r *Rule) SavedCopy() Rule {
+	c := *r
+	c.compiled, c.compiledDigest, c.compiledType = nil, "", 0
+	return c
 }
 
 func cloneRuleConfig(config *Config) (*Config, error) {

@@ -5210,6 +5210,7 @@
   "m_02ef7a68293764e1a4c3": "Device Info",
   "m_eab3fd916c5262ff58e0": "Community String",
   "rules.failedCount": "{count, plural, one {# rule failed} other {# rules failed}}",
+  "rules.groupedThreshold": "Threshold per {fields}: {count} matches in {window}s",
   "m_98ea5107ce31d865f187": "Session: {arg0}",
   "m_c09b8183b627ee6cc13b": "Select {arg0}",
   "m_74720a7ce02c9b30dc05": "Success",

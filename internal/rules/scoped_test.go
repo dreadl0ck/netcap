@@ -60,8 +60,13 @@ func TestScopedCountsAndReorderedStream(t *testing.T) {
 			}
 		}
 	}
-	if _, err := e.Evaluate(scopedTCP(55, "192.0.2.1")); err == nil {
-		t.Fatal("unscoped grouping admitted")
+	// Unscoped evaluation counts in its own bounded state and never completes
+	// a scoped count.
+	if n, err := e.Evaluate(scopedTCP(55, "192.0.2.1")); n != 0 || err != nil {
+		t.Fatal("unscoped grouping:", n, err)
+	}
+	if e.grouped == nil || len(e.grouped.groups) != 1 || len(e.scopedCounts) != 4 {
+		t.Fatalf("unscoped state leaked into scoped counts: grouped=%v scoped=%d", e.grouped, len(e.scopedCounts))
 	}
 }
 

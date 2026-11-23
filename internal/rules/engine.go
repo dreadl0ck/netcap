@@ -20,6 +20,7 @@
 package rules
 
 import (
+	"container/list"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -67,7 +68,9 @@ type Engine struct {
 	scopedCounts     map[string]*scopedCount
 	scopedJoins      map[string]*scopedJoin
 	scopedEntries    int
-	ordered          *OrderedStream
+	// grouped counts group_by thresholds evaluated without a capture scope.
+	grouped *groupedThresholds
+	ordered *OrderedStream
 
 	// Performance tracking
 	perfTracker *performance.Tracker
@@ -110,10 +113,37 @@ type thresholdTracker struct {
 
 // distinctTracker tracks distinct field values per source IP for
 // cardinality-based (fan-out) detection. seen[srcIP][distinctValue] = lastSeenNanos.
+// Sources are bounded: the least recently seen source is evicted first.
 type distinctTracker struct {
 	seen      map[string]map[string]int64
+	order     *list.List // source IPs, least recently seen first
+	elems     map[string]*list.Element
+	evictions uint64
 	evalCount uint64 // number of evaluations, used to schedule periodic sweeps
 	mu        sync.Mutex
+}
+
+// maxDistinctSources bounds per-rule distinct state; a spoofed-source SYN
+// flood otherwise grows it without limit.
+const maxDistinctSources = 100_000
+
+func (t *distinctTracker) touch(src string) {
+	if t.order == nil {
+		t.order, t.elems = list.New(), make(map[string]*list.Element)
+	}
+	if elem, ok := t.elems[src]; ok {
+		t.order.MoveToBack(elem)
+		return
+	}
+	t.elems[src] = t.order.PushBack(src)
+}
+
+func (t *distinctTracker) remove(src string) {
+	delete(t.seen, src)
+	if elem, ok := t.elems[src]; ok {
+		t.order.Remove(elem)
+		delete(t.elems, src)
+	}
 }
 
 // NewEngine creates a new rules engine with the given configuration and alert writer.
@@ -141,7 +171,7 @@ func NewEngine(rulesPath string, alertWriter AlertWriter) (*Engine, error) {
 	}
 	if config.CaptureTime == nil {
 		for _, rule := range config.Rules {
-			if rule.Enabled && (len(rule.GroupBy) > 0 || rule.Sequence != nil && rule.Sequence.AfterType != "") {
+			if rule.Enabled && rule.Sequence != nil && rule.Sequence.AfterType != "" {
 				return nil, fmt.Errorf("scoped capture rules require capture_time scope/lateness configuration")
 			}
 		}
@@ -370,7 +400,9 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 			} else if rule.Threshold > 1 {
 				// Check threshold - if rule has threshold > 1, track matches
 				thresholdReached := false
-				if len(rule.GroupBy) > 0 {
+				if len(rule.GroupBy) > 0 && scope == "" {
+					thresholdReached = e.groupedThreshold(rule, record)
+				} else if len(rule.GroupBy) > 0 {
 					thresholdReached, err = e.scopedThreshold(scope, rule, record)
 					if err != nil {
 						return alertCount, err
@@ -600,9 +632,15 @@ func (e *Engine) checkDistinctThreshold(rule *Rule, record types.AuditRecord) bo
 
 	values, ok := tracker.seen[src]
 	if !ok {
+		// The least recently seen source is evicted; stale sources sort first.
+		for len(tracker.seen) >= maxDistinctSources && tracker.order != nil && tracker.order.Len() > 0 {
+			tracker.remove(tracker.order.Front().Value.(string))
+			tracker.evictions++
+		}
 		values = make(map[string]int64)
 		tracker.seen[src] = values
 	}
+	tracker.touch(src)
 
 	// Record/refresh this distinct value's last-seen time.
 	values[value] = now
@@ -622,7 +660,7 @@ func (e *Engine) checkDistinctThreshold(rule *Rule, record types.AuditRecord) bo
 
 	if count >= threshold {
 		// Reset this source's set so the alert re-arms for the next window.
-		delete(tracker.seen, src)
+		tracker.remove(src)
 		return true
 	}
 
@@ -652,40 +690,15 @@ func (t *distinctTracker) sweep(now, windowNanos int64) {
 			}
 		}
 		if len(values) == 0 {
-			delete(t.seen, src)
+			t.remove(src)
 		}
 	}
 }
 
-// extractStringField returns the string representation of a top-level field of
-// the audit record via reflection. Supports string and integer field kinds.
+// extractStringField renders a field path (see fieldPathType) of the audit
+// record as a string. Supports string and integer leaves.
 func extractStringField(record types.AuditRecord, fieldName string) string {
-	v := reflect.ValueOf(record)
-	if v.Kind() == reflect.Pointer {
-		if v.IsNil() {
-			return ""
-		}
-		v = v.Elem()
-	}
-	if v.Kind() != reflect.Struct {
-		return ""
-	}
-
-	f := v.FieldByName(fieldName)
-	if !f.IsValid() || !f.CanInterface() {
-		return ""
-	}
-
-	switch f.Kind() {
-	case reflect.String:
-		return f.String()
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return fmt.Sprintf("%d", f.Int())
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return fmt.Sprintf("%d", f.Uint())
-	default:
-		return ""
-	}
+	return fieldPathValue(reflect.ValueOf(record), fieldName)
 }
 
 // isRateLimited checks if a rule has exceeded its rate limit.
@@ -750,6 +763,9 @@ func (e *Engine) GetStats() map[string]any {
 		"rate_limit":             e.rateLimit,
 		"tracked_thresholds":     len(e.thresholdTrackers),
 		"tracked_distinct":       len(e.distinctTrackers),
+		"distinct_evictions":     e.distinctEvictions(),
+		"grouped_groups":         groupedLen(e.grouped),
+		"grouped_evictions":      groupedEvictions(e.grouped),
 		"tracked_sequences":      len(e.sequenceTrackers),
 	}
 }
@@ -791,6 +807,7 @@ func (e *Engine) UpdateConfig(config *Config) error {
 	e.scopedCounts = nil
 	e.scopedJoins = nil
 	e.scopedEntries = 0
+	e.grouped = nil
 	e.recentAlerts = make(map[string]int64)
 	e.ruleCounters = make(map[string]*rateCounter)
 	e.mu.Unlock()

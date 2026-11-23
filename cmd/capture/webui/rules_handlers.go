@@ -59,6 +59,8 @@ type RuleResponse struct {
 	ThresholdWindow   int      `json:"thresholdWindow,omitempty"`
 	DistinctField     string   `json:"distinctField,omitempty"`
 	DistinctThreshold int      `json:"distinctThreshold,omitempty"`
+	// GroupBy is read-only: thresholds count per distinct value of these fields.
+	GroupBy []string `json:"groupBy,omitempty"`
 	// Sequence is read-only here: the UI cannot author an ordered correlation
 	// gate, but a gated rule must not be displayed as an ungated one.
 	Sequence *rules.Sequence     `json:"sequence,omitempty"`
@@ -325,21 +327,7 @@ func (s *Server) saveRulesConfig(config *rules.Config) error {
 		rulesForSave := make([]*rules.Rule, len(rulesList))
 		for i, rule := range rulesList {
 			// Create a copy of the rule
-			ruleCopy := rules.Rule{
-				Name:              rule.Name,
-				Description:       rule.Description,
-				Type:              rule.Type,
-				Expression:        rule.Expression,
-				Severity:          rule.Severity,
-				MITRE:             rule.MITRE,
-				Enabled:           rule.Enabled,
-				Threshold:         rule.Threshold,
-				ThresholdWindow:   rule.ThresholdWindow,
-				DistinctField:     rule.DistinctField,
-				DistinctThreshold: rule.DistinctThreshold,
-				Sequence:          rule.Sequence,
-				Actions:           rule.Actions,
-			}
+			ruleCopy := rule.SavedCopy()
 			// Filter out the ruleset tag
 			newTags := make([]string, 0, len(rule.Tags))
 			for _, tag := range rule.Tags {
@@ -375,21 +363,7 @@ func (s *Server) saveRulesConfig(config *rules.Config) error {
 	// Save orphaned rules as individual files (these were created via the UI)
 	for _, rule := range orphanedRules {
 		// Create a copy of the rule without ruleset tags
-		ruleCopy := rules.Rule{
-			Name:              rule.Name,
-			Description:       rule.Description,
-			Type:              rule.Type,
-			Expression:        rule.Expression,
-			Severity:          rule.Severity,
-			MITRE:             rule.MITRE,
-			Enabled:           rule.Enabled,
-			Threshold:         rule.Threshold,
-			ThresholdWindow:   rule.ThresholdWindow,
-			DistinctField:     rule.DistinctField,
-			DistinctThreshold: rule.DistinctThreshold,
-			Sequence:          rule.Sequence,
-			Actions:           rule.Actions,
-		}
+		ruleCopy := rule.SavedCopy()
 
 		// Filter out the ruleset tag
 		newTags := make([]string, 0, len(rule.Tags))
@@ -501,6 +475,7 @@ func (s *Server) handleGetRules(w http.ResponseWriter, r *http.Request) {
 			ThresholdWindow:   rule.ThresholdWindow,
 			DistinctField:     rule.DistinctField,
 			DistinctThreshold: rule.DistinctThreshold,
+			GroupBy:           rule.GroupBy,
 			Sequence:          rule.Sequence,
 			Actions:           convertActionsToAPI(rule.Actions),
 		})
@@ -700,6 +675,7 @@ func (s *Server) handleGetRule(w http.ResponseWriter, r *http.Request, ruleID st
 				ThresholdWindow:   rule.ThresholdWindow,
 				DistinctField:     rule.DistinctField,
 				DistinctThreshold: rule.DistinctThreshold,
+				GroupBy:           rule.GroupBy,
 				Sequence:          rule.Sequence,
 				Actions:           convertActionsToAPI(rule.Actions),
 			})

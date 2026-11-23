@@ -104,9 +104,17 @@ func validateJoinFields(fields []string, typ types.Type, after []string, afterTy
 	if err := validateGroupFields(after, afterType); err != nil {
 		return err
 	}
-	a, b := reflect.ValueOf(netio.InitRecord(typ)).Elem(), reflect.ValueOf(netio.InitRecord(afterType)).Elem()
+	a, b := reflect.TypeOf(netio.InitRecord(typ)), reflect.TypeOf(netio.InitRecord(afterType))
 	for i, name := range fields {
-		if a.FieldByName(name).Kind() != b.FieldByName(after[i]).Kind() {
+		left, err := fieldPathType(a, name)
+		if err != nil {
+			return err
+		}
+		right, err := fieldPathType(b, after[i])
+		if err != nil {
+			return err
+		}
+		if left.Kind() != right.Kind() {
 			return fmt.Errorf("join key types differ at %s/%s", name, after[i])
 		}
 	}

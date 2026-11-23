@@ -22,21 +22,9 @@ func validateGroupFields(fields []string, recordType types.Type) error {
 	if record == nil {
 		return fmt.Errorf("unsupported record type: %s", recordType.String())
 	}
-	value := reflect.ValueOf(record)
-	if value.Kind() == reflect.Pointer {
-		value = value.Elem()
-	}
 	for _, name := range fields {
-		field := value.FieldByName(name)
-		if !field.IsValid() {
-			return fmt.Errorf("sequence group_by field %q does not exist on %s", name, recordType.String())
-		}
-		switch field.Kind() {
-		case reflect.String,
-			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		default:
-			return fmt.Errorf("sequence group_by field %q is a %s, which cannot form a group key", name, field.Kind())
+		if _, err := fieldPathType(reflect.TypeOf(record), name); err != nil {
+			return fmt.Errorf("group_by on %s: %w", recordType.String(), err)
 		}
 	}
 	return nil

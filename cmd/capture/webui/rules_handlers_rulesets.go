@@ -285,21 +285,7 @@ func (s *Server) saveRuleSetOverride(ruleSetName string, rulesToSave []*rules.Ru
 	rulesForSave := make([]*rules.Rule, len(rulesToSave))
 	for i, rule := range rulesToSave {
 		// Create a copy of the rule
-		ruleCopy := rules.Rule{
-			Name:              rule.Name,
-			Description:       rule.Description,
-			Type:              rule.Type,
-			Expression:        rule.Expression,
-			Severity:          rule.Severity,
-			MITRE:             rule.MITRE,
-			Enabled:           rule.Enabled,
-			Threshold:         rule.Threshold,
-			ThresholdWindow:   rule.ThresholdWindow,
-			DistinctField:     rule.DistinctField,
-			DistinctThreshold: rule.DistinctThreshold,
-			Sequence:          rule.Sequence,
-			Actions:           rule.Actions,
-		}
+		ruleCopy := rule.SavedCopy()
 		// Filter out internal tags (ruleset: and embedded)
 		newTags := make([]string, 0, len(rule.Tags))
 		for _, tag := range rule.Tags {

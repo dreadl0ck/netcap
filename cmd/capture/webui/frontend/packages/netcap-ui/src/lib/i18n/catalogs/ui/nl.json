@@ -5210,6 +5210,7 @@
   "m_02ef7a68293764e1a4c3": "Apparaatinformatie",
   "m_eab3fd916c5262ff58e0": "Community-string",
   "rules.failedCount": "{count, plural, one {# regel mislukt} other {# regels mislukt}}",
+  "rules.groupedThreshold": "Drempelwaarde per {fields}: {count} treffers in {window}s",
   "m_98ea5107ce31d865f187": "Sessie: {arg0}",
   "m_c09b8183b627ee6cc13b": "Selecteer {arg0}",
   "m_74720a7ce02c9b30dc05": "Geslaagd",

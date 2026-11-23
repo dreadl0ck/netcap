@@ -554,7 +554,7 @@ export default function RulesPage() {
                     hover
                     onClick={() => handleOpenDialog(rule)}
                     sx={{ cursor: 'pointer' }}><TableCell><Box><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Typography variant="body1" fontWeight="medium">{rule.name}</Typography>{(rule.distinctField || (rule.threshold && rule.threshold > 0)) && (
-                            <Tooltip title={rule.distinctField ? i18nText("ui:m_ed12d4537a74a15c1a45", { arg0: Math.max(2, rule.distinctThreshold || 2), arg1: rule.distinctField, arg2: rule.thresholdWindow || 60 }) : i18nText("ui:m_ac22d2cf75bbd7baa126", { arg0: rule.threshold, arg1: rule.thresholdWindow || 60 })}><Chip label={i18nText("ui:m_023cfbe2165f816ad207")} 
+                            <Tooltip title={rule.distinctField ? i18nText("ui:m_ed12d4537a74a15c1a45", { arg0: Math.max(2, rule.distinctThreshold || 2), arg1: rule.distinctField, arg2: rule.thresholdWindow || 60 }) : (rule.groupBy?.length ? i18nText("ui:rules.groupedThreshold", { count: rule.threshold, window: rule.thresholdWindow || 60, fields: rule.groupBy.join(", ") }) : i18nText("ui:m_ac22d2cf75bbd7baa126", { arg0: rule.threshold, arg1: rule.thresholdWindow || 60 }))}><Chip label={i18nText("ui:m_023cfbe2165f816ad207")} 
                                 size="small" 
                                 color="info" 
                                 variant="outlined"

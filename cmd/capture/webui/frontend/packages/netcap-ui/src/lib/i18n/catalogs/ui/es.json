@@ -5210,6 +5210,7 @@
   "m_02ef7a68293764e1a4c3": "Información del dispositivo",
   "m_eab3fd916c5262ff58e0": "Cadena de comunidad",
   "rules.failedCount": "{count, plural, one {# regla fallida} other {# reglas fallidas}}",
+  "rules.groupedThreshold": "Umbral por {fields}: {count} coincidencias en {window}s",
   "m_98ea5107ce31d865f187": "Sesión: {arg0}",
   "m_c09b8183b627ee6cc13b": "Seleccionar {arg0}",
   "m_74720a7ce02c9b30dc05": "Éxito",

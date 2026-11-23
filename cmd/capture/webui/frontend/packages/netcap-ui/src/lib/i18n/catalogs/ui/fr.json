@@ -5210,6 +5210,7 @@
   "m_02ef7a68293764e1a4c3": "Infos de l’appareil",
   "m_eab3fd916c5262ff58e0": "Chaîne de communauté",
   "rules.failedCount": "{count, plural, one {# règle a échoué} other {# règles ont échoué}}",
+  "rules.groupedThreshold": "Seuil par {fields} : {count} correspondances en {window} s",
   "m_98ea5107ce31d865f187": "Session : {arg0}",
   "m_c09b8183b627ee6cc13b": "Sélectionner {arg0}",
   "m_74720a7ce02c9b30dc05": "Succès",

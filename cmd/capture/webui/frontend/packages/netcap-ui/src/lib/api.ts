@@ -1068,6 +1068,8 @@ export interface Rule {
   thresholdWindow?: number;
   distinctField?: string;
   distinctThreshold?: number;
+  /** Read-only: thresholds count per distinct value of these fields. */
+  groupBy?: string[];
   executionTimeMs?: number;
   lastExecuted?: number;
   actions?: ResponseAction[];

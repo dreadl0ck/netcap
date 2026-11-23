@@ -4697,6 +4697,7 @@
   "m_02ef7a68293764e1a4c3": "Device Info",
   "m_eab3fd916c5262ff58e0": "Community String",
   "rules.failedCount": "{count} rules failed",
+  "rules.groupedThreshold": "Threshold per {fields}: {count} matches in {window}s",
   "m_74720a7ce02c9b30dc05": "Success",
   "m_ec2e545d1c38366dc86a": "Refused",
   "protobuf.uploaded": "{count, plural, one {Uploaded # file} other {Uploaded # files}}",
