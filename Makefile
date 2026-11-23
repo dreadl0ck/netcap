@@ -8,7 +8,7 @@
 .PHONY: test-coverage test-coverage-html test-coverage-check test-race test-determinism test-wireshark
 .PHONY: test-golden-update test-regression-verify
 .PHONY: test-hyperscan test-msan test-pkg test-verbose test-clean test-help
-.PHONY: docs-check docs-source-check
+.PHONY: docs-check docs-source-check recheck-v01612
 
 NETCAP_BIN ?= ./net
 DOCS_TEST_TAGS ?= nodpi,noyara
@@ -172,6 +172,20 @@ test-clean:
 	find . -name "*.test" -delete
 
 # Help
+# v0.16.12 evaluator follow-up gate. MIXED_UPLOAD_ARCHIVE (the pinned
+# v0.16.9 synthetic archive) adds the default-on auxiliary scheduling probe.
+RECHECK_TAGS := nodpi,noyara,nomagika
+RECHECK_PKGS := ./internal/auditname ./internal/rules ./internal/mcp ./internal/delimited \
+	./internal/decoder/stream ./internal/decoder/stream/service ./internal/decoder/stream/utils ./cmd/capture/webui
+recheck-v01612:
+	GOWORK=off go test -tags $(RECHECK_TAGS) -count=1 $(RECHECK_PKGS) ./internal/collector ./internal/decoder/packet ./cmd/transform
+	GOWORK=off go test -race -tags $(RECHECK_TAGS) -count=1 $(RECHECK_PKGS)
+	GOWORK=off go test -tags=e2e,$(RECHECK_TAGS) ./tests/e2e -run '^(TestRecheck1612CLI|TestHuntCLIRegressions)$$' -count=1 -timeout=10m
+	@if [ -n "$(MIXED_UPLOAD_ARCHIVE)" ]; then \
+		GOWORK=off go build -tags $(RECHECK_TAGS) -o $(TMPDIR)net-recheck ./cmd/net && \
+		uv run --script scripts/check-mcp-stdio.py $(TMPDIR)net-recheck --mixed-upload-archive "$(MIXED_UPLOAD_ARCHIVE)" --full-fanout; \
+	fi
+
 test-help:
 	@echo "Netcap Test Targets:"
 	@echo ""
@@ -189,6 +203,7 @@ test-help:
 	@echo "  test-race         - Run tests with race detector"
 	@echo "  test-determinism  - Compare Ultimate PCAP output across runs and worker counts"
 	@echo "  test-wireshark    - Fetch verified Wireshark samples and run the full corpus (needs editcap)"
+	@echo "  recheck-v01612    - v0.16.12 evaluator follow-up gate (MIXED_UPLOAD_ARCHIVE= adds scheduling)"
 	@echo ""
 	@echo "  test-golden-update    - Retired; fails explicitly (no registered suite)"
 	@echo "  test-regression-verify - Verify against golden files"
