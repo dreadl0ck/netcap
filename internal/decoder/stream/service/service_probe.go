@@ -64,7 +64,10 @@ func SignatureInventory() servicesignatures.Inventory {
 	return *i
 }
 
-func MatchServiceProbes(serv *service, banner []byte, ident string) {
+// MatchServiceProbes derives the service identity from one banner. Software is
+// emitted once at flush from the preferred banner (emitSignatureSoftware), so
+// the order in which flows are observed cannot change the Software records.
+func MatchServiceProbes(serv *service, banner []byte) {
 	r, ok := signatureEngine.Load().Identify(banner, strings.ToLower(serv.Protocol), "server-to-client")
 	if !ok {
 		return
@@ -73,22 +76,29 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 	serv.MatchedProbeID = r.ID
 	serv.Product, serv.Version = r.Product, r.Version
 	if r.Protocol == "http" {
-		matchHTTPHeaders(serv, banner, ident)
-	}
-	if serv.Product != "" && r.Protocol != "http" {
-		writeSoftwareFromBanner(serv, ident, r.ID)
+		matchHTTPHeaders(serv, banner)
 	}
 }
 
-func writeSoftwareFromBanner(serv *service, ident, probeIdent string) {
+// maxSignatureSoftwareFlows bounds the flow list copied into Software; the
+// Service record keeps every flow.
+const maxSignatureSoftwareFlows = 128
+
+// emitSignatureSoftware writes the Software identified by the service's
+// preferred banner. Callers pass a service whose Flows are sorted.
+func emitSignatureSoftware(s *types.Service) {
+	if s == nil || s.Product == "" || s.MatchedProbeID == "" {
+		return
+	}
+	flows := append([]string(nil), s.Flows[:min(len(s.Flows), maxSignatureSoftwareFlows)]...)
 	software.WriteSoftware([]*software.AtomicSoftware{{Software: &types.Software{
-		ObservedHost: serv.IP, ObservationRole: "server",
-		Timestamp: serv.Timestamp, Product: serv.Product, Vendor: serv.Vendor, Version: serv.Version,
-		SourceName: "Service Signature: " + probeIdent, Service: serv.Name, Flows: []string{ident}, Notes: "Protocol: " + serv.Protocol,
+		ObservedHost: s.IP, ObservationRole: "server",
+		Timestamp: s.Timestamp, Product: s.Product, Vendor: s.Vendor, Version: s.Version,
+		SourceName: "Service Signature: " + s.MatchedProbeID, Service: s.Name, Flows: flows, Notes: "Protocol: " + s.Protocol,
 	}}}, nil)
 }
 
-func matchHTTPHeaders(serv *service, banner []byte, ident string) {
+func matchHTTPHeaders(serv *service, banner []byte) {
 	if len(banner) > servicesignatures.MaxBannerBytes {
 		banner = banner[:servicesignatures.MaxBannerBytes]
 	}
@@ -97,7 +107,7 @@ func matchHTTPHeaders(serv *service, banner []byte, ident string) {
 	}
 	h, v := extractHeaderManually(string(banner), []string{"Server", "X-Powered-By", "X-AspNet-Version", "X-AspNetMvc-Version", "X-Generator", "Via", "X-Cache"})
 	if v != "" {
-		parseHeaderValue(serv, h, v, ident)
+		parseHeaderValue(serv, h, v)
 	}
 }
 
@@ -118,7 +128,7 @@ func extractHeaderManually(banner string, priorityHeaders []string) (string, str
 	return "", ""
 }
 
-func parseHeaderValue(serv *service, name, value, ident string) {
+func parseHeaderValue(serv *service, name, value string) {
 	var p, v string
 	value = strings.TrimSpace(value)
 	switch name {
@@ -143,7 +153,6 @@ func parseHeaderValue(serv *service, name, value, ident string) {
 		if serv.MatchedProbeID == "" {
 			serv.MatchedProbeID = "netcap.http.response.v1"
 		}
-		writeSoftwareFromBanner(serv, ident, serv.MatchedProbeID)
 	}
 }
 

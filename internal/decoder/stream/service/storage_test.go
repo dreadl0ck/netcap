@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"sort"
 	"sync"
 	"testing"
@@ -202,7 +203,72 @@ func TestServiceProbeCanReenterAggregateStore(t *testing.T) {
 	if _, err = ObserveBanner(Observation{ID: "fixture", FlowID: "flow", IP: "192.0.2.10", Port: 80, Protocol: "TCP", Banner: []byte("HTTP/1.1 200 OK\r\nServer: Fixture/1\r\n\r\n")}); err != nil {
 		t.Fatal(err)
 	}
-	if !called {
-		t.Fatal("service signature did not emit a software lookup")
+	if called {
+		t.Fatal("software lookup must wait until the preferred banner is flushed")
 	}
+	if err := Decoder.DeInit(&decoder.AbstractDecoder{Writer: &serviceTestWriter{}}); err != nil {
+		t.Fatal(err)
+	}
+	if !called {
+		t.Fatal("service signature did not emit a software lookup at flush")
+	}
+}
+
+// V1612-4: two flows to one endpoint with a short and a versioned Server
+// banner produced one or two Software records depending on which arrived
+// first. Software now comes from the preferred banner at flush.
+func TestSignatureSoftwareUsesPreferredBannerRegardlessOfOrder(t *testing.T) {
+	short := []byte("HTTP/1.1 200 OK\r\nServer: Apache\r\n\r\n")
+	long := []byte("HTTP/1.1 200 OK\r\nServer: Apache/2.4.18 (Unix) OpenSSL/1.0.1e-fips\r\n\r\n")
+	for name, order := range map[string][][]byte{"short first": {short, long}, "long first": {long, short}} {
+		t.Run(name, func(t *testing.T) {
+			serviceStorageConfig(t)
+			oldItems := software.Store.Items
+			software.Store.Items = map[string]*software.AtomicSoftware{}
+			t.Cleanup(func() { software.Store.Items = oldItems })
+			for i, banner := range order {
+				if _, err := ObserveBanner(Observation{
+					ID: "14.34.11.232:80", FlowID: fmt.Sprintf("flow-%d", 1-i), IP: "14.34.11.232", Port: 80, Protocol: "TCP",
+					Timestamp: int64(i + 1), ServerBytes: len(banner), ClientBytes: 20, Banner: banner,
+				}); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if len(software.Store.Items) != 0 {
+				t.Fatalf("software emitted before flush: %d", len(software.Store.Items))
+			}
+			if err := Decoder.DeInit(&decoder.AbstractDecoder{Writer: &serviceTestWriter{}}); err != nil {
+				t.Fatal(err)
+			}
+			if len(software.Store.Items) != 1 {
+				t.Fatalf("software records %d, want 1", len(software.Store.Items))
+			}
+			for _, item := range software.Store.Items {
+				got := item.Software
+				if got.Product != "Apache" || got.Version != "2.4.18" || got.SourceName != "Service Signature: netcap.http.response.v1" ||
+					!slices.Equal(got.Flows, []string{"flow-0", "flow-1"}) {
+					t.Fatalf("software %+v", got)
+				}
+			}
+		})
+	}
+}
+
+func TestSignatureSoftwareFlowListIsBounded(t *testing.T) {
+	serviceStorageConfig(t)
+	oldItems := software.Store.Items
+	software.Store.Items = map[string]*software.AtomicSoftware{}
+	t.Cleanup(func() { software.Store.Items = oldItems })
+	flows := make([]string, maxSignatureSoftwareFlows+5)
+	for i := range flows {
+		flows[i] = fmt.Sprintf("flow-%03d", i)
+	}
+	emitSignatureSoftware(&types.Service{IP: "192.0.2.1", Product: "OpenSSH", MatchedProbeID: "netcap.ssh.ident.v1", Flows: flows})
+	for _, item := range software.Store.Items {
+		if len(item.Flows) != maxSignatureSoftwareFlows || item.Flows[0] != "flow-000" {
+			t.Fatalf("flows %d", len(item.Flows))
+		}
+		return
+	}
+	t.Fatal("no software emitted")
 }

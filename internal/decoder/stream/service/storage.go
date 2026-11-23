@@ -78,7 +78,7 @@ func ObserveBanner(o Observation) (bool, error) {
 		if !found {
 			s = newObservation(o)
 			s.AddFlow(o.FlowID)
-			MatchServiceProbes(s, o.Banner, o.FlowID)
+			MatchServiceProbes(s, o.Banner)
 			Store.Lock()
 			Store.Items[o.ID] = s
 			Store.Unlock()
@@ -89,7 +89,7 @@ func ObserveBanner(o Observation) (bool, error) {
 		s.AddFlow(o.FlowID)
 		if s.PreferObservation(o.Banner, o.Timestamp, o.ServerBytes, o.ClientBytes) {
 			s.ResetProbeMatch()
-			MatchServiceProbes(s, o.Banner, o.FlowID)
+			MatchServiceProbes(s, o.Banner)
 		}
 		return false, nil
 	}
@@ -110,10 +110,10 @@ func ObserveBanner(o Observation) (bool, error) {
 	changed := !found
 	if !found {
 		s = newObservation(o)
-		MatchServiceProbes(s, o.Banner, o.FlowID)
+		MatchServiceProbes(s, o.Banner)
 	} else if s.PreferObservation(o.Banner, o.Timestamp, o.ServerBytes, o.ClientBytes) {
 		s.ResetProbeMatch()
-		MatchServiceProbes(s, o.Banner, o.FlowID)
+		MatchServiceProbes(s, o.Banner)
 		changed = true
 	}
 	err = state.Do(func(tx *aggregate.Tx) error {

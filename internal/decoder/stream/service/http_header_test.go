@@ -247,7 +247,7 @@ func TestMatchHTTPHeaders(t *testing.T) {
 				applications: make(map[string]struct{}),
 			}
 
-			matchHTTPHeaders(serv, []byte(tt.banner), "test-ident")
+			matchHTTPHeaders(serv, []byte(tt.banner))
 
 			if serv.Product != tt.expectedProduct {
 				t.Errorf("matchHTTPHeaders() product = %v, want %v", serv.Product, tt.expectedProduct)
@@ -268,7 +268,7 @@ func TestMatchHTTPHeadersInvalidBanner(t *testing.T) {
 	}
 
 	// Test with non-HTTP banner
-	matchHTTPHeaders(serv, []byte("Not an HTTP response"), "test-ident")
+	matchHTTPHeaders(serv, []byte("Not an HTTP response"))
 
 	// Should not set any fields
 	if serv.Product != "" {
@@ -298,7 +298,7 @@ func TestMatchHTTPHeadersWithGWSServer(t *testing.T) {
 		"X-XSS-Protection: 1; mode=b\r\n" +
 		"\r\n"
 
-	matchHTTPHeaders(serv, []byte(banner), "test-ident")
+	matchHTTPHeaders(serv, []byte(banner))
 
 	if serv.Product != "gws" {
 		t.Errorf("matchHTTPHeaders() should extract Server header value 'gws', got %v", serv.Product)
@@ -404,7 +404,7 @@ func TestMatchHTTPHeadersTruncatedBanner(t *testing.T) {
 		"Server: gws\r\n" +
 		"X-XSS-Protection: 1; mode=b"
 
-	matchHTTPHeaders(serv, []byte(banner), "test-ident")
+	matchHTTPHeaders(serv, []byte(banner))
 
 	if serv.Product != "gws" {
 		t.Errorf("matchHTTPHeaders() with truncated banner should extract 'gws', got %v", serv.Product)
@@ -448,7 +448,7 @@ func TestMatchServiceProbesWithEmptyProductHTTPFallback(t *testing.T) {
 		"\r\n")
 
 	// Run the full MatchServiceProbes which includes probe matching + HTTP header fallback
-	MatchServiceProbes(serv, banner, "test-flow")
+	MatchServiceProbes(serv, banner)
 
 	// Even if a service probe matched but didn't extract Product,
 	// the HTTP header matching should have extracted "gws" from the Server header

@@ -101,6 +101,7 @@ func writeService(d *decoder.AbstractDecoder, s *types.Service, apps map[string]
 	if s.MatchedProbeID == "" {
 		s.Name = s.DetectedProtocolName
 	}
+	emitSignatureSoftware(s)
 	if err := d.Writer.Write(s); err != nil {
 		return err
 	}

@@ -53,7 +53,7 @@ func TestServiceSignaturesStaleInstallAndWarning(t *testing.T) {
 			t.Fatal("missing stderr warning")
 		}
 		s := &service{Service: &types.Service{Protocol: "TCP", Port: 9999}}
-		MatchServiceProbes(s, []byte("220 host.example ESMTP ready\r\n"), "fixture")
+		MatchServiceProbes(s, []byte("220 host.example ESMTP ready\r\n"))
 		if s.Name != "smtp" || s.MatchedProbeID != "netcap.smtp.greeting.v1" {
 			t.Fatalf("%+v", s.Service)
 		}
@@ -100,12 +100,12 @@ func TestVerifiedOptionalServiceSnapshotIsImmutable(t *testing.T) {
 
 func TestHTTPHeaderCannotMatchBodyOrOverrideRuleID(t *testing.T) {
 	s := &service{Service: &types.Service{Protocol: "TCP"}}
-	MatchServiceProbes(s, []byte("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nServer: injected/1\r\n"), "fixture")
+	MatchServiceProbes(s, []byte("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nServer: injected/1\r\n"))
 	if s.Product != "" || s.MatchedProbeID != "netcap.http.response.v1" {
 		t.Fatalf("body treated as headers: %+v", s.Service)
 	}
 	s = &service{Service: &types.Service{MatchedProbeID: "netcap.custom.http.v1"}}
-	parseHeaderValue(s, "Server", "Fixture/1", "fixture")
+	parseHeaderValue(s, "Server", "Fixture/1")
 	if s.MatchedProbeID != "netcap.custom.http.v1" {
 		t.Fatal("rule ID overwritten")
 	}
