@@ -198,7 +198,7 @@ retry:
 		)
 	}
 
-	err = f.Sync()
+	err = syncFile(f)
 	if err != nil {
 		reassemblyLog.Info("failed to sync file",
 			zap.String("ident", ident),
@@ -294,7 +294,7 @@ retryNetwork:
 		_, writeErr = w.Write(d.Raw())
 		return writeErr == nil
 	})
-	if err := errors.Join(sourceErr, writeErr, w.Flush(), f.Sync(), f.Close()); err != nil {
+	if err := errors.Join(sourceErr, writeErr, w.Flush(), syncFile(f), f.Close()); err != nil {
 		return err
 	}
 	Stats.Lock()

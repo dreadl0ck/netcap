@@ -73,7 +73,7 @@ func SaveDatagramConversation(source core.FragmentSource, ident string, first ti
 		return writeErr
 	}
 	err = w.Flush()
-	err = errors.Join(err, f.Sync(), f.Close())
+	err = errors.Join(err, syncFile(f), f.Close())
 	if err == nil {
 		Stats.Lock()
 		Stats.SavedUDPConnections++
