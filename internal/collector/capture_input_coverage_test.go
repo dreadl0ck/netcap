@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/evidence"
@@ -105,5 +106,27 @@ func TestCaptureInputExitCoverageMatrix(t *testing.T) {
 				t.Fatalf("status=%s exit=%d; want %s/%d", tc.report.Status, code, tc.status, tc.code)
 			}
 		})
+	}
+}
+
+// Thousands of malformed DNS packets filled the issue list, so a capture made
+// partial by three short Ethernet frames reported a DNS decode error as its
+// reason.
+func TestCaptureInputIssuesNameStatusCause(t *testing.T) {
+	var report CaptureInputReport
+	report.ReachedEOF = true
+	report.ProcessedPackets = 100
+	for i := range 40 {
+		report.DecodeErrors++
+		report.issue(int64(i), "decode", "dns offset pointer too high", true)
+	}
+	report.LinkErrors++
+	report.issue(4000, "link", "Ethernet packet too small", true)
+	err := report.result()
+	if len(report.Issues) != 16 || report.Issues[15].Kind != "link" {
+		t.Fatalf("link issue not retained: %+v", report.Issues[15])
+	}
+	if err == nil || !strings.HasSuffix(err.Error(), "; link at offset 4000: Ethernet packet too small") {
+		t.Fatalf("message: %v", err)
 	}
 }

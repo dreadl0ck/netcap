@@ -75,18 +75,39 @@ func (e *CaptureInputError) ExitCode() int {
 func (e *CaptureInputError) Error() string {
 	message := fmt.Sprintf("capture input %s: processed=%d skipped=%d read-errors=%d link-errors=%d decode-errors=%d unsupported=%d snapshot-truncated=%d", e.Report.Status, e.Report.ProcessedPackets, e.Report.SkippedRecords, e.Report.ReadErrors, e.Report.LinkErrors, e.Report.DecodeErrors, e.Report.Unsupported, e.Report.SnapshotTruncated)
 	if len(e.Report.Issues) > 0 {
-		message += fmt.Sprintf("; offset %d: %s", e.Report.Issues[0].Offset, e.Report.Issues[0].Reason)
+		// Name an issue that set the status; decode errors never do.
+		issue := e.Report.Issues[0]
+		for _, candidate := range e.Report.Issues {
+			if candidate.Kind != "decode" && candidate.Kind != "timestamp-unavailable" {
+				issue = candidate
+				break
+			}
+		}
+		message += fmt.Sprintf("; %s at offset %d: %s", issue.Kind, issue.Offset, issue.Reason)
 	}
 	return message
 }
 
 func (r *CaptureInputReport) issue(offset int64, kind, reason string, recoverable bool, ordinal ...uint64) {
+	item := CaptureInputIssue{Offset: offset, Kind: kind, Reason: reason, Recoverable: recoverable}
+	if len(ordinal) > 0 {
+		item.Ordinal = ordinal[0]
+	}
 	if len(r.Issues) < 16 {
-		item := CaptureInputIssue{Offset: offset, Kind: kind, Reason: reason, Recoverable: recoverable}
-		if len(ordinal) > 0 {
-			item.Ordinal = ordinal[0]
-		}
 		r.Issues = append(r.Issues, item)
+		return
+	}
+	// Malformed protocol packets never set the status. When they fill the
+	// list, the first issue that does (link, read) replaces the last of them,
+	// so the report names why the input is partial.
+	if kind == "decode" || kind == "timestamp-unavailable" {
+		return
+	}
+	for i := len(r.Issues) - 1; i >= 0; i-- {
+		if k := r.Issues[i].Kind; k == "decode" || k == "timestamp-unavailable" {
+			r.Issues[i] = item
+			return
+		}
 	}
 }
 

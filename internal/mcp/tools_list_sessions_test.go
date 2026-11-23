@@ -186,3 +186,15 @@ func contentText(r *mcplib.CallToolResult) string {
 	}
 	return ""
 }
+
+func TestUnifiedSessionKeepsPartialCoverage(t *testing.T) {
+	for mode, raw := range map[string]map[string]any{
+		"service": {"sessionId": "s", "status": "completed", "coverage": "capture input partial"},
+		"local":   {"path": "/x.pcap", "isCompleted": true, "coverage": "capture input partial"},
+	} {
+		out := unifiedSession(mode, raw)
+		if out["completed"] != true || out["coverage"] != "capture input partial" {
+			t.Fatalf("%s: %v", mode, out)
+		}
+	}
+}

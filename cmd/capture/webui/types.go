@@ -32,6 +32,7 @@ type FileInfo struct {
 	SourceKind       string                `json:"sourceKind,omitempty"`
 	Error            *string               `json:"error,omitempty"`
 	ErrorLogPath     *string               `json:"errorLogPath,omitempty"`   // Path to detailed error log file
+	Coverage         string                `json:"coverage,omitempty"`       // Why a completed analysis is partial
 	BPFFilter        string                `json:"bpfFilter,omitempty"`      // BPF filter used during capture
 	ProcessingTime   float64               `json:"processingTime,omitempty"` // Processing duration in seconds
 	Hash             string                `json:"hash,omitempty"`           // SHA256 hash of the file

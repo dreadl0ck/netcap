@@ -268,6 +268,10 @@ func (s *Server) runOfflineCaptureHelper(job *AnalysisJob, executable string, ar
 	err = cmd.Wait()
 	duration := time.Since(startTime)
 
+	if note, ok := acceptPartialCapture(err, job.OutputDir); ok && ctx.Err() == nil {
+		log.Printf("[WebUI] Analysis of %s produced partial coverage: %s", job.InputFile, note)
+		err = nil
+	}
 	if err != nil {
 		if s.isServiceMode {
 			log.Printf("[Service] Analysis failed for session %s: %v (duration: %v)", job.SessionID, err, duration)

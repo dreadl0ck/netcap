@@ -56,18 +56,21 @@ type SessionInfo struct {
 	OutputDir        string                `json:"outputDir"`
 	Status           SessionStatus         `json:"status"`
 	ErrorMessage     string                `json:"errorMessage,omitempty"`
-	ErrorLogPath     string                `json:"errorLogPath,omitempty"` // Path to detailed error log file
-	StartTime        time.Time             `json:"startTime"`
-	CompletionTime   time.Time             `json:"completionTime"`
-	ProcessingTime   float64               `json:"processingTime,omitempty"` // Processing duration in seconds
-	PacketsTotal     int64                 `json:"packetsTotal,omitempty"`
-	ResultsReady     bool                  `json:"resultsReady"`
-	ShareUrl         string                `json:"shareUrl"`         // Shareable URL for viewing this session
-	IsPreloaded      bool                  `json:"isPreloaded"`      // True if this is a preloaded system pcap
-	BPFFilter        string                `json:"bpfFilter"`        // BPF filter applied during capture
-	IncludeDecoders  string                `json:"includeDecoders"`  // Decoders included during capture
-	ExcludeDecoders  string                `json:"excludeDecoders"`  // Decoders excluded during capture
-	HasReportedIssue bool                  `json:"hasReportedIssue"` // True if an issue has been reported for this session
+	// Coverage explains why a completed capture is partial (capture-manifest
+	// coverageError); empty for complete coverage.
+	Coverage         string    `json:"coverage,omitempty"`
+	ErrorLogPath     string    `json:"errorLogPath,omitempty"` // Path to detailed error log file
+	StartTime        time.Time `json:"startTime"`
+	CompletionTime   time.Time `json:"completionTime"`
+	ProcessingTime   float64   `json:"processingTime,omitempty"` // Processing duration in seconds
+	PacketsTotal     int64     `json:"packetsTotal,omitempty"`
+	ResultsReady     bool      `json:"resultsReady"`
+	ShareUrl         string    `json:"shareUrl"`         // Shareable URL for viewing this session
+	IsPreloaded      bool      `json:"isPreloaded"`      // True if this is a preloaded system pcap
+	BPFFilter        string    `json:"bpfFilter"`        // BPF filter applied during capture
+	IncludeDecoders  string    `json:"includeDecoders"`  // Decoders included during capture
+	ExcludeDecoders  string    `json:"excludeDecoders"`  // Decoders excluded during capture
+	HasReportedIssue bool      `json:"hasReportedIssue"` // True if an issue has been reported for this session
 }
 
 // IPTracker tracks analysis attempts per IP for rate limiting
@@ -251,6 +254,15 @@ func (sm *SessionManager) UpdateSessionProcessingTime(sessionID string, duration
 	if session, exists := sm.sessions[sessionID]; exists {
 		session.ProcessingTime = durationSeconds
 		log.Printf("[SessionManager] Session %s processing time: %.2f seconds", sessionID, durationSeconds)
+	}
+}
+
+// SetSessionCoverage records why a completed session has partial coverage.
+func (sm *SessionManager) SetSessionCoverage(sessionID, coverage string) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	if session, exists := sm.sessions[sessionID]; exists {
+		session.Coverage = coverage
 	}
 }
 

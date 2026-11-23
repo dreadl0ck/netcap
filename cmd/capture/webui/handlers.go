@@ -172,6 +172,7 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 				ParentSessionID: session.ParentSessionID,
 				ParentRunID:     session.ParentRunID, AnalysisSelector: session.AnalysisSelector, PacketSelection: session.PacketSelection,
 				HasReportedIssue: session.HasReportedIssue,
+				Coverage:         session.Coverage,
 			}
 
 			// Add error if failed
@@ -206,6 +207,7 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 				ParentSessionID: session.ParentSessionID,
 				ParentRunID:     session.ParentRunID, AnalysisSelector: session.AnalysisSelector, PacketSelection: session.PacketSelection,
 				HasReportedIssue: session.HasReportedIssue,
+				Coverage:         session.Coverage,
 			}
 
 			// Add error if failed
@@ -239,6 +241,7 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 	maps.Copy(fileBPFFilters, s.fileBPFFilters)
 	fileProcessingTime := make(map[string]float64)
 	maps.Copy(fileProcessingTime, s.fileProcessingTime)
+	fileCoverage := maps.Clone(s.fileCoverage)
 	reportedIssues := make(map[string]bool)
 	maps.Copy(reportedIssues, s.reportedIssues)
 	children := make(map[string]childAnalysis)
@@ -304,6 +307,7 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			ProcessingTime:   fileProcessingTime[path],
 			Hash:             hash,
 			HasReportedIssue: reportedIssues[hash],
+			Coverage:         fileCoverage[path],
 			ParentInputFile:  children[path].ParentInputFile,
 			ParentRunID:      children[path].ParentRunID, AnalysisSelector: children[path].Selector, PacketSelection: children[path].PacketSelection,
 		}

@@ -361,6 +361,9 @@ func unifiedSession(mode string, raw map[string]any) map[string]any {
 			out["source"] = "cli-preloaded"
 		}
 	}
+	if coverage := firstString(raw, "coverage"); coverage != "" {
+		out["coverage"] = coverage // completed, but the capture input was partial
+	}
 	if id, _ := out["session_id"].(string); id != "" {
 		out["summary_resource_uri"] = sessionResourceURI(id, "summary")
 		out["graph_resource_uri"] = sessionResourceURI(id, "graph")

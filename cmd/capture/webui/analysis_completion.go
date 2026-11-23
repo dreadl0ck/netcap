@@ -43,8 +43,10 @@ func (s *Server) completeAnalysis(job *AnalysisJob, duration time.Duration) erro
 	if err := s.waitForAnalysisTimeline(job.OutputDir); err != nil {
 		return err
 	}
+	coverage, _ := partialCaptureCoverage(job.OutputDir)
 	if s.sessionManager != nil {
 		s.sessionManager.UpdateSessionProcessingTime(job.SessionID, duration.Seconds())
+		s.sessionManager.SetSessionCoverage(job.SessionID, coverage)
 		if err := s.sessionManager.UpdateSessionStatus(job.SessionID, StatusCompleted, "", ""); err != nil {
 			return fmt.Errorf("persist analysis completion: %w", err)
 		}
@@ -59,6 +61,7 @@ func (s *Server) completeAnalysis(job *AnalysisJob, duration time.Duration) erro
 		s.mu.Unlock()
 	} else {
 		s.SetFileProcessingTime(job.InputFile, duration.Seconds())
+		s.setFileCoverage(job.InputFile, coverage)
 		s.SetFileOutputDir(job.InputFile, job.OutputDir)
 		s.SetFileBPFFilter(job.InputFile, job.BPFFilter)
 		s.MarkFileCompleted(job.InputFile)

@@ -232,6 +232,7 @@ type Server struct {
 	fileBPFFilters         map[string]string              // Tracks BPF filter used for each file
 	fileOutputDirs         map[string]string              // Tracks actual output directory for each file
 	fileProcessingTime     map[string]float64             // Tracks processing time in seconds for each file
+	fileCoverage           map[string]string              // Partial-coverage reason per completed file
 	dpiPreferences         map[string]*UserDPIPreferences // DPI preferences per user IP
 	reportedIssues         map[string]bool                // Tracks which file hashes have had issues reported
 	fileIDToPath           map[string]string              // Maps file IDs to file paths (local mode)
@@ -1136,6 +1137,20 @@ func (s *Server) SetFileBPFFilter(inputFile, bpfFilter string) {
 	}
 }
 
+// setFileCoverage records why a completed local analysis is partial.
+func (s *Server) setFileCoverage(inputFile, coverage string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if coverage == "" {
+		delete(s.fileCoverage, inputFile)
+		return
+	}
+	if s.fileCoverage == nil {
+		s.fileCoverage = make(map[string]string)
+	}
+	s.fileCoverage[inputFile] = coverage
+}
+
 // SetFileProcessingTime stores the processing time for a specific input file
 func (s *Server) SetFileProcessingTime(inputFile string, durationSeconds float64) {
 	s.mu.Lock()
@@ -2029,6 +2044,10 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	}
 	if err := c.GetNetworkDetectionError(); err != nil {
 		analysisErr = fmt.Errorf("network detection failed: %w (capture error: %v)", err, analysisErr)
+	}
+	if note, ok := acceptPartialCapture(analysisErr, job.OutputDir); ok {
+		log.Printf("[WebUI] Analysis of %s produced partial coverage: %s", job.InputFile, note)
+		analysisErr = nil
 	}
 
 	duration := time.Since(startTime)
