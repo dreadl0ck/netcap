@@ -65,7 +65,8 @@ Tool responses are capped at 256 KiB. When a response is cut off, page through t
 | Snapshot-safe traffic rankings | `query_flows`; exact `startNs` / `endNs` strings, cumulative snapshot reconciliation, source hash required on subsequent pages |
 | Exported flow observations | `query_flow_exports`; explicit exporter, format, domain and time scope; sampling is not silently scaled |
 | Direct UDP flow collection | `flow_receiver`: start → status → stop → query → delete; owned loopback listener, duration 1–300 s and post-datagram byte guard, native collection health and source hashes |
-| Timeline | `get_timeline_meta` → `query_timeline_events` / `get_timeline_buckets`; preserve generation and pagination cursors |
+| Timeline | `get_timeline_meta` → `query_timeline_events` / `get_timeline_buckets`; preserve generation and pagination cursors. `truncated` means records are not indexed (event cap or `skippedRecords` over 16 MiB); `metadataTruncated` means host, Community ID and search filters undercount `eventsMissingMetadata` events, and filtered responses then list `limitations` |
+| Busy backends | Admission refusals end in `; retry_after_ms=N` (HTTP 429/503 carry `Retry-After`); back off and retry. 413 and 507 are not retryable |
 | Related and exact evidence | `get_related_evidence` for qualified links; existing analyst binding/catalogue/occurrence tools for content-bound resolution |
 | Host identity and context | `list_hosts` preserves the backend identity report; `get_behavior`, `get_asset_context`, `get_behavior_topology` expose learned context |
 | Detection coverage | `get_network_detection`, `get_behavior_health`, `list_alerts`; missing reports are errors, not no-match results |

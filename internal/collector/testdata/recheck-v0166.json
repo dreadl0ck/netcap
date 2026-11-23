@@ -1,4 +1,132 @@
 {
+  "recheckV01612": {
+    "intake": {
+      "sourceRevision": "4ab42e88",
+      "proposalsSHA256": "070125abf7881b0c68403184c925deac4e6aa7d964e7205cd8bfe81129223da7",
+      "patchSHA256": "8a8eb196e070281a8578e0828d8d130b238294170e1678e68d9e41e5dfe32518",
+      "status": "The evaluator supplied fix proposals and an unpushed patch (e5bb07ef), not the full recheck report. Each proposal was reimplemented and verified on Darwin arm64 with nodpi,noyara,nomagika; the patch was not applied because its DNS Beaconing group_by failed every unscoped analysis and it broke TestMCPAlertReadAdmissionSharedAcrossViews."
+    },
+    "gate": "make recheck-v01612 (unit, race, TestRecheck1612CLI, TestHuntCLIRegressions; MIXED_UPLOAD_ARCHIVE adds --full-fanout)",
+    "issues": [
+      {
+        "id": "MCP-24",
+        "status": "implemented",
+        "commit": "d82a8887",
+        "tests": [
+          "TestTimelineBuildBoundsCommunityMetadata",
+          "TestTimelineMetadataShares",
+          "TestTimelineMetadataTruncationIsMonotonic",
+          "TestTimelineMetadataTruncationIsDeterministic",
+          "TestTimelineFilteredQueriesReportLimitations",
+          "TestAnalysisCompletesWhenTimelineMetadataIsTruncated",
+          "TestTimelineBuildEnforcesAuditFrameLimit"
+        ],
+        "qualification": "Per-track metadata shares fixed before reading (a quarter equal, the rest by stored size); exhaustion sets metadataTruncated and eventsMissingMetadata and filtered queries report limitations. Frames over 16 MiB are skipped and counted. Damaged and mislabeled audits still fail. The original 100k-flow session was not replayed."
+      },
+      {
+        "id": "MCP-23",
+        "status": "implemented",
+        "commit": "aed14c94",
+        "tests": [
+          "TestAlertViewsAboveDecodedScanCap",
+          "TestAlertScanLimitMessages",
+          "TestRawAlertSpillCapacity",
+          "TestAlertViewsAbovePageScanBudget",
+          "TestRawAlertPageRejectsFullScratchWithoutPartialResults"
+        ],
+        "qualification": "Paged views stream without a total byte cap; 1,048,576 rows and 1 MiB per alert still bound a scan. 64 KiB SQLite scratch pages fit 2,000 rows of about 1.5 KB in 6 MiB where 4 KiB pages returned 507. The evaluator session remains unreplayed."
+      },
+      {
+        "id": "V1612-2",
+        "status": "implemented",
+        "commit": "e4f58cf5",
+        "tests": [
+          "TestStreamEvidenceRetriesTakenName",
+          "TestStreamEvidenceNameErrorsAreNotRetried",
+          "TestStreamEvidenceNamesAre128Bit"
+        ],
+        "qualification": "128-bit final names, retried on fs.ErrExist or an existing target (Windows reports access denied). No 200k-stream run."
+      },
+      {
+        "id": "V1612-3",
+        "status": "implemented",
+        "commit": "254c6677, 837d4221, ed99bfa1",
+        "tests": [
+          "TestEmbeddedRulesIgnoreBrowseBurst",
+          "TestEmbeddedSYNScanCountsDistinctPorts",
+          "TestEmbeddedMultipleExternalConnections",
+          "TestEmbeddedDNSBeaconing",
+          "TestEmbeddedDNSTunnelingNeedsLongNames",
+          "TestUnscopedGroupedThresholdIsBounded",
+          "TestDistinctAndGroupedCountsTolerateReordering",
+          "TestSavedLegacyDefaultsLoadCurrentDefinition",
+          "TestRecheck1612CLI"
+        ],
+        "qualification": "Embedded rules are tested through NewAuditReplay and the CLI. check-recheck1611-alerts.py now matches 88 alerts and 300 HTTP rows in all four runs at d5b2e491; the three removed alerts were SYN Scan Detection on 300 port-80 SYNs from three clients. DNS grouping is case-sensitive and periodicity is not modeled."
+      },
+      {
+        "id": "V1612-4",
+        "status": "implemented",
+        "commit": "f5e8c7a8",
+        "tests": [
+          "TestSignatureSoftwareUsesPreferredBannerRegardlessOfOrder",
+          "TestServiceProbeCanReenterAggregateStore",
+          "TestServiceFlushesBeforeSoftwareConsumers",
+          "TestSignatureSoftwareFlowListIsBounded"
+        ],
+        "qualification": "Signature Software is emitted at service flush from the preferred banner; derived vulnerability and exploit records move to flush. The 20-run Tufts set4 replay was not run."
+      },
+      {
+        "id": "Cleartext/SNMP",
+        "status": "implemented",
+        "commit": "837d4221",
+        "tests": [
+          "TestEmbeddedSecretRulesSeparateSNMP"
+        ],
+        "qualification": "SNMP communities no longer raise Cleartext Password Captured; non-default communities raise SNMP Community String Observed."
+      },
+      {
+        "id": "Retry hints",
+        "status": "implemented",
+        "commit": "e04d773c",
+        "tests": [
+          "TestRetryAfterMiddlewareMarksBusyResponses",
+          "TestBackendBusyIsRetryable",
+          "TestAuditQueryAdmissionRecoversAfterCancellation"
+        ],
+        "qualification": "Every WebUI 429/503 carries Retry-After; MCP busy errors end in retry_after_ms=N."
+      },
+      {
+        "id": "GTP/VRRP audit names",
+        "status": "implemented",
+        "commit": "d1b2cb77, 86838d7a",
+        "tests": [
+          "TestAuditNameTableCoversGoPacketDecoders",
+          "TestAnalysisCompletesWithVRRPAudit",
+          "TestLegacyGTPv1UAuditIsReadable",
+          "TestManagedCaptureOutputIncludesAuditAliases",
+          "TestRecheck1612CLI"
+        ],
+        "qualification": "VRRP.ncap.gz (NC_VRRPv2) failed every timeline and analysis on master; ApplePktap.ncap.gz (NC_PKTAP) had the same shape. Readers use internal/auditname. A -y re-run failed on the existing audit-output-stages.json since 29f3d994."
+      },
+      {
+        "id": "MCP-20",
+        "status": "implemented_with_policy",
+        "commit": "65c91776",
+        "tests": [
+          "TestAuxiliaryDispatchOverlapsOwnedSmallCaptures",
+          "TestAuxiliaryCaptureIsOnUnlessDisabled"
+        ],
+        "qualification": "The helper is on unless NETCAP_AUXILIARY_CAPTURE=0, up to eight starts per large capture. check-mcp-stdio.py --full-fanout at 65c91776 (default settings, Darwin arm64): 384 successful calls; three small uploads completed 4.6-10.6 s after first attempt while the 15,000-packet capture took 129 s. The evaluator's 3 s target is unmet: each helper start costs 2.9-3.4 s and helpers run one at a time."
+      },
+      {
+        "id": "V1611-3",
+        "status": "open",
+        "tests": [],
+        "qualification": "Binary fragment metadata shipped in v0.16.12. Per-fragment SQLite writes and the second full HTTP read remain; no performance gate exists."
+      }
+    ]
+  },
   "recheckV01611AlertStreamableHTTP": "At 7d594c7e on Darwin arm64, check-mcp-stdio.py --http-alerts used the official Python SDK against the authenticated loopback /mcp service endpoint. All 12 successful calls matched the published schemas. The 27,152-row synthetic audit exceeded 16 MiB and passed statistics, deep raw and grouped/member continuation, exact unique counts and scoped search; both stale generation calls returned errors carrying HTTP 409. Capture Contracts runs the same witness over both transports. The original evaluator session is unverified.",
   "recheckV01611CurrentBranchVerification": "Darwin arm64 at 7d594c7e, portable nodpi,noyara,nomagika: the default stdio suite passed 254 schema-validated calls across 96 tools, including the synthetic 27,152-alert audit. Full-fanout stdio passed in both lanes (630 calls serial; 470 auxiliary with --partial-download). All four jobs per lane completed with zero 503s or queue drops and verified input digests and ready timelines. From initial attempt, small jobs took 128.436–130.938 s serial and 4.607, 7.624, and 129.998 s with the opt-in helper. The portable collector race run passed the partial download, 90 MiB backed HTTP extraction, pressure isolation, and eight GTP cases in 48.041 s. GTP MCP parity passed for seven synthetic control cases; Protobuf returned 0/0/9/3 and mixed TCP/UDP opt-in returned 1/3; four synthetic rule replays matched 91 alerts and 300 HTTP rows at one and four workers. The public H-17 race replay retained one June and two April candidates in 3.489 s. These runs do not establish evaluator-corpus equivalence, full MCP variant coverage, native Windows/Npcap qualification, or process-wide memory limits.",
   "recheckV01611PartialArtifactMCP": "scripts/check-mcp-stdio.py --partial-download <pinned download-fast capture> verifies the input digest, a complete sealed File audit of one 82,095,922-byte incomplete artifact with the pinned SHA-256, and partial extraction with unexpected EOF. The extended stdio run on Darwin arm64 at 75233644 passed 259 schema-validated calls across 96 tools.",
@@ -102,8 +230,8 @@
   "recheckV01611MixedUploadLatency": "On portable Darwin arm64 at 06f704b8, scripts/check-mcp-stdio.py --mixed-upload-archive with the pinned v0.16.9 archive ran eight uploads on a fresh server, alternating a 1,500-packet TCP prefix and the tracked mDNS fixture. All eight completed with matching retained SHA-256, exact admitted packet counts and timeline generations. Over the 8.752 s arrival window none completed and no HTTP 503 occurred. Small-job latency was 14.646–55.403 s from first attempt and 14.577–55.346 s from admission. The full probe passed 469 calls across 96 tools. This establishes a local latency baseline, not a scheduling fix or evaluator-scale replay.",
   "recheckV01611GTPStdio": "A fresh portable Darwin arm64 build at 06f704b8 passed scripts/check-recheck1611-gtp.py with the pinned v0.16.11 archive. Both uploads completed and the official MCP SDK returned one sealed GTP record with complete coverage per capture: Echo Request (1) and the mixed T-PDU/End Marker capture (254). Input and structured output schemas validated for all six calls.",
   "recheckV01611GroupedAlertPages": "Grouped MCP alert pages now scan into bounded summary state instead of materializing the full audit. TestAlertViewsAbovePageScanBudget verifies exact grouped totals, first/next/empty pages and a consistent generation on a 27,152-alert gzip audit above 16 MiB. TestGroupedAlertPagesRejectExcessSummaryState verifies a 413 without partial totals. Focused Darwin arm64 WebUI race tests passed in 16.644 s. Evaluator-session replay remains open.",
-  "recheckV01611RawAlertPages": "MCP-23 raw pages sort and deduplicate storage in a temporary SQLite database while preserving duplicate alert occurrences and the existing canonical page order. TestAlertStatsAbovePageScanBudget verifies first, deep (offset 25,000), final and empty pages on the 27,152-row gzip audit above 16 MiB, with exact totals and consistent generation across offsets. Focused Darwin arm64 WebUI alert and collection tests passed under the race detector in 15.699 s. Grouped large pages and evaluator-session replay remain open.",
-  "recheckV01611AlertStats": "MCP-23 statistics now scan without retaining the full alert track. TestAlertStatsAbovePageScanBudget verifies exact totals, severity/rule groups and newest ten alerts for 27,152 rows in a gzip audit exceeding the former 16 MiB stored cap. Focused Darwin arm64 WebUI alert race tests passed in 3.838 s. Large raw and grouped pages and evaluator-session replay remain open.",
+  "recheckV01611RawAlertPages": "MCP-23 raw pages sort and deduplicate storage in a temporary SQLite database while preserving duplicate alert occurrences and the existing canonical page order. TestAlertViewsAbovePageScanBudget verifies first, deep (offset 25,000), final and empty pages on the 27,152-row gzip audit above 16 MiB, with exact totals and consistent generation across offsets. Focused Darwin arm64 WebUI alert and collection tests passed under the race detector in 15.699 s. Grouped large pages and evaluator-session replay remain open.",
+  "recheckV01611AlertStats": "MCP-23 statistics now scan without retaining the full alert track. TestAlertViewsAbovePageScanBudget verifies exact totals, severity/rule groups and newest ten alerts for 27,152 rows in a gzip audit exceeding the former 16 MiB stored cap. Focused Darwin arm64 WebUI alert race tests passed in 3.838 s. Large raw and grouped pages and evaluator-session replay remain open.",
   "recheckV01611GTPSealing": "TestRecheck1611GTPAuditSealing passed on portable Darwin arm64 under the race detector in 2.779 s. Five control-only fixtures and one mixed T-PDU/End Marker fixture from the SHA-256-pinned evaluator archive finished with complete GTP.ncap.gz seals and the expected control-message types. Both packets in the mixed capture were admitted; only the End Marker produces a GTP row in this path. MCP replay is recorded in recheckV01611GTPQueryParity; exact full corpus replay remains blocked.",
   "recheckV01611Intake": {"sourceRevision":"10249a9f8b73db86ab8357d72c6e3a3af43d5de6","reportSHA256":"23685cb71cf98ab835d94c1e5d86709709e8e691b4a7c390fdb1016a4403c129","syntheticArchiveSHA256":"6d5c914a95b343096f86e454ee67a122a1da47b1172dcc82d8dc39f70312133e","priority":["MCP-23 and V1611-1","MCP-22 and MCP-20","V1611-3 and V1611-2"],"status":"Local replay evidence is indexed in W87's v0.16.11 evaluator follow-up. Exact full corpus/harness replay, the original MCP-23 session and native Windows/Npcap runtime remain blocked."},
   "report": "netcap-v0.16.6-combined-issues.md",
@@ -292,7 +420,7 @@
     "timelineQueryAdmission": "TestTimelineEventAndBucketQueriesShareSlotsThroughWrite verifies that four event requests hold the shared query slots through response writes. A bucket request returns HTTP 429 with an empty series, then reports both fixture matches after release. Focused timeline and analysis completion race tests passed.",
     "timelineRecordReadAdmission": "TestTimelineRecordRejectsSaturationAndRecovers verifies that a detail request returns HTTP 429 while both read slots are occupied, then returns the expected record on retry. Focused timeline record race tests passed.",
     "timelineFacetBuildBudget": "Timeline facet construction checks available estimated capacity before allocating keys, every 16,384 posting additions, and before publication. Builds for the same index share its 32 MiB budget. TestTimelineFacetBudgetFallsBackToExactScan verified 50,000 matches and a four-row page with zero or 1 KiB available, without retaining a partial facet. Focused WebUI race tests passed.",
-    "timelineMetadataBudget": "Timeline builds divide a 64 MiB estimated metadata budget across tracks, charging unique endpoint and Community ID strings and extra ID lists. TestTimelineBuildBoundsCommunityMetadata verifies exact-fit admission with repeated IDs and rejection without an index one byte short. Focused timeline and analysis completion race tests passed.",
+    "timelineMetadataBudget": "Superseded by recheckV01612 MCP-24: exhaustion now degrades per-track metadata instead of rejecting the index. Timeline builds give each track a fixed share of a 64 MiB metadata budget, charging unique endpoint and Community ID strings and extra ID lists.",
     "timelineAuditFrameLimit": "Timeline builds and record lookups share a 16 MiB audit frame cap. TestTimelineBuildEnforcesAuditFrameLimit verifies that an exact-size record produces a ready index and one byte over fails without publishing an index. Focused timeline and analysis completion race tests passed.",
     "timelineDetailInputIdentity": "TestTimelineRecordRejectsReplacementAfterIndexSelection verifies that a replacement with the same event time and ordinal returns HTTP 409 after the old index has been selected. Detail reads use the indexed descriptor identity and size, honor cancellation, and recheck the generation before returning. Focused timeline and analysis completion race tests passed.",
     "timelineCachedGenerationIdentity": "TestTimelineCacheRejectsReplacedAuditGeneration verifies that replacing an audit with the same name, size and mtime invalidates the cached index. The old generation receives HTTP 409; the rebuilt generation exposes the replacement timestamp. Focused timeline, audit-stats and completion race tests passed; portable MCP stdio passed 230 calls across 95 of 119 tools with zero failures.",
@@ -473,7 +601,7 @@
     "alertStatsAdmission": "Alert statistics share the two bounded alert read slots and use the same audit and resolution limits. The regressions verify rejection of oversized audit inputs, HTTP 429 while both page writes are held, and an exact empty total after release. Portable WebUI and MCP race suites passed.",
     "alertPageAdmission": "Flat and grouped MCP alert pages share two slots held through response writes. TestMCPAlertPagesShareCapacityThroughResponseWrite holds one response of each kind, verifies both MCP routes return 429 while saturated, and verifies legacy pages and subsequent MCP pages remain available. Five focused race repetitions passed.",
     "alertResolutionSourceCap": "MCP alert pages read resolution metadata from a confined descriptor with a 4 MiB cap. TestAlertPagesRequireValidBoundedResolutionMetadata verifies exact-cap resolution and stale flat-page generation rejection, and that both flat and grouped routes reject oversized or malformed metadata without a generation. Portable WebUI and MCP race suites passed.",
-    "alertPageSourceCap": "MCP flat and grouped alert pages bound the audit before filtering: 16 MiB stored gzip, 16 MiB cumulative record bodies and 65536 records. TestAlertPagesRejectOversizeSourceBeforeFiltering verifies both routes return HTTP 413 without totals or a generation for an oversized body or record count, even when the filter would match nothing. Reads use the confined descriptor and honor cancellation.",
+    "alertPageSourceCap": "Superseded (5fc46594, 06f704b8, aed14c94): MCP alert pages stream without a stored or decoded total cap; 1,048,576 rows and 1 MiB per alert still return HTTP 413 without totals or a generation. TestAlertPagesRejectOversizeSourceBeforeFiltering covers the per-alert cap.",
     "collectionScanCap": "The shared MCP collection pager rejects more than 65536 input rows or 16777216 encoded scan bytes with HTTP 413 and no page totals or generation. Unmatched rows count toward the byte limit. TestCollectionPageRejectsIncompleteScans and the portable WebUI and MCP race suites passed. This limit applies after handlers gather source rows.",
     "boundAuditHeaderBudget": "TestAnalystAuditHeaderBudget verifies that a gzip audit with a 1 MiB header reaches the record visitor. A header one byte larger returns ErrRecordLimit before any records are visited. The portable analyst race suite passed.",
     "analystCICoverage": "Capture Contracts now triggers on internal/analyst/** and runs the analyst race suite and vet. Portable analyst race tests, vet, and actionlint v1.7.7 passed locally.",

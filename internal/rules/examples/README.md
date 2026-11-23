@@ -189,11 +189,11 @@ In an isolated worktree without the `../go-dpi` workspace sibling, use `GOWORK=o
 **Focus**: Rate-based and threshold detection  
 **Maturity**: Production-ready  
 **Contains**:
-- Port scanning (threshold-based)
+- Port scanning (distinct destination ports per source)
 - Brute force attacks (SSH, RDP, web logins, authentication services)
 - Network reconnaissance (ICMP sweeps, DNS zone transfers)
 - DoS attacks (SYN floods, UDP floods)
-- C2 beaconing patterns
+- C2 beaconing patterns (DNS queries per host and name)
 - Web application attack patterns (SQL injection, directory traversal)
 - Scanner activity detection
 - Lateral movement patterns (SMB enumeration, Kerberos spikes)

@@ -74,7 +74,8 @@ type Rule struct {
 	// Only applicable when Threshold > 1. Default is 60 seconds (1 minute)
 	ThresholdWindow int `yaml:"threshold_window,omitempty"`
 
-	// GroupBy opts repeated-count rules into explicit scoped capture-time state.
+	// GroupBy counts repeated-count rules per distinct value of these fields:
+	// scoped capture-time state with capture_time, bounded state without.
 	GroupBy []string `yaml:"group_by,omitempty"`
 
 	// DistinctField enables cardinality-based detection: instead of counting raw
@@ -87,7 +88,7 @@ type Rule struct {
 	// DistinctField: "DstIP" with DistinctThreshold: 5 fires when a single
 	// source contacts 5+ distinct destinations within the window.
 	//
-	// The field name must be a top-level field of the record type (e.g. "DstIP").
+	// The field is a record field or a dotted path such as "Questions.Name".
 	DistinctField string `yaml:"distinct_field,omitempty"`
 
 	// DistinctThreshold is the number of distinct DistinctField values (per source)
@@ -124,7 +125,7 @@ type Sequence struct {
 	// against the same record type as the rule.
 	After string `yaml:"after"`
 
-	// GroupBy lists top-level record fields whose values must be equal for the
+	// GroupBy lists record fields or dotted paths whose values must be equal for the
 	// earlier and triggering records to be considered related. Grouping is
 	// exact equality: it cannot express range overlap.
 	GroupBy []string `yaml:"group_by"`

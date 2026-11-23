@@ -62,13 +62,13 @@ rules:
 
 | Topic         | Behavior                                                                                                                                                                                                                                                                                                                                                             |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Group/window  | `group_by` keys are string or integer fields. Counters are kept per scope and rule name. Windows are inclusive and reset each time they are crossed. Pick fields that identify the service or account. Records with a missing string key don't join.                                                                                                                 |
+| Group/window  | `group_by` keys are string or integer fields, or dotted paths into nested records such as `Questions.Name` (the first DNS question). Counters are kept per scope and rule name. Windows are inclusive and reset each time they are crossed. Pick fields that identify the service or account. Records with a missing string key don't join. Without `capture_time` the engine counts per group in bounded state: 10,000 groups and 100,000 timestamps, least recently matched evicted first. |
 | Reordering    | `lateness_seconds` holds records with equal times together and sorts them by timestamp, type and protobuf bytes. A record older than the watermark fails with an error. Replays within the allowance give the same crossings. Lateness beyond it is unsupported.                                                                                                     |
 | Limits        | 4,096 queued records, 1 MiB protobuf frame, 32 MiB reorder storage, 10,000 scoped groups and 100,000 pending count timestamps. Beyond these, `ErrStateCapacity` is returned. These limit rule state, not total process memory.                                                                                                                                       |
 | Reload        | If the new rules fail to compile, pending state is kept. After a successful reload, admitted records drain under the old rules, then correlation, dedup and rate state reset. A change of scope or lateness needs a new engine.                                                                                                                                      |
 | Finalization  | `Engine.Finalize()` drains pending records before readiness. `Close()` also drains and reports errors. The capture CLI returns finalization errors. Code that embeds the engine must call `Finalize()` before it writes `audit-output-ready.json`.                                                                                                                   |
 | API           | `NewOrderedStream` gives you `Advance(watermark)` and `Finish()`. `Reload` on an explicit stream refuses pending records. `EvaluateScoped` needs records that are already ordered.                                                                                                                                                                                   |
-| Compatibility | Without `capture_time`, the default rule semantics apply. Capture-time mode needs typed `after_type` sequences and rejects distinct-cardinality rules. Wall-clock dedup and rate limiting are off in scoped evaluation. Scoped count and join rules loaded by `NewEngine` need `capture_time`. Offline rule packs (`netcap-offline-rules/v1`) keep their own format. |
+| Compatibility | Without `capture_time`, the default rule semantics apply. Capture-time mode needs typed `after_type` sequences and rejects distinct-cardinality rules. Wall-clock dedup and rate limiting are off in scoped evaluation. Typed joins (`after_type`) loaded by `NewEngine` need `capture_time`; grouped counts run unscoped without it. Offline rule packs (`netcap-offline-rules/v1`) keep their own format. |
 
 `sequence.after_type` and `sequence.after_group_by` add exact joins across record types. The mapped scalar types must agree, and `sequence.group_by` names the fields of the triggering record. For example, to alert on a rejected login: `after_type: Secret`, `after: AuthSuccessSet && !AuthSuccess`, `after_group_by: [CommunityID]`, `group_by: [CommunityID]`, `within: 60`.
 
@@ -215,11 +215,11 @@ Tags for organizing rules, for example `["ssh", "bruteforce", "authentication"]`
 
 #### `threshold` / `threshold_window` (optional)
 
-Alert only after `threshold` matches within `threshold_window` seconds (default 60). These counters are shared per rule name and are not grouped by host. They use record timestamps when available, but arrival order and wall-clock suppression still apply. For deterministic counting per entity on finalized records, use [offline grouped thresholds](RULES_ENGINE.md#offline-grouped-thresholds).
+Alert only after `threshold` matches within `threshold_window` seconds (default 60). Without `group_by` these counters are shared per rule name and are not grouped by host; add `group_by: [SrcIP]` to count per host. They use record timestamps when available, but arrival order and wall-clock suppression still apply. For deterministic counting per entity on finalized records, use [offline grouped thresholds](RULES_ENGINE.md#offline-grouped-thresholds).
 
 #### `distinct_field` / `distinct_threshold` (optional)
 
-Fan-out detection. The engine counts the **distinct values** of `distinct_field` seen **per source IP** within `threshold_window`, and alerts when the count reaches `distinct_threshold` (default 2). This finds one source touching many destinations, for example an internal host sweeping many controllers:
+Fan-out detection. The engine counts the **distinct values** of `distinct_field` seen **per source IP** within `threshold_window`, and alerts when the count reaches `distinct_threshold` (default 2). The window ends at the newest value seen for the source, so out-of-order records count. At most 100,000 sources are tracked per rule; the least recently seen is evicted first. This finds one source touching many destinations, for example an internal host sweeping many controllers:
 
 ```yaml
 - name: S7comm Horizontal Enumeration
@@ -244,7 +244,7 @@ sequence:
 ```
 
 * `after` (required): expression for the **earlier** record. It is compiled against the rule's record type, so both expressions see the same fields. The rule's own `expression` is the **trigger**.
-* `group_by` (required, at least one field): top-level record fields that must be equal on the earlier and the triggering record.
+* `group_by` (required, at least one field): record fields or dotted paths that must be equal on the earlier and the triggering record.
 * `within` (optional): how many seconds the earlier record stays eligible. Default 60. A negative value is rejected when the rules load.
 
 How it behaves:
