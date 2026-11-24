@@ -28,25 +28,27 @@ rules:
 
   # KDC_ERR_PREAUTH_FAILED (error code 24) - brute force indicator
   - name: Kerberos Pre-Authentication Failure Burst
-    description: Multiple Kerberos pre-authentication failures detected from the same source, indicating a potential brute force or password spraying attack
+    description: 'One client receives 5+ Kerberos pre-authentication failures within 60 seconds, indicating brute force or password spraying'
     type: Kerberos
     expression: 'MessageTypeCode == 30 && ErrorCode == 24'
     severity: medium
     mitre: ["T1110"]
     tags: ["kerberos", "credential-access", "brute-force"]
     enabled: true
+    group_by: ["DstIP"]
     threshold: 5
     threshold_window: 60
 
   # KDC_ERR_C_PRINCIPAL_UNKNOWN (error code 6) - user enumeration
   - name: Kerberos User Enumeration
-    description: Multiple Kerberos principal-not-found errors detected, indicating Active Directory user enumeration via Kerberos
+    description: 'One client receives 10+ Kerberos principal-not-found errors within 60 seconds, indicating user enumeration'
     type: Kerberos
     expression: 'MessageTypeCode == 30 && ErrorCode == 6'
     severity: medium
     mitre: ["T1087.002"]
     tags: ["kerberos", "discovery", "user-enumeration"]
     enabled: true
+    group_by: ["DstIP"]
     threshold: 10
     threshold_window: 60
 

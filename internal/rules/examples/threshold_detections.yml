@@ -11,37 +11,40 @@ rules:
   
   # SSH Brute Force - multiple connection attempts to SSH
   - name: SSH Brute Force
-    description: Alert when 50+ SSH connection attempts detected within 120 seconds
+    description: 'One source opens 50+ SSH connections to the same server within 120 seconds'
     type: TCP
     expression: DstPort == 22 && SYN && !ACK
     severity: high
     mitre: ["T1110.001", "T1021.004"]
     tags: ["brute-force"]
     enabled: true
+    group_by: ["SrcIP", "DstIP"]
     threshold: 50
     threshold_window: 120
 
   # RDP Brute Force - multiple connection attempts to RDP
   - name: RDP Brute Force
-    description: Alert when 30+ RDP connection attempts detected within 120 seconds
+    description: 'One source opens 30+ RDP connections to the same server within 120 seconds'
     type: TCP
     expression: DstPort == 3389 && SYN && !ACK
     severity: high
     mitre: ["T1110.001", "T1021.001"]
     tags: ["brute-force"]
     enabled: true
+    group_by: ["SrcIP", "DstIP"]
     threshold: 30
     threshold_window: 120
 
   # Web Login Brute Force - multiple POST requests to login endpoints
   - name: Web Login Brute Force
-    description: Alert when 100+ POST requests to login endpoints within 300 seconds
+    description: 'One client sends 100+ POSTs to login endpoints on the same server within 300 seconds'
     type: HTTP
     expression: Method == "POST" && MatchesPattern(URL, "(?i)(login|signin|auth)")
     severity: high
     mitre: ["T1110.001"]
     tags: ["brute-force"]
     enabled: true
+    group_by: ["SrcIP", "DstIP"]
     threshold: 100
     threshold_window: 300
 
@@ -66,13 +69,14 @@ rules:
 
   # Large File Upload Pattern - multiple large POST requests
   - name: Large Upload Pattern
-    description: Alert when 20+ large HTTP POSTs (>100KB) detected within 600 seconds
+    description: 'One host sends 20+ HTTP POSTs over 100 KB to public addresses within 600 seconds'
     type: HTTP
     expression: Method == "POST" && ReqContentLength > 100000 && IsPublicIP(DstIP)
     severity: medium
     mitre: ["T1041", "T1567.002"]
     tags: ["exfiltration"]
     enabled: true
+    group_by: ["SrcIP"]
     threshold: 20
     threshold_window: 600
 
@@ -82,25 +86,27 @@ rules:
   
   # SYN Flood Detection
   - name: SYN Flood Detection
-    description: Alert when 10.000+ SYN packets to same destination within 10 seconds
+    description: 'One destination receives 10,000+ SYNs within 10 seconds'
     type: TCP
     expression: SYN && !ACK && !RST
     severity: medium
     mitre: ["T1499.002"]
     tags: ["dos"]
     enabled: true
+    group_by: ["DstIP"]
     threshold: 10000
     threshold_window: 10
 
   # UDP Flood Detection
   - name: UDP Flood Detection
-    description: Alert when 10.000+ UDP packets to same destination within 10 seconds
+    description: 'One destination receives 10,000+ UDP packets with payload within 10 seconds'
     type: UDP
     expression: PayloadSize > 0
     severity: medium
     mitre: ["T1499.002"]
     tags: ["dos"]
     enabled: true
+    group_by: ["DstIP"]
     threshold: 10000
     threshold_window: 10
 
@@ -111,13 +117,14 @@ rules:
   # Beaconing Pattern - regular HTTP requests with small payloads
   # Noisy, disabled by default.
   - name: C2 Beaconing Pattern
-    description: Alert when 50+ small HTTP GET/POST requests within 600 seconds
+    description: 'One host sends 50+ small HTTP GET/POST requests to the same public server within 600 seconds'
     type: HTTP
     expression: (Method == "GET" || Method == "POST") && ReqContentLength < 100 && IsPublicIP(DstIP)
     severity: medium
     mitre: ["T1071.001"]
     tags: ["beaconing"]
     enabled: false
+    group_by: ["SrcIP", "DstIP"]
     threshold: 50
     threshold_window: 600
 
@@ -140,37 +147,40 @@ rules:
   
   # SQL Injection Attack Pattern
   - name: SQL Injection Attack Pattern
-    description: Alert when 20+ SQL injection attempts detected within 300 seconds
+    description: 'One client sends 20+ URLs with SQL injection keywords within 300 seconds'
     type: HTTP
     expression: MatchesPattern(URL, "(?i)(union.*select|insert.*into|delete.*from|drop.*table)")
     severity: high
     mitre: ["T1190"]
     tags: ["sql-injection"]
     enabled: true
+    group_by: ["SrcIP"]
     threshold: 20
     threshold_window: 300
 
   # Directory Traversal Attack Pattern
   - name: Directory Traversal Attack Pattern
-    description: Alert when 20+ directory traversal attempts detected within 300 seconds
+    description: 'One client sends 20+ directory traversal URLs within 300 seconds'
     type: HTTP
     expression: MatchesPattern(URL, "\\.\\./|\\.\\.\\\\")
     severity: high
     mitre: ["T1083"]
     tags: ["path-traversal"]
     enabled: true
+    group_by: ["SrcIP"]
     threshold: 20
     threshold_window: 300
 
   # Web Scanner Activity
   - name: Web Scanner Activity
-    description: Alert when 50+ requests with scanner user agents within 120 seconds
+    description: 'One client sends 50+ requests with scanner user agents within 120 seconds'
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(nikto|nmap|masscan|sqlmap|burp|nessus|acunetix)")
     severity: low
     mitre: ["T1595.002"]
     tags: ["scanner"]
     enabled: true
+    group_by: ["SrcIP"]
     threshold: 50
     threshold_window: 120
 
@@ -180,25 +190,27 @@ rules:
   
   # SMB Enumeration Pattern
   - name: SMB Enumeration Pattern
-    description: Alert when 30+ internal SMB connections within 60 seconds
+    description: 'One internal host opens SMB connections to 30+ distinct internal hosts within 60 seconds'
     type: TCP
     expression: DstPort == 445 && IsPrivateIP(SrcIP) && IsPrivateIP(DstIP) && SYN && !ACK
     severity: low
     mitre: ["T1021.002", "T1135"]
     tags: ["lateral-movement"]
     enabled: true
-    threshold: 30
+    distinct_field: DstIP
+    distinct_threshold: 30
     threshold_window: 60
 
   # Kerberos Authentication Spike
   - name: Kerberos Authentication Spike
-    description: Alert when 100+ Kerberos packets within 120 seconds (potential ticket attacks)
+    description: 'One host sends 100+ packets to Kerberos (port 88) within 120 seconds'
     type: TCP
     expression: DstPort == 88
     severity: info
     mitre: ["T1558.001", "T1558.003"]
     tags: ["lateral-movement"]
     enabled: true
+    group_by: ["SrcIP"]
     threshold: 100
     threshold_window: 120
 
@@ -208,13 +220,14 @@ rules:
   
   # Unusual Non-Standard Port Usage
   - name: High Port Activity
-    description: Alert when 200+ connections to high ports (>49152) within 60 seconds
+    description: 'One host opens 200+ connections to ports above 49152 within 60 seconds'
     type: TCP
     expression: DstPort > 49152 && SYN && !ACK
     severity: info
     mitre: ["T1571"]
     tags: ["anomaly"]
     enabled: true
+    group_by: ["SrcIP"]
     threshold: 200
     threshold_window: 60
 

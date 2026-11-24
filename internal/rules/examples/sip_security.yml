@@ -65,9 +65,10 @@ rules:
     severity: high
     mitre: ["T1110"]
     tags: ["brute-force", "voip", "credential-access"]
+    enabled: true
+    group_by: ["SrcIP"]
     threshold: 30
     threshold_window: 60
-    enabled: true
 
   - name: SIP Authentication Challenge Response
     description: SIP 401 Unauthorized response - authentication challenge (track for correlation)
@@ -88,15 +89,16 @@ rules:
     enabled: true
 
   - name: SIP Excessive Authentication Failures
-    description: Multiple SIP 403 Forbidden responses indicating repeated auth failures (brute force)
+    description: 'One client receives 10+ SIP 403 Forbidden responses within 60 seconds, indicating brute force'
     type: SIP
     expression: IsResponse && ResponseCode == 403
     severity: high
     mitre: ["T1110"]
     tags: ["brute-force", "voip", "credential-access"]
+    enabled: true
+    group_by: ["DstIP"]
     threshold: 10
     threshold_window: 60
-    enabled: true
 
   # ========================================
   # SPOOFING ATTACKS
@@ -218,15 +220,16 @@ rules:
   # ========================================
 
   - name: SIP OPTIONS Flood
-    description: High rate of SIP OPTIONS requests - service enumeration or DoS attempt
+    description: 'One source sends 50+ SIP OPTIONS requests to the same target within 60 seconds - service enumeration or DoS attempt'
     type: SIP
     expression: MethodName == "OPTIONS" && !IsResponse
     severity: medium
     mitre: ["T1046", "T1499"]
     tags: ["recon", "voip", "dos"]
+    enabled: true
+    group_by: ["SrcIP", "DstIP"]
     threshold: 50
     threshold_window: 60
-    enabled: true
 
   # ========================================
   # CALL SECURITY EVENTS

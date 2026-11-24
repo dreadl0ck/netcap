@@ -21,26 +21,28 @@ rules:
 
   # ICMP Ping Sweep
   - name: ICMP Echo Request Detected
-    description: Detect ICMP echo requests that may be part of a ping sweep
+    description: 'One host sends ICMP echo requests to 50+ distinct addresses within 30 seconds (ping sweep)'
     type: ICMPv4
-    expression: TypeCode == 8
+    expression: 'IsEchoRequest'
     severity: info
     mitre: ["T1018"]
     tags: ["ping-sweep"]
     enabled: true
-    threshold: 50
+    distinct_field: DstIP
+    distinct_threshold: 50
     threshold_window: 30
 
   # ARP Scan Detection
   - name: ARP Scan Detection
-    description: Detect ARP requests that may indicate network mapping
+    description: 'One host sends ARP requests for 100+ distinct addresses within 60 seconds'
     type: ARP
     expression: Operation == 1
     severity: info
     mitre: ["T1016"]
     tags: ["network-mapping"]
     enabled: true
-    threshold: 100
+    distinct_field: DstProtocolAddress
+    distinct_threshold: 100
     threshold_window: 60
 
   # UDP Port Scan
@@ -65,26 +67,28 @@ rules:
 
   # SNMP Enumeration
   - name: SNMP Enumeration
-    description: Detect SNMP traffic that may indicate device enumeration
+    description: 'One host sends SNMP requests to 50+ distinct devices within 60 seconds'
     type: UDP
-    expression: DstPort == 161 || DstPort == 162
+    expression: 'DstPort == 161'
     severity: low
     mitre: ["T1046"]
     tags: ["enumeration"]
     enabled: true
-    threshold: 50
+    distinct_field: DstIP
+    distinct_threshold: 50
     threshold_window: 60
 
   # NetBIOS Name Service Query
   - name: NetBIOS Name Query
-    description: Detect NetBIOS name service queries used for Windows network discovery
+    description: 'One host sends NetBIOS name queries to 50+ distinct addresses within 60 seconds'
     type: UDP
-    expression: DstPort == 137 || DstPort == 138
+    expression: 'DstPort == 137'
     severity: info
     mitre: ["T1016"]
     tags: ["enumeration", "windows"]
     enabled: true
-    threshold: 50
+    distinct_field: DstIP
+    distinct_threshold: 50
     threshold_window: 60
 
   # DHCP Traffic Detection - Rogue DHCP Server

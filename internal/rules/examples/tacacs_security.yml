@@ -16,13 +16,14 @@ rules:
 
   # Brute force - multiple failures
   - name: TACACS Brute Force
-    description: Multiple TACACS+ authentication failures detected, indicating a potential brute force attack against network infrastructure
+    description: 'One client receives 5+ TACACS+ authentication failures within 120 seconds'
     type: TACACS
     expression: 'StatusName == "FAIL"'
     severity: high
     mitre: ["T1110.001"]
     tags: ["tacacs", "credential-access", "brute-force"]
     enabled: true
+    group_by: ["DstIP"]
     threshold: 5
     threshold_window: 120
 

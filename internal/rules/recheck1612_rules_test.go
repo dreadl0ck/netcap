@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -194,12 +195,19 @@ func TestSavedLegacyDefaultsLoadCurrentDefinition(t *testing.T) {
 	if err := yaml.Unmarshal(legacyDefaultsYAML, &legacy); err != nil {
 		t.Fatal(err)
 	}
-	if len(legacy.Rules) != 5 {
-		t.Fatalf("legacy rules %d", len(legacy.Rules))
-	}
 	current := map[string]*Rule{}
 	for _, rule := range embedded.Rules {
 		current[rule.Name] = rule
+	}
+	// Every entry must name a shipped rule and differ from it, or it either
+	// never migrates or turns every saved copy back into the default.
+	for _, old := range legacy.Rules {
+		if current[old.Name] == nil || bytes.Equal(legacyComparable(old), legacyComparable(current[old.Name])) {
+			t.Fatalf("legacy entry %q has no distinct current definition", old.Name)
+		}
+	}
+	if len(legacy.Rules) < 42 {
+		t.Fatalf("legacy rules %d: superseded definitions were dropped", len(legacy.Rules))
 	}
 	for _, old := range legacy.Rules {
 		saved := *old
@@ -286,4 +294,68 @@ func retiredDefinitions(t *testing.T) []*Rule {
 		t.Fatal(err)
 	}
 	return retired.Rules
+}
+
+// A threshold without grouping counts every host in the capture together, so
+// one busy network reaches it with no single actor behaving abnormally.
+func TestEmbeddedThresholdsAreGrouped(t *testing.T) {
+	embedded, err := LoadEmbeddedRules()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, rule := range embedded.Rules {
+		if rule.Threshold > 1 && len(rule.GroupBy) == 0 && rule.DistinctField == "" {
+			t.Errorf("%s counts globally", rule.Name)
+		}
+	}
+}
+
+// Busy networks reach global counts with no single actor misbehaving; the
+// regrouped rules must stay quiet there and still fire for one actor.
+func TestEmbeddedThresholdsCountPerActor(t *testing.T) {
+	type check struct {
+		rule        string
+		busy, actor func(i int) types.AuditRecord
+		n           int
+	}
+	checks := []check{
+		{"SSH Brute Force", func(i int) types.AuditRecord {
+			return synTo(at(time.Duration(i)*time.Second), fmt.Sprintf("10.0.%d.%d", i/200, i%200+1), fmt.Sprintf("10.1.0.%d", i%50+1), 22)
+		}, func(i int) types.AuditRecord {
+			return synTo(at(time.Duration(i)*time.Second), "198.51.100.9", "10.1.0.1", 22)
+		}, 60},
+		{"SYN Flood Detection", func(i int) types.AuditRecord {
+			return synTo(at(time.Duration(i)*time.Microsecond), "203.0.113.1", fmt.Sprintf("10.2.%d.%d", i/250, i%250+1), 443)
+		}, func(i int) types.AuditRecord {
+			return synTo(at(time.Duration(i)*time.Microsecond), fmt.Sprintf("203.0.%d.%d", i/250, i%250+1), "10.2.0.1", 443)
+		}, 10_000},
+		{"ICMP Echo Request Detected", func(i int) types.AuditRecord {
+			return &types.ICMPv4{Timestamp: at(time.Duration(i) * 100 * time.Millisecond), SrcIP: fmt.Sprintf("10.3.0.%d", i%250+1), DstIP: "10.3.1.1", IsEchoRequest: true, TypeCode: 8}
+		}, func(i int) types.AuditRecord {
+			return &types.ICMPv4{Timestamp: at(time.Duration(i) * 100 * time.Millisecond), SrcIP: "10.3.0.9", DstIP: fmt.Sprintf("10.3.2.%d", i+1), IsEchoRequest: true, TypeCode: 8}
+		}, 60},
+		{"HTTP 404 Scanning", func(i int) types.AuditRecord {
+			return &types.HTTP{Timestamp: at(time.Duration(i) * time.Second), SrcIP: fmt.Sprintf("10.4.0.%d", i%200+1), DstIP: "10.4.1.1", StatusCode: 404, Method: "GET", URL: "/x"}
+		}, func(i int) types.AuditRecord {
+			return &types.HTTP{Timestamp: at(time.Duration(i) * time.Second), SrcIP: "10.4.0.9", DstIP: "10.4.1.1", StatusCode: 404, Method: "GET", URL: fmt.Sprintf("/x%d", i)}
+		}, 120},
+	}
+	for _, c := range checks {
+		t.Run(c.rule, func(t *testing.T) {
+			replay, counts := embeddedReplay(t)
+			for i := range c.n {
+				feed(t, replay, c.busy(i))
+			}
+			if counts()[c.rule] != 0 {
+				t.Fatalf("busy network fired %s %d times", c.rule, counts()[c.rule])
+			}
+			replay, counts = embeddedReplay(t)
+			for i := range c.n {
+				feed(t, replay, c.actor(i))
+			}
+			if counts()[c.rule] == 0 {
+				t.Fatalf("single actor did not fire %s", c.rule)
+			}
+		})
+	}
 }

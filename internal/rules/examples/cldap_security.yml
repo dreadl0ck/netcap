@@ -23,5 +23,6 @@ rules:
     mitre: ["T1018"]
     tags: ["cldap", "discovery", "enumeration"]
     enabled: true
+    group_by: ["SrcIP"]
     threshold: 20
     threshold_window: 60

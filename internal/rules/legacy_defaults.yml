@@ -1,7 +1,7 @@
-# Embedded defaults as shipped in v0.16.12 and earlier, before the v0.16.13
-# false-positive fixes. A saved rules-folder copy that still equals one of
-# these (ignoring enabled and ruleset tags) loads as the current default.
-# Never edit an entry; add the previous definition when a default changes.
+# Superseded embedded defaults, as shipped. A saved rules-folder copy that
+# still equals one of these (ignoring enabled and ruleset tags) loads as the
+# current default. Never edit an entry; add the previous definition when a
+# default changes. Entries before the first section comment predate v0.16.13.
 rules:
   - name: SYN Scan Detection
     description: Detect TCP SYN scan attempts (SYN without ACK)
@@ -51,3 +51,374 @@ rules:
     enabled: true
     threshold: 100
     threshold_window: 60
+  # Superseded in v0.16.14: global thresholds regrouped per source, pair, victim or distinct destination.
+  - name: CLDAP Enumeration Burst
+    description: High volume of CLDAP queries detected from a single source, indicating Active Directory enumeration
+    type: CLDAP
+    expression: 'Operation == "SearchRequest"'
+    severity: medium
+    mitre: ["T1018"]
+    tags: ["cldap", "discovery", "enumeration"]
+    enabled: true
+    threshold: 20
+    threshold_window: 60
+  - name: ICS Modbus Scan Pattern
+    description: Multiple Modbus connection attempts detected - possible scanning or enumeration
+    type: TCP
+    expression: DstPort == 502 && SYN && !ACK
+    severity: high
+    mitre: ["T0840", "T0846"]
+    tags: ["ics", "modbus", "scanning", "enumeration"]
+    enabled: true
+    threshold: 50
+    threshold_window: 60
+  - name: ICS S7comm Scan Pattern
+    description: Multiple S7comm connection attempts detected - possible PLC scanning
+    type: TCP
+    expression: DstPort == 102 && SYN && !ACK
+    severity: high
+    mitre: ["T0840", "T0846"]
+    tags: ["ics", "s7comm", "plc", "scanning"]
+    enabled: true
+    threshold: 50
+    threshold_window: 60
+  - name: ICS Protocol Flooding
+    description: High volume of ICS protocol traffic detected - possible DoS attack
+    type: TCP
+    expression: DstPort == 502 || DstPort == 102 || DstPort == 44818 || DstPort == 20000 || DstPort == 2404
+    severity: critical
+    mitre: ["T0814", "T0826"]
+    tags: ["ics", "dos", "flooding", "availability"]
+    enabled: true
+    threshold: 1000
+    threshold_window: 30
+  - name: ICS MQTT Message Storm
+    description: High volume of MQTT messages detected - potential message storm or attack
+    type: TCP
+    expression: (DstPort == 1883 || DstPort == 8883) && PSH
+    severity: high
+    mitre: ["T0814"]
+    tags: ["ics", "mqtt", "iiot", "message-storm"]
+    enabled: true
+    threshold: 500
+    threshold_window: 60
+  - name: Kerberos Pre-Authentication Failure Burst
+    description: Multiple Kerberos pre-authentication failures detected from the same source, indicating a potential brute force or password spraying attack
+    type: Kerberos
+    expression: 'MessageTypeCode == 30 && ErrorCode == 24'
+    severity: medium
+    mitre: ["T1110"]
+    tags: ["kerberos", "credential-access", "brute-force"]
+    enabled: true
+    threshold: 5
+    threshold_window: 60
+  - name: Kerberos User Enumeration
+    description: Multiple Kerberos principal-not-found errors detected, indicating Active Directory user enumeration via Kerberos
+    type: Kerberos
+    expression: 'MessageTypeCode == 30 && ErrorCode == 6'
+    severity: medium
+    mitre: ["T1087.002"]
+    tags: ["kerberos", "discovery", "user-enumeration"]
+    enabled: true
+    threshold: 10
+    threshold_window: 60
+  - name: ICMP Echo Request Detected
+    description: Detect ICMP echo requests that may be part of a ping sweep
+    type: ICMPv4
+    expression: TypeCode == 8
+    severity: info
+    mitre: ["T1018"]
+    tags: ["ping-sweep"]
+    enabled: true
+    threshold: 50
+    threshold_window: 30
+  - name: ARP Scan Detection
+    description: Detect ARP requests that may indicate network mapping
+    type: ARP
+    expression: Operation == 1
+    severity: info
+    mitre: ["T1016"]
+    tags: ["network-mapping"]
+    enabled: true
+    threshold: 100
+    threshold_window: 60
+  - name: SNMP Enumeration
+    description: Detect SNMP traffic that may indicate device enumeration
+    type: UDP
+    expression: DstPort == 161 || DstPort == 162
+    severity: low
+    mitre: ["T1046"]
+    tags: ["enumeration"]
+    enabled: true
+    threshold: 50
+    threshold_window: 60
+  - name: NetBIOS Name Query
+    description: Detect NetBIOS name service queries used for Windows network discovery
+    type: UDP
+    expression: DstPort == 137 || DstPort == 138
+    severity: info
+    mitre: ["T1016"]
+    tags: ["enumeration", "windows"]
+    enabled: true
+    threshold: 50
+    threshold_window: 60
+  - name: SIP Excessive REGISTER Attempts
+    description: High rate of SIP REGISTER requests from single source indicates brute force authentication attack
+    type: SIP
+    expression: MethodName == "REGISTER" && !IsResponse
+    severity: high
+    mitre: ["T1110"]
+    tags: ["brute-force", "voip", "credential-access"]
+    threshold: 30
+    threshold_window: 60
+    enabled: true
+  - name: SIP Excessive Authentication Failures
+    description: Multiple SIP 403 Forbidden responses indicating repeated auth failures (brute force)
+    type: SIP
+    expression: IsResponse && ResponseCode == 403
+    severity: high
+    mitre: ["T1110"]
+    tags: ["brute-force", "voip", "credential-access"]
+    threshold: 10
+    threshold_window: 60
+    enabled: true
+  - name: SIP OPTIONS Flood
+    description: High rate of SIP OPTIONS requests - service enumeration or DoS attempt
+    type: SIP
+    expression: MethodName == "OPTIONS" && !IsResponse
+    severity: medium
+    mitre: ["T1046", "T1499"]
+    tags: ["recon", "voip", "dos"]
+    threshold: 50
+    threshold_window: 60
+    enabled: true
+  - name: HTTP Base64 Auth Bruteforce
+    description: Detect HTTP Basic Authentication attempts that may indicate brute forcing
+    type: HTTP
+    expression: MatchesPattern(URL, "(?i)authorization") || StatusCode == 401
+    severity: low
+    mitre: ["T1110.001"]
+    tags: ["brute-force"]
+    enabled: true
+    threshold: 50
+    threshold_window: 300
+  - name: RADIUS Auth Attempts
+    description: Detect RADIUS authentication traffic that may indicate brute forcing
+    type: UDP
+    expression: DstPort == 1812 || DstPort == 1645
+    severity: medium
+    mitre: ["T1110"]
+    tags: ["brute-force"]
+    enabled: true
+    threshold: 50
+    threshold_window: 120
+  - name: HTTP Server Error Spike
+    description: Detect server-side errors that may indicate attacks or issues
+    type: HTTP
+    expression: StatusCode >= 500
+    severity: medium
+    mitre: ["T1499"]
+    tags: ["dos"]
+    enabled: true
+    threshold: 30
+    threshold_window: 120
+  - name: Authentication Brute Force
+    description: Detect high frequency connections to authentication services
+    type: TCP
+    expression: (DstPort == 389 || DstPort == 636 || DstPort == 88) && SYN && !ACK
+    severity: medium
+    mitre: ["T1110.001", "T1110.003"]
+    tags: ["brute-force"]
+    enabled: true
+    threshold: 50
+    threshold_window: 120
+  - name: TACACS Brute Force
+    description: Multiple TACACS+ authentication failures detected, indicating a potential brute force attack against network infrastructure
+    type: TACACS
+    expression: 'StatusName == "FAIL"'
+    severity: high
+    mitre: ["T1110.001"]
+    tags: ["tacacs", "credential-access", "brute-force"]
+    enabled: true
+    threshold: 5
+    threshold_window: 120
+  - name: SSH Brute Force
+    description: Alert when 50+ SSH connection attempts detected within 120 seconds
+    type: TCP
+    expression: DstPort == 22 && SYN && !ACK
+    severity: high
+    mitre: ["T1110.001", "T1021.004"]
+    tags: ["brute-force"]
+    enabled: true
+    threshold: 50
+    threshold_window: 120
+  - name: RDP Brute Force
+    description: Alert when 30+ RDP connection attempts detected within 120 seconds
+    type: TCP
+    expression: DstPort == 3389 && SYN && !ACK
+    severity: high
+    mitre: ["T1110.001", "T1021.001"]
+    tags: ["brute-force"]
+    enabled: true
+    threshold: 30
+    threshold_window: 120
+  - name: Web Login Brute Force
+    description: Alert when 100+ POST requests to login endpoints within 300 seconds
+    type: HTTP
+    expression: Method == "POST" && MatchesPattern(URL, "(?i)(login|signin|auth)")
+    severity: high
+    mitre: ["T1110.001"]
+    tags: ["brute-force"]
+    enabled: true
+    threshold: 100
+    threshold_window: 300
+  - name: Large Upload Pattern
+    description: Alert when 20+ large HTTP POSTs (>100KB) detected within 600 seconds
+    type: HTTP
+    expression: Method == "POST" && ReqContentLength > 100000 && IsPublicIP(DstIP)
+    severity: medium
+    mitre: ["T1041", "T1567.002"]
+    tags: ["exfiltration"]
+    enabled: true
+    threshold: 20
+    threshold_window: 600
+  - name: SYN Flood Detection
+    description: Alert when 10.000+ SYN packets to same destination within 10 seconds
+    type: TCP
+    expression: SYN && !ACK && !RST
+    severity: medium
+    mitre: ["T1499.002"]
+    tags: ["dos"]
+    enabled: true
+    threshold: 10000
+    threshold_window: 10
+  - name: UDP Flood Detection
+    description: Alert when 10.000+ UDP packets to same destination within 10 seconds
+    type: UDP
+    expression: PayloadSize > 0
+    severity: medium
+    mitre: ["T1499.002"]
+    tags: ["dos"]
+    enabled: true
+    threshold: 10000
+    threshold_window: 10
+  - name: C2 Beaconing Pattern
+    description: Alert when 50+ small HTTP GET/POST requests within 600 seconds
+    type: HTTP
+    expression: (Method == "GET" || Method == "POST") && ReqContentLength < 100 && IsPublicIP(DstIP)
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["beaconing"]
+    enabled: false
+    threshold: 50
+    threshold_window: 600
+  - name: SQL Injection Attack Pattern
+    description: Alert when 20+ SQL injection attempts detected within 300 seconds
+    type: HTTP
+    expression: MatchesPattern(URL, "(?i)(union.*select|insert.*into|delete.*from|drop.*table)")
+    severity: high
+    mitre: ["T1190"]
+    tags: ["sql-injection"]
+    enabled: true
+    threshold: 20
+    threshold_window: 300
+  - name: Directory Traversal Attack Pattern
+    description: Alert when 20+ directory traversal attempts detected within 300 seconds
+    type: HTTP
+    expression: MatchesPattern(URL, "\\.\\./|\\.\\.\\\\")
+    severity: high
+    mitre: ["T1083"]
+    tags: ["path-traversal"]
+    enabled: true
+    threshold: 20
+    threshold_window: 300
+  - name: Web Scanner Activity
+    description: Alert when 50+ requests with scanner user agents within 120 seconds
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(nikto|nmap|masscan|sqlmap|burp|nessus|acunetix)")
+    severity: low
+    mitre: ["T1595.002"]
+    tags: ["scanner"]
+    enabled: true
+    threshold: 50
+    threshold_window: 120
+  - name: SMB Enumeration Pattern
+    description: Alert when 30+ internal SMB connections within 60 seconds
+    type: TCP
+    expression: DstPort == 445 && IsPrivateIP(SrcIP) && IsPrivateIP(DstIP) && SYN && !ACK
+    severity: low
+    mitre: ["T1021.002", "T1135"]
+    tags: ["lateral-movement"]
+    enabled: true
+    threshold: 30
+    threshold_window: 60
+  - name: Kerberos Authentication Spike
+    description: Alert when 100+ Kerberos packets within 120 seconds (potential ticket attacks)
+    type: TCP
+    expression: DstPort == 88
+    severity: info
+    mitre: ["T1558.001", "T1558.003"]
+    tags: ["lateral-movement"]
+    enabled: true
+    threshold: 100
+    threshold_window: 120
+  - name: High Port Activity
+    description: Alert when 200+ connections to high ports (>49152) within 60 seconds
+    type: TCP
+    expression: DstPort > 49152 && SYN && !ACK
+    severity: info
+    mitre: ["T1571"]
+    tags: ["anomaly"]
+    enabled: true
+    threshold: 200
+    threshold_window: 60
+  - name: Excessive HTTP Errors Client
+    description: Detect clients generating excessive HTTP errors (4xx/5xx)
+    type: HTTP
+    expression: StatusCode >= 400
+    severity: low
+    mitre: ["T1595.002"]
+    tags: ["scanning"]
+    enabled: true
+    threshold: 50
+    threshold_window: 300
+  - name: HTTP 404 Scanning
+    description: Detect excessive HTTP 404 errors indicating directory/file scanning
+    type: HTTP
+    expression: StatusCode == 404
+    severity: low
+    mitre: ["T1595.002"]
+    tags: ["scanning"]
+    enabled: true
+    threshold: 100
+    threshold_window: 300
+  - name: HTTP Service Abuse
+    description: Detect potential HTTP service abuse or DoS attempts
+    type: HTTP
+    expression: Method == "POST" && ReqContentLength > 100000
+    severity: medium
+    mitre: ["T1499.002"]
+    tags: ["dos"]
+    enabled: true
+    threshold: 20
+    threshold_window: 120
+  - name: API Endpoint Enumeration
+    description: Detect potential API endpoint scanning/enumeration
+    type: HTTP
+    expression: MatchesPattern(URL, "(?i)(/api/|/v1/|/v2/|/graphql|/rest/)") && StatusCode == 404
+    severity: medium
+    mitre: ["T1595.002"]
+    tags: ["enumeration", "api"]
+    enabled: true
+    threshold: 20
+    threshold_window: 120
+  - name: User Agent Switching Detected
+    description: Detect rapid user agent changes from same source IP (requires correlation)
+    type: HTTP
+    expression: UserAgent != ""
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["evasion", "fingerprinting"]
+    enabled: false
+    threshold: 5
+    threshold_window: 300

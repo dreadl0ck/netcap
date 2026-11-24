@@ -28,13 +28,14 @@ rules:
 
   # HTTP Base64 Auth Bruteforce
   - name: HTTP Base64 Auth Bruteforce
-    description: Detect HTTP Basic Authentication attempts that may indicate brute forcing
+    description: 'One client gets 50+ HTTP 401 responses or authorization URLs from the same server within 300 seconds'
     type: HTTP
     expression: MatchesPattern(URL, "(?i)authorization") || StatusCode == 401
     severity: low
     mitre: ["T1110.001"]
     tags: ["brute-force"]
     enabled: true
+    group_by: ["SrcIP", "DstIP"]
     threshold: 50
     threshold_window: 300
 
@@ -60,14 +61,15 @@ rules:
 
   # RADIUS Auth Attempts
   - name: RADIUS Auth Attempts
-    description: Detect RADIUS authentication traffic that may indicate brute forcing
-    type: UDP
-    expression: DstPort == 1812 || DstPort == 1645
+    description: 'One client receives 20+ RADIUS Access-Reject responses within 120 seconds'
+    type: RADIUS
+    expression: 'Code == 3'
     severity: medium
     mitre: ["T1110"]
     tags: ["brute-force"]
     enabled: true
-    threshold: 50
+    group_by: ["DstIP"]
+    threshold: 20
     threshold_window: 120
 
   # Unknown HTTP Proxy Detection
@@ -180,13 +182,14 @@ rules:
 
   # HTTP Server Error Spike
   - name: HTTP Server Error Spike
-    description: Detect server-side errors that may indicate attacks or issues
+    description: 'One server returns 30+ HTTP 5xx responses within 120 seconds'
     type: HTTP
     expression: StatusCode >= 500
     severity: medium
     mitre: ["T1499"]
     tags: ["dos"]
     enabled: true
+    group_by: ["DstIP"]
     threshold: 30
     threshold_window: 120
 
@@ -252,13 +255,14 @@ rules:
 
   # Authentication Brute Force
   - name: Authentication Brute Force
-    description: Detect high frequency connections to authentication services
+    description: 'One host opens 50+ connections to LDAP or Kerberos ports within 120 seconds'
     type: TCP
     expression: (DstPort == 389 || DstPort == 636 || DstPort == 88) && SYN && !ACK
     severity: medium
     mitre: ["T1110.001", "T1110.003"]
     tags: ["brute-force"]
     enabled: true
+    group_by: ["SrcIP"]
     threshold: 50
     threshold_window: 120
 

@@ -329,46 +329,50 @@ rules:
   # ========================================
 
   - name: ICS Modbus Scan Pattern
-    description: Multiple Modbus connection attempts detected - possible scanning or enumeration
+    description: 'One source opens Modbus connections to 50+ distinct devices within 60 seconds'
     type: TCP
     expression: DstPort == 502 && SYN && !ACK
     severity: high
     mitre: ["T0840", "T0846"]
     tags: ["ics", "modbus", "scanning", "enumeration"]
     enabled: true
-    threshold: 50
+    distinct_field: DstIP
+    distinct_threshold: 50
     threshold_window: 60
 
   - name: ICS S7comm Scan Pattern
-    description: Multiple S7comm connection attempts detected - possible PLC scanning
+    description: 'One source opens 50+ S7comm connections to the same PLC within 60 seconds'
     type: TCP
     expression: DstPort == 102 && SYN && !ACK
     severity: high
     mitre: ["T0840", "T0846"]
     tags: ["ics", "s7comm", "plc", "scanning"]
     enabled: true
+    group_by: ["SrcIP", "DstIP"]
     threshold: 50
     threshold_window: 60
 
   - name: ICS Protocol Flooding
-    description: High volume of ICS protocol traffic detected - possible DoS attack
+    description: 'One ICS device receives 1,000+ packets on ICS protocol ports within 30 seconds - possible DoS'
     type: TCP
     expression: DstPort == 502 || DstPort == 102 || DstPort == 44818 || DstPort == 20000 || DstPort == 2404
     severity: critical
     mitre: ["T0814", "T0826"]
     tags: ["ics", "dos", "flooding", "availability"]
     enabled: true
+    group_by: ["DstIP"]
     threshold: 1000
     threshold_window: 30
 
   - name: ICS MQTT Message Storm
-    description: High volume of MQTT messages detected - potential message storm or attack
+    description: 'One client publishes 500+ MQTT segments to the same broker within 60 seconds'
     type: TCP
     expression: (DstPort == 1883 || DstPort == 8883) && PSH
     severity: high
     mitre: ["T0814"]
     tags: ["ics", "mqtt", "iiot", "message-storm"]
     enabled: true
+    group_by: ["SrcIP", "DstIP"]
     threshold: 500
     threshold_window: 60
 

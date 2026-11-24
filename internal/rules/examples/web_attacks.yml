@@ -336,25 +336,27 @@ rules:
 
   # Excessive HTTP Errors from Client
   - name: Excessive HTTP Errors Client
-    description: Detect clients generating excessive HTTP errors (4xx/5xx)
+    description: 'One client receives 50+ HTTP 4xx/5xx responses within 300 seconds'
     type: HTTP
     expression: StatusCode >= 400
     severity: low
     mitre: ["T1595.002"]
     tags: ["scanning"]
     enabled: true
+    group_by: ["SrcIP"]
     threshold: 50
     threshold_window: 300
 
   # HTTP 404 Scanning
   - name: HTTP 404 Scanning
-    description: Detect excessive HTTP 404 errors indicating directory/file scanning
+    description: 'One client receives 100+ HTTP 404 responses within 300 seconds, indicating directory or file scanning'
     type: HTTP
     expression: StatusCode == 404
     severity: low
     mitre: ["T1595.002"]
     tags: ["scanning"]
     enabled: true
+    group_by: ["SrcIP"]
     threshold: 100
     threshold_window: 300
 
@@ -370,38 +372,41 @@ rules:
 
   # HTTP Service Abuse
   - name: HTTP Service Abuse
-    description: Detect potential HTTP service abuse or DoS attempts
+    description: 'One client sends 20+ HTTP POSTs over 100 KB to the same server within 120 seconds'
     type: HTTP
     expression: Method == "POST" && ReqContentLength > 100000
     severity: medium
     mitre: ["T1499.002"]
     tags: ["dos"]
     enabled: true
+    group_by: ["SrcIP", "DstIP"]
     threshold: 20
     threshold_window: 120
 
   # Mass API Endpoint Enumeration
   - name: API Endpoint Enumeration
-    description: Detect potential API endpoint scanning/enumeration
+    description: 'One client receives 20+ HTTP 404 responses for API paths within 120 seconds'
     type: HTTP
     expression: MatchesPattern(URL, "(?i)(/api/|/v1/|/v2/|/graphql|/rest/)") && StatusCode == 404
     severity: medium
     mitre: ["T1595.002"]
     tags: ["enumeration", "api"]
     enabled: true
+    group_by: ["SrcIP"]
     threshold: 20
     threshold_window: 120
 
   # Multiple User-Agent Switching
   - name: User Agent Switching Detected
-    description: Detect rapid user agent changes from same source IP (requires correlation)
+    description: 'One client uses 5+ distinct user agents within 300 seconds'
     type: HTTP
     expression: UserAgent != ""
     severity: medium
     mitre: ["T1071.001"]
     tags: ["evasion", "fingerprinting"]
     enabled: false
-    threshold: 5
+    distinct_field: UserAgent
+    distinct_threshold: 5
     threshold_window: 300
 
   # Modern Security Headers
