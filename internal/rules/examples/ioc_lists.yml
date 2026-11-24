@@ -1,0 +1,54 @@
+# IOC list rules: match indicators from plain-text feeds in the iocs folder of
+# the netcap config root (NC_IOC_DIR overrides it). One indicator per line,
+# case-insensitive, '#' starts a comment. Disabled until a feed is installed.
+description: "Indicator list matches for file hashes, domains, IP addresses, TLS server names and JA4 fingerprints"
+
+rules:
+  - name: File Hash In IOC List
+    description: Extracted file whose MD5, SHA1 or SHA256 is listed in iocs/hashes.txt
+    type: File
+    expression: 'InList(Hashes?.SHA256, "hashes.txt") || InList(Hashes?.SHA1, "hashes.txt") || InList(Hashes?.MD5, "hashes.txt")'
+    severity: high
+    mitre: ["T1105"]
+    tags: ["ioc", "malware"]
+    enabled: false
+
+  - name: DNS Query For IOC Domain
+    description: DNS question for a domain listed in iocs/domains.txt
+    type: DNS
+    expression: 'len(Questions) > 0 && InList(Questions[0].Name, "domains.txt")'
+    severity: high
+    mitre: ["T1071.004"]
+    tags: ["ioc", "c2"]
+    enabled: false
+    dedupe_by: [SrcIP, Questions.Name]
+
+  - name: Connection To IOC Address
+    description: Connection to an IP address listed in iocs/ips.txt
+    type: Connection
+    expression: 'InList(DstIP, "ips.txt") || InList(SrcIP, "ips.txt")'
+    severity: high
+    mitre: ["T1071"]
+    tags: ["ioc", "c2"]
+    enabled: false
+    dedupe_by: [SrcIP, DstIP]
+
+  - name: TLS Server Name In IOC List
+    description: TLS ClientHello naming a server listed in iocs/domains.txt
+    type: TLSClientHello
+    expression: 'SNI != "" && InList(SNI, "domains.txt")'
+    severity: high
+    mitre: ["T1071.001", "T1573"]
+    tags: ["ioc", "c2"]
+    enabled: false
+    dedupe_by: [SrcIP, SNI]
+
+  - name: TLS Client Fingerprint In IOC List
+    description: TLS ClientHello whose JA4 fingerprint is listed in iocs/ja4.txt
+    type: TLSClientHello
+    expression: 'Ja4 != "" && InList(Ja4, "ja4.txt")'
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["ioc", "fingerprint"]
+    enabled: false
+    dedupe_by: [SrcIP, Ja4]

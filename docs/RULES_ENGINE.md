@@ -309,6 +309,25 @@ Besides the network, string and time helpers, expressions can use:
 * `Weekday(ts)`: local weekday, 0 (Sunday) to 6 (Saturday).
 * `IsBusinessHours(ts, startHour, endHour)`: true within `[startHour, endHour)` on Monday to Friday. Use `!IsBusinessHours(Timestamp, 8, 18)` to find off-hours activity.
 
+### Matching local indicator feeds
+
+`InList(value, filename)` matches an exact indicator after trimming surrounding
+whitespace and ignoring case. Put one indicator per line in a plain-text file;
+blank lines and lines beginning with `#` are ignored. Wildcards and CIDR ranges
+are not interpreted.
+
+Netcap reads the file from `$NC_IOC_DIR`, `$NC_CONFIG_ROOT/iocs`, or
+`~/.config/netcap/iocs`, in that order. Pass a filename such as `ips.txt`, not a
+path. Files must be regular files within the selected directory, at most 64 MiB
+and 2 million distinct entries. Missing or invalid feeds return no match. Cached
+feeds are rechecked on the first lookup after 30 seconds; replace files atomically
+to avoid reads of partially updated feeds.
+
+For example, add `198.51.100.7` to `ips.txt` and use `InList(DstIP, "ips.txt")`
+in a `Connection` rule. Copy and enable the applicable rules from
+[`ioc_lists.yml`](../internal/rules/examples/ioc_lists.yml) after installing the
+feeds. The examples cover file hashes, DNS domains, IPs, TLS server names and JA4.
+
 ## Writing Rules
 
 ### Basic Rule Structure

@@ -52,6 +52,10 @@ func CompileExpression(expression string, recordType types.Type) (*vm.Program, e
 		return nil, fmt.Errorf("unsupported record type: %s", recordType.String())
 	}
 
+	// Nested messages are nil in a fresh record, which would type them as nil
+	// and reject Hashes?.SHA256; give the type check zero values instead.
+	fillNestedMessages(reflect.ValueOf(record), 3)
+
 	// Create the environment with the record fields and helper functions
 	env := CreateEnvironment(record.(types.AuditRecord))
 
@@ -174,6 +178,13 @@ func CompileExpression(expression string, recordType types.Type) (*vm.Program, e
 			},
 			new(func(any, any) bool),
 		),
+		expr.Function("InList",
+			func(params ...any) (any, error) {
+				value, _ := params[0].(string) // nil from a ?. chain on an absent message
+				return InList(value, params[1].(string)), nil
+			},
+			new(func(string, string) bool),
+		),
 		expr.Function("HasKey",
 			func(params ...any) (any, error) {
 				return HasKey(params[0], params[1].(string)), nil
@@ -225,6 +236,7 @@ func EvaluateEnvironment(program *vm.Program, env map[string]any) (bool, error) 
 	env["MatchesPattern"] = MatchesPattern
 	env["Contains"] = Contains
 	env["HasKey"] = HasKey
+	env["InList"] = InList
 
 	result, err := expr.Run(program, env)
 	if err != nil {
@@ -357,4 +369,22 @@ func MustCompileExpression(expression string, recordType types.Type) *vm.Program
 		panic(err)
 	}
 	return program
+}
+
+// fillNestedMessages allocates nil struct pointers of a type-check sample.
+func fillNestedMessages(v reflect.Value, depth int) {
+	if depth == 0 || v.Kind() != reflect.Pointer || v.IsNil() || v.Elem().Kind() != reflect.Struct {
+		return
+	}
+	v = v.Elem()
+	for i := range v.NumField() {
+		field := v.Field(i)
+		if !field.CanSet() || field.Kind() != reflect.Pointer || field.Type().Elem().Kind() != reflect.Struct {
+			continue
+		}
+		if field.IsNil() {
+			field.Set(reflect.New(field.Type().Elem()))
+		}
+		fillNestedMessages(field, depth-1)
+	}
 }
