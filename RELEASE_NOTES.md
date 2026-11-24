@@ -14,6 +14,7 @@
 | MCP retries | Busy responses carry `Retry-After`; MCP tool errors end in `; retry_after_ms=N`. |
 | Partial captures | WebUI and MCP analyses complete again when the capture input is partial (exit 2) or only some packets use an unsupported link type (exit 3); the session reports the reason as `coverage`. v0.16.11 and v0.16.12 failed them. |
 | macOS performance | Per-stream evidence uses `fsync` instead of `F_FULLFSYNC`: an 18,000-stream capture drops from 835 s to under a minute. |
+| Service mode | Anonymous visitors (try.netcap.io) get 403 on `GET /api/network-interfaces` and on injection rule and event writes; those navigation entries are hidden. A one-time welcome dialog and Imprint/Privacy links are added. |
 
 The [qualification ledger](internal/collector/testdata/recheck-v0166.json)
 (`recheckV01612`) records the tests and replays. `make recheck-v01612` is the
