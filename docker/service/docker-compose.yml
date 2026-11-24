@@ -37,8 +37,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2.0'
-          memory: 4G
+          cpus: '4.0'
+          memory: 12G
         reservations:
           cpus: '0.5'
           memory: 512M
@@ -50,4 +50,3 @@ volumes:
 networks:
   netcap-service:
     driver: bridge
-

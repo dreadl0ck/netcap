@@ -53,6 +53,8 @@ try is the Dokploy application `ehTukSWyJaSFPvZ5PZxZ2` on the estate host. It
 runs `registry.amsterdam-technologies.com/library/netcap-service:<tag>@<digest>`
 with `/srv/netcap-try-server/data` on `/data` and
 `/srv/netcap-try-server/managed-0154` on `/home/netcap/.config/netcap`.
+Keep the runtime caps on the Dokploy application: `cpuLimit=4000000000`
+(4 vCPUs) and `memoryLimit=12884901888` (12 GiB).
 
 1. Build: duplicate the previous `try-release-build-*` raw compose in Dokploy.
    Replace the commit, the `ADD --checksum` value (SHA-256 of

@@ -121,14 +121,14 @@ Common issues:
 
 ### Slow Performance
 
-The service has resource limits configured. To adjust them, edit `docker-compose.yml`:
+The service defaults to 4 vCPUs and 12 GiB of RAM. To adjust the caps, edit `docker-compose.yml` (or `docker-compose.traefik.yml` if using Traefik):
 
 ```yaml
 deploy:
   resources:
     limits:
-      cpus: '4.0'      # Increase CPU limit
-      memory: 8G       # Increase memory limit
+      cpus: '4.0'
+      memory: 12G
 ```
 
 Then restart the service:
