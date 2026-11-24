@@ -134,6 +134,8 @@ func linkTypeToLayerType(lt layers.LinkType) gopacket.LayerType {
 		return gopacket.LayerTypePayload
 	case layers.LinkTypeEthernet:
 		return layers.LayerTypeEthernet
+	case 6:
+		return layerTokenRing
 	case 189, 220, 249, 266:
 		return layers.LayerTypeUSB
 	case 12, layers.LinkTypeRaw: // Historical DLT_RAW captures also use 12 on disk.
