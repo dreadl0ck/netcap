@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -74,5 +75,33 @@ func TestDedupeByIsValidatedAndBounded(t *testing.T) {
 	}
 	if n := len(replay.engine.dedupe["r"].seen); n > maxDedupeKeys {
 		t.Fatalf("dedupe state %d keys", n)
+	}
+}
+
+func TestInfoRulesAreInventoryUnlessTheySayOtherwise(t *testing.T) {
+	record := &types.TCP{SrcIP: "10.0.0.1", DstIP: "10.0.0.2", SYN: true}
+	for _, tc := range []struct {
+		rule      Rule
+		inventory bool
+	}{
+		{Rule{Name: "a", Type: "TCP", Expression: "SYN", Severity: "info", Enabled: true}, true},
+		{Rule{Name: "b", Type: "TCP", Expression: "SYN", Severity: "low", Enabled: true}, false},
+		{Rule{Name: "c", Type: "TCP", Expression: "SYN", Severity: "info", Kind: KindFinding, Enabled: true}, false},
+		{Rule{Name: "d", Type: "TCP", Expression: "SYN", Severity: "high", Kind: KindInventory, Enabled: true}, true},
+	} {
+		rule := tc.rule
+		if err := CompileRules(&Config{Rules: []*Rule{&rule}}); err != nil {
+			t.Fatal(err)
+		}
+		alert, err := createRuleAlert(&rule, record, "", false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := slices.Contains(alert.Tags, InventoryTag); got != tc.inventory {
+			t.Errorf("%s: inventory %v", rule.Name, got)
+		}
+	}
+	if err := CompileRules(&Config{Rules: []*Rule{{Name: "e", Type: "TCP", Expression: "SYN", Severity: "low", Kind: "noise", Enabled: true}}}); err == nil {
+		t.Fatal("unknown kind compiled")
 	}
 }

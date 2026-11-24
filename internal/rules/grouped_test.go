@@ -187,7 +187,7 @@ func TestSavedCopyKeepsEveryExportedField(t *testing.T) {
 func fullyPopulatedRule(t *testing.T) *Rule {
 	t.Helper()
 	rule := &Rule{Name: "r", Description: "d", Type: "DNS", Expression: "true", Severity: "low", MITRE: []string{"T1"}, Tags: []string{"x"}, Enabled: true,
-		Threshold: 5, ThresholdWindow: 60, GroupBy: []string{"SrcIP"}, FoldCase: true, DedupeBy: []string{"SrcIP"}, DedupeWindow: 60, DistinctField: "DstIP", DistinctThreshold: 3,
+		Threshold: 5, ThresholdWindow: 60, GroupBy: []string{"SrcIP"}, FoldCase: true, DedupeBy: []string{"SrcIP"}, DedupeWindow: 60, Kind: "inventory", DistinctField: "DstIP", DistinctThreshold: 3,
 		Actions: []*ResponseAction{{Type: "log"}}, Sequence: &Sequence{After: "true", GroupBy: []string{"SrcIP"}}}
 	v := reflect.ValueOf(rule).Elem()
 	for i := range v.NumField() {

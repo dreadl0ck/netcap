@@ -122,8 +122,13 @@ func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Requ
 	q := r.URL.Query()
 	severity, rule, group := q.Get("severity"), q.Get("ruleName"), q.Get("groupId")
 	search := strings.ToLower(q.Get("pageSearch"))
+	kindMatch, err := alertKindFilter(r)
+	if err != nil {
+		RespondJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
 	match := func(alert *types.Alert) bool {
-		return (severity == "" || strings.EqualFold(alert.Severity, severity)) &&
+		return kindMatch(alert) && (severity == "" || strings.EqualFold(alert.Severity, severity)) &&
 			(rule == "" || strings.EqualFold(alert.RuleName, rule)) &&
 			(group == "" || generateGroupID(alert.RuleName, alert.Severity) == group)
 	}

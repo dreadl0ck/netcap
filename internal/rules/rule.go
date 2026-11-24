@@ -87,6 +87,10 @@ type Rule struct {
 	DedupeBy     []string `yaml:"dedupe_by,omitempty"`
 	DedupeWindow int      `yaml:"dedupe_window,omitempty"`
 
+	// Kind is "finding" or "inventory". Unset, info-severity rules are
+	// inventory. Alert views list findings unless asked for inventory.
+	Kind string `yaml:"kind,omitempty"`
+
 	// DistinctField enables cardinality-based detection: instead of counting raw
 	// matches, the engine counts the number of DISTINCT values of this field
 	// observed per source IP within ThresholdWindow. When the distinct count
@@ -348,6 +352,9 @@ func CompileRules(config *Config) error {
 				return fmt.Errorf("rule %s: distinct_field: %w", rule.Name, err)
 			}
 		}
+		if rule.Kind != "" && rule.Kind != KindFinding && rule.Kind != KindInventory {
+			return fmt.Errorf("rule %s: kind must be %q or %q", rule.Name, KindFinding, KindInventory)
+		}
 		if len(rule.DedupeBy) > 0 {
 			if rule.Threshold > 1 || rule.DistinctField != "" || rule.Sequence != nil {
 				return fmt.Errorf("rule %s: dedupe_by applies only to single-match rules", rule.Name)
@@ -473,9 +480,11 @@ func EvaluateRule(rule *Rule, record types.AuditRecord) (*types.Alert, error) {
 func createRuleAlert(rule *Rule, record types.AuditRecord, compiledDigest string, projectReplayEvidence bool) (*types.Alert, error) {
 
 	// Ensure tags is never nil (use empty slice if nil)
-	tags := rule.Tags
-	if tags == nil {
-		tags = []string{}
+	tags := append([]string{}, rule.Tags...)
+	if rule.EffectiveKind() == KindInventory {
+		tags = append(tags, InventoryTag)
+	} else if strings.EqualFold(rule.Severity, "info") {
+		tags = append(tags, FindingTag)
 	}
 
 	if compiledDigest == "" {
@@ -559,4 +568,24 @@ func ValidateSeverity(severity string) bool {
 	default:
 		return false
 	}
+}
+
+const (
+	KindFinding   = "finding"
+	KindInventory = "inventory"
+	// InventoryTag marks alerts of inventory rules; alert views hide them by default.
+	InventoryTag = "kind:inventory"
+	// FindingTag marks info-severity alerts of rules that declare kind: finding.
+	FindingTag = "kind:finding"
+)
+
+// EffectiveKind is the rule's kind, defaulting info-severity rules to inventory.
+func (r *Rule) EffectiveKind() string {
+	if r.Kind != "" {
+		return r.Kind
+	}
+	if strings.EqualFold(r.Severity, "info") {
+		return KindInventory
+	}
+	return KindFinding
 }

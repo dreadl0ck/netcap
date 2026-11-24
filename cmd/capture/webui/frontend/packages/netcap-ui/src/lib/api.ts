@@ -1150,6 +1150,7 @@ export interface Alert {
   resolved: boolean;
   resolvedAt?: number;
   alertId: string;
+  kind?: 'finding' | 'inventory';
   groupedEvaluation?: OfflineAlertMetadata;
   count?: number;
   firstSeenNs?: string;
@@ -1210,6 +1211,7 @@ export interface AlertStatsResponse {
   recentAlerts: Alert[];
   criticalAlerts: number;
   lastUpdate: number;
+  byKind?: Record<string, number>;
 }
 
 export interface FieldsResponse {
@@ -2378,8 +2380,10 @@ function createApiWithBase(apiBase: string) {
     ruleName?: string;
     groupId?: string;
     sort?: 'asc' | 'desc';
+    kind?: 'finding' | 'inventory' | 'all';
   }): Promise<AlertsResponse> {
     const queryParams = new URLSearchParams();
+    if (params?.kind) queryParams.set('kind', params.kind);
     if (params?.groupId) queryParams.set('groupId', params.groupId);
     if (params?.limit) queryParams.set('limit', params.limit.toString());
     if (params?.offset) queryParams.set('offset', params.offset.toString());
@@ -2401,8 +2405,10 @@ function createApiWithBase(apiBase: string) {
     sort?: 'asc' | 'desc';
     sortBy?: 'count' | 'lastSeen' | 'firstSeen' | 'severity';
     hideResolved?: boolean;
+    kind?: 'finding' | 'inventory' | 'all';
   }): Promise<GroupedAlertsResponse> {
     const queryParams = new URLSearchParams();
+    if (params?.kind) queryParams.set('kind', params.kind);
     if (params?.hideResolved) queryParams.set('hideResolved', 'true');
     if (params?.limit) queryParams.set('limit', params.limit.toString());
     if (params?.offset) queryParams.set('offset', params.offset.toString());
@@ -2417,8 +2423,8 @@ function createApiWithBase(apiBase: string) {
     return res.json();
   },
 
-  async getAlertStats(): Promise<AlertStatsResponse> {
-    const res = await fetch(`${apiBase}/alerts/stats`);
+  async getAlertStats(kind?: 'finding' | 'inventory' | 'all'): Promise<AlertStatsResponse> {
+    const res = await fetch(`${apiBase}/alerts/stats${kind ? `?kind=${kind}` : ''}`);
     if (!res.ok) throw displayError(message("ui:m_5f87753fdf991c057a54"));
     return res.json();
   },

@@ -43,13 +43,13 @@ func (s *Server) registerActionTools() error {
 		},
 		simpleSessionTool(s, "list_alerts",
 			"Alerts raised in this session. Use group_id from a grouped result to page every member, with an independent alert-page generation.",
-			"/api/alerts", []queryArg{qLimit(500), qOffset(), qSearch(), {Name: "group_id", QueryName: "groupId", Description: "Exact group identifier from list_alerts_grouped."}}),
+			"/api/alerts", []queryArg{qLimit(500), qOffset(), qSearch(), {Name: "group_id", QueryName: "groupId", Description: "Exact group identifier from list_alerts_grouped."}, qAlertKind()}),
 		simpleSessionTool(s, "list_alerts_grouped",
 			"Bounded alert-group summaries with unique-value previews and exact totals. Retrieve full members with list_alerts(group_id). Pagination counts groups; groupCount is the number of groups and totalCount counts underlying alerts.",
-			"/api/alerts/grouped", nil),
+			"/api/alerts/grouped", []queryArg{qAlertKind()}),
 		simpleSessionTool(s, "get_alert_stats",
-			"Summary statistics for alerts in this session.",
-			"/api/alerts/stats", nil),
+			"Summary statistics for alerts in this session. byKind counts every kind; the other fields follow kind.",
+			"/api/alerts/stats", []queryArg{qAlertKind()}),
 		simpleSessionTool(s, "list_rules",
 			"List netcap detection rules available for execution.",
 			"/api/rules", nil),
@@ -104,4 +104,11 @@ func (s *Server) handleExecuteAllRules(ctx context.Context, req mcplib.CallToolR
 		return textResult("Detection rules executed. Use list_alerts to inspect new alerts."), nil
 	}
 	return rawJSONResult(raw), nil
+}
+
+// Inventory alerts (info-severity rules unless a rule sets kind) record that
+// a service exists; findings are what an analyst triages.
+func qAlertKind() queryArg {
+	return queryArg{Name: "kind", Kind: argString, Enum: []string{"finding", "inventory", "all"},
+		Description: "finding (default), inventory, or all. Inventory alerts record that a service or protocol was seen."}
 }

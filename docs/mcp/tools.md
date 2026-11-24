@@ -1841,7 +1841,7 @@ Generate versioned control/truncation/XOR byte cases offline. data is base64; ex
 
 ### `get_alert_stats`
 
-Summary statistics for alerts in this session.
+Summary statistics for alerts in this session. byKind counts every kind; the other fields follow kind.
 
 **Hints:** read-only, idempotent
 
@@ -1849,6 +1849,7 @@ Summary statistics for alerts in this session.
 
 | name | type | required | description |
 | --- | --- | --- | --- |
+| `kind` | string |  | finding (default), inventory, or all. Inventory alerts record that a service or protocol was seen. |
 | `session_id` | string | yes | Session identifier. |
 
 
@@ -3301,6 +3302,7 @@ Alerts raised in this session. Use group_id from a grouped result to page every 
 | `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
 | `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
 | `group_id` | string |  | Exact group identifier from list_alerts_grouped. |
+| `kind` | string |  | finding (default), inventory, or all. Inventory alerts record that a service or protocol was seen. |
 | `limit` | number |  | Maximum number of results to return. |
 | `offset` | number |  | Pagination offset. |
 | `search` | string |  | Substring filter applied server-side. |
@@ -3319,6 +3321,7 @@ Bounded alert-group summaries with unique-value previews and exact totals. Retri
 | --- | --- | --- | --- |
 | `fields` | string |  | Optional comma-separated fields or JSON Pointer paths. |
 | `generation` | string |  | Generation from the previous page; changed collections reject continuation. |
+| `kind` | string |  | finding (default), inventory, or all. Inventory alerts record that a service or protocol was seen. |
 | `limit` | number |  | Maximum number of results to return. |
 | `offset` | number |  | Pagination offset. |
 | `search` | string |  | Substring filter applied server-side. |

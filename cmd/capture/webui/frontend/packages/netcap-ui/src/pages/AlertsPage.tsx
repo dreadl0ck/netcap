@@ -113,6 +113,8 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
   const [switchingFile, setSwitchingFile] = useState(false);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [showResolved, setShowResolved] = useState(true);
+  const [showInventory, setShowInventory] = useState(false);
+  const alertKind = showInventory ? 'all' : 'finding';
   const [resolvingGroups, setResolvingGroups] = useState<Set<string>>(new Set());
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: UIMessageText; severity: 'success' | 'error' }>({
     open: false,
@@ -138,7 +140,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
 
   // Fetch grouped alerts
   const { data: groupedAlertsData, error } = useSWR(
-    ['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter, showResolved],
+    ['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter, showResolved, showInventory],
     () =>
       api.getGroupedAlerts({
         limit: rowsPerPage,
@@ -149,6 +151,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
         sort: sortOrder,
         sortBy: sortBy,
         hideResolved: !showResolved,
+        kind: alertKind,
       }),
     {
       refreshInterval: 5000,
@@ -156,7 +159,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
   );
 
   // Fetch alert statistics
-  const { data: stats } = useSWR<AlertStatsResponse>('alertStats', () => api.getAlertStats(), {
+  const { data: stats } = useSWR<AlertStatsResponse>(['alertStats', alertKind], () => api.getAlertStats(alertKind), {
     refreshInterval: 5000,
   });
 
@@ -186,8 +189,8 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
   };
 
   const handleRefresh = () => {
-    mutate(['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter, showResolved]);
-    mutate('alertStats');
+    mutate(['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter, showResolved, showInventory]);
+    mutate(['alertStats', alertKind]); mutate('alertStats');
   };
 
   const handleSort = (column: 'count' | 'lastSeen' | 'firstSeen' | 'severity') => {
@@ -211,8 +214,8 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
       
       // Refresh local data
       await mutateStatus();
-      await mutate(['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter, showResolved]);
-      await mutate('alertStats');
+      await mutate(['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter, showResolved, showInventory]);
+      await mutate(['alertStats', alertKind]); mutate('alertStats');
       
       // Globally invalidate status cache for all pages
       await globalMutate('status');
@@ -225,7 +228,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
     } finally {
       setSwitchingFile(false);
     }
-  }, [mutateStatus, mutate, page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter, showResolved, __uiLocale]);
+  }, [mutateStatus, mutate, page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter, showResolved, showInventory, __uiLocale]);
 
   const handleClearAlerts = async () => {
     if (!confirm(i18nText("ui:m_a42e250b515343cd36cf"))) return;
@@ -370,7 +373,11 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
               startIcon={<FilterAltIcon />} 
               onClick={() => { setShowResolved(!showResolved); setPage(0); }}
               size="small"
-              sx={{ flex: { xs: 1, sm: 'none' } }}>{showResolved ? i18nText("ui:m_9ae02100760198ff9fd0") : i18nText("ui:m_bbdbb9a6cb91944ace7b")}</Button><Button data-learn={i18nText("ui:m_a3d69e25d47882759349")}
+              sx={{ flex: { xs: 1, sm: 'none' } }}>{showResolved ? i18nText("ui:m_9ae02100760198ff9fd0") : i18nText("ui:m_bbdbb9a6cb91944ace7b")}</Button><Button variant={showInventory ? "contained" : "outlined"}
+              startIcon={<FilterAltIcon />}
+              onClick={() => { setShowInventory(!showInventory); setPage(0); }}
+              size="small"
+              sx={{ flex: { xs: 1, sm: 'none' } }}>{showInventory ? i18nText("ui:m_93fb8662cab0f6871021") : i18nText("ui:m_ff4c032ec3a05f603be4", { arg0: (stats?.byKind?.inventory ?? 0).toLocaleString(getUILocale()) })}</Button><Button data-learn={i18nText("ui:m_a3d69e25d47882759349")}
               variant="outlined" 
               startIcon={<RefreshIcon />} 
               onClick={handleRefresh}
@@ -603,7 +610,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                                             mt: 0.5,
                                             p: 1.5,
                                           }} /></Grid>
-                                    )}</Grid><GroupAlerts groupId={group.groupId} count={group.count} onView={handleViewDetails} /></Box></TableCell></TableRow>
+                                    )}</Grid><GroupAlerts groupId={group.groupId} count={group.count} kind={alertKind} onView={handleViewDetails} /></Box></TableCell></TableRow>
                           )}</>
                       );
                     })
@@ -694,10 +701,10 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
 const GROUP_ALERTS_PAGE = 10;
 
 // Pages through every alert of a group; the group summary keeps only samples.
-function GroupAlerts({ groupId, count, onView }: { groupId: string; count: number; onView: (alert: Alert) => void }) {
+function GroupAlerts({ groupId, count, kind, onView }: { groupId: string; count: number; kind: 'finding' | 'all'; onView: (alert: Alert) => void }) {
   const api = useNetcapApi();
   const [offset, setOffset] = useState(0);
-  const { data } = useSWR(['groupAlerts', groupId, offset], () => api.getAlerts({ groupId, limit: GROUP_ALERTS_PAGE, offset }));
+  const { data } = useSWR(['groupAlerts', groupId, offset, kind], () => api.getAlerts({ groupId, limit: GROUP_ALERTS_PAGE, offset, kind }));
   const alerts = data?.alerts || [];
   const total = data?.totalCount ?? count;
   return (

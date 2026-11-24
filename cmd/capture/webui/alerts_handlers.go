@@ -73,6 +73,9 @@ type AlertResponse struct {
 
 	GroupedEvaluation *rules.OfflineAlertMetadata `json:"groupedEvaluation,omitempty"`
 
+	// Kind is "finding" or "inventory"; alert views default to findings.
+	Kind string `json:"kind"`
+
 	// What a threshold, cardinality or detector alert counted.
 	Count        uint64   `json:"count,omitempty"`
 	FirstSeenNs  string   `json:"firstSeenNs,omitempty"`
@@ -183,15 +186,20 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	groupFilter := query.Get("groupId")
+	kindMatch, err := alertKindFilter(r)
+	if err != nil {
+		RespondJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+		return
+	}
 	match := func(alert *types.Alert) bool {
-		return (groupFilter == "" || generateGroupID(alert.RuleName, alert.Severity) == groupFilter) &&
+		return kindMatch(alert) && (groupFilter == "" || generateGroupID(alert.RuleName, alert.Severity) == groupFilter) &&
 			(severityFilter == "" || strings.EqualFold(alert.Severity, severityFilter)) &&
 			(ruleNameFilter == "" || strings.EqualFold(alert.RuleName, ruleNameFilter))
 	}
 	window := newAlertWindow(offset+limit, sortOrder == "asc", alertListBudgetBytes)
 	ctx, scanStats := withAlertScanStats(r.Context())
 	totalCount := 0
-	_, err := s.scanFilteredAlertAudit(ctx, alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, match, func(alert AlertResponse) error {
+	_, err = s.scanFilteredAlertAudit(ctx, alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, match, func(alert AlertResponse) error {
 		totalCount++
 		return window.add(alert)
 	})
@@ -446,9 +454,19 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 	alertGroups := make(map[groupKey]struct{})
 	recent := make([]*types.Alert, 0, 10)
 	var resolved *ResolvedAlertsStore
+	kindMatch, err := alertKindFilter(r)
+	if err != nil {
+		RespondJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+		return
+	}
+	byKind := map[string]int{}
 	scanCtx, scanStats := withAlertScanStats(r.Context())
-	err := s.walkAlertAudit(scanCtx, alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, func(alert *types.Alert, store *ResolvedAlertsStore) error {
+	err = s.walkAlertAudit(scanCtx, alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, func(alert *types.Alert, store *ResolvedAlertsStore) error {
 		resolved = store
+		byKind[alertKind(alert)]++
+		if !kindMatch(alert) {
+			return nil
+		}
 		key := groupKey{alert.RuleName, alert.Severity}
 		if _, ok := alertGroups[key]; !ok {
 			dimensions += len(key.rule) + len(key.severity) + 128
@@ -509,6 +527,8 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 		"lastUpdate":     time.Now().Unix(),
 		// Alerts above the frame limit in audits written before v0.16.14.
 		"skippedOversizedAlerts": scanStats.skippedOversized,
+		// Counts over every kind; the other fields follow ?kind.
+		"byKind": byKind,
 	})
 	if err != nil {
 		s.respondAlertReadError(w, r.Context(), err)
@@ -631,9 +651,14 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 	if bounded {
 		budget = maxCollectionPageScanBytes
 	}
+	kindMatch, err := alertKindFilter(r)
+	if err != nil {
+		RespondJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+		return
+	}
 	acc := newAlertGroups(budget)
 	ctx, scanStats := withAlertScanStats(r.Context())
-	_, err := s.scanAlertAudit(ctx, alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, func(alert AlertResponse) error {
+	_, err = s.scanFilteredAlertAudit(ctx, alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, kindMatch, func(alert AlertResponse) error {
 		return acc.add(alert, severityFilter, ruleNameFilter)
 	})
 	if err != nil {
