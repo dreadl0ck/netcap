@@ -103,6 +103,12 @@ func (s *Server) handleAnalysisSettings(w http.ResponseWriter, r *http.Request) 
 			rc.Payload = payload
 		}
 		if patch.RetainPackets != nil {
+			// Packet retention writes into the capture manifest; without it
+			// every analysis would fail at capture start.
+			if *patch.RetainPackets && !rc.CaptureEvidence {
+				uiHTTPError(w, r, "packet retention requires capture evidence", 422, "analysis_settings_retention_evidence", "Packet retention requires capture evidence")
+				return
+			}
 			rc.RetainPackets = *patch.RetainPackets
 		}
 		for name, item := range map[string]struct {
