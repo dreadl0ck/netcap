@@ -26,7 +26,21 @@ type storedTCPReader struct {
 	completionBudget      *core.StateBudget
 	payloadBudget         *retainedPayloadBudget
 	credit, payloadCredit int64
+	// pending holds appended rows not yet written; see flushPending.
+	pending      []aggregate.Row
+	pendingBytes int64
 }
+
+// Appends are written in batches of aggregate.BatchRows. Per-fragment Puts
+// went through the shared cache and evicted hot packet state one row at a
+// time. Buffered rows across all readers are capped so many open flows
+// cannot pin much memory.
+const (
+	pendingRowBytes   = 64 << 10
+	pendingTotalBytes = 16 << 20
+)
+
+var pendingTotal atomic.Int64
 
 type storedTCPFragment struct {
 	Capture, Context           []byte
@@ -224,7 +238,12 @@ func (s *storedTCPReader) append(data *core.StreamData) error {
 			}
 		}
 	}
-	err = s.state.Do(func(tx *aggregate.Tx) error { return tx.Put(retainedTCPKey(s.prefix, s.count), wire) })
+	s.pending = append(s.pending, aggregate.Row{Key: retainedTCPKey(s.prefix, s.count), Value: wire})
+	s.pendingBytes += int64(len(wire))
+	pendingTotal.Add(int64(len(wire)))
+	if len(s.pending) >= aggregate.BatchRows || s.pendingBytes >= pendingRowBytes || pendingTotal.Load() >= pendingTotalBytes {
+		err = s.flushPending()
+	}
 	if err != nil {
 		s.budget.Release(credit)
 		if s.payloadBudget != nil {
@@ -246,6 +265,23 @@ func (s *storedTCPReader) append(data *core.StreamData) error {
 		s.payloadBytes = math.MaxInt64
 	}
 	return nil
+}
+
+// flushPending writes buffered rows. Every read of the prefix, marker
+// rewrite and cold snapshot calls it first.
+func (s *storedTCPReader) flushPending() error {
+	if len(s.pending) == 0 {
+		return nil
+	}
+	rows, n := s.pending, s.pendingBytes
+	s.pending, s.pendingBytes = nil, 0
+	pendingTotal.Add(-n)
+	return s.state.Do(func(tx *aggregate.Tx) error { return tx.PutRows(rows) })
+}
+
+func (s *storedTCPReader) dropPending() {
+	pendingTotal.Add(-s.pendingBytes)
+	s.pending, s.pendingBytes = nil, 0
 }
 
 func (s *storedTCPReader) Count() int64 { return int64(s.count) }
@@ -284,6 +320,9 @@ func retainedTCPKey(prefix string, index uint64) string {
 
 func (s *storedTCPReader) WalkRange(start, length int64, yield func(core.DataFragment) bool) error {
 	if err := core.CheckFragmentRange(s.Count(), start, length); err != nil {
+		return err
+	}
+	if err := s.flushPending(); err != nil {
 		return err
 	}
 	count := s.count
@@ -371,6 +410,9 @@ func (s *storedTCPReader) WalkRange(start, length int64, yield func(core.DataFra
 }
 
 func (s *storedTCPReader) read() (core.DataFragments, error) {
+	if err := s.flushPending(); err != nil {
+		return nil, err
+	}
 	var data core.DataFragments
 	budget := s.readBudget()
 	bounded := s.payloadBudget != nil || budget.Health().LimitBytes > 0
@@ -454,6 +496,7 @@ func (s *storedTCPReader) clear() error {
 		s.payloadBudget.release(s.payloadCredit)
 	}
 	s.credit, s.payloadCredit = 0, 0
+	s.dropPending()
 	err := s.state.Do(func(tx *aggregate.Tx) error { return tx.Delete(s.prefix) })
 	if err == nil {
 		s.count, s.loaded = 0, false

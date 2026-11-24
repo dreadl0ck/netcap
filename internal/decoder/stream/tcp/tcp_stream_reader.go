@@ -49,6 +49,11 @@ type tcpStreamReader struct {
 	data               core.DataFragments
 	stored             *storedTCPReader
 	storedMarkers      map[*core.StreamData]uint64
+	marks              []core.FragmentMark
+	payloadEnd         int64
+	indexed            int64
+	marksLost          bool
+	sizeLost           bool
 	ident              string
 	parent             *tcpConnection
 	numBytes           int
@@ -102,6 +107,7 @@ func (t *tcpStreamReader) StoreData(data *core.StreamData) {
 		id := tcpReaderSequence.Add(1)
 		t.stored = &storedTCPReader{state: decoderconfig.Instance.AggregateStore, prefix: fmt.Sprintf("tcp/payload/%016x/", id), budget: t.parent.stateBudget, payloadBudget: t.parent.payloadBudget}
 	}
+	t.noteMark(data)
 	if t.stored != nil {
 		if data.DiscardReason != "" {
 			if t.storedMarkers == nil {
@@ -123,10 +129,43 @@ func (t *tcpStreamReader) StoreData(data *core.StreamData) {
 	t.numBytes += len(data.RawData)
 }
 
+func (t *tcpStreamReader) noteMark(data *core.StreamData) {
+	index := t.Count()
+	if data.SkippedBytes != 0 || data.DiscardedBytes > 0 || data.DiscardReason != "" || data.TCPObservation != "" {
+		if len(t.marks) >= core.MaxFragmentMarks {
+			t.marksLost, t.marks = true, nil
+		} else if !t.marksLost {
+			t.marks = append(t.marks, core.FragmentMark{Index: index, PayloadEnd: t.payloadEnd})
+		}
+	}
+	if len(data.RawData) > 0 {
+		t.payloadEnd = index + 1
+	}
+	t.indexed = index + 1
+}
+
+// Valid only while every stored fragment went through noteMark.
+func (t *tcpStreamReader) FragmentMarks() ([]core.FragmentMark, bool) {
+	if t.marksLost || t.indexed != t.Count() {
+		return nil, false
+	}
+	return t.marks, true
+}
+
+// Incremental delivery adjusts numBytes apart from the stored fragments.
+func (t *tcpStreamReader) PayloadBytes() (int64, bool) {
+	return int64(t.numBytes), !t.sizeLost && (t.parent == nil || t.parent.incremental == nil)
+}
+
+func (t *tcpStreamReader) dropMarks() { t.marks, t.marksLost, t.sizeLost = nil, true, true }
+
 func (t *tcpStreamReader) updateStoredMarker(data *core.StreamData) {
 	t.parent.Lock()
 	defer t.parent.Unlock()
 	if index, found := t.storedMarkers[data]; found {
+		if err := t.stored.flushPending(); err != nil {
+			return
+		}
 		_ = t.stored.state.Do(func(tx *aggregate.Tx) error {
 			wire, err := encodeTCPFragment(data)
 			if err != nil {

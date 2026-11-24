@@ -13,6 +13,21 @@ func WalkSourceTransportRuns(c *core.ConversationInfo, consume func(*core.Conver
 	if c.ClientSource == nil || c.ServerSource == nil {
 		return fmt.Errorf("transport source requires directional ranges")
 	}
+	if single, err := singleTransportRun(c); err != nil || single {
+		if err != nil || c.ClientSource.Count()+c.ServerSource.Count() == 0 {
+			return err
+		}
+		copy := *c
+		copy.Data, copy.ClientData, copy.ServerData = nil, nil, nil
+		copy.ClientSource = core.FragmentRange(c.ClientSource, 0, c.ClientSource.Count())
+		copy.ServerSource = core.FragmentRange(c.ServerSource, 0, c.ServerSource.Count())
+		copy.Source = core.MergedSource{Client: copy.ClientSource, Server: copy.ServerSource}
+		copy.LoadData = nil
+		if err := consume(&copy, ""); err != nil {
+			return err
+		}
+		return copy.FragmentError
+	}
 	source := core.MergedSource{Client: c.ClientSource, Server: c.ServerSource}
 	var sourceErr error
 	next, stop := iter.Pull(core.SourceFragments(source, &sourceErr))
@@ -62,4 +77,25 @@ func WalkSourceTransportRuns(c *core.ConversationInfo, consume func(*core.Conver
 		}
 		seen[side]++
 	}
+}
+
+// Runs split only where the TCP observation changes; without one anywhere the
+// conversation is a single run and needs no merged walk to find that out.
+func singleTransportRun(c *core.ConversationInfo) (bool, error) {
+	for _, source := range []core.RangedFragmentSource{c.ClientSource, c.ServerSource} {
+		marks, ok := core.SourceMarks(source)
+		if !ok {
+			return false, nil
+		}
+		for _, mark := range marks {
+			data, err := core.MarkedFragment(source, mark.Index)
+			if err != nil {
+				return false, err
+			}
+			if data != nil && data.TCPObservation != "" {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
 }

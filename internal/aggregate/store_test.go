@@ -224,7 +224,7 @@ func TestStorePrivateScratchCleanupAndFailureCancellation(t *testing.T) {
 	if _, err = Open(t.TempDir(), -1, nil); err == nil {
 		t.Fatal("negative limit accepted")
 	}
-	if err = s.tx.Rollback(); err != nil {
+	if err = s.conn.Close(); err != nil {
 		t.Fatal(err)
 	}
 	for range 2 {

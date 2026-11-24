@@ -37,6 +37,29 @@ func upgradePrefixSequence(fragments iter.Seq[core.DataFragment]) [2][]byte {
 	return data
 }
 
+// Each side's prefix depends only on that side, so walk the directions apart and
+// stop each at its cap instead of merging the whole conversation.
+func upgradePrefixSource(c *core.ConversationInfo) [2][]byte {
+	if c.ClientSource == nil || c.ServerSource == nil {
+		return upgradePrefixSequence(c.Fragments())
+	}
+	var data [2][]byte
+	for side, source := range []core.FragmentSource{c.ClientSource, c.ServerSource} {
+		err := source.Walk(func(f core.DataFragment) bool {
+			if d, ok := f.(*core.StreamData); ok && (d.DiscardedBytes > 0 || d.SkippedBytes != 0 && (d.SkippedBytes > 0 || len(data[side]) > 0)) {
+				return false
+			}
+			n := min(len(f.Raw()), maxUpgradeBytes-len(data[side]))
+			data[side] = append(data[side], f.Raw()[:n]...)
+			return len(data[side]) < maxUpgradeBytes
+		})
+		if err != nil {
+			c.FragmentError = err
+		}
+	}
+	return data
+}
+
 type upgradeParser func(client, server []byte) ([2]int, bool)
 
 func tryUpgrade(data [2][]byte, parse upgradeParser) ([2]int, bool) {
@@ -53,7 +76,7 @@ func negotiatedUpgrade(fragments core.DataFragments, primary string) ([2]int, bo
 }
 
 func negotiatedUpgradeSource(conversation *core.ConversationInfo, primary string) ([2]int, bool) {
-	data := upgradePrefixSequence(conversation.Fragments())
+	data := upgradePrefixSource(conversation)
 	// HTTP bodies are not candidates for another protocol's upgrade grammar.
 	if primary == "HTTP" {
 		return tryUpgrade(data, connectBounds)

@@ -47,6 +47,9 @@ func TestStoredTCPMaterializationBudgets(t *testing.T) {
 				}
 			}
 			if missing {
+				if err := s.flushPending(); err != nil {
+					t.Fatal(err)
+				}
 				if err := state.Do(func(tx *aggregate.Tx) error { return tx.Delete(s.prefix + "0000000000000001") }); err != nil {
 					t.Fatal(err)
 				}

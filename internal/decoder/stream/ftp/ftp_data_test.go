@@ -121,3 +121,29 @@ func TestFTPInvalidNegotiation(t *testing.T) {
 		t.Fatal("valid EPRT failed")
 	}
 }
+
+type sizedSource struct {
+	core.SliceSource
+	size int64
+	read *int
+}
+
+func (s sizedSource) PayloadBytes() (int64, bool) { return s.size, true }
+func (s sizedSource) Walk(yield func(core.DataFragment) bool) error {
+	return s.SliceSource.Walk(func(f core.DataFragment) bool { *s.read++; return yield(f) })
+}
+
+func TestOversizedCandidateIsRejectedWithoutWalking(t *testing.T) {
+	dataTestState(t)
+	read := 0
+	server := make(core.SliceSource, 64)
+	for i := range server {
+		server[i] = &core.StreamData{RawData: make([]byte, 1<<20+1)}
+	}
+	c := &core.ConversationInfo{TCPHandshakeComplete: true, Source: core.MergedSource{
+		Client: sizedSource{read: &read}, Server: sizedSource{SliceSource: server, size: 64 * (1<<20 + 1), read: &read}}}
+	ObserveDataConversation(c)
+	if read != 0 || len(dataState.streams) != 0 || dataState.health.Rejected != 1 {
+		t.Fatalf("read %d fragments to reject an oversized candidate", read)
+	}
+}

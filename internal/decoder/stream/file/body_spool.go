@@ -1,6 +1,7 @@
 package file
 
 import (
+	"bufio"
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -101,6 +102,9 @@ func SpoolBody(reader io.Reader) (result *BodySpool, resultErr error) {
 			_ = result.Close()
 		}
 	}()
+	// Body readers return one TCP segment per Read; buffer so the spool is
+	// written in large blocks rather than one syscall per segment.
+	spool := bufio.NewWriterSize(file, 256<<10)
 	md5Hash, sha1Hash, sha256Hash := md5.New(), sha1.New(), sha256.New()
 	hashes := io.MultiWriter(md5Hash, sha1Hash, sha256Hash)
 	var facts artifactFacts
@@ -131,7 +135,7 @@ func SpoolBody(reader io.Reader) (result *BodySpool, resultErr error) {
 				sourceErr = errors.Join(errArtifactScratchBudget, sourceErr)
 				readErr = sourceErr
 			}
-			written, writeErr := file.Write(chunk[:n])
+			written, writeErr := spool.Write(chunk[:n])
 			result.credit += int64(written)
 			releaseArtifactScratch(int64(n - written))
 			if written > 0 {
@@ -162,6 +166,10 @@ func SpoolBody(reader io.Reader) (result *BodySpool, resultErr error) {
 			resultErr = io.ErrNoProgress
 			break
 		}
+	}
+	if err := spool.Flush(); err != nil {
+		RecordArtifactWriteError(err)
+		resultErr = errors.Join(resultErr, err)
 	}
 	result.content.hashes = FileHashes{MD5: hex.EncodeToString(md5Hash.Sum(nil)), SHA1: hex.EncodeToString(sha1Hash.Sum(nil)), SHA256: hex.EncodeToString(sha256Hash.Sum(nil))}
 	result.content.mime, result.content.accurate = facts.mimeType()

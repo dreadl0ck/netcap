@@ -3,6 +3,7 @@ package aggregate
 
 import (
 	"container/list"
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -38,7 +39,7 @@ type Health struct {
 type Store struct {
 	mu         sync.Mutex
 	db         *sql.DB
-	tx         *sql.Tx
+	conn       *sql.Conn // a Tx would spawn a context watcher per query
 	path       string
 	cache      map[string]*list.Element
 	dirty      map[string]*entry
@@ -84,9 +85,15 @@ func Open(directory string, limit int64, cancel func()) (*Store, error) {
 		_, err = s.db.Exec(`PRAGMA page_size=16384; PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF; PRAGMA cache_size=-1024; PRAGMA mmap_size=0; PRAGMA temp_store=FILE; CREATE TABLE state (key TEXT PRIMARY KEY, value BLOB NOT NULL) WITHOUT ROWID`)
 	}
 	if err == nil {
-		s.tx, err = s.db.Begin()
+		s.conn, err = s.db.Conn(context.Background())
+	}
+	if err == nil {
+		_, err = s.conn.ExecContext(context.Background(), "BEGIN")
 	}
 	if err != nil {
+		if s.conn != nil {
+			_ = s.conn.Close()
+		}
 		if s.db != nil {
 			_ = s.db.Close()
 		}
@@ -144,7 +151,7 @@ func (s *Store) statement(query string) (*sql.Stmt, error) {
 	if statement := s.statements[query]; statement != nil {
 		return statement, nil
 	}
-	statement, err := s.tx.Prepare(query)
+	statement, err := s.conn.PrepareContext(context.Background(), query)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +270,7 @@ func (t *Tx) DeleteKey(key string) error {
 }
 
 func (t *Tx) Count(prefix string) (int64, error) {
-	if err := t.flush(); err != nil {
+	if err := t.flushPrefix(prefix); err != nil {
 		return 0, err
 	}
 	var count int64
@@ -317,8 +324,14 @@ func (t *Tx) Find(prefix, upper string, descending bool) (string, []byte, bool, 
 	return key, append([]byte(nil), value...), found, nil
 }
 
-func (t *Tx) flush() error {
-	for _, entry := range t.store.dirty {
+// flushPrefix writes dirty cache entries in prefix's range. A range read needs
+// only those; flushing the whole cache made every stream read write up to
+// 4096 unrelated entries.
+func (t *Tx) flushPrefix(prefix string) error {
+	for key, entry := range t.store.dirty {
+		if !strings.HasPrefix(key, prefix) {
+			continue
+		}
 		if err := t.store.write(entry); err != nil {
 			return err
 		}
@@ -326,10 +339,45 @@ func (t *Tx) flush() error {
 	return nil
 }
 
+// PutRows writes new rows straight to storage, bypassing the cache. It is for
+// append-only bulk data that would otherwise evict hot state one row at a
+// time; rows replace cached values for the same keys.
+func (t *Tx) PutRows(rows []Row) error {
+	s := t.store
+	for len(rows) > 0 {
+		n := min(len(rows), BatchRows)
+		query := `INSERT INTO state(key,value) VALUES(?,coalesce(?,x''))` + strings.Repeat(`,(?,coalesce(?,x''))`, n-1) + ` ON CONFLICT(key) DO UPDATE SET value=excluded.value`
+		if n != BatchRows && n != 1 {
+			n = 1
+			query = `INSERT INTO state(key,value) VALUES(?,coalesce(?,x'')) ON CONFLICT(key) DO UPDATE SET value=excluded.value`
+		}
+		statement, err := s.statement(query)
+		if err != nil {
+			return err
+		}
+		args := make([]any, 0, 2*n)
+		for _, row := range rows[:n] {
+			if element := s.cache[row.Key]; element != nil {
+				s.health.ResidentBytes -= charge(element.Value.(*entry))
+				s.lru.Remove(element)
+				delete(s.cache, row.Key)
+				delete(s.dirty, row.Key)
+			}
+			args = append(args, row.Key, row.Value)
+		}
+		if _, err := statement.Exec(args...); err != nil {
+			return err
+		}
+		s.health.DiskWrites += uint64(n)
+		rows = rows[n:]
+	}
+	return nil
+}
+
 // Next returns one ordered row after flushing pending writes. An empty after
 // starts at prefix. Callers can release Do's lock between successive records.
 func (t *Tx) Next(prefix, after string) (string, []byte, bool, error) {
-	if err := t.flush(); err != nil {
+	if err := t.flushPrefix(prefix); err != nil {
 		return "", nil, false, err
 	}
 	query := `SELECT key,value FROM state WHERE key>? AND key<? ORDER BY key LIMIT 1`
@@ -355,7 +403,7 @@ func (t *Tx) Next(prefix, after string) (string, []byte, bool, error) {
 }
 
 func (t *Tx) Last(prefix string) (string, []byte, bool, error) {
-	if err := t.flush(); err != nil {
+	if err := t.flushPrefix(prefix); err != nil {
 		return "", nil, false, err
 	}
 	var key string
@@ -378,7 +426,7 @@ func (t *Tx) Last(prefix string) (string, []byte, bool, error) {
 // Each visits an ordered range with one row resident at a time. The callback may
 // replace the same key; it must not add keys to the range being visited.
 func (t *Tx) Each(prefix string, fn func(string, []byte) error) error {
-	if err := t.flush(); err != nil {
+	if err := t.flushPrefix(prefix); err != nil {
 		return err
 	}
 	last, first := prefix, true
@@ -436,11 +484,8 @@ func (s *Store) Close() error {
 	}
 	s.statements = nil
 	// This is scratch storage, not a recovery log. No capture state is reused.
-	err := s.tx.Rollback()
-	if errors.Is(err, sql.ErrTxDone) {
-		err = nil
-	}
-	err = errors.Join(statementError, err, s.db.Close(), os.Remove(s.path))
+	_, err := s.conn.ExecContext(context.Background(), "ROLLBACK")
+	err = errors.Join(statementError, err, s.conn.Close(), s.db.Close(), os.Remove(s.path))
 	s.cache = nil
 	s.dirty = nil
 	s.lru.Init()

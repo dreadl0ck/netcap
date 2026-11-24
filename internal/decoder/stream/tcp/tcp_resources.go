@@ -37,6 +37,7 @@ func (t *tcpConnection) releaseResources() {
 		for _, reader := range readers {
 			if owned, ok := reader.(*tcpStreamReader); ok {
 				owned.data = nil
+				owned.dropMarks()
 				owned.storedMarkers = nil
 				if owned.stored != nil {
 					_ = owned.stored.clear()

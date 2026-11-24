@@ -2,6 +2,7 @@ package aggregate
 
 import (
 	"fmt"
+	"runtime/metrics"
 	"testing"
 )
 
@@ -53,5 +54,44 @@ func TestPreparedStatementsDoNotScaleWithRows(t *testing.T) {
 		if _, err := statement.Exec("unused"); err == nil {
 			t.Fatal("statement survived store teardown")
 		}
+	}
+}
+
+func TestQueriesDoNotSpawnGoroutines(t *testing.T) {
+	s, err := Open(t.TempDir(), 1, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	created := func() uint64 {
+		sample := []metrics.Sample{{Name: "/sched/goroutines-created:goroutines"}}
+		metrics.Read(sample)
+		return sample[0].Value.Uint64()
+	}
+	var before uint64
+	if err := s.Do(func(tx *Tx) error {
+		for i := 0; i < 64; i++ {
+			if err := tx.Put(fmt.Sprintf("rows/%06d", i), []byte("value")); err != nil {
+				return err
+			}
+		}
+		if _, err := tx.NextBatch("rows/", ""); err != nil {
+			return err
+		}
+		before = created()
+		for i := 0; i < 200; i++ {
+			if _, err := tx.NextBatch("rows/", ""); err != nil {
+				return err
+			}
+			if _, _, err := tx.Get(fmt.Sprintf("rows/%06d", i%64)); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if spawned := created() - before; spawned > 20 {
+		t.Fatalf("200 reads spawned %d goroutines; each wakes an OS thread", spawned)
 	}
 }

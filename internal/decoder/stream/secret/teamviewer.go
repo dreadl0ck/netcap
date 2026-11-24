@@ -247,6 +247,9 @@ func harvestTeamViewerConversation(c *core.ConversationInfo, emit func(*types.Se
 		}
 		s := &sides[i]
 		if s.stopped {
+			if sides[1-i].stopped {
+				break
+			}
 			continue
 		}
 		if d, ok := f.(*core.StreamData); ok && (d.DiscardedBytes > 0 || d.SkippedBytes != 0 && (d.SkippedBytes > 0 || s.seen)) {

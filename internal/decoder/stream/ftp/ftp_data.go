@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"iter"
 	"os"
 	"path/filepath"
 	"strings"
@@ -103,15 +104,22 @@ func ObserveDataConversation(c *core.ConversationInfo) {
 	if !dataState.enabled || !file.IsProtocolEnabled("FTP") || config.Instance.FileStorage == "" || !c.TCPHandshakeComplete {
 		return
 	}
-	size := 0
-	sizes := [2]int{}
-	for f := range c.Fragments() {
+	if len(dataState.streams) >= maxPendingStreams || c.FragmentCount() > 65536 {
+		dataState.health.Rejected++
+		dataState.health.Status = "partial"
+		return
+	}
+	size, sizes, sized := sourceSizes(c)
+	for f := range sizeWalk(c, sized) {
 		size += len(f.Raw())
 		d := 0
 		if f.Direction() == reassembly.TCPDirServerToClient {
 			d = 1
 		}
 		sizes[d] += len(f.Raw())
+		if size > maxPendingBytes-dataState.bytes {
+			break
+		}
 	}
 	if c.FragmentError != nil || size == 0 {
 		return
@@ -286,4 +294,24 @@ func FinalizeDataConnections() error {
 		return err
 	}
 	return errors.Join(failure, os.WriteFile(filepath.Join(config.Instance.Out, "FTPDataHealth.json"), b, 0600))
+}
+
+func sourceSizes(c *core.ConversationInfo) (int, [2]int, bool) {
+	merged, ok := c.Source.(core.MergedSource)
+	if !ok {
+		return 0, [2]int{}, false
+	}
+	client, clientSized := core.SourcePayloadBytes(merged.Client)
+	server, serverSized := core.SourcePayloadBytes(merged.Server)
+	if !clientSized || !serverSized {
+		return 0, [2]int{}, false
+	}
+	return int(client + server), [2]int{int(client), int(server)}, true
+}
+
+func sizeWalk(c *core.ConversationInfo, sized bool) iter.Seq[core.DataFragment] {
+	if sized {
+		return func(func(core.DataFragment) bool) {}
+	}
+	return c.Fragments()
 }

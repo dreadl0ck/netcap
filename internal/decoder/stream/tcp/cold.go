@@ -32,8 +32,12 @@ type coldReaderState struct {
 	Count                 uint64
 	Bytes                 int
 	Client, Saved, Closed bool
-	PayloadBytes          *int64 `json:",omitempty"`
-	PrefixBeforeGap       int64  `json:",omitempty"`
+	PayloadBytes          *int64              `json:",omitempty"`
+	PrefixBeforeGap       int64               `json:",omitempty"`
+	Marks                 []core.FragmentMark `json:",omitempty"`
+	PayloadEnd            int64               `json:",omitempty"`
+	Indexed               int64               `json:",omitempty"`
+	MarksIndexed          bool                `json:",omitempty"`
 }
 
 func readerClosed(r *tcpStreamReader) bool {
@@ -59,7 +63,8 @@ func saveReader(r streamReader) *coldReaderState {
 		return nil
 	}
 	owned := r.(*tcpStreamReader)
-	s := &coldReaderState{Bytes: owned.numBytes, Client: owned.isClient, Saved: owned.saved, Closed: readerClosed(owned)}
+	s := &coldReaderState{Bytes: owned.numBytes, Client: owned.isClient, Saved: owned.saved, Closed: readerClosed(owned),
+		Marks: owned.marks, PayloadEnd: owned.payloadEnd, Indexed: owned.indexed, MarksIndexed: !owned.marksLost}
 	if owned.stored != nil {
 		s.Prefix, s.Count = owned.stored.prefix, owned.stored.count
 		if !owned.stored.payloadSizeUnknown {
@@ -87,6 +92,13 @@ func (t *tcpConnection) SaveColdState() ([]byte, error) {
 	defer t.Unlock()
 	if !t.ColdEligible() || t.tcpstate == nil {
 		return nil, fmt.Errorf("TCP stream has nonspillable reader state")
+	}
+	for _, reader := range []streamReader{t.client, t.server} {
+		if owned, ok := reader.(*tcpStreamReader); ok && owned.stored != nil {
+			if err := owned.stored.flushPending(); err != nil {
+				return nil, err
+			}
+		}
 	}
 	return json.Marshal(coldTCPState{Version: 1, Network: reassembly.SaveFlow(t.net), Transport: reassembly.SaveFlow(t.transport),
 		Validation: reassembly.SaveTCPValidation(t.tcpstate, t.optchecker), FirstPacket: reassembly.SaveTime(t.firstPacket),
@@ -186,6 +198,8 @@ func (f *connectionFactory) RestoreColdState(wire []byte, reserve bool) (reassem
 		}
 		reader := t.newTCPStreamReader(stored.Client)
 		reader.numBytes, reader.saved = stored.Bytes, stored.Saved
+		reader.marks, reader.payloadEnd, reader.indexed = stored.Marks, stored.PayloadEnd, stored.Indexed
+		reader.marksLost = !stored.MarksIndexed || len(stored.Marks) > core.MaxFragmentMarks || !validMarks(stored.Marks, stored.Indexed)
 		if stored.Prefix != "" {
 			reader.stored = &storedTCPReader{state: decoderconfig.Instance.AggregateStore, prefix: stored.Prefix, count: stored.Count, payloadSizeUnknown: stored.PayloadBytes == nil, budget: budget, payloadBudget: payloadBudget}
 			if stored.PayloadBytes != nil {
@@ -218,4 +232,15 @@ func (f *connectionFactory) RestoreColdState(wire []byte, reserve bool) (reassem
 	}
 	t.decoder = &tcpReader{parent: t}
 	return t, nil
+}
+
+func validMarks(marks []core.FragmentMark, indexed int64) bool {
+	previous := int64(-1)
+	for _, mark := range marks {
+		if mark.Index <= previous || mark.Index >= indexed || mark.PayloadEnd < 0 || mark.PayloadEnd > mark.Index {
+			return false
+		}
+		previous = mark.Index
+	}
+	return true
 }

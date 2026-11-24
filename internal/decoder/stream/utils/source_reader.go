@@ -48,6 +48,9 @@ func WithSourceReader(c *core.ConversationInfo, source core.FragmentSource, serv
 }
 
 func WalkSourceGapRuns(source core.RangedFragmentSource, consume func(core.RangedFragmentSource, bool, bool) error) error {
+	if marks, ok := core.SourceMarks(source); ok {
+		return markedGapRuns(source, marks, consume)
+	}
 	var index, start int64
 	lost, unknown, seen := false, false, false
 	var consumeErr error
@@ -78,6 +81,35 @@ func WalkSourceGapRuns(source core.RangedFragmentSource, consume func(core.Range
 	}
 	if index > start {
 		return consume(core.FragmentRange(source, start, index-start), lost, unknown)
+	}
+	return nil
+}
+
+// Same runs as the walk above, read from the boundary index alone.
+func markedGapRuns(source core.RangedFragmentSource, marks []core.FragmentMark, consume func(core.RangedFragmentSource, bool, bool) error) error {
+	var start int64
+	lost, unknown := false, false
+	for _, mark := range marks {
+		data, err := core.MarkedFragment(source, mark.Index)
+		if err != nil {
+			return err
+		}
+		if data == nil || data.SkippedBytes == 0 && data.DiscardedBytes <= 0 {
+			continue
+		}
+		if data.SkippedBytes == -1 && mark.PayloadEnd == 0 && data.DiscardedBytes == 0 {
+			unknown = true
+			continue
+		}
+		if mark.Index > start {
+			if err := consume(core.FragmentRange(source, start, mark.Index-start), lost, unknown); err != nil {
+				return err
+			}
+		}
+		start, lost = mark.Index, true
+	}
+	if count := source.Count(); count > start {
+		return consume(core.FragmentRange(source, start, count-start), lost, unknown)
 	}
 	return nil
 }

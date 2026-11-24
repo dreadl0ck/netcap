@@ -175,6 +175,7 @@ func (t *tcpConnection) tryIncremental() {
 		for _, reader := range []streamReader{t.client, t.server} {
 			if owned, ok := reader.(*tcpStreamReader); ok {
 				owned.data = nil
+				owned.dropMarks()
 			}
 		}
 		t.merged = nil

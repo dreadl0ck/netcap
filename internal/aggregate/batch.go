@@ -12,7 +12,7 @@ type Row struct {
 // outside Do; mutable ranges must keep Next/Each's per-record visibility.
 // One oversized first row is returned to make progress, as with Next.
 func (t *Tx) NextBatch(prefix, after string) ([]Row, error) {
-	if err := t.flush(); err != nil {
+	if err := t.flushPrefix(prefix); err != nil {
 		return nil, err
 	}
 	return t.readBatch(prefix, after, after == "")
@@ -60,7 +60,7 @@ func (t *Tx) readBatch(prefix, after string, first bool) ([]Row, error) {
 // EachStable batches a range whose membership and future rows do not change.
 // The callback may rewrite its current row; SQL cursors close before callbacks.
 func (t *Tx) EachStable(prefix string, fn func(string, []byte) error) error {
-	if err := t.flush(); err != nil {
+	if err := t.flushPrefix(prefix); err != nil {
 		return err
 	}
 	last := ""
