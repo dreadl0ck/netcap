@@ -63,3 +63,11 @@ rules:
     severity: high
     tags: [tor, onion, dns]
     enabled: true
+  - name: Tor-Like Certificate On HTTPS Port
+    description: The TLS server supplied a leaf with distinct generated-looking Tor-style names and no alternative name or organization. Correlate with other Tor evidence.
+    type: TLSCertificate
+    expression: 'CertificateSender == "server" && ChainIndex == 0 && SrcPort == 443 && IsPublicIP(SrcIP) && !IsCA && !IsSelfSigned && SubjectCommonName != IssuerCommonName && len(SubjectAltNames) == 0 && len(SubjectOrganization) == 0 && len(IssuerOrganization) == 0 && MatchesPattern(SubjectCommonName, "(?i)^www[.][a-z2-7]{8,20}[.](com|net)$") && MatchesPattern(IssuerCommonName, "(?i)^www[.][a-z2-7]{8,20}[.](com|net)$")'
+    severity: medium
+    tags: [tor, tls, heuristic]
+    dedupe_by: [SrcIP, DstIP, SrcPort]
+    enabled: true

@@ -103,6 +103,10 @@ def showcase_report(base, captures, rows, data, dpi, strict):
         "traffic-from-malspam-pushing-Dreambot.pcap": ["Onion Destination In DNS", "Onion Destination In Cleartext HTTP"],
         "Blank-Slate-campaign-pushes-Sage-2.2-ransomware.pcap": ["udp.fanout"],
         "botnet-capture-20110810-neris.pcap": ["smtp.fanout", "Host Identity In HTTP Check-in"],
+        "EITest-Rig-EK-traffic.pcap": ["Exploit Kit Plugin Content", "Tor-Like Certificate On HTTPS Port"],
+        "Hancitor-malspam-1st-run.pcap": ["Public IP Lookup Service", "Credential Stealer Gate POST"],
+        "hancitor-malspam-traffic.pcap": ["Public IP Lookup Service", "Credential Stealer Gate POST"],
+        "KaiXin-EK-2nd-run.pcap": ["Executable Downloaded From Internet", "Host Identity In HTTP Check-in"],
         "mail.pcap": ["Cleartext Password Captured"],
     }
     for name in ("Brazil-malspam-pushes-Banload", "Brazil-malspam-traffic-example",
@@ -137,8 +141,11 @@ def showcase_report(base, captures, rows, data, dpi, strict):
                     errors.append(f"missing {rule}")
             if strict and any(alerts.get(rule, 0) for rule in ("Potential C2 Beaconing", "SOCKS Proxy Detection", "SOCKS Proxy Detected", "Outbound SMTP Fan-Out")):
                 errors.append("retired/duplicate rule fired")
-            if strict and name == "ultimate-PCAP-v20250325.pcapng" and alerts.get("DNS on Unusual Port", 0):
-                errors.append("local discovery or unrelated UDP triggered unusual DNS")
+            if strict and name == "ultimate-PCAP-v20250325.pcapng":
+                if alerts.get("DNS on Unusual Port", 0):
+                    errors.append("local discovery or unrelated UDP triggered unusual DNS")
+                if alerts.get("Tor-Like Certificate On HTTPS Port", 0):
+                    errors.append("unrelated TLS traffic triggered the Tor heuristic")
             if strict and name in {"snort.log.1426118407.pcap", "traffic-from-malspam-pushing-Dreambot.pcap", "ultimate-PCAP-v20250325.pcapng"} and alerts.get("Non-TLS Traffic on Port 443", 0):
                 errors.append("unexpected non-TLS finding on 443")
             if strict and name == "mail.pcap" and alerts.get("Cleartext Password Captured", 0) > 20:
