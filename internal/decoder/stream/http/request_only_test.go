@@ -75,3 +75,42 @@ func TestInterimResponseDoesNotConsumeRequest(t *testing.T) {
 		t.Fatalf("pairing: %v", w.records)
 	}
 }
+
+// A response whose request was not captured has empty request fields;
+// request-side rules (Empty User Agent, Unusual HTTP Method) matched it.
+func TestUnpairedRecordsSayWhichHalfIsMissing(t *testing.T) {
+	old, cfg, count := Decoder.Writer, config.Instance, Decoder.NumRecordsWritten
+	t.Cleanup(func() { Decoder.Writer, config.Instance, Decoder.NumRecordsWritten = old, cfg, count })
+	config.Instance = &config.Config{}
+	has := func(r *types.HTTP, q string) bool {
+		for _, v := range r.ParseQualifications {
+			if v == q {
+				return true
+			}
+		}
+		return false
+	}
+	for _, tc := range []struct {
+		name string
+		data core.DataFragments
+		want string
+	}{
+		{"response only", core.DataFragments{&core.StreamData{Dir: reassembly.TCPDirServerToClient, RawData: []byte("HTTP/1.1 204 No Content\r\n\r\n")}}, ResponseWithoutRequest},
+		{"request only", core.DataFragments{&core.StreamData{RawData: []byte("GET /x HTTP/1.1\r\nHost: example.test\r\n\r\n")}}, RequestWithoutResponse},
+		{"paired", core.DataFragments{
+			&core.StreamData{RawData: []byte("GET /x HTTP/1.1\r\nHost: example.test\r\n\r\n")},
+			&core.StreamData{Dir: reassembly.TCPDirServerToClient, RawData: []byte("HTTP/1.1 204 No Content\r\n\r\n")},
+		}, ""},
+	} {
+		w := &httpEvidenceWriter{}
+		Decoder.Writer = w
+		(&httpReader{conversation: &core.ConversationInfo{Ident: "flow", Data: tc.data}}).Decode()
+		if len(w.records) != 1 {
+			t.Fatalf("%s: %d records", tc.name, len(w.records))
+		}
+		r := w.records[0]
+		if tc.want != "" && !has(r, tc.want) || has(r, ResponseWithoutRequest) && tc.want != ResponseWithoutRequest || has(r, RequestWithoutResponse) && tc.want != RequestWithoutResponse {
+			t.Fatalf("%s: %v", tc.name, r.ParseQualifications)
+		}
+	}
+}

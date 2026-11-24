@@ -223,7 +223,9 @@ func (h *httpReader) decodeTransportRun() {
 			setRequest(ht, matchedReq)
 		} else {
 			// The request may precede the capture; retain the visible response.
+			// Request fields stay empty; rules on them must not read that as a value.
 			atomic.AddInt64(&streamutils.Stats.NumUnmatchedResp, 1)
+			ht.ParseQualifications = appendUnique(ht.ParseQualifications, ResponseWithoutRequest)
 		}
 
 		// Set Community ID for cross-tool correlation
@@ -263,6 +265,7 @@ func (h *httpReader) decodeTransportRun() {
 
 			atomic.AddInt64(&streamutils.Stats.NumRequests, 1)
 			atomic.AddInt64(&streamutils.Stats.NumUnansweredRequests, 1)
+			ht.ParseQualifications = appendUnique(ht.ParseQualifications, RequestWithoutResponse)
 
 			// Set Community ID for cross-tool correlation
 			ht.CommunityID = h.conversation.CommunityID
@@ -276,6 +279,12 @@ func (h *httpReader) decodeTransportRun() {
 		}
 	}
 }
+
+// Pairing qualifications on HTTP records whose other half was not observed.
+const (
+	ResponseWithoutRequest = "response-without-request"
+	RequestWithoutResponse = "request-without-response"
+)
 
 func (h *httpReader) qualifyPairing(record *types.HTTP, paired bool) {
 	if h.transportObservation != "" {
