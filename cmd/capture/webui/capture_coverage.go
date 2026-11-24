@@ -3,17 +3,17 @@ package webui
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"os/exec"
+	"io"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/artifactio"
+	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/evidence"
+	"github.com/dreadl0ck/netcap/internal/exitcode"
 )
 
-// partialCaptureCoverage returns the coverage reason of a capture that
-// finished with sealed but partial output, such as a pcap with a few frames
-// too short for their link header. Since v0.16.11 the capture exits 2 for
-// these; the output is complete for what was readable and must stay usable.
+// partialCaptureCoverage returns the coverage reason a sealed capture
+// manifest records for a partial run.
 func partialCaptureCoverage(dir string) (string, bool) {
 	data, err := artifactio.Read(context.Background(), dir, "capture-manifest.json", 16<<20)
 	if err != nil {
@@ -27,41 +27,53 @@ func partialCaptureCoverage(dir string) (string, bool) {
 	return manifest.CoverageError, true
 }
 
-// acceptPartialCapture reports whether a capture error is a coverage exit (2
-// partial, 3 some link types unsupported) of a run whose manifest records
-// sealed partial output.
-func acceptPartialCapture(err error, dir string) (string, bool) {
-	code := 0
-	var exitErr *exec.ExitError
-	var coded interface{ ExitCode() int }
-	switch {
-	case errors.As(err, &exitErr):
-		code = exitErr.ExitCode()
-	case errors.As(err, &coded):
-		code = coded.ExitCode()
+// acceptPartialCapture reports whether a failed capture is a coverage exit
+// whose output is complete for what was read: exit 2 (partial input,
+// reassembly or artifact budget) or exit 3 (some link types unsupported).
+// Since v0.16.11 the CLI uses these codes; they are not analysis failures.
+//
+// Exit 2 is also how Go reports a crash, so acceptance needs this run's
+// capture-input.json, rewritten as finalized after cleanup closed every
+// writer, and at least one packet decoded past the link layer. This holds
+// with capture evidence off, as in service mode. fallback supplies the
+// coverage note when neither the manifest nor the input report names one.
+func acceptPartialCapture(err error, dir string, started time.Time, fallback func() string) (string, bool) {
+	code := exitcode.Code(err)
+	if code != 2 && code != 3 {
+		return "", false
 	}
-	switch code {
-	case 2:
-	case 3:
-		// Unsupported link types: accept a mixed-link capture where only some
-		// packets are unsupported, never one where nothing was decodable.
-		if !someLinksSupported(dir) {
+	f, info, openErr := artifactio.Open(dir, collector.CaptureInputFile)
+	if openErr != nil {
+		return "", false
+	}
+	var report collector.CaptureInputReport
+	decodeErr := json.NewDecoder(io.LimitReader(f, 4<<20)).Decode(&report)
+	f.Close()
+	if decodeErr != nil || !report.Finalized || info.ModTime().Before(started.Truncate(time.Second)) {
+		return "", false
+	}
+	if report.ProcessedPackets-report.LinkErrors-report.Unsupported <= 0 {
+		return "", false
+	}
+	switch report.Status {
+	case "partial", "complete":
+		if code == 3 {
 			return "", false
 		}
+	case "unsupported":
 	default:
 		return "", false
 	}
-	return partialCaptureCoverage(dir)
-}
-
-func someLinksSupported(dir string) bool {
-	data, err := artifactio.Read(context.Background(), dir, "capture-input.json", 4<<20)
-	if err != nil {
-		return false
+	if note, ok := partialCaptureCoverage(dir); ok {
+		return note, true
 	}
-	var report struct {
-		Processed   int64 `json:"processedPackets"`
-		Unsupported int64 `json:"unsupportedPackets"`
+	if report.Status != "complete" {
+		return (&collector.CaptureInputError{Report: report}).Error(), true
 	}
-	return json.Unmarshal(data, &report) == nil && report.Processed > report.Unsupported
+	if fallback != nil {
+		if note := fallback(); note != "" {
+			return note, true
+		}
+	}
+	return "capture completed with partial coverage", true
 }

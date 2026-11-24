@@ -20,22 +20,25 @@ import (
 // CaptureInputReport describes input coverage independently of audit counts.
 // Issues is bounded; counters include every occurrence, even after it fills.
 type CaptureInputReport struct {
-	SourcePacketRecords  uint64              `json:"sourcePacketRecords"`
-	NormalizedTimestamps int64               `json:"normalizedTimestamps,omitempty"`
-	MissingTimestamps    int64               `json:"missingTimestamps,omitempty"`
-	Format               string              `json:"format"`
-	Status               string              `json:"status"`
-	ReachedEOF           bool                `json:"reachedEOF"`
-	CountedPackets       int64               `json:"countedPackets"`
-	ProcessedPackets     int64               `json:"processedPackets"`
-	SkippedRecords       int64               `json:"skippedRecords"`
-	ReadErrors           int64               `json:"readErrors"`
-	LinkErrors           int64               `json:"linkErrors"`
-	DecodeErrors         int64               `json:"decodeErrors"`
-	Unsupported          int64               `json:"unsupportedPackets"`
-	SnaplenOverrides     int64               `json:"snaplenOverrides"`
-	SnapshotTruncated    int64               `json:"snapshotTruncatedPackets"`
-	Issues               []CaptureInputIssue `json:"issues,omitempty"`
+	SourcePacketRecords  uint64 `json:"sourcePacketRecords"`
+	NormalizedTimestamps int64  `json:"normalizedTimestamps,omitempty"`
+	MissingTimestamps    int64  `json:"missingTimestamps,omitempty"`
+	Format               string `json:"format"`
+	Status               string `json:"status"`
+	ReachedEOF           bool   `json:"reachedEOF"`
+	CountedPackets       int64  `json:"countedPackets"`
+	ProcessedPackets     int64  `json:"processedPackets"`
+	SkippedRecords       int64  `json:"skippedRecords"`
+	ReadErrors           int64  `json:"readErrors"`
+	LinkErrors           int64  `json:"linkErrors"`
+	DecodeErrors         int64  `json:"decodeErrors"`
+	Unsupported          int64  `json:"unsupportedPackets"`
+	SnaplenOverrides     int64  `json:"snaplenOverrides"`
+	SnapshotTruncated    int64  `json:"snapshotTruncatedPackets"`
+	// Finalized is set when the report is rewritten after capture cleanup
+	// closed every writer; a run that crashed during cleanup lacks it.
+	Finalized bool                `json:"finalized,omitempty"`
+	Issues    []CaptureInputIssue `json:"issues,omitempty"`
 }
 
 type CaptureInputIssue struct {
@@ -239,6 +242,7 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 	if err != nil {
 		return err
 	}
+	var written *CaptureInputReport
 	defer func() {
 		if c.captureCoverageError == nil {
 			c.captureRunError = resultErr
@@ -246,6 +250,10 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 		finish()
 		c.cleanup(false)
 		resultErr = errors.Join(resultErr, c.reassemblyCoverageError, c.flowExportError, c.captureEvidenceError, c.artifactAnalysisError)
+		if written != nil {
+			written.Finalized = true
+			resultErr = errors.Join(resultErr, c.writeCaptureInputReport(written))
+		}
 	}()
 	stat, err := os.Stat(path)
 	if err != nil {
@@ -330,13 +338,24 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 	}
 	c.captureInputStatus = report.Status
 	c.captureComplete = report.ReachedEOF && report.Status == "complete" && resultErr == nil
-	data, err := json.MarshalIndent(report, "", "  ")
+	err = c.writeCaptureInputReport(&report)
 	if err == nil {
-		err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "capture-input.json"), append(data, '\n'), 0600)
+		written = &report
 	}
 	if c.captureCoverageError != nil {
 		c.captureRunError = errors.Join(ctx.Err(), err)
 	}
 	c.printlnStdOut("capture input status:", report.Status, "processed:", report.ProcessedPackets, "skipped:", report.SkippedRecords)
 	return errors.Join(resultErr, err)
+}
+
+// CaptureInputFile is the per-run input coverage report in the output directory.
+const CaptureInputFile = "capture-input.json"
+
+func (c *Collector) writeCaptureInputReport(report *CaptureInputReport) error {
+	data, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, CaptureInputFile), append(data, '\n'), 0600)
 }

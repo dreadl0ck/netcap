@@ -48,6 +48,7 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/util"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/env"
+	"github.com/dreadl0ck/netcap/internal/exitcode"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/runtimebudget"
 )
@@ -238,35 +239,10 @@ or: ./net <subcommand> [-h] to get help for the subcommand`)
 
 	if err := app.Run(context.Background(), os.Args); err != nil {
 		log.Print(err)
-		os.Exit(commandExitCode(err))
+		os.Exit(exitcode.Code(err))
 	}
 }
 
-func commandExitCode(err error) int {
-	if coded, ok := err.(interface{ ExitCode() int }); ok {
-		return coded.ExitCode()
-	}
-	if joined, ok := err.(interface{ Unwrap() []error }); ok {
-		code := 0
-		for _, child := range joined.Unwrap() {
-			next := commandExitCode(child)
-			if next == 1 {
-				return 1
-			}
-			code = max(code, next)
-		}
-		return code
-	}
-	if wrapped, ok := err.(interface{ Unwrap() error }); ok {
-		if inner := wrapped.Unwrap(); inner != nil {
-			return commandExitCode(inner)
-		}
-	}
-	if err == nil {
-		return 0
-	}
-	return 1
-}
 
 // handleLegacyCompletion handles bash completion using the old flag-based system.
 // This preserves backward compatibility with existing bash completion scripts.

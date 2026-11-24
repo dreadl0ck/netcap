@@ -43,7 +43,10 @@ func (s *Server) completeAnalysis(job *AnalysisJob, duration time.Duration) erro
 	if err := s.waitForAnalysisTimeline(job.OutputDir); err != nil {
 		return err
 	}
-	coverage, _ := partialCaptureCoverage(job.OutputDir)
+	coverage := job.coverage
+	if coverage == "" {
+		coverage, _ = partialCaptureCoverage(job.OutputDir)
+	}
 	if s.sessionManager != nil {
 		s.sessionManager.UpdateSessionProcessingTime(job.SessionID, duration.Seconds())
 		s.sessionManager.SetSessionCoverage(job.SessionID, coverage)

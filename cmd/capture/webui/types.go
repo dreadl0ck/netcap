@@ -126,4 +126,7 @@ type AnalysisJob struct {
 	BPFFilter              string // BPF filter to apply during capture
 	IncludeDecoders        string // Decoders to include
 	ExcludeDecoders        string // Decoders to exclude
+	// coverage explains why an accepted capture is partial; set by the
+	// capture lane before completion, which may run after its logs are gone.
+	coverage string
 }

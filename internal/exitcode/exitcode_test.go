@@ -1,4 +1,4 @@
-package main
+package exitcode_test
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/collector"
+	"github.com/dreadl0ck/netcap/internal/exitcode"
 	"github.com/expr-lang/expr"
 )
 
@@ -26,7 +27,7 @@ func TestCommandExitCodePreservesLeafErrors(t *testing.T) {
 		{fmt.Errorf("collect pcap: %w", errors.Join(&collector.CaptureInputError{Report: collector.CaptureInputReport{Status: "partial", SnapshotTruncated: 1}}, nil)), 2},
 		{errors.Join(&collector.CaptureInputError{Report: collector.CaptureInputReport{Status: "partial"}}, errors.New("artifact finalization failed")), 1},
 	} {
-		if got := commandExitCode(tc.err); got != tc.want {
+		if got := exitcode.Code(tc.err); got != tc.want {
 			t.Fatalf("%v: exit=%d want=%d", tc.err, got, tc.want)
 		}
 	}

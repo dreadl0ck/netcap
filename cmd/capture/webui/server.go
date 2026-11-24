@@ -2045,9 +2045,9 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	if err := c.GetNetworkDetectionError(); err != nil {
 		analysisErr = fmt.Errorf("network detection failed: %w (capture error: %v)", err, analysisErr)
 	}
-	if note, ok := acceptPartialCapture(analysisErr, job.OutputDir); ok {
+	if note, ok := acceptPartialCapture(analysisErr, job.OutputDir, startTime, func() string { return analysisErr.Error() }); ok {
 		log.Printf("[WebUI] Analysis of %s produced partial coverage: %s", job.InputFile, note)
-		analysisErr = nil
+		job.coverage, analysisErr = note, nil
 	}
 
 	duration := time.Since(startTime)
