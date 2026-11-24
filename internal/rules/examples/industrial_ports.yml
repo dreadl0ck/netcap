@@ -11,9 +11,10 @@ rules:
 
   # Port 102: Siemens S7comm
   - name: Siemens S7comm Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Siemens S7 PLC communication (S7comm over TCP/ISO RFC1006) detected - high-value target for control/logic access
     type: TCP
-    expression: DstPort == 102
+    expression: (DstPort == 102) && ACK && PayloadSize > 0
     severity: critical
     mitre: ["T0855", "T0836"]
     tags: ["plc", "scada"]
@@ -21,9 +22,10 @@ rules:
 
   # Port 502: Modbus TCP
   - name: Modbus TCP Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Modbus over TCP detected - read/write coils/registers used by many PLCs/RTUs (no auth by default)
     type: TCP
-    expression: DstPort == 502
+    expression: (DstPort == 502) && ACK && PayloadSize > 0
     severity: critical
     mitre: ["T0855", "T0836"]
     tags: ["plc", "scada", "unauthenticated"]
@@ -31,9 +33,10 @@ rules:
 
   # Port 44818: EtherNet/IP (TCP)
   - name: EtherNet IP TCP Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: EtherNet/IP explicit messaging / CIP detected (TCP) - restrict to OT networks
     type: TCP
-    expression: DstPort == 44818
+    expression: (DstPort == 44818) && ACK && PayloadSize > 0
     severity: critical
     mitre: ["T0855", "T0836"]
     tags: ["plc"]
@@ -51,9 +54,10 @@ rules:
 
   # Port 20000: DNP3
   - name: DNP3 Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: DNP3 over TCP/UDP detected - common in energy/utility SCADA (requires secure channels and network isolation)
     type: TCP
-    expression: DstPort == 20000
+    expression: (DstPort == 20000) && ACK && PayloadSize > 0
     severity: critical
     mitre: ["T0855", "T0836"]
     tags: ["scada"]
@@ -61,9 +65,10 @@ rules:
 
   # Port 2404: IEC 60870-5-104
   - name: IEC 104 Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: IEC-104 telecontrol protocol port usage detected - critical grid protocol used in electric SCADA
     type: TCP
-    expression: DstPort == 2404
+    expression: (DstPort == 2404) && ACK && PayloadSize > 0
     severity: medium
     mitre: ["T0855", "T0836"]
     tags: ["scada"]
@@ -71,9 +76,10 @@ rules:
 
   # Port 4840: OPC UA
   - name: OPC UA Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: OPC Unified Architecture detected - use certified security modes and monitor session activity
     type: TCP
-    expression: DstPort == 4840
+    expression: (DstPort == 4840) && ACK && PayloadSize > 0
     severity: critical
     mitre: ["T0855", "T1071.001"]
     tags: ["automation"]
@@ -81,9 +87,10 @@ rules:
 
   # Port 4843: OPC UA (HTTPS binding)
   - name: OPC UA HTTPS Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: OPC UA over HTTPS or alternate port detected - enforce cert validation and endpoint filtering
     type: TCP
-    expression: DstPort == 4843
+    expression: (DstPort == 4843) && ACK && PayloadSize > 0
     severity: high
     mitre: ["T0855", "T1071.001"]
     tags: ["automation", "encrypted"]
@@ -129,9 +136,10 @@ rules:
 
   # Port 1883: MQTT (Plain)
   - name: MQTT Plaintext Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: MQTT messaging detected (plaintext) - prefer MQTT over TLS (8883), enforce broker ACLs
     type: TCP
-    expression: DstPort == 1883
+    expression: (DstPort == 1883) && ACK && PayloadSize > 0
     severity: critical
     mitre: ["T1071.001", "T0868"]
     tags: ["iiot", "cleartext"]
@@ -139,9 +147,10 @@ rules:
 
   # Port 8883: MQTT over TLS
   - name: MQTT TLS Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: MQTT over TLS detected - use mutual TLS where possible and monitor broker sessions
     type: TCP
-    expression: DstPort == 8883
+    expression: (DstPort == 8883) && ACK && PayloadSize > 0
     severity: high
     mitre: ["T1071.001", "T0868"]
     tags: ["iiot", "encrypted"]
@@ -154,19 +163,22 @@ rules:
 
   # Port 88: Kerberos (ICS AD Integration)
   - name: ICS Kerberos Detected
+    # tuned-v0.16.13: duplicate of suspicious_traffic "Kerberos Activity" (port 88 is AD, not ICS)
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Kerberos auth detected - used in enterprise integration with OT bridges
     type: TCP
-    expression: DstPort == 88
+    expression: (DstPort == 88) && ACK && PayloadSize > 0
     severity: low
     mitre: ["T1558"]
     tags: ["authentication"]
-    enabled: true
+    enabled: false
 
   # Port 1025: Dynamic RPC
   - name: ICS Dynamic RPC Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Dynamic RPC ports detected - used by Windows services and DCOM in ICS apps
     type: TCP
-    expression: DstPort == 1025
+    expression: (DstPort == 1025) && ACK && PayloadSize > 0
     severity: medium
     mitre: ["T1021.003"]
     tags: ["legacy"]
@@ -174,18 +186,20 @@ rules:
 
   # Port 5985-5986: WinRM
   - name: ICS WinRM HTTP Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Windows remote management (HTTP) detected - used for automation/config
     type: TCP
-    expression: DstPort == 5985
+    expression: (DstPort == 5985) && ACK && PayloadSize > 0
     severity: medium
     mitre: ["T1021.006"]
     tags: ["remote-management"]
     enabled: true
 
   - name: ICS WinRM HTTPS Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Windows remote management (HTTPS) detected - secure WinRM for remote management
     type: TCP
-    expression: DstPort == 5986
+    expression: (DstPort == 5986) && ACK && PayloadSize > 0
     severity: medium
     mitre: ["T1021.006"]
     tags: ["remote-management", "encrypted"]
@@ -199,9 +213,10 @@ rules:
 
   # Port 5020: OT Management
   - name: ICS Vendor Management 5020 Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Vendor OT management tools detected (port 5020) - should be inventoried and limited
     type: TCP
-    expression: DstPort == 5020
+    expression: (DstPort == 5020) && ACK && PayloadSize > 0
     severity: medium
     mitre: ["T0855"]
     tags: ["ics", "vendor-tools", "management", "proprietary"]
@@ -209,9 +224,10 @@ rules:
 
   # Port 5021: Proprietary Vendor
   - name: ICS Vendor Port 5021 Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Vendor-specific engineering/service port detected - require VPN/jumphost access
     type: TCP
-    expression: DstPort == 5021
+    expression: (DstPort == 5021) && ACK && PayloadSize > 0
     severity: medium
     mitre: ["T0855"]
     tags: ["ics", "vendor-tools", "engineering", "proprietary"]
@@ -219,9 +235,10 @@ rules:
 
   # Port 22222: Vendor Agent/Telemetry
   - name: ICS Vendor Telemetry Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Vendor agent/telemetry port detected - should be authenticated and whitelisted
     type: TCP
-    expression: DstPort == 22222
+    expression: (DstPort == 22222) && ACK && PayloadSize > 0
     severity: medium
     mitre: ["T0868"]
     tags: ["ics", "vendor-tools", "telemetry", "iiot", "agent"]
@@ -229,9 +246,10 @@ rules:
 
   # Port 8880: Vendor Web Admin
   - name: ICS Vendor Web Admin Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Alternate HTTP admin port detected - used by vendor web UIs
     type: TCP
-    expression: DstPort == 8880
+    expression: (DstPort == 8880) && ACK && PayloadSize > 0
     severity: medium
     mitre: ["T1071.001"]
     tags: ["ics", "vendor-tools", "web-admin", "http"]
@@ -239,9 +257,10 @@ rules:
 
   # Port 247: Talk (Legacy)
   - name: ICS Legacy Talk Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Legacy Talk service detected on older devices - rare but indicates legacy deployments
     type: TCP
-    expression: DstPort == 247
+    expression: (DstPort == 247) && ACK && PayloadSize > 0
     severity: low
     mitre: ["T1071.001"]
     tags: ["ics", "legacy", "deprecated"]
@@ -249,9 +268,10 @@ rules:
 
   # Port 10250: Kubernetes/Container Management (Modern ICS/IIoT)
   - name: ICS Kubelet Detected
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Container/kubernetes endpoints detected - used in modern ICS/IIoT infrastructure
     type: TCP
-    expression: DstPort == 10250
+    expression: (DstPort == 10250) && ACK && PayloadSize > 0
     severity: critical
     mitre: ["T1610"]
     tags: ["ics", "kubernetes", "container", "iiot", "orchestration"]
@@ -262,54 +282,60 @@ rules:
   # ========================================
 
   - name: ICS Modbus External Connection
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Modbus connection to external IP detected - CRITICAL security violation
     type: TCP
-    expression: DstPort == 502 && IsPublicIP(DstIP)
+    expression: (DstPort == 502 && IsPublicIP(DstIP)) && ACK && PayloadSize > 0
     severity: critical
     mitre: ["T0885", "T0868"]
     tags: ["ics", "modbus", "external", "internet-exposure", "critical"]
     enabled: true
 
   - name: ICS S7comm External Connection
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: S7comm connection to external IP detected - CRITICAL PLC exposure
     type: TCP
-    expression: DstPort == 102 && IsPublicIP(DstIP)
+    expression: (DstPort == 102 && IsPublicIP(DstIP)) && ACK && PayloadSize > 0
     severity: critical
     mitre: ["T0885", "T0868"]
     tags: ["ics", "s7comm", "plc", "external", "siemens"]
     enabled: true
 
   - name: ICS EtherNet IP External Connection
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: EtherNet/IP connection to external IP detected - CRITICAL CIP exposure
     type: TCP
-    expression: DstPort == 44818 && IsPublicIP(DstIP)
+    expression: (DstPort == 44818 && IsPublicIP(DstIP)) && ACK && PayloadSize > 0
     severity: critical
     mitre: ["T0885", "T0868"]
     tags: ["ics", "ethernet-ip", "external", "rockwell"]
     enabled: true
 
   - name: ICS DNP3 External Connection
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: DNP3 connection to external IP detected - CRITICAL SCADA exposure
     type: TCP
-    expression: DstPort == 20000 && IsPublicIP(DstIP)
+    expression: (DstPort == 20000 && IsPublicIP(DstIP)) && ACK && PayloadSize > 0
     severity: critical
     mitre: ["T0885", "T0868"]
     tags: ["ics", "dnp3", "scada", "external", "utility"]
     enabled: true
 
   - name: ICS IEC104 External Connection
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: IEC-104 connection to external IP detected - CRITICAL grid protocol exposure
     type: TCP
-    expression: DstPort == 2404 && IsPublicIP(DstIP)
+    expression: (DstPort == 2404 && IsPublicIP(DstIP)) && ACK && PayloadSize > 0
     severity: critical
     mitre: ["T0885", "T0868"]
     tags: ["ics", "iec-104", "grid", "external", "telecontrol"]
     enabled: true
 
   - name: ICS OPC UA External Connection
+    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: OPC UA connection to external IP detected - monitor for unauthorized data access
     type: TCP
-    expression: (DstPort == 4840 || DstPort == 4843) && IsPublicIP(DstIP)
+    expression: ((DstPort == 4840 || DstPort == 4843) && IsPublicIP(DstIP)) && ACK && PayloadSize > 0
     severity: critical
     mitre: ["T0885", "T0868"]
     tags: ["ics", "opc-ua", "external", "data-access"]
@@ -353,9 +379,10 @@ rules:
     threshold_window: 60
 
   - name: ICS Protocol Flooding
+    # tuned-v0.16.13: established sessions only; SYN probes are scans, not floods
     description: 'One ICS device receives 1,000+ packets on ICS protocol ports within 30 seconds - possible DoS'
     type: TCP
-    expression: DstPort == 502 || DstPort == 102 || DstPort == 44818 || DstPort == 20000 || DstPort == 2404
+    expression: '(DstPort == 502 || DstPort == 102 || DstPort == 44818 || DstPort == 20000 || DstPort == 2404) && ACK && PayloadSize > 0'
     severity: critical
     mitre: ["T0814", "T0826"]
     tags: ["ics", "dos", "flooding", "availability"]

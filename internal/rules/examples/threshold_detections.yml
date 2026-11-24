@@ -11,7 +11,8 @@ rules:
   
   # SSH Brute Force - multiple connection attempts to SSH
   - name: SSH Brute Force
-    description: 'One source opens 50+ SSH connections to the same server within 120 seconds'
+    # tuned-v0.16.13: horizontal SSH sweeps are raised once by "Failed Connection Fan-Out"
+    description: 'One source opens 20+ SSH connections to the same server within 120 seconds'
     type: TCP
     expression: DstPort == 22 && SYN && !ACK
     severity: high
@@ -19,7 +20,7 @@ rules:
     tags: ["brute-force"]
     enabled: true
     group_by: ["SrcIP", "DstIP"]
-    threshold: 50
+    threshold: 20
     threshold_window: 120
 
   # RDP Brute Force - multiple connection attempts to RDP
@@ -204,7 +205,8 @@ rules:
 
   # Kerberos Authentication Spike
   - name: Kerberos Authentication Spike
-    description: 'One host sends 100+ packets to Kerberos (port 88) within 120 seconds'
+    # tuned-v0.16.13: 100 TGS requests in 2 min is a normal workstation logon burst
+    description: 'One host sends 300+ packets to Kerberos (port 88) within 120 seconds'
     type: TCP
     expression: DstPort == 88
     severity: info
@@ -212,7 +214,7 @@ rules:
     tags: ["lateral-movement"]
     enabled: true
     group_by: ["SrcIP"]
-    threshold: 100
+    threshold: 300
     threshold_window: 120
 
   # ========================================
@@ -236,10 +238,11 @@ rules:
   # Web ports are excluded: browsing a modern site opens dozens of HTTPS
   # connections to distinct CDN addresses.
   - name: Multiple External Connections
+    # tuned-v0.16.13: fan-out to 50+ public IPs on non-web ports is scan/spam shaped
     description: One host opens connections to 50+ distinct public IPs on non-web ports within 60 seconds
     type: TCP
     expression: IsPublicIP(DstIP) && SYN && !ACK && DstPort != 80 && DstPort != 443 && DstPort != 8080 && DstPort != 8443
-    severity: info
+    severity: medium
     mitre: ["T1071"]
     tags: ["anomaly"]
     enabled: true

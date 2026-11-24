@@ -6,10 +6,11 @@ description: "Detection rules for data exfiltration attempts including large DNS
 rules:
   # Large DNS Response
   - name: DNS Large Response
+    # tuned-v0.16.13: large A/AAAA answer sets from big CDN/SaaS names are normal
     description: Detect unusually large DNS responses that may indicate data exfiltration
     type: DNS
-    expression: len(Answers) > 10
-    severity: medium
+    expression: (len(Answers) > 10) && len(Questions) > 0 && !MatchesPattern(Questions[0].Name, "(?i)(\\.|^)(microsoftonline\\.com|live\\.com|microsoft\\.com|office\\.com|bing\\.com|google\\.com|google-analytics\\.com|gstatic\\.com|googleapis\\.com|hotmail\\.com|outlook\\.com|akamaiedge\\.net|cloudfront\\.net)$")
+    severity: low
     mitre: ["T1048.003"]
     tags: ["exfiltration"]
     enabled: true
@@ -76,19 +77,21 @@ rules:
 
   # Internal File Transfer SMB
   - name: Internal File Transfer SMB
+    # tuned-v0.16.13: GPO/SYSVOL and share reads on every AD client; exfil to the internet is covered by external/large-upload rules
     description: Detect large file transfers over SMB within the network
     type: TCP
     expression: DstPort == 445 && IsPrivateIP(SrcIP) && IsPrivateIP(DstIP) && PayloadSize > 1000
     severity: info
     mitre: ["T1005", "T1039"]
     tags: ["file-transfer"]
-    enabled: true
+    enabled: false
 
   # FTP External Transfer
   - name: FTP External Transfer
+    # tuned-v0.16.13: established sessions only (see important_ports)
     description: Detect FTP control/data connections to external hosts (potential exfiltration)
     type: TCP
-    expression: (DstPort == 21 || DstPort == 20) && IsPublicIP(DstIP)
+    expression: ((DstPort == 21 || DstPort == 20) && IsPublicIP(DstIP)) && ACK && PayloadSize > 0
     severity: medium
     mitre: ["T1048.002"]
     tags: ["exfiltration"]

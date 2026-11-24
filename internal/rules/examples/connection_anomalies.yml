@@ -8,13 +8,17 @@ rules:
   # Byte symmetry within one connection, not timing. Periodic connections are
   # detected by network detection (c2.beacon).
   - name: Symmetric External Connection
+    # tuned-v0.16.13: single symmetric flows are ordinary web traffic; require 5 per host pair per hour (repetition)
     description: Connection to a public IP with near 1:1 client/server bytes; a weak C2 heuristic that does not measure periodicity
     type: Connection
     expression: 'ByteRatio > 0.8 && ByteRatio < 1.2 && NumPackets > 20 && IsPublicIP(DstIP) && IsPrivateIP(SrcIP) && TotalSize > 1000'
-    severity: medium
+    severity: low
     mitre: ["T1071", "T1573"]
     tags: ["c2", "beaconing"]
     enabled: true
+    threshold: 5
+    threshold_window: 3600
+    group_by: [SrcIP, DstIP]
 
   - name: Long Lived External Connection
     description: Connection to public IP lasting longer than 1 hour (potential C2 or persistent tunnel). Disabled by default - triggers on VPN, streaming, websockets.

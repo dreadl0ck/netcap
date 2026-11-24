@@ -185,9 +185,10 @@ rules:
 
   # RDP Connection
   - name: RDP Connection
+    # tuned-v0.16.13: established sessions only (see important_ports)
     description: Detect RDP connections that may indicate lateral movement
     type: TCP
-    expression: DstPort == 3389
+    expression: (DstPort == 3389) && ACK && PayloadSize > 0
     severity: low
     mitre: ["T1021.001"]
     tags: ["lateral-movement"]
@@ -195,13 +196,14 @@ rules:
 
   # SMB Admin Share Connection
   - name: SMB Admin Share Connection
+    # tuned-v0.16.13: matched every SMB SYN (no share name at TCP level); replaced by "SMB Fan-Out Lateral Movement" (analyst_findings.yml)
     description: Detect connections to SMB ports that may indicate admin share access
     type: TCP
     expression: (DstPort == 445 || DstPort == 139) && SYN && !RST
     severity: medium
     mitre: ["T1021.002", "T1570"]
     tags: ["lateral-movement"]
-    enabled: true
+    enabled: false
 
   # SSH Internal Lateral Movement
   - name: SSH Internal Lateral Movement
@@ -225,9 +227,10 @@ rules:
 
   # Kerberos Activity
   - name: Kerberos Activity
+    # tuned-v0.16.13: established sessions only (see important_ports)
     description: Detect Kerberos traffic that may indicate ticket attacks (Golden/Silver Ticket)
     type: TCP
-    expression: DstPort == 88
+    expression: (DstPort == 88) && ACK && PayloadSize > 0
     severity: info
     mitre: ["T1558.001", "T1558.003"]
     tags: ["credential-access"]
@@ -248,13 +251,14 @@ rules:
 
   # SMB Service Execution
   - name: SMB Service Execution
+    # tuned-v0.16.13: matched every SMB data packet; service creation is raised by the smb.remote-service-control detector and DCERPC svcctl
     description: Detect SMB connections that may indicate remote service execution (PsExec-style)
     type: TCP
     expression: DstPort == 445 && PSH && ACK
     severity: medium
     mitre: ["T1569.002"]
     tags: ["execution"]
-    enabled: true
+    enabled: false
 
   # WinRM PowerShell Execution
   - name: WinRM PowerShell Execution
@@ -268,10 +272,11 @@ rules:
 
   # WMI Activity
   - name: WMI Activity
+    # tuned-v0.16.13: remote WMI is routine Windows administration: inventory, not a finding
     description: 'Remote WMI over DCOM: a client binds to or calls IWbemLevel1Login or IWbemServices'
     type: DCERPC
     expression: 'InterfaceName == "IWbemLevel1Login" || InterfaceName == "IWbemServices"'
-    severity: low
+    severity: 'info'
     mitre: ["T1047", "T1021.003"]
     tags: ["execution"]
     enabled: true

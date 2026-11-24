@@ -1,0 +1,167 @@
+# Analyst finding rules (netcap-eval-scoring alert tuning, v0.16.13)
+# Added for detection gaps found by comparing alerts with the expected findings of 121 MTA
+# exercises, 48 CTF captures and labelled CTU-13/synthetic captures. Each rule names a behaviour
+# an analyst acts on (delivery, C2, recon, lateral movement, spam) instead of a port or header.
+
+description: "Behaviour rules for malware delivery, TLS/DNS C2 tradecraft, scanning, lateral movement and spam fan-out. Tuned on MTA/CTF/CTU-13 captures to cover expected findings with low benign volume."
+
+rules:
+  # ---------------- delivery ----------------
+  - name: Executable Downloaded From Internet
+    description: PE executable transferred over HTTP from a public server (malware delivery, second stage, loader update)
+    type: File
+    expression: 'IsPEExecutable && Protocol == "HTTP" && IsPublicIP(DstIP) && !MatchesPattern(Host, "(?i)(\\.|^)(windowsupdate\\.com|update\\.microsoft\\.com|download\\.microsoft\\.com|delivery\\.mp\\.microsoft\\.com|msftncsi\\.com|digicert\\.com|adobe\\.com|mozilla\\.net|google\\.com|gvt1\\.com)(:\\d+)?$")'
+    severity: high
+    mitre: ["T1105", "T1204.002"]
+    tags: ["delivery", "malware"]
+    enabled: true
+
+  - name: Archive Download With Generic Content-Type
+    description: ZIP/GZIP/7z/RAR archive fetched over cleartext HTTP from a public server and labelled application/octet-stream (or unlabelled); the classic lure/second-stage delivery shape (malspam link, loader update). Software updates name their archives.
+    type: File
+    expression: 'Protocol == "HTTP" && IsPublicIP(DstIP) && MatchesPattern(TrueFileType, "(?i)(zip|gzip|x-7z|x-rar|vnd\\.rar)") && (ContentType == "" || MatchesPattern(ContentType, "(?i)^application/octet-stream")) && !MatchesPattern(Host, "(?i)(\\.|^)(windowsupdate\\.com|update\\.microsoft\\.com|download\\.microsoft\\.com|delivery\\.mp\\.microsoft\\.com|download\\.windowsupdate\\.com|officecdn\\.microsoft\\.com|adobe\\.com|mozilla\\.net|gvt1\\.com)(:\\d+)?$")'
+    severity: medium
+    mitre: ["T1105", "T1204.002"]
+    tags: ["delivery", "malware"]
+    enabled: true
+
+  - name: Archive Attachment Sent Over SMTP
+    description: Archive (ZIP/RAR/7z/GZIP) attached to a mail sent over SMTP from this network; workstations normally submit mail via webmail/Exchange, so cleartext SMTP with archive attachments is malspam (infected spambot) or a phishing lure in transit
+    type: File
+    expression: 'Protocol == "SMTP" && MatchesPattern(TrueFileType, "(?i)(zip|gzip|x-7z|x-rar|vnd\\.rar)")'
+    severity: low
+    mitre: ["T1566.001"]
+    tags: ["delivery", "malspam"]
+    enabled: true
+
+  - name: Exploit Kit Plugin Content
+    description: Flash, Java applet or Silverlight content delivered over HTTP; these plugins are end-of-life and were the classic exploit-kit payload carriers
+    type: File
+    expression: 'Protocol == "HTTP" && IsPublicIP(DstIP) && MatchesPattern(ContentType, "(?i)(x-shockwave-flash|java-archive|x-java-applet|x-silverlight)")'
+    severity: medium
+    mitre: ["T1189", "T1203"]
+    tags: ["delivery", "exploit-kit"]
+    enabled: true
+
+  # ---------------- TLS / DNS C2 tradecraft ----------------
+  - name: TLS SNI With Abused TLD
+    description: TLS ClientHello to a server name under a TLD that is heavily abused for malware C2 and delivery
+    type: TLSClientHello
+    expression: 'IsPublicIP(DstIP) && MatchesPattern(SNI, "(?i)\\.(tk|cc|pw|top|xyz|club|cyou|icu|gdn|win|bid|casa|link|click|rest|buzz|monster|ga|gq|ml|cf|surf|quest|online|fun|space)$")'
+    severity: medium
+    mitre: ["T1071.001", "T1573.002"]
+    tags: ["c2", "tls"]
+    enabled: true
+
+  - name: TLS On Non-Standard Port To Public IP
+    description: TLS handshake to a public server on a port that is not a well-known TLS service port (Trickbot/Dridex/Qakbot-style C2 on 447/449/443x/757 and similar)
+    type: TLSClientHello
+    expression: 'IsPublicIP(DstIP) && IsPrivateIP(SrcIP) && !(DstPort in [443, 8443, 465, 587, 993, 995, 636, 853, 989, 990, 5061, 5223, 5228, 3389, 25, 110, 143, 4443, 8883, 9443, 2083, 2087, 2096, 10443])'
+    severity: medium
+    mitre: ["T1571", "T1573.002"]
+    tags: ["c2", "tls"]
+    enabled: true
+
+  - name: Self-Signed Certificate From Public Server
+    description: A public server presented a self-signed leaf certificate; common for malware C2 and rare for legitimate public services
+    type: TLSCertificate
+    expression: 'IsSelfSigned && ChainIndex == 0 && CertificateSender == "server" && IsPublicIP(SrcIP)'
+    severity: medium
+    mitre: ["T1573.002", "T1587.003"]
+    tags: ["c2", "tls"]
+    enabled: true
+
+  - name: Public IP Lookup Service
+    description: DNS lookup of an external-IP discovery service; malware checks its public address before C2 registration
+    type: DNS
+    expression: '!QR && len(Questions) > 0 && MatchesPattern(Questions[0].Name, "(?i)(^|\\.)(api\\.ipify\\.org|ipify\\.org|ipinfo\\.io|ip-api\\.com|checkip\\.amazonaws\\.com|icanhazip\\.com|myexternalip\\.com|wtfismyip\\.com|checkip\\.dyndns\\.org|ifconfig\\.me|ipecho\\.net|api\\.ip\\.sb|myip\\.opendns\\.com|ident\\.me|ip\\.anysrc\\.net|whatismyipaddress\\.com|geoplugin\\.net|ipapi\\.co|freegeoip\\.app|myip\\.dnsomatic\\.com|bot\\.whatismyipaddress\\.com|showip\\.net)\\.?$")'
+    severity: medium
+    mitre: ["T1016", "T1590.005"]
+    tags: ["recon", "malware"]
+    enabled: true
+
+  - name: Dynamic DNS Or Tunnel Service Domain
+    description: DNS lookup under a free dynamic-DNS or reverse-tunnel service (duckdns, no-ip, trycloudflare, ngrok ...), frequent malware C2 hosting
+    type: DNS
+    expression: '!QR && len(Questions) > 0 && MatchesPattern(Questions[0].Name, "(?i)\\.(duckdns\\.org|no-ip\\.(org|com|biz|info)|ddns\\.net|hopto\\.org|zapto\\.org|sytes\\.net|serveftp\\.com|servehttp\\.com|dynu\\.(net|com)|freedns\\.afraid\\.org|myftp\\.(biz|org)|redirectme\\.net|3utilities\\.com|bounceme\\.net|ddnsking\\.com|gotdns\\.ch|trycloudflare\\.com|ngrok\\.io|ngrok-free\\.app|ngrok\\.app|serveo\\.net|loca\\.lt|portmap\\.io|duckdns\\.org)\\.?$")'
+    severity: medium
+    mitre: ["T1568.002", "T1572"]
+    tags: ["c2", "dns"]
+    enabled: true
+
+  # ---------------- recon / lateral movement / spam ----------------
+  - name: Failed Connection Fan-Out
+    description: One source opened 50+ distinct destinations with TCP connection attempts that were unanswered or reset without payload within 5 minutes (horizontal scan / worm propagation); completed handshakes (browsing) do not count
+    type: Connection
+    expression: 'TransportProto == "TCP" && NumSYNFlags > 0 && AppPayloadSize == 0 && NumPackets <= 4 && (NumACKFlags == 0 || NumRSTFlags > 0)'
+    severity: medium
+    mitre: ["T1046", "T1595.001"]
+    tags: ["recon", "scan"]
+    enabled: true
+    distinct_field: DstIP
+    distinct_threshold: 50
+    threshold_window: 300
+
+  - name: Outbound Alt-Port C2 List Walk
+    description: One internal host tried 5+ distinct public servers on classic botnet C2 ports (8080/7080/447/449/2222/4143/8000/8081/8090/4443) within 5 minutes; Emotet/Trickbot/Qakbot walk a hard-coded C2 list until one answers, browsers do not
+    type: TCP
+    expression: 'SYN && !ACK && IsPrivateIP(SrcIP) && IsPublicIP(DstIP) && DstPort in [8080, 7080, 447, 449, 2222, 4143, 8000, 8081, 8090, 4443]'
+    severity: medium
+    mitre: ["T1571", "T1008"]
+    tags: ["c2", "botnet"]
+    enabled: true
+    distinct_field: DstIP
+    distinct_threshold: 5
+    threshold_window: 300
+
+  - name: SMB Fan-Out Lateral Movement
+    description: One internal host opened SMB/NetBIOS sessions to 5+ distinct internal hosts within 5 minutes (lateral movement, worm spread, share enumeration); a workstation talking to its DC does not match
+    type: TCP
+    expression: '(DstPort == 445 || DstPort == 139) && SYN && !ACK && IsPrivateIP(SrcIP) && IsPrivateIP(DstIP)'
+    severity: high
+    mitre: ["T1021.002", "T1135"]
+    tags: ["lateral-movement", "smb"]
+    enabled: true
+    distinct_field: DstIP
+    distinct_threshold: 5
+    threshold_window: 300
+
+  - name: Outbound SMTP Fan-Out
+    description: One host connected to 10+ distinct mail servers on port 25 within 5 minutes (spam bot / mass mailer); a mail client talks to one submission server
+    type: TCP
+    expression: 'DstPort == 25 && SYN && !ACK && IsPublicIP(DstIP)'
+    severity: high
+    mitre: ["T1071.003", "T1498"]
+    tags: ["spam", "malware"]
+    enabled: true
+    distinct_field: DstIP
+    distinct_threshold: 10
+    threshold_window: 300
+
+  # ---------------- HTTP C2 / delivery shapes ----------------
+  - name: HTTP To Public Server On Non-Standard Port
+    description: Cleartext HTTP request to a public server on a port other than 80/443 (Emotet/Dridex-style C2 on 8080/7080/447, payload hosting on odd ports)
+    type: HTTP
+    expression: 'Method != "" && IsPublicIP(DstIP) && DstPort != 80 && DstPort != 443'
+    severity: medium
+    mitre: ["T1571", "T1071.001"]
+    tags: ["c2", "http"]
+    enabled: true
+
+  - name: HTTP GET To Raw Public IP
+    description: HTTP GET where the Host header is a bare public IPv4 address (payload or config fetched without DNS); browsers rarely do this
+    type: HTTP
+    expression: 'Method == "GET" && IsPublicIP(DstIP) && MatchesPattern(Host, "^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+(:[0-9]+)?$")'
+    severity: medium
+    mitre: ["T1105", "T1071.001"]
+    tags: ["delivery", "http"]
+    enabled: true
+
+  - name: Credential Stealer Gate POST
+    description: HTTP POST to a gate.php/fre.php panel path used by Pony, LokiBot, AZORult and similar stealers
+    type: HTTP
+    expression: 'Method == "POST" && IsPublicIP(DstIP) && MatchesPattern(URL, "(?i)/(gate|fre)\\.php(\\?|$)")'
+    severity: high
+    mitre: ["T1041", "T1555"]
+    tags: ["c2", "stealer"]
+    enabled: true

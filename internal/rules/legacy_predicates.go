@@ -25,6 +25,22 @@ var legacyDefaultsYAML []byte
 // embedded definitions.
 var legacyDefaults = comparableDefaults(legacyDefaultsYAML, "legacy_defaults.yml")
 
+// legacyEnabled records each superseded definition's shipped enabled flag, so a
+// saved copy still at that flag follows a default that is now disabled.
+var legacyEnabled = enabledDefaults(legacyDefaultsYAML)
+
+func enabledDefaults(data []byte) map[string][]bool {
+	var config Config
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		panic("legacy_defaults.yml: " + err.Error())
+	}
+	out := map[string][]bool{}
+	for _, rule := range config.Rules {
+		out[rule.Name] = append(out[rule.Name], rule.Enabled)
+	}
+	return out
+}
+
 // Defaults removed from the embedded set, as last shipped. A saved copy that
 // still equals one is dropped instead of loading as an operator rule.
 //
@@ -110,13 +126,22 @@ func migrateLegacyPredicate(base, override *Rule) *Rule {
 	// A saved copy of a superseded default (WebUI saves write whole rule
 	// sets) would otherwise shadow the fixed embedded rule forever.
 	if saved := legacyComparable(override); saved != nil {
-		for _, legacy := range legacyDefaults[override.Name] {
+		matched, unchanged := false, false
+		for i, legacy := range legacyDefaults[override.Name] {
 			if bytes.Equal(saved, legacy) {
-				migrated := base.SavedCopy()
-				migrated.Enabled = override.Enabled
-				migrated.Tags = override.Tags
-				return &migrated
+				matched = true
+				unchanged = unchanged || legacyEnabled[override.Name][i] == override.Enabled
 			}
+		}
+		if matched {
+			migrated := base.SavedCopy()
+			// An operator's enable/disable choice survives; a copy still at the
+			// old default follows the new one.
+			if !unchanged {
+				migrated.Enabled = override.Enabled
+			}
+			migrated.Tags = override.Tags
+			return &migrated
 		}
 	}
 	digest := sha256.Sum256([]byte(override.Expression))

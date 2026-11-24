@@ -25,10 +25,11 @@ rules:
 
   # Evasion Techniques
   - name: File Type Mismatch
+    # tuned-v0.16.13: text/* vs text/* or script labels are sniffing noise; binaries mislabelled as text/images still match
     description: File extension does not match actual file type (magic bytes) - potential evasion technique
     type: File
-    expression: 'TypeMismatch && Length > 1000'
-    severity: high
+    expression: (TypeMismatch && Length > 1000) && !(MatchesPattern(TrueFileType, "^text/") && MatchesPattern(ContentType, "(?i)^text/|javascript|json|xml"))
+    severity: medium
     mitre: ["T1036.008"]
     tags: ["evasion", "masquerading"]
     enabled: true
@@ -44,9 +45,10 @@ rules:
 
   # Suspicious File Properties
   - name: High Entropy File
+    # tuned-v0.16.13: compressed media/archives/fonts are high-entropy by design; unknown/encrypted blobs still match
     description: File with very high entropy (>7.5) may be encrypted, packed, or compressed malware
     type: File
-    expression: 'Entropy > 7.5 && Length > 10000'
+    expression: (Entropy > 7.5 && Length > 10000) && !MatchesPattern(TrueFileType, "(?i)^(image|video|audio|font)/|zip|gzip|x-7z|rar|bzip|x-xz|cab|woff|pdf")
     severity: medium
     mitre: ["T1027"]
     tags: ["obfuscation", "packed"]
@@ -62,9 +64,10 @@ rules:
     enabled: true
 
   - name: Document With Embedded Script
+    # tuned-v0.16.13: every .js/.html matched; keep documents/containers (PDF, Office, SVG, archives) with script
     description: Office document or PDF with embedded scripts/macros
     type: File
-    expression: 'HasEmbeddedScript'
+    expression: (HasEmbeddedScript) && !MatchesPattern(TrueFileType, "(?i)(javascript|ecmascript|html|css|json|xml|text/plain|x-powershell)")
     severity: medium
     mitre: ["T1204.002"]
     tags: ["macro", "script", "initial-access"]

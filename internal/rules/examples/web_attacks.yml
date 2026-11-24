@@ -226,9 +226,10 @@ rules:
 
   # Empty or Missing User-Agent
   - name: Empty User Agent Detected
+    # tuned-v0.16.13: unpaired response records have Method=="" and UserAgent=="" and matched before
     description: Detect missing or empty user agent string (suspicious for legitimate browsers)
     type: HTTP
-    expression: UserAgent == ""
+    expression: (UserAgent == "") && Method != ""
     severity: low
     mitre: ["T1071.001"]
     tags: ["suspicious-ua", "anomaly"]
@@ -236,9 +237,10 @@ rules:
 
   # Short Suspicious User-Agent
   - name: Suspiciously Short User Agent
+    # tuned-v0.16.13: unpaired response records have Method=="" and UserAgent=="" and matched before
     description: Detect unusually short user agent strings (< 10 chars) often used by tools
     type: HTTP
-    expression: len(UserAgent) > 0 && len(UserAgent) < 10
+    expression: (len(UserAgent) > 0 && len(UserAgent) < 10) && Method != ""
     severity: low
     mitre: ["T1071.001"]
     tags: ["suspicious-ua", "anomaly"]
@@ -296,9 +298,10 @@ rules:
 
   # Old HTTP Version
   - name: Old HTTP Version
+    # tuned-v0.16.13: unpaired response records have Method=="" and UserAgent=="" and matched before
     description: Detect HTTP/1.0 usage (unusual for modern clients, common in scripts)
     type: HTTP
-    expression: MatchesPattern(Proto, "HTTP/1\\.0")
+    expression: (MatchesPattern(Proto, "HTTP/1\\.0")) && Method != ""
     severity: low
     mitre: ["T1071.001"]
     tags: ["anomaly", "legacy"]
@@ -316,9 +319,10 @@ rules:
 
   # HTTP Method Anomaly
   - name: Unusual HTTP Method
+    # tuned-v0.16.13: unpaired response records have Method=="" and UserAgent=="" and matched before
     description: Detect unusual HTTP methods that may indicate tunneling or scanning
     type: HTTP
-    expression: Method != "GET" && Method != "POST" && Method != "HEAD" && Method != "PUT" && Method != "DELETE" && Method != "OPTIONS" && Method != "PATCH"
+    expression: (Method != "GET" && Method != "POST" && Method != "HEAD" && Method != "PUT" && Method != "DELETE" && Method != "OPTIONS" && Method != "PATCH") && Method != ""
     severity: medium
     mitre: ["T1090", "T1572"]
     tags: ["tunneling"]

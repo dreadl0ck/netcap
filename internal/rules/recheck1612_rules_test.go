@@ -202,7 +202,7 @@ func TestSavedLegacyDefaultsLoadCurrentDefinition(t *testing.T) {
 	// Every entry must name a shipped rule and differ from it, or it either
 	// never migrates or turns every saved copy back into the default.
 	for _, old := range legacy.Rules {
-		if current[old.Name] == nil || bytes.Equal(legacyComparable(old), legacyComparable(current[old.Name])) {
+		if current[old.Name] == nil || bytes.Equal(legacyComparable(old), legacyComparable(current[old.Name])) && old.Enabled == current[old.Name].Enabled {
 			t.Fatalf("legacy entry %q has no distinct current definition", old.Name)
 		}
 	}
@@ -436,5 +436,37 @@ func TestDNSBeaconingIgnoresNameCase(t *testing.T) {
 	}
 	if counts()["DNS Beaconing Pattern"] != 1 {
 		t.Fatalf("case variants split the beacon: %v", counts())
+	}
+}
+
+// v0.16.15 disables inventory rules. A saved copy still at the old default
+// (enabled) follows the new default; an operator's own choice survives.
+func TestSavedDefaultFollowsNewlyDisabledDefault(t *testing.T) {
+	embedded, err := LoadEmbeddedRules()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var legacy Config
+	if err := yaml.Unmarshal(legacyDefaultsYAML, &legacy); err != nil {
+		t.Fatal(err)
+	}
+	var old *Rule
+	for _, rule := range legacy.Rules {
+		if rule.Name == "WPAD Query Detection" && rule.Enabled {
+			copy := *rule
+			old = &copy
+		}
+	}
+	if old == nil {
+		t.Fatal("fixture missing")
+	}
+	for _, savedEnabled := range []bool{true, false} {
+		saved := *old
+		saved.Enabled = savedEnabled
+		for _, rule := range MergeConfigs(embedded, &Config{Rules: []*Rule{&saved}}).Rules {
+			if rule.Name == saved.Name && rule.Enabled {
+				t.Fatalf("saved enabled=%v: WPAD Query Detection still enabled", savedEnabled)
+			}
+		}
 	}
 }

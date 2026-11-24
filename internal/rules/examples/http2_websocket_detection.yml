@@ -11,12 +11,13 @@ rules:
 
   # HTTP/2 via ALPN (TLS)
   - name: HTTP/2 ALPN Negotiation
+    # tuned-v0.16.13: h2 is the default for every modern TLS client; pure inventory
     description: Detect HTTP/2 protocol negotiation via TLS ALPN extension (h2, h2-16, h2-15, h2-14)
     type: TLSClientHello
     expression: (len(ALPNs) > 0 && MatchesPattern(ALPNs[0], "(?i)^h2(-\\d+)?$")) || (len(ALPNs) > 1 && MatchesPattern(ALPNs[1], "(?i)^h2(-\\d+)?$")) || (len(ALPNs) > 2 && MatchesPattern(ALPNs[2], "(?i)^h2(-\\d+)?$"))
     severity: info
     tags: ["protocol-detection", "http2", "modern", "alpn"]
-    enabled: true
+    enabled: false
 
   # HTTP/2 Cleartext (h2c) via Upgrade header
   - name: HTTP/2 Cleartext Upgrade Request

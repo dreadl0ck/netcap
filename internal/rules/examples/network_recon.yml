@@ -8,10 +8,11 @@ rules:
   # Counts distinct destination ports per source, not SYN packets: a burst
   # of HTTPS connections opens many SYNs to one port and is not a scan.
   - name: SYN Scan Detection
+    # tuned-v0.16.13: only rule that names a vertical scan; was info so it never reached the triage queue
     description: One source sends SYNs (without ACK or RST) to 100+ distinct destination ports within 60 seconds
     type: TCP
     expression: SYN && !ACK && !RST
-    severity: info
+    severity: medium
     mitre: ["T1046"]
     tags: ["port-scan"]
     enabled: true
@@ -93,23 +94,26 @@ rules:
 
   # DHCP Traffic Detection - Rogue DHCP Server
   - name: DHCP Traffic Detected
+    # tuned-v0.16.13: DHCP is present on every LAN; DeviceProfile carries the inventory
     description: "Detects DHCP traffic. NOTE: To detect a rogue DHCP server, this requires correlation to distinguish from known, legitimate DHCP servers."
     type: UDP
     expression: DstPort == 68 || DstPort == 67
     severity: info
     mitre: ["T1557.003"]
     tags: ["rogue-server"]
-    enabled: true
+    enabled: false
 
   # WPAD Query Detection
   - name: WPAD Query Detection
+    # tuned-v0.16.13: every Windows host queries wpad.<domain> at boot; the abuse shape is "WPAD HTTP Request" (kept)
+    # tuned-v0.16.13: normal Windows/AD LAN traffic: inventory, not a finding (external variants keep their severity)
     description: Detect WPAD (Web Proxy Auto-Discovery) queries
     type: DNS
     expression: len(Questions) > 0 && MatchesPattern(Questions[0].Name, "(?i)wpad")
-    severity: low
+    severity: info
     mitre: ["T1557"]
     tags: ["mitm"]
-    enabled: true
+    enabled: false
 
   # WPAD HTTP Request
   - name: WPAD HTTP Request

@@ -19,9 +19,10 @@ rules:
 
   # SAMR - Security Account Manager Remote
   - name: DCERPC SAMR User Enumeration
+    # tuned-v0.16.13: SamrLookupNamesInDomain/SamrEnumerateDomainsInSamServer run on every interactive logon; keep user/group/alias enumeration
     description: SAMR domain or user enumeration request, commonly used for remote account discovery in Active Directory
     type: DCERPC
-    expression: 'InterfaceName == "SAMR" && PacketTypeName == "Request" && OperationName in ["SamrEnumerateDomainsInSamServer", "SamrEnumerateUsersInDomain", "SamrLookupNamesInDomain"]'
+    expression: InterfaceName == "SAMR" && PacketTypeName == "Request" && OperationName in ["SamrEnumerateUsersInDomain", "SamrEnumerateGroupsInDomain", "SamrEnumerateAliasesInDomain"]
     severity: medium
     mitre: ["T1087.002"]
     tags: ["dcerpc", "discovery", "user-enumeration"]

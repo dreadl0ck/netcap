@@ -11,9 +11,10 @@ rules:
 
   # Missing HSTS on HTTPS
   - name: Missing HSTS Header
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect HTTPS responses without Strict-Transport-Security header (MITM risk)
     type: HTTP
-    expression: StatusCode == 200 && MatchesPattern(Proto, "(?i)https") && ResponseHeader["Strict-Transport-Security"] == ""
+    expression: (StatusCode == 200 && MatchesPattern(Proto, "(?i)https") && ResponseHeader["Strict-Transport-Security"] == "") && IsPrivateIP(DstIP)
     severity: low
     tags: ["security-headers", "hsts", "misconfiguration", "mitm"]
     enabled: true
@@ -33,9 +34,10 @@ rules:
 
   # Missing X-Frame-Options
   - name: Missing X-Frame-Options Header
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect HTML responses without clickjacking protection (X-Frame-Options or CSP)
     type: HTTP
-    expression: StatusCode == 200 && MatchesPattern(ContentType, "(?i)text/html") && ResponseHeader["X-Frame-Options"] == "" && ResponseHeader["Content-Security-Policy"] == ""
+    expression: (StatusCode == 200 && MatchesPattern(ContentType, "(?i)text/html") && ResponseHeader["X-Frame-Options"] == "" && ResponseHeader["Content-Security-Policy"] == "") && IsPrivateIP(DstIP)
     severity: low
     tags: ["security-headers", "clickjacking", "misconfiguration"]
     enabled: true
@@ -51,9 +53,10 @@ rules:
 
   # Weak X-Frame-Options (ALLOW-FROM)
   - name: Weak X-Frame-Options Configuration
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect deprecated ALLOW-FROM directive in X-Frame-Options
     type: HTTP
-    expression: MatchesPattern(ResponseHeader["X-Frame-Options"], "(?i)ALLOW-FROM")
+    expression: (MatchesPattern(ResponseHeader["X-Frame-Options"], "(?i)ALLOW-FROM")) && IsPrivateIP(DstIP)
     severity: low
     tags: ["security-headers", "clickjacking", "weak-config"]
     enabled: true
@@ -64,9 +67,10 @@ rules:
 
   # Missing X-Content-Type-Options
   - name: Missing X-Content-Type-Options
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect responses without MIME-sniffing protection (XSS risk)
     type: HTTP
-    expression: StatusCode == 200 && ResponseHeader["X-Content-Type-Options"] == ""
+    expression: (StatusCode == 200 && ResponseHeader["X-Content-Type-Options"] == "") && IsPrivateIP(DstIP)
     severity: info
     tags: ["security-headers", "mime-sniffing", "misconfiguration"]
     enabled: true
@@ -95,27 +99,30 @@ rules:
 
   # Weak CSP - unsafe-inline
   - name: Weak CSP with unsafe-inline
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect CSP allowing unsafe-inline (XSS risk)
     type: HTTP
-    expression: MatchesPattern(ResponseHeader["Content-Security-Policy"], "(?i)unsafe-inline")
+    expression: (MatchesPattern(ResponseHeader["Content-Security-Policy"], "(?i)unsafe-inline")) && IsPrivateIP(DstIP)
     severity: medium
     tags: ["security-headers", "csp", "weak-config", "xss"]
     enabled: true
 
   # Weak CSP - unsafe-eval
   - name: Weak CSP with unsafe-eval
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect CSP allowing unsafe-eval (code injection risk)
     type: HTTP
-    expression: MatchesPattern(ResponseHeader["Content-Security-Policy"], "(?i)unsafe-eval")
+    expression: (MatchesPattern(ResponseHeader["Content-Security-Policy"], "(?i)unsafe-eval")) && IsPrivateIP(DstIP)
     severity: medium
     tags: ["security-headers", "csp", "weak-config", "injection"]
     enabled: true
 
   # Overly Permissive CSP
   - name: Overly Permissive CSP
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect CSP with wildcard (*) allowing all sources
     type: HTTP
-    expression: MatchesPattern(ResponseHeader["Content-Security-Policy"], "(?i)(default-src|script-src|style-src)\\s+[^;]*\\*")
+    expression: (MatchesPattern(ResponseHeader["Content-Security-Policy"], "(?i)(default-src|script-src|style-src)\\s+[^;]*\\*")) && IsPrivateIP(DstIP)
     severity: medium
     tags: ["security-headers", "csp", "weak-config"]
     enabled: true
@@ -148,9 +155,10 @@ rules:
 
   # Unsafe Referrer-Policy
   - name: Unsafe Referrer-Policy
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect unsafe-url or no-referrer-when-downgrade Referrer-Policy
     type: HTTP
-    expression: MatchesPattern(ResponseHeader["Referrer-Policy"], "(?i)(unsafe-url|no-referrer-when-downgrade)")
+    expression: (MatchesPattern(ResponseHeader["Referrer-Policy"], "(?i)(unsafe-url|no-referrer-when-downgrade)")) && IsPrivateIP(DstIP)
     severity: low
     tags: ["security-headers", "referrer", "privacy", "weak-config"]
     enabled: true
@@ -174,27 +182,30 @@ rules:
 
   # Cookie Without Secure Flag on HTTPS
   - name: Cookie Without Secure Flag on HTTPS
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect Set-Cookie on HTTPS without Secure flag (MITM risk)
     type: HTTP
-    expression: MatchesPattern(Proto, "(?i)https") && ResponseHeader["Set-Cookie"] != "" && !MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)Secure")
+    expression: (MatchesPattern(Proto, "(?i)https") && ResponseHeader["Set-Cookie"] != "" && !MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)Secure")) && IsPrivateIP(DstIP)
     severity: medium
     tags: ["security-headers", "cookies", "misconfiguration", "mitm"]
     enabled: true
 
   # Session Cookie Without HttpOnly
   - name: Session Cookie Without HttpOnly
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect session cookies without HttpOnly flag (XSS risk)
     type: HTTP
-    expression: MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)(session|PHPSESSID|JSESSIONID|ASP\\.NET_SessionId|connect\\.sid)") && !MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)HttpOnly")
+    expression: (MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)(session|PHPSESSID|JSESSIONID|ASP\\.NET_SessionId|connect\\.sid)") && !MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)HttpOnly")) && IsPrivateIP(DstIP)
     severity: medium
     tags: ["security-headers", "cookies", "xss", "session"]
     enabled: true
 
   # Cookie Without SameSite
   - name: Cookie Without SameSite Attribute
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect cookies without SameSite attribute (CSRF risk)
     type: HTTP
-    expression: ResponseHeader["Set-Cookie"] != "" && !MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)SameSite")
+    expression: (ResponseHeader["Set-Cookie"] != "" && !MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)SameSite")) && IsPrivateIP(DstIP)
     severity: low
     tags: ["security-headers", "cookies", "csrf", "misconfiguration"]
     enabled: true
@@ -205,36 +216,40 @@ rules:
 
   # X-Powered-By Header Disclosure
   - name: X-Powered-By Information Disclosure
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect X-Powered-By header revealing server technology
     type: HTTP
-    expression: ResponseHeader["X-Powered-By"] != ""
+    expression: (ResponseHeader["X-Powered-By"] != "") && IsPrivateIP(DstIP)
     severity: info
     tags: ["information-disclosure", "fingerprinting", "opsec"]
     enabled: true
 
   # Verbose Server Header with Version
   - name: Verbose Server Header
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect detailed Server header with version information
     type: HTTP
-    expression: MatchesPattern(ResponseHeader["Server"], "/(\\d+\\.\\d+)")
+    expression: (MatchesPattern(ResponseHeader["Server"], "/(\\d+\\.\\d+)")) && IsPrivateIP(DstIP)
     severity: info
     tags: ["information-disclosure", "fingerprinting", "opsec"]
     enabled: true
 
   # X-AspNet-Version Disclosure
   - name: ASP.NET Version Disclosure
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect X-AspNet-Version header revealing framework version
     type: HTTP
-    expression: ResponseHeader["X-AspNet-Version"] != "" || ResponseHeader["X-AspNetMvc-Version"] != ""
+    expression: (ResponseHeader["X-AspNet-Version"] != "" || ResponseHeader["X-AspNetMvc-Version"] != "") && IsPrivateIP(DstIP)
     severity: info
     tags: ["information-disclosure", "fingerprinting", "aspnet"]
     enabled: true
 
   # X-Generator Disclosure (CMS)
   - name: X-Generator CMS Disclosure
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect X-Generator header revealing CMS/framework
     type: HTTP
-    expression: ResponseHeader["X-Generator"] != ""
+    expression: (ResponseHeader["X-Generator"] != "") && IsPrivateIP(DstIP)
     severity: info
     tags: ["information-disclosure", "fingerprinting", "cms"]
     enabled: true
@@ -245,9 +260,10 @@ rules:
 
   # Overly Permissive CORS
   - name: Overly Permissive CORS Configuration
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect Access-Control-Allow-Origin wildcard (*) with credentials
     type: HTTP
-    expression: ResponseHeader["Access-Control-Allow-Origin"] == "*" && MatchesPattern(ResponseHeader["Access-Control-Allow-Credentials"], "(?i)true")
+    expression: (ResponseHeader["Access-Control-Allow-Origin"] == "*" && MatchesPattern(ResponseHeader["Access-Control-Allow-Credentials"], "(?i)true")) && IsPrivateIP(DstIP)
     severity: high
     tags: ["security-headers", "cors", "misconfiguration"]
     enabled: true
@@ -267,9 +283,10 @@ rules:
 
   # Sensitive Content Caching Allowed
   - name: Sensitive Content Caching Allowed
+    # tuned-v0.16.13: header hygiene matters for servers we operate; third-party sites visited by clients are not findings
     description: Detect responses with sensitive paths allowing caching
     type: HTTP
-    expression: MatchesPattern(URL, "(?i)(/login|/auth|/password|/admin|/api/token)") && !MatchesPattern(ResponseHeader["Cache-Control"], "(?i)(no-store|no-cache|private)")
+    expression: (MatchesPattern(URL, "(?i)(/login|/auth|/password|/admin|/api/token)") && !MatchesPattern(ResponseHeader["Cache-Control"], "(?i)(no-store|no-cache|private)")) && IsPrivateIP(DstIP)
     severity: medium
     tags: ["security-headers", "cache", "misconfiguration"]
     enabled: true
