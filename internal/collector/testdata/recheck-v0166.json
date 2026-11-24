@@ -36,7 +36,7 @@
           "TestUpgradePrefixStopsEachDirectionAtItsCap",
           "TestOversizedCandidateIsRejectedWithoutWalking"
         ],
-        "qualification": "download-fast on Darwin arm64, interleaved runs: master 4.6 s / 185 MB, d86b6abf 3.4 s / 165 MB, v0.16.8 1.5 s / 815 MB. Full payload walks at completion 18 -> 3. Record dumps match master on 10 local captures. The NTLMSSP harvester still walks the payload; the evaluator target (<= 5.5 s, <= 250 MB, Linux 8 vCPU) needs host QA."
+        "qualification": "download-fast on Darwin arm64, interleaved runs: master 4.6 s / 185 MB, d86b6abf 3.4 s / 165 MB, v0.16.8 1.5 s / 815 MB. Full payload walks at completion 18 -> 3. Record dumps match master on 10 local captures. The NTLMSSP harvester still walks the payload. Estate host (Linux amd64, try image, --cpus=8, 2 runs each): v0.16.13 11.2-12.6 s, v0.16.14 8.8-9.6 s at 162 MB nodpi / 255 MB DPI; the 5.5 s target is unmet."
       },
       {
         "id": "MCP-20",
