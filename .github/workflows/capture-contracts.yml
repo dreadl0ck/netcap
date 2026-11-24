@@ -9,6 +9,8 @@ on:
       - 'go.mod'
       - 'go.sum'
       - 'scripts/check-mcp-stdio.py'
+      - 'tests/e2e/**'
+      - 'internal/exitcode/**'
       - 'docs/mcp/tools.md'
       - 'defaults/**/*.go'
       - 'internal/aggregate/**/*.go'
@@ -40,6 +42,8 @@ on:
       - 'go.mod'
       - 'go.sum'
       - 'scripts/check-mcp-stdio.py'
+      - 'tests/e2e/**'
+      - 'internal/exitcode/**'
       - 'docs/mcp/tools.md'
       - 'defaults/**/*.go'
       - 'internal/aggregate/**/*.go'
@@ -81,7 +85,7 @@ env:
 jobs:
   contracts:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -127,6 +131,10 @@ jobs:
           "$RUNNER_TEMP/mcp-check/bin/pip" install uv==0.9.13
           go build -tags nodpi,noyara,nomagika -o "$RUNNER_TEMP/net" ./cmd/net
           "$RUNNER_TEMP/mcp-check/bin/uv" run --script scripts/check-mcp-stdio.py "$RUNNER_TEMP/net"
+      - name: Verify App Store WebUI build and in-process analysis
+        run: go test -tags appstore,nodpi,noyara,nomagika ./cmd/capture/webui -count=1 -timeout=5m
+      - name: Verify service-mode and rule regressions end to end
+        run: go test -tags e2e,nodpi,noyara,nomagika ./tests/e2e -run '^(TestServicePartialCapture|TestRecheck1612CLI|TestHuntCLIRegressions)$' -count=1 -timeout=10m
       - name: Verify large-alert contracts over MCP Streamable HTTP
         run: '"$RUNNER_TEMP/mcp-check/bin/uv" run --script scripts/check-mcp-stdio.py "$RUNNER_TEMP/net" --http-alerts'
       - name: Verify resource ownership and reader races

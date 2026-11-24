@@ -1,0 +1,125 @@
+{
+  "description": "The 20 captures preloaded on try.netcap.io, by try name, with their local copies under the gitignored pcaps/ directory.",
+  "captures": [
+    {
+      "name": "Brazil-malspam-Solicitacao-de-Orcamento-traffic-example.pcap",
+      "path": "pcaps/malware-traffic-analysis.net/2017-09-05-Brazil-malspam-Solicitacao-de-Orcamento-traffic-example.pcap",
+      "bytes": 9304731,
+      "sha256": "f699f8fe706cc41792e6035ae8a35aa30a8c87bb64fcb74cd32454b150057a8e"
+    },
+    {
+      "name": "Portuguese-invoice-malspam-traffic.pcap",
+      "path": "pcaps/malware-traffic-analysis.net/2017-03-22-Portuguese-invoice-malspam-traffic.pcap",
+      "bytes": 9499306,
+      "sha256": "e7ccd2f6692cb4bb642ea82f08c0633680877b33148e19ae9c9c34a7d2fc4b2a"
+    },
+    {
+      "name": "Brazil-malspam-pushes-Banload.pcap",
+      "path": "pcaps/malware-traffic-analysis.net/2017-11-15-Brazil-malspam-pushes-Banload.pcap",
+      "bytes": 10065400,
+      "sha256": "ed5bb82e049d4c6fbf5343aa9169d9e07658c5cdd66bfc6544857dd7de976a26"
+    },
+    {
+      "name": "smb.pcap",
+      "path": "pcaps/testfiles/smb.pcap",
+      "bytes": 11698631,
+      "sha256": "242f6f0178c4c3fdd70a2e7161c60624ff2ce7ce481cd5e9a658b610df01a9c0"
+    },
+    {
+      "name": "USPS-malspam-traffic-1-of-2.pcap",
+      "path": "pcaps/malware-traffic-analysis.net/2017-04-19-USPS-malspam-traffic-1-of-2.pcap",
+      "bytes": 11730171,
+      "sha256": "67206ddc425a99bc75ec386914402bddd0a2cb29ae0168943b6dc554a5cf3d07"
+    },
+    {
+      "name": "USPS-malspam-js-file-post-infection-traffic.pcap",
+      "path": "pcaps/malware-traffic-analysis.net/2017-04-18-USPS-malspam-js-file-post-infection-traffic.pcap",
+      "bytes": 11944359,
+      "sha256": "08b17d22b5a0d3420247a7ae191fadf7a6d45c8b83a0a1c0dfb8f3b8951a71c8"
+    },
+    {
+      "name": "Blank-Slate-campaign-pushes-Sage-2.2-ransomware.pcap",
+      "path": "pcaps/malware-traffic-analysis.net/2017-10-13-Blank-Slate-campaign-pushes-Sage-2.2-ransomware.pcap",
+      "bytes": 12113770,
+      "sha256": "012531ca992f0b98772bb4600a2a4c65182503dba662fe4115d29a2ccfbfcbbc"
+    },
+    {
+      "name": "Brazil-malspam-traffic-example.pcap",
+      "path": "pcaps/malware-traffic-analysis.net/2017-10-23-Brazil-malspam-traffic-example.pcap",
+      "bytes": 12729380,
+      "sha256": "3e87d248d34d95dcb79c8d782e182dd5be16259b9b91faed834d45cbdbdbc5d8"
+    },
+    {
+      "name": "Hancitor-malspam-1st-run.pcap",
+      "path": "pcaps/malware-traffic-analysis.net/2017-05-25-Hancitor-malspam-1st-run.pcap",
+      "bytes": 13624335,
+      "sha256": "f98316f3710c2474989d1a2df8a9fb118c6081cbc31f24fd09bddef70d659d19"
+    },
+    {
+      "name": "KaiXin-EK-2nd-run.pcap",
+      "path": "pcaps/malware-traffic-analysis.net/2017-03-04-KaiXin-EK-2nd-run.pcap",
+      "bytes": 13852023,
+      "sha256": "cc2b99900d4af5549186b531f7ee4c1e04f23bea267212a4d5e616b0bca8179d"
+    },
+    {
+      "name": "hancitor-malspam-traffic.pcap",
+      "path": "pcaps/malware-traffic-analysis.net/2017-03-14-hancitor-malspam-traffic.pcap",
+      "bytes": 15411270,
+      "sha256": "0098b36878624d65519bf43045fbafe2fdd3ef9fa4a6dbf406b1154123231b89"
+    },
+    {
+      "name": "whatsapp-malspam-traffic.pcap",
+      "path": "pcaps/malware-traffic-analysis.net/2018-01-02-whatsapp-malspam-traffic.pcap",
+      "bytes": 15560361,
+      "sha256": "e75f097a1216217ea850f6197d9b3c93f2d33934dbd018970ac3ca80322399cd"
+    },
+    {
+      "name": "ultimate-PCAP-v20250325.pcapng",
+      "path": "pcaps/testfiles/ultimate-PCAP-v20250325.pcapng",
+      "bytes": 15989140,
+      "sha256": "4531d1a21f8dc181b6838a564031f39e2dc97f5808bcbb3c919dfff3562afef0"
+    },
+    {
+      "name": "traffic-from-malspam-pushing-Dreambot.pcap",
+      "path": "pcaps/malware-traffic-analysis.net/2017-12-29-traffic-from-malspam-pushing-Dreambot.pcap",
+      "bytes": 20485768,
+      "sha256": "af9be967d2922a4815677809b5653062b59d289b6acf9943f9e1b3401a2529b4"
+    },
+    {
+      "name": "EITest-Rig-EK-traffic.pcap",
+      "path": "pcaps/malware-traffic-analysis.net/2017-04-18-EITest-Rig-EK-traffic.pcap",
+      "bytes": 23828777,
+      "sha256": "ccbffa80c55bb69ff76b0721a736a1e411e0d7c644d09f88234d08558ee0c6d1"
+    },
+    {
+      "name": "mail.pcap",
+      "path": "pcaps/mail.pcap",
+      "bytes": 31360056,
+      "sha256": "3f2c29af5ac72f094082ef972d64fd1067a77795e4926ecb764f150aa01228ee"
+    },
+    {
+      "name": "snort.log.1426118407.pcap",
+      "path": "pcaps/snort.log.1426118407.pcap",
+      "bytes": 37241158,
+      "sha256": "5272b725ba1276ab02b09e43180895e4cd2c0832caf2f5c1794cbff2abba5ab1"
+    },
+    {
+      "name": "WannaCry-ransomware-using-EnternalBlue-exploit.pcap",
+      "path": "pcaps/malware-traffic-analysis.net/2017-05-18-WannaCry-ransomware-using-EnternalBlue-exploit.pcap",
+      "bytes": 37791327,
+      "sha256": "feb8befd8d6891511bd00471d153a2bf8d57d022e1d81e00755941b872fdc355"
+    },
+    {
+      "name": "arp-dns-eth-icmp-ip-udp-goodhttp-gooddns.pcapng",
+      "path": "pcaps/arp-dns-eth-icmp-ip-udp-goodhttp-gooddns.pcapng",
+      "bytes": 38162680,
+      "sha256": "bf63bf6245d691d0ea9c96fc97e9b6454704dca74545b37f1e99875ed2cdeabe"
+    },
+    {
+      "name": "botnet-capture-20110810-neris.pcap",
+      "path": "pcaps/botnet-capture-20110810-neris.pcap",
+      "bytes": 58266506,
+      "sha256": "b89cd5931f62d87ceff266568c97c6e36e56dd0330813cacadbc14a6c5576a36"
+    }
+  ]
+}

@@ -30,6 +30,11 @@ air
 
 ## Testing
 
+**Check WebUI, MCP or capture exit-code changes with `make try-parity`.** It
+replays the 20 try.netcap.io captures through `net capture --service` with
+try's flags. `net mcp --pcap` runs local mode with different analysis settings
+and missed a service-only regression in v0.16.13.
+
 ```bash
 # Unit tests (default, fast)
 make test-unit
