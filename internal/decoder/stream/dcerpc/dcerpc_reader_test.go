@@ -225,3 +225,12 @@ func TestPendingCallsAreBounded(t *testing.T) {
 		t.Fatalf("records=%d pending=%d", n, r.pending)
 	}
 }
+
+// Remote WMI binds DCOM interface IDs; the WMI Activity rule keys on these names.
+func TestWMIInterfacesAreNamed(t *testing.T) {
+	conv := &core.ConversationInfo{Data: core.DataFragments{fragment(cat(bind(1, "f309ad18-d86a-11d0-a075-00c04fb68820", "9556dc99-828c-11cf-a37e-00aa003240c7"), request(2, 1, 3)), 1, false)}}
+	got := decodeAll(conv)
+	if len(got) != 2 || got[0].InterfaceName != "IWbemLevel1Login" || got[1].InterfaceName != "IWbemServices" {
+		t.Fatalf("WMI interfaces: %+v", got)
+	}
+}

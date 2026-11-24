@@ -114,6 +114,9 @@ var wellKnownInterfaces = map[string]string{
 	"e3514235-4b06-11d1-ab04-00c04fc2dcd2": "DRSUAPI",
 	"4fc742e0-4a10-11cf-8273-00aa004ae673": "DFSNM",
 	"c681d488-d850-11d0-8c52-00c04fd90f7e": "EFSR",
+	// DCOM interface IDs from MS-WMI.
+	"f309ad18-d86a-11d0-a075-00c04fb68820": "IWbemLevel1Login",
+	"9556dc99-828c-11cf-a37e-00aa003240c7": "IWbemServices",
 }
 
 // operationNames names opnums used in remote administration and credential

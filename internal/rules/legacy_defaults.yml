@@ -422,3 +422,36 @@ rules:
     enabled: false
     threshold: 5
     threshold_window: 300
+  # Superseded in v0.16.14: single-match rules that fired on ordinary traffic.
+  - name: LDAP Enumeration
+    description: Detect LDAP queries that may enumerate domain accounts
+    type: TCP
+    expression: DstPort == 389 || DstPort == 3268
+    severity: low
+    mitre: ["T1087.002"]
+    tags: ["enumeration"]
+    enabled: true
+  - name: WMI Activity
+    description: Detect connections to WMI ports for remote execution
+    type: TCP
+    expression: DstPort == 135 || DstPort == 49152
+    severity: low
+    mitre: ["T1047", "T1021.003"]
+    tags: ["execution"]
+    enabled: true
+  - name: High Volume SMB Write
+    description: Detect high volume SMB activity that may indicate ransomware encryption
+    type: TCP
+    expression: DstPort == 445 && ACK && PSH && PayloadSize > 1000
+    severity: critical
+    mitre: ["T1486"]
+    tags: ["ransomware"]
+    enabled: true
+  - name: HTTP OPTIONS Enumeration
+    description: Detect HTTP OPTIONS method used for service enumeration
+    type: HTTP
+    expression: Method == "OPTIONS"
+    severity: low
+    mitre: ["T1046"]
+    tags: ["enumeration"]
+    enabled: true

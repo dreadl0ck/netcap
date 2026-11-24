@@ -362,13 +362,16 @@ rules:
 
   # HTTP OPTIONS Enumeration
   - name: HTTP OPTIONS Enumeration
-    description: Detect HTTP OPTIONS method used for service enumeration
+    description: 'One client sends OPTIONS requests for 20+ distinct URLs within 120 seconds, excluding CORS preflight'
     type: HTTP
-    expression: Method == "OPTIONS"
+    expression: 'Method == "OPTIONS" && RequestHeader["Access-Control-Request-Method"] == ""'
     severity: low
     mitre: ["T1046"]
     tags: ["enumeration"]
     enabled: true
+    distinct_field: URL
+    distinct_threshold: 20
+    threshold_window: 120
 
   # HTTP Service Abuse
   - name: HTTP Service Abuse
@@ -408,12 +411,3 @@ rules:
     distinct_field: UserAgent
     distinct_threshold: 5
     threshold_window: 300
-
-  # Modern Security Headers
-  - name: Missing Security Headers
-    description: Detect web servers without HSTS
-    type: HTTP
-    expression: StatusCode == 200 && ResponseHeader["Strict-Transport-Security"] == ""
-    severity: low
-    tags: ["security-headers", "misconfiguration"]
-    enabled: true

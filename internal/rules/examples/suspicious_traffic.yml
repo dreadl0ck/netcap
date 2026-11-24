@@ -4,16 +4,6 @@
 description: "Detection rules for suspicious network traffic patterns including SSH connection monitoring, high port scanning, internal lateral movement indicators, and anomalous communication patterns requiring further investigation."
 
 rules:
-  # Port Scanning Detection
-  - name: Port Scan High Port
-    description: Detect connections to uncommon high ports that may indicate port scanning
-    type: TCP
-    expression: DstPort > 49152 && SYN && !ACK
-    severity: info
-    mitre: ["T1046"]
-    tags: ["port-scan"]
-    enabled: true
-
   # Suspicious Internal-to-Internal Traffic
   # NOTE: Many legitimate services use high ports. Consider maintaining an allow-list
   # of known internal services or focusing on specific suspicious port ranges.
@@ -233,16 +223,6 @@ rules:
     tags: ["lateral-movement"]
     enabled: true
 
-  # LDAP Replication Activity
-  - name: LDAP Replication Activity
-    description: Detect LDAP connections that may indicate DCSync credential dumping
-    type: TCP
-    expression: (DstPort == 389 || DstPort == 636) && SYN
-    severity: medium
-    mitre: ["T1003.006"]
-    tags: ["credential-access"]
-    enabled: true
-
   # Kerberos Activity
   - name: Kerberos Activity
     description: Detect Kerberos traffic that may indicate ticket attacks (Golden/Silver Ticket)
@@ -288,9 +268,9 @@ rules:
 
   # WMI Activity
   - name: WMI Activity
-    description: Detect connections to WMI ports for remote execution
-    type: TCP
-    expression: DstPort == 135 || DstPort == 49152
+    description: 'Remote WMI over DCOM: a client binds to or calls IWbemLevel1Login or IWbemServices'
+    type: DCERPC
+    expression: 'InterfaceName == "IWbemLevel1Login" || InterfaceName == "IWbemServices"'
     severity: low
     mitre: ["T1047", "T1021.003"]
     tags: ["execution"]
@@ -308,13 +288,16 @@ rules:
 
   # High Volume SMB Write
   - name: High Volume SMB Write
-    description: Detect high volume SMB activity that may indicate ransomware encryption
-    type: TCP
-    expression: DstPort == 445 && ACK && PSH && PayloadSize > 1000
-    severity: critical
+    description: 'One client writes to 200+ distinct SMB file handles within 60 seconds, as ransomware encrypting a share does'
+    type: SMB
+    expression: 'Action == "WRITE" && !IsResponse'
+    severity: high
     mitre: ["T1486"]
     tags: ["ransomware"]
     enabled: true
+    distinct_field: FileID
+    distinct_threshold: 200
+    threshold_window: 60
   
   # Port 1337: Leet Port
   - name: Port 1337 Detected

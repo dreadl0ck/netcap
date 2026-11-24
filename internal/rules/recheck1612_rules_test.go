@@ -359,3 +359,61 @@ func TestEmbeddedThresholdsCountPerActor(t *testing.T) {
 		})
 	}
 }
+
+// Single-match rules that fired on ordinary traffic: CORS preflight, an LDAP
+// bind, any DCERPC endpoint mapper call, or one large SMB segment.
+func TestRewrittenSingleMatchRulesNeedTheirBehaviour(t *testing.T) {
+	type check struct {
+		rule         string
+		benign, real []types.AuditRecord
+	}
+	var preflight, optionsScan, oneAccount, enumeration, oneFile, encryption []types.AuditRecord
+	for i := range 40 {
+		ts := at(time.Duration(i) * time.Second)
+		preflight = append(preflight, &types.HTTP{Timestamp: ts, SrcIP: "10.5.0.2", DstIP: "10.5.0.1", Method: "OPTIONS", URL: fmt.Sprintf("/api/%d", i),
+			RequestHeader: map[string]string{"Access-Control-Request-Method": "POST"}})
+		optionsScan = append(optionsScan, &types.HTTP{Timestamp: ts, SrcIP: "10.5.0.3", DstIP: "10.5.0.1", Method: "OPTIONS", URL: fmt.Sprintf("/x%d", i)})
+		oneAccount = append(oneAccount, &types.LDAP{Timestamp: ts, SrcIP: "10.6.0.2", DstIP: "10.6.0.1", Operation: "SearchRequest", SearchAccount: "svc-backup"})
+		enumeration = append(enumeration, &types.LDAP{Timestamp: ts, SrcIP: "10.6.0.3", DstIP: "10.6.0.1", Operation: "SearchRequest", SearchAccount: fmt.Sprintf("user%d", i)})
+	}
+	for i := range 300 {
+		ts := at(time.Duration(i) * 100 * time.Millisecond)
+		oneFile = append(oneFile, &types.SMB{Timestamp: ts, SrcIP: "10.7.0.2", DstIP: "10.7.0.1", Action: "WRITE", FileID: 7})
+		encryption = append(encryption, &types.SMB{Timestamp: ts, SrcIP: "10.7.0.3", DstIP: "10.7.0.1", Action: "WRITE", FileID: uint64(i + 1)})
+	}
+	epm := []types.AuditRecord{&types.DCERPC{Timestamp: at(0), SrcIP: "10.8.0.2", DstIP: "10.8.0.1", DstPort: 135, InterfaceName: "EPM", PacketTypeName: "Bind"}}
+	wmi := []types.AuditRecord{&types.DCERPC{Timestamp: at(0), SrcIP: "10.8.0.3", DstIP: "10.8.0.1", DstPort: 49667, InterfaceName: "IWbemServices", PacketTypeName: "Request"}}
+	for _, c := range []check{
+		{"HTTP OPTIONS Enumeration", preflight, optionsScan},
+		{"LDAP Enumeration", oneAccount, enumeration},
+		{"High Volume SMB Write", oneFile, encryption},
+		{"WMI Activity", epm, wmi},
+	} {
+		t.Run(c.rule, func(t *testing.T) {
+			replay, counts := embeddedReplay(t)
+			feed(t, replay, c.benign...)
+			if n := counts()[c.rule]; n != 0 {
+				t.Fatalf("ordinary traffic fired %d times", n)
+			}
+			replay, counts = embeddedReplay(t)
+			feed(t, replay, c.real...)
+			if counts()[c.rule] == 0 {
+				t.Fatal("behaviour did not fire")
+			}
+		})
+	}
+	embedded, err := LoadEmbeddedRules()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, rule := range embedded.Rules {
+		for _, retired := range retiredDefinitions(t) {
+			if rule.Name == retired.Name {
+				t.Errorf("retired rule %s still ships", rule.Name)
+			}
+		}
+	}
+	if len(retiredDefinitions(t)) != 3 {
+		t.Fatal("retired list changed")
+	}
+}

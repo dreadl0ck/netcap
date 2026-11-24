@@ -5,7 +5,7 @@
  */
 
 // Benchmarks for MatchesPattern. The pattern set mirrors what the
-// shipped rules/examples and configs/firewall-rules use against the
+// shipped rules/examples use against the
 // most common HTTP fields, so the numbers are representative of the
 // rule engine hot path.
 //

@@ -123,11 +123,14 @@ rules:
 
   # LDAP Enumeration
   - name: LDAP Enumeration
-    description: Detect LDAP queries that may enumerate domain accounts
-    type: TCP
-    expression: DstPort == 389 || DstPort == 3268
+    description: 'One client searches LDAP for 20+ distinct accounts within 60 seconds'
+    type: LDAP
+    expression: 'Operation == "SearchRequest" && SearchAccount != ""'
     severity: low
     mitre: ["T1087.002"]
     tags: ["enumeration"]
     enabled: true
+    distinct_field: SearchAccount
+    distinct_threshold: 20
+    threshold_window: 60
 

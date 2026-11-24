@@ -1,4 +1,29 @@
 # Embedded defaults removed from the shipped set, as last shipped. A saved
 # rules-folder copy that still equals one (ignoring enabled and ruleset tags)
 # is dropped. Never edit an entry.
-rules: []
+rules:
+  # Retired in v0.16.14: each fired on ordinary traffic with no fix that keeps its intent.
+  - name: Port Scan High Port
+    description: Detect connections to uncommon high ports that may indicate port scanning
+    type: TCP
+    expression: DstPort > 49152 && SYN && !ACK
+    severity: info
+    mitre: ["T1046"]
+    tags: ["port-scan"]
+    enabled: true
+  - name: LDAP Replication Activity
+    description: Detect LDAP connections that may indicate DCSync credential dumping
+    type: TCP
+    expression: (DstPort == 389 || DstPort == 636) && SYN
+    severity: medium
+    mitre: ["T1003.006"]
+    tags: ["credential-access"]
+    enabled: true
+  - name: Missing Security Headers
+    description: Detect web servers without HSTS
+    type: HTTP
+    expression: StatusCode == 200 && ResponseHeader["Strict-Transport-Security"] == ""
+    severity: low
+    tags: ["security-headers", "misconfiguration"]
+    enabled: true
+
