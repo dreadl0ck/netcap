@@ -85,14 +85,8 @@ ls -lh dist-linux/
 
 ### Full Release
 
-```bash
-zeus release
-# This automatically:
-# - Runs build-linux (uses base images)
-# - Runs build-linux-nodpi (uses base images)
-# - Builds macOS/Windows with goreleaser
-# - Uploads to GitHub
-```
+`zeus release` runs both Linux builds with these base images; see
+[Releasing](RELEASING.md) for the full procedure.
 
 ## Benefits
 

@@ -28,6 +28,11 @@ CGO_ENABLED=1 go build -tags hyperscan -o net ./cmd/net/
 air
 ```
 
+## Releasing
+
+Follow [docs/RELEASING.md](docs/RELEASING.md). `zeus release-preflight` must pass
+before the tag; after a failure past the tag, run `zeus release-resume`.
+
 ## Testing
 
 **Check WebUI, MCP or capture exit-code changes with `make try-parity`.** It

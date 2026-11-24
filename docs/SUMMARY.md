@@ -80,6 +80,7 @@
 * [Testing](tests.md)
 * [macOS development](macos-development-setup.md)
 * [Contributing](contributing.md)
+* [Releasing](RELEASING.md)
 
 ## Reference
 

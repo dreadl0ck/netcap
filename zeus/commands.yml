@@ -500,25 +500,51 @@ commands:
     remove-dist:
         exec: rm -rf dist; rm -rf dist-linux
 
-    # run a prod release
+    # run a prod release; see docs/RELEASING.md
     release:
         stopOnError: true
         description: release a new version, bundle and publish on github
+        help: |
+            Everything that can fail without a network build runs before the
+            tag: preflight and licenses. The tag is pushed only after that, so a
+            failure later leaves a public tag without a release; finish it with
+            `zeus release-resume`, which runs only the post-tag steps.
         dependencies:
+            - release-preflight
+            - licenses
             - remove-dist
             - gen-version
             - version-bump
             - check-version
-            - gen-proto-release
-            - licenses
+            - release-resume
+        exec: echo "release v$VERSION done"
+
+    release-preflight:
+        description: check every release prerequisite before tagging
+        exec: VERSION=${VERSION} zeus/scripts/release-preflight.sh
+
+    # Post-tag steps. Safe to rerun: uploads use --clobber.
+    release-resume:
+        stopOnError: true
+        description: build and publish an already tagged release (resume after a failure)
+        dependencies:
+            - check-version
             - build-linux
             - build-linux-nodpi
             - package-license-sources
             - run-goreleaser
             - package-macos-runtime-sources
             - update-release-assets
-        exec: echo "release v$VERSION done"
+            - release-title
+        exec: echo "release v$VERSION published"
 
+    release-title:
+        description: title the GitHub release after the first RELEASE_NOTES.md heading
+        exec: |
+            title=$(head -1 RELEASE_NOTES.md | sed -e 's/^## v[0-9.]* — //')
+            gh release edit "v${VERSION}" --title "Netcap v${VERSION} — ${title}"
+
+    # GOWORK=off and YARA_X_PREFIX are required; release-preflight checks both.
     run-goreleaser:
         help: |
             GOWORK=off is mandatory, not defensive. go.work is an untracked
@@ -569,7 +595,6 @@ commands:
         dependencies:
             - gen-version
             - version-bump-test
-            - gen-proto-release
             - licenses
         exec: goreleaser check .goreleaser.yml && GOWORK=off sh scripts/with-yara-x.sh goreleaser release --snapshot --clean --skip-publish --skip-validate; zeus version-bump-test-undo
 
@@ -579,7 +604,6 @@ commands:
         dependencies:
             - gen-version
             - version-bump-test
-            - gen-proto-release
             - licenses
         exec: goreleaser check .goreleaser.yml && GOWORK=off sh scripts/with-yara-x.sh goreleaser release --snapshot --clean --skip-publish --skip-validate --debug; zeus version-bump-test-undo
 
@@ -816,6 +840,9 @@ commands:
         exec: protoc --proto_path=types --gogofaster_out=types/. types/netcap.proto
 
     # generate protocol buffers for release
+    # Not a release step: run it when types/netcap.proto changes and commit the
+    # result. A local protoc differs from the builder's, so regenerating at
+    # release time dirtied the tree after tagging.
     gen-proto-release:
         description: generate protocol buffers
         help: proto compiler must be installed with all required plugins
@@ -909,11 +936,8 @@ commands:
     version-bump:
         description: bump framework version and add git version tag
         exec: |
-            read -p "[WARNING] This will bump the version to $VERSION, as configured in the zeus/commands.yml. Are you sure? Hit [Enter] to proceed"
-
-            git status
-            read -p "[WARNING] The following changes will be added to version control. Hit [Enter] to proceed"
-            git add .
+            # Commit only the files gen-version stamps, never the whole tree.
+            git add version.go internal/dpi/version.go
             git commit -m "v${VERSION} release"
 
             git tag -a v${VERSION} -m "v${VERSION} release"
