@@ -19,6 +19,7 @@ rules:
     mitre: ["T1071.002"]
     tags: ["cleartext"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: FTP Control Channel Detected
     # tuned-v0.16.13: cleartext creds risk; Cleartext Password Captured raises the credential itself
@@ -30,6 +31,7 @@ rules:
     mitre: ["T1071.002", "T1078"]
     tags: ["cleartext", "legacy"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 22: SSH
   - name: SSH Connection Detected
@@ -41,6 +43,7 @@ rules:
     mitre: ["T1021.004", "T1110.001"]
     tags: ["remote-access"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 23: Telnet (Insecure Legacy)
   - name: Telnet Detected
@@ -52,6 +55,7 @@ rules:
     mitre: ["T1021.004"]
     tags: ["cleartext", "legacy"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 69: TFTP
   - name: TFTP Detected
@@ -63,6 +67,7 @@ rules:
     mitre: ["T1071.002"]
     tags: ["unauthenticated"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 80: HTTP
   - name: HTTP Traffic Detected
@@ -95,6 +100,7 @@ rules:
     mitre: ["T1021.003", "T1047"]
     tags: ["lateral-movement"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 137-139: NetBIOS (Windows Legacy)
   - name: NetBIOS Name Service Detected
@@ -106,6 +112,7 @@ rules:
     mitre: ["T1016", "T1018"]
     tags: ["legacy"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: NetBIOS Datagram Detected
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -116,6 +123,7 @@ rules:
     mitre: ["T1016"]
     tags: ["legacy"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: NetBIOS Session Detected
     # tuned-v0.16.13: normal Windows/AD LAN traffic: inventory, not a finding (external variants keep their severity)
@@ -127,6 +135,7 @@ rules:
     mitre: ["T1021.002"]
     tags: ["legacy"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 161: SNMP
   - name: SNMP Detected
@@ -138,6 +147,7 @@ rules:
     mitre: ["T1046", "T1592.001"]
     tags: ["information-disclosure"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 389: LDAP (Cleartext)
   - name: LDAP Cleartext Detected
@@ -150,6 +160,7 @@ rules:
     mitre: ["T1087.002", "T1069.002"]
     tags: ["cleartext"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 445: SMB
   - name: SMB Traffic Detected
@@ -162,6 +173,7 @@ rules:
     mitre: ["T1021.002", "T1570", "T1486"]
     tags: ["ransomware", "lateral-movement"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 1080: SOCKS Proxy
   - name: SOCKS Proxy Detected
@@ -173,6 +185,7 @@ rules:
     mitre: ["T1090.001", "T1572"]
     tags: ["proxy", "tunneling"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 1433: Microsoft SQL Server
   - name: MSSQL Detected
@@ -184,6 +197,7 @@ rules:
     mitre: ["T1190", "T1078.001"]
     tags: ["database"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 1434: MSSQL Browser (UDP)
   - name: MSSQL Browser Service Detected
@@ -205,6 +219,7 @@ rules:
     mitre: ["T1190", "T1078.001"]
     tags: ["database"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 1723: PPTP VPN
   - name: PPTP VPN Detected
@@ -216,6 +231,7 @@ rules:
     mitre: ["T1133"]
     tags: ["weak-crypto", "legacy"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 2049: NFS
   - name: NFS Detected
@@ -228,6 +244,7 @@ rules:
     mitre: ["T1039", "T1005"]
     tags: ["ransomware"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 2375: Docker API (Unencrypted)
   - name: Docker API Unencrypted Detected
@@ -239,6 +256,7 @@ rules:
     mitre: ["T1610", "T1133"]
     tags: ["exposure", "rce"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 3306: MySQL/MariaDB
   - name: MySQL Detected
@@ -250,6 +268,7 @@ rules:
     mitre: ["T1190", "T1078.001"]
     tags: ["database"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 3389: RDP
   - name: RDP Detected
@@ -262,6 +281,7 @@ rules:
     mitre: ["T1021.001", "T1110.001"]
     tags: ["remote-desktop", "ransomware"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 5900: VNC
   - name: VNC Detected
@@ -273,6 +293,7 @@ rules:
     mitre: ["T1021.005"]
     tags: ["remote-desktop"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 6379: Redis
   - name: Redis Detected
@@ -284,6 +305,7 @@ rules:
     mitre: ["T1190"]
     tags: ["database"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 27017: MongoDB
   - name: MongoDB Detected
@@ -295,6 +317,7 @@ rules:
     mitre: ["T1190"]
     tags: ["database"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # ========================================
   # HIGH RISK PORTS (Monitoring Recommended)
@@ -311,6 +334,7 @@ rules:
     mitre: ["T1071.003"]
     tags: ["email"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 53: DNS
   - name: DNS Traffic Detected
@@ -332,6 +356,7 @@ rules:
     mitre: ["T1557.002"]
     tags: ["rogue-server"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 110: POP3
   - name: POP3 Detected
@@ -344,6 +369,7 @@ rules:
     mitre: ["T1114.001"]
     tags: ["email", "cleartext"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 123: NTP
   - name: NTP Detected
@@ -355,6 +381,7 @@ rules:
     mitre: ["T1498.002"]
     tags: ["amplification"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 143: IMAP
   - name: IMAP Detected
@@ -367,6 +394,7 @@ rules:
     mitre: ["T1114.001"]
     tags: ["email", "cleartext"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 162: SNMP Trap
   - name: SNMP Trap Detected
@@ -378,6 +406,7 @@ rules:
     mitre: ["T1046"]
     tags: ["monitoring"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 179: BGP
   - name: BGP Detected
@@ -389,6 +418,7 @@ rules:
     mitre: ["T1557.002"]
     tags: ["routing"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 194: IRC
   - name: IRC Detected
@@ -400,6 +430,7 @@ rules:
     mitre: ["T1071.001"]
     tags: ["c2", "legacy"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Ports 6660-6669: IRC Extended Range
   - name: IRC Extended Range Detected
@@ -411,6 +442,7 @@ rules:
     mitre: ["T1071.001"]
     tags: ["c2", "irc", "legacy"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 465: SMTPS (deprecated)
   - name: SMTPS Deprecated Detected
@@ -423,6 +455,7 @@ rules:
     mitre: ["T1071.003"]
     tags: ["email", "deprecated"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 514: Syslog
   - name: Syslog Detected
@@ -434,6 +467,7 @@ rules:
     mitre: ["T1070.002"]
     tags: ["logging"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 587: SMTP Submission
   - name: SMTP Submission Detected
@@ -446,6 +480,7 @@ rules:
     mitre: ["T1071.003"]
     tags: ["email"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 631: IPP (Printing)
   - name: IPP Printing Detected
@@ -457,6 +492,7 @@ rules:
     mitre: ["T1559"]
     tags: ["printer"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 636: LDAPS
   - name: LDAPS Detected
@@ -468,6 +504,7 @@ rules:
     mitre: ["T1087.002"]
     tags: ["encrypted"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 686: LDAP over SSL
   - name: LDAP over SSL Detected
@@ -479,6 +516,7 @@ rules:
     mitre: ["T1087.002", "T1069.002"]
     tags: ["encrypted", "ldap"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 873: rsync
   - name: Rsync Detected
@@ -490,6 +528,7 @@ rules:
     mitre: ["T1039"]
     tags: ["file-sync"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 989-990: FTPS
   - name: FTPS Data Detected
@@ -501,6 +540,7 @@ rules:
     mitre: ["T1071.002"]
     tags: ["encrypted"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: FTPS Control Detected
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -511,6 +551,7 @@ rules:
     mitre: ["T1071.002"]
     tags: ["encrypted"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 993: IMAPS
   - name: IMAPS Detected
@@ -523,6 +564,7 @@ rules:
     mitre: ["T1114.001"]
     tags: ["email", "encrypted"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 995: POP3S
   - name: POP3S Detected
@@ -535,6 +577,7 @@ rules:
     mitre: ["T1114.001"]
     tags: ["email", "encrypted"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 2082-2083: cPanel
   - name: cPanel HTTP Detected
@@ -546,6 +589,7 @@ rules:
     mitre: ["T1078.004"]
     tags: ["admin-panel"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: cPanel HTTPS Detected
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -556,6 +600,7 @@ rules:
     mitre: ["T1078.004"]
     tags: ["admin-panel"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 2222: Alternate SSH
   - name: Alternate SSH Detected
@@ -567,6 +612,7 @@ rules:
     mitre: ["T1021.004"]
     tags: ["remote-access"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 22022: SSH Alternate
   - name: SSH Alternate Port 22022 Detected
@@ -578,6 +624,7 @@ rules:
     mitre: ["T1021.004"]
     tags: ["remote-access", "alternate-port"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 3391: RDP over UDP
   - name: RDP over UDP Detected
@@ -599,6 +646,7 @@ rules:
     mitre: ["T1021.001"]
     tags: ["remote-desktop", "rd-gateway"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 5650: Remote Utilities
   - name: Remote Utilities Direct Connection Detected
@@ -610,6 +658,7 @@ rules:
     mitre: ["T1219"]
     tags: ["remote-access", "remote-utilities"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 5655: Remote Utilities Server
   - name: Remote Utilities Server Detected
@@ -621,6 +670,7 @@ rules:
     mitre: ["T1219"]
     tags: ["remote-access", "remote-utilities"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 5000: UPnP / Dev Servers
   - name: UPnP Dev Server Detected
@@ -632,6 +682,7 @@ rules:
     mitre: ["T1021.001"]
     tags: ["exposure"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 5060-5061: SIP (VoIP)
   - name: SIP Detected
@@ -643,6 +694,7 @@ rules:
     mitre: ["T1499"]
     tags: ["voip", "cleartext"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: SIPS Detected
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -653,6 +705,7 @@ rules:
     mitre: ["T1499"]
     tags: ["voip", "encrypted"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 8080: HTTP Alternate
   - name: HTTP Alternate 8080 Detected
@@ -665,6 +718,7 @@ rules:
     mitre: ["T1071.001", "T1190"]
     tags: ["alternate-port"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 3000: Next.js
   - name: Next.js Detected
@@ -676,6 +730,7 @@ rules:
     mitre: ["T1071.001", "T1190"]
     tags: ["alternate-port"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 8443: HTTPS Alternate
   - name: HTTPS Alternate 8443 Detected
@@ -687,6 +742,7 @@ rules:
     mitre: ["T1071.001"]
     tags: ["admin-panel"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 8888: HTTP Alternate
   - name: HTTP Alternate 8888 Detected
@@ -698,6 +754,7 @@ rules:
     mitre: ["T1071.001", "T1090.001"]
     tags: ["alternate-port", "proxy"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 9000: Admin / Dev Panels
   - name: Admin Panel 9000 Detected
@@ -709,6 +766,7 @@ rules:
     mitre: ["T1078.004"]
     tags: ["admin-panel"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 10000: Webmin
   - name: Webmin Detected
@@ -720,6 +778,7 @@ rules:
     mitre: ["T1078.004"]
     tags: ["admin-panel"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # ========================================
   # LOW RISK PORTS (Informational)
@@ -735,6 +794,7 @@ rules:
     mitre: ["T1557.002"]
     tags: ["dhcp"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 119: NNTP
   - name: NNTP Detected
@@ -746,6 +806,7 @@ rules:
     mitre: ["T1071.001"]
     tags: ["legacy"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 520: RIP
   - name: RIP Detected
@@ -757,6 +818,7 @@ rules:
     mitre: ["T1557.002"]
     tags: ["routing", "legacy"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 25565: Minecraft
   - name: Minecraft Server Detected
@@ -768,6 +830,7 @@ rules:
     mitre: ["T1499"]
     tags: ["gaming"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # ========================================
   # EXTERNAL CONNECTION MONITORING
@@ -783,6 +846,7 @@ rules:
     mitre: ["T1021.002", "T1486"]
     tags: ["external", "ransomware"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: RDP External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -793,6 +857,7 @@ rules:
     mitre: ["T1021.001"]
     tags: ["external"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: Database External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -803,6 +868,7 @@ rules:
     mitre: ["T1041", "T1567.002"]
     tags: ["external"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: Redis External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -813,6 +879,7 @@ rules:
     mitre: ["T1041"]
     tags: ["external"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: VNC External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -823,6 +890,7 @@ rules:
     mitre: ["T1021.005"]
     tags: ["external"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: Telnet External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -833,6 +901,7 @@ rules:
     mitre: ["T1021.004"]
     tags: ["external", "cleartext"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: RDP Gateway External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -843,6 +912,7 @@ rules:
     mitre: ["T1021.001"]
     tags: ["external", "remote-desktop"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: Remote Utilities External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -853,6 +923,7 @@ rules:
     mitre: ["T1219"]
     tags: ["external", "remote-access"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: SSH Alternate External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -863,5 +934,6 @@ rules:
     mitre: ["T1021.004", "T1041"]
     tags: ["external", "remote-access"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
 

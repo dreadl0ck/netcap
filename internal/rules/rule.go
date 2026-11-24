@@ -81,6 +81,12 @@ type Rule struct {
 	// FoldCase groups values that differ only in ASCII case, as DNS names do.
 	FoldCase bool `yaml:"fold_case,omitempty"`
 
+	// DedupeBy alerts once per distinct value of these fields, replacing the
+	// engine's default SrcIP/DstIP key; DedupeWindow (seconds of record time,
+	// 0 for the whole run) re-arms it. Only for rules without a threshold.
+	DedupeBy     []string `yaml:"dedupe_by,omitempty"`
+	DedupeWindow int      `yaml:"dedupe_window,omitempty"`
+
 	// DistinctField enables cardinality-based detection: instead of counting raw
 	// matches, the engine counts the number of DISTINCT values of this field
 	// observed per source IP within ThresholdWindow. When the distinct count
@@ -341,6 +347,17 @@ func CompileRules(config *Config) error {
 			if _, err := fieldPathType(reflect.TypeOf(netio.InitRecord(recordType)), rule.DistinctField); err != nil {
 				return fmt.Errorf("rule %s: distinct_field: %w", rule.Name, err)
 			}
+		}
+		if len(rule.DedupeBy) > 0 {
+			if rule.Threshold > 1 || rule.DistinctField != "" || rule.Sequence != nil {
+				return fmt.Errorf("rule %s: dedupe_by applies only to single-match rules", rule.Name)
+			}
+			if err := validateGroupFields(rule.DedupeBy, recordType); err != nil {
+				return fmt.Errorf("rule %s: dedupe_by: %w", rule.Name, err)
+			}
+		}
+		if rule.DedupeWindow < 0 || rule.DedupeWindow > maxSequenceWithinSeconds || rule.DedupeWindow > 0 && len(rule.DedupeBy) == 0 {
+			return fmt.Errorf("rule %s: dedupe_window needs dedupe_by and must be within 0..%d", rule.Name, maxSequenceWithinSeconds)
 		}
 		if rule.FoldCase && len(rule.GroupBy) == 0 {
 			return fmt.Errorf("rule %s: fold_case requires group_by", rule.Name)

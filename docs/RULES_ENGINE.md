@@ -215,6 +215,8 @@ Tags for organizing rules, for example `["ssh", "bruteforce", "authentication"]`
 
 #### `threshold` / `threshold_window` (optional)
 
+A single-match rule alerts once per source/destination pair per five minutes of record time. `dedupe_by: [SrcIP, DstIP, DstPort]` replaces that key with the listed fields, and `dedupe_window` (seconds, 0 = the whole run) re-arms it. The shipped port rules alert once per client and service. Threshold and distinct alerts set `Count`, `FirstSeen`, `LastSeen`, the group in `AggregateKey` and up to 64 distinct values in `Examples`.
+
 Alert only after `threshold` matches within `threshold_window` seconds (default 60). Without `group_by` these counters are shared per rule name and are not grouped by host; add `group_by: [SrcIP]` to count per host. They use record timestamps when available, but arrival order and wall-clock suppression still apply. For deterministic counting per entity on finalized records, use [offline grouped thresholds](RULES_ENGINE.md#offline-grouped-thresholds).
 
 #### `distinct_field` / `distinct_threshold` (optional)

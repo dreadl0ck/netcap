@@ -70,6 +70,8 @@ type Engine struct {
 	scopedEntries    int
 	// grouped counts group_by thresholds evaluated without a capture scope.
 	grouped map[string]*groupedThresholds
+	// dedupe holds dedupe_by keys per rule.
+	dedupe map[string]*dedupeState
 	ordered *OrderedStream
 
 	// Performance tracking
@@ -427,6 +429,15 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 				// itself provides rate limiting. The threshold tracker already ensures
 				// we don't alert too frequently, and we want to alert each time the
 				// threshold is reached (not just once per dedup window).
+			} else if len(rule.DedupeBy) > 0 {
+				if e.ruleDuplicate(rule, record) {
+					matched = true
+					alertGenerated = false
+					if e.perfTracker != nil {
+						e.perfTracker.RecordRuleExecution(rule.Name, time.Since(ruleStart), matched, alertGenerated)
+					}
+					continue
+				}
 			} else if scope == "" && (rule.Sequence == nil || rule.Sequence.AfterType == "") {
 				// Check deduplication only for non-threshold rules
 				if e.isDuplicate(alert) {
@@ -816,6 +827,7 @@ func (e *Engine) UpdateConfig(config *Config) error {
 	e.scopedJoins = nil
 	e.scopedEntries = 0
 	e.grouped = nil
+	e.dedupe = nil
 	e.recentAlerts = make(map[string]int64)
 	e.ruleCounters = make(map[string]*rateCounter)
 	e.mu.Unlock()

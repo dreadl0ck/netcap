@@ -96,6 +96,7 @@ rules:
     mitre: ["T1048.002"]
     tags: ["exfiltration"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Cloud Storage Upload
   - name: Cloud Storage Upload

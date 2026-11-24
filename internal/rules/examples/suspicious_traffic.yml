@@ -48,6 +48,7 @@ rules:
     mitre: ["T1110.001", "T1021.004"]
     tags: ["baseline"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # RADIUS Auth Attempts
   - name: RADIUS Auth Attempts
@@ -193,6 +194,7 @@ rules:
     mitre: ["T1021.001"]
     tags: ["lateral-movement"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # SMB Admin Share Connection
   - name: SMB Admin Share Connection
@@ -235,6 +237,7 @@ rules:
     mitre: ["T1558.001", "T1558.003"]
     tags: ["credential-access"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Authentication Brute Force
   - name: Authentication Brute Force

@@ -19,6 +19,7 @@ rules:
     mitre: ["T0855", "T0836"]
     tags: ["plc", "scada"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 502: Modbus TCP
   - name: Modbus TCP Detected
@@ -30,6 +31,7 @@ rules:
     mitre: ["T0855", "T0836"]
     tags: ["plc", "scada", "unauthenticated"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 44818: EtherNet/IP (TCP)
   - name: EtherNet IP TCP Detected
@@ -41,6 +43,7 @@ rules:
     mitre: ["T0855", "T0836"]
     tags: ["plc"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 2222: EtherNet/IP (UDP)
   - name: EtherNet IP UDP Detected
@@ -62,6 +65,7 @@ rules:
     mitre: ["T0855", "T0836"]
     tags: ["scada"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 2404: IEC 60870-5-104
   - name: IEC 104 Detected
@@ -73,6 +77,7 @@ rules:
     mitre: ["T0855", "T0836"]
     tags: ["scada"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 4840: OPC UA
   - name: OPC UA Detected
@@ -84,6 +89,7 @@ rules:
     mitre: ["T0855", "T1071.001"]
     tags: ["automation"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 4843: OPC UA (HTTPS binding)
   - name: OPC UA HTTPS Detected
@@ -95,6 +101,7 @@ rules:
     mitre: ["T0855", "T1071.001"]
     tags: ["automation", "encrypted"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 47808: BACnet/IP
   - name: BACnet Detected
@@ -144,6 +151,7 @@ rules:
     mitre: ["T1071.001", "T0868"]
     tags: ["iiot", "cleartext"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 8883: MQTT over TLS
   - name: MQTT TLS Detected
@@ -155,6 +163,7 @@ rules:
     mitre: ["T1071.001", "T0868"]
     tags: ["iiot", "encrypted"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
 
   # ========================================
@@ -172,6 +181,7 @@ rules:
     mitre: ["T1558"]
     tags: ["authentication"]
     enabled: false
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 1025: Dynamic RPC
   - name: ICS Dynamic RPC Detected
@@ -183,6 +193,7 @@ rules:
     mitre: ["T1021.003"]
     tags: ["legacy"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 5985-5986: WinRM
   - name: ICS WinRM HTTP Detected
@@ -194,6 +205,7 @@ rules:
     mitre: ["T1021.006"]
     tags: ["remote-management"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: ICS WinRM HTTPS Detected
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -204,6 +216,7 @@ rules:
     mitre: ["T1021.006"]
     tags: ["remote-management", "encrypted"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
 
 
@@ -221,6 +234,7 @@ rules:
     mitre: ["T0855"]
     tags: ["ics", "vendor-tools", "management", "proprietary"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 5021: Proprietary Vendor
   - name: ICS Vendor Port 5021 Detected
@@ -232,6 +246,7 @@ rules:
     mitre: ["T0855"]
     tags: ["ics", "vendor-tools", "engineering", "proprietary"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 22222: Vendor Agent/Telemetry
   - name: ICS Vendor Telemetry Detected
@@ -243,6 +258,7 @@ rules:
     mitre: ["T0868"]
     tags: ["ics", "vendor-tools", "telemetry", "iiot", "agent"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 8880: Vendor Web Admin
   - name: ICS Vendor Web Admin Detected
@@ -254,6 +270,7 @@ rules:
     mitre: ["T1071.001"]
     tags: ["ics", "vendor-tools", "web-admin", "http"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 247: Talk (Legacy)
   - name: ICS Legacy Talk Detected
@@ -265,6 +282,7 @@ rules:
     mitre: ["T1071.001"]
     tags: ["ics", "legacy", "deprecated"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 10250: Kubernetes/Container Management (Modern ICS/IIoT)
   - name: ICS Kubelet Detected
@@ -276,6 +294,7 @@ rules:
     mitre: ["T1610"]
     tags: ["ics", "kubernetes", "container", "iiot", "orchestration"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # ========================================
   # EXTERNAL CONNECTION MONITORING (Critical for ICS)
@@ -290,6 +309,7 @@ rules:
     mitre: ["T0885", "T0868"]
     tags: ["ics", "modbus", "external", "internet-exposure", "critical"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: ICS S7comm External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -300,6 +320,7 @@ rules:
     mitre: ["T0885", "T0868"]
     tags: ["ics", "s7comm", "plc", "external", "siemens"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: ICS EtherNet IP External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -310,6 +331,7 @@ rules:
     mitre: ["T0885", "T0868"]
     tags: ["ics", "ethernet-ip", "external", "rockwell"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: ICS DNP3 External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -320,6 +342,7 @@ rules:
     mitre: ["T0885", "T0868"]
     tags: ["ics", "dnp3", "scada", "external", "utility"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: ICS IEC104 External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -330,6 +353,7 @@ rules:
     mitre: ["T0885", "T0868"]
     tags: ["ics", "iec-104", "grid", "external", "telecontrol"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: ICS OPC UA External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
@@ -340,6 +364,7 @@ rules:
     mitre: ["T0885", "T0868"]
     tags: ["ics", "opc-ua", "external", "data-access"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: ICS BACnet External Connection
     description: BACnet connection to external IP detected - building automation exposure
