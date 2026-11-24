@@ -2,6 +2,7 @@
 # These rules detect potentially suspicious network traffic patterns
 
 description: "Detection rules for suspicious network traffic patterns including SSH connection monitoring, high port scanning, internal lateral movement indicators, and anomalous communication patterns requiring further investigation."
+connection_port_gates: true
 
 rules:
   # Suspicious Internal-to-Internal Traffic
@@ -373,8 +374,8 @@ rules:
     description: DNS traffic on non-standard port (potential DNS tunneling)
     type: Connection
     expression: |
-      ("DNS" in Applications || "MDNS" in Applications || "LLMNR" in Applications) && 
-      DstPort != "53" && DstPort != "5353" && DstPort != "5355" && DstPort != "853"
+      "DNS" in Applications && !("MDNS" in Applications || "LLMNR" in Applications || "NBNS" in Applications || "NETBIOS" in Applications) &&
+      !(SrcPort in ["53", "137", "5353", "5355", "853"] || DstPort in ["53", "137", "5353", "5355", "853"])
     severity: high
     mitre: ["T1071.004", "T1572"]
     tags: ["suspicious", "dns", "tunneling", "protocol-anomaly"]

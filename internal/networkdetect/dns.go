@@ -7,6 +7,18 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
+func dgaCandidate(name string, qtype uint16) bool {
+	if qtype != 1 && qtype != 28 || !validDomain(name) {
+		return false
+	}
+	suffix, icann := publicsuffix.PublicSuffix(name)
+	label, ok := strings.CutSuffix(name, "."+suffix)
+	if !icann || !ok || strings.Contains(label, ".") || strings.HasPrefix(label, "xn--") {
+		return false
+	}
+	return len(label) >= 7 && len(label) <= 20 && strings.ContainsAny(label, "0123456789") && entropy([]byte(label)) >= 2.5
+}
+
 func dnsTunnelPayload(name string, qtype uint16) (payload, zone string, suspicious bool) {
 	if qtype != 1 && qtype != 5 && qtype != 10 && qtype != 15 && qtype != 16 && qtype != 28 {
 		return

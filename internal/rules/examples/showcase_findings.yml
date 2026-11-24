@@ -1,0 +1,65 @@
+description: Passive evidence of SMB backdoor responses, web compromise, host check-ins and exposed onion destinations.
+rules:
+  - name: DoublePulsar Backdoor Response
+    description: SMB1 response pattern consistent with DoublePulsar; corroborate with other evidence on the same host.
+    type: SMB
+    expression: 'Version == 1 && IsResponse && CommandName == "TRANSACTION2" && Status == 3221225474 && MessageID in [81, 82]'
+    severity: high
+    tags: [smb, backdoor]
+    dedupe_by: [SrcIP, DstIP]
+    dedupe_window: 300
+    enabled: true
+  - name: MS17-010 Probe Response
+    description: SMB1 response consistent with a vulnerability probe; this alone does not prove exploitation.
+    type: SMB
+    expression: 'Version == 1 && IsResponse && CommandName == "TRANSACTION" && Status == 3221225989'
+    severity: high
+    tags: [smb, vulnerability-probe]
+    dedupe_by: [SrcIP, DstIP]
+    dedupe_window: 300
+    enabled: true
+  - name: Webshell Command Parameter
+    description: A request to a script uses a command parameter containing shell-command syntax. Does not assert execution.
+    type: HTTP
+    expression: 'Method != "" && MatchesPattern(URL, "(?i)\\.(php|asp|aspx|jsp|cgi)\\?(?:[^#]*&)?(?:cmd|exec|command|execute|run)=(?:ls|cat|id|pwd|whoami|uname|wget|curl|nc|ncat|bash|sh|perl|python|powershell)(?:%20|\\+|[[:space:]&]|$)")'
+    severity: high
+    tags: [web, command-execution]
+    enabled: true
+  - name: Reverse Shell Indicator In HTTP Request
+    description: A request contains reverse-shell indicators in its URL or decoded form values; an attempt does not prove compromise.
+    type: HTTP
+    expression: 'Method != "" && (MatchesPattern(URL, "(?i)(\\bnc(?:%20|\\+|[[:space:]])+-e(?:%20|\\+|[[:space:]])|/dev/tcp/)") || (Method == "POST" && ParamMatches(Parameters, "(?i)(?:\\bIO::Socket::INET\\b|/dev/tcp/)")))'
+    severity: high
+    tags: [web, reverse-shell]
+    enabled: true
+  - name: Indy Library HTTP Client
+    description: An Indy Library client contacted a public endpoint; correlate with delivery or check-in evidence.
+    type: HTTP
+    expression: 'Method != "" && IsPublicIP(DstIP) && MatchesPattern(UserAgent, "(?i)\\bIndy Library\\b")'
+    severity: medium
+    tags: [http, scripted-client]
+    dedupe_by: [SrcIP, DstIP, Host]
+    enabled: true
+  - name: Host Identity In HTTP Check-in
+    description: A request to a public endpoint includes a MAC address or workstation name in a check-in parameter.
+    type: HTTP
+    expression: 'Method != "" && IsPublicIP(DstIP) && MatchesPattern(URL, "(?i)[?&](?:mac=(?:[0-9a-f]{2}[-:]){5}[0-9a-f]{2}(?:&|$)|md=[^&]*(?:\\(|%28)[^&()]*-PC(?:\\)|%29))")'
+    severity: medium
+    tags: [http, check-in]
+    dedupe_by: [SrcIP, DstIP, Host]
+    enabled: true
+  - name: Onion Destination In Cleartext HTTP
+    description: An onion destination appeared in the Host field of a cleartext request.
+    type: HTTP
+    expression: 'Method != "" && MatchesPattern(Host, "(?i)[.]onion[.]?(?::[0-9]+)?$")'
+    severity: high
+    tags: [tor, onion, http]
+    dedupe_by: [SrcIP, DstIP, Host]
+    enabled: true
+  - name: Onion Destination In DNS
+    description: An onion name was sent to a DNS resolver instead of being resolved by Tor.
+    type: DNS
+    expression: '!QR && any(Questions, {MatchesPattern(.Name, "(?i)[.]onion[.]?$")})'
+    severity: high
+    tags: [tor, onion, dns]
+    enabled: true

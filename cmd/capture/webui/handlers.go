@@ -79,15 +79,34 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		IsMultiFile:          len(inputFiles) > 1,
 		IsServiceMode:        s.isServiceMode,
 		IsLiveMode:           s.isLiveMode,
-		SessionID:            s.currentSession, // Include current session ID in service mode
 		LogoSubText:          logoSubText,
 	}
-
-	// Add completed files info
-	completedFiles := make(map[string]bool)
-	maps.Copy(completedFiles, s.completedFiles)
+	if !response.IsServiceMode {
+		response.Coverage = s.fileCoverage[response.ActiveInputFile]
+	}
 	s.mu.RUnlock()
 
+	if response.IsServiceMode {
+		response.OutputDir, response.ActiveInputFile, response.InputFiles, response.IsProcessing = "", "", []string{}, false
+		id := r.URL.Query().Get("sessionId")
+		if suffix, ok := strings.CutPrefix(r.URL.Path, "/api/status/"); ok && suffix != "" {
+			if id != "" && id != suffix {
+				http.Error(w, "Conflicting session selectors", http.StatusConflict)
+				return
+			}
+			id = suffix
+		}
+		if id != "" {
+			session, ok := s.visibleSession(r, id)
+			if !ok {
+				http.Error(w, "Session not found", http.StatusNotFound)
+				return
+			}
+			response.SessionID, response.OutputDir, response.ActiveInputFile = id, session.OutputDir, session.InputFile
+			response.Coverage, response.Status, response.ErrorMessage = session.Coverage, session.Status, session.ErrorMessage
+			response.IsProcessing = session.Status == StatusQueued || session.Status == StatusProcessing
+		}
+	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
@@ -103,7 +122,7 @@ func (s *Server) handleInputReadiness(w http.ResponseWriter, r *http.Request) {
 	row := map[string]any{"id": selected.AnalysisID, "path": selected.InputFile}
 	if selected.SessionID != "" && s.sessionManager != nil {
 		session, ok := s.sessionManager.GetSession(selected.SessionID)
-		if !ok || (!session.IsPreloaded && session.IP != s.getUserIP(r) && !captureAdminAuthorized(r)) {
+		if !ok || !sessionVisible(r, session) {
 			http.Error(w, "Analysis unavailable", http.StatusNotFound)
 			return
 		}
@@ -147,13 +166,11 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 
 	// In service mode, return sessions as files
 	if s.isServiceMode && s.sessionManager != nil {
-		clientIP := s.getUserIP(r)
-		sessions := s.sessionManager.GetSessionsForIP(clientIP)
+		allSessions := s.visibleSessions(r)
 
 		files := make([]FileInfo, 0)
 
 		// First, add preloaded pcaps (visible to all users)
-		allSessions := s.sessionManager.GetAllSessions()
 		for _, session := range allSessions {
 			if !session.IsPreloaded {
 				continue
@@ -189,7 +206,7 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Then add user's own uploaded files
-		for _, session := range sessions {
+		for _, session := range allSessions {
 			if session.IsPreloaded {
 				continue
 			}
@@ -627,26 +644,17 @@ func (s *Server) handleSetDirectory(w http.ResponseWriter, r *http.Request) {
 	// Service mode: find session by input file path
 	// This handles both preloaded pcaps and user-uploaded captures
 	if s.isServiceMode && s.sessionManager != nil {
-		clientIP := s.getUserIP(r)
-
-		// Search in user's sessions and preloaded sessions
-		allSessions := s.sessionManager.GetAllSessions()
+		allSessions := s.visibleSessions(r)
 		var matchedSession *SessionInfo
 
 		for _, session := range allSessions {
-			// Match by input file path
 			if session.InputFile == req.InputFile {
-				// For preloaded sessions (IsPreloaded=true), any user can access
-				// For user sessions, check IP ownership
-				if session.IsPreloaded || session.IP == clientIP {
-					matchedSession = session
-					break
-				}
+				matchedSession = session
+				break
 			}
 		}
 
 		if matchedSession == nil {
-			log.Printf("[WebUI] Session not found for input file: %s (IP: %s)", req.InputFile, clientIP)
 			http.Error(w, "File not found or access denied", http.StatusNotFound)
 			return
 		}
@@ -658,17 +666,10 @@ func (s *Server) handleSetDirectory(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Set active session and output directory
-		s.currentSession = matchedSession.SessionID
-		s.outDir = matchedSession.OutputDir
-		s.activeInputFile = matchedSession.InputFile
-
-		log.Printf("[WebUI] Active session changed to: %s (file: %s, outputDir: %s)",
-			matchedSession.SessionID, matchedSession.InputFilename, matchedSession.OutputDir)
-
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
 			"success":         true,
+			"sessionId":       matchedSession.SessionID,
 			"outputDir":       matchedSession.OutputDir,
 			"activeInputFile": matchedSession.InputFile,
 		})
@@ -798,7 +799,7 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Check access rights
-		if !session.IsPreloaded && session.IP != clientIP && !captureAdminAuthorized(r) {
+		if !sessionVisible(r, session) {
 			http.Error(w, "Access denied", http.StatusForbidden)
 			return
 		}
@@ -1197,6 +1198,12 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 				}
 				response["admittedSettings"] = map[string]any{"dpi": admitted.DPI, "payload": admitted.Payload, "networkDetection": admitted.NetworkDetection, "dnsResolutionContext": admitted.DNSContext, "bpf": admitted.BPF, "includeDecoders": admitted.IncludeDecoders, "excludeDecoders": admitted.ExcludeDecoders, "schemaFiles": len(admitted.SchemaHashes)}
 				response["configurationOrigin"] = "admission snapshot for controlled options; other options are server runtime defaults; capture evidence records producer settings"
+			}
+			if data, err := artifactio.Read(r.Context(), selected.OutputDir, rulePackProvenanceFile, 4<<10); err == nil {
+				var provenance rulePackProvenance
+				if json.Unmarshal(data, &provenance) == nil {
+					response["detectionRulePack"] = provenance
+				}
 			}
 		}
 	}
@@ -2259,7 +2266,7 @@ func (s *Server) handleReportIssue(w http.ResponseWriter, r *http.Request) {
 // handleServiceModeIssueReport handles issue reports in service mode with full session data
 func (s *Server) handleServiceModeIssueReport(w http.ResponseWriter, req ReportIssueRequest, clientIP string, r *http.Request) {
 	// Get session info
-	session, exists := s.sessionManager.GetSession(req.SessionID)
+	session, exists := s.visibleSession(r, req.SessionID)
 	if !exists {
 		RespondJSON(w, http.StatusNotFound, map[string]any{
 			"error":   "Session not found",
@@ -2575,6 +2582,8 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		MagikaIsText      bool
 	}
 	fileInfoMap := make(map[string]fileAuditInfo) // filename -> {name, hash, protocol}
+	partialMetadata := false
+	showcase := s.preloadedSelection(r)
 	compressed := true
 	audit, _, auditErr := artifactio.Open(outDir, "File.ncap.gz")
 	if errors.Is(auditErr, os.ErrNotExist) {
@@ -2605,6 +2614,10 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 				var file types.File
 				err := reader.delimitedReader.NextProtoWithLimit(&file, uint64(max(1, remaining-1024)))
 				if errors.Is(err, delimited.ErrRecordLimit) {
+					if showcase {
+						partialMetadata = true
+						break
+					}
 					http.Error(w, "Artifact metadata budget exceeded", http.StatusRequestEntityTooLarge)
 					return
 				}
@@ -2619,13 +2632,20 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 				// Charge the record and a fixed allowance for inventory map entries.
 				remaining -= file.Size() + 16*len(file.YaraMatches) + 1024
 				if remaining < 0 {
+					if showcase {
+						partialMetadata = true
+						break
+					}
 					http.Error(w, "Artifact metadata budget exceeded", http.StatusRequestEntityTooLarge)
 					return
 				}
 				// Map by filename (base name of Location) for reliable matching
 				// Location paths may differ from current filesystem paths due to directory changes
 				if file.Location != "" {
-					filename := filepath.Base(file.Location)
+					filename, err := filepath.Rel(filesDir, file.Location)
+					if err != nil || !filepath.IsLocal(filename) {
+						continue
+					}
 					prior := fileInfoMap[filename]
 					occurrences := prior.Occurrences
 					if len(occurrences) < 1024 {
@@ -2700,7 +2720,7 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 		// Add name, hash, protocol, and security indicators from File audit records
 		// Match by filename since full paths may differ
-		if auditInfo, ok := fileInfoMap[info.Name()]; ok {
+		if auditInfo, ok := fileInfoMap[relPath]; ok {
 			fileInfo["occurrences"] = auditInfo.Occurrences
 			fileInfo["occurrencesCapped"] = auditInfo.OccurrencesCapped
 			fileInfo["sha256"] = auditInfo.SHA256
@@ -2775,6 +2795,7 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	}
 	RespondJSON(w, http.StatusOK, map[string]any{
 		"files":      extractedFiles,
+		"partialMetadata": partialMetadata,
 		"totalCount": len(extractedFiles),
 		"filesDir":   filesDir,
 	})
@@ -3099,8 +3120,7 @@ func (s *Server) handleDownloadInputFile(w http.ResponseWriter, r *http.Request)
 		}
 
 		// Check if user has access to this session
-		clientIP := s.getUserIP(r)
-		if !session.IsPreloaded && session.IP != clientIP {
+		if !sessionVisible(r, session) {
 			http.Error(w, "Access denied", http.StatusForbidden)
 			return
 		}
@@ -3212,9 +3232,7 @@ func (s *Server) handleDownloadAllAuditRecords(w http.ResponseWriter, r *http.Re
 		// Check if user has access to this session
 		// Preloaded sessions (IsPreloaded=true) are accessible to all users
 		// User sessions require IP match
-		clientIP := s.getUserIP(r)
-		if !session.IsPreloaded && session.IP != clientIP {
-			log.Printf("[WebUI] Access denied for session %s: client IP %s != session IP %s", identifier, clientIP, session.IP)
+		if !sessionVisible(r, session) {
 			http.Error(w, "Access denied", http.StatusForbidden)
 			return
 		}
@@ -3407,7 +3425,7 @@ func (s *Server) handleErrorLogContent(w http.ResponseWriter, r *http.Request) {
 
 	// Service mode: Look up the session
 	if s.isServiceMode && s.sessionManager != nil {
-		session, exists := s.sessionManager.GetSession(sessionID)
+		session, exists := s.visibleSession(r, sessionID)
 		if !exists || session == nil {
 			log.Printf("[WebUI] Session not found: %s", sessionID)
 			http.Error(w, "Session not found", http.StatusNotFound)
@@ -3540,8 +3558,7 @@ func (s *Server) handleErrorLogFiles(w http.ResponseWriter, r *http.Request) {
 
 	// Service mode
 	if s.isServiceMode && s.sessionManager != nil {
-		clientIP := s.getUserIP(r)
-		sessions := s.sessionManager.GetSessionsForIP(clientIP)
+		sessions := s.visibleSessions(r)
 
 		// Add preloaded sessions
 		allSessions := s.sessionManager.GetAllSessions()
@@ -3720,8 +3737,7 @@ func (s *Server) handleAggregatedErrors(w http.ResponseWriter, r *http.Request) 
 
 	// Service mode
 	if s.isServiceMode && s.sessionManager != nil {
-		clientIP := s.getUserIP(r)
-		sessions := s.sessionManager.GetSessionsForIP(clientIP)
+		sessions := s.visibleSessions(r)
 
 		// Add preloaded sessions
 		allSessions := s.sessionManager.GetAllSessions()

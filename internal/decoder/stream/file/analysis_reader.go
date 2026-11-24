@@ -6,6 +6,7 @@ import (
 	"math"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -19,8 +20,9 @@ type artifactFacts struct {
 	size      int64
 }
 
-var artifactTokens = []string{"param(", "$PSVersionTable", "function ", "cmdlet", "function(", "var ", "const ", "let ", "Sub ", "Function ", "End Sub", "EncryptedPackage", "StrongEncryptionDataSpace", ":"}
+var artifactTokens = []string{"$PSVersionTable", "[CmdletBinding", "Invoke-Expression", "-ExecutionPolicy", "function(", "var ", "const ", "let ", "Sub ", "Function ", "End Sub", "EncryptedPackage", "StrongEncryptionDataSpace", ":"}
 var firstLineTokens = []string{"python", "bash", "/sh", "perl", "ruby", "node"}
+var standalonePowerShellParam = regexp.MustCompile(`(?im)^[\t ]*param[\t ]*\([[:space:]]*[\[$]`)
 
 func (f *artifactFacts) feed(window []byte, overlap int) {
 	data := window[overlap:]
@@ -57,11 +59,14 @@ func (f *artifactFacts) scriptType() string {
 			}
 		}
 	}
-	if f.tokens["param("] || f.tokens["$PSVersionTable"] || f.tokens["function "] && f.tokens["cmdlet"] {
+	if f.tokens["$PSVersionTable"] || f.tokens["[CmdletBinding"] || standalonePowerShellParam.Match(f.prefix) {
 		return "text/x-powershell"
 	}
 	if f.tokens["function("] || f.tokens["var "] || f.tokens["const "] || f.tokens["let "] {
 		return "application/javascript"
+	}
+	if f.tokens["Invoke-Expression"] || f.tokens["-ExecutionPolicy"] {
+		return "text/x-powershell"
 	}
 	if f.tokens["Sub "] || f.tokens["Function "] && f.tokens["End Sub"] {
 		return "text/vbscript"
@@ -83,23 +88,11 @@ func (facts *artifactFacts) analyze(reader io.ReaderAt, name string) (*FileAnaly
 		return a, nil
 	}
 	a.MagicBytes = append([]byte(nil), facts.prefix[:min(8, len(facts.prefix))]...)
-	a.TrueFileType = detectFileTypeFromMagic(facts.prefix)
-	if facts.size >= 2 && isTextFile(facts.prefix) {
-		matchedMagic := false
-		for _, magic := range magicSignatures {
-			matchedMagic = matchedMagic || bytes.HasPrefix(facts.prefix, magic)
-		}
-		if markup := markupType(facts.prefix); !matchedMagic && markup != "" {
-			// An HTML page that contains script is still HTML.
-			a.TrueFileType = markup
-		} else if !matchedMagic {
-			a.TrueFileType = facts.scriptType()
-			if a.TrueFileType == "" {
-				a.TrueFileType = "text/plain"
-			}
-		}
-	}
+	a.TrueFileType = classifyFileType(facts.prefix, facts.scriptType)
 	expected := extensionToMimeType(strings.ToLower(filepath.Ext(name)))
+	if a.TrueFileType == "text/plain" && expected == "application/javascript" {
+		a.TrueFileType = expected
+	}
 	a.TypeMismatch = expected != "" && a.TrueFileType != "" && !strings.HasPrefix(a.TrueFileType, expected) && !strings.HasPrefix(expected, a.TrueFileType)
 	cfg := GetGlobalConfig().FileExtraction.Advanced
 	if cfg.DetectExecutables {

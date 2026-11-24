@@ -169,6 +169,10 @@ func CompileExpression(expression string, recordType types.Type) (*vm.Program, e
 		expr.Function("HeaderValue", func(params ...any) (any, error) {
 			return HeaderValue(params[0].(map[string]string), params[1].(string)), nil
 		}, new(func(map[string]string, string) string)),
+		expr.Function("ParamMatches", func(params ...any) (any, error) {
+			values, _ := params[0].(map[string]string)
+			return ParamMatches(values, params[1].(string)), nil
+		}, new(func(map[string]string, string) bool)),
 		expr.Function("HasHeaderPrefix", func(params ...any) (any, error) {
 			return HasHeaderPrefix(params[0].(map[string]string), params[1].(string)), nil
 		}, new(func(map[string]string, string) bool)),
@@ -234,6 +238,7 @@ func EvaluateEnvironment(program *vm.Program, env map[string]any) (bool, error) 
 	env["IsBusinessHours"] = IsBusinessHours
 	env["ContainsAny"] = ContainsAny
 	env["MatchesPattern"] = MatchesPattern
+	env["ParamMatches"] = ParamMatches
 	env["Contains"] = Contains
 	env["HasKey"] = HasKey
 	env["InList"] = InList
@@ -265,7 +270,11 @@ func CreateEnvironment(record types.AuditRecord) map[string]any {
 		return make(map[string]any)
 	}
 
-	return structToMap(reflect.ValueOf(protoMsg))
+	env := structToMap(reflect.ValueOf(protoMsg))
+	if h, ok := record.(*types.TLSClientHello); ok && h.Ja3 == "" && (h.HelloFormat == "TLS" || h.HelloFormat == "") {
+		env["Ja3"] = types.ClientHelloJA3(h.HandshakeVersion, h.CipherSuites, h.Extensions, h.SupportedGroups, h.SupportedPoints)
+	}
+	return env
 }
 
 // convertFieldValue converts a reflect.Value to a suitable interface{} for expr-lang.

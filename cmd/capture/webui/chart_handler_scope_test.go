@@ -114,7 +114,9 @@ func TestResolveChartScopeDirsServiceModeByPath(t *testing.T) {
 
 	// The session must belong to the requesting client, or the resolver
 	// correctly refuses it -- scope resolution is ownership-checked.
+	setTestVisitor(r, "a")
 	sm.sessions["sess-1"] = &SessionInfo{
+		visitorHash:   testVisitorHash("a"),
 		SessionID:     "sess-1",
 		InputFile:     "/data/pcaps/bgp.pcap",
 		InputFilename: "bgp.pcap",
@@ -168,12 +170,13 @@ func TestResolveChartScopeDirsEnforcesSessionOwnership(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
 
 	mine := filepath.Join(tmp, "mine")
+	setTestVisitor(r, "a")
 	theirs := filepath.Join(tmp, "theirs")
 	preloaded := filepath.Join(tmp, "preloaded")
 
 	sm.sessions["mine"] = &SessionInfo{
 		SessionID: "mine", InputFile: "/up/mine.pcap", InputFilename: "mine.pcap",
-		OutputDir: mine, Status: StatusCompleted, IP: s.getUserIP(r),
+		OutputDir: mine, Status: StatusCompleted, IP: s.getUserIP(r), visitorHash: testVisitorHash("a"),
 	}
 	// Same basename as the victim's file, to pin the basename-matching hole.
 	sm.sessions["theirs"] = &SessionInfo{

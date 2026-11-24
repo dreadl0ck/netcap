@@ -123,6 +123,11 @@ func migrateLegacyPredicate(base, override *Rule) *Rule {
 	if base == nil || override == nil {
 		return override
 	}
+	if isSavedPacketServiceRule(base, override) {
+		migrated := base.SavedCopy()
+		migrated.Enabled, migrated.Tags = override.Enabled, override.Tags
+		return &migrated
+	}
 	// A saved copy of a superseded default (WebUI saves write whole rule
 	// sets) would otherwise shadow the fixed embedded rule forever.
 	if saved := legacyComparable(override); saved != nil {

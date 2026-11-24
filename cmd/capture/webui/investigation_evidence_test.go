@@ -134,8 +134,8 @@ func TestInvestigationKnownForeignSessionSelection(t *testing.T) {
 	active, foreign := t.TempDir(), t.TempDir()
 	manager := NewSessionManager(10, 60, 10)
 	manager.AddSession(&SessionInfo{SessionID: "active", IP: "192.0.2.1", InputFile: "active.pcap", OutputDir: active, Status: StatusCompleted})
-	manager.AddSession(&SessionInfo{SessionID: "foreign", IP: "192.0.2.2", InputFile: "foreign.pcap", OutputDir: foreign, Status: StatusCompleted})
-	s := &Server{outDir: active, isServiceMode: true, currentSession: "active", sessionManager: manager}
+	manager.AddSession(&SessionInfo{SessionID: "foreign", IP: "192.0.2.2", InputFile: "foreign.pcap", OutputDir: foreign, Status: StatusCompleted, visitorHash: testVisitorHash("b")})
+	s := &Server{outDir: active, isServiceMode: true, sessionManager: manager}
 	var streamID string
 	for dir, marker := range map[string]string{active: "active-only", foreign: "foreign-only"} {
 		stream, err := streamutils.SaveStreamEvidence(dir, "TCP", core.DataFragments{&core.StreamData{RawData: []byte(marker)}}, marker, time.Unix(1, 0), "")
@@ -151,6 +151,7 @@ func TestInvestigationKnownForeignSessionSelection(t *testing.T) {
 	ownerRequest := func(url string) *http.Request {
 		r := httptest.NewRequest("GET", url, nil)
 		r.RemoteAddr = "192.0.2.2:42460"
+		setTestVisitor(r, "b")
 		return r
 	}
 	s.handleStreamEvidence(response, ownerRequest("/?sessionId=foreign"))
@@ -173,7 +174,7 @@ func TestInvestigationKnownForeignSessionSelection(t *testing.T) {
 	request.RemoteAddr = "192.0.2.1:42460"
 	response = httptest.NewRecorder()
 	s.handleSetDirectory(response, request)
-	if response.Code != http.StatusNotFound || s.currentSession != "active" || s.outDir != active {
+	if response.Code != http.StatusNotFound || s.outDir != active {
 		t.Fatalf("foreign session changed shared active state: %d %s", response.Code, response.Body)
 	}
 	if err := os.Remove(filepath.Join(foreign, "stream-evidence", streamID, "manifest.json")); err != nil {

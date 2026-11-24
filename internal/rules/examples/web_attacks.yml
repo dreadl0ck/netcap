@@ -250,7 +250,7 @@ rules:
   - name: DotNet WebClient Detected
     description: Detect .NET WebClient or HttpClient usage
     type: HTTP
-    expression: MatchesPattern(UserAgent, "(?i)(System\\.Net|Microsoft-CryptoAPI|WinHttp)")
+    expression: MatchesPattern(UserAgent, "(?i)\\b(System\\.Net|\\.NET HttpClient)\\b")
     severity: info
     mitre: ["T1071.001"]
     tags: ["automated-tool", "suspicious-ua", "dotnet"]

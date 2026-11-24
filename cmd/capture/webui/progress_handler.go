@@ -76,7 +76,7 @@ func (s *Server) handleProgress(w http.ResponseWriter, r *http.Request) {
 
 	// Service mode: Look up the session (file ID is session ID)
 	if s.isServiceMode && s.sessionManager != nil {
-		session, exists := s.sessionManager.GetSession(fileID)
+		session, exists := s.visibleSession(r, fileID)
 		if !exists || session == nil {
 			http.Error(w, "Session not found", http.StatusNotFound)
 			return

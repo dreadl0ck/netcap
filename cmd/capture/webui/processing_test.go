@@ -158,10 +158,10 @@ func processingStatus(t *testing.T, server *Server) bool {
 	if err := json.Unmarshal(response.Body.Bytes(), &status); err != nil {
 		t.Fatal(err)
 	}
-	if status.IsProcessing != server.IsProcessing() {
+	if !server.isServiceMode && status.IsProcessing != server.IsProcessing() {
 		t.Fatal("API status and manager disagree")
 	}
-	return status.IsProcessing
+	return server.IsProcessing()
 }
 
 func TestCanceledSchemaSnapshotReturnsShutdownCause(t *testing.T) {

@@ -42,7 +42,7 @@ rules:
   - name: Non-TLS Traffic on Port 443
     description: Traffic on port 443 that is not TLS (potential protocol tunneling)
     type: Connection
-    expression: 'DstPort == "443" && DetectedProtocolName != "" && DetectedProtocolName != "TLS" && DetectedProtocolName != "QUIC"'
+    expression: 'DstPort == "443" && AppPayloadSize > 64 && DetectedProtocolName in ["HTTP", "SSH", "FTP", "TELNET", "SMTP", "POP3", "IMAP", "IRC", "DNS"] && !("TLS" in Applications || "SSL" in Applications || "HTTPS" in Applications || "QUIC" in Applications || "TOR" in Applications)'
     severity: medium
     mitre: ["T1572"]
     tags: ["tunneling", "protocol-anomaly"]

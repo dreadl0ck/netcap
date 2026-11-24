@@ -22,7 +22,7 @@ func TestBeaconURIsShareOneIncidentWithoutSharingCadence(t *testing.T) {
 	alerts = append(alerts, e.Flush()...)
 	var beacons []*types.Alert
 	for _, a := range alerts {
-		if a.Name == "c2.beacon" {
+		if a.RuleName == "c2.beacon" {
 			beacons = append(beacons, a)
 		}
 	}

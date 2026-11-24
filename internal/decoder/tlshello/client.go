@@ -244,6 +244,7 @@ func Client(hello *tlsx.ClientHello, p gopacket.Packet) *types.TLSClientHello {
 			timestamp = p.Metadata().Timestamp.UnixNano()
 		}
 		return &types.TLSClientHello{
+			Ja3:              types.ClientHelloJA3(int32(hello.HandshakeVersion), cipherSuites, extensions, supportedGroups, supportedPoints),
 			Timestamp:        timestamp,
 			Type:             int32(hello.Type),
 			Version:          int32(hello.Version),

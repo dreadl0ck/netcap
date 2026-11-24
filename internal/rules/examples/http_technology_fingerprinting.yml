@@ -165,7 +165,7 @@ rules:
   - name: Drupal CMS Detected
     description: Detect Drupal CMS via headers or URL patterns
     type: HTTP
-    expression: MatchesPattern(HeaderValue(ResponseHeader, "X-Generator"), "(?i)Drupal") || HeaderValue(ResponseHeader, "X-Drupal-Cache") != "" || MatchesPattern(URL, "(?i)(/sites/default/|/modules/|/themes/)")
+    expression: MatchesPattern(HeaderValue(ResponseHeader, "X-Generator"), "(?i)Drupal") || HeaderValue(ResponseHeader, "X-Drupal-Cache") != "" || MatchesPattern(URL, "(?i)(^|/)(sites/(default|all)/|core/misc/drupal[.]js)")
     severity: info
     tags: ["fingerprinting", "drupal", "cms", "php"]
     enabled: true

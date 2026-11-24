@@ -33,14 +33,7 @@ func (s *Server) handleVulnerabilitiesSeverity(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -65,14 +58,7 @@ func (s *Server) handleVulnerabilitiesTopVulnerableSoftware(w http.ResponseWrite
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -97,14 +83,7 @@ func (s *Server) handleVulnerabilitiesAccessVectors(w http.ResponseWriter, r *ht
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -129,14 +108,7 @@ func (s *Server) handleVulnerabilitiesExploitTypes(w http.ResponseWriter, r *htt
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -161,14 +133,7 @@ func (s *Server) handleVulnerabilitiesTopAffectedHosts(w http.ResponseWriter, r 
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)

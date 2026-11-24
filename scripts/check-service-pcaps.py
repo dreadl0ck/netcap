@@ -19,6 +19,7 @@ import sys
 import tempfile
 import time
 import urllib.request
+import urllib.parse
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -48,6 +49,86 @@ def stage(captures, pcaps):
             shutil.copy2(capture["source"], target)
 
 
+def showcase_report(base, captures, rows, data, dpi, strict):
+    stories = json.loads((REPO / "cmd/capture/webui/showcase_stories.json").read_text())
+    floors = {
+        "WannaCry-ransomware-using-EnternalBlue-exploit.pcap": ["DoublePulsar Backdoor Response", "MS17-010 Probe Response"],
+        "snort.log.1426118407.pcap": ["Webshell Command Parameter", "Reverse Shell Indicator In HTTP Request"],
+        "traffic-from-malspam-pushing-Dreambot.pcap": ["Onion Destination In DNS", "Onion Destination In Cleartext HTTP"],
+        "Blank-Slate-campaign-pushes-Sage-2.2-ransomware.pcap": ["udp.fanout"],
+        "botnet-capture-20110810-neris.pcap": ["smtp.fanout", "Host Identity In HTTP Check-in"],
+        "mail.pcap": ["Cleartext Password Captured"],
+    }
+    for name in ("Brazil-malspam-pushes-Banload", "Brazil-malspam-traffic-example",
+                 "Brazil-malspam-Solicitacao-de-Orcamento-traffic-example",
+                 "Portuguese-invoice-malspam-traffic", "whatsapp-malspam-traffic"):
+        floors[name + ".pcap"] = ["Indy Library HTTP Client"]
+    failed = False
+    sources = set()
+    for capture in captures:
+        name = capture["name"]
+        row = rows.get(name, {})
+        if not row.get("isCompleted"):
+            continue
+        query = urllib.parse.urlencode({"sessionId": row["sessionId"]})
+        def endpoint(path):
+            return get(f"{base}{path}?{query}")
+        errors = []
+        try:
+            counts = endpoint("/api/alerts/stats")
+            alerts = counts.get("byRule") or {}
+            audit = endpoint("/api/audit-stats")
+            config = endpoint("/api/config")
+            story = endpoint("/api/showcase-story")
+            pack = config.get("detectionRulePack", {})
+            sources.add(pack.get("sha256"))
+            if strict and (config.get("admittedSettings", {}).get("dpi") is not dpi or pack.get("source") != "embedded" or not pack.get("sha256")):
+                errors.append("missing or mismatched DPI/rule-pack provenance")
+            if strict and not story:
+                errors.append("missing capture story")
+            for rule in floors.get(name, []):
+                if strict and alerts.get(rule, 0) == 0:
+                    errors.append(f"missing {rule}")
+            if strict and any(alerts.get(rule, 0) for rule in ("Potential C2 Beaconing", "SOCKS Proxy Detection", "SOCKS Proxy Detected")):
+                errors.append("retired/duplicate rule fired")
+            if strict and name in {"snort.log.1426118407.pcap", "traffic-from-malspam-pushing-Dreambot.pcap", "ultimate-PCAP-v20250325.pcapng"} and alerts.get("Non-TLS Traffic on Port 443", 0):
+                errors.append("unexpected non-TLS finding on 443")
+            if strict and name == "mail.pcap" and alerts.get("Cleartext Password Captured", 0) > 20:
+                errors.append("credential findings exceeded the noise budget")
+            if strict and name == "smb.pcap" and any(alerts.get(rule) for rule in floors["WannaCry-ransomware-using-EnternalBlue-exploit.pcap"]):
+                errors.append("ordinary SMB triggered a backdoor/probe finding")
+            pages = {}
+            if name.startswith("arp-dns"):
+                files = endpoint("/api/extracted-files")
+                pages["files"] = files.get("totalCount", 0)
+                if not pages["files"] or not row.get("coverage"):
+                    errors.append("missing extracted files or partial packet coverage")
+            if name.startswith("botnet-capture-20110810"):
+                page = endpoint("/api/fingerprints")
+                pages["fingerprints"] = page.get("totalCount", 0)
+                if not pages["fingerprints"]:
+                    errors.append("missing fingerprint inventory")
+                next_page = get(f"{base}/api/fingerprints?{query}&offset=1&limit=1&sortField=count")
+                if pages["fingerprints"] > 1 and len(next_page.get("fingerprints", [])) != 1:
+                    errors.append("fingerprint pagination failed")
+            out = data / "results" / row["sessionId"]
+            sizes = [p.stat().st_size for p in out.rglob("*") if p.is_file()]
+            if strict and name.startswith("Blank-Slate") and (len(sizes) > 30_000 or sum(sizes) > 300 << 20):
+                errors.append("Sage output exceeded the file or byte budget")
+            print(json.dumps({"capture": name, "alertCounts": alerts, "auditCount": audit.get("totalRecords"),
+                              "rulePack": pack, "outputBytes": sum(sizes), "outputFiles": len(sizes),
+                              "findings": [x["rule"] for x in (story or {}).get("findings") or []],
+                              "pages": pages, "failures": errors}), flush=True)
+        except (OSError, ValueError) as err:
+            errors.append(str(err))
+            print(json.dumps({"capture": name, "failures": errors}), flush=True)
+        failed |= strict and bool(errors)
+    if strict and (len(sources) != 1 or set(stories) != {c["sha256"] for c in captures}):
+        print("Expected a single rule-pack digest and exactly one story per input hash", file=sys.stderr)
+        failed = True
+    return failed
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("binary", type=Path)
@@ -56,6 +137,8 @@ def main():
     parser.add_argument("--dpi", default="true", help="try runs a DPI build; use false for nodpi binaries")
     parser.add_argument("--config", type=Path, help="netcap config root with dbs/ (default: empty)")
     parser.add_argument("--compare", help="base URL of a running service to compare names and sizes, e.g. https://try.netcap.io")
+    parser.add_argument("--showcase", action="store_true", help="assert findings, coverage, and budgets for the pinned showcase")
+    parser.add_argument("--report", action="store_true", help="collect the showcase metrics without applying the acceptance gate")
     args = parser.parse_args()
 
     if args.captures:
@@ -70,7 +153,9 @@ def main():
             with source.open("rb") as f:
                 if hashlib.file_digest(f, "sha256").hexdigest() != item["sha256"]:
                     sys.exit(f"{source} does not match its pinned SHA-256")
-            captures.append({"name": item["name"], "source": source, "bytes": item["bytes"]})
+            captures.append({"name": item["name"], "source": source, "bytes": item["bytes"], "sha256": item["sha256"]})
+    if args.showcase and (args.captures or args.dpi != "true"):
+        parser.error("--showcase requires the full pinned corpus and a DPI build")
 
     if args.compare:
         remote = {row["name"]: row["size"] for row in get(args.compare.rstrip("/") + "/api/files/input")}
@@ -97,6 +182,7 @@ def main():
     names = {c["name"] for c in captures}
     deadline = time.monotonic() + args.timeout
     rows = {}
+    failed = False
     try:
         while time.monotonic() < deadline and service.poll() is None:
             try:
@@ -106,14 +192,17 @@ def main():
             if len(rows) == len(names) and all(r.get("isCompleted") or r.get("error") for r in rows.values()):
                 break
             time.sleep(2)
+        if args.showcase or args.report:
+            failed = showcase_report(base, captures, rows, data, args.dpi == "true", args.showcase)
     finally:
         service.send_signal(signal.SIGTERM)
         try:
             service.wait(40)
         except subprocess.TimeoutExpired:
             service.kill()
+            service.wait()
+        log.close()
 
-    failed = False
     for name in sorted(names, key=lambda n: next(c["bytes"] for c in captures if c["name"] == n)):
         row = rows.get(name, {})
         out = data / "results" / row.get("sessionId", "-")

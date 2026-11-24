@@ -51,9 +51,9 @@ func TestSecretDeviceCaptureSelection(t *testing.T) {
 		})
 	}
 	manager := NewSessionManager(10, 60, 10)
-	manager.AddSession(&SessionInfo{SessionID: "a", IP: "192.0.2.1", InputFile: "a.pcap", OutputDir: a})
+	manager.AddSession(&SessionInfo{SessionID: "a", IP: "192.0.2.1", InputFile: "a.pcap", OutputDir: a, visitorHash: testVisitorHash("a")})
 	manager.AddSession(&SessionInfo{SessionID: "b", IP: "192.0.2.2", InputFile: "b.pcap", OutputDir: b})
-	s.isServiceMode, s.sessionManager, s.currentSession = true, manager, "b"
+	s.isServiceMode, s.sessionManager = true, manager
 	for name, handler := range map[string]http.HandlerFunc{"secrets": s.handleSecrets, "devices": s.handleDevices} {
 		for _, tc := range []struct {
 			id     string
@@ -62,6 +62,7 @@ func TestSecretDeviceCaptureSelection(t *testing.T) {
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(http.MethodGet, "/api/"+name+"?sessionId="+tc.id, nil)
 			r.RemoteAddr = "192.0.2.1:4242"
+			setTestVisitor(r, "a")
 			handler(w, r)
 			if w.Code != tc.status || strings.Contains(w.Body.String(), "-B") {
 				t.Fatalf("%s %s: %d %s", name, tc.id, w.Code, w.Body.String())

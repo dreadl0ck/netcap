@@ -35,14 +35,7 @@ func (s *Server) handleHTTPTopHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	httpRecords, err := readHTTP(outDir)
 	if err != nil {
@@ -152,14 +145,7 @@ func (s *Server) handleHTTPStatusCodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	httpRecords, err := readHTTP(outDir)
 	if err != nil {
@@ -252,14 +238,7 @@ func (s *Server) handleHTTPMethods(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	httpRecords, err := readHTTP(outDir)
 	if err != nil {
@@ -364,14 +343,7 @@ func (s *Server) handleHTTPContentTypes(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	httpRecords, err := readHTTP(outDir)
 	if err != nil {

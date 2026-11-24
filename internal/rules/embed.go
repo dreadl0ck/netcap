@@ -62,6 +62,7 @@ func LoadEmbeddedRules() (*Config, error) {
 		}
 
 		// Tag each rule with its source file (used for rule set management)
+		fileConfig.useServiceFlows()
 		ruleSetName := strings.TrimSuffix(entry.Name(), ".yml")
 		for _, rule := range fileConfig.Rules {
 			if rule == nil {

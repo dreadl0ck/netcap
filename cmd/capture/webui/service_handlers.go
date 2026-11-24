@@ -101,7 +101,7 @@ func (s *Server) handleQuota(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleListSessions returns all sessions for the requesting IP
+// handleListSessions returns sessions visible to the caller.
 func (s *Server) handleListSessions(w http.ResponseWriter, r *http.Request) {
 	if !s.isServiceMode {
 		http.Error(w, "Not available in local mode", http.StatusNotFound)
@@ -113,8 +113,7 @@ func (s *Server) handleListSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clientIP := s.getUserIP(r)
-	sessions := s.sessionManager.GetSessionsForIP(clientIP)
+	sessions := s.visibleSessions(r)
 
 	respondJSON(w, http.StatusOK, map[string]any{
 		"sessions": sessions,
@@ -156,10 +155,7 @@ func (s *Server) handleSessionSelect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clientIP := s.getUserIP(r)
-
-	// Verify session belongs to this IP
-	session, ok := s.sessionManager.GetSessionForIP(sessionID, clientIP)
+	session, ok := s.visibleSession(r, sessionID)
 	if !ok {
 		respondJSON(w, http.StatusNotFound, map[string]string{
 			"error": "Session not found or access denied",
@@ -182,13 +178,6 @@ func (s *Server) handleSessionSelect(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		removedFiles, errs := s.deleteSessionArtefacts(removed)
-		// Clear the global pointer if it referenced this session.
-		s.mu.Lock()
-		if s.currentSession == sessionID {
-			s.currentSession = ""
-			s.outDir = ""
-		}
-		s.mu.Unlock()
 		log.Printf("[WebUI] Session %s deleted (%d files removed, %d errors)", sessionID, len(removedFiles), len(errs))
 		respondJSON(w, http.StatusOK, map[string]any{
 			"success":       true,
@@ -198,12 +187,6 @@ func (s *Server) handleSessionSelect(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
-	// GET: select session as active.
-	s.mu.Lock()
-	s.currentSession = sessionID
-	s.outDir = session.OutputDir
-	s.mu.Unlock()
 
 	respondJSON(w, http.StatusOK, map[string]any{
 		"success": true,
@@ -259,15 +242,14 @@ func (s *Server) handleViewSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get session info
-	_, ok := s.sessionManager.GetSession(sessionID)
+	_, ok := s.visibleSession(r, sessionID)
 	if !ok {
 		http.Error(w, "Session not found", http.StatusNotFound)
 		return
 	}
 
-	// TODO: Serve a special HTML page for viewing the session
-	// For now, redirect to the main UI with session parameter
-	http.Redirect(w, r, fmt.Sprintf("/?session=%s", sessionID), http.StatusFound)
+	w.Header().Set("Cache-Control", "private, no-store")
+	http.Redirect(w, r, "/?sessionId="+url.QueryEscape(sessionID), http.StatusFound)
 }
 
 // handleUploadServiceMode handles file uploads in service mode
@@ -410,6 +392,7 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 	// Create session info
 	shareURL := fmt.Sprintf("/view/%s", sessionID)
 	session := &SessionInfo{
+		visitorHash:     ensureVisitor(w, r),
 		SessionID:       sessionID,
 		IP:              clientIP,
 		UploadTimestamp: time.Now(),

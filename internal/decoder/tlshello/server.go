@@ -124,6 +124,7 @@ func Server(hello *tlsx.ServerHello, p gopacket.Packet) *types.TLSServerHello {
 			SrcPort:                      int32(srcPort),
 			DstPort:                      int32(dstPort),
 			Extensions:                   extensions,
+			Ja3S:                         types.ServerHelloJA3(int32(hello.Vers), int32(hello.CipherSuite), extensions),
 			// JA4S fingerprint
 			Ja4S:            ja4sFingerprint,
 			Ja4SDescription: ja4sDescription,

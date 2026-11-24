@@ -316,16 +316,7 @@ func (s *Server) handleVisualizeTreemap(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -385,16 +376,7 @@ func (s *Server) handleVisualizeBar3D(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -454,16 +436,7 @@ func (s *Server) handleVisualizeGraph(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -529,16 +502,7 @@ func (s *Server) handleVisualizeGeo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -598,16 +562,7 @@ func (s *Server) handleVisualizeScatter3D(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -683,16 +638,7 @@ func (s *Server) handleVisualizeHostsGraph(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -1500,7 +1446,12 @@ func (s *Server) handleVisualizeGeoAll(w http.ResponseWriter, r *http.Request) {
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
-	chart := s.generateGeoChartAll(showLegend, s.getUserIP(r))
+	dirs, status, err := s.resolveChartScopeDirs(r.URL.Query().Get("scope"), r)
+	if err != nil {
+		http.Error(w, err.Error(), status)
+		return
+	}
+	chart := s.generateGeoChartAll(showLegend, dirs)
 	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -1525,8 +1476,8 @@ func HandleVisualizeGeoAll() http.HandlerFunc {
 }
 
 // generateGeoChartAll creates a geo chart showing IP geolocation distribution from all captures
-func (s *Server) generateGeoChartAll(showLegend bool, clientIP string) *charts.Geo {
-	geoData := s.getAllCapturesGeolocations(clientIP)
+func (s *Server) generateGeoChartAll(showLegend bool, dirs []string) *charts.Geo {
+	geoData := getCapturesGeolocations(dirs)
 
 	geo := charts.NewGeo()
 	geo.SetGlobalOptions(
@@ -1596,34 +1547,9 @@ func (s *Server) generateGeoChartAll(showLegend bool, clientIP string) *charts.G
 //
 // This used to aggregate GetAllSessions(), so in service mode the chart plotted
 // every visitor's uploaded capture into one map.
-func (s *Server) getAllCapturesGeolocations(clientIP string) []opts.GeoData {
+func getCapturesGeolocations(outputDirs []string) []opts.GeoData {
 	geoMap := make(map[string]int) // country code -> count
 	locationCoords := getLocationCoordinates()
-
-	s.mu.RLock()
-	isServiceMode := s.isServiceMode
-	outDir := s.outDir
-	sessionManager := s.sessionManager
-	s.mu.RUnlock()
-
-	// Collect all output directories to scan
-	var outputDirs []string
-
-	if isServiceMode && sessionManager != nil {
-		// In service mode, only the caller's own sessions plus preloaded pcaps
-		allSessions := sessionManager.GetAccessibleSessions(clientIP)
-		for _, session := range allSessions {
-			// Only include completed sessions with output directories
-			if session.Status == StatusCompleted && session.OutputDir != "" {
-				outputDirs = append(outputDirs, session.OutputDir)
-			}
-		}
-	} else {
-		// In local mode, just use the current output directory
-		if outDir != "" {
-			outputDirs = append(outputDirs, outDir)
-		}
-	}
 
 	// If no output directories found, return empty data
 	if len(outputDirs) == 0 {
@@ -2395,16 +2321,7 @@ func (s *Server) handleVisualizeSankey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)

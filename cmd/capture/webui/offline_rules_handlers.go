@@ -129,16 +129,16 @@ func (s *Server) offlineDirectory(r *http.Request, input, sessionID string) (str
 			return "", http.StatusBadRequest, fmt.Errorf("Use a sessionId selector in service mode")
 		}
 		if sessionID == "" {
-			sessionID = s.currentSession
+			sessionID = r.URL.Query().Get("sessionId")
 		}
-		if s.sessionManager == nil {
+		if s.sessionManager == nil || sessionID == "" {
 			return "", 503, fmt.Errorf("No session selected")
 		}
 		session, ok := s.sessionManager.GetSession(sessionID)
 		if !ok {
 			return "", 404, fmt.Errorf("Session not found")
 		}
-		if !session.IsPreloaded && session.IP != s.getUserIP(r) {
+		if !sessionVisible(r, session) {
 			return "", 403, fmt.Errorf("Access denied")
 		}
 		if session.Status != StatusCompleted {
@@ -200,7 +200,7 @@ func (s *Server) handleOfflineExecute(w http.ResponseWriter, r *http.Request) {
 	}
 	s.mu.RLock()
 	if request.SessionID == "" && s.isServiceMode {
-		request.SessionID = s.currentSession
+		request.SessionID = r.URL.Query().Get("sessionId")
 	}
 	if request.InputFile == "" && !s.isServiceMode {
 		request.InputFile = s.activeInputFile

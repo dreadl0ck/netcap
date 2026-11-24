@@ -21,6 +21,7 @@ package file
 
 import (
 	"bytes"
+	"encoding/binary"
 	"path/filepath"
 	"strings"
 
@@ -97,7 +98,10 @@ func AnalyzeFile(content []byte, filename string) *FileAnalysis {
 	// Check for type mismatch (extension vs magic bytes)
 	if filename != "" {
 		ext := strings.ToLower(filepath.Ext(filename))
-		expectedType := extensionToMimeType(ext)
+			expectedType := extensionToMimeType(ext)
+			if analysis.TrueFileType == "text/plain" && expectedType == "application/javascript" {
+				analysis.TrueFileType = expectedType
+			}
 		if expectedType != "" && analysis.TrueFileType != "" &&
 			!strings.HasPrefix(analysis.TrueFileType, expectedType) &&
 			!strings.HasPrefix(expectedType, analysis.TrueFileType) {
@@ -148,8 +152,16 @@ func calculateEntropy(data []byte) float64 {
 
 // detectFileTypeFromMagic detects file type from magic bytes
 func detectFileTypeFromMagic(data []byte) string {
+	return classifyFileType(data, func() string { return detectScriptType(data) })
+}
+
+func classifyFileType(data []byte, script func() string) string {
 	if len(data) < 2 {
 		return ""
+	}
+	if len(data) >= 8 && (data[0] == 'F' || data[0] == 'C' || data[0] == 'Z') && data[1] == 'W' && data[2] == 'S' &&
+		data[3] != 0 && binary.LittleEndian.Uint32(data[4:8]) >= 8 {
+		return "application/x-shockwave-flash"
 	}
 
 	for mimeType, magic := range magicSignatures {
@@ -160,7 +172,10 @@ func detectFileTypeFromMagic(data []byte) string {
 
 	// Check for text-based scripts
 	if isTextFile(data) {
-		scriptType := detectScriptType(data)
+		if markup := markupType(data); markup != "" {
+			return markup
+		}
+		scriptType := script()
 		if scriptType != "" {
 			return scriptType
 		}
@@ -343,51 +358,15 @@ func isTextFileScalar(data []byte) bool {
 
 // detectScriptType detects the type of script from content
 func detectScriptType(data []byte) string {
-	if len(data) == 0 {
-		return ""
+	facts := artifactFacts{prefix: data[:min(len(data), 512)], tokens: map[string]bool{}, firstLine: map[string]bool{}}
+	firstLine, _, _ := bytes.Cut(data, []byte{'\n'})
+	for _, token := range firstLineTokens {
+		facts.firstLine[token] = bytes.Contains(firstLine, []byte(token))
 	}
-
-	content := string(data)
-
-	// Check shebang
-	if strings.HasPrefix(content, "#!") {
-		firstLine := strings.Split(content, "\n")[0]
-		if strings.Contains(firstLine, "python") {
-			return "text/x-python"
-		}
-		if strings.Contains(firstLine, "bash") || strings.Contains(firstLine, "/sh") {
-			return "text/x-shellscript"
-		}
-		if strings.Contains(firstLine, "perl") {
-			return "text/x-perl"
-		}
-		if strings.Contains(firstLine, "ruby") {
-			return "text/x-ruby"
-		}
-		if strings.Contains(firstLine, "node") {
-			return "application/javascript"
-		}
+	for _, token := range artifactTokens {
+		facts.tokens[token] = bytes.Contains(data, []byte(token))
 	}
-
-	// Check for PowerShell
-	if strings.Contains(content, "param(") || strings.Contains(content, "$PSVersionTable") ||
-		strings.Contains(content, "function ") && strings.Contains(content, "cmdlet") {
-		return "text/x-powershell"
-	}
-
-	// Check for JavaScript
-	if strings.Contains(content, "function(") || strings.Contains(content, "var ") ||
-		strings.Contains(content, "const ") || strings.Contains(content, "let ") {
-		return "application/javascript"
-	}
-
-	// Check for VBScript
-	if strings.Contains(content, "Sub ") || strings.Contains(content, "Function ") &&
-		strings.Contains(content, "End Sub") {
-		return "text/vbscript"
-	}
-
-	return ""
+	return facts.scriptType()
 }
 
 // extensionToMimeType maps file extensions to expected MIME types

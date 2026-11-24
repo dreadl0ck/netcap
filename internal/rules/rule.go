@@ -219,9 +219,10 @@ func (a *ResponseAction) Validate() error {
 // Config holds a collection of rules loaded from a YAML file.
 type Config struct {
 	// CaptureTime opts capture-time evaluation into one caller-qualified scope.
-	CaptureTime *CaptureTimeConfig `yaml:"capture_time,omitempty"`
-	Description string             `yaml:"description"`
-	Rules       []*Rule            `yaml:"rules"`
+	CaptureTime         *CaptureTimeConfig `yaml:"capture_time,omitempty"`
+	Description         string             `yaml:"description"`
+	Rules               []*Rule            `yaml:"rules"`
+	ConnectionPortGates bool               `yaml:"connection_port_gates,omitempty"`
 }
 
 func (c *Config) Clone() (*Config, error) { return cloneRuleConfig(c) }
@@ -256,6 +257,7 @@ func LoadRulesFromFile(path string) (*Config, error) {
 	if err := validateRuleNames(&config); err != nil {
 		return nil, err
 	}
+	config.useServiceFlows()
 	return &config, nil
 }
 
@@ -356,8 +358,8 @@ func CompileRules(config *Config) error {
 			return fmt.Errorf("rule %s: kind must be %q or %q", rule.Name, KindFinding, KindInventory)
 		}
 		if len(rule.DedupeBy) > 0 {
-			if rule.Threshold > 1 || rule.DistinctField != "" || rule.Sequence != nil {
-				return fmt.Errorf("rule %s: dedupe_by applies only to single-match rules", rule.Name)
+			if rule.Threshold > 1 || rule.Sequence != nil {
+				return fmt.Errorf("rule %s: dedupe_by requires a single-match or distinct-cardinality rule", rule.Name)
 			}
 			if err := validateGroupFields(rule.DedupeBy, recordType); err != nil {
 				return fmt.Errorf("rule %s: dedupe_by: %w", rule.Name, err)

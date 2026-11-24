@@ -34,16 +34,7 @@ func (s *Server) handleDomainsTopByQueries(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -72,16 +63,7 @@ func (s *Server) handleDomainsTLDs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -110,16 +92,7 @@ func (s *Server) handleDomainsRecordTypes(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -148,16 +121,7 @@ func (s *Server) handleDomainsSubdomainDistribution(w http.ResponseWriter, r *ht
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)

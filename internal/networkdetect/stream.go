@@ -221,9 +221,44 @@ func (e *Engine) observeStream(ev Event, add func(string, string, string, string
 	if source == f.client && d.bytes >= 128 && ev.DstPort == 443 && !d.traits.tls && !d.traits.sslv2 && !f.ssh && !d.traits.http {
 		add("policy.non-tls-on-443", "policy-observation", "low", "T1571", d.bytes, 128, []string{"At least 128 contiguous TCP payload bytes whose prefix is not a TLS record"}, f.first, nil, "A non-TLS prefix on TCP/443 can be intentional or precede a protocol upgrade; C2 intent is not established")
 	}
-	if len(d.prefix) >= 64 && (ev.DstPort == 21 || ev.DstPort == 23 || ev.DstPort == 110 || ev.DstPort == 143 || ev.DstPort == 873) && !f.ssh && !d.traits.tls {
-		add("policy.cleartext-service", "policy-observation", "low", "", uint64(len(d.prefix)), 64, []string{fmt.Sprintf("TCP destination port %d", ev.DstPort)}, f.first, nil, "Port and observed payload do not identify the application protocol or prove credentials were sent")
+	if source == f.client && !f.ssh && !d.traits.tls && !d.traits.sslv2 {
+		if protocol := cleartextService(ev.DstPort, d.prefix); protocol != "" {
+			add("policy.cleartext-service", "policy-observation", "info", "", 1, 1, []string{protocol + " cleartext client prefix"}, f.first, nil, "Protocol observation does not establish that credentials were sent or that later traffic was unencrypted")
+		}
 	}
+}
+
+func cleartextService(port uint16, prefix []byte) string {
+	if port == 23 && len(prefix) >= 3 && prefix[0] == 255 && prefix[1] >= 251 && prefix[1] <= 254 {
+		return "Telnet"
+	}
+	line, _, ok := strings.Cut(string(prefix), "\n")
+	if !ok {
+		return ""
+	}
+	parts := strings.Fields(line)
+	if len(parts) < 2 {
+		return ""
+	}
+	switch port {
+	case 21:
+		if strings.EqualFold(parts[0], "USER") {
+			return "FTP"
+		}
+	case 110:
+		if strings.EqualFold(parts[0], "USER") {
+			return "POP3"
+		}
+	case 143:
+		if strings.EqualFold(parts[1], "CAPABILITY") || len(parts) >= 4 && strings.EqualFold(parts[1], "LOGIN") {
+			return "IMAP"
+		}
+	case 873:
+		if parts[0] == "@RSYNCD:" {
+			return "rsync"
+		}
+	}
+	return ""
 }
 
 type prefixTraits struct{ ssh, stratum, irc, tls, sslv2, http bool }

@@ -280,7 +280,7 @@ func (s *Server) resolveChartScopeDirs(scope string, r *http.Request) ([]string,
 		if isServiceMode && s.sessionManager != nil {
 			// Own sessions plus the preloaded demo pcaps -- never every
 			// visitor's uploads, which is what GetAllSessions would return.
-			for _, sess := range s.sessionManager.GetAccessibleSessions(s.getUserIP(r)) {
+			for _, sess := range s.visibleSessions(r) {
 				if sess.Status == StatusCompleted && sess.OutputDir != "" {
 					add(sess.OutputDir)
 				}
@@ -302,14 +302,12 @@ func (s *Server) resolveChartScopeDirs(scope string, r *http.Request) ([]string,
 		// frontend may send any of: session id, full input file path, or just
 		// the file's basename.
 		if isServiceMode && s.sessionManager != nil {
-			clientIP := s.getUserIP(r)
-
 			// Direct session-id lookup is the cheapest, but must still be
 			// ownership-checked: GetSession resolves any id in the manager, so
 			// without this a visitor holding another visitor's session id could
 			// chart their capture.
 			if sess, ok := s.sessionManager.GetSession(scope); ok {
-				if !sess.IsPreloaded && sess.IP != clientIP {
+				if !sessionVisible(r, sess) {
 					return nil, http.StatusNotFound, fmt.Errorf("unknown scope: %s", scope)
 				}
 				if sess.OutputDir == "" {
@@ -323,7 +321,7 @@ func (s *Server) resolveChartScopeDirs(scope string, r *http.Request) ([]string,
 			// basename across every session let one visitor read another's
 			// capture by guessing an ordinary filename.
 			scopeBase := filepath.Base(scope)
-			for _, sess := range s.sessionManager.GetAccessibleSessions(clientIP) {
+			for _, sess := range s.visibleSessions(r) {
 				if sess.OutputDir == "" {
 					continue
 				}

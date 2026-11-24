@@ -594,6 +594,9 @@ func trackConnectionLifecycle(conn *connection, p gopacket.Packet) {
 	if tcp.SYN && !tcp.ACK && !conn.tcpSynSeen {
 		conn.tcpSynSeen = true
 		conn.tcpSynSequence = tcp.Seq
+		if network := p.NetworkLayer(); network != nil {
+			conn.TCPInitiatorObserved = network.NetworkFlow().Src().String() == conn.SrcIP && connectionPort(tcp.TransportFlow().Src()) == conn.SrcPort
+		}
 	}
 	if tcp.FIN {
 		client := p.NetworkLayer() != nil && p.NetworkLayer().NetworkFlow().Src().String() == conn.clientIP && connectionPort(p.TransportLayer().TransportFlow().Src()) == conn.clientPort

@@ -78,6 +78,7 @@ type FingerprintsStats struct {
 
 // FingerprintsResponse contains the list of fingerprints
 type FingerprintsResponse struct {
+	Partial bool `json:"partial,omitempty"`
 	Fingerprints []FingerprintSummary `json:"fingerprints"`
 	TotalCount   int                  `json:"totalCount"` // post-filter, pre-pagination
 	Offset       int                  `json:"offset"`
@@ -115,7 +116,7 @@ func (s *Server) handleFingerprints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	snapshot, err := fingerprintSnapshotForContext(r.Context(), outDir)
+	snapshot, err := fingerprintSnapshotWithPolicy(r.Context(), outDir, s.preloadedSelection(r))
 	if err != nil {
 		if r.Context().Err() != nil {
 			return
@@ -177,6 +178,7 @@ func (s *Server) handleFingerprints(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := FingerprintsResponse{
+		Partial:      snapshot.partial,
 		Fingerprints: out,
 		TotalCount:   totalCount,
 		Offset:       opts.offset,

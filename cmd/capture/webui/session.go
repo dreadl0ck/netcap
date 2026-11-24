@@ -46,6 +46,7 @@ const (
 
 // SessionInfo tracks information about an upload and analysis session
 type SessionInfo struct {
+	visitorHash      string
 	SessionID        string                `json:"sessionId"`
 	ParentSessionID  string                `json:"parentSessionId,omitempty"`
 	ParentRunID      string                `json:"parentRunId,omitempty"`
@@ -519,18 +520,10 @@ func (sm *SessionManager) RestoreSessionsFromDisk(resultsDir, pcapsDir, uploadsD
 		metadataPath := filepath.Join(sessionDir, "session.json")
 		session, err := loadSessionMetadata(metadataPath)
 
-		if err != nil {
-			// If metadata file doesn't exist or is invalid, try to reconstruct session info
-			session, err = sm.reconstructSession(sessionID, sessionDir, pcapsDir, uploadsDir)
-			if err != nil {
-				log.Printf("[SessionManager] Failed to restore session %s: %v", sessionID, err)
-				continue
-			}
-
-			// Save reconstructed session metadata for next time
-			if saveErr := saveSessionMetadata(metadataPath, session); saveErr != nil {
-				log.Printf("[SessionManager] Warning: Failed to save reconstructed session metadata for %s: %v", sessionID, saveErr)
-			}
+		if err != nil || session.SessionID != sessionID {
+			// Public visibility cannot be inferred from files in an output directory.
+			log.Printf("[SessionManager] Missing or invalid metadata for session %s: %v", sessionID, err)
+			continue
 		}
 
 		// Add session to manager
@@ -669,17 +662,23 @@ func loadSessionMetadata(path string) (*SessionInfo, error) {
 		return nil, err
 	}
 
-	var session SessionInfo
-	if err := json.Unmarshal(data, &session); err != nil {
+	var stored struct {
+		SessionInfo
+		VisitorHash string `json:"visitorHash"`
+	}
+	if err := json.Unmarshal(data, &stored); err != nil {
 		return nil, err
 	}
-
-	return &session, nil
+	stored.SessionInfo.visitorHash = stored.VisitorHash
+	return &stored.SessionInfo, nil
 }
 
 // saveSessionMetadata saves session metadata to JSON file
 func saveSessionMetadata(path string, session *SessionInfo) error {
-	return writeAnalysisJSON(filepath.Dir(path), filepath.Base(path), session)
+	return writeAnalysisJSON(filepath.Dir(path), filepath.Base(path), struct {
+		*SessionInfo
+		VisitorHash string `json:"visitorHash,omitempty"`
+	}{session, session.visitorHash})
 }
 
 // SaveSessionMetadata is a public method to save session metadata

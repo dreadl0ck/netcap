@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -48,7 +47,9 @@ func corpus() fixtureCorpus {
 		ev := baseEvent("dns", n)
 		ev.Name = fmt.Sprintf("q%dazwsxe.com", n)
 		ev.QType = 1
+		ev.Kind = "dns.nxdomain"
 		dga = append(dga, ev)
+		ev.Kind = "dns"
 		ev.Name = fmt.Sprintf("qazwsxedcrfvtgbyhnujmikolp%d0123.tunnel.example", n)
 		ev.QType = 16
 		tunnel = append(tunnel, ev)
@@ -70,7 +71,7 @@ func corpus() fixtureCorpus {
 	for _, tc := range []struct {
 		name, payload, detector string
 		port                    uint16
-	}{{"miner", `{"jsonrpc":"2.0","method":"mining.subscribe","params":[]}` + "\n", "protocol.stratum", 3333}, {"irc", "NICK analyst\r\nUSER analyst 0 * :training\r\n", "protocol.irc", 6667}, {"cleartext", strings.Repeat("q", 1000), "policy.cleartext-service", 23}} {
+	}{{"miner", `{"jsonrpc":"2.0","method":"mining.subscribe","params":[]}` + "\n", "protocol.stratum", 3333}, {"irc", "NICK analyst\r\nUSER analyst 0 * :training\r\n", "protocol.irc", 6667}, {"cleartext", "USER training\r\n", "policy.cleartext-service", 21}} {
 		syn := baseEvent("syn", 0)
 		syn.DstPort = tc.port
 		syn.Seq = 99

@@ -39,7 +39,7 @@ func TestCaptureShiftedToEpochKeepsDetectionSemantics(t *testing.T) {
 		if err := json.Unmarshal([]byte(a.MatchedRecord), &evidence); err != nil {
 			t.Fatal(err)
 		}
-		if a.Name != "network.scan" || a.Count != 6 || a.FirstSeen != origin+9e9 || a.LastSeen != origin+14e9 || evidence.FirstSeen != origin || evidence.Observed != 10 {
+		if a.RuleName != "network.scan" || a.Count != 6 || a.FirstSeen != origin+9e9 || a.LastSeen != origin+14e9 || evidence.FirstSeen != origin || evidence.Observed != 10 {
 			t.Fatal("capture-time semantics changed", a, evidence)
 		}
 		if key != "" && key != a.AggregateKey {

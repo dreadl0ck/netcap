@@ -102,7 +102,7 @@ func serviceChildFixture(t *testing.T) (*Server, *ServiceConfig, *AnalysisJob) {
 	if err := os.WriteFile(input, []byte("owned service input"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	s.sessionManager.AddSession(&SessionInfo{SessionID: "parent", IP: "192.0.2.1", InputFile: input, OutputDir: parent, Status: StatusCompleted})
+	s.sessionManager.AddSession(&SessionInfo{SessionID: "parent", IP: "192.0.2.1", InputFile: input, OutputDir: parent, Status: StatusCompleted, visitorHash: testVisitorHash("a")})
 	w := requestReanalysis(s, `{"sessionId":"parent"}`)
 	if w.Code != 200 {
 		t.Fatalf("admission: %d %s", w.Code, w.Body.String())

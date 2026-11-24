@@ -75,6 +75,9 @@ type StatusResponse struct {
 	IsServiceMode        bool      `json:"isServiceMode,omitempty"`
 	IsLiveMode           bool      `json:"isLiveMode"`
 	SessionID            string    `json:"sessionId,omitempty"`   // Current session ID (service mode only)
+	Status               SessionStatus `json:"status,omitempty"`
+	Coverage             string    `json:"coverage,omitempty"`
+	ErrorMessage         string    `json:"errorMessage,omitempty"`
 	LogoSubText          string    `json:"logoSubText,omitempty"` // Custom label shown below NETCAP logo
 }
 

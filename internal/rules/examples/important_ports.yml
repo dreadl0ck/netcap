@@ -2,6 +2,8 @@
 # These rules detect traffic on ports associated with security-relevant protocols
 # Generated from important_ports.csv - monitoring critical infrastructure and attack vectors
 
+connection_port_gates: true
+
 description: "Port-based detection rules for monitoring critical infrastructure protocols, legacy cleartext services, database servers, remote access tools, and common attack vectors. Includes both internal and external connection monitoring."
 
 rules:
@@ -167,8 +169,8 @@ rules:
     # tuned-v0.16.13: normal Windows/AD LAN traffic: inventory, not a finding (external variants keep their severity)
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: SMB file sharing detected - frequent vector for ransomware and lateral movement
-    type: TCP
-    expression: (DstPort == 445) && ACK && PayloadSize > 0
+    type: SMB
+    expression: '!IsResponse && DstPort in [139, 445]'
     severity: info
     mitre: ["T1021.002", "T1570", "T1486"]
     tags: ["ransomware", "lateral-movement"]
@@ -184,7 +186,7 @@ rules:
     severity: medium
     mitre: ["T1090.001", "T1572"]
     tags: ["proxy", "tunneling"]
-    enabled: true
+    enabled: false # Covered by protocol-based SOCKS Proxy Traffic Detected.
     dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 1433: Microsoft SQL Server
@@ -328,8 +330,8 @@ rules:
     # tuned-v0.16.13: protocol inventory; spam/C2 shapes are covered by fan-out and C2 rules
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: SMTP mail transfer detected - monitor for open relays and outbound spam
-    type: TCP
-    expression: (DstPort == 25) && ACK && PayloadSize > 0
+    type: Connection
+    expression: 'TCPInitiatorObserved && Established && DstPort == "25"'
     severity: info
     mitre: ["T1071.003"]
     tags: ["email"]
@@ -363,8 +365,8 @@ rules:
     # tuned-v0.16.13: protocol inventory; spam/C2 shapes are covered by fan-out and C2 rules
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: POP3 mail retrieval detected (cleartext) - use TLS variants
-    type: TCP
-    expression: (DstPort == 110) && ACK && PayloadSize > 0
+    type: Connection
+    expression: 'TCPInitiatorObserved && Established && DstPort == "110"'
     severity: info
     mitre: ["T1114.001"]
     tags: ["email", "cleartext"]
@@ -426,10 +428,10 @@ rules:
     description: IRC detected (legacy command/control) - can be abused for C2
     type: TCP
     expression: (DstPort == 194) && ACK && PayloadSize > 0
-    severity: medium
+    severity: info
+    enabled: false
     mitre: ["T1071.001"]
     tags: ["c2", "legacy"]
-    enabled: true
     dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Ports 6660-6669: IRC Extended Range
@@ -438,10 +440,10 @@ rules:
     description: IRC traffic on ports 6660-6669 detected - can be used for C2 communication
     type: TCP
     expression: (DstPort >= 6660 && DstPort <= 6669) && ACK && PayloadSize > 0
-    severity: medium
+    severity: info
+    enabled: false
     mitre: ["T1071.001"]
     tags: ["c2", "irc", "legacy"]
-    enabled: true
     dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 465: SMTPS (deprecated)
@@ -724,12 +726,12 @@ rules:
   - name: Next.js Detected
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Next.js HTTP dev endpoint detected - unmanaged apps often run here
-    type: TCP
-    expression: (DstPort == 3000) && ACK && PayloadSize > 0
+    type: Connection
+    expression: 'TCPInitiatorObserved && Established && DstPort == "3000"'
     severity: medium
     mitre: ["T1071.001", "T1190"]
     tags: ["alternate-port"]
-    enabled: true
+    enabled: false # The HTTP technology fingerprint is authoritative.
     dedupe_by: [SrcIP, DstIP, DstPort]
 
   # Port 8443: HTTPS Alternate
@@ -862,8 +864,8 @@ rules:
   - name: Database External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: Database connection to external IP detected (MySQL/MSSQL/Oracle/MongoDB) - data breach risk
-    type: TCP
-    expression: ((DstPort == 3306 || DstPort == 1433 || DstPort == 1521 || DstPort == 27017) && IsPublicIP(DstIP)) && ACK && PayloadSize > 0
+    type: Connection
+    expression: 'TCPInitiatorObserved && Established && DstPort in ["3306", "1433", "1521", "27017"] && IsPublicIP(DstIP)'
     severity: critical
     mitre: ["T1041", "T1567.002"]
     tags: ["external"]
@@ -906,8 +908,8 @@ rules:
   - name: RDP Gateway External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: RDP Gateway connection to external IP detected (RD Web Access or RDP over UDP)
-    type: TCP
-    expression: ((DstPort == 5504 || DstPort == 3391) && IsPublicIP(DstIP)) && ACK && PayloadSize > 0
+    type: Connection
+    expression: 'TCPInitiatorObserved && Established && DstPort in ["5504", "3391"] && IsPublicIP(DstIP)'
     severity: critical
     mitre: ["T1021.001"]
     tags: ["external", "remote-desktop"]
@@ -935,5 +937,3 @@ rules:
     tags: ["external", "remote-access"]
     enabled: true
     dedupe_by: [SrcIP, DstIP, DstPort]
-
-

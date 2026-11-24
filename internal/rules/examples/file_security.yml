@@ -28,7 +28,7 @@ rules:
     # tuned-v0.16.13: text/* vs text/* or script labels are sniffing noise; binaries mislabelled as text/images still match
     description: File extension does not match actual file type (magic bytes) - potential evasion technique
     type: File
-    expression: (TypeMismatch && Length > 1000) && !(MatchesPattern(TrueFileType, "^text/") && MatchesPattern(ContentType, "(?i)^text/|javascript|json|xml"))
+    expression: (TypeMismatch && IsComplete && Length > 1000) && !(MatchesPattern(TrueFileType, "^text/") && MatchesPattern(ContentType, "(?i)^text/|javascript|json|xml"))
     severity: medium
     mitre: ["T1036.008"]
     tags: ["evasion", "masquerading"]
@@ -67,7 +67,7 @@ rules:
     # tuned-v0.16.13: every .js/.html matched; keep documents/containers (PDF, Office, SVG, archives) with script
     description: Office document or PDF with embedded scripts/macros
     type: File
-    expression: (HasEmbeddedScript) && !MatchesPattern(TrueFileType, "(?i)(javascript|ecmascript|html|css|json|xml|text/plain|x-powershell)")
+    expression: HasEmbeddedScript && !(IsPEExecutable || IsELFExecutable || IsMachO) && MatchesPattern(TrueFileType, "(?i)^(application/(pdf|msword|vnd[.]ms-|vnd[.]openxmlformats-|x-ole-storage|zip)|image/svg[+]xml)")
     severity: medium
     mitre: ["T1204.002"]
     tags: ["macro", "script", "initial-access"]

@@ -217,14 +217,14 @@ func (s *Server) resolutionOutDir(w http.ResponseWriter, r *http.Request) (strin
 		RespondJSON(w, http.StatusBadRequest, map[string]any{"error": "Either alertId or groupId must be provided"})
 		return "", nil, false
 	}
-	s.mu.RLock()
-	outDir := s.outDir
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
+	outDir, _ := s.resolveOutDirFromRequest(r)
+	if s.isServiceMode {
+		selected, _ := s.resolveCaptureSelection(r)
+		if session, ok := s.visibleSession(r, selected.SessionID); ok && session.IsPreloaded && !captureAdminAuthorized(r) {
+			http.Error(w, "Showcase findings are read-only", http.StatusForbidden)
+			return "", nil, false
 		}
 	}
-	s.mu.RUnlock()
 	if outDir == "" {
 		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "No output directory selected"})
 		return "", nil, false

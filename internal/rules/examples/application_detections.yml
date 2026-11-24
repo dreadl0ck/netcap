@@ -242,8 +242,6 @@ rules:
       "CISCOVPN" in Applications || "CISCO_VPN" in Applications || 
       "FORTICLIENT" in Applications || "PPTP" in Applications || 
       "L2TP" in Applications || "TEREDO" in Applications || 
-      "TOR" in Applications || "SOCKS" in Applications || 
-      "SOCKS4" in Applications || "SOCKS5" in Applications || 
       "HTTP_PROXY" in Applications || "HTTP_TUNNEL" in Applications
     severity: low
     mitre: ["T1090"]

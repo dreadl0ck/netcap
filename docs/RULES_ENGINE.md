@@ -215,7 +215,7 @@ Tags for organizing rules, for example `["ssh", "bruteforce", "authentication"]`
 
 #### `threshold` / `threshold_window` (optional)
 
-TCP records describe single packets, so the shipped port rules approximate a session with `ACK && PayloadSize > 0`. `Connection.Established` is true when both endpoints sent packets and the flow carried payload; a scan probe never is. Rules on `Connection` records see one record per flow snapshot, so pair them with `dedupe_by: [ObservationID]`.
+`Connection.Established` requires packets in both directions and transport payload. The bundled port rulesets use `connection_port_gates: true` to load TCP service predicates ending in `&& ACK && PayloadSize > 0` and keyed by `[SrcIP, DstIP, DstPort]` as Connection rules. They alert once per observation, or by scoped tuple and first timestamp when replaying older records. Scan and fan-out rules still inspect packet evidence.
 
 An HTTP record whose request was not captured has empty request fields and `ParseQualifications` containing `response-without-request`; an unanswered request carries `request-without-response`. Request-side rules check `Method != ""`.
 
@@ -326,7 +326,8 @@ to avoid reads of partially updated feeds.
 For example, add `198.51.100.7` to `ips.txt` and use `InList(DstIP, "ips.txt")`
 in a `Connection` rule. Copy and enable the applicable rules from
 [`ioc_lists.yml`](../internal/rules/examples/ioc_lists.yml) after installing the
-feeds. The examples cover file hashes, DNS domains, IPs, TLS server names and JA4.
+feeds. The examples cover file hashes, DNS domains, IPs, TLS server names,
+JA3/JA4 fingerprints, and TLS leaf certificate fingerprints and issuers.
 
 ## Writing Rules
 

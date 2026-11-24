@@ -257,7 +257,7 @@ func TestAnalystRenderedCoverageFixture(t *testing.T) {
 func TestAnalystHTTPWorkspaceRestartAndSecondaryOwnerRevocation(t *testing.T) {
 	a, ab := boundFixture(t, "primary")
 	b, bb := boundFixture(t, "secondary")
-	manager := &SessionManager{sessions: map[string]*SessionInfo{"primary": {SessionID: "primary", IP: "127.0.0.1", OutputDir: a}, "secondary": {SessionID: "secondary", IP: "127.0.0.1", OutputDir: b}}}
+	manager := &SessionManager{sessions: map[string]*SessionInfo{"primary": {SessionID: "primary", visitorHash: testVisitorHash("a"), OutputDir: a}, "secondary": {SessionID: "secondary", visitorHash: testVisitorHash("a"), OutputDir: b}}}
 	newAPI := func() *httptest.Server {
 		s := &Server{isServiceMode: true, sessionManager: manager}
 		mux := http.NewServeMux()
@@ -272,7 +272,13 @@ func TestAnalystHTTPWorkspaceRestartAndSecondaryOwnerRevocation(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		response, err := http.Post(api.URL+path, "application/json", bytes.NewReader(data))
+		req, err := http.NewRequest("POST", api.URL+path, bytes.NewReader(data))
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		setTestVisitor(req, "a")
+		response, err := http.DefaultClient.Do(req)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -322,7 +328,7 @@ func TestAnalystHTTPWorkspaceRestartAndSecondaryOwnerRevocation(t *testing.T) {
 		t.Fatalf("lost persisted report %s", data)
 	}
 	manager.mu.Lock()
-	manager.sessions["secondary"].IP = "192.0.2.99"
+	manager.sessions["secondary"].visitorHash = testVisitorHash("b")
 	manager.mu.Unlock()
 	status, data = call("/api/analyst/workspace", analyst.WorkspaceRequest{Source: source})
 	if status < 400 || strings.Contains(string(data), "Retained peer query") {

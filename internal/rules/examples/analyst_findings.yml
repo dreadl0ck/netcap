@@ -37,7 +37,7 @@ rules:
   - name: Exploit Kit Plugin Content
     description: Flash, Java applet or Silverlight content delivered over HTTP; these plugins are end-of-life and were the classic exploit-kit payload carriers
     type: File
-    expression: 'Protocol == "HTTP" && IsPublicIP(DstIP) && MatchesPattern(ContentType, "(?i)(x-shockwave-flash|java-archive|x-java-applet|x-silverlight)")'
+    expression: 'Protocol == "HTTP" && IsPublicIP(DstIP) && (TrueFileType == "application/x-shockwave-flash" || MatchesPattern(ContentType, "(?i)(x-shockwave-flash|java-archive|x-java-applet|x-silverlight)"))'
     severity: medium
     mitre: ["T1189", "T1203"]
     tags: ["delivery", "exploit-kit"]

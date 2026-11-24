@@ -51,6 +51,9 @@ func SaveDatagramConversation(source core.FragmentSource, ident string, first ti
 	if !decoderconfig.Instance.SaveConns {
 		return nil
 	}
+	if !admitUDPStreamEvidence(size, int(source.Count())) {
+		return nil
+	}
 	if _, err := SaveSourceEvidence(decoderconfig.Instance.Out, "UDP", source, ident, first, communityID); err != nil {
 		return err
 	}

@@ -32,8 +32,7 @@ import (
 // handleAuditStats serves audit statistics. Honors the optional `scope` query
 // parameter:
 //
-//   - "" / "current": legacy behavior — single active output dir (or service
-//     mode "across all sessions" aggregation when no current session exists).
+//   - "" / "current": one selected capture.
 //   - "all": always aggregate across every completed capture/session.
 //   - any other value: scoped to the matching pcap id / file path.
 func (s *Server) handleAuditStats(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +66,7 @@ func (s *Server) handleAuditStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if q := r.URL.Query(); q.Has("sessionId") || q.Has("inputFile") || q.Has("runId") {
+	if q := r.URL.Query(); s.isServiceMode || q.Has("sessionId") || q.Has("inputFile") || q.Has("runId") {
 		selection, ok := s.selectedCapture(w, r)
 		if !ok {
 			return
@@ -80,16 +79,6 @@ func (s *Server) handleAuditStats(w http.ResponseWriter, r *http.Request) {
 		RespondJSON(w, http.StatusOK, stats)
 		return
 	}
-	s.mu.RLock()
-	isServiceMode := s.isServiceMode
-	s.mu.RUnlock()
-
-	// In service mode, aggregate across all session output directories
-	if isServiceMode && s.serviceConfig != nil && s.sessionManager != nil {
-		s.handleServiceModeAuditStats(w, r)
-		return
-	}
-
 	// Local mode: use current output directory
 	s.mu.RLock()
 	outDir := s.outDir
@@ -129,43 +118,6 @@ func (s *Server) selectedAnalysisPhase(selection captureSelection) (string, stri
 		}
 	}
 	return "completed", ""
-}
-
-// handleServiceModeAuditStats aggregates audit statistics across all sessions in service mode
-func (s *Server) handleServiceModeAuditStats(w http.ResponseWriter, r *http.Request) {
-	response := AuditStatsResponse{
-		TotalRecords:       0,
-		ExploitCount:       0,
-		VulnerabilityCount: 0,
-		SecretCount:        0,
-		SoftwareCount:      0,
-	}
-
-	// Only the caller's own sessions plus the preloaded demo pcaps. Using
-	// GetAllSessions here summed secret, vulnerability and software counts out
-	// of every visitor's uploaded capture into one figure.
-	allSessions := s.sessionManager.GetAccessibleSessions(s.getUserIP(r))
-
-	// Iterate through all completed sessions and aggregate audit records
-	for _, session := range allSessions {
-		// Only count completed sessions
-		if session.Status != StatusCompleted {
-			continue
-		}
-
-		// Aggregate stats from this session's output directory
-		sessionStats := getAuditStatsForDirectory(r.Context(), session.OutputDir)
-		if r.Context().Err() != nil {
-			return
-		}
-		response.TotalRecords += sessionStats.TotalRecords
-		response.ExploitCount += sessionStats.ExploitCount
-		response.VulnerabilityCount += sessionStats.VulnerabilityCount
-		response.SecretCount += sessionStats.SecretCount
-		response.SoftwareCount += sessionStats.SoftwareCount
-	}
-
-	RespondJSON(w, http.StatusOK, response)
 }
 
 // getAuditStatsForDirectory returns audit statistics for a specific directory

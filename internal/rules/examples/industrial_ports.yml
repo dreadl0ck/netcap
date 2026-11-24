@@ -3,6 +3,7 @@
 # Generated from ics_ports.csv - monitoring critical industrial and SCADA systems
 
 description: "Industrial Control Systems (ICS/OT) detection rules for SCADA, PLCs, and industrial protocols including Modbus, S7comm, OPC-UA, EtherNet/IP, DNP3, BACnet, PROFINET, and MQTT. Monitors critical infrastructure and detects unauthorized ICS protocol exposure."
+connection_port_gates: true
 
 rules:
   # ========================================
@@ -347,8 +348,8 @@ rules:
   - name: ICS IEC104 External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: IEC-104 connection to external IP detected - CRITICAL grid protocol exposure
-    type: TCP
-    expression: (DstPort == 2404 && IsPublicIP(DstIP)) && ACK && PayloadSize > 0
+    type: Connection
+    expression: 'TCPInitiatorObserved && Established && DstPort == "2404" && IsPublicIP(DstIP)'
     severity: critical
     mitre: ["T0885", "T0868"]
     tags: ["ics", "iec-104", "grid", "external", "telecontrol"]
@@ -358,8 +359,8 @@ rules:
   - name: ICS OPC UA External Connection
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
     description: OPC UA connection to external IP detected - monitor for unauthorized data access
-    type: TCP
-    expression: ((DstPort == 4840 || DstPort == 4843) && IsPublicIP(DstIP)) && ACK && PayloadSize > 0
+    type: Connection
+    expression: 'TCPInitiatorObserved && Established && DstPort in ["4840", "4843"] && IsPublicIP(DstIP)'
     severity: critical
     mitre: ["T0885", "T0868"]
     tags: ["ics", "opc-ua", "external", "data-access"]
@@ -427,4 +428,3 @@ rules:
     group_by: ["SrcIP", "DstIP"]
     threshold: 500
     threshold_window: 60
-

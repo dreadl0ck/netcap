@@ -19,11 +19,17 @@ func packetForEvent(t *testing.T, ev Event) []byte {
 	ip := &layers.IPv4{Version: 4, TTL: 64, SrcIP: net.ParseIP(ev.SrcIP), DstIP: net.ParseIP(ev.DstIP)}
 	stack := []gopacket.SerializableLayer{eth, ip}
 	switch ev.Kind {
-	case "dns":
+	case "dns", "dns.nxdomain":
 		ip.Protocol = layers.IPProtocolUDP
 		udp := &layers.UDP{SrcPort: 40000, DstPort: 53}
+		dns := &layers.DNS{ID: 1, RD: true, Questions: []layers.DNSQuestion{{Name: []byte(ev.Name), Type: layers.DNSType(ev.QType), Class: layers.DNSClassIN}}}
+		if ev.Kind == "dns.nxdomain" {
+			ip.SrcIP, ip.DstIP = ip.DstIP, ip.SrcIP
+			udp.SrcPort, udp.DstPort = udp.DstPort, udp.SrcPort
+			dns.QR, dns.ResponseCode = true, layers.DNSResponseCodeNXDomain
+		}
 		_ = udp.SetNetworkLayerForChecksum(ip)
-		stack = append(stack, udp, &layers.DNS{ID: 1, RD: true, Questions: []layers.DNSQuestion{{Name: []byte(ev.Name), Type: layers.DNSType(ev.QType), Class: layers.DNSClassIN}}})
+		stack = append(stack, udp, dns)
 	case "syn", "data", "end":
 		ip.Protocol = layers.IPProtocolTCP
 		tcp := &layers.TCP{SrcPort: layers.TCPPort(ev.SrcPort), DstPort: layers.TCPPort(ev.DstPort), Seq: ev.Seq, Window: 65535, SYN: ev.Kind == "syn", ACK: ev.Kind == "data", FIN: ev.Kind == "end"}

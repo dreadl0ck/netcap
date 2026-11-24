@@ -42,6 +42,7 @@
 import { parseRelatedEvidence, type EvidenceSelector, type RelatedEvidence } from './evidenceLinks';
 import { translate as i18nText } from "./i18n";
 import { localeURL } from "./i18n";
+import { setSelectedSession } from './captureSelection';
 import { message, displayError, translate } from "./i18n";
 import { formatNumber, formatBytes as formatExactBytes, formatTimestampNs, formatDateTime, formatQuantity } from "./i18n";
 import { type MessageText, type UIMessage, messageSource, message as streamMessage, presentationValue } from "./i18n";
@@ -295,6 +296,7 @@ export interface AuditStatsResponse {
 }
 
 export interface StatusResponse {
+  coverage?: string;
   childAnalysisVersion?: number;
   isProcessing: boolean;
   outputDir: string;
@@ -565,6 +567,7 @@ export interface ExtractedFileInfo {
 }
 
 export interface ExtractedFilesResponse {
+  partialMetadata?: boolean;
   files: ExtractedFileInfo[];
   totalCount: number;
   filesDir: string;
@@ -903,6 +906,7 @@ export interface FingerprintsStats {
 }
 
 export interface FingerprintsResponse {
+  partial?: boolean;
   fingerprints: FingerprintSummary[];
   totalCount: number;
   offset: number;
@@ -1461,14 +1465,16 @@ function createApiWithBase(apiBase: string) {
     return res.text();
   },
 
-  async setActiveDirectory(inputFile: string): Promise<{success: boolean; outputDir: string; activeInputFile: string}> {
+  async setActiveDirectory(inputFile: string): Promise<{success: boolean; outputDir: string; activeInputFile: string; sessionId?: string}> {
     const res = await fetch(`${apiBase}/set-directory`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ inputFile }),
     });
     if (!res.ok) throw displayError(message("ui:m_88e6c716a086cdc4ff44"));
-    return res.json();
+    const result = await res.json();
+    if (result.sessionId) setSelectedSession(result.sessionId);
+    return result;
   },
 
   async uploadFile(file: File): Promise<UploadResponse> {
@@ -1515,10 +1521,11 @@ function createApiWithBase(apiBase: string) {
   },
 
   async selectSession(sessionId: string): Promise<void> {
-    const res = await fetch(`${apiBase}/try/session/${sessionId}`, {
+    const res = await fetch(`${apiBase}/try/session/${encodeURIComponent(sessionId)}`, {
       method: 'GET',
     });
     if (!res.ok) throw displayError(message("ui:m_6c643fdce05e526b754d"));
+    setSelectedSession(sessionId);
   },
 
   async getDatabaseInfo(): Promise<DatabaseInfo> {

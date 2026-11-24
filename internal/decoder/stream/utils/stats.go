@@ -53,6 +53,9 @@ var Stats struct {
 // ResetStats clears all stream reassembly statistics
 // This should be called when resetting state between processing different files
 func ResetStats() {
+	udpEvidenceBudget.Lock()
+	udpEvidenceBudget.udpEvidenceCoverage = udpEvidenceCoverage{}
+	udpEvidenceBudget.Unlock()
 	Stats.Lock()
 	Stats.IPdefrag = 0
 	Stats.MissedBytes = 0

@@ -2,6 +2,7 @@
 # These rules detect potential data exfiltration attempts
 
 description: "Detection rules for data exfiltration attempts including large DNS responses, large HTTP POST uploads to external hosts, and suspicious data transfers over alternative protocols."
+connection_port_gates: true
 
 rules:
   # Large DNS Response
@@ -118,4 +119,3 @@ rules:
     mitre: ["T1071.004"]
     tags: ["c2"]
     enabled: true
-

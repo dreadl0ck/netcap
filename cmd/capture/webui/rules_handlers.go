@@ -200,10 +200,24 @@ func (s *Server) loadRulesConfig() (*rules.Config, error) {
 	// Start with embedded default rules
 	config, err := rules.LoadEmbeddedRules()
 	if err != nil {
+		if s.isServiceMode {
+			return nil, err
+		}
 		log.Printf("[WebUI] Warning: failed to load embedded detection rules: %v", err)
 		config = &rules.Config{Rules: []*rules.Rule{}}
 	} else {
 		log.Printf("[WebUI] Loaded %d embedded default detection rules", len(config.Rules))
+	}
+
+	if s.isServiceMode {
+		config, err = loadServiceRules(s.getRulesFolderPath(), config)
+		if err != nil {
+			return nil, err
+		}
+		s.rulesConfigMutex.Lock()
+		s.rulesConfig = config
+		s.rulesConfigMutex.Unlock()
+		return config.Clone()
 	}
 
 	// Load additional/override rules from the rules folder
@@ -279,6 +293,9 @@ func (s *Server) invalidateRulesCache() {
 // saveRulesConfig saves all rules back to their original rule set files
 // Rules are grouped by their ruleset tag and saved to the corresponding file
 func (s *Server) saveRulesConfig(config *rules.Config) error {
+	if s.isServiceMode {
+		return fmt.Errorf("the service rule pack is managed on disk")
+	}
 	rulesFolder := s.getRulesFolderPath()
 
 	log.Printf("[WebUI] saveRulesConfig: using rules folder path: %s", rulesFolder)

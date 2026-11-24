@@ -145,7 +145,7 @@ func TestActiveFTPNegotiationExcludesOnlyNegotiatedData(t *testing.T) {
 			alerts, stats := packetReplay(t, c, f.events)
 			found := false
 			for _, a := range alerts {
-				found = found || a.Name == "network.scan"
+				found = found || a.RuleName == "network.scan"
 			}
 			valid := mode == "PORT" || mode == "EPRT" || mode == "nonstandard"
 			if found == valid || valid && stats.FTPDataExclusions != 114 {
@@ -163,7 +163,7 @@ func TestPort20AloneStillScansAndFTPDoesNotBypassIntel(t *testing.T) {
 		events = append(events, ev)
 	}
 	alerts, _ := packetReplay(t, DefaultConfig(), events)
-	if len(alerts) != 1 || alerts[0].Name != "network.scan" || alerts[0].Count != 6 {
+	if len(alerts) != 1 || alerts[0].RuleName != "network.scan" || alerts[0].Count != 6 {
 		t.Fatal(alerts)
 	}
 	f := newFTPTrace()
@@ -219,7 +219,7 @@ func TestPassiveFTPNegotiationAndMalformedControls(t *testing.T) {
 			valid := mode == "PASV" || mode == "EPSV"
 			scan := false
 			for _, row := range rows {
-				scan = scan || row.Name == "network.scan"
+				scan = scan || row.RuleName == "network.scan"
 			}
 			if scan == valid || valid && stats.FTPDataExclusions != 15 {
 				t.Fatal(mode, rows, stats)
@@ -337,7 +337,7 @@ func TestSMTPRelayRolesAreDetectorSpecific(t *testing.T) {
 				t.Fatal("genuine/unqualified fanout lost", alerts, stats)
 			}
 			for _, a := range alerts {
-				if a.Name == "smtp.fanout" && (!strings.Contains(a.MatchedRecord, "SMTP source role:") || a.Count != 11) {
+				if a.RuleName == "smtp.fanout" && (!strings.Contains(a.MatchedRecord, "SMTP source role:") || a.Count != 11) {
 					t.Fatal("missing roles or counts", a)
 				}
 			}
@@ -358,7 +358,7 @@ func TestSMTPRelayStillAllowsVerticalScansAndIntel(t *testing.T) {
 	alerts, stats := packetReplay(t, c, events)
 	seen := map[string]bool{}
 	for _, a := range alerts {
-		seen[a.Name] = true
+		seen[a.RuleName] = true
 	}
 	if !seen["network.scan"] || !seen["intel.c2"] || stats.SMTPRelayExclusions != 1 {
 		t.Fatal("SMTP role became a general bypass", seen, stats)

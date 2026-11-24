@@ -139,7 +139,7 @@ func TestVariablePOSTBeaconIsOneIncident(t *testing.T) {
 		if ranges && len(alerts) != 0 {
 			t.Fatal("range transfer classified as beacon")
 		}
-		if !ranges && (len(alerts) != 1 || alerts[0].Name != "c2.beacon" || alerts[0].Count != 193) {
+		if !ranges && (len(alerts) != 1 || alerts[0].RuleName != "c2.beacon" || alerts[0].Count != 193) {
 			t.Fatalf("beacon incident split: %+v", alerts)
 		}
 	}
@@ -165,7 +165,7 @@ func TestDNScatThroughForwarder(t *testing.T) {
 	alerts = append(alerts, e.Flush()...)
 	found := false
 	for _, a := range alerts {
-		if a.Name == "dns.tunnel" {
+		if a.RuleName == "dns.tunnel" {
 			found = true
 			if a.DstPort != "53" || a.Domain != "example.net" {
 				t.Fatal(a)
@@ -222,7 +222,7 @@ func TestSensitiveADRequestsAreQualified(t *testing.T) {
 	alerts = append(alerts, e.Flush()...)
 	seen := map[string]bool{}
 	for _, a := range alerts {
-		seen[a.Name] = true
+		seen[a.RuleName] = true
 	}
 	if !seen["ad.netlogon-authentication-burst"] || !seen["ad.directory-replication"] {
 		t.Fatal(seen)
@@ -327,7 +327,7 @@ func TestPOSTBeaconWithSkippedPolls(t *testing.T) {
 			}
 			alerts = append(alerts, e.Flush()...)
 			if mode == "cadence" {
-				if len(alerts) != 1 || alerts[0].Name != "c2.beacon" {
+				if len(alerts) != 1 || alerts[0].RuleName != "c2.beacon" {
 					t.Fatal("skipped polls missed", alerts)
 				}
 			} else if len(alerts) != 0 {

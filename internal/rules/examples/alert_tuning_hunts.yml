@@ -1,0 +1,22 @@
+description: Opt-in hunts for low-confidence patterns identified in the v0.16.13 evaluation
+rules:
+  - name: Alternate SSH Port Unanswered Probe
+    description: Observed TCP SYN to public port 2222 with no reply or payload; port alone does not identify SSH
+    type: Connection
+    expression: 'TransportProto == "TCP" && DstPort == "2222" && IsPublicIP(DstIP) && NumSYNFlags > 0 && PacketsServerToClient == 0 && AppPayloadSize64 == 0 && AppPayloadSize == 0'
+    severity: info
+    kind: inventory
+    enabled: false
+    dedupe_by: [SrcIP, DstIP, DstPort]
+    tags: ["probe", "hunt"]
+
+  - name: HTTP Advertising Click Burst
+    description: Repeated cleartext HTTP GETs to ad click endpoints with ad-network referrers; volume alone does not prove fraud
+    type: HTTP
+    expression: 'Method == "GET" && MatchesPattern(Host, "(?i)(^|[.])(doubleclick[.]net|googleadservices[.]com)(:[0-9]+)?$") && MatchesPattern(URL, "(?i)^/(pagead/)?(aclk|click)([/?]|$)") && MatchesPattern(Referer, "(?i)^https?://([a-z0-9-]+[.])*(doubleclick[.]net|googleadservices[.]com)(:[0-9]+)?(/|$)")'
+    severity: low
+    enabled: false
+    threshold: 30
+    threshold_window: 60
+    group_by: [SrcIP]
+    tags: ["hunt", "click-fraud"]

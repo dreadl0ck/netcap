@@ -23,6 +23,7 @@ type inventoryAuditBudget struct {
 	bodies, rows int
 	frame        int
 	verifySource func(string, os.FileInfo) error
+	prefix       *bool // Optional coverage marker for bounded showcase inventories.
 }
 
 func openInventoryAuditReader(f *os.File, size int64, ctx context.Context, want types.Type) (*AuditRecordReader, error) {
@@ -69,6 +70,10 @@ func (b *inventoryAuditBudget) open(path string, want types.Type) (*AuditRecordR
 		}
 		if info.Size() > b.stored {
 			f.Close()
+			if b.prefix != nil {
+				*b.prefix = true
+				return nil, os.ErrNotExist
+			}
 			return nil, errInventoryAuditLimit
 		}
 		b.stored -= info.Size()
@@ -120,6 +125,10 @@ func (b *inventoryAuditBudget) nextRaw(r *AuditRecordReader) ([]byte, error) {
 		}
 	}
 	if errors.Is(err, delimited.ErrRecordLimit) || (err == nil && (b.rows == 0 || len(raw) > limit)) {
+		if b.prefix != nil {
+			*b.prefix = true
+			return nil, io.EOF
+		}
 		return nil, errInventoryAuditLimit
 	}
 	if err != nil {

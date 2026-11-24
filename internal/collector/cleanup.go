@@ -37,6 +37,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/network"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/udp"
+	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/internal/durable"
 	"github.com/dreadl0ck/netcap/internal/label/manager"
@@ -240,6 +241,9 @@ func (c *Collector) doCleanup(force bool) {
 			err = os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, "AggregateStateHealth.json"), append(data, '\n'), 0600)
 		}
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, err)
+	}
+	if err := streamutils.WriteUDPStreamEvidenceCoverage(c.config.DecoderConfig.Out); err != nil {
+		c.log.Warn("write UDP stream evidence coverage", zap.Error(err))
 	}
 	c.detachRecordAnalysis()
 

@@ -66,10 +66,10 @@ export default function DashboardPage() {
   // Page-level scope (persisted across reloads).
   const [scope, setScope] = useState<string>(() => {
     if (typeof window === 'undefined') return ALL_PCAPS_SCOPE;
-    return window.localStorage.getItem(SCOPE_STORAGE_KEY) || ALL_PCAPS_SCOPE;
+    return window.sessionStorage.getItem(SCOPE_STORAGE_KEY) || 'current';
   });
   useEffect(() => {
-    window.localStorage.setItem(SCOPE_STORAGE_KEY, scope);
+    window.sessionStorage.setItem(SCOPE_STORAGE_KEY, scope);
   }, [scope]);
 
   // Active tab/view (persisted across reloads).

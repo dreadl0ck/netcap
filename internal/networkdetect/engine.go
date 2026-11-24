@@ -191,6 +191,9 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 		if detector == "network.scan" {
 			key = stableKey(ev.Scope, ev.SrcIP, detector, group)
 		}
+		if detector == "udp.fanout" {
+			key = stableKey(ev.Scope, ev.SrcIP, detector, ev.DstPort)
+		}
 		if detector == "c2.beacon" {
 			key = stableKey(ev.Scope, ev.SrcIP, detector, "tcp", ev.DstIP, ev.DstPort)
 		}
@@ -206,7 +209,7 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 		}
 		evidence := Evidence{1, detector, class, ev.Scope, first, ev.At, count, threshold, window, samples, limitations, indicator}
 		data, _ := json.Marshal(evidence)
-		alert := &types.Alert{Timestamp: ev.At, Name: detector, RuleName: detector, Description: detector + ": " + class, RecordType: "NetworkDetection", Severity: severity, SrcIP: ev.SrcIP, DstIP: ev.DstIP, SrcPort: fmt.Sprint(ev.SrcPort), DstPort: fmt.Sprint(ev.DstPort), Domain: ev.Name, MITRE: mitre, Tags: []string{"network-detection", class}, MatchedRecord: string(data)}
+		alert := &types.Alert{Timestamp: ev.At, Name: DisplayName(detector), RuleName: detector, Description: DisplayName(detector) + ": " + class, RecordType: "NetworkDetection", Severity: severity, SrcIP: ev.SrcIP, DstIP: ev.DstIP, SrcPort: fmt.Sprint(ev.SrcPort), DstPort: fmt.Sprint(ev.DstPort), Domain: ev.Name, MITRE: mitre, Tags: []string{"network-detection", class}, MatchedRecord: string(data)}
 		alerts = append(alerts, e.aggregates.add(key, alert)...)
 	}
 	if ev.Kind == "dns" {
@@ -251,16 +254,16 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 		add(ev.Kind, "behavioral-suspicion", "medium", "T1562.006", 1, 1, []string{"Conflicting bytes in overlapping IP fragments; datagram rejected"}, ev.At, nil, "Conflicting wire evidence does not establish which bytes the endpoint accepted")
 	case "ip.tiny-fragment":
 		add(ev.Kind, "policy-observation", "info", "", 1, 1, []string{"Non-final IPv4 fragment carries at most 8 payload bytes"}, ev.At, nil, "Tiny fragments also occur legitimately; reassembly remains bounded")
-	case "dns":
-		label, parent, _ := strings.Cut(ev.Name, ".")
-		digits := strings.ContainsAny(label, "0123456789")
-		if !strings.Contains(parent, ".") && len(label) >= 7 && len(label) <= 20 && digits && entropy([]byte(label)) >= 2.5 {
+	case "dns.nxdomain":
+		ev.Name = normalizeDNSWireName(ev.Name)
+		if dgaCandidate(ev.Name, ev.QType) {
 			count, first, samples := e.count(ev, "dns-dga", ev.Name)
 			if count >= e.config.DNSNames {
 				ev.Name = ""
-				add("dns.dga", "behavioral-suspicion", "medium", "T1568.002", uint64(count), uint64(e.config.DNSNames), samples, first, nil, "Lexical/domain-diversity heuristic; DNS response outcomes are not required or inferred")
+				add("dns.dga", "behavioral-suspicion", "medium", "T1568.002", uint64(count), uint64(e.config.DNSNames), samples, first, nil, "Counts distinct algorithmic-looking public names in observed NXDOMAIN replies; a resolver or forwarder can be the observed client")
 			}
 		}
+	case "dns":
 		if ev.Name == "api.telegram.org" {
 			add("policy.telegram-api", "policy-observation", "info", "", 1, 1, []string{ev.Name}, ev.At, nil, "Encrypted traffic does not reveal bot method, token or intent")
 		}
@@ -269,6 +272,13 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 				add("policy.oast", "policy-observation", "low", "", 1, 1, []string{ev.Name}, ev.At, nil, "Authorized application testing also uses OAST")
 				break
 			}
+		}
+	case "udp.contact":
+		const threshold = 64
+		count, first, samples := e.count(ev, fmt.Sprintf("udp-fanout|%d", ev.DstPort), ev.DstIP)
+		if count >= threshold {
+			add("udp.fanout", "behavioral-suspicion", "medium", "T1046", uint64(count), threshold, samples, first, nil,
+				"Distinct public destinations on one UDP port; count is a lower bound after the window reaches 128 destinations. Delivery and intent are unknown.")
 		}
 	case "syn":
 		f := e.startFlow(ev)

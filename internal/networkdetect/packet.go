@@ -1,6 +1,7 @@
 package networkdetect
 
 import (
+	"net/netip"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 
@@ -33,13 +34,21 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 		base.SrcPort, base.DstPort = uint16(tcp.SrcPort), uint16(tcp.DstPort)
 	}
 	var events []Event
+	if udp, ok := packet.TransportLayer().(*layers.UDP); ok && len(udp.Payload) > 0 && packet.Layer(layers.LayerTypeDNS) == nil {
+		destination, err := netip.ParseAddr(base.DstIP)
+		if err == nil && destination.IsGlobalUnicast() && !destination.IsPrivate() {
+			ev := base
+			ev.Kind = "udp.contact"
+			events = append(events, ev)
+		}
+	}
 	if layer := packet.Layer(layers.LayerTypeDNS); layer != nil {
 		dns := layer.(*layers.DNS)
 		if packet.ErrorLayer() != nil {
 			ev := base
 			ev.Kind = "dns.malformed"
 			events = append(events, ev)
-		} else if !dns.QR {
+		} else if !dns.QR || dns.ResponseCode == layers.DNSResponseCodeNXDomain && !dns.TC && dns.OpCode == layers.DNSOpCodeQuery {
 			for n, q := range dns.Questions {
 				if n >= 32 {
 					break
@@ -49,6 +58,14 @@ func PacketEvents(packet gopacket.Packet, scope Scope) []Event {
 				}
 				ev := base
 				ev.Kind = "dns"
+				if dns.QR {
+					if q.Class != layers.DNSClassIN || base.SrcPort != 53 {
+						continue
+					}
+					// Attribute negative replies to the receiving client.
+					ev.Kind = "dns.nxdomain"
+					ev.SrcIP, ev.DstIP, ev.SrcPort, ev.DstPort = base.DstIP, base.SrcIP, base.DstPort, base.SrcPort
+				}
 				ev.Name = string(q.Name)
 				ev.QType = uint16(q.Type)
 				events = append(events, ev)

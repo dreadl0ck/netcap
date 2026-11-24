@@ -213,9 +213,17 @@ demo-pcaps:
 # Replay the 20 try.netcap.io captures (scripts/try-pcaps.json) through
 # service mode with try's flags. TRY_DPI=true for a DPI build.
 TRY_DPI ?= false
+TRY_BINARY ?=
+TRY_CHECK_FLAGS ?=
 try-parity:
-	GOWORK=off go build -tags $(RECHECK_TAGS) -o $(TMPDIR)net-try ./cmd/net
-	python3 scripts/check-service-pcaps.py $(TMPDIR)net-try --dpi $(TRY_DPI)
+	@if [ -n "$(TRY_BINARY)" ]; then \
+		python3 scripts/check-service-pcaps.py "$(TRY_BINARY)" --dpi $(TRY_DPI) $(TRY_CHECK_FLAGS); \
+	elif [ "$(TRY_DPI)" = true ]; then \
+		printf '%s\n' 'Set TRY_BINARY to a DPI-enabled build before using TRY_DPI=true' >&2; exit 2; \
+	else \
+		GOWORK=off go build -tags $(RECHECK_TAGS) -o $(TMPDIR)net-try ./cmd/net && \
+		python3 scripts/check-service-pcaps.py $(TMPDIR)net-try --dpi false $(TRY_CHECK_FLAGS); \
+	fi
 
 test-help:
 	@echo "Netcap Test Targets:"

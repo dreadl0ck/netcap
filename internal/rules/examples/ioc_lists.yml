@@ -52,3 +52,30 @@ rules:
     tags: ["ioc", "fingerprint"]
     enabled: false
     dedupe_by: [SrcIP, Ja4]
+
+  - name: TLS Client JA3 In IOC List
+    description: TLS ClientHello whose JA3 fingerprint is listed in iocs/ja3.txt
+    type: TLSClientHello
+    expression: 'InList(Ja3, "ja3.txt")'
+    severity: medium
+    tags: ["ioc", "fingerprint"]
+    enabled: false
+    dedupe_by: [SrcIP, DstIP]
+
+  - name: TLS Leaf Certificate In IOC List
+    description: TLS leaf certificate whose SHA256 fingerprint is listed in iocs/cert-sha256.txt
+    type: TLSCertificate
+    expression: 'ChainIndex == 0 && InList(SHA256Fingerprint, "cert-sha256.txt")'
+    severity: high
+    tags: ["ioc", "certificate"]
+    enabled: false
+    dedupe_by: [SrcIP, SHA256Fingerprint]
+
+  - name: Recently Valid TLS Certificate From Listed Issuer
+    description: Public TLS leaf first valid within the past day at capture time, from an operator-listed issuer
+    type: TLSCertificate
+    expression: 'ChainIndex == 0 && IsPublicIP(SrcIP) && NotBefore > 0 && Timestamp >= NotBefore && Timestamp - NotBefore <= 86400000000000 && InList(IssuerCommonName, "cert-issuers.txt")'
+    severity: low
+    tags: ["ioc", "certificate"]
+    enabled: false
+    dedupe_by: [SrcIP, SHA256Fingerprint]

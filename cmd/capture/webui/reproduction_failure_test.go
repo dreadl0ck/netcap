@@ -24,7 +24,7 @@ func failedReproductionFixture(t *testing.T, service bool) (*Server, *AnalysisJo
 		jobQueue: make(chan *AnalysisJob, 1), isServiceMode: service}
 	if service {
 		s.sessionManager = NewSessionManager(10, 60, 10)
-		s.sessionManager.AddSession(&SessionInfo{SessionID: "owned", IP: "192.0.2.1", InputFile: input, OutputDir: filepath.Join(root, "missing-output"), Status: StatusQueued})
+		s.sessionManager.AddSession(&SessionInfo{SessionID: "owned", IP: "192.0.2.1", InputFile: input, OutputDir: filepath.Join(root, "missing-output"), Status: StatusQueued, visitorHash: testVisitorHash("a")})
 	}
 	job := &AnalysisJob{InputFile: input, SessionID: "owned", OutputDir: filepath.Join(root, "missing-output"), ArtifactConfig: []byte("RAW_SECRET_SENTINEL"), BPFFilter: "RAW_SECRET_SENTINEL"}
 	if err := s.enqueueAnalysis(job, false); err != nil {
@@ -41,6 +41,9 @@ func failedReproductionFixture(t *testing.T, service bool) (*Server, *AnalysisJo
 func failureReproductionRequest(s *Server, query, ip, token string) *httptest.ResponseRecorder {
 	r := httptest.NewRequest("GET", "/api/investigation/reproduction?"+query, nil)
 	r.RemoteAddr = ip
+	if strings.HasPrefix(ip, "192.0.2.1:") {
+		setTestVisitor(r, "a")
+	}
 	if token != "" {
 		r.Header.Set("Authorization", "Bearer "+token)
 	}

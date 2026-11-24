@@ -2,6 +2,8 @@ package rules
 
 import (
 	"container/list"
+	"slices"
+	"strconv"
 	"time"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -26,6 +28,13 @@ type dedupeEntry struct {
 // deduplicated.
 func (e *Engine) ruleDuplicate(rule *Rule, record types.AuditRecord) bool {
 	key, ok := sequenceKey(record, rule.DedupeBy)
+	if flow, isFlow := record.(*types.Connection); isFlow && slices.Equal(rule.DedupeBy, flowServiceKey) {
+		if flow.ObservationID != "" {
+			key, ok = "observation:"+flow.ObservationID, true
+		} else if ok {
+			key = strconv.Quote(flow.NetworkScope) + ":" + key
+		}
+	}
 	if !ok || len(key) > 4096 {
 		return false
 	}

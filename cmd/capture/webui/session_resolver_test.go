@@ -107,15 +107,15 @@ func TestServiceCaptureSelectionAccess(t *testing.T) {
 	t.Setenv(EnvMCPAdminToken, "synthetic-admin")
 	sm := NewSessionManager(10, 60, 10)
 	for id, session := range map[string]*SessionInfo{
-		"own":     {IP: "192.0.2.1", InputFile: "own.pcap", OutputDir: "own-output"},
-		"private": {IP: "192.0.2.2", InputFile: "private.pcap", OutputDir: "private-output"},
+		"own":     {IP: "192.0.2.1", InputFile: "own.pcap", OutputDir: "own-output", visitorHash: testVisitorHash("a")},
+		"private": {IP: "192.0.2.1", InputFile: "private.pcap", OutputDir: "private-output", visitorHash: testVisitorHash("b")},
 		"public":  {IsPreloaded: true, InputFile: "public.pcap", OutputDir: "public-output"},
 	} {
 		session.SessionID = id
 		session.Status = StatusCompleted
 		sm.AddSession(session)
 	}
-	s := &Server{isServiceMode: true, sessionManager: sm, currentSession: "own", outDir: "own-output"}
+	s := &Server{isServiceMode: true, sessionManager: sm}
 	for _, tc := range []struct {
 		query, auth string
 		status      int
@@ -129,6 +129,7 @@ func TestServiceCaptureSelectionAccess(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/api/http?"+tc.query, nil)
 		r.RemoteAddr = "192.0.2.1:42460"
+		setTestVisitor(r, "a")
 		r.Header.Set("Authorization", tc.auth)
 		called := false
 		s.captureSelectionMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { called = true })).ServeHTTP(w, r)
@@ -136,7 +137,7 @@ func TestServiceCaptureSelectionAccess(t *testing.T) {
 			t.Fatalf("%s status=%d body=%s", tc.query, w.Code, w.Body.String())
 		}
 	}
-	if s.currentSession != "own" || s.outDir != "own-output" {
+	if s.outDir != "" || s.activeInputFile != "" {
 		t.Fatal("explicit selection mutated global state")
 	}
 }

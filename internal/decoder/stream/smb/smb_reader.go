@@ -1510,6 +1510,23 @@ func (s *smbReader) writeSMBRecord(
 	} else if status != 0 {
 		statusName = fmt.Sprintf("STATUS_0x%08X", status)
 	}
+	if s.version == 1 && isResponse {
+		var indicator string
+		switch {
+		case command == SMB1_COM_TRANSACTION2 && status == 0xc0000002 && (s.messageID == 81 || s.messageID == 82):
+			indicator = "DOUBLEPULSAR_RESPONSE_PATTERN"
+		case command == SMB1_COM_TRANSACTION && status == 0xc0000205:
+			indicator = "MS17_010_PROBE_RESPONSE_PATTERN"
+			statusName = "STATUS_INSUFF_SERVER_RESOURCES"
+		}
+		if indicator != "" {
+			isPotentialThreat = true
+			if threatIndicator != "" {
+				threatIndicator += ","
+			}
+			threatIndicator += indicator
+		}
+	}
 
 	smb := &types.SMB{
 		Timestamp:            s.timestamp,
@@ -1611,6 +1628,7 @@ func getSMB1CommandName(cmd uint8) string {
 		SMB1_COM_READ_ANDX:             "READ_ANDX",
 		SMB1_COM_WRITE_ANDX:            "WRITE_ANDX",
 		SMB1_COM_TRANSACTION2:          "TRANSACTION2",
+		SMB1_COM_TRANSACTION2_SECONDARY: "TRANSACTION2_SECONDARY",
 		SMB1_COM_FIND_CLOSE2:           "FIND_CLOSE2",
 		SMB1_COM_TREE_CONNECT:          "TREE_CONNECT",
 		SMB1_COM_TREE_DISCONNECT:       "TREE_DISCONNECT",

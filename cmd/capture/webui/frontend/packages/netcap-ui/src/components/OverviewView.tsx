@@ -25,6 +25,8 @@ import { useNetcapApi } from '../hooks';
 import { ALL_PCAPS_SCOPE } from './DashboardPcapScopeSelector';
 
 import { ChartFrame } from './ChartFrame';
+import { ShowcaseStory } from './ShowcaseStory';
+import { useNetcapLink } from '../providers/NetcapProvider';
 import { translate as i18nText, richText as i18nRichText, formatNumber as i18nNumber, getLocale as getUILocale, useLocale as useUILocale } from "../lib/i18n";
 import { usePresentationSWR as useSWR } from "../lib/i18n";
 
@@ -36,6 +38,7 @@ interface Props {
 export default function OverviewView({ scope }: Props) {
   const __uiLocale = useUILocale();
   const api = useNetcapApi();
+  const Link = useNetcapLink();
 
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus(), { refreshInterval: 2000 });
   const { data: stats, mutate: mutateStats } = useSWR(['stats', scope], () => api.getStats(), {
@@ -43,7 +46,7 @@ export default function OverviewView({ scope }: Props) {
   });
   // Scope is forwarded to audit-stats / audit-files; "all" maps to backend's
   // aggregate path, anything else to a per-pcap subset.
-  const auditScope = scope === ALL_PCAPS_SCOPE ? '' : scope; // empty -> server's "current" / "aggregate" default
+  const auditScope = scope;
   const { data: auditStats, mutate: mutateAuditStats } = useSWR(['auditStats', scope], () => api.getAuditStats(scope), {
     refreshInterval: status?.isProcessing ? 5000 : 10000,
   });
@@ -74,8 +77,12 @@ export default function OverviewView({ scope }: Props) {
   // Geo-all already aggregates across all sessions; per-pcap scope forwards.
   const geoSrc = `${getBackendUrl()}/api/visualize/geo-all?showLegend=false${auditScope ? `&scope=${encodeURIComponent(auditScope)}` : ''}`;
 
+  if (status?.isServiceMode && !status.sessionId && (!scope || scope === 'current')) {
+    return <Typography color="text.secondary">Choose a <Link href="/pcaps">capture</Link> to open its findings.</Typography>;
+  }
+
   return (
-    <Box>{status?.isProcessing && stats?.processingStats && (
+    <Box>{scope === 'current' && <ShowcaseStory sessionId={status?.sessionId} />}{status?.isProcessing && stats?.processingStats && (
         <Box mb={3}><Card data-learn={i18nText("ui:m_84c137a7305554d87b6c")} sx={{ borderColor: 'rgba(59,130,246,.42)', boxShadow: '0 16px 50px rgba(59,130,246,.08)' }}><CardContent><Box display="flex" alignItems="center" gap={1} mb={2}><SpeedIcon color="primary" /><Typography variant="h6">{i18nText("ui:m_edb9732a0e38a2035859")}</Typography><Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 0.75, color: 'success.main', fontFamily: 'var(--netcap-mono)', fontSize: '0.68rem' }}><Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: 'success.main', boxShadow: '0 0 12px currentColor' }} />{i18nText("ui:m_1c60a0eefc2b38261cab")}
                 </Box></Box>{status.isServiceMode ? (
                 <Grid container spacing={3}><Grid item xs={12} md={6}><Box display="flex" alignItems="center" gap={2} mb={1}><InsertDriveFileIcon fontSize="small" color="action" /><Typography variant="body2">{i18nRichText("ui:m_450817484cf1f3043c75", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}</Typography></Box><Typography variant="h6" sx={{ ml: 4, fontFamily: 'monospace' }}>{stats.processingStats.currentFile || i18nText("ui:m_a5d19b9b86ff54945f03")}</Typography></Grid><Grid item xs={12} md={6}><Box display="flex" alignItems="center" gap={2} mb={1}><Typography variant="body2">{i18nRichText("ui:m_b2eca18914dff22e0975", { tag0: (chunks: import('react').ReactNode[]) => <strong>{chunks}</strong> })}</Typography></Box><Typography variant="h6" sx={{ ml: 4 }}>

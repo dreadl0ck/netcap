@@ -65,7 +65,7 @@ func TestHTTPBeaconInsideOneConnectionIsQualified(t *testing.T) {
 	}
 	alerts = append(alerts, e.Flush()...)
 	for _, a := range alerts {
-		if a.Name == "c2.beacon" {
+		if a.RuleName == "c2.beacon" {
 			found = true
 			if a.Severity != "low" || !strings.Contains(a.MatchedRecord, "legitimate") {
 				t.Fatal("periodicity represented as compromise", a)

@@ -113,10 +113,15 @@ func TestServiceDeletionProtectsPreloadedRunningAndForeignSessions(t *testing.T)
 			input := filepath.Join(t.TempDir(), "original.pcap")
 			os.WriteFile(input, []byte("original"), 0600)
 			sm := NewSessionManager(10, 60, 10)
-			sm.AddSession(&SessionInfo{SessionID: "session", InputFile: input, IP: tc.ip, Status: tc.phase, IsPreloaded: tc.preloaded})
+			owner := testVisitorHash("b")
+			if tc.ip == "192.0.2.1" {
+				owner = testVisitorHash("a")
+			}
+			sm.AddSession(&SessionInfo{SessionID: "session", InputFile: input, IP: tc.ip, Status: tc.phase, IsPreloaded: tc.preloaded, visitorHash: owner})
 			s := &Server{isServiceMode: true, sessionManager: sm}
 			r := httptest.NewRequest("DELETE", "/api/try/session/session", nil)
 			r.RemoteAddr = "192.0.2.1:1234"
+			setTestVisitor(r, "a")
 			w := httptest.NewRecorder()
 			s.handleSessionSelect(w, r)
 			if w.Code != tc.want {

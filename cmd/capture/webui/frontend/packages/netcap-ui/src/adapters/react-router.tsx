@@ -47,6 +47,8 @@ import type { LinkProps as RRLinkProps } from 'react-router';
 import { NetcapProvider, NetcapConfig, LinkProps, NavigationItem, FullscreenAdapter } from '../providers/NetcapProvider.js';
 import { LearnModeProvider } from '../contexts/LearnModeContext.js';
 import { CommunityIDFilterProvider } from '../contexts/CommunityIDFilterContext.js';
+import { SWRConfig } from 'swr';
+import { captureNavigation } from '../lib/captureSelection.js';
 
 export interface ReactRouterNetcapProviderProps {
   children: ReactNode;
@@ -69,7 +71,7 @@ export interface ReactRouterNetcapProviderProps {
  */
 function ReactRouterLinkAdapter({ href, children, passHref, ...props }: LinkProps) {
   return (
-    <RRLink to={href} {...(props as Omit<RRLinkProps, 'to'>)}>
+    <RRLink to={captureNavigation(href)} {...(props as Omit<RRLinkProps, 'to'>)}>
       {children}
     </RRLink>
   );
@@ -108,8 +110,8 @@ export function ReactRouterNetcapProvider({
       pathname: location.pathname,
       query: Object.fromEntries(searchParams),
       isReady: true, // Always ready in SPA — no hydration step
-      push: (path: string) => { navigate(path); },
-      replace: (path: string) => { navigate(path, { replace: true }); },
+      push: (path: string) => { navigate(captureNavigation(path)); },
+      replace: (path: string) => { navigate(captureNavigation(path), { replace: true }); },
     },
     Link: ReactRouterLinkAdapter,
   }), [backendUrl, debug, navigationItems, headerActions, fullscreen, saveJSON, location.pathname, searchParams, navigate]);
@@ -124,9 +126,13 @@ export function ReactRouterNetcapProvider({
 
   return (
     <NetcapProvider config={config}>
-      {content}
+      <SWRConfig key={JSON.stringify([searchParams.get('sessionId'), searchParams.get('runId')])} value={captureCache}>
+        {content}
+      </SWRConfig>
     </NetcapProvider>
   );
 }
 
 export default ReactRouterNetcapProvider;
+
+const captureCache = { provider: () => new Map() };

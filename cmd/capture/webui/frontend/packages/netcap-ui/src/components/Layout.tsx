@@ -1026,6 +1026,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
         }}
       >
         <CommunityIDFilterBar />
+        {status?.coverage && <Typography variant="body2" role="status" color="warning.main" sx={{ mb: 2, overflowWrap: 'anywhere' }}>Partial packet coverage: {status.coverage}</Typography>}
         {children}
         <GeoIPAttribution />
       </Box>

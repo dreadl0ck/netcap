@@ -211,7 +211,7 @@ func (s *Server) queueChildAnalysis(w http.ResponseWriter, r *http.Request, inpu
 	job := &AnalysisJob{SessionID: provenance.AnalysisID, InputFile: childInput, OutputDir: dir,
 		EnableDPI: enableDPI, BPFFilter: provenance.BPFFilter, ArtifactConfig: config, requireCaptureEvidence: true}
 	if s.sessionManager != nil {
-		child := &SessionInfo{SessionID: job.SessionID, IP: ip, UploadTimestamp: provenance.CreatedAt,
+		child := &SessionInfo{SessionID: job.SessionID, IP: ip, visitorHash: ensureVisitor(w, r), UploadTimestamp: provenance.CreatedAt,
 			InputFile: childInput, InputFilename: filepath.Base(input), InputFileSize: size, OutputDir: dir,
 			Status: StatusQueued, ShareUrl: "/view/" + job.SessionID, BPFFilter: job.BPFFilter,
 			ParentSessionID: parentSession, ParentRunID: parent.RunID, AnalysisSelector: provenance.Selector, PacketSelection: selection}

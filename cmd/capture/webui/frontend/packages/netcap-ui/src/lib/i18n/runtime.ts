@@ -6,6 +6,7 @@ import uiSources from './catalogs/ui/sources.json';
 import { isLocale, supportedLocales, type Locale } from './locales';
 import { messageValues } from './values';
 import backendIDs from './backend-ids.json';
+import { scopeCaptureURL } from '../captureSelection';
 
 export type MessageParams = Readonly<Record<string, unknown>>;
 export type Catalogs = Readonly<Record<Locale, Readonly<Record<string, string>>>>;
@@ -248,6 +249,7 @@ export function metadataMessages(owner: unknown, field: string): MessageText[] {
 export function metadataTexts(owner: unknown, field: string): string[] { return metadataMessages(owner, field).map(renderText); }
 
 export function localeURL(input: string): string {
+  input = scopeCaptureURL(input);
   const hashAt = input.indexOf('#');
   const hash = hashAt === -1 ? '' : input.slice(hashAt);
   const base = hashAt === -1 ? input : input.slice(0, hashAt);

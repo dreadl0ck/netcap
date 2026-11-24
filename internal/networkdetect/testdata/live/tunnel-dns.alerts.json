@@ -1,8 +1,8 @@
 [
   {
     "Timestamp": 1791363781936160000,
-    "Name": "dns.tunnel",
-    "Description": "dns.tunnel: behavioral-suspicion",
+    "Name": "Possible DNS Tunnel",
+    "Description": "Possible DNS Tunnel: behavioral-suspicion",
     "SrcIP": "127.0.0.1",
     "SrcPort": "38746",
     "DstIP": "127.0.0.1",

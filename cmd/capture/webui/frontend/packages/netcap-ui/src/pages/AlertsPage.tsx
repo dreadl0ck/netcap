@@ -104,7 +104,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [severityFilter, setSeverityFilter] = useState<string>('');
-  const [ruleFilter, setRuleFilter] = useState<string>('');
+  const [ruleFilter, setRuleFilter] = useState<string>(() => typeof window === 'undefined' ? '' : new URLSearchParams(window.location.search).get('rule') || '');
   const [classificationFilter, setClassificationFilter] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [sortBy, setSortBy] = useState<'count' | 'lastSeen' | 'firstSeen' | 'severity'>('lastSeen');
@@ -130,7 +130,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
     { refreshInterval: 10000, shouldRetryOnError: false },
   );
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
-  const { data: detectionCoverage, error: detectionCoverageError } = useSWR(['network-detection', status?.activeInputFile], () => api.getNetworkDetectionStats(status?.activeInputFile || undefined), { refreshInterval: 5000 });
+  const { data: detectionCoverage, error: detectionCoverageError } = useSWR(['network-detection', status?.sessionId || status?.activeInputFile], () => api.getNetworkDetectionStats(status?.isServiceMode ? undefined : status?.activeInputFile || undefined), { refreshInterval: 5000 });
 
   // Compute selected file from status and inputFiles
   const selectedFile = useMemo(() => {

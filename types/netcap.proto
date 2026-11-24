@@ -501,6 +501,7 @@ message Connection {
   // Both endpoints sent packets and the flow carried payload. A scan probe
   // (SYN, SYN-ACK or RST, no data) is never established.
   bool Established = 72;
+  bool TCPInitiatorObserved = 73; // A SYN without ACK was observed from SrcIP:SrcPort.
 }
 
 //
@@ -1629,6 +1630,7 @@ message HTTPCookie {
 // TLS Client Hello
 
 message TLSClientHello {
+  string Ja3 = 39; // Legacy JA3 identifier, MD5 of ordered Hello attributes.
   string HelloFormat = 100; // SSLv2 for legacy framing; empty on older TLS records
   repeated uint32 SSLv2CipherSpecs = 101; // Full 24-bit cipher identifiers, not TLS cipher suites
   bytes SSLv2Challenge = 102; // Unpadded challenge; Random remains unset
@@ -1680,6 +1682,7 @@ message TLSClientHello {
 // TLS Server Hello
 
 message TLSServerHello {
+  string Ja3S = 33; // Legacy JA3S identifier, MD5 of ordered Hello attributes.
   string HelloFormat = 100;
   repeated uint32 SSLv2CipherSpecs = 101; // Offered cipher list, not a selected TLS cipher
   bytes SSLv2ConnectionID = 102;

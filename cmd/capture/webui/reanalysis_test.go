@@ -41,6 +41,7 @@ func requestReanalysis(s *Server, body string) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodPost, "/api/reanalyze", strings.NewReader(body))
 	r.RemoteAddr = "192.0.2.1:4321"
+	setTestVisitor(r, "a")
 	s.handleReanalyze(w, r)
 	return w
 }

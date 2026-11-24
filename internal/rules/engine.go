@@ -402,8 +402,9 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 					}
 					continue
 				}
-				// Cardinality reached: fall through to rate limiting and write.
-				// Skip dedup for the same reason threshold rules do.
+				if len(rule.DedupeBy) > 0 && e.ruleDuplicate(rule, record) {
+					continue
+				}
 			} else if rule.Threshold > 1 {
 				// Check threshold - if rule has threshold > 1, track matches
 				if len(rule.GroupBy) > 0 && scope == "" {
@@ -440,7 +441,7 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 				}
 			} else if scope == "" && (rule.Sequence == nil || rule.Sequence.AfterType == "") {
 				// Check deduplication only for non-threshold rules
-				if e.isDuplicate(alert) {
+				if e.isDuplicate(alert, e.recordEvalTime(record)) {
 					matched = true
 					alertGenerated = false
 					if e.perfTracker != nil {
@@ -501,14 +502,13 @@ func isNilAuditRecord(record types.AuditRecord) bool {
 }
 
 // isDuplicate checks if an alert is a duplicate within the deduplication window.
-func (e *Engine) isDuplicate(alert *types.Alert) bool {
+func (e *Engine) isDuplicate(alert *types.Alert, now int64) bool {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
 	// Create a key for deduplication
 	key := fmt.Sprintf("%s:%s:%s:%s", alert.RuleName, alert.SrcIP, alert.DstIP, alert.RecordType)
 
-	now := e.now().UnixNano()
 	lastSeen, exists := e.recentAlerts[key]
 
 	if exists {
@@ -523,15 +523,14 @@ func (e *Engine) isDuplicate(alert *types.Alert) bool {
 
 	// Cleanup old entries (every 100 alerts)
 	if len(e.recentAlerts)%100 == 0 {
-		e.cleanupRecentAlerts()
+		e.cleanupRecentAlerts(now)
 	}
 
 	return false
 }
 
 // cleanupRecentAlerts removes old entries from the deduplication map.
-func (e *Engine) cleanupRecentAlerts() {
-	now := e.now().UnixNano()
+func (e *Engine) cleanupRecentAlerts(now int64) {
 	for key, lastSeen := range e.recentAlerts {
 		if now >= lastSeen && (e.dedupWindow < 0 || uint64(now)-uint64(lastSeen) > uint64(e.dedupWindow)) {
 			delete(e.recentAlerts, key)

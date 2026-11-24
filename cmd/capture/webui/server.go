@@ -258,7 +258,6 @@ type Server struct {
 	shutdownChan         chan struct{}     // Shutdown channel for graceful shutdown
 	shutdownOnce         sync.Once         // Ensure shutdown channel is only closed once
 	wg                   sync.WaitGroup    // Track background workers
-	currentSession       string            // Currently active session for webUI viewing (service mode only)
 	jobsScheduled        int64             // Total number of jobs scheduled (atomic counter)
 	captureDispatchDepth atomic.Int64
 	captureQueueSlots    chan struct{}
@@ -613,6 +612,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/live-capture", s.handleOwnedLiveCapture)
 	mux.HandleFunc("/api/stats", s.handleStats)
 	mux.HandleFunc("/api/audit-stats", s.handleAuditStats)
+	mux.HandleFunc("/api/showcase-story", s.handleShowcaseStory)
 	mux.HandleFunc("/api/menu-counts", s.handleMenuCounts)
 	mux.HandleFunc("/api/files/input", s.handleInputFiles)
 	mux.HandleFunc("/api/files/input/download/", s.handleDownloadInputFile)
@@ -1674,6 +1674,16 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) (resultErr error) {
 		if rule.Enabled {
 			enabledRules = append(enabledRules, rule)
 		}
+	}
+	source := "local"
+	if s.isServiceMode {
+		source = "embedded"
+		if os.Getenv("NC_SERVICE_RULES_MODE") == "operator" {
+			source = "operator"
+		}
+	}
+	if err := writeAnalysisJSON(job.OutputDir, rulePackProvenanceFile, rulePackProvenance{ruleDigest(config), source, len(enabledRules)}); err != nil {
+		return fmt.Errorf("persist rule pack provenance: %w", err)
 	}
 
 	if len(enabledRules) == 0 {

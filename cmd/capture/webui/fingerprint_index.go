@@ -23,6 +23,7 @@ var fingerprintSources = [...]string{
 }
 
 type fingerprintSnapshot struct {
+	partial bool
 	rows  []FingerprintSummary
 	stats FingerprintsStats
 	byID  map[string]*roaring.Bitmap
@@ -182,6 +183,14 @@ func fingerprintSnapshotFor(outDir string) (*fingerprintSnapshot, error) {
 }
 
 func fingerprintSnapshotForContext(ctx context.Context, outDir string) (*fingerprintSnapshot, error) {
+	return fingerprintSnapshotWithPolicy(ctx, outDir, false)
+}
+
+func fingerprintSnapshotWithPolicy(ctx context.Context, outDir string, showcase bool) (*fingerprintSnapshot, error) {
+	cacheKey := outDir
+	if showcase {
+		cacheKey += "\x00showcase"
+	}
 	for attempt := 0; attempt < 2; attempt++ {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -191,7 +200,7 @@ func fingerprintSnapshotForContext(ctx context.Context, outDir string) (*fingerp
 			return nil, err
 		}
 		fingerprintCache.Lock()
-		entry := fingerprintCache.entries[outDir]
+		entry := fingerprintCache.entries[cacheKey]
 		if entry == nil || !entry.generation.same(generation) {
 			select {
 			case fingerprintBuildSlots <- struct{}{}:
@@ -209,16 +218,16 @@ func fingerprintSnapshotForContext(ctx context.Context, outDir string) (*fingerp
 				}
 			}
 			entry = &fingerprintCacheEntry{generation: generation, ready: make(chan struct{})}
-			fingerprintCache.entries[outDir] = entry
+			fingerprintCache.entries[cacheKey] = entry
 			fingerprintCache.Unlock()
 
-			snapshot, buildErr := buildFingerprintSnapshot(outDir, generation)
+			snapshot, buildErr := buildFingerprintSnapshot(outDir, generation, showcase)
 			fingerprintCache.Lock()
 			entry.snapshot, entry.err = snapshot, buildErr
 			close(entry.ready)
-			if fingerprintCache.entries[outDir] == entry {
+			if fingerprintCache.entries[cacheKey] == entry {
 				if buildErr != nil || entry.snapshot.bytes > fingerprintCacheBytes {
-					delete(fingerprintCache.entries, outDir)
+					delete(fingerprintCache.entries, cacheKey)
 				} else {
 					entry.used = time.Now()
 					fingerprintCache.bytes += entry.snapshot.bytes
@@ -255,13 +264,20 @@ func fingerprintSnapshotForContext(ctx context.Context, outDir string) (*fingerp
 	return nil, errFingerprintAuditChanged
 }
 
-func buildFingerprintSnapshot(outDir string, generation fingerprintAuditGeneration) (*fingerprintSnapshot, error) {
+func buildFingerprintSnapshot(outDir string, generation fingerprintAuditGeneration, showcase bool) (*fingerprintSnapshot, error) {
 	defer func() { <-fingerprintBuildSlots }()
-	rows, err := readFingerprintGeneration(outDir, generation)
+	budget := fingerprintGenerationBudget(generation)
+	var partial bool
+	if showcase {
+		budget.prefix = &partial
+	}
+	rows, err := readFingerprintInventory(outDir, &budget)
 	if err != nil {
 		return nil, err
 	}
-	return newFingerprintSnapshot(rows), nil
+	snapshot := newFingerprintSnapshot(rows)
+	snapshot.partial = partial
+	return snapshot, nil
 }
 
 func readFingerprintGeneration(outDir string, generation fingerprintAuditGeneration) ([]FingerprintSummary, error) {

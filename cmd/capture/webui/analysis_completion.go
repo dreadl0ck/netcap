@@ -53,15 +53,6 @@ func (s *Server) completeAnalysis(job *AnalysisJob, duration time.Duration) erro
 		if err := s.sessionManager.UpdateSessionStatus(job.SessionID, StatusCompleted, "", ""); err != nil {
 			return fmt.Errorf("persist analysis completion: %w", err)
 		}
-		s.mu.Lock()
-		if s.activeInputFile == "" {
-			if session, ok := s.sessionManager.GetSession(job.SessionID); ok {
-				s.currentSession = job.SessionID
-				s.outDir = job.OutputDir
-				s.activeInputFile = session.InputFile
-			}
-		}
-		s.mu.Unlock()
 	} else {
 		s.SetFileProcessingTime(job.InputFile, duration.Seconds())
 		s.setFileCoverage(job.InputFile, coverage)

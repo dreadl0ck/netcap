@@ -23,5 +23,10 @@ func TestHTMLWithScriptStaysHTML(t *testing.T) {
 		if a.TrueFileType != want {
 			t.Errorf("%.30q: %s, want %s", content, a.TrueFileType, want)
 		}
+		memory := (&artifactData{bytes: []byte(content)})
+		b, err := memory.Analyze("page.html")
+		if err != nil || b.TrueFileType != want || b.TypeMismatch != a.TypeMismatch {
+			t.Errorf("%.30q: in-memory analysis %+v (%v), spool analysis %+v", content, b, err, a)
+		}
 	}
 }

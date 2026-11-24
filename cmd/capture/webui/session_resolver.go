@@ -39,6 +39,14 @@ func selectionError(status int, reason string) error {
 func (s *Server) captureSelectionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/") {
+			if s.isServiceMode {
+				w.Header().Set("Cache-Control", "private, no-store")
+				if r.Method != http.MethodGet && (strings.HasPrefix(r.URL.Path, "/api/rule-sets") || r.URL.Path == "/api/rules" ||
+					(strings.HasPrefix(r.URL.Path, "/api/rules/") && !strings.HasPrefix(r.URL.Path, "/api/rules/offline/"))) {
+					http.Error(w, "Service detection rules are read-only", http.StatusForbidden)
+					return
+				}
+			}
 			if q := r.URL.Query(); q.Get("allowPartial") == "true" && !q.Has("sessionId") && !q.Has("inputFile") {
 				writeSelectionError(w, selectionError(400, "Partial admission requires an explicit capture"))
 				return
@@ -102,7 +110,6 @@ func (s *Server) resolveCaptureSelection(r *http.Request) (captureSelection, err
 	}
 	s.mu.RLock()
 	service, manager := s.isServiceMode, s.sessionManager
-	activeSession := s.currentSession
 	s.mu.RUnlock()
 	var selected captureSelection
 	if service {
@@ -110,7 +117,6 @@ func (s *Server) resolveCaptureSelection(r *http.Request) (captureSelection, err
 			if input != "" {
 				return selected, selectionError(400, "Service capture selection requires sessionId")
 			}
-			sid = activeSession
 		}
 		if manager == nil || sid == "" {
 			return selected, selectionError(503, "No analysis selected")
@@ -119,7 +125,7 @@ func (s *Server) resolveCaptureSelection(r *http.Request) (captureSelection, err
 		session, exists := manager.sessions[sid]
 		if exists {
 			selected = captureSelection{AnalysisID: sid, SessionID: sid, InputFile: session.InputFile, OutputDir: session.OutputDir}
-			if !session.IsPreloaded && session.IP != s.getUserIP(r) && !captureAdminAuthorized(r) {
+			if !sessionVisible(r, session) {
 				manager.mu.RUnlock()
 				return captureSelection{}, selectionError(403, "Access denied")
 			}

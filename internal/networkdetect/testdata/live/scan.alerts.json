@@ -1,8 +1,8 @@
 [
   {
     "Timestamp": 1791363759819068000,
-    "Name": "network.scan",
-    "Description": "network.scan: behavioral-suspicion",
+    "Name": "Network Reconnaissance Pattern",
+    "Description": "Network Reconnaissance Pattern: behavioral-suspicion",
     "SrcIP": "127.0.0.1",
     "SrcPort": "48019",
     "DstIP": "203.0.113.130",
@@ -35,8 +35,8 @@
   },
   {
     "Timestamp": 1791363762822857000,
-    "Name": "network.scan",
-    "Description": "network.scan: behavioral-suspicion",
+    "Name": "Network Reconnaissance Pattern",
+    "Description": "Network Reconnaissance Pattern: behavioral-suspicion",
     "SrcIP": "127.0.0.1",
     "SrcPort": "46965",
     "DstIP": "203.0.113.139",
@@ -69,8 +69,8 @@
   },
   {
     "Timestamp": 1791363765822447000,
-    "Name": "network.scan",
-    "Description": "network.scan: behavioral-suspicion",
+    "Name": "Network Reconnaissance Pattern",
+    "Description": "Network Reconnaissance Pattern: behavioral-suspicion",
     "SrcIP": "127.0.0.1",
     "SrcPort": "59395",
     "DstIP": "203.0.113.250",

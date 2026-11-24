@@ -1,8 +1,8 @@
 [
   {
     "Timestamp": 1791363772469794000,
-    "Name": "smtp.fanout",
-    "Description": "smtp.fanout: behavioral-suspicion",
+    "Name": "Outbound SMTP Fan-Out",
+    "Description": "Outbound SMTP Fan-Out: behavioral-suspicion",
     "SrcIP": "127.0.0.1",
     "SrcPort": "48677",
     "DstIP": "127.0.0.67",
@@ -34,8 +34,8 @@
   },
   {
     "Timestamp": 1791363772507173000,
-    "Name": "network.scan",
-    "Description": "network.scan: behavioral-suspicion",
+    "Name": "Network Reconnaissance Pattern",
+    "Description": "Network Reconnaissance Pattern: behavioral-suspicion",
     "SrcIP": "127.0.0.1",
     "SrcPort": "54939",
     "DstIP": "127.0.0.52",

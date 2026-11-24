@@ -121,6 +121,9 @@ func SaveConversation(proto string, conversation core.DataFragments, ident strin
 	if !decoderconfig.Instance.SaveConns {
 		return nil
 	}
+	if proto == protoUDP && !admitUDPStreamEvidence(int64(conversation.Size()), len(conversation)) {
+		return nil
+	}
 	if _, err := SaveStreamEvidence(decoderconfig.Instance.Out, proto, conversation, ident, firstPacket, communityID); err != nil {
 		return err
 	}

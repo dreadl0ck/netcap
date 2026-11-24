@@ -239,7 +239,7 @@ export default function FingerprintsPage() {
   }
 
   return (
-    <Layout title={i18nText("ui:m_919292d9354daf5b36fd")} headerAction={fileSelector}><Box sx={{ minWidth: 0 }}>{/* View Mode Toggle */}<Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}><ToggleButtonGroup value={viewMode}
+    <Layout title={i18nText("ui:m_919292d9354daf5b36fd")} headerAction={fileSelector}><Box sx={{ minWidth: 0 }}>{fingerprintsData?.partial && <Alert severity="info" sx={{ mb: 2 }}>This inventory reached its scan limit. Counts and search cover only the indexed records.</Alert>}{/* View Mode Toggle */}<Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}><ToggleButtonGroup value={viewMode}
             exclusive
             onChange={(_e, newValue) => {
               if (newValue !== null) {

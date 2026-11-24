@@ -32,7 +32,7 @@ func TestBinaryNULLTunnelBeforeHostnameValidation(t *testing.T) {
 		}
 		found := false
 		for _, a := range e.Flush() {
-			if a.Name == "dns.tunnel" {
+			if a.RuleName == "dns.tunnel" {
 				found = true
 				if a.Domain != "example.net" || strings.Contains(a.MatchedRecord, "\ufffd") {
 					t.Fatal(a)
