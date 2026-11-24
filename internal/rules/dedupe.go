@@ -23,11 +23,18 @@ type dedupeEntry struct {
 	at  int64
 }
 
+var credentialEndpointKey = []string{"SrcIP", "DstIP", "User", "Service"}
+
 // ruleDuplicate reports whether rule already alerted for this record's
 // dedupe_by key within its window. Records missing a key field are not
 // deduplicated.
 func (e *Engine) ruleDuplicate(rule *Rule, record types.AuditRecord) bool {
 	key, ok := sequenceKey(record, rule.DedupeBy)
+	if secret, isSecret := record.(*types.Secret); isSecret && slices.Equal(rule.DedupeBy, credentialEndpointKey) {
+		src, dst := secret.Src(), secret.Dst()
+		ok = src != "" && dst != "" && secret.Service != ""
+		key = strconv.Quote(src) + ":" + strconv.Quote(dst) + ":" + strconv.Quote(secret.User) + ":" + strconv.Quote(secret.Service)
+	}
 	if flow, isFlow := record.(*types.Connection); isFlow && slices.Equal(rule.DedupeBy, flowServiceKey) {
 		if flow.ObservationID != "" {
 			key, ok = "observation:"+flow.ObservationID, true

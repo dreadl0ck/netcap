@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import os
+import secrets
 import shutil
 import signal
 import socket
@@ -47,6 +48,51 @@ def stage(captures, pcaps):
             os.link(capture["source"], target)
         except OSError:
             shutil.copy2(capture["source"], target)
+
+
+def check_mcp_parity(base, token, rows):
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json, text/event-stream",
+               "Content-Type": "application/json"}
+
+    def send(method, params=None, number=None):
+        body = {"jsonrpc": "2.0", "method": method}
+        if params is not None:
+            body["params"] = params
+        if number is not None:
+            body["id"] = number
+        request = urllib.request.Request(base + "/mcp", json.dumps(body).encode(), headers)
+        with urllib.request.urlopen(request, timeout=30) as response:
+            if sid := response.headers.get("Mcp-Session-Id"):
+                headers["Mcp-Session-Id"] = sid
+            if number is None:
+                return None
+            if response.headers.get_content_type() == "text/event-stream":
+                for line in response:
+                    if line.startswith(b"data: ") and (message := json.loads(line[6:])).get("id") == number:
+                        break
+                else:
+                    raise ValueError(f"no response to {method}")
+            else:
+                message = json.load(response)
+            if message.get("error") or message.get("result", {}).get("isError"):
+                raise ValueError(f"MCP {method} failed")
+            return message["result"]
+
+    init = send("initialize", {"protocolVersion": "2025-03-26", "capabilities": {},
+                               "clientInfo": {"name": "netcap-showcase-gate", "version": "1"}}, 1)
+    headers["MCP-Protocol-Version"] = init["protocolVersion"]
+    send("notifications/initialized")
+    for i, name in enumerate(("Brazil-malspam-pushes-Banload.pcap", "WannaCry-ransomware-using-EnternalBlue-exploit.pcap",
+                              "snort.log.1426118407.pcap"), start=1):
+        sid = rows[name]["sessionId"]
+        for j, (tool, path, key) in enumerate((("get_analysis_config", "config", "detectionRulePack"),
+                                                ("get_alert_stats", "alerts/stats", "byRule"))):
+            raw = send("tools/call", {"name": tool, "arguments": {"session_id": sid}}, 2*i + j)
+            result = raw.get("structuredContent") or json.loads(raw["content"][0]["text"])
+            web = get(f"{base}/api/{path}?" + urllib.parse.urlencode({"sessionId": sid}))
+            if result.get(key) != web[key] or (path == "config" and result.get("admittedSettings") != web["admittedSettings"]):
+                raise ValueError(f"MCP/WebUI parity: {name}, {tool}")
+    print(json.dumps({"mcpParity": "3 captures, same run, rules, DPI and alerts"}), flush=True)
 
 
 def showcase_report(base, captures, rows, data, dpi, strict):
@@ -89,8 +135,10 @@ def showcase_report(base, captures, rows, data, dpi, strict):
             for rule in floors.get(name, []):
                 if strict and alerts.get(rule, 0) == 0:
                     errors.append(f"missing {rule}")
-            if strict and any(alerts.get(rule, 0) for rule in ("Potential C2 Beaconing", "SOCKS Proxy Detection", "SOCKS Proxy Detected")):
+            if strict and any(alerts.get(rule, 0) for rule in ("Potential C2 Beaconing", "SOCKS Proxy Detection", "SOCKS Proxy Detected", "Outbound SMTP Fan-Out")):
                 errors.append("retired/duplicate rule fired")
+            if strict and name == "ultimate-PCAP-v20250325.pcapng" and alerts.get("DNS on Unusual Port", 0):
+                errors.append("local discovery or unrelated UDP triggered unusual DNS")
             if strict and name in {"snort.log.1426118407.pcap", "traffic-from-malspam-pushing-Dreambot.pcap", "ultimate-PCAP-v20250325.pcapng"} and alerts.get("Non-TLS Traffic on Port 443", 0):
                 errors.append("unexpected non-TLS finding on 443")
             if strict and name == "mail.pcap" and alerts.get("Cleartext Password Captured", 0) > 20:
@@ -139,6 +187,9 @@ def main():
     parser.add_argument("--compare", help="base URL of a running service to compare names and sizes, e.g. https://try.netcap.io")
     parser.add_argument("--showcase", action="store_true", help="assert findings, coverage, and budgets for the pinned showcase")
     parser.add_argument("--report", action="store_true", help="collect the showcase metrics without applying the acceptance gate")
+    parser.add_argument("--browser", action="store_true", help="verify independent browser contexts against the owned local service")
+    parser.add_argument("--node", type=Path, help="real Node executable for --browser (temporary HOME bypasses version-manager shims)")
+    parser.add_argument("--mcp", action="store_true", help="verify read-only MCP and WebUI parity on the same local runs")
     args = parser.parse_args()
 
     if args.captures:
@@ -172,6 +223,9 @@ def main():
         config.mkdir()
     env = {k: v for k, v in os.environ.items() if not k.startswith("NC_")}
     env.update(HOME=str(root), XDG_CONFIG_HOME=str(root), XDG_DATA_HOME=str(root), NC_CONFIG_ROOT=str(config))
+    env.pop("NETCAP_MCP_ADMIN_TOKEN", None)
+    if args.mcp:
+        env["NETCAP_MCP_ADMIN_TOKEN"] = secrets.token_hex(24)
     port = free_port()
     flags = [f if f != "-dpi=true" else f"-dpi={args.dpi}" for f in TRY_ARGS]
     command = [str(args.binary.resolve()), "capture", "--service", "-http", f"127.0.0.1:{port}",
@@ -192,8 +246,17 @@ def main():
             if len(rows) == len(names) and all(r.get("isCompleted") or r.get("error") for r in rows.values()):
                 break
             time.sleep(2)
+        failed = any(not rows.get(name, {}).get("isCompleted") for name in names)
         if args.showcase or args.report:
-            failed = showcase_report(base, captures, rows, data, args.dpi == "true", args.showcase)
+            failed |= showcase_report(base, captures, rows, data, args.dpi == "true", args.showcase)
+        if args.mcp and not failed:
+            check_mcp_parity(base, env["NETCAP_MCP_ADMIN_TOKEN"], rows)
+        if args.browser and not failed:
+            browser_env = {k: env[k] for k in ("PATH", "HOME", "TMPDIR") if k in env}
+            subset = {name: {"name": name, "sessionId": rows[name]["sessionId"]}
+                      for name in ("mail.pcap", "smb.pcap", "arp-dns-eth-icmp-ip-udp-goodhttp-gooddns.pcapng")}
+            subprocess.run([str(args.node.resolve()) if args.node else "node", "scripts/showcase-browser.mjs", base, json.dumps(get(base + "/api/version")), json.dumps(subset)],
+                           cwd=REPO / "cmd/capture/webui/frontend", env=browser_env, check=True, timeout=120)
     finally:
         service.send_signal(signal.SIGTERM)
         try:

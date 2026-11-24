@@ -371,15 +371,14 @@ rules:
   # DNS on Non-Standard Port
   # DNS traffic on ports other than 53 is highly suspicious
   - name: DNS on Unusual Port
-    description: DNS traffic on non-standard port (potential DNS tunneling)
-    type: Connection
-    expression: |
-      "DNS" in Applications && !("MDNS" in Applications || "LLMNR" in Applications || "NBNS" in Applications || "NETBIOS" in Applications) &&
-      !(SrcPort in ["53", "137", "5353", "5355", "853"] || DstPort in ["53", "137", "5353", "5355", "853"])
-    severity: high
+    description: A decoded DNS question addressed to a non-standard responder port.
+    type: DNS
+    expression: '!QR && OpCode == 0 && len(Questions) > 0 && DstPort > 0 && !(SrcPort in [137, 5353, 5355]) && !(DstPort in [53, 137, 5353, 5355, 853])'
+    severity: medium
     mitre: ["T1071.004", "T1572"]
     tags: ["suspicious", "dns", "tunneling", "protocol-anomaly"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP, DstPort]
 
   # SOCKS Protocol Detection
   - name: SOCKS Proxy Traffic Detected

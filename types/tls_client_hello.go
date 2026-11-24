@@ -48,6 +48,7 @@ const (
 	fieldSupportedPoints  = "SupportedPoints"
 	fieldALPNs            = "ALPNs"
 	fieldJa4              = "Ja4"
+	fieldJa3              = "Ja3"
 	fieldHelloFormat      = "HelloFormat"
 	fieldSSLv2CipherSpecs = "SSLv2CipherSpecs"
 	fieldSSLv2Challenge   = "SSLv2Challenge"
@@ -76,6 +77,7 @@ var fieldsTLSClientHello = []string{
 	fieldSupportedPoints,
 	fieldALPNs,
 	fieldJa4,
+	fieldJa3,
 	fieldSrcIP,
 	fieldDstIP,
 	fieldSrcMAC,
@@ -117,6 +119,7 @@ func (t *TLSClientHello) CSVRecord() []string {
 		joinInts(t.SupportedPoints),
 		join(t.ALPNs...),
 		t.Ja4,
+		t.Ja3,
 		t.SrcIP,
 		t.DstIP,
 		t.SrcMAC,
@@ -164,6 +167,7 @@ var fieldsTLSClientHelloMetrics = []string{
 	fieldSupportedPoints,
 	fieldALPNs,
 	fieldJa4,
+	fieldJa3,
 	fieldSrcIP,
 	fieldDstIP,
 	fieldSrcMAC,
@@ -192,6 +196,7 @@ func (t *TLSClientHello) metricValues() []string {
 		joinInts(t.SupportedPoints),
 		join(t.ALPNs...),
 		t.Ja4,
+		t.Ja3,
 		t.SrcIP,
 		t.DstIP,
 		t.SrcMAC,
@@ -255,6 +260,7 @@ func (t *TLSClientHello) Encode() []string {
 		tlsClientHelloEncoder.String(fieldSupportedPoints, joinInts(t.SupportedPoints)),
 		tlsClientHelloEncoder.String(fieldALPNs, join(t.ALPNs...)),
 		tlsClientHelloEncoder.String(fieldJa4, t.Ja4),
+		tlsClientHelloEncoder.String(fieldJa3, t.Ja3),
 		tlsClientHelloEncoder.String(fieldSrcIP, t.SrcIP),
 		tlsClientHelloEncoder.String(fieldDstIP, t.DstIP),
 		tlsClientHelloEncoder.String(fieldSrcMAC, t.SrcMAC),

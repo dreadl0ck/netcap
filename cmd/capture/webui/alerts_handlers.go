@@ -45,6 +45,7 @@ import (
 
 // AlertResponse represents an alert for the API
 type AlertResponse struct {
+	DeviceMAC           string   `json:"deviceMAC,omitempty"`
 	SrcPort             string   `json:"srcPort,omitempty"`
 	DstPort             string   `json:"dstPort,omitempty"`
 	Domain              string   `json:"domain,omitempty"`

@@ -267,7 +267,7 @@ export default function AuditRecords() {
     status?.isServiceMode ? 'try-sessions' : null, 
     () => api.getAllSessions()
   );
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(() => typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('type'));
   const [switchingSession, setSwitchingSession] = useState(false);
   const filterInputRef = React.useRef<HTMLInputElement>(null);
   const occurrenceRequest = React.useRef<AbortController | null>(null);

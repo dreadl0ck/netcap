@@ -96,7 +96,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
     -o /netcap/bin/netcap github.com/dreadl0ck/netcap/cmd/net
 
 # Runtime stage
-FROM --platform=linux/amd64 alpine:3.24.4@sha256:93b41ef40b1677fce8fcc64ff4af09daddfacf5040afde618bc46c1e2d1cc7d4
+FROM --platform=linux/amd64 alpine:3.24.4@sha256:93b41ef40b1677fce8fcc64ff4af09daddfacf5040afde618bc46c1e2d1cc7d4 AS service
 
 LABEL maintainer="Philipp Mieden <dreadl0ck@protonmail.ch>"
 LABEL description="Netcap Service Mode - Upload and analyze PCAP files (with DPI support)"
@@ -166,3 +166,20 @@ VOLUME ["/data"]
 
 # Use entrypoint script to bootstrap databases
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+# Build with --target showcase --build-context showcase_enrichment=PATH.
+# The context is a signed, already installed enrichment snapshot.
+FROM service AS showcase
+USER root
+RUN apk add --no-cache gcompat
+ADD --checksum=sha256:4ce475c965cd20e724b5fc53e8a303a479b9d8649beef8721d05e9b3988fbab4 https://github.com/google/magika/releases/download/cli/v1.0.2/magika-x86_64-unknown-linux-gnu.tar.xz /tmp/magika.tar.xz
+RUN tar -xJOf /tmp/magika.tar.xz magika-x86_64-unknown-linux-gnu/magika > /usr/local/bin/magika && \
+    chmod 0755 /usr/local/bin/magika && magika --version && rm /tmp/magika.tar.xz
+COPY --from=showcase_enrichment --chown=1000:1000 / /opt/netcap/enrichment/
+COPY docker/service/showcase-files.yml /opt/netcap/showcase-files.yml
+COPY docker/service/showcase.yar /opt/netcap/showcase-rules/format.yar
+ENV NC_ENRICHMENT_ROOT=/opt/netcap/enrichment
+ENV NC_SHOWCASE_FILE_CONFIG=/opt/netcap/showcase-files.yml
+USER netcap
+
+FROM service AS runtime

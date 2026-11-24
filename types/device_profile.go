@@ -20,6 +20,7 @@
 package types
 
 import (
+	"net/netip"
 	"strconv"
 	"time"
 
@@ -87,6 +88,21 @@ func (d *DeviceProfile) SetPacketContext(*PacketContext) {}
 
 // Src returns the source address of the audit record.
 func (d *DeviceProfile) Src() string {
+	var address netip.Addr
+	for _, value := range d.DeviceIPs {
+		ip, err := netip.ParseAddr(value)
+		if err != nil || !ip.IsGlobalUnicast() {
+			continue
+		}
+		ip = ip.Unmap()
+		if address.IsValid() && address != ip {
+			return "" // Multiple observed addresses do not identify a primary address.
+		}
+		address = ip
+	}
+	if address.IsValid() {
+		return address.String()
+	}
 	return ""
 }
 

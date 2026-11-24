@@ -54,9 +54,9 @@ rules:
     enabled: true
 
   - name: TLS On Non-Standard Port To Public IP
-    description: TLS handshake to a public server on a port that is not a well-known TLS service port (Trickbot/Dridex/Qakbot-style C2 on 447/449/443x/757 and similar)
-    type: TLSClientHello
-    expression: 'IsPublicIP(DstIP) && IsPrivateIP(SrcIP) && !(DstPort in [443, 8443, 465, 587, 993, 995, 636, 853, 989, 990, 5061, 5223, 5228, 3389, 25, 110, 143, 4443, 8883, 9443, 2083, 2087, 2096, 10443])'
+    description: A TLS flow to a public server uses a non-standard port and has not been identified as Tor.
+    type: Connection
+    expression: 'TCPInitiatorObserved && Established && IsPublicIP(DstIP) && IsPrivateIP(SrcIP) && !("TOR" in Applications) && (Sni != "" || "TLS" in Applications || "SSL" in Applications || "HTTPS" in Applications) && !(ParsePort(DstPort) in [443, 8443, 465, 587, 993, 995, 636, 853, 989, 990, 5061, 5223, 5228, 3389, 25, 110, 143, 4443, 8883, 9443, 2083, 2087, 2096, 10443])'
     severity: medium
     mitre: ["T1571", "T1573.002"]
     tags: ["c2", "tls"]
@@ -133,10 +133,12 @@ rules:
     severity: high
     mitre: ["T1071.003", "T1498"]
     tags: ["spam", "malware"]
-    enabled: true
+    enabled: false # smtp.fanout supplies the default capture-time finding.
     distinct_field: DstIP
     distinct_threshold: 10
     threshold_window: 300
+    dedupe_by: [SrcIP]
+    dedupe_window: 300
 
   # ---------------- HTTP C2 / delivery shapes ----------------
   - name: HTTP To Public Server On Non-Standard Port

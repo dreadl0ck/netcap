@@ -48,6 +48,7 @@ const (
 	fieldSelectedGroup                = "SelectedGroup"
 	fieldExtensions                   = "Extensions"
 	fieldJa4S                         = "Ja4S"
+	fieldJa3S                         = "Ja3S"
 	fieldSSLv2ConnectionID            = "SSLv2ConnectionID"
 	fieldSSLv2SessionIDHit            = "SSLv2SessionIDHit"
 	fieldSSLv2CertificateType         = "SSLv2CertificateType"
@@ -81,6 +82,7 @@ var fieldsTLSServerHello = []string{
 	fieldSrcPort,
 	fieldDstPort,
 	fieldJa4S,
+	fieldJa3S,
 	fieldHelloFormat,
 	fieldSSLv2CipherSpecs,
 	fieldSSLv2ConnectionID,
@@ -128,6 +130,7 @@ func (t *TLSServerHello) csvRecord() []string {
 		formatInt32(t.SrcPort),
 		formatInt32(t.DstPort),
 		t.Ja4S,
+		t.Ja3S,
 		t.HelloFormat,
 		joinUints(t.SSLv2CipherSpecs),
 		hex.EncodeToString(t.SSLv2ConnectionID),
@@ -209,6 +212,7 @@ func (t *TLSServerHello) Encode() []string {
 		tlsServerHelloEncoder.Int32(fieldSrcPort, t.SrcPort),
 		tlsServerHelloEncoder.Int32(fieldDstPort, t.DstPort),
 		tlsServerHelloEncoder.String(fieldJa4S, t.Ja4S),
+		tlsServerHelloEncoder.String(fieldJa3S, t.Ja3S),
 		tlsServerHelloEncoder.String(fieldHelloFormat, t.HelloFormat),
 		tlsServerHelloEncoder.String(fieldSSLv2CipherSpecs, joinUints(t.SSLv2CipherSpecs)),
 		tlsServerHelloEncoder.String(fieldSSLv2ConnectionID, hex.EncodeToString(t.SSLv2ConnectionID)),

@@ -78,7 +78,7 @@ type FingerprintsStats struct {
 
 // FingerprintsResponse contains the list of fingerprints
 type FingerprintsResponse struct {
-	Partial bool `json:"partial,omitempty"`
+	Partial      bool                 `json:"partial,omitempty"`
 	Fingerprints []FingerprintSummary `json:"fingerprints"`
 	TotalCount   int                  `json:"totalCount"` // post-filter, pre-pagination
 	Offset       int                  `json:"offset"`
@@ -696,7 +696,11 @@ func readJA4FromTLSClientHello(outDir string, fingerprintMap map[string]*fingerp
 		}
 
 		hello, ok := record.(*types.TLSClientHello)
-		if !ok || hello.Ja4 == "" {
+		if !ok {
+			continue
+		}
+		observeTLSFingerprint(fingerprintMap, "JA3", hello.Ja3, hello.SrcIP, hello.CommunityID, hello.Timestamp)
+		if hello.Ja4 == "" {
 			continue
 		}
 
@@ -761,7 +765,11 @@ func readJA4SFromTLSServerHello(outDir string, fingerprintMap map[string]*finger
 		}
 
 		hello, ok := record.(*types.TLSServerHello)
-		if !ok || hello.Ja4S == "" {
+		if !ok {
+			continue
+		}
+		observeTLSFingerprint(fingerprintMap, "JA3S", hello.Ja3S, hello.SrcIP, hello.CommunityID, hello.Timestamp)
+		if hello.Ja4S == "" {
 			continue
 		}
 
@@ -800,6 +808,26 @@ func readJA4SFromTLSServerHello(outDir string, fingerprintMap map[string]*finger
 	}
 
 	return nil
+}
+
+func observeTLSFingerprint(fingerprints map[string]*fingerprintAggregator, kind, value, host, cid string, at int64) {
+	if value == "" {
+		return
+	}
+	key := kind + ":" + value
+	entry := fingerprints[key]
+	if entry == nil {
+		entry = &fingerprintAggregator{fingerprint: value, fpType: kind, hosts: map[string]bool{}, communityIDs: map[string]bool{}, firstSeen: at, lastSeen: at}
+		fingerprints[key] = entry
+	}
+	entry.count++
+	entry.firstSeen, entry.lastSeen = min(entry.firstSeen, at), max(entry.lastSeen, at)
+	if host != "" {
+		entry.hosts[host] = true
+	}
+	if cid != "" {
+		entry.communityIDs[cid] = true
+	}
 }
 
 // readJA4FromHost reads JA4/JA4S fingerprints from IPProfile records (for additional hosts)

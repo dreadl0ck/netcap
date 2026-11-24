@@ -64,10 +64,13 @@ with `/srv/netcap-try-server/data` on `/data` and
    and push; note the digest.
 3. Back up into `/root/netcap-try-vXYZ-<date>`: `docker service inspect`
    output, the config mount, the data mount and capture hashes.
-4. QA: run the new image on copies of `pcaps`, `rules`, `dashboards` and
-   `injection-rules` plus the config, with `-e NC_GEO_PROVIDERS=dbip` and a
-   loopback port. Wait until `/api/files/input` reports all 20 captures complete
-   and the log has no `panic`.
+4. QA: stage the 20 pinned inputs and run `make try-parity TRY_DPI=true
+   TRY_BINARY=/path/to/net TRY_CHECK_FLAGS=--showcase` against the candidate.
+   Also run the candidate image against an isolated copy of production data
+   (loopback, `NC_GEO_PROVIDERS=dbip`). Start with fresh derived results.
+   Archive legacy rule YAML outside the rules directory in the backed-up data
+   volume. Public try should keep the default embedded pack; compare
+   `/api/config?sessionId=…` `detectionRulePack.sha256` across all 20 runs.
 5. Deploy: set the app's image to `<tag>@<digest>` and deploy, with the
    rollback image in the deployment description. The service updates stop-first.
 6. Verify: `https://try.netcap.io/api/files/input` reports 20/20 complete,
@@ -75,6 +78,15 @@ with `/srv/netcap-try-server/data` on `/data` and
    container prints the release commit.
 
 Rollback: set the app's image back to the previous `<tag>@<digest>` and deploy.
+
+For the optional YARA-X, Magika and KEV image, use `docker/service/Dockerfile`
+target `showcase` with the named BuildKit context `showcase_enrichment` set to a
+reviewed install produced by `net util --download-enrichment --enrichment-root
+/path/to/snapshot`. Supply the snapshot's verified revision and digest with the
+build. Confirm Magika, YARA-X and `kev.status` are available in staging before
+promoting this target. `NC_SHOWCASE_FILE_CONFIG` is applied only to preloaded
+captures. Any pre-existing private upload without a browser owner is accessible
+only to the operator until normal service expiry.
 
 ## Pitfalls
 

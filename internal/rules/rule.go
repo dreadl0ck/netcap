@@ -361,8 +361,10 @@ func CompileRules(config *Config) error {
 			if rule.Threshold > 1 || rule.Sequence != nil {
 				return fmt.Errorf("rule %s: dedupe_by requires a single-match or distinct-cardinality rule", rule.Name)
 			}
-			if err := validateGroupFields(rule.DedupeBy, recordType); err != nil {
-				return fmt.Errorf("rule %s: dedupe_by: %w", rule.Name, err)
+			if recordType != types.Type_NC_Secret || !slices.Equal(rule.DedupeBy, credentialEndpointKey) {
+				if err := validateGroupFields(rule.DedupeBy, recordType); err != nil {
+					return fmt.Errorf("rule %s: dedupe_by: %w", rule.Name, err)
+				}
 			}
 		}
 		if rule.DedupeWindow < 0 || rule.DedupeWindow > maxSequenceWithinSeconds || rule.DedupeWindow > 0 && len(rule.DedupeBy) == 0 {

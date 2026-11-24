@@ -168,6 +168,12 @@ Clients connect with `Authorization: Bearer <token>` over the streamable
 HTTP transport at `/mcp`. The auth check is constant-time; failed
 requests return 401 with `WWW-Authenticate: Bearer realm="netcap-mcp"`.
 
+Use the same `session_id` as the WebUI's `sessionId` to read an existing service
+run. `get_analysis_config` reports its admitted DPI setting and detection-pack
+SHA-256. A standalone `net mcp --pcap` creates a new run and defaults to DPI
+off; use `net mcp --dpi --pcap capture.pcap` with a DPI-enabled build for a
+comparable ingest.
+
 ## Limits
 
 - Response bodies are capped at 256 KiB per tool call. Use `limit` and

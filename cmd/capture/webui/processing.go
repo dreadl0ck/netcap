@@ -307,7 +307,7 @@ func (s *Server) enqueueAnalysisContext(ctx context.Context, job *AnalysisJob, w
 		}
 	}
 	if len(job.ArtifactConfig) == 0 {
-		snapshot, err := snapshotArtifactConfig()
+		snapshot, err := s.captureArtifactConfig(job.SessionID)
 		if err != nil {
 			return err
 		}

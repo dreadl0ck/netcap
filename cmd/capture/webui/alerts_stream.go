@@ -21,6 +21,12 @@ func alertResponse(alert *types.Alert) AlertResponse {
 		RecordType: alert.RecordType, Severity: alert.Severity, Tags: append([]string{}, alert.Tags...), MITRE: alert.MITRE, SrcIP: alert.SrcIP, DstIP: alert.DstIP,
 		MatchedRecord: alert.MatchedRecord, RuleExpression: alert.RuleExpression, Threshold: alert.Threshold, ThresholdWindow: alert.ThresholdWindow,
 		Kind: alertKind(alert)}
+	if (alert.RecordType == "DeviceProfile" || alert.RecordType == "NC_DeviceProfile") && len(alert.MatchedRecord) <= 1<<20 {
+		var profile struct{ MacAddr string }
+		if json.Unmarshal([]byte(alert.MatchedRecord), &profile) == nil {
+			response.DeviceMAC = profile.MacAddr
+		}
+	}
 	if alert.TimestampBasis != "" {
 		response.TimestampNs = strconv.FormatInt(alert.Timestamp, 10)
 		response.DetectedAtNs = strconv.FormatInt(alert.DetectedAt, 10)

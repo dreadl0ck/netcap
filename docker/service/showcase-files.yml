@@ -1,0 +1,5 @@
+file_extraction:
+  advanced:
+    enable_yara_scanning: true
+    yara_rules_path: /opt/netcap/showcase-rules
+    enable_magika: true

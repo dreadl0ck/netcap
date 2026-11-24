@@ -7,7 +7,7 @@ import { Layout } from './Layout';
 import { ReactRouterNetcapProvider } from '../adapters/react-router';
 import { initializeI18n, setLocale, supportedLocales, translate } from '../lib/i18n';
 
-vi.mock('swr', () => ({ default: () => ({ data: undefined, mutate: vi.fn() }), mutate: vi.fn() }));
+vi.mock('swr', async (original) => ({ ...await original<typeof import('swr')>(), default: () => ({ data: undefined, mutate: vi.fn() }), mutate: vi.fn() }));
 afterEach(cleanup);
 
 it('forwards the global header slot, renders full live titles/hints/captions, and preserves focus and route controls', () => {

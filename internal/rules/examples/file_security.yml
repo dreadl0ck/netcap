@@ -17,7 +17,7 @@ rules:
   - name: YARA Rule Match
     description: Extracted file triggered a YARA detection rule
     type: File
-    expression: 'len(YaraMatches) > 0'
+    expression: 'any(YaraMatches, {# != "Showcase_Legacy_Flash_Object"})'
     severity: high
     mitre: ["T1204"]
     tags: ["malware", "yara"]

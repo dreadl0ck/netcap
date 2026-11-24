@@ -8,7 +8,10 @@ import (
 )
 
 func snapshotArtifactConfig() ([]byte, error) {
-	cfg := file.GetGlobalConfig()
+	return encodeArtifactConfig(file.GetGlobalConfig())
+}
+
+func encodeArtifactConfig(cfg *file.Config) ([]byte, error) {
 	if err := file.ValidateConfig(cfg); err != nil {
 		return nil, err
 	}

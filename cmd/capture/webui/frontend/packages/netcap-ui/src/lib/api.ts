@@ -1134,6 +1134,7 @@ export interface UpdateRuleSetRequest {
 }
 
 export interface Alert {
+  deviceMAC?: string;
   srcPort?: string;
   dstPort?: string;
   domain?: string;
