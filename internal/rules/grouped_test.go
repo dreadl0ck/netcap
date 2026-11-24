@@ -65,8 +65,9 @@ func TestUnscopedGroupedThresholdIsBounded(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if len(e.grouped.groups) > maxGroupedThresholdGroups || e.grouped.evictions == 0 || e.grouped.entries > maxGroupedThresholdMatches {
-		t.Fatalf("groups %d entries %d evictions %d", len(e.grouped.groups), e.grouped.entries, e.grouped.evictions)
+	g := e.grouped["beacon"]
+	if len(g.groups) > maxGroupedThresholdGroups || g.evictions == 0 || g.entries > maxGroupedThresholdMatches {
+		t.Fatalf("groups %d entries %d evictions %d", len(g.groups), g.entries, g.evictions)
 	}
 	// An active group stays most recently used and still reaches its threshold.
 	for i := range 100 {
@@ -186,7 +187,7 @@ func TestSavedCopyKeepsEveryExportedField(t *testing.T) {
 func fullyPopulatedRule(t *testing.T) *Rule {
 	t.Helper()
 	rule := &Rule{Name: "r", Description: "d", Type: "DNS", Expression: "true", Severity: "low", MITRE: []string{"T1"}, Tags: []string{"x"}, Enabled: true,
-		Threshold: 5, ThresholdWindow: 60, GroupBy: []string{"SrcIP"}, DistinctField: "DstIP", DistinctThreshold: 3,
+		Threshold: 5, ThresholdWindow: 60, GroupBy: []string{"SrcIP"}, FoldCase: true, DistinctField: "DstIP", DistinctThreshold: 3,
 		Actions: []*ResponseAction{{Type: "log"}}, Sequence: &Sequence{After: "true", GroupBy: []string{"SrcIP"}}}
 	v := reflect.ValueOf(rule).Elem()
 	for i := range v.NumField() {
@@ -241,5 +242,96 @@ func TestDistinctAndGroupedCountsTolerateReordering(t *testing.T) {
 	}
 	if len(alerts) != before {
 		t.Fatal("matches outside the window counted")
+	}
+}
+
+// Per-victim floods need 10,000 matches per group; one timestamp per match
+// overran the shared budget and evicted every victim before it fired.
+func TestGroupedFloodCountsEveryVictimWithinBudget(t *testing.T) {
+	var alerts []*types.Alert
+	config := &Config{Rules: []*Rule{
+		{Name: "flood", Type: "TCP", Expression: "SYN", Severity: "high", Enabled: true, Threshold: 10_000, ThresholdWindow: 10, GroupBy: []string{"DstIP"}},
+		{Name: "brute", Type: "TCP", Expression: "SYN && DstPort == 22", Severity: "high", Enabled: true, Threshold: 3, ThresholdWindow: 120, GroupBy: []string{"SrcIP", "DstIP"}},
+	}}
+	replay, err := NewAuditReplay(config, alertWriterFunc(func(a *types.Alert) error { alerts = append(alerts, a); return nil }))
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := int64(1_700_000_000) * int64(time.Second)
+	feed := func(at int64, src, dst string, port int32) {
+		t.Helper()
+		if _, err := replay.Evaluate(&types.TCP{Timestamp: base + at, SrcIP: src, DstIP: dst, DstPort: port, SYN: true}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	feed(0, "198.51.100.7", "192.0.2.22", 22)
+	feed(1, "198.51.100.7", "192.0.2.22", 22)
+	for i := range 30 * 10_000 {
+		feed(int64(i)*20_000, "203.0.113.1", fmt.Sprintf("192.0.2.%d", i%30), 80)
+	}
+	if len(alerts) != 30 {
+		t.Fatalf("flood alerts %d, want one per victim", len(alerts))
+	}
+	if g := replay.engine.grouped["flood"]; g.evictions != 0 {
+		t.Fatalf("flood evicted %d groups", g.evictions)
+	}
+	// The flood must not have evicted another rule's pending group.
+	feed(2, "198.51.100.7", "192.0.2.22", 22)
+	if len(alerts) != 31 || alerts[30].RuleName != "brute" {
+		t.Fatalf("brute-force group lost to the flood: %d alerts", len(alerts))
+	}
+}
+
+func TestBucketedGroupedWindowMatchesExact(t *testing.T) {
+	window := int64(10 * time.Second)
+	width := window / groupedBuckets
+	for _, tc := range []struct {
+		name   string
+		spread int64
+		fires  bool
+	}{
+		{"inside window", window - width, true},
+		{"outside window by two buckets", window + 2*width, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := &groupedCount{}
+			fired := false
+			const threshold = 1000
+			for i := range int64(threshold) {
+				// Deliver out of order: odd matches arrive late.
+				at := i * tc.spread / (threshold - 1)
+				if i%2 == 1 && i > 1 {
+					at = (i - 1) * tc.spread / (threshold - 1)
+				}
+				fired = c.addBucketed(at, window, threshold) || fired
+			}
+			if fired != tc.fires || len(c.buckets) > groupedBuckets+1 {
+				t.Fatalf("fired %v buckets %d", fired, len(c.buckets))
+			}
+		})
+	}
+}
+
+func TestFoldCaseGroupsDNSNamesCaseInsensitively(t *testing.T) {
+	var alerts []*types.Alert
+	config := &Config{Rules: []*Rule{{Name: "beacon", Type: "DNS", Expression: "len(Questions) > 0", Severity: "low", Enabled: true,
+		Threshold: 3, ThresholdWindow: 600, GroupBy: []string{"SrcIP", "Questions.Name"}, FoldCase: true}}}
+	replay, err := NewAuditReplay(config, alertWriterFunc(func(a *types.Alert) error { alerts = append(alerts, a); return nil }))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, name := range []string{"C2.Example", "c2.example", "c2.EXAMPLE"} {
+		if _, err := replay.Evaluate(dnsQueryRecord(int64(i), "10.0.0.1", name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(alerts) != 1 {
+		t.Fatalf("case variants split the group: %d alerts", len(alerts))
+	}
+	if err := CompileRules(&Config{Rules: []*Rule{{Name: "x", Type: "DNS", Expression: "true", Severity: "low", Enabled: true, Threshold: 2, FoldCase: true}}}); err == nil {
+		t.Fatal("fold_case without group_by compiled")
+	}
+	if foldASCII("İ.ExAmple") != "İ.example" {
+		t.Fatal("non-ASCII folded")
 	}
 }

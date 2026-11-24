@@ -47,7 +47,7 @@ func (e *Engine) scopedThreshold(scope string, rule *Rule, record types.AuditRec
 	if err := requireScope(scope, record); err != nil {
 		return false, err
 	}
-	group, ok := sequenceKey(record, rule.GroupBy)
+	group, ok := groupKey(record, rule)
 	if !ok {
 		return false, nil
 	}

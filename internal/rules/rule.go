@@ -78,6 +78,9 @@ type Rule struct {
 	// scoped capture-time state with capture_time, bounded state without.
 	GroupBy []string `yaml:"group_by,omitempty"`
 
+	// FoldCase groups values that differ only in ASCII case, as DNS names do.
+	FoldCase bool `yaml:"fold_case,omitempty"`
+
 	// DistinctField enables cardinality-based detection: instead of counting raw
 	// matches, the engine counts the number of DISTINCT values of this field
 	// observed per source IP within ThresholdWindow. When the distinct count
@@ -338,6 +341,9 @@ func CompileRules(config *Config) error {
 			if _, err := fieldPathType(reflect.TypeOf(netio.InitRecord(recordType)), rule.DistinctField); err != nil {
 				return fmt.Errorf("rule %s: distinct_field: %w", rule.Name, err)
 			}
+		}
+		if rule.FoldCase && len(rule.GroupBy) == 0 {
+			return fmt.Errorf("rule %s: fold_case requires group_by", rule.Name)
 		}
 		if len(rule.GroupBy) > 0 {
 			if rule.Threshold < 2 || rule.DistinctField != "" {

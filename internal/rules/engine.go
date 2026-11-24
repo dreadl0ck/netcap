@@ -69,7 +69,7 @@ type Engine struct {
 	scopedJoins      map[string]*scopedJoin
 	scopedEntries    int
 	// grouped counts group_by thresholds evaluated without a capture scope.
-	grouped *groupedThresholds
+	grouped map[string]*groupedThresholds
 	ordered *OrderedStream
 
 	// Performance tracking

@@ -60,7 +60,8 @@ type RuleResponse struct {
 	DistinctField     string   `json:"distinctField,omitempty"`
 	DistinctThreshold int      `json:"distinctThreshold,omitempty"`
 	// GroupBy is read-only: thresholds count per distinct value of these fields.
-	GroupBy []string `json:"groupBy,omitempty"`
+	GroupBy  []string `json:"groupBy,omitempty"`
+	FoldCase bool     `json:"foldCase,omitempty"`
 	// Sequence is read-only here: the UI cannot author an ordered correlation
 	// gate, but a gated rule must not be displayed as an ungated one.
 	Sequence *rules.Sequence     `json:"sequence,omitempty"`
@@ -476,6 +477,7 @@ func (s *Server) handleGetRules(w http.ResponseWriter, r *http.Request) {
 			DistinctField:     rule.DistinctField,
 			DistinctThreshold: rule.DistinctThreshold,
 			GroupBy:           rule.GroupBy,
+			FoldCase:          rule.FoldCase,
 			Sequence:          rule.Sequence,
 			Actions:           convertActionsToAPI(rule.Actions),
 		})
@@ -676,6 +678,7 @@ func (s *Server) handleGetRule(w http.ResponseWriter, r *http.Request, ruleID st
 				DistinctField:     rule.DistinctField,
 				DistinctThreshold: rule.DistinctThreshold,
 				GroupBy:           rule.GroupBy,
+				FoldCase:          rule.FoldCase,
 				Sequence:          rule.Sequence,
 				Actions:           convertActionsToAPI(rule.Actions),
 			})
