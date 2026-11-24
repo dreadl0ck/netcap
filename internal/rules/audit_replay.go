@@ -7,8 +7,8 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// AuditReplay evaluates records in file order. Its clock starts at the first
-// nonzero timestamp and never moves backward after that.
+// AuditReplay evaluates records in file order with a monotonic capture clock.
+// Call Finalize at EOF to emit pending file findings.
 type AuditReplay struct {
 	mu        sync.Mutex
 	engine    *Engine
@@ -23,6 +23,7 @@ func NewAuditReplay(config *Config, writer AlertWriter) (*AuditReplay, error) {
 	}
 	replay := &AuditReplay{engine: engine}
 	engine.projectReplayEvidence = true
+	engine.replayFiles = &replayFileEvidence{writer: writer, window: engine.dedupWindow}
 	engine.clock = func() time.Time { return time.Unix(0, replay.watermark).UTC() }
 	return replay, nil
 }
@@ -35,11 +36,21 @@ func (r *AuditReplay) Evaluate(record types.AuditRecord) (int, error) {
 			r.watermark, r.hasTime = ts, true
 		}
 	}
-	return r.engine.Evaluate(record)
+	n, err := r.engine.replayFiles.flush(r.watermark, false)
+	if err != nil {
+		return n, err
+	}
+	written, err := r.engine.Evaluate(record)
+	return n + written, err
 }
 
 func (r *AuditReplay) Finalize() (int, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return r.engine.Finalize()
+	n, err := r.engine.Finalize()
+	if err != nil {
+		return n, err
+	}
+	written, err := r.engine.replayFiles.flush(r.watermark, true)
+	return n + written, err
 }

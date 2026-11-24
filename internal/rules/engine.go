@@ -45,6 +45,7 @@ type Engine struct {
 	alertWriter           AlertWriter
 	clock                 func() time.Time
 	projectReplayEvidence bool
+	replayFiles           *replayFileEvidence // owned by the serial AuditReplay
 
 	// Deduplication tracking
 	recentAlerts map[string]int64 // map[alertKey]lastSeen
@@ -388,6 +389,10 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 				}
 				continue
 			}
+			var replayFile *types.File
+			if e.replayFiles != nil && scope == "" {
+				replayFile = fileForReplayEvidence(rule, record)
+			}
 
 			// Check distinct-cardinality threshold first (fan-out detection):
 			// count DISTINCT values of DistinctField per source within the window.
@@ -442,6 +447,9 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 			} else if scope == "" && (rule.Sequence == nil || rule.Sequence.AfterType == "") {
 				// Check deduplication only for non-threshold rules
 				if e.isDuplicate(alert, e.recordEvalTime(record)) {
+					if replayFile != nil {
+						e.replayFiles.observeDuplicate(alert, replayFile)
+					}
 					matched = true
 					alertGenerated = false
 					if e.perfTracker != nil {
@@ -473,12 +481,17 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 			if len(contributors) > 0 {
 				alert.Notes = joinEvidence(scope, contributors)
 			}
-			err = e.alertWriter.WriteAlert(alert)
+			var written int
+			if replayFile != nil {
+				written, err = e.replayFiles.start(alert, replayFile)
+			} else if err = e.alertWriter.WriteAlert(alert); err == nil {
+				written = 1
+			}
 			if err != nil {
-				return alertCount, fmt.Errorf("error writing alert: %w", err)
+				return alertCount + written, fmt.Errorf("error writing alert: %w", err)
 			}
 
-			alertCount++
+			alertCount += written
 			alertGenerated = true
 
 			// Execute response actions
