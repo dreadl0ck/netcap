@@ -8,7 +8,7 @@
 .PHONY: test-coverage test-coverage-html test-coverage-check test-race test-determinism test-wireshark
 .PHONY: test-golden-update test-regression-verify
 .PHONY: test-hyperscan test-msan test-pkg test-verbose test-clean test-help
-.PHONY: docs-check docs-source-check recheck-v01612 recheck-v01613 demo-pcaps try-parity
+.PHONY: docs-check docs-source-check recheck-v01612 recheck-v01613 demo-pcaps try-parity alert-budgets
 
 NETCAP_BIN ?= ./net
 DOCS_TEST_TAGS ?= nodpi,noyara
@@ -195,6 +195,12 @@ recheck-v01613: recheck-v01612
 	GOWORK=off go test -tags appstore,$(RECHECK_TAGS) -count=1 ./cmd/capture/webui
 	GOWORK=off go test -tags=e2e,$(RECHECK_TAGS) ./tests/e2e -run '^TestServicePartialCapture$$' -count=1 -timeout=10m
 
+# Replay 7 synthetic captures through the embedded rules and check the
+# evaluator's noise budgets and coverage floors (netcap-eval-scoring checkout).
+EVAL_SCORING ?= ../netcap-eval-scoring
+alert-budgets:
+	/bin/bash $(EVAL_SCORING)/tools/alert_tuning/run_synthetic_check.sh .
+
 # Analyze captures through the MCP/WebUI pipeline the try demo uses; every
 # input must complete. Defaults to the captures that regressed in v0.16.12.
 DEMO_PCAPS ?= pcaps/arp-dns-eth-icmp-ip-udp-goodhttp-gooddns.pcapng \
@@ -230,6 +236,7 @@ test-help:
 	@echo "  test-wireshark    - Fetch verified Wireshark samples and run the full corpus (needs editcap)"
 	@echo "  recheck-v01612    - v0.16.12 evaluator follow-up gate (MIXED_UPLOAD_ARCHIVE= adds scheduling)"
 	@echo "  recheck-v01613    - v0.16.13 follow-up gate; runs recheck-v01612 first"
+	@echo "  alert-budgets     - rule noise budgets on synthetic captures (needs ../netcap-eval-scoring)"
 	@echo "  demo-pcaps        - Analyze DEMO_PCAPS through the try-demo MCP/WebUI pipeline"
 	@echo "  try-parity        - Replay the 20 try.netcap.io captures through service mode"
 	@echo ""

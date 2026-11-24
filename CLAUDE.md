@@ -35,6 +35,11 @@ before the tag; after a failure past the tag, run `zeus release-resume`.
 
 ## Testing
 
+**Check embedded rule changes with `make alert-budgets`.** It replays 7
+synthetic captures and fails when a rule exceeds the evaluator's noise budget
+or loses coverage. Regenerate budgets only with a written reason
+(`netcap-eval-scoring/fixes/v0.16.13/alert-tuning/README.md`).
+
 **Check WebUI, MCP or capture exit-code changes with `make try-parity`.** It
 replays the 20 try.netcap.io captures through `net capture --service` with
 try's flags. `net mcp --pcap` runs local mode with different analysis settings
