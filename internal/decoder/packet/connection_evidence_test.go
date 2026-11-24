@@ -180,3 +180,29 @@ func TestConnectionTupleReuseAndLatePriorPacket(t *testing.T) {
 		t.Fatalf("session boundary/late attribution lost: %v", w.records)
 	}
 }
+
+// Rules could tell a session from a scan probe only by ACK && PayloadSize > 0
+// on single packets. Connection.Established says it for the whole flow.
+func TestConnectionEstablishedNeedsBothDirectionsAndPayload(t *testing.T) {
+	connectionConcurrencySetup(t)
+	first := connectionBenchmarkPackets(t, 1)[0]
+	handlePacket(first)
+	w := &connectionTestWriter{}
+	d := &Decoder{Writer: w}
+	connectionDecoder.FlushState(d)
+	if w.records[0].Established {
+		t.Fatal("one-way flow is established")
+	}
+	reverse := gopacket.NewPacket(first.Data(), layers.LayerTypeEthernet, gopacket.Default)
+	reverse.Metadata().CaptureInfo = first.Metadata().CaptureInfo
+	ip, tcp := reverse.NetworkLayer().(*layers.IPv4), reverse.TransportLayer().(*layers.TCP)
+	ip.SrcIP, ip.DstIP = ip.DstIP, ip.SrcIP
+	tcp.SrcPort, tcp.DstPort = tcp.DstPort, tcp.SrcPort
+	reverse = serializedEvidencePacket(t, reverse, first.Metadata().Timestamp.Add(time.Millisecond))
+	handlePacket(reverse)
+	connectionDecoder.FlushState(d)
+	last := w.records[len(w.records)-1]
+	if last.AppPayloadSize64 == 0 || !last.Established {
+		t.Fatalf("two-way flow: established %v with %d payload bytes", last.Established, last.AppPayloadSize64)
+	}
+}

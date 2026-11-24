@@ -498,6 +498,9 @@ message Connection {
   repeated Encapsulation Encapsulations = 69; // Path of the first observed datagram
   uint64 ReassembledDatagrams = 70;
   string Normalization = 71; // complete, or why only an outer network observation was possible
+  // Both endpoints sent packets and the flow carried payload. A scan probe
+  // (SYN, SYN-ACK or RST, no data) is never established.
+  bool Established = 72;
 }
 
 //

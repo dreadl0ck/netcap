@@ -215,6 +215,8 @@ Tags for organizing rules, for example `["ssh", "bruteforce", "authentication"]`
 
 #### `threshold` / `threshold_window` (optional)
 
+TCP records describe single packets, so the shipped port rules approximate a session with `ACK && PayloadSize > 0`. `Connection.Established` is true when both endpoints sent packets and the flow carried payload; a scan probe never is. Rules on `Connection` records see one record per flow snapshot, so pair them with `dedupe_by: [ObservationID]`.
+
 `kind: finding|inventory` says whether an alert is for triage. Unset, info-severity rules are inventory. Alert views (`/api/alerts*`, MCP `list_alerts`, `list_alerts_grouped`, `get_alert_stats`) show findings unless given `kind=inventory` or `kind=all`; the WebUI has a Show inventory button.
 
 A single-match rule alerts once per source/destination pair per five minutes of record time. `dedupe_by: [SrcIP, DstIP, DstPort]` replaces that key with the listed fields, and `dedupe_window` (seconds, 0 = the whole run) re-arms it. The shipped port rules alert once per client and service. Threshold and distinct alerts set `Count`, `FirstSeen`, `LastSeen`, the group in `AggregateKey` and up to 64 distinct values in `Examples`.
