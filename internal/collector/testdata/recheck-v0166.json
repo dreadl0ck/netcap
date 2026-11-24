@@ -1,4 +1,135 @@
 {
+  "recheckV01613": {
+    "intake": {
+      "sourceRelease": "v0.16.13",
+      "status": "Fixes for the v0.16.13 regressions on try.netcap.io and the items v0.16.13 left open. Verified on Darwin arm64 with nodpi,noyara,nomagika unless noted; Linux timing needs host QA."
+    },
+    "gate": "make recheck-v01613 (runs recheck-v01612, then stored-TCP, rule, alert and capture-input packages, the App Store build and TestServicePartialCapture)",
+    "issues": [
+      {
+        "id": "try partial captures",
+        "status": "implemented",
+        "commit": "0e1c0bbd, f8e8f30c, 05c3ef92",
+        "tests": [
+          "TestServicePartialCapture",
+          "TestPartialCaptureAcceptedWithoutManifest"
+        ],
+        "qualification": "Service mode uses the CLI's runtime defaults and accepts partial captures without a capture manifest. make try-parity replays the 20 pinned try captures (scripts/try-pcaps.json): 20/20 complete."
+      },
+      {
+        "id": "fsync storm",
+        "status": "implemented",
+        "commit": "7553ba6b",
+        "tests": [
+          "TestStreamOutputsDoNotSyncPerFile", "TestBarrier"
+        ],
+        "qualification": "Per-file fsync and O_SYNC removed; one syncfs barrier (Linux) before audit-output-ready. On macOS durability is relaxed by decision: markers keep their own Sync."
+      },
+      {
+        "id": "V1611-3",
+        "status": "implemented",
+        "commit": "d86b6abf",
+        "tests": [
+          "TestQueriesDoNotSpawnGoroutines",
+          "TestMarkedSourcesSkipPayloadWalks",
+          "TestStoredReaderIndexesBoundariesAcrossColdState",
+          "TestUpgradePrefixStopsEachDirectionAtItsCap",
+          "TestOversizedCandidateIsRejectedWithoutWalking"
+        ],
+        "qualification": "download-fast on Darwin arm64, interleaved runs: master 4.6 s / 185 MB, d86b6abf 3.4 s / 165 MB, v0.16.8 1.5 s / 815 MB. Full payload walks at completion 18 -> 3. Record dumps match master on 10 local captures. The NTLMSSP harvester still walks the payload; the evaluator target (<= 5.5 s, <= 250 MB, Linux 8 vCPU) needs host QA."
+      },
+      {
+        "id": "MCP-20",
+        "status": "implemented",
+        "commit": "7553ba6b, d86b6abf",
+        "tests": [
+          "TestAuxiliaryDispatchOverlapsOwnedSmallCaptures"
+        ],
+        "qualification": "check-mcp-stdio.py --full-fanout at d86b6abf (DPI build, Darwin arm64): three small uploads 0.53-0.55 s first attempt to completion; the 15,000-packet capture 21 s (was 129 s). CTU-13 rbot (41880c3a...): a small capture ingested 2 s after it completed in 0.52 s; rbot itself in 43-46 s. The lazy-initialization work planned for MCP-20 was not needed."
+      },
+      {
+        "id": "Rule engine",
+        "status": "implemented",
+        "commit": "311d1524, cec4d3bc",
+        "tests": [
+          "TestGroupedFloodCountsEveryVictimWithinBudget",
+          "TestBucketedGroupedWindowMatchesExact",
+          "TestFoldCaseGroupsDNSNamesCaseInsensitively",
+          "TestRulesDirectoryMigratesSavedDefaults"
+        ],
+        "qualification": "Per-rule grouped budgets; thresholds above 256 count in 64 buckets (window edge exact to window/64); fold_case; capture -rules DIR migrates saved defaults and drops retired ones."
+      },
+      {
+        "id": "Global threshold rules",
+        "status": "implemented",
+        "commit": "d09c4637, 14edd524",
+        "tests": [
+          "TestEmbeddedThresholdsAreGrouped",
+          "TestEmbeddedThresholdsCountPerActor",
+          "TestDNSBeaconingIgnoresNameCase",
+          "TestSavedLegacyDefaultsLoadCurrentDefinition"
+        ],
+        "qualification": "37 rules regrouped: 12 per source, 9 per pair, 6 per receiving client, 7 distinct destinations, 3 per victim. RADIUS counts Access-Reject records; ICMP Echo uses IsEchoRequest. DNS Beaconing is case-insensitive. Periodicity is still not modeled."
+      },
+      {
+        "id": "Single-match false positives",
+        "status": "implemented",
+        "commit": "ba53c4ad",
+        "tests": [
+          "TestRewrittenSingleMatchRulesNeedTheirBehaviour",
+          "TestWMIInterfacesAreNamed"
+        ],
+        "qualification": "Retired Port Scan High Port, LDAP Replication Activity and Missing Security Headers; rewrote High Volume SMB Write, WMI Activity, HTTP OPTIONS Enumeration and LDAP Enumeration. configs/firewall-rules.yml deleted. On the NetSupport walkthrough capture alerts drop from 108 under 35 rules to 100 under 31."
+      },
+      {
+        "id": "MCP-23",
+        "status": "implemented",
+        "commit": "86f8d0ee, a4e025da",
+        "tests": [
+          "TestResolveLargeGroupStaysCompact",
+          "TestUnresolveGroupRemovesLegacyEntries",
+          "TestFileAlertWriterTrimsMatchedRecord",
+          "TestAlertPagesSkipOversizeRecords",
+          "TestAlertListStreamsAWindow"
+        ],
+        "qualification": "resolved_alerts.json version 2 records groups once; matched records above 256 KiB are replaced by their identity; frames above 1 MiB are skipped and counted; the WebUI list and grouped views stream. CTU-13 rbot over MCP: 29,320 alerts, get_alert_stats 0.24 s, list_alerts_grouped and list_alerts at offset 0 and 1000 all 200. 26,856 of them are SSH Connection Detected, one per SSH-scanned pair; that fan-out is unchanged."
+      },
+      {
+        "id": "caplen > origlen",
+        "status": "implemented",
+        "commit": "0f515dcf",
+        "tests": [
+          "TestCaptureReaderRaisesOrigLenBelowCaplen"
+        ],
+        "qualification": "sip.pcap (Linux SLL, origlen without the 16-byte cooked header): 4,558/4,558 packets, status complete, origLenRaisedPackets 4,558 (was 0 processed)."
+      },
+      {
+        "id": "Token Ring",
+        "status": "implemented",
+        "commit": "171a8aa3",
+        "tests": [
+          "TestTokenRingDecodesLLCSNAPToIP"
+        ],
+        "qualification": "DLT 6 decodes 802.5, routing field and LLC/SNAP. wireshark-tftp.pcap yields its UDP record; ncp2222 completes; tr.pcap and llc.pcap are fuzzed and stay partial on malformed frames, as tshark reports them malformed."
+      },
+      {
+        "id": "BPF capture input",
+        "status": "implemented",
+        "commit": "d81099bb",
+        "tests": [
+          "TestCollectBPFWritesCaptureInputReport"
+        ],
+        "qualification": "CollectBPF uses the bounded reader, writes capture-input.json with bpfFilter and bpfExcludedPackets, and keeps the valid prefix of a damaged file."
+      },
+      {
+        "id": "V1612-4",
+        "status": "verified",
+        "commit": "f5e8c7a8",
+        "tests": [],
+        "qualification": "20 consecutive CLI runs on Tufts set4 (a0caa05a...) at d81099bb: Software 54 every run, Apache 2.4.18 present every run. v0.16.11 reported 55; the difference was not investigated."
+      }
+    ]
+  },
   "recheckV01612": {
     "intake": {
       "sourceRevision": "4ab42e88",

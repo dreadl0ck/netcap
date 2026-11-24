@@ -16,7 +16,7 @@ The traffic is Brad Duncan's [“The Lucky Turkey”](https://www.malware-traffi
 | SHA-256 | `b52bd2a4ec9d747266206e10df01283197cc3e8ace8af20f1c1e5fb8f0b61533` |
 | Time span | 2026-11-10 18:19:52.69 to 20:24:53.91 UTC |
 | Network | `10.11.10.0/24`, AD domain `THELUCKYTURKEY` / `theluckyturkey[.]com`, DC `10.11.10.10` (`LUCKYTURKEY-DC`) |
-| Netcap | v0.16.12, nodpi build, rules from `internal/rules/examples` |
+| Netcap | v0.16.14, nodpi build, rules from `internal/rules/examples` |
 
 Download the ZIP from the exercise page; the password scheme is on the site's [about page](https://www.malware-traffic-analysis.net/about.html). The capture contains live malware traffic: work in an offline VM, do not run anything extracted from it, and do not visit the indicators.
 
@@ -123,7 +123,7 @@ Three points to take from this:
 
 ## 4. Triage the detections
 
-The run raises 108 alert records under 35 rule names. These are the ones that matter for this incident:
+The run raises 100 alert records under 31 rule names. These are the ones that matter for this incident:
 
 ```sh
 net dump -read lucky-turkey/Alert.ncap.gz -csv -select Name,Severity,SrcIP,DstIP,DstPort \
@@ -142,7 +142,6 @@ net dump -read lucky-turkey/Alert.ncap.gz -csv -select Name,Severity,SrcIP,DstIP
 | `Suspicious File Download` | `malware.yml` | Defender update from `au.download.windowsupdate[.]com` | False positive |
 | `DotNet WebClient Detected` | `web_attacks.yml` | `Microsoft-CryptoAPI/10.0` fetching a certificate list | False positive. CryptoAPI is not .NET |
 | `ICS Kerberos Detected` | `industrial_ports.yml` | any TCP/88 | Misleading. Office Kerberos labelled as ICS |
-| `Port Scan High Port` | `suspicious_traffic.yml` | one SYN to the DC's RPC port 52500 | False positive. One connection is not a scan |
 | `NetSupport Gateway RAT Server User Agent Detected` | `suspicious_user_agents.yml` | nothing | Missed. See below |
 
 Nothing detects the lure page or `vericheckusgo[.]com` by name, which is expected: Netcap ships no threat-intelligence feed. You can add the indicators through a [network-detection config](network-detections.md#indicators-and-policy).

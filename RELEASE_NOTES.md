@@ -1,3 +1,23 @@
+## v0.16.14 — evaluator follow-up
+
+| Area | Change |
+| --- | --- |
+| try.netcap.io | Service mode uses the CLI's analysis defaults and accepts partial captures without a capture manifest. `make try-parity` replays the 20 try captures; all complete. |
+| Durability | Per-file `fsync` is replaced by one filesystem barrier (`syncfs` on Linux) before the output-ready marker. On macOS, durability is relaxed: only the markers are synced. |
+| `download-fast` (V1611-3) | Stored TCP completion reads the payload 3 times instead of 18, and the scratch store no longer starts a goroutine per query. macOS: 4.6 s / 185 MB → 3.4 s / 165 MB. |
+| MCP-20 | A small upload behind a large capture completes in about 0.5 s (was 4.6–10.6 s); the 15,000-packet fan-out capture takes 21 s (was 129 s). |
+| Threshold rules | All 37 shipped thresholds that counted every host together now count per source, source–destination pair, receiving client, victim or distinct destination. Thresholds above 256 count in time buckets; each rule has its own state budget. RADIUS counts Access-Reject records; DNS Beaconing ignores name case (`fold_case`). |
+| Rule false positives | Port Scan High Port, LDAP Replication Activity and Missing Security Headers are retired. High Volume SMB Write, WMI Activity, HTTP OPTIONS Enumeration and LDAP Enumeration now need the behaviour they name. `configs/firewall-rules.yml` is removed. Saved copies of old defaults load as the new ones, also through `capture -rules DIR`; saved copies of retired rules are dropped. |
+| Alerts | Resolving a group records it once (`resolved_alerts.json` version 2), so large groups no longer break every alert view. Matched records above 256 KiB are replaced by their identity and hash; older alerts above 1 MiB are skipped and counted (`skippedOversizedAlerts`). The WebUI alert list and grouped view stream instead of loading the audit, the Alerts page pages correctly, and an expanded group pages through all of its alerts. |
+| Capture input | Records whose caplen exceeds origlen are decoded (`origLenRaisedPackets`); `sip.pcap` processes 4,558 of 4,558 packets instead of none. Token Ring (DLT 6) is decoded. BPF-filtered captures use the bounded reader and write `capture-input.json` with `bpfExcludedPackets`. |
+
+The [qualification ledger](internal/collector/testdata/recheck-v0166.json)
+(`recheckV01613`) records the tests and replays; `make recheck-v01613` is the
+gate. Linux timing for `download-fast` and the original evaluator sessions remain
+to be measured.
+
+Full changes: https://github.com/dreadl0ck/netcap/compare/v0.16.13...v0.16.14
+
 ## v0.16.13 — evaluator follow-up
 
 | Area | Change |

@@ -8,7 +8,7 @@
 .PHONY: test-coverage test-coverage-html test-coverage-check test-race test-determinism test-wireshark
 .PHONY: test-golden-update test-regression-verify
 .PHONY: test-hyperscan test-msan test-pkg test-verbose test-clean test-help
-.PHONY: docs-check docs-source-check recheck-v01612 demo-pcaps try-parity
+.PHONY: docs-check docs-source-check recheck-v01612 recheck-v01613 demo-pcaps try-parity
 
 NETCAP_BIN ?= ./net
 DOCS_TEST_TAGS ?= nodpi,noyara
@@ -186,6 +186,15 @@ recheck-v01612:
 		uv run --script scripts/check-mcp-stdio.py $(TMPDIR)net-recheck --mixed-upload-archive "$(MIXED_UPLOAD_ARCHIVE)" --full-fanout; \
 	fi
 
+# v0.16.13 follow-up: rules, alerts, stored-TCP passes, capture input.
+RECHECK1613_PKGS := ./internal/aggregate ./internal/decoder/stream/tcp ./internal/decoder/stream/tls \
+	./internal/decoder/stream/ftp ./internal/decoder/stream/file ./internal/decoder/stream/secret \
+	./internal/decoder/stream/dcerpc ./internal/durable ./internal/exitcode ./types
+recheck-v01613: recheck-v01612
+	GOWORK=off go test -tags $(RECHECK_TAGS) -count=1 $(RECHECK1613_PKGS)
+	GOWORK=off go test -tags appstore,$(RECHECK_TAGS) -count=1 ./cmd/capture/webui
+	GOWORK=off go test -tags=e2e,$(RECHECK_TAGS) ./tests/e2e -run '^TestServicePartialCapture$$' -count=1 -timeout=10m
+
 # Analyze captures through the MCP/WebUI pipeline the try demo uses; every
 # input must complete. Defaults to the captures that regressed in v0.16.12.
 DEMO_PCAPS ?= pcaps/arp-dns-eth-icmp-ip-udp-goodhttp-gooddns.pcapng \
@@ -220,6 +229,7 @@ test-help:
 	@echo "  test-determinism  - Compare Ultimate PCAP output across runs and worker counts"
 	@echo "  test-wireshark    - Fetch verified Wireshark samples and run the full corpus (needs editcap)"
 	@echo "  recheck-v01612    - v0.16.12 evaluator follow-up gate (MIXED_UPLOAD_ARCHIVE= adds scheduling)"
+	@echo "  recheck-v01613    - v0.16.13 follow-up gate; runs recheck-v01612 first"
 	@echo "  demo-pcaps        - Analyze DEMO_PCAPS through the try-demo MCP/WebUI pipeline"
 	@echo "  try-parity        - Replay the 20 try.netcap.io captures through service mode"
 	@echo ""
