@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"math"
+	"net/http"
 	"path/filepath"
 	"strings"
 )
@@ -88,7 +89,10 @@ func (facts *artifactFacts) analyze(reader io.ReaderAt, name string) (*FileAnaly
 		for _, magic := range magicSignatures {
 			matchedMagic = matchedMagic || bytes.HasPrefix(facts.prefix, magic)
 		}
-		if !matchedMagic {
+		if markup := markupType(facts.prefix); !matchedMagic && markup != "" {
+			// An HTML page that contains script is still HTML.
+			a.TrueFileType = markup
+		} else if !matchedMagic {
 			a.TrueFileType = facts.scriptType()
 			if a.TrueFileType == "" {
 				a.TrueFileType = "text/plain"
@@ -129,4 +133,16 @@ func (facts *artifactFacts) analyze(reader io.ReaderAt, name string) (*FileAnaly
 		a.IsPasswordProtected = a.IsPasswordProtected || facts.tokens["EncryptedPackage"] || facts.tokens["StrongEncryptionDataSpace"]
 	}
 	return a, nil
+}
+
+// markupType is text/html or text/xml when the content starts as a markup
+// document, by the WHATWG sniffing rules net/http implements.
+func markupType(prefix []byte) string {
+	sniffed := http.DetectContentType(prefix)
+	for _, typ := range []string{"text/html", "text/xml"} {
+		if strings.HasPrefix(sniffed, typ) {
+			return typ
+		}
+	}
+	return ""
 }
