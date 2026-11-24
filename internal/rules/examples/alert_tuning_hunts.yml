@@ -1,9 +1,9 @@
 description: Opt-in hunts for low-confidence patterns identified in the v0.16.13 evaluation
 rules:
-  - name: Alternate SSH Port Unanswered Probe
-    description: Observed TCP SYN to public port 2222 with no reply or payload; port alone does not identify SSH
+  - name: Alternate SSH Port Failed Probe
+    description: Observed TCP SYN to public port 2222 with no reply or a reset without payload; port alone does not identify SSH
     type: Connection
-    expression: 'TransportProto == "TCP" && DstPort == "2222" && IsPublicIP(DstIP) && NumSYNFlags > 0 && PacketsServerToClient == 0 && AppPayloadSize64 == 0 && AppPayloadSize == 0'
+    expression: 'TransportProto == "TCP" && DstPort == "2222" && IsPublicIP(DstIP) && TCPInitiatorObserved && NumSYNFlags > 0 && AppPayloadSize64 == 0 && AppPayloadSize == 0 && (PacketsServerToClient == 0 || (NumRSTFlags > 0 && NumSYNFlags == 1 && NumPackets <= 4))'
     severity: info
     kind: inventory
     enabled: false
@@ -20,3 +20,15 @@ rules:
     threshold_window: 60
     group_by: [SrcIP]
     tags: ["hunt", "click-fraud"]
+
+  - name: HTTP Parked-Domain Advertising Polling
+    description: Repeated successful parked-domain ad requests with a referring page; one observation per client per 6-hour window, not evidence of a click or billing event
+    type: HTTP
+    expression: 'Method == "GET" && StatusCode == 200 && MatchesPattern(IOCHost(Host), "(?i)(^|[.])doubleclick[.]net$") && MatchesPattern(URL, "^/apps/domainpark/domainpark[.]cgi([?]|$)") && MatchesPattern(Referer, "(?i)^https?://[^/]+/")'
+    severity: info
+    kind: inventory
+    enabled: false
+    threshold: 20
+    threshold_window: 21600
+    group_by: [SrcIP]
+    tags: ["hunt", "advertising"]

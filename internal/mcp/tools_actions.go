@@ -45,7 +45,7 @@ func (s *Server) registerActionTools() error {
 			"Alerts raised in this session. Use group_id from a grouped result to page every member, with an independent alert-page generation.",
 			"/api/alerts", []queryArg{qLimit(500), qOffset(), qSearch(), {Name: "group_id", QueryName: "groupId", Description: "Exact group identifier from list_alerts_grouped."}, qAlertKind()}),
 		simpleSessionTool(s, "list_alerts_grouped",
-			"Bounded alert-group summaries with unique-value previews and exact totals. Retrieve full members with list_alerts(group_id). Pagination counts groups; groupCount is the number of groups and totalCount counts underlying alerts.",
+			"Bounded alert-group summaries with unique-value previews and exact totals. Findings with both endpoints are grouped by rule, severity, source IP and destination IP. Retrieve full members with list_alerts(group_id). Pagination counts groups; groupCount counts groups and totalCount counts underlying alerts.",
 			"/api/alerts/grouped", []queryArg{qAlertKind()}),
 		simpleSessionTool(s, "get_alert_stats",
 			"Summary statistics for alerts in this session. byKind counts every kind; the other fields follow kind.",

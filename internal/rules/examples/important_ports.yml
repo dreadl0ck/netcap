@@ -38,10 +38,10 @@ rules:
   # Port 22: SSH
   - name: SSH Connection Detected
     # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
-    description: SSH connection detected - secure shell for remote admin (monitor for brute-force and stolen keys)
+    description: Established TCP traffic on the standard SSH port; protocol and authentication are unverified.
     type: TCP
     expression: (DstPort == 22) && ACK && PayloadSize > 0
-    severity: low
+    severity: info
     mitre: ["T1021.004", "T1110.001"]
     tags: ["remote-access"]
     enabled: true
@@ -274,13 +274,11 @@ rules:
 
   # Port 3389: RDP
   - name: RDP Detected
-    # tuned-v0.16.13: internal RDP is admin traffic; RDP External Connection stays critical
-    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
-    description: Remote Desktop Protocol detected - common ransomware vector, require VPN + MFA
-    type: TCP
-    expression: (DstPort == 3389) && ACK && PayloadSize > 0
-    severity: low
-    mitre: ["T1021.001", "T1110.001"]
+    description: A private RDP server accepted protocol negotiation; authentication is unknown.
+    type: RDP
+    expression: 'NegotiationOutcome == "accepted" && IsPrivateIP(DstIP)'
+    severity: info
+    mitre: ["T1021.001"]
     tags: ["remote-desktop", "ransomware"]
     enabled: true
     dedupe_by: [SrcIP, DstIP, DstPort]
@@ -851,11 +849,10 @@ rules:
     dedupe_by: [SrcIP, DstIP, DstPort]
 
   - name: RDP External Connection
-    # tuned-v0.16.13: require an established client session (ACK + payload): SYN-only scan probes no longer fire one alert per target
-    description: RDP connection to external IP detected - potential compromise or exfiltration
-    type: TCP
-    expression: (DstPort == 3389 && IsPublicIP(DstIP)) && ACK && PayloadSize > 0
-    severity: critical
+    description: A public RDP server accepted protocol negotiation; authentication is unknown.
+    type: RDP
+    expression: 'NegotiationOutcome == "accepted" && IsPublicIP(DstIP)'
+    severity: medium
     mitre: ["T1021.001"]
     tags: ["external"]
     enabled: true

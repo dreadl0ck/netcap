@@ -267,6 +267,7 @@ func (e *Engine) indexLocal(fact Fact) {
 }
 
 func (e *Engine) rebuildIndexes() {
+	e.contacts = newContactIndex(e.state)
 	e.bySource = make(map[string]map[string]Activity)
 	e.incoming = make(map[string]map[string]Activity)
 	e.localIPs = make(map[string]map[netip.Addr]bool)

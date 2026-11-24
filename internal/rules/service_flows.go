@@ -9,6 +9,7 @@ import (
 
 const packetServiceGate = " && ACK && PayloadSize > 0"
 const flowServiceGate = ` && TransportProto == "TCP" && (Established || (PacketsClientToServer > 0 && PacketsServerToClient > 0 && (AppPayloadSize64 > 0 || AppPayloadSize > 0)))`
+const initiatedServiceGate = "TCPInitiatorObserved && Established && "
 
 var (
 	packetServiceKey = []string{"SrcIP", "DstIP", "DstPort"}
@@ -22,10 +23,12 @@ func (c *Config) useServiceFlows() {
 		return
 	}
 	for _, r := range c.Rules {
-		if r == nil || r.Type != "TCP" || !slices.Equal(r.DedupeBy, packetServiceKey) {
+		if r == nil || !slices.Equal(r.DedupeBy, packetServiceKey) {
 			continue
 		}
-		if predicate, ok := strings.CutSuffix(r.Expression, packetServiceGate); ok && servicePort.MatchString(predicate) {
+		if r.Type == "Connection" && strings.HasPrefix(r.Expression, initiatedServiceGate) {
+			r.DedupeBy = slices.Clone(flowServiceKey)
+		} else if predicate, ok := strings.CutSuffix(r.Expression, packetServiceGate); r.Type == "TCP" && ok && servicePort.MatchString(predicate) {
 			r.Type = "Connection"
 			r.Expression = servicePort.ReplaceAllString(predicate, "ParsePort(DstPort)") + flowServiceGate
 			r.DedupeBy = slices.Clone(flowServiceKey)
@@ -34,11 +37,18 @@ func (c *Config) useServiceFlows() {
 }
 
 func isSavedPacketServiceRule(base, saved *Rule) bool {
-	predicate, ok := strings.CutSuffix(base.Expression, flowServiceGate)
-	if !ok || base.Type != "Connection" || saved.Type != "TCP" || !slices.Equal(base.DedupeBy, flowServiceKey) {
+	if base.Type != "Connection" || !slices.Equal(base.DedupeBy, flowServiceKey) {
 		return false
 	}
 	old := *base
-	old.Type, old.Expression, old.DedupeBy = "TCP", flowPort.ReplaceAllString(predicate, "DstPort")+packetServiceGate, packetServiceKey
+	old.DedupeBy = packetServiceKey
+	if saved.Type == "Connection" && strings.HasPrefix(base.Expression, initiatedServiceGate) {
+		return bytes.Equal(legacyComparable(&old), legacyComparable(saved))
+	}
+	predicate, ok := strings.CutSuffix(base.Expression, flowServiceGate)
+	if !ok || saved.Type != "TCP" {
+		return false
+	}
+	old.Type, old.Expression = "TCP", flowPort.ReplaceAllString(predicate, "DstPort")+packetServiceGate
 	return bytes.Equal(legacyComparable(&old), legacyComparable(saved))
 }

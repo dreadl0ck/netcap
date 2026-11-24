@@ -130,7 +130,7 @@ func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Requ
 	match := func(alert *types.Alert) bool {
 		return kindMatch(alert) && (severity == "" || strings.EqualFold(alert.Severity, severity)) &&
 			(rule == "" || strings.EqualFold(alert.RuleName, rule)) &&
-			(group == "" || generateGroupID(alert.RuleName, alert.Severity) == group)
+			(group == "" || inAlertGroup(alert, group))
 	}
 	scanCtx, scanStats := withAlertScanStats(ctx)
 	_, err = s.scanFilteredAlertAudit(scanCtx, auditPath, 0, alertStatsScanRows, alertStatsFrameBytes, match, func(alert AlertResponse) error {

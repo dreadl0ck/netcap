@@ -71,7 +71,7 @@ type Engine struct {
 	// grouped counts group_by thresholds evaluated without a capture scope.
 	grouped map[string]*groupedThresholds
 	// dedupe holds dedupe_by keys per rule.
-	dedupe map[string]*dedupeState
+	dedupe  map[string]*dedupeState
 	ordered *OrderedStream
 
 	// Performance tracking
@@ -452,7 +452,7 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 			}
 
 			// Check rate limiting
-			if scope == "" && len(rule.GroupBy) == 0 && (rule.Sequence == nil || rule.Sequence.AfterType == "") && e.isRateLimited(rule.Name) {
+			if scope == "" && len(rule.GroupBy) == 0 && (rule.Sequence == nil || rule.Sequence.AfterType == "") && e.isRateLimited(rule.Name, time.Unix(0, e.recordEvalTime(record))) {
 				matched = true
 				alertGenerated = false
 				if e.perfTracker != nil {
@@ -574,12 +574,7 @@ func (e *Engine) checkThresholdHit(rule *Rule, record types.AuditRecord) *thresh
 		return nil
 	}
 
-	// Default threshold window is 60 seconds if not specified
-	windowSeconds := rule.ThresholdWindow
-	if windowSeconds <= 0 {
-		windowSeconds = 60
-	}
-	windowNanos := int64(windowSeconds) * int64(time.Second)
+	windowNanos := int64(rule.thresholdWindowSeconds()) * int64(time.Second)
 
 	// Removing future matches before appending keeps the window sorted.
 	matches := tracker.matches
@@ -625,11 +620,7 @@ func (e *Engine) checkDistinctThresholdHit(rule *Rule, record types.AuditRecord)
 		threshold = 2
 	}
 
-	windowSeconds := rule.ThresholdWindow
-	if windowSeconds <= 0 {
-		windowSeconds = 60
-	}
-	windowNanos := int64(windowSeconds) * int64(time.Second)
+	windowNanos := int64(rule.thresholdWindowSeconds()) * int64(time.Second)
 
 	src := record.Src()
 	value := extractStringField(record, rule.DistinctField)
@@ -720,13 +711,13 @@ func extractStringField(record types.AuditRecord, fieldName string) string {
 }
 
 // isRateLimited checks if a rule has exceeded its rate limit.
-func (e *Engine) isRateLimited(ruleName string) bool {
+func (e *Engine) isRateLimited(ruleName string, now time.Time) bool {
 	e.mu.Lock()
 	counter, exists := e.ruleCounters[ruleName]
 	if !exists {
 		counter = &rateCounter{
 			count:       0,
-			windowStart: e.now(),
+			windowStart: now,
 		}
 		e.ruleCounters[ruleName] = counter
 	}
@@ -734,8 +725,6 @@ func (e *Engine) isRateLimited(ruleName string) bool {
 
 	counter.mu.Lock()
 	defer counter.mu.Unlock()
-
-	now := e.now()
 
 	// Reset counter if window has passed
 	if now.Sub(counter.windowStart) >= time.Minute {

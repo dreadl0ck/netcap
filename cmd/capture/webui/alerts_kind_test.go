@@ -21,6 +21,7 @@ func TestAlertViewsDefaultToFindings(t *testing.T) {
 		&types.Alert{Timestamp: 2, RuleName: "SMB", Severity: "info", Tags: []string{rules.InventoryTag}},
 		&types.Alert{Timestamp: 3, RuleName: "Apache", Severity: "info", RuleExpression: "ServerName != \"\""},
 		&types.Alert{Timestamp: 4, RuleName: "Beacon", Severity: "info", Tags: []string{rules.FindingTag}},
+		&types.Alert{Timestamp: 5, RuleName: "policy.cleartext-service", Severity: "info", RecordType: "NetworkDetection"},
 	})
 	s := &Server{outDir: dir}
 	list := func(query string) AlertsResponse {
@@ -33,10 +34,10 @@ func TestAlertViewsDefaultToFindings(t *testing.T) {
 	if page := list(""); page.TotalCount != 2 || page.Alerts[1].RuleName != "C2" || page.Alerts[0].Kind != "finding" {
 		t.Fatalf("default: %+v", page)
 	}
-	if page := list("?kind=inventory"); page.TotalCount != 2 || page.Alerts[0].Kind != "inventory" {
+	if page := list("?kind=inventory"); page.TotalCount != 3 || page.Alerts[0].Kind != "inventory" {
 		t.Fatalf("inventory: %+v", page)
 	}
-	if page := list("?kind=all"); page.TotalCount != 4 {
+	if page := list("?kind=all"); page.TotalCount != 5 {
 		t.Fatalf("all: %+v", page)
 	}
 	w := httptest.NewRecorder()
@@ -56,7 +57,7 @@ func TestAlertViewsDefaultToFindings(t *testing.T) {
 		TotalAlerts int
 		ByKind      map[string]int
 	}
-	if json.Unmarshal(w.Body.Bytes(), &stats) != nil || stats.TotalAlerts != 2 || stats.ByKind["inventory"] != 2 || stats.ByKind["finding"] != 2 {
+	if json.Unmarshal(w.Body.Bytes(), &stats) != nil || stats.TotalAlerts != 2 || stats.ByKind["inventory"] != 3 || stats.ByKind["finding"] != 2 {
 		t.Fatalf("stats: %s", w.Body)
 	}
 }

@@ -32,6 +32,7 @@ type Engine struct {
 	localIPs    map[string]map[netip.Addr]bool
 	networks    map[string][]netip.Prefix
 	trustedDHCP map[string]bool
+	contacts    contactIndex
 }
 
 func Open(config Config, sink AlertSink) (*Engine, error) {
@@ -181,6 +182,7 @@ func (e *Engine) Observe(at time.Time, facts ...Fact) error {
 		}
 		observation.Samples++
 		e.state.Observed[id] = observation
+		firstContact := !exists && e.contacts.observe(fact)
 		if fact.Kind == "geo" && e.state.Mode == Monitoring {
 			if err := e.checkGeography(ns, id, fact); err != nil {
 				e.err = err
@@ -226,7 +228,7 @@ func (e *Engine) Observe(at time.Time, facts ...Fact) error {
 		if previous, sent := e.recent[id]; sent && ns-previous < int64(e.config.DedupWindow) {
 			continue
 		}
-		if err := e.emit(ns, id, fact); err != nil {
+		if err := e.emit(ns, id, fact, firstContact); err != nil {
 			e.err = err
 			return err
 		}
@@ -235,10 +237,14 @@ func (e *Engine) Observe(at time.Time, facts ...Fact) error {
 	return nil
 }
 
-func (e *Engine) emit(ns int64, id string, fact Fact) error {
+func (e *Engine) emit(ns int64, id string, fact Fact, firstContact bool) error {
 	detector := "baseline.new-" + fact.Kind
 	expected := "fact present in approved baseline"
 	severity := "low"
+	if firstContact && e.contacts.novel(fact) {
+		detector = "baseline.first-public-contact"
+		expected = "First observed non-web TCP attempt by this source to a public destination absent from the approved scope; reachability and intent are unknown"
+	}
 	if fact.Kind == "binding" && e.leaseMatches(ns, fact) {
 		detector, expected = "baseline.dhcp-reassignment", "address change supported by a lease from an approved DHCP server; review inventory change"
 	} else if fact.Kind == "binding" && fact.Provenance != "dhcp" {

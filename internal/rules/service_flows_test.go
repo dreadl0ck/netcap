@@ -3,6 +3,7 @@ package rules
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -20,6 +21,59 @@ func TestAlertTuningHuntsCompileWhenEnabled(t *testing.T) {
 	}
 	if err := CompileRules(config); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestAdClickBurstUsesClientAndWindow(t *testing.T) {
+	config, err := LoadRulesFromFile(filepath.Join("examples", "alert_tuning_hunts.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, rule := range config.Rules {
+		rule.Enabled = rule.Name == "HTTP Advertising Click Burst"
+	}
+	var alerts []*types.Alert
+	replay, err := NewAuditReplay(config, alertWriterFunc(func(a *types.Alert) error { alerts = append(alerts, a); return nil }))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range 30 {
+		for _, record := range []*types.HTTP{
+			{SrcIP: "192.0.2.1", Host: "ads.doubleclick.net", URL: "/pagead/aclk?q=fixture", Referer: "https://ads.doubleclick.net/", Method: "GET"},
+			{SrcIP: "192.0.2.2", Host: "ads.doubleclick.net", URL: "/pixel", Referer: "https://ads.doubleclick.net/", Method: "GET"},
+			{SrcIP: "192.0.2.3", Host: "ads.doubleclick.net.example", URL: "/pagead/aclk?q=fixture", Referer: "https://ads.doubleclick.net/", Method: "GET"},
+		} {
+			record.Timestamp = time.Unix(1700000000+int64(i), 0).UnixNano()
+			if _, err := replay.Evaluate(record); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if len(alerts) != 1 || alerts[0].SrcIP != "192.0.2.1" || alerts[0].Count != 30 {
+		t.Fatalf("unqualified click burst: %v", alerts)
+	}
+}
+
+func TestRDPServiceRulesRequireAcceptedNegotiation(t *testing.T) {
+	config, err := LoadEmbeddedRules()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, rule := range config.Rules {
+		rule.Enabled = rule.Enabled && (rule.Name == "RDP External Connection" || rule.Name == "RDP Detected")
+	}
+	var alerts []*types.Alert
+	replay, err := NewAuditReplay(config, alertWriterFunc(func(a *types.Alert) error { alerts = append(alerts, a); return nil }))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, outcome := range []string{"malformed", "not-observed", "rejected", "accepted", "accepted"} {
+		if _, err := replay.Evaluate(&types.RDP{Timestamp: 1000, SrcIP: "10.0.0.2", DstIP: "8.8.8.8", DstPort: 3389, NegotiationOutcome: outcome}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(alerts) != 1 || alerts[0].RuleName != "RDP External Connection" || alerts[0].Severity != "medium" {
+		t.Fatalf("external RDP negotiation: %v", alerts)
 	}
 }
 

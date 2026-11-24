@@ -70,10 +70,7 @@ func (e *Engine) groupedThresholdHit(rule *Rule, record types.AuditRecord) *thre
 		return nil
 	}
 	now := e.recordEvalTime(record)
-	window := int64(rule.ThresholdWindow) * int64(time.Second)
-	if window <= 0 {
-		window = int64(time.Minute)
-	}
+	window := int64(rule.thresholdWindowSeconds()) * int64(time.Second)
 
 	e.mu.Lock()
 	defer e.mu.Unlock()

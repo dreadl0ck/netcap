@@ -27,7 +27,7 @@ const (
 var iocListName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`)
 
 type iocList struct {
-	entries map[string]struct{}
+	entries map[string]int64
 	info    os.FileInfo
 	checked time.Time
 	err     error
@@ -81,6 +81,18 @@ func ValidateIOCList(name string) error {
 }
 
 func loadIOCList(name string) *iocList {
+	return loadIOCFeed(name, iocValue)
+}
+
+type iocFormat uint8
+
+const (
+	iocValue iocFormat = iota
+	iocHTTPURL
+	iocDomainDate
+)
+
+func loadIOCFeed(name string, format iocFormat) *iocList {
 	if !iocListName.MatchString(name) {
 		return nil
 	}
@@ -92,18 +104,22 @@ func loadIOCList(name string) *iocList {
 		iocDir = dir
 	}
 	now := time.Now()
-	list := iocLists[name]
+	key := name
+	if format != iocValue {
+		key = string(rune(format)) + ":" + name
+	}
+	list := iocLists[key]
 	if list != nil && now.Sub(list.checked) < iocListRecheck {
 		return list
 	}
 	root, err := os.OpenRoot(dir)
 	if err != nil {
-		return remember(name, &iocList{checked: now, err: err})
+		return remember(key, &iocList{checked: now, err: err})
 	}
 	defer root.Close()
 	info, err := root.Stat(name)
 	if err = checkIOCFile(info, err); err != nil {
-		return remember(name, &iocList{checked: now, err: err})
+		return remember(key, &iocList{checked: now, err: err})
 	}
 	if list != nil && list.err == nil && os.SameFile(info, list.info) && info.ModTime().Equal(list.info.ModTime()) && info.Size() == list.info.Size() {
 		list.checked = now
@@ -111,15 +127,15 @@ func loadIOCList(name string) *iocList {
 	}
 	file, err := root.Open(name)
 	if err != nil {
-		return remember(name, &iocList{checked: now, err: err})
+		return remember(key, &iocList{checked: now, err: err})
 	}
 	defer file.Close()
 	info, err = file.Stat()
 	if err = checkIOCFile(info, err); err != nil {
-		return remember(name, &iocList{checked: now, err: err})
+		return remember(key, &iocList{checked: now, err: err})
 	}
-	entries, err := readIOCList(file, maxIOCListBytes)
-	return remember(name, &iocList{entries: entries, info: info, checked: now, err: err})
+	entries, err := readIOCFeed(file, maxIOCListBytes, format)
+	return remember(key, &iocList{entries: entries, info: info, checked: now, err: err})
 }
 
 var errIOCListSize = errors.New("IOC list exceeds byte limit")
@@ -151,9 +167,13 @@ func remember(name string, list *iocList) *iocList {
 	return list
 }
 
-func readIOCList(r io.Reader, byteLimit int64) (map[string]struct{}, error) {
+func readIOCList(r io.Reader, byteLimit int64) (map[string]int64, error) {
+	return readIOCFeed(r, byteLimit, iocValue)
+}
+
+func readIOCFeed(r io.Reader, byteLimit int64, format iocFormat) (map[string]int64, error) {
 	limited := &io.LimitedReader{R: r, N: byteLimit + 1}
-	entries := map[string]struct{}{}
+	entries := map[string]int64{}
 	scanner := bufio.NewScanner(limited)
 	scanner.Buffer(make([]byte, 64<<10), 64<<10)
 	for scanner.Scan() {
@@ -161,11 +181,17 @@ func readIOCList(r io.Reader, byteLimit int64) (map[string]struct{}, error) {
 		if line == "" || line[0] == '#' {
 			continue
 		}
-		key := strings.ToLower(line)
+		key, value, err := parseIOCEntry(format, line)
+		if err != nil {
+			return nil, err
+		}
 		if _, exists := entries[key]; !exists && len(entries) >= maxIOCListEntries {
 			return nil, errors.New("IOC list exceeds 2,000,000 entries")
 		}
-		entries[key] = struct{}{}
+		if old, exists := entries[key]; exists && old != value {
+			return nil, errors.New("conflicting IOC feed dates")
+		}
+		entries[key] = value
 	}
 	if limited.N == 0 {
 		return nil, errIOCListSize

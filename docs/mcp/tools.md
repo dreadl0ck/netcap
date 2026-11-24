@@ -3311,7 +3311,7 @@ Alerts raised in this session. Use group_id from a grouped result to page every 
 
 ### `list_alerts_grouped`
 
-Bounded alert-group summaries with unique-value previews and exact totals. Retrieve full members with list_alerts(group_id). Pagination counts groups; groupCount is the number of groups and totalCount counts underlying alerts.
+Bounded alert-group summaries with unique-value previews and exact totals. Findings with both endpoints are grouped by rule, severity, source IP and destination IP. Retrieve full members with list_alerts(group_id). Pagination counts groups; groupCount counts groups and totalCount counts underlying alerts.
 
 **Hints:** read-only, idempotent
 

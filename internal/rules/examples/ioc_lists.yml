@@ -16,7 +16,7 @@ rules:
   - name: DNS Query For IOC Domain
     description: DNS question for a domain listed in iocs/domains.txt
     type: DNS
-    expression: 'len(Questions) > 0 && InList(Questions[0].Name, "domains.txt")'
+    expression: '!QR && any(Questions, InList(IOCHost(.Name), "domains.txt"))'
     severity: high
     mitre: ["T1071.004"]
     tags: ["ioc", "c2"]
@@ -36,7 +36,7 @@ rules:
   - name: TLS Server Name In IOC List
     description: TLS ClientHello naming a server listed in iocs/domains.txt
     type: TLSClientHello
-    expression: 'SNI != "" && InList(SNI, "domains.txt")'
+    expression: 'SNI != "" && InList(IOCHost(SNI), "domains.txt")'
     severity: high
     mitre: ["T1071.001", "T1573"]
     tags: ["ioc", "c2"]
@@ -70,6 +70,24 @@ rules:
     tags: ["ioc", "certificate"]
     enabled: false
     dedupe_by: [SrcIP, SHA256Fingerprint]
+
+  - name: HTTP Host Or URL In IOC List
+    description: HTTP request to a host or exact URL on a local IOC feed
+    type: HTTP
+    expression: 'Method != "" && (InList(IOCHost(Host), "domains.txt") || HTTPURLInList(Host, URL, "urls.txt"))'
+    severity: high
+    tags: ["ioc", "http"]
+    enabled: false
+    dedupe_by: [SrcIP, Host, URL]
+
+  - name: TLS To Recently Registered Domain
+    description: Outbound TLS to a domain registered within 14 days of the capture, according to the local registration feed
+    type: TLSClientHello
+    expression: 'IsPrivateIP(SrcIP) && IsPublicIP(DstIP) && (let age = DomainAgeDays(SNI, Timestamp, "domain-registration.txt"); age >= 0 && age <= 14)'
+    severity: low
+    tags: ["hunt", "domain-age", "tls"]
+    enabled: false
+    dedupe_by: [SrcIP, SNI]
 
   - name: Recently Valid TLS Certificate From Listed Issuer
     description: Public TLS leaf first valid within the past day at capture time, from an operator-listed issuer

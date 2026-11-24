@@ -126,6 +126,9 @@ func migrateLegacyPredicate(base, override *Rule) *Rule {
 	if isSavedPacketServiceRule(base, override) {
 		migrated := base.SavedCopy()
 		migrated.Enabled, migrated.Tags = override.Enabled, override.Tags
+		if (base.Name == "RDP Connection" || base.Name == "SSH Connection Activity") && override.Enabled {
+			migrated.Enabled = false
+		}
 		return &migrated
 	}
 	// A saved copy of a superseded default (WebUI saves write whole rule

@@ -55,10 +55,7 @@ func (e *Engine) scopedThresholdHit(scope string, rule *Rule, record types.Audit
 		return nil, ErrStateCapacity
 	}
 	now := record.Time()
-	window := int64(rule.ThresholdWindow) * int64(time.Second)
-	if window == 0 {
-		window = int64(time.Minute)
-	}
+	window := int64(rule.thresholdWindowSeconds()) * int64(time.Second)
 	key := scopedKey(scope, rule.Name, group)
 	e.mu.Lock()
 	defer e.mu.Unlock()

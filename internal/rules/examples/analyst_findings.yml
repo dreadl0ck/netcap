@@ -61,6 +61,7 @@ rules:
     mitre: ["T1571", "T1573.002"]
     tags: ["c2", "tls"]
     enabled: true
+    dedupe_by: [SrcIP, SrcPort, DstIP, DstPort, TimestampFirst]
 
   - name: Self-Signed Certificate From Public Server
     description: A public server presented a self-signed leaf certificate; common for malware C2 and rare for legitimate public services

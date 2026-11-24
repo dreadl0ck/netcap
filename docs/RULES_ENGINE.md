@@ -219,9 +219,9 @@ Tags for organizing rules, for example `["ssh", "bruteforce", "authentication"]`
 
 An HTTP record whose request was not captured has empty request fields and `ParseQualifications` containing `response-without-request`; an unanswered request carries `request-without-response`. Request-side rules check `Method != ""`.
 
-`kind: finding|inventory` says whether an alert is for triage. Unset, info-severity rules are inventory. Alert views (`/api/alerts*`, MCP `list_alerts`, `list_alerts_grouped`, `get_alert_stats`) show findings unless given `kind=inventory` or `kind=all`; the WebUI has a Show inventory button.
+`kind: finding|inventory` says whether an alert is for triage. Unset, info-severity rules are inventory. Alert views (`/api/alerts*`, MCP `list_alerts`, `list_alerts_grouped`, `get_alert_stats`) show findings unless given `kind=inventory` or `kind=all`; the WebUI has a Show inventory button. Grouped findings with two IP endpoints separate source/destination pairs. Use the returned group ID to page or resolve that pair.
 
-A single-match rule alerts once per source/destination pair per five minutes of record time. `dedupe_by: [SrcIP, DstIP, DstPort]` replaces that key with the listed fields, and `dedupe_window` (seconds, 0 = the whole run) re-arms it. The shipped port rules alert once per client and service. Threshold and distinct alerts set `Count`, `FirstSeen`, `LastSeen`, the group in `AggregateKey` and up to 64 distinct values in `Examples`.
+A single-match rule alerts once per source/destination pair per five minutes of record time. `dedupe_by: [SrcIP, DstIP, DstPort]` replaces that key with the listed fields, and `dedupe_window` (seconds, 0 = the whole run) re-arms it. Threshold and distinct alerts report the effective window, `Count`, `FirstSeen`, `LastSeen`, the group in `AggregateKey` and up to 64 distinct values in `Examples`.
 
 Alert only after `threshold` matches within `threshold_window` seconds (default 60). Without `group_by` these counters are shared per rule name and are not grouped by host; add `group_by: [SrcIP]` to count per host. They use record timestamps when available, but arrival order and wall-clock suppression still apply. For deterministic counting per entity on finalized records, use [offline grouped thresholds](RULES_ENGINE.md#offline-grouped-thresholds).
 
@@ -327,7 +327,14 @@ For example, add `198.51.100.7` to `ips.txt` and use `InList(DstIP, "ips.txt")`
 in a `Connection` rule. Copy and enable the applicable rules from
 [`ioc_lists.yml`](../internal/rules/examples/ioc_lists.yml) after installing the
 feeds. The examples cover file hashes, DNS domains, IPs, TLS server names,
-JA3/JA4 fingerprints, and TLS leaf certificate fingerprints and issuers.
+JA3/JA4 fingerprints, HTTP request URLs, and TLS leaf certificate fingerprints
+and issuers. `IOCHost(Host)` removes a port and trailing dot, and normalizes
+the hostname for exact lookup. `HTTPURLInList(Host, URL, "urls.txt")` reads
+one absolute HTTP(S) URL per line, preserving the path and query case.
+
+`DomainAgeDays(SNI, Timestamp, "domain-registration.txt")` compares capture time
+with a local `registrable-domain YYYY-MM-DD` feed. Missing, invalid or future
+dates return `-1`. Registration age is context; no live lookup is performed.
 
 ## Writing Rules
 

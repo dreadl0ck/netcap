@@ -189,6 +189,15 @@ func CompileExpression(expression string, recordType types.Type) (*vm.Program, e
 			},
 			new(func(string, string) bool),
 		),
+		expr.Function("IOCHost", func(params ...any) (any, error) {
+			return IOCHost(params[0].(string)), nil
+		}, new(func(string) string)),
+		expr.Function("HTTPURLInList", func(params ...any) (any, error) {
+			return HTTPURLInList(params[0].(string), params[1].(string), params[2].(string)), nil
+		}, new(func(string, string, string) bool)),
+		expr.Function("DomainAgeDays", func(params ...any) (any, error) {
+			return DomainAgeDays(params[0].(string), params[1].(int64), params[2].(string)), nil
+		}, new(func(string, int64, string) int64)),
 		expr.Function("HasKey",
 			func(params ...any) (any, error) {
 				return HasKey(params[0], params[1].(string)), nil

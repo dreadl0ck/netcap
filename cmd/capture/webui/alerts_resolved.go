@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -33,9 +34,10 @@ type ResolvedAlert struct {
 // Through (Unix ns), except the listed alert IDs. Alerts without a
 // detection time predate Through by construction of the append-only audit.
 type ResolvedGroup struct {
-	ResolvedAt int64    `json:"resolvedAt"`
-	Through    int64    `json:"through"`
-	Except     []string `json:"except,omitempty"`
+	ResolvedAt   int64    `json:"resolvedAt"`
+	Through      int64    `json:"through"`
+	Except       []string `json:"except,omitempty"`
+	ExceptGroups []string `json:"exceptGroups,omitempty"`
 }
 
 // ResolvedAlertsStore manages the resolved alerts
@@ -156,16 +158,14 @@ func isAlertResolved(alert *types.Alert, alertID string, store *ResolvedAlertsSt
 	if alert == nil {
 		return false, 0
 	}
-	group, ok := store.Groups[generateGroupID(alert.RuleName, alert.Severity)]
-	if !ok || alert.DetectedAt > group.Through {
-		return false, 0
-	}
-	for _, id := range group.Except {
-		if id == alertID {
-			return false, 0
+	k := recordAlertGroup(alert)
+	for _, id := range [2]string{k.id(), k.legacyID()} {
+		group, ok := store.Groups[id]
+		if ok && alert.DetectedAt <= group.Through && !slices.Contains(group.Except, alertID) && !slices.Contains(group.ExceptGroups, k.id()) {
+			return true, group.ResolvedAt
 		}
 	}
-	return true, group.ResolvedAt
+	return false, 0
 }
 
 // alertGroupOf streams the audit to find the group of one alert ID.
@@ -187,20 +187,24 @@ func (s *Server) alertGroupOf(ctx context.Context, outDir, alertID string) (*typ
 
 // countAlertGroup streams the audit and counts alerts of a group detected
 // at or before through, collecting matching legacy per-alert entries.
-func (s *Server) countAlertGroup(ctx context.Context, outDir, groupID string, through int64, store *ResolvedAlertsStore) (int, []string, error) {
+func (s *Server) countAlertGroup(ctx context.Context, outDir, groupID string, through int64, store *ResolvedAlertsStore) (int, []string, string, error) {
 	count := 0
 	var ids []string
+	var parentID string
 	err := s.walkAlertAudit(ctx, filepath.Join(outDir, "Alert.ncap.gz"), 0, alertStatsScanRows, alertStatsFrameBytes, func(alert *types.Alert, _ *ResolvedAlertsStore) error {
-		if generateGroupID(alert.RuleName, alert.Severity) != groupID || alert.DetectedAt > through {
+		if !inAlertGroup(alert, groupID) || alert.DetectedAt > through {
 			return nil
 		}
 		count++
+		if count == 1 {
+			parentID = recordAlertGroup(alert).legacyID()
+		}
 		if id := alertResponse(alert).AlertID; store.Alerts[id].AlertID != "" {
 			ids = append(ids, id)
 		}
 		return nil
 	})
-	return count, ids, err
+	return count, ids, parentID, err
 }
 
 func (s *Server) resolutionOutDir(w http.ResponseWriter, r *http.Request) (string, *ResolveAlertRequest, bool) {
@@ -263,7 +267,7 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 	if req.GroupID != "" {
 		through := time.Now().UnixNano()
 		var legacy []string
-		count, legacy, err = s.countAlertGroup(r.Context(), outDir, req.GroupID, through, store)
+		count, legacy, _, err = s.countAlertGroup(r.Context(), outDir, req.GroupID, through, store)
 		if err != nil {
 			s.respondResolutionError(w, r, "resolve", err)
 			return
@@ -298,19 +302,13 @@ func (s *Server) dropGroupException(ctx context.Context, outDir, alertID string,
 	if err != nil || alert == nil {
 		return err
 	}
-	groupID := generateGroupID(alert.RuleName, alert.Severity)
-	group, ok := store.Groups[groupID]
-	if !ok {
-		return nil
-	}
-	kept := group.Except[:0]
-	for _, id := range group.Except {
-		if id != alertID {
-			kept = append(kept, id)
+	k := recordAlertGroup(alert)
+	for _, id := range [2]string{k.id(), k.legacyID()} {
+		if group, ok := store.Groups[id]; ok {
+			group.Except = slices.DeleteFunc(group.Except, func(id string) bool { return id == alertID })
+			store.Groups[id] = group
 		}
 	}
-	group.Except = kept
-	store.Groups[groupID] = group
 	return nil
 }
 
@@ -331,7 +329,8 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 	count := 1
 	if req.GroupID != "" {
 		var legacy []string
-		count, legacy, err = s.countAlertGroup(r.Context(), outDir, req.GroupID, int64(^uint64(0)>>1), store)
+		var parentID string
+		count, legacy, parentID, err = s.countAlertGroup(r.Context(), outDir, req.GroupID, int64(^uint64(0)>>1), store)
 		if err != nil {
 			s.respondResolutionError(w, r, "unresolve", err)
 			return
@@ -340,6 +339,10 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 			delete(store.Alerts, id)
 		}
 		delete(store.Groups, req.GroupID)
+		if parent, ok := store.Groups[parentID]; ok && !slices.Contains(parent.ExceptGroups, req.GroupID) {
+			parent.ExceptGroups = append(parent.ExceptGroups, req.GroupID)
+			store.Groups[parentID] = parent
+		}
 	} else {
 		delete(store.Alerts, req.AlertID)
 		unresolved = []string{req.AlertID}
@@ -350,10 +353,12 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if alert != nil {
-				groupID := generateGroupID(alert.RuleName, alert.Severity)
-				if group, ok := store.Groups[groupID]; ok && alert.DetectedAt <= group.Through {
-					group.Except = append(group.Except, req.AlertID)
-					store.Groups[groupID] = group
+				k := recordAlertGroup(alert)
+				for _, groupID := range [2]string{k.id(), k.legacyID()} {
+					if group, ok := store.Groups[groupID]; ok && alert.DetectedAt <= group.Through && !slices.Contains(group.Except, req.AlertID) {
+						group.Except = append(group.Except, req.AlertID)
+						store.Groups[groupID] = group
+					}
 				}
 			}
 		}

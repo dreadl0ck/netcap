@@ -48,7 +48,7 @@ rules:
     severity: info
     mitre: ["T1110.001", "T1021.004"]
     tags: ["baseline"]
-    enabled: true
+    enabled: false # Already represented by SSH Connection Detected inventory.
     dedupe_by: [SrcIP, DstIP, DstPort]
 
   # RADIUS Auth Attempts
@@ -187,14 +187,14 @@ rules:
 
   # RDP Connection
   - name: RDP Connection
-    # tuned-v0.16.13: established sessions only (see important_ports)
+    # Replaced by the RDP negotiation rules in important_ports.yml.
     description: Detect RDP connections that may indicate lateral movement
     type: TCP
     expression: (DstPort == 3389) && ACK && PayloadSize > 0
     severity: low
     mitre: ["T1021.001"]
     tags: ["lateral-movement"]
-    enabled: true
+    enabled: false
     dedupe_by: [SrcIP, DstIP, DstPort]
 
   # SMB Admin Share Connection

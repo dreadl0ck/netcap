@@ -15,7 +15,7 @@ func TestThresholdAlertsCarryWhatTheyCounted(t *testing.T) {
 	var alerts []*types.Alert
 	config := &Config{Rules: []*Rule{
 		{Name: "walk", Type: "TCP", Expression: "SYN", Severity: "medium", Enabled: true, DistinctField: "DstIP", DistinctThreshold: 5, ThresholdWindow: 300},
-		{Name: "brute", Type: "TCP", Expression: "SYN && DstPort == 22", Severity: "high", Enabled: true, Threshold: 3, ThresholdWindow: 60, GroupBy: []string{"SrcIP", "DstIP"}},
+		{Name: "brute", Type: "TCP", Expression: "SYN && DstPort == 22", Severity: "high", Enabled: true, Threshold: 3, GroupBy: []string{"SrcIP", "DstIP"}},
 	}}
 	replay, err := NewAuditReplay(config, alertWriterFunc(func(a *types.Alert) error { alerts = append(alerts, a); return nil }))
 	if err != nil {
@@ -37,7 +37,7 @@ func TestThresholdAlertsCarryWhatTheyCounted(t *testing.T) {
 		byRule[a.RuleName] = a
 	}
 	walk := byRule["walk"]
-	if walk == nil || walk.Count != 5 || len(walk.Examples) != 5 || walk.FirstSeen != base || walk.LastSeen != base+4*int64(time.Second) {
+	if walk == nil || walk.Count != 5 || len(walk.Examples) != 5 || walk.FirstSeen != base || walk.LastSeen != base+4*int64(time.Second) || walk.Threshold != 5 || walk.ThresholdWindow != 300 {
 		t.Fatalf("distinct evidence: %+v", walk)
 	}
 	var first map[string]string
@@ -49,7 +49,7 @@ func TestThresholdAlertsCarryWhatTheyCounted(t *testing.T) {
 		Rule  string
 		Group map[string]string
 	}
-	if brute == nil || brute.Count != 3 || json.Unmarshal([]byte(brute.AggregateKey), &key) != nil || key.Group["SrcIP"] != "10.0.0.6" || key.Group["DstIP"] != "192.0.2.22" {
+	if brute == nil || brute.Count != 3 || brute.ThresholdWindow != 60 || json.Unmarshal([]byte(brute.AggregateKey), &key) != nil || key.Group["SrcIP"] != "10.0.0.6" || key.Group["DstIP"] != "192.0.2.22" {
 		t.Fatalf("grouped evidence: %+v", brute)
 	}
 }

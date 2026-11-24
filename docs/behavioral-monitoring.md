@@ -24,6 +24,12 @@ Open the Behavior view. A short pcap may not meet the default learning requireme
 
 Use `-behavior-baseline` to point at an existing baseline file, `-behavior-sensor` to name the sensor and `-behavior-prefix` to give your network CIDRs. By default the state is stored in the output directory. The baseline file has a single-writer lock, so don't run concurrent captures against one file.
 
+With `firstPublicContact: true` in the JSON `-behavior-policy`, the first
+non-web TCP attempt from a trained source to a public destination absent from
+the approved scope raises `baseline.first-public-contact` instead of the
+generic new-service observation. It is scoped to the sensor, interface and
+VLAN. Subsequent new ports on the pair still follow the regular baseline rules.
+
 ## Baseline walkthrough: a changed gateway MAC
 
 This walkthrough learns the devices on a LAN, then replays a later capture in which a different device claims the gateway's IP address. You need three captures of the same network: `lan-baseline.pcap` from a quiet period, `lan-unchanged.pcap` with nothing different, and `lan-later.pcap` taken while a second machine on your lab network answers ARP for the gateway (192.168.1.1).

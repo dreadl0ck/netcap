@@ -210,6 +210,9 @@ func (e *Engine) Observe(ev Event) (alerts []*types.Alert, err error) {
 		evidence := Evidence{1, detector, class, ev.Scope, first, ev.At, count, threshold, window, samples, limitations, indicator}
 		data, _ := json.Marshal(evidence)
 		alert := &types.Alert{Timestamp: ev.At, Name: DisplayName(detector), RuleName: detector, Description: DisplayName(detector) + ": " + class, RecordType: "NetworkDetection", Severity: severity, SrcIP: ev.SrcIP, DstIP: ev.DstIP, SrcPort: fmt.Sprint(ev.SrcPort), DstPort: fmt.Sprint(ev.DstPort), Domain: ev.Name, MITRE: mitre, Tags: []string{"network-detection", class}, MatchedRecord: string(data)}
+		if detector == "policy.cleartext-service" {
+			alert.Tags = append(alert.Tags, "kind:inventory")
+		}
 		alerts = append(alerts, e.aggregates.add(key, alert)...)
 	}
 	if ev.Kind == "dns" {

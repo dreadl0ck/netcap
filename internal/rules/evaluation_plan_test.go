@@ -44,6 +44,9 @@ func TestSharedEvaluationPreservesAlertProvenanceAndClockGates(t *testing.T) {
 			want.DetectedAt = alert.DetectedAt
 			// Threshold evidence is added by the engine, not by EvaluateRule.
 			want.Count, want.FirstSeen, want.LastSeen, want.AggregateKey = alert.Count, alert.FirstSeen, alert.LastSeen, alert.AggregateKey
+			if alert.Count > 0 {
+				want.ThresholdWindow = 60
+			}
 			if !reflect.DeepEqual(want, alert) {
 				t.Fatal("shared evaluation changed alert provenance", want, alert)
 			}
@@ -53,6 +56,7 @@ func TestSharedEvaluationPreservesAlertProvenanceAndClockGates(t *testing.T) {
 		t.Fatal("clock-controlled gates changed", counts)
 	}
 	now = now.Add(61 * time.Second)
+	record.Timestamp = now.UnixNano()
 	if count, err := engine.Evaluate(record); err != nil || count != 1 {
 		t.Fatal("rate window did not advance", count, err)
 	}

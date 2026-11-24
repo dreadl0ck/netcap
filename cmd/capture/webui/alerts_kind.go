@@ -19,6 +19,8 @@ func alertKind(alert *types.Alert) string {
 		return rules.KindInventory
 	case slices.Contains(alert.Tags, rules.FindingTag):
 		return rules.KindFinding
+	case alert.RecordType == "NetworkDetection" && alert.RuleName == "policy.cleartext-service" && strings.EqualFold(alert.Severity, "info"):
+		return rules.KindInventory
 	case alert.RuleExpression != "" && strings.EqualFold(alert.Severity, "info"):
 		return rules.KindInventory
 	}

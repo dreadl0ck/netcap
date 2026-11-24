@@ -235,15 +235,16 @@ type Evidence struct {
 }
 
 type Policy struct {
-	Maintenance     []Maintenance `json:"maintenance,omitempty"`
-	DeniedCountries []string      `json:"deniedCountries,omitempty"`
-	DeniedASNs      []string      `json:"deniedASNs,omitempty"`
-	RateWindows     uint64        `json:"rateWindows"`
-	RateMultiplier  float64       `json:"rateMultiplier"`
-	WindowNS        int64         `json:"windowNS"`
-	Fanout          int           `json:"fanout"`
-	RDPAttempts     int           `json:"rdpAttempts"`
-	ApprovedSources []string      `json:"approvedSources,omitempty"`
+	Maintenance        []Maintenance `json:"maintenance,omitempty"`
+	DeniedCountries    []string      `json:"deniedCountries,omitempty"`
+	DeniedASNs         []string      `json:"deniedASNs,omitempty"`
+	RateWindows        uint64        `json:"rateWindows"`
+	RateMultiplier     float64       `json:"rateMultiplier"`
+	WindowNS           int64         `json:"windowNS"`
+	Fanout             int           `json:"fanout"`
+	RDPAttempts        int           `json:"rdpAttempts"`
+	ApprovedSources    []string      `json:"approvedSources,omitempty"`
+	FirstPublicContact bool          `json:"firstPublicContact,omitempty"`
 }
 
 type Maintenance struct {

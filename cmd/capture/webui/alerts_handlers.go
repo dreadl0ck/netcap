@@ -193,7 +193,7 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	match := func(alert *types.Alert) bool {
-		return kindMatch(alert) && (groupFilter == "" || generateGroupID(alert.RuleName, alert.Severity) == groupFilter) &&
+		return kindMatch(alert) && (groupFilter == "" || inAlertGroup(alert, groupFilter)) &&
 			(severityFilter == "" || strings.EqualFold(alert.Severity, severityFilter)) &&
 			(ruleNameFilter == "" || strings.EqualFold(alert.RuleName, ruleNameFilter))
 	}
@@ -451,8 +451,7 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 	bySeverity := make(map[string]int)
 	byRule := make(map[string]int)
 	criticalCount, total, dimensions := 0, 0, 0
-	type groupKey struct{ rule, severity string }
-	alertGroups := make(map[groupKey]struct{})
+	alertGroups := make(map[alertGroupKey]struct{})
 	recent := make([]*types.Alert, 0, 10)
 	var resolved *ResolvedAlertsStore
 	kindMatch, err := alertKindFilter(r)
@@ -468,9 +467,9 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 		if !kindMatch(alert) {
 			return nil
 		}
-		key := groupKey{alert.RuleName, alert.Severity}
+		key := recordAlertGroup(alert)
 		if _, ok := alertGroups[key]; !ok {
-			dimensions += len(key.rule) + len(key.severity) + 128
+			dimensions += len(key.ruleName) + len(key.severity) + len(key.src) + len(key.dst) + 128
 			if dimensions > alertStatsDimensionBytes {
 				return fmt.Errorf("%w: summary dimension budget exceeded", errAlertPageSourceLimit)
 			}
@@ -550,13 +549,9 @@ func (s *Server) handleClearAlerts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Determine the output directory
 	outDir, _ := s.resolveOutDirFromRequest(r)
-
 	if outDir == "" {
-		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": "No output directory selected",
-		})
+		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "No output directory selected"})
 		return
 	}
 
@@ -737,7 +732,7 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// groupAlerts groups alerts by rule name and severity, collecting unique values
+// groupAlerts groups findings by rule, severity and observed endpoint pair.
 func groupAlerts(alerts []AlertResponse, severityFilter, ruleNameFilter string) []GroupedAlert {
 	acc := newAlertGroups(-1)
 	for _, alert := range alerts {
@@ -746,7 +741,35 @@ func groupAlerts(alerts []AlertResponse, severityFilter, ruleNameFilter string) 
 	return acc.finish()
 }
 
-type alertGroupKey struct{ ruleName, severity string }
+type alertGroupKey struct{ ruleName, severity, src, dst string }
+
+func newAlertGroupKey(rule, severity, kind, src, dst string) alertGroupKey {
+	k := alertGroupKey{ruleName: rule, severity: severity}
+	if kind != rules.KindInventory && src != "" && dst != "" {
+		k.src, k.dst = src, dst
+	}
+	return k
+}
+
+func recordAlertGroup(a *types.Alert) alertGroupKey {
+	return newAlertGroupKey(a.RuleName, a.Severity, alertKind(a), a.SrcIP, a.DstIP)
+}
+
+func (k alertGroupKey) legacyID() string { return k.ruleName + "-" + k.severity }
+
+func (k alertGroupKey) id() string {
+	if k.src == "" {
+		return k.legacyID()
+	}
+	encoded, _ := json.Marshal([4]string{k.ruleName, k.severity, k.src, k.dst})
+	digest := sha256.Sum256(encoded)
+	return fmt.Sprintf("pair:%x", digest[:16])
+}
+
+func inAlertGroup(alert *types.Alert, id string) bool {
+	k := recordAlertGroup(alert)
+	return k.legacyID() == id || k.id() == id
+}
 
 type alertGroups struct {
 	groups    map[alertGroupKey]*GroupedAlert
@@ -766,10 +789,7 @@ func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter st
 		return nil
 	}
 
-	key := alertGroupKey{
-		ruleName: alert.RuleName,
-		severity: alert.Severity,
-	}
+	key := newAlertGroupKey(alert.RuleName, alert.Severity, alert.Kind, alert.SrcIP, alert.DstIP)
 
 	group, exists := a.groups[key]
 	srcPort, dstPort := groupedAlertPorts(alert)
@@ -817,7 +837,7 @@ func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter st
 			UniqueDstPorts:  []string{},
 			SampleAlerts:    []AlertResponse{},
 			ResolvedCount:   0,
-			GroupID:         generateGroupID(alert.RuleName, alert.Severity),
+			GroupID:         key.id(),
 		}
 		a.groups[key] = group
 		seen = [4]map[string]bool{{}, {}, {}, {}}
@@ -887,10 +907,10 @@ func sortGroupedAlerts(groups []GroupedAlert, sortBy, sortOrder string) {
 			order = cmp.Compare(severityRank[strings.ToLower(a.Severity)], severityRank[strings.ToLower(b.Severity)])
 		default: // lastSeen
 			return cmp.Or(cmp.Compare(a.LastSeen, b.LastSeen), cmp.Compare(a.Count, b.Count),
-				cmp.Compare(a.RuleName, b.RuleName), cmp.Compare(a.Severity, b.Severity)) < 0
+				cmp.Compare(a.RuleName, b.RuleName), cmp.Compare(a.Severity, b.Severity), cmp.Compare(a.GroupID, b.GroupID)) < 0
 		}
 		return cmp.Or(order, cmp.Compare(a.LastSeen, b.LastSeen),
-			cmp.Compare(a.RuleName, b.RuleName), cmp.Compare(a.Severity, b.Severity)) < 0
+			cmp.Compare(a.RuleName, b.RuleName), cmp.Compare(a.Severity, b.Severity), cmp.Compare(a.GroupID, b.GroupID)) < 0
 	})
 }
 
@@ -925,11 +945,6 @@ func generateAlertID(alert AlertResponse) string {
 		return fmt.Sprintf("%s-%x", id, hash[:16])
 	}
 	return id
-}
-
-// generateGroupID generates a unique identifier for an alert group
-func generateGroupID(ruleName, severity string) string {
-	return fmt.Sprintf("%s-%s", ruleName, severity)
 }
 
 type alertScanStatsKey struct{}

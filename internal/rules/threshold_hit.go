@@ -10,6 +10,13 @@ import (
 // maxThresholdValues bounds the distinct values an alert lists.
 const maxThresholdValues = 64
 
+func (r *Rule) thresholdWindowSeconds() int {
+	if r.ThresholdWindow <= 0 {
+		return 60
+	}
+	return r.ThresholdWindow
+}
+
 // thresholdHit is what a count or cardinality rule counted when it fired.
 // A rule without a threshold fires with an empty hit.
 type thresholdHit struct {
@@ -72,8 +79,9 @@ func (h *thresholdHit) annotate(rule *Rule, alert *types.Alert) {
 		wire, _ := json.Marshal(map[string]int{"omittedDistinctValues": h.total - len(h.values)})
 		alert.Examples = append(alert.Examples, string(wire))
 	}
-	if rule.ThresholdWindow > 0 && alert.ThresholdWindow == 0 {
-		alert.ThresholdWindow = int32(rule.ThresholdWindow)
+	alert.ThresholdWindow = int32(rule.thresholdWindowSeconds())
+	if rule.DistinctField != "" {
+		alert.Threshold = int32(max(2, rule.DistinctThreshold))
 	}
 }
 

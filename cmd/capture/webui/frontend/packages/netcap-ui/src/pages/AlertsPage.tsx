@@ -442,7 +442,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
           labelDisplayedRows={({ from, to, count }) =>
             translate("ui:m_b05d201872a5873dd2ba", { arg0: from, arg1: to, arg2: count, arg3: totalCount })}
           onCardClick={(group) => {
-            const groupKey = `${group.ruleName}-${group.severity}`;
+            const groupKey = group.groupId;
             setExpandedGroup(expandedGroup === groupKey ? null : groupKey);
           }}
           renderCard={(group) => (
@@ -491,7 +491,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                         </Typography></TableCell></TableRow>
                   ) : (
                     groups.map((group, index) => {
-                      const groupKey = `${group.ruleName}-${group.severity}`;
+                      const groupKey = group.groupId;
                       const isExpanded = expandedGroup === groupKey;
 
                       return (

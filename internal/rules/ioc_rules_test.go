@@ -19,8 +19,8 @@ func TestIOCRulesCompile(t *testing.T) {
 			}
 		}
 	}
-	if count != 8 {
-		t.Fatalf("loaded %d IOC examples, want 8", count)
+	if count != 10 {
+		t.Fatalf("loaded %d IOC examples, want 10", count)
 	}
 	if err := CompileRules(config); err != nil {
 		t.Fatal(err)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -125,5 +126,47 @@ func TestUnresolveGroupRemovesLegacyEntries(t *testing.T) {
 	groupResolutionRequest(t, s, "/api/alerts/unresolve", map[string]string{"groupId": "r-low"})
 	if resolved, _ := groupResolvedCount(t, s, dir); resolved != 0 {
 		t.Fatalf("legacy entries survived: %d", resolved)
+	}
+}
+
+func TestEndpointPairAlertGroupsAndResolution(t *testing.T) {
+	dir := t.TempDir()
+	const src, a, b = "192.0.2.1", "198.51.100.2", "198.51.100.3"
+	rows := []proto.Message{
+		&types.Alert{RuleName: "rule", Severity: "high", SrcIP: src, DstIP: a, Timestamp: 1e9},
+		&types.Alert{RuleName: "rule", Severity: "high", SrcIP: src, DstIP: a, Timestamp: 2e9},
+		&types.Alert{RuleName: "rule", Severity: "high", SrcIP: src, DstIP: b, Timestamp: 3e9},
+	}
+	writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, rows)
+	s := &Server{outDir: dir}
+	w := httptest.NewRecorder()
+	s.handleGroupedAlerts(w, httptest.NewRequest("GET", "/api/alerts/grouped?mcpPage=true&pageLimit=10", nil))
+	var groups GroupedAlertsResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &groups); err != nil || len(groups.Groups) != 2 || groups.TotalCount != 3 {
+		t.Fatalf("grouped: %d %s", w.Code, w.Body)
+	}
+	var pairID string
+	for _, g := range groups.Groups {
+		if g.Count == 2 {
+			pairID = g.GroupID
+		}
+	}
+	if pairID == "" || pairID == "rule-high" {
+		t.Fatalf("missing exact pair group: %+v", groups)
+	}
+	w = httptest.NewRecorder()
+	s.handleAlerts(w, httptest.NewRequest("GET", "/api/alerts?mcpPage=true&pageLimit=10&groupId="+url.QueryEscape(pairID), nil))
+	var page AlertsResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &page); err != nil || len(page.Alerts) != 2 || page.Alerts[0].DstIP != a || page.Alerts[1].DstIP != a {
+		t.Fatalf("members: %d %s", w.Code, w.Body)
+	}
+	groupResolutionRequest(t, s, "/api/alerts/resolve", map[string]string{"groupId": pairID})
+	if got, _ := groupResolvedCount(t, s, dir); got != 2 {
+		t.Fatalf("resolved %d alerts, want only the pair's 2", got)
+	}
+	groupResolutionRequest(t, s, "/api/alerts/resolve", map[string]string{"groupId": "rule-high"})
+	groupResolutionRequest(t, s, "/api/alerts/unresolve", map[string]string{"groupId": pairID})
+	if got, _ := groupResolvedCount(t, s, dir); got != 1 {
+		t.Fatalf("unresolving a pair of a legacy group left %d resolved, want 1", got)
 	}
 }

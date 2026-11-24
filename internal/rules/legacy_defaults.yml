@@ -3,6 +3,33 @@
 # current default. Never edit an entry; add the previous definition when a
 # default changes. Entries before the first section comment predate v0.16.13.
 rules:
+  - name: SSH Connection Detected
+    description: SSH connection detected - secure shell for remote admin (monitor for brute-force and stolen keys)
+    type: Connection
+    expression: '(ParsePort(DstPort) == 22) && TransportProto == "TCP" && (Established || (PacketsClientToServer > 0 && PacketsServerToClient > 0 && (AppPayloadSize64 > 0 || AppPayloadSize > 0)))'
+    severity: low
+    mitre: ["T1021.004", "T1110.001"]
+    tags: ["remote-access"]
+    enabled: true
+    dedupe_by: [SrcIP, SrcPort, DstIP, DstPort, TimestampFirst]
+  - name: RDP Detected
+    description: Remote Desktop Protocol detected - common ransomware vector, require VPN + MFA
+    type: Connection
+    expression: '(ParsePort(DstPort) == 3389) && TransportProto == "TCP" && (Established || (PacketsClientToServer > 0 && PacketsServerToClient > 0 && (AppPayloadSize64 > 0 || AppPayloadSize > 0)))'
+    severity: low
+    mitre: ["T1021.001", "T1110.001"]
+    tags: ["remote-desktop", "ransomware"]
+    enabled: true
+    dedupe_by: [SrcIP, SrcPort, DstIP, DstPort, TimestampFirst]
+  - name: RDP External Connection
+    description: RDP connection to external IP detected - potential compromise or exfiltration
+    type: Connection
+    expression: '(ParsePort(DstPort) == 3389 && IsPublicIP(DstIP)) && TransportProto == "TCP" && (Established || (PacketsClientToServer > 0 && PacketsServerToClient > 0 && (AppPayloadSize64 > 0 || AppPayloadSize > 0)))'
+    severity: critical
+    mitre: ["T1021.001"]
+    tags: ["external"]
+    enabled: true
+    dedupe_by: [SrcIP, SrcPort, DstIP, DstPort, TimestampFirst]
   - name: SYN Scan Detection
     description: Detect TCP SYN scan attempts (SYN without ACK)
     type: TCP
