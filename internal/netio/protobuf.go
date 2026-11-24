@@ -287,12 +287,6 @@ func (w *protoWriter) Close(numRecords int64) (name string, size int64) {
 		w.record(closeGzipWriters(w.gWriter))
 	}
 
-	// Track file sync performance
-	if w.wc.PerfTracker != nil && w.file != nil {
-		start := time.Now()
-		w.record(w.file.Sync())
-		w.wc.PerfTracker.RecordDiskSync(w.wc.Name, time.Since(start))
-	}
 
 	name, size, err := closeFileChecked(w.wc.Out, w.file, w.wc.Name, numRecords)
 	w.record(err)

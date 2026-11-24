@@ -59,7 +59,7 @@ func SaveDatagramConversation(source core.FragmentSource, ident string, first ti
 		return err
 	}
 	base := filepath.Join(root, filepath.Clean(path.Base(utils.CleanIdent(ident)))+binaryFileExtension)
-	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaults.FilePermission)
+	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND, defaults.FilePermission)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func SaveDatagramConversation(source core.FragmentSource, ident string, first ti
 		return writeErr
 	}
 	err = w.Flush()
-	err = errors.Join(err, syncFile(f), f.Close())
+	err = errors.Join(err, f.Close())
 	if err == nil {
 		Stats.Lock()
 		Stats.SavedUDPConnections++

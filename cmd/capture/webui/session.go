@@ -20,6 +20,7 @@
 package webui
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -29,6 +30,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/netcap/internal/artifactio"
 )
 
 // SessionStatus represents the current status of an analysis session
@@ -620,7 +623,8 @@ func (sm *SessionManager) reconstructSession(sessionID, sessionDir, pcapsDir, up
 		errorMessage = "Analysis failed (see error log)"
 	}
 
-	// Check if there are any .ncap or .ncap.gz files (indicates successful completion)
+	// Audit files exist from capture start, so only a report written after
+	// cleanup proves the run finished.
 	hasResults := false
 	if entries, err := os.ReadDir(sessionDir); err == nil {
 		for _, entry := range entries {
@@ -634,6 +638,9 @@ func (sm *SessionManager) reconstructSession(sessionID, sessionDir, pcapsDir, up
 	if !hasResults && status != StatusFailed {
 		status = StatusQueued
 		resultsReady = false
+	} else if status != StatusFailed && !captureFinished(sessionDir) {
+		status, resultsReady = StatusFailed, false
+		errorMessage = "Analysis did not finish (no finalized capture report)"
 	}
 
 	session := &SessionInfo{
@@ -688,4 +695,22 @@ func (sm *SessionManager) SaveSessionMetadata(sessionID string) error {
 
 	metadataPath := filepath.Join(session.OutputDir, "session.json")
 	return saveSessionMetadata(metadataPath, session)
+}
+
+// captureFinished reports whether dir holds a finalized capture-input.json or
+// a manifest of a finished run.
+func captureFinished(dir string) bool {
+	if data, err := artifactio.Read(context.Background(), dir, "capture-input.json", 4<<20); err == nil {
+		var report struct {
+			Finalized bool `json:"finalized"`
+		}
+		if json.Unmarshal(data, &report) == nil && report.Finalized {
+			return true
+		}
+	}
+	data, err := artifactio.Read(context.Background(), dir, "capture-manifest.json", 16<<20)
+	var manifest struct {
+		Status string `json:"status"`
+	}
+	return err == nil && json.Unmarshal(data, &manifest) == nil && (manifest.Status == "complete" || manifest.Status == "partial")
 }

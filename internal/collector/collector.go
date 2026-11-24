@@ -958,13 +958,6 @@ func (c *Collector) closeErrorLogFile() {
 
 	fileName := c.errorLogFile.Name()
 
-	// sync
-	err = c.errorLogFile.Sync()
-	if err != nil {
-		c.log.Error("failed to sync error log", zap.Error(err))
-		return
-	}
-
 	// close file handle
 	err = c.errorLogFile.Close()
 	if err != nil {

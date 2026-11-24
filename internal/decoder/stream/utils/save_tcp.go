@@ -82,7 +82,7 @@ func SaveTCPConversation(source core.FragmentSource, ident string, first time.Ti
 	if writeErr != nil {
 		return writeErr
 	}
-	err = errors.Join(writer.Flush(), syncFile(file), file.Close())
+	err = errors.Join(writer.Flush(), file.Close())
 	if err == nil {
 		Stats.Lock()
 		Stats.SavedTCPConnections++

@@ -35,6 +35,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/alert"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
+	"github.com/dreadl0ck/netcap/internal/durable"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/network"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/udp"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
@@ -119,6 +120,10 @@ func (c *Collector) cleanup(force bool) {
 		}
 		c.finalizeCaptureEvidence()
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, c.sealAuditStages())
+		// One barrier replaces per-file syncs; it precedes the ready marker.
+		if err := durable.Barrier(c.outputDir()); err != nil {
+			c.captureEvidenceError = errors.Join(c.captureEvidenceError, fmt.Errorf("sync capture output: %w", err))
+		}
 		if c.captureEvidence != nil && c.captureRunError == nil && c.captureCoverageError == nil && c.captureEvidenceError == nil && c.flowExportError == nil && c.artifactAnalysisError == nil {
 			if err := c.captureEvidence.MarkAuditOutputReady(); err != nil {
 				c.captureEvidenceError = fmt.Errorf("finalize audit output: %w", err)
@@ -430,10 +435,6 @@ func (c *Collector) teardown() {
 
 				fileName := l.Name()
 
-				err = l.Sync()
-				if err != nil {
-					fmt.Println("failed to sync logfile:", err)
-				}
 				err = l.Close()
 				if err != nil {
 					fmt.Println("failed to close logfile handle:", err)
@@ -584,4 +585,11 @@ func (c *Collector) updatePerformanceTrackerWithDecoderStats() {
 			c.perfTracker.UpdateDecoderRecords("abstract", d.GetName(), d.NumRecords(), 0)
 		}
 	}
+}
+
+func (c *Collector) outputDir() string {
+	if c.config.DecoderConfig.Out == "" {
+		return "."
+	}
+	return c.config.DecoderConfig.Out
 }

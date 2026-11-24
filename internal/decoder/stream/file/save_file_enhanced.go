@@ -374,7 +374,7 @@ func savePreparedFile(conv *core.ConversationInfo, source, name string, extracti
 
 		// Copy data while computing hashes
 		w, errCopy := io.Copy(hashWriter, r)
-		errClose := errors.Join(f.Sync(), hashWriter.Close())
+		errClose := hashWriter.Close()
 		if errCopy != nil {
 			RecordArtifactWriteError(errCopy)
 			saveFileLog.Error("failed to save file",

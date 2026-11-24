@@ -2,6 +2,8 @@ package webui
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -204,8 +206,35 @@ func (s *Server) handleStreamEvidence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer f.Close()
+	if direction != "manifest" && !streamBytesMatchManifest(r, out, id, direction, f, info) {
+		http.Error(w, "stream bytes do not match manifest", http.StatusConflict)
+		return
+	}
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s-%s"`, id, filename))
 	w.Header().Set("Cache-Control", "no-store")
 	http.ServeContent(w, r, filename, info.ModTime(), f)
+}
+
+// streamBytesMatchManifest verifies one direction against its manifest before
+// it is served; outputs are not synced per file, so a crash can leave a
+// published file shorter than its manifest.
+func streamBytesMatchManifest(r *http.Request, out, id, direction string, f *os.File, info os.FileInfo) bool {
+	raw, err := artifactio.Read(r.Context(), out, filepath.Join("stream-evidence", id, "manifest.json"), 4<<20)
+	var manifest streamutils.StreamEvidenceManifest
+	if err != nil || json.Unmarshal(raw, &manifest) != nil {
+		return false
+	}
+	expected := manifest.Client
+	if direction == "server" {
+		expected = manifest.Server
+	}
+	if info.Size() != expected.Length {
+		return false
+	}
+	hash := sha256.New()
+	if _, err := io.Copy(hash, io.NewSectionReader(f, 0, info.Size())); err != nil {
+		return false
+	}
+	return hex.EncodeToString(hash.Sum(nil)) == expected.SHA256
 }

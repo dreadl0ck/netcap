@@ -340,9 +340,6 @@ func (s *alertStore) appendMember(msg proto.Message) error {
 	if err == nil && n != s.buffer.Len() {
 		err = io.ErrShortWrite
 	}
-	if err == nil {
-		err = s.file.Sync()
-	}
 	if err != nil {
 		// Preserve the last committed member on a partial write or sync failure.
 		s.err = errors.Join(err, s.file.Truncate(s.size), s.file.Sync())
@@ -379,7 +376,9 @@ func (w *FileAlertWriter) Close() error {
 	if s.refs == 0 {
 		slot.store = nil
 		if s.file != nil {
-			w.closeErr = errors.Join(w.closeErr, s.file.Close())
+			// One sync per history on close, not per alert: a rule replay can
+			// write tens of thousands of alerts.
+			w.closeErr = errors.Join(w.closeErr, s.file.Sync(), s.file.Close())
 		}
 	}
 	return w.closeErr

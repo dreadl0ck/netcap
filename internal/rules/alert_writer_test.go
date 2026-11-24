@@ -390,7 +390,7 @@ func (f *failingAlertFile) Sync() error {
 }
 
 func TestFileAlertWriterPersistenceFailure(t *testing.T) {
-	for _, mode := range []string{"partial-write", "short-write", "sync"} {
+	for _, mode := range []string{"partial-write", "short-write"} {
 		t.Run(mode, func(t *testing.T) {
 			dir := t.TempDir()
 			w := openAlertWriter(t, dir)
@@ -424,6 +424,24 @@ func TestFileAlertWriterPersistenceFailure(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func TestFileAlertWriterSyncsOnClose(t *testing.T) {
+	w := openAlertWriter(t, t.TempDir())
+	if err := w.WriteAlert(&types.Alert{Name: "committed"}); err != nil {
+		t.Fatal(err)
+	}
+	failing := &failingAlertFile{alertFile: w.store.file, syncErr: true}
+	w.store.file = failing
+	if err := w.WriteAlert(&types.Alert{Name: "second"}); err != nil {
+		t.Fatalf("write synced per alert: %v", err)
+	}
+	if !failing.syncErr {
+		t.Fatal("alert write called Sync")
+	}
+	if err := w.Close(); !errors.Is(err, errAlertDisk) {
+		t.Fatalf("close did not sync: %v", err)
 	}
 }
 

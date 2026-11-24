@@ -2,9 +2,14 @@ package udp
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
+	"runtime"
+	"sync"
 	"time"
+
+	"github.com/gopacket/gopacket"
 
 	"github.com/dreadl0ck/netcap/internal/aggregate"
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
@@ -15,7 +20,6 @@ import (
 	"github.com/dreadl0ck/netcap/internal/packetview"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/utils"
-	"github.com/gopacket/gopacket"
 )
 
 type storedUDPFlow struct {
@@ -257,6 +261,13 @@ func (s *udpFragmentSource) Walk(yield func(core.DataFragment) bool) error {
 }
 
 func processStoredUDP(key uint64, flow storedUDPFlow) error {
+	return processStoredUDPExport(key, flow, func(save func() error) error { return save() })
+}
+
+// processStoredUDPExport decodes one flow in order and hands its file export
+// to export, which may run it concurrently: decoders write audit records and
+// must stay ordered, while per-flow exports only create files.
+func processStoredUDPExport(key uint64, flow storedUDPFlow, export func(func() error) error) error {
 	state := decoderconfig.Instance.AggregateStore
 	if flow.count > uint64(^uint64(0)>>1) {
 		return fmt.Errorf("UDP datagram count exceeds signed range")
@@ -306,7 +317,10 @@ func processStoredUDP(key uint64, flow storedUDPFlow) error {
 	if conversation.FragmentError != nil {
 		return conversation.FragmentError
 	}
-	if err := streamutils.SaveDatagramConversation(source, ident, first.CaptureInfo().Timestamp, clientTransport, cid); err != nil {
+	timestamp := first.CaptureInfo().Timestamp
+	if err := export(func() error {
+		return streamutils.SaveDatagramConversation(source, ident, timestamp, clientTransport, cid)
+	}); err != nil {
 		return err
 	}
 	if !flow.refused || serverBytes > 0 {
@@ -317,6 +331,47 @@ func processStoredUDP(key uint64, flow storedUDPFlow) error {
 
 func flushStoredUDP() {
 	state := decoderconfig.Instance.AggregateStore
+	// Exports are file-system bound (one evidence directory per flow); run
+	// them beside the ordered decode. The first error stops new work.
+	exports := make(chan func() error, 64)
+	var (
+		exportWG  sync.WaitGroup
+		exportMu  sync.Mutex
+		exportErr error
+	)
+	for range min(8, max(1, runtime.NumCPU())) {
+		exportWG.Go(func() {
+			for save := range exports {
+				exportMu.Lock()
+				failed := exportErr != nil
+				exportMu.Unlock()
+				if failed {
+					continue
+				}
+				if err := save(); err != nil {
+					exportMu.Lock()
+					exportErr = errors.Join(exportErr, err)
+					exportMu.Unlock()
+				}
+			}
+		})
+	}
+	export := func(save func() error) error {
+		exportMu.Lock()
+		err := exportErr
+		exportMu.Unlock()
+		if err == nil {
+			exports <- save
+		}
+		return err
+	}
+	defer func() {
+		close(exports)
+		exportWG.Wait()
+		if exportErr != nil {
+			_ = state.Do(func(*aggregate.Tx) error { return exportErr })
+		}
+	}()
 	last := ""
 	for {
 		var rows []aggregate.Row
@@ -337,7 +392,7 @@ func flushStoredUDP() {
 			}
 			var id uint64
 			if _, err = fmt.Sscanf(key, "udp/flows/%x", &id); err == nil {
-				err = processStoredUDP(id, flow)
+				err = processStoredUDPExport(id, flow, export)
 			}
 			if err != nil {
 				_ = state.Do(func(*aggregate.Tx) error { return err })

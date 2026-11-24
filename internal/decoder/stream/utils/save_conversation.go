@@ -159,7 +159,7 @@ func SaveConversation(proto string, conversation core.DataFragments, ident strin
 
 retry:
 	// append to files
-	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaults.FilePermission)
+	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND, defaults.FilePermission)
 	if err != nil {
 
 		reassemblyLog.Error(
@@ -191,16 +191,6 @@ retry:
 	err = w.Flush()
 	if err != nil {
 		reassemblyLog.Info("failed to flush buffer",
-			zap.String("ident", ident),
-			zap.String("proto", proto),
-			zap.String("base", base),
-			zap.String("proto", proto),
-		)
-	}
-
-	err = syncFile(f)
-	if err != nil {
-		reassemblyLog.Info("failed to sync file",
 			zap.String("ident", ident),
 			zap.String("proto", proto),
 			zap.String("base", base),
@@ -269,7 +259,7 @@ func SaveNetworkSource(protocol string, source NetworkFragmentSource, ident stri
 
 retryNetwork:
 	// append to files
-	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaults.FilePermission)
+	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND, defaults.FilePermission)
 	if err != nil {
 		reassemblyLog.Error(
 			"failed to create path",
@@ -294,7 +284,7 @@ retryNetwork:
 		_, writeErr = w.Write(d.Raw())
 		return writeErr == nil
 	})
-	if err := errors.Join(sourceErr, writeErr, w.Flush(), syncFile(f), f.Close()); err != nil {
+	if err := errors.Join(sourceErr, writeErr, w.Flush(), f.Close()); err != nil {
 		return err
 	}
 	Stats.Lock()

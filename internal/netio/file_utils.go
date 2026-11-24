@@ -101,23 +101,21 @@ func closeFileChecked(outDir string, file *os.File, typ string, numRecords int64
 		return "", 0, errors.Join(err, file.Close())
 	}
 
-	var (
-		errSync  = file.Sync()
-		errClose = file.Close()
-	)
-
-	if errSync != nil || errClose != nil {
-		ioLog.Error("error while closing file", zap.String("name", i.Name()), zap.NamedError("errSync", errSync), zap.NamedError("errClose", errClose))
+	// No per-file sync: the collector syncs the output filesystem once
+	// before it reports the run complete (internal/durable).
+	errClose := file.Close()
+	if errClose != nil {
+		ioLog.Error("error while closing file", zap.String("name", i.Name()), zap.NamedError("errClose", errClose))
 	}
 
 	if numRecords == 0 {
-		return i.Name(), 0, errors.Join(errSync, errClose, os.Remove(filepath.Join(outDir, i.Name())))
+		return i.Name(), 0, errors.Join(errClose, os.Remove(filepath.Join(outDir, i.Name())))
 	}
 	final, statErr := os.Stat(filepath.Join(outDir, i.Name()))
 	if final != nil {
 		size = final.Size()
 	}
-	return i.Name(), size, errors.Join(errSync, errClose, statErr)
+	return i.Name(), size, errors.Join(errClose, statErr)
 }
 
 // removeAuditRecordFileIfEmpty removes the audit record file if it does not contain audit records.

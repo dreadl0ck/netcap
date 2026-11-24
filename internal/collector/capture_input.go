@@ -352,10 +352,20 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 // CaptureInputFile is the per-run input coverage report in the output directory.
 const CaptureInputFile = "capture-input.json"
 
+// writeCaptureInputReport replaces the report. The finalized rewrite comes
+// after the output barrier, so it is synced itself.
 func (c *Collector) writeCaptureInputReport(report *CaptureInputReport) error {
 	data, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(c.config.DecoderConfig.Out, CaptureInputFile), append(data, '\n'), 0600)
+	f, err := os.OpenFile(filepath.Join(c.outputDir(), CaptureInputFile), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(append(data, '\n'))
+	if err == nil && report.Finalized {
+		err = f.Sync()
+	}
+	return errors.Join(err, f.Close())
 }

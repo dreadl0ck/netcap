@@ -266,9 +266,9 @@ func saveSourceEvidence(out, protocol string, source core.FragmentSource, ident 
 	}
 	var clientErr, serverErr error
 	var syncs sync.WaitGroup
-	syncs.Go(func() { clientErr = errors.Join(syncFile(client), client.Close()) })
-	syncs.Go(func() { serverErr = errors.Join(syncFile(server), server.Close()) })
-	manifestErr := errors.Join(syncFile(file), file.Close())
+	syncs.Go(func() { clientErr = client.Close() })
+	syncs.Go(func() { serverErr = server.Close() })
+	manifestErr := file.Close()
 	syncs.Wait()
 	if err := errors.Join(clientErr, serverErr, manifestErr); err != nil {
 		return "", err

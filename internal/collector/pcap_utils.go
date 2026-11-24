@@ -260,10 +260,6 @@ func (c *Collector) closePcapFiles() error {
 
 		fileName := c.unknownPcapFile.Name()
 
-		if err = c.unknownPcapFile.Sync(); err != nil {
-			return err
-		}
-
 		if err = c.unknownPcapFile.Close(); err != nil {
 			return err
 		}
@@ -298,10 +294,6 @@ func (c *Collector) closePcapFiles() error {
 		}
 
 		fileName := c.errorsPcapFile.Name()
-
-		if err = c.errorsPcapFile.Sync(); err != nil {
-			return err
-		}
 
 		if err = c.errorsPcapFile.Close(); err != nil {
 			return err
