@@ -5300,5 +5300,6 @@
   "m_8516a09d344c78e76f0a": "Confidentialité",
   "m_1f88304c2357bb0a6512": "Alertes de ce groupe ({arg0})",
   "m_2b500365c4a97ed05a4f": "{arg0} enregistrements d’alerte dépassent 1 Mio et ne sont pas affichés.",
-  "m_ff496f592bb0ad0ee2c7": "Précédent"
+  "m_ff496f592bb0ad0ee2c7": "Précédent",
+  "m_c8f9cd63288678efe780": "{arg0} correspondances comptées"
 }

@@ -5300,5 +5300,6 @@
   "m_8516a09d344c78e76f0a": "Privacidad",
   "m_1f88304c2357bb0a6512": "Alertas de este grupo ({arg0})",
   "m_2b500365c4a97ed05a4f": "{arg0} registros de alerta superan 1 MiB y no se muestran.",
-  "m_ff496f592bb0ad0ee2c7": "Anterior"
+  "m_ff496f592bb0ad0ee2c7": "Anterior",
+  "m_c8f9cd63288678efe780": "{arg0} coincidencias contadas"
 }

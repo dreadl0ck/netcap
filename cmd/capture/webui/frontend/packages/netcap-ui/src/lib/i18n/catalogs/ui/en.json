@@ -5300,5 +5300,6 @@
   "m_8516a09d344c78e76f0a": "Privacy",
   "m_1f88304c2357bb0a6512": "Alerts in this group ({arg0})",
   "m_2b500365c4a97ed05a4f": "{arg0} alert records are larger than 1 MiB and are not shown.",
-  "m_ff496f592bb0ad0ee2c7": "Previous"
+  "m_ff496f592bb0ad0ee2c7": "Previous",
+  "m_c8f9cd63288678efe780": "Counted {arg0} matches"
 }

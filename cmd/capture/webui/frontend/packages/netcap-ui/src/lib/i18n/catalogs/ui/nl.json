@@ -5300,5 +5300,6 @@
   "m_8516a09d344c78e76f0a": "Privacy",
   "m_1f88304c2357bb0a6512": "Waarschuwingen in deze groep ({arg0})",
   "m_2b500365c4a97ed05a4f": "{arg0} waarschuwingsrecords zijn groter dan 1 MiB en worden niet getoond.",
-  "m_ff496f592bb0ad0ee2c7": "Vorige"
+  "m_ff496f592bb0ad0ee2c7": "Vorige",
+  "m_c8f9cd63288678efe780": "{arg0} overeenkomsten geteld"
 }

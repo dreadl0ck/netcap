@@ -64,10 +64,10 @@ func (g *groupedThresholds) drop(count *groupedCount) {
 // groupedThreshold counts a match for the record's group and reports whether
 // the rule's threshold was reached within its window. Records with an empty
 // group field are not counted.
-func (e *Engine) groupedThreshold(rule *Rule, record types.AuditRecord) bool {
+func (e *Engine) groupedThresholdHit(rule *Rule, record types.AuditRecord) *thresholdHit {
 	group, ok := groupKey(record, rule)
 	if !ok || len(group) > 4096 {
-		return false
+		return nil
 	}
 	now := e.recordEvalTime(record)
 	window := int64(rule.ThresholdWindow) * int64(time.Second)
@@ -106,13 +106,19 @@ func (e *Engine) groupedThreshold(rule *Rule, record types.AuditRecord) bool {
 	}
 	g.entries += count.entries() - before
 	if reached {
+		hit := &thresholdHit{group: groupValues(record, rule)}
+		if len(count.matches) > 0 {
+			hit.count, hit.first, hit.last = len(count.matches), count.matches[0], count.matches[len(count.matches)-1]
+		} else {
+			hit.count, hit.first, hit.last = count.total, count.buckets[0].start, now
+		}
 		g.drop(count)
-		return true
+		return hit
 	}
 	for g.entries > maxGroupedThresholdMatches && g.lru.Len() > 1 {
 		g.evictOldest()
 	}
-	return false
+	return nil
 }
 
 // The window ends at the newest match because capture workers deliver

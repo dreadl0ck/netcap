@@ -5300,5 +5300,6 @@
   "m_8516a09d344c78e76f0a": "Datenschutz",
   "m_1f88304c2357bb0a6512": "Warnmeldungen in dieser Gruppe ({arg0})",
   "m_2b500365c4a97ed05a4f": "{arg0} Warnmeldungsdatensätze sind größer als 1 MiB und werden nicht angezeigt.",
-  "m_ff496f592bb0ad0ee2c7": "Zurück"
+  "m_ff496f592bb0ad0ee2c7": "Zurück",
+  "m_c8f9cd63288678efe780": "{arg0} Treffer gezählt"
 }

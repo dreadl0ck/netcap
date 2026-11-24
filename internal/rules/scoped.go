@@ -43,16 +43,16 @@ func requireScope(scope string, record types.AuditRecord) error {
 	return nil
 }
 
-func (e *Engine) scopedThreshold(scope string, rule *Rule, record types.AuditRecord) (bool, error) {
+func (e *Engine) scopedThresholdHit(scope string, rule *Rule, record types.AuditRecord) (*thresholdHit, error) {
 	if err := requireScope(scope, record); err != nil {
-		return false, err
+		return nil, err
 	}
 	group, ok := groupKey(record, rule)
 	if !ok {
-		return false, nil
+		return nil, nil
 	}
 	if len(group) > 4096 {
-		return false, ErrStateCapacity
+		return nil, ErrStateCapacity
 	}
 	now := record.Time()
 	window := int64(rule.ThresholdWindow) * int64(time.Second)
@@ -74,12 +74,12 @@ func (e *Engine) scopedThreshold(scope string, rule *Rule, record types.AuditRec
 	t := e.scopedCounts[key]
 	if t == nil {
 		if len(e.scopedCounts)+len(e.scopedJoins) >= maxScopedGroups {
-			return false, ErrStateCapacity
+			return nil, ErrStateCapacity
 		}
 		t = &scopedCount{scope: scope, window: window}
 		e.scopedCounts[key] = t
 	} else if now < t.last {
-		return false, errors.New("scoped thresholds require ordered capture time; use OrderedStream")
+		return nil, errors.New("scoped thresholds require ordered capture time; use OrderedStream")
 	}
 	if len(t.matches) > 0 && uint64(now)-uint64(t.matches[0]) > uint64(window) {
 		first := sort.Search(len(t.matches), func(i int) bool { return uint64(now)-uint64(t.matches[i]) <= uint64(window) })
@@ -87,17 +87,18 @@ func (e *Engine) scopedThreshold(scope string, rule *Rule, record types.AuditRec
 		e.scopedEntries -= first
 	}
 	if e.scopedEntries >= maxScopedEntries {
-		return false, ErrStateCapacity
+		return nil, ErrStateCapacity
 	}
 	t.last = now
 	t.matches = append(t.matches, now)
 	e.scopedEntries++
 	if len(t.matches) >= rule.Threshold {
+		hit := &thresholdHit{count: len(t.matches), first: t.matches[0], last: t.matches[len(t.matches)-1], group: groupValues(record, rule)}
 		e.scopedEntries -= len(t.matches)
 		delete(e.scopedCounts, key)
-		return true, nil
+		return hit, nil
 	}
-	return false, nil
+	return nil, nil
 }
 
 func validateJoinFields(fields []string, typ types.Type, after []string, afterType types.Type) error {

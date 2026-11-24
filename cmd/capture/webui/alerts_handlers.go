@@ -72,6 +72,13 @@ type AlertResponse struct {
 	MatchedRecordSHA256 string   `json:"matchedRecordSHA256,omitempty"`
 
 	GroupedEvaluation *rules.OfflineAlertMetadata `json:"groupedEvaluation,omitempty"`
+
+	// What a threshold, cardinality or detector alert counted.
+	Count        uint64   `json:"count,omitempty"`
+	FirstSeenNs  string   `json:"firstSeenNs,omitempty"`
+	LastSeenNs   string   `json:"lastSeenNs,omitempty"`
+	AggregateKey string   `json:"aggregateKey,omitempty"`
+	Examples     []string `json:"examples,omitempty"`
 }
 
 // GroupedAlert represents a deduplicated/grouped alert

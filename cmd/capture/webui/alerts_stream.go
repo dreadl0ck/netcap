@@ -27,6 +27,10 @@ func alertResponse(alert *types.Alert) AlertResponse {
 		response.RuleDigest = alert.RuleDigest
 		response.MatchedRecordSHA256 = alert.MatchedRecordSHA256
 	}
+	if alert.Count > 0 {
+		response.Count, response.FirstSeenNs, response.LastSeenNs = alert.Count, strconv.FormatInt(alert.FirstSeen, 10), strconv.FormatInt(alert.LastSeen, 10)
+		response.AggregateKey, response.Examples = alert.AggregateKey, append([]string(nil), alert.Examples...)
+	}
 	response.AlertID = generateAlertID(response)
 	if metadata := offlineAlertMetadata(alert.Notes); metadata != nil {
 		response.GroupedEvaluation = metadata

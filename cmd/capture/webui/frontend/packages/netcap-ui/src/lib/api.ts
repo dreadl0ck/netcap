@@ -1151,6 +1151,11 @@ export interface Alert {
   resolvedAt?: number;
   alertId: string;
   groupedEvaluation?: OfflineAlertMetadata;
+  count?: number;
+  firstSeenNs?: string;
+  lastSeenNs?: string;
+  aggregateKey?: string;
+  examples?: string[];
 }
 
 export interface AlertsResponse {

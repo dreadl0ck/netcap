@@ -359,6 +359,7 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 			alert = &types.Alert{RuleName: rule.Name, SrcIP: record.Src(), DstIP: record.Dst(), RecordType: recordType.String()}
 		}
 		alertGenerated := false
+		var hit *thresholdHit
 
 		// Ordered correlation gate. This runs for every record of the rule's
 		// type, not only matching ones: the earlier record of a sequence
@@ -389,8 +390,9 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 			// Check distinct-cardinality threshold first (fan-out detection):
 			// count DISTINCT values of DistinctField per source within the window.
 			if rule.DistinctField != "" {
-				reached := e.checkDistinctThreshold(rule, record)
-				if !reached {
+				reached := e.checkDistinctThresholdHit(rule, record)
+				hit = reached
+				if reached == nil {
 					matched = true
 					alertGenerated = false
 					if e.perfTracker != nil {
@@ -402,18 +404,17 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 				// Skip dedup for the same reason threshold rules do.
 			} else if rule.Threshold > 1 {
 				// Check threshold - if rule has threshold > 1, track matches
-				thresholdReached := false
 				if len(rule.GroupBy) > 0 && scope == "" {
-					thresholdReached = e.groupedThreshold(rule, record)
+					hit = e.groupedThresholdHit(rule, record)
 				} else if len(rule.GroupBy) > 0 {
-					thresholdReached, err = e.scopedThreshold(scope, rule, record)
+					hit, err = e.scopedThresholdHit(scope, rule, record)
 					if err != nil {
 						return alertCount, err
 					}
 				} else {
-					thresholdReached = e.checkThreshold(rule, record)
+					hit = e.checkThresholdHit(rule, record)
 				}
-				if !thresholdReached {
+				if hit == nil {
 					// Threshold not reached yet, don't generate alert
 					matched = true
 					alertGenerated = false
@@ -456,6 +457,7 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 			if scope != "" {
 				alert.MatchedRecord = scopedProjection(record)
 			}
+			hit.annotate(rule, alert)
 			if len(contributors) > 0 {
 				alert.Notes = joinEvidence(scope, contributors)
 			}
@@ -538,8 +540,8 @@ func (e *Engine) recordEvalTime(record types.AuditRecord) int64 {
 	return e.now().UnixNano()
 }
 
-// checkThreshold tracks rule matches and returns true when threshold is reached.
-func (e *Engine) checkThreshold(rule *Rule, record types.AuditRecord) bool {
+// checkThreshold tracks rule matches and reports the hit when the threshold is reached.
+func (e *Engine) checkThresholdHit(rule *Rule, record types.AuditRecord) *thresholdHit {
 	e.mu.Lock()
 	tracker, exists := e.thresholdTrackers[rule.Name]
 	if !exists {
@@ -559,7 +561,7 @@ func (e *Engine) checkThreshold(rule *Rule, record types.AuditRecord) bool {
 
 	// Handle edge case: threshold <= 0 should never trigger
 	if rule.Threshold <= 0 {
-		return false
+		return nil
 	}
 
 	// Default threshold window is 60 seconds if not specified
@@ -584,13 +586,11 @@ func (e *Engine) checkThreshold(rule *Rule, record types.AuditRecord) bool {
 
 	// Check if threshold is reached
 	if len(tracker.matches) >= rule.Threshold {
-		// Threshold reached - reset the tracker and return true
+		hit := &thresholdHit{count: len(tracker.matches), first: tracker.matches[0], last: tracker.matches[len(tracker.matches)-1]}
 		tracker.matches = nil
-		return true
+		return hit
 	}
-
-	// Threshold not yet reached
-	return false
+	return nil
 }
 
 // checkDistinctThreshold implements cardinality-based (fan-out) detection. It
@@ -598,7 +598,7 @@ func (e *Engine) checkThreshold(rule *Rule, record types.AuditRecord) bool {
 // record's source IP within the threshold window, and returns true once that
 // count reaches DistinctThreshold. This detects the AA26-231A "one source
 // touching many distinct controllers" enumeration shape.
-func (e *Engine) checkDistinctThreshold(rule *Rule, record types.AuditRecord) bool {
+func (e *Engine) checkDistinctThresholdHit(rule *Rule, record types.AuditRecord) *thresholdHit {
 	e.mu.Lock()
 	tracker, exists := e.distinctTrackers[rule.Name]
 	if !exists {
@@ -625,7 +625,7 @@ func (e *Engine) checkDistinctThreshold(rule *Rule, record types.AuditRecord) bo
 	value := extractStringField(record, rule.DistinctField)
 	if value == "" {
 		// Nothing to count on this record.
-		return false
+		return nil
 	}
 
 	now := e.recordEvalTime(record)
@@ -666,9 +666,10 @@ func (e *Engine) checkDistinctThreshold(rule *Rule, record types.AuditRecord) bo
 	}
 
 	if count >= threshold {
+		hit := distinctHit(src, values)
 		// Reset this source's set so the alert re-arms for the next window.
 		tracker.remove(src)
-		return true
+		return hit
 	}
 
 	// Periodically sweep sources whose entire value-set has aged out of the
@@ -680,7 +681,7 @@ func (e *Engine) checkDistinctThreshold(rule *Rule, record types.AuditRecord) bo
 		tracker.sweep(now, windowNanos)
 	}
 
-	return false
+	return nil
 }
 
 // distinctSweepInterval controls how often checkDistinctThreshold performs a
