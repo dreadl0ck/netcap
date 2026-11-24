@@ -455,3 +455,15 @@ rules:
     mitre: ["T1046"]
     tags: ["enumeration"]
     enabled: true
+  # Superseded in v0.16.14: case variants of one name (DNS 0x20 randomization) split the count.
+  - name: DNS Beaconing Pattern
+    description: One host sends 100+ DNS queries for the same name to external resolvers within 600 seconds
+    type: DNS
+    expression: '!QR && len(Questions) > 0 && IsPublicIP(DstIP)'
+    severity: low
+    mitre: ["T1071.004"]
+    tags: ["beaconing"]
+    enabled: true
+    group_by: ["SrcIP", "Questions.Name"]
+    threshold: 100
+    threshold_window: 600

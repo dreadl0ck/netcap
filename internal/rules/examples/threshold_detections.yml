@@ -130,7 +130,7 @@ rules:
 
   # Suspicious DNS Beaconing - frequent queries to same domain
   - name: DNS Beaconing Pattern
-    description: One host sends 100+ DNS queries for the same name to external resolvers within 600 seconds
+    description: One host sends 100+ DNS queries for the same name (any letter case) to external resolvers within 600 seconds
     type: DNS
     expression: '!QR && len(Questions) > 0 && IsPublicIP(DstIP)'
     severity: low
@@ -138,6 +138,7 @@ rules:
     tags: ["beaconing"]
     enabled: true
     group_by: ["SrcIP", "Questions.Name"]
+    fold_case: true
     threshold: 100
     threshold_window: 600
 

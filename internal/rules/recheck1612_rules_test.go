@@ -251,32 +251,36 @@ func TestRulesDirectoryMigratesSavedDefaults(t *testing.T) {
 	for _, rule := range embedded.Rules {
 		current[rule.Name] = rule
 	}
-	custom := &Rule{Name: "Operator Rule", Type: "TCP", Expression: "SYN", Severity: "low", Enabled: true}
-	saved := &Config{Rules: append(append([]*Rule{}, legacy.Rules...), custom)}
-	for _, old := range retiredDefinitions(t) {
-		saved.Rules = append(saved.Rules, old)
+	load := func(rules ...*Rule) map[string]*Rule {
+		t.Helper()
+		data, err := yaml.Marshal(&Config{Rules: rules})
+		if err != nil {
+			t.Fatal(err)
+		}
+		dir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(dir, "saved.yml"), data, 0600); err != nil {
+			t.Fatal(err)
+		}
+		engine, err := NewEngine(dir, &MockAlertWriter{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := map[string]*Rule{}
+		for _, rule := range engine.config.Rules {
+			names[rule.Name] = rule
+		}
+		return names
 	}
-	data, err := yaml.Marshal(saved)
-	if err != nil {
-		t.Fatal(err)
-	}
-	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "saved.yml"), data, 0600); err != nil {
-		t.Fatal(err)
-	}
-	engine, err := NewEngine(dir, &MockAlertWriter{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	names := map[string]*Rule{}
-	for _, rule := range engine.config.Rules {
-		names[rule.Name] = rule
-	}
+	// One folder per entry: a rule superseded twice has two entries.
 	for _, old := range legacy.Rules {
-		if got := names[old.Name]; got == nil || got.Expression != current[old.Name].Expression || !reflect.DeepEqual(got.GroupBy, current[old.Name].GroupBy) || got.Threshold != current[old.Name].Threshold {
+		want := current[old.Name]
+		if got := load(old)[old.Name]; got == nil || got.Expression != want.Expression || !reflect.DeepEqual(got.GroupBy, want.GroupBy) ||
+			got.Threshold != want.Threshold || got.DistinctField != want.DistinctField || got.FoldCase != want.FoldCase {
 			t.Fatalf("%s not migrated: %+v", old.Name, got)
 		}
 	}
+	custom := &Rule{Name: "Operator Rule", Type: "TCP", Expression: "SYN", Severity: "low", Enabled: true}
+	names := load(append(retiredDefinitions(t), custom)...)
 	for _, old := range retiredDefinitions(t) {
 		if names[old.Name] != nil {
 			t.Fatalf("retired default %s still loads", old.Name)
@@ -415,5 +419,22 @@ func TestRewrittenSingleMatchRulesNeedTheirBehaviour(t *testing.T) {
 	}
 	if len(retiredDefinitions(t)) != 3 {
 		t.Fatal("retired list changed")
+	}
+}
+
+// Resolvers using DNS 0x20 randomize query-name case; the beacon is still one name.
+func TestDNSBeaconingIgnoresNameCase(t *testing.T) {
+	replay, counts := embeddedReplay(t)
+	for i := range 100 {
+		name := []byte("beacon.example.com")
+		for j := range name {
+			if (i>>(j%7))&1 == 1 && name[j] >= 'a' && name[j] <= 'z' {
+				name[j] -= 'a' - 'A'
+			}
+		}
+		feed(t, replay, dnsMessage(at(time.Duration(i)*5*time.Second), "10.9.0.2", "8.8.8.8", string(name), 1, false))
+	}
+	if counts()["DNS Beaconing Pattern"] != 1 {
+		t.Fatalf("case variants split the beacon: %v", counts())
 	}
 }
