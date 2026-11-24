@@ -22,7 +22,6 @@ func TestCaptureInputSynthetic(t *testing.T) {
 	frame := rawPacketFixture(t, false, 64)
 	pcap := inputPCAPHeader(le, false, 1, 1)
 	pcap = append(pcap, inputPCAPRecord(le, 123, 0, 64, 64, frame)...)
-	bad := inputPCAPRecord(le, 124, 0, 64, 63, frame)
 	last := inputPCAPRecord(le, 125, 0, 64, 64, frame)
 	legacy := bytes.Clone(pcap)
 	le.PutUint16(legacy[6:], 1)
@@ -37,7 +36,6 @@ func TestCaptureInputSynthetic(t *testing.T) {
 		packets, skipped int64
 		eof              bool
 	}{
-		{"pcap-recover", append(append(bytes.Clone(pcap), bad...), last...), false, 2, 1, true},
 		{"pcap-truncated", append(bytes.Clone(pcap), last[:23]...), false, 1, 0, false},
 		{"legacy-pcap-truncated", append(legacy, last[:23]...), false, 1, 0, false},
 		{"pcap-short-header", append(bytes.Clone(pcap), last[:7]...), false, 1, 0, false},

@@ -41,6 +41,7 @@ type capturePacketInfo struct {
 	Offset              int64
 	SnaplenOverride     bool
 	NoTimestamp         bool
+	OrigLenRaised       bool
 }
 
 type captureReader interface {
@@ -201,8 +202,12 @@ func (r *boundedPCAPReader) readPacket(reuse bool) ([]byte, gopacket.CaptureInfo
 	if err := r.read(data); err != nil {
 		return nil, ci, r.failPacket(offset, fmt.Sprintf("truncated PCAP payload: %v", err), false, r.ordinal)
 	}
-	if caplen > wire {
-		return nil, ci, r.failPacket(offset, fmt.Sprintf("PCAP caplen %d exceeds origlen %d", caplen, wire), true, r.ordinal)
+	// Some writers record the length before adding a pseudo-header (SLL),
+	// so the captured bytes exceed origlen. Wireshark decodes them; so do we,
+	// counting each such record in the capture input report.
+	raised := caplen > wire
+	if raised {
+		wire = caplen
 	}
 	frac, units := r.order.Uint32(header[4:8]), uint32(1_000_000)
 	if r.nanos {
@@ -211,7 +216,7 @@ func (r *boundedPCAPReader) readPacket(reuse bool) ([]byte, gopacket.CaptureInfo
 	ci.Timestamp = time.Unix(int64(r.order.Uint32(header[:4])), int64(frac)*int64(1_000_000_000/units)).UTC()
 	ci.CaptureLength, ci.Length = int(caplen), int(wire)
 	source := evidence.SourcePacket{Ordinal: r.ordinal, Offset: offset, OffsetNamespace: evidence.SourceOffsetNamespace, OffsetKind: "record-header", ByteOrder: captureByteOrder(r.order), TimestampEncoding: "seconds-fraction", TimestampSeconds: uint64(r.order.Uint32(header[:4])), TimestampFraction: frac, TimestampUnits: uint64(units)}
-	ci.AncillaryData = []any{r.link, capturePacketInfo{Source: source, Order: r.order, Offset: offset, SnaplenOverride: caplen > r.snaplen, TimestampNormalized: frac >= units, FCSKnown: r.fcsKnown, FCSBytes: r.fcsBytes}}
+	ci.AncillaryData = []any{r.link, capturePacketInfo{Source: source, Order: r.order, Offset: offset, SnaplenOverride: caplen > r.snaplen, TimestampNormalized: frac >= units, FCSKnown: r.fcsKnown, FCSBytes: r.fcsBytes, OrigLenRaised: raised}}
 	return data, ci, nil
 }
 

@@ -20,7 +20,8 @@ import (
 
 func TestSourceOrdinalsSurviveRejectedRecordsAndRetention(t *testing.T) {
 	frame := rawPacketFixture(t, false, 64)
-	for _, ng := range []bool{false, true} {
+	// PCAP has no recoverable record defect left: caplen above origlen is decoded.
+	for _, ng := range []bool{true} {
 		for _, order := range []binary.ByteOrder{binary.LittleEndian, binary.BigEndian} {
 			t.Run(captureByteOrder(order)+map[bool]string{false: "-pcap", true: "-pcapng"}[ng], func(t *testing.T) {
 				var input []byte

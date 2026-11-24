@@ -117,7 +117,7 @@ func TestCaptureReaderPCAPRecovery(t *testing.T) {
 				eof            bool
 			}{
 				{"clean", suffix, 2, 0, true},
-				{"caplen-origlen", append(inputPCAPRecord(order, 11, 0, 64, 63, good), suffix...), 2, 1, true},
+				{"caplen-origlen", append(inputPCAPRecord(order, 11, 0, 64, 63, good), suffix...), 3, 0, true},
 				{"timestamp", append(inputPCAPRecord(order, 11, 1_000_000_000, 64, 64, good), suffix...), 3, 0, true},
 				{"short-header", suffix[:9], 1, 0, false},
 				{"short-payload", suffix[:20], 1, 0, false},
@@ -144,7 +144,10 @@ func TestCaptureReaderPCAPRecovery(t *testing.T) {
 					if infos[0].Timestamp.Nanosecond() != wantFrac {
 						t.Fatal("timestamp precision lost")
 					}
-					if tc.name != "clean" && tc.name != "timestamp" && got.result() == nil {
+					if tc.name == "caplen-origlen" && (got.OrigLenRaised != 1 || infos[1].Length != 64 || got.result() != nil || len(got.Issues) != 1) {
+						t.Fatal("caplen above origlen was not decoded with a raised origlen", got)
+					}
+					if tc.name != "clean" && tc.name != "timestamp" && tc.name != "caplen-origlen" && got.result() == nil {
 						t.Fatal("corruption reported as success")
 					}
 				})
@@ -179,7 +182,6 @@ func TestCaptureReaderNGBoundaries(t *testing.T) {
 			count, skipped int64
 			eof            bool
 		}{
-			{"caplen-origlen", inputNGPacket(order, 0, 64, 63, good), 2, 1, true},
 			{"caplen-block", inputNGPacket(order, 0, 100, 100, good), 2, 1, true},
 			{"packet-cap", inputNGPacket(order, 0, maxInputPacket+1, maxInputPacket+1, nil), 2, 1, true},
 			{"absent-interface", inputNGPacket(order, 1, 64, 64, good), 2, 1, true},
@@ -475,4 +477,34 @@ func FuzzCaptureReaders(f *testing.F) {
 		}
 		t.Fatal("reader made no progress")
 	})
+}
+
+// sip.pcap (Linux SLL) records origlen without the 16-byte cooked header, so
+// every caplen exceeds origlen by 16. Wireshark decodes it; the capture
+// used to fail with 0 of 4,558 packets processed.
+func TestCaptureReaderRaisesOrigLenBelowCaplen(t *testing.T) {
+	for _, ng := range []bool{false, true} {
+		good := rawPacketFixture(t, false, 64)
+		var input []byte
+		if ng {
+			input = append(inputNGSection(binary.LittleEndian), inputNGInterface(binary.LittleEndian, 1, 65535)...)
+			for range 3 {
+				input = append(input, inputNGPacket(binary.LittleEndian, 0, 64, 48, good)...)
+			}
+		} else {
+			input = inputPCAPHeader(binary.LittleEndian, false, 65535, layers.LinkTypeEthernet)
+			for i := range 3 {
+				input = append(input, inputPCAPRecord(binary.LittleEndian, uint32(10+i), 0, 64, 48, good)...)
+			}
+		}
+		got, packets, infos := scanInputBytes(t, input, ng, true)
+		if got.ProcessedPackets != 3 || got.OrigLenRaised != 3 || got.SnapshotTruncated != 0 || got.result() != nil || len(got.Issues) != 1 || got.Issues[0].Kind != "origlen-raised" {
+			t.Fatalf("ng=%v: %+v", ng, got)
+		}
+		for i := range packets {
+			if !bytes.Equal(packets[i], good) || infos[i].Length != 64 || infos[i].CaptureLength != 64 {
+				t.Fatalf("ng=%v packet %d changed", ng, i)
+			}
+		}
+	}
 }

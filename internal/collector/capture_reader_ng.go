@@ -261,7 +261,11 @@ func (r *scopedNgReader) packet(kind uint32, body []byte, offset int64) ([]byte,
 	if kind == 3 && intf.snaplen != 0 && caplen > intf.snaplen {
 		caplen = intf.snaplen
 	}
-	if caplen > maxInputPacket || caplen > wire || uint64(header)+((uint64(caplen)+3)&^3) > uint64(len(body)) {
+	raised := caplen > wire
+	if raised {
+		wire = caplen
+	}
+	if caplen > maxInputPacket || uint64(header)+((uint64(caplen)+3)&^3) > uint64(len(body)) {
 		return bad(fmt.Sprintf("invalid PCAPNG packet lengths caplen=%d origlen=%d block-body=%d (packet cap %d)", caplen, wire, len(body), maxInputPacket))
 	}
 	end := header + (int(caplen)+3)&^3
@@ -286,7 +290,7 @@ func (r *scopedNgReader) packet(kind uint32, body []byte, offset int64) ([]byte,
 		encoding = "missing"
 	}
 	source := evidence.SourcePacket{Ordinal: r.ordinal, Offset: offset, OffsetNamespace: evidence.SourceOffsetNamespace, OffsetKind: "block-header", Section: r.sectionOrdinal, Interface: iface, ByteOrder: captureByteOrder(r.order), TimestampEncoding: encoding, TimestampTicks: stamp, TimestampUnits: intf.units, TimestampOffset: intf.offset}
-	ci.AncillaryData = []any{intf.link, capturePacketInfo{Source: source, Order: r.order, Offset: offset, SnaplenOverride: intf.snaplen != 0 && caplen > intf.snaplen, NoTimestamp: kind == 3, FCSKnown: intf.fcsKnown, FCSBytes: intf.fcsBytes}}
+	ci.AncillaryData = []any{intf.link, capturePacketInfo{Source: source, Order: r.order, Offset: offset, SnaplenOverride: intf.snaplen != 0 && caplen > intf.snaplen, NoTimestamp: kind == 3, FCSKnown: intf.fcsKnown, FCSBytes: intf.fcsBytes, OrigLenRaised: raised}}
 	if r.mergeSections && r.continuity[int(iface)] == intf {
 		ci.AncillaryData = append(ci.AncillaryData, packetview.CaptureInterface(iface))
 	}

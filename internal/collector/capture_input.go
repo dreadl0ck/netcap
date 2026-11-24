@@ -35,6 +35,9 @@ type CaptureInputReport struct {
 	Unsupported          int64  `json:"unsupportedPackets"`
 	SnaplenOverrides     int64  `json:"snaplenOverrides"`
 	SnapshotTruncated    int64  `json:"snapshotTruncatedPackets"`
+	// OrigLenRaised counts records whose captured length exceeded the
+	// recorded original length; origlen was raised to the captured length.
+	OrigLenRaised int64 `json:"origLenRaisedPackets,omitempty"`
 	// Finalized is set when the report is rewritten after capture cleanup
 	// closed every writer; a run that crashed during cleanup lacks it.
 	Finalized bool                `json:"finalized,omitempty"`
@@ -209,6 +212,12 @@ func walkCaptureInput(ctx context.Context, r captureReader, report *CaptureInput
 		}
 		if ci.CaptureLength < ci.Length {
 			report.SnapshotTruncated++
+		}
+		if info.OrigLenRaised {
+			if report.OrigLenRaised == 0 {
+				report.issue(info.Offset, "origlen-raised", "record caplen exceeds origlen; origlen raised to caplen as Wireshark does", true, info.Source.Ordinal)
+			}
+			report.OrigLenRaised++
 		}
 		if info.NoTimestamp {
 			report.MissingTimestamps++
