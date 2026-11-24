@@ -49,6 +49,8 @@ github.com/dreadl0ck/go-dpi v1.5.0 h1:29lseJhxBT5/5COBGkXzrbWIXWyymtOO7sZ1aA7faz
 github.com/dreadl0ck/go-dpi v1.5.0/go.mod h1:HqEJeAzmr5+1I8dQQtb/FK/5tSVNxlROz9dMZFMk5NU=
 github.com/dreadl0ck/gopacket v1.1.16-0.20261108153543-61002f918d93 h1:LaQKg6sbwgHWUOCKX2zFZZqQEmaiAwe2HMVq5kwtAho=
 github.com/dreadl0ck/gopacket v1.1.16-0.20261108153543-61002f918d93/go.mod h1:QKowPlTLrQU2rqV5C5I14Aoaid3l8da3kbddibc/Wgk=
+github.com/dreadl0ck/gopacket v1.1.16-0.20261124230652-18ed914b14fe h1:3UT9xviscdZjcxgeo5dHRKtATFtOohMr0r4uX+O+rEw=
+github.com/dreadl0ck/gopacket v1.1.16-0.20261124230652-18ed914b14fe/go.mod h1:QKowPlTLrQU2rqV5C5I14Aoaid3l8da3kbddibc/Wgk=
 github.com/dreadl0ck/ja4plus v0.1.0 h1:iQbDUTwfESCYcMj0vJmn/Q69XwCdOqJhK353NkfU6Ck=
 github.com/dreadl0ck/ja4plus v0.1.0/go.mod h1:BLVnv+9uNktZihwghNAXwYOLVPRjt5eP4xfVtnfXimk=
 github.com/dreadl0ck/maltego v0.0.3 h1:wRh3u1Sc0rciX80rZE+ncInMpoTLCm78vT9Tns8s25s=

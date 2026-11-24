@@ -201,6 +201,96 @@ enum Type {
   NC_NBNS = 202;
   NC_IEEE802154 = 203;
   NC_LinkFrame = 204;
+  NC_PTPv2 = 205;
+  NC_GOOSE = 206;
+  NC_SampledValues = 207;
+  NC_EtherCAT = 208;
+  NC_OPCUAPubSub = 209;
+  NC_IEC104 = 210;
+  NC_MMS = 211;
+  NC_AMS = 212;
+}
+
+message PTPv2 {
+  int64 Timestamp = 1;
+  PacketContext Context = 2;
+  string MessageType = 3;
+  uint32 Domain = 4;
+  uint32 SequenceID = 5;
+  string SourcePortIdentity = 6;
+  int64 CorrectionScaledNs = 7;
+  uint32 Flags = 8;
+  uint32 TLVCount = 9;
+}
+message GOOSE {
+  int64 Timestamp = 1;
+  PacketContext Context = 2;
+  uint32 AppID = 3;
+  string ControlBlock = 4;
+  string DataSet = 5;
+  string GoID = 6;
+  uint32 State = 7;
+  uint32 Sequence = 8;
+  uint32 Revision = 9;
+  bool Simulation = 10;
+  uint32 TimeAllowedToLive = 11;
+}
+message SampledValues {
+  int64 Timestamp = 1;
+  PacketContext Context = 2;
+  uint32 AppID = 3;
+  repeated string StreamID = 4;
+  repeated uint32 SampleCounter = 5;
+  repeated uint32 Revision = 6;
+}
+message EtherCAT {
+  int64 Timestamp = 1;
+  PacketContext Context = 2;
+  string FrameType = 3;
+  uint32 Length = 4;
+  repeated string Commands = 5;
+  repeated uint32 WorkingCounters = 6;
+}
+message OPCUAPubSub {
+  int64 Timestamp = 1;
+  PacketContext Context = 2;
+  string MessageType = 3;
+  uint32 Version = 4;
+  repeated uint32 DataSetWriterIDs = 5;
+  bool Encrypted = 6;
+  bool Chunk = 7;
+  string PayloadError = 8;
+}
+message IEC104 {
+  int64 Timestamp = 1;
+  PacketContext Context = 2;
+  string Format = 3;
+  uint32 SendSequence = 4;
+  uint32 ReceiveSequence = 5;
+  string UFunction = 6;
+  uint32 TypeID = 7;
+  uint32 CommonAddress = 8;
+  uint32 Cause = 9;
+  uint32 ObjectCount = 10;
+}
+message MMS {
+  int64 Timestamp = 1;
+  PacketContext Context = 2;
+  string PDUType = 3;
+  uint32 InvokeID = 4;
+  string Service = 5;
+  string ServiceError = 6;
+}
+message AMS {
+  int64 Timestamp = 1;
+  PacketContext Context = 2;
+  string Command = 3;
+  uint32 Length = 4;
+  string ADSCommand = 5;
+  uint32 InvokeID = 6;
+  uint32 ErrorCode = 7;
+  string TargetNetID = 8;
+  string SourceNetID = 9;
 }
 
 message LinkFrame {

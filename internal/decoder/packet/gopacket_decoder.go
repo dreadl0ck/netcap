@@ -109,7 +109,7 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 	sipaudit.Media.Reset()
 
 	active, err := decoderutils.SelectDecoders(defaultGoPacketDecoders, c.IncludeDecoders, c.ExcludeDecoders, func(d *GoPacketDecoder) string {
-		return d.Layer.String()
+		return d.selectionName()
 	}, ErrInvalidDecoder)
 	if err != nil {
 		return nil, err
@@ -193,6 +193,8 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 // Names that differ from the record type must be listed in internal/auditname.
 func (dec *GoPacketDecoder) AuditFileBase() string {
 	switch dec.Type {
+	case types.Type_NC_PTPv2, types.Type_NC_SampledValues:
+		return dec.selectionName()
 	case types.Type_NC_OSPFv2:
 		return "OSPFv2"
 	case types.Type_NC_OSPFv3:
@@ -201,6 +203,16 @@ func (dec *GoPacketDecoder) AuditFileBase() string {
 		return "ENIP"
 	case types.Type_NC_GTP:
 		return "GTP"
+	}
+	return dec.Layer.String()
+}
+
+func (dec *GoPacketDecoder) selectionName() string {
+	switch dec.Type {
+	case types.Type_NC_PTPv2:
+		return "PTPv2"
+	case types.Type_NC_SampledValues:
+		return "SampledValues"
 	}
 	return dec.Layer.String()
 }
