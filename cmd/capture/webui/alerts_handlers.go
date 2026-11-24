@@ -96,19 +96,23 @@ type GroupedAlert struct {
 	Resolved        bool            `json:"resolved"`      // True if all alerts in this group are resolved
 	ResolvedCount   int             `json:"resolvedCount"` // Number of resolved alerts in this group
 	GroupID         string          `json:"groupId"`       // Unique identifier for the group
+	// UniqueValuesTruncated: a unique list stopped at maxGroupUniqueValues.
+	UniqueValuesTruncated bool `json:"uniqueValuesTruncated,omitempty"`
 }
 
 // AlertsResponse represents the response containing multiple alerts
 type AlertsResponse struct {
-	Alerts     []AlertResponse `json:"alerts"`
-	TotalCount int             `json:"totalCount"`
+	Alerts                 []AlertResponse `json:"alerts"`
+	TotalCount             int             `json:"totalCount"`
+	SkippedOversizedAlerts int             `json:"skippedOversizedAlerts,omitempty"`
 }
 
 // GroupedAlertsResponse represents the response containing grouped/deduplicated alerts
 type GroupedAlertsResponse struct {
-	Groups     []GroupedAlert `json:"groups"`
-	TotalCount int            `json:"totalCount"` // Total individual alerts
-	GroupCount int            `json:"groupCount"` // Number of unique groups
+	Groups                 []GroupedAlert `json:"groups"`
+	TotalCount             int            `json:"totalCount"` // Total individual alerts
+	GroupCount             int            `json:"groupCount"` // Number of unique groups
+	SkippedOversizedAlerts int            `json:"skippedOversizedAlerts,omitempty"`
 }
 
 // handleAlerts handles GET requests for alerts
@@ -167,46 +171,35 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 		s.serveRawAlertPage(w, r, alertsFile)
 		return
 	}
-	alerts, ok := s.alertsForResponse(w, r, alertsFile, bounded)
-	if !ok {
+	if offset+limit > maxAlertListWindow {
+		RespondJSON(w, http.StatusBadRequest, map[string]any{"error": fmt.Sprintf("offset+limit must not exceed %d; narrow with groupId, severity or ruleName", maxAlertListWindow)})
 		return
 	}
-
-	// Apply filters
-	filtered := make([]AlertResponse, 0)
-	for _, alert := range alerts {
-		if groupID := query.Get("groupId"); groupID != "" && generateGroupID(alert.RuleName, alert.Severity) != groupID {
-			continue
-		}
-		// Filter by severity
-		if severityFilter != "" && !strings.EqualFold(alert.Severity, severityFilter) {
-			continue
-		}
-
-		// Filter by rule name
-		if ruleNameFilter != "" && !strings.EqualFold(alert.RuleName, ruleNameFilter) {
-			continue
-		}
-
-		filtered = append(filtered, alert)
+	groupFilter := query.Get("groupId")
+	match := func(alert *types.Alert) bool {
+		return (groupFilter == "" || generateGroupID(alert.RuleName, alert.Severity) == groupFilter) &&
+			(severityFilter == "" || strings.EqualFold(alert.Severity, severityFilter)) &&
+			(ruleNameFilter == "" || strings.EqualFold(alert.RuleName, ruleNameFilter))
 	}
-
-	// Sort alerts
-	sort.Slice(filtered, func(i, j int) bool {
-		if sortOrder == "asc" {
-			return filtered[i].Timestamp < filtered[j].Timestamp
-		}
-		return filtered[i].Timestamp > filtered[j].Timestamp
+	window := newAlertWindow(offset+limit, sortOrder == "asc", alertListBudgetBytes)
+	ctx, scanStats := withAlertScanStats(r.Context())
+	totalCount := 0
+	_, err := s.scanFilteredAlertAudit(ctx, alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, match, func(alert AlertResponse) error {
+		totalCount++
+		return window.add(alert)
 	})
-
-	// Apply pagination
-	totalCount := len(filtered)
-	start := min(offset, totalCount)
-	filtered = filtered[start : start+min(limit, totalCount-start)]
-
+	if err != nil {
+		s.respondAlertReadError(w, r.Context(), err)
+		return
+	}
+	page := window.sorted()
+	start := min(offset, len(page))
+	page = page[start:min(len(page), start+limit)]
+	w.Header().Set("X-Netcap-Skipped-Oversized-Alerts", strconv.Itoa(scanStats.skippedOversized))
 	RespondJSON(w, http.StatusOK, AlertsResponse{
-		Alerts:     filtered,
-		TotalCount: totalCount,
+		Alerts:                 page,
+		TotalCount:             totalCount,
+		SkippedOversizedAlerts: scanStats.skippedOversized,
 	})
 }
 
@@ -231,19 +224,6 @@ func admitAlertRead(w http.ResponseWriter, r *http.Request, bounded bool) func()
 	}
 }
 
-func (s *Server) alertsForResponse(w http.ResponseWriter, r *http.Request, filePath string, bounded bool) ([]AlertResponse, bool) {
-	var ctx context.Context
-	if bounded {
-		ctx = r.Context()
-	}
-	alerts, err := s.readAlertAudit(ctx, filePath)
-	if err == nil {
-		return alerts, true
-	}
-	s.respondAlertReadError(w, ctx, err)
-	return nil, false
-}
-
 func (s *Server) respondAlertReadError(w http.ResponseWriter, ctx context.Context, err error) {
 	if ctx != nil && ctx.Err() != nil {
 		return
@@ -258,10 +238,6 @@ func (s *Server) respondAlertReadError(w http.ResponseWriter, ctx context.Contex
 	}
 	log.Printf("[WebUI] Failed to read alerts: %v", err)
 	RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read alerts"})
-}
-
-func (s *Server) readAlertAudit(ctx context.Context, filePath string) ([]AlertResponse, error) {
-	return s.scanAlertAudit(ctx, filePath, maxCollectionPageScanBytes, maxCollectionPageRows, maxCollectionPageScanBytes, nil)
 }
 
 func (s *Server) scanAlertAudit(ctx context.Context, filePath string, byteLimit, rowLimit, frameCap int, visit func(AlertResponse) error) ([]AlertResponse, error) {
@@ -376,7 +352,18 @@ func (s *Server) walkAlertAudit(ctx context.Context, filePath string, byteLimit,
 			switch {
 			case rows == rowLimit && (err == nil || errors.As(err, &tooLarge)):
 				return fmt.Errorf("%w: alert audit exceeds %d records", errAlertPageSourceLimit, rowLimit)
-			case errors.As(err, &tooLarge) && tooLarge.Size > uint64(frameCap) || err == nil && len(raw) > frameCap:
+			case errors.As(err, &tooLarge) && tooLarge.Size > uint64(frameCap):
+				// Older audits can hold alerts above the frame cap; skip and
+				// count them rather than failing every view of the session.
+				if err := reader.delimitedReader.Discard(tooLarge.Size); err != nil {
+					return fmt.Errorf("failed to skip oversized alert record: %w", err)
+				}
+				rows++
+				if stats, ok := ctx.Value(alertScanStatsKey{}).(*alertScanStats); ok {
+					stats.skippedOversized++
+				}
+				continue
+			case err == nil && len(raw) > frameCap:
 				return fmt.Errorf("%w: an alert record exceeds %d bytes", errAlertPageSourceLimit, frameCap)
 			case errors.As(err, &tooLarge) || err == nil && len(raw) > frameLimit:
 				return fmt.Errorf("%w: decoded alert audit exceeds %d bytes", errAlertPageSourceLimit, byteLimit)
@@ -452,7 +439,8 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 	alertGroups := make(map[groupKey]struct{})
 	recent := make([]*types.Alert, 0, 10)
 	var resolved *ResolvedAlertsStore
-	err := s.walkAlertAudit(r.Context(), alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, func(alert *types.Alert, store *ResolvedAlertsStore) error {
+	scanCtx, scanStats := withAlertScanStats(r.Context())
+	err := s.walkAlertAudit(scanCtx, alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, func(alert *types.Alert, store *ResolvedAlertsStore) error {
 		resolved = store
 		key := groupKey{alert.RuleName, alert.Severity}
 		if _, ok := alertGroups[key]; !ok {
@@ -512,6 +500,8 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 		"recentAlerts":   recentAlerts,
 		"criticalAlerts": criticalCount,
 		"lastUpdate":     time.Now().Unix(),
+		// Alerts above the frame limit in audits written before v0.16.14.
+		"skippedOversizedAlerts": scanStats.skippedOversized,
 	})
 	if err != nil {
 		s.respondAlertReadError(w, r.Context(), err)
@@ -624,28 +614,27 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 
 	// Read alerts from the alerts audit record file
 	alertsFile := filepath.Join(outDir, "Alert.ncap.gz")
-	var groups []GroupedAlert
 	if bounded {
 		if _, err := parseCollectionPage(r); err != nil {
 			RespondJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
 		}
-		acc := newAlertGroups(maxCollectionPageScanBytes)
-		_, err := s.scanAlertAudit(r.Context(), alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, func(alert AlertResponse) error {
-			return acc.add(alert, severityFilter, ruleNameFilter)
-		})
-		if err != nil {
-			s.respondAlertReadError(w, r.Context(), err)
-			return
-		}
-		groups = acc.finish()
-	} else {
-		alerts, ok := s.alertsForResponse(w, r, alertsFile, false)
-		if !ok {
-			return
-		}
-		groups = groupAlerts(alerts, severityFilter, ruleNameFilter)
 	}
+	budget := alertListBudgetBytes
+	if bounded {
+		budget = maxCollectionPageScanBytes
+	}
+	acc := newAlertGroups(budget)
+	ctx, scanStats := withAlertScanStats(r.Context())
+	_, err := s.scanAlertAudit(ctx, alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, func(alert AlertResponse) error {
+		return acc.add(alert, severityFilter, ruleNameFilter)
+	})
+	if err != nil {
+		s.respondAlertReadError(w, r.Context(), err)
+		return
+	}
+	groups := acc.finish()
+	w.Header().Set("X-Netcap-Skipped-Oversized-Alerts", strconv.Itoa(scanStats.skippedOversized))
 	if classification := query.Get("classification"); classification != "" {
 		filtered := make([]GroupedAlert, 0, len(groups))
 		for _, group := range groups {
@@ -657,6 +646,17 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		groups = filtered
+	}
+
+	// Filtered here so groupCount and pages match what the UI shows.
+	if query.Get("hideResolved") == "true" {
+		open := groups[:0]
+		for _, group := range groups {
+			if !group.Resolved {
+				open = append(open, group)
+			}
+		}
+		groups = open
 	}
 
 	// Sort groups
@@ -690,16 +690,17 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 			RespondJSON(w, 500, map[string]string{"error": err.Error()})
 			return
 		}
-		respondFilteredCollectionPage(w, r, rows, "groups", map[string]any{"totalCount": totalCount, "groupCount": groupCount})
+		respondFilteredCollectionPage(w, r, rows, "groups", map[string]any{"totalCount": totalCount, "groupCount": groupCount, "skippedOversizedAlerts": scanStats.skippedOversized})
 		return
 	}
 	start := min(offset, groupCount)
 	groups = groups[start : start+min(limit, groupCount-start)]
 
 	RespondJSON(w, http.StatusOK, GroupedAlertsResponse{
-		Groups:     groups,
-		TotalCount: totalCount,
-		GroupCount: groupCount,
+		Groups:                 groups,
+		TotalCount:             totalCount,
+		GroupCount:             groupCount,
+		SkippedOversizedAlerts: scanStats.skippedOversized,
 	})
 }
 
@@ -754,7 +755,7 @@ func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter st
 			}
 		}
 		for i, value := range values {
-			if value != "" && !seen[i][value] {
+			if value != "" && !seen[i][value] && len(seen[i]) < maxGroupUniqueValues {
 				charge += len(value) + 64
 			}
 		}
@@ -802,11 +803,14 @@ func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter st
 		group.LastSeen = alert.Timestamp
 	}
 
-	// Collect unique IPs and ports
-	appendGroupUnique(&group.UniqueSrcIPs, seen[0], values[0])
-	appendGroupUnique(&group.UniqueDstIPs, seen[1], values[1])
-	appendGroupUnique(&group.UniqueSrcPorts, seen[2], values[2])
-	appendGroupUnique(&group.UniqueDstPorts, seen[3], values[3])
+	// Collect unique IPs and ports; a flood group can have one per alert.
+	for i, list := range []*[]string{&group.UniqueSrcIPs, &group.UniqueDstIPs, &group.UniqueSrcPorts, &group.UniqueDstPorts} {
+		if values[i] != "" && !seen[i][values[i]] && len(seen[i]) >= maxGroupUniqueValues {
+			group.UniqueValuesTruncated = true
+			continue
+		}
+		appendGroupUnique(list, seen[i], values[i])
+	}
 
 	// Keep up to 5 sample alerts for detail view
 	if len(group.SampleAlerts) < 5 {
@@ -893,4 +897,14 @@ func generateAlertID(alert AlertResponse) string {
 // generateGroupID generates a unique identifier for an alert group
 func generateGroupID(ruleName, severity string) string {
 	return fmt.Sprintf("%s-%s", ruleName, severity)
+}
+
+type alertScanStatsKey struct{}
+
+// alertScanStats counts what a bounded alert scan left out.
+type alertScanStats struct{ skippedOversized int }
+
+func withAlertScanStats(ctx context.Context) (context.Context, *alertScanStats) {
+	stats := &alertScanStats{}
+	return context.WithValue(ctx, alertScanStatsKey{}, stats), stats
 }

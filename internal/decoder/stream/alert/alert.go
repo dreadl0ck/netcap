@@ -54,7 +54,7 @@ func WriteAlert(f *types.Alert) {
 
 	atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 
-	err := Decoder.Writer.Write(f)
+	err := Decoder.Writer.Write(f.WithBoundedMatchedRecord())
 	if err != nil {
 		log.Println("failed to write Alert audit record:", err)
 	}

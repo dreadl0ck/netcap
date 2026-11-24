@@ -17,10 +17,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
+
 	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
 )
 
 func TestCollectionPageRejectsIncompleteScans(t *testing.T) {
@@ -312,28 +313,28 @@ func TestHostTrafficPageRejectsOversizedAudit(t *testing.T) {
 	}
 }
 
-func TestAlertPagesRejectOversizeSourceBeforeFiltering(t *testing.T) {
-	for _, tc := range []struct {
-		name string
-		rows []proto.Message
-	}{
-		{"record bytes", []proto.Message{&types.Alert{Description: strings.Repeat("x", maxCollectionPageScanBytes)}}},
+// Audits written before v0.16.14 can hold alerts above the 1 MiB frame cap;
+// one used to answer 413 for every alert view of the session.
+func TestAlertPagesSkipOversizeRecords(t *testing.T) {
+	dir := t.TempDir()
+	writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, []proto.Message{
+		&types.Alert{RuleName: "kept", Severity: "low", Timestamp: 1},
+		&types.Alert{RuleName: "huge", Description: strings.Repeat("x", 2<<20)},
+	})
+	s := &Server{outDir: dir}
+	for path, handler := range map[string]http.HandlerFunc{
+		"/api/alerts?mcpPage=true&pageLimit=10": s.handleAlerts, "/api/alerts": s.handleAlerts,
+		"/api/alerts/grouped?mcpPage=true&pageLimit=10": s.handleGroupedAlerts, "/api/alerts/grouped": s.handleGroupedAlerts, "/api/alerts/stats": s.handleAlertStats,
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			dir := t.TempDir()
-			writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, tc.rows)
-			s := &Server{outDir: dir}
-			for path, handler := range map[string]http.HandlerFunc{
-				"/api/alerts": s.handleAlerts, "/api/alerts/grouped": s.handleGroupedAlerts, "/api/alerts/stats": s.handleAlertStats,
-			} {
-				w := httptest.NewRecorder()
-				handler(w, httptest.NewRequest(http.MethodGet, path+"?mcpPage=true&ruleName=missing&pageLimit=1", nil))
-				var body map[string]string
-				if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil || w.Code != http.StatusRequestEntityTooLarge || len(body) != 1 || body["error"] == "" {
-					t.Fatalf("%s: %d %s", path, w.Code, w.Body.String())
-				}
-			}
-		})
+		w := httptest.NewRecorder()
+		handler(w, httptest.NewRequest(http.MethodGet, path, nil))
+		body := w.Body.String()
+		if w.Code != http.StatusOK || !strings.Contains(body, "kept") || strings.Contains(body, "huge") {
+			t.Fatalf("%s: %d %.300s", path, w.Code, body)
+		}
+		if !strings.Contains(body, `"skippedOversizedAlerts":1`) {
+			t.Fatalf("%s did not report the skipped alert: %.300s", path, body)
+		}
 	}
 }
 

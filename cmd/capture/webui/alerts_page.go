@@ -12,11 +12,13 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/types"
 	"modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // Rows up to about 16 KiB stay on a 64 KiB SQLite page; with 4 KiB pages any
@@ -125,7 +127,8 @@ func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Requ
 			(rule == "" || strings.EqualFold(alert.RuleName, rule)) &&
 			(group == "" || generateGroupID(alert.RuleName, alert.Severity) == group)
 	}
-	_, err = s.scanFilteredAlertAudit(ctx, auditPath, 0, alertStatsScanRows, alertStatsFrameBytes, match, func(alert AlertResponse) error {
+	scanCtx, scanStats := withAlertScanStats(ctx)
+	_, err = s.scanFilteredAlertAudit(scanCtx, auditPath, 0, alertStatsScanRows, alertStatsFrameBytes, match, func(alert AlertResponse) error {
 		raw, err := json.Marshal(alert)
 		if err != nil {
 			return err
@@ -157,6 +160,11 @@ func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Requ
 		fail(err)
 		return
 	}
+	w.Header().Set("X-Netcap-Skipped-Oversized-Alerts", strconv.Itoa(scanStats.skippedOversized))
+	var metadata []map[string]any
+	if scanStats.skippedOversized > 0 {
+		metadata = append(metadata, map[string]any{"skippedOversizedAlerts": scanStats.skippedOversized})
+	}
 	if spill.insert == nil {
 		slices.SortFunc(buffered, func(a, b json.RawMessage) int { return bytes.Compare(a, b) })
 		respondSortedCollectionPage(w, r, "alerts", options, func(yield func(json.RawMessage, error) bool) {
@@ -165,7 +173,7 @@ func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Requ
 					return
 				}
 			}
-		})
+		}, metadata...)
 		return
 	}
 	if err := spill.tx.Commit(); err != nil {
@@ -198,5 +206,5 @@ func (s *Server) serveRawAlertPageWithBudget(w http.ResponseWriter, r *http.Requ
 		if err := rows.Err(); err != nil {
 			yield(nil, err)
 		}
-	})
+	}, metadata...)
 }

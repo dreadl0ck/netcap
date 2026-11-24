@@ -1156,6 +1156,7 @@ export interface Alert {
 export interface AlertsResponse {
   alerts: Alert[];
   totalCount: number;
+  skippedOversizedAlerts?: number;
 }
 export interface FeatureState { name: string; title: string; titleI18n?: UIMessage; description: string; descriptionI18n?: UIMessage; scope: 'query' | 'capture'; scopeI18n?: UIMessage; flag: string; env: string; enabled: boolean }
 export interface FeaturesResponse { features: FeatureState[] }
@@ -1186,12 +1187,14 @@ export interface GroupedAlert {
   resolved: boolean;
   resolvedCount: number;
   groupId: string;
+  uniqueValuesTruncated?: boolean;
 }
 
 export interface GroupedAlertsResponse {
   groups: GroupedAlert[];
   totalCount: number;
   groupCount: number;
+  skippedOversizedAlerts?: number;
 }
 
 export interface AlertStatsResponse {
@@ -2368,9 +2371,11 @@ function createApiWithBase(apiBase: string) {
     offset?: number;
     severity?: string;
     ruleName?: string;
+    groupId?: string;
     sort?: 'asc' | 'desc';
   }): Promise<AlertsResponse> {
     const queryParams = new URLSearchParams();
+    if (params?.groupId) queryParams.set('groupId', params.groupId);
     if (params?.limit) queryParams.set('limit', params.limit.toString());
     if (params?.offset) queryParams.set('offset', params.offset.toString());
     if (params?.severity) queryParams.set('severity', params.severity);
@@ -2390,8 +2395,10 @@ function createApiWithBase(apiBase: string) {
     ruleName?: string;
     sort?: 'asc' | 'desc';
     sortBy?: 'count' | 'lastSeen' | 'firstSeen' | 'severity';
+    hideResolved?: boolean;
   }): Promise<GroupedAlertsResponse> {
     const queryParams = new URLSearchParams();
+    if (params?.hideResolved) queryParams.set('hideResolved', 'true');
     if (params?.limit) queryParams.set('limit', params.limit.toString());
     if (params?.offset) queryParams.set('offset', params.offset.toString());
     if (params?.severity) queryParams.set('severity', params.severity);

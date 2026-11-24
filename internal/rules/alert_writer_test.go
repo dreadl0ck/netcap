@@ -4,13 +4,17 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -448,7 +452,7 @@ func TestFileAlertWriterSyncsOnClose(t *testing.T) {
 func TestFileAlertWriterOversizedAlert(t *testing.T) {
 	dir := t.TempDir()
 	w := openAlertWriter(t, dir)
-	if err := w.WriteAlert(&types.Alert{MatchedRecord: string(make([]byte, maxAlertRecordSize))}); err == nil {
+	if err := w.WriteAlert(&types.Alert{Description: string(make([]byte, maxAlertRecordSize))}); err == nil {
 		t.Fatal("accepted oversized alert")
 	}
 	if err := w.WriteAlert(&types.Alert{Name: "valid"}); err != nil {
@@ -456,6 +460,34 @@ func TestFileAlertWriterOversizedAlert(t *testing.T) {
 	}
 	if got := readAlertHistory(t, dir); len(got) != 1 || got[0].Name != "valid" {
 		t.Fatalf("alerts = %v", got)
+	}
+}
+
+// One matched HTTP body above the page readers' 1 MiB frame limit used to
+// fail every alert view of the session.
+func TestFileAlertWriterTrimsMatchedRecord(t *testing.T) {
+	dir := t.TempDir()
+	w := openAlertWriter(t, dir)
+	record := `{"Body":"` + strings.Repeat("x", 2<<20) + `"}`
+	original := &types.Alert{Name: "big", RecordType: "HTTP", SrcIP: "192.0.2.1", MatchedRecord: record}
+	if err := w.WriteAlert(original); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.WriteAlert(&types.Alert{Name: "small", MatchedRecord: `{"a":1}`, MatchedRecordSHA256: "kept"}); err != nil {
+		t.Fatal(err)
+	}
+	if original.MatchedRecord != record {
+		t.Fatal("caller's alert was modified")
+	}
+	got := readAlertHistory(t, dir)
+	digest := sha256.Sum256([]byte(record))
+	var projection map[string]any
+	if len(got) != 2 || len(got[0].MatchedRecord) > MaxMatchedRecordBytes || got[0].MatchedRecordSHA256 != hex.EncodeToString(digest[:]) ||
+		json.Unmarshal([]byte(got[0].MatchedRecord), &projection) != nil || projection["MatchedRecordOmitted"] != true || projection["SrcIP"] != "192.0.2.1" {
+		t.Fatalf("oversized record kept or lost its identity: %.200s", got[0].MatchedRecord)
+	}
+	if got[1].MatchedRecord != `{"a":1}` || got[1].MatchedRecordSHA256 != "kept" {
+		t.Fatal("small record changed")
 	}
 }
 

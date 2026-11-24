@@ -274,6 +274,7 @@ func (w *FileAlertWriter) WriteAlert(alert *types.Alert) error {
 	if alert == nil {
 		return errors.New("alert cannot be nil")
 	}
+	alert = alert.WithBoundedMatchedRecord()
 	if alert.Size() > maxAlertRecordSize {
 		return fmt.Errorf("alert record exceeds %d bytes", maxAlertRecordSize)
 	}
@@ -383,3 +384,6 @@ func (w *FileAlertWriter) Close() error {
 	}
 	return w.closeErr
 }
+
+// MaxMatchedRecordBytes bounds the evidence copy in one alert.
+const MaxMatchedRecordBytes = types.MaxMatchedRecordBytes

@@ -70,7 +70,6 @@ func TestAlertScanLimitMessages(t *testing.T) {
 	}{
 		{"exact rows", 0, 3, frame, ""},
 		{"rows", 0, 2, frame, "alert audit exceeds 2 records"},
-		{"frame", 0, 3, frame - 1, fmt.Sprintf("an alert record exceeds %d bytes", frame-1)},
 		{"decoded total", 2*frame + 1, 3, frame, fmt.Sprintf("decoded alert audit exceeds %d bytes", 2*frame+1)},
 	} {
 		_, err := s.scanAlertAudit(t.Context(), path, tc.bytes, tc.rows, tc.frameCap, func(AlertResponse) error { return nil })
@@ -83,6 +82,12 @@ func TestAlertScanLimitMessages(t *testing.T) {
 		if !errors.Is(err, errAlertPageSourceLimit) || !strings.HasSuffix(err.Error(), tc.want) {
 			t.Fatalf("%s: %v, want suffix %q", tc.name, err, tc.want)
 		}
+	}
+	// Frames above the cap are skipped and counted, not fatal.
+	ctx, stats := withAlertScanStats(t.Context())
+	visited := 0
+	if _, err := s.scanAlertAudit(ctx, path, 0, 3, frame-1, func(AlertResponse) error { visited++; return nil }); err != nil || visited != 0 || stats.skippedOversized != 3 {
+		t.Fatalf("oversized frames: %v visited %d skipped %d", err, visited, stats.skippedOversized)
 	}
 }
 

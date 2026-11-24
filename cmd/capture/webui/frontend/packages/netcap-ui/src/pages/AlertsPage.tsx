@@ -138,7 +138,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
 
   // Fetch grouped alerts
   const { data: groupedAlertsData, error } = useSWR(
-    ['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter],
+    ['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter, showResolved],
     () =>
       api.getGroupedAlerts({
         limit: rowsPerPage,
@@ -148,6 +148,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
         classification: classificationFilter || undefined,
         sort: sortOrder,
         sortBy: sortBy,
+        hideResolved: !showResolved,
       }),
     {
       refreshInterval: 5000,
@@ -170,9 +171,10 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
     uniqueDstPorts: g.uniqueDstPorts || [],
     sampleAlerts: g.sampleAlerts || [],
   }));
-  const groups = showResolved ? allGroups : allGroups.filter(g => !g.resolved);
+  // The server filters resolved groups, so its groupCount pages correctly.
+  const groups = allGroups;
   const totalCount = groupedAlertsData?.totalCount || 0;
-  const groupCount = groups.length;
+  const groupCount = groupedAlertsData?.groupCount || 0;
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -184,7 +186,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
   };
 
   const handleRefresh = () => {
-    mutate(['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter]);
+    mutate(['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter, showResolved]);
     mutate('alertStats');
   };
 
@@ -209,7 +211,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
       
       // Refresh local data
       await mutateStatus();
-      await mutate(['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter]);
+      await mutate(['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter, showResolved]);
       await mutate('alertStats');
       
       // Globally invalidate status cache for all pages
@@ -223,7 +225,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
     } finally {
       setSwitchingFile(false);
     }
-  }, [mutateStatus, mutate, page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter, __uiLocale]);
+  }, [mutateStatus, mutate, page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter, showResolved, __uiLocale]);
 
   const handleClearAlerts = async () => {
     if (!confirm(i18nText("ui:m_a42e250b515343cd36cf"))) return;
@@ -326,7 +328,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
   );
 
   return (
-    <Layout title={i18nText("ui:m_451e6181764a06e7c139")} headerAction={fileSelector}><Box sx={{ minWidth: 0 }}>{offlineHistory?.evaluations.some(report => report.status !== 'complete') && <MuiAlert severity="warning" sx={{ mb: 2 }}>{i18nText("ui:m_49618d0c10d77081350b")}</MuiAlert>}{offlineHistoryError && offlineHistoryError.status !== 404 && offlineHistoryError.status !== 409 && <MuiAlert severity="error" sx={{ mb: 2 }}>{i18nRichText("ui:m_1a51b1fa92b0c5f873fa", { arg0: renderError(offlineHistoryError) })}</MuiAlert>}<Box sx={{ 
+    <Layout title={i18nText("ui:m_451e6181764a06e7c139")} headerAction={fileSelector}><Box sx={{ minWidth: 0 }}>{offlineHistory?.evaluations.some(report => report.status !== 'complete') && <MuiAlert severity="warning" sx={{ mb: 2 }}>{i18nText("ui:m_49618d0c10d77081350b")}</MuiAlert>}{(groupedAlertsData?.skippedOversizedAlerts ?? 0) > 0 && <MuiAlert severity="warning" sx={{ mb: 2 }}>{i18nText("ui:m_2b500365c4a97ed05a4f", { arg0: groupedAlertsData?.skippedOversizedAlerts ?? 0 })}</MuiAlert>}{offlineHistoryError && offlineHistoryError.status !== 404 && offlineHistoryError.status !== 409 && <MuiAlert severity="error" sx={{ mb: 2 }}>{i18nRichText("ui:m_1a51b1fa92b0c5f873fa", { arg0: renderError(offlineHistoryError) })}</MuiAlert>}<Box sx={{ 
           display: 'flex', 
           flexDirection: { xs: 'column', md: 'row' },
           justifyContent: 'space-between', 
@@ -366,7 +368,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
           }}><Button data-learn={i18nText("ui:m_94d69d96ded302a37efd")}
               variant={showResolved ? "contained" : "outlined"}
               startIcon={<FilterAltIcon />} 
-              onClick={() => setShowResolved(!showResolved)}
+              onClick={() => { setShowResolved(!showResolved); setPage(0); }}
               size="small"
               sx={{ flex: { xs: 1, sm: 'none' } }}>{showResolved ? i18nText("ui:m_9ae02100760198ff9fd0") : i18nText("ui:m_bbdbb9a6cb91944ace7b")}</Button><Button data-learn={i18nText("ui:m_a3d69e25d47882759349")}
               variant="outlined" 
@@ -601,19 +603,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                                             mt: 0.5,
                                             p: 1.5,
                                           }} /></Grid>
-                                    )}</Grid>{/* Sample Alerts */}{group.sampleAlerts.length > 0 && (
-                                    <Box sx={{ mt: 2 }}><Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                                        {i18nRichText("ui:m_94cbd1f4c3548a2e8e8a", { arg0: group.sampleAlerts.length, arg1: group.count })}
-                                      </Typography><Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>{group.sampleAlerts.map((alert, idx) => (
-                                          <Button key={`${alert.timestamp}-${idx}`}
-                                            size="small"
-                                            variant="outlined"
-                                            startIcon={<VisibilityIcon />}
-                                            onClick={() => handleViewDetails(alert)}>
-                                            {i18nRichText("ui:m_86b5d9d3f99513e8ec62", { arg0: idx + 1 })}
-                                          </Button>
-                                        ))}</Box></Box>
-                                  )}</Box></TableCell></TableRow>
+                                    )}</Grid><GroupAlerts groupId={group.groupId} count={group.count} onView={handleViewDetails} /></Box></TableCell></TableRow>
                           )}</>
                       );
                     })
@@ -698,5 +688,21 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
           onClose={() => setSnackbar({ ...snackbar, open: false })}><MuiAlert onClose={() => setSnackbar({ ...snackbar, open: false })}
             severity={snackbar.severity}
             sx={{ width: '100%' }}>{i18nRenderText(snackbar.message)}</MuiAlert></Snackbar></Box></Layout>
+  );
+}
+
+const GROUP_ALERTS_PAGE = 10;
+
+// Pages through every alert of a group; the group summary keeps only samples.
+function GroupAlerts({ groupId, count, onView }: { groupId: string; count: number; onView: (alert: Alert) => void }) {
+  const api = useNetcapApi();
+  const [offset, setOffset] = useState(0);
+  const { data } = useSWR(['groupAlerts', groupId, offset], () => api.getAlerts({ groupId, limit: GROUP_ALERTS_PAGE, offset }));
+  const alerts = data?.alerts || [];
+  const total = data?.totalCount ?? count;
+  return (
+    <Box sx={{ mt: 2 }}><Typography variant="subtitle2" fontWeight="bold" gutterBottom>{i18nText("ui:m_1f88304c2357bb0a6512", { arg0: total.toLocaleString(getUILocale()) })}</Typography><Table size="small"><TableHead><TableRow><TableCell>{i18nText("ui:m_f68524a5a2e8c875738d")}</TableCell><TableCell>{i18nText("ui:m_e540837f52427c6b32ef")}</TableCell><TableCell>{i18nText("ui:m_c687f3a957a05117cce7")}</TableCell><TableCell>{i18nText("ui:m_cf025c2b66b1d8e97700")}</TableCell><TableCell /></TableRow></TableHead><TableBody>{alerts.map(alert => (
+      <TableRow key={alert.alertId}><TableCell>{displayTimestamp(alert.timestamp, 'nanoseconds')}</TableCell><TableCell sx={{ fontFamily: 'monospace' }}>{alert.srcIP || '-'}</TableCell><TableCell sx={{ fontFamily: 'monospace' }}>{alert.dstIP || '-'}</TableCell><TableCell>{alert.resolved && <Chip label={i18nText("ui:m_6409fda6c1b6bad4d325")} size="small" color="success" variant="outlined" />}</TableCell><TableCell align="right"><Tooltip title={i18nText("ui:m_0e07624e3854b301c0e2")}><IconButton size="small" aria-label={i18nText("ui:m_0e07624e3854b301c0e2")} onClick={() => onView(alert)}><VisibilityIcon fontSize="small" /></IconButton></Tooltip></TableCell></TableRow>
+    ))}</TableBody></Table><Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, mt: 1 }}><Typography variant="caption" color="text.secondary">{i18nText("ui:m_6fa96ac45775b8cea8af", { arg0: total === 0 ? 0 : offset + 1, arg1: Math.min(offset + GROUP_ALERTS_PAGE, total), arg2: total })}</Typography><Button size="small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - GROUP_ALERTS_PAGE))}>{i18nText("ui:m_ff496f592bb0ad0ee2c7")}</Button><Button size="small" disabled={offset + GROUP_ALERTS_PAGE >= total} onClick={() => setOffset(offset + GROUP_ALERTS_PAGE)}>{i18nText("ui:m_d169a90acabd9d48bf7b")}</Button></Box></Box>
   );
 }
