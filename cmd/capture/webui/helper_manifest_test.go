@@ -3,6 +3,7 @@
 package webui
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -28,10 +29,12 @@ func TestPackagedHelperManifest(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(root, "cmd", "net"), 0700); err != nil {
 		t.Fatal(err)
 	}
-	write(filepath.Join(root, "cmd", "net", "main.go"), []byte("package main\nfunc main() { panic(\"must never execute during verification\") }\n"), 0600)
+	write(filepath.Join(root, "version.go"), []byte("package netcap\nvar BuildIdentity string\nfunc init() { if BuildIdentity == \"\" { println() } }\n"), 0600)
+	write(filepath.Join(root, "cmd", "net", "main.go"), []byte("package main\nimport _ \"github.com/dreadl0ck/netcap\"\nfunc main() { panic(\"must never execute during verification\") }\n"), 0600)
 	helper := filepath.Join(root, helperName())
-	flags := "-X github.com/dreadl0ck/netcap.Version=v1.2.3 -X github.com/dreadl0ck/netcap.Commit=abc123"
-	cmd := exec.Command("go", "build", "-tags", "production,nodpi", "-ldflags", flags, "-o", helper, "./cmd/net")
+	// Release helpers are built with -trimpath, which drops the -ldflags build setting.
+	flags := "-s -w -X github.com/dreadl0ck/netcap.BuildIdentity=netcap-build-identity/1:v1.2.3:abc123;"
+	cmd := exec.Command("go", "build", "-trimpath", "-tags", "production,nodpi", "-ldflags", flags, "-o", helper, "./cmd/net")
 	cmd.Dir = root
 	cmd.Env = append(os.Environ(), "GOWORK=off")
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -56,7 +59,7 @@ func TestPackagedHelperManifest(t *testing.T) {
 		var slices []string
 		for _, arch := range []string{"arm64", "amd64"} {
 			slice := filepath.Join(root, "net-"+arch)
-			cmd := exec.Command("go", "build", "-tags", "production,nodpi", "-ldflags", flags, "-o", slice, "./cmd/net")
+			cmd := exec.Command("go", "build", "-trimpath", "-tags", "production,nodpi", "-ldflags", flags, "-o", slice, "./cmd/net")
 			cmd.Dir = root
 			cmd.Env = append(os.Environ(), "GOWORK=off", "GOOS=darwin", "GOARCH="+arch, "CGO_ENABLED=0")
 			if out, err := cmd.CombinedOutput(); err != nil {
@@ -81,7 +84,7 @@ func TestPackagedHelperManifest(t *testing.T) {
 		if err := verifyPackagedHelper(fat, "v1.2.3", "abc123"); err != nil {
 			t.Fatal(err)
 		}
-		cmd = exec.Command("go", "build", "-tags", "production,nodpi", "-ldflags", "-X github.com/dreadl0ck/netcap.Version=stale", "-o", slices[0], "./cmd/net")
+		cmd = exec.Command("go", "build", "-tags", "production,nodpi", "-ldflags", "-X github.com/dreadl0ck/netcap.BuildIdentity=netcap-build-identity/1:stale:abc123;", "-o", slices[0], "./cmd/net")
 		cmd.Dir = root
 		cmd.Env = append(os.Environ(), "GOWORK=off", "GOOS=darwin", "GOARCH=arm64", "CGO_ENABLED=0")
 		if out, err := cmd.CombinedOutput(); err != nil {
@@ -103,7 +106,7 @@ func TestPackagedHelperManifest(t *testing.T) {
 			t.Fatal("accepted stale universal slice with matching file hash")
 		}
 	})
-	for _, identity := range [][2]string{{"", ""}, {"v0.0.1", "abc123"}, {"v1.2.3", "stale"}} {
+	for _, identity := range [][2]string{{"", ""}, {"v0.0.1", "abc123"}, {"v1.2.3", "stale"}, {"v1.2.3", "abc12"}, {"v1.2", "abc123"}} {
 		if err := verifyPackagedHelper(helper, identity[0], identity[1]); err == nil {
 			t.Fatal("accepted missing/stale identity")
 		}
@@ -118,6 +121,27 @@ func TestPackagedHelperManifest(t *testing.T) {
 		}
 		if _, err := os.Stat(helper); err != nil {
 			t.Fatal("genuine helper was removed", err)
+		}
+	})
+	t.Run("unstamped build", func(t *testing.T) {
+		bare := filepath.Join(root, "bare")
+		cmd := exec.Command("go", "build", "-tags", "production,nodpi", "-ldflags", "-X github.com/dreadl0ck/netcap.Version=v1.2.3 -X github.com/dreadl0ck/netcap.Commit=abc123", "-o", bare, "./cmd/net")
+		cmd.Dir = root
+		cmd.Env = append(os.Environ(), "GOWORK=off")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("build: %v: %s", err, out)
+		}
+		data, err := os.ReadFile(bare)
+		if err != nil {
+			t.Fatal(err)
+		}
+		hash := sha256.Sum256(data)
+		bareManifest := manifest
+		bareManifest.SHA256 = hex.EncodeToString(hash[:])
+		encoded, _ := json.Marshal(bareManifest)
+		write(bare+".manifest.json", encoded, 0600)
+		if verifyPackagedHelper(bare, "v1.2.3", "abc123") == nil {
+			t.Fatal("accepted helper without build identity stamp")
 		}
 	})
 	t.Run("symlink", func(t *testing.T) {
@@ -178,6 +202,20 @@ func TestPackagedHelperLayouts(t *testing.T) {
 	} {
 		if got := packagedHelperPath(tc.executable, tc.platform); got != tc.want {
 			t.Errorf("got %s, want %s", got, tc.want)
+		}
+	}
+}
+
+func TestReaderContainsAcrossChunks(t *testing.T) {
+	needle := []byte("netcap-build-identity/1:v1.2.3:abc123;")
+	for _, offset := range []int{0, 1<<20 - 5, 1 << 20, 3<<20 - len(needle)} {
+		data := make([]byte, 3<<20)
+		copy(data[offset:], needle)
+		if found, err := readerContains(bytes.NewReader(data), needle); err != nil || !found {
+			t.Fatalf("offset %d: found=%v err=%v", offset, found, err)
+		}
+		if found, _ := readerContains(bytes.NewReader(data), []byte("netcap-build-identity/1:v1.2.3:abc124;")); found {
+			t.Fatalf("offset %d: false match", offset)
 		}
 	}
 }

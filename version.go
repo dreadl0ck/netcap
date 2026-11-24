@@ -9,3 +9,20 @@ var Commit = "e4c4d6e42e3aef9453c248914c0ffc41f42ca843"
 
 // GopacketVersion is the version of gopacket library used.
 var GopacketVersion = "v1.7.7+v1.1.16-0.20261108153543-61002f918d93"
+
+// BuildIdentity is set with -X by packaged helper builds to
+// BuildIdentityFor(Version, Commit). It survives -trimpath, which drops the
+// -ldflags build setting, so packagers can verify a helper from its bytes.
+var BuildIdentity string
+
+// BuildIdentityFor is the exact byte string a packaged helper embeds.
+func BuildIdentityFor(version, commit string) string {
+	return "netcap-build-identity/1:" + version + ":" + commit + ";"
+}
+
+func init() {
+	// Also keeps the stamp reachable, so the linker cannot drop its data.
+	if BuildIdentity != "" && BuildIdentity != BuildIdentityFor(Version, Commit) {
+		panic("netcap: BuildIdentity does not match Version and Commit")
+	}
+}

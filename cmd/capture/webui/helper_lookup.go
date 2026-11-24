@@ -22,6 +22,7 @@
 package webui
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"debug/buildinfo"
 	"debug/macho"
@@ -36,6 +37,8 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strings"
+
+	"github.com/dreadl0ck/netcap"
 )
 
 // SetProductionHelperIdentity scopes strict packaged-helper lookup to Pro.
@@ -133,40 +136,73 @@ func verifyPackagedHelper(path, version, revision string) error {
 	// Universal macOS helpers contain an independent Go build record per slice.
 	fat, err := macho.NewFatFile(binary)
 	if err != nil {
-		build, readErr := buildinfo.Read(binary)
-		if readErr != nil {
-			return fmt.Errorf("helper build info: %w", readErr)
+		info, statErr := binary.Stat()
+		if statErr != nil {
+			return statErr
 		}
-		return verifyHelperBuild(build, version, revision)
+		return verifyHelperImage(io.NewSectionReader(binary, 0, info.Size()), version, revision)
 	}
 	for _, arch := range fat.Arches {
-		build, err := buildinfo.Read(io.NewSectionReader(binary, int64(arch.Offset), int64(arch.Size)))
-		if err != nil {
-			return fmt.Errorf("helper slice build info: %w", err)
-		}
-		if err := verifyHelperBuild(build, version, revision); err != nil {
+		if err := verifyHelperImage(io.NewSectionReader(binary, int64(arch.Offset), int64(arch.Size)), version, revision); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func verifyHelperBuild(build *debug.BuildInfo, version, revision string) error {
+// verifyHelperImage checks one executable image: its Go build record and the
+// netcap.BuildIdentity stamp, which survives -trimpath unlike -ldflags.
+func verifyHelperImage(image *io.SectionReader, version, revision string) error {
+	build, err := buildinfo.Read(image)
+	if err != nil {
+		return fmt.Errorf("helper build info: %w", err)
+	}
+	if err := verifyHelperBuild(build); err != nil {
+		return err
+	}
+	found, err := readerContains(io.NewSectionReader(image, 0, image.Size()), []byte(netcap.BuildIdentityFor(version, revision)))
+	if err != nil {
+		return err
+	}
+	if !found {
+		return fmt.Errorf("helper build identity stamp mismatch")
+	}
+	return nil
+}
+
+// readerContains streams r looking for needle without loading r into memory.
+func readerContains(r io.Reader, needle []byte) (bool, error) {
+	buf := make([]byte, 0, 1<<20+len(needle))
+	chunk := make([]byte, 1<<20)
+	for {
+		n, err := r.Read(chunk)
+		buf = append(buf, chunk[:n]...)
+		if bytes.Contains(buf, needle) {
+			return true, nil
+		}
+		if keep := len(needle) - 1; len(buf) > keep {
+			buf = append(buf[:0], buf[len(buf)-keep:]...)
+		}
+		if err == io.EOF {
+			return false, nil
+		}
+		if err != nil {
+			return false, err
+		}
+	}
+}
+
+func verifyHelperBuild(build *debug.BuildInfo) error {
 	if build.Path != "github.com/dreadl0ck/netcap/cmd/net" || build.Main.Path != "github.com/dreadl0ck/netcap" {
 		return fmt.Errorf("unexpected helper Go module or command")
 	}
-	var tags, flags string
+	var tags string
 	for _, setting := range build.Settings {
 		if setting.Key == "-tags" {
 			tags = setting.Value
 		}
-		if setting.Key == "-ldflags" {
-			flags = setting.Value
-		}
 	}
-	if !strings.Contains(","+tags+",", ",production,") ||
-		!strings.Contains(" "+flags+" ", " -X github.com/dreadl0ck/netcap.Version="+version+" ") ||
-		!strings.Contains(" "+flags+" ", " -X github.com/dreadl0ck/netcap.Commit="+revision+" ") {
+	if !strings.Contains(","+tags+",", ",production,") {
 		return fmt.Errorf("helper production build settings mismatch")
 	}
 	return nil
