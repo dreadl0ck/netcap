@@ -207,13 +207,13 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 	if ua := hdr["User-Agent"]; ua != "" {
 
 		userInfo := software.LookupUserAgent(ua)
-		if userInfo != nil && (userInfo.Product != "" || userInfo.Vendor != "" || userInfo.Version != "") {
+		if userInfo != nil && userInfo.Vendor != "" {
 			software.WriteSoftware([]*software.AtomicSoftware{
 				{
 					Software: &types.Software{
 						Timestamp: ti,
-						Product:   userInfo.Product,
-						Vendor:    userInfo.Vendor,
+						Product:   userInfo.Vendor,
+						Vendor:    software.VendorFor(userInfo.Vendor),
 						Version:   userInfo.Version,
 						// DeviceProfiles: []string{dpIdent},
 						SourceName: "Mail UserAgent",

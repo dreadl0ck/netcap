@@ -21,6 +21,9 @@ package software
 
 import "github.com/dreadl0ck/netcap/types"
 
+// VendorFor returns the vendor of a known client product, or "".
+func VendorFor(product string) string { return determineVendor(product) }
+
 // determine vendor name based on product name
 // TODO: add more associations
 func determineVendor(product string) (vendor string) {

@@ -246,7 +246,9 @@ var (
 	HashDBMap map[string][]sshSoftware
 )
 
-// userAgent is a browser user agent.
+// userAgent is a parsed user agent. Vendor is the client name (the
+// uap-go family, or the compatible token when uap-go has none) and is the
+// name Software records use; Product is the uap-go device family.
 type userAgent struct {
 	Client  *uaparser.Client
 	Product string
@@ -312,13 +314,15 @@ func ParseUserAgent(ua string) *userAgent {
 		}
 	}
 
-	// if vendor could not be identified, try to determine based on product name
+	// uap-go names many scripted clients "Other"; their own token is the
+	// only name they carry, e.g. "(compatible; Indy Library)".
 	if vendor == "" {
-		vendor = determineVendor(product)
+		vendor, version = compatibleClient(ua)
 	}
 
 	osName := uaClient.Os.ToString()
-	if osName == "Other" {
+	// uap-go maps a bare "Win32" platform token to Windows 95.
+	if osName == "Other" || osName == "Windows 95" && !windows95Token.MatchString(ua) {
 		osName = ""
 	}
 
@@ -330,6 +334,35 @@ func ParseUserAgent(ua string) *userAgent {
 		OS:      osName,
 		Full:    strings.TrimSpace(full),
 	}
+}
+
+var (
+	windows95Token = regexp.MustCompile(`(?i)Windows 95|Win95|Win 9x`)
+	// The last element of a "(compatible; ...)" list names the client.
+	compatibleList  = regexp.MustCompile(`\(compatible;([^)]*)\)`)
+	compatibleToken = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9 ._-]*?)(?:[ /]v?|\.)(\d+(?:\.\d+)*)$`)
+	platformToken   = regexp.MustCompile(`(?i)^(win(32|64|dows.*)|x64|wow64|u|i|linux.*|macintosh|mac os.*|x11)$`)
+)
+
+// compatibleClient returns the client named in a "(compatible; ...)" list,
+// skipping platform tokens, with a trailing version split off.
+func compatibleClient(ua string) (name, version string) {
+	m := compatibleList.FindStringSubmatch(ua)
+	if m == nil {
+		return "", ""
+	}
+	fields := strings.Split(m[1], ";")
+	for i := len(fields) - 1; i >= 0; i-- {
+		token := strings.TrimSpace(fields[i])
+		if token == "" || platformToken.MatchString(token) || len(token) > 64 {
+			continue
+		}
+		if v := compatibleToken.FindStringSubmatch(token); v != nil {
+			return strings.TrimSpace(v[1]), v[2]
+		}
+		return token, ""
+	}
+	return "", ""
 }
 
 // generic version harvester, scans the payload using a regular expression.
@@ -386,7 +419,8 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 		userInfo := LookupUserAgent(h.UserAgent)
 
 		if userInfo != nil {
-			if userInfo.Product != "" || userInfo.Vendor != "" || userInfo.Version != "" {
+			// Product is the client name; a record without it is an empty row.
+			if userInfo.Vendor != "" {
 				var communityIDs []string
 				if communityID != "" {
 					communityIDs = []string{communityID}
