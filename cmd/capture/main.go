@@ -1436,8 +1436,6 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			}
 		}
 
-		// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
-		// setting BPF filters is not yet supported by the pcapgo package
 		if flagBPF != "" {
 			// Record BPF filter for this file in web UI
 			if webUIServer != nil {

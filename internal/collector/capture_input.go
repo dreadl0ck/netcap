@@ -35,6 +35,9 @@ type CaptureInputReport struct {
 	Unsupported          int64  `json:"unsupportedPackets"`
 	SnaplenOverrides     int64  `json:"snaplenOverrides"`
 	SnapshotTruncated    int64  `json:"snapshotTruncatedPackets"`
+	// BPFFilter admitted only matching packets; the others are BPFExcluded.
+	BPFFilter   string `json:"bpfFilter,omitempty"`
+	BPFExcluded int64  `json:"bpfExcludedPackets,omitempty"`
 	// OrigLenRaised counts records whose captured length exceeded the
 	// recorded original length; origlen was raised to the captured length.
 	OrigLenRaised int64 `json:"origLenRaisedPackets,omitempty"`
@@ -285,6 +288,12 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 	defer f.Close()
 	defer interruptCapture(ctx, ctx, func() { _ = f.Close() })()
 	c.captureLinkType = r.LinkType()
+	var filter *captureBPF
+	if c.bpfFilter != "" {
+		if filter, err = newCaptureBPF(c.bpfFilter, r.LinkType()); err != nil {
+			return err
+		}
+	}
 	c.config.BaseLayer = linkTypeToLayerType(r.LinkType())
 	if c.config.BaseLayer == 0 {
 		c.config.BaseLayer = gopacket.LayerTypePayload // Per-packet dispatch reports unsupported links.
@@ -300,7 +309,7 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 	if countErr != nil {
 		c.printlnStdOut("counting found incomplete input; processing readable records:", countErr)
 	}
-	report := CaptureInputReport{Format: "pcap", CountedPackets: count}
+	report := CaptureInputReport{Format: "pcap", CountedPackets: count, BPFFilter: c.bpfFilter}
 	if ng {
 		report.Format = "pcapng"
 	}
@@ -308,6 +317,19 @@ func (c *Collector) collectCaptureInput(path string, ng bool) (resultErr error) 
 	defer close(stopProgress)
 	walkCaptureInput(ctx, r, &report, func(data []byte, ci gopacket.CaptureInfo) bool {
 		c.captureLinkType = ci.AncillaryData[0].(layers.LinkType)
+		if filter != nil {
+			match, err := filter.matches(c.captureLinkType, ci, data)
+			if err != nil {
+				report.Unsupported++
+				info := inputPacketInfo(ci)
+				report.issue(info.Offset, "unsupported", err.Error(), true, info.Source.Ordinal)
+				return true
+			}
+			if !match {
+				report.BPFExcluded++
+				return true
+			}
+		}
 		p := c.decodeRawPacketData(data, &ci)
 		if failure := p.ErrorLayer(); failure != nil {
 			kind := "decode"

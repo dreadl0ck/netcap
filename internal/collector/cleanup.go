@@ -35,10 +35,10 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/alert"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
-	"github.com/dreadl0ck/netcap/internal/durable"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/network"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/udp"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
+	"github.com/dreadl0ck/netcap/internal/durable"
 	"github.com/dreadl0ck/netcap/internal/label/manager"
 	"github.com/dreadl0ck/netcap/internal/netio"
 
@@ -498,8 +498,6 @@ func (c *Collector) teardown() {
 			log.Fatal("failed to open logfile:", err)
 		}
 
-		// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
-		// setting BPF filters is not yet supported by the pcapgo package
 		if c.Bpf != "" {
 			if err = c.CollectBPF(c.InputFile, c.Bpf); err != nil {
 				log.Fatal("failed to set BPF: ", err)

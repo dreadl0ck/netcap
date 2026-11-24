@@ -224,6 +224,7 @@ type Collector struct {
 	captureKind, captureSource string
 	heldBeacons                []*types.Alert // c2.beacon rows awaiting cross-detector tagging (offline only)
 	captureLinkType            layers.LinkType
+	bpfFilter                  string
 	captureComplete            bool
 	captureInputStatus         string
 	networkDetector            *networkdetect.Engine
