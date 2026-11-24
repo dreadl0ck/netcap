@@ -169,6 +169,9 @@ func NewEngine(rulesPath string, alertWriter AlertWriter) (*Engine, error) {
 	if err != nil {
 		return nil, err
 	}
+	if config, err = MigrateSavedDefaults(config); err != nil {
+		return nil, err
+	}
 	if config.CaptureTime == nil {
 		for _, rule := range config.Rules {
 			if rule.Enabled && rule.Sequence != nil && rule.Sequence.AfterType != "" {

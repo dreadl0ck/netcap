@@ -2,6 +2,9 @@ package rules
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -160,7 +163,7 @@ func TestEmbeddedDNSTunnelingNeedsLongNames(t *testing.T) {
 func TestEmbeddedSecretRulesSeparateSNMP(t *testing.T) {
 	for _, tc := range []struct {
 		service, password string
-		fires, silent    string
+		fires, silent     string
 	}{
 		{"SNMP", "public", "SNMP Default Community String", "Cleartext Password Captured,SNMP Community String Observed"},
 		{"SNMP", "s3cr3t", "SNMP Community String Observed", "Cleartext Password Captured,SNMP Default Community String"},
@@ -223,4 +226,64 @@ func TestSavedLegacyDefaultsLoadCurrentDefinition(t *testing.T) {
 			t.Fatal("edited override was replaced")
 		}
 	}
+}
+
+// capture -rules DIR loads a folder on its own, without the embedded merge
+// that migrates saved defaults; it must migrate them the same way.
+func TestRulesDirectoryMigratesSavedDefaults(t *testing.T) {
+	var legacy Config
+	if err := yaml.Unmarshal(legacyDefaultsYAML, &legacy); err != nil {
+		t.Fatal(err)
+	}
+	embedded, err := LoadEmbeddedRules()
+	if err != nil {
+		t.Fatal(err)
+	}
+	current := map[string]*Rule{}
+	for _, rule := range embedded.Rules {
+		current[rule.Name] = rule
+	}
+	custom := &Rule{Name: "Operator Rule", Type: "TCP", Expression: "SYN", Severity: "low", Enabled: true}
+	saved := &Config{Rules: append(append([]*Rule{}, legacy.Rules...), custom)}
+	for _, old := range retiredDefinitions(t) {
+		saved.Rules = append(saved.Rules, old)
+	}
+	data, err := yaml.Marshal(saved)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "saved.yml"), data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	engine, err := NewEngine(dir, &MockAlertWriter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	names := map[string]*Rule{}
+	for _, rule := range engine.config.Rules {
+		names[rule.Name] = rule
+	}
+	for _, old := range legacy.Rules {
+		if got := names[old.Name]; got == nil || got.Expression != current[old.Name].Expression || !reflect.DeepEqual(got.GroupBy, current[old.Name].GroupBy) || got.Threshold != current[old.Name].Threshold {
+			t.Fatalf("%s not migrated: %+v", old.Name, got)
+		}
+	}
+	for _, old := range retiredDefinitions(t) {
+		if names[old.Name] != nil {
+			t.Fatalf("retired default %s still loads", old.Name)
+		}
+	}
+	if names[custom.Name] == nil {
+		t.Fatal("operator rule dropped")
+	}
+}
+
+func retiredDefinitions(t *testing.T) []*Rule {
+	t.Helper()
+	var retired Config
+	if err := yaml.Unmarshal(retiredDefaultsYAML, &retired); err != nil {
+		t.Fatal(err)
+	}
+	return retired.Rules
 }

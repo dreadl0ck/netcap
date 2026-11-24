@@ -1,0 +1,4 @@
+# Embedded defaults removed from the shipped set, as last shipped. A saved
+# rules-folder copy that still equals one (ignoring enabled and ruleset tags)
+# is dropped. Never edit an entry.
+rules: []

@@ -2,8 +2,8 @@ package rules
 
 import (
 	"bytes"
-	_ "embed"
 	"crypto/sha256"
+	_ "embed"
 	"encoding/hex"
 	"strings"
 
@@ -23,17 +23,61 @@ var legacyDefaultsYAML []byte
 
 // legacyDefaults maps a rule name to the normalized YAML of its superseded
 // embedded definitions.
-var legacyDefaults = func() map[string][][]byte {
+var legacyDefaults = comparableDefaults(legacyDefaultsYAML, "legacy_defaults.yml")
+
+// Defaults removed from the embedded set, as last shipped. A saved copy that
+// still equals one is dropped instead of loading as an operator rule.
+//
+//go:embed retired_defaults.yml
+var retiredDefaultsYAML []byte
+
+var retiredDefaults = comparableDefaults(retiredDefaultsYAML, "retired_defaults.yml")
+
+func comparableDefaults(data []byte, name string) map[string][][]byte {
 	var config Config
-	if err := yaml.Unmarshal(legacyDefaultsYAML, &config); err != nil {
-		panic("legacy_defaults.yml: " + err.Error())
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		panic(name + ": " + err.Error())
 	}
 	out := map[string][][]byte{}
 	for _, rule := range config.Rules {
 		out[rule.Name] = append(out[rule.Name], legacyComparable(rule))
 	}
 	return out
-}()
+}
+
+func isRetiredDefault(rule *Rule) bool {
+	saved := legacyComparable(rule)
+	for _, retired := range retiredDefaults[rule.Name] {
+		if saved != nil && bytes.Equal(saved, retired) {
+			return true
+		}
+	}
+	return false
+}
+
+// MigrateSavedDefaults applies the rules-folder migration to a configuration
+// loaded on its own, such as capture -rules DIR: unchanged copies of
+// superseded defaults load as the current default and retired ones drop out.
+func MigrateSavedDefaults(config *Config) (*Config, error) {
+	embedded, err := LoadEmbeddedRules()
+	if err != nil {
+		return nil, err
+	}
+	current := map[string]*Rule{}
+	for _, rule := range embedded.Rules {
+		current[rule.Name] = rule
+	}
+	migrated := *config
+	migrated.Rules = make([]*Rule, 0, len(config.Rules))
+	for _, rule := range config.Rules {
+		if base := current[rule.Name]; base != nil {
+			migrated.Rules = append(migrated.Rules, migrateLegacyPredicate(base, rule))
+		} else if !isRetiredDefault(rule) {
+			migrated.Rules = append(migrated.Rules, rule)
+		}
+	}
+	return &migrated, nil
+}
 
 // legacyComparable renders the fields an unchanged saved default shares
 // with the shipped definition; enabled is the operator's choice.

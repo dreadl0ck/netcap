@@ -151,7 +151,7 @@ func MergeConfigs(base, override *Config) *Config {
 
 	// Then add new rules from override that weren't in base
 	for _, rule := range override.Rules {
-		if !addedNames[rule.Name] {
+		if !addedNames[rule.Name] && !isRetiredDefault(rule) {
 			merged.Rules = append(merged.Rules, rule)
 		}
 	}
