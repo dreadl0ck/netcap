@@ -118,8 +118,8 @@ func (i *FindingContext) forHTTP(h *types.HTTP) []RelatedEvidence {
 		return nil
 	}
 	key, client, server := contextFlow(h.CommunityID, h.SrcIP, h.DstIP, h.SrcPort, h.DstPort)
-	uri, name := contextURL(h.URL, h.Host)
-	links := i.addDNSLink(nil, key, h.Timestamp, client, server, name)
+	uri, _ := contextURL(h.URL, h.Host)
+	links := i.addDNSLink(nil, key, h.Timestamp, client, server, h.Host)
 	return i.appendReferrers(links, key, h.Timestamp, client, h.Method, uri, h.StatusCode, 0)
 }
 

@@ -14,6 +14,7 @@ func groupedAlertPageRows(groups []GroupedAlert) ([]map[string]any, error) {
 		scalar.UniqueSrcIPs, scalar.UniqueDstIPs, scalar.UniqueSrcPorts, scalar.UniqueDstPorts = nil, nil, nil, nil
 		scalar.SampleAlerts = nil
 		hash := sha256.New()
+		hash.Write(group.memberDigest)
 		encoder := json.NewEncoder(hash)
 		if err := encoder.Encode(scalar); err != nil {
 			return nil, err

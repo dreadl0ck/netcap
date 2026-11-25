@@ -1684,3 +1684,21 @@ rules:
     mitre: ["T1090", "T1572"]
     tags: ["tunneling"]
     enabled: true
+
+  # Polling-noise defaults superseded by rule-aware fallback.
+  - name: HTTP POST to IP
+    description: HTTP POST to a literal IP without a recognizable NetSupport Manager client fingerprint
+    type: HTTP
+    expression: Method == "POST" && MatchesPattern(Host, "^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$") && !MatchesPattern(UserAgent, "(?i)^netsupport manager")
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["c2"]
+    enabled: true
+  - name: Unknown HTTP Proxy Detection
+    description: Detect CONNECT or absolute-form requests without a recognizable NetSupport Manager client fingerprint
+    type: HTTP
+    expression: Method == "CONNECT" || (MatchesPattern(URL, "^https?://") && !MatchesPattern(UserAgent, "(?i)^netsupport manager"))
+    severity: medium
+    mitre: ["T1090.002"]
+    tags: ["proxy"]
+    enabled: true

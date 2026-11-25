@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -30,6 +31,53 @@ func TestNetSupportRulesMatchTheHeaderEachSideSends(t *testing.T) {
 		if got := matches(t, rules[c.rule], c.record); got != c.want {
 			t.Errorf("%s on %+v = %v, want %v", c.rule, c.record, got, c.want)
 		}
+	}
+}
+
+func TestNetSupportFallbackKeepsIndependentlySelectedHTTPRules(t *testing.T) {
+	post := exampleRules(t, "malware.yml")["HTTP POST to IP"]
+	proxy := exampleRules(t, "suspicious_traffic.yml")["Unknown HTTP Proxy Detection"]
+	client := exampleRules(t, "suspicious_user_agents.yml")[netSupportClientRule]
+	poll := &types.HTTP{Timestamp: 1e9, SrcIP: "192.0.2.1", DstIP: "192.0.2.2", Host: "192.0.2.2", Method: "POST", URL: "http://192.0.2.2/check", UserAgent: "NetSupport Manager/1.3"}
+	for _, tc := range []struct {
+		name   string
+		modify func(*Rule)
+		custom bool
+		want   []string
+	}{
+		{name: "generic rules only", want: []string{post.Name, proxy.Name}},
+		{name: "specific disabled", modify: func(r *Rule) { r.Enabled = false }, want: []string{post.Name, proxy.Name}},
+		{name: "specific predicate did not match", modify: func(r *Rule) { r.Expression = `UserAgent == "NetSupport Manager/2"` }, want: []string{post.Name, proxy.Name}},
+		{name: "specific threshold not reached", modify: func(r *Rule) { r.Threshold, r.DedupeBy = 2, nil }, want: []string{post.Name, proxy.Name}},
+		{name: "custom generic same name", custom: true, modify: func(*Rule) {}, want: []string{post.Name, client.Name}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			generic := post.SavedCopy()
+			if tc.custom {
+				generic.Expression = `Method == "POST"`
+			}
+			selected := []*Rule{&generic, proxy}
+			if tc.modify != nil {
+				specific := client.SavedCopy()
+				tc.modify(&specific)
+				selected = append(selected, &specific)
+			}
+			writer := new(MockAlertWriter)
+			replay, err := NewAuditReplay(&Config{Rules: selected}, writer)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := replay.Evaluate(poll); err != nil {
+				t.Fatal(err)
+			}
+			var names []string
+			for _, alert := range writer.alerts {
+				names = append(names, alert.RuleName)
+			}
+			if !slices.Equal(names, tc.want) {
+				t.Fatalf("findings = %v, want %v", names, tc.want)
+			}
+		})
 	}
 }
 

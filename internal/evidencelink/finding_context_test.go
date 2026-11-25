@@ -97,7 +97,7 @@ func TestFindingContextLinksOnlyObservedHTTPReferrersInScope(t *testing.T) {
 
 func TestFindingContextDNSAndTLSUseDistinctObservations(t *testing.T) {
 	const client, server, resolver = "192.0.2.1", "192.0.2.2", "192.0.2.53"
-	for _, variant := range []string{"valid", "ambiguous DNS", "alias expired", "future answer", "reused TLS tuple", "ambiguous handshake"} {
+	for _, variant := range []string{"valid", "same address only", "ambiguous DNS", "alias expired", "future answer", "reused TLS tuple", "ambiguous handshake"} {
 		t.Run(variant, func(t *testing.T) {
 			answer := &types.DNS{QR: true, Timestamp: second, TransactionStatus: "answered", CommunityID: "1:dns", SrcIP: resolver, DstIP: client, SrcPort: 53, DstPort: 53001,
 				Questions: []*types.DNSQuestion{{Name: "lookup.example.", Type: 1, Class: 1}}, Answers: []*types.DNSResourceRecord{
@@ -105,37 +105,42 @@ func TestFindingContextDNSAndTLSUseDistinctObservations(t *testing.T) {
 					{Name: "alias.example.", IP: server, Type: 1, Class: 1, TTL: 60},
 				}}
 			tls := &types.Connection{TimestampFirst: 5 * second, TimestampLast: 20 * second, NetworkScope: "vlan-7", TransportProto: "TCP", CommunityID: "1:tls", ObservationID: "one", SrcIP: client, DstIP: server, SrcPort: "40001", DstPort: "443"}
-			hello := &types.TLSClientHello{Timestamp: 6 * second, SNI: "sni.example", CommunityID: tls.CommunityID, SrcIP: client, DstIP: server, SrcPort: 40001, DstPort: 443}
+			hello := &types.TLSClientHello{Timestamp: 6 * second, SNI: "alias.example", CommunityID: tls.CommunityID, SrcIP: client, DstIP: server, SrcPort: 40001, DstPort: 443}
 			leaf := &types.TLSCertificate{Timestamp: 8 * second, CertificateSender: "server", CommunityID: tls.CommunityID, SrcIP: server, DstIP: client, SrcPort: 443, DstPort: 40001}
 			tracks := findingTracks{
 				"Connection": {tls, &types.Connection{TimestampFirst: second / 2, TimestampLast: 15 * second, NetworkScope: "vlan-7", TransportProto: "UDP", SrcIP: client, DstIP: resolver, SrcPort: "53001", DstPort: "53", CommunityID: answer.CommunityID}},
 				"DNS":        {answer}, "TLSClientHello": {hello},
 			}
-			wantDNS, wantTLS := true, true
+			wantDNS, wantTLS := "dns-resolution", true
 			switch variant {
+			case "same address only":
+				hello.SNI = "other.example"
+				wantDNS = "dns-same-address"
 			case "ambiguous DNS":
 				secondAnswer := *answer
 				secondAnswer.Questions = []*types.DNSQuestion{{Name: "other.example", Type: 1, Class: 1}}
 				secondAnswer.Answers = []*types.DNSResourceRecord{{Name: "other.example", Type: 1, Class: 1, IP: server, TTL: 60}}
 				tracks["DNS"] = append(tracks["DNS"], &secondAnswer)
-				wantDNS = false
+				wantDNS = ""
 			case "alias expired":
 				answer.Answers[0].TTL = 4
-				wantDNS = false
+				wantDNS = ""
 			case "future answer":
 				answer.Timestamp = 7 * second
-				wantDNS = false
+				wantDNS = ""
 			case "reused TLS tuple":
 				reused := *tls
 				reused.TimestampFirst, reused.ObservationID = 7*second, "two"
 				tls.TimestampLast = 6 * second
 				tracks["Connection"] = append(tracks["Connection"], &reused)
 				wantTLS = false
+				wantDNS = "dns-same-address"
 			case "ambiguous handshake":
 				other := *hello
 				other.Timestamp++
 				tracks["TLSClientHello"] = append(tracks["TLSClientHello"], &other)
 				wantTLS = false
+				wantDNS = "dns-same-address"
 			}
 			seen := map[string]bool{}
 			for _, l := range findLinks(t, findingAlert(leaf), tracks.build(t)) {
@@ -144,8 +149,19 @@ func TestFindingContextDNSAndTLSUseDistinctObservations(t *testing.T) {
 					t.Fatalf("bad origin record: %+v", l)
 				}
 			}
-			if seen["dns-resolution"] != wantDNS || seen["tls-server-name"] != wantTLS {
+			if seen["dns-resolution"] != (wantDNS == "dns-resolution") || seen["dns-same-address"] != (wantDNS == "dns-same-address") || seen["tls-server-name"] != wantTLS {
 				t.Fatalf("unexpected links: %v", seen)
+			}
+			if variant == "valid" {
+				file := &types.File{Timestamp: 8 * second, SrcIP: client, DstIP: server, SrcPort: 40001, DstPort: 443, CommunityID: tls.CommunityID,
+					Host: "LOOKUP.example.:443", Protocol: "HTTP", FlowDirection: "server_to_client", IsComplete: true}
+				if links := findLinks(t, findingAlert(file), tracks.build(t)); len(links) != 0 {
+					t.Fatalf("HTTP authority already named the DNS question: %+v", links)
+				}
+				file.Host = "ALIAS.example.:443"
+				if links := findLinks(t, findingAlert(file), tracks.build(t)); len(links) != 1 || links[0].Relationship != "dns-resolution" {
+					t.Fatalf("expected resolution through the alias: %+v", links)
+				}
 			}
 		})
 	}

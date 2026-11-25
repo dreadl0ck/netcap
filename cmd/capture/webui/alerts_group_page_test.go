@@ -2,17 +2,20 @@ package webui
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
 
 func TestGroupedSummaryBoundsSamplesAndPreservesExactTimes(t *testing.T) {
-	group := GroupedAlert{GroupID: "group", RuleName: "large", Count: 10000, FirstSeen: 1700000000000000001, LastSeen: 1700000000000000003, SampleAlerts: []AlertResponse{{MatchedRecord: strings.Repeat("x", 9<<20)}}}
+	group := GroupedAlert{GroupID: "group", RuleName: "large", Count: 10000, FirstSeen: 1700000000001, LastSeen: 1700000000003, SampleAlerts: []AlertResponse{{MatchedRecord: strings.Repeat("x", 9<<20)}}}
 	for index := range 10000 {
 		group.UniqueSrcIPs = append(group.UniqueSrcIPs, fmt.Sprintf("host-%05d", index))
 	}
@@ -24,7 +27,7 @@ func TestGroupedSummaryBoundsSamplesAndPreservesExactTimes(t *testing.T) {
 	if err != nil || len(wire) > 8192 {
 		t.Fatal("group summary retained its members", len(wire), err)
 	}
-	if !strings.Contains(string(wire), `"firstSeen":1700000000000000001`) || rows[0]["uniqueSrcIPsTotal"] != 10000 || rows[0]["membersPaged"] != true {
+	if !strings.Contains(string(wire), `"firstSeen":1700000000001`) || rows[0]["uniqueSrcIPsTotal"] != 10000 || rows[0]["membersPaged"] != true {
 		t.Fatal("group summary changed counts or timestamps", string(wire))
 	}
 	if len(rows[0]["sampleAlerts"].([]any)) != 0 || len(rows[0]["uniqueSrcIPs"].([]any)) != 10 {
@@ -36,6 +39,69 @@ func TestGroupedSummaryBoundsSamplesAndPreservesExactTimes(t *testing.T) {
 	if err != nil || changed[0]["groupDataSHA256"] == digest {
 		t.Fatal("hidden member change did not change generation seed", err)
 	}
+}
+
+func TestMCPGroupedAlertsCountBeyondPreviewAndInvalidateHiddenEdits(t *testing.T) {
+	dir := t.TempDir()
+	const distinct = 300
+	alerts := make([]proto.Message, 0, distinct+2)
+	for i := range distinct + 1 {
+		alerts = append(alerts, &types.Alert{
+			Timestamp: int64(i+1) * 1000000, RuleName: "inventory", Severity: "info", Tags: []string{rules.InventoryTag},
+			SrcIP: fmt.Sprintf("10.0.%d.%d", (i%distinct)/250, (i%distinct)%250), DstIP: "192.0.2.1",
+		})
+	}
+	alerts = append(alerts, &types.Alert{RuleName: "another", Severity: "info"})
+	writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, alerts)
+	s := &Server{outDir: dir}
+	get := func(query string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		s.handleGroupedAlerts(w, httptest.NewRequest("GET", "/api/alerts/grouped?kind=all&mcpPage=true&"+query, nil))
+		return w
+	}
+	w := get("pageLimit=2")
+	var page struct {
+		Groups []struct {
+			GroupedAlert
+			UniqueSrcIPsTotal int
+		}
+		Generation string
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &page); err != nil || w.Code != http.StatusOK || len(page.Groups) != 2 || page.Generation == "" {
+		t.Fatalf("expected two MCP groups: %d %s (%v)", w.Code, w.Body, err)
+	}
+	g := page.Groups[0]
+	if g.RuleName != "inventory" {
+		g = page.Groups[1]
+	}
+	if g.UniqueSrcIPsTotal != distinct || g.Count != distinct+1 || len(g.UniqueSrcIPs) != 10 || g.UniqueValuesTruncated {
+		t.Fatalf("expected exact distinct total and bounded preview: %+v", g)
+	}
+	query := "pageLimit=1&pageOffset=1&pageGeneration=" + page.Generation
+	if w = get(query); w.Code != http.StatusOK {
+		t.Fatalf("unchanged pagination: %d %s", w.Code, w.Body)
+	}
+	// Change the last member's content, without touching totals, times, or the first five samples.
+	alerts[distinct].(*types.Alert).Description = "edited hidden member"
+	writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, alerts)
+	if w = get(query); w.Code != http.StatusConflict || !strings.Contains(w.Body.String(), "collection generation changed") {
+		t.Fatalf("hidden member edit must invalidate pagination: %d %s", w.Code, w.Body)
+	}
+}
+
+func TestExactGroupStateRefusesAdditionalUniqueValuesOverBudget(t *testing.T) {
+	acc := newAlertGroups(32<<10, true)
+	for i := 0; i < 1024; i++ {
+		err := acc.add(AlertResponse{RuleName: "inventory", Kind: rules.KindInventory, SrcIP: fmt.Sprintf("host-%04d", i)}, "", "")
+		if err == nil {
+			continue
+		}
+		if !errors.Is(err, errAlertPageSourceLimit) || i <= maxGroupUniqueValues {
+			t.Fatalf("unexpected failure at %d unique values: %v", i, err)
+		}
+		return
+	}
+	t.Fatal("exact summary did not honor the state budget")
 }
 
 func TestAlertStatsRefusesOversizedEncodedRecentRows(t *testing.T) {

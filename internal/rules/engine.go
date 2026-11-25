@@ -326,8 +326,9 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 	recordType := record.NetcapType()
 	alertCount := 0
 	var environment map[string]any
+	plan := e.rulesFor(recordType)
 
-	for _, rule := range e.rulesFor(recordType) {
+	for _, rule := range plan {
 		if !rule.Enabled {
 			continue
 		}
@@ -356,6 +357,12 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 		matched, err := filter.EvaluateEnvironment(rule.compiled, environment)
 		if err != nil {
 			return alertCount, fmt.Errorf("error evaluating rule %s: %w", rule.Name, err)
+		}
+		if matched && recordType == types.Type_NC_HTTP && coalescedNetSupportPoll(rule, record, plan, environment) {
+			if e.perfTracker != nil {
+				e.perfTracker.RecordRuleExecution(rule.Name, time.Since(ruleStart), true, false)
+			}
+			continue
 		}
 		var alert *types.Alert
 		if matched {

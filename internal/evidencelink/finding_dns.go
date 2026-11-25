@@ -2,6 +2,7 @@ package evidencelink
 
 import (
 	"net/netip"
+	"slices"
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/dnsaudit"
@@ -14,9 +15,9 @@ type findingDNSKey struct {
 }
 
 type findingAnswer struct {
-	ref  ContextRef
-	name string
-	ttl  int64
+	ref   ContextRef
+	chain []string
+	ttl   int64
 }
 
 func (i *FindingContext) addFindingDNS(d *types.DNS, ref ContextRef) {
@@ -40,50 +41,55 @@ func (i *FindingContext) addFindingDNS(d *types.DNS, ref ContextRef) {
 			return
 		}
 	}
-	owner, ttl := answerOwner(name, d.Answers)
-	if owner == "" {
+	chain, ttl := answerChain(name, d.Answers)
+	if len(chain) == 0 {
 		return
+	}
+	owner := chain[len(chain)-1]
+	charge := 512
+	for _, alias := range chain {
+		charge += 16 + len(alias)
 	}
 	for _, rr := range d.Answers {
 		if rr == nil || rr.Class != 1 || rr.Type != q.Type || rr.TTL == 0 || contextName(rr.Name) != owner {
 			continue
 		}
 		if addr := contextAddress(rr.IP); addr.IsValid() && addr.Is4() == (rr.Type == 1) {
-			addContext(i.dns, findingDNSKey{conn.scope, client, addr}, findingAnswer{ref, name, int64(min(ttl, rr.TTL)) * int64(time.Second)})
-			i.bytes += 512 + len(name)
+			addContext(i.dns, findingDNSKey{conn.scope, client, addr}, findingAnswer{ref, chain, int64(min(ttl, rr.TTL)) * int64(time.Second)})
+			i.bytes += charge
 		}
 	}
 }
 
 // Follow only a single bounded CNAME chain from the actual question.
-func answerOwner(name string, records []*types.DNSResourceRecord) (string, uint32) {
+func answerChain(name string, records []*types.DNSResourceRecord) ([]string, uint32) {
 	owner, ttl := name, uint32(300)
-	seen := map[string]bool{name: true}
+	chain := []string{name}
 	for range 9 {
 		var alias *types.DNSResourceRecord
 		for _, rr := range records {
 			if rr != nil && rr.Class == 1 && rr.Type == 5 && contextName(rr.Name) == owner {
 				if alias != nil || rr.TTL == 0 {
-					return "", 0
+					return nil, 0
 				}
 				alias = rr
 			}
 		}
 		if alias == nil {
-			return owner, ttl
+			return chain, ttl
 		}
 		target := alias.CNAMEText
 		if target == "" {
 			target = string(alias.CNAME)
 		}
 		owner = contextName(target)
-		if owner == "" || seen[owner] {
-			return "", 0
+		if owner == "" || slices.Contains(chain, owner) {
+			return nil, 0
 		}
-		seen[owner] = true
+		chain = append(chain, owner)
 		ttl = min(ttl, alias.TTL)
 	}
-	return "", 0
+	return nil, 0
 }
 
 func (i *FindingContext) addDNSLink(links []RelatedEvidence, key findingFlow, at int64, client, server netip.Addr, knownName string) []RelatedEvidence {
@@ -98,15 +104,23 @@ func (i *FindingContext) addDNSLink(links []RelatedEvidence, key findingFlow, at
 		if candidate.ref.Timestamp > conn.first || conn.first-candidate.ref.Timestamp >= candidate.ttl {
 			continue
 		}
-		if match != nil && match.name != candidate.name {
+		if match != nil && match.chain[0] != candidate.chain[0] {
 			return links
 		}
 		if match == nil || candidate.ref.Timestamp > match.ref.Timestamp {
 			match = candidate
 		}
 	}
-	if match != nil && match.name != contextName(knownName) {
-		links = append(links, RelatedEvidence{Relationship: "dns-resolution", Name: match.name, IP: server.String(), Record: match.ref})
+	if match == nil {
+		return links
 	}
-	return links
+	_, authority := contextAuthority(knownName, "")
+	if authority == match.chain[0] {
+		return links // already named in direct evidence (or by the linked TLS hello)
+	}
+	relationship := "dns-same-address"
+	if slices.Contains(match.chain[1:], authority) {
+		relationship = "dns-resolution"
+	}
+	return append(links, RelatedEvidence{Relationship: relationship, Name: match.chain[0], IP: server.String(), Record: match.ref})
 }
