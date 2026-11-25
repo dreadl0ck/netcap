@@ -35,9 +35,10 @@ import OverviewView from '../components/OverviewView';
 import CustomDashboardView from '../components/CustomDashboardView';
 import DashboardViewTabs, { OVERVIEW_VIEW_ID } from '../components/DashboardViewTabs';
 import DashboardPcapScopeSelector, { ALL_PCAPS_SCOPE } from '../components/DashboardPcapScopeSelector';
-import { useNetcapApi } from '../hooks';
+import { useNetcapApi, useNetcapRouter } from '../hooks';
 
 import { DashboardApiError, type Dashboard } from '../lib/api';
+import { setSelectedSession } from '../lib/captureSelection';
 import { translate as i18nText, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
 import { usePresentationSWR as useSWR } from "../lib/i18n";
 
@@ -55,7 +56,9 @@ function describeError(err: unknown): string {
 export default function DashboardPage() {
   const __uiLocale = useUILocale();
   const api = useNetcapApi();
+  const router = useNetcapRouter();
 
+  const { data: status } = useSWR('status', () => api.getStatus());
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
   const {
     data: dashboards,
@@ -63,14 +66,24 @@ export default function DashboardPage() {
     mutate: mutateDashboards,
   } = useSWR('dashboards-list', () => api.listDashboards());
 
-  // Page-level scope (persisted across reloads).
-  const [scope, setScope] = useState<string>(() => {
-    if (typeof window === 'undefined') return ALL_PCAPS_SCOPE;
-    return window.sessionStorage.getItem(SCOPE_STORAGE_KEY) || 'current';
+  // Service scope belongs to the URL. A bare landing always aggregates, even
+  // in tabs that persisted the old "current" default without a selection.
+  const sessionId = typeof router.query.sessionId === 'string' ? router.query.sessionId : undefined;
+  const service = status?.isServiceMode ?? Boolean(sessionId);
+  const [localScope, setLocalScope] = useState(() => {
+    const saved = typeof window === 'undefined' ? null : window.sessionStorage.getItem(SCOPE_STORAGE_KEY);
+    return saved && saved !== 'current' ? saved : ALL_PCAPS_SCOPE;
   });
-  useEffect(() => {
-    window.sessionStorage.setItem(SCOPE_STORAGE_KEY, scope);
-  }, [scope]);
+  const localAvailable = inputFiles?.some(file => file.isCompleted && file.path === localScope);
+  const scopeChoice = service ? sessionId || ALL_PCAPS_SCOPE : localAvailable ? localScope : ALL_PCAPS_SCOPE;
+  const scope = service && sessionId ? 'current' : scopeChoice;
+  const changeScope = (value: string) => {
+    if (service) setSelectedSession(value === ALL_PCAPS_SCOPE ? null : value);
+    else {
+      setLocalScope(value);
+      window.sessionStorage.setItem(SCOPE_STORAGE_KEY, value);
+    }
+  };
 
   // Active tab/view (persisted across reloads).
   const [activeView, setActiveView] = useState<string>(() => {
@@ -196,7 +209,7 @@ export default function DashboardPage() {
           py: { xs: 1, md: 2 },
         }}><Box><Chip label={i18nText("ui:m_36b211425443465c14c7")} color="primary" variant="outlined" size="small" sx={{ mb: 1.5, height: 24 }} /><Typography component="h2" variant="h2">{i18nText("ui:m_b2507e16ae0cc36bfb5e")}</Typography><Typography color="text.secondary" sx={{ mt: 0.75, maxWidth: 620 }}>
               {i18nText("ui:m_2cc7656d50b861f3c12f")}
-            </Typography></Box><Box sx={{ minWidth: { md: 300 } }}><DashboardPcapScopeSelector value={scope} onChange={setScope} inputFiles={inputFiles} /></Box></Box><DashboardViewTabs dashboards={userDashboards}
+            </Typography></Box><Box sx={{ minWidth: { md: 300 } }}><DashboardPcapScopeSelector value={scopeChoice} onChange={changeScope} inputFiles={inputFiles} useSessionIds={service} /></Box></Box><DashboardViewTabs dashboards={userDashboards}
           activeId={activeView}
           onSelect={setActiveView}
           onCreate={openCreate}

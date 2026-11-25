@@ -144,7 +144,7 @@ export default function SoftwarePage() {
   // Fetch software data
   const { data: softwareData, error, mutate } = useSWR<SoftwareResponse>(
     'software',
-    () => fetch(`${getBackendUrl()}/api/software`).then(res => res.json()),
+    () => api.getCaptureInventory('software'),
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
       refreshInterval: 0,

@@ -1,3 +1,15 @@
+## v0.16.16 — restore the WebUI dashboard and capture views
+
+| Area | Change |
+| --- | --- |
+| Traffic overview | **All PCAPs** again shows aggregate totals and charts on first visit. Direct capture links retain their selection. |
+| Data pages | Hosts, Devices, Connections, HTTP, Services and other inventories load records for the selected capture. Visitor isolation is preserved. |
+| Capture review | Audit Records keeps one capture selector. Alerts and Files drop the page-level diagnostics; detailed evidence remains available. |
+
+Release preflight now requires `make try-webui`, which tests the browser against an embedded service build with two local captures. User-visible WebUI changes require explicit maintainer approval.
+
+Full changes: https://github.com/dreadl0ck/netcap/compare/v0.16.15...v0.16.16
+
 ## v0.16.15 — clearer findings and isolated showcase sessions
 
 | Area | Change |

@@ -168,7 +168,7 @@ export default function VulnerabilitiesPage() {
     () => {
       const params = new URLSearchParams();
       communityIds.forEach(id => params.append('communityId', id));
-      return fetch(`${getBackendUrl()}/api/vulnerabilities?${params}`).then(res => res.json());
+      return api.getCaptureInventory(`vulnerabilities?${params}`);
     },
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing

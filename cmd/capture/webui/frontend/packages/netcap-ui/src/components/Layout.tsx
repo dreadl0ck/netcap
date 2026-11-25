@@ -240,7 +240,8 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
   );
 
   // Fetch alert statistics (not filtered by community ID in menu badge)
-  const { data: alertStats, mutate: mutateAlertStats } = useSWR('alertStats', () => api.getAlertStats(), {
+  const hasCapture = status && (!status.isServiceMode || status.sessionId);
+  const { data: alertStats, mutate: mutateAlertStats } = useSWR(hasCapture ? 'alertStats' : null, () => api.getAlertStats(), {
     refreshInterval: 10000,
   });
 
@@ -1026,8 +1027,6 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
         }}
       >
         <CommunityIDFilterBar />
-        {status?.coverage && <Typography variant="body2" role="status" color="warning.main" sx={{ mb: 2, overflowWrap: 'anywhere' }}>Partial packet coverage: {status.coverage}</Typography>}
-        {!!status?.udpOmittedStreams && <Typography variant="body2" role="status" color="warning.main" sx={{ mb: 2 }}>UDP stream retention limit: payloads for {status.udpOmittedStreams.toLocaleString()} flows were omitted. Packet records and detections are still available.</Typography>}
         {children}
         <GeoIPAttribution />
       </Box>

@@ -29,14 +29,10 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
   IconButton,
   InputAdornment,
   LinearProgress,
-  MenuItem,
   Paper,
-  Select,
-  SelectChangeEvent,
   TextField,
   Tooltip,
   Typography,
@@ -241,12 +237,7 @@ export default function AuditRecords() {
   const { data: files, error, mutate } = useSWR('auditFiles', () => api.getAuditFiles());
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
-  const { data: sessions } = useSWR(
-    status?.isServiceMode ? 'try-sessions' : null, 
-    () => api.getAllSessions()
-  );
   const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [switchingSession, setSwitchingSession] = useState(false);
   const filterInputRef = React.useRef<HTMLInputElement>(null);
   // Expand all sections by default
   const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set([
@@ -631,22 +622,6 @@ export default function AuditRecords() {
     setStreamError(null);
   };
 
-  const handleSessionChange = async (event: SelectChangeEvent<string>) => {
-    const sessionId = event.target.value;
-    setSwitchingSession(true);
-    try {
-      await api.selectSession(sessionId);
-      // Refresh data
-      await mutate();
-      await mutateStatus();
-    } catch (error) {
-      console.error('Failed to switch session:', error);
-      alert(i18nText("ui:m_c621cba9a2fca09e49af"));
-    } finally {
-      setSwitchingSession(false);
-    }
-  };
-
   const toggleLayer = (layerName: string) => {
     setExpandedLayers(prev => {
       const newSet = new Set(prev);
@@ -769,20 +744,7 @@ export default function AuditRecords() {
   }
 
   return (
-    <Layout title={i18nText("ui:m_b4278c403d07ec43e879")} headerAction={fileSelector}><Box sx={{ minWidth: 0 }}>{/* Session Selector for Try Service */}{status?.isServiceMode && sessions && sessions.length > 1 && (
-          <Box mb={3}><FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 300 } }}><Select value={status?.sessionId || ''}
-                onChange={handleSessionChange}
-                disabled={switchingSession}
-                displayEmpty
-                renderValue={(value) => {
-                  const session = sessions.find(s => s.sessionId === value);
-                  return session ? i18nText("ui:m_98ea5107ce31d865f187", { arg0: session.inputFilename }) : translate("ui:m_6a62a54b5077b61e7565");
-                }}>{sessions
-                  .filter(s => s.resultsReady)
-                  .map((session) => (
-                    <MenuItem key={session.sessionId} value={session.sessionId}><Box><Typography variant="body2">{session.inputFilename}</Typography><Typography variant="caption" color="text.secondary">{new Date(session.uploadTimestamp).toLocaleString(getUILocale())}</Typography></Box></MenuItem>
-                  ))}</Select></FormControl></Box>
-        )}<Box mb={3}><Box display="flex" 
+    <Layout title={i18nText("ui:m_b4278c403d07ec43e879")} headerAction={fileSelector}><Box sx={{ minWidth: 0 }}><Box mb={3}><Box display="flex"
             flexDirection={{ xs: 'column', sm: 'row' }}
             justifyContent="space-between" 
             alignItems={{ xs: 'stretch', sm: 'flex-start' }} 

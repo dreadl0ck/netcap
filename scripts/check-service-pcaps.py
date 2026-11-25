@@ -15,6 +15,7 @@ import secrets
 import shutil
 import signal
 import socket
+import struct
 import subprocess
 import sys
 import tempfile
@@ -48,6 +49,74 @@ def stage(captures, pcaps):
             os.link(capture["source"], target)
         except OSError:
             shutil.copy2(capture["source"], target)
+
+
+def write_webui_capture(path, host, suffix, partial=False):
+    """A synthetic HTTP download with distinct IPs, MACs and URI per capture."""
+    client = (bytes((192, 0, 2, suffix)), bytes((2, 0, 0, 0, 0, suffix)), 12000)
+    server = (bytes((198, 51, 100, suffix)), bytes((2, 0, 0, 0, 1, suffix)), 80)
+    request = f"GET /{host}.txt HTTP/1.1\r\nHost: {host}.test\r\nConnection: close\r\n\r\n".encode()
+    body = f"Synthetic Netcap fixture for {host}.\n".encode()
+    response = (f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(body)}\r\n"
+                f"Content-Disposition: attachment; filename={host}.txt\r\nConnection: close\r\n\r\n").encode() + body
+    frames = []
+
+    def checksum(data):
+        if len(data) % 2:
+            data += b"\0"
+        total = sum(word for (word,) in struct.iter_unpack("!H", data))
+        while total >> 16:
+            total = (total & 0xFFFF) + (total >> 16)
+        return (~total) & 0xFFFF
+
+    def emit(source, destination, seq, ack, flags, data=b""):
+        src_ip, src_mac, src_port = source
+        dst_ip, dst_mac, dst_port = destination
+        ip = struct.pack("!BBHHHBBH4s4s", 0x45, 0, 40 + len(data), len(frames), 0, 64, 6, 0, src_ip, dst_ip)
+        tcp = struct.pack("!HHIIBBHHH", src_port, dst_port, seq, ack, 0x50, flags, 4096, 0, 0)
+        ip = ip[:10] + struct.pack("!H", checksum(ip)) + ip[12:]
+        pseudo_header = src_ip + dst_ip + struct.pack("!BBH", 0, 6, len(tcp) + len(data))
+        tcp = tcp[:16] + struct.pack("!H", checksum(pseudo_header + tcp + data)) + tcp[18:]
+        frames.append(dst_mac + src_mac + b"\x08\x00" + ip + tcp + data)
+
+    c, s = 101, 501
+    emit(client, server, c - 1, 0, 0x02)
+    emit(server, client, s - 1, c, 0x12)
+    emit(client, server, c, s, 0x10)
+    emit(client, server, c, s, 0x18, request)
+    c += len(request)
+    emit(server, client, s, c, 0x18, response)
+    s += len(response)
+    emit(server, client, s, c, 0x11)
+    emit(client, server, c, s + 1, 0x11)
+    emit(server, client, s + 1, c + 1, 0x10)
+    if partial:
+        frames.append(b"\0" * 8)  # short Ethernet frame; good records still usable
+
+    with path.open("wb") as f:
+        f.write(struct.pack("<IHHIIII", 0xa1b2c3d4, 2, 4, 0, 0, 65535, 1))
+        for i, frame in enumerate(frames):
+            f.write(struct.pack("<IIII", 1700000000, 1000 * i, len(frame), len(frame)))
+            f.write(frame)
+
+
+def stop_service(service):
+    # Capture helpers can outlive the leader when it exits unexpectedly.
+    for sig, timeout in ((signal.SIGTERM, 35), (signal.SIGKILL, 5)):
+        try:
+            os.killpg(service.pid, sig)
+        except ProcessLookupError:
+            service.wait()
+            return
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            service.poll()
+            try:
+                os.killpg(service.pid, 0)
+            except ProcessLookupError:
+                return
+            time.sleep(0.05)
+    raise RuntimeError("owned capture service process group did not stop")
 
 
 def check_mcp_parity(base, token, rows):
@@ -201,11 +270,22 @@ def main():
     parser.add_argument("--showcase", action="store_true", help="assert findings, coverage, and budgets for the pinned showcase")
     parser.add_argument("--report", action="store_true", help="collect the showcase metrics without applying the acceptance gate")
     parser.add_argument("--browser", action="store_true", help="verify independent browser contexts against the owned local service")
+    parser.add_argument("--webui", action="store_true", help="run the Try browser regression with two synthetic captures")
     parser.add_argument("--node", type=Path, help="real Node executable for --browser (temporary HOME bypasses version-manager shims)")
     parser.add_argument("--mcp", action="store_true", help="verify read-only MCP and WebUI parity on the same local runs")
     args = parser.parse_args()
 
-    if args.captures:
+    if args.webui and (args.captures or args.compare or args.config or args.showcase or args.report or args.browser or args.mcp):
+        parser.error("--webui uses its own synthetic fixtures and configuration")
+    if args.webui:
+        root = Path(tempfile.mkdtemp(prefix="netcap-try-webui-"))
+        captures = []
+        for host, suffix in (("sample-a", 11), ("sample-b", 12)):
+            source = root / f"{host}-{root.name}.pcap"
+            write_webui_capture(source, host, suffix, partial=(suffix == 11))
+            captures.append({"name": source.name, "source": source, "bytes": source.stat().st_size})
+        node = str(args.node.resolve()) if args.node else subprocess.check_output(["node", "-p", "process.execPath"], text=True).strip()
+    elif args.captures:
         captures = [{"name": p.name, "source": p.resolve(), "bytes": p.stat().st_size} for p in args.captures]
     else:
         pinned = json.loads((REPO / "scripts/try-pcaps.json").read_text())["captures"]
@@ -227,14 +307,15 @@ def main():
             if remote.get(capture["name"]) != capture["bytes"]:
                 print(json.dumps({"compare": capture["name"], "local": capture["bytes"], "remote": remote.get(capture["name"])}))
 
-    root = Path(tempfile.mkdtemp(prefix="netcap-try-parity-"))
+    if not args.webui:
+        root = Path(tempfile.mkdtemp(prefix="netcap-try-parity-"))
     data, config = root / "data", root / "config"
     stage(captures, data / "pcaps")
     if args.config:
         shutil.copytree(args.config, config)
     else:
         config.mkdir()
-    env = {k: v for k, v in os.environ.items() if not k.startswith("NC_")}
+    env = {k: os.environ[k] for k in ("PATH", "TMPDIR", "LANG") if k in os.environ}
     env.update(HOME=str(root), XDG_CONFIG_HOME=str(root), XDG_DATA_HOME=str(root), NC_CONFIG_ROOT=str(config))
     env.pop("NETCAP_MCP_ADMIN_TOKEN", None)
     if args.mcp:
@@ -243,8 +324,12 @@ def main():
     flags = [f if f != "-dpi=true" else f"-dpi={args.dpi}" for f in TRY_ARGS]
     command = [str(args.binary.resolve()), "capture", "--service", "-http", f"127.0.0.1:{port}",
                "-service-data-dir", str(data), *flags, "-service-preload-largest-n", str(max(20, len(captures)))]
+    if args.webui:
+        command.extend(["-geoDB=false", "-reverse-dns=false"])
+    revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip()
+    print(json.dumps({"run": root.name, "revision": revision, "port": port, "workdir": str(root)}), flush=True)
     log = (root / "service.log").open("w")
-    service = subprocess.Popen(command, env=env, stdout=log, stderr=log)
+    service = subprocess.Popen(command, env=env, cwd=root, stdout=log, stderr=log, start_new_session=True)
     base = f"http://127.0.0.1:{port}"
     names = {c["name"] for c in captures}
     deadline = time.monotonic() + args.timeout
@@ -264,6 +349,16 @@ def main():
             failed |= showcase_report(base, captures, rows, data, args.dpi == "true", args.showcase)
         if args.mcp and not failed:
             check_mcp_parity(base, env["NETCAP_MCP_ADMIN_TOKEN"], rows)
+        if args.webui and not failed:
+            assert service.poll() is None
+            browser_env = {k: env[k] for k in ("PATH", "HOME", "TMPDIR") if k in env}
+            browser_env.update({k: os.environ[k] for k in ("CHROME_PATH", "NETCAP_TRY_SCREENSHOTS") if os.environ.get(k)})
+            # Seed the same diagnostic sidecar as a capture hitting the UDP retention cap.
+            partial = next(row for row in rows.values() if row["name"].startswith("sample-a-"))
+            (data / "results" / partial["sessionId"] / "udp-stream-evidence.json").write_text('{"omittedFlows": 2}')
+            result = subprocess.run([node, "scripts/qualify-try-webui.mjs", base, str(root), json.dumps(rows)],
+                                    cwd=REPO / "cmd/capture/webui/frontend", env=browser_env, timeout=180)
+            failed |= result.returncode != 0
         if args.browser and not failed:
             browser_env = {k: env[k] for k in ("PATH", "HOME", "TMPDIR") if k in env}
             subset = {name: {"name": name, "sessionId": rows[name]["sessionId"]}
@@ -272,13 +367,8 @@ def main():
             subprocess.run([str(args.node.resolve()) if args.node else "node", "scripts/showcase-browser.mjs", base, json.dumps(get(base + "/api/version")), json.dumps(subset)],
                            cwd=REPO / "cmd/capture/webui/frontend", env=browser_env, check=True, timeout=120)
     finally:
-        service.send_signal(signal.SIGTERM)
-        try:
-            service.wait(40)
-        except subprocess.TimeoutExpired:
-            service.kill()
-            service.wait()
-        log.close()
+        with log:
+            stop_service(service)
 
     for name in sorted(names, key=lambda n: next(c["bytes"] for c in captures if c["name"] == n)):
         row = rows.get(name, {})
@@ -295,6 +385,10 @@ def main():
                           "captureEvidence": runtime.get("CaptureEvidence"),
                           "manifest": (out / "capture-manifest.json").exists()}), flush=True)
     print(json.dumps({"workdir": str(root), "log": str(root / "service.log")}))
+    if args.webui:
+        shutil.rmtree(data)
+        for capture in captures:
+            capture["source"].unlink()
     sys.exit(1 if failed else 0)
 
 

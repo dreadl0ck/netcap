@@ -72,6 +72,7 @@ import { ChartFrame } from '../components/ChartFrame';
 import { translate as i18nText, richText as i18nRichText, formatNumber as i18nNumber, useLocale as useUILocale } from "../lib/i18n";
 import { usePresentationSWR as useSWR, mutatePresentation as globalMutate } from "../lib/i18n";
 import { renderError, translate } from "../lib/i18n";
+import { scopeCaptureURL } from '../lib/captureSelection';
 import { message as finalCopyMessage } from "../lib/i18n";
 
 
@@ -186,7 +187,7 @@ export default function HTTPPage() {
   // Fetch HTTP data
   const { data: httpData, error, mutate } = useSWR<HTTPResponse>(
     'http',
-    () => fetch(`${getBackendUrl()}/api/http`).then(res => res.json()),
+    () => api.getCaptureInventory<HTTPResponse>('http'),
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
       refreshInterval: 0,
@@ -196,7 +197,7 @@ export default function HTTPPage() {
   // Fetch credentials to check which HTTP requests have secrets
   const { data: credentialsData, mutate: mutateSecrets } = useSWR<SecretsResponse>(
     'secrets',
-    () => fetch(`${getBackendUrl()}/api/secrets`).then(res => res.json()),
+    () => api.getCaptureInventory<SecretsResponse>('secrets'),
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
       refreshInterval: 0,
@@ -413,7 +414,7 @@ export default function HTTPPage() {
       });
       const downloadUrl = `${getBackendUrl()}/api/http/download-pcap?${params}`;
       
-      const response = await fetch(downloadUrl);
+      const response = await fetch(scopeCaptureURL(downloadUrl));
       
       if (!response.ok) {
         const errorText = await response.text();

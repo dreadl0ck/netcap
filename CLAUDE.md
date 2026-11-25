@@ -35,6 +35,18 @@ before the tag; after a failure past the tag, run `zeus release-resume`.
 
 ## Testing
 
+**Get explicit maintainer approval before changing any user-visible UI.** Agree
+on the affected screens and the exact changes to copy, layout, controls,
+navigation or defaults before editing. Backend, detection-rule and performance
+work does not authorize UI changes. Record the approval in the PR.
+
+**Run `make try-webui` for changes affecting Try or the shared WebUI.** It
+starts the rebuilt embedded UI in service mode and checks the unscoped landing,
+capture-scoped data and visitor isolation in Chrome. It is required by release
+preflight; the capture-only `make try-parity` check cannot replace it.
+Use the shared API client for capture-scoped reads, and cover new data pages
+with a browser assertion against the real service.
+
 **Check embedded rule changes with `make alert-budgets`.** It replays 7
 synthetic captures and fails when a rule exceeds the evaluator's noise budget
 or loses coverage. Regenerate budgets only with a written reason

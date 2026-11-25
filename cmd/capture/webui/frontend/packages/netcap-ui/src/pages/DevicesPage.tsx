@@ -130,7 +130,7 @@ export default function DevicesPage() {
   // Fetch devices data
   const { data: devicesData, error, mutate } = useSWR<DevicesResponse>(
     'devices',
-    () => fetch(`${getBackendUrl()}/api/devices`).then(res => res.json()),
+    () => api.getCaptureInventory<DevicesResponse>('devices'),
     {
       refreshInterval: 10000,
     }

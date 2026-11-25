@@ -8,7 +8,7 @@
 .PHONY: test-coverage test-coverage-html test-coverage-check test-race test-determinism test-wireshark
 .PHONY: test-golden-update test-regression-verify
 .PHONY: test-hyperscan test-msan test-pkg test-verbose test-clean test-help
-.PHONY: docs-check docs-source-check recheck-v01612 recheck-v01613 demo-pcaps try-parity alert-budgets
+.PHONY: docs-check docs-source-check recheck-v01612 recheck-v01613 demo-pcaps try-parity try-webui alert-budgets
 
 NETCAP_BIN ?= ./net
 DOCS_TEST_TAGS ?= nodpi,noyara
@@ -225,6 +225,23 @@ try-parity:
 		python3 scripts/check-service-pcaps.py $(TMPDIR)net-try --dpi false $(TRY_CHECK_FLAGS); \
 	fi
 
+# Test the browser against the bundle actually embedded by net capture --service.
+try-webui:
+	@set -eu; \
+	if [ -n "$(TRY_BINARY)" ]; then \
+		python3 scripts/check-service-pcaps.py "$(TRY_BINARY)" --dpi $(TRY_DPI) --webui --timeout 60; \
+	else \
+		tmp=$$(mktemp -d "$${TMPDIR:-/tmp}/netcap-try-build.XXXXXX"); \
+		frontend=cmd/capture/webui/frontend; \
+		placeholder=$$frontend/dist/MODULE_PLACEHOLDER.txt; \
+		if [ -f "$$placeholder" ]; then cp "$$placeholder" "$$tmp/placeholder"; fi; \
+		trap 'if [ -f "$$tmp/placeholder" ]; then cp "$$tmp/placeholder" "$$placeholder"; fi; rm -rf "$$tmp"' EXIT; \
+		env -i PATH="$$PATH" HOME="$$HOME" TMPDIR="$${TMPDIR:-/tmp}" COREPACK_ENABLE_NETWORK=0 \
+			pnpm --dir "$$frontend" run build --mode e2e; \
+		GOWORK=off go build -tags $(RECHECK_TAGS) -o "$$tmp/net" ./cmd/net; \
+		python3 scripts/check-service-pcaps.py "$$tmp/net" --dpi false --webui --timeout 60; \
+	fi
+
 test-help:
 	@echo "Netcap Test Targets:"
 	@echo ""
@@ -247,6 +264,7 @@ test-help:
 	@echo "  alert-budgets     - rule noise budgets on synthetic captures (needs ../netcap-eval-scoring)"
 	@echo "  demo-pcaps        - Analyze DEMO_PCAPS through the try-demo MCP/WebUI pipeline"
 	@echo "  try-parity        - Replay the 20 try.netcap.io captures through service mode"
+	@echo "  try-webui         - Check the embedded Try UI in Chrome with two synthetic captures"
 	@echo ""
 	@echo "  test-golden-update    - Retired; fails explicitly (no registered suite)"
 	@echo "  test-regression-verify - Verify against golden files"

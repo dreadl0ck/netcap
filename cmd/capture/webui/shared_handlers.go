@@ -331,54 +331,39 @@ func HandleLogFiles(outputDir string) http.HandlerFunc {
 			return
 		}
 
-		// Look for all .log files in output directory
-		var logs []FileInfo
-
-		entries, err := os.ReadDir(outputDir)
+		logs, err := listLogFiles(outputDir)
 		if err != nil {
 			RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": "Cannot read analysis log directory"})
 			return
 		}
-
-		for _, entry := range entries {
-			// Skip directories
-			if entry.IsDir() {
-				continue
-			}
-
-			name := entry.Name()
-
-			// Only include .log files
-			if !strings.HasSuffix(name, ".log") {
-				continue
-			}
-
-			info, err := entry.Info()
-			if err != nil {
-				continue
-			}
-
-			// Skip empty log files (size 0)
-			if info.Size() == 0 {
-				continue
-			}
-
-			logs = append(logs, FileInfo{
-				Name:         name,
-				Path:         filepath.Join(outputDir, name),
-				Size:         info.Size(),
-				ModifiedTime: info.ModTime().Unix(),
-				IsCompleted:  true,
-			})
-		}
-
-		// Sort logs by name for consistent ordering
-		sort.Slice(logs, func(i, j int) bool {
-			return logs[i].Name < logs[j].Name
-		})
-
 		RespondJSON(w, http.StatusOK, logs)
 	}
+}
+
+func listLogFiles(outputDir string) ([]FileInfo, error) {
+	entries, err := os.ReadDir(outputDir)
+	if err != nil {
+		return nil, err
+	}
+	logs := []FileInfo{}
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".log") {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil || info.Size() == 0 {
+			continue
+		}
+		logs = append(logs, FileInfo{
+			Name:         name,
+			Path:         filepath.Join(outputDir, name),
+			Size:         info.Size(),
+			ModifiedTime: info.ModTime().Unix(),
+			IsCompleted:  true,
+		})
+	}
+	return logs, nil
 }
 
 // HandleLogContent returns the content of a log file

@@ -6,12 +6,13 @@ await qualify(process.argv[2], async page => {
   const errors = [];
   page.on('pageerror', error => errors.push(String(error)));
   await page.goto(`${process.argv[2]}/alerts`);
-  await page.getByText('Network detection coverage', { exact: true }).waitFor();
-  await page.getByText(/5 configured indicators/).waitFor();
+  const coverage = await page.request.get(`${process.argv[2]}/api/network-detection`);
+  assert.equal(coverage.status(), 200);
+  assert.equal((await coverage.json()).indicators, 5);
   const grouped = await (await page.request.get(`${process.argv[2]}/api/alerts/grouped`)).json();
   assert.ok(grouped.groups.length > 0, JSON.stringify(grouped));
   await page.getByText('intel.c2', { exact: true }).first().click();
-  await page.getByRole('button', { name: 'View Sample 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Details', exact: true }).first().click();
   await page.getByRole('heading', { name: 'Why this finding fired' }).waitFor();
   await page.getByText('Indicator match', { exact: true }).waitFor();
   await page.getByText('Indicator provenance', { exact: true }).waitFor();

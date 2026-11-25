@@ -30,6 +30,13 @@ check "docker can pull through its proxy" 'docker pull -q alpine:3.24.4@sha256:9
 check "pnpm can list frontend licenses" '(cd cmd/capture/webui/frontend && pnpm install --frozen-lockfile && pnpm licenses list --prod --json)' "pnpm install --frozen-lockfile --force in cmd/capture/webui/frontend"
 check "ssh can push to GitHub" 'ssh -o BatchMode=yes -T git@github.com 2>&1 | grep -q "successfully authenticated"' "ssh-add --apple-load-keychain"
 
+if make try-webui TRY_BINARY=; then
+    echo "[ok]   Try WebUI browser regression gate"
+else
+    echo "[FAIL] Try WebUI browser regression gate (requires Chrome or CHROME_PATH)"
+    fail=1
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "release preflight failed; nothing was tagged"
     exit 1

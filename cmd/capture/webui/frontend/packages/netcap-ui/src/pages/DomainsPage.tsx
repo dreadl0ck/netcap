@@ -129,7 +129,7 @@ export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
   // Fetch domains data
   const { data: domainsData, error, mutate } = useSWR<DomainsResponse>(
     'domains',
-    () => fetch(`${getBackendUrl()}/api/domains`).then(res => res.json()),
+    () => api.getCaptureInventory('domains'),
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
       refreshInterval: 0,

@@ -8,6 +8,7 @@ const metadata: OfflineAlertMetadata = {
   group: { SrcIP: '192.0.2.1', DstPort: { type: 'int32', value: '443' } }, count: 2, first: '1794000000000000001', last: '1794000000000000003', windowNs: '60000000000',
   contributors: [{ file: 'TCP.ncap.gz', ordinal: '9007199254740993', sha256: 'record-digest', timestamp: '1794000000000000001' }], contributorsTruncated: false,
 };
+const alert = { timestamp: 1794000000000000000, name: 'HTTPS fixture', description: 'Synthetic offline alert', ruleName: 'HTTPS fixture', recordType: 'TCP', severity: 'medium', tags: [], mitre: '', srcIP: '192.0.2.1', dstIP: '192.0.2.2', matchedRecord: '{"DstPort":443}', ruleExpression: 'DstPort == 443', threshold: 2, thresholdWindow: 60, resolved: false, alertId: 'event-fixture', groupedEvaluation: metadata };
 
 async function backend(page: Page, baseURL: string) {
   const calls: { method: string; path: string; query: string; body: any }[] = [];
@@ -44,17 +45,29 @@ async function backend(page: Page, baseURL: string) {
       case 'POST /api/rules/offline/execute':
         if (state.execute) return state.execute(route);
         ({ status, json } = state.execution); break;
-      case 'GET /api/network-detection': json = { schema: 1, active: false, events: 0, alerts: 0 }; break;
       case 'GET /api/alerts/stats': json = { totalAlerts: 1, groupCount: 1, bySeverity: { medium: 1 }, byRule: { 'HTTPS fixture': 1 }, recentAlerts: [], criticalAlerts: 0, lastUpdate: 1794000000 }; break;
       case 'GET /api/alerts/grouped': {
-        const alert = { timestamp: 1794000000000000000, name: 'HTTPS fixture', description: 'Synthetic offline alert', ruleName: 'HTTPS fixture', recordType: 'TCP', severity: 'medium', tags: [], mitre: '', srcIP: '192.0.2.1', dstIP: '192.0.2.2', matchedRecord: '{"DstPort":443}', ruleExpression: 'DstPort == 443', threshold: 2, thresholdWindow: 60, resolved: false, alertId: 'event-fixture', groupedEvaluation: metadata };
         json = { groups: [{ ...alert, groupId: 'group-fixture', count: 1, firstSeen: alert.timestamp, lastSeen: alert.timestamp, uniqueSrcIPs: [alert.srcIP], uniqueDstIPs: [alert.dstIP], uniqueSrcPorts: [], uniqueDstPorts: ['443'], sampleAlerts: [alert], resolvedCount: 0 }], totalCount: 1, groupCount: 1 }; break;
+      }
+      case 'GET /api/alerts': {
+        if (url.searchParams.get('groupId') !== 'group-fixture' || (url.searchParams.get('offset') ?? '0') !== '0' || url.searchParams.get('limit') !== '10') {
+          unexpected.push(`${key}${url.search}`); return route.abort();
+        }
+        json = { alerts: [alert], totalCount: 1 }; break;
       }
       default: unexpected.push(key); return route.abort();
     }
     return route.fulfill({ status, json });
   });
-  return { state, calls, async clean() {
+  return { state, calls, expectEvaluationSelection(selection: Record<string, string>) {
+    const reads = calls.filter(c => c.path.endsWith('/evaluations'));
+    expect(reads.length).toBeGreaterThan(0);
+    for (const { query } of reads) {
+      const params = new URLSearchParams(query);
+      params.delete('locale');
+      expect(Object.fromEntries(params)).toEqual(selection);
+    }
+  }, async clean() {
     await test.info().attach('ui-mocked-ledger', { body: JSON.stringify({ calls, unexpected, errors }, null, 2), contentType: 'application/json' });
     expect(unexpected, 'undeclared API calls/egress').toEqual([]);
     expect(errors, 'browser errors').toEqual([]);
@@ -89,7 +102,7 @@ test('ui-mocked: upload size/read failures never reuse a previously validated pa
   await expect(page.getByRole('button', { name: 'Validate pack', exact: true })).toBeDisabled();
   await page.evaluate(() => { File.prototype.text = async () => { throw new Error('Synthetic file read failure'); }; });
   await page.getByLabel('Upload offline YAML pack').setInputFiles({ name: 'broken.yaml', mimeType: 'text/yaml', buffer: Buffer.from(yaml) });
-  await expect(page.getByText('Error: Synthetic file read failure')).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: 'Synthetic file read failure' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Evaluate capture', exact: true })).toBeDisabled();
   expect(b.calls.filter(c => c.path.endsWith('/execute'))).toHaveLength(0);
   await b.clean();
@@ -101,7 +114,7 @@ test('ui-mocked: service selection sends sessionId without a local inputFile fal
   await page.getByRole('button', { name: 'Evaluate capture', exact: true }).click();
   await expect(page.getByText('Offline evaluation completed', { exact: true })).toBeVisible();
   expect(b.calls.find(c => c.path.endsWith('/execute'))?.body).toEqual({ yaml, sessionId: 'owned-fixture-session' });
-  expect(b.calls.filter(c => c.path.endsWith('/evaluations')).every(c => c.query === '?sessionId=owned-fixture-session')).toBe(true);
+  b.expectEvaluationSelection({ sessionId: 'owned-fixture-session' });
   await b.clean();
 });
 
@@ -119,7 +132,7 @@ test('ui-mocked: browser File.text, keyboard validation, explicit frozen selecto
   await expect(page.getByText('0 alerts committed')).toBeVisible();
   expect(b.calls.find(c => c.path.endsWith('/validate'))?.body).toEqual({ yaml });
   expect(b.calls.find(c => c.path.endsWith('/execute'))?.body).toEqual({ yaml, inputFile: '/fixture.pcap' });
-  expect(b.calls.filter(c => c.path.endsWith('/evaluations')).every(c => c.query === '?inputFile=%2Ffixture.pcap')).toBe(true);
+  b.expectEvaluationSelection({ inputFile: '/fixture.pcap' });
   await b.clean();
 });
 
@@ -199,11 +212,11 @@ for (const flag of ['processing', 'live'] as const) {
   });
 }
 
-test('ui-mocked: Alerts sample preserves string-valued group and nanosecond audit metadata exactly', async ({ page, baseURL }) => {
+test('ui-mocked: alert details preserve string-valued group and nanosecond audit metadata exactly', async ({ page, baseURL }) => {
   const b = await backend(page, baseURL!);
   await page.goto('/alerts');
   await page.getByRole('row').filter({ hasText: 'HTTPS fixture' }).click();
-  await page.getByRole('button', { name: 'View Sample 1', exact: true }).click();
+  await page.getByRole('main').getByRole('button', { name: 'Details', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByText('2 matching records · rule fixture')).toBeVisible();
   const pre = dialog.locator('pre').filter({ hasText: 'event-fixture' });

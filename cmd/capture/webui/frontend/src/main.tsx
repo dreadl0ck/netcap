@@ -20,7 +20,7 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, useNavigate } from 'react-router';
+import { BrowserRouter, useLocation, useNavigate } from 'react-router';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
@@ -66,6 +66,37 @@ applyServiceDocument(initialLocale);
 
 // Host interfaces and packet injection are local-mode only; the backend answers 403 in service mode.
 const LOCAL_ONLY_PATHS = new Set(['/interfaces', '/inject']);
+
+const CAPTURE_DATA_PATHS = new Set([
+  '/records', '/audit', '/explore', '/visualize', '/investigation-evidence', '/hosts', '/devices',
+  '/connections', '/http', '/certificates', '/secrets', '/services', '/domains', '/fingerprints',
+  '/software', '/vulnerabilities', '/behavior', '/alerts', '/files', '/logs',
+]);
+
+function CaptureDataRoutes() {
+  const { pathname, search } = useLocation();
+  const navigate = useNavigate();
+  const needsCapture = CAPTURE_DATA_PATHS.has(pathname.toLowerCase().replace(/\/+$/, '')) && !new URLSearchParams(search).get('sessionId');
+  const { data: status } = useSWR(needsCapture ? 'capture-route-status' : null, () => api.getStatus());
+  const { data: files, error } = useSWR(needsCapture && status?.isServiceMode ? 'capture-route-inputs' : null, () => api.getInputFiles());
+
+  useEffect(() => {
+    if (!needsCapture || !status?.isServiceMode || (!files && !error)) return;
+    const capture = files?.filter(file => file.isCompleted && file.sessionId).sort((a, b) => a.path.localeCompare(b.path))[0];
+    if (!capture?.sessionId) {
+      navigate('/pcaps', { replace: true });
+      return;
+    }
+    const query = new URLSearchParams(search);
+    query.set('sessionId', capture.sessionId);
+    query.delete('runId');
+    navigate({ pathname, search: query.toString() }, { replace: true });
+  }, [needsCapture, status, files, error, pathname, search, navigate]);
+
+  // Do not mount a capture-only page until service requests have a selection.
+  if (needsCapture && (!status || status.isServiceMode)) return null;
+  return <AppRoutes />;
+}
 
 function useServiceNavigationItems() {
   const t = useTranslate();
@@ -374,7 +405,7 @@ function AppContent() {
   return (
     <>
       <GlobalDropZone>
-        <AppRoutes />
+        <CaptureDataRoutes />
       </GlobalDropZone>
       <ConnectionOverlay
         visible={connectionStatus.showOverlay}

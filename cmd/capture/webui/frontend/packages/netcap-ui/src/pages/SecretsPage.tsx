@@ -303,7 +303,7 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
   // Fetch credentials data
   const { data: credentialsData, error, mutate } = useSWR<SecretsResponse>(
     'secrets',
-    () => fetch(`${getBackendUrl()}/api/secrets`).then(res => res.json()),
+    () => api.getCaptureInventory('secrets'),
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
       refreshInterval: 0,
@@ -807,6 +807,7 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
 // AuthActivityView shows unified authentication events from Credentials, TACACS+, and Kerberos
 function AuthActivityView() {
   const __uiLocale = useUILocale();
+  const api = useNetcapApi();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<UIMessageText | null>(null);
@@ -814,11 +815,7 @@ function AuthActivityView() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch(`${getBackendUrl()}/api/auth-activity`)
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
+    api.getCaptureInventory<{ events: unknown[] }>('auth-activity')
       .then(data => {
         setEvents(Array.isArray(data?.events) ? data.events : []);
       })
@@ -827,7 +824,7 @@ function AuthActivityView() {
         setEvents([]);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [api]);
 
   if (loading) {
     return (

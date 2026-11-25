@@ -141,7 +141,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
   // Fetch services data
   const { data: servicesData, error, mutate } = useSWR<ServicesResponse>(
     'services',
-    () => fetch(`${getBackendUrl()}/api/services`).then(res => res.json()),
+    () => api.getCaptureInventory<ServicesResponse>('services'),
     {
       refreshInterval: 10000,
     }

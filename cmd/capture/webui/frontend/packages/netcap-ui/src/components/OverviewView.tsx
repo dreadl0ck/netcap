@@ -26,7 +26,6 @@ import { ALL_PCAPS_SCOPE } from './DashboardPcapScopeSelector';
 
 import { ChartFrame } from './ChartFrame';
 import { ShowcaseStory } from './ShowcaseStory';
-import { useNetcapLink } from '../providers/NetcapProvider';
 import { translate as i18nText, richText as i18nRichText, formatNumber as i18nNumber, getLocale as getUILocale, useLocale as useUILocale } from "../lib/i18n";
 import { usePresentationSWR as useSWR } from "../lib/i18n";
 
@@ -38,7 +37,6 @@ interface Props {
 export default function OverviewView({ scope }: Props) {
   const __uiLocale = useUILocale();
   const api = useNetcapApi();
-  const Link = useNetcapLink();
 
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus(), { refreshInterval: 2000 });
   const { data: stats, mutate: mutateStats } = useSWR(['stats', scope], () => api.getStats(), {
@@ -52,7 +50,7 @@ export default function OverviewView({ scope }: Props) {
   });
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
   const { data: auditFiles, mutate: mutateAuditFiles } = useSWR(['auditFiles', scope], () => api.getAuditFiles(scope));
-  const { data: logFiles, mutate: mutateLogFiles } = useSWR('logFiles', () => api.getLogFiles());
+  const { data: logFiles, mutate: mutateLogFiles } = useSWR(['logFiles', scope], () => api.getLogFiles(scope));
   const { data: systemInfo } = useSWR('systemInfo', () => api.getSystemInfo());
 
   // Refresh on directory change events fired by other parts of the UI.
@@ -76,10 +74,6 @@ export default function OverviewView({ scope }: Props) {
 
   // Geo-all already aggregates across all sessions; per-pcap scope forwards.
   const geoSrc = `${getBackendUrl()}/api/visualize/geo-all?showLegend=false${auditScope ? `&scope=${encodeURIComponent(auditScope)}` : ''}`;
-
-  if (status?.isServiceMode && !status.sessionId && (!scope || scope === 'current')) {
-    return <Typography color="text.secondary">Choose a <Link href="/pcaps">capture</Link> to open its findings.</Typography>;
-  }
 
   return (
     <Box>{scope === 'current' && <ShowcaseStory sessionId={status?.sessionId} />}{status?.isProcessing && stats?.processingStats && (

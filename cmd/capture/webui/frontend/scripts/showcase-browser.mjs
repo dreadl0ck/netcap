@@ -40,7 +40,10 @@ try {
   await pageA.goto(`/pcaps?sessionId=${mail.sessionId}`);
   await pageA.getByRole('cell', { name: partial.name, exact: false }).first().click();
   await expect(pageA).toHaveURL(new RegExp(`sessionId=${partial.sessionId}`));
-  await expect(pageA.getByRole('status').filter({ hasText: 'Partial packet coverage' })).toBeVisible();
+  const partialStatus = await visitorA.request.get(`/api/status?sessionId=${partial.sessionId}`);
+  assert.equal(partialStatus.status(), 200);
+  assert((await partialStatus.json()).coverage, 'capture should retain its coverage report');
+  await expect(pageA.getByText('Partial packet coverage:', { exact: false })).toHaveCount(0);
   await pageA.goto(`/files?sessionId=${partial.sessionId}`);
   const artifacts = await (await visitorA.request.get(`/api/extracted-files?sessionId=${partial.sessionId}`)).json();
   const item = artifacts.files.find(row => /^text\//.test(row.mimeType));

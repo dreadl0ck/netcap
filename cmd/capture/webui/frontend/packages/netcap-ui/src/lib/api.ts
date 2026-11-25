@@ -106,6 +106,7 @@ function createNoOpApi(): NetcapApiClient {
     getStats: noOpReturn({ processingStats: {} as ProcessingStats, fileErrors: {} }),
     getAuditStats: noOpReturn({ totalRecords: 0, exploitCount: 0, vulnerabilityCount: 0, secretCount: 0, softwareCount: 0 }),
     getInputFiles: noOpReturn([]),
+    getCaptureInventory: <T>(_path: string) => noOp() as Promise<T>,
     getAuditFiles: noOpReturn([]),
     getAuditFilesFiltered: noOpReturn([]),
     getLogFiles: noOpReturn([]),
@@ -1427,6 +1428,12 @@ function createApiWithBase(apiBase: string) {
     return res.json();
   },
 
+  async getCaptureInventory<T>(path: string): Promise<T> {
+    const res = await fetch(`${apiBase}/${path}`);
+    if (!res.ok) throw displayError(await describeFailure(res, res.statusText || `HTTP ${res.status}`));
+    return res.json();
+  },
+
   async getAuditFiles(scope?: string): Promise<AuditFileInfo[]> {
     const url = scope ? `${apiBase}/files/audit?scope=${encodeURIComponent(scope)}` : `${apiBase}/files/audit`;
     const res = await fetch(url);
@@ -1444,8 +1451,8 @@ function createApiWithBase(apiBase: string) {
     return res.json();
   },
 
-  async getLogFiles(): Promise<FileInfo[]> {
-    const res = await fetch(`${apiBase}/files/logs`);
+  async getLogFiles(scope?: string): Promise<FileInfo[]> {
+    const res = await fetch(`${apiBase}/files/logs${scope ? `?scope=${encodeURIComponent(scope)}` : ''}`);
     if (!res.ok) throw displayError(message("ui:m_b75ea1f689a7dfa5a503"));
     return res.json();
   },

@@ -16,6 +16,12 @@
 - [ ] I have updated documentation if necessary
 - [ ] My code follows the project's coding style
 
+## WebUI (if affected)
+
+Maintainer approval for the exact screens and visible changes: <!-- link, or N/A -->
+
+`make try-webui` result: <!-- result, or N/A -->
+
 ## Contributor License Agreement
 
 By submitting this pull request, I confirm that:

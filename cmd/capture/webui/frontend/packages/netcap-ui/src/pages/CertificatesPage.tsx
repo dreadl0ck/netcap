@@ -71,6 +71,7 @@ import { ChartFrame } from '../components/ChartFrame';
 import { translate as i18nText, richText as i18nRichText, getLocale as getUILocale, useLocale as useUILocale } from "../lib/i18n";
 import { usePresentationSWR as useSWR, mutatePresentation as globalMutate } from "../lib/i18n";
 import { renderError, translate } from "../lib/i18n";
+import { scopeCaptureURL } from '../lib/captureSelection';
 import { message as finalCopyMessage } from "../lib/i18n";
 
 
@@ -172,7 +173,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
   // Fetch certificates data
   const { data: certificatesData, error, mutate } = useSWR<CertificatesResponse>(
     'certificates',
-    () => fetch(`${getBackendUrl()}/api/certificates`).then(res => res.json()),
+    () => api.getCaptureInventory('certificates'),
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
       refreshInterval: 0,
@@ -345,7 +346,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
       });
       const downloadUrl = `${getBackendUrl()}/api/certificates/download-pcap?${params}`;
       
-      const response = await fetch(downloadUrl);
+      const response = await fetch(scopeCaptureURL(downloadUrl));
       
       if (!response.ok) {
         const errorText = await response.text();

@@ -1,5 +1,5 @@
 import { Alert as MuiAlert, Box, Button, Chip, Paper, Table, TableBody, TableCell, TableRow, Typography } from '@mui/material';
-import type { Alert, NetworkDetectionStats } from '../lib/api';
+import type { Alert } from '../lib/api';
 import { translate as i18nText, richText as i18nRichText, getLocale as getUILocale, useLocale as useUILocale } from "../lib/i18n";
 import { getLocale } from "../lib/i18n";
 import { translate, formatQuantity, enumLabel } from "../lib/i18n";
@@ -42,12 +42,6 @@ export function parseNetworkEvidence(raw: string): Evidence | null {
 const utc = (ns: number) => new Date(ns / 1e6).toISOString();
 const labels = { 'indicator-match': 'Indicator match', 'behavioral-suspicion': 'Behavioral suspicion', 'policy-observation': 'Policy observation' };
 const endpoint = (ip: string, port?: string) => `${ip.includes(':') ? `[${ip}]` : ip}:${port && port !== '0' ? port : 'unavailable'}`;
-
-export function NetworkDetectionCoverage({ stats, unavailable }: { stats?: NetworkDetectionStats; unavailable: boolean }) {
-  const __uiLocale = useUILocale();
-  if (!stats) return <MuiAlert severity="info">{i18nRichText("ui:m_23abebd8a491c14760d3", { arg0: unavailable ? i18nText("ui:m_b36083a05d85f96160a2") : i18nText("ui:m_aa8290a1ba5668712897") })}</MuiAlert>;
-  return <Paper variant="outlined" sx={{ p: 2 }} aria-label={i18nText("ui:m_9f45548af765955760a4")}><Typography variant="subtitle1" component="h2">{i18nText("ui:m_9f45548af765955760a4")}</Typography><Typography variant="body2">{i18nRichText("ui:m_f1e55d3053e42e6d01f9", { arg0: stats.active ? i18nText("ui:m_c6be2cc3788dab45d1c0") : i18nText("ui:m_37c1ee06fa9cd4e57570"), arg1: stats.events.toLocaleString(getUILocale()), arg2: stats.alerts.toLocaleString(getUILocale()) })}</Typography><Typography variant="body2">{stats.indicators ? i18nText("ui:m_6f8294e2bcf5aada2fb1", { arg0: stats.indicators }) : i18nText("ui:m_f42b4ee260ab536d98f2")}</Typography><Typography variant="body2">{i18nRichText("ui:m_3b67c06471a9a6d4415d", { arg0: stats.overflow, arg1: stats.late, arg2: stats.streamGaps })}</Typography>{(stats.error || stats.overflow || stats.late || stats.streamGaps) ? <MuiAlert severity="warning" sx={{ mt: 1 }}>{stats.error || i18nText("ui:m_5bb0f59593597eab326a")}</MuiAlert> : null}</Paper>;
-}
 
 export default function NetworkDetectionEvidence({ alert }: { alert: Alert }) {
   const __uiLocale = useUILocale();

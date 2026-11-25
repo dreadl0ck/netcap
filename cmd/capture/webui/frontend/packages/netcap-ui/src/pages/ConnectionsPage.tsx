@@ -81,6 +81,7 @@ import { ChartFrame } from '../components/ChartFrame';
 import { translate as i18nText, richText as i18nRichText, formatNumber as i18nNumber, getLocale as getUILocale, useLocale as useUILocale } from "../lib/i18n";
 import { usePresentationSWR as useSWR, mutatePresentation as globalMutate } from "../lib/i18n";
 import { renderError, translate, formatQuantity } from "../lib/i18n";
+import { scopeCaptureURL } from '../lib/captureSelection';
 import { message as finalCopyMessage } from "../lib/i18n";
 
 
@@ -216,7 +217,7 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
       communityIds.forEach(id => params.append('communityId', id));
       if (observationId || snapshotSequence) { params.set('observationId', observationId); params.set('snapshotSequence', snapshotSequence); }
       if (evidenceInputFile) params.set('inputFile', evidenceInputFile);
-      return fetch(`${getBackendUrl()}/api/connections?${params}`).then(async res => { if (!res.ok) throw new Error(await res.text()); return res.json(); });
+      return api.getCaptureInventory<ConnectionsResponse>(`connections?${params}`);
     },
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
@@ -227,7 +228,7 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
   // Fetch credentials to check which connections have secrets
   const { data: credentialsData, mutate: mutateSecrets } = useSWR<SecretsResponse>(
     'secrets',
-    () => fetch(`${getBackendUrl()}/api/secrets`).then(res => res.json()),
+    () => api.getCaptureInventory<SecretsResponse>('secrets'),
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
       refreshInterval: 0,
@@ -599,7 +600,7 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
       const downloadUrl = `${getBackendUrl()}/api/connections/download-pcap?${params}`;
       
       // Fetch the file as a blob
-      const response = await fetch(downloadUrl);
+      const response = await fetch(scopeCaptureURL(downloadUrl));
       
       if (!response.ok) {
         const errorText = await response.text();

@@ -77,7 +77,8 @@ import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode,
 import { ChartFrame } from '../components/ChartFrame';
 import { translate as i18nText, richText as i18nRichText, getLocale as getUILocale, useLocale as useUILocale } from "../lib/i18n";
 import { usePresentationSWR as useSWR, mutatePresentation as globalMutate } from "../lib/i18n";
-import { message, displayError, renderError, translate } from "../lib/i18n";
+import { renderError, translate } from "../lib/i18n";
+import { scopeCaptureURL } from '../lib/captureSelection';
 import { message as finalCopyMessage } from "../lib/i18n";
 
 
@@ -166,10 +167,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
   // Fetch hosts data
   const { data: hostsData, error, mutate } = useSWR<HostsResponse>(
     'hosts',
-    () => fetch(`${getBackendUrl()}/api/hosts`).then(res => {
-      if (!res.ok) throw displayError(message("ui:m_762097b766ebd882235c"));
-      return res.json();
-    }),
+    () => api.getCaptureInventory<HostsResponse>('hosts'),
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
       refreshInterval: 0,
@@ -318,7 +316,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
       const downloadUrl = `${getBackendUrl()}/api/hosts/download-pcap?${params}`;
       
       // Fetch the file as a blob
-      const response = await fetch(downloadUrl);
+      const response = await fetch(scopeCaptureURL(downloadUrl));
       
       if (!response.ok) {
         const errorText = await response.text();

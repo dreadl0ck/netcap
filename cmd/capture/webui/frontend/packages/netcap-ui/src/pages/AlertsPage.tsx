@@ -73,7 +73,7 @@ import { FilterExpressionBlock } from '../components/FilterExpressionHighlight';
 import { syntaxHighlightJSON } from '../lib/html';
 import { useTheme } from '@mui/material/styles';
 import { appearanceTokens } from '../lib/appearance';
-import NetworkDetectionEvidence, { NetworkDetectionCoverage } from '../components/NetworkDetectionEvidence';
+import NetworkDetectionEvidence from '../components/NetworkDetectionEvidence';
 import RelatedEvidence from '../components/RelatedEvidence';
 import { selectorForAlert } from '../lib/evidenceLinks';
 import { message as i18nMessage, translate as i18nText, richText as i18nRichText, getLocale as getUILocale, renderText as i18nRenderText, type MessageText as UIMessageText, useLocale as useUILocale } from "../lib/i18n";
@@ -130,7 +130,6 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
     { refreshInterval: 10000, shouldRetryOnError: false },
   );
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
-  const { data: detectionCoverage, error: detectionCoverageError } = useSWR(['network-detection', status?.sessionId || status?.activeInputFile], () => api.getNetworkDetectionStats(status?.isServiceMode ? undefined : status?.activeInputFile || undefined), { refreshInterval: 5000 });
 
   // Compute selected file from status and inputFiles
   const selectedFile = useMemo(() => {
@@ -397,7 +396,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
           <MuiAlert severity="error" sx={{ mb: 2 }}>
             {i18nRichText("ui:m_d1fec055a51de9318b59", { arg0: renderError(error) })}
           </MuiAlert>
-        )}<Box sx={{ mb: 2 }}><NetworkDetectionCoverage stats={detectionCoverage ?? undefined} unavailable={Boolean(detectionCoverageError) || detectionCoverage === null} /></Box><FormControl size="small" sx={{ mb: 2, minWidth: 240 }}><InputLabel id="finding-class-label">{i18nText("ui:m_ce0227fef732712341e3")}</InputLabel><Select labelId="finding-class-label" label={i18nText("ui:m_ce0227fef732712341e3")} value={classificationFilter} onChange={event => { setClassificationFilter(event.target.value); setPage(0); }}><MenuItem value="">{i18nText("ui:m_7543b75b9150514fd1a1")}</MenuItem><MenuItem value="indicator-match">{i18nText("ui:m_4927de4ce6e603ca7260")}</MenuItem><MenuItem value="behavioral-suspicion">{i18nText("ui:m_252e1f238d91fa786162")}</MenuItem><MenuItem value="policy-observation">{i18nText("ui:m_6d9badd743a5785976f6")}</MenuItem></Select></FormControl>{/* Statistics Cards */}{stats && (
+        )}<FormControl size="small" sx={{ mb: 2, minWidth: 240 }}><InputLabel id="finding-class-label">{i18nText("ui:m_ce0227fef732712341e3")}</InputLabel><Select labelId="finding-class-label" label={i18nText("ui:m_ce0227fef732712341e3")} value={classificationFilter} onChange={event => { setClassificationFilter(event.target.value); setPage(0); }}><MenuItem value="">{i18nText("ui:m_7543b75b9150514fd1a1")}</MenuItem><MenuItem value="indicator-match">{i18nText("ui:m_4927de4ce6e603ca7260")}</MenuItem><MenuItem value="behavioral-suspicion">{i18nText("ui:m_252e1f238d91fa786162")}</MenuItem><MenuItem value="policy-observation">{i18nText("ui:m_6d9badd743a5785976f6")}</MenuItem></Select></FormControl>{/* Statistics Cards */}{stats && (
           <Grid container spacing={2} sx={{ mb: 3 }}><Grid item xs={12} sm={6} md={3}><Card sx={{ height: '100%' }}><CardContent><Typography color="text.secondary" gutterBottom>
                     {i18nText("ui:m_bd3b66813b0e0d1b31ac")}
                   </Typography><Typography variant="h4">{stats.totalAlerts}</Typography></CardContent></Card></Grid><Grid item xs={12} sm={6} md={3}><Card sx={{ height: '100%' }}><CardContent><Typography color="text.secondary" gutterBottom>

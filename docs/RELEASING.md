@@ -18,6 +18,7 @@ GoReleaser.
 | YARA-X 1.22.0 install | `export YARA_X_PREFIX="$PWD/.native/yara-x"`; build it with `PREFIX=... sh scripts/build-yara-x.sh` |
 | Docker can pull images | Docker Desktop uses a manual proxy on `127.0.0.1:1030`; start it |
 | Frontend licenses readable | `pnpm install --frozen-lockfile --force` in `cmd/capture/webui/frontend` |
+| Try browser gate passes against the embedded WebUI | `make try-webui` (local Chrome or `CHROME_PATH`; failure traces in the printed run directory) |
 | Windows signing credentials | `SSL_COM_ENV_FILE`, defaulting to `../products/.env` |
 | Native binary hygiene | Rust `llvm-tools` and Homebrew LLVM; Linux image receipt keys: `commit`, `builders` (`alpine`, `ubuntu`), `images` (`alpine`, `alpine-nodpi`, `ubuntu`, `ubuntu-nodpi`) |
 
@@ -74,6 +75,8 @@ Keep the runtime caps on the Dokploy application: `cpuLimit=4000000000`
    output, the config mount, the data mount and capture hashes.
 4. QA: stage the 20 pinned inputs and run `make try-parity TRY_DPI=true
    TRY_BINARY=/path/to/net TRY_CHECK_FLAGS=--showcase` against the candidate.
+   On the candidate binary's platform, run `make try-webui TRY_DPI=true
+   TRY_BINARY=/path/to/net` against its embedded frontend before promotion.
    Also run the candidate image against an isolated copy of production data
    (loopback, `NC_GEO_PROVIDERS=dbip`). Start with fresh derived results.
    Archive legacy rule YAML outside the rules directory in the backed-up data

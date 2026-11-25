@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import NetworkDetectionEvidence, { parseNetworkEvidence, NetworkDetectionCoverage } from '../../packages/netcap-ui/src/components/NetworkDetectionEvidence';
+import NetworkDetectionEvidence, { parseNetworkEvidence } from '../../packages/netcap-ui/src/components/NetworkDetectionEvidence';
 import type { Alert } from '../../packages/netcap-ui/src/lib/api';
 
 const evidence = { schema: 1, detector: 'dns.tunnel', classification: 'behavioral-suspicion', scope: { sensor: 'office', interface: 'pcap', vlans: [12] }, firstSeen: 1800000000000000000, lastSeen: 1800000001000000000, observed: 10, threshold: 10, windowNS: 60000000000, samples: ['<script>alert(1)</script>'], limitations: ['DNS payload content is unavailable'] };
@@ -22,12 +22,5 @@ describe('network detection analyst evidence', () => {
     for (const patch of [{ schema: 2 }, { firstSeen: 1e308 }, { scope: { sensor: 'x', interface: 'p', vlans: 'fake' } }, { samples: [1] }]) expect(parseNetworkEvidence(JSON.stringify({ ...evidence, ...patch }))).toBeNull();
     const { container } = render(<NetworkDetectionEvidence alert={{ ...alert, recordType: 'DNS' }} />);
     expect(container.innerHTML).toBe('');
-  });
-  it('distinguishes unavailable coverage from zero findings and unconfigured intelligence', () => {
-    const { rerender } = render(<NetworkDetectionCoverage unavailable />);
-    expect(screen.getByText(/unavailable for this capture/)).toBeTruthy();
-    rerender(<NetworkDetectionCoverage unavailable={false} stats={{ schema: 1, active: false, events: 15, alerts: 0, indicators: 0, overflow: 0, late: 0, streamGaps: 0, keys: 0, flows: 0 }} />);
-    expect(screen.getByText(/No indicators configured/)).toBeTruthy();
-    expect(screen.getByText(/15 evaluated events · 0 findings/)).toBeTruthy();
   });
 });

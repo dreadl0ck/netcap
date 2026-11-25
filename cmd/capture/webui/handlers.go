@@ -438,8 +438,36 @@ func (s *Server) handleAuditFilesFiltered(w http.ResponseWriter, r *http.Request
 	HandleAuditFilesFiltered(selected.OutputDir)(w, r)
 }
 
-// handleLogFiles delegates to the shared handler
+// handleLogFiles supports the same dashboard scopes as handleAuditFiles.
 func (s *Server) handleLogFiles(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if scope := r.URL.Query().Get("scope"); scope != "" && scope != "current" {
+		dirs, status, err := s.resolveChartScopeDirs(scope, r)
+		if err != nil {
+			http.Error(w, err.Error(), status)
+			return
+		}
+		logs := []FileInfo{}
+		for _, dir := range dirs {
+			if r.Context().Err() != nil {
+				return
+			}
+			files, err := listLogFiles(dir)
+			if err != nil {
+				if errors.Is(err, os.ErrNotExist) && scope == "all" {
+					continue
+				}
+				RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": "Cannot read analysis log directory"})
+				return
+			}
+			logs = append(logs, files...)
+		}
+		RespondJSON(w, http.StatusOK, logs)
+		return
+	}
 	selected, ok := s.selectedCapture(w, r)
 	if !ok {
 		return

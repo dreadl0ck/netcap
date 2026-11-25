@@ -1119,7 +1119,7 @@ export default function ExtractedFilesPage() {
   }
 
   return (
-    <Layout title={i18nText("ui:m_9398bbdae27b6b92fc35")} headerAction={fileSelector}><Box sx={{ minWidth: 0 }}>{extractedFilesData?.partialMetadata && <Alert severity="info" sx={{ mb: 2 }}>The file list is available, but some files have no indexed metadata.</Alert>}<ArtifactAnalysisPanel selection={status?.sessionId ? { sessionId: status.sessionId } : { inputFile: status?.activeInputFile }} /><Box sx={{
+    <Layout title={i18nText("ui:m_9398bbdae27b6b92fc35")} headerAction={fileSelector}><Box sx={{ minWidth: 0 }}>{extractedFilesData?.partialMetadata && <Alert severity="info" sx={{ mb: 2 }}>The file list is available, but some files have no indexed metadata.</Alert>}<Box sx={{
           display: 'flex', 
           flexDirection: { xs: 'column', md: 'row' },
           justifyContent: 'space-between', 
