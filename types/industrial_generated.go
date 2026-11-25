@@ -2,13 +2,24 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/dreadl0ck/netcap/internal/encoder"
-	"github.com/prometheus/client_golang/prometheus"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/dreadl0ck/netcap/internal/encoder"
 )
 
 var otEncoder = encoder.NewValueEncoder()
+
+func otJSONField(v any) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
 
 var metricPTPv2 = prometheus.NewCounter(prometheus.CounterOpts{Name: "nc_ptpv2", Help: "Decoded PTPv2 records"})
 
@@ -43,7 +54,7 @@ func (*PTPv2) CSVHeader() []string {
 	return filter([]string{"Timestamp", "Context", "MessageType", "Domain", "SequenceID", "SourcePortIdentity", "CorrectionScaledNs", "Flags", "TLVCount"})
 }
 func (r *PTPv2) CSVRecord() []string {
-	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.MessageType), fmt.Sprint(r.Domain), fmt.Sprint(r.SequenceID), fmt.Sprint(r.SourcePortIdentity), fmt.Sprint(r.CorrectionScaledNs), fmt.Sprint(r.Flags), fmt.Sprint(r.TLVCount)})
+	return filter([]string{formatTimestamp(r.Timestamp), otJSONField(r.Context), r.MessageType, fmt.Sprint(r.Domain), fmt.Sprint(r.SequenceID), r.SourcePortIdentity, fmt.Sprint(r.CorrectionScaledNs), fmt.Sprint(r.Flags), fmt.Sprint(r.TLVCount)})
 }
 func (r *PTPv2) Encode() []string {
 	v := r.CSVRecord()
@@ -90,7 +101,7 @@ func (*GOOSE) CSVHeader() []string {
 	return filter([]string{"Timestamp", "Context", "AppID", "ControlBlock", "DataSet", "GoID", "State", "Sequence", "Revision", "Simulation", "TimeAllowedToLive"})
 }
 func (r *GOOSE) CSVRecord() []string {
-	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.AppID), fmt.Sprint(r.ControlBlock), fmt.Sprint(r.DataSet), fmt.Sprint(r.GoID), fmt.Sprint(r.State), fmt.Sprint(r.Sequence), fmt.Sprint(r.Revision), fmt.Sprint(r.Simulation), fmt.Sprint(r.TimeAllowedToLive)})
+	return filter([]string{formatTimestamp(r.Timestamp), otJSONField(r.Context), fmt.Sprint(r.AppID), r.ControlBlock, r.DataSet, r.GoID, fmt.Sprint(r.State), fmt.Sprint(r.Sequence), fmt.Sprint(r.Revision), fmt.Sprint(r.Simulation), fmt.Sprint(r.TimeAllowedToLive)})
 }
 func (r *GOOSE) Encode() []string {
 	v := r.CSVRecord()
@@ -137,7 +148,7 @@ func (*SampledValues) CSVHeader() []string {
 	return filter([]string{"Timestamp", "Context", "AppID", "StreamID", "SampleCounter", "Revision"})
 }
 func (r *SampledValues) CSVRecord() []string {
-	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.AppID), fmt.Sprint(r.StreamID), fmt.Sprint(r.SampleCounter), fmt.Sprint(r.Revision)})
+	return filter([]string{formatTimestamp(r.Timestamp), otJSONField(r.Context), fmt.Sprint(r.AppID), otJSONField(r.StreamID), otJSONField(r.SampleCounter), otJSONField(r.Revision)})
 }
 func (r *SampledValues) Encode() []string {
 	v := r.CSVRecord()
@@ -184,7 +195,7 @@ func (*EtherCAT) CSVHeader() []string {
 	return filter([]string{"Timestamp", "Context", "FrameType", "Length", "Commands", "WorkingCounters", "Mailboxes"})
 }
 func (r *EtherCAT) CSVRecord() []string {
-	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.FrameType), fmt.Sprint(r.Length), fmt.Sprint(r.Commands), fmt.Sprint(r.WorkingCounters), fmt.Sprint(r.Mailboxes)})
+	return filter([]string{formatTimestamp(r.Timestamp), otJSONField(r.Context), r.FrameType, fmt.Sprint(r.Length), otJSONField(r.Commands), otJSONField(r.WorkingCounters), otJSONField(r.Mailboxes)})
 }
 func (r *EtherCAT) Encode() []string {
 	v := r.CSVRecord()
@@ -231,7 +242,7 @@ func (*OPCUAPubSub) CSVHeader() []string {
 	return filter([]string{"Timestamp", "Context", "MessageType", "Version", "DataSetWriterIDs", "Encrypted", "Chunk", "PayloadError"})
 }
 func (r *OPCUAPubSub) CSVRecord() []string {
-	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.MessageType), fmt.Sprint(r.Version), fmt.Sprint(r.DataSetWriterIDs), fmt.Sprint(r.Encrypted), fmt.Sprint(r.Chunk), fmt.Sprint(r.PayloadError)})
+	return filter([]string{formatTimestamp(r.Timestamp), otJSONField(r.Context), r.MessageType, fmt.Sprint(r.Version), otJSONField(r.DataSetWriterIDs), fmt.Sprint(r.Encrypted), fmt.Sprint(r.Chunk), r.PayloadError})
 }
 func (r *OPCUAPubSub) Encode() []string {
 	v := r.CSVRecord()
@@ -278,7 +289,7 @@ func (*IEC104) CSVHeader() []string {
 	return filter([]string{"Timestamp", "Context", "Format", "SendSequence", "ReceiveSequence", "UFunction", "TypeID", "CommonAddress", "Cause", "ObjectCount", "Assembly"})
 }
 func (r *IEC104) CSVRecord() []string {
-	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.Format), fmt.Sprint(r.SendSequence), fmt.Sprint(r.ReceiveSequence), fmt.Sprint(r.UFunction), fmt.Sprint(r.TypeID), fmt.Sprint(r.CommonAddress), fmt.Sprint(r.Cause), fmt.Sprint(r.ObjectCount), fmt.Sprint(r.Assembly)})
+	return filter([]string{formatTimestamp(r.Timestamp), otJSONField(r.Context), r.Format, fmt.Sprint(r.SendSequence), fmt.Sprint(r.ReceiveSequence), r.UFunction, fmt.Sprint(r.TypeID), fmt.Sprint(r.CommonAddress), fmt.Sprint(r.Cause), fmt.Sprint(r.ObjectCount), otJSONField(r.Assembly)})
 }
 func (r *IEC104) Encode() []string {
 	v := r.CSVRecord()
@@ -325,7 +336,7 @@ func (*MMS) CSVHeader() []string {
 	return filter([]string{"Timestamp", "Context", "PDUType", "InvokeID", "Service", "ServiceError", "Assembly"})
 }
 func (r *MMS) CSVRecord() []string {
-	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.PDUType), fmt.Sprint(r.InvokeID), fmt.Sprint(r.Service), fmt.Sprint(r.ServiceError), fmt.Sprint(r.Assembly)})
+	return filter([]string{formatTimestamp(r.Timestamp), otJSONField(r.Context), r.PDUType, fmt.Sprint(r.InvokeID), r.Service, r.ServiceError, otJSONField(r.Assembly)})
 }
 func (r *MMS) Encode() []string {
 	v := r.CSVRecord()
@@ -372,7 +383,7 @@ func (*AMS) CSVHeader() []string {
 	return filter([]string{"Timestamp", "Context", "Command", "Length", "ADSCommand", "InvokeID", "ErrorCode", "TargetNetID", "SourceNetID", "Assembly"})
 }
 func (r *AMS) CSVRecord() []string {
-	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.Command), fmt.Sprint(r.Length), fmt.Sprint(r.ADSCommand), fmt.Sprint(r.InvokeID), fmt.Sprint(r.ErrorCode), fmt.Sprint(r.TargetNetID), fmt.Sprint(r.SourceNetID), fmt.Sprint(r.Assembly)})
+	return filter([]string{formatTimestamp(r.Timestamp), otJSONField(r.Context), r.Command, fmt.Sprint(r.Length), r.ADSCommand, fmt.Sprint(r.InvokeID), fmt.Sprint(r.ErrorCode), r.TargetNetID, r.SourceNetID, otJSONField(r.Assembly)})
 }
 func (r *AMS) Encode() []string {
 	v := r.CSVRecord()

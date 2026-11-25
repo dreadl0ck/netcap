@@ -1,0 +1,21 @@
+<MaltegoEntity id="netcap.MLDv2MulticastListenerQueryAuditRecords" displayName="MLDv2MulticastListenerQueryAuditRecords" displayNamePlural="MLDv2MulticastListenerQueryAuditRecords" description="An archive of MLDv2MulticastListenerQuery audit records" category="Netcap Archives" smallIconResource="netcap/insert_drive_file_sandybrown" largeIconResource="netcap/insert_drive_file_sandybrown" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.mldv2multicastlistenerqueryauditrecords" displayValue="properties.mldv2multicastlistenerqueryauditrecords">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.mldv2multicastlistenerqueryauditrecords" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="MLDv2MulticastListenerQueryAuditRecords">
+    <SampleValue>-</SampleValue>
+   </Field>
+   <Field name="path" type="string" nullable="true" hidden="false" readonly="false" description="path to the audit records on disk" displayName="Path">
+    <SampleValue></SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+ <Converter>
+  <Value>^(.+(\/|\\)(MLDv2MulticastListenerQuery)\.ncap(\.gz)?)</Value>
+  <RegexGroups>
+   <RegexGroup property="path"></RegexGroup>
+   <RegexGroup property=""></RegexGroup>
+   <RegexGroup property="properties.mldv2multicastlistenerqueryauditrecords"></RegexGroup>
+  </RegexGroups>
+ </Converter>
+</MaltegoEntity>

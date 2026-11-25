@@ -25,6 +25,7 @@ import (
 	"encoding/xml"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -139,7 +140,7 @@ func TestGenerateAllEntities(t *testing.T) {
 	})
 
 	packet.ApplyActionToGoPacketDecoders(func(d *packet.GoPacketDecoder) {
-		createEntity(out, d.Layer.String(), d.Description, &count)
+		createWriterEntity(out, d.Layer.String(), d.AuditFileBase(), d.Description, &count)
 	})
 
 	stream.ApplyActionToStreamDecoders(func(d core.StreamDecoderAPI) {
@@ -295,6 +296,10 @@ func TestGenerateDHCPClientXMLEntity(t *testing.T) {
 }
 
 func createEntity(outpath string, name string, description string, count *int) {
+	createWriterEntity(outpath, name, strings.ReplaceAll(name, "/", ""), description, count)
+}
+
+func createWriterEntity(outpath, name, file, description string, count *int) {
 	n := strings.ReplaceAll(name, "/", "")
 	maltego.GenEntity(
 		svgIconPath,
@@ -309,7 +314,7 @@ func createEntity(outpath string, name string, description string, count *int) {
 		"",
 		colors[*count],
 		&maltego.RegexConversion{
-			Regex: "^(.+(\\/|\\\\)(" + n + ")\\.ncap(\\.gz)?)",
+			Regex: "^(.+(\\/|\\\\)(" + regexp.QuoteMeta(file) + ")\\.ncap(\\.gz)?)$",
 			Properties: []string{
 				"path",
 				"",
