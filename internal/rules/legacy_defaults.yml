@@ -3,6 +3,38 @@
 # current default. Never edit an entry; add the previous definition when a
 # default changes. Entries before the first section comment predate v0.16.13.
 rules:
+  - name: HTTP POST to IP
+    description: Detect HTTP POST to IP addresses instead of domains
+    type: HTTP
+    expression: Method == "POST" && MatchesPattern(Host, "^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$")
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["c2"]
+    enabled: true
+  - name: Unknown HTTP Proxy Detection
+    description: Detect servers behaving as HTTP proxies
+    type: HTTP
+    expression: Method == "CONNECT" || MatchesPattern(URL, "^https?://")
+    severity: medium
+    mitre: ["T1090.002"]
+    tags: ["proxy"]
+    enabled: true
+  - name: NetSupport Manager RAT User Agent Detected
+    description: Used by NetSupport RAT client
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^netsupport manager")
+    severity: low
+    mitre: ["T1219"]
+    tags: ["rmm", "remote-access", "netsupport"]
+    enabled: true
+  - name: NetSupport Gateway Server Header Detected
+    description: HTTP response from a NetSupport Gateway, the relay NetSupport RAT clients poll
+    type: HTTP
+    expression: MatchesPattern(ServerName, "(?i)^netsupport gateway")
+    severity: low
+    mitre: ["T1219"]
+    tags: ["rmm", "remote-access", "netsupport", "c2"]
+    enabled: true
   - name: SSH Connection Detected
     description: SSH connection detected - secure shell for remote admin (monitor for brute-force and stolen keys)
     type: Connection
@@ -1651,4 +1683,22 @@ rules:
     severity: medium
     mitre: ["T1090", "T1572"]
     tags: ["tunneling"]
+    enabled: true
+
+  # Polling-noise defaults superseded by rule-aware fallback.
+  - name: HTTP POST to IP
+    description: HTTP POST to a literal IP without a recognizable NetSupport Manager client fingerprint
+    type: HTTP
+    expression: Method == "POST" && MatchesPattern(Host, "^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$") && !MatchesPattern(UserAgent, "(?i)^netsupport manager")
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["c2"]
+    enabled: true
+  - name: Unknown HTTP Proxy Detection
+    description: Detect CONNECT or absolute-form requests without a recognizable NetSupport Manager client fingerprint
+    type: HTTP
+    expression: Method == "CONNECT" || (MatchesPattern(URL, "^https?://") && !MatchesPattern(UserAgent, "(?i)^netsupport manager"))
+    severity: medium
+    mitre: ["T1090.002"]
+    tags: ["proxy"]
     enabled: true

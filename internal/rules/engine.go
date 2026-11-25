@@ -45,9 +45,10 @@ type Engine struct {
 	alertWriter           AlertWriter
 	clock                 func() time.Time
 	projectReplayEvidence bool
+	replayFiles           *replayFileEvidence // owned by the serial AuditReplay
 
 	// Deduplication tracking
-	recentAlerts map[string]int64 // map[alertKey]lastSeen
+	recentAlerts map[alertKey]int64
 	dedupWindow  time.Duration
 	mu           sync.RWMutex
 
@@ -208,7 +209,7 @@ func NewEngineFromConfig(config *Config, alertWriter AlertWriter) (*Engine, erro
 		plan:              compiledRulePlan(config),
 		alertWriter:       alertWriter,
 		clock:             time.Now,
-		recentAlerts:      make(map[string]int64),
+		recentAlerts:      make(map[alertKey]int64),
 		dedupWindow:       5 * time.Minute, // Default 5 minute deduplication window
 		ruleCounters:      make(map[string]*rateCounter),
 		rateLimit:         100, // Default 100 alerts per minute per rule
@@ -325,8 +326,9 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 	recordType := record.NetcapType()
 	alertCount := 0
 	var environment map[string]any
+	plan := e.rulesFor(recordType)
 
-	for _, rule := range e.rulesFor(recordType) {
+	for _, rule := range plan {
 		if !rule.Enabled {
 			continue
 		}
@@ -355,6 +357,12 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 		matched, err := filter.EvaluateEnvironment(rule.compiled, environment)
 		if err != nil {
 			return alertCount, fmt.Errorf("error evaluating rule %s: %w", rule.Name, err)
+		}
+		if matched && recordType == types.Type_NC_HTTP && coalescedNetSupportPoll(rule, record, plan, environment) {
+			if e.perfTracker != nil {
+				e.perfTracker.RecordRuleExecution(rule.Name, time.Since(ruleStart), true, false)
+			}
+			continue
 		}
 		var alert *types.Alert
 		if matched {
@@ -387,6 +395,10 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 					e.perfTracker.RecordRuleExecution(rule.Name, time.Since(ruleStart), matched, alertGenerated)
 				}
 				continue
+			}
+			var replayFile *types.File
+			if e.replayFiles != nil && scope == "" {
+				replayFile = fileForReplayEvidence(rule, record)
 			}
 
 			// Check distinct-cardinality threshold first (fan-out detection):
@@ -442,6 +454,9 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 			} else if scope == "" && (rule.Sequence == nil || rule.Sequence.AfterType == "") {
 				// Check deduplication only for non-threshold rules
 				if e.isDuplicate(alert, e.recordEvalTime(record)) {
+					if replayFile != nil {
+						e.replayFiles.observeDuplicate(alert, replayFile)
+					}
 					matched = true
 					alertGenerated = false
 					if e.perfTracker != nil {
@@ -473,12 +488,17 @@ func (e *Engine) EvaluateScoped(scope string, record types.AuditRecord) (int, er
 			if len(contributors) > 0 {
 				alert.Notes = joinEvidence(scope, contributors)
 			}
-			err = e.alertWriter.WriteAlert(alert)
+			var written int
+			if replayFile != nil {
+				written, err = e.replayFiles.start(alert, replayFile)
+			} else if err = e.alertWriter.WriteAlert(alert); err == nil {
+				written = 1
+			}
 			if err != nil {
-				return alertCount, fmt.Errorf("error writing alert: %w", err)
+				return alertCount + written, fmt.Errorf("error writing alert: %w", err)
 			}
 
-			alertCount++
+			alertCount += written
 			alertGenerated = true
 
 			// Execute response actions
@@ -501,13 +521,19 @@ func isNilAuditRecord(record types.AuditRecord) bool {
 	return !v.IsValid() || v.Kind() == reflect.Pointer && v.IsNil()
 }
 
+type alertKey struct{ rule, src, dst, recordType string }
+
+func dedupKey(alert *types.Alert) alertKey {
+	return alertKey{alert.RuleName, alert.SrcIP, alert.DstIP, alert.RecordType}
+}
+
 // isDuplicate checks if an alert is a duplicate within the deduplication window.
 func (e *Engine) isDuplicate(alert *types.Alert, now int64) bool {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
 	// Create a key for deduplication
-	key := fmt.Sprintf("%s:%s:%s:%s", alert.RuleName, alert.SrcIP, alert.DstIP, alert.RecordType)
+	key := dedupKey(alert)
 
 	lastSeen, exists := e.recentAlerts[key]
 
@@ -816,7 +842,7 @@ func (e *Engine) UpdateConfig(config *Config) error {
 	e.scopedEntries = 0
 	e.grouped = nil
 	e.dedupe = nil
-	e.recentAlerts = make(map[string]int64)
+	e.recentAlerts = make(map[alertKey]int64)
 	e.ruleCounters = make(map[string]*rateCounter)
 	e.mu.Unlock()
 

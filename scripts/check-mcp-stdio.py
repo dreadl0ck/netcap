@@ -897,6 +897,7 @@ rules:
             ("get_audit_record_values", args | {"type": "UDP"}),
             ("get_chart_data", args | {"type": "UDP", "field": "Length", "max_data_points": 5}),
             ("query_flows", args | {"startNs": meta["minTime"], "endNs": meta["maxTime"], "limit": 3}),
+            ("hunt_peer_rotation", args | {"pageLimit": 1}),
             ("list_auth_activity", args | {"limit": 5}),
             ("get_audit_record_fields", {"type": "UDP"}),
             ("wait_for_session", args | {"timeout_seconds": 2}),
@@ -911,6 +912,10 @@ rules:
                 if name == "get_chart_data":
                     if result["type"] != "UDP" or result["field"] != "Length" or not 1 <= len(result["data"]) <= 5:
                         raise ValueError("UDP chart lost its field or point bound")
+                if name == "hunt_peer_rotation":
+                    if (result["candidates"] != [] or result["totalCount"] != 0 or result["has_more"]
+                            or not result["auditGeneration"] or not result["generation"]):
+                        raise ValueError("mDNS should yield a generation-bound empty hunt result")
             except Exception as exc:
                 failures.append(f"{name}: {exc}")
 

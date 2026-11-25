@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"log"
 	"math"
@@ -111,6 +112,7 @@ type GroupedAlert struct {
 	GroupID         string          `json:"groupId"`       // Unique identifier for the group
 	// UniqueValuesTruncated: a unique list stopped at maxGroupUniqueValues.
 	UniqueValuesTruncated bool `json:"uniqueValuesTruncated,omitempty"`
+	memberDigest          []byte
 }
 
 // AlertsResponse represents the response containing multiple alerts
@@ -654,7 +656,7 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 		RespondJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 		return
 	}
-	acc := newAlertGroups(budget)
+	acc := newAlertGroups(budget, bounded)
 	ctx, scanStats := withAlertScanStats(r.Context())
 	_, err = s.scanFilteredAlertAudit(ctx, alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, kindMatch, func(alert AlertResponse) error {
 		return acc.add(alert, severityFilter, ruleNameFilter)
@@ -736,7 +738,7 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 
 // groupAlerts groups findings by rule, severity and observed endpoint pair.
 func groupAlerts(alerts []AlertResponse, severityFilter, ruleNameFilter string) []GroupedAlert {
-	acc := newAlertGroups(-1)
+	acc := newAlertGroups(-1, false)
 	for _, alert := range alerts {
 		_ = acc.add(alert, severityFilter, ruleNameFilter)
 	}
@@ -774,13 +776,18 @@ func inAlertGroup(alert *types.Alert, id string) bool {
 }
 
 type alertGroups struct {
-	groups    map[alertGroupKey]*GroupedAlert
-	unique    map[alertGroupKey][4]map[string]bool
-	remaining int
+	groups       map[alertGroupKey]*GroupedAlert
+	unique       map[alertGroupKey][4]map[string]bool
+	memberHashes map[alertGroupKey]hash.Hash // non-nil for exact MCP summaries
+	remaining    int
 }
 
-func newAlertGroups(budget int) *alertGroups {
-	return &alertGroups{groups: make(map[alertGroupKey]*GroupedAlert), unique: make(map[alertGroupKey][4]map[string]bool), remaining: budget}
+func newAlertGroups(budget int, exact bool) *alertGroups {
+	a := &alertGroups{groups: make(map[alertGroupKey]*GroupedAlert), unique: make(map[alertGroupKey][4]map[string]bool), remaining: budget}
+	if exact {
+		a.memberHashes = make(map[alertGroupKey]hash.Hash)
+	}
+	return a
 }
 
 func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter string) error {
@@ -792,25 +799,32 @@ func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter st
 	}
 
 	key := newAlertGroupKey(alert.RuleName, alert.Severity, alert.Kind, alert.SrcIP, alert.DstIP)
+	first, last := groupedAlertTimes(alert)
 
 	group, exists := a.groups[key]
 	srcPort, dstPort := groupedAlertPorts(alert)
 	values := [4]string{alert.SrcIP, alert.DstIP, srcPort, dstPort}
 	seen := a.unique[key]
+	exact := a.memberHashes != nil
+	sample := !exists || len(group.SampleAlerts) < 5
+	var raw []byte
+	if exact || (sample && a.remaining >= 0) {
+		var err error
+		raw, err = json.Marshal(alert)
+		if err != nil {
+			return err
+		}
+	}
 	if a.remaining >= 0 {
 		charge := 0
-		if !exists || len(group.SampleAlerts) < 5 {
-			raw, err := json.Marshal(alert)
-			if err != nil {
-				return err
-			}
+		if sample {
 			charge += len(raw) + 512
 			if !exists {
 				charge += len(raw) + 1024
 			}
 		}
 		for i, value := range values {
-			if value != "" && !seen[i][value] && len(seen[i]) < maxGroupUniqueValues {
+			if value != "" && !seen[i][value] && (exact || len(seen[i]) < maxGroupUniqueValues) {
 				charge += len(value) + 64
 			}
 		}
@@ -832,8 +846,8 @@ func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter st
 			Threshold:       alert.Threshold,
 			ThresholdWindow: alert.ThresholdWindow,
 			Count:           0,
-			FirstSeen:       alert.Timestamp,
-			LastSeen:        alert.Timestamp,
+			FirstSeen:       first,
+			LastSeen:        last,
 			UniqueSrcIPs:    []string{},
 			UniqueDstIPs:    []string{},
 			UniqueSrcPorts:  []string{},
@@ -845,6 +859,15 @@ func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter st
 		a.groups[key] = group
 		seen = [4]map[string]bool{{}, {}, {}, {}}
 		a.unique[key] = seen
+		if exact {
+			a.memberHashes[key] = sha256.New()
+		}
+	}
+	if exact {
+		// A member edit can leave the preview, distinct values and totals unchanged.
+		h := a.memberHashes[key]
+		h.Write(raw)
+		h.Write([]byte{0})
 	}
 
 	// Update group statistics
@@ -852,16 +875,12 @@ func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter st
 	if alert.Resolved {
 		group.ResolvedCount++
 	}
-	if alert.Timestamp < group.FirstSeen {
-		group.FirstSeen = alert.Timestamp
-	}
-	if alert.Timestamp > group.LastSeen {
-		group.LastSeen = alert.Timestamp
-	}
+	group.FirstSeen = min(group.FirstSeen, first)
+	group.LastSeen = max(group.LastSeen, last)
 
 	// Collect unique IPs and ports; a flood group can have one per alert.
 	for i, list := range []*[]string{&group.UniqueSrcIPs, &group.UniqueDstIPs, &group.UniqueSrcPorts, &group.UniqueDstPorts} {
-		if values[i] != "" && !seen[i][values[i]] && len(seen[i]) >= maxGroupUniqueValues {
+		if !exact && values[i] != "" && !seen[i][values[i]] && len(seen[i]) >= maxGroupUniqueValues {
 			group.UniqueValuesTruncated = true
 			continue
 		}
@@ -877,7 +896,10 @@ func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter st
 
 func (a *alertGroups) finish() []GroupedAlert {
 	result := make([]GroupedAlert, 0, len(a.groups))
-	for _, group := range a.groups {
+	for key, group := range a.groups {
+		if h := a.memberHashes[key]; h != nil {
+			group.memberDigest = h.Sum(nil)
+		}
 		// Sort the unique values for consistent display
 		sort.Strings(group.UniqueSrcIPs)
 		sort.Strings(group.UniqueDstIPs)
@@ -915,6 +937,19 @@ func sortGroupedAlerts(groups []GroupedAlert, sortBy, sortOrder string) {
 		return cmp.Or(order, cmp.Compare(a.LastSeen, b.LastSeen),
 			cmp.Compare(a.RuleName, b.RuleName), cmp.Compare(a.Severity, b.Severity), cmp.Compare(a.GroupID, b.GroupID)) < 0
 	})
+}
+
+func groupedAlertTimes(alert AlertResponse) (first, last int64) {
+	first, last = alert.Timestamp, alert.Timestamp
+	if alert.Count > 0 {
+		start, errStart := strconv.ParseInt(alert.FirstSeenNs, 10, 64)
+		end, errEnd := strconv.ParseInt(alert.LastSeenNs, 10, 64)
+		if errStart == nil && errEnd == nil && start <= end {
+			first = min(first, start/1_000_000)
+			last = max(last, end/1_000_000)
+		}
+	}
+	return first, last
 }
 
 func groupedAlertPorts(alert AlertResponse) (src, dst string) {

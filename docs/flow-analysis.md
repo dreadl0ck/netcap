@@ -26,6 +26,23 @@ Connection files with repeated tuples and no snapshot fields are ambiguous. The 
 
 Defaults limit frame size, decoded input, records, groups and query time. A query that exceeds a limit fails. `/api/flows/query` uses the same engine.
 
+## Hunt for TCP peer rotation
+
+`net investigate peer-rotation -read analysis/` and the MCP tool
+`hunt_peer_rotation` read one finalized capture.
+It reports five or more distinct public peers with short (at most 10 seconds)
+unanswered or reset TCP attempts, followed by payload in both directions to
+a different peer within 300 seconds. Attempts must share the client, server
+port and network scope. The query keeps the latest snapshot per observation
+and uses TCP audit ordinals to verify both payload directions. Each burst is
+reported once. Reused tuples are excluded because TCP records lack network scope.
+
+The JSON ties candidates to the audit generation and includes the exact
+distinct-peer count, up to 32 failed peer references and both payload record
+ordinals. Browsing, mail retries and service failover can produce this pattern.
+The command is opt-in and returns candidates without writing alerts. Scans fail
+on incomplete required stages or on exceeding the record, byte or work limits.
+
 ## Collect flow exports
 
 ```sh

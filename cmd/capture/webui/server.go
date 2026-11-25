@@ -734,6 +734,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/connections/network-conversation", s.handleNetworkConversation)
 	mux.HandleFunc("/api/connections/download-pcap", s.handleConnectionDownloadPCAP)
 	mux.HandleFunc("/api/flows/query", s.handleFlowQuery)
+	mux.HandleFunc("/api/flows/peer-rotation", s.handlePeerRotation)
 	mux.HandleFunc("/api/flows/exports/query", s.handleFlowExportQuery)
 	mux.HandleFunc("/api/investigation/capture", s.handleCaptureEvidence)
 	mux.HandleFunc("/api/investigation/reproduction", s.handleReproductionBundle)
@@ -1715,6 +1716,7 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) (resultErr error) {
 	}()
 
 	// Group rules by type to minimize file reads
+	findingWriter := s.findingAlertWriter(job.OutputDir, s.shutdownChan, enabledRules, alertWriter)
 	// We want to read each audit file (e.g. TCP.ncap.gz) only once
 	rulesByType := make(map[string][]*rules.Rule)
 	var typeOrder []string
@@ -1752,7 +1754,7 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) (resultErr error) {
 		}
 
 		// Create engine with these rules
-		engine, err := rules.NewAuditReplay(typeConfig, alertWriter)
+		engine, err := rules.NewAuditReplay(typeConfig, findingWriter)
 		if err != nil {
 			log.Printf("%s Failed to create rules engine for type %s: %v", mode, typeStr, err)
 			return err

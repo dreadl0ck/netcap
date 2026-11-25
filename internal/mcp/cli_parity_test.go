@@ -15,6 +15,7 @@ func TestInvestigationCLICapabilityParity(t *testing.T) {
 	covered := map[string]string{
 		"protocol-fields": "interpret_protocol_grammar", "tls-capture": "analyze_tls_capture", "protocol-proxy": "start_protocol_listener", "exchange": "run_protocol_exchange",
 		"collect-flows": "flow_receiver", "exported-flows": "query_flow_exports", "flows": "query_flows", "related": "get_related_evidence", "packet-evidence": "export_packet_evidence",
+		"peer-rotation": "hunt_peer_rotation",
 		"protocol-fuzz": "run_protocol_campaign", "protocol-server": "start_protocol_listener", "protocol-access": "run_protocol_access_matrix", "protocol-corpus": "generate_protocol_corpus",
 		"protocol-generate": "generate_protocol_cases", "protocol-reproduce": "reproduce_protocol_case", "protocol-triage": "import_protocol_triage", "protocol-boundary": "run_protocol_boundary", "rules": "execute_offline_rule_pack",
 		"sensor-seal": "sensor_bundle", "sensor-import": "sensor_bundle", "sensor-prune": "sensor_bundle", "deliver-alerts": "alert_delivery",

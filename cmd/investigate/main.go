@@ -78,6 +78,10 @@ func GetCommand() *cli.Command {
 			&cli.IntFlag{Name: "limit", Value: 100, Usage: "returned groups (1..1000)"},
 			&cli.DurationFlag{Name: "timeout", Value: 2 * time.Minute, Usage: "maximum query duration"},
 		}, Action: runFlows},
+		{Name: "peer-rotation", Usage: "find failed TCP peer attempts followed by two-way payload on another peer", Flags: []cli.Flag{
+			&cli.StringFlag{Name: "read", Required: true, Usage: "finalized capture output directory with Connection and TCP audit stages"},
+			&cli.DurationFlag{Name: "timeout", Value: 2 * time.Minute},
+		}, Action: runPeerRotation},
 		{Name: "related", Usage: "records linked across protocols: same connection, resolving DNS answer, resolved connections and alerts", Flags: []cli.Flag{
 			&cli.StringFlag{Name: "id", Usage: "content-bound record ID returned by a prior related query"},
 			&cli.StringFlag{Name: "read", Required: true, Usage: "capture output directory"},
@@ -355,6 +359,19 @@ func runFlows(ctx context.Context, cmd *cli.Command) error {
 	ctx, cancel := context.WithTimeout(ctx, cmd.Duration("timeout"))
 	defer cancel()
 	result, err := flow.ReadFile(ctx, cmd.String("read"), q)
+	if err != nil {
+		return err
+	}
+	return json.NewEncoder(cmd.Root().Writer).Encode(result)
+}
+
+func runPeerRotation(ctx context.Context, cmd *cli.Command) error {
+	if cmd.Args().Len() != 0 || cmd.Duration("timeout") <= 0 {
+		return fmt.Errorf("peer-rotation requires a positive timeout and no positional arguments")
+	}
+	ctx, cancel := context.WithTimeout(ctx, cmd.Duration("timeout"))
+	defer cancel()
+	result, err := flow.ReadPeerRotation(ctx, cmd.String("read"))
 	if err != nil {
 		return err
 	}

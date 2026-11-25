@@ -1140,7 +1140,7 @@ export interface Alert {
   srcPort?: string;
   dstPort?: string;
   domain?: string;
-  timestamp: number;
+  timestamp: number; // Unix milliseconds
   name: string;
   description: string;
   ruleName: string;
@@ -1160,7 +1160,7 @@ export interface Alert {
   kind?: 'finding' | 'inventory';
   groupedEvaluation?: OfflineAlertMetadata;
   count?: number;
-  firstSeenNs?: string;
+  firstSeenNs?: string; // Observed range in exact Unix nanoseconds
   lastSeenNs?: string;
   aggregateKey?: string;
   examples?: string[];
@@ -1191,8 +1191,8 @@ export interface GroupedAlert {
   threshold: number;
   thresholdWindow: number;
   count: number;
-  firstSeen: number;
-  lastSeen: number;
+  firstSeen: number; // Unix milliseconds
+  lastSeen: number; // Unix milliseconds
   uniqueSrcIPs: string[];
   uniqueDstIPs: string[];
   uniqueSrcPorts: string[];

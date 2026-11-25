@@ -73,7 +73,7 @@ rules:
   # GET http://www.google.com/index.html HTTP/1.1
   # Authorized Proxies: If this rule runs on traffic flowing to your corporate Secure Web Gateway (SWG), Firewall, or Load Balancer, it will flag every single outbound web request.
   - name: Unknown HTTP Proxy Detection
-    description: Detect servers behaving as HTTP proxies
+    description: HTTP CONNECT or absolute-form request; only redundant NetSupport client polling is coalesced
     type: HTTP
     expression: Method == "CONNECT" || MatchesPattern(URL, "^https?://")
     severity: medium

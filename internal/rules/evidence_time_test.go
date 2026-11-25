@@ -17,14 +17,17 @@ func TestFileAlertEvidenceIndependentOfOutputDirectory(t *testing.T) {
 	}
 	var previous *types.Alert
 	for _, location := range []string{"/run-one/files/sample", "/run-two/files/sample"} {
-		record := &types.File{Timestamp: 42, Location: location}
+		record := &types.File{Timestamp: 42, SrcIP: "192.0.2.1", DstIP: "192.0.2.2", Location: location}
 		writer := new(MockAlertWriter)
 		replay, err := NewAuditReplay(&Config{Rules: []*Rule{rule}}, writer)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := replay.Evaluate(record); err != nil || len(writer.alerts) != 1 {
+		if _, err := replay.Evaluate(record); err != nil {
 			t.Fatalf("replay File: %v", err)
+		}
+		if _, err := replay.Finalize(); err != nil || len(writer.alerts) != 1 {
+			t.Fatalf("finalize File: %v, %d alerts", err, len(writer.alerts))
 		}
 		alert := writer.alerts[0]
 		var evidence types.File

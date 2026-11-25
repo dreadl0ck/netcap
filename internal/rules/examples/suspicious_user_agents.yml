@@ -233,13 +233,14 @@ rules:
     enabled: true
 
   - name: NetSupport Manager RAT User Agent Detected
-    description: Used by NetSupport RAT client
+    description: NetSupport Manager client fingerprint, also used by legitimate remote management
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^netsupport manager")
     severity: low
     mitre: ["T1219"]
     tags: ["rmm", "remote-access", "netsupport"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP]
 
   # The gateway identifies itself in the response Server header, not in a User-Agent.
   - name: NetSupport Gateway Server Header Detected
@@ -250,6 +251,7 @@ rules:
     mitre: ["T1219"]
     tags: ["rmm", "remote-access", "netsupport", "c2"]
     enabled: true
+    dedupe_by: [SrcIP, DstIP]
 
   # ========================================
   # DATA EXFILTRATION TOOLS

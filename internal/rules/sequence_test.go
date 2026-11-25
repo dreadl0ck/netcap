@@ -23,7 +23,7 @@ func sequenceEngine(t *testing.T, seq *Sequence, expression string) (*Engine, *[
 	engine := &Engine{
 		config:            config,
 		alertWriter:       alertWriterFunc(func(a *types.Alert) error { written = append(written, a); return nil }),
-		recentAlerts:      make(map[string]int64),
+		recentAlerts:      make(map[alertKey]int64),
 		dedupWindow:       0,
 		ruleCounters:      make(map[string]*rateCounter),
 		rateLimit:         100000,

@@ -96,6 +96,8 @@ import { message as finalCopyMessage } from "../lib/i18n";
 
 import { formatEvidenceJSON as formatMatchedRecord } from '../lib/evidenceJSON';
 
+const formatAlertTime = (timestamp: number) => displayTimestamp(timestamp, 'milliseconds');
+
 export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceActions?: (alert: Alert) => React.ReactNode } = {}) {
   const __uiLocale = useUILocale();
   const colors = appearanceTokens(useTheme().palette.mode);
@@ -315,7 +317,6 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
     }
   };
 
-  const formatTimestamp = (timestamp: number, unit: 'seconds' | 'milliseconds' | 'nanoseconds') => displayTimestamp(timestamp, unit);
 
   // Get unique rule names for filter
   const uniqueRules = Array.from(new Set(stats?.byRule ? Object.keys(stats.byRule) : []));
@@ -451,7 +452,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                     color="primary"
                     sx={{ fontWeight: 'bold' }} />{group.resolved && (
                     <Chip label={i18nText("ui:m_6409fda6c1b6bad4d325")} size="small" variant="outlined" color="success" />
-                   )}</Box><Typography variant="body2" noWrap fontWeight="medium">{group.displayName || group.ruleName}</Typography><Typography variant="caption" color="text.secondary" display="block" mt={0.5}>{group.description}</Typography><Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}><Typography variant="caption" color="text.secondary">{formatTimestamp(group.firstSeen, 'nanoseconds')}</Typography>{group.resolved ? (
+                   )}</Box><Typography variant="body2" noWrap fontWeight="medium">{group.displayName || group.ruleName}</Typography><Typography variant="caption" color="text.secondary" display="block" mt={0.5}>{group.description}</Typography><Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}><Typography variant="caption" color="text.secondary">{formatAlertTime(group.firstSeen)}</Typography>{group.resolved ? (
                     <IconButton size="small"
                       color="default"
                       onClick={(e) => {
@@ -514,7 +515,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                                   }}>{group.displayName || group.ruleName}</Typography></Tooltip></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Chip label={recordTypeLabel(group.recordType)} size="small" variant="outlined" /></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}><Chip label={group.count.toLocaleString(getUILocale())}
                                 size="small"
                                 color="primary"
-                                sx={{ fontWeight: 'bold' }} /></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}><Typography variant="body2">{formatTimestamp(group.firstSeen, 'nanoseconds')}</Typography></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Typography variant="body2">{formatTimestamp(group.lastSeen, 'nanoseconds')}</Typography></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}><Typography variant="caption" color="text.secondary">
+                                sx={{ fontWeight: 'bold' }} /></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}><Typography variant="body2">{formatAlertTime(group.firstSeen)}</Typography></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Typography variant="body2">{formatAlertTime(group.lastSeen)}</Typography></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}><Typography variant="caption" color="text.secondary">
                                   {i18nRichText("ui:m_98ad4aa030dde6b61875", { arg0: group.uniqueSrcIPs.length, arg1: group.uniqueDstIPs.length })}
                                 </Typography>{group.uniqueSrcPorts.length > 0 && (
                                   <Typography variant="caption" color="text.secondary">
@@ -625,7 +626,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
             </Box></DialogTitle><DialogContent>{selectedAlert && (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}><NetworkDetectionEvidence alert={selectedAlert} />{selectedAlert.recordType === 'NetworkDetection' && renderEvidenceActions?.(selectedAlert)}{selectorForAlert(selectedAlert.recordType, selectedAlert.matchedRecord) && <RelatedEvidence selector={selectorForAlert(selectedAlert.recordType, selectedAlert.matchedRecord)} />}<Box><Typography variant="subtitle2" color="text.secondary">
                     {i18nText("ui:m_f68524a5a2e8c875738d")}
-                  </Typography><Typography variant="body1">{formatTimestamp(selectedAlert.timestamp, 'nanoseconds')}</Typography></Box><Box><Typography variant="subtitle2" color="text.secondary">
+                  </Typography><Typography variant="body1">{formatAlertTime(selectedAlert.timestamp)}</Typography></Box><Box><Typography variant="subtitle2" color="text.secondary">
                     {i18nText("ui:m_752576a3b0b2dca4ab6a")}
                   </Typography><Typography variant="body1" fontWeight="medium">{selectedAlert.ruleName}</Typography></Box><Box><Typography variant="subtitle2" color="text.secondary">
                     {i18nText("ui:m_a02602e322c10d1a5449")}
@@ -671,7 +672,9 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                     </Typography><Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>{(selectedAlert.tags || []).map((tag) => (
                         <Chip key={tag} label={tag} size="small" />
                       ))}</Box></Box>
-                )}{(selectedAlert.count ?? 0) > 1 && <Box><Typography variant="subtitle2" color="text.secondary">{i18nText("ui:m_c8f9cd63288678efe780", { arg0: selectedAlert.count })}</Typography>{selectedAlert.firstSeenNs && selectedAlert.lastSeenNs && <Typography variant="body2">{formatTimestamp(Number(selectedAlert.firstSeenNs), 'nanoseconds')} – {formatTimestamp(Number(selectedAlert.lastSeenNs), 'nanoseconds')}</Typography>}{(selectedAlert.examples || []).length > 0 && <Box component="pre" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12, maxHeight: 240, overflow: 'auto' }}>{(selectedAlert.examples || []).join('\n')}</Box>}</Box>}{selectedAlert.groupedEvaluation && <Box><Typography variant="subtitle2">{i18nText("ui:m_d607679de2b23948c496")}</Typography><Typography variant="body2">{i18nRichText("ui:m_79f12a5a00887e8b8f2d", { arg0: selectedAlert.groupedEvaluation.count, arg1: selectedAlert.groupedEvaluation.ruleId })}</Typography><Box component="pre" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12 }}>{JSON.stringify(selectedAlert.groupedEvaluation, null, 2)}</Box></Box>}{selectedAlert.matchedRecord && (
+                )}{(selectedAlert.count ?? 0) > 0 && <Box><Typography variant="subtitle2" color="text.secondary">{i18nText("ui:m_c8f9cd63288678efe780", { arg0: selectedAlert.count })}</Typography>{selectedAlert.firstSeenNs && selectedAlert.lastSeenNs && <Typography variant="body2">{displayTimestamp(selectedAlert.firstSeenNs, 'nanoseconds')} – {displayTimestamp(selectedAlert.lastSeenNs, 'nanoseconds')}</Typography>}</Box>}
+                {!!selectedAlert.examples?.length && <AlertEvidenceExamples examples={selectedAlert.examples} />}
+                {selectedAlert.groupedEvaluation && <Box><Typography variant="subtitle2">{i18nText("ui:m_d607679de2b23948c496")}</Typography><Typography variant="body2">{i18nRichText("ui:m_79f12a5a00887e8b8f2d", { arg0: selectedAlert.groupedEvaluation.count, arg1: selectedAlert.groupedEvaluation.ruleId })}</Typography><Box component="pre" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12 }}>{JSON.stringify(selectedAlert.groupedEvaluation, null, 2)}</Box></Box>}{selectedAlert.matchedRecord && (
                   <Box><Typography variant="subtitle2" color="text.secondary" gutterBottom>
                       {i18nText("ui:m_8771965c4afc3da2f3e2")}
                     </Typography><Paper sx={{
@@ -701,6 +704,21 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
 const GROUP_ALERTS_PAGE = 10;
 
 // Pages through every alert of a group; the group summary keeps only samples.
+function AlertEvidenceExamples({ examples }: { examples: string[] }) {
+  const matched: string[] = [];
+  const related: string[] = [];
+  examples.forEach(example => {
+    let kind: string | undefined;
+    try { kind = JSON.parse(example)?.kind; } catch { /* legacy examples may be plain text */ }
+    (kind === 'related-evidence' || kind === 'related-evidence-limit' ? related : matched).push(example);
+  });
+  const style = { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12, maxHeight: 240, overflow: 'auto' } as const;
+  return <>
+    {!!matched.length && <Box component="pre" sx={style}>{matched.join('\n')}</Box>}
+    {!!related.length && <Box><Typography variant="subtitle2" color="text.secondary">{i18nText("ui:m_e88c8ee8b22fc69dbf66")}</Typography><Box component="pre" sx={style}>{related.join('\n')}</Box></Box>}
+  </>;
+}
+
 function GroupAlerts({ groupId, count, kind, onView }: { groupId: string; count: number; kind: 'finding' | 'all'; onView: (alert: Alert) => void }) {
   const api = useNetcapApi();
   const [offset, setOffset] = useState(0);
@@ -709,7 +727,7 @@ function GroupAlerts({ groupId, count, kind, onView }: { groupId: string; count:
   const total = data?.totalCount ?? count;
   return (
     <Box sx={{ mt: 2 }}><Typography variant="subtitle2" fontWeight="bold" gutterBottom>{i18nText("ui:m_1f88304c2357bb0a6512", { arg0: total.toLocaleString(getUILocale()) })}</Typography><Table size="small"><TableHead><TableRow><TableCell>{i18nText("ui:m_f68524a5a2e8c875738d")}</TableCell><TableCell>{i18nText("ui:m_e540837f52427c6b32ef")}</TableCell><TableCell>{i18nText("ui:m_c687f3a957a05117cce7")}</TableCell><TableCell>{i18nText("ui:m_cf025c2b66b1d8e97700")}</TableCell><TableCell /></TableRow></TableHead><TableBody>{alerts.map(alert => (
-      <TableRow key={alert.alertId}><TableCell>{displayTimestamp(alert.timestamp, 'nanoseconds')}</TableCell><TableCell sx={{ fontFamily: 'monospace' }}>{alert.srcIP || alert.deviceMAC || '-'}</TableCell><TableCell sx={{ fontFamily: 'monospace' }}>{alert.dstIP || '-'}</TableCell><TableCell>{alert.resolved && <Chip label={i18nText("ui:m_6409fda6c1b6bad4d325")} size="small" color="success" variant="outlined" />}</TableCell><TableCell align="right"><Tooltip title={i18nText("ui:m_0e07624e3854b301c0e2")}><IconButton size="small" aria-label={i18nText("ui:m_0e07624e3854b301c0e2")} onClick={() => onView(alert)}><VisibilityIcon fontSize="small" /></IconButton></Tooltip></TableCell></TableRow>
+      <TableRow key={alert.alertId}><TableCell>{formatAlertTime(alert.timestamp)}</TableCell><TableCell sx={{ fontFamily: 'monospace' }}>{alert.srcIP || alert.deviceMAC || '-'}</TableCell><TableCell sx={{ fontFamily: 'monospace' }}>{alert.dstIP || '-'}</TableCell><TableCell>{alert.resolved && <Chip label={i18nText("ui:m_6409fda6c1b6bad4d325")} size="small" color="success" variant="outlined" />}</TableCell><TableCell align="right"><Tooltip title={i18nText("ui:m_0e07624e3854b301c0e2")}><IconButton size="small" aria-label={i18nText("ui:m_0e07624e3854b301c0e2")} onClick={() => onView(alert)}><VisibilityIcon fontSize="small" /></IconButton></Tooltip></TableCell></TableRow>
     ))}</TableBody></Table><Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, mt: 1 }}><Typography variant="caption" color="text.secondary">{i18nText("ui:m_6fa96ac45775b8cea8af", { arg0: total === 0 ? 0 : offset + 1, arg1: Math.min(offset + GROUP_ALERTS_PAGE, total), arg2: total })}</Typography><Button size="small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - GROUP_ALERTS_PAGE))}>{i18nText("ui:m_ff496f592bb0ad0ee2c7")}</Button><Button size="small" disabled={offset + GROUP_ALERTS_PAGE >= total} onClick={() => setOffset(offset + GROUP_ALERTS_PAGE)}>{i18nText("ui:m_d169a90acabd9d48bf7b")}</Button></Box></Box>
   );
 }

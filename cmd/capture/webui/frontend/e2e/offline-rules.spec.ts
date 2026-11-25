@@ -8,6 +8,7 @@ const metadata: OfflineAlertMetadata = {
   group: { SrcIP: '192.0.2.1', DstPort: { type: 'int32', value: '443' } }, count: 2, first: '1794000000000000001', last: '1794000000000000003', windowNs: '60000000000',
   contributors: [{ file: 'TCP.ncap.gz', ordinal: '9007199254740993', sha256: 'record-digest', timestamp: '1794000000000000001' }], contributorsTruncated: false,
 };
+const fixtureAlert = { timestamp: 1794000000000, firstSeenNs: '1794000000000000001', lastSeenNs: '1794000001000000003', count: 2, name: 'HTTPS fixture', description: 'Synthetic offline alert', ruleName: 'HTTPS fixture', recordType: 'TCP', severity: 'medium', tags: [], mitre: '', srcIP: '192.0.2.1', dstIP: '192.0.2.2', matchedRecord: '{"DstPort":443}', ruleExpression: 'DstPort == 443', threshold: 2, thresholdWindow: 60, resolved: false, alertId: 'event-fixture', groupedEvaluation: metadata };
 
 async function backend(page: Page, baseURL: string) {
   const calls: { method: string; path: string; query: string; body: any }[] = [];
@@ -47,9 +48,12 @@ async function backend(page: Page, baseURL: string) {
       case 'GET /api/network-detection': json = { schema: 1, active: false, events: 0, alerts: 0 }; break;
       case 'GET /api/alerts/stats': json = { totalAlerts: 1, groupCount: 1, bySeverity: { medium: 1 }, byRule: { 'HTTPS fixture': 1 }, recentAlerts: [], criticalAlerts: 0, lastUpdate: 1794000000 }; break;
       case 'GET /api/alerts/grouped': {
-        const alert = { timestamp: 1794000000000000000, name: 'HTTPS fixture', description: 'Synthetic offline alert', ruleName: 'HTTPS fixture', recordType: 'TCP', severity: 'medium', tags: [], mitre: '', srcIP: '192.0.2.1', dstIP: '192.0.2.2', matchedRecord: '{"DstPort":443}', ruleExpression: 'DstPort == 443', threshold: 2, thresholdWindow: 60, resolved: false, alertId: 'event-fixture', groupedEvaluation: metadata };
-        json = { groups: [{ ...alert, groupId: 'group-fixture', count: 1, firstSeen: alert.timestamp, lastSeen: alert.timestamp, uniqueSrcIPs: [alert.srcIP], uniqueDstIPs: [alert.dstIP], uniqueSrcPorts: [], uniqueDstPorts: ['443'], sampleAlerts: [alert], resolvedCount: 0 }], totalCount: 1, groupCount: 1 }; break;
+        const alert = fixtureAlert;
+        json = { groups: [{ ...alert, groupId: 'group-fixture', count: 1, firstSeen: alert.timestamp, lastSeen: alert.timestamp + 1000, uniqueSrcIPs: [alert.srcIP], uniqueDstIPs: [alert.dstIP], uniqueSrcPorts: [], uniqueDstPorts: ['443'], sampleAlerts: [alert], resolvedCount: 0 }], totalCount: 1, groupCount: 1 }; break;
       }
+      case 'GET /api/alerts':
+        if (url.searchParams.get('groupId') !== 'group-fixture') { unexpected.push(req.url()); return route.abort(); }
+        json = { alerts: [fixtureAlert], totalCount: 1 }; break;
       default: unexpected.push(key); return route.abort();
     }
     return route.fulfill({ status, json });
@@ -199,12 +203,19 @@ for (const flag of ['processing', 'live'] as const) {
   });
 }
 
-test('ui-mocked: Alerts sample preserves string-valued group and nanosecond audit metadata exactly', async ({ page, baseURL }) => {
+test('ui-mocked: Alerts member preserves capture dates and exact nanosecond ranges', async ({ page, baseURL }) => {
   const b = await backend(page, baseURL!);
+  await page.setViewportSize({ width: 1600, height: 900 });
   await page.goto('/alerts');
-  await page.getByRole('row').filter({ hasText: 'HTTPS fixture' }).click();
-  await page.getByRole('button', { name: 'View Sample 1', exact: true }).click();
+  const group = page.getByRole('row').filter({ hasText: 'HTTPS fixture' });
+  await expect(group.getByRole('cell', { name: 'Nov 6, 2026, 9:20:00 PM UTC' })).toBeVisible();
+  await expect(group.getByRole('cell', { name: 'Nov 6, 2026, 9:20:01 PM UTC' })).toBeVisible();
+  await group.getByRole('cell', { name: 'Nov 6, 2026, 9:20:00 PM UTC' }).click();
+  await expect(page.getByRole('cell', { name: 'Nov 6, 2026, 9:20:00 PM UTC', exact: true })).toHaveCount(2);
+  await page.getByRole('button', { name: 'Details', exact: true }).click();
   const dialog = page.getByRole('dialog');
+  await expect(dialog.getByText('Nov 6, 2026, 9:20:00 PM UTC', { exact: true })).toBeVisible();
+  await expect(dialog.getByText(/21:20:00\.000000001 UTC.*21:20:01\.000000003 UTC/)).toBeVisible();
   await expect(dialog.getByText('2 matching records · rule fixture')).toBeVisible();
   const pre = dialog.locator('pre').filter({ hasText: 'event-fixture' });
   expect(JSON.parse(await pre.innerText())).toEqual(metadata);
