@@ -189,6 +189,7 @@ func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-ch
 		return nil, err
 	}
 	defer func() { err = errors.Join(err, writer.Close()) }()
+	findingWriter := s.findingAlertWriter(dir, stop, selected, writer)
 	results = make([]RuleExecResult, len(selected))
 	engines := make([]*rules.AuditReplay, len(selected))
 	groups := make(map[string][]int)
@@ -209,7 +210,7 @@ func (s *Server) replayManualRules(dir string, selected []*rules.Rule, stop <-ch
 			if ruleReplayCanceled(stop, s.shutdownChan) {
 				return results, errAnalysisStopping
 			}
-			engine, err := rules.NewAuditReplay(&rules.Config{Rules: []*rules.Rule{selected[i]}}, writer)
+			engine, err := rules.NewAuditReplay(&rules.Config{Rules: []*rules.Rule{selected[i]}}, findingWriter)
 			if err != nil {
 				results[i].Error = err.Error()
 				continue

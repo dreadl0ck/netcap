@@ -136,10 +136,58 @@ func TestReplayFileEvidenceFlushesAtCapacityWithoutMixingPairs(t *testing.T) {
 	if len(writer.alerts) != 1 || writer.alerts[0].DstIP != "2001:db8::1" || !strings.Contains(writer.alerts[0].Examples[1], `"flushedEarly":true`) {
 		t.Fatal("expected the oldest finding to flush at capacity")
 	}
+	later := replayArtifact(maxPendingFileFindings+2, -1)
+	later.DstIP = "2001:db8::1"
+	if n, err := replay.Evaluate(later); n != 1 || err != nil {
+		t.Fatalf("reopening an evicted pair: %d alerts, %v", n, err)
+	}
 	if n, err := replay.Finalize(); n != maxPendingFileFindings || err != nil {
 		t.Fatalf("EOF: %d, %v", n, err)
 	}
-	if len(writer.alerts) != maxPendingFileFindings+1 || len(writer.alerts[1].Examples) != 0 {
-		t.Fatal("file findings were lost or evidence leaked into a different endpoint pair")
+	last := writer.alerts[len(writer.alerts)-1]
+	if len(writer.alerts) != maxPendingFileFindings+2 || last.DstIP != later.DstIP || !strings.Contains(last.MatchedRecord, later.Hashes.SHA256) {
+		t.Fatal("later hash for the evicted pair was lost")
+	}
+}
+
+func TestReplayFileEvidenceKeepsHashesAfterRecordProjection(t *testing.T) {
+	writer := new(MockAlertWriter)
+	replay, err := NewAuditReplay(&Config{Rules: []*Rule{replayArtifactRule()}}, writer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, second := replayArtifact(1, 1), replayArtifact(2, 2)
+	first.Source = strings.Repeat("x", maxPendingFileRecordBytes+1)
+	for _, f := range []*types.File{first, second} {
+		if n, err := replay.Evaluate(f); n != 0 || err != nil {
+			t.Fatalf("evaluate: %d, %v", n, err)
+		}
+	}
+	if n, err := replay.Finalize(); n != 1 || err != nil {
+		t.Fatalf("EOF: %d, %v", n, err)
+	}
+	row := writer.alerts[0]
+	if !strings.Contains(row.MatchedRecord, `"MatchedRecordOmitted":true`) || len(row.Examples) != 3 ||
+		!strings.Contains(row.Examples[0], first.Hashes.SHA256) || !strings.Contains(row.Examples[1], second.Hashes.SHA256) ||
+		!strings.Contains(row.Examples[2], `"matchedRecordProjected":true`) {
+		t.Fatalf("missing projected record or hash evidence: %+v", row)
+	}
+}
+
+func TestReplayFileEvidenceSeparatesIPv6Pairs(t *testing.T) {
+	writer := new(MockAlertWriter)
+	replay, err := NewAuditReplay(&Config{Rules: []*Rule{replayArtifactRule()}}, writer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, pair := range [][2]string{{"2001:db8::1", "2:2001:db8::3"}, {"2001:db8::1:2", "2001:db8::3"}} {
+		f := replayArtifact(int64(i+1), i)
+		f.SrcIP, f.DstIP = pair[0], pair[1]
+		if _, err := replay.Evaluate(f); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n, err := replay.Finalize(); n != 2 || err != nil {
+		t.Fatalf("distinct IPv6 pairs: %d alerts, %v", n, err)
 	}
 }

@@ -671,7 +671,9 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                     </Typography><Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>{(selectedAlert.tags || []).map((tag) => (
                         <Chip key={tag} label={tag} size="small" />
                       ))}</Box></Box>
-                )}{(selectedAlert.count ?? 0) > 1 && <Box><Typography variant="subtitle2" color="text.secondary">{i18nText("ui:m_c8f9cd63288678efe780", { arg0: selectedAlert.count })}</Typography>{selectedAlert.firstSeenNs && selectedAlert.lastSeenNs && <Typography variant="body2">{formatTimestamp(Number(selectedAlert.firstSeenNs), 'nanoseconds')} – {formatTimestamp(Number(selectedAlert.lastSeenNs), 'nanoseconds')}</Typography>}{(selectedAlert.examples || []).length > 0 && <Box component="pre" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12, maxHeight: 240, overflow: 'auto' }}>{(selectedAlert.examples || []).join('\n')}</Box>}</Box>}{selectedAlert.groupedEvaluation && <Box><Typography variant="subtitle2">{i18nText("ui:m_d607679de2b23948c496")}</Typography><Typography variant="body2">{i18nRichText("ui:m_79f12a5a00887e8b8f2d", { arg0: selectedAlert.groupedEvaluation.count, arg1: selectedAlert.groupedEvaluation.ruleId })}</Typography><Box component="pre" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12 }}>{JSON.stringify(selectedAlert.groupedEvaluation, null, 2)}</Box></Box>}{selectedAlert.matchedRecord && (
+                )}{(selectedAlert.count ?? 0) > 0 && <Box><Typography variant="subtitle2" color="text.secondary">{i18nText("ui:m_c8f9cd63288678efe780", { arg0: selectedAlert.count })}</Typography>{selectedAlert.firstSeenNs && selectedAlert.lastSeenNs && <Typography variant="body2">{formatTimestamp(Number(selectedAlert.firstSeenNs), 'nanoseconds')} – {formatTimestamp(Number(selectedAlert.lastSeenNs), 'nanoseconds')}</Typography>}</Box>}
+                {!!selectedAlert.examples?.length && <AlertEvidenceExamples examples={selectedAlert.examples} />}
+                {selectedAlert.groupedEvaluation && <Box><Typography variant="subtitle2">{i18nText("ui:m_d607679de2b23948c496")}</Typography><Typography variant="body2">{i18nRichText("ui:m_79f12a5a00887e8b8f2d", { arg0: selectedAlert.groupedEvaluation.count, arg1: selectedAlert.groupedEvaluation.ruleId })}</Typography><Box component="pre" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12 }}>{JSON.stringify(selectedAlert.groupedEvaluation, null, 2)}</Box></Box>}{selectedAlert.matchedRecord && (
                   <Box><Typography variant="subtitle2" color="text.secondary" gutterBottom>
                       {i18nText("ui:m_8771965c4afc3da2f3e2")}
                     </Typography><Paper sx={{
@@ -701,6 +703,21 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
 const GROUP_ALERTS_PAGE = 10;
 
 // Pages through every alert of a group; the group summary keeps only samples.
+function AlertEvidenceExamples({ examples }: { examples: string[] }) {
+  const matched: string[] = [];
+  const related: string[] = [];
+  examples.forEach(example => {
+    let kind: string | undefined;
+    try { kind = JSON.parse(example)?.kind; } catch { /* legacy examples may be plain text */ }
+    (kind === 'related-evidence' || kind === 'related-evidence-limit' ? related : matched).push(example);
+  });
+  const style = { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12, maxHeight: 240, overflow: 'auto' } as const;
+  return <>
+    {!!matched.length && <Box component="pre" sx={style}>{matched.join('\n')}</Box>}
+    {!!related.length && <Box><Typography variant="subtitle2" color="text.secondary">{i18nText("ui:m_e88c8ee8b22fc69dbf66")}</Typography><Box component="pre" sx={style}>{related.join('\n')}</Box></Box>}
+  </>;
+}
+
 function GroupAlerts({ groupId, count, kind, onView }: { groupId: string; count: number; kind: 'finding' | 'all'; onView: (alert: Alert) => void }) {
   const api = useNetcapApi();
   const [offset, setOffset] = useState(0);

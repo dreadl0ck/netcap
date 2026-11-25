@@ -48,7 +48,7 @@ type Engine struct {
 	replayFiles           *replayFileEvidence // owned by the serial AuditReplay
 
 	// Deduplication tracking
-	recentAlerts map[string]int64 // map[alertKey]lastSeen
+	recentAlerts map[alertKey]int64
 	dedupWindow  time.Duration
 	mu           sync.RWMutex
 
@@ -209,7 +209,7 @@ func NewEngineFromConfig(config *Config, alertWriter AlertWriter) (*Engine, erro
 		plan:              compiledRulePlan(config),
 		alertWriter:       alertWriter,
 		clock:             time.Now,
-		recentAlerts:      make(map[string]int64),
+		recentAlerts:      make(map[alertKey]int64),
 		dedupWindow:       5 * time.Minute, // Default 5 minute deduplication window
 		ruleCounters:      make(map[string]*rateCounter),
 		rateLimit:         100, // Default 100 alerts per minute per rule
@@ -514,13 +514,19 @@ func isNilAuditRecord(record types.AuditRecord) bool {
 	return !v.IsValid() || v.Kind() == reflect.Pointer && v.IsNil()
 }
 
+type alertKey struct{ rule, src, dst, recordType string }
+
+func dedupKey(alert *types.Alert) alertKey {
+	return alertKey{alert.RuleName, alert.SrcIP, alert.DstIP, alert.RecordType}
+}
+
 // isDuplicate checks if an alert is a duplicate within the deduplication window.
 func (e *Engine) isDuplicate(alert *types.Alert, now int64) bool {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
 	// Create a key for deduplication
-	key := fmt.Sprintf("%s:%s:%s:%s", alert.RuleName, alert.SrcIP, alert.DstIP, alert.RecordType)
+	key := dedupKey(alert)
 
 	lastSeen, exists := e.recentAlerts[key]
 
@@ -829,7 +835,7 @@ func (e *Engine) UpdateConfig(config *Config) error {
 	e.scopedEntries = 0
 	e.grouped = nil
 	e.dedupe = nil
-	e.recentAlerts = make(map[string]int64)
+	e.recentAlerts = make(map[alertKey]int64)
 	e.ruleCounters = make(map[string]*rateCounter)
 	e.mu.Unlock()
 

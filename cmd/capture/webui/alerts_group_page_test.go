@@ -141,6 +141,26 @@ func TestGroupedAlertPagesPreserveObservedPorts(t *testing.T) {
 	}
 }
 
+func TestGroupedFileFindingsUseObservedRange(t *testing.T) {
+	dir := t.TempDir()
+	const firstNS, lastNS = int64(1700000000000000421), int64(1700000025342000999)
+	writeTimelineAuditFile(t, dir, "Alert", types.Type_NC_Alert, []proto.Message{
+		&types.Alert{RuleName: "files", Severity: "high", RecordType: "NC_File", Timestamp: firstNS,
+			FirstSeen: firstNS, LastSeen: lastNS, Count: 7, SrcIP: "192.0.2.1", DstIP: "192.0.2.2"},
+		&types.Alert{RuleName: "files", Severity: "high", Timestamp: firstNS + 1e9, SrcIP: "192.0.2.1", DstIP: "192.0.2.2"},
+	})
+	w := httptest.NewRecorder()
+	(&Server{outDir: dir}).handleGroupedAlerts(w, httptest.NewRequest("GET", "/api/alerts/grouped?mcpPage=true", nil))
+	var page GroupedAlertsResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &page); err != nil || w.Code != 200 || len(page.Groups) != 1 {
+		t.Fatalf("expected one group: %d %s (%v)", w.Code, w.Body, err)
+	}
+	group := page.Groups[0]
+	if group.Count != 2 || group.FirstSeen != firstNS/1e6 || group.LastSeen != lastNS/1e6 {
+		t.Fatalf("unexpected grouped range or row count: %+v", group)
+	}
+}
+
 func TestGroupedSearchFindsHiddenMembersAndMemberPagesAreComplete(t *testing.T) {
 	dir := t.TempDir()
 	var alerts []proto.Message

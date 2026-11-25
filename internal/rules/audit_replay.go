@@ -23,7 +23,11 @@ func NewAuditReplay(config *Config, writer AlertWriter) (*AuditReplay, error) {
 	}
 	replay := &AuditReplay{engine: engine}
 	engine.projectReplayEvidence = true
-	engine.replayFiles = &replayFileEvidence{writer: writer, window: engine.dedupWindow}
+	engine.replayFiles = &replayFileEvidence{writer: writer, window: engine.dedupWindow, reopen: func(key alertKey) {
+		engine.mu.Lock()
+		delete(engine.recentAlerts, key)
+		engine.mu.Unlock()
+	}}
 	engine.clock = func() time.Time { return time.Unix(0, replay.watermark).UTC() }
 	return replay, nil
 }

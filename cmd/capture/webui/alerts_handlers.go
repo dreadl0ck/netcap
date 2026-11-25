@@ -790,6 +790,7 @@ func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter st
 	}
 
 	key := newAlertGroupKey(alert.RuleName, alert.Severity, alert.Kind, alert.SrcIP, alert.DstIP)
+	first, last := groupedAlertTimes(alert)
 
 	group, exists := a.groups[key]
 	srcPort, dstPort := groupedAlertPorts(alert)
@@ -829,8 +830,8 @@ func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter st
 			Threshold:       alert.Threshold,
 			ThresholdWindow: alert.ThresholdWindow,
 			Count:           0,
-			FirstSeen:       alert.Timestamp,
-			LastSeen:        alert.Timestamp,
+			FirstSeen:       first,
+			LastSeen:        last,
 			UniqueSrcIPs:    []string{},
 			UniqueDstIPs:    []string{},
 			UniqueSrcPorts:  []string{},
@@ -849,12 +850,8 @@ func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter st
 	if alert.Resolved {
 		group.ResolvedCount++
 	}
-	if alert.Timestamp < group.FirstSeen {
-		group.FirstSeen = alert.Timestamp
-	}
-	if alert.Timestamp > group.LastSeen {
-		group.LastSeen = alert.Timestamp
-	}
+	group.FirstSeen = min(group.FirstSeen, first)
+	group.LastSeen = max(group.LastSeen, last)
 
 	// Collect unique IPs and ports; a flood group can have one per alert.
 	for i, list := range []*[]string{&group.UniqueSrcIPs, &group.UniqueDstIPs, &group.UniqueSrcPorts, &group.UniqueDstPorts} {
@@ -912,6 +909,19 @@ func sortGroupedAlerts(groups []GroupedAlert, sortBy, sortOrder string) {
 		return cmp.Or(order, cmp.Compare(a.LastSeen, b.LastSeen),
 			cmp.Compare(a.RuleName, b.RuleName), cmp.Compare(a.Severity, b.Severity), cmp.Compare(a.GroupID, b.GroupID)) < 0
 	})
+}
+
+func groupedAlertTimes(alert AlertResponse) (first, last int64) {
+	first, last = alert.Timestamp, alert.Timestamp
+	if alert.Count > 0 {
+		start, errStart := strconv.ParseInt(alert.FirstSeenNs, 10, 64)
+		end, errEnd := strconv.ParseInt(alert.LastSeenNs, 10, 64)
+		if errStart == nil && errEnd == nil && start <= end {
+			first = min(first, start/1_000_000)
+			last = max(last, end/1_000_000)
+		}
+	}
+	return first, last
 }
 
 func groupedAlertPorts(alert AlertResponse) (src, dst string) {

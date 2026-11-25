@@ -17,15 +17,9 @@ const (
 	maxFileMatchExamples      = 32
 )
 
-type fileFindingKey struct{ rule, src, dst string }
-
-func fileFindingOf(alert *types.Alert) fileFindingKey {
-	return fileFindingKey{alert.RuleName, alert.SrcIP, alert.DstIP}
-}
-
 func fileForReplayEvidence(rule *Rule, record types.AuditRecord) *types.File {
 	file, ok := record.(*types.File)
-	if !ok || file.Timestamp <= 0 || file.SrcIP == "" || file.DstIP == "" {
+	if !ok || file.Timestamp <= 0 || file.SrcIP == "" || file.DstIP == "" || len(file.SrcIP) > 128 || len(file.DstIP) > 128 {
 		return nil
 	}
 	if rule.Threshold > 1 || rule.DistinctField != "" || rule.Sequence != nil || len(rule.DedupeBy) != 0 || len(rule.Actions) != 0 {
@@ -50,11 +44,12 @@ type fileMatchIdentity struct {
 }
 
 type fileFinding struct {
-	alert    *types.Alert
-	examples map[fileMatchIdentity]struct{}
-	count    uint64
-	last     int64
-	omitted  uint64
+	alert     *types.Alert
+	examples  map[fileMatchIdentity]struct{}
+	count     uint64
+	last      int64
+	omitted   uint64
+	projected bool
 }
 
 func (f *fileFinding) observe(file *types.File) {
@@ -100,13 +95,14 @@ func (f *fileFinding) observe(file *types.File) {
 type replayFileEvidence struct {
 	writer  AlertWriter
 	window  time.Duration
-	pending map[fileFindingKey]*list.Element
+	reopen  func(alertKey)
+	pending map[alertKey]*list.Element
 	order   list.List
 	bytes   int
 }
 
 func (r *replayFileEvidence) observeDuplicate(alert *types.Alert, file *types.File) {
-	if elem := r.pending[fileFindingOf(alert)]; elem != nil {
+	if elem := r.pending[dedupKey(alert)]; elem != nil {
 		finding := elem.Value.(*fileFinding)
 		if file.Timestamp >= finding.alert.Timestamp && uint64(file.Timestamp)-uint64(finding.alert.Timestamp) < uint64(r.window) {
 			finding.observe(file)
@@ -116,7 +112,7 @@ func (r *replayFileEvidence) observeDuplicate(alert *types.Alert, file *types.Fi
 
 func (r *replayFileEvidence) start(alert *types.Alert, file *types.File) (int, error) {
 	n := 0
-	key := fileFindingOf(alert)
+	key := dedupKey(alert)
 	if previous := r.pending[key]; previous != nil {
 		// An out-of-order replay may start this pair's next window before the
 		// front of the queue expires. Commit the previous finding first.
@@ -125,15 +121,12 @@ func (r *replayFileEvidence) start(alert *types.Alert, file *types.File) (int, e
 		}
 		n++
 	}
-	size := len(alert.MatchedRecord)
-	if size > maxPendingFileRecordBytes {
-		if err := r.writer.WriteAlert(alert); err != nil {
-			return n, err
-		}
-		return n + 1, nil
-	}
+	// Apply the writer's projection before buffering, so a large first
+	// record can still retain the hashes of later matches.
+	bounded := alert.WithBoundedMatchedRecord()
+	size := len(bounded.MatchedRecord)
 	if r.pending == nil {
-		r.pending = make(map[fileFindingKey]*list.Element)
+		r.pending = make(map[alertKey]*list.Element)
 	}
 	for len(r.pending) == maxPendingFileFindings || r.bytes+size > maxPendingFileRecordBytes {
 		if err := r.emit(r.order.Front(), true); err != nil {
@@ -141,7 +134,7 @@ func (r *replayFileEvidence) start(alert *types.Alert, file *types.File) (int, e
 		}
 		n++
 	}
-	finding := &fileFinding{alert: alert, examples: make(map[fileMatchIdentity]struct{})}
+	finding := &fileFinding{alert: bounded, examples: make(map[fileMatchIdentity]struct{}), projected: bounded != alert}
 	finding.observe(file)
 	r.pending[key] = r.order.PushBack(finding)
 	r.bytes += size
@@ -165,18 +158,19 @@ func (r *replayFileEvidence) flush(at int64, all bool) (int, error) {
 
 func (r *replayFileEvidence) emit(elem *list.Element, early bool) error {
 	finding := elem.Value.(*fileFinding)
-	key := fileFindingOf(finding.alert)
+	key := dedupKey(finding.alert)
 	alert := *finding.alert
-	if finding.count > 1 || early {
+	if finding.count > 1 || early || finding.projected {
 		alert.Count, alert.FirstSeen, alert.LastSeen = finding.count, alert.Timestamp, finding.last
 		wire, _ := json.Marshal([3]string{key.rule, key.src, key.dst})
 		alert.AggregateKey = fmt.Sprintf("file:%x", sha256.Sum256(wire))
-		if finding.omitted != 0 || early {
+		if finding.omitted != 0 || early || finding.projected {
 			status, _ := json.Marshal(struct {
-				Kind    string `json:"kind"`
-				Omitted uint64 `json:"omittedMatches,omitempty"`
-				Early   bool   `json:"flushedEarly,omitempty"`
-			}{"file-evidence-limit", finding.omitted, early})
+				Kind      string `json:"kind"`
+				Omitted   uint64 `json:"omittedMatches,omitempty"`
+				Early     bool   `json:"flushedEarly,omitempty"`
+				Projected bool   `json:"matchedRecordProjected,omitempty"`
+			}{"file-evidence-limit", finding.omitted, early, finding.projected})
 			alert.Examples = append(alert.Examples, string(status))
 		}
 	} else {
@@ -188,5 +182,10 @@ func (r *replayFileEvidence) emit(elem *list.Element, early bool) error {
 	r.bytes -= len(alert.MatchedRecord)
 	delete(r.pending, key)
 	r.order.Remove(elem)
+	if early {
+		// A later match must be able to start another segment rather than
+		// being suppressed against a finding we can no longer update.
+		r.reopen(key)
+	}
 	return nil
 }
