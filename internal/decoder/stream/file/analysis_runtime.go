@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -73,23 +74,24 @@ type analysisJob struct {
 	size  int64
 }
 type analysisRuntime struct {
-	mu               sync.Mutex
-	ctx              context.Context
-	cancel           context.CancelFunc
-	wg               sync.WaitGroup
-	jobs             chan analysisJob
-	closing          bool
-	directory        string
-	cfg              *Config
-	report           AnalysisReport
-	cache            map[string]*analysisEntry
-	cacheBytes       int
-	queuedBytes      int64
-	yara             yaraBackend
-	magika           *magika.Classifier
-	persistenceError error
-	sharedBudgetLoss bool
-	analyzerError    bool
+	mu                         sync.Mutex
+	ctx                        context.Context
+	cancel                     context.CancelFunc
+	wg                         sync.WaitGroup
+	jobs                       chan analysisJob
+	closing                    bool
+	directory                  string
+	cfg                        *Config
+	report                     AnalysisReport
+	cache                      map[string]*analysisEntry
+	cacheBytes                 int
+	queuedBytes                int64
+	yara                       yaraBackend
+	magika                     *magika.Classifier
+	persistenceError           error
+	sharedBudgetLoss           bool
+	analyzerError              bool
+	unqualifiedExtractionError bool
 }
 
 type yaraBackend interface {
@@ -444,6 +446,7 @@ func RecordExtractionIssue(err error) {
 		m.mu.Lock()
 		m.report.ExtractionIssues = appendIssue(m.report.ExtractionIssues, err.Error())
 		m.sharedBudgetLoss = m.sharedBudgetLoss || errors.Is(err, errSharedArtifactBudget)
+		m.unqualifiedExtractionError = m.unqualifiedExtractionError || !artifactCoverageOnly(err)
 		m.mu.Unlock()
 	}
 }
@@ -480,6 +483,48 @@ func (artifactBudgetCoverageError) Error() string {
 func (artifactBudgetCoverageError) Unwrap() error { return errSharedArtifactBudget }
 func (artifactBudgetCoverageError) ExitCode() int { return 2 }
 
+type artifactInputCoverageError struct{}
+
+func (artifactInputCoverageError) Error() string {
+	return "artifact input was incomplete; inspect " + AnalysisReportFile
+}
+func (artifactInputCoverageError) Unwrap() error { return io.ErrUnexpectedEOF }
+func (artifactInputCoverageError) ExitCode() int { return 2 }
+
+// ErrMalformedArtifactInput marks a parser rejection of captured content.
+var ErrMalformedArtifactInput = errors.New("malformed artifact input")
+
+func artifactCoverageOnly(err error) bool {
+	switch err {
+	case io.EOF, io.ErrUnexpectedEOF, errSharedArtifactBudget, errUnsupportedContentEncoding:
+		return true
+	}
+	if _, ok := err.(malformedArtifactInput); ok {
+		return true
+	}
+	switch e := err.(type) {
+	case interface{ Unwrap() []error }:
+		for _, cause := range e.Unwrap() {
+			if !artifactCoverageOnly(cause) {
+				return false
+			}
+		}
+		return true
+	case interface{ Unwrap() error }:
+		return artifactCoverageOnly(e.Unwrap())
+	}
+	return false
+}
+
+type malformedArtifactInput struct{ cause string }
+
+func (e malformedArtifactInput) Error() string {
+	return ErrMalformedArtifactInput.Error() + ": " + e.cause
+}
+func (e malformedArtifactInput) Unwrap() error { return ErrMalformedArtifactInput }
+
+func MalformedArtifactInput(reason string) error { return malformedArtifactInput{reason} }
+
 // FinishAnalysis drains accepted jobs and durably reports incomplete coverage.
 func FinishAnalysis() (analysisErr, persistenceErr error) {
 	analysisLifecycle.Lock()
@@ -514,8 +559,10 @@ func FinishAnalysis() (analysisErr, persistenceErr error) {
 			}
 		}
 	}
-	if m.sharedBudgetLoss && !m.analyzerError {
+	if m.sharedBudgetLoss && !m.analyzerError && !m.unqualifiedExtractionError {
 		analysisErr = artifactBudgetCoverageError{}
+	} else if len(m.report.ExtractionIssues) > 0 && m.report.Rejected == 0 && m.persistenceError == nil && !m.analyzerError && !m.unqualifiedExtractionError && (m.yara != nil || m.magika != nil) {
+		analysisErr = artifactInputCoverageError{}
 	} else if m.report.State == "partial" && (m.yara != nil || m.magika != nil) {
 		analysisErr = fmt.Errorf("artifact processing incomplete; inspect %s", AnalysisReportFile)
 	}

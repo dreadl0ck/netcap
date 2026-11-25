@@ -40,6 +40,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/artifactio"
 	"github.com/dreadl0ck/netcap/internal/delimited"
+	"github.com/dreadl0ck/netcap/internal/networkdetect"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -88,6 +89,7 @@ type AlertResponse struct {
 
 // GroupedAlert represents a deduplicated/grouped alert
 type GroupedAlert struct {
+	DisplayName     string          `json:"displayName"`
 	RuleName        string          `json:"ruleName"`
 	Description     string          `json:"description"`
 	Severity        string          `json:"severity"`
@@ -551,11 +553,11 @@ func (s *Server) handleClearAlerts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	outDir, _ := s.resolveOutDirFromRequest(r)
-	if outDir == "" {
-		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "No output directory selected"})
+	selected, ok := s.writableCapture(w, r)
+	if !ok {
 		return
 	}
+	outDir := selected.OutputDir
 
 	// Delete the alerts file
 	release, available := leaseOfflineMutation(outDir)
@@ -833,6 +835,7 @@ func (a *alertGroups) add(alert AlertResponse, severityFilter, ruleNameFilter st
 	}
 	if !exists {
 		group = &GroupedAlert{
+			DisplayName:     networkdetect.DisplayName(alert.RuleName),
 			RuleName:        alert.RuleName,
 			Description:     alert.Description,
 			Severity:        alert.Severity,

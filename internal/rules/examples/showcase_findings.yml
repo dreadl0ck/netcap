@@ -63,11 +63,61 @@ rules:
     severity: high
     tags: [tor, onion, dns]
     enabled: true
-  - name: Tor-Like Certificate On HTTPS Port
-    description: The TLS server supplied a leaf with distinct generated-looking Tor-style names and no alternative name or organization. Correlate with other Tor evidence.
-    type: TLSCertificate
-    expression: 'CertificateSender == "server" && ChainIndex == 0 && SrcPort == 443 && IsPublicIP(SrcIP) && !IsCA && !IsSelfSigned && SubjectCommonName != IssuerCommonName && len(SubjectAltNames) == 0 && len(SubjectOrganization) == 0 && len(IssuerOrganization) == 0 && MatchesPattern(SubjectCommonName, "(?i)^www[.][a-z2-7]{8,20}[.](com|net)$") && MatchesPattern(IssuerCommonName, "(?i)^www[.][a-z2-7]{8,20}[.](com|net)$")'
+  - name: Tor-Like Relay Certificate
+    description: A public TLS connection carried a Tor-like server certificate. The certificate is supporting evidence; it does not identify the session by itself.
+    type: Connection
+    expression: 'IsPublicIP(DstIP) && TorLikeCertificateSHA256 != "" && !("TOR" in Applications)'
     severity: medium
     tags: [tor, tls, heuristic]
-    dedupe_by: [SrcIP, DstIP, SrcPort]
+    dedupe_by: [SrcIP, DstIP, DstPort]
+    enabled: true
+  - name: Repeated Opaque HTTP Check-In
+    description: Repeated root POSTs with a small opaque body and an algorithmic-looking host. Legitimate telemetry is possible.
+    type: HTTP
+    expression: 'Method == "POST" && URL == "/" && IsPublicIP(DstIP) && ReqContentLength >= 32 && ReqContentLength <= 512 && Referer == "" && len(ReqCookies) == 0 && MatchesPattern(Host, "(?i)^[a-z0-9]{15,32}[.][a-z0-9]{5,12}[.](com|net|org)$") && MatchesPattern(Host, "[0-9]")'
+    severity: medium
+    tags: [http, check-in, c2]
+    threshold: 5
+    threshold_window: 300
+    group_by: [SrcIP, Host]
+    enabled: true
+  - name: Scripted HTTP Ad Interaction
+    description: A scripted ad-interaction client sent a MAC address to a public HTTP destination. This characterizes the traffic, not actual billing impact.
+    type: HTTP
+    expression: 'Method != "" && IsPublicIP(DstIP) && MatchesPattern(UserAgent, "(?i)\\bClickAdsByIE\\b") && MatchesPattern(URL, "(?i)[?&]mac=(?:[0-9a-f]{2}[-:]){5}[0-9a-f]{2}(?:&|$)")'
+    severity: medium
+    tags: [http, scripted-client, ad-fraud]
+    dedupe_by: [SrcIP, DstIP, Host]
+    enabled: true
+  - name: HTTP Check-In On IRC Port
+    description: One client sent decoded HTTP POSTs to multiple servers on an IRC service port. The wire protocol is HTTP.
+    type: HTTP
+    expression: 'Method == "POST" && StatusCode >= 100 && DstPort >= 6660 && DstPort <= 6669 && IsPublicIP(DstIP)'
+    severity: medium
+    tags: [http, protocol-anomaly]
+    distinct_field: DstIP
+    distinct_threshold: 3
+    threshold_window: 1800
+    dedupe_by: [SrcIP, DstPort]
+    dedupe_window: 1800
+    enabled: true
+  - name: Repeated DNS Name Lookup Failure
+    description: One client repeatedly received NXDOMAIN for a long registrable name under an often-abused suffix. Check for retries by a loader or a misconfigured client.
+    type: DNS
+    expression: 'QR && ResponseCode == 3 && SrcPort == 53 && len(Questions) == 1 && MatchesPattern(Questions[0].Name, "(?i)^[a-z0-9-]{12,32}[.](top|gdn|bit|xyz|cc|pw|tk|cyou|buzz|zip|site)[.]?$")'
+    severity: medium
+    tags: [dns, lookup-failure]
+    threshold: 12
+    threshold_window: 300
+    group_by: [DstIP, Questions.Name]
+    enabled: true
+  - name: Repeated Failed TCP Contact On RAT-Associated Port
+    description: Multiple refused or unanswered TCP attempts to a public endpoint on a port associated with legacy RATs. No remote-control session was observed.
+    type: Connection
+    expression: 'TCPInitiatorObserved && IsPrivateIP(SrcIP) && IsPublicIP(DstIP) && DstPort == "4502" && NumSYNFlags > 0 && !Established && (PacketsServerToClient == 0 || NumRSTFlags > 0) && AppPayloadSize64 == 0'
+    severity: medium
+    tags: [rat, attempted-contact]
+    threshold: 3
+    threshold_window: 300
+    group_by: [SrcIP, DstIP, DstPort]
     enabled: true

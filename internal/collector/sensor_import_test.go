@@ -165,6 +165,9 @@ func TestBookScopedSensorImport(t *testing.T) {
 	if err := os.Mkdir(publicStore, 0755); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.Chmod(publicStore, 0755); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := ImportSensorOutput(ctx, bundles["inside"], publicStore, scope); err == nil {
 		t.Fatal("world-readable receiving store accepted")
 	}

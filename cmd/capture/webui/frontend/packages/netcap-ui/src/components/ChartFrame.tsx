@@ -3,6 +3,7 @@ import { useTheme } from '@mui/material/styles';
 import { appearanceTokens, type AppearanceMode } from '../lib/appearance';
 import { getLocale, useLocale, type Locale } from '../lib/i18n';
 import { useLocale as useUILocale } from "../lib/i18n";
+import { scopeCaptureURL } from '../lib/captureSelection';
 
 
 export function chartFrameURL(src: string | undefined, mode: AppearanceMode, locale?: Locale): string | undefined {
@@ -15,7 +16,7 @@ export function chartFrameURL(src: string | undefined, mode: AppearanceMode, loc
   const query = new URLSearchParams(queryAt < 0 ? '' : url.slice(queryAt + 1));
   query.set('theme', mode);
   query.set('locale', locale ?? query.get('locale') ?? getLocale());
-  return `${path}?${query}${hash}`;
+  return scopeCaptureURL(`${path}?${query}${hash}`);
 }
 
 /**

@@ -502,6 +502,7 @@ message Connection {
   // (SYN, SYN-ACK or RST, no data) is never established.
   bool Established = 72;
   bool TCPInitiatorObserved = 73; // A SYN without ACK was observed from SrcIP:SrcPort.
+  string TorLikeCertificateSHA256 = 74; // Candidate certificate from this scoped TCP observation.
 }
 
 //

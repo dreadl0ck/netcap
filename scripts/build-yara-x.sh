@@ -21,18 +21,25 @@ else
 fi
 tar -xzf "$tmp/source.tar.gz" -C "$tmp"
 cd "$tmp/yara-x-$YARA_X_VERSION"
+sysroot=$(rustc +"$YARA_X_RUST_VERSION" --print sysroot)
+separator=$(printf '\037')
+# Alpine supplies the musl target feature through RUSTFLAGS.
+encoded=${CARGO_ENCODED_RUSTFLAGS:-$(printf '%s' "${RUSTFLAGS:-}" | tr ' ' '\037')}
+export CARGO_ENCODED_RUSTFLAGS="${encoded:+$encoded$separator}--remap-path-prefix=$(pwd -P)=/yara-x${separator}--remap-path-prefix=${CARGO_HOME:-$HOME/.cargo}=/cargo${separator}--remap-path-prefix=$sysroot=/rustc-sysroot"
+export CARGO_PROFILE_RELEASE_STRIP=symbols
 cargo +"$YARA_X_RUST_VERSION" build --locked --release -j "${JOBS:-4}" -p yara-x-capi
+artifacts="${CARGO_TARGET_DIR:-target}/release"
 mkdir -p "$PREFIX/lib/pkgconfig" "$PREFIX/include"
 case "$(uname -s)" in
     Darwin)
         library=libyara_x_capi.dylib
-        cp "target/release/$library" "$PREFIX/lib/"
+        cp "$artifacts/$library" "$PREFIX/lib/"
         install_name_tool -id "$PREFIX/lib/$library" "$PREFIX/lib/$library"
         ;;
-    Linux) library=libyara_x_capi.so; cp "target/release/$library" "$PREFIX/lib/" ;;
+    Linux) library=libyara_x_capi.so; cp "$artifacts/$library" "$PREFIX/lib/" ;;
     *) echo 'Unsupported YARA-X platform' >&2; exit 1 ;;
 esac
-cp target/release/libyara_x_capi.a "$PREFIX/lib/"
+cp "$artifacts/libyara_x_capi.a" "$PREFIX/lib/"
 cp capi/include/yara_x.h "$PREFIX/include/"
 # An absolute library avoids earlier -L/opt/homebrew/lib flags selecting an old ABI.
 cat > "$PREFIX/lib/pkgconfig/yara_x_capi.pc" <<EOF

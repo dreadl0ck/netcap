@@ -24,8 +24,9 @@ func TestFlightSimCollectorReplay(t *testing.T) {
 	}
 	var corpus struct {
 		Cases []struct {
-			Name     string   `json:"name"`
-			Expected []string `json:"expected"`
+			Name             string   `json:"name"`
+			Expected         []string `json:"expected"`
+			CapturedExpected []string `json:"capturedExpected"`
 		} `json:"cases"`
 	}
 	if err := json.Unmarshal(data, &corpus); err != nil {
@@ -37,16 +38,14 @@ func TestFlightSimCollectorReplay(t *testing.T) {
 				continue
 			}
 			caseRoot := root
-			expected := tc.Expected
 			if origin == "live" {
 				caseRoot = filepath.Join(root, "live")
-				// These historical captures contain queries without negative replies
-				// and unclassified payload on a cleartext service port, respectively.
-				if tc.Name == "dga" || tc.Name == "cleartext" {
-					expected = nil
-				}
 			}
 			t.Run(origin+"/"+tc.Name, func(t *testing.T) {
+				wantDetectors := tc.Expected
+				if origin == "live" && tc.CapturedExpected != nil {
+					wantDetectors = tc.CapturedExpected
+				}
 				var reference []string
 				for _, workers := range []int{1, 2, 4, 8} {
 					t.Run(fmt.Sprint(workers), func(t *testing.T) {
@@ -70,18 +69,18 @@ func TestFlightSimCollectorReplay(t *testing.T) {
 						}
 						seen := map[string]bool{}
 						for _, s := range semantics {
-							for _, want := range expected {
+							for _, want := range wantDetectors {
 								if len(s) >= len(want) && s[:len(want)] == want {
 									seen[want] = true
 								}
 							}
 						}
-						for _, want := range expected {
+						for _, want := range wantDetectors {
 							if !seen[want] {
 								t.Fatalf("missing %s: %v", want, semantics)
 							}
 						}
-						if len(expected) == 0 && len(semantics) != 0 {
+						if len(wantDetectors) == 0 && len(semantics) != 0 {
 							t.Fatalf("benign alerts: %v", semantics)
 						}
 						statsData, err := os.ReadFile(filepath.Join(out, "NetworkDetection.json"))

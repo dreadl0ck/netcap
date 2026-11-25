@@ -6,6 +6,35 @@ import (
 	"testing"
 )
 
+func TestPublishedInternetExplorer8Applicability(t *testing.T) {
+	path := os.Getenv("NETCAP_TEST_PUBLISHED_VULNDB")
+	if path == "" {
+		t.Skip("set NETCAP_TEST_PUBLISHED_VULNDB to the reviewed schema-2 database")
+	}
+	db, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	rows, err := db.VersionedVulnerabilities("", "IE", "8.0")
+	if err != nil || len(rows) == 0 {
+		t.Fatalf("IE 8 applicability unavailable: rows=%d error=%v", len(rows), err)
+	}
+	correct := false
+	for _, v := range rows {
+		switch v.ID {
+		case "CVE-2002-2435":
+			correct = true // This old CVE explicitly includes version 8.
+		case "CVE-2004-0549", "CVE-2004-2704", "CVE-2005-1829", "CVE-2006-6956":
+			t.Errorf("IE 8 inherited unbounded version match %s", v.ID)
+		}
+	}
+	if !correct {
+		t.Error("the explicit IE 8 match was lost")
+	}
+	t.Logf("IE 8: %d version-qualified CVEs", len(rows))
+}
+
 func leaf(criteria string) Configuration {
 	return Configuration{Nodes: []Node{{Operator: "OR", Matches: []CPEMatch{{Criteria: criteria, Vulnerable: true}}}}}
 }

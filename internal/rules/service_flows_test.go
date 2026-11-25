@@ -110,4 +110,8 @@ func TestServiceRuleUsesConnectionEvidence(t *testing.T) {
 			t.Errorf("observation %q (%d bytes): %d alerts, %v; want %d", tc.id, tc.payload, got, err, tc.want)
 		}
 	}
+	if got, err := replay.Evaluate(&types.Connection{TransportProto: "TCP", SrcIP: "192.0.2.2", DstIP: "192.0.2.1", SrcPort: "110", DstPort: "22",
+		TimestampFirst: 50, CounterSemantics: "tuple-cumulative", Established: true}); err != nil || got != 0 {
+		t.Fatalf("reply-first ephemeral port was reported as SSH: %d, %v", got, err)
+	}
 }

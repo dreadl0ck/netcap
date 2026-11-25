@@ -32,7 +32,7 @@ func parseMIMEMessage(buf []byte) (map[string]string, []*types.MailPart, []mimeA
 	}
 	message, err := stdmail.ReadMessage(bytes.NewReader(buf))
 	if err != nil {
-		return nil, nil, nil, cleanup, err
+		return nil, nil, nil, cleanup, file.MalformedArtifactInput("unreadable MIME message header")
 	}
 	headers := map[string]string{}
 	for k, v := range message.Header {

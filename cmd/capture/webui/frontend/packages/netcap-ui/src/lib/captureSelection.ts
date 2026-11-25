@@ -1,4 +1,4 @@
-const captureEndpoints = /^\/api\/(?:status$|stats$|audit-stats$|showcase-story$|files\/(?:logs|audit|extracted)|extracted-files(?:\/|$)|audit\/|logs(?:\/|$)|menu-counts|alerts(?:\/|-|$)|chart\/|visualize\/|hosts(?:\/|-|$)|devices(?:\/|-|$)|connections(?:\/|-|$)|domains(?:\/|-|$)|services(?:\/|-|$)|software(?:\/|-|$)|http(?:\/|-|$)|fingerprints(?:\/|-|$)|certificates(?:\/|-|$)|secrets(?:\/|-|$)|vulnerabilities(?:\/|-|$)|network-detection|artifact-analysis|investigation\/|behavior(?:\/|-|$)|config$|conversation|rules\/offline\/evaluations|yara\/)/;
+const captureEndpoints = /^\/api\/(?:status$|stats$|audit-stats$|showcase-story$|files\/(?:logs|audit|extracted)|extracted-files(?:\/|$)|audit\/|timeline\/|flows\/|evidence\/|logs(?:\/|$)|menu-counts|alerts(?:\/|-|$)|chart\/|visualize\/|hosts(?:\/|-|$)|devices(?:\/|-|$)|connections(?:\/|-|$)|domains(?:\/|-|$)|services(?:\/|-|$)|software(?:\/|-|$)|http(?:\/|-|$)|fingerprints(?:\/|-|$)|certificates(?:\/|-|$)|secrets(?:\/|-|$)|vulnerabilities(?:\/|-|$)|network-detection|artifact-analysis|investigation\/|behavior(?:\/|-|$)|config$|conversation|rules\/offline\/(?:evaluations|execute)|yara\/)/;
 
 export function selectedSession(): string | null {
   return typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('sessionId');
@@ -9,9 +9,13 @@ export function scopeCaptureURL(input: string): string {
   if (!id) return input;
   const url = new URL(input, window.location.origin);
   const scope = url.searchParams.get('scope');
-  if (url.origin !== window.location.origin || !captureEndpoints.test(url.pathname) ||
-      url.searchParams.has('sessionId') || (scope && scope !== 'current')) return input;
-  url.searchParams.set('sessionId', id);
+  if (url.origin !== window.location.origin || !captureEndpoints.test(url.pathname) || (scope && scope !== 'current')) return input;
+  const explicit = url.searchParams.get('sessionId');
+  if (explicit && explicit !== id) return input;
+  if (!explicit && url.searchParams.has('inputFile')) return input;
+  if (!explicit) url.searchParams.set('sessionId', id);
+  const run = new URLSearchParams(window.location.search).get('runId');
+  if (run && !url.searchParams.has('runId')) url.searchParams.set('runId', run);
   return url.href;
 }
 

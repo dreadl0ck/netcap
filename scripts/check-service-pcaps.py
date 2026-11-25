@@ -101,9 +101,9 @@ def showcase_report(base, captures, rows, data, dpi, strict):
         "WannaCry-ransomware-using-EnternalBlue-exploit.pcap": ["DoublePulsar Backdoor Response", "MS17-010 Probe Response"],
         "snort.log.1426118407.pcap": ["Webshell Command Parameter", "Reverse Shell Indicator In HTTP Request"],
         "traffic-from-malspam-pushing-Dreambot.pcap": ["Onion Destination In DNS", "Onion Destination In Cleartext HTTP"],
-        "Blank-Slate-campaign-pushes-Sage-2.2-ransomware.pcap": ["udp.fanout"],
-        "botnet-capture-20110810-neris.pcap": ["smtp.fanout", "Host Identity In HTTP Check-in"],
-        "EITest-Rig-EK-traffic.pcap": ["Exploit Kit Plugin Content", "Tor-Like Certificate On HTTPS Port"],
+        "Blank-Slate-campaign-pushes-Sage-2.2-ransomware.pcap": ["udp.fanout", "Repeated Opaque HTTP Check-In"],
+        "botnet-capture-20110810-neris.pcap": ["smtp.fanout", "Host Identity In HTTP Check-in", "Scripted HTTP Ad Interaction", "HTTP Check-In On IRC Port"],
+        "EITest-Rig-EK-traffic.pcap": ["Exploit Kit Plugin Content", "Tor-Like Relay Certificate", "Repeated DNS Name Lookup Failure", "http.flash-referral"],
         "Hancitor-malspam-1st-run.pcap": ["Public IP Lookup Service", "Credential Stealer Gate POST"],
         "hancitor-malspam-traffic.pcap": ["Public IP Lookup Service", "Credential Stealer Gate POST"],
         "KaiXin-EK-2nd-run.pcap": ["Executable Downloaded From Internet", "Host Identity In HTTP Check-in"],
@@ -113,6 +113,7 @@ def showcase_report(base, captures, rows, data, dpi, strict):
                  "Brazil-malspam-Solicitacao-de-Orcamento-traffic-example",
                  "Portuguese-invoice-malspam-traffic", "whatsapp-malspam-traffic"):
         floors[name + ".pcap"] = ["Indy Library HTTP Client"]
+    floors["Brazil-malspam-traffic-example.pcap"].append("Repeated Failed TCP Contact On RAT-Associated Port")
     failed = False
     sources = set()
     for capture in captures:
@@ -144,9 +145,9 @@ def showcase_report(base, captures, rows, data, dpi, strict):
             if strict and name == "ultimate-PCAP-v20250325.pcapng":
                 if alerts.get("DNS on Unusual Port", 0):
                     errors.append("local discovery or unrelated UDP triggered unusual DNS")
-                if alerts.get("Tor-Like Certificate On HTTPS Port", 0):
+                if alerts.get("Tor-Like Relay Certificate", 0):
                     errors.append("unrelated TLS traffic triggered the Tor heuristic")
-            if strict and name in {"snort.log.1426118407.pcap", "traffic-from-malspam-pushing-Dreambot.pcap", "ultimate-PCAP-v20250325.pcapng"} and alerts.get("Non-TLS Traffic on Port 443", 0):
+            if strict and alerts.get("Non-TLS Traffic on Port 443", 0):
                 errors.append("unexpected non-TLS finding on 443")
             if strict and name == "mail.pcap" and alerts.get("Cleartext Password Captured", 0) > 20:
                 errors.append("credential findings exceeded the noise budget")
@@ -166,10 +167,15 @@ def showcase_report(base, captures, rows, data, dpi, strict):
                 next_page = get(f"{base}/api/fingerprints?{query}&offset=1&limit=1&sortField=count")
                 if pages["fingerprints"] > 1 and len(next_page.get("fingerprints", [])) != 1:
                     errors.append("fingerprint pagination failed")
+                with urllib.request.urlopen(f"{base}/api/fingerprints/type-distribution?{query}", timeout=10) as response:
+                    if b"Fingerprint Type Distribution" not in response.read(1 << 20):
+                        errors.append("fingerprint chart did not render")
             out = data / "results" / row["sessionId"]
             sizes = [p.stat().st_size for p in out.rglob("*") if p.is_file()]
             if strict and name.startswith("Blank-Slate") and (len(sizes) > 30_000 or sum(sizes) > 300 << 20):
                 errors.append("Sage output exceeded the file or byte budget")
+            if strict and name.startswith("Blank-Slate") and not endpoint("/api/status").get("udpOmittedStreams"):
+                errors.append("missing UDP retention qualification")
             print(json.dumps({"capture": name, "alertCounts": alerts, "auditCount": audit.get("totalRecords"),
                               "rulePack": pack, "outputBytes": sum(sizes), "outputFiles": len(sizes),
                               "findings": [x["rule"] for x in (story or {}).get("findings") or []],
@@ -261,7 +267,8 @@ def main():
         if args.browser and not failed:
             browser_env = {k: env[k] for k in ("PATH", "HOME", "TMPDIR") if k in env}
             subset = {name: {"name": name, "sessionId": rows[name]["sessionId"]}
-                      for name in ("mail.pcap", "smb.pcap", "arp-dns-eth-icmp-ip-udp-goodhttp-gooddns.pcapng")}
+                      for name in ("mail.pcap", "smb.pcap", "arp-dns-eth-icmp-ip-udp-goodhttp-gooddns.pcapng", "botnet-capture-20110810-neris.pcap")
+                      if name in rows}
             subprocess.run([str(args.node.resolve()) if args.node else "node", "scripts/showcase-browser.mjs", base, json.dumps(get(base + "/api/version")), json.dumps(subset)],
                            cwd=REPO / "cmd/capture/webui/frontend", env=browser_env, check=True, timeout=120)
     finally:

@@ -38,6 +38,8 @@
       "validUntil": 1800000100000000000
     }
   ],
+  "smtpRelays": null,
+  "internalNetworks": null,
   "beaconSamples": 8,
   "beaconJitter": 0.1,
   "beaconMinIntervalNS": 10000000000,

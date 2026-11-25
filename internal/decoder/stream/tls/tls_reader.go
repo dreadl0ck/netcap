@@ -347,6 +347,9 @@ func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32, timestam
 	)
 
 	// Add or update certificate in cache
+	if decoderconfig.Instance != nil {
+		decoderconfig.Instance.TorCertificates.Observe(h.conversation.NetworkScope, tlsCert)
+	}
 	addOrUpdateCertificate(tlsCert)
 }
 

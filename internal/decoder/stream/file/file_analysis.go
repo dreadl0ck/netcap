@@ -98,10 +98,10 @@ func AnalyzeFile(content []byte, filename string) *FileAnalysis {
 	// Check for type mismatch (extension vs magic bytes)
 	if filename != "" {
 		ext := strings.ToLower(filepath.Ext(filename))
-			expectedType := extensionToMimeType(ext)
-			if analysis.TrueFileType == "text/plain" && expectedType == "application/javascript" {
-				analysis.TrueFileType = expectedType
-			}
+		expectedType := extensionToMimeType(ext)
+		if analysis.TrueFileType == "text/plain" && expectedType == "application/javascript" {
+			analysis.TrueFileType = expectedType
+		}
 		if expectedType != "" && analysis.TrueFileType != "" &&
 			!strings.HasPrefix(analysis.TrueFileType, expectedType) &&
 			!strings.HasPrefix(expectedType, analysis.TrueFileType) {
@@ -159,9 +159,8 @@ func classifyFileType(data []byte, script func() string) string {
 	if len(data) < 2 {
 		return ""
 	}
-	if len(data) >= 8 && (data[0] == 'F' || data[0] == 'C' || data[0] == 'Z') && data[1] == 'W' && data[2] == 'S' &&
-		data[3] != 0 && binary.LittleEndian.Uint32(data[4:8]) >= 8 {
-		return "application/x-shockwave-flash"
+	if typ := containerMagic(data); typ != "" {
+		return typ
 	}
 
 	for mimeType, magic := range magicSignatures {
@@ -183,6 +182,22 @@ func classifyFileType(data []byte, script func() string) string {
 	}
 
 	return "application/octet-stream"
+}
+
+func containerMagic(data []byte) string {
+	if len(data) >= 8 && (data[0] == 'F' || data[0] == 'C' || data[0] == 'Z') && data[1] == 'W' && data[2] == 'S' &&
+		data[3] != 0 && binary.LittleEndian.Uint32(data[4:8]) >= 8 {
+		return "application/x-shockwave-flash"
+	}
+	if len(data) >= 12 {
+		switch string(data[:4]) {
+		case "wOFF":
+			return "font/woff"
+		case "wOF2":
+			return "font/woff2"
+		}
+	}
+	return ""
 }
 
 // isPEExecutable checks if content is a Windows PE executable

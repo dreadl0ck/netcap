@@ -42,7 +42,7 @@
 import { parseRelatedEvidence, type EvidenceSelector, type RelatedEvidence } from './evidenceLinks';
 import { translate as i18nText } from "./i18n";
 import { localeURL } from "./i18n";
-import { setSelectedSession } from './captureSelection';
+import { scopeCaptureURL, setSelectedSession } from './captureSelection';
 import { message, displayError, translate } from "./i18n";
 import { formatNumber, formatBytes as formatExactBytes, formatTimestampNs, formatDateTime, formatQuantity } from "./i18n";
 import { type MessageText, type UIMessage, messageSource, message as streamMessage, presentationValue } from "./i18n";
@@ -296,6 +296,8 @@ export interface AuditStatsResponse {
 }
 
 export interface StatusResponse {
+  readOnly?: boolean;
+  udpOmittedStreams?: number;
   coverage?: string;
   childAnalysisVersion?: number;
   isProcessing: boolean;
@@ -1178,6 +1180,7 @@ export type RelatedEvidenceResponse =
 export interface NetworkDetectionStats { schema: number; active: boolean; events: number; alerts: number; overflow: number; late: number; streamGaps: number; keys: number; flows: number; indicators: number; error?: string }
 
 export interface GroupedAlert {
+  displayName?: string;
   ruleName: string;
   description: string;
   severity: string;
@@ -2478,12 +2481,12 @@ function createApiWithBase(apiBase: string) {
 
   downloadExtractedFile(relativePath: string): string {
     // Return the download URL for the file
-    return `${apiBase}/extracted-files/download/${encodeURIComponent(relativePath)}`;
+    return scopeCaptureURL(`${apiBase}/extracted-files/download/${encodeURIComponent(relativePath)}`);
   },
 
   downloadAllExtractedFiles(): string {
     // Return the download URL for all extracted files as a zip
-    return `${apiBase}/extracted-files/download-all`;
+    return scopeCaptureURL(`${apiBase}/extracted-files/download-all`);
   },
 
   async getExtractedFileContent(relativePath: string, offset: number = 0, limit: number = 16384): Promise<ExtractedFileContentResponse> {

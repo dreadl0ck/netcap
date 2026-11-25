@@ -65,20 +65,22 @@ type AuditFileInfo struct {
 
 // StatusResponse represents the capture status
 type StatusResponse struct {
-	ChildAnalysisVersion int       `json:"childAnalysisVersion"`
-	IsProcessing         bool      `json:"isProcessing"`
-	OutputDir            string    `json:"outputDir"`
-	InputFiles           []string  `json:"inputFiles"`
-	ServerStarted        time.Time `json:"serverStarted"`
-	ActiveInputFile      string    `json:"activeInputFile"`
-	IsMultiFile          bool      `json:"isMultiFile"`
-	IsServiceMode        bool      `json:"isServiceMode,omitempty"`
-	IsLiveMode           bool      `json:"isLiveMode"`
-	SessionID            string    `json:"sessionId,omitempty"`   // Current session ID (service mode only)
+	ChildAnalysisVersion int           `json:"childAnalysisVersion"`
+	IsProcessing         bool          `json:"isProcessing"`
+	OutputDir            string        `json:"outputDir"`
+	InputFiles           []string      `json:"inputFiles"`
+	ServerStarted        time.Time     `json:"serverStarted"`
+	ActiveInputFile      string        `json:"activeInputFile"`
+	IsMultiFile          bool          `json:"isMultiFile"`
+	IsServiceMode        bool          `json:"isServiceMode,omitempty"`
+	IsLiveMode           bool          `json:"isLiveMode"`
+	SessionID            string        `json:"sessionId,omitempty"` // Current session ID (service mode only)
+	ReadOnly             bool          `json:"readOnly,omitempty"`
+	UDPOmittedStreams    int64         `json:"udpOmittedStreams,omitempty"`
 	Status               SessionStatus `json:"status,omitempty"`
-	Coverage             string    `json:"coverage,omitempty"`
-	ErrorMessage         string    `json:"errorMessage,omitempty"`
-	LogoSubText          string    `json:"logoSubText,omitempty"` // Custom label shown below NETCAP logo
+	Coverage             string        `json:"coverage,omitempty"`
+	ErrorMessage         string        `json:"errorMessage,omitempty"`
+	LogoSubText          string        `json:"logoSubText,omitempty"` // Custom label shown below NETCAP logo
 }
 
 // AuditStatsResponse represents the audit record statistics response

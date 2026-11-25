@@ -28,7 +28,7 @@ RUN ls /usr/lib/*
 # Extract library versions from go.mod
 RUN GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket) && \
     GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
-    GOOS=linux GOARCH=amd64 go build ${TAGS} -trimpath \
+    GOOS=linux GOARCH=amd64 go build ${TAGS} -trimpath -buildvcs=false \
     -ldflags "-s -w \
         -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
         -X github.com/dreadl0ck/netcap.Commit=${NETCAP_BUILD_COMMIT} \

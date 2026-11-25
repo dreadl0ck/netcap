@@ -39,9 +39,10 @@ import (
 // fileDeduplicationCache stores SHA256 hashes of already extracted files
 // to prevent saving duplicate files with identical content.
 type fileDeduplicationCache struct {
-	mu         sync.RWMutex
-	hashToPath map[string]string // SHA256 hash -> file path on disk
-	stats      dedupStats
+	mu          sync.RWMutex
+	hashToPath  map[string]string // SHA256 hash -> file path on disk
+	occurrences map[[32]byte]bool
+	stats       dedupStats
 }
 
 // dedupStats tracks deduplication statistics
@@ -79,7 +80,24 @@ func ResetDedupCache() {
 	dedupCache.mu.Lock()
 	defer dedupCache.mu.Unlock()
 	dedupCache.hashToPath = make(map[string]string)
+	dedupCache.occurrences = nil
 	dedupCache.stats = dedupStats{}
+}
+
+func (c *fileDeduplicationCache) duplicateOccurrence(key [32]byte) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.occurrences[key] {
+		return true
+	}
+	if len(c.occurrences) >= 100000 {
+		return false
+	}
+	if c.occurrences == nil {
+		c.occurrences = make(map[[32]byte]bool)
+	}
+	c.occurrences[key] = true
+	return false
 }
 
 // GetDedupStats returns the current deduplication statistics

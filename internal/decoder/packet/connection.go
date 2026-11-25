@@ -734,6 +734,7 @@ func (d *Decoder) writeConn(conn *types.Connection, clientIP, clientPort string,
 	}
 
 	conn.Established = pktsC2S > 0 && pktsS2C > 0 && conn.AppPayloadSize64 > 0
+	conn.TorLikeCertificateSHA256 = conf.TorCertificates.Match(conn)
 
 	// Check if connection is external (either IP is not RFC1918 private)
 	conn.IsExternal = !isPrivateIP(conn.SrcIP) || !isPrivateIP(conn.DstIP)

@@ -10,6 +10,10 @@ func DisplayName(id string) string {
 		return "Outbound SMTP Fan-Out"
 	case "udp.fanout":
 		return "Outbound UDP Fan-Out"
+	case "http.flash-referral":
+		return "Flash Delivered After Cross-Site Referral"
+	case "http.scan":
+		return "HTTP Reconnaissance Pattern"
 	case "dns.dga":
 		return "DNS Name-Generation Pattern"
 	case "dns.tunnel":
