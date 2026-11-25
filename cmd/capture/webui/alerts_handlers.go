@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"log"
 	"math"
@@ -305,7 +306,11 @@ func (s *Server) walkAlertAudit(ctx context.Context, filePath string, byteLimit,
 			return fmt.Errorf("%w: stored alert audit exceeds %d bytes", errAlertPageSourceLimit, byteLimit)
 		} else {
 			opened = info
-			reader, err = auditRecordReaderFromInput(file, io.NewSectionReader(file, 0, info.Size()), true, func(in io.Reader) io.Reader {
+			var input io.Reader = io.NewSectionReader(file, 0, info.Size())
+			if stats, ok := ctx.Value(alertScanStatsKey{}).(*alertScanStats); ok && stats.auditHash != nil {
+				input = io.TeeReader(input, stats.auditHash)
+			}
+			reader, err = auditRecordReaderFromInput(file, input, true, func(in io.Reader) io.Reader {
 				return auditContextReader{ctx: ctx, input: in}
 			})
 		}
@@ -656,6 +661,9 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 	}
 	acc := newAlertGroups(budget)
 	ctx, scanStats := withAlertScanStats(r.Context())
+	if bounded {
+		scanStats.auditHash = sha256.New()
+	}
 	_, err = s.scanFilteredAlertAudit(ctx, alertsFile, 0, alertStatsScanRows, alertStatsFrameBytes, kindMatch, func(alert AlertResponse) error {
 		return acc.add(alert, severityFilter, ruleNameFilter)
 	})
@@ -720,7 +728,11 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 			RespondJSON(w, 500, map[string]string{"error": err.Error()})
 			return
 		}
-		respondFilteredCollectionPage(w, r, rows, "groups", map[string]any{"totalCount": totalCount, "groupCount": groupCount, "skippedOversizedAlerts": scanStats.skippedOversized})
+		// A changed member can fall outside every retained address and sample.
+		respondFilteredCollectionPage(w, r, rows, "groups", map[string]any{
+			"totalCount": totalCount, "groupCount": groupCount, "skippedOversizedAlerts": scanStats.skippedOversized,
+			"auditSHA256": fmt.Sprintf("%x", scanStats.auditHash.Sum(nil)),
+		})
 		return
 	}
 	start := min(offset, groupCount)
@@ -953,7 +965,10 @@ func generateAlertID(alert AlertResponse) string {
 type alertScanStatsKey struct{}
 
 // alertScanStats counts what a bounded alert scan left out.
-type alertScanStats struct{ skippedOversized int }
+type alertScanStats struct {
+	skippedOversized int
+	auditHash        hash.Hash
+}
 
 func withAlertScanStats(ctx context.Context) (context.Context, *alertScanStats) {
 	stats := &alertScanStats{}

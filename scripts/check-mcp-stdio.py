@@ -152,8 +152,11 @@ async def check_large_alert_views(client, call, directory, args):
         for page in (first, last):
             group, = page["groups"]
             parity = 0 if group["severity"] == "critical" else 1
-            if group["uniqueSrcIPsTotal"] != count // 2 or group["uniqueSrcIPs"] != sorted(sources[parity::2])[:10]:
-                raise ValueError("large group lost exact unique-address count or preview order")
+            retained_cap = 256
+            retained = sources[parity::2][:retained_cap]
+            if (group.get("uniqueValuesTruncated") is not True or group["uniqueSrcIPsTotal"] != retained_cap
+                    or group["uniqueSrcIPs"] != sorted(retained)[:10]):
+                raise ValueError("large group lost the unique-address cap, truncation flag or preview order")
             members = await call("list_alerts", args | {"group_id": group["groupId"], "limit": 2, "offset": 12_500})
             expected = [25_000 + parity, 25_002 + parity]
             if (members["totalCount"] != count // 2 or not members["has_more"]
