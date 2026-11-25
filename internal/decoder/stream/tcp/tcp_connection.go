@@ -803,7 +803,7 @@ func (t *tcpConnection) decode() {
 		}
 	}
 	stream.ObserveFTPData(conv)
-	stream.ObserveIndustrial(conv, sel.Name)
+	industrialHandled := stream.ObserveIndustrial(conv, sel.Name)
 	secret.HarvestSMTPConversation(conv)
 	secret.HarvestTelnetConversation(conv)
 	secret.HarvestAdditionalConversation(conv)
@@ -830,7 +830,7 @@ func (t *tcpConnection) decode() {
 	}
 
 	// call the decoder if one was found
-	if t.decoder != nil {
+	if t.decoder != nil && !industrialHandled {
 		ti := time.Now()
 		decoderTypeName := reflect.TypeOf(t.decoder).String()
 

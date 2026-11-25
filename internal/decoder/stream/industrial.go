@@ -1,10 +1,12 @@
 package stream
 
 import (
+	"encoding/binary"
 	"sync/atomic"
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/iec62351"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/otframe"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/s7comm"
 	"github.com/dreadl0ck/netcap/types"
@@ -14,29 +16,62 @@ import (
 )
 
 var otStreams = map[int32]*decoder.AbstractDecoder{
-	102: {Name: "MMS", Type: types.Type_NC_MMS, Description: "IEC 61850 Manufacturing Message Specification"}, 2404: {Name: "IEC104", Type: types.Type_NC_IEC104, Description: "IEC 60870-5-104 control and information messages"}, 48898: {Name: "AMS", Type: types.Type_NC_AMS, Description: "AMS/ADS over TCP"},
+	102:   {Name: "MMS", Type: types.Type_NC_MMS, Description: "IEC 61850 Manufacturing Message Specification"},
+	2404:  {Name: "IEC104", Type: types.Type_NC_IEC104, Description: "IEC 60870-5-104 control and information messages"},
+	48898: {Name: "AMS", Type: types.Type_NC_AMS, Description: "AMS/ADS over TCP"},
 }
 
-func ObserveIndustrial(c *core.ConversationInfo, primary string) {
+// tpktPrefix is a carrier probe only. No application record is emitted on its evidence.
+func tpktPrefix(c *core.ConversationInfo) bool {
+	for _, fragments := range []core.DataFragments{c.ClientData, c.ServerData} {
+		var h [7]byte
+		n := 0
+		for _, fragment := range fragments {
+			if s, ok := fragment.(*core.StreamData); ok && n > 0 && (s.SkippedBytes != 0 || s.DiscardedBytes != 0) {
+				break
+			}
+			n += copy(h[n:], fragment.Raw())
+			if n == len(h) {
+				break
+			}
+		}
+		if n == len(h) && h[0] == 3 && h[1] == 0 && h[4] >= 2 && int(binary.BigEndian.Uint16(h[2:4])) >= 5+int(h[4]) {
+			switch h[5] & 0xf0 {
+			case 0xe0, 0xd0, 0xf0:
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// ObserveIndustrial reports whether it also ran the selected primary decoder.
+func ObserveIndustrial(c *core.ConversationInfo, primary string) bool {
+	if primary != "" && primary != "S7Comm" && primary != "IEC62351" {
+		return false
+	}
 	port := c.ServerPort
 	if otStreams[port] == nil {
 		port = c.ClientPort
 	}
+	if primary == "S7Comm" || (otStreams[port] == nil && (otStreams[102].Writer != nil || s7comm.Decoder.Writer != nil) && tpktPrefix(c)) {
+		port = 102
+	}
 	d := otStreams[port]
 	if d == nil {
-		return
+		return false
 	}
-	fallbackS7 := port == 102 && primary != "S7Comm" && primary != "RDP" && configuredDecoder("S7Comm") && s7comm.Decoder.Writer != nil
-	if d.Writer == nil && !fallbackS7 {
-		return
-	}
-	if primary == "RDP" {
-		return
+	handleS7 := port == 102 && configuredDecoder("S7Comm") && s7comm.Decoder.Writer != nil
+	handleSecurity := port == 2404 && configuredDecoder("IEC62351") && iec62351.Decoder.Writer != nil
+	if d.Writer == nil && !handleS7 && !handleSecurity {
+		return false
 	}
 	split, _, _ := layers.OTStreamDecoder(layers.TCPPort(port))
 	limit := map[int32]int{102: 65535, 2404: 255, 48898: (16 << 20) + 6}[port]
 	var iso [2]otframe.ISO
 	var s7 [2]s7comm.Assembly
+	var security [2]iec62351.IEC104Assembly
+	owned := primary == "S7Comm" && handleS7
 	var identified [2]bool
 	write := func(side int, r proto.Message) {
 		if r == nil || d.Writer == nil {
@@ -57,8 +92,8 @@ func ObserveIndustrial(c *core.ConversationInfo, primary string) {
 			if err != nil {
 				return
 			}
-			if fallbackS7 {
-				s7[f.Side].Observe(c, u, false)
+			if handleS7 {
+				s7[f.Side].Observe(c, u, primary == "S7Comm")
 			}
 			if u.Type != layers.LayerTypeISOSession {
 				return
@@ -93,6 +128,18 @@ func ObserveIndustrial(c *core.ConversationInfo, primary string) {
 				r.UFunction = p.UFunction.String()
 			}
 			write(f.Side, r)
+			if handleSecurity {
+				if sec := security[f.Side].Record(&p, f); sec != nil {
+					if primary == "IEC62351" {
+						owned = true
+					}
+					if err := iec62351.Decoder.Writer.Write(sec); err != nil {
+						c.FragmentError = err
+					} else {
+						atomic.AddInt64(&iec62351.Decoder.NumRecordsWritten, 1)
+					}
+				}
+			}
 		case 48898:
 			var p layers.EtherCATAMSTCP
 			if p.DecodeFromBytes(f.Data, gopacket.NilDecodeFeedback) != nil || len(p.PDUs) != 1 {
@@ -123,7 +170,8 @@ func ObserveIndustrial(c *core.ConversationInfo, primary string) {
 	}, func(f otframe.Frame, why string) {
 		pending := iso[f.Side].Pending()
 		iso[f.Side] = otframe.ISO{}
-		if fallbackS7 {
+		security[f.Side] = iec62351.IEC104Assembly{}
+		if handleS7 {
 			s7[f.Side].Reset(c, f, why)
 		}
 		if !identified[f.Side] || why == "EOF" && !pending {
@@ -139,4 +187,5 @@ func ObserveIndustrial(c *core.ConversationInfo, primary string) {
 			write(f.Side, &types.AMS{Timestamp: f.At, Context: f.Context, Assembly: a})
 		}
 	})
+	return owned
 }

@@ -72,6 +72,7 @@ func TestRound2PinnedCLIReplays(t *testing.T) {
 						"HTTP": func() proto.Message { return &types.HTTP{} }, "DNS": func() proto.Message { return &types.DNS{} },
 						"SMB": func() proto.Message { return &types.SMB{} }, "PROFINET": func() proto.Message { return &types.PROFINET{} },
 						"RDP": func() proto.Message { return &types.RDP{} }, "S7Comm": func() proto.Message { return &types.S7Comm{} },
+						"MMS": func() proto.Message { return &types.MMS{} },
 						"Modbus": func() proto.Message { return &types.Modbus{} }, "FTP": func() proto.Message { return &types.FTP{} },
 						"Kerberos": func() proto.Message { return &types.Kerberos{} }, "Secret": func() proto.Message { return &types.Secret{} },
 					}
