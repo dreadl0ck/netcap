@@ -153,13 +153,13 @@ func TestFragmentDetectionInterleavedCollector(t *testing.T) {
 								t.Fatal("unexpected extra alert", err)
 							}
 							r.Close()
-							wantName, wantCount := "network.scan", uint64(1)
+							wantRule, wantCount := "network.scan", uint64(1)
 							if kind == "dns" {
-								wantName, wantCount = "policy.telegram-api", 2
+								wantRule, wantCount = "policy.telegram-api", 2
 							} else if kind == "tcp" {
-								wantName, wantCount = "intel.c2", 2
+								wantRule, wantCount = "intel.c2", 2
 							}
-							if a.Name != wantName || a.Count != wantCount || a.LastSeen != (base+5)*1e9 {
+							if a.RuleName != wantRule || a.Count != wantCount || a.LastSeen != (base+5)*1e9 {
 								t.Fatalf("unexpected detection semantics: %v", a)
 							}
 							if reference == nil {

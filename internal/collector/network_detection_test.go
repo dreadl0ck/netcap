@@ -37,8 +37,14 @@ func TestFlightSimCollectorReplay(t *testing.T) {
 				continue
 			}
 			caseRoot := root
+			expected := tc.Expected
 			if origin == "live" {
 				caseRoot = filepath.Join(root, "live")
+				// These historical captures contain queries without negative replies
+				// and unclassified payload on a cleartext service port, respectively.
+				if tc.Name == "dga" || tc.Name == "cleartext" {
+					expected = nil
+				}
 			}
 			t.Run(origin+"/"+tc.Name, func(t *testing.T) {
 				var reference []string
@@ -64,18 +70,18 @@ func TestFlightSimCollectorReplay(t *testing.T) {
 						}
 						seen := map[string]bool{}
 						for _, s := range semantics {
-							for _, want := range tc.Expected {
+							for _, want := range expected {
 								if len(s) >= len(want) && s[:len(want)] == want {
 									seen[want] = true
 								}
 							}
 						}
-						for _, want := range tc.Expected {
+						for _, want := range expected {
 							if !seen[want] {
 								t.Fatalf("missing %s: %v", want, semantics)
 							}
 						}
-						if len(tc.Expected) == 0 && len(semantics) != 0 {
+						if len(expected) == 0 && len(semantics) != 0 {
 							t.Fatalf("benign alerts: %v", semantics)
 						}
 						statsData, err := os.ReadFile(filepath.Join(out, "NetworkDetection.json"))
