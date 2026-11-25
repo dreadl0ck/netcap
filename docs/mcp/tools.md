@@ -37,7 +37,7 @@ Each tool exposes the standard MCP hint annotations (read-only,
 destructive, idempotent, open-world). Treat them as advisory: a
 `destructive` tool should prompt the user before invocation.
 
-## Tool catalogue (119 tools)
+## Tool catalogue (120 tools)
 
 Auto-generated from the live tool registry. Do not edit by hand; run `go test ./internal/mcp/ -run TestToolDocsUpToDate -update` to regenerate.
 
@@ -2721,6 +2721,48 @@ Return YARA engine status (enabled, rule count, last reload).
 | --- | --- | --- | --- |
 | `session_id` | string | yes | Session identifier. |
 
+
+### `hunt_peer_rotation`
+
+Find scoped TCP peer rotation candidates in one finalized capture. Five distinct short failed peers followed by two-way payload to a different peer within 300 seconds; report candidates and audit references without writing alerts.
+
+**Hints:** read-only
+
+**Arguments (JSON Schema):**
+
+```json
+{
+  "additionalProperties": false,
+  "properties": {
+    "pageGeneration": {
+      "description": "Generation from the first page.",
+      "type": "string"
+    },
+    "pageLimit": {
+      "description": "Maximum candidates per page.",
+      "maximum": 500,
+      "minimum": 1,
+      "multipleOf": 1,
+      "type": "number"
+    },
+    "pageOffset": {
+      "description": "Offset from next_offset.",
+      "maximum": 1000,
+      "minimum": 0,
+      "multipleOf": 1,
+      "type": "number"
+    },
+    "session_id": {
+      "description": "Explicit session identifier returned by ingest_pcap or list_sessions.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id"
+  ],
+  "type": "object"
+}
+```
 
 ### `import_protocol_triage`
 

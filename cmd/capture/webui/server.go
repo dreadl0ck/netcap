@@ -734,6 +734,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/connections/network-conversation", s.handleNetworkConversation)
 	mux.HandleFunc("/api/connections/download-pcap", s.handleConnectionDownloadPCAP)
 	mux.HandleFunc("/api/flows/query", s.handleFlowQuery)
+	mux.HandleFunc("/api/flows/peer-rotation", s.handlePeerRotation)
 	mux.HandleFunc("/api/flows/exports/query", s.handleFlowExportQuery)
 	mux.HandleFunc("/api/investigation/capture", s.handleCaptureEvidence)
 	mux.HandleFunc("/api/investigation/reproduction", s.handleReproductionBundle)
